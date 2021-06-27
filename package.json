@@ -1,0 +1,27 @@
+{
+  "name": "symbioz-contracts",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/PaulFrambot/symbioz-contracts.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/PaulFrambot/symbioz-contracts/issues"
+  },
+  "homepage": "https://github.com/PaulFrambot/symbioz-contracts#readme",
+  "devDependencies": {
+    "hardhat": "^2.4.1"
+  },
+  "dependencies": {
+    "@nomiclabs/hardhat-waffle": "^2.0.1",
+    "@openzeppelin/contracts": "^4.1.0"
+  }
+}
