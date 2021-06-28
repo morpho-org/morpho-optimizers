@@ -6,18 +6,17 @@ import "@openzeppelin/contracts/utils/math/Math.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "./SlidingWindowOracle.sol";
 
-import { ICErc20, ICEth } from "./interfaces/ICompound.sol";
+import {ICErc20, ICEth} from "./interfaces/ICompound.sol";
 
 contract CompoundModule is SlidingWindowOracle, Math {
-
     /* Structs */
 
     struct Balance {
-		uint256 total;
-		uint256 used;
-	}
+        uint256 total;
+        uint256 used;
+    }
 
-	struct BorrowingOperation {
+    struct BorrowingOperation {
         uint256 timeBorrowed;
         uint256 amountBorrowed;
         uint256 amountRepaid;
@@ -25,21 +24,23 @@ contract CompoundModule is SlidingWindowOracle, Math {
 
     /* Storage */
 
-	mapping(address => bool) isOnComp;
-	mapping(address => Balance) lendingBalanceOf;
-	mapping(address => Balance) collateralBalanceOf;
-	mapping(address => BorrowingOperation) borrowingOperations;
-	mapping(address => uint256) borrowingBalanceOf;
-	mapping(address => mapping(address => uint256)) stakingBalanceOf;
-    mapping(address => uint) lenderToIndex;
-	address[] currentLenders;
+    mapping(address => bool) isOnComp;
+    mapping(address => Balance) lendingBalanceOf;
+    mapping(address => Balance) collateralBalanceOf;
+    mapping(address => BorrowingOperation) borrowingOperations;
+    mapping(address => uint256) borrowingBalanceOf;
+    mapping(address => mapping(address => uint256)) stakingBalanceOf;
+    mapping(address => uint256) lenderToIndex;
+    address[] currentLenders;
     uint256 constant COLLATERAL_FACTOR = 12000; // Collateral factor in basis points 120% by default.
     uint256 constant DENOMINATOR = 10000; // Collateral factor in basis points.
 
     address constant wethAddress = 0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2;
-	address payable constant cEtherAddress = payable(0x4Ddc2D193948926D02f9B1fE9e1daa0718270ED5);
+    address payable constant cEtherAddress =
+        payable(0x4Ddc2D193948926D02f9B1fE9e1daa0718270ED5);
     address constant daiAddress = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
-    address payable constant cDaiAddress = payable(0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643);
+    address payable constant cDaiAddress =
+        payable(0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643);
 
     ICEth public cEthToken = ICEth(cEtherAddress);
     ICErc20 public cDaiToken = ICErc20(cDaiAddress);
@@ -47,33 +48,35 @@ contract CompoundModule is SlidingWindowOracle, Math {
 
     /* External */
 
-	function stake(uint256 _amount) external {
-		require(_amount > 0, "Amount cannot be 0");
-		cEthToken.approve(address(this), _amount);
+    function stake(uint256 _amount) external {
+        require(_amount > 0, "Amount cannot be 0");
+        cEthToken.approve(address(this), _amount);
         cEthToken.transferFrom(msg.sender, address(this), _amount);
         stakingBalanceOf[msg.sender].total += _amount;
-	}
+    }
 
-	function lend() external payable {
-		_supplyEthToCompound{value: msg.value}();
+    function lend() external payable {
+        _supplyEthToCompound{value: msg.value}();
         if (lendingBalanceOf[msg.sender].total == 0) {
             lenderToIndex[msg.sender] = currentLenders.length;
-		    currentLenders.push(msg.sender);
+            currentLenders.push(msg.sender);
         }
-		lendingBalanceOf[msg.sender].total += msg.value;
-	}
+        lendingBalanceOf[msg.sender].total += msg.value;
+    }
 
-	function borrow(uint256 _amount) external {
-
-		// Verify that borrowers has enough collateral
-        uint daiAmountOut = consult(WETHAddress, _amount, daiAddress);
-        uint unusedCollateral = collateralBalanceOf[msg.sender].total - collateralBalanceOf[msg.sender].used;
-        uint collateralNeeded = (daiAmountOut / DENOMINATOR) * COLLATERAL_FACTOR ;
+    function borrow(uint256 _amount) external {
+        // Verify that borrowers has enough collateral
+        uint256 daiAmountOut = consult(WETHAddress, _amount, daiAddress);
+        uint256 unusedCollateral = collateralBalanceOf[msg.sender].total -
+            collateralBalanceOf[msg.sender].used;
+        uint256 collateralNeeded = (daiAmountOut / DENOMINATOR) *
+            COLLATERAL_FACTOR;
         require(collateralNeeded <= unusedCollateral, "Not enough collateral.");
 
         // Check if contract has the cTokens for the borrowing
         // TODO: Verify multiplication, rounds
-        uint256 availableTokensToBorrow = cDaiToken.balanceOf(address(this)) * cDaiToken.exchangeRateCurrent();
+        uint256 availableTokensToBorrow = cDaiToken.balanceOf(address(this)) *
+            cDaiToken.exchangeRateCurrent();
         require(_amount <= availableTokensToBorrow, "");
 
         // Now contract can take liquidity thanks to cTokens
@@ -81,7 +84,7 @@ contract CompoundModule is SlidingWindowOracle, Math {
 
         // Update used collateral
         collateralBalanceOf[msg.sender].used += collateralNeeded;
-		borrowingBalanceOf[msg.sender] += _amount;
+        borrowingBalanceOf[msg.sender] += _amount;
 
         // Signal that user has not been displaced to Comp (rare case but to prevent)
         isOnComp[msg.sender] = false;
@@ -91,47 +94,50 @@ contract CompoundModule is SlidingWindowOracle, Math {
         borrowingOperations[msg.sender].amountRepaid = 0;
 
         // Transfer ETH to borrower
-		msg.sender.transfer(_amount);
-	}
+        msg.sender.transfer(_amount);
+    }
 
     function payBackAll() external payable {
-        require(msg.value >= borrowingBalanceOf[msg.sender], "Must payback all debt.");
-		address(this).transfer(msg.value);
-		_supplyEthToCompound(msg.value);
-		_findUsedCTokensAndUnuse(msg.value);
-        uint daiAmountOut = consult(wethAddress, msg.value, daiAddress);
-        uint amountToRedeem = (daiAmountOut / DENOMINATOR) * COLLATERAL_FACTOR;
+        require(
+            msg.value >= borrowingBalanceOf[msg.sender],
+            "Must payback all debt."
+        );
+        address(this).transfer(msg.value);
+        _supplyEthToCompound(msg.value);
+        _findUsedCTokensAndUnuse(msg.value);
+        uint256 daiAmountOut = consult(wethAddress, msg.value, daiAddress);
+        uint256 amountToRedeem = (daiAmountOut / DENOMINATOR) *
+            COLLATERAL_FACTOR;
         borrowingBalanceOf[msg.sender] = 0;
         _redeemCollateral(_borrower, amountToRedeem);
     }
 
     function cashOut(uint256 _amount) external {
-		_cashOut(msg.sender, _amount);
-	}
+        _cashOut(msg.sender, _amount);
+    }
 
-	function provideCollateral(uint256 _amount) payable external {
-		require(_amount > 0, "Amount cannot be 0");
-		IERC20(daiToken).approve(address(this), _amount);
+    function provideCollateral(uint256 _amount) external payable {
+        require(_amount > 0, "Amount cannot be 0");
+        IERC20(daiToken).approve(address(this), _amount);
         IERC20(daiToken).transferFrom(msg.sender, address(this), msg.value);
         _supplyDaiToCompound(_amount);
         // We update the collateral balance of the message sender
         collateralBalanceOf[msg.sender].total += _amount;
     }
 
-	// function redeemAllCollateral() external {
+    // function redeemAllCollateral() external {
     //     uint amountToRedeem = collateralBalanceOf[msg.sender].total;
     //     _redeemCollateral(msg.sender, amountToRedeem);
     // }
 
-	function liquidate(address _borrower) external {
+    function liquidate(address _borrower) external {
         // TODO: write function
-	}
-
+    }
 
     /* Internal */
 
     function _cashOut(address _lender, uint256 _amount) internal {
-		if (lendingBalanceOf[_lender].used == 0) {
+        if (lendingBalanceOf[_lender].used == 0) {
             lendingBalanceOf[_lender].total -= _amount;
             _redeemLending(_amount);
         } else if (cEthToken.balanceOf(address(this)) > 0) {
@@ -144,10 +150,13 @@ contract CompoundModule is SlidingWindowOracle, Math {
             require(_lender.send(_amount));
         }
         delete currentLenders[lenderToIndex[_lender]];
-	}
+    }
 
     function _redeemCollateral(address _borrower, uint256 _amount) internal {
-        require(isNotBorrowing(_borrower), "Borrowing must be repaid before redeeming collateral.");
+        require(
+            isNotBorrowing(_borrower),
+            "Borrowing must be repaid before redeeming collateral."
+        );
         require(_amount <= collateralBalanceOf[msg.sender].total);
         _redeemCDaiFromCompound(_amount, true);
         // Amount of Tokens given by Compound calculation
@@ -168,21 +177,23 @@ contract CompoundModule is SlidingWindowOracle, Math {
         _lender.transfer(amountRedeemed);
     }
 
-	function _supplyEthToCompound() internal payable returns (bool) {
-        uint result = cEthToken.mint{value: msg.value}();
+    function _supplyEthToCompound() internal payable returns (bool) {
+        uint256 result = cEthToken.mint{value: msg.value}();
         require(result == 0, "");
     }
 
-	function _supplyDaiToCompound(uint256 _amount) internal {
+    function _supplyDaiToCompound(uint256 _amount) internal {
         // Approve transfer on the ERC20 contract.
         underlying.approve(cDaiAddress, _amount);
         // Mint cTokens.
         require(cDaiToken.mint(_amount) == 0, "");
     }
 
-	function _redeemCDaiFromCompound(uint256 _amount, bool _redeemType) internal {
-        uint result;
-		// TODO: check here this is false
+    function _redeemCDaiFromCompound(uint256 _amount, bool _redeemType)
+        internal
+    {
+        uint256 result;
+        // TODO: check here this is false
         if (_redeemType == true) {
             // Retrieve your asset based on a cToken amount
             result = cDaiToken.redeem(_amount);
@@ -193,8 +204,11 @@ contract CompoundModule is SlidingWindowOracle, Math {
         require(result == 0, "");
     }
 
-	function _redeemCEthFromCompound( uint256 _amount, bool _redeemType) internal returns (bool) {
-        uint result;
+    function _redeemCEthFromCompound(uint256 _amount, bool _redeemType)
+        internal
+        returns (bool)
+    {
+        uint256 result;
         if (_redeemType == true) {
             // Retrieve your asset based on a cToken amount
             result = cEthToken.redeem(_amount);
@@ -205,49 +219,58 @@ contract CompoundModule is SlidingWindowOracle, Math {
         require(result == 0, "");
     }
 
-	// TODO: can be a public function
-	function _calculateAmountToRepay(address _borrower) internal returns(uint256) {
-        return borrowingOperations[_borrower].amountBorrowed - borrowingOperations[_borrower].amountRepaid;
+    // TODO: can be a public function
+    function _calculateAmountToRepay(address _borrower)
+        internal
+        returns (uint256)
+    {
+        return
+            borrowingOperations[_borrower].amountBorrowed -
+            borrowingOperations[_borrower].amountRepaid;
     }
 
-	// TODO: can be a modifier or removed it as it's used only once
-	function isNotBorrowing(address _borrower) internal returns (bool){
+    // TODO: can be a modifier or removed it as it's used only once
+    function isNotBorrowing(address _borrower) internal returns (bool) {
         return (borrowingOperations[_borrower].amountBorrowed == 0);
     }
 
-	function _findUnusedCTokensAndUse(uint256 _amount) internal {
-		uint remainingLiquidityToUse = _amount;
-		uint i;
-		while (remainingLiquidityToUse > 0 && i < currentLenders.length) {
-			address lenderAddress = currentLenders[i];
-			// We calculate how much is unused=usable for this lender
-			uint usable = lendingBalanceOf[lenderAddress].total - lendingBalanceOf[lenderAddress].used;
+    function _findUnusedCTokensAndUse(uint256 _amount) internal {
+        uint256 remainingLiquidityToUse = _amount;
+        uint256 i;
+        while (remainingLiquidityToUse > 0 && i < currentLenders.length) {
+            address lenderAddress = currentLenders[i];
+            // We calculate how much is unused=usable for this lender
+            uint256 usable = lendingBalanceOf[lenderAddress].total -
+                lendingBalanceOf[lenderAddress].used;
 
-			if (usable > 0) {
-                uint amountToUse = min(usable, remainingLiquidityToUse);
-				lendingBalanceOf[lenderAddress].used += amountToUse;
-				remainingLiquidityToUse -= amountToUse;
-			}
-			i += 1;
-		}
+            if (usable > 0) {
+                uint256 amountToUse = min(usable, remainingLiquidityToUse);
+                lendingBalanceOf[lenderAddress].used += amountToUse;
+                remainingLiquidityToUse -= amountToUse;
+            }
+            i += 1;
+        }
         require(remainingLiquidityToUnuse == 0);
-	}
+    }
 
-	function _findUsedCTokensAndUnuse(uint256 _amount) internal {
-		uint remainingLiquidityToUnuse = _amount;
-		uint i = currentLenders.length;
-		while (remainingLiquidityToUnuse > 0 && i < currentLenders.length) {
-			address lenderAddress = currentLenders[i];
-			// We calculate how much is used=unusable for this lender
-			uint unusable = lendingBalanceOf[lenderAddress].used;
+    function _findUsedCTokensAndUnuse(uint256 _amount) internal {
+        uint256 remainingLiquidityToUnuse = _amount;
+        uint256 i = currentLenders.length;
+        while (remainingLiquidityToUnuse > 0 && i < currentLenders.length) {
+            address lenderAddress = currentLenders[i];
+            // We calculate how much is used=unusable for this lender
+            uint256 unusable = lendingBalanceOf[lenderAddress].used;
 
-			if (unusable > 0) {
-                uint amountToUnuse = min(unusable, remainingLiquidityToUnuse);
-				lendingBalanceOf[lenderAddress].used -= amountToUnuse;
-				remainingLiquidityToUnuse -= amountToUnuse;
-			}
-			i += 1;
-		}
+            if (unusable > 0) {
+                uint256 amountToUnuse = min(
+                    unusable,
+                    remainingLiquidityToUnuse
+                );
+                lendingBalanceOf[lenderAddress].used -= amountToUnuse;
+                remainingLiquidityToUnuse -= amountToUnuse;
+            }
+            i += 1;
+        }
         require(remainingLiquidityToUnuse == 0);
-	}
+    }
 }

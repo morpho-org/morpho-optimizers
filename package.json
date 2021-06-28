@@ -2,9 +2,18 @@
   "name": "symbioz-contracts",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "hardhat.config.js",
+  "files": [
+    "contracts"
+  ],
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "lint": "yarn run lint:sol && yarn run lint:js",
+    "lint:js": "eslint .",
+    "lint:sol": "solhint 'contracts/**/*.sol'",
+    "fix": "run-p -s fix:*",
+    "fix:js": "eslint --fix '**/*.js'",
+    "fix:sol": "prettier --write 'contracts/**/*.sol'"
   },
   "repository": {
     "type": "git",
@@ -18,7 +27,11 @@
   },
   "homepage": "https://github.com/PaulFrambot/symbioz-contracts#readme",
   "devDependencies": {
-    "hardhat": "^2.4.1"
+    "hardhat": "^2.4.1",
+    "prettier": "^2.3.2",
+    "prettier-plugin-solidity": "^1.0.0-beta.13",
+    "solhint": "^3.3.6",
+    "solhint-plugin-prettier": "0.0.5"
   },
   "dependencies": {
     "@nomiclabs/hardhat-waffle": "^2.0.1",
