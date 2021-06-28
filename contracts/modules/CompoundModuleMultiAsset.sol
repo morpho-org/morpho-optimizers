@@ -9,7 +9,7 @@ import { ICErc20, ICEth } from "./interfaces/ICompound.sol";
 // No constructor here as it will be called by a Proxy
 // TODO resolve issue when token is not allowed anymore
 // TODO beware that people can directly interact with this contract
-contract CompoundModule {
+contract CompoundModuleMultiAsset {
 
 	mapping(address => bool) isOnComp;
 	mapping(address => bool) tokenAllowed;
