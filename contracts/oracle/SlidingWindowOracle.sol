@@ -3,11 +3,10 @@ pragma solidity ^0.8.0;
 import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol";
 import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol";
 import "@uniswap/lib/contracts/libraries/FixedPoint.sol";
-
-import "./libraries/UniswapV2Library.sol";
-import "./libraries/UniswapV2OracleLibrary.sol";
-
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+
+import "../libraries/UniswapV2Library.sol";
+import "../libraries/UniswapV2OracleLibrary.sol";
 
 // sliding window oracle that uses observations collected over a window to provide moving price averages in the past
 // `windowSize` with a precision of `windowSize / granularity`
@@ -23,9 +22,9 @@ contract SlidingWindowOracle {
         uint256 price1Cumulative;
     }
 
-    address public immutable factory;
+    address public constant factory = 0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f;
     // the desired amount of time over which the moving average should be computed, e.g. 24 hours
-    uint256 public immutable windowSize;
+    uint256 public constant windowSize = 24 hours;
     // the number of observations stored for each pair, i.e. how many price observations are stored for the window.
     // as granularity increases from 1, more frequent updates are needed, but moving averages become more precise.
     // averages are computed over intervals with sizes in the range:
@@ -33,27 +32,20 @@ contract SlidingWindowOracle {
     // e.g. if the window size is 24 hours, and the granularity is 24, the oracle will return the average price for
     //   the period:
     //   [now - [22 hours, 24 hours], now]
-    uint8 public immutable granularity;
+    uint8 public constant granularity = 24;
     // this is redundant with granularity and windowSize, but stored for gas savings & informational purposes.
     uint256 public immutable periodSize;
 
     // mapping from pair address to a list of price observations of that pair
     mapping(address => Observation[]) public pairObservations;
 
-    constructor(
-        address factory_,
-        uint256 windowSize_,
-        uint8 granularity_
-    ) public {
-        require(granularity_ > 1, "SlidingWindowOracle: GRANULARITY");
+    constructor() {
+        require(granularity > 1, "SlidingWindowOracle: GRANULARITY");
         require(
-            (periodSize = windowSize_ / granularity_) * granularity_ ==
-                windowSize_,
+            (periodSize = windowSize / granularity) * granularity ==
+                windowSize,
             "SlidingWindowOracle: WINDOW_NOT_EVENLY_DIVISIBLE"
         );
-        factory = factory_;
-        windowSize = windowSize_;
-        granularity = granularity_;
     }
 
     // returns the index of the observation corresponding to the given timestamp

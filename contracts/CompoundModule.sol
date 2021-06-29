@@ -4,11 +4,11 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
-import "./SlidingWindowOracle.sol";
 
 import {ICErc20, ICEth} from "./interfaces/ICompound.sol";
+import "./interfaces/IOracle.sol";
 
-contract CompoundModule is SlidingWindowOracle, Math {
+contract CompoundModule is Math {
 
     /* Structs */
 
@@ -19,24 +19,26 @@ contract CompoundModule is SlidingWindowOracle, Math {
 
     /* Storage */
 
-    mapping(address => Balance) lendingBalanceOf;
-    mapping(address => Balance) collateralBalanceOf;
-    mapping(address => uint256) borrowingBalanceOf;
-    mapping(address => uint256) lenderToIndex; // return the position of the lender in the currentLenders list
-    address[] currentLenders;
-    uint256 constant COLLATERAL_FACTOR = 12000; // Collateral factor in basis points 120% by default.
-    uint256 constant DENOMINATOR = 10000; // Collateral factor in basis points.
+    mapping(address => Balance) public lendingBalanceOf; // Lending balance of user (ETH).
+    mapping(address => Balance) public collateralBalanceOf; // Collateral balance of user (ETH).
+    mapping(address => uint256) public borrowingBalanceOf; // Borrowing balance of user (DAI).
+    mapping(address => uint256) public lenderToIndex; // Position of the lender in the currentLenders list.
+    address[] public currentLenders; // Current lenders in the protocol.
+    uint256 constant public COLLATERAL_FACTOR = 12000; // Collateral factor in basis points 120% by default.
+    uint256 constant public DENOMINATOR = 10000; // Collateral factor in basis points.
 
-    address constant wethAddress = 0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2;
-    address payable constant cEtherAddress =
+    address constant public wethAddress = 0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2;
+    address payable constant public cEtherAddress =
         payable(0x4Ddc2D193948926D02f9B1fE9e1daa0718270ED5);
-    address constant daiAddress = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
-    address payable constant cDaiAddress =
+    address constant public daiAddress = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
+    address payable constant public cDaiAddress =
         payable(0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643);
+    address constant public oracleAddress = 0x0000000000000000000000000000000000000000000000000000000000000000;
 
     ICEth public cEthToken = ICEth(cEtherAddress);
     ICErc20 public cDaiToken = ICErc20(cDaiAddress);
     IERC20 public daiToken = IERC20(daiAddress);
+    IOracle public oracle = IOracle(oracleAddress);
 
     /* External */
 
@@ -51,7 +53,7 @@ contract CompoundModule is SlidingWindowOracle, Math {
 
     function borrow(uint256 _amount) external {
         // Verify that borrower has enough collateral
-        uint256 daiAmountOut = consult(wethAddress, _amount, daiAddress);
+        uint256 daiAmountOut = oracle.consult(wethAddress, _amount, daiAddress);
         uint256 unusedCollateral = collateralBalanceOf[msg.sender].total -
             collateralBalanceOf[msg.sender].used;
         uint256 collateralNeeded = (daiAmountOut / DENOMINATOR) *
@@ -59,10 +61,9 @@ contract CompoundModule is SlidingWindowOracle, Math {
         require(collateralNeeded <= unusedCollateral, "Not enough collateral.");
 
         // Check if contract has the cTokens for the borrowing
-        // TODO: Verify multiplication, rounds
         uint256 availableTokensToBorrow = cDaiToken.balanceOf(address(this)) *
             cDaiToken.exchangeRateCurrent();
-        require(_amount <= availableTokensToBorrow, "");
+        require(_amount <= availableTokensToBorrow, "Amount to borrow should be less than total available.");
 
         // Now contract can take liquidity thanks to cTokens
         _findUnusedCTokensAndUse(_amount);
@@ -78,12 +79,12 @@ contract CompoundModule is SlidingWindowOracle, Math {
     function payBackAll() external payable {
         require(
             msg.value >= borrowingBalanceOf[msg.sender],
-            "Must payback all debt."
+            "Must payback all the debt."
         );
         address(this).transfer(msg.value);
         _supplyEthToCompound{value: msg.value}();
         _findUsedCTokensAndUnuse(msg.value);
-        uint256 daiAmountOut = consult(wethAddress, msg.value, daiAddress); // This is the equivalent amount to repay  in DAI
+        uint256 daiAmountOut = oracle.consult(wethAddress, msg.value, daiAddress); // This is the equivalent amount to repay in DAI
         uint256 amountToRedeem = (daiAmountOut / DENOMINATOR) *
             COLLATERAL_FACTOR;
         borrowingBalanceOf[msg.sender] = 0;
@@ -99,7 +100,7 @@ contract CompoundModule is SlidingWindowOracle, Math {
         daiToken.approve(address(this), _amount);
         daiToken.transferFrom(msg.sender, address(this), msg.value);
         _supplyDaiToCompound(_amount);
-        // We update the collateral balance of the message sender
+        // We update the collateral balance of the sender.
         collateralBalanceOf[msg.sender].total += _amount;
     }
 
@@ -125,17 +126,17 @@ contract CompoundModule is SlidingWindowOracle, Math {
             cEthToken.borrow(_amount);
             borrowingBalanceOf[_lender] += _amount;
             lendingBalanceOf[_lender].total -= _amount;
-            require(_lender.send(_amount));
+            _lender.transfer(_amount);
         }
         delete currentLenders[lenderToIndex[_lender]];
     }
 
     function _redeemCollateral(address _borrower, uint256 _amount) internal {
         require(
-            isNotBorrowing(_borrower),
+            borrowingBalanceOf[_borrower].used == 0,
             "Borrowing must be repaid before redeeming collateral."
         );
-        require(_amount <= collateralBalanceOf[msg.sender].total);
+        require(_amount <= collateralBalanceOf[msg.sender].total, "");
         _redeemCDaiFromCompound(_amount, false);
         // Amount of Tokens given by Compound calculation
         uint256 amountRedeemed = _amount * cDaiToken.exchangeRateCurrent();
@@ -145,7 +146,7 @@ contract CompoundModule is SlidingWindowOracle, Math {
     }
 
     function _redeemLending(address _lender, uint256 _amount) internal {
-        require(_amount <= lendingBalanceOf[msg.sender].total);
+        require(_amount <= lendingBalanceOf[msg.sender].total, "Cannot redeem more than the lending amount provided.");
         _redeemCEthFromCompound(_amount, false);
         // Amount of Tokens given by Compound calculation
         uint256 amountRedeemed = _amount * cEthToken.exchangeRateCurrent();
@@ -164,7 +165,7 @@ contract CompoundModule is SlidingWindowOracle, Math {
         // Approve transfer on the ERC20 contract.
         daiToken.approve(cDaiAddress, _amount);
         // Mint cTokens.
-        require(cDaiToken.mint(_amount) == 0, "");
+        require(cDaiToken.mint(_amount) == 0, "Call to Compound failed.");
     }
 
     function _redeemCDaiFromCompound(uint256 _amount, bool _redeemType)
@@ -205,11 +206,6 @@ contract CompoundModule is SlidingWindowOracle, Math {
         return borrowingBalanceOf[_borrower].used;
     }
 
-    // TODO: can be a modifier or removed it as it's used only once
-    function isNotBorrowing(address _borrower) internal returns (bool) {
-        return (borrowingBalanceOf[_borrower].used == 0);
-    }
-
     function _findUnusedCTokensAndUse(uint256 _amount) internal {
         uint256 remainingLiquidityToUse = _amount;
         uint256 i;
@@ -226,7 +222,7 @@ contract CompoundModule is SlidingWindowOracle, Math {
             }
             i += 1;
         }
-        require(remainingLiquidityToUse == 0, "Not enough liquidity to use in the protocol.");
+        require(remainingLiquidityToUse == 0, "Not enough liquidity to use.");
     }
 
     function _findUsedCTokensAndUnuse(uint256 _amount) internal {
@@ -247,6 +243,6 @@ contract CompoundModule is SlidingWindowOracle, Math {
             }
             i += 1;
         }
-        require(remainingLiquidityToUnuse == 0, "Not enough liquidity to unuse in the protocol.");
+        require(remainingLiquidityToUnuse == 0, "Not enough liquidity to unuse.");
     }
 }
