@@ -201,8 +201,7 @@ contract CompoundModule is SlidingWindowOracle, Math {
         internal
         returns (uint256)
     {
-        return
-            borrowingBalanceOf[_borrower].used;
+        return borrowingBalanceOf[_borrower].used;
     }
 
     // TODO: can be a modifier or removed it as it's used only once
