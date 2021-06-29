@@ -27,7 +27,6 @@ contract CompoundModule is SlidingWindowOracle, Math {
     mapping(address => Balance) lendingBalanceOf;
     mapping(address => Balance) collateralBalanceOf;
     mapping(address => uint256) borrowingBalanceOf;
-    mapping(address => mapping(address => uint256)) stakingBalanceOf;
     mapping(address => uint256) lenderToIndex;
     address[] currentLenders;
     uint256 constant COLLATERAL_FACTOR = 12000; // Collateral factor in basis points 120% by default.
@@ -45,13 +44,6 @@ contract CompoundModule is SlidingWindowOracle, Math {
     IERC20 public daiToken = IERC20(daiAddress);
 
     /* External */
-
-    function stake(uint256 _amount) external {
-        require(_amount > 0, "Amount cannot be 0");
-        cEthToken.approve(address(this), _amount);
-        cEthToken.transferFrom(msg.sender, address(this), _amount);
-        stakingBalanceOf[msg.sender].total += _amount;
-    }
 
     function lend() external payable {
         _supplyEthToCompound{value: msg.value}();
