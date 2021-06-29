@@ -32,8 +32,7 @@
   // SECOND : Creation of the contracts
   const erc20Json = require('../../abis/Erc20.json');
   const cErc20Json = require('../../abis/CErc20.json');
-  const CompoundModule = require('../../abis/CompoundModule.json');
-  const leechJson = require('../../abis/Leech.json');
+  const CompoundModuleJson = require('../../abis/CompoundModule.json');
 
 
   // Instanciation of the contracts of the Underlying token contract address. Example: Dai.
@@ -50,9 +49,7 @@
   // We fetch the address of the deployed contract
   let networkId = 1 // see the -i 1 in the ganache-cli command
   const CompoundModuleContractAddress = CompoundModuleJson.networks[networkId].address
-  const leechContractAddress = leechJson.networks[networkId].address
   const CompoundModuleContract = new web3.eth.Contract(CompoundModuleJson.abi, CompoundModuleContractAddress)
-  const leechContract = new web3.eth.Contract(leechJson.abi, leechContractAddress)
 
 
 
@@ -66,7 +63,7 @@
     console.log(`CompoundModuleContract's c${assetName} Token Balance:`, cUnderlyingBalance);
     const amount = web3.utils.toHex(cUnderlyingBalance * 1e8);
 
-    let redeemResult = await CompoundModuleContract.methods.redeemCErc20Tokens(
+    let redeemResult = await CompoundModuleContract.methods._redeemErc20Tokens(
       amount,
       redeemType=true,
       cUnderlyingMainnetAddress

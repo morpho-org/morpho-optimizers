@@ -370,7 +370,7 @@
         "id": 2,
         "nodeType": "ImportDirective",
         "scope": 825,
-        "sourceUnit": 1203,
+        "sourceUnit": 1170,
         "src": "27:34:0",
         "symbolAliases": [],
         "unitAlias": ""
@@ -381,7 +381,7 @@
         "id": 3,
         "nodeType": "ImportDirective",
         "scope": 825,
-        "sourceUnit": 1114,
+        "sourceUnit": 1081,
         "src": "63:33:0",
         "symbolAliases": [],
         "unitAlias": ""
@@ -392,7 +392,7 @@
         "id": 4,
         "nodeType": "ImportDirective",
         "scope": 825,
-        "sourceUnit": 1128,
+        "sourceUnit": 1095,
         "src": "97:34:0",
         "symbolAliases": [],
         "unitAlias": ""
@@ -403,7 +403,7 @@
         "id": 7,
         "nodeType": "ImportDirective",
         "scope": 825,
-        "sourceUnit": 1036,
+        "sourceUnit": 1003,
         "src": "132:58:0",
         "symbolAliases": [
           {
@@ -462,10 +462,10 @@
               "id": 8,
               "name": "SafeMath",
               "nodeType": "UserDefinedTypeName",
-              "referencedDeclaration": 1202,
+              "referencedDeclaration": 1169,
               "src": "228:8:0",
               "typeDescriptions": {
-                "typeIdentifier": "t_contract$_SafeMath_$1202",
+                "typeIdentifier": "t_contract$_SafeMath_$1169",
                 "typeString": "library SafeMath"
               }
             },
@@ -1223,7 +1223,7 @@
             "stateVariable": true,
             "storageLocation": "default",
             "typeDescriptions": {
-              "typeIdentifier": "t_contract$_ICEth_$1035",
+              "typeIdentifier": "t_contract$_ICEth_$1002",
               "typeString": "contract ICEth"
             },
             "typeName": {
@@ -1231,10 +1231,10 @@
               "id": 62,
               "name": "ICEth",
               "nodeType": "UserDefinedTypeName",
-              "referencedDeclaration": 1035,
+              "referencedDeclaration": 1002,
               "src": "1514:5:0",
               "typeDescriptions": {
-                "typeIdentifier": "t_contract$_ICEth_$1035",
+                "typeIdentifier": "t_contract$_ICEth_$1002",
                 "typeString": "contract ICEth"
               }
             },
@@ -1266,10 +1266,10 @@
                 "name": "ICEth",
                 "nodeType": "Identifier",
                 "overloadedDeclarations": [],
-                "referencedDeclaration": 1035,
+                "referencedDeclaration": 1002,
                 "src": "1539:5:0",
                 "typeDescriptions": {
-                  "typeIdentifier": "t_type$_t_contract$_ICEth_$1035_$",
+                  "typeIdentifier": "t_type$_t_contract$_ICEth_$1002_$",
                   "typeString": "type(contract ICEth)"
                 }
               },
@@ -1284,7 +1284,7 @@
               "src": "1539:19:0",
               "tryCall": false,
               "typeDescriptions": {
-                "typeIdentifier": "t_contract$_ICEth_$1035",
+                "typeIdentifier": "t_contract$_ICEth_$1002",
                 "typeString": "contract ICEth"
               }
             },
@@ -1303,7 +1303,7 @@
             "stateVariable": true,
             "storageLocation": "default",
             "typeDescriptions": {
-              "typeIdentifier": "t_contract$_ICErc20_$942",
+              "typeIdentifier": "t_contract$_ICErc20_$909",
               "typeString": "contract ICErc20"
             },
             "typeName": {
@@ -1311,10 +1311,10 @@
               "id": 67,
               "name": "ICErc20",
               "nodeType": "UserDefinedTypeName",
-              "referencedDeclaration": 942,
+              "referencedDeclaration": 909,
               "src": "1564:7:0",
               "typeDescriptions": {
-                "typeIdentifier": "t_contract$_ICErc20_$942",
+                "typeIdentifier": "t_contract$_ICErc20_$909",
                 "typeString": "contract ICErc20"
               }
             },
@@ -1346,10 +1346,10 @@
                 "name": "ICErc20",
                 "nodeType": "Identifier",
                 "overloadedDeclarations": [],
-                "referencedDeclaration": 942,
+                "referencedDeclaration": 909,
                 "src": "1591:7:0",
                 "typeDescriptions": {
-                  "typeIdentifier": "t_type$_t_contract$_ICErc20_$942_$",
+                  "typeIdentifier": "t_type$_t_contract$_ICErc20_$909_$",
                   "typeString": "type(contract ICErc20)"
                 }
               },
@@ -1364,7 +1364,7 @@
               "src": "1591:21:0",
               "tryCall": false,
               "typeDescriptions": {
-                "typeIdentifier": "t_contract$_ICErc20_$942",
+                "typeIdentifier": "t_contract$_ICErc20_$909",
                 "typeString": "contract ICErc20"
               }
             },
@@ -1383,7 +1383,7 @@
             "stateVariable": true,
             "storageLocation": "default",
             "typeDescriptions": {
-              "typeIdentifier": "t_contract$_IERC20_$1113",
+              "typeIdentifier": "t_contract$_IERC20_$1080",
               "typeString": "contract IERC20"
             },
             "typeName": {
@@ -1391,10 +1391,10 @@
               "id": 72,
               "name": "IERC20",
               "nodeType": "UserDefinedTypeName",
-              "referencedDeclaration": 1113,
+              "referencedDeclaration": 1080,
               "src": "1618:6:0",
               "typeDescriptions": {
-                "typeIdentifier": "t_contract$_IERC20_$1113",
+                "typeIdentifier": "t_contract$_IERC20_$1080",
                 "typeString": "contract IERC20"
               }
             },
@@ -1426,10 +1426,10 @@
                 "name": "IERC20",
                 "nodeType": "Identifier",
                 "overloadedDeclarations": [],
-                "referencedDeclaration": 1113,
+                "referencedDeclaration": 1080,
                 "src": "1643:6:0",
                 "typeDescriptions": {
-                  "typeIdentifier": "t_type$_t_contract$_IERC20_$1113_$",
+                  "typeIdentifier": "t_type$_t_contract$_IERC20_$1080_$",
                   "typeString": "type(contract IERC20)"
                 }
               },
@@ -1444,7 +1444,7 @@
               "src": "1643:19:0",
               "tryCall": false,
               "typeDescriptions": {
-                "typeIdentifier": "t_contract$_IERC20_$1113",
+                "typeIdentifier": "t_contract$_IERC20_$1080",
                 "typeString": "contract IERC20"
               }
             },
@@ -1463,7 +1463,7 @@
             "stateVariable": true,
             "storageLocation": "default",
             "typeDescriptions": {
-              "typeIdentifier": "t_contract$_IOracle_$1127",
+              "typeIdentifier": "t_contract$_IOracle_$1094",
               "typeString": "contract IOracle"
             },
             "typeName": {
@@ -1471,10 +1471,10 @@
               "id": 77,
               "name": "IOracle",
               "nodeType": "UserDefinedTypeName",
-              "referencedDeclaration": 1127,
+              "referencedDeclaration": 1094,
               "src": "1668:7:0",
               "typeDescriptions": {
-                "typeIdentifier": "t_contract$_IOracle_$1127",
+                "typeIdentifier": "t_contract$_IOracle_$1094",
                 "typeString": "contract IOracle"
               }
             },
@@ -1506,10 +1506,10 @@
                 "name": "IOracle",
                 "nodeType": "Identifier",
                 "overloadedDeclarations": [],
-                "referencedDeclaration": 1127,
+                "referencedDeclaration": 1094,
                 "src": "1692:7:0",
                 "typeDescriptions": {
-                  "typeIdentifier": "t_type$_t_contract$_IOracle_$1127_$",
+                  "typeIdentifier": "t_type$_t_contract$_IOracle_$1094_$",
                   "typeString": "type(contract IOracle)"
                 }
               },
@@ -1524,7 +1524,7 @@
               "src": "1692:23:0",
               "tryCall": false,
               "typeDescriptions": {
-                "typeIdentifier": "t_contract$_IOracle_$1127",
+                "typeIdentifier": "t_contract$_IOracle_$1094",
                 "typeString": "contract IOracle"
               }
             },
@@ -2179,7 +2179,7 @@
                         "referencedDeclaration": 81,
                         "src": "2206:6:0",
                         "typeDescriptions": {
-                          "typeIdentifier": "t_contract$_IOracle_$1127",
+                          "typeIdentifier": "t_contract$_IOracle_$1094",
                           "typeString": "contract IOracle"
                         }
                       },
@@ -2190,7 +2190,7 @@
                       "lValueRequested": false,
                       "memberName": "consult",
                       "nodeType": "MemberAccess",
-                      "referencedDeclaration": 1126,
+                      "referencedDeclaration": 1093,
                       "src": "2206:14:0",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_external_view$_t_address_$_t_uint256_$_t_address_$returns$_t_uint256_$",
@@ -2787,7 +2787,7 @@
                           "referencedDeclaration": 71,
                           "src": "2685:9:0",
                           "typeDescriptions": {
-                            "typeIdentifier": "t_contract$_ICErc20_$942",
+                            "typeIdentifier": "t_contract$_ICErc20_$909",
                             "typeString": "contract ICErc20"
                           }
                         },
@@ -2798,7 +2798,7 @@
                         "lValueRequested": false,
                         "memberName": "balanceOf",
                         "nodeType": "MemberAccess",
-                        "referencedDeclaration": 908,
+                        "referencedDeclaration": 875,
                         "src": "2685:19:0",
                         "typeDescriptions": {
                           "typeIdentifier": "t_function_external_nonpayable$_t_address_$returns$_t_uint256_$",
@@ -2836,7 +2836,7 @@
                           "referencedDeclaration": 71,
                           "src": "2734:9:0",
                           "typeDescriptions": {
-                            "typeIdentifier": "t_contract$_ICErc20_$942",
+                            "typeIdentifier": "t_contract$_ICErc20_$909",
                             "typeString": "contract ICErc20"
                           }
                         },
@@ -2847,7 +2847,7 @@
                         "lValueRequested": false,
                         "memberName": "exchangeRateCurrent",
                         "nodeType": "MemberAccess",
-                        "referencedDeclaration": 871,
+                        "referencedDeclaration": 838,
                         "src": "2734:29:0",
                         "typeDescriptions": {
                           "typeIdentifier": "t_function_external_nonpayable$__$returns$_t_uint256_$",
@@ -4054,7 +4054,7 @@
                         "referencedDeclaration": 81,
                         "src": "3583:6:0",
                         "typeDescriptions": {
-                          "typeIdentifier": "t_contract$_IOracle_$1127",
+                          "typeIdentifier": "t_contract$_IOracle_$1094",
                           "typeString": "contract IOracle"
                         }
                       },
@@ -4065,7 +4065,7 @@
                       "lValueRequested": false,
                       "memberName": "consult",
                       "nodeType": "MemberAccess",
-                      "referencedDeclaration": 1126,
+                      "referencedDeclaration": 1093,
                       "src": "3583:14:0",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_external_view$_t_address_$_t_uint256_$_t_address_$returns$_t_uint256_$",
@@ -4807,7 +4807,7 @@
                         "referencedDeclaration": 76,
                         "src": "4127:8:0",
                         "typeDescriptions": {
-                          "typeIdentifier": "t_contract$_IERC20_$1113",
+                          "typeIdentifier": "t_contract$_IERC20_$1080",
                           "typeString": "contract IERC20"
                         }
                       },
@@ -4818,7 +4818,7 @@
                       "lValueRequested": false,
                       "memberName": "approve",
                       "nodeType": "MemberAccess",
-                      "referencedDeclaration": 1082,
+                      "referencedDeclaration": 1049,
                       "src": "4127:16:0",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_external_nonpayable$_t_address_$_t_uint256_$returns$_t_bool_$",
@@ -4992,7 +4992,7 @@
                         "referencedDeclaration": 76,
                         "src": "4177:8:0",
                         "typeDescriptions": {
-                          "typeIdentifier": "t_contract$_IERC20_$1113",
+                          "typeIdentifier": "t_contract$_IERC20_$1080",
                           "typeString": "contract IERC20"
                         }
                       },
@@ -5003,7 +5003,7 @@
                       "lValueRequested": false,
                       "memberName": "transferFrom",
                       "nodeType": "MemberAccess",
-                      "referencedDeclaration": 1094,
+                      "referencedDeclaration": 1061,
                       "src": "4177:21:0",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_external_nonpayable$_t_address_$_t_address_$_t_uint256_$returns$_t_bool_$",
@@ -5504,7 +5504,7 @@
                             "referencedDeclaration": 66,
                             "src": "4944:9:0",
                             "typeDescriptions": {
-                              "typeIdentifier": "t_contract$_ICEth_$1035",
+                              "typeIdentifier": "t_contract$_ICEth_$1002",
                               "typeString": "contract ICEth"
                             }
                           },
@@ -5515,7 +5515,7 @@
                           "lValueRequested": false,
                           "memberName": "balanceOf",
                           "nodeType": "MemberAccess",
-                          "referencedDeclaration": 1005,
+                          "referencedDeclaration": 972,
                           "src": "4944:19:0",
                           "typeDescriptions": {
                             "typeIdentifier": "t_function_external_nonpayable$_t_address_$returns$_t_uint256_$",
@@ -5602,7 +5602,7 @@
                                 "referencedDeclaration": 66,
                                 "src": "5111:9:0",
                                 "typeDescriptions": {
-                                  "typeIdentifier": "t_contract$_ICEth_$1035",
+                                  "typeIdentifier": "t_contract$_ICEth_$1002",
                                   "typeString": "contract ICEth"
                                 }
                               },
@@ -5613,7 +5613,7 @@
                               "lValueRequested": false,
                               "memberName": "borrow",
                               "nodeType": "MemberAccess",
-                              "referencedDeclaration": 1019,
+                              "referencedDeclaration": 986,
                               "src": "5111:16:0",
                               "typeDescriptions": {
                                 "typeIdentifier": "t_function_external_nonpayable$_t_uint256_$returns$_t_uint256_$",
@@ -6912,7 +6912,7 @@
                           "referencedDeclaration": 71,
                           "src": "5809:9:0",
                           "typeDescriptions": {
-                            "typeIdentifier": "t_contract$_ICErc20_$942",
+                            "typeIdentifier": "t_contract$_ICErc20_$909",
                             "typeString": "contract ICErc20"
                           }
                         },
@@ -6923,7 +6923,7 @@
                         "lValueRequested": false,
                         "memberName": "exchangeRateCurrent",
                         "nodeType": "MemberAccess",
-                        "referencedDeclaration": 871,
+                        "referencedDeclaration": 838,
                         "src": "5809:29:0",
                         "typeDescriptions": {
                           "typeIdentifier": "t_function_external_nonpayable$__$returns$_t_uint256_$",
@@ -7175,7 +7175,7 @@
                         "referencedDeclaration": 76,
                         "src": "5958:8:0",
                         "typeDescriptions": {
-                          "typeIdentifier": "t_contract$_IERC20_$1113",
+                          "typeIdentifier": "t_contract$_IERC20_$1080",
                           "typeString": "contract IERC20"
                         }
                       },
@@ -7186,7 +7186,7 @@
                       "lValueRequested": false,
                       "memberName": "transferFrom",
                       "nodeType": "MemberAccess",
-                      "referencedDeclaration": 1094,
+                      "referencedDeclaration": 1061,
                       "src": "5958:21:0",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_external_nonpayable$_t_address_$_t_address_$_t_uint256_$returns$_t_bool_$",
@@ -7627,7 +7627,7 @@
                           "referencedDeclaration": 66,
                           "src": "6373:9:0",
                           "typeDescriptions": {
-                            "typeIdentifier": "t_contract$_ICEth_$1035",
+                            "typeIdentifier": "t_contract$_ICEth_$1002",
                             "typeString": "contract ICEth"
                           }
                         },
@@ -7638,7 +7638,7 @@
                         "lValueRequested": false,
                         "memberName": "exchangeRateCurrent",
                         "nodeType": "MemberAccess",
-                        "referencedDeclaration": 950,
+                        "referencedDeclaration": 917,
                         "src": "6373:29:0",
                         "typeDescriptions": {
                           "typeIdentifier": "t_function_external_nonpayable$__$returns$_t_uint256_$",
@@ -8003,7 +8003,7 @@
                           "referencedDeclaration": 66,
                           "src": "6698:9:0",
                           "typeDescriptions": {
-                            "typeIdentifier": "t_contract$_ICEth_$1035",
+                            "typeIdentifier": "t_contract$_ICEth_$1002",
                             "typeString": "contract ICEth"
                           }
                         },
@@ -8014,7 +8014,7 @@
                         "lValueRequested": false,
                         "memberName": "mint",
                         "nodeType": "MemberAccess",
-                        "referencedDeclaration": 945,
+                        "referencedDeclaration": 912,
                         "src": "6698:14:0",
                         "typeDescriptions": {
                           "typeIdentifier": "t_function_external_payable$__$returns$__$",
@@ -8184,7 +8184,7 @@
                         "referencedDeclaration": 76,
                         "src": "6880:8:0",
                         "typeDescriptions": {
-                          "typeIdentifier": "t_contract$_IERC20_$1113",
+                          "typeIdentifier": "t_contract$_IERC20_$1080",
                           "typeString": "contract IERC20"
                         }
                       },
@@ -8195,7 +8195,7 @@
                       "lValueRequested": false,
                       "memberName": "approve",
                       "nodeType": "MemberAccess",
-                      "referencedDeclaration": 1082,
+                      "referencedDeclaration": 1049,
                       "src": "6880:16:0",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_external_nonpayable$_t_address_$_t_uint256_$returns$_t_bool_$",
@@ -8269,7 +8269,7 @@
                               "referencedDeclaration": 71,
                               "src": "6962:9:0",
                               "typeDescriptions": {
-                                "typeIdentifier": "t_contract$_ICErc20_$942",
+                                "typeIdentifier": "t_contract$_ICErc20_$909",
                                 "typeString": "contract ICErc20"
                               }
                             },
@@ -8280,7 +8280,7 @@
                             "lValueRequested": false,
                             "memberName": "mint",
                             "nodeType": "MemberAccess",
-                            "referencedDeclaration": 866,
+                            "referencedDeclaration": 833,
                             "src": "6962:14:0",
                             "typeDescriptions": {
                               "typeIdentifier": "t_function_external_nonpayable$_t_uint256_$returns$_t_uint256_$",
@@ -8605,7 +8605,7 @@
                                 "referencedDeclaration": 71,
                                 "src": "7437:9:0",
                                 "typeDescriptions": {
-                                  "typeIdentifier": "t_contract$_ICErc20_$942",
+                                  "typeIdentifier": "t_contract$_ICErc20_$909",
                                   "typeString": "contract ICErc20"
                                 }
                               },
@@ -8616,7 +8616,7 @@
                               "lValueRequested": false,
                               "memberName": "redeemUnderlying",
                               "nodeType": "MemberAccess",
-                              "referencedDeclaration": 890,
+                              "referencedDeclaration": 857,
                               "src": "7437:26:0",
                               "typeDescriptions": {
                                 "typeIdentifier": "t_function_external_nonpayable$_t_uint256_$returns$_t_uint256_$",
@@ -8714,7 +8714,7 @@
                                 "referencedDeclaration": 71,
                                 "src": "7305:9:0",
                                 "typeDescriptions": {
-                                  "typeIdentifier": "t_contract$_ICErc20_$942",
+                                  "typeIdentifier": "t_contract$_ICErc20_$909",
                                   "typeString": "contract ICErc20"
                                 }
                               },
@@ -8725,7 +8725,7 @@
                               "lValueRequested": false,
                               "memberName": "redeem",
                               "nodeType": "MemberAccess",
-                              "referencedDeclaration": 883,
+                              "referencedDeclaration": 850,
                               "src": "7305:16:0",
                               "typeDescriptions": {
                                 "typeIdentifier": "t_function_external_nonpayable$_t_uint256_$returns$_t_uint256_$",
@@ -9119,7 +9119,7 @@
                                 "referencedDeclaration": 66,
                                 "src": "7939:9:0",
                                 "typeDescriptions": {
-                                  "typeIdentifier": "t_contract$_ICEth_$1035",
+                                  "typeIdentifier": "t_contract$_ICEth_$1002",
                                   "typeString": "contract ICEth"
                                 }
                               },
@@ -9130,7 +9130,7 @@
                               "lValueRequested": false,
                               "memberName": "redeemUnderlying",
                               "nodeType": "MemberAccess",
-                              "referencedDeclaration": 969,
+                              "referencedDeclaration": 936,
                               "src": "7939:26:0",
                               "typeDescriptions": {
                                 "typeIdentifier": "t_function_external_nonpayable$_t_uint256_$returns$_t_uint256_$",
@@ -9228,7 +9228,7 @@
                                 "referencedDeclaration": 66,
                                 "src": "7807:9:0",
                                 "typeDescriptions": {
-                                  "typeIdentifier": "t_contract$_ICEth_$1035",
+                                  "typeIdentifier": "t_contract$_ICEth_$1002",
                                   "typeString": "contract ICEth"
                                 }
                               },
@@ -9239,7 +9239,7 @@
                               "lValueRequested": false,
                               "memberName": "redeem",
                               "nodeType": "MemberAccess",
-                              "referencedDeclaration": 962,
+                              "referencedDeclaration": 929,
                               "src": "7807:16:0",
                               "typeDescriptions": {
                                 "typeIdentifier": "t_function_external_nonpayable$_t_uint256_$returns$_t_uint256_$",
@@ -11729,7 +11729,7 @@
       },
       {
         "attributes": {
-          "SourceUnit": 1203,
+          "SourceUnit": 1170,
           "absolutePath": "/Users/paulframbot/leech-code/leech-contracts/contracts/libraries/SafeMath.sol",
           "file": "./libraries/SafeMath.sol",
           "scope": 825,
@@ -11744,7 +11744,7 @@
       },
       {
         "attributes": {
-          "SourceUnit": 1114,
+          "SourceUnit": 1081,
           "absolutePath": "/Users/paulframbot/leech-code/leech-contracts/contracts/interfaces/IERC20.sol",
           "file": "./interfaces/IERC20.sol",
           "scope": 825,
@@ -11759,7 +11759,7 @@
       },
       {
         "attributes": {
-          "SourceUnit": 1128,
+          "SourceUnit": 1095,
           "absolutePath": "/Users/paulframbot/leech-code/leech-contracts/contracts/interfaces/IOracle.sol",
           "file": "./interfaces/IOracle.sol",
           "scope": 825,
@@ -11774,7 +11774,7 @@
       },
       {
         "attributes": {
-          "SourceUnit": 1036,
+          "SourceUnit": 1003,
           "absolutePath": "/Users/paulframbot/leech-code/leech-contracts/contracts/interfaces/ICompound.sol",
           "file": "./interfaces/ICompound.sol",
           "scope": 825,
@@ -11845,7 +11845,7 @@
                 "attributes": {
                   "contractScope": null,
                   "name": "SafeMath",
-                  "referencedDeclaration": 1202,
+                  "referencedDeclaration": 1169,
                   "type": "library SafeMath"
                 },
                 "id": 8,
@@ -12612,7 +12612,7 @@
                 "attributes": {
                   "contractScope": null,
                   "name": "ICEth",
-                  "referencedDeclaration": 1035,
+                  "referencedDeclaration": 1002,
                   "type": "contract ICEth"
                 },
                 "id": 62,
@@ -12646,7 +12646,7 @@
                       "overloadedDeclarations": [
                         null
                       ],
-                      "referencedDeclaration": 1035,
+                      "referencedDeclaration": 1002,
                       "type": "type(contract ICEth)",
                       "value": "ICEth"
                     },
@@ -12696,7 +12696,7 @@
                 "attributes": {
                   "contractScope": null,
                   "name": "ICErc20",
-                  "referencedDeclaration": 942,
+                  "referencedDeclaration": 909,
                   "type": "contract ICErc20"
                 },
                 "id": 67,
@@ -12730,7 +12730,7 @@
                       "overloadedDeclarations": [
                         null
                       ],
-                      "referencedDeclaration": 942,
+                      "referencedDeclaration": 909,
                       "type": "type(contract ICErc20)",
                       "value": "ICErc20"
                     },
@@ -12780,7 +12780,7 @@
                 "attributes": {
                   "contractScope": null,
                   "name": "IERC20",
-                  "referencedDeclaration": 1113,
+                  "referencedDeclaration": 1080,
                   "type": "contract IERC20"
                 },
                 "id": 72,
@@ -12814,7 +12814,7 @@
                       "overloadedDeclarations": [
                         null
                       ],
-                      "referencedDeclaration": 1113,
+                      "referencedDeclaration": 1080,
                       "type": "type(contract IERC20)",
                       "value": "IERC20"
                     },
@@ -12864,7 +12864,7 @@
                 "attributes": {
                   "contractScope": null,
                   "name": "IOracle",
-                  "referencedDeclaration": 1127,
+                  "referencedDeclaration": 1094,
                   "type": "contract IOracle"
                 },
                 "id": 77,
@@ -12898,7 +12898,7 @@
                       "overloadedDeclarations": [
                         null
                       ],
-                      "referencedDeclaration": 1127,
+                      "referencedDeclaration": 1094,
                       "type": "type(contract IOracle)",
                       "value": "IOracle"
                     },
@@ -13669,7 +13669,7 @@
                               "isPure": false,
                               "lValueRequested": false,
                               "member_name": "consult",
-                              "referencedDeclaration": 1126,
+                              "referencedDeclaration": 1093,
                               "type": "function (address,uint256,address) view external returns (uint256)"
                             },
                             "children": [
@@ -14292,7 +14292,7 @@
                                   "isPure": false,
                                   "lValueRequested": false,
                                   "member_name": "balanceOf",
-                                  "referencedDeclaration": 908,
+                                  "referencedDeclaration": 875,
                                   "type": "function (address) external returns (uint256)"
                                 },
                                 "children": [
@@ -14413,7 +14413,7 @@
                                   "isPure": false,
                                   "lValueRequested": false,
                                   "member_name": "exchangeRateCurrent",
-                                  "referencedDeclaration": 871,
+                                  "referencedDeclaration": 838,
                                   "type": "function () external returns (uint256)"
                                 },
                                 "children": [
@@ -15642,7 +15642,7 @@
                               "isPure": false,
                               "lValueRequested": false,
                               "member_name": "consult",
-                              "referencedDeclaration": 1126,
+                              "referencedDeclaration": 1093,
                               "type": "function (address,uint256,address) view external returns (uint256)"
                             },
                             "children": [
@@ -16471,7 +16471,7 @@
                               "isPure": false,
                               "lValueRequested": false,
                               "member_name": "approve",
-                              "referencedDeclaration": 1082,
+                              "referencedDeclaration": 1049,
                               "type": "function (address,uint256) external returns (bool)"
                             },
                             "children": [
@@ -16621,7 +16621,7 @@
                               "isPure": false,
                               "lValueRequested": false,
                               "member_name": "transferFrom",
-                              "referencedDeclaration": 1094,
+                              "referencedDeclaration": 1061,
                               "type": "function (address,address,uint256) external returns (bool)"
                             },
                             "children": [
@@ -17485,7 +17485,7 @@
                                       "isPure": false,
                                       "lValueRequested": false,
                                       "member_name": "balanceOf",
-                                      "referencedDeclaration": 1005,
+                                      "referencedDeclaration": 972,
                                       "type": "function (address) external returns (uint256)"
                                     },
                                     "children": [
@@ -17796,7 +17796,7 @@
                                           "isPure": false,
                                           "lValueRequested": false,
                                           "member_name": "borrow",
-                                          "referencedDeclaration": 1019,
+                                          "referencedDeclaration": 986,
                                           "type": "function (uint256) external returns (uint256)"
                                         },
                                         "children": [
@@ -18868,7 +18868,7 @@
                                   "isPure": false,
                                   "lValueRequested": false,
                                   "member_name": "exchangeRateCurrent",
-                                  "referencedDeclaration": 871,
+                                  "referencedDeclaration": 838,
                                   "type": "function () external returns (uint256)"
                                 },
                                 "children": [
@@ -19059,7 +19059,7 @@
                               "isPure": false,
                               "lValueRequested": false,
                               "member_name": "transferFrom",
-                              "referencedDeclaration": 1094,
+                              "referencedDeclaration": 1061,
                               "type": "function (address,address,uint256) external returns (bool)"
                             },
                             "children": [
@@ -19643,7 +19643,7 @@
                                   "isPure": false,
                                   "lValueRequested": false,
                                   "member_name": "exchangeRateCurrent",
-                                  "referencedDeclaration": 950,
+                                  "referencedDeclaration": 917,
                                   "type": "function () external returns (uint256)"
                                 },
                                 "children": [
@@ -20043,7 +20043,7 @@
                                   "isPure": false,
                                   "lValueRequested": false,
                                   "member_name": "mint",
-                                  "referencedDeclaration": 945,
+                                  "referencedDeclaration": 912,
                                   "type": "function () payable external"
                                 },
                                 "children": [
@@ -20205,7 +20205,7 @@
                               "isPure": false,
                               "lValueRequested": false,
                               "member_name": "approve",
-                              "referencedDeclaration": 1082,
+                              "referencedDeclaration": 1049,
                               "type": "function (address,uint256) external returns (bool)"
                             },
                             "children": [
@@ -20352,7 +20352,7 @@
                                       "isPure": false,
                                       "lValueRequested": false,
                                       "member_name": "mint",
-                                      "referencedDeclaration": 866,
+                                      "referencedDeclaration": 833,
                                       "type": "function (uint256) external returns (uint256)"
                                     },
                                     "children": [
@@ -20698,7 +20698,7 @@
                                           "isPure": false,
                                           "lValueRequested": false,
                                           "member_name": "redeem",
-                                          "referencedDeclaration": 883,
+                                          "referencedDeclaration": 850,
                                           "type": "function (uint256) external returns (uint256)"
                                         },
                                         "children": [
@@ -20813,7 +20813,7 @@
                                           "isPure": false,
                                           "lValueRequested": false,
                                           "member_name": "redeemUnderlying",
-                                          "referencedDeclaration": 890,
+                                          "referencedDeclaration": 857,
                                           "type": "function (uint256) external returns (uint256)"
                                         },
                                         "children": [
@@ -21274,7 +21274,7 @@
                                           "isPure": false,
                                           "lValueRequested": false,
                                           "member_name": "redeem",
-                                          "referencedDeclaration": 962,
+                                          "referencedDeclaration": 929,
                                           "type": "function (uint256) external returns (uint256)"
                                         },
                                         "children": [
@@ -21389,7 +21389,7 @@
                                           "isPure": false,
                                           "lValueRequested": false,
                                           "member_name": "redeemUnderlying",
-                                          "referencedDeclaration": 969,
+                                          "referencedDeclaration": 936,
                                           "type": "function (uint256) external returns (uint256)"
                                         },
                                         "children": [
@@ -23949,12 +23949,12 @@
     "1": {
       "events": {},
       "links": {},
-      "address": "0xf6688883084DC1467c6F9158A0a9f398E29635BF",
-      "transactionHash": "0x761603882fda1b0451c756615ec24720b8c56f72b583f312e84ac23b48bb43fd"
+      "address": "0x975A605cb4aaEbf6AF65F1a02c2eBc8be47f814F",
+      "transactionHash": "0x0e836f42567dfdd4b5b97b004a367d6560cc0c4f3645edd365847bf7b63dfa1e"
     }
   },
   "schemaVersion": "3.3.4",
-  "updatedAt": "2021-06-29T19:26:58.141Z",
+  "updatedAt": "2021-06-29T19:44:26.477Z",
   "networkType": "ethereum",
   "devdoc": {
     "methods": {}

@@ -34,7 +34,6 @@
   const erc20Json = require('../../abis/Erc20.json');
   const cErc20Json = require('../../abis/CErc20.json');
   const CompoundModuleJson = require('../../abis/CompoundModule.json');
-  const leechJson = require('../../abis/Leech.json');
 
 
   // Instanciation of the contracts of the Underlying token contract address. Example: Dai.
@@ -51,9 +50,7 @@
   // We fetch the address of the deployed contract
   let networkId = 1 // see the -i 1 in the ganache-cli command
   const CompoundModuleContractAddress = CompoundModuleJson.networks[networkId].address
-  const leechContractAddress = leechJson.networks[networkId].address
   const CompoundModuleContract = new web3.eth.Contract(CompoundModuleJson.abi, CompoundModuleContractAddress)
-  const leechContract = new web3.eth.Contract(leechJson.abi, leechContractAddress)
 
 
 
@@ -71,9 +68,7 @@
 
     // Mint some cUnderlying by sending Underlying to the Compound Protocol
     console.log(`CompoundModuleContract is now minting c${assetName}...`);
-    let supplyResult = await CompoundModuleContract.methods.supplyErc20ToCompound(
-      underlyingMainnetAddress,
-      cUnderlyingMainnetAddress,
+    let supplyResult = await CompoundModuleContract.methods.provideCollateral(
       web3.utils.toHex(1 * Math.pow(10, underlyingDecimals)) // 10 tokens to supply
     ).send(fromTestWallet);
     console.log(`c${assetName} "Mint" operation successful`, '\n');
