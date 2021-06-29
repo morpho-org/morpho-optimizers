@@ -1,10 +1,11 @@
-pragma solidity ^0.8.0;
+pragma solidity = 0.6.6;
 
 import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol";
 import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol";
 import "@uniswap/lib/contracts/libraries/FixedPoint.sol";
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
+
+import "../libraries/SafeMath.sol";
 import "../libraries/UniswapV2Library.sol";
 import "../libraries/UniswapV2OracleLibrary.sol";
 
@@ -39,7 +40,7 @@ contract SlidingWindowOracle {
     // mapping from pair address to a list of price observations of that pair
     mapping(address => Observation[]) public pairObservations;
 
-    constructor() {
+    constructor() public {
         require(granularity > 1, "SlidingWindowOracle: GRANULARITY");
         require(
             (periodSize = windowSize / granularity) * granularity ==

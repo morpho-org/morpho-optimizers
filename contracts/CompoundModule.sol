@@ -1,14 +1,13 @@
-pragma solidity ^0.8.0;
+pragma solidity = 0.6.6;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/utils/math/Math.sol";
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import "./libraries/SafeMath.sol";
 
-import {ICErc20, ICEth} from "./interfaces/ICompound.sol";
+import "./interfaces/IERC20.sol";
 import "./interfaces/IOracle.sol";
+import {ICErc20, ICEth} from "./interfaces/ICompound.sol";
 
 contract CompoundModule {
+    using SafeMath for uint256;
 
     /* Structs */
 
@@ -207,7 +206,7 @@ contract CompoundModule {
                 lendingBalanceOf[lenderAddress].used;
 
             if (usable > 0) {
-                uint256 amountToUse = Math.min(usable, remainingLiquidityToUse);
+                uint256 amountToUse = min(usable, remainingLiquidityToUse);
                 lendingBalanceOf[lenderAddress].used += amountToUse;
                 remainingLiquidityToUse -= amountToUse;
             }
@@ -225,7 +224,7 @@ contract CompoundModule {
             uint256 unusable = lendingBalanceOf[lenderAddress].used;
 
             if (unusable > 0) {
-                uint256 amountToUnuse = Math.min(
+                uint256 amountToUnuse = min(
                     unusable,
                     remainingLiquidityToUnuse
                 );
@@ -235,5 +234,9 @@ contract CompoundModule {
             i += 1;
         }
         require(remainingLiquidityToUnuse == 0, "Not enough liquidity to unuse.");
+    }
+
+    function min(uint256 a, uint256 b) internal pure returns (uint256) {
+        return a < b ? a : b;
     }
 }
