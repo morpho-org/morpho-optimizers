@@ -33,11 +33,11 @@
 
 
   const ethDecimals = 18; // Ethereum has 18 decimal places
-  const cEthJson = require('../../src/abis/CEth.json');
+  const cEthJson = require('../../abis/CEth.json');
   const cEthContractAddress = '0x4ddc2d193948926d02f9b1fe9e1daa0718270ed5';
   const cEthContract = new web3.eth.Contract(cEthJson.abi, cEthContractAddress)
   
-  const CompoundModuleJson = require('../../src/abis/CompoundModule.json');
+  const CompoundModuleJson = require('../../abis/CompoundModule.json');
   let networkId = 1 // see the -i 1 in the ganache-cli command
   const CompoundModuleContractAddress = CompoundModuleJson.networks[networkId].address
   const CompoundModuleContract = new web3.eth.Contract(CompoundModuleJson.abi, CompoundModuleContractAddress)
@@ -53,11 +53,8 @@
     console.log(`CompoundModuleContract's cETH Token Balance:`, cEthBalance);
     const amount = web3.utils.toHex(cEthBalance * 1e8);
 
-    let redeemResult = await CompoundModuleContract.methods.redeemCEth(
-      amount,
-      redeemType=true,
-      cEthContractAddress
-    ).send(fromTestWallet);
+    let redeemResult = await CompoundModuleContract.methods.cashOut(
+      amount).send(fromTestWallet);
 
 
     // // OR   Call redeem based on a Eth amount

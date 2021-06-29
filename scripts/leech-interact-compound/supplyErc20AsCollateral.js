@@ -31,10 +31,10 @@
 
 
   // SECOND : Creation of the contracts
-  const erc20Json = require('../../src/abis/Erc20.json');
-  const cErc20Json = require('../../src/abis/CErc20.json');
-  const CompoundModuleJson = require('../../src/abis/CompoundModule.json');
-  const leechJson = require('../../src/abis/Leech.json');
+  const erc20Json = require('../../abis/Erc20.json');
+  const cErc20Json = require('../../abis/CErc20.json');
+  const CompoundModuleJson = require('../../abis/CompoundModule.json');
+  const leechJson = require('../../abis/Leech.json');
 
 
   // Instanciation of the contracts of the Underlying token contract address. Example: Dai.
