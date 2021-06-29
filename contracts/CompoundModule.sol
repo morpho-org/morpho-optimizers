@@ -226,7 +226,7 @@ contract CompoundModule is SlidingWindowOracle, Math {
             }
             i += 1;
         }
-        require(remainingLiquidityToUnuse == 0);
+        require(remainingLiquidityToUse == 0);
     }
 
     function _findUsedCTokensAndUnuse(uint256 _amount) internal {

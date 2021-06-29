@@ -2,7 +2,7 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {ICErc20, ICEth} from "./interfaces/ICompound.sol";
+import {ICErc20, ICEth} from "../interfaces/ICompound.sol";
 
 // TODO: add only proxy
 // No constructor here as it will be called by a Proxy
