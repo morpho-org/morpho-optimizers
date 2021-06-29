@@ -9,6 +9,7 @@ import "./SlidingWindowOracle.sol";
 import {ICErc20, ICEth} from "./interfaces/ICompound.sol";
 
 contract CompoundModule is SlidingWindowOracle, Math {
+
     /* Structs */
 
     struct Balance {
@@ -40,7 +41,6 @@ contract CompoundModule is SlidingWindowOracle, Math {
     /* External */
 
     function lend() external payable {
-
         _supplyEthToCompound{value: msg.value}();
         if (lendingBalanceOf[msg.sender].total == 0) {
             lenderToIndex[msg.sender] = currentLenders.length;
@@ -51,7 +51,7 @@ contract CompoundModule is SlidingWindowOracle, Math {
 
     function borrow(uint256 _amount) external {
         // Verify that borrower has enough collateral
-        uint256 daiAmountOut = consult(WETHAddress, _amount, daiAddress);
+        uint256 daiAmountOut = consult(wethAddress, _amount, daiAddress);
         uint256 unusedCollateral = collateralBalanceOf[msg.sender].total -
             collateralBalanceOf[msg.sender].used;
         uint256 collateralNeeded = (daiAmountOut / DENOMINATOR) *
@@ -87,7 +87,7 @@ contract CompoundModule is SlidingWindowOracle, Math {
         uint256 amountToRedeem = (daiAmountOut / DENOMINATOR) *
             COLLATERAL_FACTOR;
         borrowingBalanceOf[msg.sender] = 0;
-        _redeemCollateral(_borrower, amountToRedeem);
+        _redeemCollateral(msg.sender, amountToRedeem);
     }
 
     function cashOut(uint256 _amount) external {
@@ -96,8 +96,8 @@ contract CompoundModule is SlidingWindowOracle, Math {
 
     function provideCollateral(uint256 _amount) external payable {
         require(_amount > 0, "Amount cannot be 0");
-        IERC20(daiToken).approve(address(this), _amount);
-        IERC20(daiToken).transferFrom(msg.sender, address(this), msg.value);
+        daiToken.approve(address(this), _amount);
+        daiToken.transferFrom(msg.sender, address(this), msg.value);
         _supplyDaiToCompound(_amount);
         // We update the collateral balance of the message sender
         collateralBalanceOf[msg.sender].total += _amount;
@@ -146,7 +146,7 @@ contract CompoundModule is SlidingWindowOracle, Math {
 
     function _redeemLending(address _lender, uint256 _amount) internal {
         require(_amount <= lendingBalanceOf[msg.sender].total);
-        _redeemCEthFromCompoundTokens(_amount, false);
+        _redeemCEthFromCompound(_amount, false);
         // Amount of Tokens given by Compound calculation
         uint256 amountRedeemed = _amount * cEthToken.exchangeRateCurrent();
         // The sender does not have any collateral anymore
@@ -157,12 +157,12 @@ contract CompoundModule is SlidingWindowOracle, Math {
 
     function _supplyEthToCompound() internal payable returns (bool) {
         uint256 result = cEthToken.mint{value: msg.value}();
-        require(result == 0, "");
+        require(result == 0, "Call to Compound failed.");
     }
 
     function _supplyDaiToCompound(uint256 _amount) internal {
         // Approve transfer on the ERC20 contract.
-        underlying.approve(cDaiAddress, _amount);
+        daiToken.approve(cDaiAddress, _amount);
         // Mint cTokens.
         require(cDaiToken.mint(_amount) == 0, "");
     }
@@ -179,7 +179,7 @@ contract CompoundModule is SlidingWindowOracle, Math {
             // Retrieve your asset based on an amount of the asset
             result = cDaiToken.redeemUnderlying(_amount);
         }
-        require(result == 0, "");
+        require(result == 0, "Call to Compound failed.");
     }
 
     function _redeemCEthFromCompound(uint256 _amount, bool _redeemType)
@@ -194,7 +194,7 @@ contract CompoundModule is SlidingWindowOracle, Math {
             // Retrieve your asset based on an amount of the asset
             result = cEthToken.redeemUnderlying(_amount);
         }
-        require(result == 0, "");
+        require(result == 0, "Call to Compound failed.");
     }
 
     // TODO: can be a public function
@@ -226,7 +226,7 @@ contract CompoundModule is SlidingWindowOracle, Math {
             }
             i += 1;
         }
-        require(remainingLiquidityToUse == 0);
+        require(remainingLiquidityToUse == 0, "Not enough liquidity to use in the protocol.");
     }
 
     function _findUsedCTokensAndUnuse(uint256 _amount) internal {
@@ -247,6 +247,6 @@ contract CompoundModule is SlidingWindowOracle, Math {
             }
             i += 1;
         }
-        require(remainingLiquidityToUnuse == 0);
+        require(remainingLiquidityToUnuse == 0, "Not enough liquidity to unuse in the protocol.");
     }
 }
