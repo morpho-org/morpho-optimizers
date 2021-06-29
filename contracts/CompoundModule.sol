@@ -24,10 +24,8 @@ contract CompoundModule is SlidingWindowOracle, Math {
 
     /* Storage */
 
-    mapping(address => bool) isOnComp;
     mapping(address => Balance) lendingBalanceOf;
     mapping(address => Balance) collateralBalanceOf;
-    mapping(address => BorrowingOperation) borrowingOperations;
     mapping(address => uint256) borrowingBalanceOf;
     mapping(address => mapping(address => uint256)) stakingBalanceOf;
     mapping(address => uint256) lenderToIndex;
@@ -85,13 +83,6 @@ contract CompoundModule is SlidingWindowOracle, Math {
         // Update used collateral
         collateralBalanceOf[msg.sender].used += collateralNeeded;
         borrowingBalanceOf[msg.sender] += _amount;
-
-        // Signal that user has not been displaced to Comp (rare case but to prevent)
-        isOnComp[msg.sender] = false;
-
-        borrowingOperations[msg.sender].timeBorrowed = block.timestamp;
-        borrowingOperations[msg.sender].amountBorrowed = _amount;
-        borrowingOperations[msg.sender].amountRepaid = 0;
 
         // Transfer ETH to borrower
         msg.sender.transfer(_amount);
@@ -225,13 +216,12 @@ contract CompoundModule is SlidingWindowOracle, Math {
         returns (uint256)
     {
         return
-            borrowingOperations[_borrower].amountBorrowed -
-            borrowingOperations[_borrower].amountRepaid;
+            borrowingBalanceOf[_borrower].used;
     }
 
     // TODO: can be a modifier or removed it as it's used only once
     function isNotBorrowing(address _borrower) internal returns (bool) {
-        return (borrowingOperations[_borrower].amountBorrowed == 0);
+        return (borrowingBalanceOf[_borrower].used == 0);
     }
 
     function _findUnusedCTokensAndUse(uint256 _amount) internal {
