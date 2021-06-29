@@ -41,7 +41,7 @@ module.exports = {
     // timeout: 100000
   },
   // contracts_directory: './src/contracts/',
-  // contracts_build_directory: './src/abis/',
+  contracts_build_directory: './abis/',
   compilers: {
     solc: {
       version: "0.6.6",    // Fetch exact version from solc-bin (default: truffle's version)
