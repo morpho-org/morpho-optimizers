@@ -16,12 +16,6 @@ contract CompoundModule is SlidingWindowOracle, Math {
         uint256 used;
     }
 
-    struct BorrowingOperation {
-        uint256 timeBorrowed;
-        uint256 amountBorrowed;
-        uint256 amountRepaid;
-    }
-
     /* Storage */
 
     mapping(address => Balance) lendingBalanceOf;
@@ -141,7 +135,7 @@ contract CompoundModule is SlidingWindowOracle, Math {
             "Borrowing must be repaid before redeeming collateral."
         );
         require(_amount <= collateralBalanceOf[msg.sender].total);
-        _redeemCDaiFromCompound(_amount, true);
+        _redeemCDaiFromCompound(_amount, false);
         // Amount of Tokens given by Compound calculation
         uint256 amountRedeemed = _amount * cDaiToken.exchangeRateCurrent();
         collateralBalanceOf[msg.sender].total -= _amount;
@@ -151,7 +145,7 @@ contract CompoundModule is SlidingWindowOracle, Math {
 
     function _redeemLending(address _lender, uint256 _amount) internal {
         require(_amount <= lendingBalanceOf[msg.sender].total);
-        _redeemCEthFromCompoundTokens(_amount, true);
+        _redeemCEthFromCompoundTokens(_amount, false);
         // Amount of Tokens given by Compound calculation
         uint256 amountRedeemed = _amount * cEthToken.exchangeRateCurrent();
         // The sender does not have any collateral anymore
