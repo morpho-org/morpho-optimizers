@@ -2,7 +2,7 @@
   "name": "symbioz-contracts",
   "version": "1.0.0",
   "description": "",
-  "main": "hardhat.config.js",
+  "main": "truffle-config.js",
   "files": [
     "contracts"
   ],
@@ -27,7 +27,6 @@
   },
   "homepage": "https://github.com/PaulFrambot/symbioz-contracts#readme",
   "devDependencies": {
-    "hardhat": "^2.4.1",
     "prettier": "^2.3.2",
     "prettier-plugin-solidity": "^1.0.0-beta.13",
     "solhint": "^3.3.6",
