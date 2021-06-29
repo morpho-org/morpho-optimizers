@@ -27,18 +27,18 @@ contract CompoundModule {
     uint256 constant public COLLATERAL_FACTOR = 12000; // Collateral factor in basis points 120% by default.
     uint256 constant public DENOMINATOR = 10000; // Collateral factor in basis points.
 
-    address constant public wethAddress = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
-    address payable constant public cEtherAddress =
+    address constant public WETH_ADDRESS = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+    address payable constant public CETH_ADDRESS =
         payable(0x4Ddc2D193948926D02f9B1fE9e1daa0718270ED5);
-    address constant public daiAddress = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
-    address payable constant public cDaiAddress =
+    address constant public DAI_ADDRESS = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
+    address payable constant public CDAI_ADDRESS =
         payable(0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643);
-    address constant public oracleAddress = 0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643;
+    address constant public ORACLE_ADDRESS = 0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643;
 
-    ICEth public cEthToken = ICEth(cEtherAddress);
-    ICErc20 public cDaiToken = ICErc20(cDaiAddress);
-    IERC20 public daiToken = IERC20(daiAddress);
-    IOracle public oracle = IOracle(oracleAddress);
+    ICEth public cEthToken = ICEth(CETH_ADDRESS);
+    ICErc20 public cDaiToken = ICErc20(CDAI_ADDRESS);
+    IERC20 public daiToken = IERC20(DAI_ADDRESS);
+    IOracle public oracle = IOracle(ORACLE_ADDRESS);
 
     /* External */
 
@@ -53,10 +53,10 @@ contract CompoundModule {
 
     function borrow(uint256 _amount) external {
         // Verify that borrower has enough collateral
-        uint256 daiAmountOut = oracle.consult(wethAddress, _amount, daiAddress);
+        uint256 daiAmountEquivalentToEthAmount = oracle.consult(WETH_ADDRESS, _amount, DAI_ADDRESS);
         uint256 unusedCollateral = collateralBalanceOf[msg.sender].total -
             collateralBalanceOf[msg.sender].used;
-        uint256 collateralNeeded = (daiAmountOut / DENOMINATOR) *
+        uint256 collateralNeeded = (daiAmountEquivalentToEthAmount / DENOMINATOR) *
             COLLATERAL_FACTOR;
         require(collateralNeeded <= unusedCollateral, "Not enough collateral.");
 
@@ -84,8 +84,8 @@ contract CompoundModule {
         payable(address(this)).transfer(msg.value);
         _supplyEthToCompound(msg.value);
         _findUsedCTokensAndUnuse(msg.value);
-        uint256 daiAmountOut = oracle.consult(wethAddress, msg.value, daiAddress); // This is the equivalent amount to repay in DAI
-        uint256 amountToRedeem = (daiAmountOut / DENOMINATOR) *
+        uint256 daiAmountEquivalentToEthAmount = oracle.consult(WETH_ADDRESS, msg.value, DAI_ADDRESS); // This is the equivalent amount to repay in DAI
+        uint256 amountToRedeem = (daiAmountEquivalentToEthAmount / DENOMINATOR) *
             COLLATERAL_FACTOR;
         borrowingBalanceOf[msg.sender] = 0;
         _redeemCollateral(msg.sender, amountToRedeem);
@@ -162,7 +162,7 @@ contract CompoundModule {
 
     function _supplyDaiToCompound(uint256 _amount) internal {
         // Approve transfer on the ERC20 contract.
-        daiToken.approve(cDaiAddress, _amount);
+        daiToken.approve(CDAI_ADDRESS, _amount);
         // Mint cTokens.
         require(cDaiToken.mint(_amount) == 0, "Call to Compound failed.");
     }
