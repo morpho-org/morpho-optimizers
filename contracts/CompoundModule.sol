@@ -21,7 +21,7 @@ contract CompoundModule is SlidingWindowOracle, Math {
     mapping(address => Balance) lendingBalanceOf;
     mapping(address => Balance) collateralBalanceOf;
     mapping(address => uint256) borrowingBalanceOf;
-    mapping(address => uint256) lenderToIndex;
+    mapping(address => uint256) lenderToIndex; // return the position of the lender in the currentLenders list
     address[] currentLenders;
     uint256 constant COLLATERAL_FACTOR = 12000; // Collateral factor in basis points 120% by default.
     uint256 constant DENOMINATOR = 10000; // Collateral factor in basis points.
@@ -40,6 +40,7 @@ contract CompoundModule is SlidingWindowOracle, Math {
     /* External */
 
     function lend() external payable {
+
         _supplyEthToCompound{value: msg.value}();
         if (lendingBalanceOf[msg.sender].total == 0) {
             lenderToIndex[msg.sender] = currentLenders.length;
@@ -49,7 +50,7 @@ contract CompoundModule is SlidingWindowOracle, Math {
     }
 
     function borrow(uint256 _amount) external {
-        // Verify that borrowers has enough collateral
+        // Verify that borrower has enough collateral
         uint256 daiAmountOut = consult(WETHAddress, _amount, daiAddress);
         uint256 unusedCollateral = collateralBalanceOf[msg.sender].total -
             collateralBalanceOf[msg.sender].used;
@@ -64,7 +65,7 @@ contract CompoundModule is SlidingWindowOracle, Math {
         require(_amount <= availableTokensToBorrow, "");
 
         // Now contract can take liquidity thanks to cTokens
-        _findUnusedCTokenAndUse(_amount);
+        _findUnusedCTokensAndUse(_amount);
 
         // Update used collateral
         collateralBalanceOf[msg.sender].used += collateralNeeded;
@@ -80,9 +81,9 @@ contract CompoundModule is SlidingWindowOracle, Math {
             "Must payback all debt."
         );
         address(this).transfer(msg.value);
-        _supplyEthToCompound(msg.value);
+        _supplyEthToCompound{value: msg.value}();
         _findUsedCTokensAndUnuse(msg.value);
-        uint256 daiAmountOut = consult(wethAddress, msg.value, daiAddress);
+        uint256 daiAmountOut = consult(wethAddress, msg.value, daiAddress); // This is the equivalent amount to repay  in DAI
         uint256 amountToRedeem = (daiAmountOut / DENOMINATOR) *
             COLLATERAL_FACTOR;
         borrowingBalanceOf[msg.sender] = 0;
