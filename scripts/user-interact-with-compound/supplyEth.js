@@ -35,7 +35,7 @@ const fromTestWallet = {
 // Main Net Contract for cETH (the supply process is different for cERC20 tokens)
 const ethDecimals = 18; // Ethereum has 18 decimal places
 const cEthContractAddress = '0x4ddc2d193948926d02f9b1fe9e1daa0718270ed5';
-const cEthJson = require('../../src/abis/CEth.json');
+const cEthJson = require('../../abis/CEth.json');
 const cEthContract = new web3.eth.Contract(cEthJson.abi, cEthContractAddress)
 
 
