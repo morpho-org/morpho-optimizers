@@ -1,9 +1,8 @@
-pragma solidity = 0.6.6;
+pragma solidity =0.6.6;
 
 import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol";
 import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol";
 import "@uniswap/lib/contracts/libraries/FixedPoint.sol";
-
 
 import "../libraries/SafeMath.sol";
 import "../libraries/UniswapV2Library.sol";
@@ -23,7 +22,8 @@ contract SlidingWindowOracle {
         uint256 price1Cumulative;
     }
 
-    address public constant factory = 0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f;
+    address public constant factory =
+        0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f;
     // the desired amount of time over which the moving average should be computed, e.g. 24 hours
     uint256 public constant windowSize = 24 hours;
     // the number of observations stored for each pair, i.e. how many price observations are stored for the window.
@@ -43,8 +43,7 @@ contract SlidingWindowOracle {
     constructor() public {
         require(granularity > 1, "SlidingWindowOracle: GRANULARITY");
         require(
-            (periodSize = windowSize / granularity) * granularity ==
-                windowSize,
+            (periodSize = windowSize / granularity) * granularity == windowSize,
             "SlidingWindowOracle: WINDOW_NOT_EVENLY_DIVISIBLE"
         );
     }

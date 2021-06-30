@@ -1,7 +1,7 @@
-pragma solidity = 0.6.6;
+pragma solidity =0.6.6;
 
 interface IOracle {
-	function consult(
+    function consult(
         address tokenIn,
         uint256 amountIn,
         address tokenOut

@@ -1,4 +1,4 @@
-pragma solidity >= 0.6.6;
+pragma solidity >=0.6.6;
 
 import "./libraries/SafeMath.sol";
 
@@ -23,16 +23,19 @@ contract CompoundModule {
     mapping(address => uint256) public borrowingBalanceOf; // Borrowing balance of user (DAI).
     mapping(address => uint256) public lenderToIndex; // Position of the lender in the currentLenders list.
     address[] public currentLenders; // Current lenders in the protocol.
-    uint256 constant public COLLATERAL_FACTOR = 12000; // Collateral factor in basis points 120% by default.
-    uint256 constant public DENOMINATOR = 10000; // Collateral factor in basis points.
+    uint256 public constant COLLATERAL_FACTOR = 12000; // Collateral factor in basis points 120% by default.
+    uint256 public constant DENOMINATOR = 10000; // Collateral factor in basis points.
 
-    address constant public WETH_ADDRESS = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
-    address payable constant public CETH_ADDRESS =
+    address public constant WETH_ADDRESS =
+        0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+    address payable public constant CETH_ADDRESS =
         payable(0x4Ddc2D193948926D02f9B1fE9e1daa0718270ED5);
-    address constant public DAI_ADDRESS = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
-    address payable constant public CDAI_ADDRESS =
+    address public constant DAI_ADDRESS =
+        0x6B175474E89094C44Da98b954EedeAC495271d0F;
+    address payable public constant CDAI_ADDRESS =
         payable(0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643);
-    address constant public ORACLE_ADDRESS = 0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643;
+    address public constant ORACLE_ADDRESS =
+        0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643;
 
     ICEth public cEthToken = ICEth(CETH_ADDRESS);
     ICErc20 public cDaiToken = ICErc20(CDAI_ADDRESS);
@@ -52,17 +55,24 @@ contract CompoundModule {
 
     function borrow(uint256 _amount) external {
         // Verify that borrower has enough collateral
-        uint256 daiAmountEquivalentToEthAmount = oracle.consult(WETH_ADDRESS, _amount, DAI_ADDRESS);
+        uint256 daiAmountEquivalentToEthAmount = oracle.consult(
+            WETH_ADDRESS,
+            _amount,
+            DAI_ADDRESS
+        );
         uint256 unusedCollateral = collateralBalanceOf[msg.sender].total -
             collateralBalanceOf[msg.sender].used;
-        uint256 collateralNeeded = (daiAmountEquivalentToEthAmount / DENOMINATOR) *
-            COLLATERAL_FACTOR;
+        uint256 collateralNeeded = (daiAmountEquivalentToEthAmount /
+            DENOMINATOR) * COLLATERAL_FACTOR;
         require(collateralNeeded <= unusedCollateral, "Not enough collateral.");
 
         // Check if contract has the cTokens for the borrowing
         uint256 availableTokensToBorrow = cDaiToken.balanceOf(address(this)) *
             cDaiToken.exchangeRateCurrent();
-        require(_amount <= availableTokensToBorrow, "Amount to borrow should be less than total available.");
+        require(
+            _amount <= availableTokensToBorrow,
+            "Amount to borrow should be less than total available."
+        );
 
         // Now contract can take liquidity thanks to cTokens
         _findUnusedCTokensAndUse(_amount);
@@ -83,9 +93,13 @@ contract CompoundModule {
         payable(address(this)).transfer(msg.value);
         _supplyEthToCompound(msg.value);
         _findUsedCTokensAndUnuse(msg.value);
-        uint256 daiAmountEquivalentToEthAmount = oracle.consult(WETH_ADDRESS, msg.value, DAI_ADDRESS); // This is the equivalent amount to repay in DAI
-        uint256 amountToRedeem = (daiAmountEquivalentToEthAmount / DENOMINATOR) *
-            COLLATERAL_FACTOR;
+        uint256 daiAmountEquivalentToEthAmount = oracle.consult(
+            WETH_ADDRESS,
+            msg.value,
+            DAI_ADDRESS
+        ); // This is the equivalent amount to repay in DAI
+        uint256 amountToRedeem = (daiAmountEquivalentToEthAmount /
+            DENOMINATOR) * COLLATERAL_FACTOR;
         borrowingBalanceOf[msg.sender] = 0;
         _redeemCollateral(msg.sender, amountToRedeem);
     }
@@ -103,10 +117,10 @@ contract CompoundModule {
         collateralBalanceOf[msg.sender].total += _amount;
     }
 
-    // function redeemAllCollateral() external {
-    //     uint amountToRedeem = collateralBalanceOf[msg.sender].total;
-    //     _redeemCollateral(msg.sender, amountToRedeem);
-    // }
+    function redeemAllCollateral() external {
+        uint256 amountToRedeem = collateralBalanceOf[msg.sender].total;
+        _redeemCollateral(msg.sender, amountToRedeem);
+    }
 
     function liquidate(address _borrower) external {
         // TODO: write function
@@ -145,7 +159,10 @@ contract CompoundModule {
     }
 
     function _redeemLending(address _lender, uint256 _amount) internal {
-        require(_amount <= lendingBalanceOf[msg.sender].total, "Cannot redeem more than the lending amount provided.");
+        require(
+            _amount <= lendingBalanceOf[msg.sender].total,
+            "Cannot redeem more than the lending amount provided."
+        );
         _redeemCEthFromCompound(_amount, false);
         // Amount of Tokens given by Compound calculation
         uint256 amountRedeemed = _amount * cEthToken.exchangeRateCurrent();
@@ -170,7 +187,6 @@ contract CompoundModule {
         internal
     {
         uint256 result;
-        // TODO: check here this is false
         if (_redeemType == true) {
             // Retrieve your asset based on a cToken amount
             result = cDaiToken.redeem(_amount);
@@ -183,7 +199,6 @@ contract CompoundModule {
 
     function _redeemCEthFromCompound(uint256 _amount, bool _redeemType)
         internal
-        returns (bool)
     {
         uint256 result;
         if (_redeemType == true) {
@@ -233,7 +248,10 @@ contract CompoundModule {
             }
             i += 1;
         }
-        require(remainingLiquidityToUnuse == 0, "Not enough liquidity to unuse.");
+        require(
+            remainingLiquidityToUnuse == 0,
+            "Not enough liquidity to unuse."
+        );
     }
 
     function min(uint256 a, uint256 b) internal pure returns (uint256) {
