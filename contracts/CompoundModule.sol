@@ -9,6 +9,8 @@ import {ICErc20, ICEth} from "./interfaces/ICompound.sol";
 contract CompoundModule {
     using SafeMath for uint256;
 
+    event MyLog(string, uint256);
+
     /* Structs */
 
     struct Balance {
@@ -23,7 +25,7 @@ contract CompoundModule {
     mapping(address => uint256) public borrowingBalanceOf; // Borrowing balance of user (DAI).
     mapping(address => uint256) public lenderToIndex; // Position of the lender in the currentLenders list.
     address[] public currentLenders; // Current lenders in the protocol.
-    uint256 public constant COLLATERAL_FACTOR = 12000; // Collateral factor in basis points 120% by default.
+    uint256 public constant COLLATERAL_FACTOR = 10000; // Collateral factor in basis points 100% by default.
     uint256 public constant DENOMINATOR = 10000; // Collateral factor in basis points.
 
     address public constant WETH_ADDRESS =
@@ -97,7 +99,7 @@ contract CompoundModule {
             WETH_ADDRESS,
             msg.value,
             DAI_ADDRESS
-        ); // This is the equivalent amount to repay in DAI
+        );
         uint256 amountToRedeem = (daiAmountEquivalentToEthAmount /
             DENOMINATOR) * COLLATERAL_FACTOR;
         borrowingBalanceOf[msg.sender] = 0;
@@ -117,9 +119,8 @@ contract CompoundModule {
         collateralBalanceOf[msg.sender].total += _amount;
     }
 
-    function redeemAllCollateral() external {
-        uint256 amountToRedeem = collateralBalanceOf[msg.sender].total;
-        _redeemCollateral(msg.sender, amountToRedeem);
+    function redeemCollateral(uint256 _amount) external {
+        _redeemCollateral(msg.sender, _amount);
     }
 
     function liquidate(address _borrower) external {
@@ -150,12 +151,9 @@ contract CompoundModule {
             "Borrowing must be repaid before redeeming collateral."
         );
         require(_amount <= collateralBalanceOf[msg.sender].total, "");
-        _redeemCDaiFromCompound(_amount, false);
-        // Amount of Tokens given by Compound calculation
-        uint256 amountRedeemed = _amount * cDaiToken.exchangeRateCurrent();
+        require(_redeemCDaiFromCompound(_amount, false) == 0, "");
         collateralBalanceOf[msg.sender].total -= _amount;
-        // Finally leech transfers it to the user
-        daiToken.transferFrom(address(this), _borrower, amountRedeemed);
+        daiToken.transferFrom(address(this), _borrower, _amount);
     }
 
     function _redeemLending(address _lender, uint256 _amount) internal {
@@ -164,11 +162,11 @@ contract CompoundModule {
             "Cannot redeem more than the lending amount provided."
         );
         _redeemCEthFromCompound(_amount, false);
-        // Amount of Tokens given by Compound calculation
+        // Amount of Tokens given by Compound calculation.
         uint256 amountRedeemed = _amount * cEthToken.exchangeRateCurrent();
-        // The sender does not have any collateral anymore
+        // The sender does not have any collateral anymore.
         lendingBalanceOf[msg.sender].total -= _amount;
-        // Finally leech transfers it to the user
+        // Finally leech transfers it to the user.
         payable(_lender).transfer(amountRedeemed);
     }
 
@@ -185,8 +183,8 @@ contract CompoundModule {
 
     function _redeemCDaiFromCompound(uint256 _amount, bool _redeemType)
         internal
+        returns(uint256 result)
     {
-        uint256 result;
         if (_redeemType == true) {
             // Retrieve your asset based on a cToken amount
             result = cDaiToken.redeem(_amount);
@@ -194,13 +192,12 @@ contract CompoundModule {
             // Retrieve your asset based on an amount of the asset
             result = cDaiToken.redeemUnderlying(_amount);
         }
-        require(result == 0, "Call to Compound failed.");
     }
 
     function _redeemCEthFromCompound(uint256 _amount, bool _redeemType)
         internal
+        returns(uint256 result)
     {
-        uint256 result;
         if (_redeemType == true) {
             // Retrieve your asset based on a cToken amount
             result = cEthToken.redeem(_amount);
@@ -208,7 +205,6 @@ contract CompoundModule {
             // Retrieve your asset based on an amount of the asset
             result = cEthToken.redeemUnderlying(_amount);
         }
-        require(result == 0, "Call to Compound failed.");
     }
 
     function _findUnusedCTokensAndUse(uint256 _amount) internal {

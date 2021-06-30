@@ -51,8 +51,6 @@
   const CompoundModuleContractAddress = CompoundModuleJson.networks[networkId].address
   const CompoundModuleContract = new web3.eth.Contract(CompoundModuleJson.abi, CompoundModuleContractAddress)
 
-
-
   // THIRD : Setup is done now we implement the function
 
   const main = async function() {
@@ -61,30 +59,33 @@
     let cUnderlyingBalance = await cUnderlying.methods.balanceOf(CompoundModuleContractAddress).call();
     cUnderlyingBalance = cUnderlyingBalance / 1e8;
     console.log(`CompoundModuleContract's c${assetName} Token Balance:`, cUnderlyingBalance);
+    let underlyingBalance = await underlying.methods.balanceOf(CompoundModuleContractAddress).call();
+    underlyingBalance = underlyingBalance / Math.pow(10, underlyingDecimals);
+    console.log(`CompoundModuleContract's ${assetName} Token Balance:`, underlyingBalance);
+    let collateralBalance = await CompoundModuleContract.methods.collateralBalanceOf(testWalletAddress).call();
+    console.log(`Test wallet's ${assetName} total collateral balance:`, collateralBalance.total, '\n');
     const amount = web3.utils.toHex(cUnderlyingBalance * 1e8);
 
-    let redeemResult = await CompoundModuleContract.methods._redeemErc20Tokens(
-      amount,
-      redeemType=true,
-      cUnderlyingMainnetAddress
+    let redeemResult = await CompoundModuleContract.methods.redeemCollateral(
+      collateralBalance.total,
     ).send(fromTestWallet);
 
-    if (redeemResult.events.MyLog.returnValues[1] != 0) {
-      throw Error('Redeem Error Code: '+redeemResult.events.MyLog.returnValues[1]);
-    }
+    // if (redeemResult.events.MyLog.returnValues[1] != 0) {
+    //   throw Error('Redeem Error Code: '+redeemResult.events.MyLog.returnValues[1]);
+    // }
     console.log(`c${assetName} Redeem operation successful`, '\n');
-    
+
     console.log('Here are some statistics after the redeem:');
     let balanceOfUnderlying = await cUnderlying.methods
         .balanceOfUnderlying(CompoundModuleContractAddress).call() / Math.pow(10, underlyingDecimals);
-    console.log(`       ${assetName} currently supplied by CompoundModuleContract to the Compound Protocol:`, balanceOfUnderlying);
+    console.log(`${assetName} currently supplied by CompoundModuleContract to the Compound Protocol:`, balanceOfUnderlying);
     cUnderlyingBalance = await cUnderlying.methods.balanceOf(CompoundModuleContractAddress).call();
     cUnderlyingBalance = cUnderlyingBalance / 1e8;
-    console.log(`       CompoundModuleContract's c${assetName} Token Balance:`, cUnderlyingBalance);
+    console.log(`CompoundModuleContract's c${assetName} Token Balance:`, cUnderlyingBalance);
     let erc20Balance = await underlying.methods.balanceOf(CompoundModuleContractAddress).call()/ Math.pow(10, underlyingDecimals);
-    console.log(`       CompoundModuleContract's ${assetName} balance:`, erc20Balance);
+    console.log(`CompoundModuleContract's ${assetName} balance:`, erc20Balance);
     let erc20BalanceUser = await underlying.methods.balanceOf(testWalletAddress).call()/ Math.pow(10, underlyingDecimals);
-    console.log(`       Test wallet's ${assetName} balance:`, erc20BalanceUser, '\n');
+    console.log(`Test wallet's ${assetName} balance:`, erc20BalanceUser, '\n');
 }
 
   main().catch((err) => {
