@@ -12,7 +12,7 @@
 /build
 
 # abis
-/src/abis
+/abis
 
 # misc
 .DS_Store
