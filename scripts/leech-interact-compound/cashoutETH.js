@@ -71,7 +71,6 @@
     // ).send(fromTestWallet);
 
 
-
     if (redeemResult.events.MyLog.returnValues[1] != 0) {
       throw Error('Redeem Error Code: '+redeemResult.events.MyLog.returnValues[1]);
     }
