@@ -131,15 +131,13 @@ contract CompoundModule {
 
     function _cashOut(address _lender, uint256 _amount) internal {
         if (lendingBalanceOf[_lender].used == 0) {
-            lendingBalanceOf[_lender].total -= _amount;
-            _redeemLending(msg.sender, _amount);
+            _redeemLending(_lender, _amount);
         } else if (cEthToken.balanceOf(address(this)) > 0) {
             _findUnusedCTokensAndUse(_amount);
-            _redeemLending(msg.sender, _amount);
+            _redeemLending(_lender, _amount);
         } else {
             cEthToken.borrow(_amount);
             borrowingBalanceOf[_lender] += _amount;
-            lendingBalanceOf[_lender].total -= _amount;
             payable(_lender).transfer(_amount);
         }
         delete currentLenders[lenderToIndex[_lender]];
@@ -158,19 +156,16 @@ contract CompoundModule {
 
     function _redeemLending(address _lender, uint256 _amount) internal {
         require(
-            _amount <= lendingBalanceOf[msg.sender].total,
+            _amount <= lendingBalanceOf[_lender].total,
             "Cannot redeem more than the lending amount provided."
         );
+        lendingBalanceOf[_lender].total -= _amount;
         _redeemCEthFromCompound(_amount, false);
-        // Amount of Tokens given by Compound calculation.
-        uint256 amountRedeemed = _amount * cEthToken.exchangeRateCurrent();
-        // The sender does not have any collateral anymore.
-        lendingBalanceOf[msg.sender].total -= _amount;
-        // Finally leech transfers it to the user.
-        payable(_lender).transfer(amountRedeemed);
+        payable(_lender).transfer(_amount);
     }
 
     function _supplyEthToCompound(uint256 _amount) internal {
+        emit MyLog("value", _amount);
         cEthToken.mint{value: _amount}(); // Revert on error.
     }
 
