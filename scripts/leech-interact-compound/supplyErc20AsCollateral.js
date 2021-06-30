@@ -73,7 +73,9 @@
     ).send(fromTestWallet);
     console.log(`c${assetName} "Mint" operation successful`, '\n');
 
-
+    // if (supplyResult.events.MyLog.returnValues[1] != 0) {
+    //   throw Error('Redeem Error Code: '+supplyResult.events.MyLog.returnValues[1]);
+    // }
     console.log('Here are some statistics on the intermediate contract after the mint:');
     let balanceOfUnderlying = await cUnderlying.methods
       .balanceOfUnderlying(CompoundModuleContractAddress).call() / Math.pow(10, underlyingDecimals);

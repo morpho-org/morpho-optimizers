@@ -47,41 +47,65 @@
 
   const main = async function() {
 
-    // Call redeem based on a cEth amount
-    console.log(`Redeeming the cETH for ETH...`);
-    let cEthBalance = await cEthContract.methods.balanceOf(CompoundModuleContractAddress).call() / 1e8;
-    console.log(`CompoundModuleContract's cETH Token Balance:`, cEthBalance);
-    const amount = web3.utils.toHex(cEthBalance * 1e8);
-
-    let redeemResult = await CompoundModuleContract.methods.cashOut(
-      amount).send(fromTestWallet);
 
 
-    // // OR   Call redeem based on a Eth amount
-    // let balanceOfUnderlying = web3.utils.toBN(await cEthContract.methods
-    //   .balanceOfUnderlying(CompoundModuleContractAddress).call()) / Math.pow(10, ethDecimals);
-    // console.log(`     ETH currently supplied to the Compound Protocol:`, balanceOfUnderlying);     
-    // let ethBalance = web3.utils.toWei(balanceOfUnderlying.toString())
-    // // const amount = web3.utils.toHex(ethBalance * 1e8);
-    // console.log(`Redeeming the cETH for ETH...`);
-    // let redeemResult = await CompoundModuleContract.methods.redeemCEth(
-    //   ethBalance,
-    //   redeemType=false,
-    //   cEthContractAddress
+    // let cEthBalance = await cEthContract.methods.balanceOf(CompoundModuleContractAddress).call() / 1e8;
+    // console.log(CompoundModuleContract's cETH Token Balance:, cEthBalance);
+    // let lendingBalance = await CompoundModuleContract.methods.lendingBalanceOf(testWalletAddress).call();
+    // console.log(Test wallet's ETH used lending balance:, lendingBalance.used, '\n');
+    // console.log(Test wallet's ETH total lending balance:, lendingBalance.total, '\n');
+
+    // let redeemResult = await CompoundModuleContract.methods.cashOut(
+    //   lendingBalance.total
     // ).send(fromTestWallet);
+    // console.log(redeemResult.events.MyLog)
 
 
-    if (redeemResult.events.MyLog.returnValues[1] != 0) {
-      throw Error('Redeem Error Code: '+redeemResult.events.MyLog.returnValues[1]);
+
+
+
+
+    console.log(`Redeeming the cETH for ETH...`);
+    console.log(`Here are some statistics before the operation: \n`);
+        
+    let balanceOfUnderlying = web3.utils.toBN(await cEthContract.methods
+      .balanceOfUnderlying(CompoundModuleContractAddress).call()) / Math.pow(10, ethDecimals);
+    let amountInEth = web3.utils.toWei(balanceOfUnderlying.toString())
+    console.log(`     ETH currently supplied to the Compound Protocol:`, balanceOfUnderlying);     
+
+    let cEthBalance = await cEthContract.methods.balanceOf(CompoundModuleContractAddress).call() / 1e8;
+    const amountInCEth = web3.utils.toHex(cEthBalance * 1e8);
+    console.log(`     CompoundModuleContract's cETH Token Balance:`, cEthBalance);
+
+
+
+    let redeemType = false
+    let redeemResult
+    if (redeemType) { 
+    console.log(`Cashing out based on a cEth amount`);
+    redeemResult = await CompoundModuleContract.methods.cashOut(
+      // amountInCEth
+      "1"
+      ).send(fromTestWallet);
+    }
+    else {
+    console.log(`Cashing out based on a Eth amount`);
+    redeemResult = await CompoundModuleContract.methods.cashOut(
+      // amountInEth
+      "100000000000000000"
+    ).send(fromTestWallet);
     }
 
-    console.log('Here are some statistics on the intermediate contract after the mint:');
-     balanceOfUnderlying = web3.utils.toBN(await cEthContract.methods
+    console.log('The solidity contract recieved as variable : ', redeemResult.events.MyLog.returnValues[1], '\n');
+
+
+    console.log('Here are some statistics on the intermediate contract after the cashout:');
+    balanceOfUnderlying = web3.utils.toBN(await cEthContract.methods
         .balanceOfUnderlying(CompoundModuleContractAddress).call()) / Math.pow(10, ethDecimals);
     console.log(`     ETH currently supplied to the Compound Protocol:`, balanceOfUnderlying);
     cEthBalance = await cEthContract.methods.balanceOf(CompoundModuleContractAddress).call()/ 1e8;
     console.log(`     CompoundModuleContract's cETH Token Balance:`, cEthBalance);
-    let ethBalance = await await web3.eth.getBalance(CompoundModuleContractAddress) / Math.pow(10, ethDecimals);
+    ethBalance = await await web3.eth.getBalance(CompoundModuleContractAddress) / Math.pow(10, ethDecimals);
     console.log(`     CompoundModuleContract's ETH balance:`, ethBalance);
     let cEthBalanceUser =  await cEthContract.methods.balanceOf(testWalletAddress).call() / 1e8;
     console.log(`     Test wallet's cETH balance:`, cEthBalanceUser);

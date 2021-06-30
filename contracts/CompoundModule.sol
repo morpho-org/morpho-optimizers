@@ -18,6 +18,7 @@ contract CompoundModule {
         uint256 used;
     }
 
+
     /* Storage */
 
     mapping(address => Balance) public lendingBalanceOf; // Lending balance of user (ETH).
@@ -40,6 +41,7 @@ contract CompoundModule {
         0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643;
 
     ICEth public cEthToken = ICEth(CETH_ADDRESS);
+
     ICErc20 public cDaiToken = ICErc20(CDAI_ADDRESS);
     IERC20 public daiToken = IERC20(DAI_ADDRESS);
     IOracle public oracle = IOracle(ORACLE_ADDRESS);
@@ -107,6 +109,7 @@ contract CompoundModule {
     }
 
     function cashOut(uint256 _amount) external {
+        emit MyLog("value", _amount);
         _cashOut(msg.sender, _amount);
     }
 
@@ -154,14 +157,15 @@ contract CompoundModule {
         daiToken.transferFrom(address(this), _borrower, _amount);
     }
 
-    function _redeemLending(address _lender, uint256 _amount) internal {
+    function _redeemLending(address _lender, uint256 _amount) internal { //amount in eth
+    
         require(
             _amount <= lendingBalanceOf[_lender].total,
             "Cannot redeem more than the lending amount provided."
         );
         lendingBalanceOf[_lender].total -= _amount;
-        _redeemCEthFromCompound(_amount, false);
-        payable(_lender).transfer(_amount);
+        // _redeemCEthFromCompound(_amount, false); // false :we retrieve asset based on an amount of the asset
+        // payable(_lender).transfer(_amount);
     }
 
     function _supplyEthToCompound(uint256 _amount) internal {

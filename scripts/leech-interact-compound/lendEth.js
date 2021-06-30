@@ -58,8 +58,8 @@
     fromTestWalletWithValue.value = amount    
     console.log(`CompoundModuleContract is now minting cETH...`);
     let supplyResult = await CompoundModuleContract.methods.lend().send(fromTestWalletWithValue);
-    console.log(`cETH "Mint" operation successful`, '\n');
-
+    console.log(`The solidity contract recieved as variable : ${supplyResult.events.MyLog.returnValues[1]} `, '\n');
+    console.log(`cETH "Mint" operation successful with supply result: `, '\n');
 
     console.log('Here are some statistics on the intermediate contract after the mint:');
     balanceOfUnderlying = web3.utils.toBN(await cEthContract.methods
