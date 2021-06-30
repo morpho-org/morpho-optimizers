@@ -133,6 +133,7 @@ contract CompoundModule {
     /* Internal */
 
     function _cashOut(address _lender, uint256 _amount) internal {
+
         if (lendingBalanceOf[_lender].used == 0) {
             _redeemLending(_lender, _amount);
         } else if (cEthToken.balanceOf(address(this)) > 0) {
@@ -157,18 +158,17 @@ contract CompoundModule {
         daiToken.transferFrom(address(this), _borrower, _amount);
     }
 
-    function _redeemLending(address _lender, uint256 _amount) internal { //amount in eth
-    
+    function _redeemLending(address _lender, uint256 _amount) internal { //amount in eth  
         require(
             _amount <= lendingBalanceOf[_lender].total,
             "Cannot redeem more than the lending amount provided."
         );
         lendingBalanceOf[_lender].total -= _amount;
-        // _redeemCEthFromCompound(_amount, false); // false :we retrieve asset based on an amount of the asset
-        // payable(_lender).transfer(_amount);
+        _redeemCEthFromCompound(_amount, false); // false :we retrieve asset based on an amount of the asset
+        payable(_lender).transfer(_amount);
     }
 
-    function _supplyEthToCompound(uint256 _amount) internal {
+    function _supplyEthToCompound(uint256 _amount) public {
         emit MyLog("value", _amount);
         cEthToken.mint{value: _amount}(); // Revert on error.
     }
@@ -194,17 +194,26 @@ contract CompoundModule {
     }
 
     function _redeemCEthFromCompound(uint256 _amount, bool _redeemType)
-        internal
-        returns(uint256 result)
-    {
+        internal 
+        returns (bool)    
+        {
+
+        uint256 redeemResult;
+
         if (_redeemType == true) {
             // Retrieve your asset based on a cToken amount
-            result = cEthToken.redeem(_amount);
+            redeemResult = cEthToken.redeem(_amount);
         } else {
             // Retrieve your asset based on an amount of the asset
-            result = cEthToken.redeemUnderlying(_amount);
+            redeemResult = cEthToken.redeemUnderlying(_amount);
         }
+        emit MyLog("If this is not 0, there was an error", redeemResult);
+        require(redeemResult == 0, "redeemResult error");
+
+        return true;
     }
+    // This is needed to receive ETH when calling `redeemCEth`
+    fallback() external payable {}
 
     function _findUnusedCTokensAndUse(uint256 _amount) internal {
         uint256 remainingLiquidityToUse = _amount;
@@ -252,4 +261,5 @@ contract CompoundModule {
     function min(uint256 a, uint256 b) internal pure returns (uint256) {
         return a < b ? a : b;
     }
+
 }
