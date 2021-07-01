@@ -6,10 +6,13 @@ import "./interfaces/IERC20.sol";
 import "./interfaces/IOracle.sol";
 import {ICErc20, ICEth} from "./interfaces/ICompound.sol";
 
+
+/**
+ *  @title CompoundModule
+ *  @dev Smart contracts interacting with Compound to enable real P2P lending.
+ */
 contract CompoundModule {
     using SafeMath for uint256;
-
-    event MyLog(string, uint256);
 
     /* Structs */
 
@@ -46,6 +49,9 @@ contract CompoundModule {
 
     /* External */
 
+    /** @dev Allows someone to lend ETH.
+     *  @dev ETH is sent through msg.value.
+     */
     function lend() external payable {
         _supplyEthToCompound(msg.value);
         if (lendingBalanceOf[msg.sender].unused == 0) {
@@ -57,6 +63,10 @@ contract CompoundModule {
             cEthToken.exchangeRateCurrent();
     }
 
+
+    /** @dev Allows someone to borrow ETH.
+     *  @param _amount Amount to borrow in ETH.
+     */
     function borrow(uint256 _amount) external {
         // Calculate the collateral needed.
         uint256 daiAmountEquivalentToEthAmount = oracle.consult(
@@ -74,51 +84,45 @@ contract CompoundModule {
             collateralNeededInDai <= collateralBalanceOf[msg.sender].unused,
             "Not enough collateral."
         );
-
         // Check if contract has the cTokens for the borrowing.
         uint256 amountInCEth = _amount * cEthToken.exchangeRateCurrent();
         require(
             amountInCEth <= cEthToken.balanceOf(address(this)),
-            "Amount to borrow should be less than total available."
+            "Borrowing amount must be less than total available."
         );
-
         // Now contract can take liquidity thanks to cTokens.
-        _findUnusedCTokensAndUse(amountInCEth);
-
+        _findUnusedCTokensAndUse(amountInCEth, msg.sender);
         // Update used and unused collateral.
         collateralBalanceOf[msg.sender].unused -= collateralNeededInCDai; // In cToken.
         collateralBalanceOf[msg.sender].used += collateralNeededInDai; // In underlying.
         borrowingBalanceOf[msg.sender] += amountInCEth; // In cToken.
-
         // Transfer ETH to borrower
         payable(msg.sender).transfer(_amount);
     }
 
+    /** @dev Allows someone to pay back its debt in ETH.
+     *  @dev ETH is sent as msg.value.
+     */
     function payBack() external payable {
         uint256 amountInCEth = msg.value * cEthToken.exchangeRateCurrent();
+        borrowingBalanceOf[msg.sender] -= amountInCEth; // Revert if sender has no borrowing.
         payable(address(this)).transfer(msg.value);
         _supplyEthToCompound(msg.value);
-        _findUsedCTokensAndUnuse(amountInCEth);
-        borrowingBalanceOf[msg.sender] -= amountInCEth;
+        _findUsedCTokensAndUnuse(amountInCEth, msg.sender);
     }
 
-    function payBackAll() external payable {
-        uint256 amountInCEth = msg.value * cEthToken.exchangeRateCurrent();
-        require(
-            amountInCEth >= borrowingBalanceOf[msg.sender],
-            "Must payback all the debt."
-        );
-        payable(address(this)).transfer(msg.value);
-        _supplyEthToCompound(msg.value);
-        _findUsedCTokensAndUnuse(amountInCEth);
-        borrowingBalanceOf[msg.sender] = 0;
-    }
 
+    /** @dev Allows a lender to cash-out.
+     *  @param _amount Amount in ETH to cash-out.
+     */
     function cashOut(uint256 _amount) external {
         _cashOut(msg.sender, _amount);
     }
 
-    function provideCollateral(uint256 _amount) external payable {
+    /** @dev Allows a borrower to provide collateral in DAI.
+     *  @param _amount Amount in DAI to provide.
+     */
+    function provideCollateral(uint256 _amount) external {
         require(_amount > 0, "Amount cannot be 0");
         daiToken.approve(address(this), _amount);
         daiToken.transferFrom(msg.sender, address(this), _amount);
@@ -129,26 +133,36 @@ contract CompoundModule {
             cDaiToken.exchangeRateCurrent(); // In cToken.
     }
 
+    /** @dev Allows a borrower to redeem its collateral in DAI.
+     *  @param _amount Amount in DAI to get back.
+     */
     function redeemCollateral(uint256 _amount) external {
         _redeemCollateral(msg.sender, _amount);
     }
 
-    function liquidate(address _borrower) external {
+    /** @dev Allows somone to liquidate a position.
+     *  @param _borrower The address of the borrowe to liquidate.
+     */
+    function liquidate(address _borrower) external payable {
         // TODO: write function
     }
 
     /* Internal */
 
+    /** @dev Implements cash-out's logic for a `_lender`.
+     *  @param _lender Address of the lender to cash-out its position.
+     *  @param _amount Amount in ETH to cash-out.
+     */
     function _cashOut(address _lender, uint256 _amount) internal {
         if (lendingBalanceOf[_lender].used == 0) {
             _redeemLending(_lender, _amount);
         } else {
             // Update used and unused of `_lender`.
-            uint256 amountInCEth = _amount * cEthToken.exchangeRateCurrent();
+            uint amountInCEth = _amount * cEthToken.exchangeRateCurrent();
             lendingBalanceOf[_lender].unused += amountInCEth; // In cToken.
             lendingBalanceOf[_lender].used -= _amount; // In underlying.
             if (cEthToken.balanceOf(address(this)) > 0) {
-                _findUnusedCTokensAndUse(amountInCEth);
+                _findUnusedCTokensAndUse(amountInCEth, _lender);
                 _redeemLending(_lender, _amount);
             } else {
                 // TODO: what happens after borrowing?
@@ -157,15 +171,22 @@ contract CompoundModule {
                 payable(_lender).transfer(_amount);
             }
         }
-        delete currentLenders[lenderToIndex[_lender]];
+        // If lender has no lending, then remove it from the list of lenders.
+        if (lendingBalanceOf[_lender].unused == 0) {
+            delete currentLenders[lenderToIndex[_lender]];
+        }
     }
 
+    /** @dev Implements collateral redeeming's logic for a `_borrower`.
+     *  @param _borrower Address of the borrower to redeem collateral for.
+     *  @param _amount Amount in DAI to redeem.
+     */
     function _redeemCollateral(address _borrower, uint256 _amount) internal {
         require(
             borrowingBalanceOf[_borrower] == 0,
             "Borrowing must be repaid before redeeming collateral."
         );
-        uint256 amountInCDai = _amount * cDaiToken.exchangeRateCurrent();
+        uint amountInCDai = _amount * cDaiToken.exchangeRateCurrent();
         require(
             amountInCDai <= collateralBalanceOf[msg.sender].unused,
             "Amount to redeem must be less than collateral."
@@ -178,7 +199,10 @@ contract CompoundModule {
         daiToken.transferFrom(address(this), _borrower, _amount);
     }
 
-    // Amount in cETH.
+    /** @dev Implements lend redeeming's logic for a `_lender`.
+     *  @param _lender Address of the lender to redeem lending for.
+     *  @param _amount Amount in ETH to redeem.
+     */
     function _redeemLending(address _lender, uint256 _amount) internal {
         uint256 amountInCEth = _amount * cEthToken.exchangeRateCurrent();
         require(
@@ -191,59 +215,77 @@ contract CompoundModule {
         payable(_lender).transfer(_amount);
     }
 
+    /** @dev Supplies ETH to Compound.
+     *  @param _amount Amount in ETH to supply.
+     */
     function _supplyEthToCompound(uint256 _amount) internal {
         cEthToken.mint{value: _amount}(); // Revert on error.
     }
 
+    /** @dev Supplies DAI to Compound.
+     *  @param _amount Amount in DAI to supply.
+     */
     function _supplyDaiToCompound(uint256 _amount) internal {
         // Approve transfer on the ERC20 contract.
         daiToken.approve(CDAI_ADDRESS, _amount);
         // Mint cTokens.
-        require(cDaiToken.mint(_amount) == 0, "Call to Compound failed.");
+        require(cDaiToken.mint(_amount) == 0, "cDAI minting failed.");
     }
 
-    // If false pass DAI, if true pass cDAI
+    /** @dev Redeems DAI from Compound.
+     *  @dev If `_redeemType` is true pass cDAI as argument, else pass DAI.
+     *  @param _amount Amount of tokens to be redeemed.
+     *  @param _redeemType The redeem type to use on Compound.
+     *  @return result Result from Compound.
+     */
     function _redeemCDaiFromCompound(uint256 _amount, bool _redeemType)
         internal
         returns (uint256 result)
     {
         if (_redeemType == true) {
-            // Retrieve your asset based on a cToken amount
+            // Retrieve your asset based on a cDAI amount.
             result = cDaiToken.redeem(_amount);
         } else {
-            // Retrieve your asset based on an amount of the asset
+            // Retrieve your asset based on a DAI amount.
             result = cDaiToken.redeemUnderlying(_amount);
         }
     }
 
-    // If false pass ETH, if true pass cETH
+    /** @dev Redeems ETH from Compound.
+     *  @dev If `_redeemType` is true pass cETH as argument, else pass ETH.
+     *  @param _amount Amount of tokens to be redeemed.
+     *  @param _redeemType The redeem type to use on Compound.
+     *  @return result Result from Compound.
+     */
     function _redeemCEthFromCompound(uint256 _amount, bool _redeemType)
         internal
         returns (uint256 result)
     {
         if (_redeemType == true) {
-            // Retrieve your asset based on a cToken amount
+            // Retrieve your asset based on a cETH amount.
             result = cEthToken.redeem(_amount);
         } else {
-            // Retrieve your asset based on an amount of the asset
+            // Retrieve your asset based on an ETH amount.
             result = cEthToken.redeemUnderlying(_amount);
         }
     }
 
     // Amount in cToken.
-    function _findUnusedCTokensAndUse(uint256 _amount) internal {
-        uint256 remainingLiquidityToUse = _amount;
-        uint256 i;
+    function _findUnusedCTokensAndUse(uint256 _amount, address _lenderToAvoid) internal {
+        uint remainingLiquidityToUse = _amount;
+        uint i;
         while (remainingLiquidityToUse > 0 && i < currentLenders.length) {
-            address lenderAddress = currentLenders[i];
-            uint256 unused = lendingBalanceOf[lenderAddress].unused;
+            address lender = currentLenders[i];
+            if (lender != _lenderToAvoid) {
+                uint unused = lendingBalanceOf[lender].unused;
 
-            if (unused > 0) {
-                uint256 amountToUse = min(unused, remainingLiquidityToUse); // In cToken.
-                lendingBalanceOf[lenderAddress].used +=
-                    amountToUse /
-                    cEthToken.exchangeRateCurrent(); // In underlying.
-                remainingLiquidityToUse -= amountToUse; // In cToken.
+                if (unused > 0) {
+                    uint amountToUse = min(unused, remainingLiquidityToUse); // In cToken.
+                    lendingBalanceOf[lender].used +=
+                        amountToUse /
+                        cEthToken.exchangeRateCurrent(); // In underlying.
+                    remainingLiquidityToUse -= amountToUse; // In cToken.
+                }
             }
             i++;
         }
@@ -251,19 +293,21 @@ contract CompoundModule {
     }
 
     // Amount in cToken.
-    function _findUsedCTokensAndUnuse(uint256 _amount) internal {
-        uint256 remainingLiquidityToUnuse = _amount;
-        uint256 i;
+    function _findUsedCTokensAndUnuse(uint256 _amount, address _lenderToAvoid) internal {
+        uint remainingLiquidityToUnuse = _amount;
+        uint i;
         while (remainingLiquidityToUnuse > 0 && i < currentLenders.length) {
-            address lenderAddress = currentLenders[i];
-            uint256 used = lendingBalanceOf[lenderAddress].used;
+            address lender = currentLenders[i];
+            if (lender != _lenderToAvoid) {
+                uint used = lendingBalanceOf[lender].used;
 
-            if (used > 0) {
-                uint256 amountToUnuse = min(used, remainingLiquidityToUnuse);
-                lendingBalanceOf[lenderAddress].used -=
-                    amountToUnuse /
-                    cEthToken.exchangeRateCurrent(); // In underlying.
-                remainingLiquidityToUnuse -= amountToUnuse; // In cToken.
+                if (used > 0) {
+                    uint amountToUnuse = min(used, remainingLiquidityToUnuse);
+                    lendingBalanceOf[lender].used -=
+                        amountToUnuse /
+                        cEthToken.exchangeRateCurrent(); // In underlying.
+                    remainingLiquidityToUnuse -= amountToUnuse; // In cToken.
+                }
             }
             i++;
         }
