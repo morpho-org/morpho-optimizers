@@ -28,10 +28,6 @@
     gasPrice: web3.utils.toHex(20000000000) // use ethgasstation.info (mainnet only)
   };
 
-
-  // SECOND : Creation of the contracts
-
-
   const ethDecimals = 18; // Ethereum has 18 decimal places
   const cEthJson = require('../../abis/CEth.json');
   const cEthContractAddress = '0x4ddc2d193948926d02f9b1fe9e1daa0718270ed5';
@@ -43,8 +39,6 @@
   const CompoundModuleContract = new web3.eth.Contract(CompoundModuleJson.abi, CompoundModuleContractAddress)
 
 
-  // THIRD : Setup is done now we implement the function
-
   const main = async function() {
 
     console.log(`Redeeming the cETH for ETH...`);
@@ -53,10 +47,6 @@
     let balanceOfUnderlying = web3.utils.toBN(await cEthContract.methods
       .balanceOfUnderlying(CompoundModuleContractAddress).call()) / Math.pow(10, ethDecimals);
     let amountInEth = web3.utils.toWei(balanceOfUnderlying.toString())
-    // let balanceOfUnderlying = await cEthContract.methods
-    // .balanceOfUnderlying(CompoundModuleContractAddress).call();
-    // // balanceOfUnderlying = web3.utils.fromWei(balanceOfUnderlying);
-    // let amountInEth = web3.utils.toHex(balanceOfUnderlying);
 
     console.log(`     ETH currently supplied to the Compound Protocol:`, balanceOfUnderlying);     
 
@@ -69,22 +59,22 @@
     let redeemType = false
     let redeemResult
     if (redeemType) { 
-    console.log(`Cashing out based on a cEth amount...\n`);
-    redeemResult = await CompoundModuleContract.methods.cashOut(
-      amountInCEth,
-      true
-      ).send(fromTestWallet);
+      console.log(`Cashing out based on a cEth amount...\n`);
+      redeemResult = await CompoundModuleContract.methods.cashOut(
+        amountInCEth,
+        true
+        ).send(fromTestWallet);
     }
     else {
-    console.log(`Cashing out based on a Eth amount...\n`);
-    redeemResult = await CompoundModuleContract.methods.cashOut(amountInEth).send(fromTestWallet);
+      console.log(`Cashing out based on a Eth amount...\n`);
+      redeemResult = await CompoundModuleContract.methods.cashOut(amountInEth).send(fromTestWallet);
     }
 
-    // console.log('The solidity contract recieved as variable : ', redeemResult.events.MyLog.returnValues[1], '\n');
+    console.log('The solidity contract recieved as variable : ', redeemResult.events.MyLog.returnValues[1], '\n');
 
-    // if (redeemResult.events.MyLog.returnValues[1] != 0) {
-    //   throw Error('Redeem Error Code: '+redeemResult.events.MyLog.returnValues[1]);
-    // }
+    if (redeemResult.events.MyLog.returnValues[1] != 0) {
+      throw Error('Redeem Error Code: '+redeemResult.events.MyLog.returnValues[1]);
+    }
 
     console.log('Here are some statistics on the intermediate contract after the cashout:');
     balanceOfUnderlying = web3.utils.toBN(await cEthContract.methods

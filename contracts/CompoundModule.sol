@@ -116,7 +116,7 @@ contract CompoundModule {
     function provideCollateral(uint256 _amount) external payable {
         require(_amount > 0, "Amount cannot be 0");
         daiToken.approve(address(this), _amount);
-        daiToken.transferFrom(msg.sender, address(this), msg.value);
+        daiToken.transferFrom(msg.sender, address(this), _amount);
         _supplyDaiToCompound(_amount);
         // We update the collateral balance of the sender.
         collateralBalanceOf[msg.sender].total += _amount;

@@ -940,12 +940,12 @@
     "1": {
       "events": {},
       "links": {},
-      "address": "0x30ab2387A7f8B49647963Ad93edA2962604fC2ae",
-      "transactionHash": "0xb70f4a90dbfcbd398788fb761a7b743410a75c64aac745f6277f631b16532049"
+      "address": "0x72a710863447A455888EfbEc0347cB13DD1d8AB1",
+      "transactionHash": "0x3a2ba33194b48797037447c2d9623a3b2fbda0893070b1946cd835c155344b0c"
     }
   },
   "schemaVersion": "3.3.4",
-  "updatedAt": "2021-06-30T23:26:52.068Z",
+  "updatedAt": "2021-07-01T12:14:41.954Z",
   "networkType": "ethereum",
   "devdoc": {
     "methods": {}
