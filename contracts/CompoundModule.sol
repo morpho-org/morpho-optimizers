@@ -53,8 +53,7 @@ contract CompoundModule {
             lenderToIndex[msg.sender] = currentLenders.length;
             currentLenders.push(msg.sender);
         }
-        uint exchangeRate = cEthToken.exchangeRateCurrent();
-        lendingBalanceOf[msg.sender].unused += msg.value * exchangeRate;
+        lendingBalanceOf[msg.sender].unused += msg.value * cEthToken.exchangeRateCurrent();
     }
 
     function borrow(uint256 _amount) external {
@@ -116,7 +115,7 @@ contract CompoundModule {
     function provideCollateral(uint256 _amount) external payable {
         require(_amount > 0, "Amount cannot be 0");
         daiToken.approve(address(this), _amount);
-        daiToken.transferFrom(msg.sender, address(this), msg.value);
+        daiToken.transferFrom(msg.sender, address(this), _amount);
         _supplyDaiToCompound(_amount);
         // We update the collateral balance of the sender.
         collateralBalanceOf[msg.sender].total += _amount;
@@ -151,9 +150,10 @@ contract CompoundModule {
             borrowingBalanceOf[_borrower] == 0,
             "Borrowing must be repaid before redeeming collateral."
         );
-        require(_amount <= collateralBalanceOf[msg.sender].total, "");
-        require(_redeemCDaiFromCompound(_amount, false) == 0, "");
-        collateralBalanceOf[msg.sender].total -= _amount;
+        uint collateralValueInDAI = collateralBalanceOf[msg.sender].unused * cDaiToken.exchangeRateCurrent();
+        require(_amount <= collateralValueInDAI, "Amount to redeem must be less than collateral.");
+        require(_redeemCDaiFromCompound(_amount, false) == 0, "Redeem cDAI on Compound failed.");
+        collateralBalanceOf[msg.sender].unused -= _amount / cDaiToken.exchangeRateCurrent();
         daiToken.transferFrom(address(this), _borrower, _amount);
     }
 
@@ -163,8 +163,8 @@ contract CompoundModule {
             "Cannot redeem more than the lending amount provided."
         );
         lendingBalanceOf[_lender].total -= _amount;
-        // _redeemCEthFromCompound(_amount, false); // false :we retrieve asset based on an amount of the asset
-        // payable(_lender).transfer(_amount);
+        _redeemCEthFromCompound(_amount, false);
+        payable(_lender).transfer(_amount);
     }
 
     function _supplyEthToCompound(uint256 _amount) internal {
