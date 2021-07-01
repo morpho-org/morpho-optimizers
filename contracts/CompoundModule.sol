@@ -6,6 +6,7 @@ import "./interfaces/IERC20.sol";
 import "./interfaces/IOracle.sol";
 import {ICErc20, ICEth} from "./interfaces/ICompound.sol";
 
+
 contract CompoundModule {
     using SafeMath for uint256;
 
@@ -14,16 +15,15 @@ contract CompoundModule {
     /* Structs */
 
     struct Balance {
-        uint256 total;
-        uint256 used;
+        uint256 unused; // In cToken.
+        uint256 used; // In underlying Token.
     }
-
 
     /* Storage */
 
-    mapping(address => Balance) public lendingBalanceOf; // Lending balance of user (ETH).
-    mapping(address => Balance) public collateralBalanceOf; // Collateral balance of user (ETH).
-    mapping(address => uint256) public borrowingBalanceOf; // Borrowing balance of user (DAI).
+    mapping(address => Balance) public lendingBalanceOf; // Lending balance of user (ETH/cETH).
+    mapping(address => Balance) public collateralBalanceOf; // Collateral balance of user (ETH/cETH).
+    mapping(address => uint256) public borrowingBalanceOf; // Borrowing balance of user (cDAI).
     mapping(address => uint256) public lenderToIndex; // Position of the lender in the currentLenders list.
     address[] public currentLenders; // Current lenders in the protocol.
     uint256 public constant COLLATERAL_FACTOR = 10000; // Collateral factor in basis points 100% by default.
@@ -41,7 +41,6 @@ contract CompoundModule {
         0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643;
 
     ICEth public cEthToken = ICEth(CETH_ADDRESS);
-
     ICErc20 public cDaiToken = ICErc20(CDAI_ADDRESS);
     IERC20 public daiToken = IERC20(DAI_ADDRESS);
     IOracle public oracle = IOracle(ORACLE_ADDRESS);
@@ -50,38 +49,39 @@ contract CompoundModule {
 
     function lend() external payable {
         _supplyEthToCompound(msg.value);
-        if (lendingBalanceOf[msg.sender].total == 0) {
+        if (lendingBalanceOf[msg.sender].unused == 0) {
             lenderToIndex[msg.sender] = currentLenders.length;
             currentLenders.push(msg.sender);
         }
-        lendingBalanceOf[msg.sender].total += msg.value;
+        uint exchangeRate = cEthToken.exchangeRateCurrent();
+        lendingBalanceOf[msg.sender].unused += msg.value * exchangeRate;
     }
 
     function borrow(uint256 _amount) external {
-        // Verify that borrower has enough collateral
+        // Calculate the collateral needed.
         uint256 daiAmountEquivalentToEthAmount = oracle.consult(
             WETH_ADDRESS,
             _amount,
             DAI_ADDRESS
         );
-        uint256 unusedCollateral = collateralBalanceOf[msg.sender].total -
-            collateralBalanceOf[msg.sender].used;
-        uint256 collateralNeeded = (daiAmountEquivalentToEthAmount /
+        uint collateralNeeded = (daiAmountEquivalentToEthAmount /
             DENOMINATOR) * COLLATERAL_FACTOR;
-        require(collateralNeeded <= unusedCollateral, "Not enough collateral.");
+        // Calculate the collateral value of sender in DAI.
+        uint collateralValueInDAI = collateralBalanceOf[msg.sender].unused / cDaiToken.exchangeRateCurrent();
+        require(collateralNeeded <= collateralValueInDAI, "Not enough collateral.");
 
-        // Check if contract has the cTokens for the borrowing
-        uint256 availableTokensToBorrow = cDaiToken.balanceOf(address(this)) *
-            cDaiToken.exchangeRateCurrent();
+        // Check if contract has the cTokens for the borrowing.
+        uint256 availableTokensToBorrowInDAI = cDaiToken.balanceOf(address(this)) / cDaiToken.exchangeRateCurrent();
         require(
-            _amount <= availableTokensToBorrow,
+            _amount <= availableTokensToBorrowInDAI,
             "Amount to borrow should be less than total available."
         );
 
-        // Now contract can take liquidity thanks to cTokens
+        // Now contract can take liquidity thanks to cTokens.
         _findUnusedCTokensAndUse(_amount);
 
-        // Update used collateral
+        // Update used and unused collateral.
+        collateralBalanceOf[msg.sender].unused -= _amount * cDaiToken.exchangeRateCurrent();
         collateralBalanceOf[msg.sender].used += collateralNeeded;
         borrowingBalanceOf[msg.sender] += _amount;
 
@@ -158,7 +158,6 @@ contract CompoundModule {
     }
 
     function _redeemLending(address _lender, uint256 _amount) internal { //amount in eth
-    
         require(
             _amount <= lendingBalanceOf[_lender].total,
             "Cannot redeem more than the lending amount provided."
@@ -169,7 +168,6 @@ contract CompoundModule {
     }
 
     function _supplyEthToCompound(uint256 _amount) internal {
-        emit MyLog("value", _amount);
         cEthToken.mint{value: _amount}(); // Revert on error.
     }
 
