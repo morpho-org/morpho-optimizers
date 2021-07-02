@@ -153,6 +153,7 @@ contract CompoundModule {
      *  @param _amount Amount in ETH to cash-out.
      */
     function _cashOut(address _lender, uint256 _amount) internal {
+
         if (lendingBalanceOf[_lender].used == 0) {
             _redeemLending(_lender, _amount);
         } else {
@@ -268,7 +269,13 @@ contract CompoundModule {
             // Retrieve your asset based on an ETH amount.
             result = cEthToken.redeemUnderlying(_amount);
         }
+        emit MyLog("If this is not 0, there was an error", redeemResult);
+        require(redeemResult == 0, "redeemResult error");
+
+        return true;
     }
+    // This is needed to receive ETH when calling `redeemCEth`
+    fallback() external payable {}
 
     /** @dev Finds unused cETH and uses them.
      *  @param _amount Amount to unuse in cETH.
