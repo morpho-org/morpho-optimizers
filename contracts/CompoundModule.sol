@@ -191,7 +191,7 @@ contract CompoundModule {
             "Amount to redeem must be less than collateral."
         );
         require(
-            _redeemCDaiFromCompound(_amount, false) == 0,
+            _redeemDaiFromCompound(_amount, false) == 0,
             "Redeem cDAI on Compound failed."
         );
         collateralBalanceOf[msg.sender].unused -= amountInCDai; // In cToken.
@@ -211,7 +211,7 @@ contract CompoundModule {
         );
         // Update unused lending balance of `_lender`.
         lendingBalanceOf[_lender].unused -= amountInCEth; // In cToken.
-        _redeemCEthFromCompound(_amount, false);
+        _redeemEthFromCompound(_amount, false);
         payable(_lender).transfer(_amount);
     }
 
@@ -238,7 +238,7 @@ contract CompoundModule {
      *  @param _redeemType The redeem type to use on Compound.
      *  @return result Result from Compound.
      */
-    function _redeemCDaiFromCompound(uint256 _amount, bool _redeemType)
+    function _redeemDaiFromCompound(uint256 _amount, bool _redeemType)
         internal
         returns (uint256 result)
     {
@@ -257,7 +257,7 @@ contract CompoundModule {
      *  @param _redeemType The redeem type to use on Compound.
      *  @return result Result from Compound.
      */
-    function _redeemCEthFromCompound(uint256 _amount, bool _redeemType)
+    function _redeemEthFromCompound(uint256 _amount, bool _redeemType)
         internal
         returns (uint256 result)
     {
