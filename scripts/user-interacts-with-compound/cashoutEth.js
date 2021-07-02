@@ -34,7 +34,7 @@ const fromTestWallet = {
 // Main Net Contract for cETH (the supply process is different for cERC20 tokens)
 const ethDecimals = 18; // Ethereum has 18 decimal places
 const cEthContractAddress = '0x4ddc2d193948926d02f9b1fe9e1daa0718270ed5';
-const cEthJson = require('../../src/abis/CEth.json');
+const cEthJson = require('../../abis/CEth.json');
 const cEthContract = new web3.eth.Contract(cEthJson.abi, cEthContractAddress)
 
 
@@ -46,7 +46,7 @@ const main = async function() {
     console.log('\nRedeeming the cETH for ETH... \nCurrent exchange rate from cETH to ETH:', exchangeRateCurrent, '\n');
     
     // Here we chose if we want cTokens amounts as inputs for redeeming tokens (useless)
-    let baseCalculationsOnCtokenAmount = true
+    let baseCalculationsOnCtokenAmount = false
     if (baseCalculationsOnCtokenAmount) {
         // The first method, redeem, redeems ETH based on the cToken amount passed to the function call.
         let cTokenBalance = await cEthContract.methods.balanceOf(testWalletAddress).call() / 1e8;

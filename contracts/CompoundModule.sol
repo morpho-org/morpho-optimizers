@@ -263,7 +263,7 @@ contract CompoundModule {
         } else {
             // Retrieve your asset based on an ETH amount.
             result = cEthToken.redeemUnderlying(_amount);
-        }
+        }        
     }
 
     /** @dev Finds unused cETH and uses them.
@@ -326,5 +326,6 @@ contract CompoundModule {
         return a < b ? a : b;
     }
 
+    // This is needed to receive ETH when calling `redeemCEth`
     receive() external payable {}
 }

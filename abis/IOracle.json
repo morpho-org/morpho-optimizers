@@ -43,14 +43,14 @@
     "absolutePath": "/Users/merlinegalite/Desktop/HackMoney/symbioz-contracts/contracts/interfaces/IOracle.sol",
     "exportedSymbols": {
       "IOracle": [
-        1264
+        1270
       ]
     },
-    "id": 1265,
+    "id": 1271,
     "nodeType": "SourceUnit",
     "nodes": [
       {
-        "id": 1252,
+        "id": 1258,
         "literals": [
           "solidity",
           "=",
@@ -67,9 +67,9 @@
         "contractKind": "interface",
         "documentation": null,
         "fullyImplemented": false,
-        "id": 1264,
+        "id": 1270,
         "linearizedBaseContracts": [
-          1264
+          1270
         ],
         "name": "IOracle",
         "nodeType": "ContractDefinition",
@@ -78,7 +78,7 @@
             "body": null,
             "documentation": null,
             "functionSelector": "8c86f1e4",
-            "id": 1263,
+            "id": 1269,
             "implemented": false,
             "kind": "function",
             "modifiers": [],
@@ -86,17 +86,17 @@
             "nodeType": "FunctionDefinition",
             "overrides": null,
             "parameters": {
-              "id": 1259,
+              "id": 1265,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 1254,
+                  "id": 1260,
                   "mutability": "mutable",
                   "name": "tokenIn",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 1263,
+                  "scope": 1269,
                   "src": "75:15:4",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -105,7 +105,7 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 1253,
+                    "id": 1259,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
                     "src": "75:7:4",
@@ -120,12 +120,12 @@
                 },
                 {
                   "constant": false,
-                  "id": 1256,
+                  "id": 1262,
                   "mutability": "mutable",
                   "name": "amountIn",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 1263,
+                  "scope": 1269,
                   "src": "100:16:4",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -134,7 +134,7 @@
                     "typeString": "uint256"
                   },
                   "typeName": {
-                    "id": 1255,
+                    "id": 1261,
                     "name": "uint256",
                     "nodeType": "ElementaryTypeName",
                     "src": "100:7:4",
@@ -148,12 +148,12 @@
                 },
                 {
                   "constant": false,
-                  "id": 1258,
+                  "id": 1264,
                   "mutability": "mutable",
                   "name": "tokenOut",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 1263,
+                  "scope": 1269,
                   "src": "126:16:4",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -162,7 +162,7 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 1257,
+                    "id": 1263,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
                     "src": "126:7:4",
@@ -179,17 +179,17 @@
               "src": "65:83:4"
             },
             "returnParameters": {
-              "id": 1262,
+              "id": 1268,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 1261,
+                  "id": 1267,
                   "mutability": "mutable",
                   "name": "amountOut",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 1263,
+                  "scope": 1269,
                   "src": "172:17:4",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -198,7 +198,7 @@
                     "typeString": "uint256"
                   },
                   "typeName": {
-                    "id": 1260,
+                    "id": 1266,
                     "name": "uint256",
                     "nodeType": "ElementaryTypeName",
                     "src": "172:7:4",
@@ -213,14 +213,14 @@
               ],
               "src": "171:19:4"
             },
-            "scope": 1264,
+            "scope": 1270,
             "src": "49:142:4",
             "stateMutability": "view",
             "virtual": false,
             "visibility": "external"
           }
         ],
-        "scope": 1265,
+        "scope": 1271,
         "src": "25:168:4"
       }
     ],
@@ -230,14 +230,14 @@
     "absolutePath": "/Users/merlinegalite/Desktop/HackMoney/symbioz-contracts/contracts/interfaces/IOracle.sol",
     "exportedSymbols": {
       "IOracle": [
-        1264
+        1270
       ]
     },
-    "id": 1265,
+    "id": 1271,
     "nodeType": "SourceUnit",
     "nodes": [
       {
-        "id": 1252,
+        "id": 1258,
         "literals": [
           "solidity",
           "=",
@@ -254,9 +254,9 @@
         "contractKind": "interface",
         "documentation": null,
         "fullyImplemented": false,
-        "id": 1264,
+        "id": 1270,
         "linearizedBaseContracts": [
-          1264
+          1270
         ],
         "name": "IOracle",
         "nodeType": "ContractDefinition",
@@ -265,7 +265,7 @@
             "body": null,
             "documentation": null,
             "functionSelector": "8c86f1e4",
-            "id": 1263,
+            "id": 1269,
             "implemented": false,
             "kind": "function",
             "modifiers": [],
@@ -273,17 +273,17 @@
             "nodeType": "FunctionDefinition",
             "overrides": null,
             "parameters": {
-              "id": 1259,
+              "id": 1265,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 1254,
+                  "id": 1260,
                   "mutability": "mutable",
                   "name": "tokenIn",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 1263,
+                  "scope": 1269,
                   "src": "75:15:4",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -292,7 +292,7 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 1253,
+                    "id": 1259,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
                     "src": "75:7:4",
@@ -307,12 +307,12 @@
                 },
                 {
                   "constant": false,
-                  "id": 1256,
+                  "id": 1262,
                   "mutability": "mutable",
                   "name": "amountIn",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 1263,
+                  "scope": 1269,
                   "src": "100:16:4",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -321,7 +321,7 @@
                     "typeString": "uint256"
                   },
                   "typeName": {
-                    "id": 1255,
+                    "id": 1261,
                     "name": "uint256",
                     "nodeType": "ElementaryTypeName",
                     "src": "100:7:4",
@@ -335,12 +335,12 @@
                 },
                 {
                   "constant": false,
-                  "id": 1258,
+                  "id": 1264,
                   "mutability": "mutable",
                   "name": "tokenOut",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 1263,
+                  "scope": 1269,
                   "src": "126:16:4",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -349,7 +349,7 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 1257,
+                    "id": 1263,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
                     "src": "126:7:4",
@@ -366,17 +366,17 @@
               "src": "65:83:4"
             },
             "returnParameters": {
-              "id": 1262,
+              "id": 1268,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 1261,
+                  "id": 1267,
                   "mutability": "mutable",
                   "name": "amountOut",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 1263,
+                  "scope": 1269,
                   "src": "172:17:4",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -385,7 +385,7 @@
                     "typeString": "uint256"
                   },
                   "typeName": {
-                    "id": 1260,
+                    "id": 1266,
                     "name": "uint256",
                     "nodeType": "ElementaryTypeName",
                     "src": "172:7:4",
@@ -400,14 +400,14 @@
               ],
               "src": "171:19:4"
             },
-            "scope": 1264,
+            "scope": 1270,
             "src": "49:142:4",
             "stateMutability": "view",
             "virtual": false,
             "visibility": "external"
           }
         ],
-        "scope": 1265,
+        "scope": 1271,
         "src": "25:168:4"
       }
     ],
@@ -419,7 +419,7 @@
   },
   "networks": {},
   "schemaVersion": "3.2.4",
-  "updatedAt": "2021-07-02T18:44:38.876Z",
+  "updatedAt": "2021-07-02T21:07:08.221Z",
   "devdoc": {
     "methods": {}
   },
