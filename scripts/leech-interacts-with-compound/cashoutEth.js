@@ -31,7 +31,7 @@
   const ethDecimals = 18; // Ethereum has 18 decimal places
   const cEthJson = require('../../abis/CEth.json');
   const cEthContractAddress = '0x4ddc2d193948926d02f9b1fe9e1daa0718270ed5';
-  const cEthContract = new web3.eth.Contract(cEthJson.abi, cEthContractAddress)
+  const cEthContract = new web3.eth.Contract(cEthJson, cEthContractAddress)
   
   const CompoundModuleJson = require('../../abis/CompoundModule.json');
   let networkId = 1 // see the -i 1 in the ganache-cli command
