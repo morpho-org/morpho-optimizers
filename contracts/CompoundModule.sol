@@ -268,14 +268,8 @@ contract CompoundModule {
         } else {
             // Retrieve your asset based on an ETH amount.
             result = cEthToken.redeemUnderlying(_amount);
-        }
-        emit MyLog("If this is not 0, there was an error", redeemResult);
-        require(redeemResult == 0, "redeemResult error");
-
-        return true;
+        }        
     }
-    // This is needed to receive ETH when calling `redeemCEth`
-    fallback() external payable {}
 
     /** @dev Finds unused cETH and uses them.
      *  @param _amount Amount to unuse in cETH.
@@ -341,5 +335,6 @@ contract CompoundModule {
         return a < b ? a : b;
     }
 
+    // This is needed to receive ETH when calling `redeemCEth`
     receive() external payable {}
 }
