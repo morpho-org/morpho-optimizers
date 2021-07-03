@@ -1,10 +1,10 @@
-/** 
+/**
  * Redeem all Erc20 from Compound using one intermidiate contract of leech
  * More details at https://compound.finance/docs
- * 
+ *
  * Remember to run your local ganache-cli with the mnemonic so you have accounts
  * with ETH in your local Ethereum environment.
- * 
+ *
  * ganache-cli \
  *     -f https://mainnet.infura.io/v3/<YOUR INFURA API KEY HERE> \
  *     -m "clutch captain shoe salt awake harvest setup primary inmate ugly among become"
@@ -71,8 +71,7 @@
     console.log(`Test wallet's ${assetName} unused collateral balance in DAI:`, 
     web3.utils.fromWei((collateralBalance.unused * exchangeRateCurrent).toString()) , '\n');
     console.log(`Test wallet's ${assetName} used collateral balance in DAI:`, collateralBalance.used, '\n');
-    
-// 1.0000000628442465 
+
     const amount = web3.utils.toHex(cUnderlyingBalance * 1e8);
 
     let redeemResult = await CompoundModuleContract.methods.redeemCollateral(
