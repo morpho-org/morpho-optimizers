@@ -75,7 +75,7 @@ contract CompoundModule {
         );
         uint256 collateralNeededInDai = daiAmountEquivalentToEthAmount
         .mul(COLLATERAL_FACTOR)
-        .div(COLLATERAL_FACTOR);
+        .div(DENOMINATOR);
         // Calculate the collateral value of sender in DAI.
         uint256 collateralNeededInCDai = collateralNeededInDai
         .mul(10**POWER)
