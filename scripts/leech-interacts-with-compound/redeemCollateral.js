@@ -63,11 +63,11 @@
     underlyingBalance = underlyingBalance / Math.pow(10, underlyingDecimals);
     console.log(`CompoundModuleContract's ${assetName} Token Balance:`, underlyingBalance);
     let collateralBalance = await CompoundModuleContract.methods.collateralBalanceOf(testWalletAddress).call();
-    console.log(`Test wallet's ${assetName} total collateral balance:`, collateralBalance.total, '\n');
+    console.log(`Test wallet's ${assetName} total collateral balance:`, collateralBalance.unused, '\n');
     const amount = web3.utils.toHex(cUnderlyingBalance * 1e8);
 
     let redeemResult = await CompoundModuleContract.methods.redeemCollateral(
-      collateralBalance.total,
+      collateralBalance.unused,
     ).send(fromTestWallet);
 
     // if (redeemResult.events.MyLog.returnValues[1] != 0) {
