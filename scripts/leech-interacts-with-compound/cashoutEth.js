@@ -16,7 +16,7 @@
   const Web3 = require('web3');
   const web3 = new Web3('http://127.0.0.1:7545');
 
-  const privateKey = '0x574028dad40752ed4448624f35ecb32821b0b0791652a34c10aa78053a08a730';
+  const privateKey = '0xae756dcb08a84a119e4910d1ba4dfeb180b0ec5ec4a25223fae2669f36559dd1';
   // Add your Ethereum wallet to the Web3 object
   web3.eth.accounts.wallet.add(privateKey);
   const testWalletAddress = web3.eth.accounts.wallet[0].address; // should be 0xa0df350d2637096571F7A701CBc1C5fdE30dF76A
@@ -31,50 +31,48 @@
   const ethDecimals = 18; // Ethereum has 18 decimal places
   const cEthJson = require('../../abis/CEth.json');
   const cEthContractAddress = '0x4ddc2d193948926d02f9b1fe9e1daa0718270ed5';
-  const cEthContract = new web3.eth.Contract(cEthJson.abi, cEthContractAddress)
+  const cEthContract = new web3.eth.Contract(cEthJson, cEthContractAddress)
 
   const CompoundModuleJson = require('../../abis/CompoundModule.json');
   let networkId = 1 // see the -i 1 in the ganache-cli command
   const CompoundModuleContractAddress = CompoundModuleJson.networks[networkId].address
   const CompoundModuleContract = new web3.eth.Contract(CompoundModuleJson.abi, CompoundModuleContractAddress)
 
-
   const main = async function() {
 
     console.log(`Redeeming the cETH for ETH...`);
     console.log(`Here are some statistics before the operation: \n`);
-        
+
     let balanceOfUnderlying = web3.utils.toBN(await cEthContract.methods
       .balanceOfUnderlying(CompoundModuleContractAddress).call()) / Math.pow(10, ethDecimals);
     let amountInEth = web3.utils.toWei(balanceOfUnderlying.toString())
 
-    console.log(`     ETH currently supplied to the Compound Protocol:`, balanceOfUnderlying);     
+    console.log(`     ETH currently supplied to the Compound Protocol:`, balanceOfUnderlying);
 
     let cEthBalance = await cEthContract.methods.balanceOf(CompoundModuleContractAddress).call() / 1e8;
-    let amountInCEth = web3.utils.toHex(cEthBalance * 1e8);
     console.log(`     CompoundModuleContract's cETH Token Balance:`, cEthBalance, '\n');
-
-
+    let lendingBalance = await CompoundModuleContract.methods.lendingBalanceOf(testWalletAddress).call();
+    console.log(lendingBalance.unused)
 
     let redeemType = false
     let redeemResult
-    if (redeemType) { 
+    console.log(web3.utils.toWei('1'))
+    if (redeemType) {
       console.log(`Cashing out based on a cEth amount...\n`);
       redeemResult = await CompoundModuleContract.methods.cashOut(
-        amountInCEth,
-        true
-        ).send(fromTestWallet);
+        web3.utils.toWei('1'),
+      ).send(fromTestWallet);
     }
     else {
       console.log(`Cashing out based on a Eth amount...\n`);
       redeemResult = await CompoundModuleContract.methods.cashOut(amountInEth).send(fromTestWallet);
     }
 
-    console.log('The solidity contract recieved as variable : ', redeemResult.events.MyLog.returnValues[1], '\n');
+    // console.log('The solidity contract recieved as variable : ', redeemResult.events.MyLog.returnValues[1], '\n');
 
-    if (redeemResult.events.MyLog.returnValues[1] != 0) {
-      throw Error('Redeem Error Code: '+redeemResult.events.MyLog.returnValues[1]);
-    }
+    // if (redeemResult.events.MyLog.returnValues[1] != 0) {
+    //   throw Error('Redeem Error Code: '+redeemResult.events.MyLog.returnValues[1]);
+    // }
 
     console.log('Here are some statistics on the intermediate contract after the cashout:');
     balanceOfUnderlying = web3.utils.toBN(await cEthContract.methods

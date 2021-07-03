@@ -136,7 +136,35 @@ contract CompoundModule {
      *  @param _amount Amount in ETH to cash-out.
      */
     function cashOut(uint256 _amount) external {
-        _cashOut(msg.sender, _amount);
+        uint256 unusedInEth = lendingBalanceOf[msg.sender].unused
+            .mul(cEthToken.exchangeRateCurrent())
+            .div(10**POWER);
+        if (_amount <= unusedInEth) {
+            _cashOutUnused(msg.sender, _amount);
+        } else {
+            _cashOutUnused(msg.sender, unusedInEth);
+            uint256 amountToCashOutInCEth = lendingBalanceOf[msg.sender].unused -
+                _amount.mul(10**POWER).div(cEthToken.exchangeRateCurrent()); // In cToken.
+            uint256 amountToCashOutInEth = amountToCashOutInCEth
+                .mul(cEthToken.exchangeRateCurrent())
+                .div(10**POWER);
+            if (cEthToken.balanceOf(address(this)) > amountToCashOutInCEth) {
+                _findUnusedCTokensAndUse(amountToCashOutInCEth, msg.sender);
+                lendingBalanceOf[msg.sender].used -= amountToCashOutInEth; // In underlying.
+                payable(msg.sender).transfer(amountToCashOutInEth);
+            } else {
+                // TODO: find borrower to unused.
+                cEthToken.borrow(_amount);
+                payable(msg.sender).transfer(_amount);
+            }
+        }
+        // If lender has no lending at all, then remove it from the list of lenders.
+        if (
+            lendingBalanceOf[msg.sender].unused == 0 &&
+            lendingBalanceOf[msg.sender].used == 0
+        ) {
+            delete currentLenders[lenderToIndex[msg.sender]];
+        }
     }
 
     /** @dev Allows a borrower to provide collateral in DAI.
@@ -167,42 +195,6 @@ contract CompoundModule {
     }
 
     /* Internal */
-
-    /** @dev Implements cash-out's logic for a `_lender`.
-     *  @param _lender Address of the lender to cash-out its position.
-     *  @param _amount Amount in ETH to cash-out.
-     */
-    function _cashOut(address _lender, uint256 _amount) internal {
-        if (_amount <= lendingBalanceOf[_lender].unused) {
-            _cashOutUnused(_lender, _amount);
-        } else {
-            uint256 unusedInEth = lendingBalanceOf[_lender].unused
-                .mul(cEthToken.exchangeRateCurrent())
-                .div(10**POWER);
-            _cashOutUnused(_lender, unusedInEth);
-            uint256 amountToCashOutInCEth = lendingBalanceOf[_lender].unused -
-                _amount.mul(10**POWER).div(cEthToken.exchangeRateCurrent()); // In cToken.
-            uint256 amountToCashOutInEth = amountToCashOutInCEth
-                .mul(cEthToken.exchangeRateCurrent())
-                .div(10**POWER);
-            if (cEthToken.balanceOf(address(this)) > amountToCashOutInCEth) {
-                _findUnusedCTokensAndUse(amountToCashOutInCEth, _lender);
-                lendingBalanceOf[_lender].used -= amountToCashOutInEth; // In underlying.
-                payable(_lender).transfer(amountToCashOutInEth);
-            } else {
-                // TODO: find borrower to unused.
-                cEthToken.borrow(_amount);
-                payable(_lender).transfer(_amount);
-            }
-        }
-        // If lender has no lending at all, then remove it from the list of lenders.
-        if (
-            lendingBalanceOf[_lender].unused == 0 &&
-            lendingBalanceOf[_lender].used == 0
-        ) {
-            delete currentLenders[lenderToIndex[_lender]];
-        }
-    }
 
     /** @dev Implements collateral redeeming's logic for a `_borrower`.
      *  @param _borrower Address of the borrower to redeem collateral for.

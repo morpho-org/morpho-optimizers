@@ -44,12 +44,11 @@
 
   // THIRD : Setup is done now we implement the function
 
-  const main = async function() {    
+  const main = async function() {
 
     console.log(`\nNow transferring ETH from test wallet to CompoundModuleContract...\n`);
 
     console.log(`CompoundModuleContract now has ETH to supply to the Compound Protocol`);
-    console.log(`\nCurrent exchange rate:`, exchangeRateCurrent);
     // Mint some cETH by supplying ETH to the Compound Protocol
     let amount = 1;
     amount = web3.utils.toWei(amount.toString(), 'Ether')
@@ -59,7 +58,6 @@
     console.log(`CompoundModuleContract is now minting cETH...`);
     let supplyResult = await CompoundModuleContract.methods.lend().send(fromTestWalletWithValue);
 
-    console.log(`\nCurrent exchange rate:`, exchangeRateCurrent);
     console.log(`cETH "Mint" operation successful with supply result: `, '\n');
 
     console.log('Here are some statistics on the intermediate contract after the mint:');
@@ -75,7 +73,7 @@
     ethBalanceUser =  await web3.eth.getBalance(testWalletAddress) / Math.pow(10, ethDecimals);
     console.log(`     Test wallet's ETH balance:`, ethBalanceUser, '\n');
 
-    console.log(`The solidity contract recieved as variable : ${supplyResult.events.MyLog.returnValues[1]} `, '\n');
+    // console.log(`The solidity contract recieved as variable : ${supplyResult.events.MyLog.returnValues[1]} `, '\n');
     let exchangeRateCurrent = await cEthContract.methods.exchangeRateCurrent().call();
     exchangeRateCurrent = exchangeRateCurrent / Math.pow(10, 18 + 18 - 8);
   }
