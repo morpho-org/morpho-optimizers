@@ -29,7 +29,7 @@ contract CompoundModule {
     address[] public currentLenders; // Current lenders in the protocol.
     uint256 public constant COLLATERAL_FACTOR = 10000; // Collateral factor in basis points 100% by default.
     uint256 public constant DENOMINATOR = 10000; // Collateral factor in basis points.
-    uint256 public constant POWER = 28; // 18 + underlyingDecimals - cTokenDecimals = 18 + 18 - 8
+    uint256 public constant POWER = 18; // 18 + underlyingDecimals - cTokenDecimals = 18 + 18 - 8
 
     address public constant WETH_ADDRESS =
         0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
@@ -68,21 +68,23 @@ contract CompoundModule {
      */
     function borrow(uint256 _amount) external {
         // Calculate the collateral needed.
-        uint256 daiAmountEquivalentToEthAmount = oracle.consult(
-            WETH_ADDRESS,
-            _amount,
-            DAI_ADDRESS
-        );
+        // uint256 daiAmountEquivalentToEthAmount = oracle.consult(
+        //     WETH_ADDRESS,
+        //     _amount,
+        //     DAI_ADDRESS
+        // );
+        // TODO: Fix oracle
+        uint256 daiAmountEquivalentToEthAmount = 1e18;
         uint256 collateralNeededInDai = daiAmountEquivalentToEthAmount
-        .mul(COLLATERAL_FACTOR)
-        .div(DENOMINATOR);
+            .mul(COLLATERAL_FACTOR)
+            .div(DENOMINATOR);
         // Calculate the collateral value of sender in DAI.
         uint256 collateralNeededInCDai = collateralNeededInDai
-        .mul(10**POWER)
-        .div(cDaiToken.exchangeRateCurrent());
+            .mul(10**POWER)
+            .div(cDaiToken.exchangeRateCurrent());
         // Check if sender has enough collateral.
         require(
-            collateralNeededInDai <= collateralBalanceOf[msg.sender].unused,
+            collateralNeededInCDai <= collateralBalanceOf[msg.sender].unused,
             "Not enough collateral."
         );
         // Check if contract has the cTokens for the borrowing.
@@ -99,6 +101,7 @@ contract CompoundModule {
         collateralBalanceOf[msg.sender].unused -= collateralNeededInCDai; // In cToken.
         collateralBalanceOf[msg.sender].used += collateralNeededInDai; // In underlying.
         borrowingBalanceOf[msg.sender] += _amount; // In underlying.
+        _redeemEthFromCompound(_amount, false);
         // Transfer ETH to borrower
         payable(msg.sender).transfer(_amount);
     }
@@ -160,16 +163,15 @@ contract CompoundModule {
         if (_amount <= lendingBalanceOf[_lender].unused) {
             _cashOutUnused(_lender, _amount);
         } else {
-            uint256 unusedInEth = lendingBalanceOf[_lender]
-            .unused
-            .mul(cEthToken.exchangeRateCurrent())
-            .div(10**POWER);
+            uint256 unusedInEth = lendingBalanceOf[_lender].unused
+                .mul(cEthToken.exchangeRateCurrent())
+                .div(10**POWER);
             _cashOutUnused(_lender, unusedInEth);
             uint256 amountToCashOutInCEth = lendingBalanceOf[_lender].unused -
                 _amount.mul(10**POWER).div(cEthToken.exchangeRateCurrent()); // In cToken.
             uint256 amountToCashOutInEth = amountToCashOutInCEth
-            .mul(cEthToken.exchangeRateCurrent())
-            .div(10**POWER);
+                .mul(cEthToken.exchangeRateCurrent())
+                .div(10**POWER);
             if (cEthToken.balanceOf(address(this)) > amountToCashOutInCEth) {
                 _findUnusedCTokensAndUse(amountToCashOutInCEth, _lender);
                 lendingBalanceOf[_lender].used -= amountToCashOutInEth; // In underlying.
@@ -303,8 +305,8 @@ contract CompoundModule {
                 if (unused > 0) {
                     uint256 amountToUse = min(unused, remainingLiquidityToUse); // In cToken.
                     lendingBalanceOf[lender].used += amountToUse
-                    .mul(cEthToken.exchangeRateCurrent())
-                    .div(10**POWER); // In underlying.
+                        .mul(cEthToken.exchangeRateCurrent())
+                        .div(10**POWER); // In underlying.
                     remainingLiquidityToUse -= amountToUse;
                 }
             }
@@ -333,8 +335,8 @@ contract CompoundModule {
                         remainingLiquidityToUnuse
                     );
                     lendingBalanceOf[lender].used -= amountToUnuse
-                    .mul(cEthToken.exchangeRateCurrent())
-                    .div(10**POWER); // In underlying.
+                        .mul(cEthToken.exchangeRateCurrent())
+                        .div(10**POWER); // In underlying.
                     remainingLiquidityToUnuse -= amountToUnuse; // In cToken.
                 }
             }
