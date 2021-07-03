@@ -38,7 +38,7 @@
   const ethDecimals = 18; // Ethereum has 18 decimal places
   const cEthJson = require('../../abis/CEth.json');
   const cEthContractAddress = '0x4ddc2d193948926d02f9b1fe9e1daa0718270ed5';
-  const cEthContract = new web3.eth.Contract(cEthJson.abi, cEthContractAddress)
+  const cEthContract = new web3.eth.Contract(cEthJson, cEthContractAddress)
 
 
   // Instanciation of the contracts of the Underlying token contract address. Example: Dai.

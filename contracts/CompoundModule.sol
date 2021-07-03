@@ -132,7 +132,7 @@ contract CompoundModule {
         _supplyEthToCompound(msg.value);
     }
 
-    /** @dev Allows a lender to cash-out.
+    /** @dev Allows a lender to cash-out in ETH.
      *  @param _amount Amount in ETH to cash-out.
      */
     function cashOut(uint256 _amount) external {
@@ -154,6 +154,38 @@ contract CompoundModule {
                 payable(msg.sender).transfer(amountToCashOutInEth);
             } else {
                 // TODO: find borrower to unused.
+                revert("Not implemented yet.");
+                cEthToken.borrow(_amount);
+                payable(msg.sender).transfer(_amount);
+            }
+        }
+        // If lender has no lending at all, then remove it from the list of lenders.
+        if (
+            lendingBalanceOf[msg.sender].unused == 0 &&
+            lendingBalanceOf[msg.sender].used == 0
+        ) {
+            delete currentLenders[lenderToIndex[msg.sender]];
+        }
+    }
+
+    /** @dev Allows a lender to unstake its cETH.
+     *  @param _amount Amount in cETH to unstake.
+     */
+    function unstake(uint256 _amount) external {
+        if (_amount <= lendingBalanceOf[msg.sender].unused) {
+            _unstakeUnused(msg.sender, _amount);
+        } else {
+            _unstakeUnused(msg.sender, _amount);
+            uint256 amountToUnstakeInCEth = lendingBalanceOf[msg.sender].unused - _amount; // In cToken.
+            if (cEthToken.balanceOf(address(this)) > amountToUnstakeInCEth) {
+                _findUnusedCTokensAndUse(amountToUnstakeInCEth, msg.sender);
+                lendingBalanceOf[msg.sender].used -= amountToUnstakeInCEth
+                    .mul(cEthToken.exchangeRateCurrent())
+                    .div(10**POWER); // In underlying.
+                cEthToken.transfer(msg.sender, amountToUnstakeInCEth);
+            } else {
+                // TODO: find borrower to unused.
+                revert("Not implemented yet.");
                 cEthToken.borrow(_amount);
                 payable(msg.sender).transfer(_amount);
             }
@@ -236,6 +268,20 @@ contract CompoundModule {
         lendingBalanceOf[_lender].unused -= amountInCEth; // In cToken.
         _redeemEthFromCompound(_amount, false);
         payable(_lender).transfer(_amount);
+    }
+
+    /** @dev Unstakes `_lender`'s unused tokens.
+     *  @param _lender Address of the lender to redeem staked tokens for.
+     *  @param _amount Amount in cETH to redeem.
+     */
+    function _unstakeUnused(address _lender, uint256 _amount) internal {
+        require(
+            _amount <= lendingBalanceOf[_lender].unused,
+            "Cannot redeem more than the lending amount provided."
+        );
+        // Update unused lending balance of `_lender`.
+        lendingBalanceOf[_lender].unused -= _amount; // In cToken.
+        cEthToken.transfer(_lender, _amount);
     }
 
     /** @dev Supplies ETH to Compound.
