@@ -53,6 +53,7 @@ contract CompoundModule {
      *  @dev ETH is sent through msg.value.
      */
     function lend() external payable {
+        require(msg.value > 0, "Amount cannot be 0");
         _supplyEthToCompound(msg.value);
         if (lendingBalanceOf[msg.sender].unused == 0) {
             lenderToIndex[msg.sender] = currentLenders.length;
@@ -63,7 +64,20 @@ contract CompoundModule {
         ); // In cToken.
     }
 
-    /** @dev Allows someone to borrow ETH.
+    /** @dev Allows someone to directly stake cETH.
+     *  @param _amount Amount to stake in cETH.
+     */
+    function stake(uint256 _amount) external payable {
+        require(_amount > 0, "Amount cannot be 0");
+        cEthToken.transferFrom(msg.sender, address(this), _amount);
+        if (lendingBalanceOf[msg.sender].unused == 0) {
+            lenderToIndex[msg.sender] = currentLenders.length;
+            currentLenders.push(msg.sender);
+        }
+        lendingBalanceOf[msg.sender].unused += _amount; // In cToken.
+    }
+
+    /** @dev Allows someone to borrow ETH.)
      *  @param _amount Amount to borrow in ETH.
      */
     function borrow(uint256 _amount) external {
@@ -130,7 +144,6 @@ contract CompoundModule {
      */
     function provideCollateral(uint256 _amount) external {
         require(_amount > 0, "Amount cannot be 0");
-        daiToken.approve(address(this), _amount);
         daiToken.transferFrom(msg.sender, address(this), _amount);
         _supplyDaiToCompound(_amount);
         // Update the collateral balance of the sender in cDAI.
