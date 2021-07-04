@@ -88,7 +88,7 @@ contract CompoundModule {
         //     DAI_ADDRESS
         // );
         // TODO: Fix oracle
-        uint256 daiAmountEquivalentToEthAmount = 1e18;
+        uint256 daiAmountEquivalentToEthAmount = _amount;
         uint256 collateralNeededInDai = daiAmountEquivalentToEthAmount
             .mul(COLLATERAL_FACTOR)
             .div(DENOMINATOR);
@@ -130,6 +130,23 @@ contract CompoundModule {
         borrowingBalanceOf[msg.sender] -= msg.value;
         _findUsedCTokensAndUnuse(amountInCEth, msg.sender);
         _supplyEthToCompound(msg.value);
+        // Calculate the collateral needed.
+        // uint256 daiAmountEquivalentToEthAmount = oracle.consult(
+        //     WETH_ADDRESS,
+        //     _amount,
+        //     DAI_ADDRESS
+        // );
+        // TODO: Fix oracle
+        uint256 daiAmountEquivalentToEthAmount = msg.value;
+        uint256 collateralNeededInDai = daiAmountEquivalentToEthAmount
+            .mul(COLLATERAL_FACTOR)
+            .div(DENOMINATOR);
+        // Calculate the collateral value of sender in DAI.
+        uint256 collateralNeededInCDai = collateralNeededInDai
+            .mul(10**POWER)
+            .div(cDaiToken.exchangeRateCurrent());
+        collateralBalanceOf[msg.sender].unused += collateralNeededInCDai; // In cToken.
+        collateralBalanceOf[msg.sender].used -= collateralNeededInDai; // In underlying.
     }
 
     /** @dev Allows a lender to cash-out in ETH.
