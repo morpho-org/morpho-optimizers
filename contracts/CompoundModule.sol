@@ -372,6 +372,7 @@ contract CompoundModule {
 
                 if (unused > 0) {
                     uint256 amountToUse = min(unused, remainingLiquidityToUse); // In cToken.
+                    lendingBalanceOf[lender].unused -= amountToUse; // In cToken.
                     lendingBalanceOf[lender].used += amountToUse
                         .mul(cEthToken.exchangeRateCurrent())
                         .div(10**POWER); // In underlying.
@@ -401,7 +402,8 @@ contract CompoundModule {
                     uint256 amountToUnuse = min(
                         used,
                         remainingLiquidityToUnuse
-                    );
+                    ); // In cToken.
+                    lendingBalanceOf[lender].unused += amountToUnuse; // In cToken.
                     lendingBalanceOf[lender].used -= amountToUnuse
                         .mul(cEthToken.exchangeRateCurrent())
                         .div(10**POWER); // In underlying.
