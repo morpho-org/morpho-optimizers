@@ -45,8 +45,8 @@
   const underlyingMainnetAddress = daiContractAddress
   const cUnderlyingMainnetAddress = cDaiContractAddress
 
-  const underlying = new web3.eth.Contract(erc20Json.abi, underlyingMainnetAddress)
-  const cUnderlying = new web3.eth.Contract(cErc20Json.abi, cUnderlyingMainnetAddress)
+  const underlying = new web3.eth.Contract(erc20Json, underlyingMainnetAddress)
+  const cUnderlying = new web3.eth.Contract(cErc20Json, cUnderlyingMainnetAddress)
   // We fetch the address of the deployed contract
   let networkId = 1 // see the -i 1 in the ganache-cli command
   const CompoundModuleContractAddress = CompoundModuleJson.networks[networkId].address

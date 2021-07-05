@@ -1,10 +1,10 @@
-/** 
+/**
  * Redeem all Erc20 from Compound using one intermidiate contract of leech
  * More details at https://compound.finance/docs
- * 
+ *
  * Remember to run your local ganache-cli with the mnemonic so you have accounts
  * with ETH in your local Ethereum environment.
- * 
+ *
  * ganache-cli \
  *     -f https://mainnet.infura.io/v3/<YOUR INFURA API KEY HERE> \
  *     -m "clutch captain shoe salt awake harvest setup primary inmate ugly among become"
@@ -44,8 +44,8 @@
   const underlyingMainnetAddress = daiContractAddress
   const cUnderlyingMainnetAddress = cDaiContractAddress
 
-  const underlying = new web3.eth.Contract(erc20Json.abi, underlyingMainnetAddress)
-  const cUnderlying = new web3.eth.Contract(cErc20Json.abi, cUnderlyingMainnetAddress)
+  const underlying = new web3.eth.Contract(erc20Json, underlyingMainnetAddress)
+  const cUnderlying = new web3.eth.Contract(cErc20Json, cUnderlyingMainnetAddress)
   // We fetch the address of the deployed contract
   let networkId = 1 // see the -i 1 in the ganache-cli command
   const CompoundModuleContractAddress = CompoundModuleJson.networks[networkId].address
@@ -54,7 +54,9 @@
   // THIRD : Setup is done now we implement the function
 
   const main = async function() {
-    console.log(`Redeeming the c${assetName} for ${assetName}...`);
+    let exchangeRateCurrent = await cUnderlying.methods.exchangeRateCurrent().call();
+    exchangeRateCurrent = exchangeRateCurrent / Math.pow(10, 18 + underlyingDecimals - 8);
+    console.log(`\nRedeeming the c${assetName} for ${assetName}... \nCurrent exchange rate from c${assetName} to ${assetName}:`, exchangeRateCurrent);
     // Call redeem based on a cUnderlying amount, we can base it on underlying, see compound docs
     let cUnderlyingBalance = await cUnderlying.methods.balanceOf(CompoundModuleContractAddress).call();
     cUnderlyingBalance = cUnderlyingBalance / 1e8;
@@ -63,12 +65,19 @@
     underlyingBalance = underlyingBalance / Math.pow(10, underlyingDecimals);
     console.log(`CompoundModuleContract's ${assetName} Token Balance:`, underlyingBalance);
     let collateralBalance = await CompoundModuleContract.methods.collateralBalanceOf(testWalletAddress).call();
-    console.log(`Test wallet's ${assetName} total collateral balance:`, collateralBalance.total, '\n');
+    // collateralBalance.total = (parseInt(collateralBalance.used) + parseInt(collateralBalance.unused)).toString() //TODO conversion + err float
+    // console.log(`Test wallet's ${assetName} total collateral balance in DAI:`, collateralBalance.total, '\n');
+    console.log(`Test wallet's ${assetName} unused collateral balance in DAI:`, collateralBalance.unused * exchangeRateCurrent/ Math.pow(10, underlyingDecimals), '\n');
+    console.log(`Test wallet's ${assetName} unused collateral balance in DAI:`, 
+    web3.utils.fromWei((collateralBalance.unused * exchangeRateCurrent).toString()) , '\n');
+    console.log(`Test wallet's ${assetName} used collateral balance in DAI:`, collateralBalance.used, '\n');
+
     const amount = web3.utils.toHex(cUnderlyingBalance * 1e8);
 
     let redeemResult = await CompoundModuleContract.methods.redeemCollateral(
-      collateralBalance.total,
-    ).send(fromTestWallet);
+      // web3.utils.fromWei((collateralBalance.unused * exchangeRateCurrent).toString()) //TODO make correct conersion
+      '1'
+      ).send(fromTestWallet);
 
     // if (redeemResult.events.MyLog.returnValues[1] != 0) {
     //   throw Error('Redeem Error Code: '+redeemResult.events.MyLog.returnValues[1]);

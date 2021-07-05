@@ -37,9 +37,9 @@ interface ICEth {
 
     function supplyRatePerBlock() external returns (uint256);
 
-    function redeem(uint) external returns (uint);
+    function redeem(uint256) external returns (uint256);
 
-    function redeemUnderlying(uint) external returns (uint);
+    function redeemUnderlying(uint256) external returns (uint256);
 
     function approve(address spender, uint256 amount) external returns (bool);
 
