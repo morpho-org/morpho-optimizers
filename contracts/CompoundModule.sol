@@ -159,9 +159,9 @@ contract CompoundModule {
         if (_amount <= unusedInEth) {
             _cashOutUnused(msg.sender, _amount);
         } else {
-            _cashOutUnused(msg.sender, unusedInEth);
             uint256 amountToCashOutInCEth = lendingBalanceOf[msg.sender].unused -
                 _amount.mul(10**POWER).div(cEthToken.exchangeRateCurrent()); // In cToken.
+            _cashOutUnused(msg.sender, unusedInEth);
             uint256 amountToCashOutInEth = amountToCashOutInCEth
                 .mul(cEthToken.exchangeRateCurrent())
                 .div(10**POWER);
