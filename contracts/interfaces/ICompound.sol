@@ -1,4 +1,4 @@
-pragma solidity =0.6.6;
+pragma solidity >=0.6.6;
 
 interface ICErc20 {
     function mint(uint256) external returns (uint256);
@@ -62,4 +62,12 @@ interface ICEth {
     function borrowBalanceCurrent(address) external returns (uint256);
 
     function borrowRatePerBlock() external view returns (uint256);
+}
+
+interface IComptroller {
+    function markets(address) external returns (bool, uint256);
+
+    function enterMarkets(address[] calldata) external returns (uint256[] memory);
+
+    function getAccountLiquidity(address) external view returns (uint256, uint256, uint256);
 }
