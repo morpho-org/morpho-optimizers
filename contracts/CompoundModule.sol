@@ -120,33 +120,11 @@ contract CompoundModule {
         payable(msg.sender).transfer(_amount);
     }
 
-    /** @dev Allows someone to pay back its debt in ETH.
+    /** @dev Allows a borrower to pay back its debt in ETH.
      *  @dev ETH is sent as msg.value.
      */
     function payBack() external payable {
-        uint256 amountInCEth = msg.value.mul(1e18).div(
-            cEthToken.exchangeRateCurrent()
-        );
-        borrowingBalanceOf[msg.sender] -= msg.value;
-        _findUsedCTokensAndUnuse(amountInCEth, msg.sender);
-        _supplyEthToCompound(msg.value);
-        // Calculate the collateral needed.
-        // uint256 daiAmountEquivalentToEthAmount = oracle.consult(
-        //     WETH_ADDRESS,
-        //     _amount,
-        //     DAI_ADDRESS
-        // );
-        // TODO: Fix oracle
-        uint256 daiAmountEquivalentToEthAmount = msg.value;
-        uint256 collateralNeededInDai = daiAmountEquivalentToEthAmount
-            .mul(COLLATERAL_FACTOR)
-            .div(1e18);
-        // Calculate the collateral value of sender in DAI.
-        uint256 collateralNeededInCDai = collateralNeededInDai
-            .mul(1e18)
-            .div(cDaiToken.exchangeRateCurrent());
-        collateralBalanceOf[msg.sender].unused += collateralNeededInCDai; // In cToken.
-        collateralBalanceOf[msg.sender].used -= collateralNeededInDai; // In underlying.
+        _payBack(msg.sender, msg.value);
     }
 
     /** @dev Allows a lender to cash-out in ETH.
@@ -240,15 +218,93 @@ contract CompoundModule {
      *  @param _borrower The address of the borrowe to liquidate.
      */
     function liquidate(address _borrower) external payable {
-        // TODO: write function
+        (uint256 collateralNeededInDai, uint256 collateralUsed) = getAccountLiquidity(_borrower);
+        if (collateralUsed >= collateralNeededInDai) {
+            revert("Borrower cannot be liquidated.");
+        } else {
+            // TODO: check that amount sent allows the borrower to be solvable
+            // TODO: 1. payBack part of the total borrowing on behalf of borrower.
+            _payBack(_borrower, msg.value);
+            // TODO: 2. Receive a discounted amount of collateral: transfer unused collateral tokens?
+        }
     }
 
+    /** @dev Updates the collateral factor related to cETH.
+     */
     function updateCollateralFactor() external {
         (, uint256 collateralFactorMantissa,) = comptroller.markets(CETH_ADDRESS);
         COLLATERAL_FACTOR = collateralFactorMantissa;
     }
 
+    /** @dev Updates and returns the liquidity state of the borrower.
+     *  @param _borrower The address of the borrowe to update.
+     */
+    function getAccountLiquidity(address _borrower) external view returns (uint256, uint256) {
+        uint256 borrowingAmount = borrowingBalanceOf[_borrower];
+        // Calculate the collateral needed.
+        // uint256 daiAmountEquivalentToEthAmount = oracle.consult(
+        //     WETH_ADDRESS,
+        //     _amount,
+        //     DAI_ADDRESS
+        // );
+        // TODO: Fix oracle
+        uint256 daiAmountEquivalentToEthAmount = borrowingAmount;
+        uint256 collateralNeededInDai = daiAmountEquivalentToEthAmount
+            .mul(COLLATERAL_FACTOR)
+            .div(1e18);
+        // Calculate the collateral value of sender in DAI.
+        uint256 collateralNeededInCDai = collateralNeededInDai
+            .mul(1e18)
+            .div(cDaiToken.exchangeRateCurrent());
+        if (collateralNeededInDai > collateralBalanceOf[_borrower].used) {
+            uint256 collateralToUseInDai = collateralNeededInDai - collateralBalanceOf[_borrower].used; // In underlying.
+            uint256 collateralToUseInCDai = collateralToUseInDai
+                .mul(1e18)
+                .div(cDaiToken.exchangeRateCurrent());
+            if (collateralToUseInCDai <= collateralBalanceOf[_borrower].unused) {
+                collateralBalanceOf[_borrower].unused -= collateralToUseInCDai;
+                collateralBalanceOf[_borrower].used += collateralToUseInDai;
+            } else {
+                collateralBalanceOf[_borrower].unused -= collateralBalanceOf[_borrower].unused;
+                collateralBalanceOf[_borrower].used += collateralBalanceOf[_borrower].unused
+                    .mul(cDaiToken.exchangeRateCurrent())
+                    .div(1e18);
+            }
+        }
+        return (collateralNeededInDai, collateralBalanceOf[_borrower].used);
+    }
+
     /* Internal */
+
+    /** @dev Implements pay back logic.
+     *  @param _borrower The address of the `_borrower`to pay back the borrowing.
+     *  @param _amount The amount of ETH to pay back.
+     */
+    function _payBack(address _borrower, uint _amount) internal {
+        uint256 amountInCEth = _amount.mul(1e18).div(
+            cEthToken.exchangeRateCurrent()
+        );
+        borrowingBalanceOf[_borrower] -= _amount;
+        _findUsedCTokensAndUnuse(amountInCEth, _borrower);
+        _supplyEthToCompound(_amount);
+        // Calculate the collateral needed.
+        // uint256 daiAmountEquivalentToEthAmount = oracle.consult(
+        //     WETH_ADDRESS,
+        //     _amount,
+        //     DAI_ADDRESS
+        // );
+        // TODO: Fix oracle
+        uint256 daiAmountEquivalentToEthAmount = _amount;
+        uint256 collateralNeededInDai = daiAmountEquivalentToEthAmount
+            .mul(COLLATERAL_FACTOR)
+            .div(1e18);
+        // Calculate the collateral value of sender in DAI.
+        uint256 collateralNeededInCDai = collateralNeededInDai
+            .mul(1e18)
+            .div(cDaiToken.exchangeRateCurrent());
+        collateralBalanceOf[_borrower].unused += collateralNeededInCDai; // In cToken.
+        collateralBalanceOf[_borrower].used -= collateralNeededInDai; // In underlying.
+    }
 
     /** @dev Implements collateral redeeming's logic for a `_borrower`.
      *  @param _borrower Address of the borrower to redeem collateral for.
@@ -425,6 +481,10 @@ contract CompoundModule {
 
     function min(uint256 a, uint256 b) internal pure returns (uint256) {
         return a < b ? a : b;
+    }
+
+    function max(uint a, uint b) private pure returns (uint) {
+        return a > b ? a : b;
     }
 
     // This is needed to receive ETH when calling `redeemCEth`
