@@ -81,6 +81,7 @@ contract CompoundModule {
      *  @param _amount Amount to borrow in ETH.
      */
     function borrow(uint256 _amount) external {
+        getAccountLiquidity(_borrower);
         // Calculate the collateral needed.
         // uint256 daiAmountEquivalentToEthAmount = oracle.consult(
         //     WETH_ADDRESS,
@@ -214,18 +215,22 @@ contract CompoundModule {
         _redeemCollateral(msg.sender, _amount);
     }
 
-    /** @dev Allows somone to liquidate a position.
+    /** @dev Allows someone to liquidate a position.
      *  @param _borrower The address of the borrowe to liquidate.
      */
     function liquidate(address _borrower) external payable {
+        // Update borrower balance.
         (uint256 collateralNeededInDai, uint256 collateralUsed) = getAccountLiquidity(_borrower);
         if (collateralUsed >= collateralNeededInDai) {
             revert("Borrower cannot be liquidated.");
         } else {
-            // TODO: check that amount sent allows the borrower to be solvable
-            // TODO: 1. payBack part of the total borrowing on behalf of borrower.
             _payBack(_borrower, msg.value);
-            // TODO: 2. Receive a discounted amount of collateral: transfer unused collateral tokens?
+            uint256 daiAmountToTransfer = collateralBalanceOf[_borrower].unused
+                .mul(cDaiToken.exchangeRateCurrent())
+                .div(1e18);
+            _redeemDaiFromCompound(daiAmountToTransfer, false);
+            // TODO: What amount should we tranfser?
+            daiToken.transfer(msg.sender, daiAmountToTransfer);
         }
     }
 
@@ -304,6 +309,7 @@ contract CompoundModule {
             .div(cDaiToken.exchangeRateCurrent());
         collateralBalanceOf[_borrower].unused += collateralNeededInCDai; // In cToken.
         collateralBalanceOf[_borrower].used -= collateralNeededInDai; // In underlying.
+        getAccountLiquidity(_borrower); // Needed to update unused / used;
     }
 
     /** @dev Implements collateral redeeming's logic for a `_borrower`.
@@ -311,6 +317,7 @@ contract CompoundModule {
      *  @param _amount Amount in DAI to redeem.
      */
     function _redeemCollateral(address _borrower, uint256 _amount) internal {
+        getAccountLiquidity(_borrower);
         require(
             borrowingBalanceOf[_borrower] == 0,
             "Borrowing must be repaid before redeeming collateral."
