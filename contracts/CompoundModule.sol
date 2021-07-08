@@ -39,13 +39,13 @@ contract CompoundModule {
     address payable public constant CDAI_ADDRESS =
         payable(0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643);
     address public constant ORACLE_ADDRESS =
-        0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643;
+        0xf6688883084DC1467c6F9158A0a9f398E29635BF;
 
+    IComptroller public comptroller = IComptroller(COMPTROLLER_ADDRESS);
     ICEth public cEthToken = ICEth(CETH_ADDRESS);
     ICErc20 public cDaiToken = ICErc20(CDAI_ADDRESS);
     IERC20 public daiToken = IERC20(DAI_ADDRESS);
     IOracle public oracle = IOracle(ORACLE_ADDRESS);
-    IComptroller public comptroller = IComptroller();
 
     /* External */
 
@@ -81,7 +81,7 @@ contract CompoundModule {
      *  @param _amount Amount to borrow in ETH.
      */
     function borrow(uint256 _amount) external {
-        getAccountLiquidity(_borrower);
+        getAccountLiquidity(msg.sender);
         // Calculate the collateral needed.
         // uint256 daiAmountEquivalentToEthAmount = oracle.consult(
         //     WETH_ADDRESS,
@@ -237,14 +237,16 @@ contract CompoundModule {
     /** @dev Updates the collateral factor related to cETH.
      */
     function updateCollateralFactor() external {
-        (, uint256 collateralFactorMantissa,) = comptroller.markets(CETH_ADDRESS);
+        (bool isListed, uint256 collateralFactorMantissa, bool isComped) = comptroller.markets(CETH_ADDRESS);
         COLLATERAL_FACTOR = collateralFactorMantissa;
     }
+
+    /* Public */
 
     /** @dev Updates and returns the liquidity state of the borrower.
      *  @param _borrower The address of the borrowe to update.
      */
-    function getAccountLiquidity(address _borrower) external view returns (uint256, uint256) {
+    function getAccountLiquidity(address _borrower) public returns (uint256, uint256) {
         uint256 borrowingAmount = borrowingBalanceOf[_borrower];
         // Calculate the collateral needed.
         // uint256 daiAmountEquivalentToEthAmount = oracle.consult(
@@ -257,10 +259,6 @@ contract CompoundModule {
         uint256 collateralNeededInDai = daiAmountEquivalentToEthAmount
             .mul(COLLATERAL_FACTOR)
             .div(1e18);
-        // Calculate the collateral value of sender in DAI.
-        uint256 collateralNeededInCDai = collateralNeededInDai
-            .mul(1e18)
-            .div(cDaiToken.exchangeRateCurrent());
         if (collateralNeededInDai > collateralBalanceOf[_borrower].used) {
             uint256 collateralToUseInDai = collateralNeededInDai - collateralBalanceOf[_borrower].used; // In underlying.
             uint256 collateralToUseInCDai = collateralToUseInDai

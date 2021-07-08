@@ -65,7 +65,7 @@ interface ICEth {
 }
 
 interface IComptroller {
-    function markets(address) external returns (bool, uint256);
+    function markets(address) external returns (bool, uint256, bool);
 
     function enterMarkets(address[] calldata) external returns (uint256[] memory);
 
