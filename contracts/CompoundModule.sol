@@ -15,15 +15,15 @@ contract CompoundModule {
 
     /* Structs */
 
-    struct Balance {
+    struct LendingBalance {
         uint256 unused; // In cToken.
         uint256 used; // In underlying Token.
     }
 
     /* Storage */
 
-    mapping(address => Balance) public lendingBalanceOf; // Lending balance of user (ETH/cETH).
-    mapping(address => Balance) public collateralBalanceOf; // Collateral balance of user (DAI/cDAI).
+    mapping(address => LendingBalance) public lendingBalanceOf; // Lending balance of user (ETH/cETH).
+    mapping(address => uint256) public collateralBalanceOf; // Collateral balance of user (cDAI).
     mapping(address => uint256) public borrowingBalanceOf; // Borrowing balance of user (ETH).
     mapping(address => uint256) public lenderToIndex; // Position of the lender in the currentLenders list.
     address[] public currentLenders; // Current lenders in the protocol.
@@ -81,8 +81,7 @@ contract CompoundModule {
      *  @param _amount Amount to borrow in ETH.
      */
     function borrow(uint256 _amount) external {
-        getAccountLiquidity(msg.sender);
-        // Calculate the collateral needed.
+        // Calculate the collateral required.
         // uint256 daiAmountEquivalentToEthAmount = oracle.consult(
         //     WETH_ADDRESS,
         //     _amount,
@@ -90,16 +89,16 @@ contract CompoundModule {
         // );
         // TODO: Fix oracle
         uint256 daiAmountEquivalentToEthAmount = _amount;
-        uint256 collateralNeededInDai = daiAmountEquivalentToEthAmount
+        uint256 collateralRequiredInDai = daiAmountEquivalentToEthAmount
             .mul(COLLATERAL_FACTOR)
             .div(1e18);
         // Calculate the collateral value of sender in DAI.
-        uint256 collateralNeededInCDai = collateralNeededInDai
+        uint256 collateralRequiredInCDai = collateralRequiredInDai
             .mul(1e18)
             .div(cDaiToken.exchangeRateCurrent());
         // Check if sender has enough collateral.
         require(
-            collateralNeededInCDai <= collateralBalanceOf[msg.sender].unused,
+            collateralRequiredInCDai <= collateralBalanceOf[msg.sender],
             "Not enough collateral."
         );
         // Check if contract has the cTokens for the borrowing.
@@ -112,9 +111,6 @@ contract CompoundModule {
         );
         // Now contract can take liquidity thanks to cTokens.
         _findUnusedCTokensAndUse(amountInCEth, msg.sender);
-        // Update used and unused collateral.
-        collateralBalanceOf[msg.sender].unused -= collateralNeededInCDai; // In cToken.
-        collateralBalanceOf[msg.sender].used += collateralNeededInDai; // In underlying.
         borrowingBalanceOf[msg.sender] += _amount; // In underlying.
         _redeemEthFromCompound(_amount, false);
         // Transfer ETH to borrower
@@ -203,9 +199,9 @@ contract CompoundModule {
         daiToken.transferFrom(msg.sender, address(this), _amount);
         _supplyDaiToCompound(_amount);
         // Update the collateral balance of the sender in cDAI.
-        collateralBalanceOf[msg.sender].unused += _amount.mul(1e18).div(
+        collateralBalanceOf[msg.sender] += _amount.mul(1e18).div(
             cDaiToken.exchangeRateCurrent()
-        ); // In cToken.
+        );
     }
 
     /** @dev Allows a borrower to redeem its collateral in DAI.
@@ -219,19 +215,35 @@ contract CompoundModule {
      *  @param _borrower The address of the borrowe to liquidate.
      */
     function liquidate(address _borrower) external payable {
-        // Update borrower balance.
-        (uint256 collateralNeededInDai, uint256 collateralUsed) = getAccountLiquidity(_borrower);
-        if (collateralUsed >= collateralNeededInDai) {
-            revert("Borrower cannot be liquidated.");
-        } else {
-            _payBack(_borrower, msg.value);
-            uint256 daiAmountToTransfer = collateralBalanceOf[_borrower].unused
-                .mul(cDaiToken.exchangeRateCurrent())
-                .div(1e18);
-            _redeemDaiFromCompound(daiAmountToTransfer, false);
-            // TODO: What amount should we tranfser?
-            daiToken.transfer(msg.sender, daiAmountToTransfer);
-        }
+        require(getAccountHealthFactor(_borrower) < 1, "Borrower position cannot be liquidated.");
+        _payBack(_borrower, msg.value);
+        uint256 borrowingAmount = borrowingBalanceOf[_borrower];
+        // uint256 borrowingAmountInDai = oracle.consult(
+        //     WETH_ADDRESS,
+        //     borrowingAmount,
+        //     DAI_ADDRESS
+        // );
+        // uint256 repayAmount = oracle.consult(
+        //     WETH_ADDRESS,
+        //     msg.value,
+        //     DAI_ADDRESS
+        // );
+        // TODO: Fix oracle
+        uint256 borrowingAmountInDai = borrowingAmount;
+        uint256 repayAmountInDai = msg.value;
+        uint256 daiExchangeRate = cDaiToken.exchangeRateCurrent();
+        uint256 collateralInDai = collateralBalanceOf[_borrower]
+            .mul(daiExchangeRate)
+            .div(1e18);
+        uint256 daiAmountToTransfer = repayAmountInDai
+            .mul(collateralInDai)
+            .div(borrowingAmountInDai);
+        uint256 cDaiAmountToTransfer = daiAmountToTransfer
+            .mul(1e18)
+            .div(daiExchangeRate);
+        _redeemDaiFromCompound(daiAmountToTransfer, false);
+        collateralBalanceOf[_borrower] -= cDaiAmountToTransfer;
+        daiToken.transfer(msg.sender, daiAmountToTransfer);
     }
 
     /** @dev Updates the collateral factor related to cETH.
@@ -243,38 +255,28 @@ contract CompoundModule {
 
     /* Public */
 
-    /** @dev Updates and returns the liquidity state of the borrower.
-     *  @param _borrower The address of the borrowe to update.
+    /** @dev Returns the health factor of the `_borrower`.
+     *  @dev When the health factor of a borrower fells below 1, she can be liquidated.
+     *  @param _borrower The address of `_borrower`.
+     *  @return The health factor.
      */
-    function getAccountLiquidity(address _borrower) public returns (uint256, uint256) {
+    function getAccountHealthFactor(address _borrower) public returns (uint256) {
         uint256 borrowingAmount = borrowingBalanceOf[_borrower];
-        // Calculate the collateral needed.
+        // Calculate the collateral required.
         // uint256 daiAmountEquivalentToEthAmount = oracle.consult(
         //     WETH_ADDRESS,
-        //     _amount,
+        //     borrowingAmount,
         //     DAI_ADDRESS
         // );
         // TODO: Fix oracle
-        uint256 daiAmountEquivalentToEthAmount = borrowingAmount;
-        uint256 collateralNeededInDai = daiAmountEquivalentToEthAmount
+        uint256 borrowingAmountInDai = borrowingAmount;
+        uint256 collateralRequiredInDai = borrowingAmountInDai
             .mul(COLLATERAL_FACTOR)
             .div(1e18);
-        if (collateralNeededInDai > collateralBalanceOf[_borrower].used) {
-            uint256 collateralToUseInDai = collateralNeededInDai - collateralBalanceOf[_borrower].used; // In underlying.
-            uint256 collateralToUseInCDai = collateralToUseInDai
-                .mul(1e18)
-                .div(cDaiToken.exchangeRateCurrent());
-            if (collateralToUseInCDai <= collateralBalanceOf[_borrower].unused) {
-                collateralBalanceOf[_borrower].unused -= collateralToUseInCDai;
-                collateralBalanceOf[_borrower].used += collateralToUseInDai;
-            } else {
-                collateralBalanceOf[_borrower].unused -= collateralBalanceOf[_borrower].unused;
-                collateralBalanceOf[_borrower].used += collateralBalanceOf[_borrower].unused
-                    .mul(cDaiToken.exchangeRateCurrent())
-                    .div(1e18);
-            }
-        }
-        return (collateralNeededInDai, collateralBalanceOf[_borrower].used);
+        uint256 collateralInDai = collateralBalanceOf[_borrower]
+            .mul(cDaiToken.exchangeRateCurrent())
+            .div(1e18);
+        return collateralInDai.div(collateralRequiredInDai);
     }
 
     /* Internal */
@@ -290,24 +292,6 @@ contract CompoundModule {
         borrowingBalanceOf[_borrower] -= _amount;
         _findUsedCTokensAndUnuse(amountInCEth, _borrower);
         _supplyEthToCompound(_amount);
-        // Calculate the collateral needed.
-        // uint256 daiAmountEquivalentToEthAmount = oracle.consult(
-        //     WETH_ADDRESS,
-        //     _amount,
-        //     DAI_ADDRESS
-        // );
-        // TODO: Fix oracle
-        uint256 daiAmountEquivalentToEthAmount = _amount;
-        uint256 collateralNeededInDai = daiAmountEquivalentToEthAmount
-            .mul(COLLATERAL_FACTOR)
-            .div(1e18);
-        // Calculate the collateral value of sender in DAI.
-        uint256 collateralNeededInCDai = collateralNeededInDai
-            .mul(1e18)
-            .div(cDaiToken.exchangeRateCurrent());
-        collateralBalanceOf[_borrower].unused += collateralNeededInCDai; // In cToken.
-        collateralBalanceOf[_borrower].used -= collateralNeededInDai; // In underlying.
-        getAccountLiquidity(_borrower); // Needed to update unused / used;
     }
 
     /** @dev Implements collateral redeeming's logic for a `_borrower`.
@@ -315,7 +299,6 @@ contract CompoundModule {
      *  @param _amount Amount in DAI to redeem.
      */
     function _redeemCollateral(address _borrower, uint256 _amount) internal {
-        getAccountLiquidity(_borrower);
         require(
             borrowingBalanceOf[_borrower] == 0,
             "Borrowing must be repaid before redeeming collateral."
@@ -324,14 +307,14 @@ contract CompoundModule {
             cDaiToken.exchangeRateCurrent()
         );
         require(
-            amountInCDai <= collateralBalanceOf[msg.sender].unused,
+            amountInCDai <= collateralBalanceOf[msg.sender],
             "Amount to redeem must be less than collateral."
         );
         require(
             _redeemDaiFromCompound(_amount, false) == 0,
             "Redeem cDAI on Compound failed."
         );
-        collateralBalanceOf[msg.sender].unused -= amountInCDai; // In cToken.
+        collateralBalanceOf[msg.sender] -= amountInCDai; // In cToken.
         daiToken.transfer(_borrower, _amount);
     }
 
