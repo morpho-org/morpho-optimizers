@@ -29,7 +29,8 @@ contract CompoundModule {
     address[] public currentLenders; // Current lenders in the protocol.
     uint256 public COLLATERAL_FACTOR = 1e18; // Collateral Factor related to cETH.
 
-    address public constant COMPTROLLER_ADDRESS = 0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B;
+    address public constant COMPTROLLER_ADDRESS =
+        0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B;
     address public constant WETH_ADDRESS =
         0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     address payable public constant CETH_ADDRESS =
@@ -90,12 +91,12 @@ contract CompoundModule {
         // TODO: Fix oracle
         uint256 daiAmountEquivalentToEthAmount = _amount;
         uint256 collateralRequiredInDai = daiAmountEquivalentToEthAmount
-            .mul(COLLATERAL_FACTOR)
-            .div(1e18);
+        .mul(COLLATERAL_FACTOR)
+        .div(1e18);
         // Calculate the collateral value of sender in DAI.
         uint256 collateralRequiredInCDai = collateralRequiredInDai
-            .mul(1e18)
-            .div(cDaiToken.exchangeRateCurrent());
+        .mul(1e18)
+        .div(cDaiToken.exchangeRateCurrent());
         // Check if sender has enough collateral.
         require(
             collateralRequiredInCDai <= collateralBalanceOf[msg.sender],
@@ -128,18 +129,19 @@ contract CompoundModule {
      *  @param _amount Amount in ETH to cash-out.
      */
     function cashOut(uint256 _amount) external {
-        uint256 unusedInEth = lendingBalanceOf[msg.sender].unused
-            .mul(cEthToken.exchangeRateCurrent())
-            .div(1e18);
+        uint256 unusedInEth = lendingBalanceOf[msg.sender]
+        .unused
+        .mul(cEthToken.exchangeRateCurrent())
+        .div(1e18);
         if (_amount <= unusedInEth) {
             _cashOutUnused(msg.sender, _amount);
         } else {
-            uint256 amountToCashOutInCEth = lendingBalanceOf[msg.sender].unused -
-                _amount.mul(1e18).div(cEthToken.exchangeRateCurrent()); // In cToken.
+            uint256 amountToCashOutInCEth = lendingBalanceOf[msg.sender]
+            .unused - _amount.mul(1e18).div(cEthToken.exchangeRateCurrent()); // In cToken.
             _cashOutUnused(msg.sender, unusedInEth);
             uint256 amountToCashOutInEth = amountToCashOutInCEth
-                .mul(cEthToken.exchangeRateCurrent())
-                .div(1e18);
+            .mul(cEthToken.exchangeRateCurrent())
+            .div(1e18);
             if (cEthToken.balanceOf(address(this)) > amountToCashOutInCEth) {
                 _findUnusedCTokensAndUse(amountToCashOutInCEth, msg.sender);
                 lendingBalanceOf[msg.sender].used -= amountToCashOutInEth; // In underlying.
@@ -168,12 +170,13 @@ contract CompoundModule {
             _unstakeUnused(msg.sender, _amount);
         } else {
             _unstakeUnused(msg.sender, _amount);
-            uint256 amountToUnstakeInCEth = lendingBalanceOf[msg.sender].unused - _amount; // In cToken.
+            uint256 amountToUnstakeInCEth = lendingBalanceOf[msg.sender]
+            .unused - _amount; // In cToken.
             if (cEthToken.balanceOf(address(this)) > amountToUnstakeInCEth) {
                 _findUnusedCTokensAndUse(amountToUnstakeInCEth, msg.sender);
                 lendingBalanceOf[msg.sender].used -= amountToUnstakeInCEth
-                    .mul(cEthToken.exchangeRateCurrent())
-                    .div(1e18); // In underlying.
+                .mul(cEthToken.exchangeRateCurrent())
+                .div(1e18); // In underlying.
                 cEthToken.transfer(msg.sender, amountToUnstakeInCEth);
             } else {
                 // TODO: find borrower to unused.
@@ -215,7 +218,10 @@ contract CompoundModule {
      *  @param _borrower The address of the borrowe to liquidate.
      */
     function liquidate(address _borrower) external payable {
-        require(getAccountHealthFactor(_borrower) < 1, "Borrower position cannot be liquidated.");
+        require(
+            getAccountHealthFactor(_borrower) < 1,
+            "Borrower position cannot be liquidated."
+        );
         _payBack(_borrower, msg.value);
         uint256 borrowingAmount = borrowingBalanceOf[_borrower];
         // uint256 borrowingAmountInDai = oracle.consult(
@@ -233,14 +239,14 @@ contract CompoundModule {
         uint256 repayAmountInDai = msg.value;
         uint256 daiExchangeRate = cDaiToken.exchangeRateCurrent();
         uint256 collateralInDai = collateralBalanceOf[_borrower]
-            .mul(daiExchangeRate)
-            .div(1e18);
-        uint256 daiAmountToTransfer = repayAmountInDai
-            .mul(collateralInDai)
-            .div(borrowingAmountInDai);
-        uint256 cDaiAmountToTransfer = daiAmountToTransfer
-            .mul(1e18)
-            .div(daiExchangeRate);
+        .mul(daiExchangeRate)
+        .div(1e18);
+        uint256 daiAmountToTransfer = repayAmountInDai.mul(collateralInDai).div(
+            borrowingAmountInDai
+        );
+        uint256 cDaiAmountToTransfer = daiAmountToTransfer.mul(1e18).div(
+            daiExchangeRate
+        );
         _redeemDaiFromCompound(daiAmountToTransfer, false);
         collateralBalanceOf[_borrower] -= cDaiAmountToTransfer;
         daiToken.transfer(msg.sender, daiAmountToTransfer);
@@ -249,7 +255,11 @@ contract CompoundModule {
     /** @dev Updates the collateral factor related to cETH.
      */
     function updateCollateralFactor() external {
-        (bool isListed, uint256 collateralFactorMantissa, bool isComped) = comptroller.markets(CETH_ADDRESS);
+        (
+            bool isListed,
+            uint256 collateralFactorMantissa,
+            bool isComped
+        ) = comptroller.markets(CETH_ADDRESS);
         COLLATERAL_FACTOR = collateralFactorMantissa;
     }
 
@@ -260,7 +270,10 @@ contract CompoundModule {
      *  @param _borrower The address of `_borrower`.
      *  @return The health factor.
      */
-    function getAccountHealthFactor(address _borrower) public returns (uint256) {
+    function getAccountHealthFactor(address _borrower)
+        public
+        returns (uint256)
+    {
         uint256 borrowingAmount = borrowingBalanceOf[_borrower];
         // Calculate the collateral required.
         // uint256 daiAmountEquivalentToEthAmount = oracle.consult(
@@ -271,11 +284,11 @@ contract CompoundModule {
         // TODO: Fix oracle
         uint256 borrowingAmountInDai = borrowingAmount;
         uint256 collateralRequiredInDai = borrowingAmountInDai
-            .mul(COLLATERAL_FACTOR)
-            .div(1e18);
+        .mul(COLLATERAL_FACTOR)
+        .div(1e18);
         uint256 collateralInDai = collateralBalanceOf[_borrower]
-            .mul(cDaiToken.exchangeRateCurrent())
-            .div(1e18);
+        .mul(cDaiToken.exchangeRateCurrent())
+        .div(1e18);
         return collateralInDai.div(collateralRequiredInDai);
     }
 
@@ -285,7 +298,7 @@ contract CompoundModule {
      *  @param _borrower The address of the `_borrower`to pay back the borrowing.
      *  @param _amount The amount of ETH to pay back.
      */
-    function _payBack(address _borrower, uint _amount) internal {
+    function _payBack(address _borrower, uint256 _amount) internal {
         uint256 amountInCEth = _amount.mul(1e18).div(
             cEthToken.exchangeRateCurrent()
         );
@@ -423,8 +436,8 @@ contract CompoundModule {
                     uint256 amountToUse = min(unused, remainingLiquidityToUse); // In cToken.
                     lendingBalanceOf[lender].unused -= amountToUse; // In cToken.
                     lendingBalanceOf[lender].used += amountToUse
-                        .mul(cEthToken.exchangeRateCurrent())
-                        .div(1e18); // In underlying.
+                    .mul(cEthToken.exchangeRateCurrent())
+                    .div(1e18); // In underlying.
                     remainingLiquidityToUse -= amountToUse;
                 }
             }
@@ -454,8 +467,8 @@ contract CompoundModule {
                     ); // In cToken.
                     lendingBalanceOf[lender].unused += amountToUnuse; // In cToken.
                     lendingBalanceOf[lender].used -= amountToUnuse
-                        .mul(cEthToken.exchangeRateCurrent())
-                        .div(1e18); // In underlying.
+                    .mul(cEthToken.exchangeRateCurrent())
+                    .div(1e18); // In underlying.
                     remainingLiquidityToUnuse -= amountToUnuse; // In cToken.
                 }
             }
@@ -471,7 +484,7 @@ contract CompoundModule {
         return a < b ? a : b;
     }
 
-    function max(uint a, uint b) private pure returns (uint) {
+    function max(uint256 a, uint256 b) private pure returns (uint256) {
         return a > b ? a : b;
     }
 
