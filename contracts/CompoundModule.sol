@@ -27,7 +27,7 @@ contract CompoundModule {
     mapping(address => uint256) public borrowingBalanceOf; // Borrowing balance of user (ETH).
     mapping(address => uint256) public lenderToIndex; // Position of the lender in the currentLenders list.
     address[] public currentLenders; // Current lenders in the protocol.
-    uint256 public COLLATERAL_FACTOR = 1e18; // Collateral Factor related to cETH.
+    uint256 public collateralFactor = 1e18; // Collateral Factor related to cETH.
 
     address public constant COMPTROLLER_ADDRESS =
         0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B;
@@ -91,7 +91,7 @@ contract CompoundModule {
         // TODO: Fix oracle
         uint256 daiAmountEquivalentToEthAmount = _amount;
         uint256 collateralRequiredInDai = daiAmountEquivalentToEthAmount
-        .mul(COLLATERAL_FACTOR)
+        .mul(collateralFactor)
         .div(1e18);
         // Calculate the collateral value of sender in DAI.
         uint256 collateralRequiredInCDai = collateralRequiredInDai
@@ -230,7 +230,7 @@ contract CompoundModule {
             amountInCDai
         );
         uint256 collateralRequiredInCDai = borrowingAmountInDai
-        .mul(COLLATERAL_FACTOR)
+        .mul(collateralFactor)
         .div(daiExchangeRate);
         require(
             collateralAfterInCDAI >= collateralRequiredInCDai,
@@ -290,7 +290,7 @@ contract CompoundModule {
             uint256 collateralFactorMantissa,
             bool isComped
         ) = comptroller.markets(CETH_ADDRESS);
-        COLLATERAL_FACTOR = collateralFactorMantissa;
+        collateralFactor = collateralFactorMantissa;
     }
 
     /* Public */
@@ -314,7 +314,7 @@ contract CompoundModule {
         // TODO: Fix oracle
         uint256 borrowingAmountInDai = borrowingAmount;
         uint256 collateralRequiredInDai = borrowingAmountInDai
-        .mul(COLLATERAL_FACTOR)
+        .mul(collateralFactor)
         .div(1e18);
         uint256 collateralInDai = collateralBalanceOf[_borrower]
         .mul(cDaiToken.exchangeRateCurrent())
