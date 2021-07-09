@@ -59,8 +59,9 @@
   const main = async function() {
     console.log(`\nNow transferring ${assetName} from test wallet to CompoundModuleContract...`);
 
+    const amount = web3.utils.toWei('3000');
 
-    await underlying.methods.approve(CompoundModuleContractAddress, web3.utils.toHex(1 * Math.pow(10, underlyingDecimals))).send(fromTestWallet);;
+    await underlying.methods.approve(CompoundModuleContractAddress, amount).send(fromTestWallet);;
 
 
     console.log(`CompoundModuleContract now has ${assetName} to supply to the Compound Protocol`);
@@ -68,7 +69,7 @@
     // Mint some cUnderlying by sending Underlying to the Compound Protocol
     console.log(`CompoundModuleContract is now minting c${assetName}...`);
     let supplyResult = await CompoundModuleContract.methods.provideCollateral(
-      web3.utils.toHex(1 * Math.pow(10, underlyingDecimals)) // 1 tokens to supply
+      amount // 1 tokens to supply
     ).send(fromTestWallet);
     console.log(`c${assetName} "Mint" operation successful`, '\n');
 
