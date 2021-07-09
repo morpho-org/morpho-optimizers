@@ -211,7 +211,37 @@ contract CompoundModule {
      *  @param _amount Amount in DAI to get back.
      */
     function redeemCollateral(uint256 _amount) external {
-        _redeemCollateral(msg.sender, _amount);
+        uint256 daiExchangeRate = cDaiToken.exchangeRateCurrent();
+        uint256 amountInCDai = _amount.mul(1e18).div(daiExchangeRate);
+        require(
+            amountInCDai <= collateralBalanceOf[msg.sender],
+            "Must redeem less than collateral."
+        );
+        uint borrowingAmount = borrowingBalanceOf[msg.sender];
+        // Get the borrowing value from ETH to DAI.
+        // uint256 daiAmountEquivalentToEthAmount = oracle.consult(
+        //     WETH_ADDRESS,
+        //     borrowingAmount,
+        //     DAI_ADDRESS
+        // );
+        // TODO: Fix oracle
+        uint256 borrowingAmountInDai = borrowingAmount;
+        uint256 collateralAfterInCDAI = collateralBalanceOf[msg.sender].sub(
+            amountInCDai
+        );
+        uint256 collateralRequiredInCDai = borrowingAmountInDai
+        .mul(COLLATERAL_FACTOR)
+        .div(daiExchangeRate);
+        require(
+            collateralAfterInCDAI >= collateralRequiredInCDai,
+            "Health factor will drop below 1"
+        );
+        require(
+            _redeemDaiFromCompound(_amount, false) == 0,
+            "Redeem cDAI on Compound failed."
+        );
+        collateralBalanceOf[msg.sender] -= amountInCDai; // In cToken.
+        daiToken.transfer(msg.sender, _amount);
     }
 
     /** @dev Allows someone to liquidate a position.
@@ -305,30 +335,6 @@ contract CompoundModule {
         borrowingBalanceOf[_borrower] -= _amount;
         _findUsedCTokensAndUnuse(amountInCEth, _borrower);
         _supplyEthToCompound(_amount);
-    }
-
-    /** @dev Implements collateral redeeming's logic for a `_borrower`.
-     *  @param _borrower Address of the borrower to redeem collateral for.
-     *  @param _amount Amount in DAI to redeem.
-     */
-    function _redeemCollateral(address _borrower, uint256 _amount) internal {
-        require(
-            borrowingBalanceOf[_borrower] == 0,
-            "Borrowing must be repaid before redeeming collateral."
-        );
-        uint256 amountInCDai = _amount.mul(1e18).div(
-            cDaiToken.exchangeRateCurrent()
-        );
-        require(
-            amountInCDai <= collateralBalanceOf[msg.sender],
-            "Amount to redeem must be less than collateral."
-        );
-        require(
-            _redeemDaiFromCompound(_amount, false) == 0,
-            "Redeem cDAI on Compound failed."
-        );
-        collateralBalanceOf[msg.sender] -= amountInCDai; // In cToken.
-        daiToken.transfer(_borrower, _amount);
     }
 
     /** @dev Cashes-out `_lender`'s unused tokens.
