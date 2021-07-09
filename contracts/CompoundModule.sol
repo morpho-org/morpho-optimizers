@@ -217,7 +217,7 @@ contract CompoundModule {
             amountInCDai <= collateralBalanceOf[msg.sender],
             "Must redeem less than collateral."
         );
-        uint borrowingAmount = borrowingBalanceOf[msg.sender];
+        uint256 borrowingAmount = borrowingBalanceOf[msg.sender];
         // Get the borrowing value from ETH to DAI.
         // uint256 daiAmountEquivalentToEthAmount = oracle.consult(
         //     WETH_ADDRESS,
@@ -285,12 +285,7 @@ contract CompoundModule {
     /** @dev Updates the collateral factor related to cETH.
      */
     function updateCollateralFactor() external {
-        (
-            bool isListed,
-            uint256 collateralFactorMantissa,
-            bool isComped
-        ) = comptroller.markets(CETH_ADDRESS);
-        collateralFactor = collateralFactorMantissa;
+        (, collateralFactor, ) = comptroller.markets(CETH_ADDRESS);
     }
 
     /* Public */
