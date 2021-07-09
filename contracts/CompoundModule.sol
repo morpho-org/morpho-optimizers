@@ -78,12 +78,14 @@ contract CompoundModule {
         lendingBalanceOf[msg.sender].unused += _amount; // In cToken.
     }
 
+    event MyLog(string, uint);
+
     /** @dev Allows someone to borrow ETH.)
      *  @param _amount Amount to borrow in ETH.
      */
     function borrow(uint256 _amount) external {
         // Calculate the collateral required.
-        uint256 daiAmountEquivalentToEthAmount = _amount.div(oracle.consult());
+        uint256 daiAmountEquivalentToEthAmount = _amount.mul(1e18).div(oracle.consult());
         uint256 collateralRequiredInDai = daiAmountEquivalentToEthAmount
         .mul(collateralFactor)
         .div(1e18);
@@ -211,7 +213,7 @@ contract CompoundModule {
             amountInCDai <= collateralBalanceOf[msg.sender],
             "Must redeem less than collateral."
         );
-        uint256 borrowingAmount = borrowingBalanceOf[msg.sender].div(oracle.consult());
+        uint256 borrowingAmount = borrowingBalanceOf[msg.sender].mul(1e18).div(oracle.consult());
         uint256 borrowingAmountInDai = borrowingAmount;
         uint256 collateralAfterInCDAI = collateralBalanceOf[msg.sender].sub(
             amountInCDai
@@ -241,8 +243,8 @@ contract CompoundModule {
         );
         _payBack(_borrower, msg.value);
         uint256 daiToEthRate = oracle.consult();
-        uint256 borrowingAmountInDai = borrowingBalanceOf[_borrower].div(daiToEthRate);
-        uint256 repayAmountInDai = msg.value.div(daiToEthRate);
+        uint256 borrowingAmountInDai = borrowingBalanceOf[_borrower].mul(1e18).div(daiToEthRate);
+        uint256 repayAmountInDai = msg.value.mul(1e18).div(daiToEthRate);
         uint256 daiExchangeRate = cDaiToken.exchangeRateCurrent();
         uint256 collateralInDai = collateralBalanceOf[_borrower]
         .mul(daiExchangeRate)
@@ -279,7 +281,7 @@ contract CompoundModule {
         public
         returns (uint256)
     {
-        uint256 borrowingAmountInDai = borrowingBalanceOf[_borrower].div(oracle.consult());
+        uint256 borrowingAmountInDai = borrowingBalanceOf[_borrower].mul(1e18).div(oracle.consult());
         uint256 collateralRequiredInDai = borrowingAmountInDai
         .mul(collateralFactor)
         .div(1e18);
