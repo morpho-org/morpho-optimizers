@@ -10,6 +10,7 @@
         "not-rely-on-time": "off",
         "multiple-sends": "off",
         "compiler-version": "off",
+        "reason-string": "off",
         "func-visibility": ["warn", {
         "ignoreConstructors": true
         }]
