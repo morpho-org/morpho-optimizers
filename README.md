@@ -68,3 +68,7 @@ We made some scripts to make your life easier. It is hardcoded for DAI/cDAI but 
         const compoundModuleContract = new web3.eth.Contract(compoundModuleJson.abi, compoundModuleContractAddress)
         let lendingBalance = await compoundModuleContract.methods.lendingBalanceOf('0xb94268c327a1D07f43B592263559200c6AC56062').call()
         console.log("Leech lending balance",lendingBalance.used.toString())```
+
+### Documentation
+
+ - [Chainlink Oracle](https://docs.chain.link/docs/get-the-latest-price/)
