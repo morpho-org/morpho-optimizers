@@ -277,8 +277,12 @@ contract CompoundModule {
         uint256 cDaiAmountToTransfer = daiAmountToTransfer.mul(1e18).div(
             daiExchangeRate
         );
-        _redeemDaiFromCompound(daiAmountToTransfer, false);
+        require(
+            collateralBalanceOf[_borrower] >= cDaiAmountToTransfer,
+            "Cannot get more than collateral balance of borrower."
+        );
         collateralBalanceOf[_borrower] -= cDaiAmountToTransfer;
+        _redeemDaiFromCompound(daiAmountToTransfer, false);
         daiToken.transfer(msg.sender, daiAmountToTransfer);
     }
 
