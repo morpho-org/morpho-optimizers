@@ -78,8 +78,6 @@ contract CompoundModule {
         lendingBalanceOf[msg.sender].unused += _amount; // In cToken.
     }
 
-    event MyLog(string, uint256);
-
     /** @dev Allows someone to borrow ETH.)
      *  @param _amount Amount to borrow in ETH.
      */
