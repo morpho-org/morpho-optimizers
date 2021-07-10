@@ -26,7 +26,11 @@ contract CompoundModule {
     mapping(address => uint256) public collateralBalanceOf; // Collateral balance of user (cDAI).
     mapping(address => uint256) public borrowingBalanceOf; // Borrowing balance of user (ETH).
     mapping(address => uint256) public lenderToIndex; // Position of the lender in the currentLenders list.
+    mapping(address => uint256) public busyBorrowerToIndex; // Position of the lender in the busyBorrowers list.
+    mapping(address => uint256) public waitingBorrowerToIndex; // Position of the lender in the waitingBorrowers list.
     address[] public currentLenders; // Current lenders in the protocol.
+    address[] public busyBorrowers; // Busy borrowers in the protocol.
+    address[] public waitingBorrowers; // Waiting borrowers in the protocol.
     uint256 public collateralFactor = 1e18; // Collateral Factor related to cETH.
 
     address public constant COMPTROLLER_ADDRESS =
@@ -56,7 +60,8 @@ contract CompoundModule {
     function lend() external payable {
         require(msg.value > 0, "Amount cannot be 0");
         _supplyEthToCompound(msg.value);
-        if (lendingBalanceOf[msg.sender].unused == 0) {
+        // If lender is not already in the list of lenders, add him to the list.
+        if (lendingBalanceOf[msg.sender].unused == 0 && lendingBalanceOf[msg.sender].used == 0) {
             lenderToIndex[msg.sender] = currentLenders.length;
             currentLenders.push(msg.sender);
         }
@@ -71,7 +76,8 @@ contract CompoundModule {
     function stake(uint256 _amount) external payable {
         require(_amount > 0, "Amount cannot be 0");
         cEthToken.transferFrom(msg.sender, address(this), _amount);
-        if (lendingBalanceOf[msg.sender].unused == 0) {
+        // If lender is not already in the list of lenders, add him to the list.
+        if (lendingBalanceOf[msg.sender].unused == 0 && lendingBalanceOf[msg.sender].used == 0) {
             lenderToIndex[msg.sender] = currentLenders.length;
             currentLenders.push(msg.sender);
         }
