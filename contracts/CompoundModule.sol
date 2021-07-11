@@ -20,11 +20,16 @@ contract CompoundModule {
         uint256 used; // In underlying Token.
     }
 
+    struct BorrowingBalance {
+        uint256 balance; // In ETH.
+        bool isWaiting; // Is the borrower on the waiting list.
+    }
+
     /* Storage */
 
     mapping(address => LendingBalance) public lendingBalanceOf; // Lending balance of user (ETH/cETH).
+    mapping(address => BorrowingBalance) public borrowingBalanceOf; // Borrowing balance of user (ETH).
     mapping(address => uint256) public collateralBalanceOf; // Collateral balance of user (cDAI).
-    mapping(address => uint256) public borrowingBalanceOf; // Borrowing balance of user (ETH).
     mapping(address => uint256) public lenderToIndex; // Position of the lender in the currentLenders list.
     mapping(address => uint256) public busyBorrowerToIndex; // Position of the lender in the busyBorrowers list.
     mapping(address => uint256) public waitingBorrowerToIndex; // Position of the lender in the waitingBorrowers list.
@@ -59,7 +64,12 @@ contract CompoundModule {
      */
     function lend() external payable {
         require(msg.value > 0, "Amount cannot be 0");
-        _supplyEthToCompound(msg.value);
+        if (waitingBorrowers.length > 0) { // This is wrong as we cannot remove elements from a list...
+            // TODO: implement repay of borrowings.
+            // TODO: pass borrower as busy.
+        } else {
+            _supplyEthToCompound(msg.value);
+        }
         // If lender is not already in the list of lenders, add him to the list.
         if (lendingBalanceOf[msg.sender].unused == 0 && lendingBalanceOf[msg.sender].used == 0) {
             lenderToIndex[msg.sender] = currentLenders.length;
@@ -112,9 +122,15 @@ contract CompoundModule {
             amountInCEth <= cEthToken.balanceOf(address(this)),
             "Borrowing amount must be less than total available."
         );
+        // If the borrower is not in the `busyBorrowers` list, add her to the list.
+        if (borrowingBalanceOf[msg.sender].balance == 0) {
+            borrowingBalanceOf[msg.sender].isWaiting = false;
+            busyBorrowerToIndex[msg.sender] = busyBorrowers.length;
+            busyBorrowers.push(msg.sender);
+        }
         // Now contract can take liquidity thanks to cTokens.
         _findUnusedCTokensAndUse(amountInCEth, msg.sender);
-        borrowingBalanceOf[msg.sender] += _amount; // In underlying.
+        borrowingBalanceOf[msg.sender].balance += _amount; // In underlying.
         _redeemEthFromCompound(_amount, false);
         // Transfer ETH to borrower
         payable(msg.sender).transfer(_amount);
@@ -149,8 +165,7 @@ contract CompoundModule {
                 lendingBalanceOf[msg.sender].used -= amountToCashOutInEth; // In underlying.
                 payable(msg.sender).transfer(amountToCashOutInEth);
             } else {
-                // TODO: find borrower to unused.
-                revert("Not implemented yet.");
+                _findBusyBorrowers(_amount);
                 cEthToken.borrow(_amount);
                 payable(msg.sender).transfer(_amount);
             }
@@ -219,7 +234,7 @@ contract CompoundModule {
             amountInCDai <= collateralBalanceOf[msg.sender],
             "Must redeem less than collateral."
         );
-        uint256 borrowingAmount = borrowingBalanceOf[msg.sender].mul(1e18).div(
+        uint256 borrowingAmount = borrowingBalanceOf[msg.sender].balance.mul(1e18).div(
             oracle.consult()
         );
         uint256 borrowingAmountInDai = borrowingAmount;
@@ -251,7 +266,7 @@ contract CompoundModule {
         );
         _payBack(_borrower, msg.value);
         uint256 daiToEthRate = oracle.consult();
-        uint256 borrowingAmountInDai = borrowingBalanceOf[_borrower]
+        uint256 borrowingAmountInDai = borrowingBalanceOf[_borrower].balance
         .mul(1e18)
         .div(daiToEthRate);
         uint256 repayAmountInDai = msg.value.mul(1e18).div(daiToEthRate);
@@ -291,7 +306,7 @@ contract CompoundModule {
         public
         returns (uint256)
     {
-        uint256 borrowingAmountInDai = borrowingBalanceOf[_borrower]
+        uint256 borrowingAmountInDai = borrowingBalanceOf[_borrower].balance
         .mul(1e18)
         .div(oracle.consult());
         uint256 collateralRequiredInDai = borrowingAmountInDai
@@ -313,7 +328,16 @@ contract CompoundModule {
         uint256 amountInCEth = _amount.mul(1e18).div(
             cEthToken.exchangeRateCurrent()
         );
-        borrowingBalanceOf[_borrower] -= _amount;
+        borrowingBalanceOf[_borrower].balance -= _amount;
+        // If `_borrower` has no more borrowing balance, remove her.
+        if (borrowingBalanceOf[_borrower].balance == 0) {
+            // No need to update `busyBorrowerToIndex` as it will be updated when `_borrower` will borrow another time.
+            if (borrowingBalanceOf[_borrower].isWaiting) {
+                delete waitingBorrowers[waitingBorrowerToIndex[msg.sender]];
+                // TODO: like in lend
+            }
+            delete busyBorrowers[busyBorrowerToIndex[msg.sender]];
+        }
         _findUsedCTokensAndUnuse(amountInCEth, _borrower);
         _supplyEthToCompound(_amount);
     }
@@ -463,6 +487,37 @@ contract CompoundModule {
         }
         require(
             remainingLiquidityToUnuse == 0,
+            "Not enough liquidity to unuse."
+        );
+    }
+
+    /** @dev Finds busy borrowers to move into the waiting list.
+     *  @param _amount Amount to use in cETH.
+     */
+    function _findBusyBorrowers(uint256 _amount)
+        internal
+    {
+        uint256 remainingLiquidityToSearch = _amount;
+        uint256 i;
+        while (remainingLiquidityToSearch > 0 && i < busyBorrowers.length) {
+            address borrower = busyBorrowers[i];
+            uint256 borrowingBalance = borrowingBalanceOf[borrower].balance;
+
+            if (borrowingBalance > 0) {
+                uint256 amountAvailable = min(
+                    borrowingBalance,
+                    remainingLiquidityToSearch
+                );
+                remainingLiquidityToSearch -= amountAvailable;
+                delete busyBorrowers[busyBorrowerToIndex[borrower]];
+                borrowingBalanceOf[borrower].isWaiting = true;
+                waitingBorrowerToIndex[borrower] = waitingBorrowers.length;
+                waitingBorrowers.push(borrower);
+            }
+            i++;
+        }
+        require(
+            remainingLiquidityToSearch == 0,
             "Not enough liquidity to unuse."
         );
     }
