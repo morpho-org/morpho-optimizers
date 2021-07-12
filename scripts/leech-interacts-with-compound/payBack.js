@@ -50,7 +50,7 @@
     console.log(`CompoundModuleContract now has ETH to supply to the Compound Protocol`);
     // Mint some cETH by supplying ETH to the Compound Protocol
     let amount = 1;
-    amount = web3.utils.toWei(amount.toString(), 'Ether')
+    amount = web3.utils.toWei(amount.toString(), 'ether')
     fromTestWalletWithValue = fromTestWallet
     fromTestWalletWithValue.value = amount
 
