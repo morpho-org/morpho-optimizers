@@ -1,6 +1,6 @@
-pragma solidity >=0.6.6;
+pragma solidity ^0.8.0;
 
-import "@chainlink/contracts/src/v0.6/interfaces/AggregatorV3Interface.sol";
+import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 
 contract ChainlinkOracle {
     AggregatorV3Interface internal priceFeed;
@@ -10,7 +10,7 @@ contract ChainlinkOracle {
      * Aggregator: DAI / ETH
      * Address: 0x773616E4d11A78F511299002da57A0a94577F1f4
      */
-    constructor() public {
+    constructor() {
         priceFeed = AggregatorV3Interface(
             0x773616E4d11A78F511299002da57A0a94577F1f4
         );
