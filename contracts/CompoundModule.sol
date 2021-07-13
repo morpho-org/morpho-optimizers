@@ -68,14 +68,16 @@ contract CompoundModule {
         if (waitingBorrowers.length() > 0) {
             // Find borrowers in the waiting list and move them to the busyBorrowers.
             uint256 unused = _matchLendingWithWaitingBorrowers(msg.value) * 1e18 / cEthExchangerate;
-            // Repay Compound.
             uint256 morphoBorrowingBalance = cEthToken.borrowBalanceCurrent(address(this)); // In underlying.
-            if (morphoBorrowingBalance > msg.value) {
-                toSupplyToCompound = 0;
-                cEthToken.repayBorrow{value: msg.value}(); // Revert on error.
-            } else {
-                toSupplyToCompound = msg.value - morphoBorrowingBalance;
-                cEthToken.repayBorrow{value: morphoBorrowingBalance}(); // Revert on error.
+            // Repay Compound if needed.
+            if (morphoBorrowingBalance > 0) {
+                if (morphoBorrowingBalance > msg.value) {
+                    toSupplyToCompound = 0;
+                    cEthToken.repayBorrow{value: msg.value}(); // Revert on error.
+                } else {
+                    toSupplyToCompound = msg.value - morphoBorrowingBalance;
+                    cEthToken.repayBorrow{value: morphoBorrowingBalance}(); // Revert on error.
+                }
             }
             // Update lender balance.
             lendingBalanceOf[msg.sender].used += msg.value - ((unused * cEthExchangerate) / 1e18); // In underlying.
@@ -104,11 +106,13 @@ contract CompoundModule {
             uint256 amountInEth = (_amount * cEthExchangeRate) / 1e18;
             // Find borrowers in the waiting list and move them to the busyBorrowers.
             uint256 unused = (_matchLendingWithWaitingBorrowers(amountInEth) * 1e18) / cEthExchangeRate;
-            // Repay Compound.
             uint256 morphoBorrowingBalance = cEthToken.borrowBalanceCurrent(address(this)); // In underlying.
-            uint256 amountToRepay = min(morphoBorrowingBalance, amountInEth);
-            _redeemEthFromCompound(amountToRepay, false);
-            cEthToken.repayBorrow{value: amountToRepay}(); // Revert on error.
+            // Repay Compound if needed.
+            if (morphoBorrowingBalance > 0) {
+                uint256 amountToRepay = min(morphoBorrowingBalance, amountInEth);
+                _redeemEthFromCompound(amountToRepay, false);
+                cEthToken.repayBorrow{value: amountToRepay}(); // Revert on error.
+            }
             // Update lender balance.
             lendingBalanceOf[msg.sender].used += ((_amount - unused) * cEthExchangeRate) / 1e18;
             lendingBalanceOf[msg.sender].unused += unused;
@@ -125,8 +129,7 @@ contract CompoundModule {
         uint256 daiAmountEquivalentToEthAmount = (_amount * 1e18) / oracle.consult();
         uint256 collateralRequiredInDai = (daiAmountEquivalentToEthAmount * collateralFactor) / 1e18;
         // Calculate the collateral value of sender in DAI.
-        uint256 collateralRequiredInCDai = (collateralRequiredInDai * 1e18) /
-            cDaiToken.exchangeRateCurrent();
+        uint256 collateralRequiredInCDai = (collateralRequiredInDai * 1e18) / cDaiToken.exchangeRateCurrent();
         // Check if sender has enough collateral.
         require(
             collateralRequiredInCDai <= collateralBalanceOf[msg.sender],
@@ -171,10 +174,10 @@ contract CompoundModule {
             lendingBalanceOf[msg.sender].unused -= (_amount * 1e18) / cEthToken.exchangeRateCurrent(); // In cToken.
             _redeemEthFromCompound(_amount, false);
         } else {
-            uint256 amountToCashOutInEth = _amount - unusedInEth;
             lendingBalanceOf[msg.sender].unused = 0;
-            lendingBalanceOf[msg.sender].used -= amountToCashOutInEth;
             _redeemEthFromCompound(unusedInEth, false);
+            uint256 amountToCashOutInEth = _amount - unusedInEth;
+            lendingBalanceOf[msg.sender].used -= amountToCashOutInEth;
             uint256 amountToCashOutInCEth = (amountToCashOutInEth * 1e18) / cEthExchangeRate;
             uint256 cEthContractBalance = cEthToken.balanceOf(address(this));
             if (amountToCashOutInCEth <= cEthContractBalance) {
@@ -183,7 +186,7 @@ contract CompoundModule {
                 _findUnusedCTokensAndUse(cEthContractBalance, msg.sender);
                 amountToCashOutInCEth -= cEthContractBalance;
                 _findBusyBorrowers(amountToCashOutInCEth);
-                cEthToken.borrow(amountToCashOutInCEth);
+                cEthToken.borrow(amountToCashOutInCEth); // Revert on error.
             }
         }
         payable(msg.sender).transfer(_amount);
@@ -204,10 +207,10 @@ contract CompoundModule {
      */
     function unstake(uint256 _amount) external {
         if (_amount <= lendingBalanceOf[msg.sender].unused) {
-            lendingBalanceOf[msg.sender].unused -= _amount; // In cToken.
+            lendingBalanceOf[msg.sender].unused -= _amount;
         } else {
             uint256 cEthRateExchange = cEthToken.exchangeRateCurrent();
-            uint256 amountToUnstakeInCEth = _amount - lendingBalanceOf[msg.sender].unused; // In cToken.
+            uint256 amountToUnstakeInCEth = _amount - lendingBalanceOf[msg.sender].unused;
             lendingBalanceOf[msg.sender].unused = 0;
             lendingBalanceOf[msg.sender].used -= (amountToUnstakeInCEth * cEthRateExchange) / 1e18;
             uint256 cEthContractBalance = cEthToken.balanceOf(address(this));
@@ -217,7 +220,7 @@ contract CompoundModule {
                 _findUnusedCTokensAndUse(cEthContractBalance, msg.sender);
                 amountToUnstakeInCEth -= cEthContractBalance;
                 _findBusyBorrowers(amountToUnstakeInCEth);
-                cEthToken.borrow(amountToUnstakeInCEth);
+                cEthToken.borrow(amountToUnstakeInCEth); // Revert on error.
             }
         }
         cEthToken.transfer(msg.sender, _amount);
@@ -241,9 +244,7 @@ contract CompoundModule {
         daiToken.transferFrom(msg.sender, address(this), _amount);
         _supplyDaiToCompound(_amount);
         // Update the collateral balance of the sender in cDAI.
-        collateralBalanceOf[msg.sender] +=
-            (_amount * 1e18) /
-            cDaiToken.exchangeRateCurrent();
+        collateralBalanceOf[msg.sender] += (_amount * 1e18) / cDaiToken.exchangeRateCurrent();
     }
 
     /** @dev Allows a borrower to redeem its collateral in DAI.
@@ -256,12 +257,9 @@ contract CompoundModule {
             amountInCDai <= collateralBalanceOf[msg.sender],
             "Must redeem less than collateral."
         );
-        uint256 borrowingAmountInDai = (borrowingBalanceOf[msg.sender] * 1e18) /
-            oracle.consult();
-        uint256 collateralAfterInCDAI = collateralBalanceOf[msg.sender] -
-            amountInCDai;
-        uint256 collateralRequiredInCDai = (borrowingAmountInDai *
-            collateralFactor) / daiExchangeRate;
+        uint256 borrowingAmountInDai = (borrowingBalanceOf[msg.sender] * 1e18) / oracle.consult();
+        uint256 collateralAfterInCDAI = collateralBalanceOf[msg.sender] - amountInCDai;
+        uint256 collateralRequiredInCDai = (borrowingAmountInDai * collateralFactor) / daiExchangeRate;
         require(
             collateralAfterInCDAI >= collateralRequiredInCDai,
             "Health factor will drop below 1"
@@ -285,16 +283,12 @@ contract CompoundModule {
         _payBack(_borrower, msg.value);
         // Calculation done step by step to avoid overflows.
         uint256 daiToEthRate = oracle.consult();
-        uint256 borrowingAmountInDai = (borrowingBalanceOf[_borrower] * 1e18) /
-            daiToEthRate;
+        uint256 borrowingAmountInDai = (borrowingBalanceOf[_borrower] * 1e18) / daiToEthRate;
         uint256 repayAmountInDai = (msg.value * 1e18) / daiToEthRate;
         uint256 daiExchangeRate = cDaiToken.exchangeRateCurrent();
-        uint256 collateralInDai = (collateralBalanceOf[_borrower] *
-            daiExchangeRate) / 1e18;
-        uint256 daiAmountToTransfer = (repayAmountInDai * collateralInDai) /
-            borrowingAmountInDai;
-        uint256 cDaiAmountToTransfer = (daiAmountToTransfer * 1e18) /
-            daiExchangeRate;
+        uint256 collateralInDai = (collateralBalanceOf[_borrower] * daiExchangeRate) / 1e18;
+        uint256 daiAmountToTransfer = (repayAmountInDai * collateralInDai) / borrowingAmountInDai;
+        uint256 cDaiAmountToTransfer = (daiAmountToTransfer * 1e18) / daiExchangeRate;
         require(
             collateralBalanceOf[_borrower] >= cDaiAmountToTransfer,
             "Cannot get more than collateral balance of borrower."
@@ -321,32 +315,27 @@ contract CompoundModule {
         public
         returns (uint256)
     {
-        uint256 collateralRequiredInDai = (borrowingBalanceOf[_borrower] *
-            collateralFactor) / oracle.consult();
-        uint256 collateralInDai = (collateralBalanceOf[_borrower] *
-            cDaiToken.exchangeRateCurrent()) / 1e18;
+        uint256 collateralRequiredInDai = (borrowingBalanceOf[_borrower] * collateralFactor) / oracle.consult();
+        uint256 collateralInDai = (collateralBalanceOf[_borrower] * cDaiToken.exchangeRateCurrent()) / 1e18;
         return collateralInDai / collateralRequiredInDai;
     }
 
     /* Internal */
 
     /** @dev Implements pay back logic.
-     *  @param _borrower The address of the `_borrower`to pay back the borrowing.
+     *  @param _borrower The address of the `_borrower` to pay back the borrowing.
      *  @param _amount The amount of ETH to pay back.
      */
     function _payBack(address _borrower, uint256 _amount) internal {
-        uint256 amountInCEth = (_amount * 1e18) /
-            cEthToken.exchangeRateCurrent();
+        uint256 amountInCEth = (_amount * 1e18) / cEthToken.exchangeRateCurrent();
         borrowingBalanceOf[_borrower] -= _amount;
         // If `_borrower` has no more borrowing balance, remove her.
         if (borrowingBalanceOf[_borrower] == 0) {
-            // No need to update `busyBorrowerToIndex` as it will be updated when `_borrower` will borrow another time.
             if (waitingBorrowers.contains(_borrower)) {
                 require(
                     waitingBorrowers.remove(_borrower),
                     "Fails to remove borrower from waitingBorrowers."
                 );
-                // TODO: like in lend
             } else {
                 require(
                     busyBorrowers.remove(_borrower),
@@ -356,34 +345,6 @@ contract CompoundModule {
         }
         _findUsedCTokensAndUnuse(amountInCEth, _borrower);
         _supplyEthToCompound(_amount);
-    }
-
-    /** @dev Cashes-out `_lender`'s unused tokens.
-     *  @param _lender Address of the lender to redeem lending for.
-     *  @param _amount Amount in ETH to redeem.
-     */
-    function _cashOutUnused(address _lender, uint256 _amount) internal {
-        uint256 amountInCEth = (_amount * 1e18) / cEthToken.exchangeRateCurrent();
-        require(
-            amountInCEth <= lendingBalanceOf[_lender].unused,
-            "Cannot redeem more than the lending amount provided."
-        );
-        // Update unused lending balance of `_lender`.
-        lendingBalanceOf[_lender].unused -= amountInCEth; // In cToken.
-        _redeemEthFromCompound(_amount, false);
-    }
-
-    /** @dev Unstakes `_lender`'s unused tokens.
-     *  @param _lender Address of the lender to redeem staked tokens for.
-     *  @param _amount Amount in cETH to redeem.
-     */
-    function _unstakeUnused(address _lender, uint256 _amount) internal {
-        require(
-            _amount <= lendingBalanceOf[_lender].unused,
-            "Cannot redeem more than the lending amount provided."
-        );
-        // Update unused lending balance of `_lender`.
-        lendingBalanceOf[_lender].unused -= _amount; // In cToken.
     }
 
     /** @dev Supplies ETH to Compound.
@@ -491,9 +452,7 @@ contract CompoundModule {
                         remainingLiquidityToUnuse
                     ); // In cToken.
                     lendingBalanceOf[lender].unused += amountToUnuse; // In cToken.
-                    lendingBalanceOf[lender].used -=
-                        (amountToUnuse * cEthExchangeRate) /
-                        1e18; // In underlying.
+                    lendingBalanceOf[lender].used -= (amountToUnuse * cEthExchangeRate) / 1e18; // In underlying.
                     remainingLiquidityToUnuse -= amountToUnuse; // In cToken.
                 }
             }
