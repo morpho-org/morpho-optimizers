@@ -135,22 +135,21 @@ contract CompoundModule {
             "Not enough collateral."
         );
         // Check if contract has the cTokens for the borrowing.
-        uint256 amountInCEth = (_amount * 1e18) /
-            cEthToken.exchangeRateCurrent();
+        uint256 cEthExchangeRate = cEthToken.exchangeRateCurrent();
+        uint256 amountInCEth = (_amount * 1e18) / cEthExchangeRate;
+        // TODO: remove this requirement as the borrower can be in a waiting state?
         require(
             amountInCEth <= cEthToken.balanceOf(address(this)),
             "Borrowing amount must be less than total available."
         );
-        // If the borrower is not already in the `busyBorrowers` list, add her to the list.
-        if (!busyBorrowers.contains(msg.sender)) {
-            require(
-                busyBorrowers.add(msg.sender),
-                "Fails to add borrower to busyBorrowers."
-            );
-        }
         // Now contract can take liquidity thanks to cTokens.
-        _findUnusedCTokensAndUse(amountInCEth, msg.sender);
         borrowingBalanceOf[msg.sender].total += _amount; // In underlying.
+        uint256 waiting = _findUnusedCTokensAndUse(amountInCEth, msg.sender) * cEthExchangeRate / 1e18; // In underlying.
+        if (waiting > 0) {
+            borrowingBalanceOf[msg.sender].waiting += waiting; // In underlying.
+            waitingBorrowers.add(msg.sender);
+            if (waiting != _amount) busyBorrowers.add(msg.sender);
+        }
         _redeemEthFromCompound(_amount, false);
         // Transfer ETH to borrower
         payable(msg.sender).transfer(_amount);
@@ -395,11 +394,13 @@ contract CompoundModule {
     /** @dev Finds unused cETH and uses them.
      *  @param _amount Amount to unuse in cETH.
      *  @param _lenderToAvoid Address of the lender to avoid moving liquidity.
+     *  @return remainingLiquidityToUse The remaining liquidity to use in cETH.
      */
     function _findUnusedCTokensAndUse(uint256 _amount, address _lenderToAvoid)
         internal
+        returns (uint256 remainingLiquidityToUse)
     {
-        uint256 remainingLiquidityToUse = _amount; // In cToken.
+        remainingLiquidityToUse = _amount; // In cToken.
         uint256 cEthExchangeRate = cEthToken.exchangeRateCurrent();
         uint256 i;
         while (remainingLiquidityToUse > 0 && i < currentLenders.length()) {
@@ -416,7 +417,6 @@ contract CompoundModule {
             }
             i++;
         }
-        require(remainingLiquidityToUse == 0, "Not enough liquidity to use.");
     }
 
     /** @dev Finds used cETH and unuses them.
@@ -443,6 +443,7 @@ contract CompoundModule {
             }
             i++;
         }
+        // TODO: check the consequences of this require.
         require(
             remainingLiquidityToUnuse == 0,
             "Not enough liquidity to unuse."
@@ -467,6 +468,7 @@ contract CompoundModule {
             }
             i++;
         }
+        // TODO: check the consequences of this require.
         require(
             remainingLiquidityToSearch == 0,
             "Not enough liquidity to unuse."
