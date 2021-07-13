@@ -20,28 +20,27 @@ contract CompoundModule {
         uint256 used; // In underlying Token.
     }
 
+    struct BorrowingBalance {
+        uint256 total; // In underlying.
+        uint256 waiting; // In underlying.
+    }
+
     /* Storage */
 
     mapping(address => LendingBalance) public lendingBalanceOf; // Lending balance of user (ETH/cETH).
-    mapping(address => uint256) public borrowingBalanceOf; // Borrowing balance of user (ETH).
+    mapping(address => BorrowingBalance) public borrowingBalanceOf; // Borrowing balance of user (ETH).
     mapping(address => uint256) public collateralBalanceOf; // Collateral balance of user (cDAI).
     EnumerableSet.AddressSet private currentLenders; // Current lenders in the protocol.
     EnumerableSet.AddressSet private busyBorrowers; // Busy borrowers in the protocol.
     EnumerableSet.AddressSet private waitingBorrowers; // Waiting borrowers in the protocol.
     uint256 public collateralFactor = 1e18; // Collateral Factor related to cETH.
 
-    address public constant COMPTROLLER_ADDRESS =
-        0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B;
-    address public constant WETH_ADDRESS =
-        0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
-    address payable public constant CETH_ADDRESS =
-        payable(0x4Ddc2D193948926D02f9B1fE9e1daa0718270ED5);
-    address public constant DAI_ADDRESS =
-        0x6B175474E89094C44Da98b954EedeAC495271d0F;
-    address payable public constant CDAI_ADDRESS =
-        payable(0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643);
-    address public constant ORACLE_ADDRESS =
-        0xf6688883084DC1467c6F9158A0a9f398E29635BF;
+    address public constant COMPTROLLER_ADDRESS = 0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B;
+    address public constant WETH_ADDRESS = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+    address payable public constant CETH_ADDRESS = payable(0x4Ddc2D193948926D02f9B1fE9e1daa0718270ED5);
+    address public constant DAI_ADDRESS = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
+    address payable public constant CDAI_ADDRESS = payable(0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643);
+    address public constant ORACLE_ADDRESS = 0xf6688883084DC1467c6F9158A0a9f398E29635BF;
 
     IComptroller public comptroller = IComptroller(COMPTROLLER_ADDRESS);
     ICEth public cEthToken = ICEth(CETH_ADDRESS);
@@ -151,7 +150,7 @@ contract CompoundModule {
         }
         // Now contract can take liquidity thanks to cTokens.
         _findUnusedCTokensAndUse(amountInCEth, msg.sender);
-        borrowingBalanceOf[msg.sender] += _amount; // In underlying.
+        borrowingBalanceOf[msg.sender].total += _amount; // In underlying.
         _redeemEthFromCompound(_amount, false);
         // Transfer ETH to borrower
         payable(msg.sender).transfer(_amount);
@@ -257,7 +256,7 @@ contract CompoundModule {
             amountInCDai <= collateralBalanceOf[msg.sender],
             "Must redeem less than collateral."
         );
-        uint256 borrowingAmountInDai = (borrowingBalanceOf[msg.sender] * 1e18) / oracle.consult();
+        uint256 borrowingAmountInDai = (borrowingBalanceOf[msg.sender].total * 1e18) / oracle.consult();
         uint256 collateralAfterInCDAI = collateralBalanceOf[msg.sender] - amountInCDai;
         uint256 collateralRequiredInCDai = (borrowingAmountInDai * collateralFactor) / daiExchangeRate;
         require(
@@ -283,7 +282,7 @@ contract CompoundModule {
         _payBack(_borrower, msg.value);
         // Calculation done step by step to avoid overflows.
         uint256 daiToEthRate = oracle.consult();
-        uint256 borrowingAmountInDai = (borrowingBalanceOf[_borrower] * 1e18) / daiToEthRate;
+        uint256 borrowingAmountInDai = (borrowingBalanceOf[_borrower].total * 1e18) / daiToEthRate;
         uint256 repayAmountInDai = (msg.value * 1e18) / daiToEthRate;
         uint256 daiExchangeRate = cDaiToken.exchangeRateCurrent();
         uint256 collateralInDai = (collateralBalanceOf[_borrower] * daiExchangeRate) / 1e18;
@@ -315,7 +314,7 @@ contract CompoundModule {
         public
         returns (uint256)
     {
-        uint256 collateralRequiredInDai = (borrowingBalanceOf[_borrower] * collateralFactor) / oracle.consult();
+        uint256 collateralRequiredInDai = (borrowingBalanceOf[_borrower].total * collateralFactor) / oracle.consult();
         uint256 collateralInDai = (collateralBalanceOf[_borrower] * cDaiToken.exchangeRateCurrent()) / 1e18;
         return collateralInDai / collateralRequiredInDai;
     }
@@ -328,20 +327,11 @@ contract CompoundModule {
      */
     function _payBack(address _borrower, uint256 _amount) internal {
         uint256 amountInCEth = (_amount * 1e18) / cEthToken.exchangeRateCurrent();
-        borrowingBalanceOf[_borrower] -= _amount;
+        borrowingBalanceOf[_borrower].total -= _amount;
         // If `_borrower` has no more borrowing balance, remove her.
-        if (borrowingBalanceOf[_borrower] == 0) {
-            if (waitingBorrowers.contains(_borrower)) {
-                require(
-                    waitingBorrowers.remove(_borrower),
-                    "Fails to remove borrower from waitingBorrowers."
-                );
-            } else {
-                require(
-                    busyBorrowers.remove(_borrower),
-                    "Fails to remove borrower from busyBorrowers."
-                );
-            }
+        if (borrowingBalanceOf[_borrower].total == 0) {
+            waitingBorrowers.remove(_borrower);
+            busyBorrowers.remove(_borrower);
         }
         _findUsedCTokensAndUnuse(amountInCEth, _borrower);
         _supplyEthToCompound(_amount);
@@ -420,9 +410,7 @@ contract CompoundModule {
                 if (unused > 0) {
                     uint256 amountToUse = min(unused, remainingLiquidityToUse); // In cToken.
                     lendingBalanceOf[lender].unused -= amountToUse; // In cToken.
-                    lendingBalanceOf[lender].used +=
-                        (amountToUse * cEthExchangeRate) /
-                        1e18; // In underlying.
+                    lendingBalanceOf[lender].used += (amountToUse * cEthExchangeRate) / 1e18; // In underlying.
                     remainingLiquidityToUse -= amountToUse;
                 }
             }
@@ -443,14 +431,11 @@ contract CompoundModule {
         uint256 i;
         while (remainingLiquidityToUnuse > 0 && i < currentLenders.length()) {
             address lender = currentLenders.at(i);
-            if (lender != _lenderToAvoid && lender != address(0)) {
+            if (lender != _lenderToAvoid) {
                 uint256 used = lendingBalanceOf[lender].used;
 
                 if (used > 0) {
-                    uint256 amountToUnuse = min(
-                        used,
-                        remainingLiquidityToUnuse
-                    ); // In cToken.
+                    uint256 amountToUnuse = min(used, remainingLiquidityToUnuse); // In cToken.
                     lendingBalanceOf[lender].unused += amountToUnuse; // In cToken.
                     lendingBalanceOf[lender].used -= (amountToUnuse * cEthExchangeRate) / 1e18; // In underlying.
                     remainingLiquidityToUnuse -= amountToUnuse; // In cToken.
@@ -464,7 +449,7 @@ contract CompoundModule {
         );
     }
 
-    /** @dev Finds busy borrowers to move into the waiting list.
+    /** @dev Finds busy borrowers to match the givent `_amount` of ETH.
      *  @param _amount Amount to use in cETH.
      */
     function _findBusyBorrowers(uint256 _amount) internal {
@@ -472,22 +457,13 @@ contract CompoundModule {
         uint256 i;
         while (remainingLiquidityToSearch > 0 && i < busyBorrowers.length()) {
             address borrower = busyBorrowers.at(i);
-            uint256 borrowingBalance = borrowingBalanceOf[borrower];
+            uint256 busyBalance = borrowingBalanceOf[borrower].total - borrowingBalanceOf[borrower].waiting;
 
-            if (borrowingBalance > 0) {
-                uint256 amountAvailable = min(
-                    borrowingBalance,
-                    remainingLiquidityToSearch
-                );
+            if (busyBalance > 0) {
+                uint256 amountAvailable = min(busyBalance, remainingLiquidityToSearch);
                 remainingLiquidityToSearch -= amountAvailable;
-                require(
-                    busyBorrowers.remove(borrower),
-                    "Fails to remove borrower from busyBorrowers."
-                );
-                require(
-                    waitingBorrowers.add(borrower),
-                    "Fails to add borrower to waitingBorrowers."
-                );
+                borrowingBalanceOf[borrower].waiting += amountAvailable;
+                waitingBorrowers.add(borrower);
             }
             i++;
         }
@@ -509,22 +485,17 @@ contract CompoundModule {
         uint256 i;
         while (remainingLiquidityToMatch > 0 && i < waitingBorrowers.length()) {
             address borrower = waitingBorrowers.at(i);
-            uint256 borrowingBalance = borrowingBalanceOf[borrower];
 
-            if (borrowingBalance > 0) {
-                uint256 amountAvailable = min(
-                    borrowingBalance,
-                    remainingLiquidityToMatch
-                );
+            if (borrowingBalanceOf[borrower].waiting > 0) {
+                uint256 amountAvailable = min(borrowingBalanceOf[borrower].waiting, remainingLiquidityToMatch);
                 remainingLiquidityToMatch -= amountAvailable;
-                require(
-                    waitingBorrowers.remove(borrower),
-                    "Fails to remove borrower from waitingBorrowers."
-                );
-                require(
-                    busyBorrowers.add(borrower),
-                    "Fails to add borrower to busyBorrowers."
-                );
+                borrowingBalanceOf[borrower].waiting -= amountAvailable;
+                if (borrowingBalanceOf[borrower].waiting == 0) {
+                    require(
+                        waitingBorrowers.remove(borrower),
+                        "Fails to add borrower to waitingBorrowers."
+                    );
+                }
             }
             i++;
         }
