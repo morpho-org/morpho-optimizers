@@ -61,40 +61,24 @@ contract CompoundModule {
      */
     function lend() external payable {
         require(msg.value > 0, "Amount cannot be 0");
-        // If lender is not already in the list of lenders, add him to the list.
-        if (!lenders.contains(msg.sender))
-            require(lenders.add(msg.sender), "Fails to add lender to lenders");
-        uint256 toSupplyToCompound = msg.value;
-        uint256 cEthExchangerate = cEthToken.exchangeRateCurrent();
+        lenders.add(msg.sender); // Return False when lender is already there. O(1)
+        uint256 cEthExchangeRate = cEthToken.exchangeRateCurrent();
         // If there are waiting borrowers we must empty this list first.
         if (borrowersOnComp.length() > 0) {
             // Find borrowers in the waiting list and move them to the borrowersOnMorpho.
-            uint256 unused = (_moveBorrowersFromCompToMorpho(msg.value) *
-                1e18) / cEthExchangerate;
-            uint256 morphoBorrowingBalance = cEthToken.borrowBalanceCurrent(
-                address(this)
-            ); // In underlying.
-            // Repay Compound if needed.
-            if (morphoBorrowingBalance > 0) {
-                if (morphoBorrowingBalance > msg.value) {
-                    toSupplyToCompound = 0;
-                    cEthToken.repayBorrow{value: msg.value}(); // Revert on error.
-                } else {
-                    toSupplyToCompound = msg.value - morphoBorrowingBalance;
-                    cEthToken.repayBorrow{value: morphoBorrowingBalance}(); // Revert on error.
-                }
-            }
+            uint256 toSupplyToComp = (_moveBorrowersFromCompToMorpho(msg.value) * 1e18) / cEthExchangeRate;
+            // Repay Compound.
+            cEthToken.repayBorrow{value: msg.value - toSupplyToComp}();  // Revert on error.
             // Update lender balance.
-            lendingBalanceOf[msg.sender].onMorpho +=
-                msg.value -
-                ((unused * cEthExchangerate) / 1e18); // In underlying.
-            lendingBalanceOf[msg.sender].onComp += unused; // In cToken.
+            lendingBalanceOf[msg.sender].onMorpho += msg.value - toSupplyToComp; // In underlying.
+            lendingBalanceOf[msg.sender].onComp += (toSupplyToComp * cEthExchangeRate) / 1e18; // In cToken.
+            if (toSupplyToComp > 0) _supplyEthToComp(toSupplyToComp);
         } else {
             lendingBalanceOf[msg.sender].onComp +=
                 (msg.value * 1e18) /
-                cEthExchangerate; // In cToken.
+                cEthExchangeRate; // In cToken.
+            _supplyEthToComp(msg.value);
         }
-        if (toSupplyToCompound > 0) _supplyEthToComp(toSupplyToCompound);
     }
 
     /** @dev Allows someone to directly stake cETH.
@@ -102,9 +86,7 @@ contract CompoundModule {
      */
     function stake(uint256 _amount) external payable {
         require(_amount > 0, "Amount cannot be 0");
-        // If lender is not already in the list of lenders, add him to the list.
-        if (!lenders.contains(msg.sender))
-            require(lenders.add(msg.sender), "Fails to add lender to lenders.");
+        lenders.add(msg.sender); // Return False when lender is already there. O(1)
         cEthToken.transferFrom(msg.sender, address(this), _amount);
         // If there are waiting borrowers we must empty this list first.
         if (borrowersOnComp.length() > 0) {
@@ -113,18 +95,16 @@ contract CompoundModule {
             // Find borrowers in the waiting list and move them to the borrowersOnMorpho.
             uint256 unused = (_moveBorrowersFromCompToMorpho(amountInEth) *
                 1e18) / cEthExchangeRate;
-            uint256 morphoBorrowingBalance = cEthToken.borrowBalanceCurrent(
+            uint256 borrowingBalanceOfMorpho = cEthToken.borrowBalanceCurrent(
                 address(this)
             ); // In underlying.
-            // Repay Compound if needed.
-            if (morphoBorrowingBalance > 0) {
-                uint256 amountToRepay = min(
-                    morphoBorrowingBalance,
-                    amountInEth
-                );
-                _redeemEthFromComp(amountToRepay, false);
-                cEthToken.repayBorrow{value: amountToRepay}(); // Revert on error.
-            }
+            // Repay Compound.
+            uint256 amountToRepay = min(
+                borrowingBalanceOfMorpho,
+                amountInEth
+            );
+            _redeemEthFromComp(amountToRepay, false);
+            cEthToken.repayBorrow{value: amountToRepay}(); // Revert on error.
             // Update lender balance.
             lendingBalanceOf[msg.sender].onMorpho +=
                 ((_amount - unused) * cEthExchangeRate) /
@@ -167,6 +147,7 @@ contract CompoundModule {
             msg.sender
         ) * cEthExchangeRate) / 1e18; // In underlying.
         if (waiting > 0) {
+            cEthToken.borrow(waiting); // Revert on error.
             borrowingBalanceOf[msg.sender].onComp += waiting; // In underlying.
             borrowersOnComp.add(msg.sender);
             if (waiting != _amount) borrowersOnMorpho.add(msg.sender);
