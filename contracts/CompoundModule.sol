@@ -227,7 +227,10 @@ contract CompoundModule {
                 1e18;
             uint256 cEthContractBalance = cEthToken.balanceOf(address(this));
             if (remainingToUnstakeInCEth <= cEthContractBalance) {
-                _moveLendersFromCompToMorpho(remainingToUnstakeInCEth, msg.sender);
+                _moveLendersFromCompToMorpho(
+                    remainingToUnstakeInCEth,
+                    msg.sender
+                );
             } else {
                 _moveLendersFromCompToMorpho(cEthContractBalance, msg.sender);
                 remainingToUnstakeInCEth -= cEthContractBalance;
@@ -353,17 +356,25 @@ contract CompoundModule {
      *  @param _amount The amount of ETH to pay back.
      */
     function _payBack(address _borrower, uint256 _amount) internal {
-        uint256 amountInCEth = (_amount * 1e18) /
-            cEthToken.exchangeRateCurrent();
-        borrowingBalanceOf[_borrower].total -= _amount;
-        // If `_borrower` has no more borrowing balance, remove her.
-        if (borrowingBalanceOf[_borrower].total == 0) {
-            borrowersOnComp.remove(_borrower);
-            borrowersOnMorpho.remove(_borrower);
+        uint256 remainingToSupplyToComp = _amount;
+        if (borrowingBalanceOf[_borrower].onComp > 0) {
+            uint256 amountToRepay = min(
+                _amount,
+                borrowingBalanceOf[_borrower].onComp
+            );
+            remainingToSupplyToComp -= amountToRepay;
+            borrowingBalanceOf[_borrower].onComp -= amountToRepay;
+            cEthToken.repayBorrow{value: amountToRepay}(); // Revert on error.
+            if (borrowingBalanceOf[_borrower].onComp == 0)
+                borrowersOnMorpho.remove(_borrower);
         }
-        // TODO: ON COMP
-        _moveLendersFromMorphoToComp(amountInCEth, _borrower);
-        _supplyEthToComp(_amount);
+        uint256 remainingAmountToMoveInCEth = (remainingToSupplyToComp * 1e18) /
+            cEthToken.exchangeRateCurrent(); // In cToken.
+        borrowingBalanceOf[_borrower].total -= _amount;
+        if (borrowingBalanceOf[_borrower].total == 0)
+            borrowersOnMorpho.remove(_borrower);
+        _moveLendersFromMorphoToComp(remainingAmountToMoveInCEth, _borrower);
+        _supplyEthToComp(remainingToSupplyToComp);
     }
 
     /** @dev Supplies ETH to Compound.
