@@ -16,13 +16,13 @@ contract CompoundModule {
     /* Structs */
 
     struct LendingBalance {
-        uint256 unused; // In cToken.
-        uint256 used; // In underlying Token.
+        uint256 onComp; // In cToken.
+        uint256 onMorpho; // In underlying Token.
     }
 
     struct BorrowingBalance {
         uint256 total; // In underlying.
-        uint256 waiting; // In underlying.
+        uint256 onComp; // In underlying.
     }
 
     /* Storage */
@@ -30,9 +30,9 @@ contract CompoundModule {
     mapping(address => LendingBalance) public lendingBalanceOf; // Lending balance of user (ETH/cETH).
     mapping(address => BorrowingBalance) public borrowingBalanceOf; // Borrowing balance of user (ETH).
     mapping(address => uint256) public collateralBalanceOf; // Collateral balance of user (cDAI).
-    EnumerableSet.AddressSet private currentLenders; // Current lenders in the protocol.
-    EnumerableSet.AddressSet private busyBorrowers; // Busy borrowers in the protocol.
-    EnumerableSet.AddressSet private waitingBorrowers; // Waiting borrowers in the protocol.
+    EnumerableSet.AddressSet private lenders; // Current lenders in the protocol.
+    EnumerableSet.AddressSet private borrowersOnMorpho; // Busy borrowers in the protocol.
+    EnumerableSet.AddressSet private borrowersOnComp; // Waiting borrowers in the protocol.
     uint256 public collateralFactor = 1e18; // Collateral Factor related to cETH.
 
     address public constant COMPTROLLER_ADDRESS =
@@ -62,17 +62,14 @@ contract CompoundModule {
     function lend() external payable {
         require(msg.value > 0, "Amount cannot be 0");
         // If lender is not already in the list of lenders, add him to the list.
-        if (!currentLenders.contains(msg.sender))
-            require(
-                currentLenders.add(msg.sender),
-                "Fails to add lender to currentLenders"
-            );
+        if (!lenders.contains(msg.sender))
+            require(lenders.add(msg.sender), "Fails to add lender to lenders");
         uint256 toSupplyToCompound = msg.value;
         uint256 cEthExchangerate = cEthToken.exchangeRateCurrent();
         // If there are waiting borrowers we must empty this list first.
-        if (waitingBorrowers.length() > 0) {
-            // Find borrowers in the waiting list and move them to the busyBorrowers.
-            uint256 unused = (_matchLendingWithWaitingBorrowers(msg.value) *
+        if (borrowersOnComp.length() > 0) {
+            // Find borrowers in the waiting list and move them to the borrowersOnMorpho.
+            uint256 unused = (_moveBorrowersFromCompToMorpho(msg.value) *
                 1e18) / cEthExchangerate;
             uint256 morphoBorrowingBalance = cEthToken.borrowBalanceCurrent(
                 address(this)
@@ -88,16 +85,16 @@ contract CompoundModule {
                 }
             }
             // Update lender balance.
-            lendingBalanceOf[msg.sender].used +=
+            lendingBalanceOf[msg.sender].onMorpho +=
                 msg.value -
                 ((unused * cEthExchangerate) / 1e18); // In underlying.
-            lendingBalanceOf[msg.sender].unused += unused; // In cToken.
+            lendingBalanceOf[msg.sender].onComp += unused; // In cToken.
         } else {
-            lendingBalanceOf[msg.sender].unused +=
+            lendingBalanceOf[msg.sender].onComp +=
                 (msg.value * 1e18) /
                 cEthExchangerate; // In cToken.
         }
-        if (toSupplyToCompound > 0) _supplyEthToCompound(toSupplyToCompound);
+        if (toSupplyToCompound > 0) _supplyEthToComp(toSupplyToCompound);
     }
 
     /** @dev Allows someone to directly stake cETH.
@@ -106,18 +103,15 @@ contract CompoundModule {
     function stake(uint256 _amount) external payable {
         require(_amount > 0, "Amount cannot be 0");
         // If lender is not already in the list of lenders, add him to the list.
-        if (!currentLenders.contains(msg.sender))
-            require(
-                currentLenders.add(msg.sender),
-                "Fails to add lender to currentLenders."
-            );
+        if (!lenders.contains(msg.sender))
+            require(lenders.add(msg.sender), "Fails to add lender to lenders.");
         cEthToken.transferFrom(msg.sender, address(this), _amount);
         // If there are waiting borrowers we must empty this list first.
-        if (waitingBorrowers.length() > 0) {
+        if (borrowersOnComp.length() > 0) {
             uint256 cEthExchangeRate = cEthToken.exchangeRateCurrent();
             uint256 amountInEth = (_amount * cEthExchangeRate) / 1e18;
-            // Find borrowers in the waiting list and move them to the busyBorrowers.
-            uint256 unused = (_matchLendingWithWaitingBorrowers(amountInEth) *
+            // Find borrowers in the waiting list and move them to the borrowersOnMorpho.
+            uint256 unused = (_moveBorrowersFromCompToMorpho(amountInEth) *
                 1e18) / cEthExchangeRate;
             uint256 morphoBorrowingBalance = cEthToken.borrowBalanceCurrent(
                 address(this)
@@ -128,16 +122,16 @@ contract CompoundModule {
                     morphoBorrowingBalance,
                     amountInEth
                 );
-                _redeemEthFromCompound(amountToRepay, false);
+                _redeemEthFromComp(amountToRepay, false);
                 cEthToken.repayBorrow{value: amountToRepay}(); // Revert on error.
             }
             // Update lender balance.
-            lendingBalanceOf[msg.sender].used +=
+            lendingBalanceOf[msg.sender].onMorpho +=
                 ((_amount - unused) * cEthExchangeRate) /
                 1e18;
-            lendingBalanceOf[msg.sender].unused += unused;
+            lendingBalanceOf[msg.sender].onComp += unused;
         } else {
-            lendingBalanceOf[msg.sender].unused += _amount; // In cToken.
+            lendingBalanceOf[msg.sender].onComp += _amount; // In cToken.
         }
     }
 
@@ -168,14 +162,16 @@ contract CompoundModule {
         );
         // Now contract can take liquidity thanks to cTokens.
         borrowingBalanceOf[msg.sender].total += _amount; // In underlying.
-        uint256 waiting = (_findUnusedCTokensAndUse(amountInCEth, msg.sender) *
-            cEthExchangeRate) / 1e18; // In underlying.
+        uint256 waiting = (_moveLendersFromCompToMorpho(
+            amountInCEth,
+            msg.sender
+        ) * cEthExchangeRate) / 1e18; // In underlying.
         if (waiting > 0) {
-            borrowingBalanceOf[msg.sender].waiting += waiting; // In underlying.
-            waitingBorrowers.add(msg.sender);
-            if (waiting != _amount) busyBorrowers.add(msg.sender);
+            borrowingBalanceOf[msg.sender].onComp += waiting; // In underlying.
+            borrowersOnComp.add(msg.sender);
+            if (waiting != _amount) borrowersOnMorpho.add(msg.sender);
         }
-        _redeemEthFromCompound(_amount, false);
+        _redeemEthFromComp(_amount, false);
         // Transfer ETH to borrower
         payable(msg.sender).transfer(_amount);
     }
@@ -192,29 +188,30 @@ contract CompoundModule {
      */
     function cashOut(uint256 _amount) external {
         uint256 cEthExchangeRate = cEthToken.exchangeRateCurrent();
-        uint256 unusedInEth = (lendingBalanceOf[msg.sender].unused *
+        uint256 unusedInEth = (lendingBalanceOf[msg.sender].onComp *
             cEthExchangeRate) / 1e18;
         if (_amount <= unusedInEth) {
-            lendingBalanceOf[msg.sender].unused -=
+            lendingBalanceOf[msg.sender].onComp -=
                 (_amount * 1e18) /
                 cEthToken.exchangeRateCurrent(); // In cToken.
-            _redeemEthFromCompound(_amount, false);
+            _redeemEthFromComp(_amount, false);
         } else {
-            lendingBalanceOf[msg.sender].unused = 0;
-            _redeemEthFromCompound(unusedInEth, false);
+            lendingBalanceOf[msg.sender].onComp = 0;
+            _redeemEthFromComp(unusedInEth, false);
             uint256 amountToCashOutInEth = _amount - unusedInEth;
-            lendingBalanceOf[msg.sender].used -= amountToCashOutInEth;
+            lendingBalanceOf[msg.sender].onMorpho -= amountToCashOutInEth;
             uint256 amountToCashOutInCEth = (amountToCashOutInEth * 1e18) /
                 cEthExchangeRate;
             uint256 cEthContractBalance = cEthToken.balanceOf(address(this));
             if (amountToCashOutInCEth <= cEthContractBalance) {
-                // TODO: add require _findUnusedCTokensAndUse == 0 ?
-                _findUnusedCTokensAndUse(amountToCashOutInCEth, msg.sender);
+                // TODO: add require _moveLendersFromCompToMorpho == 0 ?
+                _moveLendersFromCompToMorpho(amountToCashOutInCEth, msg.sender);
             } else {
-                _findUnusedCTokensAndUse(cEthContractBalance, msg.sender);
+                _moveLendersFromCompToMorpho(cEthContractBalance, msg.sender);
                 amountToCashOutInCEth -= cEthContractBalance;
                 amountToCashOutInCEth -=
-                    (_findBusyBorrowers(amountToCashOutInCEth) * 1e18) /
+                    (_moveBorrowersFromMorphoToComp(amountToCashOutInCEth) *
+                        1e18) /
                     cEthToken.exchangeRateCurrent();
                 cEthToken.borrow(amountToCashOutInCEth); // Revert on error.
             }
@@ -222,12 +219,12 @@ contract CompoundModule {
         payable(msg.sender).transfer(_amount);
         // If lender has no lending at all, then remove it from the list of lenders.
         if (
-            lendingBalanceOf[msg.sender].unused == 0 &&
-            lendingBalanceOf[msg.sender].used == 0
+            lendingBalanceOf[msg.sender].onComp == 0 &&
+            lendingBalanceOf[msg.sender].onMorpho == 0
         ) {
             require(
-                currentLenders.remove(msg.sender),
-                "Fails to remove lender from currentLenders."
+                lenders.remove(msg.sender),
+                "Fails to remove lender from lenders."
             );
         }
     }
@@ -236,25 +233,26 @@ contract CompoundModule {
      *  @param _amount Amount in cETH to unstake.
      */
     function unstake(uint256 _amount) external {
-        if (_amount <= lendingBalanceOf[msg.sender].unused) {
-            lendingBalanceOf[msg.sender].unused -= _amount;
+        if (_amount <= lendingBalanceOf[msg.sender].onComp) {
+            lendingBalanceOf[msg.sender].onComp -= _amount;
         } else {
             uint256 cEthRateExchange = cEthToken.exchangeRateCurrent();
             uint256 amountToUnstakeInCEth = _amount -
-                lendingBalanceOf[msg.sender].unused;
-            lendingBalanceOf[msg.sender].unused = 0;
-            lendingBalanceOf[msg.sender].used -=
+                lendingBalanceOf[msg.sender].onComp;
+            lendingBalanceOf[msg.sender].onComp = 0;
+            lendingBalanceOf[msg.sender].onMorpho -=
                 (amountToUnstakeInCEth * cEthRateExchange) /
                 1e18;
             uint256 cEthContractBalance = cEthToken.balanceOf(address(this));
             if (amountToUnstakeInCEth <= cEthContractBalance) {
-                // TODO: add require _findUnusedCTokensAndUse == 0 ?
-                _findUnusedCTokensAndUse(amountToUnstakeInCEth, msg.sender);
+                // TODO: add require _moveLendersFromCompToMorpho == 0 ?
+                _moveLendersFromCompToMorpho(amountToUnstakeInCEth, msg.sender);
             } else {
-                _findUnusedCTokensAndUse(cEthContractBalance, msg.sender);
+                _moveLendersFromCompToMorpho(cEthContractBalance, msg.sender);
                 amountToUnstakeInCEth -= cEthContractBalance;
                 amountToUnstakeInCEth -=
-                    (_findBusyBorrowers(amountToUnstakeInCEth) * 1e18) /
+                    (_moveBorrowersFromMorphoToComp(amountToUnstakeInCEth) *
+                        1e18) /
                     cEthToken.exchangeRateCurrent();
                 cEthToken.borrow(amountToUnstakeInCEth); // Revert on error.
             }
@@ -262,12 +260,12 @@ contract CompoundModule {
         cEthToken.transfer(msg.sender, _amount);
         // If lender has no lending at all, then remove it from the list of lenders.
         if (
-            lendingBalanceOf[msg.sender].unused == 0 &&
-            lendingBalanceOf[msg.sender].used == 0
+            lendingBalanceOf[msg.sender].onComp == 0 &&
+            lendingBalanceOf[msg.sender].onMorpho == 0
         ) {
             require(
-                currentLenders.remove(msg.sender),
-                "Fails to remove lender from currentLenders."
+                lenders.remove(msg.sender),
+                "Fails to remove lender from lenders."
             );
         }
     }
@@ -278,7 +276,7 @@ contract CompoundModule {
     function provideCollateral(uint256 _amount) external {
         require(_amount > 0, "Amount cannot be 0");
         daiToken.transferFrom(msg.sender, address(this), _amount);
-        _supplyDaiToCompound(_amount);
+        _supplyDaiToComp(_amount);
         // Update the collateral balance of the sender in cDAI.
         collateralBalanceOf[msg.sender] +=
             (_amount * 1e18) /
@@ -306,7 +304,7 @@ contract CompoundModule {
             "Health factor will drop below 1"
         );
         require(
-            _redeemDaiFromCompound(_amount, false) == 0,
+            _redeemDaiFromComp(_amount, false) == 0,
             "Redeem cDAI on Compound failed."
         );
         collateralBalanceOf[msg.sender] -= amountInCDai; // In cToken.
@@ -339,7 +337,7 @@ contract CompoundModule {
             "Cannot get more than collateral balance of borrower."
         );
         collateralBalanceOf[_borrower] -= cDaiAmountToTransfer;
-        _redeemDaiFromCompound(daiAmountToTransfer, false);
+        _redeemDaiFromComp(daiAmountToTransfer, false);
         daiToken.transfer(msg.sender, daiAmountToTransfer);
     }
 
@@ -379,25 +377,25 @@ contract CompoundModule {
         borrowingBalanceOf[_borrower].total -= _amount;
         // If `_borrower` has no more borrowing balance, remove her.
         if (borrowingBalanceOf[_borrower].total == 0) {
-            waitingBorrowers.remove(_borrower);
-            busyBorrowers.remove(_borrower);
+            borrowersOnComp.remove(_borrower);
+            borrowersOnMorpho.remove(_borrower);
         }
         // NOTE: what do we do if not enough Used cTokens? Can it happen?
-        _findUsedCTokensAndUnuse(amountInCEth, _borrower);
-        _supplyEthToCompound(_amount);
+        _moveLendersFromMorphoToComp(amountInCEth, _borrower);
+        _supplyEthToComp(_amount);
     }
 
     /** @dev Supplies ETH to Compound.
      *  @param _amount Amount in ETH to supply.
      */
-    function _supplyEthToCompound(uint256 _amount) internal {
+    function _supplyEthToComp(uint256 _amount) internal {
         cEthToken.mint{value: _amount}(); // Revert on error.
     }
 
     /** @dev Supplies DAI to Compound.
      *  @param _amount Amount in DAI to supply.
      */
-    function _supplyDaiToCompound(uint256 _amount) internal {
+    function _supplyDaiToComp(uint256 _amount) internal {
         // Approve transfer on the ERC20 contract.
         daiToken.approve(CDAI_ADDRESS, _amount);
         // Mint cTokens.
@@ -410,7 +408,7 @@ contract CompoundModule {
      *  @param _redeemType The redeem type to use on Compound.
      *  @return result Result from Compound.
      */
-    function _redeemDaiFromCompound(uint256 _amount, bool _redeemType)
+    function _redeemDaiFromComp(uint256 _amount, bool _redeemType)
         internal
         returns (uint256 result)
     {
@@ -429,7 +427,7 @@ contract CompoundModule {
      *  @param _redeemType The redeem type to use on Compound.
      *  @return result Result from Compound.
      */
-    function _redeemEthFromCompound(uint256 _amount, bool _redeemType)
+    function _redeemEthFromComp(uint256 _amount, bool _redeemType)
         internal
         returns (uint256 result)
     {
@@ -447,22 +445,22 @@ contract CompoundModule {
      *  @param _lenderToAvoid Address of the lender to avoid moving liquidity.
      *  @return remainingLiquidityToUse The remaining liquidity to use in cETH.
      */
-    function _findUnusedCTokensAndUse(uint256 _amount, address _lenderToAvoid)
-        internal
-        returns (uint256 remainingLiquidityToUse)
-    {
+    function _moveLendersFromCompToMorpho(
+        uint256 _amount,
+        address _lenderToAvoid
+    ) internal returns (uint256 remainingLiquidityToUse) {
         remainingLiquidityToUse = _amount; // In cToken.
         uint256 cEthExchangeRate = cEthToken.exchangeRateCurrent();
         uint256 i;
-        while (remainingLiquidityToUse > 0 && i < currentLenders.length()) {
-            address lender = currentLenders.at(i);
+        while (remainingLiquidityToUse > 0 && i < lenders.length()) {
+            address lender = lenders.at(i);
             if (lender != _lenderToAvoid) {
-                uint256 unused = lendingBalanceOf[lender].unused;
+                uint256 unused = lendingBalanceOf[lender].onComp;
 
                 if (unused > 0) {
                     uint256 amountToUse = min(unused, remainingLiquidityToUse); // In cToken.
-                    lendingBalanceOf[lender].unused -= amountToUse; // In cToken.
-                    lendingBalanceOf[lender].used +=
+                    lendingBalanceOf[lender].onComp -= amountToUse; // In cToken.
+                    lendingBalanceOf[lender].onMorpho +=
                         (amountToUse * cEthExchangeRate) /
                         1e18; // In underlying.
                     remainingLiquidityToUse -= amountToUse;
@@ -476,24 +474,25 @@ contract CompoundModule {
      *  @param _amount Amount to use in cETH.
      *  @param _lenderToAvoid Address of the lender to avoid moving liquidity.
      */
-    function _findUsedCTokensAndUnuse(uint256 _amount, address _lenderToAvoid)
-        internal
-    {
+    function _moveLendersFromMorphoToComp(
+        uint256 _amount,
+        address _lenderToAvoid
+    ) internal {
         uint256 remainingLiquidityToUnuse = _amount; // In cToken.
         uint256 cEthExchangeRate = cEthToken.exchangeRateCurrent();
         uint256 i;
-        while (remainingLiquidityToUnuse > 0 && i < currentLenders.length()) {
-            address lender = currentLenders.at(i);
+        while (remainingLiquidityToUnuse > 0 && i < lenders.length()) {
+            address lender = lenders.at(i);
             if (lender != _lenderToAvoid) {
-                uint256 used = lendingBalanceOf[lender].used;
+                uint256 used = lendingBalanceOf[lender].onMorpho;
 
                 if (used > 0) {
                     uint256 amountToUnuse = min(
                         used,
                         remainingLiquidityToUnuse
                     ); // In cToken.
-                    lendingBalanceOf[lender].unused += amountToUnuse; // In cToken.
-                    lendingBalanceOf[lender].used -=
+                    lendingBalanceOf[lender].onComp += amountToUnuse; // In cToken.
+                    lendingBalanceOf[lender].onMorpho -=
                         (amountToUnuse * cEthExchangeRate) /
                         1e18; // In underlying.
                     remainingLiquidityToUnuse -= amountToUnuse; // In cToken.
@@ -511,16 +510,18 @@ contract CompoundModule {
     /** @dev Finds busy borrowers to match the given `_amount` of ETH.
      *  @param _amount Amount to use in cETH.
      */
-    function _findBusyBorrowers(uint256 _amount)
+    function _moveBorrowersFromMorphoToComp(uint256 _amount)
         internal
         returns (uint256 remainingLiquidityToSearch)
     {
         remainingLiquidityToSearch = _amount;
         uint256 i;
-        while (remainingLiquidityToSearch > 0 && i < busyBorrowers.length()) {
-            address borrower = busyBorrowers.at(i);
+        while (
+            remainingLiquidityToSearch > 0 && i < borrowersOnMorpho.length()
+        ) {
+            address borrower = borrowersOnMorpho.at(i);
             uint256 busyBalance = borrowingBalanceOf[borrower].total -
-                borrowingBalanceOf[borrower].waiting;
+                borrowingBalanceOf[borrower].onComp;
 
             if (busyBalance > 0) {
                 uint256 amountAvailable = min(
@@ -528,8 +529,8 @@ contract CompoundModule {
                     remainingLiquidityToSearch
                 );
                 remainingLiquidityToSearch -= amountAvailable;
-                borrowingBalanceOf[borrower].waiting += amountAvailable;
-                waitingBorrowers.add(borrower);
+                borrowingBalanceOf[borrower].onComp += amountAvailable;
+                borrowersOnComp.add(borrower);
             }
             i++;
         }
@@ -539,26 +540,26 @@ contract CompoundModule {
      *  @param _amount Amount to use in ETH.
      *  @return remainingLiquidityToMatch The amount remaining in ETH after matching.
      */
-    function _matchLendingWithWaitingBorrowers(uint256 _amount)
+    function _moveBorrowersFromCompToMorpho(uint256 _amount)
         internal
         returns (uint256 remainingLiquidityToMatch)
     {
         remainingLiquidityToMatch = _amount;
         uint256 i;
-        while (remainingLiquidityToMatch > 0 && i < waitingBorrowers.length()) {
-            address borrower = waitingBorrowers.at(i);
+        while (remainingLiquidityToMatch > 0 && i < borrowersOnComp.length()) {
+            address borrower = borrowersOnComp.at(i);
 
-            if (borrowingBalanceOf[borrower].waiting > 0) {
+            if (borrowingBalanceOf[borrower].onComp > 0) {
                 uint256 amountAvailable = min(
-                    borrowingBalanceOf[borrower].waiting,
+                    borrowingBalanceOf[borrower].onComp,
                     remainingLiquidityToMatch
                 );
                 remainingLiquidityToMatch -= amountAvailable;
-                borrowingBalanceOf[borrower].waiting -= amountAvailable;
-                if (borrowingBalanceOf[borrower].waiting == 0) {
+                borrowingBalanceOf[borrower].onComp -= amountAvailable;
+                if (borrowingBalanceOf[borrower].onComp == 0) {
                     require(
-                        waitingBorrowers.remove(borrower),
-                        "Fails to add borrower to waitingBorrowers."
+                        borrowersOnComp.remove(borrower),
+                        "Fails to add borrower to borrowersOnComp."
                     );
                 }
             }
