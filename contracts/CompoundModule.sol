@@ -66,13 +66,13 @@ contract CompoundModule {
         // If there are waiting borrowers we must empty this list first.
         if (borrowersOnComp.length() > 0) {
             // Find borrowers in the waiting list and move them to the borrowersOnMorpho.
-            uint256 toSupplyToComp = (_moveBorrowersFromCompToMorpho(msg.value) * 1e18) / cEthExchangeRate;
+            uint256 remainingToSupplyToComp = (_moveBorrowersFromCompToMorpho(msg.value) * 1e18) / cEthExchangeRate;
             // Repay Compound.
-            cEthToken.repayBorrow{value: msg.value - toSupplyToComp}();  // Revert on error.
+            cEthToken.repayBorrow{value: msg.value - remainingToSupplyToComp}();  // Revert on error.
             // Update lender balance.
-            lendingBalanceOf[msg.sender].onMorpho += msg.value - toSupplyToComp; // In underlying.
-            lendingBalanceOf[msg.sender].onComp += (toSupplyToComp * cEthExchangeRate) / 1e18; // In cToken.
-            if (toSupplyToComp > 0) _supplyEthToComp(toSupplyToComp);
+            lendingBalanceOf[msg.sender].onMorpho += msg.value - remainingToSupplyToComp; // In underlying.
+            lendingBalanceOf[msg.sender].onComp += (remainingToSupplyToComp * cEthExchangeRate) / 1e18; // In cToken.
+            if (remainingToSupplyToComp > 0) _supplyEthToComp(remainingToSupplyToComp);
         } else {
             lendingBalanceOf[msg.sender].onComp +=
                 (msg.value * 1e18) /
@@ -135,25 +135,20 @@ contract CompoundModule {
         // Check if contract has the cTokens for the borrowing.
         uint256 cEthExchangeRate = cEthToken.exchangeRateCurrent();
         uint256 amountInCEth = (_amount * 1e18) / cEthExchangeRate;
-        // TODO: remove this requirement as the borrower can be in a waiting state?
-        require(
-            amountInCEth <= cEthToken.balanceOf(address(this)),
-            "Borrowing amount must be less than total available."
-        );
         // Now contract can take liquidity thanks to cTokens.
         borrowingBalanceOf[msg.sender].total += _amount; // In underlying.
-        uint256 waiting = (_moveLendersFromCompToMorpho(
+        uint256 remainingToBorrowOnComp = (_moveLendersFromCompToMorpho(
             amountInCEth,
             msg.sender
         ) * cEthExchangeRate) / 1e18; // In underlying.
-        if (waiting > 0) {
-            cEthToken.borrow(waiting); // Revert on error.
-            borrowingBalanceOf[msg.sender].onComp += waiting; // In underlying.
+        if (remainingToBorrowOnComp > 0) {
+            cEthToken.borrow(remainingToBorrowOnComp); // Revert on error.
+            borrowingBalanceOf[msg.sender].onComp += remainingToBorrowOnComp; // In underlying.
             borrowersOnComp.add(msg.sender);
-            if (waiting != _amount) borrowersOnMorpho.add(msg.sender);
+            if (remainingToBorrowOnComp != _amount) borrowersOnMorpho.add(msg.sender);
         }
-        _redeemEthFromComp(_amount, false);
-        // Transfer ETH to borrower
+        _redeemEthFromComp(_amount - remainingToBorrowOnComp, false);
+        // Transfer ETH to borrower.
         payable(msg.sender).transfer(_amount);
     }
 
@@ -179,22 +174,21 @@ contract CompoundModule {
         } else {
             lendingBalanceOf[msg.sender].onComp = 0;
             _redeemEthFromComp(unusedInEth, false);
-            uint256 amountToCashOutInEth = _amount - unusedInEth;
-            lendingBalanceOf[msg.sender].onMorpho -= amountToCashOutInEth;
-            uint256 amountToCashOutInCEth = (amountToCashOutInEth * 1e18) /
+            uint256 remainingToCashOutInEth = _amount - unusedInEth; // In underlying.
+            lendingBalanceOf[msg.sender].onMorpho -= remainingToCashOutInEth; // In underlying.
+            uint256 remainingToCashOutInCEth = (remainingToCashOutInEth * 1e18) /
                 cEthExchangeRate;
             uint256 cEthContractBalance = cEthToken.balanceOf(address(this));
-            if (amountToCashOutInCEth <= cEthContractBalance) {
-                // TODO: add require _moveLendersFromCompToMorpho == 0 ?
-                _moveLendersFromCompToMorpho(amountToCashOutInCEth, msg.sender);
+            if (remainingToCashOutInCEth <= cEthContractBalance) {
+                _moveLendersFromCompToMorpho(remainingToCashOutInCEth, msg.sender);
             } else {
                 _moveLendersFromCompToMorpho(cEthContractBalance, msg.sender);
-                amountToCashOutInCEth -= cEthContractBalance;
-                amountToCashOutInCEth -=
-                    (_moveBorrowersFromMorphoToComp(amountToCashOutInCEth) *
+                remainingToCashOutInCEth -= cEthContractBalance;
+                remainingToCashOutInCEth -=
+                    (_moveBorrowersFromMorphoToComp(remainingToCashOutInCEth) *
                         1e18) /
                     cEthToken.exchangeRateCurrent();
-                cEthToken.borrow(amountToCashOutInCEth); // Revert on error.
+                cEthToken.borrow((remainingToCashOutInCEth * cEthExchangeRate) / 1e18); // Revert on error.
             }
         }
         payable(msg.sender).transfer(_amount);
