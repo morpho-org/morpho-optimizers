@@ -315,7 +315,7 @@ contract CompoundModule {
             borrowingAmountInDai;
         uint256 cDaiAmountToTransfer = (daiAmountToTransfer * 1e18) /
             daiExchangeRate;
-        cDaiAmountToTransfer *= liquidationIncentive / DENOMINATOR;
+        cDaiAmountToTransfer = (cDaiAmountToTransfer * liquidationIncentive) / DENOMINATOR;
         require(
             collateralBalanceOf[_borrower] >= cDaiAmountToTransfer,
             "Cannot get more than collateral balance of borrower."
@@ -356,25 +356,30 @@ contract CompoundModule {
      *  @param _amount The amount of ETH to pay back.
      */
     function _payBack(address _borrower, uint256 _amount) internal {
-        uint256 remainingToSupplyToComp = _amount;
         if (borrowingBalanceOf[_borrower].onComp > 0) {
-            uint256 amountToRepay = min(
-                _amount,
-                borrowingBalanceOf[_borrower].onComp
-            );
-            remainingToSupplyToComp -= amountToRepay;
-            borrowingBalanceOf[_borrower].onComp -= amountToRepay;
-            cEthToken.repayBorrow{value: amountToRepay}(); // Revert on error.
-            if (borrowingBalanceOf[_borrower].onComp == 0)
-                borrowersOnMorpho.remove(_borrower);
+            if (_amount <= borrowingBalanceOf[_borrower].onComp) {
+                // Repay Compound.
+                borrowingBalanceOf[_borrower].onComp -= _amount;
+                cEthToken.repayBorrow{value: _amount}(); // Revert on error.
+                _supplyEthToComp(_amount);
+            } else {
+                // Repay Compound first.
+                cEthToken.repayBorrow{value: borrowingBalanceOf[_borrower].onComp}(); // Revert on error.
+                // Then, move remaining and supply it to Compound.
+                uint256 remainingToSupplyToComp = _amount- borrowingBalanceOf[_borrower].onComp;
+                uint256 remainingAmountToMoveInCEth = (remainingToSupplyToComp * 1e18) / cEthToken.exchangeRateCurrent(); // In cToken.
+                borrowingBalanceOf[_borrower].onComp = 0;
+                borrowersOnComp.remove(_borrower);
+                _moveLendersFromMorphoToComp(remainingAmountToMoveInCEth, _borrower);
+                _supplyEthToComp(remainingToSupplyToComp);
+            }
+        } else {
+            _moveLendersFromMorphoToComp((_amount * 1e18) / cEthToken.exchangeRateCurrent(), _borrower);
+            _supplyEthToComp(_amount);
         }
-        uint256 remainingAmountToMoveInCEth = (remainingToSupplyToComp * 1e18) /
-            cEthToken.exchangeRateCurrent(); // In cToken.
         borrowingBalanceOf[_borrower].total -= _amount;
         if (borrowingBalanceOf[_borrower].total == 0)
             borrowersOnMorpho.remove(_borrower);
-        _moveLendersFromMorphoToComp(remainingAmountToMoveInCEth, _borrower);
-        _supplyEthToComp(remainingToSupplyToComp);
     }
 
     /** @dev Supplies ETH to Compound.
