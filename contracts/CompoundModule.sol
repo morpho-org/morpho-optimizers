@@ -1,8 +1,8 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-import "./interfaces/IERC20.sol";
 import "./interfaces/IOracle.sol";
 import {ICErc20, ICEth, IComptroller} from "./interfaces/ICompound.sol";
 
@@ -11,6 +11,7 @@ import {ICErc20, ICEth, IComptroller} from "./interfaces/ICompound.sol";
  *  @dev Smart contracts interacting with Compound to enable real P2P lending.
  */
 contract CompoundModule {
+    using SafeERC20 for IERC20;
     using EnumerableSet for EnumerableSet.AddressSet;
 
     /* Structs */
@@ -36,7 +37,7 @@ contract CompoundModule {
     uint256 public collateralFactor = 75e16; // Collateral Factor related to cETH.
     uint256 public liquidationIncentive = 8000; // Incentive for liquidators in percentage in basis points.
 
-    uint256 constant DENOMINATOR = 10000; // Denominator for percentage multiplications.
+    uint256 public constant DENOMINATOR = 10000; // Denominator for percentage multiplications.
     address public constant PROXY_COMPTROLLER_ADDRESS =
         0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B;
     address public constant WETH_ADDRESS =
@@ -258,7 +259,7 @@ contract CompoundModule {
      */
     function provideCollateral(uint256 _amount) external {
         require(_amount > 0, "Amount cannot be 0");
-        daiToken.transferFrom(msg.sender, address(this), _amount);
+        daiToken.safeTransferFrom(msg.sender, address(this), _amount);
         _supplyDaiToComp(_amount);
         // Update the collateral balance of the sender in cDAI.
         collateralBalanceOf[msg.sender] +=
@@ -291,7 +292,7 @@ contract CompoundModule {
             "Redeem cDAI on Compound failed."
         );
         collateralBalanceOf[msg.sender] -= amountInCDai; // In cToken.
-        daiToken.transfer(msg.sender, _amount);
+        daiToken.safeTransfer(msg.sender, _amount);
     }
 
     /** @dev Allows someone to liquidate a position.
@@ -322,7 +323,7 @@ contract CompoundModule {
         );
         collateralBalanceOf[_borrower] -= cDaiAmountToTransfer;
         _redeemDaiFromComp(daiAmountToTransfer, false);
-        daiToken.transfer(msg.sender, daiAmountToTransfer);
+        daiToken.safeTransfer(msg.sender, daiAmountToTransfer);
     }
 
     /** @dev Updates the collateral factor related to cETH.
@@ -394,7 +395,7 @@ contract CompoundModule {
      */
     function _supplyDaiToComp(uint256 _amount) internal {
         // Approve transfer on the ERC20 contract.
-        daiToken.approve(CDAI_ADDRESS, _amount);
+        daiToken.safeApprove(CDAI_ADDRESS, _amount);
         // Mint cTokens.
         require(cDaiToken.mint(_amount) == 0, "cDAI minting failed.");
     }
