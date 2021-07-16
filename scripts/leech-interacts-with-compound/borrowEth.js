@@ -31,14 +31,14 @@
 
 
   // SECOND : Creation of the contracts
-  const erc20Json = require('../../abis/Erc20.json');
-  const cErc20Json = require('../../abis/CErc20.json');
+  const erc20Json = require('../../abis/IErc20.json');
+  const cErc20Json = require('../../abis/ICErc20.json');
   const CompoundModuleJson = require('../../abis/CompoundModule.json');
 
   const ethDecimals = 18; // Ethereum has 18 decimal places
-  const cEthJson = require('../../abis/CEth.json');
+  const cEthJson = require('../../abis/ICEth.json');
   const cEthContractAddress = '0x4ddc2d193948926d02f9b1fe9e1daa0718270ed5';
-  const cEthContract = new web3.eth.Contract(cEthJson, cEthContractAddress)
+  const cEthContract = new web3.eth.Contract(cEthJson.abi, cEthContractAddress)
 
 
   // Instanciation of the contracts of the Underlying token contract address. Example: Dai.

@@ -30,8 +30,8 @@
 
 
   // SECOND : Creation of the contracts
-  const erc20Json = require('../../abis/Erc20.json');
-  const cErc20Json = require('../../abis/CErc20.json');
+  const erc20Json = require('../../abis/IErc20.json');
+  const cErc20Json = require('../../abis/ICErc20.json');
   const CompoundModuleJson = require('../../abis/CompoundModule.json');
 
 
@@ -44,8 +44,8 @@
   const underlyingMainnetAddress = daiContractAddress
   const cUnderlyingMainnetAddress = cDaiContractAddress
 
-  const underlying = new web3.eth.Contract(erc20Json, underlyingMainnetAddress)
-  const cUnderlying = new web3.eth.Contract(cErc20Json, cUnderlyingMainnetAddress)
+  const underlying = new web3.eth.Contract(erc20Json.abi, underlyingMainnetAddress)
+  const cUnderlying = new web3.eth.Contract(cErc20Json.abi, cUnderlyingMainnetAddress)
   // We fetch the address of the deployed contract
   let networkId = 1 // see the -i 1 in the ganache-cli command
   const CompoundModuleContractAddress = CompoundModuleJson.networks[networkId].address
