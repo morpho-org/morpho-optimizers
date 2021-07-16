@@ -219,12 +219,12 @@ contract CompoundModule {
         if (_amount <= lendingBalanceOf[msg.sender].onComp) {
             lendingBalanceOf[msg.sender].onComp -= _amount;
         } else {
-            uint256 cEthRateExchange = cEthToken.exchangeRateCurrent();
+            uint256 cEthExchangeRate = cEthToken.exchangeRateCurrent();
             uint256 remainingToUnstakeInCEth = _amount -
                 lendingBalanceOf[msg.sender].onComp;
             lendingBalanceOf[msg.sender].onComp = 0;
             lendingBalanceOf[msg.sender].onMorpho -=
-                (remainingToUnstakeInCEth * cEthRateExchange) /
+                (remainingToUnstakeInCEth * cEthExchangeRate) /
                 1e18;
             uint256 cEthContractBalance = cEthToken.balanceOf(address(this));
             if (remainingToUnstakeInCEth <= cEthContractBalance) {
@@ -238,9 +238,9 @@ contract CompoundModule {
                 remainingToUnstakeInCEth -=
                     (_moveBorrowersFromMorphoToComp(remainingToUnstakeInCEth) *
                         1e18) /
-                    cEthRateExchange;
+                    cEthExchangeRate;
                 cEthToken.borrow(
-                    (remainingToUnstakeInCEth * cEthRateExchange) / 1e18
+                    (remainingToUnstakeInCEth * cEthExchangeRate) / 1e18
                 ); // Revert on error.
             }
         }
@@ -271,8 +271,8 @@ contract CompoundModule {
      *  @param _amount The amount in DAI to get back.
      */
     function redeemCollateral(uint256 _amount) external {
-        uint256 daiExchangeRate = cDaiToken.exchangeRateCurrent();
-        uint256 amountInCDai = (_amount * 1e18) / daiExchangeRate;
+        uint256 cDaiExchangeRate = cDaiToken.exchangeRateCurrent();
+        uint256 amountInCDai = (_amount * 1e18) / cDaiExchangeRate;
         require(
             amountInCDai <= collateralBalanceOf[msg.sender],
             "Must redeem less than collateral."
@@ -282,7 +282,7 @@ contract CompoundModule {
         uint256 collateralAfterInCDAI = collateralBalanceOf[msg.sender] -
             amountInCDai;
         uint256 collateralRequiredInCDai = (borrowingAmountInDai *
-            collateralFactor) / daiExchangeRate;
+            collateralFactor) / cDaiExchangeRate;
         require(
             collateralAfterInCDAI >= collateralRequiredInCDai,
             "Health factor will drop below 1"
@@ -310,11 +310,11 @@ contract CompoundModule {
         uint256 borrowingAmountInDai = (borrowingBalanceOf[_borrower].total *
             1e18) / daiToEthRate;
         uint256 repayAmountInDai = (msg.value * 1e18) / daiToEthRate;
-        uint256 daiExchangeRate = cDaiToken.exchangeRateCurrent();
+        uint256 cDaiExchangeRate = cDaiToken.exchangeRateCurrent();
         uint256 daiAmountToTransfer = (repayAmountInDai * collateralInDai) /
             borrowingAmountInDai;
         uint256 cDaiAmountToTransfer = (daiAmountToTransfer * 1e18) /
-            daiExchangeRate;
+            cDaiExchangeRate;
         cDaiAmountToTransfer = (cDaiAmountToTransfer * liquidationIncentive) / DENOMINATOR;
         require(
             collateralBalanceOf[_borrower] >= cDaiAmountToTransfer,
