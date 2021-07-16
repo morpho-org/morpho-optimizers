@@ -299,8 +299,9 @@ contract CompoundModule {
      *  @param _borrower The address of the borrower to liquidate.
      */
     function liquidate(address _borrower) external payable {
+        (uint256 collateralInDai, uint256 collateralRequiredInDAI) = getAccountLiquidity(_borrower);
         require(
-            getAccountHealthFactor(_borrower) < 1,
+            collateralInDai < collateralRequiredInDAI,
             "Borrower position cannot be liquidated."
         );
         _payBack(_borrower, msg.value);
@@ -310,8 +311,6 @@ contract CompoundModule {
             1e18) / daiToEthRate;
         uint256 repayAmountInDai = (msg.value * 1e18) / daiToEthRate;
         uint256 daiExchangeRate = cDaiToken.exchangeRateCurrent();
-        uint256 collateralInDai = (collateralBalanceOf[_borrower] *
-            daiExchangeRate) / 1e18;
         uint256 daiAmountToTransfer = (repayAmountInDai * collateralInDai) /
             borrowingAmountInDai;
         uint256 cDaiAmountToTransfer = (daiAmountToTransfer * 1e18) /
@@ -337,17 +336,18 @@ contract CompoundModule {
     /** @dev Returns the health factor of the `_borrower`.
      *  @dev When the health factor of a borrower fells below 1, she can be liquidated.
      *  @param _borrower The address of `_borrower`.
-     *  @return The health factor.
+     *  @return collateralInDai The collateral of the `_borrower` in DAI.
+     *  @return collateralRequiredInDai The collateral required of the `_borrower` in DAI.
      */
-    function getAccountHealthFactor(address _borrower)
+    function getAccountLiquidity(address _borrower)
         public
-        returns (uint256)
+        returns (uint256 collateralInDai, uint256 collateralRequiredInDai)
     {
-        uint256 collateralRequiredInDai = (borrowingBalanceOf[_borrower].total *
+        collateralRequiredInDai = (borrowingBalanceOf[_borrower].total *
             collateralFactor) / oracle.consult();
-        uint256 collateralInDai = (collateralBalanceOf[_borrower] *
+        collateralInDai = (collateralBalanceOf[_borrower] *
             cDaiToken.exchangeRateCurrent()) / 1e18;
-        return collateralInDai / collateralRequiredInDai;
+        return (collateralInDai, collateralInDai);
     }
 
     /* Internal */
