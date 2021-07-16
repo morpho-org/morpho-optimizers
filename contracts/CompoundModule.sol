@@ -4,7 +4,7 @@ import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import "./interfaces/IOracle.sol";
-import {ICErc20, ICEth, IComptroller} from "./interfaces/ICompound.sol";
+import {ICErc20, ICEth, ICToken, IComptroller, ICompoundOracle} from "./interfaces/ICompound.sol";
 
 /**
  *  @title CompoundModule
@@ -50,12 +50,15 @@ contract CompoundModule {
         payable(0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643);
     address public constant ORACLE_ADDRESS =
         0xf6688883084DC1467c6F9158A0a9f398E29635BF;
+    address public constant COMPOUND_ORACLE_ADDRESS =
+        0x841616a5CBA946CF415Efe8a326A621A794D0f97;
 
     IComptroller public comptroller = IComptroller(PROXY_COMPTROLLER_ADDRESS);
     ICEth public cEthToken = ICEth(CETH_ADDRESS);
     ICErc20 public cDaiToken = ICErc20(CDAI_ADDRESS);
     IERC20 public daiToken = IERC20(DAI_ADDRESS);
     IOracle public oracle = IOracle(ORACLE_ADDRESS);
+    ICompoundOracle public compoundOracle = ICompoundOracle(COMPOUND_ORACLE_ADDRESS);
 
     /* External */
 
@@ -126,14 +129,14 @@ contract CompoundModule {
      */
     function borrow(uint256 _amount) external {
         // Calculate the collateral required.
-        uint256 daiAmountEquivalentToEthAmount = (_amount * 1e18) /
-            oracle.consult();
-        uint256 collateralRequiredInDai = (daiAmountEquivalentToEthAmount *
-            collateralFactor) / 1e18;
-        // Calculate the collateral value of sender in DAI.
-        uint256 collateralRequiredInCDai = (collateralRequiredInDai * 1e18) /
-            cDaiToken.exchangeRateCurrent();
-        // Check if sender has enough collateral.
+        require(_amount > 0, "Amount cannot be 0");
+        uint256 ethPriceMantissa = compoundOracle.getUnderlyingPrice(ICToken(CETH_ADDRESS));
+        uint256 daiPriceMantissa = compoundOracle.getUnderlyingPrice(ICToken(CDAI_ADDRESS));
+        require(ethPriceMantissa != 0 && daiPriceMantissa != 0, "Oracle fails.");
+        uint256 numerator = _amount * ethPriceMantissa * collateralFactor;
+        uint256 denominator = daiPriceMantissa * cDaiToken.exchangeRateCurrent();
+        uint256 collateralRequiredInCDai = numerator / denominator;
+        // Check if borrower has enough collateral.
         require(
             collateralRequiredInCDai <= collateralBalanceOf[msg.sender],
             "Not enough collateral."
@@ -277,15 +280,17 @@ contract CompoundModule {
             amountInCDai <= collateralBalanceOf[msg.sender],
             "Must redeem less than collateral."
         );
-        uint256 borrowingAmountInDai = (borrowingBalanceOf[msg.sender].total *
-            1e18) / oracle.consult();
+        uint256 ethPriceMantissa = compoundOracle.getUnderlyingPrice(ICToken(CETH_ADDRESS));
+        uint256 daiPriceMantissa = compoundOracle.getUnderlyingPrice(ICToken(CDAI_ADDRESS));
+        require(ethPriceMantissa != 0 && daiPriceMantissa != 0, "Oracle fails.");
+        uint256 borrowingAmountInDai = (borrowingBalanceOf[msg.sender].total * ethPriceMantissa) / daiPriceMantissa;
         uint256 collateralAfterInCDAI = collateralBalanceOf[msg.sender] -
             amountInCDai;
         uint256 collateralRequiredInCDai = (borrowingAmountInDai *
             collateralFactor) / cDaiExchangeRate;
         require(
             collateralAfterInCDAI >= collateralRequiredInCDai,
-            "Health factor will drop below 1"
+            "Not enough collateral to maintain position."
         );
         require(
             _redeemDaiFromComp(_amount, false) == 0,
@@ -305,24 +310,22 @@ contract CompoundModule {
             "Borrower position cannot be liquidated."
         );
         _payBack(_borrower, msg.value);
-        // Calculation done step by step to avoid overflows.
-        uint256 daiToEthRate = oracle.consult();
-        uint256 borrowingAmountInDai = (borrowingBalanceOf[_borrower].total *
-            1e18) / daiToEthRate;
-        uint256 repayAmountInDai = (msg.value * 1e18) / daiToEthRate;
-        uint256 cDaiExchangeRate = cDaiToken.exchangeRateCurrent();
-        uint256 daiAmountToTransfer = (repayAmountInDai * collateralInDai) /
-            borrowingAmountInDai;
-        uint256 cDaiAmountToTransfer = (daiAmountToTransfer * 1e18) /
-            cDaiExchangeRate;
-        cDaiAmountToTransfer = (cDaiAmountToTransfer * liquidationIncentive) / DENOMINATOR;
+        // Calculate the amount of token to seize from collateral.
+        uint256 ethPriceMantissa = compoundOracle.getUnderlyingPrice(ICToken(CETH_ADDRESS));
+        uint256 daiPriceMantissa = compoundOracle.getUnderlyingPrice(ICToken(CDAI_ADDRESS));
+        require(ethPriceMantissa != 0 && daiPriceMantissa != 0, "Oracle fails.");
+        uint256 numerator = msg.value * ethPriceMantissa * collateralInDai * liquidationIncentive;
+        uint256 denominator = borrowingBalanceOf[_borrower].total * daiPriceMantissa * DENOMINATOR;
+        uint256 daiAmountToSeize = numerator / denominator;
+        uint256 cDaiAmountToSeize = (daiAmountToSeize * 1e18) /
+            cDaiToken.exchangeRateCurrent();
         require(
-            collateralBalanceOf[_borrower] >= cDaiAmountToTransfer,
+            cDaiAmountToSeize <= collateralBalanceOf[_borrower],
             "Cannot get more than collateral balance of borrower."
         );
-        collateralBalanceOf[_borrower] -= cDaiAmountToTransfer;
-        _redeemDaiFromComp(daiAmountToTransfer, false);
-        daiToken.safeTransfer(msg.sender, daiAmountToTransfer);
+        collateralBalanceOf[_borrower] -= cDaiAmountToSeize;
+        _redeemDaiFromComp(daiAmountToSeize, false);
+        daiToken.safeTransfer(msg.sender, daiAmountToSeize);
     }
 
     /** @dev Updates the collateral factor related to cETH.
@@ -333,8 +336,7 @@ contract CompoundModule {
 
     /* Public */
 
-    /** @dev Returns the health factor of the `_borrower`.
-     *  @dev When the health factor of a borrower fells below 1, she can be liquidated.
+    /** @dev Returns the collateral and the collateral required for the `_borrower`.
      *  @param _borrower The address of `_borrower`.
      *  @return collateralInDai The collateral of the `_borrower` in DAI.
      *  @return collateralRequiredInDai The collateral required of the `_borrower` in DAI.
@@ -343,8 +345,10 @@ contract CompoundModule {
         public
         returns (uint256 collateralInDai, uint256 collateralRequiredInDai)
     {
-        collateralRequiredInDai = (borrowingBalanceOf[_borrower].total *
-            collateralFactor) / oracle.consult();
+        uint256 ethPriceMantissa = compoundOracle.getUnderlyingPrice(ICToken(CETH_ADDRESS));
+        uint256 daiPriceMantissa = compoundOracle.getUnderlyingPrice(ICToken(CDAI_ADDRESS));
+        require(ethPriceMantissa != 0 && daiPriceMantissa != 0, "Oracle fails.");
+        collateralRequiredInDai = borrowingBalanceOf[_borrower].total * ethPriceMantissa * collateralFactor / daiPriceMantissa * 1e18;
         collateralInDai = (collateralBalanceOf[_borrower] *
             cDaiToken.exchangeRateCurrent()) / 1e18;
         return (collateralInDai, collateralInDai);
