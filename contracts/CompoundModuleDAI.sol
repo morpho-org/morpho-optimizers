@@ -42,12 +42,12 @@ contract CompoundModuleDAI {
         0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B;
     address public constant WETH_ADDRESS =
         0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
-    address payable public constant CETH_ADDRESS =
-        payable(0x4Ddc2D193948926D02f9B1fE9e1daa0718270ED5);
+    address public constant CETH_ADDRESS =
+        0x4Ddc2D193948926D02f9B1fE9e1daa0718270ED5;
     address public constant DAI_ADDRESS =
         0x6B175474E89094C44Da98b954EedeAC495271d0F;
-    address payable public constant CDAI_ADDRESS =
-        payable(0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643);
+    address public constant CDAI_ADDRESS =
+        0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643;
     address public constant ORACLE_ADDRESS =
         0xf6688883084DC1467c6F9158A0a9f398E29635BF;
     address public constant COMPOUND_ORACLE_ADDRESS =
