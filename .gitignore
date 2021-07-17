@@ -11,8 +11,9 @@
 # production
 /build
 
-# abis
-/abis
+# hardhat
+/artifacts
+/cache
 
 # misc
 .DS_Store
