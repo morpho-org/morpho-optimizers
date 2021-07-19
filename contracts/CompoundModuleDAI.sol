@@ -7,10 +7,10 @@ import "./interfaces/IOracle.sol";
 import {ICErc20, ICEth, ICToken, IComptroller, ICompoundOracle} from "./interfaces/ICompound.sol";
 
 /**
- *  @title CompoundModule
- *  @dev Smart contracts interacting with Compound to enable real P2P lending.
+ *  @title CompoundModuleDAI
+ *  @dev Smart contracts interacting with Compound to enable real P2P lending with DAI as collateral
  */
-contract CompoundModule {
+contract CompoundModuleDAI {
     using SafeERC20 for IERC20;
     using EnumerableSet for EnumerableSet.AddressSet;
 
@@ -58,7 +58,8 @@ contract CompoundModule {
     ICErc20 public cDaiToken = ICErc20(CDAI_ADDRESS);
     IERC20 public daiToken = IERC20(DAI_ADDRESS);
     IOracle public oracle = IOracle(ORACLE_ADDRESS);
-    ICompoundOracle public compoundOracle = ICompoundOracle(COMPOUND_ORACLE_ADDRESS);
+    ICompoundOracle public compoundOracle =
+        ICompoundOracle(COMPOUND_ORACLE_ADDRESS);
 
     /* External */
 
@@ -130,11 +131,19 @@ contract CompoundModule {
     function borrow(uint256 _amount) external {
         // Calculate the collateral required.
         require(_amount > 0, "Amount cannot be 0");
-        uint256 ethPriceMantissa = compoundOracle.getUnderlyingPrice(ICToken(CETH_ADDRESS));
-        uint256 daiPriceMantissa = compoundOracle.getUnderlyingPrice(ICToken(CDAI_ADDRESS));
-        require(ethPriceMantissa != 0 && daiPriceMantissa != 0, "Oracle failed.");
+        uint256 ethPriceMantissa = compoundOracle.getUnderlyingPrice(
+            ICToken(CETH_ADDRESS)
+        );
+        uint256 daiPriceMantissa = compoundOracle.getUnderlyingPrice(
+            ICToken(CDAI_ADDRESS)
+        );
+        require(
+            ethPriceMantissa != 0 && daiPriceMantissa != 0,
+            "Oracle failed."
+        );
         uint256 numerator = _amount * ethPriceMantissa * collateralFactor;
-        uint256 denominator = daiPriceMantissa * cDaiToken.exchangeRateCurrent();
+        uint256 denominator = daiPriceMantissa *
+            cDaiToken.exchangeRateCurrent();
         uint256 collateralRequiredInCDai = numerator / denominator;
         // Check if borrower has enough collateral.
         require(
@@ -280,9 +289,16 @@ contract CompoundModule {
             amountInCDai <= collateralBalanceOf[msg.sender],
             "Must redeem less than collateral."
         );
-        uint256 collateralRequiredInDai = getCollateralRequired(borrowingBalanceOf[msg.sender].total, collateralFactor, CETH_ADDRESS, CDAI_ADDRESS);
-        uint256 collateralRequiredInCDai = (collateralRequiredInDai * 1e18) / cDaiExchangeRate;
-        uint256 collateralAfterInCDAI = collateralBalanceOf[msg.sender] - amountInCDai;
+        uint256 collateralRequiredInDai = getCollateralRequired(
+            borrowingBalanceOf[msg.sender].total,
+            collateralFactor,
+            CETH_ADDRESS,
+            CDAI_ADDRESS
+        );
+        uint256 collateralRequiredInCDai = (collateralRequiredInDai * 1e18) /
+            cDaiExchangeRate;
+        uint256 collateralAfterInCDAI = collateralBalanceOf[msg.sender] -
+            amountInCDai;
         require(
             collateralAfterInCDAI >= collateralRequiredInCDai,
             "Not enough collateral to maintain position."
@@ -299,18 +315,33 @@ contract CompoundModule {
      *  @param _borrower The address of the borrower to liquidate.
      */
     function liquidate(address _borrower) external payable {
-        (uint256 collateralInDai, uint256 collateralRequiredInDAI) = getAccountLiquidity(_borrower);
+        (
+            uint256 collateralInDai,
+            uint256 collateralRequiredInDAI
+        ) = getAccountLiquidity(_borrower);
         require(
             collateralInDai < collateralRequiredInDAI,
             "Borrower position cannot be liquidated."
         );
         _payBack(_borrower, msg.value);
         // Calculate the amount of token to seize from collateral.
-        uint256 ethPriceMantissa = compoundOracle.getUnderlyingPrice(ICToken(CETH_ADDRESS));
-        uint256 daiPriceMantissa = compoundOracle.getUnderlyingPrice(ICToken(CDAI_ADDRESS));
-        require(ethPriceMantissa != 0 && daiPriceMantissa != 0, "Oracle failed.");
-        uint256 numerator = msg.value * ethPriceMantissa * collateralInDai * liquidationIncentive;
-        uint256 denominator = borrowingBalanceOf[_borrower].total * daiPriceMantissa * DENOMINATOR;
+        uint256 ethPriceMantissa = compoundOracle.getUnderlyingPrice(
+            ICToken(CETH_ADDRESS)
+        );
+        uint256 daiPriceMantissa = compoundOracle.getUnderlyingPrice(
+            ICToken(CDAI_ADDRESS)
+        );
+        require(
+            ethPriceMantissa != 0 && daiPriceMantissa != 0,
+            "Oracle failed."
+        );
+        uint256 numerator = msg.value *
+            ethPriceMantissa *
+            collateralInDai *
+            liquidationIncentive;
+        uint256 denominator = borrowingBalanceOf[_borrower].total *
+            daiPriceMantissa *
+            DENOMINATOR;
         uint256 daiAmountToSeize = numerator / denominator;
         uint256 cDaiAmountToSeize = (daiAmountToSeize * 1e18) /
             cDaiToken.exchangeRateCurrent();
@@ -340,9 +371,15 @@ contract CompoundModule {
         public
         returns (uint256 collateralInDai, uint256 collateralRequiredInDai)
     {
-        collateralRequiredInDai = getCollateralRequired(borrowingBalanceOf[_borrower].total, collateralFactor, CETH_ADDRESS, CDAI_ADDRESS);
-        collateralInDai = (collateralBalanceOf[_borrower] *
-            cDaiToken.exchangeRateCurrent()) / 1e18;
+        collateralRequiredInDai = getCollateralRequired(
+            borrowingBalanceOf[_borrower].total,
+            collateralFactor,
+            CETH_ADDRESS,
+            CDAI_ADDRESS
+        );
+        collateralInDai =
+            (collateralBalanceOf[_borrower] * cDaiToken.exchangeRateCurrent()) /
+            1e18;
     }
 
     /** @dev Returns the collateral required for the given parameters.
@@ -350,17 +387,27 @@ contract CompoundModule {
      *  @param _collateralFactor The collateral factor linked to the token borrowed.
      *  @param _borrowedCTokenAddress The address of the cToken linked to the token borrowed.
      *  @param _collateralCTokenAddress The address of the cToken linked to the token in collateral.
-     *  @return collateralRequiredThe collateral required of the `_borrower`.
+     *  @return collateralRequired The collateral required of the `_borrower`.
      */
-    function getCollateralRequired(uint256 _borrowedAmount, uint256 _collateralFactor, address _borrowedCTokenAddress, address _collateralCTokenAddress)
-        public
-        view
-        returns (uint256)
-    {
-        uint256 borrowedAssetPriceMantissa = compoundOracle.getUnderlyingPrice(ICToken(_borrowedCTokenAddress));
-        uint256 collateralAssetPriceMantissa = compoundOracle.getUnderlyingPrice(ICToken(_collateralCTokenAddress));
-        require(borrowedAssetPriceMantissa != 0 && collateralAssetPriceMantissa != 0, "Oracle failed");
-        uint256 numerator = _borrowedAmount * borrowedAssetPriceMantissa * _collateralFactor;
+    function getCollateralRequired(
+        uint256 _borrowedAmount,
+        uint256 _collateralFactor,
+        address _borrowedCTokenAddress,
+        address _collateralCTokenAddress
+    ) public view returns (uint256) {
+        uint256 borrowedAssetPriceMantissa = compoundOracle.getUnderlyingPrice(
+            ICToken(_borrowedCTokenAddress)
+        );
+        uint256 collateralAssetPriceMantissa = compoundOracle
+            .getUnderlyingPrice(ICToken(_collateralCTokenAddress));
+        require(
+            borrowedAssetPriceMantissa != 0 &&
+                collateralAssetPriceMantissa != 0,
+            "Oracle failed"
+        );
+        uint256 numerator = _borrowedAmount *
+            borrowedAssetPriceMantissa *
+            _collateralFactor;
         uint256 denominator = collateralAssetPriceMantissa * 1e18;
         return numerator / denominator;
     }
@@ -380,17 +427,27 @@ contract CompoundModule {
                 _supplyEthToComp(_amount);
             } else {
                 // Repay Compound first.
-                cEthToken.repayBorrow{value: borrowingBalanceOf[_borrower].onComp}(); // Revert on error.
+                cEthToken.repayBorrow{
+                    value: borrowingBalanceOf[_borrower].onComp
+                }(); // Revert on error.
                 // Then, move remaining and supply it to Compound.
-                uint256 remainingToSupplyToComp = _amount- borrowingBalanceOf[_borrower].onComp;
-                uint256 remainingAmountToMoveInCEth = (remainingToSupplyToComp * 1e18) / cEthToken.exchangeRateCurrent(); // In cToken.
+                uint256 remainingToSupplyToComp = _amount -
+                    borrowingBalanceOf[_borrower].onComp;
+                uint256 remainingAmountToMoveInCEth = (remainingToSupplyToComp *
+                    1e18) / cEthToken.exchangeRateCurrent(); // In cToken.
                 borrowingBalanceOf[_borrower].onComp = 0;
                 borrowersOnComp.remove(_borrower);
-                _moveLendersFromMorphoToComp(remainingAmountToMoveInCEth, _borrower);
+                _moveLendersFromMorphoToComp(
+                    remainingAmountToMoveInCEth,
+                    _borrower
+                );
                 _supplyEthToComp(remainingToSupplyToComp);
             }
         } else {
-            _moveLendersFromMorphoToComp((_amount * 1e18) / cEthToken.exchangeRateCurrent(), _borrower);
+            _moveLendersFromMorphoToComp(
+                (_amount * 1e18) / cEthToken.exchangeRateCurrent(),
+                _borrower
+            );
             _supplyEthToComp(_amount);
         }
         borrowingBalanceOf[_borrower].total -= _amount;
@@ -572,6 +629,6 @@ contract CompoundModule {
         return a > b ? a : b;
     }
 
-    // This is needed to receive ETH when calling `redeemCEth`
+    // This is needed to receive ETH when calling `_redeemEthFromComp`
     receive() external payable {}
 }
