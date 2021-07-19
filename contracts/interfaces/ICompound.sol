@@ -17,6 +17,8 @@ interface ICErc20 {
         uint256
     ) external returns (bool);
 
+    function transfer(address dst, uint256 amount) external returns (bool);
+
     function balanceOf(address) external returns (uint256);
 
     function balanceOfUnderlying(address account) external returns (uint256); // The user's underlying balance, representing their assets in the protocol, is equal to the user's cToken balance multiplied by the Exchange Rate.
@@ -72,103 +74,217 @@ interface IComptroller {
             uint256,
             bool
         );
-    function enterMarkets(address[] calldata cTokens) external returns (uint[] memory);
-    function exitMarket(address cToken) external returns (uint);
 
-    function mintAllowed(address cToken, address minter, uint mintAmount) external returns (uint);
-    function mintVerify(address cToken, address minter, uint mintAmount, uint mintTokens) external;
+    function enterMarkets(address[] calldata cTokens)
+        external
+        returns (uint256[] memory);
 
-    function redeemAllowed(address cToken, address redeemer, uint redeemTokens) external returns (uint);
-    function redeemVerify(address cToken, address redeemer, uint redeemAmount, uint redeemTokens) external;
+    function exitMarket(address cToken) external returns (uint256);
 
-    function borrowAllowed(address cToken, address borrower, uint borrowAmount) external returns (uint);
-    function borrowVerify(address cToken, address borrower, uint borrowAmount) external;
+    function mintAllowed(
+        address cToken,
+        address minter,
+        uint256 mintAmount
+    ) external returns (uint256);
+
+    function mintVerify(
+        address cToken,
+        address minter,
+        uint256 mintAmount,
+        uint256 mintTokens
+    ) external;
+
+    function redeemAllowed(
+        address cToken,
+        address redeemer,
+        uint256 redeemTokens
+    ) external returns (uint256);
+
+    function redeemVerify(
+        address cToken,
+        address redeemer,
+        uint256 redeemAmount,
+        uint256 redeemTokens
+    ) external;
+
+    function borrowAllowed(
+        address cToken,
+        address borrower,
+        uint256 borrowAmount
+    ) external returns (uint256);
+
+    function borrowVerify(
+        address cToken,
+        address borrower,
+        uint256 borrowAmount
+    ) external;
 
     function repayBorrowAllowed(
         address cToken,
         address payer,
         address borrower,
-        uint repayAmount) external returns (uint);
+        uint256 repayAmount
+    ) external returns (uint256);
+
     function repayBorrowVerify(
         address cToken,
         address payer,
         address borrower,
-        uint repayAmount,
-        uint borrowerIndex) external;
+        uint256 repayAmount,
+        uint256 borrowerIndex
+    ) external;
 
     function liquidateBorrowAllowed(
         address cTokenBorrowed,
         address cTokenCollateral,
         address liquidator,
         address borrower,
-        uint repayAmount) external returns (uint);
+        uint256 repayAmount
+    ) external returns (uint256);
+
     function liquidateBorrowVerify(
         address cTokenBorrowed,
         address cTokenCollateral,
         address liquidator,
         address borrower,
-        uint repayAmount,
-        uint seizeTokens) external;
+        uint256 repayAmount,
+        uint256 seizeTokens
+    ) external;
 
     function seizeAllowed(
         address cTokenCollateral,
         address cTokenBorrowed,
         address liquidator,
         address borrower,
-        uint seizeTokens) external returns (uint);
+        uint256 seizeTokens
+    ) external returns (uint256);
+
     function seizeVerify(
         address cTokenCollateral,
         address cTokenBorrowed,
         address liquidator,
         address borrower,
-        uint seizeTokens) external;
+        uint256 seizeTokens
+    ) external;
 
-    function transferAllowed(address cToken, address src, address dst, uint transferTokens) external returns (uint);
-    function transferVerify(address cToken, address src, address dst, uint transferTokens) external;
+    function transferAllowed(
+        address cToken,
+        address src,
+        address dst,
+        uint256 transferTokens
+    ) external returns (uint256);
+
+    function transferVerify(
+        address cToken,
+        address src,
+        address dst,
+        uint256 transferTokens
+    ) external;
 
     /*** Liquidity/Liquidation Calculations ***/
 
     function liquidateCalculateSeizeTokens(
         address cTokenBorrowed,
         address cTokenCollateral,
-        uint repayAmount) external view returns (uint, uint);
+        uint256 repayAmount
+    ) external view returns (uint256, uint256);
 }
 
 interface IInterestRateModel {
-    function getBorrowRate(uint cash, uint borrows, uint reserves) external view returns (uint);
-    function getSupplyRate(uint cash, uint borrows, uint reserves, uint reserveFactorMantissa) external view returns (uint);
+    function getBorrowRate(
+        uint256 cash,
+        uint256 borrows,
+        uint256 reserves
+    ) external view returns (uint256);
 
+    function getSupplyRate(
+        uint256 cash,
+        uint256 borrows,
+        uint256 reserves,
+        uint256 reserveFactorMantissa
+    ) external view returns (uint256);
 }
 
 interface ICToken {
-    function transfer(address dst, uint amount) external returns (bool);
-    function transferFrom(address src, address dst, uint amount) external returns (bool);
-    function approve(address spender, uint amount) external returns (bool);
-    function allowance(address owner, address spender) external view returns (uint);
-    function balanceOf(address owner) external view returns (uint);
-    function balanceOfUnderlying(address owner) external returns (uint);
-    function getAccountSnapshot(address account) external view returns (uint, uint, uint, uint);
-    function borrowRatePerBlock() external view returns (uint);
-    function supplyRatePerBlock() external view returns (uint);
-    function totalBorrowsCurrent() external returns (uint);
-    function borrowBalanceCurrent(address account) external returns (uint);
-    function borrowBalanceStored(address account) external view returns (uint);
-    function exchangeRateCurrent() external returns (uint);
-    function exchangeRateStored() external view returns (uint);
-    function getCash() external view returns (uint);
-    function accrueInterest() external returns (uint);
-    function seize(address liquidator, address borrower, uint seizeTokens) external returns (uint);
+    function transfer(address dst, uint256 amount) external returns (bool);
+
+    function transferFrom(
+        address src,
+        address dst,
+        uint256 amount
+    ) external returns (bool);
+
+    function approve(address spender, uint256 amount) external returns (bool);
+
+    function allowance(address owner, address spender)
+        external
+        view
+        returns (uint256);
+
+    function balanceOf(address owner) external view returns (uint256);
+
+    function balanceOfUnderlying(address owner) external returns (uint256);
+
+    function getAccountSnapshot(address account)
+        external
+        view
+        returns (
+            uint256,
+            uint256,
+            uint256,
+            uint256
+        );
+
+    function borrowRatePerBlock() external view returns (uint256);
+
+    function supplyRatePerBlock() external view returns (uint256);
+
+    function totalBorrowsCurrent() external returns (uint256);
+
+    function borrowBalanceCurrent(address account) external returns (uint256);
+
+    function borrowBalanceStored(address account)
+        external
+        view
+        returns (uint256);
+
+    function exchangeRateCurrent() external returns (uint256);
+
+    function exchangeRateStored() external view returns (uint256);
+
+    function getCash() external view returns (uint256);
+
+    function accrueInterest() external returns (uint256);
+
+    function seize(
+        address liquidator,
+        address borrower,
+        uint256 seizeTokens
+    ) external returns (uint256);
 
     /*** Admin Functions ***/
 
-    function _setPendingAdmin(address payable newPendingAdmin) external returns (uint);
-    function _acceptAdmin() external returns (uint);
-    function _setComptroller(IComptroller newComptroller) external returns (uint);
-    function _setReserveFactor(uint newReserveFactorMantissa) external returns (uint);
-    function _reduceReserves(uint reduceAmount) external returns (uint);
-    function _setInterestRateModel(IInterestRateModel newInterestRateModel) external returns (uint);
+    function _setPendingAdmin(address payable newPendingAdmin)
+        external
+        returns (uint256);
+
+    function _acceptAdmin() external returns (uint256);
+
+    function _setComptroller(IComptroller newComptroller)
+        external
+        returns (uint256);
+
+    function _setReserveFactor(uint256 newReserveFactorMantissa)
+        external
+        returns (uint256);
+
+    function _reduceReserves(uint256 reduceAmount) external returns (uint256);
+
+    function _setInterestRateModel(IInterestRateModel newInterestRateModel)
+        external
+        returns (uint256);
 }
 
 interface ICompoundOracle {
-    function getUnderlyingPrice(ICToken cToken) external view returns (uint);
+    function getUnderlyingPrice(ICToken cToken) external view returns (uint256);
 }
