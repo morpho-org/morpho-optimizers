@@ -23,7 +23,7 @@ contract CompoundModuleETH is ReentrancyGuard {
     }
 
     struct BorrowingBalance {
-        uint256 total; // In underlying.
+        uint256 onMorpho; // In underlying.
         uint256 onComp; // In underlying.
     }
 
@@ -151,11 +151,13 @@ contract CompoundModuleETH is ReentrancyGuard {
         );
         uint256 cDaiExchangeRate = cDaiToken.exchangeRateCurrent();
         uint256 amountInCDai = (_amount * 1e18) / cDaiExchangeRate;
-        borrowingBalanceOf[msg.sender].total += _amount; // In underlying.
         uint256 remainingToBorrowOnComp = (_moveLendersFromCompToMorpho(
             amountInCDai,
             msg.sender
         ) * cDaiExchangeRate) / 1e18; // In underlying.
+        borrowingBalanceOf[msg.sender].onMorpho +=
+            _amount -
+            remainingToBorrowOnComp; // In underlying.
         // If not enough cTokens on Morpho, we must borrow it on Compound.
         if (remainingToBorrowOnComp > 0) {
             cDaiToken.borrow(remainingToBorrowOnComp); // Revert on error.
@@ -288,7 +290,8 @@ contract CompoundModuleETH is ReentrancyGuard {
             "Must redeem less than collateral."
         );
         uint256 collateralRequiredInEth = getCollateralRequired(
-            borrowingBalanceOf[msg.sender].total,
+            borrowingBalanceOf[msg.sender].onComp,
+            borrowingBalanceOf[msg.sender].onMorpho,
             collateralFactor,
             CETH_ADDRESS,
             CDAI_ADDRESS
@@ -321,6 +324,7 @@ contract CompoundModuleETH is ReentrancyGuard {
             uint256 collateralInEth,
             uint256 collateralRequiredInEth
         ) = getAccountLiquidity(_borrower);
+        uint256 cDaiExchangeRate = cDaiToken.exchangeRateCurrent();
         require(
             collateralInEth < collateralRequiredInEth,
             "Borrower position cannot be liquidated."
@@ -341,7 +345,9 @@ contract CompoundModuleETH is ReentrancyGuard {
             daiPriceMantissa *
             collateralInEth *
             liquidationIncentive;
-        uint256 denominator = borrowingBalanceOf[_borrower].total *
+        uint256 totalBorrowingBalance = borrowingBalanceOf[_borrower].onMorpho +
+            borrowingBalanceOf[_borrower].onComp;
+        uint256 denominator = totalBorrowingBalance *
             ethPriceMantissa *
             DENOMINATOR;
         uint256 ethAmountToSeize = numerator / denominator;
@@ -374,7 +380,8 @@ contract CompoundModuleETH is ReentrancyGuard {
         returns (uint256 collateralInEth, uint256 collateralRequiredInEth)
     {
         collateralRequiredInEth = getCollateralRequired(
-            borrowingBalanceOf[_borrower].total,
+            borrowingBalanceOf[_borrower].onComp,
+            borrowingBalanceOf[_borrower].onMorpho,
             collateralFactor,
             CDAI_ADDRESS,
             CETH_ADDRESS
@@ -385,14 +392,16 @@ contract CompoundModuleETH is ReentrancyGuard {
     }
 
     /** @dev Returns the collateral required for the given parameters.
-     *  @param _borrowedAmount The amount of tokens borrowed.
+     *  @param _borrowedAmountOnCompound The amount of tokens borrowed that are on Compound.
+     *  @param _borrowedAmountOnMorpho The amount of token borrowed that are on Morpho.
      *  @param _collateralFactor The collateral factor linked to the token borrowed.
      *  @param _borrowedCTokenAddress The address of the cToken linked to the token borrowed.
      *  @param _collateralCTokenAddress The address of the cToken linked to the token in collateral.
      *  @return collateralRequired The collateral required of the `_borrower`.
      */
     function getCollateralRequired(
-        uint256 _borrowedAmount,
+        uint256 _borrowedAmountOnCompound,
+        uint256 _borrowedAmountOnMorpho,
         uint256 _collateralFactor,
         address _borrowedCTokenAddress,
         address _collateralCTokenAddress
@@ -401,13 +410,15 @@ contract CompoundModuleETH is ReentrancyGuard {
             ICToken(_borrowedCTokenAddress)
         );
         uint256 collateralAssetPriceMantissa = compoundOracle
-            .getUnderlyingPrice(ICToken(_collateralCTokenAddress));
+        .getUnderlyingPrice(ICToken(_collateralCTokenAddress));
         require(
             borrowedAssetPriceMantissa != 0 &&
                 collateralAssetPriceMantissa != 0,
             "Oracle failed"
         );
-        uint256 numerator = _borrowedAmount *
+        uint256 totalBorrowedAmount = _borrowedAmountOnCompound +
+            _borrowedAmountOnMorpho; // In underlying
+        uint256 numerator = totalBorrowedAmount *
             borrowedAssetPriceMantissa *
             _collateralFactor;
         uint256 denominator = collateralAssetPriceMantissa * 1e18;
@@ -435,6 +446,8 @@ contract CompoundModuleETH is ReentrancyGuard {
                     borrowingBalanceOf[_borrower].onComp;
                 uint256 remainingAmountToMoveInCDai = (remainingToSupplyToComp *
                     1e18) / cDaiToken.exchangeRateCurrent(); // In cToken.
+                borrowingBalanceOf[_borrower]
+                .onMorpho -= remainingToSupplyToComp;
                 borrowingBalanceOf[_borrower].onComp = 0;
                 borrowersOnComp.remove(_borrower);
                 _moveLendersFromMorphoToComp(
@@ -448,11 +461,13 @@ contract CompoundModuleETH is ReentrancyGuard {
                 (_amount * 1e18) / cDaiToken.exchangeRateCurrent(),
                 _borrower
             );
+            borrowingBalanceOf[_borrower].onMorpho -= _amount;
             _supplyDaiToComp(_amount);
         }
-        borrowingBalanceOf[_borrower].total -= _amount;
-        if (borrowingBalanceOf[_borrower].total == 0)
-            borrowersOnMorpho.remove(_borrower);
+        if (
+            borrowingBalanceOf[_borrower].onMorpho == 0 &&
+            borrowingBalanceOf[_borrower].onComp == 0
+        ) borrowersOnMorpho.remove(_borrower);
     }
 
     /** @dev Supplies ETH to Compound.
@@ -581,11 +596,12 @@ contract CompoundModuleETH is ReentrancyGuard {
         uint256 i;
         while (remainingToMatch > 0 && i < borrowersOnMorpho.length()) {
             address borrower = borrowersOnMorpho.at(i);
-            uint256 onMorpho = borrowingBalanceOf[borrower].total -
-                borrowingBalanceOf[borrower].onComp;
 
-            if (onMorpho > 0) {
-                uint256 toMatch = min(onMorpho, remainingToMatch);
+            if (borrowingBalanceOf[borrower].onMorpho > 0) {
+                uint256 toMatch = min(
+                    borrowingBalanceOf[borrower].onMorpho,
+                    remainingToMatch
+                );
                 remainingToMatch -= toMatch;
                 borrowingBalanceOf[borrower].onComp += toMatch;
                 borrowersOnComp.add(borrower);
