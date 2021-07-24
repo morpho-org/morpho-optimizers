@@ -27,6 +27,32 @@ contract CompoundModuleETH is ReentrancyGuard {
         uint256 onComp; // In underlying.
     }
 
+    struct UserInfo {
+        uint256 amount; // How many LP tokens the user has provided.
+        uint256 rewardDebt; // Reward debt. See explanation below.
+        //
+        // We do some fancy math here. Basically, any point in time, the amount of COMPs
+        // entitled to a user but is pending to be distributed is:
+        //
+        //   pending reward = (user.amount * pool.accCompPerShare) - user.rewardDebt
+        //
+        // Whenever a user deposits or withdraws LP tokens to a pool. Here's what happens:
+        //   1. The pool's `accCompPerShare` (and `lastRewardBlock`) gets updated.
+        //   2. User receives the pending reward sent to her address.
+        //   3. User's `amount` gets updated.
+        //   4. User's `rewardDebt` gets updated.
+    }
+
+    // Info of each pool.
+    struct PoolInfo {
+        uint256 compSupply; // Comp supply of the contract associated to this pool.
+        uint256 lastRewardBlock; // Last block number that COMPs distribution occurs.
+        uint256 accCompPerShare; // Accumulated COMPs per share, times 1e18. See below.
+    }
+
+    mapping(address => mapping(address => UserInfo)) public userInfo;
+    mapping(address => PoolInfo) public poolInfo;
+
     /* Storage */
 
     mapping(address => LendingBalance) public lendingBalanceOf; // Lending balance of user (DAI/cDAI).
@@ -53,11 +79,14 @@ contract CompoundModuleETH is ReentrancyGuard {
         0xf6688883084DC1467c6F9158A0a9f398E29635BF;
     address public constant COMPOUND_ORACLE_ADDRESS =
         0x841616a5CBA946CF415Efe8a326A621A794D0f97;
+    address public constant COMP_ADDRESS =
+        0xc00e94Cb662C3520282E6f5717214004A7f26888;
 
     IComptroller public comptroller = IComptroller(PROXY_COMPTROLLER_ADDRESS);
     ICEth public cEthToken = ICEth(CETH_ADDRESS);
     ICErc20 public cDaiToken = ICErc20(CDAI_ADDRESS);
     IERC20 public daiToken = IERC20(DAI_ADDRESS);
+    IERC20 public compToken = IERC20(COMP_ADDRESS);
     IOracle public oracle = IOracle(ORACLE_ADDRESS);
     ICompoundOracle public compoundOracle =
         ICompoundOracle(COMPOUND_ORACLE_ADDRESS);
@@ -70,6 +99,21 @@ contract CompoundModuleETH is ReentrancyGuard {
     function lend(uint256 _amount) external {
         require(_amount > 0, "Amount cannot be 0");
         lenders.add(msg.sender); // Return false when lender is already there. O(1)
+        // Update COMP rewards for DAI lenders.
+        PoolInfo storage pool = poolInfo[CDAI_ADDRESS];
+        UserInfo storage user = userInfo[CDAI_ADDRESS][msg.sender];
+        updateCompRewards(CDAI_ADDRESS);
+        if (user.amount > 0) {
+            uint256 pending = ((user.amount * pool.accCompPerShare) / 1e18) -
+                user.rewardDebt;
+            if (pending > 0) {
+                pool.compSupply -= pending;
+                compToken.safeTransfer(msg.sender, pending);
+            }
+        }
+        if (_amount > 0) user.amount += _amount;
+        user.rewardDebt = (user.amount * pool.accCompPerShare) / 1e18;
+        // Handle lend.
         uint256 cDaiExchangeRate = cDaiToken.exchangeRateCurrent();
         // If some borrowers are on Compound, we must move them to Morpho.
         if (borrowersOnComp.length() > 0) {
@@ -102,11 +146,26 @@ contract CompoundModuleETH is ReentrancyGuard {
     function stake(uint256 _amount) external payable nonReentrant {
         require(_amount > 0, "Amount cannot be 0");
         lenders.add(msg.sender); // Return false when lender is already there. O(1)
+        uint256 cDaiExchangeRate = cDaiToken.exchangeRateCurrent();
+        // Update COMP rewards for DAI lenders.
+        PoolInfo storage pool = poolInfo[CDAI_ADDRESS];
+        UserInfo storage user = userInfo[CDAI_ADDRESS][msg.sender];
+        updateCompRewards(CDAI_ADDRESS);
+        if (user.amount > 0) {
+            uint256 pending = ((user.amount * pool.accCompPerShare) / 1e18) -
+                user.rewardDebt;
+            if (pending > 0) {
+                pool.compSupply -= pending;
+                compToken.safeTransfer(msg.sender, pending);
+            }
+        }
+        uint256 amounInDai = (_amount * cDaiExchangeRate) / 1e18;
+        if (_amount > 0) user.amount += amounInDai;
+        user.rewardDebt = (user.amount * pool.accCompPerShare) / 1e18;
+        // Handle stake.
         cDaiToken.transferFrom(msg.sender, address(this), _amount);
         // If some borrowers are on Compound, we must move them to Morpho.
         if (borrowersOnComp.length() > 0) {
-            uint256 cDaiExchangeRate = cDaiToken.exchangeRateCurrent();
-            uint256 amounInDai = (_amount * cDaiExchangeRate) / 1e18;
             // Find borrowers and move them to Morpho.
             uint256 remainingToSupplyToComp = (_moveBorrowersFromCompToMorpho(
                 amounInDai
@@ -180,6 +239,18 @@ contract CompoundModuleETH is ReentrancyGuard {
      *  @param _amount The amount in DAI to cash-out.
      */
     function cashOut(uint256 _amount) external nonReentrant {
+        // Update COMP rewards for lenders.
+        PoolInfo storage pool = poolInfo[CDAI_ADDRESS];
+        UserInfo storage user = userInfo[CDAI_ADDRESS][msg.sender];
+        updateCompRewards(CDAI_ADDRESS);
+        uint256 pending = ((user.amount * pool.accCompPerShare) / 1e18) -
+            user.rewardDebt;
+        if (pending > 0) {
+            pool.compSupply -= pending;
+            compToken.safeTransfer(msg.sender, pending);
+        }
+        if (_amount > 0) user.amount -= _amount;
+        // Handle cash-out.
         uint256 cDaiExchangeRate = cDaiToken.exchangeRateCurrent();
         uint256 amountOnCompInDai = (lendingBalanceOf[msg.sender].onComp *
             cDaiExchangeRate) / 1e18;
@@ -227,10 +298,22 @@ contract CompoundModuleETH is ReentrancyGuard {
      *  @param _amount Amount in cDAI to unstake.
      */
     function unstake(uint256 _amount) external nonReentrant {
+        uint256 cDaiExchangeRate = cDaiToken.exchangeRateCurrent();
+        // Update COMP rewards for borrowers.
+        PoolInfo storage pool = poolInfo[CETH_ADDRESS];
+        UserInfo storage user = userInfo[CETH_ADDRESS][msg.sender];
+        updateCompRewards(CETH_ADDRESS);
+        uint256 pending = ((user.amount * pool.accCompPerShare) / 1e18) -
+            user.rewardDebt;
+        if (pending > 0) {
+            pool.compSupply -= pending;
+            compToken.safeTransfer(msg.sender, pending);
+        }
+        if (_amount > 0) user.amount -= (_amount * 1e18) / cDaiExchangeRate;
+        // Handle unstake.
         if (_amount <= lendingBalanceOf[msg.sender].onComp) {
             lendingBalanceOf[msg.sender].onComp -= _amount;
         } else {
-            uint256 cDaiExchangeRate = cDaiToken.exchangeRateCurrent();
             uint256 remainingToUnstakeInCDai = _amount -
                 lendingBalanceOf[msg.sender].onComp;
             lendingBalanceOf[msg.sender].onComp = 0;
@@ -269,6 +352,21 @@ contract CompoundModuleETH is ReentrancyGuard {
      */
     function provideCollateral() external payable nonReentrant {
         require(msg.value > 0, "Amount cannot be 0");
+        // Update COMP rewards for borrowers.
+        PoolInfo storage pool = poolInfo[CETH_ADDRESS];
+        UserInfo storage user = userInfo[CETH_ADDRESS][msg.sender];
+        updateCompRewards(CETH_ADDRESS);
+        if (user.amount > 0) {
+            uint256 pending = ((user.amount * pool.accCompPerShare) / 1e18) -
+                user.rewardDebt;
+            if (pending > 0) {
+                pool.compSupply -= pending;
+                compToken.safeTransfer(msg.sender, pending);
+            }
+        }
+        if (msg.value > 0) user.amount += msg.value;
+        user.rewardDebt = (user.amount * pool.accCompPerShare) / 1e18;
+        // Handle collateral deposit.
         payable(address(this)).transfer(msg.value);
         _supplyEthToComp(msg.value);
         // Update the collateral balance of the sender in cETH.
@@ -287,6 +385,18 @@ contract CompoundModuleETH is ReentrancyGuard {
             amountInCEth <= collateralBalanceOf[msg.sender],
             "Must redeem less than collateral."
         );
+        // Update COMP rewards for borrowers.
+        PoolInfo storage pool = poolInfo[CETH_ADDRESS];
+        UserInfo storage user = userInfo[CETH_ADDRESS][msg.sender];
+        updateCompRewards(CETH_ADDRESS);
+        uint256 pending = ((user.amount * pool.accCompPerShare) / 1e18) -
+            user.rewardDebt;
+        if (pending > 0) {
+            pool.compSupply -= pending;
+            compToken.safeTransfer(msg.sender, pending);
+        }
+        if (_amount > 0) user.amount -= _amount;
+        user.rewardDebt = (user.amount * pool.accCompPerShare) / 1e18;
         uint256 collateralRequiredInEth = getCollateralRequired(
             borrowingBalanceOf[msg.sender].total,
             collateralFactor,
@@ -363,6 +473,31 @@ contract CompoundModuleETH is ReentrancyGuard {
     }
 
     /* Public */
+
+    function updateCompRewards(address cTokenAddress) public {
+        PoolInfo storage pool = poolInfo[cTokenAddress];
+        if (block.number <= pool.lastRewardBlock) {
+            return;
+        }
+        // Check balance of COMP before.
+        uint256 balanceBefore = compToken.balanceOf(address(this));
+        // Claim COMP tokens.
+        ICToken[] memory cTokens = new ICToken[](1);
+        cTokens[0] = ICToken(cTokenAddress);
+        comptroller.claimComp(address(this), cTokens);
+        // Check balance of COMP after.
+        uint256 balanceAfter = compToken.balanceOf(address(this));
+        // Update the supply of the pool with the difference.
+        pool.compSupply += (balanceAfter - balanceBefore);
+        if (pool.compSupply == 0) {
+            pool.lastRewardBlock = block.number;
+            return;
+        }
+        uint256 compReward = (pool.lastRewardBlock - block.number) *
+            comptroller.compSpeeds(cTokenAddress);
+        pool.accCompPerShare += (compReward * 1e18) / pool.compSupply;
+        pool.lastRewardBlock = block.number;
+    }
 
     /** @dev Returns the collateral and the collateral required for the `_borrower`.
      *  @param _borrower The address of `_borrower`.

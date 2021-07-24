@@ -188,6 +188,12 @@ interface IComptroller {
         address cTokenCollateral,
         uint256 repayAmount
     ) external view returns (uint256, uint256);
+
+    function claimComp(address holder, ICToken[] memory cTokens) external;
+
+    function compRate() external returns (uint256);
+
+    function compSpeeds(address) external returns (uint256);
 }
 
 interface IInterestRateModel {
