@@ -16,17 +16,23 @@ describe("CompoundModule Contract", () => {
   let daiToken;
   let CompoundModule;
   let compoundModule;
+
+  let owner;
   let lender;
   let borrower;
+  let addrs;
 
   beforeEach(async () => {
+
+    // CompoundModule
     CompoundModule = await ethers.getContractFactory("CompoundModule");
-    // CEth = await ethers.getContractFactory("ICEth");
-    // CEth = await artifacts.readArtifact("ICEth");
-    [lender, borrower] = await ethers.getSigners();
+    [owner, lender, borrower, ...addrs] = await ethers.getSigners();
     compoundModule = await CompoundModule.deploy();
     await compoundModule.deployed();
-    cEthToken = await ethers.getContractAt(cEthJson.abi, CETH_ADDRESS, lender);
+
+    // CEth
+    // CEth = await ethers.getContractFactory("ICEth");
+    cEthToken = await new ethers.Contract(CETH_ADDRESS, cEthJson.abi, owner);
   });
 
   describe("Deployment", () => {
@@ -37,15 +43,58 @@ describe("CompoundModule Contract", () => {
     });
   });
 
-  describe("Lending / Borrowing", () => {
-    it("Should lend 1 ETH", async () => {
+
+  // UNITARY TESTS
+
+  // lend
+
+  describe("Lend function when there is no borrowers", () => {
+    xit("Should have correct balances at the beginning", async () => {
       const ethAmount = utils.parseUnits("1");
-      const lenderBalanceBefore = await lender.getBalance(lender.address);
-      const compoundModuleCEthBalanceBefore = await cEthToken.balanceOf(compoundModule.address);
-      expect(compoundModuleCEthBalanceBefore).to.equal(0);
-      await compoundModule.lend({ from: lender, value: ethAmount });
-      const lenderBalanceAfter = await lender.getBalance(lender.address);
-      expect(BigNumber.from(lenderBalanceAfter)).to.equal(BigNumber.from(lenderBalanceBefore).add(ethAmount));
-    });
-  });
+      // expect(await lender.getBalance()).to.equal(ownerBalance);
+      expect((await compoundModule.lendingBalanceOf(owner.getAddress())).onComp).to.equal(0);
+      expect((await compoundModule.lendingBalanceOf(owner.getAddress())).onMorpho).to.equal(0);
+    })
+
+    xit("Should not work with amount 0", async () => {
+      const ethAmount = utils.parseUnits("0");
+      await expect(compoundModule.lend({ from: owner.getAddress(), value: ethAmount.toNumber() })).to.be.revertedWith("Amount cannot be 0");
+    })
+
+    it("Should have the right amount of cETH in onComp lending balance after", async () => {
+      const ethAmount = utils.parseUnits("1");
+      compoundModule.lend({ from: owner.getAddress(), value: ethAmount });
+      expectedOnCompLendingBalance = await cEthToken.exchangeRateCurrent({ from: owner.getAddress() });
+      console.log("exchange current rate :", expectedOnCompLendingBalance)
+      expect(Number((await compoundModule.lendingBalanceOf(owner.getAddress())).onComp)).to.equal(expectedOnCompLendingBalance);
+    })
+
+    it("Should have the right amount of ETH in onMorpho lending balance after", async () => {
+      const ethAmount = utils.parseUnits("1");
+      compoundModule.lend({ from: owner.getAddress(), value: ethAmount });
+      expectedOnMorphoLendingBalance = 0;
+      expect((await compoundModule.lendingBalanceOf(owner.getAddress())).onMorpho).to.equal(expectedOnMorphoLendingBalance);
+    })
+
+    // it("Should should have the correct amount of ETH on Compound after", async () => {
+    // })
+  })
+
+  // describe("Lend function when there is not enough borrowers", () => {
+  // })
+
+  // describe("Lend function when there is enough borrowers", () => {
+  // })
+
+  // describe("Lending / Borrowing", () => {
+  //   it("Should lend 1 ETH", async () => {
+  //     const ethAmount = utils.parseUnits("1");
+  //     const lenderBalanceBefore = await lender.getBalance(lender.getAddress());
+  //     const compoundModuleCEthBalanceBefore = await cEthToken.balanceOf(compoundModule.getAddress());
+  //     expect(compoundModuleCEthBalanceBefore).to.equal(0);
+  //     await compoundModule.lend({ from: lender, value: ethAmount });
+  //     const lenderBalanceAfter = await lender.getBalance(lender.getAddress());
+  //     expect(BigNumber.from(lenderBalanceAfter)).to.equal(BigNumber.from(lenderBalanceBefore).add(ethAmount));
+  //   });
+  // });
 });
