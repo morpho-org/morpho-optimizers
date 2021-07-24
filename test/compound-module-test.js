@@ -1,7 +1,5 @@
 const { expect } = require("chai");
 const { utils, BigNumber } = require('ethers');
-const cEthJson = require('../artifacts/contracts/interfaces/ICompound.sol/ICEth.json');
-
 
 describe("CompoundModule Contract", () => {
 
@@ -23,7 +21,6 @@ describe("CompoundModule Contract", () => {
   let addrs;
 
   beforeEach(async () => {
-
     // CompoundModule
     CompoundModule = await ethers.getContractFactory("CompoundModule");
     [owner, lender, borrower, ...addrs] = await ethers.getSigners();
@@ -32,6 +29,8 @@ describe("CompoundModule Contract", () => {
 
     // CEth
     cEthToken = await ethers.getContractAt("ICEth", CETH_ADDRESS, owner);
+    cDaiToken = await ethers.getContractAt("ICErc20", CDAI_ADDRESS, owner);
+    daiToken = await ethers.getContractAt("ICERC20", DAI_ADDRESS, owner);
   });
 
   describe("Deployment", () => {
@@ -63,8 +62,8 @@ describe("CompoundModule Contract", () => {
       const ethAmount = utils.parseUnits("1");
       compoundModule.lend({ from: owner.getAddress(), value: ethAmount });
       expectedOnCompLendingBalance = await cEthToken.exchangeRateCurrent();
-      // console.log("exchange current rate:", expectedOnCompLendingBalance)
-      // expect(Number((await compoundModule.lendingBalanceOf(owner.getAddress())).onComp)).to.equal(expectedOnCompLendingBalance);
+      console.log("exchange current rate:", expectedOnCompLendingBalance)
+      expect(Number((await compoundModule.lendingBalanceOf(owner.getAddress())).onComp)).to.equal(expectedOnCompLendingBalance);
     })
 
     it("Should have the right amount of ETH in onMorpho lending balance after", async () => {
