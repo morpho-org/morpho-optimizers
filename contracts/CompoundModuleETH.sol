@@ -35,7 +35,7 @@ contract CompoundModuleETH is ReentrancyGuard {
     EnumerableSet.AddressSet private lenders; // Lenders on Morpho.
     EnumerableSet.AddressSet private borrowersOnMorpho; // Borrowers on Morpho.
     EnumerableSet.AddressSet private borrowersOnComp; // Borrowers on Compound.
-    uint256 public collateralFactor = 75e16; // TODO: change collateral factor. Collateral Factor related to cETH.
+    uint256 public collateralFactor = 75e16; // Collateral Factor related to cETH.
     uint256 public liquidationIncentive = 8000; // Incentive for liquidators in percentage in basis points.
 
     uint256 public constant DENOMINATOR = 10000; // Denominator for percentage multiplications.
