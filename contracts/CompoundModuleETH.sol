@@ -2,6 +2,7 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 import "./interfaces/IOracle.sol";
 import {ICErc20, ICEth, ICToken, IComptroller, ICompoundOracle} from "./interfaces/ICompound.sol";
@@ -10,7 +11,7 @@ import {ICErc20, ICEth, ICToken, IComptroller, ICompoundOracle} from "./interfac
  *  @title CompoundModuleETH
  *  @dev Smart contracts interacting with Compound to enable real P2P lending with ETH as collateral.
  */
-contract CompoundModuleETH {
+contract CompoundModuleETH is ReentrancyGuard {
     using SafeERC20 for IERC20;
     using EnumerableSet for EnumerableSet.AddressSet;
 
@@ -98,7 +99,7 @@ contract CompoundModuleETH {
     /** @dev Allows someone to directly stake cDAI.
      *  @param _amount The amount to stake in cDAI.
      */
-    function stake(uint256 _amount) external payable {
+    function stake(uint256 _amount) external payable nonReentrant {
         require(_amount > 0, "Amount cannot be 0");
         lenders.add(msg.sender); // Return false when lender is already there. O(1)
         cDaiToken.transferFrom(msg.sender, address(this), _amount);
@@ -126,7 +127,7 @@ contract CompoundModuleETH {
     /** @dev Allows someone to borrow DAI.
      *  @param _amount The amount to borrow in DAI.
      */
-    function borrow(uint256 _amount) external {
+    function borrow(uint256 _amount) external nonReentrant {
         // Calculate the collateral required.
         require(_amount > 0, "Amount cannot be 0");
         uint256 ethPriceMantissa = compoundOracle.getUnderlyingPrice(
@@ -171,14 +172,14 @@ contract CompoundModuleETH {
     /** @dev Allows a borrower to pay back its debt in DAI.
      *  @param _amount The amount in DAI to payback.
      */
-    function payBack(uint256 _amount) external {
+    function payBack(uint256 _amount) external nonReentrant {
         _payBack(msg.sender, _amount);
     }
 
     /** @dev Allows a lender to cash-out her DAI.
      *  @param _amount The amount in DAI to cash-out.
      */
-    function cashOut(uint256 _amount) external {
+    function cashOut(uint256 _amount) external nonReentrant {
         uint256 cDaiExchangeRate = cDaiToken.exchangeRateCurrent();
         uint256 amountOnCompInDai = (lendingBalanceOf[msg.sender].onComp *
             cDaiExchangeRate) / 1e18;
@@ -225,7 +226,7 @@ contract CompoundModuleETH {
     /** @dev Allows a lender to unstake its cDAI.
      *  @param _amount Amount in cDAI to unstake.
      */
-    function unstake(uint256 _amount) external {
+    function unstake(uint256 _amount) external nonReentrant {
         if (_amount <= lendingBalanceOf[msg.sender].onComp) {
             lendingBalanceOf[msg.sender].onComp -= _amount;
         } else {
@@ -266,7 +267,7 @@ contract CompoundModuleETH {
 
     /** @dev Allows a borrower to provide collateral in ETH.
      */
-    function provideCollateral() external payable {
+    function provideCollateral() external payable nonReentrant {
         require(msg.value > 0, "Amount cannot be 0");
         payable(address(this)).transfer(msg.value);
         _supplyEthToComp(msg.value);
@@ -279,7 +280,7 @@ contract CompoundModuleETH {
     /** @dev Allows a borrower to redeem her collateral in ETH.
      *  @param _amount The amount in ETH to get back.
      */
-    function redeemCollateral(uint256 _amount) external {
+    function redeemCollateral(uint256 _amount) external nonReentrant {
         uint256 cEthExchangeRate = cEthToken.exchangeRateCurrent();
         uint256 amountInCEth = (_amount * 1e18) / cEthExchangeRate;
         require(
@@ -312,7 +313,10 @@ contract CompoundModuleETH {
      *  @param _borrower The address of the borrower to liquidate.
      *  @param _amount The amount to repay in DAI.
      */
-    function liquidate(address _borrower, uint256 _amount) external {
+    function liquidate(address _borrower, uint256 _amount)
+        external
+        nonReentrant
+    {
         (
             uint256 collateralInEth,
             uint256 collateralRequiredInEth
