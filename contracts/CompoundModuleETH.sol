@@ -81,6 +81,7 @@ contract CompoundModuleETH is ReentrancyGuard {
      */
     function lend(uint256 _amount) external {
         require(_amount > 0, "Amount cannot be 0");
+        daiToken.transferFrom(msg.sender, address(this), _amount);
         lenders.add(msg.sender); // Return false when lender is already there. O(1)
         uint256 cDaiExchangeRate = cDaiToken.exchangeRateCurrent();
         // If some borrowers are on Compound, we must move them to Morpho.
