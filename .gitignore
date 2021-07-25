@@ -14,6 +14,7 @@
 # hardhat
 /artifacts
 /cache
+/coverage.json
 
 # misc
 .DS_Store
