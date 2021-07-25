@@ -1,14 +1,17 @@
 const { expect } = require("chai");
 const hre = require("hardhat");
 const { utils, BigNumber } = require('ethers');
-const daiAbi = require('./abis/dai-abi.json');
+// Use mainnet ABIs
+const daiAbi = require('./abis/daiABI.json');
+const CErc20ABI = require('./abis/CErc20ABI.json');
+const CEthABI = require('./abis/CEthABI.json');
 
 describe("CompoundModuleETH Contract", () => {
 
   const WETH_ADDRESS = "0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B";
   const CETH_ADDRESS = "0x4Ddc2D193948926D02f9B1fE9e1daa0718270ED5";
   const DAI_ADDRESS = "0x6B175474E89094C44Da98b954EedeAC495271d0F";
-  const CDAI_ADDRESS = "0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643";
+  const CDAI_ADDRESS = "0x5d3a536e4d6dbd6114cc1ead35777bab948e3643";
   const COMPOUND_ORACLE_ADDRESS = "0x841616a5CBA946CF415Efe8a326A621A794D0f97";
 
   const cTokenDecimals = 8; // all cTokens have 8 decimal places
@@ -25,13 +28,13 @@ describe("CompoundModuleETH Contract", () => {
   let addrs;
 
   const underlyingToCToken = (amount, exchangeRateCurrent, underlyingDecimals) => {
-    const mantissa = 18 + parseInt(underlyingDecimals) - cTokenDecimals;
-    return amount * BigNumber.from(10).pow(mantissa) / exchangeRateCurrent;
+    const mantissa = 18 + underlyingDecimals - cTokenDecimals;
+    return BigNumber.from(amount).mul(BigNumber.from(10).pow(mantissa)).div(BigNumber.from(exchangeRateCurrent));
   }
 
   const cTokenToUnderlying = (amount, exchangeRateCurrent, underlyingDecimals) => {
     const mantissa = 18 + parseInt(underlyingDecimals) - cTokenDecimals;
-    return amount * exchangeRateCurrent / BigNumber.from(10).pow(mantissa);
+    return BigNumber.from(amount).mul(exchangeRateCurrent).div(BigNumber.from(10).pow(mantissa));
   }
 
   beforeEach(async () => {
@@ -41,25 +44,24 @@ describe("CompoundModuleETH Contract", () => {
     compoundModule = await CompoundModule.deploy();
     await compoundModule.deployed();
 
-    cEthToken = await ethers.getContractAt("ICEth", CETH_ADDRESS, owner);
-    cDaiToken = await ethers.getContractAt("ICErc20", CDAI_ADDRESS, owner);
-    const daiMcdJoin = '0x9759A6Ac90977b93B58547b4A71c78317f391A28';
+    cEthToken = await ethers.getContractAt(CEthABI, CETH_ADDRESS, lender);
+    cDaiToken = await ethers.getContractAt(CErc20ABI, CDAI_ADDRESS, lender);
+    const daiMinter = '0x9759A6Ac90977b93B58547b4A71c78317f391A28';
     await hre.network.provider.request({
       method: "hardhat_impersonateAccount",
-      params: [daiMcdJoin],
+      params: [daiMinter],
     });
-    const daiSigner = await ethers.getSigner(daiMcdJoin)
+    const daiSigner = await ethers.getSigner(daiMinter);
     daiToken = await ethers.getContractAt(daiAbi, DAI_ADDRESS, daiSigner);
 
     // Address of Join (has auth) https://changelog.makerdao.com/ -> releases -> contract addresses -> MCD_JOIN_DAI
     const daiAmount = utils.parseUnits("10000");
     const ethAmount = utils.parseUnits("100");
     await network.provider.send("hardhat_setBalance", [
-      daiMcdJoin,
+      daiMinter,
       utils.hexValue(ethAmount),
     ]);
-    await daiToken.mint(lender.getAddress(), daiAmount, { from: daiMcdJoin });
-    console.log((await daiToken.balanceOf(lender.getAddress())).toString());
+    await daiToken.mint(lender.getAddress(), daiAmount, { from: daiMinter });
   });
 
   describe("Deployment", () => {
@@ -70,53 +72,120 @@ describe("CompoundModuleETH Contract", () => {
     });
   });
 
-  // lend
-  describe("Lend function when there is no borrowers", () => {
+  describe("Lending when there is no borrowers", () => {
     it("Should have correct balances at the beginning", async () => {
       expect((await compoundModule.lendingBalanceOf(lender.getAddress())).onComp).to.equal(0);
       expect((await compoundModule.lendingBalanceOf(lender.getAddress())).onMorpho).to.equal(0);
     })
 
-    it("Should revert with amount 0", async () => {
+    it("Should revert when lending 0", async () => {
       await expect(compoundModule.connect(lender).lend(0)).to.be.revertedWith("Amount cannot be 0");
     })
 
-    it("Should have the right amount of cETH in onComp lending balance after", async () => {
+    it("Should have the right amount of cDAI onComp after lending DAI", async () => {
       const amount = utils.parseUnits("10");
-      await daiToken.connect(lender).approve(compoundModule.address, 10);
-      await compoundModule.connect(lender).lend(10);
-      console.log(await daiToken.balanceOf(compoundModule.address));
-      exchangeRateCurrent = await cDaiToken.exchangeRateCurrent();
-      // const expectedLendingBalanceOnMorpho = underlyingToCToken(amount, exchangeRateCurrent, 18);
-      // expect(Number((await compoundModule.lendingBalanceOf(lender.getAddress())).onMorpho)).to.equal(expectedLendingBalanceOnMorpho);
+      await daiToken.connect(lender).approve(compoundModule.address, amount);
+      await compoundModule.connect(lender).lend(amount);
+      const exchangeRateCurrent = (await cDaiToken.exchangeRateCurrent()).value;
+      const expectedLendingBalanceOnMorpho = underlyingToCToken(amount, exchangeRateCurrent, 18);
+      expect((await compoundModule.lendingBalanceOf(lender.getAddress())).onMorpho).to.equal(expectedLendingBalanceOnMorpho);
     })
 
-    it("Should have the right amount of ETH in onMorpho lending balance after", async () => {
-      const ethAmount = utils.parseUnits("1");
-      compoundModule.lend({ from: owner.getAddress(), value: ethAmount });
+    it("Should be able to cash-out DAI right after lending", async () => {
+      const amount = utils.parseUnits("10");
+      await daiToken.connect(lender).approve(compoundModule.address, amount);
+      await compoundModule.connect(lender).lend(amount);
+      await compoundModule.connect(lender).cashOut(amount);
       const expectedLendingBalanceOnMorpho = 0;
-      expect((await compoundModule.lendingBalanceOf(owner.getAddress())).onMorpho).to.equal(expectedOnMorphoLendingBalance);
+      expect((await compoundModule.lendingBalanceOf(lender.getAddress())).onMorpho).to.equal(expectedLendingBalanceOnMorpho);
     })
 
-    // it("Should should have the correct amount of ETH on Compound after", async () => {
-    // })
+    it("Should be able to lend more DAI after already having lend DAI", async () => {
+      const amount = utils.parseUnits("10");
+      const amountToApprove = utils.parseUnits("20");
+      await daiToken.connect(lender).approve(compoundModule.address, amountToApprove);
+      await compoundModule.connect(lender).lend(amount);
+      await compoundModule.connect(lender).lend(amount);
+      const exchangeRateCurrent = (await cDaiToken.exchangeRateCurrent()).value;
+      const expectedLendingBalanceOnMorpho = underlyingToCToken(20, exchangeRateCurrent, 18);
+      expect((await compoundModule.lendingBalanceOf(lender.getAddress())).onMorpho).to.equal(expectedLendingBalanceOnMorpho);
+    });
   })
 
-  // describe("Lend function when there is not enough borrowers", () => {
-  // })
+  describe("Borrowing when there is no lenders", () => {
+    it("Should have correct balances at the beginning", async () => {
+      expect((await compoundModule.borrowingBalanceOf(borrower.getAddress())).onComp).to.equal(0);
+      expect((await compoundModule.borrowingBalanceOf(borrower.getAddress())).onMorpho).to.equal(0);
+    });
 
-  // describe("Lend function when there is enough borrowers", () => {
-  // })
+    it("Should revert when providing 0 as collateral", async () => {
+      await expect(compoundModule.connect(lender).provideCollateral({ value: 0 })).to.be.revertedWith("Amount cannot be 0");
+    });
 
-  // describe("Lending / Borrowing", () => {
-  //   it("Should lend 1 ETH", async () => {
-  //     const ethAmount = utils.parseUnits("1");
-  //     const lenderBalanceBefore = await lender.getBalance(lender.getAddress());
-  //     const compoundModuleCEthBalanceBefore = await cEthToken.balanceOf(compoundModule.getAddress());
-  //     expect(compoundModuleCEthBalanceBefore).to.equal(0);
-  //     await compoundModule.lend({ from: lender, value: ethAmount });
-  //     const lenderBalanceAfter = await lender.getBalance(lender.getAddress());
-  //     expect(BigNumber.from(lenderBalanceAfter)).to.equal(BigNumber.from(lenderBalanceBefore).add(ethAmount));
-  //   });
-  // });
+    it("Should revert when borrowing 0", async () => {
+      await expect(compoundModule.connect(lender).borrow(0)).to.be.revertedWith("Amount cannot be 0");
+    });
+
+    it("Should have the right amount of cETH in collateral after providing ETH as collateral", async () => {
+      const amount = utils.parseUnits("10");
+      await compoundModule.connect(borrower).provideCollateral({ value: amount });
+      const exchangeRateCurrent = (await cEthToken.exchangeRateCurrent()).value;
+      const expectedCollateralBalance = underlyingToCToken(10, exchangeRateCurrent, 18);
+      expect(await compoundModule.collateralBalanceOf(borrower.getAddress())).to.equal(expectedCollateralBalance);
+    });
+
+    it("Should be able to redeem collateral right after providing it", async () => {
+      const amount = utils.parseUnits("10");
+      await compoundModule.connect(borrower).provideCollateral({ value: amount });
+      await compoundModule.connect(borrower).provideCollateral({ value: amount });
+      const exchangeRateCurrent = (await cEthToken.exchangeRateCurrent()).value;
+      const expectedCollateralBalance = underlyingToCToken(20, exchangeRateCurrent, 18);
+      expect(await compoundModule.collateralBalanceOf(borrower.getAddress())).to.equal(expectedCollateralBalance);
+    });
+
+    it("Should not be able to borrow if no collateral provided", async () => {
+      await expect(compoundModule.connect(borrower).borrow(0)).to.be.revertedWith("Amount cannot be 0");
+    });
+
+    it("Should be able to borrow on Compound after providing collateral up to max", async () => {
+      const amount = utils.parseUnits("10");
+      await compoundModule.connect(borrower).provideCollateral({ value: amount });
+      const collateralFactor = 0;
+      const maxToBorrow = 0;
+      await expect(compoundModule.connect(borrower).borrow(maxToBorrow)).to.be.revertedWith("Not enough collateral.");
+    });
+
+    it("Should not be able to borrow more than max allowed given an amount of collateral", async () => {
+      const amount = utils.parseUnits("10");
+      await compoundModule.connect(borrower).provideCollateral({ value: amount });
+      const collateralFactor = 0;
+      const moreThanMaxToBorrow = BigNumber.from(100000000000000000000000000);
+      await expect(compoundModule.connect(borrower).borrow(moreThanMaxToBorrow)).to.be.revertedWith("Not enough collateral.");
+    });
+  })
+
+  describe("Check interests accrued for a one borrower / one lender interaction on Morpho", () => {
+    it("Lender and borrower should be in P2P interaction", async () => {
+    });
+
+    it("Lender and borrower should be in P2P interaction", async () => {
+    });
+  });
+
+  describe("Check permissions", () => {
+  });
+
+  describe("Test attacks", async () => {
+    it("Should not be DDOS by a lender or a group of lenders", async () => {
+    });
+
+    it("Should not be DDOS by a borrower or a group of borrowers", async () => {
+    });
+
+    it("Should not be subject to flash loan attacks", async () => {
+    });
+
+    it("Should be subjected to Oracle Manipulation attacs", async () => {
+    });
+  });
 });
