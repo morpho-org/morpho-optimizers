@@ -437,8 +437,8 @@ contract CompoundModuleETH is ReentrancyGuard {
      */
     function updateBPY() public {
         // update BPY
-        uint256 lendBPY;
-        uint256 borrowBPY;
+        uint256 lendBPY = cDaiToken.borrowRatePerBlock();
+        uint256 borrowBPY = cDaiToken.supplyRatePerBlock();
         BPY = (lendBPY + borrowBPY) / 2;
     }
 
