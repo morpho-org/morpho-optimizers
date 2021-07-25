@@ -38,7 +38,9 @@ contract CompoundModuleETH is ReentrancyGuard {
     uint256 public collateralFactor = 75e16; // Collateral Factor related to cETH.
     uint256 public liquidationIncentive = 8000; // Incentive for liquidators in percentage in basis points.
 
-    uint256 public BPY; // Block Percentage Yield
+    uint256 public BPY; // Block Percentage Yield ("midrate").
+    uint256 public currentExchangeRate; // current exchange rate from mUnit to underlying.
+    uint256 public lastUpdateBlockNumber; // Last time currentExchangeRate was updated.
 
     uint256 public constant DENOMINATOR = 10000; // Denominator for percentage multiplications.
     address public constant PROXY_COMPTROLLER_ADDRESS =
@@ -68,6 +70,8 @@ contract CompoundModuleETH is ReentrancyGuard {
 
     constructor() {
         updateBPY();
+        lastUpdateBlockNumber = block.number;
+        currentExchangeRate = 1e18;
     }
 
     /* External */
@@ -418,7 +422,7 @@ contract CompoundModuleETH is ReentrancyGuard {
             ICToken(_borrowedCTokenAddress)
         );
         uint256 collateralAssetPriceMantissa = compoundOracle
-        .getUnderlyingPrice(ICToken(_collateralCTokenAddress));
+            .getUnderlyingPrice(ICToken(_collateralCTokenAddress));
         require(
             borrowedAssetPriceMantissa != 0 &&
                 collateralAssetPriceMantissa != 0,
@@ -440,6 +444,9 @@ contract CompoundModuleETH is ReentrancyGuard {
         uint256 lendBPY = cDaiToken.borrowRatePerBlock();
         uint256 borrowBPY = cDaiToken.supplyRatePerBlock();
         BPY = (lendBPY + borrowBPY) / 2;
+
+        // update currentExchangeRate
+        _updateCurrentExchangeRate();
     }
 
     /* Internal */
@@ -464,7 +471,7 @@ contract CompoundModuleETH is ReentrancyGuard {
                 uint256 remainingAmountToMoveInCDai = (remainingToSupplyToComp *
                     1e18) / cDaiToken.exchangeRateCurrent(); // In cToken.
                 borrowingBalanceOf[_borrower]
-                .onMorpho -= remainingToSupplyToComp;
+                    .onMorpho -= remainingToSupplyToComp;
                 borrowingBalanceOf[_borrower].onComp = 0;
                 borrowersOnComp.remove(_borrower);
                 _moveLendersFromMorphoToComp(
@@ -652,6 +659,25 @@ contract CompoundModuleETH is ReentrancyGuard {
             }
             i++;
         }
+    }
+
+    /** @dev Updates the current exchange rate, taking into the account block percentage yield since the last time it has been updated.
+     *  @return currentExchangeRate to convert from mUnit to underlying or from underlying to mUnit.
+     */
+    function _updateCurrentExchangeRate() internal returns (uint256) {
+        // update currentExchangeRate.
+        uint256 currentBlock = block.number;
+        uint256 numberOfBlocksSinceLastUpdate = currentBlock -
+            lastUpdateBlockNumber;
+        currentExchangeRate =
+            (currentExchangeRate *
+                (1e18 + BPY * numberOfBlocksSinceLastUpdate)) /
+            1e18;
+
+        // update lastUpdateBlockNumber.
+        lastUpdateBlockNumber = currentBlock;
+
+        return currentExchangeRate;
     }
 
     function min(uint256 a, uint256 b) internal pure returns (uint256) {
