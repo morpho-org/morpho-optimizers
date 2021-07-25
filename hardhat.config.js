@@ -9,7 +9,7 @@ module.exports = {
   networks: {
     hardhat: {
       forking: {
-        url: `https://mainnet.infura.io/v3/${process.env.INFURA_PROJECT_ID}`
+        url: `https://eth-mainnet.gateway.pokt.network/v1/lb/${process.env.POCKET_NETWORK_ID}`
       },
       accounts: [
         {
