@@ -38,6 +38,8 @@ contract CompoundModuleETH is ReentrancyGuard {
     uint256 public collateralFactor = 75e16; // Collateral Factor related to cETH.
     uint256 public liquidationIncentive = 8000; // Incentive for liquidators in percentage in basis points.
 
+    uint256 public BPY; // Block Percentage Yield
+
     uint256 public constant DENOMINATOR = 10000; // Denominator for percentage multiplications.
     address public constant PROXY_COMPTROLLER_ADDRESS =
         0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B;
@@ -61,6 +63,12 @@ contract CompoundModuleETH is ReentrancyGuard {
     IOracle public oracle = IOracle(ORACLE_ADDRESS);
     ICompoundOracle public compoundOracle =
         ICompoundOracle(COMPOUND_ORACLE_ADDRESS);
+
+    /* Contructor */
+
+    constructor() {
+        updateBPY();
+    }
 
     /* External */
 
@@ -423,6 +431,15 @@ contract CompoundModuleETH is ReentrancyGuard {
             _collateralFactor;
         uint256 denominator = collateralAssetPriceMantissa * 1e18;
         return numerator / denominator;
+    }
+
+    /** @dev Updates the Block Percentage Yield (`BPY`) and calculate the current exchange rate (`currentExchangeRate`).
+     */
+    function updateBPY() public {
+        // update BPY
+        uint256 lendBPY;
+        uint256 borrowBPY;
+        BPY = (lendBPY + borrowBPY) / 2;
     }
 
     /* Internal */
