@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "./utils/DSMath.sol";
 
 import "./interfaces/IOracle.sol";
 import {ICErc20, ICEth, ICToken, IComptroller, ICompoundOracle} from "./interfaces/ICompound.sol";
@@ -11,7 +12,7 @@ import {ICErc20, ICEth, ICToken, IComptroller, ICompoundOracle} from "./interfac
  *  @title CompoundModuleETH
  *  @dev Smart contracts interacting with Compound to enable real P2P lending with ETH as collateral.
  */
-contract CompoundModuleETH is ReentrancyGuard {
+contract CompoundModuleETH is ReentrancyGuard, DSMath {
     using SafeERC20 for IERC20;
     using EnumerableSet for EnumerableSet.AddressSet;
 
@@ -674,27 +675,16 @@ contract CompoundModuleETH is ReentrancyGuard {
      *  @return currentExchangeRate to convert from mUnit to underlying or from underlying to mUnit.
      */
     function _updateCurrentExchangeRate() internal returns (uint256) {
-        // update currentExchangeRate.
+        // Update currentExchangeRate.
         uint256 currentBlock = block.number;
         uint256 numberOfBlocksSinceLastUpdate = currentBlock -
             lastUpdateBlockNumber;
-        currentExchangeRate =
-            (currentExchangeRate *
-                (1e18 + BPY * numberOfBlocksSinceLastUpdate)) /
-            1e18;
+        currentExchangeRate = currentExchangeRate * rpow((WAD + BPY * 1e9), numberOfBlocksSinceLastUpdate) / WAD;
 
-        // update lastUpdateBlockNumber.
+        // Update lastUpdateBlockNumber.
         lastUpdateBlockNumber = currentBlock;
 
         return currentExchangeRate;
-    }
-
-    function min(uint256 a, uint256 b) internal pure returns (uint256) {
-        return a < b ? a : b;
-    }
-
-    function max(uint256 a, uint256 b) private pure returns (uint256) {
-        return a > b ? a : b;
     }
 
     // This is needed to receive ETH when calling `_redeemEthFromComp`
