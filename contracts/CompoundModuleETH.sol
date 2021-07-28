@@ -340,7 +340,6 @@ contract CompoundModuleETH is ReentrancyGuard, DSMath {
             uint256 collateralInEth,
             uint256 collateralRequiredInEth
         ) = getAccountLiquidity(_borrower);
-        uint256 cDaiExchangeRate = cDaiToken.exchangeRateCurrent();
         require(
             collateralInEth < collateralRequiredInEth,
             "Borrower position cannot be liquidated."
