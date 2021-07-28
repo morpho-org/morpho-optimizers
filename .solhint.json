@@ -11,6 +11,8 @@
         "multiple-sends": "off",
         "compiler-version": "off",
         "reason-string": "off",
+        "no-inline-assembly": "off",
+        "no-empty-blocks": "off",
         "func-visibility": ["warn", {
         "ignoreConstructors": true
         }]
