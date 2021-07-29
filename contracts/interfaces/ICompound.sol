@@ -1,4 +1,4 @@
-pragma solidity ^0.8.0;
+pragma solidity 0.8.6;
 
 interface ICErc20 {
     function mint(uint256) external returns (uint256);
