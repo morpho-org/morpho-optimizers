@@ -201,7 +201,7 @@ contract CompoundModuleETH is ReentrancyGuard {
         if (_amount <= amountOnCompInDai) {
             lendingBalanceOf[msg.sender].onComp -=
                 (_amount * 1e18) /
-                cEthToken.exchangeRateCurrent(); // In cToken.
+                cDaiExchangeRate; // In cToken.
             _redeemDaiFromComp(_amount, false);
         } else {
             lendingBalanceOf[msg.sender].onComp = 0;
@@ -340,7 +340,6 @@ contract CompoundModuleETH is ReentrancyGuard {
             uint256 collateralInEth,
             uint256 collateralRequiredInEth
         ) = getAccountLiquidity(_borrower);
-        uint256 cDaiExchangeRate = cDaiToken.exchangeRateCurrent();
         require(
             collateralInEth < collateralRequiredInEth,
             "Borrower position cannot be liquidated."
