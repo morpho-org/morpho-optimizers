@@ -1,10 +1,13 @@
 const { expect } = require("chai");
 const hre = require("hardhat");
+const { ethers } = require("hardhat");
 const { utils, BigNumber } = require('ethers');
 // Use mainnet ABIs
-const daiAbi = require('./abis/daiABI.json');
-const CErc20ABI = require('./abis/CErc20ABI.json');
-const CEthABI = require('./abis/CEthABI.json');
+const daiAbi = require('./abis/Dai.json');
+const CErc20ABI = require('./abis/CErc20.json');
+const CEthABI = require('./abis/CEth.json');
+const comptrollerABI = require('./abis/Comptroller.json');
+const compoundOracleABI = require('./abis/UniswapAnchoredView.json');
 
 describe("CompoundModuleETH Contract", () => {
 
@@ -12,6 +15,7 @@ describe("CompoundModuleETH Contract", () => {
   const CETH_ADDRESS = "0x4Ddc2D193948926D02f9B1fE9e1daa0718270ED5";
   const DAI_ADDRESS = "0x6B175474E89094C44Da98b954EedeAC495271d0F";
   const CDAI_ADDRESS = "0x5d3a536e4d6dbd6114cc1ead35777bab948e3643";
+  const PROXY_COMPTROLLER_ADDRESS = "0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B";
   const COMPOUND_ORACLE_ADDRESS = "0x841616a5CBA946CF415Efe8a326A621A794D0f97";
 
   const cTokenDecimals = 8; // all cTokens have 8 decimal places
@@ -42,8 +46,10 @@ describe("CompoundModuleETH Contract", () => {
     compoundModule = await CompoundModule.deploy();
     await compoundModule.deployed();
 
-    cEthToken = await ethers.getContractAt(CEthABI, CETH_ADDRESS, lender);
-    cDaiToken = await ethers.getContractAt(CErc20ABI, CDAI_ADDRESS, lender);
+    cEthToken = await ethers.getContractAt(CEthABI, CETH_ADDRESS, owner);
+    cDaiToken = await ethers.getContractAt(CErc20ABI, CDAI_ADDRESS, owner);
+    comptroller = await ethers.getContractAt(comptrollerABI, PROXY_COMPTROLLER_ADDRESS, owner);
+    compoundOracle = await ethers.getContractAt(compoundOracleABI, COMPOUND_ORACLE_ADDRESS, owner);
     const daiMinter = '0x9759A6Ac90977b93B58547b4A71c78317f391A28';
     await hre.network.provider.request({
       method: "hardhat_impersonateAccount",
@@ -63,11 +69,29 @@ describe("CompoundModuleETH Contract", () => {
   });
 
   describe("Deployment", () => {
-    it("Should deploy the contract", async () => {
+    it("Should deploy the contract with the right values", async () => {
       expect(await compoundModule.collateralFactor()).to.equal("750000000000000000");
       expect(await compoundModule.liquidationIncentive()).to.equal("8000");
       expect(await compoundModule.DENOMINATOR()).to.equal("10000");
+      const borrowRatePerBlock = await cDaiToken.borrowRatePerBlock();
+      const supplyRatePerBlock = await cDaiToken.supplyRatePerBlock();
+      const expectedBPY = borrowRatePerBlock.add(supplyRatePerBlock).div(2);
+      expect(await compoundModule.BPY()).to.equal(expectedBPY);
     });
+  });
+
+  describe("Test utils functions", () => {
+    it("Should give the right collateral required for different values", async () => {
+      const amount = utils.parseUnits("10");
+      const { collateralFactorMantissa } = await comptroller.markets(CDAI_ADDRESS);
+      const collateralRequired = await compoundModule.getCollateralRequired(amount, 0, collateralFactorMantissa, CDAI_ADDRESS, CETH_ADDRESS);
+      const ethPriceMantissa = await compoundOracle.getUnderlyingPrice(CETH_ADDRESS);
+      const daiPriceMantissa = await compoundOracle.getUnderlyingPrice(CDAI_ADDRESS);
+      const expectedCollateralRequired = amount.mul(daiPriceMantissa).mul(utils.parseUnits("1")).div(ethPriceMantissa).div(collateralFactorMantissa);
+      expect(collateralRequired).to.equal(expectedCollateralRequired);
+    });
+
+    it("Should give the right collateral required for different values", async () => {})
   });
 
   describe("Lending when there is no borrowers", () => {
@@ -162,6 +186,7 @@ describe("CompoundModuleETH Contract", () => {
     });
 
     it("Should not be able to borrow if no collateral provided", async () => {
+      // TODO: fix issue in SC with borrow
       await expect(compoundModule.connect(borrower).borrow(1)).to.be.revertedWith("Not enough collateral.");
     });
 
