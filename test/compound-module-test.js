@@ -101,7 +101,8 @@ describe("CompoundModuleETH Contract", () => {
       // Check that lender cannot withdraw too much
       await expect(compoundModule.connect(lender).cashOut(toCashOut.add(utils.parseUnits("0.01")).toString())).to.be.reverted;
 
-      // To improve as there is still dust after withdrawing
+      // To improve as there is still dust after withdrawing: create a function with cToken as input?
+      await cDaiToken.connect(lender).exchangeRateCurrent()
       const exchangeRate2 = await cDaiToken.exchangeRateStored();
       toCashOut = cTokenToUnderlying(lendingBalanceOnComp, exchangeRate2);
       await compoundModule.connect(lender).cashOut(toCashOut);
@@ -125,7 +126,7 @@ describe("CompoundModuleETH Contract", () => {
     });
   })
 
-  xdescribe("Borrowing when there is no lenders", () => {
+  describe("Borrowing when there is no lenders", () => {
     it("Should have correct balances at the beginning", async () => {
       expect((await compoundModule.borrowingBalanceOf(borrower.getAddress())).onComp).to.equal(0);
       expect((await compoundModule.borrowingBalanceOf(borrower.getAddress())).onMorpho).to.equal(0);
@@ -142,33 +143,37 @@ describe("CompoundModuleETH Contract", () => {
     it("Should have the right amount of cETH in collateral after providing ETH as collateral", async () => {
       const amount = utils.parseUnits("10");
       await compoundModule.connect(borrower).provideCollateral({ value: amount });
-      const exchangeRateCurrent = await cDaiToken.exchangeRateStored();
-      const expectedCollateralBalance = underlyingToCToken(10, exchangeRateCurrent, 18);
-      expect(await compoundModule.collateralBalanceOf(borrower.getAddress())).to.equal(expectedCollateralBalance);
+      const exchangeRate = await cEthToken.exchangeRateStored();
+      const expectedCollateralBalance = underlyingToCToken(amount, exchangeRate);
+      expect((await compoundModule.collateralBalanceOf(borrower.getAddress())).toNumber()).to.equal(expectedCollateralBalance);
     });
 
-    it("Should be able to redeem collateral right after providing it", async () => {
+    it("Should be able to provide more collateral right after having providing some", async () => {
       const amount = utils.parseUnits("10");
       await compoundModule.connect(borrower).provideCollateral({ value: amount });
+      const exchangeRate1 = await cEthToken.exchangeRateStored();
       await compoundModule.connect(borrower).provideCollateral({ value: amount });
-      const exchangeRateCurrent = await cDaiToken.exchangeRateStored();
-      const expectedCollateralBalance = underlyingToCToken(amountToApprove, exchangeRateCurrent);
+      const exchangeRate2 = await cEthToken.exchangeRateStored();
+      const expectedCollateralBalance1 = underlyingToCToken(amount, exchangeRate1);
+      const expectedCollateralBalance2 = underlyingToCToken(amount, exchangeRate2);
+      const expectedCollateralBalance = expectedCollateralBalance1.add(expectedCollateralBalance2);
+      expect((await cEthToken.balanceOf(compoundModule.address)).toNumber()).to.equal(expectedCollateralBalance);
       expect(await compoundModule.collateralBalanceOf(borrower.getAddress())).to.equal(expectedCollateralBalance);
     });
 
     it("Should not be able to borrow if no collateral provided", async () => {
-      await expect(compoundModule.connect(borrower).borrow(0)).to.be.revertedWith("Amount cannot be 0");
+      await expect(compoundModule.connect(borrower).borrow(1)).to.be.revertedWith("Not enough collateral.");
     });
 
-    it("Should be able to borrow on Compound after providing collateral up to max", async () => {
+    xit("Should be able to borrow on Compound after providing collateral up to max", async () => {
       const amount = utils.parseUnits("10");
       await compoundModule.connect(borrower).provideCollateral({ value: amount });
-      const collateralFactor = 0;
+      const collateralFactor = compoundModule.collateralFactor();
       const maxToBorrow = 0;
       await expect(compoundModule.connect(borrower).borrow(maxToBorrow)).to.be.revertedWith("Not enough collateral.");
     });
 
-    it("Should not be able to borrow more than max allowed given an amount of collateral", async () => {
+    xit("Should not be able to borrow more than max allowed given an amount of collateral", async () => {
       const amount = utils.parseUnits("10");
       await compoundModule.connect(borrower).provideCollateral({ value: amount });
       const collateralFactor = 0;
