@@ -304,10 +304,12 @@ contract CompoundModuleETH is ReentrancyGuard {
             amountInCEth <= collateralBalanceOf[msg.sender],
             "Must redeem less than collateral."
         );
-        uint256 collateralRequiredInEth = getCollateralRequired(
-            borrowingBalanceOf[msg.sender].onComp,
+        uint256 borrowedAmount = borrowingBalanceOf[msg.sender].onComp +
             (borrowingBalanceOf[msg.sender].onMorpho *
-                _updateCurrentExchangeRate()) / 1e18,
+                _updateCurrentExchangeRate()) /
+            1e18;
+        uint256 collateralRequiredInEth = getCollateralRequired(
+            borrowedAmount,
             collateralFactor,
             CETH_ADDRESS,
             CDAI_ADDRESS
@@ -361,7 +363,7 @@ contract CompoundModuleETH is ReentrancyGuard {
             collateralInEth *
             liquidationIncentive;
         uint256 totalBorrowingBalance = (borrowingBalanceOf[_borrower]
-        .onMorpho * _updateCurrentExchangeRate()) /
+            .onMorpho * _updateCurrentExchangeRate()) /
             1e18 +
             borrowingBalanceOf[_borrower].onComp;
         uint256 denominator = totalBorrowingBalance *
@@ -396,10 +398,12 @@ contract CompoundModuleETH is ReentrancyGuard {
         public
         returns (uint256 collateralInEth, uint256 collateralRequiredInEth)
     {
-        collateralRequiredInEth = getCollateralRequired(
-            borrowingBalanceOf[_borrower].onComp,
+        uint256 borrowedAmount = borrowingBalanceOf[_borrower].onComp +
             (borrowingBalanceOf[_borrower].onMorpho *
-                _updateCurrentExchangeRate()) / 1e18,
+                _updateCurrentExchangeRate()) /
+            1e18;
+        collateralRequiredInEth = getCollateralRequired(
+            borrowedAmount,
             collateralFactor,
             CDAI_ADDRESS,
             CETH_ADDRESS
@@ -410,16 +414,14 @@ contract CompoundModuleETH is ReentrancyGuard {
     }
 
     /** @dev Returns the collateral required for the given parameters.
-     *  @param _borrowedAmountOnCompound The amount of tokens borrowed that are on Compound.
-     *  @param _borrowedAmountOnMorpho The amount of token borrowed that are on Morpho.
+     *  @param _borrowedAmountInUnderlying The amount of underlying tokens borrowed.
      *  @param _collateralFactor The collateral factor linked to the token borrowed.
      *  @param _borrowedCTokenAddress The address of the cToken linked to the token borrowed.
      *  @param _collateralCTokenAddress The address of the cToken linked to the token in collateral.
      *  @return collateralRequired The collateral required of the `_borrower`.
      */
     function getCollateralRequired(
-        uint256 _borrowedAmountOnCompound,
-        uint256 _borrowedAmountOnMorpho,
+        uint256 _borrowedAmountInUnderlying,
         uint256 _collateralFactor,
         address _borrowedCTokenAddress,
         address _collateralCTokenAddress
@@ -434,9 +436,7 @@ contract CompoundModuleETH is ReentrancyGuard {
                 collateralAssetPriceMantissa != 0,
             "Oracle failed"
         );
-        uint256 totalBorrowedAmount = _borrowedAmountOnCompound +
-            _borrowedAmountOnMorpho; // In underlying
-        uint256 numerator = totalBorrowedAmount *
+        uint256 numerator = _borrowedAmountInUnderlying *
             borrowedAssetPriceMantissa *
             _collateralFactor;
         uint256 denominator = collateralAssetPriceMantissa * 1e18;
