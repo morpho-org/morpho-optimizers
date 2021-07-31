@@ -51,7 +51,7 @@
   },
   "husky": {
     "hooks": {
-      "pre-push": "yarn fix:sol"
+      "pre-commit": "yarn fix:sol"
     }
   }
 }
