@@ -11,7 +11,6 @@ const compoundOracleABI = require('./abis/UniswapAnchoredView.json');
 
 describe("CompoundModuleETH Contract", () => {
 
-  const WETH_ADDRESS = "0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B";
   const CETH_ADDRESS = "0x4Ddc2D193948926D02f9B1fE9e1daa0718270ED5";
   const DAI_ADDRESS = "0x6B175474E89094C44Da98b954EedeAC495271d0F";
   const CDAI_ADDRESS = "0x5d3a536e4d6dbd6114cc1ead35777bab948e3643";
@@ -71,7 +70,7 @@ describe("CompoundModuleETH Contract", () => {
   describe("Deployment", () => {
     it("Should deploy the contract with the right values", async () => {
       expect(await compoundModule.collateralFactor()).to.equal("750000000000000000");
-      expect(await compoundModule.liquidationIncentive()).to.equal("8000");
+      expect(await compoundModule.liquidationIncentive()).to.equal("11000");
       expect(await compoundModule.DENOMINATOR()).to.equal("10000");
       const borrowRatePerBlock = await cDaiToken.borrowRatePerBlock();
       const supplyRatePerBlock = await cDaiToken.supplyRatePerBlock();
@@ -84,7 +83,7 @@ describe("CompoundModuleETH Contract", () => {
     it("Should give the right collateral required for different values", async () => {
       const amount = utils.parseUnits("10");
       const { collateralFactorMantissa } = await comptroller.markets(CDAI_ADDRESS);
-      const collateralRequired = await compoundModule.getCollateralRequired(amount, 0, collateralFactorMantissa, CDAI_ADDRESS, CETH_ADDRESS);
+      const collateralRequired = await compoundModule.getCollateralRequired(amount, collateralFactorMantissa, CDAI_ADDRESS, CETH_ADDRESS);
       const ethPriceMantissa = await compoundOracle.getUnderlyingPrice(CETH_ADDRESS);
       const daiPriceMantissa = await compoundOracle.getUnderlyingPrice(CDAI_ADDRESS);
       const expectedCollateralRequired = amount.mul(daiPriceMantissa).mul(utils.parseUnits("1")).div(ethPriceMantissa).div(collateralFactorMantissa);
@@ -110,7 +109,7 @@ describe("CompoundModuleETH Contract", () => {
       await compoundModule.connect(lender).lend(amount);
       const exchangeRateCurrent = await cDaiToken.exchangeRateStored();
       const expectedLendingBalanceOnComp = underlyingToCToken(amount, exchangeRateCurrent);
-      expect((await cDaiToken.balanceOf(compoundModule.address)).toNumber()).to.equal(expectedLendingBalanceOnComp);
+      expect(await cDaiToken.balanceOf(compoundModule.address)).to.equal(expectedLendingBalanceOnComp);
       expect((await compoundModule.lendingBalanceOf(lender.getAddress())).onComp.toNumber()).to.equal(expectedLendingBalanceOnComp);
     })
 
@@ -126,7 +125,7 @@ describe("CompoundModuleETH Contract", () => {
       await expect(compoundModule.connect(lender).cashOut(toCashOut.add(utils.parseUnits("0.01")).toString())).to.be.reverted;
 
       // To improve as there is still dust after withdrawing: create a function with cToken as input?
-      await cDaiToken.connect(lender).exchangeRateCurrent()
+      await cDaiToken.connect(lender).exchangeRateCurrent();
       const exchangeRate2 = await cDaiToken.exchangeRateStored();
       toCashOut = cTokenToUnderlying(lendingBalanceOnComp, exchangeRate2);
       await compoundModule.connect(lender).cashOut(toCashOut);
@@ -136,7 +135,7 @@ describe("CompoundModuleETH Contract", () => {
     it("Should be able to lend more DAI after already having lend DAI", async () => {
       const amount = utils.parseUnits("10");
       const amountToApprove = utils.parseUnits("20");
-      // Tx are done in different blocks
+      // Tx are done in different blocks.
       await daiToken.connect(lender).approve(compoundModule.address, amountToApprove);
       await compoundModule.connect(lender).lend(amount);
       const exchangeRate1 = await cDaiToken.exchangeRateStored();
@@ -145,8 +144,8 @@ describe("CompoundModuleETH Contract", () => {
       const expectedLendingBalanceOnComp1 = underlyingToCToken(amount, exchangeRate1);
       const expectedLendingBalanceOnComp2 = underlyingToCToken(amount, exchangeRate2);
       const expectedLendingBalanceOnComp = expectedLendingBalanceOnComp1.add(expectedLendingBalanceOnComp2);
-      expect((await cDaiToken.balanceOf(compoundModule.address)).toNumber()).to.equal(expectedLendingBalanceOnComp);
-      expect((await compoundModule.lendingBalanceOf(lender.getAddress())).onComp.toNumber()).to.equal(expectedLendingBalanceOnComp);
+      expect(await cDaiToken.balanceOf(compoundModule.address)).to.equal(expectedLendingBalanceOnComp);
+      expect((await compoundModule.lendingBalanceOf(lender.getAddress())).onComp).to.equal(expectedLendingBalanceOnComp);
     });
   })
 
@@ -157,11 +156,11 @@ describe("CompoundModuleETH Contract", () => {
     });
 
     it("Should revert when providing 0 as collateral", async () => {
-      await expect(compoundModule.connect(lender).provideCollateral({ value: 0 })).to.be.revertedWith("Amount cannot be 0");
+      await expect(compoundModule.connect(lender).provideCollateral({ value: 0 })).to.be.revertedWith("Amount cannot be 0.");
     });
 
     it("Should revert when borrowing 0", async () => {
-      await expect(compoundModule.connect(lender).borrow(0)).to.be.revertedWith("Amount cannot be 0");
+      await expect(compoundModule.connect(lender).borrow(0)).to.be.revertedWith("Amount cannot be 0.");
     });
 
     it("Should have the right amount of cETH in collateral after providing ETH as collateral", async () => {
@@ -169,7 +168,7 @@ describe("CompoundModuleETH Contract", () => {
       await compoundModule.connect(borrower).provideCollateral({ value: amount });
       const exchangeRate = await cEthToken.exchangeRateStored();
       const expectedCollateralBalance = underlyingToCToken(amount, exchangeRate);
-      expect((await compoundModule.collateralBalanceOf(borrower.getAddress())).toNumber()).to.equal(expectedCollateralBalance);
+      expect(await compoundModule.collateralBalanceOf(borrower.getAddress())).to.equal(expectedCollateralBalance);
     });
 
     it("Should be able to provide more collateral right after having providing some", async () => {
@@ -181,13 +180,13 @@ describe("CompoundModuleETH Contract", () => {
       const expectedCollateralBalance1 = underlyingToCToken(amount, exchangeRate1);
       const expectedCollateralBalance2 = underlyingToCToken(amount, exchangeRate2);
       const expectedCollateralBalance = expectedCollateralBalance1.add(expectedCollateralBalance2);
-      expect((await cEthToken.balanceOf(compoundModule.address)).toNumber()).to.equal(expectedCollateralBalance);
+      expect(await cEthToken.balanceOf(compoundModule.address)).to.equal(expectedCollateralBalance);
       expect(await compoundModule.collateralBalanceOf(borrower.getAddress())).to.equal(expectedCollateralBalance);
     });
 
     it("Should not be able to borrow if no collateral provided", async () => {
       // TODO: fix issue in SC with borrow
-      await expect(compoundModule.connect(borrower).borrow(1)).to.be.revertedWith("Not enough collateral.");
+      await expect(compoundModule.connect(borrower).borrow(1)).to.be.revertedWith("Borrowing is too low.");
     });
 
     xit("Should be able to borrow on Compound after providing collateral up to max", async () => {
