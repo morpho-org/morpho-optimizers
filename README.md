@@ -1,4 +1,4 @@
-# leech-contracts
+# morpho-contracts
 
 This is the repo where all the Leech contracts are.
 
@@ -69,6 +69,24 @@ We made some scripts to make your life easier. It is hardcoded for DAI/cDAI but 
         let lendingBalance = await compoundModuleContract.methods.lendingBalanceOf('0xb94268c327a1D07f43B592263559200c6AC56062').call()
         console.log("Leech lending balance",lendingBalance.used.toString())```
 
-### Documentation
+### Code Fromatting
+
+We use prettier with the default configuration mentionned in the [Solidity Prettier Plugin](https://github.com/prettier-solidity/prettier-plugin-solidity).
+We recommend developers using VSCODE to set their local config as below:
+```
+{
+	"editor.formatOnSave": true,
+	"solidity.formatter": "prettier",
+	"[solidity]": {
+		"editor.defaultFormatter": "JuanBlanco.solidity"
+	}
+}
+```
+In doing so the code will be formatted on each save.
+
+We use Husky hook to format code before being pushed to any remote branch to enforce coding style among all developers.
+
+### Resources & documentation
 
  - [Chainlink Oracle](https://docs.chain.link/docs/get-the-latest-price/)
+ - [Solidity Prettier Plugin](https://github.com/prettier-solidity/prettier-plugin-solidity)
