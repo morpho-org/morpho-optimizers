@@ -4,7 +4,6 @@ import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-import "./interfaces/IOracle.sol";
 import {ICErc20, ICEth, ICToken, IComptroller, ICompoundOracle} from "./interfaces/ICompound.sol";
 
 /**
@@ -35,40 +34,37 @@ contract CompoundModuleETH is ReentrancyGuard {
     EnumerableSet.AddressSet private lenders; // Lenders on Morpho.
     EnumerableSet.AddressSet private borrowersOnMorpho; // Borrowers on Morpho.
     EnumerableSet.AddressSet private borrowersOnComp; // Borrowers on Compound.
-    uint256 public collateralFactor = 75e16; // Collateral Factor related to cETH.
-    uint256 public liquidationIncentive = 8000; // Incentive for liquidators in percentage in basis points.
 
     uint256 public BPY; // Block Percentage Yield ("midrate").
+    uint256 public collateralFactor = 75e16; // Collateral Factor related to cDAI.
+    uint256 public liquidationIncentive = 11000; // Incentive for liquidators in percentage in basis points (110%).
     uint256 public currentExchangeRate; // current exchange rate from mUnit to underlying.
     uint256 public lastUpdateBlockNumber; // Last time currentExchangeRate was updated.
-
     uint256 public constant DENOMINATOR = 10000; // Denominator for percentage multiplications.
+
+    // For now these variables are set in the storage not in constructor:
     address public constant PROXY_COMPTROLLER_ADDRESS =
         0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B;
-    address public constant WETH_ADDRESS =
-        0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     address payable public constant CETH_ADDRESS =
         payable(0x4Ddc2D193948926D02f9B1fE9e1daa0718270ED5);
-    address public constant DAI_ADDRESS =
-        0x6B175474E89094C44Da98b954EedeAC495271d0F;
     address payable public constant CDAI_ADDRESS =
         payable(0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643);
-    address public constant ORACLE_ADDRESS =
-        0xf6688883084DC1467c6F9158A0a9f398E29635BF;
-    address public constant COMPOUND_ORACLE_ADDRESS =
-        0x841616a5CBA946CF415Efe8a326A621A794D0f97;
 
-    IComptroller public comptroller = IComptroller(PROXY_COMPTROLLER_ADDRESS);
-    ICEth public cEthToken = ICEth(CETH_ADDRESS);
-    ICErc20 public cDaiToken = ICErc20(CDAI_ADDRESS);
-    IERC20 public daiToken = IERC20(DAI_ADDRESS);
-    IOracle public oracle = IOracle(ORACLE_ADDRESS);
-    ICompoundOracle public compoundOracle =
-        ICompoundOracle(COMPOUND_ORACLE_ADDRESS);
+    IComptroller public comptroller;
+    ICompoundOracle public compoundOracle;
+    ICEth public cEthToken;
+    ICErc20 public cDaiToken;
+    IERC20 public daiToken;
 
     /* Contructor */
 
     constructor() {
+        comptroller = IComptroller(PROXY_COMPTROLLER_ADDRESS);
+        cEthToken = ICEth(CETH_ADDRESS);
+        cDaiToken = ICErc20(CDAI_ADDRESS);
+        address compoundOracleAddress = comptroller.oracle();
+        compoundOracle = ICompoundOracle(compoundOracleAddress);
+        daiToken = IERC20(cDaiToken.underlying());
         updateBPY();
         lastUpdateBlockNumber = block.number;
         currentExchangeRate = 1e18;
@@ -91,6 +87,7 @@ contract CompoundModuleETH is ReentrancyGuard {
                 _amount
             ) * 1e18) / cDaiExchangeRate;
             // Repay Compound.
+            // TODO: verify that not too much is sent to Compound.
             cDaiToken.repayBorrow(_amount - remainingToSupplyToComp); // Revert on error.
             // Update lender balance.
             lendingBalanceOf[msg.sender].onMorpho +=
@@ -126,6 +123,7 @@ contract CompoundModuleETH is ReentrancyGuard {
             ) * 1e18) / cDaiExchangeRate;
             _redeemDaiFromComp(remainingToSupplyToComp, false);
             // Repay Compound.
+            // TODO: verify that not too much is sent to Compound.
             cDaiToken.repayBorrow(amounInDai - remainingToSupplyToComp); // Revert on error.
             // Update lender balance.
             lendingBalanceOf[msg.sender].onMorpho +=
@@ -451,12 +449,12 @@ contract CompoundModuleETH is ReentrancyGuard {
     /** @dev Updates the Block Percentage Yield (`BPY`) and calculate the current exchange rate (`currentExchangeRate`).
      */
     function updateBPY() public {
-        // update BPY
+        // Update BPY.
         uint256 lendBPY = cDaiToken.supplyRatePerBlock();
         uint256 borrowBPY = cDaiToken.borrowRatePerBlock();
         BPY = (lendBPY + borrowBPY) / 2;
 
-        // update currentExchangeRate
+        // Update currentExchangeRate.
         _updateCurrentExchangeRate();
     }
 
@@ -679,7 +677,7 @@ contract CompoundModuleETH is ReentrancyGuard {
      *  @return currentExchangeRate to convert from mUnit to underlying or from underlying to mUnit.
      */
     function _updateCurrentExchangeRate() internal returns (uint256) {
-        // update currentExchangeRate.
+        // Update currentExchangeRate.
         uint256 currentBlock = block.number;
         uint256 numberOfBlocksSinceLastUpdate = currentBlock -
             lastUpdateBlockNumber;
@@ -688,7 +686,7 @@ contract CompoundModuleETH is ReentrancyGuard {
                 (1e18 + BPY * numberOfBlocksSinceLastUpdate)) /
             1e18;
 
-        // update lastUpdateBlockNumber.
+        // Update lastUpdateBlockNumber.
         lastUpdateBlockNumber = currentBlock;
 
         return currentExchangeRate;

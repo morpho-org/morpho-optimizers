@@ -30,6 +30,8 @@ interface ICErc20 {
     function borrowBalanceCurrent(address) external returns (uint256);
 
     function repayBorrow(uint256) external returns (uint256);
+
+    function underlying() external returns (address);
 }
 
 interface ICEth {
@@ -67,6 +69,8 @@ interface ICEth {
 }
 
 interface IComptroller {
+    function oracle() external returns (address);
+
     function markets(address)
         external
         returns (
