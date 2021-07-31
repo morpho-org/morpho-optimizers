@@ -80,7 +80,7 @@ contract CompoundModuleETH is ReentrancyGuard {
      *  @param _amount The amount to lend in DAI.
      */
     function lend(uint256 _amount) external {
-        require(_amount > 0, "Amount cannot be 0");
+        require(_amount > 0, "Amount cannot be 0.");
         daiToken.transferFrom(msg.sender, address(this), _amount);
         lenders.add(msg.sender); // Return false when lender is already there. O(1)
         uint256 cDaiExchangeRate = cDaiToken.exchangeRateCurrent();
@@ -113,7 +113,7 @@ contract CompoundModuleETH is ReentrancyGuard {
      *  @param _amount The amount to stake in cDAI.
      */
     function stake(uint256 _amount) external payable nonReentrant {
-        require(_amount > 0, "Amount cannot be 0");
+        require(_amount > 0, "Amount cannot be 0.");
         lenders.add(msg.sender); // Return false when lender is already there. O(1)
         cDaiToken.transferFrom(msg.sender, address(this), _amount);
         // If some borrowers are on Compound, we must move them to Morpho.
@@ -141,8 +141,8 @@ contract CompoundModuleETH is ReentrancyGuard {
      *  @param _amount The amount to borrow in DAI.
      */
     function borrow(uint256 _amount) external nonReentrant {
+        require(_amount > 0, "Amount cannot be 0.");
         // Calculate the collateral required.
-        require(_amount > 0, "Amount cannot be 0");
         uint256 ethPriceMantissa = compoundOracle.getUnderlyingPrice(
             ICToken(CETH_ADDRESS)
         );
@@ -153,10 +153,14 @@ contract CompoundModuleETH is ReentrancyGuard {
             ethPriceMantissa != 0 && daiPriceMantissa != 0,
             "Oracle failed."
         );
-        uint256 numerator = _amount * daiPriceMantissa * collateralFactor;
+        // TODO: check overflow/underflow and precision for this calculation.
+        uint256 numerator = _amount * daiPriceMantissa * 1e18;
         uint256 denominator = ethPriceMantissa *
-            cEthToken.exchangeRateCurrent();
+            cEthToken.exchangeRateCurrent() *
+            collateralFactor;
         uint256 collateralRequiredInCEth = numerator / denominator;
+        // Prevent to borrow dust without collateral.
+        require(collateralRequiredInCEth > 0, "Borrowing is too low.");
         // Check if borrower has enough collateral.
         require(
             collateralRequiredInCEth <= collateralBalanceOf[msg.sender],
@@ -285,7 +289,7 @@ contract CompoundModuleETH is ReentrancyGuard {
     /** @dev Allows a borrower to provide collateral in ETH.
      */
     function provideCollateral() external payable nonReentrant {
-        require(msg.value > 0, "Amount cannot be 0");
+        require(msg.value > 0, "Amount cannot be 0.");
         payable(address(this)).transfer(msg.value);
         _supplyEthToComp(msg.value);
         // Update the collateral balance of the sender in cETH.
@@ -436,10 +440,11 @@ contract CompoundModuleETH is ReentrancyGuard {
                 collateralAssetPriceMantissa != 0,
             "Oracle failed"
         );
+        // TODO: check overflow/underflow and precision for this calculation.
         uint256 numerator = _borrowedAmountInUnderlying *
             borrowedAssetPriceMantissa *
-            _collateralFactor;
-        uint256 denominator = collateralAssetPriceMantissa * 1e18;
+            1e18;
+        uint256 denominator = collateralAssetPriceMantissa * _collateralFactor;
         return numerator / denominator;
     }
 
