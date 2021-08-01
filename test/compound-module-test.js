@@ -2,6 +2,7 @@ const { expect } = require("chai");
 const hre = require("hardhat");
 const { ethers } = require("hardhat");
 const { utils, BigNumber } = require('ethers');
+
 // Use mainnet ABIs
 const daiAbi = require('./abis/Dai.json');
 const CErc20ABI = require('./abis/CErc20.json');
@@ -16,8 +17,6 @@ describe("CompoundModuleETH Contract", () => {
   const CDAI_ADDRESS = "0x5d3a536e4d6dbd6114cc1ead35777bab948e3643";
   const PROXY_COMPTROLLER_ADDRESS = "0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B";
   const COMPOUND_ORACLE_ADDRESS = "0x841616a5CBA946CF415Efe8a326A621A794D0f97";
-
-  const cTokenDecimals = 8; // all cTokens have 8 decimal places
 
   let cEthToken;
   let cDaiToken;
@@ -39,16 +38,22 @@ describe("CompoundModuleETH Contract", () => {
   }
 
   beforeEach(async () => {
-    // CompoundModule
-    CompoundModule = await ethers.getContractFactory("CompoundModuleETH");
+    // Users
     [lender, borrower, owner, ...addrs] = await ethers.getSigners();
+
+    // Deploy CompoundModule
+    CompoundModule = await ethers.getContractFactory("CompoundModuleETH");
     compoundModule = await CompoundModule.deploy();
     await compoundModule.deployed();
 
+    // Get contract dependencies
     cEthToken = await ethers.getContractAt(CEthABI, CETH_ADDRESS, owner);
     cDaiToken = await ethers.getContractAt(CErc20ABI, CDAI_ADDRESS, owner);
     comptroller = await ethers.getContractAt(comptrollerABI, PROXY_COMPTROLLER_ADDRESS, owner);
     compoundOracle = await ethers.getContractAt(compoundOracleABI, COMPOUND_ORACLE_ADDRESS, owner);
+
+    // Mint some DAI
+    // Address of Join (has auth) https://changelog.makerdao.com/ -> releases -> contract addresses -> MCD_JOIN_DAI
     const daiMinter = '0x9759A6Ac90977b93B58547b4A71c78317f391A28';
     await hre.network.provider.request({
       method: "hardhat_impersonateAccount",
@@ -56,8 +61,6 @@ describe("CompoundModuleETH Contract", () => {
     });
     const daiSigner = await ethers.getSigner(daiMinter);
     daiToken = await ethers.getContractAt(daiAbi, DAI_ADDRESS, daiSigner);
-
-    // Address of Join (has auth) https://changelog.makerdao.com/ -> releases -> contract addresses -> MCD_JOIN_DAI
     const daiAmount = utils.parseUnits("10000");
     const ethAmount = utils.parseUnits("100");
     await network.provider.send("hardhat_setBalance", [
@@ -72,6 +75,7 @@ describe("CompoundModuleETH Contract", () => {
       expect(await compoundModule.collateralFactor()).to.equal("750000000000000000");
       expect(await compoundModule.liquidationIncentive()).to.equal("11000");
       expect(await compoundModule.DENOMINATOR()).to.equal("10000");
+
       // Calculate BPY
       const borrowRatePerBlock = await cDaiToken.borrowRatePerBlock();
       const supplyRatePerBlock = await cDaiToken.supplyRatePerBlock();
@@ -86,10 +90,12 @@ describe("CompoundModuleETH Contract", () => {
       const amount1 = utils.parseUnits("10");
       const amount2 = utils.parseUnits("0");
       const amount3 = utils.parseUnits("100000000000");
+
       // Query collateral and prices
       const { collateralFactorMantissa } = await comptroller.markets(CDAI_ADDRESS);
       const ethPriceMantissa = await compoundOracle.getUnderlyingPrice(CETH_ADDRESS);
       const daiPriceMantissa = await compoundOracle.getUnderlyingPrice(CDAI_ADDRESS);
+
       // Collateral & expected collaterals
       const collateralRequired1 = await compoundModule.getCollateralRequired(amount1, collateralFactorMantissa, CDAI_ADDRESS, CETH_ADDRESS);
       const collateralRequired2 = await compoundModule.getCollateralRequired(amount2, collateralFactorMantissa, CDAI_ADDRESS, CETH_ADDRESS);
@@ -97,7 +103,8 @@ describe("CompoundModuleETH Contract", () => {
       const expectedCollateralRequired1 = amount1.mul(daiPriceMantissa).mul(utils.parseUnits("1")).div(ethPriceMantissa).div(collateralFactorMantissa);
       const expectedCollateralRequired2 = amount2.mul(daiPriceMantissa).mul(utils.parseUnits("1")).div(ethPriceMantissa).div(collateralFactorMantissa);
       const expectedCollateralRequired3 = amount3.mul(daiPriceMantissa).mul(utils.parseUnits("1")).div(ethPriceMantissa).div(collateralFactorMantissa);
-      // Tests
+
+      // Checks
       expect(collateralRequired1).to.equal(expectedCollateralRequired1);
       expect(collateralRequired2).to.equal(expectedCollateralRequired2);
       expect(collateralRequired3).to.equal(expectedCollateralRequired3);
@@ -125,47 +132,72 @@ describe("CompoundModuleETH Contract", () => {
     })
 
     it("Should revert when lending 0", async () => {
-      await expect(compoundModule.connect(lender).lend(0)).to.be.revertedWith("Amount cannot be 0");
+      await expect(compoundModule.connect(lender).lend(0)).to.be.revertedWith("Amount cannot be 0.");
     })
 
     it("Should have the right amount of cDAI onComp after lending DAI", async () => {
       const amount = utils.parseUnits("10");
+      const daiBalanceBefore = await daiToken.balanceOf(lender.getAddress());
+      const expectedDaiBalanceAfter = daiBalanceBefore.sub(amount);
       await daiToken.connect(lender).approve(compoundModule.address, amount);
       await compoundModule.connect(lender).lend(amount);
-      const exchangeRateCurrent = await cDaiToken.exchangeRateStored();
-      const expectedLendingBalanceOnComp = underlyingToCToken(amount, exchangeRateCurrent);
+      const daiBalanceAfter = await daiToken.balanceOf(lender.getAddress());
+
+      // Check dai balance
+      expect(daiBalanceAfter).to.equal(expectedDaiBalanceAfter);
+      const exchangeRate = await cDaiToken.exchangeRateStored();
+      const expectedLendingBalanceOnComp = underlyingToCToken(amount, exchangeRate);
       expect(await cDaiToken.balanceOf(compoundModule.address)).to.equal(expectedLendingBalanceOnComp);
-      expect((await compoundModule.lendingBalanceOf(lender.getAddress())).onComp.toNumber()).to.equal(expectedLendingBalanceOnComp);
+      expect((await compoundModule.lendingBalanceOf(lender.getAddress())).onComp).to.equal(expectedLendingBalanceOnComp);
     })
 
     it("Should be able to cash-out DAI right after lending up to max lending balance", async () => {
       const amount = utils.parseUnits("10");
+      const daiBalanceBefore = await daiToken.balanceOf(lender.getAddress());
       await daiToken.connect(lender).approve(compoundModule.address, amount);
       await compoundModule.connect(lender).lend(amount);
       const lendingBalanceOnComp = (await compoundModule.lendingBalanceOf(lender.getAddress())).onComp;
       const exchangeRate1 = await cDaiToken.exchangeRateStored();
-      let toCashOut = cTokenToUnderlying(lendingBalanceOnComp, exchangeRate1);
+      const toCashOut1 = cTokenToUnderlying(lendingBalanceOnComp, exchangeRate1);
 
       // Check that lender cannot withdraw too much
-      await expect(compoundModule.connect(lender).cashOut(toCashOut.add(utils.parseUnits("0.01")).toString())).to.be.reverted;
+      // TODO: improve this test to prevent attacks
+      await expect(compoundModule.connect(lender).cashOut(toCashOut1.add(utils.parseUnits("0.001")).toString())).to.be.reverted;
 
       // To improve as there is still dust after withdrawing: create a function with cToken as input?
+      // Update exchange rate
       await cDaiToken.connect(lender).exchangeRateCurrent();
       const exchangeRate2 = await cDaiToken.exchangeRateStored();
-      toCashOut = cTokenToUnderlying(lendingBalanceOnComp, exchangeRate2);
-      await compoundModule.connect(lender).cashOut(toCashOut);
-      expect((await compoundModule.lendingBalanceOf(lender.getAddress())).onComp.toNumber()).to.gt(0);
+      const toCashOut2 = cTokenToUnderlying(lendingBalanceOnComp, exchangeRate2);
+      await compoundModule.connect(lender).cashOut(toCashOut2);
+      const daiBalanceAfter = await daiToken.balanceOf(lender.getAddress());
+
+      // Check DAI balance
+      // expect(toCashOut2).to.be.above(toCashOut1);
+      expect(daiBalanceAfter).to.equal(daiBalanceBefore.sub(amount).add(toCashOut2));
+
+      // Check cDAI left are only dust in lending balance
+      expect((await compoundModule.lendingBalanceOf(lender.getAddress())).onComp).to.lt(1000);
+      await expect(compoundModule.connect(lender).cashOut(utils.parseUnits("0.001"))).to.be.reverted;
     })
 
     it("Should be able to lend more DAI after already having lend DAI", async () => {
       const amount = utils.parseUnits("10");
-      const amountToApprove = utils.parseUnits("20");
+      const amountToApprove = utils.parseUnits("10").mul(2);
+      const daiBalanceBefore = await daiToken.balanceOf(lender.getAddress());
+
       // Tx are done in different blocks.
       await daiToken.connect(lender).approve(compoundModule.address, amountToApprove);
       await compoundModule.connect(lender).lend(amount);
       const exchangeRate1 = await cDaiToken.exchangeRateStored();
       await compoundModule.connect(lender).lend(amount);
       const exchangeRate2 = await cDaiToken.exchangeRateStored();
+
+      // Check DAI balance
+      const daiBalanceAfter = await daiToken.balanceOf(lender.getAddress());
+      expect(daiBalanceAfter).to.equal(daiBalanceBefore.sub(amountToApprove));
+
+      // Check lending balance
       const expectedLendingBalanceOnComp1 = underlyingToCToken(amount, exchangeRate1);
       const expectedLendingBalanceOnComp2 = underlyingToCToken(amount, exchangeRate2);
       const expectedLendingBalanceOnComp = expectedLendingBalanceOnComp1.add(expectedLendingBalanceOnComp2);
