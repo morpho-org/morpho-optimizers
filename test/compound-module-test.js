@@ -18,6 +18,8 @@ describe("CompoundModuleETH Contract", () => {
   const PROXY_COMPTROLLER_ADDRESS = "0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B";
   const COMPOUND_ORACLE_ADDRESS = "0x841616a5CBA946CF415Efe8a326A621A794D0f97";
 
+  const gasPrice = BigNumber.from(8000000000); // Default value
+
   let cEthToken;
   let cDaiToken;
   let daiToken;
@@ -63,14 +65,14 @@ describe("CompoundModuleETH Contract", () => {
     daiToken = await ethers.getContractAt(daiAbi, DAI_ADDRESS, daiSigner);
     const daiAmount = utils.parseUnits("10000");
     const ethAmount = utils.parseUnits("100");
-    await network.provider.send("hardhat_setBalance", [
+    await hre.network.provider.send("hardhat_setBalance", [
       daiMinter,
       utils.hexValue(ethAmount),
     ]);
     await daiToken.mint(lender.getAddress(), daiAmount, { from: daiMinter });
   });
 
-  describe("Deployment", () => {
+  xdescribe("Deployment", () => {
     it("Should deploy the contract with the right values", async () => {
       expect(await compoundModule.collateralFactor()).to.equal("750000000000000000");
       expect(await compoundModule.liquidationIncentive()).to.equal("11000");
@@ -84,7 +86,7 @@ describe("CompoundModuleETH Contract", () => {
     });
   });
 
-  describe("Test utils functions", () => {
+  xdescribe("Test utils functions", () => {
     it("Should give the right collateral required for different values", async () => {
       // Amounts
       const amount1 = utils.parseUnits("10");
@@ -125,7 +127,7 @@ describe("CompoundModuleETH Contract", () => {
     });
   });
 
-  describe("Lending when there is no borrowers", () => {
+  xdescribe("Lending when there is no borrowers", () => {
     it("Should have correct balances at the beginning", async () => {
       expect((await compoundModule.lendingBalanceOf(lender.getAddress())).onComp).to.equal(0);
       expect((await compoundModule.lendingBalanceOf(lender.getAddress())).onMorpho).to.equal(0);
@@ -222,7 +224,16 @@ describe("CompoundModuleETH Contract", () => {
 
     it("Should have the right amount of cETH in collateral after providing ETH as collateral", async () => {
       const amount = utils.parseUnits("10");
-      await compoundModule.connect(borrower).provideCollateral({ value: amount });
+      const ethBalanceBefore = await ethers.provider.getBalance(borrower.getAddress());
+      const { hash } = await compoundModule.connect(borrower).provideCollateral({ value: amount });
+      const { gasUsed } = await ethers.provider.getTransactionReceipt(hash);
+      const gasCost = gasUsed.mul(gasPrice);
+
+      // Check ETH balance
+      const ethBalanceAfter = await ethers.provider.getBalance(borrower.getAddress());
+      expect(ethBalanceAfter).to.equal(ethBalanceBefore.sub(gasCost).sub(amount));
+
+      // Check collateral balance
       const exchangeRate = await cEthToken.exchangeRateStored();
       const expectedCollateralBalance = underlyingToCToken(amount, exchangeRate);
       expect(await compoundModule.collateralBalanceOf(borrower.getAddress())).to.equal(expectedCollateralBalance);
@@ -230,10 +241,25 @@ describe("CompoundModuleETH Contract", () => {
 
     it("Should be able to provide more collateral right after having providing some", async () => {
       const amount = utils.parseUnits("10");
-      await compoundModule.connect(borrower).provideCollateral({ value: amount });
+      const ethBalanceBefore = await ethers.provider.getBalance(borrower.getAddress());
+
+      // First tx (calculate gas cost too)
+      const { hash: hash1 } = await compoundModule.connect(borrower).provideCollateral({ value: amount });
+      const { gasUsed: gasUsed1 } = await ethers.provider.getTransactionReceipt(hash1);
+      const gasCost1 = gasUsed1.mul(gasPrice);
       const exchangeRate1 = await cEthToken.exchangeRateStored();
-      await compoundModule.connect(borrower).provideCollateral({ value: amount });
+
+      // Second tx (calculate gas cost too)
+      const { hash: hash2 } = await compoundModule.connect(borrower).provideCollateral({ value: amount });
+      const { gasUsed: gasUsed2 } = await ethers.provider.getTransactionReceipt(hash2);
+      const gasCost2 = gasUsed2.mul(gasPrice);
       const exchangeRate2 = await cEthToken.exchangeRateStored();
+
+      // Check ETH balance
+      const ethBalanceAfter = await ethers.provider.getBalance(borrower.getAddress());
+      expect(ethBalanceAfter).to.equal(ethBalanceBefore.sub(gasCost1).sub(gasCost2).sub(amount.mul(2)));
+
+      // Check collateral balance
       const expectedCollateralBalance1 = underlyingToCToken(amount, exchangeRate1);
       const expectedCollateralBalance2 = underlyingToCToken(amount, exchangeRate2);
       const expectedCollateralBalance = expectedCollateralBalance1.add(expectedCollateralBalance2);
@@ -242,7 +268,7 @@ describe("CompoundModuleETH Contract", () => {
     });
 
     it("Should not be able to borrow if no collateral provided", async () => {
-      // TODO: fix issue in SC with borrow
+      // TODO: fix issue in SC when borrowing too low values
       await expect(compoundModule.connect(borrower).borrow(1)).to.be.revertedWith("Borrowing is too low.");
     });
 
