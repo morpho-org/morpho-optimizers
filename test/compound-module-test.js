@@ -72,6 +72,7 @@ describe("CompoundModuleETH Contract", () => {
       expect(await compoundModule.collateralFactor()).to.equal("750000000000000000");
       expect(await compoundModule.liquidationIncentive()).to.equal("11000");
       expect(await compoundModule.DENOMINATOR()).to.equal("10000");
+      // Calculate BPY
       const borrowRatePerBlock = await cDaiToken.borrowRatePerBlock();
       const supplyRatePerBlock = await cDaiToken.supplyRatePerBlock();
       const expectedBPY = borrowRatePerBlock.add(supplyRatePerBlock).div(2);
@@ -81,16 +82,40 @@ describe("CompoundModuleETH Contract", () => {
 
   describe("Test utils functions", () => {
     it("Should give the right collateral required for different values", async () => {
-      const amount = utils.parseUnits("10");
+      // Amounts
+      const amount1 = utils.parseUnits("10");
+      const amount2 = utils.parseUnits("0");
+      const amount3 = utils.parseUnits("100000000000");
+      // Query collateral and prices
       const { collateralFactorMantissa } = await comptroller.markets(CDAI_ADDRESS);
-      const collateralRequired = await compoundModule.getCollateralRequired(amount, collateralFactorMantissa, CDAI_ADDRESS, CETH_ADDRESS);
       const ethPriceMantissa = await compoundOracle.getUnderlyingPrice(CETH_ADDRESS);
       const daiPriceMantissa = await compoundOracle.getUnderlyingPrice(CDAI_ADDRESS);
-      const expectedCollateralRequired = amount.mul(daiPriceMantissa).mul(utils.parseUnits("1")).div(ethPriceMantissa).div(collateralFactorMantissa);
-      expect(collateralRequired).to.equal(expectedCollateralRequired);
+      // Collateral & expected collaterals
+      const collateralRequired1 = await compoundModule.getCollateralRequired(amount1, collateralFactorMantissa, CDAI_ADDRESS, CETH_ADDRESS);
+      const collateralRequired2 = await compoundModule.getCollateralRequired(amount2, collateralFactorMantissa, CDAI_ADDRESS, CETH_ADDRESS);
+      const collateralRequired3 = await compoundModule.getCollateralRequired(amount3, collateralFactorMantissa, CDAI_ADDRESS, CETH_ADDRESS);
+      const expectedCollateralRequired1 = amount1.mul(daiPriceMantissa).mul(utils.parseUnits("1")).div(ethPriceMantissa).div(collateralFactorMantissa);
+      const expectedCollateralRequired2 = amount2.mul(daiPriceMantissa).mul(utils.parseUnits("1")).div(ethPriceMantissa).div(collateralFactorMantissa);
+      const expectedCollateralRequired3 = amount3.mul(daiPriceMantissa).mul(utils.parseUnits("1")).div(ethPriceMantissa).div(collateralFactorMantissa);
+      // Tests
+      expect(collateralRequired1).to.equal(expectedCollateralRequired1);
+      expect(collateralRequired2).to.equal(expectedCollateralRequired2);
+      expect(collateralRequired3).to.equal(expectedCollateralRequired3);
     });
 
-    it("Should give the right collateral required for different values", async () => {})
+    it("Should update the collateralFactor", async () => {
+      await compoundModule.updateCollateralFactor();
+      const { collateralFactorMantissa: expectedCollateraFactor } = await comptroller.markets(CDAI_ADDRESS);
+      expect(await compoundModule.collateralFactor()).to.equal(expectedCollateraFactor);
+    });
+
+    // Note: this is not porrible to access the result off-chain as the function is not pure/view.
+    // We should add en event to allow catching of the values.
+    xit("Should give the right account liquidity for an empty account", async () => {
+      const { collateralInEth, collateralRequiredInEth } = (await compoundModule.getAccountLiquidity(borrower.getAddress())).value;
+      expect(collateralRequiredInEth).to.equal(0);
+      expect(collateralInEth).to.equal(0);
+    });
   });
 
   describe("Lending when there is no borrowers", () => {
