@@ -1,6 +1,6 @@
 # Morpho Protocol V0 🦋
 
-[![Tests](https://github.com/morpho-protocol/morpho-contracts/actions/workflows/tests.yml/badge.svg?branch=test-rebased)](https://github.com/morpho-protocol/morpho-contracts/actions/workflows/tests.yml)
+[![Tests](https://github.com/morpho-protocol/morpho-contracts/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/morpho-protocol/morpho-contracts/actions/workflows/tests.yml)
 [![codecov](https://codecov.io/gh/morpho-protocol/morpho-contracts/branch/main/graph/badge.svg?token=ZSX5RRQG36)](https://codecov.io/gh/morpho-protocol/morpho-contracts)
 
 This repository contains the core smart contracts for the Morpho Protocol V0 🦋.
