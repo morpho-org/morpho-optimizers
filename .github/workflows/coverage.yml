@@ -30,8 +30,13 @@ jobs:
       - name: Install dependencies
         run: yarn install --frozen-lockfile
 
-      - name: Run coverage
+      - name: Codecov
         uses: codecov/codecov-action@v2
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
+          flags: unittests
+
+      - name: Run coverage
+        env:
+          INFURA_PROJECT_ID: ${{ secrets.INFURA_PROJECT_ID }}
         run: yarn coverage

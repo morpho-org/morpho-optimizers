@@ -43,3 +43,4 @@ We use Husky hook to format code before being pushed to any remote branch to enf
 
  - [Chainlink Oracle](https://docs.chain.link/docs/get-the-latest-price/)
  - [Solidity Prettier Plugin](https://github.com/prettier-solidity/prettier-plugin-solidity)
+ - [Codecov](https://github.com/codecov/example-node)
