@@ -48,7 +48,8 @@
     "@openzeppelin/contracts": "^4.2.0",
     "@uniswap/lib": "^4.0.1-alpha",
     "@uniswap/v2-core": "^1.0.1",
-    "@uniswap/v2-periphery": "^1.1.0-beta.0"
+    "@uniswap/v2-periphery": "^1.1.0-beta.0",
+    "prb-math": "^2.2.0"
   },
   "husky": {
     "hooks": {
