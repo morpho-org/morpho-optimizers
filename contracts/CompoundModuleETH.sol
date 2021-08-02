@@ -1,6 +1,7 @@
 pragma solidity 0.8.6;
 
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import "@openzeppelin/contracts/utils/math/Math.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "./libraries/PRBMathUD60x18.sol";
@@ -15,6 +16,7 @@ contract CompoundModuleETH is ReentrancyGuard {
     using EnumerableSet for EnumerableSet.AddressSet;
     using PRBMathUD60x18 for uint256;
     using SafeERC20 for IERC20;
+    using Math for uint256;
 
     /* Structs */
 
@@ -130,8 +132,8 @@ contract CompoundModuleETH is ReentrancyGuard {
             // Update lender balance.
             lendingBalanceOf[msg.sender].onMorpho += (_amount -
                 remainingToSupplyToComp).mul(cDaiExchangeRate).div(
-                _updateCurrentExchangeRate()
-            ); // In mUnit.
+                    _updateCurrentExchangeRate()
+                ); // In mUnit.
             lendingBalanceOf[msg.sender].onComp += remainingToSupplyToComp;
         } else {
             lendingBalanceOf[msg.sender].onComp += _amount; // In cToken.
@@ -457,7 +459,7 @@ contract CompoundModuleETH is ReentrancyGuard {
         // Update BPY.
         uint256 lendBPY = cDaiToken.supplyRatePerBlock();
         uint256 borrowBPY = cDaiToken.borrowRatePerBlock();
-        BPY = lendBPY.avg(borrowBPY);
+        BPY = Math.average(lendBPY, borrowBPY);
 
         // Update currentExchangeRate.
         _updateCurrentExchangeRate();
@@ -584,7 +586,7 @@ contract CompoundModuleETH is ReentrancyGuard {
                 uint256 onComp = lendingBalanceOf[lender].onComp;
 
                 if (onComp > 0) {
-                    uint256 amountToMove = min(onComp, remainingToMove); // In cToken.
+                    uint256 amountToMove = Math.min(onComp, remainingToMove); // In cToken.
                     lendingBalanceOf[lender].onComp -= amountToMove; // In cToken.
                     lendingBalanceOf[lender].onMorpho += amountToMove
                         .mul(cDaiExchangeRate)
@@ -613,7 +615,7 @@ contract CompoundModuleETH is ReentrancyGuard {
                 uint256 used = lendingBalanceOf[lender].onMorpho;
 
                 if (used > 0) {
-                    uint256 amountToMove = min(used, remainingToMove); // In cToken.
+                    uint256 amountToMove = Math.min(used, remainingToMove); // In cToken.
                     lendingBalanceOf[lender].onComp += amountToMove; // In cToken.
                     lendingBalanceOf[lender].onMorpho -= amountToMove
                         .mul(cDaiExchangeRate)
@@ -639,7 +641,7 @@ contract CompoundModuleETH is ReentrancyGuard {
             address borrower = borrowersOnMorpho.at(i);
 
             if (borrowingBalanceOf[borrower].onMorpho > 0) {
-                uint256 toMatch = min(
+                uint256 toMatch = Math.min(
                     borrowingBalanceOf[borrower].onMorpho.mul(
                         _updateCurrentExchangeRate()
                     ),
@@ -667,7 +669,7 @@ contract CompoundModuleETH is ReentrancyGuard {
             address borrower = borrowersOnComp.at(i);
 
             if (borrowingBalanceOf[borrower].onComp > 0) {
-                uint256 toMatch = min(
+                uint256 toMatch = Math.min(
                     borrowingBalanceOf[borrower].onComp,
                     remainingToMatch
                 );
@@ -696,14 +698,6 @@ contract CompoundModuleETH is ReentrancyGuard {
         lastUpdateBlockNumber = currentBlock;
 
         return currentExchangeRate;
-    }
-
-    function min(uint256 a, uint256 b) internal pure returns (uint256) {
-        return a < b ? a : b;
-    }
-
-    function max(uint256 a, uint256 b) private pure returns (uint256) {
-        return a > b ? a : b;
     }
 
     // This is needed to receive ETH when calling `_redeemEthFromComp`
