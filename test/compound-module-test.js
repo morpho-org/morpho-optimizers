@@ -42,7 +42,7 @@ describe("CompoundModuleETH Contract", () => {
   }
 
   const getCollateralRequired = (amount, collateralFactor, borrowedAssetPrice, collateralAssetPrice) => {
-    return amount.mul(borrowedAssetPrice).mul(BigNumber.from(10).pow(18)).div(collateralAssetPrice).div(collateralFactor)
+    return amount.mul(borrowedAssetPrice).div(collateralAssetPrice).mul(BigNumber.from(10).pow(18)).div(collateralFactor)
   }
 
   beforeEach(async () => {
@@ -81,8 +81,7 @@ describe("CompoundModuleETH Contract", () => {
   describe("Deployment", () => {
     it("Should deploy the contract with the right values", async () => {
       expect(await compoundModule.collateralFactor()).to.equal("750000000000000000");
-      expect(await compoundModule.liquidationIncentive()).to.equal("11000");
-      expect(await compoundModule.DENOMINATOR()).to.equal("10000");
+      expect(await compoundModule.liquidationIncentive()).to.equal("1100000000000000000");
 
       // Calculate BPY
       const borrowRatePerBlock = await cDaiToken.borrowRatePerBlock();
@@ -97,7 +96,7 @@ describe("CompoundModuleETH Contract", () => {
       // Amounts
       const amount1 = utils.parseUnits("10");
       const amount2 = utils.parseUnits("0");
-      const amount3 = utils.parseUnits("100000000000");
+      const amount3 = utils.parseUnits("1000000000");
 
       // Query collateral and prices
       const { collateralFactorMantissa } = await comptroller.markets(CDAI_ADDRESS);
