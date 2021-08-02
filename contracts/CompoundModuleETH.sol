@@ -132,8 +132,8 @@ contract CompoundModuleETH is ReentrancyGuard {
             // Update lender balance.
             lendingBalanceOf[msg.sender].onMorpho += (_amount -
                 remainingToSupplyToComp).mul(cDaiExchangeRate).div(
-                    _updateCurrentExchangeRate()
-                ); // In mUnit.
+                _updateCurrentExchangeRate()
+            ); // In mUnit.
             lendingBalanceOf[msg.sender].onComp += remainingToSupplyToComp;
         } else {
             lendingBalanceOf[msg.sender].onComp += _amount; // In cToken.
