@@ -4,7 +4,7 @@ import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "./libraries/PRBMathUD60x18.sol";
+import "prb-math/contracts/PRBMathUD60x18.sol";
 
 import {ICErc20, ICEth, ICToken, IComptroller, ICompoundOracle} from "./interfaces/ICompound.sol";
 
