@@ -22,7 +22,7 @@ For coverage, run:
 yarn coverage
 ```
 
-## Code Fromatting
+## Code Formatting
 
 We use prettier with the default configuration mentionned in the [Solidity Prettier Plugin](https://github.com/prettier-solidity/prettier-plugin-solidity).
 We recommend developers using VSCODE to set their local config as below:
@@ -39,8 +39,9 @@ In doing so the code will be formatted on each save.
 
 We use Husky hook to format code before being pushed to any remote branch to enforce coding style among all developers.
 
-### External resources & documentation
+## External resources & documentation
 
  - [Chainlink Oracle](https://docs.chain.link/docs/get-the-latest-price/)
  - [Solidity Prettier Plugin](https://github.com/prettier-solidity/prettier-plugin-solidity)
  - [Codecov](https://github.com/codecov/example-node)
+ - [PRBMath](https://github.com/hifi-finance/prb-math): we use this library to handle fixed-point math.
