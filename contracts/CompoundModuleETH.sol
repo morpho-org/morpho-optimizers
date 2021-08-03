@@ -132,8 +132,8 @@ contract CompoundModuleETH is ReentrancyGuard {
             // Update lender balance.
             lendingBalanceOf[msg.sender].onMorpho += (_amount -
                 remainingToSupplyToComp).mul(cDaiExchangeRate).div(
-                _updateCurrentExchangeRate()
-            ); // In mUnit.
+                    _updateCurrentExchangeRate()
+                ); // In mUnit.
             lendingBalanceOf[msg.sender].onComp += remainingToSupplyToComp;
         } else {
             lendingBalanceOf[msg.sender].onComp += _amount; // In cToken.
@@ -368,16 +368,16 @@ contract CompoundModuleETH is ReentrancyGuard {
             ethPriceMantissa != 0 && daiPriceMantissa != 0,
             "Oracle failed."
         );
-        uint256 numerator = _amount
-            .mul(daiPriceMantissa)
-            .mul(collateralInEth)
-            .mul(liquidationIncentive);
         uint256 totalBorrowingBalance = (borrowingBalanceOf[_borrower]
             .onMorpho * _updateCurrentExchangeRate()) /
             1e18 +
             borrowingBalanceOf[_borrower].onComp;
-        uint256 denominator = totalBorrowingBalance.mul(ethPriceMantissa);
-        uint256 ethAmountToSeize = numerator.div(denominator);
+        uint256 ethAmountToSeize = _amount
+            .mul(daiPriceMantissa)
+            .mul(collateralInEth)
+            .mul(liquidationIncentive)
+            .div(totalBorrowingBalance)
+            .div(ethPriceMantissa);
         uint256 cEthAmountToSeize = ethAmountToSeize.div(
             cEthToken.exchangeRateCurrent()
         );
