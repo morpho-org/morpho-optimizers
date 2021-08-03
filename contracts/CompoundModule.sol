@@ -6,13 +6,13 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "prb-math/contracts/PRBMathUD60x18.sol";
 
-import {ICErc20, ICEth, ICToken, IComptroller, ICompoundOracle} from "./interfaces/ICompound.sol";
+import {ICErc20, ICEth, IComptroller, ICompoundOracle} from "./interfaces/ICompound.sol";
 
 /**
- *  @title CompoundModuleETH
- *  @dev Smart contracts interacting with Compound to enable real P2P lending with ETH as collateral.
+ *  @title CompoundModule
+ *  @dev Smart contracts interacting with Compound to enable real P2P lending with ETH as collateral and a cERC20 token as lending/borrowing asset.
  */
-contract CompoundModuleETH is ReentrancyGuard {
+contract CompoundModule is ReentrancyGuard {
     using EnumerableSet for EnumerableSet.AddressSet;
     using PRBMathUD60x18 for uint256;
     using SafeERC20 for IERC20;
@@ -32,17 +32,17 @@ contract CompoundModuleETH is ReentrancyGuard {
 
     /* Storage */
 
-    mapping(address => LendingBalance) public lendingBalanceOf; // Lending balance of user (DAI/cDAI).
-    mapping(address => BorrowingBalance) public borrowingBalanceOf; // Borrowing balance of user (DAI).
+    mapping(address => LendingBalance) public lendingBalanceOf; // Lending balance of user (ERC20/cERC20).
+    mapping(address => BorrowingBalance) public borrowingBalanceOf; // Borrowing balance of user (ERC20).
     mapping(address => uint256) public collateralBalanceOf; // Collateral balance of user (cETH).
     EnumerableSet.AddressSet private lenders; // Lenders on Morpho.
     EnumerableSet.AddressSet private borrowersOnMorpho; // Borrowers on Morpho.
     EnumerableSet.AddressSet private borrowersOnComp; // Borrowers on Compound.
 
     uint256 public BPY; // Block Percentage Yield ("midrate").
-    uint256 public collateralFactor = 75e16; // Collateral Factor related to cDAI.
+    uint256 public collateralFactor = 75e16; // Collateral Factor related to cToken.
     uint256 public liquidationIncentive = 1.1e18; // Incentive for liquidators in percentage (110%).
-    uint256 public currentExchangeRate; // current exchange rate from mUnit to underlying.
+    uint256 public currentExchangeRate = 1e18; // current exchange rate from mUnit to underlying.
     uint256 public lastUpdateBlockNumber; // Last time currentExchangeRate was updated.
 
     // For now these variables are set in the storage not in constructor:
@@ -50,118 +50,112 @@ contract CompoundModuleETH is ReentrancyGuard {
         0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B;
     address payable public constant CETH_ADDRESS =
         payable(0x4Ddc2D193948926D02f9B1fE9e1daa0718270ED5);
-    address payable public constant CDAI_ADDRESS =
-        payable(0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643);
+    address public cErc20Address;
 
     IComptroller public comptroller;
     ICompoundOracle public compoundOracle;
     ICEth public cEthToken;
-    ICErc20 public cDaiToken;
-    IERC20 public daiToken;
+    ICErc20 public cErc20Token;
+    IERC20 public erc20Token;
 
     /* Contructor */
 
-    constructor() {
+    constructor(address _cErc20Address) {
         comptroller = IComptroller(PROXY_COMPTROLLER_ADDRESS);
         cEthToken = ICEth(CETH_ADDRESS);
-        cDaiToken = ICErc20(CDAI_ADDRESS);
+        cErc20Address = _cErc20Address;
+        cErc20Token = ICErc20(_cErc20Address);
         address compoundOracleAddress = comptroller.oracle();
         compoundOracle = ICompoundOracle(compoundOracleAddress);
-        daiToken = IERC20(cDaiToken.underlying());
-        updateBPY();
+        erc20Token = IERC20(cErc20Token.underlying());
         lastUpdateBlockNumber = block.number;
-        currentExchangeRate = 1e18;
+        updateBPY();
     }
 
     /* External */
 
-    /** @dev Allows someone to lend DAI.
-     *  @param _amount The amount to lend in DAI.
+    /** @dev Lends ERC20 tokens.
+     *  @param _amount The amount to lend in ERC20 tokens.
      */
     function lend(uint256 _amount) external nonReentrant {
         require(_amount > 0, "Amount cannot be 0.");
-        daiToken.transferFrom(msg.sender, address(this), _amount);
+        erc20Token.transferFrom(msg.sender, address(this), _amount);
         lenders.add(msg.sender); // Return false when lender is already there. O(1)
-        uint256 cDaiExchangeRate = cDaiToken.exchangeRateCurrent();
+        uint256 cExchangeRate = cErc20Token.exchangeRateCurrent();
         // If some borrowers are on Compound, we must move them to Morpho.
         if (borrowersOnComp.length() > 0) {
+            uint256 mExchangeRate = _updateCurrentExchangeRate();
             // Find borrowers and move them to Morpho.
             uint256 remainingToSupplyToComp = _moveBorrowersFromCompToMorpho(
                 _amount
-            ).div(cDaiExchangeRate);
+            ).div(cExchangeRate);
             // Repay Compound.
             // TODO: verify that not too much is sent to Compound.
             uint256 toRepay = _amount - remainingToSupplyToComp;
-            cDaiToken.repayBorrow(toRepay); // Revert on error.
+            cErc20Token.repayBorrow(toRepay); // Revert on error.
             // Update lender balance.
-            lendingBalanceOf[msg.sender].onMorpho += toRepay.div(
-                _updateCurrentExchangeRate()
-            ); // In mUnit.
+            lendingBalanceOf[msg.sender].onMorpho += toRepay.div(mExchangeRate); // In mUnit.
             lendingBalanceOf[msg.sender].onComp += remainingToSupplyToComp.mul(
-                cDaiExchangeRate
+                cExchangeRate
             ); // In cToken.
             if (remainingToSupplyToComp > 0)
-                _supplyDaiToComp(remainingToSupplyToComp);
+                _supplyErc20ToComp(remainingToSupplyToComp); // Revert on error.
         } else {
-            lendingBalanceOf[msg.sender].onComp += _amount.div(
-                cDaiExchangeRate
-            ); // In cToken.
-            _supplyDaiToComp(_amount);
+            lendingBalanceOf[msg.sender].onComp += _amount.div(cExchangeRate); // In cToken.
+            _supplyErc20ToComp(_amount); // Revert on error.
         }
     }
 
-    /** @dev Allows someone to directly stake cDAI.
-     *  @param _amount The amount to stake in cDAI.
+    /** @dev Stakes cTokens.
+     *  @param _amount The amount to stake in cTokens.
      */
     function stake(uint256 _amount) external nonReentrant {
         require(_amount > 0, "Amount cannot be 0.");
         lenders.add(msg.sender); // Return false when lender is already there. O(1)
-        cDaiToken.transferFrom(msg.sender, address(this), _amount);
+        cErc20Token.transferFrom(msg.sender, address(this), _amount);
         // If some borrowers are on Compound, we must move them to Morpho.
         if (borrowersOnComp.length() > 0) {
-            uint256 cDaiExchangeRate = cDaiToken.exchangeRateCurrent();
-            uint256 amounInDai = _amount.mul(cDaiExchangeRate);
+            uint256 mExchangeRate = _updateCurrentExchangeRate();
+            uint256 cExchangeRate = cErc20Token.exchangeRateCurrent();
+            uint256 amountInUnderlying = _amount.mul(cExchangeRate);
             // Find borrowers and move them to Morpho.
             uint256 remainingToSupplyToComp = _moveBorrowersFromCompToMorpho(
-                amounInDai
-            ).div(cDaiExchangeRate);
-            _redeemDaiFromComp(remainingToSupplyToComp, false);
+                amountInUnderlying
+            ).div(cExchangeRate);
+            _redeemErc20FromComp(remainingToSupplyToComp, false);
             // Repay Compound.
             // TODO: verify that not too much is sent to Compound.
-            cDaiToken.repayBorrow(amounInDai - remainingToSupplyToComp); // Revert on error.
+            uint256 toRepay = amountInUnderlying - remainingToSupplyToComp;
+            cErc20Token.repayBorrow(toRepay); // Revert on error.
             // Update lender balance.
-            lendingBalanceOf[msg.sender].onMorpho += (_amount -
-                remainingToSupplyToComp).mul(cDaiExchangeRate).div(
-                _updateCurrentExchangeRate()
-            ); // In mUnit.
+            lendingBalanceOf[msg.sender].onMorpho += toRepay
+                .mul(cExchangeRate)
+                .div(mExchangeRate); // In mUnit.
             lendingBalanceOf[msg.sender].onComp += remainingToSupplyToComp;
         } else {
             lendingBalanceOf[msg.sender].onComp += _amount; // In cToken.
         }
     }
 
-    /** @dev Allows someone to borrow DAI.
-     *  @param _amount The amount to borrow in DAI.
+    /** @dev Borrows ERC20 tokens.
+     *  @param _amount The amount to borrow in ERC20 tokens.
      */
     function borrow(uint256 _amount) external nonReentrant {
         require(_amount > 0, "Amount cannot be 0.");
+        uint256 mExchangeRate = _updateCurrentExchangeRate();
+        uint256 amountBorrowedAfter = _amount +
+            borrowingBalanceOf[msg.sender].onComp +
+            borrowingBalanceOf[msg.sender].onMorpho.mul(mExchangeRate);
         // Calculate the collateral required.
-        uint256 ethPriceMantissa = compoundOracle.getUnderlyingPrice(
-            CETH_ADDRESS
+        uint256 collateralRequiredInEth = getCollateralRequired(
+            amountBorrowedAfter,
+            collateralFactor,
+            CETH_ADDRESS,
+            cErc20Address
         );
-        uint256 daiPriceMantissa = compoundOracle.getUnderlyingPrice(
-            CDAI_ADDRESS
+        uint256 collateralRequiredInCEth = collateralRequiredInEth.div(
+            cEthToken.exchangeRateCurrent()
         );
-        require(
-            ethPriceMantissa != 0 && daiPriceMantissa != 0,
-            "Oracle failed."
-        );
-        // TODO: check overflow/underflow and precision for this calculation.
-        uint256 collateralRequiredInCEth = _amount
-            .mul(daiPriceMantissa)
-            .div(ethPriceMantissa)
-            .div(cEthToken.exchangeRateCurrent())
-            .div(collateralFactor);
         // Prevent to borrow dust without collateral.
         require(collateralRequiredInCEth > 0, "Borrowing is too low.");
         // Check if borrower has enough collateral.
@@ -169,78 +163,87 @@ contract CompoundModuleETH is ReentrancyGuard {
             collateralRequiredInCEth <= collateralBalanceOf[msg.sender],
             "Not enough collateral."
         );
-        uint256 cDaiExchangeRate = cDaiToken.exchangeRateCurrent();
-        uint256 amountInCDai = _amount.div(cDaiExchangeRate);
+        uint256 cExchangeRate = cErc20Token.exchangeRateCurrent();
+        uint256 amountInCToken = _amount.div(cExchangeRate);
         uint256 remainingToBorrowOnComp = _moveLendersFromCompToMorpho(
-            amountInCDai,
+            amountInCToken,
             msg.sender
-        ).mul(cDaiExchangeRate); // In underlying.
+        ).mul(cExchangeRate); // In underlying.
         uint256 toRedeem = _amount - remainingToBorrowOnComp;
-        borrowingBalanceOf[msg.sender].onMorpho += (toRedeem).div(
-            _updateCurrentExchangeRate()
-        ); // In mUnit.
+        borrowingBalanceOf[msg.sender].onMorpho += toRedeem.div(mExchangeRate); // In mUnit.
         // If not enough cTokens on Morpho, we must borrow it on Compound.
         if (remainingToBorrowOnComp > 0) {
             // TODO: round superior to avoid floating issues.
-            cDaiToken.borrow(remainingToBorrowOnComp); // Revert on error.
+            cErc20Token.borrow(remainingToBorrowOnComp); // Revert on error.
             borrowingBalanceOf[msg.sender].onComp += remainingToBorrowOnComp; // In underlying.
             borrowersOnComp.add(msg.sender);
             if (remainingToBorrowOnComp != _amount)
                 borrowersOnMorpho.add(msg.sender);
         }
-        if (toRedeem > 0) _redeemDaiFromComp(toRedeem, false);
-        // Transfer DAI to borrower.
-        daiToken.safeTransfer(msg.sender, _amount);
+        if (toRedeem > 0) _redeemErc20FromComp(toRedeem, false); // Revert on error.
+        // Transfer ERC20 tokens to borrower.
+        erc20Token.safeTransfer(msg.sender, _amount);
     }
 
-    /** @dev Allows a borrower to pay back its debt in DAI.
-     *  @param _amount The amount in DAI to payback.
+    /** @dev Repays debt of the user.
+     *  @param _amount The amount in ERC20 tokens to repay.
      */
-    function payBack(uint256 _amount) external nonReentrant {
-        _payBack(msg.sender, _amount);
+    function repay(uint256 _amount) external nonReentrant {
+        _repay(msg.sender, _amount);
     }
 
-    /** @dev Allows a lender to cash-out her DAI.
-     *  @param _amount The amount in DAI to cash-out.
+    /** @dev Withdraws ERC20 tokens from lending.
+     *  @param _amount The amount in tokens to withdraw from lending.
      */
-    function cashOut(uint256 _amount) external nonReentrant {
+    function withdraw(uint256 _amount) external nonReentrant {
         require(_amount > 0, "Amount cannot be 0.");
-        uint256 cDaiExchangeRate = cDaiToken.exchangeRateCurrent();
-        uint256 amountOnCompInDai = lendingBalanceOf[msg.sender].onComp.mul(
-            cDaiExchangeRate
-        );
-        if (_amount <= amountOnCompInDai) {
-            lendingBalanceOf[msg.sender].onComp -= _amount.div(
-                cDaiExchangeRate
-            ); // In cToken.
-            _redeemDaiFromComp(_amount, false);
+        uint256 mExchangeRate = _updateCurrentExchangeRate();
+        uint256 cExchangeRate = cErc20Token.exchangeRateCurrent();
+        uint256 amountOnCompInUnderlying = lendingBalanceOf[msg.sender]
+            .onComp
+            .mul(cExchangeRate);
+        if (_amount <= amountOnCompInUnderlying) {
+            // Simple case where we can directly withdraw unused liquidity on Compound.
+            lendingBalanceOf[msg.sender].onComp -= _amount.div(cExchangeRate); // In cToken.
+            _redeemErc20FromComp(_amount, false);
         } else {
+            // We take all the unused liquidy first.
             lendingBalanceOf[msg.sender].onComp = 0;
-            _redeemDaiFromComp(amountOnCompInDai, false);
-            uint256 remainingToCashOutInDai = _amount - amountOnCompInDai; // In underlying.
-            lendingBalanceOf[msg.sender].onMorpho -= remainingToCashOutInDai
-                .div(_updateCurrentExchangeRate()); // In mUnit.
-            uint256 remainingToCashOutInCDai = remainingToCashOutInDai.div(
-                cDaiExchangeRate
+            _redeemErc20FromComp(amountOnCompInUnderlying, false); // Revert on error.
+            // And search for the remaining liquidity.
+            uint256 remainingToWithdraw = _amount - amountOnCompInUnderlying; // In underlying.
+            lendingBalanceOf[msg.sender].onMorpho -= remainingToWithdraw.div(
+                mExchangeRate
+            ); // In mUnit.
+            uint256 remainingToWithdrawInCToken = remainingToWithdraw.div(
+                cExchangeRate
             );
-            uint256 cDaiContractBalance = cDaiToken.balanceOf(address(this));
-            if (remainingToCashOutInCDai <= cDaiContractBalance) {
+            uint256 cTokenContractBalance = cErc20Token.balanceOf(
+                address(this)
+            );
+            if (remainingToWithdrawInCToken <= cTokenContractBalance) {
+                // There is enough cTokens in the contract to use.
                 _moveLendersFromCompToMorpho(
-                    remainingToCashOutInCDai,
+                    remainingToWithdrawInCToken,
                     msg.sender
                 );
             } else {
-                _moveLendersFromCompToMorpho(cDaiContractBalance, msg.sender);
-                remainingToCashOutInCDai -= cDaiContractBalance;
-                remainingToCashOutInCDai -= _moveBorrowersFromMorphoToComp(
-                    remainingToCashOutInCDai
-                ).div(cDaiExchangeRate);
-                cDaiToken.borrow(
-                    remainingToCashOutInCDai.mul(cDaiExchangeRate)
+                // The contract does not have enough cTokens for the withdraw.
+                // First, we use all the cTokens in the contract.
+                _moveLendersFromCompToMorpho(cTokenContractBalance, msg.sender);
+                // Then, we put borrowers on Compound.
+                remainingToWithdrawInCToken -= cTokenContractBalance;
+                remainingToWithdrawInCToken -= _moveBorrowersFromMorphoToComp(
+                    remainingToWithdrawInCToken
+                ).div(cExchangeRate);
+                // Finally, we borrow directly on Compound to search the remaining liquidity if any.
+                cErc20Token.borrow(
+                    remainingToWithdrawInCToken.mul(cExchangeRate)
                 ); // Revert on error.
             }
         }
-        daiToken.safeTransfer(msg.sender, _amount);
+        // Transfer back the ERC20 tokens.
+        erc20Token.safeTransfer(msg.sender, _amount);
         // If lender has no lending at all, then remove her from `lenders`.
         if (
             lendingBalanceOf[msg.sender].onComp == 0 &&
@@ -250,38 +253,41 @@ contract CompoundModuleETH is ReentrancyGuard {
         }
     }
 
-    /** @dev Allows a lender to unstake its cDAI.
-     *  @param _amount Amount in cDAI to unstake.
+    /** @dev Allows a lender to unstake its cToken.
+     *  @param _amount Amount in cToken to unstake.
      */
     function unstake(uint256 _amount) external nonReentrant {
+        uint256 mExchangeRate = _updateCurrentExchangeRate();
         if (_amount <= lendingBalanceOf[msg.sender].onComp) {
             lendingBalanceOf[msg.sender].onComp -= _amount;
         } else {
-            uint256 cDaiExchangeRate = cDaiToken.exchangeRateCurrent();
-            uint256 remainingToUnstakeInCDai = _amount -
+            uint256 cExchangeRate = cErc20Token.exchangeRateCurrent();
+            uint256 remainingToUnstakeInCToken = _amount -
                 lendingBalanceOf[msg.sender].onComp;
             lendingBalanceOf[msg.sender].onComp = 0;
-            lendingBalanceOf[msg.sender].onMorpho -= remainingToUnstakeInCDai
-                .mul(cDaiExchangeRate)
-                .div(_updateCurrentExchangeRate()); // In mUnit.
-            uint256 cDaiContractBalance = cDaiToken.balanceOf(address(this));
-            if (remainingToUnstakeInCDai <= cDaiContractBalance) {
+            lendingBalanceOf[msg.sender].onMorpho -= remainingToUnstakeInCToken
+                .mul(cExchangeRate)
+                .div(mExchangeRate); // In mUnit.
+            uint256 cTokenContractBalance = cErc20Token.balanceOf(
+                address(this)
+            );
+            if (remainingToUnstakeInCToken <= cTokenContractBalance) {
                 _moveLendersFromCompToMorpho(
-                    remainingToUnstakeInCDai,
+                    remainingToUnstakeInCToken,
                     msg.sender
                 );
             } else {
-                _moveLendersFromCompToMorpho(cDaiContractBalance, msg.sender);
-                remainingToUnstakeInCDai -= cDaiContractBalance;
-                remainingToUnstakeInCDai -= _moveBorrowersFromMorphoToComp(
-                    remainingToUnstakeInCDai
-                ).div(cDaiExchangeRate);
-                cDaiToken.borrow(
-                    remainingToUnstakeInCDai.mul(cDaiExchangeRate)
+                _moveLendersFromCompToMorpho(cTokenContractBalance, msg.sender);
+                remainingToUnstakeInCToken -= cTokenContractBalance;
+                remainingToUnstakeInCToken -= _moveBorrowersFromMorphoToComp(
+                    remainingToUnstakeInCToken
+                ).div(cExchangeRate);
+                cErc20Token.borrow(
+                    remainingToUnstakeInCToken.mul(cExchangeRate)
                 ); // Revert on error.
             }
         }
-        cDaiToken.transfer(msg.sender, _amount);
+        cErc20Token.transfer(msg.sender, _amount);
         // If lender has no lending at all, then remove her from `lenders`.
         if (
             lendingBalanceOf[msg.sender].onComp == 0 &&
@@ -295,8 +301,10 @@ contract CompoundModuleETH is ReentrancyGuard {
      */
     function provideCollateral() external payable nonReentrant {
         require(msg.value > 0, "Amount cannot be 0.");
+        // Transfer ETH to Morpho.
         payable(address(this)).transfer(msg.value);
-        _supplyEthToComp(msg.value);
+        // Supply them to Compound.
+        _supplyEthToComp(msg.value); // Revert on error.
         // Update the collateral balance of the sender in cETH.
         collateralBalanceOf[msg.sender] += msg.value.div(
             cEthToken.exchangeRateCurrent()
@@ -307,6 +315,7 @@ contract CompoundModuleETH is ReentrancyGuard {
      *  @param _amount The amount in ETH to get back.
      */
     function redeemCollateral(uint256 _amount) external nonReentrant {
+        uint256 mExchangeRate = _updateCurrentExchangeRate();
         uint256 cEthExchangeRate = cEthToken.exchangeRateCurrent();
         uint256 amountInCEth = _amount.div(cEthExchangeRate);
         require(
@@ -314,14 +323,12 @@ contract CompoundModuleETH is ReentrancyGuard {
             "Must redeem less than collateral."
         );
         uint256 borrowedAmount = borrowingBalanceOf[msg.sender].onComp +
-            borrowingBalanceOf[msg.sender].onMorpho.mul(
-                _updateCurrentExchangeRate()
-            );
+            borrowingBalanceOf[msg.sender].onMorpho.mul(mExchangeRate);
         uint256 collateralRequiredInEth = getCollateralRequired(
             borrowedAmount,
             collateralFactor,
             CETH_ADDRESS,
-            CDAI_ADDRESS
+            cErc20Address
         );
         uint256 collateralRequiredInCEth = collateralRequiredInEth.div(
             cEthExchangeRate
@@ -332,17 +339,14 @@ contract CompoundModuleETH is ReentrancyGuard {
             collateralAfterInCEth >= collateralRequiredInCEth,
             "Not enough collateral to maintain position."
         );
-        require(
-            _redeemEthFromComp(_amount, false) == 0,
-            "Redeem cETH on Compound failed."
-        );
+        _redeemEthFromComp(_amount, false); // Revert on error.
         collateralBalanceOf[msg.sender] -= amountInCEth; // In cToken.
         payable(msg.sender).transfer(_amount);
     }
 
     /** @dev Allows someone to liquidate a position.
      *  @param _borrower The address of the borrower to liquidate.
-     *  @param _amount The amount to repay in DAI.
+     *  @param _amount The amount to repay in ERC20 tokens.
      */
     function liquidate(address _borrower, uint256 _amount)
         external
@@ -356,26 +360,26 @@ contract CompoundModuleETH is ReentrancyGuard {
             collateralInEth < collateralRequiredInEth,
             "Borrower position cannot be liquidated."
         );
-        _payBack(_borrower, _amount);
+        uint256 mExchangeRate = _updateCurrentExchangeRate();
+        _repay(_borrower, _amount);
         // Calculate the amount of token to seize from collateral.
         uint256 ethPriceMantissa = compoundOracle.getUnderlyingPrice(
             CETH_ADDRESS
         );
-        uint256 daiPriceMantissa = compoundOracle.getUnderlyingPrice(
-            CDAI_ADDRESS
+        uint256 underlyingPriceMantissa = compoundOracle.getUnderlyingPrice(
+            cErc20Address
         );
         require(
-            ethPriceMantissa != 0 && daiPriceMantissa != 0,
+            ethPriceMantissa != 0 && underlyingPriceMantissa != 0,
             "Oracle failed."
         );
+        // Calculate separately to avoid call stack too deep.
         uint256 numerator = _amount
-            .mul(daiPriceMantissa)
+            .mul(underlyingPriceMantissa)
             .mul(collateralInEth)
             .mul(liquidationIncentive);
-        uint256 totalBorrowingBalance = (borrowingBalanceOf[_borrower]
-            .onMorpho * _updateCurrentExchangeRate()) /
-            1e18 +
-            borrowingBalanceOf[_borrower].onComp;
+        uint256 totalBorrowingBalance = borrowingBalanceOf[_borrower].onComp +
+            borrowingBalanceOf[_borrower].onMorpho.mul(mExchangeRate);
         uint256 denominator = totalBorrowingBalance.mul(ethPriceMantissa);
         uint256 ethAmountToSeize = numerator.div(denominator);
         uint256 cEthAmountToSeize = ethAmountToSeize.div(
@@ -386,14 +390,14 @@ contract CompoundModuleETH is ReentrancyGuard {
             "Cannot get more than collateral balance of borrower."
         );
         collateralBalanceOf[_borrower] -= cEthAmountToSeize;
-        _redeemEthFromComp(ethAmountToSeize, false);
+        _redeemEthFromComp(ethAmountToSeize, false); // Revert on error.
         payable(msg.sender).transfer(ethAmountToSeize);
     }
 
-    /** @dev Updates the collateral factor related to cDAI.
+    /** @dev Updates the collateral factor related to cToken.
      */
     function updateCollateralFactor() external {
-        (, collateralFactor, ) = comptroller.markets(CDAI_ADDRESS);
+        (, collateralFactor, ) = comptroller.markets(cErc20Address);
     }
 
     /* Public */
@@ -414,7 +418,7 @@ contract CompoundModuleETH is ReentrancyGuard {
         collateralRequiredInEth = getCollateralRequired(
             borrowedAmount,
             collateralFactor,
-            CDAI_ADDRESS,
+            cErc20Address,
             CETH_ADDRESS
         );
         collateralInEth = collateralBalanceOf[_borrower].mul(
@@ -457,8 +461,8 @@ contract CompoundModuleETH is ReentrancyGuard {
      */
     function updateBPY() public {
         // Update BPY.
-        uint256 lendBPY = cDaiToken.supplyRatePerBlock();
-        uint256 borrowBPY = cDaiToken.borrowRatePerBlock();
+        uint256 lendBPY = cErc20Token.supplyRatePerBlock();
+        uint256 borrowBPY = cErc20Token.borrowRatePerBlock();
         BPY = Math.average(lendBPY, borrowBPY);
 
         // Update currentExchangeRate.
@@ -467,45 +471,46 @@ contract CompoundModuleETH is ReentrancyGuard {
 
     /* Internal */
 
-    /** @dev Implements pay back logic.
-     *  @param _borrower The address of the `_borrower` to pay back the borrowing.
-     *  @param _amount The amount of DAI to pay back.
+    /** @dev Implements repay logic.
+     *  @param _borrower The address of the `_borrower` to repay the borrowing.
+     *  @param _amount The amount of ERC20 tokens to repay.
      */
-    function _payBack(address _borrower, uint256 _amount) internal {
+    function _repay(address _borrower, uint256 _amount) internal {
+        uint256 mExchangeRate = _updateCurrentExchangeRate();
         if (borrowingBalanceOf[_borrower].onComp > 0) {
             if (_amount <= borrowingBalanceOf[_borrower].onComp) {
                 // Repay Compound.
                 borrowingBalanceOf[_borrower].onComp -= _amount;
-                cDaiToken.repayBorrow(_amount); // Revert on error.
-                _supplyDaiToComp(_amount);
+                cErc20Token.repayBorrow(_amount); // Revert on error.
+                _supplyErc20ToComp(_amount);
             } else {
                 // Repay Compound first.
-                cDaiToken.repayBorrow(borrowingBalanceOf[_borrower].onComp); // Revert on error.
+                cErc20Token.repayBorrow(borrowingBalanceOf[_borrower].onComp); // Revert on error.
                 // Then, move remaining and supply it to Compound.
                 uint256 remainingToSupplyToComp = _amount -
-                    borrowingBalanceOf[_borrower].onComp;
-                uint256 remainingAmountToMoveInCDai = remainingToSupplyToComp
-                    .div(cDaiToken.exchangeRateCurrent()); // In cToken.
+                    borrowingBalanceOf[_borrower].onComp; // In underlying.
+                uint256 remainingAmountToMoveInCToken = remainingToSupplyToComp
+                    .div(cErc20Token.exchangeRateCurrent()); // In cToken.
                 borrowingBalanceOf[_borrower]
                     .onMorpho -= remainingToSupplyToComp;
                 borrowingBalanceOf[_borrower].onComp = 0;
                 borrowersOnComp.remove(_borrower);
                 _moveLendersFromMorphoToComp(
-                    remainingAmountToMoveInCDai,
+                    remainingAmountToMoveInCToken,
                     _borrower
                 );
                 if (remainingToSupplyToComp > 0)
-                    _supplyDaiToComp(remainingToSupplyToComp);
+                    _supplyErc20ToComp(remainingToSupplyToComp);
             }
         } else {
             _moveLendersFromMorphoToComp(
-                _amount.div(cDaiToken.exchangeRateCurrent()),
+                _amount.div(cErc20Token.exchangeRateCurrent()),
                 _borrower
             );
             borrowingBalanceOf[_borrower].onMorpho -= _amount.div(
-                _updateCurrentExchangeRate()
+                mExchangeRate
             );
-            _supplyDaiToComp(_amount);
+            _supplyErc20ToComp(_amount);
         }
         if (
             borrowingBalanceOf[_borrower].onMorpho == 0 &&
@@ -520,45 +525,40 @@ contract CompoundModuleETH is ReentrancyGuard {
         cEthToken.mint{value: _amount}(); // Revert on error.
     }
 
-    /** @dev Supplies DAI to Compound.
-     *  @param _amount Amount in DAI to supply.
+    /** @dev Supplies ERC20 tokens to Compound.
+     *  @param _amount Amount in ERC20 tokens to supply.
      */
-    function _supplyDaiToComp(uint256 _amount) internal {
+    function _supplyErc20ToComp(uint256 _amount) internal {
         // Approve transfer on the ERC20 contract.
-        daiToken.safeApprove(CDAI_ADDRESS, _amount);
+        erc20Token.safeApprove(cErc20Address, _amount);
         // Mint cTokens.
-        require(cDaiToken.mint(_amount) == 0, "cDAI minting failed.");
+        require(cErc20Token.mint(_amount) == 0, "cToken minting failed.");
     }
 
-    /** @dev Redeems DAI from Compound.
-     *  @dev If `_redeemType` is true pass cDAI as argument, else pass DAI.
+    /** @dev Redeems ERC20 tokens from Compound.
+     *  @dev If `_redeemType` is true pass cToken as argument, else pass ERC20 tokens.
      *  @param _amount Amount of tokens to be redeemed.
      *  @param _redeemType The redeem type to use on Compound.
-     *  @return result The result from Compound.
      */
-    function _redeemDaiFromComp(uint256 _amount, bool _redeemType)
-        internal
-        returns (uint256 result)
-    {
+    function _redeemErc20FromComp(uint256 _amount, bool _redeemType) internal {
+        uint256 result;
         if (_redeemType == true) {
-            // Retrieve your asset based on a cDAI amount.
-            result = cDaiToken.redeem(_amount);
+            // Retrieve your asset based on a cToken amount.
+            result = cErc20Token.redeem(_amount);
         } else {
-            // Retrieve your asset based on a DAI amount.
-            result = cDaiToken.redeemUnderlying(_amount);
+            // Retrieve your asset based on a ERC20 tokens amount.
+            result = cErc20Token.redeemUnderlying(_amount);
         }
+        require(result == 0, "Redeem ERC20 on Compound failed.");
     }
 
     /** @dev Redeems ETH from Compound.
      *  @dev If `_redeemType` is true pass cETH as argument, else pass ETH.
      *  @param _amount Amount of tokens to be redeemed.
      *  @param _redeemType The redeem type to use on Compound.
-     *  @return result The result from Compound.
      */
-    function _redeemEthFromComp(uint256 _amount, bool _redeemType)
-        internal
-        returns (uint256 result)
-    {
+    function _redeemEthFromComp(uint256 _amount, bool _redeemType) internal {
+        uint256 result;
         if (_redeemType == true) {
             // Retrieve your asset based on a cETH amount.
             result = cEthToken.redeem(_amount);
@@ -566,19 +566,22 @@ contract CompoundModuleETH is ReentrancyGuard {
             // Retrieve your asset based on an ETH amount.
             result = cEthToken.redeemUnderlying(_amount);
         }
+        require(result == 0, "Redeem ETH on Compound failed.");
     }
 
     /** @dev Finds liquidity on Compound and moves it to Morpho.
-     *  @param _amount The amount to search for in cDAI.
+     *  @dev Note: currentExchangeRate must have been upated before calling this function.
+     *  @param _amount The amount to search for in cToken.
      *  @param _lenderToAvoid The address of the lender to avoid moving liquidity from.
-     *  @return remainingToMove The remaining liquidity to search for in cDAI.
+     *  @return remainingToMove The remaining liquidity to search for in cToken.
      */
     function _moveLendersFromCompToMorpho(
         uint256 _amount,
         address _lenderToAvoid
     ) internal returns (uint256 remainingToMove) {
         remainingToMove = _amount; // In cToken.
-        uint256 cDaiExchangeRate = cDaiToken.exchangeRateCurrent();
+        uint256 mExchangeRate = currentExchangeRate;
+        uint256 cExchangeRate = cErc20Token.exchangeRateCurrent();
         uint256 i;
         while (remainingToMove > 0 && i < lenders.length()) {
             address lender = lenders.at(i);
@@ -589,8 +592,8 @@ contract CompoundModuleETH is ReentrancyGuard {
                     uint256 amountToMove = Math.min(onComp, remainingToMove); // In cToken.
                     lendingBalanceOf[lender].onComp -= amountToMove; // In cToken.
                     lendingBalanceOf[lender].onMorpho += amountToMove
-                        .mul(cDaiExchangeRate)
-                        .div(_updateCurrentExchangeRate()); // In mUnit.
+                        .mul(cExchangeRate)
+                        .div(mExchangeRate); // In mUnit.
                     remainingToMove -= amountToMove;
                 }
             }
@@ -599,7 +602,8 @@ contract CompoundModuleETH is ReentrancyGuard {
     }
 
     /** @dev Finds liquidity on Morpho and moves it to Compound.
-     *  @param _amount The amount to search for in cDAI.
+     *  @dev Note: currentExchangeRate must have been upated before calling this function.
+     *  @param _amount The amount to search for in cToken.
      *  @param _lenderToAvoid The address of the lender to avoid moving liquidity from.
      */
     function _moveLendersFromMorphoToComp(
@@ -607,7 +611,8 @@ contract CompoundModuleETH is ReentrancyGuard {
         address _lenderToAvoid
     ) internal {
         uint256 remainingToMove = _amount; // In cToken.
-        uint256 cDaiExchangeRate = cDaiToken.exchangeRateCurrent();
+        uint256 cExchangeRate = cErc20Token.exchangeRateCurrent();
+        uint256 mExchangeRate = currentExchangeRate;
         uint256 i;
         while (remainingToMove > 0 && i < lenders.length()) {
             address lender = lenders.at(i);
@@ -618,8 +623,8 @@ contract CompoundModuleETH is ReentrancyGuard {
                     uint256 amountToMove = Math.min(used, remainingToMove); // In cToken.
                     lendingBalanceOf[lender].onComp += amountToMove; // In cToken.
                     lendingBalanceOf[lender].onMorpho -= amountToMove
-                        .mul(cDaiExchangeRate)
-                        .div(_updateCurrentExchangeRate()); // In mUnit.
+                        .mul(cExchangeRate)
+                        .div(mExchangeRate); // In mUnit.
                     remainingToMove -= amountToMove; // In cToken.
                 }
             }
@@ -629,12 +634,14 @@ contract CompoundModuleETH is ReentrancyGuard {
     }
 
     /** @dev Finds borrowers on Morpho that match the given `_amount` and moves them to Compound.
-     *  @param _amount The amount to match in cDAI.
+     *  @dev Note: currentExchangeRate must have been upated before calling this function.
+     *  @param _amount The amount to match in cToken.
      */
     function _moveBorrowersFromMorphoToComp(uint256 _amount)
         internal
         returns (uint256 remainingToMatch)
     {
+        uint256 mExchangeRate = currentExchangeRate;
         remainingToMatch = _amount;
         uint256 i;
         while (remainingToMatch > 0 && i < borrowersOnMorpho.length()) {
@@ -642,9 +649,7 @@ contract CompoundModuleETH is ReentrancyGuard {
 
             if (borrowingBalanceOf[borrower].onMorpho > 0) {
                 uint256 toMatch = Math.min(
-                    borrowingBalanceOf[borrower].onMorpho.mul(
-                        _updateCurrentExchangeRate()
-                    ),
+                    borrowingBalanceOf[borrower].onMorpho.mul(mExchangeRate),
                     remainingToMatch
                 );
                 remainingToMatch -= toMatch;
@@ -656,8 +661,8 @@ contract CompoundModuleETH is ReentrancyGuard {
     }
 
     /** @dev Finds borrowers on Compound that match the given `_amount` and moves them to Morpho.
-     *  @param _amount The amount to match in DAI.
-     *  @return remainingToMatch The amount remaining to match in DAI.
+     *  @param _amount The amount to match in ERC20 tokens.
+     *  @return remainingToMatch The amount remaining to match in ERC20 tokens.
      */
     function _moveBorrowersFromCompToMorpho(uint256 _amount)
         internal
