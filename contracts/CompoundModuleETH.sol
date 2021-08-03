@@ -1,8 +1,10 @@
 pragma solidity 0.8.6;
 
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import "@openzeppelin/contracts/utils/math/Math.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "prb-math/contracts/PRBMathUD60x18.sol";
 
 import {ICErc20, ICEth, ICToken, IComptroller, ICompoundOracle} from "./interfaces/ICompound.sol";
 
@@ -11,14 +13,16 @@ import {ICErc20, ICEth, ICToken, IComptroller, ICompoundOracle} from "./interfac
  *  @dev Smart contracts interacting with Compound to enable real P2P lending with ETH as collateral.
  */
 contract CompoundModuleETH is ReentrancyGuard {
-    using SafeERC20 for IERC20;
     using EnumerableSet for EnumerableSet.AddressSet;
+    using PRBMathUD60x18 for uint256;
+    using SafeERC20 for IERC20;
+    using Math for uint256;
 
     /* Structs */
 
     struct LendingBalance {
-        uint256 onComp; // In cToken.
         uint256 onMorpho; // In mUnit (a unit that grows in value, to follow debt increase).
+        uint256 onComp; // In cToken.
     }
 
     struct BorrowingBalance {
@@ -37,10 +41,9 @@ contract CompoundModuleETH is ReentrancyGuard {
 
     uint256 public BPY; // Block Percentage Yield ("midrate").
     uint256 public collateralFactor = 75e16; // Collateral Factor related to cDAI.
-    uint256 public liquidationIncentive = 11000; // Incentive for liquidators in percentage in basis points (110%).
+    uint256 public liquidationIncentive = 1.1e18; // Incentive for liquidators in percentage (110%).
     uint256 public currentExchangeRate; // current exchange rate from mUnit to underlying.
     uint256 public lastUpdateBlockNumber; // Last time currentExchangeRate was updated.
-    uint256 public constant DENOMINATOR = 10000; // Denominator for percentage multiplications.
 
     // For now these variables are set in the storage not in constructor:
     address public constant PROXY_COMPTROLLER_ADDRESS =
@@ -75,7 +78,7 @@ contract CompoundModuleETH is ReentrancyGuard {
     /** @dev Allows someone to lend DAI.
      *  @param _amount The amount to lend in DAI.
      */
-    function lend(uint256 _amount) external {
+    function lend(uint256 _amount) external nonReentrant {
         require(_amount > 0, "Amount cannot be 0.");
         daiToken.transferFrom(msg.sender, address(this), _amount);
         lenders.add(msg.sender); // Return false when lender is already there. O(1)
@@ -83,25 +86,26 @@ contract CompoundModuleETH is ReentrancyGuard {
         // If some borrowers are on Compound, we must move them to Morpho.
         if (borrowersOnComp.length() > 0) {
             // Find borrowers and move them to Morpho.
-            uint256 remainingToSupplyToComp = (_moveBorrowersFromCompToMorpho(
+            uint256 remainingToSupplyToComp = _moveBorrowersFromCompToMorpho(
                 _amount
-            ) * 1e18) / cDaiExchangeRate;
+            ).div(cDaiExchangeRate);
             // Repay Compound.
             // TODO: verify that not too much is sent to Compound.
-            cDaiToken.repayBorrow(_amount - remainingToSupplyToComp); // Revert on error.
+            uint256 toRepay = _amount - remainingToSupplyToComp;
+            cDaiToken.repayBorrow(toRepay); // Revert on error.
             // Update lender balance.
-            lendingBalanceOf[msg.sender].onMorpho +=
-                ((_amount - remainingToSupplyToComp) * 1e18) /
-                _updateCurrentExchangeRate(); // In mUnit.
-            lendingBalanceOf[msg.sender].onComp +=
-                (remainingToSupplyToComp * cDaiExchangeRate) /
-                1e18; // In cToken.
+            lendingBalanceOf[msg.sender].onMorpho += toRepay.div(
+                _updateCurrentExchangeRate()
+            ); // In mUnit.
+            lendingBalanceOf[msg.sender].onComp += remainingToSupplyToComp.mul(
+                cDaiExchangeRate
+            ); // In cToken.
             if (remainingToSupplyToComp > 0)
                 _supplyDaiToComp(remainingToSupplyToComp);
         } else {
-            lendingBalanceOf[msg.sender].onComp +=
-                (_amount * 1e18) /
-                cDaiExchangeRate; // In cToken.
+            lendingBalanceOf[msg.sender].onComp += _amount.div(
+                cDaiExchangeRate
+            ); // In cToken.
             _supplyDaiToComp(_amount);
         }
     }
@@ -109,26 +113,27 @@ contract CompoundModuleETH is ReentrancyGuard {
     /** @dev Allows someone to directly stake cDAI.
      *  @param _amount The amount to stake in cDAI.
      */
-    function stake(uint256 _amount) external payable nonReentrant {
+    function stake(uint256 _amount) external nonReentrant {
         require(_amount > 0, "Amount cannot be 0.");
         lenders.add(msg.sender); // Return false when lender is already there. O(1)
         cDaiToken.transferFrom(msg.sender, address(this), _amount);
         // If some borrowers are on Compound, we must move them to Morpho.
         if (borrowersOnComp.length() > 0) {
             uint256 cDaiExchangeRate = cDaiToken.exchangeRateCurrent();
-            uint256 amounInDai = (_amount * cDaiExchangeRate) / 1e18;
+            uint256 amounInDai = _amount.mul(cDaiExchangeRate);
             // Find borrowers and move them to Morpho.
-            uint256 remainingToSupplyToComp = (_moveBorrowersFromCompToMorpho(
+            uint256 remainingToSupplyToComp = _moveBorrowersFromCompToMorpho(
                 amounInDai
-            ) * 1e18) / cDaiExchangeRate;
+            ).div(cDaiExchangeRate);
             _redeemDaiFromComp(remainingToSupplyToComp, false);
             // Repay Compound.
             // TODO: verify that not too much is sent to Compound.
             cDaiToken.repayBorrow(amounInDai - remainingToSupplyToComp); // Revert on error.
             // Update lender balance.
-            lendingBalanceOf[msg.sender].onMorpho +=
-                ((_amount - remainingToSupplyToComp) * cDaiExchangeRate) /
-                _updateCurrentExchangeRate(); // In mUnit.
+            lendingBalanceOf[msg.sender].onMorpho += (_amount -
+                remainingToSupplyToComp).mul(cDaiExchangeRate).div(
+                _updateCurrentExchangeRate()
+            ); // In mUnit.
             lendingBalanceOf[msg.sender].onComp += remainingToSupplyToComp;
         } else {
             lendingBalanceOf[msg.sender].onComp += _amount; // In cToken.
@@ -152,11 +157,11 @@ contract CompoundModuleETH is ReentrancyGuard {
             "Oracle failed."
         );
         // TODO: check overflow/underflow and precision for this calculation.
-        uint256 numerator = _amount * daiPriceMantissa * 1e18;
-        uint256 denominator = ethPriceMantissa *
-            cEthToken.exchangeRateCurrent() *
-            collateralFactor;
-        uint256 collateralRequiredInCEth = numerator / denominator;
+        uint256 collateralRequiredInCEth = _amount
+            .mul(daiPriceMantissa)
+            .div(ethPriceMantissa)
+            .div(cEthToken.exchangeRateCurrent())
+            .div(collateralFactor);
         // Prevent to borrow dust without collateral.
         require(collateralRequiredInCEth > 0, "Borrowing is too low.");
         // Check if borrower has enough collateral.
@@ -165,23 +170,25 @@ contract CompoundModuleETH is ReentrancyGuard {
             "Not enough collateral."
         );
         uint256 cDaiExchangeRate = cDaiToken.exchangeRateCurrent();
-        uint256 amountInCDai = (_amount * 1e18) / cDaiExchangeRate;
-        uint256 remainingToBorrowOnComp = (_moveLendersFromCompToMorpho(
+        uint256 amountInCDai = _amount.div(cDaiExchangeRate);
+        uint256 remainingToBorrowOnComp = _moveLendersFromCompToMorpho(
             amountInCDai,
             msg.sender
-        ) * cDaiExchangeRate) / 1e18; // In underlying.
-        borrowingBalanceOf[msg.sender].onMorpho +=
-            ((_amount - remainingToBorrowOnComp) * 1e18) /
-            _updateCurrentExchangeRate(); // In mUnit.
+        ).mul(cDaiExchangeRate); // In underlying.
+        uint256 toRedeem = _amount - remainingToBorrowOnComp;
+        borrowingBalanceOf[msg.sender].onMorpho += (toRedeem).div(
+            _updateCurrentExchangeRate()
+        ); // In mUnit.
         // If not enough cTokens on Morpho, we must borrow it on Compound.
         if (remainingToBorrowOnComp > 0) {
+            // TODO: round superior to avoid floating issues.
             cDaiToken.borrow(remainingToBorrowOnComp); // Revert on error.
             borrowingBalanceOf[msg.sender].onComp += remainingToBorrowOnComp; // In underlying.
             borrowersOnComp.add(msg.sender);
             if (remainingToBorrowOnComp != _amount)
                 borrowersOnMorpho.add(msg.sender);
         }
-        _redeemDaiFromComp(_amount - remainingToBorrowOnComp, false);
+        if (toRedeem > 0) _redeemDaiFromComp(toRedeem, false);
         // Transfer DAI to borrower.
         daiToken.safeTransfer(msg.sender, _amount);
     }
@@ -197,23 +204,25 @@ contract CompoundModuleETH is ReentrancyGuard {
      *  @param _amount The amount in DAI to cash-out.
      */
     function cashOut(uint256 _amount) external nonReentrant {
+        require(_amount > 0, "Amount cannot be 0.");
         uint256 cDaiExchangeRate = cDaiToken.exchangeRateCurrent();
-        uint256 amountOnCompInDai = (lendingBalanceOf[msg.sender].onComp *
-            cDaiExchangeRate) / 1e18;
+        uint256 amountOnCompInDai = lendingBalanceOf[msg.sender].onComp.mul(
+            cDaiExchangeRate
+        );
         if (_amount <= amountOnCompInDai) {
-            lendingBalanceOf[msg.sender].onComp -=
-                (_amount * 1e18) /
-                cDaiExchangeRate; // In cToken.
+            lendingBalanceOf[msg.sender].onComp -= _amount.div(
+                cDaiExchangeRate
+            ); // In cToken.
             _redeemDaiFromComp(_amount, false);
         } else {
             lendingBalanceOf[msg.sender].onComp = 0;
             _redeemDaiFromComp(amountOnCompInDai, false);
             uint256 remainingToCashOutInDai = _amount - amountOnCompInDai; // In underlying.
-            lendingBalanceOf[msg.sender].onMorpho -=
-                (remainingToCashOutInDai * 1e18) /
-                _updateCurrentExchangeRate(); // In mUnit.
-            uint256 remainingToCashOutInCDai = (remainingToCashOutInDai *
-                1e18) / cDaiExchangeRate;
+            lendingBalanceOf[msg.sender].onMorpho -= remainingToCashOutInDai
+                .div(_updateCurrentExchangeRate()); // In mUnit.
+            uint256 remainingToCashOutInCDai = remainingToCashOutInDai.div(
+                cDaiExchangeRate
+            );
             uint256 cDaiContractBalance = cDaiToken.balanceOf(address(this));
             if (remainingToCashOutInCDai <= cDaiContractBalance) {
                 _moveLendersFromCompToMorpho(
@@ -223,12 +232,11 @@ contract CompoundModuleETH is ReentrancyGuard {
             } else {
                 _moveLendersFromCompToMorpho(cDaiContractBalance, msg.sender);
                 remainingToCashOutInCDai -= cDaiContractBalance;
-                remainingToCashOutInCDai -=
-                    (_moveBorrowersFromMorphoToComp(remainingToCashOutInCDai) *
-                        1e18) /
-                    cDaiExchangeRate;
+                remainingToCashOutInCDai -= _moveBorrowersFromMorphoToComp(
+                    remainingToCashOutInCDai
+                ).div(cDaiExchangeRate);
                 cDaiToken.borrow(
-                    (remainingToCashOutInCDai * cDaiExchangeRate) / 1e18
+                    remainingToCashOutInCDai.mul(cDaiExchangeRate)
                 ); // Revert on error.
             }
         }
@@ -253,9 +261,9 @@ contract CompoundModuleETH is ReentrancyGuard {
             uint256 remainingToUnstakeInCDai = _amount -
                 lendingBalanceOf[msg.sender].onComp;
             lendingBalanceOf[msg.sender].onComp = 0;
-            lendingBalanceOf[msg.sender].onMorpho -=
-                (remainingToUnstakeInCDai * cDaiExchangeRate) /
-                _updateCurrentExchangeRate(); // In mUnit.
+            lendingBalanceOf[msg.sender].onMorpho -= remainingToUnstakeInCDai
+                .mul(cDaiExchangeRate)
+                .div(_updateCurrentExchangeRate()); // In mUnit.
             uint256 cDaiContractBalance = cDaiToken.balanceOf(address(this));
             if (remainingToUnstakeInCDai <= cDaiContractBalance) {
                 _moveLendersFromCompToMorpho(
@@ -265,12 +273,11 @@ contract CompoundModuleETH is ReentrancyGuard {
             } else {
                 _moveLendersFromCompToMorpho(cDaiContractBalance, msg.sender);
                 remainingToUnstakeInCDai -= cDaiContractBalance;
-                remainingToUnstakeInCDai -=
-                    (_moveBorrowersFromMorphoToComp(remainingToUnstakeInCDai) *
-                        1e18) /
-                    cDaiExchangeRate;
+                remainingToUnstakeInCDai -= _moveBorrowersFromMorphoToComp(
+                    remainingToUnstakeInCDai
+                ).div(cDaiExchangeRate);
                 cDaiToken.borrow(
-                    (remainingToUnstakeInCDai * cDaiExchangeRate) / 1e18
+                    remainingToUnstakeInCDai.mul(cDaiExchangeRate)
                 ); // Revert on error.
             }
         }
@@ -291,9 +298,9 @@ contract CompoundModuleETH is ReentrancyGuard {
         payable(address(this)).transfer(msg.value);
         _supplyEthToComp(msg.value);
         // Update the collateral balance of the sender in cETH.
-        collateralBalanceOf[msg.sender] +=
-            (msg.value * 1e18) /
-            cEthToken.exchangeRateCurrent();
+        collateralBalanceOf[msg.sender] += msg.value.div(
+            cEthToken.exchangeRateCurrent()
+        );
     }
 
     /** @dev Allows a borrower to redeem her collateral in ETH.
@@ -301,23 +308,24 @@ contract CompoundModuleETH is ReentrancyGuard {
      */
     function redeemCollateral(uint256 _amount) external nonReentrant {
         uint256 cEthExchangeRate = cEthToken.exchangeRateCurrent();
-        uint256 amountInCEth = (_amount * 1e18) / cEthExchangeRate;
+        uint256 amountInCEth = _amount.div(cEthExchangeRate);
         require(
             amountInCEth <= collateralBalanceOf[msg.sender],
             "Must redeem less than collateral."
         );
         uint256 borrowedAmount = borrowingBalanceOf[msg.sender].onComp +
-            (borrowingBalanceOf[msg.sender].onMorpho *
-                _updateCurrentExchangeRate()) /
-            1e18;
+            borrowingBalanceOf[msg.sender].onMorpho.mul(
+                _updateCurrentExchangeRate()
+            );
         uint256 collateralRequiredInEth = getCollateralRequired(
             borrowedAmount,
             collateralFactor,
             CETH_ADDRESS,
             CDAI_ADDRESS
         );
-        uint256 collateralRequiredInCEth = (collateralRequiredInEth * 1e18) /
-            cEthExchangeRate;
+        uint256 collateralRequiredInCEth = collateralRequiredInEth.div(
+            cEthExchangeRate
+        );
         uint256 collateralAfterInCEth = collateralBalanceOf[msg.sender] -
             amountInCEth;
         require(
@@ -360,20 +368,19 @@ contract CompoundModuleETH is ReentrancyGuard {
             ethPriceMantissa != 0 && daiPriceMantissa != 0,
             "Oracle failed."
         );
-        uint256 numerator = _amount *
-            daiPriceMantissa *
-            collateralInEth *
-            liquidationIncentive;
+        uint256 numerator = _amount
+            .mul(daiPriceMantissa)
+            .mul(collateralInEth)
+            .mul(liquidationIncentive);
         uint256 totalBorrowingBalance = (borrowingBalanceOf[_borrower]
             .onMorpho * _updateCurrentExchangeRate()) /
             1e18 +
             borrowingBalanceOf[_borrower].onComp;
-        uint256 denominator = totalBorrowingBalance *
-            ethPriceMantissa *
-            DENOMINATOR;
-        uint256 ethAmountToSeize = numerator / denominator;
-        uint256 cEthAmountToSeize = (ethAmountToSeize * 1e18) /
-            cEthToken.exchangeRateCurrent();
+        uint256 denominator = totalBorrowingBalance.mul(ethPriceMantissa);
+        uint256 ethAmountToSeize = numerator.div(denominator);
+        uint256 cEthAmountToSeize = ethAmountToSeize.div(
+            cEthToken.exchangeRateCurrent()
+        );
         require(
             cEthAmountToSeize <= collateralBalanceOf[_borrower],
             "Cannot get more than collateral balance of borrower."
@@ -401,18 +408,18 @@ contract CompoundModuleETH is ReentrancyGuard {
         returns (uint256 collateralInEth, uint256 collateralRequiredInEth)
     {
         uint256 borrowedAmount = borrowingBalanceOf[_borrower].onComp +
-            (borrowingBalanceOf[_borrower].onMorpho *
-                _updateCurrentExchangeRate()) /
-            1e18;
+            borrowingBalanceOf[_borrower].onMorpho.mul(
+                _updateCurrentExchangeRate()
+            );
         collateralRequiredInEth = getCollateralRequired(
             borrowedAmount,
             collateralFactor,
             CDAI_ADDRESS,
             CETH_ADDRESS
         );
-        collateralInEth =
-            (collateralBalanceOf[_borrower] * cEthToken.exchangeRateCurrent()) /
-            1e18;
+        collateralInEth = collateralBalanceOf[_borrower].mul(
+            cEthToken.exchangeRateCurrent()
+        );
     }
 
     /** @dev Returns the collateral required for the given parameters.
@@ -439,11 +446,11 @@ contract CompoundModuleETH is ReentrancyGuard {
             "Oracle failed"
         );
         // TODO: check overflow/underflow and precision for this calculation.
-        uint256 numerator = _borrowedAmountInUnderlying *
-            borrowedAssetPriceMantissa *
-            1e18;
-        uint256 denominator = collateralAssetPriceMantissa * _collateralFactor;
-        return numerator / denominator;
+        return
+            _borrowedAmountInUnderlying
+                .mul(borrowedAssetPriceMantissa)
+                .div(collateralAssetPriceMantissa)
+                .div(_collateralFactor);
     }
 
     /** @dev Updates the Block Percentage Yield (`BPY`) and calculate the current exchange rate (`currentExchangeRate`).
@@ -452,7 +459,7 @@ contract CompoundModuleETH is ReentrancyGuard {
         // Update BPY.
         uint256 lendBPY = cDaiToken.supplyRatePerBlock();
         uint256 borrowBPY = cDaiToken.borrowRatePerBlock();
-        BPY = (lendBPY + borrowBPY) / 2;
+        BPY = Math.average(lendBPY, borrowBPY);
 
         // Update currentExchangeRate.
         _updateCurrentExchangeRate();
@@ -477,8 +484,8 @@ contract CompoundModuleETH is ReentrancyGuard {
                 // Then, move remaining and supply it to Compound.
                 uint256 remainingToSupplyToComp = _amount -
                     borrowingBalanceOf[_borrower].onComp;
-                uint256 remainingAmountToMoveInCDai = (remainingToSupplyToComp *
-                    1e18) / cDaiToken.exchangeRateCurrent(); // In cToken.
+                uint256 remainingAmountToMoveInCDai = remainingToSupplyToComp
+                    .div(cDaiToken.exchangeRateCurrent()); // In cToken.
                 borrowingBalanceOf[_borrower]
                     .onMorpho -= remainingToSupplyToComp;
                 borrowingBalanceOf[_borrower].onComp = 0;
@@ -487,16 +494,17 @@ contract CompoundModuleETH is ReentrancyGuard {
                     remainingAmountToMoveInCDai,
                     _borrower
                 );
-                _supplyDaiToComp(remainingToSupplyToComp);
+                if (remainingToSupplyToComp > 0)
+                    _supplyDaiToComp(remainingToSupplyToComp);
             }
         } else {
             _moveLendersFromMorphoToComp(
-                (_amount * 1e18) / cDaiToken.exchangeRateCurrent(),
+                _amount.div(cDaiToken.exchangeRateCurrent()),
                 _borrower
             );
-            borrowingBalanceOf[_borrower].onMorpho -=
-                (_amount * 1e18) /
-                _updateCurrentExchangeRate();
+            borrowingBalanceOf[_borrower].onMorpho -= _amount.div(
+                _updateCurrentExchangeRate()
+            );
             _supplyDaiToComp(_amount);
         }
         if (
@@ -578,11 +586,11 @@ contract CompoundModuleETH is ReentrancyGuard {
                 uint256 onComp = lendingBalanceOf[lender].onComp;
 
                 if (onComp > 0) {
-                    uint256 amountToMove = min(onComp, remainingToMove); // In cToken.
+                    uint256 amountToMove = Math.min(onComp, remainingToMove); // In cToken.
                     lendingBalanceOf[lender].onComp -= amountToMove; // In cToken.
-                    lendingBalanceOf[lender].onMorpho +=
-                        (amountToMove * cDaiExchangeRate) /
-                        _updateCurrentExchangeRate(); // In mUnit.
+                    lendingBalanceOf[lender].onMorpho += amountToMove
+                        .mul(cDaiExchangeRate)
+                        .div(_updateCurrentExchangeRate()); // In mUnit.
                     remainingToMove -= amountToMove;
                 }
             }
@@ -607,11 +615,11 @@ contract CompoundModuleETH is ReentrancyGuard {
                 uint256 used = lendingBalanceOf[lender].onMorpho;
 
                 if (used > 0) {
-                    uint256 amountToMove = min(used, remainingToMove); // In cToken.
+                    uint256 amountToMove = Math.min(used, remainingToMove); // In cToken.
                     lendingBalanceOf[lender].onComp += amountToMove; // In cToken.
-                    lendingBalanceOf[lender].onMorpho -=
-                        (amountToMove * cDaiExchangeRate) /
-                        _updateCurrentExchangeRate(); // In mUnit.
+                    lendingBalanceOf[lender].onMorpho -= amountToMove
+                        .mul(cDaiExchangeRate)
+                        .div(_updateCurrentExchangeRate()); // In mUnit.
                     remainingToMove -= amountToMove; // In cToken.
                 }
             }
@@ -633,9 +641,10 @@ contract CompoundModuleETH is ReentrancyGuard {
             address borrower = borrowersOnMorpho.at(i);
 
             if (borrowingBalanceOf[borrower].onMorpho > 0) {
-                uint256 toMatch = min(
-                    (borrowingBalanceOf[borrower].onMorpho *
-                        _updateCurrentExchangeRate()) / 1e18,
+                uint256 toMatch = Math.min(
+                    borrowingBalanceOf[borrower].onMorpho.mul(
+                        _updateCurrentExchangeRate()
+                    ),
                     remainingToMatch
                 );
                 remainingToMatch -= toMatch;
@@ -660,7 +669,7 @@ contract CompoundModuleETH is ReentrancyGuard {
             address borrower = borrowersOnComp.at(i);
 
             if (borrowingBalanceOf[borrower].onComp > 0) {
-                uint256 toMatch = min(
+                uint256 toMatch = Math.min(
                     borrowingBalanceOf[borrower].onComp,
                     remainingToMatch
                 );
@@ -681,23 +690,14 @@ contract CompoundModuleETH is ReentrancyGuard {
         uint256 currentBlock = block.number;
         uint256 numberOfBlocksSinceLastUpdate = currentBlock -
             lastUpdateBlockNumber;
-        currentExchangeRate =
-            (currentExchangeRate *
-                (1e18 + BPY * numberOfBlocksSinceLastUpdate)) /
-            1e18;
+        currentExchangeRate = currentExchangeRate.mul(
+            (1e18 + BPY).pow(numberOfBlocksSinceLastUpdate)
+        );
 
         // Update lastUpdateBlockNumber.
         lastUpdateBlockNumber = currentBlock;
 
         return currentExchangeRate;
-    }
-
-    function min(uint256 a, uint256 b) internal pure returns (uint256) {
-        return a < b ? a : b;
-    }
-
-    function max(uint256 a, uint256 b) private pure returns (uint256) {
-        return a > b ? a : b;
     }
 
     // This is needed to receive ETH when calling `_redeemEthFromComp`
