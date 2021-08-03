@@ -21,8 +21,8 @@ contract CompoundModuleETH is ReentrancyGuard {
     /* Structs */
 
     struct LendingBalance {
-        uint256 onComp; // In cToken.
         uint256 onMorpho; // In mUnit (a unit that grows in value, to follow debt increase).
+        uint256 onComp; // In cToken.
     }
 
     struct BorrowingBalance {
@@ -78,7 +78,7 @@ contract CompoundModuleETH is ReentrancyGuard {
     /** @dev Allows someone to lend DAI.
      *  @param _amount The amount to lend in DAI.
      */
-    function lend(uint256 _amount) external {
+    function lend(uint256 _amount) external nonReentrant {
         require(_amount > 0, "Amount cannot be 0.");
         daiToken.transferFrom(msg.sender, address(this), _amount);
         lenders.add(msg.sender); // Return false when lender is already there. O(1)
@@ -113,7 +113,7 @@ contract CompoundModuleETH is ReentrancyGuard {
     /** @dev Allows someone to directly stake cDAI.
      *  @param _amount The amount to stake in cDAI.
      */
-    function stake(uint256 _amount) external payable nonReentrant {
+    function stake(uint256 _amount) external nonReentrant {
         require(_amount > 0, "Amount cannot be 0.");
         lenders.add(msg.sender); // Return false when lender is already there. O(1)
         cDaiToken.transferFrom(msg.sender, address(this), _amount);
