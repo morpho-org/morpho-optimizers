@@ -32,5 +32,5 @@ jobs:
 
       - name: Run unit tests
         env:
-          INFURA_PROJECT_ID: ${{ secrets.INFURA_PROJECT_ID }}
+          POCKET_NETWORK_ID: ${{ secrets.POCKET_NETWORK_ID }}
         run: yarn test

@@ -10,8 +10,8 @@ module.exports = {
   networks: {
     hardhat: {
       forking: {
-        // url: `https://eth-trace.gateway.pokt.network/v1/lb/${process.env.POCKET_NETWORK_ID}`
-        url: `https://mainnet.infura.io/v3/${process.env.INFURA_PROJECT_ID}`
+        url: `https://eth-trace.gateway.pokt.network/v1/lb/${process.env.POCKET_NETWORK_ID}`
+        // url: `https://mainnet.infura.io/v3/${process.env.INFURA_PROJECT_ID}`
       },
       // accounts: [
       //   {
@@ -36,6 +36,6 @@ module.exports = {
     }
   },
   mocha: {
-    timeout: 20000
+    timeout: 50000
   }
 };
