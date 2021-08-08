@@ -16,7 +16,6 @@ describe("CompoundModuleETH Contract", () => {
   const DAI_ADDRESS = "0x6B175474E89094C44Da98b954EedeAC495271d0F";
   const CDAI_ADDRESS = "0x5d3a536e4d6dbd6114cc1ead35777bab948e3643";
   const PROXY_COMPTROLLER_ADDRESS = "0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B";
-  const COMPOUND_ORACLE_ADDRESS = "0x841616a5CBA946CF415Efe8a326A621A794D0f97";
 
   const gasPrice = BigNumber.from(8000000000); // Default value
 
@@ -58,7 +57,7 @@ describe("CompoundModuleETH Contract", () => {
     cEthToken = await ethers.getContractAt(CEthABI, CETH_ADDRESS, owner);
     cDaiToken = await ethers.getContractAt(CErc20ABI, CDAI_ADDRESS, owner);
     comptroller = await ethers.getContractAt(comptrollerABI, PROXY_COMPTROLLER_ADDRESS, owner);
-    compoundOracle = await ethers.getContractAt(compoundOracleABI, COMPOUND_ORACLE_ADDRESS, owner);
+    compoundOracle = await ethers.getContractAt(compoundOracleABI, comptroller.oracle(), owner);
 
     // Mint some DAI
     // Address of Join (has auth) https://changelog.makerdao.com/ -> releases -> contract addresses -> MCD_JOIN_DAI
