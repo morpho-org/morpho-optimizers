@@ -147,10 +147,10 @@ contract CompoundModuleETH is ReentrancyGuard {
         require(_amount > 0, "Amount cannot be 0.");
         // Calculate the collateral required.
         uint256 ethPriceMantissa = compoundOracle.getUnderlyingPrice(
-            ICToken(CETH_ADDRESS)
+            CETH_ADDRESS
         );
         uint256 daiPriceMantissa = compoundOracle.getUnderlyingPrice(
-            ICToken(CDAI_ADDRESS)
+            CDAI_ADDRESS
         );
         require(
             ethPriceMantissa != 0 && daiPriceMantissa != 0,
@@ -359,10 +359,10 @@ contract CompoundModuleETH is ReentrancyGuard {
         _payBack(_borrower, _amount);
         // Calculate the amount of token to seize from collateral.
         uint256 ethPriceMantissa = compoundOracle.getUnderlyingPrice(
-            ICToken(CETH_ADDRESS)
+            CETH_ADDRESS
         );
         uint256 daiPriceMantissa = compoundOracle.getUnderlyingPrice(
-            ICToken(CDAI_ADDRESS)
+            CDAI_ADDRESS
         );
         require(
             ethPriceMantissa != 0 && daiPriceMantissa != 0,
@@ -436,10 +436,10 @@ contract CompoundModuleETH is ReentrancyGuard {
         address _collateralCTokenAddress
     ) public view returns (uint256) {
         uint256 borrowedAssetPriceMantissa = compoundOracle.getUnderlyingPrice(
-            ICToken(_borrowedCTokenAddress)
+            _borrowedCTokenAddress
         );
         uint256 collateralAssetPriceMantissa = compoundOracle
-            .getUnderlyingPrice(ICToken(_collateralCTokenAddress));
+            .getUnderlyingPrice(_collateralCTokenAddress);
         require(
             borrowedAssetPriceMantissa != 0 &&
                 collateralAssetPriceMantissa != 0,
