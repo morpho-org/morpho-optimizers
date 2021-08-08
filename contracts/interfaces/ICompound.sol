@@ -290,5 +290,5 @@ interface ICToken {
 }
 
 interface ICompoundOracle {
-    function getUnderlyingPrice(ICToken cToken) external view returns (uint256);
+    function getUnderlyingPrice(address) external view returns (uint256);
 }
