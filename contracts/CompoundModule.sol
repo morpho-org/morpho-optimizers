@@ -30,6 +30,13 @@ contract CompoundModule is ReentrancyGuard {
         uint256 onComp; // In underlying.
     }
 
+    struct Market {
+        bool isListed; // Whether or not this market is listed.
+        uint256 collateralFactorMantissa; // Multiplier representing the most one can borrow against their collateral in this market (0.9 => borrow 90% of collateral value max). Between 0 and 1.
+        EnumerableSet.AddressSet lenders; // Lenders of this asset.
+        EnumerableSet.AddressSet borrowersOnMorpho; // Borrowers of this asset on Morpho.
+        EnumerableSet.AddressSet borrowersOnComp; // Borrowers of this asset on Compound.
+    }
     /* Storage */
 
     mapping(address => LendingBalance) public lendingBalanceOf; // Lending balance of user (ERC20/cERC20).
