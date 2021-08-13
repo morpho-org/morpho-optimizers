@@ -741,6 +741,158 @@ contract CompoundModule is ReentrancyGuard {
         return currentExchangeRate;
     }
 
+    /** MULTI ASSET **/
+    // Those functions will be deported ina  seprate contract in the long run
+
+    /**
+     * @param cTokens The list of addresses of the cToken markets to be enabled
+     * @return Success indicator for whether each corresponding market was entered
+     */
+    function enterMarkets(address[] memory cTokens)
+        public
+        returns (uint256[] memory)
+    {}
+
+    /**
+     * @param cTokenAddress The address of the asset to be removed
+     * @return Whether or not the account successfully exited the market
+     */
+    function exitMarket(address cTokenAddress) external returns (uint256) {}
+
+    /** View functions **/
+
+    /**
+     * @notice Returns the assets an account has entered
+     * @param account The address of the account to pull assets for
+     * @return A dynamic list with the assets the account has entered
+     */
+    function getAssetsIn(address account)
+        external
+        view
+        returns (ICErc20[] memory)
+    {
+        ICErc20[] memory assetsIn = enteredMarketsOf[account];
+
+        return assetsIn;
+    }
+
+    /**
+     * @notice Returns whether the given account is entered in the given asset market
+     * @param account The address of the account to check
+     * @param cToken The cToken to check
+     * @return True if the account is in the asset, otherwise false.
+     */
+    function checkMembership(address account, ICErc20 cToken)
+        external
+        view
+        returns (bool)
+    {
+        return markets[address(cToken)].accountMembership[account];
+    }
+
+    // Replacing getCollateralRequired: getCollateralRequired() <-> getAccountLiquidity()
+
+    /**
+     * @notice Determine the current account liquidity wrt collateral requirements
+     * @return (possible error code (semi-opaque),
+                account liquidity in excess of collateral requirements,
+     *          account shortfall below collateral requirements)
+     */
+    function getAccountLiquidity(address account)
+        public
+        view
+        returns (
+            uint256,
+            uint256,
+            uint256
+        )
+    {
+        (
+            Error err,
+            uint256 liquidity,
+            uint256 shortfall
+        ) = getHypotheticalAccountLiquidityInternal(account, CToken(0), 0, 0);
+        return (uint256(err), liquidity, shortfall);
+    }
+
+    function getAccountLiquidityInternal(address account)
+        internal
+        view
+        returns (
+            Error,
+            uint256,
+            uint256
+        )
+    {
+        return
+            getHypotheticalAccountLiquidityInternal(account, CToken(0), 0, 0);
+    }
+
+    function getHypotheticalAccountLiquidity(
+        address account,
+        address cTokenModify,
+        uint256 redeemTokens,
+        uint256 borrowAmount
+    )
+        public
+        view
+        returns (
+            uint256,
+            uint256,
+            uint256
+        )
+    {}
+
+    /**
+     * @notice Checks if the account should be allowed to redeem tokens in the given market
+     * @param cToken The market to verify the redeem against
+     * @param redeemer The account which would redeem the tokens
+     * @param redeemTokens The number of cTokens to exchange for the underlying asset in the market
+     * @return 0 if the redeem is allowed, otherwise a semi-opaque error code (See ErrorReporter.sol)
+     */
+    function redeemAllowed(
+        address cToken,
+        address redeemer,
+        uint256 redeemTokens
+    ) external returns (uint256) {
+        // (Error err, , uint shortfall) = getHypotheticalAccountLiquidityInternal(redeemer, CToken(cToken), redeemTokens, 0);
+    }
+
+    function borrowAllowed(
+        address cToken,
+        address borrower,
+        uint256 borrowAmount
+    ) external returns (uint256) {}
+
+    function mintAllowed(
+        address cToken,
+        address minter,
+        uint256 mintAmount
+    ) external returns (uint256) {}
+
+    function seizeAllowed(
+        address cTokenCollateral,
+        address cTokenBorrowed,
+        address liquidator,
+        address borrower,
+        uint256 seizeTokens
+    ) external returns (uint256) {}
+
+    function repayBorrowAllowed(
+        address cToken,
+        address payer,
+        address borrower,
+        uint256 repayAmount
+    ) external returns (uint256) {}
+
+    function liquidateBorrowAllowed(
+        address cTokenBorrowed,
+        address cTokenCollateral,
+        address liquidator,
+        address borrower,
+        uint256 repayAmount
+    ) external returns (uint256) {}
+
     // This is needed to receive ETH when calling `_redeemEthFromComp`
     receive() external payable {}
 }
