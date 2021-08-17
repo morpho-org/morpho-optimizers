@@ -39,9 +39,14 @@ contract CompoundModule is ReentrancyGuard, Ownable {
         EnumerableSet.AddressSet borrowersOnMorpho; // Borrowers of this asset on Morpho.
         EnumerableSet.AddressSet borrowersOnComp; // Borrowers of this asset on Compound.
     }
+
     /* Storage */
 
     mapping(address => Market) private market; // Markets of Morpho.
+
+    mapping(address => address[]) public enteredMarketsAsLenderOf; // Markets entered by a user as lender.
+    mapping(address => address[]) public enteredMarketsForCollateral; // Markets entered by a user for collateral.
+    mapping(address => address[]) public enteredMarketsAsBorrowerOf; // Markets entered by a user as borrower.
 
     mapping(address => LendingBalance) public lendingBalanceOf; // Lending balance of user (ERC20/cERC20).
     mapping(address => BorrowingBalance) public borrowingBalanceOf; // Borrowing balance of user (ERC20).
