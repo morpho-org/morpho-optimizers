@@ -64,29 +64,14 @@ contract CompoundModule is ReentrancyGuard, Ownable {
 
     IComptroller public comptroller;
     ICompoundOracle public compoundOracle;
-    ICEth public cEthToken;
-    ICErc20 public cErc20Token;
-    IERC20 public erc20Token;
 
     /* Contructor */
 
-    constructor(
-        address _cErc20Address,
-        address _cEthAddress,
-        address _proxyComptrollerAddress
-    ) {
+    constructor(address _cEthAddress, address _proxyComptrollerAddress) {
         cEthAddress = _cEthAddress;
         comptroller = IComptroller(_proxyComptrollerAddress);
-        address[] memory markets = new address[](2);
-        markets[0] = _cEthAddress;
-        markets[1] = _cErc20Address;
-        comptroller.enterMarkets(markets);
-        cEthToken = ICEth(_cEthAddress);
-        cErc20Address = _cErc20Address;
-        cErc20Token = ICErc20(_cErc20Address);
         address compoundOracleAddress = comptroller.oracle();
         compoundOracle = ICompoundOracle(compoundOracleAddress);
-        erc20Token = IERC20(cErc20Token.underlying());
         lastUpdateBlockNumber = block.number;
         updateBPY();
     }
@@ -107,13 +92,19 @@ contract CompoundModule is ReentrancyGuard, Ownable {
     }
 
     /** @dev Lends ERC20 tokens.
+     *  @param _cErc20Address The address of the market the user wants to enter.
      *  @param _amount The amount to lend in ERC20 tokens.
      */
-    function lend(uint256 _amount) external nonReentrant {
+    function lend(address _cErc20Address, uint256 _amount)
+        external
+        nonReentrant
+    {
         require(
             _amount >= markets[_cErc20Address].thresholds[0],
             "Amount cannot be less than THRESHOLD."
         );
+        ICErc20 cErc20Token = ICErc20(_cErc20Address);
+        IERC20 erc20Token = IERC20(cErc20Token.underlying());
         erc20Token.transferFrom(msg.sender, address(this), _amount);
         uint256 cExchangeRate = cErc20Token.exchangeRateCurrent();
 
@@ -122,6 +113,7 @@ contract CompoundModule is ReentrancyGuard, Ownable {
             uint256 mExchangeRate = updateCurrentExchangeRate();
             // Find borrowers and move them to Morpho.
             uint256 remainingToSupplyToComp = _moveBorrowersFromCompToMorpho(
+                _cErc20Address,
                 _amount
             ); // In underlying.
             // Repay Compound.
@@ -135,23 +127,30 @@ contract CompoundModule is ReentrancyGuard, Ownable {
                 lendingBalanceOf[msg.sender].onComp += remainingToSupplyToComp
                     .div(cExchangeRate); // In cToken.
                 lendersOnComp.addTail(msg.sender);
-                _supplyErc20ToComp(remainingToSupplyToComp); // Revert on error.
+                _supplyErc20ToComp(_cErc20Address, remainingToSupplyToComp); // Revert on error.
             }
         } else {
             lendingBalanceOf[msg.sender].onComp += _amount.div(cExchangeRate); // In cToken.
             lendersOnComp.addTail(msg.sender);
-            _supplyErc20ToComp(_amount); // Revert on error.
+            _supplyErc20ToComp(_cErc20Address, _amount); // Revert on error.
         }
     }
 
     /** @dev Borrows ERC20 tokens.
+     *  @param _cErc20Address The address of the market the user wants to enter.
      *  @param _amount The amount to borrow in ERC20 tokens.
      */
-    function borrow(uint256 _amount) external nonReentrant {
+    function borrow(address _cErc20Address, uint256 _amount)
+        external
+        nonReentrant
+    {
         require(
             _amount >= markets[_cErc20Address].thresholds[0],
             "Amount cannot be less than THRESHOLD."
         );
+        ICErc20 cErc20Token = ICErc20(_cErc20Address);
+        IERC20 erc20Token = IERC20(cErc20Token.underlying());
+        ICEth cEthToken = ICEth(cEthAddress);
         uint256 borrowIndex = cErc20Token.borrowIndex();
         uint256 mExchangeRate = updateCurrentExchangeRate();
         uint256 amountBorrowedAfter = _amount +
@@ -161,7 +160,7 @@ contract CompoundModule is ReentrancyGuard, Ownable {
         uint256 collateralRequiredInEth = getCollateralRequired(
             amountBorrowedAfter,
             collateralFactor,
-            cErc20Address,
+            _cErc20Address,
             cEthAddress
         );
         uint256 collateralRequiredInCEth = collateralRequiredInEth.div(
@@ -183,11 +182,11 @@ contract CompoundModule is ReentrancyGuard, Ownable {
         uint256 toRedeem = _amount - remainingToBorrowOnComp;
 
         if (toRedeem > 0) {
-            borrowingBalanceOf[msg.sender].onMorpho += toRedeem.div(
-                mExchangeRate
-            ); // In mUnit.
+            market[_cErc20Address]
+                .borrowingBalanceOf[msg.sender]
+                .onMorpho += toRedeem.div(mExchangeRate); // In mUnit.
             market[_cErc20Address].borrowersOnMorpho.addTail(msg.sender);
-            _redeemErc20FromComp(toRedeem, false); // Revert on error.
+            _redeemErc20FromComp(_cErc20Address, toRedeem, false); // Revert on error.
         }
 
         // If not enough cTokens on Morpho, we must borrow it on Compound.
@@ -200,24 +199,33 @@ contract CompoundModule is ReentrancyGuard, Ownable {
                 .div(cErc20Token.borrowIndex()); // In cdUnit.
             market[_cErc20Address].borrowersOnComp.addTail(msg.sender);
         }
-
         // Transfer ERC20 tokens to borrower.
         erc20Token.safeTransfer(msg.sender, _amount);
     }
 
     /** @dev Repays debt of the user.
      *  @dev `msg.sender` must have approved Morpho's contract to spend the underlying `_amount`.
+     *  @param _cErc20Address The address of the market the user wants to interact with.
      *  @param _amount The amount in ERC20 tokens to repay.
      */
-    function repay(uint256 _amount) external nonReentrant {
-        _repay(msg.sender, _amount);
+    function repay(address _cErc20Address, uint256 _amount)
+        external
+        nonReentrant
+    {
+        _repay(_cErc20Address, msg.sender, _amount);
     }
 
     /** @dev Withdraws ERC20 tokens from lending.
+     *  @param _cErc20Address The address of the market the user wants to interact with.
      *  @param _amount The amount in tokens to withdraw from lending.
      */
-    function withdraw(uint256 _amount) external nonReentrant {
+    function withdraw(address _cErc20Address, uint256 _amount)
+        external
+        nonReentrant
+    {
         require(_amount > 0, "Amount cannot be 0.");
+        ICErc20 cErc20Token = ICErc20(_cErc20Address);
+        IERC20 erc20Token = IERC20(cErc20Token.underlying());
         uint256 mExchangeRate = updateCurrentExchangeRate();
         uint256 cExchangeRate = cErc20Token.exchangeRateCurrent();
         uint256 amountOnCompInUnderlying = lendingBalanceOf[msg.sender]
@@ -227,10 +235,14 @@ contract CompoundModule is ReentrancyGuard, Ownable {
         if (_amount <= amountOnCompInUnderlying) {
             // Simple case where we can directly withdraw unused liquidity on Compound.
             lendingBalanceOf[msg.sender].onComp -= _amount.div(cExchangeRate); // In cToken.
-            _redeemErc20FromComp(_amount, false); // Revert on error.
+            _redeemErc20FromComp(_cErc20Address, _amount, false); // Revert on error.
         } else {
             // First, we take all the unused liquidy on Compound.
-            _redeemErc20FromComp(amountOnCompInUnderlying, false); // Revert on error.
+            _redeemErc20FromComp(
+                _cErc20Address,
+                amountOnCompInUnderlying,
+                false
+            ); // Revert on error.
             lendingBalanceOf[msg.sender].onComp -= amountOnCompInUnderlying.div(
                 cExchangeRate
             );
@@ -247,26 +259,35 @@ contract CompoundModule is ReentrancyGuard, Ownable {
                 // There is enough cTokens in the contract to use.
                 require(
                     _moveLendersFromCompToMorpho(
+                        _cErc20Address,
                         remainingToWithdraw,
                         msg.sender
                     ) == 0,
                     "Remaining to move should be 0."
                 );
-                _redeemErc20FromComp(remainingToWithdraw, false); // Revert on error.
+                _redeemErc20FromComp(
+                    _cErc20Address,
+                    remainingToWithdraw,
+                    false
+                ); // Revert on error.
             } else {
                 // The contract does not have enough cTokens for the withdraw.
                 // First, we use all the available cTokens in the contract.
                 uint256 toRedeem = cTokenContractBalanceInUnderlying -
                     _moveLendersFromCompToMorpho(
+                        _cErc20Address,
                         cTokenContractBalanceInUnderlying,
                         msg.sender
                     ); // The amount that can be redeemed for underlying.
-                _redeemErc20FromComp(toRedeem, false); // Revert on error.
+                _redeemErc20FromComp(_cErc20Address, toRedeem, false); // Revert on error.
                 // Update the remaining amount to withdraw to `msg.sender`.
                 remainingToWithdraw -= toRedeem;
                 // Then, we move borrowers not matched anymore from Morpho to Compound and borrow the amount directly on Compound.
                 require(
-                    _moveBorrowersFromMorphoToComp(remainingToWithdraw) == 0,
+                    _moveBorrowersFromMorphoToComp(
+                        _cErc20Address,
+                        remainingToWithdraw
+                    ) == 0,
                     "All liquidity should have been moved."
                 );
                 require(
@@ -288,8 +309,13 @@ contract CompoundModule is ReentrancyGuard, Ownable {
 
     /** @dev Allows a borrower to provide collateral in ETH.
      */
-    function provideCollateral() external payable nonReentrant {
+    function provideCollateral(address _cErc20Address)
+        external
+        payable
+        nonReentrant
+    {
         require(msg.value > 0, "Amount cannot be 0.");
+        ICEth cEthToken = ICEth(cEthAddress);
         // Transfer ETH to Morpho.
         payable(address(this)).transfer(msg.value);
         // Supply them to Compound.
@@ -303,8 +329,13 @@ contract CompoundModule is ReentrancyGuard, Ownable {
     /** @dev Allows a borrower to redeem her collateral in ETH.
      *  @param _amount The amount in ETH to get back.
      */
-    function redeemCollateral(uint256 _amount) external nonReentrant {
-        uint256 mExchangeRate = updateCurrentExchangeRate();
+    function redeemCollateral(address _cErc20Address, uint256 _amount)
+        external
+        nonReentrant
+    {
+        ICErc20 cErc20Token = ICErc20(_cErc20Address);
+        ICEth cEthToken = ICEth(cEthAddress);
+        uint256 mExchangeRate = updateCurrentExchangeRate(_cErc20Address);
         uint256 cEthExchangeRate = cEthToken.exchangeRateCurrent();
         uint256 amountInCEth = _amount.div(cEthExchangeRate);
         require(
@@ -319,7 +350,7 @@ contract CompoundModule is ReentrancyGuard, Ownable {
         uint256 collateralRequiredInEth = getCollateralRequired(
             borrowedAmount,
             collateralFactor,
-            cErc20Address,
+            _cErc20Address,
             cEthAddress
         );
         uint256 collateralRequiredInCEth = collateralRequiredInEth.div(
@@ -338,29 +369,34 @@ contract CompoundModule is ReentrancyGuard, Ownable {
     }
 
     /** @dev Allows someone to liquidate a position.
+     *  @param _cErc20Address The address of the market the user wants to interact with.
      *  @param _borrower The address of the borrower to liquidate.
      *  @param _amount The amount to repay in ERC20 tokens.
      */
-    function liquidate(address _borrower, uint256 _amount)
-        external
-        nonReentrant
-    {
+    function liquidate(
+        address _cErc20Address,
+        address _borrower,
+        uint256 _amount
+    ) external nonReentrant {
         (
             uint256 collateralInEth,
             uint256 collateralRequiredInEth
-        ) = getAccountLiquidity(_borrower);
+        ) = getAccountLiquidity(_cErc20Address, _borrower);
         require(
             collateralInEth < collateralRequiredInEth,
             "Borrower position cannot be liquidated."
         );
-        uint256 mExchangeRate = updateCurrentExchangeRate();
-        _repay(_borrower, _amount);
+        require(allowed);
+        ICErc20 cErc20Token = ICErc20(_cErc20Address);
+        ICEth cEthToken = ICEth(cEthAddress);
+        uint256 mExchangeRate = updateCurrentExchangeRate(_cErc20Address);
+        _repay(_cErc20Address, _borrower, _amount);
         // Calculate the amount of token to seize from collateral.
         uint256 ethPriceMantissa = compoundOracle.getUnderlyingPrice(
             cEthAddress
         );
         uint256 underlyingPriceMantissa = compoundOracle.getUnderlyingPrice(
-            cErc20Address
+            _cErc20Address
         );
         require(
             ethPriceMantissa != 0 && underlyingPriceMantissa != 0,
@@ -392,6 +428,7 @@ contract CompoundModule is ReentrancyGuard, Ownable {
     }
 
     /** @dev Updates the collateral factor related to cToken.
+     *  @param _cErc20Address The address of the market the user wants to interact with.
      */
     function updateCollateralFactor(address _cErc20Address) external {
         (, collateralFactor, ) = comptroller.markets(_cErc20Address);
@@ -400,14 +437,17 @@ contract CompoundModule is ReentrancyGuard, Ownable {
     /* Public */
 
     /** @dev Returns the collateral and the collateral required for the `_borrower`.
+     *  @param _cErc20Address The address of the market the user wants to enter.
      *  @param _borrower The address of `_borrower`.
      *  @return collateralInEth The collateral of the `_borrower` in ETH.
      *  @return collateralRequiredInEth The collateral required of the `_borrower` in ETH.
      */
-    function getAccountLiquidity(address _borrower)
+    function getAccountLiquidity(address _cErc20Address, address _borrower)
         public
         returns (uint256 collateralInEth, uint256 collateralRequiredInEth)
     {
+        ICErc20 cErc20Token = ICErc20(_cErc20Address);
+        ICEth cEthToken = ICEth(CETH_ADDRESS);
         uint256 borrowIndex = cErc20Token.borrowIndex();
 
         // Calculate total borrowing balance.
@@ -420,7 +460,7 @@ contract CompoundModule is ReentrancyGuard, Ownable {
         collateralRequiredInEth = getCollateralRequired(
             borrowedAmount,
             collateralFactor,
-            cErc20Address,
+            _cErc20Address,
             cEthAddress
         );
         collateralInEth = collateralBalanceOf[_borrower].mul(
@@ -460,7 +500,8 @@ contract CompoundModule is ReentrancyGuard, Ownable {
 
     /** @dev Updates the Block Percentage Yield (`BPY`) and calculate the current exchange rate (`currentExchangeRate`).
      */
-    function updateBPY() public {
+    function updateBPY(address _cErc20Address) public {
+        ICErc20 cErc20Token = ICErc20(_cErc20Address);
         // Update BPY.
         uint256 lendBPY = cErc20Token.supplyRatePerBlock();
         uint256 borrowBPY = cErc20Token.borrowRatePerBlock();
@@ -496,10 +537,17 @@ contract CompoundModule is ReentrancyGuard, Ownable {
 
     /** @dev Implements repay logic.
      *  @dev `msg.sender` must have approved Morpho's contract to spend the underlying `_amount`.
+     *  @param _cErc20Address The address of the market the user wants to interact with.
      *  @param _borrower The address of the `_borrower` to repay the borrowing.
      *  @param _amount The amount of ERC20 tokens to repay.
      */
-    function _repay(address _borrower, uint256 _amount) internal {
+    function _repay(
+        address _cErc20Address,
+        address _borrower,
+        uint256 _amount
+    ) internal {
+        ICErc20 cErc20Token = ICErc20(_cErc20Address);
+        IERC20 erc20Token = IERC20(cErc20Token.underlying());
         erc20Token.transferFrom(msg.sender, address(this), _amount);
         uint256 mExchangeRate = updateCurrentExchangeRate();
 
@@ -510,7 +558,7 @@ contract CompoundModule is ReentrancyGuard, Ownable {
 
             if (_amount <= onCompInUnderlying) {
                 // Repay Compound.
-                erc20Token.safeApprove(cErc20Address, _amount);
+                erc20Token.safeApprove(_cErc20Address, _amount);
                 cErc20Token.repayBorrow(_amount);
                 borrowingBalanceOf[_borrower].onComp -= _amount.div(
                     cErc20Token.borrowIndex()
@@ -530,19 +578,20 @@ contract CompoundModule is ReentrancyGuard, Ownable {
                     cErc20Token.borrowIndex()
                 ); // Since the borrowIndex is updated after a repay.
                 _moveLendersFromMorphoToComp(
+                    _cErc20Address,
                     remainingToSupplyToComp,
                     _borrower
                 ); // Revert on error.
 
                 if (remainingToSupplyToComp > 0)
-                    _supplyErc20ToComp(remainingToSupplyToComp);
+                    _supplyErc20ToComp(_cErc20Address, remainingToSupplyToComp);
             }
         } else {
-            _moveLendersFromMorphoToComp(_amount, _borrower); // Revert on error.
+            _moveLendersFromMorphoToComp(_cErc20Address, _amount, _borrower);
             borrowingBalanceOf[_borrower].onMorpho -= _amount.div(
                 mExchangeRate
             ); // In mUnit.
-            _supplyErc20ToComp(_amount);
+            _supplyErc20ToComp(_cErc20Address, _amount);
         }
 
         // Remove borrower from lists if needed.
@@ -556,25 +605,37 @@ contract CompoundModule is ReentrancyGuard, Ownable {
      *  @param _amount The amount in ETH to supply.
      */
     function _supplyEthToComp(uint256 _amount) internal {
+        ICEth cEthToken = ICEth(cEthAddress);
         cEthToken.mint{value: _amount}(); // Revert on error.
     }
 
     /** @dev Supplies ERC20 tokens to Compound.
+     *  @param _cErc20Address The address of the market the user wants to interact with.
      *  @param _amount Amount in ERC20 tokens to supply.
      */
-    function _supplyErc20ToComp(uint256 _amount) internal {
+    function _supplyErc20ToComp(address _cErc20Address, uint256 _amount)
+        internal
+    {
+        ICErc20 cErc20Token = ICErc20(_cErc20Address);
+        IERC20 erc20Token = IERC20(cErc20Token.underlying());
         // Approve transfer on the ERC20 contract.
-        erc20Token.safeApprove(cErc20Address, _amount);
+        erc20Token.safeApprove(_cErc20Address, _amount);
         // Mint cTokens.
         require(cErc20Token.mint(_amount) == 0, "cToken minting failed.");
     }
 
     /** @dev Redeems ERC20 tokens from Compound.
      *  @dev If `_redeemType` is true pass cToken as argument, else pass ERC20 tokens.
+     *  @param _cErc20Address The address of the market the user wants to interact with.
      *  @param _amount Amount of tokens to be redeemed.
      *  @param _redeemType The redeem type to use on Compound.
      */
-    function _redeemErc20FromComp(uint256 _amount, bool _redeemType) internal {
+    function _redeemErc20FromComp(
+        address _cErc20Address,
+        uint256 _amount,
+        bool _redeemType
+    ) internal {
+        ICErc20 cErc20Token = ICErc20(_cErc20Address);
         uint256 result;
         if (_redeemType == true) {
             // Retrieve your asset based on a cToken amount.
@@ -592,6 +653,7 @@ contract CompoundModule is ReentrancyGuard, Ownable {
      *  @param _redeemType The redeem type to use on Compound.
      */
     function _redeemEthFromComp(uint256 _amount, bool _redeemType) internal {
+        ICEth cEthToken = ICEth(cEthAddress);
         uint256 result;
         if (_redeemType == true) {
             // Retrieve your asset based on a cETH amount.
@@ -605,14 +667,17 @@ contract CompoundModule is ReentrancyGuard, Ownable {
 
     /** @dev Finds liquidity on Compound and moves it to Morpho.
      *  @dev Note: currentExchangeRate must have been upated before calling this function.
+     *  @param _cErc20Address The address of the market on which we want to move users.
      *  @param _amount The amount to search for in underlying.
      *  @param _lenderToAvoid The address of the lender to avoid moving liquidity from.
      *  @return remainingToMove The remaining liquidity to search for in underlying.
      */
     function _moveLendersFromCompToMorpho(
+        address _cErc20Address,
         uint256 _amount,
         address _lenderToAvoid
     ) internal returns (uint256 remainingToMove) {
+        ICErc20 cErc20Token = ICErc20(_cErc20Address);
         remainingToMove = _amount; // In underlying.
         uint256 mExchangeRate = currentExchangeRate;
         uint256 cExchangeRate = cErc20Token.exchangeRateCurrent();
@@ -653,13 +718,16 @@ contract CompoundModule is ReentrancyGuard, Ownable {
 
     /** @dev Finds liquidity on Morpho and moves it to Compound.
      *  @dev Note: currentExchangeRate must have been upated before calling this function.
+     *  @param _cErc20Address The address of the market on which we want to move users.
      *  @param _amount The amount to search for in underlying.
      *  @param _lenderToAvoid The address of the lender to avoid moving liquidity from.
      */
     function _moveLendersFromMorphoToComp(
+        address _cErc20Address,
         uint256 _amount,
         address _lenderToAvoid
     ) internal {
+        ICErc20 cErc20Token = ICErc20(_cErc20Address);
         uint256 remainingToMove = _amount; // In underlying.
         uint256 cExchangeRate = cErc20Token.exchangeRateCurrent();
         uint256 mExchangeRate = currentExchangeRate;
@@ -703,13 +771,15 @@ contract CompoundModule is ReentrancyGuard, Ownable {
 
     /** @dev Finds borrowers on Morpho that match the given `_amount` and moves them to Compound.
      *  @dev Note: currentExchangeRate must have been upated before calling this function.
+     *  @param _cErc20Address The address of the market on which we want to move users.
      *  @param _amount The amount to match in underlying.
      *  @return remainingToMatch The amount remaining to match in underlying.
      */
-    function _moveBorrowersFromMorphoToComp(uint256 _amount)
-        internal
-        returns (uint256 remainingToMatch)
-    {
+    function _moveBorrowersFromMorphoToComp(
+        address _cErc20Address,
+        uint256 _amount
+    ) internal returns (uint256 remainingToMatch) {
+        ICErc20 cErc20Token = ICErc20(_cErc20Address);
         remainingToMatch = _amount;
         uint256 mExchangeRate = currentExchangeRate;
         uint256 borrowIndex = cErc20Token.borrowIndex();
@@ -746,13 +816,15 @@ contract CompoundModule is ReentrancyGuard, Ownable {
 
     /** @dev Finds borrowers on Compound that match the given `_amount` and moves them to Morpho.
      *  @dev Note: currentExchangeRate must have been upated before calling this function.
+     *  @param _cErc20Address The address of the market on which we want to move users.
      *  @param _amount The amount to match in underlying.
      *  @return remainingToMatch The amount remaining to match in underlying.
      */
-    function _moveBorrowersFromCompToMorpho(uint256 _amount)
-        internal
-        returns (uint256 remainingToMatch)
-    {
+    function _moveBorrowersFromCompToMorpho(
+        address _cErc20Address,
+        uint256 _amount
+    ) internal returns (uint256 remainingToMatch) {
+        ICErc20 cErc20Token = ICErc20(_cErc20Address);
         remainingToMatch = _amount;
         uint256 mExchangeRate = currentExchangeRate;
         uint256 borrowIndex = cErc20Token.borrowIndex();
