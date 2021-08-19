@@ -62,6 +62,10 @@ contract CompoundModule is ReentrancyGuard {
 
     constructor(address _cErc20Address) {
         comptroller = IComptroller(PROXY_COMPTROLLER_ADDRESS);
+        address[] memory markets = new address[](2);
+        markets[0] = CETH_ADDRESS;
+        markets[1] = _cErc20Address;
+        comptroller.enterMarkets(markets);
         cEthToken = ICEth(CETH_ADDRESS);
         cErc20Address = _cErc20Address;
         cErc20Token = ICErc20(_cErc20Address);
@@ -150,8 +154,8 @@ contract CompoundModule is ReentrancyGuard {
         uint256 collateralRequiredInEth = getCollateralRequired(
             amountBorrowedAfter,
             collateralFactor,
-            CETH_ADDRESS,
-            cErc20Address
+            cErc20Address,
+            CETH_ADDRESS
         );
         uint256 collateralRequiredInCEth = collateralRequiredInEth.div(
             cEthToken.exchangeRateCurrent()
@@ -172,7 +176,10 @@ contract CompoundModule is ReentrancyGuard {
         // If not enough cTokens on Morpho, we must borrow it on Compound.
         if (remainingToBorrowOnComp > 0) {
             // TODO: round superior to avoid floating issues.
-            cErc20Token.borrow(remainingToBorrowOnComp); // Revert on error.
+            require(
+                cErc20Token.borrow(remainingToBorrowOnComp) == 0,
+                "Borrow on Compound failed."
+            );
             borrowingBalanceOf[msg.sender].onComp += remainingToBorrowOnComp; // In underlying.
             borrowersOnComp.add(msg.sender);
             if (remainingToBorrowOnComp != _amount)
@@ -232,7 +239,10 @@ contract CompoundModule is ReentrancyGuard {
                     remainingToWithdraw
                 );
                 // Finally, we borrow directly on Compound to search the remaining liquidity if any.
-                cErc20Token.borrow(remainingToWithdraw); // Revert on error.
+                require(
+                    cErc20Token.borrow(remainingToWithdraw) == 0,
+                    "Borrow on Compound failed."
+                );
             }
         }
         // Transfer back the ERC20 tokens.
@@ -280,7 +290,10 @@ contract CompoundModule is ReentrancyGuard {
                 remainingToUnstakeInUnderlying -= _moveBorrowersFromMorphoToComp(
                     remainingToUnstakeInUnderlying
                 );
-                cErc20Token.borrow(remainingToUnstakeInUnderlying); // Revert on error.
+                require(
+                    cErc20Token.borrow(remainingToUnstakeInUnderlying) == 0,
+                    "Borrow on Compound failed."
+                );
             }
         }
         cErc20Token.transfer(msg.sender, _amount);
@@ -323,8 +336,8 @@ contract CompoundModule is ReentrancyGuard {
         uint256 collateralRequiredInEth = getCollateralRequired(
             borrowedAmount,
             collateralFactor,
-            CETH_ADDRESS,
-            cErc20Address
+            cErc20Address,
+            CETH_ADDRESS
         );
         uint256 collateralRequiredInCEth = collateralRequiredInEth.div(
             cEthExchangeRate
