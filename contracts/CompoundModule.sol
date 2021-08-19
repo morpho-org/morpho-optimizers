@@ -88,7 +88,7 @@ contract CompoundModule is ReentrancyGuard {
         uint256 cExchangeRate = cErc20Token.exchangeRateCurrent();
         // If some borrowers are on Compound, we must move them to Morpho.
         if (borrowersOnComp.length() > 0) {
-            uint256 mExchangeRate = _updateCurrentExchangeRate();
+            uint256 mExchangeRate = updateCurrentExchangeRate();
             // Find borrowers and move them to Morpho.
             uint256 remainingToSupplyToComp = _moveBorrowersFromCompToMorpho(
                 _amount
@@ -119,7 +119,7 @@ contract CompoundModule is ReentrancyGuard {
         lenders.add(msg.sender); // Return false when lender is already there. O(1)
         // If some borrowers are on Compound, we must move them to Morpho.
         if (borrowersOnComp.length() > 0) {
-            uint256 mExchangeRate = _updateCurrentExchangeRate();
+            uint256 mExchangeRate = updateCurrentExchangeRate();
             uint256 cExchangeRate = cErc20Token.exchangeRateCurrent();
             uint256 amountInUnderlying = _amount.mul(cExchangeRate);
             // Find borrowers and move them to Morpho.
@@ -146,7 +146,7 @@ contract CompoundModule is ReentrancyGuard {
      */
     function borrow(uint256 _amount) external nonReentrant {
         require(_amount > 0, "Amount cannot be 0.");
-        uint256 mExchangeRate = _updateCurrentExchangeRate();
+        uint256 mExchangeRate = updateCurrentExchangeRate();
         uint256 amountBorrowedAfter = _amount +
             borrowingBalanceOf[msg.sender].onComp +
             borrowingBalanceOf[msg.sender].onMorpho.mul(mExchangeRate);
@@ -202,7 +202,7 @@ contract CompoundModule is ReentrancyGuard {
      */
     function withdraw(uint256 _amount) external nonReentrant {
         require(_amount > 0, "Amount cannot be 0.");
-        uint256 mExchangeRate = _updateCurrentExchangeRate();
+        uint256 mExchangeRate = updateCurrentExchangeRate();
         uint256 cExchangeRate = cErc20Token.exchangeRateCurrent();
         uint256 amountOnCompInUnderlying = lendingBalanceOf[msg.sender]
             .onComp
@@ -260,7 +260,7 @@ contract CompoundModule is ReentrancyGuard {
      *  @param _amount Amount in cToken to unstake.
      */
     function unstake(uint256 _amount) external nonReentrant {
-        uint256 mExchangeRate = _updateCurrentExchangeRate();
+        uint256 mExchangeRate = updateCurrentExchangeRate();
         if (_amount <= lendingBalanceOf[msg.sender].onComp) {
             lendingBalanceOf[msg.sender].onComp -= _amount;
         } else {
@@ -324,7 +324,7 @@ contract CompoundModule is ReentrancyGuard {
      *  @param _amount The amount in ETH to get back.
      */
     function redeemCollateral(uint256 _amount) external nonReentrant {
-        uint256 mExchangeRate = _updateCurrentExchangeRate();
+        uint256 mExchangeRate = updateCurrentExchangeRate();
         uint256 cEthExchangeRate = cEthToken.exchangeRateCurrent();
         uint256 amountInCEth = _amount.div(cEthExchangeRate);
         require(
@@ -369,7 +369,7 @@ contract CompoundModule is ReentrancyGuard {
             collateralInEth < collateralRequiredInEth,
             "Borrower position cannot be liquidated."
         );
-        uint256 mExchangeRate = _updateCurrentExchangeRate();
+        uint256 mExchangeRate = updateCurrentExchangeRate();
         _repay(_borrower, _amount);
         // Calculate the amount of token to seize from collateral.
         uint256 ethPriceMantissa = compoundOracle.getUnderlyingPrice(
@@ -422,7 +422,7 @@ contract CompoundModule is ReentrancyGuard {
     {
         uint256 borrowedAmount = borrowingBalanceOf[_borrower].onComp +
             borrowingBalanceOf[_borrower].onMorpho.mul(
-                _updateCurrentExchangeRate()
+                updateCurrentExchangeRate()
             );
         collateralRequiredInEth = getCollateralRequired(
             borrowedAmount,
@@ -475,7 +475,29 @@ contract CompoundModule is ReentrancyGuard {
         BPY = Math.average(lendBPY, borrowBPY);
 
         // Update currentExchangeRate.
-        _updateCurrentExchangeRate();
+        updateCurrentExchangeRate();
+    }
+
+    /** @dev Updates the current exchange rate, taking into the account block percentage yield since the last time it has been updated.
+     *  @return currentExchangeRate to convert from mUnit to underlying or from underlying to mUnit.
+     */
+    function updateCurrentExchangeRate() public returns (uint256) {
+        // Update currentExchangeRate.
+        uint256 currentBlock = block.number;
+        uint256 numberOfBlocksSinceLastUpdate = currentBlock -
+            lastUpdateBlockNumber;
+
+        uint256 newCurrentExchangeRate = currentExchangeRate.mul(
+            (1e18 + BPY).pow(
+                PRBMathUD60x18.fromUint(numberOfBlocksSinceLastUpdate)
+            )
+        );
+        currentExchangeRate = newCurrentExchangeRate;
+
+        // Update lastUpdateBlockNumber.
+        lastUpdateBlockNumber = currentBlock;
+
+        return newCurrentExchangeRate;
     }
 
     /* Internal */
@@ -485,7 +507,7 @@ contract CompoundModule is ReentrancyGuard {
      *  @param _amount The amount of ERC20 tokens to repay.
      */
     function _repay(address _borrower, uint256 _amount) internal {
-        uint256 mExchangeRate = _updateCurrentExchangeRate();
+        uint256 mExchangeRate = updateCurrentExchangeRate();
         if (borrowingBalanceOf[_borrower].onComp > 0) {
             if (_amount <= borrowingBalanceOf[_borrower].onComp) {
                 // Repay Compound.
@@ -711,24 +733,6 @@ contract CompoundModule is ReentrancyGuard {
             }
             i++;
         }
-    }
-
-    /** @dev Updates the current exchange rate, taking into the account block percentage yield since the last time it has been updated.
-     *  @return currentExchangeRate to convert from mUnit to underlying or from underlying to mUnit.
-     */
-    function _updateCurrentExchangeRate() internal returns (uint256) {
-        // Update currentExchangeRate.
-        uint256 currentBlock = block.number;
-        uint256 numberOfBlocksSinceLastUpdate = currentBlock -
-            lastUpdateBlockNumber;
-        currentExchangeRate = currentExchangeRate.mul(
-            (1e18 + BPY).pow(numberOfBlocksSinceLastUpdate)
-        );
-
-        // Update lastUpdateBlockNumber.
-        lastUpdateBlockNumber = currentBlock;
-
-        return currentExchangeRate;
     }
 
     // This is needed to receive ETH when calling `_redeemEthFromComp`
