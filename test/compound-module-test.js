@@ -18,6 +18,7 @@ describe("CompoundModule Contract", () => {
   const PROXY_COMPTROLLER_ADDRESS = "0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B";
 
   const gasPrice = BigNumber.from(8000000000); // Default value
+  const SCALE = BigNumber.from(10).pow(18);
 
   let cEthToken;
   let cToken;
@@ -33,15 +34,31 @@ describe("CompoundModule Contract", () => {
   // Utils functions
 
   const underlyingToCToken = (underlyingAmount, exchangeRateCurrent) => {
-    return underlyingAmount.mul(BigNumber.from(10).pow(18)).div(exchangeRateCurrent);
+    return underlyingAmount.mul(SCALE).div(exchangeRateCurrent);
   }
 
   const cTokenToUnderlying = (cTokenAmount, exchangeRateCurrent) => {
-    return cTokenAmount.mul(exchangeRateCurrent).div(BigNumber.from(10).pow(18));
+    return cTokenAmount.mul(exchangeRateCurrent).div(SCALE);
+  }
+
+  const underlyingToMUnit = (underlyingAmount, exchangeRateCurrent) => {
+    return underlyingAmount.mul(SCALE).div(exchangeRateCurrent);
+  }
+
+  const mUnitToUnderlying = (mUnitAmount, exchangeRateCurrent) => {
+    return mUnitAmount.mul(exchangeRateCurrent).div(SCALE);
   }
 
   const getCollateralRequired = (amount, collateralFactor, borrowedAssetPrice, collateralAssetPrice) => {
-    return amount.mul(borrowedAssetPrice).div(collateralAssetPrice).mul(BigNumber.from(10).pow(18)).div(collateralFactor)
+    return amount.mul(borrowedAssetPrice).div(collateralAssetPrice).mul(SCALE).div(collateralFactor)
+  }
+
+  // Removes the mast 5 digits of a number: used to prevent dust errors
+  const removeDigitsBigNumber = (number) => (number.sub(number.mod(100000))).div(100000);
+  const removeDigits = (number) => (number - (number % 100000)) / 100000;
+
+  const computeNewMorphoExchangeRate = (currentExchangeRate, BPY, currentBlockNumber, lastUpdateBlockNumber) => {
+    return currentExchangeRate * (1 + BPY / 1e18) ** BigNumber.from(currentBlockNumber).sub(lastUpdateBlockNumber).toNumber();
   }
 
   beforeEach(async () => {
@@ -87,6 +104,7 @@ describe("CompoundModule Contract", () => {
       const supplyRatePerBlock = await cToken.supplyRatePerBlock();
       const expectedBPY = borrowRatePerBlock.add(supplyRatePerBlock).div(2);
       expect(await compoundModule.BPY()).to.equal(expectedBPY);
+      expect(await compoundModule.currentExchangeRate()).to.be.equal(utils.parseUnits("1"));
     });
   });
 
@@ -122,12 +140,22 @@ describe("CompoundModule Contract", () => {
       expect(await compoundModule.collateralFactor()).to.equal(expectedCollateraFactor);
     });
 
-    // Note: this is not porrible to access the result off-chain as the function is not pure/view.
+    // Note: this is not possible to access the result off-chain as the function is not pure/view.
     // We should add en event to allow catching of the values.
     xit("Should give the right account liquidity for an empty account", async () => {
       const { collateralInEth, collateralRequiredInEth } = (await compoundModule.getAccountLiquidity(borrower.getAddress())).value;
       expect(collateralRequiredInEth).to.equal(0);
       expect(collateralInEth).to.equal(0);
+    });
+
+    it('Should update currentExchangeRate with the right value', async () => {
+      const BPY = (await compoundModule.BPY()).toNumber();
+      const currentExchangeRate = await compoundModule.currentExchangeRate();
+      const lastUpdateBlockNumber = await compoundModule.lastUpdateBlockNumber();
+      const { blockNumber } = await compoundModule.connect(owner).updateCurrentExchangeRate();
+      const expectedCurrentExchangeRate = computeNewMorphoExchangeRate(currentExchangeRate, BPY, blockNumber, lastUpdateBlockNumber);
+      // The pow function has some small decimal errors
+      expect(removeDigitsBigNumber((await compoundModule.currentExchangeRate()))).to.equal(removeDigits(expectedCurrentExchangeRate));
     });
   });
 
