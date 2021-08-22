@@ -173,6 +173,8 @@ contract CompoundModule is ReentrancyGuard {
         ); // In underlying.
         uint256 toRedeem = _amount - remainingToBorrowOnComp;
         borrowingBalanceOf[msg.sender].onMorpho += toRedeem.div(mExchangeRate); // In mUnit.
+        if (borrowingBalanceOf[msg.sender].onMorpho > 0)
+            borrowersOnMorpho.add(msg.sender);
         // If not enough cTokens on Morpho, we must borrow it on Compound.
         if (remainingToBorrowOnComp > 0) {
             // TODO: round superior to avoid floating issues.
@@ -225,22 +227,36 @@ contract CompoundModule is ReentrancyGuard {
                 .mul(cExchangeRate);
             if (remainingToWithdraw <= cTokenContractBalanceInUnderlying) {
                 // There is enough cTokens in the contract to use.
-                _moveLendersFromCompToMorpho(remainingToWithdraw, msg.sender);
+                require(
+                    _moveLendersFromCompToMorpho(
+                        remainingToWithdraw,
+                        msg.sender
+                    ) == 0,
+                    "Remaining to move should be 0."
+                );
+                _redeemErc20FromComp(remainingToWithdraw, false); // Revert on error.
             } else {
                 // The contract does not have enough cTokens for the withdraw.
-                // First, we use all the cTokens in the contract.
-                _moveLendersFromCompToMorpho(
+                // First, we use all the available cTokens in the contract.
+                uint256 remainingToMove = _moveLendersFromCompToMorpho(
                     cTokenContractBalanceInUnderlying,
                     msg.sender
-                );
-                // Then, we put borrowers on Compound.
-                remainingToWithdraw -= cTokenContractBalanceInUnderlying;
-                remainingToWithdraw -= _moveBorrowersFromMorphoToComp(
-                    remainingToWithdraw
-                );
-                // Finally, we borrow directly on Compound to search the remaining liquidity if any.
+                ); // The remaining liquidity to move.
+                // Redeem what has been moved.
+                _redeemErc20FromComp(
+                    cTokenContractBalanceInUnderlying - remainingToMove,
+                    false
+                ); // Revert on error.
+                // Then, we move borrowers not matched from Morpho to Compound and borrow the amount directly on Compound.
+                uint256 toBorrow = remainingToWithdraw -
+                    cTokenContractBalanceInUnderlying +
+                    remainingToMove;
                 require(
-                    cErc20Token.borrow(remainingToWithdraw) == 0,
+                    _moveBorrowersFromMorphoToComp(toBorrow) == 0,
+                    "All liquidity should have been moved."
+                );
+                require(
+                    cErc20Token.borrow(toBorrow) == 0,
                     "Borrow on Compound failed."
                 );
             }
