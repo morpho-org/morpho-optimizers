@@ -190,7 +190,7 @@ describe("CompoundModule Contract", () => {
 
       // Check ERC20 balance
       expect(daiBalanceAfter).to.equal(expectedDaiBalanceAfter);
-      const exchangeRate = await cToken.exchangeRateStored();
+      const exchangeRate = await cToken.callStatic.exchangeRateCurrent();
       const expectedLendingBalanceOnComp = underlyingToCToken(amount, exchangeRate);
       expect(await cToken.balanceOf(compoundModule.address)).to.equal(expectedLendingBalanceOnComp);
       expect((await compoundModule.lendingBalanceOf(lender1.getAddress())).onComp).to.equal(expectedLendingBalanceOnComp);
@@ -203,7 +203,7 @@ describe("CompoundModule Contract", () => {
       await daiToken.connect(lender1).approve(compoundModule.address, amount);
       await compoundModule.connect(lender1).lend(amount);
       const lendingBalanceOnComp = (await compoundModule.lendingBalanceOf(lender1.getAddress())).onComp;
-      const exchangeRate1 = await cToken.exchangeRateStored();
+      const exchangeRate1 = await cToken.callStatic.exchangeRateCurrent();
       const toWithdraw1 = cTokenToUnderlying(lendingBalanceOnComp, exchangeRate1);
 
       // Check that lender1 cannot withdraw too much
@@ -213,7 +213,7 @@ describe("CompoundModule Contract", () => {
       // To improve as there is still dust after withdrawing: create a function with cToken as input?
       // Update exchange rate
       await cToken.connect(lender1).exchangeRateCurrent();
-      const exchangeRate2 = await cToken.exchangeRateStored();
+      const exchangeRate2 = await cToken.callStatic.exchangeRateCurrent();
       const toWithdraw2 = cTokenToUnderlying(lendingBalanceOnComp, exchangeRate2);
       await compoundModule.connect(lender1).withdraw(toWithdraw2);
       const daiBalanceAfter = await daiToken.balanceOf(lender1.getAddress());
@@ -235,9 +235,9 @@ describe("CompoundModule Contract", () => {
       // Tx are done in different blocks.
       await daiToken.connect(lender1).approve(compoundModule.address, amountToApprove);
       await compoundModule.connect(lender1).lend(amount);
-      const exchangeRate1 = await cToken.exchangeRateStored();
+      const exchangeRate1 = await cToken.callStatic.exchangeRateCurrent();
       await compoundModule.connect(lender1).lend(amount);
-      const exchangeRate2 = await cToken.exchangeRateStored();
+      const exchangeRate2 = await cToken.callStatic.exchangeRateCurrent();
 
       // Check ERC20 balance
       const daiBalanceAfter = await daiToken.balanceOf(lender1.getAddress());
@@ -264,7 +264,7 @@ describe("CompoundModule Contract", () => {
 
         // Check ERC20 balance
         expect(daiBalanceAfter).to.equal(expectedDaiBalanceAfter);
-        const exchangeRate = await cToken.exchangeRateStored();
+        const exchangeRate = await cToken.callStatic.exchangeRateCurrent();
         const expectedLendingBalanceOnComp = underlyingToCToken(amount, exchangeRate);
         expectedCTokenBalance = expectedCTokenBalance.add(expectedLendingBalanceOnComp);
         expect(removeDigitsBigNumber(await cToken.balanceOf(compoundModule.address))).to.equal(removeDigitsBigNumber(expectedCTokenBalance));
@@ -300,7 +300,7 @@ describe("CompoundModule Contract", () => {
       expect(ethBalanceAfter).to.equal(ethBalanceBefore.sub(gasCost).sub(amount));
 
       // Check collateral balance
-      const exchangeRate = await cEthToken.exchangeRateStored();
+      const exchangeRate = await cEthToken.callStatic.exchangeRateCurrent();
       const expectedCollateralBalance = underlyingToCToken(amount, exchangeRate);
       expect(await compoundModule.collateralBalanceOf(borrower1.getAddress())).to.equal(expectedCollateralBalance);
     });
@@ -313,13 +313,13 @@ describe("CompoundModule Contract", () => {
       const { hash: hash1 } = await compoundModule.connect(borrower1).provideCollateral({ value: amount });
       const { gasUsed: gasUsed1 } = await ethers.provider.getTransactionReceipt(hash1);
       const gasCost1 = gasUsed1.mul(gasPrice);
-      const exchangeRate1 = await cEthToken.exchangeRateStored();
+      const exchangeRate1 = await cEthToken.callStatic.exchangeRateCurrent();
 
       // Second tx (calculate gas cost too)
       const { hash: hash2 } = await compoundModule.connect(borrower1).provideCollateral({ value: amount });
       const { gasUsed: gasUsed2 } = await ethers.provider.getTransactionReceipt(hash2);
       const gasCost2 = gasUsed2.mul(gasPrice);
-      const exchangeRate2 = await cEthToken.exchangeRateStored();
+      const exchangeRate2 = await cEthToken.callStatic.exchangeRateCurrent();
 
       // Check ETH balance
       const ethBalanceAfter = await ethers.provider.getBalance(borrower1.getAddress());
@@ -339,10 +339,11 @@ describe("CompoundModule Contract", () => {
     });
 
     it("Should be able to borrow on Compound after providing collateral up to max", async () => {
+      // TODO: check borrowing balance of Morpho contract
       const amount = utils.parseUnits("10");
       await compoundModule.connect(borrower1).provideCollateral({ value: amount });
       const collateralBalanceInCEth = await compoundModule.collateralBalanceOf(borrower1.getAddress());
-      const cEthExchangeRate = await cEthToken.exchangeRateStored();
+      const cEthExchangeRate = await cEthToken.callStatic.exchangeRateCurrent();
       const collateralBalanceInEth = cTokenToUnderlying(collateralBalanceInCEth, cEthExchangeRate);
       const { collateralFactorMantissa } = await comptroller.markets(CDAI_ADDRESS);
       const ethPriceMantissa = await compoundOracle.getUnderlyingPrice(CETH_ADDRESS);
@@ -363,7 +364,7 @@ describe("CompoundModule Contract", () => {
       const amount = utils.parseUnits("10");
       await compoundModule.connect(borrower1).provideCollateral({ value: amount });
       const collateralBalanceInCEth = await compoundModule.collateralBalanceOf(borrower1.getAddress());
-      const cEthExchangeRate = await cEthToken.exchangeRateStored();
+      const cEthExchangeRate = await cEthToken.callStatic.exchangeRateCurrent();
       const collateralBalanceInEth = cTokenToUnderlying(collateralBalanceInCEth, cEthExchangeRate);
       const { collateralFactorMantissa } = await comptroller.markets(CDAI_ADDRESS);
       const ethPriceMantissa = await compoundOracle.getUnderlyingPrice(CETH_ADDRESS);
@@ -376,12 +377,13 @@ describe("CompoundModule Contract", () => {
     });
 
     it("Several borrowers should be able to borrow and have the correct balances", async () => {
+      // TODO: check borrowing balance of Morpho contract
       const amount = utils.parseUnits("10");
 
       Promise.all(borrowers.map(async borrower => {
         await compoundModule.connect(borrower).provideCollateral({ value: amount });
         const collateralBalanceInCEth = await compoundModule.collateralBalanceOf(borrower.getAddress());
-        const cEthExchangeRate = await cEthToken.exchangeRateStored();
+        const cEthExchangeRate = await cEthToken.callStatic.exchangeRateCurrent();
         const collateralBalanceInEth = cTokenToUnderlying(collateralBalanceInCEth, cEthExchangeRate);
         const { collateralFactorMantissa } = await comptroller.markets(CDAI_ADDRESS);
         const ethPriceMantissa = await compoundOracle.getUnderlyingPrice(CETH_ADDRESS);
@@ -412,7 +414,7 @@ describe("CompoundModule Contract", () => {
 
       // Check ERC20 balance
       expect(daiBalanceAfter1).to.equal(expectedDaiBalanceAfter1);
-      const cExchangeRate1 = await cToken.exchangeRateStored();
+      const cExchangeRate1 = await cToken.callStatic.exchangeRateCurrent();
       const expectedLendingBalanceOnComp1 = underlyingToCToken(lendingAmount, cExchangeRate1);
       expect(await cToken.balanceOf(compoundModule.address)).to.equal(expectedLendingBalanceOnComp1);
       expect((await compoundModule.lendingBalanceOf(lender1.getAddress())).onComp).to.equal(expectedLendingBalanceOnComp1);
@@ -425,7 +427,7 @@ describe("CompoundModule Contract", () => {
       await compoundModule.connect(borrower1).borrow(lendingAmount);
 
       // Check lender1 balances
-      const cExchangeRate2 = await cToken.exchangeRateStored();
+      const cExchangeRate2 = await cToken.callStatic.exchangeRateCurrent();
       const mExchangeRate1 = await compoundModule.currentExchangeRate();
       const expectedLendingBalanceOnComp2 = expectedLendingBalanceOnComp1.sub(underlyingToCToken(lendingAmount, cExchangeRate2));
       const expectedLendingBalanceOnMorpho2 = underlyingToMUnit(lendingAmount, mExchangeRate1);
@@ -440,7 +442,7 @@ describe("CompoundModule Contract", () => {
       expect((await compoundModule.borrowingBalanceOf(borrower1.getAddress())).onMorpho).to.equal(expectedBorrowingBalanceOnMorpho1);
 
       // Check lending balance balances
-      const cExchangeRate3 = await cToken.exchangeRateStored();
+      const cExchangeRate3 = await cToken.callStatic.exchangeRateCurrent();
       await compoundModule.connect(owner).updateCurrentExchangeRate();
       const mExchangeRate2 = await compoundModule.currentExchangeRate();
       const mExchangeRate3 = computeNewMorphoExchangeRate(mExchangeRate2, await compoundModule.BPY(), 1, 0).toString();
@@ -458,13 +460,13 @@ describe("CompoundModule Contract", () => {
 
       // Withdraw
       await compoundModule.connect(lender1).withdraw(amountToWithdraw);
-      const borrowBalance = await cToken.borrowBalanceStored(compoundModule.address);
+      const borrowBalance = await cToken.callStatic.borrowBalanceCurrent(compoundModule.address);
       const daiBalanceAfter2 = await daiToken.balanceOf(lender1.getAddress());
 
       // Check borrow balance of Morpho
       expect(removeDigitsBigNumber(borrowBalance)).to.equal(removeDigitsBigNumber(expectedMorphoBorrowingBalance));
 
-      // Check lender1 token balance
+      // Check lender1 underlying balance
       expect(removeDigitsBigNumber(daiBalanceAfter2)).to.equal(removeDigitsBigNumber(expectedDaiBalanceAfter2));
 
       // Check lending balances of lender1
