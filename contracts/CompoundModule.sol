@@ -238,25 +238,21 @@ contract CompoundModule is ReentrancyGuard {
             } else {
                 // The contract does not have enough cTokens for the withdraw.
                 // First, we use all the available cTokens in the contract.
-                uint256 remainingToMove = _moveLendersFromCompToMorpho(
-                    cTokenContractBalanceInUnderlying,
-                    msg.sender
-                ); // The remaining liquidity to move.
-                // Redeem what has been moved.
-                _redeemErc20FromComp(
-                    cTokenContractBalanceInUnderlying - remainingToMove,
-                    false
-                ); // Revert on error.
+                uint256 toRedeem = cTokenContractBalanceInUnderlying -
+                    _moveLendersFromCompToMorpho(
+                        cTokenContractBalanceInUnderlying,
+                        msg.sender
+                    ); // The remaining liquidity to move.
+                // Redeem only what has been moved.
+                _redeemErc20FromComp(toRedeem, false); // Revert on error.
                 // Then, we move borrowers not matched from Morpho to Compound and borrow the amount directly on Compound.
-                uint256 toBorrow = remainingToWithdraw -
-                    cTokenContractBalanceInUnderlying +
-                    remainingToMove;
+                remainingToWithdraw -= toRedeem;
                 require(
-                    _moveBorrowersFromMorphoToComp(toBorrow) == 0,
+                    _moveBorrowersFromMorphoToComp(remainingToWithdraw) == 0,
                     "All liquidity should have been moved."
                 );
                 require(
-                    cErc20Token.borrow(toBorrow) == 0,
+                    cErc20Token.borrow(remainingToWithdraw) == 0,
                     "Borrow on Compound failed."
                 );
             }
