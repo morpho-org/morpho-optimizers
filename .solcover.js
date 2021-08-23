@@ -1,3 +1,3 @@
 module.exports = {
-	skipFiles: ['CompoundModuleDAI.sol', 'ICompound.sol', 'IOracle.sol', 'ChainlinkOracle.sol']
+	skipFiles: ['interfaces/ICompound.sol', 'interfaces/IOracle.sol', 'oracle/ChainlinkOracle.sol']
 }
