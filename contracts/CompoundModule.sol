@@ -209,15 +209,16 @@ contract CompoundModule is ReentrancyGuard {
         uint256 amountOnCompInUnderlying = lendingBalanceOf[msg.sender]
             .onComp
             .mul(cExchangeRate);
+
         if (_amount <= amountOnCompInUnderlying) {
             // Simple case where we can directly withdraw unused liquidity on Compound.
             lendingBalanceOf[msg.sender].onComp -= _amount.div(cExchangeRate); // In cToken.
-            _redeemErc20FromComp(_amount, false);
+            _redeemErc20FromComp(_amount, false); // Revert on error.
         } else {
-            // We take all the unused liquidy first.
+            // First, we take all the unused liquidy on Compound.
+            _redeemErc20FromComp(lendingBalanceOf[msg.sender].onComp, true); // Revert on error.
             lendingBalanceOf[msg.sender].onComp = 0;
-            _redeemErc20FromComp(amountOnCompInUnderlying, false); // Revert on error.
-            // And search for the remaining liquidity.
+            // Then, search for the remaining liquidity on Morpho.
             uint256 remainingToWithdraw = _amount - amountOnCompInUnderlying; // In underlying.
             lendingBalanceOf[msg.sender].onMorpho -= remainingToWithdraw.div(
                 mExchangeRate
@@ -225,6 +226,7 @@ contract CompoundModule is ReentrancyGuard {
             uint256 cTokenContractBalanceInUnderlying = cErc20Token
                 .balanceOf(address(this))
                 .mul(cExchangeRate);
+
             if (remainingToWithdraw <= cTokenContractBalanceInUnderlying) {
                 // There is enough cTokens in the contract to use.
                 require(
@@ -242,11 +244,11 @@ contract CompoundModule is ReentrancyGuard {
                     _moveLendersFromCompToMorpho(
                         cTokenContractBalanceInUnderlying,
                         msg.sender
-                    ); // The remaining liquidity to move.
-                // Redeem only what has been moved.
+                    ); // The amount that can be redeemed for underlying.
                 _redeemErc20FromComp(toRedeem, false); // Revert on error.
-                // Then, we move borrowers not matched from Morpho to Compound and borrow the amount directly on Compound.
+                // Update the remaining amount to withdraw to `msg.sender`.
                 remainingToWithdraw -= toRedeem;
+                // Then, we move borrowers not matched anymore from Morpho to Compound and borrow the amount directly on Compound.
                 require(
                     _moveBorrowersFromMorphoToComp(remainingToWithdraw) == 0,
                     "All liquidity should have been moved."
@@ -257,6 +259,7 @@ contract CompoundModule is ReentrancyGuard {
                 );
             }
         }
+
         // Transfer back the ERC20 tokens.
         erc20Token.safeTransfer(msg.sender, _amount);
         // If lender has no lending at all, then remove her from `lenders`.
