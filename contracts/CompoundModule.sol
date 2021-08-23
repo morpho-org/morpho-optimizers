@@ -110,37 +110,6 @@ contract CompoundModule is ReentrancyGuard {
         }
     }
 
-    /** @dev Stakes cTokens.
-     *  @param _amount The amount to stake in cTokens.
-     */
-    function stake(uint256 _amount) external nonReentrant {
-        require(_amount > 0, "Amount cannot be 0.");
-        cErc20Token.transferFrom(msg.sender, address(this), _amount);
-        lenders.add(msg.sender); // Return false when lender is already there. O(1)
-        // If some borrowers are on Compound, we must move them to Morpho.
-        if (borrowersOnComp.length() > 0) {
-            uint256 mExchangeRate = updateCurrentExchangeRate();
-            uint256 cExchangeRate = cErc20Token.exchangeRateCurrent();
-            uint256 amountInUnderlying = _amount.mul(cExchangeRate);
-            // Find borrowers and move them to Morpho.
-            uint256 remainingToSupplyToComp = _moveBorrowersFromCompToMorpho(
-                amountInUnderlying
-            ); // In underlying.
-            _redeemErc20FromComp(remainingToSupplyToComp, false);
-            // Repay Compound.
-            // TODO: verify that not too much is sent to Compound.
-            uint256 toRepay = amountInUnderlying - remainingToSupplyToComp;
-            cErc20Token.repayBorrow(toRepay); // Revert on error.
-            // Update lender balance.
-            lendingBalanceOf[msg.sender].onMorpho += toRepay.div(mExchangeRate); // In mUnit.
-            lendingBalanceOf[msg.sender].onComp += remainingToSupplyToComp.div(
-                cExchangeRate
-            ); // In cToken.
-        } else {
-            lendingBalanceOf[msg.sender].onComp += _amount; // In cToken.
-        }
-    }
-
     /** @dev Borrows ERC20 tokens.
      *  @param _amount The amount to borrow in ERC20 tokens.
      */
@@ -262,56 +231,6 @@ contract CompoundModule is ReentrancyGuard {
 
         // Transfer back the ERC20 tokens.
         erc20Token.safeTransfer(msg.sender, _amount);
-        // If lender has no lending at all, then remove her from `lenders`.
-        if (
-            lendingBalanceOf[msg.sender].onComp == 0 &&
-            lendingBalanceOf[msg.sender].onMorpho == 0
-        ) {
-            lenders.remove(msg.sender);
-        }
-    }
-
-    /** @dev Allows a lender to unstake its cToken.
-     *  @param _amount Amount in cToken to unstake.
-     */
-    function unstake(uint256 _amount) external nonReentrant {
-        uint256 mExchangeRate = updateCurrentExchangeRate();
-        if (_amount <= lendingBalanceOf[msg.sender].onComp) {
-            lendingBalanceOf[msg.sender].onComp -= _amount;
-        } else {
-            uint256 cExchangeRate = cErc20Token.exchangeRateCurrent();
-            uint256 remainingToUnstakeInUnderlying = (_amount -
-                lendingBalanceOf[msg.sender].onComp).mul(cExchangeRate);
-            lendingBalanceOf[msg.sender].onComp = 0;
-            lendingBalanceOf[msg.sender]
-                .onMorpho -= remainingToUnstakeInUnderlying.div(mExchangeRate); // In mUnit.
-            uint256 cTokenContractBalanceInUnderlying = cErc20Token
-                .balanceOf(address(this))
-                .mul(cExchangeRate);
-            if (
-                remainingToUnstakeInUnderlying <=
-                cTokenContractBalanceInUnderlying
-            ) {
-                _moveLendersFromCompToMorpho(
-                    remainingToUnstakeInUnderlying,
-                    msg.sender
-                );
-            } else {
-                _moveLendersFromCompToMorpho(
-                    cTokenContractBalanceInUnderlying,
-                    msg.sender
-                );
-                remainingToUnstakeInUnderlying -= cTokenContractBalanceInUnderlying;
-                remainingToUnstakeInUnderlying -= _moveBorrowersFromMorphoToComp(
-                    remainingToUnstakeInUnderlying
-                );
-                require(
-                    cErc20Token.borrow(remainingToUnstakeInUnderlying) == 0,
-                    "Borrow on Compound failed."
-                );
-            }
-        }
-        cErc20Token.transfer(msg.sender, _amount);
         // If lender has no lending at all, then remove her from `lenders`.
         if (
             lendingBalanceOf[msg.sender].onComp == 0 &&
