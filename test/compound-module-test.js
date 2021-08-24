@@ -59,6 +59,11 @@ describe("CompoundModule Contract", () => {
     return amount.mul(borrowedAssetPrice).div(collateralAssetPrice).mul(SCALE).div(collateralFactor)
   }
 
+  const bigNumberMin = (a, b) => {
+    if (a.lte(b)) return a
+    return b
+  }
+
   // Removes the mast 5 digits of a number: used to prevent dust errors
   const removeDigitsBigNumber = (number) => (number.sub(number.mod(100000))).div(100000);
   const removeDigits = (number) => (number - (number % 100000)) / 100000;
@@ -441,20 +446,22 @@ describe("CompoundModule Contract", () => {
       expect((await compoundModule.borrowingBalanceOf(borrower1.getAddress())).onComp).to.equal(0);
       expect((await compoundModule.borrowingBalanceOf(borrower1.getAddress())).onMorpho).to.equal(expectedBorrowingBalanceOnMorpho1);
 
-      // Check lending balance balances
-      const cExchangeRate3 = await cToken.callStatic.exchangeRateCurrent();
+      // Compare remaining to withdraw and the cToken contract balance
       await compoundModule.connect(owner).updateCurrentExchangeRate();
       const mExchangeRate2 = await compoundModule.currentExchangeRate();
       const mExchangeRate3 = computeNewMorphoExchangeRate(mExchangeRate2, await compoundModule.BPY(), 1, 0).toString();
       const daiBalanceBefore2 = await daiToken.balanceOf(lender1.getAddress());
       const lendingBalanceOnComp3 = (await compoundModule.lendingBalanceOf(lender1.getAddress())).onComp;
       const lendingBalanceOnMorpho3 = (await compoundModule.lendingBalanceOf(lender1.getAddress())).onMorpho;
+      const cExchangeRate3 = await cToken.callStatic.exchangeRateCurrent();
       const lendingBalanceOnCompInUnderlying = cTokenToUnderlying(lendingBalanceOnComp3, cExchangeRate3);
       const amountToWithdraw = lendingBalanceOnCompInUnderlying.add(mUnitToUnderlying(lendingBalanceOnMorpho3, mExchangeRate3));
       const expectedDaiBalanceAfter2 = daiBalanceBefore2.add(amountToWithdraw);
       const remainingToWithdraw = amountToWithdraw.sub(lendingBalanceOnCompInUnderlying);
       const cTokenContractBalanceInUnderlying = cTokenToUnderlying(await cToken.balanceOf(compoundModule.address), cExchangeRate3);
       expect(remainingToWithdraw).to.be.gt(cTokenContractBalanceInUnderlying);
+
+      // Expected borrowing balances
       const expectedMorphoBorrowingBalance = remainingToWithdraw.add(cTokenContractBalanceInUnderlying).sub(lendingBalanceOnCompInUnderlying);
       const expectedBorrowingBalanceOnComp = expectedMorphoBorrowingBalance;
 
@@ -470,12 +477,129 @@ describe("CompoundModule Contract", () => {
       expect(removeDigitsBigNumber(daiBalanceAfter2)).to.equal(removeDigitsBigNumber(expectedDaiBalanceAfter2));
 
       // Check lending balances of lender1
-      expect((await compoundModule.lendingBalanceOf(lender1.getAddress())).onComp).to.equal(0);
+      expect(removeDigitsBigNumber((await compoundModule.lendingBalanceOf(lender1.getAddress())).onComp)).to.equal(0);
       expect(removeDigitsBigNumber((await compoundModule.lendingBalanceOf(lender1.getAddress())).onMorpho)).to.equal(0);
 
       // Check borrowing balances of borrower1
       expect(removeDigitsBigNumber((await compoundModule.borrowingBalanceOf(borrower1.getAddress())).onComp)).to.equal(removeDigitsBigNumber(expectedBorrowingBalanceOnComp));
       expect(removeDigitsBigNumber((await compoundModule.borrowingBalanceOf(borrower1.getAddress())).onMorpho)).to.equal(0);
+    });
+
+    it("Lender should withdraw her liquidity while enough cToken on Morpho contract", async () => {
+      // Lenders deposit tokens
+      const lendingAmount = utils.parseUnits("10");
+
+      const daiBalanceBefore1 = await daiToken.balanceOf(lender1.getAddress());
+      const expectedDaiBalanceAfter1 = daiBalanceBefore1.sub(lendingAmount);
+      await daiToken.connect(lender1).approve(compoundModule.address, lendingAmount);
+      await compoundModule.connect(lender1).lend(lendingAmount);
+      const daiBalanceAfter1 = await daiToken.balanceOf(lender1.getAddress());
+
+      // Check ERC20 balance
+      expect(daiBalanceAfter1).to.equal(expectedDaiBalanceAfter1);
+      const cExchangeRate1 = await cToken.callStatic.exchangeRateCurrent();
+      const expectedLendingBalanceOnComp1 = underlyingToCToken(lendingAmount, cExchangeRate1);
+      expect((await compoundModule.lendingBalanceOf(lender1.getAddress())).onComp).to.equal(expectedLendingBalanceOnComp1);
+
+      Promise.all(lenders.slice(1, lenders.length - 1).map(async lender => {
+        const daiBalanceBefore1 = await daiToken.balanceOf(lender.getAddress());
+        const expectedDaiBalanceAfter = daiBalanceBefore1.sub(lendingAmount);
+        await daiToken.connect(lender).approve(compoundModule.address, lendingAmount);
+        await compoundModule.connect(lender).lend(lendingAmount);
+        const daiBalanceAfter = await daiToken.balanceOf(lender.getAddress());
+
+        // Check ERC20 balance
+        expect(daiBalanceAfter).to.equal(expectedDaiBalanceAfter);
+        const cExchangeRate = await cToken.callStatic.exchangeRateCurrent();
+        const expectedLendingBalanceOnComp = underlyingToCToken(lendingAmount, cExchangeRate);
+        expect((await compoundModule.lendingBalanceOf(lender.getAddress())).onComp).to.equal(expectedLendingBalanceOnComp);
+      }));
+
+      // Borrower provides collateral
+      const collateralAmount = utils.parseUnits("10");
+      await compoundModule.connect(borrower1).provideCollateral({ value: collateralAmount });
+
+      const previousLender1LendingBalanceOnComp = (await compoundModule.lendingBalanceOf(lender1.getAddress())).onComp
+
+      // Borrowers borrows lender1 amount
+      await compoundModule.connect(borrower1).borrow(lendingAmount);
+
+      // Check lender1 balances
+      const mExchangeRate1 = await compoundModule.currentExchangeRate();
+      const cExchangeRate2 = await cToken.callStatic.exchangeRateCurrent();
+      // Expected positions of lender1
+      const expectedLendingBalanceOnComp2 = previousLender1LendingBalanceOnComp.sub(underlyingToCToken(lendingAmount, cExchangeRate2));
+      const expectedLendingBalanceOnMorpho2 = underlyingToMUnit(lendingAmount, mExchangeRate1);
+      const lendingBalanceOnComp2 = (await compoundModule.lendingBalanceOf(lender1.getAddress())).onComp;
+      const lendingBalanceOnMorpho2 = (await compoundModule.lendingBalanceOf(lender1.getAddress())).onMorpho;
+      expect(lendingBalanceOnComp2).to.equal(expectedLendingBalanceOnComp2);
+      expect(lendingBalanceOnMorpho2).to.equal(expectedLendingBalanceOnMorpho2);
+
+      // Check borrower1 balances
+      const expectedBorrowingBalanceOnMorpho1 = expectedLendingBalanceOnMorpho2;
+      expect((await compoundModule.borrowingBalanceOf(borrower1.getAddress())).onComp).to.equal(0);
+      expect((await compoundModule.borrowingBalanceOf(borrower1.getAddress())).onMorpho).to.equal(expectedBorrowingBalanceOnMorpho1);
+
+      // Compare remaining to withdraw and the cToken contract balance
+      await compoundModule.connect(owner).updateCurrentExchangeRate();
+      const mExchangeRate2 = await compoundModule.currentExchangeRate();
+      const mExchangeRate3 = computeNewMorphoExchangeRate(mExchangeRate2, await compoundModule.BPY(), 1, 0).toString();
+      const daiBalanceBefore2 = await daiToken.balanceOf(lender1.getAddress());
+      const lendingBalanceOnComp3 = (await compoundModule.lendingBalanceOf(lender1.getAddress())).onComp;
+      const lendingBalanceOnMorpho3 = (await compoundModule.lendingBalanceOf(lender1.getAddress())).onMorpho;
+      const cExchangeRate3 = await cToken.callStatic.exchangeRateCurrent();
+      const lendingBalanceOnCompInUnderlying = cTokenToUnderlying(lendingBalanceOnComp3, cExchangeRate3);
+      const amountToWithdraw = lendingBalanceOnCompInUnderlying.add(mUnitToUnderlying(lendingBalanceOnMorpho3, mExchangeRate3));
+      const expectedDaiBalanceAfter2 = daiBalanceBefore2.add(amountToWithdraw);
+      const remainingToWithdraw = amountToWithdraw.sub(lendingBalanceOnCompInUnderlying);
+      const cTokenContractBalanceInUnderlying = cTokenToUnderlying(await cToken.balanceOf(compoundModule.address), cExchangeRate3);
+      expect(remainingToWithdraw).to.be.lt(cTokenContractBalanceInUnderlying);
+
+      // lender3 positions before the withdraw
+      const lender3LendingBalanceOnComp = (await compoundModule.lendingBalanceOf(lender3.getAddress())).onComp;
+      const lender3LendingBalanceOnMorpho = (await compoundModule.lendingBalanceOf(lender3.getAddress())).onMorpho;
+
+      // lender2 positions before the withdraw
+      const lender2LendingBalanceOnComp = (await compoundModule.lendingBalanceOf(lender2.getAddress())).onComp;
+      const lender2LendingBalanceOnMorpho = (await compoundModule.lendingBalanceOf(lender2.getAddress())).onMorpho;
+
+      // borrower1 positions before the withdraw
+      const borrower1BorrowingBalanceOnComp = (await compoundModule.borrowingBalanceOf(borrower1.getAddress())).onComp;
+      const borrower1BorrowingBalanceOnMorpho = (await compoundModule.borrowingBalanceOf(borrower1.getAddress())).onMorpho;
+
+      // Withdraw
+      await compoundModule.connect(lender1).withdraw(amountToWithdraw);
+      const cExchangeRate4 = await cToken.callStatic.exchangeRateStored();
+      const borrowBalance = await cToken.callStatic.borrowBalanceCurrent(compoundModule.address);
+      const daiBalanceAfter2 = await daiToken.balanceOf(lender1.getAddress());
+
+      const lender2LendingBalanceOnCompInUnderlying = cTokenToUnderlying(lender2LendingBalanceOnComp, cExchangeRate4);
+      const amountToMove = bigNumberMin(lender2LendingBalanceOnCompInUnderlying, remainingToWithdraw);
+      const mExchangeRate4 = await compoundModule.currentExchangeRate();
+      const expectedLender2LendingBalanceOnComp = lender2LendingBalanceOnComp.sub(underlyingToCToken(amountToMove, cExchangeRate4));
+      const expectedLender2LendingBalanceOnMorpho = lender2LendingBalanceOnMorpho.add(underlyingToMUnit(amountToMove, mExchangeRate4));
+
+      // Check borrow balance of Morpho
+      expect(borrowBalance).to.equal(0);
+
+      // Check lender1 underlying balance
+      expect(daiBalanceAfter2).to.equal(expectedDaiBalanceAfter2);
+
+      // Check lending balances of lender1
+      expect(removeDigitsBigNumber((await compoundModule.lendingBalanceOf(lender1.getAddress())).onComp)).to.equal(0);
+      expect(removeDigitsBigNumber((await compoundModule.lendingBalanceOf(lender1.getAddress())).onMorpho)).to.equal(0);
+
+      // Check lending balances of lender2: lender2 should have replaced lender1
+      expect(removeDigitsBigNumber((await compoundModule.lendingBalanceOf(lender2.getAddress())).onComp)).to.equal(removeDigitsBigNumber(expectedLender2LendingBalanceOnComp));
+      expect(removeDigitsBigNumber((await compoundModule.lendingBalanceOf(lender2.getAddress())).onMorpho)).to.equal(removeDigitsBigNumber(expectedLender2LendingBalanceOnMorpho));
+
+      // Check lending balances of lender3: lender3 positions should not move
+      expect((await compoundModule.lendingBalanceOf(lender3.getAddress())).onComp).to.equal(lender3LendingBalanceOnComp);
+      expect((await compoundModule.lendingBalanceOf(lender3.getAddress())).onMorpho).to.equal(lender3LendingBalanceOnMorpho);
+
+      // Check borrowing balances of borrower1: borrower1 positions should not move (except interest earn meanwhile)
+      expect((await compoundModule.borrowingBalanceOf(borrower1.getAddress())).onComp).to.equal(borrower1BorrowingBalanceOnComp);
+      expect((await compoundModule.borrowingBalanceOf(borrower1.getAddress())).onMorpho).to.equal(borrower1BorrowingBalanceOnMorpho);
     });
   });
 
