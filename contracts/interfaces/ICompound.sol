@@ -5,6 +5,8 @@ interface ICErc20 {
 
     function exchangeRateCurrent() external returns (uint256);
 
+    function exchangeRateStored() external view returns (uint256);
+
     function supplyRatePerBlock() external returns (uint256);
 
     function redeem(uint256) external returns (uint256);
@@ -38,6 +40,8 @@ interface ICEth {
     function mint() external payable;
 
     function exchangeRateCurrent() external returns (uint256);
+
+    function exchangeRateStored() external view returns (uint256);
 
     function supplyRatePerBlock() external returns (uint256);
 
