@@ -37,7 +37,7 @@ describe("CompoundModule Contract", () => {
   let lenders;
   let borrowers;
 
-  // Utils functions
+  /* Utils functions */
 
   const underlyingToCToken = (underlyingAmount, exchangeRateCurrent) => {
     return underlyingAmount.mul(SCALE).div(exchangeRateCurrent);
@@ -63,6 +63,11 @@ describe("CompoundModule Contract", () => {
     if (a.lte(b)) return a
     return b
   }
+
+  // To update exchangeRateCurrent:
+  // const doUpdate = await cToken.exchangeRateCurrent();
+  // await doUpdate.wait(1);
+  // const erc = await cToken.callStatic.exchangeRateStored();
 
   // Removes the mast 5 digits of a number: used to prevent dust errors
   const removeDigitsBigNumber = (number) => (number.sub(number.mod(100000))).div(100000);
@@ -277,7 +282,7 @@ describe("CompoundModule Contract", () => {
         expect((await compoundModule.lendingBalanceOf(lender1.getAddress())).onMorpho).to.equal(0);
       }))
     })
-  })
+  });
 
   describe("Borrowing when there is no lenders", () => {
     it("Should have correct balances at the beginning", async () => {
@@ -305,8 +310,8 @@ describe("CompoundModule Contract", () => {
       expect(ethBalanceAfter).to.equal(ethBalanceBefore.sub(gasCost).sub(amount));
 
       // Check collateral balance
-      const exchangeRate = await cEthToken.callStatic.exchangeRateCurrent();
-      const expectedCollateralBalance = underlyingToCToken(amount, exchangeRate);
+      const cEthExchangeRate = await cEthToken.callStatic.exchangeRateCurrent();
+      const expectedCollateralBalance = underlyingToCToken(amount, cEthExchangeRate);
       expect(await compoundModule.collateralBalanceOf(borrower1.getAddress())).to.equal(expectedCollateralBalance);
     });
 
@@ -344,7 +349,6 @@ describe("CompoundModule Contract", () => {
     });
 
     it("Should be able to borrow on Compound after providing collateral up to max", async () => {
-      // TODO: check borrowing balance of Morpho contract
       const amount = utils.parseUnits("10");
       await compoundModule.connect(borrower1).provideCollateral({ value: amount });
       const collateralBalanceInCEth = await compoundModule.collateralBalanceOf(borrower1.getAddress());
@@ -361,8 +365,13 @@ describe("CompoundModule Contract", () => {
 
       // All underlyings should have been sent to the borrower1
       const daiBalanceAfter = await daiToken.balanceOf(borrower1.getAddress());
+      // Check borrower1 balances
       expect(daiBalanceAfter).to.equal(daiBalanceBefore.add(maxToBorrow));
+      expect((await compoundModule.borrowingBalanceOf(borrower1.getAddress())).onComp).to.equal(maxToBorrow);
+
+      // Check Morpho balances
       expect(await daiToken.balanceOf(compoundModule.address)).to.equal(0);
+      expect(await cToken.callStatic.borrowBalanceCurrent(compoundModule.address)).to.equal(maxToBorrow);
     });
 
     it("Should not be able to borrow more than max allowed given an amount of collateral", async () => {
@@ -377,6 +386,7 @@ describe("CompoundModule Contract", () => {
       const maxToBorrow = collateralBalanceInEth.mul(collateralFactorMantissa).div(daiPriceMantissa).mul(ethPriceMantissa).div(SCALE);
       const moreThanMaxToBorrow = maxToBorrow.add(utils.parseUnits("0.0001"));
 
+      // TODO: fix dust issue
       // This check does not pass when adding utils.parseUnits("0.00001") to maxToBorrow
       await expect(compoundModule.connect(borrower1).borrow(moreThanMaxToBorrow)).to.be.revertedWith("Not enough collateral.");
     });
@@ -384,6 +394,7 @@ describe("CompoundModule Contract", () => {
     it("Several borrowers should be able to borrow and have the correct balances", async () => {
       // TODO: check borrowing balance of Morpho contract
       const amount = utils.parseUnits("10");
+      let expectedMorphoBorrowingBalance = BigNumber.from(0);
 
       Promise.all(borrowers.map(async borrower => {
         await compoundModule.connect(borrower).provideCollateral({ value: amount });
@@ -394,6 +405,7 @@ describe("CompoundModule Contract", () => {
         const ethPriceMantissa = await compoundOracle.getUnderlyingPrice(CETH_ADDRESS);
         const daiPriceMantissa = await compoundOracle.getUnderlyingPrice(CDAI_ADDRESS);
         const maxToBorrow = collateralBalanceInEth.mul(ethPriceMantissa).div(daiPriceMantissa).mul(collateralFactorMantissa).div(SCALE);
+        expectedMorphoBorrowingBalance = expectedMorphoBorrowingBalance.add(maxToBorrow);
         const daiBalanceBefore = await daiToken.balanceOf(borrower.getAddress());
 
         await compoundModule.connect(borrower).borrow(maxToBorrow);
@@ -401,11 +413,14 @@ describe("CompoundModule Contract", () => {
         // All underlyings should have been sent to the borrower
         const daiBalanceAfter = await daiToken.balanceOf(borrower.getAddress());
         expect(daiBalanceAfter).to.equal(daiBalanceBefore.add(maxToBorrow));
+        expect((await compoundModule.borrowingBalanceOf(borrower1.getAddress())).onComp).to.equal(maxToBorrow);
       }));
 
+      // Check Morpho balances
       expect(await daiToken.balanceOf(compoundModule.address)).to.equal(0);
-    })
-  })
+      expect(await cToken.callStatic.borrowBalanceCurrent(compoundModule.address)).to.equal(expectedMorphoBorrowingBalance);
+    });
+  });
 
   describe("Check P2P interactions", () => {
     it("Lender should withdraw her liquidity while not enough cToken on Morpho contract", async () => {
