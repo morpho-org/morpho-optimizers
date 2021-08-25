@@ -72,7 +72,6 @@ contract CompoundModule is ReentrancyGuard, Ownable {
         address compoundOracleAddress = comptroller.oracle();
         compoundOracle = ICompoundOracle(compoundOracleAddress);
         lastUpdateBlockNumber = block.number;
-        updateBPY();
     }
 
     /* External */
@@ -936,4 +935,29 @@ contract CompoundModule is ReentrancyGuard, Ownable {
 
     // This is needed to receive ETH when calling `_redeemEthFromComp`
     receive() external payable {}
+
+    /* Morpho markets management */
+
+    function createMarkets(address[] memory _cTokensAddresses) public {
+        address[] memory marketsToEnter = new address[](
+            _cTokensAddresses.length
+        );
+        for (uint256 k = 0; k < _cTokensAddresses.length; k++) {
+            marketsToEnter[k] = _cTokensAddresses[k];
+        }
+        comptroller.enterMarkets(marketsToEnter);
+        for (uint256 k = 0; k < _cTokensAddresses.length; k++) {
+            market[_cTokensAddresses[k]].isListed = true;
+            market[_cTokensAddresses[k]].collateralFactorMantissa = 75e16;
+            updateBPY(_cTokensAddresses[k]);
+        }
+    }
+
+    function listMarket(address _cTokenAddress) public {
+        market[_cTokenAddress].isListed = true;
+    }
+
+    function unlistMarket(address _cTokenAddress) public {
+        market[_cTokenAddress].isListed = false;
+    }
 }
