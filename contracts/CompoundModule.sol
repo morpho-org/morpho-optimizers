@@ -141,22 +141,23 @@ contract CompoundModule is ReentrancyGuard {
             msg.sender
         ); // In underlying.
         uint256 toRedeem = _amount - remainingToBorrowOnComp;
-        borrowingBalanceOf[msg.sender].onMorpho += toRedeem.div(mExchangeRate); // In mUnit.
-        if (borrowingBalanceOf[msg.sender].onMorpho > 0)
+        if (toRedeem > 0) {
+            borrowingBalanceOf[msg.sender].onMorpho += toRedeem.div(
+                mExchangeRate
+            ); // In mUnit.
             borrowersOnMorpho.add(msg.sender);
+            _redeemErc20FromComp(toRedeem, false); // Revert on error.
+        }
         // If not enough cTokens on Morpho, we must borrow it on Compound.
         if (remainingToBorrowOnComp > 0) {
             // TODO: round superior to avoid floating issues.
+            borrowingBalanceOf[msg.sender].onComp += remainingToBorrowOnComp; // In underlying.
+            borrowersOnComp.add(msg.sender);
             require(
                 cErc20Token.borrow(remainingToBorrowOnComp) == 0,
                 "Borrow on Compound failed."
             );
-            borrowingBalanceOf[msg.sender].onComp += remainingToBorrowOnComp; // In underlying.
-            borrowersOnComp.add(msg.sender);
-            if (remainingToBorrowOnComp != _amount)
-                borrowersOnMorpho.add(msg.sender);
         }
-        if (toRedeem > 0) _redeemErc20FromComp(toRedeem, false); // Revert on error.
         // Transfer ERC20 tokens to borrower.
         erc20Token.safeTransfer(msg.sender, _amount);
     }
