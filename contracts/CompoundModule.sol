@@ -162,6 +162,7 @@ contract CompoundModule is ReentrancyGuard {
     }
 
     /** @dev Repays debt of the user.
+     *  @dev `msg.sender` must have approved Morpho's contract to spend the underlying `_amount`.
      *  @param _amount The amount in ERC20 tokens to repay.
      */
     function repay(uint256 _amount) external nonReentrant {
@@ -437,21 +438,30 @@ contract CompoundModule is ReentrancyGuard {
     /* Internal */
 
     /** @dev Implements repay logic.
+     *  @dev `msg.sender` must have approved Morpho's contract to spend the underlying `_amount`.
      *  @param _borrower The address of the `_borrower` to repay the borrowing.
      *  @param _amount The amount of ERC20 tokens to repay.
      */
     function _repay(address _borrower, uint256 _amount) internal {
+        erc20Token.transferFrom(msg.sender, address(this), _amount);
         uint256 mExchangeRate = updateCurrentExchangeRate();
+
         if (borrowingBalanceOf[_borrower].onComp > 0) {
             if (_amount <= borrowingBalanceOf[_borrower].onComp) {
+                borrowingBalanceOf[_borrower].onComp -= _amount; // In underlying.
+
                 // Repay Compound.
-                borrowingBalanceOf[_borrower].onComp -= _amount;
-                cErc20Token.repayBorrow(_amount); // Revert on error.
-                _supplyErc20ToComp(_amount); // Revert on error.
+                erc20Token.safeApprove(cErc20Address, _amount);
+                cErc20Token.repayBorrow(_amount);
             } else {
                 // Repay Compound first.
+                erc20Token.safeApprove(
+                    cErc20Address,
+                    borrowingBalanceOf[_borrower].onComp
+                );
                 cErc20Token.repayBorrow(borrowingBalanceOf[_borrower].onComp); // Revert on error.
-                // Then, move remaining and supply it to Compound.
+
+                // Then, move the remaining liquidity to Compound.
                 uint256 remainingToSupplyToComp = _amount -
                     borrowingBalanceOf[_borrower].onComp; // In underlying.
                 borrowingBalanceOf[_borrower]
@@ -461,21 +471,23 @@ contract CompoundModule is ReentrancyGuard {
                 _moveLendersFromMorphoToComp(
                     remainingToSupplyToComp,
                     _borrower
-                );
+                ); // Revert on error.
+
                 if (remainingToSupplyToComp > 0)
                     _supplyErc20ToComp(remainingToSupplyToComp);
             }
         } else {
-            _moveLendersFromMorphoToComp(_amount, _borrower);
+            _moveLendersFromMorphoToComp(_amount, _borrower); // Revert on error.
             borrowingBalanceOf[_borrower].onMorpho -= _amount.div(
                 mExchangeRate
             ); // In mUnit.
             _supplyErc20ToComp(_amount);
         }
-        if (
-            borrowingBalanceOf[_borrower].onMorpho == 0 &&
-            borrowingBalanceOf[_borrower].onComp == 0
-        ) borrowersOnMorpho.remove(_borrower);
+
+        if (borrowingBalanceOf[_borrower].onMorpho == 0)
+            borrowersOnMorpho.remove(_borrower);
+        if (borrowingBalanceOf[_borrower].onComp == 0)
+            borrowersOnComp.remove(_borrower);
     }
 
     /** @dev Supplies ETH to Compound.
