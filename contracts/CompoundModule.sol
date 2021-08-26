@@ -101,6 +101,7 @@ contract CompoundModule is ReentrancyGuard, Ownable {
             _amount >= markets[_cErc20Address].thresholds[0],
             "Amount cannot be less than THRESHOLD."
         );
+        require(lendAuthorization(_cErc20Address, msg.sender, _amount));
         ICErc20 cErc20Token = ICErc20(_cErc20Address);
         IERC20 erc20Token = IERC20(cErc20Token.underlying());
         erc20Token.transferFrom(msg.sender, address(this), _amount);
@@ -151,6 +152,7 @@ contract CompoundModule is ReentrancyGuard, Ownable {
             _amount >= markets[_cErc20Address].thresholds[0],
             "Amount cannot be less than THRESHOLD."
         );
+        require(borrowAuthorization(_cErc20Address, msg.sender, _amount));
         ICErc20 cErc20Token = ICErc20(_cErc20Address);
         IERC20 erc20Token = IERC20(cErc20Token.underlying());
         ICEth cEthToken = ICEth(cEthAddress);
@@ -235,6 +237,7 @@ contract CompoundModule is ReentrancyGuard, Ownable {
         nonReentrant
     {
         require(_amount > 0, "Amount cannot be 0.");
+        require(withdrawAuthorization(_cErc20Address, msg.sender, _amount));
         ICErc20 cErc20Token = ICErc20(_cErc20Address);
         IERC20 erc20Token = IERC20(cErc20Token.underlying());
         uint256 mExchangeRate = updateCurrentExchangeRate();
@@ -959,5 +962,121 @@ contract CompoundModule is ReentrancyGuard, Ownable {
 
     function unlistMarket(address _cTokenAddress) public {
         market[_cTokenAddress].isListed = false;
+    }
+
+    /* Functions authorizations */
+
+    function lendAuthorization(
+        address _cErc20Token,
+        address,
+        uint256
+    ) internal view returns (bool) {
+        // check if market is listed
+        require(market[_cErc20Token].isListed, "Market not listed");
+        return true;
+    }
+
+    function borrowAuthorization(
+        address _cErc20Token,
+        address _user,
+        uint256 _amount
+    ) internal returns (bool) {
+        // check if market is listed
+        require(market[_cErc20Token].isListed, "Market not listed");
+        // check if the user has enough collateral
+        uint256 debt;
+        // TODO prevent dust borrowing
+        for (uint256 k = 0; k < enteredMarketsAsBorrowerOf[_user].length; k++) {
+            address _cErc20Address = enteredMarketsAsBorrowerOf[_user][k];
+            ICErc20 cErc20Token = ICErc20(_cErc20Address);
+            uint256 mExchangeRate = updateCurrentExchangeRate();
+            uint256 cExchangeRate = cErc20Token.exchangeRateCurrent();
+            debt +=
+                market[_cErc20Address].borrowingBalanceOf[_user].onComp.mul(
+                    mExchangeRate
+                ) +
+                market[_cErc20Address].borrowingBalanceOf[_user].onMorpho.mul(
+                    cExchangeRate
+                );
+        }
+        uint256 maxDebt;
+        for (
+            uint256 k = 0;
+            k < enteredMarketsForCollateral[_user].length;
+            k++
+        ) {
+            address _cErc20Address = enteredMarketsForCollateral[_user][k];
+            ICErc20 cErc20Token = ICErc20(_cErc20Address);
+            uint256 cExchangeRate = cErc20Token.exchangeRateCurrent();
+            maxDebt +=
+                market[_cErc20Address].collateralBalanceOf[_user].mul(
+                    cExchangeRate
+                ) *
+                market[_cErc20Address].collateralFactorMantissa;
+        }
+        require(_amount < maxDebt - debt, "Not enough collateral");
+        return true;
+    }
+
+    function withdrawAuthorization(
+        address _cErc20Token,
+        address _user,
+        uint256 _amount
+    ) internal returns (bool) {
+        // check if market is listed
+        require(market[_cErc20Token].isListed, "Market not listed");
+        // check if the user entered this market as a lender
+        require(
+            market[_cErc20Token].lendersOnComp.contains(_user) ||
+                market[_cErc20Token].lendersOnMorpho.contains(_user)
+        );
+        // check if the user has enough collateral
+        uint256 debt;
+        for (uint256 k = 0; k < enteredMarketsAsBorrowerOf[_user].length; k++) {
+            address _cErc20Address = enteredMarketsAsBorrowerOf[_user][k];
+            ICErc20 cErc20Token = ICErc20(_cErc20Address);
+            uint256 mExchangeRate = updateCurrentExchangeRate();
+            uint256 cExchangeRate = cErc20Token.exchangeRateCurrent();
+            debt +=
+                market[_cErc20Address].borrowingBalanceOf[_user].onComp.mul(
+                    cExchangeRate
+                ) +
+                market[_cErc20Address].borrowingBalanceOf[_user].onMorpho.mul(
+                    mExchangeRate
+                );
+        }
+        uint256 maxDebt;
+        for (
+            uint256 k = 0;
+            k < enteredMarketsForCollateral[_user].length;
+            k++
+        ) {
+            address _cErc20Address = enteredMarketsForCollateral[_user][k];
+            ICErc20 cErc20Token = ICErc20(_cErc20Address);
+            uint256 cExchangeRate = cErc20Token.exchangeRateCurrent();
+            maxDebt +=
+                market[_cErc20Address].collateralBalanceOf[_user].mul(
+                    cExchangeRate
+                ) *
+                market[_cErc20Address].collateralFactorMantissa;
+        }
+        require(_amount < maxDebt - debt, "Not enough collateral");
+
+        return true;
+    }
+
+    function repayAuthorization(
+        address _cErc20Token,
+        address _user,
+        uint256
+    ) internal view returns (bool) {
+        // check if market is listed
+        require(market[_cErc20Token].isListed, "Market not listed");
+        // check if the user entered this market as a borrower
+        require(
+            market[_cErc20Token].borrowersOnComp.contains(_user) ||
+                market[_cErc20Token].borrowersOnMorpho.contains(_user)
+        );
+        return true;
     }
 }
