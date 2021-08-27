@@ -2,6 +2,7 @@ const { expect } = require("chai");
 const hre = require("hardhat");
 const { ethers } = require("hardhat");
 const { utils, BigNumber } = require('ethers');
+const Decimal = require('decimal.js');
 
 // Use mainnet ABIs
 const daiAbi = require('./abis/Dai.json');
@@ -74,7 +75,14 @@ describe("CompoundModule Contract", () => {
   const removeDigits = (number) => (number - (number % 100000)) / 100000;
 
   const computeNewMorphoExchangeRate = (currentExchangeRate, BPY, currentBlockNumber, lastUpdateBlockNumber) => {
-    return currentExchangeRate * (1 + BPY / 1e18) ** BigNumber.from(currentBlockNumber).sub(lastUpdateBlockNumber).toNumber();
+    // Use of decimal.js library for better accuracy
+    const bpy = new Decimal(BPY.toString())
+    const scale = new Decimal('1e18')
+    const exponent = new Decimal(currentBlockNumber - lastUpdateBlockNumber)
+    const val = bpy.div(scale).add(1)
+    const multiplier = val.pow(exponent)
+    const newExchangeRate = new Decimal(currentExchangeRate.toString()).mul(multiplier)
+    return Decimal.round(newExchangeRate);
   }
 
   beforeEach(async () => {
