@@ -186,8 +186,10 @@ contract CompoundModule is ReentrancyGuard {
             _redeemErc20FromComp(_amount, false); // Revert on error.
         } else {
             // First, we take all the unused liquidy on Compound.
-            _redeemErc20FromComp(lendingBalanceOf[msg.sender].onComp, true); // Revert on error.
-            lendingBalanceOf[msg.sender].onComp = 0;
+            _redeemErc20FromComp(amountOnCompInUnderlying, false); // Revert on error.
+            lendingBalanceOf[msg.sender].onComp -= amountOnCompInUnderlying.div(
+                cExchangeRate
+            );
             // Then, search for the remaining liquidity on Morpho.
             uint256 remainingToWithdraw = _amount - amountOnCompInUnderlying; // In underlying.
             lendingBalanceOf[msg.sender].onMorpho -= remainingToWithdraw.div(
