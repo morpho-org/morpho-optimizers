@@ -18,7 +18,6 @@ describe("CompoundModule Contract", () => {
   const CDAI_ADDRESS = "0x5d3a536e4d6dbd6114cc1ead35777bab948e3643";
   const PROXY_COMPTROLLER_ADDRESS = "0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B";
 
-  const gasPrice = BigNumber.from(8000000000); // Default value
   const SCALE = BigNumber.from(10).pow(18);
 
   let cEthToken;
@@ -312,7 +311,7 @@ describe("CompoundModule Contract", () => {
     it("Should have the right amount of cETH in collateral after providing ETH as collateral", async () => {
       const amount = utils.parseUnits("10");
       const ethBalanceBefore = await ethers.provider.getBalance(borrower1.getAddress());
-      const { hash } = await compoundModule.connect(borrower1).provideCollateral({ value: amount });
+      const { hash, gasPrice } = await compoundModule.connect(borrower1).provideCollateral({ value: amount });
       const { gasUsed } = await ethers.provider.getTransactionReceipt(hash);
       const gasCost = gasUsed.mul(gasPrice);
 
@@ -329,16 +328,16 @@ describe("CompoundModule Contract", () => {
     it("Should redeem all collateral", async () => {
       const amount = utils.parseUnits("10");
       const ethBalanceBefore = await ethers.provider.getBalance(borrower1.getAddress());
-      const { hash: hash1 } = await compoundModule.connect(borrower1).provideCollateral({ value: amount });
+      const { hash: hash1, gasPrice: gasPrice1 } = await compoundModule.connect(borrower1).provideCollateral({ value: amount });
       const { gasUsed: gasUsed1 } = await ethers.provider.getTransactionReceipt(hash1);
-      const gasCost1 = gasUsed1.mul(gasPrice);
+      const gasCost1 = gasUsed1.mul(gasPrice1);
 
       const toRedeemInCToken = await compoundModule.collateralBalanceOf(borrower1.getAddress());
       const cEthExchangeRate = await cEthToken.callStatic.exchangeRateCurrent();
       const toRedeemInUnderlying = cTokenToUnderlying(toRedeemInCToken, cEthExchangeRate);
-      const { hash: hash2 } = await compoundModule.connect(borrower1).redeemCollateral(toRedeemInUnderlying);
+      const { hash: hash2, gasPrice: gasPrice2 } = await compoundModule.connect(borrower1).redeemCollateral(toRedeemInUnderlying);
       const { gasUsed: gasUsed2 } = await ethers.provider.getTransactionReceipt(hash2);
-      const gasCost2 = gasUsed2.mul(gasPrice);
+      const gasCost2 = gasUsed2.mul(gasPrice2);
 
       // Check collateral balance
       expect(removeDigitsBigNumber(await compoundModule.collateralBalanceOf(borrower1.getAddress()))).to.equal(0);
@@ -353,15 +352,16 @@ describe("CompoundModule Contract", () => {
       const ethBalanceBefore = await ethers.provider.getBalance(borrower1.getAddress());
 
       // First tx (calculate gas cost too)
-      const { hash: hash1 } = await compoundModule.connect(borrower1).provideCollateral({ value: amount });
+      const { hash: hash1, gasPrice: gasPrice1 } = await compoundModule.connect(borrower1).provideCollateral({ value: amount });
+      // const tx = await compoundModule.connect(borrower1).provideCollateral({ value: amount });
       const { gasUsed: gasUsed1 } = await ethers.provider.getTransactionReceipt(hash1);
-      const gasCost1 = gasUsed1.mul(gasPrice);
+      const gasCost1 = gasUsed1.mul(gasPrice1);
       const exchangeRate1 = await cEthToken.callStatic.exchangeRateCurrent();
 
       // Second tx (calculate gas cost too)
-      const { hash: hash2 } = await compoundModule.connect(borrower1).provideCollateral({ value: amount });
+      const { hash: hash2, gasPrice: gasPrice2 } = await compoundModule.connect(borrower1).provideCollateral({ value: amount });
       const { gasUsed: gasUsed2 } = await ethers.provider.getTransactionReceipt(hash2);
-      const gasCost2 = gasUsed2.mul(gasPrice);
+      const gasCost2 = gasUsed2.mul(gasPrice2);
       const exchangeRate2 = await cEthToken.callStatic.exchangeRateCurrent();
 
       // Check ETH balance
