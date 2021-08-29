@@ -1,8 +1,9 @@
 /**
  * @type import('hardhat/config').HardhatUserConfig
  */
-require('dotenv').config({ path: './.env.local' });
+require("dotenv").config({ path: "./.env.local" });
 require("@nomiclabs/hardhat-waffle");
+require("hardhat-gas-reporter");
 require("solidity-coverage");
 
 module.exports = {
@@ -23,19 +24,22 @@ module.exports = {
       //     balance: "10000000000000000000000"
       //   },
       // ],
-      blockNumber: 7710600 // Beginning from a specific block number allows caching data and a faster setup.
-    }
+      blockNumber: 7710600, // Beginning from a specific block number allows caching data and a faster setup.
+    },
   },
   solidity: {
     version: "0.8.7",
     settings: {
       optimizer: {
         enabled: true,
-        runs: 200
-      }
-    }
+        runs: 200,
+      },
+    },
+  },
+  gasReporter: {
+    currency: 'USD',
   },
   mocha: {
-    timeout: 50000
-  }
+    timeout: 50000,
+  },
 };
