@@ -1,6 +1,14 @@
 pragma solidity 0.8.7;
 
 interface ICErc20 {
+    function accrueInterest() external returns (uint256);
+
+    function borrowRate() external returns (uint256);
+
+    function borrowIndex() external returns (uint256);
+
+    function borrowBalanceStored(address) external returns (uint256);
+
     function mint(uint256) external returns (uint256);
 
     function exchangeRateCurrent() external returns (uint256);
@@ -37,6 +45,14 @@ interface ICErc20 {
 }
 
 interface ICEth {
+    function accrueInterest() external returns (uint256);
+
+    function borrowRate() external returns (uint256);
+
+    function borrowIndex() external returns (uint256);
+
+    function borrowBalanceStored(address) external returns (uint256);
+
     function mint() external payable;
 
     function exchangeRateCurrent() external returns (uint256);
@@ -196,6 +212,15 @@ interface IComptroller {
         address cTokenCollateral,
         uint256 repayAmount
     ) external view returns (uint256, uint256);
+
+    function getAccountLiquidity(address)
+        external
+        view
+        returns (
+            uint256,
+            uint256,
+            uint256
+        );
 }
 
 interface IInterestRateModel {
