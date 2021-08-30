@@ -28,6 +28,7 @@ contract CompoundModule is ReentrancyGuard {
     struct BorrowingBalance {
         uint256 onMorpho; // In mUnit.
         uint256 onComp; // In underlying.
+        uint256 interestIndex; // Borrow Index to keep track of the debt accruing on Compound.
     }
 
     /* Storage */
@@ -87,6 +88,7 @@ contract CompoundModule is ReentrancyGuard {
         erc20Token.transferFrom(msg.sender, address(this), _amount);
         lenders.add(msg.sender); // Return false when lender is already there. O(1)
         uint256 cExchangeRate = cErc20Token.exchangeRateCurrent();
+
         // If some borrowers are on Compound, we must move them to Morpho.
         if (borrowersOnComp.length() > 0) {
             uint256 mExchangeRate = updateCurrentExchangeRate();
@@ -116,6 +118,20 @@ contract CompoundModule is ReentrancyGuard {
      */
     function borrow(uint256 _amount) external nonReentrant {
         require(_amount > 0, "Amount cannot be 0.");
+        uint256 borrowIndex = cErc20Token.borrowIndex();
+
+        if (borrowingBalanceOf[msg.sender].onComp > 0) {
+            // Update borrowing balance onComp.
+            uint256 borrowerInterestIndex = borrowingBalanceOf[msg.sender]
+                .interestIndex;
+            if (borrowerInterestIndex != borrowIndex) {
+                borrowingBalanceOf[msg.sender].onComp = borrowingBalanceOf[
+                    msg.sender
+                ].onComp.mul(borrowIndex).div(borrowerInterestIndex);
+                borrowingBalanceOf[msg.sender].interestIndex = borrowIndex;
+            }
+        }
+
         uint256 mExchangeRate = updateCurrentExchangeRate();
         uint256 amountBorrowedAfter = _amount +
             borrowingBalanceOf[msg.sender].onComp +
@@ -137,6 +153,7 @@ contract CompoundModule is ReentrancyGuard {
             collateralRequiredInCEth <= collateralBalanceOf[msg.sender],
             "Not enough collateral."
         );
+
         uint256 remainingToBorrowOnComp = _moveLendersFromCompToMorpho(
             _amount,
             msg.sender
@@ -151,7 +168,6 @@ contract CompoundModule is ReentrancyGuard {
         }
         // If not enough cTokens on Morpho, we must borrow it on Compound.
         if (remainingToBorrowOnComp > 0) {
-            // TODO: round superior to avoid floating issues.
             borrowingBalanceOf[msg.sender].onComp += remainingToBorrowOnComp; // In underlying.
             borrowersOnComp.add(msg.sender);
             require(
@@ -159,6 +175,7 @@ contract CompoundModule is ReentrancyGuard {
                 "Borrow on Compound failed."
             );
         }
+        borrowingBalanceOf[msg.sender].interestIndex = borrowIndex;
         // Transfer ERC20 tokens to borrower.
         erc20Token.safeTransfer(msg.sender, _amount);
     }
@@ -270,6 +287,20 @@ contract CompoundModule is ReentrancyGuard {
             amountInCEth <= collateralBalanceOf[msg.sender],
             "Must redeem less than collateral."
         );
+
+        if (borrowingBalanceOf[msg.sender].onComp > 0) {
+            // Update borrowing balance onComp.
+            uint256 borrowIndex = cErc20Token.borrowIndex();
+            uint256 borrowerInterestIndex = borrowingBalanceOf[msg.sender]
+                .interestIndex;
+            if (borrowerInterestIndex != borrowIndex) {
+                borrowingBalanceOf[msg.sender].onComp = borrowingBalanceOf[
+                    msg.sender
+                ].onComp.mul(borrowIndex).div(borrowerInterestIndex);
+                borrowingBalanceOf[msg.sender].interestIndex = borrowIndex;
+            }
+        }
+
         uint256 borrowedAmount = borrowingBalanceOf[msg.sender].onComp +
             borrowingBalanceOf[msg.sender].onMorpho.mul(mExchangeRate);
         uint256 collateralRequiredInEth = getCollateralRequired(
@@ -287,6 +318,7 @@ contract CompoundModule is ReentrancyGuard {
             collateralAfterInCEth >= collateralRequiredInCEth,
             "Not enough collateral to maintain position."
         );
+
         _redeemEthFromComp(_amount, false); // Revert on error.
         collateralBalanceOf[msg.sender] -= amountInCEth; // In cToken.
         payable(msg.sender).transfer(_amount);
@@ -321,6 +353,7 @@ contract CompoundModule is ReentrancyGuard {
             ethPriceMantissa != 0 && underlyingPriceMantissa != 0,
             "Oracle failed."
         );
+
         // Calculate separately to avoid call stack too deep.
         uint256 numerator = _amount
             .mul(underlyingPriceMantissa)
@@ -359,6 +392,20 @@ contract CompoundModule is ReentrancyGuard {
         public
         returns (uint256 collateralInEth, uint256 collateralRequiredInEth)
     {
+        if (borrowingBalanceOf[_borrower].onComp > 0) {
+            // Update borrowing balance onComp.
+            uint256 borrowIndex = cErc20Token.borrowIndex();
+            uint256 borrowerInterestIndex = borrowingBalanceOf[_borrower]
+                .interestIndex;
+            if (borrowerInterestIndex != borrowIndex) {
+                borrowingBalanceOf[_borrower].onComp = borrowingBalanceOf[
+                    _borrower
+                ].onComp.mul(borrowIndex).div(borrowerInterestIndex);
+                borrowingBalanceOf[_borrower].interestIndex = borrowIndex;
+            }
+        }
+
+        // Calculate total borrowing balance.
         uint256 borrowedAmount = borrowingBalanceOf[_borrower].onComp +
             borrowingBalanceOf[_borrower].onMorpho.mul(
                 updateCurrentExchangeRate()
@@ -451,6 +498,19 @@ contract CompoundModule is ReentrancyGuard {
         uint256 mExchangeRate = updateCurrentExchangeRate();
 
         if (borrowingBalanceOf[_borrower].onComp > 0) {
+            // Update borrowing balance onComp.
+            uint256 borrowIndex = cErc20Token.borrowIndex();
+            uint256 borrowerInterestIndex = borrowingBalanceOf[_borrower]
+                .interestIndex;
+            if (borrowerInterestIndex != borrowIndex) {
+                borrowingBalanceOf[_borrower].onComp = borrowingBalanceOf[
+                    _borrower
+                ].onComp.mul(borrowIndex).div(
+                        borrowingBalanceOf[_borrower].interestIndex
+                    );
+                borrowerInterestIndex = borrowIndex;
+            }
+
             if (_amount <= borrowingBalanceOf[_borrower].onComp) {
                 borrowingBalanceOf[_borrower].onComp -= _amount; // In underlying.
 
@@ -630,6 +690,7 @@ contract CompoundModule is ReentrancyGuard {
     {
         remainingToMatch = _amount;
         uint256 mExchangeRate = currentExchangeRate;
+        uint256 borrowIndex = cErc20Token.borrowIndex();
         uint256 i;
         while (remainingToMatch > 0 && i < borrowersOnMorpho.length()) {
             address borrower = borrowersOnMorpho.at(i);
@@ -639,7 +700,21 @@ contract CompoundModule is ReentrancyGuard {
                     borrowingBalanceOf[borrower].onMorpho.mul(mExchangeRate),
                     remainingToMatch
                 ); // In underlying.
+
+                // Update borrowing balance onComp.
+                uint256 borrowerInterestIndex = borrowingBalanceOf[borrower]
+                    .interestIndex;
+                if (
+                    (borrowerInterestIndex != 0) &&
+                    (borrowerInterestIndex != borrowIndex)
+                ) {
+                    borrowingBalanceOf[borrower].onComp = borrowingBalanceOf[
+                        borrower
+                    ].onComp.mul(borrowIndex).div(borrowerInterestIndex);
+                }
+
                 remainingToMatch -= toMatch;
+                borrowingBalanceOf[borrower].interestIndex = borrowIndex;
                 borrowingBalanceOf[borrower].onComp += toMatch;
                 borrowingBalanceOf[borrower].onMorpho -= toMatch.div(
                     mExchangeRate
@@ -663,21 +738,36 @@ contract CompoundModule is ReentrancyGuard {
     {
         remainingToMatch = _amount;
         uint256 mExchangeRate = currentExchangeRate;
+        uint256 borrowIndex = cErc20Token.borrowIndex();
         uint256 i;
         while (remainingToMatch > 0 && i < borrowersOnComp.length()) {
             address borrower = borrowersOnComp.at(i);
 
             if (borrowingBalanceOf[borrower].onComp > 0) {
+                // Update borrowing balance onComp.
+                uint256 borrowerInterestIndex = borrowingBalanceOf[borrower]
+                    .interestIndex;
+                if (
+                    (borrowerInterestIndex != 0) &&
+                    (borrowerInterestIndex != borrowIndex)
+                ) {
+                    borrowingBalanceOf[borrower].onComp = borrowingBalanceOf[
+                        borrower
+                    ].onComp.mul(borrowIndex).div(borrowerInterestIndex);
+                }
+
                 uint256 toMatch = Math.min(
                     borrowingBalanceOf[borrower].onComp,
                     remainingToMatch
                 ); // In underlying.
                 remainingToMatch -= toMatch;
+                borrowingBalanceOf[borrower].interestIndex = borrowIndex;
                 borrowingBalanceOf[borrower].onComp -= toMatch;
                 borrowingBalanceOf[borrower].onMorpho += toMatch.div(
                     mExchangeRate
                 );
                 borrowersOnMorpho.add(borrower);
+
                 if (borrowingBalanceOf[borrower].onComp == 0)
                     borrowersOnComp.remove(borrower);
             }
