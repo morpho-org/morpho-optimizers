@@ -461,7 +461,7 @@ describe("CompoundModule Contract", () => {
       expect(await cToken.callStatic.borrowBalanceCurrent(compoundModule.address)).to.equal(expectedMorphoBorrowingBalance);
     });
 
-    xit("Should be able to repay all borrowing amount", async () => {
+    it("Should be able to repay all borrowing amount", async () => {
       const amount = utils.parseUnits("1");
       // Approve more to be large enough
       const amountToApprove = utils.parseUnits("100000000");
@@ -578,7 +578,6 @@ describe("CompoundModule Contract", () => {
 
       // Borrowers borrows lender1 amount
       await compoundModule.connect(borrower1).borrow(lendingAmount);
-      expect((await compoundModule.borrowingBalanceOf(borrower1.getAddress())).interestIndex).to.equal(0);
 
       // Check lender1 balances
       const cExchangeRate2 = await cToken.callStatic.exchangeRateCurrent();

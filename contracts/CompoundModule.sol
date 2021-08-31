@@ -121,15 +121,12 @@ contract CompoundModule is ReentrancyGuard {
 
         if (borrowingBalanceOf[msg.sender].onComp > 0) {
             // Update borrowing balance onComp.
-            if (
-                (borrowingBalanceOf[msg.sender].interestIndex != 0) &&
-                (borrowingBalanceOf[msg.sender].interestIndex != borrowIndex)
-            ) {
+            uint256 borrowerInterestIndex = borrowingBalanceOf[msg.sender]
+                .interestIndex;
+            if (borrowerInterestIndex != borrowIndex) {
                 borrowingBalanceOf[msg.sender].onComp = borrowingBalanceOf[
                     msg.sender
-                ].onComp.mul(borrowIndex).div(
-                    borrowingBalanceOf[msg.sender].interestIndex
-                );
+                ].onComp.mul(borrowIndex).div(borrowerInterestIndex);
                 borrowingBalanceOf[msg.sender].interestIndex = borrowIndex;
             }
         }
@@ -171,13 +168,13 @@ contract CompoundModule is ReentrancyGuard {
         // If not enough cTokens on Morpho, we must borrow it on Compound.
         if (remainingToBorrowOnComp > 0) {
             borrowingBalanceOf[msg.sender].onComp += remainingToBorrowOnComp; // In underlying.
-            borrowingBalanceOf[msg.sender].interestIndex = borrowIndex;
             borrowersOnComp.add(msg.sender);
             require(
                 cErc20Token.borrow(remainingToBorrowOnComp) == 0,
                 "Borrow on Compound failed."
             );
         }
+        borrowingBalanceOf[msg.sender].interestIndex = borrowIndex;
         // Transfer ERC20 tokens to borrower.
         erc20Token.safeTransfer(msg.sender, _amount);
     }
@@ -293,15 +290,12 @@ contract CompoundModule is ReentrancyGuard {
         if (borrowingBalanceOf[msg.sender].onComp > 0) {
             // Update borrowing balance onComp.
             uint256 borrowIndex = cErc20Token.borrowIndex();
-            if (
-                (borrowingBalanceOf[msg.sender].interestIndex != 0) &&
-                (borrowingBalanceOf[msg.sender].interestIndex != borrowIndex)
-            ) {
+            uint256 borrowerInterestIndex = borrowingBalanceOf[msg.sender]
+                .interestIndex;
+            if (borrowerInterestIndex != borrowIndex) {
                 borrowingBalanceOf[msg.sender].onComp = borrowingBalanceOf[
                     msg.sender
-                ].onComp.mul(borrowIndex).div(
-                    borrowingBalanceOf[msg.sender].interestIndex
-                );
+                ].onComp.mul(borrowIndex).div(borrowerInterestIndex);
                 borrowingBalanceOf[msg.sender].interestIndex = borrowIndex;
             }
         }
@@ -400,15 +394,12 @@ contract CompoundModule is ReentrancyGuard {
         if (borrowingBalanceOf[_borrower].onComp > 0) {
             // Update borrowing balance onComp.
             uint256 borrowIndex = cErc20Token.borrowIndex();
-            if (
-                (borrowingBalanceOf[_borrower].interestIndex != 0) &&
-                (borrowingBalanceOf[_borrower].interestIndex != borrowIndex)
-            ) {
+            uint256 borrowerInterestIndex = borrowingBalanceOf[_borrower]
+                .interestIndex;
+            if (borrowerInterestIndex != borrowIndex) {
                 borrowingBalanceOf[_borrower].onComp = borrowingBalanceOf[
                     _borrower
-                ].onComp.mul(borrowIndex).div(
-                    borrowingBalanceOf[_borrower].interestIndex
-                );
+                ].onComp.mul(borrowIndex).div(borrowerInterestIndex);
                 borrowingBalanceOf[_borrower].interestIndex = borrowIndex;
             }
         }
@@ -508,16 +499,15 @@ contract CompoundModule is ReentrancyGuard {
         if (borrowingBalanceOf[_borrower].onComp > 0) {
             // Update borrowing balance onComp.
             uint256 borrowIndex = cErc20Token.borrowIndex();
-            if (
-                (borrowingBalanceOf[_borrower].interestIndex != 0) &&
-                (borrowingBalanceOf[_borrower].interestIndex != borrowIndex)
-            ) {
+            uint256 borrowerInterestIndex = borrowingBalanceOf[_borrower]
+                .interestIndex;
+            if (borrowerInterestIndex != borrowIndex) {
                 borrowingBalanceOf[_borrower].onComp = borrowingBalanceOf[
                     _borrower
                 ].onComp.mul(borrowIndex).div(
-                    borrowingBalanceOf[_borrower].interestIndex
-                );
-                borrowingBalanceOf[_borrower].interestIndex = borrowIndex;
+                        borrowingBalanceOf[_borrower].interestIndex
+                    );
+                borrowerInterestIndex = borrowIndex;
             }
 
             if (_amount <= borrowingBalanceOf[_borrower].onComp) {
@@ -711,15 +701,15 @@ contract CompoundModule is ReentrancyGuard {
                 ); // In underlying.
 
                 // Update borrowing balance onComp.
+                uint256 borrowerInterestIndex = borrowingBalanceOf[borrower]
+                    .interestIndex;
                 if (
-                    (borrowingBalanceOf[borrower].interestIndex != 0) &&
-                    (borrowingBalanceOf[borrower].interestIndex != borrowIndex)
+                    (borrowerInterestIndex != 0) &&
+                    (borrowerInterestIndex != borrowIndex)
                 ) {
                     borrowingBalanceOf[borrower].onComp = borrowingBalanceOf[
                         borrower
-                    ].onComp.mul(borrowIndex).div(
-                        borrowingBalanceOf[borrower].interestIndex
-                    );
+                    ].onComp.mul(borrowIndex).div(borrowerInterestIndex);
                 }
 
                 remainingToMatch -= toMatch;
@@ -754,15 +744,15 @@ contract CompoundModule is ReentrancyGuard {
 
             if (borrowingBalanceOf[borrower].onComp > 0) {
                 // Update borrowing balance onComp.
+                uint256 borrowerInterestIndex = borrowingBalanceOf[borrower]
+                    .interestIndex;
                 if (
-                    (borrowingBalanceOf[borrower].interestIndex != 0) &&
-                    (borrowingBalanceOf[borrower].interestIndex != borrowIndex)
+                    (borrowerInterestIndex != 0) &&
+                    (borrowerInterestIndex != borrowIndex)
                 ) {
                     borrowingBalanceOf[borrower].onComp = borrowingBalanceOf[
                         borrower
-                    ].onComp.mul(borrowIndex).div(
-                        borrowingBalanceOf[borrower].interestIndex
-                    );
+                    ].onComp.mul(borrowIndex).div(borrowerInterestIndex);
                 }
 
                 uint256 toMatch = Math.min(
