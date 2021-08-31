@@ -159,6 +159,7 @@ contract CompoundModule is ReentrancyGuard {
             msg.sender
         ); // In underlying.
         uint256 toRedeem = _amount - remainingToBorrowOnComp;
+
         if (toRedeem > 0) {
             borrowingBalanceOf[msg.sender].onMorpho += toRedeem.div(
                 mExchangeRate
@@ -166,6 +167,7 @@ contract CompoundModule is ReentrancyGuard {
             borrowersOnMorpho.add(msg.sender);
             _redeemErc20FromComp(toRedeem, false); // Revert on error.
         }
+
         // If not enough cTokens on Morpho, we must borrow it on Compound.
         if (remainingToBorrowOnComp > 0) {
             borrowingBalanceOf[msg.sender].onComp += remainingToBorrowOnComp; // In underlying.
@@ -175,6 +177,7 @@ contract CompoundModule is ReentrancyGuard {
                 "Borrow on Compound failed."
             );
         }
+
         borrowingBalanceOf[msg.sender].interestIndex = borrowIndex;
         // Transfer ERC20 tokens to borrower.
         erc20Token.safeTransfer(msg.sender, _amount);
@@ -505,10 +508,8 @@ contract CompoundModule is ReentrancyGuard {
             if (borrowerInterestIndex != borrowIndex) {
                 borrowingBalanceOf[_borrower].onComp = borrowingBalanceOf[
                     _borrower
-                ].onComp.mul(borrowIndex).div(
-                        borrowingBalanceOf[_borrower].interestIndex
-                    );
-                borrowerInterestIndex = borrowIndex;
+                ].onComp.mul(borrowIndex).div(borrowerInterestIndex);
+                borrowingBalanceOf[_borrower].interestIndex = borrowIndex;
             }
 
             if (_amount <= borrowingBalanceOf[_borrower].onComp) {
@@ -704,10 +705,7 @@ contract CompoundModule is ReentrancyGuard {
                 // Update borrowing balance onComp.
                 uint256 borrowerInterestIndex = borrowingBalanceOf[borrower]
                     .interestIndex;
-                if (
-                    (borrowerInterestIndex != 0) &&
-                    (borrowerInterestIndex != borrowIndex)
-                ) {
+                if (borrowerInterestIndex != borrowIndex) {
                     borrowingBalanceOf[borrower].onComp = borrowingBalanceOf[
                         borrower
                     ].onComp.mul(borrowIndex).div(borrowerInterestIndex);
@@ -747,10 +745,7 @@ contract CompoundModule is ReentrancyGuard {
                 // Update borrowing balance onComp.
                 uint256 borrowerInterestIndex = borrowingBalanceOf[borrower]
                     .interestIndex;
-                if (
-                    (borrowerInterestIndex != 0) &&
-                    (borrowerInterestIndex != borrowIndex)
-                ) {
+                if (borrowerInterestIndex != borrowIndex) {
                     borrowingBalanceOf[borrower].onComp = borrowingBalanceOf[
                         borrower
                     ].onComp.mul(borrowIndex).div(borrowerInterestIndex);
