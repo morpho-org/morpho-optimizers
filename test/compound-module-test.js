@@ -195,7 +195,7 @@ describe("CompoundModule Contract", () => {
     });
   });
 
-  describe("Lending when there is no borrowers", () => {
+  describe("Lenders on Compound (no borrowers)", () => {
     it("Should have correct balances at the beginning", async () => {
       expect((await compoundModule.lendingBalanceOf(lender1.getAddress())).onComp).to.equal(0);
       expect((await compoundModule.lendingBalanceOf(lender1.getAddress())).onMorpho).to.equal(0);
@@ -300,7 +300,7 @@ describe("CompoundModule Contract", () => {
     });
   });
 
-  describe("Borrowing when there is no lenders", () => {
+  describe("Borrowers on Compound (no lenders)", () => {
     it("Should have correct balances at the beginning", async () => {
       expect((await compoundModule.borrowingBalanceOf(borrower1.getAddress())).onComp).to.equal(0);
       expect((await compoundModule.borrowingBalanceOf(borrower1.getAddress())).onMorpho).to.equal(0);
@@ -555,7 +555,7 @@ describe("CompoundModule Contract", () => {
     });
   });
 
-  describe("Check P2P interactions", () => {
+  describe("P2P interactions between lender and borrowers", () => {
     it("Lender should withdraw her liquidity while not enough cToken on Morpho contract", async () => {
       // Lender deposits tokens
       const lendingAmount = utils.parseUnits("10");
