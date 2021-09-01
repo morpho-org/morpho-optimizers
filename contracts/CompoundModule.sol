@@ -409,7 +409,7 @@ contract CompoundModule is ReentrancyGuard, Ownable {
             uint256 collateralRequiredInEth
         ) = getAccountLiquidity(_cErc20Address, _borrower);
         require(
-            collateralInEth < collateralRequiredInEth,
+            liquidateAuthorization(_cErc20Address, _borrower, _amount),
             "Borrower position cannot be liquidated."
         );
         require(allowed);
@@ -1077,6 +1077,47 @@ contract CompoundModule is ReentrancyGuard, Ownable {
             market[_cErc20Token].borrowersOnComp.contains(_user) ||
                 market[_cErc20Token].borrowersOnMorpho.contains(_user)
         );
+        return true;
+    }
+
+    function liquidateAuthorization(
+        address _cErc20Token,
+        address _user,
+        uint256
+    ) internal returns (bool) {
+        // check if market is listed
+        require(market[_cErc20Token].isListed, "Market not listed");
+        // check if the position is liquidable
+        uint256 debt = 0;
+        for (uint256 k = 0; k < enteredMarketsAsBorrowerOf[_user].length; k++) {
+            address _cErc20Address = enteredMarketsAsBorrowerOf[_user][k];
+            ICErc20 cErc20Token = ICErc20(_cErc20Address);
+            uint256 mExchangeRate = updateCurrentExchangeRate();
+            uint256 cExchangeRate = cErc20Token.exchangeRateCurrent();
+            debt +=
+                market[_cErc20Address].borrowingBalanceOf[_user].onComp.mul(
+                    cExchangeRate
+                ) +
+                market[_cErc20Address].borrowingBalanceOf[_user].onMorpho.mul(
+                    mExchangeRate
+                );
+        }
+        uint256 maxDebt;
+        for (
+            uint256 k = 0;
+            k < enteredMarketsForCollateral[_user].length;
+            k++
+        ) {
+            address _cErc20Address = enteredMarketsAsBorrowerOf[_user][k];
+            ICErc20 cErc20Token = ICErc20(_cErc20Address);
+            uint256 cExchangeRate = cErc20Token.exchangeRateCurrent();
+            maxDebt +=
+                market[_cErc20Address].collateralBalanceOf[_user].mul(
+                    cExchangeRate
+                ) *
+                market[_cErc20Address].collateralFactorMantissa;
+        }
+        require(maxDebt < debt, "Not enough collateral");
         return true;
     }
 }
