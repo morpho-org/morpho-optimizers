@@ -1,19 +1,20 @@
 pragma solidity 0.8.7;
 
-import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
-import "@openzeppelin/contracts/utils/math/Math.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/math/Math.sol";
 import "prb-math/contracts/PRBMathUD60x18.sol";
 
+import "./libraries/DoubleLinkedList.sol";
 import {ICErc20, ICEth, IComptroller, ICompoundOracle} from "./interfaces/ICompound.sol";
 
 /**
  *  @title CompoundModule
  *  @dev Smart contracts interacting with Compound to enable real P2P lending with ETH as collateral and a cERC20 token as lending/borrowing asset.
  */
-contract CompoundModule is ReentrancyGuard {
-    using EnumerableSet for EnumerableSet.AddressSet;
+contract CompoundModule is ReentrancyGuard, Ownable {
+    using DoubleLinkedList for DoubleLinkedList.List;
     using PRBMathUD60x18 for uint256;
     using SafeERC20 for IERC20;
     using Math for uint256;
@@ -35,9 +36,11 @@ contract CompoundModule is ReentrancyGuard {
     mapping(address => LendingBalance) public lendingBalanceOf; // Lending balance of user (ERC20/cERC20).
     mapping(address => BorrowingBalance) public borrowingBalanceOf; // Borrowing balance of user (ERC20).
     mapping(address => uint256) public collateralBalanceOf; // Collateral balance of user (cETH).
-    EnumerableSet.AddressSet private lenders; // Lenders on Morpho.
-    EnumerableSet.AddressSet private borrowersOnMorpho; // Borrowers on Morpho.
-    EnumerableSet.AddressSet private borrowersOnComp; // Borrowers on Compound.
+    uint256[] public thresholds = [1e18, 1e8, 1e18]; // Thresholds below the ones we remove lenders and borrowers from the lists. 0 -> Underlying, 1 -> cToken, 2 -> mUnit
+    DoubleLinkedList.List public lendersOnMorpho; // Lenders on Morpho.
+    DoubleLinkedList.List public lendersOnComp; // Lenders on Compound.
+    DoubleLinkedList.List public borrowersOnMorpho; // Borrowers on Morpho.
+    DoubleLinkedList.List public borrowersOnComp; // Borrowers on Compound.
 
     uint256 public BPY; // Block Percentage Yield ("midrate").
     uint256 public collateralFactor = 75e16; // Collateral Factor related to cToken.
@@ -79,13 +82,27 @@ contract CompoundModule is ReentrancyGuard {
 
     /* External */
 
+    /** @dev Updates thresholds below the ones lenders and borrowers are removed from lists.
+     *  @param _thresholdType Which threshold must be updated. 0 -> Underlying, 1 -> cToken, 2 -> mUnit
+     *  @param _newThreshold The new threshold to set.
+     */
+    function updateThreshold(uint256 _thresholdType, uint256 _newThreshold)
+        external
+        onlyOwner
+    {
+        require(_newThreshold > 0, "New THRESHOLD must be strictly positive.");
+        thresholds[_thresholdType] = _newThreshold;
+    }
+
     /** @dev Lends ERC20 tokens.
      *  @param _amount The amount to lend in ERC20 tokens.
      */
     function lend(uint256 _amount) external nonReentrant {
-        require(_amount > 0, "Amount cannot be 0.");
+        require(
+            _amount >= thresholds[0],
+            "Amount cannot be less than THRESHOLD."
+        );
         erc20Token.transferFrom(msg.sender, address(this), _amount);
-        lenders.add(msg.sender); // Return false when lender is already there. O(1)
         uint256 cExchangeRate = cErc20Token.exchangeRateCurrent();
 
         // If some borrowers are on Compound, we must move them to Morpho.
@@ -101,13 +118,16 @@ contract CompoundModule is ReentrancyGuard {
             cErc20Token.repayBorrow(toRepay); // Revert on error.
             // Update lender balance.
             lendingBalanceOf[msg.sender].onMorpho += toRepay.div(mExchangeRate); // In mUnit.
-            lendingBalanceOf[msg.sender].onComp += remainingToSupplyToComp.div(
-                cExchangeRate
-            ); // In cToken.
-            if (remainingToSupplyToComp > 0)
+            lendersOnMorpho.addTail(msg.sender);
+            if (remainingToSupplyToComp > 0) {
+                lendingBalanceOf[msg.sender].onComp += remainingToSupplyToComp
+                    .div(cExchangeRate); // In cToken.
+                lendersOnComp.addTail(msg.sender);
                 _supplyErc20ToComp(remainingToSupplyToComp); // Revert on error.
+            }
         } else {
             lendingBalanceOf[msg.sender].onComp += _amount.div(cExchangeRate); // In cToken.
+            lendersOnComp.addTail(msg.sender);
             _supplyErc20ToComp(_amount); // Revert on error.
         }
     }
@@ -116,7 +136,10 @@ contract CompoundModule is ReentrancyGuard {
      *  @param _amount The amount to borrow in ERC20 tokens.
      */
     function borrow(uint256 _amount) external nonReentrant {
-        require(_amount > 0, "Amount cannot be 0.");
+        require(
+            _amount >= thresholds[0],
+            "Amount cannot be less than THRESHOLD."
+        );
         uint256 borrowIndex = cErc20Token.borrowIndex();
         uint256 mExchangeRate = updateCurrentExchangeRate();
         uint256 amountBorrowedAfter = _amount +
@@ -150,19 +173,21 @@ contract CompoundModule is ReentrancyGuard {
             borrowingBalanceOf[msg.sender].onMorpho += toRedeem.div(
                 mExchangeRate
             ); // In mUnit.
-            borrowersOnMorpho.add(msg.sender);
+            borrowersOnMorpho.addTail(msg.sender);
             _redeemErc20FromComp(toRedeem, false); // Revert on error.
         }
 
         // If not enough cTokens on Morpho, we must borrow it on Compound.
         if (remainingToBorrowOnComp > 0) {
+            borrowingBalanceOf[msg.sender].onComp += remainingToBorrowOnComp; // In underlying.
+            borrowersOnComp.addTail(msg.sender);
             require(
                 cErc20Token.borrow(remainingToBorrowOnComp) == 0,
                 "Borrow on Compound failed."
             );
             borrowingBalanceOf[msg.sender].onComp += remainingToBorrowOnComp
                 .div(cErc20Token.borrowIndex()); // In cdUnit.
-            borrowersOnComp.add(msg.sender);
+            borrowersOnComp.addTail(msg.sender);
         }
 
         // Transfer ERC20 tokens to borrower.
@@ -242,13 +267,12 @@ contract CompoundModule is ReentrancyGuard {
 
         // Transfer back the ERC20 tokens.
         erc20Token.safeTransfer(msg.sender, _amount);
-        // If lender has no lending at all, then remove her from `lenders`.
-        if (
-            lendingBalanceOf[msg.sender].onComp == 0 &&
-            lendingBalanceOf[msg.sender].onMorpho == 0
-        ) {
-            lenders.remove(msg.sender);
-        }
+
+        // Remove lenders from list if needed.
+        if (lendingBalanceOf[msg.sender].onComp < thresholds[1])
+            lendersOnComp.remove(msg.sender);
+        if (lendingBalanceOf[msg.sender].onMorpho < thresholds[2])
+            lendersOnMorpho.remove(msg.sender);
     }
 
     /** @dev Allows a borrower to provide collateral in ETH.
@@ -416,7 +440,6 @@ contract CompoundModule is ReentrancyGuard {
                 collateralAssetPriceMantissa != 0,
             "Oracle failed"
         );
-        // TODO: check overflow/underflow and precision for this calculation.
         return
             _borrowedAmountInUnderlying
                 .mul(borrowedAssetPriceMantissa)
@@ -509,10 +532,11 @@ contract CompoundModule is ReentrancyGuard {
             _supplyErc20ToComp(_amount);
         }
 
-        if (borrowingBalanceOf[_borrower].onMorpho == 0)
-            borrowersOnMorpho.remove(_borrower);
-        if (borrowingBalanceOf[_borrower].onComp == 0)
+        // Remove borrower from lists if needed.
+        if (borrowingBalanceOf[_borrower].onComp < thresholds[1])
             borrowersOnComp.remove(_borrower);
+        if (borrowingBalanceOf[_borrower].onMorpho < thresholds[2])
+            borrowersOnMorpho.remove(_borrower);
     }
 
     /** @dev Supplies ETH to Compound.
@@ -579,9 +603,9 @@ contract CompoundModule is ReentrancyGuard {
         remainingToMove = _amount; // In underlying.
         uint256 mExchangeRate = currentExchangeRate;
         uint256 cExchangeRate = cErc20Token.exchangeRateCurrent();
+        address lender = lendersOnComp.getHead();
         uint256 i;
-        while (remainingToMove > 0 && i < lenders.length()) {
-            address lender = lenders.at(i);
+        while (remainingToMove > 0 && i < lendersOnComp.length()) {
             if (lender != _lenderToAvoid) {
                 uint256 onComp = lendingBalanceOf[lender].onComp; // In cToken.
 
@@ -590,14 +614,22 @@ contract CompoundModule is ReentrancyGuard {
                         onComp.mul(cExchangeRate),
                         remainingToMove
                     ); // In underlying.
+                    remainingToMove -= amountToMove;
                     lendingBalanceOf[lender].onComp -= amountToMove.div(
                         cExchangeRate
                     ); // In cToken.
                     lendingBalanceOf[lender].onMorpho += amountToMove.div(
                         mExchangeRate
                     ); // In mUnit.
-                    remainingToMove -= amountToMove;
+
+                    // Update lists if needed.
+                    if (lendingBalanceOf[lender].onComp < thresholds[1])
+                        lendersOnComp.remove(lender);
+                    if (lendingBalanceOf[lender].onMorpho >= thresholds[2])
+                        lendersOnMorpho.addTail(lender);
                 }
+            } else {
+                lender = lendersOnComp.getNext(lender);
             }
             i++;
         }
@@ -615,9 +647,9 @@ contract CompoundModule is ReentrancyGuard {
         uint256 remainingToMove = _amount; // In underlying.
         uint256 cExchangeRate = cErc20Token.exchangeRateCurrent();
         uint256 mExchangeRate = currentExchangeRate;
+        address lender = lendersOnMorpho.getHead();
         uint256 i;
-        while (remainingToMove > 0 && i < lenders.length()) {
-            address lender = lenders.at(i);
+        while (remainingToMove > 0 && i < lendersOnMorpho.length()) {
             if (lender != _lenderToAvoid) {
                 uint256 onMorpho = lendingBalanceOf[lender].onMorpho; // In mUnit.
 
@@ -626,14 +658,22 @@ contract CompoundModule is ReentrancyGuard {
                         onMorpho.mul(mExchangeRate),
                         remainingToMove
                     ); // In underlying.
+                    remainingToMove -= amountToMove; // In underlying.
                     lendingBalanceOf[lender].onComp += amountToMove.div(
                         cExchangeRate
                     ); // In cToken.
                     lendingBalanceOf[lender].onMorpho -= amountToMove.div(
                         mExchangeRate
                     ); // In mUnit.
-                    remainingToMove -= amountToMove; // In underlying.
+
+                    // Update lists if needed.
+                    if (lendingBalanceOf[lender].onComp >= thresholds[1])
+                        lendersOnComp.addTail(lender);
+                    if (lendingBalanceOf[lender].onMorpho < thresholds[2])
+                        lendersOnMorpho.remove(lender);
                 }
+            } else {
+                lender = lendersOnMorpho.getNext(lender);
             }
             i++;
         }
@@ -654,7 +694,7 @@ contract CompoundModule is ReentrancyGuard {
         uint256 borrowIndex = cErc20Token.borrowIndex();
         uint256 i;
         while (remainingToMatch > 0 && i < borrowersOnMorpho.length()) {
-            address borrower = borrowersOnMorpho.at(i);
+            address borrower = borrowersOnMorpho.getHead();
 
             if (borrowingBalanceOf[borrower].onMorpho > 0) {
                 uint256 toMatch = Math.min(
@@ -668,8 +708,10 @@ contract CompoundModule is ReentrancyGuard {
                     mExchangeRate
                 );
 
-                borrowersOnComp.add(borrower);
-                if (borrowingBalanceOf[borrower].onMorpho == 0)
+                // Update lists if needed.
+                if (borrowingBalanceOf[borrower].onComp >= thresholds[1])
+                    borrowersOnComp.addTail(borrower);
+                if (borrowingBalanceOf[borrower].onMorpho < thresholds[2])
                     borrowersOnMorpho.remove(borrower);
             }
             i++;
@@ -690,7 +732,7 @@ contract CompoundModule is ReentrancyGuard {
         uint256 borrowIndex = cErc20Token.borrowIndex();
         uint256 i;
         while (remainingToMatch > 0 && i < borrowersOnComp.length()) {
-            address borrower = borrowersOnComp.at(i);
+            address borrower = borrowersOnComp.getHead();
 
             if (borrowingBalanceOf[borrower].onComp > 0) {
                 uint256 onCompInUnderlying = borrowingBalanceOf[borrower]
@@ -707,9 +749,13 @@ contract CompoundModule is ReentrancyGuard {
                     mExchangeRate
                 );
 
-                borrowersOnMorpho.add(borrower);
+                borrowersOnMorpho.addTail(borrower);
                 if (borrowingBalanceOf[borrower].onComp == 0)
-                    borrowersOnComp.remove(borrower);
+                    if (borrowingBalanceOf[borrower].onComp < thresholds[1])
+                        // Update lists if needed.
+                        borrowersOnComp.remove(borrower);
+                if (borrowingBalanceOf[borrower].onMorpho >= thresholds[2])
+                    borrowersOnMorpho.addTail(borrower);
             }
             i++;
         }
