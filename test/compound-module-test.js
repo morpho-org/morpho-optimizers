@@ -38,6 +38,8 @@ describe("CompoundModule Contract", () => {
   let lenders;
   let borrowers;
 
+  let underlyingThreshold;
+
   /* Utils functions */
 
   const underlyingToCToken = (underlyingAmount, exchangeRateCurrent) => {
@@ -141,6 +143,12 @@ describe("CompoundModule Contract", () => {
       const expectedBPY = borrowRatePerBlock.add(supplyRatePerBlock).div(2);
       expect(await compoundModule.BPY()).to.equal(expectedBPY);
       expect(await compoundModule.currentExchangeRate()).to.be.equal(utils.parseUnits("1"));
+
+      // Thresholds
+      underlyingThreshold = await compoundModule.thresholds(0);
+      expect(underlyingThreshold).to.be.equal(utils.parseUnits("1"));
+      expect(await compoundModule.thresholds(1)).to.be.equal(BigNumber.from(10).pow(8));
+      expect(await compoundModule.thresholds(2)).to.be.equal(utils.parseUnits("1"));
     });
   });
 
@@ -202,7 +210,7 @@ describe("CompoundModule Contract", () => {
     })
 
     it("Should revert when lending 0", async () => {
-      await expect(compoundModule.connect(lender1).lend(0)).to.be.revertedWith("Amount cannot be 0.");
+      await expect(compoundModule.connect(lender1).lend(underlyingThreshold.sub(1))).to.be.revertedWith("Amount cannot be less than THRESHOLD.");
     })
 
     it("Should have the correct balances after lending", async () => {
@@ -310,8 +318,8 @@ describe("CompoundModule Contract", () => {
       await expect(compoundModule.connect(lender1).provideCollateral({ value: 0 })).to.be.revertedWith("Amount cannot be 0.");
     });
 
-    it("Should revert when borrowing 0", async () => {
-      await expect(compoundModule.connect(lender1).borrow(0)).to.be.revertedWith("Amount cannot be 0.");
+    it("Should revert when borrowing less than threshold", async () => {
+      await expect(compoundModule.connect(lender1).borrow(underlyingThreshold.sub(1))).to.be.revertedWith("Amount cannot be less than THRESHOLD.");
     });
 
     it("Should have the right amount of cETH in collateral after providing ETH as collateral", async () => {
@@ -382,9 +390,8 @@ describe("CompoundModule Contract", () => {
       expect(await compoundModule.collateralBalanceOf(borrower1.getAddress())).to.equal(expectedCollateralBalance);
     });
 
-    it("Should not be able to borrow if no collateral provided", async () => {
-      // TODO: fix issue in SC when borrowing too low values
-      await expect(compoundModule.connect(borrower1).borrow(1)).to.be.revertedWith("Borrowing is too low.");
+    it("Should not be able to borrow less than threshold", async () => {
+      await expect(compoundModule.connect(borrower1).borrow(underlyingThreshold.sub(1))).to.be.revertedWith("Amount cannot be less than THRESHOLD.");
     });
 
     it("Should be able to borrow on Compound after providing collateral up to max", async () => {
@@ -838,15 +845,23 @@ describe("CompoundModule Contract", () => {
     });
   });
 
-  xdescribe("Check interests accrued for a one borrower / one lender interaction on Morpho", () => {
-    it("Lender and borrower should be in P2P interaction", async () => {
-    });
+  describe("Check permissions", () => {
+    it("Only Owner should be bale to update thresholds", async () => {
+      const newThreshold = utils.parseUnits("2");
+      await compoundModule.updateThreshold(0, newThreshold);
+      expect(await compoundModule.thresholds(0)).to.equal(newThreshold);
+      await compoundModule.updateThreshold(1, newThreshold);
+      expect(await compoundModule.thresholds(1)).to.equal(newThreshold);
+      await compoundModule.updateThreshold(2, newThreshold);
+      expect(await compoundModule.thresholds(2)).to.equal(newThreshold);
 
-    it("Lender and borrower should be in P2P interaction", async () => {
-    });
-  });
+      // Pointer out of boundss
+      await expect(compoundModule.updateThreshold(3, newThreshold)).to.be.reverted;
 
-  xdescribe("Check permissions", () => {
+      // Other accounts than Owner
+      await expect(compoundModule.connect(lender1).updateThreshold(0, newThreshold)).to.be.reverted;
+      await expect(compoundModule.connect(borrower1).updateThreshold(0, newThreshold)).to.be.reverted;
+    });
   });
 
   xdescribe("Test attacks", async () => {
@@ -859,7 +874,7 @@ describe("CompoundModule Contract", () => {
     it("Should not be subject to flash loan attacks", async () => {
     });
 
-    it("Should be subjected to Oracle Manipulation attacks", async () => {
+    it("Should not be subjected to Oracle Manipulation attacks", async () => {
     });
   });
 });
