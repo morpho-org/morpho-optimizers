@@ -998,7 +998,7 @@ contract CompoundModule is ReentrancyGuard, Ownable {
         for (uint256 k = 0; k < enteredMarketsAsBorrowerOf[_user].length; k++) {
             address _cErc20Address = enteredMarketsAsBorrowerOf[_user][k];
             ICErc20 cErc20Token = ICErc20(_cErc20Address);
-            uint256 mExchangeRate = updateCurrentExchangeRate();
+            uint256 mExchangeRate = updateCurrentExchangeRate(_cErc20Token);
             uint256 cExchangeRate = cErc20Token.exchangeRateCurrent();
             debt +=
                 market[_cErc20Address].borrowingBalanceOf[_user].onComp.mul(
@@ -1044,7 +1044,7 @@ contract CompoundModule is ReentrancyGuard, Ownable {
         for (uint256 k = 0; k < enteredMarketsAsBorrowerOf[_user].length; k++) {
             address _cErc20Address = enteredMarketsAsBorrowerOf[_user][k];
             ICErc20 cErc20Token = ICErc20(_cErc20Address);
-            uint256 mExchangeRate = updateCurrentExchangeRate();
+            uint256 mExchangeRate = updateCurrentExchangeRate(_cErc20Token);
             uint256 cExchangeRate = cErc20Token.exchangeRateCurrent();
             debt +=
                 market[_cErc20Address].borrowingBalanceOf[_user].onComp.mul(
@@ -1097,11 +1097,11 @@ contract CompoundModule is ReentrancyGuard, Ownable {
         // check if market is listed
         require(market[_cErc20Token].isListed, "Market not listed");
         // check if the position is liquidable
-        uint256 debt = 0;
+        uint256 debt;
         for (uint256 k = 0; k < enteredMarketsAsBorrowerOf[_user].length; k++) {
             address _cErc20Address = enteredMarketsAsBorrowerOf[_user][k];
             ICErc20 cErc20Token = ICErc20(_cErc20Address);
-            uint256 mExchangeRate = updateCurrentExchangeRate();
+            uint256 mExchangeRate = updateCurrentExchangeRate(_cErc20Token);
             uint256 cExchangeRate = cErc20Token.exchangeRateCurrent();
             debt +=
                 market[_cErc20Address].borrowingBalanceOf[_user].onComp.mul(
