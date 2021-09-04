@@ -43,6 +43,7 @@ contract CompoundModule is ReentrancyGuard, Ownable {
         mapping(address => LendingBalance) lendingBalanceOf; // Lending balance of user (ERC20/cERC20).
         mapping(address => BorrowingBalance) borrowingBalanceOf; // Borrowing balance of user (ERC20).
         mapping(address => uint256) collateralBalanceOf; // Collateral balance of user (cETH).
+        uint256 BPY; // Block Percentage Yield ("midrate").
     }
 
     /* Storage */
@@ -53,7 +54,6 @@ contract CompoundModule is ReentrancyGuard, Ownable {
     mapping(address => address[]) public enteredMarketsForCollateral; // Markets entered by a user for collateral.
     mapping(address => address[]) public enteredMarketsAsBorrowerOf; // Markets entered by a user as borrower.
 
-    uint256 public BPY; // Block Percentage Yield ("midrate").
     uint256 public collateralFactor = 75e16; // Collateral Factor related to cToken.
     uint256 public liquidationIncentive = 1.1e18; // Incentive for liquidators in percentage (110%).
     uint256 public currentExchangeRate = 1e18; // current exchange rate from mUnit to underlying.
@@ -110,7 +110,7 @@ contract CompoundModule is ReentrancyGuard, Ownable {
 
         // If some borrowers are on Compound, we must move them to Morpho.
         if (market[_cErc20Address].borrowersOnComp.length() > 0) {
-            uint256 mExchangeRate = updateCurrentExchangeRate();
+            uint256 mExchangeRate = updateCurrentExchangeRate(_cErc20Address);
             // Find borrowers and move them to Morpho.
             uint256 remainingToSupplyToComp = _moveBorrowersFromCompToMorpho(
                 _cErc20Address,
@@ -158,7 +158,7 @@ contract CompoundModule is ReentrancyGuard, Ownable {
         IERC20 erc20Token = IERC20(cErc20Token.underlying());
         ICEth cEthToken = ICEth(cEthAddress);
         uint256 borrowIndex = cErc20Token.borrowIndex();
-        uint256 mExchangeRate = updateCurrentExchangeRate();
+        uint256 mExchangeRate = updateCurrentExchangeRate(_cErc20Address);
         uint256 amountBorrowedAfter = _amount +
             market[_cErc20Address].borrowingBalanceOf[msg.sender].onComp.mul(
                 borrowIndex
@@ -241,7 +241,7 @@ contract CompoundModule is ReentrancyGuard, Ownable {
         require(withdrawAuthorization(_cErc20Address, msg.sender, _amount));
         ICErc20 cErc20Token = ICErc20(_cErc20Address);
         IERC20 erc20Token = IERC20(cErc20Token.underlying());
-        uint256 mExchangeRate = updateCurrentExchangeRate();
+        uint256 mExchangeRate = updateCurrentExchangeRate(_cErc20Address);
         uint256 cExchangeRate = cErc20Token.exchangeRateCurrent();
         uint256 amountOnCompInUnderlying = market[_cErc20Address]
             .lendingBalanceOf[msg.sender]
@@ -487,7 +487,7 @@ contract CompoundModule is ReentrancyGuard, Ownable {
             .onComp
             .mul(borrowIndex) +
             market[_cErc20Address].borrowingBalanceOf[_borrower].onMorpho.mul(
-                updateCurrentExchangeRate()
+                updateCurrentExchangeRate(_cErc20Address)
             );
         collateralRequiredInEth = getCollateralRequired(
             borrowedAmount,
@@ -537,23 +537,26 @@ contract CompoundModule is ReentrancyGuard, Ownable {
         // Update BPY.
         uint256 lendBPY = cErc20Token.supplyRatePerBlock();
         uint256 borrowBPY = cErc20Token.borrowRatePerBlock();
-        BPY = Math.average(lendBPY, borrowBPY);
+        market[_cErc20Address].BPY = Math.average(lendBPY, borrowBPY);
 
         // Update currentExchangeRate.
-        updateCurrentExchangeRate();
+        updateCurrentExchangeRate(_cErc20Address);
     }
 
     /** @dev Updates the current exchange rate, taking into the account block percentage yield since the last time it has been updated.
      *  @return currentExchangeRate to convert from mUnit to underlying or from underlying to mUnit.
      */
-    function updateCurrentExchangeRate() public returns (uint256) {
+    function updateCurrentExchangeRate(address _cErc20Address)
+        public
+        returns (uint256)
+    {
         // Update currentExchangeRate.
         uint256 currentBlock = block.number;
         uint256 numberOfBlocksSinceLastUpdate = currentBlock -
             lastUpdateBlockNumber;
 
         uint256 newCurrentExchangeRate = currentExchangeRate.mul(
-            (1e18 + BPY).pow(
+            (1e18 + market[_cErc20Address].BPY).pow(
                 PRBMathUD60x18.fromUint(numberOfBlocksSinceLastUpdate)
             )
         );
@@ -581,7 +584,7 @@ contract CompoundModule is ReentrancyGuard, Ownable {
         ICErc20 cErc20Token = ICErc20(_cErc20Address);
         IERC20 erc20Token = IERC20(cErc20Token.underlying());
         erc20Token.transferFrom(msg.sender, address(this), _amount);
-        uint256 mExchangeRate = updateCurrentExchangeRate();
+        uint256 mExchangeRate = updateCurrentExchangeRate(_cErc20Address);
 
         if (market[_cErc20Address].borrowingBalanceOf[_borrower].onComp > 0) {
             uint256 onCompInUnderlying = market[_cErc20Address]
