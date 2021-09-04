@@ -405,13 +405,10 @@ contract CompoundModule is ReentrancyGuard, Ownable {
         address _borrower,
         uint256 _amount
     ) external nonReentrant {
-        (
-            uint256 collateralInEth,
-            uint256 collateralRequiredInEth
-        ) = getAccountLiquidity(_cErc20Address, _borrower);
-        require(
-            liquidateAuthorization(_cErc20Address, _borrower, _amount),
-            "Borrower position cannot be liquidated."
+        (bool allowed, uint256 debt, uint256 maxDebt) = liquidateAuthorization(
+            _cErc20Address,
+            _borrower,
+            _amount
         );
         require(allowed);
         ICErc20 cErc20Token = ICErc20(_cErc20Address);
@@ -440,7 +437,9 @@ contract CompoundModule is ReentrancyGuard, Ownable {
             .borrowingBalanceOf[_borrower]
             .onComp
             .mul(borrowIndex) +
-            borrowingBalanceOf[_borrower].onMorpho.mul(mExchangeRate);
+            market[_cErc20Address].borrowingBalanceOf[_borrower].onMorpho.mul(
+                mExchangeRate
+            );
         uint256 denominator = totalBorrowingBalance.mul(ethPriceMantissa);
         uint256 ethAmountToSeize = numerator.div(denominator);
         uint256 cEthAmountToSeize = ethAmountToSeize.div(
@@ -467,39 +466,6 @@ contract CompoundModule is ReentrancyGuard, Ownable {
     }
 
     /* Public */
-
-    /** @dev Returns the collateral and the collateral required for the `_borrower`.
-     *  @param _cErc20Address The address of the market the user wants to enter.
-     *  @param _borrower The address of `_borrower`.
-     *  @return collateralInEth The collateral of the `_borrower` in ETH.
-     *  @return collateralRequiredInEth The collateral required of the `_borrower` in ETH.
-     */
-    function getAccountLiquidity(address _cErc20Address, address _borrower)
-        public
-        returns (uint256 collateralInEth, uint256 collateralRequiredInEth)
-    {
-        ICErc20 cErc20Token = ICErc20(_cErc20Address);
-        ICEth cEthToken = ICEth(CETH_ADDRESS);
-        uint256 borrowIndex = cErc20Token.borrowIndex();
-
-        // Calculate total borrowing balance.
-        uint256 borrowedAmount = market[_cErc20Address]
-            .borrowingBalanceOf[_borrower]
-            .onComp
-            .mul(borrowIndex) +
-            market[_cErc20Address].borrowingBalanceOf[_borrower].onMorpho.mul(
-                updateCurrentExchangeRate(_cErc20Address)
-            );
-        collateralRequiredInEth = getCollateralRequired(
-            borrowedAmount,
-            collateralFactor,
-            _cErc20Address,
-            cEthAddress
-        );
-        collateralInEth = market[_cErc20Address]
-            .collateralBalanceOf[_borrower]
-            .mul(cEthToken.exchangeRateCurrent());
-    }
 
     /** @dev Returns the collateral required for the given parameters.
      *  @param _borrowedAmountInUnderlying The amount of underlying tokens borrowed.
@@ -1093,7 +1059,14 @@ contract CompoundModule is ReentrancyGuard, Ownable {
         address _cErc20Token,
         address _user,
         uint256
-    ) internal returns (bool) {
+    )
+        internal
+        returns (
+            bool,
+            uint256,
+            uint256
+        )
+    {
         // check if market is listed
         require(market[_cErc20Token].isListed, "Market not listed");
         // check if the position is liquidable
@@ -1127,6 +1100,6 @@ contract CompoundModule is ReentrancyGuard, Ownable {
                 market[_cErc20Address].collateralFactorMantissa;
         }
         require(maxDebt < debt, "Not enough collateral");
-        return true;
+        return (true, debt, maxDebt);
     }
 }
