@@ -1,6 +1,7 @@
 pragma solidity 0.8.7;
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
@@ -941,7 +942,10 @@ contract CompoundModule is ReentrancyGuard, Ownable {
 
     /* Morpho markets management */
 
-    function createMarkets(address[] memory _cTokensAddresses) public {
+    function createMarkets(address[] memory _cTokensAddresses)
+        public
+        onlyOwner
+    {
         address[] memory marketsToEnter = new address[](
             _cTokensAddresses.length
         );
@@ -956,11 +960,11 @@ contract CompoundModule is ReentrancyGuard, Ownable {
         }
     }
 
-    function listMarket(address _cTokenAddress) public {
+    function listMarket(address _cTokenAddress) public onlyOwner {
         market[_cTokenAddress].isListed = true;
     }
 
-    function unlistMarket(address _cTokenAddress) public {
+    function unlistMarket(address _cTokenAddress) public onlyOwner {
         market[_cTokenAddress].isListed = false;
     }
 
