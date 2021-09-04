@@ -461,8 +461,9 @@ contract CompoundModule is ReentrancyGuard, Ownable {
     /** @dev Updates the collateral factor related to cToken.
      *  @param _cErc20Address The address of the market the user wants to interact with.
      */
-    function updateCollateralFactor(address _cErc20Address) external {
+    function updateCollateralFactor(address _cErc20Address) public {
         (, collateralFactor, ) = comptroller.markets(_cErc20Address);
+        market[_cErc20Address].collateralFactorMantissa = collateralFactor;
     }
 
     /* Public */
@@ -960,6 +961,7 @@ contract CompoundModule is ReentrancyGuard, Ownable {
             market[_cTokensAddresses[k]].isListed = true;
             market[_cTokensAddresses[k]].collateralFactorMantissa = 75e16;
             updateBPY(_cTokensAddresses[k]);
+            updateCollateralFactor(_cTokensAddresses[k]);
         }
     }
 
