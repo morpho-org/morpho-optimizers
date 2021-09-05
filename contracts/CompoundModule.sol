@@ -45,12 +45,8 @@ contract CompoundModule is ReentrancyGuard {
     uint256 public currentExchangeRate = 1e18; // current exchange rate from mUnit to underlying.
     uint256 public lastUpdateBlockNumber; // Last time currentExchangeRate was updated.
 
-    // For now these variables are set in the storage not in constructor:
-    address public constant PROXY_COMPTROLLER_ADDRESS =
-        0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B;
-    address payable public constant CETH_ADDRESS =
-        payable(0x4Ddc2D193948926D02f9B1fE9e1daa0718270ED5);
     address public cErc20Address;
+    address public cEthAddress;
 
     IComptroller public comptroller;
     ICompoundOracle public compoundOracle;
@@ -60,13 +56,18 @@ contract CompoundModule is ReentrancyGuard {
 
     /* Contructor */
 
-    constructor(address _cErc20Address) {
-        comptroller = IComptroller(PROXY_COMPTROLLER_ADDRESS);
+    constructor(
+        address _cErc20Address,
+        address _cEthAddress,
+        address _proxyComptrollerAddress
+    ) {
+        cEthAddress = _cEthAddress;
+        comptroller = IComptroller(_proxyComptrollerAddress);
         address[] memory markets = new address[](2);
-        markets[0] = CETH_ADDRESS;
+        markets[0] = _cEthAddress;
         markets[1] = _cErc20Address;
         comptroller.enterMarkets(markets);
-        cEthToken = ICEth(CETH_ADDRESS);
+        cEthToken = ICEth(_cEthAddress);
         cErc20Address = _cErc20Address;
         cErc20Token = ICErc20(_cErc20Address);
         address compoundOracleAddress = comptroller.oracle();
@@ -124,7 +125,7 @@ contract CompoundModule is ReentrancyGuard {
             amountBorrowedAfter,
             collateralFactor,
             cErc20Address,
-            CETH_ADDRESS
+            cEthAddress
         );
         uint256 collateralRequiredInCEth = collateralRequiredInEth.div(
             cEthToken.exchangeRateCurrent()
@@ -275,7 +276,7 @@ contract CompoundModule is ReentrancyGuard {
             borrowedAmount,
             collateralFactor,
             cErc20Address,
-            CETH_ADDRESS
+            cEthAddress
         );
         uint256 collateralRequiredInCEth = collateralRequiredInEth.div(
             cEthExchangeRate
@@ -311,7 +312,7 @@ contract CompoundModule is ReentrancyGuard {
         _repay(_borrower, _amount);
         // Calculate the amount of token to seize from collateral.
         uint256 ethPriceMantissa = compoundOracle.getUnderlyingPrice(
-            CETH_ADDRESS
+            cEthAddress
         );
         uint256 underlyingPriceMantissa = compoundOracle.getUnderlyingPrice(
             cErc20Address
@@ -366,7 +367,7 @@ contract CompoundModule is ReentrancyGuard {
             borrowedAmount,
             collateralFactor,
             cErc20Address,
-            CETH_ADDRESS
+            cEthAddress
         );
         collateralInEth = collateralBalanceOf[_borrower].mul(
             cEthToken.exchangeRateCurrent()
