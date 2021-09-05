@@ -48,7 +48,7 @@ contract CompoundModule is ReentrancyGuard, Ownable {
 
     /* Storage */
 
-    mapping(address => Market) private market; // Markets of Morpho.
+    mapping(address => Market) private markets; // Markets of Morpho.
 
     mapping(address => address[]) public enteredMarketsAsLenderOf; // Markets entered by a user as lender.
     mapping(address => address[]) public enteredMarketsForCollateral; // Markets entered by a user for collateral.
@@ -109,7 +109,7 @@ contract CompoundModule is ReentrancyGuard, Ownable {
         uint256 cExchangeRate = cErc20Token.exchangeRateCurrent();
 
         // If some borrowers are on Compound, we must move them to Morpho.
-        if (market[_cErc20Address].borrowersOnComp.length() > 0) {
+        if (markets[_cErc20Address].borrowersOnComp.length() > 0) {
             uint256 mExchangeRate = updateCurrentExchangeRate(_cErc20Address);
             // Find borrowers and move them to Morpho.
             uint256 remainingToSupplyToComp = _moveBorrowersFromCompToMorpho(
@@ -142,7 +142,7 @@ contract CompoundModule is ReentrancyGuard, Ownable {
     }
 
     /** @dev Borrows ERC20 tokens.
-     *  @param _cErc20Address The address of the market the user wants to enter.
+     *  @param _cErc20Address The address of the markets the user wants to enter.
      *  @param _amount The amount to borrow in ERC20 tokens.
      */
     function borrow(address _cErc20Address, uint256 _amount)
@@ -181,7 +181,7 @@ contract CompoundModule is ReentrancyGuard, Ownable {
         // Check if borrower has enough collateral.
         require(
             collateralRequiredInCEth <=
-                market[_cErc20Address].collateralBalanceOf[msg.sender],
+                markets[_cErc20Address].collateralBalanceOf[msg.sender],
             "Not enough collateral."
         );
 
@@ -243,14 +243,14 @@ contract CompoundModule is ReentrancyGuard, Ownable {
         IERC20 erc20Token = IERC20(cErc20Token.underlying());
         uint256 mExchangeRate = updateCurrentExchangeRate(_cErc20Address);
         uint256 cExchangeRate = cErc20Token.exchangeRateCurrent();
-        uint256 amountOnCompInUnderlying = market[_cErc20Address]
+        uint256 amountOnCompInUnderlying = markets[_cErc20Address]
             .lendingBalanceOf[msg.sender]
             .onComp
             .mul(cExchangeRate);
 
         if (_amount <= amountOnCompInUnderlying) {
             // Simple case where we can directly withdraw unused liquidity on Compound.
-            market[_cErc20Address]
+            markets[_cErc20Address]
                 .lendingBalanceOf[msg.sender]
                 .onComp -= _amount.div(cExchangeRate); // In cToken.
             _redeemErc20FromComp(_cErc20Address, _amount, false); // Revert on error.
@@ -261,12 +261,12 @@ contract CompoundModule is ReentrancyGuard, Ownable {
                 amountOnCompInUnderlying,
                 false
             ); // Revert on error.
-            market[_cErc20Address]
+            markets[_cErc20Address]
                 .lendingBalanceOf[msg.sender]
                 .onComp -= amountOnCompInUnderlying.div(cExchangeRate);
             // Then, search for the remaining liquidity on Morpho.
             uint256 remainingToWithdraw = _amount - amountOnCompInUnderlying; // In underlying.
-            market[_cErc20Address]
+            markets[_cErc20Address]
                 .lendingBalanceOf[msg.sender]
                 .onMorpho -= remainingToWithdraw.div(mExchangeRate); // In mUnit.
             uint256 cTokenContractBalanceInUnderlying = cErc20Token
@@ -343,9 +343,9 @@ contract CompoundModule is ReentrancyGuard, Ownable {
         // Supply them to Compound.
         _supplyEthToComp(msg.value); // Revert on error.
         // Update the collateral balance of the sender in cETH.
-        market[_cErc20Address].collateralBalanceOf[msg.sender] += msg.value.div(
-            cEthToken.exchangeRateCurrent()
-        );
+        markets[_cErc20Address].collateralBalanceOf[msg.sender] += msg
+            .value
+            .div(cEthToken.exchangeRateCurrent());
     }
 
     /** @dev Allows a borrower to redeem her collateral in ETH.
@@ -362,7 +362,7 @@ contract CompoundModule is ReentrancyGuard, Ownable {
         uint256 amountInCEth = _amount.div(cEthExchangeRate);
         require(
             amountInCEth <=
-                market[_cErc20Address].collateralBalanceOf[msg.sender],
+                markets[_cErc20Address].collateralBalanceOf[msg.sender],
             "Must redeem less than collateral."
         );
 
@@ -383,7 +383,7 @@ contract CompoundModule is ReentrancyGuard, Ownable {
         uint256 collateralRequiredInCEth = collateralRequiredInEth.div(
             cEthExchangeRate
         );
-        uint256 collateralAfterInCEth = market[_cErc20Address]
+        uint256 collateralAfterInCEth = markets[_cErc20Address]
             .collateralBalanceOf[msg.sender] - amountInCEth;
         require(
             collateralAfterInCEth >= collateralRequiredInCEth,
@@ -391,7 +391,7 @@ contract CompoundModule is ReentrancyGuard, Ownable {
         );
 
         _redeemEthFromComp(_amount, false); // Revert on error.
-        market[_cErc20Address].collateralBalanceOf[msg.sender] -= amountInCEth; // In cToken.
+        markets[_cErc20Address].collateralBalanceOf[msg.sender] -= amountInCEth; // In cToken.
         payable(msg.sender).transfer(_amount);
     }
 
@@ -447,10 +447,10 @@ contract CompoundModule is ReentrancyGuard, Ownable {
         );
         require(
             cEthAmountToSeize <=
-                market[_cErc20Address].collateralBalanceOf[_borrower],
+                markets[_cErc20Address].collateralBalanceOf[_borrower],
             "Cannot get more than collateral balance of borrower."
         );
-        market[_cErc20Address].collateralBalanceOf[
+        markets[_cErc20Address].collateralBalanceOf[
             _borrower
         ] -= cEthAmountToSeize;
         _redeemEthFromComp(ethAmountToSeize, false); // Revert on error.
@@ -462,7 +462,7 @@ contract CompoundModule is ReentrancyGuard, Ownable {
      */
     function updateCollateralFactor(address _cErc20Address) public {
         (, collateralFactor, ) = comptroller.markets(_cErc20Address);
-        market[_cErc20Address].collateralFactorMantissa = collateralFactor;
+        markets[_cErc20Address].collateralFactorMantissa = collateralFactor;
     }
 
     /* Public */
@@ -504,7 +504,7 @@ contract CompoundModule is ReentrancyGuard, Ownable {
         // Update BPY.
         uint256 lendBPY = cErc20Token.supplyRatePerBlock();
         uint256 borrowBPY = cErc20Token.borrowRatePerBlock();
-        market[_cErc20Address].BPY = Math.average(lendBPY, borrowBPY);
+        markets[_cErc20Address].BPY = Math.average(lendBPY, borrowBPY);
 
         // Update currentExchangeRate.
         updateCurrentExchangeRate(_cErc20Address);
@@ -523,7 +523,7 @@ contract CompoundModule is ReentrancyGuard, Ownable {
             lastUpdateBlockNumber;
 
         uint256 newCurrentExchangeRate = currentExchangeRate.mul(
-            (1e18 + market[_cErc20Address].BPY).pow(
+            (1e18 + markets[_cErc20Address].BPY).pow(
                 PRBMathUD60x18.fromUint(numberOfBlocksSinceLastUpdate)
             )
         );
@@ -592,7 +592,7 @@ contract CompoundModule is ReentrancyGuard, Ownable {
             }
         } else {
             _moveLendersFromMorphoToComp(_cErc20Address, _amount, _borrower);
-            market[_cErc20Address]
+            markets[_cErc20Address]
                 .borrowingBalanceOf[_borrower]
                 .onMorpho -= _amount.div(mExchangeRate); // In mUnit.
             _supplyErc20ToComp(_cErc20Address, _amount);
@@ -696,7 +696,7 @@ contract CompoundModule is ReentrancyGuard, Ownable {
             i < market[_cErc20Address].lendersOnComp.length()
         ) {
             if (lender != _lenderToAvoid) {
-                uint256 onComp = market[_cErc20Address]
+                uint256 onComp = markets[_cErc20Address]
                     .lendingBalanceOf[lender]
                     .onComp; // In cToken.
 
@@ -721,11 +721,11 @@ contract CompoundModule is ReentrancyGuard, Ownable {
                     if (
                         market[_cErc20Address]
                             .lendingBalanceOf[lender]
-                            .onMorpho >= market[_cErc20Address].thresholds[2]
-                    ) market[_cErc20Address].lendersOnMorpho.addTail(lender);
+                            .onMorpho >= markets[_cErc20Address].thresholds[2]
+                    ) markets[_cErc20Address].lendersOnMorpho.addTail(lender);
                 }
             } else {
-                lender = market[_cErc20Address].lendersOnComp.getNext(lender);
+                lender = markets[_cErc20Address].lendersOnComp.getNext(lender);
             }
             i++;
         }
@@ -816,10 +816,11 @@ contract CompoundModule is ReentrancyGuard, Ownable {
                 .getHead();
 
             if (
-                market[_cErc20Address].borrowingBalanceOf[borrower].onMorpho > 0
+                markets[_cErc20Address].borrowingBalanceOf[borrower].onMorpho >
+                0
             ) {
                 uint256 toMatch = Math.min(
-                    market[_cErc20Address]
+                    markets[_cErc20Address]
                         .borrowingBalanceOf[borrower]
                         .onMorpho
                         .mul(mExchangeRate),
@@ -924,19 +925,19 @@ contract CompoundModule is ReentrancyGuard, Ownable {
         }
         comptroller.enterMarkets(marketsToEnter);
         for (uint256 k = 0; k < _cTokensAddresses.length; k++) {
-            market[_cTokensAddresses[k]].isListed = true;
-            market[_cTokensAddresses[k]].collateralFactorMantissa = 75e16;
+            markets[_cTokensAddresses[k]].isListed = true;
+            markets[_cTokensAddresses[k]].collateralFactorMantissa = 75e16;
             updateBPY(_cTokensAddresses[k]);
             updateCollateralFactor(_cTokensAddresses[k]);
         }
     }
 
     function listMarket(address _cTokenAddress) public onlyOwner {
-        market[_cTokenAddress].isListed = true;
+        markets[_cTokenAddress].isListed = true;
     }
 
     function unlistMarket(address _cTokenAddress) public onlyOwner {
-        market[_cTokenAddress].isListed = false;
+        markets[_cTokenAddress].isListed = false;
     }
 
     /* Functions authorizations */
@@ -947,7 +948,7 @@ contract CompoundModule is ReentrancyGuard, Ownable {
         uint256
     ) internal view returns (bool) {
         // check if market is listed
-        require(market[_cErc20Token].isListed, "Market not listed");
+        require(markets[_cErc20Token].isListed, "Market not listed");
         return true;
     }
 
@@ -957,7 +958,7 @@ contract CompoundModule is ReentrancyGuard, Ownable {
         uint256 _amount
     ) internal returns (bool) {
         // check if market is listed
-        require(market[_cErc20Token].isListed, "Market not listed");
+        require(markets[_cErc20Token].isListed, "Market not listed");
         // check if the user has enough collateral
         uint256 debt;
         // TODO prevent dust borrowing
@@ -967,10 +968,10 @@ contract CompoundModule is ReentrancyGuard, Ownable {
             uint256 mExchangeRate = updateCurrentExchangeRate(_cErc20Token);
             uint256 cExchangeRate = cErc20Token.exchangeRateCurrent();
             debt +=
-                market[_cErc20Address].borrowingBalanceOf[_user].onComp.mul(
+                markets[_cErc20Address].borrowingBalanceOf[_user].onComp.mul(
                     mExchangeRate
                 ) +
-                market[_cErc20Address].borrowingBalanceOf[_user].onMorpho.mul(
+                markets[_cErc20Address].borrowingBalanceOf[_user].onMorpho.mul(
                     cExchangeRate
                 );
         }
@@ -984,10 +985,10 @@ contract CompoundModule is ReentrancyGuard, Ownable {
             ICErc20 cErc20Token = ICErc20(_cErc20Address);
             uint256 cExchangeRate = cErc20Token.exchangeRateCurrent();
             maxDebt +=
-                market[_cErc20Address].collateralBalanceOf[_user].mul(
+                markets[_cErc20Address].collateralBalanceOf[_user].mul(
                     cExchangeRate
                 ) *
-                market[_cErc20Address].collateralFactorMantissa;
+                markets[_cErc20Address].collateralFactorMantissa;
         }
         require(_amount < maxDebt - debt, "Not enough collateral");
         return true;
@@ -999,11 +1000,11 @@ contract CompoundModule is ReentrancyGuard, Ownable {
         uint256 _amount
     ) internal returns (bool) {
         // check if market is listed
-        require(market[_cErc20Token].isListed, "Market not listed");
+        require(markets[_cErc20Token].isListed, "Market not listed");
         // check if the user entered this market as a lender
         require(
-            market[_cErc20Token].lendersOnComp.contains(_user) ||
-                market[_cErc20Token].lendersOnMorpho.contains(_user)
+            markets[_cErc20Token].lendersOnComp.contains(_user) ||
+                markets[_cErc20Token].lendersOnMorpho.contains(_user)
         );
         // check if the user has enough collateral
         uint256 debt;
@@ -1013,10 +1014,10 @@ contract CompoundModule is ReentrancyGuard, Ownable {
             uint256 mExchangeRate = updateCurrentExchangeRate(_cErc20Token);
             uint256 cExchangeRate = cErc20Token.exchangeRateCurrent();
             debt +=
-                market[_cErc20Address].borrowingBalanceOf[_user].onComp.mul(
+                markets[_cErc20Address].borrowingBalanceOf[_user].onComp.mul(
                     cExchangeRate
                 ) +
-                market[_cErc20Address].borrowingBalanceOf[_user].onMorpho.mul(
+                markets[_cErc20Address].borrowingBalanceOf[_user].onMorpho.mul(
                     mExchangeRate
                 );
         }
@@ -1030,10 +1031,10 @@ contract CompoundModule is ReentrancyGuard, Ownable {
             ICErc20 cErc20Token = ICErc20(_cErc20Address);
             uint256 cExchangeRate = cErc20Token.exchangeRateCurrent();
             maxDebt +=
-                market[_cErc20Address].collateralBalanceOf[_user].mul(
+                markets[_cErc20Address].collateralBalanceOf[_user].mul(
                     cExchangeRate
                 ) *
-                market[_cErc20Address].collateralFactorMantissa;
+                markets[_cErc20Address].collateralFactorMantissa;
         }
         require(_amount < maxDebt - debt, "Not enough collateral");
 
@@ -1046,11 +1047,11 @@ contract CompoundModule is ReentrancyGuard, Ownable {
         uint256
     ) internal view returns (bool) {
         // check if market is listed
-        require(market[_cErc20Token].isListed, "Market not listed");
+        require(markets[_cErc20Token].isListed, "Market not listed");
         // check if the user entered this market as a borrower
         require(
-            market[_cErc20Token].borrowersOnComp.contains(_user) ||
-                market[_cErc20Token].borrowersOnMorpho.contains(_user)
+            markets[_cErc20Token].borrowersOnComp.contains(_user) ||
+                markets[_cErc20Token].borrowersOnMorpho.contains(_user)
         );
         return true;
     }
@@ -1068,7 +1069,7 @@ contract CompoundModule is ReentrancyGuard, Ownable {
         )
     {
         // check if market is listed
-        require(market[_cErc20Token].isListed, "Market not listed");
+        require(markets[_cErc20Token].isListed, "Market not listed");
         // check if the position is liquidable
         uint256 debt;
         for (uint256 k = 0; k < enteredMarketsAsBorrowerOf[_user].length; k++) {
@@ -1077,10 +1078,10 @@ contract CompoundModule is ReentrancyGuard, Ownable {
             uint256 mExchangeRate = updateCurrentExchangeRate(_cErc20Token);
             uint256 cExchangeRate = cErc20Token.exchangeRateCurrent();
             debt +=
-                market[_cErc20Address].borrowingBalanceOf[_user].onComp.mul(
+                markets[_cErc20Address].borrowingBalanceOf[_user].onComp.mul(
                     cExchangeRate
                 ) +
-                market[_cErc20Address].borrowingBalanceOf[_user].onMorpho.mul(
+                markets[_cErc20Address].borrowingBalanceOf[_user].onMorpho.mul(
                     mExchangeRate
                 );
         }
@@ -1094,10 +1095,10 @@ contract CompoundModule is ReentrancyGuard, Ownable {
             ICErc20 cErc20Token = ICErc20(_cErc20Address);
             uint256 cExchangeRate = cErc20Token.exchangeRateCurrent();
             maxDebt +=
-                market[_cErc20Address].collateralBalanceOf[_user].mul(
+                markets[_cErc20Address].collateralBalanceOf[_user].mul(
                     cExchangeRate
                 ) *
-                market[_cErc20Address].collateralFactorMantissa;
+                markets[_cErc20Address].collateralFactorMantissa;
         }
         require(maxDebt < debt, "Not enough collateral");
         return (true, debt, maxDebt);
