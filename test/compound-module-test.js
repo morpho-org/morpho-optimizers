@@ -92,7 +92,7 @@ describe("CompoundModule Contract", () => {
 
     // Deploy CompoundModule
     CompoundModule = await ethers.getContractFactory("CompoundModule");
-    compoundModule = await CompoundModule.deploy(CDAI_ADDRESS);
+    compoundModule = await CompoundModule.deploy(CDAI_ADDRESS, CETH_ADDRESS, PROXY_COMPTROLLER_ADDRESS);
     await compoundModule.deployed();
 
     // Get contract dependencies
