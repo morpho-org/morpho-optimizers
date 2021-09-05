@@ -161,7 +161,7 @@ contract CompoundModule is ReentrancyGuard {
                 "Borrow on Compound failed."
             );
             borrowingBalanceOf[msg.sender].onComp += remainingToBorrowOnComp
-                .div(borrowIndex); // In cdUnit.
+                .div(cErc20Token.borrowIndex()); // In cdUnit.
             borrowersOnComp.add(msg.sender);
         }
 
@@ -470,18 +470,17 @@ contract CompoundModule is ReentrancyGuard {
         uint256 mExchangeRate = updateCurrentExchangeRate();
 
         if (borrowingBalanceOf[_borrower].onComp > 0) {
-            uint256 borrowIndex = cErc20Token.borrowIndex();
             uint256 onCompInUnderlying = borrowingBalanceOf[_borrower]
                 .onComp
-                .mul(borrowIndex);
-            if (_amount <= onCompInUnderlying) {
-                borrowingBalanceOf[_borrower].onComp -= _amount.div(
-                    borrowIndex
-                ); // In cdUnit.
+                .mul(cErc20Token.borrowIndex());
 
+            if (_amount <= onCompInUnderlying) {
                 // Repay Compound.
                 erc20Token.safeApprove(cErc20Address, _amount);
                 cErc20Token.repayBorrow(_amount);
+                borrowingBalanceOf[_borrower].onComp -= _amount.div(
+                    cErc20Token.borrowIndex()
+                ); // In cdUnit.
             } else {
                 // Repay Compound first.
                 erc20Token.safeApprove(cErc20Address, onCompInUnderlying);
@@ -491,7 +490,9 @@ contract CompoundModule is ReentrancyGuard {
                 uint256 remainingToSupplyToComp = _amount - onCompInUnderlying; // In underlying.
                 borrowingBalanceOf[_borrower]
                     .onMorpho -= remainingToSupplyToComp.div(mExchangeRate);
-                borrowingBalanceOf[_borrower].onComp = 0;
+                borrowingBalanceOf[_borrower].onComp -= onCompInUnderlying.div(
+                    cErc20Token.borrowIndex()
+                ); // Since the borrowIndex is updated after a repay.
                 _moveLendersFromMorphoToComp(
                     remainingToSupplyToComp,
                     _borrower
