@@ -209,7 +209,7 @@ describe("CompoundModule Contract", () => {
       expect((await compoundModule.lendingBalanceOf(lender1.getAddress())).onMorpho).to.equal(0);
     })
 
-    it("Should revert when lending 0", async () => {
+    it("Should revert when lending less than the required threshold", async () => {
       await expect(compoundModule.connect(lender1).lend(underlyingThreshold.sub(1))).to.be.revertedWith("Amount cannot be less than THRESHOLD.");
     })
 
@@ -833,7 +833,7 @@ describe("CompoundModule Contract", () => {
       const daiBalanceAfter = await daiToken.balanceOf(borrower1.getAddress());
       expect(daiBalanceAfter).to.equal(expectedDaiBalanceAfter);
       const borrower1BorrowingBalanceOnComp = (await compoundModule.borrowingBalanceOf(borrower1.getAddress())).onComp;
-      expect(removeDigitsBigNumber(1, borrower1BorrowingBalanceOnComp)).to.equal(removeDigitsBigNumber(1, expectedBalanceOnComp));
+      expect(removeDigitsBigNumber(2, borrower1BorrowingBalanceOnComp)).to.equal(removeDigitsBigNumber(2, expectedBalanceOnComp));
       // WARNING: Commented here due to the pow function issue
       expect((await compoundModule.borrowingBalanceOf(borrower1.getAddress())).onMorpho).to.be.lt(1000000000000);
 
