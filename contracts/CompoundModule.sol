@@ -179,8 +179,6 @@ contract CompoundModule is ReentrancyGuard, Ownable {
 
         // If not enough cTokens on Morpho, we must borrow it on Compound.
         if (remainingToBorrowOnComp > 0) {
-            borrowingBalanceOf[msg.sender].onComp += remainingToBorrowOnComp; // In underlying.
-            borrowersOnComp.addTail(msg.sender);
             require(
                 cErc20Token.borrow(remainingToBorrowOnComp) == 0,
                 "Borrow on Compound failed."
@@ -750,10 +748,9 @@ contract CompoundModule is ReentrancyGuard, Ownable {
                 );
 
                 borrowersOnMorpho.addTail(borrower);
-                if (borrowingBalanceOf[borrower].onComp == 0)
-                    if (borrowingBalanceOf[borrower].onComp < thresholds[1])
-                        // Update lists if needed.
-                        borrowersOnComp.remove(borrower);
+                // Update lists if needed.
+                if (borrowingBalanceOf[borrower].onComp < thresholds[1])
+                    borrowersOnComp.remove(borrower);
                 if (borrowingBalanceOf[borrower].onMorpho >= thresholds[2])
                     borrowersOnMorpho.addTail(borrower);
             }
