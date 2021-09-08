@@ -405,11 +405,12 @@ contract CompoundModule is ReentrancyGuard, Ownable {
         address _borrower,
         uint256 _amount
     ) external nonReentrant {
-        (bool allowed, uint256 debt, uint256 maxDebt) = liquidateAuthorization(
-            _cErc20Address,
-            _borrower,
-            _amount
-        );
+        (
+            bool allowed,
+            uint256 debt,
+            uint256 maxDebt,
+            uint256 collateral
+        ) = liquidateAuthorization(_cErc20Address, _borrower, _amount);
         require(allowed);
         ICErc20 cErc20Token = ICErc20(_cErc20Address);
         ICEth cEthToken = ICEth(cEthAddress);
@@ -430,7 +431,7 @@ contract CompoundModule is ReentrancyGuard, Ownable {
         // Calculate separately to avoid call stack too deep.
         uint256 numerator = _amount
             .mul(underlyingPriceMantissa)
-            .mul(collateralInEth)
+            .mul(collateral)
             .mul(liquidationIncentive);
         uint256 borrowIndex = cErc20Token.borrowIndex();
         uint256 totalBorrowingBalance = markets[_cErc20Address]
@@ -440,7 +441,7 @@ contract CompoundModule is ReentrancyGuard, Ownable {
             markets[_cErc20Address].borrowingBalanceOf[_borrower].onMorpho.mul(
                 mExchangeRate
             );
-        uint256 denominator = totalBorrowingBalance.mul(ethPriceMantissa);
+        uint256 denominator = totalBorrowingBalance;
         uint256 ethAmountToSeize = numerator.div(denominator);
         uint256 cEthAmountToSeize = ethAmountToSeize.div(
             cEthToken.exchangeRateCurrent()
@@ -1069,6 +1070,7 @@ contract CompoundModule is ReentrancyGuard, Ownable {
         returns (
             bool,
             uint256,
+            uint256,
             uint256
         )
     {
@@ -1090,6 +1092,7 @@ contract CompoundModule is ReentrancyGuard, Ownable {
                 );
         }
         uint256 maxDebt;
+        uint256 collateral;
         for (
             uint256 k = 0;
             k < enteredMarketsForCollateral[_user].length;
@@ -1103,8 +1106,11 @@ contract CompoundModule is ReentrancyGuard, Ownable {
                     cExchangeRate
                 ) *
                 markets[_cErc20Address].collateralFactorMantissa;
+            collateral += markets[_cErc20Address]
+                .collateralBalanceOf[_user]
+                .mul(cExchangeRate);
         }
         require(maxDebt < debt, "Not enough collateral");
-        return (true, debt, maxDebt);
+        return (true, debt, maxDebt, collateral);
     }
 }
