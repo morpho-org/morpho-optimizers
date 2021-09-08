@@ -121,22 +121,22 @@ contract CompoundModule is ReentrancyGuard, Ownable {
             uint256 toRepay = _amount - remainingToSupplyToComp;
             cErc20Token.repayBorrow(toRepay); // Revert on error.
             // Update lender balance.
-            market[_cErc20Address]
+            markets[_cErc20Address]
                 .lendingBalanceOf[msg.sender]
                 .onMorpho += toRepay.div(mExchangeRate); // In mUnit.
-            market[_cErc20Address].lendersOnMorpho.addTail(msg.sender);
+            markets[_cErc20Address].lendersOnMorpho.addTail(msg.sender);
             if (remainingToSupplyToComp > 0) {
-                market[_cErc20Address]
+                markets[_cErc20Address]
                     .lendingBalanceOf[msg.sender]
                     .onComp += remainingToSupplyToComp.div(cExchangeRate); // In cToken.
-                market[_cErc20Address].lendersOnComp.addTail(msg.sender);
+                markets[_cErc20Address].lendersOnComp.addTail(msg.sender);
                 _supplyErc20ToComp(_cErc20Address, remainingToSupplyToComp); // Revert on error.
             }
         } else {
-            market[_cErc20Address]
+            markets[_cErc20Address]
                 .lendingBalanceOf[msg.sender]
                 .onComp += _amount.div(cExchangeRate); // In cToken.
-            market[_cErc20Address].lendersOnComp.addTail(msg.sender);
+            markets[_cErc20Address].lendersOnComp.addTail(msg.sender);
             _supplyErc20ToComp(_cErc20Address, _amount); // Revert on error.
         }
     }
@@ -160,12 +160,12 @@ contract CompoundModule is ReentrancyGuard, Ownable {
         uint256 borrowIndex = cErc20Token.borrowIndex();
         uint256 mExchangeRate = updateCurrentExchangeRate(_cErc20Address);
         uint256 amountBorrowedAfter = _amount +
-            market[_cErc20Address].borrowingBalanceOf[msg.sender].onComp.mul(
+            markets[_cErc20Address].borrowingBalanceOf[msg.sender].onComp.mul(
                 borrowIndex
             ) +
-            market[_cErc20Address].borrowingBalanceOf[msg.sender].onMorpho.mul(
-                mExchangeRate
-            );
+            markets[_cErc20Address].borrowingBalanceOf[msg.sender].onMorpho.mul(
+                    mExchangeRate
+                );
         // Calculate the collateral required.
         uint256 collateralRequiredInEth = getCollateralRequired(
             amountBorrowedAfter,
@@ -193,10 +193,10 @@ contract CompoundModule is ReentrancyGuard, Ownable {
         uint256 toRedeem = _amount - remainingToBorrowOnComp;
 
         if (toRedeem > 0) {
-            market[_cErc20Address]
+            markets[_cErc20Address]
                 .borrowingBalanceOf[msg.sender]
                 .onMorpho += toRedeem.div(mExchangeRate); // In mUnit.
-            market[_cErc20Address].borrowersOnMorpho.addTail(msg.sender);
+            markets[_cErc20Address].borrowersOnMorpho.addTail(msg.sender);
             _redeemErc20FromComp(_cErc20Address, toRedeem, false); // Revert on error.
         }
 
@@ -206,12 +206,12 @@ contract CompoundModule is ReentrancyGuard, Ownable {
                 cErc20Token.borrow(remainingToBorrowOnComp) == 0,
                 "Borrow on Compound failed."
             );
-            market[_cErc20Address]
+            markets[_cErc20Address]
                 .borrowingBalanceOf[msg.sender]
                 .onComp += remainingToBorrowOnComp.div(
                 cErc20Token.borrowIndex()
             ); // In cdUnit.
-            market[_cErc20Address].borrowersOnComp.addTail(msg.sender);
+            markets[_cErc20Address].borrowersOnComp.addTail(msg.sender);
         }
         // Transfer ERC20 tokens to borrower.
         erc20Token.safeTransfer(msg.sender, _amount);
@@ -320,13 +320,13 @@ contract CompoundModule is ReentrancyGuard, Ownable {
 
         // Remove lenders from list if needed.
         if (
-            market[_cErc20Address].lendingBalanceOf[msg.sender].onComp <
-            market[_cErc20Address].thresholds[1]
-        ) market[_cErc20Address].lendersOnComp.remove(msg.sender);
+            markets[_cErc20Address].lendingBalanceOf[msg.sender].onComp <
+            markets[_cErc20Address].thresholds[1]
+        ) markets[_cErc20Address].lendersOnComp.remove(msg.sender);
         if (
-            market[_cErc20Address].lendingBalanceOf[msg.sender].onMorpho <
-            market[_cErc20Address].thresholds[2]
-        ) market[_cErc20Address].lendersOnMorpho.remove(msg.sender);
+            markets[_cErc20Address].lendingBalanceOf[msg.sender].onMorpho <
+            markets[_cErc20Address].thresholds[2]
+        ) markets[_cErc20Address].lendersOnMorpho.remove(msg.sender);
     }
 
     /** @dev Allows a borrower to provide collateral in ETH.
@@ -367,11 +367,11 @@ contract CompoundModule is ReentrancyGuard, Ownable {
         );
 
         uint256 borrowIndex = cErc20Token.borrowIndex();
-        uint256 borrowedAmount = market[_cErc20Address]
+        uint256 borrowedAmount = markets[_cErc20Address]
             .borrowingBalanceOf[msg.sender]
             .onComp
             .mul(borrowIndex) +
-            market[_cErc20Address].borrowingBalanceOf[msg.sender].onMorpho.mul(
+            markets[_cErc20Address].borrowingBalanceOf[msg.sender].onMorpho.mul(
                 mExchangeRate
             );
         uint256 collateralRequiredInEth = getCollateralRequired(
@@ -433,11 +433,11 @@ contract CompoundModule is ReentrancyGuard, Ownable {
             .mul(collateralInEth)
             .mul(liquidationIncentive);
         uint256 borrowIndex = cErc20Token.borrowIndex();
-        uint256 totalBorrowingBalance = market[_cErc20Address]
+        uint256 totalBorrowingBalance = markets[_cErc20Address]
             .borrowingBalanceOf[_borrower]
             .onComp
             .mul(borrowIndex) +
-            market[_cErc20Address].borrowingBalanceOf[_borrower].onMorpho.mul(
+            markets[_cErc20Address].borrowingBalanceOf[_borrower].onMorpho.mul(
                 mExchangeRate
             );
         uint256 denominator = totalBorrowingBalance.mul(ethPriceMantissa);
@@ -553,8 +553,8 @@ contract CompoundModule is ReentrancyGuard, Ownable {
         erc20Token.transferFrom(msg.sender, address(this), _amount);
         uint256 mExchangeRate = updateCurrentExchangeRate(_cErc20Address);
 
-        if (market[_cErc20Address].borrowingBalanceOf[_borrower].onComp > 0) {
-            uint256 onCompInUnderlying = market[_cErc20Address]
+        if (markets[_cErc20Address].borrowingBalanceOf[_borrower].onComp > 0) {
+            uint256 onCompInUnderlying = markets[_cErc20Address]
                 .borrowingBalanceOf[_borrower]
                 .onComp
                 .mul(cErc20Token.borrowIndex());
@@ -573,10 +573,10 @@ contract CompoundModule is ReentrancyGuard, Ownable {
 
                 // Then, move the remaining liquidity to Compound.
                 uint256 remainingToSupplyToComp = _amount - onCompInUnderlying; // In underlying.
-                market[_cErc20Address]
+                markets[_cErc20Address]
                     .borrowingBalanceOf[_borrower]
                     .onMorpho -= remainingToSupplyToComp.div(mExchangeRate);
-                market[_cErc20Address]
+                markets[_cErc20Address]
                     .borrowingBalanceOf[_borrower]
                     .onComp -= onCompInUnderlying.div(
                     cErc20Token.borrowIndex()
@@ -600,13 +600,13 @@ contract CompoundModule is ReentrancyGuard, Ownable {
 
         // Remove borrower from lists if needed.
         if (
-            market[_cErc20Address].borrowingBalanceOf[_borrower].onComp <
-            market[_cErc20Address].thresholds[1]
-        ) market[_cErc20Address].borrowersOnComp.remove(_borrower);
+            markets[_cErc20Address].borrowingBalanceOf[_borrower].onComp <
+            markets[_cErc20Address].thresholds[1]
+        ) markets[_cErc20Address].borrowersOnComp.remove(_borrower);
         if (
-            market[_cErc20Address].borrowingBalanceOf[_borrower].onMorpho <
-            market[_cErc20Address].thresholds[2]
-        ) market[_cErc20Address].borrowersOnMorpho.remove(_borrower);
+            markets[_cErc20Address].borrowingBalanceOf[_borrower].onMorpho <
+            markets[_cErc20Address].thresholds[2]
+        ) markets[_cErc20Address].borrowersOnMorpho.remove(_borrower);
     }
 
     /** @dev Supplies ETH to Compound.
@@ -693,7 +693,7 @@ contract CompoundModule is ReentrancyGuard, Ownable {
         uint256 i;
         while (
             remainingToMove > 0 &&
-            i < market[_cErc20Address].lendersOnComp.length()
+            i < markets[_cErc20Address].lendersOnComp.length()
         ) {
             if (lender != _lenderToAvoid) {
                 uint256 onComp = markets[_cErc20Address]
@@ -706,20 +706,21 @@ contract CompoundModule is ReentrancyGuard, Ownable {
                         remainingToMove
                     ); // In underlying.
                     remainingToMove -= amountToMove;
-                    market[_cErc20Address]
+                    markets[_cErc20Address]
                         .lendingBalanceOf[lender]
                         .onComp -= amountToMove.div(cExchangeRate); // In cToken.
-                    market[_cErc20Address]
+                    markets[_cErc20Address]
                         .lendingBalanceOf[lender]
                         .onMorpho += amountToMove.div(mExchangeRate); // In mUnit.
 
                     // Update lists if needed.
                     if (
-                        market[_cErc20Address].lendingBalanceOf[lender].onComp <
-                        market[_cErc20Address].thresholds[1]
-                    ) market[_cErc20Address].lendersOnComp.remove(lender);
+                        markets[_cErc20Address]
+                            .lendingBalanceOf[lender]
+                            .onComp < markets[_cErc20Address].thresholds[1]
+                    ) markets[_cErc20Address].lendersOnComp.remove(lender);
                     if (
-                        market[_cErc20Address]
+                        markets[_cErc20Address]
                             .lendingBalanceOf[lender]
                             .onMorpho >= markets[_cErc20Address].thresholds[2]
                     ) markets[_cErc20Address].lendersOnMorpho.addTail(lender);
@@ -750,10 +751,10 @@ contract CompoundModule is ReentrancyGuard, Ownable {
         uint256 i;
         while (
             remainingToMove > 0 &&
-            i < market[_cErc20Address].lendersOnMorpho.length()
+            i < markets[_cErc20Address].lendersOnMorpho.length()
         ) {
             if (lender != _lenderToAvoid) {
-                uint256 onMorpho = market[_cErc20Address]
+                uint256 onMorpho = markets[_cErc20Address]
                     .lendingBalanceOf[lender]
                     .onMorpho; // In mUnit.
 
@@ -763,24 +764,24 @@ contract CompoundModule is ReentrancyGuard, Ownable {
                         remainingToMove
                     ); // In underlying.
                     remainingToMove -= amountToMove; // In underlying.
-                    market[_cErc20Address]
+                    markets[_cErc20Address]
                         .lendingBalanceOf[lender]
                         .onComp += amountToMove.div(cExchangeRate); // In cToken.
-                    market[_cErc20Address]
+                    markets[_cErc20Address]
                         .lendingBalanceOf[lender]
                         .onMorpho -= amountToMove.div(mExchangeRate); // In mUnit.
 
                     // Update lists if needed.
                     if (
-                        market[_cErc20Address]
+                        markets[_cErc20Address]
                             .lendingBalanceOf[lender]
-                            .onComp >= market[_cErc20Address].thresholds[1]
-                    ) market[_cErc20Address].lendersOnComp.addTail(lender);
+                            .onComp >= markets[_cErc20Address].thresholds[1]
+                    ) markets[_cErc20Address].lendersOnComp.addTail(lender);
                     if (
-                        market[_cErc20Address]
+                        markets[_cErc20Address]
                             .lendingBalanceOf[lender]
-                            .onMorpho < market[_cErc20Address].thresholds[2]
-                    ) market[_cErc20Address].lendersOnMorpho.remove(lender);
+                            .onMorpho < markets[_cErc20Address].thresholds[2]
+                    ) markets[_cErc20Address].lendersOnMorpho.remove(lender);
                 }
             } else {
                 lender = markets[_cErc20Address].lendersOnMorpho.getNext(
@@ -809,9 +810,9 @@ contract CompoundModule is ReentrancyGuard, Ownable {
         uint256 i;
         while (
             remainingToMatch > 0 &&
-            i < market[_cErc20Address].borrowersOnMorpho.length()
+            i < markets[_cErc20Address].borrowersOnMorpho.length()
         ) {
-            address borrower = market[_cErc20Address]
+            address borrower = markets[_cErc20Address]
                 .borrowersOnMorpho
                 .getHead();
 
@@ -828,24 +829,24 @@ contract CompoundModule is ReentrancyGuard, Ownable {
                 ); // In underlying.
 
                 remainingToMatch -= toMatch;
-                market[_cErc20Address]
+                markets[_cErc20Address]
                     .borrowingBalanceOf[borrower]
                     .onComp += toMatch.div(borrowIndex);
-                market[_cErc20Address]
+                markets[_cErc20Address]
                     .borrowingBalanceOf[borrower]
                     .onMorpho -= toMatch.div(mExchangeRate);
 
                 // Update lists if needed.
                 if (
-                    market[_cErc20Address]
+                    markets[_cErc20Address]
                         .borrowingBalanceOf[borrower]
-                        .onComp >= market[_cErc20Address].thresholds[1]
-                ) market[_cErc20Address].borrowersOnComp.addTail(borrower);
+                        .onComp >= markets[_cErc20Address].thresholds[1]
+                ) markets[_cErc20Address].borrowersOnComp.addTail(borrower);
                 if (
-                    market[_cErc20Address]
+                    markets[_cErc20Address]
                         .borrowingBalanceOf[borrower]
-                        .onMorpho < market[_cErc20Address].thresholds[2]
-                ) market[_cErc20Address].borrowersOnMorpho.remove(borrower);
+                        .onMorpho < markets[_cErc20Address].thresholds[2]
+                ) markets[_cErc20Address].borrowersOnMorpho.remove(borrower);
             }
             i++;
         }
@@ -868,14 +869,16 @@ contract CompoundModule is ReentrancyGuard, Ownable {
         uint256 i;
         while (
             remainingToMatch > 0 &&
-            i < market[_cErc20Address].borrowersOnComp.length()
+            i < markets[_cErc20Address].borrowersOnComp.length()
         ) {
-            address borrower = market[_cErc20Address].borrowersOnComp.getHead();
+            address borrower = markets[_cErc20Address]
+                .borrowersOnComp
+                .getHead();
 
             if (
-                market[_cErc20Address].borrowingBalanceOf[borrower].onComp > 0
+                markets[_cErc20Address].borrowingBalanceOf[borrower].onComp > 0
             ) {
-                uint256 onCompInUnderlying = market[_cErc20Address]
+                uint256 onCompInUnderlying = markets[_cErc20Address]
                     .borrowingBalanceOf[borrower]
                     .onComp
                     .mul(borrowIndex);
@@ -885,24 +888,25 @@ contract CompoundModule is ReentrancyGuard, Ownable {
                 ); // In underlying.
 
                 remainingToMatch -= toMatch;
-                market[_cErc20Address]
+                markets[_cErc20Address]
                     .borrowingBalanceOf[borrower]
                     .onComp -= toMatch.div(borrowIndex);
-                market[_cErc20Address]
+                markets[_cErc20Address]
                     .borrowingBalanceOf[borrower]
                     .onMorpho += toMatch.div(mExchangeRate);
 
                 markets[_cErc20Address].borrowersOnMorpho.addTail(borrower);
                 // Update lists if needed.
                 if (
-                    market[_cErc20Address].borrowingBalanceOf[borrower].onComp <
-                    market[_cErc20Address].thresholds[1]
-                ) market[_cErc20Address].borrowersOnComp.remove(borrower);
-                if (
-                    market[_cErc20Address]
+                    markets[_cErc20Address]
                         .borrowingBalanceOf[borrower]
-                        .onMorpho >= market[_cErc20Address].thresholds[2]
-                ) market[_cErc20Address].borrowersOnMorpho.addTail(borrower);
+                        .onComp < markets[_cErc20Address].thresholds[1]
+                ) markets[_cErc20Address].borrowersOnComp.remove(borrower);
+                if (
+                    markets[_cErc20Address]
+                        .borrowingBalanceOf[borrower]
+                        .onMorpho >= markets[_cErc20Address].thresholds[2]
+                ) markets[_cErc20Address].borrowersOnMorpho.addTail(borrower);
             }
             i++;
         }
