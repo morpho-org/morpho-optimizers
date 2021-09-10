@@ -166,10 +166,6 @@ describe("CompoundModule Contract", () => {
   });
 
   describe("Lenders on Compound (no borrowers)", () => {
-    it("test", async () => {
-      console.log(await compoundModule.getMarketInfo(CDAI_ADDRESS));
-    })
-
     it("Should revert when lending less than the required threshold", async () => {
       await expect(compoundModule.connect(lender1).lend(CDAI_ADDRESS, underlyingThreshold.sub(1))).to.be.revertedWith("Amount cannot be less than THRESHOLD.");
     })
