@@ -73,7 +73,7 @@ contract CompoundModule is ReentrancyGuard, Ownable {
         address compoundOracleAddress = comptroller.oracle();
         compoundOracle = ICompoundOracle(compoundOracleAddress);
         address[] memory marketsToAdd = new address[](2);
-        marketsToAdd[0] = address(0x4a92E71227D294F041BD82dd8f78591B75140d63); // USDC
+        marketsToAdd[0] = address(0x39AA39c021dfbaE8faC545936693aC917d5E7563); // USDC
         marketsToAdd[1] = address(0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643); // DAI
         createMarkets(marketsToAdd);
     }
@@ -176,20 +176,23 @@ contract CompoundModule is ReentrancyGuard, Ownable {
         external
         nonReentrant
     {
-        require(_borrowAuthorization(_cErc20Address, msg.sender, _amount));
-        Market storage market = markets[_cErc20Address];
-
         if (!checkMembership(msg.sender, _cErc20Address)) {
             markets[_cErc20Address].accountMembership[msg.sender] = true;
             enteredMarkets[msg.sender].push(_cErc20Address);
         }
+
+        require(
+            _borrowAuthorization(_cErc20Address, msg.sender, _amount),
+            "Not enough collateral."
+        );
+        Market storage market = markets[_cErc20Address];
 
         ICErc20 cErc20Token = ICErc20(_cErc20Address);
         IERC20 erc20Token = IERC20(cErc20Token.underlying());
         uint256 mExchangeRate = updateCurrentExchangeRate(_cErc20Address);
 
         // If some borrowers are on Compound, we must move them to Morpho
-        if (market.borrowersOnComp.length() > 0) {
+        if (market.lendersOnComp.length() > 0) {
             uint256 remainingToBorrowOnComp = _moveLendersFromCompToMorpho(
                 _cErc20Address,
                 _amount,
@@ -344,7 +347,7 @@ contract CompoundModule is ReentrancyGuard, Ownable {
         Market storage market = markets[_cErc20Address];
 
         if (!checkMembership(msg.sender, _cErc20Address)) {
-            markets[_cErc20Address].accountMembership[msg.sender] = true;
+            market.accountMembership[msg.sender] = true;
             enteredMarkets[msg.sender].push(_cErc20Address);
         }
 
@@ -458,9 +461,10 @@ contract CompoundModule is ReentrancyGuard, Ownable {
         for (uint256 k = 0; k < _cTokensAddresses.length; k++) {
             address cTokenAddress = _cTokensAddresses[k];
             Market storage market = markets[cTokenAddress];
+            market.currentExchangeRate = 1e18;
             market.collateralFactorMantissa = 75e16;
             market.lastUpdateBlockNumber = block.number;
-            market.thresholds = [1e18, 1e18, 1e18];
+            market.thresholds = [1e18, 1e7, 1e18];
             updateBPY(cTokenAddress);
             updateCollateralFactor(cTokenAddress);
         }
@@ -693,7 +697,7 @@ contract CompoundModule is ReentrancyGuard, Ownable {
     {
         ICErc20 cErc20Token = ICErc20(_cErc20Address);
         require(
-            cErc20Token.redeem(_amount) == 0,
+            cErc20Token.redeemUnderlying(_amount) == 0,
             "Redeem ERC20 on Compound failed."
         );
     }
@@ -796,9 +800,9 @@ contract CompoundModule is ReentrancyGuard, Ownable {
                         market.thresholds[2]
                     ) market.lendersOnMorpho.remove(lender);
                 }
-            } else {
-                lender = market.lendersOnMorpho.getNext(lender);
             }
+
+            lender = market.lendersOnMorpho.getNext(lender);
             i++;
         }
         require(remainingToMove == 0, "Not enough liquidity to unuse.");
