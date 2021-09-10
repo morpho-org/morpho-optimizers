@@ -2,14 +2,13 @@
 pragma solidity 0.8.7;
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "prb-math/contracts/PRBMathUD60x18.sol";
 
 import "./libraries/DoubleLinkedList.sol";
-import {ICErc20, ICEth, IComptroller, ICompoundOracle} from "./interfaces/ICompound.sol";
+import {ICErc20, IComptroller, ICompoundOracle} from "./interfaces/ICompound.sol";
 
 /**
  *  @title CompoundModule
@@ -61,7 +60,6 @@ contract CompoundModule is ReentrancyGuard, Ownable {
         public borrowingBalanceInOf; // Borrowing balance of user.
     mapping(address => mapping(address => uint256))
         public collateralBalanceInOf; // Collateral balance of user.
-    mapping(address => mapping(address => uint256)) public test;
 
     mapping(address => Market) private markets; // Markets of Morpho.
     mapping(address => address[]) public enteredMarkets; // Markets entered by a user.
