@@ -103,8 +103,12 @@ describe("CompoundModule Contract", () => {
     borrowers = [borrower1, borrower2, borrower3];
 
     // Deploy CompoundModule
+    Morpho = await ethers.getContractFactory("Morpho");
+    morpho = await Morpho.deploy(PROXY_COMPTROLLER_ADDRESS);
+    await morpho.deployed();
+
     CompoundModule = await ethers.getContractFactory("CompoundModule");
-    compoundModule = await CompoundModule.deploy(PROXY_COMPTROLLER_ADDRESS);
+    compoundModule = await CompoundModule.deploy(morpho.address, PROXY_COMPTROLLER_ADDRESS);
     await compoundModule.deployed();
 
     // Get contract dependencies
@@ -159,10 +163,11 @@ describe("CompoundModule Contract", () => {
 
     underlyingThreshold = BigNumber.from(1).pow(18);
 
-    await compoundModule.connect(owner).createMarkets([CDAI_ADDRESS, CUSDC_ADDRESS]);
-    await compoundModule.connect(owner).listMarket(CDAI_ADDRESS);
-    await compoundModule.connect(owner).updateThreshold(CUSDC_ADDRESS, 0, BigNumber.from(1).pow(6));
-    await compoundModule.connect(owner).listMarket(CUSDC_ADDRESS);
+    await morpho.connect(owner).setCompoundModule(compoundModule.address);
+    await morpho.connect(owner).createMarkets([CDAI_ADDRESS, CUSDC_ADDRESS]);
+    await morpho.connect(owner).listMarket(CDAI_ADDRESS);
+    await morpho.connect(owner).updateThreshold(CUSDC_ADDRESS, 0, BigNumber.from(1).pow(6));
+    await morpho.connect(owner).listMarket(CUSDC_ADDRESS);
   });
 
   describe("Lenders on Compound (no borrowers)", () => {
@@ -429,16 +434,13 @@ describe("CompoundModule Contract", () => {
   describe("Check permissions", () => {
     it("Only Owner should be bale to update thresholds", async () => {
       const newThreshold = utils.parseUnits("2");
-      await compoundModule.connect(owner).updateThreshold(CUSDC_ADDRESS, 0, newThreshold);
-      await compoundModule.connect(owner).updateThreshold(CUSDC_ADDRESS, 1, newThreshold);
-      await compoundModule.connect(owner).updateThreshold(CUSDC_ADDRESS, 2, newThreshold);
-
-      // Pointer out of bounds
-      await expect(compoundModule.connect(owner).updateThreshold(CDAI_ADDRESS, 3, newThreshold)).to.be.reverted;
+      await morpho.connect(owner).updateThreshold(CUSDC_ADDRESS, 0, newThreshold);
+      await morpho.connect(owner).updateThreshold(CUSDC_ADDRESS, 1, newThreshold);
+      await morpho.connect(owner).updateThreshold(CUSDC_ADDRESS, 2, newThreshold);
 
       // Other accounts than Owner
-      await expect(compoundModule.connect(lender1).updateThreshold(CUSDC_ADDRESS, 2, newThreshold)).to.be.reverted;
-      await expect(compoundModule.connect(borrower1).updateThreshold(CUSDC_ADDRESS, 2, newThreshold)).to.be.reverted;
+      await expect(morpho.connect(lender1).updateThreshold(CUSDC_ADDRESS, 2, newThreshold)).to.be.reverted;
+      await expect(morpho.connect(borrower1).updateThreshold(CUSDC_ADDRESS, 2, newThreshold)).to.be.reverted;
     });
   });
 
