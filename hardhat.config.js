@@ -25,6 +25,24 @@ module.exports = {
         // },
       // ],
       url: `https://kovan.infura.io/v3/${process.env.INFURA_PROJECT_ID}`
+    },
+    rinkeby: {
+      accounts: ["0xae756dcb08a84a119e4910d1ba4dfeb180b0ec5ec4a25223fae2669f36559dd1"],
+        // },
+        // {
+        //   privateKey: "0x574028dad40752ed4448624f35ecb32821b0b0791652a34c10aa78053a08a730",
+        // },
+      // ],
+      url: `https://rinkeby.infura.io/v3/${process.env.INFURA_PROJECT_ID}`
+    },
+    ropsten: {
+      accounts: ["0xae756dcb08a84a119e4910d1ba4dfeb180b0ec5ec4a25223fae2669f36559dd1"],
+        // },
+        // {
+        //   privateKey: "0x574028dad40752ed4448624f35ecb32821b0b0791652a34c10aa78053a08a730",
+        // },
+      // ],
+      url: `https://ropsten.infura.io/v3/${process.env.INFURA_PROJECT_ID}`
     }
   },
   namedAccounts: {
@@ -37,7 +55,7 @@ module.exports = {
     settings: {
       optimizer: {
         enabled: true,
-        runs: 1,
+        runs: 200,
       },
     },
   },
