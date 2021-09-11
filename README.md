@@ -39,6 +39,17 @@ In doing so the code will be formatted on each save.
 
 We use Husky hook to format code before being pushed to any remote branch to enforce coding style among all developers.
 
+## Deploy a contract on a network
+
+```npx hardhat run scripts/deploy.js --network <network-name>```
+
+## Publish and verify a contract on Etherscan
+
+
+An etherscn API key is required to verify the contract.
+
+```npx hardhat verify --network <network-name> --constructor-args scripts/arguments.js <contract-address>```
+
 ## External resources & documentation
 
  - [Chainlink Oracle](https://docs.chain.link/docs/get-the-latest-price/)
