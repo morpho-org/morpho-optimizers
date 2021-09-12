@@ -27,8 +27,8 @@ contract Morpho is Ownable {
     mapping(address => uint256) public lastUpdateBlockNumber; // Last time mUnitExchangeRate was updated.
     mapping(address => mapping(uint256 => uint256)) public thresholds; // Thresholds below the ones we remove lenders and borrowers from the lists. 0 -> Underlying, 1 -> cToken, 2 -> mUnit
 
-    ICompoundModule public compoundModule;
     IComptroller public comptroller;
+    ICompoundModule public compoundModule;
     ICompoundOracle public compoundOracle;
 
     /* Events */
@@ -52,6 +52,9 @@ contract Morpho is Ownable {
 
     /* External */
 
+    /** @dev Sets the compound module to interact with Compound.
+     *  @param _compoundModule The address of compound module.
+     */
     function setCompoundModule(ICompoundModule _compoundModule)
         external
         onlyOwner
@@ -70,7 +73,6 @@ contract Morpho is Ownable {
         for (uint256 k = 0; k < _cTokensAddresses.length; k++) {
             address cTokenAddress = _cTokensAddresses[k];
             mUnitExchangeRate[cTokenAddress] = 1e18;
-            collateralFactor[cTokenAddress] = 75e16;
             lastUpdateBlockNumber[cTokenAddress] = block.number;
             thresholds[cTokenAddress][0] = 1e18;
             thresholds[cTokenAddress][1] = 1e7;
@@ -106,6 +108,8 @@ contract Morpho is Ownable {
         require(_newThreshold > 0, "New THRESHOLD must be strictly positive.");
         thresholds[_cErc20Address][_thresholdType] = _newThreshold;
     }
+
+    /* Public */
 
     /** @dev Updates the collateral factor related to cToken.
      *  @param _cErc20Address The address of the market we want to update.

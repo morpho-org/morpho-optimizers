@@ -32,10 +32,19 @@ contract CompoundModule is ReentrancyGuard {
         uint256 onComp; // In cdUnit. (a unit that grows in value, to keep track of the  debt increase). Multiply by current borrowIndex to get the underlying amount.
     }
 
+    // Struct to avoid stack too deep error
     struct StateBalance {
         uint256 debtValue; // The total debt value (in USD).
         uint256 maxDebtValue; // The maximum debt value available thanks to the collateral (in USD).
         uint256 collateralValue; // The collateral value (in USD).
+    }
+
+    // Struct to avoid stack too deep error
+    struct Vars {
+        uint256 toAddDebt;
+        uint256 toAddCollateral;
+        uint256 mExchangeRate;
+        address cErc20Entered;
     }
 
     /* Storage */
@@ -49,8 +58,6 @@ contract CompoundModule is ReentrancyGuard {
         public lendingBalanceInOf; // Lending balance of user.
     mapping(address => mapping(address => BorrowingBalance))
         public borrowingBalanceInOf; // Borrowing balance of user.
-    mapping(address => mapping(address => uint256))
-        public collateralBalanceInOf; // Collateral balance of user.
     mapping(address => address[]) public enteredMarkets; // Markets entered by a user.
 
     IMorpho public morpho;
@@ -59,38 +66,91 @@ contract CompoundModule is ReentrancyGuard {
 
     /* Events */
 
-    event Lend(address _account, address _cErc20Address, uint256 _amount);
-    event Withdraw(address _account, address _cErc20Address, uint256 _amount);
-    event Borrow(address _account, address _cErc20Address, uint256 _amount);
-    event Repay(address _account, address _cErc20Address, uint256 _amount);
-    event ProvideCollateral(
-        address _account,
-        address _cErc20Address,
+    /** @dev Emitted when a deposit happens.
+     *  @param _account The address of the depositor.
+     *  @param _cErc20Address The address of the market where assets are deposited into.
+     *  @param _amount The amount of assets.
+     */
+    event Deposit(
+        address indexed _account,
+        address indexed _cErc20Address,
         uint256 _amount
     );
-    event RedeemCollateral(
-        address _account,
-        address _cErc20Address,
+
+    /** @dev Emitted when a redeem happens.
+     *  @param _account The address of the redeemer.
+     *  @param _cErc20Address The address of the market from where assets are redeemed.
+     *  @param _amount The amount of assets.
+     */
+    event Redeem(
+        address indexed _account,
+        address indexed _cErc20Address,
         uint256 _amount
     );
+
+    /** @dev Emitted when a borrow happens.
+     *  @param _account The address of the borrower.
+     *  @param _cErc20Address The address of the market where assets are borrowed.
+     *  @param _amount The amount of assets.
+     */
+    event Borrow(
+        address indexed _account,
+        address indexed _cErc20Address,
+        uint256 _amount
+    );
+
+    /** @dev Emitted when a deposit happens.
+     *  @param _account The address of the depositor.
+     *  @param _cErc20Address The address of the market where assets are deposited.
+     *  @param _amount The amount of assets.
+     */
+    event Repay(
+        address indexed _account,
+        address indexed _cErc20Address,
+        uint256 _amount
+    );
+
+    /** @dev Emitted when a lender position is moved from Morpho to Compound.
+     *  @param _account The address of the lender.
+     *  @param _cErc20Address The address of the market.
+     *  @param _amount The amount of assets.
+     */
     event LenderMovedFromMorphoToComp(
-        address _account,
-        address _cErc20Address,
+        address indexed _account,
+        address indexed _cErc20Address,
         uint256 _amount
     );
+
+    /** @dev Emitted when a lender position is moved from Compound to Morpho.
+     *  @param _account The address of the lender.
+     *  @param _cErc20Address The address of the market.
+     *  @param _amount The amount of assets.
+     */
     event LenderMovedFromCompToMorpho(
-        address _account,
-        address _cErc20Address,
+        address indexed _account,
+        address indexed _cErc20Address,
         uint256 _amount
     );
+
+    /** @dev Emitted when a borrower position is moved from Morpho to Compound.
+     *  @param _account The address of the borrower.
+     *  @param _cErc20Address The address of the market.
+     *  @param _amount The amount of assets.
+     */
     event BorrowerMovedFromMorphoToComp(
-        address _account,
-        address _cErc20Address,
+        address indexed _account,
+        address indexed _cErc20Address,
         uint256 _amount
     );
+
+    /** @dev Emitted when a borrower position is moved from Compound to Morpho.
+     *  @param _account The address of the borrower.
+     *  @param _cErc20Address The address of the market.
+     *  @param _amount The amount of assets.
+     */
     event BorrowerMovedFromCompToMorpho(
-        address _account,
-        address _cErc20Address,
+        address indexed _account,
+        address indexed _cErc20Address,
         uint256 _amount
     );
 
@@ -110,11 +170,11 @@ contract CompoundModule is ReentrancyGuard {
         comptroller.enterMarkets(markets);
     }
 
-    /** @dev Lends ERC20 tokens in a specific market.
-     *  @param _cErc20Address The address of the market the user wants to lend.
-     *  @param _amount The amount to lend in ERC20 tokens.
+    /** @dev Deposits ERC20 tokens in a specific market.
+     *  @param _cErc20Address The address of the market the user wants to deposit.
+     *  @param _amount The amount to deposit in ERC20 tokens.
      */
-    function lend(address _cErc20Address, uint256 _amount)
+    function deposit(address _cErc20Address, uint256 _amount)
         external
         nonReentrant
     {
@@ -171,7 +231,7 @@ contract CompoundModule is ReentrancyGuard {
         ) {
             lendersOnComp[_cErc20Address].addTail(msg.sender);
         }
-        emit Lend(msg.sender, _cErc20Address, _amount);
+        emit Deposit(msg.sender, _cErc20Address, _amount);
     }
 
     /** @dev Borrows ERC20 tokens.
@@ -225,6 +285,7 @@ contract CompoundModule is ReentrancyGuard {
                 borrowersOnComp[_cErc20Address].addTail(msg.sender);
             }
         } else {
+            _moveLenderFromMorphoToComp(msg.sender);
             require(
                 cErc20Token.borrow(_amount) == 0,
                 "Borrow on Compound failed."
@@ -250,11 +311,11 @@ contract CompoundModule is ReentrancyGuard {
         _repay(_cErc20Address, msg.sender, _amount);
     }
 
-    /** @dev Withdraws ERC20 tokens from lending.
+    /** @dev Redeems ERC20 tokens from lending.
      *  @param _cErc20Address The address of the market the user wants to interact with.
      *  @param _amount The amount in tokens to withdraw from lending.
      */
-    function withdraw(address _cErc20Address, uint256 _amount)
+    function redeem(address _cErc20Address, uint256 _amount)
         external
         nonReentrant
     {
@@ -337,55 +398,7 @@ contract CompoundModule is ReentrancyGuard {
             lendingBalanceInOf[_cErc20Address][msg.sender].onMorpho <
             morpho.thresholds(_cErc20Address, 2)
         ) lendersOnMorpho[_cErc20Address].remove(msg.sender);
-        emit Withdraw(msg.sender, _cErc20Address, _amount);
-    }
-
-    /** @dev Allows a borrower to provide collateral.
-     *  @param _cErc20Address The address of the market the user wants to provide collateral to.
-     *  @param _amount The amount in ERC20 tokens to provide.
-     */
-    function provideCollateral(address _cErc20Address, uint256 _amount)
-        external
-        nonReentrant
-    {
-        require(_amount > 0, "Amount cannot be 0.");
-
-        if (!_checkMembership(_cErc20Address, msg.sender)) {
-            accountMembership[_cErc20Address][msg.sender] = true;
-            enteredMarkets[msg.sender].push(_cErc20Address);
-        }
-
-        ICErc20 cErc20Token = ICErc20(_cErc20Address);
-        IERC20 erc20Token = IERC20(cErc20Token.underlying());
-        erc20Token.safeTransferFrom(msg.sender, address(this), _amount);
-        // Update the collateral balance of the sender in cToken
-        collateralBalanceInOf[_cErc20Address][msg.sender] += _amount.div(
-            cErc20Token.exchangeRateCurrent()
-        );
-        _supplyErc20ToComp(_cErc20Address, _amount); // Revert on error
-        emit ProvideCollateral(msg.sender, _cErc20Address, _amount);
-    }
-
-    /** @dev Allows a borrower to redeem her collateral in underlying.
-     *  @param _cErc20Address The address of the market the user wants to redeem collateral from.
-     *  @param _amount The amount in ERC20 tokens to redeem.
-     */
-    function redeemCollateral(address _cErc20Address, uint256 _amount)
-        external
-        nonReentrant
-    {
-        require(_redeemAuthorization(_cErc20Address, msg.sender, _amount), "");
-        ICErc20 cErc20Token = ICErc20(_cErc20Address);
-        IERC20 erc20Token = IERC20(cErc20Token.underlying());
-        uint256 cExchangeRate = cErc20Token.exchangeRateCurrent();
-        uint256 amountInCToken = _amount.div(cExchangeRate);
-        collateralBalanceInOf[_cErc20Address][msg.sender] -= amountInCToken; // In cToken
-
-        _redeemErc20FromComp(_cErc20Address, _amount); // Revert on error
-
-        // Transfer ERC20 tokens to the borrower
-        erc20Token.safeTransfer(msg.sender, _amount);
-        emit RedeemCollateral(msg.sender, _cErc20Address, _amount);
+        emit Redeem(msg.sender, _cErc20Address, _amount);
     }
 
     /** @dev Allows someone to liquidate a position.
@@ -425,27 +438,45 @@ contract CompoundModule is ReentrancyGuard {
          *  seizeTokens = seizeAmount / exchangeRate
          *   = actualRepayAmount * (liquidationIncentive * priceBorrowed) / (priceCollateral * exchangeRate)
          */
-
-        uint256 cTokenAmountToSeize = _amount
-            .mul(priceBorrowedMantissa)
-            .div(priceCollateralMantissa)
-            .mul(morpho.liquidationIncentive())
-            .div(ICErc20(_cErc20CollateralAddress).exchangeRateCurrent());
-
-        require(
-            cTokenAmountToSeize <=
-                collateralBalanceInOf[_cErc20CollateralAddress][_borrower],
-            "Cannot get more than collateral balance of borrower."
-        );
-        collateralBalanceInOf[_cErc20CollateralAddress][
-            _borrower
-        ] -= cTokenAmountToSeize;
-        _redeemErc20FromComp(_cErc20CollateralAddress, _amount); // Revert on error
-
         ICErc20 cErc20CollateralToken = ICErc20(_cErc20CollateralAddress);
         IERC20 erc20CollateralToken = IERC20(
             cErc20CollateralToken.underlying()
         );
+
+        uint256 amountToSeize = _amount
+            .mul(priceBorrowedMantissa)
+            .div(priceCollateralMantissa)
+            .mul(morpho.liquidationIncentive());
+
+        uint256 onCompInUnderlying = lendingBalanceInOf[
+            _cErc20CollateralAddress
+        ][_borrower].onComp.mul(cErc20CollateralToken.exchangeRateCurrent());
+        uint256 totalCollateral = onCompInUnderlying +
+            lendingBalanceInOf[_cErc20CollateralAddress][_borrower]
+                .onMorpho
+                .mul(morpho.updateMUnitExchangeRate(_cErc20CollateralAddress));
+
+        require(
+            amountToSeize <= totalCollateral,
+            "Cannot get more than collateral balance of borrower."
+        );
+
+        if (amountToSeize <= onCompInUnderlying) {
+            _redeemErc20FromComp(_cErc20CollateralAddress, amountToSeize);
+            lendingBalanceInOf[_cErc20CollateralAddress][_borrower]
+                .onComp -= amountToSeize.div(
+                cErc20CollateralToken.exchangeRateCurrent()
+            );
+            // Remove borrower from lists if needed
+            if (
+                borrowingBalanceInOf[_cErc20CollateralAddress][_borrower]
+                    .onComp < morpho.thresholds(_cErc20CollateralAddress, 1)
+            ) borrowersOnComp[_cErc20CollateralAddress].remove(_borrower);
+        } else {
+            _redeemErc20FromComp(_cErc20CollateralAddress, onCompInUnderlying);
+            uint256 toMove = totalCollateral - amountToSeize;
+            _moveBorrowersFromMorphoToComp(_cErc20CollateralAddress, toMove);
+        }
 
         // Transfer ERC20 tokens to liquidator
         erc20CollateralToken.safeTransfer(msg.sender, _amount);
@@ -486,10 +517,9 @@ contract CompoundModule is ReentrancyGuard {
                 uint256 remainingToSupplyToComp = _amount - onCompInUnderlying; // In underlying
                 borrowingBalanceInOf[_cErc20Address][_borrower]
                     .onMorpho -= remainingToSupplyToComp.div(mExchangeRate);
+                uint256 index = cErc20Token.borrowIndex();
                 borrowingBalanceInOf[_cErc20Address][_borrower]
-                    .onComp -= onCompInUnderlying.div(
-                    cErc20Token.borrowIndex()
-                ); // We use a fresh new borrowIndex since the borrowIndex is updated after a repay
+                    .onComp -= onCompInUnderlying.div(index); // We use a fresh new borrowIndex since the borrowIndex is updated after a repay
 
                 _moveLendersFromMorphoToComp(
                     _cErc20Address,
@@ -785,9 +815,48 @@ contract CompoundModule is ReentrancyGuard {
     }
 
     /**
-     * @dev Returns whether the given account is entered in the given asset
-     * @param _account The address of the account to check
-     * @param _cTokenAddress The cToken to check
+     * @dev Moves lending balance of an account from Compound to Morpho.
+     * @param _account The address of the account to move balance.
+     */
+    function _moveLenderFromMorphoToComp(address _account) internal {
+        for (uint256 i; i < enteredMarkets[_account].length; i++) {
+            address cErc20Entered = enteredMarkets[_account][i];
+            uint256 mExchangeRate = morpho.mUnitExchangeRate(cErc20Entered);
+            uint256 cExchangeRate = ICErc20(cErc20Entered)
+                .exchangeRateCurrent();
+            uint256 onMorphoInUnderlying = lendingBalanceInOf[cErc20Entered][
+                _account
+            ].onMorpho.mul(mExchangeRate);
+
+            if (onMorphoInUnderlying > 0) {
+                lendingBalanceInOf[cErc20Entered][_account]
+                    .onComp += onMorphoInUnderlying.div(cExchangeRate); // In cToken
+                lendingBalanceInOf[cErc20Entered][_account]
+                    .onMorpho -= onMorphoInUnderlying.div(mExchangeRate); // In mUnit
+
+                // Update lists if needed
+                if (
+                    lendingBalanceInOf[cErc20Entered][_account].onComp >=
+                    morpho.thresholds(cErc20Entered, 1)
+                ) lendersOnComp[cErc20Entered].addTail(_account);
+                if (
+                    lendingBalanceInOf[cErc20Entered][_account].onMorpho <
+                    morpho.thresholds(cErc20Entered, 2)
+                ) lendersOnMorpho[cErc20Entered].remove(_account);
+
+                emit LenderMovedFromMorphoToComp(
+                    _account,
+                    cErc20Entered,
+                    onMorphoInUnderlying
+                );
+            }
+        }
+    }
+
+    /**
+     * @dev Returns whether the given account is entered in the given asset.
+     * @param _account The address of the account to check.
+     * @param _cTokenAddress The cToken to check.
      * @return True if the account is in the asset, otherwise false.
      */
     function _checkMembership(address _cTokenAddress, address _account)
@@ -818,35 +887,46 @@ contract CompoundModule is ReentrancyGuard {
             uint256
         )
     {
+        // Avoid stack too deep error
         StateBalance memory stateBalance;
 
         for (uint256 i; i < enteredMarkets[_account].length; i++) {
-            address cErc20Entered = enteredMarkets[_account][i];
+            // Avoid stack too deep error
+            Vars memory vars;
+            vars.cErc20Entered = enteredMarkets[_account][i];
+            vars.mExchangeRate = morpho.updateMUnitExchangeRate(
+                vars.cErc20Entered
+            );
 
-            uint256 toAddDebt = borrowingBalanceInOf[cErc20Entered][_account]
-                .onComp
-                .mul(ICErc20(cErc20Entered).borrowIndex()) +
-                borrowingBalanceInOf[cErc20Entered][_account].onMorpho.mul(
-                    morpho.updateMUnitExchangeRate(cErc20Entered)
+            vars.toAddDebt =
+                borrowingBalanceInOf[vars.cErc20Entered][_account].onComp.mul(
+                    ICErc20(vars.cErc20Entered).borrowIndex()
+                ) +
+                borrowingBalanceInOf[vars.cErc20Entered][_account].onMorpho.mul(
+                    vars.mExchangeRate
                 );
-            uint256 toAddCollateral = collateralBalanceInOf[cErc20Entered][
-                _account
-            ].mul(ICErc20(cErc20Entered).exchangeRateCurrent());
+            vars.toAddCollateral =
+                lendingBalanceInOf[vars.cErc20Entered][_account].onComp.mul(
+                    ICErc20(vars.cErc20Entered).exchangeRateCurrent()
+                ) +
+                lendingBalanceInOf[vars.cErc20Entered][_account].onMorpho.mul(
+                    vars.mExchangeRate
+                );
 
-            if (_cErc20Address == cErc20Entered) {
-                toAddDebt += _borrowedAmount;
-                toAddCollateral += _redeemAmount;
+            if (_cErc20Address == vars.cErc20Entered) {
+                vars.toAddDebt += _borrowedAmount;
+                vars.toAddCollateral += _redeemAmount;
             }
 
-            toAddCollateral = toAddCollateral.mul(
-                compoundOracle.getUnderlyingPrice(cErc20Entered)
+            vars.toAddCollateral = vars.toAddCollateral.mul(
+                compoundOracle.getUnderlyingPrice(vars.cErc20Entered)
             );
 
-            stateBalance.debtValue += toAddDebt.mul(
-                compoundOracle.getUnderlyingPrice(cErc20Entered)
+            stateBalance.debtValue += vars.toAddDebt.mul(
+                compoundOracle.getUnderlyingPrice(vars.cErc20Entered)
             );
-            stateBalance.collateralValue += toAddCollateral;
-            stateBalance.maxDebtValue += toAddCollateral.mul(
+            stateBalance.collateralValue += vars.toAddCollateral;
+            stateBalance.maxDebtValue += vars.toAddCollateral.mul(
                 morpho.collateralFactor(_cErc20Address)
             );
         }
