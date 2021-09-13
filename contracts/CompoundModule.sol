@@ -37,6 +37,7 @@ contract CompoundModule is ReentrancyGuard {
         uint256 debtValue; // The total debt value (in USD).
         uint256 maxDebtValue; // The maximum debt value available thanks to the collateral (in USD).
         uint256 collateralValue; // The collateral value (in USD).
+        uint256 redeemedValue; // The redeemed value if any (in USD).
     }
 
     // Struct to avoid stack too deep error
@@ -44,6 +45,7 @@ contract CompoundModule is ReentrancyGuard {
         uint256 toAddDebt;
         uint256 toAddCollateral;
         uint256 mExchangeRate;
+        uint256 underlyingPrice;
         address cErc20Entered;
     }
 
@@ -834,6 +836,11 @@ contract CompoundModule is ReentrancyGuard {
                 lendingBalanceInOf[cErc20Entered][_account]
                     .onMorpho -= onMorphoInUnderlying.div(mExchangeRate); // In mUnit
 
+                _moveBorrowersFromMorphoToComp(
+                    cErc20Entered,
+                    onMorphoInUnderlying
+                );
+
                 // Update lists if needed
                 if (
                     lendingBalanceInOf[cErc20Entered][_account].onComp >=
@@ -913,23 +920,28 @@ contract CompoundModule is ReentrancyGuard {
                     vars.mExchangeRate
                 );
 
+            vars.underlyingPrice = compoundOracle.getUnderlyingPrice(
+                vars.cErc20Entered
+            );
             if (_cErc20Address == vars.cErc20Entered) {
                 vars.toAddDebt += _borrowedAmount;
-                vars.toAddCollateral += _redeemAmount;
+                stateBalance.redeemedValue = _redeemAmount.mul(
+                    vars.underlyingPrice
+                );
             }
 
             vars.toAddCollateral = vars.toAddCollateral.mul(
-                compoundOracle.getUnderlyingPrice(vars.cErc20Entered)
+                vars.underlyingPrice
             );
 
-            stateBalance.debtValue += vars.toAddDebt.mul(
-                compoundOracle.getUnderlyingPrice(vars.cErc20Entered)
-            );
+            stateBalance.debtValue += vars.toAddDebt.mul(vars.underlyingPrice);
             stateBalance.collateralValue += vars.toAddCollateral;
             stateBalance.maxDebtValue += vars.toAddCollateral.mul(
-                morpho.collateralFactor(_cErc20Address)
+                morpho.collateralFactor(vars.cErc20Entered)
             );
         }
+
+        stateBalance.collateralValue -= stateBalance.redeemedValue;
 
         return (
             stateBalance.debtValue,
