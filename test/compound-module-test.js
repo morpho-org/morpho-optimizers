@@ -23,6 +23,7 @@ describe("CompoundModule Contract", () => {
   const CUSDC_ADDRESS = "0x39AA39c021dfbaE8faC545936693aC917d5E7563";
   const USDT_ADDRESS = "0xdAC17F958D2ee523a2206206994597C13D831ec7";
   const CUSDT_ADDRESS = "0xf650c3d88d12db855b8bf7d11be6c55a4e07dcc9";
+  const CUNI_ADDRESS = "0x35a18000230da775cac24873d00ff85bccded550";
   const PROXY_COMPTROLLER_ADDRESS = "0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B";
 
   const SCALE = BigNumber.from(10).pow(18);
@@ -198,6 +199,14 @@ describe("CompoundModule Contract", () => {
       expect(underlyingThreshold).to.be.equal(utils.parseUnits("1"));
       expect(await morpho.thresholds(CDAI_ADDRESS, 1)).to.be.equal(BigNumber.from(10).pow(7));
       expect(await morpho.thresholds(CDAI_ADDRESS, 2)).to.be.equal(utils.parseUnits("1"));
+    });
+  });
+
+  describe.only("Governance functions", () => {
+    it("Should revert when at least one of the markets in input is not a real market", async () => {
+      expect(morpho.connect(owner).createMarkets([USDT_ADDRESS])).to.be.reverted;
+      expect(morpho.connect(owner).createMarkets([CETH_ADDRESS, USDT_ADDRESS, CUNI_ADDRESS])).to.be.reverted;
+      expect(morpho.connect(owner).createMarkets([CETH_ADDRESS, CUNI_ADDRESS])).not.be.reverted;
     });
   });
 
@@ -702,7 +711,7 @@ describe("CompoundModule Contract", () => {
       // expect(removeDigitsBigNumber(3, await cToken.callStatic.borrowBalanceStored(compoundModule.address))).to.equal(removeDigitsBigNumber(3, expectedMorphoBorrowingBalance2));
     });
 
-    it.only("Should disconnect lender from Morpho when borrowing an asset that nobody has on morpho and the lending balance is partly used", async () => {
+    it("Should disconnect lender from Morpho when borrowing an asset that nobody has on morpho and the lending balance is partly used", async () => {
       // lender1 deposits DAI
       const lendingAmount = utils.parseUnits("100");
       await daiToken.connect(lender1).approve(compoundModule.address, lendingAmount);
@@ -761,7 +770,7 @@ describe("CompoundModule Contract", () => {
     });
   });
 
-  xdescribe("Test attacks", async () => {
+  xdescribe("Test attacks", () => {
     it("Should not be DDOS by a lender or a group of lenders", async () => {
     });
 
