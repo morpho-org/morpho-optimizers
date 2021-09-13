@@ -167,9 +167,12 @@ contract CompoundModule is ReentrancyGuard {
 
     /* External */
 
-    function enterMarkets(address[] memory markets) external {
+    function enterMarkets(address[] memory markets)
+        external
+        returns (uint256[] memory)
+    {
         require(msg.sender == address(morpho), "Only Morpho");
-        comptroller.enterMarkets(markets);
+        return comptroller.enterMarkets(markets);
     }
 
     /** @dev Deposits ERC20 tokens in a specific market.
