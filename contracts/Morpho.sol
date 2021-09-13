@@ -65,13 +65,16 @@ contract Morpho is Ownable {
     /** @dev Creates new market to borrow/lend.
      *  @param _cTokensAddresses The addresses of the markets to add.
      */
-    function createMarkets(address[] memory _cTokensAddresses)
+    function createMarkets(address[] calldata _cTokensAddresses)
         external
         onlyOwner
     {
-        compoundModule.enterMarkets(_cTokensAddresses);
-        for (uint256 k = 0; k < _cTokensAddresses.length; k++) {
-            address cTokenAddress = _cTokensAddresses[k];
+        uint256[] memory results = compoundModule.enterMarkets(
+            _cTokensAddresses
+        );
+        for (uint256 i; i < _cTokensAddresses.length; i++) {
+            require(results[i] == 0, "Enter market failed on Compound");
+            address cTokenAddress = _cTokensAddresses[i];
             mUnitExchangeRate[cTokenAddress] = 1e18;
             lastUpdateBlockNumber[cTokenAddress] = block.number;
             thresholds[cTokenAddress][0] = 1e18;
@@ -115,8 +118,10 @@ contract Morpho is Ownable {
      *  @param _cErc20Address The address of the market we want to update.
      */
     function updateCollateralFactor(address _cErc20Address) public {
-        (, uint256 newCollateralFactor, ) = comptroller.markets(_cErc20Address);
-        collateralFactor[_cErc20Address] = newCollateralFactor;
+        (, uint256 collateralFactorMantissa, ) = comptroller.markets(
+            _cErc20Address
+        );
+        collateralFactor[_cErc20Address] = collateralFactorMantissa;
     }
 
     /** @dev Updates the Block Percentage Yield (`BPY`) and calculate the current exchange rate (`currentExchangeRate`).
