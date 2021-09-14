@@ -820,7 +820,7 @@ contract CompoundModule is ReentrancyGuard {
     }
 
     /**
-     * @dev Moves lending balance of an account from Compound to Morpho.
+     * @dev Moves lending balance of an account from Morpho to Compound.
      * @param _account The address of the account to move balance.
      */
     function _moveLenderFromMorphoToComp(address _account) internal {
