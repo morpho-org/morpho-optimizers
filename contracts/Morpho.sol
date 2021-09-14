@@ -36,11 +36,7 @@ contract Morpho is Ownable {
     event CreateMarket(address _cErc20Address);
     event UpdateBPY(address _cErc20Address, uint256 _newValue);
     event UpdateMUnitExchangeRate(address _cErc20Address, uint256 _newValue);
-    event UpdateThreshold(
-        address _cErc20Address,
-        uint256 _thresholdType,
-        uint256 _newValue
-    );
+    event UpdateThreshold(address _cErc20Address, uint256 _thresholdType, uint256 _newValue);
 
     /* Constructor */
 
@@ -55,23 +51,15 @@ contract Morpho is Ownable {
     /** @dev Sets the compound module to interact with Compound.
      *  @param _compoundModule The address of compound module.
      */
-    function setCompoundModule(ICompoundModule _compoundModule)
-        external
-        onlyOwner
-    {
+    function setCompoundModule(ICompoundModule _compoundModule) external onlyOwner {
         compoundModule = _compoundModule;
     }
 
     /** @dev Creates new market to borrow/lend.
      *  @param _cTokensAddresses The addresses of the markets to add.
      */
-    function createMarkets(address[] calldata _cTokensAddresses)
-        external
-        onlyOwner
-    {
-        uint256[] memory results = compoundModule.enterMarkets(
-            _cTokensAddresses
-        );
+    function createMarkets(address[] calldata _cTokensAddresses) external onlyOwner {
+        uint256[] memory results = compoundModule.enterMarkets(_cTokensAddresses);
         for (uint256 i; i < _cTokensAddresses.length; i++) {
             require(results[i] == 0, "Enter market failed on Compound");
             address cTokenAddress = _cTokensAddresses[i];
@@ -118,9 +106,7 @@ contract Morpho is Ownable {
      *  @param _cErc20Address The address of the market we want to update.
      */
     function updateCollateralFactor(address _cErc20Address) public {
-        (, uint256 collateralFactorMantissa, ) = comptroller.markets(
-            _cErc20Address
-        );
+        (, uint256 collateralFactorMantissa, ) = comptroller.markets(_cErc20Address);
         collateralFactor[_cErc20Address] = collateralFactorMantissa;
     }
 
@@ -145,10 +131,7 @@ contract Morpho is Ownable {
      *  @param _cErc20Address The address of the market we want to update.
      *  @return currentExchangeRate to convert from mUnit to underlying or from underlying to mUnit.
      */
-    function updateMUnitExchangeRate(address _cErc20Address)
-        public
-        returns (uint256)
-    {
+    function updateMUnitExchangeRate(address _cErc20Address) public returns (uint256) {
         uint256 currentBlock = block.number;
 
         if (lastUpdateBlockNumber[_cErc20Address] == currentBlock) {
@@ -157,12 +140,11 @@ contract Morpho is Ownable {
             uint256 numberOfBlocksSinceLastUpdate = currentBlock -
                 lastUpdateBlockNumber[_cErc20Address];
 
-            uint256 newMUnitExchangeRate = mUnitExchangeRate[_cErc20Address]
-                .mul(
-                    (1e18 + BPY[_cErc20Address]).pow(
-                        PRBMathUD60x18.fromUint(numberOfBlocksSinceLastUpdate)
-                    )
-                );
+            uint256 newMUnitExchangeRate = mUnitExchangeRate[_cErc20Address].mul(
+                (1e18 + BPY[_cErc20Address]).pow(
+                    PRBMathUD60x18.fromUint(numberOfBlocksSinceLastUpdate)
+                )
+            );
 
             emit UpdateMUnitExchangeRate(_cErc20Address, newMUnitExchangeRate);
 

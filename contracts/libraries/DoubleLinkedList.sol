@@ -16,19 +16,11 @@ library DoubleLinkedList {
         uint256 counter;
     }
 
-    function get(List storage _list, address _id)
-        internal
-        view
-        returns (Account memory account)
-    {
+    function get(List storage _list, address _id) internal view returns (Account memory account) {
         return _list.accounts[_id];
     }
 
-    function getNext(List storage _list, address _id)
-        internal
-        view
-        returns (address)
-    {
+    function getNext(List storage _list, address _id) internal view returns (address) {
         return _list.accounts[_id].next;
     }
 
@@ -82,11 +74,7 @@ library DoubleLinkedList {
         }
     }
 
-    function contains(List storage _list, address _id)
-        internal
-        view
-        returns (bool)
-    {
+    function contains(List storage _list, address _id) internal view returns (bool) {
         return _contains(_list, _id);
     }
 
@@ -125,11 +113,7 @@ library DoubleLinkedList {
         _list.accounts[_nextId].prev = _prevId;
     }
 
-    function _contains(List storage _list, address _id)
-        private
-        view
-        returns (bool)
-    {
+    function _contains(List storage _list, address _id) private view returns (bool) {
         return _list.accounts[_id].isIn;
     }
 

@@ -8,23 +8,13 @@ interface IMorpho {
 
     function BPY(address _cErc20Address) external returns (uint256);
 
-    function collateralFactor(address _cErc20Address)
-        external
-        returns (uint256);
+    function collateralFactor(address _cErc20Address) external returns (uint256);
 
-    function mUnitExchangeRate(address _cErc20Address)
-        external
-        returns (uint256);
+    function mUnitExchangeRate(address _cErc20Address) external returns (uint256);
 
-    function lastUpdateBlockNumber(address _cErc20Address)
-        external
-        returns (uint256);
+    function lastUpdateBlockNumber(address _cErc20Address) external returns (uint256);
 
-    function thresholds(address _cErc20Address, uint256 _thresholdType)
-        external
-        returns (uint256);
+    function thresholds(address _cErc20Address, uint256 _thresholdType) external returns (uint256);
 
-    function updateMUnitExchangeRate(address _cErc20Address)
-        external
-        returns (uint256);
+    function updateMUnitExchangeRate(address _cErc20Address) external returns (uint256);
 }

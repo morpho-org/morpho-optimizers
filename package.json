@@ -60,7 +60,7 @@
   },
   "husky": {
     "hooks": {
-      "pre-commit": "yarn fix:sol"
+      "pre-commit": "yarn fix:sol && yarn fix:js"
     }
   }
 }

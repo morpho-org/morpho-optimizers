@@ -100,9 +100,7 @@ interface IComptroller {
             bool
         );
 
-    function enterMarkets(address[] calldata cTokens)
-        external
-        returns (uint256[] memory);
+    function enterMarkets(address[] calldata cTokens) external returns (uint256[] memory);
 
     function exitMarket(address cToken) external returns (uint256);
 
@@ -250,10 +248,7 @@ interface ICToken {
 
     function approve(address spender, uint256 amount) external returns (bool);
 
-    function allowance(address owner, address spender)
-        external
-        view
-        returns (uint256);
+    function allowance(address owner, address spender) external view returns (uint256);
 
     function balanceOf(address owner) external view returns (uint256);
 
@@ -277,10 +272,7 @@ interface ICToken {
 
     function borrowBalanceCurrent(address account) external returns (uint256);
 
-    function borrowBalanceStored(address account)
-        external
-        view
-        returns (uint256);
+    function borrowBalanceStored(address account) external view returns (uint256);
 
     function exchangeRateCurrent() external returns (uint256);
 
@@ -298,19 +290,13 @@ interface ICToken {
 
     /*** Admin Functions ***/
 
-    function _setPendingAdmin(address payable newPendingAdmin)
-        external
-        returns (uint256);
+    function _setPendingAdmin(address payable newPendingAdmin) external returns (uint256);
 
     function _acceptAdmin() external returns (uint256);
 
-    function _setComptroller(IComptroller newComptroller)
-        external
-        returns (uint256);
+    function _setComptroller(IComptroller newComptroller) external returns (uint256);
 
-    function _setReserveFactor(uint256 newReserveFactorMantissa)
-        external
-        returns (uint256);
+    function _setReserveFactor(uint256 newReserveFactorMantissa) external returns (uint256);
 
     function _reduceReserves(uint256 reduceAmount) external returns (uint256);
 

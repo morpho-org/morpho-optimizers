@@ -1,7 +1,7 @@
-require("dotenv").config({ path: "../.env.local" });
-const { expect } = require("chai");
-const hre = require("hardhat");
-const { ethers } = require("hardhat");
+require('dotenv').config({ path: '../.env.local' });
+const { expect } = require('chai');
+const hre = require('hardhat');
+const { ethers } = require('hardhat');
 const { utils, BigNumber } = require('ethers');
 const Decimal = require('decimal.js');
 
@@ -14,17 +14,17 @@ const CEthABI = require('./abis/CEth.json');
 const comptrollerABI = require('./abis/Comptroller.json');
 const compoundOracleABI = require('./abis/UniswapAnchoredView.json');
 
-describe("CompoundModule Contract", () => {
+describe('CompoundModule Contract', () => {
 
-  const CETH_ADDRESS = "0x4Ddc2D193948926D02f9B1fE9e1daa0718270ED5";
-  const DAI_ADDRESS = "0x6B175474E89094C44Da98b954EedeAC495271d0F";
-  const CDAI_ADDRESS = "0x5d3a536e4d6dbd6114cc1ead35777bab948e3643";
-  const USDC_ADDRESS = "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48";
-  const CUSDC_ADDRESS = "0x39AA39c021dfbaE8faC545936693aC917d5E7563";
-  const USDT_ADDRESS = "0xdAC17F958D2ee523a2206206994597C13D831ec7";
-  const CUSDT_ADDRESS = "0xf650c3d88d12db855b8bf7d11be6c55a4e07dcc9";
-  const CUNI_ADDRESS = "0x35a18000230da775cac24873d00ff85bccded550";
-  const PROXY_COMPTROLLER_ADDRESS = "0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B";
+  const CETH_ADDRESS = '0x4Ddc2D193948926D02f9B1fE9e1daa0718270ED5';
+  const DAI_ADDRESS = '0x6B175474E89094C44Da98b954EedeAC495271d0F';
+  const CDAI_ADDRESS = '0x5d3a536e4d6dbd6114cc1ead35777bab948e3643';
+  const USDC_ADDRESS = '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48';
+  const CUSDC_ADDRESS = '0x39AA39c021dfbaE8faC545936693aC917d5E7563';
+  const USDT_ADDRESS = '0xdAC17F958D2ee523a2206206994597C13D831ec7';
+  const CUSDT_ADDRESS = '0xf650c3d88d12db855b8bf7d11be6c55a4e07dcc9';
+  const CUNI_ADDRESS = '0x35a18000230da775cac24873d00ff85bccded550';
+  const PROXY_COMPTROLLER_ADDRESS = '0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B';
 
   const SCALE = BigNumber.from(10).pow(18);
 
@@ -53,28 +53,28 @@ describe("CompoundModule Contract", () => {
 
   const underlyingToCToken = (underlyingAmount, exchangeRateCurrent) => {
     return underlyingAmount.mul(SCALE).div(exchangeRateCurrent);
-  }
+  };
 
   const cTokenToUnderlying = (cTokenAmount, exchangeRateCurrent) => {
     return cTokenAmount.mul(exchangeRateCurrent).div(SCALE);
-  }
+  };
 
   const underlyingToMUnit = (underlyingAmount, exchangeRateCurrent) => {
     return underlyingAmount.mul(SCALE).div(exchangeRateCurrent);
-  }
+  };
 
   const mUnitToUnderlying = (mUnitAmount, exchangeRateCurrent) => {
     return mUnitAmount.mul(exchangeRateCurrent).div(SCALE);
-  }
+  };
 
   const getCollateralRequired = (amount, collateralFactor, borrowedAssetPrice, collateralAssetPrice) => {
-    return amount.mul(borrowedAssetPrice).div(collateralAssetPrice).mul(SCALE).div(collateralFactor)
-  }
+    return amount.mul(borrowedAssetPrice).div(collateralAssetPrice).mul(SCALE).div(collateralFactor);
+  };
 
   const bigNumberMin = (a, b) => {
-    if (a.lte(b)) return a
-    return b
-  }
+    if (a.lte(b)) return a;
+    return b;
+  };
 
   // To update exchangeRateCurrent
   // const doUpdate = await cDaiToken.exchangeRateCurrent();
@@ -87,18 +87,18 @@ describe("CompoundModule Contract", () => {
 
   const computeNewMorphoExchangeRate = (currentExchangeRate, BPY, currentBlockNumber, lastUpdateBlockNumber) => {
     // Use of decimal.js library for better accuracy
-    const bpy = new Decimal(BPY.toString())
-    const scale = new Decimal('1e18')
-    const exponent = new Decimal(currentBlockNumber - lastUpdateBlockNumber)
-    const val = bpy.div(scale).add(1)
-    const multiplier = val.pow(exponent)
-    const newExchangeRate = new Decimal(currentExchangeRate.toString()).mul(multiplier)
+    const bpy = new Decimal(BPY.toString());
+    const scale = new Decimal('1e18');
+    const exponent = new Decimal(currentBlockNumber - lastUpdateBlockNumber);
+    const val = bpy.div(scale).add(1);
+    const multiplier = val.pow(exponent);
+    const newExchangeRate = new Decimal(currentExchangeRate.toString()).mul(multiplier);
     return Decimal.round(newExchangeRate);
-  }
+  };
 
   const computeNewBorrowIndex = (borrowRate, blockDelta, borrowIndex) => {
     return borrowRate.mul(blockDelta).mul(borrowIndex).div(SCALE).add(borrowIndex);
-  }
+  };
 
   const to6Decimals = (value) => value.div(BigNumber.from(10).pow(12));
 
@@ -109,11 +109,11 @@ describe("CompoundModule Contract", () => {
     borrowers = [borrower1, borrower2, borrower3];
 
     // Deploy CompoundModule
-    Morpho = await ethers.getContractFactory("Morpho");
+    Morpho = await ethers.getContractFactory('Morpho');
     morpho = await Morpho.deploy(PROXY_COMPTROLLER_ADDRESS);
     await morpho.deployed();
 
-    CompoundModule = await ethers.getContractFactory("CompoundModule");
+    CompoundModule = await ethers.getContractFactory('CompoundModule');
     compoundModule = await CompoundModule.deploy(morpho.address, PROXY_COMPTROLLER_ADDRESS);
     await compoundModule.deployed();
 
@@ -125,19 +125,19 @@ describe("CompoundModule Contract", () => {
     comptroller = await ethers.getContractAt(comptrollerABI, PROXY_COMPTROLLER_ADDRESS, owner);
     compoundOracle = await ethers.getContractAt(compoundOracleABI, comptroller.oracle(), owner);
 
-    const ethAmount = utils.parseUnits("100");
+    const ethAmount = utils.parseUnits('100');
 
     // Mint some ERC20
     // Address of Join (has auth) https://changelog.makerdao.com/ -> releases -> contract addresses -> MCD_JOIN_DAI
     const daiMinter = '0x9759A6Ac90977b93B58547b4A71c78317f391A28';
     await hre.network.provider.request({
-      method: "hardhat_impersonateAccount",
+      method: 'hardhat_impersonateAccount',
       params: [daiMinter],
     });
     const daiSigner = await ethers.getSigner(daiMinter);
     daiToken = await ethers.getContractAt(daiAbi, DAI_ADDRESS, daiSigner);
-    const daiAmount = utils.parseUnits("100000000");
-    await hre.network.provider.send("hardhat_setBalance", [
+    const daiAmount = utils.parseUnits('100000000');
+    await hre.network.provider.send('hardhat_setBalance', [
       daiMinter,
       utils.hexValue(ethAmount),
     ]);
@@ -145,21 +145,21 @@ describe("CompoundModule Contract", () => {
     // Mint DAI to all lenders and borrowers
     await Promise.all(lenders.map(async lender => {
       await daiToken.mint(lender.getAddress(), daiAmount, { from: daiMinter });
-    }))
+    }));
     await Promise.all(borrowers.map(async borrower => {
       await daiToken.mint(borrower.getAddress(), daiAmount, { from: daiMinter });
-    }))
+    }));
 
     const usdcMinter = '0x5b6122c109b78c6755486966148c1d70a50a47d7';
     // const masterMinter = await usdcToken.masterMinter();
     await hre.network.provider.request({
-      method: "hardhat_impersonateAccount",
+      method: 'hardhat_impersonateAccount',
       params: [usdcMinter],
     });
     const usdcSigner = await ethers.getSigner(usdcMinter);
     usdcToken = await ethers.getContractAt(usdcAbi, USDC_ADDRESS, usdcSigner);
     const usdcAmount = BigNumber.from(10).pow(10); // 10 000 USDC
-    await hre.network.provider.send("hardhat_setBalance", [
+    await hre.network.provider.send('hardhat_setBalance', [
       usdcMinter,
       utils.hexValue(ethAmount),
     ]);
@@ -180,9 +180,9 @@ describe("CompoundModule Contract", () => {
     await morpho.connect(owner).listMarket(CUSDT_ADDRESS);
   });
 
-  describe("Deployment", () => {
-    it("Should deploy the contract with the right values", async () => {
-      expect(await morpho.liquidationIncentive()).to.equal("1100000000000000000");
+  describe('Deployment', () => {
+    it('Should deploy the contract with the right values', async () => {
+      expect(await morpho.liquidationIncentive()).to.equal('1100000000000000000');
 
       // Calculate BPY
       const borrowRatePerBlock = await cDaiToken.borrowRatePerBlock();
@@ -191,37 +191,37 @@ describe("CompoundModule Contract", () => {
       expect(await morpho.BPY(CDAI_ADDRESS)).to.equal(expectedBPY);
 
       const result = await comptroller.markets(CDAI_ADDRESS);
-      expect(await morpho.mUnitExchangeRate(CDAI_ADDRESS)).to.be.equal(utils.parseUnits("1"));
+      expect(await morpho.mUnitExchangeRate(CDAI_ADDRESS)).to.be.equal(utils.parseUnits('1'));
       expect(await morpho.collateralFactor(CDAI_ADDRESS)).to.be.equal(result.collateralFactorMantissa);
 
       // Thresholds
       underlyingThreshold = await morpho.thresholds(CDAI_ADDRESS, 0);
-      expect(underlyingThreshold).to.be.equal(utils.parseUnits("1"));
+      expect(underlyingThreshold).to.be.equal(utils.parseUnits('1'));
       expect(await morpho.thresholds(CDAI_ADDRESS, 1)).to.be.equal(BigNumber.from(10).pow(7));
-      expect(await morpho.thresholds(CDAI_ADDRESS, 2)).to.be.equal(utils.parseUnits("1"));
+      expect(await morpho.thresholds(CDAI_ADDRESS, 2)).to.be.equal(utils.parseUnits('1'));
     });
   });
 
-  describe("Governance functions", () => {
-    it("Should revert when at least one of the markets in input is not a real market", async () => {
+  describe('Governance functions', () => {
+    it('Should revert when at least one of the markets in input is not a real market', async () => {
       expect(morpho.connect(owner).createMarkets([USDT_ADDRESS])).to.be.reverted;
       expect(morpho.connect(owner).createMarkets([CETH_ADDRESS, USDT_ADDRESS, CUNI_ADDRESS])).to.be.reverted;
       expect(morpho.connect(owner).createMarkets([CETH_ADDRESS, CUNI_ADDRESS])).not.be.reverted;
     });
   });
 
-  describe("Lenders on Compound (no borrowers)", () => {
-    it("Should have correct balances at the beginning", async () => {
+  describe('Lenders on Compound (no borrowers)', () => {
+    it('Should have correct balances at the beginning', async () => {
       expect((await compoundModule.lendingBalanceInOf(CDAI_ADDRESS, lender1.getAddress())).onComp).to.equal(0);
       expect((await compoundModule.lendingBalanceInOf(CDAI_ADDRESS, lender1.getAddress())).onMorpho).to.equal(0);
-    })
+    });
 
-    it("Should revert when lending less than the required threshold", async () => {
-      await expect(compoundModule.connect(lender1).deposit(CDAI_ADDRESS, underlyingThreshold.sub(1))).to.be.revertedWith("Amount cannot be less than THRESHOLD");
-    })
+    it('Should revert when lending less than the required threshold', async () => {
+      await expect(compoundModule.connect(lender1).deposit(CDAI_ADDRESS, underlyingThreshold.sub(1))).to.be.revertedWith('Amount cannot be less than THRESHOLD');
+    });
 
-    it("Should have the correct balances after lending", async () => {
-      const amount = utils.parseUnits("10");
+    it('Should have the correct balances after lending', async () => {
+      const amount = utils.parseUnits('10');
       const daiBalanceBefore = await daiToken.balanceOf(lender1.getAddress());
       const expectedDaiBalanceAfter = daiBalanceBefore.sub(amount);
       await daiToken.connect(lender1).approve(compoundModule.address, amount);
@@ -235,10 +235,10 @@ describe("CompoundModule Contract", () => {
       expect(await cDaiToken.balanceOf(compoundModule.address)).to.equal(expectedLendingBalanceOnComp);
       expect((await compoundModule.lendingBalanceInOf(CDAI_ADDRESS, lender1.getAddress())).onComp).to.equal(expectedLendingBalanceOnComp);
       expect((await compoundModule.lendingBalanceInOf(CDAI_ADDRESS, lender1.getAddress())).onMorpho).to.equal(0);
-    })
+    });
 
-    it("Should be able to redeem ERC20 right after lending up to max lending balance", async () => {
-      const amount = utils.parseUnits("10");
+    it('Should be able to redeem ERC20 right after lending up to max lending balance', async () => {
+      const amount = utils.parseUnits('10');
       const daiBalanceBefore1 = await daiToken.balanceOf(lender1.getAddress());
       await daiToken.connect(lender1).approve(compoundModule.address, amount);
       await compoundModule.connect(lender1).deposit(CDAI_ADDRESS, amount);
@@ -250,7 +250,7 @@ describe("CompoundModule Contract", () => {
       const toWithdraw1 = cTokenToUnderlying(lendingBalanceOnComp, exchangeRate1);
 
       // TODO: improve this test to prevent attacks
-      await expect(compoundModule.connect(lender1).redeem(toWithdraw1.add(utils.parseUnits("0.001")).toString())).to.be.reverted;
+      await expect(compoundModule.connect(lender1).redeem(toWithdraw1.add(utils.parseUnits('0.001')).toString())).to.be.reverted;
 
       // Update exchange rate
       await cDaiToken.connect(lender1).exchangeRateCurrent();
@@ -263,12 +263,12 @@ describe("CompoundModule Contract", () => {
 
       // Check cToken left are only dust in lending balance
       expect((await compoundModule.lendingBalanceInOf(CDAI_ADDRESS, lender1.getAddress())).onComp).to.be.lt(1000);
-      await expect(compoundModule.connect(lender1).redeem(CDAI_ADDRESS, utils.parseUnits("0.001"))).to.be.reverted;
-    })
+      await expect(compoundModule.connect(lender1).redeem(CDAI_ADDRESS, utils.parseUnits('0.001'))).to.be.reverted;
+    });
 
-    it("Should be able to deposit more ERC20 after already having deposit ERC20", async () => {
-      const amount = utils.parseUnits("10");
-      const amountToApprove = utils.parseUnits("10").mul(2);
+    it('Should be able to deposit more ERC20 after already having deposit ERC20', async () => {
+      const amount = utils.parseUnits('10');
+      const amountToApprove = utils.parseUnits('10').mul(2);
       const daiBalanceBefore = await daiToken.balanceOf(lender1.getAddress());
 
       await daiToken.connect(lender1).approve(compoundModule.address, amountToApprove);
@@ -289,8 +289,8 @@ describe("CompoundModule Contract", () => {
       expect((await compoundModule.lendingBalanceInOf(CDAI_ADDRESS, lender1.getAddress())).onComp).to.equal(expectedLendingBalanceOnComp);
     });
 
-    it("Several lenders should be able to deposit and have the correct balances", async () => {
-      const amount = utils.parseUnits("10");
+    it('Several lenders should be able to deposit and have the correct balances', async () => {
+      const amount = utils.parseUnits('10');
       let expectedCTokenBalance = BigNumber.from(0);
 
       for (const i in lenders) {
@@ -313,24 +313,24 @@ describe("CompoundModule Contract", () => {
     });
   });
 
-  describe("Borrowers on Compound (no lenders)", () => {
-    it("Should have correct balances at the beginning", async () => {
+  describe('Borrowers on Compound (no lenders)', () => {
+    it('Should have correct balances at the beginning', async () => {
       expect((await compoundModule.borrowingBalanceInOf(CDAI_ADDRESS, borrower1.getAddress())).onComp).to.equal(0);
       expect((await compoundModule.borrowingBalanceInOf(CDAI_ADDRESS, borrower1.getAddress())).onMorpho).to.equal(0);
     });
 
-    it("Should revert when providing 0 as collateral", async () => {
-      await expect(compoundModule.connect(lender1).deposit(CDAI_ADDRESS, 0)).to.be.revertedWith("Amount cannot be less than THRESHOLD");
+    it('Should revert when providing 0 as collateral', async () => {
+      await expect(compoundModule.connect(lender1).deposit(CDAI_ADDRESS, 0)).to.be.revertedWith('Amount cannot be less than THRESHOLD');
     });
 
-    it("Should revert when borrowing less than threshold", async () => {
-      const amount = to6Decimals(utils.parseUnits("10"));
+    it('Should revert when borrowing less than threshold', async () => {
+      const amount = to6Decimals(utils.parseUnits('10'));
       await usdcToken.connect(borrower1).approve(compoundModule.address, amount);
-      await expect(compoundModule.connect(lender1).borrow(CDAI_ADDRESS, amount)).to.be.revertedWith("Amount cannot be less than THRESHOLD");
+      await expect(compoundModule.connect(lender1).borrow(CDAI_ADDRESS, amount)).to.be.revertedWith('Amount cannot be less than THRESHOLD');
     });
 
-    it("Should be able to borrow on Compound after providing collateral up to max", async () => {
-      const amount = to6Decimals(utils.parseUnits("100"));
+    it('Should be able to borrow on Compound after providing collateral up to max', async () => {
+      const amount = to6Decimals(utils.parseUnits('100'));
       await usdcToken.connect(borrower1).approve(compoundModule.address, amount);
       await compoundModule.connect(borrower1).deposit(CUSDC_ADDRESS, amount);
       const cExchangeRate = await cUsdcToken.callStatic.exchangeRateCurrent();
@@ -362,8 +362,8 @@ describe("CompoundModule Contract", () => {
       expect(await cDaiToken.callStatic.borrowBalanceCurrent(compoundModule.address)).to.equal(maxToBorrow);
     });
 
-    it("Should not be able to borrow more than max allowed given an amount of collateral", async () => {
-      const amount = to6Decimals(utils.parseUnits("100"));
+    it('Should not be able to borrow more than max allowed given an amount of collateral', async () => {
+      const amount = to6Decimals(utils.parseUnits('100'));
       await usdcToken.connect(borrower1).approve(compoundModule.address, amount);
       await compoundModule.connect(borrower1).deposit(CUSDC_ADDRESS, amount);
       const collateralBalanceInCToken = (await compoundModule.lendingBalanceInOf(CUSDC_ADDRESS, borrower1.getAddress())).onComp;
@@ -373,16 +373,16 @@ describe("CompoundModule Contract", () => {
       const usdcPriceMantissa = await compoundOracle.getUnderlyingPrice(CUSDC_ADDRESS);
       const daiPriceMantissa = await compoundOracle.getUnderlyingPrice(CDAI_ADDRESS);
       const maxToBorrow = collateralBalanceInUnderlying.mul(usdcPriceMantissa).div(daiPriceMantissa).mul(collateralFactorMantissa).div(SCALE);
-      const moreThanMaxToBorrow = maxToBorrow.add(utils.parseUnits("0.0001"));
+      const moreThanMaxToBorrow = maxToBorrow.add(utils.parseUnits('0.0001'));
 
       // TODO: fix dust issue
       // This check does not pass when adding utils.parseUnits("0.00001") to maxToBorrow
-      await expect(compoundModule.connect(borrower1).borrow(CDAI_ADDRESS, moreThanMaxToBorrow)).to.be.revertedWith("Not enough collateral");
+      await expect(compoundModule.connect(borrower1).borrow(CDAI_ADDRESS, moreThanMaxToBorrow)).to.be.revertedWith('Not enough collateral');
     });
 
-    it("Several borrowers should be able to borrow and have the correct balances", async () => {
-      const collateralAmount = to6Decimals(utils.parseUnits("10"));
-      const borrowedAmount = utils.parseUnits("2");
+    it('Several borrowers should be able to borrow and have the correct balances', async () => {
+      const collateralAmount = to6Decimals(utils.parseUnits('10'));
+      const borrowedAmount = utils.parseUnits('2');
       let expectedMorphoBorrowingBalance = BigNumber.from(0);
       let previousBorrowIndex = await cDaiToken.borrowIndex();
 
@@ -417,10 +417,10 @@ describe("CompoundModule Contract", () => {
     });
   });
 
-  describe("P2P interactions between lender and borrowers", () => {
-    it("Lender should withdraw her liquidity while not enough cToken on Morpho contract", async () => {
+  describe('P2P interactions between lender and borrowers', () => {
+    it('Lender should withdraw her liquidity while not enough cToken on Morpho contract', async () => {
       // Lender deposits tokens
-      const lendingAmount = utils.parseUnits("10");
+      const lendingAmount = utils.parseUnits('10');
       const daiBalanceBefore1 = await daiToken.balanceOf(lender1.getAddress());
       const expectedDaiBalanceAfter1 = daiBalanceBefore1.sub(lendingAmount);
       await daiToken.connect(lender1).approve(compoundModule.address, lendingAmount);
@@ -435,7 +435,7 @@ describe("CompoundModule Contract", () => {
       expect((await compoundModule.lendingBalanceInOf(CDAI_ADDRESS, lender1.getAddress())).onComp).to.equal(expectedLendingBalanceOnComp1);
 
       // Borrower provides collateral
-      const collateralAmount = to6Decimals(utils.parseUnits("100"));
+      const collateralAmount = to6Decimals(utils.parseUnits('100'));
       await usdcToken.connect(borrower1).approve(compoundModule.address, collateralAmount);
       await compoundModule.connect(borrower1).deposit(CUSDC_ADDRESS, collateralAmount);
 
@@ -497,8 +497,8 @@ describe("CompoundModule Contract", () => {
       expect(removeDigitsBigNumber(4, (await compoundModule.borrowingBalanceInOf(CDAI_ADDRESS, borrower1.getAddress())).onMorpho)).to.equal(0);
     });
 
-    it("Lender should redeem her liquidity while enough cDaiToken on Morpho contract", async () => {
-      const lendingAmount = utils.parseUnits("10");
+    it('Lender should redeem her liquidity while enough cDaiToken on Morpho contract', async () => {
+      const lendingAmount = utils.parseUnits('10');
       let lender;
       const expectedDaiBalance = await daiToken.balanceOf(lender1.getAddress());
 
@@ -518,7 +518,7 @@ describe("CompoundModule Contract", () => {
       }
 
       // Borrower provides collateral
-      const collateralAmount = to6Decimals(utils.parseUnits("100"));
+      const collateralAmount = to6Decimals(utils.parseUnits('100'));
       await usdcToken.connect(borrower1).approve(compoundModule.address, collateralAmount);
       await compoundModule.connect(borrower1).deposit(CUSDC_ADDRESS, collateralAmount);
 
@@ -605,14 +605,14 @@ describe("CompoundModule Contract", () => {
       expect((await compoundModule.borrowingBalanceInOf(CDAI_ADDRESS, borrower1.getAddress())).onMorpho).to.equal(borrower1BorrowingBalanceOnMorpho);
     });
 
-    it("Borrower on Morpho only, should be able to repay all borrowing amount", async () => {
+    it('Borrower on Morpho only, should be able to repay all borrowing amount', async () => {
       // Lender deposits tokens
-      const lendingAmount = utils.parseUnits("10");
+      const lendingAmount = utils.parseUnits('10');
       await daiToken.connect(lender1).approve(compoundModule.address, lendingAmount);
       await compoundModule.connect(lender1).deposit(CDAI_ADDRESS, lendingAmount);
 
       // Borrower borrows half of the tokens
-      const collateralAmount = to6Decimals(utils.parseUnits("100"));
+      const collateralAmount = to6Decimals(utils.parseUnits('100'));
       const daiBalanceBefore = await daiToken.balanceOf(borrower1.getAddress());
       const toBorrow = lendingAmount.div(2);
 
@@ -649,15 +649,15 @@ describe("CompoundModule Contract", () => {
       expect(await cDaiToken.callStatic.borrowBalanceCurrent(compoundModule.address)).to.equal(0);
     });
 
-    it("Borrower on Morpho and on Compound, should be able to repay all borrowing amount", async () => {
+    it('Borrower on Morpho and on Compound, should be able to repay all borrowing amount', async () => {
       // Lender deposits tokens
-      const lendingAmount = utils.parseUnits("10");
-      const amountToApprove = utils.parseUnits("100000000");
+      const lendingAmount = utils.parseUnits('10');
+      const amountToApprove = utils.parseUnits('100000000');
       await daiToken.connect(lender1).approve(compoundModule.address, lendingAmount);
       await compoundModule.connect(lender1).deposit(CDAI_ADDRESS, lendingAmount);
 
       // Borrower borrows two times the amount of tokens;
-      const collateralAmount = to6Decimals(utils.parseUnits("100"));
+      const collateralAmount = to6Decimals(utils.parseUnits('100'));
       await usdcToken.connect(borrower1).approve(compoundModule.address, collateralAmount);
       await compoundModule.connect(borrower1).deposit(CUSDC_ADDRESS, collateralAmount);
       const daiBalanceBefore = await daiToken.balanceOf(borrower1.getAddress());
@@ -711,14 +711,14 @@ describe("CompoundModule Contract", () => {
       // expect(removeDigitsBigNumber(3, await cToken.callStatic.borrowBalanceStored(compoundModule.address))).to.equal(removeDigitsBigNumber(3, expectedMorphoBorrowingBalance2));
     });
 
-    it("Should disconnect lender from Morpho when borrowing an asset that nobody has on morpho and the lending balance is partly used", async () => {
+    it('Should disconnect lender from Morpho when borrowing an asset that nobody has on morpho and the lending balance is partly used', async () => {
       // lender1 deposits DAI
-      const lendingAmount = utils.parseUnits("100");
+      const lendingAmount = utils.parseUnits('100');
       await daiToken.connect(lender1).approve(compoundModule.address, lendingAmount);
       await compoundModule.connect(lender1).deposit(CDAI_ADDRESS, lendingAmount);
 
       // borrower1 deposits USDC as collateral
-      const collateralAmount = to6Decimals(utils.parseUnits("100"));
+      const collateralAmount = to6Decimals(utils.parseUnits('100'));
       await usdcToken.connect(borrower1).approve(compoundModule.address, collateralAmount);
       await compoundModule.connect(borrower1).deposit(CUSDC_ADDRESS, collateralAmount);
 
@@ -757,9 +757,9 @@ describe("CompoundModule Contract", () => {
     });
   });
 
-  describe("Check permissions", () => {
-    it("Only Owner should be bale to update thresholds", async () => {
-      const newThreshold = utils.parseUnits("2");
+  describe('Check permissions', () => {
+    it('Only Owner should be bale to update thresholds', async () => {
+      const newThreshold = utils.parseUnits('2');
       await morpho.connect(owner).updateThreshold(CUSDC_ADDRESS, 0, newThreshold);
       await morpho.connect(owner).updateThreshold(CUSDC_ADDRESS, 1, newThreshold);
       await morpho.connect(owner).updateThreshold(CUSDC_ADDRESS, 2, newThreshold);
@@ -770,17 +770,17 @@ describe("CompoundModule Contract", () => {
     });
   });
 
-  xdescribe("Test attacks", () => {
-    it("Should not be DDOS by a lender or a group of lenders", async () => {
+  xdescribe('Test attacks', () => {
+    it('Should not be DDOS by a lender or a group of lenders', async () => {
     });
 
-    it("Should not be DDOS by a borrower or a group of borrowers", async () => {
+    it('Should not be DDOS by a borrower or a group of borrowers', async () => {
     });
 
-    it("Should not be subject to flash loan attacks", async () => {
+    it('Should not be subject to flash loan attacks', async () => {
     });
 
-    it("Should not be subjected to Oracle Manipulation attacks", async () => {
+    it('Should not be subjected to Oracle Manipulation attacks', async () => {
     });
   });
 });
