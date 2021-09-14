@@ -202,7 +202,7 @@ describe("CompoundModule Contract", () => {
     });
   });
 
-  describe.only("Governance functions", () => {
+  describe("Governance functions", () => {
     it("Should revert when at least one of the markets in input is not a real market", async () => {
       expect(morpho.connect(owner).createMarkets([USDT_ADDRESS])).to.be.reverted;
       expect(morpho.connect(owner).createMarkets([CETH_ADDRESS, USDT_ADDRESS, CUNI_ADDRESS])).to.be.reverted;
@@ -217,7 +217,7 @@ describe("CompoundModule Contract", () => {
     })
 
     it("Should revert when lending less than the required threshold", async () => {
-      await expect(compoundModule.connect(lender1).deposit(CDAI_ADDRESS, underlyingThreshold.sub(1))).to.be.revertedWith("Amount cannot be less than THRESHOLD.");
+      await expect(compoundModule.connect(lender1).deposit(CDAI_ADDRESS, underlyingThreshold.sub(1))).to.be.revertedWith("Amount cannot be less than THRESHOLD");
     })
 
     it("Should have the correct balances after lending", async () => {
@@ -320,13 +320,13 @@ describe("CompoundModule Contract", () => {
     });
 
     it("Should revert when providing 0 as collateral", async () => {
-      await expect(compoundModule.connect(lender1).deposit(CDAI_ADDRESS, 0)).to.be.revertedWith("Amount cannot be less than THRESHOLD.");
+      await expect(compoundModule.connect(lender1).deposit(CDAI_ADDRESS, 0)).to.be.revertedWith("Amount cannot be less than THRESHOLD");
     });
 
     it("Should revert when borrowing less than threshold", async () => {
       const amount = to6Decimals(utils.parseUnits("10"));
       await usdcToken.connect(borrower1).approve(compoundModule.address, amount);
-      await expect(compoundModule.connect(lender1).borrow(CDAI_ADDRESS, amount)).to.be.revertedWith("Amount cannot be less than THRESHOLD.");
+      await expect(compoundModule.connect(lender1).borrow(CDAI_ADDRESS, amount)).to.be.revertedWith("Amount cannot be less than THRESHOLD");
     });
 
     it("Should be able to borrow on Compound after providing collateral up to max", async () => {
@@ -377,7 +377,7 @@ describe("CompoundModule Contract", () => {
 
       // TODO: fix dust issue
       // This check does not pass when adding utils.parseUnits("0.00001") to maxToBorrow
-      await expect(compoundModule.connect(borrower1).borrow(CDAI_ADDRESS, moreThanMaxToBorrow)).to.be.revertedWith("Not enough collateral.");
+      await expect(compoundModule.connect(borrower1).borrow(CDAI_ADDRESS, moreThanMaxToBorrow)).to.be.revertedWith("Not enough collateral");
     });
 
     it("Several borrowers should be able to borrow and have the correct balances", async () => {
