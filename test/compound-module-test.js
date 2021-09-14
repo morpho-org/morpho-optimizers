@@ -594,7 +594,7 @@ describe("CompoundModule Contract", () => {
 
       // Check lending balances of lender2: lender2 should have replaced lender1
       expect(removeDigitsBigNumber(1, (await compoundModule.lendingBalanceInOf(CDAI_ADDRESS, lender2.getAddress())).onComp)).to.equal(removeDigitsBigNumber(1, expectedLender2LendingBalanceOnComp));
-      expect(removeDigitsBigNumber(5, (await compoundModule.lendingBalanceInOf(CDAI_ADDRESS, lender2.getAddress())).onMorpho)).to.equal(removeDigitsBigNumber(5, expectedLender2LendingBalanceOnMorpho));
+      expect(removeDigitsBigNumber(6, (await compoundModule.lendingBalanceInOf(CDAI_ADDRESS, lender2.getAddress())).onMorpho)).to.equal(removeDigitsBigNumber(6, expectedLender2LendingBalanceOnMorpho));
 
       // Check lending balances of lender3: lender3 balances should not move
       expect((await compoundModule.lendingBalanceInOf(CDAI_ADDRESS, lender3.getAddress())).onComp).to.equal(lender3LendingBalanceOnComp);
