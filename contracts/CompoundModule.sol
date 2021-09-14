@@ -252,10 +252,23 @@ contract CompoundModule is ReentrancyGuard {
             enteredMarkets[msg.sender].push(_cErc20Address);
         }
 
+        require(morpho.isListed(_cErc20Address), "Market not listed");
         require(
-            _borrowAuthorization(_cErc20Address, msg.sender, _amount),
-            "Not enough collateral."
+            _amount >= morpho.thresholds(_cErc20Address, 0),
+            "Amount cannot be less than THRESHOLD"
         );
+        (
+            uint256 debtValue,
+            uint256 maxDebtValue,
+
+        ) = _getUserHypotheticalStateBalances(
+                msg.sender,
+                _cErc20Address,
+                0,
+                _amount
+            );
+
+        require(debtValue < maxDebtValue, "Not enough collateral");
 
         ICErc20 cErc20Token = ICErc20(_cErc20Address);
         IERC20 erc20Token = IERC20(cErc20Token.underlying());
@@ -324,8 +337,20 @@ contract CompoundModule is ReentrancyGuard {
         external
         nonReentrant
     {
+        require(_amount > 0, "Amount cannot be 0");
         require(morpho.isListed(_cErc20Address), "Market not listed");
-        require(_amount > 0, "Amount cannot be 0.");
+        (
+            uint256 debtValue,
+            uint256 maxDebtValue,
+
+        ) = _getUserHypotheticalStateBalances(
+                msg.sender,
+                _cErc20Address,
+                _amount,
+                0
+            );
+        require(debtValue < maxDebtValue, "Cannot redeem");
+
         ICErc20 cErc20Token = ICErc20(_cErc20Address);
         IERC20 erc20Token = IERC20(cErc20Token.underlying());
 
@@ -418,10 +443,13 @@ contract CompoundModule is ReentrancyGuard {
         address _borrower,
         uint256 _amount
     ) external nonReentrant {
-        require(
-            _liquidateAuthorization(_cErc20CollateralAddress, _borrower),
-            "Liquidation not allowed"
-        );
+        require(morpho.isListed(_cErc20CollateralAddress), "Market not listed");
+        (
+            uint256 debtValue,
+            uint256 maxDebtValue,
+
+        ) = _getUserHypotheticalStateBalances(_borrower, address(0), 0, 0);
+        require(maxDebtValue > debtValue, "Liquidation not allowed");
 
         _repay(_cErc20BorrowedAddress, _borrower, _amount);
 
@@ -913,8 +941,8 @@ contract CompoundModule is ReentrancyGuard {
                     ICErc20(vars.cErc20Entered).borrowIndex()
                 ) +
                 borrowingBalanceInOf[vars.cErc20Entered][_account].onMorpho.mul(
-                    vars.mExchangeRate
-                );
+                        vars.mExchangeRate
+                    );
             vars.toAddCollateral =
                 lendingBalanceInOf[vars.cErc20Entered][_account].onComp.mul(
                     ICErc20(vars.cErc20Entered).exchangeRateCurrent()
@@ -951,78 +979,5 @@ contract CompoundModule is ReentrancyGuard {
             stateBalance.maxDebtValue,
             stateBalance.collateralValue
         );
-    }
-
-    /** @dev Returns whether the user can borrow on a specific market or not.
-     *  @param _cErc20Address The address of the market.
-     *  @param _account The address of the user.
-     *  @param _amount The amount to be borrowed in underlying.
-     *  @return Whether the user is allowed or not.
-     */
-    function _borrowAuthorization(
-        address _cErc20Address,
-        address _account,
-        uint256 _amount
-    ) internal returns (bool) {
-        require(morpho.isListed(_cErc20Address), "Market not listed");
-        require(
-            _amount >= morpho.thresholds(_cErc20Address, 0),
-            "Amount cannot be less than THRESHOLD."
-        );
-        (
-            uint256 debtValue,
-            uint256 maxDebtValue,
-
-        ) = _getUserHypotheticalStateBalances(
-            _account,
-            _cErc20Address,
-            0,
-            _amount
-        );
-        return debtValue < maxDebtValue;
-    }
-
-    /** @dev Returns whether the user can redeem from a specific market or not.
-     *  @param _cErc20Address The address of the market.
-     *  @param _account The address of the user.
-     *  @param _amount The amount to be redeemed in underlying.
-     *  @return Whether the user is allowed or not.
-     */
-    function _redeemAuthorization(
-        address _cErc20Address,
-        address _account,
-        uint256 _amount
-    ) internal returns (bool) {
-        require(morpho.isListed(_cErc20Address), "Market not listed");
-
-        (
-            uint256 debtValue,
-            uint256 maxDebtValue,
-
-        ) = _getUserHypotheticalStateBalances(
-            _account,
-            _cErc20Address,
-            _amount,
-            0
-        );
-        return debtValue < maxDebtValue;
-    }
-
-    /** @dev Returns whether the user can liquidated or not.
-     *  @param _cErc20Address The address of the market.
-     *  @param _account The address of the user.
-     *  @return Whether liquidation is allowed or not.
-     */
-    function _liquidateAuthorization(address _cErc20Address, address _account)
-        internal
-        returns (bool)
-    {
-        require(morpho.isListed(_cErc20Address), "Market not listed");
-        (
-            uint256 debtValue,
-            uint256 maxDebtValue,
-
-        ) = _getUserHypotheticalStateBalances(_account, address(0), 0, 0);
-        return maxDebtValue > debtValue;
     }
 }
