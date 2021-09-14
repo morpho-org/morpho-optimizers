@@ -159,10 +159,10 @@ contract Morpho is Ownable {
 
             uint256 newMUnitExchangeRate = mUnitExchangeRate[_cErc20Address]
                 .mul(
-                (1e18 + BPY[_cErc20Address]).pow(
-                    PRBMathUD60x18.fromUint(numberOfBlocksSinceLastUpdate)
-                )
-            );
+                    (1e18 + BPY[_cErc20Address]).pow(
+                        PRBMathUD60x18.fromUint(numberOfBlocksSinceLastUpdate)
+                    )
+                );
 
             emit UpdateMUnitExchangeRate(_cErc20Address, newMUnitExchangeRate);
 
