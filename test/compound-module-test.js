@@ -483,7 +483,7 @@ describe("CompoundModule Contract", () => {
       const daiBalanceAfter2 = await daiToken.balanceOf(lender1.getAddress());
 
       // Check borrow balance of Morphof
-      expect(removeDigitsBigNumber(5, borrowBalance)).to.equal(removeDigitsBigNumber(5, expectedMorphoBorrowingBalance));
+      expect(removeDigitsBigNumber(6, borrowBalance)).to.equal(removeDigitsBigNumber(6, expectedMorphoBorrowingBalance));
 
       // Check lender1 underlying balance
       expect(removeDigitsBigNumber(1, daiBalanceAfter2)).to.equal(removeDigitsBigNumber(1, expectedDaiBalanceAfter2));
