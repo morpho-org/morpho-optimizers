@@ -211,6 +211,24 @@ describe('CompoundModule Contract', () => {
       expect(morpho.connect(owner).createMarkets([CETH_ADDRESS, CUNI_ADDRESS])).not.be.reverted;
     });
 
+    it('Only Owner should be able to create markets', async () => {
+      expect(morpho.connect(lender1).createMarkets([CUNI_ADDRESS])).to.be.reverted;
+      expect(morpho.connect(borrower1).createMarkets([CUNI_ADDRESS])).to.be.reverted;
+      expect(morpho.connect(owner).createMarkets([CUNI_ADDRESS])).not.be.reverted;
+    });
+
+    it('Only Owner should be able to update thresholds', async () => {
+      const newThreshold = utils.parseUnits('2');
+      await morpho.connect(owner).updateThreshold(CUSDC_ADDRESS, 0, newThreshold);
+      await morpho.connect(owner).updateThreshold(CUSDC_ADDRESS, 1, newThreshold);
+      await morpho.connect(owner).updateThreshold(CUSDC_ADDRESS, 2, newThreshold);
+
+      // Other accounts than Owner
+      await expect(morpho.connect(lender1).updateThreshold(CUSDC_ADDRESS, 2, newThreshold)).to.be.reverted;
+      await expect(morpho.connect(borrower1).updateThreshold(CUSDC_ADDRESS, 2, newThreshold)).to.be.reverted;
+    });
+
+
     it('Only Owner should be allowed to list/unlisted a market', async () => {
       await morpho.connect(owner).createMarkets([CUNI_ADDRESS]);
       expect(morpho.connect(lender1).listMarket(CUNI_ADDRESS)).to.be.reverted;
@@ -239,7 +257,7 @@ describe('CompoundModule Contract', () => {
       expect(await morpho.lastUpdateBlockNumber(CUNI_ADDRESS)).to.equal(blockNumber);
     });
 
-    it('Should set the liquidation incentive of a market', async () => {
+    it('Only Owner should set the liquidation incentive of a market', async () => {
       const newLiquidationIncentive = utils.parseUnits('1.4');
       await morpho.connect(owner).setLiquidationIncentive(CDAI_ADDRESS, newLiquidationIncentive);
       expect(await morpho.liquidationIncentive(CDAI_ADDRESS)).to.equal(newLiquidationIncentive);
@@ -247,7 +265,7 @@ describe('CompoundModule Contract', () => {
       expect(morpho.connect(borrower1).setLiquidationIncentive(CDAI_ADDRESS, utils.parseUnits('1.1'))).to.be.reverted;
     });
 
-    it('Should set the close factor of a market', async () => {
+    it('Only Owner should set the close factor of a market', async () => {
       const newCloseFactor= utils.parseUnits('0.7');
       await morpho.connect(owner).setCloseFactor(CDAI_ADDRESS, newCloseFactor);
       expect(await morpho.closeFactor(CDAI_ADDRESS)).to.equal(newCloseFactor);
@@ -800,19 +818,6 @@ describe('CompoundModule Contract', () => {
       expect(removeDigitsBigNumber(5, lendingBalanceOnComp2)).to.equal(removeDigitsBigNumber(5, underlyingToCToken(lendingBalanceInUnderlying, cDaiExchangeRate2)));
       expect(removeDigitsBigNumber(2, borrowingBalanceOnComp)).to.equal(removeDigitsBigNumber(2, expectedBorrowingBalanceOnComp));
       expect(removeDigitsBigNumber(1, usdtBorrowingBalanceInUnderlying)).to.equal(removeDigitsBigNumber(1, maxToBorrow));
-    });
-  });
-
-  describe('Check permissions', () => {
-    it('Only Owner should be bale to update thresholds', async () => {
-      const newThreshold = utils.parseUnits('2');
-      await morpho.connect(owner).updateThreshold(CUSDC_ADDRESS, 0, newThreshold);
-      await morpho.connect(owner).updateThreshold(CUSDC_ADDRESS, 1, newThreshold);
-      await morpho.connect(owner).updateThreshold(CUSDC_ADDRESS, 2, newThreshold);
-
-      // Other accounts than Owner
-      await expect(morpho.connect(lender1).updateThreshold(CUSDC_ADDRESS, 2, newThreshold)).to.be.reverted;
-      await expect(morpho.connect(borrower1).updateThreshold(CUSDC_ADDRESS, 2, newThreshold)).to.be.reverted;
     });
   });
 
