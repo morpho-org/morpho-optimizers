@@ -12,7 +12,7 @@
     "lint": "yarn run lint:sol && yarn run lint:js",
     "lint:js": "eslint .",
     "lint:sol": "solhint 'contracts/**/*.sol'",
-    "fix": "run-p -s fix:*",
+    "fix": "yarn fix:sol && yarn fix:js",
     "fix:js": "eslint --fix '**/*.js'",
     "fix:sol": "prettier --write 'contracts/**/*.sol'",
     "size": "yarn run hardhat size-contracts",
