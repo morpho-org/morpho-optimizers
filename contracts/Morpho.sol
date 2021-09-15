@@ -20,6 +20,7 @@ contract Morpho is Ownable {
 
     mapping(address => bool) public isListed; // Whether or not this market is listed.
     mapping(address => uint256) public BPY; // Block Percentage Yield ("midrate").
+    mapping(address => uint256) public closeFactor; // Multiplier used to calculate the maximum repayAmount when liquidating a borrow.
     mapping(address => uint256) public collateralFactor; // Multiplier representing the most one can borrow against their collateral in this market (0.9 => borrow 90% of collateral value max). Between 0 and 1.
     mapping(address => uint256) public mUnitExchangeRate; // current exchange rate from mUnit to underlying.
     mapping(address => uint256) public liquidationIncentive; // Incentive for liquidators in percentage (110% at the beginning).
@@ -37,17 +38,17 @@ contract Morpho is Ownable {
      */
     event CreateMarket(address _marketAddress);
 
-    /** @dev Emitted when the collateral factor of a market is updated.
-     *  @param _marketAddress The address of the market to update.
-     *  @param _newValue The new value of the collateral factor.
-     */
-    event UpdateCollateralFactor(address _marketAddress, uint256 _newValue);
-
     /** @dev Emitted when the BPY of a market is updated.
      *  @param _marketAddress The address of the market to update.
      *  @param _newValue The new value of the BPY.
      */
     event UpdateBPY(address _marketAddress, uint256 _newValue);
+
+    /** @dev Emitted when the collateral factor of a market is updated.
+     *  @param _marketAddress The address of the market to update.
+     *  @param _newValue The new value of the collateral factor.
+     */
+    event UpdateCollateralFactor(address _marketAddress, uint256 _newValue);
 
     /** @dev Emitted when the mUnitExchangeRate of a market is updated.
      *  @param _marketAddress The address of the market to update.
@@ -62,9 +63,15 @@ contract Morpho is Ownable {
      */
     event UpdateThreshold(address _marketAddress, uint256 _thresholdType, uint256 _newValue);
 
-    /** @dev Emitted when the BPY of a market is updated.
+    /** @dev Emitted when the close factor of a market is changed.
      *  @param _marketAddress The address of the market to update.
-     *  @param _newValue The new value of the BPY.
+     *  @param _newValue The new value of the close factor.
+     */
+    event NewCloseFactor(address _marketAddress, uint256 _newValue);
+
+    /** @dev Emitted when the liquidation incentive of a market is changed.
+     *  @param _marketAddress The address of the market to update.
+     *  @param _newValue The new value of the liquidation incentive.
      */
     event NewLiquidationIncentive(address _marketAddress, uint256 _newValue);
 
@@ -93,6 +100,7 @@ contract Morpho is Ownable {
         for (uint256 i; i < _cTokensAddresses.length; i++) {
             require(results[i] == 0, "Enter market failed on Compound");
             address cTokenAddress = _cTokensAddresses[i];
+            closeFactor[cTokenAddress] = 0.5e18;
             liquidationIncentive[cTokenAddress] = 1e18;
             mUnitExchangeRate[cTokenAddress] = 1e18;
             lastUpdateBlockNumber[cTokenAddress] = block.number;
@@ -135,7 +143,7 @@ contract Morpho is Ownable {
     }
 
     /** @dev Sets a new liquidation incentive to a market.
-     *  @param _marketAddress The address of the market to unlist.
+     *  @param _marketAddress The address of the market to modify.
      *  @param _liquidationIncentive The new liquidation incentive to set. 1e18 means no incentive, 1.1e18 means a 10% bonus on the amount seized.
      */
     function setLiquidationIncentive(address _marketAddress, uint256 _liquidationIncentive)
@@ -144,6 +152,15 @@ contract Morpho is Ownable {
     {
         liquidationIncentive[_marketAddress] = _liquidationIncentive;
         emit NewLiquidationIncentive(_marketAddress, _liquidationIncentive);
+    }
+
+    /** @dev Sets a new close factor to a market.
+     *  @param _marketAddress The address of the market to modify.
+     *  @param _closeFactor The new close factor to set.
+     */
+    function setCloseFactor(address _marketAddress, uint256 _closeFactor) external onlyOwner {
+        closeFactor[_marketAddress] = _closeFactor;
+        emit NewCloseFactor(_marketAddress, _closeFactor);
     }
 
     /* Public */
