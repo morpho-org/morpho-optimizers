@@ -415,7 +415,7 @@ contract CompoundModule is ReentrancyGuard {
         IERC20 erc20CollateralToken = IERC20(cErc20CollateralToken.underlying());
 
         uint256 amountToSeize = _amount.mul(priceBorrowedMantissa).div(priceCollateralMantissa).mul(
-            morpho.liquidationIncentive()
+            morpho.liquidationIncentive(_cErc20CollateralAddress)
         );
 
         uint256 onCompInUnderlying = lendingBalanceInOf[_cErc20CollateralAddress][_borrower]
