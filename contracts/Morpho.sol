@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/utils/math/Math.sol";
 import "prb-math/contracts/PRBMathUD60x18.sol";
 
 import {ICErc20, IComptroller, ICompoundOracle} from "./interfaces/ICompound.sol";
+import "./interfaces/IMorpho.sol";
 import "./interfaces/ICompoundModule.sol";
 
 /**
@@ -16,6 +17,13 @@ contract Morpho is Ownable {
     using PRBMathUD60x18 for uint256;
     using Math for uint256;
 
+    enum Threshold {
+        Underlying,
+        CToken,
+        MUnit,
+        CdUnit
+    }
+
     /* Storage */
 
     mapping(address => bool) public isListed; // Whether or not this market is listed.
@@ -25,7 +33,7 @@ contract Morpho is Ownable {
     mapping(address => uint256) public mUnitExchangeRate; // current exchange rate from mUnit to underlying.
     mapping(address => uint256) public liquidationIncentive; // Incentive for liquidators in percentage (110% at the beginning).
     mapping(address => uint256) public lastUpdateBlockNumber; // Last time mUnitExchangeRate was updated.
-    mapping(address => mapping(uint256 => uint256)) public thresholds; // Thresholds below the ones we remove lenders and borrowers from the lists. 0 -> Underlying, 1 -> cToken, 2 -> mUnit
+    mapping(address => mapping(Threshold => uint256)) public thresholds; // Thresholds below the ones we remove lenders and borrowers from the lists. 0 -> Underlying, 1 -> cToken, 2 -> mUnit
 
     IComptroller public comptroller;
     ICompoundModule public compoundModule;
@@ -61,7 +69,7 @@ contract Morpho is Ownable {
      *  @param _thresholdType The threshold type to update.
      *  @param _newValue The new value of the threshold.
      */
-    event UpdateThreshold(address _marketAddress, uint256 _thresholdType, uint256 _newValue);
+    event UpdateThreshold(address _marketAddress, Threshold _thresholdType, uint256 _newValue);
 
     /** @dev Emitted when the close factor of a market is changed.
      *  @param _marketAddress The address of the market to update.
@@ -104,9 +112,10 @@ contract Morpho is Ownable {
             liquidationIncentive[cTokenAddress] = 1e18;
             mUnitExchangeRate[cTokenAddress] = 1e18;
             lastUpdateBlockNumber[cTokenAddress] = block.number;
-            thresholds[cTokenAddress][0] = 1e18;
-            thresholds[cTokenAddress][1] = 1e7;
-            thresholds[cTokenAddress][2] = 1e18;
+            thresholds[cTokenAddress][Threshold.Underlying] = 1e18;
+            thresholds[cTokenAddress][Threshold.CToken] = 1e7;
+            thresholds[cTokenAddress][Threshold.MUnit] = 1e18;
+            thresholds[cTokenAddress][Threshold.CdUnit] = 1e16;
             updateBPY(cTokenAddress);
             updateCollateralFactor(cTokenAddress);
             emit CreateMarket(cTokenAddress);
@@ -134,7 +143,7 @@ contract Morpho is Ownable {
      */
     function updateThreshold(
         address _marketAddress,
-        uint256 _thresholdType,
+        Threshold _thresholdType,
         uint256 _newThreshold
     ) external onlyOwner {
         require(_newThreshold > 0, "New THRESHOLD must be strictly positive.");

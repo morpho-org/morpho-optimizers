@@ -167,7 +167,7 @@ contract CompoundModule is ReentrancyGuard {
      */
     function deposit(address _cErc20Address, uint256 _amount) external nonReentrant {
         require(
-            _amount >= morpho.thresholds(_cErc20Address, 0),
+            _amount >= morpho.thresholds(_cErc20Address, IMorpho.Threshold.Underlying),
             "Amount cannot be less than THRESHOLD."
         );
         require(morpho.isListed(_cErc20Address), "Market not listed");
@@ -211,7 +211,7 @@ contract CompoundModule is ReentrancyGuard {
 
         if (
             lendingBalanceInOf[_cErc20Address][msg.sender].onComp >=
-            morpho.thresholds(_cErc20Address, 1)
+            morpho.thresholds(_cErc20Address, IMorpho.Threshold.CToken)
         ) {
             lendersOnComp[_cErc20Address].addTail(msg.sender);
         }
@@ -230,7 +230,7 @@ contract CompoundModule is ReentrancyGuard {
 
         require(morpho.isListed(_cErc20Address), "Market not listed");
         require(
-            _amount >= morpho.thresholds(_cErc20Address, 0),
+            _amount >= morpho.thresholds(_cErc20Address, IMorpho.Threshold.Underlying),
             "Amount cannot be less than THRESHOLD"
         );
         (uint256 debtValue, uint256 maxDebtValue, ) = _getUserHypotheticalStateBalances(
@@ -373,11 +373,11 @@ contract CompoundModule is ReentrancyGuard {
         // Remove lenders from lists if needed
         if (
             lendingBalanceInOf[_cErc20Address][msg.sender].onComp <
-            morpho.thresholds(_cErc20Address, 1)
+            morpho.thresholds(_cErc20Address, IMorpho.Threshold.CToken)
         ) lendersOnComp[_cErc20Address].remove(msg.sender);
         if (
             lendingBalanceInOf[_cErc20Address][msg.sender].onMorpho <
-            morpho.thresholds(_cErc20Address, 2)
+            morpho.thresholds(_cErc20Address, IMorpho.Threshold.MUnit)
         ) lendersOnMorpho[_cErc20Address].remove(msg.sender);
         emit Redeem(msg.sender, _cErc20Address, _amount);
     }
@@ -459,7 +459,7 @@ contract CompoundModule is ReentrancyGuard {
             // Remove borrower from lists if needed
             if (
                 borrowingBalanceInOf[_cErc20CollateralAddress][_borrower].onComp <
-                morpho.thresholds(_cErc20CollateralAddress, 1)
+                morpho.thresholds(_cErc20CollateralAddress, IMorpho.Threshold.CdUnit)
             ) borrowersOnComp[_cErc20CollateralAddress].remove(_borrower);
         } else {
             _redeemErc20FromComp(_cErc20CollateralAddress, onCompInUnderlying);
@@ -530,11 +530,11 @@ contract CompoundModule is ReentrancyGuard {
         // Remove borrower from lists if needed
         if (
             borrowingBalanceInOf[_cErc20Address][_borrower].onComp <
-            morpho.thresholds(_cErc20Address, 1)
+            morpho.thresholds(_cErc20Address, IMorpho.Threshold.CToken)
         ) borrowersOnComp[_cErc20Address].remove(_borrower);
         if (
             borrowingBalanceInOf[_cErc20Address][_borrower].onMorpho <
-            morpho.thresholds(_cErc20Address, 2)
+            morpho.thresholds(_cErc20Address, IMorpho.Threshold.MUnit)
         ) borrowersOnMorpho[_cErc20Address].remove(_borrower);
         emit Repay(_borrower, _cErc20Address, _amount);
     }
@@ -597,11 +597,11 @@ contract CompoundModule is ReentrancyGuard {
                     // Update lists if needed
                     if (
                         lendingBalanceInOf[_cErc20Address][lender].onComp <
-                        morpho.thresholds(_cErc20Address, 1)
+                        morpho.thresholds(_cErc20Address, IMorpho.Threshold.CToken)
                     ) lendersOnComp[_cErc20Address].remove(lender);
                     if (
                         lendingBalanceInOf[_cErc20Address][lender].onMorpho >=
-                        morpho.thresholds(_cErc20Address, 2)
+                        morpho.thresholds(_cErc20Address, IMorpho.Threshold.MUnit)
                     ) lendersOnMorpho[_cErc20Address].addTail(lender);
 
                     emit LenderMovedFromCompToMorpho(lender, _cErc20Address, amountToMove);
@@ -648,11 +648,11 @@ contract CompoundModule is ReentrancyGuard {
                     // Update lists if needed
                     if (
                         lendingBalanceInOf[_cErc20Address][lender].onComp >=
-                        morpho.thresholds(_cErc20Address, 1)
+                        morpho.thresholds(_cErc20Address, IMorpho.Threshold.CToken)
                     ) lendersOnComp[_cErc20Address].addTail(lender);
                     if (
                         lendingBalanceInOf[_cErc20Address][lender].onMorpho <
-                        morpho.thresholds(_cErc20Address, 2)
+                        morpho.thresholds(_cErc20Address, IMorpho.Threshold.MUnit)
                     ) lendersOnMorpho[_cErc20Address].remove(lender);
 
                     emit LenderMovedFromMorphoToComp(lender, _cErc20Address, amountToMove);
@@ -699,11 +699,11 @@ contract CompoundModule is ReentrancyGuard {
                 // Update lists if needed
                 if (
                     borrowingBalanceInOf[_cErc20Address][borrower].onComp >=
-                    morpho.thresholds(_cErc20Address, 1)
+                    morpho.thresholds(_cErc20Address, IMorpho.Threshold.CdUnit)
                 ) borrowersOnComp[_cErc20Address].addTail(borrower);
                 if (
                     borrowingBalanceInOf[_cErc20Address][borrower].onMorpho <
-                    morpho.thresholds(_cErc20Address, 2)
+                    morpho.thresholds(_cErc20Address, IMorpho.Threshold.MUnit)
                 ) borrowersOnMorpho[_cErc20Address].remove(borrower);
 
                 emit BorrowerMovedFromMorphoToComp(borrower, _cErc20Address, toMatch);
@@ -746,11 +746,11 @@ contract CompoundModule is ReentrancyGuard {
                 // Update lists if needed
                 if (
                     borrowingBalanceInOf[_cErc20Address][borrower].onComp <
-                    morpho.thresholds(_cErc20Address, 1)
+                    morpho.thresholds(_cErc20Address, IMorpho.Threshold.CdUnit)
                 ) borrowersOnComp[_cErc20Address].remove(borrower);
                 if (
                     borrowingBalanceInOf[_cErc20Address][borrower].onMorpho >=
-                    morpho.thresholds(_cErc20Address, 2)
+                    morpho.thresholds(_cErc20Address, IMorpho.Threshold.MUnit)
                 ) borrowersOnMorpho[_cErc20Address].addTail(borrower);
 
                 emit BorrowerMovedFromCompToMorpho(borrower, _cErc20Address, toMatch);
@@ -785,11 +785,11 @@ contract CompoundModule is ReentrancyGuard {
                 // Update lists if needed
                 if (
                     lendingBalanceInOf[cErc20Entered][_account].onComp >=
-                    morpho.thresholds(cErc20Entered, 1)
+                    morpho.thresholds(cErc20Entered, IMorpho.Threshold.CToken)
                 ) lendersOnComp[cErc20Entered].addTail(_account);
                 if (
                     lendingBalanceInOf[cErc20Entered][_account].onMorpho <
-                    morpho.thresholds(cErc20Entered, 2)
+                    morpho.thresholds(cErc20Entered, IMorpho.Threshold.MUnit)
                 ) lendersOnMorpho[cErc20Entered].remove(_account);
 
                 emit LenderMovedFromMorphoToComp(_account, cErc20Entered, onMorphoInUnderlying);

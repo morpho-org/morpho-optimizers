@@ -2,6 +2,13 @@
 pragma solidity 0.8.7;
 
 interface IMorpho {
+    enum Threshold {
+        Underlying,
+        CToken,
+        MUnit,
+        CdUnit
+    }
+
     function liquidationIncentive() external returns (uint256);
 
     function isListed(address _marketAddress) external returns (bool);
@@ -18,7 +25,9 @@ interface IMorpho {
 
     function lastUpdateBlockNumber(address _marketAddress) external returns (uint256);
 
-    function thresholds(address _marketAddress, uint256 _thresholdType) external returns (uint256);
+    function thresholds(address _marketAddress, Threshold _thresholdType)
+        external
+        returns (uint256);
 
     function updateMUnitExchangeRate(address _marketAddress) external returns (uint256);
 }
