@@ -13,8 +13,9 @@
         "reason-string": "off",
         "var-name-mixedcase": "off",
         "no-empty-blocks": "off",
+        "func-name-mixedcase": "off",
         "func-visibility": ["warn", {
-        "ignoreConstructors": true
+            "ignoreConstructors": true
         }]
     }
 }
