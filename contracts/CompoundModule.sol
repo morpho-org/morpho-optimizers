@@ -41,12 +41,19 @@ contract CompoundModule is ReentrancyGuard {
     }
 
     // Struct to avoid stack too deep error
-    struct Vars {
+    struct StateBalanceVars {
         uint256 toAddDebt;
         uint256 toAddCollateral;
         uint256 mExchangeRate;
         uint256 underlyingPrice;
         address cErc20Entered;
+    }
+
+    // Struct to avoid stack too deep error
+    struct LiquidateVars {
+        uint256 borrowingBalance;
+        uint256 priceCollateralMantissa;
+        uint256 priceBorrowedMantissa;
     }
 
     /* Storage */
@@ -387,7 +394,6 @@ contract CompoundModule is ReentrancyGuard {
         address _borrower,
         uint256 _amount
     ) external nonReentrant {
-        require(morpho.isListed(_cErc20CollateralAddress), "Market not listed");
         (uint256 debtValue, uint256 maxDebtValue, ) = _getUserHypotheticalStateBalances(
             _borrower,
             address(0),
@@ -395,15 +401,28 @@ contract CompoundModule is ReentrancyGuard {
             0
         );
         require(maxDebtValue > debtValue, "Liquidation not allowed");
+        LiquidateVars memory vars;
+        vars.borrowingBalance =
+            borrowingBalanceInOf[_cErc20BorrowedAddress][_borrower].onComp.mul(
+                ICErc20(_cErc20BorrowedAddress).borrowIndex()
+            ) +
+            borrowingBalanceInOf[_cErc20BorrowedAddress][_borrower].onMorpho.mul(
+                morpho.mUnitExchangeRate(_cErc20BorrowedAddress)
+            );
+        require(
+            _amount <= vars.borrowingBalance.mul(morpho.closeFactor(_cErc20BorrowedAddress)),
+            "Cannot liquidate more than allowed by close factor"
+        );
 
         _repay(_cErc20BorrowedAddress, _borrower, _amount);
 
         // Calculate the amount of token to seize from collateral
-        uint256 priceCollateralMantissa = compoundOracle.getUnderlyingPrice(
-            _cErc20CollateralAddress
+        vars.priceCollateralMantissa = compoundOracle.getUnderlyingPrice(_cErc20CollateralAddress);
+        vars.priceBorrowedMantissa = compoundOracle.getUnderlyingPrice(_cErc20BorrowedAddress);
+        require(
+            vars.priceCollateralMantissa != 0 && vars.priceBorrowedMantissa != 0,
+            "Oracle failed."
         );
-        uint256 priceBorrowedMantissa = compoundOracle.getUnderlyingPrice(_cErc20BorrowedAddress);
-        require(priceCollateralMantissa != 0 && priceBorrowedMantissa != 0, "Oracle failed.");
 
         /*
          * Get the exchange rate and calculate the number of collateral tokens to seize:
@@ -414,9 +433,10 @@ contract CompoundModule is ReentrancyGuard {
         ICErc20 cErc20CollateralToken = ICErc20(_cErc20CollateralAddress);
         IERC20 erc20CollateralToken = IERC20(cErc20CollateralToken.underlying());
 
-        uint256 amountToSeize = _amount.mul(priceBorrowedMantissa).div(priceCollateralMantissa).mul(
-            morpho.liquidationIncentive(_cErc20CollateralAddress)
-        );
+        uint256 amountToSeize = _amount
+            .mul(vars.priceBorrowedMantissa)
+            .div(vars.priceCollateralMantissa)
+            .mul(morpho.liquidationIncentive(_cErc20CollateralAddress));
 
         uint256 onCompInUnderlying = lendingBalanceInOf[_cErc20CollateralAddress][_borrower]
             .onComp
@@ -816,7 +836,7 @@ contract CompoundModule is ReentrancyGuard {
 
         for (uint256 i; i < enteredMarkets[_account].length; i++) {
             // Avoid stack too deep error
-            Vars memory vars;
+            StateBalanceVars memory vars;
             vars.cErc20Entered = enteredMarkets[_account][i];
             vars.mExchangeRate = morpho.updateMUnitExchangeRate(vars.cErc20Entered);
 
