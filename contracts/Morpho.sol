@@ -5,9 +5,9 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "prb-math/contracts/PRBMathUD60x18.sol";
 
-import {ICErc20, IComptroller, ICompoundOracle} from "./interfaces/ICompound.sol";
-import "./interfaces/IMorpho.sol";
+import {ICErc20, IComptroller} from "./interfaces/ICompound.sol";
 import "./interfaces/ICompoundModule.sol";
+import "./interfaces/IMorpho.sol";
 
 /**
  *  @title CompoundModule
@@ -37,7 +37,6 @@ contract Morpho is Ownable {
 
     IComptroller public comptroller;
     ICompoundModule public compoundModule;
-    ICompoundOracle public compoundOracle;
 
     /* Events */
 
@@ -87,8 +86,6 @@ contract Morpho is Ownable {
 
     constructor(address _proxyComptrollerAddress) {
         comptroller = IComptroller(_proxyComptrollerAddress);
-        address compoundOracleAddress = comptroller.oracle();
-        compoundOracle = ICompoundOracle(compoundOracleAddress);
     }
 
     /* External */
