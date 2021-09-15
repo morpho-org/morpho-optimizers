@@ -121,6 +121,7 @@ describe('CompoundModule Contract', () => {
     cUsdcToken = await ethers.getContractAt(CErc20ABI, CUSDC_ADDRESS, owner);
     cDaiToken = await ethers.getContractAt(CErc20ABI, CDAI_ADDRESS, owner);
     cUsdtToken = await ethers.getContractAt(CErc20ABI, CUSDT_ADDRESS, owner);
+    cUniToken = await ethers.getContractAt(CErc20ABI, CUNI_ADDRESS, owner);
     usdtToken = await ethers.getContractAt(usdtAbi, USDT_ADDRESS, owner);
     comptroller = await ethers.getContractAt(comptrollerABI, PROXY_COMPTROLLER_ADDRESS, owner);
     compoundOracle = await ethers.getContractAt(compoundOracleABI, comptroller.oracle(), owner);
@@ -207,6 +208,41 @@ describe('CompoundModule Contract', () => {
       expect(morpho.connect(owner).createMarkets([USDT_ADDRESS])).to.be.reverted;
       expect(morpho.connect(owner).createMarkets([CETH_ADDRESS, USDT_ADDRESS, CUNI_ADDRESS])).to.be.reverted;
       expect(morpho.connect(owner).createMarkets([CETH_ADDRESS, CUNI_ADDRESS])).not.be.reverted;
+    });
+
+    it('Only Owner should be allowed to list/unlisted a market', async () => {
+      await morpho.connect(owner).createMarkets([CUNI_ADDRESS]);
+      expect(morpho.connect(lender1).listMarket(CUNI_ADDRESS)).to.be.reverted;
+      expect(morpho.connect(borrower1).listMarket(CUNI_ADDRESS)).to.be.reverted;
+      expect(morpho.connect(lender1).unlistMarket(CUNI_ADDRESS)).to.be.reverted;
+      expect(morpho.connect(borrower1).unlistMarket(CUNI_ADDRESS)).to.be.reverted;
+      expect(morpho.connect(owner).listMarket(CUNI_ADDRESS)).not.to.be.reverted;
+      expect(morpho.connect(owner).unlistMarket(CUNI_ADDRESS)).not.to.be.reverted;
+    });
+
+    it('Should create a market the with right values', async () => {
+      const lendBPY = await cUniToken.supplyRatePerBlock();
+      const borrowBPY = await cUniToken.borrowRatePerBlock();
+      const { blockNumber } = await morpho.connect(owner).createMarkets([CUNI_ADDRESS]);
+      expect(await morpho.isListed(CUNI_ADDRESS)).not.to.be.true;
+
+      const BPY = (lendBPY.add(borrowBPY)).div(2);
+      expect(await morpho.BPY(CUNI_ADDRESS)).to.equal(BPY);
+
+      const { collateralFactorMantissa } = await comptroller.markets(CUNI_ADDRESS);
+      expect(await morpho.collateralFactor(CUNI_ADDRESS)).to.equal(collateralFactorMantissa);
+
+      expect(await morpho.mUnitExchangeRate(CUNI_ADDRESS)).to.equal(SCALE);
+      expect(await morpho.liquidationIncentive(CUNI_ADDRESS)).to.equal(SCALE);
+      expect(await morpho.lastUpdateBlockNumber(CUNI_ADDRESS)).to.equal(blockNumber);
+    });
+
+    it('Should set the liquidation incentive of a market', async () => {
+      const newLiquidationIncentive = utils.parseUnits('1.4');
+      await morpho.connect(owner).setLiquidationIncentive(CDAI_ADDRESS, newLiquidationIncentive);
+      expect(await morpho.liquidationIncentive(CDAI_ADDRESS)).to.equal(newLiquidationIncentive);
+      expect(morpho.connect(lender1).setLiquidationIncentive(CDAI_ADDRESS, utils.parseUnits('1.1'))).to.be.reverted;
+      expect(morpho.connect(borrower1).setLiquidationIncentive(CDAI_ADDRESS, utils.parseUnits('1.1'))).to.be.reverted;
     });
   });
 
