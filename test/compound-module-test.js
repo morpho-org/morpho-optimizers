@@ -183,7 +183,7 @@ describe('CompoundModule Contract', () => {
 
   describe('Deployment', () => {
     it('Should deploy the contract with the right values', async () => {
-      expect(await morpho.liquidationIncentive()).to.equal('1100000000000000000');
+      expect(await morpho.liquidationIncentive(CDAI_ADDRESS)).to.equal(utils.parseUnits('1'));
 
       // Calculate BPY
       const borrowRatePerBlock = await cDaiToken.borrowRatePerBlock();
@@ -193,6 +193,7 @@ describe('CompoundModule Contract', () => {
 
       const result = await comptroller.markets(CDAI_ADDRESS);
       expect(await morpho.mUnitExchangeRate(CDAI_ADDRESS)).to.be.equal(utils.parseUnits('1'));
+      expect(await morpho.closeFactor(CDAI_ADDRESS)).to.be.equal(utils.parseUnits('0.5'));
       expect(await morpho.collateralFactor(CDAI_ADDRESS)).to.be.equal(result.collateralFactorMantissa);
 
       // Thresholds
@@ -232,6 +233,7 @@ describe('CompoundModule Contract', () => {
       const { collateralFactorMantissa } = await comptroller.markets(CUNI_ADDRESS);
       expect(await morpho.collateralFactor(CUNI_ADDRESS)).to.equal(collateralFactorMantissa);
 
+      expect(await morpho.closeFactor(CUNI_ADDRESS)).to.equal(utils.parseUnits('0.5'));
       expect(await morpho.mUnitExchangeRate(CUNI_ADDRESS)).to.equal(SCALE);
       expect(await morpho.liquidationIncentive(CUNI_ADDRESS)).to.equal(SCALE);
       expect(await morpho.lastUpdateBlockNumber(CUNI_ADDRESS)).to.equal(blockNumber);
@@ -243,6 +245,14 @@ describe('CompoundModule Contract', () => {
       expect(await morpho.liquidationIncentive(CDAI_ADDRESS)).to.equal(newLiquidationIncentive);
       expect(morpho.connect(lender1).setLiquidationIncentive(CDAI_ADDRESS, utils.parseUnits('1.1'))).to.be.reverted;
       expect(morpho.connect(borrower1).setLiquidationIncentive(CDAI_ADDRESS, utils.parseUnits('1.1'))).to.be.reverted;
+    });
+
+    it('Should set the close factor of a market', async () => {
+      const newCloseFactor= utils.parseUnits('0.7');
+      await morpho.connect(owner).setCloseFactor(CDAI_ADDRESS, newCloseFactor);
+      expect(await morpho.closeFactor(CDAI_ADDRESS)).to.equal(newCloseFactor);
+      expect(morpho.connect(lender1).setCloseFactor(CDAI_ADDRESS, utils.parseUnits('0.8'))).to.be.reverted;
+      expect(morpho.connect(borrower1).setCloseFactor(CDAI_ADDRESS, utils.parseUnits('0.8'))).to.be.reverted;
     });
   });
 
