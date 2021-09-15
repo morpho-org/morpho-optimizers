@@ -479,6 +479,34 @@ describe('CompoundModule Contract', () => {
       expect(await daiToken.balanceOf(compoundModule.address)).to.equal(0);
       expect(await cDaiToken.callStatic.borrowBalanceCurrent(compoundModule.address)).to.equal(expectedMorphoBorrowingBalance);
     });
+
+    it('Borrower should be able to repay less than what is on Compound', async () => {
+      const amount = to6Decimals(utils.parseUnits('100'));
+      await usdcToken.connect(borrower1).approve(compoundModule.address, amount);
+      await compoundModule.connect(borrower1).deposit(CUSDC_ADDRESS, amount);
+      const collateralBalanceInCToken = (await compoundModule.lendingBalanceInOf(CUSDC_ADDRESS, borrower1.getAddress())).onComp;
+      const cExchangeRate = await cUsdcToken.callStatic.exchangeRateCurrent();
+      const collateralBalanceInUnderlying = cTokenToUnderlying(collateralBalanceInCToken, cExchangeRate);
+      const { collateralFactorMantissa } = await comptroller.markets(CDAI_ADDRESS);
+      const usdcPriceMantissa = await compoundOracle.getUnderlyingPrice(CUSDC_ADDRESS);
+      const daiPriceMantissa = await compoundOracle.getUnderlyingPrice(CDAI_ADDRESS);
+      const maxToBorrow = collateralBalanceInUnderlying.mul(usdcPriceMantissa).div(daiPriceMantissa).mul(collateralFactorMantissa).div(SCALE);
+
+      const daiBalanceBefore = await daiToken.balanceOf(borrower1.getAddress());
+      await compoundModule.connect(borrower1).borrow(CDAI_ADDRESS, maxToBorrow);
+      const borrowingBalanceOnComp = (await compoundModule.borrowingBalanceInOf(CDAI_ADDRESS, borrower1.getAddress())).onComp;
+      const borrowIndex1 = await cDaiToken.borrowIndex();
+      const borrowingBalanceOnCompInUnderlying = borrowingBalanceOnComp.mul(borrowIndex1).div(SCALE);
+      const toRepay = borrowingBalanceOnCompInUnderlying.div(2);
+      await daiToken.connect(borrower1).approve(compoundModule.address, toRepay);
+      const borrowIndex2 = await cDaiToken.borrowIndex();
+      await compoundModule.connect(borrower1).repay(CDAI_ADDRESS, toRepay);
+      const daiBalanceAfter = await daiToken.balanceOf(borrower1.getAddress());
+
+      const expectedBalanceOnComp = borrowingBalanceOnComp.sub(borrowingBalanceOnCompInUnderlying.div(2).mul(SCALE).div(borrowIndex2));
+      expect((await compoundModule.borrowingBalanceInOf(CDAI_ADDRESS, borrower1.getAddress())).onComp).to.equal(expectedBalanceOnComp);
+      expect(daiBalanceAfter).to.equal(daiBalanceBefore.add(maxToBorrow).sub(toRepay));
+    });
   });
 
   describe('P2P interactions between lender and borrowers', () => {
@@ -818,6 +846,49 @@ describe('CompoundModule Contract', () => {
       expect(removeDigitsBigNumber(5, lendingBalanceOnComp2)).to.equal(removeDigitsBigNumber(5, underlyingToCToken(lendingBalanceInUnderlying, cDaiExchangeRate2)));
       expect(removeDigitsBigNumber(2, borrowingBalanceOnComp)).to.equal(removeDigitsBigNumber(2, expectedBorrowingBalanceOnComp));
       expect(removeDigitsBigNumber(1, usdtBorrowingBalanceInUnderlying)).to.equal(removeDigitsBigNumber(1, maxToBorrow));
+    });
+
+    it('Lender should be connected to borrowers already on Morpho when depositing', async () => {
+      const collateralAmount = to6Decimals(utils.parseUnits('100'));
+      const lendingAmount = utils.parseUnits('100');
+      const borrowingAmount = utils.parseUnits('30');
+
+      // borrower1 borrows
+      await usdcToken.connect(borrower1).approve(compoundModule.address, collateralAmount);
+      await compoundModule.connect(borrower1).deposit(CUSDC_ADDRESS, collateralAmount);
+      await compoundModule.connect(borrower1).borrow(CDAI_ADDRESS, borrowingAmount);
+      const borrower1BorrowingBalanceOnComp = (await compoundModule.borrowingBalanceInOf(CDAI_ADDRESS, borrower1.getAddress())).onComp;
+
+      // borrower2 borrows
+      await usdcToken.connect(borrower2).approve(compoundModule.address, collateralAmount);
+      await compoundModule.connect(borrower2).deposit(CUSDC_ADDRESS, collateralAmount);
+      await compoundModule.connect(borrower2).borrow(CDAI_ADDRESS, borrowingAmount);
+      const borrower2BorrowingBalanceOnComp = (await compoundModule.borrowingBalanceInOf(CDAI_ADDRESS, borrower2.getAddress())).onComp;
+
+      // borrower3 borrows
+      await usdcToken.connect(borrower3).approve(compoundModule.address, collateralAmount);
+      await compoundModule.connect(borrower3).deposit(CUSDC_ADDRESS, collateralAmount);
+      await compoundModule.connect(borrower3).borrow(CDAI_ADDRESS, borrowingAmount);
+      const borrower3BorrowingBalanceOnComp = (await compoundModule.borrowingBalanceInOf(CDAI_ADDRESS, borrower3.getAddress())).onComp;
+
+      // lender1 deposit
+      await daiToken.connect(lender1).approve(compoundModule.address, lendingAmount);
+      await compoundModule.connect(lender1).deposit(CDAI_ADDRESS, lendingAmount);
+      const cExchangeRate = await cDaiToken.callStatic.exchangeRateStored();
+      const borrowIndex = await cDaiToken.borrowIndex();
+      const mUnitExchangeRate = await morpho.mUnitExchangeRate(CDAI_ADDRESS);
+
+      // Check balances
+      const lendingBalanceOnMorpho = (await compoundModule.lendingBalanceInOf(CDAI_ADDRESS, lender1.getAddress())).onMorpho;
+      const lendingBalanceOnComp = (await compoundModule.lendingBalanceInOf(CDAI_ADDRESS, lender1.getAddress())).onComp;
+      const underlyingMatched = (borrower1BorrowingBalanceOnComp.add(borrower2BorrowingBalanceOnComp).add(borrower3BorrowingBalanceOnComp)).mul(borrowIndex).div(SCALE);
+      expectedLendingBalanceOnMorpho = underlyingMatched.mul(SCALE).div(mUnitExchangeRate);
+      expectedLendingBalanceOnComp = underlyingToCToken(lendingAmount.sub(underlyingMatched), cExchangeRate);
+      expect(removeDigitsBigNumber(2, lendingBalanceOnMorpho)).to.equal(removeDigitsBigNumber(2, expectedLendingBalanceOnMorpho));
+      expect(lendingBalanceOnComp).to.equal(expectedLendingBalanceOnComp);
+      expect((await compoundModule.borrowingBalanceInOf(CDAI_ADDRESS, borrower1.getAddress())).onComp).to.be.lte(1);
+      expect((await compoundModule.borrowingBalanceInOf(CDAI_ADDRESS, borrower2.getAddress())).onComp).to.be.lte(1);
+      expect((await compoundModule.borrowingBalanceInOf(CDAI_ADDRESS, borrower3.getAddress())).onComp).to.be.lte(1);
     });
   });
 
