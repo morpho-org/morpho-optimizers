@@ -246,7 +246,7 @@ contract CompoundModule is ReentrancyGuard {
         IERC20 erc20Token = IERC20(cErc20Token.underlying());
         uint256 mExchangeRate = morpho.updateMUnitExchangeRate(_cErc20Address);
 
-        // If some borrowers are on Compound, we must move them to Morpho
+        // If some lenders are on Compound, we must move them to Morpho
         if (lendersOnComp[_cErc20Address].length() > 0) {
             uint256 remainingToBorrowOnComp = _moveLendersFromCompToMorpho(
                 _cErc20Address,
@@ -468,7 +468,7 @@ contract CompoundModule is ReentrancyGuard {
         }
 
         // Transfer ERC20 tokens to liquidator
-        erc20CollateralToken.safeTransfer(msg.sender, _amount);
+        erc20CollateralToken.safeTransfer(msg.sender, amountToSeize);
     }
 
     /* Internal */
