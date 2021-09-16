@@ -98,24 +98,24 @@ contract Morpho is Ownable {
     }
 
     /** @dev Creates new market to borrow/lend.
-     *  @param _cTokensAddresses The addresses of the markets to add.
+     *  @param _marketAddresses The addresses of the markets to add.
      */
-    function createMarkets(address[] calldata _cTokensAddresses) external onlyOwner {
-        uint256[] memory results = compoundModule.enterMarkets(_cTokensAddresses);
-        for (uint256 i; i < _cTokensAddresses.length; i++) {
+    function createMarkets(address[] calldata _marketAddresses) external onlyOwner {
+        uint256[] memory results = compoundModule.enterMarkets(_marketAddresses);
+        for (uint256 i; i < _marketAddresses.length; i++) {
             require(results[i] == 0, "Enter market failed on Compound");
-            address cTokenAddress = _cTokensAddresses[i];
-            closeFactor[cTokenAddress] = 0.5e18;
-            liquidationIncentive[cTokenAddress] = 1e18;
-            mUnitExchangeRate[cTokenAddress] = 1e18;
-            lastUpdateBlockNumber[cTokenAddress] = block.number;
-            thresholds[cTokenAddress][Threshold.Underlying] = 1e18;
-            thresholds[cTokenAddress][Threshold.CToken] = 1e7;
-            thresholds[cTokenAddress][Threshold.MUnit] = 1e18;
-            thresholds[cTokenAddress][Threshold.CdUnit] = 1e16;
-            updateBPY(cTokenAddress);
-            updateCollateralFactor(cTokenAddress);
-            emit CreateMarket(cTokenAddress);
+            address _marketAddress = _marketAddresses[i];
+            closeFactor[_marketAddress] = 0.5e18;
+            liquidationIncentive[_marketAddress] = 1e18;
+            mUnitExchangeRate[_marketAddress] = 1e18;
+            lastUpdateBlockNumber[_marketAddress] = block.number;
+            thresholds[_marketAddress][Threshold.Underlying] = 1e18;
+            thresholds[_marketAddress][Threshold.CToken] = 1e7;
+            thresholds[_marketAddress][Threshold.MUnit] = 1e18;
+            thresholds[_marketAddress][Threshold.CdUnit] = 1e16;
+            updateBPY(_marketAddress);
+            updateCollateralFactor(_marketAddress);
+            emit CreateMarket(_marketAddress);
         }
     }
 
