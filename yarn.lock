@@ -612,10 +612,10 @@
     "@ethersproject/properties" "^5.4.0"
     "@ethersproject/strings" "^5.4.0"
 
-"@giry/hardhat-test-solidity@^0.0.3":
-  version "0.0.3"
-  resolved "https://registry.yarnpkg.com/@giry/hardhat-test-solidity/-/hardhat-test-solidity-0.0.3.tgz#6832c8fe9ac187e6b65f2b2a65bbbd46020addaa"
-  integrity sha512-SaRovSd1Oe1kYKu3dJJjaoaLvZyRfBlX7jHQF/WmmdaA4U7MVGQjZ5Rm2G5IXTXWmJS7R53wAKkpeEocq+q94A==
+"@giry/hardhat-test-solidity@^0.0.7":
+  version "0.0.7"
+  resolved "https://registry.yarnpkg.com/@giry/hardhat-test-solidity/-/hardhat-test-solidity-0.0.7.tgz#ff831452f8588736b907493c79793aca8d7f9bfa"
+  integrity sha512-Cd0Aicw3W7GD2O9zWESFQrGz/cA91w566t7XqBE5pj85wDA9l967c6mcIXFjeewfzFu8wsdXARcs9Yz7+UUNsA==
 
 "@nodelib/fs.scandir@2.1.5":
   version "2.1.5"
