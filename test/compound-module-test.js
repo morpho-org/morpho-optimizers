@@ -83,7 +83,7 @@ describe('CompoundModule Contract', () => {
 
   // Removes the last digits of a number: used to remove dust errors
   const removeDigitsBigNumber = (decimalsToRemove, number) => (number.sub(number.mod(BigNumber.from(10).pow(decimalsToRemove)))).div(BigNumber.from(10).pow(decimalsToRemove));
-  const removeDigits = (decimalsToRemove, number) => (number - (number % (10**decimalsToRemove))) / (10**decimalsToRemove);
+  const removeDigits = (decimalsToRemove, number) => (number - (number % (10 ** decimalsToRemove))) / (10 ** decimalsToRemove);
 
   const computeNewMorphoExchangeRate = (currentExchangeRate, BPY, currentBlockNumber, lastUpdateBlockNumber) => {
     // Use of decimal.js library for better accuracy
@@ -266,7 +266,7 @@ describe('CompoundModule Contract', () => {
     });
 
     it('Only Owner should set the close factor of a market', async () => {
-      const newCloseFactor= utils.parseUnits('0.7');
+      const newCloseFactor = utils.parseUnits('0.7');
       await morpho.connect(owner).setCloseFactor(CDAI_ADDRESS, newCloseFactor);
       expect(await morpho.closeFactor(CDAI_ADDRESS)).to.equal(newCloseFactor);
       expect(morpho.connect(lender1).setCloseFactor(CDAI_ADDRESS, utils.parseUnits('0.8'))).to.be.reverted;
