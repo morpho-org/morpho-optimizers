@@ -22,23 +22,23 @@ async function main() {
   const CZRX_ADDRESS = '0x6b8b0d7875b4182fb126877023fb93b934dd302a';
   const PROXY_COMPTROLLER_ADDRESS = '0xcfa7b0e37f5ac60f3ae25226f5e39ec59ad26152';
 
-	const [deployer] = await ethers.getSigners();
+  const [deployer] = await ethers.getSigners();
 
-	console.log('Deploying contracts with the account:', deployer.address);
+  console.log('Deploying contracts with the account:', deployer.address);
 
-	console.log('Account balance:', (await deployer.getBalance()).toString());
+  console.log('Account balance:', (await deployer.getBalance()).toString());
 
-	const Morpho = await ethers.getContractFactory('Morpho');
-	const morpho = await Morpho.deploy(PROXY_COMPTROLLER_ADDRESS);
+  const Morpho = await ethers.getContractFactory('Morpho');
+  const morpho = await Morpho.deploy(PROXY_COMPTROLLER_ADDRESS);
   await morpho.deployed();
 
   console.log('Morpho address:', morpho.address);
 
-	const CompoundModule = await ethers.getContractFactory('CompoundModule');
-	const compoundModule = await CompoundModule.deploy(morpho.address, PROXY_COMPTROLLER_ADDRESS);
+  const CompoundModule = await ethers.getContractFactory('CompoundModule');
+  const compoundModule = await CompoundModule.deploy(morpho.address, PROXY_COMPTROLLER_ADDRESS);
   await compoundModule.deployed();
 
-	console.log('CompoundModule address:', compoundModule.address);
+  console.log('CompoundModule address:', compoundModule.address);
 
   await morpho.connect(deployer).setCompoundModule(compoundModule.address);
   await morpho.connect(deployer).createMarkets([CDAI_ADDRESS, CUSDC_ADDRESS, CBAT_ADDRESS, CZRX_ADDRESS]);

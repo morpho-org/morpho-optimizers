@@ -1,3 +1,17 @@
 {
-	"printWidth": 100
+  "overrides": [
+    {
+      "files": "*.sol",
+      "options": {
+        "printWidth": 100
+      }
+    },
+    {
+      "files": "*.js",
+      "options": {
+        "printWidth": 200,
+        "singleQuote": true
+      }
+    }
+  ]
 }

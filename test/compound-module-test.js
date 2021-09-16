@@ -15,7 +15,6 @@ const comptrollerABI = require('./abis/Comptroller.json');
 const compoundOracleABI = require('./abis/UniswapAnchoredView.json');
 
 describe('CompoundModule Contract', () => {
-
   const CETH_ADDRESS = '0x4Ddc2D193948926D02f9B1fE9e1daa0718270ED5';
   const DAI_ADDRESS = '0x6B175474E89094C44Da98b954EedeAC495271d0F';
   const CDAI_ADDRESS = '0x5d3a536e4d6dbd6114cc1ead35777bab948e3643';
@@ -82,8 +81,8 @@ describe('CompoundModule Contract', () => {
   // const erc = await cDaiToken.callStatic.exchangeRateStored();
 
   // Removes the last digits of a number: used to remove dust errors
-  const removeDigitsBigNumber = (decimalsToRemove, number) => (number.sub(number.mod(BigNumber.from(10).pow(decimalsToRemove)))).div(BigNumber.from(10).pow(decimalsToRemove));
-  const removeDigits = (decimalsToRemove, number) => (number - (number % (10 ** decimalsToRemove))) / (10 ** decimalsToRemove);
+  const removeDigitsBigNumber = (decimalsToRemove, number) => number.sub(number.mod(BigNumber.from(10).pow(decimalsToRemove))).div(BigNumber.from(10).pow(decimalsToRemove));
+  const removeDigits = (decimalsToRemove, number) => (number - (number % 10 ** decimalsToRemove)) / 10 ** decimalsToRemove;
 
   const computeNewMorphoExchangeRate = (currentExchangeRate, BPY, currentBlockNumber, lastUpdateBlockNumber) => {
     // Use of decimal.js library for better accuracy
@@ -138,18 +137,23 @@ describe('CompoundModule Contract', () => {
     const daiSigner = await ethers.getSigner(daiMinter);
     daiToken = await ethers.getContractAt(daiAbi, DAI_ADDRESS, daiSigner);
     const daiAmount = utils.parseUnits('100000000');
-    await hre.network.provider.send('hardhat_setBalance', [
-      daiMinter,
-      utils.hexValue(ethAmount),
-    ]);
+    await hre.network.provider.send('hardhat_setBalance', [daiMinter, utils.hexValue(ethAmount)]);
 
     // Mint DAI to all lenders and borrowers
-    await Promise.all(lenders.map(async lender => {
-      await daiToken.mint(lender.getAddress(), daiAmount, { from: daiMinter });
-    }));
-    await Promise.all(borrowers.map(async borrower => {
-      await daiToken.mint(borrower.getAddress(), daiAmount, { from: daiMinter });
-    }));
+    await Promise.all(
+      lenders.map(async (lender) => {
+        await daiToken.mint(lender.getAddress(), daiAmount, {
+          from: daiMinter,
+        });
+      })
+    );
+    await Promise.all(
+      borrowers.map(async (borrower) => {
+        await daiToken.mint(borrower.getAddress(), daiAmount, {
+          from: daiMinter,
+        });
+      })
+    );
 
     const usdcMinter = '0x5b6122c109b78c6755486966148c1d70a50a47d7';
     // const masterMinter = await usdcToken.masterMinter();
@@ -160,15 +164,16 @@ describe('CompoundModule Contract', () => {
     const usdcSigner = await ethers.getSigner(usdcMinter);
     usdcToken = await ethers.getContractAt(usdcAbi, USDC_ADDRESS, usdcSigner);
     const usdcAmount = BigNumber.from(10).pow(10); // 10 000 USDC
-    await hre.network.provider.send('hardhat_setBalance', [
-      usdcMinter,
-      utils.hexValue(ethAmount),
-    ]);
+    await hre.network.provider.send('hardhat_setBalance', [usdcMinter, utils.hexValue(ethAmount)]);
 
     // Mint USDC
-    await Promise.all(borrowers.map(async borrower => {
-      await usdcToken.mint(borrower.getAddress(), usdcAmount, { from: usdcMinter });
-    }));
+    await Promise.all(
+      borrowers.map(async (borrower) => {
+        await usdcToken.mint(borrower.getAddress(), usdcAmount, {
+          from: usdcMinter,
+        });
+      })
+    );
 
     underlyingThreshold = BigNumber.from(1).pow(18);
 
@@ -228,7 +233,6 @@ describe('CompoundModule Contract', () => {
       await expect(morpho.connect(borrower1).updateThreshold(CUSDC_ADDRESS, 2, newThreshold)).to.be.reverted;
     });
 
-
     it('Only Owner should be allowed to list/unlisted a market', async () => {
       await morpho.connect(owner).createMarkets([CUNI_ADDRESS]);
       expect(morpho.connect(lender1).listMarket(CUNI_ADDRESS)).to.be.reverted;
@@ -245,7 +249,7 @@ describe('CompoundModule Contract', () => {
       const { blockNumber } = await morpho.connect(owner).createMarkets([CUNI_ADDRESS]);
       expect(await morpho.isListed(CUNI_ADDRESS)).not.to.be.true;
 
-      const BPY = (lendBPY.add(borrowBPY)).div(2);
+      const BPY = lendBPY.add(borrowBPY).div(2);
       expect(await morpho.BPY(CUNI_ADDRESS)).to.equal(BPY);
 
       const { collateralFactorMantissa } = await comptroller.markets(CUNI_ADDRESS);
@@ -373,7 +377,7 @@ describe('CompoundModule Contract', () => {
         expect(removeDigitsBigNumber(7, await cDaiToken.balanceOf(compoundModule.address))).to.equal(removeDigitsBigNumber(7, expectedCTokenBalance));
         expect(removeDigitsBigNumber(4, (await compoundModule.lendingBalanceInOf(CDAI_ADDRESS, lender.getAddress())).onComp)).to.equal(removeDigitsBigNumber(4, expectedLendingBalanceOnComp));
         expect((await compoundModule.lendingBalanceInOf(CDAI_ADDRESS, lender.getAddress())).onMorpho).to.equal(0);
-      };
+      }
     });
   });
 
@@ -415,10 +419,8 @@ describe('CompoundModule Contract', () => {
       expect(daiBalanceAfter).to.equal(daiBalanceBefore.add(maxToBorrow));
       const borrowingBalanceOnCompInUnderlying = (await compoundModule.borrowingBalanceInOf(CDAI_ADDRESS, borrower1.getAddress())).onComp.mul(borrowIndex).div(SCALE);
       let diff;
-      if (borrowingBalanceOnCompInUnderlying.gt(maxToBorrow))
-        diff = borrowingBalanceOnCompInUnderlying.sub(maxToBorrow);
-      else
-        diff = maxToBorrow.sub(borrowingBalanceOnCompInUnderlying);
+      if (borrowingBalanceOnCompInUnderlying.gt(maxToBorrow)) diff = borrowingBalanceOnCompInUnderlying.sub(maxToBorrow);
+      else diff = maxToBorrow.sub(borrowingBalanceOnCompInUnderlying);
       expect(removeDigitsBigNumber(1, diff)).to.equal(0);
 
       // Check Morpho balances
@@ -466,10 +468,8 @@ describe('CompoundModule Contract', () => {
         expect(daiBalanceAfter).to.equal(daiBalanceBefore.add(borrowedAmount));
         const borrowingBalanceOnCompInUnderlying = (await compoundModule.borrowingBalanceInOf(CDAI_ADDRESS, borrower.getAddress())).onComp.mul(borrowIndex).div(SCALE);
         let diff;
-        if (borrowingBalanceOnCompInUnderlying.gt(borrowedAmount))
-          diff = borrowingBalanceOnCompInUnderlying.sub(borrowedAmount);
-        else
-          diff = borrowedAmount.sub(borrowingBalanceOnCompInUnderlying);
+        if (borrowingBalanceOnCompInUnderlying.gt(borrowedAmount)) diff = borrowingBalanceOnCompInUnderlying.sub(borrowedAmount);
+        else diff = borrowedAmount.sub(borrowingBalanceOnCompInUnderlying);
         expect(removeDigitsBigNumber(1, diff)).to.equal(0);
         // Update previous borrow index
         previousBorrowIndex = borrowIndex;
@@ -585,7 +585,9 @@ describe('CompoundModule Contract', () => {
       expect(removeDigitsBigNumber(4, (await compoundModule.lendingBalanceInOf(CDAI_ADDRESS, lender1.getAddress())).onMorpho)).to.equal(0);
 
       // Check borrowing balances of borrower1
-      expect(removeDigitsBigNumber(6, (await compoundModule.borrowingBalanceInOf(CDAI_ADDRESS, borrower1.getAddress())).onComp)).to.equal(removeDigitsBigNumber(6, expectedBorrowerBorrowingBalanceOnComp));
+      expect(removeDigitsBigNumber(6, (await compoundModule.borrowingBalanceInOf(CDAI_ADDRESS, borrower1.getAddress())).onComp)).to.equal(
+        removeDigitsBigNumber(6, expectedBorrowerBorrowingBalanceOnComp)
+      );
       expect(removeDigitsBigNumber(4, (await compoundModule.borrowingBalanceInOf(CDAI_ADDRESS, borrower1.getAddress())).onMorpho)).to.equal(0);
     });
 
@@ -686,7 +688,9 @@ describe('CompoundModule Contract', () => {
 
       // Check lending balances of lender2: lender2 should have replaced lender1
       expect(removeDigitsBigNumber(1, (await compoundModule.lendingBalanceInOf(CDAI_ADDRESS, lender2.getAddress())).onComp)).to.equal(removeDigitsBigNumber(1, expectedLender2LendingBalanceOnComp));
-      expect(removeDigitsBigNumber(6, (await compoundModule.lendingBalanceInOf(CDAI_ADDRESS, lender2.getAddress())).onMorpho)).to.equal(removeDigitsBigNumber(6, expectedLender2LendingBalanceOnMorpho));
+      expect(removeDigitsBigNumber(6, (await compoundModule.lendingBalanceInOf(CDAI_ADDRESS, lender2.getAddress())).onMorpho)).to.equal(
+        removeDigitsBigNumber(6, expectedLender2LendingBalanceOnMorpho)
+      );
 
       // Check lending balances of lender3: lender3 balances should not move
       expect((await compoundModule.lendingBalanceInOf(CDAI_ADDRESS, lender3.getAddress())).onComp).to.equal(lender3LendingBalanceOnComp);
@@ -881,7 +885,7 @@ describe('CompoundModule Contract', () => {
       // Check balances
       const lendingBalanceOnMorpho = (await compoundModule.lendingBalanceInOf(CDAI_ADDRESS, lender1.getAddress())).onMorpho;
       const lendingBalanceOnComp = (await compoundModule.lendingBalanceInOf(CDAI_ADDRESS, lender1.getAddress())).onComp;
-      const underlyingMatched = (borrower1BorrowingBalanceOnComp.add(borrower2BorrowingBalanceOnComp).add(borrower3BorrowingBalanceOnComp)).mul(borrowIndex).div(SCALE);
+      const underlyingMatched = borrower1BorrowingBalanceOnComp.add(borrower2BorrowingBalanceOnComp).add(borrower3BorrowingBalanceOnComp).mul(borrowIndex).div(SCALE);
       expectedLendingBalanceOnMorpho = underlyingMatched.mul(SCALE).div(mUnitExchangeRate);
       expectedLendingBalanceOnComp = underlyingToCToken(lendingAmount.sub(underlyingMatched), cExchangeRate);
       expect(removeDigitsBigNumber(2, lendingBalanceOnMorpho)).to.equal(removeDigitsBigNumber(2, expectedLendingBalanceOnMorpho));
@@ -893,16 +897,12 @@ describe('CompoundModule Contract', () => {
   });
 
   xdescribe('Test attacks', () => {
-    it('Should not be DDOS by a lender or a group of lenders', async () => {
-    });
+    it('Should not be DDOS by a lender or a group of lenders', async () => {});
 
-    it('Should not be DDOS by a borrower or a group of borrowers', async () => {
-    });
+    it('Should not be DDOS by a borrower or a group of borrowers', async () => {});
 
-    it('Should not be subject to flash loan attacks', async () => {
-    });
+    it('Should not be subject to flash loan attacks', async () => {});
 
-    it('Should not be subjected to Oracle Manipulation attacks', async () => {
-    });
+    it('Should not be subjected to Oracle Manipulation attacks', async () => {});
   });
 });
