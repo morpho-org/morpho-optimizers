@@ -168,6 +168,13 @@ describe('CompoundModule Contract', () => {
 
     // Mint USDC
     await Promise.all(
+      lenders.map(async (lender) => {
+        await usdcToken.mint(lender.getAddress(), usdcAmount, {
+          from: usdcMinter,
+        });
+      })
+    );
+    await Promise.all(
       borrowers.map(async (borrower) => {
         await usdcToken.mint(borrower.getAddress(), usdcAmount, {
           from: usdcMinter,
@@ -893,6 +900,56 @@ describe('CompoundModule Contract', () => {
       expect((await compoundModule.borrowingBalanceInOf(CDAI_ADDRESS, borrower1.getAddress())).onComp).to.be.lte(1);
       expect((await compoundModule.borrowingBalanceInOf(CDAI_ADDRESS, borrower2.getAddress())).onComp).to.be.lte(1);
       expect((await compoundModule.borrowingBalanceInOf(CDAI_ADDRESS, borrower3.getAddress())).onComp).to.be.lte(1);
+    });
+  });
+
+  describe.only('Test liquidation', () => {
+    it('Borrower should be liquidated while only on Compound', async () => {
+      const amount = to6Decimals(utils.parseUnits('100'));
+      await usdcToken.connect(borrower1).approve(compoundModule.address, amount);
+      await compoundModule.connect(borrower1).deposit(CUSDC_ADDRESS, amount);
+      const collateralBalanceInCToken = (await compoundModule.lendingBalanceInOf(CUSDC_ADDRESS, borrower1.getAddress())).onComp;
+      const cExchangeRate = await cUsdcToken.callStatic.exchangeRateCurrent();
+      const collateralBalanceInUnderlying = cTokenToUnderlying(collateralBalanceInCToken, cExchangeRate);
+      const { collateralFactorMantissa } = await comptroller.markets(CDAI_ADDRESS);
+      const usdcPriceMantissa = await compoundOracle.getUnderlyingPrice(CUSDC_ADDRESS);
+      const daiPriceMantissa = await compoundOracle.getUnderlyingPrice(CDAI_ADDRESS);
+      const maxToBorrow = collateralBalanceInUnderlying.mul(usdcPriceMantissa).div(daiPriceMantissa).mul(collateralFactorMantissa).div(SCALE);
+
+      // Borrow
+      await compoundModule.connect(borrower1).borrow(CDAI_ADDRESS, maxToBorrow);
+      const collateralBalanceBefore = (await compoundModule.lendingBalanceInOf(CUSDC_ADDRESS, borrower1.getAddress())).onComp;
+      const borrowingBalanceBefore = (await compoundModule.borrowingBalanceInOf(CDAI_ADDRESS, borrower1.getAddress())).onComp;
+
+      // Mine block
+      await hre.network.provider.send('evm_mine', []);
+
+      // Liquidate
+      const toRepay = maxToBorrow.div(2);
+      await daiToken.connect(lender1).approve(compoundModule.address, toRepay);
+      const USDCBalanceBefore = await usdcToken.balanceOf(lender1.getAddress());
+      const daiBalanceBefore = await daiToken.balanceOf(lender1.getAddress());
+      await compoundModule.connect(lender1).liquidate(CDAI_ADDRESS, CUSDC_ADDRESS, borrower1.getAddress(), toRepay);
+      const USDCBalanceAfter = await usdcToken.balanceOf(lender1.getAddress());
+      const daiBalanceAfter = await daiToken.balanceOf(lender1.getAddress());
+
+      // Liquidation parameters
+      const borrowIndex = await cDaiToken.borrowIndex();
+      const cUsdcExchangeRate = await cUsdcToken.callStatic.exchangeRateCurrent();
+      const liquidationIncentive = await morpho.liquidationIncentive(CDAI_ADDRESS);
+      const collateralAssetPrice = await compoundOracle.getUnderlyingPrice(CUSDC_ADDRESS);
+      const borrowedAssetPrice = await compoundOracle.getUnderlyingPrice(CDAI_ADDRESS);
+      const amountToSeize = toRepay.mul(borrowedAssetPrice).div(collateralAssetPrice).mul(liquidationIncentive).div(SCALE);
+      const expectedCollateralBalanceAfter = collateralBalanceBefore.sub(underlyingToCToken(amountToSeize, cUsdcExchangeRate));
+      const expectedBorrowingBalanceAfter = borrowingBalanceBefore.sub(toRepay.mul(SCALE).div(borrowIndex));
+      const expectedUSDCBalanceAfter = USDCBalanceBefore.add(amountToSeize);
+      const expectedDaiBalanceAfter = daiBalanceBefore.sub(toRepay);
+
+      // Check balances
+      expect((await compoundModule.lendingBalanceInOf(CUSDC_ADDRESS, borrower1.getAddress())).onComp).to.equal(expectedCollateralBalanceAfter);
+      expect((await compoundModule.borrowingBalanceInOf(CDAI_ADDRESS, borrower1.getAddress())).onComp).to.equal(expectedBorrowingBalanceAfter);
+      expect(USDCBalanceAfter).to.equal(expectedUSDCBalanceAfter);
+      expect(daiBalanceAfter).to.equal(expectedDaiBalanceAfter);
     });
   });
 
