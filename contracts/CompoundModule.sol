@@ -54,6 +54,8 @@ contract CompoundModule is ReentrancyGuard {
         uint256 borrowingBalance;
         uint256 priceCollateralMantissa;
         uint256 priceBorrowedMantissa;
+        uint256 amountToSeize;
+        uint256 onCompInUnderlying;
     }
 
     /* Storage */
@@ -239,7 +241,6 @@ contract CompoundModule is ReentrancyGuard {
             0,
             _amount
         );
-
         require(debtValue < maxDebtValue, "Not enough collateral");
 
         ICErc20 cErc20Token = ICErc20(_cErc20Address);
@@ -267,7 +268,7 @@ contract CompoundModule is ReentrancyGuard {
             if (remainingToBorrowOnComp > 0) {
                 require(
                     cErc20Token.borrow(remainingToBorrowOnComp) == 0,
-                    "Borrow on Compound failed."
+                    "Borrow on Compound failed"
                 );
                 borrowingBalanceInOf[_cErc20Address][msg.sender].onComp += remainingToBorrowOnComp
                     .div(cErc20Token.borrowIndex()); // In cdUnit
@@ -275,7 +276,7 @@ contract CompoundModule is ReentrancyGuard {
             }
         } else {
             _moveLenderFromMorphoToComp(msg.sender);
-            require(cErc20Token.borrow(_amount) == 0, "Borrow on Compound failed.");
+            require(cErc20Token.borrow(_amount) == 0, "Borrow on Compound failed");
             borrowingBalanceInOf[_cErc20Address][msg.sender].onComp += _amount.div(
                 cErc20Token.borrowIndex()
             ); // In cdUnit
@@ -362,9 +363,9 @@ contract CompoundModule is ReentrancyGuard {
                 // Then, we move borrowers not matched anymore from Morpho to Compound and borrow the amount directly on Compound
                 require(
                     _moveBorrowersFromMorphoToComp(_cErc20Address, remainingToWithdraw) == 0,
-                    "All liquidity should have been moved."
+                    "All liquidity should have been moved"
                 );
-                require(cErc20Token.borrow(remainingToWithdraw) == 0, "Borrow on Compound failed.");
+                require(cErc20Token.borrow(remainingToWithdraw) == 0, "Borrow on Compound failed");
             }
         }
 
@@ -412,7 +413,7 @@ contract CompoundModule is ReentrancyGuard {
             );
         require(
             _amount <= vars.borrowingBalance.mul(morpho.closeFactor(_cErc20BorrowedAddress)),
-            "Cannot liquidate more than allowed by close factor"
+            "Cannot repay more than allowed by close factor"
         );
 
         _repay(_cErc20BorrowedAddress, _borrower, _amount);
@@ -422,7 +423,7 @@ contract CompoundModule is ReentrancyGuard {
         vars.priceBorrowedMantissa = compoundOracle.getUnderlyingPrice(_cErc20BorrowedAddress);
         require(
             vars.priceCollateralMantissa != 0 && vars.priceBorrowedMantissa != 0,
-            "Oracle failed."
+            "Oracle failed"
         );
 
         /*
@@ -434,42 +435,64 @@ contract CompoundModule is ReentrancyGuard {
         ICErc20 cErc20CollateralToken = ICErc20(_cErc20CollateralAddress);
         IERC20 erc20CollateralToken = IERC20(cErc20CollateralToken.underlying());
 
-        uint256 amountToSeize = _amount
+        vars.amountToSeize = _amount
             .mul(vars.priceBorrowedMantissa)
-            .div(vars.priceCollateralMantissa)
-            .mul(morpho.liquidationIncentive(_cErc20CollateralAddress));
+            .mul(morpho.liquidationIncentive(_cErc20BorrowedAddress))
+            .div(vars.priceCollateralMantissa);
 
-        uint256 onCompInUnderlying = lendingBalanceInOf[_cErc20CollateralAddress][_borrower]
+        vars.onCompInUnderlying = lendingBalanceInOf[_cErc20CollateralAddress][_borrower]
             .onComp
-            .mul(cErc20CollateralToken.exchangeRateCurrent());
-        uint256 totalCollateral = onCompInUnderlying +
+            .mul(cErc20CollateralToken.exchangeRateStored());
+        uint256 totalCollateral = vars.onCompInUnderlying +
             lendingBalanceInOf[_cErc20CollateralAddress][_borrower].onMorpho.mul(
                 morpho.updateMUnitExchangeRate(_cErc20CollateralAddress)
             );
 
         require(
-            amountToSeize <= totalCollateral,
-            "Cannot get more than collateral balance of borrower."
+            vars.amountToSeize <= totalCollateral,
+            "Cannot get more than collateral balance of borrower"
         );
 
-        if (amountToSeize <= onCompInUnderlying) {
-            _redeemErc20FromComp(_cErc20CollateralAddress, amountToSeize);
-            lendingBalanceInOf[_cErc20CollateralAddress][_borrower].onComp -= amountToSeize.div(
-                cErc20CollateralToken.exchangeRateCurrent()
-            );
-            // Remove borrower from lists if needed
-            if (
-                borrowingBalanceInOf[_cErc20CollateralAddress][_borrower].onComp <
-                morpho.thresholds(_cErc20CollateralAddress, IMorpho.Threshold.CdUnit)
-            ) borrowersOnComp[_cErc20CollateralAddress].remove(_borrower);
+        if (vars.amountToSeize <= vars.onCompInUnderlying) {
+            // Seize tokens from Compound
+            lendingBalanceInOf[_cErc20CollateralAddress][_borrower].onComp -= vars
+                .amountToSeize
+                .div(cErc20CollateralToken.exchangeRateStored());
+            _redeemErc20FromComp(_cErc20CollateralAddress, vars.amountToSeize);
         } else {
-            _redeemErc20FromComp(_cErc20CollateralAddress, onCompInUnderlying);
-            uint256 toMove = totalCollateral - amountToSeize;
+            // Seize tokens from Morpho and Compound
+            uint256 toMove = vars.amountToSeize - vars.onCompInUnderlying;
+            lendingBalanceInOf[_cErc20CollateralAddress][_borrower].onMorpho -= toMove.div(
+                morpho.mUnitExchangeRate(_cErc20CollateralAddress)
+            );
+
+            // Check balances before and after to avoid round errors issues
+            uint256 balanceBefore = erc20CollateralToken.balanceOf(address(this));
+            require(
+                cErc20CollateralToken.redeem(
+                    lendingBalanceInOf[_cErc20CollateralAddress][_borrower].onComp
+                ) == 0,
+                "Redeem cToken on Compound failed"
+            );
+            lendingBalanceInOf[_cErc20CollateralAddress][_borrower].onComp = 0;
+            require(cErc20CollateralToken.borrow(toMove) == 0, "Borrow on Compound failed");
+            uint256 balanceAfter = erc20CollateralToken.balanceOf(address(this));
+            vars.amountToSeize = balanceAfter - balanceBefore;
             _moveBorrowersFromMorphoToComp(_cErc20CollateralAddress, toMove);
         }
 
+        // Update lists if needed
+        if (
+            lendingBalanceInOf[_cErc20CollateralAddress][_borrower].onComp <
+            morpho.thresholds(_cErc20CollateralAddress, IMorpho.Threshold.CToken)
+        ) lendersOnComp[_cErc20CollateralAddress].remove(_borrower);
+        if (
+            lendingBalanceInOf[_cErc20CollateralAddress][_borrower].onMorpho <
+            morpho.thresholds(_cErc20CollateralAddress, IMorpho.Threshold.MUnit)
+        ) lendersOnMorpho[_cErc20CollateralAddress].remove(_borrower);
+
         // Transfer ERC20 tokens to liquidator
-        erc20CollateralToken.safeTransfer(msg.sender, amountToSeize);
+        erc20CollateralToken.safeTransfer(msg.sender, vars.amountToSeize);
     }
 
     /* Internal */
@@ -559,7 +582,7 @@ contract CompoundModule is ReentrancyGuard {
      */
     function _redeemErc20FromComp(address _cErc20Address, uint256 _amount) internal {
         ICErc20 cErc20Token = ICErc20(_cErc20Address);
-        require(cErc20Token.redeemUnderlying(_amount) == 0, "Redeem ERC20 on Compound failed.");
+        require(cErc20Token.redeemUnderlying(_amount) == 0, "Redeem ERC20 on Compound failed");
     }
 
     /** @dev Finds liquidity on Compound and moves it to Morpho.
@@ -671,7 +694,7 @@ contract CompoundModule is ReentrancyGuard {
 
             i++;
         }
-        require(remainingToMove == 0, "Not enough liquidity to unuse.");
+        require(remainingToMove == 0, "Not enough liquidity to unuse");
     }
 
     /** @dev Finds borrowers on Morpho that match the given `_amount` and moves them to Compound.

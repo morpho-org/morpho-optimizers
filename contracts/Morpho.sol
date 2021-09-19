@@ -106,7 +106,7 @@ contract Morpho is Ownable {
             require(results[i] == 0, "Enter market failed on Compound");
             address _marketAddress = _marketAddresses[i];
             closeFactor[_marketAddress] = 0.5e18;
-            liquidationIncentive[_marketAddress] = 1e18;
+            liquidationIncentive[_marketAddress] = 1.1e18;
             mUnitExchangeRate[_marketAddress] = 1e18;
             lastUpdateBlockNumber[_marketAddress] = block.number;
             thresholds[_marketAddress][Threshold.Underlying] = 1e18;
