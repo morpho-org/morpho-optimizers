@@ -157,9 +157,22 @@ contract CompoundModule is ReentrancyGuard {
 
     /* External */
 
+    /** @dev Enters Compound's markets.
+     *  @param markets The address of the market the user wants to deposit.
+     *  @return The results of entered.
+     */
     function enterMarkets(address[] memory markets) external returns (uint256[] memory) {
         require(msg.sender == address(morpho), "enterMarkets: only Morpho");
         return comptroller.enterMarkets(markets);
+    }
+
+    /** @dev Sets the comptroller and oracle address.
+     *  @param _proxyComptrollerAddress The address of Compound's comptroller.
+     */
+    function setComptroller(address _proxyComptrollerAddress) external {
+        require(msg.sender == address(morpho), "enterMarkets: only Morpho");
+        comptroller = IComptroller(_proxyComptrollerAddress);
+        compoundOracle = ICompoundOracle(comptroller.oracle());
     }
 
     /** @dev Deposits ERC20 tokens in a specific market.
@@ -389,7 +402,7 @@ contract CompoundModule is ReentrancyGuard {
                 morpho.mUnitExchangeRate(_cErc20BorrowedAddress)
             );
         require(
-            _amount <= vars.borrowingBalance.mul(morpho.closeFactor(_cErc20BorrowedAddress)),
+            _amount <= vars.borrowingBalance.mul(comptroller.closeFactorMantissa()),
             "liquidate: cannot repay more than allowed by close factor"
         );
 
@@ -414,7 +427,7 @@ contract CompoundModule is ReentrancyGuard {
 
         vars.amountToSeize = _amount
             .mul(vars.priceBorrowedMantissa)
-            .mul(morpho.liquidationIncentive(_cErc20BorrowedAddress))
+            .mul(comptroller.liquidationIncentiveMantissa())
             .div(vars.priceCollateralMantissa);
 
         vars.onCompInUnderlying = lendingBalanceInOf[_cErc20CollateralAddress][_borrower]
@@ -815,9 +828,8 @@ contract CompoundModule is ReentrancyGuard {
 
             stateBalance.debtValue += vars.toAddDebt.mul(vars.underlyingPrice);
             stateBalance.collateralValue += vars.toAddCollateral;
-            stateBalance.maxDebtValue += vars.toAddCollateral.mul(
-                morpho.collateralFactor(vars.cErc20Entered)
-            );
+            (, uint256 collateralFactorMantissa, ) = comptroller.markets(vars.cErc20Entered);
+            stateBalance.maxDebtValue += vars.toAddCollateral.mul(collateralFactorMantissa);
         }
 
         stateBalance.collateralValue -= stateBalance.redeemedValue;
