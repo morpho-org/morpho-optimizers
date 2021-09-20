@@ -27,6 +27,7 @@ describe('CompoundModule Contract', () => {
   const USDT_ADDRESS = '0xdAC17F958D2ee523a2206206994597C13D831ec7';
   const UNI_ADDRESS = '0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984';
   const PROXY_COMPTROLLER_ADDRESS = '0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B';
+  const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 
   const SCALE = BigNumber.from(10).pow(18);
 
@@ -40,6 +41,7 @@ describe('CompoundModule Contract', () => {
   let uniToken;
   let CompoundModule;
   let compoundModule;
+  let fakeCompoundModule;
 
   let signers;
   let owner;
@@ -123,7 +125,9 @@ describe('CompoundModule Contract', () => {
 
     CompoundModule = await ethers.getContractFactory('CompoundModule');
     compoundModule = await CompoundModule.deploy(morpho.address, PROXY_COMPTROLLER_ADDRESS);
+    fakeCompoundModule = await CompoundModule.deploy(morpho.address, PROXY_COMPTROLLER_ADDRESS);
     await compoundModule.deployed();
+    await fakeCompoundModule.deployed();
 
     // Get contract dependencies
     cUsdcToken = await ethers.getContractAt(CErc20ABI, CUSDC_ADDRESS, owner);
@@ -227,18 +231,13 @@ describe('CompoundModule Contract', () => {
 
   describe('Deployment', () => {
     it('Should deploy the contract with the right values', async () => {
-      expect(await morpho.liquidationIncentive(CDAI_ADDRESS)).to.equal(utils.parseUnits('1.1'));
-
       // Calculate BPY
       const borrowRatePerBlock = await cDaiToken.borrowRatePerBlock();
       const supplyRatePerBlock = await cDaiToken.supplyRatePerBlock();
       const expectedBPY = borrowRatePerBlock.add(supplyRatePerBlock).div(2);
       expect(await morpho.BPY(CDAI_ADDRESS)).to.equal(expectedBPY);
 
-      const result = await comptroller.markets(CDAI_ADDRESS);
       expect(await morpho.mUnitExchangeRate(CDAI_ADDRESS)).to.be.equal(utils.parseUnits('1'));
-      expect(await morpho.closeFactor(CDAI_ADDRESS)).to.be.equal(utils.parseUnits('0.5'));
-      expect(await morpho.collateralFactor(CDAI_ADDRESS)).to.be.equal(result.collateralFactorMantissa);
 
       // Thresholds
       underlyingThreshold = await morpho.thresholds(CDAI_ADDRESS, 0);
@@ -252,13 +251,29 @@ describe('CompoundModule Contract', () => {
     it('Should revert when at least one of the markets in input is not a real market', async () => {
       expect(morpho.connect(owner).createMarkets([USDT_ADDRESS])).to.be.reverted;
       expect(morpho.connect(owner).createMarkets([CETH_ADDRESS, USDT_ADDRESS, CUNI_ADDRESS])).to.be.reverted;
-      expect(morpho.connect(owner).createMarkets([CETH_ADDRESS, CUNI_ADDRESS])).not.be.reverted;
+      expect(morpho.connect(owner).createMarkets([CETH_ADDRESS])).not.be.reverted;
     });
 
-    it('Only Owner should be able to create markets', async () => {
-      expect(morpho.connect(lender1).createMarkets([CUNI_ADDRESS])).to.be.reverted;
-      expect(morpho.connect(borrower1).createMarkets([CUNI_ADDRESS])).to.be.reverted;
-      expect(morpho.connect(owner).createMarkets([CUNI_ADDRESS])).not.be.reverted;
+    it('Only Owner should be able to create markets on Morpho', async () => {
+      expect(morpho.connect(lender1).createMarkets([CETH_ADDRESS])).to.be.reverted;
+      expect(morpho.connect(borrower1).createMarkets([CETH_ADDRESS])).to.be.reverted;
+      expect(morpho.connect(owner).createMarkets([CETH_ADDRESS])).not.be.reverted;
+    });
+
+    it('Only Morpho should be able to create markets on CompoundModule', async () => {
+      expect(compoundModule.connect(lender1).enterMarkets([CETH_ADDRESS])).to.be.reverted;
+      expect(compoundModule.connect(borrower1).enterMarkets([CETH_ADDRESS])).to.be.reverted;
+      expect(compoundModule.connect(owner).enterMarkets([CETH_ADDRESS])).to.be.reverted;
+      await morpho.connect(owner).createMarkets([CETH_ADDRESS]);
+      expect(await comptroller.checkMembership(compoundModule.address, CETH_ADDRESS)).to.be.true;
+    });
+
+    it('Only Owner should be able to set compoundModule on Morpho', async () => {
+      expect(morpho.connect(lender1).setCompoundModule(fakeCompoundModule.address)).to.be.reverted;
+      expect(morpho.connect(borrower1).setCompoundModule(fakeCompoundModule.address)).to.be.reverted;
+      expect(morpho.connect(owner).setCompoundModule(fakeCompoundModule.address)).not.be.reverted;
+      await morpho.connect(owner).setCompoundModule(fakeCompoundModule.address);
+      expect(await morpho.compoundModule()).to.equal(fakeCompoundModule.address);
     });
 
     it('Only Owner should be able to update thresholds', async () => {
@@ -266,6 +281,7 @@ describe('CompoundModule Contract', () => {
       await morpho.connect(owner).updateThreshold(CUSDC_ADDRESS, 0, newThreshold);
       await morpho.connect(owner).updateThreshold(CUSDC_ADDRESS, 1, newThreshold);
       await morpho.connect(owner).updateThreshold(CUSDC_ADDRESS, 2, newThreshold);
+      await morpho.connect(owner).updateThreshold(CUSDC_ADDRESS, 3, newThreshold);
 
       // Other accounts than Owner
       await expect(morpho.connect(lender1).updateThreshold(CUSDC_ADDRESS, 2, newThreshold)).to.be.reverted;
@@ -273,13 +289,13 @@ describe('CompoundModule Contract', () => {
     });
 
     it('Only Owner should be allowed to list/unlisted a market', async () => {
-      await morpho.connect(owner).createMarkets([CUNI_ADDRESS]);
-      expect(morpho.connect(lender1).listMarket(CUNI_ADDRESS)).to.be.reverted;
-      expect(morpho.connect(borrower1).listMarket(CUNI_ADDRESS)).to.be.reverted;
-      expect(morpho.connect(lender1).unlistMarket(CUNI_ADDRESS)).to.be.reverted;
-      expect(morpho.connect(borrower1).unlistMarket(CUNI_ADDRESS)).to.be.reverted;
-      expect(morpho.connect(owner).listMarket(CUNI_ADDRESS)).not.to.be.reverted;
-      expect(morpho.connect(owner).unlistMarket(CUNI_ADDRESS)).not.to.be.reverted;
+      await morpho.connect(owner).createMarkets([CETH_ADDRESS]);
+      expect(morpho.connect(lender1).listMarket(CETH_ADDRESS)).to.be.reverted;
+      expect(morpho.connect(borrower1).listMarket(CETH_ADDRESS)).to.be.reverted;
+      expect(morpho.connect(lender1).unlistMarket(CETH_ADDRESS)).to.be.reverted;
+      expect(morpho.connect(borrower1).unlistMarket(CETH_ADDRESS)).to.be.reverted;
+      expect(morpho.connect(owner).listMarket(CETH_ADDRESS)).not.to.be.reverted;
+      expect(morpho.connect(owner).unlistMarket(CETH_ADDRESS)).not.to.be.reverted;
     });
 
     it('Should create a market the with right values', async () => {
@@ -291,29 +307,8 @@ describe('CompoundModule Contract', () => {
       const BPY = lendBPY.add(borrowBPY).div(2);
       expect(await morpho.BPY(CMKR_ADDRESS)).to.equal(BPY);
 
-      const { collateralFactorMantissa } = await comptroller.markets(CMKR_ADDRESS);
-      expect(await morpho.collateralFactor(CMKR_ADDRESS)).to.equal(collateralFactorMantissa);
-
-      expect(await morpho.closeFactor(CMKR_ADDRESS)).to.equal(utils.parseUnits('0.5'));
       expect(await morpho.mUnitExchangeRate(CMKR_ADDRESS)).to.equal(SCALE);
-      expect(await morpho.liquidationIncentive(CMKR_ADDRESS)).to.equal(utils.parseUnits('1.1'));
       expect(await morpho.lastUpdateBlockNumber(CMKR_ADDRESS)).to.equal(blockNumber);
-    });
-
-    it('Only Owner should set the liquidation incentive of a market', async () => {
-      const newLiquidationIncentive = utils.parseUnits('1.4');
-      await morpho.connect(owner).setLiquidationIncentive(CDAI_ADDRESS, newLiquidationIncentive);
-      expect(await morpho.liquidationIncentive(CDAI_ADDRESS)).to.equal(newLiquidationIncentive);
-      expect(morpho.connect(lender1).setLiquidationIncentive(CDAI_ADDRESS, utils.parseUnits('1.1'))).to.be.reverted;
-      expect(morpho.connect(borrower1).setLiquidationIncentive(CDAI_ADDRESS, utils.parseUnits('1.1'))).to.be.reverted;
-    });
-
-    it('Only Owner should set the close factor of a market', async () => {
-      const newCloseFactor = utils.parseUnits('0.7');
-      await morpho.connect(owner).setCloseFactor(CDAI_ADDRESS, newCloseFactor);
-      expect(await morpho.closeFactor(CDAI_ADDRESS)).to.equal(newCloseFactor);
-      expect(morpho.connect(lender1).setCloseFactor(CDAI_ADDRESS, utils.parseUnits('0.8'))).to.be.reverted;
-      expect(morpho.connect(borrower1).setCloseFactor(CDAI_ADDRESS, utils.parseUnits('0.8'))).to.be.reverted;
     });
   });
 
@@ -968,7 +963,7 @@ describe('CompoundModule Contract', () => {
       // Liquidation parameters
       const borrowIndex = await cDaiToken.borrowIndex();
       const cUsdcExchangeRate = await cUsdcToken.callStatic.exchangeRateCurrent();
-      const liquidationIncentive = await morpho.liquidationIncentive(CDAI_ADDRESS);
+      const liquidationIncentive = await comptroller.liquidationIncentiveMantissa();
       const collateralAssetPrice = await compoundOracle.getUnderlyingPrice(CUSDC_ADDRESS);
       const borrowedAssetPrice = await compoundOracle.getUnderlyingPrice(CDAI_ADDRESS);
       const amountToSeize = toRepay.mul(borrowedAssetPrice).div(collateralAssetPrice).mul(liquidationIncentive).div(SCALE);
@@ -1032,7 +1027,7 @@ describe('CompoundModule Contract', () => {
       // Liquidation parameters
       const mDaiExchangeRate = await morpho.mUnitExchangeRate(CDAI_ADDRESS);
       const cUsdcExchangeRate = await cUsdcToken.callStatic.exchangeRateCurrent();
-      const liquidationIncentive = await morpho.liquidationIncentive(CDAI_ADDRESS);
+      const liquidationIncentive = await comptroller.liquidationIncentiveMantissa();
       const collateralAssetPrice = await compoundOracle.getUnderlyingPrice(CUSDC_ADDRESS);
       const borrowedAssetPrice = await compoundOracle.getUnderlyingPrice(CDAI_ADDRESS);
       const amountToSeize = toRepay.mul(borrowedAssetPrice).div(collateralAssetPrice).mul(liquidationIncentive).div(SCALE);
