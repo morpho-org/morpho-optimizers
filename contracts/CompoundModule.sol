@@ -159,7 +159,7 @@ contract CompoundModule is ReentrancyGuard {
     /* External */
 
     function enterMarkets(address[] memory markets) external returns (uint256[] memory) {
-        require(msg.sender == address(morpho), "Only Morpho");
+        require(msg.sender == address(morpho), "enterMarkets: only Morpho");
         return comptroller.enterMarkets(markets);
     }
 
@@ -170,9 +170,9 @@ contract CompoundModule is ReentrancyGuard {
     function deposit(address _cErc20Address, uint256 _amount) external nonReentrant {
         require(
             _amount >= morpho.thresholds(_cErc20Address, IMorpho.Threshold.Underlying),
-            "Amount cannot be less than THRESHOLD."
+            "deposit: amount cannot be less than THRESHOLD."
         );
-        require(morpho.isListed(_cErc20Address), "Market not listed");
+        require(morpho.isListed(_cErc20Address), "deposit: market not listed");
 
         if (!_checkMembership(_cErc20Address, msg.sender)) {
             accountMembership[_cErc20Address][msg.sender] = true;
@@ -230,10 +230,10 @@ contract CompoundModule is ReentrancyGuard {
             enteredMarkets[msg.sender].push(_cErc20Address);
         }
 
-        require(morpho.isListed(_cErc20Address), "Market not listed");
+        require(morpho.isListed(_cErc20Address), "borrow: market not listed");
         require(
             _amount >= morpho.thresholds(_cErc20Address, IMorpho.Threshold.Underlying),
-            "Amount cannot be less than THRESHOLD"
+            "borrow: amount cannot be less than THRESHOLD"
         );
         (uint256 debtValue, uint256 maxDebtValue, ) = _getUserHypotheticalStateBalances(
             msg.sender,
@@ -241,7 +241,7 @@ contract CompoundModule is ReentrancyGuard {
             0,
             _amount
         );
-        require(debtValue < maxDebtValue, "Not enough collateral");
+        require(debtValue < maxDebtValue, "borrow: debt value exceeds max");
 
         ICErc20 cErc20Token = ICErc20(_cErc20Address);
         IERC20 erc20Token = IERC20(cErc20Token.underlying());
@@ -268,7 +268,7 @@ contract CompoundModule is ReentrancyGuard {
             if (remainingToBorrowOnComp > 0) {
                 require(
                     cErc20Token.borrow(remainingToBorrowOnComp) == 0,
-                    "Borrow on Compound failed"
+                    "borrow: borrow on Compound failed"
                 );
                 borrowingBalanceInOf[_cErc20Address][msg.sender].onComp += remainingToBorrowOnComp
                     .div(cErc20Token.borrowIndex()); // In cdUnit
@@ -276,7 +276,7 @@ contract CompoundModule is ReentrancyGuard {
             }
         } else {
             _moveLenderFromMorphoToComp(msg.sender);
-            require(cErc20Token.borrow(_amount) == 0, "Borrow on Compound failed");
+            require(cErc20Token.borrow(_amount) == 0, "borrow: borrow on Compound failed");
             borrowingBalanceInOf[_cErc20Address][msg.sender].onComp += _amount.div(
                 cErc20Token.borrowIndex()
             ); // In cdUnit
@@ -302,15 +302,15 @@ contract CompoundModule is ReentrancyGuard {
      *  @param _amount The amount in tokens to withdraw from lending.
      */
     function redeem(address _cErc20Address, uint256 _amount) external nonReentrant {
-        require(_amount > 0, "Amount cannot be 0");
-        require(morpho.isListed(_cErc20Address), "Market not listed");
+        require(_amount > 0, "redeem: amount cannot be 0");
+        require(morpho.isListed(_cErc20Address), "redeem: market not listed");
         (uint256 debtValue, uint256 maxDebtValue, ) = _getUserHypotheticalStateBalances(
             msg.sender,
             _cErc20Address,
             _amount,
             0
         );
-        require(debtValue < maxDebtValue, "Cannot redeem");
+        require(debtValue < maxDebtValue, "redeem: debt value exceeds max");
 
         ICErc20 cErc20Token = ICErc20(_cErc20Address);
         IERC20 erc20Token = IERC20(cErc20Token.underlying());
@@ -345,7 +345,7 @@ contract CompoundModule is ReentrancyGuard {
                 require(
                     _moveLendersFromCompToMorpho(_cErc20Address, remainingToWithdraw, msg.sender) ==
                         0,
-                    "Remaining to move should be 0."
+                    "redeem: remaining to move should be 0"
                 );
                 _redeemErc20FromComp(_cErc20Address, remainingToWithdraw); // Revert on error
             } else {
@@ -363,9 +363,12 @@ contract CompoundModule is ReentrancyGuard {
                 // Then, we move borrowers not matched anymore from Morpho to Compound and borrow the amount directly on Compound
                 require(
                     _moveBorrowersFromMorphoToComp(_cErc20Address, remainingToWithdraw) == 0,
-                    "All liquidity should have been moved"
+                    "redeem: all liquidity should have been moved"
                 );
-                require(cErc20Token.borrow(remainingToWithdraw) == 0, "Borrow on Compound failed");
+                require(
+                    cErc20Token.borrow(remainingToWithdraw) == 0,
+                    "redeem: borrow on Compound failed"
+                );
             }
         }
 
@@ -402,7 +405,7 @@ contract CompoundModule is ReentrancyGuard {
             0,
             0
         );
-        require(maxDebtValue > debtValue, "Liquidation not allowed");
+        require(maxDebtValue > debtValue, "liquidate: debt value is below max");
         LiquidateVars memory vars;
         vars.borrowingBalance =
             borrowingBalanceInOf[_cErc20BorrowedAddress][_borrower].onComp.mul(
@@ -413,7 +416,7 @@ contract CompoundModule is ReentrancyGuard {
             );
         require(
             _amount <= vars.borrowingBalance.mul(morpho.closeFactor(_cErc20BorrowedAddress)),
-            "Cannot repay more than allowed by close factor"
+            "liquidate: cannot repay more than allowed by close factor"
         );
 
         _repay(_cErc20BorrowedAddress, _borrower, _amount);
@@ -423,7 +426,7 @@ contract CompoundModule is ReentrancyGuard {
         vars.priceBorrowedMantissa = compoundOracle.getUnderlyingPrice(_cErc20BorrowedAddress);
         require(
             vars.priceCollateralMantissa != 0 && vars.priceBorrowedMantissa != 0,
-            "Oracle failed"
+            "liquidate: oracle failed"
         );
 
         /*
@@ -450,7 +453,7 @@ contract CompoundModule is ReentrancyGuard {
 
         require(
             vars.amountToSeize <= totalCollateral,
-            "Cannot get more than collateral balance of borrower"
+            "liquidate: cannot seize more than borrower's collateral balance"
         );
 
         if (vars.amountToSeize <= vars.onCompInUnderlying) {
@@ -472,10 +475,13 @@ contract CompoundModule is ReentrancyGuard {
                 cErc20CollateralToken.redeem(
                     lendingBalanceInOf[_cErc20CollateralAddress][_borrower].onComp
                 ) == 0,
-                "Redeem cToken on Compound failed"
+                "liquidate: redeem cToken on Compound failed"
             );
             lendingBalanceInOf[_cErc20CollateralAddress][_borrower].onComp = 0;
-            require(cErc20CollateralToken.borrow(toMove) == 0, "Borrow on Compound failed");
+            require(
+                cErc20CollateralToken.borrow(toMove) == 0,
+                "liquidate: borrow on Compound failed"
+            );
             uint256 balanceAfter = erc20CollateralToken.balanceOf(address(this));
             vars.amountToSeize = balanceAfter - balanceBefore;
             _moveBorrowersFromMorphoToComp(_cErc20CollateralAddress, toMove);
@@ -508,7 +514,7 @@ contract CompoundModule is ReentrancyGuard {
         address _borrower,
         uint256 _amount
     ) internal {
-        require(morpho.isListed(_cErc20Address), "Market not listed");
+        require(morpho.isListed(_cErc20Address), "_repay: market not listed");
         ICErc20 cErc20Token = ICErc20(_cErc20Address);
         IERC20 erc20Token = IERC20(cErc20Token.underlying());
         erc20Token.safeTransferFrom(msg.sender, address(this), _amount);
@@ -573,7 +579,7 @@ contract CompoundModule is ReentrancyGuard {
         // Approve transfer on the ERC20 contract
         erc20Token.safeApprove(_cErc20Address, _amount);
         // Mint cTokens
-        require(cErc20Token.mint(_amount) == 0, "cToken minting failed.");
+        require(cErc20Token.mint(_amount) == 0, "_supplyErc20ToComp: cToken minting failed");
     }
 
     /** @dev Redeems ERC20 tokens from Compound.
@@ -582,7 +588,10 @@ contract CompoundModule is ReentrancyGuard {
      */
     function _redeemErc20FromComp(address _cErc20Address, uint256 _amount) internal {
         ICErc20 cErc20Token = ICErc20(_cErc20Address);
-        require(cErc20Token.redeemUnderlying(_amount) == 0, "Redeem ERC20 on Compound failed");
+        require(
+            cErc20Token.redeemUnderlying(_amount) == 0,
+            "_redeemErc20FromComp: redeem ERC20 on Compound failed"
+        );
     }
 
     /** @dev Finds liquidity on Compound and moves it to Morpho.
@@ -694,7 +703,7 @@ contract CompoundModule is ReentrancyGuard {
 
             i++;
         }
-        require(remainingToMove == 0, "Not enough liquidity to unuse");
+        require(remainingToMove == 0, "_moveLendersFromMorphoToComp: not enough liquidity to move");
     }
 
     /** @dev Finds borrowers on Morpho that match the given `_amount` and moves them to Compound.
