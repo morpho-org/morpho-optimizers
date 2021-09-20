@@ -9,11 +9,7 @@ interface IMorpho {
         CdUnit
     }
 
-    function liquidationIncentive() external returns (uint256);
-
     function isListed(address _marketAddress) external returns (bool);
-
-    function closeFactor(address _marketAddress) external returns (uint256);
 
     function BPY(address _marketAddress) external returns (uint256);
 

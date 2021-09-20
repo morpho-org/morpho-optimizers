@@ -90,6 +90,10 @@ interface ICEth {
 }
 
 interface IComptroller {
+    function liquidationIncentiveMantissa() external returns (uint256);
+
+    function closeFactorMantissa() external returns (uint256);
+
     function oracle() external returns (address);
 
     function markets(address)

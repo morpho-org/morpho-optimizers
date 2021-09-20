@@ -28,10 +28,7 @@ contract Morpho is Ownable {
 
     mapping(address => bool) public isListed; // Whether or not this market is listed.
     mapping(address => uint256) public BPY; // Block Percentage Yield ("midrate").
-    mapping(address => uint256) public closeFactor; // Multiplier used to calculate the maximum repayAmount when liquidating a borrow.
-    mapping(address => uint256) public collateralFactor; // Multiplier representing the most one can borrow against their collateral in this market (0.9 => borrow 90% of collateral value max). Between 0 and 1.
     mapping(address => uint256) public mUnitExchangeRate; // current exchange rate from mUnit to underlying.
-    mapping(address => uint256) public liquidationIncentive; // Incentive for liquidators in percentage (110% at the beginning).
     mapping(address => uint256) public lastUpdateBlockNumber; // Last time mUnitExchangeRate was updated.
     mapping(address => mapping(Threshold => uint256)) public thresholds; // Thresholds below the ones we remove lenders and borrowers from the lists. 0 -> Underlying, 1 -> cToken, 2 -> mUnit
 
@@ -70,18 +67,6 @@ contract Morpho is Ownable {
      */
     event UpdateThreshold(address _marketAddress, Threshold _thresholdType, uint256 _newValue);
 
-    /** @dev Emitted when the close factor of a market is changed.
-     *  @param _marketAddress The address of the market to update.
-     *  @param _newValue The new value of the close factor.
-     */
-    event NewCloseFactor(address _marketAddress, uint256 _newValue);
-
-    /** @dev Emitted when the liquidation incentive of a market is changed.
-     *  @param _marketAddress The address of the market to update.
-     *  @param _newValue The new value of the liquidation incentive.
-     */
-    event NewLiquidationIncentive(address _marketAddress, uint256 _newValue);
-
     /* Constructor */
 
     constructor(address _proxyComptrollerAddress) {
@@ -97,16 +82,26 @@ contract Morpho is Ownable {
         compoundModule = _compoundModule;
     }
 
+    /** @dev Sets the comptroller address.
+     *  @param _proxyComptrollerAddress The address of Compound's comptroller.
+     */
+    function setComptroller(address _proxyComptrollerAddress) external onlyOwner {
+        comptroller = IComptroller(_proxyComptrollerAddress);
+        compoundModule.setComptroller(_proxyComptrollerAddress);
+    }
+
     /** @dev Creates new market to borrow/lend.
      *  @param _marketAddresses The addresses of the markets to add.
      */
     function createMarkets(address[] calldata _marketAddresses) external onlyOwner {
         uint256[] memory results = compoundModule.enterMarkets(_marketAddresses);
         for (uint256 i; i < _marketAddresses.length; i++) {
-            require(results[i] == 0, "Enter market failed on Compound");
+            require(results[i] == 0, "createMarkets: enter market failed on Compound");
             address _marketAddress = _marketAddresses[i];
-            closeFactor[_marketAddress] = 0.5e18;
-            liquidationIncentive[_marketAddress] = 1.1e18;
+            require(
+                lastUpdateBlockNumber[_marketAddress] == 0,
+                "createMarkets: market already created"
+            );
             mUnitExchangeRate[_marketAddress] = 1e18;
             lastUpdateBlockNumber[_marketAddress] = block.number;
             thresholds[_marketAddress][Threshold.Underlying] = 1e18;
@@ -114,7 +109,6 @@ contract Morpho is Ownable {
             thresholds[_marketAddress][Threshold.MUnit] = 1e18;
             thresholds[_marketAddress][Threshold.CdUnit] = 1e16;
             updateBPY(_marketAddress);
-            updateCollateralFactor(_marketAddress);
             emit CreateMarket(_marketAddress);
         }
     }
@@ -135,7 +129,7 @@ contract Morpho is Ownable {
 
     /** @dev Updates thresholds below the ones lenders and borrowers are removed from lists.
      *  @param _marketAddress The address of the market to change the threshold.
-     *  @param _thresholdType Which threshold must be updated. 0 -> Underlying, 1 -> cToken, 2 -> mUnit
+     *  @param _thresholdType Which threshold must be updated.
      *  @param _newThreshold The new threshold to set.
      */
     function updateThreshold(
@@ -143,44 +137,14 @@ contract Morpho is Ownable {
         Threshold _thresholdType,
         uint256 _newThreshold
     ) external onlyOwner {
-        require(_newThreshold > 0, "New THRESHOLD must be strictly positive.");
+        require(_newThreshold > 0, "morpho: new THRESHOLD must be strictly positive.");
         thresholds[_marketAddress][_thresholdType] = _newThreshold;
         emit UpdateThreshold(_marketAddress, _thresholdType, _newThreshold);
     }
 
-    /** @dev Sets a new liquidation incentive to a market.
-     *  @param _marketAddress The address of the market to modify.
-     *  @param _liquidationIncentive The new liquidation incentive to set. 1e18 means no incentive, 1.1e18 means a 10% bonus on the amount seized.
-     */
-    function setLiquidationIncentive(address _marketAddress, uint256 _liquidationIncentive)
-        external
-        onlyOwner
-    {
-        liquidationIncentive[_marketAddress] = _liquidationIncentive;
-        emit NewLiquidationIncentive(_marketAddress, _liquidationIncentive);
-    }
-
-    /** @dev Sets a new close factor to a market.
-     *  @param _marketAddress The address of the market to modify.
-     *  @param _closeFactor The new close factor to set.
-     */
-    function setCloseFactor(address _marketAddress, uint256 _closeFactor) external onlyOwner {
-        closeFactor[_marketAddress] = _closeFactor;
-        emit NewCloseFactor(_marketAddress, _closeFactor);
-    }
-
     /* Public */
 
-    /** @dev Updates the collateral factor related to cToken.
-     *  @param _marketAddress The address of the market we want to update.
-     */
-    function updateCollateralFactor(address _marketAddress) public {
-        (, uint256 collateralFactorMantissa, ) = comptroller.markets(_marketAddress);
-        collateralFactor[_marketAddress] = collateralFactorMantissa;
-        emit UpdateCollateralFactor(_marketAddress, collateralFactorMantissa);
-    }
-
-    /** @dev Updates the Block Percentage Yield (`BPY`) and calculate the current exchange rate (`currentExchangeRate`).
+    /** @dev Updates the Block Percentage Yield (`BPY`) and calculate the current exchange rate (`mUnitExchangeRate`).
      *  @param _marketAddress The address of the market we want to update.
      */
     function updateBPY(address _marketAddress) public {
@@ -193,7 +157,7 @@ contract Morpho is Ownable {
 
         emit UpdateBPY(_marketAddress, BPY[_marketAddress]);
 
-        // Update currentExchangeRate
+        // Update mUnitExhangeRate
         updateMUnitExchangeRate(_marketAddress);
     }
 
