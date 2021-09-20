@@ -152,8 +152,7 @@ contract CompoundModule is ReentrancyGuard {
     constructor(IMorpho _morpho, address _proxyComptrollerAddress) {
         morpho = _morpho;
         comptroller = IComptroller(_proxyComptrollerAddress);
-        address compoundOracleAddress = comptroller.oracle();
-        compoundOracle = ICompoundOracle(compoundOracleAddress);
+        compoundOracle = ICompoundOracle(comptroller.oracle());
     }
 
     /* External */
@@ -174,11 +173,7 @@ contract CompoundModule is ReentrancyGuard {
         );
         require(morpho.isListed(_cErc20Address), "deposit: market not listed");
 
-        if (!_checkMembership(_cErc20Address, msg.sender)) {
-            accountMembership[_cErc20Address][msg.sender] = true;
-            enteredMarkets[msg.sender].push(_cErc20Address);
-        }
-
+        _handleMembership(_cErc20Address, msg.sender);
         ICErc20 cErc20Token = ICErc20(_cErc20Address);
         IERC20 erc20Token = IERC20(cErc20Token.underlying());
         erc20Token.safeTransferFrom(msg.sender, address(this), _amount);
@@ -197,7 +192,6 @@ contract CompoundModule is ReentrancyGuard {
             uint256 toRepay = _amount - remainingToSupplyToComp;
             // Update lender balance
             lendingBalanceInOf[_cErc20Address][msg.sender].onMorpho += toRepay.div(mExchangeRate); // In mUnit
-            lendersOnMorpho[_cErc20Address].addTail(msg.sender);
             erc20Token.safeApprove(_cErc20Address, toRepay);
             cErc20Token.repayBorrow(toRepay);
 
@@ -211,12 +205,7 @@ contract CompoundModule is ReentrancyGuard {
             _supplyErc20ToComp(_cErc20Address, _amount); // Revert on error
         }
 
-        if (
-            lendingBalanceInOf[_cErc20Address][msg.sender].onComp >=
-            morpho.thresholds(_cErc20Address, IMorpho.Threshold.CToken)
-        ) {
-            lendersOnComp[_cErc20Address].addTail(msg.sender);
-        }
+        _updateLenderList(_cErc20Address, msg.sender);
         emit Deposit(msg.sender, _cErc20Address, _amount);
     }
 
@@ -225,11 +214,7 @@ contract CompoundModule is ReentrancyGuard {
      *  @param _amount The amount to borrow in ERC20 tokens.
      */
     function borrow(address _cErc20Address, uint256 _amount) external nonReentrant {
-        if (!_checkMembership(_cErc20Address, msg.sender)) {
-            accountMembership[_cErc20Address][msg.sender] = true;
-            enteredMarkets[msg.sender].push(_cErc20Address);
-        }
-
+        _handleMembership(_cErc20Address, msg.sender);
         require(morpho.isListed(_cErc20Address), "borrow: market not listed");
         require(
             _amount >= morpho.thresholds(_cErc20Address, IMorpho.Threshold.Underlying),
@@ -260,7 +245,6 @@ contract CompoundModule is ReentrancyGuard {
                 borrowingBalanceInOf[_cErc20Address][msg.sender].onMorpho += toRedeem.div(
                     mExchangeRate
                 ); // In mUnit
-                borrowersOnMorpho[_cErc20Address].addTail(msg.sender);
                 _redeemErc20FromComp(_cErc20Address, toRedeem); // Revert on error
             }
 
@@ -272,7 +256,6 @@ contract CompoundModule is ReentrancyGuard {
                 );
                 borrowingBalanceInOf[_cErc20Address][msg.sender].onComp += remainingToBorrowOnComp
                     .div(cErc20Token.borrowIndex()); // In cdUnit
-                borrowersOnComp[_cErc20Address].addTail(msg.sender);
             }
         } else {
             _moveLenderFromMorphoToComp(msg.sender);
@@ -280,9 +263,9 @@ contract CompoundModule is ReentrancyGuard {
             borrowingBalanceInOf[_cErc20Address][msg.sender].onComp += _amount.div(
                 cErc20Token.borrowIndex()
             ); // In cdUnit
-            borrowersOnComp[_cErc20Address].addTail(msg.sender);
         }
 
+        _updateBorrowerList(_cErc20Address, msg.sender);
         // Transfer ERC20 tokens to borrower
         erc20Token.safeTransfer(msg.sender, _amount);
         emit Borrow(msg.sender, _cErc20Address, _amount);
@@ -372,18 +355,9 @@ contract CompoundModule is ReentrancyGuard {
             }
         }
 
+        _updateLenderList(_cErc20Address, msg.sender);
         // Transfer back the ERC20 tokens
         erc20Token.safeTransfer(msg.sender, _amount);
-
-        // Remove lenders from lists if needed
-        if (
-            lendingBalanceInOf[_cErc20Address][msg.sender].onComp <
-            morpho.thresholds(_cErc20Address, IMorpho.Threshold.CToken)
-        ) lendersOnComp[_cErc20Address].remove(msg.sender);
-        if (
-            lendingBalanceInOf[_cErc20Address][msg.sender].onMorpho <
-            morpho.thresholds(_cErc20Address, IMorpho.Threshold.MUnit)
-        ) lendersOnMorpho[_cErc20Address].remove(msg.sender);
         emit Redeem(msg.sender, _cErc20Address, _amount);
     }
 
@@ -487,16 +461,7 @@ contract CompoundModule is ReentrancyGuard {
             _moveBorrowersFromMorphoToComp(_cErc20CollateralAddress, toMove);
         }
 
-        // Update lists if needed
-        if (
-            lendingBalanceInOf[_cErc20CollateralAddress][_borrower].onComp <
-            morpho.thresholds(_cErc20CollateralAddress, IMorpho.Threshold.CToken)
-        ) lendersOnComp[_cErc20CollateralAddress].remove(_borrower);
-        if (
-            lendingBalanceInOf[_cErc20CollateralAddress][_borrower].onMorpho <
-            morpho.thresholds(_cErc20CollateralAddress, IMorpho.Threshold.MUnit)
-        ) lendersOnMorpho[_cErc20CollateralAddress].remove(_borrower);
-
+        _updateLenderList(_cErc20CollateralAddress, _borrower);
         // Transfer ERC20 tokens to liquidator
         erc20CollateralToken.safeTransfer(msg.sender, vars.amountToSeize);
     }
@@ -557,15 +522,7 @@ contract CompoundModule is ReentrancyGuard {
             _supplyErc20ToComp(_cErc20Address, _amount);
         }
 
-        // Remove borrower from lists if needed
-        if (
-            borrowingBalanceInOf[_cErc20Address][_borrower].onComp <
-            morpho.thresholds(_cErc20Address, IMorpho.Threshold.CToken)
-        ) borrowersOnComp[_cErc20Address].remove(_borrower);
-        if (
-            borrowingBalanceInOf[_cErc20Address][_borrower].onMorpho <
-            morpho.thresholds(_cErc20Address, IMorpho.Threshold.MUnit)
-        ) borrowersOnMorpho[_cErc20Address].remove(_borrower);
+        _updateBorrowerList(_cErc20Address, _borrower);
         emit Repay(_borrower, _cErc20Address, _amount);
     }
 
@@ -628,16 +585,7 @@ contract CompoundModule is ReentrancyGuard {
                         mExchangeRate
                     ); // In mUnit
 
-                    // Update lists if needed
-                    if (
-                        lendingBalanceInOf[_cErc20Address][lender].onComp <
-                        morpho.thresholds(_cErc20Address, IMorpho.Threshold.CToken)
-                    ) lendersOnComp[_cErc20Address].remove(lender);
-                    if (
-                        lendingBalanceInOf[_cErc20Address][lender].onMorpho >=
-                        morpho.thresholds(_cErc20Address, IMorpho.Threshold.MUnit)
-                    ) lendersOnMorpho[_cErc20Address].addTail(lender);
-
+                    _updateLenderList(_cErc20Address, lender);
                     emit LenderMovedFromCompToMorpho(lender, _cErc20Address, amountToMove);
                 }
 
@@ -683,16 +631,7 @@ contract CompoundModule is ReentrancyGuard {
                         mExchangeRate
                     ); // In mUnit
 
-                    // Update lists if needed
-                    if (
-                        lendingBalanceInOf[_cErc20Address][lender].onComp >=
-                        morpho.thresholds(_cErc20Address, IMorpho.Threshold.CToken)
-                    ) lendersOnComp[_cErc20Address].addTail(lender);
-                    if (
-                        lendingBalanceInOf[_cErc20Address][lender].onMorpho <
-                        morpho.thresholds(_cErc20Address, IMorpho.Threshold.MUnit)
-                    ) lendersOnMorpho[_cErc20Address].remove(lender);
-
+                    _updateLenderList(_cErc20Address, lender);
                     emit LenderMovedFromMorphoToComp(lender, _cErc20Address, amountToMove);
                 }
 
@@ -738,16 +677,7 @@ contract CompoundModule is ReentrancyGuard {
                     mExchangeRate
                 );
 
-                // Update lists if needed
-                if (
-                    borrowingBalanceInOf[_cErc20Address][borrower].onComp >=
-                    morpho.thresholds(_cErc20Address, IMorpho.Threshold.CdUnit)
-                ) borrowersOnComp[_cErc20Address].addTail(borrower);
-                if (
-                    borrowingBalanceInOf[_cErc20Address][borrower].onMorpho <
-                    morpho.thresholds(_cErc20Address, IMorpho.Threshold.MUnit)
-                ) borrowersOnMorpho[_cErc20Address].remove(borrower);
-
+                _updateBorrowerList(_cErc20Address, borrower);
                 emit BorrowerMovedFromMorphoToComp(borrower, _cErc20Address, toMatch);
             }
 
@@ -787,16 +717,7 @@ contract CompoundModule is ReentrancyGuard {
                     mExchangeRate
                 );
 
-                // Update lists if needed
-                if (
-                    borrowingBalanceInOf[_cErc20Address][borrower].onComp <
-                    morpho.thresholds(_cErc20Address, IMorpho.Threshold.CdUnit)
-                ) borrowersOnComp[_cErc20Address].remove(borrower);
-                if (
-                    borrowingBalanceInOf[_cErc20Address][borrower].onMorpho >=
-                    morpho.thresholds(_cErc20Address, IMorpho.Threshold.MUnit)
-                ) borrowersOnMorpho[_cErc20Address].addTail(borrower);
-
+                _updateBorrowerList(_cErc20Address, borrower);
                 emit BorrowerMovedFromCompToMorpho(borrower, _cErc20Address, toMatch);
             }
 
@@ -826,34 +747,22 @@ contract CompoundModule is ReentrancyGuard {
                 ); // In mUnit
 
                 _moveBorrowersFromMorphoToComp(cErc20Entered, onMorphoInUnderlying);
-
-                // Update lists if needed
-                if (
-                    lendingBalanceInOf[cErc20Entered][_account].onComp >=
-                    morpho.thresholds(cErc20Entered, IMorpho.Threshold.CToken)
-                ) lendersOnComp[cErc20Entered].addTail(_account);
-                if (
-                    lendingBalanceInOf[cErc20Entered][_account].onMorpho <
-                    morpho.thresholds(cErc20Entered, IMorpho.Threshold.MUnit)
-                ) lendersOnMorpho[cErc20Entered].remove(_account);
-
+                _updateLenderList(cErc20Entered, _account);
                 emit LenderMovedFromMorphoToComp(_account, cErc20Entered, onMorphoInUnderlying);
             }
         }
     }
 
     /**
-     * @dev Returns whether the given account is entered in the given asset.
-     * @param _account The address of the account to check.
-     * @param _cTokenAddress The cToken to check.
-     * @return True if the account is in the asset, otherwise false.
+     * @dev Updates the account membership.
+     * @param _account The address of the account to update.
+     * @param _cTokenAddress The address of the market to check.
      */
-    function _checkMembership(address _cTokenAddress, address _account)
-        internal
-        view
-        returns (bool)
-    {
-        return accountMembership[_cTokenAddress][_account];
+    function _handleMembership(address _cTokenAddress, address _account) internal {
+        if (!accountMembership[_cTokenAddress][_account]) {
+            accountMembership[_cTokenAddress][_account] = true;
+            enteredMarkets[_account].push(_cTokenAddress);
+        }
     }
 
     /**
@@ -914,5 +823,39 @@ contract CompoundModule is ReentrancyGuard {
         stateBalance.collateralValue -= stateBalance.redeemedValue;
 
         return (stateBalance.debtValue, stateBalance.maxDebtValue, stateBalance.collateralValue);
+    }
+
+    /** @dev Updates borrower lists.
+     *  @param _cErc20Address The address of the market on which we want to update the borrower lists.
+     *  @param _account The address of the borrower to add or remove.
+     */
+    function _updateBorrowerList(address _cErc20Address, address _account) internal {
+        if (
+            borrowingBalanceInOf[_cErc20Address][_account].onComp <
+            morpho.thresholds(_cErc20Address, IMorpho.Threshold.CdUnit)
+        ) borrowersOnComp[_cErc20Address].remove(_account);
+        else borrowersOnComp[_cErc20Address].addTail(_account);
+        if (
+            borrowingBalanceInOf[_cErc20Address][_account].onMorpho <
+            morpho.thresholds(_cErc20Address, IMorpho.Threshold.MUnit)
+        ) borrowersOnMorpho[_cErc20Address].remove(_account);
+        else borrowersOnMorpho[_cErc20Address].addTail(_account);
+    }
+
+    /** @dev Updates lender lists.
+     *  @param _cErc20Address The address of the market on which we want to update the lender lists.
+     *  @param _account The address of the lender to add or remove.
+     */
+    function _updateLenderList(address _cErc20Address, address _account) internal {
+        if (
+            lendingBalanceInOf[_cErc20Address][_account].onComp <
+            morpho.thresholds(_cErc20Address, IMorpho.Threshold.CToken)
+        ) lendersOnComp[_cErc20Address].remove(_account);
+        else lendersOnComp[_cErc20Address].addTail(_account);
+        if (
+            lendingBalanceInOf[_cErc20Address][_account].onMorpho <
+            morpho.thresholds(_cErc20Address, IMorpho.Threshold.MUnit)
+        ) lendersOnMorpho[_cErc20Address].remove(_account);
+        else lendersOnMorpho[_cErc20Address].addTail(_account);
     }
 }
