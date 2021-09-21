@@ -1,20 +1,22 @@
 require('dotenv').config({ path: '.env.local' });
+const { utils, BigNumber } = require('ethers');
+const { ethers } = require('hardhat');
+const { expect } = require('chai');
+const hre = require('hardhat');
+const config = require('@config/ethereum-config.json').mainnet;
 const {
   SCALE,
   underlyingToCToken,
   cTokenToUnderlying,
   underlyingToMUnit,
   mUnitToUnderlying,
+  underlyingToCdUnit,
+  cDUnitToUnderlying,
   removeDigitsBigNumber,
   bigNumberMin,
   to6Decimals,
   computeNewMorphoExchangeRate,
 } = require('./utils/helpers');
-const { utils, BigNumber } = require('ethers');
-const { ethers } = require('hardhat');
-const { expect } = require('chai');
-const hre = require('hardhat');
-const config = require('@config/ethereum-config.json').mainnet;
 
 describe('CompoundModule Contract', () => {
   let cUsdcToken;
@@ -50,7 +52,7 @@ describe('CompoundModule Contract', () => {
     lenders = [lender1, lender2, lender3];
     borrowers = [borrower1, borrower2, borrower3];
 
-    // Deploy CompoundModule
+    // Deploy contracts
     Morpho = await ethers.getContractFactory('Morpho');
     morpho = await Morpho.deploy(config.compound.comptroller.address);
     await morpho.deployed();
@@ -131,8 +133,8 @@ describe('CompoundModule Contract', () => {
       })
     );
 
+    // Mint UNI
     const uniMinter = '0x1a9c8182c09f50c8318d769245bea52c32be35bc';
-    // const uni = '0x8546ecA807B4789b3734525456643fd8F239c795';
     await hre.network.provider.request({
       method: 'hardhat_impersonateAccount',
       params: [uniMinter],
@@ -385,7 +387,7 @@ describe('CompoundModule Contract', () => {
 
       // Check borrower1 balances
       expect(daiBalanceAfter).to.equal(daiBalanceBefore.add(maxToBorrow));
-      const borrowingBalanceOnCompInUnderlying = (await compoundModule.borrowingBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onComp.mul(borrowIndex).div(SCALE);
+      const borrowingBalanceOnCompInUnderlying = cDUnitToUnderlying((await compoundModule.borrowingBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onComp, borrowIndex);
       let diff;
       if (borrowingBalanceOnCompInUnderlying.gt(maxToBorrow)) diff = borrowingBalanceOnCompInUnderlying.sub(maxToBorrow);
       else diff = maxToBorrow.sub(borrowingBalanceOnCompInUnderlying);
@@ -434,7 +436,7 @@ describe('CompoundModule Contract', () => {
         // All underlyings should have been sent to the borrower
         const daiBalanceAfter = await daiToken.balanceOf(borrower.getAddress());
         expect(daiBalanceAfter).to.equal(daiBalanceBefore.add(borrowedAmount));
-        const borrowingBalanceOnCompInUnderlying = (await compoundModule.borrowingBalanceInOf(config.tokens.cDai.address, borrower.getAddress())).onComp.mul(borrowIndex).div(SCALE);
+        const borrowingBalanceOnCompInUnderlying = cDUnitToUnderlying((await compoundModule.borrowingBalanceInOf(config.tokens.cDai.address, borrower.getAddress())).onComp, borrowIndex);
         let diff;
         if (borrowingBalanceOnCompInUnderlying.gt(borrowedAmount)) diff = borrowingBalanceOnCompInUnderlying.sub(borrowedAmount);
         else diff = borrowedAmount.sub(borrowingBalanceOnCompInUnderlying);
@@ -464,14 +466,14 @@ describe('CompoundModule Contract', () => {
       await compoundModule.connect(borrower1).borrow(config.tokens.cDai.address, maxToBorrow);
       const borrowingBalanceOnComp = (await compoundModule.borrowingBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onComp;
       const borrowIndex1 = await cDaiToken.borrowIndex();
-      const borrowingBalanceOnCompInUnderlying = borrowingBalanceOnComp.mul(borrowIndex1).div(SCALE);
+      const borrowingBalanceOnCompInUnderlying = cDUnitToUnderlying(borrowingBalanceOnComp, borrowIndex1);
       const toRepay = borrowingBalanceOnCompInUnderlying.div(2);
       await daiToken.connect(borrower1).approve(compoundModule.address, toRepay);
       const borrowIndex2 = await cDaiToken.borrowIndex();
       await compoundModule.connect(borrower1).repay(config.tokens.cDai.address, toRepay);
       const daiBalanceAfter = await daiToken.balanceOf(borrower1.getAddress());
 
-      const expectedBalanceOnComp = borrowingBalanceOnComp.sub(borrowingBalanceOnCompInUnderlying.div(2).mul(SCALE).div(borrowIndex2));
+      const expectedBalanceOnComp = borrowingBalanceOnComp.sub(underlyingToCdUnit(borrowingBalanceOnCompInUnderlying.div(2), borrowIndex2));
       expect((await compoundModule.borrowingBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onComp).to.equal(expectedBalanceOnComp);
       expect(daiBalanceAfter).to.equal(daiBalanceBefore.add(maxToBorrow).sub(toRepay));
     });
@@ -538,7 +540,7 @@ describe('CompoundModule Contract', () => {
       // Withdraw
       await compoundModule.connect(lender1).redeem(config.tokens.cDai.address, amountToWithdraw);
       const borrowIndex = await cDaiToken.borrowIndex();
-      const expectedBorrowerBorrowingBalanceOnComp = expectedMorphoBorrowingBalance.mul(SCALE).div(borrowIndex);
+      const expectedBorrowerBorrowingBalanceOnComp = underlyingToCdUnit(expectedMorphoBorrowingBalance, borrowIndex);
       const borrowBalance = await cDaiToken.callStatic.borrowBalanceCurrent(compoundModule.address);
       const daiBalanceAfter2 = await daiToken.balanceOf(lender1.getAddress());
 
@@ -855,7 +857,7 @@ describe('CompoundModule Contract', () => {
       // Check balances
       const lendingBalanceOnMorpho = (await compoundModule.lendingBalanceInOf(config.tokens.cDai.address, lender1.getAddress())).onMorpho;
       const lendingBalanceOnComp = (await compoundModule.lendingBalanceInOf(config.tokens.cDai.address, lender1.getAddress())).onComp;
-      const underlyingMatched = borrower1BorrowingBalanceOnComp.add(borrower2BorrowingBalanceOnComp).add(borrower3BorrowingBalanceOnComp).mul(borrowIndex).div(SCALE);
+      const underlyingMatched = cDUnitToUnderlying(borrower1BorrowingBalanceOnComp.add(borrower2BorrowingBalanceOnComp).add(borrower3BorrowingBalanceOnComp), borrowIndex);
       expectedLendingBalanceOnMorpho = underlyingMatched.mul(SCALE).div(mUnitExchangeRate);
       expectedLendingBalanceOnComp = underlyingToCToken(lendingAmount.sub(underlyingMatched), cExchangeRate);
       expect(removeDigitsBigNumber(2, lendingBalanceOnMorpho)).to.equal(removeDigitsBigNumber(2, expectedLendingBalanceOnMorpho));
@@ -904,7 +906,7 @@ describe('CompoundModule Contract', () => {
       const borrowedAssetPrice = await compoundOracle.getUnderlyingPrice(config.tokens.cDai.address);
       const amountToSeize = toRepay.mul(borrowedAssetPrice).div(collateralAssetPrice).mul(liquidationIncentive).div(SCALE);
       const expectedCollateralBalanceAfter = collateralBalanceBefore.sub(underlyingToCToken(amountToSeize, cUsdcExchangeRate));
-      const expectedBorrowingBalanceAfter = borrowingBalanceBefore.sub(toRepay.mul(SCALE).div(borrowIndex));
+      const expectedBorrowingBalanceAfter = borrowingBalanceBefore.sub(underlyingToCdUnit(toRepay, borrowIndex));
       const expectedUSDCBalanceAfter = usdcBalanceBefore.add(amountToSeize);
       const expectedDaiBalanceAfter = daiBalanceBefore.sub(toRepay);
 
