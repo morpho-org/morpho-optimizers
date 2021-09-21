@@ -1,3 +1,4 @@
+require('module-alias/register');
 require('dotenv').config({ path: './.env.local' });
 require('@nomiclabs/hardhat-etherscan');
 require('@giry/hardhat-test-solidity');
