@@ -1,14 +1,22 @@
 require('dotenv').config({ path: '.env.local' });
+const {
+  SCALE,
+  underlyingToCToken,
+  cTokenToUnderlying,
+  underlyingToMUnit,
+  mUnitToUnderlying,
+  removeDigitsBigNumber,
+  bigNumberMin,
+  to6Decimals,
+  computeNewMorphoExchangeRate,
+} = require('./utils/helpers');
 const { utils, BigNumber } = require('ethers');
-const Decimal = require('decimal.js');
 const { ethers } = require('hardhat');
 const { expect } = require('chai');
 const hre = require('hardhat');
 const config = require('@config/ethereum-config.json').mainnet;
 
 describe('CompoundModule Contract', () => {
-  const SCALE = BigNumber.from(10).pow(18);
-
   let cUsdcToken;
   let cDaiToken;
   let cUsdtToken;
@@ -34,50 +42,6 @@ describe('CompoundModule Contract', () => {
   let borrowers;
 
   let underlyingThreshold;
-
-  /* Utils functions */
-
-  const underlyingToCToken = (underlyingAmount, exchangeRateCurrent) => {
-    return underlyingAmount.mul(SCALE).div(exchangeRateCurrent);
-  };
-
-  const cTokenToUnderlying = (cTokenAmount, exchangeRateCurrent) => {
-    return cTokenAmount.mul(exchangeRateCurrent).div(SCALE);
-  };
-
-  const underlyingToMUnit = (underlyingAmount, exchangeRateCurrent) => {
-    return underlyingAmount.mul(SCALE).div(exchangeRateCurrent);
-  };
-
-  const mUnitToUnderlying = (mUnitAmount, exchangeRateCurrent) => {
-    return mUnitAmount.mul(exchangeRateCurrent).div(SCALE);
-  };
-
-  const bigNumberMin = (a, b) => {
-    if (a.lte(b)) return a;
-    return b;
-  };
-
-  // Removes the last digits of a number: used to remove dust errors
-  const removeDigitsBigNumber = (decimalsToRemove, number) => number.sub(number.mod(BigNumber.from(10).pow(decimalsToRemove))).div(BigNumber.from(10).pow(decimalsToRemove));
-  const removeDigits = (decimalsToRemove, number) => (number - (number % 10 ** decimalsToRemove)) / 10 ** decimalsToRemove;
-
-  const computeNewMorphoExchangeRate = (currentExchangeRate, BPY, currentBlockNumber, lastUpdateBlockNumber) => {
-    // Use of decimal.js library for better accuracy
-    const bpy = new Decimal(BPY.toString());
-    const scale = new Decimal('1e18');
-    const exponent = new Decimal(currentBlockNumber - lastUpdateBlockNumber);
-    const val = bpy.div(scale).add(1);
-    const multiplier = val.pow(exponent);
-    const newExchangeRate = new Decimal(currentExchangeRate.toString()).mul(multiplier);
-    return Decimal.round(newExchangeRate);
-  };
-
-  const computeNewBorrowIndex = (borrowRate, blockDelta, borrowIndex) => {
-    return borrowRate.mul(blockDelta).mul(borrowIndex).div(SCALE).add(borrowIndex);
-  };
-
-  const to6Decimals = (value) => value.div(BigNumber.from(10).pow(12));
 
   beforeEach(async () => {
     // Users
@@ -205,7 +169,6 @@ describe('CompoundModule Contract', () => {
       const supplyRatePerBlock = await cDaiToken.supplyRatePerBlock();
       const expectedBPY = borrowRatePerBlock.add(supplyRatePerBlock).div(2);
       expect(await morpho.BPY(config.tokens.cDai.address)).to.equal(expectedBPY);
-
       expect(await morpho.mUnitExchangeRate(config.tokens.cDai.address)).to.be.equal(utils.parseUnits('1'));
 
       // Thresholds
@@ -599,7 +562,6 @@ describe('CompoundModule Contract', () => {
     it('Lender should redeem her liquidity while enough cDaiToken on Morpho contract', async () => {
       const lendingAmount = utils.parseUnits('10');
       let lender;
-      const expectedDaiBalance = await daiToken.balanceOf(lender1.getAddress());
 
       for (const i in lenders) {
         lender = lenders[i];
@@ -786,7 +748,6 @@ describe('CompoundModule Contract', () => {
       // Compute how much to repay
       const doUpdate = await cDaiToken.borrowBalanceCurrent(compoundModule.address);
       await doUpdate.wait(1);
-      const morphoBorrowingBalanceBefore2 = await cDaiToken.borrowBalanceStored(compoundModule.address);
       const borrowIndex1 = await cDaiToken.borrowIndex();
       const borrowerBalanceOnComp = (await compoundModule.borrowingBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onComp;
       const toRepay = borrowerBalanceOnComp.mul(borrowIndex1).div(SCALE).add(borrowerBalanceOnMorphoInUnderlying);
