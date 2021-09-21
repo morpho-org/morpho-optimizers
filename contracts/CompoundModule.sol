@@ -169,7 +169,7 @@ contract CompoundModule is ReentrancyGuard {
     function deposit(address _cErc20Address, uint256 _amount) external nonReentrant {
         require(
             _amount >= morpho.thresholds(_cErc20Address, IMorpho.Threshold.Underlying),
-            "deposit: amount cannot be less than THRESHOLD."
+            "deposit: amount cannot be less than THRESHOLD"
         );
         require(morpho.isListed(_cErc20Address), "deposit: market not listed");
 
