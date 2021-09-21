@@ -44,6 +44,7 @@
     "hardhat-deploy": "^0.9.1",
     "hardhat-gas-reporter": "^1.0.4",
     "husky": "^7.0.1",
+    "module-alias": "^2.2.2",
     "prettier": "^2.3.2",
     "prettier-plugin-solidity": "^1.0.0-beta.13",
     "solhint": "^3.3.6",
@@ -62,5 +63,9 @@
     "hooks": {
       "pre-commit": "yarn fix:sol && yarn fix:js"
     }
+  },
+  "_moduleAliases": {
+    "@config": "config",
+    "@test": "test"
   }
 }
