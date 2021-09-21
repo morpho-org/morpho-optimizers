@@ -41,6 +41,7 @@ describe('CompoundModule Contract', () => {
   let CompoundModule;
   let compoundModule;
 
+  let signers;
   let owner;
   let lender1;
   let lender2;
@@ -48,6 +49,7 @@ describe('CompoundModule Contract', () => {
   let borrower1;
   let borrower2;
   let borrower3;
+  let liquidator;
   let addrs;
   let lenders;
   let borrowers;
@@ -109,7 +111,8 @@ describe('CompoundModule Contract', () => {
 
   beforeEach(async () => {
     // Users
-    [owner, lender1, lender2, lender3, borrower1, borrower2, borrower3, ...addrs] = await ethers.getSigners();
+    signers = await ethers.getSigners();
+    [owner, lender1, lender2, lender3, borrower1, borrower2, borrower3, liquidator, ...addrs] = signers;
     lenders = [lender1, lender2, lender3];
     borrowers = [borrower1, borrower2, borrower3];
 
@@ -148,15 +151,8 @@ describe('CompoundModule Contract', () => {
 
     // Mint DAI to all lenders and borrowers
     await Promise.all(
-      lenders.map(async (lender) => {
-        await daiToken.mint(lender.getAddress(), daiAmount, {
-          from: daiMinter,
-        });
-      })
-    );
-    await Promise.all(
-      borrowers.map(async (borrower) => {
-        await daiToken.mint(borrower.getAddress(), daiAmount, {
+      signers.map(async (signer) => {
+        await daiToken.mint(signer.getAddress(), daiAmount, {
           from: daiMinter,
         });
       })
@@ -175,22 +171,14 @@ describe('CompoundModule Contract', () => {
 
     // Mint USDC
     await Promise.all(
-      lenders.map(async (lender) => {
-        await usdcToken.mint(lender.getAddress(), usdcAmount, {
-          from: usdcMinter,
-        });
-      })
-    );
-    await Promise.all(
-      borrowers.map(async (borrower) => {
-        await usdcToken.mint(borrower.getAddress(), usdcAmount, {
+      signers.map(async (signer) => {
+        await usdcToken.mint(signer.getAddress(), usdcAmount, {
           from: usdcMinter,
         });
       })
     );
 
     const usdtWhale = '0x47ac0fb4f2d84898e4d9e7b4dab3c24507a6d503';
-    // const usdtWhale = '0x8546ecA807B4789b3734525456643fd8F239c795';
     await hre.network.provider.request({
       method: 'hardhat_impersonateAccount',
       params: [usdtWhale],
@@ -202,13 +190,8 @@ describe('CompoundModule Contract', () => {
 
     // Transfer USDT
     await Promise.all(
-      lenders.map(async (lender) => {
-        await usdtToken.connect(usdtWhaleSigner).transfer(lender.getAddress(), usdtAmount);
-      })
-    );
-    await Promise.all(
-      borrowers.map(async (borrower) => {
-        await usdtToken.connect(usdtWhaleSigner).transfer(borrower.getAddress(), usdtAmount);
+      signers.map(async (signer) => {
+        await usdtToken.connect(usdtWhaleSigner).transfer(signer.getAddress(), usdtAmount);
       })
     );
 
@@ -223,15 +206,10 @@ describe('CompoundModule Contract', () => {
     const uniAmount = utils.parseUnits('10000'); // 10 000 UNI
     await hre.network.provider.send('hardhat_setBalance', [uniMinter, utils.hexValue(ethAmount)]);
 
-    // Transfer USDT
+    // Transfer UNI
     await Promise.all(
-      lenders.map(async (lender) => {
-        await uniToken.connect(uniSigner).transfer(lender.getAddress(), uniAmount);
-      })
-    );
-    await Promise.all(
-      borrowers.map(async (borrower) => {
-        await uniToken.connect(uniSigner).transfer(borrower.getAddress(), uniAmount);
+      signers.map(async (signer) => {
+        await uniToken.connect(uniSigner).transfer(signer.getAddress(), uniAmount);
       })
     );
 
@@ -980,12 +958,12 @@ describe('CompoundModule Contract', () => {
 
       // Liquidate
       const toRepay = maxToBorrow.div(2);
-      await daiToken.connect(lender1).approve(compoundModule.address, toRepay);
-      const USDCBalanceBefore = await usdcToken.balanceOf(lender1.getAddress());
-      const daiBalanceBefore = await daiToken.balanceOf(lender1.getAddress());
-      await compoundModule.connect(lender1).liquidate(CDAI_ADDRESS, CUSDC_ADDRESS, borrower1.getAddress(), toRepay);
-      const USDCBalanceAfter = await usdcToken.balanceOf(lender1.getAddress());
-      const daiBalanceAfter = await daiToken.balanceOf(lender1.getAddress());
+      await daiToken.connect(liquidator).approve(compoundModule.address, toRepay);
+      const usdcBalanceBefore = await usdcToken.balanceOf(liquidator.getAddress());
+      const daiBalanceBefore = await daiToken.balanceOf(liquidator.getAddress());
+      await compoundModule.connect(liquidator).liquidate(CDAI_ADDRESS, CUSDC_ADDRESS, borrower1.getAddress(), toRepay);
+      const usdcBalanceAfter = await usdcToken.balanceOf(liquidator.getAddress());
+      const daiBalanceAfter = await daiToken.balanceOf(liquidator.getAddress());
 
       // Liquidation parameters
       const borrowIndex = await cDaiToken.borrowIndex();
@@ -996,13 +974,13 @@ describe('CompoundModule Contract', () => {
       const amountToSeize = toRepay.mul(borrowedAssetPrice).div(collateralAssetPrice).mul(liquidationIncentive).div(SCALE);
       const expectedCollateralBalanceAfter = collateralBalanceBefore.sub(underlyingToCToken(amountToSeize, cUsdcExchangeRate));
       const expectedBorrowingBalanceAfter = borrowingBalanceBefore.sub(toRepay.mul(SCALE).div(borrowIndex));
-      const expectedUSDCBalanceAfter = USDCBalanceBefore.add(amountToSeize);
+      const expectedUSDCBalanceAfter = usdcBalanceBefore.add(amountToSeize);
       const expectedDaiBalanceAfter = daiBalanceBefore.sub(toRepay);
 
       // Check balances
       expect(removeDigitsBigNumber(6, (await compoundModule.lendingBalanceInOf(CUSDC_ADDRESS, borrower1.getAddress())).onComp)).to.equal(removeDigitsBigNumber(6, expectedCollateralBalanceAfter));
       expect((await compoundModule.borrowingBalanceInOf(CDAI_ADDRESS, borrower1.getAddress())).onComp).to.equal(expectedBorrowingBalanceAfter);
-      expect(removeDigitsBigNumber(1, USDCBalanceAfter)).to.equal(removeDigitsBigNumber(1, expectedUSDCBalanceAfter));
+      expect(removeDigitsBigNumber(1, usdcBalanceAfter)).to.equal(removeDigitsBigNumber(1, expectedUSDCBalanceAfter));
       expect(daiBalanceAfter).to.equal(expectedDaiBalanceAfter);
     });
 
@@ -1036,20 +1014,20 @@ describe('CompoundModule Contract', () => {
       await compoundModule.connect(borrower1).borrow(CDAI_ADDRESS, maxToBorrow);
       const collateralBalanceOnCompBefore = (await compoundModule.lendingBalanceInOf(CUSDC_ADDRESS, borrower1.getAddress())).onComp;
       const collateralBalanceOnMorphoBefore = (await compoundModule.lendingBalanceInOf(CUSDC_ADDRESS, borrower1.getAddress())).onMorpho;
-      // const borrowingBalanceOnMorphoBefore = (await compoundModule.borrowingBalanceInOf(CDAI_ADDRESS, borrower1.getAddress())).onComp;
       const borrowingBalanceOnMorphoBefore = (await compoundModule.borrowingBalanceInOf(CDAI_ADDRESS, borrower1.getAddress())).onMorpho;
 
       // Mine block
       await hre.network.provider.send('evm_mine', []);
 
-      // lender2 liquidates borrower1's position
-      const toRepay = maxToBorrow.div(2);
-      await daiToken.connect(lender2).approve(compoundModule.address, toRepay);
-      const USDCBalanceBefore = await usdcToken.balanceOf(lender2.getAddress());
-      const daiBalanceBefore = await daiToken.balanceOf(lender2.getAddress());
-      await compoundModule.connect(lender2).liquidate(CDAI_ADDRESS, CUSDC_ADDRESS, borrower1.getAddress(), toRepay);
-      const USDCBalanceAfter = await usdcToken.balanceOf(lender2.getAddress());
-      const daiBalanceAfter = await daiToken.balanceOf(lender2.getAddress());
+      // liquidator liquidates borrower1's position
+      const closeFactor = await comptroller.closeFactorMantissa();
+      const toRepay = maxToBorrow.mul(closeFactor).div(SCALE);
+      await daiToken.connect(liquidator).approve(compoundModule.address, toRepay);
+      const usdcBalanceBefore = await usdcToken.balanceOf(liquidator.getAddress());
+      const daiBalanceBefore = await daiToken.balanceOf(liquidator.getAddress());
+      await compoundModule.connect(liquidator).liquidate(CDAI_ADDRESS, CUSDC_ADDRESS, borrower1.getAddress(), toRepay);
+      const usdcBalanceAfter = await usdcToken.balanceOf(liquidator.getAddress());
+      const daiBalanceAfter = await daiToken.balanceOf(liquidator.getAddress());
 
       // Liquidation parameters
       const mDaiExchangeRate = await morpho.mUnitExchangeRate(CDAI_ADDRESS);
@@ -1060,7 +1038,7 @@ describe('CompoundModule Contract', () => {
       const amountToSeize = toRepay.mul(borrowedAssetPrice).div(collateralAssetPrice).mul(liquidationIncentive).div(SCALE);
       const expectedCollateralBalanceOnMorphoAfter = collateralBalanceOnMorphoBefore.sub(amountToSeize.sub(cTokenToUnderlying(collateralBalanceOnCompBefore, cUsdcExchangeRate)));
       const expectedBorrowingBalanceOnMorphoAfter = borrowingBalanceOnMorphoBefore.sub(toRepay.mul(SCALE).div(mDaiExchangeRate));
-      const expectedUSDCBalanceAfter = USDCBalanceBefore.add(amountToSeize);
+      const expectedUSDCBalanceAfter = usdcBalanceBefore.add(amountToSeize);
       const expectedDaiBalanceAfter = daiBalanceBefore.sub(toRepay);
 
       // Check liquidatee balances
@@ -1072,7 +1050,7 @@ describe('CompoundModule Contract', () => {
       expect((await compoundModule.borrowingBalanceInOf(CDAI_ADDRESS, borrower1.getAddress())).onMorpho).to.equal(expectedBorrowingBalanceOnMorphoAfter);
 
       // Check liquidator balances
-      expect(removeDigitsBigNumber(1, USDCBalanceAfter)).to.equal(removeDigitsBigNumber(1, expectedUSDCBalanceAfter));
+      expect(removeDigitsBigNumber(1, usdcBalanceAfter)).to.equal(removeDigitsBigNumber(1, expectedUSDCBalanceAfter));
       expect(daiBalanceAfter).to.equal(expectedDaiBalanceAfter);
     });
   });
