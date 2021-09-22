@@ -907,7 +907,7 @@ describe('CompoundModule Contract', () => {
       const amountToSeize = toRepay.mul(borrowedAssetPrice).div(collateralAssetPrice).mul(liquidationIncentive).div(SCALE);
       const expectedCollateralBalanceAfter = collateralBalanceBefore.sub(underlyingToCToken(amountToSeize, cUsdcExchangeRate));
       const expectedBorrowingBalanceAfter = borrowingBalanceBefore.sub(underlyingToCdUnit(toRepay, borrowIndex));
-      const expectedUSDCBalanceAfter = usdcBalanceBefore.add(amountToSeize);
+      const expectedUsdcBalanceAfter = usdcBalanceBefore.add(amountToSeize);
       const expectedDaiBalanceAfter = daiBalanceBefore.sub(toRepay);
 
       // Check balances
@@ -915,7 +915,7 @@ describe('CompoundModule Contract', () => {
         removeDigitsBigNumber(6, expectedCollateralBalanceAfter)
       );
       expect((await compoundModule.borrowingBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onComp).to.equal(expectedBorrowingBalanceAfter);
-      expect(removeDigitsBigNumber(1, usdcBalanceAfter)).to.equal(removeDigitsBigNumber(1, expectedUSDCBalanceAfter));
+      expect(removeDigitsBigNumber(1, usdcBalanceAfter)).to.equal(removeDigitsBigNumber(1, expectedUsdcBalanceAfter));
       expect(daiBalanceAfter).to.equal(expectedDaiBalanceAfter);
     });
 
@@ -973,7 +973,7 @@ describe('CompoundModule Contract', () => {
       const amountToSeize = toRepay.mul(borrowedAssetPrice).div(collateralAssetPrice).mul(liquidationIncentive).div(SCALE);
       const expectedCollateralBalanceOnMorphoAfter = collateralBalanceOnMorphoBefore.sub(amountToSeize.sub(cTokenToUnderlying(collateralBalanceOnCompBefore, cUsdcExchangeRate)));
       const expectedBorrowingBalanceOnMorphoAfter = borrowingBalanceOnMorphoBefore.sub(toRepay.mul(SCALE).div(mDaiExchangeRate));
-      const expectedUSDCBalanceAfter = usdcBalanceBefore.add(amountToSeize);
+      const expectedUsdcBalanceAfter = usdcBalanceBefore.add(amountToSeize);
       const expectedDaiBalanceAfter = daiBalanceBefore.sub(toRepay);
 
       // Check liquidatee balances
@@ -985,7 +985,10 @@ describe('CompoundModule Contract', () => {
       expect((await compoundModule.borrowingBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onMorpho).to.equal(expectedBorrowingBalanceOnMorphoAfter);
 
       // Check liquidator balances
-      expect(removeDigitsBigNumber(1, usdcBalanceAfter)).to.equal(removeDigitsBigNumber(1, expectedUSDCBalanceAfter));
+      let diff;
+      if (usdcBalanceAfter.gt(expectedUsdcBalanceAfter)) diff = usdcBalanceAfter.sub(expectedUsdcBalanceAfter);
+      else diff = expectedUsdcBalanceAfter.sub(usdcBalanceAfter);
+      expect(removeDigitsBigNumber(1, diff)).to.equal(0);
       expect(daiBalanceAfter).to.equal(expectedDaiBalanceAfter);
     });
   });
