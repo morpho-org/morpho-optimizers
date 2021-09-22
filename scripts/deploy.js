@@ -7,25 +7,25 @@ async function main() {
   console.log('Deploying contracts with the account:', deployer.address);
   console.log('Account balance:', (await deployer.getBalance()).toString());
 
-  const Morpho = await ethers.getContractFactory('Morpho');
-  const morpho = await Morpho.deploy(config.compound.comptroller.address);
-  await morpho.deployed();
+  const CompMarketsManager = await ethers.getContractFactory('CompMarketsManager');
+  const compMarketsManager = await CompMarketsManager.deploy(config.compound.comptroller.address);
+  await compMarketsManager.deployed();
 
-  console.log('Morpho address:', morpho.address);
+  console.log('CompMarketsManager address:', compMarketsManager.address);
 
-  const CompoundModule = await ethers.getContractFactory('CompoundModule');
-  const compoundModule = await CompoundModule.deploy(morpho.address, config.compound.comptroller.address);
-  await compoundModule.deployed();
+  const CompPositionsManager = await ethers.getContractFactory('CompPositionsManager');
+  const compPositionsManager = await CompPositionsManager.deploy(compMarketsManager.address, config.compound.comptroller.address);
+  await compPositionsManager.deployed();
 
-  console.log('CompoundModule address:', compoundModule.address);
+  console.log('CompPositionsManager address:', compPositionsManager.address);
 
-  await morpho.connect(deployer).setCompoundModule(compoundModule.address);
-  await morpho.connect(deployer).createMarkets([config.tokens.cDai.address, config.tokens.cUsdc.address, config.tokens.cBat.address, config.tokens.cZrx.address]);
-  await morpho.connect(deployer).updateThreshold(config.tokens.cUsdc.address, 0, BigNumber.from(1).pow(6));
-  await morpho.connect(deployer).listMarket(config.tokens.cDai.address);
-  await morpho.connect(deployer).listMarket(config.tokens.cUsdc.address);
-  await morpho.connect(deployer).listMarket(config.tokens.cBat.address);
-  await morpho.connect(deployer).listMarket(config.tokens.cZrx.address);
+  await compMarketsManager.connect(deployer).setCompPositionsManager(compPositionsManager.address);
+  await compMarketsManager.connect(deployer).createMarkets([config.tokens.cDai.address, config.tokens.cUsdc.address, config.tokens.cBat.address, config.tokens.cZrx.address]);
+  await compMarketsManager.connect(deployer).updateThreshold(config.tokens.cUsdc.address, 0, BigNumber.from(1).pow(6));
+  await compMarketsManager.connect(deployer).listMarket(config.tokens.cDai.address);
+  await compMarketsManager.connect(deployer).listMarket(config.tokens.cUsdc.address);
+  await compMarketsManager.connect(deployer).listMarket(config.tokens.cBat.address);
+  await compMarketsManager.connect(deployer).listMarket(config.tokens.cZrx.address);
 }
 
 main()

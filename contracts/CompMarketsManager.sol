@@ -6,14 +6,14 @@ import "@openzeppelin/contracts/utils/math/Math.sol";
 import "prb-math/contracts/PRBMathUD60x18.sol";
 
 import {ICErc20, IComptroller} from "./interfaces/ICompound.sol";
-import "./interfaces/ICompoundModule.sol";
-import "./interfaces/IMorpho.sol";
+import "./interfaces/ICompPositionsManager.sol";
+import "./interfaces/ICompMarketsManager.sol";
 
 /**
- *  @title CompoundModule
+ *  @title CompPositionsManager
  *  @dev Smart contracts interacting with Compound to enable real P2P lending with cERC20 tokens as lending/borrowing assets.
  */
-contract Morpho is Ownable {
+contract CompMarketsManager is Ownable {
     using PRBMathUD60x18 for uint256;
     using Math for uint256;
 
@@ -33,7 +33,7 @@ contract Morpho is Ownable {
     mapping(address => mapping(Threshold => uint256)) public thresholds; // Thresholds below the ones we remove lenders and borrowers from the lists. 0 -> Underlying, 1 -> cToken, 2 -> mUnit
 
     IComptroller public comptroller;
-    ICompoundModule public compoundModule;
+    ICompPositionsManager public compPositionsManager;
 
     /* Events */
 
@@ -75,11 +75,14 @@ contract Morpho is Ownable {
 
     /* External */
 
-    /** @dev Sets the compound module to interact with Compound.
-     *  @param _compoundModule The address of compound module.
+    /** @dev Sets the `compPositionsManager` to interact with Compound.
+     *  @param _compPositionsManager The address of compound module.
      */
-    function setCompoundModule(ICompoundModule _compoundModule) external onlyOwner {
-        compoundModule = _compoundModule;
+    function setCompPositionsManager(ICompPositionsManager _compPositionsManager)
+        external
+        onlyOwner
+    {
+        compPositionsManager = _compPositionsManager;
     }
 
     /** @dev Sets the comptroller address.
@@ -87,14 +90,14 @@ contract Morpho is Ownable {
      */
     function setComptroller(address _proxyComptrollerAddress) external onlyOwner {
         comptroller = IComptroller(_proxyComptrollerAddress);
-        compoundModule.setComptroller(_proxyComptrollerAddress);
+        compPositionsManager.setComptroller(_proxyComptrollerAddress);
     }
 
     /** @dev Creates new market to borrow/lend.
      *  @param _marketAddresses The addresses of the markets to add.
      */
     function createMarkets(address[] calldata _marketAddresses) external onlyOwner {
-        uint256[] memory results = compoundModule.enterMarkets(_marketAddresses);
+        uint256[] memory results = compPositionsManager.enterMarkets(_marketAddresses);
         for (uint256 i; i < _marketAddresses.length; i++) {
             require(results[i] == 0, "createMarkets: enter market failed on Compound");
             address _marketAddress = _marketAddresses[i];

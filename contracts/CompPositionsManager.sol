@@ -7,14 +7,14 @@ import "@openzeppelin/contracts/utils/math/Math.sol";
 import "prb-math/contracts/PRBMathUD60x18.sol";
 
 import "./libraries/DoubleLinkedList.sol";
-import "./interfaces/IMorpho.sol";
+import "./interfaces/ICompMarketsManager.sol";
 import {ICErc20, IComptroller, ICompoundOracle} from "./interfaces/ICompound.sol";
 
 /**
- *  @title CompoundModule
+ *  @title CompPositionsManager
  *  @dev Smart contracts interacting with Compound to enable real P2P lending with cERC20 tokens as lending/borrowing assets.
  */
-contract CompoundModule is ReentrancyGuard {
+contract CompPositionsManager is ReentrancyGuard {
     using DoubleLinkedList for DoubleLinkedList.List;
     using PRBMathUD60x18 for uint256;
     using SafeERC20 for IERC20;
@@ -69,9 +69,9 @@ contract CompoundModule is ReentrancyGuard {
     mapping(address => mapping(address => BorrowingBalance)) public borrowingBalanceInOf; // Borrowing balance of user.
     mapping(address => address[]) public enteredMarkets; // Markets entered by a user.
 
-    IMorpho public morpho;
     IComptroller public comptroller;
     ICompoundOracle public compoundOracle;
+    ICompMarketsManager public compMarketsManager;
 
     /* Events */
 
@@ -149,8 +149,8 @@ contract CompoundModule is ReentrancyGuard {
 
     /* Constructor */
 
-    constructor(IMorpho _morpho, address _proxyComptrollerAddress) {
-        morpho = _morpho;
+    constructor(ICompMarketsManager _compMarketsManager, address _proxyComptrollerAddress) {
+        compMarketsManager = _compMarketsManager;
         comptroller = IComptroller(_proxyComptrollerAddress);
         compoundOracle = ICompoundOracle(comptroller.oracle());
     }
@@ -162,7 +162,7 @@ contract CompoundModule is ReentrancyGuard {
      *  @return The results of entered.
      */
     function enterMarkets(address[] memory markets) external returns (uint256[] memory) {
-        require(msg.sender == address(morpho), "enterMarkets: only Morpho");
+        require(msg.sender == address(compMarketsManager), "enterMarkets: only Morpho");
         return comptroller.enterMarkets(markets);
     }
 
@@ -170,7 +170,7 @@ contract CompoundModule is ReentrancyGuard {
      *  @param _proxyComptrollerAddress The address of Compound's comptroller.
      */
     function setComptroller(address _proxyComptrollerAddress) external {
-        require(msg.sender == address(morpho), "enterMarkets: only Morpho");
+        require(msg.sender == address(compMarketsManager), "enterMarkets: only compMarketsManager");
         comptroller = IComptroller(_proxyComptrollerAddress);
         compoundOracle = ICompoundOracle(comptroller.oracle());
     }
@@ -181,10 +181,14 @@ contract CompoundModule is ReentrancyGuard {
      */
     function deposit(address _cErc20Address, uint256 _amount) external nonReentrant {
         require(
-            _amount >= morpho.thresholds(_cErc20Address, IMorpho.Threshold.Underlying),
+            _amount >=
+                compMarketsManager.thresholds(
+                    _cErc20Address,
+                    ICompMarketsManager.Threshold.Underlying
+                ),
             "deposit: amount cannot be less than THRESHOLD"
         );
-        require(morpho.isListed(_cErc20Address), "deposit: market not listed");
+        require(compMarketsManager.isListed(_cErc20Address), "deposit: market not listed");
 
         _handleMembership(_cErc20Address, msg.sender);
         ICErc20 cErc20Token = ICErc20(_cErc20Address);
@@ -194,7 +198,7 @@ contract CompoundModule is ReentrancyGuard {
 
         // If some borrowers are on Compound, we must move them to Morpho
         if (borrowersOnComp[_cErc20Address].length() > 0) {
-            uint256 mExchangeRate = morpho.updateMUnitExchangeRate(_cErc20Address);
+            uint256 mExchangeRate = compMarketsManager.updateMUnitExchangeRate(_cErc20Address);
             // Find borrowers and move them to Morpho
             uint256 remainingToSupplyToComp = _moveBorrowersFromCompToMorpho(
                 _cErc20Address,
@@ -228,9 +232,13 @@ contract CompoundModule is ReentrancyGuard {
      */
     function borrow(address _cErc20Address, uint256 _amount) external nonReentrant {
         _handleMembership(_cErc20Address, msg.sender);
-        require(morpho.isListed(_cErc20Address), "borrow: market not listed");
+        require(compMarketsManager.isListed(_cErc20Address), "borrow: market not listed");
         require(
-            _amount >= morpho.thresholds(_cErc20Address, IMorpho.Threshold.Underlying),
+            _amount >=
+                compMarketsManager.thresholds(
+                    _cErc20Address,
+                    ICompMarketsManager.Threshold.Underlying
+                ),
             "borrow: amount cannot be less than THRESHOLD"
         );
         (uint256 debtValue, uint256 maxDebtValue, ) = _getUserHypotheticalStateBalances(
@@ -243,7 +251,7 @@ contract CompoundModule is ReentrancyGuard {
 
         ICErc20 cErc20Token = ICErc20(_cErc20Address);
         IERC20 erc20Token = IERC20(cErc20Token.underlying());
-        uint256 mExchangeRate = morpho.updateMUnitExchangeRate(_cErc20Address);
+        uint256 mExchangeRate = compMarketsManager.updateMUnitExchangeRate(_cErc20Address);
 
         // If some lenders are on Compound, we must move them to Morpho
         if (lendersOnComp[_cErc20Address].length() > 0) {
@@ -299,7 +307,7 @@ contract CompoundModule is ReentrancyGuard {
      */
     function redeem(address _cErc20Address, uint256 _amount) external nonReentrant {
         require(_amount > 0, "redeem: amount cannot be 0");
-        require(morpho.isListed(_cErc20Address), "redeem: market not listed");
+        require(compMarketsManager.isListed(_cErc20Address), "redeem: market not listed");
         (uint256 debtValue, uint256 maxDebtValue, ) = _getUserHypotheticalStateBalances(
             msg.sender,
             _cErc20Address,
@@ -311,7 +319,7 @@ contract CompoundModule is ReentrancyGuard {
         ICErc20 cErc20Token = ICErc20(_cErc20Address);
         IERC20 erc20Token = IERC20(cErc20Token.underlying());
 
-        uint256 mExchangeRate = morpho.updateMUnitExchangeRate(_cErc20Address);
+        uint256 mExchangeRate = compMarketsManager.updateMUnitExchangeRate(_cErc20Address);
         uint256 cExchangeRate = cErc20Token.exchangeRateCurrent();
         uint256 amountOnCompInUnderlying = lendingBalanceInOf[_cErc20Address][msg.sender]
             .onComp
@@ -399,7 +407,7 @@ contract CompoundModule is ReentrancyGuard {
                 ICErc20(_cErc20BorrowedAddress).borrowIndex()
             ) +
             borrowingBalanceInOf[_cErc20BorrowedAddress][_borrower].onMorpho.mul(
-                morpho.mUnitExchangeRate(_cErc20BorrowedAddress)
+                compMarketsManager.mUnitExchangeRate(_cErc20BorrowedAddress)
             );
         require(
             _amount <= vars.borrowingBalance.mul(comptroller.closeFactorMantissa()),
@@ -435,7 +443,7 @@ contract CompoundModule is ReentrancyGuard {
             .mul(cErc20CollateralToken.exchangeRateStored());
         uint256 totalCollateral = vars.onCompInUnderlying +
             lendingBalanceInOf[_cErc20CollateralAddress][_borrower].onMorpho.mul(
-                morpho.updateMUnitExchangeRate(_cErc20CollateralAddress)
+                compMarketsManager.updateMUnitExchangeRate(_cErc20CollateralAddress)
             );
 
         require(
@@ -453,7 +461,7 @@ contract CompoundModule is ReentrancyGuard {
             // Seize tokens from Morpho and Compound
             uint256 toMove = vars.amountToSeize - vars.onCompInUnderlying;
             lendingBalanceInOf[_cErc20CollateralAddress][_borrower].onMorpho -= toMove.div(
-                morpho.mUnitExchangeRate(_cErc20CollateralAddress)
+                compMarketsManager.mUnitExchangeRate(_cErc20CollateralAddress)
             );
 
             // Check balances before and after to avoid round errors issues
@@ -492,11 +500,11 @@ contract CompoundModule is ReentrancyGuard {
         address _borrower,
         uint256 _amount
     ) internal {
-        require(morpho.isListed(_cErc20Address), "_repay: market not listed");
+        require(compMarketsManager.isListed(_cErc20Address), "_repay: market not listed");
         ICErc20 cErc20Token = ICErc20(_cErc20Address);
         IERC20 erc20Token = IERC20(cErc20Token.underlying());
         erc20Token.safeTransferFrom(msg.sender, address(this), _amount);
-        uint256 mExchangeRate = morpho.updateMUnitExchangeRate(_cErc20Address);
+        uint256 mExchangeRate = compMarketsManager.updateMUnitExchangeRate(_cErc20Address);
 
         if (borrowingBalanceInOf[_cErc20Address][_borrower].onComp > 0) {
             uint256 onCompInUnderlying = borrowingBalanceInOf[_cErc20Address][_borrower].onComp.mul(
@@ -578,7 +586,7 @@ contract CompoundModule is ReentrancyGuard {
     ) internal returns (uint256 remainingToMove) {
         ICErc20 cErc20Token = ICErc20(_cErc20Address);
         remainingToMove = _amount; // In underlying
-        uint256 mExchangeRate = morpho.mUnitExchangeRate(_cErc20Address);
+        uint256 mExchangeRate = compMarketsManager.mUnitExchangeRate(_cErc20Address);
         uint256 cExchangeRate = cErc20Token.exchangeRateCurrent();
         uint256 length = lendersOnComp[_cErc20Address].length();
         address lender = lendersOnComp[_cErc20Address].getHead();
@@ -625,7 +633,7 @@ contract CompoundModule is ReentrancyGuard {
         ICErc20 cErc20Token = ICErc20(_cErc20Address);
         uint256 remainingToMove = _amount; // In underlying
         uint256 cExchangeRate = cErc20Token.exchangeRateCurrent();
-        uint256 mExchangeRate = morpho.mUnitExchangeRate(_cErc20Address);
+        uint256 mExchangeRate = compMarketsManager.mUnitExchangeRate(_cErc20Address);
         uint256 length = lendersOnMorpho[_cErc20Address].length();
         address lender = lendersOnMorpho[_cErc20Address].getHead();
         uint256 i;
@@ -670,7 +678,7 @@ contract CompoundModule is ReentrancyGuard {
     {
         ICErc20 cErc20Token = ICErc20(_cErc20Address);
         remainingToMatch = _amount;
-        uint256 mExchangeRate = morpho.mUnitExchangeRate(_cErc20Address);
+        uint256 mExchangeRate = compMarketsManager.mUnitExchangeRate(_cErc20Address);
         uint256 borrowIndex = cErc20Token.borrowIndex();
         uint256 length = borrowersOnMorpho[_cErc20Address].length();
         uint256 i;
@@ -710,7 +718,7 @@ contract CompoundModule is ReentrancyGuard {
     {
         ICErc20 cErc20Token = ICErc20(_cErc20Address);
         remainingToMatch = _amount;
-        uint256 mExchangeRate = morpho.mUnitExchangeRate(_cErc20Address);
+        uint256 mExchangeRate = compMarketsManager.mUnitExchangeRate(_cErc20Address);
         uint256 borrowIndex = cErc20Token.borrowIndex();
         uint256 length = borrowersOnComp[_cErc20Address].length();
         uint256 i;
@@ -745,7 +753,7 @@ contract CompoundModule is ReentrancyGuard {
     function _moveLenderFromMorphoToComp(address _account) internal {
         for (uint256 i; i < enteredMarkets[_account].length; i++) {
             address cErc20Entered = enteredMarkets[_account][i];
-            uint256 mExchangeRate = morpho.mUnitExchangeRate(cErc20Entered);
+            uint256 mExchangeRate = compMarketsManager.mUnitExchangeRate(cErc20Entered);
             uint256 cExchangeRate = ICErc20(cErc20Entered).exchangeRateCurrent();
             uint256 onMorphoInUnderlying = lendingBalanceInOf[cErc20Entered][_account].onMorpho.mul(
                 mExchangeRate
@@ -805,7 +813,7 @@ contract CompoundModule is ReentrancyGuard {
             // Avoid stack too deep error
             StateBalanceVars memory vars;
             vars.cErc20Entered = enteredMarkets[_account][i];
-            vars.mExchangeRate = morpho.updateMUnitExchangeRate(vars.cErc20Entered);
+            vars.mExchangeRate = compMarketsManager.updateMUnitExchangeRate(vars.cErc20Entered);
 
             vars.toAddDebt =
                 borrowingBalanceInOf[vars.cErc20Entered][_account].onComp.mul(
@@ -844,12 +852,12 @@ contract CompoundModule is ReentrancyGuard {
     function _updateBorrowerList(address _cErc20Address, address _account) internal {
         if (
             borrowingBalanceInOf[_cErc20Address][_account].onComp <
-            morpho.thresholds(_cErc20Address, IMorpho.Threshold.CdUnit)
+            compMarketsManager.thresholds(_cErc20Address, ICompMarketsManager.Threshold.CdUnit)
         ) borrowersOnComp[_cErc20Address].remove(_account);
         else borrowersOnComp[_cErc20Address].addTail(_account);
         if (
             borrowingBalanceInOf[_cErc20Address][_account].onMorpho <
-            morpho.thresholds(_cErc20Address, IMorpho.Threshold.MUnit)
+            compMarketsManager.thresholds(_cErc20Address, ICompMarketsManager.Threshold.MUnit)
         ) borrowersOnMorpho[_cErc20Address].remove(_account);
         else borrowersOnMorpho[_cErc20Address].addTail(_account);
     }
@@ -861,12 +869,12 @@ contract CompoundModule is ReentrancyGuard {
     function _updateLenderList(address _cErc20Address, address _account) internal {
         if (
             lendingBalanceInOf[_cErc20Address][_account].onComp <
-            morpho.thresholds(_cErc20Address, IMorpho.Threshold.CToken)
+            compMarketsManager.thresholds(_cErc20Address, ICompMarketsManager.Threshold.CToken)
         ) lendersOnComp[_cErc20Address].remove(_account);
         else lendersOnComp[_cErc20Address].addTail(_account);
         if (
             lendingBalanceInOf[_cErc20Address][_account].onMorpho <
-            morpho.thresholds(_cErc20Address, IMorpho.Threshold.MUnit)
+            compMarketsManager.thresholds(_cErc20Address, ICompMarketsManager.Threshold.MUnit)
         ) lendersOnMorpho[_cErc20Address].remove(_account);
         else lendersOnMorpho[_cErc20Address].addTail(_account);
     }
