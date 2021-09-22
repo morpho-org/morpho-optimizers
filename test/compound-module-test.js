@@ -64,11 +64,12 @@ describe('CompoundModule Contract', () => {
     await fakeCompoundModule.deployed();
 
     // Get contract dependencies
-    cUsdcToken = await ethers.getContractAt(require(config.tokens.cToken.abi), config.tokens.cUsdc.address, owner);
-    cDaiToken = await ethers.getContractAt(require(config.tokens.cToken.abi), config.tokens.cDai.address, owner);
-    cUsdtToken = await ethers.getContractAt(require(config.tokens.cToken.abi), config.tokens.cUsdt.address, owner);
-    cUniToken = await ethers.getContractAt(require(config.tokens.cToken.abi), config.tokens.cUni.address, owner);
-    cMkrToken = await ethers.getContractAt(require(config.tokens.cToken.abi), config.tokens.cMkr.address, owner);
+    const cTokenAbi = require(config.tokens.cToken.abi);
+    cUsdcToken = await ethers.getContractAt(cTokenAbi, config.tokens.cUsdc.address, owner);
+    cDaiToken = await ethers.getContractAt(cTokenAbi, config.tokens.cDai.address, owner);
+    cUsdtToken = await ethers.getContractAt(cTokenAbi, config.tokens.cUsdt.address, owner);
+    cUniToken = await ethers.getContractAt(cTokenAbi, config.tokens.cUni.address, owner);
+    cMkrToken = await ethers.getContractAt(cTokenAbi, config.tokens.cMkr.address, owner);
     usdtToken = await ethers.getContractAt(require(config.tokens.usdt.abi), config.tokens.usdt.address, owner);
     comptroller = await ethers.getContractAt(require(config.compound.comptroller.abi), config.compound.comptroller.address, owner);
     compoundOracle = await ethers.getContractAt(require(config.compound.oracle.abi), comptroller.oracle(), owner);
