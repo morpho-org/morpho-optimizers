@@ -1,0 +1,60 @@
+{
+   "polygon": {
+      "tokens": {
+         "cToken": {
+            "abi": "@config/abis/CErc20.json"
+         },
+         "cEth": {
+            "_comment": "This is for crMATIC",
+            "address": "0x3FaE5e5722C51cdb5B0afD8c7082e8a6AF336Ee8",
+            "abi": "@config/abis/CEth.json"
+         },
+         "cDai": {
+            "address": "0x4eCEDdF62277eD78623f9A94995c680f8fd6C00e",
+            "abi": "@config/abis/CErc20.json"
+         },
+         "cUsdc": {
+            "address": "0x73CF8c5D14Aa0EbC89f18272A568319F5BAB6cBD",
+            "abi": "@config/abis/CErc20.json"
+         },
+         "cUsdt": {
+            "address": "0xf976C9bc0E16B250E0B1523CffAa9E4c07Bc5C8a",
+            "abi": "@config/abis/CErc20.json"
+         },
+         "cUni": {
+            "address": "0x7ea7174dD0CB4Ab84f42177F01e9a8a79475d381",
+            "abi": "@config/abis/CErc20.json"
+         },
+         "cMkr": {
+            "_comment": "There is no crMKR crToken, so this address is in fact crLINK",
+            "address": "0x20d5d319C2964ecb52e1B006a4C059b7f6d6ad0a",
+            "abi": "@config/abis/CErc20.json"
+         },
+         "dai": {
+            "address": "0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063",
+            "abi": "@config/abis/Dai.json"
+         },
+         "usdc": {
+            "address": "0x2791bca1f2de4661ed88a30c99a7a9449aa84174",
+            "abi": "@config/abis/USDC.json"
+         },
+         "usdt": {
+            "address": "0xc2132d05d31c914a87c6611c10748aeb04b58e8f",
+            "abi": "@config/abis/USDT.json"
+         },
+         "uni": {
+            "address": "0xb33eaad8d922b1083446dc23f610c2567fb5180f",
+            "abi": "@config/abis/UNI.json"
+         }
+      },
+      "compound": {
+         "comptroller": {
+            "address": "0x20CA53E2395FA571798623F1cFBD11Fe2C114c24",
+            "abi": "@config/abis/Comptroller.json"
+         },
+         "oracle": {
+            "abi": "@config/abis/UniswapAnchoredView.json"
+         }
+      }
+   }
+}
