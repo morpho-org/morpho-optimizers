@@ -77,9 +77,9 @@ describe('CreamPositionsManager Contract', () => {
     const ethAmount = utils.parseUnits('100');
 
     // Mint some ERC20
-    daiToken = await getFromWhale('0xc5ed2333f8a2c351fca35e5ebadb2a82f5d254c3', config.tokens.dai, utils.parseUnits('10000'));
-    usdcToken = await getFromWhale('0x06959153b974d0d5fdfd87d561db6d8d4fa0bb0b', config.tokens.usdc, BigNumber.from(10).pow(10));
-    usdtToken = await getFromWhale('0x0d0707963952f2fba59dd06f2b425ace40b492fe', config.tokens.usdt, BigNumber.from(10).pow(10));
+    daiToken = await getFromWhale('0x27f8d03b3a2196956ed754badc28d73be8830a6e', config.tokens.dai, utils.parseUnits('10000'));
+    usdcToken = await getFromWhale('0x1a13f4ca1d028320a707d99520abfefca3998b7f', config.tokens.usdc, BigNumber.from(10).pow(10));
+    usdtToken = await getFromWhale('0x44aaa9ebafb4557605de574d5e968589dc3a84d1', config.tokens.usdt, BigNumber.from(10).pow(10));
     uniToken = await getFromWhale('0xf7135272a5584eb116f5a77425118a8b4a2ddfdb', config.tokens.uni, utils.parseUnits('100'));
 
     underlyingThreshold = utils.parseUnits('1');
@@ -348,7 +348,7 @@ describe('CreamPositionsManager Contract', () => {
       expect(await cDaiToken.callStatic.borrowBalanceCurrent(creamPositionsManager.address)).to.equal(maxToBorrow);
     });
 
-    it.only('Should not be able to borrow more than max allowed given an amount of collateral', async () => {
+    it('Should not be able to borrow more than max allowed given an amount of collateral', async () => {
       const amount = to6Decimals(utils.parseUnits('100'));
       await usdcToken.connect(borrower1).approve(creamPositionsManager.address, amount);
       await creamPositionsManager.connect(borrower1).deposit(config.tokens.cUsdc.address, amount);
@@ -359,7 +359,7 @@ describe('CreamPositionsManager Contract', () => {
       const usdcPriceMantissa = await compoundOracle.getUnderlyingPrice(config.tokens.cUsdc.address);
       const daiPriceMantissa = await compoundOracle.getUnderlyingPrice(config.tokens.cDai.address);
       const maxToBorrow = collateralBalanceInUnderlying.mul(usdcPriceMantissa).div(daiPriceMantissa).mul(collateralFactorMantissa).div(SCALE);
-      const moreThanMaxToBorrow = maxToBorrow.add(utils.parseUnits('5'));
+      const moreThanMaxToBorrow = maxToBorrow.add(utils.parseUnits('10'));
 
       // TODO: fix dust issue
       // This check does not pass when adding utils.parseUnits("0.00001") to maxToBorrow
