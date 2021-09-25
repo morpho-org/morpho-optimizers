@@ -39,7 +39,9 @@ By default, PR are rebased with `main` before merging to keep a clean historic o
 
 First, install dependencies with:
 
-`yarn test`
+```
+yarn test
+```
 
 Test are run against a fork of the mainnet, which allows us to interact with directly with Compound.
 We aim a test coverage > 90% of all functions.
@@ -48,11 +50,15 @@ We aim a test coverage > 90% of all functions.
 
 To run test, you can run:
 
-`yarn test`
+```
+yarn test
+```
 
 For coverage, run:
 
-`yarn coverage`
+```
+yarn coverage
+```
 
 ## Code Formatting
 
@@ -73,14 +79,18 @@ We use Husky hook to format code before being pushed to any remote branch to enf
 
 ## Deploy a contract on a network
 
-`npx hardhat run scripts/deploy.js --network <network-name>`
+```
+npx hardhat run scripts/deploy.js --network <network-name>
+```
 
 ## Publish and verify a contract on Etherscan
 
 An etherscn API key is required to verify the contract and placed into your `.env` local file.
 The right arguments of the constructor of the smart contract to verify must be write inside `arguments.js`. Then you can run the following command to verify a contract:
 
-`npx hardhat verify --network <network-name> --constructor-args scripts/arguments.js <contract-address>`
+```
+npx hardhat verify --network <network-name> --constructor-args scripts/arguments.js <contract-address>
+```
 
 ## External resources & documentation
 
