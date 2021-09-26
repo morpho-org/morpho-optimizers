@@ -850,16 +850,26 @@ contract CompPositionsManager is ReentrancyGuard {
      *  @param _account The address of the borrower to add or remove.
      */
     function _updateBorrowerList(address _cErc20Address, address _account) internal {
+        borrowersOnComp[_cErc20Address].remove(_account);
         if (
-            borrowingBalanceInOf[_cErc20Address][_account].onComp <
+            borrowingBalanceInOf[_cErc20Address][_account].onComp >
             compMarketsManager.thresholds(_cErc20Address, ICompMarketsManager.Threshold.CdUnit)
-        ) borrowersOnComp[_cErc20Address].remove(_account);
-        else borrowersOnComp[_cErc20Address].addTail(_account);
+        ) {
+            borrowersOnComp[_cErc20Address].insertSorted(
+                _account,
+                borrowingBalanceInOf[_cErc20Address][_account].onComp
+            );
+        }
+        borrowersOnMorpho[_cErc20Address].remove(_account);
         if (
-            borrowingBalanceInOf[_cErc20Address][_account].onMorpho <
+            borrowingBalanceInOf[_cErc20Address][_account].onMorpho >
             compMarketsManager.thresholds(_cErc20Address, ICompMarketsManager.Threshold.MUnit)
-        ) borrowersOnMorpho[_cErc20Address].remove(_account);
-        else borrowersOnMorpho[_cErc20Address].addTail(_account);
+        ) {
+            borrowersOnMorpho[_cErc20Address].insertSorted(
+                _account,
+                borrowingBalanceInOf[_cErc20Address][_account].onMorpho
+            );
+        }
     }
 
     /** @dev Updates lender lists.
@@ -867,15 +877,25 @@ contract CompPositionsManager is ReentrancyGuard {
      *  @param _account The address of the lender to add or remove.
      */
     function _updateLenderList(address _cErc20Address, address _account) internal {
+        lendersOnComp[_cErc20Address].remove(_account);
         if (
-            lendingBalanceInOf[_cErc20Address][_account].onComp <
+            lendingBalanceInOf[_cErc20Address][_account].onComp >
             compMarketsManager.thresholds(_cErc20Address, ICompMarketsManager.Threshold.CToken)
-        ) lendersOnComp[_cErc20Address].remove(_account);
-        else lendersOnComp[_cErc20Address].addTail(_account);
+        ) {
+            lendersOnComp[_cErc20Address].insertSorted(
+                _account,
+                lendingBalanceInOf[_cErc20Address][_account].onComp
+            );
+        }
+        lendersOnMorpho[_cErc20Address].remove(_account);
         if (
-            lendingBalanceInOf[_cErc20Address][_account].onMorpho <
+            lendingBalanceInOf[_cErc20Address][_account].onMorpho >
             compMarketsManager.thresholds(_cErc20Address, ICompMarketsManager.Threshold.MUnit)
-        ) lendersOnMorpho[_cErc20Address].remove(_account);
-        else lendersOnMorpho[_cErc20Address].addTail(_account);
+        ) {
+            lendersOnMorpho[_cErc20Address].insertSorted(
+                _account,
+                lendingBalanceInOf[_cErc20Address][_account].onMorpho
+            );
+        }
     }
 }
