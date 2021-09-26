@@ -108,9 +108,9 @@ contract CompMarketsManager is Ownable {
             mUnitExchangeRate[_marketAddress] = 1e18;
             lastUpdateBlockNumber[_marketAddress] = block.number;
             thresholds[_marketAddress][Threshold.Underlying] = 1e18;
-            thresholds[_marketAddress][Threshold.CToken] = 1e7;
-            thresholds[_marketAddress][Threshold.MUnit] = 1e18;
-            thresholds[_marketAddress][Threshold.CdUnit] = 1e16;
+            thresholds[_marketAddress][Threshold.CToken] = 1e5;
+            thresholds[_marketAddress][Threshold.MUnit] = 1e5;
+            thresholds[_marketAddress][Threshold.CdUnit] = 1e5;
             updateBPY(_marketAddress);
             emit CreateMarket(_marketAddress);
         }
