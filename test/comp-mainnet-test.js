@@ -106,8 +106,8 @@ describe('CompPositionsManager Contract', () => {
       // Thresholds
       underlyingThreshold = await compMarketsManager.thresholds(config.tokens.cDai.address, 0);
       expect(underlyingThreshold).to.be.equal(utils.parseUnits('1'));
-      expect(await compMarketsManager.thresholds(config.tokens.cDai.address, 1)).to.be.equal(BigNumber.from(10).pow(7));
-      expect(await compMarketsManager.thresholds(config.tokens.cDai.address, 2)).to.be.equal(utils.parseUnits('1'));
+      expect(await compMarketsManager.thresholds(config.tokens.cDai.address, 1)).to.be.equal(BigNumber.from(10).pow(5));
+      expect(await compMarketsManager.thresholds(config.tokens.cDai.address, 2)).to.be.equal(BigNumber.from(10).pow(5));
     });
   });
 
