@@ -726,36 +726,43 @@ contract CompPositionsManager is ReentrancyGuard {
      *  @dev Note: mUnitExchangeRate must have been upated before calling this function.
      *  @param _cErc20Address The address of the market on which we want to move users.
      *  @param _amount The amount to match in underlying.
-     *  @return remainingToMatch The amount remaining to match in underlying.
+     *  @return remainingToMove The amount remaining to match in underlying.
      */
     function _moveBorrowersFromCompToMorpho(address _cErc20Address, uint256 _amount)
         internal
-        returns (uint256 remainingToMatch)
+        returns (uint256 remainingToMove)
     {
         ICErc20 cErc20Token = ICErc20(_cErc20Address);
-        remainingToMatch = _amount;
+        remainingToMove = _amount;
         uint256 mExchangeRate = compMarketsManager.mUnitExchangeRate(_cErc20Address);
         uint256 borrowIndex = cErc20Token.borrowIndex();
         uint256 length = borrowersOnComp[_cErc20Address].length();
         uint256 i;
 
-        while (remainingToMatch > 0 && i < length) {
+        while (remainingToMove > 0 && i < length) {
             address borrower = borrowersOnComp[_cErc20Address].getHead();
 
             if (borrowingBalanceInOf[_cErc20Address][borrower].onComp > 0) {
                 uint256 onCompInUnderlying = borrowingBalanceInOf[_cErc20Address][borrower]
                     .onComp
                     .mul(borrowIndex);
-                uint256 toMatch = Math.min(onCompInUnderlying, remainingToMatch); // In underlying
-
-                remainingToMatch -= toMatch;
-                borrowingBalanceInOf[_cErc20Address][borrower].onComp -= toMatch.div(borrowIndex);
-                borrowingBalanceInOf[_cErc20Address][borrower].onMorpho += toMatch.div(
+                uint256 toMove; // in underlying;
+                if (onCompInUnderlying <= remainingToMove) {
+                    toMove = onCompInUnderlying;
+                    borrowingBalanceInOf[_cErc20Address][borrower].onComp = 0;
+                } else {
+                    toMove = remainingToMove;
+                    borrowingBalanceInOf[_cErc20Address][borrower].onComp -= remainingToMove.div(
+                        borrowIndex
+                    );
+                }
+                remainingToMove -= toMove;
+                borrowingBalanceInOf[_cErc20Address][borrower].onMorpho += toMove.div(
                     mExchangeRate
                 );
 
                 _updateBorrowerList(_cErc20Address, borrower);
-                emit BorrowerMovedFromCompToMorpho(borrower, _cErc20Address, toMatch);
+                emit BorrowerMovedFromCompToMorpho(borrower, _cErc20Address, toMove);
             }
 
             i++;
