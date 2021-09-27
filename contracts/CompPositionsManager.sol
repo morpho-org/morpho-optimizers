@@ -649,17 +649,20 @@ contract CompPositionsManager is ReentrancyGuard {
                 uint256 onMorpho = lendingBalanceInOf[_cErc20Address][lender].onMorpho; // In mUnit
 
                 if (onMorpho > 0) {
-                    uint256 amountToMove = Math.min(onMorpho.mul(mExchangeRate), remainingToMove); // In underlying
-                    remainingToMove -= amountToMove; // In underlying
-                    lendingBalanceInOf[_cErc20Address][lender].onComp += amountToMove.div(
-                        cExchangeRate
-                    ); // In cToken
-                    lendingBalanceInOf[_cErc20Address][lender].onMorpho -= amountToMove.div(
-                        mExchangeRate
-                    ); // In mUnit
-
+                    uint256 toMove; // In underlying
+                    if (onMorpho.mul(mExchangeRate) <= remainingToMove) {
+                        toMove = onMorpho.mul(mExchangeRate);
+                        lendingBalanceInOf[_cErc20Address][lender].onMorpho = 0;
+                    } else {
+                        toMove = remainingToMove;
+                        lendingBalanceInOf[_cErc20Address][lender].onMorpho -= remainingToMove.div(
+                            mExchangeRate
+                        );
+                    }
+                    remainingToMove -= toMove; // In underlying
+                    lendingBalanceInOf[_cErc20Address][lender].onComp += toMove.div(cExchangeRate); // In cToken
                     _updateLenderList(_cErc20Address, lender);
-                    emit LenderMovedFromMorphoToComp(lender, _cErc20Address, amountToMove);
+                    emit LenderMovedFromMorphoToComp(lender, _cErc20Address, toMove);
                 }
 
                 lender = lendersOnMorpho[_cErc20Address].getHead();
