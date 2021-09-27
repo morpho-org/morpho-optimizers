@@ -69,8 +69,7 @@ describe('CreamPositionsManager Contract', () => {
     cDaiToken = await ethers.getContractAt(cTokenAbi, config.tokens.cDai.address, owner);
     cUsdtToken = await ethers.getContractAt(cTokenAbi, config.tokens.cUsdt.address, owner);
     cUniToken = await ethers.getContractAt(cTokenAbi, config.tokens.cUni.address, owner);
-    cMkrToken = await ethers.getContractAt(cTokenAbi, config.tokens.cMkr.address, owner);
-    usdtToken = await ethers.getContractAt(require(config.tokens.usdt.abi), config.tokens.usdt.address, owner);
+    cMkrToken = await ethers.getContractAt(cTokenAbi, config.tokens.cMkr.address, owner); // This is in fact crLINK tokens (no crMKR on Polygon)
     comptroller = await ethers.getContractAt(require(config.compound.comptroller.abi), config.compound.comptroller.address, owner);
     compoundOracle = await ethers.getContractAt(require(config.compound.oracle.abi), comptroller.oracle(), owner);
 
