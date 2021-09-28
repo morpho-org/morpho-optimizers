@@ -592,8 +592,8 @@ describe('CompPositionsManager Contract', () => {
       expect(removeDigitsBigNumber(1, (await compPositionsManager.lendingBalanceInOf(config.tokens.cDai.address, lender2.getAddress())).onComp)).to.equal(
         removeDigitsBigNumber(1, expectedLender2LendingBalanceOnComp)
       );
-      expect(removeDigitsBigNumber(6, (await compPositionsManager.lendingBalanceInOf(config.tokens.cDai.address, lender2.getAddress())).onMorpho)).to.equal(
-        removeDigitsBigNumber(6, expectedLender2LendingBalanceOnMorpho)
+      expect(removeDigitsBigNumber(7, (await compPositionsManager.lendingBalanceInOf(config.tokens.cDai.address, lender2.getAddress())).onMorpho)).to.equal(
+        removeDigitsBigNumber(7, expectedLender2LendingBalanceOnMorpho)
       );
 
       // Check lending balances of lender3: lender3 balances should not move
