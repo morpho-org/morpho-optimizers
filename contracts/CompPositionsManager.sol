@@ -870,7 +870,7 @@ contract CompPositionsManager is ReentrancyGuard {
 
     /** @dev Updates borrower lists.
      *  @param _cErc20Address The address of the market on which we want to update the borrower lists.
-     *  @param _account The address of the borrower to add or remove.
+     *  @param _account The address of the borrower to move.
      */
     function _updateBorrowerList(address _cErc20Address, address _account) internal {
         borrowersOnComp[_cErc20Address].remove(_account);
@@ -897,7 +897,7 @@ contract CompPositionsManager is ReentrancyGuard {
 
     /** @dev Updates lender lists.
      *  @param _cErc20Address The address of the market on which we want to update the lender lists.
-     *  @param _account The address of the lender to add or remove.
+     *  @param _account The address of the lender to move.
      */
     function _updateLenderList(address _cErc20Address, address _account) internal {
         lendersOnComp[_cErc20Address].remove(_account);
