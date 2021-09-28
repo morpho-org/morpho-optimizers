@@ -517,19 +517,20 @@ describe('CompPositionsManager Contract', () => {
       await usdcToken.connect(borrower1).approve(compPositionsManager.address, collateralAmount);
       await compPositionsManager.connect(borrower1).deposit(config.tokens.cUsdc.address, collateralAmount);
 
-      const previousLender1LendingBalanceOnComp = (await compPositionsManager.lendingBalanceInOf(config.tokens.cDai.address, lender1.getAddress())).onComp;
+      // We pick lender2 because lender2 is inserted before lender3 with the current sorting mechanism
+      const previousLender2LendingBalanceOnComp = (await compPositionsManager.lendingBalanceInOf(config.tokens.cDai.address, lender2.getAddress())).onComp;
 
       // Borrowers borrows lender1 amount
       await compPositionsManager.connect(borrower1).borrow(config.tokens.cDai.address, lendingAmount);
 
-      // Check lender1 balances
+      // Check lender2 balances
       const mExchangeRate1 = await compMarketsManager.mUnitExchangeRate(config.tokens.cDai.address);
       const cExchangeRate2 = await cDaiToken.callStatic.exchangeRateCurrent();
-      // Expected balances of lender1
-      const expectedLendingBalanceOnComp2 = previousLender1LendingBalanceOnComp.sub(underlyingToCToken(lendingAmount, cExchangeRate2));
+      // Expected balances of lender2
+      const expectedLendingBalanceOnComp2 = previousLender2LendingBalanceOnComp.sub(underlyingToCToken(lendingAmount, cExchangeRate2));
       const expectedLendingBalanceOnMorpho2 = underlyingToMUnit(lendingAmount, mExchangeRate1);
-      const lendingBalanceOnComp2 = (await compPositionsManager.lendingBalanceInOf(config.tokens.cDai.address, lender1.getAddress())).onComp;
-      const lendingBalanceOnMorpho2 = (await compPositionsManager.lendingBalanceInOf(config.tokens.cDai.address, lender1.getAddress())).onMorpho;
+      const lendingBalanceOnComp2 = (await compPositionsManager.lendingBalanceInOf(config.tokens.cDai.address, lender2.getAddress())).onComp;
+      const lendingBalanceOnMorpho2 = (await compPositionsManager.lendingBalanceInOf(config.tokens.cDai.address, lender2.getAddress())).onMorpho;
       expect(lendingBalanceOnComp2).to.equal(expectedLendingBalanceOnComp2);
       expect(lendingBalanceOnMorpho2).to.equal(expectedLendingBalanceOnMorpho2);
 

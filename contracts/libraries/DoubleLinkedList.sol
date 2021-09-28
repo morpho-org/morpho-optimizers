@@ -94,7 +94,18 @@ library DoubleLinkedList {
         while (previous != _list.tail && _list.accounts[previous].value >= _value) {
             previous = _list.accounts[previous].next;
         }
-        insertAfter(_list, previous, _add, _value);
+        insertBefore(_list, previous, _add, _value);
+    }
+
+    function insertBefore(
+        List storage _list,
+        address _nextId,
+        address _add,
+        uint256 _value
+    ) internal {
+        require(!_contains(_list, _add));
+        if (_nextId == _list.head) addHead(_list, _add, _value);
+        else insertAfter(_list, _list.accounts[_nextId].prev, _add, _value);
     }
 
     function insertAfter(
