@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.7;
 
+import "hardhat/console.sol";
+
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "prb-math/contracts/PRBMathUD60x18.sol";
 
-import "./libraries/DoubleLinkedList.sol";
+import "./libraries/RedBlackBinaryTree.sol";
 import "./interfaces/ICompMarketsManager.sol";
 import {ICErc20, IComptroller, ICompoundOracle} from "./interfaces/ICompound.sol";
 
@@ -15,7 +17,7 @@ import {ICErc20, IComptroller, ICompoundOracle} from "./interfaces/ICompound.sol
  *  @dev Smart contracts interacting with Compound to enable real P2P lending with cERC20 tokens as lending/borrowing assets.
  */
 contract CompPositionsManager is ReentrancyGuard {
-    using DoubleLinkedList for DoubleLinkedList.List;
+    using RedBlackBinaryTree for RedBlackBinaryTree.Tree;
     using PRBMathUD60x18 for uint256;
     using SafeERC20 for IERC20;
     using Math for uint256;
@@ -58,12 +60,18 @@ contract CompPositionsManager is ReentrancyGuard {
         uint256 onCompInUnderlying;
     }
 
+    // Struct to avoid stack too deep error
+    struct MoveVars {
+        address account;
+        uint256 highestValue;
+    }
+
     /* Storage */
 
-    mapping(address => DoubleLinkedList.List) public lendersOnMorpho; // Lenders on Morpho.
-    mapping(address => DoubleLinkedList.List) public lendersOnComp; // Lenders on Compound.
-    mapping(address => DoubleLinkedList.List) public borrowersOnMorpho; // Borrowers on Morpho.
-    mapping(address => DoubleLinkedList.List) public borrowersOnComp; // Borrowers on Compound.
+    mapping(address => RedBlackBinaryTree.Tree) public lendersOnMorpho; // Lenders on Morpho.
+    mapping(address => RedBlackBinaryTree.Tree) public lendersOnComp; // Lenders on Compound.
+    mapping(address => RedBlackBinaryTree.Tree) public borrowersOnMorpho; // Borrowers on Morpho.
+    mapping(address => RedBlackBinaryTree.Tree) public borrowersOnComp; // Borrowers on Compound.
     mapping(address => mapping(address => bool)) public accountMembership; // Whether the account is in the market or not.
     mapping(address => mapping(address => LendingBalance)) public lendingBalanceInOf; // Lending balance of user.
     mapping(address => mapping(address => BorrowingBalance)) public borrowingBalanceInOf; // Borrowing balance of user.
@@ -197,7 +205,7 @@ contract CompPositionsManager is ReentrancyGuard {
         uint256 cExchangeRate = cErc20Token.exchangeRateCurrent();
 
         // If some borrowers are on Compound, we must move them to Morpho
-        if (borrowersOnComp[_cErc20Address].length() > 0) {
+        if (borrowersOnComp[_cErc20Address].count() > 0) {
             uint256 mExchangeRate = compMarketsManager.updateMUnitExchangeRate(_cErc20Address);
             // Find borrowers and move them to Morpho
             uint256 remainingToSupplyToComp = _moveBorrowersFromCompToMorpho(
@@ -254,12 +262,8 @@ contract CompPositionsManager is ReentrancyGuard {
         uint256 mExchangeRate = compMarketsManager.updateMUnitExchangeRate(_cErc20Address);
 
         // If some lenders are on Compound, we must move them to Morpho
-        if (lendersOnComp[_cErc20Address].length() > 0) {
-            uint256 remainingToBorrowOnComp = _moveLendersFromCompToMorpho(
-                _cErc20Address,
-                _amount,
-                msg.sender
-            ); // In underlying
+        if (lendersOnComp[_cErc20Address].count() > 0) {
+            uint256 remainingToBorrowOnComp = _moveLendersFromCompToMorpho(_cErc20Address, _amount); // In underlying
             uint256 toRedeem = _amount - remainingToBorrowOnComp;
 
             if (toRedeem > 0) {
@@ -328,6 +332,7 @@ contract CompPositionsManager is ReentrancyGuard {
         if (_amount <= amountOnCompInUnderlying) {
             // Simple case where we can directly withdraw unused liquidity from Compound
             lendingBalanceInOf[_cErc20Address][msg.sender].onComp -= _amount.div(cExchangeRate); // In cToken
+            console.log("here0");
             _redeemErc20FromComp(_cErc20Address, _amount); // Revert on error
         } else {
             // First, we take all the unused liquidy on Compound.
@@ -347,8 +352,7 @@ contract CompPositionsManager is ReentrancyGuard {
             if (remainingToWithdraw <= cTokenContractBalanceInUnderlying) {
                 // There is enough cTokens in the contract to use
                 require(
-                    _moveLendersFromCompToMorpho(_cErc20Address, remainingToWithdraw, msg.sender) ==
-                        0,
+                    _moveLendersFromCompToMorpho(_cErc20Address, remainingToWithdraw) == 0,
                     "redeem: remaining to move should be 0"
                 );
                 _redeemErc20FromComp(_cErc20Address, remainingToWithdraw); // Revert on error
@@ -356,11 +360,7 @@ contract CompPositionsManager is ReentrancyGuard {
                 // The contract does not have enough cTokens for the withdraw
                 // First, we use all the available cTokens in the contract
                 uint256 toRedeem = cTokenContractBalanceInUnderlying -
-                    _moveLendersFromCompToMorpho(
-                        _cErc20Address,
-                        cTokenContractBalanceInUnderlying,
-                        msg.sender
-                    ); // The amount that can be redeemed for underlying
+                    _moveLendersFromCompToMorpho(_cErc20Address, cTokenContractBalanceInUnderlying); // The amount that can be redeemed for underlying
                 // Update the remaining amount to withdraw to `msg.sender`
                 remainingToWithdraw -= toRedeem;
                 _redeemErc20FromComp(_cErc20Address, toRedeem); // Revert on error
@@ -528,7 +528,10 @@ contract CompPositionsManager is ReentrancyGuard {
                     index
                 ); // We use a fresh new borrowIndex since the borrowIndex is updated after a repay
 
-                _moveLendersFromMorphoToComp(_cErc20Address, remainingToSupplyToComp, _borrower); // Revert on error
+                require(
+                    _moveLendersFromMorphoToComp(_cErc20Address, remainingToSupplyToComp) == 0,
+                    "_repay(1): move lenders failed"
+                );
 
                 // Repay Compound
                 erc20Token.safeApprove(_cErc20Address, onCompInUnderlying);
@@ -539,7 +542,10 @@ contract CompPositionsManager is ReentrancyGuard {
             }
         } else {
             borrowingBalanceInOf[_cErc20Address][_borrower].onMorpho -= _amount.div(mExchangeRate); // In mUnit
-            _moveLendersFromMorphoToComp(_cErc20Address, _amount, _borrower);
+            require(
+                _moveLendersFromMorphoToComp(_cErc20Address, _amount) == 0,
+                "_repay(2): move lenders failed"
+            );
             _supplyErc20ToComp(_cErc20Address, _amount);
         }
 
@@ -576,46 +582,45 @@ contract CompPositionsManager is ReentrancyGuard {
      *  @dev Note: mUnitExchangeRate must have been upated before calling this function.
      *  @param _cErc20Address The address of the market on which we want to move users.
      *  @param _amount The amount to search for in underlying.
-     *  @param _lenderToAvoid The address of the lender to avoid moving liquidity from.
      *  @return remainingToMove The remaining liquidity to search for in underlying.
      */
-    function _moveLendersFromCompToMorpho(
-        address _cErc20Address,
-        uint256 _amount,
-        address _lenderToAvoid
-    ) internal returns (uint256 remainingToMove) {
+    function _moveLendersFromCompToMorpho(address _cErc20Address, uint256 _amount)
+        internal
+        returns (uint256 remainingToMove)
+    {
+        MoveVars memory vars;
         ICErc20 cErc20Token = ICErc20(_cErc20Address);
         remainingToMove = _amount; // In underlying
         uint256 mExchangeRate = compMarketsManager.mUnitExchangeRate(_cErc20Address);
         uint256 cExchangeRate = cErc20Token.exchangeRateCurrent();
-        uint256 length = lendersOnComp[_cErc20Address].length();
-        address lender = lendersOnComp[_cErc20Address].getHead();
-        uint256 i;
+        vars.highestValue = lendersOnComp[_cErc20Address].last();
 
-        while (remainingToMove > 0 && i < length) {
-            if (lender != _lenderToAvoid) {
-                uint256 onComp = lendingBalanceInOf[_cErc20Address][lender].onComp; // In cToken
+        while (remainingToMove > 0 && vars.highestValue != 0) {
+            while (lendersOnComp[_cErc20Address].getNodeCount(vars.highestValue) > 0) {
+                vars.account = lendersOnComp[_cErc20Address].valueKeyAtIndex(vars.highestValue, 0);
+                uint256 onComp = lendingBalanceInOf[_cErc20Address][vars.account].onComp; // In cToken
 
                 if (onComp > 0) {
-                    uint256 amountToMove = Math.min(onComp.mul(cExchangeRate), remainingToMove); // In underlying
+                    uint256 amountToMove;
+                    if (onComp.mul(cExchangeRate) <= remainingToMove) {
+                        lendingBalanceInOf[_cErc20Address][vars.account].onComp = 0;
+                        amountToMove = onComp.mul(cExchangeRate);
+                    } else {
+                        amountToMove = remainingToMove;
+                        lendingBalanceInOf[_cErc20Address][vars.account].onComp -= amountToMove.div(
+                            cExchangeRate
+                        ); // In cToken
+                    }
                     remainingToMove -= amountToMove;
-                    lendingBalanceInOf[_cErc20Address][lender].onComp -= amountToMove.div(
-                        cExchangeRate
-                    ); // In cToken
-                    lendingBalanceInOf[_cErc20Address][lender].onMorpho += amountToMove.div(
+                    lendingBalanceInOf[_cErc20Address][vars.account].onMorpho += amountToMove.div(
                         mExchangeRate
                     ); // In mUnit
 
-                    _updateLenderList(_cErc20Address, lender);
-                    emit LenderMovedFromCompToMorpho(lender, _cErc20Address, amountToMove);
+                    _updateLenderList(_cErc20Address, vars.account);
+                    emit LenderMovedFromCompToMorpho(vars.account, _cErc20Address, amountToMove);
                 }
-
-                lender = lendersOnComp[_cErc20Address].getHead();
-            } else {
-                lender = lendersOnComp[_cErc20Address].getNext(lender);
             }
-
-            i++;
+            vars.highestValue = lendersOnComp[_cErc20Address].last();
         }
     }
 
@@ -623,47 +628,42 @@ contract CompPositionsManager is ReentrancyGuard {
      *  @dev Note: mUnitExchangeRate must have been upated before calling this function.
      *  @param _cErc20Address The address of the market on which we want to move users.
      *  @param _amount The amount to search for in underlying.
-     *  @param _lenderToAvoid The address of the lender to avoid moving liquidity from.
      */
-    function _moveLendersFromMorphoToComp(
-        address _cErc20Address,
-        uint256 _amount,
-        address _lenderToAvoid
-    ) internal {
+    function _moveLendersFromMorphoToComp(address _cErc20Address, uint256 _amount)
+        internal
+        returns (uint256 remainingToMove)
+    {
+        MoveVars memory vars;
         ICErc20 cErc20Token = ICErc20(_cErc20Address);
-        uint256 remainingToMove = _amount; // In underlying
+        remainingToMove = _amount; // In underlying
         uint256 cExchangeRate = cErc20Token.exchangeRateCurrent();
         uint256 mExchangeRate = compMarketsManager.mUnitExchangeRate(_cErc20Address);
-        uint256 length = lendersOnMorpho[_cErc20Address].length();
-        address lender = lendersOnMorpho[_cErc20Address].getHead();
-        uint256 i;
+        vars.highestValue = lendersOnMorpho[_cErc20Address].last();
 
-        while (remainingToMove > 0 && i < length) {
-            if (lender != _lenderToAvoid) {
-                uint256 onMorpho = lendingBalanceInOf[_cErc20Address][lender].onMorpho; // In mUnit
+        while (remainingToMove > 0 && vars.highestValue != 0) {
+            while (lendersOnMorpho[_cErc20Address].getNodeCount(vars.highestValue) > 0) {
+                vars.account = lendersOnMorpho[_cErc20Address].valueKeyAtIndex(
+                    vars.highestValue,
+                    0
+                );
+                uint256 onMorpho = lendingBalanceInOf[_cErc20Address][vars.account].onMorpho; // In cToken
 
                 if (onMorpho > 0) {
                     uint256 amountToMove = Math.min(onMorpho.mul(mExchangeRate), remainingToMove); // In underlying
-                    remainingToMove -= amountToMove; // In underlying
-                    lendingBalanceInOf[_cErc20Address][lender].onComp += amountToMove.div(
+                    remainingToMove -= amountToMove;
+                    lendingBalanceInOf[_cErc20Address][vars.account].onComp += amountToMove.div(
                         cExchangeRate
                     ); // In cToken
-                    lendingBalanceInOf[_cErc20Address][lender].onMorpho -= amountToMove.div(
+                    lendingBalanceInOf[_cErc20Address][vars.account].onMorpho -= amountToMove.div(
                         mExchangeRate
                     ); // In mUnit
 
-                    _updateLenderList(_cErc20Address, lender);
-                    emit LenderMovedFromMorphoToComp(lender, _cErc20Address, amountToMove);
+                    _updateLenderList(_cErc20Address, vars.account);
+                    emit LenderMovedFromMorphoToComp(vars.account, _cErc20Address, amountToMove);
                 }
-
-                lender = lendersOnMorpho[_cErc20Address].getHead();
-            } else {
-                lender = lendersOnMorpho[_cErc20Address].getNext(lender);
             }
-
-            i++;
+            vars.highestValue = lendersOnMorpho[_cErc20Address].last();
         }
-        require(remainingToMove == 0, "_moveLendersFromMorphoToComp: not enough liquidity to move");
     }
 
     /** @dev Finds borrowers on Morpho that match the given `_amount` and moves them to Compound.
@@ -676,33 +676,36 @@ contract CompPositionsManager is ReentrancyGuard {
         internal
         returns (uint256 remainingToMatch)
     {
+        MoveVars memory vars;
         ICErc20 cErc20Token = ICErc20(_cErc20Address);
         remainingToMatch = _amount;
         uint256 mExchangeRate = compMarketsManager.mUnitExchangeRate(_cErc20Address);
         uint256 borrowIndex = cErc20Token.borrowIndex();
-        uint256 length = borrowersOnMorpho[_cErc20Address].length();
-        uint256 i;
+        vars.highestValue = borrowersOnMorpho[_cErc20Address].last();
 
-        while (remainingToMatch > 0 && i < length) {
-            address borrower = borrowersOnMorpho[_cErc20Address].getHead();
-
-            if (borrowingBalanceInOf[_cErc20Address][borrower].onMorpho > 0) {
-                uint256 toMatch = Math.min(
-                    borrowingBalanceInOf[_cErc20Address][borrower].onMorpho.mul(mExchangeRate),
-                    remainingToMatch
-                ); // In underlying
-
-                remainingToMatch -= toMatch;
-                borrowingBalanceInOf[_cErc20Address][borrower].onComp += toMatch.div(borrowIndex);
-                borrowingBalanceInOf[_cErc20Address][borrower].onMorpho -= toMatch.div(
-                    mExchangeRate
+        while (remainingToMatch > 0 && vars.highestValue != 0) {
+            while (borrowersOnMorpho[_cErc20Address].getNodeCount(vars.highestValue) > 0) {
+                vars.account = borrowersOnMorpho[_cErc20Address].valueKeyAtIndex(
+                    vars.highestValue,
+                    0
                 );
+                uint256 onMorpho = borrowingBalanceInOf[_cErc20Address][vars.account].onMorpho;
 
-                _updateBorrowerList(_cErc20Address, borrower);
-                emit BorrowerMovedFromMorphoToComp(borrower, _cErc20Address, toMatch);
+                if (onMorpho > 0) {
+                    uint256 toMatch = Math.min(onMorpho.mul(mExchangeRate), remainingToMatch); // In underlying
+                    remainingToMatch -= toMatch;
+                    borrowingBalanceInOf[_cErc20Address][vars.account].onComp += toMatch.div(
+                        borrowIndex
+                    );
+                    borrowingBalanceInOf[_cErc20Address][vars.account].onMorpho -= toMatch.div(
+                        mExchangeRate
+                    );
+
+                    _updateBorrowerList(_cErc20Address, vars.account);
+                    emit BorrowerMovedFromMorphoToComp(vars.account, _cErc20Address, toMatch);
+                }
             }
-
-            i++;
+            vars.highestValue = borrowersOnMorpho[_cErc20Address].last();
         }
     }
 
@@ -717,32 +720,41 @@ contract CompPositionsManager is ReentrancyGuard {
         returns (uint256 remainingToMatch)
     {
         ICErc20 cErc20Token = ICErc20(_cErc20Address);
+        MoveVars memory vars;
         remainingToMatch = _amount;
         uint256 mExchangeRate = compMarketsManager.mUnitExchangeRate(_cErc20Address);
         uint256 borrowIndex = cErc20Token.borrowIndex();
-        uint256 length = borrowersOnComp[_cErc20Address].length();
-        uint256 i;
+        vars.highestValue = borrowersOnComp[_cErc20Address].last();
 
-        while (remainingToMatch > 0 && i < length) {
-            address borrower = borrowersOnComp[_cErc20Address].getHead();
-
-            if (borrowingBalanceInOf[_cErc20Address][borrower].onComp > 0) {
-                uint256 onCompInUnderlying = borrowingBalanceInOf[_cErc20Address][borrower]
-                    .onComp
-                    .mul(borrowIndex);
-                uint256 toMatch = Math.min(onCompInUnderlying, remainingToMatch); // In underlying
-
-                remainingToMatch -= toMatch;
-                borrowingBalanceInOf[_cErc20Address][borrower].onComp -= toMatch.div(borrowIndex);
-                borrowingBalanceInOf[_cErc20Address][borrower].onMorpho += toMatch.div(
-                    mExchangeRate
+        while (remainingToMatch > 0 && vars.highestValue != 0) {
+            while (borrowersOnComp[_cErc20Address].getNodeCount(vars.highestValue) > 0) {
+                vars.account = borrowersOnComp[_cErc20Address].valueKeyAtIndex(
+                    vars.highestValue,
+                    0
                 );
+                uint256 onComp = borrowingBalanceInOf[_cErc20Address][vars.account].onComp; // In cToken
 
-                _updateBorrowerList(_cErc20Address, borrower);
-                emit BorrowerMovedFromCompToMorpho(borrower, _cErc20Address, toMatch);
+                if (onComp > 0) {
+                    uint256 toMatch;
+                    if (onComp.mul(borrowIndex) <= remainingToMatch) {
+                        toMatch = onComp.mul(borrowIndex);
+                        borrowingBalanceInOf[_cErc20Address][vars.account].onComp = 0;
+                    } else {
+                        toMatch = remainingToMatch;
+                        borrowingBalanceInOf[_cErc20Address][vars.account].onComp -= toMatch.div(
+                            borrowIndex
+                        );
+                    }
+                    remainingToMatch -= toMatch;
+                    borrowingBalanceInOf[_cErc20Address][vars.account].onMorpho += toMatch.div(
+                        mExchangeRate
+                    );
+
+                    _updateBorrowerList(_cErc20Address, vars.account);
+                    emit BorrowerMovedFromCompToMorpho(vars.account, _cErc20Address, toMatch);
+                }
             }
-
-            i++;
+            vars.highestValue = borrowersOnComp[_cErc20Address].last();
         }
     }
 
@@ -850,22 +862,18 @@ contract CompPositionsManager is ReentrancyGuard {
      *  @param _account The address of the borrower to move.
      */
     function _updateBorrowerList(address _cErc20Address, address _account) internal {
-        borrowersOnComp[_cErc20Address].remove(_account);
-        if (
-            borrowingBalanceInOf[_cErc20Address][_account].onComp >
-            compMarketsManager.thresholds(_cErc20Address, ICompMarketsManager.Threshold.CdUnit)
-        ) {
-            borrowersOnComp[_cErc20Address].insertSorted(
+        if (borrowersOnComp[_cErc20Address].keyExists(_account))
+            borrowersOnComp[_cErc20Address].remove(_account);
+        if (borrowersOnMorpho[_cErc20Address].keyExists(_account))
+            borrowersOnMorpho[_cErc20Address].remove(_account);
+        if (borrowingBalanceInOf[_cErc20Address][_account].onComp > 0) {
+            borrowersOnComp[_cErc20Address].insert(
                 _account,
                 borrowingBalanceInOf[_cErc20Address][_account].onComp
             );
         }
-        borrowersOnMorpho[_cErc20Address].remove(_account);
-        if (
-            borrowingBalanceInOf[_cErc20Address][_account].onMorpho >
-            compMarketsManager.thresholds(_cErc20Address, ICompMarketsManager.Threshold.MUnit)
-        ) {
-            borrowersOnMorpho[_cErc20Address].insertSorted(
+        if (borrowingBalanceInOf[_cErc20Address][_account].onMorpho > 0) {
+            borrowersOnMorpho[_cErc20Address].insert(
                 _account,
                 borrowingBalanceInOf[_cErc20Address][_account].onMorpho
             );
@@ -877,22 +885,18 @@ contract CompPositionsManager is ReentrancyGuard {
      *  @param _account The address of the lender to move.
      */
     function _updateLenderList(address _cErc20Address, address _account) internal {
-        lendersOnComp[_cErc20Address].remove(_account);
-        if (
-            lendingBalanceInOf[_cErc20Address][_account].onComp >
-            compMarketsManager.thresholds(_cErc20Address, ICompMarketsManager.Threshold.CToken)
-        ) {
-            lendersOnComp[_cErc20Address].insertSorted(
+        if (lendersOnComp[_cErc20Address].keyExists(_account))
+            lendersOnComp[_cErc20Address].remove(_account);
+        if (lendersOnMorpho[_cErc20Address].keyExists(_account))
+            lendersOnMorpho[_cErc20Address].remove(_account);
+        if (lendingBalanceInOf[_cErc20Address][_account].onComp > 0) {
+            lendersOnComp[_cErc20Address].insert(
                 _account,
                 lendingBalanceInOf[_cErc20Address][_account].onComp
             );
         }
-        lendersOnMorpho[_cErc20Address].remove(_account);
-        if (
-            lendingBalanceInOf[_cErc20Address][_account].onMorpho >
-            compMarketsManager.thresholds(_cErc20Address, ICompMarketsManager.Threshold.MUnit)
-        ) {
-            lendersOnMorpho[_cErc20Address].insertSorted(
+        if (lendingBalanceInOf[_cErc20Address][_account].onMorpho > 0) {
+            lendersOnMorpho[_cErc20Address].insert(
                 _account,
                 lendingBalanceInOf[_cErc20Address][_account].onMorpho
             );
