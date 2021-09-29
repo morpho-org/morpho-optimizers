@@ -28,8 +28,6 @@ THIS SOFTWARE IS NOT TESTED OR AUDITED. DO NOT USE FOR PRODUCTION.
 */
 
 library RedBlackBinaryTree {
-    uint256 private constant EMPTY = 0;
-
     struct Node {
         uint256 parent;
         uint256 left;
@@ -49,27 +47,27 @@ library RedBlackBinaryTree {
 
     function first(Tree storage self) internal view returns (uint256 _value) {
         _value = self.root;
-        if (_value == EMPTY) return 0;
-        while (self.nodes[_value].left != EMPTY) {
+        if (_value == 0) return 0;
+        while (self.nodes[_value].left != 0) {
             _value = self.nodes[_value].left;
         }
     }
 
     function last(Tree storage self) internal view returns (uint256 _value) {
         _value = self.root;
-        if (_value == EMPTY) return 0;
-        while (self.nodes[_value].right != EMPTY) {
+        if (_value == 0) return 0;
+        while (self.nodes[_value].right != 0) {
             _value = self.nodes[_value].right;
         }
     }
 
     function next(Tree storage self, uint256 value) internal view returns (uint256 _cursor) {
-        require(value != EMPTY, "OrderStatisticsTree(401) - Starting value cannot be zero");
-        if (self.nodes[value].right != EMPTY) {
+        require(value != 0, "RBBT(401):start-value=0");
+        if (self.nodes[value].right != 0) {
             _cursor = treeMinimum(self, self.nodes[value].right);
         } else {
             _cursor = self.nodes[value].parent;
-            while (_cursor != EMPTY && value == self.nodes[_cursor].right) {
+            while (_cursor != 0 && value == self.nodes[_cursor].right) {
                 value = _cursor;
                 _cursor = self.nodes[_cursor].parent;
             }
@@ -77,12 +75,12 @@ library RedBlackBinaryTree {
     }
 
     function prev(Tree storage self, uint256 value) internal view returns (uint256 _cursor) {
-        require(value != EMPTY, "OrderStatisticsTree(402) - Starting value cannot be zero");
-        if (self.nodes[value].left != EMPTY) {
+        require(value != 0, "RBBT(402):start-value=0");
+        if (self.nodes[value].left != 0) {
             _cursor = treeMaximum(self, self.nodes[value].left);
         } else {
             _cursor = self.nodes[value].parent;
-            while (_cursor != EMPTY && value == self.nodes[_cursor].left) {
+            while (_cursor != 0 && value == self.nodes[_cursor].left) {
                 value = _cursor;
                 _cursor = self.nodes[_cursor].parent;
             }
@@ -90,31 +88,14 @@ library RedBlackBinaryTree {
     }
 
     function exists(Tree storage self, uint256 value) internal view returns (bool _exists) {
-        if (value == EMPTY) return false;
+        if (value == 0) return false;
         if (value == self.root) return true;
-        if (self.nodes[value].parent != EMPTY) return true;
+        if (self.nodes[value].parent != 0) return true;
         return false;
     }
 
     function keyExists(Tree storage self, address key) internal view returns (bool _exists) {
         return self.isIn[key];
-    }
-
-    function getNode(Tree storage self, uint256 value)
-        internal
-        view
-        returns (
-            uint256 _parent,
-            uint256 _left,
-            uint256 _right,
-            bool _red,
-            uint256 keyCount,
-            uint256 count
-        )
-    {
-        require(exists(self, value), "OrderStatisticsTree(403) - Value does not exist.");
-        Node storage gn = self.nodes[value];
-        return (gn.parent, gn.left, gn.right, gn.red, gn.keys.length, gn.keys.length + gn.count);
     }
 
     function getNodeCount(Tree storage self, uint256 value) internal view returns (uint256 count) {
@@ -127,7 +108,7 @@ library RedBlackBinaryTree {
         uint256 value,
         uint256 index
     ) internal view returns (address _key) {
-        require(exists(self, value), "OrderStatisticsTree(404) - Value does not exist.");
+        require(exists(self, value), "RBBT(404):value-not-exist");
         return self.nodes[value].keys[index];
     }
 
@@ -135,118 +116,18 @@ library RedBlackBinaryTree {
         return getNodeCount(self, self.root);
     }
 
-    function percentile(Tree storage self, uint256 value)
-        internal
-        view
-        returns (uint256 _percentile)
-    {
-        uint256 denominator = count(self);
-        uint256 numerator = rank(self, value);
-        _percentile = ((uint256(1000) * numerator) / denominator + (uint256(5))) / uint256(10);
-    }
-
-    function permil(Tree storage self, uint256 value) internal view returns (uint256 _permil) {
-        uint256 denominator = count(self);
-        uint256 numerator = rank(self, value);
-        _permil = ((uint256(10000) * numerator) / denominator + (uint256(5))) / uint256(10);
-    }
-
-    function atPercentile(Tree storage self, uint256 _percentile)
-        internal
-        view
-        returns (uint256 _value)
-    {
-        uint256 findRank = (((_percentile * count(self)) / uint256(10)) + uint256(5)) / uint256(10);
-        return atRank(self, findRank);
-    }
-
-    function atPermil(Tree storage self, uint256 _permil) internal view returns (uint256 _value) {
-        uint256 findRank = (((_permil * count(self)) / uint256(100)) + uint256(5)) / uint256(10);
-        return atRank(self, findRank);
-    }
-
-    function median(Tree storage self) internal view returns (uint256 value) {
-        return atPercentile(self, 50);
-    }
-
-    function below(Tree storage self, uint256 value) public view returns (uint256 _below) {
-        if (count(self) > 0 && value > 0) _below = rank(self, value) - uint256(1);
-    }
-
-    function above(Tree storage self, uint256 value) public view returns (uint256 _above) {
-        if (count(self) > 0) _above = count(self) - rank(self, value);
-    }
-
-    function rank(Tree storage self, uint256 value) internal view returns (uint256 _rank) {
-        if (count(self) > 0) {
-            bool finished;
-            uint256 cursor = self.root;
-            Node storage c = self.nodes[cursor];
-            uint256 smaller = getNodeCount(self, c.left);
-            while (!finished) {
-                uint256 keyCount = c.keys.length;
-                if (cursor == value) {
-                    finished = true;
-                } else {
-                    if (cursor < value) {
-                        cursor = c.right;
-                        c = self.nodes[cursor];
-                        smaller += keyCount + getNodeCount(self, c.left);
-                    } else {
-                        cursor = c.left;
-                        c = self.nodes[cursor];
-                        smaller -= (keyCount + getNodeCount(self, c.right));
-                    }
-                }
-                if (!exists(self, cursor)) {
-                    finished = true;
-                }
-            }
-            return smaller + 1;
-        }
-    }
-
-    function atRank(Tree storage self, uint256 _rank) internal view returns (uint256 _value) {
-        bool finished;
-        uint256 cursor = self.root;
-        Node storage c = self.nodes[cursor];
-        uint256 smaller = getNodeCount(self, c.left);
-        while (!finished) {
-            _value = cursor;
-            c = self.nodes[cursor];
-            uint256 keyCount = c.keys.length;
-            if (smaller + 1 >= _rank && smaller + keyCount <= _rank) {
-                _value = cursor;
-                finished = true;
-            } else {
-                if (smaller + keyCount <= _rank) {
-                    cursor = c.right;
-                    c = self.nodes[cursor];
-                    smaller += keyCount + getNodeCount(self, c.left);
-                } else {
-                    cursor = c.left;
-                    c = self.nodes[cursor];
-                    smaller -= (keyCount + getNodeCount(self, c.right));
-                }
-            }
-            if (!exists(self, cursor)) {
-                finished = true;
-            }
-        }
-    }
-
     function insert(
         Tree storage self,
         address key,
         uint256 value
     ) internal {
-        require(value != EMPTY, "OrderStatisticsTree(405) - Value to insert cannot be zero");
-        require(!self.isIn[key], "Account already inserted");
+        require(value != 0, "RBBT(405):value-cannot-be-0");
+        require(!self.isIn[key], "RBBT:account-already-in");
         self.isIn[key] = true;
         self.keyToValue[key] = value;
         uint256 cursor;
         uint256 probe = self.root;
-        while (probe != EMPTY) {
+        while (probe != 0) {
             cursor = probe;
             if (value < probe) {
                 probe = self.nodes[probe].left;
@@ -261,12 +142,12 @@ library RedBlackBinaryTree {
         }
         Node storage nValue = self.nodes[value];
         nValue.parent = cursor;
-        nValue.left = EMPTY;
-        nValue.right = EMPTY;
+        nValue.left = 0;
+        nValue.right = 0;
         nValue.red = true;
         nValue.keys.push(key);
         nValue.keyMap[key] = nValue.keys.length - 1;
-        if (cursor == EMPTY) {
+        if (cursor == 0) {
             self.root = value;
         } else if (value < cursor) {
             self.nodes[cursor].left = value;
@@ -277,12 +158,7 @@ library RedBlackBinaryTree {
     }
 
     function remove(Tree storage self, address key) internal {
-        // require(value != EMPTY, "OrderStatisticsTree(407) - Value to delete cannot be zero");
-        // require(
-        //     keyExists(self, key, value),
-        //     "OrderStatisticsTree(408) - Value to delete does not exist."
-        // );
-        require(self.isIn[key], "Account does not exist");
+        require(self.isIn[key], "RBBT:account-not-exist");
         self.isIn[key] = false;
         uint256 value = self.keyToValue[key];
         Node storage nValue = self.nodes[value];
@@ -293,22 +169,22 @@ library RedBlackBinaryTree {
         uint256 probe;
         uint256 cursor;
         if (nValue.keys.length == 0) {
-            if (self.nodes[value].left == EMPTY || self.nodes[value].right == EMPTY) {
+            if (self.nodes[value].left == 0 || self.nodes[value].right == 0) {
                 cursor = value;
             } else {
                 cursor = self.nodes[value].right;
-                while (self.nodes[cursor].left != EMPTY) {
+                while (self.nodes[cursor].left != 0) {
                     cursor = self.nodes[cursor].left;
                 }
             }
-            if (self.nodes[cursor].left != EMPTY) {
+            if (self.nodes[cursor].left != 0) {
                 probe = self.nodes[cursor].left;
             } else {
                 probe = self.nodes[cursor].right;
             }
             uint256 cursorParent = self.nodes[cursor].parent;
             self.nodes[probe].parent = cursorParent;
-            if (cursorParent != EMPTY) {
+            if (cursorParent != 0) {
                 if (cursor == self.nodes[cursorParent].left) {
                     self.nodes[cursorParent].left = probe;
                 } else {
@@ -337,7 +213,7 @@ library RedBlackBinaryTree {
     }
 
     function fixCountRecurse(Tree storage self, uint256 value) private {
-        while (value != EMPTY) {
+        while (value != 0) {
             self.nodes[value].count =
                 getNodeCount(self, self.nodes[value].left) +
                 getNodeCount(self, self.nodes[value].right);
@@ -346,14 +222,14 @@ library RedBlackBinaryTree {
     }
 
     function treeMinimum(Tree storage self, uint256 value) private view returns (uint256) {
-        while (self.nodes[value].left != EMPTY) {
+        while (self.nodes[value].left != 0) {
             value = self.nodes[value].left;
         }
         return value;
     }
 
     function treeMaximum(Tree storage self, uint256 value) private view returns (uint256) {
-        while (self.nodes[value].right != EMPTY) {
+        while (self.nodes[value].right != 0) {
             value = self.nodes[value].right;
         }
         return value;
@@ -364,11 +240,11 @@ library RedBlackBinaryTree {
         uint256 parent = self.nodes[value].parent;
         uint256 cursorLeft = self.nodes[cursor].left;
         self.nodes[value].right = cursorLeft;
-        if (cursorLeft != EMPTY) {
+        if (cursorLeft != 0) {
             self.nodes[cursorLeft].parent = value;
         }
         self.nodes[cursor].parent = parent;
-        if (parent == EMPTY) {
+        if (parent == 0) {
             self.root = cursor;
         } else if (value == self.nodes[parent].left) {
             self.nodes[parent].left = cursor;
@@ -390,11 +266,11 @@ library RedBlackBinaryTree {
         uint256 parent = self.nodes[value].parent;
         uint256 cursorRight = self.nodes[cursor].right;
         self.nodes[value].left = cursorRight;
-        if (cursorRight != EMPTY) {
+        if (cursorRight != 0) {
             self.nodes[cursorRight].parent = value;
         }
         self.nodes[cursor].parent = parent;
-        if (parent == EMPTY) {
+        if (parent == 0) {
             self.root = cursor;
         } else if (value == self.nodes[parent].right) {
             self.nodes[parent].right = cursor;
@@ -461,7 +337,7 @@ library RedBlackBinaryTree {
     ) private {
         uint256 bParent = self.nodes[b].parent;
         self.nodes[a].parent = bParent;
-        if (bParent == EMPTY) {
+        if (bParent == 0) {
             self.root = a;
         } else {
             if (b == self.nodes[bParent].left) {

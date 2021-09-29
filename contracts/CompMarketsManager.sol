@@ -17,13 +17,6 @@ contract CompMarketsManager is Ownable {
     using PRBMathUD60x18 for uint256;
     using Math for uint256;
 
-    enum Threshold {
-        Underlying,
-        CToken,
-        MUnit,
-        CdUnit
-    }
-
     /* Storage */
 
     mapping(address => bool) public isListed; // Whether or not this market is listed.
@@ -31,7 +24,7 @@ contract CompMarketsManager is Ownable {
     mapping(address => uint256) public BPY; // Block Percentage Yield ("midrate").
     mapping(address => uint256) public mUnitExchangeRate; // current exchange rate from mUnit to underlying.
     mapping(address => uint256) public lastUpdateBlockNumber; // Last time mUnitExchangeRate was updated.
-    mapping(address => mapping(Threshold => uint256)) public thresholds; // Thresholds below the ones we remove lenders and borrowers from the lists. 0 -> Underlying, 1 -> cToken, 2 -> mUnit
+    mapping(address => uint256) public thresholds; // Thresholds below the ones lenders and borrowers cannot enter markets.
 
     IComptroller public comptroller;
     ICompPositionsManager public compPositionsManager;
@@ -63,10 +56,9 @@ contract CompMarketsManager is Ownable {
 
     /** @dev Emitted when a threshold of a market is updated.
      *  @param _marketAddress The address of the market to update.
-     *  @param _thresholdType The threshold type to update.
      *  @param _newValue The new value of the threshold.
      */
-    event UpdateThreshold(address _marketAddress, Threshold _thresholdType, uint256 _newValue);
+    event UpdateThreshold(address _marketAddress, uint256 _newValue);
 
     /* Constructor */
 
@@ -106,10 +98,7 @@ contract CompMarketsManager is Ownable {
             isEntered[_marketAddress] = true;
             mUnitExchangeRate[_marketAddress] = 1e18;
             lastUpdateBlockNumber[_marketAddress] = block.number;
-            thresholds[_marketAddress][Threshold.Underlying] = 1e18;
-            thresholds[_marketAddress][Threshold.CToken] = 1e5;
-            thresholds[_marketAddress][Threshold.MUnit] = 1e5;
-            thresholds[_marketAddress][Threshold.CdUnit] = 1e5;
+            thresholds[_marketAddress] = 1e18;
             updateBPY(_marketAddress);
             emit CreateMarket(_marketAddress);
         }
@@ -129,19 +118,14 @@ contract CompMarketsManager is Ownable {
         isListed[_marketAddress] = false;
     }
 
-    /** @dev Updates thresholds below the ones lenders and borrowers are removed from lists.
+    /** @dev Updates thresholds below the ones lenders and borrowers cannot enter markets.
      *  @param _marketAddress The address of the market to change the threshold.
-     *  @param _thresholdType Which threshold must be updated.
      *  @param _newThreshold The new threshold to set.
      */
-    function updateThreshold(
-        address _marketAddress,
-        Threshold _thresholdType,
-        uint256 _newThreshold
-    ) external onlyOwner {
+    function updateThreshold(address _marketAddress, uint256 _newThreshold) external onlyOwner {
         require(_newThreshold > 0, "morpho: new THRESHOLD must be strictly positive.");
-        thresholds[_marketAddress][_thresholdType] = _newThreshold;
-        emit UpdateThreshold(_marketAddress, _thresholdType, _newThreshold);
+        thresholds[_marketAddress] = _newThreshold;
+        emit UpdateThreshold(_marketAddress, _newThreshold);
     }
 
     /* Public */
