@@ -2,13 +2,6 @@
 pragma solidity 0.8.7;
 
 interface ICompMarketsManager {
-    enum Threshold {
-        Underlying,
-        CToken,
-        MUnit,
-        CdUnit
-    }
-
     function isListed(address _marketAddress) external returns (bool);
 
     function BPY(address _marketAddress) external returns (uint256);
@@ -21,9 +14,7 @@ interface ICompMarketsManager {
 
     function lastUpdateBlockNumber(address _marketAddress) external returns (uint256);
 
-    function thresholds(address _marketAddress, Threshold _thresholdType)
-        external
-        returns (uint256);
+    function thresholds(address _marketAddress) external returns (uint256);
 
     function updateMUnitExchangeRate(address _marketAddress) external returns (uint256);
 }

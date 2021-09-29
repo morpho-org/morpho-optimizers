@@ -87,9 +87,9 @@ describe('CompPositionsManager Contract', () => {
     await compMarketsManager.connect(owner).setCompPositionsManager(compPositionsManager.address);
     await compMarketsManager.connect(owner).createMarkets([config.tokens.cDai.address, config.tokens.cUsdc.address, config.tokens.cUsdt.address, config.tokens.cUni.address]);
     await compMarketsManager.connect(owner).listMarket(config.tokens.cDai.address);
-    await compMarketsManager.connect(owner).updateThreshold(config.tokens.cUsdc.address, 0, BigNumber.from(1).pow(6));
+    await compMarketsManager.connect(owner).updateThreshold(config.tokens.cUsdc.address, BigNumber.from(1).pow(6));
     await compMarketsManager.connect(owner).listMarket(config.tokens.cUsdc.address);
-    await compMarketsManager.connect(owner).updateThreshold(config.tokens.cUsdt.address, 0, BigNumber.from(1).pow(6));
+    await compMarketsManager.connect(owner).updateThreshold(config.tokens.cUsdt.address, BigNumber.from(1).pow(6));
     await compMarketsManager.connect(owner).listMarket(config.tokens.cUsdt.address);
     await compMarketsManager.connect(owner).listMarket(config.tokens.cUni.address);
   });
@@ -104,10 +104,8 @@ describe('CompPositionsManager Contract', () => {
       expect(await compMarketsManager.mUnitExchangeRate(config.tokens.cDai.address)).to.be.equal(utils.parseUnits('1'));
 
       // Thresholds
-      underlyingThreshold = await compMarketsManager.thresholds(config.tokens.cDai.address, 0);
+      underlyingThreshold = await compMarketsManager.thresholds(config.tokens.cDai.address);
       expect(underlyingThreshold).to.be.equal(utils.parseUnits('1'));
-      expect(await compMarketsManager.thresholds(config.tokens.cDai.address, 1)).to.be.equal(BigNumber.from(10).pow(5));
-      expect(await compMarketsManager.thresholds(config.tokens.cDai.address, 2)).to.be.equal(BigNumber.from(10).pow(5));
     });
   });
 
@@ -142,14 +140,11 @@ describe('CompPositionsManager Contract', () => {
 
     it('Only Owner should be able to update thresholds', async () => {
       const newThreshold = utils.parseUnits('2');
-      await compMarketsManager.connect(owner).updateThreshold(config.tokens.cUsdc.address, 0, newThreshold);
-      await compMarketsManager.connect(owner).updateThreshold(config.tokens.cUsdc.address, 1, newThreshold);
-      await compMarketsManager.connect(owner).updateThreshold(config.tokens.cUsdc.address, 2, newThreshold);
-      await compMarketsManager.connect(owner).updateThreshold(config.tokens.cUsdc.address, 3, newThreshold);
+      await compMarketsManager.connect(owner).updateThreshold(config.tokens.cUsdc.address, newThreshold);
 
       // Other accounts than Owner
-      await expect(compMarketsManager.connect(lender1).updateThreshold(config.tokens.cUsdc.address, 2, newThreshold)).to.be.reverted;
-      await expect(compMarketsManager.connect(borrower1).updateThreshold(config.tokens.cUsdc.address, 2, newThreshold)).to.be.reverted;
+      await expect(compMarketsManager.connect(lender1).updateThreshold(config.tokens.cUsdc.address, newThreshold)).to.be.reverted;
+      await expect(compMarketsManager.connect(borrower1).updateThreshold(config.tokens.cUsdc.address, newThreshold)).to.be.reverted;
     });
 
     it('Only Owner should be allowed to list/unlisted a market', async () => {
