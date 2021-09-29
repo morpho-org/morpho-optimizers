@@ -93,7 +93,7 @@ library DoubleLinkedList {
         while (previous != _list.tail && _list.accounts[previous].value >= _value) {
             previous = _list.accounts[previous].next;
         }
-        insertBefore(_list, previous, _id, _value);
+        require(insertBefore(_list, previous, _id, _value));
     }
 
     function insertBefore(
@@ -101,23 +101,14 @@ library DoubleLinkedList {
         address _nextId,
         address _id,
         uint256 _value
-    ) internal {
-        require(!_contains(_list, _id));
-        if (_nextId == _list.head) addHead(_list, _id, _value);
-        else insertAfter(_list, _list.accounts[_nextId].prev, _id, _value);
-    }
-
-    function insertAfter(
-        List storage _list,
-        address _prevId,
-        address _id,
-        uint256 _value
     ) internal returns (bool) {
         require(!_contains(_list, _id));
-        if (_prevId == _list.tail) {
+        if (_nextId == _list.head) {
+            return addHead(_list, _id, _value);
+        } else if (_list.accounts[_nextId].prev == _list.tail) {
             return addTail(_list, _id, _value);
         } else {
-            Account memory prevAccount = _list.accounts[_prevId];
+            Account memory prevAccount = _list.accounts[_list.accounts[_nextId].prev];
             Account memory nextAccount = _list.accounts[prevAccount.next];
             _createAccount(_list, _id, _value);
             _link(_list, _id, nextAccount.id);
