@@ -1,10 +1,10 @@
+// SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.7;
 
 /*
-Hitchens Order Statistics Tree v0.99
 A Solidity Red-Black Tree library to store and maintain a sorted data
 structure in a Red-Black binary search tree, with O(log 2n) insert, remove
-and search time (and gas, approximately)
+and search time (and gas, approximately) based on
 https://github.com/rob-Hitchens/OrderStatisticsTree
 Copyright (c) Rob Hitchens. the MIT License
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -45,7 +45,7 @@ library RedBlackBinaryTree {
         mapping(address => bool) isIn;
     }
 
-    function first(Tree storage self) internal view returns (uint256 _value) {
+    function first(Tree storage self) public view returns (uint256 _value) {
         _value = self.root;
         if (_value == 0) return 0;
         while (self.nodes[_value].left != 0) {
@@ -53,7 +53,7 @@ library RedBlackBinaryTree {
         }
     }
 
-    function last(Tree storage self) internal view returns (uint256 _value) {
+    function last(Tree storage self) public view returns (uint256 _value) {
         _value = self.root;
         if (_value == 0) return 0;
         while (self.nodes[_value].right != 0) {
@@ -61,7 +61,7 @@ library RedBlackBinaryTree {
         }
     }
 
-    function next(Tree storage self, uint256 value) internal view returns (uint256 _cursor) {
+    function next(Tree storage self, uint256 value) public view returns (uint256 _cursor) {
         require(value != 0, "RBBT(401):start-value=0");
         if (self.nodes[value].right != 0) {
             _cursor = treeMinimum(self, self.nodes[value].right);
@@ -74,7 +74,7 @@ library RedBlackBinaryTree {
         }
     }
 
-    function prev(Tree storage self, uint256 value) internal view returns (uint256 _cursor) {
+    function prev(Tree storage self, uint256 value) public view returns (uint256 _cursor) {
         require(value != 0, "RBBT(402):start-value=0");
         if (self.nodes[value].left != 0) {
             _cursor = treeMaximum(self, self.nodes[value].left);
@@ -87,18 +87,18 @@ library RedBlackBinaryTree {
         }
     }
 
-    function exists(Tree storage self, uint256 value) internal view returns (bool _exists) {
+    function exists(Tree storage self, uint256 value) public view returns (bool) {
         if (value == 0) return false;
         if (value == self.root) return true;
         if (self.nodes[value].parent != 0) return true;
         return false;
     }
 
-    function keyExists(Tree storage self, address key) internal view returns (bool _exists) {
+    function keyExists(Tree storage self, address key) public view returns (bool) {
         return self.isIn[key];
     }
 
-    function getNodeCount(Tree storage self, uint256 value) internal view returns (uint256 count) {
+    function getNodeCount(Tree storage self, uint256 value) public view returns (uint256) {
         Node storage gn = self.nodes[value];
         return gn.keys.length + gn.count;
     }
@@ -107,12 +107,12 @@ library RedBlackBinaryTree {
         Tree storage self,
         uint256 value,
         uint256 index
-    ) internal view returns (address _key) {
+    ) public view returns (address _key) {
         require(exists(self, value), "RBBT(404):value-not-exist");
         return self.nodes[value].keys[index];
     }
 
-    function count(Tree storage self) internal view returns (uint256 _count) {
+    function count(Tree storage self) public view returns (uint256 _count) {
         return getNodeCount(self, self.root);
     }
 
@@ -120,7 +120,7 @@ library RedBlackBinaryTree {
         Tree storage self,
         address key,
         uint256 value
-    ) internal {
+    ) public {
         require(value != 0, "RBBT(405):value-cannot-be-0");
         require(!self.isIn[key], "RBBT:account-already-in");
         self.isIn[key] = true;
@@ -157,7 +157,7 @@ library RedBlackBinaryTree {
         insertFixup(self, value);
     }
 
-    function remove(Tree storage self, address key) internal {
+    function remove(Tree storage self, address key) public {
         require(self.isIn[key], "RBBT:account-not-exist");
         self.isIn[key] = false;
         uint256 value = self.keyToValue[key];

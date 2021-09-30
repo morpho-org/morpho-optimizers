@@ -52,12 +52,20 @@ describe('CompPositionsManager Contract', () => {
     lenders = [lender1, lender2, lender3];
     borrowers = [borrower1, borrower2, borrower3];
 
+    const RedBlackBinaryTree = await ethers.getContractFactory('RedBlackBinaryTree');
+    const redBlackBinaryTree = await RedBlackBinaryTree.deploy();
+    await redBlackBinaryTree.deployed();
+
     // Deploy contracts
     CompMarketsManager = await ethers.getContractFactory('CompMarketsManager');
     compMarketsManager = await CompMarketsManager.deploy(config.compound.comptroller.address);
     await compMarketsManager.deployed();
 
-    CompPositionsManager = await ethers.getContractFactory('CompPositionsManager');
+    CompPositionsManager = await ethers.getContractFactory('CompPositionsManager', {
+      libraries: {
+        RedBlackBinaryTree: redBlackBinaryTree.address,
+      },
+    });
     compPositionsManager = await CompPositionsManager.deploy(compMarketsManager.address, config.compound.comptroller.address);
     fakeCompoundModule = await CompPositionsManager.deploy(compMarketsManager.address, config.compound.comptroller.address);
     await compPositionsManager.deployed();
