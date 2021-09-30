@@ -15,8 +15,8 @@ module.exports = {
       forking: {
         //url: `https://eth-trace.gateway.pokt.network/v1/lb/${process.env.POCKET_NETWORK_ID}`,
         //url: `https://mainnet.infura.io/v3/${process.env.INFURA_PROJECT_ID}`,
-        //url: `https://polygon-mainnet.infura.io/v3/${process.env.INFURA_PROJECT_ID}`,
-        url: `https://poly-mainnet.gateway.pokt.network/v1/lb/${process.env.POCKET_NETWORK_ID}`,
+        url: `https://polygon-mainnet.infura.io/v3/${process.env.INFURA_PROJECT_ID}`,
+        //url: `https://poly-mainnet.gateway.pokt.network/v1/lb/${process.env.POCKET_NETWORK_ID}`,
       },
       allowUnlimitedContractSize: true,
       //blockNumber: 7710600, // Beginning from a specific block number allows caching data and a faster setup.
