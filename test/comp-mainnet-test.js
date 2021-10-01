@@ -16,6 +16,7 @@ const {
   bigNumberMin,
   to6Decimals,
   computeNewMorphoExchangeRate,
+  getTokens,
 } = require('./utils/helpers');
 
 describe('CompPositionsManager Contract', () => {
@@ -74,83 +75,11 @@ describe('CompPositionsManager Contract', () => {
     comptroller = await ethers.getContractAt(require(config.compound.comptroller.abi), config.compound.comptroller.address, owner);
     compoundOracle = await ethers.getContractAt(require(config.compound.oracle.abi), comptroller.oracle(), owner);
 
-    const ethAmount = utils.parseUnits('100');
-
     // Mint some ERC20
-    // Address of Join (has auth) https://changelog.makerdao.com/ -> releases -> contract addresses -> MCD_JOIN_DAI
-    const daiMinter = '0x9759A6Ac90977b93B58547b4A71c78317f391A28';
-    await hre.network.provider.request({
-      method: 'hardhat_impersonateAccount',
-      params: [daiMinter],
-    });
-    const daiSigner = await ethers.getSigner(daiMinter);
-    daiToken = await ethers.getContractAt(require(config.tokens.dai.abi), config.tokens.dai.address, daiSigner);
-    const daiAmount = utils.parseUnits('100000000');
-    await hre.network.provider.send('hardhat_setBalance', [daiMinter, utils.hexValue(ethAmount)]);
-
-    // Mint DAI to all lenders and borrowers
-    await Promise.all(
-      signers.map(async (signer) => {
-        await daiToken.mint(signer.getAddress(), daiAmount, {
-          from: daiMinter,
-        });
-      })
-    );
-
-    const usdcMinter = '0x5b6122c109b78c6755486966148c1d70a50a47d7';
-    // const masterMinter = await usdcToken.masterMinter();
-    await hre.network.provider.request({
-      method: 'hardhat_impersonateAccount',
-      params: [usdcMinter],
-    });
-    const usdcSigner = await ethers.getSigner(usdcMinter);
-    usdcToken = await ethers.getContractAt(require(config.tokens.usdc.abi), config.tokens.usdc.address, usdcSigner);
-    const usdcAmount = BigNumber.from(10).pow(10); // 10 000 USDC
-    await hre.network.provider.send('hardhat_setBalance', [usdcMinter, utils.hexValue(ethAmount)]);
-
-    // Mint USDC
-    await Promise.all(
-      signers.map(async (signer) => {
-        await usdcToken.mint(signer.getAddress(), usdcAmount, {
-          from: usdcMinter,
-        });
-      })
-    );
-
-    const usdtWhale = '0x47ac0fb4f2d84898e4d9e7b4dab3c24507a6d503';
-    await hre.network.provider.request({
-      method: 'hardhat_impersonateAccount',
-      params: [usdtWhale],
-    });
-    const usdtWhaleSigner = await ethers.getSigner(usdtWhale);
-    usdtToken = await ethers.getContractAt(require(config.tokens.usdt.abi), config.tokens.usdt.address, usdtWhaleSigner);
-    const usdtAmount = BigNumber.from(10).pow(10); // 10 000 USDT
-    await hre.network.provider.send('hardhat_setBalance', [usdtWhale, utils.hexValue(ethAmount)]);
-
-    // Transfer USDT
-    await Promise.all(
-      signers.map(async (signer) => {
-        await usdtToken.connect(usdtWhaleSigner).transfer(signer.getAddress(), usdtAmount);
-      })
-    );
-
-    // Mint UNI
-    const uniMinter = '0x1a9c8182c09f50c8318d769245bea52c32be35bc';
-    await hre.network.provider.request({
-      method: 'hardhat_impersonateAccount',
-      params: [uniMinter],
-    });
-    const uniSigner = await ethers.getSigner(uniMinter);
-    uniToken = await ethers.getContractAt(require(config.tokens.uni.abi), config.tokens.uni.address, uniSigner);
-    const uniAmount = utils.parseUnits('10000'); // 10 000 UNI
-    await hre.network.provider.send('hardhat_setBalance', [uniMinter, utils.hexValue(ethAmount)]);
-
-    // Transfer UNI
-    await Promise.all(
-      signers.map(async (signer) => {
-        await uniToken.connect(uniSigner).transfer(signer.getAddress(), uniAmount);
-      })
-    );
+    daiToken = await getTokens('0x9759A6Ac90977b93B58547b4A71c78317f391A28', 'minter', signers, config.tokens.dai, utils.parseUnits('10000'));
+    usdcToken = await getTokens('0x5b6122c109b78c6755486966148c1d70a50a47d7', 'minter', signers, config.tokens.usdc, BigNumber.from(10).pow(10));
+    usdtToken = await getTokens('0x47ac0fb4f2d84898e4d9e7b4dab3c24507a6d503', 'whale', signers, config.tokens.usdt, BigNumber.from(10).pow(10));
+    uniToken = await getTokens('0x1a9c8182c09f50c8318d769245bea52c32be35bc', 'whale', signers, config.tokens.uni, utils.parseUnits('100'));
 
     underlyingThreshold = utils.parseUnits('1');
 
@@ -995,12 +924,12 @@ describe('CompPositionsManager Contract', () => {
   });
 
   xdescribe('Test attacks', () => {
-    it('Should not be DDOS by a lender or a group of lenders', async () => { });
+    it('Should not be DDOS by a lender or a group of lenders', async () => {});
 
-    it('Should not be DDOS by a borrower or a group of borrowers', async () => { });
+    it('Should not be DDOS by a borrower or a group of borrowers', async () => {});
 
-    it('Should not be subject to flash loan attacks', async () => { });
+    it('Should not be subject to flash loan attacks', async () => {});
 
-    it('Should not be subjected to Oracle Manipulation attacks', async () => { });
+    it('Should not be subjected to Oracle Manipulation attacks', async () => {});
   });
 });

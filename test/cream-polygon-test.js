@@ -16,6 +16,7 @@ const {
   bigNumberMin,
   to6Decimals,
   computeNewMorphoExchangeRate,
+  getTokens,
 } = require('./utils/helpers');
 
 describe('CreamPositionsManager Contract', () => {
@@ -73,13 +74,11 @@ describe('CreamPositionsManager Contract', () => {
     comptroller = await ethers.getContractAt(require(config.compound.comptroller.abi), config.compound.comptroller.address, owner);
     compoundOracle = await ethers.getContractAt(require(config.compound.oracle.abi), comptroller.oracle(), owner);
 
-    const ethAmount = utils.parseUnits('100');
-
     // Mint some ERC20
-    daiToken = await getFromWhale('0x27f8d03b3a2196956ed754badc28d73be8830a6e', config.tokens.dai, utils.parseUnits('10000'));
-    usdcToken = await getFromWhale('0x1a13f4ca1d028320a707d99520abfefca3998b7f', config.tokens.usdc, BigNumber.from(10).pow(10));
-    usdtToken = await getFromWhale('0x44aaa9ebafb4557605de574d5e968589dc3a84d1', config.tokens.usdt, BigNumber.from(10).pow(10));
-    uniToken = await getFromWhale('0xf7135272a5584eb116f5a77425118a8b4a2ddfdb', config.tokens.uni, utils.parseUnits('100'));
+    daiToken = await getTokens('0x27f8d03b3a2196956ed754badc28d73be8830a6e', 'whale', signers, config.tokens.dai, utils.parseUnits('10000'));
+    usdcToken = await getTokens('0x1a13f4ca1d028320a707d99520abfefca3998b7f', 'whale', signers, config.tokens.usdc, BigNumber.from(10).pow(10));
+    usdtToken = await getTokens('0x44aaa9ebafb4557605de574d5e968589dc3a84d1', 'whale', signers, config.tokens.usdt, BigNumber.from(10).pow(10));
+    uniToken = await getTokens('0xf7135272a5584eb116f5a77425118a8b4a2ddfdb', 'whale', signers, config.tokens.uni, utils.parseUnits('100'));
 
     underlyingThreshold = utils.parseUnits('1');
 
@@ -93,25 +92,6 @@ describe('CreamPositionsManager Contract', () => {
     await compMarketsManager.connect(owner).listMarket(config.tokens.cUsdt.address);
     await compMarketsManager.connect(owner).listMarket(config.tokens.cUni.address);
   });
-
-  getFromWhale = async (whaleAddress, tokenConfig, amount) => {
-    await hre.network.provider.request({
-      method: 'hardhat_impersonateAccount',
-      params: [whaleAddress],
-    });
-    const whaleSigner = await ethers.getSigner(whaleAddress);
-    await hre.network.provider.send('hardhat_setBalance', [whaleAddress, utils.hexValue(utils.parseUnits('100'))]);
-
-    // Transfer token
-    const token = await ethers.getContractAt(require(tokenConfig.abi), tokenConfig.address, whaleSigner);
-    await Promise.all(
-      signers.map(async (signer) => {
-        await token.connect(whaleSigner).transfer(signer.getAddress(), amount);
-      })
-    );
-
-    return token;
-  };
 
   describe('Deployment', () => {
     it('Should deploy the contract with the right values', async () => {
@@ -943,12 +923,12 @@ describe('CreamPositionsManager Contract', () => {
   });
 
   xdescribe('Test attacks', () => {
-    it('Should not be DDOS by a lender or a group of lenders', async () => { });
+    it('Should not be DDOS by a lender or a group of lenders', async () => {});
 
-    it('Should not be DDOS by a borrower or a group of borrowers', async () => { });
+    it('Should not be DDOS by a borrower or a group of borrowers', async () => {});
 
-    it('Should not be subject to flash loan attacks', async () => { });
+    it('Should not be subject to flash loan attacks', async () => {});
 
-    it('Should not be subjected to Oracle Manipulation attacks', async () => { });
+    it('Should not be subjected to Oracle Manipulation attacks', async () => {});
   });
 });
