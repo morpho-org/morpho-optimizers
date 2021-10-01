@@ -97,6 +97,9 @@ npx hardhat verify --network <network-name> --constructor-args scripts/arguments
 - [Solidity Prettier Plugin](https://github.com/prettier-solidity/prettier-plugin-solidity)
 - [Codecov](https://github.com/codecov/example-node)
 - [PRBMath](https://github.com/hifi-finance/prb-math): we use this library to handle fixed-point math.
+- [Red Black Binary Tree](https://en.wikipedia.org/wiki/Red%E2%80%93black_tree): binary tree used to sort users for the matching engine
+- [Red Black Binary Tree Solidity Implementation 1](https://github.com/bokkypoobah/BokkyPooBahsRedBlackTreeLibrary): base solidity implementation of a Red Black Binary Tree.
+- [Red Black Binary Tree Solidity Implementation 2](https://github.com/rob-Hitchens/OrderStatisticsTree): solidity implementation of a Red Black Binary Tree based on the previous version. Our modified version makes keys unique items instead of just (key, value) unique pairs.
 
 ## Questions
 
