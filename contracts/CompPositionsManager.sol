@@ -598,8 +598,9 @@ contract CompPositionsManager is ReentrancyGuard {
 
                 if (onComp > 0) {
                     uint256 toMove; // In underlying
-                    if (onComp.mul(cExchangeRate) <= remainingToMove) {
-                        toMove = onComp.mul(cExchangeRate);
+                    uint256 onCompInUnderlying = onComp.mul(cExchangeRate);
+                    if (onCompInUnderlying <= remainingToMove) {
+                        toMove = onCompInUnderlying;
                         lendingBalanceInOf[_cErc20Address][lender].onComp = 0;
                     } else {
                         toMove = remainingToMove;
@@ -650,8 +651,9 @@ contract CompPositionsManager is ReentrancyGuard {
 
                 if (onMorpho > 0) {
                     uint256 toMove; // In underlying
-                    if (onMorpho.mul(mExchangeRate) <= remainingToMove) {
-                        toMove = onMorpho.mul(mExchangeRate);
+                    uint256 onMorphoInUnderlying = onMorpho.mul(mExchangeRate); // In underlying
+                    if (onMorphoInUnderlying <= remainingToMove) {
+                        toMove = onMorphoInUnderlying;
                         lendingBalanceInOf[_cErc20Address][lender].onMorpho = 0;
                     } else {
                         toMove = remainingToMove;
@@ -694,13 +696,12 @@ contract CompPositionsManager is ReentrancyGuard {
 
         while (remainingToMove > 0 && i < length) {
             address borrower = borrowersOnMorpho[_cErc20Address].getHead();
+            uint256 onMorpho = borrowingBalanceInOf[_cErc20Address][borrower].onMorpho; // In mUnit
 
-            if (borrowingBalanceInOf[_cErc20Address][borrower].onMorpho > 0) {
+            if (onMorpho > 0) {
                 uint256 toMove; // In underlying
-                if (
-                    borrowingBalanceInOf[_cErc20Address][borrower].onMorpho.mul(mExchangeRate) <=
-                    remainingToMove
-                ) {
+                uint256 onMorphoInUnderlying = onMorpho.mul(mExchangeRate); // In underlying
+                if (onMorphoInUnderlying <= remainingToMove) {
                     toMove = borrowingBalanceInOf[_cErc20Address][borrower].onMorpho.mul(
                         mExchangeRate
                     );
@@ -741,11 +742,10 @@ contract CompPositionsManager is ReentrancyGuard {
 
         while (remainingToMove > 0 && i < length) {
             address borrower = borrowersOnComp[_cErc20Address].getHead();
+            uint256 onComp = borrowingBalanceInOf[_cErc20Address][borrower].onComp; // In cToken
 
-            if (borrowingBalanceInOf[_cErc20Address][borrower].onComp > 0) {
-                uint256 onCompInUnderlying = borrowingBalanceInOf[_cErc20Address][borrower]
-                    .onComp
-                    .mul(borrowIndex);
+            if (onComp > 0) {
+                uint256 onCompInUnderlying = onComp.mul(borrowIndex);
                 uint256 toMove; // in underlying;
                 if (onCompInUnderlying <= remainingToMove) {
                     toMove = onCompInUnderlying;
