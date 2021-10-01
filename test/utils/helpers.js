@@ -1,5 +1,6 @@
 const { utils, BigNumber } = require('ethers');
 const Decimal = require('decimal.js');
+const hre = require('hardhat');
 
 const SCALE = utils.parseUnits('1');
 
@@ -53,6 +54,29 @@ const computeNewBorrowIndex = (borrowRate, blockDelta, borrowIndex) => {
 
 const to6Decimals = (value) => value.div(BigNumber.from(10).pow(12));
 
+const getTokens = async (signerAddress, signerType, signers, tokenConfig, amount) => {
+  await hre.network.provider.request({
+    method: 'hardhat_impersonateAccount',
+    params: [signerAddress],
+  });
+  const signerAccount = await ethers.getSigner(signerAddress);
+  await hre.network.provider.send('hardhat_setBalance', [signerAddress, utils.hexValue(utils.parseUnits('1000'))]);
+
+  // Transfer token
+  const token = await ethers.getContractAt(require(tokenConfig.abi), tokenConfig.address, signerAccount);
+  await Promise.all(
+    signers.map(async (signer) => {
+      if (signerType == 'whale') {
+        await token.connect(signerAccount).transfer(signerAccount.getAddress(), amount);
+      } else {
+        await token.mint(signer.getAddress(), amount, { from: signerAddress });
+      }
+    })
+  );
+
+  return token;
+};
+
 module.exports = {
   SCALE,
   underlyingToCToken,
@@ -67,4 +91,5 @@ module.exports = {
   computeNewMorphoExchangeRate,
   computeNewBorrowIndex,
   to6Decimals,
+  getTokens,
 };
