@@ -656,7 +656,7 @@ describe('CompPositionsManager Contract', () => {
 
       // Check lending balances of lender1
       expect(removeDigitsBigNumber(1, (await compPositionsManager.lendingBalanceInOf(config.tokens.cDai.address, lender1.getAddress())).onComp)).to.equal(0);
-      expect(removeDigitsBigNumber(4, (await compPositionsManager.lendingBalanceInOf(config.tokens.cDai.address, lender1.getAddress())).onMorpho)).to.equal(0);
+      expect(removeDigitsBigNumber(5, (await compPositionsManager.lendingBalanceInOf(config.tokens.cDai.address, lender1.getAddress())).onMorpho)).to.equal(0);
 
       // Check lending balances of lender2: lender2 should have replaced lender1
       expect(removeDigitsBigNumber(1, (await compPositionsManager.lendingBalanceInOf(config.tokens.cDai.address, lender2.getAddress())).onComp)).to.equal(
