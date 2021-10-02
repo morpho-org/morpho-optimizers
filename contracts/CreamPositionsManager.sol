@@ -12,7 +12,7 @@ import {ICErc20, IComptroller, ICompoundOracle} from "./interfaces/ICompound.sol
 
 /**
  *  @title CreamPositionsManager
- *  @dev Smart contracts interacting with Cream to enable real P2P lending with crERC20 tokens as lending/borrowing assets.
+ *  @dev Smart contracts interacting with Cream to enable real P2P lending with cERC20 tokens as lending/borrowing assets.
  */
 contract CreamPositionsManager is ReentrancyGuard {
     using DoubleLinkedList for DoubleLinkedList.List;
@@ -597,17 +597,24 @@ contract CreamPositionsManager is ReentrancyGuard {
                 uint256 onComp = lendingBalanceInOf[_cErc20Address][lender].onComp; // In cToken
 
                 if (onComp > 0) {
-                    uint256 amountToMove = Math.min(onComp.mul(cExchangeRate), remainingToMove); // In underlying
-                    remainingToMove -= amountToMove;
-                    lendingBalanceInOf[_cErc20Address][lender].onComp -= amountToMove.div(
-                        cExchangeRate
-                    ); // In cToken
-                    lendingBalanceInOf[_cErc20Address][lender].onMorpho += amountToMove.div(
+                    uint256 toMove; // In underlying
+                    uint256 onCompInUnderlying = onComp.mul(cExchangeRate);
+                    if (onCompInUnderlying <= remainingToMove) {
+                        toMove = onCompInUnderlying;
+                        lendingBalanceInOf[_cErc20Address][lender].onComp = 0;
+                    } else {
+                        toMove = remainingToMove;
+                        lendingBalanceInOf[_cErc20Address][lender].onComp -= toMove.div(
+                            cExchangeRate
+                        );
+                    }
+                    remainingToMove -= toMove;
+                    lendingBalanceInOf[_cErc20Address][lender].onMorpho += toMove.div(
                         mExchangeRate
                     ); // In mUnit
 
                     _updateLenderList(_cErc20Address, lender);
-                    emit LenderMovedFromCompToMorpho(lender, _cErc20Address, amountToMove);
+                    emit LenderMovedFromCompToMorpho(lender, _cErc20Address, toMove);
                 }
 
                 lender = lendersOnComp[_cErc20Address].getHead();
@@ -643,17 +650,21 @@ contract CreamPositionsManager is ReentrancyGuard {
                 uint256 onMorpho = lendingBalanceInOf[_cErc20Address][lender].onMorpho; // In mUnit
 
                 if (onMorpho > 0) {
-                    uint256 amountToMove = Math.min(onMorpho.mul(mExchangeRate), remainingToMove); // In underlying
-                    remainingToMove -= amountToMove; // In underlying
-                    lendingBalanceInOf[_cErc20Address][lender].onComp += amountToMove.div(
-                        cExchangeRate
-                    ); // In cToken
-                    lendingBalanceInOf[_cErc20Address][lender].onMorpho -= amountToMove.div(
-                        mExchangeRate
-                    ); // In mUnit
-
+                    uint256 toMove; // In underlying
+                    uint256 onMorphoInUnderlying = onMorpho.mul(mExchangeRate); // In underlying
+                    if (onMorphoInUnderlying <= remainingToMove) {
+                        toMove = onMorphoInUnderlying;
+                        lendingBalanceInOf[_cErc20Address][lender].onMorpho = 0;
+                    } else {
+                        toMove = remainingToMove;
+                        lendingBalanceInOf[_cErc20Address][lender].onMorpho -= remainingToMove.div(
+                            mExchangeRate
+                        );
+                    }
+                    remainingToMove -= toMove; // In underlying
+                    lendingBalanceInOf[_cErc20Address][lender].onComp += toMove.div(cExchangeRate); // In cToken
                     _updateLenderList(_cErc20Address, lender);
-                    emit LenderMovedFromMorphoToComp(lender, _cErc20Address, amountToMove);
+                    emit LenderMovedFromMorphoToComp(lender, _cErc20Address, toMove);
                 }
 
                 lender = lendersOnMorpho[_cErc20Address].getHead();
@@ -670,36 +681,42 @@ contract CreamPositionsManager is ReentrancyGuard {
      *  @dev Note: mUnitExchangeRate must have been upated before calling this function.
      *  @param _cErc20Address The address of the market on which we want to move users.
      *  @param _amount The amount to match in underlying.
-     *  @return remainingToMatch The amount remaining to match in underlying.
+     *  @return remainingToMove The amount remaining to match in underlying.
      */
     function _moveBorrowersFromMorphoToComp(address _cErc20Address, uint256 _amount)
         internal
-        returns (uint256 remainingToMatch)
+        returns (uint256 remainingToMove)
     {
         ICErc20 cErc20Token = ICErc20(_cErc20Address);
-        remainingToMatch = _amount;
+        remainingToMove = _amount;
         uint256 mExchangeRate = compMarketsManager.mUnitExchangeRate(_cErc20Address);
         uint256 borrowIndex = cErc20Token.borrowIndex();
         uint256 length = borrowersOnMorpho[_cErc20Address].length();
         uint256 i;
 
-        while (remainingToMatch > 0 && i < length) {
+        while (remainingToMove > 0 && i < length) {
             address borrower = borrowersOnMorpho[_cErc20Address].getHead();
+            uint256 onMorpho = borrowingBalanceInOf[_cErc20Address][borrower].onMorpho; // In mUnit
 
-            if (borrowingBalanceInOf[_cErc20Address][borrower].onMorpho > 0) {
-                uint256 toMatch = Math.min(
-                    borrowingBalanceInOf[_cErc20Address][borrower].onMorpho.mul(mExchangeRate),
-                    remainingToMatch
-                ); // In underlying
-
-                remainingToMatch -= toMatch;
-                borrowingBalanceInOf[_cErc20Address][borrower].onComp += toMatch.div(borrowIndex);
-                borrowingBalanceInOf[_cErc20Address][borrower].onMorpho -= toMatch.div(
-                    mExchangeRate
-                );
+            if (onMorpho > 0) {
+                uint256 toMove; // In underlying
+                uint256 onMorphoInUnderlying = onMorpho.mul(mExchangeRate); // In underlying
+                if (onMorphoInUnderlying <= remainingToMove) {
+                    toMove = borrowingBalanceInOf[_cErc20Address][borrower].onMorpho.mul(
+                        mExchangeRate
+                    );
+                    borrowingBalanceInOf[_cErc20Address][borrower].onMorpho = 0;
+                } else {
+                    toMove = remainingToMove;
+                    borrowingBalanceInOf[_cErc20Address][borrower].onMorpho -= remainingToMove.div(
+                        mExchangeRate
+                    );
+                }
+                remainingToMove -= toMove;
+                borrowingBalanceInOf[_cErc20Address][borrower].onComp += toMove.div(borrowIndex);
 
                 _updateBorrowerList(_cErc20Address, borrower);
-                emit BorrowerMovedFromMorphoToComp(borrower, _cErc20Address, toMatch);
+                emit BorrowerMovedFromMorphoToComp(borrower, _cErc20Address, toMove);
             }
 
             i++;
@@ -710,36 +727,42 @@ contract CreamPositionsManager is ReentrancyGuard {
      *  @dev Note: mUnitExchangeRate must have been upated before calling this function.
      *  @param _cErc20Address The address of the market on which we want to move users.
      *  @param _amount The amount to match in underlying.
-     *  @return remainingToMatch The amount remaining to match in underlying.
+     *  @return remainingToMove The amount remaining to match in underlying.
      */
     function _moveBorrowersFromCompToMorpho(address _cErc20Address, uint256 _amount)
         internal
-        returns (uint256 remainingToMatch)
+        returns (uint256 remainingToMove)
     {
         ICErc20 cErc20Token = ICErc20(_cErc20Address);
-        remainingToMatch = _amount;
+        remainingToMove = _amount;
         uint256 mExchangeRate = compMarketsManager.mUnitExchangeRate(_cErc20Address);
         uint256 borrowIndex = cErc20Token.borrowIndex();
         uint256 length = borrowersOnComp[_cErc20Address].length();
         uint256 i;
 
-        while (remainingToMatch > 0 && i < length) {
+        while (remainingToMove > 0 && i < length) {
             address borrower = borrowersOnComp[_cErc20Address].getHead();
+            uint256 onComp = borrowingBalanceInOf[_cErc20Address][borrower].onComp; // In cToken
 
-            if (borrowingBalanceInOf[_cErc20Address][borrower].onComp > 0) {
-                uint256 onCompInUnderlying = borrowingBalanceInOf[_cErc20Address][borrower]
-                    .onComp
-                    .mul(borrowIndex);
-                uint256 toMatch = Math.min(onCompInUnderlying, remainingToMatch); // In underlying
-
-                remainingToMatch -= toMatch;
-                borrowingBalanceInOf[_cErc20Address][borrower].onComp -= toMatch.div(borrowIndex);
-                borrowingBalanceInOf[_cErc20Address][borrower].onMorpho += toMatch.div(
+            if (onComp > 0) {
+                uint256 onCompInUnderlying = onComp.mul(borrowIndex);
+                uint256 toMove; // in underlying;
+                if (onCompInUnderlying <= remainingToMove) {
+                    toMove = onCompInUnderlying;
+                    borrowingBalanceInOf[_cErc20Address][borrower].onComp = 0;
+                } else {
+                    toMove = remainingToMove;
+                    borrowingBalanceInOf[_cErc20Address][borrower].onComp -= remainingToMove.div(
+                        borrowIndex
+                    );
+                }
+                remainingToMove -= toMove;
+                borrowingBalanceInOf[_cErc20Address][borrower].onMorpho += toMove.div(
                     mExchangeRate
                 );
 
                 _updateBorrowerList(_cErc20Address, borrower);
-                emit BorrowerMovedFromCompToMorpho(borrower, _cErc20Address, toMatch);
+                emit BorrowerMovedFromCompToMorpho(borrower, _cErc20Address, toMove);
             }
 
             i++;

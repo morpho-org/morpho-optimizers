@@ -79,7 +79,7 @@ describe('CompPositionsManager Contract', () => {
     daiToken = await getTokens('0x9759A6Ac90977b93B58547b4A71c78317f391A28', 'minter', signers, config.tokens.dai, utils.parseUnits('10000'));
     usdcToken = await getTokens('0x5b6122c109b78c6755486966148c1d70a50a47d7', 'minter', signers, config.tokens.usdc, BigNumber.from(10).pow(10));
     usdtToken = await getTokens('0x47ac0fb4f2d84898e4d9e7b4dab3c24507a6d503', 'whale', signers, config.tokens.usdt, BigNumber.from(10).pow(10));
-    uniToken = await getTokens('0x1a9c8182c09f50c8318d769245bea52c32be35bc', 'whale', signers, config.tokens.uni, utils.parseUnits('100'));
+    uniToken = await getTokens('0x1a9c8182c09f50c8318d769245bea52c32be35bc', 'whale', signers, config.tokens.uni, utils.parseUnits('10000'));
 
     underlyingThreshold = utils.parseUnits('1');
 
