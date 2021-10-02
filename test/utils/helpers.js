@@ -67,7 +67,7 @@ const getTokens = async (signerAddress, signerType, signers, tokenConfig, amount
   await Promise.all(
     signers.map(async (signer) => {
       if (signerType == 'whale') {
-        await token.connect(signerAccount).transfer(signerAccount.getAddress(), amount);
+        await token.connect(signerAccount).transfer(signer.getAddress(), amount);
       } else {
         await token.mint(signer.getAddress(), amount, { from: signerAddress });
       }
