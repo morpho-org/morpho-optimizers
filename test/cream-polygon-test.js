@@ -123,7 +123,7 @@ describe('CreamPositionsManager Contract', () => {
       expect(compMarketsManager.connect(owner).createMarkets([config.tokens.cEth.address])).not.be.reverted;
     });
 
-    it('Only Morpho should be able to create markets on CreamPositionsManager', async () => {
+    it('Only Morpho should be able to create markets on creamPositionsManager', async () => {
       expect(creamPositionsManager.connect(lender1).enterMarkets([config.tokens.cEth.address])).to.be.reverted;
       expect(creamPositionsManager.connect(borrower1).enterMarkets([config.tokens.cEth.address])).to.be.reverted;
       expect(creamPositionsManager.connect(owner).enterMarkets([config.tokens.cEth.address])).to.be.reverted;
@@ -131,7 +131,7 @@ describe('CreamPositionsManager Contract', () => {
       expect(await comptroller.checkMembership(creamPositionsManager.address, config.tokens.cEth.address)).to.be.true;
     });
 
-    it('Only Owner should be able to set compPositionsManager on Morpho', async () => {
+    it('Only Owner should be able to set creamPositionsManager on Morpho', async () => {
       expect(compMarketsManager.connect(lender1).setCompPositionsManager(fakeCreamPositonsManager.address)).to.be.reverted;
       expect(compMarketsManager.connect(borrower1).setCompPositionsManager(fakeCreamPositonsManager.address)).to.be.reverted;
       expect(compMarketsManager.connect(owner).setCompPositionsManager(fakeCreamPositonsManager.address)).not.be.reverted;
@@ -338,10 +338,11 @@ describe('CreamPositionsManager Contract', () => {
       const usdcPriceMantissa = await compoundOracle.getUnderlyingPrice(config.tokens.cUsdc.address);
       const daiPriceMantissa = await compoundOracle.getUnderlyingPrice(config.tokens.cDai.address);
       const maxToBorrow = collateralBalanceInUnderlying.mul(usdcPriceMantissa).div(daiPriceMantissa).mul(collateralFactorMantissa).div(SCALE);
+      // WARNING: maxToBorrow seems to be not accurate
       const moreThanMaxToBorrow = maxToBorrow.add(utils.parseUnits('10'));
 
       // TODO: fix dust issue
-      // This check does not pass when adding utils.parseUnits("0.00001") to maxToBorrow
+      // This check does not pass when adding less than utils.parseUnits("1") to maxToBorrow
       await expect(creamPositionsManager.connect(borrower1).borrow(config.tokens.cDai.address, moreThanMaxToBorrow)).to.be.reverted;
     });
 
@@ -584,7 +585,7 @@ describe('CreamPositionsManager Contract', () => {
 
       // Check lending balances of lender1
       expect(removeDigitsBigNumber(1, (await creamPositionsManager.lendingBalanceInOf(config.tokens.cDai.address, lender1.getAddress())).onComp)).to.equal(0);
-      expect(removeDigitsBigNumber(4, (await creamPositionsManager.lendingBalanceInOf(config.tokens.cDai.address, lender1.getAddress())).onMorpho)).to.equal(0);
+      expect(removeDigitsBigNumber(5, (await creamPositionsManager.lendingBalanceInOf(config.tokens.cDai.address, lender1.getAddress())).onMorpho)).to.equal(0);
 
       // Check lending balances of lender2: lender2 should have replaced lender1
       expect(removeDigitsBigNumber(1, (await creamPositionsManager.lendingBalanceInOf(config.tokens.cDai.address, lender2.getAddress())).onComp)).to.equal(
@@ -666,7 +667,7 @@ describe('CreamPositionsManager Contract', () => {
       const cExchangeRate1 = await cDaiToken.callStatic.exchangeRateStored();
       const expectedMorphoBorrowingBalance1 = toBorrow.sub(cTokenToUnderlying(lendingBalanceOnComp, cExchangeRate1));
       const morphoBorrowingBalanceBefore1 = await cDaiToken.callStatic.borrowBalanceCurrent(creamPositionsManager.address);
-      expect(removeDigitsBigNumber(5, morphoBorrowingBalanceBefore1)).to.equal(removeDigitsBigNumber(5, expectedMorphoBorrowingBalance1));
+      expect(removeDigitsBigNumber(4, morphoBorrowingBalanceBefore1)).to.equal(removeDigitsBigNumber(4, expectedMorphoBorrowingBalance1));
       await daiToken.connect(borrower1).approve(creamPositionsManager.address, amountToApprove);
 
       const borrowerBalanceOnMorpho = (await creamPositionsManager.borrowingBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onMorpho;
@@ -750,7 +751,7 @@ describe('CreamPositionsManager Contract', () => {
       const usdtBorrowingBalanceInUnderlying = usdtBorrowingBalance.mul(cUsdtBorrowIndex).div(SCALE);
       expect(removeDigitsBigNumber(5, lendingBalanceOnComp2)).to.equal(removeDigitsBigNumber(5, underlyingToCToken(lendingBalanceInUnderlying, cDaiExchangeRate2)));
       expect(removeDigitsBigNumber(2, borrowingBalanceOnComp)).to.equal(removeDigitsBigNumber(2, expectedBorrowingBalanceOnComp));
-      expect(removeDigitsBigNumber(1, usdtBorrowingBalanceInUnderlying)).to.equal(removeDigitsBigNumber(1, maxToBorrow));
+      expect(removeDigitsBigNumber(2, usdtBorrowingBalanceInUnderlying)).to.equal(removeDigitsBigNumber(2, maxToBorrow));
     });
 
     it('Lender should be connected to borrowers already on Morpho when depositing', async () => {
