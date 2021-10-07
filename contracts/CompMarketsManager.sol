@@ -27,6 +27,7 @@ contract CompMarketsManager is Ownable {
     /* Storage */
 
     mapping(address => bool) public isListed; // Whether or not this market is listed.
+    mapping(address => bool) public isEntered; // Whether or not this market is entered.
     mapping(address => uint256) public BPY; // Block Percentage Yield ("midrate").
     mapping(address => uint256) public mUnitExchangeRate; // current exchange rate from mUnit to underlying.
     mapping(address => uint256) public lastUpdateBlockNumber; // Last time mUnitExchangeRate was updated.
@@ -101,10 +102,8 @@ contract CompMarketsManager is Ownable {
         for (uint256 i; i < _marketAddresses.length; i++) {
             require(results[i] == 0, "createMarkets: enter market failed on Compound");
             address _marketAddress = _marketAddresses[i];
-            require(
-                lastUpdateBlockNumber[_marketAddress] == 0,
-                "createMarkets: market already created"
-            );
+            require(!isEntered[_marketAddress], "createMarkets: market already entered");
+            isEntered[_marketAddress] = true;
             mUnitExchangeRate[_marketAddress] = 1e18;
             lastUpdateBlockNumber[_marketAddress] = block.number;
             thresholds[_marketAddress][Threshold.Underlying] = 1e18;
