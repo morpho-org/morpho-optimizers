@@ -211,7 +211,7 @@ contract CompPositionsManager is ReentrancyGuard {
         uint256 cExchangeRate = cErc20Token.exchangeRateCurrent();
 
         // If some borrowers are on Compound, we must move them to Morpho
-        if (borrowersOnComp[_cErc20Address].count() > 0) {
+        if (borrowersOnComp[_cErc20Address].isKeyInTree()) {
             uint256 mExchangeRate = compMarketsManager.updateMUnitExchangeRate(_cErc20Address);
             // Find borrowers and move them to Morpho
             uint256 remainingToSupplyToComp = _moveBorrowersFromCompToMorpho(
@@ -257,7 +257,7 @@ contract CompPositionsManager is ReentrancyGuard {
         uint256 mExchangeRate = compMarketsManager.updateMUnitExchangeRate(_cErc20Address);
 
         // If some lenders are on Compound, we must move them to Morpho
-        if (lendersOnComp[_cErc20Address].count() > 0) {
+        if (lendersOnComp[_cErc20Address].isKeyInTree()) {
             uint256 remainingToBorrowOnComp = _moveLendersFromCompToMorpho(_cErc20Address, _amount); // In underlying
             uint256 toRedeem = _amount - remainingToBorrowOnComp;
 
@@ -570,7 +570,7 @@ contract CompPositionsManager is ReentrancyGuard {
         uint256 highestValue = lendersOnComp[_cErc20Address].last();
 
         while (remainingToMove > 0 && highestValue != 0) {
-            while (lendersOnComp[_cErc20Address].getNodeCount(highestValue) > 0) {
+            while (lendersOnComp[_cErc20Address].getNumberOfKeysAtValue(highestValue) > 0) {
                 address account = lendersOnComp[_cErc20Address].valueKeyAtIndex(highestValue, 0);
                 uint256 onComp = lendingBalanceInOf[_cErc20Address][account].onComp; // In cToken
 
@@ -614,7 +614,7 @@ contract CompPositionsManager is ReentrancyGuard {
         uint256 highestValue = lendersOnMorpho[_cErc20Address].last();
 
         while (remainingToMove > 0 && highestValue != 0) {
-            while (lendersOnMorpho[_cErc20Address].getNodeCount(highestValue) > 0) {
+            while (lendersOnMorpho[_cErc20Address].getNumberOfKeysAtValue(highestValue) > 0) {
                 address account = lendersOnMorpho[_cErc20Address].valueKeyAtIndex(highestValue, 0);
                 uint256 onMorpho = lendingBalanceInOf[_cErc20Address][account].onMorpho; // In cToken
 
@@ -651,7 +651,7 @@ contract CompPositionsManager is ReentrancyGuard {
         uint256 highestValue = borrowersOnMorpho[_cErc20Address].last();
 
         while (remainingToMatch > 0 && highestValue != 0) {
-            while (borrowersOnMorpho[_cErc20Address].getNodeCount(highestValue) > 0) {
+            while (borrowersOnMorpho[_cErc20Address].getNumberOfKeysAtValue(highestValue) > 0) {
                 address account = borrowersOnMorpho[_cErc20Address].valueKeyAtIndex(
                     highestValue,
                     0
@@ -693,7 +693,7 @@ contract CompPositionsManager is ReentrancyGuard {
         uint256 highestValue = borrowersOnComp[_cErc20Address].last();
 
         while (remainingToMatch > 0 && highestValue != 0) {
-            while (borrowersOnComp[_cErc20Address].getNodeCount(highestValue) > 0) {
+            while (borrowersOnComp[_cErc20Address].getNumberOfKeysAtValue(highestValue) > 0) {
                 address account = borrowersOnComp[_cErc20Address].valueKeyAtIndex(highestValue, 0);
                 uint256 onComp = borrowingBalanceInOf[_cErc20Address][account].onComp; // In cToken
 
