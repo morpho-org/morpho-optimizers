@@ -485,11 +485,11 @@ describe('CompPositionsManager Contract', () => {
 
       // Check lending balances of lender1
       expect(removeDigitsBigNumber(1, (await compPositionsManager.lendingBalanceInOf(config.tokens.cDai.address, lender1.getAddress())).onComp)).to.equal(0);
-      expect(removeDigitsBigNumber(4, (await compPositionsManager.lendingBalanceInOf(config.tokens.cDai.address, lender1.getAddress())).onMorpho)).to.equal(0);
+      expect(removeDigitsBigNumber(9, (await compPositionsManager.lendingBalanceInOf(config.tokens.cDai.address, lender1.getAddress())).onMorpho)).to.equal(0);
 
       // Check borrowing balances of borrower1
-      expect(removeDigitsBigNumber(6, (await compPositionsManager.borrowingBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onComp)).to.equal(
-        removeDigitsBigNumber(6, expectedBorrowerBorrowingBalanceOnComp)
+      expect(removeDigitsBigNumber(9, (await compPositionsManager.borrowingBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onComp)).to.equal(
+        removeDigitsBigNumber(9, expectedBorrowerBorrowingBalanceOnComp)
       );
       expect(removeDigitsBigNumber(4, (await compPositionsManager.borrowingBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onMorpho)).to.equal(0);
     });
