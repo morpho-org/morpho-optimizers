@@ -29,7 +29,7 @@ describe('CreamPositionsManager Contract', () => {
   let uniToken;
   let CreamPositionsManager;
   let creamPositionsManager;
-  let fakeCreamPositonsManager;
+  let fakeCreamPositionsManager;
 
   let signers;
   let owner;
@@ -53,16 +53,24 @@ describe('CreamPositionsManager Contract', () => {
     lenders = [lender1, lender2, lender3];
     borrowers = [borrower1, borrower2, borrower3];
 
+    const RedBlackBinaryTree = await ethers.getContractFactory('RedBlackBinaryTree');
+    const redBlackBinaryTree = await RedBlackBinaryTree.deploy();
+    await redBlackBinaryTree.deployed();
+
     // Deploy contracts
     CompMarketsManager = await ethers.getContractFactory('CompMarketsManager');
-    compMarketsManager = await CompMarketsManager.deploy(config.compound.comptroller.address);
+    compMarketsManager = await CompMarketsManager.deploy(config.cream.comptroller.address);
     await compMarketsManager.deployed();
 
-    CreamPositionsManager = await ethers.getContractFactory('CreamPositionsManager');
-    creamPositionsManager = await CreamPositionsManager.deploy(compMarketsManager.address, config.compound.comptroller.address);
-    fakeCreamPositonsManager = await CreamPositionsManager.deploy(compMarketsManager.address, config.compound.comptroller.address);
+    CreamPositionsManager = await ethers.getContractFactory('CreamPositionsManager', {
+      libraries: {
+        RedBlackBinaryTree: redBlackBinaryTree.address,
+      },
+    });
+    creamPositionsManager = await CreamPositionsManager.deploy(compMarketsManager.address, config.cream.comptroller.address);
+    fakeCreamPositionsManager = await CreamPositionsManager.deploy(compMarketsManager.address, config.cream.comptroller.address);
     await creamPositionsManager.deployed();
-    await fakeCreamPositonsManager.deployed();
+    await fakeCreamPositionsManager.deployed();
 
     // Get contract dependencies
     const cTokenAbi = require(config.tokens.cToken.abi);
@@ -71,8 +79,9 @@ describe('CreamPositionsManager Contract', () => {
     cUsdtToken = await ethers.getContractAt(cTokenAbi, config.tokens.cUsdt.address, owner);
     cUniToken = await ethers.getContractAt(cTokenAbi, config.tokens.cUni.address, owner);
     cMkrToken = await ethers.getContractAt(cTokenAbi, config.tokens.cMkr.address, owner); // This is in fact crLINK tokens (no crMKR on Polygon)
-    comptroller = await ethers.getContractAt(require(config.compound.comptroller.abi), config.compound.comptroller.address, owner);
-    compoundOracle = await ethers.getContractAt(require(config.compound.oracle.abi), comptroller.oracle(), owner);
+
+    comptroller = await ethers.getContractAt(require(config.cream.comptroller.abi), config.cream.comptroller.address, owner);
+    compoundOracle = await ethers.getContractAt(require(config.cream.oracle.abi), comptroller.oracle(), owner);
 
     // Mint some ERC20
     daiToken = await getTokens('0x27f8d03b3a2196956ed754badc28d73be8830a6e', 'whale', signers, config.tokens.dai, utils.parseUnits('10000'));
@@ -86,9 +95,9 @@ describe('CreamPositionsManager Contract', () => {
     await compMarketsManager.connect(owner).setCompPositionsManager(creamPositionsManager.address);
     await compMarketsManager.connect(owner).createMarkets([config.tokens.cDai.address, config.tokens.cUsdc.address, config.tokens.cUsdt.address, config.tokens.cUni.address]);
     await compMarketsManager.connect(owner).listMarket(config.tokens.cDai.address);
-    await compMarketsManager.connect(owner).updateThreshold(config.tokens.cUsdc.address, 0, BigNumber.from(1).pow(6));
+    await compMarketsManager.connect(owner).updateThreshold(config.tokens.cUsdc.address, BigNumber.from(1).pow(6));
     await compMarketsManager.connect(owner).listMarket(config.tokens.cUsdc.address);
-    await compMarketsManager.connect(owner).updateThreshold(config.tokens.cUsdt.address, 0, BigNumber.from(1).pow(6));
+    await compMarketsManager.connect(owner).updateThreshold(config.tokens.cUsdt.address, BigNumber.from(1).pow(6));
     await compMarketsManager.connect(owner).listMarket(config.tokens.cUsdt.address);
     await compMarketsManager.connect(owner).listMarket(config.tokens.cUni.address);
   });
@@ -103,10 +112,8 @@ describe('CreamPositionsManager Contract', () => {
       expect(await compMarketsManager.mUnitExchangeRate(config.tokens.cDai.address)).to.be.equal(utils.parseUnits('1'));
 
       // Thresholds
-      underlyingThreshold = await compMarketsManager.thresholds(config.tokens.cDai.address, 0);
+      underlyingThreshold = await compMarketsManager.thresholds(config.tokens.cDai.address);
       expect(underlyingThreshold).to.be.equal(utils.parseUnits('1'));
-      expect(await compMarketsManager.thresholds(config.tokens.cDai.address, 1)).to.be.equal(BigNumber.from(10).pow(7));
-      expect(await compMarketsManager.thresholds(config.tokens.cDai.address, 2)).to.be.equal(utils.parseUnits('1'));
     });
   });
 
@@ -123,7 +130,7 @@ describe('CreamPositionsManager Contract', () => {
       expect(compMarketsManager.connect(owner).createMarkets([config.tokens.cEth.address])).not.be.reverted;
     });
 
-    it('Only Morpho should be able to create markets on creamPositionsManager', async () => {
+    it('Only Morpho should be able to create markets on CreamPositionsManager', async () => {
       expect(creamPositionsManager.connect(lender1).enterMarkets([config.tokens.cEth.address])).to.be.reverted;
       expect(creamPositionsManager.connect(borrower1).enterMarkets([config.tokens.cEth.address])).to.be.reverted;
       expect(creamPositionsManager.connect(owner).enterMarkets([config.tokens.cEth.address])).to.be.reverted;
@@ -131,24 +138,21 @@ describe('CreamPositionsManager Contract', () => {
       expect(await comptroller.checkMembership(creamPositionsManager.address, config.tokens.cEth.address)).to.be.true;
     });
 
-    it('Only Owner should be able to set creamPositionsManager on Morpho', async () => {
-      expect(compMarketsManager.connect(lender1).setCompPositionsManager(fakeCreamPositonsManager.address)).to.be.reverted;
-      expect(compMarketsManager.connect(borrower1).setCompPositionsManager(fakeCreamPositonsManager.address)).to.be.reverted;
-      expect(compMarketsManager.connect(owner).setCompPositionsManager(fakeCreamPositonsManager.address)).not.be.reverted;
-      await compMarketsManager.connect(owner).setCompPositionsManager(fakeCreamPositonsManager.address);
-      expect(await compMarketsManager.compPositionsManager()).to.equal(fakeCreamPositonsManager.address);
+    it('Only Owner should be able to set CreamPositionsManager on Morpho', async () => {
+      expect(compMarketsManager.connect(lender1).setCompPositionsManager(fakeCreamPositionsManager.address)).to.be.reverted;
+      expect(compMarketsManager.connect(borrower1).setCompPositionsManager(fakeCreamPositionsManager.address)).to.be.reverted;
+      expect(compMarketsManager.connect(owner).setCompPositionsManager(fakeCreamPositionsManager.address)).not.be.reverted;
+      await compMarketsManager.connect(owner).setCompPositionsManager(fakeCreamPositionsManager.address);
+      expect(await compMarketsManager.compPositionsManager()).to.equal(fakeCreamPositionsManager.address);
     });
 
     it('Only Owner should be able to update thresholds', async () => {
       const newThreshold = utils.parseUnits('2');
-      await compMarketsManager.connect(owner).updateThreshold(config.tokens.cUsdc.address, 0, newThreshold);
-      await compMarketsManager.connect(owner).updateThreshold(config.tokens.cUsdc.address, 1, newThreshold);
-      await compMarketsManager.connect(owner).updateThreshold(config.tokens.cUsdc.address, 2, newThreshold);
-      await compMarketsManager.connect(owner).updateThreshold(config.tokens.cUsdc.address, 3, newThreshold);
+      await compMarketsManager.connect(owner).updateThreshold(config.tokens.cUsdc.address, newThreshold);
 
       // Other accounts than Owner
-      await expect(compMarketsManager.connect(lender1).updateThreshold(config.tokens.cUsdc.address, 2, newThreshold)).to.be.reverted;
-      await expect(compMarketsManager.connect(borrower1).updateThreshold(config.tokens.cUsdc.address, 2, newThreshold)).to.be.reverted;
+      await expect(compMarketsManager.connect(lender1).updateThreshold(config.tokens.cUsdc.address, newThreshold)).to.be.reverted;
+      await expect(compMarketsManager.connect(borrower1).updateThreshold(config.tokens.cUsdc.address, newThreshold)).to.be.reverted;
     });
 
     it('Only Owner should be allowed to list/unlisted a market', async () => {
@@ -342,7 +346,7 @@ describe('CreamPositionsManager Contract', () => {
       const moreThanMaxToBorrow = maxToBorrow.add(utils.parseUnits('10'));
 
       // TODO: fix dust issue
-      // This check does not pass when adding less than utils.parseUnits("1") to maxToBorrow
+      // This check does not pass when adding utils.parseUnits("0.00001") to maxToBorrow
       await expect(creamPositionsManager.connect(borrower1).borrow(config.tokens.cDai.address, moreThanMaxToBorrow)).to.be.reverted;
     });
 
@@ -474,19 +478,19 @@ describe('CreamPositionsManager Contract', () => {
       const borrowBalance = await cDaiToken.callStatic.borrowBalanceCurrent(creamPositionsManager.address);
       const daiBalanceAfter2 = await daiToken.balanceOf(lender1.getAddress());
 
-      // Check borrow balance of Morphof
-      expect(removeDigitsBigNumber(6, borrowBalance)).to.equal(removeDigitsBigNumber(6, expectedMorphoBorrowingBalance));
+      // Check borrow balance of Morpho
+      expect(removeDigitsBigNumber(10, borrowBalance)).to.equal(removeDigitsBigNumber(10, expectedMorphoBorrowingBalance));
 
       // Check lender1 underlying balance
       expect(removeDigitsBigNumber(1, daiBalanceAfter2)).to.equal(removeDigitsBigNumber(1, expectedDaiBalanceAfter2));
 
       // Check lending balances of lender1
       expect(removeDigitsBigNumber(1, (await creamPositionsManager.lendingBalanceInOf(config.tokens.cDai.address, lender1.getAddress())).onComp)).to.equal(0);
-      expect(removeDigitsBigNumber(4, (await creamPositionsManager.lendingBalanceInOf(config.tokens.cDai.address, lender1.getAddress())).onMorpho)).to.equal(0);
+      expect(removeDigitsBigNumber(9, (await creamPositionsManager.lendingBalanceInOf(config.tokens.cDai.address, lender1.getAddress())).onMorpho)).to.equal(0);
 
       // Check borrowing balances of borrower1
-      expect(removeDigitsBigNumber(6, (await creamPositionsManager.borrowingBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onComp)).to.equal(
-        removeDigitsBigNumber(6, expectedBorrowerBorrowingBalanceOnComp)
+      expect(removeDigitsBigNumber(9, (await creamPositionsManager.borrowingBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onComp)).to.equal(
+        removeDigitsBigNumber(9, expectedBorrowerBorrowingBalanceOnComp)
       );
       expect(removeDigitsBigNumber(4, (await creamPositionsManager.borrowingBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onMorpho)).to.equal(0);
     });
@@ -591,8 +595,8 @@ describe('CreamPositionsManager Contract', () => {
       expect(removeDigitsBigNumber(1, (await creamPositionsManager.lendingBalanceInOf(config.tokens.cDai.address, lender2.getAddress())).onComp)).to.equal(
         removeDigitsBigNumber(1, expectedLender2LendingBalanceOnComp)
       );
-      expect(removeDigitsBigNumber(6, (await creamPositionsManager.lendingBalanceInOf(config.tokens.cDai.address, lender2.getAddress())).onMorpho)).to.equal(
-        removeDigitsBigNumber(6, expectedLender2LendingBalanceOnMorpho)
+      expect(removeDigitsBigNumber(7, (await creamPositionsManager.lendingBalanceInOf(config.tokens.cDai.address, lender2.getAddress())).onMorpho)).to.equal(
+        removeDigitsBigNumber(7, expectedLender2LendingBalanceOnMorpho)
       );
 
       // Check lending balances of lender3: lender3 balances should not move
@@ -667,7 +671,7 @@ describe('CreamPositionsManager Contract', () => {
       const cExchangeRate1 = await cDaiToken.callStatic.exchangeRateStored();
       const expectedMorphoBorrowingBalance1 = toBorrow.sub(cTokenToUnderlying(lendingBalanceOnComp, cExchangeRate1));
       const morphoBorrowingBalanceBefore1 = await cDaiToken.callStatic.borrowBalanceCurrent(creamPositionsManager.address);
-      expect(removeDigitsBigNumber(4, morphoBorrowingBalanceBefore1)).to.equal(removeDigitsBigNumber(4, expectedMorphoBorrowingBalance1));
+      expect(removeDigitsBigNumber(5, morphoBorrowingBalanceBefore1)).to.equal(removeDigitsBigNumber(5, expectedMorphoBorrowingBalance1));
       await daiToken.connect(borrower1).approve(creamPositionsManager.address, amountToApprove);
 
       const borrowerBalanceOnMorpho = (await creamPositionsManager.borrowingBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onMorpho;
@@ -749,7 +753,7 @@ describe('CreamPositionsManager Contract', () => {
       const usdtBorrowingBalance = (await creamPositionsManager.borrowingBalanceInOf(config.tokens.cUsdt.address, lender1.getAddress())).onComp;
       const cUsdtBorrowIndex = await cUsdtToken.borrowIndex();
       const usdtBorrowingBalanceInUnderlying = usdtBorrowingBalance.mul(cUsdtBorrowIndex).div(SCALE);
-      expect(removeDigitsBigNumber(5, lendingBalanceOnComp2)).to.equal(removeDigitsBigNumber(5, underlyingToCToken(lendingBalanceInUnderlying, cDaiExchangeRate2)));
+      expect(removeDigitsBigNumber(6, lendingBalanceOnComp2)).to.equal(removeDigitsBigNumber(6, underlyingToCToken(lendingBalanceInUnderlying, cDaiExchangeRate2)));
       expect(removeDigitsBigNumber(2, borrowingBalanceOnComp)).to.equal(removeDigitsBigNumber(2, expectedBorrowingBalanceOnComp));
       expect(removeDigitsBigNumber(2, usdtBorrowingBalanceInUnderlying)).to.equal(removeDigitsBigNumber(2, maxToBorrow));
     });
