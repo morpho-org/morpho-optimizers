@@ -22,12 +22,12 @@ contract CreamPositionsManager is ReentrancyGuard {
 
     /* Structs */
 
-    struct LendingBalance {
+    struct SupplyBalance {
         uint256 onMorpho; // In mUnit (a unit that grows in value, to keep track of the debt increase).
         uint256 onComp; // In cToken.
     }
 
-    struct BorrowingBalance {
+    struct BorrowBalance {
         uint256 onMorpho; // In mUnit.
         uint256 onComp; // In cdUnit. (a unit that grows in value, to keep track of the  debt increase). Multiply by current borrowIndex to get the underlying amount.
     }
@@ -65,8 +65,8 @@ contract CreamPositionsManager is ReentrancyGuard {
     mapping(address => RedBlackBinaryTree.Tree) public borrowersOnMorpho; // Borrowers on Morpho.
     mapping(address => RedBlackBinaryTree.Tree) public borrowersOnComp; // Borrowers on Compound.
     mapping(address => mapping(address => bool)) public accountMembership; // Whether the account is in the market or not.
-    mapping(address => mapping(address => LendingBalance)) public lendingBalanceInOf; // Lending balance of user.
-    mapping(address => mapping(address => BorrowingBalance)) public borrowingBalanceInOf; // Borrowing balance of user.
+    mapping(address => mapping(address => SupplyBalance)) public supplyBalanceInOf; // Lending balance of user.
+    mapping(address => mapping(address => BorrowBalance)) public borrowBalanceInOf; // Borrowing balance of user.
     mapping(address => address[]) public enteredMarkets; // Markets entered by a user.
 
     IComptroller public comptroller;
@@ -222,17 +222,17 @@ contract CreamPositionsManager is ReentrancyGuard {
             // Repay Compound
             uint256 toRepay = _amount - remainingToSupplyToComp;
             // Update supplier balance
-            lendingBalanceInOf[_cErc20Address][msg.sender].onMorpho += toRepay.div(mExchangeRate); // In mUnit
+            supplyBalanceInOf[_cErc20Address][msg.sender].onMorpho += toRepay.div(mExchangeRate); // In mUnit
             erc20Token.safeApprove(_cErc20Address, toRepay);
             cErc20Token.repayBorrow(toRepay);
 
             if (remainingToSupplyToComp > 0) {
-                lendingBalanceInOf[_cErc20Address][msg.sender].onComp += remainingToSupplyToComp
+                supplyBalanceInOf[_cErc20Address][msg.sender].onComp += remainingToSupplyToComp
                     .div(cExchangeRate); // In cToken
                 _supplyErc20ToComp(_cErc20Address, remainingToSupplyToComp); // Revert on error
             }
         } else {
-            lendingBalanceInOf[_cErc20Address][msg.sender].onComp += _amount.div(cExchangeRate); // In cToken
+            supplyBalanceInOf[_cErc20Address][msg.sender].onComp += _amount.div(cExchangeRate); // In cToken
             _supplyErc20ToComp(_cErc20Address, _amount); // Revert on error
         }
 
@@ -265,7 +265,7 @@ contract CreamPositionsManager is ReentrancyGuard {
             uint256 toRedeem = _amount - remainingToBorrowOnComp;
 
             if (toRedeem > 0) {
-                borrowingBalanceInOf[_cErc20Address][msg.sender].onMorpho += toRedeem.div(
+                borrowBalanceInOf[_cErc20Address][msg.sender].onMorpho += toRedeem.div(
                     mExchangeRate
                 ); // In mUnit
                 _redeemErc20FromComp(_cErc20Address, toRedeem); // Revert on error
@@ -274,13 +274,13 @@ contract CreamPositionsManager is ReentrancyGuard {
             // If not enough cTokens on Morpho, we must borrow it on Compound
             if (remainingToBorrowOnComp > 0) {
                 require(cErc20Token.borrow(remainingToBorrowOnComp) == 0, "bor:borrow-comp-fail");
-                borrowingBalanceInOf[_cErc20Address][msg.sender].onComp += remainingToBorrowOnComp
+                borrowBalanceInOf[_cErc20Address][msg.sender].onComp += remainingToBorrowOnComp
                     .div(cErc20Token.borrowIndex()); // In cdUnit
             }
         } else {
             _moveSupplierFromMorphoToComp(msg.sender);
             require(cErc20Token.borrow(_amount) == 0, "bor:borrow-comp-fail");
-            borrowingBalanceInOf[_cErc20Address][msg.sender].onComp += _amount.div(
+            borrowBalanceInOf[_cErc20Address][msg.sender].onComp += _amount.div(
                 cErc20Token.borrowIndex()
             ); // In cdUnit
         }
@@ -317,23 +317,23 @@ contract CreamPositionsManager is ReentrancyGuard {
 
         uint256 mExchangeRate = compMarketsManager.updateMUnitExchangeRate(_cErc20Address);
         uint256 cExchangeRate = cErc20Token.exchangeRateCurrent();
-        uint256 amountOnCompInUnderlying = lendingBalanceInOf[_cErc20Address][msg.sender]
+        uint256 amountOnCompInUnderlying = supplyBalanceInOf[_cErc20Address][msg.sender]
             .onComp
             .mul(cExchangeRate);
 
         if (_amount <= amountOnCompInUnderlying) {
             // Simple case where we can directly withdraw unused liquidity from Compound
-            lendingBalanceInOf[_cErc20Address][msg.sender].onComp -= _amount.div(cExchangeRate); // In cToken
+            supplyBalanceInOf[_cErc20Address][msg.sender].onComp -= _amount.div(cExchangeRate); // In cToken
             _redeemErc20FromComp(_cErc20Address, _amount); // Revert on error
         } else {
             // First, we take all the unused liquidy on Compound.
             _redeemErc20FromComp(_cErc20Address, amountOnCompInUnderlying); // Revert on error
-            lendingBalanceInOf[_cErc20Address][msg.sender].onComp -= amountOnCompInUnderlying.div(
+            supplyBalanceInOf[_cErc20Address][msg.sender].onComp -= amountOnCompInUnderlying.div(
                 cExchangeRate
             );
             // Then, search for the remaining liquidity on Morpho
             uint256 remainingToWithdraw = _amount - amountOnCompInUnderlying; // In underlying
-            lendingBalanceInOf[_cErc20Address][msg.sender].onMorpho -= remainingToWithdraw.div(
+            supplyBalanceInOf[_cErc20Address][msg.sender].onMorpho -= remainingToWithdraw.div(
                 mExchangeRate
             ); // In mUnit
             uint256 cTokenContractBalanceInUnderlying = cErc20Token.balanceOf(address(this)).mul(
@@ -394,10 +394,10 @@ contract CreamPositionsManager is ReentrancyGuard {
         require(maxDebtValue > debtValue, "liq:debt-value<=max");
         LiquidateVars memory vars;
         vars.borrowingBalance =
-            borrowingBalanceInOf[_cErc20BorrowedAddress][_borrower].onComp.mul(
+            borrowBalanceInOf[_cErc20BorrowedAddress][_borrower].onComp.mul(
                 ICErc20(_cErc20BorrowedAddress).borrowIndex()
             ) +
-            borrowingBalanceInOf[_cErc20BorrowedAddress][_borrower].onMorpho.mul(
+            borrowBalanceInOf[_cErc20BorrowedAddress][_borrower].onMorpho.mul(
                 compMarketsManager.mUnitExchangeRate(_cErc20BorrowedAddress)
             );
         require(
@@ -429,11 +429,11 @@ contract CreamPositionsManager is ReentrancyGuard {
             .mul(comptroller.liquidationIncentiveMantissa())
             .div(vars.priceCollateralMantissa);
 
-        vars.onCompInUnderlying = lendingBalanceInOf[_cErc20CollateralAddress][_borrower]
+        vars.onCompInUnderlying = supplyBalanceInOf[_cErc20CollateralAddress][_borrower]
             .onComp
             .mul(cErc20CollateralToken.exchangeRateStored());
         uint256 totalCollateral = vars.onCompInUnderlying +
-            lendingBalanceInOf[_cErc20CollateralAddress][_borrower].onMorpho.mul(
+            supplyBalanceInOf[_cErc20CollateralAddress][_borrower].onMorpho.mul(
                 compMarketsManager.updateMUnitExchangeRate(_cErc20CollateralAddress)
             );
 
@@ -441,14 +441,14 @@ contract CreamPositionsManager is ReentrancyGuard {
 
         if (vars.amountToSeize <= vars.onCompInUnderlying) {
             // Seize tokens from Compound
-            lendingBalanceInOf[_cErc20CollateralAddress][_borrower].onComp -= vars
+            supplyBalanceInOf[_cErc20CollateralAddress][_borrower].onComp -= vars
                 .amountToSeize
                 .div(cErc20CollateralToken.exchangeRateStored());
             _redeemErc20FromComp(_cErc20CollateralAddress, vars.amountToSeize);
         } else {
             // Seize tokens from Morpho and Compound
             uint256 toMove = vars.amountToSeize - vars.onCompInUnderlying;
-            lendingBalanceInOf[_cErc20CollateralAddress][_borrower].onMorpho -= toMove.div(
+            supplyBalanceInOf[_cErc20CollateralAddress][_borrower].onMorpho -= toMove.div(
                 compMarketsManager.mUnitExchangeRate(_cErc20CollateralAddress)
             );
 
@@ -456,11 +456,11 @@ contract CreamPositionsManager is ReentrancyGuard {
             uint256 balanceBefore = erc20CollateralToken.balanceOf(address(this));
             require(
                 cErc20CollateralToken.redeem(
-                    lendingBalanceInOf[_cErc20CollateralAddress][_borrower].onComp
+                    supplyBalanceInOf[_cErc20CollateralAddress][_borrower].onComp
                 ) == 0,
                 "liq:redeem-cToken-fail"
             );
-            lendingBalanceInOf[_cErc20CollateralAddress][_borrower].onComp = 0;
+            supplyBalanceInOf[_cErc20CollateralAddress][_borrower].onComp = 0;
             require(cErc20CollateralToken.borrow(toMove) == 0, "liq:borrow-comp-fail");
             uint256 balanceAfter = erc20CollateralToken.balanceOf(address(this));
             vars.amountToSeize = balanceAfter - balanceBefore;
@@ -490,13 +490,13 @@ contract CreamPositionsManager is ReentrancyGuard {
         erc20Token.safeTransferFrom(msg.sender, address(this), _amount);
         uint256 mExchangeRate = compMarketsManager.updateMUnitExchangeRate(_cErc20Address);
 
-        if (borrowingBalanceInOf[_cErc20Address][_borrower].onComp > 0) {
-            uint256 onCompInUnderlying = borrowingBalanceInOf[_cErc20Address][_borrower].onComp.mul(
+        if (borrowBalanceInOf[_cErc20Address][_borrower].onComp > 0) {
+            uint256 onCompInUnderlying = borrowBalanceInOf[_cErc20Address][_borrower].onComp.mul(
                 cErc20Token.borrowIndex()
             );
 
             if (_amount <= onCompInUnderlying) {
-                borrowingBalanceInOf[_cErc20Address][_borrower].onComp -= _amount.div(
+                borrowBalanceInOf[_cErc20Address][_borrower].onComp -= _amount.div(
                     cErc20Token.borrowIndex()
                 ); // In cdUnit
                 // Repay Compound
@@ -505,10 +505,10 @@ contract CreamPositionsManager is ReentrancyGuard {
             } else {
                 // Move the remaining liquidity to Compound
                 uint256 remainingToSupplyToComp = _amount - onCompInUnderlying; // In underlying
-                borrowingBalanceInOf[_cErc20Address][_borrower].onMorpho -= remainingToSupplyToComp
+                borrowBalanceInOf[_cErc20Address][_borrower].onMorpho -= remainingToSupplyToComp
                     .div(mExchangeRate);
                 uint256 index = cErc20Token.borrowIndex();
-                borrowingBalanceInOf[_cErc20Address][_borrower].onComp -= onCompInUnderlying.div(
+                borrowBalanceInOf[_cErc20Address][_borrower].onComp -= onCompInUnderlying.div(
                     index
                 ); // We use a fresh new borrowIndex since the borrowIndex is updated after a repay
 
@@ -525,7 +525,7 @@ contract CreamPositionsManager is ReentrancyGuard {
                     _supplyErc20ToComp(_cErc20Address, remainingToSupplyToComp);
             }
         } else {
-            borrowingBalanceInOf[_cErc20Address][_borrower].onMorpho -= _amount.div(mExchangeRate); // In mUnit
+            borrowBalanceInOf[_cErc20Address][_borrower].onMorpho -= _amount.div(mExchangeRate); // In mUnit
             require(
                 _moveSuppliersFromMorphoToComp(_cErc20Address, _amount) == 0,
                 "_rep(2):remaining-suppliers!=0"
@@ -578,21 +578,21 @@ contract CreamPositionsManager is ReentrancyGuard {
         while (remainingToMove > 0 && highestValue != 0) {
             while (suppliersOnComp[_cErc20Address].getNumberOfKeysAtValue(highestValue) > 0) {
                 address account = suppliersOnComp[_cErc20Address].valueKeyAtIndex(highestValue, 0);
-                uint256 onComp = lendingBalanceInOf[_cErc20Address][account].onComp; // In cToken
+                uint256 onComp = supplyBalanceInOf[_cErc20Address][account].onComp; // In cToken
 
                 if (onComp > 0) {
                     uint256 toMove;
                     if (onComp.mul(cExchangeRate) <= remainingToMove) {
-                        lendingBalanceInOf[_cErc20Address][account].onComp = 0;
+                        supplyBalanceInOf[_cErc20Address][account].onComp = 0;
                         toMove = onComp.mul(cExchangeRate);
                     } else {
                         toMove = remainingToMove;
-                        lendingBalanceInOf[_cErc20Address][account].onComp -= toMove.div(
+                        supplyBalanceInOf[_cErc20Address][account].onComp -= toMove.div(
                             cExchangeRate
                         ); // In cToken
                     }
                     remainingToMove -= toMove;
-                    lendingBalanceInOf[_cErc20Address][account].onMorpho += toMove.div(
+                    supplyBalanceInOf[_cErc20Address][account].onMorpho += toMove.div(
                         mExchangeRate
                     ); // In mUnit
 
@@ -625,13 +625,15 @@ contract CreamPositionsManager is ReentrancyGuard {
                     highestValue,
                     0
                 );
-                uint256 onMorpho = lendingBalanceInOf[_cErc20Address][account].onMorpho; // In cToken
+                uint256 onMorpho = supplyBalanceInOf[_cErc20Address][account].onMorpho; // In cToken
 
                 if (onMorpho > 0) {
                     uint256 toMove = Math.min(onMorpho.mul(mExchangeRate), remainingToMove); // In underlying
                     remainingToMove -= toMove;
-                    lendingBalanceInOf[_cErc20Address][account].onComp += toMove.div(cExchangeRate); // In cToken
-                    lendingBalanceInOf[_cErc20Address][account].onMorpho -= toMove.div(
+                    supplyBalanceInOf[_cErc20Address][account].onComp += toMove.div(
+                        cExchangeRate
+                    ); // In cToken
+                    supplyBalanceInOf[_cErc20Address][account].onMorpho -= toMove.div(
                         mExchangeRate
                     ); // In mUnit
 
@@ -665,15 +667,15 @@ contract CreamPositionsManager is ReentrancyGuard {
                     highestValue,
                     0
                 );
-                uint256 onMorpho = borrowingBalanceInOf[_cErc20Address][account].onMorpho;
+                uint256 onMorpho = borrowBalanceInOf[_cErc20Address][account].onMorpho;
 
                 if (onMorpho > 0) {
                     uint256 toMatch = Math.min(onMorpho.mul(mExchangeRate), remainingToMove); // In underlying
                     remainingToMove -= toMatch;
-                    borrowingBalanceInOf[_cErc20Address][account].onComp += toMatch.div(
+                    borrowBalanceInOf[_cErc20Address][account].onComp += toMatch.div(
                         borrowIndex
                     );
-                    borrowingBalanceInOf[_cErc20Address][account].onMorpho -= toMatch.div(
+                    borrowBalanceInOf[_cErc20Address][account].onMorpho -= toMatch.div(
                         mExchangeRate
                     );
 
@@ -704,21 +706,21 @@ contract CreamPositionsManager is ReentrancyGuard {
         while (remainingToMove > 0 && highestValue != 0) {
             while (borrowersOnComp[_cErc20Address].getNumberOfKeysAtValue(highestValue) > 0) {
                 address account = borrowersOnComp[_cErc20Address].valueKeyAtIndex(highestValue, 0);
-                uint256 onComp = borrowingBalanceInOf[_cErc20Address][account].onComp; // In cToken
+                uint256 onComp = borrowBalanceInOf[_cErc20Address][account].onComp; // In cToken
 
                 if (onComp > 0) {
                     uint256 toMatch;
                     if (onComp.mul(borrowIndex) <= remainingToMove) {
                         toMatch = onComp.mul(borrowIndex);
-                        borrowingBalanceInOf[_cErc20Address][account].onComp = 0;
+                        borrowBalanceInOf[_cErc20Address][account].onComp = 0;
                     } else {
                         toMatch = remainingToMove;
-                        borrowingBalanceInOf[_cErc20Address][account].onComp -= toMatch.div(
+                        borrowBalanceInOf[_cErc20Address][account].onComp -= toMatch.div(
                             borrowIndex
                         );
                     }
                     remainingToMove -= toMatch;
-                    borrowingBalanceInOf[_cErc20Address][account].onMorpho += toMatch.div(
+                    borrowBalanceInOf[_cErc20Address][account].onMorpho += toMatch.div(
                         mExchangeRate
                     );
 
@@ -739,15 +741,15 @@ contract CreamPositionsManager is ReentrancyGuard {
             address cErc20Entered = enteredMarkets[_account][i];
             uint256 mExchangeRate = compMarketsManager.mUnitExchangeRate(cErc20Entered);
             uint256 cExchangeRate = ICErc20(cErc20Entered).exchangeRateCurrent();
-            uint256 onMorphoInUnderlying = lendingBalanceInOf[cErc20Entered][_account].onMorpho.mul(
-                mExchangeRate
-            );
+            uint256 onMorphoInUnderlying = supplyBalanceInOf[cErc20Entered][_account]
+                .onMorpho
+                .mul(mExchangeRate);
 
             if (onMorphoInUnderlying > 0) {
-                lendingBalanceInOf[cErc20Entered][_account].onComp += onMorphoInUnderlying.div(
+                supplyBalanceInOf[cErc20Entered][_account].onComp += onMorphoInUnderlying.div(
                     cExchangeRate
                 ); // In cToken
-                lendingBalanceInOf[cErc20Entered][_account].onMorpho -= onMorphoInUnderlying.div(
+                supplyBalanceInOf[cErc20Entered][_account].onMorpho -= onMorphoInUnderlying.div(
                     mExchangeRate
                 ); // In mUnit
 
@@ -821,15 +823,15 @@ contract CreamPositionsManager is ReentrancyGuard {
             vars.mExchangeRate = compMarketsManager.updateMUnitExchangeRate(vars.cErc20Entered);
 
             vars.toAddDebt =
-                borrowingBalanceInOf[vars.cErc20Entered][_account].onComp.mul(
+                borrowBalanceInOf[vars.cErc20Entered][_account].onComp.mul(
                     ICErc20(vars.cErc20Entered).borrowIndex()
                 ) +
-                borrowingBalanceInOf[vars.cErc20Entered][_account].onMorpho.mul(vars.mExchangeRate);
+                borrowBalanceInOf[vars.cErc20Entered][_account].onMorpho.mul(vars.mExchangeRate);
             vars.toAddCollateral =
-                lendingBalanceInOf[vars.cErc20Entered][_account].onComp.mul(
+                supplyBalanceInOf[vars.cErc20Entered][_account].onComp.mul(
                     ICErc20(vars.cErc20Entered).exchangeRateCurrent()
                 ) +
-                lendingBalanceInOf[vars.cErc20Entered][_account].onMorpho.mul(vars.mExchangeRate);
+                supplyBalanceInOf[vars.cErc20Entered][_account].onMorpho.mul(vars.mExchangeRate);
 
             vars.underlyingPrice = compoundOracle.getUnderlyingPrice(vars.cErc20Entered);
             if (_cErc20Address == vars.cErc20Entered) {
@@ -859,16 +861,16 @@ contract CreamPositionsManager is ReentrancyGuard {
             borrowersOnComp[_cErc20Address].remove(_account);
         if (borrowersOnMorpho[_cErc20Address].keyExists(_account))
             borrowersOnMorpho[_cErc20Address].remove(_account);
-        if (borrowingBalanceInOf[_cErc20Address][_account].onComp > 0) {
+        if (borrowBalanceInOf[_cErc20Address][_account].onComp > 0) {
             borrowersOnComp[_cErc20Address].insert(
                 _account,
-                borrowingBalanceInOf[_cErc20Address][_account].onComp
+                borrowBalanceInOf[_cErc20Address][_account].onComp
             );
         }
-        if (borrowingBalanceInOf[_cErc20Address][_account].onMorpho > 0) {
+        if (borrowBalanceInOf[_cErc20Address][_account].onMorpho > 0) {
             borrowersOnMorpho[_cErc20Address].insert(
                 _account,
-                borrowingBalanceInOf[_cErc20Address][_account].onMorpho
+                borrowBalanceInOf[_cErc20Address][_account].onMorpho
             );
         }
     }
@@ -882,16 +884,16 @@ contract CreamPositionsManager is ReentrancyGuard {
             suppliersOnComp[_cErc20Address].remove(_account);
         if (suppliersOnMorpho[_cErc20Address].keyExists(_account))
             suppliersOnMorpho[_cErc20Address].remove(_account);
-        if (lendingBalanceInOf[_cErc20Address][_account].onComp > 0) {
+        if (supplyBalanceInOf[_cErc20Address][_account].onComp > 0) {
             suppliersOnComp[_cErc20Address].insert(
                 _account,
-                lendingBalanceInOf[_cErc20Address][_account].onComp
+                supplyBalanceInOf[_cErc20Address][_account].onComp
             );
         }
-        if (lendingBalanceInOf[_cErc20Address][_account].onMorpho > 0) {
+        if (supplyBalanceInOf[_cErc20Address][_account].onMorpho > 0) {
             suppliersOnMorpho[_cErc20Address].insert(
                 _account,
-                lendingBalanceInOf[_cErc20Address][_account].onMorpho
+                supplyBalanceInOf[_cErc20Address][_account].onMorpho
             );
         }
     }
