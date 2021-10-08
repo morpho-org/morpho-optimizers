@@ -34,31 +34,31 @@ contract CompMarketsManager is Ownable {
     /** @dev Emitted when a new market is created.
      *  @param _marketAddress The address of the market that has been created.
      */
-    event CreateMarket(address _marketAddress);
+    event MarketCreated(address _marketAddress);
 
     /** @dev Emitted when the p2pBPY of a market is updated.
      *  @param _marketAddress The address of the market to update.
      *  @param _newValue The new value of the p2pBPY.
      */
-    event UpdateBPY(address _marketAddress, uint256 _newValue);
+    event BPYUpdated(address _marketAddress, uint256 _newValue);
 
     /** @dev Emitted when the collateral factor of a market is updated.
      *  @param _marketAddress The address of the market to update.
      *  @param _newValue The new value of the collateral factor.
      */
-    event UpdateCollateralFactor(address _marketAddress, uint256 _newValue);
+    event CollateralFactorUpdated(address _marketAddress, uint256 _newValue);
 
     /** @dev Emitted when the mUnitExchangeRate of a market is updated.
      *  @param _marketAddress The address of the market to update.
      *  @param _newValue The new value of the mUnitExchangeRate.
      */
-    event UpdateMUnitExchangeRate(address _marketAddress, uint256 _newValue);
+    event MUnitExchangeRateUpdated(address _marketAddress, uint256 _newValue);
 
     /** @dev Emitted when a threshold of a market is updated.
      *  @param _marketAddress The address of the market to update.
      *  @param _newValue The new value of the threshold.
      */
-    event UpdateThreshold(address _marketAddress, uint256 _newValue);
+    event ThresholdUpdated(address _marketAddress, uint256 _newValue);
 
     /* Constructor */
 
@@ -100,7 +100,7 @@ contract CompMarketsManager is Ownable {
             lastUpdateBlockNumber[_marketAddress] = block.number;
             thresholds[_marketAddress] = 1e18;
             updateBPY(_marketAddress);
-            emit CreateMarket(_marketAddress);
+            emit MarketCreated(_marketAddress);
         }
     }
 
@@ -125,7 +125,7 @@ contract CompMarketsManager is Ownable {
     function updateThreshold(address _marketAddress, uint256 _newThreshold) external onlyOwner {
         require(_newThreshold > 0, "morpho: new THRESHOLD must be strictly positive.");
         thresholds[_marketAddress] = _newThreshold;
-        emit UpdateThreshold(_marketAddress, _newThreshold);
+        emit ThresholdUpdated(_marketAddress, _newThreshold);
     }
 
     /* Public */
@@ -141,7 +141,7 @@ contract CompMarketsManager is Ownable {
         uint256 borrowBPY = cErc20Token.borrowRatePerBlock();
         p2pBPY[_marketAddress] = Math.average(supplyBPY, borrowBPY);
 
-        emit UpdateBPY(_marketAddress, p2pBPY[_marketAddress]);
+        emit BPYUpdated(_marketAddress, p2pBPY[_marketAddress]);
 
         // Update mUnitExhangeRate
         updateMUnitExchangeRate(_marketAddress);
@@ -166,7 +166,7 @@ contract CompMarketsManager is Ownable {
                 )
             );
 
-            emit UpdateMUnitExchangeRate(_marketAddress, newMUnitExchangeRate);
+            emit MUnitExchangeRateUpdated(_marketAddress, newMUnitExchangeRate);
 
             // Update currentExchangeRate
             mUnitExchangeRate[_marketAddress] = newMUnitExchangeRate;
