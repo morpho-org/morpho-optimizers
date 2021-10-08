@@ -185,11 +185,11 @@ describe('CreamPositionsManager Contract', () => {
       expect((await creamPositionsManager.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).onMorpho).to.equal(0);
     });
 
-    it('Should revert when lending less than the required threshold', async () => {
+    it('Should revert when supply less than the required threshold', async () => {
       await expect(creamPositionsManager.connect(supplier1).deposit(config.tokens.cDai.address, underlyingThreshold.sub(1))).to.be.reverted;
     });
 
-    it('Should have the correct balances after lending', async () => {
+    it('Should have the correct balances after supply', async () => {
       const amount = utils.parseUnits('10');
       const daiBalanceBefore = await daiToken.balanceOf(supplier1.getAddress());
       const expectedDaiBalanceAfter = daiBalanceBefore.sub(amount);
@@ -200,13 +200,13 @@ describe('CreamPositionsManager Contract', () => {
       // Check ERC20 balance
       expect(daiBalanceAfter).to.equal(expectedDaiBalanceAfter);
       const exchangeRate = await cDaiToken.callStatic.exchangeRateCurrent();
-      const expectedLendingBalanceOnComp = underlyingToCToken(amount, exchangeRate);
-      expect(await cDaiToken.balanceOf(creamPositionsManager.address)).to.equal(expectedLendingBalanceOnComp);
-      expect((await creamPositionsManager.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).onComp).to.equal(expectedLendingBalanceOnComp);
+      const expectedSupplyBalanceOnComp = underlyingToCToken(amount, exchangeRate);
+      expect(await cDaiToken.balanceOf(creamPositionsManager.address)).to.equal(expectedSupplyBalanceOnComp);
+      expect((await creamPositionsManager.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).onComp).to.equal(expectedSupplyBalanceOnComp);
       expect((await creamPositionsManager.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).onMorpho).to.equal(0);
     });
 
-    it('Should be able to redeem ERC20 right after lending up to max lending balance', async () => {
+    it('Should be able to redeem ERC20 right after supply up to max supply balance', async () => {
       const amount = utils.parseUnits('10');
       const daiBalanceBefore1 = await daiToken.balanceOf(supplier1.getAddress());
       await daiToken.connect(supplier1).approve(creamPositionsManager.address, amount);
@@ -214,9 +214,9 @@ describe('CreamPositionsManager Contract', () => {
       const daiBalanceAfter1 = await daiToken.balanceOf(supplier1.getAddress());
       expect(daiBalanceAfter1).to.equal(daiBalanceBefore1.sub(amount));
 
-      const lendingBalanceOnComp = (await creamPositionsManager.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).onComp;
+      const supplyBalanceOnComp = (await creamPositionsManager.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).onComp;
       const exchangeRate1 = await cDaiToken.callStatic.exchangeRateCurrent();
-      const toWithdraw1 = cTokenToUnderlying(lendingBalanceOnComp, exchangeRate1);
+      const toWithdraw1 = cTokenToUnderlying(supplyBalanceOnComp, exchangeRate1);
 
       // TODO: improve this test to prevent attacks
       await expect(creamPositionsManager.connect(supplier1).redeem(toWithdraw1.add(utils.parseUnits('0.001')).toString())).to.be.reverted;
@@ -224,13 +224,13 @@ describe('CreamPositionsManager Contract', () => {
       // Update exchange rate
       await cDaiToken.connect(supplier1).exchangeRateCurrent();
       const exchangeRate2 = await cDaiToken.callStatic.exchangeRateCurrent();
-      const toWithdraw2 = cTokenToUnderlying(lendingBalanceOnComp, exchangeRate2);
+      const toWithdraw2 = cTokenToUnderlying(supplyBalanceOnComp, exchangeRate2);
       await creamPositionsManager.connect(supplier1).redeem(config.tokens.cDai.address, toWithdraw2);
       const daiBalanceAfter2 = await daiToken.balanceOf(supplier1.getAddress());
       // Check ERC20 balance
       expect(daiBalanceAfter2).to.equal(daiBalanceBefore1.sub(amount).add(toWithdraw2));
 
-      // Check cToken left are only dust in lending balance
+      // Check cToken left are only dust in supply balance
       expect((await creamPositionsManager.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).onComp).to.be.lt(1000);
       await expect(creamPositionsManager.connect(supplier1).redeem(config.tokens.cDai.address, utils.parseUnits('0.001'))).to.be.reverted;
     });
@@ -250,12 +250,12 @@ describe('CreamPositionsManager Contract', () => {
       const daiBalanceAfter = await daiToken.balanceOf(supplier1.getAddress());
       expect(daiBalanceAfter).to.equal(daiBalanceBefore.sub(amountToApprove));
 
-      // Check lending balance
-      const expectedLendingBalanceOnComp1 = underlyingToCToken(amount, exchangeRate1);
-      const expectedLendingBalanceOnComp2 = underlyingToCToken(amount, exchangeRate2);
-      const expectedLendingBalanceOnComp = expectedLendingBalanceOnComp1.add(expectedLendingBalanceOnComp2);
-      expect(await cDaiToken.balanceOf(creamPositionsManager.address)).to.equal(expectedLendingBalanceOnComp);
-      expect((await creamPositionsManager.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).onComp).to.equal(expectedLendingBalanceOnComp);
+      // Check supply balance
+      const expectedSupplyBalanceOnComp1 = underlyingToCToken(amount, exchangeRate1);
+      const expectedSupplyBalanceOnComp2 = underlyingToCToken(amount, exchangeRate2);
+      const expectedSupplyBalanceOnComp = expectedSupplyBalanceOnComp1.add(expectedSupplyBalanceOnComp2);
+      expect(await cDaiToken.balanceOf(creamPositionsManager.address)).to.equal(expectedSupplyBalanceOnComp);
+      expect((await creamPositionsManager.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).onComp).to.equal(expectedSupplyBalanceOnComp);
     });
 
     it('Several suppliers should be able to deposit and have the correct balances', async () => {
@@ -273,11 +273,11 @@ describe('CreamPositionsManager Contract', () => {
 
         // Check ERC20 balance
         expect(daiBalanceAfter).to.equal(expectedDaiBalanceAfter);
-        const expectedLendingBalanceOnComp = underlyingToCToken(amount, exchangeRate);
-        expectedCTokenBalance = expectedCTokenBalance.add(expectedLendingBalanceOnComp);
+        const expectedSupplyBalanceOnComp = underlyingToCToken(amount, exchangeRate);
+        expectedCTokenBalance = expectedCTokenBalance.add(expectedSupplyBalanceOnComp);
         expect(removeDigitsBigNumber(7, await cDaiToken.balanceOf(creamPositionsManager.address))).to.equal(removeDigitsBigNumber(7, expectedCTokenBalance));
         expect(removeDigitsBigNumber(4, (await creamPositionsManager.supplyBalanceInOf(config.tokens.cDai.address, supplier.getAddress())).onComp)).to.equal(
-          removeDigitsBigNumber(4, expectedLendingBalanceOnComp)
+          removeDigitsBigNumber(4, expectedSupplyBalanceOnComp)
         );
         expect((await creamPositionsManager.supplyBalanceInOf(config.tokens.cDai.address, supplier.getAddress())).onMorpho).to.equal(0);
       }
@@ -294,7 +294,7 @@ describe('CreamPositionsManager Contract', () => {
       await expect(creamPositionsManager.connect(supplier1).deposit(config.tokens.cDai.address, 0)).to.be.reverted;
     });
 
-    it('Should revert when borrowing less than threshold', async () => {
+    it('Should revert when borrow less than threshold', async () => {
       const amount = to6Decimals(utils.parseUnits('10'));
       await usdcToken.connect(borrower1).approve(creamPositionsManager.address, amount);
       await expect(creamPositionsManager.connect(supplier1).borrow(config.tokens.cDai.address, amount)).to.be.reverted;
@@ -320,10 +320,10 @@ describe('CreamPositionsManager Contract', () => {
 
       // Check borrower1 balances
       expect(daiBalanceAfter).to.equal(daiBalanceBefore.add(maxToBorrow));
-      const borrowingBalanceOnCompInUnderlying = cDUnitToUnderlying((await creamPositionsManager.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onComp, borrowIndex);
+      const borrowBalanceOnCompInUnderlying = cDUnitToUnderlying((await creamPositionsManager.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onComp, borrowIndex);
       let diff;
-      if (borrowingBalanceOnCompInUnderlying.gt(maxToBorrow)) diff = borrowingBalanceOnCompInUnderlying.sub(maxToBorrow);
-      else diff = maxToBorrow.sub(borrowingBalanceOnCompInUnderlying);
+      if (borrowBalanceOnCompInUnderlying.gt(maxToBorrow)) diff = borrowBalanceOnCompInUnderlying.sub(maxToBorrow);
+      else diff = maxToBorrow.sub(borrowBalanceOnCompInUnderlying);
       expect(removeDigitsBigNumber(1, diff)).to.equal(0);
 
       // Check Morpho balances
@@ -353,7 +353,7 @@ describe('CreamPositionsManager Contract', () => {
     it('Several borrowers should be able to borrow and have the correct balances', async () => {
       const collateralAmount = to6Decimals(utils.parseUnits('10'));
       const borrowedAmount = utils.parseUnits('2');
-      let expectedMorphoBorrowingBalance = BigNumber.from(0);
+      let expectedMorphoBorrowBalance = BigNumber.from(0);
       let previousBorrowIndex = await cDaiToken.borrowIndex();
 
       for (const i in borrowers) {
@@ -365,15 +365,15 @@ describe('CreamPositionsManager Contract', () => {
         await creamPositionsManager.connect(borrower).borrow(config.tokens.cDai.address, borrowedAmount);
         // We have one block delay from Compound
         const borrowIndex = await cDaiToken.borrowIndex();
-        expectedMorphoBorrowingBalance = expectedMorphoBorrowingBalance.mul(borrowIndex).div(previousBorrowIndex).add(borrowedAmount);
+        expectedMorphoBorrowBalance = expectedMorphoBorrowBalance.mul(borrowIndex).div(previousBorrowIndex).add(borrowedAmount);
 
         // All underlyings should have been sent to the borrower
         const daiBalanceAfter = await daiToken.balanceOf(borrower.getAddress());
         expect(daiBalanceAfter).to.equal(daiBalanceBefore.add(borrowedAmount));
-        const borrowingBalanceOnCompInUnderlying = cDUnitToUnderlying((await creamPositionsManager.borrowBalanceInOf(config.tokens.cDai.address, borrower.getAddress())).onComp, borrowIndex);
+        const borrowBalanceOnCompInUnderlying = cDUnitToUnderlying((await creamPositionsManager.borrowBalanceInOf(config.tokens.cDai.address, borrower.getAddress())).onComp, borrowIndex);
         let diff;
-        if (borrowingBalanceOnCompInUnderlying.gt(borrowedAmount)) diff = borrowingBalanceOnCompInUnderlying.sub(borrowedAmount);
-        else diff = borrowedAmount.sub(borrowingBalanceOnCompInUnderlying);
+        if (borrowBalanceOnCompInUnderlying.gt(borrowedAmount)) diff = borrowBalanceOnCompInUnderlying.sub(borrowedAmount);
+        else diff = borrowedAmount.sub(borrowBalanceOnCompInUnderlying);
         expect(removeDigitsBigNumber(1, diff)).to.equal(0);
         // Update previous borrow index
         previousBorrowIndex = borrowIndex;
@@ -381,7 +381,7 @@ describe('CreamPositionsManager Contract', () => {
 
       // Check Morpho balances
       expect(await daiToken.balanceOf(creamPositionsManager.address)).to.equal(0);
-      expect(await cDaiToken.callStatic.borrowBalanceCurrent(creamPositionsManager.address)).to.equal(expectedMorphoBorrowingBalance);
+      expect(await cDaiToken.callStatic.borrowBalanceCurrent(creamPositionsManager.address)).to.equal(expectedMorphoBorrowBalance);
     });
 
     it('Borrower should be able to repay less than what is on Compound', async () => {
@@ -398,16 +398,16 @@ describe('CreamPositionsManager Contract', () => {
 
       const daiBalanceBefore = await daiToken.balanceOf(borrower1.getAddress());
       await creamPositionsManager.connect(borrower1).borrow(config.tokens.cDai.address, maxToBorrow);
-      const borrowingBalanceOnComp = (await creamPositionsManager.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onComp;
+      const borrowBalanceOnComp = (await creamPositionsManager.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onComp;
       const borrowIndex1 = await cDaiToken.borrowIndex();
-      const borrowingBalanceOnCompInUnderlying = cDUnitToUnderlying(borrowingBalanceOnComp, borrowIndex1);
-      const toRepay = borrowingBalanceOnCompInUnderlying.div(2);
+      const borrowBalanceOnCompInUnderlying = cDUnitToUnderlying(borrowBalanceOnComp, borrowIndex1);
+      const toRepay = borrowBalanceOnCompInUnderlying.div(2);
       await daiToken.connect(borrower1).approve(creamPositionsManager.address, toRepay);
       const borrowIndex2 = await cDaiToken.borrowIndex();
       await creamPositionsManager.connect(borrower1).repay(config.tokens.cDai.address, toRepay);
       const daiBalanceAfter = await daiToken.balanceOf(borrower1.getAddress());
 
-      const expectedBalanceOnComp = borrowingBalanceOnComp.sub(underlyingToCdUnit(borrowingBalanceOnCompInUnderlying.div(2), borrowIndex2));
+      const expectedBalanceOnComp = borrowBalanceOnComp.sub(underlyingToCdUnit(borrowBalanceOnCompInUnderlying.div(2), borrowIndex2));
       expect((await creamPositionsManager.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onComp).to.equal(expectedBalanceOnComp);
       expect(daiBalanceAfter).to.equal(daiBalanceBefore.add(maxToBorrow).sub(toRepay));
     });
@@ -416,19 +416,19 @@ describe('CreamPositionsManager Contract', () => {
   describe('P2P interactions between supplier and borrowers', () => {
     it('Supplier should withdraw her liquidity while not enough cToken on Morpho contract', async () => {
       // Supplier deposits tokens
-      const lendingAmount = utils.parseUnits('10');
+      const supplyAmount = utils.parseUnits('10');
       const daiBalanceBefore1 = await daiToken.balanceOf(supplier1.getAddress());
-      const expectedDaiBalanceAfter1 = daiBalanceBefore1.sub(lendingAmount);
-      await daiToken.connect(supplier1).approve(creamPositionsManager.address, lendingAmount);
-      await creamPositionsManager.connect(supplier1).deposit(config.tokens.cDai.address, lendingAmount);
+      const expectedDaiBalanceAfter1 = daiBalanceBefore1.sub(supplyAmount);
+      await daiToken.connect(supplier1).approve(creamPositionsManager.address, supplyAmount);
+      await creamPositionsManager.connect(supplier1).deposit(config.tokens.cDai.address, supplyAmount);
       const daiBalanceAfter1 = await daiToken.balanceOf(supplier1.getAddress());
 
       // Check ERC20 balance
       expect(daiBalanceAfter1).to.equal(expectedDaiBalanceAfter1);
       const cExchangeRate1 = await cDaiToken.callStatic.exchangeRateCurrent();
-      const expectedLendingBalanceOnComp1 = underlyingToCToken(lendingAmount, cExchangeRate1);
-      expect(await cDaiToken.balanceOf(creamPositionsManager.address)).to.equal(expectedLendingBalanceOnComp1);
-      expect((await creamPositionsManager.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).onComp).to.equal(expectedLendingBalanceOnComp1);
+      const expectedSupplyBalanceOnComp1 = underlyingToCToken(supplyAmount, cExchangeRate1);
+      expect(await cDaiToken.balanceOf(creamPositionsManager.address)).to.equal(expectedSupplyBalanceOnComp1);
+      expect((await creamPositionsManager.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).onComp).to.equal(expectedSupplyBalanceOnComp1);
 
       // Borrower provides collateral
       const collateralAmount = to6Decimals(utils.parseUnits('100'));
@@ -436,83 +436,83 @@ describe('CreamPositionsManager Contract', () => {
       await creamPositionsManager.connect(borrower1).deposit(config.tokens.cUsdc.address, collateralAmount);
 
       // Borrowers borrows supplier1 amount
-      await creamPositionsManager.connect(borrower1).borrow(config.tokens.cDai.address, lendingAmount);
+      await creamPositionsManager.connect(borrower1).borrow(config.tokens.cDai.address, supplyAmount);
 
       // Check supplier1 balances
       const cExchangeRate2 = await cDaiToken.callStatic.exchangeRateCurrent();
       const mExchangeRate1 = await compMarketsManager.mUnitExchangeRate(config.tokens.cDai.address);
-      const expectedLendingBalanceOnComp2 = expectedLendingBalanceOnComp1.sub(underlyingToCToken(lendingAmount, cExchangeRate2));
-      const expectedLendingBalanceOnMorpho2 = underlyingToMUnit(lendingAmount, mExchangeRate1);
-      const lendingBalanceOnComp2 = (await creamPositionsManager.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).onComp;
-      const lendingBalanceOnMorpho2 = (await creamPositionsManager.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).onMorpho;
-      expect(lendingBalanceOnComp2).to.equal(expectedLendingBalanceOnComp2);
-      expect(lendingBalanceOnMorpho2).to.equal(expectedLendingBalanceOnMorpho2);
+      const expectedSupplyBalanceOnComp2 = expectedSupplyBalanceOnComp1.sub(underlyingToCToken(supplyAmount, cExchangeRate2));
+      const expectedSupplyBalanceOnMorpho2 = underlyingToMUnit(supplyAmount, mExchangeRate1);
+      const supplyBalanceOnComp2 = (await creamPositionsManager.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).onComp;
+      const supplyBalanceOnMorpho2 = (await creamPositionsManager.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).onMorpho;
+      expect(supplyBalanceOnComp2).to.equal(expectedSupplyBalanceOnComp2);
+      expect(supplyBalanceOnMorpho2).to.equal(expectedSupplyBalanceOnMorpho2);
 
       // Check borrower1 balances
-      const expectedBorrowingBalanceOnMorpho1 = expectedLendingBalanceOnMorpho2;
+      const expectedBorrowBalanceOnMorpho1 = expectedSupplyBalanceOnMorpho2;
       expect((await creamPositionsManager.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onComp).to.equal(0);
-      expect((await creamPositionsManager.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onMorpho).to.equal(expectedBorrowingBalanceOnMorpho1);
+      expect((await creamPositionsManager.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onMorpho).to.equal(expectedBorrowBalanceOnMorpho1);
 
       // Compare remaining to withdraw and the cToken contract balance
       await compMarketsManager.connect(owner).updateMUnitExchangeRate(config.tokens.cDai.address);
       const mExchangeRate2 = await compMarketsManager.mUnitExchangeRate(config.tokens.cDai.address);
       const mExchangeRate3 = computeNewMorphoExchangeRate(mExchangeRate2, await compMarketsManager.p2pBPY(config.tokens.cDai.address), 1, 0).toString();
       const daiBalanceBefore2 = await daiToken.balanceOf(supplier1.getAddress());
-      const lendingBalanceOnComp3 = (await creamPositionsManager.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).onComp;
-      const lendingBalanceOnMorpho3 = (await creamPositionsManager.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).onMorpho;
+      const supplyBalanceOnComp3 = (await creamPositionsManager.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).onComp;
+      const supplyBalanceOnMorpho3 = (await creamPositionsManager.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).onMorpho;
       const cExchangeRate3 = await cDaiToken.callStatic.exchangeRateStored();
-      const lendingBalanceOnCompInUnderlying = cTokenToUnderlying(lendingBalanceOnComp3, cExchangeRate3);
-      const amountToWithdraw = lendingBalanceOnCompInUnderlying.add(mUnitToUnderlying(lendingBalanceOnMorpho3, mExchangeRate3));
+      const supplyBalanceOnCompInUnderlying = cTokenToUnderlying(supplyBalanceOnComp3, cExchangeRate3);
+      const amountToWithdraw = supplyBalanceOnCompInUnderlying.add(mUnitToUnderlying(supplyBalanceOnMorpho3, mExchangeRate3));
       const expectedDaiBalanceAfter2 = daiBalanceBefore2.add(amountToWithdraw);
-      const remainingToWithdraw = amountToWithdraw.sub(lendingBalanceOnCompInUnderlying);
+      const remainingToWithdraw = amountToWithdraw.sub(supplyBalanceOnCompInUnderlying);
       const cTokenContractBalanceInUnderlying = cTokenToUnderlying(await cDaiToken.balanceOf(creamPositionsManager.address), cExchangeRate3);
       expect(remainingToWithdraw).to.be.gt(cTokenContractBalanceInUnderlying);
 
-      // Expected borrowing balances
-      const expectedMorphoBorrowingBalance = remainingToWithdraw.add(cTokenContractBalanceInUnderlying).sub(lendingBalanceOnCompInUnderlying);
+      // Expected borrow balances
+      const expectedMorphoBorrowBalance = remainingToWithdraw.add(cTokenContractBalanceInUnderlying).sub(supplyBalanceOnCompInUnderlying);
 
       // Withdraw
       await creamPositionsManager.connect(supplier1).redeem(config.tokens.cDai.address, amountToWithdraw);
       const borrowIndex = await cDaiToken.borrowIndex();
-      const expectedBorrowerBorrowingBalanceOnComp = underlyingToCdUnit(expectedMorphoBorrowingBalance, borrowIndex);
+      const expectedBorrowerBorrowBalanceOnComp = underlyingToCdUnit(expectedMorphoBorrowBalance, borrowIndex);
       const borrowBalance = await cDaiToken.callStatic.borrowBalanceCurrent(creamPositionsManager.address);
       const daiBalanceAfter2 = await daiToken.balanceOf(supplier1.getAddress());
 
       // Check borrow balance of Morpho
-      expect(removeDigitsBigNumber(10, borrowBalance)).to.equal(removeDigitsBigNumber(10, expectedMorphoBorrowingBalance));
+      expect(removeDigitsBigNumber(10, borrowBalance)).to.equal(removeDigitsBigNumber(10, expectedMorphoBorrowBalance));
 
       // Check supplier1 underlying balance
       expect(removeDigitsBigNumber(1, daiBalanceAfter2)).to.equal(removeDigitsBigNumber(1, expectedDaiBalanceAfter2));
 
-      // Check lending balances of supplier1
+      // Check supply balances of supplier1
       expect(removeDigitsBigNumber(1, (await creamPositionsManager.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).onComp)).to.equal(0);
       expect(removeDigitsBigNumber(9, (await creamPositionsManager.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).onMorpho)).to.equal(0);
 
-      // Check borrowing balances of borrower1
+      // Check borrow balances of borrower1
       expect(removeDigitsBigNumber(9, (await creamPositionsManager.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onComp)).to.equal(
-        removeDigitsBigNumber(9, expectedBorrowerBorrowingBalanceOnComp)
+        removeDigitsBigNumber(9, expectedBorrowerBorrowBalanceOnComp)
       );
       expect(removeDigitsBigNumber(9, (await creamPositionsManager.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onMorpho)).to.equal(0);
     });
 
     it('Supplier should redeem her liquidity while enough cDaiToken on Morpho contract', async () => {
-      const lendingAmount = utils.parseUnits('10');
+      const supplyAmount = utils.parseUnits('10');
       let supplier;
 
       for (const i in suppliers) {
         supplier = suppliers[i];
         const daiBalanceBefore = await daiToken.balanceOf(supplier.getAddress());
-        const expectedDaiBalanceAfter = daiBalanceBefore.sub(lendingAmount);
-        await daiToken.connect(supplier).approve(creamPositionsManager.address, lendingAmount);
-        await creamPositionsManager.connect(supplier).deposit(config.tokens.cDai.address, lendingAmount);
+        const expectedDaiBalanceAfter = daiBalanceBefore.sub(supplyAmount);
+        await daiToken.connect(supplier).approve(creamPositionsManager.address, supplyAmount);
+        await creamPositionsManager.connect(supplier).deposit(config.tokens.cDai.address, supplyAmount);
         const daiBalanceAfter = await daiToken.balanceOf(supplier.getAddress());
 
         // Check ERC20 balance
         expect(daiBalanceAfter).to.equal(expectedDaiBalanceAfter);
         const cExchangeRate = await cDaiToken.callStatic.exchangeRateStored();
-        const expectedLendingBalanceOnComp = underlyingToCToken(lendingAmount, cExchangeRate);
+        const expectedSupplyBalanceOnComp = underlyingToCToken(supplyAmount, cExchangeRate);
         expect(removeDigitsBigNumber(4, (await creamPositionsManager.supplyBalanceInOf(config.tokens.cDai.address, supplier.getAddress())).onComp)).to.equal(
-          removeDigitsBigNumber(4, expectedLendingBalanceOnComp)
+          removeDigitsBigNumber(4, expectedSupplyBalanceOnComp)
         );
       }
 
@@ -521,53 +521,53 @@ describe('CreamPositionsManager Contract', () => {
       await usdcToken.connect(borrower1).approve(creamPositionsManager.address, collateralAmount);
       await creamPositionsManager.connect(borrower1).deposit(config.tokens.cUsdc.address, collateralAmount);
 
-      const previousSupplier1LendingBalanceOnComp = (await creamPositionsManager.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).onComp;
+      const previousSupplier1SupplyBalanceOnComp = (await creamPositionsManager.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).onComp;
 
       // Borrowers borrows supplier1 amount
-      await creamPositionsManager.connect(borrower1).borrow(config.tokens.cDai.address, lendingAmount);
+      await creamPositionsManager.connect(borrower1).borrow(config.tokens.cDai.address, supplyAmount);
 
       // Check supplier1 balances
       const mExchangeRate1 = await compMarketsManager.mUnitExchangeRate(config.tokens.cDai.address);
       const cExchangeRate2 = await cDaiToken.callStatic.exchangeRateCurrent();
       // Expected balances of supplier1
-      const expectedLendingBalanceOnComp2 = previousSupplier1LendingBalanceOnComp.sub(underlyingToCToken(lendingAmount, cExchangeRate2));
-      const expectedLendingBalanceOnMorpho2 = underlyingToMUnit(lendingAmount, mExchangeRate1);
-      const lendingBalanceOnComp2 = (await creamPositionsManager.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).onComp;
-      const lendingBalanceOnMorpho2 = (await creamPositionsManager.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).onMorpho;
-      expect(lendingBalanceOnComp2).to.equal(expectedLendingBalanceOnComp2);
-      expect(lendingBalanceOnMorpho2).to.equal(expectedLendingBalanceOnMorpho2);
+      const expectedSupplyBalanceOnComp2 = previousSupplier1SupplyBalanceOnComp.sub(underlyingToCToken(supplyAmount, cExchangeRate2));
+      const expectedSupplyBalanceOnMorpho2 = underlyingToMUnit(supplyAmount, mExchangeRate1);
+      const supplyBalanceOnComp2 = (await creamPositionsManager.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).onComp;
+      const supplyBalanceOnMorpho2 = (await creamPositionsManager.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).onMorpho;
+      expect(supplyBalanceOnComp2).to.equal(expectedSupplyBalanceOnComp2);
+      expect(supplyBalanceOnMorpho2).to.equal(expectedSupplyBalanceOnMorpho2);
 
       // Check borrower1 balances
-      const expectedBorrowingBalanceOnMorpho1 = expectedLendingBalanceOnMorpho2;
+      const expectedBorrowBalanceOnMorpho1 = expectedSupplyBalanceOnMorpho2;
       expect((await creamPositionsManager.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onComp).to.equal(0);
-      expect((await creamPositionsManager.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onMorpho).to.equal(expectedBorrowingBalanceOnMorpho1);
+      expect((await creamPositionsManager.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onMorpho).to.equal(expectedBorrowBalanceOnMorpho1);
 
       // Compare remaining to withdraw and the cToken contract balance
       await compMarketsManager.connect(owner).updateMUnitExchangeRate(config.tokens.cDai.address);
       const mExchangeRate2 = await compMarketsManager.mUnitExchangeRate(config.tokens.cDai.address);
       const mExchangeRate3 = computeNewMorphoExchangeRate(mExchangeRate2, await compMarketsManager.p2pBPY(config.tokens.cDai.address), 1, 0).toString();
       const daiBalanceBefore2 = await daiToken.balanceOf(supplier1.getAddress());
-      const lendingBalanceOnComp3 = (await creamPositionsManager.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).onComp;
-      const lendingBalanceOnMorpho3 = (await creamPositionsManager.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).onMorpho;
+      const supplyBalanceOnComp3 = (await creamPositionsManager.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).onComp;
+      const supplyBalanceOnMorpho3 = (await creamPositionsManager.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).onMorpho;
       const cExchangeRate3 = await cDaiToken.callStatic.exchangeRateCurrent();
-      const lendingBalanceOnCompInUnderlying = cTokenToUnderlying(lendingBalanceOnComp3, cExchangeRate3);
-      const amountToWithdraw = lendingBalanceOnCompInUnderlying.add(mUnitToUnderlying(lendingBalanceOnMorpho3, mExchangeRate3));
+      const supplyBalanceOnCompInUnderlying = cTokenToUnderlying(supplyBalanceOnComp3, cExchangeRate3);
+      const amountToWithdraw = supplyBalanceOnCompInUnderlying.add(mUnitToUnderlying(supplyBalanceOnMorpho3, mExchangeRate3));
       const expectedDaiBalanceAfter2 = daiBalanceBefore2.add(amountToWithdraw);
-      const remainingToWithdraw = amountToWithdraw.sub(lendingBalanceOnCompInUnderlying);
+      const remainingToWithdraw = amountToWithdraw.sub(supplyBalanceOnCompInUnderlying);
       const cTokenContractBalanceInUnderlying = cTokenToUnderlying(await cDaiToken.balanceOf(creamPositionsManager.address), cExchangeRate3);
       expect(remainingToWithdraw).to.be.lt(cTokenContractBalanceInUnderlying);
 
       // supplier3 balances before the withdraw
-      const supplier3LendingBalanceOnComp = (await creamPositionsManager.supplyBalanceInOf(config.tokens.cDai.address, supplier3.getAddress())).onComp;
-      const supplier3LendingBalanceOnMorpho = (await creamPositionsManager.supplyBalanceInOf(config.tokens.cDai.address, supplier3.getAddress())).onMorpho;
+      const supplier3SupplyBalanceOnComp = (await creamPositionsManager.supplyBalanceInOf(config.tokens.cDai.address, supplier3.getAddress())).onComp;
+      const supplier3SupplyBalanceOnMorpho = (await creamPositionsManager.supplyBalanceInOf(config.tokens.cDai.address, supplier3.getAddress())).onMorpho;
 
       // supplier2 balances before the withdraw
-      const supplier2LendingBalanceOnComp = (await creamPositionsManager.supplyBalanceInOf(config.tokens.cDai.address, supplier2.getAddress())).onComp;
-      const supplier2LendingBalanceOnMorpho = (await creamPositionsManager.supplyBalanceInOf(config.tokens.cDai.address, supplier2.getAddress())).onMorpho;
+      const supplier2SupplyBalanceOnComp = (await creamPositionsManager.supplyBalanceInOf(config.tokens.cDai.address, supplier2.getAddress())).onComp;
+      const supplier2SupplyBalanceOnMorpho = (await creamPositionsManager.supplyBalanceInOf(config.tokens.cDai.address, supplier2.getAddress())).onMorpho;
 
       // borrower1 balances before the withdraw
-      const borrower1BorrowingBalanceOnComp = (await creamPositionsManager.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onComp;
-      const borrower1BorrowingBalanceOnMorpho = (await creamPositionsManager.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onMorpho;
+      const borrower1BorrowBalanceOnComp = (await creamPositionsManager.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onComp;
+      const borrower1BorrowBalanceOnMorpho = (await creamPositionsManager.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onMorpho;
 
       // Withdraw
       await creamPositionsManager.connect(supplier1).redeem(config.tokens.cDai.address, amountToWithdraw);
@@ -575,11 +575,11 @@ describe('CreamPositionsManager Contract', () => {
       const borrowBalance = await cDaiToken.callStatic.borrowBalanceCurrent(creamPositionsManager.address);
       const daiBalanceAfter2 = await daiToken.balanceOf(supplier1.getAddress());
 
-      const supplier2LendingBalanceOnCompInUnderlying = cTokenToUnderlying(supplier2LendingBalanceOnComp, cExchangeRate4);
-      const amountToMove = bigNumberMin(supplier2LendingBalanceOnCompInUnderlying, remainingToWithdraw);
+      const supplier2SupplyBalanceOnCompInUnderlying = cTokenToUnderlying(supplier2SupplyBalanceOnComp, cExchangeRate4);
+      const amountToMove = bigNumberMin(supplier2SupplyBalanceOnCompInUnderlying, remainingToWithdraw);
       const mExchangeRate4 = await compMarketsManager.mUnitExchangeRate(config.tokens.cDai.address);
-      const expectedSupplier2LendingBalanceOnComp = supplier2LendingBalanceOnComp.sub(underlyingToCToken(amountToMove, cExchangeRate4));
-      const expectedSupplier2LendingBalanceOnMorpho = supplier2LendingBalanceOnMorpho.add(underlyingToMUnit(amountToMove, mExchangeRate4));
+      const expectedSupplier2SupplyBalanceOnComp = supplier2SupplyBalanceOnComp.sub(underlyingToCToken(amountToMove, cExchangeRate4));
+      const expectedSupplier2SupplyBalanceOnMorpho = supplier2SupplyBalanceOnMorpho.add(underlyingToMUnit(amountToMove, mExchangeRate4));
 
       // Check borrow balance of Morpho
       expect(borrowBalance).to.equal(0);
@@ -587,37 +587,37 @@ describe('CreamPositionsManager Contract', () => {
       // Check supplier1 underlying balance
       expect(daiBalanceAfter2).to.equal(expectedDaiBalanceAfter2);
 
-      // Check lending balances of supplier1
+      // Check supply balances of supplier1
       expect(removeDigitsBigNumber(1, (await creamPositionsManager.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).onComp)).to.equal(0);
       expect(removeDigitsBigNumber(5, (await creamPositionsManager.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).onMorpho)).to.equal(0);
 
-      // Check lending balances of supplier2: supplier2 should have replaced supplier1
+      // Check supply balances of supplier2: supplier2 should have replaced supplier1
       expect(removeDigitsBigNumber(1, (await creamPositionsManager.supplyBalanceInOf(config.tokens.cDai.address, supplier2.getAddress())).onComp)).to.equal(
-        removeDigitsBigNumber(1, expectedSupplier2LendingBalanceOnComp)
+        removeDigitsBigNumber(1, expectedSupplier2SupplyBalanceOnComp)
       );
       expect(removeDigitsBigNumber(7, (await creamPositionsManager.supplyBalanceInOf(config.tokens.cDai.address, supplier2.getAddress())).onMorpho)).to.equal(
-        removeDigitsBigNumber(7, expectedSupplier2LendingBalanceOnMorpho)
+        removeDigitsBigNumber(7, expectedSupplier2SupplyBalanceOnMorpho)
       );
 
-      // Check lending balances of supplier3: supplier3 balances should not move
-      expect((await creamPositionsManager.supplyBalanceInOf(config.tokens.cDai.address, supplier3.getAddress())).onComp).to.equal(supplier3LendingBalanceOnComp);
-      expect((await creamPositionsManager.supplyBalanceInOf(config.tokens.cDai.address, supplier3.getAddress())).onMorpho).to.equal(supplier3LendingBalanceOnMorpho);
+      // Check supply balances of supplier3: supplier3 balances should not move
+      expect((await creamPositionsManager.supplyBalanceInOf(config.tokens.cDai.address, supplier3.getAddress())).onComp).to.equal(supplier3SupplyBalanceOnComp);
+      expect((await creamPositionsManager.supplyBalanceInOf(config.tokens.cDai.address, supplier3.getAddress())).onMorpho).to.equal(supplier3SupplyBalanceOnMorpho);
 
-      // Check borrowing balances of borrower1: borrower1 balances should not move (except interest earn meanwhile)
-      expect((await creamPositionsManager.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onComp).to.equal(borrower1BorrowingBalanceOnComp);
-      expect((await creamPositionsManager.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onMorpho).to.equal(borrower1BorrowingBalanceOnMorpho);
+      // Check borrow balances of borrower1: borrower1 balances should not move (except interest earn meanwhile)
+      expect((await creamPositionsManager.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onComp).to.equal(borrower1BorrowBalanceOnComp);
+      expect((await creamPositionsManager.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onMorpho).to.equal(borrower1BorrowBalanceOnMorpho);
     });
 
-    it('Borrower on Morpho only, should be able to repay all borrowing amount', async () => {
+    it('Borrower on Morpho only, should be able to repay all borrow amount', async () => {
       // Supplier deposits tokens
-      const lendingAmount = utils.parseUnits('10');
-      await daiToken.connect(supplier1).approve(creamPositionsManager.address, lendingAmount);
-      await creamPositionsManager.connect(supplier1).deposit(config.tokens.cDai.address, lendingAmount);
+      const supplyAmount = utils.parseUnits('10');
+      await daiToken.connect(supplier1).approve(creamPositionsManager.address, supplyAmount);
+      await creamPositionsManager.connect(supplier1).deposit(config.tokens.cDai.address, supplyAmount);
 
       // Borrower borrows half of the tokens
       const collateralAmount = to6Decimals(utils.parseUnits('100'));
       const daiBalanceBefore = await daiToken.balanceOf(borrower1.getAddress());
-      const toBorrow = lendingAmount.div(2);
+      const toBorrow = supplyAmount.div(2);
 
       await usdcToken.connect(borrower1).approve(creamPositionsManager.address, collateralAmount);
       await creamPositionsManager.connect(borrower1).deposit(config.tokens.cUsdc.address, collateralAmount);
@@ -652,26 +652,26 @@ describe('CreamPositionsManager Contract', () => {
       expect(await cDaiToken.callStatic.borrowBalanceCurrent(creamPositionsManager.address)).to.equal(0);
     });
 
-    it('Borrower on Morpho and on Compound, should be able to repay all borrowing amount', async () => {
+    it('Borrower on Morpho and on Compound, should be able to repay all borrow amount', async () => {
       // Supplier deposits tokens
-      const lendingAmount = utils.parseUnits('10');
+      const supplyAmount = utils.parseUnits('10');
       const amountToApprove = utils.parseUnits('100000000');
-      await daiToken.connect(supplier1).approve(creamPositionsManager.address, lendingAmount);
-      await creamPositionsManager.connect(supplier1).deposit(config.tokens.cDai.address, lendingAmount);
+      await daiToken.connect(supplier1).approve(creamPositionsManager.address, supplyAmount);
+      await creamPositionsManager.connect(supplier1).deposit(config.tokens.cDai.address, supplyAmount);
 
       // Borrower borrows two times the amount of tokens;
       const collateralAmount = to6Decimals(utils.parseUnits('100'));
       await usdcToken.connect(borrower1).approve(creamPositionsManager.address, collateralAmount);
       await creamPositionsManager.connect(borrower1).deposit(config.tokens.cUsdc.address, collateralAmount);
       const daiBalanceBefore = await daiToken.balanceOf(borrower1.getAddress());
-      const toBorrow = lendingAmount.mul(2);
-      const lendingBalanceOnComp = (await creamPositionsManager.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).onComp;
+      const toBorrow = supplyAmount.mul(2);
+      const supplyBalanceOnComp = (await creamPositionsManager.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).onComp;
       await creamPositionsManager.connect(borrower1).borrow(config.tokens.cDai.address, toBorrow);
 
       const cExchangeRate1 = await cDaiToken.callStatic.exchangeRateStored();
-      const expectedMorphoBorrowingBalance1 = toBorrow.sub(cTokenToUnderlying(lendingBalanceOnComp, cExchangeRate1));
-      const morphoBorrowingBalanceBefore1 = await cDaiToken.callStatic.borrowBalanceCurrent(creamPositionsManager.address);
-      expect(removeDigitsBigNumber(6, morphoBorrowingBalanceBefore1)).to.equal(removeDigitsBigNumber(6, expectedMorphoBorrowingBalance1));
+      const expectedMorphoBorrowBalance1 = toBorrow.sub(cTokenToUnderlying(supplyBalanceOnComp, cExchangeRate1));
+      const morphoBorrowBalanceBefore1 = await cDaiToken.callStatic.borrowBalanceCurrent(creamPositionsManager.address);
+      expect(removeDigitsBigNumber(6, morphoBorrowBalanceBefore1)).to.equal(removeDigitsBigNumber(6, expectedMorphoBorrowBalance1));
       await daiToken.connect(borrower1).approve(creamPositionsManager.address, amountToApprove);
 
       const borrowerBalanceOnMorpho = (await creamPositionsManager.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onMorpho;
@@ -701,101 +701,101 @@ describe('CreamPositionsManager Contract', () => {
       // Check borrower1 balances
       const daiBalanceAfter = await daiToken.balanceOf(borrower1.getAddress());
       expect(daiBalanceAfter).to.equal(expectedDaiBalanceAfter);
-      const borrower1BorrowingBalanceOnComp = (await creamPositionsManager.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onComp;
-      expect(removeDigitsBigNumber(2, borrower1BorrowingBalanceOnComp)).to.equal(removeDigitsBigNumber(2, expectedBalanceOnComp));
+      const borrower1BorrowBalanceOnComp = (await creamPositionsManager.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onComp;
+      expect(removeDigitsBigNumber(2, borrower1BorrowBalanceOnComp)).to.equal(removeDigitsBigNumber(2, expectedBalanceOnComp));
       // WARNING: Commented here due to the pow function issue
       expect((await creamPositionsManager.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onMorpho).to.be.lt(1000000000000);
 
       // Check Morpho balances
       expect(removeDigitsBigNumber(5, await cDaiToken.balanceOf(creamPositionsManager.address))).to.equal(removeDigitsBigNumber(5, expectedMorphoCTokenBalance));
-      // Issue here: we cannot access the most updated borrowing balance as it's updated during the repayBorrow on Compound.
-      // const expectedMorphoBorrowingBalance2 = morphoBorrowingBalanceBefore2.sub(borrowerBalanceOnComp.mul(borrowIndex2).div(SCALE));
-      // expect(removeDigitsBigNumber(3, await cToken.callStatic.borrowBalanceStored(creamPositionsManager.address))).to.equal(removeDigitsBigNumber(3, expectedMorphoBorrowingBalance2));
+      // Issue here: we cannot access the most updated borrow balance as it's updated during the repayBorrow on Compound.
+      // const expectedMorphoBorrowBalance2 = morphoBorrowBalanceBefore2.sub(borrowerBalanceOnComp.mul(borrowIndex2).div(SCALE));
+      // expect(removeDigitsBigNumber(3, await cToken.callStatic.borrowBalanceStored(creamPositionsManager.address))).to.equal(removeDigitsBigNumber(3, expectedMorphoBorrowBalance2));
     });
 
-    it('Should disconnect supplier from Morpho when borrowing an asset that nobody has on compMarketsManager and the lending balance is partly used', async () => {
+    it('Should disconnect supplier from Morpho when borrow an asset that nobody has on compMarketsManager and the supply balance is partly used', async () => {
       // supplier1 deposits DAI
-      const lendingAmount = utils.parseUnits('100');
-      await daiToken.connect(supplier1).approve(creamPositionsManager.address, lendingAmount);
-      await creamPositionsManager.connect(supplier1).deposit(config.tokens.cDai.address, lendingAmount);
+      const supplyAmount = utils.parseUnits('100');
+      await daiToken.connect(supplier1).approve(creamPositionsManager.address, supplyAmount);
+      await creamPositionsManager.connect(supplier1).deposit(config.tokens.cDai.address, supplyAmount);
 
       // borrower1 deposits USDC as collateral
       const collateralAmount = to6Decimals(utils.parseUnits('100'));
       await usdcToken.connect(borrower1).approve(creamPositionsManager.address, collateralAmount);
       await creamPositionsManager.connect(borrower1).deposit(config.tokens.cUsdc.address, collateralAmount);
 
-      // borrower1 borrows part of the lending amount of supplier1
-      const amountToBorrow = lendingAmount.div(2);
+      // borrower1 borrows part of the supply amount of supplier1
+      const amountToBorrow = supplyAmount.div(2);
       await creamPositionsManager.connect(borrower1).borrow(config.tokens.cDai.address, amountToBorrow);
-      const borrowingBalanceOnMorpho = (await creamPositionsManager.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onMorpho;
+      const borrowBalanceOnMorpho = (await creamPositionsManager.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onMorpho;
 
-      // supplier1 borrows USDT that nobody is lending on Morpho
+      // supplier1 borrows USDT that nobody is supply on Morpho
       const cDaiExchangeRate1 = await cDaiToken.callStatic.exchangeRateCurrent();
       const mDaiExchangeRate1 = await compMarketsManager.mUnitExchangeRate(config.tokens.cDai.address);
-      const lendingBalanceOnComp1 = (await creamPositionsManager.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).onComp;
-      const lendingBalanceOnMorpho1 = (await creamPositionsManager.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).onMorpho;
-      const lendingBalanceOnCompInUnderlying = cTokenToUnderlying(lendingBalanceOnComp1, cDaiExchangeRate1);
-      const lendingBalanceMorphoInUnderlying = mUnitToUnderlying(lendingBalanceOnMorpho1, mDaiExchangeRate1);
-      const lendingBalanceInUnderlying = lendingBalanceOnCompInUnderlying.add(lendingBalanceMorphoInUnderlying);
+      const supplyBalanceOnComp1 = (await creamPositionsManager.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).onComp;
+      const supplyBalanceOnMorpho1 = (await creamPositionsManager.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).onMorpho;
+      const supplyBalanceOnCompInUnderlying = cTokenToUnderlying(supplyBalanceOnComp1, cDaiExchangeRate1);
+      const supplyBalanceMorphoInUnderlying = mUnitToUnderlying(supplyBalanceOnMorpho1, mDaiExchangeRate1);
+      const supplyBalanceInUnderlying = supplyBalanceOnCompInUnderlying.add(supplyBalanceMorphoInUnderlying);
       const { collateralFactorMantissa } = await comptroller.markets(config.tokens.cDai.address);
       const usdtPriceMantissa = await compoundOracle.callStatic.getUnderlyingPrice(config.tokens.cUsdt.address);
       const daiPriceMantissa = await compoundOracle.callStatic.getUnderlyingPrice(config.tokens.cDai.address);
-      const maxToBorrow = lendingBalanceInUnderlying.mul(daiPriceMantissa).div(usdtPriceMantissa).mul(collateralFactorMantissa).div(SCALE);
+      const maxToBorrow = supplyBalanceInUnderlying.mul(daiPriceMantissa).div(usdtPriceMantissa).mul(collateralFactorMantissa).div(SCALE);
       await creamPositionsManager.connect(supplier1).borrow(config.tokens.cUsdt.address, maxToBorrow);
 
       // Check balances
-      const lendingBalanceOnComp2 = (await creamPositionsManager.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).onComp;
-      const borrowingBalanceOnComp = (await creamPositionsManager.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onComp;
+      const supplyBalanceOnComp2 = (await creamPositionsManager.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).onComp;
+      const borrowBalanceOnComp = (await creamPositionsManager.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onComp;
       const cDaiExchangeRate2 = await cDaiToken.callStatic.exchangeRateCurrent();
       const cDaiBorrowIndex = await cDaiToken.borrowIndex();
       const mDaiExchangeRate2 = await compMarketsManager.mUnitExchangeRate(config.tokens.cDai.address);
-      const expectedBorrowingBalanceOnComp = mUnitToUnderlying(borrowingBalanceOnMorpho, mDaiExchangeRate2).mul(SCALE).div(cDaiBorrowIndex);
-      const usdtBorrowingBalance = (await creamPositionsManager.borrowBalanceInOf(config.tokens.cUsdt.address, supplier1.getAddress())).onComp;
+      const expectedBorrowBalanceOnComp = mUnitToUnderlying(borrowBalanceOnMorpho, mDaiExchangeRate2).mul(SCALE).div(cDaiBorrowIndex);
+      const usdtBorrowBalance = (await creamPositionsManager.borrowBalanceInOf(config.tokens.cUsdt.address, supplier1.getAddress())).onComp;
       const cUsdtBorrowIndex = await cUsdtToken.borrowIndex();
-      const usdtBorrowingBalanceInUnderlying = usdtBorrowingBalance.mul(cUsdtBorrowIndex).div(SCALE);
-      expect(removeDigitsBigNumber(6, lendingBalanceOnComp2)).to.equal(removeDigitsBigNumber(6, underlyingToCToken(lendingBalanceInUnderlying, cDaiExchangeRate2)));
-      expect(removeDigitsBigNumber(2, borrowingBalanceOnComp)).to.equal(removeDigitsBigNumber(2, expectedBorrowingBalanceOnComp));
-      expect(removeDigitsBigNumber(2, usdtBorrowingBalanceInUnderlying)).to.equal(removeDigitsBigNumber(2, maxToBorrow));
+      const usdtBorrowBalanceInUnderlying = usdtBorrowBalance.mul(cUsdtBorrowIndex).div(SCALE);
+      expect(removeDigitsBigNumber(6, supplyBalanceOnComp2)).to.equal(removeDigitsBigNumber(6, underlyingToCToken(supplyBalanceInUnderlying, cDaiExchangeRate2)));
+      expect(removeDigitsBigNumber(2, borrowBalanceOnComp)).to.equal(removeDigitsBigNumber(2, expectedBorrowBalanceOnComp));
+      expect(removeDigitsBigNumber(2, usdtBorrowBalanceInUnderlying)).to.equal(removeDigitsBigNumber(2, maxToBorrow));
     });
 
     it('Supplier should be connected to borrowers already on Morpho when depositing', async () => {
       const collateralAmount = to6Decimals(utils.parseUnits('100'));
-      const lendingAmount = utils.parseUnits('100');
-      const borrowingAmount = utils.parseUnits('30');
+      const supplyAmount = utils.parseUnits('100');
+      const borrowAmount = utils.parseUnits('30');
 
       // borrower1 borrows
       await usdcToken.connect(borrower1).approve(creamPositionsManager.address, collateralAmount);
       await creamPositionsManager.connect(borrower1).deposit(config.tokens.cUsdc.address, collateralAmount);
-      await creamPositionsManager.connect(borrower1).borrow(config.tokens.cDai.address, borrowingAmount);
-      const borrower1BorrowingBalanceOnComp = (await creamPositionsManager.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onComp;
+      await creamPositionsManager.connect(borrower1).borrow(config.tokens.cDai.address, borrowAmount);
+      const borrower1BorrowBalanceOnComp = (await creamPositionsManager.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onComp;
 
       // borrower2 borrows
       await usdcToken.connect(borrower2).approve(creamPositionsManager.address, collateralAmount);
       await creamPositionsManager.connect(borrower2).deposit(config.tokens.cUsdc.address, collateralAmount);
-      await creamPositionsManager.connect(borrower2).borrow(config.tokens.cDai.address, borrowingAmount);
-      const borrower2BorrowingBalanceOnComp = (await creamPositionsManager.borrowBalanceInOf(config.tokens.cDai.address, borrower2.getAddress())).onComp;
+      await creamPositionsManager.connect(borrower2).borrow(config.tokens.cDai.address, borrowAmount);
+      const borrower2BorrowBalanceOnComp = (await creamPositionsManager.borrowBalanceInOf(config.tokens.cDai.address, borrower2.getAddress())).onComp;
 
       // borrower3 borrows
       await usdcToken.connect(borrower3).approve(creamPositionsManager.address, collateralAmount);
       await creamPositionsManager.connect(borrower3).deposit(config.tokens.cUsdc.address, collateralAmount);
-      await creamPositionsManager.connect(borrower3).borrow(config.tokens.cDai.address, borrowingAmount);
-      const borrower3BorrowingBalanceOnComp = (await creamPositionsManager.borrowBalanceInOf(config.tokens.cDai.address, borrower3.getAddress())).onComp;
+      await creamPositionsManager.connect(borrower3).borrow(config.tokens.cDai.address, borrowAmount);
+      const borrower3BorrowBalanceOnComp = (await creamPositionsManager.borrowBalanceInOf(config.tokens.cDai.address, borrower3.getAddress())).onComp;
 
       // supplier1 deposit
-      await daiToken.connect(supplier1).approve(creamPositionsManager.address, lendingAmount);
-      await creamPositionsManager.connect(supplier1).deposit(config.tokens.cDai.address, lendingAmount);
+      await daiToken.connect(supplier1).approve(creamPositionsManager.address, supplyAmount);
+      await creamPositionsManager.connect(supplier1).deposit(config.tokens.cDai.address, supplyAmount);
       const cExchangeRate = await cDaiToken.callStatic.exchangeRateStored();
       const borrowIndex = await cDaiToken.borrowIndex();
       const mUnitExchangeRate = await compMarketsManager.mUnitExchangeRate(config.tokens.cDai.address);
 
       // Check balances
-      const lendingBalanceOnMorpho = (await creamPositionsManager.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).onMorpho;
-      const lendingBalanceOnComp = (await creamPositionsManager.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).onComp;
-      const underlyingMatched = cDUnitToUnderlying(borrower1BorrowingBalanceOnComp.add(borrower2BorrowingBalanceOnComp).add(borrower3BorrowingBalanceOnComp), borrowIndex);
-      expectedLendingBalanceOnMorpho = underlyingMatched.mul(SCALE).div(mUnitExchangeRate);
-      expectedLendingBalanceOnComp = underlyingToCToken(lendingAmount.sub(underlyingMatched), cExchangeRate);
-      expect(removeDigitsBigNumber(2, lendingBalanceOnMorpho)).to.equal(removeDigitsBigNumber(2, expectedLendingBalanceOnMorpho));
-      expect(lendingBalanceOnComp).to.equal(expectedLendingBalanceOnComp);
+      const supplyBalanceOnMorpho = (await creamPositionsManager.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).onMorpho;
+      const supplyBalanceOnComp = (await creamPositionsManager.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).onComp;
+      const underlyingMatched = cDUnitToUnderlying(borrower1BorrowBalanceOnComp.add(borrower2BorrowBalanceOnComp).add(borrower3BorrowBalanceOnComp), borrowIndex);
+      expectedSupplyBalanceOnMorpho = underlyingMatched.mul(SCALE).div(mUnitExchangeRate);
+      expectedSupplyBalanceOnComp = underlyingToCToken(supplyAmount.sub(underlyingMatched), cExchangeRate);
+      expect(removeDigitsBigNumber(2, supplyBalanceOnMorpho)).to.equal(removeDigitsBigNumber(2, expectedSupplyBalanceOnMorpho));
+      expect(supplyBalanceOnComp).to.equal(expectedSupplyBalanceOnComp);
       expect((await creamPositionsManager.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onComp).to.be.lte(1);
       expect((await creamPositionsManager.borrowBalanceInOf(config.tokens.cDai.address, borrower2.getAddress())).onComp).to.be.lte(1);
       expect((await creamPositionsManager.borrowBalanceInOf(config.tokens.cDai.address, borrower3.getAddress())).onComp).to.be.lte(1);
@@ -803,7 +803,7 @@ describe('CreamPositionsManager Contract', () => {
   });
 
   describe('Test liquidation', () => {
-    it('Borrower should be liquidated while lending (collateral) is only on Compound', async () => {
+    it('Borrower should be liquidated while supply (collateral) is only on Compound', async () => {
       const amount = to6Decimals(utils.parseUnits('100'));
       await usdcToken.connect(borrower1).approve(creamPositionsManager.address, amount);
       await creamPositionsManager.connect(borrower1).deposit(config.tokens.cUsdc.address, amount);
@@ -818,7 +818,7 @@ describe('CreamPositionsManager Contract', () => {
       // Borrow
       await creamPositionsManager.connect(borrower1).borrow(config.tokens.cDai.address, maxToBorrow);
       const collateralBalanceBefore = (await creamPositionsManager.supplyBalanceInOf(config.tokens.cUsdc.address, borrower1.getAddress())).onComp;
-      const borrowingBalanceBefore = (await creamPositionsManager.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onComp;
+      const borrowBalanceBefore = (await creamPositionsManager.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onComp;
 
       // Mine block
       await hre.network.provider.send('evm_mine', []);
@@ -840,7 +840,7 @@ describe('CreamPositionsManager Contract', () => {
       const borrowedAssetPrice = await compoundOracle.getUnderlyingPrice(config.tokens.cDai.address);
       const amountToSeize = toRepay.mul(borrowedAssetPrice).div(collateralAssetPrice).mul(liquidationIncentive).div(SCALE);
       const expectedCollateralBalanceAfter = collateralBalanceBefore.sub(underlyingToCToken(amountToSeize, cUsdcExchangeRate));
-      const expectedBorrowingBalanceAfter = borrowingBalanceBefore.sub(underlyingToCdUnit(toRepay, borrowIndex));
+      const expectedBorrowBalanceAfter = borrowBalanceBefore.sub(underlyingToCdUnit(toRepay, borrowIndex));
       const expectedUsdcBalanceAfter = usdcBalanceBefore.add(amountToSeize);
       const expectedDaiBalanceAfter = daiBalanceBefore.sub(toRepay);
 
@@ -848,21 +848,21 @@ describe('CreamPositionsManager Contract', () => {
       expect(removeDigitsBigNumber(6, (await creamPositionsManager.supplyBalanceInOf(config.tokens.cUsdc.address, borrower1.getAddress())).onComp)).to.equal(
         removeDigitsBigNumber(6, expectedCollateralBalanceAfter)
       );
-      expect((await creamPositionsManager.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onComp).to.equal(expectedBorrowingBalanceAfter);
+      expect((await creamPositionsManager.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onComp).to.equal(expectedBorrowBalanceAfter);
       expect(removeDigitsBigNumber(1, usdcBalanceAfter)).to.equal(removeDigitsBigNumber(1, expectedUsdcBalanceAfter));
       expect(daiBalanceAfter).to.equal(expectedDaiBalanceAfter);
     });
 
-    it('Borrower should be liquidated while lending (collateral) is on Compound and on Morpho', async () => {
+    it('Borrower should be liquidated while supply (collateral) is on Compound and on Morpho', async () => {
       await daiToken.connect(supplier1).approve(creamPositionsManager.address, utils.parseUnits('1000'));
       await creamPositionsManager.connect(supplier1).deposit(config.tokens.cDai.address, utils.parseUnits('1000'));
 
-      // borrower1 deposits USDC as lending (collateral)
+      // borrower1 deposits USDC as supply (collateral)
       const amount = to6Decimals(utils.parseUnits('100'));
       await usdcToken.connect(borrower1).approve(creamPositionsManager.address, amount);
       await creamPositionsManager.connect(borrower1).deposit(config.tokens.cUsdc.address, amount);
 
-      // borrower2 borrows part of lending of borrower1 -> borrower1 has lending on Morpho and on Compound
+      // borrower2 borrows part of supply of borrower1 -> borrower1 has supply on Morpho and on Compound
       const toBorrow = amount;
       await uniToken.connect(borrower2).approve(creamPositionsManager.address, utils.parseUnits('200'));
       await creamPositionsManager.connect(borrower2).deposit(config.tokens.cUni.address, utils.parseUnits('200'));
@@ -871,19 +871,19 @@ describe('CreamPositionsManager Contract', () => {
       // borrower1 borrows DAI
       const cUsdcExchangeRate1 = await cUsdcToken.callStatic.exchangeRateCurrent();
       const mUsdcExchangeRate1 = await compMarketsManager.mUnitExchangeRate(config.tokens.cUsdc.address);
-      const lendingBalanceOnComp1 = (await creamPositionsManager.supplyBalanceInOf(config.tokens.cUsdc.address, borrower1.getAddress())).onComp;
-      const lendingBalanceOnMorpho1 = (await creamPositionsManager.supplyBalanceInOf(config.tokens.cUsdc.address, borrower1.getAddress())).onMorpho;
-      const lendingBalanceOnCompInUnderlying = cTokenToUnderlying(lendingBalanceOnComp1, cUsdcExchangeRate1);
-      const lendingBalanceMorphoInUnderlying = mUnitToUnderlying(lendingBalanceOnMorpho1, mUsdcExchangeRate1);
-      const lendingBalanceInUnderlying = lendingBalanceOnCompInUnderlying.add(lendingBalanceMorphoInUnderlying);
+      const supplyBalanceOnComp1 = (await creamPositionsManager.supplyBalanceInOf(config.tokens.cUsdc.address, borrower1.getAddress())).onComp;
+      const supplyBalanceOnMorpho1 = (await creamPositionsManager.supplyBalanceInOf(config.tokens.cUsdc.address, borrower1.getAddress())).onMorpho;
+      const supplyBalanceOnCompInUnderlying = cTokenToUnderlying(supplyBalanceOnComp1, cUsdcExchangeRate1);
+      const supplyBalanceMorphoInUnderlying = mUnitToUnderlying(supplyBalanceOnMorpho1, mUsdcExchangeRate1);
+      const supplyBalanceInUnderlying = supplyBalanceOnCompInUnderlying.add(supplyBalanceMorphoInUnderlying);
       const { collateralFactorMantissa } = await comptroller.markets(config.tokens.cDai.address);
       const usdcPriceMantissa = await compoundOracle.getUnderlyingPrice(config.tokens.cUsdc.address);
       const daiPriceMantissa = await compoundOracle.getUnderlyingPrice(config.tokens.cDai.address);
-      const maxToBorrow = lendingBalanceInUnderlying.mul(usdcPriceMantissa).div(daiPriceMantissa).mul(collateralFactorMantissa).div(SCALE);
+      const maxToBorrow = supplyBalanceInUnderlying.mul(usdcPriceMantissa).div(daiPriceMantissa).mul(collateralFactorMantissa).div(SCALE);
       await creamPositionsManager.connect(borrower1).borrow(config.tokens.cDai.address, maxToBorrow);
       const collateralBalanceOnCompBefore = (await creamPositionsManager.supplyBalanceInOf(config.tokens.cUsdc.address, borrower1.getAddress())).onComp;
       const collateralBalanceOnMorphoBefore = (await creamPositionsManager.supplyBalanceInOf(config.tokens.cUsdc.address, borrower1.getAddress())).onMorpho;
-      const borrowingBalanceOnMorphoBefore = (await creamPositionsManager.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onMorpho;
+      const borrowBalanceOnMorphoBefore = (await creamPositionsManager.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onMorpho;
 
       // Mine block
       await hre.network.provider.send('evm_mine', []);
@@ -906,7 +906,7 @@ describe('CreamPositionsManager Contract', () => {
       const borrowedAssetPrice = await compoundOracle.getUnderlyingPrice(config.tokens.cDai.address);
       const amountToSeize = toRepay.mul(borrowedAssetPrice).div(collateralAssetPrice).mul(liquidationIncentive).div(SCALE);
       const expectedCollateralBalanceOnMorphoAfter = collateralBalanceOnMorphoBefore.sub(amountToSeize.sub(cTokenToUnderlying(collateralBalanceOnCompBefore, cUsdcExchangeRate)));
-      const expectedBorrowingBalanceOnMorphoAfter = borrowingBalanceOnMorphoBefore.sub(toRepay.mul(SCALE).div(mDaiExchangeRate));
+      const expectedBorrowBalanceOnMorphoAfter = borrowBalanceOnMorphoBefore.sub(toRepay.mul(SCALE).div(mDaiExchangeRate));
       const expectedUsdcBalanceAfter = usdcBalanceBefore.add(amountToSeize);
       const expectedDaiBalanceAfter = daiBalanceBefore.sub(toRepay);
 
@@ -916,7 +916,7 @@ describe('CreamPositionsManager Contract', () => {
         removeDigitsBigNumber(2, expectedCollateralBalanceOnMorphoAfter)
       );
       expect((await creamPositionsManager.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onComp).to.equal(0);
-      expect((await creamPositionsManager.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onMorpho).to.equal(expectedBorrowingBalanceOnMorphoAfter);
+      expect((await creamPositionsManager.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onMorpho).to.equal(expectedBorrowBalanceOnMorphoAfter);
 
       // Check liquidator balances
       let diff;

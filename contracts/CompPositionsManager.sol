@@ -12,7 +12,7 @@ import {ICErc20, IComptroller, ICompoundOracle} from "./interfaces/ICompound.sol
 
 /**
  *  @title CompPositionsManager
- *  @dev Smart contracts interacting with Compound to enable real P2P lending with cERC20 tokens as lending/borrowing assets.
+ *  @dev Smart contracts interacting with Compound to enable real P2P supply with cERC20 tokens as supply/borrow assets.
  */
 contract CompPositionsManager is ReentrancyGuard {
     using RedBlackBinaryTree for RedBlackBinaryTree.Tree;
@@ -51,7 +51,7 @@ contract CompPositionsManager is ReentrancyGuard {
 
     // Struct to avoid stack too deep error
     struct LiquidateVars {
-        uint256 borrowingBalance;
+        uint256 borrowBalance;
         uint256 priceCollateralMantissa;
         uint256 priceBorrowedMantissa;
         uint256 amountToSeize;
@@ -65,8 +65,8 @@ contract CompPositionsManager is ReentrancyGuard {
     mapping(address => RedBlackBinaryTree.Tree) public borrowersOnMorpho; // Borrowers on Morpho.
     mapping(address => RedBlackBinaryTree.Tree) public borrowersOnComp; // Borrowers on Compound.
     mapping(address => mapping(address => bool)) public accountMembership; // Whether the account is in the market or not.
-    mapping(address => mapping(address => SupplyBalance)) public supplyBalanceInOf; // Lending balance of user.
-    mapping(address => mapping(address => BorrowBalance)) public borrowBalanceInOf; // Borrowing balance of user.
+    mapping(address => mapping(address => SupplyBalance)) public supplyBalanceInOf; // Supply balance of user.
+    mapping(address => mapping(address => BorrowBalance)) public borrowBalanceInOf; // Borrow balance of user.
     mapping(address => address[]) public enteredMarkets; // Markets entered by a user.
 
     IComptroller public comptroller;
@@ -302,9 +302,9 @@ contract CompPositionsManager is ReentrancyGuard {
         _repay(_cErc20Address, msg.sender, _amount);
     }
 
-    /** @dev Redeems ERC20 tokens from lending.
+    /** @dev Redeems ERC20 tokens from supply.
      *  @param _cErc20Address The address of the market the user wants to interact with.
-     *  @param _amount The amount in tokens to withdraw from lending.
+     *  @param _amount The amount in tokens to withdraw from supply.
      */
     function redeem(address _cErc20Address, uint256 _amount)
         external
@@ -395,7 +395,7 @@ contract CompPositionsManager is ReentrancyGuard {
         );
         require(maxDebtValue > debtValue, "liq:debt-value<=max");
         LiquidateVars memory vars;
-        vars.borrowingBalance =
+        vars.borrowBalance =
             borrowBalanceInOf[_cErc20BorrowedAddress][_borrower].onComp.mul(
                 ICErc20(_cErc20BorrowedAddress).borrowIndex()
             ) +
@@ -403,7 +403,7 @@ contract CompPositionsManager is ReentrancyGuard {
                 compMarketsManager.mUnitExchangeRate(_cErc20BorrowedAddress)
             );
         require(
-            _amount <= vars.borrowingBalance.mul(comptroller.closeFactorMantissa()),
+            _amount <= vars.borrowBalance.mul(comptroller.closeFactorMantissa()),
             "liq:amount>allowed"
         );
 
@@ -479,7 +479,7 @@ contract CompPositionsManager is ReentrancyGuard {
     /** @dev Implements repay logic.
      *  @dev `msg.sender` must have approved Morpho's contract to spend the underlying `_amount`.
      *  @param _cErc20Address The address of the market the user wants to interact with.
-     *  @param _borrower The address of the `_borrower` to repay the borrowing.
+     *  @param _borrower The address of the `_borrower` to repay the borrow.
      *  @param _amount The amount of ERC20 tokens to repay.
      */
     function _repay(
@@ -731,7 +731,7 @@ contract CompPositionsManager is ReentrancyGuard {
     }
 
     /**
-     * @dev Moves lending balance of an account from Morpho to Compound.
+     * @dev Moves supply balance of an account from Morpho to Compound.
      * @param _account The address of the account to move balance.
      */
     function _moveSupplierFromMorphoToComp(address _account) internal {
