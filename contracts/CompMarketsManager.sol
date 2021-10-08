@@ -140,9 +140,9 @@ contract CompMarketsManager is Ownable {
         ICErc20 cErc20Token = ICErc20(_marketAddress);
 
         // Update BPY
-        uint256 lendBPY = cErc20Token.supplyRatePerBlock();
+        uint256 supplyBPY = cErc20Token.supplyRatePerBlock();
         uint256 borrowBPY = cErc20Token.borrowRatePerBlock();
-        BPY[_marketAddress] = Math.average(lendBPY, borrowBPY);
+        BPY[_marketAddress] = Math.average(supplyBPY, borrowBPY);
 
         emit UpdateBPY(_marketAddress, BPY[_marketAddress]);
 
