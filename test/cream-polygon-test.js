@@ -58,7 +58,7 @@ describe('CreamPositionsManager Contract', () => {
     await redBlackBinaryTree.deployed();
 
     // Deploy contracts
-    CompMarketsManager = await ethers.getContractFactory('CompMarketsManager');
+    CompMarketsManager = await ethers.getContractFactory('CreamMarketsManager');
     compMarketsManager = await CompMarketsManager.deploy(config.cream.comptroller.address);
     await compMarketsManager.deployed();
 
