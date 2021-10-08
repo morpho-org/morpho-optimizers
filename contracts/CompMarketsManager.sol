@@ -21,7 +21,7 @@ contract CompMarketsManager is Ownable {
 
     mapping(address => bool) public isListed; // Whether or not this market is listed.
     mapping(address => bool) public isEntered; // Whether or not this market is entered.
-    mapping(address => uint256) public BPY; // Block Percentage Yield ("midrate").
+    mapping(address => uint256) public p2pBPY; // Block Percentage Yield ("midrate").
     mapping(address => uint256) public mUnitExchangeRate; // current exchange rate from mUnit to underlying.
     mapping(address => uint256) public lastUpdateBlockNumber; // Last time mUnitExchangeRate was updated.
     mapping(address => uint256) public thresholds; // Thresholds below the ones suppliers and borrowers cannot enter markets.
@@ -36,9 +36,9 @@ contract CompMarketsManager is Ownable {
      */
     event CreateMarket(address _marketAddress);
 
-    /** @dev Emitted when the BPY of a market is updated.
+    /** @dev Emitted when the p2pBPY of a market is updated.
      *  @param _marketAddress The address of the market to update.
-     *  @param _newValue The new value of the BPY.
+     *  @param _newValue The new value of the p2pBPY.
      */
     event UpdateBPY(address _marketAddress, uint256 _newValue);
 
@@ -132,25 +132,25 @@ contract CompMarketsManager is Ownable {
 
     /* Public */
 
-    /** @dev Updates the Block Percentage Yield (`BPY`) and calculate the current exchange rate (`mUnitExchangeRate`).
+    /** @dev Updates the Block Percentage Yield (`p2pBPY`) and calculate the current exchange rate (`mUnitExchangeRate`).
      *  @param _marketAddress The address of the market we want to update.
      */
     function updateBPY(address _marketAddress) public {
         require(isEntered[_marketAddress], "updateBPY: market not entered");
         ICErc20 cErc20Token = ICErc20(_marketAddress);
 
-        // Update BPY
+        // Update p2pBPY
         uint256 supplyBPY = cErc20Token.supplyRatePerBlock();
         uint256 borrowBPY = cErc20Token.borrowRatePerBlock();
-        BPY[_marketAddress] = Math.average(supplyBPY, borrowBPY);
+        p2pBPY[_marketAddress] = Math.average(supplyBPY, borrowBPY);
 
-        emit UpdateBPY(_marketAddress, BPY[_marketAddress]);
+        emit UpdateBPY(_marketAddress, p2pBPY[_marketAddress]);
 
         // Update mUnitExhangeRate
         updateMUnitExchangeRate(_marketAddress);
     }
 
-    /** @dev Updates the current exchange rate, taking into account the block percentage yield (BPY) since the last time it has been updated.
+    /** @dev Updates the current exchange rate, taking into account the block percentage yield (p2pBPY) since the last time it has been updated.
      *  @param _marketAddress The address of the market we want to update.
      *  @return currentExchangeRate to convert from mUnit to underlying or from underlying to mUnit.
      */
@@ -165,7 +165,7 @@ contract CompMarketsManager is Ownable {
                 lastUpdateBlockNumber[_marketAddress];
 
             uint256 newMUnitExchangeRate = mUnitExchangeRate[_marketAddress].mul(
-                (1e18 + BPY[_marketAddress]).pow(
+                (1e18 + p2pBPY[_marketAddress]).pow(
                     PRBMathUD60x18.fromUint(numberOfBlocksSinceLastUpdate)
                 )
             );
