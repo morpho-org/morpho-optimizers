@@ -11,7 +11,7 @@ import "./interfaces/ICompMarketsManager.sol";
 
 /**
  *  @title CompPositionsManager
- *  @dev Smart contracts interacting with Compound to enable real P2P lending with cERC20 tokens as lending/borrowing assets.
+ *  @dev Smart contracts interacting with Compound to enable real P2P supply with cERC20 tokens as supply/borrow assets.
  */
 contract CompMarketsManager is Ownable {
     using PRBMathUD60x18 for uint256;
