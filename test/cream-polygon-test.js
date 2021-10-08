@@ -671,7 +671,7 @@ describe('CreamPositionsManager Contract', () => {
       const cExchangeRate1 = await cDaiToken.callStatic.exchangeRateStored();
       const expectedMorphoBorrowingBalance1 = toBorrow.sub(cTokenToUnderlying(lendingBalanceOnComp, cExchangeRate1));
       const morphoBorrowingBalanceBefore1 = await cDaiToken.callStatic.borrowBalanceCurrent(creamPositionsManager.address);
-      expect(removeDigitsBigNumber(5, morphoBorrowingBalanceBefore1)).to.equal(removeDigitsBigNumber(5, expectedMorphoBorrowingBalance1));
+      expect(removeDigitsBigNumber(6, morphoBorrowingBalanceBefore1)).to.equal(removeDigitsBigNumber(6, expectedMorphoBorrowingBalance1));
       await daiToken.connect(borrower1).approve(creamPositionsManager.address, amountToApprove);
 
       const borrowerBalanceOnMorpho = (await creamPositionsManager.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onMorpho;
