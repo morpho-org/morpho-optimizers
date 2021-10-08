@@ -24,7 +24,7 @@ contract CompMarketsManager is Ownable {
     mapping(address => uint256) public BPY; // Block Percentage Yield ("midrate").
     mapping(address => uint256) public mUnitExchangeRate; // current exchange rate from mUnit to underlying.
     mapping(address => uint256) public lastUpdateBlockNumber; // Last time mUnitExchangeRate was updated.
-    mapping(address => uint256) public thresholds; // Thresholds below the ones lenders and borrowers cannot enter markets.
+    mapping(address => uint256) public thresholds; // Thresholds below the ones suppliers and borrowers cannot enter markets.
 
     IComptroller public comptroller;
     ICompPositionsManager public compPositionsManager;
@@ -120,7 +120,7 @@ contract CompMarketsManager is Ownable {
         isListed[_marketAddress] = false;
     }
 
-    /** @dev Updates thresholds below the ones lenders and borrowers cannot enter markets.
+    /** @dev Updates thresholds below the ones suppliers and borrowers cannot enter markets.
      *  @param _marketAddress The address of the market to change the threshold.
      *  @param _newThreshold The new threshold to set.
      */
