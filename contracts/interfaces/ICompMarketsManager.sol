@@ -4,7 +4,7 @@ pragma solidity 0.8.7;
 interface ICompMarketsManager {
     function isListed(address _marketAddress) external returns (bool);
 
-    function BPY(address _marketAddress) external returns (uint256);
+    function p2pBPY(address _marketAddress) external returns (uint256);
 
     function collateralFactor(address _marketAddress) external returns (uint256);
 

@@ -37,9 +37,9 @@ const bigNumberMin = (a, b) => {
 const removeDigitsBigNumber = (decimalsToRemove, number) => number.sub(number.mod(BigNumber.from(10).pow(decimalsToRemove))).div(BigNumber.from(10).pow(decimalsToRemove));
 const removeDigits = (decimalsToRemove, number) => (number - (number % 10 ** decimalsToRemove)) / 10 ** decimalsToRemove;
 
-const computeNewMorphoExchangeRate = (currentExchangeRate, BPY, currentBlockNumber, lastUpdateBlockNumber) => {
+const computeNewMorphoExchangeRate = (currentExchangeRate, p2pBPY, currentBlockNumber, lastUpdateBlockNumber) => {
   // Use of decimal.js library for better accuracy
-  const bpy = new Decimal(BPY.toString());
+  const bpy = new Decimal(p2pBPY.toString());
   const scale = new Decimal('1e18');
   const exponent = new Decimal(currentBlockNumber - lastUpdateBlockNumber);
   const val = bpy.div(scale).add(1);
