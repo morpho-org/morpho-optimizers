@@ -108,6 +108,7 @@ contract CompMarketsManager is Ownable {
      *  @param _marketAddress The address of the market to list.
      */
     function listMarket(address _marketAddress) external onlyOwner {
+        require(isEntered[_marketAddress], "listMarket: market not entered");
         isListed[_marketAddress] = true;
     }
 
@@ -115,6 +116,7 @@ contract CompMarketsManager is Ownable {
      *  @param _marketAddress The address of the market to unlist.
      */
     function unlistMarket(address _marketAddress) external onlyOwner {
+        require(isEntered[_marketAddress], "listMarket: market not entered");
         isListed[_marketAddress] = false;
     }
 
@@ -123,7 +125,7 @@ contract CompMarketsManager is Ownable {
      *  @param _newThreshold The new threshold to set.
      */
     function updateThreshold(address _marketAddress, uint256 _newThreshold) external onlyOwner {
-        require(_newThreshold > 0, "morpho: new THRESHOLD must be strictly positive.");
+        require(_newThreshold > 0, "updateThreshold: new THRESHOLD must be strictly positive.");
         thresholds[_marketAddress] = _newThreshold;
         emit UpdateThreshold(_marketAddress, _newThreshold);
     }
@@ -134,6 +136,7 @@ contract CompMarketsManager is Ownable {
      *  @param _marketAddress The address of the market we want to update.
      */
     function updateBPY(address _marketAddress) public {
+        require(isEntered[_marketAddress], "updateBPY: market not entered");
         ICErc20 cErc20Token = ICErc20(_marketAddress);
 
         // Update BPY
@@ -152,6 +155,7 @@ contract CompMarketsManager is Ownable {
      *  @return currentExchangeRate to convert from mUnit to underlying or from underlying to mUnit.
      */
     function updateMUnitExchangeRate(address _marketAddress) public returns (uint256) {
+        require(isEntered[_marketAddress], "updateMUnitExchangeRate: market not entered");
         uint256 currentBlock = block.number;
 
         if (lastUpdateBlockNumber[_marketAddress] == currentBlock) {
