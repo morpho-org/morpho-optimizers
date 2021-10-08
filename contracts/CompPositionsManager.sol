@@ -650,7 +650,7 @@ contract CompPositionsManager is ReentrancyGuard {
         uint256 borrowIndex = cErc20Token.borrowIndex();
         uint256 highestValue = borrowersOnMorpho[_cErc20Address].last();
 
-        while (remainingToMatch > 0 && highestValue != 0) {
+        while (remainingToMove > 0 && highestValue != 0) {
             while (borrowersOnMorpho[_cErc20Address].getNumberOfKeysAtValue(highestValue) > 0) {
                 address account = borrowersOnMorpho[_cErc20Address].valueKeyAtIndex(
                     highestValue,
@@ -659,8 +659,8 @@ contract CompPositionsManager is ReentrancyGuard {
                 uint256 onMorpho = borrowingBalanceInOf[_cErc20Address][account].onMorpho;
 
                 if (onMorpho > 0) {
-                    uint256 toMatch = Math.min(onMorpho.mul(mExchangeRate), remainingToMatch); // In underlying
-                    remainingToMatch -= toMatch;
+                    uint256 toMatch = Math.min(onMorpho.mul(mExchangeRate), remainingToMove); // In underlying
+                    remainingToMove -= toMatch;
                     borrowingBalanceInOf[_cErc20Address][account].onComp += toMatch.div(
                         borrowIndex
                     );
@@ -687,28 +687,28 @@ contract CompPositionsManager is ReentrancyGuard {
         returns (uint256 remainingToMove)
     {
         ICErc20 cErc20Token = ICErc20(_cErc20Address);
-        remainingToMatch = _amount;
+        remainingToMove = _amount;
         uint256 mExchangeRate = compMarketsManager.mUnitExchangeRate(_cErc20Address);
         uint256 borrowIndex = cErc20Token.borrowIndex();
         uint256 highestValue = borrowersOnComp[_cErc20Address].last();
 
-        while (remainingToMatch > 0 && highestValue != 0) {
+        while (remainingToMove > 0 && highestValue != 0) {
             while (borrowersOnComp[_cErc20Address].getNumberOfKeysAtValue(highestValue) > 0) {
                 address account = borrowersOnComp[_cErc20Address].valueKeyAtIndex(highestValue, 0);
                 uint256 onComp = borrowingBalanceInOf[_cErc20Address][account].onComp; // In cToken
 
                 if (onComp > 0) {
                     uint256 toMatch;
-                    if (onComp.mul(borrowIndex) <= remainingToMatch) {
+                    if (onComp.mul(borrowIndex) <= remainingToMove) {
                         toMatch = onComp.mul(borrowIndex);
                         borrowingBalanceInOf[_cErc20Address][account].onComp = 0;
                     } else {
-                        toMatch = remainingToMatch;
+                        toMatch = remainingToMove;
                         borrowingBalanceInOf[_cErc20Address][account].onComp -= toMatch.div(
                             borrowIndex
                         );
                     }
-                    remainingToMatch -= toMatch;
+                    remainingToMove -= toMatch;
                     borrowingBalanceInOf[_cErc20Address][account].onMorpho += toMatch.div(
                         mExchangeRate
                     );
