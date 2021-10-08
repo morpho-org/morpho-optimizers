@@ -166,12 +166,12 @@ describe('CreamPositionsManager Contract', () => {
     });
 
     it('Should create a market the with right values', async () => {
-      const lendBPY = await cMkrToken.supplyRatePerBlock();
+      const supplyBPY = await cMkrToken.supplyRatePerBlock();
       const borrowBPY = await cMkrToken.borrowRatePerBlock();
       const { blockNumber } = await compMarketsManager.connect(owner).createMarkets([config.tokens.cMkr.address]);
       expect(await compMarketsManager.isListed(config.tokens.cMkr.address)).not.to.be.true;
 
-      const BPY = lendBPY.add(borrowBPY).div(2);
+      const BPY = supplyBPY.add(borrowBPY).div(2);
       expect(await compMarketsManager.BPY(config.tokens.cMkr.address)).to.equal(BPY);
 
       expect(await compMarketsManager.mUnitExchangeRate(config.tokens.cMkr.address)).to.equal(SCALE);
