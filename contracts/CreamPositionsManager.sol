@@ -80,28 +80,28 @@ contract CreamPositionsManager is ReentrancyGuard {
      *  @param _cErc20Address The address of the market where assets are deposited into.
      *  @param _amount The amount of assets.
      */
-    event Deposit(address indexed _account, address indexed _cErc20Address, uint256 _amount);
+    event Deposited(address indexed _account, address indexed _cErc20Address, uint256 _amount);
 
     /** @dev Emitted when a redeem happens.
      *  @param _account The address of the redeemer.
      *  @param _cErc20Address The address of the market from where assets are redeemed.
      *  @param _amount The amount of assets.
      */
-    event Redeem(address indexed _account, address indexed _cErc20Address, uint256 _amount);
+    event Redeemed(address indexed _account, address indexed _cErc20Address, uint256 _amount);
 
     /** @dev Emitted when a borrow happens.
      *  @param _account The address of the borrower.
      *  @param _cErc20Address The address of the market where assets are borrowed.
      *  @param _amount The amount of assets.
      */
-    event Borrow(address indexed _account, address indexed _cErc20Address, uint256 _amount);
+    event Borrowed(address indexed _account, address indexed _cErc20Address, uint256 _amount);
 
     /** @dev Emitted when a deposit happens.
      *  @param _account The address of the depositor.
      *  @param _cErc20Address The address of the market where assets are deposited.
      *  @param _amount The amount of assets.
      */
-    event Repay(address indexed _account, address indexed _cErc20Address, uint256 _amount);
+    event Repaid(address indexed _account, address indexed _cErc20Address, uint256 _amount);
 
     /** @dev Emitted when a supplier position is moved from Morpho to Compound.
      *  @param _account The address of the supplier.
@@ -238,7 +238,7 @@ contract CreamPositionsManager is ReentrancyGuard {
         }
 
         _updateSupplierList(_cErc20Address, msg.sender);
-        emit Deposit(msg.sender, _cErc20Address, _amount);
+        emit Deposited(msg.sender, _cErc20Address, _amount);
     }
 
     /** @dev Borrows ERC20 tokens.
@@ -290,7 +290,7 @@ contract CreamPositionsManager is ReentrancyGuard {
         _updateBorrowerList(_cErc20Address, msg.sender);
         // Transfer ERC20 tokens to borrower
         erc20Token.safeTransfer(msg.sender, _amount);
-        emit Borrow(msg.sender, _cErc20Address, _amount);
+        emit Borrowed(msg.sender, _cErc20Address, _amount);
     }
 
     /** @dev Repays debt of the user.
@@ -372,7 +372,7 @@ contract CreamPositionsManager is ReentrancyGuard {
         _updateSupplierList(_cErc20Address, msg.sender);
         // Transfer back the ERC20 tokens
         erc20Token.safeTransfer(msg.sender, _amount);
-        emit Redeem(msg.sender, _cErc20Address, _amount);
+        emit Redeemed(msg.sender, _cErc20Address, _amount);
     }
 
     /** @dev Allows someone to liquidate a position.
@@ -536,7 +536,7 @@ contract CreamPositionsManager is ReentrancyGuard {
         }
 
         _updateBorrowerList(_cErc20Address, _borrower);
-        emit Repay(_borrower, _cErc20Address, _amount);
+        emit Repaid(_borrower, _cErc20Address, _amount);
     }
 
     /** @dev Supplies ERC20 tokens to Compound.
