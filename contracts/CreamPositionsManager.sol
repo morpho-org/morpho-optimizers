@@ -272,7 +272,7 @@ contract CreamPositionsManager is ReentrancyGuard {
         // No need to update mUnitExchangeRate here as it's done in `_checkAccountLiquidity`
         uint256 mExchangeRate = compMarketsManager.mUnitExchangeRate(_cErc20Address);
 
-        // If some suppliers are on Compound, we must move them to Morpho
+        // If some suppliers are on Compound, we must pull them out and match them in P2P
         if (suppliersOnComp[_cErc20Address].isKeyInTree()) {
             uint256 remainingToBorrowOnComp = _moveSuppliersFromCompToMorpho(
                 _cErc20Address,
@@ -296,7 +296,8 @@ contract CreamPositionsManager is ReentrancyGuard {
                 ); // In cdUnit
             }
         } else {
-            // Gas intensive process below: we deconnect the supply matched on Morpho to deposit it on Compound and borrow against it
+            // There is not enough suppliers to provide this lender demand
+            // So we put all of its collateral on Compound, and borrow on Compound for him
             _moveSupplierFromMorphoToComp(msg.sender);
             require(cErc20Token.borrow(_amount) == 0, "bor:borrow-comp-fail");
             borrowBalanceInOf[_cErc20Address][msg.sender].onComp += _amount.div(
