@@ -850,7 +850,7 @@ contract CompPositionsManager is ReentrancyGuard {
         return (stateBalance.debtValue, stateBalance.maxDebtValue, stateBalance.collateralValue);
     }
 
-    /** @dev Updates borrower lists.
+    /** @dev Updates borrowers tree with the new balances of a given account.
      *  @param _cErc20Address The address of the market on which we want to update the borrower lists.
      *  @param _account The address of the borrower to move.
      */
@@ -873,7 +873,7 @@ contract CompPositionsManager is ReentrancyGuard {
         }
     }
 
-    /** @dev Updates supplier lists.
+    /** @dev Updates suppliers tree with the new balances of a given account.
      *  @param _cErc20Address The address of the market on which we want to update the supplier lists.
      *  @param _account The address of the supplier to move.
      */
