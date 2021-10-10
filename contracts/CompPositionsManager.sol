@@ -65,8 +65,8 @@ contract CompPositionsManager is ReentrancyGuard {
     mapping(address => RedBlackBinaryTree.Tree) public borrowersOnMorpho; // Borrowers on Morpho.
     mapping(address => RedBlackBinaryTree.Tree) public borrowersOnComp; // Borrowers on Compound.
     mapping(address => mapping(address => bool)) public accountMembership; // Whether the account is in the market or not.
-    mapping(address => mapping(address => SupplyBalance)) public supplyBalanceInOf; // Supply balance of user.
-    mapping(address => mapping(address => BorrowBalance)) public borrowBalanceInOf; // Borrow balance of user.
+    mapping(address => mapping(address => SupplyBalance)) public supplyBalanceInOf; // For a given market, the supply balance of user.
+    mapping(address => mapping(address => BorrowBalance)) public borrowBalanceInOf; // For a given market, the borrow balance of user.
     mapping(address => address[]) public enteredMarkets; // Markets entered by a user.
 
     IComptroller public comptroller;
