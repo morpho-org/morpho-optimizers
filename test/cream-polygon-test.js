@@ -59,7 +59,7 @@ describe('CreamPositionsManager Contract', () => {
 
     // Deploy contracts
     CompMarketsManager = await ethers.getContractFactory('CompMarketsManager');
-    compMarketsManager = await CompMarketsManager.deploy(config.cream.comptroller.address);
+    compMarketsManager = await CompMarketsManager.deploy();
     await compMarketsManager.deployed();
 
     CreamPositionsManager = await ethers.getContractFactory('CreamPositionsManager', {
