@@ -405,7 +405,7 @@ contract CreamPositionsManager is ReentrancyGuard {
             0,
             0
         );
-        require(maxDebtValue > debtValue, "liq:debt-value<=max");
+        require(debtValue > maxDebtValue, "liq:debt-value<=max");
         LiquidateVars memory vars;
         vars.borrowBalance =
             borrowBalanceInOf[_cErc20BorrowedAddress][_borrower].onComp.mul(
