@@ -332,7 +332,7 @@ contract CompPositionsManager is ReentrancyGuard {
             supplyBalanceInOf[_cErc20Address][msg.sender].onComp -= _amount.div(cExchangeRate); // In cToken
             _redeemErc20FromComp(_cErc20Address, _amount); // Revert on error
         } else {
-            // First, we take all the unused liquidy on Compound.
+            // First, we take all the unused liquidy of the user on Compound
             _redeemErc20FromComp(_cErc20Address, amountOnCompInUnderlying); // Revert on error
             supplyBalanceInOf[_cErc20Address][msg.sender].onComp -= amountOnCompInUnderlying.div(
                 cExchangeRate
@@ -347,7 +347,7 @@ contract CompPositionsManager is ReentrancyGuard {
             );
 
             if (remainingToWithdraw <= cTokenContractBalanceInUnderlying) {
-                // There is enough cTokens in the contract to use
+                // There is enough unused liquidity on Morpho, so we reconnect the credit lines to others suppliers
                 require(
                     _moveSuppliersFromCompToMorpho(_cErc20Address, remainingToWithdraw) == 0,
                     "red:remaining-suppliers!=0"
@@ -364,7 +364,7 @@ contract CompPositionsManager is ReentrancyGuard {
                 // Update the remaining amount to withdraw to `msg.sender`
                 remainingToWithdraw -= toRedeem;
                 _redeemErc20FromComp(_cErc20Address, toRedeem); // Revert on error
-                // Then, we move borrowers not matched anymore from Morpho to Compound and borrow the amount directly on Compound
+                // Then, we move borrowers not matched anymore from Morpho to Compound and borrow the amount directly on Compound, thanks to their collateral which is now on Compound
                 require(
                     _moveBorrowersFromMorphoToComp(_cErc20Address, remainingToWithdraw) == 0,
                     "red:remaining-borrowers!=0"
