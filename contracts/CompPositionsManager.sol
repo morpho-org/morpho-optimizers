@@ -477,7 +477,7 @@ contract CompPositionsManager is ReentrancyGuard {
     /* Internal */
 
     /** @dev Implements repay logic.
-     *  @dev `msg.sender` must have approved Morpho's contract to spend the underlying `_amount`.
+     *  @dev `msg.sender` must have approved this contract to spend the underlying `_amount`.
      *  @param _cErc20Address The address of the market the user wants to interact with.
      *  @param _borrower The address of the `_borrower` to repay the borrow.
      *  @param _amount The amount of ERC20 tokens to repay.
