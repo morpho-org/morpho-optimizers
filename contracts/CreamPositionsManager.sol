@@ -42,8 +42,8 @@ contract CreamPositionsManager is ReentrancyGuard {
 
     // Struct to avoid stack too deep error
     struct StateBalanceVars {
-        uint256 toAddDebt;
-        uint256 toAddCollateral;
+        uint256 debtToAdd;
+        uint256 collateralToAdd;
         uint256 mExchangeRate;
         uint256 underlyingPrice;
         address cErc20Entered;
@@ -830,13 +830,13 @@ contract CreamPositionsManager is ReentrancyGuard {
             vars.cErc20Entered = enteredMarkets[_account][i];
             vars.mExchangeRate = compMarketsManager.updateMUnitExchangeRate(vars.cErc20Entered);
             // Calculation of the current debt (in underlying)
-            vars.toAddDebt =
+            vars.debtToAdd =
                 borrowBalanceInOf[vars.cErc20Entered][_account].onComp.mul(
                     ICErc20(vars.cErc20Entered).borrowIndex()
                 ) +
                 borrowBalanceInOf[vars.cErc20Entered][_account].onMorpho.mul(vars.mExchangeRate);
             // Calculation of the current collateral (in underlying)
-            vars.toAddCollateral =
+            vars.collateralToAdd =
                 supplyBalanceInOf[vars.cErc20Entered][_account].onComp.mul(
                     ICErc20(vars.cErc20Entered).exchangeRateCurrent()
                 ) +
@@ -846,18 +846,18 @@ contract CreamPositionsManager is ReentrancyGuard {
             require(vars.underlyingPrice != 0, "_getUserHypotheticalStateBalances: oracle failed");
 
             if (_cErc20Address == vars.cErc20Entered) {
-                vars.toAddDebt += _borrowedAmount;
+                vars.debtToAdd += _borrowedAmount;
                 stateBalance.redeemedValue = _redeemedAmount.mul(vars.underlyingPrice);
             }
             // Conversion of the collateral to dollars
-            vars.toAddCollateral = vars.toAddCollateral.mul(vars.underlyingPrice);
+            vars.collateralToAdd = vars.collateralToAdd.mul(vars.underlyingPrice);
             // Add the debt in this market to the global debt (in dollars)
-            stateBalance.debtValue += vars.toAddDebt.mul(vars.underlyingPrice);
+            stateBalance.debtValue += vars.debtToAdd.mul(vars.underlyingPrice);
             // Add the collateral value in this asset to the global collateral value (in dollars)
-            stateBalance.collateralValue += vars.toAddCollateral;
+            stateBalance.collateralValue += vars.collateralToAdd;
             (, uint256 collateralFactorMantissa, ) = comptroller.markets(vars.cErc20Entered);
             // Add the max debt value allowed by the collateral in this asset to the global max debt value (in dollars)
-            stateBalance.maxDebtValue += vars.toAddCollateral.mul(collateralFactorMantissa);
+            stateBalance.maxDebtValue += vars.collateralToAdd.mul(collateralFactorMantissa);
         }
 
         stateBalance.collateralValue -= stateBalance.redeemedValue;
