@@ -259,7 +259,7 @@ contract CompPositionsManager is ReentrancyGuard {
         IERC20 erc20Token = IERC20(cErc20Token.underlying());
         uint256 mExchangeRate = compMarketsManager.updateMUnitExchangeRate(_cErc20Address);
 
-        // If some suppliers are on Compound, we must move them to Morpho
+        // If some suppliers are on Compound, we must pull them out and match them in P2P
         if (suppliersOnComp[_cErc20Address].isKeyInTree()) {
             uint256 remainingToBorrowOnComp = _moveSuppliersFromCompToMorpho(
                 _cErc20Address,
@@ -282,6 +282,8 @@ contract CompPositionsManager is ReentrancyGuard {
                 ); // In cdUnit
             }
         } else {
+            // There is not enough suppliers to provide this lender demand
+            // So we put all of its collateral on Compound, and borrow on Compound for him
             _moveSupplierFromMorphoToComp(msg.sender);
             require(cErc20Token.borrow(_amount) == 0, "bor:borrow-comp-fail");
             borrowBalanceInOf[_cErc20Address][msg.sender].onComp += _amount.div(
