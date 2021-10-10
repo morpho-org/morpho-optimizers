@@ -14,7 +14,7 @@ async function main() {
   console.log('RedBlackBinaryTree address:', redBlackBinaryTree.address);
 
   const CompMarketsManager = await ethers.getContractFactory('CompMarketsManager');
-  const compMarketsManager = await CompMarketsManager.deploy(config.compound.comptroller.address);
+  const compMarketsManager = await CompMarketsManager.deploy();
   await compMarketsManager.deployed();
 
   console.log('CompMarketsManager address:', compMarketsManager.address);

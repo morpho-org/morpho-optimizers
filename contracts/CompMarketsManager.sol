@@ -26,7 +26,6 @@ contract CompMarketsManager is Ownable {
     mapping(address => uint256) public lastUpdateBlockNumber; // Last time mUnitExchangeRate was updated.
     mapping(address => uint256) public thresholds; // Thresholds below the ones suppliers and borrowers cannot enter markets.
 
-    IComptroller public comptroller;
     ICompPositionsManager public compPositionsManager;
 
     /* Events */
@@ -63,12 +62,6 @@ contract CompMarketsManager is Ownable {
         _;
     }
 
-    /* Constructor */
-
-    constructor(address _proxyComptrollerAddress) {
-        comptroller = IComptroller(_proxyComptrollerAddress);
-    }
-
     /* External */
 
     /** @dev Sets the `compPositionsManager` to interact with Compound.
@@ -85,7 +78,6 @@ contract CompMarketsManager is Ownable {
      *  @param _proxyComptrollerAddress The address of Compound's comptroller.
      */
     function setComptroller(address _proxyComptrollerAddress) external onlyOwner {
-        comptroller = IComptroller(_proxyComptrollerAddress);
         compPositionsManager.setComptroller(_proxyComptrollerAddress);
     }
 
