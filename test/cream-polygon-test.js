@@ -131,9 +131,9 @@ describe('CreamPositionsManager Contract', () => {
     });
 
     it('Only Morpho should be able to create markets on CreamPositionsManager', async () => {
-      expect(creamPositionsManager.connect(supplier1).enterMarkets([config.tokens.cEth.address])).to.be.reverted;
-      expect(creamPositionsManager.connect(borrower1).enterMarkets([config.tokens.cEth.address])).to.be.reverted;
-      expect(creamPositionsManager.connect(owner).enterMarkets([config.tokens.cEth.address])).to.be.reverted;
+      expect(creamPositionsManager.connect(supplier1).createMarkets([config.tokens.cEth.address])).to.be.reverted;
+      expect(creamPositionsManager.connect(borrower1).createMarkets([config.tokens.cEth.address])).to.be.reverted;
+      expect(creamPositionsManager.connect(owner).createMarkets([config.tokens.cEth.address])).to.be.reverted;
       await compMarketsManager.connect(owner).createMarkets([config.tokens.cEth.address]);
       expect(await comptroller.checkMembership(creamPositionsManager.address, config.tokens.cEth.address)).to.be.true;
     });

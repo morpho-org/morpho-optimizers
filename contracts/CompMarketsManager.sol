@@ -20,7 +20,7 @@ contract CompMarketsManager is Ownable {
     /* Storage */
 
     mapping(address => bool) public isListed; // Whether or not this market is listed.
-    mapping(address => bool) public isEntered; // Whether or not this market is entered.
+    mapping(address => bool) public isCreated; // Whether or not this market is created.
     mapping(address => uint256) public p2pBPY; // Block Percentage Yield ("midrate").
     mapping(address => uint256) public mUnitExchangeRate; // current exchange rate from mUnit to underlying.
     mapping(address => uint256) public lastUpdateBlockNumber; // Last time mUnitExchangeRate was updated.
@@ -60,6 +60,15 @@ contract CompMarketsManager is Ownable {
      */
     event ThresholdUpdated(address _marketAddress, uint256 _newValue);
 
+    /* Modifiers */
+
+    /** @dev Prevents to update a market not created yet.
+     */
+    modifier isMarketCreated(address _marketAddress) {
+        require(isCreated[_marketAddress], "market not entered");
+        _;
+    }
+
     /* Constructor */
 
     constructor(address _proxyComptrollerAddress) {
@@ -90,12 +99,12 @@ contract CompMarketsManager is Ownable {
      *  @param _marketAddresses The addresses of the markets to add.
      */
     function createMarkets(address[] calldata _marketAddresses) external onlyOwner {
-        uint256[] memory results = compPositionsManager.enterMarkets(_marketAddresses);
+        uint256[] memory results = compPositionsManager.createMarkets(_marketAddresses);
         for (uint256 i; i < _marketAddresses.length; i++) {
             require(results[i] == 0, "createMarkets: enter market failed on Compound");
             address _marketAddress = _marketAddresses[i];
-            require(!isEntered[_marketAddress], "createMarkets: market already entered");
-            isEntered[_marketAddress] = true;
+            require(!isCreated[_marketAddress], "createMarkets: market already entered");
+            isCreated[_marketAddress] = true;
             mUnitExchangeRate[_marketAddress] = 1e18;
             lastUpdateBlockNumber[_marketAddress] = block.number;
             thresholds[_marketAddress] = 1e18;
@@ -107,16 +116,18 @@ contract CompMarketsManager is Ownable {
     /** @dev Sets a market as listed.
      *  @param _marketAddress The address of the market to list.
      */
-    function listMarket(address _marketAddress) external onlyOwner {
-        require(isEntered[_marketAddress], "listMarket: market not entered");
+    function listMarket(address _marketAddress) external onlyOwner isMarketCreated(_marketAddress) {
         isListed[_marketAddress] = true;
     }
 
     /** @dev Sets a market as unlisted.
      *  @param _marketAddress The address of the market to unlist.
      */
-    function unlistMarket(address _marketAddress) external onlyOwner {
-        require(isEntered[_marketAddress], "listMarket: market not entered");
+    function unlistMarket(address _marketAddress)
+        external
+        onlyOwner
+        isMarketCreated(_marketAddress)
+    {
         isListed[_marketAddress] = false;
     }
 
@@ -135,8 +146,7 @@ contract CompMarketsManager is Ownable {
     /** @dev Updates the Block Percentage Yield (`p2pBPY`) and calculate the current exchange rate (`mUnitExchangeRate`).
      *  @param _marketAddress The address of the market we want to update.
      */
-    function updateBPY(address _marketAddress) public {
-        require(isEntered[_marketAddress], "updateBPY: market not entered");
+    function updateBPY(address _marketAddress) public isMarketCreated(_marketAddress) {
         ICErc20 cErc20Token = ICErc20(_marketAddress);
 
         // Update p2pBPY
@@ -154,8 +164,11 @@ contract CompMarketsManager is Ownable {
      *  @param _marketAddress The address of the market we want to update.
      *  @return currentExchangeRate to convert from mUnit to underlying or from underlying to mUnit.
      */
-    function updateMUnitExchangeRate(address _marketAddress) public returns (uint256) {
-        require(isEntered[_marketAddress], "updateMUnitExchangeRate: market not entered");
+    function updateMUnitExchangeRate(address _marketAddress)
+        public
+        isMarketCreated(_marketAddress)
+        returns (uint256)
+    {
         uint256 currentBlock = block.number;
 
         if (lastUpdateBlockNumber[_marketAddress] == currentBlock) {
