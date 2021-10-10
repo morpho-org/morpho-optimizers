@@ -830,15 +830,15 @@ contract CreamPositionsManager is ReentrancyGuard {
                     ICErc20(vars.cErc20Entered).exchangeRateCurrent()
                 ) +
                 supplyBalanceInOf[vars.cErc20Entered][_account].onMorpho.mul(vars.mExchangeRate);
-
             vars.underlyingPrice = compoundOracle.getUnderlyingPrice(vars.cErc20Entered);
+            require(vars.underlyingPrice != 0, "_getUserHypotheticalStateBalances: oracle failed");
+
             if (_cErc20Address == vars.cErc20Entered) {
                 vars.toAddDebt += _borrowedAmount;
                 stateBalance.redeemedValue = _redeemAmount.mul(vars.underlyingPrice);
             }
 
             vars.toAddCollateral = vars.toAddCollateral.mul(vars.underlyingPrice);
-
             stateBalance.debtValue += vars.toAddDebt.mul(vars.underlyingPrice);
             stateBalance.collateralValue += vars.toAddCollateral;
             (, uint256 collateralFactorMantissa, ) = comptroller.markets(vars.cErc20Entered);
