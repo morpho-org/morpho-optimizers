@@ -162,6 +162,8 @@ contract CompMarketsManager is Ownable {
         } else {
             uint256 numberOfBlocksSinceLastUpdate = currentBlock -
                 lastUpdateBlockNumber[_marketAddress];
+            // Update lastUpdateBlockNumber
+            lastUpdateBlockNumber[_marketAddress] = currentBlock;
 
             uint256 newMUnitExchangeRate = mUnitExchangeRate[_marketAddress].mul(
                 (1e18 + p2pBPY[_marketAddress]).pow(
@@ -169,14 +171,9 @@ contract CompMarketsManager is Ownable {
                 )
             );
 
-            emit MUnitExchangeRateUpdated(_marketAddress, newMUnitExchangeRate);
-
             // Update currentExchangeRate
             mUnitExchangeRate[_marketAddress] = newMUnitExchangeRate;
-
-            // Update lastUpdateBlockNumber
-            lastUpdateBlockNumber[_marketAddress] = currentBlock;
-
+            emit MUnitExchangeRateUpdated(_marketAddress, newMUnitExchangeRate);
             return newMUnitExchangeRate;
         }
     }
