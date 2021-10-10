@@ -67,9 +67,9 @@ We recommend developers using VSCODE to set their local config as below:
 
 ```
 {
-"editor.formatOnSave": true,
-"solidity.formatter": "prettier",
-"editor.defaultFormatter": "esbenp.prettier-vscode"
+	"editor.formatOnSave": true,
+	"solidity.formatter": "prettier",
+	"editor.defaultFormatter": "esbenp.prettier-vscode"
 }
 ```
 
@@ -90,7 +90,10 @@ The right arguments of the constructor of the smart contract to verify must be w
 
 ```
 npx hardhat verify --network <network-name> --constructor-args scripts/arguments.js <contract-address>
+npx hardhat verify --network <network-name> --constructor-args scripts/arguments.js --contract contracts/Example.sol:ExampleContract <contract-address>
 ```
+
+The second is necessary if contracts with different names share the same ABI.
 
 ## External resources & documentation
 
