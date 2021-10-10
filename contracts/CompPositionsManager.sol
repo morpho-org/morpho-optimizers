@@ -562,7 +562,7 @@ contract CompPositionsManager is ReentrancyGuard {
     }
 
     /** @dev Finds liquidity on Compound and moves it to Morpho.
-     *  @dev Note: mUnitExchangeRate must have been upated before calling this function.
+     *  @dev Note: mUnitExchangeRate must have been updated before calling this function.
      *  @param _cErc20Address The address of the market on which we want to move users.
      *  @param _amount The amount to search for in underlying.
      *  @return remainingToMove The remaining liquidity to search for in underlying.
@@ -607,7 +607,7 @@ contract CompPositionsManager is ReentrancyGuard {
     }
 
     /** @dev Finds liquidity on Morpho and moves it to Compound.
-     *  @dev Note: mUnitExchangeRate must have been upated before calling this function.
+     *  @dev Note: mUnitExchangeRate must have been updated before calling this function.
      *  @param _cErc20Address The address of the market on which we want to move users.
      *  @param _amount The amount to search for in underlying.
      */
@@ -646,7 +646,7 @@ contract CompPositionsManager is ReentrancyGuard {
     }
 
     /** @dev Finds borrowers on Morpho that match the given `_amount` and moves them to Compound.
-     *  @dev Note: mUnitExchangeRate must have been upated before calling this function.
+     *  @dev Note: mUnitExchangeRate must have been updated before calling this function.
      *  @param _cErc20Address The address of the market on which we want to move users.
      *  @param _amount The amount to match in underlying.
      *  @return remainingToMove The amount remaining to match in underlying.
@@ -670,15 +670,15 @@ contract CompPositionsManager is ReentrancyGuard {
                 uint256 onMorpho = borrowBalanceInOf[_cErc20Address][account].onMorpho;
 
                 if (onMorpho > 0) {
-                    uint256 toMatch = Math.min(onMorpho.mul(mExchangeRate), remainingToMove); // In underlying
-                    remainingToMove -= toMatch;
-                    borrowBalanceInOf[_cErc20Address][account].onComp += toMatch.div(borrowIndex);
-                    borrowBalanceInOf[_cErc20Address][account].onMorpho -= toMatch.div(
+                    uint256 toMove = Math.min(onMorpho.mul(mExchangeRate), remainingToMove); // In underlying
+                    remainingToMove -= toMove;
+                    borrowBalanceInOf[_cErc20Address][account].onComp += toMove.div(borrowIndex);
+                    borrowBalanceInOf[_cErc20Address][account].onMorpho -= toMove.div(
                         mExchangeRate
                     );
 
                     _updateBorrowerList(_cErc20Address, account);
-                    emit BorrowerMovedFromMorphoToComp(account, _cErc20Address, toMatch);
+                    emit BorrowerMovedFromMorphoToComp(account, _cErc20Address, toMove);
                 }
             }
             highestValue = borrowersOnMorpho[_cErc20Address].last();
@@ -686,7 +686,7 @@ contract CompPositionsManager is ReentrancyGuard {
     }
 
     /** @dev Finds borrowers on Compound that match the given `_amount` and moves them to Morpho.
-     *  @dev Note: mUnitExchangeRate must have been upated before calling this function.
+     *  @dev Note: mUnitExchangeRate must have been updated before calling this function.
      *  @param _cErc20Address The address of the market on which we want to move users.
      *  @param _amount The amount to match in underlying.
      *  @return remainingToMove The amount remaining to match in underlying.
@@ -707,23 +707,23 @@ contract CompPositionsManager is ReentrancyGuard {
                 uint256 onComp = borrowBalanceInOf[_cErc20Address][account].onComp; // In cToken
 
                 if (onComp > 0) {
-                    uint256 toMatch;
+                    uint256 toMove;
                     if (onComp.mul(borrowIndex) <= remainingToMove) {
-                        toMatch = onComp.mul(borrowIndex);
+                        toMove = onComp.mul(borrowIndex);
                         borrowBalanceInOf[_cErc20Address][account].onComp = 0;
                     } else {
-                        toMatch = remainingToMove;
-                        borrowBalanceInOf[_cErc20Address][account].onComp -= toMatch.div(
+                        toMove = remainingToMove;
+                        borrowBalanceInOf[_cErc20Address][account].onComp -= toMove.div(
                             borrowIndex
                         );
                     }
-                    remainingToMove -= toMatch;
-                    borrowBalanceInOf[_cErc20Address][account].onMorpho += toMatch.div(
+                    remainingToMove -= toMove;
+                    borrowBalanceInOf[_cErc20Address][account].onMorpho += toMove.div(
                         mExchangeRate
                     );
 
                     _updateBorrowerList(_cErc20Address, account);
-                    emit BorrowerMovedFromCompToMorpho(account, _cErc20Address, toMatch);
+                    emit BorrowerMovedFromCompToMorpho(account, _cErc20Address, toMove);
                 }
             }
             highestValue = borrowersOnComp[_cErc20Address].last();
@@ -773,19 +773,19 @@ contract CompPositionsManager is ReentrancyGuard {
     /** @dev Checks whether the user can borrow/redeem or not.
      *  @param _account The user to determine liquidity for.
      *  @param _cErc20Address The market to hypothetically redeem/borrow in.
-     *  @param _redeemAmount The number of tokens to hypothetically redeem.
+     *  @param _redeemedAmount The number of tokens to hypothetically redeem.
      *  @param _borrowedAmount The amount of underlying to hypothetically borrow.
      */
     function _checkAccountLiquidity(
         address _account,
         address _cErc20Address,
-        uint256 _redeemAmount,
+        uint256 _redeemedAmount,
         uint256 _borrowedAmount
     ) internal {
         (uint256 debtValue, uint256 maxDebtValue, ) = _getUserHypotheticalStateBalances(
             _account,
             _cErc20Address,
-            _redeemAmount,
+            _redeemedAmount,
             _borrowedAmount
         );
         require(debtValue < maxDebtValue, "debt-value>max");
@@ -794,14 +794,14 @@ contract CompPositionsManager is ReentrancyGuard {
     /** @dev Returns the debt price, max debt price and collateral price of a given user.
      *  @param _account The user to determine liquidity for.
      *  @param _cErc20Address The market to hypothetically redeem/borrow in.
-     *  @param _redeemAmount The number of tokens to hypothetically redeem.
+     *  @param _redeemedAmount The number of tokens to hypothetically redeem.
      *  @param _borrowedAmount The amount of underlying to hypothetically borrow.
      *  @return (debtPrice, maxDebtPrice, collateralPrice).
      */
     function _getUserHypotheticalStateBalances(
         address _account,
         address _cErc20Address,
-        uint256 _redeemAmount,
+        uint256 _redeemedAmount,
         uint256 _borrowedAmount
     )
         internal
@@ -834,7 +834,7 @@ contract CompPositionsManager is ReentrancyGuard {
             vars.underlyingPrice = compoundOracle.getUnderlyingPrice(vars.cErc20Entered);
             if (_cErc20Address == vars.cErc20Entered) {
                 vars.toAddDebt += _borrowedAmount;
-                stateBalance.redeemedValue = _redeemAmount.mul(vars.underlyingPrice);
+                stateBalance.redeemedValue = _redeemedAmount.mul(vars.underlyingPrice);
             }
 
             vars.toAddCollateral = vars.toAddCollateral.mul(vars.underlyingPrice);
