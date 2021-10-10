@@ -219,13 +219,14 @@ contract CompPositionsManager is ReentrancyGuard {
                 _amount
             ); // In underlying
 
-            // Repay Compound
             uint256 toRepay = _amount - remainingToSupplyToComp;
-            // Update supplier balance
+            // Update supplier P2P balance
             supplyBalanceInOf[_cErc20Address][msg.sender].onMorpho += toRepay.div(mExchangeRate); // In mUnit
+            // Repay Compound on behalf of the borrowers with the user deposit
             erc20Token.safeApprove(_cErc20Address, toRepay);
             cErc20Token.repayBorrow(toRepay);
 
+            // If the borrowers on Compound were not sufficient to match all the supply, we put the remaining liquidity on Compound
             if (remainingToSupplyToComp > 0) {
                 supplyBalanceInOf[_cErc20Address][msg.sender].onComp += remainingToSupplyToComp.div(
                     cExchangeRate
@@ -233,6 +234,7 @@ contract CompPositionsManager is ReentrancyGuard {
                 _supplyErc20ToComp(_cErc20Address, remainingToSupplyToComp); // Revert on error
             }
         } else {
+            // If there is no borrower waiting for a P2P match, we put the user on Compound
             supplyBalanceInOf[_cErc20Address][msg.sender].onComp += _amount.div(cExchangeRate); // In cToken
             _supplyErc20ToComp(_cErc20Address, _amount); // Revert on error
         }
