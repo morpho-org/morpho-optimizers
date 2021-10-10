@@ -219,12 +219,15 @@ contract CreamPositionsManager is ReentrancyGuard {
                 _amount
             ); // In underlying
 
-            // Repay Compound
             uint256 toRepay = _amount - remainingToSupplyToComp;
-            // Update supplier balance
-            supplyBalanceInOf[_cErc20Address][msg.sender].onMorpho += toRepay.div(mExchangeRate); // In mUnit
-            erc20Token.safeApprove(_cErc20Address, toRepay);
-            cErc20Token.repayBorrow(toRepay);
+            // We must repay what we owe to Compound; the amount borrowed by the borrowers on Compound
+            if (toRepay > 0) {
+                supplyBalanceInOf[_cErc20Address][msg.sender].onMorpho += toRepay.div(
+                    mExchangeRate
+                ); // In mUnit
+                erc20Token.safeApprove(_cErc20Address, toRepay);
+                cErc20Token.repayBorrow(toRepay);
+            }
 
             if (remainingToSupplyToComp > 0) {
                 supplyBalanceInOf[_cErc20Address][msg.sender].onComp += remainingToSupplyToComp.div(
@@ -255,7 +258,8 @@ contract CreamPositionsManager is ReentrancyGuard {
         _checkAccountLiquidity(msg.sender, _cErc20Address, 0, _amount);
         ICErc20 cErc20Token = ICErc20(_cErc20Address);
         IERC20 erc20Token = IERC20(cErc20Token.underlying());
-        uint256 mExchangeRate = compMarketsManager.updateMUnitExchangeRate(_cErc20Address);
+        // No need to update mUnitExchangeRate here as it's done in `_checkAccountLiquidity`
+        uint256 mExchangeRate = compMarketsManager.mUnitExchangeRate(_cErc20Address);
 
         // If some suppliers are on Compound, we must move them to Morpho
         if (suppliersOnComp[_cErc20Address].isKeyInTree()) {
@@ -280,6 +284,7 @@ contract CreamPositionsManager is ReentrancyGuard {
                 ); // In cdUnit
             }
         } else {
+            // Gas intensive process below: we deconnect the supply matched on Morpho to deposit it on Compound and borrow against it
             _moveSupplierFromMorphoToComp(msg.sender);
             require(cErc20Token.borrow(_amount) == 0, "bor:borrow-comp-fail");
             borrowBalanceInOf[_cErc20Address][msg.sender].onComp += _amount.div(
@@ -288,7 +293,6 @@ contract CreamPositionsManager is ReentrancyGuard {
         }
 
         _updateBorrowerList(_cErc20Address, msg.sender);
-        // Transfer ERC20 tokens to borrower
         erc20Token.safeTransfer(msg.sender, _amount);
         emit Borrowed(msg.sender, _cErc20Address, _amount);
     }
@@ -313,11 +317,10 @@ contract CreamPositionsManager is ReentrancyGuard {
     {
         require(_amount > 0, "red:amount=0");
         _checkAccountLiquidity(msg.sender, _cErc20Address, _amount, 0);
-
         ICErc20 cErc20Token = ICErc20(_cErc20Address);
         IERC20 erc20Token = IERC20(cErc20Token.underlying());
-
-        uint256 mExchangeRate = compMarketsManager.updateMUnitExchangeRate(_cErc20Address);
+        // No need to update mUnitExchangeRate here as it's done in `_checkAccountLiquidity`
+        uint256 mExchangeRate = compMarketsManager.mUnitExchangeRate(_cErc20Address);
         uint256 cExchangeRate = cErc20Token.exchangeRateCurrent();
         uint256 amountOnCompInUnderlying = supplyBalanceInOf[_cErc20Address][msg.sender].onComp.mul(
             cExchangeRate
@@ -370,7 +373,6 @@ contract CreamPositionsManager is ReentrancyGuard {
         }
 
         _updateSupplierList(_cErc20Address, msg.sender);
-        // Transfer back the ERC20 tokens
         erc20Token.safeTransfer(msg.sender, _amount);
         emit Redeemed(msg.sender, _cErc20Address, _amount);
     }
@@ -470,7 +472,6 @@ contract CreamPositionsManager is ReentrancyGuard {
         }
 
         _updateSupplierList(_cErc20CollateralAddress, _borrower);
-        // Transfer ERC20 tokens to liquidator
         erc20CollateralToken.safeTransfer(msg.sender, vars.amountToSeize);
     }
 
@@ -546,9 +547,7 @@ contract CreamPositionsManager is ReentrancyGuard {
     function _supplyErc20ToComp(address _cErc20Address, uint256 _amount) internal {
         ICErc20 cErc20Token = ICErc20(_cErc20Address);
         IERC20 erc20Token = IERC20(cErc20Token.underlying());
-        // Approve transfer on the ERC20 contract
         erc20Token.safeApprove(_cErc20Address, _amount);
-        // Mint cTokens
         require(cErc20Token.mint(_amount) == 0, "_supp-to-comp:cToken-mint-fail");
     }
 
@@ -578,12 +577,14 @@ contract CreamPositionsManager is ReentrancyGuard {
         uint256 highestValue = suppliersOnComp[_cErc20Address].last();
 
         while (remainingToMove > 0 && highestValue != 0) {
+            // Loop on the keys (addresses) sharing the same value
             while (suppliersOnComp[_cErc20Address].getNumberOfKeysAtValue(highestValue) > 0) {
-                address account = suppliersOnComp[_cErc20Address].valueKeyAtIndex(highestValue, 0);
+                address account = suppliersOnComp[_cErc20Address].valueKeyAtIndex(highestValue, 0); // Pick the first account in the list
                 uint256 onComp = supplyBalanceInOf[_cErc20Address][account].onComp; // In cToken
 
                 if (onComp > 0) {
                     uint256 toMove;
+                    // This is done to prevent rounding errors
                     if (onComp.mul(cExchangeRate) <= remainingToMove) {
                         supplyBalanceInOf[_cErc20Address][account].onComp = 0;
                         toMove = onComp.mul(cExchangeRate);
@@ -602,6 +603,7 @@ contract CreamPositionsManager is ReentrancyGuard {
                     emit SupplierMovedFromCompToMorpho(account, _cErc20Address, toMove);
                 }
             }
+            // Update the highest value after the tree has been updated
             highestValue = suppliersOnComp[_cErc20Address].last();
         }
     }
