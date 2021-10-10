@@ -234,10 +234,11 @@ contract CreamPositionsManager is ReentrancyGuard {
                 supplyBalanceInOf[_cErc20Address][msg.sender].onMorpho += toRepay.div(
                     mExchangeRate
                 ); // In mUnit
+                // Repay Cream on behalf of the borrowers with the user deposit
                 erc20Token.safeApprove(_cErc20Address, toRepay);
                 cErc20Token.repayBorrow(toRepay);
             }
-
+            // If the borrowers on Cream were not sufficient to match all the supply, we put the remaining liquidity on Cream
             if (remainingToSupplyToComp > 0) {
                 supplyBalanceInOf[_cErc20Address][msg.sender].onComp += remainingToSupplyToComp.div(
                     cExchangeRate
@@ -245,6 +246,7 @@ contract CreamPositionsManager is ReentrancyGuard {
                 _supplyErc20ToComp(_cErc20Address, remainingToSupplyToComp); // Revert on error
             }
         } else {
+            // If there is no borrower waiting for a P2P match, we put the user on Cream
             supplyBalanceInOf[_cErc20Address][msg.sender].onComp += _amount.div(cExchangeRate); // In cToken
             _supplyErc20ToComp(_cErc20Address, _amount); // Revert on error
         }
