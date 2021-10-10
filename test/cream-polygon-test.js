@@ -802,7 +802,7 @@ describe('CreamPositionsManager Contract', () => {
     });
   });
 
-  describe('Test liquidation', () => {
+  xdescribe('Test liquidation', () => {
     it('Borrower should be liquidated while supply (collateral) is only on Compound', async () => {
       const amount = to6Decimals(utils.parseUnits('100'));
       await usdcToken.connect(borrower1).approve(creamPositionsManager.address, amount);
