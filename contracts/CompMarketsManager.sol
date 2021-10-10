@@ -82,7 +82,7 @@ contract CompMarketsManager is Ownable {
     }
 
     /** @dev Creates new market to borrow/supply.
-     *  @param _marketAddresses The addresses of the markets to add.
+     *  @param _marketAddresses The addresses of the markets to add (cToken).
      */
     function createMarkets(address[] calldata _marketAddresses) external onlyOwner {
         uint256[] memory results = compPositionsManager.createMarkets(_marketAddresses);
