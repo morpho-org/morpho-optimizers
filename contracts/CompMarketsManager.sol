@@ -42,12 +42,6 @@ contract CompMarketsManager is Ownable {
      */
     event BPYUpdated(address _marketAddress, uint256 _newValue);
 
-    /** @dev Emitted when the collateral factor of a market is updated.
-     *  @param _marketAddress The address of the market to update.
-     *  @param _newValue The new value of the collateral factor.
-     */
-    event CollateralFactorUpdated(address _marketAddress, uint256 _newValue);
-
     /** @dev Emitted when the mUnitExchangeRate of a market is updated.
      *  @param _marketAddress The address of the market to update.
      *  @param _newValue The new value of the mUnitExchangeRate.
