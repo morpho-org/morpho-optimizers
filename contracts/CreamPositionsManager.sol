@@ -493,34 +493,30 @@ contract CreamPositionsManager is ReentrancyGuard {
         erc20Token.safeTransferFrom(msg.sender, address(this), _amount);
         uint256 mExchangeRate = compMarketsManager.updateMUnitExchangeRate(_cErc20Address);
 
+        // If some borrowers are on Compound, we must move them to Morpho
         if (borrowBalanceInOf[_cErc20Address][_borrower].onComp > 0) {
+            uint256 borrowIndex = cErc20Token.borrowIndex();
             uint256 onCompInUnderlying = borrowBalanceInOf[_cErc20Address][_borrower].onComp.mul(
-                cErc20Token.borrowIndex()
+                borrowIndex
             );
 
+            // If the amount repaid is below what's on Compound, repay the borrowing amount on Compound
             if (_amount <= onCompInUnderlying) {
-                borrowBalanceInOf[_cErc20Address][_borrower].onComp -= _amount.div(
-                    cErc20Token.borrowIndex()
-                ); // In cdUnit
-                // Repay Compound
+                borrowBalanceInOf[_cErc20Address][_borrower].onComp -= _amount.div(borrowIndex); // In cdUnit
                 erc20Token.safeApprove(_cErc20Address, _amount);
                 cErc20Token.repayBorrow(_amount);
             } else {
-                // Move the remaining liquidity to Compound
+                // Else repay Compound and move the remaining liquidity to Compound
                 uint256 remainingToSupplyToComp = _amount - onCompInUnderlying; // In underlying
                 borrowBalanceInOf[_cErc20Address][_borrower].onMorpho -= remainingToSupplyToComp
                     .div(mExchangeRate);
-                uint256 index = cErc20Token.borrowIndex();
                 borrowBalanceInOf[_cErc20Address][_borrower].onComp -= onCompInUnderlying.div(
-                    index
-                ); // We use a fresh new borrowIndex since the borrowIndex is updated after a repay
-
+                    borrowIndex
+                );
                 require(
                     _moveSuppliersFromMorphoToComp(_cErc20Address, remainingToSupplyToComp) == 0,
                     "_rep(1):remaining-suppliers!=0"
                 );
-
-                // Repay Compound
                 erc20Token.safeApprove(_cErc20Address, onCompInUnderlying);
                 cErc20Token.repayBorrow(onCompInUnderlying); // Revert on error
 
@@ -739,13 +735,12 @@ contract CreamPositionsManager is ReentrancyGuard {
     function _moveSupplierFromMorphoToComp(address _account) internal {
         for (uint256 i; i < enteredMarkets[_account].length; i++) {
             address cErc20Entered = enteredMarkets[_account][i];
-            uint256 mExchangeRate = compMarketsManager.mUnitExchangeRate(cErc20Entered);
-            uint256 cExchangeRate = ICErc20(cErc20Entered).exchangeRateCurrent();
-            uint256 onMorphoInUnderlying = supplyBalanceInOf[cErc20Entered][_account].onMorpho.mul(
-                mExchangeRate
-            );
+            uint256 onMorpho = supplyBalanceInOf[cErc20Entered][_account].onMorpho;
 
-            if (onMorphoInUnderlying > 0) {
+            if (onMorpho > 0) {
+                uint256 mExchangeRate = compMarketsManager.mUnitExchangeRate(cErc20Entered);
+                uint256 cExchangeRate = ICErc20(cErc20Entered).exchangeRateCurrent();
+                uint256 onMorphoInUnderlying = onMorpho.mul(mExchangeRate);
                 supplyBalanceInOf[cErc20Entered][_account].onComp += onMorphoInUnderlying.div(
                     cExchangeRate
                 ); // In cToken
