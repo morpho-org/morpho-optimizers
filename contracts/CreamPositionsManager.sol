@@ -287,6 +287,7 @@ contract CreamPositionsManager is ReentrancyGuard {
 
             // If not enough cTokens on Morpho, we must borrow it on Compound
             if (remainingToBorrowOnComp > 0) {
+                _moveSupplierFromMorphoToComp(msg.sender); // This must be enhanced to supply only what's required to borrow.
                 require(cErc20Token.borrow(remainingToBorrowOnComp) == 0, "bor:borrow-comp-fail");
                 borrowBalanceInOf[_cErc20Address][msg.sender].onComp += remainingToBorrowOnComp.div(
                     cErc20Token.borrowIndex()
