@@ -766,7 +766,7 @@ contract CreamPositionsManager is ReentrancyGuard {
     }
 
     /**
-     * @dev Updates the account membership.
+     * @dev Enters the user into the market if he is not already there.
      * @param _account The address of the account to update.
      * @param _cTokenAddress The address of the market to check.
      */
