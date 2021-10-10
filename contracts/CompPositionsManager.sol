@@ -819,29 +819,32 @@ contract CompPositionsManager is ReentrancyGuard {
             StateBalanceVars memory vars;
             vars.cErc20Entered = enteredMarkets[_account][i];
             vars.mExchangeRate = compMarketsManager.updateMUnitExchangeRate(vars.cErc20Entered);
-
+            // Calculation of the current debt (in underlying)
             vars.toAddDebt =
                 borrowBalanceInOf[vars.cErc20Entered][_account].onComp.mul(
                     ICErc20(vars.cErc20Entered).borrowIndex()
                 ) +
                 borrowBalanceInOf[vars.cErc20Entered][_account].onMorpho.mul(vars.mExchangeRate);
+            // Calculation of the current collateral (in underlying)
             vars.toAddCollateral =
                 supplyBalanceInOf[vars.cErc20Entered][_account].onComp.mul(
                     ICErc20(vars.cErc20Entered).exchangeRateCurrent()
                 ) +
                 supplyBalanceInOf[vars.cErc20Entered][_account].onMorpho.mul(vars.mExchangeRate);
-
+            // Price recovery
             vars.underlyingPrice = compoundOracle.getUnderlyingPrice(vars.cErc20Entered);
             if (_cErc20Address == vars.cErc20Entered) {
                 vars.toAddDebt += _borrowedAmount;
                 stateBalance.redeemedValue = _redeemedAmount.mul(vars.underlyingPrice);
             }
-
+            // Conversion of the collateral to dollars
             vars.toAddCollateral = vars.toAddCollateral.mul(vars.underlyingPrice);
-
+            // Add the debt in this market to the global debt (in dollars)
             stateBalance.debtValue += vars.toAddDebt.mul(vars.underlyingPrice);
+            // Add the collateral value in this asset to the global collateral value (in dollars)
             stateBalance.collateralValue += vars.toAddCollateral;
             (, uint256 collateralFactorMantissa, ) = comptroller.markets(vars.cErc20Entered);
+            // Add the max debt value allowed by the collateral in this asset to the global max debt value (in dollars)
             stateBalance.maxDebtValue += vars.toAddCollateral.mul(collateralFactorMantissa);
         }
 
