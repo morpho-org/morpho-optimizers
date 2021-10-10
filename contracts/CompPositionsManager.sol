@@ -180,7 +180,7 @@ contract CompPositionsManager is ReentrancyGuard {
      *  @param markets The address of the market the user wants to deposit.
      *  @return The results of entered.
      */
-    function enterMarkets(address[] memory markets) external returns (uint256[] memory) {
+    function createMarkets(address[] memory markets) external returns (uint256[] memory) {
         require(msg.sender == address(compMarketsManager), "enter-mkt:only-mkt-manager");
         return comptroller.enterMarkets(markets);
     }

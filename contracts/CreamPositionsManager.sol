@@ -166,6 +166,13 @@ contract CreamPositionsManager is ReentrancyGuard {
         _;
     }
 
+    /** @dev Prevents a user to call function only allowed for the markets manager.
+     */
+    modifier onlyMarketsManager() {
+        require(msg.sender == address(compMarketsManager), "only-mkt-manager");
+        _;
+    }
+
     /* Constructor */
 
     constructor(ICompMarketsManager _compMarketsManager, address _proxyComptrollerAddress) {
@@ -176,20 +183,22 @@ contract CreamPositionsManager is ReentrancyGuard {
 
     /* External */
 
-    /** @dev Enters Compound's markets.
+    /** @dev Creates Compound's markets.
      *  @param markets The address of the market the user wants to deposit.
      *  @return The results of entered.
      */
-    function enterMarkets(address[] memory markets) external returns (uint256[] memory) {
-        require(msg.sender == address(compMarketsManager), "enter-mkt:only-mkt-manager");
+    function createMarkets(address[] memory markets)
+        external
+        onlyMarketsManager
+        returns (uint256[] memory)
+    {
         return comptroller.enterMarkets(markets);
     }
 
     /** @dev Sets the comptroller and oracle address.
      *  @param _proxyComptrollerAddress The address of Compound's comptroller.
      */
-    function setComptroller(address _proxyComptrollerAddress) external {
-        require(msg.sender == address(compMarketsManager), "set-comp:only-mkt-manager");
+    function setComptroller(address _proxyComptrollerAddress) external onlyMarketsManager {
         comptroller = IComptroller(_proxyComptrollerAddress);
         compoundOracle = ICompoundOracle(comptroller.oracle());
     }

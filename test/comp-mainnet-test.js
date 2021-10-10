@@ -131,9 +131,9 @@ describe('CompPositionsManager Contract', () => {
     });
 
     it('Only Morpho should be able to create markets on CompPositionsManager', async () => {
-      expect(compPositionsManager.connect(supplier1).enterMarkets([config.tokens.cEth.address])).to.be.reverted;
-      expect(compPositionsManager.connect(borrower1).enterMarkets([config.tokens.cEth.address])).to.be.reverted;
-      expect(compPositionsManager.connect(owner).enterMarkets([config.tokens.cEth.address])).to.be.reverted;
+      expect(compPositionsManager.connect(supplier1).createMarkets([config.tokens.cEth.address])).to.be.reverted;
+      expect(compPositionsManager.connect(borrower1).createMarkets([config.tokens.cEth.address])).to.be.reverted;
+      expect(compPositionsManager.connect(owner).createMarkets([config.tokens.cEth.address])).to.be.reverted;
       await compMarketsManager.connect(owner).createMarkets([config.tokens.cEth.address]);
       expect(await comptroller.checkMembership(compPositionsManager.address, config.tokens.cEth.address)).to.be.true;
     });
