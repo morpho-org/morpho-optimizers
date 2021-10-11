@@ -211,7 +211,7 @@ contract CompPositionsManager is ReentrancyGuard {
         uint256 cExchangeRate = cErc20Token.exchangeRateCurrent();
 
         // If some borrowers are on Compound, we must move them to Morpho
-        if (borrowersOnComp[_cErc20Address].isKeyInTree()) {
+        if (borrowersOnComp[_cErc20Address].isNotEmpty()) {
             uint256 mExchangeRate = compMarketsManager.updateMUnitExchangeRate(_cErc20Address);
             // Find borrowers and move them to Morpho
             uint256 remainingToSupplyToComp = _moveBorrowersFromCompToMorpho(
@@ -260,7 +260,7 @@ contract CompPositionsManager is ReentrancyGuard {
         uint256 mExchangeRate = compMarketsManager.updateMUnitExchangeRate(_cErc20Address);
 
         // If some suppliers are on Compound, we must pull them out and match them in P2P
-        if (suppliersOnComp[_cErc20Address].isKeyInTree()) {
+        if (suppliersOnComp[_cErc20Address].isNotEmpty()) {
             uint256 remainingToBorrowOnComp = _moveSuppliersFromCompToMorpho(
                 _cErc20Address,
                 _amount
