@@ -66,8 +66,8 @@ contract CreamPositionsManager is ReentrancyGuard {
     mapping(address => RedBlackBinaryTree.Tree) public borrowersOnComp; // Borrowers on Compound.
     mapping(address => mapping(address => SupplyBalance)) public supplyBalanceInOf; // For a given market, the supply balance of user.
     mapping(address => mapping(address => BorrowBalance)) public borrowBalanceInOf; // For a given market, the borrow balance of user.
-    mapping(address => mapping(address => bool)) public accountMembership; // Whether the account is in the market or not.
     mapping(address => address[]) public enteredMarkets; // Markets entered by a user.
+    mapping(address => mapping(address => bool)) public accountMembership; // Whether the account is in the market or not.
 
     IComptroller public comptroller;
     ICompoundOracle public compoundOracle;
@@ -220,7 +220,7 @@ contract CreamPositionsManager is ReentrancyGuard {
         uint256 cExchangeRate = cErc20Token.exchangeRateCurrent();
 
         // If some borrowers are on Compound, we must move them to Morpho
-        if (borrowersOnComp[_cErc20Address].isKeyInTree()) {
+        if (borrowersOnComp[_cErc20Address].isNotEmpty()) {
             uint256 mExchangeRate = compMarketsManager.updateMUnitExchangeRate(_cErc20Address);
             // Find borrowers and move them to Morpho
             uint256 remainingToSupplyToComp = _moveBorrowersFromCompToMorpho(
@@ -271,7 +271,7 @@ contract CreamPositionsManager is ReentrancyGuard {
         uint256 mExchangeRate = compMarketsManager.mUnitExchangeRate(_cErc20Address);
 
         // If some suppliers are on Compound, we must pull them out and match them in P2P
-        if (suppliersOnComp[_cErc20Address].isKeyInTree()) {
+        if (suppliersOnComp[_cErc20Address].isNotEmpty()) {
             uint256 remainingToBorrowOnComp = _moveSuppliersFromCompToMorpho(
                 _cErc20Address,
                 _amount
