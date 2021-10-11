@@ -133,7 +133,7 @@ library RedBlackBinaryTree {
      *  @param _self The tree to search in.
      *  @return Whether or not a key exist in the tree.
      */
-    function isKeyInTree(Tree storage _self) public view returns (bool) {
+    function isNotEmpty(Tree storage _self) public view returns (bool) {
         return _self.nodes[_self.root].keys.length > 0;
     }
 
