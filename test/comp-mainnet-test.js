@@ -206,7 +206,7 @@ describe('CompPositionsManager Contract', () => {
       expect((await compPositionsManager.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).onMorpho).to.equal(0);
     });
 
-    it('Should be able to redeem ERC20 right after supply up to max supply balance', async () => {
+    it('Should be able to withdraw ERC20 right after supply up to max supply balance', async () => {
       const amount = utils.parseUnits('10');
       const daiBalanceBefore1 = await daiToken.balanceOf(supplier1.getAddress());
       await daiToken.connect(supplier1).approve(compPositionsManager.address, amount);
@@ -219,20 +219,20 @@ describe('CompPositionsManager Contract', () => {
       const toWithdraw1 = cTokenToUnderlying(supplyBalanceOnComp, exchangeRate1);
 
       // TODO: improve this test to prevent attacks
-      await expect(compPositionsManager.connect(supplier1).redeem(toWithdraw1.add(utils.parseUnits('0.001')).toString())).to.be.reverted;
+      await expect(compPositionsManager.connect(supplier1).withdraw(toWithdraw1.add(utils.parseUnits('0.001')).toString())).to.be.reverted;
 
       // Update exchange rate
       await cDaiToken.connect(supplier1).exchangeRateCurrent();
       const exchangeRate2 = await cDaiToken.callStatic.exchangeRateCurrent();
       const toWithdraw2 = cTokenToUnderlying(supplyBalanceOnComp, exchangeRate2);
-      await compPositionsManager.connect(supplier1).redeem(config.tokens.cDai.address, toWithdraw2);
+      await compPositionsManager.connect(supplier1).withdraw(config.tokens.cDai.address, toWithdraw2);
       const daiBalanceAfter2 = await daiToken.balanceOf(supplier1.getAddress());
       // Check ERC20 balance
       expect(daiBalanceAfter2).to.equal(daiBalanceBefore1.sub(amount).add(toWithdraw2));
 
       // Check cToken left are only dust in supply balance
       expect((await compPositionsManager.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).onComp).to.be.lt(1000);
-      await expect(compPositionsManager.connect(supplier1).redeem(config.tokens.cDai.address, utils.parseUnits('0.001'))).to.be.reverted;
+      await expect(compPositionsManager.connect(supplier1).withdraw(config.tokens.cDai.address, utils.parseUnits('0.001'))).to.be.reverted;
     });
 
     it('Should be able to deposit more ERC20 after already having deposit ERC20', async () => {
@@ -471,7 +471,7 @@ describe('CompPositionsManager Contract', () => {
       const expectedMorphoBorrowBalance = remainingToWithdraw.add(cTokenContractBalanceInUnderlying).sub(supplyBalanceOnCompInUnderlying);
 
       // Withdraw
-      await compPositionsManager.connect(supplier1).redeem(config.tokens.cDai.address, amountToWithdraw);
+      await compPositionsManager.connect(supplier1).withdraw(config.tokens.cDai.address, amountToWithdraw);
       const borrowIndex = await cDaiToken.borrowIndex();
       const expectedBorrowerBorrowBalanceOnComp = underlyingToCdUnit(expectedMorphoBorrowBalance, borrowIndex);
       const borrowBalance = await cDaiToken.callStatic.borrowBalanceCurrent(compPositionsManager.address);
@@ -494,7 +494,7 @@ describe('CompPositionsManager Contract', () => {
       expect(removeDigitsBigNumber(4, (await compPositionsManager.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onMorpho)).to.equal(0);
     });
 
-    it('Supplier should redeem her liquidity while enough cDaiToken on Morpho contract', async () => {
+    it('Supplier should withdraw her liquidity while enough cDaiToken on Morpho contract', async () => {
       const supplyAmount = utils.parseUnits('10');
       let supplier;
 
@@ -569,7 +569,7 @@ describe('CompPositionsManager Contract', () => {
       const borrower1BorrowBalanceOnMorpho = (await compPositionsManager.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onMorpho;
 
       // Withdraw
-      await compPositionsManager.connect(supplier1).redeem(config.tokens.cDai.address, amountToWithdraw);
+      await compPositionsManager.connect(supplier1).withdraw(config.tokens.cDai.address, amountToWithdraw);
       const cExchangeRate4 = await cDaiToken.callStatic.exchangeRateStored();
       const borrowBalance = await cDaiToken.callStatic.borrowBalanceCurrent(compPositionsManager.address);
       const daiBalanceAfter2 = await daiToken.balanceOf(supplier1.getAddress());

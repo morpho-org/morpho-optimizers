@@ -78,12 +78,12 @@ contract CreamPositionsManager is ReentrancyGuard {
      */
     event Deposited(address indexed _account, address indexed _cErc20Address, uint256 _amount);
 
-    /** @dev Emitted when a redeem happens.
-     *  @param _account The address of the redeemer.
-     *  @param _cErc20Address The address of the market from where assets are redeemed.
+    /** @dev Emitted when a withdraw happens.
+     *  @param _account The address of the withdrawer.
+     *  @param _cErc20Address The address of the market from where assets are withdrawn.
      *  @param _amount The amount of assets.
      */
-    event Redeemed(address indexed _account, address indexed _cErc20Address, uint256 _amount);
+    event Withdrawn(address indexed _account, address indexed _cErc20Address, uint256 _amount);
 
     /** @dev Emitted when a borrow happens.
      *  @param _account The address of the borrower.
@@ -274,13 +274,13 @@ contract CreamPositionsManager is ReentrancyGuard {
                 _cErc20Address,
                 _amount
             ); // In underlying
-            uint256 toRedeem = _amount - remainingToBorrowOnComp;
+            uint256 toWithdraw = _amount - remainingToBorrowOnComp;
 
-            if (toRedeem > 0) {
-                borrowBalanceInOf[_cErc20Address][msg.sender].onMorpho += toRedeem.div(
+            if (toWithdraw > 0) {
+                borrowBalanceInOf[_cErc20Address][msg.sender].onMorpho += toWithdraw.div(
                     mExchangeRate
                 ); // In mUnit
-                _redeemErc20FromComp(_cErc20Address, toRedeem); // Revert on error
+                _withdrawErc20FromComp(_cErc20Address, toWithdraw); // Revert on error
             }
 
             // If not enough cTokens on Morpho, we must borrow it on Compound
@@ -315,11 +315,11 @@ contract CreamPositionsManager is ReentrancyGuard {
         _repay(_cErc20Address, msg.sender, _amount);
     }
 
-    /** @dev Redeems ERC20 tokens from supply.
+    /** @dev Withdraws ERC20 tokens from supply.
      *  @param _cErc20Address The address of the market the user wants to interact with.
      *  @param _amount The amount in tokens to withdraw from supply.
      */
-    function redeem(address _cErc20Address, uint256 _amount)
+    function withdraw(address _cErc20Address, uint256 _amount)
         external
         nonReentrant
         isMarketListed(_cErc20Address)
@@ -338,10 +338,10 @@ contract CreamPositionsManager is ReentrancyGuard {
         if (_amount <= amountOnCompInUnderlying) {
             // Simple case where we can directly withdraw unused liquidity from Compound
             supplyBalanceInOf[_cErc20Address][msg.sender].onComp -= _amount.div(cExchangeRate); // In cToken
-            _redeemErc20FromComp(_cErc20Address, _amount); // Revert on error
+            _withdrawErc20FromComp(_cErc20Address, _amount); // Revert on error
         } else {
             // First, we take all the unused liquidy of the user on Cream
-            _redeemErc20FromComp(_cErc20Address, amountOnCompInUnderlying); // Revert on error
+            _withdrawErc20FromComp(_cErc20Address, amountOnCompInUnderlying); // Revert on error
             supplyBalanceInOf[_cErc20Address][msg.sender].onComp -= amountOnCompInUnderlying.div(
                 cExchangeRate
             );
@@ -360,18 +360,18 @@ contract CreamPositionsManager is ReentrancyGuard {
                     _moveSuppliersFromCompToMorpho(_cErc20Address, remainingToWithdraw) == 0,
                     "red:remaining-suppliers!=0"
                 );
-                _redeemErc20FromComp(_cErc20Address, remainingToWithdraw); // Revert on error
+                _withdrawErc20FromComp(_cErc20Address, remainingToWithdraw); // Revert on error
             } else {
                 // The contract does not have enough cTokens for the withdraw
                 // First, we use all the available cTokens in the contract
-                uint256 toRedeem = cTokenContractBalanceInUnderlying -
+                uint256 toWithdraw = cTokenContractBalanceInUnderlying -
                     _moveSuppliersFromCompToMorpho(
                         _cErc20Address,
                         cTokenContractBalanceInUnderlying
-                    ); // The amount that can be redeemed for underlying
+                    ); // The amount that can be withdrawn for underlying
                 // Update the remaining amount to withdraw to `msg.sender`
-                remainingToWithdraw -= toRedeem;
-                _redeemErc20FromComp(_cErc20Address, toRedeem); // Revert on error
+                remainingToWithdraw -= toWithdraw;
+                _withdrawErc20FromComp(_cErc20Address, toWithdraw); // Revert on error
                 // Then, we move borrowers not matched anymore from Morpho to Compound and borrow the amount directly on Compound, thanks to their collateral which is now on Compound
                 require(
                     _moveBorrowersFromMorphoToComp(_cErc20Address, remainingToWithdraw) == 0,
@@ -383,7 +383,7 @@ contract CreamPositionsManager is ReentrancyGuard {
 
         _updateSupplierList(_cErc20Address, msg.sender);
         erc20Token.safeTransfer(msg.sender, _amount);
-        emit Redeemed(msg.sender, _cErc20Address, _amount);
+        emit Withdrawn(msg.sender, _cErc20Address, _amount);
     }
 
     /** @dev Allows someone to liquidate a position.
@@ -457,7 +457,7 @@ contract CreamPositionsManager is ReentrancyGuard {
             supplyBalanceInOf[_cErc20CollateralAddress][_borrower].onComp -= vars.amountToSeize.div(
                 cErc20CollateralToken.exchangeRateStored()
             );
-            _redeemErc20FromComp(_cErc20CollateralAddress, vars.amountToSeize);
+            _withdrawErc20FromComp(_cErc20CollateralAddress, vars.amountToSeize);
         } else {
             // Seize tokens from Morpho and Compound
             uint256 toMove = vars.amountToSeize - vars.onCompInUnderlying;
@@ -471,7 +471,7 @@ contract CreamPositionsManager is ReentrancyGuard {
                 cErc20CollateralToken.redeem(
                     supplyBalanceInOf[_cErc20CollateralAddress][_borrower].onComp
                 ) == 0,
-                "liq:redeem-cToken-fail"
+                "liq:withdraw-cToken-fail"
             );
             supplyBalanceInOf[_cErc20CollateralAddress][_borrower].onComp = 0;
             require(cErc20CollateralToken.borrow(toMove) == 0, "liq:borrow-comp-fail");
@@ -556,11 +556,11 @@ contract CreamPositionsManager is ReentrancyGuard {
         require(cErc20Token.mint(_amount) == 0, "_supp-to-comp:cToken-mint-fail");
     }
 
-    /** @dev Redeems ERC20 tokens from Compound.
+    /** @dev Withdraws ERC20 tokens from Compound.
      *  @param _cErc20Address The address of the market the user wants to interact with.
-     *  @param _amount The amount of tokens to be redeemed.
+     *  @param _amount The amount of tokens to be withdrawn.
      */
-    function _redeemErc20FromComp(address _cErc20Address, uint256 _amount) internal {
+    function _withdrawErc20FromComp(address _cErc20Address, uint256 _amount) internal {
         ICErc20 cErc20Token = ICErc20(_cErc20Address);
         require(cErc20Token.redeemUnderlying(_amount) == 0, "_redeem-from-comp:redeem-comp-fail");
     }
@@ -776,22 +776,22 @@ contract CreamPositionsManager is ReentrancyGuard {
         }
     }
 
-    /** @dev Checks whether the user can borrow/redeem or not.
+    /** @dev Checks whether the user can borrow/withdraw or not.
      *  @param _account The user to determine liquidity for.
-     *  @param _cErc20Address The market to hypothetically redeem/borrow in.
-     *  @param _redeemedAmount The number of tokens to hypothetically redeem.
+     *  @param _cErc20Address The market to hypothetically withdraw/borrow in.
+     *  @param _withdrawnAmount The number of tokens to hypothetically withdraw.
      *  @param _borrowedAmount The amount of underlying to hypothetically borrow.
      */
     function _checkAccountLiquidity(
         address _account,
         address _cErc20Address,
-        uint256 _redeemedAmount,
+        uint256 _withdrawnAmount,
         uint256 _borrowedAmount
     ) internal {
         (uint256 debtValue, uint256 maxDebtValue, ) = _getUserHypotheticalBalanceStates(
             _account,
             _cErc20Address,
-            _redeemedAmount,
+            _withdrawnAmount,
             _borrowedAmount
         );
         require(debtValue < maxDebtValue, "debt-value>max");
@@ -799,15 +799,15 @@ contract CreamPositionsManager is ReentrancyGuard {
 
     /** @dev Returns the debt value, max debt value and collateral value of a given user.
      *  @param _account The user to determine liquidity for.
-     *  @param _cErc20Address The market to hypothetically redeem/borrow in.
-     *  @param _redeemedAmount The number of tokens to hypothetically redeem.
+     *  @param _cErc20Address The market to hypothetically withdraw/borrow in.
+     *  @param _withdrawnAmount The number of tokens to hypothetically withdraw.
      *  @param _borrowedAmount The amount of underlying to hypothetically borrow.
      *  @return (debtValue, maxDebtValue collateralValue).
      */
     function _getUserHypotheticalBalanceStates(
         address _account,
         address _cErc20Address,
-        uint256 _redeemedAmount,
+        uint256 _withdrawnAmount,
         uint256 _borrowedAmount
     )
         internal
@@ -843,7 +843,7 @@ contract CreamPositionsManager is ReentrancyGuard {
 
             if (_cErc20Address == vars.cErc20Entered) {
                 vars.debtToAdd += _borrowedAmount;
-                balanceState.redeemedValue = _redeemedAmount.mul(vars.underlyingPrice);
+                balanceState.redeemedValue = _withdrawnAmount.mul(vars.underlyingPrice);
             }
             // Conversion of the collateral to dollars
             vars.collateralToAdd = vars.collateralToAdd.mul(vars.underlyingPrice);
