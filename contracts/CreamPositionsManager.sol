@@ -187,7 +187,7 @@ contract CreamPositionsManager is ReentrancyGuard {
      *  @param markets The address of the market the user wants to deposit.
      *  @return The results of entered.
      */
-    function createMarkets(address[] memory markets)
+    function createMarkets(address[] calldata markets)
         external
         onlyMarketsManager
         returns (uint256[] memory)
