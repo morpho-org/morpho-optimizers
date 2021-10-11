@@ -52,7 +52,7 @@ library RedBlackBinaryTree {
     function next(Tree storage _self, uint256 _value) public view returns (uint256 cursor) {
         require(_value != 0, "RBBT(401):start-_value=0");
         if (_self.nodes[_value].right != 0) {
-            cursor = treeMinimum(_self, _self.nodes[_value].right);
+            cursor = subTreeMin(_self, _self.nodes[_value].right);
         } else {
             cursor = _self.nodes[_value].parent;
             while (cursor != 0 && _value == _self.nodes[cursor].right) {
@@ -69,7 +69,7 @@ library RedBlackBinaryTree {
     function prev(Tree storage _self, uint256 _value) public view returns (uint256 cursor) {
         require(_value != 0, "RBBT(402):start-_value=0");
         if (_self.nodes[_value].left != 0) {
-            cursor = treeMaximum(_self, _self.nodes[_value].left);
+            cursor = subTreeMax(_self, _self.nodes[_value].left);
         } else {
             cursor = _self.nodes[_value].parent;
             while (cursor != 0 && _value == _self.nodes[cursor].left) {
@@ -241,7 +241,7 @@ library RedBlackBinaryTree {
      *  @param _self The tree to search in.
      *  @param _value The value of the node to start at.
      */
-    function treeMinimum(Tree storage _self, uint256 _value) private view returns (uint256) {
+    function subTreeMin(Tree storage _self, uint256 _value) private view returns (uint256) {
         while (_self.nodes[_value].left != 0) {
             _value = _self.nodes[_value].left;
         }
@@ -252,7 +252,7 @@ library RedBlackBinaryTree {
      *  @param _self The tree to search in.
      *  @param _value The value of the node to start at.
      */
-    function treeMaximum(Tree storage _self, uint256 _value) private view returns (uint256) {
+    function subTreeMax(Tree storage _self, uint256 _value) private view returns (uint256) {
         while (_self.nodes[_value].right != 0) {
             _value = _self.nodes[_value].right;
         }
