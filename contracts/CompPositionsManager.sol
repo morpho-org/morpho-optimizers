@@ -23,12 +23,12 @@ contract CompPositionsManager is ReentrancyGuard {
     /* Structs */
 
     struct SupplyBalance {
-        uint256 onMorpho; // In mUnit (a unit that grows in value, to keep track of the debt increase).
+        uint256 inP2P; // In mUnit (a unit that grows in value, to keep track of the debt increase).
         uint256 onComp; // In cToken.
     }
 
     struct BorrowBalance {
-        uint256 onMorpho; // In mUnit.
+        uint256 inP2P; // In mUnit.
         uint256 onComp; // In cdUnit. (a unit that grows in value, to keep track of the  debt increase). Multiply by current borrowIndex to get the underlying amount.
     }
 
@@ -60,9 +60,9 @@ contract CompPositionsManager is ReentrancyGuard {
 
     /* Storage */
 
-    mapping(address => RedBlackBinaryTree.Tree) public suppliersOnMorpho; // Suppliers on Morpho.
+    mapping(address => RedBlackBinaryTree.Tree) public suppliersInP2P; // Suppliers in peer-to-peer.
     mapping(address => RedBlackBinaryTree.Tree) public suppliersOnComp; // Suppliers on Compound.
-    mapping(address => RedBlackBinaryTree.Tree) public borrowersOnMorpho; // Borrowers on Morpho.
+    mapping(address => RedBlackBinaryTree.Tree) public borrowersInP2P; // Borrowers in peer-to-peer.
     mapping(address => RedBlackBinaryTree.Tree) public borrowersOnComp; // Borrowers on Compound.
     mapping(address => mapping(address => bool)) public accountMembership; // Whether the account is in the market or not.
     mapping(address => mapping(address => SupplyBalance)) public supplyBalanceInOf; // For a given market, the supply balance of user.
@@ -221,7 +221,7 @@ contract CompPositionsManager is ReentrancyGuard {
 
             uint256 toRepay = _amount - remainingToSupplyToComp;
             // Update supplier P2P balance
-            supplyBalanceInOf[_cErc20Address][msg.sender].onMorpho += toRepay.div(mExchangeRate); // In mUnit
+            supplyBalanceInOf[_cErc20Address][msg.sender].inP2P += toRepay.div(mExchangeRate); // In mUnit
             // Repay Compound on behalf of the borrowers with the user deposit
             erc20Token.safeApprove(_cErc20Address, toRepay);
             cErc20Token.repayBorrow(toRepay);
@@ -268,13 +268,13 @@ contract CompPositionsManager is ReentrancyGuard {
             uint256 toWithdraw = _amount - remainingToBorrowOnComp;
 
             if (toWithdraw > 0) {
-                borrowBalanceInOf[_cErc20Address][msg.sender].onMorpho += toWithdraw.div(
+                borrowBalanceInOf[_cErc20Address][msg.sender].inP2P += toWithdraw.div(
                     mExchangeRate
                 ); // In mUnit
                 _withdrawErc20FromComp(_cErc20Address, toWithdraw); // Revert on error
             }
 
-            // If not enough cTokens on Morpho, we must borrow it on Compound
+            // If not enough cTokens in peer-to-peer, we must borrow it on Compound
             if (remainingToBorrowOnComp > 0) {
                 require(cErc20Token.borrow(remainingToBorrowOnComp) == 0, "bor:borrow-comp-fail");
                 borrowBalanceInOf[_cErc20Address][msg.sender].onComp += remainingToBorrowOnComp.div(
@@ -337,9 +337,9 @@ contract CompPositionsManager is ReentrancyGuard {
             supplyBalanceInOf[_cErc20Address][msg.sender].onComp -= amountOnCompInUnderlying.div(
                 cExchangeRate
             );
-            // Then, search for the remaining liquidity on Morpho
+            // Then, search for the remaining liquidity in peer-to-peer
             uint256 remainingToWithdraw = _amount - amountOnCompInUnderlying; // In underlying
-            supplyBalanceInOf[_cErc20Address][msg.sender].onMorpho -= remainingToWithdraw.div(
+            supplyBalanceInOf[_cErc20Address][msg.sender].inP2P -= remainingToWithdraw.div(
                 mExchangeRate
             ); // In mUnit
             uint256 cTokenContractBalanceInUnderlying = cErc20Token.balanceOf(address(this)).mul(
@@ -347,7 +347,7 @@ contract CompPositionsManager is ReentrancyGuard {
             );
 
             if (remainingToWithdraw <= cTokenContractBalanceInUnderlying) {
-                // There is enough unused liquidity on Morpho, so we reconnect the credit lines to others suppliers
+                // There is enough unused liquidity in peer-to-peer, so we reconnect the credit lines to others suppliers
                 require(
                     _moveSuppliersFromCompToMorpho(_cErc20Address, remainingToWithdraw) == 0,
                     "red:remaining-suppliers!=0"
@@ -403,7 +403,7 @@ contract CompPositionsManager is ReentrancyGuard {
             borrowBalanceInOf[_cErc20BorrowedAddress][_borrower].onComp.mul(
                 ICErc20(_cErc20BorrowedAddress).borrowIndex()
             ) +
-            borrowBalanceInOf[_cErc20BorrowedAddress][_borrower].onMorpho.mul(
+            borrowBalanceInOf[_cErc20BorrowedAddress][_borrower].inP2P.mul(
                 compMarketsManager.mUnitExchangeRate(_cErc20BorrowedAddress)
             );
         require(
@@ -439,7 +439,7 @@ contract CompPositionsManager is ReentrancyGuard {
             cErc20CollateralToken.exchangeRateStored()
         );
         uint256 totalCollateral = vars.onCompInUnderlying +
-            supplyBalanceInOf[_cErc20CollateralAddress][_borrower].onMorpho.mul(
+            supplyBalanceInOf[_cErc20CollateralAddress][_borrower].inP2P.mul(
                 compMarketsManager.updateMUnitExchangeRate(_cErc20CollateralAddress)
             );
 
@@ -454,7 +454,7 @@ contract CompPositionsManager is ReentrancyGuard {
         } else {
             // Seize tokens from Morpho and Compound
             uint256 toMove = vars.amountToSeize - vars.onCompInUnderlying;
-            supplyBalanceInOf[_cErc20CollateralAddress][_borrower].onMorpho -= toMove.div(
+            supplyBalanceInOf[_cErc20CollateralAddress][_borrower].inP2P -= toMove.div(
                 compMarketsManager.mUnitExchangeRate(_cErc20CollateralAddress)
             );
 
@@ -511,8 +511,9 @@ contract CompPositionsManager is ReentrancyGuard {
             } else {
                 // Move the remaining liquidity to Compound
                 uint256 remainingToSupplyToComp = _amount - onCompInUnderlying; // In underlying
-                borrowBalanceInOf[_cErc20Address][_borrower].onMorpho -= remainingToSupplyToComp
-                    .div(mExchangeRate);
+                borrowBalanceInOf[_cErc20Address][_borrower].inP2P -= remainingToSupplyToComp.div(
+                    mExchangeRate
+                );
                 uint256 index = cErc20Token.borrowIndex();
                 borrowBalanceInOf[_cErc20Address][_borrower].onComp -= onCompInUnderlying.div(
                     index
@@ -531,7 +532,7 @@ contract CompPositionsManager is ReentrancyGuard {
                     _supplyErc20ToComp(_cErc20Address, remainingToSupplyToComp);
             }
         } else {
-            borrowBalanceInOf[_cErc20Address][_borrower].onMorpho -= _amount.div(mExchangeRate); // In mUnit
+            borrowBalanceInOf[_cErc20Address][_borrower].inP2P -= _amount.div(mExchangeRate); // In mUnit
             require(
                 _moveSuppliersFromMorphoToComp(_cErc20Address, _amount) == 0,
                 "_rep(2):remaining-suppliers!=0"
@@ -601,9 +602,7 @@ contract CompPositionsManager is ReentrancyGuard {
                         ); // In cToken
                     }
                     remainingToMove -= toMove;
-                    supplyBalanceInOf[_cErc20Address][account].onMorpho += toMove.div(
-                        mExchangeRate
-                    ); // In mUnit
+                    supplyBalanceInOf[_cErc20Address][account].inP2P += toMove.div(mExchangeRate); // In mUnit
 
                     _updateSupplierList(_cErc20Address, account);
                     emit SupplierMovedFromCompToMorpho(account, _cErc20Address, toMove);
@@ -613,7 +612,7 @@ contract CompPositionsManager is ReentrancyGuard {
         }
     }
 
-    /** @dev Finds liquidity on Morpho and moves it to Compound.
+    /** @dev Finds liquidity in peer-to-peer and moves it to Compound.
      *  @dev Note: mUnitExchangeRate must have been updated before calling this function.
      *  @param _cErc20Address The address of the market on which we want to move users.
      *  @param _amount The amount to search for in underlying.
@@ -626,33 +625,28 @@ contract CompPositionsManager is ReentrancyGuard {
         remainingToMove = _amount; // In underlying
         uint256 cExchangeRate = cErc20Token.exchangeRateCurrent();
         uint256 mExchangeRate = compMarketsManager.mUnitExchangeRate(_cErc20Address);
-        uint256 highestValue = suppliersOnMorpho[_cErc20Address].last();
+        uint256 highestValue = suppliersInP2P[_cErc20Address].last();
 
         while (remainingToMove > 0 && highestValue != 0) {
-            while (suppliersOnMorpho[_cErc20Address].getNumberOfKeysAtValue(highestValue) > 0) {
-                address account = suppliersOnMorpho[_cErc20Address].valueKeyAtIndex(
-                    highestValue,
-                    0
-                );
-                uint256 onMorpho = supplyBalanceInOf[_cErc20Address][account].onMorpho; // In cToken
+            while (suppliersInP2P[_cErc20Address].getNumberOfKeysAtValue(highestValue) > 0) {
+                address account = suppliersInP2P[_cErc20Address].valueKeyAtIndex(highestValue, 0);
+                uint256 inP2P = supplyBalanceInOf[_cErc20Address][account].inP2P; // In cToken
 
-                if (onMorpho > 0) {
-                    uint256 toMove = Math.min(onMorpho.mul(mExchangeRate), remainingToMove); // In underlying
+                if (inP2P > 0) {
+                    uint256 toMove = Math.min(inP2P.mul(mExchangeRate), remainingToMove); // In underlying
                     remainingToMove -= toMove;
                     supplyBalanceInOf[_cErc20Address][account].onComp += toMove.div(cExchangeRate); // In cToken
-                    supplyBalanceInOf[_cErc20Address][account].onMorpho -= toMove.div(
-                        mExchangeRate
-                    ); // In mUnit
+                    supplyBalanceInOf[_cErc20Address][account].inP2P -= toMove.div(mExchangeRate); // In mUnit
 
                     _updateSupplierList(_cErc20Address, account);
                     emit SupplierMovedFromMorphoToComp(account, _cErc20Address, toMove);
                 }
             }
-            highestValue = suppliersOnMorpho[_cErc20Address].last();
+            highestValue = suppliersInP2P[_cErc20Address].last();
         }
     }
 
-    /** @dev Finds borrowers on Morpho that match the given `_amount` and moves them to Compound.
+    /** @dev Finds borrowers in peer-to-peer that match the given `_amount` and moves them to Compound.
      *  @dev Note: mUnitExchangeRate must have been updated before calling this function.
      *  @param _cErc20Address The address of the market on which we want to move users.
      *  @param _amount The amount to match in underlying.
@@ -666,29 +660,24 @@ contract CompPositionsManager is ReentrancyGuard {
         remainingToMove = _amount;
         uint256 mExchangeRate = compMarketsManager.mUnitExchangeRate(_cErc20Address);
         uint256 borrowIndex = cErc20Token.borrowIndex();
-        uint256 highestValue = borrowersOnMorpho[_cErc20Address].last();
+        uint256 highestValue = borrowersInP2P[_cErc20Address].last();
 
         while (remainingToMove > 0 && highestValue != 0) {
-            while (borrowersOnMorpho[_cErc20Address].getNumberOfKeysAtValue(highestValue) > 0) {
-                address account = borrowersOnMorpho[_cErc20Address].valueKeyAtIndex(
-                    highestValue,
-                    0
-                );
-                uint256 onMorpho = borrowBalanceInOf[_cErc20Address][account].onMorpho;
+            while (borrowersInP2P[_cErc20Address].getNumberOfKeysAtValue(highestValue) > 0) {
+                address account = borrowersInP2P[_cErc20Address].valueKeyAtIndex(highestValue, 0);
+                uint256 inP2P = borrowBalanceInOf[_cErc20Address][account].inP2P;
 
-                if (onMorpho > 0) {
-                    uint256 toMove = Math.min(onMorpho.mul(mExchangeRate), remainingToMove); // In underlying
+                if (inP2P > 0) {
+                    uint256 toMove = Math.min(inP2P.mul(mExchangeRate), remainingToMove); // In underlying
                     remainingToMove -= toMove;
                     borrowBalanceInOf[_cErc20Address][account].onComp += toMove.div(borrowIndex);
-                    borrowBalanceInOf[_cErc20Address][account].onMorpho -= toMove.div(
-                        mExchangeRate
-                    );
+                    borrowBalanceInOf[_cErc20Address][account].inP2P -= toMove.div(mExchangeRate);
 
                     _updateBorrowerList(_cErc20Address, account);
                     emit BorrowerMovedFromMorphoToComp(account, _cErc20Address, toMove);
                 }
             }
-            highestValue = borrowersOnMorpho[_cErc20Address].last();
+            highestValue = borrowersInP2P[_cErc20Address].last();
         }
     }
 
@@ -725,9 +714,7 @@ contract CompPositionsManager is ReentrancyGuard {
                         );
                     }
                     remainingToMove -= toMove;
-                    borrowBalanceInOf[_cErc20Address][account].onMorpho += toMove.div(
-                        mExchangeRate
-                    );
+                    borrowBalanceInOf[_cErc20Address][account].inP2P += toMove.div(mExchangeRate);
 
                     _updateBorrowerList(_cErc20Address, account);
                     emit BorrowerMovedFromCompToMorpho(account, _cErc20Address, toMove);
@@ -746,21 +733,21 @@ contract CompPositionsManager is ReentrancyGuard {
             address cErc20Entered = enteredMarkets[_account][i];
             uint256 mExchangeRate = compMarketsManager.mUnitExchangeRate(cErc20Entered);
             uint256 cExchangeRate = ICErc20(cErc20Entered).exchangeRateCurrent();
-            uint256 onMorphoInUnderlying = supplyBalanceInOf[cErc20Entered][_account].onMorpho.mul(
+            uint256 inP2PInUnderlying = supplyBalanceInOf[cErc20Entered][_account].inP2P.mul(
                 mExchangeRate
             );
 
-            if (onMorphoInUnderlying > 0) {
-                supplyBalanceInOf[cErc20Entered][_account].onComp += onMorphoInUnderlying.div(
+            if (inP2PInUnderlying > 0) {
+                supplyBalanceInOf[cErc20Entered][_account].onComp += inP2PInUnderlying.div(
                     cExchangeRate
                 ); // In cToken
-                supplyBalanceInOf[cErc20Entered][_account].onMorpho -= onMorphoInUnderlying.div(
+                supplyBalanceInOf[cErc20Entered][_account].inP2P -= inP2PInUnderlying.div(
                     mExchangeRate
                 ); // In mUnit
 
-                _moveBorrowersFromMorphoToComp(cErc20Entered, onMorphoInUnderlying);
+                _moveBorrowersFromMorphoToComp(cErc20Entered, inP2PInUnderlying);
                 _updateSupplierList(cErc20Entered, _account);
-                emit SupplierMovedFromMorphoToComp(_account, cErc20Entered, onMorphoInUnderlying);
+                emit SupplierMovedFromMorphoToComp(_account, cErc20Entered, inP2PInUnderlying);
             }
         }
     }
@@ -831,13 +818,13 @@ contract CompPositionsManager is ReentrancyGuard {
                 borrowBalanceInOf[vars.cErc20Entered][_account].onComp.mul(
                     ICErc20(vars.cErc20Entered).borrowIndex()
                 ) +
-                borrowBalanceInOf[vars.cErc20Entered][_account].onMorpho.mul(vars.mExchangeRate);
+                borrowBalanceInOf[vars.cErc20Entered][_account].inP2P.mul(vars.mExchangeRate);
             // Calculation of the current collateral (in underlying)
             vars.collateralToAdd =
                 supplyBalanceInOf[vars.cErc20Entered][_account].onComp.mul(
                     ICErc20(vars.cErc20Entered).exchangeRateCurrent()
                 ) +
-                supplyBalanceInOf[vars.cErc20Entered][_account].onMorpho.mul(vars.mExchangeRate);
+                supplyBalanceInOf[vars.cErc20Entered][_account].inP2P.mul(vars.mExchangeRate);
             // Price recovery
             vars.underlyingPrice = compoundOracle.getUnderlyingPrice(vars.cErc20Entered);
             if (_cErc20Address == vars.cErc20Entered) {
@@ -867,18 +854,18 @@ contract CompPositionsManager is ReentrancyGuard {
     function _updateBorrowerList(address _cErc20Address, address _account) internal {
         if (borrowersOnComp[_cErc20Address].keyExists(_account))
             borrowersOnComp[_cErc20Address].remove(_account);
-        if (borrowersOnMorpho[_cErc20Address].keyExists(_account))
-            borrowersOnMorpho[_cErc20Address].remove(_account);
+        if (borrowersInP2P[_cErc20Address].keyExists(_account))
+            borrowersInP2P[_cErc20Address].remove(_account);
         if (borrowBalanceInOf[_cErc20Address][_account].onComp > 0) {
             borrowersOnComp[_cErc20Address].insert(
                 _account,
                 borrowBalanceInOf[_cErc20Address][_account].onComp
             );
         }
-        if (borrowBalanceInOf[_cErc20Address][_account].onMorpho > 0) {
-            borrowersOnMorpho[_cErc20Address].insert(
+        if (borrowBalanceInOf[_cErc20Address][_account].inP2P > 0) {
+            borrowersInP2P[_cErc20Address].insert(
                 _account,
-                borrowBalanceInOf[_cErc20Address][_account].onMorpho
+                borrowBalanceInOf[_cErc20Address][_account].inP2P
             );
         }
     }
@@ -890,18 +877,18 @@ contract CompPositionsManager is ReentrancyGuard {
     function _updateSupplierList(address _cErc20Address, address _account) internal {
         if (suppliersOnComp[_cErc20Address].keyExists(_account))
             suppliersOnComp[_cErc20Address].remove(_account);
-        if (suppliersOnMorpho[_cErc20Address].keyExists(_account))
-            suppliersOnMorpho[_cErc20Address].remove(_account);
+        if (suppliersInP2P[_cErc20Address].keyExists(_account))
+            suppliersInP2P[_cErc20Address].remove(_account);
         if (supplyBalanceInOf[_cErc20Address][_account].onComp > 0) {
             suppliersOnComp[_cErc20Address].insert(
                 _account,
                 supplyBalanceInOf[_cErc20Address][_account].onComp
             );
         }
-        if (supplyBalanceInOf[_cErc20Address][_account].onMorpho > 0) {
-            suppliersOnMorpho[_cErc20Address].insert(
+        if (supplyBalanceInOf[_cErc20Address][_account].inP2P > 0) {
+            suppliersInP2P[_cErc20Address].insert(
                 _account,
-                supplyBalanceInOf[_cErc20Address][_account].onMorpho
+                supplyBalanceInOf[_cErc20Address][_account].inP2P
             );
         }
     }
