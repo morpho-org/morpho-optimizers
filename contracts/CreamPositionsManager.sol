@@ -33,7 +33,7 @@ contract CreamPositionsManager is ReentrancyGuard {
     }
 
     // Struct to avoid stack too deep error
-    struct StateBalanceVars {
+    struct BalanceStateVars {
         uint256 debtValue; // The total debt value (in USD).
         uint256 maxDebtValue; // The maximum debt value available thanks to the collateral (in USD).
         uint256 redeemedValue; // The redeemed value if any (in USD).
@@ -398,7 +398,7 @@ contract CreamPositionsManager is ReentrancyGuard {
         address _borrower,
         uint256 _amount
     ) external nonReentrant {
-        (uint256 debtValue, uint256 maxDebtValue, ) = _getUserHypotheticalStateBalances(
+        (uint256 debtValue, uint256 maxDebtValue, ) = _getUserHypotheticalBalanceStates(
             _borrower,
             address(0),
             0,
@@ -788,7 +788,7 @@ contract CreamPositionsManager is ReentrancyGuard {
         uint256 _redeemedAmount,
         uint256 _borrowedAmount
     ) internal {
-        (uint256 debtValue, uint256 maxDebtValue, ) = _getUserHypotheticalStateBalances(
+        (uint256 debtValue, uint256 maxDebtValue, ) = _getUserHypotheticalBalanceStates(
             _account,
             _cErc20Address,
             _redeemedAmount,
@@ -804,7 +804,7 @@ contract CreamPositionsManager is ReentrancyGuard {
      *  @param _borrowedAmount The amount of underlying to hypothetically borrow.
      *  @return (debtValue, maxDebtValue collateralValue).
      */
-    function _getUserHypotheticalStateBalances(
+    function _getUserHypotheticalBalanceStates(
         address _account,
         address _cErc20Address,
         uint256 _redeemedAmount,
@@ -818,9 +818,11 @@ contract CreamPositionsManager is ReentrancyGuard {
         )
     {
         // Avoid stack too deep error
-        StateBalanceVars memory vars;
+        BalanceStateVars memory balanceState;
+
         for (uint256 i; i < enteredMarkets[_account].length; i++) {
             // Avoid stack too deep error
+            BalanceStateVars memory vars;
             vars.cErc20Entered = enteredMarkets[_account][i];
             vars.mExchangeRate = compMarketsManager.updateMUnitExchangeRate(vars.cErc20Entered);
             // Calculation of the current debt (in underlying)
@@ -837,26 +839,26 @@ contract CreamPositionsManager is ReentrancyGuard {
                 supplyBalanceInOf[vars.cErc20Entered][_account].onMorpho.mul(vars.mExchangeRate);
             // Price recovery
             vars.underlyingPrice = compoundOracle.getUnderlyingPrice(vars.cErc20Entered);
-            require(vars.underlyingPrice != 0, "_getUserHypotheticalStateBalances: oracle failed");
+            require(vars.underlyingPrice != 0, "_getUserHypotheticalBalanceStates: oracle failed");
 
             if (_cErc20Address == vars.cErc20Entered) {
                 vars.debtToAdd += _borrowedAmount;
-                vars.redeemedValue = _redeemedAmount.mul(vars.underlyingPrice);
+                balanceState.redeemedValue = _redeemedAmount.mul(vars.underlyingPrice);
             }
             // Conversion of the collateral to dollars
             vars.collateralToAdd = vars.collateralToAdd.mul(vars.underlyingPrice);
             // Add the debt in this market to the global debt (in dollars)
-            vars.debtValue += vars.debtToAdd.mul(vars.underlyingPrice);
+            balanceState.debtValue += vars.debtToAdd.mul(vars.underlyingPrice);
             // Add the collateral value in this asset to the global collateral value (in dollars)
-            vars.collateralValue += vars.collateralToAdd;
+            balanceState.collateralValue += vars.collateralToAdd;
             (, uint256 collateralFactorMantissa, ) = comptroller.markets(vars.cErc20Entered);
             // Add the max debt value allowed by the collateral in this asset to the global max debt value (in dollars)
-            vars.maxDebtValue += vars.collateralToAdd.mul(collateralFactorMantissa);
+            balanceState.maxDebtValue += vars.collateralToAdd.mul(collateralFactorMantissa);
         }
 
-        vars.collateralValue -= vars.redeemedValue;
+        balanceState.collateralValue -= balanceState.redeemedValue;
 
-        return (vars.debtValue, vars.maxDebtValue, vars.collateralValue);
+        return (balanceState.debtValue, balanceState.maxDebtValue, balanceState.collateralValue);
     }
 
     /** @dev Updates borrowers tree with the new balances of a given account.
