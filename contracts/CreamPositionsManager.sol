@@ -57,9 +57,9 @@ contract CreamPositionsManager is ReentrancyGuard {
     /* Storage */
 
     mapping(address => RedBlackBinaryTree.Tree) public suppliersInP2P; // Suppliers in peer-to-peer.
-    mapping(address => RedBlackBinaryTree.Tree) public suppliersOnComp; // Suppliers on Cream.
+    mapping(address => RedBlackBinaryTree.Tree) public suppliersOnCream; // Suppliers on Cream.
     mapping(address => RedBlackBinaryTree.Tree) public borrowersInP2P; // Borrowers in peer-to-peer.
-    mapping(address => RedBlackBinaryTree.Tree) public borrowersOnComp; // Borrowers on Cream.
+    mapping(address => RedBlackBinaryTree.Tree) public borrowersOnCream; // Borrowers on Cream.
     mapping(address => mapping(address => SupplyBalance)) public supplyBalanceInOf; // For a given market, the supply balance of user.
     mapping(address => mapping(address => BorrowBalance)) public borrowBalanceInOf; // For a given market, the borrow balance of user.
     mapping(address => address[]) public enteredMarkets; // Markets entered by a user.
@@ -216,7 +216,7 @@ contract CreamPositionsManager is ReentrancyGuard {
         uint256 cExchangeRate = cERC20Token.exchangeRateCurrent();
 
         // If some borrowers are on Cream, we must move them to Morpho
-        if (borrowersOnComp[_cERC20Address].isNotEmpty()) {
+        if (borrowersOnCream[_cERC20Address].isNotEmpty()) {
             uint256 mExchangeRate = compMarketsManager.updateMUnitExchangeRate(_cERC20Address);
             // Find borrowers and move them to Morpho
             uint256 remainingToSupplyToComp = _moveBorrowersFromCompToMorpho(
@@ -266,7 +266,7 @@ contract CreamPositionsManager is ReentrancyGuard {
         uint256 mExchangeRate = compMarketsManager.mUnitExchangeRate(_cERC20Address);
 
         // If some suppliers are on Cream, we must pull them out and match them in P2P
-        if (suppliersOnComp[_cERC20Address].isNotEmpty()) {
+        if (suppliersOnCream[_cERC20Address].isNotEmpty()) {
             uint256 remainingToBorrowOnComp = _moveSuppliersFromCompToMorpho(
                 _cERC20Address,
                 _amount
@@ -576,12 +576,12 @@ contract CreamPositionsManager is ReentrancyGuard {
         remainingToMove = _amount; // In underlying
         uint256 mExchangeRate = compMarketsManager.mUnitExchangeRate(_cERC20Address);
         uint256 cExchangeRate = cERC20Token.exchangeRateCurrent();
-        uint256 highestValue = suppliersOnComp[_cERC20Address].last();
+        uint256 highestValue = suppliersOnCream[_cERC20Address].last();
 
         while (remainingToMove > 0 && highestValue != 0) {
             // Loop on the keys (addresses) sharing the same value
-            while (suppliersOnComp[_cERC20Address].getNumberOfKeysAtValue(highestValue) > 0) {
-                address account = suppliersOnComp[_cERC20Address].valueKeyAtIndex(highestValue, 0); // Pick the first account in the list
+            while (suppliersOnCream[_cERC20Address].getNumberOfKeysAtValue(highestValue) > 0) {
+                address account = suppliersOnCream[_cERC20Address].valueKeyAtIndex(highestValue, 0); // Pick the first account in the list
                 uint256 onCream = supplyBalanceInOf[_cERC20Address][account].onCream; // In cToken
 
                 if (onCream > 0) {
@@ -604,7 +604,7 @@ contract CreamPositionsManager is ReentrancyGuard {
                 }
             }
             // Update the highest value after the tree has been updated
-            highestValue = suppliersOnComp[_cERC20Address].last();
+            highestValue = suppliersOnCream[_cERC20Address].last();
         }
     }
 
@@ -691,11 +691,11 @@ contract CreamPositionsManager is ReentrancyGuard {
         remainingToMove = _amount;
         uint256 mExchangeRate = compMarketsManager.mUnitExchangeRate(_cERC20Address);
         uint256 borrowIndex = cERC20Token.borrowIndex();
-        uint256 highestValue = borrowersOnComp[_cERC20Address].last();
+        uint256 highestValue = borrowersOnCream[_cERC20Address].last();
 
         while (remainingToMove > 0 && highestValue != 0) {
-            while (borrowersOnComp[_cERC20Address].getNumberOfKeysAtValue(highestValue) > 0) {
-                address account = borrowersOnComp[_cERC20Address].valueKeyAtIndex(highestValue, 0);
+            while (borrowersOnCream[_cERC20Address].getNumberOfKeysAtValue(highestValue) > 0) {
+                address account = borrowersOnCream[_cERC20Address].valueKeyAtIndex(highestValue, 0);
                 uint256 onCream = borrowBalanceInOf[_cERC20Address][account].onCream; // In cToken
 
                 if (onCream > 0) {
@@ -716,7 +716,7 @@ contract CreamPositionsManager is ReentrancyGuard {
                     emit BorrowerMovedFromCompToMorpho(account, _cERC20Address, toMove);
                 }
             }
-            highestValue = borrowersOnComp[_cERC20Address].last();
+            highestValue = borrowersOnCream[_cERC20Address].last();
         }
     }
 
@@ -849,12 +849,12 @@ contract CreamPositionsManager is ReentrancyGuard {
      *  @param _account The address of the borrower to move.
      */
     function _updateBorrowerList(address _cERC20Address, address _account) internal {
-        if (borrowersOnComp[_cERC20Address].keyExists(_account))
-            borrowersOnComp[_cERC20Address].remove(_account);
+        if (borrowersOnCream[_cERC20Address].keyExists(_account))
+            borrowersOnCream[_cERC20Address].remove(_account);
         if (borrowersInP2P[_cERC20Address].keyExists(_account))
             borrowersInP2P[_cERC20Address].remove(_account);
         if (borrowBalanceInOf[_cERC20Address][_account].onCream > 0) {
-            borrowersOnComp[_cERC20Address].insert(
+            borrowersOnCream[_cERC20Address].insert(
                 _account,
                 borrowBalanceInOf[_cERC20Address][_account].onCream
             );
@@ -872,12 +872,12 @@ contract CreamPositionsManager is ReentrancyGuard {
      *  @param _account The address of the supplier to move.
      */
     function _updateSupplierList(address _cERC20Address, address _account) internal {
-        if (suppliersOnComp[_cERC20Address].keyExists(_account))
-            suppliersOnComp[_cERC20Address].remove(_account);
+        if (suppliersOnCream[_cERC20Address].keyExists(_account))
+            suppliersOnCream[_cERC20Address].remove(_account);
         if (suppliersInP2P[_cERC20Address].keyExists(_account))
             suppliersInP2P[_cERC20Address].remove(_account);
         if (supplyBalanceInOf[_cERC20Address][_account].onCream > 0) {
-            suppliersOnComp[_cERC20Address].insert(
+            suppliersOnCream[_cERC20Address].insert(
                 _account,
                 supplyBalanceInOf[_cERC20Address][_account].onCream
             );
