@@ -210,7 +210,7 @@ contract CompPositionsManager is ReentrancyGuard {
         erc20Token.safeTransferFrom(msg.sender, address(this), _amount);
         uint256 cExchangeRate = cERC20Token.exchangeRateCurrent();
 
-        // If some borrowers are on Compound, we must move them to Morpho
+        // If some borrowers are on Compound, Morpho must move them to Morpho
         if (borrowersOnComp[_cERC20Address].isNotEmpty()) {
             uint256 mExchangeRate = compMarketsManager.updateMUnitExchangeRate(_cERC20Address);
             // Find borrowers and move them to Morpho
@@ -226,7 +226,7 @@ contract CompPositionsManager is ReentrancyGuard {
             erc20Token.safeApprove(_cERC20Address, toRepay);
             cERC20Token.repayBorrow(toRepay);
 
-            // If the borrowers on Compound were not sufficient to match all the supply, we put the remaining liquidity on Compound
+            // If the borrowers on Compound were not sufficient to match all the supply, Morpho put the remaining liquidity on Compound
             if (remainingToSupplyToComp > 0) {
                 supplyBalanceInOf[_cERC20Address][msg.sender].onComp += remainingToSupplyToComp.div(
                     cExchangeRate
@@ -234,7 +234,7 @@ contract CompPositionsManager is ReentrancyGuard {
                 _supplyERC20ToComp(_cERC20Address, remainingToSupplyToComp); // Revert on error
             }
         } else {
-            // If there is no borrower waiting for a P2P match, we put the user on Compound
+            // If there is no borrower waiting for a P2P match, Morpho put the user on Compound
             supplyBalanceInOf[_cERC20Address][msg.sender].onComp += _amount.div(cExchangeRate); // In cToken
             _supplyERC20ToComp(_cERC20Address, _amount); // Revert on error
         }
@@ -259,7 +259,7 @@ contract CompPositionsManager is ReentrancyGuard {
         IERC20 erc20Token = IERC20(cERC20Token.underlying());
         uint256 mExchangeRate = compMarketsManager.updateMUnitExchangeRate(_cERC20Address);
 
-        // If some suppliers are on Compound, we must pull them out and match them in P2P
+        // If some suppliers are on Compound, Morpho must pull them out and match them in P2P
         if (suppliersOnComp[_cERC20Address].isNotEmpty()) {
             uint256 remainingToBorrowOnComp = _moveSuppliersFromCompToMorpho(
                 _cERC20Address,
@@ -274,7 +274,7 @@ contract CompPositionsManager is ReentrancyGuard {
                 _withdrawERC20FromComp(_cERC20Address, toWithdraw); // Revert on error
             }
 
-            // If not enough cTokens in peer-to-peer, we must borrow it on Compound
+            // If not enough cTokens in peer-to-peer, Morpho must borrow it on Compound
             if (remainingToBorrowOnComp > 0) {
                 require(cERC20Token.borrow(remainingToBorrowOnComp) == 0, "bor:borrow-comp-fail");
                 borrowBalanceInOf[_cERC20Address][msg.sender].onComp += remainingToBorrowOnComp.div(
@@ -282,8 +282,8 @@ contract CompPositionsManager is ReentrancyGuard {
                 ); // In cdUnit
             }
         } else {
-            // There is not enough suppliers to provide this lender demand
-            // So we put all of its collateral on Compound, and borrow on Compound for him
+            // There is not enough suppliers to provide this borrower demand
+            // So Morpho put all of its collateral on Compound, and borrow on Compound for him
             _moveSupplierFromMorphoToComp(msg.sender);
             require(cERC20Token.borrow(_amount) == 0, "bor:borrow-comp-fail");
             borrowBalanceInOf[_cERC20Address][msg.sender].onComp += _amount.div(
@@ -328,11 +328,11 @@ contract CompPositionsManager is ReentrancyGuard {
         );
 
         if (_amount <= amountOnCompInUnderlying) {
-            // Simple case where we can directly withdraw unused liquidity from Compound
+            // Simple case where Morpho can directly withdraw unused liquidity from Compound
             supplyBalanceInOf[_cERC20Address][msg.sender].onComp -= _amount.div(cExchangeRate); // In cToken
             _withdrawERC20FromComp(_cERC20Address, _amount); // Revert on error
         } else {
-            // First, we take all the unused liquidy of the user on Compound
+            // First, Morpho take all the unused liquidy of the user on Compound
             _withdrawERC20FromComp(_cERC20Address, amountOnCompInUnderlying); // Revert on error
             supplyBalanceInOf[_cERC20Address][msg.sender].onComp -= amountOnCompInUnderlying.div(
                 cExchangeRate
@@ -347,7 +347,7 @@ contract CompPositionsManager is ReentrancyGuard {
             );
 
             if (remainingToWithdraw <= cTokenContractBalanceInUnderlying) {
-                // There is enough unused liquidity in peer-to-peer, so we reconnect the credit lines to others suppliers
+                // There is enough unused liquidity in peer-to-peer, so Morpho reconnect the credit lines to others suppliers
                 require(
                     _moveSuppliersFromCompToMorpho(_cERC20Address, remainingToWithdraw) == 0,
                     "red:remaining-suppliers!=0"
@@ -355,7 +355,7 @@ contract CompPositionsManager is ReentrancyGuard {
                 _withdrawERC20FromComp(_cERC20Address, remainingToWithdraw); // Revert on error
             } else {
                 // The contract does not have enough cTokens for the withdraw
-                // First, we use all the available cTokens in the contract
+                // First, Morpho use all the available cTokens in the contract
                 uint256 toWithdraw = cTokenContractBalanceInUnderlying -
                     _moveSuppliersFromCompToMorpho(
                         _cERC20Address,
@@ -364,7 +364,7 @@ contract CompPositionsManager is ReentrancyGuard {
                 // Update the remaining amount to withdraw to `msg.sender`
                 remainingToWithdraw -= toWithdraw;
                 _withdrawERC20FromComp(_cERC20Address, toWithdraw); // Revert on error
-                // Then, we move borrowers not matched anymore from Morpho to Compound and borrow the amount directly on Compound, thanks to their collateral which is now on Compound
+                // Then, Morpho move borrowers not matched anymore from Morpho to Compound and borrow the amount directly on Compound, thanks to their collateral which is now on Compound
                 require(
                     _moveBorrowersFromMorphoToComp(_cERC20Address, remainingToWithdraw) == 0,
                     "red:remaining-borrowers!=0"
@@ -517,7 +517,7 @@ contract CompPositionsManager is ReentrancyGuard {
                 uint256 index = cERC20Token.borrowIndex();
                 borrowBalanceInOf[_cERC20Address][_borrower].onComp -= onCompInUnderlying.div(
                     index
-                ); // We use a fresh new borrowIndex since the borrowIndex is updated after a repay
+                ); // Morpho use a fresh new borrowIndex since the borrowIndex is updated after a repay
 
                 require(
                     _moveSuppliersFromMorphoToComp(_cERC20Address, remainingToSupplyToComp) == 0,
@@ -571,7 +571,7 @@ contract CompPositionsManager is ReentrancyGuard {
 
     /** @dev Finds liquidity on Compound and moves it to Morpho.
      *  @dev Note: mUnitExchangeRate must have been updated before calling this function.
-     *  @param _cERC20Address The address of the market on which we want to move users.
+     *  @param _cERC20Address The address of the market on which Morpho want to move users.
      *  @param _amount The amount to search for in underlying.
      *  @return remainingToMove The remaining liquidity to search for in underlying.
      */
@@ -614,7 +614,7 @@ contract CompPositionsManager is ReentrancyGuard {
 
     /** @dev Finds liquidity in peer-to-peer and moves it to Compound.
      *  @dev Note: mUnitExchangeRate must have been updated before calling this function.
-     *  @param _cERC20Address The address of the market on which we want to move users.
+     *  @param _cERC20Address The address of the market on which Morpho want to move users.
      *  @param _amount The amount to search for in underlying.
      */
     function _moveSuppliersFromMorphoToComp(address _cERC20Address, uint256 _amount)
@@ -648,7 +648,7 @@ contract CompPositionsManager is ReentrancyGuard {
 
     /** @dev Finds borrowers in peer-to-peer that match the given `_amount` and moves them to Compound.
      *  @dev Note: mUnitExchangeRate must have been updated before calling this function.
-     *  @param _cERC20Address The address of the market on which we want to move users.
+     *  @param _cERC20Address The address of the market on which Morpho want to move users.
      *  @param _amount The amount to match in underlying.
      *  @return remainingToMove The amount remaining to match in underlying.
      */
@@ -683,7 +683,7 @@ contract CompPositionsManager is ReentrancyGuard {
 
     /** @dev Finds borrowers on Compound that match the given `_amount` and moves them to Morpho.
      *  @dev Note: mUnitExchangeRate must have been updated before calling this function.
-     *  @param _cERC20Address The address of the market on which we want to move users.
+     *  @param _cERC20Address The address of the market on which Morpho want to move users.
      *  @param _amount The amount to match in underlying.
      *  @return remainingToMove The amount remaining to match in underlying.
      */
@@ -848,7 +848,7 @@ contract CompPositionsManager is ReentrancyGuard {
     }
 
     /** @dev Updates borrowers tree with the new balances of a given account.
-     *  @param _cERC20Address The address of the market on which we want to update the borrower lists.
+     *  @param _cERC20Address The address of the market on which Morpho want to update the borrower lists.
      *  @param _account The address of the borrower to move.
      */
     function _updateBorrowerList(address _cERC20Address, address _account) internal {
@@ -871,7 +871,7 @@ contract CompPositionsManager is ReentrancyGuard {
     }
 
     /** @dev Updates suppliers tree with the new balances of a given account.
-     *  @param _cERC20Address The address of the market on which we want to update the supplier lists.
+     *  @param _cERC20Address The address of the market on which Morpho want to update the supplier lists.
      *  @param _account The address of the supplier to move.
      */
     function _updateSupplierList(address _cERC20Address, address _account) internal {

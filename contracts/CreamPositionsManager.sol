@@ -215,7 +215,7 @@ contract CreamPositionsManager is ReentrancyGuard {
         erc20Token.safeTransferFrom(msg.sender, address(this), _amount);
         uint256 cExchangeRate = cERC20Token.exchangeRateCurrent();
 
-        // If some borrowers are on Cream, we must move them to Morpho
+        // If some borrowers are on Cream, Morpho must move them in peer-to-peer
         if (borrowersOnCream[_cERC20Address].isNotEmpty()) {
             uint256 mExchangeRate = creamMarketsManager.updateMUnitExchangeRate(_cERC20Address);
             // Find borrowers and move them to Morpho
@@ -225,21 +225,21 @@ contract CreamPositionsManager is ReentrancyGuard {
             ); // In underlying
 
             uint256 toRepay = _amount - remainingToSupplyToCream;
-            // We must repay what we owe to Cream; the amount borrowed by the borrowers on Cream
+            // Morpho must repay what it owe to Cream; the amount borrowed by the borrowers on Cream
             if (toRepay > 0) {
                 supplyBalanceInOf[_cERC20Address][msg.sender].inP2P += toRepay.div(mExchangeRate); // In mUnit
                 // Repay Cream on behalf of the borrowers with the user deposit
                 erc20Token.safeApprove(_cERC20Address, toRepay);
                 cERC20Token.repayBorrow(toRepay);
             }
-            // If the borrowers on Cream were not sufficient to match all the supply, we put the remaining liquidity on Cream
+            // If the borrowers on Cream were not sufficient to match all the supply, Morpho put the remaining liquidity on Cream
             if (remainingToSupplyToCream > 0) {
                 supplyBalanceInOf[_cERC20Address][msg.sender].onCream += remainingToSupplyToCream
                     .div(cExchangeRate); // In cToken
                 _supplyERC20ToCream(_cERC20Address, remainingToSupplyToCream); // Revert on error
             }
         } else {
-            // If there is no borrower waiting for a P2P match, we put the user on Cream
+            // If there is no borrower waiting for a P2P match, Morpho put the user on Cream
             supplyBalanceInOf[_cERC20Address][msg.sender].onCream += _amount.div(cExchangeRate); // In cToken
             _supplyERC20ToCream(_cERC20Address, _amount); // Revert on error
         }
@@ -265,7 +265,7 @@ contract CreamPositionsManager is ReentrancyGuard {
         // No need to update mUnitExchangeRate here as it's done in `_checkAccountLiquidity`
         uint256 mExchangeRate = creamMarketsManager.mUnitExchangeRate(_cERC20Address);
 
-        // If some suppliers are on Cream, we must pull them out and match them in P2P
+        // If some suppliers are on Cream, Morpho must pull them out and match them in P2P
         if (suppliersOnCream[_cERC20Address].isNotEmpty()) {
             uint256 remainingToBorrowOnCream = _moveSuppliersFromCreamToMorpho(
                 _cERC20Address,
@@ -280,7 +280,7 @@ contract CreamPositionsManager is ReentrancyGuard {
                 _withdrawERC20FromCream(_cERC20Address, toWithdraw); // Revert on error
             }
 
-            // If not enough cTokens in peer-to-peer, we must borrow it on Cream
+            // If not enough cTokens in peer-to-peer, Morpho must borrow it on Cream
             if (remainingToBorrowOnCream > 0) {
                 _moveSupplierFromMorphoToCream(msg.sender); // This must be enhanced to supply only what's required to borrow
                 require(cERC20Token.borrow(remainingToBorrowOnCream) == 0, "bor:borrow-cream-fail");
@@ -289,7 +289,7 @@ contract CreamPositionsManager is ReentrancyGuard {
             }
         } else {
             // There is not enough suppliers to provide this lender demand
-            // So we put all of its collateral on Cream, and borrow on Cream for him
+            // So Morpho put all of its collateral on Cream, and borrow on Cream for him
             _moveSupplierFromMorphoToCream(msg.sender);
             require(cERC20Token.borrow(_amount) == 0, "bor:borrow-cream-fail");
             borrowBalanceInOf[_cERC20Address][msg.sender].onCream += _amount.div(
@@ -332,11 +332,11 @@ contract CreamPositionsManager is ReentrancyGuard {
             .mul(cExchangeRate);
 
         if (_amount <= amountOnCreamInUnderlying) {
-            // Simple case where we can directly withdraw unused liquidity from Cream
+            // Simple case where Morpho can directly withdraw unused liquidity from Cream
             supplyBalanceInOf[_cERC20Address][msg.sender].onCream -= _amount.div(cExchangeRate); // In cToken
             _withdrawERC20FromCream(_cERC20Address, _amount); // Revert on error
         } else {
-            // First, we take all the unused liquidy of the user on Cream
+            // First, Morpho take all the unused liquidy of the user on Cream
             _withdrawERC20FromCream(_cERC20Address, amountOnCreamInUnderlying); // Revert on error
             supplyBalanceInOf[_cERC20Address][msg.sender].onCream -= amountOnCreamInUnderlying.div(
                 cExchangeRate
@@ -351,7 +351,7 @@ contract CreamPositionsManager is ReentrancyGuard {
             );
 
             if (remainingToWithdraw <= cTokenContractBalanceInUnderlying) {
-                // There is enough unused liquidity in peer-to-peer, so we reconnect the credit lines to others suppliers
+                // There is enough unused liquidity in peer-to-peer, so Morpho reconnect the credit lines to others suppliers
                 require(
                     _moveSuppliersFromCreamToMorpho(_cERC20Address, remainingToWithdraw) == 0,
                     "red:remaining-suppliers!=0"
@@ -359,7 +359,7 @@ contract CreamPositionsManager is ReentrancyGuard {
                 _withdrawERC20FromCream(_cERC20Address, remainingToWithdraw); // Revert on error
             } else {
                 // The contract does not have enough cTokens for the withdraw
-                // First, we use all the available cTokens in the contract
+                // First, Morpho use all the available cTokens in the contract
                 uint256 toWithdraw = cTokenContractBalanceInUnderlying -
                     _moveSuppliersFromCreamToMorpho(
                         _cERC20Address,
@@ -368,7 +368,7 @@ contract CreamPositionsManager is ReentrancyGuard {
                 // Update the remaining amount to withdraw to `msg.sender`
                 remainingToWithdraw -= toWithdraw;
                 _withdrawERC20FromCream(_cERC20Address, toWithdraw); // Revert on error
-                // Then, we move borrowers not matched anymore from Morpho to Cream and borrow the amount directly on Cream, thanks to their collateral which is now on Cream
+                // Then, Morpho move borrowers not matched anymore from Morpho to Cream and borrow the amount directly on Cream, thanks to their collateral which is now on Cream
                 require(
                     _moveBorrowersFromMorphoToCream(_cERC20Address, remainingToWithdraw) == 0,
                     "red:remaining-borrowers!=0"
@@ -498,7 +498,7 @@ contract CreamPositionsManager is ReentrancyGuard {
         erc20Token.safeTransferFrom(msg.sender, address(this), _amount);
         uint256 mExchangeRate = creamMarketsManager.updateMUnitExchangeRate(_cERC20Address);
 
-        // If some borrowers are on Cream, we must move them to Morpho
+        // If some borrowers are on Cream, Morpho must move them to Morpho
         if (borrowBalanceInOf[_cERC20Address][_borrower].onCream > 0) {
             uint256 borrowIndex = cERC20Token.borrowIndex();
             uint256 onCreamInUnderlying = borrowBalanceInOf[_cERC20Address][_borrower].onCream.mul(
@@ -564,7 +564,7 @@ contract CreamPositionsManager is ReentrancyGuard {
 
     /** @dev Finds liquidity on Cream and moves it to Morpho.
      *  @dev Note: mUnitExchangeRate must have been updated before calling this function.
-     *  @param _cERC20Address The address of the market on which we want to move users.
+     *  @param _cERC20Address The address of the market on which Morpho want to move users.
      *  @param _amount The amount to search for in underlying.
      *  @return remainingToMove The remaining liquidity to search for in underlying.
      */
@@ -610,7 +610,7 @@ contract CreamPositionsManager is ReentrancyGuard {
 
     /** @dev Finds liquidity in peer-to-peer and moves it to Cream.
      *  @dev Note: mUnitExchangeRate must have been updated before calling this function.
-     *  @param _cERC20Address The address of the market on which we want to move users.
+     *  @param _cERC20Address The address of the market on which Morpho want to move users.
      *  @param _amount The amount to search for in underlying.
      */
     function _moveSuppliersFromMorphoToCream(address _cERC20Address, uint256 _amount)
@@ -644,7 +644,7 @@ contract CreamPositionsManager is ReentrancyGuard {
 
     /** @dev Finds borrowers in peer-to-peer that match the given `_amount` and moves them to Cream.
      *  @dev Note: mUnitExchangeRate must have been updated before calling this function.
-     *  @param _cERC20Address The address of the market on which we want to move users.
+     *  @param _cERC20Address The address of the market on which Morpho want to move users.
      *  @param _amount The amount to match in underlying.
      *  @return remainingToMove The amount remaining to match in underlying.
      */
@@ -679,7 +679,7 @@ contract CreamPositionsManager is ReentrancyGuard {
 
     /** @dev Finds borrowers on Cream that match the given `_amount` and moves them to Morpho.
      *  @dev Note: mUnitExchangeRate must have been updated before calling this function.
-     *  @param _cERC20Address The address of the market on which we want to move users.
+     *  @param _cERC20Address The address of the market on which Morpho want to move users.
      *  @param _amount The amount to match in underlying.
      *  @return remainingToMove The amount remaining to match in underlying.
      */
@@ -845,7 +845,7 @@ contract CreamPositionsManager is ReentrancyGuard {
     }
 
     /** @dev Updates borrowers tree with the new balances of a given account.
-     *  @param _cERC20Address The address of the market on which we want to update the borrower lists.
+     *  @param _cERC20Address The address of the market on which Morpho want to update the borrower lists.
      *  @param _account The address of the borrower to move.
      */
     function _updateBorrowerList(address _cERC20Address, address _account) internal {
@@ -868,7 +868,7 @@ contract CreamPositionsManager is ReentrancyGuard {
     }
 
     /** @dev Updates suppliers tree with the new balances of a given account.
-     *  @param _cERC20Address The address of the market on which we want to update the supplier lists.
+     *  @param _cERC20Address The address of the market on which Morpho want to update the supplier lists.
      *  @param _account The address of the supplier to move.
      */
     function _updateSupplierList(address _cERC20Address, address _account) internal {
