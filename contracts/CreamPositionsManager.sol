@@ -288,7 +288,7 @@ contract CreamPositionsManager is ReentrancyGuard {
                     .div(cERC20Token.borrowIndex()); // In cdUnit
             }
         } else {
-            // There is not enough suppliers to provide this lender demand
+            // There is not enough suppliers to provide this borrower demand
             // So Morpho put all of its collateral on Cream, and borrow on Cream for him
             _moveSupplierFromMorphoToCream(msg.sender);
             require(cERC20Token.borrow(_amount) == 0, "bor:borrow-cream-fail");
