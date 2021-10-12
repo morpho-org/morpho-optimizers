@@ -24,12 +24,12 @@ contract CreamPositionsManager is ReentrancyGuard {
 
     struct SupplyBalance {
         uint256 inP2P; // In mUnit (a unit that grows in value, to keep track of the debt increase).
-        uint256 onComp; // In cToken.
+        uint256 onCream; // In cToken.
     }
 
     struct BorrowBalance {
         uint256 inP2P; // In mUnit.
-        uint256 onComp; // In cdUnit. (a unit that grows in value, to keep track of the  debt increase). Multiply by current borrowIndex to get the underlying amount.
+        uint256 onCream; // In cdUnit. (a unit that grows in value, to keep track of the  debt increase). Multiply by current borrowIndex to get the underlying amount.
     }
 
     // Struct to avoid stack too deep error
@@ -238,14 +238,13 @@ contract CreamPositionsManager is ReentrancyGuard {
             }
             // If the borrowers on Cream were not sufficient to match all the supply, we put the remaining liquidity on Cream
             if (remainingToSupplyToComp > 0) {
-                supplyBalanceInOf[_cERC20Address][msg.sender].onComp += remainingToSupplyToComp.div(
-                    cExchangeRate
-                ); // In cToken
+                supplyBalanceInOf[_cERC20Address][msg.sender].onCream += remainingToSupplyToComp
+                    .div(cExchangeRate); // In cToken
                 _supplyERC20ToComp(_cERC20Address, remainingToSupplyToComp); // Revert on error
             }
         } else {
             // If there is no borrower waiting for a P2P match, we put the user on Cream
-            supplyBalanceInOf[_cERC20Address][msg.sender].onComp += _amount.div(cExchangeRate); // In cToken
+            supplyBalanceInOf[_cERC20Address][msg.sender].onCream += _amount.div(cExchangeRate); // In cToken
             _supplyERC20ToComp(_cERC20Address, _amount); // Revert on error
         }
 
@@ -289,16 +288,15 @@ contract CreamPositionsManager is ReentrancyGuard {
             if (remainingToBorrowOnComp > 0) {
                 _moveSupplierFromMorphoToComp(msg.sender); // This must be enhanced to supply only what's required to borrow.
                 require(cERC20Token.borrow(remainingToBorrowOnComp) == 0, "bor:borrow-cream-fail");
-                borrowBalanceInOf[_cERC20Address][msg.sender].onComp += remainingToBorrowOnComp.div(
-                    cERC20Token.borrowIndex()
-                ); // In cdUnit
+                borrowBalanceInOf[_cERC20Address][msg.sender].onCream += remainingToBorrowOnComp
+                    .div(cERC20Token.borrowIndex()); // In cdUnit
             }
         } else {
             // There is not enough suppliers to provide this lender demand
             // So we put all of its collateral on Cream, and borrow on Cream for him
             _moveSupplierFromMorphoToComp(msg.sender);
             require(cERC20Token.borrow(_amount) == 0, "bor:borrow-cream-fail");
-            borrowBalanceInOf[_cERC20Address][msg.sender].onComp += _amount.div(
+            borrowBalanceInOf[_cERC20Address][msg.sender].onCream += _amount.div(
                 cERC20Token.borrowIndex()
             ); // In cdUnit
         }
@@ -333,18 +331,18 @@ contract CreamPositionsManager is ReentrancyGuard {
         // No need to update mUnitExchangeRate here as it's done in `_checkAccountLiquidity`
         uint256 mExchangeRate = compMarketsManager.mUnitExchangeRate(_cERC20Address);
         uint256 cExchangeRate = cERC20Token.exchangeRateCurrent();
-        uint256 amountOnCompInUnderlying = supplyBalanceInOf[_cERC20Address][msg.sender].onComp.mul(
-            cExchangeRate
-        );
+        uint256 amountOnCompInUnderlying = supplyBalanceInOf[_cERC20Address][msg.sender]
+            .onCream
+            .mul(cExchangeRate);
 
         if (_amount <= amountOnCompInUnderlying) {
             // Simple case where we can directly withdraw unused liquidity from Cream
-            supplyBalanceInOf[_cERC20Address][msg.sender].onComp -= _amount.div(cExchangeRate); // In cToken
+            supplyBalanceInOf[_cERC20Address][msg.sender].onCream -= _amount.div(cExchangeRate); // In cToken
             _withdrawERC20FromComp(_cERC20Address, _amount); // Revert on error
         } else {
             // First, we take all the unused liquidy of the user on Cream
             _withdrawERC20FromComp(_cERC20Address, amountOnCompInUnderlying); // Revert on error
-            supplyBalanceInOf[_cERC20Address][msg.sender].onComp -= amountOnCompInUnderlying.div(
+            supplyBalanceInOf[_cERC20Address][msg.sender].onCream -= amountOnCompInUnderlying.div(
                 cExchangeRate
             );
             // Then, search for the remaining liquidity in peer-to-peer
@@ -409,7 +407,7 @@ contract CreamPositionsManager is ReentrancyGuard {
         require(debtValue > maxDebtValue, "liq:debt-value<=max");
         LiquidateVars memory vars;
         vars.borrowBalance =
-            borrowBalanceInOf[_cERC20BorrowedAddress][_borrower].onComp.mul(
+            borrowBalanceInOf[_cERC20BorrowedAddress][_borrower].onCream.mul(
                 ICErc20(_cERC20BorrowedAddress).borrowIndex()
             ) +
             borrowBalanceInOf[_cERC20BorrowedAddress][_borrower].inP2P.mul(
@@ -444,9 +442,9 @@ contract CreamPositionsManager is ReentrancyGuard {
             .mul(comptroller.liquidationIncentiveMantissa())
             .div(vars.priceCollateralMantissa);
 
-        vars.onCompInUnderlying = supplyBalanceInOf[_cERC20CollateralAddress][_borrower].onComp.mul(
-            cERC20CollateralToken.exchangeRateStored()
-        );
+        vars.onCompInUnderlying = supplyBalanceInOf[_cERC20CollateralAddress][_borrower]
+            .onCream
+            .mul(cERC20CollateralToken.exchangeRateStored());
         uint256 totalCollateral = vars.onCompInUnderlying +
             supplyBalanceInOf[_cERC20CollateralAddress][_borrower].inP2P.mul(
                 compMarketsManager.updateMUnitExchangeRate(_cERC20CollateralAddress)
@@ -456,9 +454,9 @@ contract CreamPositionsManager is ReentrancyGuard {
 
         if (vars.amountToSeize <= vars.onCompInUnderlying) {
             // Seize tokens from Cream
-            supplyBalanceInOf[_cERC20CollateralAddress][_borrower].onComp -= vars.amountToSeize.div(
-                cERC20CollateralToken.exchangeRateStored()
-            );
+            supplyBalanceInOf[_cERC20CollateralAddress][_borrower].onCream -= vars
+                .amountToSeize
+                .div(cERC20CollateralToken.exchangeRateStored());
             _withdrawERC20FromComp(_cERC20CollateralAddress, vars.amountToSeize);
         } else {
             // Seize tokens from Morpho and Cream
@@ -471,11 +469,11 @@ contract CreamPositionsManager is ReentrancyGuard {
             uint256 balanceBefore = erc20CollateralToken.balanceOf(address(this));
             require(
                 cERC20CollateralToken.redeem(
-                    supplyBalanceInOf[_cERC20CollateralAddress][_borrower].onComp
+                    supplyBalanceInOf[_cERC20CollateralAddress][_borrower].onCream
                 ) == 0,
                 "liq:withdraw-cToken-fail"
             );
-            supplyBalanceInOf[_cERC20CollateralAddress][_borrower].onComp = 0;
+            supplyBalanceInOf[_cERC20CollateralAddress][_borrower].onCream = 0;
             require(cERC20CollateralToken.borrow(toMove) == 0, "liq:borrow-cream-fail");
             uint256 balanceAfter = erc20CollateralToken.balanceOf(address(this));
             vars.amountToSeize = balanceAfter - balanceBefore;
@@ -505,15 +503,15 @@ contract CreamPositionsManager is ReentrancyGuard {
         uint256 mExchangeRate = compMarketsManager.updateMUnitExchangeRate(_cERC20Address);
 
         // If some borrowers are on Cream, we must move them to Morpho
-        if (borrowBalanceInOf[_cERC20Address][_borrower].onComp > 0) {
+        if (borrowBalanceInOf[_cERC20Address][_borrower].onCream > 0) {
             uint256 borrowIndex = cERC20Token.borrowIndex();
-            uint256 onCompInUnderlying = borrowBalanceInOf[_cERC20Address][_borrower].onComp.mul(
+            uint256 onCompInUnderlying = borrowBalanceInOf[_cERC20Address][_borrower].onCream.mul(
                 borrowIndex
             );
 
             // If the amount repaid is below what's on Cream, repay the borrowing amount on Cream
             if (_amount <= onCompInUnderlying) {
-                borrowBalanceInOf[_cERC20Address][_borrower].onComp -= _amount.div(borrowIndex); // In cdUnit
+                borrowBalanceInOf[_cERC20Address][_borrower].onCream -= _amount.div(borrowIndex); // In cdUnit
                 erc20Token.safeApprove(_cERC20Address, _amount);
                 cERC20Token.repayBorrow(_amount);
             } else {
@@ -522,7 +520,7 @@ contract CreamPositionsManager is ReentrancyGuard {
                 borrowBalanceInOf[_cERC20Address][_borrower].inP2P -= remainingToSupplyToComp.div(
                     mExchangeRate
                 );
-                borrowBalanceInOf[_cERC20Address][_borrower].onComp -= onCompInUnderlying.div(
+                borrowBalanceInOf[_cERC20Address][_borrower].onCream -= onCompInUnderlying.div(
                     borrowIndex
                 );
                 require(
@@ -588,17 +586,17 @@ contract CreamPositionsManager is ReentrancyGuard {
             // Loop on the keys (addresses) sharing the same value
             while (suppliersOnComp[_cERC20Address].getNumberOfKeysAtValue(highestValue) > 0) {
                 address account = suppliersOnComp[_cERC20Address].valueKeyAtIndex(highestValue, 0); // Pick the first account in the list
-                uint256 onComp = supplyBalanceInOf[_cERC20Address][account].onComp; // In cToken
+                uint256 onCream = supplyBalanceInOf[_cERC20Address][account].onCream; // In cToken
 
-                if (onComp > 0) {
+                if (onCream > 0) {
                     uint256 toMove;
                     // This is done to prevent rounding errors
-                    if (onComp.mul(cExchangeRate) <= remainingToMove) {
-                        supplyBalanceInOf[_cERC20Address][account].onComp = 0;
-                        toMove = onComp.mul(cExchangeRate);
+                    if (onCream.mul(cExchangeRate) <= remainingToMove) {
+                        supplyBalanceInOf[_cERC20Address][account].onCream = 0;
+                        toMove = onCream.mul(cExchangeRate);
                     } else {
                         toMove = remainingToMove;
-                        supplyBalanceInOf[_cERC20Address][account].onComp -= toMove.div(
+                        supplyBalanceInOf[_cERC20Address][account].onCream -= toMove.div(
                             cExchangeRate
                         ); // In cToken
                     }
@@ -637,7 +635,7 @@ contract CreamPositionsManager is ReentrancyGuard {
                 if (inP2P > 0) {
                     uint256 toMove = Math.min(inP2P.mul(mExchangeRate), remainingToMove); // In underlying
                     remainingToMove -= toMove;
-                    supplyBalanceInOf[_cERC20Address][account].onComp += toMove.div(cExchangeRate); // In cToken
+                    supplyBalanceInOf[_cERC20Address][account].onCream += toMove.div(cExchangeRate); // In cToken
                     supplyBalanceInOf[_cERC20Address][account].inP2P -= toMove.div(mExchangeRate); // In mUnit
 
                     _updateSupplierList(_cERC20Address, account);
@@ -672,7 +670,7 @@ contract CreamPositionsManager is ReentrancyGuard {
                 if (inP2P > 0) {
                     uint256 toMove = Math.min(inP2P.mul(mExchangeRate), remainingToMove); // In underlying
                     remainingToMove -= toMove;
-                    borrowBalanceInOf[_cERC20Address][account].onComp += toMove.div(borrowIndex);
+                    borrowBalanceInOf[_cERC20Address][account].onCream += toMove.div(borrowIndex);
                     borrowBalanceInOf[_cERC20Address][account].inP2P -= toMove.div(mExchangeRate);
 
                     _updateBorrowerList(_cERC20Address, account);
@@ -702,16 +700,16 @@ contract CreamPositionsManager is ReentrancyGuard {
         while (remainingToMove > 0 && highestValue != 0) {
             while (borrowersOnComp[_cERC20Address].getNumberOfKeysAtValue(highestValue) > 0) {
                 address account = borrowersOnComp[_cERC20Address].valueKeyAtIndex(highestValue, 0);
-                uint256 onComp = borrowBalanceInOf[_cERC20Address][account].onComp; // In cToken
+                uint256 onCream = borrowBalanceInOf[_cERC20Address][account].onCream; // In cToken
 
-                if (onComp > 0) {
+                if (onCream > 0) {
                     uint256 toMove;
-                    if (onComp.mul(borrowIndex) <= remainingToMove) {
-                        toMove = onComp.mul(borrowIndex);
-                        borrowBalanceInOf[_cERC20Address][account].onComp = 0;
+                    if (onCream.mul(borrowIndex) <= remainingToMove) {
+                        toMove = onCream.mul(borrowIndex);
+                        borrowBalanceInOf[_cERC20Address][account].onCream = 0;
                     } else {
                         toMove = remainingToMove;
-                        borrowBalanceInOf[_cERC20Address][account].onComp -= toMove.div(
+                        borrowBalanceInOf[_cERC20Address][account].onCream -= toMove.div(
                             borrowIndex
                         );
                     }
@@ -739,7 +737,7 @@ contract CreamPositionsManager is ReentrancyGuard {
                 uint256 mExchangeRate = compMarketsManager.mUnitExchangeRate(cERC20Entered);
                 uint256 cExchangeRate = ICErc20(cERC20Entered).exchangeRateCurrent();
                 uint256 inP2PInUnderlying = inP2P.mul(mExchangeRate);
-                supplyBalanceInOf[cERC20Entered][_account].onComp += inP2PInUnderlying.div(
+                supplyBalanceInOf[cERC20Entered][_account].onCream += inP2PInUnderlying.div(
                     cExchangeRate
                 ); // In cToken
                 supplyBalanceInOf[cERC20Entered][_account].inP2P -= inP2PInUnderlying.div(
@@ -816,13 +814,13 @@ contract CreamPositionsManager is ReentrancyGuard {
             vars.mExchangeRate = compMarketsManager.updateMUnitExchangeRate(vars.cERC20Entered);
             // Calculation of the current debt (in underlying)
             vars.debtToAdd =
-                borrowBalanceInOf[vars.cERC20Entered][_account].onComp.mul(
+                borrowBalanceInOf[vars.cERC20Entered][_account].onCream.mul(
                     ICErc20(vars.cERC20Entered).borrowIndex()
                 ) +
                 borrowBalanceInOf[vars.cERC20Entered][_account].inP2P.mul(vars.mExchangeRate);
             // Calculation of the current collateral (in underlying)
             vars.collateralToAdd =
-                supplyBalanceInOf[vars.cERC20Entered][_account].onComp.mul(
+                supplyBalanceInOf[vars.cERC20Entered][_account].onCream.mul(
                     ICErc20(vars.cERC20Entered).exchangeRateCurrent()
                 ) +
                 supplyBalanceInOf[vars.cERC20Entered][_account].inP2P.mul(vars.mExchangeRate);
@@ -859,10 +857,10 @@ contract CreamPositionsManager is ReentrancyGuard {
             borrowersOnComp[_cERC20Address].remove(_account);
         if (borrowersInP2P[_cERC20Address].keyExists(_account))
             borrowersInP2P[_cERC20Address].remove(_account);
-        if (borrowBalanceInOf[_cERC20Address][_account].onComp > 0) {
+        if (borrowBalanceInOf[_cERC20Address][_account].onCream > 0) {
             borrowersOnComp[_cERC20Address].insert(
                 _account,
-                borrowBalanceInOf[_cERC20Address][_account].onComp
+                borrowBalanceInOf[_cERC20Address][_account].onCream
             );
         }
         if (borrowBalanceInOf[_cERC20Address][_account].inP2P > 0) {
@@ -882,10 +880,10 @@ contract CreamPositionsManager is ReentrancyGuard {
             suppliersOnComp[_cERC20Address].remove(_account);
         if (suppliersInP2P[_cERC20Address].keyExists(_account))
             suppliersInP2P[_cERC20Address].remove(_account);
-        if (supplyBalanceInOf[_cERC20Address][_account].onComp > 0) {
+        if (supplyBalanceInOf[_cERC20Address][_account].onCream > 0) {
             suppliersOnComp[_cERC20Address].insert(
                 _account,
-                supplyBalanceInOf[_cERC20Address][_account].onComp
+                supplyBalanceInOf[_cERC20Address][_account].onCream
             );
         }
         if (supplyBalanceInOf[_cERC20Address][_account].inP2P > 0) {
