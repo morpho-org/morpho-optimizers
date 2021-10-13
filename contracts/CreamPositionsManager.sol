@@ -591,25 +591,30 @@ contract CreamPositionsManager is ReentrancyGuard {
                     highestValue,
                     0
                 ); // Pick the first account in the list
-                uint256 onCream = supplyBalanceInOf[_crERC20Address][account].onCream; // In crToken
+                // Check if this user is not borrowing on Cream
+                if (!_hasDebtOnCream(account)) {
+                    uint256 onCream = supplyBalanceInOf[_crERC20Address][account].onCream; // In crToken
 
-                if (onCream > 0) {
-                    uint256 toMove;
-                    // This is done to prevent rounding errors
-                    if (onCream.mul(cExchangeRate) <= remainingToMove) {
-                        supplyBalanceInOf[_crERC20Address][account].onCream = 0;
-                        toMove = onCream.mul(cExchangeRate);
-                    } else {
-                        toMove = remainingToMove;
-                        supplyBalanceInOf[_crERC20Address][account].onCream -= toMove.div(
-                            cExchangeRate
-                        ); // In crToken
+                    if (onCream > 0) {
+                        uint256 toMove;
+                        // This is done to prevent rounding errors
+                        if (onCream.mul(cExchangeRate) <= remainingToMove) {
+                            supplyBalanceInOf[_crERC20Address][account].onCream = 0;
+                            toMove = onCream.mul(cExchangeRate);
+                        } else {
+                            toMove = remainingToMove;
+                            supplyBalanceInOf[_crERC20Address][account].onCream -= toMove.div(
+                                cExchangeRate
+                            ); // In crToken
+                        }
+                        remainingToMove -= toMove;
+                        supplyBalanceInOf[_crERC20Address][account].inP2P += toMove.div(
+                            mExchangeRate
+                        ); // In mUnit
+
+                        _updateSupplierList(_crERC20Address, account);
+                        emit SupplierMovedFromCreamToMorpho(account, _crERC20Address, toMove);
                     }
-                    remainingToMove -= toMove;
-                    supplyBalanceInOf[_crERC20Address][account].inP2P += toMove.div(mExchangeRate); // In mUnit
-
-                    _updateSupplierList(_crERC20Address, account);
-                    emit SupplierMovedFromCreamToMorpho(account, _crERC20Address, toMove);
                 }
             }
             // Update the highest value after the tree has been updated
@@ -903,5 +908,14 @@ contract CreamPositionsManager is ReentrancyGuard {
                 supplyBalanceInOf[_crERC20Address][_account].inP2P
             );
         }
+    }
+
+    function _hasDebtOnCream(address _account) internal view returns (bool) {
+        for (uint256 i = 0; i < enteredMarkets[_account].length; i++) {
+            if (borrowBalanceInOf[enteredMarkets[_account][i]][_account].onCream > 0) {
+                return true;
+            }
+        }
+        return false;
     }
 }
