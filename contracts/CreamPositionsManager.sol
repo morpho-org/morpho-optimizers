@@ -673,7 +673,8 @@ contract CreamPositionsManager is ReentrancyGuard {
             while (borrowersInP2P[_crERC20Address].getNumberOfKeysAtValue(highestValue) > 0) {
                 address account = borrowersInP2P[_crERC20Address].valueKeyAtIndex(highestValue, 0);
                 uint256 inP2P = borrowBalanceInOf[_crERC20Address][account].inP2P;
-
+                // Put all its supply on Cream
+                _moveSupplierFromP2PToCream(account);
                 if (inP2P > 0) {
                     uint256 toMove = Math.min(inP2P.mul(mExchangeRate), remainingToMove); // In underlying
                     remainingToMove -= toMove;
