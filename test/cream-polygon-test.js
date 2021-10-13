@@ -186,7 +186,7 @@ describe('CreamPositionsManager Contract', () => {
     });
 
     it('Should revert when supply less than the required threshold', async () => {
-      await expect(creamPositionsManager.connect(supplier1).deposit(config.tokens.cDai.address, underlyingThreshold.sub(1))).to.be.reverted;
+      await expect(creamPositionsManager.connect(supplier1).supply(config.tokens.cDai.address, underlyingThreshold.sub(1))).to.be.reverted;
     });
 
     it('Should have the correct balances after supply', async () => {
@@ -194,7 +194,7 @@ describe('CreamPositionsManager Contract', () => {
       const daiBalanceBefore = await daiToken.balanceOf(supplier1.getAddress());
       const expectedDaiBalanceAfter = daiBalanceBefore.sub(amount);
       await daiToken.connect(supplier1).approve(creamPositionsManager.address, amount);
-      await creamPositionsManager.connect(supplier1).deposit(config.tokens.cDai.address, amount);
+      await creamPositionsManager.connect(supplier1).supply(config.tokens.cDai.address, amount);
       const daiBalanceAfter = await daiToken.balanceOf(supplier1.getAddress());
 
       // Check ERC20 balance
@@ -210,7 +210,7 @@ describe('CreamPositionsManager Contract', () => {
       const amount = utils.parseUnits('10');
       const daiBalanceBefore1 = await daiToken.balanceOf(supplier1.getAddress());
       await daiToken.connect(supplier1).approve(creamPositionsManager.address, amount);
-      await creamPositionsManager.connect(supplier1).deposit(config.tokens.cDai.address, amount);
+      await creamPositionsManager.connect(supplier1).supply(config.tokens.cDai.address, amount);
       const daiBalanceAfter1 = await daiToken.balanceOf(supplier1.getAddress());
       expect(daiBalanceAfter1).to.equal(daiBalanceBefore1.sub(amount));
 
@@ -235,15 +235,15 @@ describe('CreamPositionsManager Contract', () => {
       await expect(creamPositionsManager.connect(supplier1).withdraw(config.tokens.cDai.address, utils.parseUnits('0.001'))).to.be.reverted;
     });
 
-    it('Should be able to deposit more ERC20 after already having deposit ERC20', async () => {
+    it('Should be able to supply more ERC20 after already having supply ERC20', async () => {
       const amount = utils.parseUnits('10');
       const amountToApprove = utils.parseUnits('10').mul(2);
       const daiBalanceBefore = await daiToken.balanceOf(supplier1.getAddress());
 
       await daiToken.connect(supplier1).approve(creamPositionsManager.address, amountToApprove);
-      await creamPositionsManager.connect(supplier1).deposit(config.tokens.cDai.address, amount);
+      await creamPositionsManager.connect(supplier1).supply(config.tokens.cDai.address, amount);
       const exchangeRate1 = await cDaiToken.callStatic.exchangeRateCurrent();
-      await creamPositionsManager.connect(supplier1).deposit(config.tokens.cDai.address, amount);
+      await creamPositionsManager.connect(supplier1).supply(config.tokens.cDai.address, amount);
       const exchangeRate2 = await cDaiToken.callStatic.exchangeRateCurrent();
 
       // Check ERC20 balance
@@ -258,7 +258,7 @@ describe('CreamPositionsManager Contract', () => {
       expect((await creamPositionsManager.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).onCream).to.equal(expectedSupplyBalanceOnComp);
     });
 
-    it('Several suppliers should be able to deposit and have the correct balances', async () => {
+    it('Several suppliers should be able to supply and have the correct balances', async () => {
       const amount = utils.parseUnits('10');
       let expectedCTokenBalance = BigNumber.from(0);
 
@@ -267,7 +267,7 @@ describe('CreamPositionsManager Contract', () => {
         const daiBalanceBefore = await daiToken.balanceOf(supplier.getAddress());
         const expectedDaiBalanceAfter = daiBalanceBefore.sub(amount);
         await daiToken.connect(supplier).approve(creamPositionsManager.address, amount);
-        await creamPositionsManager.connect(supplier).deposit(config.tokens.cDai.address, amount);
+        await creamPositionsManager.connect(supplier).supply(config.tokens.cDai.address, amount);
         const exchangeRate = await cDaiToken.callStatic.exchangeRateCurrent();
         const daiBalanceAfter = await daiToken.balanceOf(supplier.getAddress());
 
@@ -291,7 +291,7 @@ describe('CreamPositionsManager Contract', () => {
     });
 
     it('Should revert when providing 0 as collateral', async () => {
-      await expect(creamPositionsManager.connect(supplier1).deposit(config.tokens.cDai.address, 0)).to.be.reverted;
+      await expect(creamPositionsManager.connect(supplier1).supply(config.tokens.cDai.address, 0)).to.be.reverted;
     });
 
     it('Should revert when borrow less than threshold', async () => {
@@ -303,7 +303,7 @@ describe('CreamPositionsManager Contract', () => {
     it('Should be able to borrow on Compound after providing collateral up to max', async () => {
       const amount = to6Decimals(utils.parseUnits('100'));
       await usdcToken.connect(borrower1).approve(creamPositionsManager.address, amount);
-      await creamPositionsManager.connect(borrower1).deposit(config.tokens.cUsdc.address, amount);
+      await creamPositionsManager.connect(borrower1).supply(config.tokens.cUsdc.address, amount);
       const cExchangeRate = await cUsdcToken.callStatic.exchangeRateCurrent();
       const collateralBalanceInCToken = (await creamPositionsManager.supplyBalanceInOf(config.tokens.cUsdc.address, borrower1.getAddress())).onCream;
       const collateralBalanceInUnderlying = cTokenToUnderlying(collateralBalanceInCToken, cExchangeRate);
@@ -334,7 +334,7 @@ describe('CreamPositionsManager Contract', () => {
     it('Should not be able to borrow more than max allowed given an amount of collateral', async () => {
       const amount = to6Decimals(utils.parseUnits('100'));
       await usdcToken.connect(borrower1).approve(creamPositionsManager.address, amount);
-      await creamPositionsManager.connect(borrower1).deposit(config.tokens.cUsdc.address, amount);
+      await creamPositionsManager.connect(borrower1).supply(config.tokens.cUsdc.address, amount);
       const collateralBalanceInCToken = (await creamPositionsManager.supplyBalanceInOf(config.tokens.cUsdc.address, borrower1.getAddress())).onCream;
       const cExchangeRate = await cUsdcToken.callStatic.exchangeRateCurrent();
       const collateralBalanceInUnderlying = cTokenToUnderlying(collateralBalanceInCToken, cExchangeRate);
@@ -359,7 +359,7 @@ describe('CreamPositionsManager Contract', () => {
       for (const i in borrowers) {
         const borrower = borrowers[i];
         await usdcToken.connect(borrower).approve(creamPositionsManager.address, collateralAmount);
-        await creamPositionsManager.connect(borrower).deposit(config.tokens.cUsdc.address, collateralAmount);
+        await creamPositionsManager.connect(borrower).supply(config.tokens.cUsdc.address, collateralAmount);
         const daiBalanceBefore = await daiToken.balanceOf(borrower.getAddress());
 
         await creamPositionsManager.connect(borrower).borrow(config.tokens.cDai.address, borrowedAmount);
@@ -387,7 +387,7 @@ describe('CreamPositionsManager Contract', () => {
     it('Borrower should be able to repay less than what is on Compound', async () => {
       const amount = to6Decimals(utils.parseUnits('100'));
       await usdcToken.connect(borrower1).approve(creamPositionsManager.address, amount);
-      await creamPositionsManager.connect(borrower1).deposit(config.tokens.cUsdc.address, amount);
+      await creamPositionsManager.connect(borrower1).supply(config.tokens.cUsdc.address, amount);
       const collateralBalanceInCToken = (await creamPositionsManager.supplyBalanceInOf(config.tokens.cUsdc.address, borrower1.getAddress())).onCream;
       const cExchangeRate = await cUsdcToken.callStatic.exchangeRateCurrent();
       const collateralBalanceInUnderlying = cTokenToUnderlying(collateralBalanceInCToken, cExchangeRate);
@@ -415,12 +415,12 @@ describe('CreamPositionsManager Contract', () => {
 
   describe('P2P interactions between supplier and borrowers', () => {
     it('Supplier should withdraw her liquidity while not enough cToken in peer-to-peer contract', async () => {
-      // Supplier deposits tokens
+      // Supplier supplys tokens
       const supplyAmount = utils.parseUnits('10');
       const daiBalanceBefore1 = await daiToken.balanceOf(supplier1.getAddress());
       const expectedDaiBalanceAfter1 = daiBalanceBefore1.sub(supplyAmount);
       await daiToken.connect(supplier1).approve(creamPositionsManager.address, supplyAmount);
-      await creamPositionsManager.connect(supplier1).deposit(config.tokens.cDai.address, supplyAmount);
+      await creamPositionsManager.connect(supplier1).supply(config.tokens.cDai.address, supplyAmount);
       const daiBalanceAfter1 = await daiToken.balanceOf(supplier1.getAddress());
 
       // Check ERC20 balance
@@ -433,7 +433,7 @@ describe('CreamPositionsManager Contract', () => {
       // Borrower provides collateral
       const collateralAmount = to6Decimals(utils.parseUnits('100'));
       await usdcToken.connect(borrower1).approve(creamPositionsManager.address, collateralAmount);
-      await creamPositionsManager.connect(borrower1).deposit(config.tokens.cUsdc.address, collateralAmount);
+      await creamPositionsManager.connect(borrower1).supply(config.tokens.cUsdc.address, collateralAmount);
 
       // Borrowers borrows supplier1 amount
       await creamPositionsManager.connect(borrower1).borrow(config.tokens.cDai.address, supplyAmount);
@@ -504,7 +504,7 @@ describe('CreamPositionsManager Contract', () => {
         const daiBalanceBefore = await daiToken.balanceOf(supplier.getAddress());
         const expectedDaiBalanceAfter = daiBalanceBefore.sub(supplyAmount);
         await daiToken.connect(supplier).approve(creamPositionsManager.address, supplyAmount);
-        await creamPositionsManager.connect(supplier).deposit(config.tokens.cDai.address, supplyAmount);
+        await creamPositionsManager.connect(supplier).supply(config.tokens.cDai.address, supplyAmount);
         const daiBalanceAfter = await daiToken.balanceOf(supplier.getAddress());
 
         // Check ERC20 balance
@@ -519,7 +519,7 @@ describe('CreamPositionsManager Contract', () => {
       // Borrower provides collateral
       const collateralAmount = to6Decimals(utils.parseUnits('100'));
       await usdcToken.connect(borrower1).approve(creamPositionsManager.address, collateralAmount);
-      await creamPositionsManager.connect(borrower1).deposit(config.tokens.cUsdc.address, collateralAmount);
+      await creamPositionsManager.connect(borrower1).supply(config.tokens.cUsdc.address, collateralAmount);
 
       const previousSupplier1SupplyBalanceOnComp = (await creamPositionsManager.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).onCream;
 
@@ -609,10 +609,10 @@ describe('CreamPositionsManager Contract', () => {
     });
 
     it('Borrower in peer-to-peer only, should be able to repay all borrow amount', async () => {
-      // Supplier deposits tokens
+      // Supplier supplys tokens
       const supplyAmount = utils.parseUnits('10');
       await daiToken.connect(supplier1).approve(creamPositionsManager.address, supplyAmount);
-      await creamPositionsManager.connect(supplier1).deposit(config.tokens.cDai.address, supplyAmount);
+      await creamPositionsManager.connect(supplier1).supply(config.tokens.cDai.address, supplyAmount);
 
       // Borrower borrows half of the tokens
       const collateralAmount = to6Decimals(utils.parseUnits('100'));
@@ -620,7 +620,7 @@ describe('CreamPositionsManager Contract', () => {
       const toBorrow = supplyAmount.div(2);
 
       await usdcToken.connect(borrower1).approve(creamPositionsManager.address, collateralAmount);
-      await creamPositionsManager.connect(borrower1).deposit(config.tokens.cUsdc.address, collateralAmount);
+      await creamPositionsManager.connect(borrower1).supply(config.tokens.cUsdc.address, collateralAmount);
       await creamPositionsManager.connect(borrower1).borrow(config.tokens.cDai.address, toBorrow);
 
       const borrowerBalanceInP2P = (await creamPositionsManager.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).inP2P;
@@ -653,16 +653,16 @@ describe('CreamPositionsManager Contract', () => {
     });
 
     it('Borrower in peer-to-peer and on Compound, should be able to repay all borrow amount', async () => {
-      // Supplier deposits tokens
+      // Supplier supplys tokens
       const supplyAmount = utils.parseUnits('10');
       const amountToApprove = utils.parseUnits('100000000');
       await daiToken.connect(supplier1).approve(creamPositionsManager.address, supplyAmount);
-      await creamPositionsManager.connect(supplier1).deposit(config.tokens.cDai.address, supplyAmount);
+      await creamPositionsManager.connect(supplier1).supply(config.tokens.cDai.address, supplyAmount);
 
       // Borrower borrows two times the amount of tokens;
       const collateralAmount = to6Decimals(utils.parseUnits('100'));
       await usdcToken.connect(borrower1).approve(creamPositionsManager.address, collateralAmount);
-      await creamPositionsManager.connect(borrower1).deposit(config.tokens.cUsdc.address, collateralAmount);
+      await creamPositionsManager.connect(borrower1).supply(config.tokens.cUsdc.address, collateralAmount);
       const daiBalanceBefore = await daiToken.balanceOf(borrower1.getAddress());
       const toBorrow = supplyAmount.mul(2);
       const supplyBalanceOnComp = (await creamPositionsManager.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).onCream;
@@ -714,15 +714,15 @@ describe('CreamPositionsManager Contract', () => {
     });
 
     it('Should disconnect supplier from Morpho when borrow an asset that nobody has on compMarketsManager and the supply balance is partly used', async () => {
-      // supplier1 deposits DAI
+      // supplier1 supplys DAI
       const supplyAmount = utils.parseUnits('100');
       await daiToken.connect(supplier1).approve(creamPositionsManager.address, supplyAmount);
-      await creamPositionsManager.connect(supplier1).deposit(config.tokens.cDai.address, supplyAmount);
+      await creamPositionsManager.connect(supplier1).supply(config.tokens.cDai.address, supplyAmount);
 
-      // borrower1 deposits USDC as collateral
+      // borrower1 supplys USDC as collateral
       const collateralAmount = to6Decimals(utils.parseUnits('100'));
       await usdcToken.connect(borrower1).approve(creamPositionsManager.address, collateralAmount);
-      await creamPositionsManager.connect(borrower1).deposit(config.tokens.cUsdc.address, collateralAmount);
+      await creamPositionsManager.connect(borrower1).supply(config.tokens.cUsdc.address, collateralAmount);
 
       // borrower1 borrows part of the supply amount of supplier1
       const amountToBorrow = supplyAmount.div(2);
@@ -758,32 +758,32 @@ describe('CreamPositionsManager Contract', () => {
       expect(removeDigitsBigNumber(2, usdtBorrowBalanceInUnderlying)).to.equal(removeDigitsBigNumber(2, maxToBorrow));
     });
 
-    it('Supplier should be connected to borrowers already in peer-to-peer when depositing', async () => {
+    it('Supplier should be connected to borrowers already in peer-to-peer when supplying', async () => {
       const collateralAmount = to6Decimals(utils.parseUnits('100'));
       const supplyAmount = utils.parseUnits('100');
       const borrowAmount = utils.parseUnits('30');
 
       // borrower1 borrows
       await usdcToken.connect(borrower1).approve(creamPositionsManager.address, collateralAmount);
-      await creamPositionsManager.connect(borrower1).deposit(config.tokens.cUsdc.address, collateralAmount);
+      await creamPositionsManager.connect(borrower1).supply(config.tokens.cUsdc.address, collateralAmount);
       await creamPositionsManager.connect(borrower1).borrow(config.tokens.cDai.address, borrowAmount);
       const borrower1BorrowBalanceOnComp = (await creamPositionsManager.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onCream;
 
       // borrower2 borrows
       await usdcToken.connect(borrower2).approve(creamPositionsManager.address, collateralAmount);
-      await creamPositionsManager.connect(borrower2).deposit(config.tokens.cUsdc.address, collateralAmount);
+      await creamPositionsManager.connect(borrower2).supply(config.tokens.cUsdc.address, collateralAmount);
       await creamPositionsManager.connect(borrower2).borrow(config.tokens.cDai.address, borrowAmount);
       const borrower2BorrowBalanceOnComp = (await creamPositionsManager.borrowBalanceInOf(config.tokens.cDai.address, borrower2.getAddress())).onCream;
 
       // borrower3 borrows
       await usdcToken.connect(borrower3).approve(creamPositionsManager.address, collateralAmount);
-      await creamPositionsManager.connect(borrower3).deposit(config.tokens.cUsdc.address, collateralAmount);
+      await creamPositionsManager.connect(borrower3).supply(config.tokens.cUsdc.address, collateralAmount);
       await creamPositionsManager.connect(borrower3).borrow(config.tokens.cDai.address, borrowAmount);
       const borrower3BorrowBalanceOnComp = (await creamPositionsManager.borrowBalanceInOf(config.tokens.cDai.address, borrower3.getAddress())).onCream;
 
-      // supplier1 deposit
+      // supplier1 supply
       await daiToken.connect(supplier1).approve(creamPositionsManager.address, supplyAmount);
-      await creamPositionsManager.connect(supplier1).deposit(config.tokens.cDai.address, supplyAmount);
+      await creamPositionsManager.connect(supplier1).supply(config.tokens.cDai.address, supplyAmount);
       const cExchangeRate = await cDaiToken.callStatic.exchangeRateStored();
       const borrowIndex = await cDaiToken.borrowIndex();
       const mUnitExchangeRate = await compMarketsManager.mUnitExchangeRate(config.tokens.cDai.address);
@@ -806,7 +806,7 @@ describe('CreamPositionsManager Contract', () => {
     it('Borrower should be liquidated while supply (collateral) is only on Compound', async () => {
       const amount = to6Decimals(utils.parseUnits('100'));
       await usdcToken.connect(borrower1).approve(creamPositionsManager.address, amount);
-      await creamPositionsManager.connect(borrower1).deposit(config.tokens.cUsdc.address, amount);
+      await creamPositionsManager.connect(borrower1).supply(config.tokens.cUsdc.address, amount);
       const collateralBalanceInCToken = (await creamPositionsManager.supplyBalanceInOf(config.tokens.cUsdc.address, borrower1.getAddress())).onCream;
       const cExchangeRate = await cUsdcToken.callStatic.exchangeRateCurrent();
       const collateralBalanceInUnderlying = cTokenToUnderlying(collateralBalanceInCToken, cExchangeRate);
@@ -855,17 +855,17 @@ describe('CreamPositionsManager Contract', () => {
 
     it('Borrower should be liquidated while supply (collateral) is on Compound and in peer-to-peer', async () => {
       await daiToken.connect(supplier1).approve(creamPositionsManager.address, utils.parseUnits('1000'));
-      await creamPositionsManager.connect(supplier1).deposit(config.tokens.cDai.address, utils.parseUnits('1000'));
+      await creamPositionsManager.connect(supplier1).supply(config.tokens.cDai.address, utils.parseUnits('1000'));
 
-      // borrower1 deposits USDC as supply (collateral)
+      // borrower1 supplys USDC as supply (collateral)
       const amount = to6Decimals(utils.parseUnits('100'));
       await usdcToken.connect(borrower1).approve(creamPositionsManager.address, amount);
-      await creamPositionsManager.connect(borrower1).deposit(config.tokens.cUsdc.address, amount);
+      await creamPositionsManager.connect(borrower1).supply(config.tokens.cUsdc.address, amount);
 
       // borrower2 borrows part of supply of borrower1 -> borrower1 has supply in peer-to-peer and on Compound
       const toBorrow = amount;
       await uniToken.connect(borrower2).approve(creamPositionsManager.address, utils.parseUnits('200'));
-      await creamPositionsManager.connect(borrower2).deposit(config.tokens.cUni.address, utils.parseUnits('200'));
+      await creamPositionsManager.connect(borrower2).supply(config.tokens.cUni.address, utils.parseUnits('200'));
       await creamPositionsManager.connect(borrower2).borrow(config.tokens.cUsdc.address, toBorrow);
 
       // borrower1 borrows DAI
