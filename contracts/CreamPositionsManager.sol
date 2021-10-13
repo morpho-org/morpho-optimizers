@@ -92,9 +92,9 @@ contract CreamPositionsManager is ReentrancyGuard {
      */
     event Borrowed(address indexed _account, address indexed _crERC20Address, uint256 _amount);
 
-    /** @dev Emitted when a deposit happens.
-     *  @param _account The address of the depositor.
-     *  @param _crERC20Address The address of the market where assets are deposited.
+    /** @dev Emitted when a repay happens.
+     *  @param _account The address of the repayer.
+     *  @param _crERC20Address The address of the market where assets are repaid.
      *  @param _amount The amount of assets.
      */
     event Repaid(address indexed _account, address indexed _crERC20Address, uint256 _amount);
