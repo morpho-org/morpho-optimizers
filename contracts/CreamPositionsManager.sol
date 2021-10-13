@@ -574,22 +574,27 @@ contract CreamPositionsManager is ReentrancyGuard {
                 // Check if this user is not borrowing on Cream
                 if (!_hasDebtOnCream(account)) {
                     uint256 onCream = supplyBalanceInOf[_crERC20Address][account].onCream; // In crToken
-                    uint256 toMatch;
-                    // This is done to prevent rounding errors
-                    if (onCream.mul(crExchangeRate) <= remainingToMatch) {
-                        supplyBalanceInOf[_crERC20Address][account].onCream = 0;
-                        toMatch = onCream.mul(crExchangeRate);
-                    } else {
-                        toMatch = remainingToMatch;
-                        supplyBalanceInOf[_crERC20Address][account].onCream -= toMatch.div(
-                            crExchangeRate
-                        ); // In crToken
+
+                    if (onCream > 0) {
+                        uint256 toMove;
+                        // This is done to prevent rounding errors
+                        if (onCream.mul(cExchangeRate) <= remainingToMove) {
+                            supplyBalanceInOf[_crERC20Address][account].onCream = 0;
+                            toMove = onCream.mul(cExchangeRate);
+                        } else {
+                            toMove = remainingToMove;
+                            supplyBalanceInOf[_crERC20Address][account].onCream -= toMove.div(
+                                cExchangeRate
+                            ); // In crToken
+                        }
+                        remainingToMove -= toMove;
+                        supplyBalanceInOf[_crERC20Address][account].inP2P += toMove.div(
+                            mExchangeRate
+                        ); // In mUnit
+
+                        _updateSupplierList(_crERC20Address, account);
+                        emit SupplierMovedFromCreamToMorpho(account, _crERC20Address, toMove);
                     }
-                    remainingToMatch -= toMatch;
-                    supplyBalanceInOf[_crERC20Address][account].inP2P += toMatch.div(mExchangeRate); // In mUnit
-                    _updateSupplierList(_crERC20Address, account);
-                    toWithdraw += toMatch;
-                    emit SupplierMatched(account, _crERC20Address, toMatch);
                 }
             }
             // Update the highest value after the tree has been updated
