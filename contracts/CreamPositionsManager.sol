@@ -215,31 +215,28 @@ contract CreamPositionsManager is ReentrancyGuard {
         erc20Token.safeTransferFrom(msg.sender, address(this), _amount);
         uint256 cExchangeRate = crERC20Token.exchangeRateCurrent();
 
-        // If some borrowers are on Cream, Morpho must move them in peer-to-peer
+        /* SCENARIO 1: Waiting borrowers -> match in P2P */
         if (borrowersOnCream[_crERC20Address].isNotEmpty()) {
             uint256 mExchangeRate = creamMarketsManager.updateMUnitExchangeRate(_crERC20Address);
-            // Find borrowers and move them to Morpho
             uint256 remainingToSupplyToCream = _moveBorrowersFromCreamToP2P(
                 _crERC20Address,
                 _amount
             ); // In underlying
-
             uint256 toRepay = _amount - remainingToSupplyToCream;
-            // Morpho must repay what it owe to Cream; the amount borrowed by the borrowers on Cream
             if (toRepay > 0) {
                 supplyBalanceInOf[_crERC20Address][msg.sender].inP2P += toRepay.div(mExchangeRate); // In mUnit
-                // Repay Cream on behalf of the borrowers with the user deposit
                 erc20Token.safeApprove(_crERC20Address, toRepay);
                 crERC20Token.repayBorrow(toRepay);
             }
-            // If the borrowers on Cream were not sufficient to match all the supply, Morpho put the remaining liquidity on Cream
+            /* SCENARIO 1.1: Not enough waiting borrowers -> supply the remaining to Cream */
             if (remainingToSupplyToCream > 0) {
                 supplyBalanceInOf[_crERC20Address][msg.sender].onCream += remainingToSupplyToCream
                     .div(cExchangeRate); // In crToken
                 _supplyERC20ToCream(_crERC20Address, remainingToSupplyToCream); // Revert on error
             }
-        } else {
-            // If there is no borrower waiting for a P2P match, Morpho put the user on Cream
+        }
+        /* SCENARIO 2: No waiting borrowers -> supply to Cream */
+        else {
             supplyBalanceInOf[_crERC20Address][msg.sender].onCream += _amount.div(cExchangeRate); // In crToken
             _supplyERC20ToCream(_crERC20Address, _amount); // Revert on error
         }
@@ -265,7 +262,7 @@ contract CreamPositionsManager is ReentrancyGuard {
         // No need to update mUnitExchangeRate here as it's done in `_checkAccountLiquidity`
         uint256 mExchangeRate = creamMarketsManager.mUnitExchangeRate(_crERC20Address);
 
-        // If some suppliers are on Cream, Morpho must pull them out and match them in P2P
+        /* SCENARIO 1: Waiting suppliers -> match in P2P */
         if (suppliersOnCream[_crERC20Address].isNotEmpty()) {
             uint256 remainingToBorrowOnCream = _moveSuppliersFromCreamToP2P(
                 _crERC20Address,
@@ -280,9 +277,9 @@ contract CreamPositionsManager is ReentrancyGuard {
                 _withdrawERC20FromCream(_crERC20Address, toWithdraw); // Revert on error
             }
 
-            // If not enough crTokens in peer-to-peer, Morpho must borrow it on Cream
+            /* SCENARIO 1.1: Not enough waiting supply -> borrow the rest on Cream */
             if (remainingToBorrowOnCream > 0) {
-                _moveSupplierFromP2PToCream(msg.sender); // This must be enhanced to supply only what's required to borrow
+                _moveSupplierFromP2PToCream(msg.sender);
                 require(
                     crERC20Token.borrow(remainingToBorrowOnCream) == 0,
                     "bor:borrow-cream-fail"
@@ -290,9 +287,9 @@ contract CreamPositionsManager is ReentrancyGuard {
                 borrowBalanceInOf[_crERC20Address][msg.sender].onCream += remainingToBorrowOnCream
                     .div(crERC20Token.borrowIndex()); // In cdUnit
             }
-        } else {
-            // There is not enough suppliers to provide this borrower demand
-            // So Morpho put all of its collateral on Cream, and borrow on Cream for him
+        }
+        /* SCENARIO 2: no waiting suppliers -> borrow on Cream */
+        else {
             _moveSupplierFromP2PToCream(msg.sender);
             require(crERC20Token.borrow(_amount) == 0, "bor:borrow-cream-fail");
             borrowBalanceInOf[_crERC20Address][msg.sender].onCream += _amount.div(
@@ -334,12 +331,13 @@ contract CreamPositionsManager is ReentrancyGuard {
             .onCream
             .mul(cExchangeRate);
 
+        /* SCENARIO 1: Enough waiting supply -> withdraw it from Cream */
         if (_amount <= amountOnCreamInUnderlying) {
-            // Simple case where Morpho can directly withdraw unused liquidity from Cream
             supplyBalanceInOf[_crERC20Address][msg.sender].onCream -= _amount.div(cExchangeRate); // In crToken
             _withdrawERC20FromCream(_crERC20Address, _amount); // Revert on error
-        } else {
-            // First, Morpho take all the unused liquidy of the user on Cream
+        }
+        /* SCENARIO 2: Not Enough waiting supply */
+        else {
             _withdrawERC20FromCream(_crERC20Address, amountOnCreamInUnderlying); // Revert on error
             supplyBalanceInOf[_crERC20Address][msg.sender].onCream -= amountOnCreamInUnderlying.div(
                 cExchangeRate
@@ -353,16 +351,16 @@ contract CreamPositionsManager is ReentrancyGuard {
                 cExchangeRate
             );
 
+            /* SCENARIO 2.1: Enough waiting suppliers -> match them with borrowers */
             if (remainingToWithdraw <= crTokenContractBalanceInUnderlying) {
-                // There is enough unused liquidity in peer-to-peer, so Morpho reconnect the credit lines to others suppliers
                 require(
                     _moveSuppliersFromCreamToP2P(_crERC20Address, remainingToWithdraw) == 0,
                     "red:remaining-suppliers!=0"
                 );
                 _withdrawERC20FromCream(_crERC20Address, remainingToWithdraw); // Revert on error
-            } else {
-                // The contract does not have enough crTokens for the withdraw
-                // First, Morpho use all the available crTokens in the contract
+            }
+            /* SCENARIO 2.2: Not enough waiting suppliers -> borrow on Cream */
+            else {
                 uint256 toWithdraw = crTokenContractBalanceInUnderlying -
                     _moveSuppliersFromCreamToP2P(
                         _crERC20Address,
@@ -371,7 +369,6 @@ contract CreamPositionsManager is ReentrancyGuard {
                 // Update the remaining amount to withdraw to `msg.sender`
                 remainingToWithdraw -= toWithdraw;
                 _withdrawERC20FromCream(_crERC20Address, toWithdraw); // Revert on error
-                // Then, Morpho move borrowers not matched anymore from Morpho to Cream and borrow the amount directly on Cream, thanks to their collateral which is now on Cream
                 require(
                     _moveBorrowersFromP2PToCream(_crERC20Address, remainingToWithdraw) == 0,
                     "red:remaining-borrowers!=0"
@@ -501,20 +498,21 @@ contract CreamPositionsManager is ReentrancyGuard {
         erc20Token.safeTransferFrom(msg.sender, address(this), _amount);
         uint256 mExchangeRate = creamMarketsManager.updateMUnitExchangeRate(_crERC20Address);
 
-        // If some borrowers are on Cream, Morpho must move them to Morpho
+        /* SCENARIO 1: Waiting borrowers -> match them in P2P */
         if (borrowBalanceInOf[_crERC20Address][_borrower].onCream > 0) {
             uint256 borrowIndex = crERC20Token.borrowIndex();
             uint256 onCreamInUnderlying = borrowBalanceInOf[_crERC20Address][_borrower].onCream.mul(
                 borrowIndex
             );
 
-            // If the amount repaid is below what's on Cream, repay the borrowing amount on Cream
+            /* SCENARIO 1.1: Enough waiting borrowers -> repay Cream */
             if (_amount <= onCreamInUnderlying) {
                 borrowBalanceInOf[_crERC20Address][_borrower].onCream -= _amount.div(borrowIndex); // In cdUnit
                 erc20Token.safeApprove(_crERC20Address, _amount);
                 crERC20Token.repayBorrow(_amount);
-            } else {
-                // Else repay Cream and move the remaining liquidity to Cream
+            }
+            /* SCENARIO 1.2: Not Enough waiting borrowers -> unmatch suppliers */
+            else {
                 uint256 remainingToSupplyToCream = _amount - onCreamInUnderlying; // In underlying
                 borrowBalanceInOf[_crERC20Address][_borrower].inP2P -= remainingToSupplyToCream.div(
                     mExchangeRate
@@ -532,7 +530,9 @@ contract CreamPositionsManager is ReentrancyGuard {
                 if (remainingToSupplyToCream > 0)
                     _supplyERC20ToCream(_crERC20Address, remainingToSupplyToCream);
             }
-        } else {
+        }
+        /* SCENARIO 2: No waiting borrowers -> supply to Cream */
+        else {
             borrowBalanceInOf[_crERC20Address][_borrower].inP2P -= _amount.div(mExchangeRate); // In mUnit
             require(
                 _moveSuppliersFromP2PToCream(_crERC20Address, _amount) == 0,
