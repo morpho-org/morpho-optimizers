@@ -574,27 +574,22 @@ contract CreamPositionsManager is ReentrancyGuard {
                 // Check if this user is not borrowing on Cream
                 if (!_hasDebtOnCream(account)) {
                     uint256 onCream = supplyBalanceInOf[_crERC20Address][account].onCream; // In crToken
-
-                    if (onCream > 0) {
-                        uint256 toMove;
-                        // This is done to prevent rounding errors
-                        if (onCream.mul(cExchangeRate) <= remainingToMove) {
-                            supplyBalanceInOf[_crERC20Address][account].onCream = 0;
-                            toMove = onCream.mul(cExchangeRate);
-                        } else {
-                            toMove = remainingToMove;
-                            supplyBalanceInOf[_crERC20Address][account].onCream -= toMove.div(
-                                cExchangeRate
-                            ); // In crToken
-                        }
-                        remainingToMove -= toMove;
-                        supplyBalanceInOf[_crERC20Address][account].inP2P += toMove.div(
-                            mExchangeRate
-                        ); // In mUnit
-
-                        _updateSupplierList(_crERC20Address, account);
-                        emit SupplierMovedFromCreamToMorpho(account, _crERC20Address, toMove);
+                    uint256 toMove;
+                    // This is done to prevent rounding errors
+                    if (onCream.mul(cExchangeRate) <= remainingToMove) {
+                        supplyBalanceInOf[_crERC20Address][account].onCream = 0;
+                        toMove = onCream.mul(cExchangeRate);
+                    } else {
+                        toMove = remainingToMove;
+                        supplyBalanceInOf[_crERC20Address][account].onCream -= toMove.div(
+                            cExchangeRate
+                        ); // In crToken
                     }
+                    remainingToMove -= toMove;
+                    supplyBalanceInOf[_crERC20Address][account].inP2P += toMove.div(mExchangeRate); // In mUnit
+
+                    _updateSupplierList(_crERC20Address, account);
+                    emit SupplierMovedFromCreamToMorpho(account, _crERC20Address, toMove);
                 }
             }
             // Update the highest value after the tree has been updated
@@ -625,15 +620,13 @@ contract CreamPositionsManager is ReentrancyGuard {
             while (suppliersInP2P[_crERC20Address].getNumberOfKeysAtValue(highestValue) > 0) {
                 address account = suppliersInP2P[_crERC20Address].valueKeyAtIndex(highestValue, 0);
                 uint256 inP2P = supplyBalanceInOf[_crERC20Address][account].inP2P; // In crToken
-                uint256 toUnmatch = Math.min(inP2P.mul(mExchangeRate), remainingToUnmatch); // In underlying
-                remainingToUnmatch -= toUnmatch;
-                supplyBalanceInOf[_crERC20Address][account].onCream += toUnmatch.div(
-                    crExchangeRate
-                ); // In crToken
-                supplyBalanceInOf[_crERC20Address][account].inP2P -= toUnmatch.div(mExchangeRate); // In mUnit
+                uint256 toMove = Math.min(inP2P.mul(mExchangeRate), remainingToMove); // In underlying
+                remainingToMove -= toMove;
+                supplyBalanceInOf[_crERC20Address][account].onCream += toMove.div(cExchangeRate); // In crToken
+                supplyBalanceInOf[_crERC20Address][account].inP2P -= toMove.div(mExchangeRate); // In mUnit
+
                 _updateSupplierList(_crERC20Address, account);
-                toSupply += toUnmatch;
-                emit SupplierUnmatched(account, _crERC20Address, toUnmatch);
+                emit SupplierMovedFromMorphoToCream(account, _crERC20Address, toMove);
             }
             highestValue = suppliersInP2P[_crERC20Address].last();
         }
@@ -659,26 +652,19 @@ contract CreamPositionsManager is ReentrancyGuard {
         uint256 highestValue = borrowersOnCream[_crERC20Address].last();
         uint256 toRepay;
 
-        while (remainingToMatch > 0 && highestValue != 0) {
-            while (borrowersOnCream[_crERC20Address].getNumberOfKeysAtValue(highestValue) > 0) {
-                address account = borrowersOnCream[_crERC20Address].valueKeyAtIndex(
-                    highestValue,
-                    0
-                );
-                uint256 onCream = borrowBalanceInOf[_crERC20Address][account].onCream; // In crToken
-                uint256 toMatch;
-                if (onCream.mul(borrowIndex) <= remainingToMatch) {
-                    toMatch = onCream.mul(borrowIndex);
-                    borrowBalanceInOf[_crERC20Address][account].onCream = 0;
-                } else {
-                    toMatch = remainingToMatch;
-                    borrowBalanceInOf[_crERC20Address][account].onCream -= toMatch.div(borrowIndex);
-                }
-                remainingToMatch -= toMatch;
-                borrowBalanceInOf[_crERC20Address][account].inP2P += toMatch.div(mExchangeRate);
+        while (remainingToMove > 0 && highestValue != 0) {
+            while (borrowersInP2P[_crERC20Address].getNumberOfKeysAtValue(highestValue) > 0) {
+                address account = borrowersInP2P[_crERC20Address].valueKeyAtIndex(highestValue, 0);
+                uint256 inP2P = borrowBalanceInOf[_crERC20Address][account].inP2P;
+                // Put all its supply on Cream
+                _moveSupplierFromP2PToCream(account);
+                uint256 toMove = Math.min(inP2P.mul(mExchangeRate), remainingToMove); // In underlying
+                remainingToMove -= toMove;
+                borrowBalanceInOf[_crERC20Address][account].onCream += toMove.div(borrowIndex);
+                borrowBalanceInOf[_crERC20Address][account].inP2P -= toMove.div(mExchangeRate);
+
                 _updateBorrowerList(_crERC20Address, account);
-                toRepay += toMatch;
-                emit BorrowerMatched(account, _crERC20Address, toMatch);
+                emit BorrowerMovedFromMorphoToCream(account, _crERC20Address, toMove);
             }
             highestValue = borrowersOnCream[_crERC20Address].last();
         }
@@ -701,22 +687,28 @@ contract CreamPositionsManager is ReentrancyGuard {
         remainingToUnmatch = _amount;
         uint256 mExchangeRate = creamMarketsManager.mUnitExchangeRate(_crERC20Address);
         uint256 borrowIndex = crERC20Token.borrowIndex();
-        uint256 highestValue = borrowersInP2P[_crERC20Address].last();
-        uint256 toBorrow;
+        uint256 highestValue = borrowersOnCream[_crERC20Address].last();
 
-        while (remainingToUnmatch > 0 && highestValue != 0) {
-            while (borrowersInP2P[_crERC20Address].getNumberOfKeysAtValue(highestValue) > 0) {
-                address account = borrowersInP2P[_crERC20Address].valueKeyAtIndex(highestValue, 0);
-                uint256 inP2P = borrowBalanceInOf[_crERC20Address][account].inP2P;
-                // Put all its supply on Cream
-                _unmatchTheSupplier(account);
-                uint256 toUnmatch = Math.min(inP2P.mul(mExchangeRate), remainingToUnmatch); // In underlying
-                remainingToUnmatch -= toUnmatch;
-                borrowBalanceInOf[_crERC20Address][account].onCream += toUnmatch.div(borrowIndex);
-                borrowBalanceInOf[_crERC20Address][account].inP2P -= toUnmatch.div(mExchangeRate);
+        while (remainingToMove > 0 && highestValue != 0) {
+            while (borrowersOnCream[_crERC20Address].getNumberOfKeysAtValue(highestValue) > 0) {
+                address account = borrowersOnCream[_crERC20Address].valueKeyAtIndex(
+                    highestValue,
+                    0
+                );
+                uint256 onCream = borrowBalanceInOf[_crERC20Address][account].onCream; // In crToken
+                uint256 toMove;
+                if (onCream.mul(borrowIndex) <= remainingToMove) {
+                    toMove = onCream.mul(borrowIndex);
+                    borrowBalanceInOf[_crERC20Address][account].onCream = 0;
+                } else {
+                    toMove = remainingToMove;
+                    borrowBalanceInOf[_crERC20Address][account].onCream -= toMove.div(borrowIndex);
+                }
+                remainingToMove -= toMove;
+                borrowBalanceInOf[_crERC20Address][account].inP2P += toMove.div(mExchangeRate);
+
                 _updateBorrowerList(_crERC20Address, account);
-                toBorrow += toUnmatch;
-                emit BorrowerUnmatched(account, _crERC20Address, toUnmatch);
+                emit BorrowerMovedFromCreamToMorpho(account, _crERC20Address, toMove);
             }
             highestValue = borrowersInP2P[_crERC20Address].last();
         }
