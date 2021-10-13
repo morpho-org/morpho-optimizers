@@ -92,7 +92,7 @@ describe('CompPositionsManager Contract', () => {
     underlyingThreshold = utils.parseUnits('1');
 
     // Create and list markets
-    await compLikeMarketsManager.connect(owner).setCompPositionsManager(compPositionsManager.address);
+    await compLikeMarketsManager.connect(owner).setCompLikePositionsManager(compPositionsManager.address);
     await compLikeMarketsManager.connect(owner).createMarkets([config.tokens.cDai.address, config.tokens.cUsdc.address, config.tokens.cUsdt.address, config.tokens.cUni.address]);
     await compLikeMarketsManager.connect(owner).listMarket(config.tokens.cDai.address);
     await compLikeMarketsManager.connect(owner).updateThreshold(config.tokens.cUsdc.address, BigNumber.from(1).pow(6));
@@ -139,11 +139,11 @@ describe('CompPositionsManager Contract', () => {
     });
 
     it('Only Owner should be able to set compPositionsManager in peer-to-peer', async () => {
-      expect(compLikeMarketsManager.connect(supplier1).setCompPositionsManager(fakeCompoundModule.address)).to.be.reverted;
-      expect(compLikeMarketsManager.connect(borrower1).setCompPositionsManager(fakeCompoundModule.address)).to.be.reverted;
-      expect(compLikeMarketsManager.connect(owner).setCompPositionsManager(fakeCompoundModule.address)).not.be.reverted;
-      await compLikeMarketsManager.connect(owner).setCompPositionsManager(fakeCompoundModule.address);
-      expect(await compLikeMarketsManager.compPositionsManager()).to.equal(fakeCompoundModule.address);
+      expect(compLikeMarketsManager.connect(supplier1).setCompLikePositionsManager(fakeCompoundModule.address)).to.be.reverted;
+      expect(compLikeMarketsManager.connect(borrower1).setCompLikePositionsManager(fakeCompoundModule.address)).to.be.reverted;
+      expect(compLikeMarketsManager.connect(owner).setCompLikePositionsManager(fakeCompoundModule.address)).not.be.reverted;
+      await compLikeMarketsManager.connect(owner).setCompLikePositionsManager(fakeCompoundModule.address);
+      expect(await compLikeMarketsManager.compLikePositionsManager()).to.equal(fakeCompoundModule.address);
     });
 
     it('Only Owner should be able to update thresholds', async () => {

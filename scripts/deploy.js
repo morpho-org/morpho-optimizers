@@ -29,7 +29,7 @@ async function main() {
 
   console.log('CompPositionsManager address:', compPositionsManager.address);
 
-  await compLikeMarketsManager.connect(deployer).setCompPositionsManager(compPositionsManager.address);
+  await compLikeMarketsManager.connect(deployer).setCompLikePositionsManager(compPositionsManager.address);
   await compLikeMarketsManager.connect(deployer).createMarkets([config.tokens.cDai.address, config.tokens.cUsdc.address, config.tokens.cBat.address, config.tokens.cZrx.address]);
   await compLikeMarketsManager.connect(deployer).updateThreshold(config.tokens.cUsdc.address, BigNumber.from(1).pow(6));
   await compLikeMarketsManager.connect(deployer).listMarket(config.tokens.cDai.address);

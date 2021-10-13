@@ -6,11 +6,11 @@ import "@openzeppelin/contracts/utils/math/Math.sol";
 import "prb-math/contracts/PRBMathUD60x18.sol";
 
 import {ICErc20, IComptroller} from "./interfaces/ICompound.sol";
-import "./interfaces/ICompPositionsManager.sol";
+import "./interfaces/ICompLikePositionsManager.sol";
 
 /**
  *  @title CompLikeMarketsManager
- *  @dev Smart contracts interacting with Compound like protocol and its markets.
+ *  @dev Smart contracts interacting with Compound-like protocol and its markets.
  */
 contract CompLikeMarketsManager is Ownable {
     using PRBMathUD60x18 for uint256;
@@ -25,7 +25,7 @@ contract CompLikeMarketsManager is Ownable {
     mapping(address => uint256) public lastUpdateBlockNumber; // Last time mUnitExchangeRate was updated.
     mapping(address => uint256) public thresholds; // Thresholds below the ones suppliers and borrowers cannot enter markets.
 
-    ICompPositionsManager public compPositionsManager;
+    ICompLikePositionsManager public compLikePositionsManager;
 
     /* Events */
 
@@ -63,28 +63,28 @@ contract CompLikeMarketsManager is Ownable {
 
     /* External */
 
-    /** @dev Sets the `compPositionsManager` to interact with Compound.
-     *  @param _compPositionsManager The address of compound module.
+    /** @dev Sets the `compLikePositionsManager` to interact with positions on Compound-like protocol.
+     *  @param _compLikePositionsManager The address of position manager module.
      */
-    function setCompPositionsManager(ICompPositionsManager _compPositionsManager)
+    function setCompLikePositionsManager(ICompLikePositionsManager _compLikePositionsManager)
         external
         onlyOwner
     {
-        compPositionsManager = _compPositionsManager;
+        compLikePositionsManager = _compLikePositionsManager;
     }
 
     /** @dev Sets the comptroller address.
-     *  @param _proxyComptrollerAddress The address of Compound's comptroller.
+     *  @param _proxyComptrollerAddress The address of Compound-like protocol's comptroller.
      */
     function setComptroller(address _proxyComptrollerAddress) external onlyOwner {
-        compPositionsManager.setComptroller(_proxyComptrollerAddress);
+        compLikePositionsManager.setComptroller(_proxyComptrollerAddress);
     }
 
     /** @dev Creates new markets to borrow/supply.
      *  @param _marketAddresses The addresses of the markets to add (cToken).
      */
     function createMarkets(address[] calldata _marketAddresses) external onlyOwner {
-        uint256[] memory results = compPositionsManager.createMarkets(_marketAddresses);
+        uint256[] memory results = compLikePositionsManager.createMarkets(_marketAddresses);
         for (uint256 i; i < _marketAddresses.length; i++) {
             require(results[i] == 0, "createMarkets:enter-mkt-fail");
             address _marketAddress = _marketAddresses[i];

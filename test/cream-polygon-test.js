@@ -92,7 +92,7 @@ describe('CreamPositionsManager Contract', () => {
     underlyingThreshold = utils.parseUnits('1');
 
     // Create and list markets
-    await compLikeMarketsManager.connect(owner).setCompPositionsManager(creamPositionsManager.address);
+    await compLikeMarketsManager.connect(owner).setCompLikePositionsManager(creamPositionsManager.address);
     await compLikeMarketsManager.connect(owner).createMarkets([config.tokens.cDai.address, config.tokens.cUsdc.address, config.tokens.cUsdt.address, config.tokens.cUni.address]);
     await compLikeMarketsManager.connect(owner).listMarket(config.tokens.cDai.address);
     await compLikeMarketsManager.connect(owner).updateThreshold(config.tokens.cUsdc.address, BigNumber.from(1).pow(6));
@@ -139,11 +139,11 @@ describe('CreamPositionsManager Contract', () => {
     });
 
     it('Only Owner should be able to set CreamPositionsManager in peer-to-peer', async () => {
-      expect(compLikeMarketsManager.connect(supplier1).setCompPositionsManager(fakeCreamPositionsManager.address)).to.be.reverted;
-      expect(compLikeMarketsManager.connect(borrower1).setCompPositionsManager(fakeCreamPositionsManager.address)).to.be.reverted;
-      expect(compLikeMarketsManager.connect(owner).setCompPositionsManager(fakeCreamPositionsManager.address)).not.be.reverted;
-      await compLikeMarketsManager.connect(owner).setCompPositionsManager(fakeCreamPositionsManager.address);
-      expect(await compLikeMarketsManager.compPositionsManager()).to.equal(fakeCreamPositionsManager.address);
+      expect(compLikeMarketsManager.connect(supplier1).setCompLikePositionsManager(fakeCreamPositionsManager.address)).to.be.reverted;
+      expect(compLikeMarketsManager.connect(borrower1).setCompLikePositionsManager(fakeCreamPositionsManager.address)).to.be.reverted;
+      expect(compLikeMarketsManager.connect(owner).setCompLikePositionsManager(fakeCreamPositionsManager.address)).not.be.reverted;
+      await compLikeMarketsManager.connect(owner).setCompLikePositionsManager(fakeCreamPositionsManager.address);
+      expect(await compLikeMarketsManager.compLikePositionsManager()).to.equal(fakeCreamPositionsManager.address);
     });
 
     it('Only Owner should be able to update thresholds', async () => {
