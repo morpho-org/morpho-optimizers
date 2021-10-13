@@ -217,7 +217,7 @@ contract CreamPositionsManager is ReentrancyGuard {
 
         // If some borrowers are on Cream, Morpho must move them in peer-to-peer
         if (borrowersOnCream[_crERC20Address].isNotEmpty()) {
-            uint256 mExchangeRate = creamMarketsManager.updateMUnitExchangeRate(_crERC20Address);
+            uint256 mExchangeRate = creamMarketsManager.updateBPY(_crERC20Address);
             // Find borrowers and move them to Morpho
             uint256 remainingToSupplyToCream = _moveBorrowersFromCreamToP2P(
                 _crERC20Address,
@@ -449,7 +449,7 @@ contract CreamPositionsManager is ReentrancyGuard {
             .mul(cERC20CollateralToken.exchangeRateStored());
         uint256 totalCollateral = vars.onCreamInUnderlying +
             supplyBalanceInOf[_cERC20CollateralAddress][_borrower].inP2P.mul(
-                creamMarketsManager.updateMUnitExchangeRate(_cERC20CollateralAddress)
+                creamMarketsManager.updateBPY(_cERC20CollateralAddress)
             );
 
         require(vars.amountToSeize <= totalCollateral, "liquidate:to-seize>collateral");
@@ -502,7 +502,7 @@ contract CreamPositionsManager is ReentrancyGuard {
         ICErc20 crERC20Token = ICErc20(_crERC20Address);
         IERC20 erc20Token = IERC20(crERC20Token.underlying());
         erc20Token.safeTransferFrom(msg.sender, address(this), _amount);
-        uint256 mExchangeRate = creamMarketsManager.updateMUnitExchangeRate(_crERC20Address);
+        uint256 mExchangeRate = creamMarketsManager.updateBPY(_crERC20Address);
 
         // If some borrowers are on Cream, Morpho must move them to Morpho
         if (borrowBalanceInOf[_crERC20Address][_borrower].onCream > 0) {
@@ -808,7 +808,7 @@ contract CreamPositionsManager is ReentrancyGuard {
             // Avoid stack too deep error
             BalanceStateVars memory vars;
             vars.cERC20Entered = enteredMarkets[_account][i];
-            vars.mExchangeRate = creamMarketsManager.updateMUnitExchangeRate(vars.cERC20Entered);
+            vars.mExchangeRate = creamMarketsManager.updateBPY(vars.cERC20Entered);
             // Calculation of the current debt (in underlying)
             vars.debtToAdd =
                 borrowBalanceInOf[vars.cERC20Entered][_account].onCream.mul(

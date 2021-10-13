@@ -212,7 +212,7 @@ contract CompPositionsManager is ReentrancyGuard {
 
         // If some borrowers are on Compound, Morpho must move them to Morpho
         if (borrowersOnComp[_cERC20Address].isNotEmpty()) {
-            uint256 mExchangeRate = compMarketsManager.updateMUnitExchangeRate(_cERC20Address);
+            uint256 mExchangeRate = compMarketsManager.updateBPY(_cERC20Address);
             // Find borrowers and move them to Morpho
             uint256 remainingToSupplyToComp = _moveBorrowersFromCompToP2P(_cERC20Address, _amount); // In underlying
 
@@ -254,7 +254,7 @@ contract CompPositionsManager is ReentrancyGuard {
         _checkAccountLiquidity(msg.sender, _cERC20Address, 0, _amount);
         ICErc20 cERC20Token = ICErc20(_cERC20Address);
         IERC20 erc20Token = IERC20(cERC20Token.underlying());
-        uint256 mExchangeRate = compMarketsManager.updateMUnitExchangeRate(_cERC20Address);
+        uint256 mExchangeRate = compMarketsManager.updateBPY(_cERC20Address);
 
         // If some suppliers are on Compound, Morpho must pull them out and match them in P2P
         if (suppliersOnComp[_cERC20Address].isNotEmpty()) {
@@ -315,7 +315,7 @@ contract CompPositionsManager is ReentrancyGuard {
         ICErc20 cERC20Token = ICErc20(_cERC20Address);
         IERC20 erc20Token = IERC20(cERC20Token.underlying());
 
-        uint256 mExchangeRate = compMarketsManager.updateMUnitExchangeRate(_cERC20Address);
+        uint256 mExchangeRate = compMarketsManager.updateBPY(_cERC20Address);
         uint256 cExchangeRate = cERC20Token.exchangeRateCurrent();
         uint256 amountOnCompInUnderlying = supplyBalanceInOf[_cERC20Address][msg.sender].onComp.mul(
             cExchangeRate
@@ -431,7 +431,7 @@ contract CompPositionsManager is ReentrancyGuard {
         );
         uint256 totalCollateral = vars.onCompInUnderlying +
             supplyBalanceInOf[_cERC20CollateralAddress][_borrower].inP2P.mul(
-                compMarketsManager.updateMUnitExchangeRate(_cERC20CollateralAddress)
+                compMarketsManager.updateBPY(_cERC20CollateralAddress)
             );
 
         require(vars.amountToSeize <= totalCollateral, "liq:toseize>collateral");
@@ -485,7 +485,7 @@ contract CompPositionsManager is ReentrancyGuard {
         ICErc20 cERC20Token = ICErc20(_cERC20Address);
         IERC20 erc20Token = IERC20(cERC20Token.underlying());
         erc20Token.safeTransferFrom(msg.sender, address(this), _amount);
-        uint256 mExchangeRate = compMarketsManager.updateMUnitExchangeRate(_cERC20Address);
+        uint256 mExchangeRate = compMarketsManager.updateBPY(_cERC20Address);
 
         if (borrowBalanceInOf[_cERC20Address][_borrower].onComp > 0) {
             uint256 onCompInUnderlying = borrowBalanceInOf[_cERC20Address][_borrower].onComp.mul(
@@ -803,7 +803,7 @@ contract CompPositionsManager is ReentrancyGuard {
             // Avoid stack too deep error
             BalanceStateVars memory vars;
             vars.cERC20Entered = enteredMarkets[_account][i];
-            vars.mExchangeRate = compMarketsManager.updateMUnitExchangeRate(vars.cERC20Entered);
+            vars.mExchangeRate = compMarketsManager.updateBPY(vars.cERC20Entered);
             // Calculation of the current debt (in underlying)
             vars.debtToAdd =
                 borrowBalanceInOf[vars.cERC20Entered][_account].onComp.mul(

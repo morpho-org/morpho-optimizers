@@ -16,5 +16,5 @@ interface ICompLikeMarketsManager {
 
     function thresholds(address _marketAddress) external returns (uint256);
 
-    function updateMUnitExchangeRate(address _marketAddress) external returns (uint256);
+    function updateBPY(address _marketAddress) external returns (uint256);
 }

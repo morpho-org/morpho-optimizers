@@ -112,11 +112,15 @@ contract CompLikeMarketsManager is Ownable {
             address _marketAddress = _marketAddresses[i];
             require(!isCreated[_marketAddress], "createMarkets:mkt-already-created");
             isCreated[_marketAddress] = true;
-            mUnitExchangeRate[_marketAddress] = 1e18;
+            ICErc20 cErc20Token = ICErc20(_marketAddress);
+            uint256 supplyBPY = cErc20Token.supplyRatePerBlock();
+            uint256 borrowBPY = cErc20Token.borrowRatePerBlock();
+            uint256 newP2pBPY = Math.average(supplyBPY, borrowBPY);
             lastUpdateBlockNumber[_marketAddress] = block.number;
+            mUnitExchangeRate[_marketAddress] = 1e18;
+            p2pBPY[_marketAddress] = newP2pBPY;
             thresholds[_marketAddress] = 1e18;
             emit MarketCreated(_marketAddress);
-            updateBPY(_marketAddress);
         }
     }
 
@@ -150,52 +154,36 @@ contract CompLikeMarketsManager is Ownable {
         emit ThresholdUpdated(_marketAddress, _newThreshold);
     }
 
-    /* Public */
-
-    /** @dev Updates the Block Percentage Yield (`p2pBPY`) and calculate the current exchange rate (`mUnitExchangeRate`).
+    /** @dev Updates the Block Percentage Yield (`p2pBPY`), calculates and returns the current exchange rate (`mUnitExchangeRate`).
      *  @param _marketAddress The address of the market we want to update.
+     *  @return The new mUnit exchange rate.
      */
-    function updateBPY(address _marketAddress) public isMarketCreated(_marketAddress) {
-        ICErc20 cErc20Token = ICErc20(_marketAddress);
-
-        // Update p2pBPY
-        uint256 supplyBPY = cErc20Token.supplyRatePerBlock();
-        uint256 borrowBPY = cErc20Token.borrowRatePerBlock();
-        p2pBPY[_marketAddress] = Math.average(supplyBPY, borrowBPY);
-
-        emit BPYUpdated(_marketAddress, p2pBPY[_marketAddress]);
-
-        // Update mUnitExhangeRate
-        updateMUnitExchangeRate(_marketAddress);
-    }
-
-    /** @dev Updates the current exchange rate, taking into account the block percentage yield (p2pBPY) since the last time it has been updated.
-     *  @param _marketAddress The address of the market we want to update.
-     *  @return currentExchangeRate to convert from mUnit to underlying or from underlying to mUnit.
-     */
-    function updateMUnitExchangeRate(address _marketAddress)
-        public
-        isMarketCreated(_marketAddress)
-        returns (uint256)
-    {
+    function updateBPY(address _marketAddress) external returns (uint256) {
         uint256 currentBlock = block.number;
 
         if (lastUpdateBlockNumber[_marketAddress] == currentBlock) {
             return mUnitExchangeRate[_marketAddress];
         } else {
+            ICErc20 cErc20Token = ICErc20(_marketAddress);
             uint256 numberOfBlocksSinceLastUpdate = currentBlock -
                 lastUpdateBlockNumber[_marketAddress];
-            // Update lastUpdateBlockNumber
             lastUpdateBlockNumber[_marketAddress] = currentBlock;
 
+            // New p2pBPY
+            uint256 supplyBPY = cErc20Token.supplyRatePerBlock();
+            uint256 borrowBPY = cErc20Token.borrowRatePerBlock();
+            uint256 newP2pBPY = Math.average(supplyBPY, borrowBPY);
+
+            // New currentExchangeRate
             uint256 newMUnitExchangeRate = mUnitExchangeRate[_marketAddress].mul(
                 (1e18 + p2pBPY[_marketAddress]).pow(
                     PRBMathUD60x18.fromUint(numberOfBlocksSinceLastUpdate)
                 )
             );
 
-            // Update currentExchangeRate
+            p2pBPY[_marketAddress] = newP2pBPY;
             mUnitExchangeRate[_marketAddress] = newMUnitExchangeRate;
+            emit BPYUpdated(_marketAddress, newP2pBPY);
             emit MUnitExchangeRateUpdated(_marketAddress, newMUnitExchangeRate);
             return newMUnitExchangeRate;
         }

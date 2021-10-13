@@ -450,7 +450,7 @@ describe('CreamPositionsManager Contract', () => {
       expect((await creamPositionsManager.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).inP2P).to.equal(expectedBorrowBalanceInP2P1);
 
       // Compare remaining to withdraw and the cToken contract balance
-      await compLikeMarketsManager.connect(owner).updateMUnitExchangeRate(config.tokens.cDai.address);
+      await compLikeMarketsManager.connect(owner).updateBPY(config.tokens.cDai.address);
       const mExchangeRate2 = await compLikeMarketsManager.mUnitExchangeRate(config.tokens.cDai.address);
       const mExchangeRate3 = computeNewMorphoExchangeRate(mExchangeRate2, await compLikeMarketsManager.p2pBPY(config.tokens.cDai.address), 1, 0).toString();
       const daiBalanceBefore2 = await daiToken.balanceOf(supplier1.getAddress());
@@ -539,7 +539,7 @@ describe('CreamPositionsManager Contract', () => {
       expect((await creamPositionsManager.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).inP2P).to.equal(expectedBorrowBalanceInP2P1);
 
       // Compare remaining to withdraw and the cToken contract balance
-      await compLikeMarketsManager.connect(owner).updateMUnitExchangeRate(config.tokens.cDai.address);
+      await compLikeMarketsManager.connect(owner).updateBPY(config.tokens.cDai.address);
       const mExchangeRate2 = await compLikeMarketsManager.mUnitExchangeRate(config.tokens.cDai.address);
       const mExchangeRate3 = computeNewMorphoExchangeRate(mExchangeRate2, await compLikeMarketsManager.p2pBPY(config.tokens.cDai.address), 1, 0).toString();
       const daiBalanceBefore2 = await daiToken.balanceOf(supplier1.getAddress());
@@ -621,7 +621,7 @@ describe('CreamPositionsManager Contract', () => {
 
       const borrowerBalanceInP2P = (await creamPositionsManager.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).inP2P;
       const p2pBPY = await compLikeMarketsManager.p2pBPY(config.tokens.cDai.address);
-      await compLikeMarketsManager.updateMUnitExchangeRate(config.tokens.cDai.address);
+      await compLikeMarketsManager.updateBPY(config.tokens.cDai.address);
       const mUnitExchangeRate = await compLikeMarketsManager.mUnitExchangeRate(config.tokens.cDai.address);
       // WARNING: Should be one block but the pow function used in contract is not accurate
       const mExchangeRate = computeNewMorphoExchangeRate(mUnitExchangeRate, p2pBPY, 1, 0).toString();
