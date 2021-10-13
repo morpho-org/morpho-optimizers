@@ -138,12 +138,8 @@ describe('CompPositionsManager Contract', () => {
       expect(await comptroller.checkMembership(compPositionsManager.address, config.tokens.cEth.address)).to.be.true;
     });
 
-    it('Only Owner should be able to set compPositionsManager in peer-to-peer', async () => {
-      expect(compLikeMarketsManager.connect(supplier1).setCompLikePositionsManager(fakeCompoundModule.address)).to.be.reverted;
-      expect(compLikeMarketsManager.connect(borrower1).setCompLikePositionsManager(fakeCompoundModule.address)).to.be.reverted;
-      expect(compLikeMarketsManager.connect(owner).setCompLikePositionsManager(fakeCompoundModule.address)).not.be.reverted;
-      await compLikeMarketsManager.connect(owner).setCompLikePositionsManager(fakeCompoundModule.address);
-      expect(await compLikeMarketsManager.compLikePositionsManager()).to.equal(fakeCompoundModule.address);
+    it('CompPositionsManager should not be changed after already set by Owner', async () => {
+      expect(compLikeMarketsManager.connect(owner).setCompLikePositionsManager(fakeCompPositionsManager.address)).to.be.reverted;
     });
 
     it('Only Owner should be able to update thresholds', async () => {

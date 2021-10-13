@@ -138,12 +138,8 @@ describe('CreamPositionsManager Contract', () => {
       expect(await comptroller.checkMembership(creamPositionsManager.address, config.tokens.cEth.address)).to.be.true;
     });
 
-    it('Only Owner should be able to set CreamPositionsManager in peer-to-peer', async () => {
-      expect(compLikeMarketsManager.connect(supplier1).setCompLikePositionsManager(fakeCreamPositionsManager.address)).to.be.reverted;
-      expect(compLikeMarketsManager.connect(borrower1).setCompLikePositionsManager(fakeCreamPositionsManager.address)).to.be.reverted;
-      expect(compLikeMarketsManager.connect(owner).setCompLikePositionsManager(fakeCreamPositionsManager.address)).not.be.reverted;
-      await compLikeMarketsManager.connect(owner).setCompLikePositionsManager(fakeCreamPositionsManager.address);
-      expect(await compLikeMarketsManager.compLikePositionsManager()).to.equal(fakeCreamPositionsManager.address);
+    it('CreamPositionsManager should not be changed after already set by Owner', async () => {
+      expect(compLikeMarketsManager.connect(owner).setCompLikePositionsManager(fakeCreamPositionsManager.address)).to.be.reverted;
     });
 
     it('Only Owner should be able to update thresholds', async () => {

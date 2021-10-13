@@ -18,6 +18,7 @@ contract CompLikeMarketsManager is Ownable {
 
     /* Storage */
 
+    bool public isPositionsManagerSet;
     mapping(address => bool) public isListed; // Whether or not this market is listed.
     mapping(address => bool) public isCreated; // Whether or not this market is created.
     mapping(address => uint256) public p2pBPY; // Block Percentage Yield ("midrate").
@@ -70,6 +71,8 @@ contract CompLikeMarketsManager is Ownable {
         external
         onlyOwner
     {
+        require(!isPositionsManagerSet, "positions-manager-already-set");
+        isPositionsManagerSet = true;
         compLikePositionsManager = _compLikePositionsManager;
     }
 
@@ -93,8 +96,8 @@ contract CompLikeMarketsManager is Ownable {
             mUnitExchangeRate[_marketAddress] = 1e18;
             lastUpdateBlockNumber[_marketAddress] = block.number;
             thresholds[_marketAddress] = 1e18;
-            updateBPY(_marketAddress);
             emit MarketCreated(_marketAddress);
+            updateBPY(_marketAddress);
         }
     }
 
