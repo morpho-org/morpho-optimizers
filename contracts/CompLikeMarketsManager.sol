@@ -7,13 +7,12 @@ import "prb-math/contracts/PRBMathUD60x18.sol";
 
 import {ICErc20, IComptroller} from "./interfaces/ICompound.sol";
 import "./interfaces/ICompPositionsManager.sol";
-import "./interfaces/ICompMarketsManager.sol";
 
 /**
- *  @title CompPositionsManager
- *  @dev Smart contracts interacting with Compound to enable real P2P supply with cERC20 tokens as supply/borrow assets.
+ *  @title CompLikeMarketsManager
+ *  @dev Smart contracts interacting with Compound like protocol and its markets.
  */
-contract CompMarketsManager is Ownable {
+contract CompLikeMarketsManager is Ownable {
     using PRBMathUD60x18 for uint256;
     using Math for uint256;
 
@@ -81,7 +80,7 @@ contract CompMarketsManager is Ownable {
         compPositionsManager.setComptroller(_proxyComptrollerAddress);
     }
 
-    /** @dev Creates new market to borrow/supply.
+    /** @dev Creates new markets to borrow/supply.
      *  @param _marketAddresses The addresses of the markets to add (cToken).
      */
     function createMarkets(address[] calldata _marketAddresses) external onlyOwner {

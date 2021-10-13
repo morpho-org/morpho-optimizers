@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/utils/math/Math.sol";
 import "prb-math/contracts/PRBMathUD60x18.sol";
 
 import "./libraries/RedBlackBinaryTree.sol";
-import "./interfaces/ICompMarketsManager.sol";
+import "./interfaces/ICompLikeMarketsManager.sol";
 import {ICErc20, IComptroller, ICompoundOracle} from "./interfaces/ICompound.sol";
 
 /**
@@ -67,7 +67,7 @@ contract CreamPositionsManager is ReentrancyGuard {
 
     IComptroller public creamtroller;
     ICompoundOracle public creamOracle;
-    ICompMarketsManager public creamMarketsManager;
+    ICompLikeMarketsManager public creamMarketsManager;
 
     /* Events */
 
@@ -171,7 +171,7 @@ contract CreamPositionsManager is ReentrancyGuard {
 
     /* Constructor */
 
-    constructor(ICompMarketsManager _creamMarketsManager, address _proxyCreamtrollerAddress) {
+    constructor(ICompLikeMarketsManager _creamMarketsManager, address _proxyCreamtrollerAddress) {
         creamMarketsManager = _creamMarketsManager;
         creamtroller = IComptroller(_proxyCreamtrollerAddress);
         creamOracle = ICompoundOracle(creamtroller.oracle());

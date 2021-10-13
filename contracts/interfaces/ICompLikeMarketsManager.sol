@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.7;
 
-interface ICompMarketsManager {
+interface ICompLikeMarketsManager {
     function isListed(address _marketAddress) external returns (bool);
 
     function p2pBPY(address _marketAddress) external returns (uint256);

@@ -13,29 +13,29 @@ async function main() {
 
   console.log('RedBlackBinaryTree address:', redBlackBinaryTree.address);
 
-  const CompMarketsManager = await ethers.getContractFactory('CompMarketsManager');
-  const compMarketsManager = await CompMarketsManager.deploy();
-  await compMarketsManager.deployed();
+  const CompLikeMarketsManager = await ethers.getContractFactory('CompLikeMarketsManager');
+  const compLikeMarketsManager = await CompLikeMarketsManager.deploy();
+  await compLikeMarketsManager.deployed();
 
-  console.log('CompMarketsManager address:', compMarketsManager.address);
+  console.log('CompLikeMarketsManager address:', compLikeMarketsManager.address);
 
   const CompPositionsManager = await ethers.getContractFactory('CompPositionsManager', {
     libraries: {
       RedBlackBinaryTree: redBlackBinaryTree.address,
     },
   });
-  const compPositionsManager = await CompPositionsManager.deploy(compMarketsManager.address, config.compound.comptroller.address);
+  const compPositionsManager = await CompPositionsManager.deploy(compLikeMarketsManager.address, config.compound.comptroller.address);
   await compPositionsManager.deployed();
 
   console.log('CompPositionsManager address:', compPositionsManager.address);
 
-  await compMarketsManager.connect(deployer).setCompPositionsManager(compPositionsManager.address);
-  await compMarketsManager.connect(deployer).createMarkets([config.tokens.cDai.address, config.tokens.cUsdc.address, config.tokens.cBat.address, config.tokens.cZrx.address]);
-  await compMarketsManager.connect(deployer).updateThreshold(config.tokens.cUsdc.address, BigNumber.from(1).pow(6));
-  await compMarketsManager.connect(deployer).listMarket(config.tokens.cDai.address);
-  await compMarketsManager.connect(deployer).listMarket(config.tokens.cUsdc.address);
-  await compMarketsManager.connect(deployer).listMarket(config.tokens.cBat.address);
-  await compMarketsManager.connect(deployer).listMarket(config.tokens.cZrx.address);
+  await compLikeMarketsManager.connect(deployer).setCompPositionsManager(compPositionsManager.address);
+  await compLikeMarketsManager.connect(deployer).createMarkets([config.tokens.cDai.address, config.tokens.cUsdc.address, config.tokens.cBat.address, config.tokens.cZrx.address]);
+  await compLikeMarketsManager.connect(deployer).updateThreshold(config.tokens.cUsdc.address, BigNumber.from(1).pow(6));
+  await compLikeMarketsManager.connect(deployer).listMarket(config.tokens.cDai.address);
+  await compLikeMarketsManager.connect(deployer).listMarket(config.tokens.cUsdc.address);
+  await compLikeMarketsManager.connect(deployer).listMarket(config.tokens.cBat.address);
+  await compLikeMarketsManager.connect(deployer).listMarket(config.tokens.cZrx.address);
 }
 
 main()
