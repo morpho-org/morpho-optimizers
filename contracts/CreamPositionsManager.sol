@@ -361,14 +361,15 @@ contract CreamPositionsManager is ReentrancyGuard {
             }
             /* SCENARIO 2.2: Not enough waiting suppliers -> borrow on Cream */
             else {
-                uint256 toWithdraw = crTokenContractBalanceInUnderlying -
-                    _moveSuppliersFromCreamToP2P(
-                        _crERC20Address,
-                        crTokenContractBalanceInUnderlying
-                    ); // The amount that can be withdrawn for underlying
+                // First, Morpho moves all the waiting suppliers, even though they are not sufficient
+                _moveSuppliersFromCreamToP2P(_crERC20Address, crTokenContractBalanceInUnderlying);
+                _withdrawERC20FromCream(_crERC20Address, crTokenContractBalanceInUnderlying); // Revert on error
+
                 // Update the remaining amount to withdraw to `msg.sender`
-                remainingToWithdraw -= toWithdraw;
-                _withdrawERC20FromCream(_crERC20Address, toWithdraw); // Revert on error
+                remainingToWithdraw -= crTokenContractBalanceInUnderlying;
+
+                // Then, we borrow the on Cream with the collateral of the borrowers
+
                 require(
                     _moveBorrowersFromP2PToCream(_crERC20Address, remainingToWithdraw) == 0,
                     "red:remaining-borrowers!=0"
