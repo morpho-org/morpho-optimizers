@@ -285,7 +285,7 @@ contract CreamPositionsManager is ReentrancyGuard {
                 _moveSupplierFromP2PToCream(msg.sender); // This must be enhanced to supply only what's required to borrow
                 require(
                     crERC20Token.borrow(remainingToBorrowOnCream) == 0,
-                    "bor:borrow-cream-fail"
+                    "borrow(1):borrow-cream-fail"
                 );
                 borrowBalanceInOf[_crERC20Address][msg.sender].onCream += remainingToBorrowOnCream
                     .div(crERC20Token.borrowIndex()); // In cdUnit
@@ -294,7 +294,7 @@ contract CreamPositionsManager is ReentrancyGuard {
             // There is not enough suppliers to provide this borrower demand
             // So Morpho put all of its collateral on Cream, and borrow on Cream for him
             _moveSupplierFromP2PToCream(msg.sender);
-            require(crERC20Token.borrow(_amount) == 0, "bor:borrow-cream-fail");
+            require(crERC20Token.borrow(_amount) == 0, "borrow(2):borrow-cream-fail");
             borrowBalanceInOf[_crERC20Address][msg.sender].onCream += _amount.div(
                 crERC20Token.borrowIndex()
             ); // In cdUnit
@@ -323,7 +323,7 @@ contract CreamPositionsManager is ReentrancyGuard {
         nonReentrant
         isMarketListed(_crERC20Address)
     {
-        require(_amount > 0, "red:amount=0");
+        require(_amount > 0, "withdraw:amount=0");
         _checkAccountLiquidity(msg.sender, _crERC20Address, _amount, 0);
         ICErc20 crERC20Token = ICErc20(_crERC20Address);
         IERC20 erc20Token = IERC20(crERC20Token.underlying());
@@ -357,7 +357,7 @@ contract CreamPositionsManager is ReentrancyGuard {
                 // There is enough unused liquidity in peer-to-peer, so Morpho reconnect the credit lines to others suppliers
                 require(
                     _moveSuppliersFromCreamToP2P(_crERC20Address, remainingToWithdraw) == 0,
-                    "red:remaining-suppliers!=0"
+                    "withdraw:remaining-suppliers!=0"
                 );
                 _withdrawERC20FromCream(_crERC20Address, remainingToWithdraw); // Revert on error
             } else {
@@ -374,9 +374,12 @@ contract CreamPositionsManager is ReentrancyGuard {
                 // Then, Morpho move borrowers not matched anymore from Morpho to Cream and borrow the amount directly on Cream, thanks to their collateral which is now on Cream
                 require(
                     _moveBorrowersFromP2PToCream(_crERC20Address, remainingToWithdraw) == 0,
-                    "red:remaining-borrowers!=0"
+                    "withdraw:remaining-borrowers!=0"
                 );
-                require(crERC20Token.borrow(remainingToWithdraw) == 0, "red:borrow-cream-fail");
+                require(
+                    crERC20Token.borrow(remainingToWithdraw) == 0,
+                    "withdraw:borrow-cream-fail"
+                );
             }
         }
 
@@ -403,7 +406,7 @@ contract CreamPositionsManager is ReentrancyGuard {
             0,
             0
         );
-        require(debtValue > maxDebtValue, "liq:debt-value<=max");
+        require(debtValue > maxDebtValue, "liquidate:debt-value<=max");
         LiquidateVars memory vars;
         vars.borrowBalance =
             borrowBalanceInOf[_cERC20BorrowedAddress][_borrower].onCream.mul(
@@ -414,7 +417,7 @@ contract CreamPositionsManager is ReentrancyGuard {
             );
         require(
             _amount <= vars.borrowBalance.mul(creamtroller.closeFactorMantissa()),
-            "liq:amount>allowed"
+            "liquidate:amount>allowed"
         );
 
         _repay(_cERC20BorrowedAddress, _borrower, _amount);
@@ -424,7 +427,7 @@ contract CreamPositionsManager is ReentrancyGuard {
         vars.priceBorrowedMantissa = creamOracle.getUnderlyingPrice(_cERC20BorrowedAddress);
         require(
             vars.priceCollateralMantissa != 0 && vars.priceBorrowedMantissa != 0,
-            "liq:oracle-fail"
+            "liquidate:oracle-fail"
         );
 
         /*
@@ -449,7 +452,7 @@ contract CreamPositionsManager is ReentrancyGuard {
                 creamMarketsManager.updateMUnitExchangeRate(_cERC20CollateralAddress)
             );
 
-        require(vars.amountToSeize <= totalCollateral, "liq:toseize>collateral");
+        require(vars.amountToSeize <= totalCollateral, "liquidate:to-seize>collateral");
 
         if (vars.amountToSeize <= vars.onCreamInUnderlying) {
             // Seize tokens from Cream
@@ -470,10 +473,10 @@ contract CreamPositionsManager is ReentrancyGuard {
                 cERC20CollateralToken.redeem(
                     supplyBalanceInOf[_cERC20CollateralAddress][_borrower].onCream
                 ) == 0,
-                "liq:withdraw-crToken-fail"
+                "liquidate:withdraw-crToken-fail"
             );
             supplyBalanceInOf[_cERC20CollateralAddress][_borrower].onCream = 0;
-            require(cERC20CollateralToken.borrow(toMove) == 0, "liq:borrow-cream-fail");
+            require(cERC20CollateralToken.borrow(toMove) == 0, "liquidate:borrow-cream-fail");
             uint256 balanceAfter = erc20CollateralToken.balanceOf(address(this));
             vars.amountToSeize = balanceAfter - balanceBefore;
             _moveBorrowersFromP2PToCream(_cERC20CollateralAddress, toMove);
@@ -524,7 +527,7 @@ contract CreamPositionsManager is ReentrancyGuard {
                 );
                 require(
                     _moveSuppliersFromP2PToCream(_crERC20Address, remainingToSupplyToCream) == 0,
-                    "_rep(1):remaining-suppliers!=0"
+                    "_repay(1):remaining-suppliers!=0"
                 );
                 erc20Token.safeApprove(_crERC20Address, onCreamInUnderlying);
                 crERC20Token.repayBorrow(onCreamInUnderlying); // Revert on error
@@ -536,7 +539,7 @@ contract CreamPositionsManager is ReentrancyGuard {
             borrowBalanceInOf[_crERC20Address][_borrower].inP2P -= _amount.div(mExchangeRate); // In mUnit
             require(
                 _moveSuppliersFromP2PToCream(_crERC20Address, _amount) == 0,
-                "_rep(2):remaining-suppliers!=0"
+                "_repay(2):remaining-suppliers!=0"
             );
             _supplyERC20ToCream(_crERC20Address, _amount);
         }
@@ -553,7 +556,7 @@ contract CreamPositionsManager is ReentrancyGuard {
         ICErc20 crERC20Token = ICErc20(_crERC20Address);
         IERC20 erc20Token = IERC20(crERC20Token.underlying());
         erc20Token.safeApprove(_crERC20Address, _amount);
-        require(crERC20Token.mint(_amount) == 0, "_supp-to-cream:crToken-mint-fail");
+        require(crERC20Token.mint(_amount) == 0, "_supplyERC20ToCream:crToken-mint-fail");
     }
 
     /** @dev Withdraws ERC20 tokens from Cream.
@@ -564,7 +567,7 @@ contract CreamPositionsManager is ReentrancyGuard {
         ICErc20 crERC20Token = ICErc20(_crERC20Address);
         require(
             crERC20Token.redeemUnderlying(_amount) == 0,
-            "_redeem-from-cream:redeem-cream-fail"
+            "_withdrawERC20FromCream:redeem-cream-fail"
         );
     }
 
@@ -791,7 +794,7 @@ contract CreamPositionsManager is ReentrancyGuard {
             _withdrawnAmount,
             _borrowedAmount
         );
-        require(debtValue < maxDebtValue, "debt-value>max");
+        require(debtValue < maxDebtValue, "_checkAccountLiquidity:debt-value>max");
     }
 
     /** @dev Returns the debt value, max debt value and collateral value of a given user.
@@ -836,7 +839,7 @@ contract CreamPositionsManager is ReentrancyGuard {
                 supplyBalanceInOf[vars.cERC20Entered][_account].inP2P.mul(vars.mExchangeRate);
             // Price recovery
             vars.underlyingPrice = creamOracle.getUnderlyingPrice(vars.cERC20Entered);
-            require(vars.underlyingPrice != 0, "_getUserHypotheticalBalanceStates: oracle failed");
+            require(vars.underlyingPrice != 0, "_getUserHypotheticalBalanceStates:oracle-fail");
 
             if (_crERC20Address == vars.cERC20Entered) {
                 vars.debtToAdd += _borrowedAmount;

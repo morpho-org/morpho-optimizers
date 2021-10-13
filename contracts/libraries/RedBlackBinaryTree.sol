@@ -50,7 +50,7 @@ library RedBlackBinaryTree {
      *  @param _value The value to search after.
      */
     function next(Tree storage _self, uint256 _value) public view returns (uint256 cursor) {
-        require(_value != 0, "RBBT(401):start-_value=0");
+        require(_value != 0, "RBBT(1):start-value=0");
         if (_self.nodes[_value].right != 0) {
             cursor = subTreeMin(_self, _self.nodes[_value].right);
         } else {
@@ -67,7 +67,7 @@ library RedBlackBinaryTree {
      *  @param _value The value to search before.
      */
     function prev(Tree storage _self, uint256 _value) public view returns (uint256 cursor) {
-        require(_value != 0, "RBBT(402):start-_value=0");
+        require(_value != 0, "RBBT(2):start-value=0");
         if (_self.nodes[_value].left != 0) {
             cursor = subTreeMax(_self, _self.nodes[_value].left);
         } else {
@@ -111,7 +111,7 @@ library RedBlackBinaryTree {
         uint256 _value,
         uint256 _index
     ) public view returns (address) {
-        require(exists(_self, _value), "RBBT(404):value-not-exist");
+        require(exists(_self, _value), "RBBT:value-not-exist");
         return _self.nodes[_value].keys[_index];
     }
 
@@ -147,7 +147,7 @@ library RedBlackBinaryTree {
         address _key,
         uint256 _value
     ) public {
-        require(_value != 0, "RBBT(405):value-cannot-be-0");
+        require(_value != 0, "RBBT:value-cannot-be-0");
         require(_self.keyToValue[_key] == 0, "RBBT:account-already-in");
         _self.keyToValue[_key] = _value;
         uint256 cursor;
