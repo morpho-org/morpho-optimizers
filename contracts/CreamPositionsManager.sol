@@ -225,8 +225,6 @@ contract CreamPositionsManager is ReentrancyGuard {
             uint256 toRepay = _amount - remainingToSupplyToCream;
             if (toRepay > 0) {
                 supplyBalanceInOf[_crERC20Address][msg.sender].inP2P += toRepay.div(mExchangeRate); // In mUnit
-                erc20Token.safeApprove(_crERC20Address, toRepay);
-                crERC20Token.repayBorrow(toRepay);
             }
             /* SCENARIO 1.1: Not enough waiting borrowers -> supply the remaining to Cream */
             if (remainingToSupplyToCream > 0) {
@@ -274,7 +272,6 @@ contract CreamPositionsManager is ReentrancyGuard {
                 borrowBalanceInOf[_crERC20Address][msg.sender].inP2P += toWithdraw.div(
                     mExchangeRate
                 ); // In mUnit
-                _withdrawERC20FromCream(_crERC20Address, toWithdraw); // Revert on error
             }
 
             /* SCENARIO 1.1: Not enough waiting supply -> borrow the rest on Cream */
@@ -357,13 +354,11 @@ contract CreamPositionsManager is ReentrancyGuard {
                     _moveSuppliersFromCreamToP2P(_crERC20Address, remainingToWithdraw) == 0,
                     "red:remaining-suppliers!=0"
                 );
-                _withdrawERC20FromCream(_crERC20Address, remainingToWithdraw); // Revert on error
             }
             /* SCENARIO 2.2: Not enough waiting suppliers -> borrow on Cream */
             else {
                 // First, Morpho moves all the waiting suppliers, even though they are not sufficient
                 _moveSuppliersFromCreamToP2P(_crERC20Address, crTokenContractBalanceInUnderlying);
-                _withdrawERC20FromCream(_crERC20Address, crTokenContractBalanceInUnderlying); // Revert on error
 
                 // Update the remaining amount to withdraw to `msg.sender`
                 remainingToWithdraw -= crTokenContractBalanceInUnderlying;
@@ -374,7 +369,6 @@ contract CreamPositionsManager is ReentrancyGuard {
                     _moveBorrowersFromP2PToCream(_crERC20Address, remainingToWithdraw) == 0,
                     "red:remaining-borrowers!=0"
                 );
-                require(crERC20Token.borrow(remainingToWithdraw) == 0, "red:borrow-cream-fail");
             }
         }
 
@@ -527,9 +521,6 @@ contract CreamPositionsManager is ReentrancyGuard {
                 );
                 erc20Token.safeApprove(_crERC20Address, onCreamInUnderlying);
                 crERC20Token.repayBorrow(onCreamInUnderlying); // Revert on error
-
-                if (remainingToSupplyToCream > 0)
-                    _supplyERC20ToCream(_crERC20Address, remainingToSupplyToCream);
             }
         }
         /* SCENARIO 2: No waiting borrowers -> supply to Cream */
@@ -539,7 +530,6 @@ contract CreamPositionsManager is ReentrancyGuard {
                 _moveSuppliersFromP2PToCream(_crERC20Address, _amount) == 0,
                 "_rep(2):remaining-suppliers!=0"
             );
-            _supplyERC20ToCream(_crERC20Address, _amount);
         }
 
         _updateBorrowerList(_crERC20Address, _borrower);
@@ -609,6 +599,8 @@ contract CreamPositionsManager is ReentrancyGuard {
                     supplyBalanceInOf[_crERC20Address][account].inP2P += toMove.div(mExchangeRate); // In mUnit
 
                     _updateSupplierList(_crERC20Address, account);
+                    // Withdraw from Cream
+                    _withdrawERC20FromCream(_crERC20Address, toMove);
                     emit SupplierMovedFromCreamToMorpho(account, _crERC20Address, toMove);
                 }
             }
@@ -642,6 +634,8 @@ contract CreamPositionsManager is ReentrancyGuard {
                 supplyBalanceInOf[_crERC20Address][account].inP2P -= toMove.div(mExchangeRate); // In mUnit
 
                 _updateSupplierList(_crERC20Address, account);
+                // Supply on Cream
+                _supplyERC20ToCream(_crERC20Address, toMove);
                 emit SupplierMovedFromMorphoToCream(account, _crERC20Address, toMove);
             }
             highestValue = suppliersInP2P[_crERC20Address].last();
@@ -674,8 +668,9 @@ contract CreamPositionsManager is ReentrancyGuard {
                 remainingToMove -= toMove;
                 borrowBalanceInOf[_crERC20Address][account].onCream += toMove.div(borrowIndex);
                 borrowBalanceInOf[_crERC20Address][account].inP2P -= toMove.div(mExchangeRate);
-
                 _updateBorrowerList(_crERC20Address, account);
+                // Borrow on Cream
+                require(crERC20Token.borrow(toMove) == 0);
                 emit BorrowerMovedFromMorphoToCream(account, _crERC20Address, toMove);
             }
             highestValue = borrowersInP2P[_crERC20Address].last();
@@ -693,6 +688,7 @@ contract CreamPositionsManager is ReentrancyGuard {
         returns (uint256 remainingToMove)
     {
         ICErc20 crERC20Token = ICErc20(_crERC20Address);
+        IERC20 erc20Token = IERC20(crERC20Token.underlying());
         remainingToMove = _amount;
         uint256 mExchangeRate = creamMarketsManager.mUnitExchangeRate(_crERC20Address);
         uint256 borrowIndex = crERC20Token.borrowIndex();
@@ -717,6 +713,9 @@ contract CreamPositionsManager is ReentrancyGuard {
                 borrowBalanceInOf[_crERC20Address][account].inP2P += toMove.div(mExchangeRate);
 
                 _updateBorrowerList(_crERC20Address, account);
+                // Repay Cream
+                erc20Token.safeApprove(_crERC20Address, toMove);
+                crERC20Token.repayBorrow(toMove);
                 emit BorrowerMovedFromCreamToMorpho(account, _crERC20Address, toMove);
             }
             highestValue = borrowersOnCream[_crERC20Address].last();
@@ -742,9 +741,10 @@ contract CreamPositionsManager is ReentrancyGuard {
                 supplyBalanceInOf[cERC20Entered][_account].inP2P -= inP2PInUnderlying.div(
                     mExchangeRate
                 ); // In mUnit
-
                 _moveBorrowersFromP2PToCream(cERC20Entered, inP2PInUnderlying);
                 _updateSupplierList(cERC20Entered, _account);
+                // Supply to Cream
+                _supplyERC20ToCream(cERC20Entered, inP2PInUnderlying);
                 emit SupplierMovedFromMorphoToCream(_account, cERC20Entered, inP2PInUnderlying);
             }
         }
