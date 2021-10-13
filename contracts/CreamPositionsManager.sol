@@ -71,12 +71,12 @@ contract CreamPositionsManager is ReentrancyGuard {
 
     /* Events */
 
-    /** @dev Emitted when a deposit happens.
-     *  @param _account The address of the depositor.
-     *  @param _crERC20Address The address of the market where assets are deposited into.
+    /** @dev Emitted when a supply happens.
+     *  @param _account The address of the supplier.
+     *  @param _crERC20Address The address of the market where assets are supplied into.
      *  @param _amount The amount of assets.
      */
-    event Deposited(address indexed _account, address indexed _crERC20Address, uint256 _amount);
+    event Supplied(address indexed _account, address indexed _crERC20Address, uint256 _amount);
 
     /** @dev Emitted when a withdraw happens.
      *  @param _account The address of the withdrawer.
@@ -153,7 +153,7 @@ contract CreamPositionsManager is ReentrancyGuard {
         _;
     }
 
-    /** @dev Prevents a user to deposit or borrow less than threshold.
+    /** @dev Prevents a user to supply or borrow less than threshold.
      *  @param _crERC20Address The address of the market.
      *  @param _amount The amount in ERC20 tokens.
      */
@@ -180,7 +180,7 @@ contract CreamPositionsManager is ReentrancyGuard {
     /* External */
 
     /** @dev Creates Cream's markets.
-     *  @param markets The address of the market the user wants to deposit.
+     *  @param markets The address of the market the user wants to supply.
      *  @return The results of entered.
      */
     function createMarkets(address[] calldata markets)
@@ -199,11 +199,11 @@ contract CreamPositionsManager is ReentrancyGuard {
         creamOracle = ICompoundOracle(creamtroller.oracle());
     }
 
-    /** @dev Deposits ERC20 tokens in a specific market.
-     *  @param _crERC20Address The address of the market the user wants to deposit.
-     *  @param _amount The amount to deposit in ERC20 tokens.
+    /** @dev Supplies ERC20 tokens in a specific market.
+     *  @param _crERC20Address The address of the market the user wants to supply.
+     *  @param _amount The amount to supply in ERC20 tokens.
      */
-    function deposit(address _crERC20Address, uint256 _amount)
+    function supply(address _crERC20Address, uint256 _amount)
         external
         nonReentrant
         isMarketListed(_crERC20Address)
@@ -242,7 +242,7 @@ contract CreamPositionsManager is ReentrancyGuard {
         }
 
         _updateSupplierList(_crERC20Address, msg.sender);
-        emit Deposited(msg.sender, _crERC20Address, _amount);
+        emit Supplied(msg.sender, _crERC20Address, _amount);
     }
 
     /** @dev Borrows ERC20 tokens.
