@@ -159,10 +159,10 @@ describe('CreamPositionsManager Contract', () => {
       await compLikeMarketsManager.connect(owner).createMarkets([config.tokens.cEth.address]);
       expect(compLikeMarketsManager.connect(supplier1).listMarket(config.tokens.cEth.address)).to.be.reverted;
       expect(compLikeMarketsManager.connect(borrower1).listMarket(config.tokens.cEth.address)).to.be.reverted;
-      expect(compLikeMarketsManager.connect(supplier1).unlistMarket(config.tokens.cEth.address)).to.be.reverted;
-      expect(compLikeMarketsManager.connect(borrower1).unlistMarket(config.tokens.cEth.address)).to.be.reverted;
+      expect(compLikeMarketsManager.connect(supplier1).delistMarket(config.tokens.cEth.address)).to.be.reverted;
+      expect(compLikeMarketsManager.connect(borrower1).delistMarket(config.tokens.cEth.address)).to.be.reverted;
       expect(compLikeMarketsManager.connect(owner).listMarket(config.tokens.cEth.address)).not.to.be.reverted;
-      expect(compLikeMarketsManager.connect(owner).unlistMarket(config.tokens.cEth.address)).not.to.be.reverted;
+      expect(compLikeMarketsManager.connect(owner).delistMarket(config.tokens.cEth.address)).not.to.be.reverted;
     });
 
     it('Should create a market the with right values', async () => {
