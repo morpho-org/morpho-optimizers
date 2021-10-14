@@ -115,7 +115,7 @@ Indeed, such liquidation should only happen if every single user of Morpho has a
 
 To maintain this invariant, we remark that every single borrow position on Cream of a user should be effectively backed by the corresponding collateral. In other words, a collateral of a borrow position on Cream can't be matched. This is why:
 
-- In the \_moveBorrowersFromP2PToCream(), we first use \_moveSupplierFromCompound to ensure that the collat
+- In the \_moveBorrowersFromP2PToCream(), we first use \_moveSupplierFromCompound to ensure that the collateral is put on Cream before borrowing on Cream.
 - When using moveSuppliersFromCreamToP2P(), we always check if the user is actually borrowing something on Cream. If yes, we don't move the supply in P2P to ensure that this collateral remains on Cream.
 
 ### Hard-Withdraw
@@ -130,6 +130,10 @@ Here, it is quite simple, Morpho can safely borrow
 
 #### The collateral of the borrower is matched
 
-In that scenario, which is extremely rare
+In that scenario, which is extremely rare, Morpho can't borrow thanks to the colalteral as it is not being supplied to Cream. The trick is thus to recursively try to borrow on the collateral of the borrower that is matching the collateral. We give an intuition of the proof of termination of this recursive loop, which is bounded to N-1, where N is yhe number of markets in the protocol.
 
-TODO
+
+
+
+
+
