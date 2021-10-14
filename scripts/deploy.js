@@ -13,23 +13,23 @@ async function main() {
 
   console.log('RedBlackBinaryTree address:', redBlackBinaryTree.address);
 
-  const CompMarketsManager = await ethers.getContractFactory('CompMarketsManager');
-  const compMarketsManager = await CompMarketsManager.deploy();
+  const MorphoMarketsManagerForCompLike = await ethers.getContractFactory('MorphoMarketsManagerForCompLike');
+  const compMarketsManager = await MorphoMarketsManagerForCompLike.deploy();
   await compMarketsManager.deployed();
 
-  console.log('CompMarketsManager address:', compMarketsManager.address);
+  console.log('MorphoMarketsManagerForCompLike address:', compMarketsManager.address);
 
-  const CompPositionsManager = await ethers.getContractFactory('CompPositionsManager', {
+  const PositionsManagerForCompLike = await ethers.getContractFactory('PositionsManagerForCompLike', {
     libraries: {
       RedBlackBinaryTree: redBlackBinaryTree.address,
     },
   });
-  const compPositionsManager = await CompPositionsManager.deploy(compMarketsManager.address, config.compound.comptroller.address);
-  await compPositionsManager.deployed();
+  const positionsManagerForCompLike = await PositionsManagerForCompLike.deploy(compMarketsManager.address, config.compound.comptroller.address);
+  await positionsManagerForCompLike.deployed();
 
-  console.log('CompPositionsManager address:', compPositionsManager.address);
+  console.log('PositionsManagerForCompLike address:', positionsManagerForCompLike.address);
 
-  await compMarketsManager.connect(deployer).setCompPositionsManager(compPositionsManager.address);
+  await compMarketsManager.connect(deployer).setCompLikePositionsManager(positionsManagerForCompLike.address);
   await compMarketsManager.connect(deployer).createMarkets([config.tokens.cDai.address, config.tokens.cUsdc.address, config.tokens.cBat.address, config.tokens.cZrx.address]);
   await compMarketsManager.connect(deployer).updateThreshold(config.tokens.cUsdc.address, BigNumber.from(1).pow(6));
   await compMarketsManager.connect(deployer).listMarket(config.tokens.cDai.address);

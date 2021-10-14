@@ -6,14 +6,14 @@ import "@openzeppelin/contracts/utils/math/Math.sol";
 import "prb-math/contracts/PRBMathUD60x18.sol";
 
 import {ICErc20, IComptroller} from "./interfaces/ICompound.sol";
-import "./interfaces/ICompPositionsManager.sol";
-import "./interfaces/ICompMarketsManager.sol";
+import "./interfaces/IPositionsManagerForCompLike.sol";
+import "./interfaces/IMarketsManagerForCompLike.sol";
 
 /**
- *  @title CompPositionsManager
+ *  @title PositionsManagerForCompLike
  *  @dev Smart contracts interacting with Compound to enable real P2P supply with cERC20 tokens as supply/borrow assets.
  */
-contract CompMarketsManager is Ownable {
+contract MorphoMarketsManagerForCompLike is Ownable {
     using PRBMathUD60x18 for uint256;
     using Math for uint256;
 
@@ -26,7 +26,7 @@ contract CompMarketsManager is Ownable {
     mapping(address => uint256) public lastUpdateBlockNumber; // Last time mUnitExchangeRate was updated.
     mapping(address => uint256) public thresholds; // Thresholds below the ones suppliers and borrowers cannot enter markets.
 
-    ICompPositionsManager public compPositionsManager;
+    IPositionsManagerForCompLike public positionsManagerForCompLike;
 
     /* Events */
 
@@ -64,28 +64,25 @@ contract CompMarketsManager is Ownable {
 
     /* External */
 
-    /** @dev Sets the `compPositionsManager` to interact with Compound.
-     *  @param _compPositionsManager The address of compound module.
+    /** @dev Sets the `positionsManagerForCompLike` to interact with Compound.
+     *  @param _compLikePositionsManager The address of compound module.
      */
-    function setCompPositionsManager(ICompPositionsManager _compPositionsManager)
-        external
-        onlyOwner
-    {
-        compPositionsManager = _compPositionsManager;
+    function setCompLikePositionsManager(address _compLikePositionsManager) external onlyOwner {
+        positionsManagerForCompLike = IPositionsManagerForCompLike(_compLikePositionsManager);
     }
 
     /** @dev Sets the comptroller address.
      *  @param _proxyComptrollerAddress The address of Compound's comptroller.
      */
     function setComptroller(address _proxyComptrollerAddress) external onlyOwner {
-        compPositionsManager.setComptroller(_proxyComptrollerAddress);
+        positionsManagerForCompLike.setComptroller(_proxyComptrollerAddress);
     }
 
     /** @dev Creates new market to borrow/supply.
      *  @param _marketAddresses The addresses of the markets to add (cToken).
      */
     function createMarkets(address[] calldata _marketAddresses) external onlyOwner {
-        uint256[] memory results = compPositionsManager.createMarkets(_marketAddresses);
+        uint256[] memory results = positionsManagerForCompLike.createMarkets(_marketAddresses);
         for (uint256 i; i < _marketAddresses.length; i++) {
             require(results[i] == 0, "createMarkets: enter market failed on Compound");
             address _marketAddress = _marketAddresses[i];
