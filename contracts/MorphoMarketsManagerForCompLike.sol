@@ -129,10 +129,10 @@ contract MorphoMarketsManagerForCompLike is Ownable {
         emit MarketListed(_marketAddress);
     }
 
-    /** @dev Sets a market as unlisted.
-     *  @param _marketAddress The address of the market to unlist.
+    /** @dev Sets a market as not listed.
+     *  @param _marketAddress The address of the market to delist.
      */
-    function unlistMarket(address _marketAddress)
+    function delistMarket(address _marketAddress)
         external
         onlyOwner
         isMarketCreated(_marketAddress)
