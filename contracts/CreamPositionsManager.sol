@@ -544,20 +544,20 @@ contract CreamPositionsManager is ReentrancyGuard {
 
         uint256 remainingToRepay = _amount;
 
-        /* If user is borrowing tokens on Cream */
+        // DEAL WITH CREAM BALANCE
         if (borrowBalanceInOf[_crERC20Address][_borrower].onCream > 0) {
             uint256 borrowIndex = crERC20Token.borrowIndex();
             uint256 onCreamInUnderlying = borrowBalanceInOf[_crERC20Address][_borrower].onCream.mul(
                 borrowIndex
             );
-            /* CASE 1: User repays less than his Cream borrow balance */
+            // ENOUGH
             if (_amount <= onCreamInUnderlying) {
                 erc20Token.safeApprove(_crERC20Address, _amount);
                 crERC20Token.repayBorrow(_amount);
                 borrowBalanceInOf[_crERC20Address][_borrower].onCream -= _amount.div(borrowIndex); // In cdUnit
                 remainingToRepay = 0;
             }
-            /* CASE 2: User repays more than his Cream borrow balance */
+            // NOT ENOUGH
             else {
                 erc20Token.safeApprove(_crERC20Address, onCreamInUnderlying);
                 crERC20Token.repayBorrow(onCreamInUnderlying); // Revert on error
@@ -568,25 +568,24 @@ contract CreamPositionsManager is ReentrancyGuard {
             }
         }
 
-        /* If there remains some tokens to repay (CASE 2), we break credit lines and repair them either with other users or with Cream itself */
+        // BREAK CREDIT LINES
         if (remainingToRepay > 0) {
-            // No need to update mUnitExchangeRate here as it's done in `_checkAccountLiquidity`
             uint256 mExchangeRate = creamMarketsManager.updateMUnitExchangeRate(_crERC20Address);
             uint256 contractBorrowBalanceOnCream = crERC20Token.borrowBalanceCurrent(address(this)); // In underlying
-            /* CASE 1: Other borrowers are borrowing enough on Cream to compensate user's position */
+            // ENOUGH TO TRANSFER CL
             if (remainingToRepay <= contractBorrowBalanceOnCream) {
-                _matchBorrowers(_crERC20Address, remainingToRepay);
+                _moveBorrowersFromCreamToP2P(_crERC20Address, remainingToRepay);
                 borrowBalanceInOf[_crERC20Address][_borrower].inP2P -= remainingToRepay.div(
                     mExchangeRate
                 );
             }
-            /* CASE 2: Other borrowers aren't borrowing enough on Cream to compensate user's position */
+            // NOT ENOUGH TO TRANSFER CL
             else {
-                _matchBorrowers(_crERC20Address, contractBorrowBalanceOnCream);
+                _moveBorrowersFromCreamToP2P(_crERC20Address, contractBorrowBalanceOnCream);
                 remainingToRepay -= contractBorrowBalanceOnCream;
                 require(
-                    _unmatchSuppliers(_crERC20Address, remainingToRepay) == 0,
-                    "_rep:remaining-suppliers!=0"
+                    _moveSuppliersFromP2PToCream(_crERC20Address, remainingToRepay) == 0,
+                    "_rep(1):remaining-suppliers!=0"
                 );
                 borrowBalanceInOf[_crERC20Address][_borrower].inP2P -=
                     contractBorrowBalanceOnCream.div(mExchangeRate) +
