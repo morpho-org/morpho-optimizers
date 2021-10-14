@@ -92,7 +92,7 @@ describe('MorphoPositionsManagerForCream Contract', () => {
     underlyingThreshold = utils.parseUnits('1');
 
     // Create and list markets
-    await morphoMarketsManagerForCompLike.connect(owner).setCompPositionsManager(morphoPositionsManagerForCream.address);
+    await morphoMarketsManagerForCompLike.connect(owner).setCompLikePositionsManager(morphoPositionsManagerForCream.address);
     await morphoMarketsManagerForCompLike.connect(owner).createMarkets([config.tokens.cDai.address, config.tokens.cUsdc.address, config.tokens.cUsdt.address, config.tokens.cUni.address]);
     await morphoMarketsManagerForCompLike.connect(owner).listMarket(config.tokens.cDai.address);
     await morphoMarketsManagerForCompLike.connect(owner).updateThreshold(config.tokens.cUsdc.address, BigNumber.from(1).pow(6));
@@ -139,7 +139,7 @@ describe('MorphoPositionsManagerForCream Contract', () => {
     });
 
     it('CreamPositionsManager should not be changed after already set by Owner', async () => {
-      expect(compLikeMarketsManager.connect(owner).setCompPositionsManager(fakeCreamPositionsManager.address)).to.be.reverted;
+      expect(compLikeMarketsManager.connect(owner).setCompLikePositionsManager(fakeCreamPositionsManager.address)).to.be.reverted;
     });
 
     it('Only Owner should be able to update thresholds', async () => {

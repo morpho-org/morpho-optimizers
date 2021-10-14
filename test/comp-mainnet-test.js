@@ -92,7 +92,7 @@ describe('PositionsManagerForCompLike Contract', () => {
     underlyingThreshold = utils.parseUnits('1');
 
     // Create and list markets
-    await morphoMarketsManagerForCompLike.connect(owner).setCompPositionsManager(positionsManagerForCompLike.address);
+    await morphoMarketsManagerForCompLike.connect(owner).setCompLikePositionsManager(positionsManagerForCompLike.address);
     await morphoMarketsManagerForCompLike.connect(owner).createMarkets([config.tokens.cDai.address, config.tokens.cUsdc.address, config.tokens.cUsdt.address, config.tokens.cUni.address]);
     await morphoMarketsManagerForCompLike.connect(owner).listMarket(config.tokens.cDai.address);
     await morphoMarketsManagerForCompLike.connect(owner).updateThreshold(config.tokens.cUsdc.address, BigNumber.from(1).pow(6));
@@ -139,10 +139,10 @@ describe('PositionsManagerForCompLike Contract', () => {
     });
 
     it('Only Owner should be able to set positionsManagerForCompLike in peer-to-peer', async () => {
-      expect(morphoMarketsManagerForCompLike.connect(supplier1).setCompPositionsManager(fakeCompoundModule.address)).to.be.reverted;
-      expect(morphoMarketsManagerForCompLike.connect(borrower1).setCompPositionsManager(fakeCompoundModule.address)).to.be.reverted;
-      expect(morphoMarketsManagerForCompLike.connect(owner).setCompPositionsManager(fakeCompoundModule.address)).not.be.reverted;
-      await morphoMarketsManagerForCompLike.connect(owner).setCompPositionsManager(fakeCompoundModule.address);
+      expect(morphoMarketsManagerForCompLike.connect(supplier1).setCompLikePositionsManager(fakeCompoundModule.address)).to.be.reverted;
+      expect(morphoMarketsManagerForCompLike.connect(borrower1).setCompLikePositionsManager(fakeCompoundModule.address)).to.be.reverted;
+      expect(morphoMarketsManagerForCompLike.connect(owner).setCompLikePositionsManager(fakeCompoundModule.address)).not.be.reverted;
+      await morphoMarketsManagerForCompLike.connect(owner).setCompLikePositionsManager(fakeCompoundModule.address);
       expect(await morphoMarketsManagerForCompLike.positionsManagerForCompLike()).to.equal(fakeCompoundModule.address);
     });
 
