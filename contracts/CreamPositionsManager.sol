@@ -219,9 +219,9 @@ contract CreamPositionsManager is ReentrancyGuard {
         if (borrowersOnCream[_crERC20Address].isNotEmpty()) {
             uint256 mExchangeRate = creamMarketsManager.updateMUnitExchangeRate(_crERC20Address);
             uint256 remainingToSupplyToCream = _matchBorrowers(_crERC20Address, _amount); // In underlying
-            uint256 toRepay = _amount - remainingToSupplyToCream;
-            if (toRepay > 0) {
-                supplyBalanceInOf[_crERC20Address][msg.sender].inP2P += toRepay.div(mExchangeRate); // In mUnit
+            uint256 matched = _amount - remainingToSupplyToCream;
+            if (matched > 0) {
+                supplyBalanceInOf[_crERC20Address][msg.sender].inP2P += matched.div(mExchangeRate); // In mUnit
             }
             /* If there aren't enough borrowers waiting on Cream to match all the tokens supplied */
             if (remainingToSupplyToCream > 0) {
@@ -260,12 +260,10 @@ contract CreamPositionsManager is ReentrancyGuard {
         /* CASE 1: Some suppliers are waiting on Cream, Morpho matches the borrowers in P2P with them */
         if (suppliersOnCream[_crERC20Address].isNotEmpty()) {
             uint256 remainingToBorrowOnCream = _matchSuppliers(_crERC20Address, _amount); // In underlying
-            uint256 toWithdraw = _amount - remainingToBorrowOnCream;
+            uint256 matched = _amount - remainingToBorrowOnCream;
 
-            if (toWithdraw > 0) {
-                borrowBalanceInOf[_crERC20Address][msg.sender].inP2P += toWithdraw.div(
-                    mExchangeRate
-                ); // In mUnit
+            if (matched > 0) {
+                borrowBalanceInOf[_crERC20Address][msg.sender].inP2P += matched.div(mExchangeRate); // In mUnit
             }
 
             /* If there aren't enough suppliers waiting on Cream to match all the tokens borrowed */
