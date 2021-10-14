@@ -20,12 +20,10 @@ contract MorphoMarketsManagerForCompLike is Ownable {
     /* Storage */
 
     bool public isPositionsManagerSet; // Whether or not the positions manager is set.
-    mapping(address => bool) public isListed; // Whether or not this market is listed.
     mapping(address => bool) public isCreated; // Whether or not this market is created.
     mapping(address => uint256) public p2pBPY; // Block Percentage Yield ("midrate").
     mapping(address => uint256) public mUnitExchangeRate; // current exchange rate from mUnit to underlying.
     mapping(address => uint256) public lastUpdateBlockNumber; // Last time mUnitExchangeRate was updated.
-    mapping(address => uint256) public thresholds; // Thresholds below the ones suppliers and borrowers cannot enter markets.
 
     IPositionsManagerForCompLike public positionsManagerForCompLike;
 
@@ -115,10 +113,10 @@ contract MorphoMarketsManagerForCompLike is Ownable {
             require(results[i] == 0, "createMarkets:enter-mkt-fail");
             address _marketAddress = _marketAddresses[i];
             require(!isCreated[_marketAddress], "createMarkets:mkt-already-created");
-            isCreated[_marketAddress] = true;
-            mUnitExchangeRate[_marketAddress] = 1e18;
+            positionsManagerForCompLike.setThreshold(_marketAddress, 1e18);
             lastUpdateBlockNumber[_marketAddress] = block.number;
-            thresholds[_marketAddress] = 1e18;
+            mUnitExchangeRate[_marketAddress] = 1e18;
+            isCreated[_marketAddress] = true;
             updateBPY(_marketAddress);
             emit MarketCreated(_marketAddress);
         }
@@ -128,7 +126,7 @@ contract MorphoMarketsManagerForCompLike is Ownable {
      *  @param _marketAddress The address of the market to list.
      */
     function listMarket(address _marketAddress) external onlyOwner isMarketCreated(_marketAddress) {
-        isListed[_marketAddress] = true;
+        positionsManagerForCompLike.setListing(_marketAddress, true);
         emit MarketListed(_marketAddress);
     }
 
@@ -140,7 +138,7 @@ contract MorphoMarketsManagerForCompLike is Ownable {
         onlyOwner
         isMarketCreated(_marketAddress)
     {
-        isListed[_marketAddress] = false;
+        positionsManagerForCompLike.setListing(_marketAddress, false);
         emit MarketDelisted(_marketAddress);
     }
 
@@ -150,7 +148,7 @@ contract MorphoMarketsManagerForCompLike is Ownable {
      */
     function updateThreshold(address _marketAddress, uint256 _newThreshold) external onlyOwner {
         require(_newThreshold > 0, "updateThreshold:threshold!=0");
-        thresholds[_marketAddress] = _newThreshold;
+        positionsManagerForCompLike.setThreshold(_marketAddress, _newThreshold);
         emit ThresholdUpdated(_marketAddress, _newThreshold);
     }
 
