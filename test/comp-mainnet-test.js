@@ -92,7 +92,7 @@ describe('PositionsManagerForCompLike Contract', () => {
     underlyingThreshold = utils.parseUnits('1');
 
     // Create and list markets
-    await compMarketsManager.connect(owner).setCompLikePositionsManager(positionsManagerForCompLike.address);
+    await compMarketsManager.connect(owner).setPositionsManagerForCompLike(positionsManagerForCompLike.address);
     await compMarketsManager.connect(owner).createMarkets([config.tokens.cDai.address, config.tokens.cUsdc.address, config.tokens.cUsdt.address, config.tokens.cUni.address]);
     await compMarketsManager.connect(owner).listMarket(config.tokens.cDai.address);
     await compMarketsManager.connect(owner).updateThreshold(config.tokens.cUsdc.address, BigNumber.from(1).pow(6));
@@ -139,10 +139,10 @@ describe('PositionsManagerForCompLike Contract', () => {
     });
 
     it('Only Owner should be able to set positionsManagerForCompLike in peer-to-peer', async () => {
-      expect(compMarketsManager.connect(supplier1).setCompLikePositionsManager(fakeCompoundModule.address)).to.be.reverted;
-      expect(compMarketsManager.connect(borrower1).setCompLikePositionsManager(fakeCompoundModule.address)).to.be.reverted;
-      expect(compMarketsManager.connect(owner).setCompLikePositionsManager(fakeCompoundModule.address)).not.be.reverted;
-      await compMarketsManager.connect(owner).setCompLikePositionsManager(fakeCompoundModule.address);
+      expect(compMarketsManager.connect(supplier1).setPositionsManagerForCompLike(fakeCompoundModule.address)).to.be.reverted;
+      expect(compMarketsManager.connect(borrower1).setPositionsManagerForCompLike(fakeCompoundModule.address)).to.be.reverted;
+      expect(compMarketsManager.connect(owner).setPositionsManagerForCompLike(fakeCompoundModule.address)).not.be.reverted;
+      await compMarketsManager.connect(owner).setPositionsManagerForCompLike(fakeCompoundModule.address);
       expect(await compMarketsManager.positionsManagerForCompLike()).to.equal(fakeCompoundModule.address);
     });
 
