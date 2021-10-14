@@ -159,10 +159,10 @@ describe('PositionsManagerForCompLike Contract', () => {
       await morphoMarketsManagerForCompLike.connect(owner).createMarkets([config.tokens.cEth.address]);
       expect(morphoMarketsManagerForCompLike.connect(supplier1).listMarket(config.tokens.cEth.address)).to.be.reverted;
       expect(morphoMarketsManagerForCompLike.connect(borrower1).listMarket(config.tokens.cEth.address)).to.be.reverted;
-      expect(morphoMarketsManagerForCompLike.connect(supplier1).unlistMarket(config.tokens.cEth.address)).to.be.reverted;
-      expect(morphoMarketsManagerForCompLike.connect(borrower1).unlistMarket(config.tokens.cEth.address)).to.be.reverted;
+      expect(morphoMarketsManagerForCompLike.connect(supplier1).delistMarket(config.tokens.cEth.address)).to.be.reverted;
+      expect(morphoMarketsManagerForCompLike.connect(borrower1).delistMarket(config.tokens.cEth.address)).to.be.reverted;
       expect(morphoMarketsManagerForCompLike.connect(owner).listMarket(config.tokens.cEth.address)).not.to.be.reverted;
-      expect(morphoMarketsManagerForCompLike.connect(owner).unlistMarket(config.tokens.cEth.address)).not.to.be.reverted;
+      expect(morphoMarketsManagerForCompLike.connect(owner).delistMarket(config.tokens.cEth.address)).not.to.be.reverted;
     });
 
     it('Should create a market the with right values', async () => {
