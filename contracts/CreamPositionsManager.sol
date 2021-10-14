@@ -588,7 +588,7 @@ contract CreamPositionsManager is ReentrancyGuard {
                     supplyBalanceInOf[_crERC20Address][account].inP2P += toMove.div(mExchangeRate); // In mUnit
                     _updateSupplierList(_crERC20Address, account);
                     toWithdraw += toMove;
-                    emit SupplierMovedFromCreamToMorpho(account, _crERC20Address, toMove);
+                    emit SupplierMatched(account, _crERC20Address, toMove);
                 }
             }
             // Update the highest value after the tree has been updated
@@ -624,7 +624,7 @@ contract CreamPositionsManager is ReentrancyGuard {
                 supplyBalanceInOf[_crERC20Address][account].inP2P -= toMove.div(mExchangeRate); // In mUnit
                 _updateSupplierList(_crERC20Address, account);
                 toSupply += toMove;
-                emit SupplierMovedFromMorphoToCream(account, _crERC20Address, toMove);
+                emit SupplierUnmatched(account, _crERC20Address, toMove);
             }
             highestValue = suppliersInP2P[_crERC20Address].last();
         }
@@ -669,7 +669,7 @@ contract CreamPositionsManager is ReentrancyGuard {
                 borrowBalanceInOf[_crERC20Address][account].inP2P += toMove.div(mExchangeRate);
                 _updateBorrowerList(_crERC20Address, account);
                 toRepay += toMove;
-                emit BorrowerMovedFromCreamToMorpho(account, _crERC20Address, toMove);
+                emit BorrowerMatched(account, _crERC20Address, toMove);
             }
             highestValue = borrowersOnCream[_crERC20Address].last();
         }
@@ -707,7 +707,7 @@ contract CreamPositionsManager is ReentrancyGuard {
                 borrowBalanceInOf[_crERC20Address][account].inP2P -= toMove.div(mExchangeRate);
                 _updateBorrowerList(_crERC20Address, account);
                 toBorrow += toMove;
-                emit BorrowerMovedFromMorphoToCream(account, _crERC20Address, toMove);
+                emit BorrowerUnmatched(account, _crERC20Address, toMove);
             }
             highestValue = borrowersInP2P[_crERC20Address].last();
         }
@@ -738,7 +738,7 @@ contract CreamPositionsManager is ReentrancyGuard {
                 _updateSupplierList(cERC20Entered, _account);
                 // Supply to Cream
                 _supplyERC20ToCream(cERC20Entered, inP2PInUnderlying);
-                emit SupplierMovedFromMorphoToCream(_account, cERC20Entered, inP2PInUnderlying);
+                emit SupplierUnmatched(_account, cERC20Entered, inP2PInUnderlying);
             }
         }
     }
