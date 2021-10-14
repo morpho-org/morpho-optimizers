@@ -253,7 +253,7 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
                 _supplyERC20ToCream(_crERC20Address, remainingToSupplyToCream); // Revert on error
             }
         }
-        /* CASE 2: There aren't any borrowers waiting on Cream, we supply all the tokens to Cream */
+        /* CASE 2: There aren't any borrowers waiting on Cream, Morpho supplies all the tokens to Cream */
         else {
             supplyBalanceInOf[_crERC20Address][msg.sender].onCream += _amount.div(crExchangeRate); // In crToken
             _supplyERC20ToCream(_crERC20Address, _amount); // Revert on error
@@ -300,7 +300,7 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
                     .div(crERC20Token.borrowIndex()); // In cdUnit
             }
         }
-        /* CASE 2: There aren't any borrowers waiting on Cream, we borrow all the tokens from Cream */
+        /* CASE 2: There aren't any borrowers waiting on Cream, Morpho borrows all the tokens from Cream */
         else {
             _unmatchTheSupplier(msg.sender);
             require(crERC20Token.borrow(_amount) == 0, "borrow(2):borrow-cream-fail");
@@ -441,7 +441,7 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
             }
         }
 
-        /* If there remains some tokens to withdraw (CASE 2), we break credit lines and repair them either with other users or with Cream itself*/
+        /* If there remains some tokens to withdraw (CASE 2), Morpho breaks credit lines and repair them either with other users or with Cream itself */
         if (remainingToWithdraw > 0) {
             uint256 mExchangeRate = marketsManagerForCompLike.mUnitExchangeRate(_crERC20Address);
             uint256 crTokenContractBalanceInUnderlying = crERC20Token.balanceOf(address(this)).mul(
@@ -517,7 +517,7 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
             }
         }
 
-        /* If there remains some tokens to repay (CASE 2), we break credit lines and repair them either with other users or with Cream itself */
+        /* If there remains some tokens to repay (CASE 2), Morpho breaks credit lines and repair them either with other users or with Cream itself */
         if (remainingToRepay > 0) {
             // No need to update mUnitExchangeRate here as it's done in `_checkAccountLiquidity`
             uint256 mExchangeRate = marketsManagerForCompLike.updateMUnitExchangeRate(
