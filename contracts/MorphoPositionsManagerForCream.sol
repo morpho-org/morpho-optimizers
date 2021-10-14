@@ -246,7 +246,7 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
             if (matched > 0) {
                 supplyBalanceInOf[_crERC20Address][msg.sender].inP2P += matched.div(mExchangeRate); // In mUnit
             }
-            /* If there aren't enough borrowers waiting on Cream to match all the tokens supplied */
+            /* If there aren't enough borrowers waiting on Cream to match all the tokens supplied, the rest is supplied to Cream */
             if (remainingToSupplyToCream > 0) {
                 supplyBalanceInOf[_crERC20Address][msg.sender].onCream += remainingToSupplyToCream
                     .div(crExchangeRate); // In crToken
