@@ -213,7 +213,7 @@ contract CreamPositionsManager is ReentrancyGuard {
         ICErc20 crERC20Token = ICErc20(_crERC20Address);
         IERC20 erc20Token = IERC20(crERC20Token.underlying());
         erc20Token.safeTransferFrom(msg.sender, address(this), _amount);
-        uint256 cExchangeRate = crERC20Token.exchangeRateCurrent();
+        uint256 crExchangeRate = crERC20Token.exchangeRateCurrent();
 
         /* SCENARIO 1: Waiting borrowers -> match in P2P */
         if (borrowersOnCream[_crERC20Address].isNotEmpty()) {
@@ -226,13 +226,13 @@ contract CreamPositionsManager is ReentrancyGuard {
             /* SCENARIO 1.1: Not enough waiting borrowers -> supply the remaining to Cream */
             if (remainingToSupplyToCream > 0) {
                 supplyBalanceInOf[_crERC20Address][msg.sender].onCream += remainingToSupplyToCream
-                    .div(cExchangeRate); // In crToken
+                    .div(crExchangeRate); // In crToken
                 _supplyERC20ToCream(_crERC20Address, remainingToSupplyToCream); // Revert on error
             }
         }
         /* SCENARIO 2: No waiting borrowers -> supply to Cream */
         else {
-            supplyBalanceInOf[_crERC20Address][msg.sender].onCream += _amount.div(cExchangeRate); // In crToken
+            supplyBalanceInOf[_crERC20Address][msg.sender].onCream += _amount.div(crExchangeRate); // In crToken
             _supplyERC20ToCream(_crERC20Address, _amount); // Revert on error
         }
 
@@ -466,25 +466,25 @@ contract CreamPositionsManager is ReentrancyGuard {
         ICErc20 crERC20Token = ICErc20(_crERC20Address);
         IERC20 erc20Token = IERC20(crERC20Token.underlying());
         // No need to update mUnitExchangeRate here as it's done in `_checkAccountLiquidity`
-        uint256 cExchangeRate = crERC20Token.exchangeRateCurrent();
+        uint256 crExchangeRate = crERC20Token.exchangeRateCurrent();
         uint256 remainingToWithdraw = _amount;
 
         // FIRST DEAL WITH CREAM BALANCE
         if (supplyBalanceInOf[_crERC20Address][_holder].onCream > 0) {
             uint256 amountOnCreamInUnderlying = supplyBalanceInOf[_crERC20Address][_holder]
                 .onCream
-                .mul(cExchangeRate);
+                .mul(crExchangeRate);
             // ENOUGH
             if (_amount <= amountOnCreamInUnderlying) {
                 _withdrawERC20FromCream(_crERC20Address, _amount); // Revert on error
-                supplyBalanceInOf[_crERC20Address][_holder].onCream -= _amount.div(cExchangeRate); // In crToken
+                supplyBalanceInOf[_crERC20Address][_holder].onCream -= _amount.div(crExchangeRate); // In crToken
                 remainingToWithdraw = 0; // In underlying
             }
             // NOT ENOUGH
             else {
                 _withdrawERC20FromCream(_crERC20Address, amountOnCreamInUnderlying); // Revert on error
                 supplyBalanceInOf[_crERC20Address][_holder].onCream -= amountOnCreamInUnderlying
-                    .div(cExchangeRate);
+                    .div(crExchangeRate);
                 remainingToWithdraw = _amount - amountOnCreamInUnderlying; // In underlying
             }
         }
@@ -493,7 +493,7 @@ contract CreamPositionsManager is ReentrancyGuard {
         if (remainingToWithdraw > 0) {
             uint256 mExchangeRate = creamMarketsManager.mUnitExchangeRate(_crERC20Address);
             uint256 crTokenContractBalanceInUnderlying = crERC20Token.balanceOf(address(this)).mul(
-                cExchangeRate
+                crExchangeRate
             );
             // ENOUGH TO TRANSFER CL
             if (remainingToWithdraw <= crTokenContractBalanceInUnderlying) {
@@ -560,7 +560,7 @@ contract CreamPositionsManager is ReentrancyGuard {
         ICErc20 crERC20Token = ICErc20(_crERC20Address);
         remainingToMove = _amount; // In underlying
         uint256 mExchangeRate = creamMarketsManager.mUnitExchangeRate(_crERC20Address);
-        uint256 cExchangeRate = crERC20Token.exchangeRateCurrent();
+        uint256 crExchangeRate = crERC20Token.exchangeRateCurrent();
         uint256 highestValue = suppliersOnCream[_crERC20Address].last();
         uint256 toWithdraw;
 
@@ -575,13 +575,13 @@ contract CreamPositionsManager is ReentrancyGuard {
                     uint256 onCream = supplyBalanceInOf[_crERC20Address][account].onCream; // In crToken
                     uint256 toMove;
                     // This is done to prevent rounding errors
-                    if (onCream.mul(cExchangeRate) <= remainingToMove) {
+                    if (onCream.mul(crExchangeRate) <= remainingToMove) {
                         supplyBalanceInOf[_crERC20Address][account].onCream = 0;
-                        toMove = onCream.mul(cExchangeRate);
+                        toMove = onCream.mul(crExchangeRate);
                     } else {
                         toMove = remainingToMove;
                         supplyBalanceInOf[_crERC20Address][account].onCream -= toMove.div(
-                            cExchangeRate
+                            crExchangeRate
                         ); // In crToken
                     }
                     remainingToMove -= toMove;
@@ -609,7 +609,7 @@ contract CreamPositionsManager is ReentrancyGuard {
     {
         ICErc20 crERC20Token = ICErc20(_crERC20Address);
         remainingToMove = _amount; // In underlying
-        uint256 cExchangeRate = crERC20Token.exchangeRateCurrent();
+        uint256 crExchangeRate = crERC20Token.exchangeRateCurrent();
         uint256 mExchangeRate = creamMarketsManager.mUnitExchangeRate(_crERC20Address);
         uint256 highestValue = suppliersInP2P[_crERC20Address].last();
         uint256 toSupply;
@@ -620,7 +620,7 @@ contract CreamPositionsManager is ReentrancyGuard {
                 uint256 inP2P = supplyBalanceInOf[_crERC20Address][account].inP2P; // In crToken
                 uint256 toMove = Math.min(inP2P.mul(mExchangeRate), remainingToMove); // In underlying
                 remainingToMove -= toMove;
-                supplyBalanceInOf[_crERC20Address][account].onCream += toMove.div(cExchangeRate); // In crToken
+                supplyBalanceInOf[_crERC20Address][account].onCream += toMove.div(crExchangeRate); // In crToken
                 supplyBalanceInOf[_crERC20Address][account].inP2P -= toMove.div(mExchangeRate); // In mUnit
                 _updateSupplierList(_crERC20Address, account);
                 toSupply += toMove;
@@ -726,10 +726,10 @@ contract CreamPositionsManager is ReentrancyGuard {
 
             if (inP2P > 0) {
                 uint256 mExchangeRate = creamMarketsManager.mUnitExchangeRate(cERC20Entered);
-                uint256 cExchangeRate = ICErc20(cERC20Entered).exchangeRateCurrent();
+                uint256 crExchangeRate = ICErc20(cERC20Entered).exchangeRateCurrent();
                 uint256 inP2PInUnderlying = inP2P.mul(mExchangeRate);
                 supplyBalanceInOf[cERC20Entered][_account].onCream += inP2PInUnderlying.div(
-                    cExchangeRate
+                    crExchangeRate
                 ); // In crToken
                 supplyBalanceInOf[cERC20Entered][_account].inP2P -= inP2PInUnderlying.div(
                     mExchangeRate
