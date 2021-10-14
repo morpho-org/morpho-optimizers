@@ -138,8 +138,8 @@ describe('MorphoPositionsManagerForCream Contract', () => {
       expect(await comptroller.checkMembership(morphoPositionsManagerForCream.address, config.tokens.cEth.address)).to.be.true;
     });
 
-    it('CreamPositionsManager should not be changed after already set by Owner', async () => {
-      expect(compLikeMarketsManager.connect(owner).setPositionsManagerForCompLike(fakeCreamPositionsManager.address)).to.be.reverted;
+    it('marketsManagerForCompLike should not be changed after already set by Owner', async () => {
+      expect(morphoMarketsManagerForCompLike.connect(owner).setPositionsManagerForCompLike(fakeCreamPositionsManager.address)).to.be.reverted;
     });
 
     it('Only Owner should be able to update thresholds', async () => {
@@ -165,7 +165,7 @@ describe('MorphoPositionsManagerForCream Contract', () => {
       const supplyBPY = await cMkrToken.supplyRatePerBlock();
       const borrowBPY = await cMkrToken.borrowRatePerBlock();
       const { blockNumber } = await morphoMarketsManagerForCompLike.connect(owner).createMarkets([config.tokens.cMkr.address]);
-      expect(await morphoMarketsManagerForCompLike.isListed(config.tokens.cMkr.address)).not.to.be.true;
+      expect(await morphoPositionsManagerForCream.isListed(config.tokens.cMkr.address)).not.to.be.true;
 
       const p2pBPY = supplyBPY.add(borrowBPY).div(2);
       expect(await morphoMarketsManagerForCompLike.p2pBPY(config.tokens.cMkr.address)).to.equal(p2pBPY);
