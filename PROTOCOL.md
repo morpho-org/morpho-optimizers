@@ -99,38 +99,11 @@ Each function consider many different cases depending on the liquidity state of 
 - Morpho moves suppliers that are in P2P back to Cream. (repairing credit lines with Cream itself)
 - Morpho updates the P2P borrow balance of the user.
 
-### A user A liquidates the borrow position of user B ([`liquidate`](https://github.com/morpho-labs/morpho-contracts/blob/b4b8ddd4fcebf3a4d497a5518d8155514040a3dc/contracts/CreamPositionsManager.sol#L323))
+### Alice liquidates the borrow position of Bob ([`liquidate`](https://github.com/morpho-labs/morpho-contracts/blob/b4b8ddd4fcebf3a4d497a5518d8155514040a3dc/contracts/CreamPositionsManager.sol#L323))
 
-- A repays the position of B: Morpho reuses the logic repay function mentioned before
+- Alice repays the position of Bob: Morpho reuses the logic repay function mentioned before
 - Morpho calculates the amount of colalteral to seize
-- A siezes the collateral of B: Morpho reuses the logic of the withdraw mentioned before
-
-#### If A has some tokens waiting on Cream
-
-##### CASE 1: Collateral siezed is less than A's Cream supply balance
-
-- Morpho withdraws the tokens from Cream.
-- Morpho updates the Cream supply balance of the user.
-
-##### CASE 1: Collateral siezed is more than A's Cream supply balance
-
-- Morpho withdraws all A's tokens on Cream.
-- Morpho sets the Cream supply balance of the user to 0.
-
-#### If there remains some tokens to seize (CASE 2), we break and repare credit lines
-
-##### CASE 1: Other suppliers have enough tokens on Cream to match A's collateral siezed
-
-- Morpho moves those suppliers out of Cream to match the user in P2P
-- Morpho withdraws the tokens from Cream.
-- Morpho updates the P2P supply balance of the user.
-
-##### CASE 2: Other suppliers don't have enough tokens on Cream
-
-- Morpho moves all the suppliers from Cream to P2P.
-- Morpho withdraws the tokens from Cream.
-- Morpho does a `hard-withdraw`.
-- Morpho updates the P2P supply balance of the user.
+- Alice siezes the collateral of Bob: Morpho reuses the logic of the withdraw mentioned before
 
 ---
 
