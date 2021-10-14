@@ -101,7 +101,7 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
      */
     event Repaid(address indexed _account, address indexed _crERC20Address, uint256 _amount);
 
-    /** @dev Emitted when a supplier position is moved from Cream to Morpho.
+    /** @dev Emitted when a supplier position is moved from Cream to P2P.
      *  @param _account The address of the supplier.
      *  @param _crERC20Address The address of the market.
      *  @param _amount The amount of assets.
@@ -112,7 +112,7 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
         uint256 _amount
     );
 
-    /** @dev Emitted when a supplier position is moved from Morpho to Cream.
+    /** @dev Emitted when a supplier position is moved from P2P to Cream.
      *  @param _account The address of the supplier.
      *  @param _crERC20Address The address of the market.
      *  @param _amount The amount of assets.
@@ -123,7 +123,7 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
         uint256 _amount
     );
 
-    /** @dev Emitted when a borrower position is moved from Cream to Morpho.
+    /** @dev Emitted when a borrower position is moved from Cream to P2P.
      *  @param _account The address of the borrower.
      *  @param _crERC20Address The address of the market.
      *  @param _amount The amount of assets.
@@ -134,7 +134,7 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
         uint256 _amount
     );
 
-    /** @dev Emitted when a borrower position is moved from Morpho to Cream.
+    /** @dev Emitted when a borrower position is moved from P2P to Cream.
      *  @param _account The address of the borrower.
      *  @param _crERC20Address The address of the market.
      *  @param _amount The amount of assets.
