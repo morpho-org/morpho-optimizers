@@ -496,45 +496,56 @@ contract CreamPositionsManager is ReentrancyGuard {
         ICErc20 crERC20Token = ICErc20(_crERC20Address);
         IERC20 erc20Token = IERC20(crERC20Token.underlying());
         erc20Token.safeTransferFrom(msg.sender, address(this), _amount);
-        uint256 mExchangeRate = creamMarketsManager.updateMUnitExchangeRate(_crERC20Address);
 
-        /* SCENARIO 1: Waiting borrowers -> match them in P2P */
+        uint256 remainingToRepay = _amount;
+
+        // DEAL WITH CREAM BALANCE
         if (borrowBalanceInOf[_crERC20Address][_borrower].onCream > 0) {
             uint256 borrowIndex = crERC20Token.borrowIndex();
             uint256 onCreamInUnderlying = borrowBalanceInOf[_crERC20Address][_borrower].onCream.mul(
                 borrowIndex
             );
-
-            /* SCENARIO 1.1: Enough waiting borrowers -> repay Cream */
+            // ENOUGH
             if (_amount <= onCreamInUnderlying) {
-                borrowBalanceInOf[_crERC20Address][_borrower].onCream -= _amount.div(borrowIndex); // In cdUnit
                 erc20Token.safeApprove(_crERC20Address, _amount);
                 crERC20Token.repayBorrow(_amount);
+                borrowBalanceInOf[_crERC20Address][_borrower].onCream -= _amount.div(borrowIndex); // In cdUnit
+                remainingToRepay = 0;
             }
-            /* SCENARIO 1.2: Not Enough waiting borrowers -> unmatch suppliers */
+            // NOT ENOUGH
             else {
-                uint256 remainingToSupplyToCream = _amount - onCreamInUnderlying; // In underlying
-                borrowBalanceInOf[_crERC20Address][_borrower].inP2P -= remainingToSupplyToCream.div(
-                    mExchangeRate
-                );
+                erc20Token.safeApprove(_crERC20Address, onCreamInUnderlying);
+                crERC20Token.repayBorrow(onCreamInUnderlying); // Revert on error
                 borrowBalanceInOf[_crERC20Address][_borrower].onCream -= onCreamInUnderlying.div(
                     borrowIndex
                 );
-                require(
-                    _moveSuppliersFromP2PToCream(_crERC20Address, remainingToSupplyToCream) == 0,
-                    "_rep(1):remaining-suppliers!=0"
-                );
-                erc20Token.safeApprove(_crERC20Address, onCreamInUnderlying);
-                crERC20Token.repayBorrow(onCreamInUnderlying); // Revert on error
+                remainingToRepay -= onCreamInUnderlying; // In underlying
             }
         }
-        /* SCENARIO 2: No waiting borrowers -> supply to Cream */
-        else {
-            borrowBalanceInOf[_crERC20Address][_borrower].inP2P -= _amount.div(mExchangeRate); // In mUnit
-            require(
-                _moveSuppliersFromP2PToCream(_crERC20Address, _amount) == 0,
-                "_rep(2):remaining-suppliers!=0"
-            );
+
+        // BREAK CREDIT LINES
+        if (remainingToRepay > 0) {
+            uint256 mExchangeRate = creamMarketsManager.updateMUnitExchangeRate(_crERC20Address);
+            uint256 contractBorrowBalanceOnCream = crERC20Token.borrowBalanceCurrent(address(this)); // In underlying
+            // ENOUGH TO TRANSFER CL
+            if (remainingToRepay <= contractBorrowBalanceOnCream) {
+                _moveBorrowersFromCreamToP2P(_crERC20Address, remainingToRepay);
+                borrowBalanceInOf[_crERC20Address][_borrower].inP2P -= remainingToRepay.div(
+                    mExchangeRate
+                );
+            }
+            // NOT ENOUGH TO TRANSFER CL
+            else {
+                _moveBorrowersFromCreamToP2P(_crERC20Address, contractBorrowBalanceOnCream);
+                borrowBalanceInOf[_crERC20Address][_borrower].inP2P -= remainingToRepay.div(
+                    mExchangeRate
+                ); // In mUnit
+                remainingToRepay -= contractBorrowBalanceOnCream;
+                require(
+                    _moveSuppliersFromP2PToCream(_crERC20Address, remainingToRepay) == 0,
+                    "_rep:remaining-suppliers!=0"
+                );
+            }
         }
 
         _updateBorrowerList(_crERC20Address, _borrower);
