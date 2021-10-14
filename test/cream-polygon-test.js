@@ -19,7 +19,7 @@ const {
   getTokens,
 } = require('./utils/helpers');
 
-describe('CreamPositionsManager Contract', () => {
+describe('MorphoPositionsManagerForCream Contract', () => {
   let cUsdcToken;
   let cDaiToken;
   let cUsdtToken;
@@ -27,7 +27,7 @@ describe('CreamPositionsManager Contract', () => {
   let daiToken;
   let usdtToken;
   let uniToken;
-  let CreamPositionsManager;
+  let MorphoPositionsManagerForCream;
   let creamPositionsManager;
   let fakeCreamPositionsManager;
 
@@ -58,17 +58,17 @@ describe('CreamPositionsManager Contract', () => {
     await redBlackBinaryTree.deployed();
 
     // Deploy contracts
-    CompMarketsManager = await ethers.getContractFactory('CompMarketsManager');
-    compMarketsManager = await CompMarketsManager.deploy();
+    MorphoMarketsManagerForCompLike = await ethers.getContractFactory('MorphoMarketsManagerForCompLike');
+    compMarketsManager = await MorphoMarketsManagerForCompLike.deploy();
     await compMarketsManager.deployed();
 
-    CreamPositionsManager = await ethers.getContractFactory('CreamPositionsManager', {
+    MorphoPositionsManagerForCream = await ethers.getContractFactory('MorphoPositionsManagerForCream', {
       libraries: {
         RedBlackBinaryTree: redBlackBinaryTree.address,
       },
     });
-    creamPositionsManager = await CreamPositionsManager.deploy(compMarketsManager.address, config.cream.comptroller.address);
-    fakeCreamPositionsManager = await CreamPositionsManager.deploy(compMarketsManager.address, config.cream.comptroller.address);
+    creamPositionsManager = await MorphoPositionsManagerForCream.deploy(compMarketsManager.address, config.cream.comptroller.address);
+    fakeCreamPositionsManager = await MorphoPositionsManagerForCream.deploy(compMarketsManager.address, config.cream.comptroller.address);
     await creamPositionsManager.deployed();
     await fakeCreamPositionsManager.deployed();
 
@@ -92,7 +92,7 @@ describe('CreamPositionsManager Contract', () => {
     underlyingThreshold = utils.parseUnits('1');
 
     // Create and list markets
-    await compMarketsManager.connect(owner).setCompPositionsManager(creamPositionsManager.address);
+    await compMarketsManager.connect(owner).setCompLikePositionsManager(creamPositionsManager.address);
     await compMarketsManager.connect(owner).createMarkets([config.tokens.cDai.address, config.tokens.cUsdc.address, config.tokens.cUsdt.address, config.tokens.cUni.address]);
     await compMarketsManager.connect(owner).listMarket(config.tokens.cDai.address);
     await compMarketsManager.connect(owner).updateThreshold(config.tokens.cUsdc.address, BigNumber.from(1).pow(6));
@@ -130,7 +130,7 @@ describe('CreamPositionsManager Contract', () => {
       expect(compMarketsManager.connect(owner).createMarkets([config.tokens.cEth.address])).not.be.reverted;
     });
 
-    it('Only Morpho should be able to create markets on CreamPositionsManager', async () => {
+    it('Only Morpho should be able to create markets on MorphoPositionsManagerForCream', async () => {
       expect(creamPositionsManager.connect(supplier1).createMarkets([config.tokens.cEth.address])).to.be.reverted;
       expect(creamPositionsManager.connect(borrower1).createMarkets([config.tokens.cEth.address])).to.be.reverted;
       expect(creamPositionsManager.connect(owner).createMarkets([config.tokens.cEth.address])).to.be.reverted;
@@ -138,12 +138,12 @@ describe('CreamPositionsManager Contract', () => {
       expect(await comptroller.checkMembership(creamPositionsManager.address, config.tokens.cEth.address)).to.be.true;
     });
 
-    it('Only Owner should be able to set CreamPositionsManager in peer-to-peer', async () => {
-      expect(compMarketsManager.connect(supplier1).setCompPositionsManager(fakeCreamPositionsManager.address)).to.be.reverted;
-      expect(compMarketsManager.connect(borrower1).setCompPositionsManager(fakeCreamPositionsManager.address)).to.be.reverted;
-      expect(compMarketsManager.connect(owner).setCompPositionsManager(fakeCreamPositionsManager.address)).not.be.reverted;
-      await compMarketsManager.connect(owner).setCompPositionsManager(fakeCreamPositionsManager.address);
-      expect(await compMarketsManager.compPositionsManager()).to.equal(fakeCreamPositionsManager.address);
+    it('Only Owner should be able to set MorphoPositionsManagerForCream in peer-to-peer', async () => {
+      expect(compMarketsManager.connect(supplier1).setCompLikePositionsManager(fakeCreamPositionsManager.address)).to.be.reverted;
+      expect(compMarketsManager.connect(borrower1).setCompLikePositionsManager(fakeCreamPositionsManager.address)).to.be.reverted;
+      expect(compMarketsManager.connect(owner).setCompLikePositionsManager(fakeCreamPositionsManager.address)).not.be.reverted;
+      await compMarketsManager.connect(owner).setCompLikePositionsManager(fakeCreamPositionsManager.address);
+      expect(await compMarketsManager.positionsManagerForCompLike()).to.equal(fakeCreamPositionsManager.address);
     });
 
     it('Only Owner should be able to update thresholds', async () => {
