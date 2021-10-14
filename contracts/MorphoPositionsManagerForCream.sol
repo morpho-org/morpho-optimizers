@@ -12,7 +12,7 @@ import "./interfaces/IMarketsManagerForCompLike.sol";
 
 /**
  *  @title MorphoPositionsManagerForCream
- *  @dev Smart contracts interacting with Cream to enable real P2P supply with cERC20 tokens as supply/borrow assets.
+ *  @dev Smart contract interacting with Cream to enable P2P supply/borrow positions that can fallback on Cream's pool using cERC20 tokens.
  */
 contract MorphoPositionsManagerForCream is ReentrancyGuard {
     using RedBlackBinaryTree for RedBlackBinaryTree.Tree;
