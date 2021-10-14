@@ -291,7 +291,7 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
 
             /* If there aren't enough suppliers waiting on Cream to match all the tokens borrowed, the rest is borrowed from Cream */
             if (remainingToBorrowOnCream > 0) {
-                _unmatchTheSupplier(msg.sender); // Ensures the collateral is put on Cream, before borrowing on Cream (cf Liquidation Invariant in docs)
+                _unmatchTheSupplier(msg.sender); // Before borrowing on Cream, we put all the collateral of the borrower on Cream (cf Liquidation Invariant in docs)
                 require(
                     crERC20Token.borrow(remainingToBorrowOnCream) == 0,
                     "borrow(1):borrow-cream-fail"
@@ -302,7 +302,7 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
         }
         /* CASE 2: There aren't any borrowers waiting on Cream, Morpho borrows all the tokens from Cream */
         else {
-            _unmatchTheSupplier(msg.sender);
+            _unmatchTheSupplier(msg.sender); // Before borrowing on Cream, we put all the collateral of the borrower on Cream (cf Liquidation Invariant in docs)
             require(crERC20Token.borrow(_amount) == 0, "borrow(2):borrow-cream-fail");
             borrowBalanceInOf[_crERC20Address][msg.sender].onCream += _amount.div(
                 crERC20Token.borrowIndex()
@@ -728,8 +728,7 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
             while (borrowersInP2P[_crERC20Address].getNumberOfKeysAtValue(highestValue) > 0) {
                 address account = borrowersInP2P[_crERC20Address].valueKeyAtIndex(highestValue, 0);
                 uint256 inP2P = borrowBalanceInOf[_crERC20Address][account].inP2P;
-                // Put all its supply on Cream
-                _unmatchTheSupplier(account);
+                _unmatchTheSupplier(account); // Before borrowing on Cream, we put all the collateral of the borrower on Cream (cf Liquidation Invariant in docs)
                 uint256 toUnmatch = Math.min(inP2P.mul(mExchangeRate), remainingToUnmatch); // In underlying
                 remainingToUnmatch -= toUnmatch;
                 borrowBalanceInOf[_crERC20Address][account].onCream += toUnmatch.div(borrowIndex);
