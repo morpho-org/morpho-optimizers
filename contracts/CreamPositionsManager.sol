@@ -359,7 +359,6 @@ contract CreamPositionsManager is ReentrancyGuard {
          *   = actualRepayAmount * (liquidationIncentive * priceBorrowed) / (priceCollateral * exchangeRate)
          */
         ICErc20 cERC20CollateralToken = ICErc20(_cERC20CollateralAddress);
-        IERC20 erc20CollateralToken = IERC20(cERC20CollateralToken.underlying());
 
         vars.amountToSeize = _amount
             .mul(vars.priceBorrowedMantissa)
@@ -376,36 +375,7 @@ contract CreamPositionsManager is ReentrancyGuard {
 
         require(vars.amountToSeize <= totalCollateral, "liq:toseize>collateral");
 
-        if (vars.amountToSeize <= vars.onCreamInUnderlying) {
-            // Seize tokens from Cream
-            supplyBalanceInOf[_cERC20CollateralAddress][_borrower].onCream -= vars
-                .amountToSeize
-                .div(cERC20CollateralToken.exchangeRateStored());
-            _withdrawERC20FromCream(_cERC20CollateralAddress, vars.amountToSeize);
-        } else {
-            // Seize tokens from Morpho and Cream
-            uint256 toMove = vars.amountToSeize - vars.onCreamInUnderlying;
-            supplyBalanceInOf[_cERC20CollateralAddress][_borrower].inP2P -= toMove.div(
-                creamMarketsManager.mUnitExchangeRate(_cERC20CollateralAddress)
-            );
-
-            // Check balances before and after to avoid round errors issues
-            uint256 balanceBefore = erc20CollateralToken.balanceOf(address(this));
-            require(
-                cERC20CollateralToken.redeem(
-                    supplyBalanceInOf[_cERC20CollateralAddress][_borrower].onCream
-                ) == 0,
-                "liq:withdraw-crToken-fail"
-            );
-            supplyBalanceInOf[_cERC20CollateralAddress][_borrower].onCream = 0;
-            require(cERC20CollateralToken.borrow(toMove) == 0, "liq:borrow-cream-fail");
-            uint256 balanceAfter = erc20CollateralToken.balanceOf(address(this));
-            vars.amountToSeize = balanceAfter - balanceBefore;
-            _unmatchBorrowers(_cERC20CollateralAddress, toMove);
-        }
-
-        _updateSupplierList(_cERC20CollateralAddress, _borrower);
-        erc20CollateralToken.safeTransfer(msg.sender, vars.amountToSeize);
+        _withdraw(_cERC20CollateralAddress, vars.amountToSeize, _borrower, msg.sender);
     }
 
     /* Internal */
