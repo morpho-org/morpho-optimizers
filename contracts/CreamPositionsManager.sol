@@ -321,54 +321,59 @@ contract CreamPositionsManager is ReentrancyGuard {
         _checkAccountLiquidity(msg.sender, _crERC20Address, _amount, 0);
         ICErc20 crERC20Token = ICErc20(_crERC20Address);
         IERC20 erc20Token = IERC20(crERC20Token.underlying());
-        // No need to update mUnitExchangeRate here as it's done in `_checkAccountLiquidity`
-        uint256 mExchangeRate = creamMarketsManager.mUnitExchangeRate(_crERC20Address);
         uint256 cExchangeRate = crERC20Token.exchangeRateCurrent();
-        uint256 amountOnCreamInUnderlying = supplyBalanceInOf[_crERC20Address][msg.sender]
-            .onCream
-            .mul(cExchangeRate);
+        uint256 remainingToWithdraw = _amount;
 
-        /* SCENARIO 1: Enough waiting supply -> withdraw it from Cream */
-        if (_amount <= amountOnCreamInUnderlying) {
-            supplyBalanceInOf[_crERC20Address][msg.sender].onCream -= _amount.div(cExchangeRate); // In crToken
-            _withdrawERC20FromCream(_crERC20Address, _amount); // Revert on error
+        // FIRST DEAL WITH CREAM BALANCE
+        if (supplyBalanceInOf[_crERC20Address][msg.sender].onCream > 0) {
+            uint256 amountOnCreamInUnderlying = supplyBalanceInOf[_crERC20Address][msg.sender]
+                .onCream
+                .mul(cExchangeRate);
+            // ENOUGH
+            if (_amount <= amountOnCreamInUnderlying) {
+                _withdrawERC20FromCream(_crERC20Address, _amount); // Revert on error
+                supplyBalanceInOf[_crERC20Address][msg.sender].onCream -= _amount.div(
+                    cExchangeRate
+                ); // In crToken
+                remainingToWithdraw = 0; // In underlying
+            }
+            // NOT ENOUGH
+            else {
+                _withdrawERC20FromCream(_crERC20Address, amountOnCreamInUnderlying); // Revert on error
+                supplyBalanceInOf[_crERC20Address][msg.sender].onCream -= amountOnCreamInUnderlying
+                    .div(cExchangeRate);
+                remainingToWithdraw = _amount - amountOnCreamInUnderlying; // In underlying
+            }
         }
-        /* SCENARIO 2: Not Enough waiting supply */
-        else {
-            _withdrawERC20FromCream(_crERC20Address, amountOnCreamInUnderlying); // Revert on error
-            supplyBalanceInOf[_crERC20Address][msg.sender].onCream -= amountOnCreamInUnderlying.div(
-                cExchangeRate
-            );
-            // Then, search for the remaining liquidity in peer-to-peer
-            uint256 remainingToWithdraw = _amount - amountOnCreamInUnderlying; // In underlying
-            supplyBalanceInOf[_crERC20Address][msg.sender].inP2P -= remainingToWithdraw.div(
-                mExchangeRate
-            ); // In mUnit
+
+        // BREAK CREDIT LINES
+        if (remainingToWithdraw > 0) {
+            // No need to update mUnitExchangeRate here as it's done in `_checkAccountLiquidity`
+            uint256 mExchangeRate = creamMarketsManager.mUnitExchangeRate(_crERC20Address);
             uint256 crTokenContractBalanceInUnderlying = crERC20Token.balanceOf(address(this)).mul(
                 cExchangeRate
             );
-
-            /* SCENARIO 2.1: Enough waiting suppliers -> match them with borrowers */
+            // ENOUGH TO TRANSFER CL
             if (remainingToWithdraw <= crTokenContractBalanceInUnderlying) {
                 require(
                     _moveSuppliersFromCreamToP2P(_crERC20Address, remainingToWithdraw) == 0,
                     "red:remaining-suppliers!=0"
                 );
+                supplyBalanceInOf[_crERC20Address][msg.sender].inP2P -= remainingToWithdraw.div(
+                    mExchangeRate
+                ); // In mUnit
             }
-            /* SCENARIO 2.2: Not enough waiting suppliers -> borrow on Cream */
+            // NOT ENOUGH TO TRANSFER CL
             else {
-                // First, Morpho moves all the waiting suppliers, even though they are not sufficient
                 _moveSuppliersFromCreamToP2P(_crERC20Address, crTokenContractBalanceInUnderlying);
-
-                // Update the remaining amount to withdraw to `msg.sender`
                 remainingToWithdraw -= crTokenContractBalanceInUnderlying;
-
-                // Then, we borrow the on Cream with the collateral of the borrowers
-
                 require(
                     _moveBorrowersFromP2PToCream(_crERC20Address, remainingToWithdraw) == 0,
                     "red:remaining-borrowers!=0"
                 );
+                supplyBalanceInOf[_crERC20Address][msg.sender].inP2P -=
+                    crTokenContractBalanceInUnderlying.div(mExchangeRate) +
+                    remainingToWithdraw.div(mExchangeRate); // In mUnit
             }
         }
 
