@@ -66,15 +66,12 @@ contract MorphoMarketsManagerForCompLike is Ownable {
     /* External */
 
     /** @dev Sets the `positionsManagerForCompLike` to interact with Compound.
-     *  @param _compPositionsManager The address of compound module.
+     *  @param _compLikePositionsManager The address of compound module.
      */
-    function setCompPositionsManager(IPositionsManagerForCompLike _compPositionsManager)
-        external
-        onlyOwner
-    {
+    function setCompLikePositionsManager(address _compLikePositionsManager) external onlyOwner {
         require(!isPositionsManagerSet, "positions-manager-already-set");
         isPositionsManagerSet = true;
-        positionsManagerForCompLike = _compPositionsManager;
+        positionsManagerForCompLike = IPositionsManagerForCompLike(_compLikePositionsManager);
     }
 
     /** @dev Sets the comptroller address.
