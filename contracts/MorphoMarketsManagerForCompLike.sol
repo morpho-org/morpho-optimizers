@@ -19,6 +19,7 @@ contract MorphoMarketsManagerForCompLike is Ownable {
 
     /* Storage */
 
+    bool public isPositionsManagerSet; // Whether or not the positions manager is set.
     mapping(address => bool) public isListed; // Whether or not this market is listed.
     mapping(address => bool) public isCreated; // Whether or not this market is created.
     mapping(address => uint256) public p2pBPY; // Block Percentage Yield ("midrate").
@@ -67,7 +68,9 @@ contract MorphoMarketsManagerForCompLike is Ownable {
     /** @dev Sets the `positionsManagerForCompLike` to interact with Compound.
      *  @param _compLikePositionsManager The address of compound module.
      */
-    function setCompLikePositionsManager(address _compLikePositionsManager) external onlyOwner {
+    function setPositionsManagerForCompLike(address _compLikePositionsManager) external onlyOwner {
+        require(!isPositionsManagerSet, "positions-manager-already-set");
+        isPositionsManagerSet = true;
         positionsManagerForCompLike = IPositionsManagerForCompLike(_compLikePositionsManager);
     }
 
