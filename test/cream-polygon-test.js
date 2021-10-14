@@ -112,7 +112,7 @@ describe('MorphoPositionsManagerForCream Contract', () => {
       expect(await morphoMarketsManagerForCompLike.mUnitExchangeRate(config.tokens.cDai.address)).to.be.equal(utils.parseUnits('1'));
 
       // Thresholds
-      underlyingThreshold = await morphoMarketsManagerForCompLike.thresholds(config.tokens.cDai.address);
+      underlyingThreshold = await morphoPositionsManagerForCream.thresholds(config.tokens.cDai.address);
       expect(underlyingThreshold).to.be.equal(utils.parseUnits('1'));
     });
   });
@@ -139,7 +139,7 @@ describe('MorphoPositionsManagerForCream Contract', () => {
     });
 
     it('CreamPositionsManager should not be changed after already set by Owner', async () => {
-      expect(compLikeMarketsManager.connect(owner).setCompLikePositionsManager(fakeCreamPositionsManager.address)).to.be.reverted;
+      expect(morphoMarketsManagerForCompLike.connect(owner).setCompLikePositionsManager(fakeCreamPositionsManager.address)).to.be.reverted;
     });
 
     it('Only Owner should be able to update thresholds', async () => {
@@ -165,7 +165,7 @@ describe('MorphoPositionsManagerForCream Contract', () => {
       const supplyBPY = await cMkrToken.supplyRatePerBlock();
       const borrowBPY = await cMkrToken.borrowRatePerBlock();
       const { blockNumber } = await morphoMarketsManagerForCompLike.connect(owner).createMarkets([config.tokens.cMkr.address]);
-      expect(await morphoMarketsManagerForCompLike.isListed(config.tokens.cMkr.address)).not.to.be.true;
+      expect(await morphoPositionsManagerForCream.isListed(config.tokens.cMkr.address)).not.to.be.true;
 
       const p2pBPY = supplyBPY.add(borrowBPY).div(2);
       expect(await morphoMarketsManagerForCompLike.p2pBPY(config.tokens.cMkr.address)).to.equal(p2pBPY);
@@ -284,10 +284,6 @@ describe('MorphoPositionsManagerForCream Contract', () => {
     it('Should have correct balances at the beginning', async () => {
       expect((await morphoPositionsManagerForCream.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onCream).to.equal(0);
       expect((await morphoPositionsManagerForCream.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).inP2P).to.equal(0);
-    });
-
-    it('Should revert when providing 0 as collateral', async () => {
-      await expect(morphoPositionsManagerForCream.connect(supplier1).supply(config.tokens.cDai.address, 0)).to.be.reverted;
     });
 
     it('Should revert when borrow less than threshold', async () => {
