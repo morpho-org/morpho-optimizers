@@ -1,5 +1,7 @@
 # Keys to understand Morpho protocol
 
+(A GitBook is being written and will be out soon)
+
 Morpho moves credit lines in and out of AAVE/Compound to match users in Peer-to-Peer, thus improving capital-efficiency and liquidity whilst preserving the same market risks.
 
 A user can trigger five different functions: supply, withdraw, borrow, repay and liquidate. Here we give an informal description of how each of those functions work.
