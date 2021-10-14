@@ -56,14 +56,14 @@ contract CreamPositionsManager is ReentrancyGuard {
 
     /* Storage */
 
-    mapping(address => RedBlackBinaryTree.Tree) public suppliersInP2P; // Suppliers in peer-to-peer.
-    mapping(address => RedBlackBinaryTree.Tree) public suppliersOnCream; // Suppliers on Cream.
-    mapping(address => RedBlackBinaryTree.Tree) public borrowersInP2P; // Borrowers in peer-to-peer.
-    mapping(address => RedBlackBinaryTree.Tree) public borrowersOnCream; // Borrowers on Cream.
+    mapping(address => RedBlackBinaryTree.Tree) private suppliersInP2P; // Suppliers in peer-to-peer.
+    mapping(address => RedBlackBinaryTree.Tree) private suppliersOnCream; // Suppliers on Cream.
+    mapping(address => RedBlackBinaryTree.Tree) private borrowersInP2P; // Borrowers in peer-to-peer.
+    mapping(address => RedBlackBinaryTree.Tree) private borrowersOnCream; // Borrowers on Cream.
     mapping(address => mapping(address => SupplyBalance)) public supplyBalanceInOf; // For a given market, the supply balance of user.
     mapping(address => mapping(address => BorrowBalance)) public borrowBalanceInOf; // For a given market, the borrow balance of user.
-    mapping(address => address[]) public enteredMarkets; // Markets entered by a user.
     mapping(address => mapping(address => bool)) public accountMembership; // Whether the account is in the market or not.
+    mapping(address => address[]) public enteredMarkets; // Markets entered by a user.
 
     IComptroller public creamtroller;
     ICompoundOracle public creamOracle;
