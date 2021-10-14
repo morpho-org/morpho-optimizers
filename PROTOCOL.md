@@ -18,7 +18,7 @@ Each function consider many different cases depending on the liquidity state of 
 - Morpho supplies the tokens to Cream
 - Morpho updates the Cream supply balance of the user
 
-#### CASE 2: There aren't any borrowers waiting on Cream, we supply all the tokens to Cream
+#### CASE 2: There aren't any borrowers waiting on Cream, Morpho supplies all the tokens to Cream
 
 - Morpho updates the Cream supply balance of the user
 - Morpho supplies the tokens to Cream
@@ -36,7 +36,7 @@ Each function consider many different cases depending on the liquidity state of 
 - Morpho borrows the tokens from Cream.
 - Morpho updates the Cream borrow balance of the user.
 
-#### CASE 2: There aren't any borrowers waiting on Cream, we borrow all the tokens from Cream
+#### CASE 2: There aren't any borrowers waiting on Cream, Morpho borrows all the tokens from Cream
 
 - Morpho moves the supply of the user from P2P to Cream to ensure Morpho's borrow is going to be backed with collateral.
 - Morpho borrows the tokens from Cream.
@@ -56,7 +56,7 @@ Each function consider many different cases depending on the liquidity state of 
 - Morpho withdraws all users' tokens on Cream.
 - Morpho sets the Cream supply balance of the user to 0.
 
-#### If there remains some tokens to withdraw (CASE 2), we break credit lines and repair them either with other users or with Cream itself
+#### If there remains some tokens to withdraw (CASE 2), Morpho breaks credit lines and repair them either with other users or with Cream itself
 
 ##### CASE 1: Other suppliers have enough tokens on Cream to compensate user's position
 
@@ -85,7 +85,7 @@ Each function consider many different cases depending on the liquidity state of 
 - Morpho supplies all the tokens to Cream.
 - Morpho sets the Cream borrow balance of the user to 0.
 
-#### If there remains some tokens to repay (CASE 2), we break credit lines and repair them either with other users or with Cream itself
+#### If there remains some tokens to repay (CASE 2), Morpho breaks credit lines and repair them either with other users or with Cream itself
 
 ##### CASE 1: Other borrowers are borrowing enough on Cream to compensate user's position
 
@@ -130,10 +130,6 @@ Here, it is quite simple, Morpho can safely borrow
 
 #### The collateral of the borrower is matched
 
-In that scenario, which is extremely rare, Morpho can't borrow thanks to the colalteral as it is not being supplied to Cream. The trick is thus to recursively try to borrow on the collateral of the borrower that is matching the collateral. We give an intuition of the proof of termination of this recursive loop, which is bounded to N-1, where N is yhe number of markets in the protocol.
+In that scenario, which is extremely rare, Morpho can't borrow thanks to the colalteral as it is not being supplied to Cream. The trick is thus to recursively try to borrow on the collateral of the borrower that is matching the collateral. In the following example, we give an intuition of the proof of termination of this recursive loop, which is bounded to N-1, where N is yhe number of markets in the protocol.
 
-
-
-
-
-
+Let's consider the most extreme scenario where Alice, Bob, Charlie and David are matched in P2P with collateral factors of 100%. This is handled by Morpho even though in practice, this very very unlikely and gas expensive. This can also be triggered by a hardworker. Find the document Hard-withdraw-with-matched-collateral.pdf to go through this example.
