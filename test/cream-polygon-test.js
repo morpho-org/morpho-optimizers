@@ -112,7 +112,7 @@ describe('MorphoPositionsManagerForCream Contract', () => {
       expect(await morphoMarketsManagerForCompLike.mUnitExchangeRate(config.tokens.cDai.address)).to.be.equal(utils.parseUnits('1'));
 
       // Thresholds
-      underlyingThreshold = await morphoMarketsManagerForCompLike.thresholds(config.tokens.cDai.address);
+      underlyingThreshold = await morphoPositionsManagerForCream.thresholds(config.tokens.cDai.address);
       expect(underlyingThreshold).to.be.equal(utils.parseUnits('1'));
     });
   });
