@@ -23,13 +23,13 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
     /* Structs */
 
     struct SupplyBalance {
-        uint256 inP2P; // In mUnit (a unit that grows in value, to keep track of the interests/debt increase when users are in p2p).
+        uint256 inP2P; // In mUnit, a unit that grows in value, to keep track of the interests/debt increase when users are in p2p.
         uint256 onCream; // In crToken.
     }
 
     struct BorrowBalance {
         uint256 inP2P; // In mUnit.
-        uint256 onCream; // In cdUnit. (a unit that grows in value, to keep track of the debt increase when users are in Cream). Multiply by current borrowIndex to get the underlying amount.
+        uint256 onCream; // In cdUnit, a unit that grows in value, to keep track of the debt increase when users are in Cream. Multiply by current borrowIndex to get the underlying amount.
     }
 
     // Struct to avoid stack too deep error
