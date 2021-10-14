@@ -306,74 +306,8 @@ contract CreamPositionsManager is ReentrancyGuard {
      *  @param _crERC20Address The address of the market the user wants to interact with.
      *  @param _amount The amount in tokens to withdraw from supply.
      */
-    function withdraw(address _crERC20Address, uint256 _amount)
-        external
-        nonReentrant
-        isMarketListed(_crERC20Address)
-    {
-        require(_amount > 0, "red:amount=0");
-        _checkAccountLiquidity(msg.sender, _crERC20Address, _amount, 0);
-        ICErc20 crERC20Token = ICErc20(_crERC20Address);
-        IERC20 erc20Token = IERC20(crERC20Token.underlying());
-        // No need to update mUnitExchangeRate here as it's done in `_checkAccountLiquidity`
-        uint256 cExchangeRate = crERC20Token.exchangeRateCurrent();
-        uint256 remainingToWithdraw = _amount;
-
-        // FIRST DEAL WITH CREAM BALANCE
-        if (supplyBalanceInOf[_crERC20Address][msg.sender].onCream > 0) {
-            uint256 amountOnCreamInUnderlying = supplyBalanceInOf[_crERC20Address][msg.sender]
-                .onCream
-                .mul(cExchangeRate);
-            // ENOUGH
-            if (_amount <= amountOnCreamInUnderlying) {
-                _withdrawERC20FromCream(_crERC20Address, _amount); // Revert on error
-                supplyBalanceInOf[_crERC20Address][msg.sender].onCream -= _amount.div(
-                    cExchangeRate
-                ); // In crToken
-                remainingToWithdraw = 0; // In underlying
-            }
-            // NOT ENOUGH
-            else {
-                _withdrawERC20FromCream(_crERC20Address, amountOnCreamInUnderlying); // Revert on error
-                supplyBalanceInOf[_crERC20Address][msg.sender].onCream -= amountOnCreamInUnderlying
-                    .div(cExchangeRate);
-                remainingToWithdraw = _amount - amountOnCreamInUnderlying; // In underlying
-            }
-        }
-
-        // BREAK CREDIT LINES
-        if (remainingToWithdraw > 0) {
-            uint256 mExchangeRate = creamMarketsManager.mUnitExchangeRate(_crERC20Address);
-            uint256 crTokenContractBalanceInUnderlying = crERC20Token.balanceOf(address(this)).mul(
-                cExchangeRate
-            );
-            // ENOUGH TO TRANSFER CL
-            if (remainingToWithdraw <= crTokenContractBalanceInUnderlying) {
-                require(
-                    _matchSuppliers(_crERC20Address, remainingToWithdraw) == 0,
-                    "red:remaining-suppliers!=0"
-                );
-                supplyBalanceInOf[_crERC20Address][msg.sender].inP2P -= remainingToWithdraw.div(
-                    mExchangeRate
-                ); // In mUnit
-            }
-            // NOT ENOUGH TO TRANSFER CL
-            else {
-                _matchSuppliers(_crERC20Address, crTokenContractBalanceInUnderlying);
-                remainingToWithdraw -= crTokenContractBalanceInUnderlying;
-                require(
-                    _unmatchBorrowers(_crERC20Address, remainingToWithdraw) == 0,
-                    "red:remaining-borrowers!=0"
-                );
-                supplyBalanceInOf[_crERC20Address][msg.sender].inP2P -=
-                    crTokenContractBalanceInUnderlying.div(mExchangeRate) +
-                    remainingToWithdraw.div(mExchangeRate); // In mUnit
-            }
-        }
-
-        _updateSupplierList(_crERC20Address, msg.sender);
-        erc20Token.safeTransfer(msg.sender, _amount);
-        emit Withdrawn(msg.sender, _crERC20Address, _amount);
+    function withdraw(address _crERC20Address, uint256 _amount) external nonReentrant {
+        _withdraw(_crERC20Address, _amount, msg.sender, msg.sender);
     }
 
     /** @dev Allows someone to liquidate a position.
@@ -544,6 +478,80 @@ contract CreamPositionsManager is ReentrancyGuard {
 
         _updateBorrowerList(_crERC20Address, _borrower);
         emit Repaid(_borrower, _crERC20Address, _amount);
+    }
+
+    /** @dev Withdraws ERC20 tokens from supply.
+     *  @param _crERC20Address The address of the market the user wants to interact with.
+     *  @param _amount The amount in tokens to withdraw from supply.
+     *  @param _receiver The address of the user that will receive the tokens.
+     */
+    function _withdraw(
+        address _crERC20Address,
+        uint256 _amount,
+        address _holder,
+        address _receiver
+    ) internal isMarketListed(_crERC20Address) {
+        require(_amount > 0, "red:amount=0");
+        _checkAccountLiquidity(_holder, _crERC20Address, _amount, 0);
+        ICErc20 crERC20Token = ICErc20(_crERC20Address);
+        IERC20 erc20Token = IERC20(crERC20Token.underlying());
+        // No need to update mUnitExchangeRate here as it's done in `_checkAccountLiquidity`
+        uint256 cExchangeRate = crERC20Token.exchangeRateCurrent();
+        uint256 remainingToWithdraw = _amount;
+
+        // FIRST DEAL WITH CREAM BALANCE
+        if (supplyBalanceInOf[_crERC20Address][_holder].onCream > 0) {
+            uint256 amountOnCreamInUnderlying = supplyBalanceInOf[_crERC20Address][_holder]
+                .onCream
+                .mul(cExchangeRate);
+            // ENOUGH
+            if (_amount <= amountOnCreamInUnderlying) {
+                _withdrawERC20FromCream(_crERC20Address, _amount); // Revert on error
+                supplyBalanceInOf[_crERC20Address][_holder].onCream -= _amount.div(cExchangeRate); // In crToken
+                remainingToWithdraw = 0; // In underlying
+            }
+            // NOT ENOUGH
+            else {
+                _withdrawERC20FromCream(_crERC20Address, amountOnCreamInUnderlying); // Revert on error
+                supplyBalanceInOf[_crERC20Address][_holder].onCream -= amountOnCreamInUnderlying
+                    .div(cExchangeRate);
+                remainingToWithdraw = _amount - amountOnCreamInUnderlying; // In underlying
+            }
+        }
+
+        // BREAK CREDIT LINES
+        if (remainingToWithdraw > 0) {
+            uint256 mExchangeRate = creamMarketsManager.mUnitExchangeRate(_crERC20Address);
+            uint256 crTokenContractBalanceInUnderlying = crERC20Token.balanceOf(address(this)).mul(
+                cExchangeRate
+            );
+            // ENOUGH TO TRANSFER CL
+            if (remainingToWithdraw <= crTokenContractBalanceInUnderlying) {
+                require(
+                    _matchSuppliers(_crERC20Address, remainingToWithdraw) == 0,
+                    "red:remaining-suppliers!=0"
+                );
+                supplyBalanceInOf[_crERC20Address][_holder].inP2P -= remainingToWithdraw.div(
+                    mExchangeRate
+                ); // In mUnit
+            }
+            // NOT ENOUGH TO TRANSFER CL
+            else {
+                _matchSuppliers(_crERC20Address, crTokenContractBalanceInUnderlying);
+                remainingToWithdraw -= crTokenContractBalanceInUnderlying;
+                require(
+                    _unmatchBorrowers(_crERC20Address, remainingToWithdraw) == 0,
+                    "red:remaining-borrowers!=0"
+                );
+                supplyBalanceInOf[_crERC20Address][_holder].inP2P -=
+                    crTokenContractBalanceInUnderlying.div(mExchangeRate) +
+                    remainingToWithdraw.div(mExchangeRate); // In mUnit
+            }
+        }
+
+        _updateSupplierList(_crERC20Address, _receiver);
+        erc20Token.safeTransfer(_receiver, _amount);
+        emit Withdrawn(_receiver, _crERC20Address, _amount);
     }
 
     /** @dev Supplies ERC20 tokens to Cream.
