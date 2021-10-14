@@ -64,6 +64,8 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
     mapping(address => mapping(address => BorrowBalance)) public borrowBalanceInOf; // For a given market, the borrow balance of user.
     mapping(address => mapping(address => bool)) public accountMembership; // Whether the account is in the market or not.
     mapping(address => address[]) public enteredMarkets; // Markets entered by a user.
+    mapping(address => uint256) public thresholds; // Thresholds below the ones suppliers and borrowers cannot enter markets.
+    mapping(address => bool) public isListed; // Whether or not this market is listed.
 
     IComptroller public creamtroller;
     ICompoundOracle public creamOracle;
@@ -149,7 +151,7 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
      *  @param _crERC20Address The address of the market.
      */
     modifier isMarketListed(address _crERC20Address) {
-        require(marketsManagerForCompLike.isListed(_crERC20Address), "mkt-not-listed");
+        require(isListed[_crERC20Address], "mkt-not-listed");
         _;
     }
 
@@ -158,10 +160,7 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
      *  @param _amount The amount in ERC20 tokens.
      */
     modifier isAboveThreshold(address _crERC20Address, uint256 _amount) {
-        require(
-            _amount >= marketsManagerForCompLike.thresholds(_crERC20Address),
-            "amount<threshold"
-        );
+        require(_amount >= thresholds[_crERC20Address], "amount<threshold");
         _;
     }
 
@@ -174,9 +173,8 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
 
     /* Constructor */
 
-    constructor(IMarketsManagerForCompLike _creamMarketsManager, address _proxyCreamtrollerAddress)
-    {
-        marketsManagerForCompLike = _creamMarketsManager;
+    constructor(address _creamMarketsManager, address _proxyCreamtrollerAddress) {
+        marketsManagerForCompLike = IMarketsManagerForCompLike(_creamMarketsManager);
         creamtroller = IComptroller(_proxyCreamtrollerAddress);
         creamOracle = ICompoundOracle(creamtroller.oracle());
     }
@@ -201,6 +199,17 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
     function setComptroller(address _proxyCreamtrollerAddress) external onlyMarketsManager {
         creamtroller = IComptroller(_proxyCreamtrollerAddress);
         creamOracle = ICompoundOracle(creamtroller.oracle());
+    }
+
+    function setListing(address _crERC20Address, bool _listing) external onlyMarketsManager {
+        isListed[_crERC20Address] = _listing;
+    }
+
+    function setThreshold(address _crERC20Address, uint256 _newThreshold)
+        external
+        onlyMarketsManager
+    {
+        thresholds[_crERC20Address] = _newThreshold;
     }
 
     /** @dev Supplies ERC20 tokens in a specific market.
