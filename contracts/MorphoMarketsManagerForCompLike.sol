@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "prb-math/contracts/PRBMathUD60x18.sol";
 
-import {ICErc20, IComptroller} from "./interfaces/ICompound.sol";
+import {ICErc20, IComptroller} from "./interfaces/compound/ICompound.sol";
 import "./interfaces/IPositionsManagerForCompLike.sol";
 import "./interfaces/IMarketsManagerForCompLike.sol";
 
