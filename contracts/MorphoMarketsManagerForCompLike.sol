@@ -36,6 +36,26 @@ contract MorphoMarketsManagerForCompLike is Ownable {
      */
     event MarketCreated(address _marketAddress);
 
+    /** @dev Emitted when a new market is listed.
+     *  @param _marketAddress The address of the market that has been listed.
+     */
+    event MarketListed(address _marketAddress);
+
+    /** @dev Emitted when a new market is listed.
+     *  @param _marketAddress The address of the market that has been listed.
+     */
+    event MarketDelisted(address _marketAddress);
+
+    /** @dev Emitted when the comptroller is set on the `compLikePositionsManager`.
+     *  @param _comptrollerAddress The address of the comptroller proxy.
+     */
+    event ComptrollerSet(address _comptrollerAddress);
+
+    /** @dev Emitted when the `compLikePositionsManager` is set.
+     *  @param _compLikePositionsManagerAddress The address of the `compLikePositionsManager`.
+     */
+    event CompLikePositionsManagerSet(address _compLikePositionsManagerAddress);
+
     /** @dev Emitted when the p2pBPY of a market is updated.
      *  @param _marketAddress The address of the market to update.
      *  @param _newValue The new value of the p2pBPY.
@@ -72,6 +92,7 @@ contract MorphoMarketsManagerForCompLike is Ownable {
         require(!isPositionsManagerSet, "positions-manager-already-set");
         isPositionsManagerSet = true;
         positionsManagerForCompLike = IPositionsManagerForCompLike(_compLikePositionsManager);
+        emit CompLikePositionsManagerSet(_compLikePositionsManager);
     }
 
     /** @dev Sets the comptroller address.
@@ -79,6 +100,7 @@ contract MorphoMarketsManagerForCompLike is Ownable {
      */
     function setComptroller(address _proxyComptrollerAddress) external onlyOwner {
         positionsManagerForCompLike.setComptroller(_proxyComptrollerAddress);
+        emit ComptrollerSet(_proxyComptrollerAddress);
     }
 
     /** @dev Creates new market to borrow/supply.
@@ -104,6 +126,7 @@ contract MorphoMarketsManagerForCompLike is Ownable {
      */
     function listMarket(address _marketAddress) external onlyOwner isMarketCreated(_marketAddress) {
         isListed[_marketAddress] = true;
+        emit MarketListed(_marketAddress);
     }
 
     /** @dev Sets a market as unlisted.
@@ -115,6 +138,7 @@ contract MorphoMarketsManagerForCompLike is Ownable {
         isMarketCreated(_marketAddress)
     {
         isListed[_marketAddress] = false;
+        emit MarketDelisted(_marketAddress);
     }
 
     /** @dev Updates thresholds below the ones suppliers and borrowers cannot enter markets.
