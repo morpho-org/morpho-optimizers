@@ -58,7 +58,7 @@ contract MorphoMarketsManagerForCompLike is Ownable {
     /** @dev Prevents to update a market not created yet.
      */
     modifier isMarketCreated(address _marketAddress) {
-        require(isCreated[_marketAddress], "market not entered");
+        require(isCreated[_marketAddress], "mkt-not-created");
         _;
     }
 
@@ -87,9 +87,9 @@ contract MorphoMarketsManagerForCompLike is Ownable {
     function createMarkets(address[] calldata _marketAddresses) external onlyOwner {
         uint256[] memory results = positionsManagerForCompLike.createMarkets(_marketAddresses);
         for (uint256 i; i < _marketAddresses.length; i++) {
-            require(results[i] == 0, "createMarkets: enter market failed on Compound");
+            require(results[i] == 0, "createMarkets:enter-mkt-fail");
             address _marketAddress = _marketAddresses[i];
-            require(!isCreated[_marketAddress], "createMarkets: market already entered");
+            require(!isCreated[_marketAddress], "createMarkets:mkt-already-created");
             isCreated[_marketAddress] = true;
             mUnitExchangeRate[_marketAddress] = 1e18;
             lastUpdateBlockNumber[_marketAddress] = block.number;
@@ -122,7 +122,7 @@ contract MorphoMarketsManagerForCompLike is Ownable {
      *  @param _newThreshold The new threshold to set.
      */
     function updateThreshold(address _marketAddress, uint256 _newThreshold) external onlyOwner {
-        require(_newThreshold > 0, "updateThreshold: new THRESHOLD must be strictly positive.");
+        require(_newThreshold > 0, "updateThreshold:threshold!=0");
         thresholds[_marketAddress] = _newThreshold;
         emit ThresholdUpdated(_marketAddress, _newThreshold);
     }
