@@ -6,7 +6,7 @@ A user can trigger five different functions: supply, withdraw, borrow, repay and
 
 Each function consider many different cases depending on the liquidity state of Morpho. In practice, most functions that will effectively happen on Morpho are gas efficient. However, one may remark that absolutely extreme scenarios like Withdraw 2.2.2 can be more costly. Such scenarios are totally unlikely but they are still implemented to ensure that Morpho can handle extreme liquidity states.
 
-## A user supplies tokens
+## A user supplies tokens ([`supply`](https://github.com/morpho-labs/morpho-contracts/blob/b4b8ddd4fcebf3a4d497a5518d8155514040a3dc/contracts/CreamPositionsManager.sol#L210))
 
 #### CASE 1: Some borrowers are waiting on Cream, Morpho matches the supplier in P2P with them
 
@@ -23,7 +23,7 @@ Each function consider many different cases depending on the liquidity state of 
 - Morpho updates the Cream supply balance of the user
 - Morpho supplies the tokens to Cream
 
-## A user borrows tokens
+## A user borrows tokens ([`borrow`](https://github.com/morpho-labs/morpho-contracts/blob/b4b8ddd4fcebf3a4d497a5518d8155514040a3dc/contracts/CreamPositionsManager.sol#L251))
 
 #### CASE 1: Some suppliers are waiting on Cream, Morpho matches the borrowers in P2P with them
 
@@ -42,7 +42,7 @@ Each function consider many different cases depending on the liquidity state of 
 - Morpho borrows the tokens from Cream.
 - Morpho updates the Cream borrow balance of the user.
 
-## A user withdraws tokens
+## A user withdraws tokens ([`_withdraw`](https://github.com/morpho-labs/morpho-contracts/blob/b4b8ddd4fcebf3a4d497a5518d8155514040a3dc/contracts/CreamPositionsManager.sol#L462))
 
 #### If user has some tokens waiting on Cream
 
@@ -71,7 +71,7 @@ Each function consider many different cases depending on the liquidity state of 
 
 - Morpho sends the tokens to the user
 
-## A user repays tokens
+## A user repays tokens ([`_repay`](https://github.com/morpho-labs/morpho-contracts/blob/b4b8ddd4fcebf3a4d497a5518d8155514040a3dc/contracts/CreamPositionsManager.sol#L393))
 
 #### If user is borrowing tokens on Cream
 
@@ -99,7 +99,7 @@ Each function consider many different cases depending on the liquidity state of 
 - Morpho moves suppliers that are in P2P back to Cream. (repairing credit lines with Cream itself)
 - Morpho updates the P2P borrow balance of the user.
 
-### A user A liquidates the borrow position of user B
+### A user A liquidates the borrow position of user B ([`liquidate`](https://github.com/morpho-labs/morpho-contracts/blob/b4b8ddd4fcebf3a4d497a5518d8155514040a3dc/contracts/CreamPositionsManager.sol#L323))
 
 - A repays the position of B: Morpho reuses the logic repay function mentioned before
 - Morpho calculates the amount of colalteral to seize
