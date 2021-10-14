@@ -852,17 +852,13 @@ contract CreamPositionsManager is ReentrancyGuard {
             borrowersOnCream[_crERC20Address].remove(_account);
         if (borrowersInP2P[_crERC20Address].keyExists(_account))
             borrowersInP2P[_crERC20Address].remove(_account);
-        if (borrowBalanceInOf[_crERC20Address][_account].onCream > 0) {
-            borrowersOnCream[_crERC20Address].insert(
-                _account,
-                borrowBalanceInOf[_crERC20Address][_account].onCream
-            );
+        uint256 onCream = borrowBalanceInOf[_crERC20Address][_account].onCream;
+        if (onCream > 0) {
+            borrowersOnCream[_crERC20Address].insert(_account, onCream);
         }
-        if (borrowBalanceInOf[_crERC20Address][_account].inP2P > 0) {
-            borrowersInP2P[_crERC20Address].insert(
-                _account,
-                borrowBalanceInOf[_crERC20Address][_account].inP2P
-            );
+        uint256 inP2P = borrowBalanceInOf[_crERC20Address][_account].inP2P;
+        if (inP2P > 0) {
+            borrowersInP2P[_crERC20Address].insert(_account, inP2P);
         }
     }
 
@@ -875,22 +871,18 @@ contract CreamPositionsManager is ReentrancyGuard {
             suppliersOnCream[_crERC20Address].remove(_account);
         if (suppliersInP2P[_crERC20Address].keyExists(_account))
             suppliersInP2P[_crERC20Address].remove(_account);
-        if (supplyBalanceInOf[_crERC20Address][_account].onCream > 0) {
-            suppliersOnCream[_crERC20Address].insert(
-                _account,
-                supplyBalanceInOf[_crERC20Address][_account].onCream
-            );
+        uint256 onCream = supplyBalanceInOf[_crERC20Address][_account].onCream;
+        if (onCream > 0) {
+            suppliersOnCream[_crERC20Address].insert(_account, onCream);
         }
-        if (supplyBalanceInOf[_crERC20Address][_account].inP2P > 0) {
-            suppliersInP2P[_crERC20Address].insert(
-                _account,
-                supplyBalanceInOf[_crERC20Address][_account].inP2P
-            );
+        uint256 inP2P = supplyBalanceInOf[_crERC20Address][_account].inP2P;
+        if (inP2P > 0) {
+            suppliersInP2P[_crERC20Address].insert(_account, inP2P);
         }
     }
 
     function _hasDebtOnCream(address _account) internal view returns (bool) {
-        for (uint256 i = 0; i < enteredMarkets[_account].length; i++) {
+        for (uint256 i; i < enteredMarkets[_account].length; i++) {
             if (borrowBalanceInOf[enteredMarkets[_account][i]][_account].onCream > 0) {
                 return true;
             }
