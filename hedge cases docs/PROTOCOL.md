@@ -117,8 +117,9 @@ Indeed, such liquidation should only happen if every single user of Morpho has a
 
 To maintain this invariant, we remark that every single borrow position on Cream of a user should be effectively backed by the corresponding collateral. In other words, a collateral of a borrow position on Cream can't be matched. This is why:
 
-- In the \_moveBorrowersFromP2PToCream(), we first use \_moveSupplierFromCompound to ensure that the collateral is put on Cream before borrowing on Cream.
+- In the \_unmatchBorrowers(), we first use \_unmatchTheSupplier() to ensure that the collateral is put on Cream before borrowing on Cream.
 - When using moveSuppliersFromCreamToP2P(), we always check if the user is actually borrowing something on Cream. If yes, we don't move the supply in P2P to ensure that this collateral remains on Cream.
+- When using borrow(), when it come to borrowing on Cream we start by using \_unmatchTheSupplier() to ensure that the collateral is put on Cream.
 
 ### Hard-Withdraw
 
