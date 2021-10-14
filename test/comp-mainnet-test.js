@@ -59,16 +59,16 @@ describe('PositionsManagerForCompLike Contract', () => {
 
     // Deploy contracts
     MorphoMarketsManagerForCompLike = await ethers.getContractFactory('MorphoMarketsManagerForCompLike');
-    compMarketsManager = await MorphoMarketsManagerForCompLike.deploy(config.compound.comptroller.address);
-    await compMarketsManager.deployed();
+    morphoMarketsManagerForCompLike = await MorphoMarketsManagerForCompLike.deploy(config.compound.comptroller.address);
+    await morphoMarketsManagerForCompLike.deployed();
 
     PositionsManagerForCompLike = await ethers.getContractFactory('PositionsManagerForCompLike', {
       libraries: {
         RedBlackBinaryTree: redBlackBinaryTree.address,
       },
     });
-    positionsManagerForCompLike = await PositionsManagerForCompLike.deploy(compMarketsManager.address, config.compound.comptroller.address);
-    fakeCompoundModule = await PositionsManagerForCompLike.deploy(compMarketsManager.address, config.compound.comptroller.address);
+    positionsManagerForCompLike = await PositionsManagerForCompLike.deploy(morphoMarketsManagerForCompLike.address, config.compound.comptroller.address);
+    fakeCompoundModule = await PositionsManagerForCompLike.deploy(morphoMarketsManagerForCompLike.address, config.compound.comptroller.address);
     await positionsManagerForCompLike.deployed();
     await fakeCompoundModule.deployed();
 
@@ -92,14 +92,14 @@ describe('PositionsManagerForCompLike Contract', () => {
     underlyingThreshold = utils.parseUnits('1');
 
     // Create and list markets
-    await compMarketsManager.connect(owner).setPositionsManagerForCompLike(positionsManagerForCompLike.address);
-    await compMarketsManager.connect(owner).createMarkets([config.tokens.cDai.address, config.tokens.cUsdc.address, config.tokens.cUsdt.address, config.tokens.cUni.address]);
-    await compMarketsManager.connect(owner).listMarket(config.tokens.cDai.address);
-    await compMarketsManager.connect(owner).updateThreshold(config.tokens.cUsdc.address, BigNumber.from(1).pow(6));
-    await compMarketsManager.connect(owner).listMarket(config.tokens.cUsdc.address);
-    await compMarketsManager.connect(owner).updateThreshold(config.tokens.cUsdt.address, BigNumber.from(1).pow(6));
-    await compMarketsManager.connect(owner).listMarket(config.tokens.cUsdt.address);
-    await compMarketsManager.connect(owner).listMarket(config.tokens.cUni.address);
+    await morphoMarketsManagerForCompLike.connect(owner).setPositionsManagerForCompLike(positionsManagerForCompLike.address);
+    await morphoMarketsManagerForCompLike.connect(owner).createMarkets([config.tokens.cDai.address, config.tokens.cUsdc.address, config.tokens.cUsdt.address, config.tokens.cUni.address]);
+    await morphoMarketsManagerForCompLike.connect(owner).listMarket(config.tokens.cDai.address);
+    await morphoMarketsManagerForCompLike.connect(owner).updateThreshold(config.tokens.cUsdc.address, BigNumber.from(1).pow(6));
+    await morphoMarketsManagerForCompLike.connect(owner).listMarket(config.tokens.cUsdc.address);
+    await morphoMarketsManagerForCompLike.connect(owner).updateThreshold(config.tokens.cUsdt.address, BigNumber.from(1).pow(6));
+    await morphoMarketsManagerForCompLike.connect(owner).listMarket(config.tokens.cUsdt.address);
+    await morphoMarketsManagerForCompLike.connect(owner).listMarket(config.tokens.cUni.address);
   });
 
   describe('Deployment', () => {
@@ -108,74 +108,74 @@ describe('PositionsManagerForCompLike Contract', () => {
       const borrowRatePerBlock = await cDaiToken.borrowRatePerBlock();
       const supplyRatePerBlock = await cDaiToken.supplyRatePerBlock();
       const expectedBPY = borrowRatePerBlock.add(supplyRatePerBlock).div(2);
-      expect(await compMarketsManager.p2pBPY(config.tokens.cDai.address)).to.equal(expectedBPY);
-      expect(await compMarketsManager.mUnitExchangeRate(config.tokens.cDai.address)).to.be.equal(utils.parseUnits('1'));
+      expect(await morphoMarketsManagerForCompLike.p2pBPY(config.tokens.cDai.address)).to.equal(expectedBPY);
+      expect(await morphoMarketsManagerForCompLike.mUnitExchangeRate(config.tokens.cDai.address)).to.be.equal(utils.parseUnits('1'));
 
       // Thresholds
-      underlyingThreshold = await compMarketsManager.thresholds(config.tokens.cDai.address);
+      underlyingThreshold = await morphoMarketsManagerForCompLike.thresholds(config.tokens.cDai.address);
       expect(underlyingThreshold).to.be.equal(utils.parseUnits('1'));
     });
   });
 
   describe('Governance functions', () => {
     it('Should revert when at least one of the markets in input is not a real market', async () => {
-      expect(compMarketsManager.connect(owner).createMarkets([config.tokens.usdt.address])).to.be.reverted;
-      expect(compMarketsManager.connect(owner).createMarkets([config.tokens.cEth.address, config.tokens.usdt.address, config.tokens.cUni.address])).to.be.reverted;
-      expect(compMarketsManager.connect(owner).createMarkets([config.tokens.cEth.address])).not.be.reverted;
+      expect(morphoMarketsManagerForCompLike.connect(owner).createMarkets([config.tokens.usdt.address])).to.be.reverted;
+      expect(morphoMarketsManagerForCompLike.connect(owner).createMarkets([config.tokens.cEth.address, config.tokens.usdt.address, config.tokens.cUni.address])).to.be.reverted;
+      expect(morphoMarketsManagerForCompLike.connect(owner).createMarkets([config.tokens.cEth.address])).not.be.reverted;
     });
 
     it('Only Owner should be able to create markets in peer-to-peer', async () => {
-      expect(compMarketsManager.connect(supplier1).createMarkets([config.tokens.cEth.address])).to.be.reverted;
-      expect(compMarketsManager.connect(borrower1).createMarkets([config.tokens.cEth.address])).to.be.reverted;
-      expect(compMarketsManager.connect(owner).createMarkets([config.tokens.cEth.address])).not.be.reverted;
+      expect(morphoMarketsManagerForCompLike.connect(supplier1).createMarkets([config.tokens.cEth.address])).to.be.reverted;
+      expect(morphoMarketsManagerForCompLike.connect(borrower1).createMarkets([config.tokens.cEth.address])).to.be.reverted;
+      expect(morphoMarketsManagerForCompLike.connect(owner).createMarkets([config.tokens.cEth.address])).not.be.reverted;
     });
 
     it('Only Morpho should be able to create markets on PositionsManagerForCompLike', async () => {
       expect(positionsManagerForCompLike.connect(supplier1).createMarkets([config.tokens.cEth.address])).to.be.reverted;
       expect(positionsManagerForCompLike.connect(borrower1).createMarkets([config.tokens.cEth.address])).to.be.reverted;
       expect(positionsManagerForCompLike.connect(owner).createMarkets([config.tokens.cEth.address])).to.be.reverted;
-      await compMarketsManager.connect(owner).createMarkets([config.tokens.cEth.address]);
+      await morphoMarketsManagerForCompLike.connect(owner).createMarkets([config.tokens.cEth.address]);
       expect(await comptroller.checkMembership(positionsManagerForCompLike.address, config.tokens.cEth.address)).to.be.true;
     });
 
     it('Only Owner should be able to set positionsManagerForCompLike in peer-to-peer', async () => {
-      expect(compMarketsManager.connect(supplier1).setPositionsManagerForCompLike(fakeCompoundModule.address)).to.be.reverted;
-      expect(compMarketsManager.connect(borrower1).setPositionsManagerForCompLike(fakeCompoundModule.address)).to.be.reverted;
-      expect(compMarketsManager.connect(owner).setPositionsManagerForCompLike(fakeCompoundModule.address)).not.be.reverted;
-      await compMarketsManager.connect(owner).setPositionsManagerForCompLike(fakeCompoundModule.address);
-      expect(await compMarketsManager.positionsManagerForCompLike()).to.equal(fakeCompoundModule.address);
+      expect(morphoMarketsManagerForCompLike.connect(supplier1).setPositionsManagerForCompLike(fakeCompoundModule.address)).to.be.reverted;
+      expect(morphoMarketsManagerForCompLike.connect(borrower1).setPositionsManagerForCompLike(fakeCompoundModule.address)).to.be.reverted;
+      expect(morphoMarketsManagerForCompLike.connect(owner).setPositionsManagerForCompLike(fakeCompoundModule.address)).not.be.reverted;
+      await morphoMarketsManagerForCompLike.connect(owner).setPositionsManagerForCompLike(fakeCompoundModule.address);
+      expect(await morphoMarketsManagerForCompLike.positionsManagerForCompLike()).to.equal(fakeCompoundModule.address);
     });
 
     it('Only Owner should be able to update thresholds', async () => {
       const newThreshold = utils.parseUnits('2');
-      await compMarketsManager.connect(owner).updateThreshold(config.tokens.cUsdc.address, newThreshold);
+      await morphoMarketsManagerForCompLike.connect(owner).updateThreshold(config.tokens.cUsdc.address, newThreshold);
 
       // Other accounts than Owner
-      await expect(compMarketsManager.connect(supplier1).updateThreshold(config.tokens.cUsdc.address, newThreshold)).to.be.reverted;
-      await expect(compMarketsManager.connect(borrower1).updateThreshold(config.tokens.cUsdc.address, newThreshold)).to.be.reverted;
+      await expect(morphoMarketsManagerForCompLike.connect(supplier1).updateThreshold(config.tokens.cUsdc.address, newThreshold)).to.be.reverted;
+      await expect(morphoMarketsManagerForCompLike.connect(borrower1).updateThreshold(config.tokens.cUsdc.address, newThreshold)).to.be.reverted;
     });
 
     it('Only Owner should be allowed to list/unlisted a market', async () => {
-      await compMarketsManager.connect(owner).createMarkets([config.tokens.cEth.address]);
-      expect(compMarketsManager.connect(supplier1).listMarket(config.tokens.cEth.address)).to.be.reverted;
-      expect(compMarketsManager.connect(borrower1).listMarket(config.tokens.cEth.address)).to.be.reverted;
-      expect(compMarketsManager.connect(supplier1).delistMarket(config.tokens.cEth.address)).to.be.reverted;
-      expect(compMarketsManager.connect(borrower1).delistMarket(config.tokens.cEth.address)).to.be.reverted;
-      expect(compMarketsManager.connect(owner).listMarket(config.tokens.cEth.address)).not.to.be.reverted;
-      expect(compMarketsManager.connect(owner).delistMarket(config.tokens.cEth.address)).not.to.be.reverted;
+      await morphoMarketsManagerForCompLike.connect(owner).createMarkets([config.tokens.cEth.address]);
+      expect(morphoMarketsManagerForCompLike.connect(supplier1).listMarket(config.tokens.cEth.address)).to.be.reverted;
+      expect(morphoMarketsManagerForCompLike.connect(borrower1).listMarket(config.tokens.cEth.address)).to.be.reverted;
+      expect(morphoMarketsManagerForCompLike.connect(supplier1).delistMarket(config.tokens.cEth.address)).to.be.reverted;
+      expect(morphoMarketsManagerForCompLike.connect(borrower1).delistMarket(config.tokens.cEth.address)).to.be.reverted;
+      expect(morphoMarketsManagerForCompLike.connect(owner).listMarket(config.tokens.cEth.address)).not.to.be.reverted;
+      expect(morphoMarketsManagerForCompLike.connect(owner).delistMarket(config.tokens.cEth.address)).not.to.be.reverted;
     });
 
     it('Should create a market the with right values', async () => {
       const supplyBPY = await cMkrToken.supplyRatePerBlock();
       const borrowBPY = await cMkrToken.borrowRatePerBlock();
-      const { blockNumber } = await compMarketsManager.connect(owner).createMarkets([config.tokens.cMkr.address]);
-      expect(await compMarketsManager.isListed(config.tokens.cMkr.address)).not.to.be.true;
+      const { blockNumber } = await morphoMarketsManagerForCompLike.connect(owner).createMarkets([config.tokens.cMkr.address]);
+      expect(await morphoMarketsManagerForCompLike.isListed(config.tokens.cMkr.address)).not.to.be.true;
 
       const p2pBPY = supplyBPY.add(borrowBPY).div(2);
-      expect(await compMarketsManager.p2pBPY(config.tokens.cMkr.address)).to.equal(p2pBPY);
+      expect(await morphoMarketsManagerForCompLike.p2pBPY(config.tokens.cMkr.address)).to.equal(p2pBPY);
 
-      expect(await compMarketsManager.mUnitExchangeRate(config.tokens.cMkr.address)).to.equal(SCALE);
-      expect(await compMarketsManager.lastUpdateBlockNumber(config.tokens.cMkr.address)).to.equal(blockNumber);
+      expect(await morphoMarketsManagerForCompLike.mUnitExchangeRate(config.tokens.cMkr.address)).to.equal(SCALE);
+      expect(await morphoMarketsManagerForCompLike.lastUpdateBlockNumber(config.tokens.cMkr.address)).to.equal(blockNumber);
     });
   });
 
@@ -439,7 +439,7 @@ describe('PositionsManagerForCompLike Contract', () => {
 
       // Check supplier1 balances
       const cExchangeRate2 = await cDaiToken.callStatic.exchangeRateCurrent();
-      const mExchangeRate1 = await compMarketsManager.mUnitExchangeRate(config.tokens.cDai.address);
+      const mExchangeRate1 = await morphoMarketsManagerForCompLike.mUnitExchangeRate(config.tokens.cDai.address);
       const expectedSupplyBalanceOnComp2 = expectedSupplyBalanceOnComp1.sub(underlyingToCToken(supplyAmount, cExchangeRate2));
       const expectedSupplyBalanceInP2P2 = underlyingToMUnit(supplyAmount, mExchangeRate1);
       const supplyBalanceOnComp2 = (await positionsManagerForCompLike.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).onComp;
@@ -453,9 +453,9 @@ describe('PositionsManagerForCompLike Contract', () => {
       expect((await positionsManagerForCompLike.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).inP2P).to.equal(expectedBorrowBalanceInP2P1);
 
       // Compare remaining to withdraw and the cToken contract balance
-      await compMarketsManager.connect(owner).updateMUnitExchangeRate(config.tokens.cDai.address);
-      const mExchangeRate2 = await compMarketsManager.mUnitExchangeRate(config.tokens.cDai.address);
-      const mExchangeRate3 = computeNewMorphoExchangeRate(mExchangeRate2, await compMarketsManager.p2pBPY(config.tokens.cDai.address), 1, 0).toString();
+      await morphoMarketsManagerForCompLike.connect(owner).updateMUnitExchangeRate(config.tokens.cDai.address);
+      const mExchangeRate2 = await morphoMarketsManagerForCompLike.mUnitExchangeRate(config.tokens.cDai.address);
+      const mExchangeRate3 = computeNewMorphoExchangeRate(mExchangeRate2, await morphoMarketsManagerForCompLike.p2pBPY(config.tokens.cDai.address), 1, 0).toString();
       const daiBalanceBefore2 = await daiToken.balanceOf(supplier1.getAddress());
       const supplyBalanceOnComp3 = (await positionsManagerForCompLike.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).onComp;
       const supplyBalanceInP2P3 = (await positionsManagerForCompLike.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).inP2P;
@@ -526,7 +526,7 @@ describe('PositionsManagerForCompLike Contract', () => {
       await positionsManagerForCompLike.connect(borrower1).borrow(config.tokens.cDai.address, supplyAmount);
 
       // Check supplier2 balances
-      const mExchangeRate1 = await compMarketsManager.mUnitExchangeRate(config.tokens.cDai.address);
+      const mExchangeRate1 = await morphoMarketsManagerForCompLike.mUnitExchangeRate(config.tokens.cDai.address);
       const cExchangeRate2 = await cDaiToken.callStatic.exchangeRateCurrent();
       // Expected balances of supplier2
       const expectedSupplyBalanceOnComp2 = previousSupplier1SupplyBalanceOnComp.sub(underlyingToCToken(supplyAmount, cExchangeRate2));
@@ -542,9 +542,9 @@ describe('PositionsManagerForCompLike Contract', () => {
       expect((await positionsManagerForCompLike.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).inP2P).to.equal(expectedBorrowBalanceInP2P1);
 
       // Compare remaining to withdraw and the cToken contract balance
-      await compMarketsManager.connect(owner).updateMUnitExchangeRate(config.tokens.cDai.address);
-      const mExchangeRate2 = await compMarketsManager.mUnitExchangeRate(config.tokens.cDai.address);
-      const mExchangeRate3 = computeNewMorphoExchangeRate(mExchangeRate2, await compMarketsManager.p2pBPY(config.tokens.cDai.address), 1, 0).toString();
+      await morphoMarketsManagerForCompLike.connect(owner).updateMUnitExchangeRate(config.tokens.cDai.address);
+      const mExchangeRate2 = await morphoMarketsManagerForCompLike.mUnitExchangeRate(config.tokens.cDai.address);
+      const mExchangeRate3 = computeNewMorphoExchangeRate(mExchangeRate2, await morphoMarketsManagerForCompLike.p2pBPY(config.tokens.cDai.address), 1, 0).toString();
       const daiBalanceBefore2 = await daiToken.balanceOf(supplier1.getAddress());
       const supplyBalanceOnComp3 = (await positionsManagerForCompLike.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).onComp;
       const supplyBalanceInP2P3 = (await positionsManagerForCompLike.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).inP2P;
@@ -576,7 +576,7 @@ describe('PositionsManagerForCompLike Contract', () => {
 
       const supplier2SupplyBalanceOnCompInUnderlying = cTokenToUnderlying(supplier2SupplyBalanceOnComp, cExchangeRate4);
       const amountToMove = bigNumberMin(supplier2SupplyBalanceOnCompInUnderlying, remainingToWithdraw);
-      const mExchangeRate4 = await compMarketsManager.mUnitExchangeRate(config.tokens.cDai.address);
+      const mExchangeRate4 = await morphoMarketsManagerForCompLike.mUnitExchangeRate(config.tokens.cDai.address);
       const expectedSupplier2SupplyBalanceOnComp = supplier2SupplyBalanceOnComp.sub(underlyingToCToken(amountToMove, cExchangeRate4));
       const expectedSupplier2SupplyBalanceInP2P = supplier2SupplyBalanceInP2P.add(underlyingToMUnit(amountToMove, mExchangeRate4));
 
@@ -623,9 +623,9 @@ describe('PositionsManagerForCompLike Contract', () => {
       await positionsManagerForCompLike.connect(borrower1).borrow(config.tokens.cDai.address, toBorrow);
 
       const borrowerBalanceInP2P = (await positionsManagerForCompLike.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).inP2P;
-      const p2pBPY = await compMarketsManager.p2pBPY(config.tokens.cDai.address);
-      await compMarketsManager.updateMUnitExchangeRate(config.tokens.cDai.address);
-      const mUnitExchangeRate = await compMarketsManager.mUnitExchangeRate(config.tokens.cDai.address);
+      const p2pBPY = await morphoMarketsManagerForCompLike.p2pBPY(config.tokens.cDai.address);
+      await morphoMarketsManagerForCompLike.updateMUnitExchangeRate(config.tokens.cDai.address);
+      const mUnitExchangeRate = await morphoMarketsManagerForCompLike.mUnitExchangeRate(config.tokens.cDai.address);
       // WARNING: Should be one block but the pow function used in contract is not accurate
       const mExchangeRate = computeNewMorphoExchangeRate(mUnitExchangeRate, p2pBPY, 1, 0).toString();
       const toRepay = mUnitToUnderlying(borrowerBalanceInP2P, mExchangeRate);
@@ -674,8 +674,8 @@ describe('PositionsManagerForCompLike Contract', () => {
       await daiToken.connect(borrower1).approve(positionsManagerForCompLike.address, amountToApprove);
 
       const borrowerBalanceInP2P = (await positionsManagerForCompLike.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).inP2P;
-      const p2pBPY = await compMarketsManager.p2pBPY(config.tokens.cDai.address);
-      const mUnitExchangeRate = await compMarketsManager.mUnitExchangeRate(config.tokens.cDai.address);
+      const p2pBPY = await morphoMarketsManagerForCompLike.p2pBPY(config.tokens.cDai.address);
+      const mUnitExchangeRate = await morphoMarketsManagerForCompLike.mUnitExchangeRate(config.tokens.cDai.address);
       // WARNING: Should be 2 blocks but the pow function used in contract is not accurate
       const mExchangeRate = computeNewMorphoExchangeRate(mUnitExchangeRate, p2pBPY, 1, 0).toString();
       const borrowerBalanceInP2PInUnderlying = mUnitToUnderlying(borrowerBalanceInP2P, mExchangeRate);
@@ -712,7 +712,7 @@ describe('PositionsManagerForCompLike Contract', () => {
       // expect(removeDigitsBigNumber(3, await cToken.callStatic.borrowBalanceStored(positionsManagerForCompLike.address))).to.equal(removeDigitsBigNumber(3, expectedMorphoBorrowBalance2));
     });
 
-    it('Should disconnect supplier from Morpho when borrow an asset that nobody has on compMarketsManager and the supply balance is partly used', async () => {
+    it('Should disconnect supplier from Morpho when borrow an asset that nobody has on morphoMarketsManagerForCompLike and the supply balance is partly used', async () => {
       // supplier1 deposits DAI
       const supplyAmount = utils.parseUnits('100');
       await daiToken.connect(supplier1).approve(positionsManagerForCompLike.address, supplyAmount);
@@ -730,7 +730,7 @@ describe('PositionsManagerForCompLike Contract', () => {
 
       // supplier1 borrows USDT that nobody is supply in peer-to-peer
       const cDaiExchangeRate1 = await cDaiToken.callStatic.exchangeRateCurrent();
-      const mDaiExchangeRate1 = await compMarketsManager.mUnitExchangeRate(config.tokens.cDai.address);
+      const mDaiExchangeRate1 = await morphoMarketsManagerForCompLike.mUnitExchangeRate(config.tokens.cDai.address);
       const supplyBalanceOnComp1 = (await positionsManagerForCompLike.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).onComp;
       const supplyBalanceInP2P1 = (await positionsManagerForCompLike.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).inP2P;
       const supplyBalanceOnCompInUnderlying = cTokenToUnderlying(supplyBalanceOnComp1, cDaiExchangeRate1);
@@ -747,7 +747,7 @@ describe('PositionsManagerForCompLike Contract', () => {
       const borrowBalanceOnComp = (await positionsManagerForCompLike.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onComp;
       const cDaiExchangeRate2 = await cDaiToken.callStatic.exchangeRateCurrent();
       const cDaiBorrowIndex = await cDaiToken.borrowIndex();
-      const mDaiExchangeRate2 = await compMarketsManager.mUnitExchangeRate(config.tokens.cDai.address);
+      const mDaiExchangeRate2 = await morphoMarketsManagerForCompLike.mUnitExchangeRate(config.tokens.cDai.address);
       const expectedBorrowBalanceOnComp = mUnitToUnderlying(borrowBalanceInP2P, mDaiExchangeRate2).mul(SCALE).div(cDaiBorrowIndex);
       const usdtBorrowBalance = (await positionsManagerForCompLike.borrowBalanceInOf(config.tokens.cUsdt.address, supplier1.getAddress())).onComp;
       const cUsdtBorrowIndex = await cUsdtToken.borrowIndex();
@@ -785,7 +785,7 @@ describe('PositionsManagerForCompLike Contract', () => {
       await positionsManagerForCompLike.connect(supplier1).deposit(config.tokens.cDai.address, supplyAmount);
       const cExchangeRate = await cDaiToken.callStatic.exchangeRateStored();
       const borrowIndex = await cDaiToken.borrowIndex();
-      const mUnitExchangeRate = await compMarketsManager.mUnitExchangeRate(config.tokens.cDai.address);
+      const mUnitExchangeRate = await morphoMarketsManagerForCompLike.mUnitExchangeRate(config.tokens.cDai.address);
 
       // Check balances
       const supplyBalanceInP2P = (await positionsManagerForCompLike.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).inP2P;
@@ -869,7 +869,7 @@ describe('PositionsManagerForCompLike Contract', () => {
 
       // borrower1 borrows DAI
       const cUsdcExchangeRate1 = await cUsdcToken.callStatic.exchangeRateCurrent();
-      const mUsdcExchangeRate1 = await compMarketsManager.mUnitExchangeRate(config.tokens.cUsdc.address);
+      const mUsdcExchangeRate1 = await morphoMarketsManagerForCompLike.mUnitExchangeRate(config.tokens.cUsdc.address);
       const supplyBalanceOnComp1 = (await positionsManagerForCompLike.supplyBalanceInOf(config.tokens.cUsdc.address, borrower1.getAddress())).onComp;
       const supplyBalanceInP2P1 = (await positionsManagerForCompLike.supplyBalanceInOf(config.tokens.cUsdc.address, borrower1.getAddress())).inP2P;
       const supplyBalanceOnCompInUnderlying = cTokenToUnderlying(supplyBalanceOnComp1, cUsdcExchangeRate1);
@@ -898,7 +898,7 @@ describe('PositionsManagerForCompLike Contract', () => {
       const daiBalanceAfter = await daiToken.balanceOf(liquidator.getAddress());
 
       // Liquidation parameters
-      const mDaiExchangeRate = await compMarketsManager.mUnitExchangeRate(config.tokens.cDai.address);
+      const mDaiExchangeRate = await morphoMarketsManagerForCompLike.mUnitExchangeRate(config.tokens.cDai.address);
       const cUsdcExchangeRate = await cUsdcToken.callStatic.exchangeRateCurrent();
       const liquidationIncentive = await comptroller.liquidationIncentiveMantissa();
       const collateralAssetPrice = await compoundOracle.getUnderlyingPrice(config.tokens.cUsdc.address);
