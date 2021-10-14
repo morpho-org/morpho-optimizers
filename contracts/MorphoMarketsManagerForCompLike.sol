@@ -10,8 +10,8 @@ import "./interfaces/IPositionsManagerForCompLike.sol";
 import "./interfaces/IMarketsManagerForCompLike.sol";
 
 /**
- *  @title PositionsManagerForCompLike
- *  @dev Smart contracts interacting with Compound to enable real P2P supply with cERC20 tokens as supply/borrow assets.
+ *  @title MorphoMarketsManagerForCompLike
+ *  @dev Smart contract managing the markets used by MorphoPositionsManagerForX, an other contract interacting with X: Compound or a fork of Compound.
  */
 contract MorphoMarketsManagerForCompLike is Ownable {
     using PRBMathUD60x18 for uint256;
@@ -142,7 +142,7 @@ contract MorphoMarketsManagerForCompLike is Ownable {
         emit MarketDelisted(_marketAddress);
     }
 
-    /** @dev Updates thresholds below the ones suppliers and borrowers cannot enter markets.
+    /** @dev Updates the threshold below which suppliers and borrowers cannot join a given market.
      *  @param _marketAddress The address of the market to change the threshold.
      *  @param _newThreshold The new threshold to set.
      */
@@ -154,7 +154,7 @@ contract MorphoMarketsManagerForCompLike is Ownable {
 
     /* Public */
 
-    /** @dev Updates the Block Percentage Yield (`p2pBPY`) and calculate the current exchange rate (`mUnitExchangeRate`).
+    /** @dev Updates the Block Percentage Yield (`p2pBPY`) and calculates the current exchange rate (`mUnitExchangeRate`).
      *  @param _marketAddress The address of the market we want to update.
      */
     function updateBPY(address _marketAddress) public isMarketCreated(_marketAddress) {
