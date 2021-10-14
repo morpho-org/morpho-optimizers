@@ -280,7 +280,7 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
         // No need to update mUnitExchangeRate here as it's done in `_checkAccountLiquidity`
         uint256 mExchangeRate = marketsManagerForCompLike.mUnitExchangeRate(_crERC20Address);
 
-        /* CASE 1: Some suppliers are waiting on Cream, Morpho matches the borrowers in P2P with them */
+        /* CASE 1: Some suppliers are waiting on Cream, Morpho matches the borrower in P2P with them */
         if (suppliersOnCream[_crERC20Address].isNotEmpty()) {
             uint256 remainingToBorrowOnCream = _matchSuppliers(_crERC20Address, _amount); // In underlying
             uint256 matched = _amount - remainingToBorrowOnCream;
@@ -289,7 +289,7 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
                 borrowBalanceInOf[_crERC20Address][msg.sender].inP2P += matched.div(mExchangeRate); // In mUnit
             }
 
-            /* If there aren't enough suppliers waiting on Cream to match all the tokens borrowed */
+            /* If there aren't enough suppliers waiting on Cream to match all the tokens borrowed, the rest is borrowed from Cream*/
             if (remainingToBorrowOnCream > 0) {
                 _unmatchTheSupplier(msg.sender);
                 require(
