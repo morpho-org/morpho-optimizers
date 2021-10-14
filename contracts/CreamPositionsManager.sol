@@ -218,10 +218,7 @@ contract CreamPositionsManager is ReentrancyGuard {
         /* SCENARIO 1: Waiting borrowers -> match in P2P */
         if (borrowersOnCream[_crERC20Address].isNotEmpty()) {
             uint256 mExchangeRate = creamMarketsManager.updateMUnitExchangeRate(_crERC20Address);
-            uint256 remainingToSupplyToCream = _moveBorrowersFromCreamToP2P(
-                _crERC20Address,
-                _amount
-            ); // In underlying
+            uint256 remainingToSupplyToCream = _matchBorrowers(_crERC20Address, _amount); // In underlying
             uint256 toRepay = _amount - remainingToSupplyToCream;
             if (toRepay > 0) {
                 supplyBalanceInOf[_crERC20Address][msg.sender].inP2P += toRepay.div(mExchangeRate); // In mUnit
@@ -262,10 +259,7 @@ contract CreamPositionsManager is ReentrancyGuard {
 
         /* SCENARIO 1: Waiting suppliers -> match in P2P */
         if (suppliersOnCream[_crERC20Address].isNotEmpty()) {
-            uint256 remainingToBorrowOnCream = _moveSuppliersFromCreamToP2P(
-                _crERC20Address,
-                _amount
-            ); // In underlying
+            uint256 remainingToBorrowOnCream = _matchSuppliers(_crERC20Address, _amount); // In underlying
             uint256 toWithdraw = _amount - remainingToBorrowOnCream;
 
             if (toWithdraw > 0) {
@@ -356,7 +350,7 @@ contract CreamPositionsManager is ReentrancyGuard {
             // ENOUGH TO TRANSFER CL
             if (remainingToWithdraw <= crTokenContractBalanceInUnderlying) {
                 require(
-                    _moveSuppliersFromCreamToP2P(_crERC20Address, remainingToWithdraw) == 0,
+                    _matchSuppliers(_crERC20Address, remainingToWithdraw) == 0,
                     "red:remaining-suppliers!=0"
                 );
                 supplyBalanceInOf[_crERC20Address][msg.sender].inP2P -= remainingToWithdraw.div(
@@ -365,10 +359,10 @@ contract CreamPositionsManager is ReentrancyGuard {
             }
             // NOT ENOUGH TO TRANSFER CL
             else {
-                _moveSuppliersFromCreamToP2P(_crERC20Address, crTokenContractBalanceInUnderlying);
+                _matchSuppliers(_crERC20Address, crTokenContractBalanceInUnderlying);
                 remainingToWithdraw -= crTokenContractBalanceInUnderlying;
                 require(
-                    _moveBorrowersFromP2PToCream(_crERC20Address, remainingToWithdraw) == 0,
+                    _unmatchBorrowers(_crERC20Address, remainingToWithdraw) == 0,
                     "red:remaining-borrowers!=0"
                 );
                 supplyBalanceInOf[_crERC20Address][msg.sender].inP2P -=
@@ -473,7 +467,7 @@ contract CreamPositionsManager is ReentrancyGuard {
             require(cERC20CollateralToken.borrow(toMove) == 0, "liq:borrow-cream-fail");
             uint256 balanceAfter = erc20CollateralToken.balanceOf(address(this));
             vars.amountToSeize = balanceAfter - balanceBefore;
-            _moveBorrowersFromP2PToCream(_cERC20CollateralAddress, toMove);
+            _unmatchBorrowers(_cERC20CollateralAddress, toMove);
         }
 
         _updateSupplierList(_cERC20CollateralAddress, _borrower);
@@ -529,17 +523,17 @@ contract CreamPositionsManager is ReentrancyGuard {
             uint256 contractBorrowBalanceOnCream = crERC20Token.borrowBalanceCurrent(address(this)); // In underlying
             // ENOUGH TO TRANSFER CL
             if (remainingToRepay <= contractBorrowBalanceOnCream) {
-                _moveBorrowersFromCreamToP2P(_crERC20Address, remainingToRepay);
+                _matchBorrowers(_crERC20Address, remainingToRepay);
                 borrowBalanceInOf[_crERC20Address][_borrower].inP2P -= remainingToRepay.div(
                     mExchangeRate
                 );
             }
             // NOT ENOUGH TO TRANSFER CL
             else {
-                _moveBorrowersFromCreamToP2P(_crERC20Address, contractBorrowBalanceOnCream);
+                _matchBorrowers(_crERC20Address, contractBorrowBalanceOnCream);
                 remainingToRepay -= contractBorrowBalanceOnCream;
                 require(
-                    _moveSuppliersFromP2PToCream(_crERC20Address, remainingToRepay) == 0,
+                    _unmatchSuppliers(_crERC20Address, remainingToRepay) == 0,
                     "_rep(1):remaining-suppliers!=0"
                 );
                 borrowBalanceInOf[_crERC20Address][_borrower].inP2P -=
@@ -581,7 +575,7 @@ contract CreamPositionsManager is ReentrancyGuard {
      *  @param _amount The amount to search for in underlying.
      *  @return remainingToMove The remaining liquidity to search for in underlying.
      */
-    function _moveSuppliersFromCreamToP2P(address _crERC20Address, uint256 _amount)
+    function _matchSuppliers(address _crERC20Address, uint256 _amount)
         internal
         returns (uint256 remainingToMove)
     {
@@ -631,7 +625,7 @@ contract CreamPositionsManager is ReentrancyGuard {
      *  @param _crERC20Address The address of the market on which Morpho want to move users.
      *  @param _amount The amount to search for in underlying.
      */
-    function _moveSuppliersFromP2PToCream(address _crERC20Address, uint256 _amount)
+    function _unmatchSuppliers(address _crERC20Address, uint256 _amount)
         internal
         returns (uint256 remainingToMove)
     {
@@ -666,7 +660,7 @@ contract CreamPositionsManager is ReentrancyGuard {
      *  @param _amount The amount to match in underlying.
      *  @return remainingToMove The amount remaining to match in underlying.
      */
-    function _moveBorrowersFromP2PToCream(address _crERC20Address, uint256 _amount)
+    function _unmatchBorrowers(address _crERC20Address, uint256 _amount)
         internal
         returns (uint256 remainingToMove)
     {
@@ -703,7 +697,7 @@ contract CreamPositionsManager is ReentrancyGuard {
      *  @param _amount The amount to match in underlying.
      *  @return remainingToMove The amount remaining to match in underlying.
      */
-    function _moveBorrowersFromCreamToP2P(address _crERC20Address, uint256 _amount)
+    function _matchBorrowers(address _crERC20Address, uint256 _amount)
         internal
         returns (uint256 remainingToMove)
     {
@@ -762,7 +756,7 @@ contract CreamPositionsManager is ReentrancyGuard {
                 supplyBalanceInOf[cERC20Entered][_account].inP2P -= inP2PInUnderlying.div(
                     mExchangeRate
                 ); // In mUnit
-                _moveBorrowersFromP2PToCream(cERC20Entered, inP2PInUnderlying);
+                _unmatchBorrowers(cERC20Entered, inP2PInUnderlying);
                 _updateSupplierList(cERC20Entered, _account);
                 // Supply to Cream
                 _supplyERC20ToCream(cERC20Entered, inP2PInUnderlying);
