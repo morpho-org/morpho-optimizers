@@ -99,34 +99,23 @@ contract CreamPositionsManager is ReentrancyGuard {
      */
     event Repaid(address indexed _account, address indexed _crERC20Address, uint256 _amount);
 
-    /** @dev Emitted when a supplier position is moved from Morpho to Cream.
-     *  @param _account The address of the supplier.
-     *  @param _crERC20Address The address of the market.
-     *  @param _amount The amount of assets.
-     */
-    event SupplierMovedFromMorphoToCream(
-        address indexed _account,
-        address indexed _crERC20Address,
-        uint256 _amount
-    );
-
     /** @dev Emitted when a supplier position is moved from Cream to Morpho.
      *  @param _account The address of the supplier.
      *  @param _crERC20Address The address of the market.
      *  @param _amount The amount of assets.
      */
-    event SupplierMovedFromCreamToMorpho(
+    event SupplierMatched(
         address indexed _account,
         address indexed _crERC20Address,
         uint256 _amount
     );
 
-    /** @dev Emitted when a borrower position is moved from Morpho to Cream.
-     *  @param _account The address of the borrower.
+    /** @dev Emitted when a supplier position is moved from Morpho to Cream.
+     *  @param _account The address of the supplier.
      *  @param _crERC20Address The address of the market.
      *  @param _amount The amount of assets.
      */
-    event BorrowerMovedFromMorphoToCream(
+    event SupplierUnmatched(
         address indexed _account,
         address indexed _crERC20Address,
         uint256 _amount
@@ -137,7 +126,18 @@ contract CreamPositionsManager is ReentrancyGuard {
      *  @param _crERC20Address The address of the market.
      *  @param _amount The amount of assets.
      */
-    event BorrowerMovedFromCreamToMorpho(
+    event BorrowerMatched(
+        address indexed _account,
+        address indexed _crERC20Address,
+        uint256 _amount
+    );
+
+    /** @dev Emitted when a borrower position is moved from Morpho to Cream.
+     *  @param _account The address of the borrower.
+     *  @param _crERC20Address The address of the market.
+     *  @param _amount The amount of assets.
+     */
+    event BorrowerUnmatched(
         address indexed _account,
         address indexed _crERC20Address,
         uint256 _amount
