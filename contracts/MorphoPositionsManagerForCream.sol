@@ -12,7 +12,7 @@ import "./interfaces/IMarketsManagerForCompLike.sol";
 
 /**
  *  @title MorphoPositionsManagerForCream
- *  @dev Smart contracts interacting with Cream to enable real P2P supply with cERC20 tokens as supply/borrow assets.
+ *  @dev Smart contract interacting with Cream to enable P2P supply/borrow positions that can fallback on Cream's pool using cERC20 tokens.
  */
 contract MorphoPositionsManagerForCream is ReentrancyGuard {
     using RedBlackBinaryTree for RedBlackBinaryTree.Tree;
@@ -23,13 +23,13 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
     /* Structs */
 
     struct SupplyBalance {
-        uint256 inP2P; // In mUnit (a unit that grows in value, to keep track of the debt increase).
+        uint256 inP2P; // In mUnit, a unit that grows in value, to keep track of the interests/debt increase when users are in p2p.
         uint256 onCream; // In crToken.
     }
 
     struct BorrowBalance {
         uint256 inP2P; // In mUnit.
-        uint256 onCream; // In cdUnit. (a unit that grows in value, to keep track of the  debt increase). Multiply by current borrowIndex to get the underlying amount.
+        uint256 onCream; // In cdUnit, a unit that grows in value, to keep track of the debt increase when users are in Cream. Multiply by current borrowIndex to get the underlying amount.
     }
 
     // Struct to avoid stack too deep error
