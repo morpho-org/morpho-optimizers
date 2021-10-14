@@ -64,8 +64,8 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
     mapping(address => mapping(address => BorrowBalance)) public borrowBalanceInOf; // For a given market, the borrow balance of user.
     mapping(address => mapping(address => bool)) public accountMembership; // Whether the account is in the market or not.
     mapping(address => address[]) public enteredMarkets; // Markets entered by a user.
-    mapping(address => bool) public isListed; // Whether or not this market is listed.
     mapping(address => uint256) public thresholds; // Thresholds below the ones suppliers and borrowers cannot enter markets.
+    mapping(address => bool) public isListed; // Whether or not this market is listed.
 
     IComptroller public creamtroller;
     ICompoundOracle public creamOracle;
