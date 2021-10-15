@@ -42,7 +42,7 @@ interface ICErc20 {
 
     function repayBorrow(uint256) external returns (uint256);
 
-    function underlying() external returns (address);
+    function underlying() external view returns (address);
 }
 
 interface ICEth {

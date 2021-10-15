@@ -798,15 +798,27 @@ describe('MorphoPositionsManagerForCream Contract', () => {
     });
   });
 
-  xdescribe('Test liquidation', () => {
-    it('Borrower should be liquidated while supply (collateral) is only on Compound', async () => {
+  describe('Test liquidation', () => {
+    it.only('Borrower should be liquidated while supply (collateral) is only on Compound', async () => {
+      // Deploy custom price oracle
+      const PriceOracle = await ethers.getContractFactory('SimplePriceOracle');
+      priceOracle = await PriceOracle.deploy();
+      await priceOracle.deployed();
+
+      // Install admin user
+      const adminAddress = await comptroller.admin();
+      await hre.network.provider.send('hardhat_impersonateAccount', [adminAddress]);
+      await hre.network.provider.send('hardhat_setBalance', [adminAddress, ethers.utils.parseEther('10').toHexString()]);
+      const admin = await ethers.getSigner(adminAddress);
+
+      // Deposit
       const amount = to6Decimals(utils.parseUnits('100'));
       await usdcToken.connect(borrower1).approve(morphoPositionsManagerForCream.address, amount);
       await morphoPositionsManagerForCream.connect(borrower1).supply(config.tokens.cUsdc.address, amount);
       const collateralBalanceInCToken = (await morphoPositionsManagerForCream.supplyBalanceInOf(config.tokens.cUsdc.address, borrower1.getAddress())).onCream;
       const cExchangeRate = await cUsdcToken.callStatic.exchangeRateCurrent();
       const collateralBalanceInUnderlying = cTokenToUnderlying(collateralBalanceInCToken, cExchangeRate);
-      const { collateralFactorMantissa } = await comptroller.markets(config.tokens.cDai.address);
+      const { collateralFactorMantissa } = await comptroller.markets(config.tokens.cUsdc.address);
       const usdcPriceMantissa = await compoundOracle.getUnderlyingPrice(config.tokens.cUsdc.address);
       const daiPriceMantissa = await compoundOracle.getUnderlyingPrice(config.tokens.cDai.address);
       const maxToBorrow = collateralBalanceInUnderlying.mul(usdcPriceMantissa).div(daiPriceMantissa).mul(collateralFactorMantissa).div(SCALE);
@@ -815,6 +827,17 @@ describe('MorphoPositionsManagerForCream Contract', () => {
       await morphoPositionsManagerForCream.connect(borrower1).borrow(config.tokens.cDai.address, maxToBorrow);
       const collateralBalanceBefore = (await morphoPositionsManagerForCream.supplyBalanceInOf(config.tokens.cUsdc.address, borrower1.getAddress())).onCream;
       const borrowBalanceBefore = (await morphoPositionsManagerForCream.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onCream;
+
+      // Set price oracle
+      await comptroller.connect(admin)._setPriceOracle(priceOracle.address);
+      priceOracle.setUnderlyingPrice(config.tokens.cDai.address, BigNumber.from('1200182920000000000'));
+      priceOracle.setUnderlyingPrice(config.tokens.cUsdc.address, BigNumber.from('1000000000000000000000000000000'));
+
+      // Force creamOracle update by setting comptroller again (but with the custom price oracle)
+      await hre.network.provider.send('hardhat_impersonateAccount', [morphoMarketsManagerForCompLike.address]);
+      await hre.network.provider.send('hardhat_setBalance', [morphoMarketsManagerForCompLike.address, ethers.utils.parseEther('10').toHexString()]);
+      const morphoMarketsManagerUser = await ethers.getSigner(morphoMarketsManagerForCompLike.address);
+      await morphoPositionsManagerForCream.connect(morphoMarketsManagerUser).setComptroller(comptroller.address);
 
       // Mine block
       await hre.network.provider.send('evm_mine', []);
@@ -924,12 +947,12 @@ describe('MorphoPositionsManagerForCream Contract', () => {
   });
 
   xdescribe('Test attacks', () => {
-    it('Should not be DDOS by a supplier or a group of suppliers', async () => {});
+    it('Should not be DDOS by a supplier or a group of suppliers', async () => { });
 
-    it('Should not be DDOS by a borrower or a group of borrowers', async () => {});
+    it('Should not be DDOS by a borrower or a group of borrowers', async () => { });
 
-    it('Should not be subject to flash loan attacks', async () => {});
+    it('Should not be subject to flash loan attacks', async () => { });
 
-    it('Should not be subjected to Oracle Manipulation attacks', async () => {});
+    it('Should not be subjected to Oracle Manipulation attacks', async () => { });
   });
 });
