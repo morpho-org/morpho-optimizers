@@ -126,20 +126,8 @@ contract MorphoMarketsManagerForCompLike is Ownable {
      *  @param _marketAddress The address of the market to list.
      */
     function listMarket(address _marketAddress) external onlyOwner isMarketCreated(_marketAddress) {
-        positionsManagerForCompLike.setListing(_marketAddress, true);
+        positionsManagerForCompLike.listMarket(_marketAddress);
         emit MarketListed(_marketAddress);
-    }
-
-    /** @dev Sets a market as not listed.
-     *  @param _marketAddress The address of the market to delist.
-     */
-    function delistMarket(address _marketAddress)
-        external
-        onlyOwner
-        isMarketCreated(_marketAddress)
-    {
-        positionsManagerForCompLike.setListing(_marketAddress, false);
-        emit MarketDelisted(_marketAddress);
     }
 
     /** @dev Updates the threshold below which suppliers and borrowers cannot join a given market.
