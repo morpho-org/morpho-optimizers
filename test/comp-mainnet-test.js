@@ -155,14 +155,11 @@ describe('PositionsManagerForCompLike Contract', () => {
       await expect(morphoMarketsManagerForCompLike.connect(borrower1).updateThreshold(config.tokens.cUsdc.address, newThreshold)).to.be.reverted;
     });
 
-    it('Only Owner should be allowed to list/unlisted a market', async () => {
+    it('Only Owner should be allowed to list a market', async () => {
       await morphoMarketsManagerForCompLike.connect(owner).createMarkets([config.tokens.cEth.address]);
       expect(morphoMarketsManagerForCompLike.connect(supplier1).listMarket(config.tokens.cEth.address)).to.be.reverted;
       expect(morphoMarketsManagerForCompLike.connect(borrower1).listMarket(config.tokens.cEth.address)).to.be.reverted;
-      expect(morphoMarketsManagerForCompLike.connect(supplier1).delistMarket(config.tokens.cEth.address)).to.be.reverted;
-      expect(morphoMarketsManagerForCompLike.connect(borrower1).delistMarket(config.tokens.cEth.address)).to.be.reverted;
       expect(morphoMarketsManagerForCompLike.connect(owner).listMarket(config.tokens.cEth.address)).not.to.be.reverted;
-      expect(morphoMarketsManagerForCompLike.connect(owner).delistMarket(config.tokens.cEth.address)).not.to.be.reverted;
     });
 
     it('Should create a market the with right values', async () => {
