@@ -42,7 +42,7 @@ interface ICErc20 {
 
     function repayBorrow(uint256) external returns (uint256);
 
-    function underlying() external returns (address);
+    function underlying() external view returns (address);
 }
 
 interface ICEth {
@@ -224,6 +224,21 @@ interface IComptroller {
             uint256,
             uint256
         );
+
+    function getHypotheticalAccountLiquidity(
+        address,
+        address,
+        uint256,
+        uint256
+    )
+        external
+        returns (
+            uint256,
+            uint256,
+            uint256
+        );
+
+    function checkMembership(address, address) external view returns (bool);
 }
 
 interface IInterestRateModel {

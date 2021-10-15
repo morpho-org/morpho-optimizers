@@ -785,15 +785,27 @@ describe('MorphoPositionsManagerForCream Contract', () => {
     });
   });
 
-  xdescribe('Test liquidation', () => {
-    it('Borrower should be liquidated while supply (collateral) is only on Compound', async () => {
+  describe('Test liquidation', () => {
+    it('Borrower should be liquidated while supply (collateral) is only on Cream', async () => {
+      // Deploy custom price oracle
+      const PriceOracle = await ethers.getContractFactory('SimplePriceOracle');
+      priceOracle = await PriceOracle.deploy();
+      await priceOracle.deployed();
+
+      // Install admin user
+      const adminAddress = await comptroller.admin();
+      await hre.network.provider.send('hardhat_impersonateAccount', [adminAddress]);
+      await hre.network.provider.send('hardhat_setBalance', [adminAddress, ethers.utils.parseEther('10').toHexString()]);
+      const admin = await ethers.getSigner(adminAddress);
+
+      // Deposit
       const amount = to6Decimals(utils.parseUnits('100'));
       await usdcToken.connect(borrower1).approve(morphoPositionsManagerForCream.address, amount);
       await morphoPositionsManagerForCream.connect(borrower1).supply(config.tokens.cUsdc.address, amount);
       const collateralBalanceInCToken = (await morphoPositionsManagerForCream.supplyBalanceInOf(config.tokens.cUsdc.address, borrower1.getAddress())).onCream;
       const cExchangeRate = await cUsdcToken.callStatic.exchangeRateCurrent();
       const collateralBalanceInUnderlying = cTokenToUnderlying(collateralBalanceInCToken, cExchangeRate);
-      const { collateralFactorMantissa } = await comptroller.markets(config.tokens.cDai.address);
+      const { collateralFactorMantissa } = await comptroller.markets(config.tokens.cUsdc.address);
       const usdcPriceMantissa = await compoundOracle.getUnderlyingPrice(config.tokens.cUsdc.address);
       const daiPriceMantissa = await compoundOracle.getUnderlyingPrice(config.tokens.cDai.address);
       const maxToBorrow = collateralBalanceInUnderlying.mul(usdcPriceMantissa).div(daiPriceMantissa).mul(collateralFactorMantissa).div(SCALE);
@@ -802,6 +814,19 @@ describe('MorphoPositionsManagerForCream Contract', () => {
       await morphoPositionsManagerForCream.connect(borrower1).borrow(config.tokens.cDai.address, maxToBorrow);
       const collateralBalanceBefore = (await morphoPositionsManagerForCream.supplyBalanceInOf(config.tokens.cUsdc.address, borrower1.getAddress())).onCream;
       const borrowBalanceBefore = (await morphoPositionsManagerForCream.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onCream;
+
+      // Set price oracle
+      await comptroller.connect(admin)._setPriceOracle(priceOracle.address);
+      priceOracle.setUnderlyingPrice(config.tokens.cDai.address, BigNumber.from('1010182920000000000'));
+      priceOracle.setUnderlyingPrice(config.tokens.cUsdc.address, BigNumber.from('1000000000000000000000000000000'));
+      priceOracle.setUnderlyingPrice(config.tokens.cUni.address, BigNumber.from('1000000000000000000000000000000'));
+      priceOracle.setUnderlyingPrice(config.tokens.cUsdt.address, BigNumber.from('1000000000000000000000000000000'));
+
+      // Force creamOracle update by setting comptroller again (but with the custom price oracle)
+      await hre.network.provider.send('hardhat_impersonateAccount', [morphoMarketsManagerForCompLike.address]);
+      await hre.network.provider.send('hardhat_setBalance', [morphoMarketsManagerForCompLike.address, ethers.utils.parseEther('10').toHexString()]);
+      const morphoMarketsManagerUser = await ethers.getSigner(morphoMarketsManagerForCompLike.address);
+      await morphoPositionsManagerForCream.connect(morphoMarketsManagerUser).setComptroller(comptroller.address);
 
       // Mine block
       await hre.network.provider.send('evm_mine', []);
@@ -819,8 +844,8 @@ describe('MorphoPositionsManagerForCream Contract', () => {
       const borrowIndex = await cDaiToken.borrowIndex();
       const cUsdcExchangeRate = await cUsdcToken.callStatic.exchangeRateCurrent();
       const liquidationIncentive = await comptroller.liquidationIncentiveMantissa();
-      const collateralAssetPrice = await compoundOracle.getUnderlyingPrice(config.tokens.cUsdc.address);
-      const borrowedAssetPrice = await compoundOracle.getUnderlyingPrice(config.tokens.cDai.address);
+      const collateralAssetPrice = await priceOracle.getUnderlyingPrice(config.tokens.cUsdc.address);
+      const borrowedAssetPrice = await priceOracle.getUnderlyingPrice(config.tokens.cDai.address);
       const amountToSeize = toRepay.mul(borrowedAssetPrice).div(collateralAssetPrice).mul(liquidationIncentive).div(SCALE);
       const expectedCollateralBalanceAfter = collateralBalanceBefore.sub(underlyingToCToken(amountToSeize, cUsdcExchangeRate));
       const expectedBorrowBalanceAfter = borrowBalanceBefore.sub(underlyingToCdUnit(toRepay, borrowIndex));
@@ -837,6 +862,17 @@ describe('MorphoPositionsManagerForCream Contract', () => {
     });
 
     it('Borrower should be liquidated while supply (collateral) is on Compound and in peer-to-peer', async () => {
+      // Deploy custom price oracle
+      const PriceOracle = await ethers.getContractFactory('SimplePriceOracle');
+      priceOracle = await PriceOracle.deploy();
+      await priceOracle.deployed();
+
+      // Install admin user
+      const adminAddress = await comptroller.admin();
+      await hre.network.provider.send('hardhat_impersonateAccount', [adminAddress]);
+      await hre.network.provider.send('hardhat_setBalance', [adminAddress, ethers.utils.parseEther('10').toHexString()]);
+      const admin = await ethers.getSigner(adminAddress);
+
       await daiToken.connect(supplier1).approve(morphoPositionsManagerForCream.address, utils.parseUnits('1000'));
       await morphoPositionsManagerForCream.connect(supplier1).supply(config.tokens.cDai.address, utils.parseUnits('1000'));
 
@@ -845,10 +881,10 @@ describe('MorphoPositionsManagerForCream Contract', () => {
       await usdcToken.connect(borrower1).approve(morphoPositionsManagerForCream.address, amount);
       await morphoPositionsManagerForCream.connect(borrower1).supply(config.tokens.cUsdc.address, amount);
 
-      // borrower2 borrows part of supply of borrower1 -> borrower1 has supply in peer-to-peer and on Compound
+      // borrower2 borrows part of supply of borrower1 -> borrower1 has supply in peer-to-peer and on Cream
       const toBorrow = amount;
-      await uniToken.connect(borrower2).approve(morphoPositionsManagerForCream.address, utils.parseUnits('200'));
-      await morphoPositionsManagerForCream.connect(borrower2).supply(config.tokens.cUni.address, utils.parseUnits('200'));
+      await uniToken.connect(borrower2).approve(morphoPositionsManagerForCream.address, utils.parseUnits('50'));
+      await morphoPositionsManagerForCream.connect(borrower2).supply(config.tokens.cUni.address, utils.parseUnits('50'));
       await morphoPositionsManagerForCream.connect(borrower2).borrow(config.tokens.cUsdc.address, toBorrow);
 
       // borrower1 borrows DAI
@@ -859,7 +895,7 @@ describe('MorphoPositionsManagerForCream Contract', () => {
       const supplyBalanceOnCompInUnderlying = cTokenToUnderlying(supplyBalanceOnComp1, cUsdcExchangeRate1);
       const supplyBalanceMorphoInUnderlying = mUnitToUnderlying(supplyBalanceInP2P1, mUsdcExchangeRate1);
       const supplyBalanceInUnderlying = supplyBalanceOnCompInUnderlying.add(supplyBalanceMorphoInUnderlying);
-      const { collateralFactorMantissa } = await comptroller.markets(config.tokens.cDai.address);
+      const { collateralFactorMantissa } = await comptroller.markets(config.tokens.cUsdc.address);
       const usdcPriceMantissa = await compoundOracle.getUnderlyingPrice(config.tokens.cUsdc.address);
       const daiPriceMantissa = await compoundOracle.getUnderlyingPrice(config.tokens.cDai.address);
       const maxToBorrow = supplyBalanceInUnderlying.mul(usdcPriceMantissa).div(daiPriceMantissa).mul(collateralFactorMantissa).div(SCALE);
@@ -867,6 +903,19 @@ describe('MorphoPositionsManagerForCream Contract', () => {
       const collateralBalanceOnCompBefore = (await morphoPositionsManagerForCream.supplyBalanceInOf(config.tokens.cUsdc.address, borrower1.getAddress())).onCream;
       const collateralBalanceInP2PBefore = (await morphoPositionsManagerForCream.supplyBalanceInOf(config.tokens.cUsdc.address, borrower1.getAddress())).inP2P;
       const borrowBalanceInP2PBefore = (await morphoPositionsManagerForCream.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).inP2P;
+
+      // Set price oracle
+      await comptroller.connect(admin)._setPriceOracle(priceOracle.address);
+      priceOracle.setUnderlyingPrice(config.tokens.cDai.address, BigNumber.from('1020182920000000000'));
+      priceOracle.setUnderlyingPrice(config.tokens.cUsdc.address, BigNumber.from('1000000000000000000000000000000'));
+      priceOracle.setUnderlyingPrice(config.tokens.cUni.address, BigNumber.from('1000000000000000000000000000000'));
+      priceOracle.setUnderlyingPrice(config.tokens.cUsdt.address, BigNumber.from('1000000000000000000000000000000'));
+
+      // Force creamOracle update by setting comptroller again (but with the custom price oracle)
+      await hre.network.provider.send('hardhat_impersonateAccount', [morphoMarketsManagerForCompLike.address]);
+      await hre.network.provider.send('hardhat_setBalance', [morphoMarketsManagerForCompLike.address, ethers.utils.parseEther('10').toHexString()]);
+      const morphoMarketsManagerUser = await ethers.getSigner(morphoMarketsManagerForCompLike.address);
+      await morphoPositionsManagerForCream.connect(morphoMarketsManagerUser).setComptroller(comptroller.address);
 
       // Mine block
       await hre.network.provider.send('evm_mine', []);
@@ -885,8 +934,8 @@ describe('MorphoPositionsManagerForCream Contract', () => {
       const mDaiExchangeRate = await morphoMarketsManagerForCompLike.mUnitExchangeRate(config.tokens.cDai.address);
       const cUsdcExchangeRate = await cUsdcToken.callStatic.exchangeRateCurrent();
       const liquidationIncentive = await comptroller.liquidationIncentiveMantissa();
-      const collateralAssetPrice = await compoundOracle.getUnderlyingPrice(config.tokens.cUsdc.address);
-      const borrowedAssetPrice = await compoundOracle.getUnderlyingPrice(config.tokens.cDai.address);
+      const collateralAssetPrice = await priceOracle.getUnderlyingPrice(config.tokens.cUsdc.address);
+      const borrowedAssetPrice = await priceOracle.getUnderlyingPrice(config.tokens.cDai.address);
       const amountToSeize = toRepay.mul(borrowedAssetPrice).div(collateralAssetPrice).mul(liquidationIncentive).div(SCALE);
       const expectedCollateralBalanceInP2PAfter = collateralBalanceInP2PBefore.sub(amountToSeize.sub(cTokenToUnderlying(collateralBalanceOnCompBefore, cUsdcExchangeRate)));
       const expectedBorrowBalanceInP2PAfter = borrowBalanceInP2PBefore.sub(toRepay.mul(SCALE).div(mDaiExchangeRate));
