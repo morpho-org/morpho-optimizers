@@ -146,7 +146,7 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
 
     /* Modifiers */
 
-    /** @dev Prevents a user to access a market not listed.
+    /** @dev Prevents a user to access a market not created yet.
      *  @param _crERC20Address The address of the market.
      */
     modifier isMarketCreated(address _crERC20Address) {
