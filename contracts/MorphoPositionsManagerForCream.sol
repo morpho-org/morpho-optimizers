@@ -47,11 +47,11 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
 
     // Struct to avoid stack too deep error
     struct LiquidateVars {
-        uint256 borrowBalance;
-        uint256 priceCollateralMantissa;
-        uint256 priceBorrowedMantissa;
-        uint256 amountToSeize;
-        uint256 onCreamInUnderlying;
+        uint256 borrowBalance; // Total borrow balance of the user in underlying for a given asset.
+        uint256 amountToSeize; // The amount of collateral underlying the liquidator can seize.
+        uint256 priceBorrowedMantissa; // The price of the asset borrowed (in USD).
+        uint256 priceCollateralMantissa; // The price of the collateral asset (in USD).
+        uint256 collateralOnCreamInUnderlying; // The amount of underlying the liquidatee has on Cream.
     }
 
     /* Storage */
@@ -386,10 +386,10 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
             .mul(creamtroller.liquidationIncentiveMantissa())
             .div(vars.priceCollateralMantissa);
 
-        vars.onCreamInUnderlying = supplyBalanceInOf[_cERC20CollateralAddress][_borrower]
+        vars.collateralOnCreamInUnderlying = supplyBalanceInOf[_cERC20CollateralAddress][_borrower]
             .onCream
             .mul(cERC20CollateralToken.exchangeRateStored());
-        uint256 totalCollateral = vars.onCreamInUnderlying +
+        uint256 totalCollateral = vars.collateralOnCreamInUnderlying +
             supplyBalanceInOf[_cERC20CollateralAddress][_borrower].inP2P.mul(
                 marketsManagerForCompLike.updateMUnitExchangeRate(_cERC20CollateralAddress)
             );
