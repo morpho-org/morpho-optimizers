@@ -9,18 +9,18 @@ pragma solidity 0.8.7;
 
 library RedBlackBinaryTree {
     struct Node {
-        uint256 parent;
-        uint256 left;
-        uint256 right;
-        bool red;
-        address[] keys;
-        mapping(address => uint256) keyMap;
+        uint256 parent; // The parent node of the current node.
+        uint256 left; // The node at the left of the current node.
+        uint256 right; // The node at the right of the current node.
+        bool red; // Whether the current notde is red or black.
+        address[] keys; // The keys sharing the value of the node.
+        mapping(address => uint256) keyMap; // Maps the keys to their index in `keys`.
     }
 
     struct Tree {
-        uint256 root;
-        mapping(uint256 => Node) nodes;
-        mapping(address => uint256) keyToValue;
+        uint256 root; // Root node.
+        mapping(uint256 => Node) nodes; // Maps value to Node.
+        mapping(address => uint256) keyToValue; // Maps key to its value.
     }
 
     /** @dev Returns the smallest value in the tree `_self`.
