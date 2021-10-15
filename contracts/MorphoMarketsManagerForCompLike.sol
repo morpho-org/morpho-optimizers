@@ -34,16 +34,6 @@ contract MorphoMarketsManagerForCompLike is Ownable {
      */
     event MarketCreated(address _marketAddress);
 
-    /** @dev Emitted when a new market is listed.
-     *  @param _marketAddress The address of the market that has been listed.
-     */
-    event MarketListed(address _marketAddress);
-
-    /** @dev Emitted when a new market is listed.
-     *  @param _marketAddress The address of the market that has been listed.
-     */
-    event MarketDelisted(address _marketAddress);
-
     /** @dev Emitted when the comptroller is set on the `compLikePositionsManager`.
      *  @param _comptrollerAddress The address of the comptroller proxy.
      */
@@ -104,30 +94,19 @@ contract MorphoMarketsManagerForCompLike is Ownable {
         emit ComptrollerSet(_proxyComptrollerAddress);
     }
 
-    /** @dev Creates new market to borrow/supply.
-     *  @param _marketAddresses The addresses of the markets to add (cToken).
+    /** @dev Creates a new market to borrow/supply.
+     *  @param _marketAddress The addresses of the markets to add (cToken).
      */
-    function createMarkets(address[] calldata _marketAddresses) external onlyOwner {
-        uint256[] memory results = positionsManagerForCompLike.createMarkets(_marketAddresses);
-        for (uint256 i; i < _marketAddresses.length; i++) {
-            require(results[i] == 0, "createMarkets:enter-mkt-fail");
-            address _marketAddress = _marketAddresses[i];
-            require(!isCreated[_marketAddress], "createMarkets:mkt-already-created");
-            positionsManagerForCompLike.setThreshold(_marketAddress, 1e18);
-            lastUpdateBlockNumber[_marketAddress] = block.number;
-            mUnitExchangeRate[_marketAddress] = 1e18;
-            isCreated[_marketAddress] = true;
-            updateBPY(_marketAddress);
-            emit MarketCreated(_marketAddress);
-        }
-    }
-
-    /** @dev Sets a market as listed.
-     *  @param _marketAddress The address of the market to list.
-     */
-    function listMarket(address _marketAddress) external onlyOwner isMarketCreated(_marketAddress) {
-        positionsManagerForCompLike.listMarket(_marketAddress);
-        emit MarketListed(_marketAddress);
+    function createMarket(address _marketAddress) external onlyOwner {
+        require(!isCreated[_marketAddress], "createMarket:mkt-already-created");
+        uint256[] memory results = positionsManagerForCompLike.createMarket(_marketAddress);
+        require(results[0] == 0, "createMarket:enter-mkt-fail");
+        positionsManagerForCompLike.setThreshold(_marketAddress, 1e18);
+        lastUpdateBlockNumber[_marketAddress] = block.number;
+        mUnitExchangeRate[_marketAddress] = 1e18;
+        isCreated[_marketAddress] = true;
+        updateBPY(_marketAddress);
+        emit MarketCreated(_marketAddress);
     }
 
     /** @dev Updates the threshold below which suppliers and borrowers cannot join a given market.

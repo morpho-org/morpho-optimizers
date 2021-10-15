@@ -867,7 +867,7 @@
     "inputs": [
       { "internalType": "address[]", "name": "cTokens", "type": "address[]" }
     ],
-    "name": "createMarkets",
+    "name": "createMarket",
     "outputs": [
       { "internalType": "uint256[]", "name": "", "type": "uint256[]" }
     ],
@@ -1083,7 +1083,7 @@
     "inputs": [{ "internalType": "address", "name": "", "type": "address" }],
     "name": "markets",
     "outputs": [
-      { "internalType": "bool", "name": "isListed", "type": "bool" },
+      { "internalType": "bool", "name": "isCreated", "type": "bool" },
       {
         "internalType": "uint256",
         "name": "collateralFactorMantissa",

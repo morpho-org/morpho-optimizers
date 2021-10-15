@@ -2,11 +2,9 @@
 pragma solidity 0.8.7;
 
 interface IPositionsManagerForCompLike {
-    function createMarkets(address[] memory markets) external returns (uint256[] memory);
+    function createMarket(address _marketAddress) external returns (uint256[] memory);
 
     function setComptroller(address _proxyComptrollerAddress) external;
-
-    function listMarket(address) external;
 
     function setThreshold(address, uint256) external;
 }

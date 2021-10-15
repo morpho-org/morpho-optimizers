@@ -65,7 +65,6 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
     mapping(address => mapping(address => bool)) public accountMembership; // Whether the account is in the market or not.
     mapping(address => address[]) public enteredMarkets; // Markets entered by a user.
     mapping(address => uint256) public thresholds; // Thresholds below the ones suppliers and borrowers cannot enter markets.
-    mapping(address => bool) public isListed; // Whether or not this market is listed.
 
     IComptroller public creamtroller;
     ICompoundOracle public creamOracle;
@@ -150,8 +149,8 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
     /** @dev Prevents a user to access a market not listed.
      *  @param _crERC20Address The address of the market.
      */
-    modifier isMarketListed(address _crERC20Address) {
-        require(isListed[_crERC20Address], "mkt-not-listed");
+    modifier isMarketCreated(address _crERC20Address) {
+        require(marketsManagerForCompLike.isCreated(_crERC20Address), "mkt-not-created");
         _;
     }
 
@@ -182,15 +181,17 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
     /* External */
 
     /** @dev Creates Cream's markets.
-     *  @param markets The address of the market the user wants to supply.
+     *  @param _crERC20Address The address of the market the user wants to supply.
      *  @return The results of entered.
      */
-    function createMarkets(address[] calldata markets)
+    function createMarket(address _crERC20Address)
         external
         onlyMarketsManager
         returns (uint256[] memory)
     {
-        return creamtroller.enterMarkets(markets);
+        address[] memory marketToEnter = new address[](1);
+        marketToEnter[0] = _crERC20Address;
+        return creamtroller.enterMarkets(marketToEnter);
     }
 
     /** @dev Sets the comptroller and oracle address.
@@ -199,13 +200,6 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
     function setComptroller(address _proxyCreamtrollerAddress) external onlyMarketsManager {
         creamtroller = IComptroller(_proxyCreamtrollerAddress);
         creamOracle = ICompoundOracle(creamtroller.oracle());
-    }
-
-    /** @dev Sets a market as listed.
-     *  @param _crERC20Address The address of the market to list.
-     */
-    function listMarket(address _crERC20Address) external onlyMarketsManager {
-        isListed[_crERC20Address] = true;
     }
 
     /** @dev Sets the threshold of a market.
@@ -226,7 +220,7 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
     function supply(address _crERC20Address, uint256 _amount)
         external
         nonReentrant
-        isMarketListed(_crERC20Address)
+        isMarketCreated(_crERC20Address)
         isAboveThreshold(_crERC20Address, _amount)
     {
         _handleMembership(_crERC20Address, msg.sender);
@@ -269,7 +263,7 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
     function borrow(address _crERC20Address, uint256 _amount)
         external
         nonReentrant
-        isMarketListed(_crERC20Address)
+        isMarketCreated(_crERC20Address)
         isAboveThreshold(_crERC20Address, _amount)
     {
         _handleMembership(_crERC20Address, msg.sender);
@@ -411,7 +405,7 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
         uint256 _amount,
         address _holder,
         address _receiver
-    ) internal isMarketListed(_crERC20Address) {
+    ) internal isMarketCreated(_crERC20Address) {
         require(_amount > 0, "_withdraw:amount=0");
         _checkAccountLiquidity(_holder, _crERC20Address, _amount, 0);
         ICErc20 crERC20Token = ICErc20(_crERC20Address);
@@ -488,7 +482,7 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
         address _crERC20Address,
         address _borrower,
         uint256 _amount
-    ) internal isMarketListed(_crERC20Address) {
+    ) internal isMarketCreated(_crERC20Address) {
         ICErc20 crERC20Token = ICErc20(_crERC20Address);
         IERC20 erc20Token = IERC20(crERC20Token.underlying());
         erc20Token.safeTransferFrom(msg.sender, address(this), _amount);
