@@ -152,7 +152,7 @@ describe('MorphoPositionsManagerForCream Contract', () => {
       const supplyBPY = await cMkrToken.supplyRatePerBlock();
       const borrowBPY = await cMkrToken.borrowRatePerBlock();
       const { blockNumber } = await morphoMarketsManagerForCompLike.connect(owner).createMarket(config.tokens.cMkr.address);
-      expect(await morphoMarketsManagerForCompLike.isCreated(config.tokens.cMkr.address)).not.to.be.true;
+      expect(await morphoMarketsManagerForCompLike.isCreated(config.tokens.cMkr.address)).to.be.true;
 
       const p2pBPY = supplyBPY.add(borrowBPY).div(2);
       expect(await morphoMarketsManagerForCompLike.p2pBPY(config.tokens.cMkr.address)).to.equal(p2pBPY);
