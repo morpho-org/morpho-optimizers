@@ -462,7 +462,7 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
                 _matchSuppliers(_crERC20Address, crTokenContractBalanceInUnderlying);
                 remainingToWithdraw -= crTokenContractBalanceInUnderlying;
                 require(
-                    _unmatchBorrowers(_crERC20Address, remainingToWithdraw) == 0,
+                    _unmatchBorrowers(_crERC20Address, remainingToWithdraw) == 0, // We break some P2P credit lines the user had with borrowers and fallback on Cream.
                     "_withdraw:_unmatchBorrowers!=0"
                 );
                 supplyBalanceInOf[_crERC20Address][_holder].inP2P -=
@@ -536,7 +536,7 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
                 _matchBorrowers(_crERC20Address, contractBorrowBalanceOnCream);
                 remainingToRepay -= contractBorrowBalanceOnCream;
                 require(
-                    _unmatchSuppliers(_crERC20Address, remainingToRepay) == 0,
+                    _unmatchSuppliers(_crERC20Address, remainingToRepay) == 0, // We break some P2P credit lines of user had with suppliers and fallback on Cream.
                     "_repay:_unmatchSuppliers!=0"
                 );
                 borrowBalanceInOf[_crERC20Address][_borrower].inP2P -=
