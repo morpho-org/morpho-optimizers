@@ -30,12 +30,11 @@ async function main() {
   console.log('PositionsManagerForCompLike address:', positionsManagerForCompLike.address);
 
   await morphoMarketsManagerForCompLike.connect(deployer).setPositionsManagerForCompLike(positionsManagerForCompLike.address);
-  await morphoMarketsManagerForCompLike.connect(deployer).createMarkets([config.tokens.cDai.address, config.tokens.cUsdc.address, config.tokens.cBat.address, config.tokens.cZrx.address]);
+  await morphoMarketsManagerForCompLike.connect(deployer).createMarket(config.tokens.cDai.address);
+  await morphoMarketsManagerForCompLike.connect(deployer).createMarket(config.tokens.cUsdc.address);
+  await morphoMarketsManagerForCompLike.connect(deployer).createMarket(config.tokens.cBat.address);
+  await morphoMarketsManagerForCompLike.connect(deployer).createMarket(config.tokens.cZrx.address);
   await morphoMarketsManagerForCompLike.connect(deployer).updateThreshold(config.tokens.cUsdc.address, BigNumber.from(1).pow(6));
-  await morphoMarketsManagerForCompLike.connect(deployer).listMarket(config.tokens.cDai.address);
-  await morphoMarketsManagerForCompLike.connect(deployer).listMarket(config.tokens.cUsdc.address);
-  await morphoMarketsManagerForCompLike.connect(deployer).listMarket(config.tokens.cBat.address);
-  await morphoMarketsManagerForCompLike.connect(deployer).listMarket(config.tokens.cZrx.address);
 }
 
 main()
