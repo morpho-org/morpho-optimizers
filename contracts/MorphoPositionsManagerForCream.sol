@@ -436,7 +436,7 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
             else {
                 _withdrawERC20FromCream(_crERC20Address, amountOnCreamInUnderlying); // Revert on error
                 supplyBalanceInOf[_crERC20Address][_holder].onCream -= amountOnCreamInUnderlying
-                    .div(crExchangeRate);
+                    .div(crExchangeRate); // Not set to 0 due to rounding errors.
                 remainingToWithdraw = _amount - amountOnCreamInUnderlying; // In underlying
             }
         }
@@ -459,15 +459,18 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
             }
             /* CASE 2: Other suppliers don't have enough tokens on Cream. Such scenario is called the Hard-Withdraw */
             else {
-                _matchSuppliers(_crERC20Address, crTokenContractBalanceInUnderlying);
-                remainingToWithdraw -= crTokenContractBalanceInUnderlying;
+                uint256 remaining = _matchSuppliers(
+                    _crERC20Address,
+                    crTokenContractBalanceInUnderlying
+                );
+                supplyBalanceInOf[_crERC20Address][_holder].inP2P -= remainingToWithdraw.div(
+                    mExchangeRate
+                ); // In mUnit
+                remainingToWithdraw -= remaining;
                 require(
                     _unmatchBorrowers(_crERC20Address, remainingToWithdraw) == 0, // We break some P2P credit lines the user had with borrowers and fallback on Cream.
                     "_withdraw:_unmatchBorrowers!=0"
                 );
-                supplyBalanceInOf[_crERC20Address][_holder].inP2P -=
-                    crTokenContractBalanceInUnderlying.div(mExchangeRate) +
-                    remainingToWithdraw.div(mExchangeRate); // In mUnit
             }
         }
 
@@ -510,9 +513,7 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
             else {
                 erc20Token.safeApprove(_crERC20Address, onCreamInUnderlying);
                 crERC20Token.repayBorrow(onCreamInUnderlying); // Revert on error
-                borrowBalanceInOf[_crERC20Address][_borrower].onCream -= onCreamInUnderlying.div(
-                    borrowIndex
-                );
+                borrowBalanceInOf[_crERC20Address][_borrower].onCream = 0;
                 remainingToRepay -= onCreamInUnderlying; // In underlying
             }
         }
@@ -534,14 +535,14 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
             /* CASE 2: Other borrowers aren't borrowing enough on Cream to compensate user's position */
             else {
                 _matchBorrowers(_crERC20Address, contractBorrowBalanceOnCream);
+                borrowBalanceInOf[_crERC20Address][_borrower].inP2P -= remainingToRepay.div(
+                    mExchangeRate
+                ); // In mUnit
                 remainingToRepay -= contractBorrowBalanceOnCream;
                 require(
                     _unmatchSuppliers(_crERC20Address, remainingToRepay) == 0, // We break some P2P credit lines the user had with suppliers and fallback on Cream.
                     "_repay:_unmatchSuppliers!=0"
                 );
-                borrowBalanceInOf[_crERC20Address][_borrower].inP2P -=
-                    contractBorrowBalanceOnCream.div(mExchangeRate) +
-                    remainingToRepay.div(mExchangeRate); // In mUnit
             }
         }
 
@@ -587,7 +588,6 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
         uint256 mExchangeRate = marketsManagerForCompLike.mUnitExchangeRate(_crERC20Address);
         uint256 crExchangeRate = crERC20Token.exchangeRateCurrent();
         uint256 highestValue = suppliersOnCream[_crERC20Address].last();
-        uint256 toWithdraw;
 
         while (remainingToMatch > 0 && highestValue != 0) {
             // Loop on the keys (addresses) sharing the same value
@@ -613,7 +613,6 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
                     remainingToMatch -= toMatch;
                     supplyBalanceInOf[_crERC20Address][account].inP2P += toMatch.div(mExchangeRate); // In mUnit
                     _updateSupplierList(_crERC20Address, account);
-                    toWithdraw += toMatch;
                     emit SupplierMatched(account, _crERC20Address, toMatch);
                 }
             }
@@ -621,7 +620,7 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
             highestValue = suppliersOnCream[_crERC20Address].last();
         }
         // Withdraw from Cream
-        _withdrawERC20FromCream(_crERC20Address, toWithdraw);
+        _withdrawERC20FromCream(_crERC20Address, _amount - remainingToMatch);
     }
 
     /** @dev Finds liquidity in peer-to-peer and unmatches it to reconnect Cream.
@@ -639,7 +638,6 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
         uint256 crExchangeRate = crERC20Token.exchangeRateCurrent();
         uint256 mExchangeRate = marketsManagerForCompLike.mUnitExchangeRate(_crERC20Address);
         uint256 highestValue = suppliersInP2P[_crERC20Address].last();
-        uint256 toSupply;
 
         while (remainingToUnmatch > 0 && highestValue != 0) {
             while (suppliersInP2P[_crERC20Address].getNumberOfKeysAtValue(highestValue) > 0) {
@@ -652,13 +650,12 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
                 ); // In crToken
                 supplyBalanceInOf[_crERC20Address][account].inP2P -= toUnmatch.div(mExchangeRate); // In mUnit
                 _updateSupplierList(_crERC20Address, account);
-                toSupply += toUnmatch;
                 emit SupplierUnmatched(account, _crERC20Address, toUnmatch);
             }
             highestValue = suppliersInP2P[_crERC20Address].last();
         }
         // Supply on Cream
-        _supplyERC20ToCream(_crERC20Address, toSupply);
+        _supplyERC20ToCream(_crERC20Address, _amount - remainingToUnmatch);
     }
 
     /** @dev Finds borrowers on Cream that match the given `_amount` and move them in P2P.
@@ -677,7 +674,6 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
         uint256 mExchangeRate = marketsManagerForCompLike.mUnitExchangeRate(_crERC20Address);
         uint256 borrowIndex = crERC20Token.borrowIndex();
         uint256 highestValue = borrowersOnCream[_crERC20Address].last();
-        uint256 toRepay;
 
         while (remainingToMatch > 0 && highestValue != 0) {
             while (borrowersOnCream[_crERC20Address].getNumberOfKeysAtValue(highestValue) > 0) {
@@ -697,12 +693,12 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
                 remainingToMatch -= toMatch;
                 borrowBalanceInOf[_crERC20Address][account].inP2P += toMatch.div(mExchangeRate);
                 _updateBorrowerList(_crERC20Address, account);
-                toRepay += toMatch;
                 emit BorrowerMatched(account, _crERC20Address, toMatch);
             }
             highestValue = borrowersOnCream[_crERC20Address].last();
         }
         // Repay Cream
+        uint256 toRepay = _amount - remainingToMatch;
         erc20Token.safeApprove(_crERC20Address, toRepay);
         require(crERC20Token.repayBorrow(toRepay) == 0, "_matchBorrowers:repay-cream-fail");
     }
@@ -722,7 +718,6 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
         uint256 mExchangeRate = marketsManagerForCompLike.mUnitExchangeRate(_crERC20Address);
         uint256 borrowIndex = crERC20Token.borrowIndex();
         uint256 highestValue = borrowersInP2P[_crERC20Address].last();
-        uint256 toBorrow;
 
         while (remainingToUnmatch > 0 && highestValue != 0) {
             while (borrowersInP2P[_crERC20Address].getNumberOfKeysAtValue(highestValue) > 0) {
@@ -734,13 +729,12 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
                 borrowBalanceInOf[_crERC20Address][account].onCream += toUnmatch.div(borrowIndex);
                 borrowBalanceInOf[_crERC20Address][account].inP2P -= toUnmatch.div(mExchangeRate);
                 _updateBorrowerList(_crERC20Address, account);
-                toBorrow += toUnmatch;
                 emit BorrowerUnmatched(account, _crERC20Address, toUnmatch);
             }
             highestValue = borrowersInP2P[_crERC20Address].last();
         }
         // Borrow on Cream
-        require(crERC20Token.borrow(toBorrow) == 0);
+        require(crERC20Token.borrow(_amount - remainingToUnmatch) == 0);
     }
 
     /**
