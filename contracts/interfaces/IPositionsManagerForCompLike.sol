@@ -6,7 +6,7 @@ interface IPositionsManagerForCompLike {
 
     function setComptroller(address _proxyComptrollerAddress) external;
 
-    function setListing(address, bool) external;
+    function listMarket(address) external;
 
     function setThreshold(address, uint256) external;
 }

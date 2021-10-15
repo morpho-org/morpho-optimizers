@@ -201,12 +201,11 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
         creamOracle = ICompoundOracle(creamtroller.oracle());
     }
 
-    /** @dev Sets the listing of a market.
-     *  @param _crERC20Address The address of the market to list or delist.
-     *  @param _listing Whether to list the market or not.
+    /** @dev Sets a market as listed.
+     *  @param _crERC20Address The address of the market to list.
      */
-    function setListing(address _crERC20Address, bool _listing) external onlyMarketsManager {
-        isListed[_crERC20Address] = _listing;
+    function listMarket(address _crERC20Address) external onlyMarketsManager {
+        isListed[_crERC20Address] = true;
     }
 
     /** @dev Sets the threshold of a market.
