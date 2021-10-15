@@ -10,8 +10,8 @@ pragma solidity 0.8.7;
 library RedBlackBinaryTree {
     struct Node {
         uint256 parent; // The parent node of the current node.
-        uint256 left; // The node at the left of the current node.
-        uint256 right; // The node at the right of the current node.
+        uint256 leftChild; // The left child of the current node.
+        uint256 rightChild; // The right child of the current node.
         bool red; // Whether the current notde is red or black.
         address[] keys; // The keys sharing the value of the node.
         mapping(address => uint256) keyMap; // Maps the keys to their index in `keys`.
@@ -29,8 +29,8 @@ library RedBlackBinaryTree {
     function first(Tree storage _self) public view returns (uint256 value) {
         value = _self.root;
         if (value == 0) return 0;
-        while (_self.nodes[value].left != 0) {
-            value = _self.nodes[value].left;
+        while (_self.nodes[value].leftChild != 0) {
+            value = _self.nodes[value].leftChild;
         }
     }
 
@@ -40,8 +40,8 @@ library RedBlackBinaryTree {
     function last(Tree storage _self) public view returns (uint256 value) {
         value = _self.root;
         if (value == 0) return 0;
-        while (_self.nodes[value].right != 0) {
-            value = _self.nodes[value].right;
+        while (_self.nodes[value].rightChild != 0) {
+            value = _self.nodes[value].rightChild;
         }
     }
 
@@ -51,11 +51,11 @@ library RedBlackBinaryTree {
      */
     function next(Tree storage _self, uint256 _value) public view returns (uint256 cursor) {
         require(_value != 0, "RBBT(1):start-_value=0");
-        if (_self.nodes[_value].right != 0) {
-            cursor = subTreeMin(_self, _self.nodes[_value].right);
+        if (_self.nodes[_value].rightChild != 0) {
+            cursor = subTreeMin(_self, _self.nodes[_value].rightChild);
         } else {
             cursor = _self.nodes[_value].parent;
-            while (cursor != 0 && _value == _self.nodes[cursor].right) {
+            while (cursor != 0 && _value == _self.nodes[cursor].rightChild) {
                 _value = cursor;
                 cursor = _self.nodes[cursor].parent;
             }
@@ -68,11 +68,11 @@ library RedBlackBinaryTree {
      */
     function prev(Tree storage _self, uint256 _value) public view returns (uint256 cursor) {
         require(_value != 0, "RBBT(2):start-value=0");
-        if (_self.nodes[_value].left != 0) {
-            cursor = subTreeMax(_self, _self.nodes[_value].left);
+        if (_self.nodes[_value].leftChild != 0) {
+            cursor = subTreeMax(_self, _self.nodes[_value].leftChild);
         } else {
             cursor = _self.nodes[_value].parent;
-            while (cursor != 0 && _value == _self.nodes[cursor].left) {
+            while (cursor != 0 && _value == _self.nodes[cursor].leftChild) {
                 _value = cursor;
                 cursor = _self.nodes[cursor].parent;
             }
@@ -155,9 +155,9 @@ library RedBlackBinaryTree {
         while (probe != 0) {
             cursor = probe;
             if (_value < probe) {
-                probe = _self.nodes[probe].left;
+                probe = _self.nodes[probe].leftChild;
             } else if (_value > probe) {
-                probe = _self.nodes[probe].right;
+                probe = _self.nodes[probe].rightChild;
             } else if (_value == probe) {
                 _self.nodes[probe].keys.push(_key);
                 _self.nodes[probe].keyMap[_key] = _self.nodes[probe].keys.length - 1;
@@ -166,17 +166,17 @@ library RedBlackBinaryTree {
         }
         Node storage nValue = _self.nodes[_value];
         nValue.parent = cursor;
-        nValue.left = 0;
-        nValue.right = 0;
+        nValue.leftChild = 0;
+        nValue.rightChild = 0;
         nValue.red = true;
         nValue.keys.push(_key);
         nValue.keyMap[_key] = nValue.keys.length - 1;
         if (cursor == 0) {
             _self.root = _value;
         } else if (_value < cursor) {
-            _self.nodes[cursor].left = _value;
+            _self.nodes[cursor].leftChild = _value;
         } else {
-            _self.nodes[cursor].right = _value;
+            _self.nodes[cursor].rightChild = _value;
         }
         insertFixup(_self, _value);
     }
@@ -196,26 +196,26 @@ library RedBlackBinaryTree {
         uint256 probe;
         uint256 cursor;
         if (nValue.keys.length == 0) {
-            if (_self.nodes[value].left == 0 || _self.nodes[value].right == 0) {
+            if (_self.nodes[value].leftChild == 0 || _self.nodes[value].rightChild == 0) {
                 cursor = value;
             } else {
-                cursor = _self.nodes[value].right;
-                while (_self.nodes[cursor].left != 0) {
-                    cursor = _self.nodes[cursor].left;
+                cursor = _self.nodes[value].rightChild;
+                while (_self.nodes[cursor].leftChild != 0) {
+                    cursor = _self.nodes[cursor].leftChild;
                 }
             }
-            if (_self.nodes[cursor].left != 0) {
-                probe = _self.nodes[cursor].left;
+            if (_self.nodes[cursor].leftChild != 0) {
+                probe = _self.nodes[cursor].leftChild;
             } else {
-                probe = _self.nodes[cursor].right;
+                probe = _self.nodes[cursor].rightChild;
             }
             uint256 cursorParent = _self.nodes[cursor].parent;
             _self.nodes[probe].parent = cursorParent;
             if (cursorParent != 0) {
-                if (cursor == _self.nodes[cursorParent].left) {
-                    _self.nodes[cursorParent].left = probe;
+                if (cursor == _self.nodes[cursorParent].leftChild) {
+                    _self.nodes[cursorParent].leftChild = probe;
                 } else {
-                    _self.nodes[cursorParent].right = probe;
+                    _self.nodes[cursorParent].rightChild = probe;
                 }
             } else {
                 _self.root = probe;
@@ -223,10 +223,10 @@ library RedBlackBinaryTree {
             bool doFixup = !_self.nodes[cursor].red;
             if (cursor != value) {
                 replaceParent(_self, cursor, value);
-                _self.nodes[cursor].left = _self.nodes[value].left;
-                _self.nodes[_self.nodes[cursor].left].parent = cursor;
-                _self.nodes[cursor].right = _self.nodes[value].right;
-                _self.nodes[_self.nodes[cursor].right].parent = cursor;
+                _self.nodes[cursor].leftChild = _self.nodes[value].leftChild;
+                _self.nodes[_self.nodes[cursor].leftChild].parent = cursor;
+                _self.nodes[cursor].rightChild = _self.nodes[value].rightChild;
+                _self.nodes[_self.nodes[cursor].rightChild].parent = cursor;
                 _self.nodes[cursor].red = _self.nodes[value].red;
                 (cursor, value) = (value, cursor);
             }
@@ -242,8 +242,8 @@ library RedBlackBinaryTree {
      *  @param _value The value of the node to start at.
      */
     function subTreeMin(Tree storage _self, uint256 _value) private view returns (uint256) {
-        while (_self.nodes[_value].left != 0) {
-            _value = _self.nodes[_value].left;
+        while (_self.nodes[_value].leftChild != 0) {
+            _value = _self.nodes[_value].leftChild;
         }
         return _value;
     }
@@ -253,59 +253,59 @@ library RedBlackBinaryTree {
      *  @param _value The value of the node to start at.
      */
     function subTreeMax(Tree storage _self, uint256 _value) private view returns (uint256) {
-        while (_self.nodes[_value].right != 0) {
-            _value = _self.nodes[_value].right;
+        while (_self.nodes[_value].rightChild != 0) {
+            _value = _self.nodes[_value].rightChild;
         }
         return _value;
     }
 
-    /** @dev Rotates the tree to keep the balance. Let's have three node, A (root), B (A's right child), C (B's left child).
-             After left rotation: B (Root), A (B's left child), C (B's right child)
+    /** @dev Rotates the tree to keep the balance. Let's have three node, A (root), B (A's rightChild child), C (B's leftChild child).
+             After leftChild rotation: B (Root), A (B's leftChild child), C (B's rightChild child)
      *  @param _self The tree to apply the rotation to.
      *  @param _value The value of the node to rotate.
      */
     function rotateLeft(Tree storage _self, uint256 _value) private {
-        uint256 cursor = _self.nodes[_value].right;
+        uint256 cursor = _self.nodes[_value].rightChild;
         uint256 parent = _self.nodes[_value].parent;
-        uint256 cursorLeft = _self.nodes[cursor].left;
-        _self.nodes[_value].right = cursorLeft;
+        uint256 cursorLeft = _self.nodes[cursor].leftChild;
+        _self.nodes[_value].rightChild = cursorLeft;
         if (cursorLeft != 0) {
             _self.nodes[cursorLeft].parent = _value;
         }
         _self.nodes[cursor].parent = parent;
         if (parent == 0) {
             _self.root = cursor;
-        } else if (_value == _self.nodes[parent].left) {
-            _self.nodes[parent].left = cursor;
+        } else if (_value == _self.nodes[parent].leftChild) {
+            _self.nodes[parent].leftChild = cursor;
         } else {
-            _self.nodes[parent].right = cursor;
+            _self.nodes[parent].rightChild = cursor;
         }
-        _self.nodes[cursor].left = _value;
+        _self.nodes[cursor].leftChild = _value;
         _self.nodes[_value].parent = cursor;
     }
 
-    /** @dev Rotates the tree to keep the balance. Let's have three node, A (root), B (A's left child), C (B's right child).
-             After right rotation: B (Root), A (B's right child), C (B's left child)
+    /** @dev Rotates the tree to keep the balance. Let's have three node, A (root), B (A's leftChild child), C (B's rightChild child).
+             After rightChild rotation: B (Root), A (B's rightChild child), C (B's leftChild child)
      *  @param _self The tree to apply the rotation to.
      *  @param _value The value of the node to rotate.
      */
     function rotateRight(Tree storage _self, uint256 _value) private {
-        uint256 cursor = _self.nodes[_value].left;
+        uint256 cursor = _self.nodes[_value].leftChild;
         uint256 parent = _self.nodes[_value].parent;
-        uint256 cursorRight = _self.nodes[cursor].right;
-        _self.nodes[_value].left = cursorRight;
+        uint256 cursorRight = _self.nodes[cursor].rightChild;
+        _self.nodes[_value].leftChild = cursorRight;
         if (cursorRight != 0) {
             _self.nodes[cursorRight].parent = _value;
         }
         _self.nodes[cursor].parent = parent;
         if (parent == 0) {
             _self.root = cursor;
-        } else if (_value == _self.nodes[parent].right) {
-            _self.nodes[parent].right = cursor;
+        } else if (_value == _self.nodes[parent].rightChild) {
+            _self.nodes[parent].rightChild = cursor;
         } else {
-            _self.nodes[parent].left = cursor;
+            _self.nodes[parent].leftChild = cursor;
         }
-        _self.nodes[cursor].right = _value;
+        _self.nodes[cursor].rightChild = _value;
         _self.nodes[_value].parent = cursor;
     }
 
@@ -317,15 +317,15 @@ library RedBlackBinaryTree {
         uint256 cursor;
         while (_value != _self.root && _self.nodes[_self.nodes[_value].parent].red) {
             uint256 valueParent = _self.nodes[_value].parent;
-            if (valueParent == _self.nodes[_self.nodes[valueParent].parent].left) {
-                cursor = _self.nodes[_self.nodes[valueParent].parent].right;
+            if (valueParent == _self.nodes[_self.nodes[valueParent].parent].leftChild) {
+                cursor = _self.nodes[_self.nodes[valueParent].parent].rightChild;
                 if (_self.nodes[cursor].red) {
                     _self.nodes[valueParent].red = false;
                     _self.nodes[cursor].red = false;
                     _self.nodes[_self.nodes[valueParent].parent].red = true;
                     _value = _self.nodes[valueParent].parent;
                 } else {
-                    if (_value == _self.nodes[valueParent].right) {
+                    if (_value == _self.nodes[valueParent].rightChild) {
                         _value = valueParent;
                         rotateLeft(_self, _value);
                     }
@@ -335,14 +335,14 @@ library RedBlackBinaryTree {
                     rotateRight(_self, _self.nodes[valueParent].parent);
                 }
             } else {
-                cursor = _self.nodes[_self.nodes[valueParent].parent].left;
+                cursor = _self.nodes[_self.nodes[valueParent].parent].leftChild;
                 if (_self.nodes[cursor].red) {
                     _self.nodes[valueParent].red = false;
                     _self.nodes[cursor].red = false;
                     _self.nodes[_self.nodes[valueParent].parent].red = true;
                     _value = _self.nodes[valueParent].parent;
                 } else {
-                    if (_value == _self.nodes[valueParent].left) {
+                    if (_value == _self.nodes[valueParent].leftChild) {
                         _value = valueParent;
                         rotateRight(_self, _value);
                     }
@@ -371,10 +371,10 @@ library RedBlackBinaryTree {
         if (bParent == 0) {
             _self.root = _a;
         } else {
-            if (_b == _self.nodes[bParent].left) {
-                _self.nodes[bParent].left = _a;
+            if (_b == _self.nodes[bParent].leftChild) {
+                _self.nodes[bParent].leftChild = _a;
             } else {
-                _self.nodes[bParent].right = _a;
+                _self.nodes[bParent].rightChild = _a;
             }
         }
     }
@@ -387,57 +387,57 @@ library RedBlackBinaryTree {
         uint256 cursor;
         while (_value != _self.root && !_self.nodes[_value].red) {
             uint256 valueParent = _self.nodes[_value].parent;
-            if (_value == _self.nodes[valueParent].left) {
-                cursor = _self.nodes[valueParent].right;
+            if (_value == _self.nodes[valueParent].leftChild) {
+                cursor = _self.nodes[valueParent].rightChild;
                 if (_self.nodes[cursor].red) {
                     _self.nodes[cursor].red = false;
                     _self.nodes[valueParent].red = true;
                     rotateLeft(_self, valueParent);
-                    cursor = _self.nodes[valueParent].right;
+                    cursor = _self.nodes[valueParent].rightChild;
                 }
                 if (
-                    !_self.nodes[_self.nodes[cursor].left].red &&
-                    !_self.nodes[_self.nodes[cursor].right].red
+                    !_self.nodes[_self.nodes[cursor].leftChild].red &&
+                    !_self.nodes[_self.nodes[cursor].rightChild].red
                 ) {
                     _self.nodes[cursor].red = true;
                     _value = valueParent;
                 } else {
-                    if (!_self.nodes[_self.nodes[cursor].right].red) {
-                        _self.nodes[_self.nodes[cursor].left].red = false;
+                    if (!_self.nodes[_self.nodes[cursor].rightChild].red) {
+                        _self.nodes[_self.nodes[cursor].leftChild].red = false;
                         _self.nodes[cursor].red = true;
                         rotateRight(_self, cursor);
-                        cursor = _self.nodes[valueParent].right;
+                        cursor = _self.nodes[valueParent].rightChild;
                     }
                     _self.nodes[cursor].red = _self.nodes[valueParent].red;
                     _self.nodes[valueParent].red = false;
-                    _self.nodes[_self.nodes[cursor].right].red = false;
+                    _self.nodes[_self.nodes[cursor].rightChild].red = false;
                     rotateLeft(_self, valueParent);
                     _value = _self.root;
                 }
             } else {
-                cursor = _self.nodes[valueParent].left;
+                cursor = _self.nodes[valueParent].leftChild;
                 if (_self.nodes[cursor].red) {
                     _self.nodes[cursor].red = false;
                     _self.nodes[valueParent].red = true;
                     rotateRight(_self, valueParent);
-                    cursor = _self.nodes[valueParent].left;
+                    cursor = _self.nodes[valueParent].leftChild;
                 }
                 if (
-                    !_self.nodes[_self.nodes[cursor].right].red &&
-                    !_self.nodes[_self.nodes[cursor].left].red
+                    !_self.nodes[_self.nodes[cursor].rightChild].red &&
+                    !_self.nodes[_self.nodes[cursor].leftChild].red
                 ) {
                     _self.nodes[cursor].red = true;
                     _value = valueParent;
                 } else {
-                    if (!_self.nodes[_self.nodes[cursor].left].red) {
-                        _self.nodes[_self.nodes[cursor].right].red = false;
+                    if (!_self.nodes[_self.nodes[cursor].leftChild].red) {
+                        _self.nodes[_self.nodes[cursor].rightChild].red = false;
                         _self.nodes[cursor].red = true;
                         rotateLeft(_self, cursor);
-                        cursor = _self.nodes[valueParent].left;
+                        cursor = _self.nodes[valueParent].leftChild;
                     }
                     _self.nodes[cursor].red = _self.nodes[valueParent].red;
                     _self.nodes[valueParent].red = false;
-                    _self.nodes[_self.nodes[cursor].left].red = false;
+                    _self.nodes[_self.nodes[cursor].leftChild].red = false;
                     rotateRight(_self, valueParent);
                     _value = _self.root;
                 }
