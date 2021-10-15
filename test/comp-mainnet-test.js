@@ -93,7 +93,7 @@ describe('PositionsManagerForCompLike Contract', () => {
 
     // Create and list markets
     await morphoMarketsManagerForCompLike.connect(owner).setPositionsManagerForCompLike(positionsManagerForCompLike.address);
-    await morphoMarketsManagerForCompLike.connect(owner).createMarkets([config.tokens.cDai.address, config.tokens.cUsdc.address, config.tokens.cUsdt.address, config.tokens.cUni.address]);
+    await morphoMarketsManagerForCompLike.connect(owner).createMarket([config.tokens.cDai.address, config.tokens.cUsdc.address, config.tokens.cUsdt.address, config.tokens.cUni.address]);
     await morphoMarketsManagerForCompLike.connect(owner).listMarket(config.tokens.cDai.address);
     await morphoMarketsManagerForCompLike.connect(owner).updateThreshold(config.tokens.cUsdc.address, BigNumber.from(1).pow(6));
     await morphoMarketsManagerForCompLike.connect(owner).listMarket(config.tokens.cUsdc.address);
@@ -119,22 +119,22 @@ describe('PositionsManagerForCompLike Contract', () => {
 
   describe('Governance functions', () => {
     it('Should revert when at least one of the markets in input is not a real market', async () => {
-      expect(morphoMarketsManagerForCompLike.connect(owner).createMarkets([config.tokens.usdt.address])).to.be.reverted;
-      expect(morphoMarketsManagerForCompLike.connect(owner).createMarkets([config.tokens.cEth.address, config.tokens.usdt.address, config.tokens.cUni.address])).to.be.reverted;
-      expect(morphoMarketsManagerForCompLike.connect(owner).createMarkets([config.tokens.cEth.address])).not.be.reverted;
+      expect(morphoMarketsManagerForCompLike.connect(owner).createMarket([config.tokens.usdt.address])).to.be.reverted;
+      expect(morphoMarketsManagerForCompLike.connect(owner).createMarket([config.tokens.cEth.address, config.tokens.usdt.address, config.tokens.cUni.address])).to.be.reverted;
+      expect(morphoMarketsManagerForCompLike.connect(owner).createMarket([config.tokens.cEth.address])).not.be.reverted;
     });
 
     it('Only Owner should be able to create markets in peer-to-peer', async () => {
-      expect(morphoMarketsManagerForCompLike.connect(supplier1).createMarkets([config.tokens.cEth.address])).to.be.reverted;
-      expect(morphoMarketsManagerForCompLike.connect(borrower1).createMarkets([config.tokens.cEth.address])).to.be.reverted;
-      expect(morphoMarketsManagerForCompLike.connect(owner).createMarkets([config.tokens.cEth.address])).not.be.reverted;
+      expect(morphoMarketsManagerForCompLike.connect(supplier1).createMarket([config.tokens.cEth.address])).to.be.reverted;
+      expect(morphoMarketsManagerForCompLike.connect(borrower1).createMarket([config.tokens.cEth.address])).to.be.reverted;
+      expect(morphoMarketsManagerForCompLike.connect(owner).createMarket([config.tokens.cEth.address])).not.be.reverted;
     });
 
     it('Only Morpho should be able to create markets on PositionsManagerForCompLike', async () => {
-      expect(positionsManagerForCompLike.connect(supplier1).createMarkets([config.tokens.cEth.address])).to.be.reverted;
-      expect(positionsManagerForCompLike.connect(borrower1).createMarkets([config.tokens.cEth.address])).to.be.reverted;
-      expect(positionsManagerForCompLike.connect(owner).createMarkets([config.tokens.cEth.address])).to.be.reverted;
-      await morphoMarketsManagerForCompLike.connect(owner).createMarkets([config.tokens.cEth.address]);
+      expect(positionsManagerForCompLike.connect(supplier1).createMarket([config.tokens.cEth.address])).to.be.reverted;
+      expect(positionsManagerForCompLike.connect(borrower1).createMarket([config.tokens.cEth.address])).to.be.reverted;
+      expect(positionsManagerForCompLike.connect(owner).createMarket([config.tokens.cEth.address])).to.be.reverted;
+      await morphoMarketsManagerForCompLike.connect(owner).createMarket([config.tokens.cEth.address]);
       expect(await comptroller.checkMembership(positionsManagerForCompLike.address, config.tokens.cEth.address)).to.be.true;
     });
 
@@ -156,7 +156,7 @@ describe('PositionsManagerForCompLike Contract', () => {
     });
 
     it('Only Owner should be allowed to list a market', async () => {
-      await morphoMarketsManagerForCompLike.connect(owner).createMarkets([config.tokens.cEth.address]);
+      await morphoMarketsManagerForCompLike.connect(owner).createMarket([config.tokens.cEth.address]);
       expect(morphoMarketsManagerForCompLike.connect(supplier1).listMarket(config.tokens.cEth.address)).to.be.reverted;
       expect(morphoMarketsManagerForCompLike.connect(borrower1).listMarket(config.tokens.cEth.address)).to.be.reverted;
       expect(morphoMarketsManagerForCompLike.connect(owner).listMarket(config.tokens.cEth.address)).not.to.be.reverted;
@@ -165,8 +165,8 @@ describe('PositionsManagerForCompLike Contract', () => {
     it('Should create a market the with right values', async () => {
       const supplyBPY = await cMkrToken.supplyRatePerBlock();
       const borrowBPY = await cMkrToken.borrowRatePerBlock();
-      const { blockNumber } = await morphoMarketsManagerForCompLike.connect(owner).createMarkets([config.tokens.cMkr.address]);
-      expect(await morphoMarketsManagerForCompLike.isListed(config.tokens.cMkr.address)).not.to.be.true;
+      const { blockNumber } = await morphoMarketsManagerForCompLike.connect(owner).createMarket([config.tokens.cMkr.address]);
+      expect(await morphoMarketsManagerForCompLike.isCreated(config.tokens.cMkr.address)).not.to.be.true;
 
       const p2pBPY = supplyBPY.add(borrowBPY).div(2);
       expect(await morphoMarketsManagerForCompLike.p2pBPY(config.tokens.cMkr.address)).to.equal(p2pBPY);
