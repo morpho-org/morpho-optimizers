@@ -596,7 +596,7 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
                     highestValue,
                     0
                 ); // Pick the first account in the list
-                // Check if this user is not borrowing on Cream
+                // Check if this user is not borrowing on Cream (cf Liquidation Invariant in docs)
                 if (!_hasDebtOnCream(account)) {
                     uint256 onCream = supplyBalanceInOf[_crERC20Address][account].onCream; // In crToken
                     uint256 toMatch;
