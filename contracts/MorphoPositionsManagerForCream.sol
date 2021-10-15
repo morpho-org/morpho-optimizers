@@ -471,9 +471,9 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
             }
         }
 
-        _updateSupplierList(_crERC20Address, _receiver);
+        _updateSupplierList(_crERC20Address, _holder);
         erc20Token.safeTransfer(_receiver, _amount);
-        emit Withdrawn(_receiver, _crERC20Address, _amount);
+        emit Withdrawn(_holder, _crERC20Address, _amount);
     }
 
     /** @dev Implements repay logic.
