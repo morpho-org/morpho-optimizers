@@ -5,6 +5,50 @@
 
 This repository contains the core smart contracts for the Morpho Protocol V0 🦋.
 
+## Testing
+
+First, install dependencies with:
+
+```
+yarn
+```
+
+Refer to the `env.example` for the required environment variable.
+
+Tests are run against a fork of the Polygon Mainnet, which allows us to interact directly with Cream. Note that you need to have an RPC provider that have access to Polygon.
+We aim a test coverage > 90% of all functions.
+
+⚠️ Tests cannot substituted to coverage as the coverage command as contracts are compiled without optimization and can alter some patterns.
+
+To run test, use this command:
+
+```
+yarn test:cream:polygon
+```
+
+For coverage, run:
+
+```
+yarn coverage
+```
+
+## Code Formatting
+
+We use prettier with the default configuration mentionned in the [Solidity Prettier Plugin](https://github.com/prettier-solidity/prettier-plugin-solidity).
+We recommend developers using VSCODE to set their local config as below:
+
+```
+{
+	"editor.formatOnSave": true,
+	"solidity.formatter": "prettier",
+	"editor.defaultFormatter": "esbenp.prettier-vscode"
+}
+```
+
+In doing so the code will be formatted on each save.
+
+We use Husky hook to format code before being pushed to any remote branch to enforce coding style among all developers.
+
 ## Contributing
 
 In this section, you will find some guidelines to read before contributing to the project.
@@ -34,48 +78,6 @@ For smart contract reviews, a complete report must have been done, not just a re
 For the guidelines on "How to review contracts and write a report?", you can follow this [link](https://abiding-machine-635.notion.site/Solidity-Guidelines-7c9a201413df47d6b72577374f93a697).
 
 By default, PR are rebased with `main` before merging to keep a clean historic of commits and the branch is deleted.
-
-## Testing
-
-First, install dependencies with:
-
-```
-yarn test
-```
-
-Test are run against a fork of the mainnet, which allows us to interact with directly with Compound.
-We aim a test coverage > 90% of all functions.
-
-⚠️ Tests cannot substituted to coverage as the coverage command as contracts are compiled without optimization and can alter some patterns.
-
-To run test, you can run:
-
-```
-yarn test
-```
-
-For coverage, run:
-
-```
-yarn coverage
-```
-
-## Code Formatting
-
-We use prettier with the default configuration mentionned in the [Solidity Prettier Plugin](https://github.com/prettier-solidity/prettier-plugin-solidity).
-We recommend developers using VSCODE to set their local config as below:
-
-```
-{
-	"editor.formatOnSave": true,
-	"solidity.formatter": "prettier",
-	"editor.defaultFormatter": "esbenp.prettier-vscode"
-}
-```
-
-In doing so the code will be formatted on each save.
-
-We use Husky hook to format code before being pushed to any remote branch to enforce coding style among all developers.
 
 ## Deploy a contract on a network
 
