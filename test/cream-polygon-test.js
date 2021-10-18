@@ -3,7 +3,7 @@ const { utils, BigNumber } = require('ethers');
 const { ethers } = require('hardhat');
 const { expect } = require('chai');
 const hre = require('hardhat');
-const config = require('@config/polygon-config.json').polygon;
+const config = require('@config/polygon/config.json').polygon;
 const {
   SCALE,
   underlyingToCToken,

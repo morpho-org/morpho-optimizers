@@ -1,5 +1,5 @@
 const { BigNumber } = require('ethers');
-const config = require('@config/ethereum-config.json').ropsten;
+const config = require('@config/ethereum/config.json').ropsten;
 
 async function main() {
   const [deployer] = await ethers.getSigners();

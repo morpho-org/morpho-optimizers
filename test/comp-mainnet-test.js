@@ -3,7 +3,7 @@ const { utils, BigNumber } = require('ethers');
 const { ethers } = require('hardhat');
 const { expect } = require('chai');
 const hre = require('hardhat');
-const config = require('@config/ethereum-config.json').mainnet;
+const config = require('@config/ethereum/config.json').mainnet;
 const {
   SCALE,
   underlyingToCToken,
