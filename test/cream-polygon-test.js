@@ -169,6 +169,14 @@ describe('MorphoPositionsManagerForCream Contract', () => {
       expect(await morphoMarketsManagerForCompLike.mUnitExchangeRate(config.tokens.cMkr.address)).to.equal(SCALE);
       expect(await morphoMarketsManagerForCompLike.lastUpdateBlockNumber(config.tokens.cMkr.address)).to.equal(blockNumber);
     });
+
+    it('Comptroller can be set only by owner', async () => {
+      await expect(morphoMarketsManagerForCompLike.connect(supplier1).setComptroller(comptroller.address)).to.be.reverted;
+      await expect(morphoMarketsManagerForCompLike.connect(borrower1).setComptroller(comptroller.address)).to.be.reverted;
+
+      await expect(morphoMarketsManagerForCompLike.connect(owner).setComptroller(comptroller.address)).not.to.be.reverted;
+    });
+
   });
 
   describe('Suppliers on Compound (no borrowers)', () => {
