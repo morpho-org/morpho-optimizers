@@ -495,6 +495,51 @@ describe('MorphoPositionsManagerForCream Contract', () => {
       expect(removeDigitsBigNumber(9, (await morphoPositionsManagerForCream.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).inP2P)).to.equal(0);
     });
 
+    it('Debt should increase over time', async () => {
+      // Supplier supplys tokens
+      const supplyAmount = utils.parseUnits('10');
+      const daiBalanceBefore1 = await daiToken.balanceOf(supplier1.getAddress());
+      const expectedDaiBalanceAfter1 = daiBalanceBefore1.sub(supplyAmount);
+      await daiToken.connect(supplier1).approve(morphoPositionsManagerForCream.address, supplyAmount);
+      await morphoPositionsManagerForCream.connect(supplier1).supply(config.tokens.cDai.address, supplyAmount);
+      const daiBalanceAfter1 = await daiToken.balanceOf(supplier1.getAddress());
+
+      // Check ERC20 balance
+      expect(daiBalanceAfter1).to.equal(expectedDaiBalanceAfter1);
+      const cExchangeRate1 = await cDaiToken.callStatic.exchangeRateCurrent();
+      const expectedSupplyBalanceOnComp1 = underlyingToCToken(supplyAmount, cExchangeRate1);
+      expect(await cDaiToken.balanceOf(morphoPositionsManagerForCream.address)).to.equal(expectedSupplyBalanceOnComp1);
+      expect((await morphoPositionsManagerForCream.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).onCream).to.equal(expectedSupplyBalanceOnComp1);
+
+      // Borrower provides collateral
+      const collateralAmount = to6Decimals(utils.parseUnits('100'));
+      await usdcToken.connect(borrower1).approve(morphoPositionsManagerForCream.address, collateralAmount);
+      await morphoPositionsManagerForCream.connect(borrower1).supply(config.tokens.cUsdc.address, collateralAmount);
+
+      // Borrowers borrows supplier1 amount
+      await morphoPositionsManagerForCream.connect(borrower1).borrow(config.tokens.cDai.address, supplyAmount);
+      const mExchangeRate1 = await morphoMarketsManagerForCompLike.mUnitExchangeRate(config.tokens.cDai.address);
+      const p2pBPY = await morphoMarketsManagerForCompLike.p2pBPY(config.tokens.cDai.address);
+      
+      const borrowerBalanceInP2P = (await morphoPositionsManagerForCream.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).inP2P;
+
+      // Mine block 1000 blocs
+      for (let i = 0; i < 1000; i++) {
+        await hre.network.provider.send('evm_mine', []);
+      }
+      
+      await morphoMarketsManagerForCompLike.updateMUnitExchangeRate(config.tokens.cDai.address);
+      const mExchangeRate2 = await morphoMarketsManagerForCompLike.mUnitExchangeRate(config.tokens.cDai.address);
+
+      const expectedToRepay = (supplyAmount*((1 + p2pBPY/1e18)**1000));
+      // console.log("expectedToRepay", expectedToRepay);
+      const toRepay = mUnitToUnderlying(borrowerBalanceInP2P, mExchangeRate2);
+      // console.log("torepay", await toRepay.toString());
+      expect((await toRepay.toString()).to.equal(expectedToRepay));
+
+      // care there is an issue with the approximation sometimes.
+    });
+
     it('Supplier should withdraw her liquidity while enough cDaiToken in peer-to-peer contract', async () => {
       const supplyAmount = utils.parseUnits('10');
       let supplier;
