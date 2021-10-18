@@ -644,6 +644,49 @@ describe('MorphoPositionsManagerForCream Contract', () => {
       expect(await cDaiToken.callStatic.borrowBalanceCurrent(morphoPositionsManagerForCream.address)).to.equal(0);
     });
 
+    it('Borrower in peer-to-peer only, should be able to repay all borrow amount, CASE 2.1', async () => {
+      // Supplier supplys tokens
+      const supplyAmount = utils.parseUnits('10');
+      await daiToken.connect(supplier1).approve(morphoPositionsManagerForCream.address, supplyAmount);
+      await morphoPositionsManagerForCream.connect(supplier1).supply(config.tokens.cDai.address, supplyAmount);
+
+      // Borrower borrows half of the tokens
+      const collateralAmount = to6Decimals(utils.parseUnits('100'));
+      const daiBalanceBefore = await daiToken.balanceOf(borrower1.getAddress());
+      const toBorrow = supplyAmount.div(2);
+
+      await usdcToken.connect(borrower1).approve(morphoPositionsManagerForCream.address, collateralAmount);
+      await morphoPositionsManagerForCream.connect(borrower1).supply(config.tokens.cUsdc.address, collateralAmount);
+      await morphoPositionsManagerForCream.connect(borrower1).borrow(config.tokens.cDai.address, toBorrow);
+
+      // Borrower 2
+      const toBorrow2 = utils.parseUnits('10');
+      await usdcToken.connect(borrower2).approve(morphoPositionsManagerForCream.address, collateralAmount);
+      await morphoPositionsManagerForCream.connect(borrower2).supply(config.tokens.cUsdc.address, collateralAmount);
+      await morphoPositionsManagerForCream.connect(borrower2).borrow(config.tokens.cDai.address, toBorrow2);
+
+      const p2pBPY = await morphoMarketsManagerForCompLike.p2pBPY(config.tokens.cDai.address);
+      await morphoMarketsManagerForCompLike.updateMUnitExchangeRate(config.tokens.cDai.address);
+      const mUnitExchangeRate = await morphoMarketsManagerForCompLike.mUnitExchangeRate(config.tokens.cDai.address);
+      // WARNING: Should be one block but the pow function used in contract is not accurate
+      const toRepay = toBorrow;
+      const expectedDaiBalanceAfter = daiBalanceBefore.add(toBorrow).sub(toRepay);
+      const previousMorphoCTokenBalance = await cDaiToken.balanceOf(morphoPositionsManagerForCream.address);
+
+      // Repay
+      await daiToken.connect(borrower1).approve(morphoPositionsManagerForCream.address, toRepay);
+      await morphoPositionsManagerForCream.connect(borrower1).repay(config.tokens.cDai.address, toRepay);
+      const cExchangeRate = await cDaiToken.callStatic.exchangeRateStored();
+      const expectedMorphoCTokenBalance = previousMorphoCTokenBalance.add(underlyingToCToken(toRepay, cExchangeRate));
+
+      // Check borrower1 balances
+      const daiBalanceAfter = await daiToken.balanceOf(borrower1.getAddress());
+      expect(daiBalanceAfter).to.equal(expectedDaiBalanceAfter);
+      // TODO: implement interest for borrowers to complete this test as borrower's debt is not increasing here
+      expect((await morphoPositionsManagerForCream.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onCream).to.equal(0);
+      //expect(removeDigitsBigNumber(1, (await morphoPositionsManagerForCream.borrowBalanceInOf(borrower1.getAddress())).inP2P)).to.equal(0);
+    });
+
     it('Borrower in peer-to-peer and on Compound, should be able to repay all borrow amount', async () => {
       // Supplier supplys tokens
       const supplyAmount = utils.parseUnits('10');
