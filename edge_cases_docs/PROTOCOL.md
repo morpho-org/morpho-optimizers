@@ -6,7 +6,7 @@ Morpho moves credit lines in and out of AAVE/Compound to match users in Peer-to-
 
 A user can trigger five different functions: supply, withdraw, borrow, repay and liquidate. Here we give an informal description of how each of those functions work.
 
-Each function consider many different cases depending on the liquidity state of Morpho. In practice, most functions that will effectively happen on Morpho are gas efficient. However, one may remark that absolutely extreme scenarios like Withdraw 2.2.2 can be more costly. Such scenarios are totally unlikely but they are still implemented to ensure that Morpho can handle extreme liquidity states.
+Each function considers many different cases depending on the liquidity state of Morpho. In practice, most functions that will effectively happen on Morpho are gas efficient. However, one may remark that absolutely extreme scenarios like Withdraw 2.2.2 can be more costly. Such scenarios are totally unlikely but they are still implemented to ensure that Morpho can handle extreme liquidity states.
 
 ## A user supplies tokens ([`supply`](https://github.com/morpho-labs/morpho-contracts/blob/b4b8ddd4fcebf3a4d497a5518d8155514040a3dc/contracts/CreamPositionsManager.sol#L210))
 
@@ -87,7 +87,7 @@ Each function consider many different cases depending on the liquidity state of 
 - Morpho supplies all the tokens to Cream.
 - Morpho sets the Cream borrow balance of the user to 0.
 
-#### If there remains some tokens to repay (CASE 2), Morpho breaks credit lines and repair them either with other users or with Cream itself
+#### If there remains some tokens to repay (CASE 2), Morpho breaks credit lines and repairs them either with other users or with Cream itself
 
 ##### CASE 1: Other borrowers are borrowing enough on Cream to compensate user's position
 
@@ -103,23 +103,23 @@ Each function consider many different cases depending on the liquidity state of 
 
 ### Alice liquidates the borrow position of Bob ([`liquidate`](https://github.com/morpho-labs/morpho-contracts/blob/b4b8ddd4fcebf3a4d497a5518d8155514040a3dc/contracts/CreamPositionsManager.sol#L323))
 
-- Alice repays the position of Bob: Morpho reuses the logic repay function mentioned before
-- Morpho calculates the amount of colalteral to seize
-- Alice siezes the collateral of Bob: Morpho reuses the logic of the withdraw mentioned before
+- Alice repays the position of Bob: Morpho reuses the logic repay function mentioned before.
+- Morpho calculates the amount of collateral to seize.
+- Alice siezes the collateral of Bob: Morpho reuses the logic of the withdraw mentioned before.
 
 ---
 
 ### The Morpho Liquidation invariant
 
-In order to ensure that Morpho does not bring any additional market risk, we have to limit the liquidation of the Morpho Contract itself by Cream liquidators
+In order to ensure that Morpho does not bring any additional market risk, we have to limit the liquidation of the Morpho Contract itself by Cream liquidators.
 
 Indeed, such liquidation should only happen if every single user of Morpho has already been liquidated. Thus we must maintain the following invariant; Morpho's contract is liquidable only if every Morpho's users are all liquidable/liquidated.
 
 To maintain this invariant, we remark that every single borrow position on Cream of a user should be effectively backed by the corresponding collateral. In other words, a collateral of a borrow position on Cream can't be matched. This is why:
 
-- In the \_unmatchBorrowers(), we first use \_unmatchTheSupplier() to ensure that the collateral is put on Cream before borrowing on Cream.
-- When using moveSuppliersFromCreamToP2P(), we always check if the user is actually borrowing something on Cream. If yes, we don't move the supply in P2P to ensure that this collateral remains on Cream.
-- When using borrow(), when it come to borrowing on Cream we start by using \_unmatchTheSupplier() to ensure that the collateral is put on Cream.
+- In the `_unmatchBorrowers()`, we first use `_unmatchTheSupplier()` to ensure that the collateral is put on Cream before borrowing on Cream.
+- When using `moveSuppliersFromCreamToP2P()`, we always check if the user is actually borrowing something on Cream. If yes, we don't move the supply in P2P to ensure that this collateral remains on Cream.
+- When using `borrow()`, when it come to borrowing on Cream we start by using `_unmatchTheSupplier()` to ensure that the collateral is put on Cream.
 
 ### Hard-Withdraw
 
@@ -129,10 +129,10 @@ However we have to distinguish two cases:
 
 #### The collateral of the borrower is on Cream
 
-Here, it is quite simple, Morpho can safely borrow
+Here, it is quite simple, Morpho can safely borrow.
 
 #### The collateral of the borrower is matched
 
-In that scenario, which is extremely rare, Morpho can't borrow thanks to the colalteral as it is not being supplied to Cream. The trick is thus to recursively try to borrow on the collateral of the borrower that is matching the collateral. In the following example, we give an intuition of the proof of termination of this recursive loop, which is bounded to N-1, where N is yhe number of markets in the protocol.
+In that scenario, which is extremely rare, Morpho can't borrow thanks to the collateral as it is not being supplied to Cream. The trick is thus to recursively try to borrow on the collateral of the borrower that is matching the collateral. In the following example, we give an intuition of the proof of termination of this recursive loop, which is bounded to N-1, where N is the number of markets in the protocol.
 
-Let's consider the most extreme scenario where Alice, Bob, Charlie and David are matched in P2P with collateral factors of 100%. This is handled by Morpho even though in practice, this very very unlikely and gas expensive. This can also be triggered by a hardworker. Find the document Hard-withdraw-with-matched-collateral.pdf to go through this example.
+Let's consider the most extreme scenario where Alice, Bob, Charlie and David are matched in P2P with collateral factors of 100%. This is handled by Morpho even though in practice, this very very unlikely and gas expensive. This can also be triggered by a hardworker. Find the document hard-withdraw-with-matched-collateral.pdf to go through this example.
