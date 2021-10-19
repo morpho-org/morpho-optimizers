@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.7;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/math/Math.sol";
+import "@openzeppelin/contracts/access/Ownable.sol"; // Not sure to be needed
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/math/Math.sol"; // Not sure to be needed
 
 import {ICErc20, IComptroller} from "./interfaces/compound/ICompound.sol";
 import "./interfaces/IPositionsManagerForCompLike.sol";
 import "./interfaces/IMarketsManagerForCompLike.sol";
 
 contract KarlThePureLender is Ownable, ReentrancyGuard {
-
-mapping(address => mapping(address => uint256)) public supplyBalanceInOf; // For a given market, the supply balance of user.
+    mapping(address => mapping(address => uint256)) public supplyBalanceInOf; // For a given market, the supply balance of user.
+    IPositionsManagerForCompLike public positionManager;
 
     /** @dev Emitted when a supply happens.
      *  @param _account The address of the supplier.
@@ -41,17 +41,26 @@ mapping(address => mapping(address => uint256)) public supplyBalanceInOf; // For
      */
     event Unstaked(address indexed _account, address indexed _cTokenAddress, uint256 _amount);
 
-
-
-    function supply(address _crERC20Address, uint256 _amount) external nonReentrant {
+    /** @dev Prevents a user to access a market not created yet.
+     *  @param _crERC20Address The address of the market.
+     */
+    modifier isMarketCreated(address _crERC20Address) {
+        require(
+            positionManager.marketsManagerForCompLike.isCreated(_crERC20Address),
+            "mkt-not-created"
+        );
+        _;
     }
 
-    function withdraw(address _crERC20Address, uint256 _amount) external nonReentrant {
+    constructor(address _morphoPositionsManagerForCream) {
+        positionManager = IPositionsManagerForCompLike(_morphoPositionsManagerForCream);
     }
 
-    function stake(address _cTokenAddress, uint256 _amount) external nonReentrant {
-    }
+    function supply(address _crERC20Address, uint256 _amount) external nonReentrant {}
 
-    function unstake(address _cTokenAddress, uint256 _amount) external nonReentrant {
-    }
+    function withdraw(address _crERC20Address, uint256 _amount) external nonReentrant {}
+
+    function stake(address _cTokenAddress, uint256 _amount) external nonReentrant {}
+
+    function unstake(address _cTokenAddress, uint256 _amount) external nonReentrant {}
 }
