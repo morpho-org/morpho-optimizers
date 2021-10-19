@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.7;
 
-import "@openzeppelin/contracts/access/Ownable.sol"; // Not sure to be needed
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol"; // TODO Not sure to be needed
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/utils/math/Math.sol"; // Not sure to be needed
+import "@openzeppelin/contracts/utils/math/Math.sol"; // TODO Not sure to be needed
 
 import {ICErc20, IComptroller} from "./interfaces/compound/ICompound.sol";
 import "./interfaces/IPositionsManagerForCompLike.sol";
@@ -11,7 +12,9 @@ import "./interfaces/IMarketsManagerForCompLike.sol";
 
 contract KarlThePureLender is Ownable, ReentrancyGuard {
     mapping(address => mapping(address => uint256)) public supplyBalanceInOf; // For a given market, the supply balance of user.
-    IPositionsManagerForCompLike public positionManager;
+
+    IMarketsManagerForCompLike marketsManager;
+    IPositionsManagerForCompLike public positionsManager;
 
     /** @dev Emitted when a supply happens.
      *  @param _account The address of the supplier.
@@ -45,22 +48,59 @@ contract KarlThePureLender is Ownable, ReentrancyGuard {
      *  @param _crERC20Address The address of the market.
      */
     modifier isMarketCreated(address _crERC20Address) {
-        require(
-            positionManager.marketsManagerForCompLike.isCreated(_crERC20Address),
-            "mkt-not-created"
-        );
+        require(marketsManager.isCreated(_crERC20Address), "mkt-not-created");
         _;
     }
 
     constructor(address _morphoPositionsManagerForCream) {
-        positionManager = IPositionsManagerForCompLike(_morphoPositionsManagerForCream);
+        positionsManager = IPositionsManagerForCompLike(_morphoPositionsManagerForCream);
+        marketsManager = IMarketsManagerForCompLike(positionsManager.marketsManagerForCompLike());
     }
 
-    function supply(address _crERC20Address, uint256 _amount) external nonReentrant {}
+    // User must approve _amount for contract
+    function supply(address _ERC20Address, uint256 _amount)
+        external
+        nonReentrant
+    // No need to check isMarketCreated, done by supply
+    {
+        require(_amount > 0, "supply:amount=0");
 
-    function withdraw(address _crERC20Address, uint256 _amount) external nonReentrant {}
+        IERC20 erc20Token = IERC20(_ERC20Address);
+        erc20Token.safeTransferFrom(msg.sender, address(this), _amount);
 
-    function stake(address _cTokenAddress, uint256 _amount) external nonReentrant {}
+        erc20Token.increaseAllowance(positionsManager, _amount); // TODO or global infinite approve ?
+        positionsManager.supply(_ERC20Address, _amount); // TODO supply must be called with crToken address !!!!!
 
-    function unstake(address _cTokenAddress, uint256 _amount) external nonReentrant {}
+        supplyBalanceInOf[_ERC20Address][msg.sender] += _amount;
+
+        emit Supplied(msg.sender, _ERC20Address, _amount);
+    }
+
+    function withdraw(address _ERC20Address, uint256 _amount) external nonReentrant {
+        require(_amount > 0, "withdraw:amount=0");
+        require(_amount <= supplyBalanceInOf[_ERC20Address][msg.sender], "withdraw:amount>balance");
+
+        IERC20 erc20Token = ICErc20(_ERC20Address);
+        positionsManager.withdraw(_ERC20Address, _amount); // TODO withdraw must be called with crToken address !!!!!
+        erc20Token.decreaseAllowance(positionsManager, _amount); // TODO or global allowance ?
+
+        supplyBalanceInOf[_ERC20Address][msg.sender] -= _amount;
+        erc20Token.safeTransfer(msg.sender, _amount);
+
+        emit Withdrawn(msg.sender, _ERC20Address, _amount);
+    }
+
+    // User must approve _amount for contract
+    function stake(address _crERC20Address, uint256 _amount) external nonReentrant {
+        require(_amount > 0, "stake:amount=0");
+
+        ICErc20 crERC20Token = ICErc20(_crERC20Address);
+        crERC20Token.safeTransferFrom(msg.sender, address(this), _amount);
+
+        IERC20 erc20Token = IERC20(crERC20Token.underlying());
+
+        // TODO remove from cream and supply ?
+    }
+
+    function unstake(address _crERC20Address, uint256 _amount) external nonReentrant {}
 }
