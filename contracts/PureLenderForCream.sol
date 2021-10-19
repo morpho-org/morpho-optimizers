@@ -15,7 +15,7 @@ contract PureLenderForCream is Ownable, ReentrancyGuard {
 
     mapping(address => mapping(address => uint256)) public supplyBalanceInOf; // For a given market, the supply balance of user.
 
-    IMarketsManagerForCompLike marketsManager;
+    IMarketsManagerForCompLike public marketsManager;
     IPositionsManagerForCompLike public positionsManager;
 
     /** @dev Emitted when a supply happens.
@@ -31,8 +31,7 @@ contract PureLenderForCream is Ownable, ReentrancyGuard {
      *  @param _amount The amount of assets.
      */
     event Withdrawn(address indexed _account, address indexed _crERC20Address, uint256 _amount);
-    
-    
+
     // TODO staking mechanism of Ctokens
 
     // /** @dev Emitted when a staking happens.
@@ -48,8 +47,6 @@ contract PureLenderForCream is Ownable, ReentrancyGuard {
     //  *  @param _amount The amount of assets.
     //  */
     // event Unstaked(address indexed _account, address indexed _cTokenAddress, uint256 _amount);
-    
-
 
     /** @dev Prevents a user to access a market not created yet.
      *  @param _crERC20Address The address of the market.
@@ -66,34 +63,35 @@ contract PureLenderForCream is Ownable, ReentrancyGuard {
 
     // User must approve _amount for contract
     // No need to check isMarketCreated, done by supply
-    function supply(address _ERC20Address, uint256 _amount)
-        external
-        nonReentrant
-    {
+    function supply(address _crERC20Address, uint256 _amount) external nonReentrant {
         require(_amount > 0, "supply:amount=0");
-        IERC20 erc20Token = IERC20(_ERC20Address);
-        erc20Token.safeApprove(msg.sender, address(this), _amount);
+        ICErc20 crERC20Token = ICErc20(_crERC20Address);
+        IERC20 erc20Token = IERC20(crERC20Token.underlying());
+        erc20Token.safeApprove(address(this), _amount);
 
-        positionsManager.supply(_ERC20Address, _amount); // TODO supply must be called with crToken address !!!!!
+        positionsManager.supply(_crERC20Address, _amount); // TODO supply must be called with crToken address !!!!!
 
-        supplyBalanceInOf[_ERC20Address][msg.sender] += _amount;
+        supplyBalanceInOf[_crERC20Address][msg.sender] += _amount;
 
-        emit Supplied(msg.sender, _ERC20Address, _amount);
+        emit Supplied(msg.sender, _crERC20Address, _amount);
     }
 
-    function withdraw(address _ERC20Address, uint256 _amount) external nonReentrant {
+    function withdraw(address _crERC20Address, uint256 _amount) external nonReentrant {
         require(_amount > 0, "withdraw:amount=0");
-        require(_amount <= supplyBalanceInOf[_ERC20Address][msg.sender], "withdraw:amount>balance");
+        require(
+            _amount <= supplyBalanceInOf[_crERC20Address][msg.sender],
+            "withdraw:amount>balance"
+        );
 
-        IERC20 erc20Token = ICErc20(_ERC20Address);
-        positionsManager.withdraw(_ERC20Address, _amount); // TODO withdraw must be called with crToken address !!!!!
+        ICErc20 crERC20Token = ICErc20(_crERC20Address);
+        IERC20 erc20Token = IERC20(crERC20Token.underlying());
+        positionsManager.withdraw(_crERC20Address, _amount); // TODO withdraw must be called with crToken address !!!!!
 
-        supplyBalanceInOf[_ERC20Address][msg.sender] -= _amount;
+        supplyBalanceInOf[_crERC20Address][msg.sender] -= _amount;
         erc20Token.safeTransfer(msg.sender, _amount);
 
-        emit Withdrawn(msg.sender, _ERC20Address, _amount);
+        emit Withdrawn(msg.sender, _crERC20Address, _amount);
     }
-
 
     // TODO staking mechanism of Ctokens
 
@@ -110,6 +108,4 @@ contract PureLenderForCream is Ownable, ReentrancyGuard {
     // }
 
     // function unstake(address _crERC20Address, uint256 _amount) external nonReentrant {}
-
-
 }
