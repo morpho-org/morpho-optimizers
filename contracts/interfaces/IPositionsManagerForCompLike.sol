@@ -7,4 +7,12 @@ interface IPositionsManagerForCompLike {
     function setComptroller(address _proxyComptrollerAddress) external;
 
     function setThreshold(address, uint256) external;
+
+    function marketsManagerForCompLike() external returns (address);
+
+    function supplyBalanceInOf(address, address) external returns (uint256, uint256);
+
+    function supply(address, uint256) external;
+
+    function withdraw(address, uint256) external;
 }
