@@ -2,58 +2,103 @@
   "polygon": {
     "tokens": {
       "cToken": {
-        "abi": "@config/abis/CErc20.json"
+        "abi": "@config/polygon/abis/CErc20.json"
       },
       "cEth": {
         "_comment": "This is for crMATIC",
         "address": "0x3FaE5e5722C51cdb5B0afD8c7082e8a6AF336Ee8",
-        "abi": "@config/abis/CEth.json"
+        "abi": "@config/polygon/abis/CEth.json"
       },
       "cDai": {
         "address": "0x4eCEDdF62277eD78623f9A94995c680f8fd6C00e",
-        "abi": "@config/abis/CErc20.json"
+        "abi": "@config/polygon/abis/CErc20.json"
       },
       "cUsdc": {
         "address": "0x73CF8c5D14Aa0EbC89f18272A568319F5BAB6cBD",
-        "abi": "@config/abis/CErc20.json"
+        "abi": "@config/polygon/abis/CErc20.json"
       },
       "cUsdt": {
         "address": "0xf976C9bc0E16B250E0B1523CffAa9E4c07Bc5C8a",
-        "abi": "@config/abis/CErc20.json"
+        "abi": "@config/polygon/abis/CErc20.json"
       },
       "cUni": {
         "address": "0x7ea7174dD0CB4Ab84f42177F01e9a8a79475d381",
-        "abi": "@config/abis/CErc20.json"
+        "abi": "@config/polygon/abis/CErc20.json"
       },
       "cMkr": {
         "_comment": "There is no crMKR crToken, so this address is in fact crLINK",
         "address": "0x20d5d319C2964ecb52e1B006a4C059b7f6d6ad0a",
-        "abi": "@config/abis/CErc20.json"
+        "abi": "@config/polygon/abis/CErc20.json"
       },
       "dai": {
         "address": "0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063",
-        "abi": "@config/abis/Dai.json"
+        "abi": "@config/polygon/abis/Dai.json"
       },
       "usdc": {
         "address": "0x2791bca1f2de4661ed88a30c99a7a9449aa84174",
-        "abi": "@config/abis/USDC.json"
+        "abi": "@config/polygon/abis/USDC.json"
       },
       "usdt": {
         "address": "0xc2132d05d31c914a87c6611c10748aeb04b58e8f",
-        "abi": "@config/abis/USDT.json"
+        "abi": "@config/polygon/abis/USDT.json"
       },
       "uni": {
         "address": "0xb33eaad8d922b1083446dc23f610c2567fb5180f",
-        "abi": "@config/abis/UNI.json"
+        "abi": "@config/polygon/abis/UNI.json"
+      },
+      "wbtc": {
+        "address": "0x1bfd67037b42cf73acf2047067bd4f2c47d9bfd6",
+        "abi": "@config/polygon/abis/WBTC.json"
+      },
+      "wmatic": {
+        "address": "0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270",
+        "abi": "@config/polygon/abis/WBTC.json"
+      },
+      "aToken": {
+        "abi": "@config/polygon/abis/AToken.json"
+      },
+      "aDai": {
+        "address": "0x27F8D03b3a2196956ED754baDc28D73be8830A6e",
+        "abi": "@config/polygon/abis/aToken.json"
+      },
+      "aUsdc": {
+        "address": "0x1a13F4Ca1d028320A707D99520AbFefca3998b7F",
+        "abi": "@config/polygon/abis/aToken.json"
+      },
+      "aUsdt": {
+        "address": "0x60D55F02A771d515e077c9C2403a1ef324885CeC",
+        "abi": "@config/polygon/abis/aToken.json"
+      },
+      "aWeth": {
+        "address": "0x28424507fefb6f7f8E9D3860F56504E4e5f5f390",
+        "abi": "@config/polygon/abis/aToken.json"
+      },
+      "aWbtc": {
+        "address": "0x5c2ed810328349100A66B82b78a1791B101C9D61",
+        "abi": "@config/polygon/abis/aToken.json"
+      },
+      "aWmatic": {
+        "address": "0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270",
+        "abi": "@config/polygon/abis/aToken.json"
       }
     },
     "cream": {
       "comptroller": {
         "address": "0x20CA53E2395FA571798623F1cFBD11Fe2C114c24",
-        "abi": "@config/abis/Comptroller.json"
+        "abi": "@config/polygon/abis/Comptroller.json"
       },
       "oracle": {
-        "abi": "@config/abis/UniswapAnchoredView.json"
+        "abi": "@config/polygon/abis/UniswapAnchoredView.json"
+      }
+    },
+    "aave": {
+      "lendingPoolAddressesProvider": {
+        "address": "0xd05e3E715d945B59290df0ae8eF85c1BdB684744",
+        "abi": "@config/polygon/abis/LendingPoolAddressesProvider.json"
+      },
+      "lendingPool": {
+        "address": "0x8dff5e27ea6b7ac08ebfdf9eb090f32ee9a30fcf",
+        "abi": "@config/polygon/abis/LendingPool.json"
       }
     }
   }

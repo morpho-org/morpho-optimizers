@@ -4,6 +4,7 @@ const { ethers } = require('hardhat');
 const { expect } = require('chai');
 const hre = require('hardhat');
 const config = require('@config/polygon/config.json').polygon;
+const { removeDigitsBigNumber, bigNumberMin, to6Decimals, getTokens } = require('./utils/common-helpers');
 const {
   SCALE,
   underlyingToCToken,
@@ -12,12 +13,8 @@ const {
   mUnitToUnderlying,
   underlyingToCdUnit,
   cDUnitToUnderlying,
-  removeDigitsBigNumber,
-  bigNumberMin,
-  to6Decimals,
   computeNewMorphoExchangeRate,
-  getTokens,
-} = require('./utils/helpers');
+} = require('./utils/comp-like-helpers');
 
 describe('MorphoPositionsManagerForCream Contract', () => {
   let cUsdcToken;
