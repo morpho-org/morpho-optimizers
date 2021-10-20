@@ -3,7 +3,6 @@ pragma solidity 0.8.7;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
-import "prb-math/contracts/PRBMathUD60x18.sol";
 
 import "./libraries/aave/WadRayMath.sol";
 import "./interfaces/aave/ILendingPoolAddressesProvider.sol";
@@ -17,7 +16,7 @@ import "./interfaces/IMarketsManagerForAave.sol";
  *  @dev Smart contract managing the markets used by MorphoPositionsManagerForX, an other contract interacting with X: Compound or a fork of Compound.
  */
 contract MorphoMarketsManagerForAave is Ownable {
-    using PRBMathUD60x18 for uint256;
+    using WadRayMath for uint256;
     using Math for uint256;
 
     /* Storage */
@@ -81,7 +80,7 @@ contract MorphoMarketsManagerForAave is Ownable {
     /** @dev Sets the `positionsManagerForAave` to interact with Compound.
      *  @param _positionsManagerForAave The address of compound module.
      */
-    function setPositionsManagerForCompLike(address _positionsManagerForAave) external onlyOwner {
+    function setPositionsManagerForAave(address _positionsManagerForAave) external onlyOwner {
         require(!isPositionsManagerSet, "positions-manager-already-set");
         isPositionsManagerSet = true;
         positionsManagerForAave = IPositionsManagerForAave(_positionsManagerForAave);
@@ -105,7 +104,7 @@ contract MorphoMarketsManagerForAave is Ownable {
         require(!isCreated[_marketAddress], "createMarket:mkt-already-created");
         positionsManagerForAave.setThreshold(_marketAddress, 1e18);
         lastUpdateBlockNumber[_marketAddress] = block.number;
-        mUnitExchangeRate[_marketAddress] = 1e18;
+        mUnitExchangeRate[_marketAddress] = WadRayMath.ray();
         isCreated[_marketAddress] = true;
         updateBPY(_marketAddress);
         emit MarketCreated(_marketAddress);
@@ -133,7 +132,7 @@ contract MorphoMarketsManagerForAave is Ownable {
         p2pBPY[_marketAddress] = Math.average(
             reserveData.currentLiquidityRate,
             reserveData.currentVariableBorrowRate
-        );
+        ); // In ray
 
         emit BPYUpdated(_marketAddress, p2pBPY[_marketAddress]);
 
@@ -160,11 +159,9 @@ contract MorphoMarketsManagerForAave is Ownable {
             // Update lastUpdateBlockNumber
             lastUpdateBlockNumber[_marketAddress] = currentBlock;
 
-            uint256 newMUnitExchangeRate = mUnitExchangeRate[_marketAddress].mul(
-                (1e18 + p2pBPY[_marketAddress]).pow(
-                    PRBMathUD60x18.fromUint(numberOfBlocksSinceLastUpdate)
-                )
-            );
+            uint256 newMUnitExchangeRate = mUnitExchangeRate[_marketAddress].rayMul(
+                (WadRayMath.ray() + p2pBPY[_marketAddress]).rayPow(numberOfBlocksSinceLastUpdate)
+            ); // In ray
 
             // Update currentExchangeRate
             mUnitExchangeRate[_marketAddress] = newMUnitExchangeRate;

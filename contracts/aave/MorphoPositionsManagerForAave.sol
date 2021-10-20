@@ -3,8 +3,8 @@ pragma solidity 0.8.7;
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
-import "prb-math/contracts/PRBMathUD60x18.sol";
 
 import "../libraries/RedBlackBinaryTree.sol";
 import "./libraries/aave/WadRayMath.sol";
@@ -22,8 +22,8 @@ import "./interfaces/IMarketsManagerForAave.sol";
  */
 contract MorphoPositionsManagerForAave is ReentrancyGuard {
     using RedBlackBinaryTree for RedBlackBinaryTree.Tree;
-    using PRBMathUD60x18 for uint256;
     using WadRayMath for uint256;
+    using SafeMath for uint256;
     using SafeERC20 for IERC20;
     using Math for uint256;
 
@@ -41,19 +41,19 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
 
     // Struct to avoid stack too deep error
     struct BalanceStateVars {
-        uint256 debtValue; // The total debt value (in USD).
+        uint256 debtValue; // The total debt value (in ETH).
         uint256 maxDebtValue; // The maximum debt value available thanks to the collateral (in USD).
-        uint256 redeemedValue; // The redeemed value if any (in USD).
-        uint256 collateralValue; // The collateral value (in USD).
+        uint256 redeemedValue; // The redeemed value if any (in ETH).
+        uint256 collateralValue; // The collateral value (in ETH).
         uint256 debtToAdd; // The debt to add at the current iteration.
         uint256 collateralToAdd; // The collateral to add at the current iteration.
         uint256 mExchangeRate; // The mUnit exchange rate of the `aTokenEntered`.
         uint256 underlyingPrice; // The price of the underlying linked to the `aTokenEntered`.
-        uint256 normalizedVariableDebt;
-        uint256 normalizedIncome;
+        uint256 normalizedVariableDebt; // Normalized variable debt of the market.
+        uint256 normalizedIncome; // Noramlized income of the market.
         address aTokenEntered; // The aToken token entered by the user.
         address underlyingAddress; // The address of the underlying.
-        IPriceOracleGetter oracle;
+        IPriceOracleGetter oracle; // Aave oracle.
     }
 
     // Struct to avoid stack too deep error
@@ -62,12 +62,14 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
         uint256 amountToSeize; // The amount of collateral underlying the liquidator can seize.
         uint256 borrowedPrice; // The price of the asset borrowed (in ETH).
         uint256 collateralPrice; // The price of the collateral asset (in ETH).
-        uint256 collateralOnAave; // The amount of underlying the liquidatee has on Aave.
+        uint256 normalizedIncome;
+        uint256 totalCollateral;
+        IPriceOracleGetter oracle;
     }
 
     /* Storage */
 
-    uint256 public constant LIQUIDATION_CLOSE_FACTOR_PERCENT = 0.5e18;
+    uint256 public constant LIQUIDATION_CLOSE_FACTOR_PERCENT = 5000;
 
     mapping(address => RedBlackBinaryTree.Tree) private suppliersInP2P; // Suppliers in peer-to-peer.
     mapping(address => RedBlackBinaryTree.Tree) private suppliersOnAave; // Suppliers on Aave.
@@ -237,7 +239,10 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
             uint256 remainingToSupplyToAave = _matchBorrowers(_aTokenAddress, _amount); // In underlying
             uint256 matched = _amount - remainingToSupplyToAave;
             if (matched > 0) {
-                supplyBalanceInOf[_aTokenAddress][msg.sender].inP2P += matched.div(mExchangeRate); // In mUnit
+                supplyBalanceInOf[_aTokenAddress][msg.sender].inP2P += matched
+                    .wadToRay()
+                    .rayDiv(mExchangeRate)
+                    .rayToWad(); // In mUnit
             }
             /* If there aren't enough borrowers waiting on Aave to match all the tokens supplied, the rest is supplied to Aave */
             if (remainingToSupplyToAave > 0) {
@@ -284,7 +289,10 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
             uint256 matched = _amount - remainingToBorrowOnAave;
 
             if (matched > 0) {
-                borrowBalanceInOf[_aTokenAddress][msg.sender].inP2P += matched.div(mExchangeRate); // In mUnit
+                borrowBalanceInOf[_aTokenAddress][msg.sender].inP2P += matched
+                    .wadToRay()
+                    .rayDiv(mExchangeRate)
+                    .rayToWad(); // In mUnit
             }
 
             /* If there aren't enough suppliers waiting on Aave to match all the tokens borrowed, the rest is borrowed from Aave */
@@ -366,32 +374,46 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
                     )
                 )
                 .wadToRay() +
-            borrowBalanceInOf[_aTokenBorrowedAddress][_borrower].inP2P.mul(
-                marketsManagerForAave.mUnitExchangeRate(_aTokenBorrowedAddress)
-            );
+            borrowBalanceInOf[_aTokenBorrowedAddress][_borrower]
+                .inP2P
+                .wadToRay()
+                .rayMul(marketsManagerForAave.mUnitExchangeRate(_aTokenBorrowedAddress))
+                .rayToWad();
         require(
-            _amount <= vars.borrowBalance.mul(LIQUIDATION_CLOSE_FACTOR_PERCENT),
+            _amount <= vars.borrowBalance.mul(LIQUIDATION_CLOSE_FACTOR_PERCENT).div(10000),
             "liquidate:amount>allowed"
         );
 
-        IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
+        vars.oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
         _repay(_aTokenBorrowedAddress, _borrower, _amount);
 
         // Calculate the amount of token to seize from collateral
-        vars.collateralPrice = oracle.getAssetPrice(_aTokenCollateralAddress); // In ETH
-        vars.borrowedPrice = oracle.getAssetPrice(_aTokenBorrowedAddress); // In ETH
+        vars.collateralPrice = vars.oracle.getAssetPrice(_aTokenCollateralAddress); // In ETH
+        vars.borrowedPrice = vars.oracle.getAssetPrice(_aTokenBorrowedAddress); // In ETH
         (, , uint256 liquidationThreshold, , , , , , , ) = dataProvider.getReserveConfigurationData(
             IAToken(_aTokenCollateralAddress).UNDERLYING_ASSET_ADDRESS()
         );
-        vars.amountToSeize =
-            (_amount.mul(vars.collateralPrice).div(vars.borrowedPrice) * liquidationThreshold) /
-            100;
-        vars.collateralOnAave = supplyBalanceInOf[_aTokenCollateralAddress][_borrower].onAave;
-        uint256 totalCollateral = vars.collateralOnAave +
-            supplyBalanceInOf[_aTokenCollateralAddress][_borrower].inP2P.mul(
-                marketsManagerForAave.updateMUnitExchangeRate(_aTokenCollateralAddress)
-            );
-        require(vars.amountToSeize <= totalCollateral, "liquidate:to-seize>collateral");
+        vars.amountToSeize = _amount
+            .mul(vars.collateralPrice)
+            .div(vars.borrowedPrice)
+            .mul(liquidationThreshold)
+            .div(10000);
+        IAToken aTokenCollateral = IAToken(_aTokenCollateralAddress);
+        vars.normalizedIncome = lendingPool.getReserveNormalizedIncome(
+            aTokenCollateral.UNDERLYING_ASSET_ADDRESS()
+        );
+        vars.totalCollateral =
+            supplyBalanceInOf[_aTokenCollateralAddress][_borrower]
+                .onAave
+                .wadToRay()
+                .rayMul(vars.normalizedIncome)
+                .rayToWad() +
+            supplyBalanceInOf[_aTokenCollateralAddress][_borrower]
+                .inP2P
+                .wadToRay()
+                .rayMul(marketsManagerForAave.updateMUnitExchangeRate(_aTokenCollateralAddress))
+                .rayToWad();
+        require(vars.amountToSeize <= vars.totalCollateral, "liquidate:to-seize>collateral");
 
         _withdraw(_aTokenCollateralAddress, vars.amountToSeize, _borrower, msg.sender);
     }
@@ -451,16 +473,18 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
                     _matchSuppliers(_aTokenAddress, remainingToWithdraw) == 0,
                     "_withdraw:_matchSuppliers!=0"
                 );
-                supplyBalanceInOf[_aTokenAddress][_holder].inP2P -= remainingToWithdraw.div(
-                    mExchangeRate
-                ); // In mUnit
+                supplyBalanceInOf[_aTokenAddress][_holder].inP2P -= remainingToWithdraw
+                    .wadToRay()
+                    .rayDiv(mExchangeRate)
+                    .rayToWad(); // In mUnit
             }
             /* CASE 2: Other suppliers don't have enough tokens on Aave. Such scenario is called the Hard-Withdraw */
             else {
                 uint256 remaining = _matchSuppliers(_aTokenAddress, aTokenContractBalance);
-                supplyBalanceInOf[_aTokenAddress][_holder].inP2P -= remainingToWithdraw.div(
-                    mExchangeRate
-                ); // In mUnit
+                supplyBalanceInOf[_aTokenAddress][_holder].inP2P -= remainingToWithdraw
+                    .wadToRay()
+                    .rayDiv(mExchangeRate)
+                    .rayToWad(); // In mUnit
                 remainingToWithdraw -= remaining;
                 require(
                     _unmatchBorrowers(_aTokenAddress, remainingToWithdraw) == 0, // We break some P2P credit lines the user had with borrowers and fallback on Aave.
@@ -532,16 +556,18 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
             /* CASE 1: Other borrowers are borrowing enough on Aave to compensate user's position */
             if (remainingToRepay <= contractBorrowBalanceOnAave) {
                 _matchBorrowers(_aTokenAddress, remainingToRepay);
-                borrowBalanceInOf[_aTokenAddress][_borrower].inP2P -= remainingToRepay.div(
-                    mExchangeRate
-                );
+                borrowBalanceInOf[_aTokenAddress][_borrower].inP2P -= remainingToRepay
+                    .wadToRay()
+                    .rayDiv(mExchangeRate)
+                    .rayToWad();
             }
             /* CASE 2: Other borrowers aren't borrowing enough on Aave to compensate user's position */
             else {
                 _matchBorrowers(_aTokenAddress, contractBorrowBalanceOnAave);
-                borrowBalanceInOf[_aTokenAddress][_borrower].inP2P -= remainingToRepay.div(
-                    mExchangeRate
-                ); // In mUnit
+                borrowBalanceInOf[_aTokenAddress][_borrower].inP2P -= remainingToRepay
+                    .wadToRay()
+                    .rayDiv(mExchangeRate)
+                    .rayToWad(); // In mUnit
                 remainingToRepay -= contractBorrowBalanceOnAave;
                 require(
                     _unmatchSuppliers(_aTokenAddress, remainingToRepay) == 0, // We break some P2P credit lines the user had with suppliers and fallback on Aave.
@@ -617,7 +643,10 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
                             .rayToWad();
                     }
                     remainingToMatch -= toMatch;
-                    supplyBalanceInOf[_aTokenAddress][account].inP2P += toMatch.div(mExchangeRate); // In mUnit
+                    supplyBalanceInOf[_aTokenAddress][account].inP2P += toMatch
+                        .wadToRay()
+                        .rayDiv(mExchangeRate)
+                        .rayToWad(); // In mUnit
                     _updateSupplierList(_aTokenAddress, account);
                     emit SupplierMatched(account, _aTokenAddress, toMatch);
                 }
@@ -657,7 +686,10 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
                     .wadToRay()
                     .rayDiv(normalizedIncome)
                     .rayToWad();
-                supplyBalanceInOf[_aTokenAddress][account].inP2P -= toUnmatch.div(mExchangeRate); // In mUnit
+                supplyBalanceInOf[_aTokenAddress][account].inP2P -= toUnmatch
+                    .wadToRay()
+                    .rayDiv(mExchangeRate)
+                    .rayToWad(); // In mUnit
                 _updateSupplierList(_aTokenAddress, account);
                 emit SupplierUnmatched(account, _aTokenAddress, toUnmatch);
             }
@@ -706,7 +738,10 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
                         .rayToWad();
                 }
                 remainingToMatch -= toMatch;
-                borrowBalanceInOf[_aTokenAddress][account].inP2P += toMatch.div(mExchangeRate);
+                borrowBalanceInOf[_aTokenAddress][account].inP2P += toMatch
+                    .wadToRay()
+                    .rayDiv(mExchangeRate)
+                    .rayToWad();
                 _updateBorrowerList(_aTokenAddress, account);
                 emit BorrowerMatched(account, _aTokenAddress, toMatch);
             }
@@ -748,7 +783,10 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
                     .wadToRay()
                     .rayDiv(normalizedVariableDebt)
                     .rayToWad();
-                borrowBalanceInOf[_aTokenAddress][account].inP2P -= toUnmatch.div(mExchangeRate);
+                borrowBalanceInOf[_aTokenAddress][account].inP2P -= toUnmatch
+                    .wadToRay()
+                    .rayDiv(mExchangeRate)
+                    .rayToWad();
                 _updateBorrowerList(_aTokenAddress, account);
                 emit BorrowerUnmatched(account, _aTokenAddress, toUnmatch);
             }
@@ -772,14 +810,15 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
 
             if (inP2P > 0) {
                 uint256 mExchangeRate = marketsManagerForAave.mUnitExchangeRate(aTokenEntered);
-                uint256 inP2PInUnderlying = inP2P.mul(mExchangeRate);
+                uint256 inP2PInUnderlying = inP2P.wadToRay().rayMul(mExchangeRate).rayToWad();
                 supplyBalanceInOf[aTokenEntered][_account].onAave += inP2PInUnderlying
                     .wadToRay()
                     .rayDiv(normalizedIncome)
                     .rayToWad();
-                supplyBalanceInOf[aTokenEntered][_account].inP2P -= inP2PInUnderlying.div(
-                    mExchangeRate
-                ); // In mUnit
+                supplyBalanceInOf[aTokenEntered][_account].inP2P -= inP2PInUnderlying
+                    .wadToRay()
+                    .rayDiv(mExchangeRate)
+                    .rayToWad(); // In mUnit
                 _unmatchBorrowers(aTokenEntered, inP2PInUnderlying);
                 _updateSupplierList(aTokenEntered, _account);
                 // Supply to Aave
