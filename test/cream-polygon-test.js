@@ -176,7 +176,6 @@ describe('MorphoPositionsManagerForCream Contract', () => {
 
       await expect(morphoMarketsManagerForCompLike.connect(owner).setComptroller(comptroller.address)).not.to.be.reverted;
     });
-
   });
 
   describe('Suppliers on Compound (no borrowers)', () => {
@@ -415,7 +414,7 @@ describe('MorphoPositionsManagerForCream Contract', () => {
 
   describe('P2P interactions between supplier and borrowers', () => {
     it('Supplier should withdraw her liquidity while not enough cToken in peer-to-peer contract', async () => {
-      // Supplier supplys tokens
+      // Supplier supplies tokens
       const supplyAmount = utils.parseUnits('10');
       const daiBalanceBefore1 = await daiToken.balanceOf(supplier1.getAddress());
       const expectedDaiBalanceAfter1 = daiBalanceBefore1.sub(supplyAmount);
@@ -496,7 +495,7 @@ describe('MorphoPositionsManagerForCream Contract', () => {
     });
 
     it('Debt should increase over time', async () => {
-      // Supplier supplys tokens
+      // Supplier supplies tokens
       const supplyAmount = utils.parseUnits('10');
       const daiBalanceBefore1 = await daiToken.balanceOf(supplier1.getAddress());
       const expectedDaiBalanceAfter1 = daiBalanceBefore1.sub(supplyAmount);
@@ -520,24 +519,31 @@ describe('MorphoPositionsManagerForCream Contract', () => {
       await morphoPositionsManagerForCream.connect(borrower1).borrow(config.tokens.cDai.address, supplyAmount);
       const mExchangeRate1 = await morphoMarketsManagerForCompLike.mUnitExchangeRate(config.tokens.cDai.address);
       const p2pBPY = await morphoMarketsManagerForCompLike.p2pBPY(config.tokens.cDai.address);
-      
+
       const borrowerBalanceInP2P = (await morphoPositionsManagerForCream.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).inP2P;
 
-      // Mine block 1000 blocs
+      // Mine block 1000 blocks
       for (let i = 0; i < 1000; i++) {
         await hre.network.provider.send('evm_mine', []);
       }
-      
+
+      // Get the updated Morpho exchange rate
       await morphoMarketsManagerForCompLike.updateMUnitExchangeRate(config.tokens.cDai.address);
       const mExchangeRate2 = await morphoMarketsManagerForCompLike.mUnitExchangeRate(config.tokens.cDai.address);
 
-      const expectedToRepay = (supplyAmount*((1 + p2pBPY/1e18)**1000));
-      // console.log("expectedToRepay", expectedToRepay);
-      const toRepay = mUnitToUnderlying(borrowerBalanceInP2P, mExchangeRate2);
-      // console.log("torepay", await toRepay.toString());
-      expect((await toRepay.toString()).to.equal(expectedToRepay));
+      // Compute what's expected to be repaid
+      const expectedNewMUnitExchangeRate = mExchangeRate1 * (1 + p2pBPY / 1e18) ** 1000;
+      const expectedToRepay = (expectedNewMUnitExchangeRate * borrowerBalanceInP2P) / SCALE;
 
-      // care there is an issue with the approximation sometimes.
+      // Compare both values
+      const toRepay = removeDigitsBigNumber(12, mUnitToUnderlying(borrowerBalanceInP2P, mExchangeRate2));
+      expect(toRepay).to.equal(removeDigitsBigNumber(12, BigNumber.from(expectedToRepay.toString())));
+
+      // Check that after repaying, the borrowing balance decreases
+      await daiToken.connect(borrower1).approve(morphoPositionsManagerForCream.address, BigNumber.from(expectedToRepay.toString()));
+      await morphoPositionsManagerForCream.connect(borrower1).repay(config.tokens.cDai.address, BigNumber.from(expectedToRepay.toString()));
+      const borrowerBalanceAfterRepay = (await morphoPositionsManagerForCream.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).inP2P;
+      expect(removeDigitsBigNumber(12, mUnitToUnderlying(borrowerBalanceAfterRepay, mExchangeRate2))).to.equal(0);
     });
 
     it('Supplier should withdraw her liquidity while enough cDaiToken in peer-to-peer contract', async () => {
@@ -654,7 +660,7 @@ describe('MorphoPositionsManagerForCream Contract', () => {
     });
 
     it('Borrower in peer-to-peer only, should be able to repay all borrow amount', async () => {
-      // Supplier supplys tokens
+      // Supplier supplies tokens
       const supplyAmount = utils.parseUnits('10');
       await daiToken.connect(supplier1).approve(morphoPositionsManagerForCream.address, supplyAmount);
       await morphoPositionsManagerForCream.connect(supplier1).supply(config.tokens.cDai.address, supplyAmount);
@@ -687,10 +693,25 @@ describe('MorphoPositionsManagerForCream Contract', () => {
       // Check borrower1 balances
       const daiBalanceAfter = await daiToken.balanceOf(borrower1.getAddress());
       expect(daiBalanceAfter).to.equal(expectedDaiBalanceAfter);
-      // TODO: implement interest for borrowers to complete this test as borrower's debt is not increasing here
+
+      // Verify all of the borrower balance is in P2P
       expect((await morphoPositionsManagerForCream.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onCream).to.equal(0);
-      // Commented here due to the pow function issue
-      // expect(removeDigitsBigNumber(1, (await morphoPositionsManagerForCream.borrowBalanceInOf(borrower1.getAddress())).inP2P)).to.equal(0);
+
+      // Mine block 1000 blocks
+      for (let i = 0; i < 1000; i++) {
+        await hre.network.provider.send('evm_mine', []);
+      }
+
+      // Get the updated Morpho exchange rate
+      await morphoMarketsManagerForCompLike.updateMUnitExchangeRate(config.tokens.cDai.address);
+      const mExchangeRate2 = await morphoMarketsManagerForCompLike.mUnitExchangeRate(config.tokens.cDai.address);
+
+      // Compute what's expected to be repaid
+      const expectedToRepay = toBorrow * (1 + p2pBPY / 1e18) ** 1000;
+      const expectedToRepayBigNumber = removeDigitsBigNumber(12, BigNumber.from(expectedToRepay.toString()));
+
+      // Compare both values
+      expect(removeDigitsBigNumber(12, mUnitToUnderlying(borrowerBalanceInP2P, mExchangeRate2))).to.equal(expectedToRepayBigNumber);
 
       // Check Morpho balances
       expect(await cDaiToken.balanceOf(morphoPositionsManagerForCream.address)).to.equal(expectedMorphoCTokenBalance);
@@ -698,7 +719,7 @@ describe('MorphoPositionsManagerForCream Contract', () => {
     });
 
     it('Borrower in peer-to-peer only, should be able to repay all borrow amount, CASE 2.1', async () => {
-      // Supplier supplys tokens
+      // Supplier supplies tokens
       const supplyAmount = utils.parseUnits('10');
       await daiToken.connect(supplier1).approve(morphoPositionsManagerForCream.address, supplyAmount);
       await morphoPositionsManagerForCream.connect(supplier1).supply(config.tokens.cDai.address, supplyAmount);
@@ -718,30 +739,66 @@ describe('MorphoPositionsManagerForCream Contract', () => {
       await morphoPositionsManagerForCream.connect(borrower2).supply(config.tokens.cUsdc.address, collateralAmount);
       await morphoPositionsManagerForCream.connect(borrower2).borrow(config.tokens.cDai.address, toBorrow2);
 
+      const mExchangeRate1 = await morphoMarketsManagerForCompLike.mUnitExchangeRate(config.tokens.cDai.address);
       const p2pBPY = await morphoMarketsManagerForCompLike.p2pBPY(config.tokens.cDai.address);
-      await morphoMarketsManagerForCompLike.updateMUnitExchangeRate(config.tokens.cDai.address);
-      const mUnitExchangeRate = await morphoMarketsManagerForCompLike.mUnitExchangeRate(config.tokens.cDai.address);
-      // WARNING: Should be one block but the pow function used in contract is not accurate
+
       const toRepay = toBorrow;
       const expectedDaiBalanceAfter = daiBalanceBefore.add(toBorrow).sub(toRepay);
-      const previousMorphoCTokenBalance = await cDaiToken.balanceOf(morphoPositionsManagerForCream.address);
 
       // Repay
       await daiToken.connect(borrower1).approve(morphoPositionsManagerForCream.address, toRepay);
       await morphoPositionsManagerForCream.connect(borrower1).repay(config.tokens.cDai.address, toRepay);
-      const cExchangeRate = await cDaiToken.callStatic.exchangeRateStored();
-      const expectedMorphoCTokenBalance = previousMorphoCTokenBalance.add(underlyingToCToken(toRepay, cExchangeRate));
 
       // Check borrower1 balances
       const daiBalanceAfter = await daiToken.balanceOf(borrower1.getAddress());
       expect(daiBalanceAfter).to.equal(expectedDaiBalanceAfter);
-      // TODO: implement interest for borrowers to complete this test as borrower's debt is not increasing here
+
+      // Verify all of the borrower balance is in P2P
       expect((await morphoPositionsManagerForCream.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onCream).to.equal(0);
-      //expect(removeDigitsBigNumber(1, (await morphoPositionsManagerForCream.borrowBalanceInOf(borrower1.getAddress())).inP2P)).to.equal(0);
+      const borrower2BalanceInP2P = (await morphoPositionsManagerForCream.borrowBalanceInOf(config.tokens.cDai.address, borrower2.getAddress())).inP2P;
+
+      // Mine block 1000 blocks
+      for (let i = 0; i < 1000; i++) {
+        await hre.network.provider.send('evm_mine', []);
+      }
+
+      // Get the updated Morpho exchange rate
+      await morphoMarketsManagerForCompLike.updateMUnitExchangeRate(config.tokens.cDai.address);
+      const mExchangeRate2 = await morphoMarketsManagerForCompLike.mUnitExchangeRate(config.tokens.cDai.address);
+
+      // Compute expected MUniteExchangerate
+      const expectedNewMUnitExchangeRate = mExchangeRate1 * (1 + p2pBPY / 1e18) ** 1000;
+
+      // For supplier
+      // Compute what's expected to be withdrawn
+      const supplierBalanceInP2P = (await morphoPositionsManagerForCream.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).inP2P;
+      const expectedToWithdraw = (expectedNewMUnitExchangeRate * supplierBalanceInP2P) / SCALE;
+      // Compare both values
+      const toWithdraw = removeDigitsBigNumber(12, mUnitToUnderlying(supplierBalanceInP2P, mExchangeRate2));
+      expect(toWithdraw).to.equal(removeDigitsBigNumber(12, BigNumber.from(expectedToWithdraw.toString())));
+
+      // Check that after withdrawing, the supplying balance decreases
+      await daiToken.connect(supplier1).approve(morphoPositionsManagerForCream.address, toWithdraw);
+      await morphoPositionsManagerForCream.connect(supplier1).withdraw(config.tokens.cDai.address, toWithdraw);
+      const supplierBalanceAfterWithdraw = (await morphoPositionsManagerForCream.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).inP2P;
+      expect(removeDigitsBigNumber(12, mUnitToUnderlying(supplierBalanceAfterWithdraw, mExchangeRate2))).to.equal(0);
+
+      // For Borrower2
+      // Compute what's expected to be repaid
+      const expectedToRepay = (expectedNewMUnitExchangeRate * borrower2BalanceInP2P) / SCALE;
+      // Compare both values
+      const toRepayBorrower2 = removeDigitsBigNumber(12, mUnitToUnderlying(borrower2BalanceInP2P, mExchangeRate2));
+      expect(toRepayBorrower2).to.equal(removeDigitsBigNumber(12, BigNumber.from(expectedToRepay.toString())));
+
+      // Check that after repaying, the borrowing balance decreases
+      await daiToken.connect(borrower2).approve(morphoPositionsManagerForCream.address, mUnitToUnderlying(borrower2BalanceInP2P, mExchangeRate2));
+      await morphoPositionsManagerForCream.connect(borrower2).repay(config.tokens.cDai.address, mUnitToUnderlying(borrower2BalanceInP2P, mExchangeRate2));
+      const borrowerBalanceAfterRepay = (await morphoPositionsManagerForCream.borrowBalanceInOf(config.tokens.cDai.address, borrower2.getAddress())).inP2P;
+      expect(removeDigitsBigNumber(12, mUnitToUnderlying(borrowerBalanceAfterRepay, mExchangeRate2))).to.equal(0);
     });
 
     it('Borrower in peer-to-peer and on Compound, should be able to repay all borrow amount', async () => {
-      // Supplier supplys tokens
+      // Supplier supplies tokens
       const supplyAmount = utils.parseUnits('10');
       const amountToApprove = utils.parseUnits('100000000');
       await daiToken.connect(supplier1).approve(morphoPositionsManagerForCream.address, supplyAmount);
@@ -802,12 +859,12 @@ describe('MorphoPositionsManagerForCream Contract', () => {
     });
 
     it('Should disconnect supplier from Morpho when borrow an asset that nobody has on morphoMarketsManagerForCompLike and the supply balance is partly used', async () => {
-      // supplier1 supplys DAI
+      // supplier1 supplies DAI
       const supplyAmount = utils.parseUnits('100');
       await daiToken.connect(supplier1).approve(morphoPositionsManagerForCream.address, supplyAmount);
       await morphoPositionsManagerForCream.connect(supplier1).supply(config.tokens.cDai.address, supplyAmount);
 
-      // borrower1 supplys USDC as collateral
+      // borrower1 supplies USDC as collateral
       const collateralAmount = to6Decimals(utils.parseUnits('100'));
       await usdcToken.connect(borrower1).approve(morphoPositionsManagerForCream.address, collateralAmount);
       await morphoPositionsManagerForCream.connect(borrower1).supply(config.tokens.cUsdc.address, collateralAmount);
@@ -981,7 +1038,7 @@ describe('MorphoPositionsManagerForCream Contract', () => {
       await daiToken.connect(supplier1).approve(morphoPositionsManagerForCream.address, utils.parseUnits('1000'));
       await morphoPositionsManagerForCream.connect(supplier1).supply(config.tokens.cDai.address, utils.parseUnits('1000'));
 
-      // borrower1 supplys USDC as supply (collateral)
+      // borrower1 supplies USDC as supply (collateral)
       const amount = to6Decimals(utils.parseUnits('100'));
       await usdcToken.connect(borrower1).approve(morphoPositionsManagerForCream.address, amount);
       await morphoPositionsManagerForCream.connect(borrower1).supply(config.tokens.cUsdc.address, amount);
@@ -1065,12 +1122,12 @@ describe('MorphoPositionsManagerForCream Contract', () => {
   });
 
   xdescribe('Test attacks', () => {
-    it('Should not be DDOS by a supplier or a group of suppliers', async () => { });
+    it('Should not be DDOS by a supplier or a group of suppliers', async () => {});
 
-    it('Should not be DDOS by a borrower or a group of borrowers', async () => { });
+    it('Should not be DDOS by a borrower or a group of borrowers', async () => {});
 
-    it('Should not be subject to flash loan attacks', async () => { });
+    it('Should not be subject to flash loan attacks', async () => {});
 
-    it('Should not be subjected to Oracle Manipulation attacks', async () => { });
+    it('Should not be subjected to Oracle Manipulation attacks', async () => {});
   });
 });
