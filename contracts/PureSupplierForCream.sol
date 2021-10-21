@@ -15,23 +15,11 @@ contract PureSupplierForCream is ReentrancyGuard {
     using SafeERC20 for IERC20;
     using Math for uint256;
 
-    mapping(address => PoolInfo) public pools; // For a given market, the corresponding pool.
-    mapping(address => mapping(address => Supplier)) public suppliers; // For a given market, the supply balance of user.
+    mapping(address => uint256) public poolSupplies; // For a given market, the corresponding supply for the pool.
+    mapping(address => mapping(address => uint256)) public shares; // For a given market, the shares balance of user.
 
     IMarketsManagerForCompLike public marketsManager;
     IPositionsManagerForCompLike public positionsManager;
-
-    // Info of each pool.
-    struct PoolInfo {
-        uint256 amount;
-        uint256 lastBlock;
-        uint256 score;
-    }
-
-    struct Supplier {
-        uint256 amount;
-        uint256 depositedBlock;
-    }
 
     /** @dev Emitted when a supply happens.
      *  @param _account The address of the supplier.
@@ -47,22 +35,9 @@ contract PureSupplierForCream is ReentrancyGuard {
      */
     event Withdrawn(address indexed _account, address indexed _crERC20Address, uint256 _amount);
 
-    /** @dev Prevents a user to access a market not created yet.
-     *  @param _crERC20Address The address of the market.
-     */
-    modifier isMarketCreated(address _crERC20Address) {
-        require(marketsManager.isCreated(_crERC20Address), "mkt-not-created");
-        _;
-    }
-
     constructor(address _morphoPositionsManagerForCream) {
         positionsManager = IPositionsManagerForCompLike(_morphoPositionsManagerForCream);
         marketsManager = IMarketsManagerForCompLike(positionsManager.marketsManagerForCompLike());
-    }
-
-    function updatePoolScore(PoolInfo storage _pool) internal {
-        _pool.score = _pool.score + _pool.amount * (block.number - _pool.lastBlock);
-        _pool.lastBlock = block.number;
     }
 
     // User must approve _amount for contract
@@ -73,62 +48,73 @@ contract PureSupplierForCream is ReentrancyGuard {
         IERC20 erc20Token = IERC20(crERC20Token.underlying());
 
         erc20Token.safeTransferFrom(msg.sender, address(this), _amount);
-        erc20Token.safeApprove(address(positionsManager), _amount); // TODO global infinite approve ?
+        erc20Token.safeApprove(address(positionsManager), _amount);
+
+        _setSharesForAccount(_crERC20Address, _amount);
         positionsManager.supply(_crERC20Address, _amount);
-
-        PoolInfo storage pool = pools[_crERC20Address];
-        updatePoolScore(pool);
-        pool.amount += _amount;
-
-        // TODO update for user who have already supply
-        suppliers[_crERC20Address][msg.sender].amount = _amount;
-        suppliers[_crERC20Address][msg.sender].depositedBlock = block.number;
 
         emit Supplied(msg.sender, _crERC20Address, _amount);
     }
 
-    function withdraw(address _crERC20Address, uint256 _amount) external nonReentrant {
-        require(_amount > 0, "withdraw:amount=0");
+    function withdraw(address _crERC20Address, uint256 _shares) external nonReentrant {
+        require(_shares > 0, "withdraw:amount=0");
+        require(_shares <= shares[_crERC20Address][msg.sender], "withdraw:shares");
 
-        Supplier storage supplier = suppliers[_crERC20Address][msg.sender];
-        require(_amount <= supplier.amount, "withdraw:toomuch");
+        uint256 value = _shareValue(_crERC20Address, _shares);
 
-        PoolInfo storage pool = pools[_crERC20Address];
-        updatePoolScore(pool);
+        positionsManager.withdraw(_crERC20Address, value);
 
-        uint256 supplierScore = _amount * (block.number - supplier.depositedBlock);
+        poolSupplies[_crERC20Address] -= _shares;
+        shares[_crERC20Address][msg.sender] -= _shares;
 
         ICErc20 crERC20Token = ICErc20(_crERC20Address);
-        uint256 totalValueOfPureLender = _calculatePoolTotal(crERC20Token);
-
-        uint256 toRepay = suppliers[_crERC20Address][msg.sender].amount +
-            (totalValueOfPureLender - pool.amount).mul(supplierScore.div(pool.score));
-
-        pool.amount -= _amount;
-        pool.score -= supplierScore;
-
-        supplier.amount -= _amount;
-        supplier.depositedBlock = block.number;
-
-        positionsManager.withdraw(_crERC20Address, toRepay);
-
         IERC20 erc20Token = IERC20(crERC20Token.underlying());
-        erc20Token.safeTransfer(msg.sender, toRepay);
+        erc20Token.safeTransfer(msg.sender, value);
 
-        emit Withdrawn(msg.sender, _crERC20Address, _amount);
+        emit Withdrawn(msg.sender, _crERC20Address, value);
     }
 
-    function _calculatePoolTotal(ICErc20 _crERC20Token) internal returns (uint256 total_) {
+    function _setSharesForAccount(address _crERC20Address, uint256 _amount) internal {
+        uint256 nbShares = 0;
+        uint256 totalSupply = poolSupplies[_crERC20Address];
+
+        if (totalSupply > 0) {
+            uint256 interestsEarned = _calculatePoolTotal(_crERC20Address) - totalSupply;
+            if (interestsEarned == 0) {
+                nbShares = _amount;
+            } else {
+                nbShares = (_amount * totalSupply) / (totalSupply - interestsEarned);
+            }
+        } else {
+            // No existing shares yet
+            nbShares = _amount;
+        }
+
+        poolSupplies[_crERC20Address] = totalSupply + nbShares;
+
+        shares[_crERC20Address][msg.sender] += nbShares;
+    }
+
+    function _shareValue(address _crERC20Address, uint256 _shares) internal returns (uint256) {
+        if (poolSupplies[_crERC20Address] == 0) {
+            return _shares;
+        }
+
+        return (_shares * _calculatePoolTotal(_crERC20Address)) / poolSupplies[_crERC20Address];
+    }
+
+    function _calculatePoolTotal(address _crERC20Address) internal returns (uint256 total_) {
         // Get balance of PureLender on positionsManager
         (uint256 inP2P, uint256 onCream) = positionsManager.supplyBalanceInOf(
-            address(_crERC20Token),
+            _crERC20Address,
             address(this)
         );
 
         // Get total + interests
-        uint256 collateralOnCreamInUnderlying = onCream.mul(_crERC20Token.exchangeRateStored());
+        ICErc20 crERC20Token = ICErc20(_crERC20Address);
+        uint256 supplyOnCreamInUnderlying = onCream.mul(crERC20Token.exchangeRateStored());
         total_ =
-            collateralOnCreamInUnderlying +
-            inP2P.mul(marketsManager.updateMUnitExchangeRate(address(_crERC20Token)));
+            supplyOnCreamInUnderlying +
+            inP2P.mul(marketsManager.updateMUnitExchangeRate(_crERC20Address));
     }
 }
