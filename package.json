@@ -9,6 +9,7 @@
   "scripts": {
     "test:comp:mainnet": "NETWORK=mainnet npx hardhat test test/comp-mainnet-test.js",
     "test:cream:polygon": "NETWORK=polygon-mainnet npx hardhat test test/cream-polygon-test.js",
+    "test:cream-pure-supplier:polygon": "NETWORK=polygon-mainnet npx hardhat test test/cream-pure-supplier-test.js",
     "coverage": "NETWORK=polygon-mainnet npx hardhat coverage --testfiles 'test/cream-polygon-test.js'",
     "lint": "yarn run lint:sol && yarn run lint:js",
     "lint:js": "eslint .",

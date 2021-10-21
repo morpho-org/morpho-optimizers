@@ -77,6 +77,13 @@ const getTokens = async (signerAddress, signerType, signers, tokenConfig, amount
   return token;
 };
 
+const mineBlocks = async (blockNumber) => {
+  while (blockNumber > 0) {
+    blockNumber--;
+    await hre.network.provider.send('evm_mine', []);
+  }
+};
+
 module.exports = {
   SCALE,
   underlyingToCToken,
@@ -92,4 +99,5 @@ module.exports = {
   computeNewBorrowIndex,
   to6Decimals,
   getTokens,
+  mineBlocks,
 };

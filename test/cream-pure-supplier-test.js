@@ -18,6 +18,7 @@ const {
   to6Decimals,
   computeNewMorphoExchangeRate,
   getTokens,
+  mineBlocks,
 } = require('./utils/helpers');
 
 
@@ -30,7 +31,7 @@ describe('MorphoPositionsManagerForCream Contract', () => {
   let usdtToken;
   let uniToken;
   let morphoPositionsManagerForCream;
-  let pureLenderForCream;
+  let pureSupplierForCream;
 
   let signers;
   let owner;
@@ -71,9 +72,9 @@ describe('MorphoPositionsManagerForCream Contract', () => {
     morphoPositionsManagerForCream = await MorphoPositionsManagerForCream.deploy(morphoMarketsManagerForCompLike.address, config.cream.comptroller.address);
     await morphoPositionsManagerForCream.deployed();
 
-    PureLenderForCream = await ethers.getContractFactory('PureLenderForCream');
-    pureLenderForCream = await PureLenderForCream.deploy(morphoPositionsManagerForCream.address);
-    await pureLenderForCream.deployed();
+    pureSupplierForCream = await ethers.getContractFactory('PureSupplierForCream');
+    pureSupplierForCream = await pureSupplierForCream.deploy(morphoPositionsManagerForCream.address);
+    await pureSupplierForCream.deployed();
 
     // Get contract dependencies
     const cTokenAbi = require(config.tokens.cToken.abi);
@@ -106,70 +107,99 @@ describe('MorphoPositionsManagerForCream Contract', () => {
 
   describe('Deployment', () => {
     it('Should deploy the contract with the right values', async () => {
-      expect(await pureLenderForCream.marketsManager()).to.equal(morphoMarketsManagerForCompLike.address);
-      expect(await pureLenderForCream.positionsManager()).to.equal(morphoPositionsManagerForCream.address);
+      expect(await pureSupplierForCream.marketsManager()).to.equal(morphoMarketsManagerForCompLike.address);
+      expect(await pureSupplierForCream.positionsManager()).to.equal(morphoPositionsManagerForCream.address);
     });
   });
 
   describe('Depositors', () => {
 
-    it.('users deposit', async () => {
+    it('users deposit', async () => {
       const amount1 = to6Decimals(utils.parseUnits('100'));
-      await usdcToken.connect(supplier1).approve(pureLenderForCream.address, amount1);
-      await pureLenderForCream.connect(supplier1).supply(config.tokens.cUsdc.address, amount1);
-      console.log('Supply 1 done');
+      await usdcToken.connect(supplier1).approve(pureSupplierForCream.address, amount1);
+      await pureSupplierForCream.connect(supplier1).supply(config.tokens.cUsdc.address, amount1);
+
+      // console.log('Supply 1 done');
 
       const amount2 = to6Decimals(utils.parseUnits('200'));
-      await usdcToken.connect(supplier2).approve(pureLenderForCream.address, amount2);
-      await pureLenderForCream.connect(supplier2).supply(config.tokens.cUsdc.address, amount2);
-      console.log('Supply 2 done');
+      await usdcToken.connect(supplier2).approve(pureSupplierForCream.address, amount2);
+      await pureSupplierForCream.connect(supplier2).supply(config.tokens.cUsdc.address, amount2);
 
-      const shares1 = await pureLenderForCream.shares(config.tokens.cUsdc.address, supplier1.address);
-      console.log('Supplier 1 shares', shares1.toString());
-      const shares2 = await pureLenderForCream.shares(config.tokens.cUsdc.address, supplier2.address)
-      console.log('Supplier 2 shares', shares2.toString());
+      // console.log('Supply 2 done');
+
+      const shares1 = await pureSupplierForCream.shares(config.tokens.cUsdc.address, supplier1.address);
+      const shares2 = await pureSupplierForCream.shares(config.tokens.cUsdc.address, supplier2.address)
+
+      // console.log('Supplier 1 shares', shares1.toString());
+      // console.log('Supplier 2 shares', shares2.toString());
 
       await mineBlocks(1000);
-      await pureLenderForCream.connect(supplier2).withdraw(config.tokens.cUsdc.address, shares2);
-      console.log('Supplier 1 balance', await usdcToken.balanceOf(supplier1.address));
-      console.log('Supplier 2 shares', await pureLenderForCream.shares(config.tokens.cUsdc.address, supplier2.address));
-      console.log('Pure lender balance on PositionsManager', await morphoPositionsManagerForCream.supplyBalanceInOf(config.tokens.cUsdc.address, pureLenderForCream.address));
+      await pureSupplierForCream.connect(supplier2).withdraw(config.tokens.cUsdc.address, shares2);
+
+      // console.log('Supplier 1 balance', await usdcToken.balanceOf(supplier1.address));
+      // console.log('Supplier 2 shares', await pureSupplierForCream.shares(config.tokens.cUsdc.address, supplier2.address));
+      // console.log('Pure supplier balance on PositionsManager', await morphoPositionsManagerForCream.supplyBalanceInOf(config.tokens.cUsdc.address, pureSupplierForCream.address));
     });
 
-    it.only('Multiple Deposits Scenario 1', async () => {
+    it('Multiple Deposits Scenario 1', async () => {
       // Alice supplies 50 tokens
       const amount = to6Decimals(utils.parseUnits('50'));
-      await usdcToken.connect(supplier1).approve(pureLenderForCream.address, amount);
-      await pureLenderForCream.connect(supplier1).supply(config.tokens.cUsdc.address, amount);
+      await usdcToken.connect(supplier1).approve(pureSupplierForCream.address, amount);
+      await pureSupplierForCream.connect(supplier1).supply(config.tokens.cUsdc.address, amount);
 
       mineBlocks(10);
 
       // Alice supplies again 50 tokens
-      await usdcToken.connect(supplier1).approve(pureLenderForCream.address, amount);
-      await pureLenderForCream.connect(supplier1).supply(config.tokens.cUsdc.address, amount);
+      await usdcToken.connect(supplier1).approve(pureSupplierForCream.address, amount);
+      await pureSupplierForCream.connect(supplier1).supply(config.tokens.cUsdc.address, amount);
 
       mineBlocks(10);
 
       // Bob supplies 50 tokens
-      await usdcToken.connect(supplier2).approve(pureLenderForCream.address, amount);
-      await pureLenderForCream.connect(supplier2).supply(config.tokens.cUsdc.address, amount);
+      await usdcToken.connect(supplier2).approve(pureSupplierForCream.address, amount);
+      await pureSupplierForCream.connect(supplier2).supply(config.tokens.cUsdc.address, amount);
 
       await mineBlocks(1000);
 
-      await pureLenderForCream.connect(supplier2).withdraw(config.tokens.cUsdc.address, amount);
+      await pureSupplierForCream.connect(supplier2).withdraw(config.tokens.cUsdc.address, amount);
 
-      console.log('Supplier 1 balance', await usdcToken.balanceOf(supplier1.address));
-      console.log('Supplier 2 balance', await usdcToken.balanceOf(supplier2.address));
-      console.log('Karl balance on PositionsManager', await morphoPositionsManagerForCream.supplyBalanceInOf(config.tokens.cUsdc.address, pureLenderForCream.address));
+      // console.log('Supplier 1 balance', await usdcToken.balanceOf(supplier1.address));
+      // console.log('Supplier 2 balance', await usdcToken.balanceOf(supplier2.address));
+      // console.log('Karl balance on PositionsManager', await morphoPositionsManagerForCream.supplyBalanceInOf(config.tokens.cUsdc.address, pureSupplierForCream.address));
     });
 
-  });
+    it.only('Checking interest calculation', async () => {
 
-  async function mineBlocks(blockNumber) {
-    while (blockNumber > 0) {
-      blockNumber--;
-      await hre.network.provider.send('evm_mine', []);
-    }
-  }
+      // Alice supplies 50 tokens
+      const amount = to6Decimals(utils.parseUnits('50'));
+      await usdcToken.connect(supplier1).approve(pureSupplierForCream.address, amount);
+      await pureSupplierForCream.connect(supplier1).supply(config.tokens.cUsdc.address, amount);
+
+      mineBlocks(10000);
+
+      const BPY = await morphoMarketsManagerForCompLike.p2pBPY(config.tokens.cUsdc.address);
+      // console.log(BPY);
+
+      // Alice supplies again 50 tokens
+      await usdcToken.connect(supplier1).approve(pureSupplierForCream.address, amount);
+      await pureSupplierForCream.connect(supplier1).supply(config.tokens.cUsdc.address, amount);
+
+      mineBlocks(10000);
+
+      const shares = await pureSupplierForCream.shares(config.tokens.cUsdc.address, supplier1.address);
+      await pureSupplierForCream.connect(supplier1).withdraw(config.tokens.cUsdc.address, shares);
+
+      // const expectedBalance = ((((BPY.dividedBy(utils.parseUnits('1'))).plus(1)).exponentiatedBy(30000)).multipliedBy(50)).plus(50);
+      const expectedBalance = (50 + 50 * (1 + BPY / 1e18) ** 30000) * 1e8;
+      const aliceBalance = await (await usdcToken.balanceOf(supplier1.address));
+
+
+      console.log("expectedBalance: ", expectedBalance);
+      console.log("Alice's balance: ", await aliceBalance.toNumber());
+
+      expect(expectedBalance).to.equal(aliceBalance);
+
+    });
+  });
 
 });
