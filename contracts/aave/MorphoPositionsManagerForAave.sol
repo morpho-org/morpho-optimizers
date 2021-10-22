@@ -31,7 +31,7 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
 
     struct SupplyBalance {
         uint256 inP2P; // In mUnit, a unit that grows in value, to keep track of the interests/debt increase when users are in p2p.
-        uint256 onAave; // In aToken.
+        uint256 onAave; // In scaled balance.
     }
 
     struct BorrowBalance {
@@ -229,7 +229,7 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
     {
         _handleMembership(_aTokenAddress, msg.sender);
         IAToken aToken = IAToken(_aTokenAddress);
-        IERC20 erc20Token = IERC20(IAToken(aToken).UNDERLYING_ASSET_ADDRESS());
+        IERC20 erc20Token = IERC20(aToken.UNDERLYING_ASSET_ADDRESS());
         erc20Token.safeTransferFrom(msg.sender, address(this), _amount);
         uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(address(erc20Token));
 
@@ -587,7 +587,7 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
     function _supplyERC20ToAave(address _aTokenAddress, uint256 _amount) internal {
         IAToken aToken = IAToken(_aTokenAddress);
         IERC20 erc20Token = IERC20(aToken.UNDERLYING_ASSET_ADDRESS());
-        erc20Token.safeApprove(_aTokenAddress, _amount);
+        erc20Token.safeApprove(address(lendingPool), _amount);
         lendingPool.deposit(address(erc20Token), _amount, address(this), 0);
         lendingPool.setUserUseReserveAsCollateral(address(erc20Token), true);
     }
