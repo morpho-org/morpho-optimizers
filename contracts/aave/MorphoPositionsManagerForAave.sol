@@ -51,6 +51,9 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
         uint256 underlyingPrice; // The price of the underlying linked to the `aTokenEntered`.
         uint256 normalizedVariableDebt; // Normalized variable debt of the market.
         uint256 normalizedIncome; // Noramlized income of the market.
+        uint256 liquidationThreshold;
+        uint256 reserveDecimals;
+        uint256 tokenUnit;
         address aTokenEntered; // The aToken token entered by the user.
         address underlyingAddress; // The address of the underlying.
         IPriceOracleGetter oracle; // Aave oracle.
@@ -58,13 +61,19 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
 
     // Struct to avoid stack too deep error
     struct LiquidateVars {
+        uint256 debtValue;
+        uint256 maxDebtValue;
         uint256 borrowBalance; // Total borrow balance of the user in underlying for a given asset.
         uint256 amountToSeize; // The amount of collateral underlying the liquidator can seize.
         uint256 borrowedPrice; // The price of the asset borrowed (in ETH).
         uint256 collateralPrice; // The price of the collateral asset (in ETH).
         uint256 normalizedIncome;
         uint256 totalCollateral;
-        IPriceOracleGetter oracle;
+        uint256 liquidationThreshold;
+        uint256 collateralReserveDecimals;
+        uint256 collateralTokenUnit;
+        uint256 borrowReserveDecimals;
+        uint256 borrowTokenUnit;
     }
 
     /* Storage */
@@ -355,14 +364,14 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
         address _borrower,
         uint256 _amount
     ) external nonReentrant {
-        (uint256 debtValue, uint256 maxDebtValue, ) = _getUserHypotheticalBalanceStates(
+        LiquidateVars memory vars;
+        (vars.debtValue, vars.maxDebtValue, ) = _getUserHypotheticalBalanceStates(
             _borrower,
             address(0),
             0,
             0
         );
-        require(debtValue > maxDebtValue, "liquidate:debt-value<=max");
-        LiquidateVars memory vars;
+        require(vars.debtValue > vars.maxDebtValue, "liquidate:debt-value<=max");
         IAToken aTokenBorrowed = IAToken(_aTokenBorrowedAddress);
         vars.borrowBalance =
             borrowBalanceInOf[_aTokenBorrowedAddress][_borrower]
@@ -384,19 +393,27 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
             "liquidate:amount>allowed"
         );
 
-        vars.oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
+        IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
         _repay(_aTokenBorrowedAddress, _borrower, _amount);
 
         // Calculate the amount of token to seize from collateral
-        vars.collateralPrice = vars.oracle.getAssetPrice(_aTokenCollateralAddress); // In ETH
-        vars.borrowedPrice = vars.oracle.getAssetPrice(_aTokenBorrowedAddress); // In ETH
-        (, , uint256 liquidationThreshold, , , , , , , ) = dataProvider.getReserveConfigurationData(
+        vars.collateralPrice = oracle.getAssetPrice(_aTokenCollateralAddress); // In ETH
+        vars.borrowedPrice = oracle.getAssetPrice(_aTokenBorrowedAddress); // In ETH
+        (vars.collateralReserveDecimals, , vars.liquidationThreshold, , , , , , , ) = dataProvider
+            .getReserveConfigurationData(
             IAToken(_aTokenCollateralAddress).UNDERLYING_ASSET_ADDRESS()
         );
+        (vars.borrowReserveDecimals, , , , , , , , , ) = dataProvider.getReserveConfigurationData(
+            IAToken(_aTokenCollateralAddress).UNDERLYING_ASSET_ADDRESS()
+        );
+        vars.collateralTokenUnit = 10**vars.collateralReserveDecimals;
+        vars.borrowTokenUnit = 10**vars.borrowReserveDecimals;
         vars.amountToSeize = _amount
             .mul(vars.collateralPrice)
+            .div(vars.collateralTokenUnit)
+            .mul(vars.borrowTokenUnit)
             .div(vars.borrowedPrice)
-            .mul(liquidationThreshold)
+            .mul(vars.liquidationThreshold)
             .div(10000);
         IAToken aTokenCollateral = IAToken(_aTokenCollateralAddress);
         vars.normalizedIncome = lendingPool.getReserveNormalizedIncome(
@@ -526,8 +543,8 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
                 .rayToWad();
             /* CASE 1: User repays less than his Aave borrow balance */
             if (_amount <= onAaveInUnderlying) {
-                erc20Token.safeApprove(_aTokenAddress, _amount);
-                lendingPool.borrow(address(erc20Token), _amount, 2, 0, address(this));
+                erc20Token.safeApprove(address(lendingPool), _amount);
+                lendingPool.repay(address(erc20Token), _amount, 2, address(this));
                 borrowBalanceInOf[_aTokenAddress][_borrower].onAave -= _amount
                     .wadToRay()
                     .rayDiv(normalizedVariableDebt)
@@ -536,7 +553,7 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
             }
             /* CASE 2: User repays more than his Aave borrow balance */
             else {
-                erc20Token.safeApprove(_aTokenAddress, onAaveInUnderlying);
+                erc20Token.safeApprove(address(lendingPool), onAaveInUnderlying);
                 lendingPool.repay(address(erc20Token), onAaveInUnderlying, 2, address(this));
                 borrowBalanceInOf[_aTokenAddress][_borrower].onAave = 0;
                 remainingToRepay -= onAaveInUnderlying; // In underlying
@@ -913,22 +930,25 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
             vars.underlyingPrice = vars.oracle.getAssetPrice(
                 IAToken(vars.aTokenEntered).UNDERLYING_ASSET_ADDRESS()
             ); // In ETH
-            if (_aTokenAddress == vars.aTokenEntered) {
-                vars.debtToAdd += _borrowedAmount;
-                vars.redeemedValue = _withdrawnAmount.mul(vars.underlyingPrice);
-            }
-            // Conversion of the collateral to dollars
-            vars.collateralToAdd = vars.collateralToAdd.mul(vars.underlyingPrice);
-            // Add the debt in this market to the global debt (in dollars)
-            vars.debtValue += vars.debtToAdd.mul(vars.underlyingPrice);
-            // Add the collateral value in this asset to the global collateral value (in ETH)
-            vars.collateralValue += vars.collateralToAdd;
-            (, , uint256 liquidationThreshold, , , , , , , ) = dataProvider
+            (vars.reserveDecimals, , vars.liquidationThreshold, , , , , , , ) = dataProvider
                 .getReserveConfigurationData(
                 IAToken(vars.aTokenEntered).UNDERLYING_ASSET_ADDRESS()
             );
+            vars.tokenUnit = 10**vars.reserveDecimals;
+            if (_aTokenAddress == vars.aTokenEntered) {
+                vars.debtToAdd += _borrowedAmount;
+                vars.redeemedValue = _withdrawnAmount.mul(vars.underlyingPrice).div(vars.tokenUnit);
+            }
+            // Conversion of the collateral to dollars
+            vars.collateralToAdd = vars.collateralToAdd.mul(vars.underlyingPrice).div(
+                vars.tokenUnit
+            );
+            // Add the debt in this market to the global debt (in dollars)
+            vars.debtValue += vars.debtToAdd.mul(vars.underlyingPrice).div(vars.tokenUnit);
+            // Add the collateral value in this asset to the global collateral value (in ETH)
+            vars.collateralValue += vars.collateralToAdd;
             // Add the max debt value allowed by the collateral in this asset to the global max debt value (in ETH)
-            vars.maxDebtValue += vars.collateralToAdd.mul(liquidationThreshold);
+            vars.maxDebtValue += vars.collateralToAdd.mul(vars.liquidationThreshold);
         }
 
         vars.collateralValue -= vars.redeemedValue;

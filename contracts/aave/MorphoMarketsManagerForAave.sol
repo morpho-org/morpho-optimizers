@@ -3,11 +3,14 @@ pragma solidity 0.8.7;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
 import "./libraries/aave/WadRayMath.sol";
 import "./interfaces/aave/ILendingPoolAddressesProvider.sol";
+import "./interfaces/aave/IProtocolDataProvider.sol";
 import "./interfaces/aave/ILendingPool.sol";
 import "./interfaces/aave/DataTypes.sol";
+import {IAToken} from "./interfaces/aave/IAToken.sol";
 import "./interfaces/IPositionsManagerForAave.sol";
 import "./interfaces/IMarketsManagerForAave.sol";
 
@@ -17,18 +20,20 @@ import "./interfaces/IMarketsManagerForAave.sol";
  */
 contract MorphoMarketsManagerForAave is Ownable {
     using WadRayMath for uint256;
+    using SafeMath for uint256;
     using Math for uint256;
 
     /* Storage */
 
+    uint256 internal constant SECONDS_PER_YEAR = 365 days;
     bool public isPositionsManagerSet; // Whether or not the positions manager is set.
     mapping(address => bool) public isCreated; // Whether or not this market is created.
     mapping(address => uint256) public p2pBPY; // Block Percentage Yield ("midrate").
     mapping(address => uint256) public mUnitExchangeRate; // current exchange rate from mUnit to underlying.
-    mapping(address => uint256) public lastUpdateBlockNumber; // Last time mUnitExchangeRate was updated.
+    mapping(address => uint256) public lastUpdateTimestamp; // Last time mUnitExchangeRate was updated.
 
     IPositionsManagerForAave public positionsManagerForAave;
-    ILendingPoolAddressesProvider public provider;
+    ILendingPoolAddressesProvider public addressesProvider;
     ILendingPool public lendingPool;
 
     /* Events */
@@ -75,6 +80,15 @@ contract MorphoMarketsManagerForAave is Ownable {
         _;
     }
 
+    /* Constructor */
+
+    /** @dev Sets the lending pool addresses provider.
+     * _lendingPoolAddressesProvider The address of the lending pool addresses provider.
+     */
+    constructor(address _lendingPoolAddressesProvider) {
+        addressesProvider = ILendingPoolAddressesProvider(_lendingPoolAddressesProvider);
+    }
+
     /* External */
 
     /** @dev Sets the `positionsManagerForAave` to interact with Compound.
@@ -87,14 +101,11 @@ contract MorphoMarketsManagerForAave is Ownable {
         emit PositionsManagerForAaveSet(_positionsManagerForAave);
     }
 
-    /** @dev Sets the lending pool address.
-     *  @param _lendingPoolAddressesProvider The address of Aaves's lending pool addresses provider.
+    /** @dev Sets the lending pool.
      */
-    function setLendingPool(address _lendingPoolAddressesProvider) external onlyOwner {
-        provider = ILendingPoolAddressesProvider(_lendingPoolAddressesProvider);
-        lendingPool = ILendingPool(provider.getLendingPool());
-        // positionsManagerForAave(provider.getLendingPool());
-        emit LendingPoolSet(_lendingPoolAddressesProvider);
+    function setLendingPool() external onlyOwner {
+        lendingPool = ILendingPool(addressesProvider.getLendingPool());
+        emit LendingPoolSet(address(lendingPool));
     }
 
     /** @dev Creates a new market to borrow/supply.
@@ -103,7 +114,7 @@ contract MorphoMarketsManagerForAave is Ownable {
     function createMarket(address _marketAddress) external onlyOwner {
         require(!isCreated[_marketAddress], "createMarket:mkt-already-created");
         positionsManagerForAave.setThreshold(_marketAddress, 1e18);
-        lastUpdateBlockNumber[_marketAddress] = block.number;
+        lastUpdateTimestamp[_marketAddress] = block.timestamp;
         mUnitExchangeRate[_marketAddress] = WadRayMath.ray();
         isCreated[_marketAddress] = true;
         updateBPY(_marketAddress);
@@ -126,13 +137,14 @@ contract MorphoMarketsManagerForAave is Ownable {
      *  @param _marketAddress The address of the market we want to update.
      */
     function updateBPY(address _marketAddress) public isMarketCreated(_marketAddress) {
-        DataTypes.ReserveData memory reserveData = lendingPool.getReserveData(_marketAddress);
+        DataTypes.ReserveData memory reserveData = lendingPool.getReserveData(
+            IAToken(_marketAddress).UNDERLYING_ASSET_ADDRESS()
+        );
 
         // Update p2pBPY
-        p2pBPY[_marketAddress] = Math.average(
-            reserveData.currentLiquidityRate,
-            reserveData.currentVariableBorrowRate
-        ); // In ray
+        p2pBPY[_marketAddress] = Math
+            .average(reserveData.currentLiquidityRate, reserveData.currentVariableBorrowRate)
+            .div(SECONDS_PER_YEAR); // In ray
 
         emit BPYUpdated(_marketAddress, p2pBPY[_marketAddress]);
 
@@ -149,18 +161,18 @@ contract MorphoMarketsManagerForAave is Ownable {
         isMarketCreated(_marketAddress)
         returns (uint256)
     {
-        uint256 currentBlock = block.number;
+        uint256 currentTimestamp = block.timestamp;
 
-        if (lastUpdateBlockNumber[_marketAddress] == currentBlock) {
+        if (lastUpdateTimestamp[_marketAddress] == currentTimestamp) {
             return mUnitExchangeRate[_marketAddress];
         } else {
-            uint256 numberOfBlocksSinceLastUpdate = currentBlock -
-                lastUpdateBlockNumber[_marketAddress];
-            // Update lastUpdateBlockNumber
-            lastUpdateBlockNumber[_marketAddress] = currentBlock;
+            uint256 timeDifference = currentTimestamp - lastUpdateTimestamp[_marketAddress];
+
+            // Update lastUpdateTimestamp
+            lastUpdateTimestamp[_marketAddress] = currentTimestamp;
 
             uint256 newMUnitExchangeRate = mUnitExchangeRate[_marketAddress].rayMul(
-                (WadRayMath.ray() + p2pBPY[_marketAddress]).rayPow(numberOfBlocksSinceLastUpdate)
+                (WadRayMath.ray() + p2pBPY[_marketAddress]).rayPow(timeDifference)
             ); // In ray
 
             // Update currentExchangeRate
