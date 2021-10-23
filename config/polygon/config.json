@@ -57,6 +57,9 @@
       "aToken": {
         "abi": "@config/polygon/abis/AToken.json"
       },
+      "stableDebtToken": {
+        "abi": "@config/polygon/abis/StableDebtToken.json"
+      },
       "aDai": {
         "address": "0x27F8D03b3a2196956ED754baDc28D73be8830A6e",
         "abi": "@config/polygon/abis/aToken.json"
@@ -80,6 +83,22 @@
       "aWmatic": {
         "address": "0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270",
         "abi": "@config/polygon/abis/aToken.json"
+      },
+      "stableDebtDai": {
+        "address": "0x75c4d1Fb84429023170086f06E682DcbBF537b7d",
+        "abi": "@config/polygon/abis/StableDebtToken.json"
+      },
+      "stableDebtUsdc": {
+        "address": "0x248960A9d75EdFa3de94F7193eae3161Eb349a12",
+        "abi": "@config/polygon/abis/StableDebtToken.json"
+      },
+      "stableDebtUsdt": {
+        "address": "0x8038857FD47108A07d1f6Bf652ef1cBeC279A2f3",
+        "abi": "@config/polygon/abis/StableDebtToken.json"
+      },
+      "stableDebtWbtc": {
+        "address": "0xF664F50631A6f0D72ecdaa0e49b0c019Fa72a8dC",
+        "abi": "@config/polygon/abis/StableDebtToken.json"
       }
     },
     "cream": {
@@ -99,6 +118,14 @@
       "lendingPool": {
         "address": "0x8dff5e27ea6b7ac08ebfdf9eb090f32ee9a30fcf",
         "abi": "@config/polygon/abis/LendingPool.json"
+      },
+      "protocolDataProvider": {
+        "address": "0x7551b5D2763519d4e37e8B81929D336De671d46d",
+        "abi": "@config/polygon/abis/ProtocolDataProvider.json"
+      },
+      "oracle": {
+        "address": "0x0229f777b0fab107f9591a41d5f02e4e98db6f2d",
+        "abi": "@config/polygon/abis/PriceOracle.json"
       }
     }
   }

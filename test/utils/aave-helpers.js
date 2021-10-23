@@ -20,12 +20,12 @@ const mUnitToUnderlying = (mUnitAmount, mUnitExchangeRate) => {
   return mUnitAmount.mul(mUnitExchangeRate).div(RAY);
 };
 
-const underlyingToCdUnit = (underlyingAmount, normalizedVariableDebt) => {
+const underlyingToAdUnit = (underlyingAmount, normalizedVariableDebt) => {
   return underlyingAmount.mul(RAY).div(normalizedVariableDebt);
 };
 
-const cDUnitToUnderlying = (cDUnitAmount, normalizedVariableDebt) => {
-  return cDUnitAmount.mul(normalizedVariableDebt).div(RAY);
+const aDUnitToUnderlying = (aDUnitAmount, normalizedVariableDebt) => {
+  return aDUnitAmount.mul(normalizedVariableDebt).div(RAY);
 };
 
 const computeNewMorphoExchangeRate = (currentExchangeRate, p2pBPY, currentBlockNumber, lastUpdateBlockNumber) => {
@@ -51,8 +51,8 @@ module.exports = {
   scaledBalanceToUnderlying,
   underlyingToMUnit,
   mUnitToUnderlying,
-  underlyingToCdUnit,
-  cDUnitToUnderlying,
+  underlyingToAdUnit,
+  aDUnitToUnderlying,
   computeNewMorphoExchangeRate,
   computeNewBorrowIndex,
 };
