@@ -589,25 +589,22 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
                     highestValue,
                     0
                 ); // Pick the first account in the list
-                // Check if this user is not borrowing on Cream (cf Liquidation Invariant in docs)
-                if (!_hasDebtOnCream(account)) {
-                    uint256 onCream = supplyBalanceInOf[_crERC20Address][account].onCream; // In crToken
-                    uint256 toMatch;
-                    // This is done to prevent rounding errors
-                    if (onCream.mul(crExchangeRate) <= remainingToMatch) {
-                        supplyBalanceInOf[_crERC20Address][account].onCream = 0;
-                        toMatch = onCream.mul(crExchangeRate);
-                    } else {
-                        toMatch = remainingToMatch;
-                        supplyBalanceInOf[_crERC20Address][account].onCream -= toMatch.div(
-                            crExchangeRate
-                        ); // In crToken
-                    }
-                    remainingToMatch -= toMatch;
-                    supplyBalanceInOf[_crERC20Address][account].inP2P += toMatch.div(mExchangeRate); // In mUnit
-                    _updateSupplierList(_crERC20Address, account);
-                    emit SupplierMatched(account, _crERC20Address, toMatch);
+                uint256 onCream = supplyBalanceInOf[_crERC20Address][account].onCream; // In crToken
+                uint256 toMatch;
+                // This is done to prevent rounding errors
+                if (onCream.mul(crExchangeRate) <= remainingToMatch) {
+                    supplyBalanceInOf[_crERC20Address][account].onCream = 0;
+                    toMatch = onCream.mul(crExchangeRate);
+                } else {
+                    toMatch = remainingToMatch;
+                    supplyBalanceInOf[_crERC20Address][account].onCream -= toMatch.div(
+                        crExchangeRate
+                    ); // In crToken
                 }
+                remainingToMatch -= toMatch;
+                supplyBalanceInOf[_crERC20Address][account].inP2P += toMatch.div(mExchangeRate); // In mUnit
+                _updateSupplierList(_crERC20Address, account);
+                emit SupplierMatched(account, _crERC20Address, toMatch);
             }
             // Update the highest value after the tree has been updated
             highestValue = suppliersOnCream[_crERC20Address].last();
@@ -867,8 +864,29 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
         if (borrowersInP2P[_crERC20Address].keyExists(_account))
             borrowersInP2P[_crERC20Address].remove(_account);
         uint256 onCream = borrowBalanceInOf[_crERC20Address][_account].onCream;
+        bool alreadyBorrowedOnCream = _hadDebtOnCream(_account);
         if (onCream > 0) {
             borrowersOnCream[_crERC20Address].insert(_account, onCream);
+            if (!alreadyBorrowedOnCream) {
+                for (uint256 i; i < enteredMarkets[_account].length; i++) {
+                    if (suppliersOnCream[_crERC20Address].keyExists(_account))
+                        suppliersOnCream[enteredMarkets[_account][i]].remove(_account);
+                }
+            }
+        } else {
+            if (alreadyBorrowedOnCream) {
+                for (uint256 i; i < enteredMarkets[_account].length; i++) {
+                    address enteredMarket = enteredMarkets[_account][i];
+                    uint256 supplyBalanceOnCream = supplyBalanceInOf[enteredMarket][_account]
+                        .onCream;
+                    if (supplyBalanceOnCream > 0) {
+                        suppliersOnCream[enteredMarkets[_account][i]].insert(
+                            _account,
+                            supplyBalanceOnCream
+                        );
+                    }
+                }
+            }
         }
         uint256 inP2P = borrowBalanceInOf[_crERC20Address][_account].inP2P;
         if (inP2P > 0) {
@@ -886,7 +904,8 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
         if (suppliersInP2P[_crERC20Address].keyExists(_account))
             suppliersInP2P[_crERC20Address].remove(_account);
         uint256 onCream = supplyBalanceInOf[_crERC20Address][_account].onCream;
-        if (onCream > 0) {
+        bool alreadyBorrowedOnCream = _hadDebtOnCream(_account);
+        if (onCream > 0 && alreadyBorrowedOnCream) {
             suppliersOnCream[_crERC20Address].insert(_account, onCream);
         }
         uint256 inP2P = supplyBalanceInOf[_crERC20Address][_account].inP2P;
@@ -895,9 +914,9 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
         }
     }
 
-    function _hasDebtOnCream(address _account) internal view returns (bool) {
+    function _hadDebtOnCream(address _account) internal view returns (bool) {
         for (uint256 i; i < enteredMarkets[_account].length; i++) {
-            if (borrowBalanceInOf[enteredMarkets[_account][i]][_account].onCream > 0) {
+            if (borrowersOnCream[enteredMarkets[_account][i]].keyExists(_account)) {
                 return true;
             }
         }
