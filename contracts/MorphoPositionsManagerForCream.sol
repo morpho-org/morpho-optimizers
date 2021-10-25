@@ -859,12 +859,12 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
      *  @param _account The address of the borrower to move.
      */
     function _updateBorrowerList(address _crERC20Address, address _account) internal {
+        bool alreadyBorrowedOnCream = _hadDebtOnCream(_account);
         if (borrowersOnCream[_crERC20Address].keyExists(_account))
             borrowersOnCream[_crERC20Address].remove(_account);
         if (borrowersInP2P[_crERC20Address].keyExists(_account))
             borrowersInP2P[_crERC20Address].remove(_account);
         uint256 onCream = borrowBalanceInOf[_crERC20Address][_account].onCream;
-        bool alreadyBorrowedOnCream = _hadDebtOnCream(_account);
         if (onCream > 0) {
             borrowersOnCream[_crERC20Address].insert(_account, onCream);
             if (!alreadyBorrowedOnCream) {
@@ -899,12 +899,12 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
      *  @param _account The address of the supplier to move.
      */
     function _updateSupplierList(address _crERC20Address, address _account) internal {
+        bool alreadyBorrowedOnCream = _hadDebtOnCream(_account);
         if (suppliersOnCream[_crERC20Address].keyExists(_account))
             suppliersOnCream[_crERC20Address].remove(_account);
         if (suppliersInP2P[_crERC20Address].keyExists(_account))
             suppliersInP2P[_crERC20Address].remove(_account);
         uint256 onCream = supplyBalanceInOf[_crERC20Address][_account].onCream;
-        bool alreadyBorrowedOnCream = _hadDebtOnCream(_account);
         if (onCream > 0 && alreadyBorrowedOnCream) {
             suppliersOnCream[_crERC20Address].insert(_account, onCream);
         }
