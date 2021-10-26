@@ -25,8 +25,7 @@
         "address": "0x7ea7174dD0CB4Ab84f42177F01e9a8a79475d381",
         "abi": "@config/abis/CErc20.json"
       },
-      "cMkr": {
-        "_comment": "There is no crMKR crToken, so this address is in fact crLINK",
+      "cLink": {
         "address": "0x20d5d319C2964ecb52e1B006a4C059b7f6d6ad0a",
         "abi": "@config/abis/CErc20.json"
       },
@@ -45,6 +44,10 @@
       "uni": {
         "address": "0xb33eaad8d922b1083446dc23f610c2567fb5180f",
         "abi": "@config/abis/UNI.json"
+      },
+      "link": {
+        "address": "0x53E0bca35eC356BD5ddDFebbD1Fc0fD03FaBad39",
+        "abi": "@config/abis/LINK.json"
       }
     },
     "cream": {

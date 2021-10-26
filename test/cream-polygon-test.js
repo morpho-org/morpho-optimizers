@@ -23,7 +23,6 @@ describe('MorphoPositionsManagerForCream Contract', () => {
   let cUsdcToken;
   let cDaiToken;
   let cUsdtToken;
-  let cMkrToken;
   let daiToken;
   let usdtToken;
   let uniToken;
@@ -79,7 +78,7 @@ describe('MorphoPositionsManagerForCream Contract', () => {
     cDaiToken = await ethers.getContractAt(cTokenAbi, config.tokens.cDai.address, owner);
     cUsdtToken = await ethers.getContractAt(cTokenAbi, config.tokens.cUsdt.address, owner);
     cUniToken = await ethers.getContractAt(cTokenAbi, config.tokens.cUni.address, owner);
-    cMkrToken = await ethers.getContractAt(cTokenAbi, config.tokens.cMkr.address, owner); // This is in fact crLINK tokens (no crMKR on Polygon)
+    cLinkToken = await ethers.getContractAt(cTokenAbi, config.tokens.cLink.address, owner);
 
     comptroller = await ethers.getContractAt(require(config.cream.comptroller.abi), config.cream.comptroller.address, owner);
     compoundOracle = await ethers.getContractAt(require(config.cream.oracle.abi), comptroller.oracle(), owner);
@@ -158,16 +157,16 @@ describe('MorphoPositionsManagerForCream Contract', () => {
     });
 
     it('Should create a market the with right values', async () => {
-      const supplyBPY = await cMkrToken.supplyRatePerBlock();
-      const borrowBPY = await cMkrToken.borrowRatePerBlock();
-      const { blockNumber } = await morphoMarketsManagerForCompLike.connect(owner).createMarket(config.tokens.cMkr.address);
-      expect(await morphoMarketsManagerForCompLike.isCreated(config.tokens.cMkr.address)).to.be.true;
+      const supplyBPY = await cLinkToken.supplyRatePerBlock();
+      const borrowBPY = await cLinkToken.borrowRatePerBlock();
+      const { blockNumber } = await morphoMarketsManagerForCompLike.connect(owner).createMarket(config.tokens.cLink.address);
+      expect(await morphoMarketsManagerForCompLike.isCreated(config.tokens.cLink.address)).to.be.true;
 
       const p2pBPY = supplyBPY.add(borrowBPY).div(2);
-      expect(await morphoMarketsManagerForCompLike.p2pBPY(config.tokens.cMkr.address)).to.equal(p2pBPY);
+      expect(await morphoMarketsManagerForCompLike.p2pBPY(config.tokens.cLink.address)).to.equal(p2pBPY);
 
-      expect(await morphoMarketsManagerForCompLike.mUnitExchangeRate(config.tokens.cMkr.address)).to.equal(SCALE);
-      expect(await morphoMarketsManagerForCompLike.lastUpdateBlockNumber(config.tokens.cMkr.address)).to.equal(blockNumber);
+      expect(await morphoMarketsManagerForCompLike.mUnitExchangeRate(config.tokens.cLink.address)).to.equal(SCALE);
+      expect(await morphoMarketsManagerForCompLike.lastUpdateBlockNumber(config.tokens.cLink.address)).to.equal(blockNumber);
     });
 
     it('Comptroller can be set only by owner', async () => {
