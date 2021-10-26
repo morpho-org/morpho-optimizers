@@ -582,18 +582,19 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
         uint256 crExchangeRate = crERC20Token.exchangeRateCurrent();
         uint256 highestValue = suppliersOnCream[_crERC20Address].last();
 
-        uint256 highestValueSeen; // Allow us to store the previous
+        uint256 valueOfLastUnavailableSupplier; // Allow us to store the previous
         while (remainingToMatch > 0 && highestValue != 0) {
-            // Loop on the keys (addresses) sharing the same value
             uint256 numberOfKeysAtValue = suppliersOnCream[_crERC20Address].getNumberOfKeysAtValue(
                 highestValue
             );
-            uint256 indexOfSupplier;
+            uint256 indexOfLastUnavailableSupplier;
             // Check that there are is still a supplier having no debt on Creams is
-            while (remainingToMatch > 0 && numberOfKeysAtValue - indexOfSupplier > 0) {
+            while (
+                remainingToMatch > 0 && numberOfKeysAtValue - indexOfLastUnavailableSupplier > 0
+            ) {
                 address account = suppliersOnCream[_crERC20Address].valueKeyAtIndex(
                     highestValue,
-                    indexOfSupplier
+                    indexOfLastUnavailableSupplier
                 ); // Pick the first account in the list
                 // Check if this user is not borrowing on Cream (cf Liquidation Invariant in docs)
                 if (!_hasDebtOnCream(account)) {
@@ -612,18 +613,18 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
                     remainingToMatch -= toMatch;
                     supplyBalanceInOf[_crERC20Address][account].inP2P += toMatch.div(mExchangeRate); // In mUnit
                     _updateSupplierList(_crERC20Address, account);
-                    numberOfKeysAtValue = suppliersOnCream[_crERC20Address].getNumberOfKeysAtValue(
-                        highestValue
-                    );
+                    numberOfKeysAtValue -= 1;
                     emit SupplierMatched(account, _crERC20Address, toMatch);
                 } else {
-                    highestValueSeen = highestValue;
-                    indexOfSupplier++;
+                    valueOfLastUnavailableSupplier = highestValue;
+                    indexOfLastUnavailableSupplier++;
                 }
             }
             // Update the highest value after the tree has been updated
-            if (highestValueSeen > 0)
-                highestValue = suppliersOnCream[_crERC20Address].prev(highestValueSeen);
+            if (valueOfLastUnavailableSupplier > 0)
+                highestValue = suppliersOnCream[_crERC20Address].prev(
+                    valueOfLastUnavailableSupplier
+                );
             else highestValue = suppliersOnCream[_crERC20Address].last();
         }
         // Withdraw from Cream
