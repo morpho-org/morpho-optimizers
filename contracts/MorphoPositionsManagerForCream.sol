@@ -590,7 +590,7 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
             );
             uint256 indexOfSupplier;
             // Check that there are is still a supplier having no debt on Creams is
-            while (numberOfKeysAtValue - indexOfSupplier > 0) {
+            while (remainingToMatch > 0 && numberOfKeysAtValue - indexOfSupplier > 0) {
                 address account = suppliersOnCream[_crERC20Address].valueKeyAtIndex(
                     highestValue,
                     indexOfSupplier
@@ -647,7 +647,10 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
         uint256 highestValue = suppliersInP2P[_crERC20Address].last();
 
         while (remainingToUnmatch > 0 && highestValue != 0) {
-            while (suppliersInP2P[_crERC20Address].getNumberOfKeysAtValue(highestValue) > 0) {
+            while (
+                remainingToUnmatch > 0 &&
+                suppliersInP2P[_crERC20Address].getNumberOfKeysAtValue(highestValue) > 0
+            ) {
                 address account = suppliersInP2P[_crERC20Address].valueKeyAtIndex(highestValue, 0);
                 uint256 inP2P = supplyBalanceInOf[_crERC20Address][account].inP2P; // In crToken
                 uint256 toUnmatch = Math.min(inP2P.mul(mExchangeRate), remainingToUnmatch); // In underlying
@@ -683,7 +686,10 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
         uint256 highestValue = borrowersOnCream[_crERC20Address].last();
 
         while (remainingToMatch > 0 && highestValue != 0) {
-            while (borrowersOnCream[_crERC20Address].getNumberOfKeysAtValue(highestValue) > 0) {
+            while (
+                remainingToMatch > 0 &&
+                borrowersOnCream[_crERC20Address].getNumberOfKeysAtValue(highestValue) > 0
+            ) {
                 address account = borrowersOnCream[_crERC20Address].valueKeyAtIndex(
                     highestValue,
                     0
@@ -727,7 +733,10 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
         uint256 highestValue = borrowersInP2P[_crERC20Address].last();
 
         while (remainingToUnmatch > 0 && highestValue != 0) {
-            while (borrowersInP2P[_crERC20Address].getNumberOfKeysAtValue(highestValue) > 0) {
+            while (
+                remainingToUnmatch > 0 &&
+                borrowersInP2P[_crERC20Address].getNumberOfKeysAtValue(highestValue) > 0
+            ) {
                 address account = borrowersInP2P[_crERC20Address].valueKeyAtIndex(highestValue, 0);
                 uint256 inP2P = borrowBalanceInOf[_crERC20Address][account].inP2P;
                 _unmatchTheSupplier(account); // Before borrowing on Cream, we put all the collateral of the borrower on Cream (cf Liquidation Invariant in docs)
