@@ -859,7 +859,6 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
      *  @param _account The address of the borrower to move.
      */
     function _updateBorrowerList(address _crERC20Address, address _account) internal {
-        bool alreadyBorrowedOnCream = _hadDebtOnCream(_account);
         if (borrowersOnCream[_crERC20Address].keyExists(_account))
             borrowersOnCream[_crERC20Address].remove(_account);
         if (borrowersInP2P[_crERC20Address].keyExists(_account))
@@ -867,14 +866,14 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
         uint256 onCream = borrowBalanceInOf[_crERC20Address][_account].onCream;
         if (onCream > 0) {
             borrowersOnCream[_crERC20Address].insert(_account, onCream);
-            if (!alreadyBorrowedOnCream) {
+            if (!_hadDebtOnCream(_account)) {
                 for (uint256 i; i < enteredMarkets[_account].length; i++) {
                     if (suppliersOnCream[_crERC20Address].keyExists(_account))
                         suppliersOnCream[enteredMarkets[_account][i]].remove(_account);
                 }
             }
         } else {
-            if (alreadyBorrowedOnCream) {
+            if (_hadDebtOnCream(_account)) {
                 for (uint256 i; i < enteredMarkets[_account].length; i++) {
                     address enteredMarket = enteredMarkets[_account][i];
                     uint256 supplyBalanceOnCream = supplyBalanceInOf[enteredMarket][_account]
@@ -905,7 +904,7 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
         if (suppliersInP2P[_crERC20Address].keyExists(_account))
             suppliersInP2P[_crERC20Address].remove(_account);
         uint256 onCream = supplyBalanceInOf[_crERC20Address][_account].onCream;
-        if (onCream > 0 && alreadyBorrowedOnCream) {
+        if (onCream > 0 && !alreadyBorrowedOnCream) {
             suppliersOnCream[_crERC20Address].insert(_account, onCream);
         }
         uint256 inP2P = supplyBalanceInOf[_crERC20Address][_account].inP2P;
