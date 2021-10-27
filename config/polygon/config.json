@@ -52,7 +52,7 @@
       },
       "wmatic": {
         "address": "0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270",
-        "abi": "@config/polygon/abis/WBTC.json"
+        "abi": "@config/polygon/abis/WMATIC.json"
       },
       "aToken": {
         "abi": "@config/polygon/abis/AToken.json"
@@ -81,7 +81,7 @@
         "abi": "@config/polygon/abis/aToken.json"
       },
       "aWmatic": {
-        "address": "0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270",
+        "address": "0x8dF3aad3a84da6b69A4DA8aeC3eA40d9091B2Ac4",
         "abi": "@config/polygon/abis/aToken.json"
       },
       "stableDebtDai": {

@@ -169,12 +169,13 @@ describe('MorphoPositionsManagerForAave Contract', () => {
       const reserveData = await lendingPool.getReserveData(config.tokens.wmatic.address);
       const currentLiquidityRate = reserveData.currentLiquidityRate;
       const currentVariableBorrowRate = reserveData.currentVariableBorrowRate;
-      const expectedBPY = currentLiquidityRate.add(currentVariableBorrowRate).div(2);
-      const { blockNumber } = await morphoMarketsManagerForAave.connect(owner).createMarket(config.tokens.aWmatic.address);
+      console.log(currentLiquidityRate.toString());
+      console.log(currentVariableBorrowRate.toString());
+      const expectedBPY = currentLiquidityRate.add(currentVariableBorrowRate).div(2).div(SECOND_PER_YEAR);
+      await morphoMarketsManagerForAave.connect(owner).createMarket(config.tokens.aWmatic.address);
       expect(await morphoMarketsManagerForAave.isCreated(config.tokens.aWmatic.address)).to.be.true;
       expect(await morphoMarketsManagerForAave.p2pBPY(config.tokens.aWmatic.address)).to.equal(expectedBPY);
       expect(await morphoMarketsManagerForAave.mUnitExchangeRate(config.tokens.aWmatic.address)).to.equal(RAY);
-      expect(await morphoMarketsManagerForAave.lastUpdateBlockNumber(config.tokens.aWmatic.address)).to.equal(blockNumber);
     });
   });
 
@@ -290,7 +291,7 @@ describe('MorphoPositionsManagerForAave Contract', () => {
     });
   });
 
-  describe.only('Borrowers on Aave (no suppliers)', () => {
+  describe('Borrowers on Aave (no suppliers)', () => {
     it('Should have correct balances at the beginning', async () => {
       expect((await morphoPositionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower1.getAddress())).onAave).to.equal(0);
       expect((await morphoPositionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower1.getAddress())).inP2P).to.equal(0);
