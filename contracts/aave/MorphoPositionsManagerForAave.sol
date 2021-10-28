@@ -672,7 +672,8 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
             highestValue = suppliersOnAave[_aTokenAddress].last();
         }
         // Withdraw from Aave
-        _withdrawERC20FromAave(_aTokenAddress, _amount - remainingToMatch);
+        uint256 toWithdraw = _amount - remainingToMatch;
+        if (toWithdraw > 0) _withdrawERC20FromAave(_aTokenAddress, _amount - remainingToMatch);
     }
 
     /** @dev Finds liquidity in peer-to-peer and unmatches it to reconnect Aave.
@@ -713,7 +714,8 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
             highestValue = suppliersInP2P[_aTokenAddress].last();
         }
         // Supply on Aave
-        _supplyERC20ToAave(_aTokenAddress, _amount - remainingToUnmatch);
+        uint256 toSupply = _amount - remainingToUnmatch;
+        if (toSupply > 0) _supplyERC20ToAave(_aTokenAddress, _amount - remainingToUnmatch);
     }
 
     /** @dev Finds borrowers on Aave that match the given `_amount` and move them in P2P.
