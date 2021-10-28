@@ -200,8 +200,8 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
     constructor(address _aaveMarketsManager, address _lendingPoolAddressesProvider) {
         marketsManagerForAave = IMarketsManagerForAave(_aaveMarketsManager);
         addressesProvider = ILendingPoolAddressesProvider(_lendingPoolAddressesProvider);
-        bytes32 input = 0x1000000000000000000000000000000000000000000000000000000000000000;
-        dataProvider = IProtocolDataProvider(addressesProvider.getAddress(input));
+        bytes32 dataProviderId = 0x1000000000000000000000000000000000000000000000000000000000000000;
+        dataProvider = IProtocolDataProvider(addressesProvider.getAddress(dataProviderId));
         lendingPool = ILendingPool(addressesProvider.getLendingPool());
     }
 
