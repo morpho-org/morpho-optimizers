@@ -766,8 +766,10 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
         }
         // Repay Aave
         uint256 toRepay = _amount - remainingToMatch;
-        erc20Token.safeApprove(_aTokenAddress, toRepay);
-        lendingPool.repay(address(erc20Token), toRepay, 2, address(this));
+        if (toRepay > 0) {
+            erc20Token.safeApprove(address(lendingPool), toRepay);
+            lendingPool.repay(address(erc20Token), toRepay, 2, address(this));
+        }
     }
 
     /** @dev Finds borrowers in peer-to-peer that match the given `_amount` and move them to Aave.
