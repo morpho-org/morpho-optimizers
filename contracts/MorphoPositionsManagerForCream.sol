@@ -228,28 +228,27 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
         IERC20 erc20Token = IERC20(crERC20Token.underlying());
         erc20Token.safeTransferFrom(msg.sender, address(this), _amount);
         uint256 crExchangeRate = crERC20Token.exchangeRateCurrent();
+        /* DEFAULT CASE: There aren't any borrowers waiting on Cream, Morpho supplies all the tokens to Cream */
+        uint256 remainingToSupplyToCream = _amount;
 
-        /* CASE 1: Some borrowers are waiting on Cream, Morpho matches the supplier in P2P with them */
+        /* If some borrowers are waiting on Cream, Morpho matches the supplier in P2P with them as much as possible */
         if (borrowersOnCream[_crERC20Address].isNotEmpty()) {
             uint256 mExchangeRate = marketsManagerForCompLike.updateMUnitExchangeRate(
                 _crERC20Address
             );
-            uint256 remainingToSupplyToCream = _matchBorrowers(_crERC20Address, _amount); // In underlying
+            remainingToSupplyToCream = _matchBorrowers(_crERC20Address, _amount); // In underlying
             uint256 matched = _amount - remainingToSupplyToCream;
+
             if (matched > 0) {
                 supplyBalanceInOf[_crERC20Address][msg.sender].inP2P += matched.div(mExchangeRate); // In mUnit
             }
-            /* If there aren't enough borrowers waiting on Cream to match all the tokens supplied, the rest is supplied to Cream */
-            if (remainingToSupplyToCream > 0) {
-                supplyBalanceInOf[_crERC20Address][msg.sender].onCream += remainingToSupplyToCream
-                    .div(crExchangeRate); // In crToken
-                _supplyERC20ToCream(_crERC20Address, remainingToSupplyToCream); // Revert on error
-            }
         }
-        /* CASE 2: There aren't any borrowers waiting on Cream, Morpho supplies all the tokens to Cream */
-        else {
-            supplyBalanceInOf[_crERC20Address][msg.sender].onCream += _amount.div(crExchangeRate); // In crToken
-            _supplyERC20ToCream(_crERC20Address, _amount); // Revert on error
+
+        /* If there aren't enough borrowers waiting on Cream to match all the tokens supplied, the rest is supplied to Cream */
+        if (remainingToSupplyToCream > 0) {
+            supplyBalanceInOf[_crERC20Address][msg.sender].onCream += remainingToSupplyToCream
+                .div(crExchangeRate); // In crToken
+            _supplyERC20ToCream(_crERC20Address, remainingToSupplyToCream); // Revert on error
         }
 
         _updateSupplierList(_crERC20Address, msg.sender);
@@ -270,36 +269,30 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
         _checkAccountLiquidity(msg.sender, _crERC20Address, 0, _amount);
         ICErc20 crERC20Token = ICErc20(_crERC20Address);
         IERC20 erc20Token = IERC20(crERC20Token.underlying());
-        // No need to update mUnitExchangeRate here as it's done in `_checkAccountLiquidity`
-        uint256 mExchangeRate = marketsManagerForCompLike.mUnitExchangeRate(_crERC20Address);
+        /* DEFAULT CASE: There aren't any borrowers waiting on Cream, Morpho borrows all the tokens from Cream */
+        uint256 remainingToBorrowOnCream = _amount;
 
-        /* CASE 1: Some suppliers are waiting on Cream, Morpho matches the borrower in P2P with them */
+        /* If some suppliers are waiting on Cream, Morpho matches the borrower in P2P with them as much as possible */
         if (suppliersOnCream[_crERC20Address].isNotEmpty()) {
-            uint256 remainingToBorrowOnCream = _matchSuppliers(_crERC20Address, _amount); // In underlying
+            // No need to update mUnitExchangeRate here as it's done in `_checkAccountLiquidity`
+            uint256 mExchangeRate = marketsManagerForCompLike.mUnitExchangeRate(_crERC20Address);
+            remainingToBorrowOnCream = _matchSuppliers(_crERC20Address, _amount); // In underlying
             uint256 matched = _amount - remainingToBorrowOnCream;
 
             if (matched > 0) {
                 borrowBalanceInOf[_crERC20Address][msg.sender].inP2P += matched.div(mExchangeRate); // In mUnit
             }
-
-            /* If there aren't enough suppliers waiting on Cream to match all the tokens borrowed, the rest is borrowed from Cream */
-            if (remainingToBorrowOnCream > 0) {
-                _unmatchTheSupplier(msg.sender); // Before borrowing on Cream, we put all the collateral of the borrower on Cream (cf Liquidation Invariant in docs)
-                require(
-                    crERC20Token.borrow(remainingToBorrowOnCream) == 0,
-                    "borrow(1):borrow-cream-fail"
-                );
-                borrowBalanceInOf[_crERC20Address][msg.sender].onCream += remainingToBorrowOnCream
-                    .div(crERC20Token.borrowIndex()); // In cdUnit
-            }
         }
-        /* CASE 2: There aren't any borrowers waiting on Cream, Morpho borrows all the tokens from Cream */
-        else {
+
+        /* If there aren't enough suppliers waiting on Cream to match all the tokens borrowed, the rest is borrowed from Cream */
+        if (remainingToBorrowOnCream > 0) {
             _unmatchTheSupplier(msg.sender); // Before borrowing on Cream, we put all the collateral of the borrower on Cream (cf Liquidation Invariant in docs)
-            require(crERC20Token.borrow(_amount) == 0, "borrow(2):borrow-cream-fail");
-            borrowBalanceInOf[_crERC20Address][msg.sender].onCream += _amount.div(
-                crERC20Token.borrowIndex()
-            ); // In cdUnit
+            require(
+                crERC20Token.borrow(remainingToBorrowOnCream) == 0,
+                "borrow-cream-fail"
+            );
+            borrowBalanceInOf[_crERC20Address][msg.sender].onCream += remainingToBorrowOnCream
+                .div(crERC20Token.borrowIndex()); // In cdUnit
         }
 
         _updateBorrowerList(_crERC20Address, msg.sender);
