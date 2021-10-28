@@ -78,7 +78,9 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
 
     /* Storage */
 
-    uint256 public constant LIQUIDATION_CLOSE_FACTOR_PERCENT = 5000;
+    uint256 public constant LIQUIDATION_CLOSE_FACTOR_PERCENT = 5000; // In basis points.
+    bytes32 public constant DATA_PROVIDER_ID =
+        0x1000000000000000000000000000000000000000000000000000000000000000; // Id of the data provider.
 
     mapping(address => RedBlackBinaryTree.Tree) private suppliersInP2P; // Suppliers in peer-to-peer.
     mapping(address => RedBlackBinaryTree.Tree) private suppliersOnAave; // Suppliers on Aave.
@@ -200,20 +202,18 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
     constructor(address _aaveMarketsManager, address _lendingPoolAddressesProvider) {
         marketsManagerForAave = IMarketsManagerForAave(_aaveMarketsManager);
         addressesProvider = ILendingPoolAddressesProvider(_lendingPoolAddressesProvider);
-        bytes32 dataProviderId = 0x1000000000000000000000000000000000000000000000000000000000000000;
-        dataProvider = IProtocolDataProvider(addressesProvider.getAddress(dataProviderId));
+        dataProvider = IProtocolDataProvider(addressesProvider.getAddress(DATA_PROVIDER_ID));
         lendingPool = ILendingPool(addressesProvider.getLendingPool());
     }
 
     /* External */
 
-    // /** @dev Sets the comptroller and oracle address.
-    //  *  @param _lendingPoolAddress The address of Aave's lendingPool.
-    //  */
-    // function setComptroller(address _lendingPoolAddress) external onlyMarketsManager {
-    //     lendingPool = ILendingPool(_lendingPoolAddress);
-    //     creamOracle = ICompoundOracle(creamtroller.oracle());
-    // }
+    /** @dev Updates the lending pool and the data provider.
+     */
+    function updateAaveContracts() external {
+        dataProvider = IProtocolDataProvider(addressesProvider.getAddress(DATA_PROVIDER_ID));
+        lendingPool = ILendingPool(addressesProvider.getLendingPool());
+    }
 
     /** @dev Sets the threshold of a market.
      *  @param _aTokenAddress The address of the market to set the threshold.
