@@ -45,8 +45,9 @@ describe('MorphoPositionsManagerForCream Contract', () => {
   let borrowers;
 
   let underlyingThreshold;
+  let snapshotId;
 
-  beforeEach(async () => {
+  before(async () => {
     // Users
     signers = await ethers.getSigners();
     [owner, supplier1, supplier2, supplier3, borrower1, borrower2, borrower3, liquidator, ...addrs] = signers;
@@ -99,6 +100,14 @@ describe('MorphoPositionsManagerForCream Contract', () => {
     await morphoMarketsManagerForCompLike.connect(owner).createMarket(config.tokens.cUsdt.address);
     await morphoMarketsManagerForCompLike.connect(owner).updateThreshold(config.tokens.cUsdc.address, BigNumber.from(1).pow(6));
     await morphoMarketsManagerForCompLike.connect(owner).updateThreshold(config.tokens.cUsdt.address, BigNumber.from(1).pow(6));
+  });
+
+  beforeEach(async () => {
+    snapshotId = await hre.network.provider.send('evm_snapshot', []);
+  });
+
+  afterEach(async () => {
+    await hre.network.provider.send('evm_revert', [snapshotId]);
   });
 
   describe('Deployment', () => {
