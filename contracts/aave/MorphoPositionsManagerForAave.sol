@@ -69,11 +69,14 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
         uint256 collateralPrice; // The price of the collateral asset (in ETH).
         uint256 normalizedIncome;
         uint256 totalCollateral;
-        uint256 liquidationThreshold;
+        uint256 liquidationBonus;
         uint256 collateralReserveDecimals;
         uint256 collateralTokenUnit;
         uint256 borrowReserveDecimals;
-        uint256 borrowTokenUnit;
+        uint256 borrowedTokenUnit;
+        address tokenBorrowedAddress;
+        address tokenCollateralAddress;
+        IPriceOracleGetter oracle;
     }
 
     /* Storage */
@@ -373,15 +376,14 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
         );
         require(vars.debtValue > vars.maxDebtValue, "liquidate:debt-value<=max");
         IAToken aTokenBorrowed = IAToken(_aTokenBorrowedAddress);
+        IAToken aTokenCollateral = IAToken(_aTokenCollateralAddress);
+        vars.tokenBorrowedAddress = aTokenBorrowed.UNDERLYING_ASSET_ADDRESS();
+        vars.tokenCollateralAddress = aTokenCollateral.UNDERLYING_ASSET_ADDRESS();
         vars.borrowBalance =
             borrowBalanceInOf[_aTokenBorrowedAddress][_borrower]
                 .onAave
                 .wadToRay()
-                .rayMul(
-                    lendingPool.getReserveNormalizedVariableDebt(
-                        aTokenBorrowed.UNDERLYING_ASSET_ADDRESS()
-                    )
-                )
+                .rayMul(lendingPool.getReserveNormalizedVariableDebt(vars.tokenBorrowedAddress))
                 .wadToRay() +
             borrowBalanceInOf[_aTokenBorrowedAddress][_borrower]
                 .inP2P
@@ -393,32 +395,27 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
             "liquidate:amount>allowed"
         );
 
-        IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
+        vars.oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
         _repay(_aTokenBorrowedAddress, _borrower, _amount);
 
         // Calculate the amount of token to seize from collateral
-        vars.collateralPrice = oracle.getAssetPrice(_aTokenCollateralAddress); // In ETH
-        vars.borrowedPrice = oracle.getAssetPrice(_aTokenBorrowedAddress); // In ETH
-        (vars.collateralReserveDecimals, , vars.liquidationThreshold, , , , , , , ) = dataProvider
-            .getReserveConfigurationData(
-            IAToken(_aTokenCollateralAddress).UNDERLYING_ASSET_ADDRESS()
-        );
+        vars.collateralPrice = vars.oracle.getAssetPrice(vars.tokenCollateralAddress); // In ETH
+        vars.borrowedPrice = vars.oracle.getAssetPrice(vars.tokenBorrowedAddress); // In ETH
+        (vars.collateralReserveDecimals, , , vars.liquidationBonus, , , , , , ) = dataProvider
+            .getReserveConfigurationData(vars.tokenCollateralAddress);
         (vars.borrowReserveDecimals, , , , , , , , , ) = dataProvider.getReserveConfigurationData(
-            IAToken(_aTokenCollateralAddress).UNDERLYING_ASSET_ADDRESS()
+            vars.tokenBorrowedAddress
         );
         vars.collateralTokenUnit = 10**vars.collateralReserveDecimals;
-        vars.borrowTokenUnit = 10**vars.borrowReserveDecimals;
+        vars.borrowedTokenUnit = 10**vars.borrowReserveDecimals;
         vars.amountToSeize = _amount
-            .mul(vars.collateralPrice)
-            .div(vars.collateralTokenUnit)
-            .mul(vars.borrowTokenUnit)
-            .div(vars.borrowedPrice)
-            .mul(vars.liquidationThreshold)
+            .mul(vars.borrowedPrice)
+            .div(vars.borrowedTokenUnit)
+            .mul(vars.collateralTokenUnit)
+            .div(vars.collateralPrice)
+            .mul(vars.liquidationBonus)
             .div(10000);
-        IAToken aTokenCollateral = IAToken(_aTokenCollateralAddress);
-        vars.normalizedIncome = lendingPool.getReserveNormalizedIncome(
-            aTokenCollateral.UNDERLYING_ASSET_ADDRESS()
-        );
+        vars.normalizedIncome = lendingPool.getReserveNormalizedIncome(vars.tokenCollateralAddress);
         vars.totalCollateral =
             supplyBalanceInOf[_aTokenCollateralAddress][_borrower]
                 .onAave
@@ -930,29 +927,25 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
                     .rayMul(vars.normalizedIncome)
                     .rayToWad() +
                 supplyBalanceInOf[vars.aTokenEntered][_account].inP2P.mul(vars.mExchangeRate);
+            vars.underlyingPrice = vars.oracle.getAssetPrice(vars.underlyingAddress); // In ETH
 
-            vars.underlyingPrice = vars.oracle.getAssetPrice(
-                IAToken(vars.aTokenEntered).UNDERLYING_ASSET_ADDRESS()
-            ); // In ETH
             (vars.reserveDecimals, , vars.liquidationThreshold, , , , , , , ) = dataProvider
-                .getReserveConfigurationData(
-                IAToken(vars.aTokenEntered).UNDERLYING_ASSET_ADDRESS()
-            );
+                .getReserveConfigurationData(vars.underlyingAddress);
             vars.tokenUnit = 10**vars.reserveDecimals;
             if (_aTokenAddress == vars.aTokenEntered) {
                 vars.debtToAdd += _borrowedAmount;
                 vars.redeemedValue = _withdrawnAmount.mul(vars.underlyingPrice).div(vars.tokenUnit);
             }
-            // Conversion of the collateral to dollars
+            // Conversion of the collateral to ETH
             vars.collateralToAdd = vars.collateralToAdd.mul(vars.underlyingPrice).div(
                 vars.tokenUnit
             );
-            // Add the debt in this market to the global debt (in dollars)
+            // Add the debt in this market to the global debt (in ETH)
             vars.debtValue += vars.debtToAdd.mul(vars.underlyingPrice).div(vars.tokenUnit);
             // Add the collateral value in this asset to the global collateral value (in ETH)
             vars.collateralValue += vars.collateralToAdd;
             // Add the max debt value allowed by the collateral in this asset to the global max debt value (in ETH)
-            vars.maxDebtValue += vars.collateralToAdd.mul(vars.liquidationThreshold);
+            vars.maxDebtValue += vars.collateralToAdd.mul(vars.liquidationThreshold).div(10000);
         }
 
         vars.collateralValue -= vars.redeemedValue;

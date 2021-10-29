@@ -11,6 +11,10 @@ contract SimplePriceOracle {
         return prices[address(ICErc20(address(_cToken)).underlying())];
     }
 
+    function getAssetPrice(address _underlying) public view returns (uint256) {
+        return prices[_underlying];
+    }
+
     function setUnderlyingPrice(ICToken _cToken, uint256 _underlyingPriceMantissa) public {
         address asset = address(ICErc20(address(_cToken)).underlying());
         prices[asset] = _underlyingPriceMantissa;

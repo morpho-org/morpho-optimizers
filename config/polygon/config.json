@@ -84,6 +84,10 @@
         "address": "0x8dF3aad3a84da6b69A4DA8aeC3eA40d9091B2Ac4",
         "abi": "@config/polygon/abis/aToken.json"
       },
+      "aAave": {
+        "address": "0x1d2a0E5EC8E5bBDCA5CB219e649B565d8e5c3360",
+        "abi": "@config/polygon/abis/aToken.json"
+      },
       "stableDebtDai": {
         "address": "0x75c4d1Fb84429023170086f06E682DcbBF537b7d",
         "abi": "@config/polygon/abis/StableDebtToken.json"

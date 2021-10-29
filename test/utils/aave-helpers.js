@@ -28,15 +28,16 @@ const aDUnitToUnderlying = (aDUnitAmount, normalizedVariableDebt) => {
   return aDUnitAmount.mul(normalizedVariableDebt).div(RAY);
 };
 
-const computeNewMorphoExchangeRate = (currentExchangeRate, p2pBPY, currentBlockNumber, lastUpdateBlockNumber) => {
+const computeNewMorphoExchangeRate = (currentExchangeRate, p2pBPY, currentTimestamp, lastUpdateTimestamp) => {
   // Use of decimal.js library for better accuracy
   const bpy = new Decimal(p2pBPY.toString());
   const ray = new Decimal('1e27');
-  const exponent = new Decimal(currentBlockNumber - lastUpdateBlockNumber);
+  const exponent = new Decimal(currentTimestamp - lastUpdateTimestamp);
   const val = bpy.div(ray).add(1);
   const multiplier = val.pow(exponent);
-  const newExchangeRate = new Decimal(currentExchangeRate.toString()).mul(multiplier);
-  return Decimal.round(newExchangeRate);
+  const bigNumberMultiplier = BigNumber.from(multiplier.mul(ray).toFixed().toString());
+  const newExchangeRate = currentExchangeRate.mul(bigNumberMultiplier).div(RAY);
+  return newExchangeRate;
 };
 
 // TODO: re-write it
