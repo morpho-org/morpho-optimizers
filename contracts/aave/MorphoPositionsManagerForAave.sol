@@ -42,7 +42,7 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
     // Struct to avoid stack too deep error
     struct BalanceStateVars {
         uint256 debtValue; // The total debt value (in ETH).
-        uint256 maxDebtValue; // The maximum debt value available thanks to the collateral (in USD).
+        uint256 maxDebtValue; // The maximum debt value available thanks to the collateral (in ETH).
         uint256 redeemedValue; // The redeemed value if any (in ETH).
         uint256 collateralValue; // The collateral value (in ETH).
         uint256 debtToAdd; // The debt to add at the current iteration.
@@ -51,9 +51,9 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
         uint256 underlyingPrice; // The price of the underlying linked to the `aTokenEntered`.
         uint256 normalizedVariableDebt; // Normalized variable debt of the market.
         uint256 normalizedIncome; // Noramlized income of the market.
-        uint256 liquidationThreshold;
-        uint256 reserveDecimals;
-        uint256 tokenUnit;
+        uint256 liquidationThreshold; // The liquidation threshold on Aave.
+        uint256 reserveDecimals; // The number of decimals of the asset in the reserve.
+        uint256 tokenUnit; // The unit of tokens considering its decimals.
         address aTokenEntered; // The aToken token entered by the user.
         address underlyingAddress; // The address of the underlying.
         IPriceOracleGetter oracle; // Aave oracle.
@@ -61,22 +61,22 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
 
     // Struct to avoid stack too deep error
     struct LiquidateVars {
-        uint256 debtValue;
-        uint256 maxDebtValue;
+        uint256 debtValue; // The debt value (in ETH).
+        uint256 maxDebtValue; // The maximum debt value possible (in ETH).
         uint256 borrowBalance; // Total borrow balance of the user in underlying for a given asset.
         uint256 amountToSeize; // The amount of collateral underlying the liquidator can seize.
         uint256 borrowedPrice; // The price of the asset borrowed (in ETH).
         uint256 collateralPrice; // The price of the collateral asset (in ETH).
-        uint256 normalizedIncome;
-        uint256 totalCollateral;
-        uint256 liquidationBonus;
-        uint256 collateralReserveDecimals;
-        uint256 collateralTokenUnit;
-        uint256 borrowReserveDecimals;
-        uint256 borrowedTokenUnit;
-        address tokenBorrowedAddress;
-        address tokenCollateralAddress;
-        IPriceOracleGetter oracle;
+        uint256 normalizedIncome; // The normalized income of the asset.
+        uint256 totalCollateral; // The total of collateral of the user in underlying.
+        uint256 liquidationBonus; // The liquidation bonus on Aave.
+        uint256 collateralReserveDecimals; // The number of decimals of the collateral asset in the reserve.
+        uint256 collateralTokenUnit; // The unit of collateral token considering its decimals.
+        uint256 borrowedReserveDecimals; // The number of decimals of the borrowed asset in the reserve.
+        uint256 borrowedTokenUnit; // The unit of borrowed token considering its decimals.
+        address tokenBorrowedAddress; // The address of the borrowed asset.
+        address tokenCollateralAddress; // The address of the collateral asset.
+        IPriceOracleGetter oracle; // Aave oracle.
     }
 
     // Struct to avoid stack too deep error
@@ -411,11 +411,11 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
         vars.borrowedPrice = vars.oracle.getAssetPrice(vars.tokenBorrowedAddress); // In ETH
         (vars.collateralReserveDecimals, , , vars.liquidationBonus, , , , , , ) = dataProvider
             .getReserveConfigurationData(vars.tokenCollateralAddress);
-        (vars.borrowReserveDecimals, , , , , , , , , ) = dataProvider.getReserveConfigurationData(
+        (vars.borrowedReserveDecimals, , , , , , , , , ) = dataProvider.getReserveConfigurationData(
             vars.tokenBorrowedAddress
         );
         vars.collateralTokenUnit = 10**vars.collateralReserveDecimals;
-        vars.borrowedTokenUnit = 10**vars.borrowReserveDecimals;
+        vars.borrowedTokenUnit = 10**vars.borrowedReserveDecimals;
         vars.amountToSeize = _amount
             .mul(vars.borrowedPrice)
             .div(vars.borrowedTokenUnit)
