@@ -79,6 +79,14 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
         IPriceOracleGetter oracle;
     }
 
+    // Struct to avoid stack too deep error
+    struct MatchSuppliersVars {
+        uint256 numberOfKeysAtValue;
+        uint256 onAaveInUnderlying;
+        uint256 highestValueSeen;
+        uint256 highestValue;
+    }
+
     /* Storage */
 
     uint256 public constant LIQUIDATION_CLOSE_FACTOR_PERCENT = 5000; // In basis points.
@@ -625,30 +633,39 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
         internal
         returns (uint256 remainingToMatch)
     {
+        MatchSuppliersVars memory vars;
         IAToken aToken = IAToken(_aTokenAddress);
         remainingToMatch = _amount; // In underlying
         uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(
             aToken.UNDERLYING_ASSET_ADDRESS()
         );
-        uint256 mExchangeRate = marketsManagerForAave.mUnitExchangeRate(_aTokenAddress);
-        uint256 highestValue = suppliersOnAave[_aTokenAddress].last();
+        vars.highestValue = suppliersOnAave[_aTokenAddress].last();
 
-        while (remainingToMatch > 0 && highestValue != 0) {
+        vars.highestValueSeen; // Allow us to store the previous
+        while (remainingToMatch > 0 && vars.highestValue != 0) {
             // Loop on the keys (addresses) sharing the same value
-            while (suppliersOnAave[_aTokenAddress].getNumberOfKeysAtValue(highestValue) > 0) {
-                address account = suppliersOnAave[_aTokenAddress].valueKeyAtIndex(highestValue, 0); // Pick the first account in the list
+            vars.numberOfKeysAtValue = suppliersOnAave[_aTokenAddress].getNumberOfKeysAtValue(
+                vars.highestValue
+            );
+            uint256 indexOfSupplier = 0;
+            // Check that there are is still a supplier having no debt on Creams is
+            while (remainingToMatch > 0 && vars.numberOfKeysAtValue - indexOfSupplier > 0) {
+                address account = suppliersOnAave[_aTokenAddress].valueKeyAtIndex(
+                    vars.highestValue,
+                    indexOfSupplier
+                );
                 // Check if this user is not borrowing on Aave (cf Liquidation Invariant in docs)
                 if (!_hasDebtOnAave(account)) {
-                    uint256 onAaveInUnderlying = supplyBalanceInOf[_aTokenAddress][account]
+                    vars.onAaveInUnderlying = supplyBalanceInOf[_aTokenAddress][account]
                         .onAave
                         .wadToRay()
                         .rayMul(normalizedIncome)
                         .rayToWad();
                     uint256 toMatch;
                     // This is done to prevent rounding errors
-                    if (onAaveInUnderlying <= remainingToMatch) {
+                    if (vars.onAaveInUnderlying <= remainingToMatch) {
                         supplyBalanceInOf[_aTokenAddress][account].onAave = 0;
-                        toMatch = onAaveInUnderlying;
+                        toMatch = vars.onAaveInUnderlying;
                     } else {
                         toMatch = remainingToMatch;
                         supplyBalanceInOf[_aTokenAddress][account].onAave -= toMatch
@@ -659,14 +676,21 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
                     remainingToMatch -= toMatch;
                     supplyBalanceInOf[_aTokenAddress][account].inP2P += toMatch
                         .wadToRay()
-                        .rayDiv(mExchangeRate)
+                        .rayDiv(marketsManagerForAave.mUnitExchangeRate(_aTokenAddress))
                         .rayToWad(); // In mUnit
                     _updateSupplierList(_aTokenAddress, account);
+                    vars.numberOfKeysAtValue = suppliersOnAave[_aTokenAddress]
+                        .getNumberOfKeysAtValue(vars.highestValue);
                     emit SupplierMatched(account, _aTokenAddress, toMatch);
+                } else {
+                    vars.highestValueSeen = vars.highestValue;
+                    indexOfSupplier++;
                 }
             }
             // Update the highest value after the tree has been updated
-            highestValue = suppliersOnAave[_aTokenAddress].last();
+            if (vars.highestValueSeen > 0)
+                vars.highestValue = suppliersOnAave[_aTokenAddress].prev(vars.highestValueSeen);
+            else vars.highestValue = suppliersOnAave[_aTokenAddress].last();
         }
         // Withdraw from Aave
         uint256 toWithdraw = _amount - remainingToMatch;
@@ -692,7 +716,10 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
         uint256 highestValue = suppliersInP2P[_aTokenAddress].last();
 
         while (remainingToUnmatch > 0 && highestValue != 0) {
-            while (suppliersInP2P[_aTokenAddress].getNumberOfKeysAtValue(highestValue) > 0) {
+            while (
+                remainingToUnmatch > 0 &&
+                suppliersInP2P[_aTokenAddress].getNumberOfKeysAtValue(highestValue) > 0
+            ) {
                 address account = suppliersInP2P[_aTokenAddress].valueKeyAtIndex(highestValue, 0);
                 uint256 inP2P = supplyBalanceInOf[_aTokenAddress][account].inP2P; // In aToken
                 uint256 toUnmatch = Math.min(inP2P.mul(mExchangeRate), remainingToUnmatch); // In underlying
@@ -735,7 +762,10 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
         uint256 highestValue = borrowersOnAave[_aTokenAddress].last();
 
         while (remainingToMatch > 0 && highestValue != 0) {
-            while (borrowersOnAave[_aTokenAddress].getNumberOfKeysAtValue(highestValue) > 0) {
+            while (
+                remainingToMatch > 0 &&
+                borrowersOnAave[_aTokenAddress].getNumberOfKeysAtValue(highestValue) > 0
+            ) {
                 address account = borrowersOnAave[_aTokenAddress].valueKeyAtIndex(highestValue, 0);
                 uint256 onAaveInUnderlying = borrowBalanceInOf[_aTokenAddress][account]
                     .onAave
@@ -791,7 +821,10 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
         uint256 highestValue = borrowersInP2P[_aTokenAddress].last();
 
         while (remainingToUnmatch > 0 && highestValue != 0) {
-            while (borrowersInP2P[_aTokenAddress].getNumberOfKeysAtValue(highestValue) > 0) {
+            while (
+                remainingToUnmatch > 0 &&
+                borrowersInP2P[_aTokenAddress].getNumberOfKeysAtValue(highestValue) > 0
+            ) {
                 address account = borrowersInP2P[_aTokenAddress].valueKeyAtIndex(highestValue, 0);
                 uint256 inP2P = borrowBalanceInOf[_aTokenAddress][account].inP2P;
                 _unmatchTheSupplier(account); // Before borrowing on Aave, we put all the collateral of the borrower on Aave (cf Liquidation Invariant in docs)
@@ -963,13 +996,9 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
         if (borrowersInP2P[_aTokenAddress].keyExists(_account))
             borrowersInP2P[_aTokenAddress].remove(_account);
         uint256 onAave = borrowBalanceInOf[_aTokenAddress][_account].onAave;
-        if (onAave > 0) {
-            borrowersOnAave[_aTokenAddress].insert(_account, onAave);
-        }
+        if (onAave > 0) borrowersOnAave[_aTokenAddress].insert(_account, onAave);
         uint256 inP2P = borrowBalanceInOf[_aTokenAddress][_account].inP2P;
-        if (inP2P > 0) {
-            borrowersInP2P[_aTokenAddress].insert(_account, inP2P);
-        }
+        if (inP2P > 0) borrowersInP2P[_aTokenAddress].insert(_account, inP2P);
     }
 
     /** @dev Updates suppliers tree with the new balances of a given account.
@@ -982,13 +1011,9 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
         if (suppliersInP2P[_aTokenAddress].keyExists(_account))
             suppliersInP2P[_aTokenAddress].remove(_account);
         uint256 onAave = supplyBalanceInOf[_aTokenAddress][_account].onAave;
-        if (onAave > 0) {
-            suppliersOnAave[_aTokenAddress].insert(_account, onAave);
-        }
+        if (onAave > 0) suppliersOnAave[_aTokenAddress].insert(_account, onAave);
         uint256 inP2P = supplyBalanceInOf[_aTokenAddress][_account].inP2P;
-        if (inP2P > 0) {
-            suppliersInP2P[_aTokenAddress].insert(_account, inP2P);
-        }
+        if (inP2P > 0) suppliersInP2P[_aTokenAddress].insert(_account, inP2P);
     }
 
     function _hasDebtOnAave(address _account) internal view returns (bool) {

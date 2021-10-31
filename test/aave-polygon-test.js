@@ -746,7 +746,7 @@ describe('MorphoPositionsManagerForAave Contract', () => {
       expect((await morphoPositionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower1.getAddress())).inP2P).to.be.lt(1000000000000);
 
       // Check Morpho balances
-      expect(removeDigitsBigNumber(11, await aDaiToken.scaledBalanceOf(morphoPositionsManagerForAave.address))).to.equal(removeDigitsBigNumber(11, expectedMorphoScaledBalance));
+      expect(removeDigitsBigNumber(12, await aDaiToken.scaledBalanceOf(morphoPositionsManagerForAave.address))).to.equal(removeDigitsBigNumber(12, expectedMorphoScaledBalance));
       // Issue here: we cannot access the most updated borrow balance as it's updated during the repayBorrow on Aave.
       // const expectedMorphoBorrowBalance2 = morphoBorrowBalanceBefore2.sub(borrowerBalanceOnAave.mul(normalizeVariableDebt2).div(SCALE));
       // expect(removeDigitsBigNumber(3, await aToken.callStatic.borrowBalanceStored(morphoPositionsManagerForAave.address))).to.equal(removeDigitsBigNumber(3, expectedMorphoBorrowBalance2));
@@ -851,7 +851,7 @@ describe('MorphoPositionsManagerForAave Contract', () => {
   });
 
   describe('Test liquidation', () => {
-    it('Borrower should be liquidated while supply (collateral) is only on Cream', async () => {
+    it('Borrower should be liquidated while supply (collateral) is only on Aave', async () => {
       // Deploy custom price oracle
       const PriceOracle = await ethers.getContractFactory('SimplePriceOracle');
       priceOracle = await PriceOracle.deploy();
@@ -956,7 +956,7 @@ describe('MorphoPositionsManagerForAave Contract', () => {
       await usdcToken.connect(borrower1).approve(morphoPositionsManagerForAave.address, amount);
       await morphoPositionsManagerForAave.connect(borrower1).supply(config.tokens.aUsdc.address, amount);
 
-      // borrower2 borrows part of supply of borrower1 -> borrower1 has supply in peer-to-peer and on Cream
+      // borrower2 borrows part of supply of borrower1 -> borrower1 has supply in peer-to-peer and on Aave
       const toBorrow = amount;
       const toSupply = BigNumber.from(10).pow(8);
       await wbtcToken.connect(borrower2).approve(morphoPositionsManagerForAave.address, toSupply);
