@@ -661,18 +661,11 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
                         .wadToRay()
                         .rayMul(normalizedIncome)
                         .rayToWad();
-                    uint256 toMatch;
-                    // This is done to prevent rounding errors
-                    if (vars.onAaveInUnderlying <= remainingToMatch) {
-                        supplyBalanceInOf[_aTokenAddress][account].onAave = 0;
-                        toMatch = vars.onAaveInUnderlying;
-                    } else {
-                        toMatch = remainingToMatch;
-                        supplyBalanceInOf[_aTokenAddress][account].onAave -= toMatch
-                            .wadToRay()
-                            .rayDiv(normalizedIncome)
-                            .rayToWad();
-                    }
+                    uint256 toMatch = Math.min(vars.onAaveInUnderlying, remainingToMatch);
+                    supplyBalanceInOf[_aTokenAddress][account].onAave -= toMatch
+                        .wadToRay()
+                        .rayDiv(normalizedIncome)
+                        .rayToWad();
                     remainingToMatch -= toMatch;
                     supplyBalanceInOf[_aTokenAddress][account].inP2P += toMatch
                         .wadToRay()
@@ -772,17 +765,11 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
                     .wadToRay()
                     .rayMul(normalizedVariableDebt)
                     .rayToWad();
-                uint256 toMatch;
-                if (onAaveInUnderlying <= remainingToMatch) {
-                    toMatch = onAaveInUnderlying;
-                    borrowBalanceInOf[_aTokenAddress][account].onAave = 0;
-                } else {
-                    toMatch = remainingToMatch;
-                    borrowBalanceInOf[_aTokenAddress][account].onAave -= toMatch
-                        .wadToRay()
-                        .rayDiv(normalizedVariableDebt)
-                        .rayToWad();
-                }
+                uint256 toMatch = Math.min(onAaveInUnderlying, remainingToMatch);
+                borrowBalanceInOf[_aTokenAddress][account].onAave -= toMatch
+                    .wadToRay()
+                    .rayDiv(normalizedVariableDebt)
+                    .rayToWad();
                 remainingToMatch -= toMatch;
                 borrowBalanceInOf[_aTokenAddress][account].inP2P += toMatch
                     .wadToRay()
