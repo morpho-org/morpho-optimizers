@@ -12,12 +12,12 @@ const scaledBalanceToUnderlying = (scaledBalance, normalizedIncome) => {
   return scaledBalance.mul(normalizedIncome).div(RAY);
 };
 
-const underlyingToMUnit = (underlyingAmount, mUnitExchangeRate) => {
-  return underlyingAmount.mul(RAY).div(mUnitExchangeRate);
+const underlyingToP2PUnit = (underlyingAmount, p2pUnitExchangeRate) => {
+  return underlyingAmount.mul(RAY).div(p2pUnitExchangeRate);
 };
 
-const mUnitToUnderlying = (mUnitAmount, mUnitExchangeRate) => {
-  return mUnitAmount.mul(mUnitExchangeRate).div(RAY);
+const p2pUnitToUnderlying = (p2pUnitAmount, p2pUnitExchangeRate) => {
+  return p2pUnitAmount.mul(p2pUnitExchangeRate).div(RAY);
 };
 
 const underlyingToAdUnit = (underlyingAmount, normalizedVariableDebt) => {
@@ -50,8 +50,8 @@ module.exports = {
   SCALE,
   underlyingToScaledBalance,
   scaledBalanceToUnderlying,
-  underlyingToMUnit,
-  mUnitToUnderlying,
+  underlyingToP2PUnit,
+  p2pUnitToUnderlying,
   underlyingToAdUnit,
   aDUnitToUnderlying,
   computeNewMorphoExchangeRate,

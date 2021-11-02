@@ -30,12 +30,12 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
     /* Structs */
 
     struct SupplyBalance {
-        uint256 inP2P; // In mUnit, a unit that grows in value, to keep track of the interests/debt increase when users are in p2p.
+        uint256 inP2P; // In p2pUnit, a unit that grows in value, to keep track of the interests/debt increase when users are in p2p.
         uint256 onPool; // In scaled balance.
     }
 
     struct BorrowBalance {
-        uint256 inP2P; // In mUnit.
+        uint256 inP2P; // In p2pUnit.
         uint256 onPool; // In adUnit, a unit that grows in value, to keep track of the debt increase when users are in Aave. Multiply by current borrowIndex to get the underlying amount.
     }
 
@@ -47,7 +47,7 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
         uint256 collateralValue; // The collateral value (in ETH).
         uint256 debtToAdd; // The debt to add at the current iteration.
         uint256 collateralToAdd; // The collateral to add at the current iteration.
-        uint256 mExchangeRate; // The mUnit exchange rate of the `aTokenEntered`.
+        uint256 p2pExchangeRate; // The p2pUnit exchange rate of the `aTokenEntered`.
         uint256 underlyingPrice; // The price of the underlying linked to the `aTokenEntered`.
         uint256 normalizedVariableDebt; // Normalized variable debt of the market.
         uint256 normalizedIncome; // Noramlized income of the market.
@@ -255,14 +255,16 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
 
         /* CASE 1: Some borrowers are waiting on Aave, Morpho matches the supplier in P2P with them */
         if (borrowersOnPool[_aTokenAddress].isNotEmpty()) {
-            uint256 mExchangeRate = marketsManagerForAave.updateMUnitExchangeRate(_aTokenAddress);
+            uint256 p2pExchangeRate = marketsManagerForAave.updateP2PUnitExchangeRate(
+                _aTokenAddress
+            );
             uint256 remainingToSupplyToAave = _matchBorrowers(_aTokenAddress, _amount); // In underlying
             uint256 matched = _amount - remainingToSupplyToAave;
             if (matched > 0) {
                 supplyBalanceInOf[_aTokenAddress][msg.sender].inP2P += matched
                     .wadToRay()
-                    .rayDiv(mExchangeRate)
-                    .rayToWad(); // In mUnit
+                    .rayDiv(p2pExchangeRate)
+                    .rayToWad(); // In p2pUnit
             }
             /* If there aren't enough borrowers waiting on Aave to match all the tokens supplied, the rest is supplied to Aave */
             if (remainingToSupplyToAave > 0) {
@@ -300,8 +302,8 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
         _checkAccountLiquidity(msg.sender, _aTokenAddress, 0, _amount);
         IAToken aToken = IAToken(_aTokenAddress);
         IERC20 erc20Token = IERC20(aToken.UNDERLYING_ASSET_ADDRESS());
-        // No need to update mUnitExchangeRate here as it's done in `_checkAccountLiquidity`
-        uint256 mExchangeRate = marketsManagerForAave.mUnitExchangeRate(_aTokenAddress);
+        // No need to update p2pUnitExchangeRate here as it's done in `_checkAccountLiquidity`
+        uint256 p2pExchangeRate = marketsManagerForAave.p2pUnitExchangeRate(_aTokenAddress);
 
         /* CASE 1: Some suppliers are waiting on Aave, Morpho matches the borrower in P2P with them */
         if (suppliersOnPool[_aTokenAddress].isNotEmpty()) {
@@ -311,8 +313,8 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
             if (matched > 0) {
                 borrowBalanceInOf[_aTokenAddress][msg.sender].inP2P += matched
                     .wadToRay()
-                    .rayDiv(mExchangeRate)
-                    .rayToWad(); // In mUnit
+                    .rayDiv(p2pExchangeRate)
+                    .rayToWad(); // In p2pUnit
             }
 
             /* If there aren't enough suppliers waiting on Aave to match all the tokens borrowed, the rest is borrowed from Aave */
@@ -396,7 +398,7 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
             borrowBalanceInOf[_aTokenBorrowedAddress][_borrower]
                 .inP2P
                 .wadToRay()
-                .rayMul(marketsManagerForAave.mUnitExchangeRate(_aTokenBorrowedAddress))
+                .rayMul(marketsManagerForAave.p2pUnitExchangeRate(_aTokenBorrowedAddress))
                 .rayToWad();
         require(
             _amount <= vars.borrowBalance.mul(LIQUIDATION_CLOSE_FACTOR_PERCENT).div(10000),
@@ -433,7 +435,7 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
             supplyBalanceInOf[_aTokenCollateralAddress][_borrower]
                 .inP2P
                 .wadToRay()
-                .rayMul(marketsManagerForAave.updateMUnitExchangeRate(_aTokenCollateralAddress))
+                .rayMul(marketsManagerForAave.updateP2PUnitExchangeRate(_aTokenCollateralAddress))
                 .rayToWad();
         require(vars.amountToSeize <= vars.totalCollateral, "liquidate:to-seize>collateral");
 
@@ -487,7 +489,7 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
 
         /* If there remains some tokens to withdraw (CASE 2), Morpho breaks credit lines and repair them either with other users or with Aave itself */
         if (remainingToWithdraw > 0) {
-            uint256 mExchangeRate = marketsManagerForAave.mUnitExchangeRate(_aTokenAddress);
+            uint256 p2pExchangeRate = marketsManagerForAave.p2pUnitExchangeRate(_aTokenAddress);
             uint256 aTokenContractBalance = aToken.balanceOf(address(this));
             /* CASE 1: Other suppliers have enough tokens on Aave to compensate user's position*/
             if (remainingToWithdraw <= aTokenContractBalance) {
@@ -497,16 +499,16 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
                 );
                 supplyBalanceInOf[_aTokenAddress][_holder].inP2P -= remainingToWithdraw
                     .wadToRay()
-                    .rayDiv(mExchangeRate)
-                    .rayToWad(); // In mUnit
+                    .rayDiv(p2pExchangeRate)
+                    .rayToWad(); // In p2pUnit
             }
             /* CASE 2: Other suppliers don't have enough tokens on Aave. Such scenario is called the Hard-Withdraw */
             else {
                 uint256 remaining = _matchSuppliers(_aTokenAddress, aTokenContractBalance);
                 supplyBalanceInOf[_aTokenAddress][_holder].inP2P -= remainingToWithdraw
                     .wadToRay()
-                    .rayDiv(mExchangeRate)
-                    .rayToWad(); // In mUnit
+                    .rayDiv(p2pExchangeRate)
+                    .rayToWad(); // In p2pUnit
                 remainingToWithdraw -= remaining;
                 require(
                     _unmatchBorrowers(_aTokenAddress, remainingToWithdraw) == 0, // We break some P2P credit lines the user had with borrowers and fallback on Aave.
@@ -573,14 +575,16 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
             IVariableDebtToken variableDebtToken = IVariableDebtToken(
                 reserveData.variableDebtTokenAddress
             );
-            uint256 mExchangeRate = marketsManagerForAave.updateMUnitExchangeRate(_aTokenAddress);
+            uint256 p2pExchangeRate = marketsManagerForAave.updateP2PUnitExchangeRate(
+                _aTokenAddress
+            );
             uint256 contractBorrowBalanceOnAave = variableDebtToken.scaledBalanceOf(address(this));
             /* CASE 1: Other borrowers are borrowing enough on Aave to compensate user's position */
             if (remainingToRepay <= contractBorrowBalanceOnAave) {
                 _matchBorrowers(_aTokenAddress, remainingToRepay);
                 borrowBalanceInOf[_aTokenAddress][_borrower].inP2P -= remainingToRepay
                     .wadToRay()
-                    .rayDiv(mExchangeRate)
+                    .rayDiv(p2pExchangeRate)
                     .rayToWad();
             }
             /* CASE 2: Other borrowers aren't borrowing enough on Aave to compensate user's position */
@@ -588,8 +592,8 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
                 _matchBorrowers(_aTokenAddress, contractBorrowBalanceOnAave);
                 borrowBalanceInOf[_aTokenAddress][_borrower].inP2P -= remainingToRepay
                     .wadToRay()
-                    .rayDiv(mExchangeRate)
-                    .rayToWad(); // In mUnit
+                    .rayDiv(p2pExchangeRate)
+                    .rayToWad(); // In p2pUnit
                 remainingToRepay -= contractBorrowBalanceOnAave;
                 require(
                     _unmatchSuppliers(_aTokenAddress, remainingToRepay) == 0, // We break some P2P credit lines the user had with suppliers and fallback on Aave.
@@ -624,7 +628,7 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
     }
 
     /** @dev Finds liquidity on Aave and matches it in P2P.
-     *  @dev Note: mUnitExchangeRate must have been updated before calling this function.
+     *  @dev Note: p2pUnitExchangeRate must have been updated before calling this function.
      *  @param _aTokenAddress The address of the market on which Morpho want to move users.
      *  @param _amount The amount to search for in underlying.
      *  @return remainingToMatch The remaining liquidity to search for in underlying.
@@ -669,8 +673,8 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
                     remainingToMatch -= toMatch;
                     supplyBalanceInOf[_aTokenAddress][account].inP2P += toMatch
                         .wadToRay()
-                        .rayDiv(marketsManagerForAave.mUnitExchangeRate(_aTokenAddress))
-                        .rayToWad(); // In mUnit
+                        .rayDiv(marketsManagerForAave.p2pUnitExchangeRate(_aTokenAddress))
+                        .rayToWad(); // In p2pUnit
                     _updateSupplierList(_aTokenAddress, account);
                     vars.numberOfKeysAtValue = suppliersOnPool[_aTokenAddress]
                         .getNumberOfKeysAtValue(vars.highestValue);
@@ -691,7 +695,7 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
     }
 
     /** @dev Finds liquidity in peer-to-peer and unmatches it to reconnect Aave.
-     *  @dev Note: mUnitExchangeRate must have been updated before calling this function.
+     *  @dev Note: p2pUnitExchangeRate must have been updated before calling this function.
      *  @param _aTokenAddress The address of the market on which Morpho want to move users.
      *  @param _amount The amount to search for in underlying.
      *  @return remainingToUnmatch The amount remaining to munmatchatch in underlying.
@@ -705,7 +709,7 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
             aToken.UNDERLYING_ASSET_ADDRESS()
         );
         remainingToUnmatch = _amount; // In underlying
-        uint256 mExchangeRate = marketsManagerForAave.mUnitExchangeRate(_aTokenAddress);
+        uint256 p2pExchangeRate = marketsManagerForAave.p2pUnitExchangeRate(_aTokenAddress);
         uint256 highestValue = suppliersInP2P[_aTokenAddress].last();
 
         while (remainingToUnmatch > 0 && highestValue != 0) {
@@ -715,7 +719,7 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
             ) {
                 address account = suppliersInP2P[_aTokenAddress].valueKeyAtIndex(highestValue, 0);
                 uint256 inP2P = supplyBalanceInOf[_aTokenAddress][account].inP2P; // In aToken
-                uint256 toUnmatch = Math.min(inP2P.mul(mExchangeRate), remainingToUnmatch); // In underlying
+                uint256 toUnmatch = Math.min(inP2P.mul(p2pExchangeRate), remainingToUnmatch); // In underlying
                 remainingToUnmatch -= toUnmatch;
                 supplyBalanceInOf[_aTokenAddress][account].onPool += toUnmatch
                     .wadToRay()
@@ -723,8 +727,8 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
                     .rayToWad();
                 supplyBalanceInOf[_aTokenAddress][account].inP2P -= toUnmatch
                     .wadToRay()
-                    .rayDiv(mExchangeRate)
-                    .rayToWad(); // In mUnit
+                    .rayDiv(p2pExchangeRate)
+                    .rayToWad(); // In p2pUnit
                 _updateSupplierList(_aTokenAddress, account);
                 emit SupplierUnmatched(account, _aTokenAddress, toUnmatch);
             }
@@ -736,7 +740,7 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
     }
 
     /** @dev Finds borrowers on Aave that match the given `_amount` and move them in P2P.
-     *  @dev Note: mUnitExchangeRate must have been updated before calling this function.
+     *  @dev Note: p2pUnitExchangeRate must have been updated before calling this function.
      *  @param _aTokenAddress The address of the market on which Morpho wants to move users.
      *  @param _amount The amount to match in underlying.
      *  @return remainingToMatch The amount remaining to match in underlying.
@@ -751,7 +755,7 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
         uint256 normalizedVariableDebt = lendingPool.getReserveNormalizedVariableDebt(
             address(erc20Token)
         );
-        uint256 mExchangeRate = marketsManagerForAave.mUnitExchangeRate(_aTokenAddress);
+        uint256 p2pExchangeRate = marketsManagerForAave.p2pUnitExchangeRate(_aTokenAddress);
         uint256 highestValue = borrowersOnPool[_aTokenAddress].last();
 
         while (remainingToMatch > 0 && highestValue != 0) {
@@ -773,7 +777,7 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
                 remainingToMatch -= toMatch;
                 borrowBalanceInOf[_aTokenAddress][account].inP2P += toMatch
                     .wadToRay()
-                    .rayDiv(mExchangeRate)
+                    .rayDiv(p2pExchangeRate)
                     .rayToWad();
                 _updateBorrowerList(_aTokenAddress, account);
                 emit BorrowerMatched(account, _aTokenAddress, toMatch);
@@ -789,7 +793,7 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
     }
 
     /** @dev Finds borrowers in peer-to-peer that match the given `_amount` and move them to Aave.
-     *  @dev Note: mUnitExchangeRate must have been updated before calling this function.
+     *  @dev Note: p2pUnitExchangeRate must have been updated before calling this function.
      *  @param _aTokenAddress The address of the market on which Morpho wants to move users.
      *  @param _amount The amount to match in underlying.
      *  @return remainingToUnmatch The amount remaining to munmatchatch in underlying.
@@ -801,7 +805,7 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
         IAToken aToken = IAToken(_aTokenAddress);
         IERC20 erc20Token = IERC20(aToken.UNDERLYING_ASSET_ADDRESS());
         remainingToUnmatch = _amount;
-        uint256 mExchangeRate = marketsManagerForAave.mUnitExchangeRate(_aTokenAddress);
+        uint256 p2pExchangeRate = marketsManagerForAave.p2pUnitExchangeRate(_aTokenAddress);
         uint256 normalizedVariableDebt = lendingPool.getReserveNormalizedVariableDebt(
             address(erc20Token)
         );
@@ -815,7 +819,7 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
                 address account = borrowersInP2P[_aTokenAddress].valueKeyAtIndex(highestValue, 0);
                 uint256 inP2P = borrowBalanceInOf[_aTokenAddress][account].inP2P;
                 _unmatchTheSupplier(account); // Before borrowing on Aave, we put all the collateral of the borrower on Aave (cf Liquidation Invariant in docs)
-                uint256 toUnmatch = Math.min(inP2P.mul(mExchangeRate), remainingToUnmatch); // In underlying
+                uint256 toUnmatch = Math.min(inP2P.mul(p2pExchangeRate), remainingToUnmatch); // In underlying
                 remainingToUnmatch -= toUnmatch;
                 borrowBalanceInOf[_aTokenAddress][account].onPool += toUnmatch
                     .wadToRay()
@@ -823,7 +827,7 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
                     .rayToWad();
                 borrowBalanceInOf[_aTokenAddress][account].inP2P -= toUnmatch
                     .wadToRay()
-                    .rayDiv(mExchangeRate)
+                    .rayDiv(p2pExchangeRate)
                     .rayToWad();
                 _updateBorrowerList(_aTokenAddress, account);
                 emit BorrowerUnmatched(account, _aTokenAddress, toUnmatch);
@@ -847,16 +851,16 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
             uint256 inP2P = supplyBalanceInOf[aTokenEntered][_account].inP2P;
 
             if (inP2P > 0) {
-                uint256 mExchangeRate = marketsManagerForAave.mUnitExchangeRate(aTokenEntered);
-                uint256 inP2PInUnderlying = inP2P.wadToRay().rayMul(mExchangeRate).rayToWad();
+                uint256 p2pExchangeRate = marketsManagerForAave.p2pUnitExchangeRate(aTokenEntered);
+                uint256 inP2PInUnderlying = inP2P.wadToRay().rayMul(p2pExchangeRate).rayToWad();
                 supplyBalanceInOf[aTokenEntered][_account].onPool += inP2PInUnderlying
                     .wadToRay()
                     .rayDiv(normalizedIncome)
                     .rayToWad();
                 supplyBalanceInOf[aTokenEntered][_account].inP2P -= inP2PInUnderlying
                     .wadToRay()
-                    .rayDiv(mExchangeRate)
-                    .rayToWad(); // In mUnit
+                    .rayDiv(p2pExchangeRate)
+                    .rayToWad(); // In p2pUnit
                 _unmatchBorrowers(aTokenEntered, inP2PInUnderlying);
                 _updateSupplierList(aTokenEntered, _account);
                 // Supply to Aave
@@ -925,7 +929,9 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
 
         for (uint256 i; i < enteredMarkets[_account].length; i++) {
             vars.aTokenEntered = enteredMarkets[_account][i];
-            vars.mExchangeRate = marketsManagerForAave.updateMUnitExchangeRate(vars.aTokenEntered);
+            vars.p2pExchangeRate = marketsManagerForAave.updateP2PUnitExchangeRate(
+                vars.aTokenEntered
+            );
             // Calculation of the current debt (in underlying)
             vars.underlyingAddress = IAToken(vars.aTokenEntered).UNDERLYING_ASSET_ADDRESS();
             vars.normalizedVariableDebt = lendingPool.getReserveNormalizedVariableDebt(
@@ -937,7 +943,7 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
                     .wadToRay()
                     .rayMul(vars.normalizedVariableDebt)
                     .rayToWad() +
-                borrowBalanceInOf[vars.aTokenEntered][_account].inP2P.mul(vars.mExchangeRate);
+                borrowBalanceInOf[vars.aTokenEntered][_account].inP2P.mul(vars.p2pExchangeRate);
             // Calculation of the current collateral (in underlying)
             vars.normalizedIncome = lendingPool.getReserveNormalizedIncome(vars.underlyingAddress);
             vars.collateralToAdd =
@@ -946,7 +952,7 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
                     .wadToRay()
                     .rayMul(vars.normalizedIncome)
                     .rayToWad() +
-                supplyBalanceInOf[vars.aTokenEntered][_account].inP2P.mul(vars.mExchangeRate);
+                supplyBalanceInOf[vars.aTokenEntered][_account].inP2P.mul(vars.p2pExchangeRate);
             vars.underlyingPrice = vars.oracle.getAssetPrice(vars.underlyingAddress); // In ETH
 
             (vars.reserveDecimals, , vars.liquidationThreshold, , , , , , , ) = dataProvider

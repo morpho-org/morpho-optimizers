@@ -29,8 +29,8 @@ contract MorphoMarketsManagerForAave is Ownable {
     bool public isPositionsManagerSet; // Whether or not the positions manager is set.
     mapping(address => bool) public isCreated; // Whether or not this market is created.
     mapping(address => uint256) public p2pBPY; // Block Percentage Yield ("midrate").
-    mapping(address => uint256) public mUnitExchangeRate; // current exchange rate from mUnit to underlying.
-    mapping(address => uint256) public lastUpdateTimestamp; // Last time mUnitExchangeRate was updated.
+    mapping(address => uint256) public p2pUnitExchangeRate; // current exchange rate from p2pUnit to underlying.
+    mapping(address => uint256) public lastUpdateTimestamp; // Last time p2pUnitExchangeRate was updated.
 
     IPositionsManagerForAave public positionsManagerForAave;
     ILendingPoolAddressesProvider public addressesProvider;
@@ -59,11 +59,11 @@ contract MorphoMarketsManagerForAave is Ownable {
      */
     event BPYUpdated(address _marketAddress, uint256 _newValue);
 
-    /** @dev Emitted when the mUnitExchangeRate of a market is updated.
+    /** @dev Emitted when the p2pUnitExchangeRate of a market is updated.
      *  @param _marketAddress The address of the market to update.
-     *  @param _newValue The new value of the mUnitExchangeRate.
+     *  @param _newValue The new value of the p2pUnitExchangeRate.
      */
-    event MUnitExchangeRateUpdated(address _marketAddress, uint256 _newValue);
+    event P2PUnitExchangeRateUpdated(address _marketAddress, uint256 _newValue);
 
     /** @dev Emitted when a threshold of a market is updated.
      *  @param _marketAddress The address of the market to update.
@@ -115,7 +115,7 @@ contract MorphoMarketsManagerForAave is Ownable {
         require(!isCreated[_marketAddress], "createMarket:mkt-already-created");
         positionsManagerForAave.setThreshold(_marketAddress, 1e18);
         lastUpdateTimestamp[_marketAddress] = block.timestamp;
-        mUnitExchangeRate[_marketAddress] = WadRayMath.ray();
+        p2pUnitExchangeRate[_marketAddress] = WadRayMath.ray();
         isCreated[_marketAddress] = true;
         updateBPY(_marketAddress);
         emit MarketCreated(_marketAddress);
@@ -133,7 +133,7 @@ contract MorphoMarketsManagerForAave is Ownable {
 
     /* Public */
 
-    /** @dev Updates the Block Percentage Yield (`p2pBPY`) and calculates the current exchange rate (`mUnitExchangeRate`).
+    /** @dev Updates the Block Percentage Yield (`p2pBPY`) and calculates the current exchange rate (`p2pUnitExchangeRate`).
      *  @param _marketAddress The address of the market we want to update.
      */
     function updateBPY(address _marketAddress) public isMarketCreated(_marketAddress) {
@@ -148,15 +148,15 @@ contract MorphoMarketsManagerForAave is Ownable {
 
         emit BPYUpdated(_marketAddress, p2pBPY[_marketAddress]);
 
-        // Update mUnitExhangeRate
-        updateMUnitExchangeRate(_marketAddress);
+        // Update p2pUnitExhangeRate
+        updateP2PUnitExchangeRate(_marketAddress);
     }
 
     /** @dev Updates the current exchange rate, taking into account the block percentage yield (p2pBPY) since the last time it has been updated.
      *  @param _marketAddress The address of the market we want to update.
-     *  @return currentExchangeRate to convert from mUnit to underlying or from underlying to mUnit.
+     *  @return currentExchangeRate to convert from p2pUnit to underlying or from underlying to p2pUnit.
      */
-    function updateMUnitExchangeRate(address _marketAddress)
+    function updateP2PUnitExchangeRate(address _marketAddress)
         public
         isMarketCreated(_marketAddress)
         returns (uint256)
@@ -164,21 +164,21 @@ contract MorphoMarketsManagerForAave is Ownable {
         uint256 currentTimestamp = block.timestamp;
 
         if (lastUpdateTimestamp[_marketAddress] == currentTimestamp) {
-            return mUnitExchangeRate[_marketAddress];
+            return p2pUnitExchangeRate[_marketAddress];
         } else {
             uint256 timeDifference = currentTimestamp - lastUpdateTimestamp[_marketAddress];
 
             // Update lastUpdateTimestamp
             lastUpdateTimestamp[_marketAddress] = currentTimestamp;
 
-            uint256 newMUnitExchangeRate = mUnitExchangeRate[_marketAddress].rayMul(
+            uint256 newP2PUnitExchangeRate = p2pUnitExchangeRate[_marketAddress].rayMul(
                 (WadRayMath.ray() + p2pBPY[_marketAddress]).rayPow(timeDifference)
             ); // In ray
 
             // Update currentExchangeRate
-            mUnitExchangeRate[_marketAddress] = newMUnitExchangeRate;
-            emit MUnitExchangeRateUpdated(_marketAddress, newMUnitExchangeRate);
-            return newMUnitExchangeRate;
+            p2pUnitExchangeRate[_marketAddress] = newP2PUnitExchangeRate;
+            emit P2PUnitExchangeRateUpdated(_marketAddress, newP2PUnitExchangeRate);
+            return newP2PUnitExchangeRate;
         }
     }
 }
