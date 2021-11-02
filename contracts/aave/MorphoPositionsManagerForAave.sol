@@ -31,12 +31,12 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
 
     struct SupplyBalance {
         uint256 inP2P; // In mUnit, a unit that grows in value, to keep track of the interests/debt increase when users are in p2p.
-        uint256 onAave; // In scaled balance.
+        uint256 onPool; // In scaled balance.
     }
 
     struct BorrowBalance {
         uint256 inP2P; // In mUnit.
-        uint256 onAave; // In adUnit, a unit that grows in value, to keep track of the debt increase when users are in Aave. Multiply by current borrowIndex to get the underlying amount.
+        uint256 onPool; // In adUnit, a unit that grows in value, to keep track of the debt increase when users are in Aave. Multiply by current borrowIndex to get the underlying amount.
     }
 
     // Struct to avoid stack too deep error
@@ -94,9 +94,9 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
         0x1000000000000000000000000000000000000000000000000000000000000000; // Id of the data provider.
 
     mapping(address => RedBlackBinaryTree.Tree) private suppliersInP2P; // Suppliers in peer-to-peer.
-    mapping(address => RedBlackBinaryTree.Tree) private suppliersOnAave; // Suppliers on Aave.
+    mapping(address => RedBlackBinaryTree.Tree) private suppliersOnPool; // Suppliers on Aave.
     mapping(address => RedBlackBinaryTree.Tree) private borrowersInP2P; // Borrowers in peer-to-peer.
-    mapping(address => RedBlackBinaryTree.Tree) private borrowersOnAave; // Borrowers on Aave.
+    mapping(address => RedBlackBinaryTree.Tree) private borrowersOnPool; // Borrowers on Aave.
     mapping(address => mapping(address => SupplyBalance)) public supplyBalanceInOf; // For a given market, the supply balance of user.
     mapping(address => mapping(address => BorrowBalance)) public borrowBalanceInOf; // For a given market, the borrow balance of user.
     mapping(address => mapping(address => bool)) public accountMembership; // Whether the account is in the market or not.
@@ -254,7 +254,7 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
         uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(address(erc20Token));
 
         /* CASE 1: Some borrowers are waiting on Aave, Morpho matches the supplier in P2P with them */
-        if (borrowersOnAave[_aTokenAddress].isNotEmpty()) {
+        if (borrowersOnPool[_aTokenAddress].isNotEmpty()) {
             uint256 mExchangeRate = marketsManagerForAave.updateMUnitExchangeRate(_aTokenAddress);
             uint256 remainingToSupplyToAave = _matchBorrowers(_aTokenAddress, _amount); // In underlying
             uint256 matched = _amount - remainingToSupplyToAave;
@@ -266,7 +266,7 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
             }
             /* If there aren't enough borrowers waiting on Aave to match all the tokens supplied, the rest is supplied to Aave */
             if (remainingToSupplyToAave > 0) {
-                supplyBalanceInOf[_aTokenAddress][msg.sender].onAave += remainingToSupplyToAave
+                supplyBalanceInOf[_aTokenAddress][msg.sender].onPool += remainingToSupplyToAave
                     .wadToRay()
                     .rayDiv(normalizedIncome)
                     .rayToWad(); // Scaled Balance
@@ -275,7 +275,7 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
         }
         /* CASE 2: There aren't any borrowers waiting on Aave, Morpho supplies all the tokens to Aave */
         else {
-            supplyBalanceInOf[_aTokenAddress][msg.sender].onAave += _amount
+            supplyBalanceInOf[_aTokenAddress][msg.sender].onPool += _amount
                 .wadToRay()
                 .rayDiv(normalizedIncome)
                 .rayToWad(); // Scaled Balance
@@ -304,7 +304,7 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
         uint256 mExchangeRate = marketsManagerForAave.mUnitExchangeRate(_aTokenAddress);
 
         /* CASE 1: Some suppliers are waiting on Aave, Morpho matches the borrower in P2P with them */
-        if (suppliersOnAave[_aTokenAddress].isNotEmpty()) {
+        if (suppliersOnPool[_aTokenAddress].isNotEmpty()) {
             uint256 remainingToBorrowOnAave = _matchSuppliers(_aTokenAddress, _amount); // In underlying
             uint256 matched = _amount - remainingToBorrowOnAave;
 
@@ -325,7 +325,7 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
                     0,
                     address(this)
                 );
-                borrowBalanceInOf[_aTokenAddress][msg.sender].onAave += remainingToBorrowOnAave
+                borrowBalanceInOf[_aTokenAddress][msg.sender].onPool += remainingToBorrowOnAave
                     .wadToRay()
                     .rayDiv(lendingPool.getReserveNormalizedVariableDebt(address(erc20Token)))
                     .rayToWad(); // In adUnit
@@ -335,7 +335,7 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
         else {
             _unmatchTheSupplier(msg.sender); // Before borrowing on Aave, we put all the collateral of the borrower on Aave (cf Liquidation Invariant in docs)
             lendingPool.borrow(address(erc20Token), _amount, 2, 0, address(this));
-            borrowBalanceInOf[_aTokenAddress][msg.sender].onAave += _amount
+            borrowBalanceInOf[_aTokenAddress][msg.sender].onPool += _amount
                 .wadToRay()
                 .rayDiv(lendingPool.getReserveNormalizedVariableDebt(address(erc20Token)))
                 .rayToWad(); // In adUnit
@@ -389,7 +389,7 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
         vars.tokenCollateralAddress = aTokenCollateral.UNDERLYING_ASSET_ADDRESS();
         vars.borrowBalance =
             borrowBalanceInOf[_aTokenBorrowedAddress][_borrower]
-                .onAave
+                .onPool
                 .wadToRay()
                 .rayMul(lendingPool.getReserveNormalizedVariableDebt(vars.tokenBorrowedAddress))
                 .wadToRay() +
@@ -426,7 +426,7 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
         vars.normalizedIncome = lendingPool.getReserveNormalizedIncome(vars.tokenCollateralAddress);
         vars.totalCollateral =
             supplyBalanceInOf[_aTokenCollateralAddress][_borrower]
-                .onAave
+                .onPool
                 .wadToRay()
                 .rayMul(vars.normalizedIncome)
                 .rayToWad() +
@@ -462,16 +462,16 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
         uint256 remainingToWithdraw = _amount;
 
         /* If user has some tokens waiting on Aave */
-        if (supplyBalanceInOf[_aTokenAddress][_holder].onAave > 0) {
+        if (supplyBalanceInOf[_aTokenAddress][_holder].onPool > 0) {
             uint256 amountOnAaveInUnderlying = supplyBalanceInOf[_aTokenAddress][_holder]
-                .onAave
+                .onPool
                 .wadToRay()
                 .rayMul(normalizedIncome)
                 .rayToWad();
             /* CASE 1: User withdraws less than his Aave supply balance */
             if (_amount <= amountOnAaveInUnderlying) {
                 _withdrawERC20FromAave(_aTokenAddress, _amount); // Revert on error
-                supplyBalanceInOf[_aTokenAddress][_holder].onAave -= _amount
+                supplyBalanceInOf[_aTokenAddress][_holder].onPool -= _amount
                     .wadToRay()
                     .rayDiv(normalizedIncome)
                     .rayToWad(); // In aToken
@@ -480,7 +480,7 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
             /* CASE 2: User withdraws more than his Aave supply balance */
             else {
                 _withdrawERC20FromAave(_aTokenAddress, amountOnAaveInUnderlying); // Revert on error
-                supplyBalanceInOf[_aTokenAddress][_holder].onAave = 0;
+                supplyBalanceInOf[_aTokenAddress][_holder].onPool = 0;
                 remainingToWithdraw = _amount - amountOnAaveInUnderlying; // In underlying
             }
         }
@@ -537,12 +537,12 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
         uint256 remainingToRepay = _amount;
 
         /* If user is borrowing tokens on Aave */
-        if (borrowBalanceInOf[_aTokenAddress][_borrower].onAave > 0) {
+        if (borrowBalanceInOf[_aTokenAddress][_borrower].onPool > 0) {
             uint256 normalizedVariableDebt = lendingPool.getReserveNormalizedVariableDebt(
                 address(erc20Token)
             );
             uint256 onAaveInUnderlying = borrowBalanceInOf[_aTokenAddress][_borrower]
-                .onAave
+                .onPool
                 .wadToRay()
                 .rayMul(normalizedVariableDebt)
                 .rayToWad();
@@ -550,7 +550,7 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
             if (_amount <= onAaveInUnderlying) {
                 erc20Token.safeApprove(address(lendingPool), _amount);
                 lendingPool.repay(address(erc20Token), _amount, 2, address(this));
-                borrowBalanceInOf[_aTokenAddress][_borrower].onAave -= _amount
+                borrowBalanceInOf[_aTokenAddress][_borrower].onPool -= _amount
                     .wadToRay()
                     .rayDiv(normalizedVariableDebt)
                     .rayToWad(); // In adUnit
@@ -560,7 +560,7 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
             else {
                 erc20Token.safeApprove(address(lendingPool), onAaveInUnderlying);
                 lendingPool.repay(address(erc20Token), onAaveInUnderlying, 2, address(this));
-                borrowBalanceInOf[_aTokenAddress][_borrower].onAave = 0;
+                borrowBalanceInOf[_aTokenAddress][_borrower].onPool = 0;
                 remainingToRepay -= onAaveInUnderlying; // In underlying
             }
         }
@@ -639,30 +639,30 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
         uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(
             aToken.UNDERLYING_ASSET_ADDRESS()
         );
-        vars.highestValue = suppliersOnAave[_aTokenAddress].last();
+        vars.highestValue = suppliersOnPool[_aTokenAddress].last();
 
         vars.highestValueSeen; // Allow us to store the previous
         while (remainingToMatch > 0 && vars.highestValue != 0) {
             // Loop on the keys (addresses) sharing the same value
-            vars.numberOfKeysAtValue = suppliersOnAave[_aTokenAddress].getNumberOfKeysAtValue(
+            vars.numberOfKeysAtValue = suppliersOnPool[_aTokenAddress].getNumberOfKeysAtValue(
                 vars.highestValue
             );
             uint256 indexOfSupplier = 0;
             // Check that there are is still a supplier having no debt on Creams is
             while (remainingToMatch > 0 && vars.numberOfKeysAtValue - indexOfSupplier > 0) {
-                address account = suppliersOnAave[_aTokenAddress].valueKeyAtIndex(
+                address account = suppliersOnPool[_aTokenAddress].valueKeyAtIndex(
                     vars.highestValue,
                     indexOfSupplier
                 );
                 // Check if this user is not borrowing on Aave (cf Liquidation Invariant in docs)
                 if (!_hasDebtOnAave(account)) {
                     vars.onAaveInUnderlying = supplyBalanceInOf[_aTokenAddress][account]
-                        .onAave
+                        .onPool
                         .wadToRay()
                         .rayMul(normalizedIncome)
                         .rayToWad();
                     uint256 toMatch = Math.min(vars.onAaveInUnderlying, remainingToMatch);
-                    supplyBalanceInOf[_aTokenAddress][account].onAave -= toMatch
+                    supplyBalanceInOf[_aTokenAddress][account].onPool -= toMatch
                         .wadToRay()
                         .rayDiv(normalizedIncome)
                         .rayToWad();
@@ -672,7 +672,7 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
                         .rayDiv(marketsManagerForAave.mUnitExchangeRate(_aTokenAddress))
                         .rayToWad(); // In mUnit
                     _updateSupplierList(_aTokenAddress, account);
-                    vars.numberOfKeysAtValue = suppliersOnAave[_aTokenAddress]
+                    vars.numberOfKeysAtValue = suppliersOnPool[_aTokenAddress]
                         .getNumberOfKeysAtValue(vars.highestValue);
                     emit SupplierMatched(account, _aTokenAddress, toMatch);
                 } else {
@@ -682,8 +682,8 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
             }
             // Update the highest value after the tree has been updated
             if (vars.highestValueSeen > 0)
-                vars.highestValue = suppliersOnAave[_aTokenAddress].prev(vars.highestValueSeen);
-            else vars.highestValue = suppliersOnAave[_aTokenAddress].last();
+                vars.highestValue = suppliersOnPool[_aTokenAddress].prev(vars.highestValueSeen);
+            else vars.highestValue = suppliersOnPool[_aTokenAddress].last();
         }
         // Withdraw from Aave
         uint256 toWithdraw = _amount - remainingToMatch;
@@ -717,7 +717,7 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
                 uint256 inP2P = supplyBalanceInOf[_aTokenAddress][account].inP2P; // In aToken
                 uint256 toUnmatch = Math.min(inP2P.mul(mExchangeRate), remainingToUnmatch); // In underlying
                 remainingToUnmatch -= toUnmatch;
-                supplyBalanceInOf[_aTokenAddress][account].onAave += toUnmatch
+                supplyBalanceInOf[_aTokenAddress][account].onPool += toUnmatch
                     .wadToRay()
                     .rayDiv(normalizedIncome)
                     .rayToWad();
@@ -752,21 +752,21 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
             address(erc20Token)
         );
         uint256 mExchangeRate = marketsManagerForAave.mUnitExchangeRate(_aTokenAddress);
-        uint256 highestValue = borrowersOnAave[_aTokenAddress].last();
+        uint256 highestValue = borrowersOnPool[_aTokenAddress].last();
 
         while (remainingToMatch > 0 && highestValue != 0) {
             while (
                 remainingToMatch > 0 &&
-                borrowersOnAave[_aTokenAddress].getNumberOfKeysAtValue(highestValue) > 0
+                borrowersOnPool[_aTokenAddress].getNumberOfKeysAtValue(highestValue) > 0
             ) {
-                address account = borrowersOnAave[_aTokenAddress].valueKeyAtIndex(highestValue, 0);
+                address account = borrowersOnPool[_aTokenAddress].valueKeyAtIndex(highestValue, 0);
                 uint256 onAaveInUnderlying = borrowBalanceInOf[_aTokenAddress][account]
-                    .onAave
+                    .onPool
                     .wadToRay()
                     .rayMul(normalizedVariableDebt)
                     .rayToWad();
                 uint256 toMatch = Math.min(onAaveInUnderlying, remainingToMatch);
-                borrowBalanceInOf[_aTokenAddress][account].onAave -= toMatch
+                borrowBalanceInOf[_aTokenAddress][account].onPool -= toMatch
                     .wadToRay()
                     .rayDiv(normalizedVariableDebt)
                     .rayToWad();
@@ -778,7 +778,7 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
                 _updateBorrowerList(_aTokenAddress, account);
                 emit BorrowerMatched(account, _aTokenAddress, toMatch);
             }
-            highestValue = borrowersOnAave[_aTokenAddress].last();
+            highestValue = borrowersOnPool[_aTokenAddress].last();
         }
         // Repay Aave
         uint256 toRepay = _amount - remainingToMatch;
@@ -817,7 +817,7 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
                 _unmatchTheSupplier(account); // Before borrowing on Aave, we put all the collateral of the borrower on Aave (cf Liquidation Invariant in docs)
                 uint256 toUnmatch = Math.min(inP2P.mul(mExchangeRate), remainingToUnmatch); // In underlying
                 remainingToUnmatch -= toUnmatch;
-                borrowBalanceInOf[_aTokenAddress][account].onAave += toUnmatch
+                borrowBalanceInOf[_aTokenAddress][account].onPool += toUnmatch
                     .wadToRay()
                     .rayDiv(normalizedVariableDebt)
                     .rayToWad();
@@ -849,7 +849,7 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
             if (inP2P > 0) {
                 uint256 mExchangeRate = marketsManagerForAave.mUnitExchangeRate(aTokenEntered);
                 uint256 inP2PInUnderlying = inP2P.wadToRay().rayMul(mExchangeRate).rayToWad();
-                supplyBalanceInOf[aTokenEntered][_account].onAave += inP2PInUnderlying
+                supplyBalanceInOf[aTokenEntered][_account].onPool += inP2PInUnderlying
                     .wadToRay()
                     .rayDiv(normalizedIncome)
                     .rayToWad();
@@ -933,7 +933,7 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
             );
             vars.debtToAdd =
                 borrowBalanceInOf[vars.aTokenEntered][_account]
-                    .onAave
+                    .onPool
                     .wadToRay()
                     .rayMul(vars.normalizedVariableDebt)
                     .rayToWad() +
@@ -942,7 +942,7 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
             vars.normalizedIncome = lendingPool.getReserveNormalizedIncome(vars.underlyingAddress);
             vars.collateralToAdd =
                 supplyBalanceInOf[vars.aTokenEntered][_account]
-                    .onAave
+                    .onPool
                     .wadToRay()
                     .rayMul(vars.normalizedIncome)
                     .rayToWad() +
@@ -978,12 +978,12 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
      *  @param _account The address of the borrower to move.
      */
     function _updateBorrowerList(address _aTokenAddress, address _account) internal {
-        if (borrowersOnAave[_aTokenAddress].keyExists(_account))
-            borrowersOnAave[_aTokenAddress].remove(_account);
+        if (borrowersOnPool[_aTokenAddress].keyExists(_account))
+            borrowersOnPool[_aTokenAddress].remove(_account);
         if (borrowersInP2P[_aTokenAddress].keyExists(_account))
             borrowersInP2P[_aTokenAddress].remove(_account);
-        uint256 onAave = borrowBalanceInOf[_aTokenAddress][_account].onAave;
-        if (onAave > 0) borrowersOnAave[_aTokenAddress].insert(_account, onAave);
+        uint256 onPool = borrowBalanceInOf[_aTokenAddress][_account].onPool;
+        if (onPool > 0) borrowersOnPool[_aTokenAddress].insert(_account, onPool);
         uint256 inP2P = borrowBalanceInOf[_aTokenAddress][_account].inP2P;
         if (inP2P > 0) borrowersInP2P[_aTokenAddress].insert(_account, inP2P);
     }
@@ -993,19 +993,19 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
      *  @param _account The address of the supplier to move.
      */
     function _updateSupplierList(address _aTokenAddress, address _account) internal {
-        if (suppliersOnAave[_aTokenAddress].keyExists(_account))
-            suppliersOnAave[_aTokenAddress].remove(_account);
+        if (suppliersOnPool[_aTokenAddress].keyExists(_account))
+            suppliersOnPool[_aTokenAddress].remove(_account);
         if (suppliersInP2P[_aTokenAddress].keyExists(_account))
             suppliersInP2P[_aTokenAddress].remove(_account);
-        uint256 onAave = supplyBalanceInOf[_aTokenAddress][_account].onAave;
-        if (onAave > 0) suppliersOnAave[_aTokenAddress].insert(_account, onAave);
+        uint256 onPool = supplyBalanceInOf[_aTokenAddress][_account].onPool;
+        if (onPool > 0) suppliersOnPool[_aTokenAddress].insert(_account, onPool);
         uint256 inP2P = supplyBalanceInOf[_aTokenAddress][_account].inP2P;
         if (inP2P > 0) suppliersInP2P[_aTokenAddress].insert(_account, inP2P);
     }
 
     function _hasDebtOnAave(address _account) internal view returns (bool) {
         for (uint256 i; i < enteredMarkets[_account].length; i++) {
-            if (borrowBalanceInOf[enteredMarkets[_account][i]][_account].onAave > 0) return true;
+            if (borrowBalanceInOf[enteredMarkets[_account][i]][_account].onPool > 0) return true;
         }
         return false;
     }

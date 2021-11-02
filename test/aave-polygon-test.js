@@ -182,7 +182,7 @@ describe('MorphoPositionsManagerForAave Contract', () => {
 
   describe('Suppliers on Aave (no borrowers)', () => {
     it('Should have correct balances at the beginning', async () => {
-      expect((await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier1.getAddress())).onAave).to.equal(0);
+      expect((await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier1.getAddress())).onPool).to.equal(0);
       expect((await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier1.getAddress())).inP2P).to.equal(0);
     });
 
@@ -201,10 +201,10 @@ describe('MorphoPositionsManagerForAave Contract', () => {
       // Check ERC20 balance
       expect(daiBalanceAfter).to.equal(expectedDaiBalanceAfter);
       const normalizedIncome = await lendingPool.getReserveNormalizedIncome(config.tokens.dai.address);
-      const expectedSupplyBalanceOnAave = underlyingToScaledBalance(amount, normalizedIncome);
+      const expectedSupplyBalanceOnPool = underlyingToScaledBalance(amount, normalizedIncome);
       expect(await aDaiToken.balanceOf(morphoPositionsManagerForAave.address)).to.equal(amount);
-      expect(removeDigitsBigNumber(1, (await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier1.getAddress())).onAave)).to.equal(
-        removeDigitsBigNumber(1, expectedSupplyBalanceOnAave)
+      expect(removeDigitsBigNumber(1, (await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier1.getAddress())).onPool)).to.equal(
+        removeDigitsBigNumber(1, expectedSupplyBalanceOnPool)
       );
       expect((await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier1.getAddress())).inP2P).to.equal(0);
     });
@@ -217,23 +217,23 @@ describe('MorphoPositionsManagerForAave Contract', () => {
       const daiBalanceAfter1 = await daiToken.balanceOf(supplier1.getAddress());
       expect(daiBalanceAfter1).to.equal(daiBalanceBefore1.sub(amount));
 
-      const supplyBalanceOnAave = (await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier1.getAddress())).onAave;
+      const supplyBalanceOnPool = (await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier1.getAddress())).onPool;
       const normalizedIncome1 = await lendingPool.getReserveNormalizedIncome(config.tokens.dai.address);
-      const toWithdraw1 = scaledBalanceToUnderlying(supplyBalanceOnAave, normalizedIncome1);
+      const toWithdraw1 = scaledBalanceToUnderlying(supplyBalanceOnPool, normalizedIncome1);
 
       // TODO: improve this test to prevent attacks
       await expect(morphoPositionsManagerForAave.connect(supplier1).withdraw(toWithdraw1.add(utils.parseUnits('0.001')).toString())).to.be.reverted;
 
       // Here we must calculate the next normalized income
       const normalizedIncome2 = await lendingPool.getReserveNormalizedIncome(config.tokens.dai.address);
-      const toWithdraw2 = scaledBalanceToUnderlying(supplyBalanceOnAave, normalizedIncome2);
+      const toWithdraw2 = scaledBalanceToUnderlying(supplyBalanceOnPool, normalizedIncome2);
       await morphoPositionsManagerForAave.connect(supplier1).withdraw(config.tokens.aDai.address, toWithdraw2);
       const daiBalanceAfter2 = await daiToken.balanceOf(supplier1.getAddress());
       // Check ERC20 balance
       expect(daiBalanceAfter2).to.equal(daiBalanceBefore1.sub(amount).add(toWithdraw2));
 
       // Check aToken left are only dust in supply balance
-      expect((await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier1.getAddress())).onAave).to.be.lt(BigNumber.from(10).pow(12));
+      expect((await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier1.getAddress())).onPool).to.be.lt(BigNumber.from(10).pow(12));
       await expect(morphoPositionsManagerForAave.connect(supplier1).withdraw(config.tokens.aDai.address, utils.parseUnits('0.001'))).to.be.reverted;
     });
 
@@ -253,12 +253,12 @@ describe('MorphoPositionsManagerForAave Contract', () => {
       expect(daiBalanceAfter).to.equal(daiBalanceBefore.sub(amountToApprove));
 
       // Check supply balance
-      const expectedSupplyBalanceOnAave1 = underlyingToScaledBalance(amount, normalizedIncome1);
-      const expectedSupplyBalanceOnAave2 = underlyingToScaledBalance(amount, normalizedIncome2);
-      const expectedSupplyBalanceOnAave = expectedSupplyBalanceOnAave1.add(expectedSupplyBalanceOnAave2);
-      expect(removeDigitsBigNumber(2, await aDaiToken.scaledBalanceOf(morphoPositionsManagerForAave.address))).to.equal(removeDigitsBigNumber(2, expectedSupplyBalanceOnAave));
-      expect(removeDigitsBigNumber(1, (await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier1.getAddress())).onAave)).to.equal(
-        removeDigitsBigNumber(1, expectedSupplyBalanceOnAave)
+      const expectedSupplyBalanceOnPool1 = underlyingToScaledBalance(amount, normalizedIncome1);
+      const expectedSupplyBalanceOnPool2 = underlyingToScaledBalance(amount, normalizedIncome2);
+      const expectedSupplyBalanceOnPool = expectedSupplyBalanceOnPool1.add(expectedSupplyBalanceOnPool2);
+      expect(removeDigitsBigNumber(2, await aDaiToken.scaledBalanceOf(morphoPositionsManagerForAave.address))).to.equal(removeDigitsBigNumber(2, expectedSupplyBalanceOnPool));
+      expect(removeDigitsBigNumber(1, (await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier1.getAddress())).onPool)).to.equal(
+        removeDigitsBigNumber(1, expectedSupplyBalanceOnPool)
       );
     });
 
@@ -274,17 +274,17 @@ describe('MorphoPositionsManagerForAave Contract', () => {
         await morphoPositionsManagerForAave.connect(supplier).supply(config.tokens.aDai.address, amount);
         const normalizedIncome = await lendingPool.getReserveNormalizedIncome(config.tokens.dai.address);
         const daiBalanceAfter = await daiToken.balanceOf(supplier.getAddress());
-        const expectedSupplyBalanceOnAave = underlyingToScaledBalance(amount, normalizedIncome);
+        const expectedSupplyBalanceOnPool = underlyingToScaledBalance(amount, normalizedIncome);
 
         // Check ERC20 balance
         expect(daiBalanceAfter).to.equal(expectedDaiBalanceAfter);
-        expectedScaledBalance = expectedScaledBalance.add(expectedSupplyBalanceOnAave);
+        expectedScaledBalance = expectedScaledBalance.add(expectedSupplyBalanceOnPool);
         let diff;
         const scaledBalance = await aDaiToken.scaledBalanceOf(morphoPositionsManagerForAave.address);
         if (scaledBalance.gt(expectedScaledBalance)) diff = scaledBalance.sub(expectedScaledBalance);
         else diff = expectedScaledBalance.sub(scaledBalance);
-        expect(removeDigitsBigNumber(2, (await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier.getAddress())).onAave)).to.equal(
-          removeDigitsBigNumber(2, expectedSupplyBalanceOnAave)
+        expect(removeDigitsBigNumber(2, (await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier.getAddress())).onPool)).to.equal(
+          removeDigitsBigNumber(2, expectedSupplyBalanceOnPool)
         );
         expect(removeDigitsBigNumber(1, diff)).to.equal(0);
         expect((await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier.getAddress())).inP2P).to.equal(0);
@@ -294,7 +294,7 @@ describe('MorphoPositionsManagerForAave Contract', () => {
 
   describe('Borrowers on Aave (no suppliers)', () => {
     it('Should have correct balances at the beginning', async () => {
-      expect((await morphoPositionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower1.getAddress())).onAave).to.equal(0);
+      expect((await morphoPositionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower1.getAddress())).onPool).to.equal(0);
       expect((await morphoPositionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower1.getAddress())).inP2P).to.equal(0);
     });
 
@@ -313,7 +313,7 @@ describe('MorphoPositionsManagerForAave Contract', () => {
       await usdcToken.connect(borrower1).approve(morphoPositionsManagerForAave.address, amount);
       await morphoPositionsManagerForAave.connect(borrower1).supply(config.tokens.aUsdc.address, amount);
       const normalizedIncome = await lendingPool.getReserveNormalizedIncome(config.tokens.usdc.address);
-      const collateralBalanceInScaledBalance = (await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aUsdc.address, borrower1.getAddress())).onAave;
+      const collateralBalanceInScaledBalance = (await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aUsdc.address, borrower1.getAddress())).onPool;
       const collateralBalanceInUnderlying = scaledBalanceToUnderlying(collateralBalanceInScaledBalance, normalizedIncome);
       const { liquidationThreshold } = await protocolDataProvider.getReserveConfigurationData(config.tokens.dai.address);
       const usdcPrice = await oracle.getAssetPrice(config.tokens.usdc.address);
@@ -336,13 +336,13 @@ describe('MorphoPositionsManagerForAave Contract', () => {
 
       // Check borrower1 balances
       expect(daiBalanceAfter).to.equal(daiBalanceBefore.add(maxToBorrow));
-      const borrowBalanceOnAaveInUnderlying = aDUnitToUnderlying(
-        (await morphoPositionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower1.getAddress())).onAave,
+      const borrowBalanceOnPoolInUnderlying = aDUnitToUnderlying(
+        (await morphoPositionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower1.getAddress())).onPool,
         normalizedVariableDebt
       );
       let diff;
-      if (borrowBalanceOnAaveInUnderlying.gt(maxToBorrow)) diff = borrowBalanceOnAaveInUnderlying.sub(underlyingToAdUnit(maxToBorrow, normalizedVariableDebt));
-      else diff = maxToBorrow.sub(borrowBalanceOnAaveInUnderlying);
+      if (borrowBalanceOnPoolInUnderlying.gt(maxToBorrow)) diff = borrowBalanceOnPoolInUnderlying.sub(underlyingToAdUnit(maxToBorrow, normalizedVariableDebt));
+      else diff = maxToBorrow.sub(borrowBalanceOnPoolInUnderlying);
       expect(removeDigitsBigNumber(1, diff)).to.equal(0);
       // Check Morpho balances
       expect(await daiToken.balanceOf(morphoPositionsManagerForAave.address)).to.equal(0);
@@ -354,7 +354,7 @@ describe('MorphoPositionsManagerForAave Contract', () => {
       await usdcToken.connect(borrower1).approve(morphoPositionsManagerForAave.address, amount);
       await morphoPositionsManagerForAave.connect(borrower1).supply(config.tokens.aUsdc.address, amount);
       const normalizedIncome = await lendingPool.getReserveNormalizedIncome(config.tokens.usdc.address);
-      const collateralBalanceInScaledBalance = (await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aUsdc.address, borrower1.getAddress())).onAave;
+      const collateralBalanceInScaledBalance = (await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aUsdc.address, borrower1.getAddress())).onPool;
       const collateralBalanceInUnderlying = scaledBalanceToUnderlying(collateralBalanceInScaledBalance, normalizedIncome);
       const { liquidationThreshold } = await protocolDataProvider.getReserveConfigurationData(config.tokens.dai.address);
       const usdcPrice = await oracle.getAssetPrice(config.tokens.usdc.address);
@@ -396,13 +396,13 @@ describe('MorphoPositionsManagerForAave Contract', () => {
         // All underlyings should have been sent to the borrower
         const daiBalanceAfter = await daiToken.balanceOf(borrower.getAddress());
         expect(daiBalanceAfter).to.equal(daiBalanceBefore.add(borrowedAmount));
-        const borrowBalanceOnAaveInUnderlying = aDUnitToUnderlying(
-          (await morphoPositionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower.getAddress())).onAave,
+        const borrowBalanceOnPoolInUnderlying = aDUnitToUnderlying(
+          (await morphoPositionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower.getAddress())).onPool,
           normalizedVariableDebt
         );
         let diff;
-        if (borrowBalanceOnAaveInUnderlying.gt(borrowedAmount)) diff = borrowBalanceOnAaveInUnderlying.sub(borrowedAmount);
-        else diff = borrowedAmount.sub(borrowBalanceOnAaveInUnderlying);
+        if (borrowBalanceOnPoolInUnderlying.gt(borrowedAmount)) diff = borrowBalanceOnPoolInUnderlying.sub(borrowedAmount);
+        else diff = borrowedAmount.sub(borrowBalanceOnPoolInUnderlying);
         expect(removeDigitsBigNumber(1, diff)).to.equal(0);
         // Update previous borrow index
         previousNormalizedVariableDebt = normalizedVariableDebt;
@@ -418,7 +418,7 @@ describe('MorphoPositionsManagerForAave Contract', () => {
       await usdcToken.connect(borrower1).approve(morphoPositionsManagerForAave.address, amount);
       await morphoPositionsManagerForAave.connect(borrower1).supply(config.tokens.aUsdc.address, amount);
       const normalizedIncome = await lendingPool.getReserveNormalizedIncome(config.tokens.usdc.address);
-      const collateralBalanceInScaledBalance = (await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aUsdc.address, borrower1.getAddress())).onAave;
+      const collateralBalanceInScaledBalance = (await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aUsdc.address, borrower1.getAddress())).onPool;
       const collateralBalanceInUnderlying = scaledBalanceToUnderlying(collateralBalanceInScaledBalance, normalizedIncome);
       const { liquidationThreshold } = await protocolDataProvider.getReserveConfigurationData(config.tokens.dai.address);
       const usdcPrice = await oracle.getAssetPrice(config.tokens.usdc.address);
@@ -435,18 +435,18 @@ describe('MorphoPositionsManagerForAave Contract', () => {
 
       const daiBalanceBefore = await daiToken.balanceOf(borrower1.getAddress());
       await morphoPositionsManagerForAave.connect(borrower1).borrow(config.tokens.aDai.address, maxToBorrow);
-      const borrowBalanceOnAave = (await morphoPositionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower1.getAddress())).onAave;
+      const borrowBalanceOnPool = (await morphoPositionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower1.getAddress())).onPool;
       const normalizeVariableDebt1 = await lendingPool.getReserveNormalizedVariableDebt(config.tokens.dai.address);
-      const borrowBalanceOnAaveInUnderlying = aDUnitToUnderlying(borrowBalanceOnAave, normalizeVariableDebt1);
-      const toRepay = borrowBalanceOnAaveInUnderlying.div(2);
+      const borrowBalanceOnPoolInUnderlying = aDUnitToUnderlying(borrowBalanceOnPool, normalizeVariableDebt1);
+      const toRepay = borrowBalanceOnPoolInUnderlying.div(2);
       await daiToken.connect(borrower1).approve(morphoPositionsManagerForAave.address, toRepay);
       await morphoPositionsManagerForAave.connect(borrower1).repay(config.tokens.aDai.address, toRepay);
       const normalizeVariableDebt2 = await lendingPool.getReserveNormalizedVariableDebt(config.tokens.dai.address);
       const daiBalanceAfter = await daiToken.balanceOf(borrower1.getAddress());
 
-      const expectedBalanceOnAave = borrowBalanceOnAave.sub(underlyingToAdUnit(borrowBalanceOnAaveInUnderlying.div(2), normalizeVariableDebt2));
-      expect(removeDigitsBigNumber(1, (await morphoPositionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower1.getAddress())).onAave)).to.equal(
-        removeDigitsBigNumber(1, expectedBalanceOnAave)
+      const expectedBalanceOnPool = borrowBalanceOnPool.sub(underlyingToAdUnit(borrowBalanceOnPoolInUnderlying.div(2), normalizeVariableDebt2));
+      expect(removeDigitsBigNumber(1, (await morphoPositionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower1.getAddress())).onPool)).to.equal(
+        removeDigitsBigNumber(1, expectedBalanceOnPool)
       );
       expect(daiBalanceAfter).to.equal(daiBalanceBefore.add(maxToBorrow).sub(toRepay));
     });
@@ -465,10 +465,10 @@ describe('MorphoPositionsManagerForAave Contract', () => {
       // Check ERC20 balance
       expect(daiBalanceAfter1).to.equal(expectedDaiBalanceAfter1);
       const normalizedIncome1 = await lendingPool.getReserveNormalizedIncome(config.tokens.dai.address);
-      const expectedSupplyBalanceOnAave1 = underlyingToScaledBalance(supplyAmount, normalizedIncome1);
-      expect(removeDigitsBigNumber(2, await aDaiToken.scaledBalanceOf(morphoPositionsManagerForAave.address))).to.equal(removeDigitsBigNumber(2, expectedSupplyBalanceOnAave1));
-      expect(removeDigitsBigNumber(2, (await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier1.getAddress())).onAave)).to.equal(
-        removeDigitsBigNumber(2, expectedSupplyBalanceOnAave1)
+      const expectedSupplyBalanceOnPool1 = underlyingToScaledBalance(supplyAmount, normalizedIncome1);
+      expect(removeDigitsBigNumber(2, await aDaiToken.scaledBalanceOf(morphoPositionsManagerForAave.address))).to.equal(removeDigitsBigNumber(2, expectedSupplyBalanceOnPool1));
+      expect(removeDigitsBigNumber(2, (await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier1.getAddress())).onPool)).to.equal(
+        removeDigitsBigNumber(2, expectedSupplyBalanceOnPool1)
       );
 
       // Borrower provides collateral
@@ -482,16 +482,16 @@ describe('MorphoPositionsManagerForAave Contract', () => {
       // Check supplier1 balances
       const normalizedIncome2 = await lendingPool.getReserveNormalizedIncome(config.tokens.dai.address);
       const mExchangeRate1 = await morphoMarketsManagerForAave.mUnitExchangeRate(config.tokens.aDai.address);
-      const expectedSupplyBalanceOnAave2 = expectedSupplyBalanceOnAave1.sub(underlyingToScaledBalance(supplyAmount, normalizedIncome2));
+      const expectedSupplyBalanceOnPool2 = expectedSupplyBalanceOnPool1.sub(underlyingToScaledBalance(supplyAmount, normalizedIncome2));
       const expectedSupplyBalanceInP2P2 = underlyingToMUnit(supplyAmount, mExchangeRate1);
-      const supplyBalanceOnAave2 = (await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier1.getAddress())).onAave;
+      const supplyBalanceOnPool2 = (await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier1.getAddress())).onPool;
       const supplyBalanceInP2P2 = (await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier1.getAddress())).inP2P;
-      expect(removeDigitsBigNumber(2, supplyBalanceOnAave2)).to.equal(removeDigitsBigNumber(2, expectedSupplyBalanceOnAave2));
+      expect(removeDigitsBigNumber(2, supplyBalanceOnPool2)).to.equal(removeDigitsBigNumber(2, expectedSupplyBalanceOnPool2));
       expect(removeDigitsBigNumber(2, supplyBalanceInP2P2)).to.equal(removeDigitsBigNumber(2, expectedSupplyBalanceInP2P2));
 
       // Check borrower1 balances
       const expectedBorrowBalanceInP2P1 = expectedSupplyBalanceInP2P2;
-      expect((await morphoPositionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower1.getAddress())).onAave).to.equal(0);
+      expect((await morphoPositionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower1.getAddress())).onPool).to.equal(0);
       expect(removeDigitsBigNumber(2, (await morphoPositionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower1.getAddress())).inP2P)).to.equal(
         removeDigitsBigNumber(2, expectedBorrowBalanceInP2P1)
       );
@@ -501,23 +501,23 @@ describe('MorphoPositionsManagerForAave Contract', () => {
       const mExchangeRate2 = await morphoMarketsManagerForAave.mUnitExchangeRate(config.tokens.aDai.address);
       const mExchangeRate3 = computeNewMorphoExchangeRate(mExchangeRate2, await morphoMarketsManagerForAave.p2pBPY(config.tokens.aDai.address), 1, 0).toString();
       const daiBalanceBefore2 = await daiToken.balanceOf(supplier1.getAddress());
-      const supplyBalanceOnAave3 = (await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier1.getAddress())).onAave;
+      const supplyBalanceOnPool3 = (await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier1.getAddress())).onPool;
       const supplyBalanceInP2P3 = (await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier1.getAddress())).inP2P;
       const normalizedIncome3 = await lendingPool.getReserveNormalizedIncome(config.tokens.dai.address);
-      const supplyBalanceOnAaveInUnderlying = scaledBalanceToUnderlying(supplyBalanceOnAave3, normalizedIncome3);
-      const amountToWithdraw = supplyBalanceOnAaveInUnderlying.add(mUnitToUnderlying(supplyBalanceInP2P3, mExchangeRate3));
+      const supplyBalanceOnPoolInUnderlying = scaledBalanceToUnderlying(supplyBalanceOnPool3, normalizedIncome3);
+      const amountToWithdraw = supplyBalanceOnPoolInUnderlying.add(mUnitToUnderlying(supplyBalanceInP2P3, mExchangeRate3));
       const expectedDaiBalanceAfter2 = daiBalanceBefore2.add(amountToWithdraw);
-      const remainingToWithdraw = amountToWithdraw.sub(supplyBalanceOnAaveInUnderlying);
+      const remainingToWithdraw = amountToWithdraw.sub(supplyBalanceOnPoolInUnderlying);
       const aTokenContractBalanceInUnderlying = scaledBalanceToUnderlying(await aDaiToken.balanceOf(morphoPositionsManagerForAave.address), normalizedIncome3);
       expect(remainingToWithdraw).to.be.gt(aTokenContractBalanceInUnderlying);
 
       // Expected borrow balances
-      const expectedMorphoBorrowBalance = remainingToWithdraw.add(aTokenContractBalanceInUnderlying).sub(supplyBalanceOnAaveInUnderlying);
+      const expectedMorphoBorrowBalance = remainingToWithdraw.add(aTokenContractBalanceInUnderlying).sub(supplyBalanceOnPoolInUnderlying);
 
       // Withdraw
       await morphoPositionsManagerForAave.connect(supplier1).withdraw(config.tokens.aDai.address, amountToWithdraw);
       const normalizedVariableDebt = await lendingPool.getReserveNormalizedVariableDebt(config.tokens.dai.address);
-      const expectedBorrowerBorrowBalanceOnAave = underlyingToAdUnit(expectedMorphoBorrowBalance, normalizedVariableDebt);
+      const expectedBorrowerBorrowBalanceOnPool = underlyingToAdUnit(expectedMorphoBorrowBalance, normalizedVariableDebt);
       const borrowBalance = await stableDebtDaiToken.balanceOf(morphoPositionsManagerForAave.address);
       const daiBalanceAfter2 = await daiToken.balanceOf(supplier1.getAddress());
 
@@ -528,12 +528,12 @@ describe('MorphoPositionsManagerForAave Contract', () => {
       expect(removeDigitsBigNumber(1, daiBalanceAfter2)).to.equal(removeDigitsBigNumber(1, expectedDaiBalanceAfter2));
 
       // Check supply balances of supplier1
-      expect(removeDigitsBigNumber(1, (await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier1.getAddress())).onAave)).to.equal(0);
+      expect(removeDigitsBigNumber(1, (await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier1.getAddress())).onPool)).to.equal(0);
       expect(removeDigitsBigNumber(9, (await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier1.getAddress())).inP2P)).to.equal(0);
 
       // Check borrow balances of borrower1
-      expect(removeDigitsBigNumber(11, (await morphoPositionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower1.getAddress())).onAave)).to.equal(
-        removeDigitsBigNumber(11, expectedBorrowerBorrowBalanceOnAave)
+      expect(removeDigitsBigNumber(11, (await morphoPositionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower1.getAddress())).onPool)).to.equal(
+        removeDigitsBigNumber(11, expectedBorrowerBorrowBalanceOnPool)
       );
       expect(removeDigitsBigNumber(9, (await morphoPositionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower1.getAddress())).inP2P)).to.equal(0);
     });
@@ -553,9 +553,9 @@ describe('MorphoPositionsManagerForAave Contract', () => {
         // Check ERC20 balance
         expect(daiBalanceAfter).to.equal(expectedDaiBalanceAfter);
         const normalizedIncome = await lendingPool.getReserveNormalizedIncome(config.tokens.dai.address);
-        const expectedSupplyBalanceOnAave = underlyingToScaledBalance(supplyAmount, normalizedIncome);
-        expect(removeDigitsBigNumber(4, (await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier.getAddress())).onAave)).to.equal(
-          removeDigitsBigNumber(4, expectedSupplyBalanceOnAave)
+        const expectedSupplyBalanceOnPool = underlyingToScaledBalance(supplyAmount, normalizedIncome);
+        expect(removeDigitsBigNumber(4, (await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier.getAddress())).onPool)).to.equal(
+          removeDigitsBigNumber(4, expectedSupplyBalanceOnPool)
         );
       }
 
@@ -564,7 +564,7 @@ describe('MorphoPositionsManagerForAave Contract', () => {
       await usdcToken.connect(borrower1).approve(morphoPositionsManagerForAave.address, collateralAmount);
       await morphoPositionsManagerForAave.connect(borrower1).supply(config.tokens.aUsdc.address, collateralAmount);
 
-      const previousSupplier1SupplyBalanceOnAave = (await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier1.getAddress())).onAave;
+      const previousSupplier1SupplyBalanceOnPool = (await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier1.getAddress())).onPool;
 
       // Borrowers borrows supplier1 amount
       await morphoPositionsManagerForAave.connect(borrower1).borrow(config.tokens.aDai.address, supplyAmount);
@@ -573,16 +573,16 @@ describe('MorphoPositionsManagerForAave Contract', () => {
       const mExchangeRate1 = await morphoMarketsManagerForAave.mUnitExchangeRate(config.tokens.aDai.address);
       const normalizedIncome2 = await lendingPool.getReserveNormalizedIncome(config.tokens.dai.address);
       // Expected balances of supplier1
-      const expectedSupplyBalanceOnAave2 = previousSupplier1SupplyBalanceOnAave.sub(underlyingToScaledBalance(supplyAmount, normalizedIncome2));
+      const expectedSupplyBalanceOnPool2 = previousSupplier1SupplyBalanceOnPool.sub(underlyingToScaledBalance(supplyAmount, normalizedIncome2));
       const expectedSupplyBalanceInP2P2 = underlyingToMUnit(supplyAmount, mExchangeRate1);
-      const supplyBalanceOnAave2 = (await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier1.getAddress())).onAave;
+      const supplyBalanceOnPool2 = (await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier1.getAddress())).onPool;
       const supplyBalanceInP2P2 = (await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier1.getAddress())).inP2P;
-      expect(removeDigitsBigNumber(1, supplyBalanceOnAave2)).to.equal(removeDigitsBigNumber(1, expectedSupplyBalanceOnAave2));
+      expect(removeDigitsBigNumber(1, supplyBalanceOnPool2)).to.equal(removeDigitsBigNumber(1, expectedSupplyBalanceOnPool2));
       expect(removeDigitsBigNumber(1, supplyBalanceInP2P2)).to.equal(removeDigitsBigNumber(1, expectedSupplyBalanceInP2P2));
 
       // Check borrower1 balances
       const expectedBorrowBalanceInP2P1 = expectedSupplyBalanceInP2P2;
-      expect((await morphoPositionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower1.getAddress())).onAave).to.equal(0);
+      expect((await morphoPositionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower1.getAddress())).onPool).to.equal(0);
       expect(removeDigitsBigNumber(1, (await morphoPositionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower1.getAddress())).inP2P)).to.equal(
         removeDigitsBigNumber(1, expectedBorrowBalanceInP2P1)
       );
@@ -592,26 +592,26 @@ describe('MorphoPositionsManagerForAave Contract', () => {
       const mExchangeRate2 = await morphoMarketsManagerForAave.mUnitExchangeRate(config.tokens.aDai.address);
       const mExchangeRate3 = computeNewMorphoExchangeRate(mExchangeRate2, await morphoMarketsManagerForAave.p2pBPY(config.tokens.aDai.address), 1, 0).toString();
       const daiBalanceBefore2 = await daiToken.balanceOf(supplier1.getAddress());
-      const supplyBalanceOnAave3 = (await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier1.getAddress())).onAave;
+      const supplyBalanceOnPool3 = (await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier1.getAddress())).onPool;
       const supplyBalanceInP2P3 = (await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier1.getAddress())).inP2P;
       const normalizedIncome3 = await lendingPool.getReserveNormalizedIncome(config.tokens.dai.address);
-      const supplyBalanceOnAaveInUnderlying = scaledBalanceToUnderlying(supplyBalanceOnAave3, normalizedIncome3);
-      const amountToWithdraw = supplyBalanceOnAaveInUnderlying.add(mUnitToUnderlying(supplyBalanceInP2P3, mExchangeRate3));
+      const supplyBalanceOnPoolInUnderlying = scaledBalanceToUnderlying(supplyBalanceOnPool3, normalizedIncome3);
+      const amountToWithdraw = supplyBalanceOnPoolInUnderlying.add(mUnitToUnderlying(supplyBalanceInP2P3, mExchangeRate3));
       const expectedDaiBalanceAfter2 = daiBalanceBefore2.add(amountToWithdraw);
-      const remainingToWithdraw = amountToWithdraw.sub(supplyBalanceOnAaveInUnderlying);
+      const remainingToWithdraw = amountToWithdraw.sub(supplyBalanceOnPoolInUnderlying);
       const aTokenContractBalanceInUnderlying = scaledBalanceToUnderlying(await aDaiToken.balanceOf(morphoPositionsManagerForAave.address), normalizedIncome3);
       expect(remainingToWithdraw).to.be.lt(aTokenContractBalanceInUnderlying);
 
       // supplier3 balances before the withdraw
-      const supplier3SupplyBalanceOnAave = (await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier3.getAddress())).onAave;
+      const supplier3SupplyBalanceOnPool = (await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier3.getAddress())).onPool;
       const supplier3SupplyBalanceInP2P = (await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier3.getAddress())).inP2P;
 
       // supplier2 balances before the withdraw
-      const supplier2SupplyBalanceOnAave = (await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier2.getAddress())).onAave;
+      const supplier2SupplyBalanceOnPool = (await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier2.getAddress())).onPool;
       const supplier2SupplyBalanceInP2P = (await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier2.getAddress())).inP2P;
 
       // borrower1 balances before the withdraw
-      const borrower1BorrowBalanceOnAave = (await morphoPositionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower1.getAddress())).onAave;
+      const borrower1BorrowBalanceOnPool = (await morphoPositionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower1.getAddress())).onPool;
       const borrower1BorrowBalanceInP2P = (await morphoPositionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower1.getAddress())).inP2P;
 
       // Withdraw
@@ -620,10 +620,10 @@ describe('MorphoPositionsManagerForAave Contract', () => {
       const borrowBalance = await stableDebtDaiToken.balanceOf(morphoPositionsManagerForAave.address);
       const daiBalanceAfter2 = await daiToken.balanceOf(supplier1.getAddress());
 
-      const supplier2SupplyBalanceOnAaveInUnderlying = scaledBalanceToUnderlying(supplier2SupplyBalanceOnAave, normalizedIncome4);
-      const amountToMove = bigNumberMin(supplier2SupplyBalanceOnAaveInUnderlying, remainingToWithdraw);
+      const supplier2SupplyBalanceOnPoolInUnderlying = scaledBalanceToUnderlying(supplier2SupplyBalanceOnPool, normalizedIncome4);
+      const amountToMove = bigNumberMin(supplier2SupplyBalanceOnPoolInUnderlying, remainingToWithdraw);
       const mExchangeRate4 = await morphoMarketsManagerForAave.mUnitExchangeRate(config.tokens.aDai.address);
-      const expectedSupplier2SupplyBalanceOnAave = supplier2SupplyBalanceOnAave.sub(underlyingToScaledBalance(amountToMove, normalizedIncome4));
+      const expectedSupplier2SupplyBalanceOnPool = supplier2SupplyBalanceOnPool.sub(underlyingToScaledBalance(amountToMove, normalizedIncome4));
       const expectedSupplier2SupplyBalanceInP2P = supplier2SupplyBalanceInP2P.add(underlyingToMUnit(amountToMove, mExchangeRate4));
 
       // Check borrow balance of Morpho
@@ -633,23 +633,23 @@ describe('MorphoPositionsManagerForAave Contract', () => {
       expect(daiBalanceAfter2).to.equal(expectedDaiBalanceAfter2);
 
       // Check supply balances of supplier1
-      expect(removeDigitsBigNumber(1, (await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier1.getAddress())).onAave)).to.equal(0);
+      expect(removeDigitsBigNumber(1, (await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier1.getAddress())).onPool)).to.equal(0);
       expect(removeDigitsBigNumber(5, (await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier1.getAddress())).inP2P)).to.equal(0);
 
       // Check supply balances of supplier2: supplier2 should have replaced supplier1
-      expect(removeDigitsBigNumber(3, (await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier2.getAddress())).onAave)).to.equal(
-        removeDigitsBigNumber(3, expectedSupplier2SupplyBalanceOnAave)
+      expect(removeDigitsBigNumber(3, (await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier2.getAddress())).onPool)).to.equal(
+        removeDigitsBigNumber(3, expectedSupplier2SupplyBalanceOnPool)
       );
       expect(removeDigitsBigNumber(7, (await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier2.getAddress())).inP2P)).to.equal(
         removeDigitsBigNumber(7, expectedSupplier2SupplyBalanceInP2P)
       );
 
       // Check supply balances of supplier3: supplier3 balances should not move
-      expect((await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier3.getAddress())).onAave).to.equal(supplier3SupplyBalanceOnAave);
+      expect((await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier3.getAddress())).onPool).to.equal(supplier3SupplyBalanceOnPool);
       expect((await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier3.getAddress())).inP2P).to.equal(supplier3SupplyBalanceInP2P);
 
       // Check borrow balances of borrower1: borrower1 balances should not move (except interest earn meanwhile)
-      expect((await morphoPositionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower1.getAddress())).onAave).to.equal(borrower1BorrowBalanceOnAave);
+      expect((await morphoPositionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower1.getAddress())).onPool).to.equal(borrower1BorrowBalanceOnPool);
       expect((await morphoPositionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower1.getAddress())).inP2P).to.equal(borrower1BorrowBalanceInP2P);
     });
 
@@ -687,7 +687,7 @@ describe('MorphoPositionsManagerForAave Contract', () => {
       const daiBalanceAfter = await daiToken.balanceOf(borrower1.getAddress());
       expect(daiBalanceAfter).to.equal(expectedDaiBalanceAfter);
       // TODO: implement interest for borrowers to complete this test as borrower's debt is not increasing here
-      expect((await morphoPositionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower1.getAddress())).onAave).to.equal(0);
+      expect((await morphoPositionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower1.getAddress())).onPool).to.equal(0);
       // Commented here due to the pow function issue
       // expect(removeDigitsBigNumber(1, (await morphoPositionsManagerForAave.borrowBalanceInOf(borrower1.getAddress())).inP2P)).to.equal(0);
 
@@ -709,11 +709,11 @@ describe('MorphoPositionsManagerForAave Contract', () => {
       await morphoPositionsManagerForAave.connect(borrower1).supply(config.tokens.aUsdc.address, collateralAmount);
       const daiBalanceBefore = await daiToken.balanceOf(borrower1.getAddress());
       const toBorrow = supplyAmount.mul(2);
-      const supplyBalanceOnAave = (await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier1.getAddress())).onAave;
+      const supplyBalanceOnPool = (await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier1.getAddress())).onPool;
       await morphoPositionsManagerForAave.connect(borrower1).borrow(config.tokens.aDai.address, toBorrow);
 
       const normalizedIncome1 = await lendingPool.getReserveNormalizedIncome(config.tokens.dai.address);
-      const expectedMorphoBorrowBalance1 = toBorrow.sub(scaledBalanceToUnderlying(supplyBalanceOnAave, normalizedIncome1));
+      const expectedMorphoBorrowBalance1 = toBorrow.sub(scaledBalanceToUnderlying(supplyBalanceOnPool, normalizedIncome1));
       const morphoBorrowBalanceBefore1 = await stableDebtDaiToken.balanceOf(morphoPositionsManagerForAave.address);
       expect(removeDigitsBigNumber(6, morphoBorrowBalanceBefore1)).to.equal(removeDigitsBigNumber(6, expectedMorphoBorrowBalance1));
       await daiToken.connect(borrower1).approve(morphoPositionsManagerForAave.address, amountToApprove);
@@ -726,8 +726,8 @@ describe('MorphoPositionsManagerForAave Contract', () => {
 
       // Compute how much to repay
       const normalizeVariableDebt1 = await lendingPool.getReserveNormalizedVariableDebt(config.tokens.dai.address);
-      const borrowerBalanceOnAave = (await morphoPositionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower1.getAddress())).onAave;
-      const toRepay = aDUnitToUnderlying(borrowerBalanceOnAave, normalizeVariableDebt1).add(borrowerBalanceInP2PInUnderlying);
+      const borrowerBalanceOnPool = (await morphoPositionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower1.getAddress())).onPool;
+      const toRepay = aDUnitToUnderlying(borrowerBalanceOnPool, normalizeVariableDebt1).add(borrowerBalanceInP2PInUnderlying);
       const expectedDaiBalanceAfter = daiBalanceBefore.add(toBorrow).sub(toRepay);
       const previousMorphoScaledBalance = await aDaiToken.scaledBalanceOf(morphoPositionsManagerForAave.address);
 
@@ -740,15 +740,15 @@ describe('MorphoPositionsManagerForAave Contract', () => {
       // Check borrower1 balances
       const daiBalanceAfter = await daiToken.balanceOf(borrower1.getAddress());
       expect(daiBalanceAfter).to.equal(expectedDaiBalanceAfter);
-      const borrower1BorrowBalanceOnAave = (await morphoPositionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower1.getAddress())).onAave;
-      expect(removeDigitsBigNumber(2, borrower1BorrowBalanceOnAave)).to.equal(0);
+      const borrower1BorrowBalanceOnPool = (await morphoPositionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower1.getAddress())).onPool;
+      expect(removeDigitsBigNumber(2, borrower1BorrowBalanceOnPool)).to.equal(0);
       // WARNING: Commented here due to the pow function issue
       expect((await morphoPositionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower1.getAddress())).inP2P).to.be.lt(1000000000000);
 
       // Check Morpho balances
       expect(removeDigitsBigNumber(12, await aDaiToken.scaledBalanceOf(morphoPositionsManagerForAave.address))).to.equal(removeDigitsBigNumber(12, expectedMorphoScaledBalance));
       // Issue here: we cannot access the most updated borrow balance as it's updated during the repayBorrow on Aave.
-      // const expectedMorphoBorrowBalance2 = morphoBorrowBalanceBefore2.sub(borrowerBalanceOnAave.mul(normalizeVariableDebt2).div(SCALE));
+      // const expectedMorphoBorrowBalance2 = morphoBorrowBalanceBefore2.sub(borrowerBalanceOnPool.mul(normalizeVariableDebt2).div(SCALE));
       // expect(removeDigitsBigNumber(3, await aToken.callStatic.borrowBalanceStored(morphoPositionsManagerForAave.address))).to.equal(removeDigitsBigNumber(3, expectedMorphoBorrowBalance2));
     });
 
@@ -771,11 +771,11 @@ describe('MorphoPositionsManagerForAave Contract', () => {
       // supplier1 borrows WMATIC that nobody is supplying in peer-to-peer
       const daiNormalizedIncome1 = await lendingPool.getReserveNormalizedIncome(config.tokens.dai.address);
       const mDaiExchangeRate1 = await morphoMarketsManagerForAave.mUnitExchangeRate(config.tokens.aDai.address);
-      const supplyBalanceOnAave1 = (await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier1.getAddress())).onAave;
+      const supplyBalanceOnPool1 = (await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier1.getAddress())).onPool;
       const supplyBalanceInP2P1 = (await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier1.getAddress())).inP2P;
-      const supplyBalanceOnAaveInUnderlying = scaledBalanceToUnderlying(supplyBalanceOnAave1, daiNormalizedIncome1);
+      const supplyBalanceOnPoolInUnderlying = scaledBalanceToUnderlying(supplyBalanceOnPool1, daiNormalizedIncome1);
       const supplyBalanceMorphoInUnderlying = mUnitToUnderlying(supplyBalanceInP2P1, mDaiExchangeRate1);
-      const supplyBalanceInUnderlying = supplyBalanceOnAaveInUnderlying.add(supplyBalanceMorphoInUnderlying);
+      const supplyBalanceInUnderlying = supplyBalanceOnPoolInUnderlying.add(supplyBalanceMorphoInUnderlying);
       const { liquidationThreshold } = await protocolDataProvider.getReserveConfigurationData(config.tokens.wmatic.address);
       const wmaticPrice = await oracle.getAssetPrice(config.tokens.wmatic.address);
       const wmaticDecimals = await wmaticToken.decimals();
@@ -791,18 +791,18 @@ describe('MorphoPositionsManagerForAave Contract', () => {
       await morphoPositionsManagerForAave.connect(supplier1).borrow(config.tokens.aWmatic.address, maxToBorrow);
 
       // Check balances
-      const supplyBalanceOnAave2 = (await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier1.getAddress())).onAave;
+      const supplyBalanceOnPool2 = (await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier1.getAddress())).onPool;
       const wmaticNormalizedVariableDebt = await lendingPool.getReserveNormalizedVariableDebt(config.tokens.wmatic.address);
       const daiNormalizedIncome2 = await lendingPool.getReserveNormalizedIncome(config.tokens.dai.address);
       const daiNormlizedVariableDebt = await lendingPool.getReserveNormalizedVariableDebt(config.tokens.dai.address);
-      const borrowBalanceOnAave = (await morphoPositionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower1.getAddress())).onAave;
+      const borrowBalanceOnPool = (await morphoPositionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower1.getAddress())).onPool;
       const mDaiExchangeRate2 = await morphoMarketsManagerForAave.mUnitExchangeRate(config.tokens.aDai.address);
-      const expectedBorrowBalanceOnAave = underlyingToAdUnit(mUnitToUnderlying(borrowBalanceInP2P, mDaiExchangeRate2), daiNormlizedVariableDebt);
-      const wmaticBorrowBalance = (await morphoPositionsManagerForAave.borrowBalanceInOf(config.tokens.aWmatic.address, supplier1.getAddress())).onAave;
+      const expectedBorrowBalanceOnPool = underlyingToAdUnit(mUnitToUnderlying(borrowBalanceInP2P, mDaiExchangeRate2), daiNormlizedVariableDebt);
+      const wmaticBorrowBalance = (await morphoPositionsManagerForAave.borrowBalanceInOf(config.tokens.aWmatic.address, supplier1.getAddress())).onPool;
       const wmaticBorrowBalanceInUnderlying = aDUnitToUnderlying(wmaticBorrowBalance, wmaticNormalizedVariableDebt);
-      const expectedScaledBalance = underlyingToScaledBalance(mUnitToUnderlying(supplyBalanceInP2P1, mDaiExchangeRate2), daiNormalizedIncome2).add(supplyBalanceOnAave1);
-      expect(removeDigitsBigNumber(2, supplyBalanceOnAave2)).to.equal(removeDigitsBigNumber(2, expectedScaledBalance));
-      expect(removeDigitsBigNumber(2, borrowBalanceOnAave)).to.equal(removeDigitsBigNumber(2, expectedBorrowBalanceOnAave));
+      const expectedScaledBalance = underlyingToScaledBalance(mUnitToUnderlying(supplyBalanceInP2P1, mDaiExchangeRate2), daiNormalizedIncome2).add(supplyBalanceOnPool1);
+      expect(removeDigitsBigNumber(2, supplyBalanceOnPool2)).to.equal(removeDigitsBigNumber(2, expectedScaledBalance));
+      expect(removeDigitsBigNumber(2, borrowBalanceOnPool)).to.equal(removeDigitsBigNumber(2, expectedBorrowBalanceOnPool));
       expect(removeDigitsBigNumber(2, wmaticBorrowBalanceInUnderlying)).to.equal(removeDigitsBigNumber(2, maxToBorrow));
     });
 
@@ -815,19 +815,19 @@ describe('MorphoPositionsManagerForAave Contract', () => {
       await usdcToken.connect(borrower1).approve(morphoPositionsManagerForAave.address, collateralAmount);
       await morphoPositionsManagerForAave.connect(borrower1).supply(config.tokens.aUsdc.address, collateralAmount);
       await morphoPositionsManagerForAave.connect(borrower1).borrow(config.tokens.aDai.address, borrowAmount);
-      const borrower1BorrowBalanceOnAave = (await morphoPositionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower1.getAddress())).onAave;
+      const borrower1BorrowBalanceOnPool = (await morphoPositionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower1.getAddress())).onPool;
 
       // borrower2 borrows
       await usdcToken.connect(borrower2).approve(morphoPositionsManagerForAave.address, collateralAmount);
       await morphoPositionsManagerForAave.connect(borrower2).supply(config.tokens.aUsdc.address, collateralAmount);
       await morphoPositionsManagerForAave.connect(borrower2).borrow(config.tokens.aDai.address, borrowAmount);
-      const borrower2BorrowBalanceOnAave = (await morphoPositionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower2.getAddress())).onAave;
+      const borrower2BorrowBalanceOnPool = (await morphoPositionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower2.getAddress())).onPool;
 
       // borrower3 borrows
       await usdcToken.connect(borrower3).approve(morphoPositionsManagerForAave.address, collateralAmount);
       await morphoPositionsManagerForAave.connect(borrower3).supply(config.tokens.aUsdc.address, collateralAmount);
       await morphoPositionsManagerForAave.connect(borrower3).borrow(config.tokens.aDai.address, borrowAmount);
-      const borrower3BorrowBalanceOnAave = (await morphoPositionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower3.getAddress())).onAave;
+      const borrower3BorrowBalanceOnPool = (await morphoPositionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower3.getAddress())).onPool;
 
       // supplier1 supply
       await daiToken.connect(supplier1).approve(morphoPositionsManagerForAave.address, supplyAmount);
@@ -838,15 +838,15 @@ describe('MorphoPositionsManagerForAave Contract', () => {
 
       // Check balances
       const supplyBalanceInP2P = (await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier1.getAddress())).inP2P;
-      const supplyBalanceOnAave = (await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier1.getAddress())).onAave;
-      const underlyingMatched = aDUnitToUnderlying(borrower1BorrowBalanceOnAave.add(borrower2BorrowBalanceOnAave).add(borrower3BorrowBalanceOnAave), normalizedVariableDebt);
+      const supplyBalanceOnPool = (await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier1.getAddress())).onPool;
+      const underlyingMatched = aDUnitToUnderlying(borrower1BorrowBalanceOnPool.add(borrower2BorrowBalanceOnPool).add(borrower3BorrowBalanceOnPool), normalizedVariableDebt);
       expectedSupplyBalanceInP2P = underlyingToAdUnit(underlyingMatched, mUnitExchangeRate);
-      expectedSupplyBalanceOnAave = underlyingToScaledBalance(supplyAmount.sub(underlyingMatched), normalizedIncome);
+      expectedSupplyBalanceOnPool = underlyingToScaledBalance(supplyAmount.sub(underlyingMatched), normalizedIncome);
       expect(removeDigitsBigNumber(2, supplyBalanceInP2P)).to.equal(removeDigitsBigNumber(2, expectedSupplyBalanceInP2P));
-      expect(removeDigitsBigNumber(2, supplyBalanceOnAave)).to.equal(removeDigitsBigNumber(2, expectedSupplyBalanceOnAave));
-      expect((await morphoPositionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower1.getAddress())).onAave).to.be.lte(1);
-      expect((await morphoPositionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower2.getAddress())).onAave).to.be.lte(1);
-      expect((await morphoPositionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower3.getAddress())).onAave).to.be.lte(1);
+      expect(removeDigitsBigNumber(2, supplyBalanceOnPool)).to.equal(removeDigitsBigNumber(2, expectedSupplyBalanceOnPool));
+      expect((await morphoPositionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower1.getAddress())).onPool).to.be.lte(1);
+      expect((await morphoPositionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower2.getAddress())).onPool).to.be.lte(1);
+      expect((await morphoPositionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower3.getAddress())).onPool).to.be.lte(1);
     });
   });
 
@@ -867,7 +867,7 @@ describe('MorphoPositionsManagerForAave Contract', () => {
       const amount = to6Decimals(utils.parseUnits('100'));
       await usdcToken.connect(borrower1).approve(morphoPositionsManagerForAave.address, amount);
       await morphoPositionsManagerForAave.connect(borrower1).supply(config.tokens.aUsdc.address, amount);
-      const collateralBalanceInScaledBalance = (await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aUsdc.address, borrower1.getAddress())).onAave;
+      const collateralBalanceInScaledBalance = (await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aUsdc.address, borrower1.getAddress())).onPool;
       const normalizedIncome = await lendingPool.getReserveNormalizedIncome(config.tokens.usdc.address);
       const collateralBalanceInUnderlying = scaledBalanceToUnderlying(collateralBalanceInScaledBalance, normalizedIncome);
       const { liquidationThreshold } = await protocolDataProvider.getReserveConfigurationData(config.tokens.dai.address);
@@ -885,8 +885,8 @@ describe('MorphoPositionsManagerForAave Contract', () => {
 
       // Borrow DAI
       await morphoPositionsManagerForAave.connect(borrower1).borrow(config.tokens.aDai.address, maxToBorrow);
-      const collateralBalanceBefore = (await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aUsdc.address, borrower1.getAddress())).onAave;
-      const borrowBalanceBefore = (await morphoPositionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower1.getAddress())).onAave;
+      const collateralBalanceBefore = (await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aUsdc.address, borrower1.getAddress())).onPool;
+      const borrowBalanceBefore = (await morphoPositionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower1.getAddress())).onPool;
 
       // Set price oracle
       await lendingPoolAddressesProvider.connect(admin).setPriceOracle(priceOracle.address);
@@ -926,10 +926,10 @@ describe('MorphoPositionsManagerForAave Contract', () => {
       const expectedDaiBalanceAfter = daiBalanceBefore.sub(toRepay);
 
       // Check balances
-      expect(removeDigitsBigNumber(6, (await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aUsdc.address, borrower1.getAddress())).onAave)).to.equal(
+      expect(removeDigitsBigNumber(6, (await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aUsdc.address, borrower1.getAddress())).onPool)).to.equal(
         removeDigitsBigNumber(6, expectedCollateralBalanceAfter)
       );
-      expect(removeDigitsBigNumber(2, (await morphoPositionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower1.getAddress())).onAave)).to.equal(
+      expect(removeDigitsBigNumber(2, (await morphoPositionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower1.getAddress())).onPool)).to.equal(
         removeDigitsBigNumber(2, expectedBorrowBalanceAfter)
       );
       expect(removeDigitsBigNumber(2, usdcBalanceAfter)).to.equal(removeDigitsBigNumber(2, expectedUsdcBalanceAfter));
@@ -966,11 +966,11 @@ describe('MorphoPositionsManagerForAave Contract', () => {
       // borrower1 borrows DAI
       const usdcNormalizedIncome1 = await lendingPool.getReserveNormalizedIncome(config.tokens.usdc.address);
       const mUsdcExchangeRate1 = await morphoMarketsManagerForAave.mUnitExchangeRate(config.tokens.aUsdc.address);
-      const supplyBalanceOnAave1 = (await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aUsdc.address, borrower1.getAddress())).onAave;
+      const supplyBalanceOnPool1 = (await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aUsdc.address, borrower1.getAddress())).onPool;
       const supplyBalanceInP2P1 = (await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aUsdc.address, borrower1.getAddress())).inP2P;
-      const supplyBalanceOnAaveInUnderlying = scaledBalanceToUnderlying(supplyBalanceOnAave1, usdcNormalizedIncome1);
+      const supplyBalanceOnPoolInUnderlying = scaledBalanceToUnderlying(supplyBalanceOnPool1, usdcNormalizedIncome1);
       const supplyBalanceMorphoInUnderlying = mUnitToUnderlying(supplyBalanceInP2P1, mUsdcExchangeRate1);
-      const supplyBalanceInUnderlying = supplyBalanceOnAaveInUnderlying.add(supplyBalanceMorphoInUnderlying);
+      const supplyBalanceInUnderlying = supplyBalanceOnPoolInUnderlying.add(supplyBalanceMorphoInUnderlying);
       const { liquidationThreshold } = await protocolDataProvider.getReserveConfigurationData(config.tokens.dai.address);
       const usdcPrice = await oracle.getAssetPrice(config.tokens.usdc.address);
       const usdcDecimals = await usdcToken.decimals();
@@ -984,7 +984,7 @@ describe('MorphoPositionsManagerForAave Contract', () => {
         .mul(liquidationThreshold)
         .div(PERCENT_BASE);
       // await morphoPositionsManagerForAave.connect(borrower1).borrow(config.tokens.aDai.address, maxToBorrow);
-      // const collateralBalanceOnAaveBefore = (await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aUsdc.address, borrower1.getAddress())).onAave;
+      // const collateralBalanceOnPoolBefore = (await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aUsdc.address, borrower1.getAddress())).onPool;
       // const collateralBalanceInP2PBefore = (await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aUsdc.address, borrower1.getAddress())).inP2P;
       // const borrowBalanceInP2PBefore = (await morphoPositionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower1.getAddress())).inP2P;
 
@@ -1014,17 +1014,17 @@ describe('MorphoPositionsManagerForAave Contract', () => {
       // const collateralAssetPrice = await priceOracle.getAssetPrice(config.tokens.usdc.address);
       // const borrowedAssetPrice = await priceOracle.getAssetPrice(config.tokens.dai.address);
       // const amountToSeize = toRepay.mul(borrowedAssetPrice).div(collateralAssetPrice).mul(liquidationIncentive).div(SCALE);
-      // const expectedCollateralBalanceInP2PAfter = collateralBalanceInP2PBefore.sub(amountToSeize.sub(scaledBalanceToUnderlying(collateralBalanceOnAaveBefore, usdcNormalizedIncome)));
+      // const expectedCollateralBalanceInP2PAfter = collateralBalanceInP2PBefore.sub(amountToSeize.sub(scaledBalanceToUnderlying(collateralBalanceOnPoolBefore, usdcNormalizedIncome)));
       // const expectedBorrowBalanceInP2PAfter = borrowBalanceInP2PBefore.sub(toRepay.mul(SCALE).div(mDaiExchangeRate));
       // const expectedUsdcBalanceAfter = usdcBalanceBefore.add(amountToSeize);
       // const expectedDaiBalanceAfter = daiBalanceBefore.sub(toRepay);
 
       // // Check liquidatee balances
-      // expect((await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aUsdc.address, borrower1.getAddress())).onAave).to.equal(0);
+      // expect((await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aUsdc.address, borrower1.getAddress())).onPool).to.equal(0);
       // expect(removeDigitsBigNumber(2, (await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aUsdc.address, borrower1.getAddress())).inP2P)).to.equal(
       //   removeDigitsBigNumber(2, expectedCollateralBalanceInP2PAfter)
       // );
-      // expect((await morphoPositionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower1.getAddress())).onAave).to.equal(0);
+      // expect((await morphoPositionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower1.getAddress())).onPool).to.equal(0);
       // expect((await morphoPositionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower1.getAddress())).inP2P).to.equal(expectedBorrowBalanceInP2PAfter);
 
       // // Check liquidator balances
