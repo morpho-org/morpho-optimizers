@@ -249,9 +249,9 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
     {
         _handleMembership(_poolTokenAddress, msg.sender);
         IAToken poolToken = IAToken(_poolTokenAddress);
-        IERC20 erc20Token = IERC20(poolToken.UNDERLYING_ASSET_ADDRESS());
-        erc20Token.safeTransferFrom(msg.sender, address(this), _amount);
-        uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(address(erc20Token));
+        IERC20 underlyingToken = IERC20(poolToken.UNDERLYING_ASSET_ADDRESS());
+        underlyingToken.safeTransferFrom(msg.sender, address(this), _amount);
+        uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(address(underlyingToken));
 
         /* CASE 1: Some borrowers are waiting on Aave, Morpho matches the supplier in P2P with them */
         if (borrowersOnPool[_poolTokenAddress].isNotEmpty()) {
@@ -301,7 +301,7 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
         _handleMembership(_poolTokenAddress, msg.sender);
         _checkAccountLiquidity(msg.sender, _poolTokenAddress, 0, _amount);
         IAToken poolToken = IAToken(_poolTokenAddress);
-        IERC20 erc20Token = IERC20(poolToken.UNDERLYING_ASSET_ADDRESS());
+        IERC20 underlyingToken = IERC20(poolToken.UNDERLYING_ASSET_ADDRESS());
         // No need to update p2pUnitExchangeRate here as it's done in `_checkAccountLiquidity`
         uint256 p2pExchangeRate = marketsManagerForAave.p2pUnitExchangeRate(_poolTokenAddress);
 
@@ -321,7 +321,7 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
             if (remainingToBorrowOnAave > 0) {
                 _unmatchTheSupplier(msg.sender); // Before borrowing on Aave, we put all the collateral of the borrower on Aave (cf Liquidation Invariant in docs)
                 lendingPool.borrow(
-                    address(erc20Token),
+                    address(underlyingToken),
                     remainingToBorrowOnAave,
                     2,
                     0,
@@ -329,22 +329,22 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
                 );
                 borrowBalanceInOf[_poolTokenAddress][msg.sender].onPool += remainingToBorrowOnAave
                     .wadToRay()
-                    .rayDiv(lendingPool.getReserveNormalizedVariableDebt(address(erc20Token)))
+                    .rayDiv(lendingPool.getReserveNormalizedVariableDebt(address(underlyingToken)))
                     .rayToWad(); // In adUnit
             }
         }
         /* CASE 2: There aren't any borrowers waiting on Aave, Morpho borrows all the tokens from Aave */
         else {
             _unmatchTheSupplier(msg.sender); // Before borrowing on Aave, we put all the collateral of the borrower on Aave (cf Liquidation Invariant in docs)
-            lendingPool.borrow(address(erc20Token), _amount, 2, 0, address(this));
+            lendingPool.borrow(address(underlyingToken), _amount, 2, 0, address(this));
             borrowBalanceInOf[_poolTokenAddress][msg.sender].onPool += _amount
                 .wadToRay()
-                .rayDiv(lendingPool.getReserveNormalizedVariableDebt(address(erc20Token)))
+                .rayDiv(lendingPool.getReserveNormalizedVariableDebt(address(underlyingToken)))
                 .rayToWad(); // In adUnit
         }
 
         _updateBorrowerList(_poolTokenAddress, msg.sender);
-        erc20Token.safeTransfer(msg.sender, _amount);
+        underlyingToken.safeTransfer(msg.sender, _amount);
         emit Borrowed(msg.sender, _poolTokenAddress, _amount);
     }
 
@@ -461,8 +461,8 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
         require(_amount > 0, "_withdraw:amount=0");
         _checkAccountLiquidity(_holder, _poolTokenAddress, _amount, 0);
         IAToken poolToken = IAToken(_poolTokenAddress);
-        IERC20 erc20Token = IERC20(poolToken.UNDERLYING_ASSET_ADDRESS());
-        uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(address(erc20Token));
+        IERC20 underlyingToken = IERC20(poolToken.UNDERLYING_ASSET_ADDRESS());
+        uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(address(underlyingToken));
         uint256 remainingToWithdraw = _amount;
 
         /* If user has some tokens waiting on Aave */
@@ -520,7 +520,7 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
         }
 
         _updateSupplierList(_poolTokenAddress, _holder);
-        erc20Token.safeTransfer(_receiver, _amount);
+        underlyingToken.safeTransfer(_receiver, _amount);
         emit Withdrawn(_holder, _poolTokenAddress, _amount);
     }
 
@@ -536,14 +536,14 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
         uint256 _amount
     ) internal isMarketCreated(_poolTokenAddress) {
         IAToken poolToken = IAToken(_poolTokenAddress);
-        IERC20 erc20Token = IERC20(poolToken.UNDERLYING_ASSET_ADDRESS());
-        erc20Token.safeTransferFrom(msg.sender, address(this), _amount);
+        IERC20 underlyingToken = IERC20(poolToken.UNDERLYING_ASSET_ADDRESS());
+        underlyingToken.safeTransferFrom(msg.sender, address(this), _amount);
         uint256 remainingToRepay = _amount;
 
         /* If user is borrowing tokens on Aave */
         if (borrowBalanceInOf[_poolTokenAddress][_borrower].onPool > 0) {
             uint256 normalizedVariableDebt = lendingPool.getReserveNormalizedVariableDebt(
-                address(erc20Token)
+                address(underlyingToken)
             );
             uint256 onAaveInUnderlying = borrowBalanceInOf[_poolTokenAddress][_borrower]
                 .onPool
@@ -552,8 +552,8 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
                 .rayToWad();
             /* CASE 1: User repays less than his Aave borrow balance */
             if (_amount <= onAaveInUnderlying) {
-                erc20Token.safeApprove(address(lendingPool), _amount);
-                lendingPool.repay(address(erc20Token), _amount, 2, address(this));
+                underlyingToken.safeApprove(address(lendingPool), _amount);
+                lendingPool.repay(address(underlyingToken), _amount, 2, address(this));
                 borrowBalanceInOf[_poolTokenAddress][_borrower].onPool -= _amount
                     .wadToRay()
                     .rayDiv(normalizedVariableDebt)
@@ -562,8 +562,8 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
             }
             /* CASE 2: User repays more than his Aave borrow balance */
             else {
-                erc20Token.safeApprove(address(lendingPool), onAaveInUnderlying);
-                lendingPool.repay(address(erc20Token), onAaveInUnderlying, 2, address(this));
+                underlyingToken.safeApprove(address(lendingPool), onAaveInUnderlying);
+                lendingPool.repay(address(underlyingToken), onAaveInUnderlying, 2, address(this));
                 borrowBalanceInOf[_poolTokenAddress][_borrower].onPool = 0;
                 remainingToRepay -= onAaveInUnderlying; // In underlying
             }
@@ -572,7 +572,7 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
         /* If there remains some tokens to repay (CASE 2), Morpho breaks credit lines and repair them either with other users or with Aave itself */
         if (remainingToRepay > 0) {
             DataTypes.ReserveData memory reserveData = lendingPool.getReserveData(
-                address(erc20Token)
+                address(underlyingToken)
             );
             IVariableDebtToken variableDebtToken = IVariableDebtToken(
                 reserveData.variableDebtTokenAddress
@@ -614,10 +614,10 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
      */
     function _supplyERC20ToAave(address _poolTokenAddress, uint256 _amount) internal {
         IAToken poolToken = IAToken(_poolTokenAddress);
-        IERC20 erc20Token = IERC20(poolToken.UNDERLYING_ASSET_ADDRESS());
-        erc20Token.safeApprove(address(lendingPool), _amount);
-        lendingPool.deposit(address(erc20Token), _amount, address(this), 0);
-        lendingPool.setUserUseReserveAsCollateral(address(erc20Token), true);
+        IERC20 underlyingToken = IERC20(poolToken.UNDERLYING_ASSET_ADDRESS());
+        underlyingToken.safeApprove(address(lendingPool), _amount);
+        lendingPool.deposit(address(underlyingToken), _amount, address(this), 0);
+        lendingPool.setUserUseReserveAsCollateral(address(underlyingToken), true);
     }
 
     /** @dev Withdraws ERC20 tokens from Aave.
@@ -755,10 +755,10 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
         returns (uint256 remainingToMatch)
     {
         IAToken poolToken = IAToken(_poolTokenAddress);
-        IERC20 erc20Token = IERC20(poolToken.UNDERLYING_ASSET_ADDRESS());
+        IERC20 underlyingToken = IERC20(poolToken.UNDERLYING_ASSET_ADDRESS());
         remainingToMatch = _amount;
         uint256 normalizedVariableDebt = lendingPool.getReserveNormalizedVariableDebt(
-            address(erc20Token)
+            address(underlyingToken)
         );
         uint256 p2pExchangeRate = marketsManagerForAave.p2pUnitExchangeRate(_poolTokenAddress);
         uint256 highestValue = borrowersOnPool[_poolTokenAddress].last();
@@ -795,8 +795,8 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
         // Repay Aave
         uint256 toRepay = _amount - remainingToMatch;
         if (toRepay > 0) {
-            erc20Token.safeApprove(address(lendingPool), toRepay);
-            lendingPool.repay(address(erc20Token), toRepay, 2, address(this));
+            underlyingToken.safeApprove(address(lendingPool), toRepay);
+            lendingPool.repay(address(underlyingToken), toRepay, 2, address(this));
         }
     }
 
@@ -811,11 +811,11 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
         returns (uint256 remainingToUnmatch)
     {
         IAToken poolToken = IAToken(_poolTokenAddress);
-        IERC20 erc20Token = IERC20(poolToken.UNDERLYING_ASSET_ADDRESS());
+        IERC20 underlyingToken = IERC20(poolToken.UNDERLYING_ASSET_ADDRESS());
         remainingToUnmatch = _amount;
         uint256 p2pExchangeRate = marketsManagerForAave.p2pUnitExchangeRate(_poolTokenAddress);
         uint256 normalizedVariableDebt = lendingPool.getReserveNormalizedVariableDebt(
-            address(erc20Token)
+            address(underlyingToken)
         );
         uint256 highestValue = borrowersInP2P[_poolTokenAddress].last();
 
@@ -846,7 +846,13 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
             highestValue = borrowersInP2P[_poolTokenAddress].last();
         }
         // Borrow on Aave
-        lendingPool.borrow(address(erc20Token), _amount - remainingToUnmatch, 2, 0, address(this));
+        lendingPool.borrow(
+            address(underlyingToken),
+            _amount - remainingToUnmatch,
+            2,
+            0,
+            address(this)
+        );
     }
 
     /**

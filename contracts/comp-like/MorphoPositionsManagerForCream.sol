@@ -225,8 +225,8 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
     {
         _handleMembership(_crERC20Address, msg.sender);
         ICErc20 crERC20Token = ICErc20(_crERC20Address);
-        IERC20 erc20Token = IERC20(crERC20Token.underlying());
-        erc20Token.safeTransferFrom(msg.sender, address(this), _amount);
+        IERC20 underlyingToken = IERC20(crERC20Token.underlying());
+        underlyingToken.safeTransferFrom(msg.sender, address(this), _amount);
         uint256 crExchangeRate = crERC20Token.exchangeRateCurrent();
 
         /* CASE 1: Some borrowers are waiting on Cream, Morpho matches the supplier in P2P with them */
@@ -269,7 +269,7 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
         _handleMembership(_crERC20Address, msg.sender);
         _checkAccountLiquidity(msg.sender, _crERC20Address, 0, _amount);
         ICErc20 crERC20Token = ICErc20(_crERC20Address);
-        IERC20 erc20Token = IERC20(crERC20Token.underlying());
+        IERC20 underlyingToken = IERC20(crERC20Token.underlying());
         // No need to update mUnitExchangeRate here as it's done in `_checkAccountLiquidity`
         uint256 mExchangeRate = marketsManagerForCompLike.mUnitExchangeRate(_crERC20Address);
 
@@ -303,7 +303,7 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
         }
 
         _updateBorrowerList(_crERC20Address, msg.sender);
-        erc20Token.safeTransfer(msg.sender, _amount);
+        underlyingToken.safeTransfer(msg.sender, _amount);
         emit Borrowed(msg.sender, _crERC20Address, _amount);
     }
 
@@ -409,7 +409,7 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
         require(_amount > 0, "_withdraw:amount=0");
         _checkAccountLiquidity(_holder, _crERC20Address, _amount, 0);
         ICErc20 crERC20Token = ICErc20(_crERC20Address);
-        IERC20 erc20Token = IERC20(crERC20Token.underlying());
+        IERC20 underlyingToken = IERC20(crERC20Token.underlying());
         // No need to update mUnitExchangeRate here as it's done in `_checkAccountLiquidity`
         uint256 crExchangeRate = crERC20Token.exchangeRateCurrent();
         uint256 remainingToWithdraw = _amount;
@@ -468,7 +468,7 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
         }
 
         _updateSupplierList(_crERC20Address, _holder);
-        erc20Token.safeTransfer(_receiver, _amount);
+        underlyingToken.safeTransfer(_receiver, _amount);
         emit Withdrawn(_holder, _crERC20Address, _amount);
     }
 
@@ -484,8 +484,8 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
         uint256 _amount
     ) internal isMarketCreated(_crERC20Address) {
         ICErc20 crERC20Token = ICErc20(_crERC20Address);
-        IERC20 erc20Token = IERC20(crERC20Token.underlying());
-        erc20Token.safeTransferFrom(msg.sender, address(this), _amount);
+        IERC20 underlyingToken = IERC20(crERC20Token.underlying());
+        underlyingToken.safeTransferFrom(msg.sender, address(this), _amount);
 
         uint256 remainingToRepay = _amount;
 
@@ -497,14 +497,14 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
             );
             /* CASE 1: User repays less than his Cream borrow balance */
             if (_amount <= onCreamInUnderlying) {
-                erc20Token.safeApprove(_crERC20Address, _amount);
+                underlyingToken.safeApprove(_crERC20Address, _amount);
                 crERC20Token.repayBorrow(_amount);
                 borrowBalanceInOf[_crERC20Address][_borrower].onCream -= _amount.div(borrowIndex); // In cdUnit
                 remainingToRepay = 0;
             }
             /* CASE 2: User repays more than his Cream borrow balance */
             else {
-                erc20Token.safeApprove(_crERC20Address, onCreamInUnderlying);
+                underlyingToken.safeApprove(_crERC20Address, onCreamInUnderlying);
                 crERC20Token.repayBorrow(onCreamInUnderlying); // Revert on error
                 borrowBalanceInOf[_crERC20Address][_borrower].onCream = 0;
                 remainingToRepay -= onCreamInUnderlying; // In underlying
@@ -549,8 +549,8 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
      */
     function _supplyERC20ToCream(address _crERC20Address, uint256 _amount) internal {
         ICErc20 crERC20Token = ICErc20(_crERC20Address);
-        IERC20 erc20Token = IERC20(crERC20Token.underlying());
-        erc20Token.safeApprove(_crERC20Address, _amount);
+        IERC20 underlyingToken = IERC20(crERC20Token.underlying());
+        underlyingToken.safeApprove(_crERC20Address, _amount);
         require(crERC20Token.mint(_amount) == 0, "_supplyERC20ToCream:mint-cream-fail");
     }
 
@@ -680,7 +680,7 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
         returns (uint256 remainingToMatch)
     {
         ICErc20 crERC20Token = ICErc20(_crERC20Address);
-        IERC20 erc20Token = IERC20(crERC20Token.underlying());
+        IERC20 underlyingToken = IERC20(crERC20Token.underlying());
         remainingToMatch = _amount;
         uint256 mExchangeRate = marketsManagerForCompLike.mUnitExchangeRate(_crERC20Address);
         uint256 borrowIndex = crERC20Token.borrowIndex();
@@ -713,7 +713,7 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
         }
         // Repay Cream
         uint256 toRepay = _amount - remainingToMatch;
-        erc20Token.safeApprove(_crERC20Address, toRepay);
+        underlyingToken.safeApprove(_crERC20Address, toRepay);
         require(crERC20Token.repayBorrow(toRepay) == 0, "_matchBorrowers:repay-cream-fail");
     }
 
