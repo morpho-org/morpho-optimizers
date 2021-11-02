@@ -15,7 +15,7 @@ yarn
 
 Refer to the `env.example` for the required environment variable.
 
-Tests are run against a fork of the Polygon Mainnet, which allows us to interact directly with Cream. Note that you need to have an RPC provider that have access to Polygon.
+Tests are run against a fork of the Polygon Mainnet, which allows us to interact directly with Aave or Cream. Note that you need to have an RPC provider that have access to Polygon.
 We aim a test coverage > 90% of all functions.
 
 ⚠️ Tests cannot substituted to coverage as the coverage command as contracts are compiled without optimization and can alter some patterns.
@@ -24,6 +24,12 @@ To run test, use this command:
 
 ```
 yarn test:cream:polygon
+```
+
+or
+
+```
+yarn test:aave:polygon
 ```
 
 For coverage, run:
