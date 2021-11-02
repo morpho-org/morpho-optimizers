@@ -55,7 +55,7 @@
         "abi": "@config/polygon/abis/WMATIC.json"
       },
       "aToken": {
-        "abi": "@config/polygon/abis/AToken.json"
+        "abi": "@config/polygon/abis/aToken.json"
       },
       "stableDebtToken": {
         "abi": "@config/polygon/abis/StableDebtToken.json"
