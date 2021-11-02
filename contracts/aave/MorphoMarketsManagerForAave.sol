@@ -28,7 +28,7 @@ contract MorphoMarketsManagerForAave is Ownable {
     uint256 internal constant SECONDS_PER_YEAR = 365 days;
     bool public isPositionsManagerSet; // Whether or not the positions manager is set.
     mapping(address => bool) public isCreated; // Whether or not this market is created.
-    mapping(address => uint256) public p2pBPY; // Block Percentage Yield ("midrate").
+    mapping(address => uint256) public p2pSPY; // Second Percentage Yield ("midrate").
     mapping(address => uint256) public p2pUnitExchangeRate; // current exchange rate from p2pUnit to underlying.
     mapping(address => uint256) public lastUpdateTimestamp; // Last time p2pUnitExchangeRate was updated.
 
@@ -53,11 +53,11 @@ contract MorphoMarketsManagerForAave is Ownable {
      */
     event PositionsManagerForAaveSet(address _positionsManagerForAave);
 
-    /** @dev Emitted when the p2pBPY of a market is updated.
+    /** @dev Emitted when the p2pSPY of a market is updated.
      *  @param _marketAddress The address of the market to update.
-     *  @param _newValue The new value of the p2pBPY.
+     *  @param _newValue The new value of the p2pSPY.
      */
-    event BPYUpdated(address _marketAddress, uint256 _newValue);
+    event P2PSPYUpdated(address _marketAddress, uint256 _newValue);
 
     /** @dev Emitted when the p2pUnitExchangeRate of a market is updated.
      *  @param _marketAddress The address of the market to update.
@@ -117,7 +117,7 @@ contract MorphoMarketsManagerForAave is Ownable {
         lastUpdateTimestamp[_marketAddress] = block.timestamp;
         p2pUnitExchangeRate[_marketAddress] = WadRayMath.ray();
         isCreated[_marketAddress] = true;
-        updateBPY(_marketAddress);
+        updateP2PSPY(_marketAddress);
         emit MarketCreated(_marketAddress);
     }
 
@@ -133,26 +133,26 @@ contract MorphoMarketsManagerForAave is Ownable {
 
     /* Public */
 
-    /** @dev Updates the Block Percentage Yield (`p2pBPY`) and calculates the current exchange rate (`p2pUnitExchangeRate`).
+    /** @dev Updates the Second Percentage Yield (`p2pSPY`) and calculates the current exchange rate (`p2pUnitExchangeRate`).
      *  @param _marketAddress The address of the market we want to update.
      */
-    function updateBPY(address _marketAddress) public isMarketCreated(_marketAddress) {
+    function updateP2PSPY(address _marketAddress) public isMarketCreated(_marketAddress) {
         DataTypes.ReserveData memory reserveData = lendingPool.getReserveData(
             IAToken(_marketAddress).UNDERLYING_ASSET_ADDRESS()
         );
 
-        // Update p2pBPY
-        p2pBPY[_marketAddress] = Math
+        // Update p2pSPY
+        p2pSPY[_marketAddress] = Math
             .average(reserveData.currentLiquidityRate, reserveData.currentVariableBorrowRate)
             .div(SECONDS_PER_YEAR); // In ray
 
-        emit BPYUpdated(_marketAddress, p2pBPY[_marketAddress]);
+        emit P2PSPYUpdated(_marketAddress, p2pSPY[_marketAddress]);
 
         // Update p2pUnitExhangeRate
         updateP2PUnitExchangeRate(_marketAddress);
     }
 
-    /** @dev Updates the current exchange rate, taking into account the block percentage yield (p2pBPY) since the last time it has been updated.
+    /** @dev Updates the current exchange rate, taking into account the Second Percentage Yield (p2pSPY) since the last time it has been updated.
      *  @param _marketAddress The address of the market we want to update.
      *  @return currentExchangeRate to convert from p2pUnit to underlying or from underlying to p2pUnit.
      */
@@ -172,7 +172,7 @@ contract MorphoMarketsManagerForAave is Ownable {
             lastUpdateTimestamp[_marketAddress] = currentTimestamp;
 
             uint256 newP2PUnitExchangeRate = p2pUnitExchangeRate[_marketAddress].rayMul(
-                (WadRayMath.ray() + p2pBPY[_marketAddress]).rayPow(timeDifference)
+                (WadRayMath.ray() + p2pSPY[_marketAddress]).rayPow(timeDifference)
             ); // In ray
 
             // Update currentExchangeRate
