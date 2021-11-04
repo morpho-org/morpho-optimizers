@@ -79,14 +79,6 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
         IPriceOracleGetter oracle; // Aave oracle.
     }
 
-    // Struct to avoid stack too deep error
-    struct MatchSuppliersVars {
-        uint256 numberOfKeysAtValue;
-        uint256 onAaveInUnderlying;
-        uint256 highestValueSeen;
-        uint256 highestValue;
-    }
-
     /* Storage */
 
     uint256 public constant LIQUIDATION_CLOSE_FACTOR_PERCENT = 5000; // In basis points.
@@ -639,61 +631,47 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
         internal
         returns (uint256 remainingToMatch)
     {
-        MatchSuppliersVars memory vars;
         IAToken poolToken = IAToken(_poolTokenAddress);
         remainingToMatch = _amount; // In underlying
         uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(
             poolToken.UNDERLYING_ASSET_ADDRESS()
         );
-        vars.highestValue = suppliersOnPool[_poolTokenAddress].last();
+        address account = suppliersOnPool[_poolTokenAddress].last();
 
-        vars.highestValueSeen; // Allow us to store the previous
-        while (remainingToMatch > 0 && vars.highestValue != 0) {
-            // Loop on the keys (addresses) sharing the same value
-            vars.numberOfKeysAtValue = suppliersOnPool[_poolTokenAddress].getNumberOfKeysAtValue(
-                vars.highestValue
-            );
-            uint256 indexOfSupplier = 0;
-            // Check that there are is still a supplier having no debt on Creams is
-            while (remainingToMatch > 0 && vars.numberOfKeysAtValue - indexOfSupplier > 0) {
-                address account = suppliersOnPool[_poolTokenAddress].valueKeyAtIndex(
-                    vars.highestValue,
-                    indexOfSupplier
-                );
-                // Check if this user is not borrowing on Aave (cf Liquidation Invariant in docs)
-                if (!_hasDebtOnAave(account)) {
-                    vars.onAaveInUnderlying = supplyBalanceInOf[_poolTokenAddress][account]
-                        .onPool
-                        .wadToRay()
-                        .rayMul(normalizedIncome)
-                        .rayToWad();
-                    uint256 toMatch = Math.min(vars.onAaveInUnderlying, remainingToMatch);
-                    supplyBalanceInOf[_poolTokenAddress][account].onPool -= toMatch
-                        .wadToRay()
-                        .rayDiv(normalizedIncome)
-                        .rayToWad();
-                    remainingToMatch -= toMatch;
-                    supplyBalanceInOf[_poolTokenAddress][account].inP2P += toMatch
-                        .wadToRay()
-                        .rayDiv(marketsManagerForAave.p2pUnitExchangeRate(_poolTokenAddress))
-                        .rayToWad(); // In p2pUnit
-                    _updateSupplierList(_poolTokenAddress, account);
-                    vars.numberOfKeysAtValue = suppliersOnPool[_poolTokenAddress]
-                        .getNumberOfKeysAtValue(vars.highestValue);
-                    emit SupplierMatched(account, _poolTokenAddress, toMatch);
-                } else {
-                    vars.highestValueSeen = vars.highestValue;
-                    indexOfSupplier++;
-                }
+        bool metAccountWithDebtOnPool; // Stores whether or not we already met an account having debt on pools
+        while (remainingToMatch > 0 && account != address(0)) {
+            address tmpAccount;
+            // Check if this user is not borrowing on Aave (cf Liquidation Invariant in docs)
+            if (!_hasDebtOnAave(account)) {
+                uint256 onAaveInUnderlying = supplyBalanceInOf[_poolTokenAddress][account]
+                    .onPool
+                    .wadToRay()
+                    .rayMul(normalizedIncome)
+                    .rayToWad();
+                uint256 toMatch = Math.min(onAaveInUnderlying, remainingToMatch);
+                supplyBalanceInOf[_poolTokenAddress][account].onPool -= toMatch
+                    .wadToRay()
+                    .rayDiv(normalizedIncome)
+                    .rayToWad();
+                remainingToMatch -= toMatch;
+                supplyBalanceInOf[_poolTokenAddress][account].inP2P += toMatch
+                    .wadToRay()
+                    .rayDiv(marketsManagerForAave.p2pUnitExchangeRate(_poolTokenAddress))
+                    .rayToWad(); // In p2pUnit
+                if (metAccountWithDebtOnPool)
+                    tmpAccount = suppliersOnPool[_poolTokenAddress].prev(account);
+                else tmpAccount = suppliersOnPool[_poolTokenAddress].last();
+                _updateSupplierList(_poolTokenAddress, account);
+                emit SupplierMatched(account, _poolTokenAddress, toMatch);
+            } else {
+                metAccountWithDebtOnPool = true;
+                tmpAccount = suppliersOnPool[_poolTokenAddress].prev(account);
             }
-            // Update the highest value after the tree has been updated
-            if (vars.highestValueSeen > 0)
-                vars.highestValue = suppliersOnPool[_poolTokenAddress].prev(vars.highestValueSeen);
-            else vars.highestValue = suppliersOnPool[_poolTokenAddress].last();
+            account = tmpAccount;
         }
         // Withdraw from Aave
         uint256 toWithdraw = _amount - remainingToMatch;
-        if (toWithdraw > 0) _withdrawERC20FromAave(_poolTokenAddress, _amount - remainingToMatch);
+        if (toWithdraw > 0) _withdrawERC20FromAave(_poolTokenAddress, toWithdraw);
     }
 
     /** @dev Finds liquidity in peer-to-peer and unmatches it to reconnect Aave.
@@ -712,32 +690,23 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
         );
         remainingToUnmatch = _amount; // In underlying
         uint256 p2pExchangeRate = marketsManagerForAave.p2pUnitExchangeRate(_poolTokenAddress);
-        uint256 highestValue = suppliersInP2P[_poolTokenAddress].last();
+        address account = suppliersInP2P[_poolTokenAddress].last();
 
-        while (remainingToUnmatch > 0 && highestValue != 0) {
-            while (
-                remainingToUnmatch > 0 &&
-                suppliersInP2P[_poolTokenAddress].getNumberOfKeysAtValue(highestValue) > 0
-            ) {
-                address account = suppliersInP2P[_poolTokenAddress].valueKeyAtIndex(
-                    highestValue,
-                    0
-                );
-                uint256 inP2P = supplyBalanceInOf[_poolTokenAddress][account].inP2P; // In poolToken
-                uint256 toUnmatch = Math.min(inP2P.mul(p2pExchangeRate), remainingToUnmatch); // In underlying
-                remainingToUnmatch -= toUnmatch;
-                supplyBalanceInOf[_poolTokenAddress][account].onPool += toUnmatch
-                    .wadToRay()
-                    .rayDiv(normalizedIncome)
-                    .rayToWad();
-                supplyBalanceInOf[_poolTokenAddress][account].inP2P -= toUnmatch
-                    .wadToRay()
-                    .rayDiv(p2pExchangeRate)
-                    .rayToWad(); // In p2pUnit
-                _updateSupplierList(_poolTokenAddress, account);
-                emit SupplierUnmatched(account, _poolTokenAddress, toUnmatch);
-            }
-            highestValue = suppliersInP2P[_poolTokenAddress].last();
+        while (remainingToUnmatch > 0 && account != address(0)) {
+            uint256 inP2P = supplyBalanceInOf[_poolTokenAddress][account].inP2P; // In poolToken
+            uint256 toUnmatch = Math.min(inP2P.mul(p2pExchangeRate), remainingToUnmatch); // In underlying
+            remainingToUnmatch -= toUnmatch;
+            supplyBalanceInOf[_poolTokenAddress][account].onPool += toUnmatch
+                .wadToRay()
+                .rayDiv(normalizedIncome)
+                .rayToWad();
+            supplyBalanceInOf[_poolTokenAddress][account].inP2P -= toUnmatch
+                .wadToRay()
+                .rayDiv(p2pExchangeRate)
+                .rayToWad(); // In p2pUnit
+            _updateSupplierList(_poolTokenAddress, account);
+            emit SupplierUnmatched(account, _poolTokenAddress, toUnmatch);
+            account = suppliersInP2P[_poolTokenAddress].last();
         }
         // Supply on Aave
         uint256 toSupply = _amount - remainingToUnmatch;
@@ -761,36 +730,27 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
             address(underlyingToken)
         );
         uint256 p2pExchangeRate = marketsManagerForAave.p2pUnitExchangeRate(_poolTokenAddress);
-        uint256 highestValue = borrowersOnPool[_poolTokenAddress].last();
+        address account = borrowersOnPool[_poolTokenAddress].last();
 
-        while (remainingToMatch > 0 && highestValue != 0) {
-            while (
-                remainingToMatch > 0 &&
-                borrowersOnPool[_poolTokenAddress].getNumberOfKeysAtValue(highestValue) > 0
-            ) {
-                address account = borrowersOnPool[_poolTokenAddress].valueKeyAtIndex(
-                    highestValue,
-                    0
-                );
-                uint256 onAaveInUnderlying = borrowBalanceInOf[_poolTokenAddress][account]
-                    .onPool
-                    .wadToRay()
-                    .rayMul(normalizedVariableDebt)
-                    .rayToWad();
-                uint256 toMatch = Math.min(onAaveInUnderlying, remainingToMatch);
-                borrowBalanceInOf[_poolTokenAddress][account].onPool -= toMatch
-                    .wadToRay()
-                    .rayDiv(normalizedVariableDebt)
-                    .rayToWad();
-                remainingToMatch -= toMatch;
-                borrowBalanceInOf[_poolTokenAddress][account].inP2P += toMatch
-                    .wadToRay()
-                    .rayDiv(p2pExchangeRate)
-                    .rayToWad();
-                _updateBorrowerList(_poolTokenAddress, account);
-                emit BorrowerMatched(account, _poolTokenAddress, toMatch);
-            }
-            highestValue = borrowersOnPool[_poolTokenAddress].last();
+        while (remainingToMatch > 0 && account != address(0)) {
+            uint256 onAaveInUnderlying = borrowBalanceInOf[_poolTokenAddress][account]
+                .onPool
+                .wadToRay()
+                .rayMul(normalizedVariableDebt)
+                .rayToWad();
+            uint256 toMatch = Math.min(onAaveInUnderlying, remainingToMatch);
+            borrowBalanceInOf[_poolTokenAddress][account].onPool -= toMatch
+                .wadToRay()
+                .rayDiv(normalizedVariableDebt)
+                .rayToWad();
+            remainingToMatch -= toMatch;
+            borrowBalanceInOf[_poolTokenAddress][account].inP2P += toMatch
+                .wadToRay()
+                .rayDiv(p2pExchangeRate)
+                .rayToWad();
+            _updateBorrowerList(_poolTokenAddress, account);
+            emit BorrowerMatched(account, _poolTokenAddress, toMatch);
+            account = borrowersOnPool[_poolTokenAddress].last();
         }
         // Repay Aave
         uint256 toRepay = _amount - remainingToMatch;
@@ -817,33 +777,24 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
         uint256 normalizedVariableDebt = lendingPool.getReserveNormalizedVariableDebt(
             address(underlyingToken)
         );
-        uint256 highestValue = borrowersInP2P[_poolTokenAddress].last();
+        address account = borrowersInP2P[_poolTokenAddress].last();
 
-        while (remainingToUnmatch > 0 && highestValue != 0) {
-            while (
-                remainingToUnmatch > 0 &&
-                borrowersInP2P[_poolTokenAddress].getNumberOfKeysAtValue(highestValue) > 0
-            ) {
-                address account = borrowersInP2P[_poolTokenAddress].valueKeyAtIndex(
-                    highestValue,
-                    0
-                );
-                uint256 inP2P = borrowBalanceInOf[_poolTokenAddress][account].inP2P;
-                _unmatchTheSupplier(account); // Before borrowing on Aave, we put all the collateral of the borrower on Aave (cf Liquidation Invariant in docs)
-                uint256 toUnmatch = Math.min(inP2P.mul(p2pExchangeRate), remainingToUnmatch); // In underlying
-                remainingToUnmatch -= toUnmatch;
-                borrowBalanceInOf[_poolTokenAddress][account].onPool += toUnmatch
-                    .wadToRay()
-                    .rayDiv(normalizedVariableDebt)
-                    .rayToWad();
-                borrowBalanceInOf[_poolTokenAddress][account].inP2P -= toUnmatch
-                    .wadToRay()
-                    .rayDiv(p2pExchangeRate)
-                    .rayToWad();
-                _updateBorrowerList(_poolTokenAddress, account);
-                emit BorrowerUnmatched(account, _poolTokenAddress, toUnmatch);
-            }
-            highestValue = borrowersInP2P[_poolTokenAddress].last();
+        while (remainingToUnmatch > 0 && account != address(0)) {
+            uint256 inP2P = borrowBalanceInOf[_poolTokenAddress][account].inP2P;
+            _unmatchTheSupplier(account); // Before borrowing on Aave, we put all the collateral of the borrower on Aave (cf Liquidation Invariant in docs)
+            uint256 toUnmatch = Math.min(inP2P.mul(p2pExchangeRate), remainingToUnmatch); // In underlying
+            remainingToUnmatch -= toUnmatch;
+            borrowBalanceInOf[_poolTokenAddress][account].onPool += toUnmatch
+                .wadToRay()
+                .rayDiv(normalizedVariableDebt)
+                .rayToWad();
+            borrowBalanceInOf[_poolTokenAddress][account].inP2P -= toUnmatch
+                .wadToRay()
+                .rayDiv(p2pExchangeRate)
+                .rayToWad();
+            _updateBorrowerList(_poolTokenAddress, account);
+            emit BorrowerUnmatched(account, _poolTokenAddress, toUnmatch);
+            account = borrowersInP2P[_poolTokenAddress].last();
         }
         // Borrow on Aave
         lendingPool.borrow(

@@ -637,8 +637,8 @@ describe('MorphoPositionsManagerForAave Contract', () => {
       expect(removeDigitsBigNumber(5, (await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier1.getAddress())).inP2P)).to.equal(0);
 
       // Check supply balances of supplier2: supplier2 should have replaced supplier1
-      expect(removeDigitsBigNumber(3, (await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier2.getAddress())).onPool)).to.equal(
-        removeDigitsBigNumber(3, expectedSupplier2SupplyBalanceOnPool)
+      expect(removeDigitsBigNumber(4, (await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier2.getAddress())).onPool)).to.equal(
+        removeDigitsBigNumber(4, expectedSupplier2SupplyBalanceOnPool)
       );
       expect(removeDigitsBigNumber(7, (await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier2.getAddress())).inP2P)).to.equal(
         removeDigitsBigNumber(7, expectedSupplier2SupplyBalanceInP2P)
@@ -801,7 +801,7 @@ describe('MorphoPositionsManagerForAave Contract', () => {
       const wmaticBorrowBalance = (await morphoPositionsManagerForAave.borrowBalanceInOf(config.tokens.aWmatic.address, supplier1.getAddress())).onPool;
       const wmaticBorrowBalanceInUnderlying = aDUnitToUnderlying(wmaticBorrowBalance, wmaticNormalizedVariableDebt);
       const expectedScaledBalance = underlyingToScaledBalance(p2pUnitToUnderlying(supplyBalanceInP2P1, p2pDaiExchangeRate2), daiNormalizedIncome2).add(supplyBalanceOnPool1);
-      expect(removeDigitsBigNumber(2, supplyBalanceOnPool2)).to.equal(removeDigitsBigNumber(2, expectedScaledBalance));
+      expect(removeDigitsBigNumber(3, supplyBalanceOnPool2)).to.equal(removeDigitsBigNumber(3, expectedScaledBalance));
       expect(removeDigitsBigNumber(2, borrowBalanceOnPool)).to.equal(removeDigitsBigNumber(2, expectedBorrowBalanceOnPool));
       expect(removeDigitsBigNumber(2, wmaticBorrowBalanceInUnderlying)).to.equal(removeDigitsBigNumber(2, maxToBorrow));
     });
@@ -947,11 +947,12 @@ describe('MorphoPositionsManagerForAave Contract', () => {
       await hre.network.provider.send('hardhat_impersonateAccount', [adminAddress]);
       await hre.network.provider.send('hardhat_setBalance', [adminAddress, ethers.utils.parseEther('10').toHexString()]);
       const admin = await ethers.getSigner(adminAddress);
+      await lendingPoolAddressesProvider.connect(admin).setPriceOracle(oracle.address);
 
       await daiToken.connect(supplier1).approve(morphoPositionsManagerForAave.address, utils.parseUnits('200'));
       await morphoPositionsManagerForAave.connect(supplier1).supply(config.tokens.aDai.address, utils.parseUnits('200'));
 
-      // borrower1 supplys USDC as supply (collateral)
+      // borrower1 supplies USDC as supply (collateral)
       const amount = to6Decimals(utils.parseUnits('100'));
       await usdcToken.connect(borrower1).approve(morphoPositionsManagerForAave.address, amount);
       await morphoPositionsManagerForAave.connect(borrower1).supply(config.tokens.aUsdc.address, amount);

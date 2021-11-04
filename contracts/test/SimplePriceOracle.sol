@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.7;
 
-import {ICErc20, ICToken} from "../interfaces/compound/ICompound.sol";
+import {ICErc20, ICToken} from "../comp-like/interfaces/compound/ICompound.sol";
 
 /// Price Oracle for liquidation tests
 contract SimplePriceOracle {
