@@ -792,6 +792,38 @@ describe('MorphoPositionsManagerForCream Contract', () => {
       expect((await morphoPositionsManagerForCream.borrowBalanceInOf(config.tokens.cDai.address, borrower2.getAddress())).onCream).to.be.lte(1);
       expect((await morphoPositionsManagerForCream.borrowBalanceInOf(config.tokens.cDai.address, borrower3.getAddress())).onCream).to.be.lte(1);
     });
+
+    it('User can borrow partially on Comp when suppliers have debt (Avoid Infinite loop)', async () => {
+      // This test produces a scenario where a user wants to borrow funds and tries to match with some suppliers.
+      // Because those suppliers are having debt on cream, their collaterals can not be given to a borrower.
+      // We look for the users with the highest value that do not have debt on cream.
+      // If, for a given checked value, all of the borrowers have debt on cream, we need to go check for the second highest value.
+      // and not end up having an infinite loop, checking all the time the highest value.
+
+      const collateralAmount = utils.parseUnits('500');
+      const supplyAmount = utils.parseUnits('100');
+      const borrowAmount = utils.parseUnits('10');
+      const borrowAmountForDAI = utils.parseUnits('200');
+
+      // supplier1 supplies 100 DAI
+      await daiToken.connect(supplier1).approve(morphoPositionsManagerForCream.address, supplyAmount);
+      await morphoPositionsManagerForCream.connect(supplier1).supply(config.tokens.cDai.address, supplyAmount);
+
+      // Borrower1 borrows 10 UNI and collateralises 500 DAI
+      await daiToken.connect(borrower1).approve(morphoPositionsManagerForCream.address, collateralAmount);
+      await morphoPositionsManagerForCream.connect(borrower1).supply(config.tokens.cDai.address, collateralAmount);
+      await morphoPositionsManagerForCream.connect(borrower1).borrow(config.tokens.cUni.address, borrowAmount);
+
+      // Borrower2 borrows 10 UNI and collateralises 500 DAI
+      await daiToken.connect(borrower2).approve(morphoPositionsManagerForCream.address, collateralAmount);
+      await morphoPositionsManagerForCream.connect(borrower2).supply(config.tokens.cDai.address, collateralAmount);
+      await morphoPositionsManagerForCream.connect(borrower2).borrow(config.tokens.cUni.address, borrowAmount);
+
+      // borrower3 wants to borrow 200 DAI
+      await usdcToken.connect(borrower3).approve(morphoPositionsManagerForCream.address, to6Decimals(utils.parseUnits('500')));
+      await morphoPositionsManagerForCream.connect(borrower3).supply(config.tokens.cUsdc.address, to6Decimals(utils.parseUnits('500')));
+      await expect(morphoPositionsManagerForCream.connect(borrower3).borrow(config.tokens.cDai.address, borrowAmountForDAI)).to.not.be.reverted;
+    });
   });
 
   describe('Test liquidation', () => {
