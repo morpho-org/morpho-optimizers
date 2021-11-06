@@ -113,7 +113,11 @@ contract MorphoMarketsManagerForCompLike is Ownable {
      *  @param _marketAddress The address of the market to change the threshold.
      *  @param _newThreshold The new threshold to set.
      */
-    function updateThreshold(address _marketAddress, uint256 _newThreshold) external onlyOwner {
+    function updateThreshold(address _marketAddress, uint256 _newThreshold)
+        external
+        onlyOwner
+        isMarketCreated(_marketAddress)
+    {
         require(_newThreshold > 0, "updateThreshold:threshold!=0");
         positionsManagerForCompLike.setThreshold(_marketAddress, _newThreshold);
         emit ThresholdUpdated(_marketAddress, _newThreshold);
