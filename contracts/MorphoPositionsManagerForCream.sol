@@ -483,6 +483,7 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
         address _borrower,
         uint256 _amount
     ) internal isMarketCreated(_crERC20Address) {
+        require(_amount > 0, "_repay:amount=0");
         ICErc20 crERC20Token = ICErc20(_crERC20Address);
         IERC20 erc20Token = IERC20(crERC20Token.underlying());
         erc20Token.safeTransferFrom(msg.sender, address(this), _amount);
