@@ -64,6 +64,7 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
     mapping(address => mapping(address => BorrowBalance)) public borrowBalanceInOf; // For a given market, the borrow balance of user.
     mapping(address => mapping(address => bool)) public accountMembership; // Whether the account is in the market or not.
     mapping(address => address[]) public enteredMarkets; // Markets entered by a user.
+    mapping(address => uint256) public numberOfEnteredMarkets; // Number of markets entered by a user.
     mapping(address => uint256) public threshold; // Thresholds below the ones suppliers and borrowers cannot enter markets.
 
     IComptroller public comptroller;
@@ -750,7 +751,7 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
      * @param _account The address of the account to move balance.
      */
     function _unmatchTheSupplier(address _account) internal {
-        for (uint256 i; i < enteredMarkets[_account].length; i++) {
+        for (uint256 i; i < numberOfEnteredMarkets[_account]; i++) {
             address cTokenEntered = enteredMarkets[_account][i];
             uint256 inP2P = supplyBalanceInOf[cTokenEntered][_account].inP2P;
 
@@ -784,6 +785,7 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
         if (!accountMembership[_cTokenAddress][_account]) {
             accountMembership[_cTokenAddress][_account] = true;
             enteredMarkets[_account].push(_cTokenAddress);
+            numberOfEnteredMarkets[_account] += 1;
         }
     }
 
@@ -832,7 +834,7 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
         BalanceStateVars memory balanceState;
         ICompoundOracle compoundOracle = ICompoundOracle(comptroller.oracle());
 
-        for (uint256 i; i < enteredMarkets[_account].length; i++) {
+        for (uint256 i; i < numberOfEnteredMarkets[_account]; i++) {
             // Avoid stack too deep error
             BalanceStateVars memory vars;
             vars.cTokenEntered = enteredMarkets[_account][i];
@@ -914,7 +916,7 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
     }
 
     function _hasDebtOnPool(address _account) internal view returns (bool) {
-        for (uint256 i; i < enteredMarkets[_account].length; i++) {
+        for (uint256 i; i < numberOfEnteredMarkets[_account]; i++) {
             if (borrowBalanceInOf[enteredMarkets[_account][i]][_account].onPool > 0) {
                 return true;
             }
