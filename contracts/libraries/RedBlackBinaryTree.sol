@@ -12,7 +12,7 @@ library RedBlackBinaryTree {
         uint256 parent; // The parent node of the current node.
         uint256 leftChild; // The left child of the current node.
         uint256 rightChild; // The right child of the current node.
-        bool red; // Whether the current notde is red or black.
+        bool red; // Whether the current node is red or black.
         address[] keys; // The keys sharing the value of the node.
         mapping(address => uint256) keyMap; // Maps the keys to their index in `keys`.
     }

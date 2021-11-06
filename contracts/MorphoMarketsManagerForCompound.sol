@@ -138,7 +138,7 @@ contract MorphoMarketsManagerForCompound is Ownable {
 
         emit BPYUpdated(_marketAddress, p2pBPY[_marketAddress]);
 
-        // Update p2pUnitExhangeRate
+        // Update p2pUnitExchangeRate
         updateP2pUnitExchangeRate(_marketAddress);
     }
 
