@@ -223,6 +223,7 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
         isMarketCreated(_crERC20Address)
         isAboveThreshold(_crERC20Address, _amount)
     {
+        require(_amount > 0, "supply:amount=0");
         _handleMembership(_crERC20Address, msg.sender);
         ICErc20 crERC20Token = ICErc20(_crERC20Address);
         IERC20 erc20Token = IERC20(crERC20Token.underlying());
