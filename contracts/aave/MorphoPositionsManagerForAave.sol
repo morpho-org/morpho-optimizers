@@ -357,6 +357,7 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
         address _borrower,
         uint256 _amount
     ) external nonReentrant {
+        require(_amount > 0, "liquidate:amount=0");
         LiquidateVars memory vars;
         (vars.debtValue, vars.maxDebtValue, ) = _getUserHypotheticalBalanceStates(
             _borrower,
@@ -515,6 +516,7 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
         address _borrower,
         uint256 _amount
     ) internal isMarketCreated(_poolTokenAddress) {
+        require(_amount > 0, "_repay:amount=0");
         IAToken poolToken = IAToken(_poolTokenAddress);
         IERC20 underlyingToken = IERC20(poolToken.UNDERLYING_ASSET_ADDRESS());
         underlyingToken.safeTransferFrom(msg.sender, address(this), _amount);
