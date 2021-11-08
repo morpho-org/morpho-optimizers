@@ -10,7 +10,7 @@ import "./interfaces/IPositionsManagerForCompound.sol";
 import "./interfaces/IMarketsManagerForCompound.sol";
 
 /**
- *  @title MorphoMarketsManagerForCompLike
+ *  @title MorphoMarketsManagerForCompound
  *  @dev Smart contract managing the markets used by MorphoPositionsManagerForX, an other contract interacting with X: Compound or a fork of Compound.
  */
 contract MorphoMarketsManagerForCompound is Ownable {
@@ -25,7 +25,7 @@ contract MorphoMarketsManagerForCompound is Ownable {
     mapping(address => uint256) public mUnitExchangeRate; // current exchange rate from mUnit to underlying.
     mapping(address => uint256) public lastUpdateBlockNumber; // Last time mUnitExchangeRate was updated.
 
-    IPositionsManagerForCompound public positionsManagerForCompLike;
+    IPositionsManagerForCompound public positionsManagerForCompound;
 
     /* Events */
 
@@ -34,15 +34,15 @@ contract MorphoMarketsManagerForCompound is Ownable {
      */
     event MarketCreated(address _marketAddress);
 
-    /** @dev Emitted when the comptroller is set on the `compLikePositionsManager`.
+    /** @dev Emitted when the comptroller is set on the `compoundPositionsManager`.
      *  @param _comptrollerAddress The address of the comptroller proxy.
      */
     event ComptrollerSet(address _comptrollerAddress);
 
-    /** @dev Emitted when the `positionsManagerForCompLike` is set.
-     *  @param _positionsManagerForCompLike The address of the `positionsManagerForCompLike`.
+    /** @dev Emitted when the `positionsManagerForCompound` is set.
+     *  @param _positionsManagerForCompound The address of the `positionsManagerForCompound`.
      */
-    event PositionsManagerForCompLikeSet(address _positionsManagerForCompLike);
+    event PositionsManagerForCompoundSet(address _positionsManagerForCompound);
 
     /** @dev Emitted when the p2pBPY of a market is updated.
      *  @param _marketAddress The address of the market to update.
@@ -73,24 +73,24 @@ contract MorphoMarketsManagerForCompound is Ownable {
 
     /* External */
 
-    /** @dev Sets the `positionsManagerForCompLike` to interact with Compound.
-     *  @param _positionsManagerForCompLike The address of compound module.
+    /** @dev Sets the `positionsManagerForCompound` to interact with Compound.
+     *  @param _positionsManagerForCompound The address of compound module.
      */
-    function setPositionsManagerForCompLike(address _positionsManagerForCompLike)
+    function setPositionsManagerForCompound(address _positionsManagerForCompound)
         external
         onlyOwner
     {
         require(!isPositionsManagerSet, "positions-manager-already-set");
         isPositionsManagerSet = true;
-        positionsManagerForCompLike = IPositionsManagerForCompound(_positionsManagerForCompLike);
-        emit PositionsManagerForCompLikeSet(_positionsManagerForCompLike);
+        positionsManagerForCompound = IPositionsManagerForCompound(_positionsManagerForCompound);
+        emit PositionsManagerForCompoundSet(_positionsManagerForCompound);
     }
 
     /** @dev Sets the comptroller address.
      *  @param _proxyComptrollerAddress The address of Compound's comptroller.
      */
     function setComptroller(address _proxyComptrollerAddress) external onlyOwner {
-        positionsManagerForCompLike.setComptroller(_proxyComptrollerAddress);
+        positionsManagerForCompound.setComptroller(_proxyComptrollerAddress);
         emit ComptrollerSet(_proxyComptrollerAddress);
     }
 
@@ -99,9 +99,9 @@ contract MorphoMarketsManagerForCompound is Ownable {
      */
     function createMarket(address _marketAddress) external onlyOwner {
         require(!isCreated[_marketAddress], "createMarket:mkt-already-created");
-        uint256[] memory results = positionsManagerForCompLike.createMarket(_marketAddress);
+        uint256[] memory results = positionsManagerForCompound.createMarket(_marketAddress);
         require(results[0] == 0, "createMarket:enter-mkt-fail");
-        positionsManagerForCompLike.setThreshold(_marketAddress, 1e18);
+        positionsManagerForCompound.setThreshold(_marketAddress, 1e18);
         lastUpdateBlockNumber[_marketAddress] = block.number;
         mUnitExchangeRate[_marketAddress] = 1e18;
         isCreated[_marketAddress] = true;
@@ -119,7 +119,7 @@ contract MorphoMarketsManagerForCompound is Ownable {
         isMarketCreated(_marketAddress)
     {
         require(_newThreshold > 0, "updateThreshold:threshold!=0");
-        positionsManagerForCompLike.setThreshold(_marketAddress, _newThreshold);
+        positionsManagerForCompound.setThreshold(_marketAddress, _newThreshold);
         emit ThresholdUpdated(_marketAddress, _newThreshold);
     }
 
