@@ -329,6 +329,7 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
         address _borrower,
         uint256 _amount
     ) external nonReentrant {
+        require(_amount > 0, "liquidate:amount=0");
         (uint256 debtValue, uint256 maxDebtValue, ) = _getUserHypotheticalBalanceStates(
             _borrower,
             address(0),
