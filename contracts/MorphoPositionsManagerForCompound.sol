@@ -8,13 +8,13 @@ import "prb-math/contracts/PRBMathUD60x18.sol";
 
 import "./libraries/RedBlackBinaryTree.sol";
 import {ICErc20, IComptroller, ICompoundOracle} from "./interfaces/compound/ICompound.sol";
-import "./interfaces/IMarketsManagerForCompLike.sol";
+import "./interfaces/IMarketsManagerForCompound.sol";
 
 /**
  *  @title MorphoPositionsManagerForCream
  *  @dev Smart contract interacting with Cream to enable P2P supply/borrow positions that can fallback on Cream's pool using cERC20 tokens.
  */
-contract MorphoPositionsManagerForCream is ReentrancyGuard {
+contract MorphoPositionsManagerForCompound is ReentrancyGuard {
     using RedBlackBinaryTree for RedBlackBinaryTree.Tree;
     using PRBMathUD60x18 for uint256;
     using SafeERC20 for IERC20;
@@ -68,7 +68,7 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
 
     IComptroller public creamtroller;
     ICompoundOracle public creamOracle;
-    IMarketsManagerForCompLike public marketsManagerForCompLike;
+    IMarketsManagerForCompound public marketsManagerForCompLike;
 
     /* Events */
 
@@ -173,7 +173,7 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
     /* Constructor */
 
     constructor(address _creamMarketsManager, address _proxyCreamtrollerAddress) {
-        marketsManagerForCompLike = IMarketsManagerForCompLike(_creamMarketsManager);
+        marketsManagerForCompLike = IMarketsManagerForCompound(_creamMarketsManager);
         creamtroller = IComptroller(_proxyCreamtrollerAddress);
         creamOracle = ICompoundOracle(creamtroller.oracle());
     }
@@ -246,8 +246,9 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
 
         /* If there aren't enough borrowers waiting on Cream to match all the tokens supplied, the rest is supplied to Cream */
         if (remainingToSupplyToCream > 0) {
-            supplyBalanceInOf[_crERC20Address][msg.sender].onCream += remainingToSupplyToCream
-                .div(crExchangeRate); // In crToken
+            supplyBalanceInOf[_crERC20Address][msg.sender].onCream += remainingToSupplyToCream.div(
+                crExchangeRate
+            ); // In crToken
             _supplyERC20ToCream(_crERC20Address, remainingToSupplyToCream); // Revert on error
         }
 
@@ -287,12 +288,10 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
         /* If there aren't enough suppliers waiting on Cream to match all the tokens borrowed, the rest is borrowed from Cream */
         if (remainingToBorrowOnCream > 0) {
             _unmatchTheSupplier(msg.sender); // Before borrowing on Cream, we put all the collateral of the borrower on Cream (cf Liquidation Invariant in docs)
-            require(
-                crERC20Token.borrow(remainingToBorrowOnCream) == 0,
-                "borrow-cream-fail"
-            );
-            borrowBalanceInOf[_crERC20Address][msg.sender].onCream += remainingToBorrowOnCream
-                .div(crERC20Token.borrowIndex()); // In cdUnit
+            require(crERC20Token.borrow(remainingToBorrowOnCream) == 0, "borrow-cream-fail");
+            borrowBalanceInOf[_crERC20Address][msg.sender].onCream += remainingToBorrowOnCream.div(
+                crERC20Token.borrowIndex()
+            ); // In cdUnit
         }
 
         _updateBorrowerList(_crERC20Address, msg.sender);

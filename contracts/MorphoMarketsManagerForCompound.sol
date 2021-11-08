@@ -6,14 +6,14 @@ import "@openzeppelin/contracts/utils/math/Math.sol";
 import "prb-math/contracts/PRBMathUD60x18.sol";
 
 import {ICErc20, IComptroller} from "./interfaces/compound/ICompound.sol";
-import "./interfaces/IPositionsManagerForCompLike.sol";
-import "./interfaces/IMarketsManagerForCompLike.sol";
+import "./interfaces/IPositionsManagerForCompound.sol";
+import "./interfaces/IMarketsManagerForCompound.sol";
 
 /**
  *  @title MorphoMarketsManagerForCompLike
  *  @dev Smart contract managing the markets used by MorphoPositionsManagerForX, an other contract interacting with X: Compound or a fork of Compound.
  */
-contract MorphoMarketsManagerForCompLike is Ownable {
+contract MorphoMarketsManagerForCompound is Ownable {
     using PRBMathUD60x18 for uint256;
     using Math for uint256;
 
@@ -25,7 +25,7 @@ contract MorphoMarketsManagerForCompLike is Ownable {
     mapping(address => uint256) public mUnitExchangeRate; // current exchange rate from mUnit to underlying.
     mapping(address => uint256) public lastUpdateBlockNumber; // Last time mUnitExchangeRate was updated.
 
-    IPositionsManagerForCompLike public positionsManagerForCompLike;
+    IPositionsManagerForCompound public positionsManagerForCompLike;
 
     /* Events */
 
@@ -82,7 +82,7 @@ contract MorphoMarketsManagerForCompLike is Ownable {
     {
         require(!isPositionsManagerSet, "positions-manager-already-set");
         isPositionsManagerSet = true;
-        positionsManagerForCompLike = IPositionsManagerForCompLike(_positionsManagerForCompLike);
+        positionsManagerForCompLike = IPositionsManagerForCompound(_positionsManagerForCompLike);
         emit PositionsManagerForCompLikeSet(_positionsManagerForCompLike);
     }
 
