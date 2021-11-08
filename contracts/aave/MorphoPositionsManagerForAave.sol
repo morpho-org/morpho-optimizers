@@ -244,13 +244,15 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
         IERC20 underlyingToken = IERC20(poolToken.UNDERLYING_ASSET_ADDRESS());
         underlyingToken.safeTransferFrom(msg.sender, address(this), _amount);
         uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(address(underlyingToken));
+        /* DEFAULT CASE: There aren't any borrowers waiting on Aave, Morpho supplies all the tokens to Aave */
+        uint256 remainingToSupplyToAave = _amount;
 
-        /* CASE 1: Some borrowers are waiting on Aave, Morpho matches the supplier in P2P with them */
+        /* If some borrowers are waiting on Aave, Morpho matches the supplier in P2P with them as much as possible */
         if (borrowersOnPool[_poolTokenAddress].isNotEmpty()) {
             uint256 p2pExchangeRate = marketsManagerForAave.updateP2PUnitExchangeRate(
                 _poolTokenAddress
             );
-            uint256 remainingToSupplyToAave = _matchBorrowers(_poolTokenAddress, _amount); // In underlying
+            remainingToSupplyToAave = _matchBorrowers(_poolTokenAddress, _amount); // In underlying
             uint256 matched = _amount - remainingToSupplyToAave;
             if (matched > 0) {
                 supplyBalanceInOf[_poolTokenAddress][msg.sender].inP2P += matched
@@ -258,22 +260,15 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
                     .rayDiv(p2pExchangeRate)
                     .rayToWad(); // In p2pUnit
             }
-            /* If there aren't enough borrowers waiting on Aave to match all the tokens supplied, the rest is supplied to Aave */
-            if (remainingToSupplyToAave > 0) {
-                supplyBalanceInOf[_poolTokenAddress][msg.sender].onPool += remainingToSupplyToAave
-                    .wadToRay()
-                    .rayDiv(normalizedIncome)
-                    .rayToWad(); // Scaled Balance
-                _supplyERC20ToAave(_poolTokenAddress, remainingToSupplyToAave); // Revert on error
-            }
         }
-        /* CASE 2: There aren't any borrowers waiting on Aave, Morpho supplies all the tokens to Aave */
-        else {
-            supplyBalanceInOf[_poolTokenAddress][msg.sender].onPool += _amount
+
+        /* If there aren't enough borrowers waiting on Aave to match all the tokens supplied, the rest is supplied to Aave */
+        if (remainingToSupplyToAave > 0) {
+            supplyBalanceInOf[_poolTokenAddress][msg.sender].onPool += remainingToSupplyToAave
                 .wadToRay()
                 .rayDiv(normalizedIncome)
                 .rayToWad(); // Scaled Balance
-            _supplyERC20ToAave(_poolTokenAddress, _amount); // Revert on error
+            _supplyERC20ToAave(_poolTokenAddress, remainingToSupplyToAave); // Revert on error
         }
 
         _updateSupplierList(_poolTokenAddress, msg.sender);
@@ -294,12 +289,14 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
         _checkAccountLiquidity(msg.sender, _poolTokenAddress, 0, _amount);
         IAToken poolToken = IAToken(_poolTokenAddress);
         IERC20 underlyingToken = IERC20(poolToken.UNDERLYING_ASSET_ADDRESS());
-        // No need to update p2pUnitExchangeRate here as it's done in `_checkAccountLiquidity`
-        uint256 p2pExchangeRate = marketsManagerForAave.p2pUnitExchangeRate(_poolTokenAddress);
+        /* DEFAULT CASE: There aren't any borrowers waiting on Cream, Morpho borrows all the tokens from Cream */
+        uint256 remainingToBorrowOnAave = _amount;
 
-        /* CASE 1: Some suppliers are waiting on Aave, Morpho matches the borrower in P2P with them */
+        /* If some suppliers are waiting on Cream, Morpho matches the borrower in P2P with them as much as possible */
         if (suppliersOnPool[_poolTokenAddress].isNotEmpty()) {
-            uint256 remainingToBorrowOnAave = _matchSuppliers(_poolTokenAddress, _amount); // In underlying
+            // No need to update p2pUnitExchangeRate here as it's done in `_checkAccountLiquidity`
+            uint256 p2pExchangeRate = marketsManagerForAave.p2pUnitExchangeRate(_poolTokenAddress);
+            remainingToBorrowOnAave = _matchSuppliers(_poolTokenAddress, _amount); // In underlying
             uint256 matched = _amount - remainingToBorrowOnAave;
 
             if (matched > 0) {
@@ -308,28 +305,19 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
                     .rayDiv(p2pExchangeRate)
                     .rayToWad(); // In p2pUnit
             }
-
-            /* If there aren't enough suppliers waiting on Aave to match all the tokens borrowed, the rest is borrowed from Aave */
-            if (remainingToBorrowOnAave > 0) {
-                _unmatchTheSupplier(msg.sender); // Before borrowing on Aave, we put all the collateral of the borrower on Aave (cf Liquidation Invariant in docs)
-                lendingPool.borrow(
-                    address(underlyingToken),
-                    remainingToBorrowOnAave,
-                    2,
-                    0,
-                    address(this)
-                );
-                borrowBalanceInOf[_poolTokenAddress][msg.sender].onPool += remainingToBorrowOnAave
-                    .wadToRay()
-                    .rayDiv(lendingPool.getReserveNormalizedVariableDebt(address(underlyingToken)))
-                    .rayToWad(); // In adUnit
-            }
         }
-        /* CASE 2: There aren't any borrowers waiting on Aave, Morpho borrows all the tokens from Aave */
-        else {
+
+        /* If there aren't enough suppliers waiting on Aave to match all the tokens borrowed, the rest is borrowed from Aave */
+        if (remainingToBorrowOnAave > 0) {
             _unmatchTheSupplier(msg.sender); // Before borrowing on Aave, we put all the collateral of the borrower on Aave (cf Liquidation Invariant in docs)
-            lendingPool.borrow(address(underlyingToken), _amount, 2, 0, address(this));
-            borrowBalanceInOf[_poolTokenAddress][msg.sender].onPool += _amount
+            lendingPool.borrow(
+                address(underlyingToken),
+                remainingToBorrowOnAave,
+                2,
+                0,
+                address(this)
+            );
+            borrowBalanceInOf[_poolTokenAddress][msg.sender].onPool += remainingToBorrowOnAave
                 .wadToRay()
                 .rayDiv(lendingPool.getReserveNormalizedVariableDebt(address(underlyingToken)))
                 .rayToWad(); // In adUnit
