@@ -202,8 +202,12 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
 
     /* Constructor */
 
-    constructor(address _aaveMarketsManager, address _lendingPoolAddressesProvider) {
-        marketsManagerForAave = IMarketsManagerForAave(_aaveMarketsManager);
+    /** @dev Constructs the MorphoPositionsManagerForAave contract.
+     *  @param _marketsManager The address of the aave markets manager.
+     *  @param _lendingPoolAddressesProvider The address of the lending pool addresses provider.
+     */
+    constructor(address _marketsManager, address _lendingPoolAddressesProvider) {
+        marketsManagerForAave = IMarketsManagerForAave(_marketsManager);
         addressesProvider = ILendingPoolAddressesProvider(_lendingPoolAddressesProvider);
         dataProvider = IProtocolDataProvider(addressesProvider.getAddress(DATA_PROVIDER_ID));
         lendingPool = ILendingPool(addressesProvider.getLendingPool());

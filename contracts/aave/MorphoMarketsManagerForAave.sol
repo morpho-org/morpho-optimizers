@@ -82,8 +82,8 @@ contract MorphoMarketsManagerForAave is Ownable {
 
     /* Constructor */
 
-    /** @dev Sets the lending pool addresses provider.
-     * _lendingPoolAddressesProvider The address of the lending pool addresses provider.
+    /** @dev Constructs the MorphoMarketsManagerForAave contract.
+     *  @param _lendingPoolAddressesProvider The address of the lending pool addresses provider.
      */
     constructor(address _lendingPoolAddressesProvider) {
         addressesProvider = ILendingPoolAddressesProvider(_lendingPoolAddressesProvider);

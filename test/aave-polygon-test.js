@@ -257,8 +257,8 @@ describe('MorphoPositionsManagerForAave Contract', () => {
       const expectedSupplyBalanceOnPool2 = underlyingToScaledBalance(amount, normalizedIncome2);
       const expectedSupplyBalanceOnPool = expectedSupplyBalanceOnPool1.add(expectedSupplyBalanceOnPool2);
       expect(removeDigitsBigNumber(2, await aDaiToken.scaledBalanceOf(morphoPositionsManagerForAave.address))).to.equal(removeDigitsBigNumber(2, expectedSupplyBalanceOnPool));
-      expect(removeDigitsBigNumber(1, (await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier1.getAddress())).onPool)).to.equal(
-        removeDigitsBigNumber(1, expectedSupplyBalanceOnPool)
+      expect(removeDigitsBigNumber(2, (await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier1.getAddress())).onPool)).to.equal(
+        removeDigitsBigNumber(2, expectedSupplyBalanceOnPool)
       );
     });
 
