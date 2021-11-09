@@ -3,7 +3,7 @@ const { utils, BigNumber } = require('ethers');
 const { ethers } = require('hardhat');
 const { expect } = require('chai');
 const hre = require('hardhat');
-const config = require('@config/ethereum-config.json').mainnet;
+const config = require(`@config/${process.env.NETWORK}-config.json`);
 const {
   SCALE,
   underlyingToCToken,
@@ -85,10 +85,10 @@ describe('MorphoPositionsManagerForCompound Contract', () => {
     compoundOracle = await ethers.getContractAt(require(config.compound.oracle.abi), comptroller.oracle(), owner);
 
     // Mint some ERC20
-    daiToken = await getTokens('0x27f8d03b3a2196956ed754badc28d73be8830a6e', 'whale', signers, config.tokens.dai, utils.parseUnits('10000'));
-    usdcToken = await getTokens('0x1a13f4ca1d028320a707d99520abfefca3998b7f', 'whale', signers, config.tokens.usdc, BigNumber.from(10).pow(10));
-    usdtToken = await getTokens('0x44aaa9ebafb4557605de574d5e968589dc3a84d1', 'whale', signers, config.tokens.usdt, BigNumber.from(10).pow(10));
-    uniToken = await getTokens('0xf7135272a5584eb116f5a77425118a8b4a2ddfdb', 'whale', signers, config.tokens.uni, utils.parseUnits('100'));
+    daiToken = await getTokens(config.tokens.dai.whale, 'whale', signers, config.tokens.dai, utils.parseUnits('10000'));
+    usdcToken = await getTokens(config.tokens.usdc.whale, 'whale', signers, config.tokens.usdc, BigNumber.from(10).pow(10));
+    usdtToken = await getTokens(config.tokens.usdt.whale, 'whale', signers, config.tokens.usdt, BigNumber.from(10).pow(10));
+    uniToken = await getTokens(config.tokens.uni.whale, 'whale', signers, config.tokens.uni, utils.parseUnits('100'));
 
     underlyingThreshold = utils.parseUnits('1');
 
