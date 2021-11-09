@@ -137,11 +137,11 @@ describe('MorphoPositionsManagerForCream Contract', () => {
     });
 
     it('Only Morpho should be able to create markets on MorphoPositionsManagerForCream', async () => {
-      expect(morphoPositionsManagerForCream.connect(supplier1).createMarket(config.tokens.cEth.address)).to.be.reverted;
-      expect(morphoPositionsManagerForCream.connect(borrower1).createMarket(config.tokens.cEth.address)).to.be.reverted;
-      expect(morphoPositionsManagerForCream.connect(owner).createMarket(config.tokens.cEth.address)).to.be.reverted;
-      await morphoMarketsManagerForCompLike.connect(owner).createMarket(config.tokens.cEth.address);
-      expect(await comptroller.checkMembership(morphoPositionsManagerForCream.address, config.tokens.cEth.address)).to.be.true;
+      expect(morphoPositionsManagerForCream.connect(supplier1).createMarket(config.tokens.cMkr.address)).to.be.reverted;
+      expect(morphoPositionsManagerForCream.connect(borrower1).createMarket(config.tokens.cMkr.address)).to.be.reverted;
+      expect(morphoPositionsManagerForCream.connect(owner).createMarket(config.tokens.cMkr.address)).to.be.reverted;
+      await morphoMarketsManagerForCompLike.connect(owner).createMarket(config.tokens.cMkr.address);
+      expect(await comptroller.checkMembership(morphoPositionsManagerForCream.address, config.tokens.cMkr.address)).to.be.true;
     });
 
     it('marketsManagerForCompLike should not be changed after already set by Owner', async () => {
@@ -699,7 +699,7 @@ describe('MorphoPositionsManagerForCream Contract', () => {
       expect((await morphoPositionsManagerForCream.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).inP2P).to.be.lt(1000000000000);
 
       // Check Morpho balances
-      expect(removeDigitsBigNumber(5, await cDaiToken.balanceOf(morphoPositionsManagerForCream.address))).to.equal(removeDigitsBigNumber(5, expectedMorphoCTokenBalance));
+      expect(removeDigitsBigNumber(6, await cDaiToken.balanceOf(morphoPositionsManagerForCream.address))).to.equal(removeDigitsBigNumber(6, expectedMorphoCTokenBalance));
       // Issue here: we cannot access the most updated borrow balance as it's updated during the repayBorrow on Compound.
       // const expectedMorphoBorrowBalance2 = morphoBorrowBalanceBefore2.sub(borrowerBalanceOnComp.mul(borrowIndex2).div(SCALE));
       // expect(removeDigitsBigNumber(3, await cToken.callStatic.borrowBalanceStored(morphoPositionsManagerForCream.address))).to.equal(removeDigitsBigNumber(3, expectedMorphoBorrowBalance2));
@@ -984,7 +984,7 @@ describe('MorphoPositionsManagerForCream Contract', () => {
       const expectedDaiBalanceAfter = daiBalanceBefore.sub(toRepay);
 
       // Check liquidatee balances
-      expect((await morphoPositionsManagerForCream.supplyBalanceInOf(config.tokens.cUsdc.address, borrower1.getAddress())).onCream).to.equal(0);
+      expect(removeDigitsBigNumber(4, (await morphoPositionsManagerForCream.supplyBalanceInOf(config.tokens.cUsdc.address, borrower1.getAddress())).onCream)).to.equal(0);
       expect(removeDigitsBigNumber(2, (await morphoPositionsManagerForCream.supplyBalanceInOf(config.tokens.cUsdc.address, borrower1.getAddress())).inP2P)).to.equal(
         removeDigitsBigNumber(2, expectedCollateralBalanceInP2PAfter)
       );
