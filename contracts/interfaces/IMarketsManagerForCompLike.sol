@@ -17,4 +17,10 @@ interface IMarketsManagerForCompLike {
     function thresholds(address _marketAddress) external returns (uint256);
 
     function updateMUnitExchangeRate(address _marketAddress) external returns (uint256);
+
+    function assets(uint256 assetIndex) external view returns (address);
+
+    function getAssetsLength() external view returns (uint256);
+
+    function assetIndexes(address asset) external view returns (uint256);
 }

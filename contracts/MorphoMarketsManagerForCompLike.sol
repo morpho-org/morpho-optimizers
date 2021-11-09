@@ -27,6 +27,9 @@ contract MorphoMarketsManagerForCompLike is Ownable {
 
     IPositionsManagerForCompLike public positionsManagerForCompLike;
 
+    address[] public assets; // List of assets.
+    mapping(address => uint256) public assetIndexes; // Indexes of assets in the `assets` list.
+
     /* Events */
 
     /** @dev Emitted when a new market is created.
@@ -73,6 +76,12 @@ contract MorphoMarketsManagerForCompLike is Ownable {
 
     /* External */
 
+    /** @dev Get the length of the `assets` list.
+     */
+    function getAssetsLength() external view returns (uint256) {
+        return assets.length;
+    }
+
     /** @dev Sets the `positionsManagerForCompLike` to interact with Compound.
      *  @param _positionsManagerForCompLike The address of compound module.
      */
@@ -106,6 +115,11 @@ contract MorphoMarketsManagerForCompLike is Ownable {
         mUnitExchangeRate[_marketAddress] = 1e18;
         isCreated[_marketAddress] = true;
         updateBPY(_marketAddress);
+
+        assets.push(_marketAddress);
+        require(assets.length < 128, "createMarket:invalid-index");
+        assetIndexes[_marketAddress] = assets.length - 1;
+
         emit MarketCreated(_marketAddress);
     }
 

@@ -20,6 +20,9 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
     using SafeERC20 for IERC20;
     using Math for uint256;
 
+    uint256 internal constant BORROWING_MASK =
+        0x5555555555555555555555555555555555555555555555555555555555555555;
+
     /* Structs */
 
     struct SupplyBalance {
@@ -63,7 +66,7 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
     mapping(address => mapping(address => SupplyBalance)) public supplyBalanceInOf; // For a given market, the supply balance of user.
     mapping(address => mapping(address => BorrowBalance)) public borrowBalanceInOf; // For a given market, the borrow balance of user.
     mapping(address => mapping(address => bool)) public accountMembership; // Whether the account is in the market or not.
-    mapping(address => address[]) public enteredMarkets; // Markets entered by a user.
+    mapping(address => uint256) public enteredMarkets; // Markets entered by a user, as bitmap.
     mapping(address => uint256) public thresholds; // Thresholds below the ones suppliers and borrowers cannot enter markets.
 
     IComptroller public creamtroller;
@@ -223,7 +226,7 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
         isMarketCreated(_crERC20Address)
         isAboveThreshold(_crERC20Address, _amount)
     {
-        _handleMembership(_crERC20Address, msg.sender);
+        _handleMembership(_crERC20Address, msg.sender, false);
         ICErc20 crERC20Token = ICErc20(_crERC20Address);
         IERC20 erc20Token = IERC20(crERC20Token.underlying());
         erc20Token.safeTransferFrom(msg.sender, address(this), _amount);
@@ -246,8 +249,9 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
 
         /* If there aren't enough borrowers waiting on Cream to match all the tokens supplied, the rest is supplied to Cream */
         if (remainingToSupplyToCream > 0) {
-            supplyBalanceInOf[_crERC20Address][msg.sender].onCream += remainingToSupplyToCream
-                .div(crExchangeRate); // In crToken
+            supplyBalanceInOf[_crERC20Address][msg.sender].onCream += remainingToSupplyToCream.div(
+                crExchangeRate
+            ); // In crToken
             _supplyERC20ToCream(_crERC20Address, remainingToSupplyToCream); // Revert on error
         }
 
@@ -265,7 +269,7 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
         isMarketCreated(_crERC20Address)
         isAboveThreshold(_crERC20Address, _amount)
     {
-        _handleMembership(_crERC20Address, msg.sender);
+        _handleMembership(_crERC20Address, msg.sender, true);
         _checkAccountLiquidity(msg.sender, _crERC20Address, 0, _amount);
         ICErc20 crERC20Token = ICErc20(_crERC20Address);
         IERC20 erc20Token = IERC20(crERC20Token.underlying());
@@ -287,12 +291,10 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
         /* If there aren't enough suppliers waiting on Cream to match all the tokens borrowed, the rest is borrowed from Cream */
         if (remainingToBorrowOnCream > 0) {
             _unmatchTheSupplier(msg.sender); // Before borrowing on Cream, we put all the collateral of the borrower on Cream (cf Liquidation Invariant in docs)
-            require(
-                crERC20Token.borrow(remainingToBorrowOnCream) == 0,
-                "borrow-cream-fail"
-            );
-            borrowBalanceInOf[_crERC20Address][msg.sender].onCream += remainingToBorrowOnCream
-                .div(crERC20Token.borrowIndex()); // In cdUnit
+            require(crERC20Token.borrow(remainingToBorrowOnCream) == 0, "borrow-cream-fail");
+            borrowBalanceInOf[_crERC20Address][msg.sender].onCream += remainingToBorrowOnCream.div(
+                crERC20Token.borrowIndex()
+            ); // In cdUnit
         }
 
         _updateBorrowerList(_crERC20Address, msg.sender);
@@ -754,8 +756,11 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
      * @param _account The address of the account to move balance.
      */
     function _unmatchTheSupplier(address _account) internal {
-        for (uint256 i; i < enteredMarkets[_account].length; i++) {
-            address cERC20Entered = enteredMarkets[_account][i];
+        uint256 assetsLength = marketsManagerForCompLike.getAssetsLength();
+        for (uint256 i; i < assetsLength; i++) {
+            if ((enteredMarkets[_account] >> (i * 2)) & 3 == 0) continue;
+
+            address cERC20Entered = marketsManagerForCompLike.assets(i);
             uint256 inP2P = supplyBalanceInOf[cERC20Entered][_account].inP2P;
 
             if (inP2P > 0) {
@@ -781,11 +786,20 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
      * @dev Enters the user into the market if he is not already there.
      * @param _account The address of the account to update.
      * @param _crTokenAddress The address of the market to check.
+     * @param _borrowing True if the user is a borrower, false for a supplier.
      */
-    function _handleMembership(address _crTokenAddress, address _account) internal {
+    function _handleMembership(
+        address _crTokenAddress,
+        address _account,
+        bool _borrowing
+    ) internal {
         if (!accountMembership[_crTokenAddress][_account]) {
             accountMembership[_crTokenAddress][_account] = true;
-            enteredMarkets[_account].push(_crTokenAddress);
+            enteredMarkets[_account] |=
+                1 <<
+                ((_borrowing ? 0 : 1) +
+                    2 *
+                    marketsManagerForCompLike.assetIndexes(_crTokenAddress));
         }
     }
 
@@ -833,10 +847,12 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
         // Avoid stack too deep error
         BalanceStateVars memory balanceState;
 
-        for (uint256 i; i < enteredMarkets[_account].length; i++) {
+        uint256 assetsLength = marketsManagerForCompLike.getAssetsLength();
+        for (uint256 i; i < assetsLength; i++) {
+            if ((enteredMarkets[_account] >> (i * 2)) & 3 == 0) continue;
             // Avoid stack too deep error
             BalanceStateVars memory vars;
-            vars.cERC20Entered = enteredMarkets[_account][i];
+            vars.cERC20Entered = marketsManagerForCompLike.assets(i);
             vars.mExchangeRate = marketsManagerForCompLike.updateMUnitExchangeRate(
                 vars.cERC20Entered
             );
@@ -889,6 +905,7 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
         if (onCream > 0) {
             borrowersOnCream[_crERC20Address].insert(_account, onCream);
         }
+        _setHasDebtOnCream(_crERC20Address, _account, onCream);
         uint256 inP2P = borrowBalanceInOf[_crERC20Address][_account].inP2P;
         if (inP2P > 0) {
             borrowersInP2P[_crERC20Address].insert(_account, inP2P);
@@ -914,12 +931,18 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
         }
     }
 
+    function _setHasDebtOnCream(
+        address _crERC20Address,
+        address _account,
+        uint256 _amount
+    ) internal {
+        uint256 shift = 2 * marketsManagerForCompLike.assetIndexes(_crERC20Address);
+        enteredMarkets[_account] =
+            (enteredMarkets[_account] & ~(1 << shift)) |
+            (uint256(_amount > 0 ? 1 : 0) << shift);
+    }
+
     function _hasDebtOnCream(address _account) internal view returns (bool) {
-        for (uint256 i; i < enteredMarkets[_account].length; i++) {
-            if (borrowBalanceInOf[enteredMarkets[_account][i]][_account].onCream > 0) {
-                return true;
-            }
-        }
-        return false;
+        return enteredMarkets[_account] & BORROWING_MASK != 0;
     }
 }
