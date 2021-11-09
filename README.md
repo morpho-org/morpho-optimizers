@@ -88,7 +88,7 @@ By default, PR are rebased with `main` before merging to keep a clean historic o
 ## Deploy a contract on a network
 
 ```
-npx hardhat run scripts/deploy.js --network <network-name>
+npx hardhat run scripts/deploy-aave.js --network <network-name>
 ```
 
 ## Publish and verify a contract on Etherscan

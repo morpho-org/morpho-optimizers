@@ -34,6 +34,12 @@ module.exports = {
       gas: 2100000,
       gasPrice: 8000000000,
     },
+    mumbai: {
+      accounts: ['0xae756dcb08a84a119e4910d1ba4dfeb180b0ec5ec4a25223fae2669f36559dd1'],
+      url: `https://polygon-mumbai.infura.io/v3/${process.env.INFURA_PROJECT_ID}`,
+      gas: 2100000,
+      gasPrice: 8000000000,
+    },
   },
   namedAccounts: {
     deployer: {
@@ -50,7 +56,7 @@ module.exports = {
     },
   },
   etherscan: {
-    apiKey: process.env.ETHERSCAN_API_KEY,
+    apiKey: process.env.NETWORK == 'mainnet' ? process.env.ETHERSCAN_API_KEY : process.env.POLYGONSCAN_API_KEY,
   },
   gasReporter: {
     currency: 'USD',
