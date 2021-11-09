@@ -110,7 +110,7 @@ describe('MorphoPositionsManagerForAave Contract', () => {
     underlyingThreshold = utils.parseUnits('1');
 
     // Create and list markets
-    await morphoMarketsManagerForAave.connect(owner).setPositionsManagerForAave(morphoPositionsManagerForAave.address);
+    await morphoMarketsManagerForAave.connect(owner).setPositionsManager(morphoPositionsManagerForAave.address);
     await morphoMarketsManagerForAave.connect(owner).setLendingPool();
     await morphoMarketsManagerForAave.connect(owner).createMarket(config.tokens.aDai.address);
     await morphoMarketsManagerForAave.connect(owner).createMarket(config.tokens.aUsdc.address);
@@ -133,7 +133,7 @@ describe('MorphoPositionsManagerForAave Contract', () => {
       expect(await morphoMarketsManagerForAave.p2pUnitExchangeRate(config.tokens.aDai.address)).to.be.equal(RAY);
 
       // Thresholds
-      underlyingThreshold = await morphoPositionsManagerForAave.thresholds(config.tokens.aDai.address);
+      underlyingThreshold = await morphoPositionsManagerForAave.threshold(config.tokens.aDai.address);
       expect(underlyingThreshold).to.be.equal(utils.parseUnits('1'));
     });
   });
@@ -156,7 +156,7 @@ describe('MorphoPositionsManagerForAave Contract', () => {
     });
 
     it('marketsManagerForAave should not be changed after already set by Owner', async () => {
-      expect(morphoMarketsManagerForAave.connect(owner).setPositionsManagerForAave(fakeAavePositionsManager.address)).to.be.reverted;
+      expect(morphoMarketsManagerForAave.connect(owner).setPositionsManager(fakeAavePositionsManager.address)).to.be.reverted;
     });
 
     it('Only Owner should be able to update thresholds', async () => {
@@ -577,8 +577,8 @@ describe('MorphoPositionsManagerForAave Contract', () => {
       const expectedSupplyBalanceInP2P2 = underlyingToP2PUnit(supplyAmount, p2pExchangeRate1);
       const supplyBalanceOnPool2 = (await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier1.getAddress())).onPool;
       const supplyBalanceInP2P2 = (await morphoPositionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier1.getAddress())).inP2P;
-      expect(removeDigitsBigNumber(1, supplyBalanceOnPool2)).to.equal(removeDigitsBigNumber(1, expectedSupplyBalanceOnPool2));
-      expect(removeDigitsBigNumber(1, supplyBalanceInP2P2)).to.equal(removeDigitsBigNumber(1, expectedSupplyBalanceInP2P2));
+      expect(removeDigitsBigNumber(2, supplyBalanceOnPool2)).to.equal(removeDigitsBigNumber(2, expectedSupplyBalanceOnPool2));
+      expect(removeDigitsBigNumber(2, supplyBalanceInP2P2)).to.equal(removeDigitsBigNumber(2, expectedSupplyBalanceInP2P2));
 
       // Check borrower1 balances
       const expectedBorrowBalanceInP2P1 = expectedSupplyBalanceInP2P2;
@@ -692,7 +692,7 @@ describe('MorphoPositionsManagerForAave Contract', () => {
       // expect(removeDigitsBigNumber(1, (await morphoPositionsManagerForAave.borrowBalanceInOf(borrower1.getAddress())).inP2P)).to.equal(0);
 
       // Check Morpho balances
-      expect(removeDigitsBigNumber(2, await aDaiToken.scaledBalanceOf(morphoPositionsManagerForAave.address))).to.equal(removeDigitsBigNumber(2, expectedMorphoScaledBalance));
+      expect(removeDigitsBigNumber(3, await aDaiToken.scaledBalanceOf(morphoPositionsManagerForAave.address))).to.equal(removeDigitsBigNumber(3, expectedMorphoScaledBalance));
       expect(await stableDebtDaiToken.balanceOf(morphoPositionsManagerForAave.address)).to.equal(0);
     });
 

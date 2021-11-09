@@ -94,7 +94,7 @@ contract MorphoMarketsManagerForAave is Ownable {
     /** @dev Sets the `positionsManagerForAave` to interact with Compound.
      *  @param _positionsManagerForAave The address of compound module.
      */
-    function setPositionsManagerForAave(address _positionsManagerForAave) external onlyOwner {
+    function setPositionsManager(address _positionsManagerForAave) external onlyOwner {
         require(!isPositionsManagerSet, "positions-manager-already-set");
         isPositionsManagerSet = true;
         positionsManagerForAave = IPositionsManagerForAave(_positionsManagerForAave);

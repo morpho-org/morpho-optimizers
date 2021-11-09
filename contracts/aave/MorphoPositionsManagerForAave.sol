@@ -45,10 +45,10 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
         uint256 maxDebtValue; // The maximum debt value available thanks to the collateral (in ETH).
         uint256 redeemedValue; // The redeemed value if any (in ETH).
         uint256 collateralValue; // The collateral value (in ETH).
-        uint256 debtToAdd; // The debt to add at the current iteration.
-        uint256 collateralToAdd; // The collateral to add at the current iteration.
+        uint256 debtToAdd; // The debt to add at the current iteration (in ETH).
+        uint256 collateralToAdd; // The collateral to add at the current iteration (in ETH).
         uint256 p2pExchangeRate; // The p2pUnit exchange rate of the `poolTokenEntered`.
-        uint256 underlyingPrice; // The price of the underlying linked to the `poolTokenEntered`.
+        uint256 underlyingPrice; // The price of the underlying linked to the `poolTokenEntered` (in ETH).
         uint256 normalizedVariableDebt; // Normalized variable debt of the market.
         uint256 normalizedIncome; // Noramlized income of the market.
         uint256 liquidationThreshold; // The liquidation threshold on Aave.
@@ -63,12 +63,12 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
     struct LiquidateVars {
         uint256 debtValue; // The debt value (in ETH).
         uint256 maxDebtValue; // The maximum debt value possible (in ETH).
-        uint256 borrowBalance; // Total borrow balance of the user in underlying for a given asset.
-        uint256 amountToSeize; // The amount of collateral underlying the liquidator can seize.
+        uint256 borrowBalance; // Total borrow balance of the user for a given asset (in underlying).
+        uint256 amountToSeize; // The amount of collateral the liquidator can seize (in underlying).
         uint256 borrowedPrice; // The price of the asset borrowed (in ETH).
         uint256 collateralPrice; // The price of the collateral asset (in ETH).
         uint256 normalizedIncome; // The normalized income of the asset.
-        uint256 totalCollateral; // The total of collateral of the user in underlying.
+        uint256 totalCollateral; // The total of collateral of the user (in underlying).
         uint256 liquidationBonus; // The liquidation bonus on Aave.
         uint256 collateralReserveDecimals; // The number of decimals of the collateral asset in the reserve.
         uint256 collateralTokenUnit; // The unit of collateral token considering its decimals.
@@ -93,7 +93,7 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
     mapping(address => mapping(address => BorrowBalance)) public borrowBalanceInOf; // For a given market, the borrow balance of user.
     mapping(address => mapping(address => bool)) public accountMembership; // Whether the account is in the market or not.
     mapping(address => address[]) public enteredMarkets; // Markets entered by a user.
-    mapping(address => uint256) public thresholds; // Thresholds below the ones suppliers and borrowers cannot enter markets.
+    mapping(address => uint256) public threshold; // Thresholds below the ones suppliers and borrowers cannot enter markets.
 
     IMarketsManagerForAave public marketsManagerForAave;
     ILendingPoolAddressesProvider public addressesProvider;
@@ -189,11 +189,11 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
      *  @param _amount The amount in ERC20 tokens.
      */
     modifier isAboveThreshold(address _poolTokenAddress, uint256 _amount) {
-        require(_amount >= thresholds[_poolTokenAddress], "amount<threshold");
+        require(_amount >= threshold[_poolTokenAddress], "amount<threshold");
         _;
     }
 
-    /** @dev Prevents a user to call function only allowed for the markets manager.
+    /** @dev Prevents a user to call function authorized only to the markets manager..
      */
     modifier onlyMarketsManager() {
         require(msg.sender == address(marketsManagerForAave), "only-mkt-manager");
@@ -226,7 +226,7 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
         external
         onlyMarketsManager
     {
-        thresholds[_poolTokenAddress] = _newThreshold;
+        threshold[_poolTokenAddress] = _newThreshold;
     }
 
     /** @dev Supplies ERC20 tokens in a specific market.
@@ -630,7 +630,7 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
         while (remainingToMatch > 0 && account != address(0)) {
             address tmpAccount;
             // Check if this user is not borrowing on Aave (cf Liquidation Invariant in docs)
-            if (!_hasDebtOnAave(account)) {
+            if (!_hasDebtOnPool(account)) {
                 uint256 onAaveInUnderlying = supplyBalanceInOf[_poolTokenAddress][account]
                     .onPool
                     .wadToRay()
@@ -967,7 +967,7 @@ contract MorphoPositionsManagerForAave is ReentrancyGuard {
         if (inP2P > 0) suppliersInP2P[_poolTokenAddress].insert(_account, inP2P);
     }
 
-    function _hasDebtOnAave(address _account) internal view returns (bool) {
+    function _hasDebtOnPool(address _account) internal view returns (bool) {
         for (uint256 i; i < enteredMarkets[_account].length; i++) {
             if (borrowBalanceInOf[enteredMarkets[_account][i]][_account].onPool > 0) return true;
         }
