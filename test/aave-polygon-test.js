@@ -52,8 +52,9 @@ describe('MorphoPositionsManagerForAave Contract', () => {
   let borrowers;
 
   let underlyingThreshold;
+  let snapshotId;
 
-  beforeEach(async () => {
+  before(async () => {
     // Users
     signers = await ethers.getSigners();
     [owner, supplier1, supplier2, supplier3, borrower1, borrower2, borrower3, liquidator, ...addrs] = signers;
@@ -120,6 +121,14 @@ describe('MorphoPositionsManagerForAave Contract', () => {
     await morphoMarketsManagerForAave.connect(owner).updateThreshold(config.tokens.aUsdc.address, BigNumber.from(10).pow(6));
     await morphoMarketsManagerForAave.connect(owner).updateThreshold(config.tokens.aUsdt.address, BigNumber.from(10).pow(6));
     await morphoMarketsManagerForAave.connect(owner).updateThreshold(config.tokens.aWbtc.address, BigNumber.from(10).pow(4));
+  });
+
+  beforeEach(async () => {
+    snapshotId = await hre.network.provider.send('evm_snapshot', []);
+  });
+
+  afterEach(async () => {
+    await hre.network.provider.send('evm_revert', [snapshotId]);
   });
 
   describe('Deployment', () => {
