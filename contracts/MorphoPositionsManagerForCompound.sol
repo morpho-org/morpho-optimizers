@@ -172,6 +172,10 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
 
     /* Constructor */
 
+    /** @dev Constructs the MorphoPositionsManagerForCompound contract.
+     *  @param _compoundMarketsManager The address of the markets manager.
+     *  @param _proxyComptrollerAddress The address of the proxy comptroller.
+     */
     constructor(address _compoundMarketsManager, address _proxyComptrollerAddress) {
         marketsManagerForCompound = IMarketsManagerForCompound(_compoundMarketsManager);
         comptroller = IComptroller(_proxyComptrollerAddress);
