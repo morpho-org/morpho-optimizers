@@ -24,11 +24,11 @@ contract MorphoMarketsManagerForCompLike is Ownable {
     mapping(address => uint256) public p2pBPY; // Block Percentage Yield ("midrate").
     mapping(address => uint256) public mUnitExchangeRate; // current exchange rate from mUnit to underlying.
     mapping(address => uint256) public lastUpdateBlockNumber; // Last time mUnitExchangeRate was updated.
-
-    IPositionsManagerForCompLike public positionsManagerForCompLike;
+    mapping(address => uint256) public assetIndexes; // Indexes of assets in the `assets` list.
 
     address[] public assets; // List of assets.
-    mapping(address => uint256) public assetIndexes; // Indexes of assets in the `assets` list.
+
+    IPositionsManagerForCompLike public positionsManagerForCompLike;
 
     /* Events */
 
