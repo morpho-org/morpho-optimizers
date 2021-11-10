@@ -67,7 +67,6 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
     mapping(address => uint256) public threshold; // Thresholds below the ones suppliers and borrowers cannot enter markets.
 
     IComptroller public comptroller;
-    ICompoundOracle public compOracle;
     IMarketsManagerForCompound public marketsManagerForCompound;
 
     /* Events */
@@ -179,7 +178,6 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
     constructor(address _compoundMarketsManager, address _proxyComptrollerAddress) {
         marketsManagerForCompound = IMarketsManagerForCompound(_compoundMarketsManager);
         comptroller = IComptroller(_proxyComptrollerAddress);
-        compOracle = ICompoundOracle(comptroller.oracle());
     }
 
     /* External */
@@ -198,12 +196,11 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
         return comptroller.enterMarkets(marketToEnter);
     }
 
-    /** @dev Sets the comptroller and oracle address.
+    /** @dev Sets the comptroller address.
      *  @param _proxyComptrollerAddress The address of Comp's comptroller.
      */
     function setComptroller(address _proxyComptrollerAddress) external onlyMarketsManager {
         comptroller = IComptroller(_proxyComptrollerAddress);
-        compOracle = ICompoundOracle(comptroller.oracle());
     }
 
     /** @dev Sets the threshold of a market.
@@ -355,8 +352,9 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
         _repay(_cTokenBorrowedAddress, _borrower, _amount);
 
         // Calculate the amount of token to seize from collateral
-        vars.priceCollateralMantissa = compOracle.getUnderlyingPrice(_cTokenCollateralAddress);
-        vars.priceBorrowedMantissa = compOracle.getUnderlyingPrice(_cTokenBorrowedAddress);
+        ICompoundOracle compoundOracle = ICompoundOracle(comptroller.oracle());
+        vars.priceCollateralMantissa = compoundOracle.getUnderlyingPrice(_cTokenCollateralAddress);
+        vars.priceBorrowedMantissa = compoundOracle.getUnderlyingPrice(_cTokenBorrowedAddress);
         require(
             vars.priceCollateralMantissa != 0 && vars.priceBorrowedMantissa != 0,
             "liquidate:oracle-fail"
@@ -832,6 +830,7 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
     {
         // Avoid stack too deep error
         BalanceStateVars memory balanceState;
+        ICompoundOracle compoundOracle = ICompoundOracle(comptroller.oracle());
 
         for (uint256 i; i < enteredMarkets[_account].length; i++) {
             // Avoid stack too deep error
@@ -853,7 +852,7 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
                 ) +
                 supplyBalanceInOf[vars.cTokenEntered][_account].inP2P.mul(vars.p2pExchangeRate);
             // Price recovery
-            vars.underlyingPrice = compOracle.getUnderlyingPrice(vars.cTokenEntered);
+            vars.underlyingPrice = compoundOracle.getUnderlyingPrice(vars.cTokenEntered);
             require(vars.underlyingPrice != 0, "_getUserHypotheticalBalanceStates:oracle-fail");
 
             if (_cTokenAddress == vars.cTokenEntered) {
