@@ -12,12 +12,12 @@ const cTokenToUnderlying = (cTokenAmount, exchangeRateCurrent) => {
   return cTokenAmount.mul(exchangeRateCurrent).div(SCALE);
 };
 
-const underlyingToMUnit = (underlyingAmount, mUnitExchangeRate) => {
-  return underlyingAmount.mul(SCALE).div(mUnitExchangeRate);
+const underlyingToP2pUnit = (underlyingAmount, p2pUnitExchangeRate) => {
+  return underlyingAmount.mul(SCALE).div(p2pUnitExchangeRate);
 };
 
-const mUnitToUnderlying = (mUnitAmount, mUnitExchangeRate) => {
-  return mUnitAmount.mul(mUnitExchangeRate).div(SCALE);
+const p2pUnitToUnderlying = (p2pUnitAmount, p2pUnitExchangeRate) => {
+  return p2pUnitAmount.mul(p2pUnitExchangeRate).div(SCALE);
 };
 
 const underlyingToCdUnit = (underlyingAmount, borrowIndex) => {
@@ -81,8 +81,8 @@ module.exports = {
   SCALE,
   underlyingToCToken,
   cTokenToUnderlying,
-  underlyingToMUnit,
-  mUnitToUnderlying,
+  underlyingToP2pUnit,
+  p2pUnitToUnderlying,
   underlyingToCdUnit,
   cDUnitToUnderlying,
   removeDigitsBigNumber,

@@ -10,11 +10,11 @@ interface IMarketsManagerForCompound {
 
     function liquidationIncentive(address _marketAddress) external returns (uint256);
 
-    function mUnitExchangeRate(address _marketAddress) external returns (uint256);
+    function p2pUnitExchangeRate(address _marketAddress) external returns (uint256);
 
     function lastUpdateBlockNumber(address _marketAddress) external returns (uint256);
 
     function thresholds(address _marketAddress) external returns (uint256);
 
-    function updateMUnitExchangeRate(address _marketAddress) external returns (uint256);
+    function updateP2pUnitExchangeRate(address _marketAddress) external returns (uint256);
 }
