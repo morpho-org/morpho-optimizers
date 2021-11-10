@@ -64,7 +64,7 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
     mapping(address => mapping(address => BorrowBalance)) public borrowBalanceInOf; // For a given market, the borrow balance of user.
     mapping(address => mapping(address => bool)) public accountMembership; // Whether the account is in the market or not.
     mapping(address => address[]) public enteredMarkets; // Markets entered by a user.
-    mapping(address => uint256) public thresholds; // Thresholds below the ones suppliers and borrowers cannot enter markets.
+    mapping(address => uint256) public threshold; // Thresholds below the ones suppliers and borrowers cannot enter markets.
 
     IComptroller public comptroller;
     ICompoundOracle public compOracle;
@@ -159,7 +159,7 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
      *  @param _amount The amount in ERC20 tokens.
      */
     modifier isAboveThreshold(address _cTokenAddress, uint256 _amount) {
-        require(_amount >= thresholds[_cTokenAddress], "amount<threshold");
+        require(_amount >= threshold[_cTokenAddress], "amount<threshold");
         _;
     }
 
@@ -210,7 +210,7 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
         external
         onlyMarketsManager
     {
-        thresholds[_cTokenAddress] = _newThreshold;
+        threshold[_cTokenAddress] = _newThreshold;
     }
 
     /** @dev Supplies ERC20 tokens in a specific market.
