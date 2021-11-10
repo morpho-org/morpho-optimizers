@@ -14,7 +14,7 @@ interface IMarketsManagerForCompound {
 
     function lastUpdateBlockNumber(address _marketAddress) external returns (uint256);
 
-    function thresholds(address _marketAddress) external returns (uint256);
+    function threshold(address _marketAddress) external returns (uint256);
 
     function updateP2pUnitExchangeRate(address _marketAddress) external returns (uint256);
 }
