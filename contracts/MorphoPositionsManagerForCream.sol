@@ -67,7 +67,6 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
     mapping(address => uint256) public thresholds; // Thresholds below the ones suppliers and borrowers cannot enter markets.
 
     IComptroller public creamtroller;
-    ICompoundOracle public creamOracle;
     IMarketsManagerForCompLike public marketsManagerForCompLike;
 
     /* Events */
@@ -175,7 +174,6 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
     constructor(address _creamMarketsManager, address _proxyCreamtrollerAddress) {
         marketsManagerForCompLike = IMarketsManagerForCompLike(_creamMarketsManager);
         creamtroller = IComptroller(_proxyCreamtrollerAddress);
-        creamOracle = ICompoundOracle(creamtroller.oracle());
     }
 
     /* External */
@@ -199,7 +197,6 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
      */
     function setComptroller(address _proxyCreamtrollerAddress) external onlyMarketsManager {
         creamtroller = IComptroller(_proxyCreamtrollerAddress);
-        creamOracle = ICompoundOracle(creamtroller.oracle());
     }
 
     /** @dev Sets the threshold of a market.
@@ -246,8 +243,9 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
 
         /* If there aren't enough borrowers waiting on Cream to match all the tokens supplied, the rest is supplied to Cream */
         if (remainingToSupplyToCream > 0) {
-            supplyBalanceInOf[_crERC20Address][msg.sender].onCream += remainingToSupplyToCream
-                .div(crExchangeRate); // In crToken
+            supplyBalanceInOf[_crERC20Address][msg.sender].onCream += remainingToSupplyToCream.div(
+                crExchangeRate
+            ); // In crToken
             _supplyERC20ToCream(_crERC20Address, remainingToSupplyToCream); // Revert on error
         }
 
@@ -287,12 +285,10 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
         /* If there aren't enough suppliers waiting on Cream to match all the tokens borrowed, the rest is borrowed from Cream */
         if (remainingToBorrowOnCream > 0) {
             _unmatchTheSupplier(msg.sender); // Before borrowing on Cream, we put all the collateral of the borrower on Cream (cf Liquidation Invariant in docs)
-            require(
-                crERC20Token.borrow(remainingToBorrowOnCream) == 0,
-                "borrow-cream-fail"
-            );
-            borrowBalanceInOf[_crERC20Address][msg.sender].onCream += remainingToBorrowOnCream
-                .div(crERC20Token.borrowIndex()); // In cdUnit
+            require(crERC20Token.borrow(remainingToBorrowOnCream) == 0, "borrow-cream-fail");
+            borrowBalanceInOf[_crERC20Address][msg.sender].onCream += remainingToBorrowOnCream.div(
+                crERC20Token.borrowIndex()
+            ); // In cdUnit
         }
 
         _updateBorrowerList(_crERC20Address, msg.sender);
@@ -353,8 +349,9 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
         _repay(_cERC20BorrowedAddress, _borrower, _amount);
 
         // Calculate the amount of token to seize from collateral
-        vars.priceCollateralMantissa = creamOracle.getUnderlyingPrice(_cERC20CollateralAddress);
-        vars.priceBorrowedMantissa = creamOracle.getUnderlyingPrice(_cERC20BorrowedAddress);
+        ICompoundOracle compoundOracle = ICompoundOracle(creamtroller.oracle());
+        vars.priceCollateralMantissa = compoundOracle.getUnderlyingPrice(_cERC20CollateralAddress);
+        vars.priceBorrowedMantissa = compoundOracle.getUnderlyingPrice(_cERC20BorrowedAddress);
         require(
             vars.priceCollateralMantissa != 0 && vars.priceBorrowedMantissa != 0,
             "liquidate:oracle-fail"
@@ -832,6 +829,7 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
     {
         // Avoid stack too deep error
         BalanceStateVars memory balanceState;
+        ICompoundOracle compoundOracle = ICompoundOracle(creamtroller.oracle());
 
         for (uint256 i; i < enteredMarkets[_account].length; i++) {
             // Avoid stack too deep error
@@ -853,7 +851,7 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
                 ) +
                 supplyBalanceInOf[vars.cERC20Entered][_account].inP2P.mul(vars.mExchangeRate);
             // Price recovery
-            vars.underlyingPrice = creamOracle.getUnderlyingPrice(vars.cERC20Entered);
+            vars.underlyingPrice = compoundOracle.getUnderlyingPrice(vars.cERC20Entered);
             require(vars.underlyingPrice != 0, "_getUserHypotheticalBalanceStates:oracle-fail");
 
             if (_crERC20Address == vars.cERC20Entered) {
