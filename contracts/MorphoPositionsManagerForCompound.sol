@@ -279,7 +279,6 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
 
         /* If some suppliers are waiting on Comp, Morpho matches the borrower in P2P with them as much as possible */
         if (suppliersOnPool[_cTokenAddress].isNotEmpty()) {
-            // No need to update p2pUnitExchangeRate here as it's done in `_checkAccountLiquidity`
             uint256 p2pExchangeRate = marketsManagerForCompound.p2pUnitExchangeRate(_cTokenAddress);
             remainingToBorrowOnPool = _matchSuppliers(_cTokenAddress, _amount); // In underlying
             uint256 matched = _amount - remainingToBorrowOnPool;
@@ -407,7 +406,6 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
         _checkAccountLiquidity(_holder, _cTokenAddress, _amount, 0);
         ICErc20 cToken = ICErc20(_cTokenAddress);
         IERC20 underlyingToken = IERC20(cToken.underlying());
-        // No need to update p2pUnitExchangeRate here as it's done in `_checkAccountLiquidity`
         uint256 cTokenExchangeRate = cToken.exchangeRateCurrent();
         uint256 remainingToWithdraw = _amount;
 
