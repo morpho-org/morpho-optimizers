@@ -401,7 +401,6 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
         _checkAccountLiquidity(_holder, _crERC20Address, _amount, 0);
         ICErc20 crERC20Token = ICErc20(_crERC20Address);
         IERC20 erc20Token = IERC20(crERC20Token.underlying());
-        // No need to update mUnitExchangeRate here as it's done in `_checkAccountLiquidity`
         uint256 crExchangeRate = crERC20Token.exchangeRateCurrent();
         uint256 remainingToWithdraw = _amount;
 
@@ -505,7 +504,6 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
 
         /* If there remains some tokens to repay (CASE 2), Morpho breaks credit lines and repair them either with other users or with Cream itself */
         if (remainingToRepay > 0) {
-            // No need to update mUnitExchangeRate here as it's done in `_checkAccountLiquidity`
             uint256 mExchangeRate = marketsManagerForCompLike.updateMUnitExchangeRate(
                 _crERC20Address
             );
