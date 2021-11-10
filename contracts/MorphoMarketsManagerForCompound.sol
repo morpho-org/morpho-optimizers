@@ -22,8 +22,8 @@ contract MorphoMarketsManagerForCompound is Ownable {
     bool public isPositionsManagerSet; // Whether or not the positions manager is set.
     mapping(address => bool) public isCreated; // Whether or not this market is created.
     mapping(address => uint256) public p2pBPY; // Block Percentage Yield ("midrate").
-    mapping(address => uint256) public mUnitExchangeRate; // current exchange rate from mUnit to underlying.
-    mapping(address => uint256) public lastUpdateBlockNumber; // Last time mUnitExchangeRate was updated.
+    mapping(address => uint256) public p2pUnitExchangeRate; // current exchange rate from p2pUnit to underlying.
+    mapping(address => uint256) public lastUpdateBlockNumber; // Last time p2pUnitExchangeRate was updated.
 
     IPositionsManagerForCompound public positionsManagerForCompound;
 
@@ -50,11 +50,11 @@ contract MorphoMarketsManagerForCompound is Ownable {
      */
     event BPYUpdated(address _marketAddress, uint256 _newValue);
 
-    /** @dev Emitted when the mUnitExchangeRate of a market is updated.
+    /** @dev Emitted when the p2pUnitExchangeRate of a market is updated.
      *  @param _marketAddress The address of the market to update.
-     *  @param _newValue The new value of the mUnitExchangeRate.
+     *  @param _newValue The new value of the p2pUnitExchangeRate.
      */
-    event MUnitExchangeRateUpdated(address _marketAddress, uint256 _newValue);
+    event P2PUnitExchangeRateUpdated(address _marketAddress, uint256 _newValue);
 
     /** @dev Emitted when a threshold of a market is updated.
      *  @param _marketAddress The address of the market to update.
@@ -103,7 +103,7 @@ contract MorphoMarketsManagerForCompound is Ownable {
         require(results[0] == 0, "createMarket:enter-mkt-fail");
         positionsManagerForCompound.setThreshold(_marketAddress, 1e18);
         lastUpdateBlockNumber[_marketAddress] = block.number;
-        mUnitExchangeRate[_marketAddress] = 1e18;
+        p2pUnitExchangeRate[_marketAddress] = 1e18;
         isCreated[_marketAddress] = true;
         updateBPY(_marketAddress);
         emit MarketCreated(_marketAddress);
@@ -125,7 +125,7 @@ contract MorphoMarketsManagerForCompound is Ownable {
 
     /* Public */
 
-    /** @dev Updates the Block Percentage Yield (`p2pBPY`) and calculates the current exchange rate (`mUnitExchangeRate`).
+    /** @dev Updates the Block Percentage Yield (`p2pBPY`) and calculates the current exchange rate (`p2pUnitExchangeRate`).
      *  @param _marketAddress The address of the market we want to update.
      */
     function updateBPY(address _marketAddress) public isMarketCreated(_marketAddress) {
@@ -138,15 +138,15 @@ contract MorphoMarketsManagerForCompound is Ownable {
 
         emit BPYUpdated(_marketAddress, p2pBPY[_marketAddress]);
 
-        // Update mUnitExhangeRate
-        updateMUnitExchangeRate(_marketAddress);
+        // Update p2pUnitExhangeRate
+        updateP2pUnitExchangeRate(_marketAddress);
     }
 
     /** @dev Updates the current exchange rate, taking into account the block percentage yield (p2pBPY) since the last time it has been updated.
      *  @param _marketAddress The address of the market we want to update.
-     *  @return currentExchangeRate to convert from mUnit to underlying or from underlying to mUnit.
+     *  @return currentExchangeRate to convert from p2pUnit to underlying or from underlying to p2pUnit.
      */
-    function updateMUnitExchangeRate(address _marketAddress)
+    function updateP2pUnitExchangeRate(address _marketAddress)
         public
         isMarketCreated(_marketAddress)
         returns (uint256)
@@ -154,23 +154,23 @@ contract MorphoMarketsManagerForCompound is Ownable {
         uint256 currentBlock = block.number;
 
         if (lastUpdateBlockNumber[_marketAddress] == currentBlock) {
-            return mUnitExchangeRate[_marketAddress];
+            return p2pUnitExchangeRate[_marketAddress];
         } else {
             uint256 numberOfBlocksSinceLastUpdate = currentBlock -
                 lastUpdateBlockNumber[_marketAddress];
             // Update lastUpdateBlockNumber
             lastUpdateBlockNumber[_marketAddress] = currentBlock;
 
-            uint256 newMUnitExchangeRate = mUnitExchangeRate[_marketAddress].mul(
+            uint256 newP2pUnitExchangeRate = p2pUnitExchangeRate[_marketAddress].mul(
                 (1e18 + p2pBPY[_marketAddress]).pow(
                     PRBMathUD60x18.fromUint(numberOfBlocksSinceLastUpdate)
                 )
             );
 
             // Update currentExchangeRate
-            mUnitExchangeRate[_marketAddress] = newMUnitExchangeRate;
-            emit MUnitExchangeRateUpdated(_marketAddress, newMUnitExchangeRate);
-            return newMUnitExchangeRate;
+            p2pUnitExchangeRate[_marketAddress] = newP2pUnitExchangeRate;
+            emit P2PUnitExchangeRateUpdated(_marketAddress, newP2pUnitExchangeRate);
+            return newP2pUnitExchangeRate;
         }
     }
 }

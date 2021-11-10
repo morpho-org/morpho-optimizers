@@ -23,12 +23,12 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
     /* Structs */
 
     struct SupplyBalance {
-        uint256 inP2P; // In mUnit, a unit that grows in value, to keep track of the interests/debt increase when users are in p2p.
+        uint256 inP2P; // In p2pUnit, a unit that grows in value, to keep track of the interests/debt increase when users are in p2p.
         uint256 onPool; // In cToken.
     }
 
     struct BorrowBalance {
-        uint256 inP2P; // In mUnit.
+        uint256 inP2P; // In p2pUnit.
         uint256 onPool; // In cdUnit, a unit that grows in value, to keep track of the debt increase when users are in Comp. Multiply by current borrowIndex to get the underlying amount.
     }
 
@@ -41,7 +41,7 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
         uint256 debtToAdd; // The debt to add at the current iteration.
         uint256 collateralToAdd; // The collateral to add at the current iteration.
         address cTokenEntered; // The cToken token entered by the user.
-        uint256 mExchangeRate; // The mUnit exchange rate of the `cErc20Entered`.
+        uint256 p2pExchangeRate; // The p2pUnit exchange rate of the `cErc20Entered`.
         uint256 underlyingPrice; // The price of the underlying linked to the `cErc20Entered`.
     }
 
@@ -233,14 +233,14 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
 
         /* If some borrowers are waiting on Comp, Morpho matches the supplier in P2P with them as much as possible */
         if (borrowersOnPool[_cTokenAddress].isNotEmpty()) {
-            uint256 mExchangeRate = marketsManagerForCompound.updateMUnitExchangeRate(
+            uint256 p2pExchangeRate = marketsManagerForCompound.updateP2pUnitExchangeRate(
                 _cTokenAddress
             );
             remainingToSupplyToPool = _matchBorrowers(_cTokenAddress, _amount); // In underlying
             uint256 matched = _amount - remainingToSupplyToPool;
 
             if (matched > 0) {
-                supplyBalanceInOf[_cTokenAddress][msg.sender].inP2P += matched.div(mExchangeRate); // In mUnit
+                supplyBalanceInOf[_cTokenAddress][msg.sender].inP2P += matched.div(p2pExchangeRate); // In p2pUnit
             }
         }
 
@@ -275,13 +275,13 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
 
         /* If some suppliers are waiting on Comp, Morpho matches the borrower in P2P with them as much as possible */
         if (suppliersOnPool[_cTokenAddress].isNotEmpty()) {
-            // No need to update mUnitExchangeRate here as it's done in `_checkAccountLiquidity`
-            uint256 mExchangeRate = marketsManagerForCompound.mUnitExchangeRate(_cTokenAddress);
+            // No need to update p2pUnitExchangeRate here as it's done in `_checkAccountLiquidity`
+            uint256 p2pExchangeRate = marketsManagerForCompound.p2pUnitExchangeRate(_cTokenAddress);
             remainingToBorrowOnPool = _matchSuppliers(_cTokenAddress, _amount); // In underlying
             uint256 matched = _amount - remainingToBorrowOnPool;
 
             if (matched > 0) {
-                borrowBalanceInOf[_cTokenAddress][msg.sender].inP2P += matched.div(mExchangeRate); // In mUnit
+                borrowBalanceInOf[_cTokenAddress][msg.sender].inP2P += matched.div(p2pExchangeRate); // In p2pUnit
             }
         }
 
@@ -342,7 +342,7 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
                 ICErc20(_cTokenBorrowedAddress).borrowIndex()
             ) +
             borrowBalanceInOf[_cTokenBorrowedAddress][_borrower].inP2P.mul(
-                marketsManagerForCompound.mUnitExchangeRate(_cTokenBorrowedAddress)
+                marketsManagerForCompound.p2pUnitExchangeRate(_cTokenBorrowedAddress)
             );
         require(
             _amount <= vars.borrowBalance.mul(comptroller.closeFactorMantissa()),
@@ -377,7 +377,7 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
             .mul(cTokenCollateralToken.exchangeRateStored());
         uint256 totalCollateral = vars.collateralOnPoolInUnderlying +
             supplyBalanceInOf[_cTokenCollateralAddress][_borrower].inP2P.mul(
-                marketsManagerForCompound.updateMUnitExchangeRate(_cTokenCollateralAddress)
+                marketsManagerForCompound.updateP2pUnitExchangeRate(_cTokenCollateralAddress)
             );
 
         require(vars.amountToSeize <= totalCollateral, "liquidate:to-seize>collateral");
@@ -403,7 +403,7 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
         _checkAccountLiquidity(_holder, _cTokenAddress, _amount, 0);
         ICErc20 cToken = ICErc20(_cTokenAddress);
         IERC20 underlyingToken = IERC20(cToken.underlying());
-        // No need to update mUnitExchangeRate here as it's done in `_checkAccountLiquidity`
+        // No need to update p2pUnitExchangeRate here as it's done in `_checkAccountLiquidity`
         uint256 cTokenExchangeRate = cToken.exchangeRateCurrent();
         uint256 remainingToWithdraw = _amount;
 
@@ -432,7 +432,7 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
 
         /* If there remains some tokens to withdraw (CASE 2), Morpho breaks credit lines and repair them either with other users or with Comp itself */
         if (remainingToWithdraw > 0) {
-            uint256 mExchangeRate = marketsManagerForCompound.mUnitExchangeRate(_cTokenAddress);
+            uint256 p2pExchangeRate = marketsManagerForCompound.p2pUnitExchangeRate(_cTokenAddress);
             uint256 cTokenContractBalanceInUnderlying = cToken.balanceOf(address(this)).mul(
                 cTokenExchangeRate
             );
@@ -443,8 +443,8 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
                     "_withdraw:_matchSuppliers!=0"
                 );
                 supplyBalanceInOf[_cTokenAddress][_holder].inP2P -= remainingToWithdraw.div(
-                    mExchangeRate
-                ); // In mUnit
+                    p2pExchangeRate
+                ); // In p2pUnit
             }
             /* CASE 2: Other suppliers don't have enough tokens on Comp. Such scenario is called the Hard-Withdraw */
             else {
@@ -453,8 +453,8 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
                     cTokenContractBalanceInUnderlying
                 );
                 supplyBalanceInOf[_cTokenAddress][_holder].inP2P -= remainingToWithdraw.div(
-                    mExchangeRate
-                ); // In mUnit
+                    p2pExchangeRate
+                ); // In p2pUnit
                 remainingToWithdraw -= remaining;
                 require(
                     _unmatchBorrowers(_cTokenAddress, remainingToWithdraw) == 0, // We break some P2P credit lines the user had with borrowers and fallback on Comp.
@@ -510,8 +510,8 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
 
         /* If there remains some tokens to repay (CASE 2), Morpho breaks credit lines and repair them either with other users or with Comp itself */
         if (remainingToRepay > 0) {
-            // No need to update mUnitExchangeRate here as it's done in `_checkAccountLiquidity`
-            uint256 mExchangeRate = marketsManagerForCompound.updateMUnitExchangeRate(
+            // No need to update p2pUnitExchangeRate here as it's done in `_checkAccountLiquidity`
+            uint256 p2pExchangeRate = marketsManagerForCompound.updateP2pUnitExchangeRate(
                 _cTokenAddress
             );
             uint256 contractBorrowBalanceOnPool = cToken.borrowBalanceCurrent(address(this)); // In underlying
@@ -519,15 +519,15 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
             if (remainingToRepay <= contractBorrowBalanceOnPool) {
                 _matchBorrowers(_cTokenAddress, remainingToRepay);
                 borrowBalanceInOf[_cTokenAddress][_borrower].inP2P -= remainingToRepay.div(
-                    mExchangeRate
+                    p2pExchangeRate
                 );
             }
             /* CASE 2: Other borrowers aren't borrowing enough on Comp to compensate user's position */
             else {
                 _matchBorrowers(_cTokenAddress, contractBorrowBalanceOnPool);
                 borrowBalanceInOf[_cTokenAddress][_borrower].inP2P -= remainingToRepay.div(
-                    mExchangeRate
-                ); // In mUnit
+                    p2pExchangeRate
+                ); // In p2pUnit
                 remainingToRepay -= contractBorrowBalanceOnPool;
                 require(
                     _unmatchSuppliers(_cTokenAddress, remainingToRepay) == 0, // We break some P2P credit lines the user had with suppliers and fallback on Comp.
@@ -561,7 +561,7 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
     }
 
     /** @dev Finds liquidity on Comp and matches it in P2P.
-     *  @dev Note: mUnitExchangeRate must have been updated before calling this function.
+     *  @dev Note: p2pUnitExchangeRate must have been updated before calling this function.
      *  @param _cTokenAddress The address of the market on which Morpho want to move users.
      *  @param _amount The amount to search for in underlying.
      *  @return remainingToMatch The remaining liquidity to search for in underlying.
@@ -572,7 +572,7 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
     {
         ICErc20 cToken = ICErc20(_cTokenAddress);
         remainingToMatch = _amount; // In underlying
-        uint256 mExchangeRate = marketsManagerForCompound.mUnitExchangeRate(_cTokenAddress);
+        uint256 p2pExchangeRate = marketsManagerForCompound.p2pUnitExchangeRate(_cTokenAddress);
         uint256 cTokenExchangeRate = cToken.exchangeRateCurrent();
         uint256 highestValue = suppliersOnPool[_cTokenAddress].last();
 
@@ -605,7 +605,9 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
                         ); // In cToken
                     }
                     remainingToMatch -= toMatch;
-                    supplyBalanceInOf[_cTokenAddress][account].inP2P += toMatch.div(mExchangeRate); // In mUnit
+                    supplyBalanceInOf[_cTokenAddress][account].inP2P += toMatch.div(
+                        p2pExchangeRate
+                    ); // In p2pUnit
                     _updateSupplierList(_cTokenAddress, account);
                     numberOfKeysAtValue -= 1;
                     emit SupplierMatched(account, _cTokenAddress, toMatch);
@@ -624,7 +626,7 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
     }
 
     /** @dev Finds liquidity in peer-to-peer and unmatches it to reconnect Comp.
-     *  @dev Note: mUnitExchangeRate must have been updated before calling this function.
+     *  @dev Note: p2pUnitExchangeRate must have been updated before calling this function.
      *  @param _cTokenAddress The address of the market on which Morpho want to move users.
      *  @param _amount The amount to search for in underlying.
      *  @return remainingToUnmatch The amount remaining to munmatchatch in underlying.
@@ -636,7 +638,7 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
         ICErc20 cToken = ICErc20(_cTokenAddress);
         remainingToUnmatch = _amount; // In underlying
         uint256 cTokenExchangeRate = cToken.exchangeRateCurrent();
-        uint256 mExchangeRate = marketsManagerForCompound.mUnitExchangeRate(_cTokenAddress);
+        uint256 p2pExchangeRate = marketsManagerForCompound.p2pUnitExchangeRate(_cTokenAddress);
         uint256 highestValue = suppliersInP2P[_cTokenAddress].last();
 
         while (remainingToUnmatch > 0 && highestValue != 0) {
@@ -646,12 +648,12 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
             ) {
                 address account = suppliersInP2P[_cTokenAddress].valueKeyAtIndex(highestValue, 0);
                 uint256 inP2P = supplyBalanceInOf[_cTokenAddress][account].inP2P; // In cToken
-                uint256 toUnmatch = Math.min(inP2P.mul(mExchangeRate), remainingToUnmatch); // In underlying
+                uint256 toUnmatch = Math.min(inP2P.mul(p2pExchangeRate), remainingToUnmatch); // In underlying
                 remainingToUnmatch -= toUnmatch;
                 supplyBalanceInOf[_cTokenAddress][account].onPool += toUnmatch.div(
                     cTokenExchangeRate
                 ); // In cToken
-                supplyBalanceInOf[_cTokenAddress][account].inP2P -= toUnmatch.div(mExchangeRate); // In mUnit
+                supplyBalanceInOf[_cTokenAddress][account].inP2P -= toUnmatch.div(p2pExchangeRate); // In p2pUnit
                 _updateSupplierList(_cTokenAddress, account);
                 emit SupplierUnmatched(account, _cTokenAddress, toUnmatch);
             }
@@ -662,7 +664,7 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
     }
 
     /** @dev Finds borrowers on Comp that match the given `_amount` and move them in P2P.
-     *  @dev Note: mUnitExchangeRate must have been updated before calling this function.
+     *  @dev Note: p2pUnitExchangeRate must have been updated before calling this function.
      *  @param _cTokenAddress The address of the market on which Morpho wants to move users.
      *  @param _amount The amount to match in underlying.
      *  @return remainingToMatch The amount remaining to match in underlying.
@@ -674,7 +676,7 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
         ICErc20 cToken = ICErc20(_cTokenAddress);
         IERC20 underlyingToken = IERC20(cToken.underlying());
         remainingToMatch = _amount;
-        uint256 mExchangeRate = marketsManagerForCompound.mUnitExchangeRate(_cTokenAddress);
+        uint256 p2pExchangeRate = marketsManagerForCompound.p2pUnitExchangeRate(_cTokenAddress);
         uint256 borrowIndex = cToken.borrowIndex();
         uint256 highestValue = borrowersOnPool[_cTokenAddress].last();
 
@@ -694,7 +696,7 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
                     borrowBalanceInOf[_cTokenAddress][account].onPool -= toMatch.div(borrowIndex);
                 }
                 remainingToMatch -= toMatch;
-                borrowBalanceInOf[_cTokenAddress][account].inP2P += toMatch.div(mExchangeRate);
+                borrowBalanceInOf[_cTokenAddress][account].inP2P += toMatch.div(p2pExchangeRate);
                 _updateBorrowerList(_cTokenAddress, account);
                 emit BorrowerMatched(account, _cTokenAddress, toMatch);
             }
@@ -707,7 +709,7 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
     }
 
     /** @dev Finds borrowers in peer-to-peer that match the given `_amount` and move them to Comp.
-     *  @dev Note: mUnitExchangeRate must have been updated before calling this function.
+     *  @dev Note: p2pUnitExchangeRate must have been updated before calling this function.
      *  @param _cTokenAddress The address of the market on which Morpho wants to move users.
      *  @param _amount The amount to match in underlying.
      *  @return remainingToUnmatch The amount remaining to munmatchatch in underlying.
@@ -718,7 +720,7 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
     {
         ICErc20 cToken = ICErc20(_cTokenAddress);
         remainingToUnmatch = _amount;
-        uint256 mExchangeRate = marketsManagerForCompound.mUnitExchangeRate(_cTokenAddress);
+        uint256 p2pExchangeRate = marketsManagerForCompound.p2pUnitExchangeRate(_cTokenAddress);
         uint256 borrowIndex = cToken.borrowIndex();
         uint256 highestValue = borrowersInP2P[_cTokenAddress].last();
 
@@ -730,10 +732,10 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
                 address account = borrowersInP2P[_cTokenAddress].valueKeyAtIndex(highestValue, 0);
                 uint256 inP2P = borrowBalanceInOf[_cTokenAddress][account].inP2P;
                 _unmatchTheSupplier(account); // Before borrowing on Comp, we put all the collateral of the borrower on Comp (cf Liquidation Invariant in docs)
-                uint256 toUnmatch = Math.min(inP2P.mul(mExchangeRate), remainingToUnmatch); // In underlying
+                uint256 toUnmatch = Math.min(inP2P.mul(p2pExchangeRate), remainingToUnmatch); // In underlying
                 remainingToUnmatch -= toUnmatch;
                 borrowBalanceInOf[_cTokenAddress][account].onPool += toUnmatch.div(borrowIndex);
-                borrowBalanceInOf[_cTokenAddress][account].inP2P -= toUnmatch.div(mExchangeRate);
+                borrowBalanceInOf[_cTokenAddress][account].inP2P -= toUnmatch.div(p2pExchangeRate);
                 _updateBorrowerList(_cTokenAddress, account);
                 emit BorrowerUnmatched(account, _cTokenAddress, toUnmatch);
             }
@@ -753,15 +755,17 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
             uint256 inP2P = supplyBalanceInOf[cTokenEntered][_account].inP2P;
 
             if (inP2P > 0) {
-                uint256 mExchangeRate = marketsManagerForCompound.mUnitExchangeRate(cTokenEntered);
+                uint256 p2pExchangeRate = marketsManagerForCompound.p2pUnitExchangeRate(
+                    cTokenEntered
+                );
                 uint256 cTokenExchangeRate = ICErc20(cTokenEntered).exchangeRateCurrent();
-                uint256 inP2PInUnderlying = inP2P.mul(mExchangeRate);
+                uint256 inP2PInUnderlying = inP2P.mul(p2pExchangeRate);
                 supplyBalanceInOf[cTokenEntered][_account].onPool += inP2PInUnderlying.div(
                     cTokenExchangeRate
                 ); // In cToken
                 supplyBalanceInOf[cTokenEntered][_account].inP2P -= inP2PInUnderlying.div(
-                    mExchangeRate
-                ); // In mUnit
+                    p2pExchangeRate
+                ); // In p2pUnit
                 _unmatchBorrowers(cTokenEntered, inP2PInUnderlying);
                 _updateSupplierList(cTokenEntered, _account);
                 // Supply to Comp
@@ -831,7 +835,7 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
             // Avoid stack too deep error
             BalanceStateVars memory vars;
             vars.cTokenEntered = enteredMarkets[_account][i];
-            vars.mExchangeRate = marketsManagerForCompound.updateMUnitExchangeRate(
+            vars.p2pExchangeRate = marketsManagerForCompound.updateP2pUnitExchangeRate(
                 vars.cTokenEntered
             );
             // Calculation of the current debt (in underlying)
@@ -839,13 +843,13 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
                 borrowBalanceInOf[vars.cTokenEntered][_account].onPool.mul(
                     ICErc20(vars.cTokenEntered).borrowIndex()
                 ) +
-                borrowBalanceInOf[vars.cTokenEntered][_account].inP2P.mul(vars.mExchangeRate);
+                borrowBalanceInOf[vars.cTokenEntered][_account].inP2P.mul(vars.p2pExchangeRate);
             // Calculation of the current collateral (in underlying)
             vars.collateralToAdd =
                 supplyBalanceInOf[vars.cTokenEntered][_account].onPool.mul(
                     ICErc20(vars.cTokenEntered).exchangeRateCurrent()
                 ) +
-                supplyBalanceInOf[vars.cTokenEntered][_account].inP2P.mul(vars.mExchangeRate);
+                supplyBalanceInOf[vars.cTokenEntered][_account].inP2P.mul(vars.p2pExchangeRate);
             // Price recovery
             vars.underlyingPrice = compOracle.getUnderlyingPrice(vars.cTokenEntered);
             require(vars.underlyingPrice != 0, "_getUserHypotheticalBalanceStates:oracle-fail");

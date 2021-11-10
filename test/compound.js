@@ -8,8 +8,8 @@ const {
   SCALE,
   underlyingToCToken,
   cTokenToUnderlying,
-  underlyingToMUnit,
-  mUnitToUnderlying,
+  underlyingToP2pUnit,
+  p2pUnitToUnderlying,
   underlyingToCdUnit,
   cDUnitToUnderlying,
   removeDigitsBigNumber,
@@ -117,7 +117,7 @@ describe('MorphoPositionsManagerForCompound Contract', () => {
       const supplyRatePerBlock = await cDaiToken.supplyRatePerBlock();
       const expectedBPY = borrowRatePerBlock.add(supplyRatePerBlock).div(2);
       expect(await morphoMarketsManagerForCompound.p2pBPY(config.tokens.cDai.address)).to.equal(expectedBPY);
-      expect(await morphoMarketsManagerForCompound.mUnitExchangeRate(config.tokens.cDai.address)).to.be.equal(utils.parseUnits('1'));
+      expect(await morphoMarketsManagerForCompound.p2pUnitExchangeRate(config.tokens.cDai.address)).to.be.equal(utils.parseUnits('1'));
 
       // Thresholds
       underlyingThreshold = await morphoPositionsManagerForCompound.thresholds(config.tokens.cDai.address);
@@ -166,7 +166,7 @@ describe('MorphoPositionsManagerForCompound Contract', () => {
       const p2pBPY = supplyBPY.add(borrowBPY).div(2);
       expect(await morphoMarketsManagerForCompound.p2pBPY(config.tokens.cMkr.address)).to.equal(p2pBPY);
 
-      expect(await morphoMarketsManagerForCompound.mUnitExchangeRate(config.tokens.cMkr.address)).to.equal(SCALE);
+      expect(await morphoMarketsManagerForCompound.p2pUnitExchangeRate(config.tokens.cMkr.address)).to.equal(SCALE);
       expect(await morphoMarketsManagerForCompound.lastUpdateBlockNumber(config.tokens.cMkr.address)).to.equal(blockNumber);
     });
   });
@@ -432,9 +432,9 @@ describe('MorphoPositionsManagerForCompound Contract', () => {
 
       // Check supplier1 balances
       const cTokenExchangeRate2 = await cDaiToken.callStatic.exchangeRateCurrent();
-      const mExchangeRate1 = await morphoMarketsManagerForCompound.mUnitExchangeRate(config.tokens.cDai.address);
+      const p2pExchangeRate1 = await morphoMarketsManagerForCompound.p2pUnitExchangeRate(config.tokens.cDai.address);
       const expectedSupplyBalanceOnPool2 = expectedSupplyBalanceOnPool1.sub(underlyingToCToken(supplyAmount, cTokenExchangeRate2));
-      const expectedSupplyBalanceInP2P2 = underlyingToMUnit(supplyAmount, mExchangeRate1);
+      const expectedSupplyBalanceInP2P2 = underlyingToP2pUnit(supplyAmount, p2pExchangeRate1);
       const supplyBalanceOnPool2 = (await morphoPositionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).onPool;
       const supplyBalanceInP2P2 = (await morphoPositionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).inP2P;
       expect(supplyBalanceOnPool2).to.equal(expectedSupplyBalanceOnPool2);
@@ -446,15 +446,15 @@ describe('MorphoPositionsManagerForCompound Contract', () => {
       expect((await morphoPositionsManagerForCompound.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).inP2P).to.equal(expectedBorrowBalanceInP2P1);
 
       // Compoundare remaining to withdraw and the cToken contract balance
-      await morphoMarketsManagerForCompound.connect(owner).updateMUnitExchangeRate(config.tokens.cDai.address);
-      const mExchangeRate2 = await morphoMarketsManagerForCompound.mUnitExchangeRate(config.tokens.cDai.address);
-      const mExchangeRate3 = computeNewMorphoExchangeRate(mExchangeRate2, await morphoMarketsManagerForCompound.p2pBPY(config.tokens.cDai.address), 1, 0).toString();
+      await morphoMarketsManagerForCompound.connect(owner).updateP2pUnitExchangeRate(config.tokens.cDai.address);
+      const p2pExchangeRate2 = await morphoMarketsManagerForCompound.p2pUnitExchangeRate(config.tokens.cDai.address);
+      const p2pExchangeRate3 = computeNewMorphoExchangeRate(p2pExchangeRate2, await morphoMarketsManagerForCompound.p2pBPY(config.tokens.cDai.address), 1, 0).toString();
       const daiBalanceBefore2 = await daiToken.balanceOf(supplier1.getAddress());
       const supplyBalanceOnPool3 = (await morphoPositionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).onPool;
       const supplyBalanceInP2P3 = (await morphoPositionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).inP2P;
       const cTokenExchangeRate3 = await cDaiToken.callStatic.exchangeRateStored();
       const supplyBalanceOnPoolInUnderlying = cTokenToUnderlying(supplyBalanceOnPool3, cTokenExchangeRate3);
-      const amountToWithdraw = supplyBalanceOnPoolInUnderlying.add(mUnitToUnderlying(supplyBalanceInP2P3, mExchangeRate3));
+      const amountToWithdraw = supplyBalanceOnPoolInUnderlying.add(p2pUnitToUnderlying(supplyBalanceInP2P3, p2pExchangeRate3));
       const expectedDaiBalanceAfter2 = daiBalanceBefore2.add(amountToWithdraw);
       const remainingToWithdraw = amountToWithdraw.sub(supplyBalanceOnPoolInUnderlying);
       const cTokenContractBalanceInUnderlying = cTokenToUnderlying(await cDaiToken.balanceOf(morphoPositionsManagerForCompound.address), cTokenExchangeRate3);
@@ -519,11 +519,11 @@ describe('MorphoPositionsManagerForCompound Contract', () => {
       await morphoPositionsManagerForCompound.connect(borrower1).borrow(config.tokens.cDai.address, supplyAmount);
 
       // Check supplier1 balances
-      const mExchangeRate1 = await morphoMarketsManagerForCompound.mUnitExchangeRate(config.tokens.cDai.address);
+      const p2pExchangeRate1 = await morphoMarketsManagerForCompound.p2pUnitExchangeRate(config.tokens.cDai.address);
       const cTokenExchangeRate2 = await cDaiToken.callStatic.exchangeRateCurrent();
       // Expected balances of supplier1
       const expectedSupplyBalanceOnPool2 = previousSupplier1SupplyBalanceOnPool.sub(underlyingToCToken(supplyAmount, cTokenExchangeRate2));
-      const expectedSupplyBalanceInP2P2 = underlyingToMUnit(supplyAmount, mExchangeRate1);
+      const expectedSupplyBalanceInP2P2 = underlyingToP2pUnit(supplyAmount, p2pExchangeRate1);
       const supplyBalanceOnPool2 = (await morphoPositionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).onPool;
       const supplyBalanceInP2P2 = (await morphoPositionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).inP2P;
       expect(supplyBalanceOnPool2).to.equal(expectedSupplyBalanceOnPool2);
@@ -535,15 +535,15 @@ describe('MorphoPositionsManagerForCompound Contract', () => {
       expect((await morphoPositionsManagerForCompound.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).inP2P).to.equal(expectedBorrowBalanceInP2P1);
 
       // Compoundare remaining to withdraw and the cToken contract balance
-      await morphoMarketsManagerForCompound.connect(owner).updateMUnitExchangeRate(config.tokens.cDai.address);
-      const mExchangeRate2 = await morphoMarketsManagerForCompound.mUnitExchangeRate(config.tokens.cDai.address);
-      const mExchangeRate3 = computeNewMorphoExchangeRate(mExchangeRate2, await morphoMarketsManagerForCompound.p2pBPY(config.tokens.cDai.address), 1, 0).toString();
+      await morphoMarketsManagerForCompound.connect(owner).updateP2pUnitExchangeRate(config.tokens.cDai.address);
+      const p2pExchangeRate2 = await morphoMarketsManagerForCompound.p2pUnitExchangeRate(config.tokens.cDai.address);
+      const p2pExchangeRate3 = computeNewMorphoExchangeRate(p2pExchangeRate2, await morphoMarketsManagerForCompound.p2pBPY(config.tokens.cDai.address), 1, 0).toString();
       const daiBalanceBefore2 = await daiToken.balanceOf(supplier1.getAddress());
       const supplyBalanceOnPool3 = (await morphoPositionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).onPool;
       const supplyBalanceInP2P3 = (await morphoPositionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).inP2P;
       const cTokenExchangeRate3 = await cDaiToken.callStatic.exchangeRateCurrent();
       const supplyBalanceOnPoolInUnderlying = cTokenToUnderlying(supplyBalanceOnPool3, cTokenExchangeRate3);
-      const amountToWithdraw = supplyBalanceOnPoolInUnderlying.add(mUnitToUnderlying(supplyBalanceInP2P3, mExchangeRate3));
+      const amountToWithdraw = supplyBalanceOnPoolInUnderlying.add(p2pUnitToUnderlying(supplyBalanceInP2P3, p2pExchangeRate3));
       const expectedDaiBalanceAfter2 = daiBalanceBefore2.add(amountToWithdraw);
       const remainingToWithdraw = amountToWithdraw.sub(supplyBalanceOnPoolInUnderlying);
       const cTokenContractBalanceInUnderlying = cTokenToUnderlying(await cDaiToken.balanceOf(morphoPositionsManagerForCompound.address), cTokenExchangeRate3);
@@ -569,9 +569,9 @@ describe('MorphoPositionsManagerForCompound Contract', () => {
 
       const supplier2SupplyBalanceOnPoolInUnderlying = cTokenToUnderlying(supplier2SupplyBalanceOnPool, cTokenExchangeRate4);
       const amountToMove = bigNumberMin(supplier2SupplyBalanceOnPoolInUnderlying, remainingToWithdraw);
-      const mExchangeRate4 = await morphoMarketsManagerForCompound.mUnitExchangeRate(config.tokens.cDai.address);
+      const p2pExchangeRate4 = await morphoMarketsManagerForCompound.p2pUnitExchangeRate(config.tokens.cDai.address);
       const expectedSupplier2SupplyBalanceOnPool = supplier2SupplyBalanceOnPool.sub(underlyingToCToken(amountToMove, cTokenExchangeRate4));
-      const expectedSupplier2SupplyBalanceInP2P = supplier2SupplyBalanceInP2P.add(underlyingToMUnit(amountToMove, mExchangeRate4));
+      const expectedSupplier2SupplyBalanceInP2P = supplier2SupplyBalanceInP2P.add(underlyingToP2pUnit(amountToMove, p2pExchangeRate4));
 
       // Check borrow balance of Morpho
       expect(borrowBalance).to.equal(0);
@@ -617,11 +617,11 @@ describe('MorphoPositionsManagerForCompound Contract', () => {
 
       const borrowerBalanceInP2P = (await morphoPositionsManagerForCompound.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).inP2P;
       const p2pBPY = await morphoMarketsManagerForCompound.p2pBPY(config.tokens.cDai.address);
-      await morphoMarketsManagerForCompound.updateMUnitExchangeRate(config.tokens.cDai.address);
-      const mUnitExchangeRate = await morphoMarketsManagerForCompound.mUnitExchangeRate(config.tokens.cDai.address);
+      await morphoMarketsManagerForCompound.updateP2pUnitExchangeRate(config.tokens.cDai.address);
+      const p2pUnitExchangeRate = await morphoMarketsManagerForCompound.p2pUnitExchangeRate(config.tokens.cDai.address);
       // WARNING: Should be one block but the pow function used in contract is not accurate
-      const mExchangeRate = computeNewMorphoExchangeRate(mUnitExchangeRate, p2pBPY, 1, 0).toString();
-      const toRepay = mUnitToUnderlying(borrowerBalanceInP2P, mExchangeRate);
+      const p2pExchangeRate = computeNewMorphoExchangeRate(p2pUnitExchangeRate, p2pBPY, 1, 0).toString();
+      const toRepay = p2pUnitToUnderlying(borrowerBalanceInP2P, p2pExchangeRate);
       const expectedDaiBalanceAfter = daiBalanceBefore.add(toBorrow).sub(toRepay);
       const previousMorphoCTokenBalance = await cDaiToken.balanceOf(morphoPositionsManagerForCompound.address);
 
@@ -668,10 +668,10 @@ describe('MorphoPositionsManagerForCompound Contract', () => {
 
       const borrowerBalanceInP2P = (await morphoPositionsManagerForCompound.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).inP2P;
       const p2pBPY = await morphoMarketsManagerForCompound.p2pBPY(config.tokens.cDai.address);
-      const mUnitExchangeRate = await morphoMarketsManagerForCompound.mUnitExchangeRate(config.tokens.cDai.address);
+      const p2pUnitExchangeRate = await morphoMarketsManagerForCompound.p2pUnitExchangeRate(config.tokens.cDai.address);
       // WARNING: Should be 2 blocks but the pow function used in contract is not accurate
-      const mExchangeRate = computeNewMorphoExchangeRate(mUnitExchangeRate, p2pBPY, 1, 0).toString();
-      const borrowerBalanceInP2PInUnderlying = mUnitToUnderlying(borrowerBalanceInP2P, mExchangeRate);
+      const p2pExchangeRate = computeNewMorphoExchangeRate(p2pUnitExchangeRate, p2pBPY, 1, 0).toString();
+      const borrowerBalanceInP2PInUnderlying = p2pUnitToUnderlying(borrowerBalanceInP2P, p2pExchangeRate);
 
       // Compoundute how much to repay
       const doUpdate = await cDaiToken.borrowBalanceCurrent(morphoPositionsManagerForCompound.address);
@@ -723,11 +723,11 @@ describe('MorphoPositionsManagerForCompound Contract', () => {
 
       // supplier1 borrows USDT that nobody is supply in peer-to-peer
       const cDaiExchangeRate1 = await cDaiToken.callStatic.exchangeRateCurrent();
-      const mDaiExchangeRate1 = await morphoMarketsManagerForCompound.mUnitExchangeRate(config.tokens.cDai.address);
+      const mDaiExchangeRate1 = await morphoMarketsManagerForCompound.p2pUnitExchangeRate(config.tokens.cDai.address);
       const supplyBalanceOnPool1 = (await morphoPositionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).onPool;
       const supplyBalanceInP2P1 = (await morphoPositionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).inP2P;
       const supplyBalanceOnPoolInUnderlying = cTokenToUnderlying(supplyBalanceOnPool1, cDaiExchangeRate1);
-      const supplyBalanceMorphoInUnderlying = mUnitToUnderlying(supplyBalanceInP2P1, mDaiExchangeRate1);
+      const supplyBalanceMorphoInUnderlying = p2pUnitToUnderlying(supplyBalanceInP2P1, mDaiExchangeRate1);
       const supplyBalanceInUnderlying = supplyBalanceOnPoolInUnderlying.add(supplyBalanceMorphoInUnderlying);
       const { collateralFactorMantissa } = await comptroller.markets(config.tokens.cDai.address);
       const usdtPriceMantissa = await compoundOracle.callStatic.getUnderlyingPrice(config.tokens.cUsdt.address);
@@ -740,8 +740,8 @@ describe('MorphoPositionsManagerForCompound Contract', () => {
       const borrowBalanceOnPool = (await morphoPositionsManagerForCompound.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onPool;
       const cDaiExchangeRate2 = await cDaiToken.callStatic.exchangeRateCurrent();
       const cDaiBorrowIndex = await cDaiToken.borrowIndex();
-      const mDaiExchangeRate2 = await morphoMarketsManagerForCompound.mUnitExchangeRate(config.tokens.cDai.address);
-      const expectedBorrowBalanceOnPool = mUnitToUnderlying(borrowBalanceInP2P, mDaiExchangeRate2).mul(SCALE).div(cDaiBorrowIndex);
+      const mDaiExchangeRate2 = await morphoMarketsManagerForCompound.p2pUnitExchangeRate(config.tokens.cDai.address);
+      const expectedBorrowBalanceOnPool = p2pUnitToUnderlying(borrowBalanceInP2P, mDaiExchangeRate2).mul(SCALE).div(cDaiBorrowIndex);
       const usdtBorrowBalance = (await morphoPositionsManagerForCompound.borrowBalanceInOf(config.tokens.cUsdt.address, supplier1.getAddress())).onPool;
       const cUsdtBorrowIndex = await cUsdtToken.borrowIndex();
       const usdtBorrowBalanceInUnderlying = usdtBorrowBalance.mul(cUsdtBorrowIndex).div(SCALE);
@@ -778,13 +778,13 @@ describe('MorphoPositionsManagerForCompound Contract', () => {
       await morphoPositionsManagerForCompound.connect(supplier1).supply(config.tokens.cDai.address, supplyAmount);
       const cTokenExchangeRate = await cDaiToken.callStatic.exchangeRateStored();
       const borrowIndex = await cDaiToken.borrowIndex();
-      const mUnitExchangeRate = await morphoMarketsManagerForCompound.mUnitExchangeRate(config.tokens.cDai.address);
+      const p2pUnitExchangeRate = await morphoMarketsManagerForCompound.p2pUnitExchangeRate(config.tokens.cDai.address);
 
       // Check balances
       const supplyBalanceInP2P = (await morphoPositionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).inP2P;
       const supplyBalanceOnPool = (await morphoPositionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).onPool;
       const underlyingMatched = cDUnitToUnderlying(borrower1BorrowBalanceOnPool.add(borrower2BorrowBalanceOnPool).add(borrower3BorrowBalanceOnPool), borrowIndex);
-      expectedSupplyBalanceInP2P = underlyingMatched.mul(SCALE).div(mUnitExchangeRate);
+      expectedSupplyBalanceInP2P = underlyingMatched.mul(SCALE).div(p2pUnitExchangeRate);
       expectedSupplyBalanceOnPool = underlyingToCToken(supplyAmount.sub(underlyingMatched), cTokenExchangeRate);
       expect(removeDigitsBigNumber(2, supplyBalanceInP2P)).to.equal(removeDigitsBigNumber(2, expectedSupplyBalanceInP2P));
       expect(supplyBalanceOnPool).to.equal(expectedSupplyBalanceOnPool);
@@ -930,11 +930,11 @@ describe('MorphoPositionsManagerForCompound Contract', () => {
 
       // borrower1 borrows DAI
       const cUsdcTokenExchangeRate1 = await cUsdcToken.callStatic.exchangeRateCurrent();
-      const mUsdcTokenExchangeRate1 = await morphoMarketsManagerForCompound.mUnitExchangeRate(config.tokens.cUsdc.address);
+      const mUsdcTokenExchangeRate1 = await morphoMarketsManagerForCompound.p2pUnitExchangeRate(config.tokens.cUsdc.address);
       const supplyBalanceOnPool1 = (await morphoPositionsManagerForCompound.supplyBalanceInOf(config.tokens.cUsdc.address, borrower1.getAddress())).onPool;
       const supplyBalanceInP2P1 = (await morphoPositionsManagerForCompound.supplyBalanceInOf(config.tokens.cUsdc.address, borrower1.getAddress())).inP2P;
       const supplyBalanceOnPoolInUnderlying = cTokenToUnderlying(supplyBalanceOnPool1, cUsdcTokenExchangeRate1);
-      const supplyBalanceMorphoInUnderlying = mUnitToUnderlying(supplyBalanceInP2P1, mUsdcTokenExchangeRate1);
+      const supplyBalanceMorphoInUnderlying = p2pUnitToUnderlying(supplyBalanceInP2P1, mUsdcTokenExchangeRate1);
       const supplyBalanceInUnderlying = supplyBalanceOnPoolInUnderlying.add(supplyBalanceMorphoInUnderlying);
       const { collateralFactorMantissa } = await comptroller.markets(config.tokens.cUsdc.address);
       const usdcPriceMantissa = await compoundOracle.getUnderlyingPrice(config.tokens.cUsdc.address);
@@ -972,7 +972,7 @@ describe('MorphoPositionsManagerForCompound Contract', () => {
       const daiBalanceAfter = await daiToken.balanceOf(liquidator.getAddress());
 
       // Liquidation parameters
-      const mDaiExchangeRate = await morphoMarketsManagerForCompound.mUnitExchangeRate(config.tokens.cDai.address);
+      const mDaiExchangeRate = await morphoMarketsManagerForCompound.p2pUnitExchangeRate(config.tokens.cDai.address);
       const cUsdcTokenExchangeRate = await cUsdcToken.callStatic.exchangeRateCurrent();
       const liquidationIncentive = await comptroller.liquidationIncentiveMantissa();
       const collateralAssetPrice = await priceOracle.getUnderlyingPrice(config.tokens.cUsdc.address);
