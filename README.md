@@ -15,12 +15,16 @@ yarn
 
 Refer to the `env.example` for the required environment variable.
 
-Tests are run against a fork of the Polygon Mainnet, which allows us to interact directly with Cream. Note that you need to have an RPC provider that have access to Polygon.
+Tests are run against a forks of real networks, which allows us to interact directly with liquidity pools of Compound or Aave. Note that you need to have an RPC provider that have access to Ethereum or Polygon.
 We aim a test coverage > 90% of all functions.
 
 ⚠️ Tests cannot substituted to coverage as the coverage command as contracts are compiled without optimization and can alter some patterns.
 
-To run test, use this command:
+To run tests on different platforms, use these commands:
+
+```
+yarn test:comp:mainnet
+```
 
 ```
 yarn test:cream:polygon
@@ -109,3 +113,7 @@ The second is necessary if contracts with different names share the same ABI.
 ## Questions
 
 For any question you can send an email to [merlin@mopho.best](mailto:merlin@morpho.best) 😊
+
+```
+
+```
