@@ -20,9 +20,6 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
     using SafeERC20 for IERC20;
     using Math for uint256;
 
-    uint256 internal constant BORROWING_MASK =
-        0x5555555555555555555555555555555555555555555555555555555555555555;
-
     /* Structs */
 
     struct SupplyBalance {
@@ -58,6 +55,8 @@ contract MorphoPositionsManagerForCream is ReentrancyGuard {
     }
 
     /* Storage */
+    uint256 internal constant BORROWING_MASK =
+        0x5555555555555555555555555555555555555555555555555555555555555555;
 
     mapping(address => RedBlackBinaryTree.Tree) private suppliersInP2P; // Suppliers in peer-to-peer.
     mapping(address => RedBlackBinaryTree.Tree) private suppliersOnCream; // Suppliers on Cream.
