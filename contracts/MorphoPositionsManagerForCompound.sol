@@ -574,52 +574,34 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
         remainingToMatch = _amount; // In underlying
         uint256 p2pExchangeRate = marketsManagerForCompound.p2pUnitExchangeRate(_cTokenAddress);
         uint256 cTokenExchangeRate = cToken.exchangeRateCurrent();
-        uint256 highestValue = suppliersOnPool[_cTokenAddress].last();
+        address account = suppliersOnPool[_cTokenAddress].last();
 
-        uint256 valueOfLastUnavailableSupplier; // Allow us to store the previous
-        while (remainingToMatch > 0 && highestValue != 0) {
-            uint256 numberOfKeysAtValue = suppliersOnPool[_cTokenAddress].getNumberOfKeysAtValue(
-                highestValue
-            );
-            uint256 indexOfLastUnavailableSupplier;
-            // Check that there are is still a supplier having no debt on Comps is
-            while (
-                remainingToMatch > 0 && numberOfKeysAtValue - indexOfLastUnavailableSupplier > 0
-            ) {
-                address account = suppliersOnPool[_cTokenAddress].valueKeyAtIndex(
-                    highestValue,
-                    indexOfLastUnavailableSupplier
-                ); // Pick the first account in the list
-                // Check if this user is not borrowing on Comp (cf Liquidation Invariant in docs)
-                if (!_hasDebtOnPool(account)) {
-                    uint256 onPool = supplyBalanceInOf[_cTokenAddress][account].onPool; // In cToken
-                    uint256 toMatch;
-                    // This is done to prevent rounding errors
-                    if (onPool.mul(cTokenExchangeRate) <= remainingToMatch) {
-                        supplyBalanceInOf[_cTokenAddress][account].onPool = 0;
-                        toMatch = onPool.mul(cTokenExchangeRate);
-                    } else {
-                        toMatch = remainingToMatch;
-                        supplyBalanceInOf[_cTokenAddress][account].onPool -= toMatch.div(
-                            cTokenExchangeRate
-                        ); // In cToken
-                    }
-                    remainingToMatch -= toMatch;
-                    supplyBalanceInOf[_cTokenAddress][account].inP2P += toMatch.div(
-                        p2pExchangeRate
-                    ); // In p2pUnit
-                    _updateSupplierList(_cTokenAddress, account);
-                    numberOfKeysAtValue -= 1;
-                    emit SupplierMatched(account, _cTokenAddress, toMatch);
+        bool metAccountWithDebtOnPool;
+        while (remainingToMatch > 0 && account != address(0)) {
+            address tmpAccount;
+            // Check if this user is not borrowing on Cream (cf Liquidation Invariant in docs)
+            if (!_hasDebtOnPool(account)) {
+                uint256 onCream = supplyBalanceInOf[_cTokenAddress][account].onPool; // In cToken
+                uint256 toMatch;
+                // This is done to prevent rounding errors
+                if (onCream.mul(cTokenExchangeRate) <= remainingToMatch) {
+                    supplyBalanceInOf[_cTokenAddress][account].onPool = 0;
+                    toMatch = onCream.mul(cTokenExchangeRate);
                 } else {
-                    valueOfLastUnavailableSupplier = highestValue;
-                    indexOfLastUnavailableSupplier++;
+                    toMatch = remainingToMatch;
+                    supplyBalanceInOf[_cTokenAddress][account].onPool -= toMatch.div(
+                        cTokenExchangeRate
+                    ); // In cToken
                 }
+                remainingToMatch -= toMatch;
+                supplyBalanceInOf[_cTokenAddress][account].inP2P += toMatch.div(p2pExchangeRate); // In p2pUnit
+                _updateSupplierList(_cTokenAddress, account);
+                emit SupplierMatched(account, _cTokenAddress, toMatch);
+            } else {
+                metAccountWithDebtOnPool = true;
+                tmpAccount = suppliersOnPool[_cTokenAddress].prev(account);
             }
-            // Update the highest value after the tree has been updated
-            if (valueOfLastUnavailableSupplier > 0)
-                highestValue = suppliersOnPool[_cTokenAddress].prev(valueOfLastUnavailableSupplier);
-            else highestValue = suppliersOnPool[_cTokenAddress].last();
+            account = tmpAccount;
         }
         // Withdraw from Comp
         _withdrawERC20FromComp(_cTokenAddress, _amount - remainingToMatch);
@@ -639,25 +621,17 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
         remainingToUnmatch = _amount; // In underlying
         uint256 cTokenExchangeRate = cToken.exchangeRateCurrent();
         uint256 p2pExchangeRate = marketsManagerForCompound.p2pUnitExchangeRate(_cTokenAddress);
-        uint256 highestValue = suppliersInP2P[_cTokenAddress].last();
+        address account = suppliersInP2P[_cTokenAddress].last();
 
-        while (remainingToUnmatch > 0 && highestValue != 0) {
-            while (
-                remainingToUnmatch > 0 &&
-                suppliersInP2P[_cTokenAddress].getNumberOfKeysAtValue(highestValue) > 0
-            ) {
-                address account = suppliersInP2P[_cTokenAddress].valueKeyAtIndex(highestValue, 0);
-                uint256 inP2P = supplyBalanceInOf[_cTokenAddress][account].inP2P; // In cToken
-                uint256 toUnmatch = Math.min(inP2P.mul(p2pExchangeRate), remainingToUnmatch); // In underlying
-                remainingToUnmatch -= toUnmatch;
-                supplyBalanceInOf[_cTokenAddress][account].onPool += toUnmatch.div(
-                    cTokenExchangeRate
-                ); // In cToken
-                supplyBalanceInOf[_cTokenAddress][account].inP2P -= toUnmatch.div(p2pExchangeRate); // In p2pUnit
-                _updateSupplierList(_cTokenAddress, account);
-                emit SupplierUnmatched(account, _cTokenAddress, toUnmatch);
-            }
-            highestValue = suppliersInP2P[_cTokenAddress].last();
+        while (remainingToUnmatch > 0 && account != address(0)) {
+            uint256 inP2P = supplyBalanceInOf[_cTokenAddress][account].inP2P; // In cToken
+            uint256 toUnmatch = Math.min(inP2P.mul(p2pExchangeRate), remainingToUnmatch); // In underlying
+            remainingToUnmatch -= toUnmatch;
+            supplyBalanceInOf[_cTokenAddress][account].onPool += toUnmatch.div(cTokenExchangeRate); // In cToken
+            supplyBalanceInOf[_cTokenAddress][account].inP2P -= toUnmatch.div(p2pExchangeRate); // In p2pUnit
+            _updateSupplierList(_cTokenAddress, account);
+            emit SupplierUnmatched(account, _cTokenAddress, toUnmatch);
+            account = suppliersInP2P[_cTokenAddress].last();
         }
         // Supply on Comp
         _supplyERC20ToPool(_cTokenAddress, _amount - remainingToUnmatch);
@@ -678,29 +652,23 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
         remainingToMatch = _amount;
         uint256 p2pExchangeRate = marketsManagerForCompound.p2pUnitExchangeRate(_cTokenAddress);
         uint256 borrowIndex = cToken.borrowIndex();
-        uint256 highestValue = borrowersOnPool[_cTokenAddress].last();
+        address account = borrowersOnPool[_cTokenAddress].last();
 
-        while (remainingToMatch > 0 && highestValue != 0) {
-            while (
-                remainingToMatch > 0 &&
-                borrowersOnPool[_cTokenAddress].getNumberOfKeysAtValue(highestValue) > 0
-            ) {
-                address account = borrowersOnPool[_cTokenAddress].valueKeyAtIndex(highestValue, 0);
-                uint256 onPool = borrowBalanceInOf[_cTokenAddress][account].onPool; // In cToken
-                uint256 toMatch;
-                if (onPool.mul(borrowIndex) <= remainingToMatch) {
-                    toMatch = onPool.mul(borrowIndex);
-                    borrowBalanceInOf[_cTokenAddress][account].onPool = 0;
-                } else {
-                    toMatch = remainingToMatch;
-                    borrowBalanceInOf[_cTokenAddress][account].onPool -= toMatch.div(borrowIndex);
-                }
-                remainingToMatch -= toMatch;
-                borrowBalanceInOf[_cTokenAddress][account].inP2P += toMatch.div(p2pExchangeRate);
-                _updateBorrowerList(_cTokenAddress, account);
-                emit BorrowerMatched(account, _cTokenAddress, toMatch);
+        while (remainingToMatch > 0 && account != address(0)) {
+            uint256 onCream = borrowBalanceInOf[_cTokenAddress][account].onPool; // In cToken
+            uint256 toMatch;
+            if (onCream.mul(borrowIndex) <= remainingToMatch) {
+                toMatch = onCream.mul(borrowIndex);
+                borrowBalanceInOf[_cTokenAddress][account].onPool = 0;
+            } else {
+                toMatch = remainingToMatch;
+                borrowBalanceInOf[_cTokenAddress][account].onPool -= toMatch.div(borrowIndex);
             }
-            highestValue = borrowersOnPool[_cTokenAddress].last();
+            remainingToMatch -= toMatch;
+            borrowBalanceInOf[_cTokenAddress][account].inP2P += toMatch.div(p2pExchangeRate);
+            _updateBorrowerList(_cTokenAddress, account);
+            emit BorrowerMatched(account, _cTokenAddress, toMatch);
+            account = borrowersOnPool[_cTokenAddress].last();
         }
         // Repay Comp
         uint256 toRepay = _amount - remainingToMatch;
@@ -722,24 +690,18 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
         remainingToUnmatch = _amount;
         uint256 p2pExchangeRate = marketsManagerForCompound.p2pUnitExchangeRate(_cTokenAddress);
         uint256 borrowIndex = cToken.borrowIndex();
-        uint256 highestValue = borrowersInP2P[_cTokenAddress].last();
+        address account = borrowersInP2P[_cTokenAddress].last();
 
-        while (remainingToUnmatch > 0 && highestValue != 0) {
-            while (
-                remainingToUnmatch > 0 &&
-                borrowersInP2P[_cTokenAddress].getNumberOfKeysAtValue(highestValue) > 0
-            ) {
-                address account = borrowersInP2P[_cTokenAddress].valueKeyAtIndex(highestValue, 0);
-                uint256 inP2P = borrowBalanceInOf[_cTokenAddress][account].inP2P;
-                _unmatchTheSupplier(account); // Before borrowing on Comp, we put all the collateral of the borrower on Comp (cf Liquidation Invariant in docs)
-                uint256 toUnmatch = Math.min(inP2P.mul(p2pExchangeRate), remainingToUnmatch); // In underlying
-                remainingToUnmatch -= toUnmatch;
-                borrowBalanceInOf[_cTokenAddress][account].onPool += toUnmatch.div(borrowIndex);
-                borrowBalanceInOf[_cTokenAddress][account].inP2P -= toUnmatch.div(p2pExchangeRate);
-                _updateBorrowerList(_cTokenAddress, account);
-                emit BorrowerUnmatched(account, _cTokenAddress, toUnmatch);
-            }
-            highestValue = borrowersInP2P[_cTokenAddress].last();
+        while (remainingToUnmatch > 0 && account != address(0)) {
+            uint256 inP2P = borrowBalanceInOf[_cTokenAddress][account].inP2P;
+            _unmatchTheSupplier(account); // Before borrowing on Comp, we put all the collateral of the borrower on Comp (cf Liquidation Invariant in docs)
+            uint256 toUnmatch = Math.min(inP2P.mul(p2pExchangeRate), remainingToUnmatch); // In underlying
+            remainingToUnmatch -= toUnmatch;
+            borrowBalanceInOf[_cTokenAddress][account].onPool += toUnmatch.div(borrowIndex);
+            borrowBalanceInOf[_cTokenAddress][account].inP2P -= toUnmatch.div(p2pExchangeRate);
+            _updateBorrowerList(_cTokenAddress, account);
+            emit BorrowerUnmatched(account, _cTokenAddress, toUnmatch);
+            account = borrowersInP2P[_cTokenAddress].last();
         }
         // Borrow on Comp
         require(cToken.borrow(_amount - remainingToUnmatch) == 0);
