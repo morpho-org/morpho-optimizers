@@ -1,5 +1,5 @@
 const { BigNumber } = require('ethers');
-const config = require('@config/ethereum-config.json').ropsten;
+const config = require(`@config/${process.env.NETWORK}-config.json`);
 
 async function main() {
   const [deployer] = await ethers.getSigners();
@@ -13,28 +13,26 @@ async function main() {
 
   console.log('RedBlackBinaryTree address:', redBlackBinaryTree.address);
 
-  const MorphoMarketsManagerForCompLike = await ethers.getContractFactory('MorphoMarketsManagerForCompLike');
-  const morphoMarketsManagerForCompLike = await MorphoMarketsManagerForCompLike.deploy();
-  await morphoMarketsManagerForCompLike.deployed();
+  const MorphoMarketsManagerForCompound = await ethers.getContractFactory('MorphoMarketsManagerForCompound');
+  const morphoMarketsManagerForCompound = await MorphoMarketsManagerForCompound.deploy();
+  await morphoMarketsManagerForCompound.deployed();
 
-  console.log('MorphoMarketsManagerForCompLike address:', morphoMarketsManagerForCompLike.address);
+  console.log('MorphoMarketsManagerForCompound address:', morphoMarketsManagerForCompound.address);
 
-  const PositionsManagerForCompLike = await ethers.getContractFactory('PositionsManagerForCompLike', {
+  const MorphoPositionsManagerForCompound = await ethers.getContractFactory('MorphoPositionsManagerForCompound', {
     libraries: {
       RedBlackBinaryTree: redBlackBinaryTree.address,
     },
   });
-  const positionsManagerForCompLike = await PositionsManagerForCompLike.deploy(morphoMarketsManagerForCompLike.address, config.compound.comptroller.address);
-  await positionsManagerForCompLike.deployed();
+  const morphoPositionsManagerForCompound = await MorphoPositionsManagerForCompound.deploy(morphoMarketsManagerForCompound.address, config.compound.comptroller.address);
+  await morphoPositionsManagerForCompound.deployed();
 
-  console.log('PositionsManagerForCompLike address:', positionsManagerForCompLike.address);
+  console.log('MorphoPositionsManagerForCompound address:', morphoPositionsManagerForCompound.address);
 
-  await morphoMarketsManagerForCompLike.connect(deployer).setPositionsManagerForCompLike(positionsManagerForCompLike.address);
-  await morphoMarketsManagerForCompLike.connect(deployer).createMarket(config.tokens.cDai.address);
-  await morphoMarketsManagerForCompLike.connect(deployer).createMarket(config.tokens.cUsdc.address);
-  await morphoMarketsManagerForCompLike.connect(deployer).createMarket(config.tokens.cBat.address);
-  await morphoMarketsManagerForCompLike.connect(deployer).createMarket(config.tokens.cZrx.address);
-  await morphoMarketsManagerForCompLike.connect(deployer).updateThreshold(config.tokens.cUsdc.address, BigNumber.from(1).pow(6));
+  await morphoMarketsManagerForCompound.connect(deployer).setPositionsManagerForCompound(morphoPositionsManagerForCompound.address);
+  await morphoMarketsManagerForCompound.connect(deployer).createMarket(config.tokens.cDai.address);
+  await morphoMarketsManagerForCompound.connect(deployer).createMarket(config.tokens.cUsdc.address);
+  await morphoMarketsManagerForCompound.connect(deployer).updateThreshold(config.tokens.cUsdc.address, BigNumber.from(1).pow(6));
 }
 
 main()
