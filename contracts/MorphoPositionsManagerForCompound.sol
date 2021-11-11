@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.7;
 
+import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
@@ -16,6 +17,7 @@ import "./interfaces/IMarketsManagerForCompound.sol";
  */
 contract MorphoPositionsManagerForCompound is ReentrancyGuard {
     using RedBlackBinaryTree for RedBlackBinaryTree.Tree;
+    using EnumerableSet for EnumerableSet.AddressSet;
     using PRBMathUD60x18 for uint256;
     using SafeERC20 for IERC20;
     using Math for uint256;
@@ -56,10 +58,15 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
 
     /* Storage */
 
+    uint16 public NMAX = 1000;
     mapping(address => RedBlackBinaryTree.Tree) private suppliersInP2P; // Suppliers in peer-to-peer.
     mapping(address => RedBlackBinaryTree.Tree) private suppliersOnPool; // Suppliers on Comp.
     mapping(address => RedBlackBinaryTree.Tree) private borrowersInP2P; // Borrowers in peer-to-peer.
     mapping(address => RedBlackBinaryTree.Tree) private borrowersOnPool; // Borrowers on Comp.
+    mapping(address => EnumerableSet.AddressSet) private suppliersInP2PBuffer;
+    mapping(address => EnumerableSet.AddressSet) private suppliersOnPoolBuffer;
+    mapping(address => EnumerableSet.AddressSet) private borrowersInP2PBuffer;
+    mapping(address => EnumerableSet.AddressSet) private borrowersOnPoolBuffer;
     mapping(address => mapping(address => SupplyBalance)) public supplyBalanceInOf; // For a given market, the supply balance of user.
     mapping(address => mapping(address => BorrowBalance)) public borrowBalanceInOf; // For a given market, the borrow balance of user.
     mapping(address => mapping(address => bool)) public accountMembership; // Whether the account is in the market or not.
@@ -201,6 +208,13 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
      */
     function setComptroller(address _proxyComptrollerAddress) external onlyMarketsManager {
         comptroller = IComptroller(_proxyComptrollerAddress);
+    }
+
+    /** @dev Sets the maximum number of users in data structure.
+     *  @param _newMaxNumber The maximum number of users to have in the data structure.
+     */
+    function setMaxNumberOfUsersInDataStructure(uint16 _newMaxNumber) external onlyMarketsManager {
+        NMAX = _newMaxNumber;
     }
 
     /** @dev Sets the threshold of a market.
@@ -842,17 +856,65 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
      *  @param _account The address of the borrower to move.
      */
     function _updateBorrowerList(address _cTokenAddress, address _account) internal {
-        if (borrowersOnPool[_cTokenAddress].keyExists(_account))
-            borrowersOnPool[_cTokenAddress].remove(_account);
-        if (borrowersInP2P[_cTokenAddress].keyExists(_account))
-            borrowersInP2P[_cTokenAddress].remove(_account);
         uint256 onPool = borrowBalanceInOf[_cTokenAddress][_account].onPool;
-        if (onPool > 0) {
-            borrowersOnPool[_cTokenAddress].insert(_account, onPool);
-        }
         uint256 inP2P = borrowBalanceInOf[_cTokenAddress][_account].inP2P;
-        if (inP2P > 0) {
-            borrowersInP2P[_cTokenAddress].insert(_account, inP2P);
+        bool isOnPool = borrowersOnPool[_cTokenAddress].keyExists(_account);
+        bool isInP2P = borrowersInP2P[_cTokenAddress].keyExists(_account);
+
+        // Check pool
+        if (isOnPool && borrowersOnPool[_cTokenAddress].getValueOfKey(_account) != onPool) {
+            borrowersOnPool[_cTokenAddress].remove(_account);
+            if (onPool > 0) {
+                if (borrowersOnPool[_cTokenAddress].numberOfKeys() <= NMAX)
+                    borrowersOnPool[_cTokenAddress].insert(_account, onPool);
+                else borrowersOnPoolBuffer[_cTokenAddress].add(_account);
+            }
+        }
+        if (!isOnPool && onPool > 0) {
+            if (borrowersOnPool[_cTokenAddress].numberOfKeys() <= NMAX)
+                borrowersOnPool[_cTokenAddress].insert(_account, onPool);
+            else borrowersOnPoolBuffer[_cTokenAddress].add(_account);
+        }
+        if (onPool == 0 && borrowersOnPoolBuffer[_cTokenAddress].contains(_account))
+            borrowersOnPoolBuffer[_cTokenAddress].remove(_account);
+
+        // Check P2P
+        if (isInP2P && borrowersInP2P[_cTokenAddress].getValueOfKey(_account) != inP2P) {
+            borrowersInP2P[_cTokenAddress].remove(_account);
+            if (inP2P > 0) {
+                if (borrowersInP2P[_cTokenAddress].numberOfKeys() <= NMAX)
+                    borrowersInP2P[_cTokenAddress].insert(_account, inP2P);
+                else borrowersInP2PBuffer[_cTokenAddress].add(_account);
+            }
+        }
+        if (!isInP2P && inP2P > 0) {
+            if (borrowersInP2P[_cTokenAddress].numberOfKeys() <= NMAX)
+                borrowersInP2P[_cTokenAddress].insert(_account, inP2P);
+            else borrowersInP2PBuffer[_cTokenAddress].add(_account);
+        }
+        if (inP2P == 0 && borrowersInP2PBuffer[_cTokenAddress].contains(_account))
+            borrowersInP2PBuffer[_cTokenAddress].remove(_account);
+
+        // Add user to the tree if possible
+        if (
+            borrowersOnPoolBuffer[_cTokenAddress].length() > 0 &&
+            borrowersOnPool[_cTokenAddress].numberOfKeys() <= NMAX
+        ) {
+            address account = borrowersOnPoolBuffer[_cTokenAddress].at(0);
+            uint256 value = borrowBalanceInOf[_cTokenAddress][account].onPool;
+            borrowersOnPoolBuffer[_cTokenAddress].remove(account);
+            borrowersOnPool[_cTokenAddress].insert(account, value);
+        }
+
+        // Check P2P
+        if (
+            borrowersInP2PBuffer[_cTokenAddress].length() > 0 &&
+            borrowersInP2P[_cTokenAddress].numberOfKeys() <= NMAX
+        ) {
+            address account = borrowersInP2PBuffer[_cTokenAddress].at(0);
+            uint256 value = borrowBalanceInOf[_cTokenAddress][account].inP2P;
+            borrowersInP2PBuffer[_cTokenAddress].remove(account);
+            borrowersInP2P[_cTokenAddress].insert(account, value);
         }
     }
 
@@ -861,17 +923,65 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
      *  @param _account The address of the supplier to move.
      */
     function _updateSupplierList(address _cTokenAddress, address _account) internal {
-        if (suppliersOnPool[_cTokenAddress].keyExists(_account))
-            suppliersOnPool[_cTokenAddress].remove(_account);
-        if (suppliersInP2P[_cTokenAddress].keyExists(_account))
-            suppliersInP2P[_cTokenAddress].remove(_account);
         uint256 onPool = supplyBalanceInOf[_cTokenAddress][_account].onPool;
-        if (onPool > 0) {
-            suppliersOnPool[_cTokenAddress].insert(_account, onPool);
-        }
         uint256 inP2P = supplyBalanceInOf[_cTokenAddress][_account].inP2P;
-        if (inP2P > 0) {
-            suppliersInP2P[_cTokenAddress].insert(_account, inP2P);
+        bool isOnPool = suppliersOnPool[_cTokenAddress].keyExists(_account);
+        bool isInP2P = suppliersInP2P[_cTokenAddress].keyExists(_account);
+
+        // Check pool
+        if (isOnPool && suppliersOnPool[_cTokenAddress].getValueOfKey(_account) != onPool) {
+            suppliersOnPool[_cTokenAddress].remove(_account);
+            if (onPool > 0) {
+                if (suppliersOnPool[_cTokenAddress].numberOfKeys() <= NMAX)
+                    suppliersOnPool[_cTokenAddress].insert(_account, onPool);
+                else suppliersOnPoolBuffer[_cTokenAddress].add(_account);
+            }
+        }
+        if (!isOnPool && onPool > 0) {
+            if (suppliersOnPool[_cTokenAddress].numberOfKeys() <= NMAX)
+                suppliersOnPool[_cTokenAddress].insert(_account, onPool);
+            else suppliersOnPoolBuffer[_cTokenAddress].add(_account);
+        }
+        if (onPool == 0 && suppliersOnPoolBuffer[_cTokenAddress].contains(_account))
+            suppliersOnPoolBuffer[_cTokenAddress].remove(_account);
+
+        // Check P2P
+        if (isInP2P && suppliersInP2P[_cTokenAddress].getValueOfKey(_account) != inP2P) {
+            suppliersInP2P[_cTokenAddress].remove(_account);
+            if (inP2P > 0) {
+                if (suppliersInP2P[_cTokenAddress].numberOfKeys() <= NMAX)
+                    suppliersInP2P[_cTokenAddress].insert(_account, inP2P);
+                else suppliersInP2PBuffer[_cTokenAddress].add(_account);
+            }
+        }
+        if (!isInP2P && inP2P > 0) {
+            if (inP2P > 0) {
+                if (suppliersInP2P[_cTokenAddress].numberOfKeys() <= NMAX)
+                    suppliersInP2P[_cTokenAddress].insert(_account, inP2P);
+                else suppliersInP2PBuffer[_cTokenAddress].add(_account);
+            }
+        }
+        if (inP2P == 0 && suppliersInP2PBuffer[_cTokenAddress].contains(_account))
+            suppliersInP2PBuffer[_cTokenAddress].remove(_account);
+
+        // Add user to the tree if possible
+        if (
+            suppliersOnPoolBuffer[_cTokenAddress].length() > 0 &&
+            suppliersOnPool[_cTokenAddress].numberOfKeys() <= NMAX
+        ) {
+            address account = suppliersOnPoolBuffer[_cTokenAddress].at(0);
+            uint256 value = supplyBalanceInOf[_cTokenAddress][account].onPool;
+            suppliersOnPoolBuffer[_cTokenAddress].remove(account);
+            suppliersOnPool[_cTokenAddress].insert(account, value);
+        }
+        if (
+            suppliersInP2PBuffer[_cTokenAddress].length() > 0 &&
+            suppliersInP2P[_cTokenAddress].numberOfKeys() <= NMAX
+        ) {
+            address account = suppliersInP2PBuffer[_cTokenAddress].at(0);
+            uint256 value = supplyBalanceInOf[_cTokenAddress][account].inP2P;
+            suppliersInP2PBuffer[_cTokenAddress].remove(account);
+            suppliersInP2P[_cTokenAddress].insert(account, value);
         }
     }
 

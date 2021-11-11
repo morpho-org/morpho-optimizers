@@ -169,6 +169,15 @@ describe('MorphoPositionsManagerForCompound Contract', () => {
       expect(await morphoMarketsManagerForCompound.p2pUnitExchangeRate(config.tokens.cMkr.address)).to.equal(SCALE);
       expect(await morphoMarketsManagerForCompound.lastUpdateBlockNumber(config.tokens.cMkr.address)).to.equal(blockNumber);
     });
+
+    it('Should update NMAX', async () => {
+      const newNMAX = BigNumber.from(3000);
+      expect(morphoMarketsManagerForCompound.connect(supplier1).setMaxNumberOfUsersInDataStructure(newNMAX)).to.be.reverted;
+      expect(morphoMarketsManagerForCompound.connect(borrower1).setMaxNumberOfUsersInDataStructure(newNMAX)).to.be.reverted;
+      expect(morphoPositionsManagerForCompound.connect(owner).setMaxNumberOfUsersInDataStructure(newNMAX)).to.be.reverted;
+      await morphoMarketsManagerForCompound.connect(owner).setMaxNumberOfUsersInDataStructure(newNMAX);
+      expect(await morphoPositionsManagerForCompound.NMAX()).to.equal(newNMAX);
+    });
   });
 
   describe('Suppliers on Compound (no borrowers)', () => {
