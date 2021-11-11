@@ -16,9 +16,10 @@ library RedBlackBinaryTree {
     }
 
     struct Tree {
-        address root; // address of the root node
-        mapping(address => Node) nodes; // Map user's address to node
-        mapping(address => uint256) keyToValue; // Maps key to its value
+        uint256 count; // Number of nodes in the tree.
+        address root; // address of the root node.
+        mapping(address => Node) nodes; // Map user's address to node.
+        mapping(address => uint256) keyToValue; // Maps key to its value.
     }
 
     /** @dev Returns the address of the smallest value in the tree `_self`.
@@ -86,6 +87,14 @@ library RedBlackBinaryTree {
         return _self.keyToValue[_key] != 0;
     }
 
+    function numberOfKeys(Tree storage _self) public view returns (uint256) {
+        return _self.count;
+    }
+
+    function getValueOfKey(Tree storage _self, address _key) public view returns (uint256) {
+        return _self.keyToValue[_key];
+    }
+
     /** @dev Returns true if A>B according to the order relationship.
      *  @param _valueA value for user A.
      *  @param _addressA Address for user A.
@@ -129,6 +138,7 @@ library RedBlackBinaryTree {
     ) public {
         require(_value != 0, "RBBT:value-cannot-be-0");
         require(_self.keyToValue[_key] == 0, "RBBT:account-already-in");
+        _self.count++;
         _self.keyToValue[_key] = _value;
         address cursor;
         address probe = _self.root;
@@ -161,6 +171,7 @@ library RedBlackBinaryTree {
      */
     function remove(Tree storage _self, address _key) public {
         require(_self.keyToValue[_key] != 0, "RBBT:account-not-exist");
+        _self.count--;
         _self.keyToValue[_key] = 0;
         address probe;
         address cursor;
