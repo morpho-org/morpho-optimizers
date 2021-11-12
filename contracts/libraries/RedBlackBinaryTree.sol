@@ -19,6 +19,8 @@ library RedBlackBinaryTree {
         uint256 count; // Number of nodes in the tree.
         uint256 minimum;
         address minimumKey;
+        uint256 maximum;
+        address maximumKey;
         address root; // address of the root node.
         mapping(address => Node) nodes; // Map user's address to node.
         mapping(address => uint256) keyToValue; // Maps key to its value.
@@ -101,6 +103,10 @@ library RedBlackBinaryTree {
         return (_self.minimum, _self.minimumKey);
     }
 
+    function getMaximum(Tree storage _self) public view returns (uint256, address) {
+        return (_self.maximum, _self.maximumKey);
+    }
+
     /** @dev Returns true if A>B according to the order relationship.
      *  @param _valueA value for user A.
      *  @param _addressA Address for user A.
@@ -144,9 +150,13 @@ library RedBlackBinaryTree {
     ) public {
         require(_value != 0, "RBBT:value-cannot-be-0");
         require(_self.keyToValue[_key] == 0, "RBBT:account-already-in");
-        if (_self.minimum == 0 || !compare(_self.minimum, _self.minimumKey, _value, _key)) {
+        if (_self.minimum == 0 || compare(_self.minimum, _self.minimumKey, _value, _key)) {
             _self.minimumKey = _key;
             _self.minimum = _value;
+        }
+        if (_self.maximum == 0 || compare(_value, _key, _self.maximum, _self.maximumKey)) {
+            _self.maximumKey = _key;
+            _self.maximum = _value;
         }
         _self.count++;
         _self.keyToValue[_key] = _value;
@@ -182,10 +192,15 @@ library RedBlackBinaryTree {
     function remove(Tree storage _self, address _key) public {
         uint256 value = _self.keyToValue[_key];
         require(value != 0, "RBBT:account-not-exist");
-        if (value == _self.minimum) {
-            address newMinimumKey = prev(_self, _key);
+        if (value == _self.minimum && _key == _self.minimumKey) {
+            address newMinimumKey = next(_self, _key);
             _self.minimumKey = newMinimumKey;
             _self.minimum = _self.keyToValue[newMinimumKey];
+        }
+        if (value == _self.maximum && _key == _self.maximumKey) {
+            address newMaximumKey = prev(_self, _key);
+            _self.maximumKey = newMaximumKey;
+            _self.maximum = _self.keyToValue[newMaximumKey];
         }
         _self.count--;
         _self.keyToValue[_key] = 0;
@@ -320,7 +335,7 @@ library RedBlackBinaryTree {
                     _self.nodes[keyParent].red = false;
                     _self.nodes[cursor].red = false;
                     _self.nodes[_self.nodes[keyParent].parent].red = true;
-                    _key = keyParent;
+                    _key = _self.nodes[keyParent].parent;
                 } else {
                     if (_key == _self.nodes[keyParent].rightChild) {
                         _key = keyParent;
