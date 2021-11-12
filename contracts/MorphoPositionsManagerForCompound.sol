@@ -588,7 +588,7 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
         remainingToMatch = _amount; // In underlying
         uint256 p2pExchangeRate = marketsManagerForCompound.p2pUnitExchangeRate(_cTokenAddress);
         uint256 cTokenExchangeRate = cToken.exchangeRateCurrent();
-        address account = suppliersOnPool[_cTokenAddress].last();
+        (, address account) = suppliersOnPool[_cTokenAddress].getMaximum();
 
         bool metAccountWithDebtOnPool;
         while (remainingToMatch > 0 && account != address(0)) {
@@ -635,7 +635,7 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
         remainingToUnmatch = _amount; // In underlying
         uint256 cTokenExchangeRate = cToken.exchangeRateCurrent();
         uint256 p2pExchangeRate = marketsManagerForCompound.p2pUnitExchangeRate(_cTokenAddress);
-        address account = suppliersInP2P[_cTokenAddress].last();
+        (, address account) = suppliersInP2P[_cTokenAddress].getMaximum();
 
         while (remainingToUnmatch > 0 && account != address(0)) {
             uint256 inP2P = supplyBalanceInOf[_cTokenAddress][account].inP2P; // In cToken
@@ -645,7 +645,7 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
             supplyBalanceInOf[_cTokenAddress][account].inP2P -= toUnmatch.div(p2pExchangeRate); // In p2pUnit
             _updateSupplierList(_cTokenAddress, account);
             emit SupplierUnmatched(account, _cTokenAddress, toUnmatch);
-            account = suppliersInP2P[_cTokenAddress].last();
+            (, account) = suppliersInP2P[_cTokenAddress].getMaximum();
         }
         // Supply on Comp
         _supplyERC20ToPool(_cTokenAddress, _amount - remainingToUnmatch);
@@ -666,7 +666,7 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
         remainingToMatch = _amount;
         uint256 p2pExchangeRate = marketsManagerForCompound.p2pUnitExchangeRate(_cTokenAddress);
         uint256 borrowIndex = cToken.borrowIndex();
-        address account = borrowersOnPool[_cTokenAddress].last();
+        (, address account) = borrowersOnPool[_cTokenAddress].getMaximum();
 
         while (remainingToMatch > 0 && account != address(0)) {
             uint256 onCream = borrowBalanceInOf[_cTokenAddress][account].onPool; // In cToken
@@ -682,7 +682,7 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
             borrowBalanceInOf[_cTokenAddress][account].inP2P += toMatch.div(p2pExchangeRate);
             _updateBorrowerList(_cTokenAddress, account);
             emit BorrowerMatched(account, _cTokenAddress, toMatch);
-            account = borrowersOnPool[_cTokenAddress].last();
+            (, account) = borrowersOnPool[_cTokenAddress].getMaximum();
         }
         // Repay Comp
         uint256 toRepay = _amount - remainingToMatch;
@@ -704,7 +704,7 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
         remainingToUnmatch = _amount;
         uint256 p2pExchangeRate = marketsManagerForCompound.p2pUnitExchangeRate(_cTokenAddress);
         uint256 borrowIndex = cToken.borrowIndex();
-        address account = borrowersInP2P[_cTokenAddress].last();
+        (, address account) = borrowersInP2P[_cTokenAddress].getMaximum();
 
         while (remainingToUnmatch > 0 && account != address(0)) {
             uint256 inP2P = borrowBalanceInOf[_cTokenAddress][account].inP2P;
@@ -715,7 +715,7 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
             borrowBalanceInOf[_cTokenAddress][account].inP2P -= toUnmatch.div(p2pExchangeRate);
             _updateBorrowerList(_cTokenAddress, account);
             emit BorrowerUnmatched(account, _cTokenAddress, toUnmatch);
-            account = borrowersInP2P[_cTokenAddress].last();
+            (, account) = borrowersInP2P[_cTokenAddress].getMaximum();
         }
         // Borrow on Comp
         require(cToken.borrow(_amount - remainingToUnmatch) == 0);
@@ -874,7 +874,7 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
             } else {
                 (uint256 minimum, address minimumAccount) = borrowersOnPool[_cTokenAddress]
                     .getMinimum();
-                if (onPool > minimum && numberOfBorrowersOnPool > NMAX) {
+                if (onPool > minimum) {
                     borrowersOnPool[_cTokenAddress].remove(minimumAccount);
                     borrowersOnPoolBuffer[_cTokenAddress].add(minimumAccount);
                     borrowersOnPool[_cTokenAddress].insert(_account, onPool);
@@ -895,10 +895,10 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
             } else {
                 (uint256 minimum, address minimumAccount) = borrowersInP2P[_cTokenAddress]
                     .getMinimum();
-                if (onPool > minimum && numberOfBorrowersInP2P > NMAX) {
+                if (inP2P > minimum) {
                     borrowersInP2P[_cTokenAddress].remove(minimumAccount);
                     borrowersInP2PBuffer[_cTokenAddress].add(minimumAccount);
-                    borrowersInP2P[_cTokenAddress].insert(_account, onPool);
+                    borrowersInP2P[_cTokenAddress].insert(_account, inP2P);
                 } else borrowersInP2PBuffer[_cTokenAddress].add(_account);
             }
         }
@@ -945,7 +945,7 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
             } else {
                 (uint256 minimum, address minimumAccount) = suppliersOnPool[_cTokenAddress]
                     .getMinimum();
-                if (onPool > minimum && numberOfSuppliersOnPool > NMAX) {
+                if (onPool > minimum) {
                     suppliersOnPool[_cTokenAddress].remove(minimumAccount);
                     suppliersOnPoolBuffer[_cTokenAddress].add(minimumAccount);
                     suppliersOnPool[_cTokenAddress].insert(_account, onPool);
@@ -966,10 +966,10 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
             } else {
                 (uint256 minimum, address minimumAccount) = suppliersInP2P[_cTokenAddress]
                     .getMinimum();
-                if (onPool > minimum && numberOfSuppliersInP2P > NMAX) {
+                if (inP2P > minimum) {
                     suppliersInP2P[_cTokenAddress].remove(minimumAccount);
                     suppliersInP2PBuffer[_cTokenAddress].add(minimumAccount);
-                    suppliersInP2P[_cTokenAddress].insert(_account, onPool);
+                    suppliersInP2P[_cTokenAddress].insert(_account, inP2P);
                 } else suppliersInP2PBuffer[_cTokenAddress].add(_account);
             }
         }
