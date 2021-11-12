@@ -17,6 +17,8 @@ library RedBlackBinaryTree {
 
     struct Tree {
         uint256 count; // Number of nodes in the tree.
+        uint256 minimum;
+        address minimumKey;
         address root; // address of the root node.
         mapping(address => Node) nodes; // Map user's address to node.
         mapping(address => uint256) keyToValue; // Maps key to its value.
@@ -95,6 +97,10 @@ library RedBlackBinaryTree {
         return _self.keyToValue[_key];
     }
 
+    function getMinimum(Tree storage _self) public view returns (uint256, address) {
+        return (_self.minimum, _self.minimumKey);
+    }
+
     /** @dev Returns true if A>B according to the order relationship.
      *  @param _valueA value for user A.
      *  @param _addressA Address for user A.
@@ -138,6 +144,10 @@ library RedBlackBinaryTree {
     ) public {
         require(_value != 0, "RBBT:value-cannot-be-0");
         require(_self.keyToValue[_key] == 0, "RBBT:account-already-in");
+        if (_self.minimum == 0 || !compare(_self.minimum, _self.minimumKey, _value, _key)) {
+            _self.minimumKey = _key;
+            _self.minimum = _value;
+        }
         _self.count++;
         _self.keyToValue[_key] = _value;
         address cursor;
@@ -170,7 +180,13 @@ library RedBlackBinaryTree {
      *  @param _key The key to remove.
      */
     function remove(Tree storage _self, address _key) public {
-        require(_self.keyToValue[_key] != 0, "RBBT:account-not-exist");
+        uint256 value = _self.keyToValue[_key];
+        require(value != 0, "RBBT:account-not-exist");
+        if (value == _self.minimum) {
+            address newMinimumKey = prev(_self, _key);
+            _self.minimumKey = newMinimumKey;
+            _self.minimum = _self.keyToValue[newMinimumKey];
+        }
         _self.count--;
         _self.keyToValue[_key] = 0;
         address probe;

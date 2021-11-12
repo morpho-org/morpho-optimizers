@@ -858,48 +858,55 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
     function _updateBorrowerList(address _cTokenAddress, address _account) internal {
         uint256 onPool = borrowBalanceInOf[_cTokenAddress][_account].onPool;
         uint256 inP2P = borrowBalanceInOf[_cTokenAddress][_account].inP2P;
+        uint256 numberOfBorrowersOnPool = borrowersOnPool[_cTokenAddress].numberOfKeys();
+        uint256 numberOfBorrowersInP2P = borrowersInP2P[_cTokenAddress].numberOfKeys();
         bool isOnPool = borrowersOnPool[_cTokenAddress].keyExists(_account);
         bool isInP2P = borrowersInP2P[_cTokenAddress].keyExists(_account);
 
         // Check pool
-        if (isOnPool && borrowersOnPool[_cTokenAddress].getValueOfKey(_account) != onPool) {
-            borrowersOnPool[_cTokenAddress].remove(_account);
-            if (onPool > 0) {
-                if (borrowersOnPool[_cTokenAddress].numberOfKeys() <= NMAX)
-                    borrowersOnPool[_cTokenAddress].insert(_account, onPool);
-                else borrowersOnPoolBuffer[_cTokenAddress].add(_account);
-            }
-        }
-        if (!isOnPool && onPool > 0) {
-            if (borrowersOnPool[_cTokenAddress].numberOfKeys() <= NMAX)
+        bool isOnPoolAndValueChanged = isOnPool &&
+            borrowersOnPool[_cTokenAddress].getValueOfKey(_account) != onPool;
+        if (isOnPoolAndValueChanged) borrowersOnPool[_cTokenAddress].remove(_account);
+        if (onPool > 0 && ((isOnPoolAndValueChanged) || !isOnPool)) {
+            if (numberOfBorrowersOnPool <= NMAX) {
+                numberOfBorrowersOnPool++;
                 borrowersOnPool[_cTokenAddress].insert(_account, onPool);
-            else borrowersOnPoolBuffer[_cTokenAddress].add(_account);
+            } else {
+                (uint256 minimum, address minimumAccount) = borrowersOnPool[_cTokenAddress]
+                    .getMinimum();
+                if (onPool > minimum && numberOfBorrowersOnPool > NMAX) {
+                    borrowersOnPool[_cTokenAddress].remove(minimumAccount);
+                    borrowersOnPoolBuffer[_cTokenAddress].add(minimumAccount);
+                    borrowersOnPool[_cTokenAddress].insert(_account, onPool);
+                } else borrowersOnPoolBuffer[_cTokenAddress].add(_account);
+            }
         }
         if (onPool == 0 && borrowersOnPoolBuffer[_cTokenAddress].contains(_account))
             borrowersOnPoolBuffer[_cTokenAddress].remove(_account);
 
         // Check P2P
-        if (isInP2P && borrowersInP2P[_cTokenAddress].getValueOfKey(_account) != inP2P) {
-            borrowersInP2P[_cTokenAddress].remove(_account);
-            if (inP2P > 0) {
-                if (borrowersInP2P[_cTokenAddress].numberOfKeys() <= NMAX)
-                    borrowersInP2P[_cTokenAddress].insert(_account, inP2P);
-                else borrowersInP2PBuffer[_cTokenAddress].add(_account);
-            }
-        }
-        if (!isInP2P && inP2P > 0) {
-            if (borrowersInP2P[_cTokenAddress].numberOfKeys() <= NMAX)
+        bool isInP2PAndValueChanged = isInP2P &&
+            borrowersInP2P[_cTokenAddress].getValueOfKey(_account) != inP2P;
+        if (isInP2PAndValueChanged) borrowersInP2P[_cTokenAddress].remove(_account);
+        if (inP2P > 0 && (isInP2PAndValueChanged || !isInP2P)) {
+            if (numberOfBorrowersInP2P <= NMAX) {
+                numberOfBorrowersInP2P++;
                 borrowersInP2P[_cTokenAddress].insert(_account, inP2P);
-            else borrowersInP2PBuffer[_cTokenAddress].add(_account);
+            } else {
+                (uint256 minimum, address minimumAccount) = borrowersInP2P[_cTokenAddress]
+                    .getMinimum();
+                if (onPool > minimum && numberOfBorrowersInP2P > NMAX) {
+                    borrowersInP2P[_cTokenAddress].remove(minimumAccount);
+                    borrowersInP2PBuffer[_cTokenAddress].add(minimumAccount);
+                    borrowersInP2P[_cTokenAddress].insert(_account, onPool);
+                } else borrowersInP2PBuffer[_cTokenAddress].add(_account);
+            }
         }
         if (inP2P == 0 && borrowersInP2PBuffer[_cTokenAddress].contains(_account))
             borrowersInP2PBuffer[_cTokenAddress].remove(_account);
 
         // Add user to the tree if possible
-        if (
-            borrowersOnPoolBuffer[_cTokenAddress].length() > 0 &&
-            borrowersOnPool[_cTokenAddress].numberOfKeys() <= NMAX
-        ) {
+        if (borrowersOnPoolBuffer[_cTokenAddress].length() > 0 && numberOfBorrowersOnPool <= NMAX) {
             address account = borrowersOnPoolBuffer[_cTokenAddress].at(0);
             uint256 value = borrowBalanceInOf[_cTokenAddress][account].onPool;
             borrowersOnPoolBuffer[_cTokenAddress].remove(account);
@@ -907,10 +914,7 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
         }
 
         // Check P2P
-        if (
-            borrowersInP2PBuffer[_cTokenAddress].length() > 0 &&
-            borrowersInP2P[_cTokenAddress].numberOfKeys() <= NMAX
-        ) {
+        if (borrowersInP2PBuffer[_cTokenAddress].length() > 0 && numberOfBorrowersInP2P <= NMAX) {
             address account = borrowersInP2PBuffer[_cTokenAddress].at(0);
             uint256 value = borrowBalanceInOf[_cTokenAddress][account].inP2P;
             borrowersInP2PBuffer[_cTokenAddress].remove(account);
@@ -925,59 +929,61 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
     function _updateSupplierList(address _cTokenAddress, address _account) internal {
         uint256 onPool = supplyBalanceInOf[_cTokenAddress][_account].onPool;
         uint256 inP2P = supplyBalanceInOf[_cTokenAddress][_account].inP2P;
+        uint256 numberOfSuppliersOnPool = suppliersOnPool[_cTokenAddress].numberOfKeys();
+        uint256 numberOfSuppliersInP2P = suppliersInP2P[_cTokenAddress].numberOfKeys();
         bool isOnPool = suppliersOnPool[_cTokenAddress].keyExists(_account);
         bool isInP2P = suppliersInP2P[_cTokenAddress].keyExists(_account);
 
         // Check pool
-        if (isOnPool && suppliersOnPool[_cTokenAddress].getValueOfKey(_account) != onPool) {
-            suppliersOnPool[_cTokenAddress].remove(_account);
-            if (onPool > 0) {
-                if (suppliersOnPool[_cTokenAddress].numberOfKeys() <= NMAX)
-                    suppliersOnPool[_cTokenAddress].insert(_account, onPool);
-                else suppliersOnPoolBuffer[_cTokenAddress].add(_account);
-            }
-        }
-        if (!isOnPool && onPool > 0) {
-            if (suppliersOnPool[_cTokenAddress].numberOfKeys() <= NMAX)
+        bool isOnPoolAndValueChanged = isOnPool &&
+            suppliersOnPool[_cTokenAddress].getValueOfKey(_account) != onPool;
+        if (isOnPoolAndValueChanged) suppliersOnPool[_cTokenAddress].remove(_account);
+        if (onPool > 0 && (isOnPoolAndValueChanged || !isOnPool)) {
+            if (numberOfSuppliersOnPool <= NMAX) {
+                numberOfSuppliersOnPool++;
                 suppliersOnPool[_cTokenAddress].insert(_account, onPool);
-            else suppliersOnPoolBuffer[_cTokenAddress].add(_account);
+            } else {
+                (uint256 minimum, address minimumAccount) = suppliersOnPool[_cTokenAddress]
+                    .getMinimum();
+                if (onPool > minimum && numberOfSuppliersOnPool > NMAX) {
+                    suppliersOnPool[_cTokenAddress].remove(minimumAccount);
+                    suppliersOnPoolBuffer[_cTokenAddress].add(minimumAccount);
+                    suppliersOnPool[_cTokenAddress].insert(_account, onPool);
+                } else suppliersOnPoolBuffer[_cTokenAddress].add(_account);
+            }
         }
         if (onPool == 0 && suppliersOnPoolBuffer[_cTokenAddress].contains(_account))
             suppliersOnPoolBuffer[_cTokenAddress].remove(_account);
 
         // Check P2P
-        if (isInP2P && suppliersInP2P[_cTokenAddress].getValueOfKey(_account) != inP2P) {
-            suppliersInP2P[_cTokenAddress].remove(_account);
-            if (inP2P > 0) {
-                if (suppliersInP2P[_cTokenAddress].numberOfKeys() <= NMAX)
-                    suppliersInP2P[_cTokenAddress].insert(_account, inP2P);
-                else suppliersInP2PBuffer[_cTokenAddress].add(_account);
-            }
-        }
-        if (!isInP2P && inP2P > 0) {
-            if (inP2P > 0) {
-                if (suppliersInP2P[_cTokenAddress].numberOfKeys() <= NMAX)
-                    suppliersInP2P[_cTokenAddress].insert(_account, inP2P);
-                else suppliersInP2PBuffer[_cTokenAddress].add(_account);
+        bool isInP2PAndValueChanged = isInP2P &&
+            suppliersInP2P[_cTokenAddress].getValueOfKey(_account) != inP2P;
+        if (isInP2PAndValueChanged) suppliersInP2P[_cTokenAddress].remove(_account);
+        if (inP2P > 0 && (isInP2PAndValueChanged || !isInP2P)) {
+            if (numberOfSuppliersInP2P <= NMAX) {
+                numberOfSuppliersInP2P++;
+                suppliersInP2P[_cTokenAddress].insert(_account, inP2P);
+            } else {
+                (uint256 minimum, address minimumAccount) = suppliersInP2P[_cTokenAddress]
+                    .getMinimum();
+                if (onPool > minimum && numberOfSuppliersInP2P > NMAX) {
+                    suppliersInP2P[_cTokenAddress].remove(minimumAccount);
+                    suppliersInP2PBuffer[_cTokenAddress].add(minimumAccount);
+                    suppliersInP2P[_cTokenAddress].insert(_account, onPool);
+                } else suppliersInP2PBuffer[_cTokenAddress].add(_account);
             }
         }
         if (inP2P == 0 && suppliersInP2PBuffer[_cTokenAddress].contains(_account))
             suppliersInP2PBuffer[_cTokenAddress].remove(_account);
 
         // Add user to the tree if possible
-        if (
-            suppliersOnPoolBuffer[_cTokenAddress].length() > 0 &&
-            suppliersOnPool[_cTokenAddress].numberOfKeys() <= NMAX
-        ) {
+        if (suppliersOnPoolBuffer[_cTokenAddress].length() > 0 && numberOfSuppliersOnPool <= NMAX) {
             address account = suppliersOnPoolBuffer[_cTokenAddress].at(0);
             uint256 value = supplyBalanceInOf[_cTokenAddress][account].onPool;
             suppliersOnPoolBuffer[_cTokenAddress].remove(account);
             suppliersOnPool[_cTokenAddress].insert(account, value);
         }
-        if (
-            suppliersInP2PBuffer[_cTokenAddress].length() > 0 &&
-            suppliersInP2P[_cTokenAddress].numberOfKeys() <= NMAX
-        ) {
+        if (suppliersInP2PBuffer[_cTokenAddress].length() > 0 && numberOfSuppliersInP2P <= NMAX) {
             address account = suppliersInP2PBuffer[_cTokenAddress].at(0);
             uint256 value = supplyBalanceInOf[_cTokenAddress][account].inP2P;
             suppliersInP2PBuffer[_cTokenAddress].remove(account);
