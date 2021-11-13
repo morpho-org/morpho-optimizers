@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.7;
 
 import {ICErc20, ICToken} from "../interfaces/compound/ICompound.sol";

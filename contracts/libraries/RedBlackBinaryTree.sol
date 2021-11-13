@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: BSD-2-Clause
 pragma solidity 0.8.7;
 
 // A Solidity Red-Black Tree library to store and maintain a sorted data structure in a Red-Black binary search tree,
