@@ -4,6 +4,7 @@ pragma solidity 0.8.7;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "prb-math/contracts/PRBMathUD60x18.sol";
+import "./compound-math/CompoundMath.sol";
 
 import {ICErc20, IComptroller} from "./interfaces/compound/ICompound.sol";
 import "./interfaces/IPositionsManagerForCompound.sol";
@@ -14,7 +15,7 @@ import "./interfaces/IMarketsManagerForCompound.sol";
  *  @dev Smart contract managing the markets used by MorphoPositionsManagerForX, an other contract interacting with X: Compound or a fork of Compound.
  */
 contract MorphoMarketsManagerForCompound is Ownable {
-    using PRBMathUD60x18 for uint256;
+    using CompoundMath for uint256;
     using Math for uint256;
 
     /* Storage */
@@ -176,9 +177,7 @@ contract MorphoMarketsManagerForCompound is Ownable {
             lastUpdateBlockNumber[_marketAddress] = currentBlock;
 
             uint256 newP2pUnitExchangeRate = p2pUnitExchangeRate[_marketAddress].mul(
-                (1e18 + p2pBPY[_marketAddress]).pow(
-                    PRBMathUD60x18.fromUint(numberOfBlocksSinceLastUpdate)
-                )
+                PRBMathUD60x18.pow(1e18 + p2pBPY[_marketAddress], PRBMathUD60x18.fromUint(numberOfBlocksSinceLastUpdate))
             );
 
             // Update currentExchangeRate
