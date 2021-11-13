@@ -672,7 +672,7 @@ describe('MorphoPositionsManagerForCompound Contract', () => {
       const cTokenExchangeRate1 = await cDaiToken.callStatic.exchangeRateStored();
       const expectedMorphoBorrowBalance1 = toBorrow.sub(cTokenToUnderlying(supplyBalanceOnPool, cTokenExchangeRate1));
       const morphoBorrowBalanceBefore1 = await cDaiToken.callStatic.borrowBalanceCurrent(morphoPositionsManagerForCompound.address);
-      expect(removeDigitsBigNumber(6, morphoBorrowBalanceBefore1)).to.equal(removeDigitsBigNumber(6, expectedMorphoBorrowBalance1));
+      expect(removeDigitsBigNumber(7, morphoBorrowBalanceBefore1)).to.equal(removeDigitsBigNumber(7, expectedMorphoBorrowBalance1));
       await daiToken.connect(borrower1).approve(morphoPositionsManagerForCompound.address, amountToApprove);
 
       const borrowerBalanceInP2P = (await morphoPositionsManagerForCompound.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).inP2P;
@@ -835,7 +835,7 @@ describe('MorphoPositionsManagerForCompound Contract', () => {
     });
   });
 
-  describe('Test liquidation', () => {
+  describe.only('Test liquidation', () => {
     it('Borrower should be liquidated while supply (collateral) is only on Compound', async () => {
       // Deploy custom price oracle
       const PriceOracle = await ethers.getContractFactory('SimplePriceOracle');
