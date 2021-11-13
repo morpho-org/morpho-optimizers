@@ -994,8 +994,8 @@ describe('MorphoPositionsManagerForCompound Contract', () => {
 
       // Check liquidatee balances
       expect(removeDigitsBigNumber(4, (await morphoPositionsManagerForCompound.supplyBalanceInOf(config.tokens.cUsdc.address, borrower1.getAddress())).onPool)).to.equal(0);
-      expect(removeDigitsBigNumber(2, (await morphoPositionsManagerForCompound.supplyBalanceInOf(config.tokens.cUsdc.address, borrower1.getAddress())).inP2P)).to.equal(
-        removeDigitsBigNumber(2, expectedCollateralBalanceInP2PAfter)
+      expect(removeDigitsBigNumber(3, (await morphoPositionsManagerForCompound.supplyBalanceInOf(config.tokens.cUsdc.address, borrower1.getAddress())).inP2P)).to.equal(
+        removeDigitsBigNumber(3, expectedCollateralBalanceInP2PAfter)
       );
       expect((await morphoPositionsManagerForCompound.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onPool).to.equal(0);
       expect((await morphoPositionsManagerForCompound.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).inP2P).to.equal(expectedBorrowBalanceInP2PAfter);
