@@ -63,10 +63,10 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
     mapping(address => RedBlackBinaryTree.Tree) private suppliersOnPool; // Suppliers on Comp.
     mapping(address => RedBlackBinaryTree.Tree) private borrowersInP2P; // Borrowers in peer-to-peer.
     mapping(address => RedBlackBinaryTree.Tree) private borrowersOnPool; // Borrowers on Comp.
-    mapping(address => EnumerableSet.AddressSet) private suppliersInP2PBuffer;
-    mapping(address => EnumerableSet.AddressSet) private suppliersOnPoolBuffer;
-    mapping(address => EnumerableSet.AddressSet) private borrowersInP2PBuffer;
-    mapping(address => EnumerableSet.AddressSet) private borrowersOnPoolBuffer;
+    mapping(address => EnumerableSet.AddressSet) private suppliersInP2PBuffer; // Buffer of suppliers in peer-to-peer.
+    mapping(address => EnumerableSet.AddressSet) private suppliersOnPoolBuffer; // Buffer of suppliers on Comp.
+    mapping(address => EnumerableSet.AddressSet) private borrowersInP2PBuffer; // Buffer of borrowers in peer-to-peer.
+    mapping(address => EnumerableSet.AddressSet) private borrowersOnPoolBuffer; // Buffer of borrowers on Comp.
     mapping(address => mapping(address => SupplyBalance)) public supplyBalanceInOf; // For a given market, the supply balance of user.
     mapping(address => mapping(address => BorrowBalance)) public borrowBalanceInOf; // For a given market, the borrow balance of user.
     mapping(address => mapping(address => bool)) public accountMembership; // Whether the account is in the market or not.
