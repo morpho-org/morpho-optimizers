@@ -805,12 +805,10 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
         )
     {
         // Avoid stack too deep error
-        BalanceStateVars memory balanceState;
+        BalanceStateVars memory vars;
         ICompoundOracle compoundOracle = ICompoundOracle(comptroller.oracle());
 
         for (uint256 i; i < enteredMarkets[_account].length; i++) {
-            // Avoid stack too deep error
-            BalanceStateVars memory vars;
             vars.cTokenEntered = enteredMarkets[_account][i];
             vars.p2pExchangeRate = marketsManagerForCompound.updateP2pUnitExchangeRate(
                 vars.cTokenEntered
@@ -833,22 +831,22 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
 
             if (_cTokenAddress == vars.cTokenEntered) {
                 vars.debtToAdd += _borrowedAmount;
-                balanceState.redeemedValue = _withdrawnAmount.mul(vars.underlyingPrice);
+                vars.redeemedValue = _withdrawnAmount.mul(vars.underlyingPrice);
             }
             // Conversion of the collateral to dollars
             vars.collateralToAdd = vars.collateralToAdd.mul(vars.underlyingPrice);
             // Add the debt in this market to the global debt (in dollars)
-            balanceState.debtValue += vars.debtToAdd.mul(vars.underlyingPrice);
+            vars.debtValue += vars.debtToAdd.mul(vars.underlyingPrice);
             // Add the collateral value in this asset to the global collateral value (in dollars)
-            balanceState.collateralValue += vars.collateralToAdd;
+            vars.collateralValue += vars.collateralToAdd;
             (, uint256 collateralFactorMantissa, ) = comptroller.markets(vars.cTokenEntered);
             // Add the max debt value allowed by the collateral in this asset to the global max debt value (in dollars)
-            balanceState.maxDebtValue += vars.collateralToAdd.mul(collateralFactorMantissa);
+            vars.maxDebtValue += vars.collateralToAdd.mul(collateralFactorMantissa);
         }
 
-        balanceState.collateralValue -= balanceState.redeemedValue;
+        vars.collateralValue -= vars.redeemedValue;
 
-        return (balanceState.debtValue, balanceState.maxDebtValue, balanceState.collateralValue);
+        return (vars.debtValue, vars.maxDebtValue, vars.collateralValue);
     }
 
     /** @dev Updates borrowers tree with the new balances of a given account.
