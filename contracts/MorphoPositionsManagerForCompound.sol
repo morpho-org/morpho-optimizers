@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
-import "prb-math/contracts/PRBMathUD60x18.sol";
+import "./compound-math/CompoundMath.sol";
 
 import "./libraries/RedBlackBinaryTree.sol";
 import {ICErc20, IComptroller, ICompoundOracle} from "./interfaces/compound/ICompound.sol";
@@ -18,7 +18,7 @@ import "./interfaces/IMarketsManagerForCompound.sol";
 contract MorphoPositionsManagerForCompound is ReentrancyGuard {
     using RedBlackBinaryTree for RedBlackBinaryTree.Tree;
     using EnumerableSet for EnumerableSet.AddressSet;
-    using PRBMathUD60x18 for uint256;
+    using CompoundMath for uint256;
     using SafeERC20 for IERC20;
     using Math for uint256;
 
@@ -396,7 +396,6 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
             );
 
         require(vars.amountToSeize <= totalCollateral, "liquidate:to-seize>collateral");
-
         _withdraw(_cTokenCollateralAddress, vars.amountToSeize, _borrower, msg.sender);
     }
 
@@ -436,10 +435,8 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
             }
             /* CASE 2: User withdraws more than his Comp supply balance */
             else {
-                _withdrawERC20FromComp(_cTokenAddress, amountOnPoolInUnderlying); // Revert on error
-                supplyBalanceInOf[_cTokenAddress][_holder].onPool -= amountOnPoolInUnderlying.div(
-                    cTokenExchangeRate
-                ); // Not set to 0 due to rounding errors.
+                require(cToken.redeem(supplyBalanceInOf[_cTokenAddress][_holder].onPool) == 0, "_withdraw:redeem-comp-fail");
+                supplyBalanceInOf[_cTokenAddress][_holder].onPool = 0;
                 remainingToWithdraw = _amount - amountOnPoolInUnderlying; // In underlying
             }
         }
@@ -571,6 +568,10 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
      */
     function _withdrawERC20FromComp(address _cTokenAddress, uint256 _amount) internal {
         ICErc20 cToken = ICErc20(_cTokenAddress);
+
+        // the 'rounding error' bug that is happening : we ask to redeem dust, due to rounding errors inside compound, this dust is eventually considered zero,
+        // and a check prohibits this.
+        // empirical : equal or lower to 217102158 : will fail
         require(cToken.redeemUnderlying(_amount) == 0, "_withdrawERC20FromComp:redeem-comp-fail");
     }
 
