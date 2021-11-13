@@ -16,13 +16,13 @@ library RedBlackBinaryTree {
     }
 
     struct Tree {
-        uint256 count; // Number of nodes in the tree.
-        uint256 minimum;
-        address minimumKey;
-        uint256 maximum;
-        address maximumKey;
-        address root; // address of the root node.
-        mapping(address => Node) nodes; // Map user's address to node.
+        uint256 count; // The umber of nodes in the tree.
+        uint256 minimum; // The inimum value of the tree.
+        address minimumKey; // The key related to the minimum value.
+        uint256 maximum; // The maximum value of the tree.
+        address maximumKey; // Key related to the maximum value.
+        address root; // the ddress of the root node.
+        mapping(address => Node) nodes; // Maps user's address to node.
         mapping(address => uint256) keyToValue; // Maps key to its value.
     }
 
@@ -91,18 +91,35 @@ library RedBlackBinaryTree {
         return _self.keyToValue[_key] != 0;
     }
 
+    /** @dev Returns the number of keys in the tree.
+     *  @param _self The tree to search in.
+     *  @return The number of keys.
+     */
     function numberOfKeys(Tree storage _self) public view returns (uint256) {
         return _self.count;
     }
 
+    /** @dev Returns the value related to the given the `_key`.
+     *  @param _self The tree to search in.
+     *  @param _key The key to search for.
+     *  @return The value related to the given the `_key`. 0 if the key does not exist.
+     */
     function getValueOfKey(Tree storage _self, address _key) public view returns (uint256) {
         return _self.keyToValue[_key];
     }
 
+    /** @dev Returns the minimum value of the tree and the related address.
+     *  @param _self The tree to search in.
+     *  @return (The minimum of the tree, The address related to the minimum).
+     */
     function getMinimum(Tree storage _self) public view returns (uint256, address) {
         return (_self.minimum, _self.minimumKey);
     }
 
+    /** @dev Returns the maximum value of the tree and the related address.
+     *  @param _self The tree to search in.
+     *  @return (The minimum of the tree, The address related to the maximum).
+     */
     function getMaximum(Tree storage _self) public view returns (uint256, address) {
         return (_self.maximum, _self.maximumKey);
     }
@@ -277,20 +294,20 @@ library RedBlackBinaryTree {
      */
     function rotateLeft(Tree storage _self, address _key) private {
         address cursor = _self.nodes[_key].rightChild;
-        address parent = _self.nodes[_key].parent;
+        address keyParent = _self.nodes[_key].parent;
         address cursorLeft = _self.nodes[cursor].leftChild;
         _self.nodes[_key].rightChild = cursorLeft;
 
         if (cursorLeft != address(0)) {
             _self.nodes[cursorLeft].parent = _key;
         }
-        _self.nodes[cursor].parent = parent;
-        if (parent == address(0)) {
+        _self.nodes[cursor].parent = keyParent;
+        if (keyParent == address(0)) {
             _self.root = cursor;
-        } else if (_key == _self.nodes[parent].leftChild) {
-            _self.nodes[parent].leftChild = cursor;
+        } else if (_key == _self.nodes[keyParent].leftChild) {
+            _self.nodes[keyParent].leftChild = cursor;
         } else {
-            _self.nodes[parent].rightChild = cursor;
+            _self.nodes[keyParent].rightChild = cursor;
         }
         _self.nodes[cursor].leftChild = _key;
         _self.nodes[_key].parent = cursor;
@@ -303,19 +320,19 @@ library RedBlackBinaryTree {
      */
     function rotateRight(Tree storage _self, address _key) private {
         address cursor = _self.nodes[_key].leftChild;
-        address parent = _self.nodes[_key].parent;
+        address keyParent = _self.nodes[_key].parent;
         address cursorRight = _self.nodes[cursor].rightChild;
         _self.nodes[_key].leftChild = cursorRight;
         if (cursorRight != address(0)) {
             _self.nodes[cursorRight].parent = _key;
         }
-        _self.nodes[cursor].parent = parent;
-        if (parent == address(0)) {
+        _self.nodes[cursor].parent = keyParent;
+        if (keyParent == address(0)) {
             _self.root = cursor;
-        } else if (_key == _self.nodes[parent].rightChild) {
-            _self.nodes[parent].rightChild = cursor;
+        } else if (_key == _self.nodes[keyParent].rightChild) {
+            _self.nodes[keyParent].rightChild = cursor;
         } else {
-            _self.nodes[parent].leftChild = cursor;
+            _self.nodes[keyParent].leftChild = cursor;
         }
         _self.nodes[cursor].rightChild = _key;
         _self.nodes[_key].parent = cursor;
