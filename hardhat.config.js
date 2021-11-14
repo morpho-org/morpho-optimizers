@@ -18,24 +18,24 @@ module.exports = {
       blockNumber: process.env.NETWORK == 'mainnet' ? 7710600 : 19416594, // Beginning from a specific block number allows caching data and a faster setup
     },
     kovan: {
-      accounts: ['0xae756dcb08a84a119e4910d1ba4dfeb180b0ec5ec4a25223fae2669f36559dd1'],
+      accounts: [process.env.DEPLOYER_PRIVATE_KEY],
       // privateKey: "0x574028dad40752ed4448624f35ecb32821b0b0791652a34c10aa78053a08a730",
       url: `https://kovan.infura.io/v3/${process.env.INFURA_PROJECT_ID}`,
     },
     rinkeby: {
-      accounts: ['0xae756dcb08a84a119e4910d1ba4dfeb180b0ec5ec4a25223fae2669f36559dd1'],
+      accounts: [process.env.DEPLOYER_PRIVATE_KEY],
       url: `https://rinkeby.infura.io/v3/${process.env.INFURA_PROJECT_ID}`,
       gas: 2100000,
       gasPrice: 8000000000,
     },
     ropsten: {
-      accounts: ['0xae756dcb08a84a119e4910d1ba4dfeb180b0ec5ec4a25223fae2669f36559dd1'],
+      accounts: [process.env.DEPLOYER_PRIVATE_KEY],
       url: `https://ropsten.infura.io/v3/${process.env.INFURA_PROJECT_ID}`,
       gas: 2100000,
       gasPrice: 8000000000,
     },
     polygon: {
-      accounts: [process.env.DEPLOYER_ADDRESS],
+      accounts: [process.env.DEPLOYER_PRIVATE_KEY],
       url: `https://polygon-mainnet.infura.io/v3/${process.env.INFURA_PROJECT_ID}`,
       gas: 2100000,
       gasPrice: 8000000000,
