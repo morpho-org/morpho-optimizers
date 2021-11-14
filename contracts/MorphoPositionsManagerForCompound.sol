@@ -2,11 +2,11 @@
 pragma solidity 0.8.7;
 
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
-import "./compound-math/CompoundMath.sol";
 
+import "./libraries/SafeERC20.sol";
+import "./compound-math/CompoundMath.sol";
 import "./libraries/RedBlackBinaryTree.sol";
 import {ICErc20, IComptroller, ICompoundOracle} from "./interfaces/compound/ICompound.sol";
 import "./interfaces/IMarketsManagerForCompound.sol";
@@ -174,6 +174,17 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
     modifier onlyMarketsManager() {
         require(msg.sender == address(marketsManagerForCompound), "only-mkt-manager");
         _;
+    }
+
+    /** @dev Skips the operation if it is unsafe due to coumpound's revert on low levels of precision
+     *  @param _amount The amount of token considered for depositing/redeeming
+     *  @param _cTokenAddress cToken address of the considered market
+     */
+    modifier isAboveCompoundThreshold(address _cTokenAddress, uint256 _amount){
+        IERC20Metadata token = IERC20Metadata(ICErc20(_cTokenAddress).underlying());
+        if(_amount > 2 * 10 ** (18 - token.decimals())){
+            _;
+        }
     }
 
     /* Constructor */
@@ -429,8 +440,8 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
             if (_amount <= amountOnPoolInUnderlying) {
                 _withdrawERC20FromComp(_cTokenAddress, _amount); // Revert on error
                 supplyBalanceInOf[_cTokenAddress][_holder].onPool -= _amount.div(
-                    cTokenExchangeRate
-                ); // In cToken
+                        cTokenExchangeRate
+                    ); // In cToken
                 remainingToWithdraw = 0; // In underlying
             }
             /* CASE 2: User withdraws more than his Comp supply balance */
@@ -555,7 +566,7 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
      *  @param _cTokenAddress The address of the market the user wants to interact with.
      *  @param _amount The amount in ERC20 tokens to supply.
      */
-    function _supplyERC20ToPool(address _cTokenAddress, uint256 _amount) internal {
+    function _supplyERC20ToPool(address _cTokenAddress, uint256 _amount) internal isAboveCompoundThreshold(_cTokenAddress, _amount) {
         ICErc20 cToken = ICErc20(_cTokenAddress);
         IERC20 underlyingToken = IERC20(cToken.underlying());
         underlyingToken.safeApprove(_cTokenAddress, _amount);
@@ -566,7 +577,7 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
      *  @param _cTokenAddress The address of the market the user wants to interact with.
      *  @param _amount The amount of tokens to be withdrawn.
      */
-    function _withdrawERC20FromComp(address _cTokenAddress, uint256 _amount) internal {
+    function _withdrawERC20FromComp(address _cTokenAddress, uint256 _amount) internal isAboveCompoundThreshold(_cTokenAddress, _amount) {
         ICErc20 cToken = ICErc20(_cTokenAddress);
 
         // the 'rounding error' bug that is happening : we ask to redeem dust, due to rounding errors inside compound, this dust is eventually considered zero,
