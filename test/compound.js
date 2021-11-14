@@ -835,7 +835,7 @@ describe('MorphoPositionsManagerForCompound Contract', () => {
     });
   });
 
-  describe.only('Test liquidation', () => {
+  describe('Test liquidation', () => {
     it('Borrower should be liquidated while supply (collateral) is only on Compound', async () => {
       // Deploy custom price oracle
       const PriceOracle = await ethers.getContractFactory('SimplePriceOracle');
