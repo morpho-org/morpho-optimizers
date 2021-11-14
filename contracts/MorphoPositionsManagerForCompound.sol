@@ -400,6 +400,21 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
         _withdraw(_cTokenCollateralAddress, vars.amountToSeize, _borrower, msg.sender);
     }
 
+    /** @dev Returns the debt value, max debt value and collateral value of a given user.
+     *  @param _account The user to determine liquidity for.
+     *  @return (debtValue, maxDebtValue, collateralValue).
+     */
+    function getUserBalanceStates(address _account)
+        external
+        returns (
+            uint256,
+            uint256,
+            uint256
+        )
+    {
+        return _getUserHypotheticalBalanceStates(_account, address(0), 0, 0);
+    }
+
     /* Internal */
 
     /** @dev Withdraws ERC20 tokens from supply.
@@ -789,7 +804,7 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
      *  @param _cTokenAddress The market to hypothetically withdraw/borrow in.
      *  @param _withdrawnAmount The number of tokens to hypothetically withdraw.
      *  @param _borrowedAmount The amount of underlying to hypothetically borrow.
-     *  @return (debtValue, maxDebtValue collateralValue).
+     *  @return (debtValue, maxDebtValue, collateralValue).
      */
     function _getUserHypotheticalBalanceStates(
         address _account,
