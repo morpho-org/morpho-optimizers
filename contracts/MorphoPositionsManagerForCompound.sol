@@ -4,8 +4,9 @@ pragma solidity 0.8.7;
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-import "./libraries/SafeERC20.sol";
 import "./compound-math/CompoundMath.sol";
 import "./libraries/RedBlackBinaryTree.sol";
 import {ICErc20, IComptroller, ICompoundOracle} from "./interfaces/compound/ICompound.sol";
