@@ -177,7 +177,10 @@ contract MorphoMarketsManagerForCompound is Ownable {
             lastUpdateBlockNumber[_marketAddress] = currentBlock;
 
             uint256 newP2pUnitExchangeRate = p2pUnitExchangeRate[_marketAddress].mul(
-                PRBMathUD60x18.pow(1e18 + p2pBPY[_marketAddress], PRBMathUD60x18.fromUint(numberOfBlocksSinceLastUpdate))
+                PRBMathUD60x18.pow(
+                    1e18 + p2pBPY[_marketAddress],
+                    PRBMathUD60x18.fromUint(numberOfBlocksSinceLastUpdate)
+                )
             );
 
             // Update currentExchangeRate
