@@ -31,7 +31,10 @@ library SafeERC20 {
         address to,
         uint256 value
     ) internal {
-        _callOptionalReturn(token, abi.encodeWithSelector(token.transferFrom.selector, from, to, value));
+        _callOptionalReturn(
+            token,
+            abi.encodeWithSelector(token.transferFrom.selector, from, to, value)
+        );
     }
 
     /**
@@ -62,7 +65,10 @@ library SafeERC20 {
         uint256 value
     ) internal {
         uint256 newAllowance = token.allowance(address(this), spender) + value;
-        _callOptionalReturn(token, abi.encodeWithSelector(token.approve.selector, spender, newAllowance));
+        _callOptionalReturn(
+            token,
+            abi.encodeWithSelector(token.approve.selector, spender, newAllowance)
+        );
     }
 
     function safeDecreaseAllowance(
@@ -74,7 +80,10 @@ library SafeERC20 {
             uint256 oldAllowance = token.allowance(address(this), spender);
             require(oldAllowance >= value, "SafeERC20: decreased allowance below zero");
             uint256 newAllowance = oldAllowance - value;
-            _callOptionalReturn(token, abi.encodeWithSelector(token.approve.selector, spender, newAllowance));
+            _callOptionalReturn(
+                token,
+                abi.encodeWithSelector(token.approve.selector, spender, newAllowance)
+            );
         }
     }
 
@@ -89,7 +98,10 @@ library SafeERC20 {
         // we're implementing it ourselves. We use {Address.functionCall} to perform this call, which verifies that
         // the target address contains contract code and also asserts for success in the low-level call.
 
-        bytes memory returndata = address(token).functionCall(data, "SafeERC20: low-level call failed");
+        bytes memory returndata = address(token).functionCall(
+            data,
+            "SafeERC20: low-level call failed"
+        );
         if (returndata.length > 0) {
             // Return data is optional
             require(abi.decode(returndata, (bool)), "SafeERC20: ERC20 operation did not succeed");
