@@ -41,7 +41,7 @@
     },
     "usdt": {
       "address": "0xc2132d05d31c914a87c6611c10748aeb04b58e8f",
-      "whale": "0x44aaa9ebafb4557605de574d5e968589dc3a84d1",
+      "whale": "0x0d0707963952f2fba59dd06f2b425ace40b492fe",
       "abi": "@config/abis/USDT.json"
     },
     "uni": {
