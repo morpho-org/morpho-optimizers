@@ -56,6 +56,8 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
         uint256 collateralOnPoolInUnderlying; // The amount of underlying the liquidatee has on Comp.
     }
 
+    uint8 constant private CTOKEN_DECIMALS = 8;
+
     /* Storage */
 
     uint16 public NMAX = 1000;
@@ -182,8 +184,17 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
      */
     modifier isAboveCompoundThreshold(address _cTokenAddress, uint256 _amount){
         IERC20Metadata token = IERC20Metadata(ICErc20(_cTokenAddress).underlying());
-        if(_amount > 2 * 10 ** (18 - token.decimals())){
-            _;
+        uint8 tokenDecimals = token.decimals();
+        if(tokenDecimals > CTOKEN_DECIMALS){
+            // we multiply by 2 to have a safety buffer
+            if(_amount > 2 * 10 ** (token.decimals() - CTOKEN_DECIMALS)){
+                _;
+            }
+        } else {
+            // we multiply by 2 to have a safety buffer
+            if(_amount > 2 * 10 ** (CTOKEN_DECIMALS - token.decimals())){
+                _;
+            }
         }
     }
 
@@ -303,8 +314,7 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
         if (suppliersOnPool[_cTokenAddress].isNotEmpty()) {
             uint256 p2pExchangeRate = marketsManagerForCompound.p2pUnitExchangeRate(_cTokenAddress);
             remainingToBorrowOnPool = _matchSuppliers(_cTokenAddress, _amount); // In underlying
-            uint256 matched = _amount - remainingToBorrowOnPool;
-
+            uint256 matched = _amount - remainingToBorrowOnPool;            
             if (matched > 0) {
                 borrowBalanceInOf[_cTokenAddress][msg.sender].inP2P += matched.div(p2pExchangeRate); // In p2pUnit
             }
@@ -579,10 +589,6 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
      */
     function _withdrawERC20FromComp(address _cTokenAddress, uint256 _amount) internal isAboveCompoundThreshold(_cTokenAddress, _amount) {
         ICErc20 cToken = ICErc20(_cTokenAddress);
-
-        // the 'rounding error' bug that is happening : we ask to redeem dust, due to rounding errors inside compound, this dust is eventually considered zero,
-        // and a check prohibits this.
-        // empirical : equal or lower to 217102158 : will fail
         require(cToken.redeemUnderlying(_amount) == 0, "_withdrawERC20FromComp:redeem-comp-fail");
     }
 
