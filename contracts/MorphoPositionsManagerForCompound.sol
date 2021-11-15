@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.7;
 
+import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import "./compound-math/CompoundMath.sol";
 import "./libraries/RedBlackBinaryTree.sol";
@@ -57,10 +57,9 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
         uint256 collateralOnPoolInUnderlying; // The amount of underlying the liquidatee has on Comp.
     }
 
-    uint8 constant private CTOKEN_DECIMALS = 8;
-
     /* Storage */
 
+    uint8 private constant CTOKEN_DECIMALS = 8;
     uint16 public NMAX = 1000;
     mapping(address => RedBlackBinaryTree.Tree) private suppliersInP2P; // Suppliers in peer-to-peer.
     mapping(address => RedBlackBinaryTree.Tree) private suppliersOnPool; // Suppliers on Comp.
@@ -183,17 +182,17 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
      *  @param _amount The amount of token considered for depositing/redeeming
      *  @param _cTokenAddress cToken address of the considered market
      */
-    modifier isAboveCompoundThreshold(address _cTokenAddress, uint256 _amount){
+    modifier isAboveCompoundThreshold(address _cTokenAddress, uint256 _amount) {
         IERC20Metadata token = IERC20Metadata(ICErc20(_cTokenAddress).underlying());
         uint8 tokenDecimals = token.decimals();
-        if(tokenDecimals > CTOKEN_DECIMALS){
+        if (tokenDecimals > CTOKEN_DECIMALS) {
             // we multiply by 2 to have a safety buffer
-            if(_amount > 2 * 10 ** (token.decimals() - CTOKEN_DECIMALS)){
+            if (_amount > 2 * 10**(tokenDecimals - CTOKEN_DECIMALS)) {
                 _;
             }
         } else {
             // we multiply by 2 to have a safety buffer
-            if(_amount > 2 * 10 ** (CTOKEN_DECIMALS - token.decimals())){
+            if (_amount > 2 * 10**(CTOKEN_DECIMALS - tokenDecimals)) {
                 _;
             }
         }
@@ -315,7 +314,7 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
         if (suppliersOnPool[_cTokenAddress].isNotEmpty()) {
             uint256 p2pExchangeRate = marketsManagerForCompound.p2pUnitExchangeRate(_cTokenAddress);
             remainingToBorrowOnPool = _matchSuppliers(_cTokenAddress, _amount); // In underlying
-            uint256 matched = _amount - remainingToBorrowOnPool;            
+            uint256 matched = _amount - remainingToBorrowOnPool;
             if (matched > 0) {
                 borrowBalanceInOf[_cTokenAddress][msg.sender].inP2P += matched.div(p2pExchangeRate); // In p2pUnit
             }
@@ -451,13 +450,16 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
             if (_amount <= amountOnPoolInUnderlying) {
                 _withdrawERC20FromComp(_cTokenAddress, _amount); // Revert on error
                 supplyBalanceInOf[_cTokenAddress][_holder].onPool -= _amount.div(
-                        cTokenExchangeRate
-                    ); // In cToken
+                    cTokenExchangeRate
+                ); // In cToken
                 remainingToWithdraw = 0; // In underlying
             }
             /* CASE 2: User withdraws more than his Comp supply balance */
             else {
-                require(cToken.redeem(supplyBalanceInOf[_cTokenAddress][_holder].onPool) == 0, "_withdraw:redeem-comp-fail");
+                require(
+                    cToken.redeem(supplyBalanceInOf[_cTokenAddress][_holder].onPool) == 0,
+                    "_withdraw:redeem-comp-fail"
+                );
                 supplyBalanceInOf[_cTokenAddress][_holder].onPool = 0;
                 remainingToWithdraw = _amount - amountOnPoolInUnderlying; // In underlying
             }
@@ -577,7 +579,10 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
      *  @param _cTokenAddress The address of the market the user wants to interact with.
      *  @param _amount The amount in ERC20 tokens to supply.
      */
-    function _supplyERC20ToPool(address _cTokenAddress, uint256 _amount) internal isAboveCompoundThreshold(_cTokenAddress, _amount) {
+    function _supplyERC20ToPool(address _cTokenAddress, uint256 _amount)
+        internal
+        isAboveCompoundThreshold(_cTokenAddress, _amount)
+    {
         ICErc20 cToken = ICErc20(_cTokenAddress);
         IERC20 underlyingToken = IERC20(cToken.underlying());
         underlyingToken.safeApprove(_cTokenAddress, _amount);
@@ -588,7 +593,10 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
      *  @param _cTokenAddress The address of the market the user wants to interact with.
      *  @param _amount The amount of tokens to be withdrawn.
      */
-    function _withdrawERC20FromComp(address _cTokenAddress, uint256 _amount) internal isAboveCompoundThreshold(_cTokenAddress, _amount) {
+    function _withdrawERC20FromComp(address _cTokenAddress, uint256 _amount)
+        internal
+        isAboveCompoundThreshold(_cTokenAddress, _amount)
+    {
         ICErc20 cToken = ICErc20(_cTokenAddress);
         require(cToken.redeemUnderlying(_amount) == 0, "_withdrawERC20FromComp:redeem-comp-fail");
     }
