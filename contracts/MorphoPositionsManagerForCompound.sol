@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 
-import "./compound-math/CompoundMath.sol";
+import "./libraries/CompoundMath.sol";
 import "./libraries/RedBlackBinaryTree.sol";
 import {ICErc20, IComptroller, ICompoundOracle} from "./interfaces/compound/ICompound.sol";
 import "./interfaces/IMarketsManagerForCompound.sol";
