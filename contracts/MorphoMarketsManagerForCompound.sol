@@ -73,7 +73,7 @@ contract MorphoMarketsManagerForCompound is Ownable {
     /** @dev Prevents to update a market not created yet.
      */
     modifier isMarketCreated(address _marketAddress) {
-        require(isCreated[_marketAddress], "mkt-not-created");
+        require(isCreated[_marketAddress], "0");
         _;
     }
 
@@ -86,7 +86,7 @@ contract MorphoMarketsManagerForCompound is Ownable {
         external
         onlyOwner
     {
-        require(!isPositionsManagerSet, "positions-manager-already-set");
+        require(!isPositionsManagerSet, "1");
         isPositionsManagerSet = true;
         positionsManagerForCompound = IPositionsManagerForCompound(_positionsManagerForCompound);
         emit PositionsManagerForCompoundSet(_positionsManagerForCompound);
@@ -104,7 +104,7 @@ contract MorphoMarketsManagerForCompound is Ownable {
      *  @param _newMaxNumber The maximum number of users to have in the data structure.
      */
     function setMaxNumberOfUsersInDataStructure(uint16 _newMaxNumber) external onlyOwner {
-        require(_newMaxNumber > 1, "new-max-number=0");
+        require(_newMaxNumber > 1, "2");
         positionsManagerForCompound.setMaxNumberOfUsersInDataStructure(_newMaxNumber);
         emit MaxNumberUpdated(_newMaxNumber);
     }
@@ -113,9 +113,9 @@ contract MorphoMarketsManagerForCompound is Ownable {
      *  @param _marketAddress The addresses of the markets to add (cToken).
      */
     function createMarket(address _marketAddress) external onlyOwner {
-        require(!isCreated[_marketAddress], "createMarket:mkt-already-created");
+        require(!isCreated[_marketAddress], "3");
         uint256[] memory results = positionsManagerForCompound.createMarket(_marketAddress);
-        require(results[0] == 0, "createMarket:enter-mkt-fail");
+        require(results[0] == 0, "4");
         positionsManagerForCompound.setThreshold(_marketAddress, 1e18);
         lastUpdateBlockNumber[_marketAddress] = block.number;
         p2pUnitExchangeRate[_marketAddress] = 1e18;
@@ -133,7 +133,7 @@ contract MorphoMarketsManagerForCompound is Ownable {
         onlyOwner
         isMarketCreated(_marketAddress)
     {
-        require(_newThreshold > 0, "updateThreshold:threshold!=0");
+        require(_newThreshold > 0, "5");
         positionsManagerForCompound.setThreshold(_marketAddress, _newThreshold);
         emit ThresholdUpdated(_marketAddress, _newThreshold);
     }

@@ -158,7 +158,7 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
      *  @param _cTokenAddress The address of the market.
      */
     modifier isMarketCreated(address _cTokenAddress) {
-        require(marketsManagerForCompound.isCreated(_cTokenAddress), "mkt-not-created");
+        require(marketsManagerForCompound.isCreated(_cTokenAddress), "0");
         _;
     }
 
@@ -167,14 +167,14 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
      *  @param _amount The amount in ERC20 tokens.
      */
     modifier isAboveThreshold(address _cTokenAddress, uint256 _amount) {
-        require(_amount >= threshold[_cTokenAddress], "amount<threshold");
+        require(_amount >= threshold[_cTokenAddress], "1");
         _;
     }
 
     /** @dev Prevents a user to call function only allowed for the markets manager.
      */
     modifier onlyMarketsManager() {
-        require(msg.sender == address(marketsManagerForCompound), "only-mkt-manager");
+        require(msg.sender == address(marketsManagerForCompound), "2");
         _;
     }
 
@@ -320,7 +320,7 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
         /* If there aren't enough suppliers waiting on Comp to match all the tokens borrowed, the rest is borrowed from Comp */
         if (remainingToBorrowOnPool > 0) {
             _unmatchTheSupplier(msg.sender); // Before borrowing on Comp, we put all the collateral of the borrower on Comp (cf Liquidation Invariant in docs)
-            require(cToken.borrow(remainingToBorrowOnPool) == 0, "borrow-comp-fail");
+            require(cToken.borrow(remainingToBorrowOnPool) == 0, "3");
             borrowBalanceInOf[_cTokenAddress][msg.sender].onPool += remainingToBorrowOnPool.div(
                 cToken.borrowIndex()
             ); // In cdUnit
@@ -360,14 +360,14 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
         address _borrower,
         uint256 _amount
     ) external nonReentrant {
-        require(_amount > 0, "liquidate:amount=0");
+        require(_amount > 0, "4");
         (uint256 debtValue, uint256 maxDebtValue, ) = _getUserHypotheticalBalanceStates(
             _borrower,
             address(0),
             0,
             0
         );
-        require(debtValue > maxDebtValue, "liquidate:debt-value<=max");
+        require(debtValue > maxDebtValue, "5");
         LiquidateVars memory vars;
         vars.borrowBalance =
             borrowBalanceInOf[_cTokenBorrowedAddress][_borrower].onPool.mul(
@@ -376,10 +376,7 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
             borrowBalanceInOf[_cTokenBorrowedAddress][_borrower].inP2P.mul(
                 marketsManagerForCompound.p2pUnitExchangeRate(_cTokenBorrowedAddress)
             );
-        require(
-            _amount <= vars.borrowBalance.mul(comptroller.closeFactorMantissa()),
-            "liquidate:amount>allowed"
-        );
+        require(_amount <= vars.borrowBalance.mul(comptroller.closeFactorMantissa()), "6");
 
         _repay(_cTokenBorrowedAddress, _borrower, _amount);
 
@@ -387,10 +384,7 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
         ICompoundOracle compoundOracle = ICompoundOracle(comptroller.oracle());
         vars.priceCollateralMantissa = compoundOracle.getUnderlyingPrice(_cTokenCollateralAddress);
         vars.priceBorrowedMantissa = compoundOracle.getUnderlyingPrice(_cTokenBorrowedAddress);
-        require(
-            vars.priceCollateralMantissa != 0 && vars.priceBorrowedMantissa != 0,
-            "liquidate:oracle-fail"
-        );
+        require(vars.priceCollateralMantissa != 0 && vars.priceBorrowedMantissa != 0, "7");
 
         /*
          * Get the exchange rate and calculate the number of collateral tokens to seize:
@@ -413,7 +407,7 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
                 marketsManagerForCompound.updateP2pUnitExchangeRate(_cTokenCollateralAddress)
             );
 
-        require(vars.amountToSeize <= totalCollateral, "liquidate:to-seize>collateral");
+        require(vars.amountToSeize <= totalCollateral, "8");
         _withdraw(_cTokenCollateralAddress, vars.amountToSeize, _borrower, msg.sender);
     }
 
@@ -431,7 +425,7 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
         address _holder,
         address _receiver
     ) internal isMarketCreated(_cTokenAddress) {
-        require(_amount > 0, "_withdraw:amount=0");
+        require(_amount > 0, "9");
         _checkAccountLiquidity(_holder, _cTokenAddress, _amount, 0);
         ICErc20 cToken = ICErc20(_cTokenAddress);
         IERC20 underlyingToken = IERC20(cToken.underlying());
@@ -455,7 +449,7 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
             else {
                 require(
                     cToken.redeem(supplyBalanceInOf[_cTokenAddress][_holder].onPool) == 0,
-                    "_withdraw:redeem-comp-fail"
+                    "10"
                 );
                 supplyBalanceInOf[_cTokenAddress][_holder].onPool = 0;
                 remainingToWithdraw = _amount - amountOnPoolInUnderlying; // In underlying
@@ -470,10 +464,7 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
             );
             /* CASE 1: Other suppliers have enough tokens on Comp to compensate user's position*/
             if (remainingToWithdraw <= cTokenContractBalanceInUnderlying) {
-                require(
-                    _matchSuppliers(_cTokenAddress, remainingToWithdraw) == 0,
-                    "_withdraw:_matchSuppliers!=0"
-                );
+                require(_matchSuppliers(_cTokenAddress, remainingToWithdraw) == 0, "11");
                 supplyBalanceInOf[_cTokenAddress][_holder].inP2P -= remainingToWithdraw.div(
                     p2pExchangeRate
                 ); // In p2pUnit
@@ -490,7 +481,7 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
                 remainingToWithdraw -= remaining;
                 require(
                     _unmatchBorrowers(_cTokenAddress, remainingToWithdraw) == 0, // We break some P2P credit lines the user had with borrowers and fallback on Comp.
-                    "_withdraw:_unmatchBorrowers!=0"
+                    "12"
                 );
             }
         }
@@ -511,7 +502,7 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
         address _borrower,
         uint256 _amount
     ) internal isMarketCreated(_cTokenAddress) {
-        require(_amount > 0, "_repay:amount=0");
+        require(_amount > 0, "13");
         ICErc20 cToken = ICErc20(_cTokenAddress);
         IERC20 underlyingToken = IERC20(cToken.underlying());
         underlyingToken.safeTransferFrom(msg.sender, address(this), _amount);
@@ -563,7 +554,7 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
                 remainingToRepay -= contractBorrowBalanceOnPool;
                 require(
                     _unmatchSuppliers(_cTokenAddress, remainingToRepay) == 0, // We break some P2P credit lines the user had with suppliers and fallback on Comp.
-                    "_repay:_unmatchSuppliers!=0"
+                    "14"
                 );
             }
         }
@@ -583,7 +574,7 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
         ICErc20 cToken = ICErc20(_cTokenAddress);
         IERC20 underlyingToken = IERC20(cToken.underlying());
         underlyingToken.safeApprove(_cTokenAddress, _amount);
-        require(cToken.mint(_amount) == 0, "_supplyERC20ToPool:mint-comp-fail");
+        require(cToken.mint(_amount) == 0, "15");
     }
 
     /** @dev Withdraws ERC20 tokens from Comp.
@@ -595,7 +586,7 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
         isAboveCompoundThreshold(_cTokenAddress, _amount)
     {
         ICErc20 cToken = ICErc20(_cTokenAddress);
-        require(cToken.redeemUnderlying(_amount) == 0, "_withdrawERC20FromComp:redeem-comp-fail");
+        require(cToken.redeemUnderlying(_amount) == 0, "16");
     }
 
     /** @dev Finds liquidity on Comp and matches it in P2P.
@@ -711,7 +702,7 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
         // Repay Comp
         uint256 toRepay = _amount - remainingToMatch;
         underlyingToken.safeApprove(_cTokenAddress, toRepay);
-        require(cToken.repayBorrow(toRepay) == 0, "_matchBorrowers:repay-comp-fail");
+        require(cToken.repayBorrow(toRepay) == 0, "17");
     }
 
     /** @dev Finds borrowers in peer-to-peer that match the given `_amount` and move them to Comp.
@@ -805,7 +796,7 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
             _withdrawnAmount,
             _borrowedAmount
         );
-        require(debtValue < maxDebtValue, "_checkAccountLiquidity:debt-value>max");
+        require(debtValue < maxDebtValue, "18");
     }
 
     /** @dev Returns the debt value, max debt value and collateral value of a given user.
@@ -851,7 +842,7 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
                 supplyBalanceInOf[vars.cTokenEntered][_account].inP2P.mul(vars.p2pExchangeRate);
             // Price recovery
             vars.underlyingPrice = compoundOracle.getUnderlyingPrice(vars.cTokenEntered);
-            require(vars.underlyingPrice != 0, "_getUserHypotheticalBalanceStates:oracle-fail");
+            require(vars.underlyingPrice != 0, "19");
 
             if (_cTokenAddress == vars.cTokenEntered) {
                 vars.debtToAdd += _borrowedAmount;
