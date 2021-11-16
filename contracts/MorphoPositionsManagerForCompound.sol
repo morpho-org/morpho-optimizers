@@ -918,15 +918,13 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
         if (inP2P == 0 && borrowersInP2PBuffer[_cTokenAddress].contains(_account))
             borrowersInP2PBuffer[_cTokenAddress].remove(_account);
 
-        // Add user to the tree if possible
+        // Add user to the trees if possible
         if (borrowersOnPoolBuffer[_cTokenAddress].length() > 0 && numberOfBorrowersOnPool <= NMAX) {
             address account = borrowersOnPoolBuffer[_cTokenAddress].at(0);
             uint256 value = borrowBalanceInOf[_cTokenAddress][account].onPool;
             borrowersOnPoolBuffer[_cTokenAddress].remove(account);
             borrowersOnPool[_cTokenAddress].insert(account, value);
         }
-
-        // Check P2P
         if (borrowersInP2PBuffer[_cTokenAddress].length() > 0 && numberOfBorrowersInP2P <= NMAX) {
             address account = borrowersInP2PBuffer[_cTokenAddress].at(0);
             uint256 value = borrowBalanceInOf[_cTokenAddress][account].inP2P;
@@ -989,7 +987,7 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
         if (inP2P == 0 && suppliersInP2PBuffer[_cTokenAddress].contains(_account))
             suppliersInP2PBuffer[_cTokenAddress].remove(_account);
 
-        // Add user to the tree if possible
+        // Add user to the trees if possible
         if (suppliersOnPoolBuffer[_cTokenAddress].length() > 0 && numberOfSuppliersOnPool <= NMAX) {
             address account = suppliersOnPoolBuffer[_cTokenAddress].at(0);
             uint256 value = supplyBalanceInOf[_cTokenAddress][account].onPool;
