@@ -25,10 +25,11 @@ describe('MorphoPositionsManagerForCompound Contract', () => {
   let cUsdtToken;
   let cMkrToken;
   let daiToken;
-  let usdtToken;
   let uniToken;
   let MorphoPositionsManagerForCompound;
   let morphoPositionsManagerForCompound;
+  let MorphoMarketsManagerForCompound;
+  let morphoMarketsManagerForCompound;
   let fakeCompoundPositionsManager;
 
   let signers;
@@ -58,6 +59,14 @@ describe('MorphoPositionsManagerForCompound Contract', () => {
     const redBlackBinaryTree = await RedBlackBinaryTree.deploy();
     await redBlackBinaryTree.deployed();
 
+    const UpdatePositions = await ethers.getContractFactory('UpdatePositions', {
+      libraries: {
+        RedBlackBinaryTree: redBlackBinaryTree.address,
+      },
+    });
+    const updatePositions = await UpdatePositions.deploy();
+    await updatePositions.deployed();
+
     // Deploy contracts
     MorphoMarketsManagerForCompound = await ethers.getContractFactory('MorphoMarketsManagerForCompound');
     morphoMarketsManagerForCompound = await MorphoMarketsManagerForCompound.deploy();
@@ -68,8 +77,8 @@ describe('MorphoPositionsManagerForCompound Contract', () => {
         RedBlackBinaryTree: redBlackBinaryTree.address,
       },
     });
-    morphoPositionsManagerForCompound = await MorphoPositionsManagerForCompound.deploy(morphoMarketsManagerForCompound.address, config.compound.comptroller.address);
-    fakeCompoundPositionsManager = await MorphoPositionsManagerForCompound.deploy(morphoMarketsManagerForCompound.address, config.compound.comptroller.address);
+    morphoPositionsManagerForCompound = await MorphoPositionsManagerForCompound.deploy(morphoMarketsManagerForCompound.address, config.compound.comptroller.address, updatePositions.address);
+    fakeCompoundPositionsManager = await MorphoPositionsManagerForCompound.deploy(morphoMarketsManagerForCompound.address, config.compound.comptroller.address, updatePositions.address);
     await morphoPositionsManagerForCompound.deployed();
     await fakeCompoundPositionsManager.deployed();
 

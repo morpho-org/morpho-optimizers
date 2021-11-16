@@ -13,6 +13,14 @@ async function main() {
 
   console.log('RedBlackBinaryTree address:', redBlackBinaryTree.address);
 
+  const UpdatePositions = await ethers.getContractFactory('UpdatePositions', {
+    libraries: {
+      RedBlackBinaryTree: redBlackBinaryTree.address,
+    },
+  });
+  const updatePositions = await UpdatePositions.deploy();
+  await updatePositions.deployed();
+
   const MorphoMarketsManagerForCompound = await ethers.getContractFactory('MorphoMarketsManagerForCompound');
   const morphoMarketsManagerForCompound = await MorphoMarketsManagerForCompound.deploy();
   await morphoMarketsManagerForCompound.deployed();
@@ -24,7 +32,7 @@ async function main() {
       RedBlackBinaryTree: redBlackBinaryTree.address,
     },
   });
-  const morphoPositionsManagerForCompound = await MorphoPositionsManagerForCompound.deploy(morphoMarketsManagerForCompound.address, config.compound.comptroller.address);
+  const morphoPositionsManagerForCompound = await MorphoPositionsManagerForCompound.deploy(morphoMarketsManagerForCompound.address, config.compound.comptroller.address, updatePositions.address);
   await morphoPositionsManagerForCompound.deployed();
 
   console.log('MorphoPositionsManagerForCompound address:', morphoPositionsManagerForCompound.address);
