@@ -16,7 +16,7 @@ import "./PositionsManagerStorageForCompound.sol";
  *  @title MorphoPositionsManagerForComp?
  *  @dev Smart contract interacting with Comp to enable P2P supply/borrow positions that can fallback on Comp's pool using cToken tokens.
  */
-contract MorphoPositionsManagerForCompound is ReentrancyGuard, PositionsManagerStorageForCompound {
+contract PositionsManagerForCompound is ReentrancyGuard, PositionsManagerStorageForCompound {
     using RedBlackBinaryTree for RedBlackBinaryTree.Tree;
     using EnumerableSet for EnumerableSet.AddressSet;
     using CompoundMath for uint256;
@@ -166,7 +166,7 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard, PositionsManagerS
 
     /* Constructor */
 
-    /** @dev Constructs the MorphoPositionsManagerForCompound contract.
+    /** @dev Constructs the PositionsManagerForCompound contract.
      *  @param _compoundMarketsManager The address of the markets manager.
      *  @param _proxyComptrollerAddress The address of the proxy comptroller.
      */
