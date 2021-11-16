@@ -59,8 +59,8 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
 
     /* Storage */
 
-    uint8 private constant CTOKEN_DECIMALS = 8;
     uint16 public NMAX = 1000;
+    uint8 private constant CTOKEN_DECIMALS = 8;
     mapping(address => RedBlackBinaryTree.Tree) private suppliersInP2P; // Suppliers in peer-to-peer.
     mapping(address => RedBlackBinaryTree.Tree) private suppliersOnPool; // Suppliers on Comp.
     mapping(address => RedBlackBinaryTree.Tree) private borrowersInP2P; // Borrowers in peer-to-peer.
@@ -191,10 +191,7 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
                 _;
             }
         } else {
-            // we multiply by 2 to have a safety buffer
-            if (_amount > 2 * 10**(CTOKEN_DECIMALS - tokenDecimals)) {
-                _;
-            }
+            _;
         }
     }
 
