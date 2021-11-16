@@ -190,11 +190,9 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
             if (_amount > 2 * 10**(tokenDecimals - CTOKEN_DECIMALS)) {
                 _;
             }
-        } else {
-            // we multiply by 2 to have a safety buffer
-            if (_amount > 2 * 10**(CTOKEN_DECIMALS - tokenDecimals)) {
-                _;
-            }
+        }
+        else {
+            _;
         }
     }
 
