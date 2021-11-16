@@ -21,26 +21,26 @@ async function main() {
   const updatePositions = await UpdatePositions.deploy();
   await updatePositions.deployed();
 
-  const MorphoMarketsManagerForCompound = await ethers.getContractFactory('MorphoMarketsManagerForCompound');
-  const morphoMarketsManagerForCompound = await MorphoMarketsManagerForCompound.deploy();
-  await morphoMarketsManagerForCompound.deployed();
+  const MarketsManagerForCompound = await ethers.getContractFactory('MarketsManagerForCompound');
+  const marketsManagerForCompound = await MarketsManagerForCompound.deploy();
+  await marketsManagerForCompound.deployed();
 
-  console.log('MorphoMarketsManagerForCompound address:', morphoMarketsManagerForCompound.address);
+  console.log('MarketsManagerForCompound address:', marketsManagerForCompound.address);
 
-  const MorphoPositionsManagerForCompound = await ethers.getContractFactory('MorphoPositionsManagerForCompound', {
+  const PositionsManagerForCompound = await ethers.getContractFactory('PositionsManagerForCompound', {
     libraries: {
       RedBlackBinaryTree: redBlackBinaryTree.address,
     },
   });
-  const morphoPositionsManagerForCompound = await MorphoPositionsManagerForCompound.deploy(morphoMarketsManagerForCompound.address, config.compound.comptroller.address, updatePositions.address);
-  await morphoPositionsManagerForCompound.deployed();
+  const positionsManagerForCompound = await PositionsManagerForCompound.deploy(marketsManagerForCompound.address, config.compound.comptroller.address, updatePositions.address);
+  await positionsManagerForCompound.deployed();
 
-  console.log('MorphoPositionsManagerForCompound address:', morphoPositionsManagerForCompound.address);
+  console.log('PositionsManagerForCompound address:', positionsManagerForCompound.address);
 
-  await morphoMarketsManagerForCompound.connect(deployer).setPositionsManagerForCompound(morphoPositionsManagerForCompound.address);
-  await morphoMarketsManagerForCompound.connect(deployer).createMarket(config.tokens.cDai.address);
-  await morphoMarketsManagerForCompound.connect(deployer).createMarket(config.tokens.cUsdc.address);
-  await morphoMarketsManagerForCompound.connect(deployer).updateThreshold(config.tokens.cUsdc.address, BigNumber.from(1).pow(6));
+  await marketsManagerForCompound.connect(deployer).setPositionsManagerForCompound(positionsManagerForCompound.address);
+  await marketsManagerForCompound.connect(deployer).createMarket(config.tokens.cDai.address);
+  await marketsManagerForCompound.connect(deployer).createMarket(config.tokens.cUsdc.address);
+  await marketsManagerForCompound.connect(deployer).updateThreshold(config.tokens.cUsdc.address, BigNumber.from(1).pow(6));
 }
 
 main()
