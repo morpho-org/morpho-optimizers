@@ -8,7 +8,6 @@ import "./libraries/CompoundMath.sol";
 
 import {ICErc20, IComptroller} from "./interfaces/compound/ICompound.sol";
 import "./interfaces/IPositionsManagerForCompound.sol";
-import "./interfaces/IMarketsManagerForCompound.sol";
 
 /**
  *  @title MarketsManagerForCompound.
@@ -20,7 +19,6 @@ contract MarketsManagerForCompound is Ownable {
 
     /* Storage */
 
-    bool public isPositionsManagerSet; // Whether or not the positions manager is set.
     mapping(address => bool) public isCreated; // Whether or not this market is created.
     mapping(address => uint256) public p2pBPY; // Block Percentage Yield ("midrate").
     mapping(address => uint256) public p2pUnitExchangeRate; // current exchange rate from p2pUnit to underlying.
@@ -63,8 +61,8 @@ contract MarketsManagerForCompound is Ownable {
      */
     event ThresholdUpdated(address _marketAddress, uint256 _newValue);
 
-    /** @dev Emitted the maximum number of users to have in the data structure is updated.
-     *  @param _newValue The new value of the maximum number of users to have in the data structure.
+    /** @dev Emitted the maximum number of users to have in the tree is updated.
+     *  @param _newValue The new value of the maximum number of users to have in the tree.
      */
     event MaxNumberUpdated(uint16 _newValue);
 
@@ -86,8 +84,7 @@ contract MarketsManagerForCompound is Ownable {
         external
         onlyOwner
     {
-        require(!isPositionsManagerSet, "1");
-        isPositionsManagerSet = true;
+        require(address(positionsManagerForCompound) == address(0), "1");
         positionsManagerForCompound = IPositionsManagerForCompound(_positionsManagerForCompound);
         emit PositionsManagerForCompoundSet(_positionsManagerForCompound);
     }
@@ -100,12 +97,12 @@ contract MarketsManagerForCompound is Ownable {
         emit ComptrollerSet(_proxyComptrollerAddress);
     }
 
-    /** @dev Sets the maximum number of users in data structure.
-     *  @param _newMaxNumber The maximum number of users to have in the data structure.
+    /** @dev Sets the maximum number of users in tree.
+     *  @param _newMaxNumber The maximum number of users to have in the tree.
      */
-    function setMaxNumberOfUsersInDataStructure(uint16 _newMaxNumber) external onlyOwner {
+    function setMaxNumberOfUsersInTree(uint16 _newMaxNumber) external onlyOwner {
         require(_newMaxNumber > 1, "2");
-        positionsManagerForCompound.setMaxNumberOfUsersInDataStructure(_newMaxNumber);
+        positionsManagerForCompound.setMaxNumberOfUsersInTree(_newMaxNumber);
         emit MaxNumberUpdated(_newMaxNumber);
     }
 

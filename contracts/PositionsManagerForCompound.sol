@@ -169,15 +169,16 @@ contract PositionsManagerForCompound is ReentrancyGuard, PositionsManagerStorage
     /** @dev Constructs the PositionsManagerForCompound contract.
      *  @param _compoundMarketsManager The address of the markets manager.
      *  @param _proxyComptrollerAddress The address of the proxy comptroller.
+     *  @param _updatePositionsAddress The address of the contract implementing the logic for positions updates.
      */
     constructor(
         address _compoundMarketsManager,
         address _proxyComptrollerAddress,
-        address _logicAddress
+        address _updatePositionsAddress
     ) {
         marketsManagerForCompound = IMarketsManagerForCompound(_compoundMarketsManager);
         comptroller = IComptroller(_proxyComptrollerAddress);
-        updatePositions = IUpdatePositions(_logicAddress);
+        updatePositions = IUpdatePositions(_updatePositionsAddress);
     }
 
     /* External */
@@ -203,10 +204,10 @@ contract PositionsManagerForCompound is ReentrancyGuard, PositionsManagerStorage
         comptroller = IComptroller(_proxyComptrollerAddress);
     }
 
-    /** @dev Sets the maximum number of users in data structure.
-     *  @param _newMaxNumber The maximum number of users to have in the data structure.
+    /** @dev Sets the maximum number of users in tree.
+     *  @param _newMaxNumber The maximum number of users to have in the tree.
      */
-    function setMaxNumberOfUsersInDataStructure(uint16 _newMaxNumber) external onlyMarketsManager {
+    function setMaxNumberOfUsersInTree(uint16 _newMaxNumber) external onlyMarketsManager {
         NMAX = _newMaxNumber;
     }
 
@@ -579,17 +580,18 @@ contract PositionsManagerForCompound is ReentrancyGuard, PositionsManagerStorage
         uint256 cTokenExchangeRate = cToken.exchangeRateCurrent();
         (, address account) = suppliersOnPool[_cTokenAddress].getMaximum();
 
-        bool metAccountWithDebtOnPool;
         while (remainingToMatch > 0 && account != address(0)) {
             address tmpAccount;
             // Check if this user is not borrowing on Pool (cf Liquidation Invariant in docs)
             if (!_hasDebtOnPool(account)) {
-                uint256 onPool = supplyBalanceInOf[_cTokenAddress][account].onPool; // In cToken
+                uint256 onPoolInUnderlying = supplyBalanceInOf[_cTokenAddress][account].onPool.mul(
+                    cTokenExchangeRate
+                ); // In underlying
                 uint256 toMatch;
                 // This is done to prevent rounding errors
-                if (onPool.mul(cTokenExchangeRate) <= remainingToMatch) {
+                if (onPoolInUnderlying <= remainingToMatch) {
                     supplyBalanceInOf[_cTokenAddress][account].onPool = 0;
-                    toMatch = onPool.mul(cTokenExchangeRate);
+                    toMatch = onPoolInUnderlying;
                 } else {
                     toMatch = remainingToMatch;
                     supplyBalanceInOf[_cTokenAddress][account].onPool -= toMatch.div(
@@ -601,7 +603,6 @@ contract PositionsManagerForCompound is ReentrancyGuard, PositionsManagerStorage
                 _updateSupplierList(_cTokenAddress, account);
                 emit SupplierMatched(account, _cTokenAddress, toMatch);
             } else {
-                metAccountWithDebtOnPool = true;
                 tmpAccount = suppliersOnPool[_cTokenAddress].prev(account);
             }
             account = tmpAccount;
@@ -658,10 +659,12 @@ contract PositionsManagerForCompound is ReentrancyGuard, PositionsManagerStorage
         (, address account) = borrowersOnPool[_cTokenAddress].getMaximum();
 
         while (remainingToMatch > 0 && account != address(0)) {
-            uint256 onPool = borrowBalanceInOf[_cTokenAddress][account].onPool; // In cToken
+            uint256 onPoolInUnderlying = borrowBalanceInOf[_cTokenAddress][account].onPool.mul(
+                borrowIndex
+            ); // In underlying
             uint256 toMatch;
-            if (onPool.mul(borrowIndex) <= remainingToMatch) {
-                toMatch = onPool.mul(borrowIndex);
+            if (onPoolInUnderlying <= remainingToMatch) {
+                toMatch = onPoolInUnderlying;
                 borrowBalanceInOf[_cTokenAddress][account].onPool = 0;
             } else {
                 toMatch = remainingToMatch;

@@ -16,8 +16,8 @@ library RedBlackBinaryTree {
     }
 
     struct Tree {
-        uint256 count; // The umber of nodes in the tree.
-        uint256 minimum; // The inimum value of the tree.
+        uint256 count; // The number of nodes in the tree.
+        uint256 minimum; // The minimum value of the tree.
         address minimumKey; // The key related to the minimum value.
         uint256 maximum; // The maximum value of the tree.
         address maximumKey; // Key related to the maximum value.
