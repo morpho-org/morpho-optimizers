@@ -579,7 +579,6 @@ contract PositionsManagerForCompound is ReentrancyGuard, PositionsManagerStorage
         uint256 cTokenExchangeRate = cToken.exchangeRateCurrent();
         (, address account) = suppliersOnPool[_cTokenAddress].getMaximum();
 
-        bool metAccountWithDebtOnPool;
         while (remainingToMatch > 0 && account != address(0)) {
             address tmpAccount;
             // Check if this user is not borrowing on Pool (cf Liquidation Invariant in docs)
@@ -601,7 +600,6 @@ contract PositionsManagerForCompound is ReentrancyGuard, PositionsManagerStorage
                 _updateSupplierList(_cTokenAddress, account);
                 emit SupplierMatched(account, _cTokenAddress, toMatch);
             } else {
-                metAccountWithDebtOnPool = true;
                 tmpAccount = suppliersOnPool[_cTokenAddress].prev(account);
             }
             account = tmpAccount;

@@ -29,7 +29,7 @@ contract UpdatePositions is ReentrancyGuard, PositionsManagerStorageForCompound 
         bool isOnPoolAndValueChanged = isOnPool &&
             borrowersOnPool[_cTokenAddress].getValueOfKey(_account) != onPool;
         if (isOnPoolAndValueChanged) borrowersOnPool[_cTokenAddress].remove(_account);
-        if (onPool > 0 && ((isOnPoolAndValueChanged) || !isOnPool)) {
+        if (onPool > 0 && (isOnPoolAndValueChanged || !isOnPool)) {
             if (numberOfBorrowersOnPool <= NMAX) {
                 numberOfBorrowersOnPool++;
                 borrowersOnPool[_cTokenAddress].insert(_account, onPool);
