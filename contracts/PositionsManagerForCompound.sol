@@ -155,7 +155,7 @@ contract PositionsManagerForCompound is ReentrancyGuard, PositionsManagerStorage
         IERC20Metadata token = IERC20Metadata(ICErc20(_cTokenAddress).underlying());
         uint8 tokenDecimals = token.decimals();
         if (tokenDecimals > CTOKEN_DECIMALS) {
-            // we multiply by 2 to have a safety buffer
+            // Multiply by 2 to have a safety buffer
             if (_amount > 2 * 10**(tokenDecimals - CTOKEN_DECIMALS)) {
                 _;
             }
@@ -582,14 +582,14 @@ contract PositionsManagerForCompound is ReentrancyGuard, PositionsManagerStorage
         bool metAccountWithDebtOnPool;
         while (remainingToMatch > 0 && account != address(0)) {
             address tmpAccount;
-            // Check if this user is not borrowing on Cream (cf Liquidation Invariant in docs)
+            // Check if this user is not borrowing on Pool (cf Liquidation Invariant in docs)
             if (!_hasDebtOnPool(account)) {
-                uint256 onCream = supplyBalanceInOf[_cTokenAddress][account].onPool; // In cToken
+                uint256 onPool = supplyBalanceInOf[_cTokenAddress][account].onPool; // In cToken
                 uint256 toMatch;
                 // This is done to prevent rounding errors
-                if (onCream.mul(cTokenExchangeRate) <= remainingToMatch) {
+                if (onPool.mul(cTokenExchangeRate) <= remainingToMatch) {
                     supplyBalanceInOf[_cTokenAddress][account].onPool = 0;
-                    toMatch = onCream.mul(cTokenExchangeRate);
+                    toMatch = onPool.mul(cTokenExchangeRate);
                 } else {
                     toMatch = remainingToMatch;
                     supplyBalanceInOf[_cTokenAddress][account].onPool -= toMatch.div(
@@ -658,10 +658,10 @@ contract PositionsManagerForCompound is ReentrancyGuard, PositionsManagerStorage
         (, address account) = borrowersOnPool[_cTokenAddress].getMaximum();
 
         while (remainingToMatch > 0 && account != address(0)) {
-            uint256 onCream = borrowBalanceInOf[_cTokenAddress][account].onPool; // In cToken
+            uint256 onPool = borrowBalanceInOf[_cTokenAddress][account].onPool; // In cToken
             uint256 toMatch;
-            if (onCream.mul(borrowIndex) <= remainingToMatch) {
-                toMatch = onCream.mul(borrowIndex);
+            if (onPool.mul(borrowIndex) <= remainingToMatch) {
+                toMatch = onPool.mul(borrowIndex);
                 borrowBalanceInOf[_cTokenAddress][account].onPool = 0;
             } else {
                 toMatch = remainingToMatch;
