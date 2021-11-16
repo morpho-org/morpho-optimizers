@@ -13,9 +13,9 @@ module.exports = {
     hardhat: {
       forking: {
         url: `https://${process.env.NETWORK}.infura.io/v3/${process.env.INFURA_PROJECT_ID}`,
+        blockNumber: process.env.NETWORK == 'mainnet' ? 7710600 : 19416594, // Beginning from a specific block number allows caching data and a faster setup
       },
       allowUnlimitedContractSize: true,
-      blockNumber: process.env.NETWORK == 'mainnet' ? 7710600 : 19416594, // Beginning from a specific block number allows caching data and a faster setup
     },
     kovan: {
       accounts: [process.env.DEPLOYER_PRIVATE_KEY],
