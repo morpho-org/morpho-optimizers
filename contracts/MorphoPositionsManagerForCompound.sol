@@ -3,20 +3,20 @@ pragma solidity 0.8.7;
 
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 
 import "./libraries/CompoundMath.sol";
-import "./libraries/RedBlackBinaryTree.sol";
 import {ICErc20, IComptroller, ICompoundOracle} from "./interfaces/compound/ICompound.sol";
 import "./interfaces/IMarketsManagerForCompound.sol";
+import "./interfaces/IUpdatePositions.sol";
+import "./PositionsManagerStorageForCompound.sol";
 
 /**
- *  @title MorphoPositionsManagerForComp
+ *  @title MorphoPositionsManagerForComp?
  *  @dev Smart contract interacting with Comp to enable P2P supply/borrow positions that can fallback on Comp's pool using cToken tokens.
  */
-contract MorphoPositionsManagerForCompound is ReentrancyGuard {
+contract MorphoPositionsManagerForCompound is ReentrancyGuard, PositionsManagerStorageForCompound {
     using RedBlackBinaryTree for RedBlackBinaryTree.Tree;
     using EnumerableSet for EnumerableSet.AddressSet;
     using CompoundMath for uint256;
@@ -24,16 +24,6 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
     using Math for uint256;
 
     /* Structs */
-
-    struct SupplyBalance {
-        uint256 inP2P; // In p2pUnit, a unit that grows in value, to keep track of the interests/debt increase when users are in p2p.
-        uint256 onPool; // In cToken.
-    }
-
-    struct BorrowBalance {
-        uint256 inP2P; // In p2pUnit.
-        uint256 onPool; // In cdUnit, a unit that grows in value, to keep track of the debt increase when users are in Comp. Multiply by current borrowIndex to get the underlying amount.
-    }
 
     // Struct to avoid stack too deep error
     struct BalanceStateVars {
@@ -56,27 +46,6 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
         uint256 priceCollateralMantissa; // The price of the collateral asset (in USD).
         uint256 collateralOnPoolInUnderlying; // The amount of underlying the liquidatee has on Comp.
     }
-
-    /* Storage */
-
-    uint16 public NMAX = 1000;
-    uint8 private constant CTOKEN_DECIMALS = 8;
-    mapping(address => RedBlackBinaryTree.Tree) private suppliersInP2P; // Suppliers in peer-to-peer.
-    mapping(address => RedBlackBinaryTree.Tree) private suppliersOnPool; // Suppliers on Comp.
-    mapping(address => RedBlackBinaryTree.Tree) private borrowersInP2P; // Borrowers in peer-to-peer.
-    mapping(address => RedBlackBinaryTree.Tree) private borrowersOnPool; // Borrowers on Comp.
-    mapping(address => EnumerableSet.AddressSet) private suppliersInP2PBuffer; // Buffer of suppliers in peer-to-peer.
-    mapping(address => EnumerableSet.AddressSet) private suppliersOnPoolBuffer; // Buffer of suppliers on Comp.
-    mapping(address => EnumerableSet.AddressSet) private borrowersInP2PBuffer; // Buffer of borrowers in peer-to-peer.
-    mapping(address => EnumerableSet.AddressSet) private borrowersOnPoolBuffer; // Buffer of borrowers on Comp.
-    mapping(address => mapping(address => SupplyBalance)) public supplyBalanceInOf; // For a given market, the supply balance of user.
-    mapping(address => mapping(address => BorrowBalance)) public borrowBalanceInOf; // For a given market, the borrow balance of user.
-    mapping(address => mapping(address => bool)) public accountMembership; // Whether the account is in the market or not.
-    mapping(address => address[]) public enteredMarkets; // Markets entered by a user.
-    mapping(address => uint256) public threshold; // Thresholds below the ones suppliers and borrowers cannot enter markets.
-
-    IComptroller public comptroller;
-    IMarketsManagerForCompound public marketsManagerForCompound;
 
     /* Events */
 
@@ -201,9 +170,14 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
      *  @param _compoundMarketsManager The address of the markets manager.
      *  @param _proxyComptrollerAddress The address of the proxy comptroller.
      */
-    constructor(address _compoundMarketsManager, address _proxyComptrollerAddress) {
+    constructor(
+        address _compoundMarketsManager,
+        address _proxyComptrollerAddress,
+        address _logicAddress
+    ) {
         marketsManagerForCompound = IMarketsManagerForCompound(_compoundMarketsManager);
         comptroller = IComptroller(_proxyComptrollerAddress);
+        updatePositions = IUpdatePositions(_logicAddress);
     }
 
     /* External */
@@ -491,7 +465,7 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
         emit Withdrawn(_holder, _cTokenAddress, _amount);
     }
 
-    /** @dev Implements repay logic.
+    /** @dev Implements repay updatePositions.
      *  @dev `msg.sender` must have approved this contract to spend the underlying `_amount`.
      *  @param _cTokenAddress The address of the market the user wants to interact with.
      *  @param _borrower The address of the `_borrower` to repay the borrow.
@@ -869,68 +843,10 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
      *  @param _account The address of the borrower to move.
      */
     function _updateBorrowerList(address _cTokenAddress, address _account) internal {
-        uint256 onPool = borrowBalanceInOf[_cTokenAddress][_account].onPool;
-        uint256 inP2P = borrowBalanceInOf[_cTokenAddress][_account].inP2P;
-        uint256 numberOfBorrowersOnPool = borrowersOnPool[_cTokenAddress].numberOfKeys();
-        uint256 numberOfBorrowersInP2P = borrowersInP2P[_cTokenAddress].numberOfKeys();
-        bool isOnPool = borrowersOnPool[_cTokenAddress].keyExists(_account);
-        bool isInP2P = borrowersInP2P[_cTokenAddress].keyExists(_account);
-
-        // Check pool
-        bool isOnPoolAndValueChanged = isOnPool &&
-            borrowersOnPool[_cTokenAddress].getValueOfKey(_account) != onPool;
-        if (isOnPoolAndValueChanged) borrowersOnPool[_cTokenAddress].remove(_account);
-        if (onPool > 0 && ((isOnPoolAndValueChanged) || !isOnPool)) {
-            if (numberOfBorrowersOnPool <= NMAX) {
-                numberOfBorrowersOnPool++;
-                borrowersOnPool[_cTokenAddress].insert(_account, onPool);
-            } else {
-                (uint256 minimum, address minimumAccount) = borrowersOnPool[_cTokenAddress]
-                    .getMinimum();
-                if (onPool > minimum) {
-                    borrowersOnPool[_cTokenAddress].remove(minimumAccount);
-                    borrowersOnPoolBuffer[_cTokenAddress].add(minimumAccount);
-                    borrowersOnPool[_cTokenAddress].insert(_account, onPool);
-                } else borrowersOnPoolBuffer[_cTokenAddress].add(_account);
-            }
-        }
-        if (onPool == 0 && borrowersOnPoolBuffer[_cTokenAddress].contains(_account))
-            borrowersOnPoolBuffer[_cTokenAddress].remove(_account);
-
-        // Check P2P
-        bool isInP2PAndValueChanged = isInP2P &&
-            borrowersInP2P[_cTokenAddress].getValueOfKey(_account) != inP2P;
-        if (isInP2PAndValueChanged) borrowersInP2P[_cTokenAddress].remove(_account);
-        if (inP2P > 0 && (isInP2PAndValueChanged || !isInP2P)) {
-            if (numberOfBorrowersInP2P <= NMAX) {
-                numberOfBorrowersInP2P++;
-                borrowersInP2P[_cTokenAddress].insert(_account, inP2P);
-            } else {
-                (uint256 minimum, address minimumAccount) = borrowersInP2P[_cTokenAddress]
-                    .getMinimum();
-                if (inP2P > minimum) {
-                    borrowersInP2P[_cTokenAddress].remove(minimumAccount);
-                    borrowersInP2PBuffer[_cTokenAddress].add(minimumAccount);
-                    borrowersInP2P[_cTokenAddress].insert(_account, inP2P);
-                } else borrowersInP2PBuffer[_cTokenAddress].add(_account);
-            }
-        }
-        if (inP2P == 0 && borrowersInP2PBuffer[_cTokenAddress].contains(_account))
-            borrowersInP2PBuffer[_cTokenAddress].remove(_account);
-
-        // Add user to the trees if possible
-        if (borrowersOnPoolBuffer[_cTokenAddress].length() > 0 && numberOfBorrowersOnPool <= NMAX) {
-            address account = borrowersOnPoolBuffer[_cTokenAddress].at(0);
-            uint256 value = borrowBalanceInOf[_cTokenAddress][account].onPool;
-            borrowersOnPoolBuffer[_cTokenAddress].remove(account);
-            borrowersOnPool[_cTokenAddress].insert(account, value);
-        }
-        if (borrowersInP2PBuffer[_cTokenAddress].length() > 0 && numberOfBorrowersInP2P <= NMAX) {
-            address account = borrowersInP2PBuffer[_cTokenAddress].at(0);
-            uint256 value = borrowBalanceInOf[_cTokenAddress][account].inP2P;
-            borrowersInP2PBuffer[_cTokenAddress].remove(account);
-            borrowersInP2P[_cTokenAddress].insert(account, value);
-        }
+        (bool success, ) = address(updatePositions).delegatecall(
+            abi.encodeWithSignature("updateBorrowerList(address,address)", _cTokenAddress, _account)
+        );
+        require(success, "");
     }
 
     /** @dev Updates suppliers tree with the new balances of a given account.
@@ -938,68 +854,10 @@ contract MorphoPositionsManagerForCompound is ReentrancyGuard {
      *  @param _account The address of the supplier to move.
      */
     function _updateSupplierList(address _cTokenAddress, address _account) internal {
-        uint256 onPool = supplyBalanceInOf[_cTokenAddress][_account].onPool;
-        uint256 inP2P = supplyBalanceInOf[_cTokenAddress][_account].inP2P;
-        uint256 numberOfSuppliersOnPool = suppliersOnPool[_cTokenAddress].numberOfKeys();
-        uint256 numberOfSuppliersInP2P = suppliersInP2P[_cTokenAddress].numberOfKeys();
-        bool isOnPool = suppliersOnPool[_cTokenAddress].keyExists(_account);
-        bool isInP2P = suppliersInP2P[_cTokenAddress].keyExists(_account);
-
-        // Check pool
-        bool isOnPoolAndValueChanged = isOnPool &&
-            suppliersOnPool[_cTokenAddress].getValueOfKey(_account) != onPool;
-        if (isOnPoolAndValueChanged) suppliersOnPool[_cTokenAddress].remove(_account);
-        if (onPool > 0 && (isOnPoolAndValueChanged || !isOnPool)) {
-            if (numberOfSuppliersOnPool <= NMAX) {
-                numberOfSuppliersOnPool++;
-                suppliersOnPool[_cTokenAddress].insert(_account, onPool);
-            } else {
-                (uint256 minimum, address minimumAccount) = suppliersOnPool[_cTokenAddress]
-                    .getMinimum();
-                if (onPool > minimum) {
-                    suppliersOnPool[_cTokenAddress].remove(minimumAccount);
-                    suppliersOnPoolBuffer[_cTokenAddress].add(minimumAccount);
-                    suppliersOnPool[_cTokenAddress].insert(_account, onPool);
-                } else suppliersOnPoolBuffer[_cTokenAddress].add(_account);
-            }
-        }
-        if (onPool == 0 && suppliersOnPoolBuffer[_cTokenAddress].contains(_account))
-            suppliersOnPoolBuffer[_cTokenAddress].remove(_account);
-
-        // Check P2P
-        bool isInP2PAndValueChanged = isInP2P &&
-            suppliersInP2P[_cTokenAddress].getValueOfKey(_account) != inP2P;
-        if (isInP2PAndValueChanged) suppliersInP2P[_cTokenAddress].remove(_account);
-        if (inP2P > 0 && (isInP2PAndValueChanged || !isInP2P)) {
-            if (numberOfSuppliersInP2P <= NMAX) {
-                numberOfSuppliersInP2P++;
-                suppliersInP2P[_cTokenAddress].insert(_account, inP2P);
-            } else {
-                (uint256 minimum, address minimumAccount) = suppliersInP2P[_cTokenAddress]
-                    .getMinimum();
-                if (inP2P > minimum) {
-                    suppliersInP2P[_cTokenAddress].remove(minimumAccount);
-                    suppliersInP2PBuffer[_cTokenAddress].add(minimumAccount);
-                    suppliersInP2P[_cTokenAddress].insert(_account, inP2P);
-                } else suppliersInP2PBuffer[_cTokenAddress].add(_account);
-            }
-        }
-        if (inP2P == 0 && suppliersInP2PBuffer[_cTokenAddress].contains(_account))
-            suppliersInP2PBuffer[_cTokenAddress].remove(_account);
-
-        // Add user to the trees if possible
-        if (suppliersOnPoolBuffer[_cTokenAddress].length() > 0 && numberOfSuppliersOnPool <= NMAX) {
-            address account = suppliersOnPoolBuffer[_cTokenAddress].at(0);
-            uint256 value = supplyBalanceInOf[_cTokenAddress][account].onPool;
-            suppliersOnPoolBuffer[_cTokenAddress].remove(account);
-            suppliersOnPool[_cTokenAddress].insert(account, value);
-        }
-        if (suppliersInP2PBuffer[_cTokenAddress].length() > 0 && numberOfSuppliersInP2P <= NMAX) {
-            address account = suppliersInP2PBuffer[_cTokenAddress].at(0);
-            uint256 value = supplyBalanceInOf[_cTokenAddress][account].inP2P;
-            suppliersInP2PBuffer[_cTokenAddress].remove(account);
-            suppliersInP2P[_cTokenAddress].insert(account, value);
-        }
+        (bool success, ) = address(updatePositions).delegatecall(
+            abi.encodeWithSignature("updateSupplierList(address,address)", _cTokenAddress, _account)
+        );
+        require(success, "");
     }
 
     function _hasDebtOnPool(address _account) internal view returns (bool) {

@@ -11,7 +11,7 @@ import "./interfaces/IPositionsManagerForCompound.sol";
 import "./interfaces/IMarketsManagerForCompound.sol";
 
 /**
- *  @title MorphoMarketsManagerForCompound
+ *  @title MorphoMarketsManagerForCompound.
  *  @dev Smart contract managing the markets used by MorphoPositionsManagerForX, an other contract interacting with X: Compound or a fork of Compound.
  */
 contract MorphoMarketsManagerForCompound is Ownable {
