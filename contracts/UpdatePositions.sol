@@ -7,7 +7,7 @@ import "./PositionsManagerStorageForCompound.sol";
 
 /**
  *  @title UpdatePositions.
- *  @dev Allows move the logic from the positions manager to this contract.
+ *  @dev Allows to move the logic from the positions manager to this contract.
  */
 contract UpdatePositions is ReentrancyGuard, PositionsManagerStorageForCompound {
     using RedBlackBinaryTree for RedBlackBinaryTree.Tree;
@@ -29,7 +29,7 @@ contract UpdatePositions is ReentrancyGuard, PositionsManagerStorageForCompound 
         bool isOnPoolAndValueChanged = isOnPool &&
             borrowersOnPool[_cTokenAddress].getValueOfKey(_account) != onPool;
         if (isOnPoolAndValueChanged) borrowersOnPool[_cTokenAddress].remove(_account);
-        if (onPool > 0 && ((isOnPoolAndValueChanged) || !isOnPool)) {
+        if (onPool > 0 && (isOnPoolAndValueChanged || !isOnPool)) {
             if (numberOfBorrowersOnPool <= NMAX) {
                 numberOfBorrowersOnPool++;
                 borrowersOnPool[_cTokenAddress].insert(_account, onPool);
