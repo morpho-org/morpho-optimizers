@@ -6,7 +6,7 @@ interface IPositionsManagerForCompound {
 
     function setComptroller(address _proxyComptrollerAddress) external;
 
-    function setMaxNumberOfUsersInDataStructure(uint16) external;
+    function setMaxNumberOfUsersInTree(uint16) external;
 
     function setThreshold(address, uint256) external;
 }

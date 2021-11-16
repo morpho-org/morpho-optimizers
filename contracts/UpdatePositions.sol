@@ -7,7 +7,7 @@ import "./PositionsManagerStorageForCompound.sol";
 
 /**
  *  @title UpdatePositions.
- *  @dev Allows move the logic from the positions manager to this contract.
+ *  @dev Allows to move the logic from the positions manager to this contract.
  */
 contract UpdatePositions is ReentrancyGuard, PositionsManagerStorageForCompound {
     using RedBlackBinaryTree for RedBlackBinaryTree.Tree;
