@@ -723,51 +723,6 @@ describe('PositionsManagerForCompound Contract', () => {
       // expect(removeDigitsBigNumber(3, await cToken.callStatic.borrowBalanceStored(positionsManagerForCompound.address))).to.equal(removeDigitsBigNumber(3, expectedMorphoBorrowBalance2));
     });
 
-    it('Should disconnect supplier from Morpho when borrow an asset that nobody has on marketsManagerForCompound and the supply balance is partly used', async () => {
-      // supplier1 supplys DAI
-      const supplyAmount = utils.parseUnits('100');
-      await daiToken.connect(supplier1).approve(positionsManagerForCompound.address, supplyAmount);
-      await positionsManagerForCompound.connect(supplier1).supply(config.tokens.cDai.address, supplyAmount);
-
-      // borrower1 supplys USDC as collateral
-      const collateralAmount = to6Decimals(utils.parseUnits('100'));
-      await usdcToken.connect(borrower1).approve(positionsManagerForCompound.address, collateralAmount);
-      await positionsManagerForCompound.connect(borrower1).supply(config.tokens.cUsdc.address, collateralAmount);
-
-      // borrower1 borrows part of the supply amount of supplier1
-      const amountToBorrow = supplyAmount.div(2);
-      await positionsManagerForCompound.connect(borrower1).borrow(config.tokens.cDai.address, amountToBorrow);
-      const borrowBalanceInP2P = (await positionsManagerForCompound.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).inP2P;
-
-      // supplier1 borrows USDT that nobody is supply in peer-to-peer
-      const cDaiExchangeRate1 = await cDaiToken.callStatic.exchangeRateCurrent();
-      const mDaiExchangeRate1 = await marketsManagerForCompound.p2pUnitExchangeRate(config.tokens.cDai.address);
-      const supplyBalanceOnPool1 = (await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).onPool;
-      const supplyBalanceInP2P1 = (await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).inP2P;
-      const supplyBalanceOnPoolInUnderlying = cTokenToUnderlying(supplyBalanceOnPool1, cDaiExchangeRate1);
-      const supplyBalanceMorphoInUnderlying = p2pUnitToUnderlying(supplyBalanceInP2P1, mDaiExchangeRate1);
-      const supplyBalanceInUnderlying = supplyBalanceOnPoolInUnderlying.add(supplyBalanceMorphoInUnderlying);
-      const { collateralFactorMantissa } = await comptroller.markets(config.tokens.cDai.address);
-      const usdtPriceMantissa = await compoundOracle.callStatic.getUnderlyingPrice(config.tokens.cUsdt.address);
-      const daiPriceMantissa = await compoundOracle.callStatic.getUnderlyingPrice(config.tokens.cDai.address);
-      const maxToBorrow = supplyBalanceInUnderlying.mul(daiPriceMantissa).div(usdtPriceMantissa).mul(collateralFactorMantissa).div(SCALE);
-      await positionsManagerForCompound.connect(supplier1).borrow(config.tokens.cUsdt.address, maxToBorrow);
-
-      // Check balances
-      const supplyBalanceOnPool2 = (await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).onPool;
-      const borrowBalanceOnPool = (await positionsManagerForCompound.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onPool;
-      const cDaiExchangeRate2 = await cDaiToken.callStatic.exchangeRateCurrent();
-      const cDaiBorrowIndex = await cDaiToken.borrowIndex();
-      const mDaiExchangeRate2 = await marketsManagerForCompound.p2pUnitExchangeRate(config.tokens.cDai.address);
-      const expectedBorrowBalanceOnPool = p2pUnitToUnderlying(borrowBalanceInP2P, mDaiExchangeRate2).mul(SCALE).div(cDaiBorrowIndex);
-      const usdtBorrowBalance = (await positionsManagerForCompound.borrowBalanceInOf(config.tokens.cUsdt.address, supplier1.getAddress())).onPool;
-      const cUsdtBorrowIndex = await cUsdtToken.borrowIndex();
-      const usdtBorrowBalanceInUnderlying = usdtBorrowBalance.mul(cUsdtBorrowIndex).div(SCALE);
-      expect(removeDigitsBigNumber(6, supplyBalanceOnPool2)).to.equal(removeDigitsBigNumber(6, underlyingToCToken(supplyBalanceInUnderlying, cDaiExchangeRate2)));
-      expect(removeDigitsBigNumber(2, borrowBalanceOnPool)).to.equal(removeDigitsBigNumber(2, expectedBorrowBalanceOnPool));
-      expect(removeDigitsBigNumber(2, usdtBorrowBalanceInUnderlying)).to.equal(removeDigitsBigNumber(2, maxToBorrow));
-    });
-
     it('Supplier should be connected to borrowers already in peer-to-peer when supplying', async () => {
       const collateralAmount = to6Decimals(utils.parseUnits('100'));
       const supplyAmount = utils.parseUnits('100');
