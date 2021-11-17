@@ -972,14 +972,4 @@ describe('PositionsManagerForCompound Contract', () => {
       expect(daiBalanceAfter).to.equal(expectedDaiBalanceAfter);
     });
   });
-
-  xdescribe('Test attacks', () => {
-    it('Should not be DDOS by a supplier or a group of suppliers', async () => {});
-
-    it('Should not be DDOS by a borrower or a group of borrowers', async () => {});
-
-    it('Should not be subject to flash loan attacks', async () => {});
-
-    it('Should not be subjected to Oracle Manipulation attacks', async () => {});
-  });
 });
