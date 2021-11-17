@@ -77,48 +77,125 @@ contract PositionsManagerForCompound is ReentrancyGuard, PositionsManagerStorage
      */
     event Repaid(address indexed _account, address indexed _cTokenAddress, uint256 _amount);
 
-    /** @dev Emitted when a supplier position is moved from Comp to P2P.
+    /** @dev Emitted when a liquidation happens.
+     *  @param _liquidator The address of the liquidator.
+     *  @param _liquidatee The address of the liquidatee.
+     *  @param _amountRepaid The amount of borrowed asset repaid.
+     *  @param _cTokenBorrowedAddress The address of the borrowed asset.
+     *  @param _amountSeized The amount of collateral asset seized.
+     *  @param _cTokenCollateralAddress The address of the collateral asset seized.
+     */
+    event Liquidate(
+        address indexed _liquidator,
+        address indexed _liquidatee,
+        uint256 _amountRepaid,
+        address _cTokenBorrowedAddress,
+        uint256 _amountSeized,
+        address _cTokenCollateralAddress
+    );
+
+    /** @dev Emitted when an amount is added on the pool balance of a supplier.
      *  @param _account The address of the supplier.
      *  @param _cTokenAddress The address of the market.
      *  @param _amount The amount of assets.
+     *  @param _cTokenExchangeRate The cToken exchange rate at the moment.
      */
-    event SupplierMatched(
+    event SupplierAmountAddedOnPool(
         address indexed _account,
         address indexed _cTokenAddress,
-        uint256 _amount
+        uint256 _amount,
+        uint256 _cTokenExchangeRate
     );
 
-    /** @dev Emitted when a supplier position is moved from P2P to Comp.
+    /** @dev Emitted when an amount is removed from the pool balance of a supplier.
      *  @param _account The address of the supplier.
      *  @param _cTokenAddress The address of the market.
      *  @param _amount The amount of assets.
+     *  @param _cTokenExchangeRate The cToken exchange rate at the moment.
      */
-    event SupplierUnmatched(
+    event SupplierAmountRemovedOnPool(
         address indexed _account,
         address indexed _cTokenAddress,
-        uint256 _amount
+        uint256 _amount,
+        uint256 _cTokenExchangeRate
     );
 
-    /** @dev Emitted when a borrower position is moved from Comp to P2P.
+    /** @dev Emitted when an amount is added on the P2P balance of a supplier.
+     *  @param _account The address of the supplier.
+     *  @param _cTokenAddress The address of the market.
+     *  @param _amount The amount of assets.
+     *  @param _p2pExchangeRate The P2P exchange rate at the moment.
+     */
+    event SupplierAmountAddedInP2P(
+        address indexed _account,
+        address indexed _cTokenAddress,
+        uint256 _amount,
+        uint256 _p2pExchangeRate
+    );
+
+    /** @dev Emitted when an amount is removed from the P2P balance of a supplier.
+     *  @param _account The address of the supplier.
+     *  @param _cTokenAddress The address of the market.
+     *  @param _amount The amount of assets.
+     *  @param _p2pExchangeRate The P2P exchange rate at the moment.
+     */
+    event SupplierAmountRemovedInP2P(
+        address indexed _account,
+        address indexed _cTokenAddress,
+        uint256 _amount,
+        uint256 _p2pExchangeRate
+    );
+
+    /** @dev Emitted when an amount is added on the pool balance of a borrower.
      *  @param _account The address of the borrower.
      *  @param _cTokenAddress The address of the market.
      *  @param _amount The amount of assets.
+     *  @param _borrowIndex The borrow index at the moment.
      */
-    event BorrowerMatched(
+    event BorrowerAmountAddedOnPool(
         address indexed _account,
         address indexed _cTokenAddress,
-        uint256 _amount
+        uint256 _amount,
+        uint256 _borrowIndex
     );
 
-    /** @dev Emitted when a borrower position is moved from P2P to Comp.
+    /** @dev Emitted when an amount is removed from the pool balance of a borrower.
      *  @param _account The address of the borrower.
      *  @param _cTokenAddress The address of the market.
      *  @param _amount The amount of assets.
+     *  @param _borrowIndex The borrow index at the moment.
      */
-    event BorrowerUnmatched(
+    event BorrowerAmountRemovedOnPool(
         address indexed _account,
         address indexed _cTokenAddress,
-        uint256 _amount
+        uint256 _amount,
+        uint256 _borrowIndex
+    );
+
+    /** @dev Emitted when an amount is added on the P2P balance of a borrower.
+     *  @param _account The address of the borrower.
+     *  @param _cTokenAddress The address of the market.
+     *  @param _amount The amount of assets.
+     *  @param _p2pExchangeRate The P2P exchange rate at the moment.
+     */
+    event BorrowerAmountAddedInP2P(
+        address indexed _account,
+        address indexed _cTokenAddress,
+        uint256 _amount,
+        uint256 _p2pExchangeRate
+    );
+
+    /** @dev Emitted when an amount is removed from the P2P balance of a borrower.
+     *  @param _account The address of the borrower.
+     *  @param _cTokenAddress The address of the market.
+     *  @param _amount The amount of assets.
+     *  @param _p2pExchangeRate The P2P exchange rate at the moment.
+     */
+    event BorrowerAmountRemovedInP2P(
+        address indexed _account,
+        address indexed _cTokenAddress,
+        uint256 _amount,
+        uint256 _p2pExchangeRate
     );
 
     /* Modifiers */
@@ -236,6 +313,7 @@ contract PositionsManagerForCompound is ReentrancyGuard, PositionsManagerStorage
         ICErc20 cToken = ICErc20(_cTokenAddress);
         IERC20 underlyingToken = IERC20(cToken.underlying());
         underlyingToken.safeTransferFrom(msg.sender, address(this), _amount);
+        emit Supplied(msg.sender, _cTokenAddress, _amount);
         uint256 cTokenExchangeRate = cToken.exchangeRateCurrent();
         /* DEFAULT CASE: There aren't any borrowers waiting on Comp, Morpho supplies all the tokens to Comp */
         uint256 remainingToSupplyToPool = _amount;
@@ -250,6 +328,7 @@ contract PositionsManagerForCompound is ReentrancyGuard, PositionsManagerStorage
 
             if (matched > 0) {
                 supplyBalanceInOf[_cTokenAddress][msg.sender].inP2P += matched.div(p2pExchangeRate); // In p2pUnit
+                emit SupplierAmountAddedInP2P(msg.sender, _cTokenAddress, matched, p2pExchangeRate);
             }
         }
 
@@ -259,10 +338,15 @@ contract PositionsManagerForCompound is ReentrancyGuard, PositionsManagerStorage
                 cTokenExchangeRate
             ); // In cToken
             _supplyERC20ToPool(_cTokenAddress, remainingToSupplyToPool); // Revert on error
+            emit SupplierAmountAddedOnPool(
+                msg.sender,
+                _cTokenAddress,
+                remainingToSupplyToPool,
+                cTokenExchangeRate
+            );
         }
 
         _updateSupplierList(_cTokenAddress, msg.sender);
-        emit Supplied(msg.sender, _cTokenAddress, _amount);
     }
 
     /** @dev Borrows ERC20 tokens.
@@ -277,6 +361,7 @@ contract PositionsManagerForCompound is ReentrancyGuard, PositionsManagerStorage
     {
         _handleMembership(_cTokenAddress, msg.sender);
         _checkAccountLiquidity(msg.sender, _cTokenAddress, 0, _amount);
+        emit Borrowed(msg.sender, _cTokenAddress, _amount);
         ICErc20 cToken = ICErc20(_cTokenAddress);
         IERC20 underlyingToken = IERC20(cToken.underlying());
         /* DEFAULT CASE: There aren't any borrowers waiting on Comp, Morpho borrows all the tokens from Comp */
@@ -289,20 +374,27 @@ contract PositionsManagerForCompound is ReentrancyGuard, PositionsManagerStorage
             uint256 matched = _amount - remainingToBorrowOnPool;
             if (matched > 0) {
                 borrowBalanceInOf[_cTokenAddress][msg.sender].inP2P += matched.div(p2pExchangeRate); // In p2pUnit
+                emit BorrowerAmountAddedInP2P(msg.sender, _cTokenAddress, matched, p2pExchangeRate);
             }
         }
 
         /* If there aren't enough suppliers waiting on Comp to match all the tokens borrowed, the rest is borrowed from Comp */
         if (remainingToBorrowOnPool > 0) {
             require(cToken.borrow(remainingToBorrowOnPool) == 0, "3");
+            uint256 borrowIndex = cToken.borrowIndex();
             borrowBalanceInOf[_cTokenAddress][msg.sender].onPool += remainingToBorrowOnPool.div(
-                cToken.borrowIndex()
+                borrowIndex
             ); // In cdUnit
+            emit BorrowerAmountAddedOnPool(
+                msg.sender,
+                _cTokenAddress,
+                remainingToBorrowOnPool,
+                borrowIndex
+            );
         }
 
         _updateBorrowerList(_cTokenAddress, msg.sender);
         underlyingToken.safeTransfer(msg.sender, _amount);
-        emit Borrowed(msg.sender, _cTokenAddress, _amount);
     }
 
     /** @dev Withdraws ERC20 tokens from supply.
@@ -382,6 +474,14 @@ contract PositionsManagerForCompound is ReentrancyGuard, PositionsManagerStorage
             );
 
         require(vars.amountToSeize <= totalCollateral, "8");
+        emit Liquidate(
+            msg.sender,
+            _borrower,
+            _amount,
+            _cTokenBorrowedAddress,
+            vars.amountToSeize,
+            _cTokenCollateralAddress
+        );
         _withdraw(_cTokenCollateralAddress, vars.amountToSeize, _borrower, msg.sender);
     }
 
@@ -401,6 +501,7 @@ contract PositionsManagerForCompound is ReentrancyGuard, PositionsManagerStorage
     ) internal isMarketCreated(_cTokenAddress) {
         require(_amount > 0, "9");
         _checkAccountLiquidity(_holder, _cTokenAddress, _amount, 0);
+        emit Withdrawn(_holder, _cTokenAddress, _amount);
         ICErc20 cToken = ICErc20(_cTokenAddress);
         IERC20 underlyingToken = IERC20(cToken.underlying());
         uint256 cTokenExchangeRate = cToken.exchangeRateCurrent();
@@ -417,6 +518,12 @@ contract PositionsManagerForCompound is ReentrancyGuard, PositionsManagerStorage
                 supplyBalanceInOf[_cTokenAddress][_holder].onPool -= _amount.div(
                     cTokenExchangeRate
                 ); // In cToken
+                emit SupplierAmountRemovedOnPool(
+                    _holder,
+                    _cTokenAddress,
+                    _amount,
+                    cTokenExchangeRate
+                );
                 remainingToWithdraw = 0; // In underlying
             }
             /* CASE 2: User withdraws more than his Comp supply balance */
@@ -426,6 +533,12 @@ contract PositionsManagerForCompound is ReentrancyGuard, PositionsManagerStorage
                     "10"
                 );
                 supplyBalanceInOf[_cTokenAddress][_holder].onPool = 0;
+                emit SupplierAmountRemovedOnPool(
+                    _holder,
+                    _cTokenAddress,
+                    amountOnPoolInUnderlying,
+                    cTokenExchangeRate
+                );
                 remainingToWithdraw = _amount - amountOnPoolInUnderlying; // In underlying
             }
         }
@@ -442,6 +555,12 @@ contract PositionsManagerForCompound is ReentrancyGuard, PositionsManagerStorage
                 supplyBalanceInOf[_cTokenAddress][_holder].inP2P -= remainingToWithdraw.div(
                     p2pExchangeRate
                 ); // In p2pUnit
+                emit SupplierAmountRemovedInP2P(
+                    _holder,
+                    _cTokenAddress,
+                    remainingToWithdraw,
+                    p2pExchangeRate
+                );
             }
             /* CASE 2: Other suppliers don't have enough tokens on Comp. Such scenario is called the Hard-Withdraw */
             else {
@@ -452,6 +571,12 @@ contract PositionsManagerForCompound is ReentrancyGuard, PositionsManagerStorage
                 supplyBalanceInOf[_cTokenAddress][_holder].inP2P -= remainingToWithdraw.div(
                     p2pExchangeRate
                 ); // In p2pUnit
+                emit SupplierAmountRemovedInP2P(
+                    _holder,
+                    _cTokenAddress,
+                    remainingToWithdraw,
+                    p2pExchangeRate
+                );
                 remainingToWithdraw -= remaining;
                 require(
                     _unmatchBorrowers(_cTokenAddress, remainingToWithdraw) == 0, // We break some P2P credit lines the user had with borrowers and fallback on Comp.
@@ -462,7 +587,6 @@ contract PositionsManagerForCompound is ReentrancyGuard, PositionsManagerStorage
 
         _updateSupplierList(_cTokenAddress, _holder);
         underlyingToken.safeTransfer(_receiver, _amount);
-        emit Withdrawn(_holder, _cTokenAddress, _amount);
     }
 
     /** @dev Implements repay updatePositions.
@@ -495,6 +619,7 @@ contract PositionsManagerForCompound is ReentrancyGuard, PositionsManagerStorage
                 cToken.repayBorrow(_amount);
                 borrowBalanceInOf[_cTokenAddress][_borrower].onPool -= _amount.div(borrowIndex); // In cdUnit
                 remainingToRepay = 0;
+                emit BorrowerAmountRemovedOnPool(_borrower, _cTokenAddress, _amount, borrowIndex);
             }
             /* CASE 2: User repays more than his Comp borrow balance */
             else {
@@ -502,12 +627,17 @@ contract PositionsManagerForCompound is ReentrancyGuard, PositionsManagerStorage
                 cToken.repayBorrow(onPoolInUnderlying); // Revert on error
                 borrowBalanceInOf[_cTokenAddress][_borrower].onPool = 0;
                 remainingToRepay -= onPoolInUnderlying; // In underlying
+                emit BorrowerAmountRemovedOnPool(
+                    _borrower,
+                    _cTokenAddress,
+                    onPoolInUnderlying,
+                    borrowIndex
+                );
             }
         }
 
         /* If there remains some tokens to repay (CASE 2), Morpho breaks credit lines and repair them either with other users or with Comp itself */
         if (remainingToRepay > 0) {
-            // No need to update p2pUnitExchangeRate here as it's done in `_checkAccountLiquidity`
             uint256 p2pExchangeRate = marketsManagerForCompound.updateP2pUnitExchangeRate(
                 _cTokenAddress
             );
@@ -518,6 +648,12 @@ contract PositionsManagerForCompound is ReentrancyGuard, PositionsManagerStorage
                 borrowBalanceInOf[_cTokenAddress][_borrower].inP2P -= remainingToRepay.div(
                     p2pExchangeRate
                 );
+                emit BorrowerAmountRemovedInP2P(
+                    _borrower,
+                    _cTokenAddress,
+                    remainingToRepay,
+                    p2pExchangeRate
+                );
             }
             /* CASE 2: Other borrowers aren't borrowing enough on Comp to compensate user's position */
             else {
@@ -525,6 +661,12 @@ contract PositionsManagerForCompound is ReentrancyGuard, PositionsManagerStorage
                 borrowBalanceInOf[_cTokenAddress][_borrower].inP2P -= remainingToRepay.div(
                     p2pExchangeRate
                 ); // In p2pUnit
+                emit BorrowerAmountRemovedInP2P(
+                    _borrower,
+                    _cTokenAddress,
+                    remainingToRepay,
+                    p2pExchangeRate
+                );
                 remainingToRepay -= contractBorrowBalanceOnPool;
                 require(
                     _unmatchSuppliers(_cTokenAddress, remainingToRepay) == 0, // We break some P2P credit lines the user had with suppliers and fallback on Comp.
@@ -599,8 +741,9 @@ contract PositionsManagerForCompound is ReentrancyGuard, PositionsManagerStorage
             remainingToMatch -= toMatch;
             supplyBalanceInOf[_cTokenAddress][account].inP2P += toMatch.div(p2pExchangeRate); // In p2pUnit
             _updateSupplierList(_cTokenAddress, account);
-            emit SupplierMatched(account, _cTokenAddress, toMatch);
             account = tmpAccount;
+            emit SupplierAmountRemovedOnPool(account, _cTokenAddress, toMatch, cTokenExchangeRate);
+            emit SupplierAmountAddedInP2P(account, _cTokenAddress, toMatch, p2pExchangeRate);
         }
         // Withdraw from Comp
         _withdrawERC20FromComp(_cTokenAddress, _amount - remainingToMatch);
@@ -629,7 +772,8 @@ contract PositionsManagerForCompound is ReentrancyGuard, PositionsManagerStorage
             supplyBalanceInOf[_cTokenAddress][account].onPool += toUnmatch.div(cTokenExchangeRate); // In cToken
             supplyBalanceInOf[_cTokenAddress][account].inP2P -= toUnmatch.div(p2pExchangeRate); // In p2pUnit
             _updateSupplierList(_cTokenAddress, account);
-            emit SupplierUnmatched(account, _cTokenAddress, toUnmatch);
+            emit SupplierAmountAddedOnPool(account, _cTokenAddress, toUnmatch, cTokenExchangeRate);
+            emit SupplierAmountRemovedOnPool(account, _cTokenAddress, toUnmatch, p2pExchangeRate);
             (, account) = suppliersInP2P[_cTokenAddress].getMaximum();
         }
         // Supply on Comp
@@ -668,7 +812,8 @@ contract PositionsManagerForCompound is ReentrancyGuard, PositionsManagerStorage
             remainingToMatch -= toMatch;
             borrowBalanceInOf[_cTokenAddress][account].inP2P += toMatch.div(p2pExchangeRate);
             _updateBorrowerList(_cTokenAddress, account);
-            emit BorrowerMatched(account, _cTokenAddress, toMatch);
+            emit BorrowerAmountRemovedOnPool(account, _cTokenAddress, toMatch, borrowIndex);
+            emit BorrowerAmountAddedInP2P(account, _cTokenAddress, toMatch, p2pExchangeRate);
             (, account) = borrowersOnPool[_cTokenAddress].getMaximum();
         }
         // Repay Comp
@@ -700,7 +845,8 @@ contract PositionsManagerForCompound is ReentrancyGuard, PositionsManagerStorage
             borrowBalanceInOf[_cTokenAddress][account].onPool += toUnmatch.div(borrowIndex);
             borrowBalanceInOf[_cTokenAddress][account].inP2P -= toUnmatch.div(p2pExchangeRate);
             _updateBorrowerList(_cTokenAddress, account);
-            emit BorrowerUnmatched(account, _cTokenAddress, toUnmatch);
+            emit BorrowerAmountAddedOnPool(account, _cTokenAddress, toUnmatch, borrowIndex);
+            emit BorrowerAmountRemovedInP2P(account, _cTokenAddress, toUnmatch, p2pExchangeRate);
             (, account) = borrowersInP2P[_cTokenAddress].getMaximum();
         }
         // Borrow on Comp
