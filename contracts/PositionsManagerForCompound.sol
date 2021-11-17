@@ -294,7 +294,6 @@ contract PositionsManagerForCompound is ReentrancyGuard, PositionsManagerStorage
 
         /* If there aren't enough suppliers waiting on Comp to match all the tokens borrowed, the rest is borrowed from Comp */
         if (remainingToBorrowOnPool > 0) {
-            _unmatchTheSupplier(msg.sender); // Before borrowing on Comp, we put all the collateral of the borrower on Comp (cf Liquidation Invariant in docs)
             require(cToken.borrow(remainingToBorrowOnPool) == 0, "3");
             borrowBalanceInOf[_cTokenAddress][msg.sender].onPool += remainingToBorrowOnPool.div(
                 cToken.borrowIndex()
@@ -583,28 +582,24 @@ contract PositionsManagerForCompound is ReentrancyGuard, PositionsManagerStorage
         while (remainingToMatch > 0 && account != address(0)) {
             address tmpAccount;
             // Check if this user is not borrowing on Pool (cf Liquidation Invariant in docs)
-            if (!_hasDebtOnPool(account)) {
-                uint256 onPoolInUnderlying = supplyBalanceInOf[_cTokenAddress][account].onPool.mul(
-                    cTokenExchangeRate
-                ); // In underlying
-                uint256 toMatch;
-                // This is done to prevent rounding errors
-                if (onPoolInUnderlying <= remainingToMatch) {
-                    supplyBalanceInOf[_cTokenAddress][account].onPool = 0;
-                    toMatch = onPoolInUnderlying;
-                } else {
-                    toMatch = remainingToMatch;
-                    supplyBalanceInOf[_cTokenAddress][account].onPool -= toMatch.div(
-                        cTokenExchangeRate
-                    ); // In cToken
-                }
-                remainingToMatch -= toMatch;
-                supplyBalanceInOf[_cTokenAddress][account].inP2P += toMatch.div(p2pExchangeRate); // In p2pUnit
-                _updateSupplierList(_cTokenAddress, account);
-                emit SupplierMatched(account, _cTokenAddress, toMatch);
+            uint256 onPoolInUnderlying = supplyBalanceInOf[_cTokenAddress][account].onPool.mul(
+                cTokenExchangeRate
+            ); // In underlying
+            uint256 toMatch;
+            // This is done to prevent rounding errors
+            if (onPoolInUnderlying <= remainingToMatch) {
+                supplyBalanceInOf[_cTokenAddress][account].onPool = 0;
+                toMatch = onPoolInUnderlying;
             } else {
-                tmpAccount = suppliersOnPool[_cTokenAddress].prev(account);
+                toMatch = remainingToMatch;
+                supplyBalanceInOf[_cTokenAddress][account].onPool -= toMatch.div(
+                    cTokenExchangeRate
+                ); // In cToken
             }
+            remainingToMatch -= toMatch;
+            supplyBalanceInOf[_cTokenAddress][account].inP2P += toMatch.div(p2pExchangeRate); // In p2pUnit
+            _updateSupplierList(_cTokenAddress, account);
+            emit SupplierMatched(account, _cTokenAddress, toMatch);
             account = tmpAccount;
         }
         // Withdraw from Comp
@@ -700,7 +695,6 @@ contract PositionsManagerForCompound is ReentrancyGuard, PositionsManagerStorage
 
         while (remainingToUnmatch > 0 && account != address(0)) {
             uint256 inP2P = borrowBalanceInOf[_cTokenAddress][account].inP2P;
-            _unmatchTheSupplier(account); // Before borrowing on Comp, we put all the collateral of the borrower on Comp (cf Liquidation Invariant in docs)
             uint256 toUnmatch = Math.min(inP2P.mul(p2pExchangeRate), remainingToUnmatch); // In underlying
             remainingToUnmatch -= toUnmatch;
             borrowBalanceInOf[_cTokenAddress][account].onPool += toUnmatch.div(borrowIndex);
@@ -711,36 +705,6 @@ contract PositionsManagerForCompound is ReentrancyGuard, PositionsManagerStorage
         }
         // Borrow on Comp
         require(cToken.borrow(_amount - remainingToUnmatch) == 0);
-    }
-
-    /**
-     * @dev Moves supply balance of an account from Morpho to Comp.
-     * @param _account The address of the account to move balance.
-     */
-    function _unmatchTheSupplier(address _account) internal {
-        for (uint256 i; i < enteredMarkets[_account].length; i++) {
-            address cTokenEntered = enteredMarkets[_account][i];
-            uint256 inP2P = supplyBalanceInOf[cTokenEntered][_account].inP2P;
-
-            if (inP2P > 0) {
-                uint256 p2pExchangeRate = marketsManagerForCompound.p2pUnitExchangeRate(
-                    cTokenEntered
-                );
-                uint256 cTokenExchangeRate = ICErc20(cTokenEntered).exchangeRateCurrent();
-                uint256 inP2PInUnderlying = inP2P.mul(p2pExchangeRate);
-                supplyBalanceInOf[cTokenEntered][_account].onPool += inP2PInUnderlying.div(
-                    cTokenExchangeRate
-                ); // In cToken
-                supplyBalanceInOf[cTokenEntered][_account].inP2P -= inP2PInUnderlying.div(
-                    p2pExchangeRate
-                ); // In p2pUnit
-                _unmatchBorrowers(cTokenEntered, inP2PInUnderlying);
-                _updateSupplierList(cTokenEntered, _account);
-                // Supply to Comp
-                _supplyERC20ToPool(cTokenEntered, inP2PInUnderlying);
-                emit SupplierUnmatched(_account, cTokenEntered, inP2PInUnderlying);
-            }
-        }
     }
 
     /**
@@ -861,14 +825,5 @@ contract PositionsManagerForCompound is ReentrancyGuard, PositionsManagerStorage
             abi.encodeWithSignature("updateSupplierList(address,address)", _cTokenAddress, _account)
         );
         require(success, "");
-    }
-
-    function _hasDebtOnPool(address _account) internal view returns (bool) {
-        for (uint256 i; i < enteredMarkets[_account].length; i++) {
-            if (borrowBalanceInOf[enteredMarkets[_account][i]][_account].onPool > 0) {
-                return true;
-            }
-        }
-        return false;
     }
 }
