@@ -449,7 +449,7 @@ describe('PositionsManagerForCompound Contract', () => {
 
   describe('P2P interactions between supplier and borrowers', () => {
     it('Supplier should withdraw her liquidity while not enough cToken in peer-to-peer contract', async () => {
-      // Supplier supplys tokens
+      // Supplier supplies tokens
       const supplyAmount = utils.parseUnits('10');
       const daiBalanceBefore1 = await daiToken.balanceOf(supplier1.getAddress());
       const expectedDaiBalanceAfter1 = daiBalanceBefore1.sub(supplyAmount);
@@ -732,7 +732,7 @@ describe('PositionsManagerForCompound Contract', () => {
     });
 
     it('Borrower in peer-to-peer only, should be able to repay all borrow amount', async () => {
-      // Supplier supplys tokens
+      // Supplier supplies tokens
       const supplyAmount = utils.parseUnits('10');
       await daiToken.connect(supplier1).approve(positionsManagerForCompound.address, supplyAmount);
       await positionsManagerForCompound.connect(supplier1).supply(config.tokens.cDai.address, supplyAmount);
@@ -777,7 +777,7 @@ describe('PositionsManagerForCompound Contract', () => {
     });
 
     it('Borrower in peer-to-peer and on Compound, should be able to repay all borrow amount', async () => {
-      // Supplier supplys tokens
+      // Supplier supplies tokens
       const supplyAmount = utils.parseUnits('10');
       const amountToApprove = utils.parseUnits('100000000');
       await daiToken.connect(supplier1).approve(positionsManagerForCompound.address, supplyAmount);
@@ -1003,7 +1003,7 @@ describe('PositionsManagerForCompound Contract', () => {
       await daiToken.connect(supplier1).approve(positionsManagerForCompound.address, utils.parseUnits('1000'));
       await positionsManagerForCompound.connect(supplier1).supply(config.tokens.cDai.address, utils.parseUnits('1000'));
 
-      // borrower1 supplys USDC as supply (collateral)
+      // borrower1 supplies USDC as supply (collateral)
       const amount = to6Decimals(utils.parseUnits('100'));
       await usdcToken.connect(borrower1).approve(positionsManagerForCompound.address, amount);
       await positionsManagerForCompound.connect(borrower1).supply(config.tokens.cUsdc.address, amount);
@@ -1101,5 +1101,264 @@ describe('PositionsManagerForCompound Contract', () => {
       expect(removeDigitsBigNumber(1, diff)).to.equal(0);
       expect(daiBalanceAfter).to.equal(expectedDaiBalanceAfter);
     });
+  });
+
+  describe('Test for interest calculation', () => {
+    it('Debt should increase over time', async () => {
+      // Supplier supplies tokens
+      const supplyAmount = utils.parseUnits('10');
+      const daiBalanceBefore1 = await daiToken.balanceOf(supplier1.getAddress());
+      const expectedDaiBalanceAfter1 = daiBalanceBefore1.sub(supplyAmount);
+      await daiToken.connect(supplier1).approve(positionsManagerForCompound.address, supplyAmount);
+      await positionsManagerForCompound.connect(supplier1).supply(config.tokens.cDai.address, supplyAmount);
+      const daiBalanceAfter1 = await daiToken.balanceOf(supplier1.getAddress());
+
+      // Check ERC20 balance
+      expect(daiBalanceAfter1).to.equal(expectedDaiBalanceAfter1);
+      const cTokenExchangeRate1 = await cDaiToken.callStatic.exchangeRateCurrent();
+      const expectedSupplyBalanceOnComp1 = underlyingToCToken(supplyAmount, cTokenExchangeRate1);
+      expect(await cDaiToken.balanceOf(positionsManagerForCompound.address)).to.equal(expectedSupplyBalanceOnComp1);
+      expect((await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).onPool).to.equal(
+        expectedSupplyBalanceOnComp1
+      );
+
+      // Borrower provides collateral
+      const collateralAmount = to6Decimals(utils.parseUnits('100'));
+      await usdcToken.connect(borrower1).approve(positionsManagerForCompound.address, collateralAmount);
+      await positionsManagerForCompound.connect(borrower1).supply(config.tokens.cUsdc.address, collateralAmount);
+
+      // Borrowers borrows supplier1 amount
+      await positionsManagerForCompound.connect(borrower1).borrow(config.tokens.cDai.address, supplyAmount);
+
+      const p2pBPY = await marketsManagerForCompound.p2pBPY(config.tokens.cDai.address);
+
+      // Take the starting block so that the p2pUnitExchangeRate is calculated with the same number of block
+      const p2pUnitExchangeRate1 = await marketsManagerForCompound.p2pUnitExchangeRate(config.tokens.cDai.address);
+      const startBlock = await ethers.provider.getBlockNumber();
+
+      // Mine 1000 blocks
+      for (let i = 0; i < 1000; i++) {
+        await hre.network.provider.send('evm_mine', []);
+      }
+
+      // Get the borrow balance
+      const borrowerBalanceInP2P = (await positionsManagerForCompound.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress()))
+        .inP2P;
+
+      // Get the updated Morpho exchange rate
+      await marketsManagerForCompound.updateP2pUnitExchangeRate(config.tokens.cDai.address);
+      const p2pUnitExchangeRate2 = await marketsManagerForCompound.p2pUnitExchangeRate(config.tokens.cDai.address);
+
+      // Compute expected MUniteExchangerate
+      const blockElasped = (await ethers.provider.getBlockNumber()) - startBlock;
+      const expectedNewP2pUnitExchangeRate = BigNumber.from(
+        computeNewMorphoExchangeRate(p2pUnitExchangeRate1, p2pBPY, blockElasped, 0).toString()
+      );
+
+      expect(p2pUnitExchangeRate2.sub(expectedNewP2pUnitExchangeRate)).to.be.below(1e5);
+
+      // Compare both values
+      const expectedToRepay = p2pUnitToUnderlying(borrowerBalanceInP2P, expectedNewP2pUnitExchangeRate);
+      const toRepay = p2pUnitToUnderlying(borrowerBalanceInP2P, p2pUnitExchangeRate2);
+      expect(expectedToRepay.sub(toRepay)).to.be.below(2e5);
+
+      // Check that after repaying, the borrowing balance decreases
+      const p2pUnitExchangeRateForRepay = BigNumber.from(computeNewMorphoExchangeRate(p2pUnitExchangeRate2, p2pBPY, 1, 0).toString());
+      const toRepayAdditionalBlock = p2pUnitToUnderlying(borrowerBalanceInP2P, p2pUnitExchangeRateForRepay);
+
+      // There is some dust left onPool
+      await daiToken.connect(borrower1).approve(positionsManagerForCompound.address, toRepayAdditionalBlock);
+      await positionsManagerForCompound.connect(borrower1).repay(config.tokens.cDai.address, toRepayAdditionalBlock);
+      const borrowerBalanceAfterRepay = (
+        await positionsManagerForCompound.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())
+      ).inP2P;
+      // 1e12 is due to the approximation made by JS as well as the dust left on the liquidity pool.
+      expect(p2pUnitToUnderlying(borrowerBalanceAfterRepay, p2pUnitExchangeRateForRepay)).to.be.below(1e12);
+    });
+
+    it('Borrower in peer-to-peer only, should be able to repay all borrow amount', async () => {
+      // Supplier supplies tokens
+      const supplyAmount = utils.parseUnits('10');
+      await daiToken.connect(supplier1).approve(positionsManagerForCompound.address, supplyAmount);
+      await positionsManagerForCompound.connect(supplier1).supply(config.tokens.cDai.address, supplyAmount);
+
+      // Borrower borrows half of the tokens
+      const collateralAmount = to6Decimals(utils.parseUnits('100'));
+      const daiBalanceBefore = await daiToken.balanceOf(borrower1.getAddress());
+      const toBorrow = supplyAmount.div(2);
+
+      await usdcToken.connect(borrower1).approve(positionsManagerForCompound.address, collateralAmount);
+      await positionsManagerForCompound.connect(borrower1).supply(config.tokens.cUsdc.address, collateralAmount);
+      await positionsManagerForCompound.connect(borrower1).borrow(config.tokens.cDai.address, toBorrow);
+
+      const borrowerBalanceInP2P = (await positionsManagerForCompound.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress()))
+        .inP2P;
+      const p2pBPY = await marketsManagerForCompound.p2pBPY(config.tokens.cDai.address);
+      await marketsManagerForCompound.updateP2pUnitExchangeRate(config.tokens.cDai.address);
+
+      const p2pUnitExchangeRate = computeNewMorphoExchangeRate(
+        await marketsManagerForCompound.p2pUnitExchangeRate(config.tokens.cDai.address),
+        p2pBPY,
+        1,
+        0
+      ).toString();
+      const toRepay = p2pUnitToUnderlying(borrowerBalanceInP2P, p2pUnitExchangeRate);
+      const expectedDaiBalanceAfter = daiBalanceBefore.add(toBorrow).sub(toRepay);
+      const previousMorphoCTokenBalance = await cDaiToken.balanceOf(positionsManagerForCompound.address);
+
+      // Count starting block here, so that p2pUnitExchangeRate is computed with the same number of blocks.
+      const startBlock = await ethers.provider.getBlockNumber();
+      const p2pUnitExchangeRate1 = await marketsManagerForCompound.p2pUnitExchangeRate(config.tokens.cDai.address);
+
+      // Repay
+      await daiToken.connect(borrower1).approve(positionsManagerForCompound.address, toRepay);
+      await positionsManagerForCompound.connect(borrower1).repay(config.tokens.cDai.address, toRepay);
+      const cTokenExchangeRate = await cDaiToken.callStatic.exchangeRateStored();
+      const expectedMorphoCTokenBalance = previousMorphoCTokenBalance.add(underlyingToCToken(toRepay, cTokenExchangeRate));
+
+      // Check borrower1 balances
+      const daiBalanceAfter = await daiToken.balanceOf(borrower1.getAddress());
+      expect(daiBalanceAfter).to.equal(expectedDaiBalanceAfter);
+
+      // Verify all of the borrower balance is in P2P
+      expect((await positionsManagerForCompound.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onPool).to.equal(0);
+
+      // Mine 1000 blocks
+      for (let i = 0; i < 1000; i++) {
+        await hre.network.provider.send('evm_mine', []);
+      }
+
+      // Get the updated Morpho exchange rate
+      await marketsManagerForCompound.updateP2pUnitExchangeRate(config.tokens.cDai.address);
+      const p2pUnitExchangeRate2 = await marketsManagerForCompound.p2pUnitExchangeRate(config.tokens.cDai.address);
+
+      // Compute expected MUniteExchangerate
+      const blockElasped = (await ethers.provider.getBlockNumber()) - startBlock;
+      const expectedNewP2pUnitExchangeRate = BigNumber.from(
+        computeNewMorphoExchangeRate(p2pUnitExchangeRate1, p2pBPY, blockElasped, 0).toString()
+      );
+
+      // Compare p2pUnitExchangeRate
+      expect(p2pUnitExchangeRate2.sub(expectedNewP2pUnitExchangeRate)).to.be.below(1e5);
+
+      // Compare values to repay
+      const expectedToRepay = p2pUnitToUnderlying(borrowerBalanceInP2P, expectedNewP2pUnitExchangeRate);
+      const toRepay2 = p2pUnitToUnderlying(borrowerBalanceInP2P, p2pUnitExchangeRate2);
+      // 1e12 is due to the approximation made by JS as well as the dust left on the liquidity pool.
+      expect(expectedToRepay.sub(toRepay2)).to.be.below(1e12);
+
+      // Check Morpho balances
+      expect(await cDaiToken.balanceOf(positionsManagerForCompound.address)).to.equal(expectedMorphoCTokenBalance);
+      expect(await cDaiToken.callStatic.borrowBalanceCurrent(positionsManagerForCompound.address)).to.equal(0);
+    });
+
+    it('Borrower in peer-to-peer only, should be able to repay all borrow amount, CASE 2.1', async () => {
+      const startBlock = await ethers.provider.getBlockNumber();
+      const p2pUnitExchangeRate1 = await marketsManagerForCompound.p2pUnitExchangeRate(config.tokens.cDai.address);
+
+      // Supplier1 supplies tokens
+      const supplyAmount = utils.parseUnits('10');
+      await daiToken.connect(supplier1).approve(positionsManagerForCompound.address, supplyAmount);
+      await positionsManagerForCompound.connect(supplier1).supply(config.tokens.cDai.address, supplyAmount);
+      let numberOfTxEmitted = 0;
+
+      // Borrower borrows half of the tokens
+      const collateralAmount = to6Decimals(utils.parseUnits('100'));
+      const daiBalanceBefore = await daiToken.balanceOf(borrower1.getAddress());
+      const toBorrow = supplyAmount.div(2);
+
+      await usdcToken.connect(borrower1).approve(positionsManagerForCompound.address, collateralAmount);
+      await positionsManagerForCompound.connect(borrower1).supply(config.tokens.cUsdc.address, collateralAmount);
+      await positionsManagerForCompound.connect(borrower1).borrow(config.tokens.cDai.address, toBorrow);
+      numberOfTxEmitted += 2;
+
+      // Borrower 2
+      const toBorrow2 = utils.parseUnits('10');
+      await usdcToken.connect(borrower2).approve(positionsManagerForCompound.address, collateralAmount);
+      await positionsManagerForCompound.connect(borrower2).supply(config.tokens.cUsdc.address, collateralAmount);
+      await positionsManagerForCompound.connect(borrower2).borrow(config.tokens.cDai.address, toBorrow2);
+      numberOfTxEmitted += 2;
+
+      const toRepay = toBorrow;
+      const expectedDaiBalanceAfter = daiBalanceBefore.add(toBorrow).sub(toRepay);
+
+      // Repay
+      await daiToken.connect(borrower1).approve(positionsManagerForCompound.address, toRepay);
+      await positionsManagerForCompound.connect(borrower1).repay(config.tokens.cDai.address, toRepay);
+      numberOfTxEmitted += 1;
+
+      // Check borrower1 balances
+      const daiBalanceAfter = await daiToken.balanceOf(borrower1.getAddress());
+      expect(daiBalanceAfter).to.equal(expectedDaiBalanceAfter);
+
+      // Verify all of the borrower balance is in P2P
+      expect((await positionsManagerForCompound.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onPool).to.equal(0);
+      const borrower2BalanceInP2P = (
+        await positionsManagerForCompound.borrowBalanceInOf(config.tokens.cDai.address, borrower2.getAddress())
+      ).inP2P;
+
+      // Mine 1000 blocks
+      for (let i = 0; i < 1000; i++) {
+        await hre.network.provider.send('evm_mine', []);
+      }
+
+      const p2pBPY = await marketsManagerForCompound.p2pBPY(config.tokens.cDai.address);
+
+      // Get the updated Morpho exchange rate
+      await marketsManagerForCompound.updateP2pUnitExchangeRate(config.tokens.cDai.address);
+      const p2pUnitExchangeRate2 = await marketsManagerForCompound.p2pUnitExchangeRate(config.tokens.cDai.address);
+
+      // Compute expected MUniteExchangerate
+      const blockElasped = (await ethers.provider.getBlockNumber()) - startBlock + numberOfTxEmitted;
+      const expectedNewP2pUnitExchangeRate = BigNumber.from(
+        computeNewMorphoExchangeRate(p2pUnitExchangeRate1, p2pBPY, blockElasped, 0).toString()
+      );
+
+      // For supplier
+      // Compute what's expected to be withdrawn
+      const supplierBalanceInP2P = (await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress()))
+        .inP2P;
+
+      // Compare both p2pUnitExchangeRate & toWithdraw
+      const expectedToWithdraw = p2pUnitToUnderlying(supplierBalanceInP2P, expectedNewP2pUnitExchangeRate);
+      const toWithdraw = p2pUnitToUnderlying(supplierBalanceInP2P, p2pUnitExchangeRate2);
+
+      expect(expectedNewP2pUnitExchangeRate.sub(p2pUnitExchangeRate2)).to.be.below(1e5);
+      expect(expectedToWithdraw.sub(toWithdraw)).to.be.below(2e5);
+
+      // Check that after withdrawing, the supplying balance decreases
+      await daiToken.connect(supplier1).approve(positionsManagerForCompound.address, toWithdraw);
+      await positionsManagerForCompound.connect(supplier1).withdraw(config.tokens.cDai.address, toWithdraw);
+      const supplierBalanceAfterWithdraw = (
+        await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())
+      ).inP2P;
+      expect(p2pUnitToUnderlying(supplierBalanceAfterWithdraw, p2pUnitExchangeRate2)).to.be.below(1e5);
+
+      // For Borrower2
+      // Compute what's expected to be repaid
+      const expectedToRepay = p2pUnitToUnderlying(borrower2BalanceInP2P, expectedNewP2pUnitExchangeRate);
+      const toRepayBorrower2 = p2pUnitToUnderlying(borrower2BalanceInP2P, p2pUnitExchangeRate2);
+
+      // Compare both values
+      expect(toRepayBorrower2.sub(expectedToRepay)).to.be.below(1e5);
+
+      // Check that after repaying, the borrowing balance decreases
+      await daiToken.connect(borrower2).approve(positionsManagerForCompound.address, toRepayBorrower2);
+      await positionsManagerForCompound.connect(borrower2).repay(config.tokens.cDai.address, toRepayBorrower2);
+      const borrowerBalanceAfterRepay = (
+        await positionsManagerForCompound.borrowBalanceInOf(config.tokens.cDai.address, borrower2.getAddress())
+      ).inP2P;
+      expect(p2pUnitToUnderlying(borrowerBalanceAfterRepay, p2pUnitExchangeRate2)).to.be.below(1e5);
+    });
+  });
+
+  xdescribe('Test attacks', () => {
+    it('Should not be DDOS by a supplier or a group of suppliers', async () => {});
+
+    it('Should not be DDOS by a borrower or a group of borrowers', async () => {});
+
+    it('Should not be subject to flash loan attacks', async () => {});
+
+    it('Should not be subjected to Oracle Manipulation attacks', async () => {});
   });
 });
