@@ -109,11 +109,11 @@ contract MarketsManagerForCompound is Ownable {
     /** @dev Creates a new market to borrow/supply.
      *  @param _marketAddress The addresses of the markets to add (cToken).
      */
-    function createMarket(address _marketAddress) external onlyOwner {
+    function createMarket(address _marketAddress, uint256 _threshold) external onlyOwner {
         require(!isCreated[_marketAddress], "3");
         uint256[] memory results = positionsManagerForCompound.createMarket(_marketAddress);
         require(results[0] == 0, "4");
-        positionsManagerForCompound.setThreshold(_marketAddress, 1e18);
+        positionsManagerForCompound.setThreshold(_marketAddress, _threshold);
         lastUpdateBlockNumber[_marketAddress] = block.number;
         p2pUnitExchangeRate[_marketAddress] = 1e18;
         isCreated[_marketAddress] = true;

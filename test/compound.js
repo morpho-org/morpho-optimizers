@@ -103,12 +103,10 @@ describe('PositionsManagerForCompound Contract', () => {
 
     // Create and list markets
     await marketsManagerForCompound.connect(owner).setPositionsManagerForCompound(positionsManagerForCompound.address);
-    await marketsManagerForCompound.connect(owner).createMarket(config.tokens.cDai.address);
-    await marketsManagerForCompound.connect(owner).createMarket(config.tokens.cUsdc.address);
-    await marketsManagerForCompound.connect(owner).createMarket(config.tokens.cUni.address);
-    await marketsManagerForCompound.connect(owner).createMarket(config.tokens.cUsdt.address);
-    await marketsManagerForCompound.connect(owner).updateThreshold(config.tokens.cUsdc.address, BigNumber.from(1).pow(6));
-    await marketsManagerForCompound.connect(owner).updateThreshold(config.tokens.cUsdt.address, BigNumber.from(1).pow(6));
+    await marketsManagerForCompound.connect(owner).createMarket(config.tokens.cDai.address, utils.parseUnits('1'));
+    await marketsManagerForCompound.connect(owner).createMarket(config.tokens.cUsdc.address, to6Decimals(utils.parseUnits('1')));
+    await marketsManagerForCompound.connect(owner).createMarket(config.tokens.cUni.address, utils.parseUnits('1'));
+    await marketsManagerForCompound.connect(owner).createMarket(config.tokens.cUsdt.address, to6Decimals(utils.parseUnits('1')));
   });
 
   beforeEach(async () => {
@@ -136,20 +134,20 @@ describe('PositionsManagerForCompound Contract', () => {
 
   describe('Governance functions', () => {
     it('Should revert when at least when a market in input is not a real market', async () => {
-      expect(marketsManagerForCompound.connect(owner).createMarket(config.tokens.usdt.address)).to.be.reverted;
+      expect(marketsManagerForCompound.connect(owner).createMarket(config.tokens.usdt.address, to6Decimals(utils.parseUnits('1')))).to.be.reverted;
     });
 
     it('Only Owner should be able to create markets in peer-to-peer', async () => {
-      expect(marketsManagerForCompound.connect(supplier1).createMarket(config.tokens.cEth.address)).to.be.reverted;
-      expect(marketsManagerForCompound.connect(borrower1).createMarket(config.tokens.cEth.address)).to.be.reverted;
-      expect(marketsManagerForCompound.connect(owner).createMarket(config.tokens.cEth.address)).not.be.reverted;
+      expect(marketsManagerForCompound.connect(supplier1).createMarket(config.tokens.cEth.address, utils.parseUnits('1'))).to.be.reverted;
+      expect(marketsManagerForCompound.connect(borrower1).createMarket(config.tokens.cEth.address, utils.parseUnits('1'))).to.be.reverted;
+      expect(marketsManagerForCompound.connect(owner).createMarket(config.tokens.cEth.address, utils.parseUnits('1'))).not.be.reverted;
     });
 
     it('Only Morpho should be able to create markets on PositionsManagerForCompound', async () => {
-      expect(positionsManagerForCompound.connect(supplier1).createMarket(config.tokens.cMkr.address)).to.be.reverted;
-      expect(positionsManagerForCompound.connect(borrower1).createMarket(config.tokens.cMkr.address)).to.be.reverted;
-      expect(positionsManagerForCompound.connect(owner).createMarket(config.tokens.cMkr.address)).to.be.reverted;
-      await marketsManagerForCompound.connect(owner).createMarket(config.tokens.cMkr.address);
+      expect(positionsManagerForCompound.connect(supplier1).createMarket(config.tokens.cMkr.address, utils.parseUnits('1'))).to.be.reverted;
+      expect(positionsManagerForCompound.connect(borrower1).createMarket(config.tokens.cMkr.address, utils.parseUnits('1'))).to.be.reverted;
+      expect(positionsManagerForCompound.connect(owner).createMarket(config.tokens.cMkr.address, utils.parseUnits('1'))).to.be.reverted;
+      await marketsManagerForCompound.connect(owner).createMarket(config.tokens.cMkr.address, utils.parseUnits('1'));
       expect(await comptroller.checkMembership(positionsManagerForCompound.address, config.tokens.cMkr.address)).to.be.true;
     });
 
@@ -169,7 +167,7 @@ describe('PositionsManagerForCompound Contract', () => {
     it('Should create a market the with right values', async () => {
       const supplyBPY = await cMkrToken.supplyRatePerBlock();
       const borrowBPY = await cMkrToken.borrowRatePerBlock();
-      const { blockNumber } = await marketsManagerForCompound.connect(owner).createMarket(config.tokens.cMkr.address);
+      const { blockNumber } = await marketsManagerForCompound.connect(owner).createMarket(config.tokens.cMkr.address, utils.parseUnits('1'));
       expect(await marketsManagerForCompound.isCreated(config.tokens.cMkr.address)).to.be.true;
 
       const p2pBPY = supplyBPY.add(borrowBPY).div(2);
