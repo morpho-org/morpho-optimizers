@@ -38,9 +38,8 @@ async function main() {
   console.log('PositionsManagerForCompound address:', positionsManagerForCompound.address);
 
   await marketsManagerForCompound.connect(deployer).setPositionsManagerForCompound(positionsManagerForCompound.address);
-  await marketsManagerForCompound.connect(deployer).createMarket(config.tokens.cDai.address);
-  await marketsManagerForCompound.connect(deployer).createMarket(config.tokens.cUsdc.address);
-  await marketsManagerForCompound.connect(deployer).updateThreshold(config.tokens.cUsdc.address, BigNumber.from(1).pow(6));
+  await marketsManagerForCompound.connect(deployer).createMarket(config.tokens.cDai.address, BigNumber.from(1).pow(6));
+  await marketsManagerForCompound.connect(deployer).createMarket(config.tokens.cUsdc.address, BigNumber.from(1).pow(6));
 }
 
 main()
