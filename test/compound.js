@@ -48,68 +48,72 @@ describe('PositionsManagerForCompound Contract', () => {
   let underlyingThreshold;
   let snapshotId;
 
-  before(async () => {
-    // Users
-    signers = await ethers.getSigners();
-    [owner, supplier1, supplier2, supplier3, borrower1, borrower2, borrower3, liquidator, ...addrs] = signers;
-    suppliers = [supplier1, supplier2, supplier3];
-    borrowers = [borrower1, borrower2, borrower3];
+  const initialize = async () => {
+    {
+      // Users
+      signers = await ethers.getSigners();
+      [owner, supplier1, supplier2, supplier3, borrower1, borrower2, borrower3, liquidator, ...addrs] = signers;
+      suppliers = [supplier1, supplier2, supplier3];
+      borrowers = [borrower1, borrower2, borrower3];
 
-    const RedBlackBinaryTree = await ethers.getContractFactory('RedBlackBinaryTree');
-    const redBlackBinaryTree = await RedBlackBinaryTree.deploy();
-    await redBlackBinaryTree.deployed();
+      const RedBlackBinaryTree = await ethers.getContractFactory('RedBlackBinaryTree');
+      const redBlackBinaryTree = await RedBlackBinaryTree.deploy();
+      await redBlackBinaryTree.deployed();
 
-    const UpdatePositions = await ethers.getContractFactory('UpdatePositions', {
-      libraries: {
-        RedBlackBinaryTree: redBlackBinaryTree.address,
-      },
-    });
-    const updatePositions = await UpdatePositions.deploy();
-    await updatePositions.deployed();
+      const UpdatePositions = await ethers.getContractFactory('UpdatePositions', {
+        libraries: {
+          RedBlackBinaryTree: redBlackBinaryTree.address,
+        },
+      });
+      const updatePositions = await UpdatePositions.deploy();
+      await updatePositions.deployed();
 
-    // Deploy contracts
-    MarketsManagerForCompound = await ethers.getContractFactory('MarketsManagerForCompound');
-    marketsManagerForCompound = await MarketsManagerForCompound.deploy();
-    await marketsManagerForCompound.deployed();
+      // Deploy contracts
+      MarketsManagerForCompound = await ethers.getContractFactory('MarketsManagerForCompound');
+      marketsManagerForCompound = await MarketsManagerForCompound.deploy();
+      await marketsManagerForCompound.deployed();
 
-    PositionsManagerForCompound = await ethers.getContractFactory('PositionsManagerForCompound', {
-      libraries: {
-        RedBlackBinaryTree: redBlackBinaryTree.address,
-      },
-    });
-    positionsManagerForCompound = await PositionsManagerForCompound.deploy(marketsManagerForCompound.address, config.compound.comptroller.address, updatePositions.address);
-    fakeCompoundPositionsManager = await PositionsManagerForCompound.deploy(marketsManagerForCompound.address, config.compound.comptroller.address, updatePositions.address);
-    await positionsManagerForCompound.deployed();
-    await fakeCompoundPositionsManager.deployed();
+      PositionsManagerForCompound = await ethers.getContractFactory('PositionsManagerForCompound', {
+        libraries: {
+          RedBlackBinaryTree: redBlackBinaryTree.address,
+        },
+      });
+      positionsManagerForCompound = await PositionsManagerForCompound.deploy(marketsManagerForCompound.address, config.compound.comptroller.address, updatePositions.address);
+      fakeCompoundPositionsManager = await PositionsManagerForCompound.deploy(marketsManagerForCompound.address, config.compound.comptroller.address, updatePositions.address);
+      await positionsManagerForCompound.deployed();
+      await fakeCompoundPositionsManager.deployed();
 
-    // Get contract dependencies
-    const cTokenAbi = require(config.tokens.cToken.abi);
-    cUsdcToken = await ethers.getContractAt(cTokenAbi, config.tokens.cUsdc.address, owner);
-    cDaiToken = await ethers.getContractAt(cTokenAbi, config.tokens.cDai.address, owner);
-    cUsdtToken = await ethers.getContractAt(cTokenAbi, config.tokens.cUsdt.address, owner);
-    cUniToken = await ethers.getContractAt(cTokenAbi, config.tokens.cUni.address, owner);
-    cMkrToken = await ethers.getContractAt(cTokenAbi, config.tokens.cMkr.address, owner); // This is in fact crLINK tokens (no crMKR on Polygon)
+      // Get contract dependencies
+      const cTokenAbi = require(config.tokens.cToken.abi);
+      cUsdcToken = await ethers.getContractAt(cTokenAbi, config.tokens.cUsdc.address, owner);
+      cDaiToken = await ethers.getContractAt(cTokenAbi, config.tokens.cDai.address, owner);
+      cUsdtToken = await ethers.getContractAt(cTokenAbi, config.tokens.cUsdt.address, owner);
+      cUniToken = await ethers.getContractAt(cTokenAbi, config.tokens.cUni.address, owner);
+      cMkrToken = await ethers.getContractAt(cTokenAbi, config.tokens.cMkr.address, owner); // This is in fact crLINK tokens (no crMKR on Polygon)
 
-    comptroller = await ethers.getContractAt(require(config.compound.comptroller.abi), config.compound.comptroller.address, owner);
-    compoundOracle = await ethers.getContractAt(require(config.compound.oracle.abi), comptroller.oracle(), owner);
+      comptroller = await ethers.getContractAt(require(config.compound.comptroller.abi), config.compound.comptroller.address, owner);
+      compoundOracle = await ethers.getContractAt(require(config.compound.oracle.abi), comptroller.oracle(), owner);
 
-    // Mint some ERC20
-    daiToken = await getTokens(config.tokens.dai.whale, 'whale', signers, config.tokens.dai, utils.parseUnits('10000'));
-    usdcToken = await getTokens(config.tokens.usdc.whale, 'whale', signers, config.tokens.usdc, BigNumber.from(10).pow(10));
-    usdtToken = await getTokens(config.tokens.usdt.whale, 'whale', signers, config.tokens.usdt, BigNumber.from(10).pow(10));
-    uniToken = await getTokens(config.tokens.uni.whale, 'whale', signers, config.tokens.uni, utils.parseUnits('100'));
+      // Mint some ERC20
+      daiToken = await getTokens(config.tokens.dai.whale, 'whale', signers, config.tokens.dai, utils.parseUnits('10000'));
+      usdcToken = await getTokens(config.tokens.usdc.whale, 'whale', signers, config.tokens.usdc, BigNumber.from(10).pow(10));
+      usdtToken = await getTokens(config.tokens.usdt.whale, 'whale', signers, config.tokens.usdt, BigNumber.from(10).pow(10));
+      uniToken = await getTokens(config.tokens.uni.whale, 'whale', signers, config.tokens.uni, utils.parseUnits('100'));
 
-    underlyingThreshold = utils.parseUnits('1');
+      underlyingThreshold = utils.parseUnits('1');
 
-    // Create and list markets
-    await marketsManagerForCompound.connect(owner).setPositionsManagerForCompound(positionsManagerForCompound.address);
-    await marketsManagerForCompound.connect(owner).createMarket(config.tokens.cDai.address);
-    await marketsManagerForCompound.connect(owner).createMarket(config.tokens.cUsdc.address);
-    await marketsManagerForCompound.connect(owner).createMarket(config.tokens.cUni.address);
-    await marketsManagerForCompound.connect(owner).createMarket(config.tokens.cUsdt.address);
-    await marketsManagerForCompound.connect(owner).updateThreshold(config.tokens.cUsdc.address, BigNumber.from(1).pow(6));
-    await marketsManagerForCompound.connect(owner).updateThreshold(config.tokens.cUsdt.address, BigNumber.from(1).pow(6));
-  });
+      // Create and list markets
+      await marketsManagerForCompound.connect(owner).setPositionsManagerForCompound(positionsManagerForCompound.address);
+      await marketsManagerForCompound.connect(owner).createMarket(config.tokens.cDai.address);
+      await marketsManagerForCompound.connect(owner).createMarket(config.tokens.cUsdc.address);
+      await marketsManagerForCompound.connect(owner).createMarket(config.tokens.cUni.address);
+      await marketsManagerForCompound.connect(owner).createMarket(config.tokens.cUsdt.address);
+      await marketsManagerForCompound.connect(owner).updateThreshold(config.tokens.cUsdc.address, BigNumber.from(1).pow(6));
+      await marketsManagerForCompound.connect(owner).updateThreshold(config.tokens.cUsdt.address, BigNumber.from(1).pow(6));
+    }
+  };
+
+  before(initialize);
 
   beforeEach(async () => {
     snapshotId = await hre.network.provider.send('evm_snapshot', []);
@@ -800,6 +804,8 @@ describe('PositionsManagerForCompound Contract', () => {
   });
 
   describe('Test liquidation', () => {
+    before(initialize);
+
     it('Borrower should be liquidated while supply (collateral) is only on Compound', async () => {
       // Deploy custom price oracle
       const PriceOracle = await ethers.getContractFactory('SimplePriceOracle');
