@@ -851,12 +851,6 @@ describe('PositionsManagerForCompound Contract', () => {
       priceOracle.setUnderlyingPrice(config.tokens.cUni.address, BigNumber.from('1000000000000000000000000000000'));
       priceOracle.setUnderlyingPrice(config.tokens.cUsdt.address, BigNumber.from('1000000000000000000000000000000'));
 
-      // Force compoundOracle update by setting comptroller again (but with the custom price oracle)
-      await hre.network.provider.send('hardhat_impersonateAccount', [marketsManagerForCompound.address]);
-      await hre.network.provider.send('hardhat_setBalance', [marketsManagerForCompound.address, ethers.utils.parseEther('10').toHexString()]);
-      const morphoMarketsManagerUser = await ethers.getSigner(marketsManagerForCompound.address);
-      await positionsManagerForCompound.connect(morphoMarketsManagerUser).setComptroller(comptroller.address);
-
       // Mine block
       await hre.network.provider.send('evm_mine', []);
 
@@ -939,12 +933,6 @@ describe('PositionsManagerForCompound Contract', () => {
       priceOracle.setUnderlyingPrice(config.tokens.cUsdc.address, BigNumber.from('1000000000000000000000000000000'));
       priceOracle.setUnderlyingPrice(config.tokens.cUni.address, BigNumber.from('1000000000000000000000000000000'));
       priceOracle.setUnderlyingPrice(config.tokens.cUsdt.address, BigNumber.from('1000000000000000000000000000000'));
-
-      // Force compoundOracle update by setting comptroller again (but with the custom price oracle)
-      await hre.network.provider.send('hardhat_impersonateAccount', [marketsManagerForCompound.address]);
-      await hre.network.provider.send('hardhat_setBalance', [marketsManagerForCompound.address, ethers.utils.parseEther('10').toHexString()]);
-      const morphoMarketsManagerUser = await ethers.getSigner(marketsManagerForCompound.address);
-      await positionsManagerForCompound.connect(morphoMarketsManagerUser).setComptroller(comptroller.address);
 
       // Mine block
       await hre.network.provider.send('evm_mine', []);

@@ -197,13 +197,6 @@ contract PositionsManagerForCompound is ReentrancyGuard, PositionsManagerStorage
         return comptroller.enterMarkets(marketToEnter);
     }
 
-    /** @dev Sets the comptroller address.
-     *  @param _proxyComptrollerAddress The address of Comp's comptroller.
-     */
-    function setComptroller(address _proxyComptrollerAddress) external onlyMarketsManager {
-        comptroller = IComptroller(_proxyComptrollerAddress);
-    }
-
     /** @dev Sets the maximum number of users in tree.
      *  @param _newMaxNumber The maximum number of users to have in the tree.
      */
