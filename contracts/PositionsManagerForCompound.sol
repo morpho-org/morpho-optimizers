@@ -197,13 +197,6 @@ contract PositionsManagerForCompound is ReentrancyGuard, PositionsManagerStorage
         return comptroller.enterMarkets(marketToEnter);
     }
 
-    /** @dev Sets the comptroller address.
-     *  @param _proxyComptrollerAddress The address of Comp's comptroller.
-     */
-    function setComptroller(address _proxyComptrollerAddress) external onlyMarketsManager {
-        comptroller = IComptroller(_proxyComptrollerAddress);
-    }
-
     /** @dev Sets the maximum number of users in tree.
      *  @param _newMaxNumber The maximum number of users to have in the tree.
      */
@@ -580,7 +573,6 @@ contract PositionsManagerForCompound is ReentrancyGuard, PositionsManagerStorage
         (, address account) = suppliersOnPool[_cTokenAddress].getMaximum();
 
         while (remainingToMatch > 0 && account != address(0)) {
-            address tmpAccount;
             // Check if this user is not borrowing on Pool (cf Liquidation Invariant in docs)
             uint256 onPoolInUnderlying = supplyBalanceInOf[_cTokenAddress][account].onPool.mul(
                 cTokenExchangeRate
@@ -600,7 +592,7 @@ contract PositionsManagerForCompound is ReentrancyGuard, PositionsManagerStorage
             supplyBalanceInOf[_cTokenAddress][account].inP2P += toMatch.div(p2pExchangeRate); // In p2pUnit
             _updateSupplierList(_cTokenAddress, account);
             emit SupplierMatched(account, _cTokenAddress, toMatch);
-            account = tmpAccount;
+            (, account) = suppliersOnPool[_cTokenAddress].getMaximum();
         }
         // Withdraw from Comp
         _withdrawERC20FromComp(_cTokenAddress, _amount - remainingToMatch);

@@ -33,11 +33,6 @@ contract MarketsManagerForCompound is Ownable {
      */
     event MarketCreated(address _marketAddress);
 
-    /** @dev Emitted when the comptroller is set on the `compoundPositionsManager`.
-     *  @param _comptrollerAddress The address of the comptroller proxy.
-     */
-    event ComptrollerSet(address _comptrollerAddress);
-
     /** @dev Emitted when the `positionsManagerForCompound` is set.
      *  @param _positionsManagerForCompound The address of the `positionsManagerForCompound`.
      */
@@ -87,14 +82,6 @@ contract MarketsManagerForCompound is Ownable {
         require(address(positionsManagerForCompound) == address(0), "1");
         positionsManagerForCompound = IPositionsManagerForCompound(_positionsManagerForCompound);
         emit PositionsManagerForCompoundSet(_positionsManagerForCompound);
-    }
-
-    /** @dev Sets the comptroller address.
-     *  @param _proxyComptrollerAddress The address of Compound's comptroller.
-     */
-    function setComptroller(address _proxyComptrollerAddress) external onlyOwner {
-        positionsManagerForCompound.setComptroller(_proxyComptrollerAddress);
-        emit ComptrollerSet(_proxyComptrollerAddress);
     }
 
     /** @dev Sets the maximum number of users in tree.
