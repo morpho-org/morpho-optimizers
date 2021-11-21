@@ -1,0 +1,26 @@
+{
+  "tokens": {
+    "aDai": {
+      "address": "0x639cB7b21ee2161DF9c882483C9D55c90c20Ca3e",
+      "abi": "@config/abis/polygon/aToken.json"
+    },
+    "aUsdc": {
+      "address": "0x2271e3Fef9e15046d09E1d78a8FF038c691E9Cf9",
+      "abi": "@config/abis/polygon/aToken.json"
+    }
+  },
+  "aave": {
+    "lendingPoolAddressesProvider": {
+      "address": "0x178113104fEcbcD7fF8669a0150721e231F0FD4B",
+      "abi": "@config/abis/polygon/LendingPoolAddressesProvider.json"
+    },
+    "lendingPool": {
+      "address": "0x9198F13B08E299d85E096929fA9781A1E3d5d827",
+      "abi": "@config/abis/polygon/LendingPool.json"
+    },
+    "protocolDataProvider": {
+      "address": "0xFA3bD19110d986c5e5E9DD5F69362d05035D045B",
+      "abi": "@config/abis/polygon/ProtocolDataProvider.json"
+    }
+  }
+}

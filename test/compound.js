@@ -4,6 +4,7 @@ const { ethers } = require('hardhat');
 const { expect } = require('chai');
 const hre = require('hardhat');
 const config = require(`@config/${process.env.NETWORK}-config.json`);
+const { removeDigitsBigNumber, bigNumberMin, to6Decimals, getTokens } = require('./utils/common-helpers');
 const {
   SCALE,
   underlyingToCToken,
@@ -12,12 +13,8 @@ const {
   p2pUnitToUnderlying,
   underlyingToCdUnit,
   cDUnitToUnderlying,
-  removeDigitsBigNumber,
-  bigNumberMin,
-  to6Decimals,
   computeNewMorphoExchangeRate,
-  getTokens,
-} = require('./utils/helpers');
+} = require('./utils/compound-helpers');
 
 describe('PositionsManagerForCompound Contract', () => {
   let cUsdcToken;
@@ -56,11 +53,11 @@ describe('PositionsManagerForCompound Contract', () => {
       suppliers = [supplier1, supplier2, supplier3];
       borrowers = [borrower1, borrower2, borrower3];
 
-      const RedBlackBinaryTree = await ethers.getContractFactory('RedBlackBinaryTree');
+      const RedBlackBinaryTree = await ethers.getContractFactory('contracts/compound/libraries/RedBlackBinaryTree.sol:RedBlackBinaryTree');
       const redBlackBinaryTree = await RedBlackBinaryTree.deploy();
       await redBlackBinaryTree.deployed();
 
-      const UpdatePositions = await ethers.getContractFactory('UpdatePositions', {
+      const UpdatePositions = await ethers.getContractFactory('contracts/compound/UpdatePositions.sol:UpdatePositions', {
         libraries: {
           RedBlackBinaryTree: redBlackBinaryTree.address,
         },
@@ -767,47 +764,6 @@ describe('PositionsManagerForCompound Contract', () => {
       expect((await positionsManagerForCompound.borrowBalanceInOf(config.tokens.cDai.address, borrower2.getAddress())).onPool).to.be.lte(1);
       expect((await positionsManagerForCompound.borrowBalanceInOf(config.tokens.cDai.address, borrower3.getAddress())).onPool).to.be.lte(1);
     });
-
-    it('Borrower should be connected to suppliers on pool in peer-to-peer when borrowing', async () => {
-      const collateralAmount = to6Decimals(utils.parseUnits('140'));
-      const supplyAmount = utils.parseUnits('30');
-      const borrowAmount = utils.parseUnits('100');
-
-      // supplier1 supplies
-      await daiToken.connect(supplier1).approve(positionsManagerForCompound.address, supplyAmount);
-      await positionsManagerForCompound.connect(supplier1).supply(config.tokens.cDai.address, supplyAmount);
-      const supplier1BorrowBalanceOnPool = (await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).onPool;
-
-      // supplier2 supplies
-      await daiToken.connect(supplier2).approve(positionsManagerForCompound.address, supplyAmount);
-      await positionsManagerForCompound.connect(supplier2).supply(config.tokens.cDai.address, supplyAmount);
-      const supplier2BorrowBalanceOnPool = (await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier2.getAddress())).onPool;
-
-      // supplier3 supplies
-      await daiToken.connect(supplier3).approve(positionsManagerForCompound.address, supplyAmount);
-      await positionsManagerForCompound.connect(supplier3).supply(config.tokens.cDai.address, supplyAmount);
-      const supplier3BorrowBalanceOnPool = (await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier3.getAddress())).onPool;
-
-      // borrower1 borrows
-      await usdcToken.connect(borrower1).approve(positionsManagerForCompound.address, collateralAmount);
-      await positionsManagerForCompound.connect(borrower1).supply(config.tokens.cUsdc.address, collateralAmount);
-      await positionsManagerForCompound.connect(borrower1).borrow(config.tokens.cDai.address, borrowAmount);
-      const cTokenExchangeRate = await cDaiToken.callStatic.exchangeRateStored();
-      const borrowIndex = await cDaiToken.borrowIndex();
-      const p2pUnitExchangeRate = await marketsManagerForCompound.p2pUnitExchangeRate(config.tokens.cDai.address);
-
-      // Check balances
-      const borrowBalanceInP2P = (await positionsManagerForCompound.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).inP2P;
-      const borrowBalanceOnPool = (await positionsManagerForCompound.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onPool;
-      const underlyingMatched = cTokenToUnderlying(supplier1BorrowBalanceOnPool.add(supplier2BorrowBalanceOnPool).add(supplier3BorrowBalanceOnPool), cTokenExchangeRate);
-      expectedBorrowBalanceInP2P = underlyingToP2pUnit(underlyingMatched, p2pUnitExchangeRate);
-      expectedBorrowBalanceOnPool = underlyingToCdUnit(borrowAmount.sub(underlyingMatched), borrowIndex);
-      expect(removeDigitsBigNumber(7, borrowBalanceInP2P)).to.equal(removeDigitsBigNumber(7, expectedBorrowBalanceInP2P));
-      expect(removeDigitsBigNumber(7, borrowBalanceOnPool)).to.equal(removeDigitsBigNumber(7, expectedBorrowBalanceOnPool));
-      expect((await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).onPool).to.be.lte(1);
-      expect((await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier2.getAddress())).onPool).to.be.lte(1);
-      expect((await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier3.getAddress())).onPool).to.be.lte(1);
-    });
   });
 
   describe('Test liquidation', () => {
@@ -815,7 +771,7 @@ describe('PositionsManagerForCompound Contract', () => {
 
     it('Borrower should be liquidated while supply (collateral) is only on Compound', async () => {
       // Deploy custom price oracle
-      const PriceOracle = await ethers.getContractFactory('SimplePriceOracle');
+      const PriceOracle = await ethers.getContractFactory('contracts/compound/test/SimplePriceOracle.sol:SimplePriceOracle');
       priceOracle = await PriceOracle.deploy();
       await priceOracle.deployed();
 
@@ -884,7 +840,7 @@ describe('PositionsManagerForCompound Contract', () => {
 
     it('Borrower should be liquidated while supply (collateral) is on Compound and in peer-to-peer', async () => {
       // Deploy custom price oracle
-      const PriceOracle = await ethers.getContractFactory('SimplePriceOracle');
+      const PriceOracle = await ethers.getContractFactory('contracts/compound/test/SimplePriceOracle.sol:SimplePriceOracle');
       priceOracle = await PriceOracle.deploy();
       await priceOracle.deployed();
 
