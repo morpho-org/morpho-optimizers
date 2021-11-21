@@ -562,7 +562,7 @@ contract PositionsManagerForCompound is ReentrancyGuard, PositionsManagerStorage
         underlyingToken.safeTransfer(_receiver, _amount);
     }
 
-    /** @dev Implements repay updatePositions.
+    /** @dev Implements repay logic.
      *  @dev `msg.sender` must have approved this contract to spend the underlying `_amount`.
      *  @param _cTokenAddress The address of the market the user wants to interact with.
      *  @param _borrower The address of the `_borrower` to repay the borrow.
@@ -988,7 +988,7 @@ contract PositionsManagerForCompound is ReentrancyGuard, PositionsManagerStorage
         (bool success, ) = address(updatePositions).delegatecall(
             abi.encodeWithSignature("updateBorrowerList(address,address)", _cTokenAddress, _account)
         );
-        require(success, "");
+        require(success, "20");
     }
 
     /** @dev Updates suppliers tree with the new balances of a given account.
@@ -999,6 +999,6 @@ contract PositionsManagerForCompound is ReentrancyGuard, PositionsManagerStorage
         (bool success, ) = address(updatePositions).delegatecall(
             abi.encodeWithSignature("updateSupplierList(address,address)", _cTokenAddress, _account)
         );
-        require(success, "");
+        require(success, "21");
     }
 }
