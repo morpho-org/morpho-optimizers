@@ -714,8 +714,10 @@ contract PositionsManagerForCompound is ReentrancyGuard, PositionsManagerStorage
         uint256 p2pExchangeRate = marketsManagerForCompound.p2pUnitExchangeRate(_cTokenAddress);
         uint256 cTokenExchangeRate = cToken.exchangeRateCurrent();
         (, address account) = suppliersOnPool[_cTokenAddress].getMaximum();
+        uint256 iterationCount;
 
-        while (remainingToMatch > 0 && account != address(0)) {
+        while (remainingToMatch > 0 && account != address(0) && iterationCount < NMAX) {
+            iterationCount++;
             // Check if this user is not borrowing on Pool (cf Liquidation Invariant in docs)
             uint256 onPoolInUnderlying = supplyBalanceInOf[_cTokenAddress][account].onPool.mul(
                 cTokenExchangeRate
@@ -805,8 +807,10 @@ contract PositionsManagerForCompound is ReentrancyGuard, PositionsManagerStorage
         uint256 p2pExchangeRate = marketsManagerForCompound.p2pUnitExchangeRate(_cTokenAddress);
         uint256 borrowIndex = cToken.borrowIndex();
         (, address account) = borrowersOnPool[_cTokenAddress].getMaximum();
+        uint256 iterationCount;
 
-        while (remainingToMatch > 0 && account != address(0)) {
+        while (remainingToMatch > 0 && account != address(0) && iterationCount < NMAX) {
+            iterationCount++;
             uint256 onPoolInUnderlying = borrowBalanceInOf[_cTokenAddress][account].onPool.mul(
                 borrowIndex
             ); // In underlying
