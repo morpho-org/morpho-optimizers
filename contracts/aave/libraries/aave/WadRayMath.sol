@@ -82,4 +82,12 @@ library WadRayMath {
             }
         }
     }
+
+    function divWadByRay(uint256 a, uint256 b) internal pure returns (uint256) {
+        return rayToWad(rayDiv(wadToRay(a), b));
+    }
+
+    function mulWadByRay(uint256 a, uint256 b) internal pure returns (uint256) {
+        return rayToWad(rayMul(wadToRay(a), b));
+    }
 }
