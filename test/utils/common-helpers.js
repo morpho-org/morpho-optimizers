@@ -2,6 +2,7 @@ const { utils, BigNumber } = require('ethers');
 const hre = require('hardhat');
 
 const SCALE = utils.parseUnits('1');
+const MAX_INT = new BigNumber.from('2').pow(BigNumber.from('256')).sub(BigNumber.from('1'));
 
 const bigNumberMin = (a, b) => {
   if (a.lte(b)) return a;
@@ -38,6 +39,7 @@ const getTokens = async (signerAddress, signerType, signers, tokenConfig, amount
 
 module.exports = {
   SCALE,
+  MAX_INT,
   removeDigitsBigNumber,
   bigNumberMin,
   removeDigits,

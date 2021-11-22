@@ -4,10 +4,9 @@ const { ethers } = require('hardhat');
 const { expect } = require('chai');
 const hre = require('hardhat');
 const config = require(`@config/${process.env.NETWORK}-config.json`);
-const { removeDigitsBigNumber, bigNumberMin, to6Decimals, getTokens } = require('./utils/common-helpers');
+const { MAX_INT, removeDigitsBigNumber, bigNumberMin, to6Decimals, getTokens } = require('./utils/common-helpers');
 const {
   RAY,
-  SCALE,
   underlyingToScaledBalance,
   scaledBalanceToUnderlying,
   underlyingToP2PUnit,
@@ -122,11 +121,11 @@ describe('PositionsManagerForAave Contract', () => {
       // Create and list markets
       await marketsManagerForAave.connect(owner).setPositionsManager(positionsManagerForAave.address);
       await marketsManagerForAave.connect(owner).setLendingPool();
-      await marketsManagerForAave.connect(owner).createMarket(config.tokens.aDai.address, utils.parseUnits('1'));
-      await marketsManagerForAave.connect(owner).createMarket(config.tokens.aUsdc.address, to6Decimals(utils.parseUnits('1')));
-      await marketsManagerForAave.connect(owner).createMarket(config.tokens.aWbtc.address, BigNumber.from(10).pow(4));
-      await marketsManagerForAave.connect(owner).createMarket(config.tokens.aUsdt.address, to6Decimals(utils.parseUnits('1')));
-      await marketsManagerForAave.connect(owner).createMarket(config.tokens.aWmatic.address, utils.parseUnits('1'));
+      await marketsManagerForAave.connect(owner).createMarket(config.tokens.aDai.address, utils.parseUnits('1'), MAX_INT);
+      await marketsManagerForAave.connect(owner).createMarket(config.tokens.aUsdc.address, to6Decimals(utils.parseUnits('1')), MAX_INT);
+      await marketsManagerForAave.connect(owner).createMarket(config.tokens.aWbtc.address, BigNumber.from(10).pow(4), MAX_INT);
+      await marketsManagerForAave.connect(owner).createMarket(config.tokens.aUsdt.address, to6Decimals(utils.parseUnits('1')), MAX_INT);
+      await marketsManagerForAave.connect(owner).createMarket(config.tokens.aWmatic.address, utils.parseUnits('1'), MAX_INT);
     }
   };
 
@@ -162,9 +161,9 @@ describe('PositionsManagerForAave Contract', () => {
     });
 
     it('Only Owner should be able to create markets in peer-to-peer', async () => {
-      expect(marketsManagerForAave.connect(supplier1).createMarket(config.tokens.aWeth.address, utils.parseUnits('1'))).to.be.reverted;
-      expect(marketsManagerForAave.connect(borrower1).createMarket(config.tokens.aWeth.address, utils.parseUnits('1'))).to.be.reverted;
-      expect(marketsManagerForAave.connect(owner).createMarket(config.tokens.aWeth.address, utils.parseUnits('1'))).not.be.reverted;
+      expect(marketsManagerForAave.connect(supplier1).createMarket(config.tokens.aWeth.address, utils.parseUnits('1'), MAX_INT)).to.be.reverted;
+      expect(marketsManagerForAave.connect(borrower1).createMarket(config.tokens.aWeth.address, utils.parseUnits('1')), MAX_INT).to.be.reverted;
+      expect(marketsManagerForAave.connect(owner).createMarket(config.tokens.aWeth.address, utils.parseUnits('1')), MAX_INT).not.be.reverted;
     });
 
     it('marketsManagerForAave should not be changed after already set by Owner', async () => {
@@ -174,10 +173,21 @@ describe('PositionsManagerForAave Contract', () => {
     it('Only Owner should be able to update thresholds', async () => {
       const newThreshold = utils.parseUnits('2');
       await marketsManagerForAave.connect(owner).updateThreshold(config.tokens.aUsdc.address, newThreshold);
+      expect(await positionsManagerForAave.threshold(config.tokens.aUsdc.address)).to.be.equal(newThreshold);
 
       // Other accounts than Owner
       await expect(marketsManagerForAave.connect(supplier1).updateThreshold(config.tokens.aUsdc.address, newThreshold)).to.be.reverted;
       await expect(marketsManagerForAave.connect(borrower1).updateThreshold(config.tokens.aUsdc.address, newThreshold)).to.be.reverted;
+    });
+
+    it('Only Owner should be able to update thresholds', async () => {
+      const newCapValue = utils.parseUnits('2');
+      await marketsManagerForAave.connect(owner).updateCapValue(config.tokens.aUsdc.address, newCapValue);
+      expect(await positionsManagerForAave.capValue(config.tokens.aUsdc.address)).to.be.equal(newCapValue);
+
+      // Other accounts than Owner
+      await expect(marketsManagerForAave.connect(supplier1).updateCapValue(config.tokens.aUsdc.address, newCapValue)).to.be.reverted;
+      await expect(marketsManagerForAave.connect(borrower1).updateCapValue(config.tokens.aUsdc.address, newCapValue)).to.be.reverted;
     });
 
     it('Should create a market the with right values', async () => {
@@ -185,7 +195,7 @@ describe('PositionsManagerForAave Contract', () => {
       const currentLiquidityRate = reserveData.currentLiquidityRate;
       const currentVariableBorrowRate = reserveData.currentVariableBorrowRate;
       const expectedSPY = currentLiquidityRate.add(currentVariableBorrowRate).div(2).div(SECOND_PER_YEAR);
-      await marketsManagerForAave.connect(owner).createMarket(config.tokens.aAave.address, utils.parseUnits('1'));
+      await marketsManagerForAave.connect(owner).createMarket(config.tokens.aAave.address, utils.parseUnits('1'), MAX_INT);
       expect(await marketsManagerForAave.isCreated(config.tokens.aAave.address)).to.be.true;
       expect(await marketsManagerForAave.p2pSPY(config.tokens.aAave.address)).to.equal(expectedSPY);
       expect(await marketsManagerForAave.p2pUnitExchangeRate(config.tokens.aAave.address)).to.equal(RAY);
@@ -1049,6 +1059,20 @@ describe('PositionsManagerForAave Contract', () => {
       else diff = expectedUsdcBalanceAfter.sub(usdcBalanceAfter);
       expect(removeDigitsBigNumber(1, diff)).to.equal(0);
       expect(daiBalanceAfter).to.equal(expectedDaiBalanceAfter);
+    });
+  });
+
+  describe('Cap Value', () => {
+    it('Should be possible to supply up to cap value', async () => {
+      const newCapValue = utils.parseUnits('2');
+      const amount = utils.parseUnits('1');
+      await marketsManagerForAave.connect(owner).updateCapValue(config.tokens.aDai.address, newCapValue);
+
+      await daiToken.connect(supplier1).approve(positionsManagerForAave.address, utils.parseUnits('3'));
+      expect(positionsManagerForAave.connect(supplier1).supply(config.tokens.aDai.address, amount)).not.to.reverted;
+      expect(positionsManagerForAave.connect(supplier1).supply(config.tokens.aDai.address, amount)).not.to.reverted;
+      expect(positionsManagerForAave.connect(supplier1).supply(config.tokens.aDai.address, utils.parseUnits('100'))).to.be.reverted;
+      expect(positionsManagerForAave.connect(supplier1).supply(config.tokens.aDai.address, 1)).to.be.reverted;
     });
   });
 });
