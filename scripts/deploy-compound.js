@@ -7,13 +7,13 @@ async function main() {
   console.log('Deploying contracts with the account:', deployer.address);
   console.log('Account balance:', (await deployer.getBalance()).toString());
 
-  const RedBlackBinaryTree = await ethers.getContractFactory('RedBlackBinaryTree');
+  const RedBlackBinaryTree = await ethers.getContractFactory('contracts/compound/libraries/RedBlackBinaryTree.sol:RedBlackBinaryTree');
   const redBlackBinaryTree = await RedBlackBinaryTree.deploy();
   await redBlackBinaryTree.deployed();
 
   console.log('RedBlackBinaryTree address:', redBlackBinaryTree.address);
 
-  const UpdatePositions = await ethers.getContractFactory('UpdatePositions', {
+  const UpdatePositions = await ethers.getContractFactory('contracts/compound/UpdatePositions.sol:UpdatePositions', {
     libraries: {
       RedBlackBinaryTree: redBlackBinaryTree.address,
     },
