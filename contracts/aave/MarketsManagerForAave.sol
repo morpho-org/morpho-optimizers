@@ -71,6 +71,12 @@ contract MarketsManagerForAave is Ownable {
      */
     event ThresholdUpdated(address _marketAddress, uint256 _newValue);
 
+    /** @dev Emitted when a cap value of a market is updated.
+     *  @param _marketAddress The address of the market to update.
+     *  @param _newValue The new value of the cap.
+     */
+    event CapValueUpdated(address _marketAddress, uint256 _newValue);
+
     /** @dev Emitted the maximum number of users to have in the tree is updated.
      *  @param _newValue The new value of the maximum number of users to have in the tree.
      */
@@ -125,10 +131,16 @@ contract MarketsManagerForAave is Ownable {
     /** @dev Creates a new market to borrow/supply.
      *  @param _marketAddress The addresses of the markets to add (aToken).
      *  @param _threshold The threshold to set for the market.
+     *  @param _capValue The cap value to set for the market.
      */
-    function createMarket(address _marketAddress, uint256 _threshold) external onlyOwner {
+    function createMarket(
+        address _marketAddress,
+        uint256 _threshold,
+        uint256 _capValue
+    ) external onlyOwner {
         require(!isCreated[_marketAddress], "3");
         positionsManagerForAave.setThreshold(_marketAddress, _threshold);
+        positionsManagerForAave.setCapValue(_marketAddress, _capValue);
         lastUpdateTimestamp[_marketAddress] = block.timestamp;
         p2pUnitExchangeRate[_marketAddress] = WadRayMath.ray();
         isCreated[_marketAddress] = true;
@@ -148,6 +160,20 @@ contract MarketsManagerForAave is Ownable {
         require(_newThreshold > 0, "4");
         positionsManagerForAave.setThreshold(_marketAddress, _newThreshold);
         emit ThresholdUpdated(_marketAddress, _newThreshold);
+    }
+
+    /** @dev Updates the cap value above which suppliers cannot supply more tokens.
+     *  @param _marketAddress The address of the market to change the max cap.
+     *  @param _newCapValue The new max cap to set.
+     */
+    function updateCapValue(address _marketAddress, uint256 _newCapValue)
+        external
+        onlyOwner
+        isMarketCreated(_marketAddress)
+    {
+        require(_newCapValue > 0, "5");
+        positionsManagerForAave.setCapValue(_marketAddress, _newCapValue);
+        emit CapValueUpdated(_marketAddress, _newCapValue);
     }
 
     /* Public */
