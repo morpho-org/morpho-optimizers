@@ -34,4 +34,4 @@ jobs:
         env:
           INFURA_PROJECT_ID: ${{ secrets.INFURA_PROJECT_ID }}
           DEPLOYER_PRIVATE_KEY: ${{ secrets.DEPLOYER_PRIVATE_KEY }}
-        run: yarn test:cream:polygon
+        run: yarn test:aave:polygon
