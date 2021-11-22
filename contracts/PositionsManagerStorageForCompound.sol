@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.7;
 
-import "./libraries/EnumerableSet.sol";
+import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+
 import "./libraries/RedBlackBinaryTree.sol";
 import {IComptroller} from "./interfaces/compound/ICompound.sol";
 import "./interfaces/IMarketsManagerForCompound.sol";
