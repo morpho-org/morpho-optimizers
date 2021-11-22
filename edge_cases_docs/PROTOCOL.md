@@ -133,6 +133,4 @@ Here, it is quite simple, Morpho can safely borrow.
 
 #### The collateral of the borrower is matched
 
-In that scenario, which is extremely rare, Morpho can't borrow thanks to the collateral as it is not being supplied to Compound. The trick is thus to recursively try to borrow on the collateral of the borrower that is matching the collateral. In the following example, we give an intuition of the proof of termination of this recursive loop, which is bounded to N-1, where N is the number of markets in the protocol.
-
-Let's consider the most extreme scenario where Alice, Bob, Charlie and David are matched in P2P with collateral factors of 100%. This is handled by Morpho even though in practice, this very very unlikely and gas expensive. This can also be triggered by a hardworker. Find the document hard-withdraw-with-matched-collateral.pdf to go through this example.
+In that scenario, which is extremely rare, Morpho can safely perform the same operation.  This is proven in Morpho's Yellow paper. Please contact us if you want more information regarding this.
