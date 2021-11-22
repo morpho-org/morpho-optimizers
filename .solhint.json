@@ -12,6 +12,7 @@
     "var-name-mixedcase": "off",
     "no-empty-blocks": "off",
     "func-name-mixedcase": "off",
+    "max-states-count": "off",
     "func-visibility": [
       "warn",
       {
