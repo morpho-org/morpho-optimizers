@@ -7,4 +7,6 @@ interface IPositionsManagerForAave {
     function setMaxNumberOfUsersInTree(uint16) external;
 
     function setThreshold(address, uint256) external;
+
+    function setCapValue(address, uint256) external;
 }

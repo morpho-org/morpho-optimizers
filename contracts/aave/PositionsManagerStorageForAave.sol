@@ -46,6 +46,7 @@ contract PositionsManagerStorageForAave {
     mapping(address => mapping(address => bool)) public accountMembership; // Whether the account is in the market or not.
     mapping(address => address[]) public enteredMarkets; // Markets entered by a user.
     mapping(address => uint256) public threshold; // Thresholds below the ones suppliers and borrowers cannot enter markets.
+    mapping(address => uint256) public capValue; // Caps above the ones suppliers cannot add more liquidity.
 
     IUpdatePositions public updatePositions;
     IMarketsManagerForAave public marketsManagerForAave;

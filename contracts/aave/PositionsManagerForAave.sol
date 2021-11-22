@@ -228,6 +228,17 @@ contract PositionsManagerForAave is ReentrancyGuard, PositionsManagerStorageForA
         threshold[_poolTokenAddress] = _newThreshold;
     }
 
+    /** @dev Sets the max cap of a market.
+     *  @param _poolTokenAddress The address of the market to set the threshold.
+     *  @param _newCapValue The new threshold.
+     */
+    function setCapValue(address _poolTokenAddress, uint256 _newCapValue)
+        external
+        onlyMarketsManager
+    {
+        capValue[_poolTokenAddress] = _newCapValue;
+    }
+
     /** @dev Supplies ERC20 tokens in a specific market.
      *  @param _poolTokenAddress The address of the market the user wants to supply.
      *  @param _amount The amount to supply in ERC20 tokens.
@@ -244,14 +255,19 @@ contract PositionsManagerForAave is ReentrancyGuard, PositionsManagerStorageForA
         underlyingToken.safeTransferFrom(msg.sender, address(this), _amount);
         emit Supplied(msg.sender, _poolTokenAddress, _amount);
         uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(address(underlyingToken));
+        uint256 p2pExchangeRate = marketsManagerForAave.updateP2PUnitExchangeRate(
+            _poolTokenAddress
+        );
+        uint256 totalSuppliedInUnderlying = supplyBalanceInOf[_poolTokenAddress][msg.sender]
+            .inP2P
+            .mulWadByRay(p2pExchangeRate) +
+            supplyBalanceInOf[_poolTokenAddress][msg.sender].onPool.mulWadByRay(normalizedIncome);
+        require(totalSuppliedInUnderlying + _amount <= capValue[_poolTokenAddress], "3");
         /* DEFAULT CASE: There aren't any borrowers waiting on Aave, Morpho supplies all the tokens to Aave */
         uint256 remainingToSupplyToPool = _amount;
 
         /* If some borrowers are waiting on Aave, Morpho matches the supplier in P2P with them as much as possible */
         if (borrowersOnPool[_poolTokenAddress].isNotEmpty()) {
-            uint256 p2pExchangeRate = marketsManagerForAave.updateP2PUnitExchangeRate(
-                _poolTokenAddress
-            );
             remainingToSupplyToPool = _matchBorrowers(_poolTokenAddress, _amount); // In underlying
             uint256 matched = _amount - remainingToSupplyToPool;
             if (matched > 0) {
