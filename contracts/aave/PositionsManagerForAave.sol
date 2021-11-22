@@ -255,10 +255,9 @@ contract PositionsManagerForAave is ReentrancyGuard, PositionsManagerStorageForA
             remainingToSupplyToPool = _matchBorrowers(_poolTokenAddress, _amount); // In underlying
             uint256 matched = _amount - remainingToSupplyToPool;
             if (matched > 0) {
-                supplyBalanceInOf[_poolTokenAddress][msg.sender].inP2P += matched
-                    .wadToRay()
-                    .rayDiv(p2pExchangeRate)
-                    .rayToWad(); // In p2pUnit
+                supplyBalanceInOf[_poolTokenAddress][msg.sender].inP2P += matched.divWadByRay(
+                    p2pExchangeRate
+                ); // In p2pUnit
                 emit SupplierPositionUpdated(
                     msg.sender,
                     _poolTokenAddress,
@@ -275,9 +274,7 @@ contract PositionsManagerForAave is ReentrancyGuard, PositionsManagerStorageForA
         /* If there aren't enough borrowers waiting on Aave to match all the tokens supplied, the rest is supplied to Aave */
         if (remainingToSupplyToPool > 0) {
             supplyBalanceInOf[_poolTokenAddress][msg.sender].onPool += remainingToSupplyToPool
-                .wadToRay()
-                .rayDiv(normalizedIncome)
-                .rayToWad(); // Scaled Balance
+                .divWadByRay(normalizedIncome); // Scaled Balance
             _supplyERC20ToAave(_poolTokenAddress, remainingToSupplyToPool); // Revert on error
             emit SupplierPositionUpdated(
                 msg.sender,
@@ -320,10 +317,9 @@ contract PositionsManagerForAave is ReentrancyGuard, PositionsManagerStorageForA
             uint256 matched = _amount - remainingToBorrowOnPool;
 
             if (matched > 0) {
-                borrowBalanceInOf[_poolTokenAddress][msg.sender].inP2P += matched
-                    .wadToRay()
-                    .rayDiv(p2pExchangeRate)
-                    .rayToWad(); // In p2pUnit
+                borrowBalanceInOf[_poolTokenAddress][msg.sender].inP2P += matched.divWadByRay(
+                    p2pExchangeRate
+                ); // In p2pUnit
                 emit BorrowerPositionUpdated(
                     msg.sender,
                     _poolTokenAddress,
@@ -350,9 +346,7 @@ contract PositionsManagerForAave is ReentrancyGuard, PositionsManagerStorageForA
                 address(underlyingToken)
             );
             borrowBalanceInOf[_poolTokenAddress][msg.sender].onPool += remainingToBorrowOnPool
-                .wadToRay()
-                .rayDiv(normalizedVariableDebt)
-                .rayToWad(); // In adUnit
+                .divWadByRay(normalizedVariableDebt); // In adUnit
             emit BorrowerPositionUpdated(
                 msg.sender,
                 _poolTokenAddress,
@@ -412,16 +406,12 @@ contract PositionsManagerForAave is ReentrancyGuard, PositionsManagerStorageForA
         vars.tokenBorrowedAddress = poolTokenBorrowed.UNDERLYING_ASSET_ADDRESS();
         vars.tokenCollateralAddress = poolTokenCollateral.UNDERLYING_ASSET_ADDRESS();
         vars.borrowBalance =
-            borrowBalanceInOf[_poolTokenBorrowedAddress][_borrower]
-                .onPool
-                .wadToRay()
-                .rayMul(lendingPool.getReserveNormalizedVariableDebt(vars.tokenBorrowedAddress))
-                .wadToRay() +
-            borrowBalanceInOf[_poolTokenBorrowedAddress][_borrower]
-                .inP2P
-                .wadToRay()
-                .rayMul(marketsManagerForAave.p2pUnitExchangeRate(_poolTokenBorrowedAddress))
-                .rayToWad();
+            borrowBalanceInOf[_poolTokenBorrowedAddress][_borrower].onPool.mulWadByRay(
+                lendingPool.getReserveNormalizedVariableDebt(vars.tokenBorrowedAddress)
+            ) +
+            borrowBalanceInOf[_poolTokenBorrowedAddress][_borrower].inP2P.mulWadByRay(
+                marketsManagerForAave.p2pUnitExchangeRate(_poolTokenBorrowedAddress)
+            );
         require(
             _amount <= vars.borrowBalance.mul(LIQUIDATION_CLOSE_FACTOR_PERCENT).div(10000),
             "5"
@@ -450,18 +440,12 @@ contract PositionsManagerForAave is ReentrancyGuard, PositionsManagerStorageForA
             .div(10000);
         vars.normalizedIncome = lendingPool.getReserveNormalizedIncome(vars.tokenCollateralAddress);
         vars.totalCollateral =
-            supplyBalanceInOf[_poolTokenCollateralAddress][_borrower]
-                .onPool
-                .wadToRay()
-                .rayMul(vars.normalizedIncome)
-                .rayToWad() +
-            supplyBalanceInOf[_poolTokenCollateralAddress][_borrower]
-                .inP2P
-                .wadToRay()
-                .rayMul(
-                    marketsManagerForAave.updateP2PUnitExchangeRate(_poolTokenCollateralAddress)
-                )
-                .rayToWad();
+            supplyBalanceInOf[_poolTokenCollateralAddress][_borrower].onPool.mulWadByRay(
+                vars.normalizedIncome
+            ) +
+            supplyBalanceInOf[_poolTokenCollateralAddress][_borrower].inP2P.mulWadByRay(
+                marketsManagerForAave.updateP2PUnitExchangeRate(_poolTokenCollateralAddress)
+            );
         require(vars.amountToSeize <= vars.totalCollateral, "6");
         emit Liquidated(
             msg.sender,
@@ -500,16 +484,13 @@ contract PositionsManagerForAave is ReentrancyGuard, PositionsManagerStorageForA
         if (supplyBalanceInOf[_poolTokenAddress][_holder].onPool > 0) {
             uint256 amountOnPoolInUnderlying = supplyBalanceInOf[_poolTokenAddress][_holder]
                 .onPool
-                .wadToRay()
-                .rayMul(normalizedIncome)
-                .rayToWad();
+                .mulWadByRay(normalizedIncome);
             /* CASE 1: User withdraws less than his Aave supply balance */
             if (_amount <= amountOnPoolInUnderlying) {
                 _withdrawERC20FromAave(_poolTokenAddress, _amount); // Revert on error
-                supplyBalanceInOf[_poolTokenAddress][_holder].onPool -= _amount
-                    .wadToRay()
-                    .rayDiv(normalizedIncome)
-                    .rayToWad(); // In poolToken
+                supplyBalanceInOf[_poolTokenAddress][_holder].onPool -= _amount.divWadByRay(
+                    normalizedIncome
+                ); // In poolToken
                 emit SupplierPositionUpdated(
                     _holder,
                     _poolTokenAddress,
@@ -548,9 +529,7 @@ contract PositionsManagerForAave is ReentrancyGuard, PositionsManagerStorageForA
             if (remainingToWithdraw <= aTokenContractBalance) {
                 require(_matchSuppliers(_poolTokenAddress, remainingToWithdraw) == 0, "8");
                 supplyBalanceInOf[_poolTokenAddress][_holder].inP2P -= remainingToWithdraw
-                    .wadToRay()
-                    .rayDiv(p2pExchangeRate)
-                    .rayToWad(); // In p2pUnit
+                    .divWadByRay(p2pExchangeRate); // In p2pUnit
                 emit SupplierPositionUpdated(
                     _holder,
                     _poolTokenAddress,
@@ -566,9 +545,7 @@ contract PositionsManagerForAave is ReentrancyGuard, PositionsManagerStorageForA
             else {
                 uint256 remaining = _matchSuppliers(_poolTokenAddress, aTokenContractBalance);
                 supplyBalanceInOf[_poolTokenAddress][_holder].inP2P -= remainingToWithdraw
-                    .wadToRay()
-                    .rayDiv(p2pExchangeRate)
-                    .rayToWad(); // In p2pUnit
+                    .divWadByRay(p2pExchangeRate); // In p2pUnit
                 emit SupplierPositionUpdated(
                     _holder,
                     _poolTokenAddress,
@@ -615,17 +592,14 @@ contract PositionsManagerForAave is ReentrancyGuard, PositionsManagerStorageForA
             );
             uint256 onPoolInUnderlying = borrowBalanceInOf[_poolTokenAddress][_borrower]
                 .onPool
-                .wadToRay()
-                .rayMul(normalizedVariableDebt)
-                .rayToWad();
+                .mulWadByRay(normalizedVariableDebt);
             /* CASE 1: User repays less than his Aave borrow balance */
             if (_amount <= onPoolInUnderlying) {
                 underlyingToken.safeApprove(address(lendingPool), _amount);
                 lendingPool.repay(address(underlyingToken), _amount, 2, address(this));
-                borrowBalanceInOf[_poolTokenAddress][_borrower].onPool -= _amount
-                    .wadToRay()
-                    .rayDiv(normalizedVariableDebt)
-                    .rayToWad(); // In adUnit
+                borrowBalanceInOf[_poolTokenAddress][_borrower].onPool -= _amount.divWadByRay(
+                    normalizedVariableDebt
+                ); // In adUnit
                 remainingToRepay = 0;
                 emit BorrowerPositionUpdated(
                     _borrower,
@@ -673,9 +647,7 @@ contract PositionsManagerForAave is ReentrancyGuard, PositionsManagerStorageForA
             if (remainingToRepay <= contractBorrowBalanceOnAave) {
                 _matchBorrowers(_poolTokenAddress, remainingToRepay);
                 borrowBalanceInOf[_poolTokenAddress][_borrower].inP2P -= remainingToRepay
-                    .wadToRay()
-                    .rayDiv(p2pExchangeRate)
-                    .rayToWad();
+                    .divWadByRay(p2pExchangeRate);
                 emit BorrowerPositionUpdated(
                     _borrower,
                     _poolTokenAddress,
@@ -691,9 +663,7 @@ contract PositionsManagerForAave is ReentrancyGuard, PositionsManagerStorageForA
             else {
                 _matchBorrowers(_poolTokenAddress, contractBorrowBalanceOnAave);
                 borrowBalanceInOf[_poolTokenAddress][_borrower].inP2P -= remainingToRepay
-                    .wadToRay()
-                    .rayDiv(p2pExchangeRate)
-                    .rayToWad(); // In p2pUnit
+                    .divWadByRay(p2pExchangeRate); // In p2pUnit
                 emit BorrowerPositionUpdated(
                     _borrower,
                     _poolTokenAddress,
@@ -757,20 +727,16 @@ contract PositionsManagerForAave is ReentrancyGuard, PositionsManagerStorageForA
         while (remainingToMatch > 0 && account != address(0)) {
             uint256 onPoolInUnderlying = supplyBalanceInOf[_poolTokenAddress][account]
                 .onPool
-                .wadToRay()
-                .rayMul(normalizedIncome)
-                .rayToWad();
+                .mulWadByRay(normalizedIncome);
             uint256 toMatch = Math.min(onPoolInUnderlying, remainingToMatch);
-            supplyBalanceInOf[_poolTokenAddress][account].onPool -= toMatch
-                .wadToRay()
-                .rayDiv(normalizedIncome)
-                .rayToWad();
+            supplyBalanceInOf[_poolTokenAddress][account].onPool -= toMatch.divWadByRay(
+                normalizedIncome
+            );
             remainingToMatch -= toMatch;
             uint256 p2pExchangeRate = marketsManagerForAave.p2pUnitExchangeRate(_poolTokenAddress);
-            supplyBalanceInOf[_poolTokenAddress][account].inP2P += toMatch
-                .wadToRay()
-                .rayDiv(p2pExchangeRate)
-                .rayToWad(); // In p2pUnit
+            supplyBalanceInOf[_poolTokenAddress][account].inP2P += toMatch.divWadByRay(
+                p2pExchangeRate
+            ); // In p2pUnit
             _updateSupplierList(_poolTokenAddress, account);
             emit SupplierPositionUpdated(
                 account,
@@ -811,14 +777,12 @@ contract PositionsManagerForAave is ReentrancyGuard, PositionsManagerStorageForA
             uint256 inP2P = supplyBalanceInOf[_poolTokenAddress][account].inP2P; // In poolToken
             uint256 toUnmatch = Math.min(inP2P.mul(p2pExchangeRate), remainingToUnmatch); // In underlying
             remainingToUnmatch -= toUnmatch;
-            supplyBalanceInOf[_poolTokenAddress][account].onPool += toUnmatch
-                .wadToRay()
-                .rayDiv(normalizedIncome)
-                .rayToWad();
-            supplyBalanceInOf[_poolTokenAddress][account].inP2P -= toUnmatch
-                .wadToRay()
-                .rayDiv(p2pExchangeRate)
-                .rayToWad(); // In p2pUnit
+            supplyBalanceInOf[_poolTokenAddress][account].onPool += toUnmatch.divWadByRay(
+                normalizedIncome
+            );
+            supplyBalanceInOf[_poolTokenAddress][account].inP2P -= toUnmatch.divWadByRay(
+                p2pExchangeRate
+            ); // In p2pUnit
             _updateSupplierList(_poolTokenAddress, account);
             emit SupplierPositionUpdated(
                 account,
@@ -859,19 +823,15 @@ contract PositionsManagerForAave is ReentrancyGuard, PositionsManagerStorageForA
         while (remainingToMatch > 0 && account != address(0)) {
             uint256 onPoolInUnderlying = borrowBalanceInOf[_poolTokenAddress][account]
                 .onPool
-                .wadToRay()
-                .rayMul(normalizedVariableDebt)
-                .rayToWad();
+                .mulWadByRay(normalizedVariableDebt);
             uint256 toMatch = Math.min(onPoolInUnderlying, remainingToMatch);
-            borrowBalanceInOf[_poolTokenAddress][account].onPool -= toMatch
-                .wadToRay()
-                .rayDiv(normalizedVariableDebt)
-                .rayToWad();
+            borrowBalanceInOf[_poolTokenAddress][account].onPool -= toMatch.divWadByRay(
+                normalizedVariableDebt
+            );
             remainingToMatch -= toMatch;
-            borrowBalanceInOf[_poolTokenAddress][account].inP2P += toMatch
-                .wadToRay()
-                .rayDiv(p2pExchangeRate)
-                .rayToWad();
+            borrowBalanceInOf[_poolTokenAddress][account].inP2P += toMatch.divWadByRay(
+                p2pExchangeRate
+            );
             _updateBorrowerList(_poolTokenAddress, account);
             emit BorrowerPositionUpdated(
                 account,
@@ -916,14 +876,12 @@ contract PositionsManagerForAave is ReentrancyGuard, PositionsManagerStorageForA
             uint256 inP2P = borrowBalanceInOf[_poolTokenAddress][account].inP2P;
             uint256 toUnmatch = Math.min(inP2P.mul(p2pExchangeRate), remainingToUnmatch); // In underlying
             remainingToUnmatch -= toUnmatch;
-            borrowBalanceInOf[_poolTokenAddress][account].onPool += toUnmatch
-                .wadToRay()
-                .rayDiv(normalizedVariableDebt)
-                .rayToWad();
-            borrowBalanceInOf[_poolTokenAddress][account].inP2P -= toUnmatch
-                .wadToRay()
-                .rayDiv(p2pExchangeRate)
-                .rayToWad();
+            borrowBalanceInOf[_poolTokenAddress][account].onPool += toUnmatch.divWadByRay(
+                normalizedVariableDebt
+            );
+            borrowBalanceInOf[_poolTokenAddress][account].inP2P -= toUnmatch.divWadByRay(
+                p2pExchangeRate
+            );
             _updateBorrowerList(_poolTokenAddress, account);
             emit BorrowerPositionUpdated(
                 account,
@@ -1015,29 +973,21 @@ contract PositionsManagerForAave is ReentrancyGuard, PositionsManagerStorageForA
                 vars.underlyingAddress
             );
             vars.debtToAdd =
-                borrowBalanceInOf[vars.poolTokenEntered][_account]
-                    .onPool
-                    .wadToRay()
-                    .rayMul(vars.normalizedVariableDebt)
-                    .rayToWad() +
-                borrowBalanceInOf[vars.poolTokenEntered][_account]
-                    .inP2P
-                    .wadToRay()
-                    .rayMul(vars.p2pExchangeRate)
-                    .rayToWad();
+                borrowBalanceInOf[vars.poolTokenEntered][_account].onPool.mulWadByRay(
+                    vars.normalizedVariableDebt
+                ) +
+                borrowBalanceInOf[vars.poolTokenEntered][_account].inP2P.mulWadByRay(
+                    vars.p2pExchangeRate
+                );
             // Calculation of the current collateral (in underlying)
             vars.normalizedIncome = lendingPool.getReserveNormalizedIncome(vars.underlyingAddress);
             vars.collateralToAdd =
-                supplyBalanceInOf[vars.poolTokenEntered][_account]
-                    .onPool
-                    .wadToRay()
-                    .rayMul(vars.normalizedIncome)
-                    .rayToWad() +
-                supplyBalanceInOf[vars.poolTokenEntered][_account]
-                    .inP2P
-                    .wadToRay()
-                    .rayMul(vars.p2pExchangeRate)
-                    .rayToWad();
+                supplyBalanceInOf[vars.poolTokenEntered][_account].onPool.mulWadByRay(
+                    vars.normalizedIncome
+                ) +
+                supplyBalanceInOf[vars.poolTokenEntered][_account].inP2P.mulWadByRay(
+                    vars.p2pExchangeRate
+                );
             vars.underlyingPrice = vars.oracle.getAssetPrice(vars.underlyingAddress); // In ETH
 
             (vars.reserveDecimals, , vars.liquidationThreshold, , , , , , , ) = dataProvider
