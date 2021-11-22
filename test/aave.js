@@ -181,14 +181,14 @@ describe('PositionsManagerForAave Contract', () => {
     });
 
     it('Should create a market the with right values', async () => {
-      const reserveData = await lendingPool.getReserveData(config.tokens.weth.address);
+      const reserveData = await lendingPool.getReserveData(config.tokens.aave.address);
       const currentLiquidityRate = reserveData.currentLiquidityRate;
       const currentVariableBorrowRate = reserveData.currentVariableBorrowRate;
       const expectedSPY = currentLiquidityRate.add(currentVariableBorrowRate).div(2).div(SECOND_PER_YEAR);
-      await marketsManagerForAave.connect(owner).createMarket(config.tokens.aWeth.address, utils.parseUnits('1'));
-      expect(await marketsManagerForAave.isCreated(config.tokens.aWeth.address)).to.be.true;
-      expect(await marketsManagerForAave.p2pSPY(config.tokens.aWeth.address)).to.equal(expectedSPY);
-      expect(await marketsManagerForAave.p2pUnitExchangeRate(config.tokens.aWeth.address)).to.equal(RAY);
+      await marketsManagerForAave.connect(owner).createMarket(config.tokens.aAave.address, utils.parseUnits('1'));
+      expect(await marketsManagerForAave.isCreated(config.tokens.aAave.address)).to.be.true;
+      expect(await marketsManagerForAave.p2pSPY(config.tokens.aAave.address)).to.equal(expectedSPY);
+      expect(await marketsManagerForAave.p2pUnitExchangeRate(config.tokens.aAave.address)).to.equal(RAY);
     });
 
     it('Should update NMAX', async () => {

@@ -61,6 +61,10 @@
       "address": "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619",
       "abi": "@config/abis/polygon/WETH.json"
     },
+    "aave": {
+      "address": "0xD6DF932A45C0f255f85145f286eA0b292B21C90B",
+      "abi": "@config/abis/polygon/AAVE.json"
+    },
     "aToken": {
       "abi": "@config/abis/polygon/aToken.json"
     },
@@ -92,7 +96,7 @@
       "abi": "@config/abis/polygon/aToken.json"
     },
     "aAave": {
-      "address": "0x7ec62b6fC19174255335C8f4346E0C2fcf870a6B",
+      "address": "0x1d2a0E5EC8E5bBDCA5CB219e649B565d8e5c3360",
       "abi": "@config/abis/polygon/aToken.json"
     },
     "stableDebtDai": {
