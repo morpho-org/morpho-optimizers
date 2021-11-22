@@ -198,6 +198,14 @@ contract PositionsManagerForCompound is ReentrancyGuard, PositionsManagerStorage
 
     /* External */
 
+    /** @dev Get the entered markets for a user.
+     *  @param _account Address of the user.
+     *  @return The entered markets.
+     */
+    function getEnteredMarkets(address _account) external view returns (address[] memory) {
+        return enteredMarkets[_account].values();
+    }
+
     /** @dev Creates Comp's markets.
      *  @param _cTokenAddress The address of the market the user wants to supply.
      *  @return The results of entered.
@@ -886,7 +894,7 @@ contract PositionsManagerForCompound is ReentrancyGuard, PositionsManagerStorage
     function _handleMembership(address _cTokenAddress, address _account) internal {
         if (!accountMembership[_cTokenAddress][_account]) {
             accountMembership[_cTokenAddress][_account] = true;
-            enteredMarkets[_account].push(_cTokenAddress);
+            enteredMarkets[_account].add(_cTokenAddress);
         }
     }
 
@@ -935,8 +943,8 @@ contract PositionsManagerForCompound is ReentrancyGuard, PositionsManagerStorage
         BalanceStateVars memory vars;
         ICompoundOracle compoundOracle = ICompoundOracle(comptroller.oracle());
 
-        for (uint256 i; i < enteredMarkets[_account].length; i++) {
-            vars.cTokenEntered = enteredMarkets[_account][i];
+        for (uint256 i; i < enteredMarkets[_account].length(); i++) {
+            vars.cTokenEntered = enteredMarkets[_account].at(i);
             vars.p2pExchangeRate = marketsManagerForCompound.updateP2pUnitExchangeRate(
                 vars.cTokenEntered
             );

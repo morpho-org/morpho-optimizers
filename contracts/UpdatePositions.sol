@@ -80,6 +80,8 @@ contract UpdatePositions is ReentrancyGuard, PositionsManagerStorageForCompound 
             borrowersInP2PBuffer[_cTokenAddress].remove(account);
             borrowersInP2P[_cTokenAddress].insert(account, value);
         }
+
+        _updateEnteredMarkets(_cTokenAddress, _account, onPool + inP2P);
     }
 
     /** @dev Updates suppliers tree with the new balances of a given account.
@@ -148,6 +150,27 @@ contract UpdatePositions is ReentrancyGuard, PositionsManagerStorageForCompound 
             uint256 value = supplyBalanceInOf[_cTokenAddress][account].inP2P;
             suppliersInP2PBuffer[_cTokenAddress].remove(account);
             suppliersInP2P[_cTokenAddress].insert(account, value);
+        }
+
+        _updateEnteredMarkets(_cTokenAddress, _account, onPool + inP2P);
+    }
+
+    /** Exit market if all balances are 0
+     */
+    function _updateEnteredMarkets(
+        address _cTokenAddress,
+        address _account,
+        uint256 _amount
+    ) internal {
+        if (_amount == 0) {
+            if (
+                supplyBalanceInOf[_cTokenAddress][_account].onPool == 0 &&
+                supplyBalanceInOf[_cTokenAddress][_account].inP2P == 0 &&
+                borrowBalanceInOf[_cTokenAddress][_account].onPool == 0 &&
+                borrowBalanceInOf[_cTokenAddress][_account].inP2P == 0
+            ) {
+                enteredMarkets[_account].remove(_cTokenAddress);
+            }
         }
     }
 }

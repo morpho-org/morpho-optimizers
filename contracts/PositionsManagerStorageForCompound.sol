@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.7;
 
-import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
-
+import "./libraries/EnumerableSet.sol";
 import "./libraries/RedBlackBinaryTree.sol";
 import {IComptroller} from "./interfaces/compound/ICompound.sol";
 import "./interfaces/IMarketsManagerForCompound.sol";
@@ -40,7 +39,7 @@ contract PositionsManagerStorageForCompound {
     mapping(address => mapping(address => SupplyBalance)) public supplyBalanceInOf; // For a given market, the supply balance of user.
     mapping(address => mapping(address => BorrowBalance)) public borrowBalanceInOf; // For a given market, the borrow balance of user.
     mapping(address => mapping(address => bool)) public accountMembership; // Whether the account is in the market or not.
-    mapping(address => address[]) public enteredMarkets; // Markets entered by a user.
+    mapping(address => EnumerableSet.AddressSet) internal enteredMarkets; // Markets entered by a user.
     mapping(address => uint256) public threshold; // Thresholds below the ones suppliers and borrowers cannot enter markets.
 
     IUpdatePositions public updatePositions;
