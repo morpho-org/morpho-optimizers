@@ -29,6 +29,7 @@ describe('PositionsManagerForAave Contract', () => {
   let daiToken;
   let usdtToken;
   let wbtcToken;
+  let meticToken;
   let PositionsManagerForAave;
   let positionsManagerForAave;
   let marketsManagerForAave;
