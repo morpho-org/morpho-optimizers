@@ -2,6 +2,8 @@
 pragma solidity 0.8.7;
 
 interface IMarketsManagerForAave {
+    function owner() external returns (address);
+
     function isCreated(address _marketAddress) external returns (bool);
 
     function p2pSPY(address _marketAddress) external returns (uint256);
