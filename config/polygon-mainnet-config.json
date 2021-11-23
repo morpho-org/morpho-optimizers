@@ -141,6 +141,10 @@
     "oracle": {
       "address": "0x0229f777b0fab107f9591a41d5f02e4e98db6f2d",
       "abi": "@config/abis/polygon/PriceOracle.json"
+    },
+    "aaveIncentivesController": {
+      "address": "0x357D51124f59836DeD84c8a1730D72B749d8BC23",
+      "abi": "@config/abis/polygon/AaveIncentivesController.json"
     }
   }
 }
