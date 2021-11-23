@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/utils/math/Math.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
 import "./libraries/aave/WadRayMath.sol";
+import "./libraries/ErrorsForAave.sol";
 import "./interfaces/aave/ILendingPoolAddressesProvider.sol";
 import "./interfaces/aave/IProtocolDataProvider.sol";
 import "./interfaces/aave/ILendingPool.sol";
@@ -106,7 +107,7 @@ contract MarketsManagerForAave is Ownable {
      *  @param _positionsManagerForAave The address of compound module.
      */
     function setPositionsManager(address _positionsManagerForAave) external onlyOwner {
-        require(!isPositionsManagerSet, "1");
+        require(!isPositionsManagerSet, Errors.MM_POSITIONS_MANAGER_SET);
         isPositionsManagerSet = true;
         positionsManagerForAave = IPositionsManagerForAave(_positionsManagerForAave);
         emit PositionsManagerForAaveSet(_positionsManagerForAave);
