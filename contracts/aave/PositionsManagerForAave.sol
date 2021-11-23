@@ -723,8 +723,10 @@ contract PositionsManagerForAave is ReentrancyGuard, PositionsManagerStorageForA
             poolToken.UNDERLYING_ASSET_ADDRESS()
         );
         (, address account) = suppliersOnPool[_poolTokenAddress].getMaximum();
+        uint256 iterationCount;
 
-        while (remainingToMatch > 0 && account != address(0)) {
+        while (remainingToMatch > 0 && account != address(0) && iterationCount < NMAX) {
+            iterationCount++;
             uint256 onPoolInUnderlying = supplyBalanceInOf[_poolTokenAddress][account]
                 .onPool
                 .mulWadByRay(normalizedIncome);
@@ -819,8 +821,10 @@ contract PositionsManagerForAave is ReentrancyGuard, PositionsManagerStorageForA
         );
         uint256 p2pExchangeRate = marketsManagerForAave.p2pUnitExchangeRate(_poolTokenAddress);
         (, address account) = borrowersOnPool[_poolTokenAddress].getMaximum();
+        uint256 iterationCount;
 
-        while (remainingToMatch > 0 && account != address(0)) {
+        while (remainingToMatch > 0 && account != address(0) && iterationCount < NMAX) {
+            iterationCount++;
             uint256 onPoolInUnderlying = borrowBalanceInOf[_poolTokenAddress][account]
                 .onPool
                 .mulWadByRay(normalizedVariableDebt);
