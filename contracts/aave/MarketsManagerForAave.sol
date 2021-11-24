@@ -17,7 +17,7 @@ import "./interfaces/IMarketsManagerForAave.sol";
 
 /**
  *  @title MarketsManagerForAave
- *  @dev Smart contract managing the markets used by MorphoPositionsManagerForX, an other contract interacting with X: Compound or a fork of Compound.
+ *  @dev Smart contract managing the markets used by a MorphoPositionsManagerForAave contract, an other contract interacting with Aave or a fork of Aave.
  */
 contract MarketsManagerForAave is Ownable {
     using WadRayMath for uint256;

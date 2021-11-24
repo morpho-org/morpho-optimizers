@@ -291,8 +291,8 @@ describe('PositionsManagerForAave Contract', () => {
       const expectedSupplyBalanceOnPool2 = underlyingToScaledBalance(amount, normalizedIncome2);
       const expectedSupplyBalanceOnPool = expectedSupplyBalanceOnPool1.add(expectedSupplyBalanceOnPool2);
       expect(removeDigitsBigNumber(3, await aDaiToken.scaledBalanceOf(positionsManagerForAave.address))).to.equal(removeDigitsBigNumber(3, expectedSupplyBalanceOnPool));
-      expect(removeDigitsBigNumber(2, (await positionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier1.getAddress())).onPool)).to.equal(
-        removeDigitsBigNumber(2, expectedSupplyBalanceOnPool)
+      expect(removeDigitsBigNumber(3, (await positionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier1.getAddress())).onPool)).to.equal(
+        removeDigitsBigNumber(3, expectedSupplyBalanceOnPool)
       );
     });
 
@@ -1067,12 +1067,11 @@ describe('PositionsManagerForAave Contract', () => {
   describe('Cap Value', () => {
     it('Should be possible to supply up to cap value', async () => {
       const newCapValue = utils.parseUnits('2');
-      const amount = utils.parseUnits('1');
+      const amount = utils.parseUnits('2');
       await marketsManagerForAave.connect(owner).updateCapValue(config.tokens.aDai.address, newCapValue);
 
       await daiToken.connect(supplier1).approve(positionsManagerForAave.address, utils.parseUnits('3'));
-      expect(positionsManagerForAave.connect(supplier1).supply(config.tokens.aDai.address, amount)).not.to.reverted;
-      expect(positionsManagerForAave.connect(supplier1).supply(config.tokens.aDai.address, amount)).not.to.reverted;
+      expect(positionsManagerForAave.connect(supplier1).supply(config.tokens.aDai.address, amount)).not.to.be.reverted;
       expect(positionsManagerForAave.connect(supplier1).supply(config.tokens.aDai.address, utils.parseUnits('100'))).to.be.reverted;
       expect(positionsManagerForAave.connect(supplier1).supply(config.tokens.aDai.address, 1)).to.be.reverted;
     });
