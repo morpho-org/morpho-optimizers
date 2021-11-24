@@ -16,8 +16,6 @@ module.exports = {
         blockNumber: process.env.NETWORK == 'mainnet' ? 7710600 : 19416594, // Beginning from a specific block number allows caching data and a faster setup
       },
       allowUnlimitedContractSize: true,
-      // 1 minute tolerance on JSON-RPC response time
-      timeout: 60000,
     },
     kovan: {
       accounts: [process.env.DEPLOYER_PRIVATE_KEY],
@@ -64,6 +62,6 @@ module.exports = {
     currency: 'USD',
   },
   mocha: {
-    timeout: 100000,
+    timeout: 200000,
   },
 };

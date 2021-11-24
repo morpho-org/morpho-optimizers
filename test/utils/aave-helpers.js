@@ -40,7 +40,6 @@ const computeNewMorphoExchangeRate = (currentExchangeRate, p2pSPY, currentTimest
   return newExchangeRate;
 };
 
-// TODO: re-write it
 const computeNewBorrowIndex = (borrowRate, blockDelta, borrowIndex) => {
   return borrowRate.mul(blockDelta).mul(borrowIndex).div(SCALE).add(borrowIndex);
 };

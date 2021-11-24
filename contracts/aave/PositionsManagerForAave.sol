@@ -40,7 +40,7 @@ contract PositionsManagerForAave is ReentrancyGuard, PositionsManagerStorageForA
         uint256 p2pExchangeRate; // The p2pUnit exchange rate of the `poolTokenEntered`.
         uint256 underlyingPrice; // The price of the underlying linked to the `poolTokenEntered` (in ETH).
         uint256 normalizedVariableDebt; // Normalized variable debt of the market.
-        uint256 normalizedIncome; // Noramlized income of the market.
+        uint256 normalizedIncome; // Normalized income of the market.
         uint256 liquidationThreshold; // The liquidation threshold on Aave.
         uint256 reserveDecimals; // The number of decimals of the asset in the reserve.
         uint256 tokenUnit; // The unit of tokens considering its decimals.
@@ -338,10 +338,10 @@ contract PositionsManagerForAave is ReentrancyGuard, PositionsManagerStorageForA
         emit Borrowed(msg.sender, _poolTokenAddress, _amount);
         IAToken poolToken = IAToken(_poolTokenAddress);
         IERC20 underlyingToken = IERC20(poolToken.UNDERLYING_ASSET_ADDRESS());
-        /* DEFAULT CASE: There aren't any borrowers waiting on Cream, Morpho borrows all the tokens from Cream */
+        /* DEFAULT CASE: There aren't any borrowers waiting on Aave, Morpho borrows all the tokens from Aave */
         uint256 remainingToBorrowOnPool = _amount;
 
-        /* If some suppliers are waiting on Cream, Morpho matches the borrower in P2P with them as much as possible */
+        /* If some suppliers are waiting on Aave, Morpho matches the borrower in P2P with them as much as possible */
         if (suppliersOnPool[_poolTokenAddress].isNotEmpty()) {
             // No need to update p2pUnitExchangeRate here as it's done in `_checkAccountLiquidity`
             uint256 p2pExchangeRate = marketsManagerForAave.p2pUnitExchangeRate(_poolTokenAddress);
@@ -447,7 +447,7 @@ contract PositionsManagerForAave is ReentrancyGuard, PositionsManagerStorageForA
         require(
             _amount <= vars.borrowBalance.mul(LIQUIDATION_CLOSE_FACTOR_PERCENT).div(10000),
             Errors.PM_AMOUNT_ABOVE_ALLOWED_TO_REPAY
-        );
+        ); // Same mechanism as Aave. Liquidator cannot repay more than part of the debt (cf close factor on Aave).
 
         vars.oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
         _repay(_poolTokenBorrowedAddress, _borrower, _amount);
@@ -463,13 +463,15 @@ contract PositionsManagerForAave is ReentrancyGuard, PositionsManagerStorageForA
         vars.collateralTokenUnit = 10**vars.collateralReserveDecimals;
         vars.borrowedTokenUnit = 10**vars.borrowedReserveDecimals;
 
+        // Calculate the amount of collateral to seize (cf Aave):
+        // seizeAmount = repayAmount * liquidationBonus * borrowedPrice * collateralTokenUnit / (collateralPrice * borrowedTokenUnit)
         vars.amountToSeize = _amount
             .mul(vars.borrowedPrice)
             .mul(vars.collateralTokenUnit)
             .div(vars.borrowedTokenUnit)
             .div(vars.collateralPrice)
             .mul(vars.liquidationBonus)
-            .div(10000);
+            .div(10000); // Same mechanism as aave. The collateral amount to seize is given.
         vars.normalizedIncome = lendingPool.getReserveNormalizedIncome(vars.tokenCollateralAddress);
         vars.totalCollateral =
             supplyBalanceInOf[_poolTokenCollateralAddress][_borrower].onPool.mulWadByRay(
