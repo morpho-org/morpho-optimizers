@@ -1,34 +1,39 @@
-const { utils, BigNumber } = require('ethers');
-const Decimal = require('decimal.js');
+import { utils, BigNumber } from 'ethers';
+import Decimal from 'decimal.js';
 
 const SCALE = utils.parseUnits('1');
 const RAY = BigNumber.from(10).pow(27);
 
-const underlyingToScaledBalance = (underlyingAmount, normalizedIncome) => {
+const underlyingToScaledBalance = (underlyingAmount: BigNumber, normalizedIncome: BigNumber): BigNumber => {
   return underlyingAmount.mul(RAY).div(normalizedIncome);
 };
 
-const scaledBalanceToUnderlying = (scaledBalance, normalizedIncome) => {
+const scaledBalanceToUnderlying = (scaledBalance: BigNumber, normalizedIncome: BigNumber): BigNumber => {
   return scaledBalance.mul(normalizedIncome).div(RAY);
 };
 
-const underlyingToP2PUnit = (underlyingAmount, p2pUnitExchangeRate) => {
+const underlyingToP2PUnit = (underlyingAmount: BigNumber, p2pUnitExchangeRate: BigNumber): BigNumber => {
   return underlyingAmount.mul(RAY).div(p2pUnitExchangeRate);
 };
 
-const p2pUnitToUnderlying = (p2pUnitAmount, p2pUnitExchangeRate) => {
+const p2pUnitToUnderlying = (p2pUnitAmount: BigNumber, p2pUnitExchangeRate: BigNumber): BigNumber => {
   return p2pUnitAmount.mul(p2pUnitExchangeRate).div(RAY);
 };
 
-const underlyingToAdUnit = (underlyingAmount, normalizedVariableDebt) => {
+const underlyingToAdUnit = (underlyingAmount: BigNumber, normalizedVariableDebt: BigNumber): BigNumber => {
   return underlyingAmount.mul(RAY).div(normalizedVariableDebt);
 };
 
-const aDUnitToUnderlying = (aDUnitAmount, normalizedVariableDebt) => {
+const aDUnitToUnderlying = (aDUnitAmount: BigNumber, normalizedVariableDebt: BigNumber): BigNumber => {
   return aDUnitAmount.mul(normalizedVariableDebt).div(RAY);
 };
 
-const computeNewMorphoExchangeRate = (currentExchangeRate, p2pSPY, currentTimestamp, lastUpdateTimestamp) => {
+const computeNewMorphoExchangeRate = (
+  currentExchangeRate: BigNumber,
+  p2pSPY: BigNumber,
+  currentTimestamp: number,
+  lastUpdateTimestamp: number
+): BigNumber => {
   // Use of decimal.js library for better accuracy
   const spy = new Decimal(p2pSPY.toString());
   const ray = new Decimal('1e27');
@@ -40,11 +45,11 @@ const computeNewMorphoExchangeRate = (currentExchangeRate, p2pSPY, currentTimest
   return newExchangeRate;
 };
 
-const computeNewBorrowIndex = (borrowRate, blockDelta, borrowIndex) => {
+const computeNewBorrowIndex = (borrowRate: BigNumber, blockDelta: BigNumber, borrowIndex: BigNumber): BigNumber => {
   return borrowRate.mul(blockDelta).mul(borrowIndex).div(SCALE).add(borrowIndex);
 };
 
-module.exports = {
+export {
   RAY,
   SCALE,
   underlyingToScaledBalance,

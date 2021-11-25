@@ -1,11 +1,11 @@
-require('dotenv').config({ path: '.env.local' });
-const { utils, BigNumber } = require('ethers');
-const { ethers } = require('hardhat');
-const { expect } = require('chai');
-const hre = require('hardhat');
+import * as dotenv from 'dotenv';
+dotenv.config({ path: './.env.local' });
+import { utils, BigNumber, Signer, Contract } from 'ethers';
+import hre, { ethers } from 'hardhat';
+import { expect } from 'chai';
 const config = require(`@config/${process.env.NETWORK}-config.json`);
-const { removeDigitsBigNumber, bigNumberMin, to6Decimals, getTokens } = require('./utils/common-helpers');
-const {
+import { removeDigitsBigNumber, bigNumberMin, to6Decimals, getTokens } from './utils/common-helpers';
+import {
   SCALE,
   underlyingToCToken,
   cTokenToUnderlying,
@@ -14,98 +14,108 @@ const {
   underlyingToCdUnit,
   cDUnitToUnderlying,
   computeNewMorphoExchangeRate,
-} = require('./utils/compound-helpers');
+} from './utils/compound-helpers';
 
 describe('PositionsManagerForCompound Contract', () => {
-  let cUsdcToken;
-  let cDaiToken;
-  let cUsdtToken;
-  let cMkrToken;
-  let daiToken;
-  let uniToken;
-  let PositionsManagerForCompound;
-  let positionsManagerForCompound;
-  let MarketsManagerForCompound;
-  let marketsManagerForCompound;
-  let fakeCompoundPositionsManager;
+  // Tokens
+  let cUsdcToken: Contract;
+  let cDaiToken: Contract;
+  let cMkrToken: Contract;
+  let daiToken: Contract;
+  let uniToken: Contract;
+  let usdcToken: Contract;
 
-  let signers;
-  let owner;
-  let supplier1;
-  let supplier2;
-  let supplier3;
-  let borrower1;
-  let borrower2;
-  let borrower3;
-  let liquidator;
-  let addrs;
-  let suppliers;
-  let borrowers;
+  // Contracts
+  let positionsManagerForCompound: Contract;
+  let marketsManagerForCompound: Contract;
+  let fakeCompoundPositionsManager: Contract;
+  let comptroller: Contract;
+  let compoundOracle: Contract;
+  let priceOracle: Contract;
 
-  let underlyingThreshold;
-  let snapshotId;
+  // Signers
+  let signers: Signer[];
+  let suppliers: Signer[];
+  let borrowers: Signer[];
+  let owner: Signer;
+  let supplier1: Signer;
+  let supplier2: Signer;
+  let supplier3: Signer;
+  let borrower1: Signer;
+  let borrower2: Signer;
+  let borrower3: Signer;
+  let liquidator: Signer;
+
+  let underlyingThreshold: BigNumber;
+  let snapshotId: number;
 
   const initialize = async () => {
-    {
-      // Users
-      signers = await ethers.getSigners();
-      [owner, supplier1, supplier2, supplier3, borrower1, borrower2, borrower3, liquidator, ...addrs] = signers;
-      suppliers = [supplier1, supplier2, supplier3];
-      borrowers = [borrower1, borrower2, borrower3];
+    // Signers
+    signers = await ethers.getSigners();
+    [owner, supplier1, supplier2, supplier3, borrower1, borrower2, borrower3, liquidator] = signers;
+    suppliers = [supplier1, supplier2, supplier3];
+    borrowers = [borrower1, borrower2, borrower3];
 
-      const RedBlackBinaryTree = await ethers.getContractFactory('contracts/compound/libraries/RedBlackBinaryTree.sol:RedBlackBinaryTree');
-      const redBlackBinaryTree = await RedBlackBinaryTree.deploy();
-      await redBlackBinaryTree.deployed();
+    // Deploy RedBlackBinaryTree
+    const RedBlackBinaryTree = await ethers.getContractFactory('contracts/compound/libraries/RedBlackBinaryTree.sol:RedBlackBinaryTree');
+    const redBlackBinaryTree = await RedBlackBinaryTree.deploy();
+    await redBlackBinaryTree.deployed();
 
-      const UpdatePositions = await ethers.getContractFactory('contracts/compound/UpdatePositions.sol:UpdatePositions', {
-        libraries: {
-          RedBlackBinaryTree: redBlackBinaryTree.address,
-        },
-      });
-      const updatePositions = await UpdatePositions.deploy();
-      await updatePositions.deployed();
+    // Deploy UpdatePositions
+    const UpdatePositions = await ethers.getContractFactory('contracts/compound/UpdatePositions.sol:UpdatePositions', {
+      libraries: {
+        RedBlackBinaryTree: redBlackBinaryTree.address,
+      },
+    });
+    const updatePositions = await UpdatePositions.deploy();
+    await updatePositions.deployed();
 
-      // Deploy contracts
-      MarketsManagerForCompound = await ethers.getContractFactory('MarketsManagerForCompound');
-      marketsManagerForCompound = await MarketsManagerForCompound.deploy();
-      await marketsManagerForCompound.deployed();
+    // Deploy MarketsManagerForCompound
+    const MarketsManagerForCompound = await ethers.getContractFactory('MarketsManagerForCompound');
+    marketsManagerForCompound = await MarketsManagerForCompound.deploy();
+    await marketsManagerForCompound.deployed();
 
-      PositionsManagerForCompound = await ethers.getContractFactory('PositionsManagerForCompound', {
-        libraries: {
-          RedBlackBinaryTree: redBlackBinaryTree.address,
-        },
-      });
-      positionsManagerForCompound = await PositionsManagerForCompound.deploy(marketsManagerForCompound.address, config.compound.comptroller.address, updatePositions.address);
-      fakeCompoundPositionsManager = await PositionsManagerForCompound.deploy(marketsManagerForCompound.address, config.compound.comptroller.address, updatePositions.address);
-      await positionsManagerForCompound.deployed();
-      await fakeCompoundPositionsManager.deployed();
+    // Deploy PositionsManagerForCompound
+    const PositionsManagerForCompound = await ethers.getContractFactory('PositionsManagerForCompound', {
+      libraries: {
+        RedBlackBinaryTree: redBlackBinaryTree.address,
+      },
+    });
+    positionsManagerForCompound = await PositionsManagerForCompound.deploy(
+      marketsManagerForCompound.address,
+      config.compound.comptroller.address,
+      updatePositions.address
+    );
+    fakeCompoundPositionsManager = await PositionsManagerForCompound.deploy(
+      marketsManagerForCompound.address,
+      config.compound.comptroller.address,
+      updatePositions.address
+    );
+    await positionsManagerForCompound.deployed();
+    await fakeCompoundPositionsManager.deployed();
 
-      // Get contract dependencies
-      const cTokenAbi = require(config.tokens.cToken.abi);
-      cUsdcToken = await ethers.getContractAt(cTokenAbi, config.tokens.cUsdc.address, owner);
-      cDaiToken = await ethers.getContractAt(cTokenAbi, config.tokens.cDai.address, owner);
-      cUsdtToken = await ethers.getContractAt(cTokenAbi, config.tokens.cUsdt.address, owner);
-      cUniToken = await ethers.getContractAt(cTokenAbi, config.tokens.cUni.address, owner);
-      cMkrToken = await ethers.getContractAt(cTokenAbi, config.tokens.cMkr.address, owner); // This is in fact crLINK tokens (no crMKR on Polygon)
+    // Get contract dependencies
+    const cTokenAbi = require(config.tokens.cToken.abi);
+    cUsdcToken = await ethers.getContractAt(cTokenAbi, config.tokens.cUsdc.address, owner);
+    cDaiToken = await ethers.getContractAt(cTokenAbi, config.tokens.cDai.address, owner);
+    cMkrToken = await ethers.getContractAt(cTokenAbi, config.tokens.cMkr.address, owner); // This is in fact crLINK tokens (no crMKR on Polygon)
 
-      comptroller = await ethers.getContractAt(require(config.compound.comptroller.abi), config.compound.comptroller.address, owner);
-      compoundOracle = await ethers.getContractAt(require(config.compound.oracle.abi), comptroller.oracle(), owner);
+    comptroller = await ethers.getContractAt(require(config.compound.comptroller.abi), config.compound.comptroller.address, owner);
+    compoundOracle = await ethers.getContractAt(require(config.compound.oracle.abi), comptroller.oracle(), owner);
 
-      // Mint some ERC20
-      daiToken = await getTokens(config.tokens.dai.whale, 'whale', signers, config.tokens.dai, utils.parseUnits('10000'));
-      usdcToken = await getTokens(config.tokens.usdc.whale, 'whale', signers, config.tokens.usdc, BigNumber.from(10).pow(10));
-      usdtToken = await getTokens(config.tokens.usdt.whale, 'whale', signers, config.tokens.usdt, BigNumber.from(10).pow(10));
-      uniToken = await getTokens(config.tokens.uni.whale, 'whale', signers, config.tokens.uni, utils.parseUnits('100'));
+    // Mint some tokens
+    daiToken = await getTokens(config.tokens.dai.whale, 'whale', signers, config.tokens.dai, utils.parseUnits('10000'));
+    usdcToken = await getTokens(config.tokens.usdc.whale, 'whale', signers, config.tokens.usdc, BigNumber.from(10).pow(10));
+    uniToken = await getTokens(config.tokens.uni.whale, 'whale', signers, config.tokens.uni, utils.parseUnits('100'));
 
-      underlyingThreshold = utils.parseUnits('1');
+    underlyingThreshold = utils.parseUnits('1');
 
-      // Create and list markets
-      await marketsManagerForCompound.connect(owner).setPositionsManager(positionsManagerForCompound.address);
-      await marketsManagerForCompound.connect(owner).createMarket(config.tokens.cDai.address, utils.parseUnits('1'));
-      await marketsManagerForCompound.connect(owner).createMarket(config.tokens.cUsdc.address, to6Decimals(utils.parseUnits('1')));
-      await marketsManagerForCompound.connect(owner).createMarket(config.tokens.cUni.address, utils.parseUnits('1'));
-      await marketsManagerForCompound.connect(owner).createMarket(config.tokens.cUsdt.address, to6Decimals(utils.parseUnits('1')));
-    }
+    // Create and list markets
+    await marketsManagerForCompound.connect(owner).setPositionsManager(positionsManagerForCompound.address);
+    await marketsManagerForCompound.connect(owner).createMarket(config.tokens.cDai.address, utils.parseUnits('1'));
+    await marketsManagerForCompound.connect(owner).createMarket(config.tokens.cUsdc.address, to6Decimals(utils.parseUnits('1')));
+    await marketsManagerForCompound.connect(owner).createMarket(config.tokens.cUni.address, utils.parseUnits('1'));
+    await marketsManagerForCompound.connect(owner).createMarket(config.tokens.cUsdt.address, to6Decimals(utils.parseUnits('1')));
   };
 
   before(initialize);
@@ -135,7 +145,8 @@ describe('PositionsManagerForCompound Contract', () => {
 
   describe('Governance functions', () => {
     it('Should revert when at least when a market in input is not a real market', async () => {
-      expect(marketsManagerForCompound.connect(owner).createMarket(config.tokens.usdt.address, to6Decimals(utils.parseUnits('1')))).to.be.reverted;
+      expect(marketsManagerForCompound.connect(owner).createMarket(config.tokens.usdt.address, to6Decimals(utils.parseUnits('1')))).to.be
+        .reverted;
     });
 
     it('Only Owner should be able to create markets in peer-to-peer', async () => {
@@ -168,7 +179,9 @@ describe('PositionsManagerForCompound Contract', () => {
     it('Should create a market the with right values', async () => {
       const supplyBPY = await cMkrToken.supplyRatePerBlock();
       const borrowBPY = await cMkrToken.borrowRatePerBlock();
-      const { blockNumber } = await marketsManagerForCompound.connect(owner).createMarket(config.tokens.cMkr.address, utils.parseUnits('1'));
+      const { blockNumber } = await marketsManagerForCompound
+        .connect(owner)
+        .createMarket(config.tokens.cMkr.address, utils.parseUnits('1'));
       expect(await marketsManagerForCompound.isCreated(config.tokens.cMkr.address)).to.be.true;
 
       const p2pBPY = supplyBPY.add(borrowBPY).div(2);
@@ -195,7 +208,8 @@ describe('PositionsManagerForCompound Contract', () => {
     });
 
     it('Should revert when supply less than the required threshold', async () => {
-      await expect(positionsManagerForCompound.connect(supplier1).supply(config.tokens.cDai.address, underlyingThreshold.sub(1))).to.be.reverted;
+      await expect(positionsManagerForCompound.connect(supplier1).supply(config.tokens.cDai.address, underlyingThreshold.sub(1))).to.be
+        .reverted;
     });
 
     it('Should have the correct balances after supply', async () => {
@@ -211,7 +225,9 @@ describe('PositionsManagerForCompound Contract', () => {
       const exchangeRate = await cDaiToken.callStatic.exchangeRateCurrent();
       const expectedSupplyBalanceOnPool = underlyingToCToken(amount, exchangeRate);
       expect(await cDaiToken.balanceOf(positionsManagerForCompound.address)).to.equal(expectedSupplyBalanceOnPool);
-      expect((await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).onPool).to.equal(expectedSupplyBalanceOnPool);
+      expect((await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).onPool).to.equal(
+        expectedSupplyBalanceOnPool
+      );
       expect((await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).inP2P).to.equal(0);
     });
 
@@ -223,12 +239,14 @@ describe('PositionsManagerForCompound Contract', () => {
       const daiBalanceAfter1 = await daiToken.balanceOf(supplier1.getAddress());
       expect(daiBalanceAfter1).to.equal(daiBalanceBefore1.sub(amount));
 
-      const supplyBalanceOnPool = (await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).onPool;
+      const supplyBalanceOnPool = (await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress()))
+        .onPool;
       const exchangeRate1 = await cDaiToken.callStatic.exchangeRateCurrent();
       const toWithdraw1 = cTokenToUnderlying(supplyBalanceOnPool, exchangeRate1);
 
       // TODO: improve this test to prevent attacks
-      await expect(positionsManagerForCompound.connect(supplier1).withdraw(toWithdraw1.add(utils.parseUnits('0.001')).toString())).to.be.reverted;
+      await expect(positionsManagerForCompound.connect(supplier1).withdraw(toWithdraw1.add(utils.parseUnits('0.001')).toString())).to.be
+        .reverted;
 
       // Update exchange rate
       await cDaiToken.connect(supplier1).exchangeRateCurrent();
@@ -240,8 +258,11 @@ describe('PositionsManagerForCompound Contract', () => {
       expect(daiBalanceAfter2).to.equal(daiBalanceBefore1.sub(amount).add(toWithdraw2));
 
       // Check cToken left are only dust in supply balance
-      expect((await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).onPool).to.be.lt(1000);
-      await expect(positionsManagerForCompound.connect(supplier1).withdraw(config.tokens.cDai.address, utils.parseUnits('0.001'))).to.be.reverted;
+      expect((await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).onPool).to.be.lt(
+        1000
+      );
+      await expect(positionsManagerForCompound.connect(supplier1).withdraw(config.tokens.cDai.address, utils.parseUnits('0.001'))).to.be
+        .reverted;
     });
 
     it('Should be able to supply more ERC20 after already having supply ERC20', async () => {
@@ -264,7 +285,9 @@ describe('PositionsManagerForCompound Contract', () => {
       const expectedSupplyBalanceOnPool2 = underlyingToCToken(amount, exchangeRate2);
       const expectedSupplyBalanceOnPool = expectedSupplyBalanceOnPool1.add(expectedSupplyBalanceOnPool2);
       expect(await cDaiToken.balanceOf(positionsManagerForCompound.address)).to.equal(expectedSupplyBalanceOnPool);
-      expect((await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).onPool).to.equal(expectedSupplyBalanceOnPool);
+      expect((await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).onPool).to.equal(
+        expectedSupplyBalanceOnPool
+      );
     });
 
     it('Several suppliers should be able to supply and have the correct balances', async () => {
@@ -284,10 +307,15 @@ describe('PositionsManagerForCompound Contract', () => {
         expect(daiBalanceAfter).to.equal(expectedDaiBalanceAfter);
         const expectedSupplyBalanceOnPool = underlyingToCToken(amount, exchangeRate);
         expectedCTokenBalance = expectedCTokenBalance.add(expectedSupplyBalanceOnPool);
-        expect(removeDigitsBigNumber(7, await cDaiToken.balanceOf(positionsManagerForCompound.address))).to.equal(removeDigitsBigNumber(7, expectedCTokenBalance));
-        expect(removeDigitsBigNumber(4, (await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier.getAddress())).onPool)).to.equal(
-          removeDigitsBigNumber(4, expectedSupplyBalanceOnPool)
+        expect(removeDigitsBigNumber(7, await cDaiToken.balanceOf(positionsManagerForCompound.address))).to.equal(
+          removeDigitsBigNumber(7, expectedCTokenBalance)
         );
+        expect(
+          removeDigitsBigNumber(
+            4,
+            (await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier.getAddress())).onPool
+          )
+        ).to.equal(removeDigitsBigNumber(4, expectedSupplyBalanceOnPool));
         expect((await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier.getAddress())).inP2P).to.equal(0);
       }
     });
@@ -314,12 +342,18 @@ describe('PositionsManagerForCompound Contract', () => {
       await usdcToken.connect(borrower1).approve(positionsManagerForCompound.address, amount);
       await positionsManagerForCompound.connect(borrower1).supply(config.tokens.cUsdc.address, amount);
       const cTokenExchangeRate = await cUsdcToken.callStatic.exchangeRateCurrent();
-      const collateralBalanceInCToken = (await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cUsdc.address, borrower1.getAddress())).onPool;
+      const collateralBalanceInCToken = (
+        await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cUsdc.address, borrower1.getAddress())
+      ).onPool;
       const collateralBalanceInUnderlying = cTokenToUnderlying(collateralBalanceInCToken, cTokenExchangeRate);
       const { collateralFactorMantissa } = await comptroller.markets(config.tokens.cDai.address);
       const usdcPriceMantissa = await compoundOracle.getUnderlyingPrice(config.tokens.cUsdc.address);
       const daiPriceMantissa = await compoundOracle.getUnderlyingPrice(config.tokens.cDai.address);
-      const maxToBorrow = collateralBalanceInUnderlying.mul(usdcPriceMantissa).div(daiPriceMantissa).mul(collateralFactorMantissa).div(SCALE);
+      const maxToBorrow = collateralBalanceInUnderlying
+        .mul(usdcPriceMantissa)
+        .div(daiPriceMantissa)
+        .mul(collateralFactorMantissa)
+        .div(SCALE);
       const daiBalanceBefore = await daiToken.balanceOf(borrower1.getAddress());
 
       // Borrow
@@ -329,7 +363,10 @@ describe('PositionsManagerForCompound Contract', () => {
 
       // Check borrower1 balances
       expect(daiBalanceAfter).to.equal(daiBalanceBefore.add(maxToBorrow));
-      const borrowBalanceOnPoolInUnderlying = cDUnitToUnderlying((await positionsManagerForCompound.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onPool, borrowIndex);
+      const borrowBalanceOnPoolInUnderlying = cDUnitToUnderlying(
+        (await positionsManagerForCompound.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onPool,
+        borrowIndex
+      );
       let diff;
       if (borrowBalanceOnPoolInUnderlying.gt(maxToBorrow)) diff = borrowBalanceOnPoolInUnderlying.sub(maxToBorrow);
       else diff = maxToBorrow.sub(borrowBalanceOnPoolInUnderlying);
@@ -344,13 +381,19 @@ describe('PositionsManagerForCompound Contract', () => {
       const amount = to6Decimals(utils.parseUnits('100'));
       await usdcToken.connect(borrower1).approve(positionsManagerForCompound.address, amount);
       await positionsManagerForCompound.connect(borrower1).supply(config.tokens.cUsdc.address, amount);
-      const collateralBalanceInCToken = (await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cUsdc.address, borrower1.getAddress())).onPool;
+      const collateralBalanceInCToken = (
+        await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cUsdc.address, borrower1.getAddress())
+      ).onPool;
       const cTokenExchangeRate = await cUsdcToken.callStatic.exchangeRateCurrent();
       const collateralBalanceInUnderlying = cTokenToUnderlying(collateralBalanceInCToken, cTokenExchangeRate);
       const { collateralFactorMantissa } = await comptroller.markets(config.tokens.cDai.address);
       const usdcPriceMantissa = await compoundOracle.getUnderlyingPrice(config.tokens.cUsdc.address);
       const daiPriceMantissa = await compoundOracle.getUnderlyingPrice(config.tokens.cDai.address);
-      const maxToBorrow = collateralBalanceInUnderlying.mul(usdcPriceMantissa).div(daiPriceMantissa).mul(collateralFactorMantissa).div(SCALE);
+      const maxToBorrow = collateralBalanceInUnderlying
+        .mul(usdcPriceMantissa)
+        .div(daiPriceMantissa)
+        .mul(collateralFactorMantissa)
+        .div(SCALE);
       // WARNING: maxToBorrow seems to be not accurate
       const moreThanMaxToBorrow = maxToBorrow.add(utils.parseUnits('10'));
 
@@ -379,7 +422,10 @@ describe('PositionsManagerForCompound Contract', () => {
         // All underlyings should have been sent to the borrower
         const daiBalanceAfter = await daiToken.balanceOf(borrower.getAddress());
         expect(daiBalanceAfter).to.equal(daiBalanceBefore.add(borrowedAmount));
-        const borrowBalanceOnPoolInUnderlying = cDUnitToUnderlying((await positionsManagerForCompound.borrowBalanceInOf(config.tokens.cDai.address, borrower.getAddress())).onPool, borrowIndex);
+        const borrowBalanceOnPoolInUnderlying = cDUnitToUnderlying(
+          (await positionsManagerForCompound.borrowBalanceInOf(config.tokens.cDai.address, borrower.getAddress())).onPool,
+          borrowIndex
+        );
         let diff;
         if (borrowBalanceOnPoolInUnderlying.gt(borrowedAmount)) diff = borrowBalanceOnPoolInUnderlying.sub(borrowedAmount);
         else diff = borrowedAmount.sub(borrowBalanceOnPoolInUnderlying);
@@ -397,17 +443,24 @@ describe('PositionsManagerForCompound Contract', () => {
       const amount = to6Decimals(utils.parseUnits('100'));
       await usdcToken.connect(borrower1).approve(positionsManagerForCompound.address, amount);
       await positionsManagerForCompound.connect(borrower1).supply(config.tokens.cUsdc.address, amount);
-      const collateralBalanceInCToken = (await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cUsdc.address, borrower1.getAddress())).onPool;
+      const collateralBalanceInCToken = (
+        await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cUsdc.address, borrower1.getAddress())
+      ).onPool;
       const cTokenExchangeRate = await cUsdcToken.callStatic.exchangeRateCurrent();
       const collateralBalanceInUnderlying = cTokenToUnderlying(collateralBalanceInCToken, cTokenExchangeRate);
       const { collateralFactorMantissa } = await comptroller.markets(config.tokens.cDai.address);
       const usdcPriceMantissa = await compoundOracle.getUnderlyingPrice(config.tokens.cUsdc.address);
       const daiPriceMantissa = await compoundOracle.getUnderlyingPrice(config.tokens.cDai.address);
-      const maxToBorrow = collateralBalanceInUnderlying.mul(usdcPriceMantissa).div(daiPriceMantissa).mul(collateralFactorMantissa).div(SCALE);
+      const maxToBorrow = collateralBalanceInUnderlying
+        .mul(usdcPriceMantissa)
+        .div(daiPriceMantissa)
+        .mul(collateralFactorMantissa)
+        .div(SCALE);
 
       const daiBalanceBefore = await daiToken.balanceOf(borrower1.getAddress());
       await positionsManagerForCompound.connect(borrower1).borrow(config.tokens.cDai.address, maxToBorrow);
-      const borrowBalanceOnPool = (await positionsManagerForCompound.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onPool;
+      const borrowBalanceOnPool = (await positionsManagerForCompound.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress()))
+        .onPool;
       const borrowIndex1 = await cDaiToken.borrowIndex();
       const borrowBalanceOnPoolInUnderlying = cDUnitToUnderlying(borrowBalanceOnPool, borrowIndex1);
       const toRepay = borrowBalanceOnPoolInUnderlying.div(2);
@@ -417,7 +470,9 @@ describe('PositionsManagerForCompound Contract', () => {
       const daiBalanceAfter = await daiToken.balanceOf(borrower1.getAddress());
 
       const expectedBalanceOnPool = borrowBalanceOnPool.sub(underlyingToCdUnit(borrowBalanceOnPoolInUnderlying.div(2), borrowIndex2));
-      expect((await positionsManagerForCompound.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onPool).to.equal(expectedBalanceOnPool);
+      expect((await positionsManagerForCompound.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onPool).to.equal(
+        expectedBalanceOnPool
+      );
       expect(daiBalanceAfter).to.equal(daiBalanceBefore.add(maxToBorrow).sub(toRepay));
     });
   });
@@ -437,7 +492,9 @@ describe('PositionsManagerForCompound Contract', () => {
       const cTokenExchangeRate1 = await cDaiToken.callStatic.exchangeRateCurrent();
       const expectedSupplyBalanceOnPool1 = underlyingToCToken(supplyAmount, cTokenExchangeRate1);
       expect(await cDaiToken.balanceOf(positionsManagerForCompound.address)).to.equal(expectedSupplyBalanceOnPool1);
-      expect((await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).onPool).to.equal(expectedSupplyBalanceOnPool1);
+      expect((await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).onPool).to.equal(
+        expectedSupplyBalanceOnPool1
+      );
 
       // Borrower provides collateral
       const collateralAmount = to6Decimals(utils.parseUnits('100'));
@@ -452,29 +509,43 @@ describe('PositionsManagerForCompound Contract', () => {
       const p2pExchangeRate1 = await marketsManagerForCompound.p2pUnitExchangeRate(config.tokens.cDai.address);
       const expectedSupplyBalanceOnPool2 = expectedSupplyBalanceOnPool1.sub(underlyingToCToken(supplyAmount, cTokenExchangeRate2));
       const expectedSupplyBalanceInP2P2 = underlyingToP2pUnit(supplyAmount, p2pExchangeRate1);
-      const supplyBalanceOnPool2 = (await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).onPool;
-      const supplyBalanceInP2P2 = (await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).inP2P;
+      const supplyBalanceOnPool2 = (await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress()))
+        .onPool;
+      const supplyBalanceInP2P2 = (await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress()))
+        .inP2P;
       expect(supplyBalanceOnPool2).to.equal(expectedSupplyBalanceOnPool2);
       expect(supplyBalanceInP2P2).to.equal(expectedSupplyBalanceInP2P2);
 
       // Check borrower1 balances
       const expectedBorrowBalanceInP2P1 = expectedSupplyBalanceInP2P2;
       expect((await positionsManagerForCompound.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onPool).to.equal(0);
-      expect((await positionsManagerForCompound.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).inP2P).to.equal(expectedBorrowBalanceInP2P1);
+      expect((await positionsManagerForCompound.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).inP2P).to.equal(
+        expectedBorrowBalanceInP2P1
+      );
 
       // Compoundare remaining to withdraw and the cToken contract balance
       await marketsManagerForCompound.connect(owner).updateP2pUnitExchangeRate(config.tokens.cDai.address);
       const p2pExchangeRate2 = await marketsManagerForCompound.p2pUnitExchangeRate(config.tokens.cDai.address);
-      const p2pExchangeRate3 = computeNewMorphoExchangeRate(p2pExchangeRate2, await marketsManagerForCompound.p2pBPY(config.tokens.cDai.address), 1, 0).toString();
+      const p2pExchangeRate3 = computeNewMorphoExchangeRate(
+        p2pExchangeRate2,
+        await marketsManagerForCompound.p2pBPY(config.tokens.cDai.address),
+        1,
+        0
+      ).toString();
       const daiBalanceBefore2 = await daiToken.balanceOf(supplier1.getAddress());
-      const supplyBalanceOnPool3 = (await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).onPool;
-      const supplyBalanceInP2P3 = (await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).inP2P;
+      const supplyBalanceOnPool3 = (await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress()))
+        .onPool;
+      const supplyBalanceInP2P3 = (await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress()))
+        .inP2P;
       const cTokenExchangeRate3 = await cDaiToken.callStatic.exchangeRateStored();
       const supplyBalanceOnPoolInUnderlying = cTokenToUnderlying(supplyBalanceOnPool3, cTokenExchangeRate3);
       const amountToWithdraw = supplyBalanceOnPoolInUnderlying.add(p2pUnitToUnderlying(supplyBalanceInP2P3, p2pExchangeRate3));
       const expectedDaiBalanceAfter2 = daiBalanceBefore2.add(amountToWithdraw);
       const remainingToWithdraw = amountToWithdraw.sub(supplyBalanceOnPoolInUnderlying);
-      const cTokenContractBalanceInUnderlying = cTokenToUnderlying(await cDaiToken.balanceOf(positionsManagerForCompound.address), cTokenExchangeRate3);
+      const cTokenContractBalanceInUnderlying = cTokenToUnderlying(
+        await cDaiToken.balanceOf(positionsManagerForCompound.address),
+        cTokenExchangeRate3
+      );
       expect(remainingToWithdraw).to.be.gt(cTokenContractBalanceInUnderlying);
 
       // Expected borrow balances
@@ -494,14 +565,32 @@ describe('PositionsManagerForCompound Contract', () => {
       expect(removeDigitsBigNumber(1, daiBalanceAfter2)).to.equal(removeDigitsBigNumber(1, expectedDaiBalanceAfter2));
 
       // Check supply balances of supplier1
-      expect(removeDigitsBigNumber(1, (await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).onPool)).to.equal(0);
-      expect(removeDigitsBigNumber(9, (await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).inP2P)).to.equal(0);
+      expect(
+        removeDigitsBigNumber(
+          1,
+          (await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).onPool
+        )
+      ).to.equal(0);
+      expect(
+        removeDigitsBigNumber(
+          9,
+          (await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).inP2P
+        )
+      ).to.equal(0);
 
       // Check borrow balances of borrower1
-      expect(removeDigitsBigNumber(9, (await positionsManagerForCompound.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onPool)).to.equal(
-        removeDigitsBigNumber(9, expectedBorrowerBorrowBalanceOnPool)
-      );
-      expect(removeDigitsBigNumber(9, (await positionsManagerForCompound.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).inP2P)).to.equal(0);
+      expect(
+        removeDigitsBigNumber(
+          9,
+          (await positionsManagerForCompound.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onPool
+        )
+      ).to.equal(removeDigitsBigNumber(9, expectedBorrowerBorrowBalanceOnPool));
+      expect(
+        removeDigitsBigNumber(
+          9,
+          (await positionsManagerForCompound.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).inP2P
+        )
+      ).to.equal(0);
     });
 
     it('Supplier should withdraw her liquidity while enough cDaiToken in peer-to-peer contract', async () => {
@@ -520,9 +609,12 @@ describe('PositionsManagerForCompound Contract', () => {
         expect(daiBalanceAfter).to.equal(expectedDaiBalanceAfter);
         const cTokenExchangeRate = await cDaiToken.callStatic.exchangeRateStored();
         const expectedSupplyBalanceOnPool = underlyingToCToken(supplyAmount, cTokenExchangeRate);
-        expect(removeDigitsBigNumber(4, (await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier.getAddress())).onPool)).to.equal(
-          removeDigitsBigNumber(4, expectedSupplyBalanceOnPool)
-        );
+        expect(
+          removeDigitsBigNumber(
+            4,
+            (await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier.getAddress())).onPool
+          )
+        ).to.equal(removeDigitsBigNumber(4, expectedSupplyBalanceOnPool));
       }
 
       // Borrower provides collateral
@@ -530,7 +622,9 @@ describe('PositionsManagerForCompound Contract', () => {
       await usdcToken.connect(borrower1).approve(positionsManagerForCompound.address, collateralAmount);
       await positionsManagerForCompound.connect(borrower1).supply(config.tokens.cUsdc.address, collateralAmount);
 
-      const previousSupplier1SupplyBalanceOnPool = (await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).onPool;
+      const previousSupplier1SupplyBalanceOnPool = (
+        await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())
+      ).onPool;
 
       // Borrowers borrows supplier1 amount
       await positionsManagerForCompound.connect(borrower1).borrow(config.tokens.cDai.address, supplyAmount);
@@ -541,42 +635,68 @@ describe('PositionsManagerForCompound Contract', () => {
       // Expected balances of supplier1
       const expectedSupplyBalanceOnPool2 = previousSupplier1SupplyBalanceOnPool.sub(underlyingToCToken(supplyAmount, cTokenExchangeRate2));
       const expectedSupplyBalanceInP2P2 = underlyingToP2pUnit(supplyAmount, p2pExchangeRate1);
-      const supplyBalanceOnPool2 = (await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).onPool;
-      const supplyBalanceInP2P2 = (await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).inP2P;
+      const supplyBalanceOnPool2 = (await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress()))
+        .onPool;
+      const supplyBalanceInP2P2 = (await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress()))
+        .inP2P;
       expect(supplyBalanceOnPool2).to.equal(expectedSupplyBalanceOnPool2);
       expect(supplyBalanceInP2P2).to.equal(expectedSupplyBalanceInP2P2);
 
       // Check borrower1 balances
       const expectedBorrowBalanceInP2P1 = expectedSupplyBalanceInP2P2;
       expect((await positionsManagerForCompound.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onPool).to.equal(0);
-      expect((await positionsManagerForCompound.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).inP2P).to.equal(expectedBorrowBalanceInP2P1);
+      expect((await positionsManagerForCompound.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).inP2P).to.equal(
+        expectedBorrowBalanceInP2P1
+      );
 
       // Compoundare remaining to withdraw and the cToken contract balance
       await marketsManagerForCompound.connect(owner).updateP2pUnitExchangeRate(config.tokens.cDai.address);
       const p2pExchangeRate2 = await marketsManagerForCompound.p2pUnitExchangeRate(config.tokens.cDai.address);
-      const p2pExchangeRate3 = computeNewMorphoExchangeRate(p2pExchangeRate2, await marketsManagerForCompound.p2pBPY(config.tokens.cDai.address), 1, 0).toString();
+      const p2pExchangeRate3 = computeNewMorphoExchangeRate(
+        p2pExchangeRate2,
+        await marketsManagerForCompound.p2pBPY(config.tokens.cDai.address),
+        1,
+        0
+      ).toString();
       const daiBalanceBefore2 = await daiToken.balanceOf(supplier1.getAddress());
-      const supplyBalanceOnPool3 = (await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).onPool;
-      const supplyBalanceInP2P3 = (await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).inP2P;
+      const supplyBalanceOnPool3 = (await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress()))
+        .onPool;
+      const supplyBalanceInP2P3 = (await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress()))
+        .inP2P;
       const cTokenExchangeRate3 = await cDaiToken.callStatic.exchangeRateCurrent();
       const supplyBalanceOnPoolInUnderlying = cTokenToUnderlying(supplyBalanceOnPool3, cTokenExchangeRate3);
       const amountToWithdraw = supplyBalanceOnPoolInUnderlying.add(p2pUnitToUnderlying(supplyBalanceInP2P3, p2pExchangeRate3));
       const expectedDaiBalanceAfter2 = daiBalanceBefore2.add(amountToWithdraw);
       const remainingToWithdraw = amountToWithdraw.sub(supplyBalanceOnPoolInUnderlying);
-      const cTokenContractBalanceInUnderlying = cTokenToUnderlying(await cDaiToken.balanceOf(positionsManagerForCompound.address), cTokenExchangeRate3);
+      const cTokenContractBalanceInUnderlying = cTokenToUnderlying(
+        await cDaiToken.balanceOf(positionsManagerForCompound.address),
+        cTokenExchangeRate3
+      );
       expect(remainingToWithdraw).to.be.lt(cTokenContractBalanceInUnderlying);
 
       // supplier3 balances before the withdraw
-      const supplier3SupplyBalanceOnPool = (await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier3.getAddress())).onPool;
-      const supplier3SupplyBalanceInP2P = (await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier3.getAddress())).inP2P;
+      const supplier3SupplyBalanceOnPool = (
+        await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier3.getAddress())
+      ).onPool;
+      const supplier3SupplyBalanceInP2P = (
+        await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier3.getAddress())
+      ).inP2P;
 
       // supplier2 balances before the withdraw
-      const supplier2SupplyBalanceOnPool = (await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier2.getAddress())).onPool;
-      const supplier2SupplyBalanceInP2P = (await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier2.getAddress())).inP2P;
+      const supplier2SupplyBalanceOnPool = (
+        await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier2.getAddress())
+      ).onPool;
+      const supplier2SupplyBalanceInP2P = (
+        await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier2.getAddress())
+      ).inP2P;
 
       // borrower1 balances before the withdraw
-      const borrower1BorrowBalanceOnPool = (await positionsManagerForCompound.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onPool;
-      const borrower1BorrowBalanceInP2P = (await positionsManagerForCompound.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).inP2P;
+      const borrower1BorrowBalanceOnPool = (
+        await positionsManagerForCompound.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())
+      ).onPool;
+      const borrower1BorrowBalanceInP2P = (
+        await positionsManagerForCompound.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())
+      ).inP2P;
 
       // Withdraw
       await positionsManagerForCompound.connect(supplier1).withdraw(config.tokens.cDai.address, amountToWithdraw);
@@ -597,24 +717,48 @@ describe('PositionsManagerForCompound Contract', () => {
       expect(daiBalanceAfter2).to.equal(expectedDaiBalanceAfter2);
 
       // Check supply balances of supplier1
-      expect(removeDigitsBigNumber(1, (await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).onPool)).to.equal(0);
-      expect(removeDigitsBigNumber(5, (await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).inP2P)).to.equal(0);
+      expect(
+        removeDigitsBigNumber(
+          1,
+          (await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).onPool
+        )
+      ).to.equal(0);
+      expect(
+        removeDigitsBigNumber(
+          5,
+          (await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).inP2P
+        )
+      ).to.equal(0);
 
       // Check supply balances of supplier2: supplier2 should have replaced supplier1
-      expect(removeDigitsBigNumber(1, (await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier2.getAddress())).onPool)).to.equal(
-        removeDigitsBigNumber(1, expectedSupplier2SupplyBalanceOnPool)
-      );
-      expect(removeDigitsBigNumber(7, (await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier2.getAddress())).inP2P)).to.equal(
-        removeDigitsBigNumber(7, expectedSupplier2SupplyBalanceInP2P)
-      );
+      expect(
+        removeDigitsBigNumber(
+          1,
+          (await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier2.getAddress())).onPool
+        )
+      ).to.equal(removeDigitsBigNumber(1, expectedSupplier2SupplyBalanceOnPool));
+      expect(
+        removeDigitsBigNumber(
+          7,
+          (await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier2.getAddress())).inP2P
+        )
+      ).to.equal(removeDigitsBigNumber(7, expectedSupplier2SupplyBalanceInP2P));
 
       // Check supply balances of supplier3: supplier3 balances should not move
-      expect((await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier3.getAddress())).onPool).to.equal(supplier3SupplyBalanceOnPool);
-      expect((await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier3.getAddress())).inP2P).to.equal(supplier3SupplyBalanceInP2P);
+      expect((await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier3.getAddress())).onPool).to.equal(
+        supplier3SupplyBalanceOnPool
+      );
+      expect((await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier3.getAddress())).inP2P).to.equal(
+        supplier3SupplyBalanceInP2P
+      );
 
       // Check borrow balances of borrower1: borrower1 balances should not move (except interest earn meanwhile)
-      expect((await positionsManagerForCompound.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onPool).to.equal(borrower1BorrowBalanceOnPool);
-      expect((await positionsManagerForCompound.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).inP2P).to.equal(borrower1BorrowBalanceInP2P);
+      expect((await positionsManagerForCompound.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onPool).to.equal(
+        borrower1BorrowBalanceOnPool
+      );
+      expect((await positionsManagerForCompound.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).inP2P).to.equal(
+        borrower1BorrowBalanceInP2P
+      );
     });
 
     it('Borrower in peer-to-peer only, should be able to repay all borrow amount', async () => {
@@ -632,7 +776,8 @@ describe('PositionsManagerForCompound Contract', () => {
       await positionsManagerForCompound.connect(borrower1).supply(config.tokens.cUsdc.address, collateralAmount);
       await positionsManagerForCompound.connect(borrower1).borrow(config.tokens.cDai.address, toBorrow);
 
-      const borrowerBalanceInP2P = (await positionsManagerForCompound.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).inP2P;
+      const borrowerBalanceInP2P = (await positionsManagerForCompound.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress()))
+        .inP2P;
       const p2pBPY = await marketsManagerForCompound.p2pBPY(config.tokens.cDai.address);
       await marketsManagerForCompound.updateP2pUnitExchangeRate(config.tokens.cDai.address);
       const p2pUnitExchangeRate = await marketsManagerForCompound.p2pUnitExchangeRate(config.tokens.cDai.address);
@@ -674,7 +819,8 @@ describe('PositionsManagerForCompound Contract', () => {
       await positionsManagerForCompound.connect(borrower1).supply(config.tokens.cUsdc.address, collateralAmount);
       const daiBalanceBefore = await daiToken.balanceOf(borrower1.getAddress());
       const toBorrow = supplyAmount.mul(2);
-      const supplyBalanceOnPool = (await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).onPool;
+      const supplyBalanceOnPool = (await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress()))
+        .onPool;
       await positionsManagerForCompound.connect(borrower1).borrow(config.tokens.cDai.address, toBorrow);
 
       const cTokenExchangeRate1 = await cDaiToken.callStatic.exchangeRateStored();
@@ -683,7 +829,8 @@ describe('PositionsManagerForCompound Contract', () => {
       expect(removeDigitsBigNumber(7, morphoBorrowBalanceBefore1)).to.equal(removeDigitsBigNumber(7, expectedMorphoBorrowBalance1));
       await daiToken.connect(borrower1).approve(positionsManagerForCompound.address, amountToApprove);
 
-      const borrowerBalanceInP2P = (await positionsManagerForCompound.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).inP2P;
+      const borrowerBalanceInP2P = (await positionsManagerForCompound.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress()))
+        .inP2P;
       const p2pBPY = await marketsManagerForCompound.p2pBPY(config.tokens.cDai.address);
       const p2pUnitExchangeRate = await marketsManagerForCompound.p2pUnitExchangeRate(config.tokens.cDai.address);
       // WARNING: Should be 2 blocks but the pow function used in contract is not accurate
@@ -694,7 +841,9 @@ describe('PositionsManagerForCompound Contract', () => {
       const doUpdate = await cDaiToken.borrowBalanceCurrent(positionsManagerForCompound.address);
       await doUpdate.wait(1);
       const borrowIndex1 = await cDaiToken.borrowIndex();
-      const borrowerBalanceOnPool = (await positionsManagerForCompound.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onPool;
+      const borrowerBalanceOnPool = (
+        await positionsManagerForCompound.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())
+      ).onPool;
       const toRepay = borrowerBalanceOnPool.mul(borrowIndex1).div(SCALE).add(borrowerBalanceInP2PInUnderlying);
       const expectedDaiBalanceAfter = daiBalanceBefore.add(toBorrow).sub(toRepay);
       const previousMorphoCTokenBalance = await cDaiToken.balanceOf(positionsManagerForCompound.address);
@@ -704,19 +853,27 @@ describe('PositionsManagerForCompound Contract', () => {
       const borrowIndex3 = await cDaiToken.callStatic.borrowIndex();
       await positionsManagerForCompound.connect(borrower1).repay(config.tokens.cDai.address, toRepay);
       const cTokenExchangeRate2 = await cDaiToken.callStatic.exchangeRateStored();
-      const expectedMorphoCTokenBalance = previousMorphoCTokenBalance.add(underlyingToCToken(borrowerBalanceInP2PInUnderlying, cTokenExchangeRate2));
+      const expectedMorphoCTokenBalance = previousMorphoCTokenBalance.add(
+        underlyingToCToken(borrowerBalanceInP2PInUnderlying, cTokenExchangeRate2)
+      );
       const expectedBalanceOnPool = borrowerBalanceOnPool.sub(borrowerBalanceOnPool.mul(borrowIndex1).div(borrowIndex3));
 
       // Check borrower1 balances
       const daiBalanceAfter = await daiToken.balanceOf(borrower1.getAddress());
       expect(daiBalanceAfter).to.equal(expectedDaiBalanceAfter);
-      const borrower1BorrowBalanceOnPool = (await positionsManagerForCompound.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onPool;
+      const borrower1BorrowBalanceOnPool = (
+        await positionsManagerForCompound.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())
+      ).onPool;
       expect(removeDigitsBigNumber(2, borrower1BorrowBalanceOnPool)).to.equal(removeDigitsBigNumber(2, expectedBalanceOnPool));
       // WARNING: Commented here due to the pow function issue
-      expect((await positionsManagerForCompound.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).inP2P).to.be.lt(1000000000000);
+      expect((await positionsManagerForCompound.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).inP2P).to.be.lt(
+        1000000000000
+      );
 
       // Check Morpho balances
-      expect(removeDigitsBigNumber(6, await cDaiToken.balanceOf(positionsManagerForCompound.address))).to.equal(removeDigitsBigNumber(6, expectedMorphoCTokenBalance));
+      expect(removeDigitsBigNumber(6, await cDaiToken.balanceOf(positionsManagerForCompound.address))).to.equal(
+        removeDigitsBigNumber(6, expectedMorphoCTokenBalance)
+      );
       // Issue here: we cannot access the most updated borrow balance as it's updated during the repayBorrow on Compound.
       // const expectedMorphoBorrowBalance2 = morphoBorrowBalanceBefore2.sub(borrowerBalanceOnPool.mul(borrowIndex2).div(SCALE));
       // expect(removeDigitsBigNumber(3, await cToken.callStatic.borrowBalanceStored(positionsManagerForCompound.address))).to.equal(removeDigitsBigNumber(3, expectedMorphoBorrowBalance2));
@@ -731,19 +888,25 @@ describe('PositionsManagerForCompound Contract', () => {
       await usdcToken.connect(borrower1).approve(positionsManagerForCompound.address, collateralAmount);
       await positionsManagerForCompound.connect(borrower1).supply(config.tokens.cUsdc.address, collateralAmount);
       await positionsManagerForCompound.connect(borrower1).borrow(config.tokens.cDai.address, borrowAmount);
-      const borrower1BorrowBalanceOnPool = (await positionsManagerForCompound.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onPool;
+      const borrower1BorrowBalanceOnPool = (
+        await positionsManagerForCompound.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())
+      ).onPool;
 
       // borrower2 borrows
       await usdcToken.connect(borrower2).approve(positionsManagerForCompound.address, collateralAmount);
       await positionsManagerForCompound.connect(borrower2).supply(config.tokens.cUsdc.address, collateralAmount);
       await positionsManagerForCompound.connect(borrower2).borrow(config.tokens.cDai.address, borrowAmount);
-      const borrower2BorrowBalanceOnPool = (await positionsManagerForCompound.borrowBalanceInOf(config.tokens.cDai.address, borrower2.getAddress())).onPool;
+      const borrower2BorrowBalanceOnPool = (
+        await positionsManagerForCompound.borrowBalanceInOf(config.tokens.cDai.address, borrower2.getAddress())
+      ).onPool;
 
       // borrower3 borrows
       await usdcToken.connect(borrower3).approve(positionsManagerForCompound.address, collateralAmount);
       await positionsManagerForCompound.connect(borrower3).supply(config.tokens.cUsdc.address, collateralAmount);
       await positionsManagerForCompound.connect(borrower3).borrow(config.tokens.cDai.address, borrowAmount);
-      const borrower3BorrowBalanceOnPool = (await positionsManagerForCompound.borrowBalanceInOf(config.tokens.cDai.address, borrower3.getAddress())).onPool;
+      const borrower3BorrowBalanceOnPool = (
+        await positionsManagerForCompound.borrowBalanceInOf(config.tokens.cDai.address, borrower3.getAddress())
+      ).onPool;
 
       // supplier1 supply
       await daiToken.connect(supplier1).approve(positionsManagerForCompound.address, supplyAmount);
@@ -753,11 +916,16 @@ describe('PositionsManagerForCompound Contract', () => {
       const p2pUnitExchangeRate = await marketsManagerForCompound.p2pUnitExchangeRate(config.tokens.cDai.address);
 
       // Check balances
-      const supplyBalanceInP2P = (await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).inP2P;
-      const supplyBalanceOnPool = (await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).onPool;
-      const underlyingMatched = cDUnitToUnderlying(borrower1BorrowBalanceOnPool.add(borrower2BorrowBalanceOnPool).add(borrower3BorrowBalanceOnPool), borrowIndex);
-      expectedSupplyBalanceInP2P = underlyingToP2pUnit(underlyingMatched, p2pUnitExchangeRate);
-      expectedSupplyBalanceOnPool = underlyingToCToken(supplyAmount.sub(underlyingMatched), cTokenExchangeRate);
+      const supplyBalanceInP2P = (await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress()))
+        .inP2P;
+      const supplyBalanceOnPool = (await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress()))
+        .onPool;
+      const underlyingMatched = cDUnitToUnderlying(
+        borrower1BorrowBalanceOnPool.add(borrower2BorrowBalanceOnPool).add(borrower3BorrowBalanceOnPool),
+        borrowIndex
+      );
+      const expectedSupplyBalanceInP2P = underlyingToP2pUnit(underlyingMatched, p2pUnitExchangeRate);
+      const expectedSupplyBalanceOnPool = underlyingToCToken(supplyAmount.sub(underlyingMatched), cTokenExchangeRate);
       expect(removeDigitsBigNumber(2, supplyBalanceInP2P)).to.equal(removeDigitsBigNumber(2, expectedSupplyBalanceInP2P));
       expect(supplyBalanceOnPool).to.equal(expectedSupplyBalanceOnPool);
       expect((await positionsManagerForCompound.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onPool).to.be.lte(1);
@@ -785,18 +953,27 @@ describe('PositionsManagerForCompound Contract', () => {
       const amount = to6Decimals(utils.parseUnits('100'));
       await usdcToken.connect(borrower1).approve(positionsManagerForCompound.address, amount);
       await positionsManagerForCompound.connect(borrower1).supply(config.tokens.cUsdc.address, amount);
-      const collateralBalanceInCToken = (await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cUsdc.address, borrower1.getAddress())).onPool;
+      const collateralBalanceInCToken = (
+        await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cUsdc.address, borrower1.getAddress())
+      ).onPool;
       const cTokenExchangeRate = await cUsdcToken.callStatic.exchangeRateCurrent();
       const collateralBalanceInUnderlying = cTokenToUnderlying(collateralBalanceInCToken, cTokenExchangeRate);
       const { collateralFactorMantissa } = await comptroller.markets(config.tokens.cUsdc.address);
       const usdcPriceMantissa = await compoundOracle.getUnderlyingPrice(config.tokens.cUsdc.address);
       const daiPriceMantissa = await compoundOracle.getUnderlyingPrice(config.tokens.cDai.address);
-      const maxToBorrow = collateralBalanceInUnderlying.mul(usdcPriceMantissa).div(daiPriceMantissa).mul(collateralFactorMantissa).div(SCALE);
+      const maxToBorrow = collateralBalanceInUnderlying
+        .mul(usdcPriceMantissa)
+        .div(daiPriceMantissa)
+        .mul(collateralFactorMantissa)
+        .div(SCALE);
 
       // Borrow
       await positionsManagerForCompound.connect(borrower1).borrow(config.tokens.cDai.address, maxToBorrow);
-      const collateralBalanceBefore = (await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cUsdc.address, borrower1.getAddress())).onPool;
-      const borrowBalanceBefore = (await positionsManagerForCompound.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onPool;
+      const collateralBalanceBefore = (
+        await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cUsdc.address, borrower1.getAddress())
+      ).onPool;
+      const borrowBalanceBefore = (await positionsManagerForCompound.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress()))
+        .onPool;
 
       // Set price oracle
       await comptroller.connect(admin)._setPriceOracle(priceOracle.address);
@@ -813,7 +990,9 @@ describe('PositionsManagerForCompound Contract', () => {
       await daiToken.connect(liquidator).approve(positionsManagerForCompound.address, toRepay);
       const usdcBalanceBefore = await usdcToken.balanceOf(liquidator.getAddress());
       const daiBalanceBefore = await daiToken.balanceOf(liquidator.getAddress());
-      await positionsManagerForCompound.connect(liquidator).liquidate(config.tokens.cDai.address, config.tokens.cUsdc.address, borrower1.getAddress(), toRepay);
+      await positionsManagerForCompound
+        .connect(liquidator)
+        .liquidate(config.tokens.cDai.address, config.tokens.cUsdc.address, borrower1.getAddress(), toRepay);
       const usdcBalanceAfter = await usdcToken.balanceOf(liquidator.getAddress());
       const daiBalanceAfter = await daiToken.balanceOf(liquidator.getAddress());
 
@@ -830,10 +1009,15 @@ describe('PositionsManagerForCompound Contract', () => {
       const expectedDaiBalanceAfter = daiBalanceBefore.sub(toRepay);
 
       // Check balances
-      expect(removeDigitsBigNumber(6, (await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cUsdc.address, borrower1.getAddress())).onPool)).to.equal(
-        removeDigitsBigNumber(6, expectedCollateralBalanceAfter)
+      expect(
+        removeDigitsBigNumber(
+          6,
+          (await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cUsdc.address, borrower1.getAddress())).onPool
+        )
+      ).to.equal(removeDigitsBigNumber(6, expectedCollateralBalanceAfter));
+      expect((await positionsManagerForCompound.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onPool).to.equal(
+        expectedBorrowBalanceAfter
       );
-      expect((await positionsManagerForCompound.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onPool).to.equal(expectedBorrowBalanceAfter);
       expect(removeDigitsBigNumber(1, usdcBalanceAfter)).to.equal(removeDigitsBigNumber(1, expectedUsdcBalanceAfter));
       expect(daiBalanceAfter).to.equal(expectedDaiBalanceAfter);
     });
@@ -867,8 +1051,11 @@ describe('PositionsManagerForCompound Contract', () => {
       // borrower1 borrows DAI
       const cUsdcTokenExchangeRate1 = await cUsdcToken.callStatic.exchangeRateCurrent();
       const mUsdcTokenExchangeRate1 = await marketsManagerForCompound.p2pUnitExchangeRate(config.tokens.cUsdc.address);
-      const supplyBalanceOnPool1 = (await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cUsdc.address, borrower1.getAddress())).onPool;
-      const supplyBalanceInP2P1 = (await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cUsdc.address, borrower1.getAddress())).inP2P;
+      const supplyBalanceOnPool1 = (
+        await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cUsdc.address, borrower1.getAddress())
+      ).onPool;
+      const supplyBalanceInP2P1 = (await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cUsdc.address, borrower1.getAddress()))
+        .inP2P;
       const supplyBalanceOnPoolInUnderlying = cTokenToUnderlying(supplyBalanceOnPool1, cUsdcTokenExchangeRate1);
       const supplyBalanceMorphoInUnderlying = p2pUnitToUnderlying(supplyBalanceInP2P1, mUsdcTokenExchangeRate1);
       const supplyBalanceInUnderlying = supplyBalanceOnPoolInUnderlying.add(supplyBalanceMorphoInUnderlying);
@@ -877,9 +1064,15 @@ describe('PositionsManagerForCompound Contract', () => {
       const daiPriceMantissa = await compoundOracle.getUnderlyingPrice(config.tokens.cDai.address);
       const maxToBorrow = supplyBalanceInUnderlying.mul(usdcPriceMantissa).div(daiPriceMantissa).mul(collateralFactorMantissa).div(SCALE);
       await positionsManagerForCompound.connect(borrower1).borrow(config.tokens.cDai.address, maxToBorrow);
-      const collateralBalanceOnPoolBefore = (await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cUsdc.address, borrower1.getAddress())).onPool;
-      const collateralBalanceInP2PBefore = (await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cUsdc.address, borrower1.getAddress())).inP2P;
-      const borrowBalanceInP2PBefore = (await positionsManagerForCompound.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).inP2P;
+      const collateralBalanceOnPoolBefore = (
+        await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cUsdc.address, borrower1.getAddress())
+      ).onPool;
+      const collateralBalanceInP2PBefore = (
+        await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cUsdc.address, borrower1.getAddress())
+      ).inP2P;
+      const borrowBalanceInP2PBefore = (
+        await positionsManagerForCompound.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())
+      ).inP2P;
 
       // Set price oracle
       await comptroller.connect(admin)._setPriceOracle(priceOracle.address);
@@ -897,7 +1090,9 @@ describe('PositionsManagerForCompound Contract', () => {
       await daiToken.connect(liquidator).approve(positionsManagerForCompound.address, toRepay);
       const usdcBalanceBefore = await usdcToken.balanceOf(liquidator.getAddress());
       const daiBalanceBefore = await daiToken.balanceOf(liquidator.getAddress());
-      await positionsManagerForCompound.connect(liquidator).liquidate(config.tokens.cDai.address, config.tokens.cUsdc.address, borrower1.getAddress(), toRepay);
+      await positionsManagerForCompound
+        .connect(liquidator)
+        .liquidate(config.tokens.cDai.address, config.tokens.cUsdc.address, borrower1.getAddress(), toRepay);
       const usdcBalanceAfter = await usdcToken.balanceOf(liquidator.getAddress());
       const daiBalanceAfter = await daiToken.balanceOf(liquidator.getAddress());
 
@@ -908,18 +1103,30 @@ describe('PositionsManagerForCompound Contract', () => {
       const collateralAssetPrice = await priceOracle.getUnderlyingPrice(config.tokens.cUsdc.address);
       const borrowedAssetPrice = await priceOracle.getUnderlyingPrice(config.tokens.cDai.address);
       const amountToSeize = toRepay.mul(borrowedAssetPrice).div(collateralAssetPrice).mul(liquidationIncentive).div(SCALE);
-      const expectedCollateralBalanceInP2PAfter = collateralBalanceInP2PBefore.sub(amountToSeize.sub(cTokenToUnderlying(collateralBalanceOnPoolBefore, cUsdcTokenExchangeRate)));
+      const expectedCollateralBalanceInP2PAfter = collateralBalanceInP2PBefore.sub(
+        amountToSeize.sub(cTokenToUnderlying(collateralBalanceOnPoolBefore, cUsdcTokenExchangeRate))
+      );
       const expectedBorrowBalanceInP2PAfter = borrowBalanceInP2PBefore.sub(toRepay.mul(SCALE).div(mDaiExchangeRate));
       const expectedUsdcBalanceAfter = usdcBalanceBefore.add(amountToSeize);
       const expectedDaiBalanceAfter = daiBalanceBefore.sub(toRepay);
 
       // Check liquidatee balances
-      expect(removeDigitsBigNumber(4, (await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cUsdc.address, borrower1.getAddress())).onPool)).to.equal(0);
-      expect(removeDigitsBigNumber(3, (await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cUsdc.address, borrower1.getAddress())).inP2P)).to.equal(
-        removeDigitsBigNumber(3, expectedCollateralBalanceInP2PAfter)
-      );
+      expect(
+        removeDigitsBigNumber(
+          4,
+          (await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cUsdc.address, borrower1.getAddress())).onPool
+        )
+      ).to.equal(0);
+      expect(
+        removeDigitsBigNumber(
+          3,
+          (await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cUsdc.address, borrower1.getAddress())).inP2P
+        )
+      ).to.equal(removeDigitsBigNumber(3, expectedCollateralBalanceInP2PAfter));
       expect((await positionsManagerForCompound.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onPool).to.equal(0);
-      expect((await positionsManagerForCompound.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).inP2P).to.equal(expectedBorrowBalanceInP2PAfter);
+      expect((await positionsManagerForCompound.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).inP2P).to.equal(
+        expectedBorrowBalanceInP2PAfter
+      );
 
       // Check liquidator balances
       let diff;

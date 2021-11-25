@@ -1,4 +1,5 @@
-const { BigNumber } = require('ethers');
+import { BigNumber } from 'ethers';
+import { ethers } from 'hardhat';
 const config = require(`@config/${process.env.NETWORK}-config.json`);
 
 async function main() {
@@ -32,7 +33,11 @@ async function main() {
       RedBlackBinaryTree: redBlackBinaryTree.address,
     },
   });
-  const positionsManagerForCompound = await PositionsManagerForCompound.deploy(marketsManagerForCompound.address, config.compound.comptroller.address, updatePositions.address);
+  const positionsManagerForCompound = await PositionsManagerForCompound.deploy(
+    marketsManagerForCompound.address,
+    config.compound.comptroller.address,
+    updatePositions.address
+  );
   await positionsManagerForCompound.deployed();
 
   console.log('PositionsManagerForCompound address:', positionsManagerForCompound.address);

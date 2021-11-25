@@ -51,10 +51,12 @@
     },
     "wbtc": {
       "address": "0x1bfd67037b42cf73acf2047067bd4f2c47d9bfd6",
+      "whale": "0xdc9232e2df177d7a12fdff6ecbab114e2231198d",
       "abi": "@config/abis/polygon/WBTC.json"
     },
     "wmatic": {
       "address": "0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270",
+      "whale": "0xadbf1854e5883eb8aa7baf50705338739e558e5b",
       "abi": "@config/abis/polygon/WMATIC.json"
     },
     "weth": {
