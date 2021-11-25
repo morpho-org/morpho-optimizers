@@ -4,38 +4,33 @@ const { ethers } = require('hardhat');
 const { expect } = require('chai');
 const hre = require('hardhat');
 const config = require(`@config/${process.env.NETWORK}-config.json`);
-const { MAX_INT, removeDigitsBigNumber, bigNumberMin, to6Decimals, getTokens } = require('./utils/common-helpers');
 const {
-  RAY,
-  underlyingToScaledBalance,
-  scaledBalanceToUnderlying,
-  underlyingToP2PUnit,
+  SCALE,
+  underlyingToCToken,
+  cTokenToUnderlying,
+  underlyingToP2pUnit,
   p2pUnitToUnderlying,
-  underlyingToAdUnit,
-  aDUnitToUnderlying,
+  underlyingToCdUnit,
+  cDUnitToUnderlying,
+  removeDigitsBigNumber,
+  bigNumberMin,
+  to6Decimals,
   computeNewMorphoExchangeRate,
-} = require('./utils/aave-helpers');
+  getTokens,
+} = require('./utils/helpers');
 
-describe('PositionsManagerForAave Contract', () => {
-  const LIQUIDATION_CLOSE_FACTOR_PERCENT = BigNumber.from(5000);
-  const SECOND_PER_YEAR = BigNumber.from(31536000);
-  const PERCENT_BASE = BigNumber.from(10000);
-  const AVERAGE_BLOCK_TIME = 2;
-
-  let aUsdcToken;
-  let aDaiToken;
-  let aUsdtToken;
-  let aWbtcToken;
+describe('PositionsManagerForCompound Contract', () => {
+  let cUsdcToken;
+  let cDaiToken;
+  let cUsdtToken;
+  let cMkrToken;
   let daiToken;
-  let usdtToken;
-  let wbtcToken;
-  let PositionsManagerForAave;
-  let positionsManagerForAave;
-  let marketsManagerForAave;
-  let fakeAavePositionsManager;
-  let lendingPool;
-  let lendingPoolAddressesProvider;
-  let protocolDataProvider;
+  let uniToken;
+  let PositionsManagerForCompound;
+  let positionsManagerForCompound;
+  let MarketsManagerForCompound;
+  let marketsManagerForCompound;
+  let fakeCompoundPositionsManager;
 
   let signers;
   let owner;
@@ -53,6 +48,10 @@ describe('PositionsManagerForAave Contract', () => {
   let underlyingThreshold;
   let snapshotId;
 
+  const NMAX = 100;
+  const daiAmount = utils.parseUnits('20000'); // 2*NMAX*SuppliedPerUser
+  let Bob = '0xc03004e3ce0784bf68186394306849f9b7b12000';
+
   const initialize = async () => {
     {
       // Users
@@ -61,11 +60,11 @@ describe('PositionsManagerForAave Contract', () => {
       suppliers = [supplier1, supplier2, supplier3];
       borrowers = [borrower1, borrower2, borrower3];
 
-      const RedBlackBinaryTree = await ethers.getContractFactory('contracts/aave/libraries/RedBlackBinaryTree.sol:RedBlackBinaryTree');
+      const RedBlackBinaryTree = await ethers.getContractFactory('RedBlackBinaryTree');
       const redBlackBinaryTree = await RedBlackBinaryTree.deploy();
       await redBlackBinaryTree.deployed();
 
-      const UpdatePositions = await ethers.getContractFactory('contracts/aave/UpdatePositions.sol:UpdatePositions', {
+      const UpdatePositions = await ethers.getContractFactory('UpdatePositions', {
         libraries: {
           RedBlackBinaryTree: redBlackBinaryTree.address,
         },
@@ -74,156 +73,164 @@ describe('PositionsManagerForAave Contract', () => {
       await updatePositions.deployed();
 
       // Deploy contracts
-      const MarketsManagerForAave = await ethers.getContractFactory('MarketsManagerForAave');
-      marketsManagerForAave = await MarketsManagerForAave.deploy(config.aave.lendingPoolAddressesProvider.address);
-      await marketsManagerForAave.deployed();
+      MarketsManagerForCompound = await ethers.getContractFactory('MarketsManagerForCompound');
+      marketsManagerForCompound = await MarketsManagerForCompound.deploy();
+      await marketsManagerForCompound.deployed();
 
-      PositionsManagerForAave = await ethers.getContractFactory('PositionsManagerForAave', {
+      PositionsManagerForCompound = await ethers.getContractFactory('PositionsManagerForCompound', {
         libraries: {
           RedBlackBinaryTree: redBlackBinaryTree.address,
         },
       });
-      positionsManagerForAave = await PositionsManagerForAave.deploy(marketsManagerForAave.address, config.aave.lendingPoolAddressesProvider.address, updatePositions.address);
-      fakeAavePositionsManager = await PositionsManagerForAave.deploy(marketsManagerForAave.address, config.aave.lendingPoolAddressesProvider.address, updatePositions.address);
-      await positionsManagerForAave.deployed();
-      await fakeAavePositionsManager.deployed();
+      positionsManagerForCompound = await PositionsManagerForCompound.deploy(marketsManagerForCompound.address, config.compound.comptroller.address, updatePositions.address);
+      fakeCompoundPositionsManager = await PositionsManagerForCompound.deploy(marketsManagerForCompound.address, config.compound.comptroller.address, updatePositions.address);
+      await positionsManagerForCompound.deployed();
+      await fakeCompoundPositionsManager.deployed();
 
       // Get contract dependencies
-      const aTokenAbi = require(config.tokens.aToken.abi);
-      const variableDebtTokenAbi = require(config.tokens.variableDebtToken.abi);
-      aUsdcToken = await ethers.getContractAt(aTokenAbi, config.tokens.aUsdc.address, owner);
-      variableDebtUsdcToken = await ethers.getContractAt(variableDebtTokenAbi, config.tokens.variableDebtUsdc.address, owner);
-      aDaiToken = await ethers.getContractAt(aTokenAbi, config.tokens.aDai.address, owner);
-      variableDebtDaiToken = await ethers.getContractAt(variableDebtTokenAbi, config.tokens.variableDebtDai.address, owner);
-      aUsdtToken = await ethers.getContractAt(aTokenAbi, config.tokens.aUsdt.address, owner);
-      variableDebtUsdtToken = await ethers.getContractAt(variableDebtTokenAbi, config.tokens.variableDebtUsdt.address, owner);
-      aWbtcToken = await ethers.getContractAt(aTokenAbi, config.tokens.aWbtc.address, owner);
-      variableDebtWbtcToken = await ethers.getContractAt(variableDebtTokenAbi, config.tokens.variableDebtWbtc.address, owner);
+      const cTokenAbi = require(config.tokens.cToken.abi);
+      cUsdcToken = await ethers.getContractAt(cTokenAbi, config.tokens.cUsdc.address, owner);
+      cDaiToken = await ethers.getContractAt(cTokenAbi, config.tokens.cDai.address, owner);
+      cUsdtToken = await ethers.getContractAt(cTokenAbi, config.tokens.cUsdt.address, owner);
+      cUniToken = await ethers.getContractAt(cTokenAbi, config.tokens.cUni.address, owner);
+      cMkrToken = await ethers.getContractAt(cTokenAbi, config.tokens.cMkr.address, owner); // This is in fact crLINK tokens (no crMKR on Polygon)
 
-      lendingPool = await ethers.getContractAt(require(config.aave.lendingPool.abi), config.aave.lendingPool.address, owner);
-      lendingPoolAddressesProvider = await ethers.getContractAt(require(config.aave.lendingPoolAddressesProvider.abi), config.aave.lendingPoolAddressesProvider.address, owner);
-      protocolDataProvider = await ethers.getContractAt(
-        require(config.aave.protocolDataProvider.abi),
-        lendingPoolAddressesProvider.getAddress('0x1000000000000000000000000000000000000000000000000000000000000000'),
-        owner
-      );
-      oracle = await ethers.getContractAt(require(config.aave.oracle.abi), lendingPoolAddressesProvider.getPriceOracle(), owner);
+      comptroller = await ethers.getContractAt(require(config.compound.comptroller.abi), config.compound.comptroller.address, owner);
+      compoundOracle = await ethers.getContractAt(require(config.compound.oracle.abi), comptroller.oracle(), owner);
 
       // Mint some ERC20
-      daiToken = await getTokens('0x27f8d03b3a2196956ed754badc28d73be8830a6e', 'whale', signers, config.tokens.dai, utils.parseUnits('10000'));
-      usdcToken = await getTokens('0x1a13f4ca1d028320a707d99520abfefca3998b7f', 'whale', signers, config.tokens.usdc, BigNumber.from(10).pow(10));
-      usdtToken = await getTokens('0x44aaa9ebafb4557605de574d5e968589dc3a84d1', 'whale', signers, config.tokens.usdt, BigNumber.from(10).pow(10));
-      wbtcToken = await getTokens('0xdc9232e2df177d7a12fdff6ecbab114e2231198d', 'whale', signers, config.tokens.wbtc, BigNumber.from(10).pow(8));
-      wmaticToken = await getTokens('0xadbf1854e5883eb8aa7baf50705338739e558e5b', 'whale', signers, config.tokens.wmatic, utils.parseUnits('100'));
+      daiToken = await getTokens(config.tokens.dai.whale, 'whale', signers, config.tokens.dai, utils.parseUnits('10000'));
+      usdcToken = await getTokens(config.tokens.usdc.whale, 'whale', signers, config.tokens.usdc, BigNumber.from(10).pow(10));
+      usdtToken = await getTokens(config.tokens.usdt.whale, 'whale', signers, config.tokens.usdt, BigNumber.from(10).pow(10));
+      uniToken = await getTokens(config.tokens.uni.whale, 'whale', signers, config.tokens.uni, utils.parseUnits('100'));
 
       underlyingThreshold = utils.parseUnits('1');
 
       // Create and list markets
-      await marketsManagerForAave.connect(owner).setPositionsManager(positionsManagerForAave.address);
-      await marketsManagerForAave.connect(owner).setLendingPool();
-      await marketsManagerForAave.connect(owner).createMarket(config.tokens.aDai.address, utils.parseUnits('1'), MAX_INT);
-      await marketsManagerForAave.connect(owner).createMarket(config.tokens.aUsdc.address, to6Decimals(utils.parseUnits('1')), MAX_INT);
-      await marketsManagerForAave.connect(owner).createMarket(config.tokens.aWbtc.address, BigNumber.from(10).pow(4), MAX_INT);
-      await marketsManagerForAave.connect(owner).createMarket(config.tokens.aUsdt.address, to6Decimals(utils.parseUnits('1')), MAX_INT);
-      await marketsManagerForAave.connect(owner).createMarket(config.tokens.aWmatic.address, utils.parseUnits('1'), MAX_INT);
+      await marketsManagerForCompound.connect(owner).setPositionsManagerForCompound(positionsManagerForCompound.address);
+      await marketsManagerForCompound.connect(owner).createMarket(config.tokens.cDai.address, utils.parseUnits('1'));
+      await marketsManagerForCompound.connect(owner).createMarket(config.tokens.cUsdc.address, to6Decimals(utils.parseUnits('1')));
+      await marketsManagerForCompound.connect(owner).createMarket(config.tokens.cUni.address, utils.parseUnits('1'));
+      await marketsManagerForCompound.connect(owner).createMarket(config.tokens.cUsdt.address, to6Decimals(utils.parseUnits('1')));
     }
   };
 
   before(initialize);
 
-  beforeEach(async () => {
-    snapshotId = await hre.network.provider.send('evm_snapshot', []);
-  });
-
-  afterEach(async () => {
-    await hre.network.provider.send('evm_revert', [snapshotId]);
-  });
-
-  describe('Worst case scenario for NMAX estimation', () => {
-    it('Create scenario', async () => {
-      const NMAX = 100;
-
-      /* ###################
-       *
-       *       BEFORE
-       *
-       *  ################### */
-
-      let smallDaiBorrowers = [];
-      let smallDaiSuppliers = [];
-      const whaleDai = await ethers.getSigner(config.tokens.dai.whale);
+  const addSmallDaiBorrowers = async (NMAX) => {
+    {
       const whaleUsdc = await ethers.getSigner(config.tokens.usdc.whale);
-
-      const usdcAmount = to6Decimals(utils.parseUnits('100'));
-      const daiAmount = utils.parseUnits('1000');
-
-      // console.log(ethers.Wallet.createRandom());
+      const daiAmount = utils.parseUnits('80');
+      const usdcAmount = to6Decimals(utils.parseUnits('1000'));
 
       for (let i = 0; i < NMAX; i++) {
-        // smallDaiSuppliers.push(utils.solidityKeccak256(['uint256'], [i]).slice(0, 42));
-        smallDaiSuppliers.push(ethers.Wallet.createRandom().address);
+        console.log('addSmallDaiBorrowers', i);
+        let smallDaiBorrower = ethers.Wallet.createRandom().address;
 
         await hre.network.provider.request({
           method: 'hardhat_impersonateAccount',
-          params: [smallDaiSuppliers[i]],
+          params: [smallDaiBorrower],
         });
 
-        const supplier = await ethers.getSigner(smallDaiSuppliers[i]);
+        const borrower = await ethers.getSigner(smallDaiBorrower);
 
-        await hre.network.provider.send('hardhat_setBalance', [smallDaiSuppliers[i], utils.hexValue(utils.parseUnits('1000'))]);
-        await daiToken.connect(whaleDai).transfer(smallDaiSuppliers[i], daiAmount);
+        await hre.network.provider.send('hardhat_setBalance', [smallDaiBorrower, utils.hexValue(utils.parseUnits('1000'))]);
+        await usdcToken.connect(whaleUsdc).transfer(smallDaiBorrower, usdcAmount);
 
-        await daiToken.connect(supplier).approve(positionsManagerForAave.address, daiAmount);
-        await positionsManagerForAave.connect(supplier).supply(config.tokens.aDai.address, daiAmount);
+        await usdcToken.connect(borrower).approve(positionsManagerForCompound.address, usdcAmount);
+        await positionsManagerForCompound.connect(borrower).supply(config.tokens.cusdc.address, usdcAmount);
+        await positionsManagerForCompound.connect(borrower).borrow(config.tokens.cdai.address, daiAmount);
       }
+    }
+  };
 
-      for (let i = NMAX; i < 2 * NMAX; i++) {
-        // smallDaiBorrowers.push(utils.solidityKeccak256(['uint256'], [i]).slice(0, 42));
-        smallDaiBorrowers.push(ethers.Wallet.createRandom().address);
-        await hre.network.provider.request({
-          method: 'hardhat_impersonateAccount',
-          params: [smallDaiBorrowers[i]],
-        });
+  const addSmallDaiSuppliers = async (NMAX) => {
+    const whaleDai = await ethers.getSigner(config.tokens.dai.whale);
+    console.log(whaleDai);
+    const daiAmount = utils.parseUnits('80');
 
-        const borrower = await ethers.getSigner(smallDaiBorrowers[i]);
+    for (let i = 0; i < NMAX; i++) {
+      console.log(NMAX);
+      let smallDaiSupplier = ethers.Wallet.createRandom().address;
+      console.log('a');
+      await hre.network.provider.request({
+        method: 'hardhat_impersonateAccount',
+        params: [smallDaiSupplier],
+      });
+      console.log('b');
+      const supplier = await ethers.getSigner(smallDaiSupplier);
+      console.log('c');
+      await hre.network.provider.send('hardhat_setBalance', [smallDaiSupplier, utils.hexValue(utils.parseUnits('1000'))]);
+      await daiToken.connect(whaleDai).transfer(smallDaiSupplier, daiAmount);
+      console.log('d');
+      await daiToken.connect(supplier).approve(positionsManagerForCompound.address, daiAmount);
+      await positionsManagerForCompound.connect(supplier).supply(config.tokens.cdai.address, daiAmount);
+      console.log('addSmallDaiSuppliers', i);
+    }
+  };
 
-        await hre.network.provider.send('hardhat_setBalance', [smallDaiBorrowers[i], utils.hexValue(utils.parseUnits('1000'))]);
-        await usdcToken.connect(whaleUsdc).transfer(smallDaiBorrowers[i], usdcAmount);
+  const addTreeDaiSuppliers = async (NMAX) => {
+    const whaleDai = await ethers.getSigner(config.tokens.dai.whale);
+    const daiAmount = utils.parseUnits('100');
 
-        await usdcToken.connect(borrower).approve(positionsManagerForAave.address, usdcAmount);
-        await positionsManagerForAave.connect(borrower).supply(config.tokens.aUsdc.address, usdcAmount);
-        await positionsManagerForAave.connect(borrower).borrow(config.tokens.aDai.address, daiAmount);
-      }
+    for (let i = 0; i < NMAX; i++) {
+      console.log('addTreeDaiSuppliers', i);
+      let treeDaiSupplier = ethers.Wallet.createRandom().address;
 
-      /* ###################
-       *
-       *       MATCH
-       *
-       *  ################### */
+      await hre.network.provider.request({
+        method: 'hardhat_impersonateAccount',
+        params: [treeDaiSupplier],
+      });
 
-      for (let i = 2 * NMAX; i < 3 * NMAX; i++) {
-        smallDaiBorrowers.push(ethers.Wallet.createRandom().address);
-        await hre.network.provider.request({
-          method: 'hardhat_impersonateAccount',
-          params: [smallDaiBorrowers[i]],
-        });
+      const supplier = await ethers.getSigner(treeDaiSupplier);
 
-        const borrower = await ethers.getSigner(smallDaiBorrowers[i]);
+      await hre.network.provider.send('hardhat_setBalance', [treeDaiSupplier, utils.hexValue(utils.parseUnits('1000'))]);
+      await daiToken.connect(whaleDai).transfer(smallDaiSupplier, daiAmount);
 
-        await hre.network.provider.send('hardhat_setBalance', [smallDaiBorrowers[i], utils.hexValue(utils.parseUnits('1000'))]);
-        await usdcToken.connect(whaleUsdc).transfer(smallDaiBorrowers[i], usdcAmount);
+      await daiToken.connect(supplier).approve(positionsManagerForCompound.address, daiAmount);
+      await positionsManagerForCompound.connect(supplier).supply(config.tokens.cDai.address, daiAmount);
+    }
+  };
 
-        await usdcToken.connect(borrower).approve(positionsManagerForAave.address, usdcAmount);
-        await positionsManagerForAave.connect(borrower).supply(config.tokens.aUsdc.address, usdcAmount);
-        await positionsManagerForAave.connect(borrower).borrow(config.tokens.aDai.address, daiAmount);
-      }
+  describe('Worst case scenario for NMAX estimation', () => {
+    it('Add small Dai borrowers', async () => {
+      addSmallDaiBorrowers(NMAX);
+    });
 
-      /* ###################
-       *
-       *       WITHDRAW
-       *
-       *  ################### */
-      expect(marketsManagerForAave.connect(owner).createMarket(config.tokens.usdt.address, utils.parseUnits('1'))).to.be.reverted;
+    it.only('Add small Dai Suppliers', async () => {
+      addSmallDaiSuppliers(NMAX);
+    });
+
+    it('Add Tree Dai Suppliers', async () => {
+      addTreeDaiSuppliers(NMAX);
+    });
+
+    it('Add Bob', async () => {
+      const whaleUni = await ethers.getSigner(config.tokens.uni.whale);
+
+      await hre.network.provider.request({
+        method: 'hardhat_impersonateAccount',
+        params: [Bob],
+      });
+
+      const Bob_signer = await ethers.getSigner(Bob);
+
+      await hre.network.provider.send('hardhat_setBalance', [Bob, utils.hexValue(utils.parseUnits('1000'))]);
+      await uniToken.connect(whaleUni).transfer(Bob, daiAmount.mul(4));
+
+      await uniToken.connect(Bob_signer).approve(positionsManagerForCompound.address, daiAmount.mul(4));
+      await positionsManagerForCompound.connect(Bob_signer).supply(config.tokens.cUni.address, daiAmount.mul(4));
+      await positionsManagerForCompound.connect(Bob_signer).borrow(config.tokens.cDai.address, daiAmount);
+    });
+
+    it('Bob leaves', async () => {
+      const Bob_signer = await ethers.getSigner(Bob);
+      console.log(await positionsManagerForCompound.borrowBalanceInOf(config.tokens.cDai.address, Bob));
+      console.log(await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cUni.address, Bob));
+
+      await daiToken.connect(Bob_signer).approve(positionsManagerForCompound.address, daiAmount.mul(4));
+      await positionsManagerForCompound.connect(Bob_signer).repay(config.tokens.cDai.address, daiAmount);
+      await positionsManagerForCompound.connect(Bob_signer).withdraw(config.tokens.cUni.address, utils.parseUnits('19900'));
     });
   });
 });
