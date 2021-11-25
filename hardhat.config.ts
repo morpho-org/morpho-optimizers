@@ -1,11 +1,12 @@
-require('module-alias/register');
-require('dotenv').config({ path: './.env.local' });
-require('@nomiclabs/hardhat-etherscan');
-require('@nomiclabs/hardhat-waffle');
-require('hardhat-contract-sizer');
-require('hardhat-gas-reporter');
-require('solidity-coverage');
-require('hardhat-deploy');
+import * as dotenv from 'dotenv';
+dotenv.config({ path: './.env.local' });
+import 'module-alias/register';
+import '@nomiclabs/hardhat-etherscan';
+import '@nomiclabs/hardhat-waffle';
+import 'hardhat-contract-sizer';
+import 'hardhat-gas-reporter';
+import 'solidity-coverage';
+import 'hardhat-deploy';
 
 module.exports = {
   defaultNetwork: 'hardhat',

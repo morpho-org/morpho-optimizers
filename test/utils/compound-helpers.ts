@@ -1,33 +1,38 @@
-const { utils } = require('ethers');
-const Decimal = require('decimal.js');
+import { utils, BigNumber } from 'ethers';
+import Decimal from 'decimal.js';
 
-const SCALE = utils.parseUnits('1');
+const SCALE: BigNumber = utils.parseUnits('1');
 
-const underlyingToCToken = (underlyingAmount, exchangeRateCurrent) => {
+const underlyingToCToken = (underlyingAmount: BigNumber, exchangeRateCurrent: BigNumber): BigNumber => {
   return underlyingAmount.mul(SCALE).div(exchangeRateCurrent);
 };
 
-const cTokenToUnderlying = (cTokenAmount, exchangeRateCurrent) => {
+const cTokenToUnderlying = (cTokenAmount: BigNumber, exchangeRateCurrent: BigNumber): BigNumber => {
   return cTokenAmount.mul(exchangeRateCurrent).div(SCALE);
 };
 
-const underlyingToP2pUnit = (underlyingAmount, p2pUnitExchangeRate) => {
+const underlyingToP2pUnit = (underlyingAmount: BigNumber, p2pUnitExchangeRate: BigNumber): BigNumber => {
   return underlyingAmount.mul(SCALE).div(p2pUnitExchangeRate);
 };
 
-const p2pUnitToUnderlying = (p2pUnitAmount, p2pUnitExchangeRate) => {
+const p2pUnitToUnderlying = (p2pUnitAmount: BigNumber, p2pUnitExchangeRate: BigNumber | string): BigNumber => {
   return p2pUnitAmount.mul(p2pUnitExchangeRate).div(SCALE);
 };
 
-const underlyingToCdUnit = (underlyingAmount, borrowIndex) => {
+const underlyingToCdUnit = (underlyingAmount: BigNumber, borrowIndex: BigNumber): BigNumber => {
   return underlyingAmount.mul(SCALE).div(borrowIndex);
 };
 
-const cDUnitToUnderlying = (cDUnitAmount, borrowIndex) => {
+const cDUnitToUnderlying = (cDUnitAmount: BigNumber, borrowIndex: BigNumber): BigNumber => {
   return cDUnitAmount.mul(borrowIndex).div(SCALE);
 };
 
-const computeNewMorphoExchangeRate = (currentExchangeRate, p2pBPY, currentBlockNumber, lastUpdateBlockNumber) => {
+const computeNewMorphoExchangeRate = (
+  currentExchangeRate: BigNumber,
+  p2pBPY: BigNumber,
+  currentBlockNumber: number,
+  lastUpdateBlockNumber: number
+): Decimal => {
   // Use of decimal.js library for better accuracy
   const bpy = new Decimal(p2pBPY.toString());
   const scale = new Decimal('1e18');
@@ -38,11 +43,11 @@ const computeNewMorphoExchangeRate = (currentExchangeRate, p2pBPY, currentBlockN
   return Decimal.round(newExchangeRate);
 };
 
-const computeNewBorrowIndex = (borrowRate, blockDelta, borrowIndex) => {
+const computeNewBorrowIndex = (borrowRate: BigNumber, blockDelta: BigNumber, borrowIndex: BigNumber): BigNumber => {
   return borrowRate.mul(blockDelta).mul(borrowIndex).div(SCALE).add(borrowIndex);
 };
 
-module.exports = {
+export {
   SCALE,
   underlyingToCToken,
   cTokenToUnderlying,
