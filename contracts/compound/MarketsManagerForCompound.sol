@@ -75,10 +75,7 @@ contract MarketsManagerForCompound is Ownable {
     /** @dev Sets the `positionsManagerForCompound` to interact with Compound.
      *  @param _positionsManagerForCompound The address of compound module.
      */
-    function setPositionsManagerForCompound(address _positionsManagerForCompound)
-        external
-        onlyOwner
-    {
+    function setPositionsManager(address _positionsManagerForCompound) external onlyOwner {
         require(address(positionsManagerForCompound) == address(0), "1");
         positionsManagerForCompound = IPositionsManagerForCompound(_positionsManagerForCompound);
         emit PositionsManagerForCompoundSet(_positionsManagerForCompound);

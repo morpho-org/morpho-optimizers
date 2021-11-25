@@ -100,7 +100,7 @@ describe('PositionsManagerForCompound Contract', () => {
       underlyingThreshold = utils.parseUnits('1');
 
       // Create and list markets
-      await marketsManagerForCompound.connect(owner).setPositionsManagerForCompound(positionsManagerForCompound.address);
+      await marketsManagerForCompound.connect(owner).setPositionsManager(positionsManagerForCompound.address);
       await marketsManagerForCompound.connect(owner).createMarket(config.tokens.cDai.address, utils.parseUnits('1'));
       await marketsManagerForCompound.connect(owner).createMarket(config.tokens.cUsdc.address, to6Decimals(utils.parseUnits('1')));
       await marketsManagerForCompound.connect(owner).createMarket(config.tokens.cUni.address, utils.parseUnits('1'));
@@ -153,7 +153,7 @@ describe('PositionsManagerForCompound Contract', () => {
     });
 
     it('marketsManagerForCompound should not be changed after already set by Owner', async () => {
-      expect(marketsManagerForCompound.connect(owner).setPositionsManagerForCompound(fakeCompoundPositionsManager.address)).to.be.reverted;
+      expect(marketsManagerForCompound.connect(owner).setPositionsManager(fakeCompoundPositionsManager.address)).to.be.reverted;
     });
 
     it('Only Owner should be able to update thresholds', async () => {
