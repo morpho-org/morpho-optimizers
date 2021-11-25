@@ -37,7 +37,7 @@ async function main() {
 
   console.log('PositionsManagerForAave address:', positionsManagerForAave.address);
 
-  await marketsManagerForAave.connect(deployer).setPositionsManagerForCompound(positionsManagerForAave.address);
+  await marketsManagerForAave.connect(deployer).setPositionsManager(positionsManagerForAave.address);
   await marketsManagerForAave.connect(deployer).createMarket(config.tokens.cDai.address, BigNumber.from(1).pow(6));
   await marketsManagerForAave.connect(deployer).createMarket(config.tokens.cUsdc.address, BigNumber.from(1).pow(6));
 }
