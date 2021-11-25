@@ -27,7 +27,6 @@ contract MarketsManagerForAave is Ownable {
     /* Storage */
 
     uint256 internal constant SECONDS_PER_YEAR = 365 days;
-    bool public isPositionsManagerSet; // Whether or not the positions manager is set.
     mapping(address => bool) public isCreated; // Whether or not this market is created.
     mapping(address => uint256) public p2pSPY; // Second Percentage Yield ("midrate").
     mapping(address => uint256) public p2pUnitExchangeRate; // current exchange rate from p2pUnit to underlying.
@@ -88,7 +87,7 @@ contract MarketsManagerForAave is Ownable {
     /** @dev Prevents to update a market not created yet.
      */
     modifier isMarketCreated(address _marketAddress) {
-        require(isCreated[_marketAddress], "0");
+        require(isCreated[_marketAddress], Errors.MM_MARKET_NOT_CREATED);
         _;
     }
 
@@ -107,8 +106,7 @@ contract MarketsManagerForAave is Ownable {
      *  @param _positionsManagerForAave The address of compound module.
      */
     function setPositionsManager(address _positionsManagerForAave) external onlyOwner {
-        require(!isPositionsManagerSet, Errors.MM_POSITIONS_MANAGER_SET);
-        isPositionsManagerSet = true;
+        require(address(positionsManagerForAave) == address(0), Errors.MM_POSITIONS_MANAGER_SET);
         positionsManagerForAave = IPositionsManagerForAave(_positionsManagerForAave);
         emit PositionsManagerForAaveSet(_positionsManagerForAave);
     }
@@ -124,7 +122,6 @@ contract MarketsManagerForAave is Ownable {
      *  @param _newMaxNumber The maximum number of users to have in the tree.
      */
     function setMaxNumberOfUsersInTree(uint16 _newMaxNumber) external onlyOwner {
-        require(_newMaxNumber > 1, "2");
         positionsManagerForAave.setMaxNumberOfUsersInTree(_newMaxNumber);
         emit MaxNumberUpdated(_newMaxNumber);
     }
@@ -139,7 +136,7 @@ contract MarketsManagerForAave is Ownable {
         uint256 _threshold,
         uint256 _capValue
     ) external onlyOwner {
-        require(!isCreated[_marketAddress], "3");
+        require(!isCreated[_marketAddress], Errors.MM_MARKET_ALREADY_CREATED);
         positionsManagerForAave.setThreshold(_marketAddress, _threshold);
         positionsManagerForAave.setCapValue(_marketAddress, _capValue);
         lastUpdateTimestamp[_marketAddress] = block.timestamp;
@@ -158,7 +155,6 @@ contract MarketsManagerForAave is Ownable {
         onlyOwner
         isMarketCreated(_marketAddress)
     {
-        require(_newThreshold > 0, "4");
         positionsManagerForAave.setThreshold(_marketAddress, _newThreshold);
         emit ThresholdUpdated(_marketAddress, _newThreshold);
     }
@@ -172,7 +168,6 @@ contract MarketsManagerForAave is Ownable {
         onlyOwner
         isMarketCreated(_marketAddress)
     {
-        require(_newCapValue > 0, "5");
         positionsManagerForAave.setCapValue(_marketAddress, _newCapValue);
         emit CapValueUpdated(_marketAddress, _newCapValue);
     }
