@@ -973,7 +973,7 @@ contract PositionsManagerForAave is ReentrancyGuard, PositionsManagerStorageForA
             _withdrawnAmount,
             _borrowedAmount
         );
-        require(debtValue < maxDebtValue, Errors.PM_DEBT_VALUE_ABOVE_MAX);
+        require(debtValue <= maxDebtValue, Errors.PM_DEBT_VALUE_ABOVE_MAX);
     }
 
     /** @dev Returns the debt value, max debt value and collateral value of a given user.
