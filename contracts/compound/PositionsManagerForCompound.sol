@@ -838,7 +838,10 @@ contract PositionsManagerForCompound is ReentrancyGuard, PositionsManagerStorage
             (, account) = borrowersOnPool[_cTokenAddress].getMaximum();
         }
         // Repay Comp
-        uint256 toRepay = _amount - remainingToMatch;
+        uint256 toRepay = Math.min(
+            _amount - remainingToMatch,
+            cToken.borrowBalanceCurrent(address(this))
+        );
         underlyingToken.safeApprove(_cTokenAddress, toRepay);
         require(cToken.repayBorrow(toRepay) == 0, "17");
     }
