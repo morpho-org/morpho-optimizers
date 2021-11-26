@@ -48,8 +48,7 @@ describe('PositionsManagerForCompound Contract', () => {
   let underlyingThreshold;
   let snapshotId;
 
-  const NMAX = 100;
-  const daiAmount = utils.parseUnits('20000'); // 2*NMAX*SuppliedPerUser
+  const daiAmountBob = utils.parseUnits('20000'); // 2*NMAX*SuppliedPerUser
   let Bob = '0xc03004e3ce0784bf68186394306849f9b7b12000';
 
   const initialize = async () => {
@@ -125,6 +124,7 @@ describe('PositionsManagerForCompound Contract', () => {
 
       for (let i = 0; i < NMAX; i++) {
         console.log('addSmallDaiBorrowers', i);
+
         let smallDaiBorrower = ethers.Wallet.createRandom().address;
 
         await hre.network.provider.request({
@@ -138,34 +138,31 @@ describe('PositionsManagerForCompound Contract', () => {
         await usdcToken.connect(whaleUsdc).transfer(smallDaiBorrower, usdcAmount);
 
         await usdcToken.connect(borrower).approve(positionsManagerForCompound.address, usdcAmount);
-        await positionsManagerForCompound.connect(borrower).supply(config.tokens.cusdc.address, usdcAmount);
-        await positionsManagerForCompound.connect(borrower).borrow(config.tokens.cdai.address, daiAmount);
+        await positionsManagerForCompound.connect(borrower).supply(config.tokens.cUsdc.address, usdcAmount);
+        await positionsManagerForCompound.connect(borrower).borrow(config.tokens.cDai.address, daiAmount);
       }
     }
   };
 
   const addSmallDaiSuppliers = async (NMAX) => {
     const whaleDai = await ethers.getSigner(config.tokens.dai.whale);
-    console.log(whaleDai);
     const daiAmount = utils.parseUnits('80');
 
     for (let i = 0; i < NMAX; i++) {
-      console.log(NMAX);
+      console.log('addSmallDaiSuppliers', i);
+
       let smallDaiSupplier = ethers.Wallet.createRandom().address;
-      console.log('a');
       await hre.network.provider.request({
         method: 'hardhat_impersonateAccount',
         params: [smallDaiSupplier],
       });
-      console.log('b');
+
       const supplier = await ethers.getSigner(smallDaiSupplier);
-      console.log('c');
       await hre.network.provider.send('hardhat_setBalance', [smallDaiSupplier, utils.hexValue(utils.parseUnits('1000'))]);
+
       await daiToken.connect(whaleDai).transfer(smallDaiSupplier, daiAmount);
-      console.log('d');
       await daiToken.connect(supplier).approve(positionsManagerForCompound.address, daiAmount);
-      await positionsManagerForCompound.connect(supplier).supply(config.tokens.cdai.address, daiAmount);
-      console.log('addSmallDaiSuppliers', i);
+      await positionsManagerForCompound.connect(supplier).supply(config.tokens.cDai.address, daiAmount);
     }
   };
 
@@ -185,7 +182,7 @@ describe('PositionsManagerForCompound Contract', () => {
       const supplier = await ethers.getSigner(treeDaiSupplier);
 
       await hre.network.provider.send('hardhat_setBalance', [treeDaiSupplier, utils.hexValue(utils.parseUnits('1000'))]);
-      await daiToken.connect(whaleDai).transfer(smallDaiSupplier, daiAmount);
+      await daiToken.connect(whaleDai).transfer(treeDaiSupplier, daiAmount);
 
       await daiToken.connect(supplier).approve(positionsManagerForCompound.address, daiAmount);
       await positionsManagerForCompound.connect(supplier).supply(config.tokens.cDai.address, daiAmount);
@@ -193,16 +190,18 @@ describe('PositionsManagerForCompound Contract', () => {
   };
 
   describe('Worst case scenario for NMAX estimation', () => {
+    const NMAX = 100;
+
     it('Add small Dai borrowers', async () => {
-      addSmallDaiBorrowers(NMAX);
+      await addSmallDaiBorrowers(NMAX);
     });
 
-    it.only('Add small Dai Suppliers', async () => {
-      addSmallDaiSuppliers(NMAX);
+    it('Add small Dai Suppliers', async () => {
+      await addSmallDaiSuppliers(NMAX);
     });
 
     it('Add Tree Dai Suppliers', async () => {
-      addTreeDaiSuppliers(NMAX);
+      await addTreeDaiSuppliers(NMAX);
     });
 
     it('Add Bob', async () => {
@@ -216,11 +215,11 @@ describe('PositionsManagerForCompound Contract', () => {
       const Bob_signer = await ethers.getSigner(Bob);
 
       await hre.network.provider.send('hardhat_setBalance', [Bob, utils.hexValue(utils.parseUnits('1000'))]);
-      await uniToken.connect(whaleUni).transfer(Bob, daiAmount.mul(4));
+      await uniToken.connect(whaleUni).transfer(Bob, daiAmountBob.mul(4));
 
-      await uniToken.connect(Bob_signer).approve(positionsManagerForCompound.address, daiAmount.mul(4));
-      await positionsManagerForCompound.connect(Bob_signer).supply(config.tokens.cUni.address, daiAmount.mul(4));
-      await positionsManagerForCompound.connect(Bob_signer).borrow(config.tokens.cDai.address, daiAmount);
+      await uniToken.connect(Bob_signer).approve(positionsManagerForCompound.address, daiAmountBob.mul(4));
+      await positionsManagerForCompound.connect(Bob_signer).supply(config.tokens.cUni.address, daiAmountBob.mul(4));
+      await positionsManagerForCompound.connect(Bob_signer).borrow(config.tokens.cDai.address, daiAmountBob);
     });
 
     it('Bob leaves', async () => {
@@ -228,8 +227,8 @@ describe('PositionsManagerForCompound Contract', () => {
       console.log(await positionsManagerForCompound.borrowBalanceInOf(config.tokens.cDai.address, Bob));
       console.log(await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cUni.address, Bob));
 
-      await daiToken.connect(Bob_signer).approve(positionsManagerForCompound.address, daiAmount.mul(4));
-      await positionsManagerForCompound.connect(Bob_signer).repay(config.tokens.cDai.address, daiAmount);
+      await daiToken.connect(Bob_signer).approve(positionsManagerForCompound.address, daiAmountBob.mul(4));
+      await positionsManagerForCompound.connect(Bob_signer).repay(config.tokens.cDai.address, daiAmountBob);
       await positionsManagerForCompound.connect(Bob_signer).withdraw(config.tokens.cUni.address, utils.parseUnits('19900'));
     });
   });
