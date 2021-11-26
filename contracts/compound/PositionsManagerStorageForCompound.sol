@@ -27,7 +27,7 @@ contract PositionsManagerStorageForCompound {
 
     /* Storage */
 
-    uint16 public NMAX = 100;
+    uint16 public NMAX = 1000;
     uint8 public constant CTOKEN_DECIMALS = 8;
     mapping(address => RedBlackBinaryTree.Tree) internal suppliersInP2P; // Suppliers in peer-to-peer.
     mapping(address => RedBlackBinaryTree.Tree) internal suppliersOnPool; // Suppliers on Comp.

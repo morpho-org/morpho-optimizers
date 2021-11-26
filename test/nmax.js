@@ -192,6 +192,12 @@ describe('PositionsManagerForCompound Contract', () => {
   describe('Worst case scenario for NMAX estimation', () => {
     const NMAX = 100;
 
+    it('Set NMAX to 100', async () => {
+      expect(await positionsManagerForCompound.NMAX()).to.equal(1000);
+      await marketsManagerForCompound.connect(owner).setMaxNumberOfUsersInTree(NMAX);
+      expect(await positionsManagerForCompound.NMAX()).to.equal(NMAX);
+    });
+
     it('Add small Dai borrowers', async () => {
       await addSmallDaiBorrowers(NMAX);
     });
