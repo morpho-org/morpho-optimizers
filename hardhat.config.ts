@@ -62,6 +62,7 @@ module.exports = {
     currency: 'USD',
   },
   mocha: {
-    timeout: 200000,
+    // needed for the long test of Nmax
+    timeout: 300000,
   },
 };
