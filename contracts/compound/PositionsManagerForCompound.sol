@@ -912,7 +912,7 @@ contract PositionsManagerForCompound is ReentrancyGuard, PositionsManagerStorage
             _withdrawnAmount,
             _borrowedAmount
         );
-        require(debtValue < maxDebtValue, "18");
+        require(debtValue <= maxDebtValue, "18");
     }
 
     /** @dev Returns the debt value, max debt value and collateral value of a given user.
