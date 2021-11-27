@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "prb-math/contracts/PRBMathUD60x18.sol";
 import "./libraries/CompoundMath.sol";
+import "./libraries/ErrorsForCompound.sol";
 
 import {ICErc20, IComptroller} from "./interfaces/compound/ICompound.sol";
 import "./interfaces/IPositionsManagerForCompound.sol";
@@ -66,7 +67,7 @@ contract MarketsManagerForCompound is Ownable {
     /** @dev Prevents to update a market not created yet.
      */
     modifier isMarketCreated(address _marketAddress) {
-        require(isCreated[_marketAddress], "0");
+        require(isCreated[_marketAddress], Errors.MM_MARKET_NOT_CREATED);
         _;
     }
 
@@ -76,7 +77,10 @@ contract MarketsManagerForCompound is Ownable {
      *  @param _positionsManagerForCompound The address of compound module.
      */
     function setPositionsManager(address _positionsManagerForCompound) external onlyOwner {
-        require(address(positionsManagerForCompound) == address(0), "1");
+        require(
+            address(positionsManagerForCompound) == address(0),
+            Errors.MM_POSITIONS_MANAGER_SET
+        );
         positionsManagerForCompound = IPositionsManagerForCompound(_positionsManagerForCompound);
         emit PositionsManagerForCompoundSet(_positionsManagerForCompound);
     }
@@ -85,7 +89,6 @@ contract MarketsManagerForCompound is Ownable {
      *  @param _newMaxNumber The maximum number of users to have in the tree.
      */
     function setMaxNumberOfUsersInTree(uint16 _newMaxNumber) external onlyOwner {
-        require(_newMaxNumber > 1, "2");
         positionsManagerForCompound.setMaxNumberOfUsersInTree(_newMaxNumber);
         emit MaxNumberUpdated(_newMaxNumber);
     }
@@ -95,9 +98,9 @@ contract MarketsManagerForCompound is Ownable {
      *  @param _threshold The threshold to set for the market.
      */
     function createMarket(address _marketAddress, uint256 _threshold) external onlyOwner {
-        require(!isCreated[_marketAddress], "3");
+        require(!isCreated[_marketAddress], Errors.MM_MARKET_ALREADY_CREATED);
         uint256[] memory results = positionsManagerForCompound.createMarket(_marketAddress);
-        require(results[0] == 0, "4");
+        require(results[0] == 0, Errors.MM_MARKET_CREATED_FAIL_ON_COMP);
         positionsManagerForCompound.setThreshold(_marketAddress, _threshold);
         lastUpdateBlockNumber[_marketAddress] = block.number;
         p2pUnitExchangeRate[_marketAddress] = 1e18;
@@ -115,7 +118,6 @@ contract MarketsManagerForCompound is Ownable {
         onlyOwner
         isMarketCreated(_marketAddress)
     {
-        require(_newThreshold > 0, "5");
         positionsManagerForCompound.setThreshold(_marketAddress, _newThreshold);
         emit ThresholdUpdated(_marketAddress, _newThreshold);
     }
