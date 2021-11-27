@@ -164,8 +164,8 @@ describe('PositionsManagerForAave Contract', () => {
 
     it('Only Owner should be able to create markets in peer-to-peer', async () => {
       expect(marketsManagerForAave.connect(supplier1).createMarket(config.tokens.aWeth.address, utils.parseUnits('1'), MAX_INT)).to.be.reverted;
-      expect(marketsManagerForAave.connect(borrower1).createMarket(config.tokens.aWeth.address, utils.parseUnits('1')), MAX_INT).to.be.reverted;
-      expect(marketsManagerForAave.connect(owner).createMarket(config.tokens.aWeth.address, utils.parseUnits('1')), MAX_INT).not.be.reverted;
+      expect(marketsManagerForAave.connect(borrower1).createMarket(config.tokens.aWeth.address, utils.parseUnits('1'), MAX_INT)).to.be.reverted;
+      expect(marketsManagerForAave.connect(owner).createMarket(config.tokens.aWeth.address, utils.parseUnits('1'), MAX_INT)).not.to.be.reverted;
     });
 
     it('marketsManagerForAave should not be changed after already set by Owner', async () => {
