@@ -17,5 +17,9 @@ library Errors {
     string public constant PM_DEBT_VALUE_ABOVE_MAX = "12";
     string public constant PM_DELEGATECALL_BORROWER_UPDATE_NOT_SUCCESS = "13";
     string public constant PM_DELEGATECALL_SUPPLIER_UPDATE_NOT_SUCCESS = "14";
-    string public constant PM_SUPPLY_ABOVE_CAP_VALUE = "15";
+    string public constant PM_BORROW_ON_COMP_FAIL = "15";
+    string public constant PM_MINT_ON_COMP_FAIL = "16";
+    string public constant PM_REDEEM_ON_COMP_FAIL = "17";
+    string public constant PM_REPAY_ON_COMP_FAIL = "18";
+    string public constant PM_ORACLE_FAIL = "19";
 }
