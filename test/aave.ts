@@ -6,6 +6,7 @@ import { expect } from 'chai';
 const config = require(`@config/${process.env.NETWORK}-config.json`);
 import { MAX_INT, removeDigitsBigNumber, bigNumberMin, to6Decimals, getTokens } from './utils/common-helpers';
 import {
+  WAD,
   RAY,
   underlyingToScaledBalance,
   scaledBalanceToUnderlying,
@@ -124,16 +125,16 @@ describe('PositionsManagerForAave Contract', () => {
     usdcToken = await getTokens(config.tokens.usdc.whale, 'whale', signers, config.tokens.usdc, BigNumber.from(10).pow(10));
     wbtcToken = await getTokens(config.tokens.wbtc.whale, 'whale', signers, config.tokens.wbtc, BigNumber.from(10).pow(8));
     wmaticToken = await getTokens(config.tokens.wmatic.whale, 'whale', signers, config.tokens.wmatic, utils.parseUnits('100'));
-    underlyingThreshold = utils.parseUnits('1');
+    underlyingThreshold = WAD;
 
     // Create and list markets
     await marketsManagerForAave.connect(owner).setPositionsManager(positionsManagerForAave.address);
     await marketsManagerForAave.connect(owner).setLendingPool();
-    await marketsManagerForAave.connect(owner).createMarket(config.tokens.aDai.address, utils.parseUnits('1'), MAX_INT);
-    await marketsManagerForAave.connect(owner).createMarket(config.tokens.aUsdc.address, to6Decimals(utils.parseUnits('1')), MAX_INT);
+    await marketsManagerForAave.connect(owner).createMarket(config.tokens.aDai.address, WAD, MAX_INT);
+    await marketsManagerForAave.connect(owner).createMarket(config.tokens.aUsdc.address, to6Decimals(WAD), MAX_INT);
     await marketsManagerForAave.connect(owner).createMarket(config.tokens.aWbtc.address, BigNumber.from(10).pow(4), MAX_INT);
-    await marketsManagerForAave.connect(owner).createMarket(config.tokens.aUsdt.address, to6Decimals(utils.parseUnits('1')), MAX_INT);
-    await marketsManagerForAave.connect(owner).createMarket(config.tokens.aWmatic.address, utils.parseUnits('1'), MAX_INT);
+    await marketsManagerForAave.connect(owner).createMarket(config.tokens.aUsdt.address, to6Decimals(WAD), MAX_INT);
+    await marketsManagerForAave.connect(owner).createMarket(config.tokens.aWmatic.address, WAD, MAX_INT);
   };
 
   before(initialize);
@@ -158,22 +159,19 @@ describe('PositionsManagerForAave Contract', () => {
 
       // Thresholds
       underlyingThreshold = await positionsManagerForAave.threshold(config.tokens.aDai.address);
-      expect(underlyingThreshold).to.be.equal(utils.parseUnits('1'));
+      expect(underlyingThreshold).to.be.equal(WAD);
     });
   });
 
   describe('Governance functions', () => {
     it('Should revert when at least when a market in input is not a real market', async () => {
-      expect(marketsManagerForAave.connect(owner).createMarket(config.tokens.usdt.address, utils.parseUnits('1'))).to.be.reverted;
+      expect(marketsManagerForAave.connect(owner).createMarket(config.tokens.usdt.address, WAD)).to.be.reverted;
     });
 
     it('Only Owner should be able to create markets in peer-to-peer', async () => {
-      expect(marketsManagerForAave.connect(supplier1).createMarket(config.tokens.aWeth.address, utils.parseUnits('1'), MAX_INT)).to.be
-        .reverted;
-      expect(marketsManagerForAave.connect(borrower1).createMarket(config.tokens.aWeth.address, utils.parseUnits('1'), MAX_INT)).to.be
-        .reverted;
-      expect(marketsManagerForAave.connect(owner).createMarket(config.tokens.aWeth.address, utils.parseUnits('1'), MAX_INT)).not.be
-        .reverted;
+      expect(marketsManagerForAave.connect(supplier1).createMarket(config.tokens.aWeth.address, WAD, MAX_INT)).to.be.reverted;
+      expect(marketsManagerForAave.connect(borrower1).createMarket(config.tokens.aWeth.address, WAD, MAX_INT)).to.be.reverted;
+      expect(marketsManagerForAave.connect(owner).createMarket(config.tokens.aWeth.address, WAD, MAX_INT)).not.be.reverted;
     });
 
     it('marketsManagerForAave should not be changed after already set by Owner', async () => {
@@ -205,7 +203,7 @@ describe('PositionsManagerForAave Contract', () => {
       const currentLiquidityRate = reserveData.currentLiquidityRate;
       const currentVariableBorrowRate = reserveData.currentVariableBorrowRate;
       const expectedSPY = currentLiquidityRate.add(currentVariableBorrowRate).div(2).div(SECOND_PER_YEAR);
-      await marketsManagerForAave.connect(owner).createMarket(config.tokens.aAave.address, utils.parseUnits('1'), MAX_INT);
+      await marketsManagerForAave.connect(owner).createMarket(config.tokens.aAave.address, WAD, MAX_INT);
       expect(await marketsManagerForAave.isCreated(config.tokens.aAave.address)).to.be.true;
       expect(await marketsManagerForAave.p2pSPY(config.tokens.aAave.address)).to.equal(expectedSPY);
       expect(await marketsManagerForAave.p2pUnitExchangeRate(config.tokens.aAave.address)).to.equal(RAY);
@@ -408,7 +406,9 @@ describe('PositionsManagerForAave Contract', () => {
       expect(removeDigitsBigNumber(1, diff)).to.equal(0);
       // Check Morpho balances
       expect(await daiToken.balanceOf(positionsManagerForAave.address)).to.equal(0);
-      expect(await variableDebtDaiToken.balanceOf(positionsManagerForAave.address)).to.equal(maxToBorrow);
+      expect(removeDigitsBigNumber(2, await variableDebtDaiToken.balanceOf(positionsManagerForAave.address))).to.equal(
+        removeDigitsBigNumber(2, maxToBorrow)
+      );
     });
 
     it('Should not be able to borrow more than max allowed given an amount of collateral', async () => {
@@ -937,7 +937,7 @@ describe('PositionsManagerForAave Contract', () => {
         removeDigitsBigNumber(13, expectedMorphoScaledBalance)
       );
       // Issue here: we cannot access the most updated borrow balance as it's updated during the repayBorrow on Aave.
-      // const expectedMorphoBorrowBalance2 = morphoBorrowBalanceBefore2.sub(borrowerBalanceOnPool.mul(normalizeVariableDebt2).div(SCALE));
+      // const expectedMorphoBorrowBalance2 = morphoBorrowBalanceBefore2.sub(borrowerBalanceOnPool.mul(normalizeVariableDebt2).div(WAD));
       // expect(removeDigitsBigNumber(3, await aToken.callStatic.borrowBalanceStored(positionsManagerForAave.address))).to.equal(removeDigitsBigNumber(3, expectedMorphoBorrowBalance2));
     });
 
@@ -1095,9 +1095,9 @@ describe('PositionsManagerForAave Contract', () => {
       // Set price oracle
       await lendingPoolAddressesProvider.connect(admin).setPriceOracle(priceOracle.address);
       priceOracle.setDirectPrice(config.tokens.dai.address, BigNumber.from('1064182920000000000'));
-      priceOracle.setDirectPrice(config.tokens.usdc.address, utils.parseUnits('1'));
-      priceOracle.setDirectPrice(config.tokens.wbtc.address, utils.parseUnits('1'));
-      priceOracle.setDirectPrice(config.tokens.usdt.address, utils.parseUnits('1'));
+      priceOracle.setDirectPrice(config.tokens.usdc.address, WAD);
+      priceOracle.setDirectPrice(config.tokens.wbtc.address, WAD);
+      priceOracle.setDirectPrice(config.tokens.usdt.address, WAD);
 
       // Mine block
       await hre.network.provider.send('evm_mine', []);
@@ -1212,9 +1212,9 @@ describe('PositionsManagerForAave Contract', () => {
       // Set price oracle
       await lendingPoolAddressesProvider.connect(admin).setPriceOracle(priceOracle.address);
       priceOracle.setDirectPrice(config.tokens.dai.address, BigNumber.from('1070182920000000000'));
-      priceOracle.setDirectPrice(config.tokens.usdc.address, utils.parseUnits('1'));
-      priceOracle.setDirectPrice(config.tokens.wbtc.address, utils.parseUnits('1'));
-      priceOracle.setDirectPrice(config.tokens.usdt.address, utils.parseUnits('1'));
+      priceOracle.setDirectPrice(config.tokens.usdc.address, WAD);
+      priceOracle.setDirectPrice(config.tokens.wbtc.address, WAD);
+      priceOracle.setDirectPrice(config.tokens.usdt.address, WAD);
 
       // Mine block
       await hre.network.provider.send('evm_mine', []);

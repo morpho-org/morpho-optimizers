@@ -1,8 +1,8 @@
 import { utils, BigNumber } from 'ethers';
 import Decimal from 'decimal.js';
 
-const SCALE = utils.parseUnits('1');
-const RAY = BigNumber.from(10).pow(27);
+const WAD: BigNumber = utils.parseUnits('1');
+const RAY: BigNumber = BigNumber.from(10).pow(27);
 
 const underlyingToScaledBalance = (underlyingAmount: BigNumber, normalizedIncome: BigNumber): BigNumber => {
   return underlyingAmount.mul(RAY).div(normalizedIncome);
@@ -46,12 +46,12 @@ const computeNewMorphoExchangeRate = (
 };
 
 const computeNewBorrowIndex = (borrowRate: BigNumber, blockDelta: BigNumber, borrowIndex: BigNumber): BigNumber => {
-  return borrowRate.mul(blockDelta).mul(borrowIndex).div(SCALE).add(borrowIndex);
+  return borrowRate.mul(blockDelta).mul(borrowIndex).div(WAD).add(borrowIndex);
 };
 
 export {
   RAY,
-  SCALE,
+  WAD,
   underlyingToScaledBalance,
   scaledBalanceToUnderlying,
   underlyingToP2PUnit,

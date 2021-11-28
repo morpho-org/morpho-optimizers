@@ -6,7 +6,7 @@ import { expect } from 'chai';
 const config = require(`@config/${process.env.NETWORK}-config.json`);
 import { removeDigitsBigNumber, bigNumberMin, to6Decimals, getTokens } from './utils/common-helpers';
 import {
-  SCALE,
+  WAD,
   underlyingToCToken,
   cTokenToUnderlying,
   underlyingToP2pUnit,
@@ -108,14 +108,14 @@ describe('PositionsManagerForCompound Contract', () => {
     usdcToken = await getTokens(config.tokens.usdc.whale, 'whale', signers, config.tokens.usdc, BigNumber.from(10).pow(10));
     uniToken = await getTokens(config.tokens.uni.whale, 'whale', signers, config.tokens.uni, utils.parseUnits('100'));
 
-    underlyingThreshold = utils.parseUnits('1');
+    underlyingThreshold = WAD;
 
     // Create and list markets
     await marketsManagerForCompound.connect(owner).setPositionsManager(positionsManagerForCompound.address);
-    await marketsManagerForCompound.connect(owner).createMarket(config.tokens.cDai.address, utils.parseUnits('1'));
-    await marketsManagerForCompound.connect(owner).createMarket(config.tokens.cUsdc.address, to6Decimals(utils.parseUnits('1')));
-    await marketsManagerForCompound.connect(owner).createMarket(config.tokens.cUni.address, utils.parseUnits('1'));
-    await marketsManagerForCompound.connect(owner).createMarket(config.tokens.cUsdt.address, to6Decimals(utils.parseUnits('1')));
+    await marketsManagerForCompound.connect(owner).createMarket(config.tokens.cDai.address, WAD);
+    await marketsManagerForCompound.connect(owner).createMarket(config.tokens.cUsdc.address, to6Decimals(WAD));
+    await marketsManagerForCompound.connect(owner).createMarket(config.tokens.cUni.address, WAD);
+    await marketsManagerForCompound.connect(owner).createMarket(config.tokens.cUsdt.address, to6Decimals(WAD));
   };
 
   before(initialize);
@@ -135,31 +135,30 @@ describe('PositionsManagerForCompound Contract', () => {
       const supplyRatePerBlock = await cDaiToken.supplyRatePerBlock();
       const expectedBPY = borrowRatePerBlock.add(supplyRatePerBlock).div(2);
       expect(await marketsManagerForCompound.p2pBPY(config.tokens.cDai.address)).to.equal(expectedBPY);
-      expect(await marketsManagerForCompound.p2pUnitExchangeRate(config.tokens.cDai.address)).to.be.equal(utils.parseUnits('1'));
+      expect(await marketsManagerForCompound.p2pUnitExchangeRate(config.tokens.cDai.address)).to.be.equal(WAD);
 
       // Thresholds
       underlyingThreshold = await positionsManagerForCompound.threshold(config.tokens.cDai.address);
-      expect(underlyingThreshold).to.be.equal(utils.parseUnits('1'));
+      expect(underlyingThreshold).to.be.equal(WAD);
     });
   });
 
   describe('Governance functions', () => {
     it('Should revert when at least when a market in input is not a real market', async () => {
-      expect(marketsManagerForCompound.connect(owner).createMarket(config.tokens.usdt.address, to6Decimals(utils.parseUnits('1')))).to.be
-        .reverted;
+      expect(marketsManagerForCompound.connect(owner).createMarket(config.tokens.usdt.address, to6Decimals(WAD))).to.be.reverted;
     });
 
     it('Only Owner should be able to create markets in peer-to-peer', async () => {
-      expect(marketsManagerForCompound.connect(supplier1).createMarket(config.tokens.cEth.address, utils.parseUnits('1'))).to.be.reverted;
-      expect(marketsManagerForCompound.connect(borrower1).createMarket(config.tokens.cEth.address, utils.parseUnits('1'))).to.be.reverted;
-      expect(marketsManagerForCompound.connect(owner).createMarket(config.tokens.cEth.address, utils.parseUnits('1'))).not.be.reverted;
+      expect(marketsManagerForCompound.connect(supplier1).createMarket(config.tokens.cEth.address, WAD)).to.be.reverted;
+      expect(marketsManagerForCompound.connect(borrower1).createMarket(config.tokens.cEth.address, WAD)).to.be.reverted;
+      expect(marketsManagerForCompound.connect(owner).createMarket(config.tokens.cEth.address, WAD)).not.be.reverted;
     });
 
     it('Only Morpho should be able to create markets on PositionsManagerForCompound', async () => {
-      expect(positionsManagerForCompound.connect(supplier1).createMarket(config.tokens.cMkr.address, utils.parseUnits('1'))).to.be.reverted;
-      expect(positionsManagerForCompound.connect(borrower1).createMarket(config.tokens.cMkr.address, utils.parseUnits('1'))).to.be.reverted;
-      expect(positionsManagerForCompound.connect(owner).createMarket(config.tokens.cMkr.address, utils.parseUnits('1'))).to.be.reverted;
-      await marketsManagerForCompound.connect(owner).createMarket(config.tokens.cMkr.address, utils.parseUnits('1'));
+      expect(positionsManagerForCompound.connect(supplier1).createMarket(config.tokens.cMkr.address, WAD)).to.be.reverted;
+      expect(positionsManagerForCompound.connect(borrower1).createMarket(config.tokens.cMkr.address, WAD)).to.be.reverted;
+      expect(positionsManagerForCompound.connect(owner).createMarket(config.tokens.cMkr.address, WAD)).to.be.reverted;
+      await marketsManagerForCompound.connect(owner).createMarket(config.tokens.cMkr.address, WAD);
       expect(await comptroller.checkMembership(positionsManagerForCompound.address, config.tokens.cMkr.address)).to.be.true;
     });
 
@@ -179,15 +178,13 @@ describe('PositionsManagerForCompound Contract', () => {
     it('Should create a market the with right values', async () => {
       const supplyBPY = await cMkrToken.supplyRatePerBlock();
       const borrowBPY = await cMkrToken.borrowRatePerBlock();
-      const { blockNumber } = await marketsManagerForCompound
-        .connect(owner)
-        .createMarket(config.tokens.cMkr.address, utils.parseUnits('1'));
+      const { blockNumber } = await marketsManagerForCompound.connect(owner).createMarket(config.tokens.cMkr.address, WAD);
       expect(await marketsManagerForCompound.isCreated(config.tokens.cMkr.address)).to.be.true;
 
       const p2pBPY = supplyBPY.add(borrowBPY).div(2);
       expect(await marketsManagerForCompound.p2pBPY(config.tokens.cMkr.address)).to.equal(p2pBPY);
 
-      expect(await marketsManagerForCompound.p2pUnitExchangeRate(config.tokens.cMkr.address)).to.equal(SCALE);
+      expect(await marketsManagerForCompound.p2pUnitExchangeRate(config.tokens.cMkr.address)).to.equal(WAD);
       expect(await marketsManagerForCompound.lastUpdateBlockNumber(config.tokens.cMkr.address)).to.equal(blockNumber);
     });
 
@@ -349,11 +346,7 @@ describe('PositionsManagerForCompound Contract', () => {
       const { collateralFactorMantissa } = await comptroller.markets(config.tokens.cDai.address);
       const usdcPriceMantissa = await compoundOracle.getUnderlyingPrice(config.tokens.cUsdc.address);
       const daiPriceMantissa = await compoundOracle.getUnderlyingPrice(config.tokens.cDai.address);
-      const maxToBorrow = collateralBalanceInUnderlying
-        .mul(usdcPriceMantissa)
-        .div(daiPriceMantissa)
-        .mul(collateralFactorMantissa)
-        .div(SCALE);
+      const maxToBorrow = collateralBalanceInUnderlying.mul(usdcPriceMantissa).div(daiPriceMantissa).mul(collateralFactorMantissa).div(WAD);
       const daiBalanceBefore = await daiToken.balanceOf(borrower1.getAddress());
 
       // Borrow
@@ -389,11 +382,7 @@ describe('PositionsManagerForCompound Contract', () => {
       const { collateralFactorMantissa } = await comptroller.markets(config.tokens.cDai.address);
       const usdcPriceMantissa = await compoundOracle.getUnderlyingPrice(config.tokens.cUsdc.address);
       const daiPriceMantissa = await compoundOracle.getUnderlyingPrice(config.tokens.cDai.address);
-      const maxToBorrow = collateralBalanceInUnderlying
-        .mul(usdcPriceMantissa)
-        .div(daiPriceMantissa)
-        .mul(collateralFactorMantissa)
-        .div(SCALE);
+      const maxToBorrow = collateralBalanceInUnderlying.mul(usdcPriceMantissa).div(daiPriceMantissa).mul(collateralFactorMantissa).div(WAD);
       // WARNING: maxToBorrow seems to be not accurate
       const moreThanMaxToBorrow = maxToBorrow.add(utils.parseUnits('10'));
 
@@ -451,11 +440,7 @@ describe('PositionsManagerForCompound Contract', () => {
       const { collateralFactorMantissa } = await comptroller.markets(config.tokens.cDai.address);
       const usdcPriceMantissa = await compoundOracle.getUnderlyingPrice(config.tokens.cUsdc.address);
       const daiPriceMantissa = await compoundOracle.getUnderlyingPrice(config.tokens.cDai.address);
-      const maxToBorrow = collateralBalanceInUnderlying
-        .mul(usdcPriceMantissa)
-        .div(daiPriceMantissa)
-        .mul(collateralFactorMantissa)
-        .div(SCALE);
+      const maxToBorrow = collateralBalanceInUnderlying.mul(usdcPriceMantissa).div(daiPriceMantissa).mul(collateralFactorMantissa).div(WAD);
 
       const daiBalanceBefore = await daiToken.balanceOf(borrower1.getAddress());
       await positionsManagerForCompound.connect(borrower1).borrow(config.tokens.cDai.address, maxToBorrow);
@@ -844,7 +829,7 @@ describe('PositionsManagerForCompound Contract', () => {
       const borrowerBalanceOnPool = (
         await positionsManagerForCompound.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())
       ).onPool;
-      const toRepay = borrowerBalanceOnPool.mul(borrowIndex1).div(SCALE).add(borrowerBalanceInP2PInUnderlying);
+      const toRepay = borrowerBalanceOnPool.mul(borrowIndex1).div(WAD).add(borrowerBalanceInP2PInUnderlying);
       const expectedDaiBalanceAfter = daiBalanceBefore.add(toBorrow).sub(toRepay);
       const previousMorphoCTokenBalance = await cDaiToken.balanceOf(positionsManagerForCompound.address);
 
@@ -875,7 +860,7 @@ describe('PositionsManagerForCompound Contract', () => {
         removeDigitsBigNumber(6, expectedMorphoCTokenBalance)
       );
       // Issue here: we cannot access the most updated borrow balance as it's updated during the repayBorrow on Compound.
-      // const expectedMorphoBorrowBalance2 = morphoBorrowBalanceBefore2.sub(borrowerBalanceOnPool.mul(borrowIndex2).div(SCALE));
+      // const expectedMorphoBorrowBalance2 = morphoBorrowBalanceBefore2.sub(borrowerBalanceOnPool.mul(borrowIndex2).div(WAD));
       // expect(removeDigitsBigNumber(3, await cToken.callStatic.borrowBalanceStored(positionsManagerForCompound.address))).to.equal(removeDigitsBigNumber(3, expectedMorphoBorrowBalance2));
     });
 
@@ -961,11 +946,7 @@ describe('PositionsManagerForCompound Contract', () => {
       const { collateralFactorMantissa } = await comptroller.markets(config.tokens.cUsdc.address);
       const usdcPriceMantissa = await compoundOracle.getUnderlyingPrice(config.tokens.cUsdc.address);
       const daiPriceMantissa = await compoundOracle.getUnderlyingPrice(config.tokens.cDai.address);
-      const maxToBorrow = collateralBalanceInUnderlying
-        .mul(usdcPriceMantissa)
-        .div(daiPriceMantissa)
-        .mul(collateralFactorMantissa)
-        .div(SCALE);
+      const maxToBorrow = collateralBalanceInUnderlying.mul(usdcPriceMantissa).div(daiPriceMantissa).mul(collateralFactorMantissa).div(WAD);
 
       // Borrow
       await positionsManagerForCompound.connect(borrower1).borrow(config.tokens.cDai.address, maxToBorrow);
@@ -1002,7 +983,7 @@ describe('PositionsManagerForCompound Contract', () => {
       const liquidationIncentive = await comptroller.liquidationIncentiveMantissa();
       const collateralAssetPrice = await priceOracle.getUnderlyingPrice(config.tokens.cUsdc.address);
       const borrowedAssetPrice = await priceOracle.getUnderlyingPrice(config.tokens.cDai.address);
-      const amountToSeize = toRepay.mul(borrowedAssetPrice).div(collateralAssetPrice).mul(liquidationIncentive).div(SCALE);
+      const amountToSeize = toRepay.mul(borrowedAssetPrice).div(collateralAssetPrice).mul(liquidationIncentive).div(WAD);
       const expectedCollateralBalanceAfter = collateralBalanceBefore.sub(underlyingToCToken(amountToSeize, cUsdcTokenExchangeRate));
       const expectedBorrowBalanceAfter = borrowBalanceBefore.sub(underlyingToCdUnit(toRepay, borrowIndex));
       const expectedUsdcBalanceAfter = usdcBalanceBefore.add(amountToSeize);
@@ -1062,7 +1043,7 @@ describe('PositionsManagerForCompound Contract', () => {
       const { collateralFactorMantissa } = await comptroller.markets(config.tokens.cUsdc.address);
       const usdcPriceMantissa = await compoundOracle.getUnderlyingPrice(config.tokens.cUsdc.address);
       const daiPriceMantissa = await compoundOracle.getUnderlyingPrice(config.tokens.cDai.address);
-      const maxToBorrow = supplyBalanceInUnderlying.mul(usdcPriceMantissa).div(daiPriceMantissa).mul(collateralFactorMantissa).div(SCALE);
+      const maxToBorrow = supplyBalanceInUnderlying.mul(usdcPriceMantissa).div(daiPriceMantissa).mul(collateralFactorMantissa).div(WAD);
       await positionsManagerForCompound.connect(borrower1).borrow(config.tokens.cDai.address, maxToBorrow);
       const collateralBalanceOnPoolBefore = (
         await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cUsdc.address, borrower1.getAddress())
@@ -1086,7 +1067,7 @@ describe('PositionsManagerForCompound Contract', () => {
 
       // liquidator liquidates borrower1's position
       const closeFactor = await comptroller.closeFactorMantissa();
-      const toRepay = maxToBorrow.mul(closeFactor).div(SCALE);
+      const toRepay = maxToBorrow.mul(closeFactor).div(WAD);
       await daiToken.connect(liquidator).approve(positionsManagerForCompound.address, toRepay);
       const usdcBalanceBefore = await usdcToken.balanceOf(liquidator.getAddress());
       const daiBalanceBefore = await daiToken.balanceOf(liquidator.getAddress());
@@ -1102,11 +1083,11 @@ describe('PositionsManagerForCompound Contract', () => {
       const liquidationIncentive = await comptroller.liquidationIncentiveMantissa();
       const collateralAssetPrice = await priceOracle.getUnderlyingPrice(config.tokens.cUsdc.address);
       const borrowedAssetPrice = await priceOracle.getUnderlyingPrice(config.tokens.cDai.address);
-      const amountToSeize = toRepay.mul(borrowedAssetPrice).div(collateralAssetPrice).mul(liquidationIncentive).div(SCALE);
+      const amountToSeize = toRepay.mul(borrowedAssetPrice).div(collateralAssetPrice).mul(liquidationIncentive).div(WAD);
       const expectedCollateralBalanceInP2PAfter = collateralBalanceInP2PBefore.sub(
         amountToSeize.sub(cTokenToUnderlying(collateralBalanceOnPoolBefore, cUsdcTokenExchangeRate))
       );
-      const expectedBorrowBalanceInP2PAfter = borrowBalanceInP2PBefore.sub(toRepay.mul(SCALE).div(mDaiExchangeRate));
+      const expectedBorrowBalanceInP2PAfter = borrowBalanceInP2PBefore.sub(toRepay.mul(WAD).div(mDaiExchangeRate));
       const expectedUsdcBalanceAfter = usdcBalanceBefore.add(amountToSeize);
       const expectedDaiBalanceAfter = daiBalanceBefore.sub(toRepay);
 
