@@ -1,7 +1,7 @@
 import { utils, BigNumber, Signer, Contract } from 'ethers';
 import hre, { ethers } from 'hardhat';
 
-const SCALE: BigNumber = utils.parseUnits('1');
+const WAD: BigNumber = utils.parseUnits('1');
 const MAX_INT: BigNumber = BigNumber.from('2').pow(BigNumber.from('256')).sub(BigNumber.from('1'));
 
 const bigNumberMin = (a: BigNumber, b: BigNumber): BigNumber => {
@@ -47,4 +47,4 @@ const getTokens = async (
   return token;
 };
 
-export { SCALE, MAX_INT, removeDigitsBigNumber, bigNumberMin, removeDigits, to6Decimals, getTokens };
+export { WAD, MAX_INT, removeDigitsBigNumber, bigNumberMin, removeDigits, to6Decimals, getTokens };

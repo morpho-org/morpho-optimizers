@@ -1,30 +1,30 @@
 import { utils, BigNumber } from 'ethers';
 import Decimal from 'decimal.js';
 
-const SCALE: BigNumber = utils.parseUnits('1');
+const WAD: BigNumber = utils.parseUnits('1');
 
 const underlyingToCToken = (underlyingAmount: BigNumber, exchangeRateCurrent: BigNumber): BigNumber => {
-  return underlyingAmount.mul(SCALE).div(exchangeRateCurrent);
+  return underlyingAmount.mul(WAD).div(exchangeRateCurrent);
 };
 
 const cTokenToUnderlying = (cTokenAmount: BigNumber, exchangeRateCurrent: BigNumber): BigNumber => {
-  return cTokenAmount.mul(exchangeRateCurrent).div(SCALE);
+  return cTokenAmount.mul(exchangeRateCurrent).div(WAD);
 };
 
 const underlyingToP2pUnit = (underlyingAmount: BigNumber, p2pUnitExchangeRate: BigNumber): BigNumber => {
-  return underlyingAmount.mul(SCALE).div(p2pUnitExchangeRate);
+  return underlyingAmount.mul(WAD).div(p2pUnitExchangeRate);
 };
 
 const p2pUnitToUnderlying = (p2pUnitAmount: BigNumber, p2pUnitExchangeRate: BigNumber | string): BigNumber => {
-  return p2pUnitAmount.mul(p2pUnitExchangeRate).div(SCALE);
+  return p2pUnitAmount.mul(p2pUnitExchangeRate).div(WAD);
 };
 
 const underlyingToCdUnit = (underlyingAmount: BigNumber, borrowIndex: BigNumber): BigNumber => {
-  return underlyingAmount.mul(SCALE).div(borrowIndex);
+  return underlyingAmount.mul(WAD).div(borrowIndex);
 };
 
 const cDUnitToUnderlying = (cDUnitAmount: BigNumber, borrowIndex: BigNumber): BigNumber => {
-  return cDUnitAmount.mul(borrowIndex).div(SCALE);
+  return cDUnitAmount.mul(borrowIndex).div(WAD);
 };
 
 const computeNewMorphoExchangeRate = (
@@ -44,11 +44,11 @@ const computeNewMorphoExchangeRate = (
 };
 
 const computeNewBorrowIndex = (borrowRate: BigNumber, blockDelta: BigNumber, borrowIndex: BigNumber): BigNumber => {
-  return borrowRate.mul(blockDelta).mul(borrowIndex).div(SCALE).add(borrowIndex);
+  return borrowRate.mul(blockDelta).mul(borrowIndex).div(WAD).add(borrowIndex);
 };
 
 export {
-  SCALE,
+  WAD,
   underlyingToCToken,
   cTokenToUnderlying,
   underlyingToP2pUnit,
