@@ -4,23 +4,13 @@ import { utils, BigNumber, Signer, Contract } from 'ethers';
 import hre, { ethers } from 'hardhat';
 import { expect } from 'chai';
 const config = require(`@config/${process.env.NETWORK}-config.json`);
-import { removeDigitsBigNumber, bigNumberMin, to6Decimals, getTokens } from './utils/common-helpers';
-import {
-  WAD,
-  underlyingToCToken,
-  cTokenToUnderlying,
-  underlyingToP2pUnit,
-  p2pUnitToUnderlying,
-  underlyingToCdUnit,
-  cDUnitToUnderlying,
-  computeNewMorphoExchangeRate,
-} from './utils/compound-helpers';
+import { to6Decimals, getTokens } from './utils/common-helpers';
+import { WAD } from './utils/compound-helpers';
 
 describe('PositionsManagerForCompound Contract', () => {
   // Tokens
   let cUsdcToken: Contract;
   let cDaiToken: Contract;
-  let cMkrToken: Contract;
   let daiToken: Contract;
   let uniToken: Contract;
   let usdcToken: Contract;
@@ -35,29 +25,17 @@ describe('PositionsManagerForCompound Contract', () => {
 
   // Signers
   let signers: Signer[];
-  let suppliers: Signer[];
-  let borrowers: Signer[];
   let owner: Signer;
-  let supplier1: Signer;
-  let supplier2: Signer;
-  let supplier3: Signer;
-  let borrower1: Signer;
-  let borrower2: Signer;
-  let borrower3: Signer;
   let liquidator: Signer;
 
   let underlyingThreshold: BigNumber;
-  let snapshotId: number;
 
-  const daiAmountBob = utils.parseUnits('20000'); // 2*NMAX*SuppliedPerUser
-  let Bob = '0xc03004e3ce0784bf68186394306849f9b7b12000';
+  const Bob = '0xc03004e3ce0784bf68186394306849f9b7b12000';
 
   const initialize = async () => {
     // Signers
     signers = await ethers.getSigners();
-    [owner, supplier1, supplier2, supplier3, borrower1, borrower2, borrower3, liquidator] = signers;
-    suppliers = [supplier1, supplier2, supplier3];
-    borrowers = [borrower1, borrower2, borrower3];
+    [owner, liquidator] = signers;
 
     // Deploy RedBlackBinaryTree
     const RedBlackBinaryTree = await ethers.getContractFactory('contracts/compound/libraries/RedBlackBinaryTree.sol:RedBlackBinaryTree');
@@ -101,7 +79,6 @@ describe('PositionsManagerForCompound Contract', () => {
     const cTokenAbi = require(config.tokens.cToken.abi);
     cUsdcToken = await ethers.getContractAt(cTokenAbi, config.tokens.cUsdc.address, owner);
     cDaiToken = await ethers.getContractAt(cTokenAbi, config.tokens.cDai.address, owner);
-    cMkrToken = await ethers.getContractAt(cTokenAbi, config.tokens.cMkr.address, owner); // This is in fact crLINK tokens (no crMKR on Polygon)
 
     comptroller = await ethers.getContractAt(require(config.compound.comptroller.abi), config.compound.comptroller.address, owner);
     compoundOracle = await ethers.getContractAt(require(config.compound.oracle.abi), comptroller.oracle(), owner);
@@ -193,11 +170,19 @@ describe('PositionsManagerForCompound Contract', () => {
 
       await daiToken.connect(supplier).approve(positionsManagerForCompound.address, daiAmount);
       await positionsManagerForCompound.connect(supplier).supply(config.tokens.cDai.address, daiAmount);
+
+      // They also borrow Uni so they are matched with Bob's collateral
+      const UniPriceMantissa = await compoundOracle.getUnderlyingPrice(config.tokens.cUni.address);
+      const { collateralFactorMantissa } = await comptroller.markets(config.tokens.cDai.address);
+      const maxToBorrow = daiAmount.div(UniPriceMantissa).mul(collateralFactorMantissa);
+
+      await positionsManagerForCompound.connect(supplier).borrow(config.tokens.cUni.address, maxToBorrow);
     }
   };
 
   describe('Worst case scenario for NMAX estimation', () => {
     const NMAX = 25;
+    const daiAmountBob = utils.parseUnits('5000'); // 2*NMAX*SuppliedPerUser
 
     it('Set new NMAX', async () => {
       expect(await positionsManagerForCompound.NMAX()).to.equal(1000);
@@ -205,18 +190,25 @@ describe('PositionsManagerForCompound Contract', () => {
       expect(await positionsManagerForCompound.NMAX()).to.equal(NMAX);
     });
 
+    // We have some borrowers that are taking some DAI and supplying as collateral USDC
     it('Add small Dai borrowers', async () => {
       await addSmallDaiBorrowers(NMAX);
     });
 
+    // We have some DAI supplier. They are matched with previous Dai borrowers.
+    // We have NMAX match for the DAI market.
     it('Add small Dai Suppliers', async () => {
       await addSmallDaiSuppliers(NMAX);
     });
 
+    // Now, comes other DAI Supplier, that are supplying a greater amount.
+    // Also, they borrow some UNI.
     it('Add Tree Dai Suppliers', async () => {
       await addTreeDaiSuppliers(NMAX);
     });
 
+    // Now comes Bob, he supplies UNI and his collateral is matched with the NMAX 'Tree Dai Supplier' that are borrowing it.
+    // Bob also borrows a large quantity of DAI, so that his dai comes from the NMAX 'Tree Dai Supplier'
     it('Add Bob', async () => {
       const whaleUni = await ethers.getSigner(config.tokens.uni.whale);
 
@@ -225,24 +217,51 @@ describe('PositionsManagerForCompound Contract', () => {
         params: [Bob],
       });
 
-      const Bob_signer = await ethers.getSigner(Bob);
+      const bobSigner = await ethers.getSigner(Bob);
 
       await hre.network.provider.send('hardhat_setBalance', [Bob, utils.hexValue(utils.parseUnits('1000'))]);
-      await uniToken.connect(whaleUni).transfer(Bob, daiAmountBob.mul(4));
+      await uniToken.connect(whaleUni).transfer(Bob, daiAmountBob.mul(100));
 
-      await uniToken.connect(Bob_signer).approve(positionsManagerForCompound.address, daiAmountBob.mul(4));
-      await positionsManagerForCompound.connect(Bob_signer).supply(config.tokens.cUni.address, daiAmountBob.mul(4));
-      await positionsManagerForCompound.connect(Bob_signer).borrow(config.tokens.cDai.address, daiAmountBob);
+      await uniToken.connect(bobSigner).approve(positionsManagerForCompound.address, daiAmountBob.mul(100));
+      await positionsManagerForCompound.connect(bobSigner).supply(config.tokens.cUni.address, daiAmountBob.mul(100));
+      await positionsManagerForCompound.connect(bobSigner).borrow(config.tokens.cDai.address, daiAmountBob);
     });
 
+    // Now Bob decides to leave Morpho, so he proceeds to a repay and a withdraw of his funds.
     it('Bob leaves', async () => {
-      const Bob_signer = await ethers.getSigner(Bob);
+      const bobSigner = await ethers.getSigner(Bob);
       console.log(await positionsManagerForCompound.borrowBalanceInOf(config.tokens.cDai.address, Bob));
       console.log(await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cUni.address, Bob));
 
-      await daiToken.connect(Bob_signer).approve(positionsManagerForCompound.address, daiAmountBob.mul(4));
-      await positionsManagerForCompound.connect(Bob_signer).repay(config.tokens.cDai.address, daiAmountBob);
-      await positionsManagerForCompound.connect(Bob_signer).withdraw(config.tokens.cUni.address, utils.parseUnits('19900'));
+      await daiToken.connect(bobSigner).approve(positionsManagerForCompound.address, daiAmountBob.mul(4));
+      await positionsManagerForCompound.connect(bobSigner).repay(config.tokens.cDai.address, daiAmountBob);
+      await positionsManagerForCompound.connect(bobSigner).withdraw(config.tokens.cUni.address, utils.parseUnits('19900'));
+    });
+
+    xit('Bob gets liquidated', async () => {
+      const PriceOracle = await ethers.getContractFactory('contracts/compound/test/SimplePriceOracle.sol:SimplePriceOracle');
+      priceOracle = await PriceOracle.deploy();
+      await priceOracle.deployed();
+
+      // Install Admin
+      const adminAddress = await comptroller.admin();
+      await hre.network.provider.send('hardhat_impersonateAccount', [adminAddress]);
+      await hre.network.provider.send('hardhat_setBalance', [adminAddress, ethers.utils.parseEther('10').toHexString()]);
+      const admin = await ethers.getSigner(adminAddress);
+
+      // Set Uni price to 0
+      await comptroller.connect(admin)._setPriceOracle(priceOracle.address);
+      priceOracle.setUnderlyingPrice(config.tokens.cDai.address, BigNumber.from('100000000000000000000000'));
+
+      // Mine block
+      await hre.network.provider.send('evm_mine', []);
+
+      await daiToken.connect(liquidator).approve(positionsManagerForCompound.address, daiAmountBob);
+      console.log('1');
+      await positionsManagerForCompound
+        .connect(liquidator)
+        .liquidate(config.tokens.cDai.address, config.tokens.cUni.address, Bob, daiAmountBob);
+      console.log('2');
     });
   });
 });
