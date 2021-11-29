@@ -1,122 +1,129 @@
-require('dotenv').config({ path: '.env.local' });
-const { utils, BigNumber } = require('ethers');
-const { ethers } = require('hardhat');
-const { expect } = require('chai');
-const hre = require('hardhat');
+import * as dotenv from 'dotenv';
+dotenv.config({ path: './.env.local' });
+import { utils, BigNumber, Signer, Contract } from 'ethers';
+import hre, { ethers } from 'hardhat';
+import { expect } from 'chai';
 const config = require(`@config/${process.env.NETWORK}-config.json`);
-const {
-  SCALE,
+import { removeDigitsBigNumber, bigNumberMin, to6Decimals, getTokens } from './utils/common-helpers';
+import {
+  WAD,
   underlyingToCToken,
   cTokenToUnderlying,
   underlyingToP2pUnit,
   p2pUnitToUnderlying,
   underlyingToCdUnit,
   cDUnitToUnderlying,
-  removeDigitsBigNumber,
-  bigNumberMin,
-  to6Decimals,
   computeNewMorphoExchangeRate,
-  getTokens,
-} = require('./utils/helpers');
+} from './utils/compound-helpers';
 
 describe('PositionsManagerForCompound Contract', () => {
-  let cUsdcToken;
-  let cDaiToken;
-  let cUsdtToken;
-  let cMkrToken;
-  let daiToken;
-  let uniToken;
-  let PositionsManagerForCompound;
-  let positionsManagerForCompound;
-  let MarketsManagerForCompound;
-  let marketsManagerForCompound;
-  let fakeCompoundPositionsManager;
+  // Tokens
+  let cUsdcToken: Contract;
+  let cDaiToken: Contract;
+  let cMkrToken: Contract;
+  let daiToken: Contract;
+  let uniToken: Contract;
+  let usdcToken: Contract;
 
-  let signers;
-  let owner;
-  let supplier1;
-  let supplier2;
-  let supplier3;
-  let borrower1;
-  let borrower2;
-  let borrower3;
-  let liquidator;
-  let addrs;
-  let suppliers;
-  let borrowers;
+  // Contracts
+  let positionsManagerForCompound: Contract;
+  let marketsManagerForCompound: Contract;
+  let fakeCompoundPositionsManager: Contract;
+  let comptroller: Contract;
+  let compoundOracle: Contract;
+  let priceOracle: Contract;
 
-  let underlyingThreshold;
-  let snapshotId;
+  // Signers
+  let signers: Signer[];
+  let suppliers: Signer[];
+  let borrowers: Signer[];
+  let owner: Signer;
+  let supplier1: Signer;
+  let supplier2: Signer;
+  let supplier3: Signer;
+  let borrower1: Signer;
+  let borrower2: Signer;
+  let borrower3: Signer;
+  let liquidator: Signer;
+
+  let underlyingThreshold: BigNumber;
+  let snapshotId: number;
 
   const daiAmountBob = utils.parseUnits('20000'); // 2*NMAX*SuppliedPerUser
   let Bob = '0xc03004e3ce0784bf68186394306849f9b7b12000';
 
   const initialize = async () => {
-    {
-      // Users
-      signers = await ethers.getSigners();
-      [owner, supplier1, supplier2, supplier3, borrower1, borrower2, borrower3, liquidator, ...addrs] = signers;
-      suppliers = [supplier1, supplier2, supplier3];
-      borrowers = [borrower1, borrower2, borrower3];
+    // Signers
+    signers = await ethers.getSigners();
+    [owner, supplier1, supplier2, supplier3, borrower1, borrower2, borrower3, liquidator] = signers;
+    suppliers = [supplier1, supplier2, supplier3];
+    borrowers = [borrower1, borrower2, borrower3];
 
-      const RedBlackBinaryTree = await ethers.getContractFactory('RedBlackBinaryTree');
-      const redBlackBinaryTree = await RedBlackBinaryTree.deploy();
-      await redBlackBinaryTree.deployed();
+    // Deploy RedBlackBinaryTree
+    const RedBlackBinaryTree = await ethers.getContractFactory('contracts/compound/libraries/RedBlackBinaryTree.sol:RedBlackBinaryTree');
+    const redBlackBinaryTree = await RedBlackBinaryTree.deploy();
+    await redBlackBinaryTree.deployed();
 
-      const UpdatePositions = await ethers.getContractFactory('UpdatePositions', {
-        libraries: {
-          RedBlackBinaryTree: redBlackBinaryTree.address,
-        },
-      });
-      const updatePositions = await UpdatePositions.deploy();
-      await updatePositions.deployed();
+    // Deploy UpdatePositions
+    const UpdatePositions = await ethers.getContractFactory('contracts/compound/UpdatePositions.sol:UpdatePositions', {
+      libraries: {
+        RedBlackBinaryTree: redBlackBinaryTree.address,
+      },
+    });
+    const updatePositions = await UpdatePositions.deploy();
+    await updatePositions.deployed();
 
-      // Deploy contracts
-      MarketsManagerForCompound = await ethers.getContractFactory('MarketsManagerForCompound');
-      marketsManagerForCompound = await MarketsManagerForCompound.deploy();
-      await marketsManagerForCompound.deployed();
+    // Deploy MarketsManagerForCompound
+    const MarketsManagerForCompound = await ethers.getContractFactory('MarketsManagerForCompound');
+    marketsManagerForCompound = await MarketsManagerForCompound.deploy();
+    await marketsManagerForCompound.deployed();
 
-      PositionsManagerForCompound = await ethers.getContractFactory('PositionsManagerForCompound', {
-        libraries: {
-          RedBlackBinaryTree: redBlackBinaryTree.address,
-        },
-      });
-      positionsManagerForCompound = await PositionsManagerForCompound.deploy(marketsManagerForCompound.address, config.compound.comptroller.address, updatePositions.address);
-      fakeCompoundPositionsManager = await PositionsManagerForCompound.deploy(marketsManagerForCompound.address, config.compound.comptroller.address, updatePositions.address);
-      await positionsManagerForCompound.deployed();
-      await fakeCompoundPositionsManager.deployed();
+    // Deploy PositionsManagerForCompound
+    const PositionsManagerForCompound = await ethers.getContractFactory('PositionsManagerForCompound', {
+      libraries: {
+        RedBlackBinaryTree: redBlackBinaryTree.address,
+      },
+    });
+    positionsManagerForCompound = await PositionsManagerForCompound.deploy(
+      marketsManagerForCompound.address,
+      config.compound.comptroller.address,
+      updatePositions.address
+    );
+    fakeCompoundPositionsManager = await PositionsManagerForCompound.deploy(
+      marketsManagerForCompound.address,
+      config.compound.comptroller.address,
+      updatePositions.address
+    );
+    await positionsManagerForCompound.deployed();
+    await fakeCompoundPositionsManager.deployed();
 
-      // Get contract dependencies
-      const cTokenAbi = require(config.tokens.cToken.abi);
-      cUsdcToken = await ethers.getContractAt(cTokenAbi, config.tokens.cUsdc.address, owner);
-      cDaiToken = await ethers.getContractAt(cTokenAbi, config.tokens.cDai.address, owner);
-      cUsdtToken = await ethers.getContractAt(cTokenAbi, config.tokens.cUsdt.address, owner);
-      cUniToken = await ethers.getContractAt(cTokenAbi, config.tokens.cUni.address, owner);
-      cMkrToken = await ethers.getContractAt(cTokenAbi, config.tokens.cMkr.address, owner); // This is in fact crLINK tokens (no crMKR on Polygon)
+    // Get contract dependencies
+    const cTokenAbi = require(config.tokens.cToken.abi);
+    cUsdcToken = await ethers.getContractAt(cTokenAbi, config.tokens.cUsdc.address, owner);
+    cDaiToken = await ethers.getContractAt(cTokenAbi, config.tokens.cDai.address, owner);
+    cMkrToken = await ethers.getContractAt(cTokenAbi, config.tokens.cMkr.address, owner); // This is in fact crLINK tokens (no crMKR on Polygon)
 
-      comptroller = await ethers.getContractAt(require(config.compound.comptroller.abi), config.compound.comptroller.address, owner);
-      compoundOracle = await ethers.getContractAt(require(config.compound.oracle.abi), comptroller.oracle(), owner);
+    comptroller = await ethers.getContractAt(require(config.compound.comptroller.abi), config.compound.comptroller.address, owner);
+    compoundOracle = await ethers.getContractAt(require(config.compound.oracle.abi), comptroller.oracle(), owner);
 
-      // Mint some ERC20
-      daiToken = await getTokens(config.tokens.dai.whale, 'whale', signers, config.tokens.dai, utils.parseUnits('10000'));
-      usdcToken = await getTokens(config.tokens.usdc.whale, 'whale', signers, config.tokens.usdc, BigNumber.from(10).pow(10));
-      usdtToken = await getTokens(config.tokens.usdt.whale, 'whale', signers, config.tokens.usdt, BigNumber.from(10).pow(10));
-      uniToken = await getTokens(config.tokens.uni.whale, 'whale', signers, config.tokens.uni, utils.parseUnits('100'));
+    // Mint some tokens
+    daiToken = await getTokens(config.tokens.dai.whale, 'whale', signers, config.tokens.dai, utils.parseUnits('10000'));
+    usdcToken = await getTokens(config.tokens.usdc.whale, 'whale', signers, config.tokens.usdc, BigNumber.from(10).pow(10));
+    uniToken = await getTokens(config.tokens.uni.whale, 'whale', signers, config.tokens.uni, utils.parseUnits('100'));
 
-      underlyingThreshold = utils.parseUnits('1');
+    underlyingThreshold = WAD;
 
-      // Create and list markets
-      await marketsManagerForCompound.connect(owner).setPositionsManagerForCompound(positionsManagerForCompound.address);
-      await marketsManagerForCompound.connect(owner).createMarket(config.tokens.cDai.address, utils.parseUnits('1'));
-      await marketsManagerForCompound.connect(owner).createMarket(config.tokens.cUsdc.address, to6Decimals(utils.parseUnits('1')));
-      await marketsManagerForCompound.connect(owner).createMarket(config.tokens.cUni.address, utils.parseUnits('1'));
-      await marketsManagerForCompound.connect(owner).createMarket(config.tokens.cUsdt.address, to6Decimals(utils.parseUnits('1')));
-    }
+    // Create and list markets
+    await marketsManagerForCompound.connect(owner).setPositionsManager(positionsManagerForCompound.address);
+    await marketsManagerForCompound.connect(owner).createMarket(config.tokens.cDai.address, WAD);
+    await marketsManagerForCompound.connect(owner).createMarket(config.tokens.cUsdc.address, to6Decimals(WAD));
+    await marketsManagerForCompound.connect(owner).createMarket(config.tokens.cUni.address, WAD);
+    await marketsManagerForCompound.connect(owner).createMarket(config.tokens.cUsdt.address, to6Decimals(WAD));
   };
 
   before(initialize);
 
-  const addSmallDaiBorrowers = async (NMAX) => {
+  const addSmallDaiBorrowers = async (NMAX: number) => {
     {
       const whaleUsdc = await ethers.getSigner(config.tokens.usdc.whale);
       const daiAmount = utils.parseUnits('80');
@@ -144,7 +151,7 @@ describe('PositionsManagerForCompound Contract', () => {
     }
   };
 
-  const addSmallDaiSuppliers = async (NMAX) => {
+  const addSmallDaiSuppliers = async (NMAX: number) => {
     const whaleDai = await ethers.getSigner(config.tokens.dai.whale);
     const daiAmount = utils.parseUnits('80');
 
@@ -166,7 +173,7 @@ describe('PositionsManagerForCompound Contract', () => {
     }
   };
 
-  const addTreeDaiSuppliers = async (NMAX) => {
+  const addTreeDaiSuppliers = async (NMAX: number) => {
     const whaleDai = await ethers.getSigner(config.tokens.dai.whale);
     const daiAmount = utils.parseUnits('100');
 
@@ -190,9 +197,9 @@ describe('PositionsManagerForCompound Contract', () => {
   };
 
   describe('Worst case scenario for NMAX estimation', () => {
-    const NMAX = 100;
+    const NMAX = 25;
 
-    it('Set NMAX to 100', async () => {
+    it('Set new NMAX', async () => {
       expect(await positionsManagerForCompound.NMAX()).to.equal(1000);
       await marketsManagerForCompound.connect(owner).setMaxNumberOfUsersInTree(NMAX);
       expect(await positionsManagerForCompound.NMAX()).to.equal(NMAX);
