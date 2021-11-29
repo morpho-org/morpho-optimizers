@@ -256,5 +256,33 @@ describe('PositionsManagerForCompound Contract', () => {
         .liquidate(config.tokens.cDai.address, config.tokens.cUni.address, Bob, daiAmountBob);
       console.log('2');
     });
+
+    xit('Bob gets liquidated', async () => {
+      const PriceOracle = await ethers.getContractFactory('contracts/compound/test/SimplePriceOracle.sol:SimplePriceOracle');
+      priceOracle = await PriceOracle.deploy();
+      await priceOracle.deployed();
+
+      // Install Admin
+      const adminAddress = await comptroller.admin();
+      await hre.network.provider.send('hardhat_impersonateAccount', [adminAddress]);
+      await hre.network.provider.send('hardhat_setBalance', [adminAddress, ethers.utils.parseEther('10').toHexString()]);
+      const admin = await ethers.getSigner(adminAddress);
+
+      // Set Uni price to 0
+      await comptroller.connect(admin)._setPriceOracle(priceOracle.address);
+      priceOracle.setUnderlyingPrice(config.tokens.cUni.address, BigNumber.from('1000000000000000000000000000000'));
+
+      // Mine block
+      await hre.network.provider.send('evm_mine', []);
+
+      // Bob gets liquidated
+      const closeFactor = await comptroller.closeFactorMantissa();
+      const toRepay = daiAmountBob.mul(closeFactor).div(WAD);
+
+      await daiToken.connect(liquidator).approve(positionsManagerForCompound.address, toRepay);
+      console.log('1');
+      await positionsManagerForCompound.connect(liquidator).liquidate(config.tokens.cDai.address, config.tokens.cUni.address, Bob, toRepay);
+      console.log('2');
+    });
   });
 });
