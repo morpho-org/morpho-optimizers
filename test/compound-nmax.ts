@@ -33,19 +33,10 @@ describe('PositionsManagerForCompound Contract', () => {
     signers = await ethers.getSigners();
     [owner, liquidator] = signers;
 
-    // Deploy RedBlackBinaryTree
-    const RedBlackBinaryTree = await ethers.getContractFactory('contracts/compound/libraries/RedBlackBinaryTree.sol:RedBlackBinaryTree');
-    const redBlackBinaryTree = await RedBlackBinaryTree.deploy();
-    await redBlackBinaryTree.deployed();
-
-    // Deploy UpdatePositions
-    const UpdatePositions = await ethers.getContractFactory('contracts/compound/UpdatePositions.sol:UpdatePositions', {
-      libraries: {
-        RedBlackBinaryTree: redBlackBinaryTree.address,
-      },
-    });
-    const updatePositions = await UpdatePositions.deploy();
-    await updatePositions.deployed();
+    // Deploy DoubleLinkedList
+    const DoubleLinkedList = await ethers.getContractFactory('contracts/compound/libraries/DoubleLinkedList.sol:DoubleLinkedList');
+    const doubleLinkedList = await DoubleLinkedList.deploy();
+    await doubleLinkedList.deployed();
 
     // Deploy MarketsManagerForCompound
     const MarketsManagerForCompound = await ethers.getContractFactory('MarketsManagerForCompound');
@@ -53,20 +44,14 @@ describe('PositionsManagerForCompound Contract', () => {
     await marketsManagerForCompound.deployed();
 
     // Deploy PositionsManagerForCompound
-    const PositionsManagerForCompound = await ethers.getContractFactory('PositionsManagerForCompound', {
-      libraries: {
-        RedBlackBinaryTree: redBlackBinaryTree.address,
-      },
-    });
+    const PositionsManagerForCompound = await ethers.getContractFactory('PositionsManagerForCompound');
     positionsManagerForCompound = await PositionsManagerForCompound.deploy(
       marketsManagerForCompound.address,
-      config.compound.comptroller.address,
-      updatePositions.address
+      config.compound.comptroller.address
     );
     fakeCompoundPositionsManager = await PositionsManagerForCompound.deploy(
       marketsManagerForCompound.address,
-      config.compound.comptroller.address,
-      updatePositions.address
+      config.compound.comptroller.address
     );
     await positionsManagerForCompound.deployed();
     await fakeCompoundPositionsManager.deployed();
@@ -174,7 +159,7 @@ describe('PositionsManagerForCompound Contract', () => {
   };
 
   describe('Worst case scenario for NMAX estimation', () => {
-    const NMAX = 25;
+    const NMAX = 45;
     const daiAmountBob = utils.parseUnits('5000'); // 2*NMAX*SuppliedPerUser
 
     it('Set new NMAX', async () => {

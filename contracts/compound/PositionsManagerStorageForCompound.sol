@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.7;
 
-import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
-
-import "./libraries/RedBlackBinaryTree.sol";
+import "./libraries/DoubleLinkedList.sol";
 import {IComptroller} from "./interfaces/compound/ICompound.sol";
 import "./interfaces/IMarketsManagerForCompound.sol";
 import "./interfaces/IUpdatePositions.sol";
@@ -29,21 +27,16 @@ contract PositionsManagerStorageForCompound {
 
     uint16 public NMAX = 1000;
     uint8 public constant CTOKEN_DECIMALS = 8;
-    mapping(address => RedBlackBinaryTree.Tree) internal suppliersInP2P; // Suppliers in peer-to-peer.
-    mapping(address => RedBlackBinaryTree.Tree) internal suppliersOnPool; // Suppliers on Comp.
-    mapping(address => RedBlackBinaryTree.Tree) internal borrowersInP2P; // Borrowers in peer-to-peer.
-    mapping(address => RedBlackBinaryTree.Tree) internal borrowersOnPool; // Borrowers on Comp.
-    mapping(address => EnumerableSet.AddressSet) internal suppliersInP2PBuffer; // Buffer of suppliers in peer-to-peer.
-    mapping(address => EnumerableSet.AddressSet) internal suppliersOnPoolBuffer; // Buffer of suppliers on Comp.
-    mapping(address => EnumerableSet.AddressSet) internal borrowersInP2PBuffer; // Buffer of borrowers in peer-to-peer.
-    mapping(address => EnumerableSet.AddressSet) internal borrowersOnPoolBuffer; // Buffer of borrowers on Comp.
+    mapping(address => DoubleLinkedList.List) internal suppliersInP2P; // Suppliers in peer-to-peer.
+    mapping(address => DoubleLinkedList.List) internal suppliersOnPool; // Suppliers on Comp.
+    mapping(address => DoubleLinkedList.List) internal borrowersInP2P; // Borrowers in peer-to-peer.
+    mapping(address => DoubleLinkedList.List) internal borrowersOnPool; // Borrowers on Comp.
     mapping(address => mapping(address => SupplyBalance)) public supplyBalanceInOf; // For a given market, the supply balance of user.
     mapping(address => mapping(address => BorrowBalance)) public borrowBalanceInOf; // For a given market, the borrow balance of user.
     mapping(address => mapping(address => bool)) public accountMembership; // Whether the account is in the market or not.
     mapping(address => address[]) public enteredMarkets; // Markets entered by a user.
     mapping(address => uint256) public threshold; // Thresholds below the ones suppliers and borrowers cannot enter markets.
 
-    IUpdatePositions public updatePositions;
     IComptroller public comptroller;
     IMarketsManagerForCompound public marketsManagerForCompound;
 }
