@@ -8,6 +8,7 @@
   ],
   "scripts": {
     "test:comp:mainnet": "NETWORK=mainnet TS_NODE_TRANSPILE_ONLY=1 npx hardhat test test/compound.ts",
+    "test:comp-nmax:mainnet": "NETWORK=mainnet TS_NODE_TRANSPILE_ONLY=1 npx hardhat test test/compound-nmax.ts",
     "test:cream:polygon": "NETWORK=polygon-mainnet TS_NODE_TRANSPILE_ONLY=1 npx hardhat test test/compound.ts",
     "test:aave:polygon": "NETWORK=polygon-mainnet TS_NODE_TRANSPILE_ONLY=1 npx hardhat test test/aave.ts",
     "deploy:compound:ropsten": "NETWORK=ropsten npx hardhat run scripts/deploy-compound.ts --network ropsten",
