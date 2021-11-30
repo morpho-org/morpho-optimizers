@@ -56,17 +56,13 @@ describe('PositionsManagerForCompound Contract', () => {
     suppliers = [supplier1, supplier2, supplier3];
     borrowers = [borrower1, borrower2, borrower3];
 
-    // Deploy RedBlackBinaryTree
-    const RedBlackBinaryTree = await ethers.getContractFactory('contracts/compound/libraries/RedBlackBinaryTree.sol:RedBlackBinaryTree');
-    const redBlackBinaryTree = await RedBlackBinaryTree.deploy();
-    await redBlackBinaryTree.deployed();
+    // Deploy DoubleLinkedList
+    const DoubleLinkedList = await ethers.getContractFactory('contracts/compound/libraries/DoubleLinkedList.sol:DoubleLinkedList');
+    const doubleLinkedList = await DoubleLinkedList.deploy();
+    await doubleLinkedList.deployed();
 
     // Deploy UpdatePositions
-    const UpdatePositions = await ethers.getContractFactory('contracts/compound/UpdatePositions.sol:UpdatePositions', {
-      libraries: {
-        RedBlackBinaryTree: redBlackBinaryTree.address,
-      },
-    });
+    const UpdatePositions = await ethers.getContractFactory('contracts/compound/UpdatePositions.sol:UpdatePositions');
     const updatePositions = await UpdatePositions.deploy();
     await updatePositions.deployed();
 
@@ -76,11 +72,7 @@ describe('PositionsManagerForCompound Contract', () => {
     await marketsManagerForCompound.deployed();
 
     // Deploy PositionsManagerForCompound
-    const PositionsManagerForCompound = await ethers.getContractFactory('PositionsManagerForCompound', {
-      libraries: {
-        RedBlackBinaryTree: redBlackBinaryTree.address,
-      },
-    });
+    const PositionsManagerForCompound = await ethers.getContractFactory('PositionsManagerForCompound');
     positionsManagerForCompound = await PositionsManagerForCompound.deploy(
       marketsManagerForCompound.address,
       config.compound.comptroller.address,

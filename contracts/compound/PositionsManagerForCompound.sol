@@ -18,8 +18,7 @@ import "./PositionsManagerStorageForCompound.sol";
  *  @dev Smart contract interacting with Comp to enable P2P supply/borrow positions that can fallback on Comp's pool using cToken tokens.
  */
 contract PositionsManagerForCompound is ReentrancyGuard, PositionsManagerStorageForCompound {
-    using RedBlackBinaryTree for RedBlackBinaryTree.Tree;
-    using EnumerableSet for EnumerableSet.AddressSet;
+    using DoubleLinkedList for DoubleLinkedList.List;
     using CompoundMath for uint256;
     using SafeERC20 for IERC20;
     using Math for uint256;
@@ -185,16 +184,10 @@ contract PositionsManagerForCompound is ReentrancyGuard, PositionsManagerStorage
     /** @dev Constructs the PositionsManagerForCompound contract.
      *  @param _compoundMarketsManager The address of the markets manager.
      *  @param _proxyComptrollerAddress The address of the proxy comptroller.
-     *  @param _updatePositionsAddress The address of the contract implementing the logic for positions updates.
      */
-    constructor(
-        address _compoundMarketsManager,
-        address _proxyComptrollerAddress,
-        address _updatePositionsAddress
-    ) {
+    constructor(address _compoundMarketsManager, address _proxyComptrollerAddress) {
         marketsManagerForCompound = IMarketsManagerForCompound(_compoundMarketsManager);
         comptroller = IComptroller(_proxyComptrollerAddress);
-        updatePositions = IUpdatePositions(_updatePositionsAddress);
     }
 
     /* External */
@@ -251,7 +244,7 @@ contract PositionsManagerForCompound is ReentrancyGuard, PositionsManagerStorage
         uint256 remainingToSupplyToPool = _amount;
 
         /* If some borrowers are waiting on Comp, Morpho matches the supplier in P2P with them as much as possible */
-        if (borrowersOnPool[_cTokenAddress].isNotEmpty()) {
+        if (borrowersOnPool[_cTokenAddress].getHead() != address(0)) {
             uint256 p2pExchangeRate = marketsManagerForCompound.updateP2pUnitExchangeRate(
                 _cTokenAddress
             );
@@ -313,7 +306,7 @@ contract PositionsManagerForCompound is ReentrancyGuard, PositionsManagerStorage
         uint256 remainingToBorrowOnPool = _amount;
 
         /* If some suppliers are waiting on Comp, Morpho matches the borrower in P2P with them as much as possible */
-        if (suppliersOnPool[_cTokenAddress].isNotEmpty()) {
+        if (suppliersOnPool[_cTokenAddress].getHead() != address(0)) {
             uint256 p2pExchangeRate = marketsManagerForCompound.p2pUnitExchangeRate(_cTokenAddress);
             remainingToBorrowOnPool = _matchSuppliers(_cTokenAddress, _amount); // In underlying
             uint256 matched = _amount - remainingToBorrowOnPool;
@@ -720,7 +713,7 @@ contract PositionsManagerForCompound is ReentrancyGuard, PositionsManagerStorage
         remainingToMatch = _amount; // In underlying
         uint256 p2pExchangeRate = marketsManagerForCompound.p2pUnitExchangeRate(_cTokenAddress);
         uint256 cTokenExchangeRate = cToken.exchangeRateCurrent();
-        (, address account) = suppliersOnPool[_cTokenAddress].getMaximum();
+        address account = suppliersOnPool[_cTokenAddress].getHead();
         uint256 iterationCount;
 
         while (remainingToMatch > 0 && account != address(0) && iterationCount < NMAX) {
@@ -753,7 +746,7 @@ contract PositionsManagerForCompound is ReentrancyGuard, PositionsManagerStorage
                 p2pExchangeRate,
                 cTokenExchangeRate
             );
-            (, account) = suppliersOnPool[_cTokenAddress].getMaximum();
+            account = suppliersOnPool[_cTokenAddress].getHead();
         }
         // Withdraw from Comp
         _withdrawERC20FromComp(_cTokenAddress, _amount - remainingToMatch);
@@ -773,7 +766,7 @@ contract PositionsManagerForCompound is ReentrancyGuard, PositionsManagerStorage
         remainingToUnmatch = _amount; // In underlying
         uint256 cTokenExchangeRate = cToken.exchangeRateCurrent();
         uint256 p2pExchangeRate = marketsManagerForCompound.p2pUnitExchangeRate(_cTokenAddress);
-        (, address account) = suppliersInP2P[_cTokenAddress].getMaximum();
+        address account = suppliersInP2P[_cTokenAddress].getHead();
 
         while (remainingToUnmatch > 0 && account != address(0)) {
             uint256 inP2P = supplyBalanceInOf[_cTokenAddress][account].inP2P; // In cToken
@@ -792,7 +785,7 @@ contract PositionsManagerForCompound is ReentrancyGuard, PositionsManagerStorage
                 p2pExchangeRate,
                 cTokenExchangeRate
             );
-            (, account) = suppliersInP2P[_cTokenAddress].getMaximum();
+            account = suppliersInP2P[_cTokenAddress].getHead();
         }
         // Supply on Comp
         _supplyERC20ToPool(_cTokenAddress, _amount - remainingToUnmatch);
@@ -813,7 +806,7 @@ contract PositionsManagerForCompound is ReentrancyGuard, PositionsManagerStorage
         remainingToMatch = _amount;
         uint256 p2pExchangeRate = marketsManagerForCompound.p2pUnitExchangeRate(_cTokenAddress);
         uint256 borrowIndex = cToken.borrowIndex();
-        (, address account) = borrowersOnPool[_cTokenAddress].getMaximum();
+        address account = borrowersOnPool[_cTokenAddress].getHead();
         uint256 iterationCount;
 
         while (remainingToMatch > 0 && account != address(0) && iterationCount < NMAX) {
@@ -842,7 +835,7 @@ contract PositionsManagerForCompound is ReentrancyGuard, PositionsManagerStorage
                 p2pExchangeRate,
                 borrowIndex
             );
-            (, account) = borrowersOnPool[_cTokenAddress].getMaximum();
+            account = borrowersOnPool[_cTokenAddress].getHead();
         }
         // Repay Comp
         uint256 toRepay = Math.min(
@@ -867,7 +860,7 @@ contract PositionsManagerForCompound is ReentrancyGuard, PositionsManagerStorage
         remainingToUnmatch = _amount;
         uint256 p2pExchangeRate = marketsManagerForCompound.p2pUnitExchangeRate(_cTokenAddress);
         uint256 borrowIndex = cToken.borrowIndex();
-        (, address account) = borrowersInP2P[_cTokenAddress].getMaximum();
+        address account = borrowersInP2P[_cTokenAddress].getHead();
 
         while (remainingToUnmatch > 0 && account != address(0)) {
             uint256 inP2P = borrowBalanceInOf[_cTokenAddress][account].inP2P;
@@ -886,7 +879,7 @@ contract PositionsManagerForCompound is ReentrancyGuard, PositionsManagerStorage
                 p2pExchangeRate,
                 borrowIndex
             );
-            (, account) = borrowersInP2P[_cTokenAddress].getMaximum();
+            account = borrowersInP2P[_cTokenAddress].getHead();
         }
         // Borrow on Comp
         require(cToken.borrow(_amount - remainingToUnmatch) == 0);
@@ -995,10 +988,24 @@ contract PositionsManagerForCompound is ReentrancyGuard, PositionsManagerStorage
      *  @param _account The address of the borrower to move.
      */
     function _updateBorrowerList(address _cTokenAddress, address _account) internal {
-        (bool success, ) = address(updatePositions).delegatecall(
-            abi.encodeWithSignature("updateBorrowerList(address,address)", _cTokenAddress, _account)
-        );
-        require(success, Errors.PM_DELEGATECALL_BORROWER_UPDATE_NOT_SUCCESS);
+        uint256 onPool = borrowBalanceInOf[_cTokenAddress][_account].onPool;
+        uint256 inP2P = borrowBalanceInOf[_cTokenAddress][_account].inP2P;
+        uint256 formerValueOnPool = borrowersOnPool[_cTokenAddress].getValueOf(_account);
+        uint256 formerValueInP2P = borrowersInP2P[_cTokenAddress].getValueOf(_account);
+
+        // Check pool
+        bool isOnPoolAndValueChanged = formerValueOnPool != 0 &&
+            borrowersOnPool[_cTokenAddress].getValueOf(_account) != onPool;
+        if (isOnPoolAndValueChanged) borrowersOnPool[_cTokenAddress].remove(_account);
+        if (onPool > 0 && (isOnPoolAndValueChanged || formerValueOnPool == 0))
+            borrowersOnPool[_cTokenAddress].insertSorted(_account, onPool, NMAX);
+
+        // Check P2P
+        bool isInP2PAndValueChanged = formerValueInP2P != 0 &&
+            borrowersInP2P[_cTokenAddress].getValueOf(_account) != inP2P;
+        if (isInP2PAndValueChanged) borrowersInP2P[_cTokenAddress].remove(_account);
+        if (inP2P > 0 && (isInP2PAndValueChanged || formerValueInP2P == 0))
+            borrowersInP2P[_cTokenAddress].insertSorted(_account, inP2P, NMAX);
     }
 
     /** @dev Updates suppliers tree with the new balances of a given account.
@@ -1006,9 +1013,23 @@ contract PositionsManagerForCompound is ReentrancyGuard, PositionsManagerStorage
      *  @param _account The address of the supplier to move.
      */
     function _updateSupplierList(address _cTokenAddress, address _account) internal {
-        (bool success, ) = address(updatePositions).delegatecall(
-            abi.encodeWithSignature("updateSupplierList(address,address)", _cTokenAddress, _account)
-        );
-        require(success, Errors.PM_DELEGATECALL_SUPPLIER_UPDATE_NOT_SUCCESS);
+        uint256 onPool = supplyBalanceInOf[_cTokenAddress][_account].onPool;
+        uint256 inP2P = supplyBalanceInOf[_cTokenAddress][_account].inP2P;
+        uint256 formerValueOnPool = suppliersOnPool[_cTokenAddress].getValueOf(_account);
+        uint256 formerValueInP2P = suppliersInP2P[_cTokenAddress].getValueOf(_account);
+
+        // Check pool
+        bool isOnPoolAndValueChanged = formerValueOnPool != 0 &&
+            suppliersOnPool[_cTokenAddress].getValueOf(_account) != onPool;
+        if (isOnPoolAndValueChanged) suppliersOnPool[_cTokenAddress].remove(_account);
+        if (onPool > 0 && (isOnPoolAndValueChanged || formerValueOnPool == 0))
+            suppliersOnPool[_cTokenAddress].insertSorted(_account, onPool, NMAX);
+
+        // Check P2P
+        bool isInP2PAndValueChanged = formerValueInP2P != 0 &&
+            suppliersInP2P[_cTokenAddress].getValueOf(_account) != inP2P;
+        if (isInP2PAndValueChanged) suppliersInP2P[_cTokenAddress].remove(_account);
+        if (inP2P > 0 && (isInP2PAndValueChanged || formerValueInP2P == 0))
+            suppliersInP2P[_cTokenAddress].insertSorted(_account, inP2P, NMAX);
     }
 }
