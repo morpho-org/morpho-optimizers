@@ -130,15 +130,15 @@ contract MarketsManagerForCompound is Ownable {
     function updateBPY(address _marketAddress) public isMarketCreated(_marketAddress) {
         ICErc20 cErc20Token = ICErc20(_marketAddress);
 
+        // Update p2pUnitExchangeRate
+        updateP2pUnitExchangeRate(_marketAddress);
+
         // Update p2pBPY
         uint256 supplyBPY = cErc20Token.supplyRatePerBlock();
         uint256 borrowBPY = cErc20Token.borrowRatePerBlock();
         p2pBPY[_marketAddress] = Math.average(supplyBPY, borrowBPY);
 
         emit BPYUpdated(_marketAddress, p2pBPY[_marketAddress]);
-
-        // Update p2pUnitExchangeRate
-        updateP2pUnitExchangeRate(_marketAddress);
     }
 
     /** @dev Updates the current exchange rate, taking into account the block percentage yield (p2pBPY) since the last time it has been updated.
