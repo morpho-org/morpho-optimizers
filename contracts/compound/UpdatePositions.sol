@@ -39,6 +39,7 @@ contract UpdatePositions is ReentrancyGuard, PositionsManagerStorageForCompound 
                 if (onPool > minimum) {
                     borrowersOnPool[_cTokenAddress].remove(minimumAccount);
                     borrowersOnPoolBuffer[_cTokenAddress].add(minimumAccount);
+                    borrowersOnPoolBuffer[_cTokenAddress].remove(_account);
                     borrowersOnPool[_cTokenAddress].insert(_account, onPool);
                 } else borrowersOnPoolBuffer[_cTokenAddress].add(_account);
             }
@@ -60,6 +61,7 @@ contract UpdatePositions is ReentrancyGuard, PositionsManagerStorageForCompound 
                 if (inP2P > minimum) {
                     borrowersInP2P[_cTokenAddress].remove(minimumAccount);
                     borrowersInP2PBuffer[_cTokenAddress].add(minimumAccount);
+                    borrowersInP2PBuffer[_cTokenAddress].remove(_account);
                     borrowersInP2P[_cTokenAddress].insert(_account, inP2P);
                 } else borrowersInP2PBuffer[_cTokenAddress].add(_account);
             }
@@ -108,6 +110,7 @@ contract UpdatePositions is ReentrancyGuard, PositionsManagerStorageForCompound 
                 if (onPool > minimum) {
                     suppliersOnPool[_cTokenAddress].remove(minimumAccount);
                     suppliersOnPoolBuffer[_cTokenAddress].add(minimumAccount);
+                    suppliersOnPoolBuffer[_cTokenAddress].remove(_account);
                     suppliersOnPool[_cTokenAddress].insert(_account, onPool);
                 } else suppliersOnPoolBuffer[_cTokenAddress].add(_account);
             }
@@ -129,6 +132,7 @@ contract UpdatePositions is ReentrancyGuard, PositionsManagerStorageForCompound 
                 if (inP2P > minimum) {
                     suppliersInP2P[_cTokenAddress].remove(minimumAccount);
                     suppliersInP2PBuffer[_cTokenAddress].add(minimumAccount);
+                    suppliersInP2PBuffer[_cTokenAddress].remove(_account);
                     suppliersInP2P[_cTokenAddress].insert(_account, inP2P);
                 } else suppliersInP2PBuffer[_cTokenAddress].add(_account);
             }
