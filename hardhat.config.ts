@@ -7,7 +7,6 @@ import 'hardhat-contract-sizer';
 import 'hardhat-gas-reporter';
 import 'solidity-coverage';
 import 'hardhat-deploy';
-const config = require(`@config/${process.env.NETWORK}-config.json`);
 
 module.exports = {
   defaultNetwork: 'hardhat',
@@ -15,7 +14,6 @@ module.exports = {
     hardhat: {
       forking: {
         url: `https://${process.env.NETWORK}.infura.io/v3/${process.env.INFURA_PROJECT_ID}`,
-        blockNumber: config.startBlock, // Beginning from a specific block number allows caching data and a faster setup
       },
       allowUnlimitedContractSize: true,
     },
