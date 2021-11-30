@@ -182,15 +182,15 @@ contract MarketsManagerForAave is Ownable {
             IAToken(_marketAddress).UNDERLYING_ASSET_ADDRESS()
         );
 
+        // Update p2pUnitExhangeRate
+        updateP2PUnitExchangeRate(_marketAddress);
+
         // Update p2pSPY
         p2pSPY[_marketAddress] = Math
             .average(reserveData.currentLiquidityRate, reserveData.currentVariableBorrowRate)
             .div(SECONDS_PER_YEAR); // In ray
 
         emit P2PSPYUpdated(_marketAddress, p2pSPY[_marketAddress]);
-
-        // Update p2pUnitExhangeRate
-        updateP2PUnitExchangeRate(_marketAddress);
     }
 
     /** @dev Updates the current exchange rate, taking into account the Second Percentage Yield (p2pSPY) since the last time it has been updated.
