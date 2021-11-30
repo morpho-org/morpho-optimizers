@@ -9,8 +9,6 @@ import { WAD } from './utils/compound-helpers';
 
 describe('PositionsManagerForCompound Contract', () => {
   // Tokens
-  let cUsdcToken: Contract;
-  let cDaiToken: Contract;
   let daiToken: Contract;
   let uniToken: Contract;
   let usdcToken: Contract;
@@ -27,8 +25,6 @@ describe('PositionsManagerForCompound Contract', () => {
   let signers: Signer[];
   let owner: Signer;
   let liquidator: Signer;
-
-  let underlyingThreshold: BigNumber;
 
   const Bob = '0xc03004e3ce0784bf68186394306849f9b7b12000';
 
@@ -76,10 +72,6 @@ describe('PositionsManagerForCompound Contract', () => {
     await fakeCompoundPositionsManager.deployed();
 
     // Get contract dependencies
-    const cTokenAbi = require(config.tokens.cToken.abi);
-    cUsdcToken = await ethers.getContractAt(cTokenAbi, config.tokens.cUsdc.address, owner);
-    cDaiToken = await ethers.getContractAt(cTokenAbi, config.tokens.cDai.address, owner);
-
     comptroller = await ethers.getContractAt(require(config.compound.comptroller.abi), config.compound.comptroller.address, owner);
     compoundOracle = await ethers.getContractAt(require(config.compound.oracle.abi), comptroller.oracle(), owner);
 
@@ -87,8 +79,6 @@ describe('PositionsManagerForCompound Contract', () => {
     daiToken = await getTokens(config.tokens.dai.whale, 'whale', signers, config.tokens.dai, utils.parseUnits('10000'));
     usdcToken = await getTokens(config.tokens.usdc.whale, 'whale', signers, config.tokens.usdc, BigNumber.from(10).pow(10));
     uniToken = await getTokens(config.tokens.uni.whale, 'whale', signers, config.tokens.uni, utils.parseUnits('100'));
-
-    underlyingThreshold = WAD;
 
     // Create and list markets
     await marketsManagerForCompound.connect(owner).setPositionsManager(positionsManagerForCompound.address);
@@ -105,11 +95,12 @@ describe('PositionsManagerForCompound Contract', () => {
       const whaleUsdc = await ethers.getSigner(config.tokens.usdc.whale);
       const daiAmount = utils.parseUnits('80');
       const usdcAmount = to6Decimals(utils.parseUnits('1000'));
+      let smallDaiBorrower;
 
       for (let i = 0; i < NMAX; i++) {
         console.log('addSmallDaiBorrowers', i);
 
-        let smallDaiBorrower = ethers.Wallet.createRandom().address;
+        smallDaiBorrower = ethers.Wallet.createRandom().address;
 
         await hre.network.provider.request({
           method: 'hardhat_impersonateAccount',
@@ -131,11 +122,12 @@ describe('PositionsManagerForCompound Contract', () => {
   const addSmallDaiSuppliers = async (NMAX: number) => {
     const whaleDai = await ethers.getSigner(config.tokens.dai.whale);
     const daiAmount = utils.parseUnits('80');
+    let smallDaiSupplier;
 
     for (let i = 0; i < NMAX; i++) {
       console.log('addSmallDaiSuppliers', i);
 
-      let smallDaiSupplier = ethers.Wallet.createRandom().address;
+      smallDaiSupplier = ethers.Wallet.createRandom().address;
       await hre.network.provider.request({
         method: 'hardhat_impersonateAccount',
         params: [smallDaiSupplier],
@@ -153,10 +145,11 @@ describe('PositionsManagerForCompound Contract', () => {
   const addTreeDaiSuppliers = async (NMAX: number) => {
     const whaleDai = await ethers.getSigner(config.tokens.dai.whale);
     const daiAmount = utils.parseUnits('100');
+    let treeDaiSupplier;
 
     for (let i = 0; i < NMAX; i++) {
       console.log('addTreeDaiSuppliers', i);
-      let treeDaiSupplier = ethers.Wallet.createRandom().address;
+      treeDaiSupplier = ethers.Wallet.createRandom().address;
 
       await hre.network.provider.request({
         method: 'hardhat_impersonateAccount',
