@@ -145,28 +145,28 @@ library DoubleLinkedList {
         if (numberOfIterations == _maxIterations + 1) {
             require(addTail(_list, _id, _value));
         } else {
-            require(insertAfter(_list, current, _id, _value));
+            require(insertBefore(_list, current, _id, _value));
         }
     }
 
-    /** @dev Inserts an account in the `_list` after `_prevId`.
+    /** @dev Inserts an account in the `_list` before `_nextId`.
      *  @param _list The list to search in.
-     *  @param _prevId The account id from which to insert the account after.
+     *  @param _nextId The account id from which to insert the account before.
      *  @param _id The address of the account.
      *  @param _value The value of the account.
      */
-    function insertAfter(
+    function insertBefore(
         List storage _list,
-        address _prevId,
+        address _nextId,
         address _id,
         uint256 _value
     ) internal returns (bool) {
         require(!_contains(_list, _id));
-        if (_prevId == _list.tail) {
+        if (_nextId == _list.tail) {
             return addTail(_list, _id, _value);
         } else {
-            Account memory prevAccount = _list.accounts[_prevId];
-            Account memory nextAccount = _list.accounts[prevAccount.next];
+            Account memory nextAccount = _list.accounts[_nextId];
+            Account memory prevAccount = _list.accounts[nextAccount.prev];
             _createAccount(_list, _id, _value);
             _link(_list, _id, nextAccount.id);
             _link(_list, prevAccount.id, _id);
