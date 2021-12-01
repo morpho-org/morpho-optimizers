@@ -9,19 +9,11 @@ async function main() {
   console.log('Deploying contracts with the account:', deployer.address);
   console.log('Account balance:', (await deployer.getBalance()).toString());
 
-  const RedBlackBinaryTree = await ethers.getContractFactory('contracts/aave/libraries/RedBlackBinaryTree.sol:RedBlackBinaryTree');
-  const redBlackBinaryTree = await RedBlackBinaryTree.deploy();
-  await redBlackBinaryTree.deployed();
+  const DoubleLinkedList = await ethers.getContractFactory('contracts/aave/libraries/DoubleLinkedList.sol:DoubleLinkedList');
+  const doubleLinkedList = await DoubleLinkedList.deploy();
+  await doubleLinkedList.deployed();
 
-  console.log('RedBlackBinaryTree address:', redBlackBinaryTree.address);
-
-  const UpdatePositions = await ethers.getContractFactory('contracts/aave/UpdatePositions.sol:UpdatePositions', {
-    libraries: {
-      RedBlackBinaryTree: redBlackBinaryTree.address,
-    },
-  });
-  const updatePositions = await UpdatePositions.deploy();
-  await updatePositions.deployed();
+  console.log('DoubleLinkedList address:', doubleLinkedList.address);
 
   const MarketsManagerForAave = await ethers.getContractFactory('MarketsManagerForAave');
   const marketsManagerForAave = await MarketsManagerForAave.deploy();
@@ -29,16 +21,8 @@ async function main() {
 
   console.log('MarketsManagerForAave address:', marketsManagerForAave.address);
 
-  const PositionsManagerForAave = await ethers.getContractFactory('PositionsManagerForAave', {
-    libraries: {
-      RedBlackBinaryTree: redBlackBinaryTree.address,
-    },
-  });
-  const positionsManagerForAave = await PositionsManagerForAave.deploy(
-    marketsManagerForAave.address,
-    config.compound.comptroller.address,
-    updatePositions.address
-  );
+  const PositionsManagerForAave = await ethers.getContractFactory('PositionsManagerForAave');
+  const positionsManagerForAave = await PositionsManagerForAave.deploy(marketsManagerForAave.address, config.compound.comptroller.address);
   await positionsManagerForAave.deployed();
 
   console.log('PositionsManagerForAave address:', positionsManagerForAave.address);

@@ -64,19 +64,10 @@ describe('PositionsManagerForAave Contract', () => {
     suppliers = [supplier1, supplier2, supplier3];
     borrowers = [borrower1, borrower2, borrower3];
 
-    // Deploy RedBlackBinaryTree
-    const RedBlackBinaryTree = await ethers.getContractFactory('contracts/aave/libraries/RedBlackBinaryTree.sol:RedBlackBinaryTree');
-    const redBlackBinaryTree = await RedBlackBinaryTree.deploy();
-    await redBlackBinaryTree.deployed();
-
-    // Deploy UpdatePositions
-    const UpdatePositions = await ethers.getContractFactory('contracts/aave/UpdatePositions.sol:UpdatePositions', {
-      libraries: {
-        RedBlackBinaryTree: redBlackBinaryTree.address,
-      },
-    });
-    const updatePositions = await UpdatePositions.deploy();
-    await updatePositions.deployed();
+    // Deploy DoubleLinkedList
+    const DoubleLinkedList = await ethers.getContractFactory('contracts/aave/libraries/DoubleLinkedList.sol:DoubleLinkedList');
+    const doubleLinkedList = await DoubleLinkedList.deploy();
+    await doubleLinkedList.deployed();
 
     // Deploy MarketsManagerForAave
     const MarketsManagerForAave = await ethers.getContractFactory('MarketsManagerForAave');
@@ -84,20 +75,14 @@ describe('PositionsManagerForAave Contract', () => {
     await marketsManagerForAave.deployed();
 
     // Deploy PositionsManagerForAave
-    const PositionsManagerForAave = await ethers.getContractFactory('PositionsManagerForAave', {
-      libraries: {
-        RedBlackBinaryTree: redBlackBinaryTree.address,
-      },
-    });
+    const PositionsManagerForAave = await ethers.getContractFactory('PositionsManagerForAave');
     positionsManagerForAave = await PositionsManagerForAave.deploy(
       marketsManagerForAave.address,
-      config.aave.lendingPoolAddressesProvider.address,
-      updatePositions.address
+      config.aave.lendingPoolAddressesProvider.address
     );
     fakeAavePositionsManager = await PositionsManagerForAave.deploy(
       marketsManagerForAave.address,
-      config.aave.lendingPoolAddressesProvider.address,
-      updatePositions.address
+      config.aave.lendingPoolAddressesProvider.address
     );
     await positionsManagerForAave.deployed();
     await fakeAavePositionsManager.deployed();
