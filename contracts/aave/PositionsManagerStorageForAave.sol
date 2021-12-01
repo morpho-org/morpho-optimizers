@@ -6,8 +6,7 @@ import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "./interfaces/aave/ILendingPoolAddressesProvider.sol";
 import "./interfaces/aave/IProtocolDataProvider.sol";
 import "./interfaces/aave/ILendingPool.sol";
-import "./libraries/RedBlackBinaryTree.sol";
-import "./interfaces/IUpdatePositions.sol";
+import "./libraries/DoubleLinkedList.sol";
 import "./interfaces/IMarketsManagerForAave.sol";
 
 /**
@@ -33,14 +32,10 @@ contract PositionsManagerStorageForAave {
     uint256 public constant LIQUIDATION_CLOSE_FACTOR_PERCENT = 5000; // In basis points.
     bytes32 public constant DATA_PROVIDER_ID =
         0x1000000000000000000000000000000000000000000000000000000000000000; // Id of the data provider.
-    mapping(address => RedBlackBinaryTree.Tree) internal suppliersInP2P; // Suppliers in peer-to-peer.
-    mapping(address => RedBlackBinaryTree.Tree) internal suppliersOnPool; // Suppliers on Aave.
-    mapping(address => RedBlackBinaryTree.Tree) internal borrowersInP2P; // Borrowers in peer-to-peer.
-    mapping(address => RedBlackBinaryTree.Tree) internal borrowersOnPool; // Borrowers on Aave.
-    mapping(address => EnumerableSet.AddressSet) internal suppliersInP2PBuffer; // Buffer of suppliers in peer-to-peer.
-    mapping(address => EnumerableSet.AddressSet) internal suppliersOnPoolBuffer; // Buffer of suppliers on Aave.
-    mapping(address => EnumerableSet.AddressSet) internal borrowersInP2PBuffer; // Buffer of borrowers in peer-to-peer.
-    mapping(address => EnumerableSet.AddressSet) internal borrowersOnPoolBuffer; // Buffer of borrowers on Aave.
+    mapping(address => DoubleLinkedList.List) internal suppliersInP2P; // Suppliers in peer-to-peer.
+    mapping(address => DoubleLinkedList.List) internal suppliersOnPool; // Suppliers on Aave.
+    mapping(address => DoubleLinkedList.List) internal borrowersInP2P; // Borrowers in peer-to-peer.
+    mapping(address => DoubleLinkedList.List) internal borrowersOnPool; // Borrowers on Aave.
     mapping(address => mapping(address => SupplyBalance)) public supplyBalanceInOf; // For a given market, the supply balance of user.
     mapping(address => mapping(address => BorrowBalance)) public borrowBalanceInOf; // For a given market, the borrow balance of user.
     mapping(address => mapping(address => bool)) public accountMembership; // Whether the account is in the market or not.
@@ -48,7 +43,6 @@ contract PositionsManagerStorageForAave {
     mapping(address => uint256) public threshold; // Thresholds below the ones suppliers and borrowers cannot enter markets.
     mapping(address => uint256) public capValue; // Caps above the ones suppliers cannot add more liquidity.
 
-    IUpdatePositions public updatePositions;
     IMarketsManagerForAave public marketsManagerForAave;
     ILendingPoolAddressesProvider public addressesProvider;
     IProtocolDataProvider public dataProvider;

@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 
-import "./libraries/RedBlackBinaryTree.sol";
+import "./libraries/DoubleLinkedList.sol";
 import "./libraries/aave/WadRayMath.sol";
 import "./libraries/ErrorsForAave.sol";
 import "./interfaces/aave/IPriceOracleGetter.sol";
@@ -14,14 +14,13 @@ import {IVariableDebtToken} from "./interfaces/aave/IVariableDebtToken.sol";
 import {IAToken} from "./interfaces/aave/IAToken.sol";
 import "./interfaces/aave/IAaveIncentivesController.sol";
 import "./PositionsManagerStorageForAave.sol";
-import "./UpdatePositions.sol";
 
 /**
  *  @title PositionsManagerForAave
  *  @dev Smart contract interacting with Aave to enable P2P supply/borrow positions that can fallback on Aave's pool using poolToken tokens.
  */
 contract PositionsManagerForAave is ReentrancyGuard, PositionsManagerStorageForAave {
-    using RedBlackBinaryTree for RedBlackBinaryTree.Tree;
+    using DoubleLinkedList for DoubleLinkedList.List;
     using WadRayMath for uint256;
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
@@ -189,18 +188,12 @@ contract PositionsManagerForAave is ReentrancyGuard, PositionsManagerStorageForA
     /** @dev Constructs the PositionsManagerForAave contract.
      *  @param _marketsManager The address of the aave markets manager.
      *  @param _lendingPoolAddressesProvider The address of the lending pool addresses provider.
-     *  @param _updatePositionsAddress The address of the contract implementing the logic for positions updates.
      */
-    constructor(
-        address _marketsManager,
-        address _lendingPoolAddressesProvider,
-        address _updatePositionsAddress
-    ) {
+    constructor(address _marketsManager, address _lendingPoolAddressesProvider) {
         marketsManagerForAave = IMarketsManagerForAave(_marketsManager);
         addressesProvider = ILendingPoolAddressesProvider(_lendingPoolAddressesProvider);
         dataProvider = IProtocolDataProvider(addressesProvider.getAddress(DATA_PROVIDER_ID));
         lendingPool = ILendingPool(addressesProvider.getLendingPool());
-        updatePositions = IUpdatePositions(_updatePositionsAddress);
     }
 
     /* External */
@@ -283,7 +276,7 @@ contract PositionsManagerForAave is ReentrancyGuard, PositionsManagerStorageForA
         uint256 remainingToSupplyToPool = _amount;
 
         /* If some borrowers are waiting on Aave, Morpho matches the supplier in P2P with them as much as possible */
-        if (borrowersOnPool[_poolTokenAddress].isNotEmpty()) {
+        if (borrowersOnPool[_poolTokenAddress].getHead() != address(0)) {
             remainingToSupplyToPool = _matchBorrowers(_poolTokenAddress, _amount); // In underlying
             uint256 matched = _amount - remainingToSupplyToPool;
             if (matched > 0) {
@@ -342,7 +335,7 @@ contract PositionsManagerForAave is ReentrancyGuard, PositionsManagerStorageForA
         uint256 remainingToBorrowOnPool = _amount;
 
         /* If some suppliers are waiting on Aave, Morpho matches the borrower in P2P with them as much as possible */
-        if (suppliersOnPool[_poolTokenAddress].isNotEmpty()) {
+        if (suppliersOnPool[_poolTokenAddress].getHead() != address(0)) {
             // No need to update p2pUnitExchangeRate here as it's done in `_checkAccountLiquidity`
             uint256 p2pExchangeRate = marketsManagerForAave.p2pUnitExchangeRate(_poolTokenAddress);
             remainingToBorrowOnPool = _matchSuppliers(_poolTokenAddress, _amount); // In underlying
@@ -756,7 +749,7 @@ contract PositionsManagerForAave is ReentrancyGuard, PositionsManagerStorageForA
         uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(
             poolToken.UNDERLYING_ASSET_ADDRESS()
         );
-        (, address account) = suppliersOnPool[_poolTokenAddress].getMaximum();
+        address account = suppliersOnPool[_poolTokenAddress].getHead();
         uint256 iterationCount;
 
         while (remainingToMatch > 0 && account != address(0) && iterationCount < NMAX) {
@@ -784,7 +777,7 @@ contract PositionsManagerForAave is ReentrancyGuard, PositionsManagerStorageForA
                 p2pExchangeRate,
                 normalizedIncome
             );
-            (, account) = suppliersOnPool[_poolTokenAddress].getMaximum();
+            account = suppliersOnPool[_poolTokenAddress].getHead();
         }
         // Withdraw from Aave
         uint256 toWithdraw = _amount - remainingToMatch;
@@ -807,7 +800,7 @@ contract PositionsManagerForAave is ReentrancyGuard, PositionsManagerStorageForA
         );
         remainingToUnmatch = _amount; // In underlying
         uint256 p2pExchangeRate = marketsManagerForAave.p2pUnitExchangeRate(_poolTokenAddress);
-        (, address account) = suppliersInP2P[_poolTokenAddress].getMaximum();
+        address account = suppliersInP2P[_poolTokenAddress].getHead();
 
         while (remainingToUnmatch > 0 && account != address(0)) {
             uint256 inP2P = supplyBalanceInOf[_poolTokenAddress][account].inP2P; // In poolToken
@@ -830,7 +823,7 @@ contract PositionsManagerForAave is ReentrancyGuard, PositionsManagerStorageForA
                 p2pExchangeRate,
                 normalizedIncome
             );
-            (, account) = suppliersInP2P[_poolTokenAddress].getMaximum();
+            account = suppliersInP2P[_poolTokenAddress].getHead();
         }
         // Supply on Aave
         uint256 toSupply = _amount - remainingToUnmatch;
@@ -854,7 +847,7 @@ contract PositionsManagerForAave is ReentrancyGuard, PositionsManagerStorageForA
             address(underlyingToken)
         );
         uint256 p2pExchangeRate = marketsManagerForAave.p2pUnitExchangeRate(_poolTokenAddress);
-        (, address account) = borrowersOnPool[_poolTokenAddress].getMaximum();
+        address account = borrowersOnPool[_poolTokenAddress].getHead();
         uint256 iterationCount;
 
         while (remainingToMatch > 0 && account != address(0) && iterationCount < NMAX) {
@@ -881,7 +874,7 @@ contract PositionsManagerForAave is ReentrancyGuard, PositionsManagerStorageForA
                 p2pExchangeRate,
                 normalizedVariableDebt
             );
-            (, account) = borrowersOnPool[_poolTokenAddress].getMaximum();
+            account = borrowersOnPool[_poolTokenAddress].getHead();
         }
         // Repay Aave
         uint256 toRepay = _amount - remainingToMatch;
@@ -908,7 +901,7 @@ contract PositionsManagerForAave is ReentrancyGuard, PositionsManagerStorageForA
         uint256 normalizedVariableDebt = lendingPool.getReserveNormalizedVariableDebt(
             address(underlyingToken)
         );
-        (, address account) = borrowersInP2P[_poolTokenAddress].getMaximum();
+        address account = borrowersInP2P[_poolTokenAddress].getHead();
 
         while (remainingToUnmatch > 0 && account != address(0)) {
             uint256 inP2P = borrowBalanceInOf[_poolTokenAddress][account].inP2P;
@@ -931,7 +924,7 @@ contract PositionsManagerForAave is ReentrancyGuard, PositionsManagerStorageForA
                 p2pExchangeRate,
                 normalizedVariableDebt
             );
-            (, account) = borrowersInP2P[_poolTokenAddress].getMaximum();
+            account = borrowersInP2P[_poolTokenAddress].getHead();
         }
         // Borrow on Aave
         lendingPool.borrow(
@@ -1057,14 +1050,22 @@ contract PositionsManagerForAave is ReentrancyGuard, PositionsManagerStorageForA
      *  @param _account The address of the borrower to move.
      */
     function _updateBorrowerList(address _poolTokenAddress, address _account) internal {
-        (bool success, ) = address(updatePositions).delegatecall(
-            abi.encodeWithSignature(
-                "updateBorrowerList(address,address)",
-                _poolTokenAddress,
-                _account
-            )
-        );
-        require(success, Errors.PM_DELEGATECALL_BORROWER_UPDATE_NOT_SUCCESS);
+        uint256 onPool = borrowBalanceInOf[_poolTokenAddress][_account].onPool;
+        uint256 inP2P = borrowBalanceInOf[_poolTokenAddress][_account].inP2P;
+        uint256 formerValueOnPool = borrowersOnPool[_poolTokenAddress].getValueOf(_account);
+        uint256 formerValueInP2P = borrowersInP2P[_poolTokenAddress].getValueOf(_account);
+
+        // Check pool
+        bool wasOnPoolAndValueChanged = formerValueOnPool != 0 && formerValueOnPool != onPool;
+        if (wasOnPoolAndValueChanged) borrowersOnPool[_poolTokenAddress].remove(_account);
+        if (onPool > 0 && (wasOnPoolAndValueChanged || formerValueOnPool == 0))
+            borrowersOnPool[_poolTokenAddress].insertSorted(_account, onPool, NMAX);
+
+        // Check P2P
+        bool wasInP2PAndValueChanged = formerValueInP2P != 0 && formerValueInP2P != inP2P;
+        if (wasInP2PAndValueChanged) borrowersInP2P[_poolTokenAddress].remove(_account);
+        if (inP2P > 0 && (wasInP2PAndValueChanged || formerValueInP2P == 0))
+            borrowersInP2P[_poolTokenAddress].insertSorted(_account, inP2P, NMAX);
     }
 
     /** @dev Updates suppliers tree with the new balances of a given account.
@@ -1072,13 +1073,21 @@ contract PositionsManagerForAave is ReentrancyGuard, PositionsManagerStorageForA
      *  @param _account The address of the supplier to move.
      */
     function _updateSupplierList(address _poolTokenAddress, address _account) internal {
-        (bool success, ) = address(updatePositions).delegatecall(
-            abi.encodeWithSignature(
-                "updateSupplierList(address,address)",
-                _poolTokenAddress,
-                _account
-            )
-        );
-        require(success, Errors.PM_DELEGATECALL_SUPPLIER_UPDATE_NOT_SUCCESS);
+        uint256 onPool = supplyBalanceInOf[_poolTokenAddress][_account].onPool;
+        uint256 inP2P = supplyBalanceInOf[_poolTokenAddress][_account].inP2P;
+        uint256 formerValueOnPool = suppliersOnPool[_poolTokenAddress].getValueOf(_account);
+        uint256 formerValueInP2P = suppliersInP2P[_poolTokenAddress].getValueOf(_account);
+
+        // Check pool
+        bool wasOnPoolAndValueChanged = formerValueOnPool != 0 && formerValueOnPool != onPool;
+        if (wasOnPoolAndValueChanged) suppliersOnPool[_poolTokenAddress].remove(_account);
+        if (onPool > 0 && (wasOnPoolAndValueChanged || formerValueOnPool == 0))
+            suppliersOnPool[_poolTokenAddress].insertSorted(_account, onPool, NMAX);
+
+        // Check P2P
+        bool wasInP2PAndValueChanged = formerValueInP2P != 0 && formerValueInP2P != inP2P;
+        if (wasInP2PAndValueChanged) suppliersInP2P[_poolTokenAddress].remove(_account);
+        if (inP2P > 0 && (wasInP2PAndValueChanged || formerValueInP2P == 0))
+            suppliersInP2P[_poolTokenAddress].insertSorted(_account, inP2P, NMAX);
     }
 }
