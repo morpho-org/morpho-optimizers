@@ -13,11 +13,12 @@ library Errors {
     string public constant PM_DEBT_VALUE_NOT_ABOVE_MAX = "8";
     string public constant PM_AMOUNT_ABOVE_ALLOWED_TO_REPAY = "9";
     string public constant PM_TO_SEIZE_ABOVE_COLLATERAL = "10";
-    string public constant PM_REMAINING_TO_UNMATCH_IS_NOT_0 = "11";
-    string public constant PM_DEBT_VALUE_ABOVE_MAX = "12";
-    string public constant PM_BORROW_ON_COMP_FAIL = "13";
-    string public constant PM_MINT_ON_COMP_FAIL = "14";
-    string public constant PM_REDEEM_ON_COMP_FAIL = "15";
-    string public constant PM_REPAY_ON_COMP_FAIL = "16";
-    string public constant PM_ORACLE_FAIL = "17";
+    string public constant PM_REMAINING_TO_MATCH_IS_NOT_0 = "11";
+    string public constant PM_REMAINING_TO_UNMATCH_IS_NOT_0 = "12";
+    string public constant PM_DEBT_VALUE_ABOVE_MAX = "13";
+    string public constant PM_BORROW_ON_COMP_FAIL = "14";
+    string public constant PM_MINT_ON_COMP_FAIL = "15";
+    string public constant PM_REDEEM_ON_COMP_FAIL = "16";
+    string public constant PM_REPAY_ON_COMP_FAIL = "17";
+    string public constant PM_ORACLE_FAIL = "18";
 }
