@@ -504,7 +504,7 @@ contract PositionsManagerForCompound is ReentrancyGuard {
             else {
                 require(
                     cToken.redeem(supplyBalanceInOf[_cTokenAddress][_holder].onPool) == 0,
-                    "10"
+                    Errors.PM_REDEEM_ON_COMP_FAIL
                 );
                 supplyBalanceInOf[_cTokenAddress][_holder].onPool = 0;
                 emit SupplierPositionUpdated(
@@ -529,7 +529,10 @@ contract PositionsManagerForCompound is ReentrancyGuard {
             );
             /* CASE 1: Other suppliers have enough tokens on Comp to compensate user's position*/
             if (remainingToWithdraw <= cTokenContractBalanceInUnderlying) {
-                require(_matchSuppliers(_cTokenAddress, remainingToWithdraw) == 0, "11");
+                require(
+                    _matchSuppliers(_cTokenAddress, remainingToWithdraw) == 0,
+                    Errors.PM_REMAINING_TO_MATCH_IS_NOT_0
+                );
                 supplyBalanceInOf[_cTokenAddress][_holder].inP2P -= remainingToWithdraw.div(
                     p2pExchangeRate
                 ); // In p2pUnit
