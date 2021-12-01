@@ -7,23 +7,32 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 
 import "./libraries/CompoundMath.sol";
+import "./libraries/DoubleLinkedList.sol";
 import "./libraries/ErrorsForCompound.sol";
 import {ICErc20, IComptroller, ICompoundOracle} from "./interfaces/compound/ICompound.sol";
 import "./interfaces/IMarketsManagerForCompound.sol";
-import "./interfaces/IUpdatePositions.sol";
-import "./PositionsManagerStorageForCompound.sol";
 
 /**
  *  @title MorphoPositionsManagerForComp?
  *  @dev Smart contract interacting with Comp to enable P2P supply/borrow positions that can fallback on Comp's pool using cToken tokens.
  */
-contract PositionsManagerForCompound is ReentrancyGuard, PositionsManagerStorageForCompound {
+contract PositionsManagerForCompound is ReentrancyGuard {
     using DoubleLinkedList for DoubleLinkedList.List;
     using CompoundMath for uint256;
     using SafeERC20 for IERC20;
     using Math for uint256;
 
     /* Structs */
+
+    struct SupplyBalance {
+        uint256 inP2P; // In p2pUnit, a unit that grows in value, to keep track of the interests/debt increase when users are in p2p.
+        uint256 onPool; // In cToken.
+    }
+
+    struct BorrowBalance {
+        uint256 inP2P; // In p2pUnit.
+        uint256 onPool; // In cdUnit, a unit that grows in value, to keep track of the debt increase when users are in Comp. Multiply by current borrowIndex to get the underlying amount.
+    }
 
     // Struct to avoid stack too deep error
     struct BalanceStateVars {
@@ -46,6 +55,23 @@ contract PositionsManagerForCompound is ReentrancyGuard, PositionsManagerStorage
         uint256 priceCollateralMantissa; // The price of the collateral asset (in USD).
         uint256 collateralOnPoolInUnderlying; // The amount of underlying the liquidatee has on Comp.
     }
+
+    /* Storage */
+
+    uint16 public NMAX = 20;
+    uint8 public constant CTOKEN_DECIMALS = 8;
+    mapping(address => DoubleLinkedList.List) internal suppliersInP2P; // Suppliers in peer-to-peer.
+    mapping(address => DoubleLinkedList.List) internal suppliersOnPool; // Suppliers on Comp.
+    mapping(address => DoubleLinkedList.List) internal borrowersInP2P; // Borrowers in peer-to-peer.
+    mapping(address => DoubleLinkedList.List) internal borrowersOnPool; // Borrowers on Comp.
+    mapping(address => mapping(address => SupplyBalance)) public supplyBalanceInOf; // For a given market, the supply balance of user.
+    mapping(address => mapping(address => BorrowBalance)) public borrowBalanceInOf; // For a given market, the borrow balance of user.
+    mapping(address => mapping(address => bool)) public accountMembership; // Whether the account is in the market or not.
+    mapping(address => address[]) public enteredMarkets; // Markets entered by a user.
+    mapping(address => uint256) public threshold; // Thresholds below the ones suppliers and borrowers cannot enter markets.
+
+    IComptroller public comptroller;
+    IMarketsManagerForCompound public marketsManagerForCompound;
 
     /* Events */
 
