@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import { BigNumber } from 'ethers';
 import { ethers } from 'hardhat';
 const config = require(`@config/${process.env.NETWORK}-config.json`);
