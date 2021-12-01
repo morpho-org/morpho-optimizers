@@ -188,23 +188,6 @@ contract PositionsManagerForCompound is ReentrancyGuard {
         _;
     }
 
-    /** @dev Skips the operation if it is unsafe due to coumpound's revert on low levels of precision
-     *  @param _amount The amount of token considered for depositing/redeeming
-     *  @param _cTokenAddress cToken address of the considered market
-     */
-    modifier isAboveCompoundThreshold(address _cTokenAddress, uint256 _amount) {
-        IERC20Metadata token = IERC20Metadata(ICErc20(_cTokenAddress).underlying());
-        uint8 tokenDecimals = token.decimals();
-        if (tokenDecimals > CTOKEN_DECIMALS) {
-            // Multiply by 2 to have a safety buffer
-            if (_amount > 2 * 10**(tokenDecimals - CTOKEN_DECIMALS)) {
-                _;
-            }
-        } else {
-            _;
-        }
-    }
-
     /* Constructor */
 
     /** @dev Constructs the PositionsManagerForCompound contract.
@@ -294,20 +277,22 @@ contract PositionsManagerForCompound is ReentrancyGuard {
 
         /* If there aren't enough borrowers waiting on Comp to match all the tokens supplied, the rest is supplied to Comp */
         if (remainingToSupplyToPool > 0) {
-            supplyBalanceInOf[_cTokenAddress][msg.sender].onPool += remainingToSupplyToPool.div(
-                cTokenExchangeRate
-            ); // In cToken
-            _supplyERC20ToPool(_cTokenAddress, remainingToSupplyToPool); // Revert on error
-            emit SupplierPositionUpdated(
-                msg.sender,
-                _cTokenAddress,
-                remainingToSupplyToPool,
-                0,
-                0,
-                0,
-                0,
-                cTokenExchangeRate
-            );
+            if (_isAboveCompoundThreshold(_cTokenAddress, remainingToSupplyToPool)) {
+                supplyBalanceInOf[_cTokenAddress][msg.sender].onPool += remainingToSupplyToPool.div(
+                    cTokenExchangeRate
+                ); // In cToken
+                _supplyERC20ToPool(_cTokenAddress, remainingToSupplyToPool); // Revert on error
+                emit SupplierPositionUpdated(
+                    msg.sender,
+                    _cTokenAddress,
+                    remainingToSupplyToPool,
+                    0,
+                    0,
+                    0,
+                    0,
+                    cTokenExchangeRate
+                );
+            }
         }
 
         _updateSupplierList(_cTokenAddress, msg.sender);
@@ -497,20 +482,22 @@ contract PositionsManagerForCompound is ReentrancyGuard {
                 .mul(cTokenExchangeRate);
             /* CASE 1: User withdraws less than his Comp supply balance */
             if (_amount <= amountOnPoolInUnderlying) {
-                _withdrawERC20FromComp(_cTokenAddress, _amount); // Revert on error
-                supplyBalanceInOf[_cTokenAddress][_holder].onPool -= _amount.div(
-                    cTokenExchangeRate
-                ); // In cToken
-                emit SupplierPositionUpdated(
-                    _holder,
-                    _cTokenAddress,
-                    0,
-                    0,
-                    _amount,
-                    0,
-                    0,
-                    cTokenExchangeRate
-                );
+                if (_isAboveCompoundThreshold(_cTokenAddress, _amount)) {
+                    supplyBalanceInOf[_cTokenAddress][_holder].onPool -= _amount.div(
+                        cTokenExchangeRate
+                    ); // In cToken
+                    _withdrawERC20FromComp(_cTokenAddress, _amount); // Revert on error
+                    emit SupplierPositionUpdated(
+                        _holder,
+                        _cTokenAddress,
+                        0,
+                        0,
+                        _amount,
+                        0,
+                        0,
+                        cTokenExchangeRate
+                    );
+                }
                 remainingToWithdraw = 0; // In underlying
             }
             /* CASE 2: User withdraws more than his Comp supply balance */
@@ -703,10 +690,7 @@ contract PositionsManagerForCompound is ReentrancyGuard {
      *  @param _cTokenAddress The address of the market the user wants to interact with.
      *  @param _amount The amount in ERC20 tokens to supply.
      */
-    function _supplyERC20ToPool(address _cTokenAddress, uint256 _amount)
-        internal
-        isAboveCompoundThreshold(_cTokenAddress, _amount)
-    {
+    function _supplyERC20ToPool(address _cTokenAddress, uint256 _amount) internal {
         ICErc20 cToken = ICErc20(_cTokenAddress);
         IERC20 underlyingToken = IERC20(cToken.underlying());
         underlyingToken.safeApprove(_cTokenAddress, _amount);
@@ -717,12 +701,27 @@ contract PositionsManagerForCompound is ReentrancyGuard {
      *  @param _cTokenAddress The address of the market the user wants to interact with.
      *  @param _amount The amount of tokens to be withdrawn.
      */
-    function _withdrawERC20FromComp(address _cTokenAddress, uint256 _amount)
-        internal
-        isAboveCompoundThreshold(_cTokenAddress, _amount)
-    {
+    function _withdrawERC20FromComp(address _cTokenAddress, uint256 _amount) internal {
         ICErc20 cToken = ICErc20(_cTokenAddress);
         require(cToken.redeemUnderlying(_amount) == 0, Errors.PM_REDEEM_ON_COMP_FAIL);
+    }
+
+    /** @dev Returns whether it is unsafe supply/witdhraw due to coumpound's revert on low levels of precision or not.
+     *  @param _amount The amount of token considered for depositing/redeeming
+     *  @param _cTokenAddress cToken address of the considered market
+     *  @return Whether to continue or not.
+     */
+    function _isAboveCompoundThreshold(address _cTokenAddress, uint256 _amount)
+        internal
+        view
+        returns (bool)
+    {
+        IERC20Metadata token = IERC20Metadata(ICErc20(_cTokenAddress).underlying());
+        uint8 tokenDecimals = token.decimals();
+        if (tokenDecimals > CTOKEN_DECIMALS)
+            // Multiply by 2 to have a safety buffer
+            return (_amount > 2 * 10**(tokenDecimals - CTOKEN_DECIMALS));
+        else return true;
     }
 
     /** @dev Finds liquidity on Comp and matches it in P2P.
@@ -775,7 +774,9 @@ contract PositionsManagerForCompound is ReentrancyGuard {
             account = suppliersOnPool[_cTokenAddress].getHead();
         }
         // Withdraw from Comp
-        _withdrawERC20FromComp(_cTokenAddress, _amount - remainingToMatch);
+        uint256 toWithdraw = _amount - remainingToMatch;
+        if (_isAboveCompoundThreshold(_cTokenAddress, toWithdraw))
+            _withdrawERC20FromComp(_cTokenAddress, toWithdraw);
     }
 
     /** @dev Finds liquidity in peer-to-peer and unmatches it to reconnect Comp.
@@ -814,7 +815,9 @@ contract PositionsManagerForCompound is ReentrancyGuard {
             account = suppliersInP2P[_cTokenAddress].getHead();
         }
         // Supply on Comp
-        _supplyERC20ToPool(_cTokenAddress, _amount - remainingToUnmatch);
+        uint256 toSupply = _amount - remainingToUnmatch;
+        if (_isAboveCompoundThreshold(_cTokenAddress, toSupply))
+            _supplyERC20ToPool(_cTokenAddress, toSupply);
     }
 
     /** @dev Finds borrowers on Comp that match the given `_amount` and move them in P2P.
