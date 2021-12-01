@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import * as dotenv from 'dotenv';
 dotenv.config({ path: './.env.local' });
 import { utils, BigNumber, Signer, Contract } from 'ethers';
@@ -163,7 +164,7 @@ describe('PositionsManagerForCompound Contract', () => {
     const daiAmountBob = utils.parseUnits('5000'); // 2*NMAX*SuppliedPerUser
 
     it('Set new NMAX', async () => {
-      expect(await positionsManagerForCompound.NMAX()).to.equal(1000);
+      expect(await positionsManagerForCompound.NMAX()).to.equal(20);
       await marketsManagerForCompound.connect(owner).setMaxNumberOfUsersInTree(NMAX);
       expect(await positionsManagerForCompound.NMAX()).to.equal(NMAX);
     });
