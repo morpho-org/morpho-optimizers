@@ -1020,17 +1020,15 @@ contract PositionsManagerForCompound is ReentrancyGuard {
         uint256 formerValueInP2P = borrowersInP2P[_cTokenAddress].getValueOf(_account);
 
         // Check pool
-        bool isOnPoolAndValueChanged = formerValueOnPool != 0 &&
-            borrowersOnPool[_cTokenAddress].getValueOf(_account) != onPool;
-        if (isOnPoolAndValueChanged) borrowersOnPool[_cTokenAddress].remove(_account);
-        if (onPool > 0 && (isOnPoolAndValueChanged || formerValueOnPool == 0))
+        bool wasOnPoolAndValueChanged = formerValueOnPool != 0 && formerValueOnPool != onPool;
+        if (wasOnPoolAndValueChanged) borrowersOnPool[_cTokenAddress].remove(_account);
+        if (onPool > 0 && (wasOnPoolAndValueChanged || formerValueOnPool == 0))
             borrowersOnPool[_cTokenAddress].insertSorted(_account, onPool, NMAX);
 
         // Check P2P
-        bool isInP2PAndValueChanged = formerValueInP2P != 0 &&
-            borrowersInP2P[_cTokenAddress].getValueOf(_account) != inP2P;
-        if (isInP2PAndValueChanged) borrowersInP2P[_cTokenAddress].remove(_account);
-        if (inP2P > 0 && (isInP2PAndValueChanged || formerValueInP2P == 0))
+        bool wasInP2PAndValueChanged = formerValueInP2P != 0 && formerValueInP2P != inP2P;
+        if (wasInP2PAndValueChanged) borrowersInP2P[_cTokenAddress].remove(_account);
+        if (inP2P > 0 && (wasInP2PAndValueChanged || formerValueInP2P == 0))
             borrowersInP2P[_cTokenAddress].insertSorted(_account, inP2P, NMAX);
     }
 
@@ -1045,17 +1043,15 @@ contract PositionsManagerForCompound is ReentrancyGuard {
         uint256 formerValueInP2P = suppliersInP2P[_cTokenAddress].getValueOf(_account);
 
         // Check pool
-        bool isOnPoolAndValueChanged = formerValueOnPool != 0 &&
-            suppliersOnPool[_cTokenAddress].getValueOf(_account) != onPool;
-        if (isOnPoolAndValueChanged) suppliersOnPool[_cTokenAddress].remove(_account);
-        if (onPool > 0 && (isOnPoolAndValueChanged || formerValueOnPool == 0))
+        bool wasOnPoolAndValueChanged = formerValueOnPool != 0 && formerValueOnPool != onPool;
+        if (wasOnPoolAndValueChanged) suppliersOnPool[_cTokenAddress].remove(_account);
+        if (onPool > 0 && (wasOnPoolAndValueChanged || formerValueOnPool == 0))
             suppliersOnPool[_cTokenAddress].insertSorted(_account, onPool, NMAX);
 
         // Check P2P
-        bool isInP2PAndValueChanged = formerValueInP2P != 0 &&
-            suppliersInP2P[_cTokenAddress].getValueOf(_account) != inP2P;
-        if (isInP2PAndValueChanged) suppliersInP2P[_cTokenAddress].remove(_account);
-        if (inP2P > 0 && (isInP2PAndValueChanged || formerValueInP2P == 0))
+        bool wasInP2PAndValueChanged = formerValueInP2P != 0 && formerValueInP2P != inP2P;
+        if (wasInP2PAndValueChanged) suppliersInP2P[_cTokenAddress].remove(_account);
+        if (inP2P > 0 && (wasInP2PAndValueChanged || formerValueInP2P == 0))
             suppliersInP2P[_cTokenAddress].insertSorted(_account, inP2P, NMAX);
     }
 }
