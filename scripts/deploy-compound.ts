@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import { BigNumber } from 'ethers';
 import { ethers } from 'hardhat';
 const config = require(`@config/${process.env.NETWORK}-config.json`);
@@ -8,19 +9,11 @@ async function main() {
   console.log('Deploying contracts with the account:', deployer.address);
   console.log('Account balance:', (await deployer.getBalance()).toString());
 
-  const RedBlackBinaryTree = await ethers.getContractFactory('contracts/compound/libraries/RedBlackBinaryTree.sol:RedBlackBinaryTree');
-  const redBlackBinaryTree = await RedBlackBinaryTree.deploy();
-  await redBlackBinaryTree.deployed();
+  const DoubleLinkedList = await ethers.getContractFactory('contracts/compound/libraries/DoubleLinkedList.sol:DoubleLinkedList');
+  const doubleLinkedList = await DoubleLinkedList.deploy();
+  await doubleLinkedList.deployed();
 
-  console.log('RedBlackBinaryTree address:', redBlackBinaryTree.address);
-
-  const UpdatePositions = await ethers.getContractFactory('contracts/compound/UpdatePositions.sol:UpdatePositions', {
-    libraries: {
-      RedBlackBinaryTree: redBlackBinaryTree.address,
-    },
-  });
-  const updatePositions = await UpdatePositions.deploy();
-  await updatePositions.deployed();
+  console.log('DoubleLinkedList address:', doubleLinkedList.address);
 
   const MarketsManagerForCompound = await ethers.getContractFactory('MarketsManagerForCompound');
   const marketsManagerForCompound = await MarketsManagerForCompound.deploy();
@@ -28,15 +21,10 @@ async function main() {
 
   console.log('MarketsManagerForCompound address:', marketsManagerForCompound.address);
 
-  const PositionsManagerForCompound = await ethers.getContractFactory('PositionsManagerForCompound', {
-    libraries: {
-      RedBlackBinaryTree: redBlackBinaryTree.address,
-    },
-  });
+  const PositionsManagerForCompound = await ethers.getContractFactory('PositionsManagerForCompound');
   const positionsManagerForCompound = await PositionsManagerForCompound.deploy(
     marketsManagerForCompound.address,
-    config.compound.comptroller.address,
-    updatePositions.address
+    config.compound.comptroller.address
   );
   await positionsManagerForCompound.deployed();
 
