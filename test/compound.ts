@@ -61,11 +61,6 @@ describe('PositionsManagerForCompound Contract', () => {
     const doubleLinkedList = await DoubleLinkedList.deploy();
     await doubleLinkedList.deployed();
 
-    // Deploy UpdatePositions
-    const UpdatePositions = await ethers.getContractFactory('contracts/compound/UpdatePositions.sol:UpdatePositions');
-    const updatePositions = await UpdatePositions.deploy();
-    await updatePositions.deployed();
-
     // Deploy MarketsManagerForCompound
     const MarketsManagerForCompound = await ethers.getContractFactory('MarketsManagerForCompound');
     marketsManagerForCompound = await MarketsManagerForCompound.deploy();
@@ -75,13 +70,11 @@ describe('PositionsManagerForCompound Contract', () => {
     const PositionsManagerForCompound = await ethers.getContractFactory('PositionsManagerForCompound');
     positionsManagerForCompound = await PositionsManagerForCompound.deploy(
       marketsManagerForCompound.address,
-      config.compound.comptroller.address,
-      updatePositions.address
+      config.compound.comptroller.address
     );
     fakeCompoundPositionsManager = await PositionsManagerForCompound.deploy(
       marketsManagerForCompound.address,
-      config.compound.comptroller.address,
-      updatePositions.address
+      config.compound.comptroller.address
     );
     await positionsManagerForCompound.deployed();
     await fakeCompoundPositionsManager.deployed();
