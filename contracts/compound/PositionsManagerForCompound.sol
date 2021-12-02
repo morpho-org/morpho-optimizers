@@ -710,8 +710,8 @@ contract PositionsManagerForCompound is ReentrancyGuard {
     }
 
     /** @dev Returns whether it is unsafe supply/witdhraw due to coumpound's revert on low levels of precision or not.
-     *  @param _amount The amount of token considered for depositing/redeeming
-     *  @param _cTokenAddress cToken address of the considered market
+     *  @param _amount The amount of token considered for depositing/redeeming.
+     *  @param _cTokenAddress cToken address of the considered market.
      *  @return Whether to continue or not.
      */
     function _isAboveCompoundThreshold(address _cTokenAddress, uint256 _amount)
@@ -725,6 +725,20 @@ contract PositionsManagerForCompound is ReentrancyGuard {
             // Multiply by 2 to have a safety buffer
             return (_amount > 2 * 10**(tokenDecimals - CTOKEN_DECIMALS));
         else return true;
+    }
+
+    /** @dev Returns whether the amount is above the precision threshold.
+     *  @param _amount The amount moved.
+     *  @param _rate1 The first rate to compare the amount with.
+     *  @param _rate2 The second rate to compare the amount with.
+     *  @return Whether this is above threshold or not.
+     */
+    function _isAbovePrecisionThreshold(
+        uint256 _amount,
+        uint256 _rate1,
+        uint256 _rate2
+    ) internal pure returns (bool) {
+        return (_amount > _rate1 / 1e18 && _amount > _rate2 / 1e18);
     }
 
     /** @dev Finds liquidity on Comp and matches it in P2P.
@@ -750,19 +764,16 @@ contract PositionsManagerForCompound is ReentrancyGuard {
             uint256 onPoolInUnderlying = supplyBalanceInOf[_cTokenAddress][account].onPool.mul(
                 cTokenExchangeRate
             ); // In underlying
-            uint256 toMatch;
-            // This is done to prevent rounding errors
-            if (onPoolInUnderlying <= remainingToMatch) {
-                supplyBalanceInOf[_cTokenAddress][account].onPool = 0;
-                toMatch = onPoolInUnderlying;
-            } else {
-                toMatch = remainingToMatch;
+            uint256 toMatch = Math.min(onPoolInUnderlying, remainingToMatch);
+            if (_isAbovePrecisionThreshold(toMatch, p2pExchangeRate, cTokenExchangeRate)) {
                 supplyBalanceInOf[_cTokenAddress][account].onPool -= toMatch.div(
                     cTokenExchangeRate
                 ); // In cToken
+                supplyBalanceInOf[_cTokenAddress][account].inP2P += toMatch.div(p2pExchangeRate); // In p2pUnit
+            } else {
+                supplyBalanceInOf[_cTokenAddress][account].onPool = 0;
             }
             remainingToMatch -= toMatch;
-            supplyBalanceInOf[_cTokenAddress][account].inP2P += toMatch.div(p2pExchangeRate); // In p2pUnit
             _updateSupplierList(_cTokenAddress, account);
             emit SupplierPositionUpdated(
                 account,
@@ -801,9 +812,15 @@ contract PositionsManagerForCompound is ReentrancyGuard {
         while (remainingToUnmatch > 0 && account != address(0)) {
             uint256 inP2P = supplyBalanceInOf[_cTokenAddress][account].inP2P; // In cToken
             uint256 toUnmatch = Math.min(inP2P.mul(p2pExchangeRate), remainingToUnmatch); // In underlying
+            if (_isAbovePrecisionThreshold(toUnmatch, p2pExchangeRate, cTokenExchangeRate)) {
+                supplyBalanceInOf[_cTokenAddress][account].inP2P -= toUnmatch.div(p2pExchangeRate); // In p2pUnit
+                supplyBalanceInOf[_cTokenAddress][account].onPool += toUnmatch.div(
+                    cTokenExchangeRate
+                ); // In cToken
+            } else {
+                supplyBalanceInOf[_cTokenAddress][account].inP2P = 0;
+            }
             remainingToUnmatch -= toUnmatch;
-            supplyBalanceInOf[_cTokenAddress][account].onPool += toUnmatch.div(cTokenExchangeRate); // In cToken
-            supplyBalanceInOf[_cTokenAddress][account].inP2P -= toUnmatch.div(p2pExchangeRate); // In p2pUnit
             _updateSupplierList(_cTokenAddress, account);
             emit SupplierPositionUpdated(
                 account,
@@ -846,16 +863,14 @@ contract PositionsManagerForCompound is ReentrancyGuard {
             uint256 onPoolInUnderlying = borrowBalanceInOf[_cTokenAddress][account].onPool.mul(
                 borrowIndex
             ); // In underlying
-            uint256 toMatch;
-            if (onPoolInUnderlying <= remainingToMatch) {
-                toMatch = onPoolInUnderlying;
-                borrowBalanceInOf[_cTokenAddress][account].onPool = 0;
-            } else {
-                toMatch = remainingToMatch;
+            uint256 toMatch = Math.min(onPoolInUnderlying, remainingToMatch);
+            if (_isAbovePrecisionThreshold(toMatch, borrowIndex, p2pExchangeRate)) {
                 borrowBalanceInOf[_cTokenAddress][account].onPool -= toMatch.div(borrowIndex);
+                borrowBalanceInOf[_cTokenAddress][account].inP2P += toMatch.div(p2pExchangeRate);
+            } else {
+                borrowBalanceInOf[_cTokenAddress][account].onPool = 0;
             }
             remainingToMatch -= toMatch;
-            borrowBalanceInOf[_cTokenAddress][account].inP2P += toMatch.div(p2pExchangeRate);
             _updateBorrowerList(_cTokenAddress, account);
             emit BorrowerPositionUpdated(
                 account,
@@ -897,9 +912,13 @@ contract PositionsManagerForCompound is ReentrancyGuard {
         while (remainingToUnmatch > 0 && account != address(0)) {
             uint256 inP2P = borrowBalanceInOf[_cTokenAddress][account].inP2P;
             uint256 toUnmatch = Math.min(inP2P.mul(p2pExchangeRate), remainingToUnmatch); // In underlying
+            if (_isAbovePrecisionThreshold(toUnmatch, borrowIndex, p2pExchangeRate)) {
+                borrowBalanceInOf[_cTokenAddress][account].onPool += toUnmatch.div(borrowIndex);
+                borrowBalanceInOf[_cTokenAddress][account].inP2P -= toUnmatch.div(p2pExchangeRate);
+            } else {
+                borrowBalanceInOf[_cTokenAddress][account].inP2P = 0;
+            }
             remainingToUnmatch -= toUnmatch;
-            borrowBalanceInOf[_cTokenAddress][account].onPool += toUnmatch.div(borrowIndex);
-            borrowBalanceInOf[_cTokenAddress][account].inP2P -= toUnmatch.div(p2pExchangeRate);
             _updateBorrowerList(_cTokenAddress, account);
             emit BorrowerPositionUpdated(
                 account,
