@@ -2,6 +2,7 @@ import * as dotenv from 'dotenv';
 dotenv.config({ path: './.env.local' });
 import 'module-alias/register';
 import '@nomiclabs/hardhat-etherscan';
+import '@tenderly/hardhat-tenderly';
 import '@nomiclabs/hardhat-waffle';
 import 'hardhat-contract-sizer';
 import 'hardhat-gas-reporter';

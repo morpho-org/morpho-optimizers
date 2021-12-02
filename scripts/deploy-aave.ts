@@ -1,35 +1,49 @@
 /* eslint-disable no-console */
 import { BigNumber } from 'ethers';
-import { ethers } from 'hardhat';
+import hre, { ethers } from 'hardhat';
 const config = require(`@config/${process.env.NETWORK}-config.json`);
 
 async function main() {
   const [deployer] = await ethers.getSigners();
 
-  console.log('Deploying contracts with the account:', deployer.address);
-  console.log('Account balance:', (await deployer.getBalance()).toString());
+  console.log('\n🦋 Deploying Morpho contracts for Aave');
+  console.log('👩 Deployer account:', deployer.address);
+  console.log('🤑 Account balance:', (await deployer.getBalance()).toString());
 
-  const DoubleLinkedList = await ethers.getContractFactory('contracts/aave/libraries/DoubleLinkedList.sol:DoubleLinkedList');
-  const doubleLinkedList = await DoubleLinkedList.deploy();
-  await doubleLinkedList.deployed();
-
-  console.log('DoubleLinkedList address:', doubleLinkedList.address);
-
+  console.log('\n🦋 Deploying MarketsManagerForAave...');
   const MarketsManagerForAave = await ethers.getContractFactory('MarketsManagerForAave');
   const marketsManagerForAave = await MarketsManagerForAave.deploy();
   await marketsManagerForAave.deployed();
+  console.log('🎉 MarketsManagerForAave deployed to address:', marketsManagerForAave.address);
 
-  console.log('MarketsManagerForAave address:', marketsManagerForAave.address);
+  console.log('\n🦋 Verifying MarketsManagerForAave on Tenderly...');
+  await hre.tenderly.verify({
+    name: 'MarketsManagerForAave',
+    address: marketsManagerForAave.address,
+  });
+  console.log('🎉 MarketsManagerForAave verified!');
 
+  console.log('\n🦋 Deploying PositionsManagerForAave...');
   const PositionsManagerForAave = await ethers.getContractFactory('PositionsManagerForAave');
-  const positionsManagerForAave = await PositionsManagerForAave.deploy(marketsManagerForAave.address, config.compound.comptroller.address);
+  const positionsManagerForAave = await PositionsManagerForAave.deploy(
+    marketsManagerForAave.address,
+    config.aave.lendingPoolAddressesProvider.address
+  );
   await positionsManagerForAave.deployed();
+  console.log('🎉 PositionsManagerForAave deployed to address:', positionsManagerForAave.address);
 
-  console.log('PositionsManagerForAave address:', positionsManagerForAave.address);
+  console.log('\n🦋 Verifying PositionsManagerForAave on Tenderly...');
+  await hre.tenderly.verify({
+    name: 'PositionsManagerForAave',
+    address: positionsManagerForAave.address,
+  });
+  console.log('🎉 PositionsManagerForAave verified!');
 
+  console.log('\n🦋 Creating markets...');
   await marketsManagerForAave.connect(deployer).setPositionsManager(positionsManagerForAave.address);
   await marketsManagerForAave.connect(deployer).createMarket(config.tokens.cDai.address, BigNumber.from(1).pow(6));
   await marketsManagerForAave.connect(deployer).createMarket(config.tokens.cUsdc.address, BigNumber.from(1).pow(6));
+  console.log('🎉 Finished!\n');
 }
 
 main()

@@ -101,6 +101,10 @@ npx hardhat verify --network <network-name> --constructor-args scripts/arguments
 
 The second is necessary if contracts with different names share the same ABI.
 
+## Verification on Tenderly
+
+In your `env.local` file, put your tenderly private key. Then you can delpoy and directly verify contracts on your tenderly dashboard.
+
 ## External resources & documentation
 
 - [Solidity Prettier Plugin](https://github.com/prettier-solidity/prettier-plugin-solidity)
