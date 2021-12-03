@@ -7,7 +7,7 @@ import { to6Decimals } from './utils/common-helpers';
 import { WAD } from './utils/compound-helpers';
 
 // Commands to use those tests :
-// terminal 1 : NETWORK=polygon-mainnet npx hardhat node
+// terminal 1 : NETWORK=mainnet npx hardhat node
 // terminal 2 : npx hardhat test test/compound-fuzzing.ts
 // if the fuzzing finds a bug, the test script will stop
 // and you can investigate the problem using the blockchain still
@@ -19,6 +19,7 @@ type Market = {
   cToken: Contract;
   collateralFactor: number; // in percent
   name: string;
+  slotPosition: number;
 };
 
 describe('PositionsManagerForCompound Contract', () => {
@@ -95,6 +96,7 @@ describe('PositionsManagerForCompound Contract', () => {
       cToken: cDaiToken,
       collateralFactor: 80,
       name: 'dai',
+      slotPosition: 2,
     };
     let usdcMarket: Market = {
       token: usdcToken,
@@ -102,6 +104,7 @@ describe('PositionsManagerForCompound Contract', () => {
       cToken: cUsdcToken,
       collateralFactor: 80,
       name: 'usdc',
+      slotPosition: 9,
     };
     // let uniMarket: Market = {
     //   token: uniToken,
@@ -125,11 +128,11 @@ describe('PositionsManagerForCompound Contract', () => {
     else return bn.div(WAD).toString();
   };
 
-  const giveTokensTo = async (token: string, receiver: string, amount: BigNumber) => {
+  const giveTokensTo = async (token: string, receiver: string, amount: BigNumber, slotPosition: number) => {
     // Get storage slot index
     let index = ethers.utils.solidityKeccak256(
       ['uint256', 'uint256'],
-      [receiver, 0] // key, slot
+      [receiver, slotPosition] // key, slot
     );
     await setStorageAt(token, index, toBytes32(amount));
   };
@@ -165,22 +168,22 @@ describe('PositionsManagerForCompound Contract', () => {
             amount = to6Decimals(amount);
           }
           try {
-            await giveTokensTo(market.token.address, supplierAddress, amount);
+            await giveTokensTo(market.token.address, supplierAddress, amount, market.slotPosition);
           } catch {
             tokenDropFailed = true;
             console.log('skipping one address');
           }
           if (!tokenDropFailed) {
             await market.token.connect(supplier).approve(positionsManagerForCompound.address, amount);
+            console.log('supplied ', tokenAmountToReadable(amount, market.token), ' ', market.name);
             await positionsManagerForCompound.connect(supplier).supply(market.cToken.address, amount);
             suppliedAmount = amount;
-            console.log('supplied ', tokenAmountToReadable(amount, market.token), ' ', market.name);
 
             // we withdraw a random withdrawable amount with a probability of 1/2
             if (Math.random() > 0.5) {
               withrewAmount = amount.mul(BigNumber.from(Math.round(1000 * Math.random()))).div(1000);
-              await positionsManagerForCompound.connect(supplier).withdraw(market.cToken.address, withrewAmount);
               console.log('withdrew ', tokenAmountToReadable(withrewAmount, market.token), ' ', market.name);
+              await positionsManagerForCompound.connect(supplier).withdraw(market.cToken.address, withrewAmount);
               suppliedAmount = suppliedAmount.sub(withrewAmount);
               console.log('remains ', tokenAmountToReadable(suppliedAmount, market.token), ' ', market.name);
             }
