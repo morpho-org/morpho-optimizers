@@ -20,6 +20,8 @@ type Market = {
   token: Contract;
   config: any;
   cToken: Contract;
+  collateralFactor: number; // in percent
+  name: string;
 };
 
 describe('PositionsManagerForCompound Contract', () => {
@@ -114,11 +116,15 @@ describe('PositionsManagerForCompound Contract', () => {
       token: daiToken,
       config: config.tokens.dai,
       cToken: cDaiToken,
+      collateralFactor: 80,
+      name: 'dai',
     };
     let usdcMarket: Market = {
       token: usdcToken,
       config: config.tokens.usdc,
       cToken: cUsdcToken,
+      collateralFactor: 80,
+      name: 'usdc',
     };
     // let uniMarket: Market = {
     //   token: uniToken,
@@ -137,6 +143,11 @@ describe('PositionsManagerForCompound Contract', () => {
     await ethers.provider.send('evm_mine', []); // Just mines to the next block
   };
 
+  const tokenAmountToReadable = (bn: BigNumber, token: Contract) => {
+    if (isA6DecimalsToken(token)) return bn.div(1e6).toString();
+    else return bn.div(WAD).toString();
+  };
+
   const giveTokensTo = async (token: string, receiver: string, amount: BigNumber) => {
     // Get storage slot index
     let index = ethers.utils.solidityKeccak256(
@@ -146,12 +157,20 @@ describe('PositionsManagerForCompound Contract', () => {
     await setStorageAt(token, index, toBytes32(amount));
   };
 
+  const isA6DecimalsToken = (token: Contract) => {
+    return token.address === config.tokens.usdc.address || token.address === config.tokens.usdt.address;
+  };
+
   before(initialize);
 
   describe('FUZZZZZZ EVERYTHING 🐙', () => {
     let amount: BigNumber;
     let supplierAddress: string;
     let tokenDropFailed: boolean = false;
+    let suppliedAmount: BigNumber;
+    let withrewAmount: BigNumber;
+    let borrowedMarket: Market;
+    let borrowedAmount: BigNumber;
 
     it('fouzzzz 🦑', async () => {
       for await (let market of markets) {
@@ -171,17 +190,38 @@ describe('PositionsManagerForCompound Contract', () => {
             await giveTokensTo(market.token.address, supplierAddress, amount);
           } catch {
             tokenDropFailed = true;
-            console.log('token drop fail');
+            console.log('token drop fail (skipping this one)');
           }
           if (!tokenDropFailed) {
             await market.token.connect(supplier).approve(positionsManagerForCompound.address, amount);
             await positionsManagerForCompound.connect(supplier).supply(market.cToken.address, amount);
+            suppliedAmount = amount;
+            console.log('supplied ', tokenAmountToReadable(amount, market.token), ' ', market.name);
 
             // we withdraw a random withdrawable amount with a probability of 1/2
             if (Math.random() > 0.5) {
-              await positionsManagerForCompound
-                .connect(supplier)
-                .withdraw(market.cToken.address, amount.mul(BigNumber.from(Math.round(1000 * Math.random()))).div(1000));
+              withrewAmount = amount.mul(BigNumber.from(Math.round(1000 * Math.random()))).div(1000);
+              await positionsManagerForCompound.connect(supplier).withdraw(market.cToken.address, withrewAmount);
+              console.log('withdrew ', tokenAmountToReadable(withrewAmount, market.token), ' ', market.name);
+              suppliedAmount = suppliedAmount.sub(withrewAmount);
+              console.log('remains ', tokenAmountToReadable(suppliedAmount, market.token), ' ', market.name);
+            }
+            // 80% chance
+            if (Math.random() > 0.2) {
+              borrowedMarket = markets[Math.floor(Math.random() * markets.length)]; // select a random market to borrow
+              borrowedAmount = suppliedAmount
+                .mul(market.collateralFactor)
+                .div(100)
+                .mul(Math.floor(1000 * Math.random()))
+                .div(1000); // borrow random amount possible with what was supplied
+              if (!isA6DecimalsToken(market.token) && isA6DecimalsToken(borrowedMarket.token)) {
+                borrowedAmount = borrowedAmount.div(BigNumber.from(10).pow(12)); // reduce to a 6 decimals equivalent amount
+              }
+              // don't borrow if below threshold
+              if (borrowedAmount > WAD) {
+                console.log('borrowed ', tokenAmountToReadable(borrowedAmount, borrowedMarket.token), ' ', borrowedMarket.name);
+                await positionsManagerForCompound.connect(supplier).borrow(borrowedMarket.cToken.address, borrowedAmount);
+              }
             }
           }
           tokenDropFailed = false;
