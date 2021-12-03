@@ -15,6 +15,7 @@ import {
   cDUnitToUnderlying,
   computeNewMorphoExchangeRate,
 } from './utils/compound-helpers';
+import { Provider } from '@ethersproject/abstract-provider';
 
 type Market = {
   token: Contract;
@@ -25,6 +26,8 @@ type Market = {
 };
 
 describe('PositionsManagerForCompound Contract', () => {
+  ethers.provider = new ethers.providers.JsonRpcProvider('http://127.0.0.1:8545/');
+
   // Tokens
   let cUsdcToken: Contract;
   let cDaiToken: Contract;
@@ -61,10 +64,14 @@ describe('PositionsManagerForCompound Contract', () => {
 
   const initialize = async () => {
     // Signers
-    signers = await ethers.getSigners();
-    [owner, supplier1, supplier2, supplier3, borrower1, borrower2, borrower3, liquidator] = signers;
-    suppliers = [supplier1, supplier2, supplier3];
-    borrowers = [borrower1, borrower2, borrower3];
+    // signers = await ethers.getSigners();
+    // [owner, supplier1, supplier2, supplier3, borrower1, borrower2, borrower3, liquidator] = signers;
+    // suppliers = [supplier1, supplier2, supplier3];
+    // borrowers = [borrower1, borrower2, borrower3];
+
+    // owner 0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
+
+    const owner = await ethers.getSigner('0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266');
 
     // Deploy DoubleLinkedList
     const DoubleLinkedList = await ethers.getContractFactory('contracts/compound/libraries/DoubleLinkedList.sol:DoubleLinkedList');
@@ -99,9 +106,12 @@ describe('PositionsManagerForCompound Contract', () => {
     compoundOracle = await ethers.getContractAt(require(config.compound.oracle.abi), comptroller.oracle(), owner);
 
     // Mint some tokens
-    daiToken = await getTokens(config.tokens.dai.whale, 'whale', signers, config.tokens.dai, utils.parseUnits('10000'));
-    usdcToken = await getTokens(config.tokens.usdc.whale, 'whale', signers, config.tokens.usdc, BigNumber.from(10).pow(10));
-    uniToken = await getTokens(config.tokens.uni.whale, 'whale', signers, config.tokens.uni, utils.parseUnits('100'));
+    daiToken = await ethers.getContractAt(require(config.tokens.dai.abi), config.tokens.dai.address, owner);
+    usdcToken = await ethers.getContractAt(require(config.tokens.usdc.abi), config.tokens.usdc.address, owner);
+
+    // daiToken = await getTokens(config.tokens.dai.whale, 'whale', signers, config.tokens.dai, utils.parseUnits('10000'));
+    // usdcToken = await getTokens(config.tokens.usdc.whale, 'whale', signers, config.tokens.usdc, BigNumber.from(10).pow(10));
+    // uniToken = await getTokens(config.tokens.uni.whale, 'whale', signers, config.tokens.uni, utils.parseUnits('100'));
 
     underlyingThreshold = WAD;
 
@@ -179,18 +189,17 @@ describe('PositionsManagerForCompound Contract', () => {
           let supplier: Signer = ethers.Wallet.createRandom();
           supplier = supplier.connect(ethers.provider);
           supplierAddress = await supplier.getAddress();
-          await hre.network.provider.send('hardhat_setBalance', [supplierAddress, utils.hexValue(utils.parseUnits('10000'))]);
+          await ethers.provider.send('hardhat_setBalance', [supplierAddress, utils.hexValue(utils.parseUnits('10000'))]);
 
           // the amount to repay is chosen randomly between 1 and 1000 (1 minimum to avoid errors because below threshold)
           amount = utils.parseUnits(Math.round(Math.random() * 1000).toString()).add(WAD);
-          if (market.token.address === config.tokens.usdc.address || market.token.address === config.tokens.usdt.address) {
+          if (isA6DecimalsToken(market.token)) {
             amount = to6Decimals(amount);
           }
           try {
             await giveTokensTo(market.token.address, supplierAddress, amount);
           } catch {
             tokenDropFailed = true;
-            console.log('token drop fail (skipping this one)');
           }
           if (!tokenDropFailed) {
             await market.token.connect(supplier).approve(positionsManagerForCompound.address, amount);
