@@ -123,10 +123,10 @@ contract PositionsManagerForCompound is ReentrancyGuard {
     /** @dev Emitted when the position of a supplier is updated.
      *  @param _account The address of the supplier.
      *  @param _poolTokenAddress The address of the market.
-     *  @param _amountAddedOnPool The amount of underlying asset added on pool.
-     *  @param _amountAddedInP2P The amount of underlying asset added in P2P.
-     *  @param _amountRemovedFromPool The amount of underlying asset removed from the pool.
-     *  @param _amountRemovedFromP2P The amount of underlying asset remove from P2P.
+     *  @param _amountAddedOnPool The amount added on pool (in underlying).
+     *  @param _amountAddedInP2P The amount added in P2P (in underlying).
+     *  @param _amountRemovedFromPool The amount removed from the pool (in underlying).
+     *  @param _amountRemovedFromP2P The amount removed from P2P (in underlying).
      *  @param _p2pExchangeRate The P2P exchange rate at the moment.
      *  @param _poolTokenExchangeRate The poolToken exchange rate at the moment.
      */
@@ -144,10 +144,10 @@ contract PositionsManagerForCompound is ReentrancyGuard {
     /** @dev Emitted when the position of a borrower is updated.
      *  @param _account The address of the borrower.
      *  @param _poolTokenAddress The address of the market.
-     *  @param _amountAddedOnPool The amount of underlying asset added on pool.
-     *  @param _amountAddedInP2P The amount of underlying asset added in P2P.
-     *  @param _amountRemovedFromPool The amount of underlying asset removed from the pool.
-     *  @param _amountRemovedFromP2P The amount of underlying asset remove from P2P.
+     *  @param _amountAddedOnPool The amount added on pool (in underlying).
+     *  @param _amountAddedInP2P The amount added in P2P (in underlying).
+     *  @param _amountRemovedFromPool The amount removed from the pool (in underlying).
+     *  @param _amountRemovedFromP2P The amount removed from P2P (in underlying).
      *  @param _p2pExchangeRate The P2P exchange rate at the moment.
      *  @param _borrowIndex The borrow index at the moment.
      */
