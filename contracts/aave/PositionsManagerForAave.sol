@@ -528,7 +528,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
     /** @dev Withdraws ERC20 tokens from supply.
      *  @param _poolTokenAddress The address of the market the user wants to interact with.
      *  @param _amount The amount in tokens to withdraw from supply.
-     *  @param _holder the user to whom Morpho will withdraw the supply.
+     *  @param _holder The user to whom Morpho will withdraw the supply.
      *  @param _receiver The address of the user that will receive the tokens.
      */
     function _withdraw(
