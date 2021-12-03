@@ -1,21 +1,17 @@
 import * as dotenv from 'dotenv';
 dotenv.config({ path: './.env.local' });
 import { utils, BigNumber, Signer, Contract } from 'ethers';
-import hre, { ethers, network } from 'hardhat';
-import { expect } from 'chai';
+import { ethers } from 'hardhat';
 const config = require(`@config/${process.env.NETWORK}-config.json`);
-import { removeDigitsBigNumber, bigNumberMin, to6Decimals, getTokens } from './utils/common-helpers';
-import {
-  WAD,
-  underlyingToCToken,
-  cTokenToUnderlying,
-  underlyingToP2pUnit,
-  p2pUnitToUnderlying,
-  underlyingToCdUnit,
-  cDUnitToUnderlying,
-  computeNewMorphoExchangeRate,
-} from './utils/compound-helpers';
-import { Provider } from '@ethersproject/abstract-provider';
+import { to6Decimals } from './utils/common-helpers';
+import { WAD } from './utils/compound-helpers';
+
+// Commands to use those tests :
+// terminal 1 : NETWORK=polygon-mainnet npx hardhat node
+// terminal 2 : npx hardhat test test/compound-fuzzing.ts
+// if the fuzzing finds a bug, the test script will stop
+// and you can investigate the problem using the blockchain still
+// running in terminal 2
 
 type Market = {
   token: Contract;
@@ -31,9 +27,9 @@ describe('PositionsManagerForCompound Contract', () => {
   // Tokens
   let cUsdcToken: Contract;
   let cDaiToken: Contract;
-  let cMkrToken: Contract;
+  // let cMkrToken: Contract;
   let daiToken: Contract;
-  let uniToken: Contract;
+  // let uniToken: Contract;
   let usdcToken: Contract;
 
   // Contracts
@@ -41,35 +37,11 @@ describe('PositionsManagerForCompound Contract', () => {
   let marketsManagerForCompound: Contract;
   let fakeCompoundPositionsManager: Contract;
   let comptroller: Contract;
-  let compoundOracle: Contract;
-  let priceOracle: Contract;
-
-  // Signers
-  let signers: Signer[];
-  let suppliers: Signer[];
-  let borrowers: Signer[];
-  let owner: Signer;
-  let supplier1: Signer;
-  let supplier2: Signer;
-  let supplier3: Signer;
-  let borrower1: Signer;
-  let borrower2: Signer;
-  let borrower3: Signer;
-  let liquidator: Signer;
-
-  let underlyingThreshold: BigNumber;
-  let snapshotId: number;
 
   let markets: Array<Market> = [];
 
   const initialize = async () => {
-    // Signers
-    // signers = await ethers.getSigners();
-    // [owner, supplier1, supplier2, supplier3, borrower1, borrower2, borrower3, liquidator] = signers;
-    // suppliers = [supplier1, supplier2, supplier3];
-    // borrowers = [borrower1, borrower2, borrower3];
-
-    // owner 0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
+    // owner : 0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
 
     const owner = await ethers.getSigner('0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266');
 
@@ -100,10 +72,7 @@ describe('PositionsManagerForCompound Contract', () => {
     const cTokenAbi = require(config.tokens.cToken.abi);
     cUsdcToken = await ethers.getContractAt(cTokenAbi, config.tokens.cUsdc.address, owner);
     cDaiToken = await ethers.getContractAt(cTokenAbi, config.tokens.cDai.address, owner);
-    cMkrToken = await ethers.getContractAt(cTokenAbi, config.tokens.cMkr.address, owner); // This is in fact crLINK tokens (no crMKR on Polygon)
-
-    comptroller = await ethers.getContractAt(require(config.compound.comptroller.abi), config.compound.comptroller.address, owner);
-    compoundOracle = await ethers.getContractAt(require(config.compound.oracle.abi), comptroller.oracle(), owner);
+    // cMkrToken = await ethers.getContractAt(cTokenAbi, config.tokens.cMkr.address, owner); // This is in fact crLINK tokens (no crMKR on Polygon)
 
     // Mint some tokens
     daiToken = await ethers.getContractAt(require(config.tokens.dai.abi), config.tokens.dai.address, owner);
@@ -112,8 +81,6 @@ describe('PositionsManagerForCompound Contract', () => {
     // daiToken = await getTokens(config.tokens.dai.whale, 'whale', signers, config.tokens.dai, utils.parseUnits('10000'));
     // usdcToken = await getTokens(config.tokens.usdc.whale, 'whale', signers, config.tokens.usdc, BigNumber.from(10).pow(10));
     // uniToken = await getTokens(config.tokens.uni.whale, 'whale', signers, config.tokens.uni, utils.parseUnits('100'));
-
-    underlyingThreshold = WAD;
 
     // Create and list markets
     await marketsManagerForCompound.connect(owner).setPositionsManager(positionsManagerForCompound.address);
@@ -181,6 +148,7 @@ describe('PositionsManagerForCompound Contract', () => {
     let withrewAmount: BigNumber;
     let borrowedMarket: Market;
     let borrowedAmount: BigNumber;
+    let isAboveThreshold: boolean;
 
     it('fouzzzz 🦑', async () => {
       for await (let market of markets) {
@@ -200,6 +168,7 @@ describe('PositionsManagerForCompound Contract', () => {
             await giveTokensTo(market.token.address, supplierAddress, amount);
           } catch {
             tokenDropFailed = true;
+            console.log('skipping one address');
           }
           if (!tokenDropFailed) {
             await market.token.connect(supplier).approve(positionsManagerForCompound.address, amount);
@@ -224,10 +193,10 @@ describe('PositionsManagerForCompound Contract', () => {
                 .mul(Math.floor(1000 * Math.random()))
                 .div(1000); // borrow random amount possible with what was supplied
               if (!isA6DecimalsToken(market.token) && isA6DecimalsToken(borrowedMarket.token)) {
-                borrowedAmount = borrowedAmount.div(BigNumber.from(10).pow(12)); // reduce to a 6 decimals equivalent amount
+                borrowedAmount = to6Decimals(borrowedAmount); // reduce to a 6 decimals equivalent amount
               }
-              // don't borrow if below threshold
-              if (borrowedAmount > WAD) {
+              isAboveThreshold = isA6DecimalsToken(borrowedMarket.token) ? borrowedAmount.gt(to6Decimals(WAD)) : borrowedAmount.gt(WAD);
+              if (isAboveThreshold) {
                 console.log('borrowed ', tokenAmountToReadable(borrowedAmount, borrowedMarket.token), ' ', borrowedMarket.name);
                 await positionsManagerForCompound.connect(supplier).borrow(borrowedMarket.cToken.address, borrowedAmount);
               }
