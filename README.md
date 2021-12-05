@@ -26,8 +26,10 @@ To run tests on different platforms, use these commands:
 yarn test:comp:mainnet
 ```
 
+or
+
 ```
-yarn test:cream:polygon
+yarn test:aave:polygon
 ```
 
 For coverage, run:
@@ -35,6 +37,8 @@ For coverage, run:
 ```
 yarn coverage
 ```
+
+For the other commands, check the `package.json` file.
 
 ## Code Formatting
 
@@ -83,13 +87,17 @@ For the guidelines on "How to review contracts and write a report?", you can fol
 
 By default, PR are rebased with `main` before merging to keep a clean historic of commits and the branch is deleted.
 
-## Deploy a contract on a network
+## Deploying a contract on a network
+
+You can run the following command to deploy Morpho's contracts on top of Aave on Polygon:
 
 ```
-npx hardhat run scripts/deploy.js --network <network-name>
+yarn deploy:aave:polygon
 ```
 
-## Publish and verify a contract on Etherscan
+For the other commands, check the `package.json` file.
+
+## Publishing and verifying a contract on Etherscan
 
 An etherscn API key is required to verify the contract and placed into your `.env` local file.
 The right arguments of the constructor of the smart contract to verify must be write inside `arguments.js`. Then you can run the following command to verify a contract:
@@ -103,7 +111,7 @@ The second is necessary if contracts with different names share the same ABI.
 
 ## Verification on Tenderly
 
-In your `env.local` file, put your tenderly private key. Then you can delpoy and directly verify contracts on your tenderly dashboard.
+In your `env.local` file, put your tenderly private key. Then you can deploy and directly verify contracts on your tenderly dashboard.
 
 ## External resources & documentation
 
@@ -117,7 +125,3 @@ In your `env.local` file, put your tenderly private key. Then you can delpoy and
 ## Questions
 
 For any question you can send an email to [merlin@mopho.best](mailto:merlin@morpho.best) 😊
-
-```
-
-```
