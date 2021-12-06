@@ -159,7 +159,7 @@ describe('PositionsManagerForCompound Contract', () => {
   };
 
   describe('Worst case scenario for NMAX estimation', () => {
-    const NMAX = 45;
+    const NMAX = 24;
     const daiAmountAlice = utils.parseUnits('5000'); // 2*NMAX*SuppliedPerUser
 
     it('Set new NMAX', async () => {
@@ -195,22 +195,28 @@ describe('PositionsManagerForCompound Contract', () => {
       await positionsManagerForCompound.connect(alice).borrow(config.tokens.cDai.address, daiAmountAlice);
     });
 
-    // Now alice decides to leave Morpho, so he proceeds to a repay and a withdraw of his funds.
+    // Now alice decides to leave Morpho, so she proceeds to a repay and a withdraw of her funds.
     it('alice leaves', async () => {
-      console.log(await positionsManagerForCompound.borrowBalanceInOf(config.tokens.cDai.address, alice));
-      console.log(await positionsManagerForCompound.supplyBalanceInOf(config.tokens.cUni.address, alice));
-
       await daiToken.connect(alice).approve(positionsManagerForCompound.address, daiAmountAlice.mul(4));
       await positionsManagerForCompound.connect(alice).repay(config.tokens.cDai.address, daiAmountAlice);
       await positionsManagerForCompound.connect(alice).withdraw(config.tokens.cUni.address, utils.parseUnits('19900'));
     });
   });
 
-  describe.only('Specific case of liquidation with NMAX', () => {
-    const NMAX = 45;
+  describe('Specific case of liquidation with NMAX', () => {
+    it('Re initialize', async () => {
+      await initialize();
+    });
+
+    const NMAX = 24;
     const usdcCollateralAmount = to6Decimals(utils.parseUnits('10000'));
     let daiBorrowAmount: BigNumber;
     let admin: Signer;
+
+    it('Set new NMAX', async () => {
+      await marketsManagerForCompound.connect(owner).setMaxNumberOfUsersInTree(NMAX);
+      expect(await positionsManagerForCompound.NMAX()).to.equal(NMAX);
+    });
 
     it('Setup admin', async () => {
       const adminAddress = await comptroller.admin();
@@ -219,7 +225,7 @@ describe('PositionsManagerForCompound Contract', () => {
       admin = await ethers.getSigner(adminAddress);
     });
 
-    // First step. alice comes and borrows 'daiBorrowAmount' while putting in collateral 'uniCollateralAmount'
+    // First step. alice comes and borrows 'daiBorrowAmount' while putting in collateral 'usdcCollateralAmount'
 
     // Second step. 2*NMAX suppliers are going to be matched with her debt.
     // (2*NMAX because in the liquidation we have a max liquidation of 50%)
@@ -247,7 +253,7 @@ describe('PositionsManagerForCompound Contract', () => {
       await positionsManagerForCompound.connect(alice).borrow(config.tokens.cDai.address, daiBorrowAmount);
     });
 
-    xit('Second step, add 2*NMAX Dai suppliers', async () => {
+    it('Second step, add 2*NMAX Dai suppliers', async () => {
       const whaleDai = await ethers.getSigner(config.tokens.dai.whale);
       const daiAmount = daiBorrowAmount.div(2 * NMAX);
       let smallDaiSupplier;
@@ -270,10 +276,10 @@ describe('PositionsManagerForCompound Contract', () => {
       }
     });
 
-    xit('third step, add 2*NMAX Usdc borrowers', async () => {
+    it('third step, add 2*NMAX Usdc borrowers', async () => {
       const whaleDai = await ethers.getSigner(config.tokens.dai.whale);
       const usdcAmount = usdcCollateralAmount.div(2 * NMAX);
-      const daiAmount = usdcAmount.mul(2);
+      const daiAmount = utils.parseUnits(usdcAmount.mul(2).div(1e6).toString());
       let smallUsdcBorrower;
 
       for (let i = 0; i < 2 * NMAX; i++) {
@@ -289,7 +295,7 @@ describe('PositionsManagerForCompound Contract', () => {
         const borrower = await ethers.getSigner(smallUsdcBorrower);
 
         await hre.network.provider.send('hardhat_setBalance', [smallUsdcBorrower, utils.hexValue(utils.parseUnits('1000'))]);
-        await usdcToken.connect(whaleDai).transfer(smallUsdcBorrower, daiAmount);
+        await daiToken.connect(whaleDai).transfer(smallUsdcBorrower, daiAmount);
 
         await daiToken.connect(borrower).approve(positionsManagerForCompound.address, daiAmount);
         await positionsManagerForCompound.connect(borrower).supply(config.tokens.cDai.address, daiAmount);
@@ -306,7 +312,7 @@ describe('PositionsManagerForCompound Contract', () => {
       await comptroller.connect(admin)._setPriceOracle(priceOracle.address);
       const usdcPrice = await compoundOracle.getUnderlyingPrice(config.tokens.cUsdc.address);
       await priceOracle.setUnderlyingPrice(config.tokens.cUsdc.address, usdcPrice);
-      await priceOracle.setUnderlyingPrice(config.tokens.cDai.address, BigNumber.from('1001182920000000000'));
+      await priceOracle.setUnderlyingPrice(config.tokens.cDai.address, BigNumber.from('1020182920000000000'));
       await priceOracle.setUnderlyingPrice(config.tokens.cUni.address, BigNumber.from('1000000000000000000000000000000'));
       await priceOracle.setUnderlyingPrice(config.tokens.cUsdt.address, BigNumber.from('1000000000000000000000000000000'));
 
