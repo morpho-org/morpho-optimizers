@@ -17,6 +17,7 @@ module.exports = {
         url: `https://${process.env.NETWORK}.infura.io/v3/${process.env.INFURA_PROJECT_ID}`,
       },
       allowUnlimitedContractSize: true,
+      blockGasLimit: 30000000,
     },
     kovan: {
       accounts: [process.env.DEPLOYER_PRIVATE_KEY],
