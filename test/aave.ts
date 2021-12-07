@@ -164,16 +164,6 @@ describe('PositionsManagerForAave Contract', () => {
     });
 
     it('Only Owner should be able to update thresholds', async () => {
-      const newThreshold = utils.parseUnits('2');
-      await marketsManagerForAave.connect(owner).updateThreshold(config.tokens.aUsdc.address, newThreshold);
-      expect(await positionsManagerForAave.threshold(config.tokens.aUsdc.address)).to.be.equal(newThreshold);
-
-      // Other accounts than Owner
-      await expect(marketsManagerForAave.connect(supplier1).updateThreshold(config.tokens.aUsdc.address, newThreshold)).to.be.reverted;
-      await expect(marketsManagerForAave.connect(borrower1).updateThreshold(config.tokens.aUsdc.address, newThreshold)).to.be.reverted;
-    });
-
-    it('Only Owner should be able to update thresholds', async () => {
       const newCapValue = utils.parseUnits('2');
       await marketsManagerForAave.connect(owner).updateCapValue(config.tokens.aUsdc.address, newCapValue);
       expect(await positionsManagerForAave.capValue(config.tokens.aUsdc.address)).to.be.equal(newCapValue);
