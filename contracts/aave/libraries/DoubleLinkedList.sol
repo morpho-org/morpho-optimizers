@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.7;
 
+import "hardhat/console.sol";
+
 library DoubleLinkedList {
     struct Account {
         address id;
@@ -131,6 +133,7 @@ library DoubleLinkedList {
         uint256 _value,
         uint256 _maxIterations
     ) internal {
+        console.log("insertSorted???");
         require(!_contains(_list, _id));
         address current = _list.head;
         uint256 numberOfIterations;
@@ -144,10 +147,38 @@ library DoubleLinkedList {
         }
         if (numberOfIterations == _maxIterations + 1) {
             require(addTail(_list, _id, _value));
+            console.log("addTail?", numberOfIterations);
         } else {
+            console.log("_list.accounts[current].value", _list.accounts[current].value);
+            console.log("_value", _value);
             require(insertBefore(_list, current, _id, _value));
         }
     }
+
+    // /** @dev Inserts an account in the `_list` before `_nextId`.
+    //  *  @param _list The list to search in.
+    //  *  @param _nextId The account id from which to insert the account before.
+    //  *  @param _id The address of the account.
+    //  *  @param _value The value of the account.
+    //  */
+    // function insertBefore(
+    //     List storage _list,
+    //     address _nextId,
+    //     address _id,
+    //     uint256 _value
+    // ) internal returns (bool) {
+    //     require(!_contains(_list, _id));
+    //     if (_nextId == _list.tail) {
+    //         return addTail(_list, _id, _value);
+    //     } else {
+    //         Account memory nextAccount = _list.accounts[_nextId];
+    //         Account memory prevAccount = _list.accounts[nextAccount.prev];
+    //         _createAccount(_list, _id, _value);
+    //         _link(_list, _id, nextAccount.id);
+    //         _link(_list, prevAccount.id, _id);
+    //         return true;
+    //     }
+    // }
 
     /** @dev Inserts an account in the `_list` before `_nextId`.
      *  @param _list The list to search in.
@@ -160,13 +191,25 @@ library DoubleLinkedList {
         address _nextId,
         address _id,
         uint256 _value
-    ) internal returns (bool) {
-        require(!_contains(_list, _id));
-        if (_nextId == _list.tail) {
+    ) public returns (bool) {
+        if (_nextId == _list.head) {
+            return addHead(_list, _id, _value);
+        } else {
+            return insertAfter(_list, _list.accounts[_nextId].prev, _id, _value);
+        }
+    }
+
+    function insertAfter(
+        List storage _list,
+        address _prevId,
+        address _id,
+        uint256 _value
+    ) public returns (bool) {
+        if (_prevId == _list.tail) {
             return addTail(_list, _id, _value);
         } else {
-            Account memory nextAccount = _list.accounts[_nextId];
-            Account memory prevAccount = _list.accounts[nextAccount.prev];
+            Account memory nextAccount = _list.accounts[_prevId];
+            Account memory prevAccount = _list.accounts[nextAccount.next];
             _createAccount(_list, _id, _value);
             _link(_list, _id, nextAccount.id);
             _link(_list, prevAccount.id, _id);

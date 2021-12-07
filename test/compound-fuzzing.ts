@@ -1,7 +1,7 @@
 import * as dotenv from 'dotenv';
 dotenv.config({ path: './.env.local' });
 import { utils, BigNumber, Signer, Contract } from 'ethers';
-import { ethers } from 'hardhat';
+import hre, { ethers } from 'hardhat';
 const config = require(`@config/${process.env.NETWORK}-config.json`);
 import { to6Decimals } from './utils/common-helpers';
 import { WAD } from './utils/compound-helpers';
@@ -62,6 +62,12 @@ describe('PositionsManagerForCompound Contract', () => {
       marketsManagerForCompound.address,
       config.compound.comptroller.address
     );
+
+    await hre.tenderly.push({
+      name: 'PositionsManagerForCompound',
+      address: positionsManagerForCompound.address,
+    });
+
     fakeCompoundPositionsManager = await PositionsManagerForCompound.deploy(
       marketsManagerForCompound.address,
       config.compound.comptroller.address
@@ -175,6 +181,7 @@ describe('PositionsManagerForCompound Contract', () => {
           }
           if (!tokenDropFailed) {
             await market.token.connect(supplier).approve(positionsManagerForCompound.address, amount);
+            console.log('supplier address: ', await supplier.getAddress());
             console.log('supplied ', tokenAmountToReadable(amount, market.token), ' ', market.name);
             await positionsManagerForCompound.connect(supplier).supply(market.cToken.address, amount);
             suppliedAmount = amount;
@@ -182,6 +189,7 @@ describe('PositionsManagerForCompound Contract', () => {
             // we withdraw a random withdrawable amount with a probability of 1/2
             if (Math.random() > 0.5) {
               withrewAmount = amount.mul(BigNumber.from(Math.round(1000 * Math.random()))).div(1000);
+              console.log('cToken address: ', market.cToken.address);
               console.log('withdrew ', tokenAmountToReadable(withrewAmount, market.token), ' ', market.name);
               await positionsManagerForCompound.connect(supplier).withdraw(market.cToken.address, withrewAmount);
               suppliedAmount = suppliedAmount.sub(withrewAmount);

@@ -2,11 +2,12 @@ import * as dotenv from 'dotenv';
 dotenv.config({ path: './.env.local' });
 import 'module-alias/register';
 import '@nomiclabs/hardhat-etherscan';
+import '@tenderly/hardhat-tenderly';
 import '@nomiclabs/hardhat-waffle';
 import 'hardhat-contract-sizer';
 import 'hardhat-gas-reporter';
 import 'solidity-coverage';
-import 'hardhat-deploy';
+// import 'hardhat-deploy';
 
 module.exports = {
   defaultNetwork: 'hardhat',
@@ -64,5 +65,9 @@ module.exports = {
   mocha: {
     // needed for the long test of Nmax
     timeout: 300000,
+  },
+  tenderly: {
+    username: 'MorphoTestnet',
+    project: 'project',
   },
 };

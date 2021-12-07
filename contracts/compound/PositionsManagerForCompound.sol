@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.7;
 
+import "hardhat/console.sol";
+
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
@@ -243,6 +245,9 @@ contract PositionsManagerForCompound is ReentrancyGuard {
         isMarketCreated(_cTokenAddress)
         isAboveThreshold(_cTokenAddress, _amount)
     {
+        console.log("supplier", msg.sender);
+        console.log("_amount", _amount);
+        console.log("_cTokenAddress", _cTokenAddress);
         _handleMembership(_cTokenAddress, msg.sender);
         ICErc20 cToken = ICErc20(_cTokenAddress);
         IERC20 underlyingToken = IERC20(cToken.underlying());
@@ -254,6 +259,7 @@ contract PositionsManagerForCompound is ReentrancyGuard {
 
         /* If some borrowers are waiting on Comp, Morpho matches the supplier in P2P with them as much as possible */
         if (borrowersOnPool[_cTokenAddress].getHead() != address(0)) {
+            console.log("borrowerrs on pool?");
             uint256 p2pExchangeRate = marketsManagerForCompound.updateP2pUnitExchangeRate(
                 _cTokenAddress
             );
@@ -272,11 +278,13 @@ contract PositionsManagerForCompound is ReentrancyGuard {
                     p2pExchangeRate,
                     0
                 );
+                _updateSupplierList(_cTokenAddress, msg.sender);
             }
         }
 
         /* If there aren't enough borrowers waiting on Comp to match all the tokens supplied, the rest is supplied to Comp */
         if (remainingToSupplyToPool > 0) {
+            console.log("remainingToSupplyToPool?");
             if (_isAboveCompoundThreshold(_cTokenAddress, remainingToSupplyToPool)) {
                 supplyBalanceInOf[_cTokenAddress][msg.sender].onPool += remainingToSupplyToPool.div(
                     cTokenExchangeRate
@@ -292,10 +300,9 @@ contract PositionsManagerForCompound is ReentrancyGuard {
                     0,
                     cTokenExchangeRate
                 );
+                _updateSupplierList(_cTokenAddress, msg.sender);
             }
         }
-
-        _updateSupplierList(_cTokenAddress, msg.sender);
     }
 
     /** @dev Borrows ERC20 tokens.
@@ -333,6 +340,7 @@ contract PositionsManagerForCompound is ReentrancyGuard {
                     p2pExchangeRate,
                     0
                 );
+                _updateBorrowerList(_cTokenAddress, msg.sender);
             }
         }
 
@@ -353,9 +361,9 @@ contract PositionsManagerForCompound is ReentrancyGuard {
                 borrowIndex,
                 0
             );
+            _updateBorrowerList(_cTokenAddress, msg.sender);
         }
 
-        _updateBorrowerList(_cTokenAddress, msg.sender);
         underlyingToken.safeTransfer(msg.sender, _amount);
     }
 
@@ -519,6 +527,7 @@ contract PositionsManagerForCompound is ReentrancyGuard {
                 );
                 remainingToWithdraw = _amount - amountOnPoolInUnderlying; // In underlying
             }
+            _updateSupplierList(_cTokenAddress, _holder);
         }
 
         /* If there remains some tokens to withdraw (CASE 2), Morpho breaks credit lines and repair them either with other users or with Comp itself */
@@ -529,13 +538,17 @@ contract PositionsManagerForCompound is ReentrancyGuard {
             );
             /* CASE 1: Other suppliers have enough tokens on Comp to compensate user's position*/
             if (remainingToWithdraw <= cTokenContractBalanceInUnderlying) {
+                console.log("_cTokenAddress", _cTokenAddress);
+                console.log("remainingToWithdraw", remainingToWithdraw);
+                console.log("cTokenContractBalanceInUnderlying", cTokenContractBalanceInUnderlying);
+                supplyBalanceInOf[_cTokenAddress][_holder].inP2P -= remainingToWithdraw.div(
+                    p2pExchangeRate
+                ); // In p2pUnit
+                _updateSupplierList(_cTokenAddress, _holder);
                 require(
                     _matchSuppliers(_cTokenAddress, remainingToWithdraw) == 0,
                     Errors.PM_REMAINING_TO_MATCH_IS_NOT_0
                 );
-                supplyBalanceInOf[_cTokenAddress][_holder].inP2P -= remainingToWithdraw.div(
-                    p2pExchangeRate
-                ); // In p2pUnit
                 emit SupplierPositionUpdated(
                     _holder,
                     _cTokenAddress,
@@ -549,13 +562,14 @@ contract PositionsManagerForCompound is ReentrancyGuard {
             }
             /* CASE 2: Other suppliers don't have enough tokens on Comp. Such scenario is called the Hard-Withdraw */
             else {
+                supplyBalanceInOf[_cTokenAddress][_holder].inP2P -= remainingToWithdraw.div(
+                    p2pExchangeRate
+                ); // In p2pUnit
+                _updateSupplierList(_cTokenAddress, _holder);
                 uint256 remaining = _matchSuppliers(
                     _cTokenAddress,
                     cTokenContractBalanceInUnderlying
                 );
-                supplyBalanceInOf[_cTokenAddress][_holder].inP2P -= remainingToWithdraw.div(
-                    p2pExchangeRate
-                ); // In p2pUnit
                 emit SupplierPositionUpdated(
                     _holder,
                     _cTokenAddress,
@@ -574,7 +588,6 @@ contract PositionsManagerForCompound is ReentrancyGuard {
             }
         }
 
-        _updateSupplierList(_cTokenAddress, _holder);
         underlyingToken.safeTransfer(_receiver, _amount);
     }
 
@@ -636,6 +649,7 @@ contract PositionsManagerForCompound is ReentrancyGuard {
                     borrowIndex
                 );
             }
+            _updateBorrowerList(_cTokenAddress, _borrower);
         }
 
         /* If there remains some tokens to repay (CASE 2), Morpho breaks credit lines and repair them either with other users or with Comp itself */
@@ -646,10 +660,11 @@ contract PositionsManagerForCompound is ReentrancyGuard {
             uint256 contractBorrowBalanceOnPool = cToken.borrowBalanceCurrent(address(this)); // In underlying
             /* CASE 1: Other borrowers are borrowing enough on Comp to compensate user's position */
             if (remainingToRepay <= contractBorrowBalanceOnPool) {
-                _matchBorrowers(_cTokenAddress, remainingToRepay);
                 borrowBalanceInOf[_cTokenAddress][_borrower].inP2P -= remainingToRepay.div(
                     p2pExchangeRate
                 );
+                _updateBorrowerList(_cTokenAddress, _borrower);
+                _matchBorrowers(_cTokenAddress, remainingToRepay);
                 emit BorrowerPositionUpdated(
                     _borrower,
                     _cTokenAddress,
@@ -663,10 +678,11 @@ contract PositionsManagerForCompound is ReentrancyGuard {
             }
             /* CASE 2: Other borrowers aren't borrowing enough on Comp to compensate user's position */
             else {
-                _matchBorrowers(_cTokenAddress, contractBorrowBalanceOnPool);
                 borrowBalanceInOf[_cTokenAddress][_borrower].inP2P -= remainingToRepay.div(
                     p2pExchangeRate
                 ); // In p2pUnit
+                _updateBorrowerList(_cTokenAddress, _borrower);
+                _matchBorrowers(_cTokenAddress, contractBorrowBalanceOnPool);
                 emit BorrowerPositionUpdated(
                     _borrower,
                     _cTokenAddress,
@@ -685,7 +701,6 @@ contract PositionsManagerForCompound is ReentrancyGuard {
             }
         }
 
-        _updateBorrowerList(_cTokenAddress, _borrower);
         emit Repaid(_borrower, _cTokenAddress, _amount);
     }
 
@@ -757,14 +772,26 @@ contract PositionsManagerForCompound is ReentrancyGuard {
         uint256 cTokenExchangeRate = cToken.exchangeRateCurrent();
         address account = suppliersOnPool[_cTokenAddress].getHead();
         uint256 iterationCount;
+        console.log("before remainingToMatch", remainingToMatch);
+        console.log("before account", account);
+        console.log("before tail", suppliersOnPool[_cTokenAddress].getTail());
 
         while (remainingToMatch > 0 && account != address(0) && iterationCount < NMAX) {
             iterationCount++;
+            console.log("before iterationCount", iterationCount);
+            console.log("account", account);
+            console.log("loop remainingToMatch", remainingToMatch);
             // Check if this user is not borrowing on Pool (cf Liquidation Invariant in docs)
             uint256 onPoolInUnderlying = supplyBalanceInOf[_cTokenAddress][account].onPool.mul(
                 cTokenExchangeRate
             ); // In underlying
             uint256 toMatch = Math.min(onPoolInUnderlying, remainingToMatch);
+            console.log(
+                "supplyBalanceInOf[_cTokenAddress][account].onPool",
+                supplyBalanceInOf[_cTokenAddress][account].onPool
+            );
+            console.log("onPoolInUnderlying", onPoolInUnderlying);
+            console.log("toMatch", toMatch);
             if (_isAbovePrecisionThreshold(toMatch, p2pExchangeRate, cTokenExchangeRate)) {
                 supplyBalanceInOf[_cTokenAddress][account].onPool -= toMatch.div(
                     cTokenExchangeRate
@@ -774,6 +801,7 @@ contract PositionsManagerForCompound is ReentrancyGuard {
                 supplyBalanceInOf[_cTokenAddress][account].onPool = 0;
             }
             remainingToMatch -= toMatch;
+            console.log("remainingToMatch", remainingToMatch);
             _updateSupplierList(_cTokenAddress, account);
             emit SupplierPositionUpdated(
                 account,
@@ -786,8 +814,10 @@ contract PositionsManagerForCompound is ReentrancyGuard {
                 cTokenExchangeRate
             );
             account = suppliersOnPool[_cTokenAddress].getHead();
+            console.log("next account", account);
         }
         // Withdraw from Comp
+        console.log("remainingToMatch", remainingToMatch);
         uint256 toWithdraw = _amount - remainingToMatch;
         if (_isAboveCompoundThreshold(_cTokenAddress, toWithdraw))
             _withdrawERC20FromComp(_cTokenAddress, toWithdraw);
@@ -909,6 +939,9 @@ contract PositionsManagerForCompound is ReentrancyGuard {
         uint256 borrowIndex = cToken.borrowIndex();
         address account = borrowersInP2P[_cTokenAddress].getHead();
 
+        console.log("_unmatchBorrowers", _amount);
+        console.log("account", account);
+
         while (remainingToUnmatch > 0 && account != address(0)) {
             uint256 inP2P = borrowBalanceInOf[_cTokenAddress][account].inP2P;
             uint256 toUnmatch = Math.min(inP2P.mul(p2pExchangeRate), remainingToUnmatch); // In underlying
@@ -933,6 +966,7 @@ contract PositionsManagerForCompound is ReentrancyGuard {
             account = borrowersInP2P[_cTokenAddress].getHead();
         }
         // Borrow on Comp
+        console.log("remainingToUnmatch", remainingToUnmatch);
         require(cToken.borrow(_amount - remainingToUnmatch) == 0);
     }
 
@@ -1062,16 +1096,24 @@ contract PositionsManagerForCompound is ReentrancyGuard {
      *  @param _account The address of the supplier to move.
      */
     function _updateSupplierList(address _cTokenAddress, address _account) internal {
+        console.log("update account", _account);
+        console.log("update on cToken", _cTokenAddress);
         uint256 onPool = supplyBalanceInOf[_cTokenAddress][_account].onPool;
         uint256 inP2P = supplyBalanceInOf[_cTokenAddress][_account].inP2P;
+        console.log("onPool", onPool);
         uint256 formerValueOnPool = suppliersOnPool[_cTokenAddress].getValueOf(_account);
         uint256 formerValueInP2P = suppliersInP2P[_cTokenAddress].getValueOf(_account);
+        console.log("formerValueOnPool", formerValueOnPool);
 
         // Check pool
         bool wasOnPoolAndValueChanged = formerValueOnPool != 0 && formerValueOnPool != onPool;
+        console.log("wasOnPoolAndValueChanged", wasOnPoolAndValueChanged);
         if (wasOnPoolAndValueChanged) suppliersOnPool[_cTokenAddress].remove(_account);
-        if (onPool > 0 && (wasOnPoolAndValueChanged || formerValueOnPool == 0))
+        if (onPool > 0 && (wasOnPoolAndValueChanged || formerValueOnPool == 0)) {
+            console.log("inserted", onPool);
             suppliersOnPool[_cTokenAddress].insertSorted(_account, onPool, NMAX);
+            console.log("value after", suppliersOnPool[_cTokenAddress].getValueOf(_account));
+        }
 
         // Check P2P
         bool wasInP2PAndValueChanged = formerValueInP2P != 0 && formerValueInP2P != inP2P;
