@@ -842,7 +842,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
 
         while (remainingToUnmatch > 0 && account != address(0)) {
             uint256 inP2P = supplyBalanceInOf[_poolTokenAddress][account].inP2P; // In poolToken
-            uint256 toUnmatch = Math.min(inP2P.mul(p2pExchangeRate), remainingToUnmatch); // In underlying
+            uint256 toUnmatch = Math.min(inP2P.mulWadByRay(p2pExchangeRate), remainingToUnmatch); // In underlying
             remainingToUnmatch -= toUnmatch;
             supplyBalanceInOf[_poolTokenAddress][account].onPool += toUnmatch.divWadByRay(
                 normalizedIncome
@@ -943,7 +943,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
 
         while (remainingToUnmatch > 0 && account != address(0)) {
             uint256 inP2P = borrowBalanceInOf[_poolTokenAddress][account].inP2P;
-            uint256 toUnmatch = Math.min(inP2P.mul(p2pExchangeRate), remainingToUnmatch); // In underlying
+            uint256 toUnmatch = Math.min(inP2P.mulWadByRay(p2pExchangeRate), remainingToUnmatch); // In underlying
             remainingToUnmatch -= toUnmatch;
             borrowBalanceInOf[_poolTokenAddress][account].onPool += toUnmatch.divWadByRay(
                 normalizedVariableDebt
