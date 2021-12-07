@@ -3,6 +3,7 @@ import Decimal from 'decimal.js';
 
 const WAD: BigNumber = utils.parseUnits('1');
 const RAY: BigNumber = BigNumber.from(10).pow(27);
+const PERCENT_BASE: BigNumber = BigNumber.from(10000);
 
 const underlyingToScaledBalance = (underlyingAmount: BigNumber, normalizedIncome: BigNumber): BigNumber => {
   return underlyingAmount.mul(RAY).div(normalizedIncome);
@@ -52,6 +53,7 @@ const computeNewBorrowIndex = (borrowRate: BigNumber, blockDelta: BigNumber, bor
 export {
   RAY,
   WAD,
+  PERCENT_BASE,
   underlyingToScaledBalance,
   scaledBalanceToUnderlying,
   underlyingToP2PUnit,
