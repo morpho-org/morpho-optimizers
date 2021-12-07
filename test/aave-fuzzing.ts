@@ -211,6 +211,24 @@ describe('PositionsManagerForAave Contract', () => {
       account.suppliedAmount = account.suppliedAmount.add(amount);
     };
 
+    const borrow = async (account: Account, market: Market) => {
+      let borrowAmount: BigNumber;
+      let minAmount = WAD;
+      if (isA6DecimalsToken(market.token)) {
+        minAmount = to6Decimals(minAmount);
+      }
+      let maxAmount: BigNumber = account.suppliedAmount.mul(BigNumber.from(market.loanToValue)).div(100);
+      if (maxAmount > minAmount) {
+        borrowAmount = maxAmount
+          .sub(minAmount)
+          .mul(BigNumber.from(Math.floor(Math.random() * 1000)))
+          .div(1000)
+          .add(minAmount);
+        console.log('borrowed ', tokenAmountToReadable(borrowAmount, market.token), market.name);
+        await positionsManagerForAave.connect(account.signer).borrow(market.aToken.address, borrowAmount);
+      }
+    };
+
     const tryGiveTokens = async (account: Account, market: Market) => {
       try {
         await giveTokensTo(market.token.address, account.address, utils.parseUnits('9999999'), market.slotPosition);
@@ -225,6 +243,8 @@ describe('PositionsManagerForAave Contract', () => {
     };
 
     const getARandomAccount = () => {
+      let index: number = Math.floor(Math.random() * accounts.length);
+      console.log('account', index);
       return accounts[Math.floor(Math.random() * accounts.length)];
     };
 
@@ -236,83 +256,34 @@ describe('PositionsManagerForAave Contract', () => {
 
     it('fouzzzz 🦑', async () => {
       const nbOfIterations: number = 100; // config
+      let tempAccount: Account;
 
       console.log('initializing tests with 10 suppliers ...');
 
       for await (let i of [...Array(10).keys()]) {
-        let tempAccount = await generateAccount();
+        tempAccount = await generateAccount();
         accounts.push(tempAccount);
         await supply(tempAccount, getARandomMarket());
       }
 
-      console.log('now fuzzing 🦑');
+      console.log('now fuzzing 🦀');
 
       for await (let i of [...Array(nbOfIterations).keys()]) {
         console.log(`${i + 1}/${nbOfIterations}`);
 
         await doWithAProbabiltyOfPercentage(20, async () => {
-          await generateAccount();
+          tempAccount = await generateAccount();
+          supply(tempAccount, getARandomMarket());
         });
 
-        await doWithAProbabiltyOfPercentage(80, async () => {
+        await doWithAProbabiltyOfPercentage(50, async () => {
           await supply(getARandomAccount(), getARandomMarket());
         });
+
+        await doWithAProbabiltyOfPercentage(70, async () => {
+          await borrow(getARandomAccount(), getARandomMarket());
+        });
       }
-
-      //   for await (let market of markets) {
-      //     for await (let i of [...Array(100).keys()]) {
-      //       console.log(i);
-      //       let supplier: Signer = ethers.Wallet.createRandom();
-      //       supplier = supplier.connect(ethers.provider);
-      //       supplierAddress = await supplier.getAddress();
-      //       await ethers.provider.send('hardhat_setBalance', [supplierAddress, utils.hexValue(utils.parseUnits('10000'))]);
-
-      //       // the amount to repay is chosen randomly between 1 and 1000 (1 minimum to avoid errors because below threshold)
-      //       amount = utils.parseUnits(Math.round(Math.random() * 1000).toString()).add(WAD);
-      //       if (isA6DecimalsToken(market.token)) {
-      //         amount = to6Decimals(amount);
-      //       }
-      //       try {
-      //         await giveTokensTo(market.token.address, supplierAddress, amount, market.slotPosition);
-      //       } catch {
-      //         tokenDropFailed = true;
-      //         console.log('skipping one address');
-      //       }
-      //       if (!tokenDropFailed) {
-      //         await market.token.connect(supplier).approve(positionsManagerForCompound.address, amount);
-      //         console.log('supplied ', tokenAmountToReadable(amount, market.token), ' ', market.name);
-      //         await positionsManagerForCompound.connect(supplier).supply(market.cToken.address, amount);
-      //         suppliedAmount = amount;
-
-      //         // we withdraw a random withdrawable amount with a probability of 1/2
-      //         if (Math.random() > 0.5) {
-      //           withrewAmount = amount.mul(BigNumber.from(Math.round(1000 * Math.random()))).div(1000);
-      //           console.log('withdrew ', tokenAmountToReadable(withrewAmount, market.token), ' ', market.name);
-      //           await positionsManagerForCompound.connect(supplier).withdraw(market.cToken.address, withrewAmount);
-      //           suppliedAmount = suppliedAmount.sub(withrewAmount);
-      //           console.log('remains ', tokenAmountToReadable(suppliedAmount, market.token), ' ', market.name);
-      //         }
-      //         // 80% chance
-      //         if (Math.random() > 0.2) {
-      //           borrowedMarket = markets[Math.floor(Math.random() * markets.length)]; // select a random market to borrow
-      //           borrowedAmount = suppliedAmount
-      //             .mul(market.collateralFactor)
-      //             .div(100)
-      //             .mul(Math.floor(1000 * Math.random()))
-      //             .div(1000); // borrow random amount possible with what was supplied
-      //           if (!isA6DecimalsToken(market.token) && isA6DecimalsToken(borrowedMarket.token)) {
-      //             borrowedAmount = to6Decimals(borrowedAmount); // reduce to a 6 decimals equivalent amount
-      //           }
-      //           isAboveThreshold = isA6DecimalsToken(borrowedMarket.token) ? borrowedAmount.gt(to6Decimals(WAD)) : borrowedAmount.gt(WAD);
-      //           if (isAboveThreshold) {
-      //             console.log('borrowed ', tokenAmountToReadable(borrowedAmount, borrowedMarket.token), ' ', borrowedMarket.name);
-      //             await positionsManagerForCompound.connect(supplier).borrow(borrowedMarket.cToken.address, borrowedAmount);
-      //           }
-      //         }
-      //       }
-      //       tokenDropFailed = false;
-      //     }
-      //   }
     });
   });
 });
