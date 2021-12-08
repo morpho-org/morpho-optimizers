@@ -271,6 +271,7 @@ describe('PositionsManagerForAave Contract', () => {
 
     const supply = async (account: Account, market: Market): Promise<void> => {
       // the amount to supply is chosen randomly between 1 and 1000 (1 minimum to avoid below threshold error)
+      let tempSigner: Signer = account.signer.connect(ethers.provider);
       let amount: BigNumber = utils.parseUnits(Math.round(Math.random() * 1000).toString()).add(WAD);
       if (isA6DecimalsToken(market.token)) {
         amount = to6Decimals(amount);
