@@ -150,15 +150,6 @@ describe('PositionsManagerForAave Contract', () => {
       index: 1,
       ethPerUnit: BigNumber.from('0xd37144db7c00'), // took from aave's oracle at pinned block
     };
-    let usdcMarket: Market = {
-      token: usdcToken,
-      config: config.tokens.usdc,
-      aToken: aUsdcToken,
-      loanToValue: 80,
-      liqThreshold: 85,
-      name: 'usdc',
-      slotPosition: 0,
-    };
 
     markets = [daiMarket, usdcMarket];
   };
@@ -299,8 +290,6 @@ describe('PositionsManagerForAave Contract', () => {
       let factor: BigNumber = isA6DecimalsToken(market.token) ? BigNumber.from(10).pow(6) : BigNumber.from(10).pow(18);
       if (isA6DecimalsToken(market.token)) {
         minAmount = to6Decimals(minAmount);
-        borrowedAmount = to6Decimals(borrowedAmount);
-        suppliedAmount = to6Decimals(suppliedAmount);
       }
       let maxAmount: BigNumber = getEthValueOfDeposits(account)
         .sub(getLoansImmobilizedEthValue(account))
@@ -377,9 +366,7 @@ describe('PositionsManagerForAave Contract', () => {
       // tempAccount = await generateAccount();
       // await supply(tempAccount, getARandomMarket());
       // logAccountData(tempAccount);
-
       console.log(`initializing tests with ${initialSize} suppliers`);
-
       for await (let i of [...Array(initialSize).keys()]) {
         tempAccount = await generateAccount();
         await supply(tempAccount, getARandomMarket());
