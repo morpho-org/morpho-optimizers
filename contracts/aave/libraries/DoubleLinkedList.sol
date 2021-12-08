@@ -96,28 +96,6 @@ library DoubleLinkedList {
         return _list.head;
     }
 
-    /** @dev Creates and inserts an account based on its relative position to `_nextId` and `_prevId`.
-     *  @param _list The list to set the tail.
-     *  @param _id The address of the account.
-     *  @param _value The value of the account.
-     *  @param _nextId The address of the next account. Can be `address(0)` for inserting as tail.
-     *  @param _prevId The address of the previous account. Can be `address(0)` for inserting as head.
-     */
-    function _insertAccount(
-        List storage _list,
-        address _id,
-        uint256 _value,
-        address _nextId,
-        address _prevId
-    ) private {
-        _list.accounts[_id] = Account(_id, _nextId, _prevId, _value);
-
-        if (_prevId != address(0)) _list.accounts[_prevId].next = _id;
-        else _list.head = _id;
-        if (_nextId != address(0)) _list.accounts[_nextId].prev = _id;
-        else _list.tail = _id;
-    }
-
     /** @dev Returns whether or not the account is in the `_list`.
      *  @param _list The list to search in.
      *  @param _id The address of the account.
