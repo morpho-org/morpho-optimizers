@@ -206,7 +206,7 @@ describe('PositionsManagerForAave Contract', () => {
     loans: BigNumber[]; // the index in the array represents the deposited token, amounts in same decimals as token
   };
 
-  describe('FUZZZZZZ EVERYTHING 🐙', () => {
+  describe('PositionsManager fuzzing', () => {
     let accounts: Array<Account> = [];
 
     const generateAccount = async (): Promise<Account> => {
@@ -357,7 +357,7 @@ describe('PositionsManagerForAave Contract', () => {
       }
     };
 
-    it('fouzzzz 🦑', async () => {
+    it('🦑🦑🦑 FOUZZZZZ 🦑🦑🦑', async () => {
       const nbOfIterations: number = 100; // config
       const initialSize: number = 10; // config
 
@@ -389,13 +389,13 @@ describe('PositionsManagerForAave Contract', () => {
         await doWithAProbabiltyOfPercentage(50, async () => {
           let acc: Account = getARandomAccount();
           let mkt: Market = getARandomMarket();
-          // logAccountData(acc);
+          logAccountData(acc);
           await borrow(acc, mkt);
         });
 
         await doWithAProbabiltyOfPercentage(70, async () => {
           let acc: Account = getARandomAccount();
-          // logAccountData(acc);
+          logAccountData(acc);
           await withdraw(acc, getARandomMarket());
         });
       }
