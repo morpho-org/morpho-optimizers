@@ -3,8 +3,9 @@ pragma solidity 0.8.7;
 
 library DoubleLinkedList {
     struct Account {
-        address prev;
+        address id;
         address next;
+        address prev;
         uint256 value;
     }
 
@@ -17,53 +18,19 @@ library DoubleLinkedList {
     /** @dev Returns the `account` linked to `_id`.
      *  @param _list The list to search in.
      *  @param _id The address of the account.
-     *  @return The value of the account.
+     *  @return value The value of the account.
      */
     function getValueOf(List storage _list, address _id) internal view returns (uint256) {
         return _list.accounts[_id].value;
     }
 
-    /** @dev Returns the address at the head of the `_list`.
-     *  @param _list The list to get the head.
-     *  @return The address of the head.
-     */
-    function getHead(List storage _list) internal view returns (address) {
-        return _list.head;
-    }
-
-    /** @dev Returns the address at the tail of the `_list`.
-     *  @param _list The list to get the tail.
-     *  @return The address of the tail.
-     */
-    function getTail(List storage _list) internal view returns (address) {
-        return _list.tail;
-    }
-
-    /** @dev Returns the next id address from the current `_id`.
-     *  @param _list The list to search in.
-     *  @param _id The address of the account.
-     *  @return The address of the next account.
-     */
-    function getNext(List storage _list, address _id) internal view returns (address) {
-        return _list.accounts[_id].next;
-    }
-
-    /** @dev Returns the previous id address from the current `_id`.
-     *  @param _list The list to search in.
-     *  @param _id The address of the account.
-     *  @return The address of the previous account.
-     */
-    function getPrev(List storage _list, address _id) internal view returns (address) {
-        return _list.accounts[_id].prev;
-    }
-
     /** @dev Removes an account of the `_list`.
      *  @param _list The list to search in.
      *  @param _id The address of the account.
-     *  @return Whether the account has been removed or not.
+     *  @return bool Whether the account has been removed or not.
      */
     function remove(List storage _list, address _id) internal returns (bool) {
-        if (_list.accounts[_id].value != 0) {
+        if (_contains(_list, _id)) {
             Account memory account = _list.accounts[_id];
 
             if (account.prev != address(0)) _list.accounts[account.prev].next = account.next;
@@ -90,31 +57,62 @@ library DoubleLinkedList {
         uint256 _value,
         uint256 _maxIterations
     ) internal {
-        require(_list.accounts[_id].value == 0);
+        require(!_contains(_list, _id));
 
         uint256 numberOfIterations;
-        address current = _list.head;
+        Account memory current = _list.accounts[_list.head];
         while (
             numberOfIterations <= _maxIterations &&
-            current != _list.tail &&
-            _list.accounts[current].value > _value
+            current.id != _list.tail &&
+            current.value > _value
         ) {
-            current = _list.accounts[current].next;
+            current = _list.accounts[current.next];
             numberOfIterations++;
         }
 
-        address nextId;
-        address prevId;
-        if (numberOfIterations < _maxIterations && current != _list.tail) {
-            prevId = _list.accounts[current].prev;
-            nextId = current;
-        } else prevId = _list.tail;
+        if (numberOfIterations > _maxIterations || current.id == _list.tail) {
+            _insertAccount(_list, _id, _value, address(0), _list.tail);
+        } else {
+            _insertAccount(_list, _id, _value, current.id, current.prev);
+        }
+    }
 
-        _list.accounts[_id] = Account(prevId, nextId, _value);
+    /** @dev Returns the address at the head of the `_list`.
+     *  @param _list The list to get the head.
+     *  @return The address.
+     */
+    function getHead(List storage _list) internal view returns (address) {
+        return _list.head;
+    }
 
-        if (prevId != address(0)) _list.accounts[prevId].next = _id;
+    /** @dev Creates and inserts an account based on its relative position to `_nextId` and `_prevId`.
+     *  @param _list The list to set the tail.
+     *  @param _id The address of the account.
+     *  @param _value The value of the account.
+     *  @param _nextId The address of the next account. Can be `address(0)` for inserting as tail.
+     *  @param _prevId The address of the previous account. Can be `address(0)` for inserting as head.
+     */
+    function _insertAccount(
+        List storage _list,
+        address _id,
+        uint256 _value,
+        address _nextId,
+        address _prevId
+    ) private {
+        _list.accounts[_id] = Account(_id, _nextId, _prevId, _value);
+
+        if (_prevId != address(0)) _list.accounts[_prevId].next = _id;
         else _list.head = _id;
-        if (nextId != address(0)) _list.accounts[nextId].prev = _id;
+        if (_nextId != address(0)) _list.accounts[_nextId].prev = _id;
         else _list.tail = _id;
+    }
+
+    /** @dev Returns whether or not the account is in the `_list`.
+     *  @param _list The list to search in.
+     *  @param _id The address of the account.
+     *  @return whether or not the account is in the `_list`.
+     */
+    function _contains(List storage _list, address _id) private view returns (bool) {
+        return _list.accounts[_id].id != address(0);
     }
 }
