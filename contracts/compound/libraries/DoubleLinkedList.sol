@@ -70,17 +70,22 @@ library DoubleLinkedList {
             numberOfIterations++;
         }
 
+        address nextId;
+        address prevId;
         if (numberOfIterations > _maxIterations || current.id == _list.tail) {
-            _list.accounts[_id] = Account(_id, _list.tail, address(0), _value);
-            _list.tail = _id;
+            prevId = _list.tail;
+            nextId = address(0);
         } else {
-            _list.accounts[_id] = Account(_id, current.prev, current.id, _value);
-
-            if (current.prev != address(0)) _list.accounts[current.prev].next = _id;
-            else _list.head = _id;
-            if (current.id != address(0)) _list.accounts[current.id].prev = _id;
-            else _list.tail = _id;
+            prevId = current.prev;
+            nextId = current.id;
         }
+
+        _list.accounts[_id] = Account(_id, prevId, nextId, _value);
+
+        if (prevId != address(0)) _list.accounts[prevId].next = _id;
+        else _list.head = _id;
+        if (nextId != address(0)) _list.accounts[nextId].prev = _id;
+        else _list.tail = _id;
     }
 
     /** @dev Returns the address at the head of the `_list`.
