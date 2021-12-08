@@ -59,6 +59,8 @@ describe('PositionsManagerForAave Contract', () => {
     liqThreshold: number; // in percent
     name: string;
     slotPosition: number;
+    index: number;
+    ethPerUnit: BigNumber; // value factor in Eth's weis per Unit
   };
 
   let markets: Array<Market>;
@@ -113,8 +115,6 @@ describe('PositionsManagerForAave Contract', () => {
     daiToken = await ethers.getContractAt(require(config.tokens.dai.abi), config.tokens.dai.address, owner);
     usdcToken = await ethers.getContractAt(require(config.tokens.usdc.abi), config.tokens.usdc.address, owner);
 
-    // daiToken = await getTokens(config.tokens.dai.whale, 'whale', signers, config.tokens.dai, utils.parseUnits('10000'));
-    // usdcToken = await getTokens(config.tokens.usdc.whale, 'whale', signers, config.tokens.usdc, BigNumber.from(10).pow(10));
     // wbtcToken = await getTokens(config.tokens.wbtc.whale, 'whale', signers, config.tokens.wbtc, BigNumber.from(10).pow(8));
     // wmaticToken = await getTokens(config.tokens.wmatic.whale, 'whale', signers, config.tokens.wmatic, utils.parseUnits('100'));
     underlyingThreshold = WAD;
@@ -136,6 +136,8 @@ describe('PositionsManagerForAave Contract', () => {
       liqThreshold: 80,
       name: 'dai',
       slotPosition: 0,
+      index: 0,
+      ethPerUnit: BigNumber.from('0xd2bbd688b200'), // took from aave's oracle at pinned block
     };
     let usdcMarket: Market = {
       token: usdcToken,
@@ -145,6 +147,8 @@ describe('PositionsManagerForAave Contract', () => {
       liqThreshold: 85,
       name: 'usdc',
       slotPosition: 0,
+      index: 1,
+      ethPerUnit: BigNumber.from('0xd37144db7c00'), // took from aave's oracle at pinned block
     };
 
     markets = [daiMarket, usdcMarket];
@@ -166,6 +170,10 @@ describe('PositionsManagerForAave Contract', () => {
     else return bn.div(WAD).toString();
   };
 
+  const ethAmountToReadable = (bn: BigNumber): string => {
+    return bn.div(BigNumber.from(10).pow(15)).toString() + ' ETH finneys';
+  };
+
   const giveTokensTo = async (token: string, receiver: string, amount: BigNumber, slotPosition: number): Promise<void> => {
     // Get storage slot index
     let index = ethers.utils.solidityKeccak256(
@@ -183,14 +191,19 @@ describe('PositionsManagerForAave Contract', () => {
     return amount.mul(BigNumber.from(10).pow(12));
   };
 
+  const min = (a: BigNumber, b: BigNumber): BigNumber => {
+    if (a.lte(b)) return a;
+    else return b;
+  };
+
   before(initialize);
 
   type Account = {
     address: string;
     signer: Signer;
-    suppliedAmountValue: BigNumber; // 18 decimals precision
-    borrowedAmountValue: BigNumber; // 18 decimals precision
     index: number;
+    deposits: BigNumber[]; // the index in the array represents the deposited token, amounts in same decimals as token
+    loans: BigNumber[]; // the index in the array represents the deposited token, amounts in same decimals as token
   };
 
   describe('FUZZZZZZ EVERYTHING 🐙', () => {
@@ -209,9 +222,9 @@ describe('PositionsManagerForAave Contract', () => {
         ret = {
           address: retAddr,
           signer: retSign,
-          suppliedAmountValue: BigNumber.from(0),
-          borrowedAmountValue: BigNumber.from(0),
           index: accounts.length,
+          deposits: markets.map((): BigNumber => BigNumber.from(0)),
+          loans: markets.map((): BigNumber => BigNumber.from(0)),
         };
         for await (let market of markets) {
           tempDropSucceeded = await tryGiveTokens(ret, market);
@@ -222,44 +235,102 @@ describe('PositionsManagerForAave Contract', () => {
       return ret;
     };
 
+    const logAccountData = (account: Account): void => {
+      console.log(`--- start account ${account.index} ---`);
+      for (let market of markets) {
+        console.log(`${tokenAmountToReadable(account.deposits[market.index], market.token)} ${market.name} supplied`);
+        console.log(`${tokenAmountToReadable(account.loans[market.index], market.token)} ${market.name} borrowed`);
+      }
+      console.log(`--- ~end~ account ${account.index} ---`);
+    };
+
+    const getEthValueOfDeposits = (account: Account): BigNumber => {
+      let sum: BigNumber = BigNumber.from(0);
+      let toAdd: BigNumber;
+      let divisor: BigNumber;
+      for (let market of markets) {
+        divisor = isA6DecimalsToken(market.token) ? BigNumber.from(10).pow(6) : BigNumber.from(10).pow(18);
+        toAdd = account.deposits[market.index].mul(market.ethPerUnit).div(divisor);
+        sum = sum.add(toAdd);
+      }
+      return sum; // in Weis
+    };
+
+    const getLoansImmobilizedEthValue = (account: Account): BigNumber => {
+      let sum: BigNumber = BigNumber.from(0);
+      let toAdd: BigNumber;
+      let divisor: BigNumber;
+      for (let market of markets) {
+        divisor = isA6DecimalsToken(market.token) ? BigNumber.from(10).pow(6) : BigNumber.from(10).pow(18);
+        toAdd = account.loans[market.index].mul(market.ethPerUnit).div(divisor).mul(100).div(market.loanToValue);
+        sum = sum.add(toAdd);
+      }
+      return sum; // in Weis
+    };
+
     const supply = async (account: Account, market: Market): Promise<void> => {
       // the amount to supply is chosen randomly between 1 and 1000 (1 minimum to avoid below threshold error)
+      let tempSigner: Signer = account.signer.connect(ethers.provider);
       let amount: BigNumber = utils.parseUnits(Math.round(Math.random() * 1000).toString()).add(WAD);
       if (isA6DecimalsToken(market.token)) {
         amount = to6Decimals(amount);
       }
-      await market.token.connect(account.signer).approve(positionsManagerForAave.address, amount);
-      console.log('supplied ', tokenAmountToReadable(amount, market.token), market.name);
-      await positionsManagerForAave.connect(account.signer).supply(market.aToken.address, amount);
-      if (isA6DecimalsToken(market.token)) amount = from6To18Decimals(amount);
-      account.suppliedAmountValue = account.suppliedAmountValue.add(amount);
+      await market.token.connect(tempSigner).approve(positionsManagerForAave.address, amount);
+      console.log(account.index, 'supplied', tokenAmountToReadable(amount, market.token), market.name);
+      await positionsManagerForAave.connect(tempSigner).supply(market.aToken.address, amount);
+      account.deposits[market.index] = account.deposits[market.index].add(amount);
+      account.signer = tempSigner;
       accounts[account.index] = account;
     };
 
     const borrow = async (account: Account, market: Market): Promise<void> => {
-      let borrowedAmount: BigNumber = account.borrowedAmountValue;
-      let suppliedAmount: BigNumber = account.suppliedAmountValue;
       let toBorrow: BigNumber;
       let minAmount = WAD;
+      let tempSigner: Signer = account.signer.connect(ethers.provider);
+      let factor: BigNumber = isA6DecimalsToken(market.token) ? BigNumber.from(10).pow(6) : BigNumber.from(10).pow(18);
       if (isA6DecimalsToken(market.token)) {
         minAmount = to6Decimals(minAmount);
-        borrowedAmount = to6Decimals(borrowedAmount);
-        suppliedAmount = to6Decimals(suppliedAmount);
       }
-      let maxAmount: BigNumber = suppliedAmount.mul(BigNumber.from(market.loanToValue)).div(100).sub(borrowedAmount);
-      console.log('max', tokenAmountToReadable(maxAmount, market.token));
-
+      let maxAmount: BigNumber = getEthValueOfDeposits(account)
+        .sub(getLoansImmobilizedEthValue(account))
+        .div(market.ethPerUnit)
+        .mul(factor)
+        .mul(market.loanToValue)
+        .div(100);
       if (maxAmount.gt(minAmount)) {
         toBorrow = maxAmount
           .sub(minAmount)
           .mul(BigNumber.from(Math.floor(Math.random() * 1000)))
           .div(1000);
-        if (toBorrow.lt(maxAmount)) toBorrow = toBorrow.add(minAmount);
-        console.log('borrowed', tokenAmountToReadable(toBorrow, market.token), market.name);
-        await positionsManagerForAave.connect(account.signer).borrow(market.aToken.address, toBorrow);
-        if (isA6DecimalsToken(market.token)) toBorrow = from6To18Decimals(toBorrow);
-        account.borrowedAmountValue = account.borrowedAmountValue.add(toBorrow);
+        if (!toBorrow.add(minAmount).gt(maxAmount)) toBorrow = toBorrow.add(minAmount);
+        console.log(account.index, 'borrowed', tokenAmountToReadable(toBorrow, market.token), market.name);
+        await positionsManagerForAave.connect(tempSigner).borrow(market.aToken.address, toBorrow);
+        account.loans[market.index] = account.loans[market.index].add(toBorrow);
       }
+      account.signer = tempSigner;
+      accounts[account.index] = account;
+    };
+
+    const withdraw = async (account: Account, market: Market): Promise<void> => {
+      let tempSigner: Signer = account.signer.connect(ethers.provider);
+      let minima: BigNumber = isA6DecimalsToken(market.token) ? to6Decimals(WAD) : WAD;
+      let factor: BigNumber = isA6DecimalsToken(market.token) ? BigNumber.from(10).pow(6) : BigNumber.from(10).pow(18);
+      if (!account.deposits[market.index].isZero()) {
+        let withdrawableAmount: BigNumber = min(
+          getEthValueOfDeposits(account).sub(getLoansImmobilizedEthValue(account)).div(market.ethPerUnit).mul(factor),
+          account.deposits[market.index]
+        );
+        let toWithdraw = BigNumber.from(Math.floor(Math.random() * 1000))
+          .mul(withdrawableAmount)
+          .div(1000);
+        if (toWithdraw.lt(minima)) toWithdraw = toWithdraw.add(minima);
+        if (toWithdraw.lt(withdrawableAmount)) {
+          console.log(account.index, 'withdrew', tokenAmountToReadable(toWithdraw, market.token), market.name);
+          await positionsManagerForAave.connect(tempSigner).withdraw(market.aToken.address, toWithdraw);
+          account.deposits[market.index] = account.deposits[market.index].sub(toWithdraw);
+        }
+      }
+      account.signer = tempSigner;
       accounts[account.index] = account;
     };
 
@@ -288,11 +359,17 @@ describe('PositionsManagerForAave Contract', () => {
 
     it('fouzzzz 🦑', async () => {
       const nbOfIterations: number = 100; // config
+      const initialSize: number = 10; // config
+
       let tempAccount: Account;
 
-      console.log('initializing tests with 10 suppliers ...');
+      // tempAccount = await generateAccount();
+      // await supply(tempAccount, getARandomMarket());
+      // logAccountData(tempAccount);
 
-      for await (let i of [...Array(10).keys()]) {
+      console.log(`initializing tests with ${initialSize} suppliers`);
+
+      for await (let i of [...Array(initialSize).keys()]) {
         tempAccount = await generateAccount();
         await supply(tempAccount, getARandomMarket());
       }
@@ -314,13 +391,14 @@ describe('PositionsManagerForAave Contract', () => {
         await doWithAProbabiltyOfPercentage(50, async () => {
           let acc: Account = getARandomAccount();
           let mkt: Market = getARandomMarket();
-          // console.log(
-          //   `account ${acc.index} supplied ${tokenAmountToReadable(acc.suppliedAmount, mkt.token)} prev. borrowed ${tokenAmountToReadable(
-          //     acc.borrowedAmount,
-          //     mkt.token
-          //   )}`
-          // );
+          // logAccountData(acc);
           await borrow(acc, mkt);
+        });
+
+        await doWithAProbabiltyOfPercentage(70, async () => {
+          let acc: Account = getARandomAccount();
+          // logAccountData(acc);
+          await withdraw(acc, getARandomMarket());
         });
       }
     });
