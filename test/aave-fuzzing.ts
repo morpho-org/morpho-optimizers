@@ -376,7 +376,7 @@ describe('PositionsManagerForAave Contract', function () {
 
     it('🦑🦑🦑 FOUZZZZZ 🦑🦑🦑', async () => {
       const nbOfIterations: number = 500; // config
-      const initialSize: number = 10; // config
+      const initialSize: number = 50; // config
       let tempAccount: Account;
 
       console.log(`initializing tests with ${initialSize} suppliers`);
