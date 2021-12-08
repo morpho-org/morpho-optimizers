@@ -70,11 +70,14 @@ library DoubleLinkedList {
             numberOfIterations++;
         }
 
-        address nextId = current.id;
-        address prevId = current.prev;
+        address nextId;
+        address prevId;
         if (numberOfIterations > _maxIterations || current.id == _list.tail) {
             nextId = address(0);
             prevId = _list.tail;
+        } else {
+            nextId = current.id;
+            prevId = current.prev;
         }
 
         _list.accounts[_id] = Account(_id, nextId, prevId, _value);
