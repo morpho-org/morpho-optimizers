@@ -142,7 +142,7 @@ library DoubleLinkedList {
             current = _list.accounts[current].next;
             numberOfIterations++;
         }
-        if (numberOfIterations == _maxIterations + 1) {
+        if (numberOfIterations == _maxIterations + 1 || current == _list.tail) {
             require(addTail(_list, _id, _value));
         } else {
             require(insertBefore(_list, current, _id, _value));
@@ -162,11 +162,11 @@ library DoubleLinkedList {
         uint256 _value
     ) internal returns (bool) {
         require(!_contains(_list, _id));
-        if (_nextId == _list.tail) {
-            return addTail(_list, _id, _value);
+        if (_nextId == _list.head) {
+            return addHead(_list, _id, _value);
         } else {
+            Account memory prevAccount = _list.accounts[_list.accounts[_nextId].prev];
             Account memory nextAccount = _list.accounts[_nextId];
-            Account memory prevAccount = _list.accounts[nextAccount.prev];
             _createAccount(_list, _id, _value);
             _link(_list, _id, nextAccount.id);
             _link(_list, prevAccount.id, _id);
