@@ -295,8 +295,7 @@ describe('PositionsManagerForAave Contract', () => {
       const amount = utils.parseUnits('10');
       let expectedScaledBalance = BigNumber.from(0);
 
-      for (const i in suppliers) {
-        const supplier = suppliers[i];
+      for (const supplier of suppliers) {
         const daiBalanceBefore = await daiToken.balanceOf(supplier.getAddress());
         const expectedDaiBalanceAfter = daiBalanceBefore.sub(amount);
         await daiToken.connect(supplier).approve(positionsManagerForAave.address, amount);
@@ -630,10 +629,8 @@ describe('PositionsManagerForAave Contract', () => {
 
     it('Supplier should withdraw her liquidity while enough aDaiToken in peer-to-peer contract', async () => {
       const supplyAmount = utils.parseUnits('10');
-      let supplier;
 
-      for (const i in suppliers) {
-        supplier = suppliers[i];
+      for (const supplier of suppliers) {
         const daiBalanceBefore = await daiToken.balanceOf(supplier.getAddress());
         const expectedDaiBalanceAfter = daiBalanceBefore.sub(supplyAmount);
         await daiToken.connect(supplier).approve(positionsManagerForAave.address, supplyAmount);
