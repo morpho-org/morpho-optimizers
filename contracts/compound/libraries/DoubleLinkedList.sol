@@ -7,7 +7,6 @@ library DoubleLinkedList {
         address next;
         address prev;
         uint256 value;
-        bool isIn;
     }
 
     struct List {
@@ -100,7 +99,7 @@ library DoubleLinkedList {
         address _nextId,
         address _prevId
     ) private {
-        _list.accounts[_id] = Account(_id, _nextId, _prevId, _value, true);
+        _list.accounts[_id] = Account(_id, _nextId, _prevId, _value);
 
         if (_prevId != address(0)) _list.accounts[_prevId].next = _id;
         else _list.head = _id;
@@ -114,6 +113,6 @@ library DoubleLinkedList {
      *  @return whether or not the account is in the `_list`.
      */
     function _contains(List storage _list, address _id) private view returns (bool) {
-        return _list.accounts[_id].isIn;
+        return _list.accounts[_id].id != address(0);
     }
 }
