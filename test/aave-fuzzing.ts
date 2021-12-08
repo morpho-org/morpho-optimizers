@@ -375,8 +375,9 @@ describe('PositionsManagerForAave Contract', function () {
     };
 
     it('🦑🦑🦑 FOUZZZZZ 🦑🦑🦑', async () => {
-      const nbOfIterations: number = 500; // config
-      const initialSize: number = 50; // config
+      const nbOfIterations: number = 100; // config
+      const initialSize: number = 10; // config
+
       let tempAccount: Account;
 
       console.log(`initializing tests with ${initialSize} suppliers`);
@@ -402,11 +403,13 @@ describe('PositionsManagerForAave Contract', function () {
         await doWithAProbabiltyOfPercentage(50, async () => {
           let acc: Account = getARandomAccount();
           let mkt: Market = getARandomMarket();
+          logAccountData(acc);
           await borrow(acc, mkt);
         });
 
         await doWithAProbabiltyOfPercentage(50, async () => {
           let acc: Account = getARandomAccount();
+          logAccountData(acc);
           await withdraw(acc, getARandomMarket());
         });
 
