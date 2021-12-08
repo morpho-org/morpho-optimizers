@@ -984,7 +984,7 @@ describe('PositionsManagerForCompound Contract', () => {
       expect((await positionsManagerForCompound.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress())).onPool).to.equal(
         expectedBorrowBalanceAfter
       );
-      expect(removeDigitsBigNumber(1, usdcBalanceAfter)).to.equal(removeDigitsBigNumber(1, expectedUsdcBalanceAfter));
+      expect(removeDigitsBigNumber(2, usdcBalanceAfter)).to.equal(removeDigitsBigNumber(2, expectedUsdcBalanceAfter));
       expect(daiBalanceAfter).to.equal(expectedDaiBalanceAfter);
     });
 
