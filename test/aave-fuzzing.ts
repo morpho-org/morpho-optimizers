@@ -23,6 +23,8 @@ import {
 // if the fuzzing finds a bug, the test script will stop
 // and you can investigate the problem using the blockchain still
 // running in terminal 2
+// or use CHAIN=integrated to use this script in a single terminal
+// ex : NETWORK=polygon-mainnet CHAIN=integrated npx hardhat test test/aave-fuzzing.ts
 
 describe('PositionsManagerForAave Contract', function () {
   this.timeout(100_000_000);
@@ -69,7 +71,7 @@ describe('PositionsManagerForAave Contract', function () {
   let markets: Array<Market>;
 
   const initialize = async () => {
-    ethers.provider = new ethers.providers.JsonRpcProvider('http://127.0.0.1:8545/');
+    if (!process.env.CHAIN) ethers.provider = new ethers.providers.JsonRpcProvider('http://127.0.0.1:8545/');
     const owner = await ethers.getSigner('0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266');
 
     // Deploy DoubleLinkedList
@@ -336,7 +338,7 @@ describe('PositionsManagerForAave Contract', function () {
       let maxima: BigNumber = account.loans[market.index];
       let toRepay: BigNumber;
 
-      if (!maxima.isZero() && maxima > minima) {
+      if (!maxima.isZero() && maxima.gt(minima)) {
         toRepay = BigNumber.from(Math.floor(Math.random() * 1000))
           .mul(maxima.sub(minima))
           .div(1000)
