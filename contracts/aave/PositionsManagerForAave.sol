@@ -328,6 +328,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
                     p2pExchangeRate,
                     0
                 );
+                _updateSupplierList(_poolTokenAddress, msg.sender);
             }
         }
 
@@ -346,9 +347,8 @@ contract PositionsManagerForAave is ReentrancyGuard {
                 0,
                 normalizedIncome
             );
+            _updateSupplierList(_poolTokenAddress, msg.sender);
         }
-
-        _updateSupplierList(_poolTokenAddress, msg.sender);
     }
 
     /** @dev Borrows ERC20 tokens.
@@ -390,6 +390,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
                     p2pExchangeRate,
                     0
                 );
+                _updateBorrowerList(_poolTokenAddress, msg.sender);
             }
         }
 
@@ -417,9 +418,8 @@ contract PositionsManagerForAave is ReentrancyGuard {
                 normalizedVariableDebt,
                 0
             );
+            _updateBorrowerList(_poolTokenAddress, msg.sender);
         }
-
-        _updateBorrowerList(_poolTokenAddress, msg.sender);
         underlyingToken.safeTransfer(msg.sender, _amount);
     }
 
@@ -581,6 +581,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
                 );
                 remainingToWithdraw = _amount - amountOnPoolInUnderlying; // In underlying
             }
+            _updateSupplierList(_poolTokenAddress, _holder);
         }
 
         /* If there remains some tokens to withdraw (CASE 2), Morpho breaks credit lines and repair them either with other users or with Aave itself */
@@ -589,14 +590,15 @@ contract PositionsManagerForAave is ReentrancyGuard {
             uint256 aTokenContractBalance = poolToken.balanceOf(address(this));
             /* CASE 1: Other suppliers have enough tokens on Aave to compensate user's position */
             if (remainingToWithdraw <= aTokenContractBalance) {
-                require(
-                    _matchSuppliers(_poolTokenAddress, remainingToWithdraw) == 0,
-                    Errors.PM_REMAINING_TO_MATCH_IS_NOT_0
-                );
                 supplyBalanceInOf[_poolTokenAddress][_holder].inP2P -= Math.min(
                     supplyBalanceInOf[_poolTokenAddress][_holder].inP2P,
                     remainingToWithdraw.divWadByRay(p2pExchangeRate)
                 ); // In p2pUnit
+                _updateSupplierList(_poolTokenAddress, _holder);
+                require(
+                    _matchSuppliers(_poolTokenAddress, remainingToWithdraw) == 0,
+                    Errors.PM_REMAINING_TO_MATCH_IS_NOT_0
+                );
                 emit SupplierPositionUpdated(
                     _holder,
                     _poolTokenAddress,
@@ -610,11 +612,12 @@ contract PositionsManagerForAave is ReentrancyGuard {
             }
             /* CASE 2: Other suppliers don't have enough tokens on Aave. Such scenario is called the Hard-Withdraw */
             else {
-                uint256 remaining = _matchSuppliers(_poolTokenAddress, aTokenContractBalance);
                 supplyBalanceInOf[_poolTokenAddress][_holder].inP2P -= Math.min(
                     supplyBalanceInOf[_poolTokenAddress][_holder].inP2P,
                     remainingToWithdraw.divWadByRay(p2pExchangeRate)
                 );
+                _updateSupplierList(_poolTokenAddress, _holder);
+                uint256 remaining = _matchSuppliers(_poolTokenAddress, aTokenContractBalance);
                 emit SupplierPositionUpdated(
                     _holder,
                     _poolTokenAddress,
@@ -632,8 +635,6 @@ contract PositionsManagerForAave is ReentrancyGuard {
                 );
             }
         }
-
-        _updateSupplierList(_poolTokenAddress, _holder);
         underlyingToken.safeTransfer(_receiver, _amount);
     }
 
@@ -698,6 +699,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
                     normalizedVariableDebt
                 );
             }
+            _updateBorrowerList(_poolTokenAddress, _borrower);
         }
 
         /* If there remains some tokens to repay (CASE 2), Morpho breaks credit lines and repair them either with other users or with Aave itself */
@@ -714,11 +716,12 @@ contract PositionsManagerForAave is ReentrancyGuard {
             uint256 contractBorrowBalanceOnAave = variableDebtToken.scaledBalanceOf(address(this));
             /* CASE 1: Other borrowers are borrowing enough on Aave to compensate user's position */
             if (remainingToRepay <= contractBorrowBalanceOnAave) {
-                _matchBorrowers(_poolTokenAddress, remainingToRepay);
                 borrowBalanceInOf[_poolTokenAddress][_borrower].inP2P -= Math.min(
                     borrowBalanceInOf[_poolTokenAddress][_borrower].inP2P,
                     remainingToRepay.divWadByRay(p2pExchangeRate)
                 ); // In p2pUnit
+                _updateBorrowerList(_poolTokenAddress, _borrower);
+                _matchBorrowers(_poolTokenAddress, remainingToRepay);
                 emit BorrowerPositionUpdated(
                     _borrower,
                     _poolTokenAddress,
@@ -732,11 +735,12 @@ contract PositionsManagerForAave is ReentrancyGuard {
             }
             /* CASE 2: Other borrowers aren't borrowing enough on Aave to compensate user's position */
             else {
-                _matchBorrowers(_poolTokenAddress, contractBorrowBalanceOnAave);
                 borrowBalanceInOf[_poolTokenAddress][_borrower].inP2P -= Math.min(
                     borrowBalanceInOf[_poolTokenAddress][_borrower].inP2P,
                     remainingToRepay.divWadByRay(p2pExchangeRate)
                 ); // In p2pUnit
+                _updateBorrowerList(_poolTokenAddress, _borrower);
+                _matchBorrowers(_poolTokenAddress, remainingToRepay);
                 emit BorrowerPositionUpdated(
                     _borrower,
                     _poolTokenAddress,
@@ -754,8 +758,6 @@ contract PositionsManagerForAave is ReentrancyGuard {
                 );
             }
         }
-
-        _updateBorrowerList(_poolTokenAddress, _borrower);
         emit Repaid(_borrower, _poolTokenAddress, _amount);
     }
 
