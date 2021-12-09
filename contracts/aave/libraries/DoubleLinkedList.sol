@@ -3,7 +3,6 @@ pragma solidity 0.8.7;
 
 library DoubleLinkedList {
     struct Account {
-        address id;
         address prev;
         address next;
         uint256 value;
@@ -30,7 +29,7 @@ library DoubleLinkedList {
      *  @return bool Whether the account has been removed or not.
      */
     function remove(List storage _list, address _id) internal returns (bool) {
-        if (_contains(_list, _id)) {
+        if (_list.accounts[_id].value != 0) {
             Account memory account = _list.accounts[_id];
 
             if (account.prev != address(0)) _list.accounts[account.prev].next = account.next;
@@ -57,7 +56,7 @@ library DoubleLinkedList {
         uint256 _value,
         uint256 _maxIterations
     ) internal {
-        require(!_contains(_list, _id));
+        require(_list.accounts[_id].value == 0);
 
         uint256 numberOfIterations;
         address current = _list.head;
@@ -79,7 +78,7 @@ library DoubleLinkedList {
             prevId = _list.tail;
         }
 
-        _list.accounts[_id] = Account(_id, prevId, nextId, _value);
+        _list.accounts[_id] = Account(prevId, nextId, _value);
 
         if (prevId != address(0)) _list.accounts[prevId].next = _id;
         else _list.head = _id;
@@ -93,14 +92,5 @@ library DoubleLinkedList {
      */
     function getHead(List storage _list) internal view returns (address) {
         return _list.head;
-    }
-
-    /** @dev Returns whether or not the account is in the `_list`.
-     *  @param _list The list to search in.
-     *  @param _id The address of the account.
-     *  @return whether or not the account is in the `_list`.
-     */
-    function _contains(List storage _list, address _id) private view returns (bool) {
-        return _list.accounts[_id].id != address(0);
     }
 }
