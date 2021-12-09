@@ -275,6 +275,7 @@ contract PositionsManagerForCompound is ReentrancyGuard {
                     p2pExchangeRate,
                     0
                 );
+                _updateSupplierList(_poolTokenAddress, msg.sender);
             }
         }
 
@@ -294,10 +295,9 @@ contract PositionsManagerForCompound is ReentrancyGuard {
                     0,
                     poolTokenExchangeRate
                 );
+                _updateSupplierList(_poolTokenAddress, msg.sender);
             }
         }
-
-        _updateSupplierList(_poolTokenAddress, msg.sender);
     }
 
     /** @dev Borrows ERC20 tokens.
@@ -339,6 +339,7 @@ contract PositionsManagerForCompound is ReentrancyGuard {
                     p2pExchangeRate,
                     0
                 );
+                _updateBorrowerList(_poolTokenAddress, msg.sender);
             }
         }
 
@@ -359,9 +360,9 @@ contract PositionsManagerForCompound is ReentrancyGuard {
                 borrowIndex,
                 0
             );
+            _updateBorrowerList(_poolTokenAddress, msg.sender);
         }
 
-        _updateBorrowerList(_poolTokenAddress, msg.sender);
         underlyingToken.safeTransfer(msg.sender, _amount);
     }
 
@@ -522,6 +523,7 @@ contract PositionsManagerForCompound is ReentrancyGuard {
                 );
                 remainingToWithdraw = _amount - amountOnPoolInUnderlying; // In underlying
             }
+            _updateSupplierList(_poolTokenAddress, _holder);
         }
 
         /* If there remains some tokens to withdraw (CASE 2), Morpho breaks credit lines and repair them either with other users or with Comp itself */
@@ -534,14 +536,14 @@ contract PositionsManagerForCompound is ReentrancyGuard {
             );
             /* CASE 1: Other suppliers have enough tokens on Comp to compensate user's position */
             if (remainingToWithdraw <= poolTokenContractBalanceInUnderlying) {
+                supplyBalanceInOf[_poolTokenAddress][_holder].inP2P -= Math.min(
+                    supplyBalanceInOf[_poolTokenAddress][_holder].inP2P,
+                    remainingToWithdraw.div(p2pExchangeRate)
+                ); // In p2pUnit                _updateSupplierList(_poolTokenAddress, _holder);
                 require(
                     _matchSuppliers(_poolTokenAddress, remainingToWithdraw) == 0,
                     Errors.PM_REMAINING_TO_MATCH_IS_NOT_0
                 );
-                supplyBalanceInOf[_poolTokenAddress][_holder].inP2P -= Math.min(
-                    supplyBalanceInOf[_poolTokenAddress][_holder].inP2P,
-                    remainingToWithdraw.div(p2pExchangeRate)
-                ); // In p2pUnit
                 emit SupplierPositionUpdated(
                     _holder,
                     _poolTokenAddress,
@@ -555,14 +557,15 @@ contract PositionsManagerForCompound is ReentrancyGuard {
             }
             /* CASE 2: Other suppliers don't have enough tokens on Comp. Such scenario is called the Hard-Withdraw */
             else {
-                uint256 remaining = _matchSuppliers(
-                    _poolTokenAddress,
-                    poolTokenContractBalanceInUnderlying
-                );
                 supplyBalanceInOf[_poolTokenAddress][_holder].inP2P -= Math.min(
                     supplyBalanceInOf[_poolTokenAddress][_holder].inP2P,
                     remainingToWithdraw.div(p2pExchangeRate)
                 ); // In p2pUnit
+                _updateSupplierList(_poolTokenAddress, _holder);
+                uint256 remaining = _matchSuppliers(
+                    _poolTokenAddress,
+                    poolTokenContractBalanceInUnderlying
+                );
                 emit SupplierPositionUpdated(
                     _holder,
                     _poolTokenAddress,
@@ -580,8 +583,6 @@ contract PositionsManagerForCompound is ReentrancyGuard {
                 );
             }
         }
-
-        _updateSupplierList(_poolTokenAddress, _holder);
         underlyingToken.safeTransfer(_receiver, _amount);
     }
 
@@ -643,6 +644,7 @@ contract PositionsManagerForCompound is ReentrancyGuard {
                     borrowIndex
                 );
             }
+            _updateBorrowerList(_poolTokenAddress, _borrower);
         }
 
         /* If there remains some tokens to repay (CASE 2), Morpho breaks credit lines and repair them either with other users or with Comp itself */
@@ -653,11 +655,13 @@ contract PositionsManagerForCompound is ReentrancyGuard {
             uint256 contractBorrowBalanceOnPool = poolToken.borrowBalanceCurrent(address(this)); // In underlying
             /* CASE 1: Other borrowers are borrowing enough on Comp to compensate user's position */
             if (remainingToRepay <= contractBorrowBalanceOnPool) {
-                _matchBorrowers(_poolTokenAddress, remainingToRepay);
                 borrowBalanceInOf[_poolTokenAddress][_borrower].inP2P -= Math.min(
                     borrowBalanceInOf[_poolTokenAddress][_borrower].inP2P,
                     remainingToRepay.div(p2pExchangeRate)
                 ); // In p2pUnit
+                _updateBorrowerList(_poolTokenAddress, _borrower);
+                _matchBorrowers(_poolTokenAddress, remainingToRepay);
+
                 emit BorrowerPositionUpdated(
                     _borrower,
                     _poolTokenAddress,
@@ -671,11 +675,12 @@ contract PositionsManagerForCompound is ReentrancyGuard {
             }
             /* CASE 2: Other borrowers aren't borrowing enough on Comp to compensate user's position */
             else {
-                _matchBorrowers(_poolTokenAddress, contractBorrowBalanceOnPool);
                 borrowBalanceInOf[_poolTokenAddress][_borrower].inP2P -= Math.min(
                     borrowBalanceInOf[_poolTokenAddress][_borrower].inP2P,
                     remainingToRepay.div(p2pExchangeRate)
                 ); // In p2pUnit
+                _updateBorrowerList(_poolTokenAddress, _borrower);
+                _matchBorrowers(_poolTokenAddress, contractBorrowBalanceOnPool);
                 emit BorrowerPositionUpdated(
                     _borrower,
                     _poolTokenAddress,
@@ -693,8 +698,6 @@ contract PositionsManagerForCompound is ReentrancyGuard {
                 );
             }
         }
-
-        _updateBorrowerList(_poolTokenAddress, _borrower);
         emit Repaid(_borrower, _poolTokenAddress, _amount);
     }
 
