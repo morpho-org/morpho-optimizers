@@ -373,7 +373,6 @@ contract PositionsManagerForAave is ReentrancyGuard {
                 msg.sender,
                 remainingToBorrowOnPool
             );
-
         underlyingToken.safeTransfer(msg.sender, _amount);
         emit Borrowed(
             msg.sender,
