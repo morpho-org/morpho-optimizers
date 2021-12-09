@@ -60,24 +60,23 @@ library DoubleLinkedList {
         require(!_contains(_list, _id));
 
         uint256 numberOfIterations;
-        Account memory current = _list.accounts[_list.head];
+        address current = _list.head;
         while (
             numberOfIterations <= _maxIterations &&
-            current.id != _list.tail &&
-            current.value > _value
+            current != _list.tail &&
+            _list.accounts[current].value > _value
         ) {
-            current = _list.accounts[current.next];
+            current = _list.accounts[current].next;
             numberOfIterations++;
         }
 
         address nextId;
         address prevId;
-        if (numberOfIterations > _maxIterations || current.id == _list.tail) {
-            prevId = _list.tail;
-            nextId = address(0);
+        if (numberOfIterations <= _maxIterations && current != _list.tail) {
+            prevId = _list.accounts[current].prev;
+            nextId = current;
         } else {
-            prevId = current.prev;
-            nextId = current.id;
+            prevId = _list.tail;
         }
 
         _list.accounts[_id] = Account(_id, prevId, nextId, _value);
