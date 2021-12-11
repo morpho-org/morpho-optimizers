@@ -56,11 +56,6 @@ describe('PositionsManagerForCompound Contract', () => {
     suppliers = [supplier1, supplier2, supplier3];
     borrowers = [borrower1, borrower2, borrower3];
 
-    // Deploy DoubleLinkedList
-    const DoubleLinkedList = await ethers.getContractFactory('contracts/compound/libraries/DoubleLinkedList.sol:DoubleLinkedList');
-    const doubleLinkedList = await DoubleLinkedList.deploy();
-    await doubleLinkedList.deployed();
-
     // Deploy MarketsManagerForCompound
     const MarketsManagerForCompound = await ethers.getContractFactory('MarketsManagerForCompound');
     marketsManagerForCompound = await MarketsManagerForCompound.deploy();

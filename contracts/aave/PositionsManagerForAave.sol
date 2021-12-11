@@ -6,10 +6,9 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 
-import "./libraries/DoubleLinkedList.sol";
+import "../common/libraries/DoubleLinkedList.sol";
 import "./libraries/aave/WadRayMath.sol";
 import "./libraries/ErrorsForAave.sol";
-import "./libraries/DoubleLinkedList.sol";
 import "./interfaces/aave/IPriceOracleGetter.sol";
 import {IVariableDebtToken} from "./interfaces/aave/IVariableDebtToken.sol";
 import {IAToken} from "./interfaces/aave/IAToken.sol";

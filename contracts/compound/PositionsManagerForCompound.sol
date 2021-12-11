@@ -6,8 +6,8 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 
+import "../common/libraries/DoubleLinkedList.sol";
 import "./libraries/CompoundMath.sol";
-import "./libraries/DoubleLinkedList.sol";
 import "./libraries/ErrorsForCompound.sol";
 import {ICErc20, IComptroller, ICompoundOracle} from "./interfaces/compound/ICompound.sol";
 import "./interfaces/IMarketsManagerForCompound.sol";
