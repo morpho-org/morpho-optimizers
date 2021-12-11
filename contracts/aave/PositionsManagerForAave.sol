@@ -35,8 +35,6 @@ contract PositionsManagerForAave is ReentrancyGuard {
     struct BalanceStateVars {
         uint256 debtValue; // The total debt value (in ETH).
         uint256 maxDebtValue; // The maximum debt value available thanks to the collateral (in ETH).
-        uint256 redeemedValue; // The redeemed value if any (in ETH).
-        uint256 collateralValue; // The collateral value (in ETH).
         uint256 debtToAdd; // The debt to add at the current iteration (in ETH).
         uint256 collateralToAdd; // The collateral to add at the current iteration (in ETH).
         uint256 p2pExchangeRate; // The p2pUnit exchange rate of the `poolTokenEntered`.
@@ -456,7 +454,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
     ) external nonReentrant {
         require(_amount > 0, Errors.PM_AMOUNT_IS_0);
         LiquidateVars memory vars;
-        (vars.debtValue, vars.maxDebtValue, ) = _getUserHypotheticalBalanceStates(
+        (vars.debtValue, vars.maxDebtValue) = _getUserHypotheticalBalanceStates(
             _borrower,
             address(0),
             0,
@@ -1000,7 +998,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
         uint256 _withdrawnAmount,
         uint256 _borrowedAmount
     ) internal {
-        (uint256 debtValue, uint256 maxDebtValue, ) = _getUserHypotheticalBalanceStates(
+        (uint256 debtValue, uint256 maxDebtValue) = _getUserHypotheticalBalanceStates(
             _account,
             _poolTokenAddress,
             _withdrawnAmount,
@@ -1014,21 +1012,14 @@ contract PositionsManagerForAave is ReentrancyGuard {
      *  @param _poolTokenAddress The market to hypothetically withdraw/borrow in.
      *  @param _withdrawnAmount The number of tokens to hypothetically withdraw.
      *  @param _borrowedAmount The amount of underlying to hypothetically borrow.
-     *  @return (debtValue, maxDebtValue collateralValue).
+     *  @return (debtValue, maxDebtValue).
      */
     function _getUserHypotheticalBalanceStates(
         address _account,
         address _poolTokenAddress,
         uint256 _withdrawnAmount,
         uint256 _borrowedAmount
-    )
-        internal
-        returns (
-            uint256,
-            uint256,
-            uint256
-        )
-    {
+    ) internal returns (uint256, uint256) {
         // Avoid stack too deep error
         BalanceStateVars memory vars;
         vars.oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
@@ -1064,25 +1055,22 @@ contract PositionsManagerForAave is ReentrancyGuard {
             (vars.reserveDecimals, , vars.liquidationThreshold, , , , , , , ) = dataProvider
                 .getReserveConfigurationData(vars.underlyingAddress);
             vars.tokenUnit = 10**vars.reserveDecimals;
-            if (_poolTokenAddress == vars.poolTokenEntered) {
-                vars.debtToAdd += _borrowedAmount;
-                vars.redeemedValue = _withdrawnAmount.mul(vars.underlyingPrice).div(vars.tokenUnit);
-            }
             // Conversion of the collateral to ETH
             vars.collateralToAdd = vars.collateralToAdd.mul(vars.underlyingPrice).div(
                 vars.tokenUnit
             );
-            // Add the debt in this market to the global debt (in ETH)
-            vars.debtValue += vars.debtToAdd.mul(vars.underlyingPrice).div(vars.tokenUnit);
-            // Add the collateral value in this asset to the global collateral value (in ETH)
-            vars.collateralValue += vars.collateralToAdd;
-            // Add the max debt value allowed by the collateral in this asset to the global max debt value (in ETH)
             vars.maxDebtValue += vars.collateralToAdd.mul(vars.liquidationThreshold).div(10000);
+            vars.debtValue += vars.debtToAdd.mul(vars.underlyingPrice).div(vars.tokenUnit);
+            if (_poolTokenAddress == vars.poolTokenEntered) {
+                vars.debtValue += _borrowedAmount.mul(vars.underlyingPrice).div(vars.tokenUnit);
+                vars.maxDebtValue -= _withdrawnAmount
+                    .mul(vars.underlyingPrice)
+                    .div(vars.tokenUnit)
+                    .mul(vars.liquidationThreshold)
+                    .div(10000);
+            }
         }
-
-        vars.collateralValue -= vars.redeemedValue;
-
-        return (vars.debtValue, vars.maxDebtValue, vars.collateralValue);
+        return (vars.debtValue, vars.maxDebtValue);
     }
 
     /** @dev Updates borrowers tree with the new balances of a given account.
