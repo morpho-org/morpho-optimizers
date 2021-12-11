@@ -1097,4 +1097,20 @@ describe('PositionsManagerForCompound Contract', () => {
       expect(daiBalanceAfter).to.equal(expectedDaiBalanceAfter);
     });
   });
+
+  describe('Test attacks', () => {
+    it('Should not be possible to withdraw amount if the position turns to be under-collateralized', async () => {
+      const toSupply = utils.parseUnits('100');
+      const toBorrow = to6Decimals(utils.parseUnits('50'));
+      // supplier1 deposits collateral
+      await daiToken.connect(supplier1).approve(positionsManagerForCompound.address, toSupply);
+      await positionsManagerForCompound.connect(supplier1).supply(config.tokens.cDai.address, toSupply);
+      // supplier2 deposits collateral
+      await daiToken.connect(supplier2).approve(positionsManagerForCompound.address, toSupply);
+      await positionsManagerForCompound.connect(supplier2).supply(config.tokens.cDai.address, toSupply);
+      // supplier1 tries to withdraw more than allowed
+      await positionsManagerForCompound.connect(supplier1).borrow(config.tokens.cUsdc.address, toBorrow);
+      expect(positionsManagerForCompound.connect(supplier1).withdraw(config.tokens.cDai.address, toSupply)).to.be.reverted;
+    });
+  });
 });
