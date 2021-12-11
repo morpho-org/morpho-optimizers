@@ -490,10 +490,10 @@ describe('PositionsManagerForAave Contract', () => {
       );
       expect(
         removeDigitsBigNumber(
-          1,
+          2,
           (await positionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower1.getAddress())).onPool
         )
-      ).to.equal(removeDigitsBigNumber(1, expectedBalanceOnPool));
+      ).to.equal(removeDigitsBigNumber(2, expectedBalanceOnPool));
       expect(daiBalanceAfter).to.equal(daiBalanceBefore.add(maxToBorrow).sub(toRepay));
     });
   });
@@ -1016,8 +1016,6 @@ describe('PositionsManagerForAave Contract', () => {
   });
 
   describe('Test liquidation', () => {
-    before(initialize);
-
     it('Borrower should be liquidated while supply (collateral) is only on Aave', async () => {
       // Deploy custom price oracle
       const PriceOracle = await ethers.getContractFactory('contracts/aave/test/SimplePriceOracle.sol:SimplePriceOracle');
@@ -1061,7 +1059,7 @@ describe('PositionsManagerForAave Contract', () => {
 
       // Set price oracle
       await lendingPoolAddressesProvider.connect(admin).setPriceOracle(priceOracle.address);
-      priceOracle.setDirectPrice(config.tokens.dai.address, BigNumber.from('1070182920000000000'));
+      priceOracle.setDirectPrice(config.tokens.dai.address, WAD.mul(11).div(10));
       priceOracle.setDirectPrice(config.tokens.usdc.address, WAD);
       priceOracle.setDirectPrice(config.tokens.wbtc.address, WAD);
       priceOracle.setDirectPrice(config.tokens.usdt.address, WAD);
@@ -1178,7 +1176,7 @@ describe('PositionsManagerForAave Contract', () => {
 
       // Set price oracle
       await lendingPoolAddressesProvider.connect(admin).setPriceOracle(priceOracle.address);
-      priceOracle.setDirectPrice(config.tokens.dai.address, BigNumber.from('1070182920000000000'));
+      priceOracle.setDirectPrice(config.tokens.dai.address, WAD.mul(11).div(10));
       priceOracle.setDirectPrice(config.tokens.usdc.address, WAD);
       priceOracle.setDirectPrice(config.tokens.wbtc.address, WAD);
       priceOracle.setDirectPrice(config.tokens.usdt.address, WAD);
@@ -1275,6 +1273,22 @@ describe('PositionsManagerForAave Contract', () => {
       await positionsManagerForAave.connect(borrower1).claimRewards([config.tokens.aDai.address]);
       const rewardTokenBalanceAfter2 = await wmaticToken.balanceOf(owner.getAddress());
       expect(rewardTokenBalanceAfter2).to.be.gt(rewardTokenBalanceAfter1);
+    });
+  });
+
+  describe('Test attacks', () => {
+    it('Should not be possible to withdraw amount if the position turns to be under-collateralized', async () => {
+      const toSupply = utils.parseUnits('100');
+      const toBorrow = to6Decimals(utils.parseUnits('50'));
+      // supplier1 deposits collateral
+      await daiToken.connect(supplier1).approve(positionsManagerForAave.address, toSupply);
+      await positionsManagerForAave.connect(supplier1).supply(config.tokens.aDai.address, toSupply);
+      // supplier2 deposits collateral
+      await daiToken.connect(supplier2).approve(positionsManagerForAave.address, toSupply);
+      await positionsManagerForAave.connect(supplier2).supply(config.tokens.aDai.address, toSupply);
+      // supplier1 tries to withdraw more than allowed
+      await positionsManagerForAave.connect(supplier1).borrow(config.tokens.aUsdc.address, toBorrow);
+      expect(positionsManagerForAave.connect(supplier1).withdraw(config.tokens.aDai.address, toSupply)).to.be.reverted;
     });
   });
 });
