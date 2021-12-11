@@ -38,8 +38,6 @@ contract PositionsManagerForCompound is ReentrancyGuard {
     struct BalanceStateVars {
         uint256 debtValue; // The total debt value (in USD).
         uint256 maxDebtValue; // The maximum debt value available thanks to the collateral (in USD).
-        uint256 redeemedValue; // The redeemed value if any (in USD).
-        uint256 collateralValue; // The collateral value (in USD).
         uint256 debtToAdd; // The debt to add at the current iteration.
         uint256 collateralToAdd; // The collateral to add at the current iteration.
         address poolTokenEntered; // The poolToken token entered by the user.
@@ -397,7 +395,7 @@ contract PositionsManagerForCompound is ReentrancyGuard {
         uint256 _amount
     ) external nonReentrant {
         require(_amount > 0, Errors.PM_AMOUNT_IS_0);
-        (uint256 debtValue, uint256 maxDebtValue, ) = _getUserHypotheticalBalanceStates(
+        (uint256 debtValue, uint256 maxDebtValue) = _getUserHypotheticalBalanceStates(
             _borrower,
             address(0),
             0,
@@ -971,7 +969,7 @@ contract PositionsManagerForCompound is ReentrancyGuard {
         uint256 _withdrawnAmount,
         uint256 _borrowedAmount
     ) internal {
-        (uint256 debtValue, uint256 maxDebtValue, ) = _getUserHypotheticalBalanceStates(
+        (uint256 debtValue, uint256 maxDebtValue) = _getUserHypotheticalBalanceStates(
             _account,
             _poolTokenAddress,
             _withdrawnAmount,
@@ -985,21 +983,14 @@ contract PositionsManagerForCompound is ReentrancyGuard {
      *  @param _poolTokenAddress The market to hypothetically withdraw/borrow in.
      *  @param _withdrawnAmount The number of tokens to hypothetically withdraw.
      *  @param _borrowedAmount The amount of underlying to hypothetically borrow.
-     *  @return (debtValue, maxDebtValue collateralValue).
+     *  @return (debtValue, maxDebtValue).
      */
     function _getUserHypotheticalBalanceStates(
         address _account,
         address _poolTokenAddress,
         uint256 _withdrawnAmount,
         uint256 _borrowedAmount
-    )
-        internal
-        returns (
-            uint256,
-            uint256,
-            uint256
-        )
-    {
+    ) internal returns (uint256, uint256) {
         // Avoid stack too deep error
         BalanceStateVars memory vars;
         ICompoundOracle compoundOracle = ICompoundOracle(comptroller.oracle());
@@ -1025,24 +1016,22 @@ contract PositionsManagerForCompound is ReentrancyGuard {
             vars.underlyingPrice = compoundOracle.getUnderlyingPrice(vars.poolTokenEntered);
             require(vars.underlyingPrice != 0, Errors.PM_ORACLE_FAIL);
 
-            if (_poolTokenAddress == vars.poolTokenEntered) {
-                vars.debtToAdd += _borrowedAmount;
-                vars.redeemedValue = _withdrawnAmount.mul(vars.underlyingPrice);
-            }
+            // Add the collateral value in this asset to the global collateral value (in dollars)
+            (, uint256 collateralFactorMantissa, ) = comptroller.markets(vars.poolTokenEntered);
             // Conversion of the collateral to dollars
             vars.collateralToAdd = vars.collateralToAdd.mul(vars.underlyingPrice);
-            // Add the debt in this market to the global debt (in dollars)
-            vars.debtValue += vars.debtToAdd.mul(vars.underlyingPrice);
-            // Add the collateral value in this asset to the global collateral value (in dollars)
-            vars.collateralValue += vars.collateralToAdd;
-            (, uint256 collateralFactorMantissa, ) = comptroller.markets(vars.poolTokenEntered);
             // Add the max debt value allowed by the collateral in this asset to the global max debt value (in dollars)
             vars.maxDebtValue += vars.collateralToAdd.mul(collateralFactorMantissa);
+            // Add the debt in this market to the global debt (in dollars)
+            vars.debtValue += vars.debtToAdd.mul(vars.underlyingPrice);
+            if (_poolTokenAddress == vars.poolTokenEntered) {
+                vars.debtValue += _borrowedAmount.mul(vars.underlyingPrice);
+                vars.maxDebtValue -= _withdrawnAmount.mul(vars.underlyingPrice).mul(
+                    collateralFactorMantissa
+                );
+            }
         }
-
-        vars.collateralValue -= vars.redeemedValue;
-
-        return (vars.debtValue, vars.maxDebtValue, vars.collateralValue);
+        return (vars.debtValue, vars.maxDebtValue);
     }
 
     /** @dev Updates borrowers tree with the new balances of a given account.
