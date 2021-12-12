@@ -308,10 +308,10 @@ describe('PositionsManagerForAave Contract', () => {
         else diff = expectedScaledBalance.sub(scaledBalance);
         expect(
           removeDigitsBigNumber(
-            2,
+            3,
             (await positionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier.getAddress())).onPool
           )
-        ).to.equal(removeDigitsBigNumber(2, expectedSupplyBalanceOnPool));
+        ).to.equal(removeDigitsBigNumber(3, expectedSupplyBalanceOnPool));
         expect(removeDigitsBigNumber(1, diff)).to.equal(0);
         expect((await positionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier.getAddress())).inP2P).to.equal(0);
       }
