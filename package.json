@@ -12,6 +12,7 @@
     "test:cream:polygon": "NETWORK=polygon-mainnet TS_NODE_TRANSPILE_ONLY=1 npx hardhat test test/compound.ts",
     "test:aave:polygon": "NETWORK=polygon-mainnet TS_NODE_TRANSPILE_ONLY=1 npx hardhat test test/aave.ts",
     "test:aave-nmax:polygon": "NETWORK=polygon-mainnet TS_NODE_TRANSPILE_ONLY=1 npx hardhat test test/aave-nmax.ts",
+    "test:dll": "TS_NODE_TRANSPILE_ONLY=1 npx hardhat test test/double-linked-list.ts",
     "deploy:compound:ropsten": "NETWORK=ropsten npx hardhat run scripts/deploy-compound.ts --network ropsten",
     "deploy:aave:polygon": "NETWORK=polygon-mainnet npx hardhat run scripts/deploy-aave.ts --network polygon",
     "coverage": "NETWORK=polygon-mainnet npx hardhat coverage --testfiles 'test/cream-polygon-test.ts'",
