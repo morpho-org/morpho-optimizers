@@ -13,9 +13,10 @@ library Errors {
     string public constant PM_DEBT_VALUE_NOT_ABOVE_MAX = "8";
     string public constant PM_AMOUNT_ABOVE_ALLOWED_TO_REPAY = "9";
     string public constant PM_TO_SEIZE_ABOVE_COLLATERAL = "10";
-    string public constant PM_REMAINING_TO_UNMATCH_IS_NOT_0 = "11";
-    string public constant PM_DEBT_VALUE_ABOVE_MAX = "12";
-    string public constant PM_DELEGATECALL_BORROWER_UPDATE_NOT_SUCCESS = "13";
-    string public constant PM_DELEGATECALL_SUPPLIER_UPDATE_NOT_SUCCESS = "14";
-    string public constant PM_SUPPLY_ABOVE_CAP_VALUE = "15";
+    string public constant PM_REMAINING_TO_MATCH_IS_NOT_0 = "11";
+    string public constant PM_REMAINING_TO_UNMATCH_IS_NOT_0 = "12";
+    string public constant PM_DEBT_VALUE_ABOVE_MAX = "13";
+    string public constant PM_DELEGATECALL_BORROWER_UPDATE_NOT_SUCCESS = "14";
+    string public constant PM_DELEGATECALL_SUPPLIER_UPDATE_NOT_SUCCESS = "15";
+    string public constant PM_SUPPLY_ABOVE_CAP_VALUE = "16";
 }
