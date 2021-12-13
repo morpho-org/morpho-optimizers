@@ -592,7 +592,10 @@ contract PositionsManagerForAave is ReentrancyGuard {
             uint256 aTokenContractBalance = poolToken.balanceOf(address(this));
             /* CASE 1: Other suppliers have enough tokens on Aave to compensate user's position*/
             if (remainingToWithdraw <= aTokenContractBalance) {
-                require(_matchSuppliers(_poolTokenAddress, remainingToWithdraw) == 0, "8");
+                require(
+                    _matchSuppliers(_poolTokenAddress, remainingToWithdraw) == 0,
+                    Errors.PM_REMAINING_TO_MATCH_IS_NOT_0
+                );
                 supplyBalanceInOf[_poolTokenAddress][_holder].inP2P -= remainingToWithdraw
                     .divWadByRay(p2pExchangeRate); // In p2pUnit
                 emit SupplierPositionUpdated(
