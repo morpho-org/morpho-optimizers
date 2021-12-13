@@ -50,6 +50,7 @@ describe('PositionsManagerForAave Contract', () => {
   // let priceOracle: Contract;
 
   let underlyingThreshold: BigNumber;
+  let nonce: BigNumber;
 
   type Market = {
     token: Contract;
@@ -270,23 +271,20 @@ describe('PositionsManagerForAave Contract', () => {
 
     const supply = async (account: Account, market: Market): Promise<void> => {
       // the amount to supply is chosen randomly between 1 and 1000 (1 minimum to avoid below threshold error)
-      let tempSigner: Signer = account.signer.connect(ethers.provider);
       let amount: BigNumber = utils.parseUnits(Math.round(Math.random() * 1000).toString()).add(WAD);
       if (isA6DecimalsToken(market.token)) {
         amount = to6Decimals(amount);
       }
-      await market.token.connect(tempSigner).approve(positionsManagerForAave.address, amount);
+      await market.token.connect(account.signer).approve(positionsManagerForAave.address, amount);
       console.log(account.index, 'supplied', tokenAmountToReadable(amount, market.token), market.name);
-      await positionsManagerForAave.connect(tempSigner).supply(market.aToken.address, amount);
+      await positionsManagerForAave.connect(account.signer).supply(market.aToken.address, amount);
       account.deposits[market.index] = account.deposits[market.index].add(amount);
-      account.signer = tempSigner;
       accounts[account.index] = account;
     };
 
     const borrow = async (account: Account, market: Market): Promise<void> => {
       let toBorrow: BigNumber;
       let minAmount = WAD;
-      let tempSigner: Signer = account.signer.connect(ethers.provider);
       let factor: BigNumber = isA6DecimalsToken(market.token) ? BigNumber.from(10).pow(6) : BigNumber.from(10).pow(18);
       if (isA6DecimalsToken(market.token)) {
         minAmount = to6Decimals(minAmount);
@@ -304,15 +302,13 @@ describe('PositionsManagerForAave Contract', () => {
           .div(1000);
         if (!toBorrow.add(minAmount).gt(maxAmount)) toBorrow = toBorrow.add(minAmount);
         console.log(account.index, 'borrowed', tokenAmountToReadable(toBorrow, market.token), market.name);
-        await positionsManagerForAave.connect(tempSigner).borrow(market.aToken.address, toBorrow);
+        await positionsManagerForAave.connect(account.signer).borrow(market.aToken.address, toBorrow);
         account.loans[market.index] = account.loans[market.index].add(toBorrow);
       }
-      account.signer = tempSigner;
       accounts[account.index] = account;
     };
 
     const withdraw = async (account: Account, market: Market): Promise<void> => {
-      let tempSigner: Signer = account.signer.connect(ethers.provider);
       let minima: BigNumber = isA6DecimalsToken(market.token) ? to6Decimals(WAD) : WAD;
       let factor: BigNumber = isA6DecimalsToken(market.token) ? BigNumber.from(10).pow(6) : BigNumber.from(10).pow(18);
       if (!account.deposits[market.index].isZero()) {
@@ -326,11 +322,27 @@ describe('PositionsManagerForAave Contract', () => {
         if (toWithdraw.lt(minima)) toWithdraw = toWithdraw.add(minima);
         if (toWithdraw.lt(withdrawableAmount)) {
           console.log(account.index, 'withdrew', tokenAmountToReadable(toWithdraw, market.token), market.name);
-          await positionsManagerForAave.connect(tempSigner).withdraw(market.aToken.address, toWithdraw);
+          await positionsManagerForAave.connect(account.signer).withdraw(market.aToken.address, toWithdraw);
           account.deposits[market.index] = account.deposits[market.index].sub(toWithdraw);
         }
       }
-      account.signer = tempSigner;
+      accounts[account.index] = account;
+    };
+
+    const repay = async (account: Account, market: Market): Promise<void> => {
+      let minima: BigNumber = isA6DecimalsToken(market.token) ? to6Decimals(WAD) : WAD;
+      let maxima: BigNumber = account.loans[market.index];
+      let toRepay: BigNumber;
+
+      if (!maxima.isZero() && maxima > minima) {
+        toRepay = BigNumber.from(Math.floor(Math.random() * 1000))
+          .mul(maxima.sub(minima))
+          .div(1000)
+          .add(minima);
+        console.log(account.index, 'repaid', tokenAmountToReadable(toRepay, market.token), market.name);
+        await positionsManagerForAave.connect(account.signer).repay(market.aToken.address, toRepay);
+        account.loans[market.index] = account.loans[market.index].sub(toRepay);
+      }
       accounts[account.index] = account;
     };
 
@@ -358,14 +370,9 @@ describe('PositionsManagerForAave Contract', () => {
     };
 
     it('🦑🦑🦑 FOUZZZZZ 🦑🦑🦑', async () => {
-      const nbOfIterations: number = 100; // config
+      const nbOfIterations: number = 500; // config
       const initialSize: number = 10; // config
-
       let tempAccount: Account;
-
-      // tempAccount = await generateAccount();
-      // await supply(tempAccount, getARandomMarket());
-      // logAccountData(tempAccount);
 
       console.log(`initializing tests with ${initialSize} suppliers`);
 
@@ -379,26 +386,30 @@ describe('PositionsManagerForAave Contract', () => {
       for await (let i of [...Array(nbOfIterations).keys()]) {
         console.log(`${i + 1}/${nbOfIterations}`);
 
-        await doWithAProbabiltyOfPercentage(20, async () => {
-          tempAccount = await generateAccount();
-          supply(tempAccount, getARandomMarket());
-        });
+        // await doWithAProbabiltyOfPercentage(20, async () => {
+        //   tempAccount = await generateAccount();
+        //   supply(tempAccount, getARandomMarket());
+        // });
 
-        await doWithAProbabiltyOfPercentage(50, async () => {
+        await doWithAProbabiltyOfPercentage(100, async () => {
           await supply(getARandomAccount(), getARandomMarket());
         });
 
         await doWithAProbabiltyOfPercentage(50, async () => {
           let acc: Account = getARandomAccount();
           let mkt: Market = getARandomMarket();
-          logAccountData(acc);
           await borrow(acc, mkt);
         });
 
-        await doWithAProbabiltyOfPercentage(70, async () => {
+        await doWithAProbabiltyOfPercentage(50, async () => {
+          let acc: Account = getARandomAccount();
+          await withdraw(acc, getARandomMarket());
+        });
+
+        await doWithAProbabiltyOfPercentage(50, async () => {
           let acc: Account = getARandomAccount();
           logAccountData(acc);
-          await withdraw(acc, getARandomMarket());
+          await repay(acc, getARandomMarket());
         });
       }
     });
