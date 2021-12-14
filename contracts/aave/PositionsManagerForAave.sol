@@ -590,12 +590,9 @@ contract PositionsManagerForAave is ReentrancyGuard {
         if (remainingToWithdraw > 0) {
             uint256 p2pExchangeRate = marketsManagerForAave.p2pUnitExchangeRate(_poolTokenAddress);
             uint256 aTokenContractBalance = poolToken.balanceOf(address(this));
-            /* CASE 1: Other suppliers have enough tokens on Aave to compensate user's position*/
+            /* CASE 1: Other suppliers have enough tokens on Aave to compensate user's position */
             if (remainingToWithdraw <= aTokenContractBalance) {
-                require(
-                    _matchSuppliers(_poolTokenAddress, remainingToWithdraw) == 0,
-                    Errors.PM_REMAINING_TO_MATCH_IS_NOT_0
-                );
+                _matchSuppliers(_poolTokenAddress, remainingToWithdraw);
                 supplyBalanceInOf[_poolTokenAddress][_holder].inP2P -= remainingToWithdraw
                     .divWadByRay(p2pExchangeRate); // In p2pUnit
                 emit SupplierPositionUpdated(
@@ -625,10 +622,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
                     0
                 );
                 remainingToWithdraw -= remaining;
-                require(
-                    _unmatchBorrowers(_poolTokenAddress, remainingToWithdraw) == 0, // We break some P2P credit lines the user had with borrowers and fallback on Aave.
-                    Errors.PM_REMAINING_TO_UNMATCH_IS_NOT_0
-                );
+                _unmatchBorrowers(_poolTokenAddress, remainingToWithdraw); // We break some P2P credit lines the user had with borrowers and fallback on Aave.
             }
         }
 
@@ -743,10 +737,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
                     0
                 );
                 remainingToRepay -= contractBorrowBalanceOnAave;
-                require(
-                    _unmatchSuppliers(_poolTokenAddress, remainingToRepay) == 0, // We break some P2P credit lines the user had with suppliers and fallback on Aave.
-                    Errors.PM_REMAINING_TO_UNMATCH_IS_NOT_0
-                );
+                _unmatchSuppliers(_poolTokenAddress, remainingToRepay); // We break some P2P credit lines the user had with suppliers and fallback on Aave.
             }
         }
 

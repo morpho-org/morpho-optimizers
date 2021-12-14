@@ -534,12 +534,9 @@ contract PositionsManagerForCompound is ReentrancyGuard {
             uint256 poolTokenContractBalanceInUnderlying = poolToken.balanceOf(address(this)).mul(
                 poolTokenExchangeRate
             );
-            /* CASE 1: Other suppliers have enough tokens on Comp to compensate user's position*/
+            /* CASE 1: Other suppliers have enough tokens on Comp to compensate user's position */
             if (remainingToWithdraw <= poolTokenContractBalanceInUnderlying) {
-                require(
-                    _matchSuppliers(_poolTokenAddress, remainingToWithdraw) == 0,
-                    Errors.PM_REMAINING_TO_MATCH_IS_NOT_0
-                );
+                _matchSuppliers(_poolTokenAddress, remainingToWithdraw);
                 supplyBalanceInOf[_poolTokenAddress][_holder].inP2P -= remainingToWithdraw.div(
                     p2pExchangeRate
                 ); // In p2pUnit
@@ -574,10 +571,7 @@ contract PositionsManagerForCompound is ReentrancyGuard {
                     0
                 );
                 remainingToWithdraw -= remaining;
-                require(
-                    _unmatchBorrowers(_poolTokenAddress, remainingToWithdraw) == 0, // We break some P2P credit lines the user had with borrowers and fallback on Comp.
-                    Errors.PM_REMAINING_TO_UNMATCH_IS_NOT_0
-                );
+                _unmatchBorrowers(_poolTokenAddress, remainingToWithdraw); // We break some P2P credit lines the user had with borrowers and fallback on Comp.
             }
         }
 
@@ -685,10 +679,7 @@ contract PositionsManagerForCompound is ReentrancyGuard {
                     0
                 );
                 remainingToRepay -= contractBorrowBalanceOnPool;
-                require(
-                    _unmatchSuppliers(_poolTokenAddress, remainingToRepay) == 0, // We break some P2P credit lines the user had with suppliers and fallback on Comp.
-                    Errors.PM_REMAINING_TO_UNMATCH_IS_NOT_0
-                );
+                _unmatchSuppliers(_poolTokenAddress, remainingToRepay); // We break some P2P credit lines the user had with suppliers and fallback on Comp.
             }
         }
 
