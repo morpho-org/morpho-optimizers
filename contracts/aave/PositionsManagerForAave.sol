@@ -98,7 +98,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
     mapping(address => uint256) public threshold; // Thresholds below the ones suppliers and borrowers cannot enter markets.
     mapping(address => uint256) public capValue; // Caps above the ones suppliers cannot add more liquidity.
 
-    IMarketsManagerForAave public marketsManagerForAave;
+    IMarketsManagerForAave public immutable marketsManagerForAave;
     ILendingPoolAddressesProvider public addressesProvider;
     IProtocolDataProvider public dataProvider;
     ILendingPool public lendingPool;
