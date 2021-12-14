@@ -664,7 +664,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
                 .mulWadByRay(normalizedVariableDebt);
             /* CASE 1: User repays less than his Aave borrow balance */
             if (_amount <= onPoolInUnderlying) {
-                underlyingToken.safeApprove(address(lendingPool), _amount);
+                underlyingToken.safeIncreaseAllowance(address(lendingPool), _amount);
                 lendingPool.repay(address(underlyingToken), _amount, 2, address(this));
                 borrowBalanceInOf[_poolTokenAddress][_borrower].onPool -= _amount.divWadByRay(
                     normalizedVariableDebt
@@ -683,7 +683,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
             }
             /* CASE 2: User repays more than his Aave borrow balance */
             else {
-                underlyingToken.safeApprove(address(lendingPool), onPoolInUnderlying);
+                underlyingToken.safeIncreaseAllowance(address(lendingPool), onPoolInUnderlying);
                 lendingPool.repay(address(underlyingToken), onPoolInUnderlying, 2, address(this));
                 borrowBalanceInOf[_poolTokenAddress][_borrower].onPool = 0;
                 remainingToRepay -= onPoolInUnderlying; // In underlying
@@ -925,7 +925,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
         // Repay Aave
         uint256 toRepay = _amount - remainingToMatch;
         if (toRepay > 0) {
-            underlyingToken.safeApprove(address(lendingPool), toRepay);
+            underlyingToken.safeIncreaseAllowance(address(lendingPool), toRepay);
             lendingPool.repay(address(underlyingToken), toRepay, 2, address(this));
         }
     }

@@ -611,7 +611,7 @@ contract PositionsManagerForCompound is ReentrancyGuard {
             );
             /* CASE 1: User repays less than his Comp borrow balance */
             if (_amount <= onPoolInUnderlying) {
-                underlyingToken.safeApprove(_poolTokenAddress, _amount);
+                underlyingToken.safeIncreaseAllowance(_poolTokenAddress, _amount);
                 poolToken.repayBorrow(_amount);
                 borrowBalanceInOf[_poolTokenAddress][_borrower].onPool -= _amount.div(borrowIndex); // In cdUnit
                 remainingToRepay = 0;
@@ -628,7 +628,7 @@ contract PositionsManagerForCompound is ReentrancyGuard {
             }
             /* CASE 2: User repays more than his Comp borrow balance */
             else {
-                underlyingToken.safeApprove(_poolTokenAddress, onPoolInUnderlying);
+                underlyingToken.safeIncreaseAllowance(_poolTokenAddress, onPoolInUnderlying);
                 poolToken.repayBorrow(onPoolInUnderlying); // Revert on error
                 borrowBalanceInOf[_poolTokenAddress][_borrower].onPool = 0;
                 remainingToRepay -= onPoolInUnderlying; // In underlying
@@ -705,7 +705,7 @@ contract PositionsManagerForCompound is ReentrancyGuard {
     function _supplyERC20ToPool(address _poolTokenAddress, uint256 _amount) internal {
         ICErc20 poolToken = ICErc20(_poolTokenAddress);
         IERC20 underlyingToken = IERC20(poolToken.underlying());
-        underlyingToken.safeApprove(_poolTokenAddress, _amount);
+        underlyingToken.safeIncreaseAllowance(_poolTokenAddress, _amount);
         require(poolToken.mint(_amount) == 0, Errors.PM_MINT_ON_COMP_FAIL);
     }
 
@@ -900,7 +900,7 @@ contract PositionsManagerForCompound is ReentrancyGuard {
             _amount - remainingToMatch,
             poolToken.borrowBalanceCurrent(address(this))
         );
-        underlyingToken.safeApprove(_poolTokenAddress, toRepay);
+        underlyingToken.safeIncreaseAllowance(_poolTokenAddress, toRepay);
         require(poolToken.repayBorrow(toRepay) == 0, Errors.PM_REPAY_ON_COMP_FAIL);
     }
 
