@@ -593,8 +593,10 @@ contract PositionsManagerForAave is ReentrancyGuard {
                     _matchSuppliers(_poolTokenAddress, remainingToWithdraw) == 0,
                     Errors.PM_REMAINING_TO_MATCH_IS_NOT_0
                 );
-                supplyBalanceInOf[_poolTokenAddress][_holder].inP2P -= remainingToWithdraw
-                    .divWadByRay(p2pExchangeRate); // In p2pUnit
+                supplyBalanceInOf[_poolTokenAddress][_holder].inP2P -= Math.min(
+                    supplyBalanceInOf[_poolTokenAddress][_holder].inP2P,
+                    remainingToWithdraw.divWadByRay(p2pExchangeRate)
+                ); // In p2pUnit
                 emit SupplierPositionUpdated(
                     _holder,
                     _poolTokenAddress,
@@ -609,8 +611,10 @@ contract PositionsManagerForAave is ReentrancyGuard {
             /* CASE 2: Other suppliers don't have enough tokens on Aave. Such scenario is called the Hard-Withdraw */
             else {
                 uint256 remaining = _matchSuppliers(_poolTokenAddress, aTokenContractBalance);
-                supplyBalanceInOf[_poolTokenAddress][_holder].inP2P -= remainingToWithdraw
-                    .divWadByRay(p2pExchangeRate); // In p2pUnit
+                supplyBalanceInOf[_poolTokenAddress][_holder].inP2P -= Math.min(
+                    supplyBalanceInOf[_poolTokenAddress][_holder].inP2P,
+                    remainingToWithdraw.divWadByRay(p2pExchangeRate)
+                );
                 emit SupplierPositionUpdated(
                     _holder,
                     _poolTokenAddress,
