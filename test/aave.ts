@@ -1269,10 +1269,10 @@ describe('PositionsManagerForAave Contract', () => {
         await hre.network.provider.send('evm_mine', []);
       }
 
-      await positionsManagerForAave.connect(supplier1).claimRewards([config.tokens.variableDebtUsdc.address]);
+      await positionsManagerForAave.connect(supplier1).claimRewards(config.tokens.variableDebtUsdc.address);
       const rewardTokenBalanceAfter1 = await wmaticToken.balanceOf(owner.getAddress());
       expect(rewardTokenBalanceAfter1).to.be.gt(rewardTokenBalanceBefore);
-      await positionsManagerForAave.connect(borrower1).claimRewards([config.tokens.aDai.address]);
+      await positionsManagerForAave.connect(borrower1).claimRewards(config.tokens.aDai.address);
       const rewardTokenBalanceAfter2 = await wmaticToken.balanceOf(owner.getAddress());
       expect(rewardTokenBalanceAfter2).to.be.gt(rewardTokenBalanceAfter1);
     });

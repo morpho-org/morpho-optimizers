@@ -17,6 +17,7 @@ import "./interfaces/aave/ILendingPoolAddressesProvider.sol";
 import "./interfaces/aave/IProtocolDataProvider.sol";
 import "./interfaces/aave/ILendingPool.sol";
 import "./interfaces/IMarketsManagerForAave.sol";
+import "./interfaces/IGetterIncentivesController.sol";
 
 /**
  *  @title PositionsManagerForAave
@@ -272,14 +273,13 @@ contract PositionsManagerForAave is ReentrancyGuard {
     }
 
     /** @dev Claims rewards from liquidity mining and transfers them to the DAO.
-     *  @param _assets The list of assets to get the rewards from (aToken, variable debt token).
+     *  @param _asset The asset to get the rewards from (aToken or variable debt token).
      */
-    function claimRewards(address[] calldata _assets) external {
-        IAaveIncentivesController(0x357D51124f59836DeD84c8a1730D72B749d8BC23).claimRewards(
-            _assets,
-            type(uint256).max,
-            marketsManagerForAave.owner()
-        );
+    function claimRewards(address _asset) external {
+        address[] memory asset = new address[](1);
+        asset[0] = _asset;
+        IAaveIncentivesController(IGetterIncentivesController(_asset).getIncentivesController())
+            .claimRewards(asset, type(uint256).max, marketsManagerForAave.owner());
     }
 
     /** @dev Supplies ERC20 tokens in a specific market.
