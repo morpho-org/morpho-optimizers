@@ -828,7 +828,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
      *  @dev Note: p2pUnitExchangeRate must have been updated before calling this function.
      *  @param _poolTokenAddress The address of the market on which Morpho want to move users.
      *  @param _amount The amount to search for in underlying.
-     *  @return remainingToUnmatch The amount remaining to munmatchatch in underlying.
+     *  @return remainingToUnmatch The amount remaining to unmatch in underlying.
      */
     function _unmatchSuppliers(address _poolTokenAddress, uint256 _amount)
         internal
@@ -928,7 +928,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
      *  @dev Note: p2pUnitExchangeRate must have been updated before calling this function.
      *  @param _poolTokenAddress The address of the market on which Morpho wants to move users.
      *  @param _amount The amount to match in underlying.
-     *  @return remainingToUnmatch The amount remaining to munmatchatch in underlying.
+     *  @return remainingToUnmatch The amount remaining to unmatch in underlying.
      */
     function _unmatchBorrowers(address _poolTokenAddress, uint256 _amount)
         internal
