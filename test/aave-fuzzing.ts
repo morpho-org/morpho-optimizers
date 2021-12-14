@@ -24,7 +24,9 @@ import {
 // and you can investigate the problem using the blockchain still
 // running in terminal 2
 
-describe('PositionsManagerForAave Contract', () => {
+describe('PositionsManagerForAave Contract', function () {
+  this.timeout(100_000_000);
+
   const LIQUIDATION_CLOSE_FACTOR_PERCENT: BigNumber = BigNumber.from(5000);
   const SECOND_PER_YEAR: BigNumber = BigNumber.from(31536000);
   const PERCENT_BASE: BigNumber = BigNumber.from(10000);
@@ -339,6 +341,7 @@ describe('PositionsManagerForAave Contract', () => {
           .mul(maxima.sub(minima))
           .div(1000)
           .add(minima);
+        await market.token.connect(account.signer).approve(positionsManagerForAave.address, toRepay);
         console.log(account.index, 'repaid', tokenAmountToReadable(toRepay, market.token), market.name);
         await positionsManagerForAave.connect(account.signer).repay(market.aToken.address, toRepay);
         account.loans[market.index] = account.loans[market.index].sub(toRepay);
@@ -371,7 +374,7 @@ describe('PositionsManagerForAave Contract', () => {
 
     it('🦑🦑🦑 FOUZZZZZ 🦑🦑🦑', async () => {
       const nbOfIterations: number = 500; // config
-      const initialSize: number = 10; // config
+      const initialSize: number = 50; // config
       let tempAccount: Account;
 
       console.log(`initializing tests with ${initialSize} suppliers`);
