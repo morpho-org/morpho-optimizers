@@ -532,7 +532,7 @@ contract PositionsManagerForCompound is ReentrancyGuard {
             uint256 poolTokenContractBalanceInUnderlying = poolToken.balanceOf(address(this)).mul(
                 poolTokenExchangeRate
             );
-            /* CASE 1: Other suppliers have enough tokens on Comp to compensate user's position*/
+            /* CASE 1: Other suppliers have enough tokens on Comp to compensate user's position */
             if (remainingToWithdraw <= poolTokenContractBalanceInUnderlying) {
                 require(
                     _matchSuppliers(_poolTokenAddress, remainingToWithdraw) == 0,
@@ -654,9 +654,10 @@ contract PositionsManagerForCompound is ReentrancyGuard {
             /* CASE 1: Other borrowers are borrowing enough on Comp to compensate user's position */
             if (remainingToRepay <= contractBorrowBalanceOnPool) {
                 _matchBorrowers(_poolTokenAddress, remainingToRepay);
-                borrowBalanceInOf[_poolTokenAddress][_borrower].inP2P -= remainingToRepay.div(
-                    p2pExchangeRate
-                );
+                borrowBalanceInOf[_poolTokenAddress][_borrower].inP2P -= Math.min(
+                    borrowBalanceInOf[_poolTokenAddress][_borrower].inP2P,
+                    remainingToRepay.div(p2pExchangeRate)
+                ); // In p2pUnit
                 emit BorrowerPositionUpdated(
                     _borrower,
                     _poolTokenAddress,
@@ -671,8 +672,9 @@ contract PositionsManagerForCompound is ReentrancyGuard {
             /* CASE 2: Other borrowers aren't borrowing enough on Comp to compensate user's position */
             else {
                 _matchBorrowers(_poolTokenAddress, contractBorrowBalanceOnPool);
-                borrowBalanceInOf[_poolTokenAddress][_borrower].inP2P -= remainingToRepay.div(
-                    p2pExchangeRate
+                borrowBalanceInOf[_poolTokenAddress][_borrower].inP2P -= Math.min(
+                    borrowBalanceInOf[_poolTokenAddress][_borrower].inP2P,
+                    remainingToRepay.div(p2pExchangeRate)
                 ); // In p2pUnit
                 emit BorrowerPositionUpdated(
                     _borrower,
