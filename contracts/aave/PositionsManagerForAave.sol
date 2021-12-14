@@ -498,9 +498,9 @@ contract PositionsManagerForAave is ReentrancyGuard {
         vars.amountToSeize = _amount
             .mul(vars.borrowedPrice)
             .mul(vars.collateralTokenUnit)
+            .mul(vars.liquidationBonus)
             .div(vars.borrowedTokenUnit)
             .div(vars.collateralPrice)
-            .mul(vars.liquidationBonus)
             .div(10000); // Same mechanism as aave. The collateral amount to seize is given.
         vars.normalizedIncome = lendingPool.getReserveNormalizedIncome(vars.tokenCollateralAddress);
         vars.totalCollateral =
