@@ -341,7 +341,7 @@ describe('PositionsManagerForAave Contract', () => {
 
       await lendingPoolAddressesProvider.connect(admin).setPriceOracle(priceOracle.address);
       const daiPrice = await oracle.getAssetPrice(config.tokens.dai.address);
-      priceOracle.setDirectPrice(config.tokens.dai.address, BigNumber.from('1200182920000000000'));
+      priceOracle.setDirectPrice(config.tokens.dai.address, WAD.mul(110).div(100));
       priceOracle.setDirectPrice(config.tokens.usdc.address, WAD);
       priceOracle.setDirectPrice(config.tokens.wbtc.address, WAD);
       priceOracle.setDirectPrice(config.tokens.usdt.address, WAD);
