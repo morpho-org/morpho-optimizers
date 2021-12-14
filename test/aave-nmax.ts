@@ -74,7 +74,7 @@ describe('PositionsManagerForAave Contract', () => {
 
     // Create and list markets
     await marketsManagerForAave.connect(owner).setPositionsManager(positionsManagerForAave.address);
-    await marketsManagerForAave.connect(owner).setLendingPool();
+    await marketsManagerForAave.connect(owner).updateLendingPool();
     await marketsManagerForAave.connect(owner).createMarket(config.tokens.aDai.address, WAD, MAX_INT);
     await marketsManagerForAave.connect(owner).createMarket(config.tokens.aUsdc.address, to6Decimals(WAD), MAX_INT);
     await marketsManagerForAave.connect(owner).createMarket(config.tokens.aWbtc.address, BigNumber.from(10).pow(4), MAX_INT);

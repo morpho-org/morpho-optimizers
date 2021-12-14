@@ -111,9 +111,9 @@ contract MarketsManagerForAave is Ownable {
         emit PositionsManagerForAaveSet(_positionsManagerForAave);
     }
 
-    /** @dev Sets the lending pool.
+    /** @dev Updates the lending pool.
      */
-    function setLendingPool() external onlyOwner {
+    function updateLendingPool() external onlyOwner {
         lendingPool = ILendingPool(addressesProvider.getLendingPool());
         emit LendingPoolSet(address(lendingPool));
     }
