@@ -587,7 +587,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
         if (remainingToWithdraw > 0) {
             uint256 p2pExchangeRate = marketsManagerForAave.p2pUnitExchangeRate(_poolTokenAddress);
             uint256 aTokenContractBalance = poolToken.balanceOf(address(this));
-            /* CASE 1: Other suppliers have enough tokens on Aave to compensate user's position*/
+            /* CASE 1: Other suppliers have enough tokens on Aave to compensate user's position */
             if (remainingToWithdraw <= aTokenContractBalance) {
                 require(
                     _matchSuppliers(_poolTokenAddress, remainingToWithdraw) == 0,
@@ -715,8 +715,10 @@ contract PositionsManagerForAave is ReentrancyGuard {
             /* CASE 1: Other borrowers are borrowing enough on Aave to compensate user's position */
             if (remainingToRepay <= contractBorrowBalanceOnAave) {
                 _matchBorrowers(_poolTokenAddress, remainingToRepay);
-                borrowBalanceInOf[_poolTokenAddress][_borrower].inP2P -= remainingToRepay
-                    .divWadByRay(p2pExchangeRate);
+                borrowBalanceInOf[_poolTokenAddress][_borrower].inP2P -= Math.min(
+                    borrowBalanceInOf[_poolTokenAddress][_borrower].inP2P,
+                    remainingToRepay.divWadByRay(p2pExchangeRate)
+                ); // In p2pUnit
                 emit BorrowerPositionUpdated(
                     _borrower,
                     _poolTokenAddress,
@@ -731,8 +733,10 @@ contract PositionsManagerForAave is ReentrancyGuard {
             /* CASE 2: Other borrowers aren't borrowing enough on Aave to compensate user's position */
             else {
                 _matchBorrowers(_poolTokenAddress, contractBorrowBalanceOnAave);
-                borrowBalanceInOf[_poolTokenAddress][_borrower].inP2P -= remainingToRepay
-                    .divWadByRay(p2pExchangeRate); // In p2pUnit
+                borrowBalanceInOf[_poolTokenAddress][_borrower].inP2P -= Math.min(
+                    borrowBalanceInOf[_poolTokenAddress][_borrower].inP2P,
+                    remainingToRepay.divWadByRay(p2pExchangeRate)
+                ); // In p2pUnit
                 emit BorrowerPositionUpdated(
                     _borrower,
                     _poolTokenAddress,
