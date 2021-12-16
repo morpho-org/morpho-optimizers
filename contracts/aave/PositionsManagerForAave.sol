@@ -543,45 +543,28 @@ contract PositionsManagerForAave is ReentrancyGuard {
             uint256 onPoolInUnderlying = supplyBalanceInOf[_poolTokenAddress][_holder]
                 .onPool
                 .mulWadByRay(normalizedIncome);
+            uint256 withdrawFromPoolInUnderlying = Math.min(
+                onPoolInUnderlying,
+                remainingToWithdraw
+            ); // In underlying
 
-            /* CASE 1: User withdraws less than his Aave supply balance */
-            if (_amount <= onPoolInUnderlying) {
-                _withdrawERC20FromAave(underlyingToken, _amount); // Revert on error
+            _withdrawERC20FromAave(underlyingToken, withdrawFromPoolInUnderlying); // Revert on error
+            supplyBalanceInOf[_poolTokenAddress][_holder].onPool -= Math.min(
+                supplyBalanceInOf[_poolTokenAddress][_holder].onPool,
+                withdrawFromPoolInUnderlying.divWadByRay(normalizedIncome)
+            ); // In poolToken
+            remainingToWithdraw -= withdrawFromPoolInUnderlying;
 
-                supplyBalanceInOf[_poolTokenAddress][_holder].onPool -= _amount.divWadByRay(
-                    normalizedIncome
-                ); // In poolToken
-                remainingToWithdraw = 0;
-
-                emit SupplierPositionUpdated(
-                    _holder,
-                    _poolTokenAddress,
-                    0,
-                    0,
-                    _amount,
-                    0,
-                    0,
-                    normalizedIncome
-                );
-            }
-            /* CASE 2: User withdraws more than his Aave supply balance */
-            else {
-                _withdrawERC20FromAave(underlyingToken, onPoolInUnderlying); // Revert on error
-
-                supplyBalanceInOf[_poolTokenAddress][_holder].onPool = 0;
-                remainingToWithdraw = _amount - onPoolInUnderlying; // In underlying
-
-                emit SupplierPositionUpdated(
-                    _holder,
-                    _poolTokenAddress,
-                    0,
-                    0,
-                    onPoolInUnderlying,
-                    0,
-                    0,
-                    normalizedIncome
-                );
-            }
+            emit SupplierPositionUpdated(
+                _holder,
+                _poolTokenAddress,
+                0,
+                0,
+                withdrawFromPoolInUnderlying,
+                0,
+                0,
+                normalizedIncome
+            );
         }
 
         /* If there remains some tokens to withdraw (CASE 2), Morpho breaks credit lines and repair them either with other users or with Aave itself */
