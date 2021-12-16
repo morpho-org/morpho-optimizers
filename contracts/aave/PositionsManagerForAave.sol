@@ -335,7 +335,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
         if (remainingToSupplyToPool > 0) {
             supplyBalanceInOf[_poolTokenAddress][msg.sender].onPool += remainingToSupplyToPool
                 .divWadByRay(normalizedIncome); // Scaled Balance
-            _supplyERC20ToAave(underlyingToken, remainingToSupplyToPool); // Revert on error
+            _supplyERC20ToPool(underlyingToken, remainingToSupplyToPool); // Revert on error
             emit SupplierPositionUpdated(
                 msg.sender,
                 _poolTokenAddress,
@@ -395,7 +395,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
 
         /* If there aren't enough suppliers waiting on Aave to match all the tokens borrowed, the rest is borrowed from Aave */
         if (remainingToBorrowOnPool > 0) {
-            _borrowERC20FromAave(underlyingToken, remainingToBorrowOnPool);
+            _borrowERC20FromPool(underlyingToken, remainingToBorrowOnPool);
 
             uint256 normalizedVariableDebt = lendingPool.getReserveNormalizedVariableDebt(
                 address(underlyingToken)
@@ -536,36 +536,12 @@ contract PositionsManagerForAave is ReentrancyGuard {
         uint256 remainingToWithdraw = _amount;
 
         /* If user has some tokens waiting on Aave */
-        if (supplyBalanceInOf[_poolTokenAddress][_holder].onPool > 0) {
-            uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(
-                address(underlyingToken)
-            );
-            uint256 onPoolInUnderlying = supplyBalanceInOf[_poolTokenAddress][_holder]
-                .onPool
-                .mulWadByRay(normalizedIncome);
-            uint256 withdrawFromPoolInUnderlying = Math.min(
-                onPoolInUnderlying,
-                remainingToWithdraw
-            ); // In underlying
-
-            _withdrawERC20FromAave(underlyingToken, withdrawFromPoolInUnderlying); // Revert on error
-            supplyBalanceInOf[_poolTokenAddress][_holder].onPool -= Math.min(
-                supplyBalanceInOf[_poolTokenAddress][_holder].onPool,
-                withdrawFromPoolInUnderlying.divWadByRay(normalizedIncome)
-            ); // In poolToken
-            remainingToWithdraw -= withdrawFromPoolInUnderlying;
-
-            emit SupplierPositionUpdated(
+        if (supplyBalanceInOf[_poolTokenAddress][_holder].onPool > 0)
+            remainingToWithdraw -= _withdrawPositionFromPool(
+                underlyingToken,
                 _holder,
-                _poolTokenAddress,
-                0,
-                0,
-                withdrawFromPoolInUnderlying,
-                0,
-                0,
-                normalizedIncome
+                remainingToWithdraw
             );
-        }
 
         /* If there remains some tokens to withdraw (CASE 2), Morpho breaks credit lines and repair them either with other users or with Aave itself */
         if (remainingToWithdraw > 0) {
@@ -650,7 +626,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
 
             /* CASE 1: User repays less than his Aave borrow balance */
             if (_amount <= onPoolInUnderlying) {
-                _repayERC20ToAave(underlyingToken, _amount); // Revert on error
+                _repayERC20ToPool(underlyingToken, _amount); // Revert on error
 
                 borrowBalanceInOf[_poolTokenAddress][_borrower].onPool -= _amount.divWadByRay(
                     normalizedVariableDebt
@@ -670,7 +646,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
             }
             /* CASE 2: User repays more than his Aave borrow balance */
             else {
-                _repayERC20ToAave(underlyingToken, onPoolInUnderlying); // Revert on error
+                _repayERC20ToPool(underlyingToken, onPoolInUnderlying); // Revert on error
 
                 borrowBalanceInOf[_poolTokenAddress][_borrower].onPool = 0;
                 remainingToRepay -= onPoolInUnderlying; // In underlying
@@ -747,11 +723,44 @@ contract PositionsManagerForAave is ReentrancyGuard {
         emit Repaid(_borrower, _poolTokenAddress, _amount);
     }
 
+    function _withdrawPositionFromPool(
+        IERC20 _underlyingToken,
+        address _holder,
+        uint256 _amount
+    ) internal returns (uint256 withdrawnInUnderlying) {
+        address poolTokenAddress = address(_underlyingToken);
+        uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(
+            address(_underlyingToken)
+        );
+        uint256 onPoolInUnderlying = supplyBalanceInOf[poolTokenAddress][_holder]
+            .onPool
+            .mulWadByRay(normalizedIncome);
+
+        withdrawnInUnderlying = Math.min(onPoolInUnderlying, _amount); // In underlying
+
+        _withdrawERC20FromPool(_underlyingToken, withdrawnInUnderlying); // Revert on error
+        supplyBalanceInOf[poolTokenAddress][_holder].onPool -= Math.min(
+            supplyBalanceInOf[poolTokenAddress][_holder].onPool,
+            withdrawnInUnderlying.divWadByRay(normalizedIncome)
+        ); // In poolToken
+
+        emit SupplierPositionUpdated(
+            _holder,
+            poolTokenAddress,
+            0,
+            0,
+            withdrawnInUnderlying,
+            0,
+            0,
+            normalizedIncome
+        );
+    }
+
     /** @dev Supplies ERC20 tokens to Aave.
      *  @param _underlyingToken The ERC20 interface of the underlying token of the market to supply to.
      *  @param _amount The amount in ERC20 tokens to supply.
      */
-    function _supplyERC20ToAave(IERC20 _underlyingToken, uint256 _amount) internal {
+    function _supplyERC20ToPool(IERC20 _underlyingToken, uint256 _amount) internal {
         _underlyingToken.safeIncreaseAllowance(address(lendingPool), _amount);
         lendingPool.deposit(address(_underlyingToken), _amount, address(this), 0);
         lendingPool.setUserUseReserveAsCollateral(address(_underlyingToken), true);
@@ -761,7 +770,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
      *  @param _underlyingToken The ERC20 interface of the underlying token of the market to withdraw from.
      *  @param _amount The amount of tokens to be withdrawn.
      */
-    function _withdrawERC20FromAave(IERC20 _underlyingToken, uint256 _amount) internal {
+    function _withdrawERC20FromPool(IERC20 _underlyingToken, uint256 _amount) internal {
         lendingPool.withdraw(address(_underlyingToken), _amount, address(this));
     }
 
@@ -769,7 +778,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
      *  @param _underlyingToken The ERC20 interface of the underlying token of the market to borrow from.
      *  @param _amount The amount of tokens to be withdrawn.
      */
-    function _borrowERC20FromAave(IERC20 _underlyingToken, uint256 _amount) internal {
+    function _borrowERC20FromPool(IERC20 _underlyingToken, uint256 _amount) internal {
         lendingPool.borrow(address(_underlyingToken), _amount, 2, 0, address(this));
     }
 
@@ -777,7 +786,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
      *  @param _underlyingToken The ERC20 interface of the underlying token of the market to repay to.
      *  @param _amount The amount of tokens to be withdrawn.
      */
-    function _repayERC20ToAave(IERC20 _underlyingToken, uint256 _amount) internal {
+    function _repayERC20ToPool(IERC20 _underlyingToken, uint256 _amount) internal {
         _underlyingToken.safeApprove(address(lendingPool), _amount);
         lendingPool.repay(address(_underlyingToken), _amount, 2, address(this));
     }
@@ -828,7 +837,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
         }
         // Withdraw from Aave
         uint256 toWithdraw = _amount - remainingToMatch;
-        if (toWithdraw > 0) _withdrawERC20FromAave(underlyingToken, toWithdraw); // Revert on error
+        if (toWithdraw > 0) _withdrawERC20FromPool(underlyingToken, toWithdraw); // Revert on error
     }
 
     /** @dev Finds liquidity in peer-to-peer and unmatches it to reconnect Aave.
@@ -873,7 +882,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
         }
         // Supply on Aave
         uint256 toSupply = _amount - remainingToUnmatch;
-        if (toSupply > 0) _supplyERC20ToAave(underlyingToken, _amount - remainingToUnmatch); // Revert on error
+        if (toSupply > 0) _supplyERC20ToPool(underlyingToken, _amount - remainingToUnmatch); // Revert on error
     }
 
     /** @dev Finds borrowers on Aave that match the given `_amount` and move them in P2P.
@@ -973,7 +982,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
             account = borrowersInP2P[_poolTokenAddress].getHead();
         }
 
-        _borrowERC20FromAave(underlyingToken, _amount - remainingToUnmatch);
+        _borrowERC20FromPool(underlyingToken, _amount - remainingToUnmatch);
     }
 
     /**
