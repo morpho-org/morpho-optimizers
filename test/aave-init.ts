@@ -11,13 +11,11 @@ import { WAD } from './utils/aave-helpers';
 // Owner is: 0xFd2DDc3693a62CB447F778f3c4a94fC722DC19b5
 // His private key: 0x89da9b678e04546984f37c39e04b11153f92fa027454e8266f5ab1149d895733
 
+// ganache-cli --fork https://polygon-mainnet.infura.io/v3/3f24d90096a34121a0b037dee8a8d4f2 -l 30000000 --mnemonic "snake snake snake snake snake snake snake snake snake snake snake snake" --db ./local-chain/
+
 // Tokens
-let aDaiToken: Contract;
 let daiToken: Contract;
 let usdcToken: Contract;
-let wbtcToken: Contract;
-let wmaticToken: Contract;
-let variableDebtDaiToken: Contract;
 
 // Contracts
 let positionsManagerForAave: Contract;
@@ -70,8 +68,6 @@ describe('Create a local fork', () => {
     // Get contract dependencies
     const aTokenAbi = require(config.tokens.aToken.abi);
     const variableDebtTokenAbi = require(config.tokens.variableDebtToken.abi);
-    aDaiToken = await ethers.getContractAt(aTokenAbi, config.tokens.aDai.address, owner);
-    variableDebtDaiToken = await ethers.getContractAt(variableDebtTokenAbi, config.tokens.variableDebtDai.address, owner);
     lendingPool = await ethers.getContractAt(require(config.aave.lendingPool.abi), config.aave.lendingPool.address, owner);
     lendingPoolAddressesProvider = await ethers.getContractAt(
       require(config.aave.lendingPoolAddressesProvider.abi),
@@ -88,8 +84,6 @@ describe('Create a local fork', () => {
     // Mint some tokens
     daiToken = await ethers.getContractAt(require(config.tokens.dai.abi), config.tokens.dai.address, owner);
     usdcToken = await ethers.getContractAt(require(config.tokens.usdc.abi), config.tokens.usdc.address, owner);
-    wbtcToken = await ethers.getContractAt(require(config.tokens.wbtc.abi), config.tokens.dai.address, owner);
-    wmaticToken = await ethers.getContractAt(require(config.tokens.wmatic.abi), config.tokens.usdc.address, owner);
 
     // Create and list markets
     await marketsManagerForAave.connect(owner).setPositionsManager(positionsManagerForAave.address);
@@ -102,7 +96,7 @@ describe('Create a local fork', () => {
   });
 
   it('Owner uses Morpho so that AAVE is saved on disk', async () => {
-    await giveTokensTo(daiToken.address, await owner.getAddress(), utils.parseUnits('10000'), 2);
+    await giveTokensTo(daiToken.address, await owner.getAddress(), utils.parseUnits('10000'), 0);
 
     const daiAmount = utils.parseUnits('1000');
     const usdcAmmount = to6Decimals(utils.parseUnits('500'));

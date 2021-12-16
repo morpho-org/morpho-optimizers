@@ -58,9 +58,12 @@ describe('PositionsManagerForAave Contract', () => {
   let snapshotId: number;
 
   const initialize = async () => {
+    ethers.provider = new ethers.providers.JsonRpcProvider('http://127.0.0.1:8545/');
+    const owner = await ethers.getSigner('0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266');
+
     // Signers
     signers = await ethers.getSigners();
-    [owner, supplier1, supplier2, supplier3, borrower1, borrower2, borrower3, liquidator] = signers;
+    [supplier1, supplier2, supplier3, borrower1, borrower2, borrower3, liquidator] = signers;
     suppliers = [supplier1, supplier2, supplier3];
     borrowers = [borrower1, borrower2, borrower3];
 
