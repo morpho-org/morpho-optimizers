@@ -102,6 +102,27 @@ describe('Create a local fork', () => {
   });
 
   it('Owner uses Morpho so that AAVE is saved on disk', async () => {
-    await giveTokensTo(daiToken.address, await owner.getAddress(), utils.parseUnits('10000'), 0);
+    await giveTokensTo(daiToken.address, await owner.getAddress(), utils.parseUnits('10000'), 2);
+
+    const daiAmount = utils.parseUnits('1000');
+    const usdcAmmount = to6Decimals(utils.parseUnits('500'));
+
+    console.log('1');
+    // supply DAI
+    await daiToken.connect(owner).approve(positionsManagerForAave.address, daiAmount);
+    await positionsManagerForAave.connect(owner).supply(config.tokens.aDai.address, daiAmount);
+
+    console.log('2');
+    // Borrow USDC
+    await positionsManagerForAave.connect(owner).borrow(config.tokens.aUsdc.address, usdcAmmount);
+
+    console.log('3');
+    // Repay USDC
+    await usdcToken.connect(owner).approve(positionsManagerForAave.address, usdcAmmount);
+    await positionsManagerForAave.connect(owner).repay(config.tokens.aUsdc.address, usdcAmmount);
+
+    console.log('4');
+    // Withdraw DAI
+    await positionsManagerForAave.connect(owner).withdraw(config.tokens.aDai.address, daiAmount);
   });
 });
