@@ -544,54 +544,8 @@ contract PositionsManagerForAave is ReentrancyGuard {
             );
 
         /* If there remains some tokens to withdraw (CASE 2), Morpho breaks credit lines and repair them either with other users or with Aave itself */
-        if (remainingToWithdraw > 0) {
-            uint256 p2pExchangeRate = marketsManagerForAave.p2pUnitExchangeRate(_poolTokenAddress);
-            uint256 aTokenContractBalance = poolToken.balanceOf(address(this));
-            /* CASE 1: Other suppliers have enough tokens on Aave to compensate user's position */
-            if (remainingToWithdraw <= aTokenContractBalance) {
-                require(
-                    _matchSuppliers(_poolTokenAddress, remainingToWithdraw) == 0,
-                    Errors.PM_REMAINING_TO_MATCH_IS_NOT_0
-                );
-                supplyBalanceInOf[_poolTokenAddress][_holder].inP2P -= Math.min(
-                    supplyBalanceInOf[_poolTokenAddress][_holder].inP2P,
-                    remainingToWithdraw.divWadByRay(p2pExchangeRate)
-                ); // In p2pUnit
-                emit SupplierPositionUpdated(
-                    _holder,
-                    _poolTokenAddress,
-                    0,
-                    0,
-                    0,
-                    remainingToWithdraw,
-                    p2pExchangeRate,
-                    0
-                );
-            }
-            /* CASE 2: Other suppliers don't have enough tokens on Aave. Such scenario is called the Hard-Withdraw */
-            else {
-                uint256 remaining = _matchSuppliers(_poolTokenAddress, aTokenContractBalance);
-                supplyBalanceInOf[_poolTokenAddress][_holder].inP2P -= Math.min(
-                    supplyBalanceInOf[_poolTokenAddress][_holder].inP2P,
-                    remainingToWithdraw.divWadByRay(p2pExchangeRate)
-                );
-                emit SupplierPositionUpdated(
-                    _holder,
-                    _poolTokenAddress,
-                    0,
-                    0,
-                    0,
-                    remainingToWithdraw,
-                    p2pExchangeRate,
-                    0
-                );
-                remainingToWithdraw -= remaining;
-                require(
-                    _unmatchBorrowers(_poolTokenAddress, remainingToWithdraw) == 0, // We break some P2P credit lines the user had with borrowers and fallback on Aave.
-                    Errors.PM_REMAINING_TO_UNMATCH_IS_NOT_0
-                );
-            }
-        }
+        if (remainingToWithdraw > 0)
+            _withdrawPositionFromP2P(poolToken, underlyingToken, _holder, remainingToWithdraw);
 
         _updateSupplierList(_poolTokenAddress, _holder);
         underlyingToken.safeTransfer(_receiver, _amount);
@@ -729,9 +683,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
         uint256 _amount
     ) internal returns (uint256 withdrawnInUnderlying) {
         address poolTokenAddress = address(_underlyingToken);
-        uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(
-            address(_underlyingToken)
-        );
+        uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(poolTokenAddress);
         uint256 onPoolInUnderlying = supplyBalanceInOf[poolTokenAddress][_holder]
             .onPool
             .mulWadByRay(normalizedIncome);
@@ -754,6 +706,45 @@ contract PositionsManagerForAave is ReentrancyGuard {
             0,
             normalizedIncome
         );
+    }
+
+    function _withdrawPositionFromP2P(
+        IAToken _poolToken,
+        IERC20 _underlyingToken,
+        address _holder,
+        uint256 _amount
+    ) internal {
+        address poolTokenAddress = address(_underlyingToken);
+        uint256 p2pExchangeRate = marketsManagerForAave.p2pUnitExchangeRate(poolTokenAddress);
+        uint256 aTokenContractBalance = _poolToken.balanceOf(address(this));
+
+        if (_amount <= aTokenContractBalance)
+            require(
+                _matchSuppliers(poolTokenAddress, Math.min(aTokenContractBalance, _amount)) == 0,
+                Errors.PM_REMAINING_TO_MATCH_IS_NOT_0
+            );
+
+        supplyBalanceInOf[poolTokenAddress][_holder].inP2P -= Math.min(
+            supplyBalanceInOf[poolTokenAddress][_holder].inP2P,
+            _amount.divWadByRay(p2pExchangeRate)
+        ); // In p2pUnit
+
+        emit SupplierPositionUpdated(
+            _holder,
+            poolTokenAddress,
+            0,
+            0,
+            0,
+            _amount,
+            p2pExchangeRate,
+            0
+        );
+
+        if (_amount > aTokenContractBalance)
+            require(
+                _unmatchBorrowers(poolTokenAddress, _amount) == 0, // We break some P2P credit lines the user had with borrowers and fallback on Aave.
+                Errors.PM_REMAINING_TO_UNMATCH_IS_NOT_0
+            );
     }
 
     /** @dev Supplies ERC20 tokens to Aave.
