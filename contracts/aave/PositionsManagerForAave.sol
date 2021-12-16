@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.7;
 
+import "hardhat/console.sol";
+
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
@@ -625,8 +627,8 @@ contract PositionsManagerForAave is ReentrancyGuard {
         );
         uint256 poolTokenContractBalance = variableDebtToken.scaledBalanceOf(address(this));
 
-        uint256 remainingToMatch = Math.min(poolTokenContractBalance, _amount);
-        remainingToMatch = _matchBorrowers(poolTokenAddress, remainingToMatch);
+        uint256 toMatch = Math.min(poolTokenContractBalance, _amount);
+        uint256 remainingToMatch = _matchBorrowers(poolTokenAddress, toMatch);
         require(
             _amount > poolTokenContractBalance || remainingToMatch == 0,
             Errors.PM_REMAINING_TO_MATCH_IS_NOT_0
@@ -696,8 +698,11 @@ contract PositionsManagerForAave is ReentrancyGuard {
         address poolTokenAddress = address(_underlyingToken);
         uint256 poolTokenContractBalance = _poolToken.balanceOf(address(this));
 
-        uint256 remainingToMatch = Math.min(poolTokenContractBalance, _amount);
-        remainingToMatch = _matchSuppliers(poolTokenAddress, remainingToMatch);
+        uint256 toMatch = Math.min(poolTokenContractBalance, _amount);
+        uint256 remainingToMatch = _matchSuppliers(poolTokenAddress, toMatch);
+        console.log("_amount: %s", _amount);
+        console.log("remainingToMatch: %s", remainingToMatch);
+        console.log("poolTokenContractBalance: %s", poolTokenContractBalance);
         require(
             _amount > poolTokenContractBalance || remainingToMatch == 0,
             Errors.PM_REMAINING_TO_MATCH_IS_NOT_0
@@ -705,7 +710,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
 
         if (remainingToMatch > 0)
             require(
-                _unmatchBorrowers(poolTokenAddress, remainingToMatch) == 0, // We break some P2P credit lines the user had with borrowers and fallback on Aave.
+                _unmatchBorrowers(poolTokenAddress, _amount - (toMatch - remainingToMatch)) == 0, // We break some P2P credit lines the user had with borrowers and fallback on Aave.
                 Errors.PM_REMAINING_TO_UNMATCH_IS_NOT_0
             );
 
@@ -742,6 +747,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
      *  @param _amount The amount of tokens to be withdrawn.
      */
     function _withdrawERC20FromPool(IERC20 _underlyingToken, uint256 _amount) internal {
+        console.log("_underlyingToken: %s", address(_underlyingToken));
         lendingPool.withdraw(address(_underlyingToken), _amount, address(this));
     }
 
