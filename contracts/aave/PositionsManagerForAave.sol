@@ -570,53 +570,8 @@ contract PositionsManagerForAave is ReentrancyGuard {
         uint256 remainingToRepay = _amount;
 
         /* If user is borrowing tokens on Aave */
-        if (borrowBalanceInOf[_poolTokenAddress][_borrower].onPool > 0) {
-            uint256 normalizedVariableDebt = lendingPool.getReserveNormalizedVariableDebt(
-                address(underlyingToken)
-            );
-            uint256 onPoolInUnderlying = borrowBalanceInOf[_poolTokenAddress][_borrower]
-                .onPool
-                .mulWadByRay(normalizedVariableDebt);
-
-            /* CASE 1: User repays less than his Aave borrow balance */
-            if (_amount <= onPoolInUnderlying) {
-                _repayERC20ToPool(underlyingToken, _amount); // Revert on error
-
-                borrowBalanceInOf[_poolTokenAddress][_borrower].onPool -= _amount.divWadByRay(
-                    normalizedVariableDebt
-                ); // In adUnit
-                remainingToRepay = 0;
-
-                emit BorrowerPositionUpdated(
-                    _borrower,
-                    _poolTokenAddress,
-                    0,
-                    0,
-                    _amount,
-                    0,
-                    0,
-                    normalizedVariableDebt
-                );
-            }
-            /* CASE 2: User repays more than his Aave borrow balance */
-            else {
-                _repayERC20ToPool(underlyingToken, onPoolInUnderlying); // Revert on error
-
-                borrowBalanceInOf[_poolTokenAddress][_borrower].onPool = 0;
-                remainingToRepay -= onPoolInUnderlying; // In underlying
-
-                emit BorrowerPositionUpdated(
-                    _borrower,
-                    _poolTokenAddress,
-                    0,
-                    0,
-                    onPoolInUnderlying,
-                    0,
-                    0,
-                    normalizedVariableDebt
-                );
-            }
-        }
+        if (borrowBalanceInOf[_poolTokenAddress][_borrower].onPool > 0)
+            remainingToRepay -= _repayPositionToPool(underlyingToken, _borrower, remainingToRepay);
 
         /* If there remains some tokens to repay (CASE 2), Morpho breaks credit lines and repair them either with other users or with Aave itself */
         if (remainingToRepay > 0) {
@@ -677,27 +632,116 @@ contract PositionsManagerForAave is ReentrancyGuard {
         emit Repaid(_borrower, _poolTokenAddress, _amount);
     }
 
+    function _repayPositionToPool(
+        IERC20 _underlyingToken,
+        address _borrower,
+        uint256 _amount
+    ) internal returns (uint256 repaidInUnderlying) {
+        address poolTokenAddress = address(_underlyingToken);
+        uint256 normalizedVariableDebt = lendingPool.getReserveNormalizedVariableDebt(
+            poolTokenAddress
+        );
+        uint256 onPoolInUnderlying = borrowBalanceInOf[poolTokenAddress][_borrower]
+            .onPool
+            .mulWadByRay(normalizedVariableDebt);
+
+        repaidInUnderlying = Math.min(onPoolInUnderlying, _amount);
+
+        _repayERC20ToPool(_underlyingToken, repaidInUnderlying); // Revert on error
+        borrowBalanceInOf[poolTokenAddress][_borrower].onPool -= Math.min(
+            borrowBalanceInOf[poolTokenAddress][_borrower].onPool,
+            repaidInUnderlying.divWadByRay(normalizedVariableDebt)
+        ); // In adUnit
+
+        emit BorrowerPositionUpdated(
+            _borrower,
+            poolTokenAddress,
+            0,
+            0,
+            repaidInUnderlying,
+            0,
+            0,
+            normalizedVariableDebt
+        );
+    }
+
+    function _repayPositionToP2P(
+        IERC20 _underlyingToken,
+        address _borrower,
+        uint256 _amount
+    ) internal {
+        address poolTokenAddress = address(_underlyingToken);
+        DataTypes.ReserveData memory reserveData = lendingPool.getReserveData(poolTokenAddress);
+        IVariableDebtToken variableDebtToken = IVariableDebtToken(
+            reserveData.variableDebtTokenAddress
+        );
+        uint256 p2pExchangeRate = marketsManagerForAave.updateP2PUnitExchangeRate(poolTokenAddress);
+        uint256 contractBorrowBalanceOnAave = variableDebtToken.scaledBalanceOf(address(this));
+
+        /* CASE 1: Other borrowers are borrowing enough on Aave to compensate user's position */
+        if (remainingToRepay <= contractBorrowBalanceOnAave) {
+            _matchBorrowers(poolTokenAddress, remainingToRepay);
+            borrowBalanceInOf[poolTokenAddress][_borrower].inP2P -= Math.min(
+                borrowBalanceInOf[poolTokenAddress][_borrower].inP2P,
+                remainingToRepay.divWadByRay(p2pExchangeRate)
+            ); // In p2pUnit
+            emit BorrowerPositionUpdated(
+                _borrower,
+                poolTokenAddress,
+                0,
+                0,
+                0,
+                remainingToRepay,
+                p2pExchangeRate,
+                0
+            );
+        }
+        /* CASE 2: Other borrowers aren't borrowing enough on Aave to compensate user's position */
+        else {
+            _matchBorrowers(poolTokenAddress, contractBorrowBalanceOnAave);
+            borrowBalanceInOf[poolTokenAddress][_borrower].inP2P -= Math.min(
+                borrowBalanceInOf[poolTokenAddress][_borrower].inP2P,
+                remainingToRepay.divWadByRay(p2pExchangeRate)
+            ); // In p2pUnit
+            emit BorrowerPositionUpdated(
+                _borrower,
+                poolTokenAddress,
+                0,
+                0,
+                0,
+                remainingToRepay,
+                p2pExchangeRate,
+                0
+            );
+            remainingToRepay -= contractBorrowBalanceOnAave;
+            require(
+                _unmatchSuppliers(poolTokenAddress, remainingToRepay) == 0, // We break some P2P credit lines the user had with suppliers and fallback on Aave.
+                Errors.PM_REMAINING_TO_UNMATCH_IS_NOT_0
+            );
+        }
+    }
+
     function _withdrawPositionFromPool(
         IERC20 _underlyingToken,
-        address _holder,
+        address _supplier,
         uint256 _amount
     ) internal returns (uint256 withdrawnInUnderlying) {
         address poolTokenAddress = address(_underlyingToken);
         uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(poolTokenAddress);
-        uint256 onPoolInUnderlying = supplyBalanceInOf[poolTokenAddress][_holder]
+        uint256 onPoolInUnderlying = supplyBalanceInOf[poolTokenAddress][_supplier]
             .onPool
             .mulWadByRay(normalizedIncome);
 
-        withdrawnInUnderlying = Math.min(onPoolInUnderlying, _amount); // In underlying
+        withdrawnInUnderlying = Math.min(onPoolInUnderlying, _amount);
 
         _withdrawERC20FromPool(_underlyingToken, withdrawnInUnderlying); // Revert on error
-        supplyBalanceInOf[poolTokenAddress][_holder].onPool -= Math.min(
-            supplyBalanceInOf[poolTokenAddress][_holder].onPool,
+        supplyBalanceInOf[poolTokenAddress][_supplier].onPool -= Math.min(
+            supplyBalanceInOf[poolTokenAddress][_supplier].onPool,
             withdrawnInUnderlying.divWadByRay(normalizedIncome)
         ); // In poolToken
 
         emit SupplierPositionUpdated(
-            _holder,
+            _supplier,
             poolTokenAddress,
             0,
             0,
@@ -711,26 +755,30 @@ contract PositionsManagerForAave is ReentrancyGuard {
     function _withdrawPositionFromP2P(
         IAToken _poolToken,
         IERC20 _underlyingToken,
-        address _holder,
+        address _supplier,
         uint256 _amount
     ) internal {
         address poolTokenAddress = address(_underlyingToken);
-        uint256 p2pExchangeRate = marketsManagerForAave.p2pUnitExchangeRate(poolTokenAddress);
-        uint256 aTokenContractBalance = _poolToken.balanceOf(address(this));
+        uint256 poolTokenContractBalance = _poolToken.balanceOf(address(this));
 
-        if (_amount <= aTokenContractBalance)
+        uint256 remainingToMatch = Math.min(poolTokenContractBalance, _amount);
+        remainingToMatch = _matchSuppliers(poolTokenAddress, remainingToMatch);
+        require(_amount > poolTokenContractBalance || remainingToMatch == 0, Errors.PM_REMAINING_TO_MATCH_IS_NOT_0);
+
+        if (remainingToMatch > 0)
             require(
-                _matchSuppliers(poolTokenAddress, Math.min(aTokenContractBalance, _amount)) == 0,
-                Errors.PM_REMAINING_TO_MATCH_IS_NOT_0
+                _unmatchBorrowers(poolTokenAddress, remainingToMatch) == 0, // We break some P2P credit lines the user had with borrowers and fallback on Aave.
+                Errors.PM_REMAINING_TO_UNMATCH_IS_NOT_0
             );
 
-        supplyBalanceInOf[poolTokenAddress][_holder].inP2P -= Math.min(
-            supplyBalanceInOf[poolTokenAddress][_holder].inP2P,
+        uint256 p2pExchangeRate = marketsManagerForAave.p2pUnitExchangeRate(poolTokenAddress);
+        supplyBalanceInOf[poolTokenAddress][_supplier].inP2P -= Math.min(
+            supplyBalanceInOf[poolTokenAddress][_supplier].inP2P,
             _amount.divWadByRay(p2pExchangeRate)
         ); // In p2pUnit
 
         emit SupplierPositionUpdated(
-            _holder,
+            _supplier,
             poolTokenAddress,
             0,
             0,
@@ -739,12 +787,6 @@ contract PositionsManagerForAave is ReentrancyGuard {
             p2pExchangeRate,
             0
         );
-
-        if (_amount > aTokenContractBalance)
-            require(
-                _unmatchBorrowers(poolTokenAddress, _amount) == 0, // We break some P2P credit lines the user had with borrowers and fallback on Aave.
-                Errors.PM_REMAINING_TO_UNMATCH_IS_NOT_0
-            );
     }
 
     /** @dev Supplies ERC20 tokens to Aave.
