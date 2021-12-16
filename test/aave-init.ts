@@ -1,13 +1,13 @@
 import * as dotenv from 'dotenv';
 dotenv.config({ path: './.env.local' });
-import { BigNumber, Contract } from 'ethers';
+import { BigNumber, Contract, Signer } from 'ethers';
 import hre, { ethers } from 'hardhat';
 const config = require(`@config/${process.env.NETWORK}-config.json`);
 import { MAX_INT, to6Decimals } from './utils/common-helpers';
 
 import { WAD } from './utils/aave-helpers';
 
-// RUN: ganache-cli --fork https://mainnet.infura.io/v3/3f24d90096a34121a0b037dee8a8d4f2 --mnemonic "snake snake snake snake snake snake snake snake snake snake snake snake" --db ./ganache-db/
+// RUN: ganache-cli --fork https://polygon-mainnet.infura.io/v3/3f24d90096a34121a0b037dee8a8d4f2 -l 30000000 --mnemonic "snake snake snake snake snake snake snake snake snake snake snake snake" --db ./ganache-db/
 // Owner is: 0xFd2DDc3693a62CB447F778f3c4a94fC722DC19b5
 // His private key: 0x89da9b678e04546984f37c39e04b11153f92fa027454e8266f5ab1149d895733
 
@@ -27,15 +27,12 @@ let lendingPoolAddressesProvider: Contract;
 let protocolDataProvider: Contract;
 let oracle: Contract;
 
+let owner: Signer;
+
 describe('Create a local fork', () => {
   it('Start init', async () => {
     ethers.provider = new ethers.providers.JsonRpcProvider('http://127.0.0.1:8545/');
-    const owner = await ethers.getSigner('0xFd2DDc3693a62CB447F778f3c4a94fC722DC19b5');
-
-    // Deploy DoubleLinkedList
-    const DoubleLinkedList = await ethers.getContractFactory('contracts/aave/libraries/DoubleLinkedList.sol:DoubleLinkedList');
-    const doubleLinkedList = await DoubleLinkedList.deploy();
-    await doubleLinkedList.deployed();
+    owner = await ethers.getSigner('0xFd2DDc3693a62CB447F778f3c4a94fC722DC19b5');
 
     // Deploy MarketsManagerForAave
     const MarketsManagerForAave = await ethers.getContractFactory('MarketsManagerForAave');
