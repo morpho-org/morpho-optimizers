@@ -13,7 +13,7 @@ import "./interfaces/aave/ILendingPool.sol";
 import "./interfaces/aave/DataTypes.sol";
 import {IAToken} from "./interfaces/aave/IAToken.sol";
 import "./interfaces/IMarketsManagerForAave.sol";
-import "../common/interfaces/IPositionsManager.sol";
+import "./PositionsManagerForAave.sol";
 
 /**
  *  @title MarketsManagerForAave
@@ -32,7 +32,7 @@ contract MarketsManagerForAave is Ownable {
     mapping(address => uint256) public p2pExchangeRate; // Current exchange rate from p2pUnit to underlying.
     mapping(address => uint256) public lastUpdateTimestamp; // Last time p2pExchangeRate was updated.
 
-    IPositionsManager public positionsManager;
+    PositionsManagerForAave public positionsManager;
     ILendingPoolAddressesProvider public addressesProvider;
     ILendingPool public lendingPool;
 
@@ -47,11 +47,6 @@ contract MarketsManagerForAave is Ownable {
      *  @param _lendingPoolAddress The address of the lending pool.
      */
     event LendingPoolSet(address _lendingPoolAddress);
-
-    /** @dev Emitted when the `positionsManager` is set.
-     *  @param _positionsManager The address of the `positionsManager`.
-     */
-    event PositionsManagerForAaveSet(address _positionsManager);
 
     /** @dev Emitted when the p2pSPY of a market is updated.
      *  @param _marketAddress The address of the market to update.
@@ -95,21 +90,18 @@ contract MarketsManagerForAave is Ownable {
 
     /** @dev Constructs the MarketsManagerForAave contract.
      *  @param _lendingPoolAddressesProvider The address of the lending pool addresses provider.
+     *  @param _positionsUpdatorLogic The address of the positions updator logic.
      */
-    constructor(address _lendingPoolAddressesProvider) {
+    constructor(address _lendingPoolAddressesProvider, address _positionsUpdatorLogic) {
         addressesProvider = ILendingPoolAddressesProvider(_lendingPoolAddressesProvider);
+        positionsManager = new PositionsManagerForAave(
+            address(this),
+            _lendingPoolAddressesProvider,
+            _positionsUpdatorLogic
+        );
     }
 
     /* External */
-
-    /** @dev Sets the `positionsManager` to interact with Aave.
-     *  @param _positionsManager The address of the positions manager.
-     */
-    function setPositionsManager(address _positionsManager) external onlyOwner {
-        require(address(positionsManager) == address(0), Errors.MM_POSITIONS_MANAGER_SET);
-        positionsManager = IPositionsManager(_positionsManager);
-        emit PositionsManagerForAaveSet(_positionsManager);
-    }
 
     /** @dev Updates the lending pool.
      */

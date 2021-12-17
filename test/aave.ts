@@ -65,29 +65,29 @@ describe('PositionsManagerForAave Contract', () => {
     suppliers = [supplier1, supplier2, supplier3];
     borrowers = [borrower1, borrower2, borrower3];
 
-    // Deploy MarketsManagerForAave
-    const MarketsManagerForAave = await ethers.getContractFactory('MarketsManagerForAave');
-    marketsManagerForAave = await MarketsManagerForAave.deploy(config.aave.lendingPoolAddressesProvider.address);
-    await marketsManagerForAave.deployed();
-
     // Deploy PositionsUpdatorLogic
     const PositionsUpdatorLogic = await ethers.getContractFactory('PositionsUpdatorLogic');
     const positionsUpdatorLogic = await PositionsUpdatorLogic.deploy();
     await positionsUpdatorLogic.deployed();
 
-    // Deploy PositionsManagerForAave
-    const PositionsManagerForAave = await ethers.getContractFactory('PositionsManagerForAave');
-    positionsManagerForAave = await PositionsManagerForAave.deploy(
-      marketsManagerForAave.address,
+    // Deploy MarketsManagerForAave
+    const MarketsManagerForAave = await ethers.getContractFactory('MarketsManagerForAave');
+    marketsManagerForAave = await MarketsManagerForAave.deploy(
       config.aave.lendingPoolAddressesProvider.address,
       positionsUpdatorLogic.address
     );
+    await marketsManagerForAave.deployed();
+
+    // Get PositionsManager
+    positionsManagerForAave = await ethers.getContractAt('PositionsManagerForAave', await marketsManagerForAave.positionsManager());
+
+    // Deploy PositionsManagerForAave
+    const PositionsManagerForAave = await ethers.getContractFactory('PositionsManagerForAave');
     fakeAavePositionsManager = await PositionsManagerForAave.deploy(
       marketsManagerForAave.address,
       config.aave.lendingPoolAddressesProvider.address,
       positionsUpdatorLogic.address
     );
-    await positionsManagerForAave.deployed();
     await fakeAavePositionsManager.deployed();
 
     // Get contract dependencies
@@ -116,7 +116,6 @@ describe('PositionsManagerForAave Contract', () => {
     underlyingThreshold = WAD;
 
     // Create and list markets
-    await marketsManagerForAave.connect(owner).setPositionsManager(positionsManagerForAave.address);
     await marketsManagerForAave.connect(owner).updateLendingPool();
     await marketsManagerForAave.connect(owner).createMarket(config.tokens.aDai.address, WAD, MAX_INT);
     await marketsManagerForAave.connect(owner).createMarket(config.tokens.aUsdc.address, to6Decimals(WAD), MAX_INT);
@@ -160,10 +159,6 @@ describe('PositionsManagerForAave Contract', () => {
       expect(marketsManagerForAave.connect(supplier1).createMarket(config.tokens.aWeth.address, WAD, MAX_INT)).to.be.reverted;
       expect(marketsManagerForAave.connect(borrower1).createMarket(config.tokens.aWeth.address, WAD, MAX_INT)).to.be.reverted;
       expect(marketsManagerForAave.connect(owner).createMarket(config.tokens.aWeth.address, WAD, MAX_INT)).not.be.reverted;
-    });
-
-    it('marketsManagerForAave should not be changed after already set by Owner', async () => {
-      expect(marketsManagerForAave.connect(owner).setPositionsManager(fakeAavePositionsManager.address)).to.be.reverted;
     });
 
     it('Only Owner should be able to update thresholds', async () => {
