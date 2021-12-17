@@ -642,6 +642,13 @@ contract PositionsManagerForAave is ReentrancyGuard {
         address _borrower,
         uint256 _amount
     ) internal {
+        address poolTokenAddress = address(_poolToken);
+        uint256 p2pExchangeRate = marketsManagerForAave.updateP2PUnitExchangeRate(poolTokenAddress);
+        borrowBalanceInOf[poolTokenAddress][_borrower].inP2P -= Math.min(
+            borrowBalanceInOf[poolTokenAddress][_borrower].inP2P,
+            _amount.divWadByRay(p2pExchangeRate)
+        ); // In p2pUnit
+
         DataTypes.ReserveData memory reserveData = lendingPool.getReserveData(
             address(_underlyingToken)
         );
@@ -649,8 +656,6 @@ contract PositionsManagerForAave is ReentrancyGuard {
             reserveData.variableDebtTokenAddress
         );
         uint256 poolTokenContractBalance = variableDebtToken.scaledBalanceOf(address(this));
-
-        address poolTokenAddress = address(_poolToken);
         uint256 borrowToMatch = Math.min(poolTokenContractBalance, _amount);
         uint256 matchedBorrow = borrowToMatch > 0
             ? _matchBorrowers(_poolToken, _underlyingToken, borrowToMatch)
@@ -660,12 +665,6 @@ contract PositionsManagerForAave is ReentrancyGuard {
             _amount > poolTokenContractBalance || matchedBorrow == borrowToMatch,
             Errors.PM_REMAINING_TO_MATCH_IS_NOT_0
         );
-
-        uint256 p2pExchangeRate = marketsManagerForAave.updateP2PUnitExchangeRate(poolTokenAddress);
-        borrowBalanceInOf[poolTokenAddress][_borrower].inP2P -= Math.min(
-            borrowBalanceInOf[poolTokenAddress][_borrower].inP2P,
-            _amount.divWadByRay(p2pExchangeRate)
-        ); // In p2pUnit
 
         if (_amount > matchedBorrow) {
             uint256 remainingSupplyToUnmatch = _unmatchSuppliers(
@@ -740,9 +739,14 @@ contract PositionsManagerForAave is ReentrancyGuard {
         address _supplier,
         uint256 _amount
     ) internal {
-        uint256 poolTokenContractBalance = _poolToken.balanceOf(address(this));
-
         address poolTokenAddress = address(_poolToken);
+        uint256 p2pExchangeRate = marketsManagerForAave.p2pUnitExchangeRate(poolTokenAddress);
+        supplyBalanceInOf[poolTokenAddress][_supplier].inP2P -= Math.min(
+            supplyBalanceInOf[poolTokenAddress][_supplier].inP2P,
+            _amount.divWadByRay(p2pExchangeRate)
+        ); // In p2pUnit
+
+        uint256 poolTokenContractBalance = _poolToken.balanceOf(address(this));
         uint256 supplyToMatch = Math.min(poolTokenContractBalance, _amount);
         uint256 matchedSupply = supplyToMatch > 0
             ? _matchSuppliers(_poolToken, _underlyingToken, supplyToMatch)
@@ -752,12 +756,6 @@ contract PositionsManagerForAave is ReentrancyGuard {
             _amount > poolTokenContractBalance || matchedSupply == supplyToMatch,
             Errors.PM_REMAINING_TO_MATCH_IS_NOT_0
         );
-
-        uint256 p2pExchangeRate = marketsManagerForAave.p2pUnitExchangeRate(poolTokenAddress);
-        supplyBalanceInOf[poolTokenAddress][_supplier].inP2P -= Math.min(
-            supplyBalanceInOf[poolTokenAddress][_supplier].inP2P,
-            _amount.divWadByRay(p2pExchangeRate)
-        ); // In p2pUnit
 
         if (_amount > matchedSupply) {
             uint256 remainingBorrowToUnmatch = _unmatchBorrowers(
