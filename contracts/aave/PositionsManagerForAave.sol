@@ -648,6 +648,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
             borrowBalanceInOf[poolTokenAddress][_borrower].inP2P,
             _amount.divWadByRay(p2pExchangeRate)
         ); // In p2pUnit
+        _updateBorrowerList(poolTokenAddress, _borrower);
 
         DataTypes.ReserveData memory reserveData = lendingPool.getReserveData(
             address(_underlyingToken)
@@ -658,10 +659,8 @@ contract PositionsManagerForAave is ReentrancyGuard {
         uint256 debtTokenContractBalance = variableDebtToken.scaledBalanceOf(address(this));
         uint256 borrowToMatch = Math.min(debtTokenContractBalance, _amount);
         uint256 matchedBorrow;
-        if (borrowToMatch > 0) {
-            _updateBorrowerList(poolTokenAddress, _borrower);
+        if (borrowToMatch > 0)
             matchedBorrow = _matchBorrowers(_poolToken, _underlyingToken, borrowToMatch);
-        }
 
         require(
             // If the requested amount is less than what Morpho is borrowing, liquidity should be totally available to repay because Morpho is borrowing it.
@@ -750,14 +749,13 @@ contract PositionsManagerForAave is ReentrancyGuard {
             supplyBalanceInOf[poolTokenAddress][_supplier].inP2P,
             _amount.divWadByRay(p2pExchangeRate)
         ); // In p2pUnit
+        _updateSupplierList(poolTokenAddress, _supplier);
 
         uint256 poolTokenContractBalance = _poolToken.balanceOf(address(this));
         uint256 supplyToMatch = Math.min(poolTokenContractBalance, _amount);
         uint256 matchedSupply;
-        if (supplyToMatch > 0) {
-            _updateSupplierList(poolTokenAddress, _supplier);
+        if (supplyToMatch > 0)
             matchedSupply = _matchSuppliers(_poolToken, _underlyingToken, supplyToMatch);
-        }
 
         require(
             // If the requested amount is less than what Morpho is supplying, liquidity should be totally available to withdraw because Morpho is supplying it.
