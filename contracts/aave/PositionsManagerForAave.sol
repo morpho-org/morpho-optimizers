@@ -693,7 +693,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
     /** @dev Withdraws `_amount` of the position of a `_supplier` on a specific market.
      *  @param _poolToken The Aave interface of the market the user wants to withdraw from.
      *  @param _underlyingToken The ERC20 interface of the underlying token of the market to withdraw from.
-     *  @param _supplier The address of the supplier to withdraw from.
+     *  @param _supplier The address of the supplier to withdraw for.
      *  @param _amount The amount of ERC20 tokens to withdraw.
      */
     function _withdrawPositionFromPool(
@@ -788,7 +788,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
 
     /** @dev Supplies ERC20 tokens to Aave.
      *  @param _underlyingToken The ERC20 interface of the underlying token of the market to supply to.
-     *  @param _amount The amount in ERC20 tokens to supply.
+     *  @param _amount The amount of tokens to supply.
      */
     function _supplyERC20ToPool(IERC20 _underlyingToken, uint256 _amount) internal {
         _underlyingToken.safeIncreaseAllowance(address(lendingPool), _amount);
@@ -798,15 +798,15 @@ contract PositionsManagerForAave is ReentrancyGuard {
 
     /** @dev Withdraws ERC20 tokens from Aave.
      *  @param _underlyingToken The ERC20 interface of the underlying token of the market to withdraw from.
-     *  @param _amount The amount of tokens to be withdrawn.
+     *  @param _amount The amount of tokens to withdraw.
      */
     function _withdrawERC20FromPool(IERC20 _underlyingToken, uint256 _amount) internal {
         lendingPool.withdraw(address(_underlyingToken), _amount, address(this));
     }
 
-    /** @dev Repays ERC20 tokens to Aave.
+    /** @dev Borrows ERC20 tokens to Aave.
      *  @param _underlyingToken The ERC20 interface of the underlying token of the market to borrow from.
-     *  @param _amount The amount of tokens to be withdrawn.
+     *  @param _amount The amount of tokens to borrow.
      */
     function _borrowERC20FromPool(IERC20 _underlyingToken, uint256 _amount) internal {
         lendingPool.borrow(address(_underlyingToken), _amount, 2, 0, address(this));
@@ -814,7 +814,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
 
     /** @dev Repays ERC20 tokens to Aave.
      *  @param _underlyingToken The ERC20 interface of the underlying token of the market to repay to.
-     *  @param _amount The amount of tokens to be withdrawn.
+     *  @param _amount The amount of tokens to repay.
      */
     function _repayERC20ToPool(IERC20 _underlyingToken, uint256 _amount) internal {
         _underlyingToken.safeApprove(address(lendingPool), _amount);
