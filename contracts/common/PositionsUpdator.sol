@@ -19,10 +19,16 @@ contract PositionsUpdator is IPositionsUpdator, PositionsUpdatorStorage {
         maxIterations = _maxIterations;
     }
 
+    /** @dev Updates the `positionsUpdatorLogic` address.
+     *  @param _positionsUpdatorLogic The new address of the `positionsUpdatorLogic`.
+     */
     function updatePositionsUpdatorLogic(address _positionsUpdatorLogic) external onlyOwner {
         positionsUpdatorLogic = IPositionsUpdatorLogic(_positionsUpdatorLogic);
     }
 
+    /** @dev Updates the `maxIterations` number.
+     *  @param _maxIterations The new `maxIterations`.
+     */
     function updateMaxIterations(uint256 _maxIterations) external onlyOwner {
         maxIterations = _maxIterations;
     }
@@ -44,7 +50,7 @@ contract PositionsUpdator is IPositionsUpdator, PositionsUpdatorStorage {
                 maxIterations
             )
         );
-        require(success, PUErrors.PU_UPDATE_BORROWER_POSITIONS_FAIL);
+        require(success, ErrorsPU.PU_UPDATE_BORROWER_POSITIONS_FAIL);
     }
 
     /** @dev Updates suppliers tree with the new balances of a given account.
@@ -64,7 +70,7 @@ contract PositionsUpdator is IPositionsUpdator, PositionsUpdatorStorage {
                 maxIterations
             )
         );
-        require(success, PUErrors.PU_UPDATE_SUPPLIER_POSITIONS_FAIL);
+        require(success, ErrorsPU.PU_UPDATE_SUPPLIER_POSITIONS_FAIL);
     }
 
     function getBorrowerAccountOnPool(address _poolTokenAddress)
@@ -79,7 +85,7 @@ contract PositionsUpdator is IPositionsUpdator, PositionsUpdatorStorage {
                 _poolTokenAddress
             )
         );
-        require(success, PUErrors.PU_GET_BORROWER_ACCOUNT_ON_POOL);
+        require(success, ErrorsPU.PU_GET_BORROWER_ACCOUNT_ON_POOL);
         return abi.decode(result, (address));
     }
 
@@ -95,7 +101,7 @@ contract PositionsUpdator is IPositionsUpdator, PositionsUpdatorStorage {
                 _poolTokenAddress
             )
         );
-        require(success, PUErrors.PU_GET_BORROWER_ACCOUNT_IN_P2P);
+        require(success, ErrorsPU.PU_GET_BORROWER_ACCOUNT_IN_P2P);
         return abi.decode(result, (address));
     }
 
@@ -111,7 +117,7 @@ contract PositionsUpdator is IPositionsUpdator, PositionsUpdatorStorage {
                 _poolTokenAddress
             )
         );
-        require(success, PUErrors.PU_GET_SUPPLIER_ACCOUNT_ON_POOL);
+        require(success, ErrorsPU.PU_GET_SUPPLIER_ACCOUNT_ON_POOL);
         return abi.decode(result, (address));
     }
 
@@ -127,7 +133,7 @@ contract PositionsUpdator is IPositionsUpdator, PositionsUpdatorStorage {
                 _poolTokenAddress
             )
         );
-        require(success, PUErrors.PU_GET_SUPPLIER_ACCOUNT_IN_P2P);
+        require(success, ErrorsPU.PU_GET_SUPPLIER_ACCOUNT_IN_P2P);
         return abi.decode(result, (address));
     }
 }

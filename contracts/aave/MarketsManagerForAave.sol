@@ -118,16 +118,19 @@ contract MarketsManagerForAave is Ownable {
         emit LendingPoolSet(address(lendingPool));
     }
 
-    /** @dev Sets the maximum number of users in tree.
-     *  @param _maxIterations The maximum number of users to have in the tree.
+    /** @dev Updates the `positionsUpdatorLogic` address.
+     *  @param _positionsUpdatorLogic The new address of the `positionsUpdatorLogic`.
+     */
+    function updatePositionsUpdatorLogic(address _positionsUpdatorLogic) external onlyOwner {
+        positionsManager.updatePositionsUpdatorLogic(_positionsUpdatorLogic);
+    }
+
+    /** @dev Updates the `maxIterations` number on the `positionsManager`.
+     *  @param _maxIterations The new `maxIterations`.
      */
     function updateMaxIterations(uint16 _maxIterations) external onlyOwner {
         positionsManager.updateMaxIterations(_maxIterations);
         emit MaxNumberUpdated(_maxIterations);
-    }
-
-    function updatePositionsUpdatorLogic(address _positionsUpdatorLogic) external onlyOwner {
-        positionsManager.updatePositionsUpdatorLogic(_positionsUpdatorLogic);
     }
 
     /** @dev Creates a new market to borrow/supply.

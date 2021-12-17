@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.7;
 
-library PUErrors {
+library ErrorsPU {
     string public constant PU_UPDATE_BORROWER_POSITIONS_FAIL = "0";
     string public constant PU_UPDATE_SUPPLIER_POSITIONS_FAIL = "1";
     string public constant PU_GET_BORROWER_ACCOUNT_ON_POOL = "2";
