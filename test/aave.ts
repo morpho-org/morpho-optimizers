@@ -16,6 +16,10 @@ import {
   aDUnitToUnderlying,
   computeNewMorphoExchangeRate,
 } from './utils/aave-helpers';
+const positionsJson = require('../artifacts/contracts/aave/PositionsManagerForAave.sol/PositionsManagerForAave.json');
+
+// RUN :
+// ganache-cli --db ./local-chain-copy --mnemonic "snake snake snake snake snake snake snake snake snake snake snake snake"
 
 describe('PositionsManagerForAave Contract', () => {
   const LIQUIDATION_CLOSE_FACTOR_PERCENT: BigNumber = BigNumber.from(5000);
@@ -59,7 +63,7 @@ describe('PositionsManagerForAave Contract', () => {
 
   const initialize = async () => {
     ethers.provider = new ethers.providers.JsonRpcProvider('http://127.0.0.1:8545/');
-    const owner = await ethers.getSigner('0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266');
+    owner = await ethers.getSigner('0xFd2DDc3693a62CB447F778f3c4a94fC722DC19b5');
 
     // Signers
     signers = await ethers.getSigners();
@@ -67,23 +71,7 @@ describe('PositionsManagerForAave Contract', () => {
     suppliers = [supplier1, supplier2, supplier3];
     borrowers = [borrower1, borrower2, borrower3];
 
-    // Deploy MarketsManagerForAave
-    const MarketsManagerForAave = await ethers.getContractFactory('MarketsManagerForAave');
-    marketsManagerForAave = await MarketsManagerForAave.deploy(config.aave.lendingPoolAddressesProvider.address);
-    await marketsManagerForAave.deployed();
-
-    // Deploy PositionsManagerForAave
-    const PositionsManagerForAave = await ethers.getContractFactory('PositionsManagerForAave');
-    positionsManagerForAave = await PositionsManagerForAave.deploy(
-      marketsManagerForAave.address,
-      config.aave.lendingPoolAddressesProvider.address
-    );
-    fakeAavePositionsManager = await PositionsManagerForAave.deploy(
-      marketsManagerForAave.address,
-      config.aave.lendingPoolAddressesProvider.address
-    );
-    await positionsManagerForAave.deployed();
-    await fakeAavePositionsManager.deployed();
+    console.log('after signers');
 
     // Get contract dependencies
     const aTokenAbi = require(config.tokens.aToken.abi);
@@ -103,21 +91,35 @@ describe('PositionsManagerForAave Contract', () => {
     );
     oracle = await ethers.getContractAt(require(config.aave.oracle.abi), lendingPoolAddressesProvider.getPriceOracle(), owner);
 
+    console.log('after get contracts');
+
+    let daiAccount = await ethers.getSigner(config.tokens.dai.whale);
+    let usdcAccount = await ethers.getSigner(config.tokens.usdc.whale);
+    let wbtcAccount = await ethers.getSigner(config.tokens.wbtc.whale);
+    let wmaticAccount = await ethers.getSigner(config.tokens.wmatic.whale);
+
     // Mint some tokens
-    daiToken = await getTokens(config.tokens.dai.whale, 'whale', signers, config.tokens.dai, utils.parseUnits('10000'));
-    usdcToken = await getTokens(config.tokens.usdc.whale, 'whale', signers, config.tokens.usdc, BigNumber.from(10).pow(10));
-    wbtcToken = await getTokens(config.tokens.wbtc.whale, 'whale', signers, config.tokens.wbtc, BigNumber.from(10).pow(8));
-    wmaticToken = await getTokens(config.tokens.wmatic.whale, 'whale', signers, config.tokens.wmatic, utils.parseUnits('100'));
+    daiToken = await ethers.getContractAt(require(config.tokens.dai.abi), config.tokens.dai.address, daiAccount);
+    usdcToken = await ethers.getContractAt(require(config.tokens.usdc.abi), config.tokens.usdc.address, usdcAccount);
+    // daiToken = await ethers.getContractAt(require(config.tokens.dai.abi), config.tokens.dai.address, daiAccount);
+    // daiToken = await ethers.getContractAt(require(config.tokens.dai.abi), config.tokens.dai.address, daiAccount);
+
+    // daiToken = await getTokens(config.tokens.dai.whale, 'whale', signers, config.tokens.dai, utils.parseUnits('10000'));
+    // usdcToken = await getTokens(config.tokens.usdc.whale, 'whale', signers, config.tokens.usdc, BigNumber.from(10).pow(10));
+    // wbtcToken = await getTokens(config.tokens.wbtc.whale, 'whale', signers, config.tokens.wbtc, BigNumber.from(10).pow(8));
+    // wmaticToken = await getTokens(config.tokens.wmatic.whale, 'whale', signers, config.tokens.wmatic, utils.parseUnits('100'));
     underlyingThreshold = WAD;
 
+    positionsManagerForAave = new ethers.Contract('0x18246e73b2e949fb80a719ccf3b79616c428d3d7', positionsJson.abi, owner);
+
     // Create and list markets
-    await marketsManagerForAave.connect(owner).setPositionsManager(positionsManagerForAave.address);
-    await marketsManagerForAave.connect(owner).setLendingPool();
-    await marketsManagerForAave.connect(owner).createMarket(config.tokens.aDai.address, WAD, MAX_INT);
-    await marketsManagerForAave.connect(owner).createMarket(config.tokens.aUsdc.address, to6Decimals(WAD), MAX_INT);
-    await marketsManagerForAave.connect(owner).createMarket(config.tokens.aWbtc.address, BigNumber.from(10).pow(4), MAX_INT);
-    await marketsManagerForAave.connect(owner).createMarket(config.tokens.aUsdt.address, to6Decimals(WAD), MAX_INT);
-    await marketsManagerForAave.connect(owner).createMarket(config.tokens.aWmatic.address, WAD, MAX_INT);
+    // await marketsManagerForAave.connect(owner).setPositionsManager(positionsManagerForAave.address);
+    // await marketsManagerForAave.connect(owner).setLendingPool();
+    // await marketsManagerForAave.connect(owner).createMarket(config.tokens.aDai.address, WAD, MAX_INT);
+    // await marketsManagerForAave.connect(owner).createMarket(config.tokens.aUsdc.address, to6Decimals(WAD), MAX_INT);
+    // await marketsManagerForAave.connect(owner).createMarket(config.tokens.aWbtc.address, BigNumber.from(10).pow(4), MAX_INT);
+    // await marketsManagerForAave.connect(owner).createMarket(config.tokens.aUsdt.address, to6Decimals(WAD), MAX_INT);
+    // await marketsManagerForAave.connect(owner).createMarket(config.tokens.aWmatic.address, WAD, MAX_INT);
   };
 
   before(initialize);
@@ -130,7 +132,14 @@ describe('PositionsManagerForAave Contract', () => {
     await hre.network.provider.send('evm_revert', [snapshotId]);
   });
 
-  describe('Deployment', () => {
+  describe('my own stufffff', () => {
+    it('should lolilol', async () => {
+      await positionsManagerForAave.connect(owner).supply(config.tokens.aDai.address, WAD);
+      console.log('lol');
+    });
+  });
+
+  xdescribe('Deployment', () => {
     it('Should deploy the contract with the right values', async () => {
       // Calculate p2pSPY
       const reserveData = await lendingPool.getReserveData(config.tokens.dai.address);
@@ -146,7 +155,7 @@ describe('PositionsManagerForAave Contract', () => {
     });
   });
 
-  describe('Governance functions', () => {
+  xdescribe('Governance functions', () => {
     it('Should revert when at least when a market in input is not a real market', async () => {
       expect(marketsManagerForAave.connect(owner).createMarket(config.tokens.usdt.address, WAD)).to.be.reverted;
     });
@@ -192,7 +201,7 @@ describe('PositionsManagerForAave Contract', () => {
     });
   });
 
-  describe('Suppliers on Aave (no borrowers)', () => {
+  xdescribe('Suppliers on Aave (no borrowers)', () => {
     it('Should have correct balances at the beginning', async () => {
       expect((await positionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier1.getAddress())).onPool).to.equal(0);
       expect((await positionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier1.getAddress())).inP2P).to.equal(0);
@@ -321,7 +330,7 @@ describe('PositionsManagerForAave Contract', () => {
     });
   });
 
-  describe('Borrowers on Aave (no suppliers)', () => {
+  xdescribe('Borrowers on Aave (no suppliers)', () => {
     it('Should have correct balances at the beginning', async () => {
       expect((await positionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower1.getAddress())).onPool).to.equal(0);
       expect((await positionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower1.getAddress())).inP2P).to.equal(0);
@@ -501,7 +510,7 @@ describe('PositionsManagerForAave Contract', () => {
     });
   });
 
-  describe('P2P interactions between supplier and borrowers', () => {
+  xdescribe('P2P interactions between supplier and borrowers', () => {
     it('Supplier should withdraw her liquidity while not enough aToken in peer-to-peer contract', async () => {
       // Supplier supplys tokens
       const supplyAmount = utils.parseUnits('10');
@@ -1018,7 +1027,7 @@ describe('PositionsManagerForAave Contract', () => {
     });
   });
 
-  describe('Test liquidation', () => {
+  xdescribe('Test liquidation', () => {
     it('Borrower should be liquidated while supply (collateral) is only on Aave', async () => {
       // Deploy custom price oracle
       const PriceOracle = await ethers.getContractFactory('contracts/aave/test/SimplePriceOracle.sol:SimplePriceOracle');
@@ -1243,7 +1252,7 @@ describe('PositionsManagerForAave Contract', () => {
     });
   });
 
-  describe('Cap Value', () => {
+  xdescribe('Cap Value', () => {
     it('Should be possible to supply up to cap value', async () => {
       const newCapValue = utils.parseUnits('2');
       const amount = utils.parseUnits('2');
@@ -1256,7 +1265,7 @@ describe('PositionsManagerForAave Contract', () => {
     });
   });
 
-  describe('Test claiming rewards', () => {
+  xdescribe('Test claiming rewards', () => {
     it('Anyone should be able to claim rewards on several markets', async () => {
       const toSupply = utils.parseUnits('100');
       const toBorrow = to6Decimals(utils.parseUnits('50'));
@@ -1279,7 +1288,7 @@ describe('PositionsManagerForAave Contract', () => {
     });
   });
 
-  describe('Test attacks', () => {
+  xdescribe('Test attacks', () => {
     it('Should not be possible to withdraw amount if the position turns to be under-collateralized', async () => {
       const toSupply = utils.parseUnits('100');
       const toBorrow = to6Decimals(utils.parseUnits('50'));

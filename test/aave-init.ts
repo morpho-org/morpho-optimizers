@@ -1,17 +1,16 @@
 import * as dotenv from 'dotenv';
 dotenv.config({ path: './.env.local' });
 import { utils, BigNumber, Contract, Signer } from 'ethers';
-import hre, { ethers } from 'hardhat';
+import { ethers } from 'hardhat';
 const config = require(`@config/${process.env.NETWORK}-config.json`);
 import { MAX_INT, to6Decimals, getTokens } from './utils/common-helpers';
 
 import { WAD } from './utils/aave-helpers';
 
-// RUN: ganache-cli --fork https://polygon-mainnet.infura.io/v3/3f24d90096a34121a0b037dee8a8d4f2 -l 30000000 --mnemonic "snake snake snake snake snake snake snake snake snake snake snake snake" --db ./ganache-db/
-// Owner is: 0xFd2DDc3693a62CB447F778f3c4a94fC722DC19b5
-// His private key: 0x89da9b678e04546984f37c39e04b11153f92fa027454e8266f5ab1149d895733
-
-// ganache-cli --fork https://polygon-mainnet.infura.io/v3/3f24d90096a34121a0b037dee8a8d4f2 -l 30000000 --mnemonic "snake snake snake snake snake snake snake snake snake snake snake snake" --db ./local-chain/
+// RUN :
+// ganache-cli --fork https://polygon-mainnet.infura.io/v3/3f24d90096a34121a0b037dee8a8d4f2 -l 30000000 --mnemonic "snake snake snake snake snake snake snake snake snake snake snake snake" --db ./local-chain/ --unlock "0x56CF0ff00fd6CfB23ce964C6338B228B0FA76640"
+// THEN (in another terminal) :
+// npx hardhat test test/aave-init.ts
 
 // Tokens
 let daiToken: Contract;
@@ -27,25 +26,14 @@ let protocolDataProvider: Contract;
 let oracle: Contract;
 
 let owner: Signer;
-
-const giveTokensTo = async (token: string, receiver: string, amount: BigNumber, slotPosition: number): Promise<void> => {
-  // Get storage slot index
-  let index = ethers.utils.solidityKeccak256(
-    ['uint256', 'uint256'],
-    [receiver, slotPosition] // key, slot
-  );
-  await setStorageAt(token, index, ethers.utils.hexlify(ethers.utils.zeroPad(amount.toHexString(), 32)));
-};
-
-const setStorageAt = async (address: string, index: string, value: string): Promise<void> => {
-  await hre.network.provider.send('hardhat_setStorageAt', [address, index, value]);
-  await hre.network.provider.send('evm_mine', []); // Just mines to the next block
-};
+const ownerAddress: string = '0xFd2DDc3693a62CB447F778f3c4a94fC722DC19b5';
+const whaleAddress: string = '0x56CF0ff00fd6CfB23ce964C6338B228B0FA76640';
 
 describe('Create a local fork', () => {
   it('Start init', async () => {
     ethers.provider = new ethers.providers.JsonRpcProvider('http://127.0.0.1:8545/');
-    owner = await ethers.getSigner('0xFd2DDc3693a62CB447F778f3c4a94fC722DC19b5');
+    owner = await ethers.getSigner(ownerAddress);
+    const whale: Signer = await ethers.getSigner(whaleAddress);
 
     // Deploy MarketsManagerForAave
     const MarketsManagerForAave = await ethers.getContractFactory('MarketsManagerForAave');
@@ -64,6 +52,8 @@ describe('Create a local fork', () => {
     );
     await positionsManagerForAave.deployed();
     await fakeAavePositionsManager.deployed();
+
+    console.log('positions', positionsManagerForAave.address);
 
     // Get contract dependencies
     const aTokenAbi = require(config.tokens.aToken.abi);
@@ -85,6 +75,10 @@ describe('Create a local fork', () => {
     daiToken = await ethers.getContractAt(require(config.tokens.dai.abi), config.tokens.dai.address, owner);
     usdcToken = await ethers.getContractAt(require(config.tokens.usdc.abi), config.tokens.usdc.address, owner);
 
+    // Give tokens to owner for later
+    await daiToken.connect(whale).transfer(ownerAddress, ethers.utils.parseUnits('2000'));
+    await usdcToken.connect(whale).transfer(ownerAddress, to6Decimals(ethers.utils.parseUnits('2000')));
+
     // Create and list markets
     await marketsManagerForAave.connect(owner).setPositionsManager(positionsManagerForAave.address);
     await marketsManagerForAave.connect(owner).setLendingPool();
@@ -96,7 +90,7 @@ describe('Create a local fork', () => {
   });
 
   it('Owner uses Morpho so that AAVE is saved on disk', async () => {
-    await giveTokensTo(daiToken.address, await owner.getAddress(), utils.parseUnits('10000'), 0);
+    // await giveTokensTo(daiToken.address, await owner.getAddress(), utils.parseUnits('10000'), 0);
 
     const daiAmount = utils.parseUnits('1000');
     const usdcAmmount = to6Decimals(utils.parseUnits('500'));
