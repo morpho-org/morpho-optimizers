@@ -612,11 +612,11 @@ contract PositionsManagerForAave is ReentrancyGuard {
 
         repaidInUnderlying = Math.min(onPoolBorrowInUnderlying, _amount);
 
-        _repayERC20ToPool(_underlyingToken, repaidInUnderlying); // Revert on error
         borrowBalanceInOf[poolTokenAddress][_borrower].onPool -= Math.min(
             borrowBalanceInOf[poolTokenAddress][_borrower].onPool,
             repaidInUnderlying.divWadByRay(normalizedVariableDebt)
         ); // In adUnit
+        _repayERC20ToPool(_underlyingToken, repaidInUnderlying); // Revert on error
 
         emit BorrowerPositionUpdated(
             _borrower,
@@ -709,11 +709,11 @@ contract PositionsManagerForAave is ReentrancyGuard {
 
         withdrawnInUnderlying = Math.min(onPoolSupplyInUnderlying, _amount);
 
-        _withdrawERC20FromPool(_underlyingToken, withdrawnInUnderlying); // Revert on error
         supplyBalanceInOf[poolTokenAddress][_supplier].onPool -= Math.min(
             onPoolSupply,
             withdrawnInUnderlying.divWadByRay(normalizedIncome)
         ); // In poolToken
+        _withdrawERC20FromPool(_underlyingToken, withdrawnInUnderlying); // Revert on error
 
         emit SupplierPositionUpdated(
             _supplier,
