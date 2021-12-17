@@ -42,6 +42,12 @@ module.exports = {
       gas: 2100000,
       gasPrice: 8000000000,
     },
+    mumbai: {
+      accounts: [process.env.DEPLOYER_PRIVATE_KEY],
+      url: `https://polygon-mumbai.infura.io/v3/${process.env.INFURA_PROJECT_ID}`,
+      gas: 2100000,
+      gasPrice: 8000000000,
+    },
   },
   namedAccounts: {
     deployer: {
