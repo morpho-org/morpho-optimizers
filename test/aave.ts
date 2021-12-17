@@ -70,15 +70,22 @@ describe('PositionsManagerForAave Contract', () => {
     marketsManagerForAave = await MarketsManagerForAave.deploy(config.aave.lendingPoolAddressesProvider.address);
     await marketsManagerForAave.deployed();
 
+    // Deploy PositionsUpdatorLogic
+    const PositionsUpdatorLogic = await ethers.getContractFactory('PositionsUpdatorLogic');
+    const positionsUpdatorLogic = await PositionsUpdatorLogic.deploy();
+    await positionsUpdatorLogic.deployed();
+
     // Deploy PositionsManagerForAave
     const PositionsManagerForAave = await ethers.getContractFactory('PositionsManagerForAave');
     positionsManagerForAave = await PositionsManagerForAave.deploy(
       marketsManagerForAave.address,
-      config.aave.lendingPoolAddressesProvider.address
+      config.aave.lendingPoolAddressesProvider.address,
+      positionsUpdatorLogic.address
     );
     fakeAavePositionsManager = await PositionsManagerForAave.deploy(
       marketsManagerForAave.address,
-      config.aave.lendingPoolAddressesProvider.address
+      config.aave.lendingPoolAddressesProvider.address,
+      positionsUpdatorLogic.address
     );
     await positionsManagerForAave.deployed();
     await fakeAavePositionsManager.deployed();
@@ -182,10 +189,10 @@ describe('PositionsManagerForAave Contract', () => {
 
     it('Should update NMAX', async () => {
       const newNMAX = BigNumber.from(3000);
-      expect(marketsManagerForAave.connect(supplier1).setMaxNumberOfUsersInTree(newNMAX)).to.be.reverted;
-      expect(marketsManagerForAave.connect(borrower1).setMaxNumberOfUsersInTree(newNMAX)).to.be.reverted;
-      expect(positionsManagerForAave.connect(owner).setMaxNumberOfUsersInTree(newNMAX)).to.be.reverted;
-      await marketsManagerForAave.connect(owner).setMaxNumberOfUsersInTree(newNMAX);
+      expect(marketsManagerForAave.connect(supplier1).updateMaxIterations(newNMAX)).to.be.reverted;
+      expect(marketsManagerForAave.connect(borrower1).updateMaxIterations(newNMAX)).to.be.reverted;
+      expect(positionsManagerForAave.connect(owner).updateMaxIterations(newNMAX)).to.be.reverted;
+      await marketsManagerForAave.connect(owner).updateMaxIterations(newNMAX);
       expect(await positionsManagerForAave.NMAX()).to.equal(newNMAX);
     });
   });

@@ -12,8 +12,8 @@ import "./interfaces/aave/IProtocolDataProvider.sol";
 import "./interfaces/aave/ILendingPool.sol";
 import "./interfaces/aave/DataTypes.sol";
 import {IAToken} from "./interfaces/aave/IAToken.sol";
-import "./interfaces/IPositionsManagerForAave.sol";
 import "./interfaces/IMarketsManagerForAave.sol";
+import "../common/interfaces/IPositionsManager.sol";
 
 /**
  *  @title MarketsManagerForAave
@@ -32,7 +32,7 @@ contract MarketsManagerForAave is Ownable {
     mapping(address => uint256) public p2pExchangeRate; // Current exchange rate from p2pUnit to underlying.
     mapping(address => uint256) public lastUpdateTimestamp; // Last time p2pExchangeRate was updated.
 
-    IPositionsManagerForAave public positionsManagerForAave;
+    IPositionsManager public positionsManagerForAave;
     ILendingPoolAddressesProvider public addressesProvider;
     ILendingPool public lendingPool;
 
@@ -107,7 +107,7 @@ contract MarketsManagerForAave is Ownable {
      */
     function setPositionsManager(address _positionsManagerForAave) external onlyOwner {
         require(address(positionsManagerForAave) == address(0), Errors.MM_POSITIONS_MANAGER_SET);
-        positionsManagerForAave = IPositionsManagerForAave(_positionsManagerForAave);
+        positionsManagerForAave = IPositionsManager(_positionsManagerForAave);
         emit PositionsManagerForAaveSet(_positionsManagerForAave);
     }
 
@@ -119,11 +119,15 @@ contract MarketsManagerForAave is Ownable {
     }
 
     /** @dev Sets the maximum number of users in tree.
-     *  @param _newMaxNumber The maximum number of users to have in the tree.
+     *  @param _maxIterations The maximum number of users to have in the tree.
      */
-    function setMaxNumberOfUsersInTree(uint16 _newMaxNumber) external onlyOwner {
-        positionsManagerForAave.setMaxNumberOfUsersInTree(_newMaxNumber);
-        emit MaxNumberUpdated(_newMaxNumber);
+    function updateMaxIterations(uint16 _maxIterations) external onlyOwner {
+        positionsManagerForAave.updateMaxIterations(_maxIterations);
+        emit MaxNumberUpdated(_maxIterations);
+    }
+
+    function updatePositionsUpdatorLogic(address _positionsUpdatorLogic) external onlyOwner {
+        positionsManagerForAave.updatePositionsUpdatorLogic(_positionsUpdatorLogic);
     }
 
     /** @dev Creates a new market to borrow/supply.

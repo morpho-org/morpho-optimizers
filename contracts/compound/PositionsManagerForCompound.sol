@@ -217,10 +217,10 @@ contract PositionsManagerForCompound is ReentrancyGuard {
     }
 
     /** @dev Sets the maximum number of users in tree.
-     *  @param _newMaxNumber The maximum number of users to have in the tree.
+     *  @param _maxIterations The maximum number of users to have in the tree.
      */
-    function setMaxNumberOfUsersInTree(uint16 _newMaxNumber) external onlyMarketsManager {
-        NMAX = _newMaxNumber;
+    function updateMaxIterations(uint16 _maxIterations) external onlyMarketsManager {
+        NMAX = _maxIterations;
     }
 
     /** @dev Sets the threshold of a market.

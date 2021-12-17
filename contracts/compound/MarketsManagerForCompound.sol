@@ -8,7 +8,7 @@ import "./libraries/CompoundMath.sol";
 import "./libraries/ErrorsForCompound.sol";
 
 import {ICErc20, IComptroller} from "./interfaces/compound/ICompound.sol";
-import "./interfaces/IPositionsManagerForCompound.sol";
+import "../common/interfaces/IPositionsManager.sol";
 
 /**
  *  @title MarketsManagerForCompound.
@@ -25,7 +25,7 @@ contract MarketsManagerForCompound is Ownable {
     mapping(address => uint256) public p2pExchangeRate; // Current exchange rate from p2pUnit to underlying.
     mapping(address => uint256) public lastUpdateBlockNumber; // Last time p2pExchangeRate was updated.
 
-    IPositionsManagerForCompound public positionsManagerForCompound;
+    IPositionsManager public positionsManagerForCompound;
 
     /* Events */
 
@@ -81,16 +81,16 @@ contract MarketsManagerForCompound is Ownable {
             address(positionsManagerForCompound) == address(0),
             Errors.MM_POSITIONS_MANAGER_SET
         );
-        positionsManagerForCompound = IPositionsManagerForCompound(_positionsManagerForCompound);
+        positionsManagerForCompound = IPositionsManager(_positionsManagerForCompound);
         emit PositionsManagerForCompoundSet(_positionsManagerForCompound);
     }
 
     /** @dev Sets the maximum number of users in tree.
-     *  @param _newMaxNumber The maximum number of users to have in the tree.
+     *  @param _maxIterations The maximum number of users to have in the tree.
      */
-    function setMaxNumberOfUsersInTree(uint16 _newMaxNumber) external onlyOwner {
-        positionsManagerForCompound.setMaxNumberOfUsersInTree(_newMaxNumber);
-        emit MaxNumberUpdated(_newMaxNumber);
+    function updateMaxIterations(uint16 _maxIterations) external onlyOwner {
+        positionsManagerForCompound.updateMaxIterations(_maxIterations);
+        emit MaxNumberUpdated(_maxIterations);
     }
 
     /** @dev Creates a new market to borrow/supply.
