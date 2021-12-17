@@ -665,7 +665,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
         require(
             // If the requested amount is less than what Morpho is borrowing, liquidity should be totally available to repay because Morpho is borrowing it.
             _amount > debtTokenContractBalance || matchedBorrow == borrowToMatch,
-            Errors.PM_REMAINING_TO_MATCH_IS_NOT_0
+            Errors.PM_COULD_NOT_MATCH_FULL_AMOUNT
         );
 
         if (_amount > matchedBorrow) {
@@ -674,7 +674,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
                 _amount - matchedBorrow
             ); // We break some P2P credit lines the borrower had with suppliers and fallback on Aave.
 
-            require(remainingSupplyToUnmatch == 0, Errors.PM_REMAINING_TO_UNMATCH_IS_NOT_0);
+            require(remainingSupplyToUnmatch == 0, Errors.PM_COULD_NOT_UNMATCH_FULL_AMOUNT);
         }
 
         emit BorrowerPositionUpdated(
@@ -760,7 +760,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
         require(
             // If the requested amount is less than what Morpho is supplying, liquidity should be totally available to withdraw because Morpho is supplying it.
             _amount > poolTokenContractBalance || matchedSupply == supplyToMatch,
-            Errors.PM_REMAINING_TO_MATCH_IS_NOT_0
+            Errors.PM_COULD_NOT_MATCH_FULL_AMOUNT
         );
 
         if (_amount > matchedSupply) {
@@ -769,7 +769,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
                 _amount - matchedSupply
             ); // We break some P2P credit lines the supplier had with borrowers and fallback on Aave.
 
-            require(remainingBorrowToUnmatch == 0, Errors.PM_REMAINING_TO_UNMATCH_IS_NOT_0);
+            require(remainingBorrowToUnmatch == 0, Errors.PM_COULD_NOT_UNMATCH_FULL_AMOUNT);
         }
 
         emit SupplierPositionUpdated(
