@@ -655,8 +655,8 @@ contract PositionsManagerForAave is ReentrancyGuard {
         IVariableDebtToken variableDebtToken = IVariableDebtToken(
             reserveData.variableDebtTokenAddress
         );
-        uint256 poolTokenContractBalance = variableDebtToken.scaledBalanceOf(address(this));
-        uint256 borrowToMatch = Math.min(poolTokenContractBalance, _amount);
+        uint256 debtTokenContractBalance = variableDebtToken.scaledBalanceOf(address(this));
+        uint256 borrowToMatch = Math.min(debtTokenContractBalance, _amount);
         uint256 matchedBorrow;
         if (borrowToMatch > 0) {
             _updateBorrowerList(poolTokenAddress, _borrower);
@@ -665,7 +665,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
 
         require(
             // If the requested amount is less than what Morpho is borrowing, liquidity should be totally available to repay because Morpho is borrowing it.
-            _amount > poolTokenContractBalance || matchedBorrow == borrowToMatch,
+            _amount > debtTokenContractBalance || matchedBorrow == borrowToMatch,
             Errors.PM_REMAINING_TO_MATCH_IS_NOT_0
         );
 
