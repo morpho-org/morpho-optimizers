@@ -444,7 +444,7 @@ describe('PositionsManagerForCompound Contract', () => {
 
   describe('P2P interactions between supplier and borrowers', () => {
     it('Supplier should withdraw her liquidity while not enough cToken in peer-to-peer contract', async () => {
-      // Supplier supplys tokens
+      // Supplier supplies tokens
       const supplyAmount = utils.parseUnits('10');
       const daiBalanceBefore1 = await daiToken.balanceOf(supplier1.getAddress());
       const expectedDaiBalanceAfter1 = daiBalanceBefore1.sub(supplyAmount);
@@ -727,7 +727,7 @@ describe('PositionsManagerForCompound Contract', () => {
     });
 
     it('Borrower in peer-to-peer only, should be able to repay all borrow amount', async () => {
-      // Supplier supplys tokens
+      // Supplier supplies tokens
       const supplyAmount = utils.parseUnits('10');
       await daiToken.connect(supplier1).approve(positionsManagerForCompound.address, supplyAmount);
       await positionsManagerForCompound.connect(supplier1).supply(config.tokens.cDai.address, supplyAmount);
@@ -772,7 +772,7 @@ describe('PositionsManagerForCompound Contract', () => {
     });
 
     it('Borrower in peer-to-peer and on Compound, should be able to repay all borrow amount', async () => {
-      // Supplier supplys tokens
+      // Supplier supplies tokens
       const supplyAmount = utils.parseUnits('10');
       const amountToApprove = utils.parseUnits('100000000');
       await daiToken.connect(supplier1).approve(positionsManagerForCompound.address, supplyAmount);
@@ -998,7 +998,7 @@ describe('PositionsManagerForCompound Contract', () => {
       await daiToken.connect(supplier1).approve(positionsManagerForCompound.address, utils.parseUnits('1000'));
       await positionsManagerForCompound.connect(supplier1).supply(config.tokens.cDai.address, utils.parseUnits('1000'));
 
-      // borrower1 supplys USDC as supply (collateral)
+      // borrower1 supplies USDC as supply (collateral)
       const amount = to6Decimals(utils.parseUnits('100'));
       await usdcToken.connect(borrower1).approve(positionsManagerForCompound.address, amount);
       await positionsManagerForCompound.connect(borrower1).supply(config.tokens.cUsdc.address, amount);

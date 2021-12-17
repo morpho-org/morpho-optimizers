@@ -499,7 +499,179 @@ describe('PositionsManagerForAave Contract', () => {
   });
 
   describe('P2P interactions between supplier and borrowers', () => {
-    it.only('Supplier should withdraw her liquidity while not enough aToken in peer-to-peer contract', async () => {
+    it('Supplier should withdraw part of his liquidity while there is some aToken', async () => {
+      // Supplier1 supplies 100 tokens
+      const supplyAmount = utils.parseUnits('100');
+      await daiToken.connect(supplier1).approve(positionsManagerForAave.address, supplyAmount);
+      await positionsManagerForAave.connect(supplier1).supply(config.tokens.aDai.address, supplyAmount);
+
+      // Supplier2 supplies 10 tokens
+      const supplyAmount2 = supplyAmount.div(10);
+      await daiToken.connect(supplier2).approve(positionsManagerForAave.address, supplyAmount2);
+      await positionsManagerForAave.connect(supplier2).supply(config.tokens.aDai.address, supplyAmount2);
+
+      // Borrower provides collateral
+      const collateralAmount = to6Decimals(utils.parseUnits('1000'));
+      await usdcToken.connect(borrower1).approve(positionsManagerForAave.address, collateralAmount);
+      await positionsManagerForAave.connect(borrower1).supply(config.tokens.aUsdc.address, collateralAmount);
+
+      // Borrowers borrows 100 tokens
+      const borrowAmount = utils.parseUnits('100');
+      await positionsManagerForAave.connect(borrower1).borrow(config.tokens.aDai.address, borrowAmount);
+
+      // Supplier withdraws 30 tokens
+      await positionsManagerForAave.connect(supplier1).withdraw(config.tokens.aDai.address, utils.parseUnits('30'));
+
+      const suppliersBalanceInP2P = (
+        await positionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier1.getAddress())
+      ).inP2P.add((await positionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier2.getAddress())).inP2P);
+
+      const suppliersBalanceOnPool = (
+        await positionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier1.getAddress())
+      ).onPool.add((await positionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier2.getAddress())).onPool);
+
+      const borrowerBalanceInP2P = (await positionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower1.getAddress()))
+        .inP2P;
+
+      expect(removeDigitsBigNumber(10, borrowerBalanceInP2P)).to.equal(removeDigitsBigNumber(10, suppliersBalanceInP2P));
+      expect(removeDigitsBigNumber(5, suppliersBalanceOnPool)).to.equal(0);
+    });
+
+    it.only('A borrower repay, there are borrowers to replace him', async () => {
+      // Supplier1 supplies 100 tokens
+      const supplyAmount = utils.parseUnits('100');
+      await daiToken.connect(supplier1).approve(positionsManagerForAave.address, supplyAmount);
+      await positionsManagerForAave.connect(supplier1).supply(config.tokens.aDai.address, supplyAmount);
+
+      // Borrower provides collateral
+      const collateralAmount = to6Decimals(utils.parseUnits('1000'));
+      await usdcToken.connect(borrower1).approve(positionsManagerForAave.address, collateralAmount);
+      await positionsManagerForAave.connect(borrower1).supply(config.tokens.aUsdc.address, collateralAmount);
+
+      // Borrowers borrows 100 tokens
+      const borrowAmount = supplyAmount;
+      await positionsManagerForAave.connect(borrower1).borrow(config.tokens.aDai.address, borrowAmount);
+
+      // Another borrower provides collateral
+      await usdcToken.connect(borrower2).approve(positionsManagerForAave.address, collateralAmount);
+      await positionsManagerForAave.connect(borrower2).supply(config.tokens.aUsdc.address, collateralAmount);
+      // he borrows 100 tokens
+      await positionsManagerForAave.connect(borrower2).borrow(config.tokens.aDai.address, borrowAmount);
+
+      // Borrower 1 repay his debt
+      await daiToken.connect(borrower1).approve(positionsManagerForAave.address, borrowAmount);
+      await positionsManagerForAave.connect(borrower1).repay(config.tokens.aDai.address, borrowAmount);
+
+      // Supplier 1 should be matched with borrower 2
+      // Borrower 1 should be free of debt
+
+      const normalizedIncome = await lendingPool.getReserveNormalizedIncome(config.tokens.dai.address);
+      const p2pExchangeRate = await marketsManagerForAave.p2pUnitExchangeRate(config.tokens.aDai.address);
+
+      const borrower2InP2P = (await positionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower2.getAddress())).inP2P;
+      const borrower2InP2PInUnderlying = p2pUnitToUnderlying(borrower2InP2P, p2pExchangeRate);
+      console.log(borrower2InP2PInUnderlying.toString());
+
+      const borrower1InP2P = (await positionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower1.getAddress())).inP2P;
+      expect(removeDigitsBigNumber(13, p2pUnitToUnderlying(borrower1InP2P, p2pExchangeRate))).to.equal(0);
+
+      const borrower1OnPool = (await positionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower1.getAddress())).onPool;
+      expect(removeDigitsBigNumber(13, underlyingToScaledBalance(borrower1OnPool, normalizedIncome))).to.equal(0);
+
+      const borrower2OnPool = (await positionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower2.getAddress())).onPool;
+      expect(removeDigitsBigNumber(13, underlyingToScaledBalance(borrower2OnPool, normalizedIncome))).to.equal(0);
+
+      const supplier1OnPool = (await positionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier1.getAddress())).onPool;
+      expect(removeDigitsBigNumber(13, underlyingToScaledBalance(supplier1OnPool, normalizedIncome))).to.equal(0);
+
+      const supplierInP2P = (await positionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier1.getAddress())).inP2P;
+      const supplierInP2PInUnderlying = p2pUnitToUnderlying(supplierInP2P, p2pExchangeRate);
+      expect(removeDigitsBigNumber(8, supplierInP2PInUnderlying.sub(borrower2InP2PInUnderlying))).to.equal(0);
+    });
+
+    it.only('A borrower repays, there is no other borrowers to replace him', async () => {
+      // Supplier1 supplies 100 tokens
+      const supplyAmount = utils.parseUnits('100');
+      await daiToken.connect(supplier1).approve(positionsManagerForAave.address, supplyAmount);
+      await positionsManagerForAave.connect(supplier1).supply(config.tokens.aDai.address, supplyAmount);
+
+      // Borrower provides collateral
+      const collateralAmount = to6Decimals(utils.parseUnits('1000'));
+      await usdcToken.connect(borrower1).approve(positionsManagerForAave.address, collateralAmount);
+      await positionsManagerForAave.connect(borrower1).supply(config.tokens.aUsdc.address, collateralAmount);
+
+      // Borrowers borrows 100 tokens
+      const borrowAmount = supplyAmount;
+      await positionsManagerForAave.connect(borrower1).borrow(config.tokens.aDai.address, borrowAmount);
+
+      // Borrower 1 repay his debt
+      await daiToken.connect(borrower1).approve(positionsManagerForAave.address, borrowAmount);
+      await positionsManagerForAave.connect(borrower1).repay(config.tokens.aDai.address, borrowAmount);
+
+      // Supplier 1 should be fully on pool
+      // Borrower 1 should be free of debt
+
+      const normalizedIncome = await lendingPool.getReserveNormalizedIncome(config.tokens.dai.address);
+      const p2pExchangeRate = await marketsManagerForAave.p2pUnitExchangeRate(config.tokens.aDai.address);
+
+      const borrower1InP2P = (await positionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower1.getAddress())).inP2P;
+      expect(removeDigitsBigNumber(13, p2pUnitToUnderlying(borrower1InP2P, p2pExchangeRate))).to.equal(0);
+
+      const borrower1OnPool = (await positionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower1.getAddress())).onPool;
+      expect(removeDigitsBigNumber(13, underlyingToScaledBalance(borrower1OnPool, normalizedIncome))).to.equal(0);
+
+      const supplierInP2P = (await positionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier1.getAddress())).inP2P;
+      expect(removeDigitsBigNumber(13, p2pUnitToUnderlying(supplierInP2P, p2pExchangeRate))).to.equal(0);
+
+      const supplierOnPool = (await positionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier1.getAddress())).onPool;
+      const supplierOnPoolInUnderlying = underlyingToScaledBalance(supplierOnPool, normalizedIncome);
+
+      expect(removeDigitsBigNumber(8, supplyAmount.sub(supplierOnPoolInUnderlying))).to.equal(0);
+    });
+
+    it.only('A supplier withdraws, there is no other supplier to replace him', async () => {
+      // Supplier1 supplies 100 tokens
+      const supplyAmount = utils.parseUnits('100');
+      await daiToken.connect(supplier1).approve(positionsManagerForAave.address, supplyAmount);
+      await positionsManagerForAave.connect(supplier1).supply(config.tokens.aDai.address, supplyAmount);
+
+      // Borrower provides collateral
+      const collateralAmount = to6Decimals(utils.parseUnits('1000'));
+      await usdcToken.connect(borrower1).approve(positionsManagerForAave.address, collateralAmount);
+      await positionsManagerForAave.connect(borrower1).supply(config.tokens.aUsdc.address, collateralAmount);
+
+      // Borrowers borrows 100 tokens
+      const borrowAmount = supplyAmount;
+      await positionsManagerForAave.connect(borrower1).borrow(config.tokens.aDai.address, borrowAmount);
+
+      // Supplier 1 withdraws his liquidity
+      await positionsManagerForAave.connect(supplier1).withdraw(config.tokens.aDai.address, supplyAmount);
+
+      // Supplier 1 should have 0 tokens on Morpho
+      // Borrower 1 should be on Pool
+
+      const normalizedIncome = await lendingPool.getReserveNormalizedIncome(config.tokens.dai.address);
+      const p2pExchangeRate = await marketsManagerForAave.p2pUnitExchangeRate(config.tokens.aDai.address);
+
+      const supplierInP2P = (await positionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier1.getAddress())).inP2P;
+      expect(removeDigitsBigNumber(13, p2pUnitToUnderlying(supplierInP2P, p2pExchangeRate))).to.equal(0);
+
+      const supplier1OnPool = (await positionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier1.getAddress())).onPool;
+      expect(removeDigitsBigNumber(13, underlyingToScaledBalance(supplier1OnPool, normalizedIncome))).to.equal(0);
+
+      const borrower1InP2P = (await positionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower1.getAddress())).inP2P;
+      expect(removeDigitsBigNumber(13, p2pUnitToUnderlying(borrower1InP2P, p2pExchangeRate))).to.equal(0);
+
+      const borrower1OnPool = (await positionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower1.getAddress())).onPool;
+      const borrower1OnPoolInUnderlying = p2pUnitToUnderlying(borrower1OnPool, p2pExchangeRate);
+      expect(removeDigitsBigNumber(8, borrowAmount.sub(borrower1OnPoolInUnderlying))).to.equal(0);
+    });
+
+    it('A supplier withdraws, there is a supplier to replace him', async () => {
+      //TODO
+    });
+
+    it('Supplier should withdraw her liquidity while not enough aToken in peer-to-peer contract', async () => {
       // supplier1 supplies tokens
       const supplyAmount1 = utils.parseUnits('10');
       await daiToken.connect(supplier1).approve(positionsManagerForAave.address, supplyAmount1);
@@ -602,7 +774,7 @@ describe('PositionsManagerForAave Contract', () => {
       ).to.equal(removeDigitsBigNumber(3, expectedBorrowBalanceInP2P));
     });
 
-    it.only('Supplier should withdraw her liquidity while not enough aToken in peer-to-peer contract (edge case 1)', async () => {
+    it('Supplier should withdraw her liquidity while not enough aToken in peer-to-peer contract (edge case 1)', async () => {
       // Supplier supplies tokens
       const supplyAmount = utils.parseUnits('10');
       const daiBalanceBefore1 = await daiToken.balanceOf(supplier1.getAddress());
@@ -899,7 +1071,7 @@ describe('PositionsManagerForAave Contract', () => {
     });
 
     it('Borrower in peer-to-peer only, should be able to repay all borrow amount', async () => {
-      // Supplier supplys tokens
+      // Supplier supplies tokens
       const supplyAmount = utils.parseUnits('10');
       await daiToken.connect(supplier1).approve(positionsManagerForAave.address, supplyAmount);
       await positionsManagerForAave.connect(supplier1).supply(config.tokens.aDai.address, supplyAmount);
@@ -945,7 +1117,7 @@ describe('PositionsManagerForAave Contract', () => {
     });
 
     it('Borrower in peer-to-peer and on Aave, should be able to repay all borrow amount', async () => {
-      // Supplier supplys tokens
+      // Supplier supplies tokens
       const supplyAmount = utils.parseUnits('10');
       const amountToApprove = utils.parseUnits('100000000');
       await daiToken.connect(supplier1).approve(positionsManagerForAave.address, supplyAmount);
