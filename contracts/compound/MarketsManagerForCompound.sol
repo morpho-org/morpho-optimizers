@@ -8,7 +8,7 @@ import "./libraries/CompoundMath.sol";
 import "./libraries/ErrorsForCompound.sol";
 
 import {ICErc20, IComptroller} from "./interfaces/compound/ICompound.sol";
-import "../common/interfaces/IPositionsManager.sol";
+import "./PositionsManagerForCompound.sol";
 
 /**
  *  @title MarketsManagerForCompound.
@@ -25,7 +25,7 @@ contract MarketsManagerForCompound is Ownable {
     mapping(address => uint256) public p2pExchangeRate; // Current exchange rate from p2pUnit to underlying.
     mapping(address => uint256) public lastUpdateBlockNumber; // Last time p2pExchangeRate was updated.
 
-    IPositionsManager public positionsManagerForCompound;
+    PositionsManagerForCompound public positionsManager;
 
     /* Events */
 
@@ -33,11 +33,6 @@ contract MarketsManagerForCompound is Ownable {
      *  @param _marketAddress The address of the market that has been created.
      */
     event MarketCreated(address _marketAddress);
-
-    /** @dev Emitted when the `positionsManagerForCompound` is set.
-     *  @param _positionsManagerForCompound The address of the `positionsManagerForCompound`.
-     */
-    event PositionsManagerForCompoundSet(address _positionsManagerForCompound);
 
     /** @dev Emitted when the p2pBPY of a market is updated.
      *  @param _marketAddress The address of the market to update.
@@ -71,25 +66,27 @@ contract MarketsManagerForCompound is Ownable {
         _;
     }
 
-    /* External */
+    /* Constructor */
 
-    /** @dev Sets the `positionsManagerForCompound` to interact with Compound.
-     *  @param _positionsManagerForCompound The address of compound module.
+    /** @dev Constructs the MarketsManagerForCompound contract.
+     *  @param _proxyComptrollerAddress The address of the proxy comptroller.
+     *  @param _positionsUpdatorLogic The address positions udpator logic.
      */
-    function setPositionsManager(address _positionsManagerForCompound) external onlyOwner {
-        require(
-            address(positionsManagerForCompound) == address(0),
-            Errors.MM_POSITIONS_MANAGER_SET
+    constructor(address _proxyComptrollerAddress, address _positionsUpdatorLogic) {
+        positionsManager = new PositionsManagerForCompound(
+            address(this),
+            _proxyComptrollerAddress,
+            _positionsUpdatorLogic
         );
-        positionsManagerForCompound = IPositionsManager(_positionsManagerForCompound);
-        emit PositionsManagerForCompoundSet(_positionsManagerForCompound);
     }
+
+    /* External */
 
     /** @dev Sets the maximum number of users in tree.
      *  @param _maxIterations The maximum number of users to have in the tree.
      */
     function updateMaxIterations(uint16 _maxIterations) external onlyOwner {
-        positionsManagerForCompound.updateMaxIterations(_maxIterations);
+        positionsManager.updateMaxIterations(_maxIterations);
         emit MaxNumberUpdated(_maxIterations);
     }
 
@@ -99,9 +96,9 @@ contract MarketsManagerForCompound is Ownable {
      */
     function createMarket(address _marketAddress, uint256 _threshold) external onlyOwner {
         require(!isCreated[_marketAddress], Errors.MM_MARKET_ALREADY_CREATED);
-        uint256[] memory results = positionsManagerForCompound.createMarket(_marketAddress);
+        uint256[] memory results = positionsManager.createMarket(_marketAddress);
         require(results[0] == 0, Errors.MM_MARKET_CREATED_FAIL_ON_COMP);
-        positionsManagerForCompound.setThreshold(_marketAddress, _threshold);
+        positionsManager.setThreshold(_marketAddress, _threshold);
         lastUpdateBlockNumber[_marketAddress] = block.number;
         p2pExchangeRate[_marketAddress] = 1e18;
         isCreated[_marketAddress] = true;
@@ -118,7 +115,7 @@ contract MarketsManagerForCompound is Ownable {
         onlyOwner
         isMarketCreated(_marketAddress)
     {
-        positionsManagerForCompound.setThreshold(_marketAddress, _newThreshold);
+        positionsManager.setThreshold(_marketAddress, _newThreshold);
         emit ThresholdUpdated(_marketAddress, _newThreshold);
     }
 

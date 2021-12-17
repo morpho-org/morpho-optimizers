@@ -56,22 +56,29 @@ describe('PositionsManagerForCompound Contract', () => {
     suppliers = [supplier1, supplier2, supplier3];
     borrowers = [borrower1, borrower2, borrower3];
 
+    // Deploy PositionsUpdatorLogic
+    const PositionsUpdatorLogic = await ethers.getContractFactory('PositionsUpdatorLogic');
+    const positionsUpdatorLogic = await PositionsUpdatorLogic.deploy();
+    await positionsUpdatorLogic.deployed();
+
     // Deploy MarketsManagerForCompound
     const MarketsManagerForCompound = await ethers.getContractFactory('MarketsManagerForCompound');
-    marketsManagerForCompound = await MarketsManagerForCompound.deploy();
+    marketsManagerForCompound = await MarketsManagerForCompound.deploy(config.compound.comptroller.address, positionsUpdatorLogic.address);
     await marketsManagerForCompound.deployed();
+
+    // Get PositionsManager
+    positionsManagerForCompound = await ethers.getContractAt(
+      'PositionsManagerForCompound',
+      await marketsManagerForCompound.positionsManager()
+    );
 
     // Deploy PositionsManagerForCompound
     const PositionsManagerForCompound = await ethers.getContractFactory('PositionsManagerForCompound');
-    positionsManagerForCompound = await PositionsManagerForCompound.deploy(
-      marketsManagerForCompound.address,
-      config.compound.comptroller.address
-    );
     fakeCompoundPositionsManager = await PositionsManagerForCompound.deploy(
       marketsManagerForCompound.address,
-      config.compound.comptroller.address
+      config.compound.comptroller.address,
+      positionsUpdatorLogic.address
     );
-    await positionsManagerForCompound.deployed();
     await fakeCompoundPositionsManager.deployed();
 
     // Get contract dependencies
@@ -91,7 +98,6 @@ describe('PositionsManagerForCompound Contract', () => {
     underlyingThreshold = WAD;
 
     // Create and list markets
-    await marketsManagerForCompound.connect(owner).setPositionsManager(positionsManagerForCompound.address);
     await marketsManagerForCompound.connect(owner).createMarket(config.tokens.cDai.address, WAD);
     await marketsManagerForCompound.connect(owner).createMarket(config.tokens.cUsdc.address, to6Decimals(WAD));
     await marketsManagerForCompound.connect(owner).createMarket(config.tokens.cUni.address, WAD);
@@ -140,10 +146,6 @@ describe('PositionsManagerForCompound Contract', () => {
       expect(positionsManagerForCompound.connect(owner).createMarket(config.tokens.cMkr.address, WAD)).to.be.reverted;
       await marketsManagerForCompound.connect(owner).createMarket(config.tokens.cMkr.address, WAD);
       expect(await comptroller.checkMembership(positionsManagerForCompound.address, config.tokens.cMkr.address)).to.be.true;
-    });
-
-    it('marketsManagerForCompound should not be changed after already set by Owner', async () => {
-      expect(marketsManagerForCompound.connect(owner).setPositionsManager(fakeCompoundPositionsManager.address)).to.be.reverted;
     });
 
     it('Only Owner should be able to update thresholds', async () => {
@@ -836,8 +838,8 @@ describe('PositionsManagerForCompound Contract', () => {
       );
 
       // Check Morpho balances
-      expect(removeDigitsBigNumber(6, await cDaiToken.balanceOf(positionsManagerForCompound.address))).to.equal(
-        removeDigitsBigNumber(6, expectedMorphoCTokenBalance)
+      expect(removeDigitsBigNumber(7, await cDaiToken.balanceOf(positionsManagerForCompound.address))).to.equal(
+        removeDigitsBigNumber(7, expectedMorphoCTokenBalance)
       );
       // Issue here: we cannot access the most updated borrow balance as it's updated during the repayBorrow on Compound.
       // const expectedMorphoBorrowBalance2 = morphoBorrowBalanceBefore2.sub(borrowerBalanceOnPool.mul(borrowIndex2).div(WAD));

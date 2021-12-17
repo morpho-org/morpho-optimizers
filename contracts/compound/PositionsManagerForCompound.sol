@@ -6,18 +6,18 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 
-import "../common/libraries/DoubleLinkedList.sol";
+import "../common/PositionsUpdator.sol";
+
 import "./libraries/CompoundMath.sol";
 import "./libraries/ErrorsForCompound.sol";
 import {ICErc20, IComptroller, ICompoundOracle} from "./interfaces/compound/ICompound.sol";
 import "./interfaces/IMarketsManagerForCompound.sol";
 
 /**
- *  @title MorphoPositionsManagerForComp?
+ *  @title MorphoPositionsManagerForComp.
  *  @dev Smart contract interacting with Comp to enable P2P supply/borrow positions that can fallback on Comp's pool using poolToken tokens.
  */
 contract PositionsManagerForCompound is ReentrancyGuard {
-    using DoubleLinkedList for DoubleLinkedList.List;
     using CompoundMath for uint256;
     using SafeERC20 for IERC20;
     using Math for uint256;
@@ -58,18 +58,15 @@ contract PositionsManagerForCompound is ReentrancyGuard {
 
     uint16 public maxIterations = 20;
     uint8 public constant CTOKEN_DECIMALS = 8;
-    mapping(address => DoubleLinkedList.List) internal suppliersInP2P; // Suppliers in peer-to-peer.
-    mapping(address => DoubleLinkedList.List) internal suppliersOnPool; // Suppliers on Comp.
-    mapping(address => DoubleLinkedList.List) internal borrowersInP2P; // Borrowers in peer-to-peer.
-    mapping(address => DoubleLinkedList.List) internal borrowersOnPool; // Borrowers on Comp.
     mapping(address => mapping(address => SupplyBalance)) public supplyBalanceInOf; // For a given market, the supply balance of user.
     mapping(address => mapping(address => BorrowBalance)) public borrowBalanceInOf; // For a given market, the borrow balance of user.
     mapping(address => mapping(address => bool)) public accountMembership; // Whether the account is in the market or not.
     mapping(address => address[]) public enteredMarkets; // Markets entered by a user.
     mapping(address => uint256) public threshold; // Thresholds below the ones suppliers and borrowers cannot enter markets.
 
+    PositionsUpdator public immutable positionsUpdator;
     IComptroller public comptroller;
-    IMarketsManagerForCompound public marketsManagerForCompound;
+    IMarketsManagerForCompound public marketsManager;
 
     /* Events */
 
@@ -166,10 +163,7 @@ contract PositionsManagerForCompound is ReentrancyGuard {
      *  @param _poolTokenAddress The address of the market.
      */
     modifier isMarketCreated(address _poolTokenAddress) {
-        require(
-            marketsManagerForCompound.isCreated(_poolTokenAddress),
-            Errors.PM_MARKET_NOT_CREATED
-        );
+        require(marketsManager.isCreated(_poolTokenAddress), Errors.PM_MARKET_NOT_CREATED);
         _;
     }
 
@@ -185,19 +179,29 @@ contract PositionsManagerForCompound is ReentrancyGuard {
     /** @dev Prevents a user to call function only allowed for the markets manager.
      */
     modifier onlyMarketsManager() {
-        require(msg.sender == address(marketsManagerForCompound), Errors.PM_ONLY_MARKETS_MANAGER);
+        require(msg.sender == address(marketsManager), Errors.PM_ONLY_MARKETS_MANAGER);
         _;
     }
 
     /* Constructor */
 
     /** @dev Constructs the PositionsManagerForCompound contract.
-     *  @param _compoundMarketsManager The address of the markets manager.
+     *  @param _marketsManager The address of the markets manager.
      *  @param _proxyComptrollerAddress The address of the proxy comptroller.
+     *  @param _positionsUpdatorLogic The address positions udpator logic.
      */
-    constructor(address _compoundMarketsManager, address _proxyComptrollerAddress) {
-        marketsManagerForCompound = IMarketsManagerForCompound(_compoundMarketsManager);
+    constructor(
+        address _marketsManager,
+        address _proxyComptrollerAddress,
+        address _positionsUpdatorLogic
+    ) {
+        marketsManager = IMarketsManagerForCompound(_marketsManager);
         comptroller = IComptroller(_proxyComptrollerAddress);
+        positionsUpdator = new PositionsUpdator(
+            address(this),
+            _positionsUpdatorLogic,
+            maxIterations
+        );
     }
 
     /* External */
@@ -245,7 +249,7 @@ contract PositionsManagerForCompound is ReentrancyGuard {
         isAboveThreshold(_poolTokenAddress, _amount)
     {
         _handleMembership(_poolTokenAddress, msg.sender);
-        marketsManagerForCompound.updateRates(_poolTokenAddress);
+        marketsManager.updateRates(_poolTokenAddress);
         ICErc20 poolToken = ICErc20(_poolTokenAddress);
         IERC20 underlyingToken = IERC20(poolToken.underlying());
         underlyingToken.safeTransferFrom(msg.sender, address(this), _amount);
@@ -255,8 +259,8 @@ contract PositionsManagerForCompound is ReentrancyGuard {
         uint256 remainingToSupplyToPool = _amount;
 
         /* If some borrowers are waiting on Comp, Morpho matches the supplier in P2P with them as much as possible */
-        if (borrowersOnPool[_poolTokenAddress].getHead() != address(0)) {
-            uint256 p2pExchangeRate = marketsManagerForCompound.p2pExchangeRate(_poolTokenAddress);
+        if (positionsUpdator.getBorrowerAccountOnPool(_poolTokenAddress) != address(0)) {
+            uint256 p2pExchangeRate = marketsManager.p2pExchangeRate(_poolTokenAddress);
             remainingToSupplyToPool = _matchBorrowers(_poolTokenAddress, _amount); // In underlying
             uint256 matched = _amount - remainingToSupplyToPool;
 
@@ -274,7 +278,7 @@ contract PositionsManagerForCompound is ReentrancyGuard {
                     p2pExchangeRate,
                     0
                 );
-                _updateSupplierList(_poolTokenAddress, msg.sender);
+                positionsUpdator.updateSupplierPositions(_poolTokenAddress, msg.sender);
             }
         }
 
@@ -294,7 +298,7 @@ contract PositionsManagerForCompound is ReentrancyGuard {
                     0,
                     poolTokenExchangeRate
                 );
-                _updateSupplierList(_poolTokenAddress, msg.sender);
+                positionsUpdator.updateSupplierPositions(_poolTokenAddress, msg.sender);
             }
         }
     }
@@ -311,7 +315,7 @@ contract PositionsManagerForCompound is ReentrancyGuard {
     {
         _handleMembership(_poolTokenAddress, msg.sender);
         _checkAccountLiquidity(msg.sender, _poolTokenAddress, 0, _amount);
-        marketsManagerForCompound.updateRates(_poolTokenAddress);
+        marketsManager.updateRates(_poolTokenAddress);
         emit Borrowed(msg.sender, _poolTokenAddress, _amount);
         ICErc20 poolToken = ICErc20(_poolTokenAddress);
         IERC20 underlyingToken = IERC20(poolToken.underlying());
@@ -319,8 +323,8 @@ contract PositionsManagerForCompound is ReentrancyGuard {
         uint256 remainingToBorrowOnPool = _amount;
 
         /* If some suppliers are waiting on Comp, Morpho matches the borrower in P2P with them as much as possible */
-        if (suppliersOnPool[_poolTokenAddress].getHead() != address(0)) {
-            uint256 p2pExchangeRate = marketsManagerForCompound.p2pExchangeRate(_poolTokenAddress);
+        if (positionsUpdator.getSupplierAccountOnPool(_poolTokenAddress) != address(0)) {
+            uint256 p2pExchangeRate = marketsManager.p2pExchangeRate(_poolTokenAddress);
             remainingToBorrowOnPool = _matchSuppliers(_poolTokenAddress, _amount); // In underlying
             uint256 matched = _amount - remainingToBorrowOnPool;
             if (matched > 0) {
@@ -337,7 +341,7 @@ contract PositionsManagerForCompound is ReentrancyGuard {
                     p2pExchangeRate,
                     0
                 );
-                _updateBorrowerList(_poolTokenAddress, msg.sender);
+                positionsUpdator.updateBorrowerPositions(_poolTokenAddress, msg.sender);
             }
         }
 
@@ -358,9 +362,10 @@ contract PositionsManagerForCompound is ReentrancyGuard {
                 borrowIndex,
                 0
             );
-            _updateBorrowerList(_poolTokenAddress, msg.sender);
+            positionsUpdator.updateBorrowerPositions(_poolTokenAddress, msg.sender);
         }
 
+        positionsUpdator.updateBorrowerPositions(_poolTokenAddress, msg.sender);
         underlyingToken.safeTransfer(msg.sender, _amount);
     }
 
@@ -407,7 +412,7 @@ contract PositionsManagerForCompound is ReentrancyGuard {
                 ICErc20(_poolTokenBorrowedAddress).borrowIndex()
             ) +
             borrowBalanceInOf[_poolTokenBorrowedAddress][_borrower].inP2P.mul(
-                marketsManagerForCompound.p2pExchangeRate(_poolTokenBorrowedAddress)
+                marketsManager.p2pExchangeRate(_poolTokenBorrowedAddress)
             );
         require(
             _amount <= vars.borrowBalance.mul(comptroller.closeFactorMantissa()),
@@ -439,10 +444,10 @@ contract PositionsManagerForCompound is ReentrancyGuard {
         vars.collateralOnPoolInUnderlying = supplyBalanceInOf[_poolTokenCollateralAddress][
             _borrower
         ].onPool.mul(poolTokenCollateral.exchangeRateStored());
-        marketsManagerForCompound.updateRates(_poolTokenCollateralAddress);
+        marketsManager.updateRates(_poolTokenCollateralAddress);
         uint256 totalCollateral = vars.collateralOnPoolInUnderlying +
             supplyBalanceInOf[_poolTokenCollateralAddress][_borrower].inP2P.mul(
-                marketsManagerForCompound.p2pExchangeRate(_poolTokenCollateralAddress)
+                marketsManager.p2pExchangeRate(_poolTokenCollateralAddress)
             );
         require(vars.amountToSeize <= totalCollateral, Errors.PM_TO_SEIZE_ABOVE_COLLATERAL);
         emit Liquidated(
@@ -472,7 +477,7 @@ contract PositionsManagerForCompound is ReentrancyGuard {
     ) internal isMarketCreated(_poolTokenAddress) {
         require(_amount > 0, Errors.PM_AMOUNT_IS_0);
         _checkAccountLiquidity(_holder, _poolTokenAddress, _amount, 0);
-        marketsManagerForCompound.updateRates(_poolTokenAddress);
+        marketsManager.updateRates(_poolTokenAddress);
         emit Withdrawn(_holder, _poolTokenAddress, _amount);
         ICErc20 poolToken = ICErc20(_poolTokenAddress);
         IERC20 underlyingToken = IERC20(poolToken.underlying());
@@ -523,12 +528,12 @@ contract PositionsManagerForCompound is ReentrancyGuard {
                 );
                 remainingToWithdraw = _amount - amountOnPoolInUnderlying; // In underlying
             }
-            _updateSupplierList(_poolTokenAddress, _holder);
+            positionsUpdator.updateSupplierPositions(_poolTokenAddress, _holder);
         }
 
         /* If there remains some tokens to withdraw (CASE 2), Morpho breaks credit lines and repair them either with other users or with Comp itself */
         if (remainingToWithdraw > 0) {
-            uint256 p2pExchangeRate = marketsManagerForCompound.p2pExchangeRate(_poolTokenAddress);
+            uint256 p2pExchangeRate = marketsManager.p2pExchangeRate(_poolTokenAddress);
             uint256 poolTokenContractBalanceInUnderlying = poolToken.balanceOf(address(this)).mul(
                 poolTokenExchangeRate
             );
@@ -538,7 +543,7 @@ contract PositionsManagerForCompound is ReentrancyGuard {
                     supplyBalanceInOf[_poolTokenAddress][_holder].inP2P,
                     remainingToWithdraw.div(p2pExchangeRate)
                 ); // In p2pUnit
-                _updateSupplierList(_poolTokenAddress, _holder);
+                positionsUpdator.updateSupplierPositions(_poolTokenAddress, _holder);
                 require(
                     _matchSuppliers(_poolTokenAddress, remainingToWithdraw) == 0,
                     Errors.PM_REMAINING_TO_MATCH_IS_NOT_0
@@ -560,7 +565,7 @@ contract PositionsManagerForCompound is ReentrancyGuard {
                     supplyBalanceInOf[_poolTokenAddress][_holder].inP2P,
                     remainingToWithdraw.div(p2pExchangeRate)
                 ); // In p2pUnit
-                _updateSupplierList(_poolTokenAddress, _holder);
+                positionsUpdator.updateSupplierPositions(_poolTokenAddress, _holder);
                 uint256 remaining = _matchSuppliers(
                     _poolTokenAddress,
                     poolTokenContractBalanceInUnderlying
@@ -582,6 +587,7 @@ contract PositionsManagerForCompound is ReentrancyGuard {
                 );
             }
         }
+
         underlyingToken.safeTransfer(_receiver, _amount);
     }
 
@@ -597,7 +603,7 @@ contract PositionsManagerForCompound is ReentrancyGuard {
         uint256 _amount
     ) internal isMarketCreated(_poolTokenAddress) {
         require(_amount > 0, Errors.PM_AMOUNT_IS_0);
-        marketsManagerForCompound.updateRates(_poolTokenAddress);
+        marketsManager.updateRates(_poolTokenAddress);
         ICErc20 poolToken = ICErc20(_poolTokenAddress);
         IERC20 underlyingToken = IERC20(poolToken.underlying());
         underlyingToken.safeTransferFrom(msg.sender, address(this), _amount);
@@ -644,12 +650,12 @@ contract PositionsManagerForCompound is ReentrancyGuard {
                     borrowIndex
                 );
             }
-            _updateBorrowerList(_poolTokenAddress, _borrower);
+            positionsUpdator.updateBorrowerPositions(_poolTokenAddress, _borrower);
         }
 
         /* If there remains some tokens to repay (CASE 2), Morpho breaks credit lines and repair them either with other users or with Comp itself */
         if (remainingToRepay > 0) {
-            uint256 p2pExchangeRate = marketsManagerForCompound.p2pExchangeRate(_poolTokenAddress);
+            uint256 p2pExchangeRate = marketsManager.p2pExchangeRate(_poolTokenAddress);
             uint256 contractBorrowBalanceOnPool = poolToken.borrowBalanceCurrent(address(this)); // In underlying
             /* CASE 1: Other borrowers are borrowing enough on Comp to compensate user's position */
             if (remainingToRepay <= contractBorrowBalanceOnPool) {
@@ -657,7 +663,7 @@ contract PositionsManagerForCompound is ReentrancyGuard {
                     borrowBalanceInOf[_poolTokenAddress][_borrower].inP2P,
                     remainingToRepay.div(p2pExchangeRate)
                 ); // In p2pUnit
-                _updateBorrowerList(_poolTokenAddress, _borrower);
+                positionsUpdator.updateBorrowerPositions(_poolTokenAddress, _borrower);
                 _matchBorrowers(_poolTokenAddress, remainingToRepay);
                 emit BorrowerPositionUpdated(
                     _borrower,
@@ -676,7 +682,7 @@ contract PositionsManagerForCompound is ReentrancyGuard {
                     borrowBalanceInOf[_poolTokenAddress][_borrower].inP2P,
                     remainingToRepay.div(p2pExchangeRate)
                 ); // In p2pUnit
-                _updateBorrowerList(_poolTokenAddress, _borrower);
+                positionsUpdator.updateBorrowerPositions(_poolTokenAddress, _borrower);
                 _matchBorrowers(_poolTokenAddress, contractBorrowBalanceOnPool);
                 emit BorrowerPositionUpdated(
                     _borrower,
@@ -695,6 +701,7 @@ contract PositionsManagerForCompound is ReentrancyGuard {
                 );
             }
         }
+
         emit Repaid(_borrower, _poolTokenAddress, _amount);
     }
 
@@ -762,9 +769,9 @@ contract PositionsManagerForCompound is ReentrancyGuard {
     {
         ICErc20 poolToken = ICErc20(_poolTokenAddress);
         remainingToMatch = _amount; // In underlying
-        uint256 p2pExchangeRate = marketsManagerForCompound.p2pExchangeRate(_poolTokenAddress);
+        uint256 p2pExchangeRate = marketsManager.p2pExchangeRate(_poolTokenAddress);
         uint256 poolTokenExchangeRate = poolToken.exchangeRateCurrent();
-        address account = suppliersOnPool[_poolTokenAddress].getHead();
+        address account = positionsUpdator.getSupplierAccountOnPool(_poolTokenAddress);
         uint256 iterationCount;
 
         while (remainingToMatch > 0 && account != address(0) && iterationCount < maxIterations) {
@@ -783,7 +790,7 @@ contract PositionsManagerForCompound is ReentrancyGuard {
                 supplyBalanceInOf[_poolTokenAddress][account].onPool = 0;
             }
             remainingToMatch -= toMatch;
-            _updateSupplierList(_poolTokenAddress, account);
+            positionsUpdator.updateSupplierPositions(_poolTokenAddress, account);
             emit SupplierPositionUpdated(
                 account,
                 _poolTokenAddress,
@@ -794,7 +801,7 @@ contract PositionsManagerForCompound is ReentrancyGuard {
                 p2pExchangeRate,
                 poolTokenExchangeRate
             );
-            account = suppliersOnPool[_poolTokenAddress].getHead();
+            account = positionsUpdator.getSupplierAccountOnPool(_poolTokenAddress);
         }
         // Withdraw from Comp
         uint256 toWithdraw = _amount - remainingToMatch;
@@ -815,8 +822,8 @@ contract PositionsManagerForCompound is ReentrancyGuard {
         ICErc20 poolToken = ICErc20(_poolTokenAddress);
         remainingToUnmatch = _amount; // In underlying
         uint256 poolTokenExchangeRate = poolToken.exchangeRateCurrent();
-        uint256 p2pExchangeRate = marketsManagerForCompound.p2pExchangeRate(_poolTokenAddress);
-        address account = suppliersInP2P[_poolTokenAddress].getHead();
+        uint256 p2pExchangeRate = marketsManager.p2pExchangeRate(_poolTokenAddress);
+        address account = positionsUpdator.getSupplierAccountInP2P(_poolTokenAddress);
 
         while (remainingToUnmatch > 0 && account != address(0)) {
             uint256 inP2P = supplyBalanceInOf[_poolTokenAddress][account].inP2P; // In poolToken
@@ -832,7 +839,7 @@ contract PositionsManagerForCompound is ReentrancyGuard {
                 supplyBalanceInOf[_poolTokenAddress][account].inP2P = 0;
             }
             remainingToUnmatch -= toUnmatch;
-            _updateSupplierList(_poolTokenAddress, account);
+            positionsUpdator.updateSupplierPositions(_poolTokenAddress, account);
             emit SupplierPositionUpdated(
                 account,
                 _poolTokenAddress,
@@ -843,7 +850,7 @@ contract PositionsManagerForCompound is ReentrancyGuard {
                 p2pExchangeRate,
                 poolTokenExchangeRate
             );
-            account = suppliersInP2P[_poolTokenAddress].getHead();
+            account = positionsUpdator.getSupplierAccountInP2P(_poolTokenAddress);
         }
         // Supply on Comp
         uint256 toSupply = _amount - remainingToUnmatch;
@@ -864,9 +871,9 @@ contract PositionsManagerForCompound is ReentrancyGuard {
         ICErc20 poolToken = ICErc20(_poolTokenAddress);
         IERC20 underlyingToken = IERC20(poolToken.underlying());
         remainingToMatch = _amount;
-        uint256 p2pExchangeRate = marketsManagerForCompound.p2pExchangeRate(_poolTokenAddress);
+        uint256 p2pExchangeRate = marketsManager.p2pExchangeRate(_poolTokenAddress);
         uint256 borrowIndex = poolToken.borrowIndex();
-        address account = borrowersOnPool[_poolTokenAddress].getHead();
+        address account = positionsUpdator.getBorrowerAccountOnPool(_poolTokenAddress);
         uint256 iterationCount;
 
         while (remainingToMatch > 0 && account != address(0) && iterationCount < maxIterations) {
@@ -882,7 +889,7 @@ contract PositionsManagerForCompound is ReentrancyGuard {
                 borrowBalanceInOf[_poolTokenAddress][account].onPool = 0;
             }
             remainingToMatch -= toMatch;
-            _updateBorrowerList(_poolTokenAddress, account);
+            positionsUpdator.updateBorrowerPositions(_poolTokenAddress, account);
             emit BorrowerPositionUpdated(
                 account,
                 _poolTokenAddress,
@@ -893,7 +900,7 @@ contract PositionsManagerForCompound is ReentrancyGuard {
                 p2pExchangeRate,
                 borrowIndex
             );
-            account = borrowersOnPool[_poolTokenAddress].getHead();
+            account = positionsUpdator.getBorrowerAccountOnPool(_poolTokenAddress);
         }
         // Repay Comp
         uint256 toRepay = Math.min(
@@ -916,9 +923,9 @@ contract PositionsManagerForCompound is ReentrancyGuard {
     {
         ICErc20 poolToken = ICErc20(_poolTokenAddress);
         remainingToUnmatch = _amount;
-        uint256 p2pExchangeRate = marketsManagerForCompound.p2pExchangeRate(_poolTokenAddress);
+        uint256 p2pExchangeRate = marketsManager.p2pExchangeRate(_poolTokenAddress);
         uint256 borrowIndex = poolToken.borrowIndex();
-        address account = borrowersInP2P[_poolTokenAddress].getHead();
+        address account = positionsUpdator.getBorrowerAccountInP2P(_poolTokenAddress);
 
         while (remainingToUnmatch > 0 && account != address(0)) {
             uint256 inP2P = borrowBalanceInOf[_poolTokenAddress][account].inP2P;
@@ -932,7 +939,7 @@ contract PositionsManagerForCompound is ReentrancyGuard {
                 borrowBalanceInOf[_poolTokenAddress][account].inP2P = 0;
             }
             remainingToUnmatch -= toUnmatch;
-            _updateBorrowerList(_poolTokenAddress, account);
+            positionsUpdator.updateBorrowerPositions(_poolTokenAddress, account);
             emit BorrowerPositionUpdated(
                 account,
                 _poolTokenAddress,
@@ -943,7 +950,7 @@ contract PositionsManagerForCompound is ReentrancyGuard {
                 p2pExchangeRate,
                 borrowIndex
             );
-            account = borrowersInP2P[_poolTokenAddress].getHead();
+            account = positionsUpdator.getBorrowerAccountInP2P(_poolTokenAddress);
         }
         // Borrow on Comp
         require(poolToken.borrow(_amount - remainingToUnmatch) == 0);
@@ -1001,8 +1008,8 @@ contract PositionsManagerForCompound is ReentrancyGuard {
 
         for (uint256 i; i < enteredMarkets[_account].length; i++) {
             vars.poolTokenEntered = enteredMarkets[_account][i];
-            marketsManagerForCompound.updateRates(vars.poolTokenEntered);
-            vars.p2pExchangeRate = marketsManagerForCompound.p2pExchangeRate(vars.poolTokenEntered);
+            marketsManager.updateRates(vars.poolTokenEntered);
+            vars.p2pExchangeRate = marketsManager.p2pExchangeRate(vars.poolTokenEntered);
             // Calculation of the current debt (in underlying)
             vars.debtToAdd =
                 borrowBalanceInOf[vars.poolTokenEntered][_account].onPool.mul(
@@ -1035,51 +1042,5 @@ contract PositionsManagerForCompound is ReentrancyGuard {
             }
         }
         return (vars.debtValue, vars.maxDebtValue);
-    }
-
-    /** @dev Updates borrowers tree with the new balances of a given account.
-     *  @param _poolTokenAddress The address of the market on which Morpho want to update the borrower lists.
-     *  @param _account The address of the borrower to move.
-     */
-    function _updateBorrowerList(address _poolTokenAddress, address _account) internal {
-        uint256 onPool = borrowBalanceInOf[_poolTokenAddress][_account].onPool;
-        uint256 inP2P = borrowBalanceInOf[_poolTokenAddress][_account].inP2P;
-        uint256 formerValueOnPool = borrowersOnPool[_poolTokenAddress].getValueOf(_account);
-        uint256 formerValueInP2P = borrowersInP2P[_poolTokenAddress].getValueOf(_account);
-
-        // Check pool
-        bool wasOnPoolAndValueChanged = formerValueOnPool != 0 && formerValueOnPool != onPool;
-        if (wasOnPoolAndValueChanged) borrowersOnPool[_poolTokenAddress].remove(_account);
-        if (onPool > 0 && (wasOnPoolAndValueChanged || formerValueOnPool == 0))
-            borrowersOnPool[_poolTokenAddress].insertSorted(_account, onPool, maxIterations);
-
-        // Check P2P
-        bool wasInP2PAndValueChanged = formerValueInP2P != 0 && formerValueInP2P != inP2P;
-        if (wasInP2PAndValueChanged) borrowersInP2P[_poolTokenAddress].remove(_account);
-        if (inP2P > 0 && (wasInP2PAndValueChanged || formerValueInP2P == 0))
-            borrowersInP2P[_poolTokenAddress].insertSorted(_account, inP2P, maxIterations);
-    }
-
-    /** @dev Updates suppliers tree with the new balances of a given account.
-     *  @param _poolTokenAddress The address of the market on which Morpho want to update the supplier lists.
-     *  @param _account The address of the supplier to move.
-     */
-    function _updateSupplierList(address _poolTokenAddress, address _account) internal {
-        uint256 onPool = supplyBalanceInOf[_poolTokenAddress][_account].onPool;
-        uint256 inP2P = supplyBalanceInOf[_poolTokenAddress][_account].inP2P;
-        uint256 formerValueOnPool = suppliersOnPool[_poolTokenAddress].getValueOf(_account);
-        uint256 formerValueInP2P = suppliersInP2P[_poolTokenAddress].getValueOf(_account);
-
-        // Check pool
-        bool wasOnPoolAndValueChanged = formerValueOnPool != 0 && formerValueOnPool != onPool;
-        if (wasOnPoolAndValueChanged) suppliersOnPool[_poolTokenAddress].remove(_account);
-        if (onPool > 0 && (wasOnPoolAndValueChanged || formerValueOnPool == 0))
-            suppliersOnPool[_poolTokenAddress].insertSorted(_account, onPool, maxIterations);
-
-        // Check P2P
-        bool wasInP2PAndValueChanged = formerValueInP2P != 0 && formerValueInP2P != inP2P;
-        if (wasInP2PAndValueChanged) suppliersInP2P[_poolTokenAddress].remove(_account);
-        if (inP2P > 0 && (wasInP2PAndValueChanged || formerValueInP2P == 0))
-            suppliersInP2P[_poolTokenAddress].insertSorted(_account, inP2P, maxIterations);
     }
 }
