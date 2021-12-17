@@ -12,19 +12,19 @@ contract PositionsUpdator is IPositionsUpdator, PositionsUpdatorStorage {
     constructor(
         address _positionsManager,
         address _positionsUpdatorLogic,
-        uint256 _NMAX
+        uint256 _maxIterations
     ) {
         positionsManager = IPositionsManager(_positionsManager);
         positionsUpdatorLogic = IPositionsUpdatorLogic(_positionsUpdatorLogic);
-        NMAX = _NMAX;
+        maxIterations = _maxIterations;
     }
 
     function updatePositionsUpdatorLogic(address _positionsUpdatorLogic) external onlyOwner {
         positionsUpdatorLogic = IPositionsUpdatorLogic(_positionsUpdatorLogic);
     }
 
-    function updateMaxIterations(uint256 _NMAX) external onlyOwner {
-        NMAX = _NMAX;
+    function updateMaxIterations(uint256 _maxIterations) external onlyOwner {
+        maxIterations = _maxIterations;
     }
 
     /** @dev Updates borrowers tree with the new balances of a given account.
@@ -34,13 +34,14 @@ contract PositionsUpdator is IPositionsUpdator, PositionsUpdatorStorage {
     function updateBorrowerPositions(address _poolTokenAddress, address _account)
         external
         override
+        onlyOwner
     {
         (bool success, ) = address(positionsUpdatorLogic).delegatecall(
             abi.encodeWithSelector(
                 positionsUpdatorLogic.updateBorrowerPositions.selector,
                 _poolTokenAddress,
                 _account,
-                NMAX
+                maxIterations
             )
         );
         require(success, PUErrors.PU_UPDATE_BORROWER_POSITIONS_FAIL);
@@ -53,13 +54,14 @@ contract PositionsUpdator is IPositionsUpdator, PositionsUpdatorStorage {
     function updateSupplierPositions(address _poolTokenAddress, address _account)
         external
         override
+        onlyOwner
     {
         (bool success, ) = address(positionsUpdatorLogic).delegatecall(
             abi.encodeWithSelector(
                 positionsUpdatorLogic.updateSupplierPositions.selector,
                 _poolTokenAddress,
                 _account,
-                NMAX
+                maxIterations
             )
         );
         require(success, PUErrors.PU_UPDATE_SUPPLIER_POSITIONS_FAIL);
@@ -68,6 +70,7 @@ contract PositionsUpdator is IPositionsUpdator, PositionsUpdatorStorage {
     function getBorrowerAccountOnPool(address _poolTokenAddress)
         external
         override
+        onlyOwner
         returns (address)
     {
         (bool success, bytes memory result) = address(positionsUpdatorLogic).delegatecall(
@@ -83,6 +86,7 @@ contract PositionsUpdator is IPositionsUpdator, PositionsUpdatorStorage {
     function getBorrowerAccountInP2P(address _poolTokenAddress)
         external
         override
+        onlyOwner
         returns (address)
     {
         (bool success, bytes memory result) = address(positionsUpdatorLogic).delegatecall(
@@ -98,6 +102,7 @@ contract PositionsUpdator is IPositionsUpdator, PositionsUpdatorStorage {
     function getSupplierAccountOnPool(address _poolTokenAddress)
         external
         override
+        onlyOwner
         returns (address)
     {
         (bool success, bytes memory result) = address(positionsUpdatorLogic).delegatecall(
@@ -113,6 +118,7 @@ contract PositionsUpdator is IPositionsUpdator, PositionsUpdatorStorage {
     function getSupplierAccountInP2P(address _poolTokenAddress)
         external
         override
+        onlyOwner
         returns (address)
     {
         (bool success, bytes memory result) = address(positionsUpdatorLogic).delegatecall(

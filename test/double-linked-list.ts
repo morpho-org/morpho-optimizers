@@ -11,7 +11,7 @@ describe('DoubleLinkedList Contract', () => {
   let firstTenAccounts: string[];
   let lastTenAccounts: string[];
   const accounts: string[] = [];
-  const NMAX = 50;
+  const maxIterations = 50;
 
   const initialize = async () => {
     signers = await ethers.getSigners();
@@ -39,7 +39,7 @@ describe('DoubleLinkedList Contract', () => {
 
   describe('Test DoubleLinkedList', () => {
     it('Should insert one single account', async () => {
-      await testDoubleLinkedList.insertSorted(accounts[0], 1, NMAX);
+      await testDoubleLinkedList.insertSorted(accounts[0], 1, maxIterations);
       expect(await testDoubleLinkedList.getHead()).to.equal(accounts[0]);
       expect(await testDoubleLinkedList.getTail()).to.equal(accounts[0]);
       expect(await testDoubleLinkedList.getValueOf(accounts[0])).to.equal(1);
@@ -48,7 +48,7 @@ describe('DoubleLinkedList Contract', () => {
     });
 
     it('Should remove one single account', async () => {
-      await testDoubleLinkedList.insertSorted(accounts[0], 1, NMAX);
+      await testDoubleLinkedList.insertSorted(accounts[0], 1, maxIterations);
       await testDoubleLinkedList.remove(accounts[0]);
       expect(await testDoubleLinkedList.getHead()).to.equal(ethers.constants.AddressZero);
       expect(await testDoubleLinkedList.getTail()).to.equal(ethers.constants.AddressZero);
@@ -58,8 +58,8 @@ describe('DoubleLinkedList Contract', () => {
     });
 
     it('Should insert 2 accounts', async () => {
-      await testDoubleLinkedList.insertSorted(accounts[0], 2, NMAX);
-      await testDoubleLinkedList.insertSorted(accounts[1], 1, NMAX);
+      await testDoubleLinkedList.insertSorted(accounts[0], 2, maxIterations);
+      await testDoubleLinkedList.insertSorted(accounts[1], 1, maxIterations);
       expect(await testDoubleLinkedList.getHead()).to.equal(accounts[0]);
       expect(await testDoubleLinkedList.getTail()).to.equal(accounts[1]);
       expect(await testDoubleLinkedList.getValueOf(accounts[0])).to.equal(2);
@@ -71,9 +71,9 @@ describe('DoubleLinkedList Contract', () => {
     });
 
     it('Should insert 3 accounts', async () => {
-      await testDoubleLinkedList.insertSorted(accounts[0], 3, NMAX);
-      await testDoubleLinkedList.insertSorted(accounts[1], 2, NMAX);
-      await testDoubleLinkedList.insertSorted(accounts[2], 1, NMAX);
+      await testDoubleLinkedList.insertSorted(accounts[0], 3, maxIterations);
+      await testDoubleLinkedList.insertSorted(accounts[1], 2, maxIterations);
+      await testDoubleLinkedList.insertSorted(accounts[2], 1, maxIterations);
       expect(await testDoubleLinkedList.getHead()).to.equal(accounts[0]);
       expect(await testDoubleLinkedList.getTail()).to.equal(accounts[2]);
       expect(await testDoubleLinkedList.getValueOf(accounts[0])).to.equal(3);
@@ -88,8 +88,8 @@ describe('DoubleLinkedList Contract', () => {
     });
 
     it('Should remove 1 account over 2', async () => {
-      await testDoubleLinkedList.insertSorted(accounts[0], 2, NMAX);
-      await testDoubleLinkedList.insertSorted(accounts[1], 1, NMAX);
+      await testDoubleLinkedList.insertSorted(accounts[0], 2, maxIterations);
+      await testDoubleLinkedList.insertSorted(accounts[1], 1, maxIterations);
       await testDoubleLinkedList.remove(accounts[0]);
       expect(await testDoubleLinkedList.getHead()).to.equal(accounts[1]);
       expect(await testDoubleLinkedList.getTail()).to.equal(accounts[1]);
@@ -100,8 +100,8 @@ describe('DoubleLinkedList Contract', () => {
     });
 
     it('Should remove both accounts', async () => {
-      await testDoubleLinkedList.insertSorted(accounts[0], 2, NMAX);
-      await testDoubleLinkedList.insertSorted(accounts[1], 1, NMAX);
+      await testDoubleLinkedList.insertSorted(accounts[0], 2, maxIterations);
+      await testDoubleLinkedList.insertSorted(accounts[1], 1, maxIterations);
       await testDoubleLinkedList.remove(accounts[0]);
       await testDoubleLinkedList.remove(accounts[1]);
       expect(await testDoubleLinkedList.getHead()).to.equal(ethers.constants.AddressZero);
@@ -109,9 +109,9 @@ describe('DoubleLinkedList Contract', () => {
     });
 
     it('Should insert 3 accounts and remove them', async () => {
-      await testDoubleLinkedList.insertSorted(accounts[0], 3, NMAX);
-      await testDoubleLinkedList.insertSorted(accounts[1], 2, NMAX);
-      await testDoubleLinkedList.insertSorted(accounts[2], 1, NMAX);
+      await testDoubleLinkedList.insertSorted(accounts[0], 3, maxIterations);
+      await testDoubleLinkedList.insertSorted(accounts[1], 2, maxIterations);
+      await testDoubleLinkedList.insertSorted(accounts[2], 1, maxIterations);
       expect(await testDoubleLinkedList.getHead()).to.equal(accounts[0]);
       expect(await testDoubleLinkedList.getTail()).to.equal(accounts[2]);
 
@@ -140,7 +140,7 @@ describe('DoubleLinkedList Contract', () => {
     it('Should insert accounts all sorted', async () => {
       const value = 50;
       for (let i = 0; i < accounts.length; i++) {
-        await testDoubleLinkedList.insertSorted(accounts[i], value - i, NMAX);
+        await testDoubleLinkedList.insertSorted(accounts[i], value - i, maxIterations);
       }
       expect(await testDoubleLinkedList.getHead()).to.equal(accounts[0]);
       expect(await testDoubleLinkedList.getTail()).to.equal(accounts[accounts.length - 1]);
@@ -159,7 +159,7 @@ describe('DoubleLinkedList Contract', () => {
     it('Should remove all sorted accounts', async () => {
       const value = 50;
       for (let i = 0; i < accounts.length; i++) {
-        await testDoubleLinkedList.insertSorted(accounts[i], value - i, NMAX);
+        await testDoubleLinkedList.insertSorted(accounts[i], value - i, maxIterations);
       }
       for (let i = 0; i < accounts.length; i++) {
         await testDoubleLinkedList.remove(accounts[i]);
@@ -168,7 +168,7 @@ describe('DoubleLinkedList Contract', () => {
       expect(await testDoubleLinkedList.getTail()).to.equal(ethers.constants.AddressZero);
     });
 
-    it('Should insert account sorted at the beginning until NMAX', async () => {
+    it('Should insert account sorted at the beginning until maxIterations', async () => {
       const value = 50;
       const newNMAX = 10;
 

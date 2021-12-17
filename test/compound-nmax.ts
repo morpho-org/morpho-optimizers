@@ -75,14 +75,14 @@ describe('PositionsManagerForCompound Contract', () => {
 
   before(initialize);
 
-  const addSmallDaiBorrowers = async (NMAX: number) => {
+  const addSmallDaiBorrowers = async (maxIterations: number) => {
     {
       const whaleUsdc = await ethers.getSigner(config.tokens.usdc.whale);
       const daiAmount = utils.parseUnits('80');
       const usdcAmount = to6Decimals(utils.parseUnits('1000'));
       let smallDaiBorrower;
 
-      for (let i = 0; i < NMAX; i++) {
+      for (let i = 0; i < maxIterations; i++) {
         console.log('addSmallDaiBorrowers', i);
 
         smallDaiBorrower = ethers.Wallet.createRandom().address;
@@ -104,12 +104,12 @@ describe('PositionsManagerForCompound Contract', () => {
     }
   };
 
-  const addSmallDaiSuppliers = async (NMAX: number) => {
+  const addSmallDaiSuppliers = async (maxIterations: number) => {
     const whaleDai = await ethers.getSigner(config.tokens.dai.whale);
     const daiAmount = utils.parseUnits('80');
     let smallDaiSupplier;
 
-    for (let i = 0; i < NMAX; i++) {
+    for (let i = 0; i < maxIterations; i++) {
       console.log('addSmallDaiSuppliers', i);
 
       smallDaiSupplier = ethers.Wallet.createRandom().address;
@@ -127,12 +127,12 @@ describe('PositionsManagerForCompound Contract', () => {
     }
   };
 
-  const addTreeDaiSuppliers = async (NMAX: number) => {
+  const addTreeDaiSuppliers = async (maxIterations: number) => {
     const whaleDai = await ethers.getSigner(config.tokens.dai.whale);
     const daiAmount = utils.parseUnits('100');
     let treeDaiSupplier;
 
-    for (let i = 0; i < NMAX; i++) {
+    for (let i = 0; i < maxIterations; i++) {
       console.log('addTreeDaiSuppliers', i);
       treeDaiSupplier = ethers.Wallet.createRandom().address;
 
@@ -158,35 +158,35 @@ describe('PositionsManagerForCompound Contract', () => {
     }
   };
 
-  describe('Worst case scenario for NMAX estimation', () => {
-    const NMAX = 24;
-    const daiAmountAlice = utils.parseUnits('5000'); // 2*NMAX*SuppliedPerUser
+  describe('Worst case scenario for maxIterations estimation', () => {
+    const maxIterations = 24;
+    const daiAmountAlice = utils.parseUnits('5000'); // 2*maxIterations*SuppliedPerUser
 
-    it('Set new NMAX', async () => {
-      expect(await positionsManagerForCompound.NMAX()).to.equal(20);
-      await marketsManagerForCompound.connect(owner).updateMaxIterations(NMAX);
-      expect(await positionsManagerForCompound.NMAX()).to.equal(NMAX);
+    it('Set new maxIterations', async () => {
+      expect(await positionsManagerForCompound.maxIterations()).to.equal(20);
+      await marketsManagerForCompound.connect(owner).updateMaxIterations(maxIterations);
+      expect(await positionsManagerForCompound.maxIterations()).to.equal(maxIterations);
     });
 
     // We have some borrowers that are taking some DAI and supplying as collateral USDC
     it('Add small Dai borrowers', async () => {
-      await addSmallDaiBorrowers(NMAX);
+      await addSmallDaiBorrowers(maxIterations);
     });
 
     // We have some DAI supplier. They are matched with previous Dai borrowers.
-    // We have NMAX match for the DAI market.
+    // We have maxIterations match for the DAI market.
     it('Add small Dai Suppliers', async () => {
-      await addSmallDaiSuppliers(NMAX);
+      await addSmallDaiSuppliers(maxIterations);
     });
 
     // Now, comes other DAI Supplier, that are supplying a greater amount.
     // Also, they borrow some UNI.
     it('Add Tree Dai Suppliers', async () => {
-      await addTreeDaiSuppliers(NMAX);
+      await addTreeDaiSuppliers(maxIterations);
     });
 
-    // Now comes alice, he supplies UNI and his collateral is matched with the NMAX 'Tree Dai Supplier' that are borrowing it.
-    // alice also borrows a large quantity of DAI, so that his dai comes from the NMAX 'Tree Dai Supplier'
+    // Now comes alice, he supplies UNI and his collateral is matched with the maxIterations 'Tree Dai Supplier' that are borrowing it.
+    // alice also borrows a large quantity of DAI, so that his dai comes from the maxIterations 'Tree Dai Supplier'
     it('Add alice', async () => {
       const whaleUni = await ethers.getSigner(config.tokens.uni.whale);
       await uniToken.connect(whaleUni).transfer(aliceAddress, daiAmountAlice.mul(100));
@@ -203,19 +203,19 @@ describe('PositionsManagerForCompound Contract', () => {
     });
   });
 
-  describe('Specific case of liquidation with NMAX', () => {
+  describe('Specific case of liquidation with maxIterations', () => {
     it('Re initialize', async () => {
       await initialize();
     });
 
-    const NMAX = 24;
+    const maxIterations = 24;
     const usdcCollateralAmount = to6Decimals(utils.parseUnits('10000'));
     let daiBorrowAmount: BigNumber;
     let admin: Signer;
 
-    it('Set new NMAX', async () => {
-      await marketsManagerForCompound.connect(owner).updateMaxIterations(NMAX);
-      expect(await positionsManagerForCompound.NMAX()).to.equal(NMAX);
+    it('Set new maxIterations', async () => {
+      await marketsManagerForCompound.connect(owner).updateMaxIterations(maxIterations);
+      expect(await positionsManagerForCompound.maxIterations()).to.equal(maxIterations);
     });
 
     it('Setup admin', async () => {
@@ -227,14 +227,14 @@ describe('PositionsManagerForCompound Contract', () => {
 
     // First step. alice comes and borrows 'daiBorrowAmount' while putting in collateral 'usdcCollateralAmount'
 
-    // Second step. 2*NMAX suppliers are going to be matched with her debt.
-    // (2*NMAX because in the liquidation we have a max liquidation of 50%)
+    // Second step. 2*maxIterations suppliers are going to be matched with her debt.
+    // (2*maxIterations because in the liquidation we have a max liquidation of 50%)
 
-    // Third step. 2*NMAX borrowers comes and are match with the collateral.
+    // Third step. 2*maxIterations borrowers comes and are match with the collateral.
 
     // Fourth step. There is a price variation.
 
-    // Fifth step. alice is liquidated 50%, generating NMAX unmatch of supplier and borrower.
+    // Fifth step. alice is liquidated 50%, generating maxIterations unmatch of supplier and borrower.
 
     it('First step, alice comes', async () => {
       const whaleUsdc = await ethers.getSigner(config.tokens.usdc.whale);
@@ -253,12 +253,12 @@ describe('PositionsManagerForCompound Contract', () => {
       await positionsManagerForCompound.connect(alice).borrow(config.tokens.cDai.address, daiBorrowAmount);
     });
 
-    it('Second step, add 2*NMAX Dai suppliers', async () => {
+    it('Second step, add 2*maxIterations Dai suppliers', async () => {
       const whaleDai = await ethers.getSigner(config.tokens.dai.whale);
-      const daiAmount = daiBorrowAmount.div(2 * NMAX);
+      const daiAmount = daiBorrowAmount.div(2 * maxIterations);
       let smallDaiSupplier;
 
-      for (let i = 0; i < 2 * NMAX; i++) {
+      for (let i = 0; i < 2 * maxIterations; i++) {
         console.log('add Dai Suppliers', i);
 
         smallDaiSupplier = ethers.Wallet.createRandom().address;
@@ -276,13 +276,13 @@ describe('PositionsManagerForCompound Contract', () => {
       }
     });
 
-    it('third step, add 2*NMAX Usdc borrowers', async () => {
+    it('third step, add 2*maxIterations Usdc borrowers', async () => {
       const whaleDai = await ethers.getSigner(config.tokens.dai.whale);
-      const usdcAmount = usdcCollateralAmount.div(2 * NMAX);
+      const usdcAmount = usdcCollateralAmount.div(2 * maxIterations);
       const daiAmount = utils.parseUnits(usdcAmount.mul(2).div(1e6).toString());
       let smallUsdcBorrower;
 
-      for (let i = 0; i < 2 * NMAX; i++) {
+      for (let i = 0; i < 2 * maxIterations; i++) {
         console.log('addsmallUsdcBorrowers', i);
 
         smallUsdcBorrower = ethers.Wallet.createRandom().address;

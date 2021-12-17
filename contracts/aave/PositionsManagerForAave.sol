@@ -86,7 +86,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
 
     uint8 public NO_REFERRAL_CODE = 0;
     uint8 public VARIABLE_INTEREST_MODE = 2;
-    uint16 public NMAX = 1000;
+    uint16 public maxIterations = 20;
     uint256 public constant LIQUIDATION_CLOSE_FACTOR_PERCENT = 5000; // In basis points.
     bytes32 public constant DATA_PROVIDER_ID =
         0x1000000000000000000000000000000000000000000000000000000000000000; // Id of the data provider.
@@ -249,7 +249,11 @@ contract PositionsManagerForAave is ReentrancyGuard {
         addressesProvider = ILendingPoolAddressesProvider(_lendingPoolAddressesProvider);
         dataProvider = IProtocolDataProvider(addressesProvider.getAddress(DATA_PROVIDER_ID));
         lendingPool = ILendingPool(addressesProvider.getLendingPool());
-        positionsUpdator = new PositionsUpdator(address(this), _positionsUpdatorLogic, NMAX);
+        positionsUpdator = new PositionsUpdator(
+            address(this),
+            _positionsUpdatorLogic,
+            maxIterations
+        );
     }
 
     /* External */
@@ -265,7 +269,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
      *  @param _maxIterations The maximum of iterations to do during a (un)matching process.
      */
     function updateMaxIterations(uint16 _maxIterations) external onlyMarketsManager {
-        NMAX = _maxIterations;
+        maxIterations = _maxIterations;
         positionsUpdator.updateMaxIterations(_maxIterations);
     }
 
@@ -831,14 +835,6 @@ contract PositionsManagerForAave is ReentrancyGuard {
 
             require(remainingSupplyToUnmatch == 0, Errors.PM_COULD_NOT_UNMATCH_FULL_AMOUNT);
         }
-
-        emit Repaid(
-            _borrower,
-            poolTokenAddress,
-            _amount,
-            borrowBalanceInOf[poolTokenAddress][_borrower].onPool,
-            borrowBalanceInOf[poolTokenAddress][_borrower].inP2P
-        );
     }
 
     /** @dev Supplies ERC20 tokens to Aave.
@@ -907,7 +903,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
         uint256 p2pExchangeRate = marketsManagerForAave.p2pExchangeRate(poolTokenAddress);
         uint256 iterationCount;
 
-        while (matchedSupply < _amount && account != address(0) && iterationCount < NMAX) {
+        while (matchedSupply < _amount && account != address(0) && iterationCount < maxIterations) {
             iterationCount++;
             uint256 onPoolInUnderlying = supplyBalanceInOf[poolTokenAddress][account]
                 .onPool
@@ -995,7 +991,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
         address account = positionsUpdator.getBorrowerAccountOnPool(poolTokenAddress);
         uint256 iterationCount;
 
-        while (matchedBorrow < _amount && account != address(0) && iterationCount < NMAX) {
+        while (matchedBorrow < _amount && account != address(0) && iterationCount < maxIterations) {
             iterationCount++;
             uint256 onPoolInUnderlying = borrowBalanceInOf[poolTokenAddress][account]
                 .onPool

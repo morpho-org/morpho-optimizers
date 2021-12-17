@@ -13,11 +13,12 @@ contract PositionsUpdatorStorage is Ownable {
 
     /* Storage */
 
+    uint256 public maxIterations = 20;
     mapping(address => DoubleLinkedList.List) internal suppliersInP2P; // Suppliers in P2P.
     mapping(address => DoubleLinkedList.List) internal suppliersOnPool; // Suppliers on pool.
     mapping(address => DoubleLinkedList.List) internal borrowersInP2P; // Borrowers in P2P.
-    mapping(address => DoubleLinkedList.List) internal borrowersOnPool; // Borrowers on poon.
+    mapping(address => DoubleLinkedList.List) internal borrowersOnPool; // Borrowers on pool.
+
     IPositionsManager public positionsManager;
     IPositionsUpdatorLogic public positionsUpdatorLogic;
-    uint256 NMAX = 20;
 }

@@ -168,13 +168,13 @@ describe('PositionsManagerForCompound Contract', () => {
       expect(await marketsManagerForCompound.lastUpdateBlockNumber(config.tokens.cMkr.address)).to.equal(blockNumber);
     });
 
-    it('Should update NMAX', async () => {
+    it('Should update maxIterations', async () => {
       const newNMAX = BigNumber.from(3000);
       expect(marketsManagerForCompound.connect(supplier1).updateMaxIterations(newNMAX)).to.be.reverted;
       expect(marketsManagerForCompound.connect(borrower1).updateMaxIterations(newNMAX)).to.be.reverted;
       expect(positionsManagerForCompound.connect(owner).updateMaxIterations(newNMAX)).to.be.reverted;
       await marketsManagerForCompound.connect(owner).updateMaxIterations(newNMAX);
-      expect(await positionsManagerForCompound.NMAX()).to.equal(newNMAX);
+      expect(await positionsManagerForCompound.maxIterations()).to.equal(newNMAX);
     });
   });
 

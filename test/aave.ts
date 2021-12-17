@@ -187,13 +187,13 @@ describe('PositionsManagerForAave Contract', () => {
       expect(await marketsManagerForAave.p2pExchangeRate(config.tokens.aAave.address)).to.equal(RAY);
     });
 
-    it('Should update NMAX', async () => {
+    it('Should update maxIterations', async () => {
       const newNMAX = BigNumber.from(3000);
       expect(marketsManagerForAave.connect(supplier1).updateMaxIterations(newNMAX)).to.be.reverted;
       expect(marketsManagerForAave.connect(borrower1).updateMaxIterations(newNMAX)).to.be.reverted;
       expect(positionsManagerForAave.connect(owner).updateMaxIterations(newNMAX)).to.be.reverted;
       await marketsManagerForAave.connect(owner).updateMaxIterations(newNMAX);
-      expect(await positionsManagerForAave.NMAX()).to.equal(newNMAX);
+      expect(await positionsManagerForAave.maxIterations()).to.equal(newNMAX);
     });
   });
 

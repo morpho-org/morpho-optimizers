@@ -56,7 +56,7 @@ contract PositionsManagerForCompound is ReentrancyGuard {
 
     /* Storage */
 
-    uint16 public NMAX = 20;
+    uint16 public maxIterations = 20;
     uint8 public constant CTOKEN_DECIMALS = 8;
     mapping(address => DoubleLinkedList.List) internal suppliersInP2P; // Suppliers in peer-to-peer.
     mapping(address => DoubleLinkedList.List) internal suppliersOnPool; // Suppliers on Comp.
@@ -220,7 +220,7 @@ contract PositionsManagerForCompound is ReentrancyGuard {
      *  @param _maxIterations The maximum number of users to have in the tree.
      */
     function updateMaxIterations(uint16 _maxIterations) external onlyMarketsManager {
-        NMAX = _maxIterations;
+        maxIterations = _maxIterations;
     }
 
     /** @dev Sets the threshold of a market.
@@ -767,7 +767,7 @@ contract PositionsManagerForCompound is ReentrancyGuard {
         address account = suppliersOnPool[_poolTokenAddress].getHead();
         uint256 iterationCount;
 
-        while (remainingToMatch > 0 && account != address(0) && iterationCount < NMAX) {
+        while (remainingToMatch > 0 && account != address(0) && iterationCount < maxIterations) {
             iterationCount++;
             // Check if this user is not borrowing on Pool (cf Liquidation Invariant in docs)
             uint256 onPoolInUnderlying = supplyBalanceInOf[_poolTokenAddress][account].onPool.mul(
@@ -869,7 +869,7 @@ contract PositionsManagerForCompound is ReentrancyGuard {
         address account = borrowersOnPool[_poolTokenAddress].getHead();
         uint256 iterationCount;
 
-        while (remainingToMatch > 0 && account != address(0) && iterationCount < NMAX) {
+        while (remainingToMatch > 0 && account != address(0) && iterationCount < maxIterations) {
             iterationCount++;
             uint256 onPoolInUnderlying = borrowBalanceInOf[_poolTokenAddress][account].onPool.mul(
                 borrowIndex
@@ -1051,13 +1051,13 @@ contract PositionsManagerForCompound is ReentrancyGuard {
         bool wasOnPoolAndValueChanged = formerValueOnPool != 0 && formerValueOnPool != onPool;
         if (wasOnPoolAndValueChanged) borrowersOnPool[_poolTokenAddress].remove(_account);
         if (onPool > 0 && (wasOnPoolAndValueChanged || formerValueOnPool == 0))
-            borrowersOnPool[_poolTokenAddress].insertSorted(_account, onPool, NMAX);
+            borrowersOnPool[_poolTokenAddress].insertSorted(_account, onPool, maxIterations);
 
         // Check P2P
         bool wasInP2PAndValueChanged = formerValueInP2P != 0 && formerValueInP2P != inP2P;
         if (wasInP2PAndValueChanged) borrowersInP2P[_poolTokenAddress].remove(_account);
         if (inP2P > 0 && (wasInP2PAndValueChanged || formerValueInP2P == 0))
-            borrowersInP2P[_poolTokenAddress].insertSorted(_account, inP2P, NMAX);
+            borrowersInP2P[_poolTokenAddress].insertSorted(_account, inP2P, maxIterations);
     }
 
     /** @dev Updates suppliers tree with the new balances of a given account.
@@ -1074,12 +1074,12 @@ contract PositionsManagerForCompound is ReentrancyGuard {
         bool wasOnPoolAndValueChanged = formerValueOnPool != 0 && formerValueOnPool != onPool;
         if (wasOnPoolAndValueChanged) suppliersOnPool[_poolTokenAddress].remove(_account);
         if (onPool > 0 && (wasOnPoolAndValueChanged || formerValueOnPool == 0))
-            suppliersOnPool[_poolTokenAddress].insertSorted(_account, onPool, NMAX);
+            suppliersOnPool[_poolTokenAddress].insertSorted(_account, onPool, maxIterations);
 
         // Check P2P
         bool wasInP2PAndValueChanged = formerValueInP2P != 0 && formerValueInP2P != inP2P;
         if (wasInP2PAndValueChanged) suppliersInP2P[_poolTokenAddress].remove(_account);
         if (inP2P > 0 && (wasInP2PAndValueChanged || formerValueInP2P == 0))
-            suppliersInP2P[_poolTokenAddress].insertSorted(_account, inP2P, NMAX);
+            suppliersInP2P[_poolTokenAddress].insertSorted(_account, inP2P, maxIterations);
     }
 }
