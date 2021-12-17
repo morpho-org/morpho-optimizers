@@ -1,6 +1,7 @@
 /* eslint-disable no-console */
 import { BigNumber } from 'ethers';
 import hre, { ethers } from 'hardhat';
+import {Signer} from '@ethersproject/abstract-signer';
 const config = require(`@config/${process.env.NETWORK}-config.json`);
 
 async function main() {
@@ -16,6 +17,8 @@ async function main() {
       config.aave.lendingPoolAddressesProvider.address
   );
   await marketsManagerForAave.deployed();
+
+  await marketsManagerForAave.connect(deployer as Signer).setLendingPool();
   console.log('🎉 MarketsManagerForAave deployed to address:', marketsManagerForAave.address);
 
   console.log('\n🦋 Verifying MarketsManagerForAave on Tenderly...');
