@@ -551,7 +551,6 @@ contract PositionsManagerForAave is ReentrancyGuard {
         if (remainingToWithdraw > 0)
             _withdrawPositionFromP2P(poolToken, underlyingToken, _supplier, remainingToWithdraw);
 
-        _updateSupplierList(_poolTokenAddress, _supplier);
         underlyingToken.safeTransfer(_receiver, _amount);
         emit Withdrawn(_supplier, _poolTokenAddress, _amount);
     }
@@ -586,7 +585,6 @@ contract PositionsManagerForAave is ReentrancyGuard {
         if (remainingToRepay > 0)
             _repayPositionToP2P(poolToken, underlyingToken, _borrower, remainingToRepay);
 
-        _updateBorrowerList(_poolTokenAddress, _borrower);
         emit Repaid(_borrower, _poolTokenAddress, _amount);
     }
 
@@ -628,6 +626,8 @@ contract PositionsManagerForAave is ReentrancyGuard {
             0,
             normalizedVariableDebt
         );
+
+        _updateBorrowerList(poolTokenAddress, _borrower);
     }
 
     /** @dev Repays `_amount` of the position of a `_borrower` in peer-to-peer.
@@ -657,9 +657,12 @@ contract PositionsManagerForAave is ReentrancyGuard {
         );
         uint256 poolTokenContractBalance = variableDebtToken.scaledBalanceOf(address(this));
         uint256 borrowToMatch = Math.min(poolTokenContractBalance, _amount);
-        uint256 matchedBorrow = borrowToMatch > 0
-            ? _matchBorrowers(_poolToken, _underlyingToken, borrowToMatch)
-            : 0;
+        uint256 matchedBorrow;
+        if (borrowToMatch > 0) {
+            _updateBorrowerList(poolTokenAddress, _borrower);
+            matchedBorrow = _matchBorrowers(_poolToken, _underlyingToken, borrowToMatch);
+        }
+
         require(
             // If the requested amount is less than what Morpho is borrowing, liquidity should be totally available to repay because Morpho is borrowing it.
             _amount > poolTokenContractBalance || matchedBorrow == borrowToMatch,
@@ -725,6 +728,8 @@ contract PositionsManagerForAave is ReentrancyGuard {
             0,
             normalizedIncome
         );
+
+        _updateSupplierList(poolTokenAddress, _supplier);
     }
 
     /** @dev Withdraws `_amount` of the position of a `_supplier` in peer-to-peer.
@@ -748,9 +753,12 @@ contract PositionsManagerForAave is ReentrancyGuard {
 
         uint256 poolTokenContractBalance = _poolToken.balanceOf(address(this));
         uint256 supplyToMatch = Math.min(poolTokenContractBalance, _amount);
-        uint256 matchedSupply = supplyToMatch > 0
-            ? _matchSuppliers(_poolToken, _underlyingToken, supplyToMatch)
-            : 0;
+        uint256 matchedSupply;
+        if (supplyToMatch > 0) {
+            _updateSupplierList(poolTokenAddress, _supplier);
+            matchedSupply = _matchSuppliers(_poolToken, _underlyingToken, supplyToMatch);
+        }
+
         require(
             // If the requested amount is less than what Morpho is supplying, liquidity should be totally available to withdraw because Morpho is supplying it.
             _amount > poolTokenContractBalance || matchedSupply == supplyToMatch,
