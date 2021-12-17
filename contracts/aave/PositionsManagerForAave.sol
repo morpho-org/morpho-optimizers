@@ -534,6 +534,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
     ) internal isMarketCreated(_poolTokenAddress) {
         require(_amount > 0, Errors.PM_AMOUNT_IS_0);
         _checkAccountLiquidity(_supplier, _poolTokenAddress, _amount, 0);
+        emit Withdrawn(_supplier, _poolTokenAddress, _amount);
         IAToken poolToken = IAToken(_poolTokenAddress);
         IERC20 underlyingToken = IERC20(poolToken.UNDERLYING_ASSET_ADDRESS());
         uint256 remainingToWithdraw = _amount;
@@ -552,7 +553,6 @@ contract PositionsManagerForAave is ReentrancyGuard {
             _withdrawPositionFromP2P(poolToken, underlyingToken, _supplier, remainingToWithdraw);
 
         underlyingToken.safeTransfer(_receiver, _amount);
-        emit Withdrawn(_supplier, _poolTokenAddress, _amount);
     }
 
     /** @dev Implements repay logic.
