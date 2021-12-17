@@ -1,24 +1,21 @@
 /* eslint-disable no-console */
 import { BigNumber } from 'ethers';
 import hre, { ethers } from 'hardhat';
-import {Signer} from '@ethersproject/abstract-signer';
 const config = require(`@config/${process.env.NETWORK}-config.json`);
 
 async function main() {
   const [deployer] = await ethers.getSigners();
 
   console.log('\n🦋 Deploying Morpho contracts for Aave');
-  console.log('👩 Deployer account:', deployer.address);
+  console.log('👩 Deployer account:', await deployer.getAddress());
   console.log('🤑 Account balance:', (await deployer.getBalance()).toString());
 
   console.log('\n🦋 Deploying MarketsManagerForAave...');
   const MarketsManagerForAave = await ethers.getContractFactory('MarketsManagerForAave');
-  const marketsManagerForAave = await MarketsManagerForAave.deploy(
-      config.aave.lendingPoolAddressesProvider.address
-  );
+  const marketsManagerForAave = await MarketsManagerForAave.deploy(config.aave.lendingPoolAddressesProvider.address);
   await marketsManagerForAave.deployed();
 
-  await marketsManagerForAave.connect(deployer as Signer).setLendingPool();
+  await marketsManagerForAave.connect(deployer).setLendingPool();
   console.log('🎉 MarketsManagerForAave deployed to address:', marketsManagerForAave.address);
 
   console.log('\n🦋 Verifying MarketsManagerForAave on Tenderly...');
@@ -45,9 +42,12 @@ async function main() {
   console.log('🎉 PositionsManagerForAave verified!');
 
   console.log('\n🦋 Creating markets...');
+  const defaultThreshold = BigNumber.from(10).pow(6);
+  const defaultCapValue = BigNumber.from(2);
+
   await marketsManagerForAave.connect(deployer).setPositionsManager(positionsManagerForAave.address);
-  await marketsManagerForAave.connect(deployer).createMarket(config.tokens.cDai.address, BigNumber.from(1).pow(6));
-  await marketsManagerForAave.connect(deployer).createMarket(config.tokens.cUsdc.address, BigNumber.from(1).pow(6));
+  await marketsManagerForAave.connect(deployer).createMarket(config.tokens.aDai.address, defaultThreshold, defaultCapValue);
+  await marketsManagerForAave.connect(deployer).createMarket(config.tokens.aUsdc.address, defaultThreshold, defaultCapValue);
   console.log('🎉 Finished!\n');
 }
 
