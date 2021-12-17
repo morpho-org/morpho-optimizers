@@ -12,7 +12,9 @@ async function main() {
 
   console.log('\n🦋 Deploying MarketsManagerForAave...');
   const MarketsManagerForAave = await ethers.getContractFactory('MarketsManagerForAave');
-  const marketsManagerForAave = await MarketsManagerForAave.deploy();
+  const marketsManagerForAave = await MarketsManagerForAave.deploy(
+      config.aave.lendingPoolAddressesProvider.address
+  );
   await marketsManagerForAave.deployed();
   console.log('🎉 MarketsManagerForAave deployed to address:', marketsManagerForAave.address);
 
