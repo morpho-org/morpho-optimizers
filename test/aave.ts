@@ -499,8 +499,111 @@ describe('PositionsManagerForAave Contract', () => {
   });
 
   describe('P2P interactions between supplier and borrowers', () => {
-    it('Supplier should withdraw her liquidity while not enough aToken in peer-to-peer contract', async () => {
-      // Supplier supplys tokens
+    it.only('Supplier should withdraw her liquidity while not enough aToken in peer-to-peer contract', async () => {
+      // supplier1 supplies tokens
+      const supplyAmount1 = utils.parseUnits('10');
+      await daiToken.connect(supplier1).approve(positionsManagerForAave.address, supplyAmount1);
+      await positionsManagerForAave.connect(supplier1).supply(config.tokens.aDai.address, supplyAmount1);
+
+      // supplier2 supplies tokens
+      const supplyAmount2 = utils.parseUnits('5');
+      await daiToken.connect(supplier2).approve(positionsManagerForAave.address, supplyAmount2);
+      await positionsManagerForAave.connect(supplier2).supply(config.tokens.aDai.address, supplyAmount2);
+
+      // Borrower provides collateral
+      const collateralAmount = to6Decimals(utils.parseUnits('100'));
+      await usdcToken.connect(borrower1).approve(positionsManagerForAave.address, collateralAmount);
+      await positionsManagerForAave.connect(borrower1).supply(config.tokens.aUsdc.address, collateralAmount);
+
+      // Borrowers borrows supplier1 amount
+      await positionsManagerForAave.connect(borrower1).borrow(config.tokens.aDai.address, supplyAmount1);
+
+      // const normalizedIncome = await lendingPool.getReserveNormalizedIncome(config.tokens.dai.address);
+      const p2pExchangeRate1 = await marketsManagerForAave.p2pUnitExchangeRate(config.tokens.aDai.address);
+
+      // Check supplier1 balances
+      const expectedSupplyBalanceInP2P1 = underlyingToP2PUnit(supplyAmount1, p2pExchangeRate1);
+      const supplier1BalanceOnPool1 = (await positionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier1.getAddress()))
+        .onPool;
+      const supplier1BalanceInP2P1 = (await positionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier1.getAddress()))
+        .inP2P;
+      expect(removeDigitsBigNumber(3, supplier1BalanceOnPool1)).to.equal(0);
+      expect(removeDigitsBigNumber(3, supplier1BalanceInP2P1)).to.equal(removeDigitsBigNumber(3, expectedSupplyBalanceInP2P1));
+
+      // Expected borrow balances
+      const expectedMorphoBorrowBalance = supplyAmount1.sub(supplyAmount2);
+
+      // supplier1 withdraws
+      await positionsManagerForAave.connect(supplier1).withdraw(config.tokens.aDai.address, supplyAmount1);
+      const p2pExchangeRate2 = await marketsManagerForAave.p2pUnitExchangeRate(config.tokens.aDai.address);
+      const normalizedVariableDebt = await lendingPool.getReserveNormalizedVariableDebt(config.tokens.dai.address);
+      const expectedBorrowBalanceOnPool = underlyingToAdUnit(expectedMorphoBorrowBalance, normalizedVariableDebt);
+      const expectedBorrowBalanceInP2P = underlyingToP2PUnit(supplyAmount2, p2pExchangeRate2);
+      const expectedSupplier2BalanceInP2P = expectedBorrowBalanceInP2P;
+      const borrowBalance = await variableDebtDaiToken.balanceOf(positionsManagerForAave.address);
+
+      // Check borrow balance of Morpho
+      expect(removeDigitsBigNumber(3, borrowBalance)).to.equal(removeDigitsBigNumber(3, expectedMorphoBorrowBalance));
+
+      // Check supply balances of supplier1
+      expect(
+        removeDigitsBigNumber(
+          3,
+          (await positionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier1.getAddress())).onPool
+        )
+      ).to.equal(0);
+      expect(
+        removeDigitsBigNumber(
+          3,
+          (await positionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier1.getAddress())).inP2P
+        )
+      ).to.equal(0);
+
+      // Check supply balances of supplier1
+      expect(
+        removeDigitsBigNumber(
+          3,
+          (await positionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier1.getAddress())).onPool
+        )
+      ).to.equal(0);
+      expect(
+        removeDigitsBigNumber(
+          3,
+          (await positionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier1.getAddress())).inP2P
+        )
+      ).to.equal(0);
+
+      // Check supply balances of supplier1
+      expect(
+        removeDigitsBigNumber(
+          3,
+          (await positionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier2.getAddress())).onPool
+        )
+      ).to.equal(0);
+      expect(
+        removeDigitsBigNumber(
+          3,
+          (await positionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier2.getAddress())).inP2P
+        )
+      ).to.equal(expectedSupplier2BalanceInP2P);
+
+      // Check borrow balances of borrower1
+      expect(
+        removeDigitsBigNumber(
+          3,
+          (await positionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower1.getAddress())).onPool
+        )
+      ).to.equal(removeDigitsBigNumber(3, expectedBorrowBalanceOnPool));
+      expect(
+        removeDigitsBigNumber(
+          3,
+          (await positionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower1.getAddress())).inP2P
+        )
+      ).to.equal(removeDigitsBigNumber(3, expectedBorrowBalanceInP2P));
+    });
+
+    it.only('Supplier should withdraw her liquidity while not enough aToken in peer-to-peer contract (edge case 1)', async () => {
+      // Supplier supplies tokens
       const supplyAmount = utils.parseUnits('10');
       const daiBalanceBefore1 = await daiToken.balanceOf(supplier1.getAddress());
       const expectedDaiBalanceAfter1 = daiBalanceBefore1.sub(supplyAmount);
@@ -593,7 +696,7 @@ describe('PositionsManagerForAave Contract', () => {
       // Check supplier1 underlying balance
       expect(removeDigitsBigNumber(1, daiBalanceAfter2)).to.equal(removeDigitsBigNumber(1, expectedDaiBalanceAfter2));
 
-      // Check supply balances of supplier1
+      // Check supplies balances of supplier1
       expect(
         removeDigitsBigNumber(
           1,
