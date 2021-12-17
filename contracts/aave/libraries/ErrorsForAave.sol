@@ -16,4 +16,5 @@ library Errors {
     string public constant PM_REMAINING_TO_UNMATCH_IS_NOT_0 = "11";
     string public constant PM_DEBT_VALUE_ABOVE_MAX = "12";
     string public constant PM_SUPPLY_ABOVE_CAP_VALUE = "13";
+    string public constant PM_COULD_NOT_UNMATCH_FULL_AMOUNT = "14";
 }
