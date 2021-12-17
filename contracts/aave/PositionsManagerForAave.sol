@@ -838,6 +838,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
             address(_underlyingToken)
         );
         address account = suppliersOnPool[poolTokenAddress].getHead();
+        uint256 p2pExchangeRate = marketsManagerForAave.p2pUnitExchangeRate(poolTokenAddress);
 
         uint256 iterationCount;
         while (matchedSupply < _amount && account != address(0) && iterationCount < NMAX) {
@@ -852,7 +853,6 @@ contract PositionsManagerForAave is ReentrancyGuard {
             );
             matchedSupply += toMatch;
 
-            uint256 p2pExchangeRate = marketsManagerForAave.p2pUnitExchangeRate(poolTokenAddress);
             supplyBalanceInOf[poolTokenAddress][account].inP2P += toMatch.divWadByRay(
                 p2pExchangeRate
             ); // In p2pUnit
