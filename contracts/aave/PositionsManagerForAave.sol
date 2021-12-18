@@ -345,50 +345,22 @@ contract PositionsManagerForAave is ReentrancyGuard {
         uint256 remainingToBorrowOnPool = _amount;
 
         /* If some suppliers are waiting on Aave, Morpho matches the borrower in P2P with them as much as possible */
-        if (suppliersOnPool[_poolTokenAddress].getHead() != address(0)) {
-            // No need to update p2pUnitExchangeRate here as it's done in `_checkAccountLiquidity`
-            uint256 p2pExchangeRate = marketsManagerForAave.p2pUnitExchangeRate(_poolTokenAddress);
-            uint256 matchedSupply = _matchSuppliers(poolToken, underlyingToken, _amount); // In underlying
-            remainingToBorrowOnPool -= matchedSupply;
-
-            if (matchedSupply > 0) {
-                borrowBalanceInOf[_poolTokenAddress][msg.sender].inP2P += matchedSupply.divWadByRay(
-                    p2pExchangeRate
-                ); // In p2pUnit
-                emit BorrowerPositionUpdated(
-                    msg.sender,
-                    _poolTokenAddress,
-                    0,
-                    matchedSupply,
-                    0,
-                    0,
-                    p2pExchangeRate,
-                    0
-                );
-                _updateBorrowerList(_poolTokenAddress, msg.sender);
-            }
-        }
+        if (suppliersOnPool[_poolTokenAddress].getHead() != address(0))
+            remainingToBorrowOnPool -= _borrowPositionFromP2P(
+                poolToken,
+                underlyingToken,
+                msg.sender,
+                _amount
+            );
 
         /* If there aren't enough suppliers waiting on Aave to match all the tokens borrowed, the rest is borrowed from Aave */
-        if (remainingToBorrowOnPool > 0) {
-            uint256 normalizedVariableDebt = lendingPool.getReserveNormalizedVariableDebt(
-                address(underlyingToken)
-            );
-            borrowBalanceInOf[_poolTokenAddress][msg.sender].onPool += remainingToBorrowOnPool
-                .divWadByRay(normalizedVariableDebt); // In adUnit
-            _borrowERC20FromPool(underlyingToken, remainingToBorrowOnPool);
-            emit BorrowerPositionUpdated(
+        if (remainingToBorrowOnPool > 0)
+            _borrowPositionFromPool(
+                poolToken,
+                underlyingToken,
                 msg.sender,
-                _poolTokenAddress,
-                remainingToBorrowOnPool,
-                0,
-                0,
-                0,
-                normalizedVariableDebt,
-                0
+                remainingToBorrowOnPool
             );
-            _updateBorrowerList(_poolTokenAddress, msg.sender);
-        }
 
         underlyingToken.safeTransfer(msg.sender, _amount);
         emit Borrowed(msg.sender, _poolTokenAddress, _amount);
@@ -811,6 +783,76 @@ contract PositionsManagerForAave is ReentrancyGuard {
 
             emit SupplierPositionUpdated(
                 _supplier,
+                poolTokenAddress,
+                0,
+                matched,
+                0,
+                0,
+                p2pExchangeRate,
+                0
+            );
+        }
+    }
+
+    /** @dev Borrows `_amount` for `_borrower` from pool.
+     *  @param _poolToken The Aave interface of the market the user wants to borrow from.
+     *  @param _underlyingToken The ERC20 interface of the underlying token of the market to borrow from.
+     *  @param _borrower The address of the borrower who is borrowing.
+     *  @param _amount The amount of ERC20 tokens to borrow.
+     */
+    function _borrowPositionFromPool(
+        IAToken _poolToken,
+        IERC20 _underlyingToken,
+        address _borrower,
+        uint256 _amount
+    ) internal {
+        address poolTokenAddress = address(_poolToken);
+        uint256 normalizedVariableDebt = lendingPool.getReserveNormalizedVariableDebt(
+            address(_underlyingToken)
+        );
+        borrowBalanceInOf[poolTokenAddress][_borrower].onPool += _amount.divWadByRay(
+            normalizedVariableDebt
+        ); // In adUnit
+        _updateBorrowerList(poolTokenAddress, _borrower);
+        _borrowERC20FromPool(_underlyingToken, _amount);
+
+        emit BorrowerPositionUpdated(
+            _borrower,
+            poolTokenAddress,
+            _amount,
+            0,
+            0,
+            0,
+            normalizedVariableDebt,
+            0
+        );
+    }
+
+    /** @dev Borrows `_amount` for `_borrower` from P2P.
+     *  @param _poolToken The Aave interface of the market the user wants to borrow from.
+     *  @param _underlyingToken The ERC20 interface of the underlying token of the market to borrow from.
+     *  @param _borrower The address of the borrower who is borrowing.
+     *  @param _amount The amount of ERC20 tokens to borrow.
+     *  @return matched The amount matched by the suppliers waiting on Pool.
+     */
+    function _borrowPositionFromP2P(
+        IAToken _poolToken,
+        IERC20 _underlyingToken,
+        address _borrower,
+        uint256 _amount
+    ) internal returns (uint256 matched) {
+        address poolTokenAddress = address(_poolToken);
+        uint256 p2pExchangeRate = marketsManagerForAave.updateP2PUnitExchangeRate(poolTokenAddress);
+        matched = _matchSuppliers(_poolToken, _underlyingToken, _amount); // In underlying
+
+        if (matched > 0) {
+            borrowBalanceInOf[poolTokenAddress][_borrower].inP2P += matched.divWadByRay(
+                p2pExchangeRate
+            ); // In p2pUnit
+            _updateBorrowerList(poolTokenAddress, _borrower);
+
+            emit BorrowerPositionUpdated(
+                _borrower,
                 poolTokenAddress,
                 0,
                 matched,
