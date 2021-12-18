@@ -312,45 +312,17 @@ contract PositionsManagerForAave is ReentrancyGuard {
         uint256 remainingToSupplyToPool = _amount;
 
         /* If some borrowers are waiting on Aave, Morpho matches the supplier in P2P with them as much as possible */
-        if (borrowersOnPool[_poolTokenAddress].getHead() != address(0)) {
-            uint256 matchedBorrow = _matchBorrowers(poolToken, underlyingToken, _amount); // In underlying
-            remainingToSupplyToPool -= matchedBorrow;
-
-            if (matchedBorrow > 0) {
-                supplyBalanceInOf[_poolTokenAddress][msg.sender].inP2P += matchedBorrow.divWadByRay(
-                    p2pExchangeRate
-                ); // In p2pUnit
-                emit SupplierPositionUpdated(
-                    msg.sender,
-                    _poolTokenAddress,
-                    0,
-                    matchedBorrow,
-                    0,
-                    0,
-                    p2pExchangeRate,
-                    0
-                );
-                _updateSupplierList(_poolTokenAddress, msg.sender);
-            }
-        }
+        if (borrowersOnPool[_poolTokenAddress].getHead() != address(0))
+            remainingToSupplyToPool -= _supplyPositionToP2P(
+                poolToken,
+                underlyingToken,
+                msg.sender,
+                _amount
+            );
 
         /* If there aren't enough borrowers waiting on Aave to match all the tokens supplied, the rest is supplied to Aave */
-        if (remainingToSupplyToPool > 0) {
-            supplyBalanceInOf[_poolTokenAddress][msg.sender].onPool += remainingToSupplyToPool
-                .divWadByRay(normalizedIncome); // Scaled Balance
-            _supplyERC20ToPool(underlyingToken, remainingToSupplyToPool); // Revert on error
-            emit SupplierPositionUpdated(
-                msg.sender,
-                _poolTokenAddress,
-                remainingToSupplyToPool,
-                0,
-                0,
-                0,
-                0,
-                normalizedIncome
-            );
-            _updateSupplierList(_poolTokenAddress, msg.sender);
-        }
+        if (remainingToSupplyToPool > 0)
+            _supplyPositionToPool(poolToken, underlyingToken, msg.sender, remainingToSupplyToPool);
 
         emit Supplied(msg.sender, _poolTokenAddress, _amount);
     }
@@ -778,6 +750,76 @@ contract PositionsManagerForAave is ReentrancyGuard {
             p2pExchangeRate,
             0
         );
+    }
+
+    /** @dev Supplies `_amount` for a `_supplier` on a specific market to the pool.
+     *  @param _poolToken The Aave interface of the market the user wants to supply to.
+     *  @param _underlyingToken The ERC20 interface of the underlying token of the market to supply to.
+     *  @param _supplier The address of the supplier supplying the tokens.
+     *  @param _amount The amount of ERC20 tokens to supply.
+     */
+    function _supplyPositionToPool(
+        IAToken _poolToken,
+        IERC20 _underlyingToken,
+        address _supplier,
+        uint256 _amount
+    ) internal {
+        address poolTokenAddress = address(_poolToken);
+        uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(
+            address(_underlyingToken)
+        );
+        supplyBalanceInOf[poolTokenAddress][_supplier].onPool += _amount.divWadByRay(
+            normalizedIncome
+        ); // Scaled Balance
+        _updateSupplierList(poolTokenAddress, _supplier);
+        _supplyERC20ToPool(_underlyingToken, _amount); // Revert on error
+
+        emit SupplierPositionUpdated(
+            _supplier,
+            poolTokenAddress,
+            _amount,
+            0,
+            0,
+            0,
+            0,
+            normalizedIncome
+        );
+    }
+
+    /** @dev Supplies `_amount` for a `_supplier` on a specific market to P2P.
+     *  @param _poolToken The Aave interface of the market the user wants to supply to.
+     *  @param _underlyingToken The ERC20 interface of the underlying token of the market to supply to.
+     *  @param _supplier The address of the supplier supplying the tokens.
+     *  @param _amount The amount of ERC20 tokens to supply.
+     *  @return matched The amount matched by the borrowers waiting on Pool.
+     */
+    function _supplyPositionToP2P(
+        IAToken _poolToken,
+        IERC20 _underlyingToken,
+        address _supplier,
+        uint256 _amount
+    ) internal returns (uint256 matched) {
+        address poolTokenAddress = address(_poolToken);
+        uint256 p2pExchangeRate = marketsManagerForAave.updateP2PUnitExchangeRate(poolTokenAddress);
+        matched = _matchBorrowers(_poolToken, _underlyingToken, _amount); // In underlying
+
+        if (matched > 0) {
+            supplyBalanceInOf[poolTokenAddress][_supplier].inP2P += matched.divWadByRay(
+                p2pExchangeRate
+            ); // In p2pUnit
+            _updateSupplierList(poolTokenAddress, _supplier);
+
+            emit SupplierPositionUpdated(
+                _supplier,
+                poolTokenAddress,
+                0,
+                matched,
+                0,
+                0,
+                p2pExchangeRate,
+                0
+            );
+        }
     }
 
     /** @dev Supplies ERC20 tokens to Aave.
