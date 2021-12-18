@@ -84,6 +84,8 @@ contract PositionsManagerForAave is ReentrancyGuard {
 
     /* Storage */
 
+    uint8 public NO_REFERRAL_CODE = 0;
+    uint8 public VARIABLE_INTEREST_MODE = 2;
     uint16 public NMAX = 1000;
     uint256 public constant LIQUIDATION_CLOSE_FACTOR_PERCENT = 5000; // In basis points.
     bytes32 public constant DATA_PROVIDER_ID =
@@ -784,7 +786,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
      */
     function _supplyERC20ToPool(IERC20 _underlyingToken, uint256 _amount) internal {
         _underlyingToken.safeIncreaseAllowance(address(lendingPool), _amount);
-        lendingPool.deposit(address(_underlyingToken), _amount, address(this), 0);
+        lendingPool.deposit(address(_underlyingToken), _amount, address(this), NO_REFERRAL_CODE);
         lendingPool.setUserUseReserveAsCollateral(address(_underlyingToken), true);
     }
 
@@ -801,7 +803,13 @@ contract PositionsManagerForAave is ReentrancyGuard {
      *  @param _amount The amount of tokens to borrow.
      */
     function _borrowERC20FromPool(IERC20 _underlyingToken, uint256 _amount) internal {
-        lendingPool.borrow(address(_underlyingToken), _amount, 2, 0, address(this));
+        lendingPool.borrow(
+            address(_underlyingToken),
+            _amount,
+            VARIABLE_INTEREST_MODE,
+            NO_REFERRAL_CODE,
+            address(this)
+        );
     }
 
     /** @dev Repays ERC20 tokens to Aave.
@@ -810,7 +818,12 @@ contract PositionsManagerForAave is ReentrancyGuard {
      */
     function _repayERC20ToPool(IERC20 _underlyingToken, uint256 _amount) internal {
         _underlyingToken.safeIncreaseAllowance(address(lendingPool), _amount);
-        lendingPool.repay(address(_underlyingToken), _amount, 2, address(this));
+        lendingPool.repay(
+            address(_underlyingToken),
+            _amount,
+            VARIABLE_INTEREST_MODE,
+            address(this)
+        );
     }
 
     /** @dev Finds liquidity on Aave and matches it in P2P.
