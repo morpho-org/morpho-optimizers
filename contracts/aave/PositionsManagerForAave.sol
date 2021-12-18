@@ -295,19 +295,9 @@ contract PositionsManagerForAave is ReentrancyGuard {
         _handleMembership(_poolTokenAddress, msg.sender);
         IAToken poolToken = IAToken(_poolTokenAddress);
         IERC20 underlyingToken = IERC20(poolToken.UNDERLYING_ASSET_ADDRESS());
+        if (capValue[_poolTokenAddress] != type(uint256).max)
+            _checkCapValue(_poolTokenAddress, underlyingToken, msg.sender, _amount);
         underlyingToken.safeTransferFrom(msg.sender, address(this), _amount);
-        uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(address(underlyingToken));
-        uint256 p2pExchangeRate = marketsManagerForAave.updateP2PUnitExchangeRate(
-            _poolTokenAddress
-        );
-        uint256 totalSuppliedInUnderlying = supplyBalanceInOf[_poolTokenAddress][msg.sender]
-            .inP2P
-            .mulWadByRay(p2pExchangeRate) +
-            supplyBalanceInOf[_poolTokenAddress][msg.sender].onPool.mulWadByRay(normalizedIncome);
-        require(
-            totalSuppliedInUnderlying + _amount <= capValue[_poolTokenAddress],
-            Errors.PM_SUPPLY_ABOVE_CAP_VALUE
-        );
         /* DEFAULT CASE: There aren't any borrowers waiting on Aave, Morpho supplies all the tokens to Aave */
         uint256 remainingToSupplyToPool = _amount;
 
@@ -1100,6 +1090,34 @@ contract PositionsManagerForAave is ReentrancyGuard {
         }
 
         _borrowERC20FromPool(underlyingToken, _amount - remainingToUnmatch);
+    }
+
+    /** @dev Checks that the total supply of `supplier` is below the cap.
+     *  @param _poolTokenAddress The address of the market to check.
+     *  @param _underlyingToken The ERC20 interface of the underlying token of the market.
+     *  @param _supplier The address of the _supplier to check.
+     *  @param _amount The amount to add to the current supply.
+     */
+    function _checkCapValue(
+        address _poolTokenAddress,
+        IERC20 _underlyingToken,
+        address _supplier,
+        uint256 _amount
+    ) internal {
+        uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(
+            address(_underlyingToken)
+        );
+        uint256 p2pExchangeRate = marketsManagerForAave.updateP2PUnitExchangeRate(
+            _poolTokenAddress
+        );
+        uint256 totalSuppliedInUnderlying = supplyBalanceInOf[_poolTokenAddress][_supplier]
+            .inP2P
+            .mulWadByRay(p2pExchangeRate) +
+            supplyBalanceInOf[_poolTokenAddress][_supplier].onPool.mulWadByRay(normalizedIncome);
+        require(
+            totalSuppliedInUnderlying + _amount <= capValue[_poolTokenAddress],
+            Errors.PM_SUPPLY_ABOVE_CAP_VALUE
+        );
     }
 
     /**
