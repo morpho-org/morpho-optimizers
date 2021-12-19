@@ -8,106 +8,57 @@ A user can trigger five different functions: supply, withdraw, borrow, repay and
 
 Each function considers many different cases depending on the liquidity state of Morpho. In practice, most functions that will effectively happen on Morpho are gas efficient. However, one may remark that absolutely extreme scenarios like Withdraw 2.2.2 can be more costly. Such scenarios are totally unlikely but they are still implemented to ensure that Morpho can handle extreme liquidity states.
 
-## A user supplies tokens ([`supply`](https://github.com/morpho-labs/morpho-contracts/blob/b4b8ddd4fcebf3a4d497a5518d8155514040a3dc/contracts/CompoundPositionsManager.sol#L210))
+## 1. [`SUPPLY`](https://github.com/morpho-labs/morpho-contracts/blob/main/contracts/aave/PositionsManagerForAave.sol#L290)
 
-#### CASE 1: Some borrowers are waiting on Compound, Morpho matches the supplier in P2P with them
+- 1.1 - There are no available borrowers: all of the supplied amount is supplied to the pool and set `onPool`.
 
-- Morpho moves the borrowers from Compound to P2P
-- Morpho updates the P2P supply balance of the user
+- 1.2 - There is 1 available borrower, he matches 100% of the supplier liquidity, everything is `inP2P`.
 
-##### If there aren't enough borrowers waiting on Compound to match all the tokens supplied
+- 1.3 - There is 1 available borrower, he doesn't match 100% of the supplier liquidity. Supplier's balance `inP2P` is equal to the borrower previous amount `onPool`, the rest is set `onPool`.
 
-- Morpho supplies the tokens to Compound
-- Morpho updates the Compound supply balance of the user
+- 1.4 - There are NMAX (or less) borrowers that match the supplied amount, everything is `inP2P` after NMAX (or less) match.
 
-#### CASE 2: There aren't any borrowers waiting on Compound, Morpho supplies all the tokens to Compound
+- 1.5 - The NMAX bigger borrowers don't match all of the supplied amount, after NMAX match, the rest supplied and set `onPool`. ⚠️ most gaz expensive supply scenario.
 
-- Morpho updates the Compound supply balance of the user
-- Morpho supplies the tokens to Compound
+## 2. [`BORROW`](https://github.com/morpho-labs/morpho-contracts/blob/main/contracts/aave/PositionsManagerForAave.sol#L361)
 
-## A user borrows tokens ([`borrow`](https://github.com/morpho-labs/morpho-contracts/blob/b4b8ddd4fcebf3a4d497a5518d8155514040a3dc/contracts/CompoundPositionsManager.sol#L251))
+- 2.1 - There are no available suppliers: all of the borrowed amount is `onPool`.
 
-#### CASE 1: Some suppliers are waiting on Compound, Morpho matches the borrowers in P2P with them
+- 2.2 - There is 1 available supplier, he matches 100% of the borrower liquidity, everything is `inP2P`.
 
-- Morpho moves the suppliers from Compound to P2P
-- Morpho updates the P2P borrow balance of the user
+- 2.3 - There is 1 available supplier, he doesn't match 100% of the borrower liquidity. Borrower `inP2P` is equal to the supplier previous amount `onPool`, the rest is set `onPool`.
 
-##### If there aren't enough suppliers waiting on Compound to match all the tokens borrowed
+- 2.4 - There are NMAX (or less) supplier that match the supplied amount, everything is `inP2P` after NMAX (or less) match.
 
-- Morpho moves all the supply of the user from P2P to Compound to ensure Morpho's borrow is going to be backed with collateral.
-- Morpho borrows the tokens from Compound.
-- Morpho updates the Compound borrow balance of the user.
+- 2.5 - The NMAX bigger supplier don't match all of the borrowed amount, after NMAX match, the rest borrowed and set `onPool`. ⚠️ most gaz expensive borrow scenario.
 
-#### CASE 2: There aren't any borrowers waiting on Compound, Morpho borrows all the tokens from Compound
+## 3. [`WITHDRAW`](https://github.com/morpho-labs/morpho-contracts/blob/main/contracts/aave/PositionsManagerForAave.sol#L534)
 
-- Morpho moves the supply of the user from P2P to Compound to ensure Morpho's borrow is going to be backed with collateral.
-- Morpho borrows the tokens from Compound.
-- Morpho updates the Compound borrow balance of the user.
+- 3.1 - The user withdrawal leads to an under-collateralized position, the withdrawal reverts.
 
-## A user withdraws tokens ([`_withdraw`](https://github.com/morpho-labs/morpho-contracts/blob/b4b8ddd4fcebf3a4d497a5518d8155514040a3dc/contracts/CompoundPositionsManager.sol#L462))
+- 3.2 - The supplier withdraws less than his `onPool` balance. The liquidity is taken from his `onPool` balance.
 
-#### If user has some tokens waiting on Compound
+- 3.3 - The supplier withdraws more than his `onPool` balance.
+  - 3.3.1 - There is a supplier `onPool` available to replace him `inP2P`. First, his liquidity `onPool` is taken, his matched is replaced by the available supplier up to his withdrawal amount.
+  - 3.3.2 - There are NMAX (or less) suppliers `onPool` available to replace him `inP2P`, they supply enough to cover for the withdrawn liquidity. First, his liquidity `onPool` is taken, his matched is replaced by NMAX (or less) suppliers up to his withdrawal amount.
+  - 3.3.3 - There are no suppliers `onPool` to replace him `inP2P`. After withdrawing the amount `onPool`, his P2P match(s) will be unmatched and the corresponding borrower(s) will be placed on pool.
+  - 3.3.4 - There are NMAX (or less) suppliers `onPool` available to replace him `inP2P`, they don't supply enough to cover for the withdrawn liquidity. First, the `onPool` liquidity is withdrawn, then we proceed to NMAX (or less) matches. Finally, some borrowers are unmatched for an amount equal to the remaining to withdraw. ⚠️ most gaz expensive withdraw scenario.
 
-##### CASE 1: User withdraws less than his Compound supply balance
+## 4. [`REPAY`](https://github.com/morpho-labs/morpho-contracts/blob/main/contracts/aave/PositionsManagerForAave.sol#L642)
 
-- Morpho withdraws the tokens from Compound.
-- Morpho updates the Compound supply balance of the user.
+- 3.1 - The borrower repays less than his `onPool` balance. The liquidity is repaid on his `onPool` balance.
 
-##### CASE 2: User withdraws more than his Compound supply balance
+- 3.3 - The borrower repays more than his `onPool` balance.
+  - 3.3.1 - There is a borrower `onPool` available to replace him `inP2P`. First, his debt `onPool` is repaid, his matched debt is replaced by the available borrower up to his repaid amount.
+  - 3.3.2 - There are NMAX (or less) borrowers `onPool` available to replace him `inP2P`, they borrow enough to cover for the repaid liquidity. First, his debt `onPool` is repaid, his matched liquidity is replaced by NMAX (or less) borrowers up to his repaid amount.
+  - 3.3.3 - There are no borrowers `onPool` to replace him `inP2P`. After repaying the amount `onPool`, his P2P match(s) will be unmatched and the corresponding supplier(s) will be placed on pool.
+  - 3.3.4 - There are NMAX (or less) borrowers `onPool` available to replace him `inP2P`, they don't supply enough to cover for the withdrawn liquidity. First, the `onPool` liquidity is withdrawn, then we proceed to NMAX (or less) matches. Finally, some suppliers are unmatched for an amount equal to the remaining to withdraw. ⚠️ most gaz expensive repay scenario.
 
-- Morpho withdraws all users' tokens on Compound.
-- Morpho sets the Compound supply balance of the user to 0.
+## 4. [`LIQUIDATE`](https://github.com/morpho-labs/morpho-contracts/blob/main/contracts/aave/PositionsManagerForAave.sol#L452)
 
-#### If there remains some tokens to withdraw (CASE 2), Morpho breaks credit lines and repair them either with other users or with Compound itself
+- 4.1 - A user liquidate a borrower that has a health factor superior to 1, the transaction reverts.
 
-##### CASE 1: Other suppliers have enough tokens on Compound to compensate user's position
-
-- Morpho moves those suppliers out of Compound to match the borrower that previously was in P2P with the user. (repairing credit lines with other users)
-- Morpho updates the P2P supply balance of the user.
-
-##### CASE 2: Other suppliers don't have enough tokens on Compound. Such scenario is called the Hard-Withdraw
-
-- Morpho moves all the suppliers from Compound to P2P. (repairing credit lines with other users)
-- Morpho moves borrowers that are in P2P back to Compound. (repairing credit lines with Compound itself)
-- Morpho updates the P2P supply balance of the user.
-
-- Morpho sends the tokens to the user
-
-## A user repays tokens ([`_repay`](https://github.com/morpho-labs/morpho-contracts/blob/b4b8ddd4fcebf3a4d497a5518d8155514040a3dc/contracts/CompoundPositionsManager.sol#L393))
-
-#### If user is borrowing tokens on Compound
-
-##### CASE 1: User repays less than his Compound borrow balance
-
-- Morpho supplies the tokens to Compound.
-- Morpho updates the Compound borrow balance of the user.
-
-##### CASE 2: User repays more than his Compound borrow balance
-
-- Morpho supplies all the tokens to Compound.
-- Morpho sets the Compound borrow balance of the user to 0.
-
-#### If there remains some tokens to repay (CASE 2), Morpho breaks credit lines and repairs them either with other users or with Compound itself
-
-##### CASE 1: Other borrowers are borrowing enough on Compound to compensate user's position
-
-- Morpho moves those borrowers out of Compound to match the supplier that was in P2P with the user.
-- Morpho supplies the tokens to Compound.
-- Morpho updates the P2P borrow balance of the user.
-
-##### CASE 2: Other borrowers aren't borrowing enough on Compound to compensate user's position
-
-- Morpho moves all the borrowers from Compound to P2P. (repairing credit lines with other users)
-- Morpho moves suppliers that are in P2P back to Compound. (repairing credit lines with Compound itself)
-- Morpho updates the P2P borrow balance of the user.
-
-### Alice liquidates the borrow position of Bob ([`liquidate`](https://github.com/morpho-labs/morpho-contracts/blob/b4b8ddd4fcebf3a4d497a5518d8155514040a3dc/contracts/CompoundPositionsManager.sol#L323))
-
-- Alice repays the position of Bob: Morpho reuses the logic repay function mentioned before.
-- Morpho calculates the amount of collateral to seize.
-- Alice siezes the collateral of Bob: Morpho reuses the logic of the withdraw mentioned before.
-
----
+- 4.2 - The liquidation is made of a Repay and Withdraw performed on a borrower's position on behalf of a liquidator. At most, the liquidator can liquidate 50% of the debt of a borrower and take the corresponding collateral. Edge-cases here are at most the combination from part 3. and 4. called with the previous amount.
 
 ### The Morpho Liquidation invariant
 
@@ -133,4 +84,4 @@ Here, it is quite simple, Morpho can safely borrow.
 
 #### The collateral of the borrower is matched
 
-In that scenario, which is extremely rare, Morpho can safely perform the same operation.  This is proven in Morpho's Yellow paper. Please contact us if you want more information regarding this.
+In that scenario, which is extremely rare, Morpho can safely perform the same operation. This is proven in Morpho's Yellow paper. Please contact us if you want more information regarding this.
