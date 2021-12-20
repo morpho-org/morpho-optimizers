@@ -105,7 +105,7 @@ contract MarketsManagerForCompound is Ownable {
         lastUpdateBlockNumber[_marketAddress] = block.number;
         p2pExchangeRate[_marketAddress] = 1e18;
         isCreated[_marketAddress] = true;
-        updateBPY(_marketAddress);
+        _updateBPY(_marketAddress);
         emit MarketCreated(_marketAddress);
     }
 
@@ -127,50 +127,42 @@ contract MarketsManagerForCompound is Ownable {
     /** @dev Updates the Block Percentage Yield (`p2pBPY`) and calculates the current exchange rate (`p2pExchangeRate`).
      *  @param _marketAddress The address of the market we want to update.
      */
-    function updateBPY(address _marketAddress) public isMarketCreated(_marketAddress) {
-        ICErc20 cErc20Token = ICErc20(_marketAddress);
-
-        // Update p2pExchangeRate
-        updateP2pUnitExchangeRate(_marketAddress);
-
-        // Update p2pBPY
-        uint256 supplyBPY = cErc20Token.supplyRatePerBlock();
-        uint256 borrowBPY = cErc20Token.borrowRatePerBlock();
-        p2pBPY[_marketAddress] = Math.average(supplyBPY, borrowBPY);
-
-        emit BPYUpdated(_marketAddress, p2pBPY[_marketAddress]);
-    }
-
-    /** @dev Updates the current exchange rate, taking into account the block percentage yield (p2pBPY) since the last time it has been updated.
-     *  @param _marketAddress The address of the market we want to update.
-     *  @return currentExchangeRate to convert from p2pUnit to underlying or from underlying to p2pUnit.
-     */
-    function updateP2pUnitExchangeRate(address _marketAddress)
-        public
-        isMarketCreated(_marketAddress)
-        returns (uint256)
-    {
+    function updateState(address _marketAddress) public isMarketCreated(_marketAddress) {
         uint256 currentBlock = block.number;
 
-        if (lastUpdateBlockNumber[_marketAddress] == currentBlock) {
-            return p2pExchangeRate[_marketAddress];
-        } else {
-            uint256 numberOfBlocksSinceLastUpdate = currentBlock -
-                lastUpdateBlockNumber[_marketAddress];
-            // Update lastUpdateBlockNumber
+        if (lastUpdateBlockNumber[_marketAddress] != currentBlock) {
+            _updateP2PExchangeRate(_marketAddress);
+            _updateBPY(_marketAddress);
             lastUpdateBlockNumber[_marketAddress] = currentBlock;
-
-            uint256 newP2pUnitExchangeRate = p2pExchangeRate[_marketAddress].mul(
-                PRBMathUD60x18.pow(
-                    1e18 + p2pBPY[_marketAddress],
-                    PRBMathUD60x18.fromUint(numberOfBlocksSinceLastUpdate)
-                )
-            );
-
-            // Update currentExchangeRate
-            p2pExchangeRate[_marketAddress] = newP2pUnitExchangeRate;
-            emit P2PExchangeRateUpdated(_marketAddress, newP2pUnitExchangeRate);
-            return newP2pUnitExchangeRate;
         }
+    }
+
+    /** @dev Updates the current exchange rate, taking into account the block percentage yield (`p2pBPY`) since the last time it has been updated.
+     *  @param _marketAddress The address of the market to update.
+     */
+    function _updateP2PExchangeRate(address _marketAddress) internal {
+        uint256 numberOfBlocksSinceLastUpdate = block.number -
+            lastUpdateBlockNumber[_marketAddress];
+        uint256 newP2pUnitExchangeRate = p2pExchangeRate[_marketAddress].mul(
+            PRBMathUD60x18.pow(
+                1e18 + p2pBPY[_marketAddress],
+                PRBMathUD60x18.fromUint(numberOfBlocksSinceLastUpdate)
+            )
+        );
+
+        p2pExchangeRate[_marketAddress] = newP2pUnitExchangeRate;
+        emit P2PExchangeRateUpdated(_marketAddress, newP2pUnitExchangeRate);
+    }
+
+    /** @dev Updates the Block Percentage Yield (`p2pBPY`).
+     *  @param _marketAddress The address of the market to update.
+     */
+    function _updateBPY(address _marketAddress) internal {
+        ICErc20 cErc20Token = ICErc20(_marketAddress);
+        uint256 supplyBPY = cErc20Token.supplyRatePerBlock();
+        uint256 borrowBPY = cErc20Token.borrowRatePerBlock();
+
+        p2pBPY[_marketAddress] = Math.average(supplyBPY, borrowBPY);
+        emit BPYUpdated(_marketAddress, p2pBPY[_marketAddress]);
     }
 }
