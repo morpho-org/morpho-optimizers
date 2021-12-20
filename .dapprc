@@ -1,0 +1,11 @@
+
+export DAPP_SRC=contracts
+
+export DAPP_SOLC_VERSION=0.8.7
+export DAPP_REMAPPINGS=$(cat remappings.txt)
+
+export DAPP_BUILD_OPTIMIZE=0
+export DAPP_LINK_TEST_LIBRARIES=0
+export DAPP_TEST_VERBOSITY=2
+
+export ETH_RPC_URL=https://polygon-mainnet.infura.io/v3/3f24d90096a34121a0b037dee8a8d4f2
