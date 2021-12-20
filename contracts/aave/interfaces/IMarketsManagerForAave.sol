@@ -18,5 +18,5 @@ interface IMarketsManagerForAave {
 
     function threshold(address _marketAddress) external returns (uint256);
 
-    function updateP2PUnitExchangeRate(address _marketAddress) external returns (uint256);
+    function updateState(address _marketAddress) external;
 }
