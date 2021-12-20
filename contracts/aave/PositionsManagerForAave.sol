@@ -214,6 +214,33 @@ contract PositionsManagerForAave is ReentrancyGuard {
         _;
     }
 
+    /** @dev Prevents that the total supply of the supplier is above the cap.
+     *  @param _poolTokenAddress The address of the market to check.
+     *  @param _amount The amount to add to the current supply.
+     */
+    modifier isBelowCapValue(address _poolTokenAddress, uint256 _amount) {
+        if (capValue[_poolTokenAddress] != type(uint256).max) {
+            IERC20 underlyingToken = IERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
+            uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(
+                address(underlyingToken)
+            );
+            uint256 p2pExchangeRate = marketsManagerForAave.updateP2PUnitExchangeRate(
+                _poolTokenAddress
+            );
+            uint256 totalSupplyInUnderlying = supplyBalanceInOf[_poolTokenAddress][msg.sender]
+                .inP2P
+                .mulWadByRay(p2pExchangeRate) +
+                supplyBalanceInOf[_poolTokenAddress][msg.sender].onPool.mulWadByRay(
+                    normalizedIncome
+                );
+            require(
+                totalSupplyInUnderlying + _amount <= capValue[_poolTokenAddress],
+                Errors.PM_SUPPLY_ABOVE_CAP_VALUE
+            );
+        }
+        _;
+    }
+
     /** @dev Prevents a user to call function allowed for the markets manager..
      */
     modifier onlyMarketsManager() {
@@ -290,13 +317,12 @@ contract PositionsManagerForAave is ReentrancyGuard {
         external
         nonReentrant
         isMarketCreated(_poolTokenAddress)
+        isBelowCapValue(_poolTokenAddress, _amount)
         isAboveThreshold(_poolTokenAddress, _amount)
     {
         _handleMembership(_poolTokenAddress, msg.sender);
         IAToken poolToken = IAToken(_poolTokenAddress);
         IERC20 underlyingToken = IERC20(poolToken.UNDERLYING_ASSET_ADDRESS());
-        if (capValue[_poolTokenAddress] != type(uint256).max)
-            _checkCapValue(_poolTokenAddress, underlyingToken, msg.sender, _amount);
         underlyingToken.safeTransferFrom(msg.sender, address(this), _amount);
         uint256 remainingToSupplyToPool = _amount;
 
@@ -1090,34 +1116,6 @@ contract PositionsManagerForAave is ReentrancyGuard {
         }
 
         _borrowERC20FromPool(underlyingToken, _amount - remainingToUnmatch);
-    }
-
-    /** @dev Checks that the total supply of `supplier` is below the cap.
-     *  @param _poolTokenAddress The address of the market to check.
-     *  @param _underlyingToken The ERC20 interface of the underlying token of the market.
-     *  @param _supplier The address of the _supplier to check.
-     *  @param _amount The amount to add to the current supply.
-     */
-    function _checkCapValue(
-        address _poolTokenAddress,
-        IERC20 _underlyingToken,
-        address _supplier,
-        uint256 _amount
-    ) internal {
-        uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(
-            address(_underlyingToken)
-        );
-        uint256 p2pExchangeRate = marketsManagerForAave.updateP2PUnitExchangeRate(
-            _poolTokenAddress
-        );
-        uint256 totalSuppliedInUnderlying = supplyBalanceInOf[_poolTokenAddress][_supplier]
-            .inP2P
-            .mulWadByRay(p2pExchangeRate) +
-            supplyBalanceInOf[_poolTokenAddress][_supplier].onPool.mulWadByRay(normalizedIncome);
-        require(
-            totalSuppliedInUnderlying + _amount <= capValue[_poolTokenAddress],
-            Errors.PM_SUPPLY_ABOVE_CAP_VALUE
-        );
     }
 
     /**
