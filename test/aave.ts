@@ -216,10 +216,10 @@ describe('PositionsManagerForAave Contract', () => {
       // expect(await aDaiToken.balanceOf(positionsManagerForAave.address)).to.equal(amount);
       expect(
         removeDigitsBigNumber(
-          2,
+          3,
           (await positionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier1.getAddress())).onPool
         )
-      ).to.equal(removeDigitsBigNumber(2, expectedSupplyBalanceOnPool));
+      ).to.equal(removeDigitsBigNumber(3, expectedSupplyBalanceOnPool));
       expect((await positionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier1.getAddress())).inP2P).to.equal(0);
     });
 
@@ -553,7 +553,7 @@ describe('PositionsManagerForAave Contract', () => {
       ).to.equal(removeDigitsBigNumber(3, expectedBorrowBalanceInP2P1));
 
       // Compare remaining to withdraw and the aToken contract balance
-      await marketsManagerForAave.connect(owner).updateP2PUnitExchangeRate(config.tokens.aDai.address);
+      await marketsManagerForAave.connect(owner).updateState(config.tokens.aDai.address);
       const p2pExchangeRate2 = await marketsManagerForAave.p2pUnitExchangeRate(config.tokens.aDai.address);
       const p2pExchangeRate3 = computeNewMorphoExchangeRate(
         p2pExchangeRate2,
@@ -668,8 +668,8 @@ describe('PositionsManagerForAave Contract', () => {
         .onPool;
       const supplyBalanceInP2P2 = (await positionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier1.getAddress()))
         .inP2P;
-      expect(removeDigitsBigNumber(2, supplyBalanceOnPool2)).to.equal(removeDigitsBigNumber(2, expectedSupplyBalanceOnPool2));
-      expect(removeDigitsBigNumber(2, supplyBalanceInP2P2)).to.equal(removeDigitsBigNumber(2, expectedSupplyBalanceInP2P2));
+      expect(removeDigitsBigNumber(3, supplyBalanceOnPool2)).to.equal(removeDigitsBigNumber(3, expectedSupplyBalanceOnPool2));
+      expect(removeDigitsBigNumber(3, supplyBalanceInP2P2)).to.equal(removeDigitsBigNumber(3, expectedSupplyBalanceInP2P2));
 
       // Check borrower1 balances
       const expectedBorrowBalanceInP2P1 = expectedSupplyBalanceInP2P2;
@@ -682,7 +682,7 @@ describe('PositionsManagerForAave Contract', () => {
       ).to.equal(removeDigitsBigNumber(2, expectedBorrowBalanceInP2P1));
 
       // Compare remaining to withdraw and the aToken contract balance
-      await marketsManagerForAave.connect(owner).updateP2PUnitExchangeRate(config.tokens.aDai.address);
+      await marketsManagerForAave.connect(owner).updateState(config.tokens.aDai.address);
       const p2pExchangeRate2 = await marketsManagerForAave.p2pUnitExchangeRate(config.tokens.aDai.address);
       const p2pExchangeRate3 = computeNewMorphoExchangeRate(
         p2pExchangeRate2,
@@ -813,7 +813,7 @@ describe('PositionsManagerForAave Contract', () => {
       const borrowerBalanceInP2P = (await positionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower1.getAddress()))
         .inP2P;
       const p2pSPY = await marketsManagerForAave.p2pSPY(config.tokens.aDai.address);
-      await marketsManagerForAave.updateP2PUnitExchangeRate(config.tokens.aDai.address);
+      await marketsManagerForAave.updateState(config.tokens.aDai.address);
       const p2pUnitExchangeRate = await marketsManagerForAave.p2pUnitExchangeRate(config.tokens.aDai.address);
       const p2pExchangeRate: BigNumber = computeNewMorphoExchangeRate(p2pUnitExchangeRate, p2pSPY, AVERAGE_BLOCK_TIME, 0);
       const toRepay = p2pUnitToUnderlying(borrowerBalanceInP2P, p2pExchangeRate);
@@ -955,8 +955,8 @@ describe('PositionsManagerForAave Contract', () => {
       );
       const expectedSupplyBalanceInP2P = underlyingToAdUnit(underlyingMatched, p2pUnitExchangeRate);
       const expectedSupplyBalanceOnPool = underlyingToScaledBalance(supplyAmount.sub(underlyingMatched), normalizedIncome);
-      expect(removeDigitsBigNumber(2, supplyBalanceInP2P)).to.equal(removeDigitsBigNumber(2, expectedSupplyBalanceInP2P));
-      expect(removeDigitsBigNumber(2, supplyBalanceOnPool)).to.equal(removeDigitsBigNumber(2, expectedSupplyBalanceOnPool));
+      expect(removeDigitsBigNumber(3, supplyBalanceInP2P)).to.equal(removeDigitsBigNumber(3, expectedSupplyBalanceInP2P));
+      expect(removeDigitsBigNumber(3, supplyBalanceOnPool)).to.equal(removeDigitsBigNumber(3, expectedSupplyBalanceOnPool));
       expect((await positionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower1.getAddress())).onPool).to.be.lte(1);
       expect((await positionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower2.getAddress())).onPool).to.be.lte(1);
       expect((await positionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower3.getAddress())).onPool).to.be.lte(1);

@@ -142,7 +142,7 @@ contract MarketsManagerForAave is Ownable {
         lastUpdateTimestamp[_marketAddress] = block.timestamp;
         p2pUnitExchangeRate[_marketAddress] = WadRayMath.ray();
         isCreated[_marketAddress] = true;
-        updateP2PSPY(_marketAddress);
+        updateState(_marketAddress);
         emit MarketCreated(_marketAddress);
     }
 
@@ -177,13 +177,13 @@ contract MarketsManagerForAave is Ownable {
     /** @dev Updates the Second Percentage Yield (`p2pSPY`) and calculates the current exchange rate (`p2pUnitExchangeRate`).
      *  @param _marketAddress The address of the market we want to update.
      */
-    function updateP2PSPY(address _marketAddress) public isMarketCreated(_marketAddress) {
+    function updateState(address _marketAddress) public isMarketCreated(_marketAddress) {
         DataTypes.ReserveData memory reserveData = lendingPool.getReserveData(
             IAToken(_marketAddress).UNDERLYING_ASSET_ADDRESS()
         );
 
         // Update p2pUnitExhangeRate
-        updateP2PUnitExchangeRate(_marketAddress);
+        _updateP2PUnitExchangeRate(_marketAddress);
 
         // Update p2pSPY
         p2pSPY[_marketAddress] = Math
@@ -193,12 +193,14 @@ contract MarketsManagerForAave is Ownable {
         emit P2PSPYUpdated(_marketAddress, p2pSPY[_marketAddress]);
     }
 
+    /* Internal */
+
     /** @dev Updates the current exchange rate, taking into account the Second Percentage Yield (p2pSPY) since the last time it has been updated.
      *  @param _marketAddress The address of the market we want to update.
      *  @return currentExchangeRate to convert from p2pUnit to underlying or from underlying to p2pUnit.
      */
-    function updateP2PUnitExchangeRate(address _marketAddress)
-        public
+    function _updateP2PUnitExchangeRate(address _marketAddress)
+        internal
         isMarketCreated(_marketAddress)
         returns (uint256)
     {
