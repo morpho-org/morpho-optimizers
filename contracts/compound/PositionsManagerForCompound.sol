@@ -320,9 +320,7 @@ contract PositionsManagerForCompound is ReentrancyGuard {
 
         /* If some suppliers are waiting on Comp, Morpho matches the borrower in P2P with them as much as possible */
         if (suppliersOnPool[_poolTokenAddress].getHead() != address(0)) {
-            uint256 p2pExchangeRate = marketsManagerForCompound.p2pUnitExchangeRate(
-                _poolTokenAddress
-            );
+            uint256 p2pExchangeRate = marketsManagerForCompound.p2pExchangeRate(_poolTokenAddress);
             remainingToBorrowOnPool = _matchSuppliers(_poolTokenAddress, _amount); // In underlying
             uint256 matched = _amount - remainingToBorrowOnPool;
             if (matched > 0) {
@@ -409,7 +407,7 @@ contract PositionsManagerForCompound is ReentrancyGuard {
                 ICErc20(_poolTokenBorrowedAddress).borrowIndex()
             ) +
             borrowBalanceInOf[_poolTokenBorrowedAddress][_borrower].inP2P.mul(
-                marketsManagerForCompound.p2pUnitExchangeRate(_poolTokenBorrowedAddress)
+                marketsManagerForCompound.p2pExchangeRate(_poolTokenBorrowedAddress)
             );
         require(
             _amount <= vars.borrowBalance.mul(comptroller.closeFactorMantissa()),
@@ -528,9 +526,7 @@ contract PositionsManagerForCompound is ReentrancyGuard {
 
         /* If there remains some tokens to withdraw (CASE 2), Morpho breaks credit lines and repair them either with other users or with Comp itself */
         if (remainingToWithdraw > 0) {
-            uint256 p2pExchangeRate = marketsManagerForCompound.p2pUnitExchangeRate(
-                _poolTokenAddress
-            );
+            uint256 p2pExchangeRate = marketsManagerForCompound.p2pExchangeRate(_poolTokenAddress);
             uint256 poolTokenContractBalanceInUnderlying = poolToken.balanceOf(address(this)).mul(
                 poolTokenExchangeRate
             );
@@ -754,7 +750,7 @@ contract PositionsManagerForCompound is ReentrancyGuard {
     }
 
     /** @dev Finds liquidity on Comp and matches it in P2P.
-     *  @dev Note: p2pUnitExchangeRate must have been updated before calling this function.
+     *  @dev Note: p2pExchangeRate must have been updated before calling this function.
      *  @param _poolTokenAddress The address of the market on which Morpho want to move users.
      *  @param _amount The amount to search for in underlying.
      *  @return remainingToMatch The remaining liquidity to search for in underlying.
@@ -765,7 +761,7 @@ contract PositionsManagerForCompound is ReentrancyGuard {
     {
         ICErc20 poolToken = ICErc20(_poolTokenAddress);
         remainingToMatch = _amount; // In underlying
-        uint256 p2pExchangeRate = marketsManagerForCompound.p2pUnitExchangeRate(_poolTokenAddress);
+        uint256 p2pExchangeRate = marketsManagerForCompound.p2pExchangeRate(_poolTokenAddress);
         uint256 poolTokenExchangeRate = poolToken.exchangeRateCurrent();
         address account = suppliersOnPool[_poolTokenAddress].getHead();
         uint256 iterationCount;
@@ -806,7 +802,7 @@ contract PositionsManagerForCompound is ReentrancyGuard {
     }
 
     /** @dev Finds liquidity in peer-to-peer and unmatches it to reconnect Comp.
-     *  @dev Note: p2pUnitExchangeRate must have been updated before calling this function.
+     *  @dev Note: p2pExchangeRate must have been updated before calling this function.
      *  @param _poolTokenAddress The address of the market on which Morpho want to move users.
      *  @param _amount The amount to search for in underlying.
      *  @return remainingToUnmatch The amount remaining to unmatch in underlying.
@@ -818,7 +814,7 @@ contract PositionsManagerForCompound is ReentrancyGuard {
         ICErc20 poolToken = ICErc20(_poolTokenAddress);
         remainingToUnmatch = _amount; // In underlying
         uint256 poolTokenExchangeRate = poolToken.exchangeRateCurrent();
-        uint256 p2pExchangeRate = marketsManagerForCompound.p2pUnitExchangeRate(_poolTokenAddress);
+        uint256 p2pExchangeRate = marketsManagerForCompound.p2pExchangeRate(_poolTokenAddress);
         address account = suppliersInP2P[_poolTokenAddress].getHead();
 
         while (remainingToUnmatch > 0 && account != address(0)) {
@@ -855,7 +851,7 @@ contract PositionsManagerForCompound is ReentrancyGuard {
     }
 
     /** @dev Finds borrowers on Comp that match the given `_amount` and move them in P2P.
-     *  @dev Note: p2pUnitExchangeRate must have been updated before calling this function.
+     *  @dev Note: p2pExchangeRate must have been updated before calling this function.
      *  @param _poolTokenAddress The address of the market on which Morpho wants to move users.
      *  @param _amount The amount to match in underlying.
      *  @return remainingToMatch The amount remaining to match in underlying.
@@ -867,7 +863,7 @@ contract PositionsManagerForCompound is ReentrancyGuard {
         ICErc20 poolToken = ICErc20(_poolTokenAddress);
         IERC20 underlyingToken = IERC20(poolToken.underlying());
         remainingToMatch = _amount;
-        uint256 p2pExchangeRate = marketsManagerForCompound.p2pUnitExchangeRate(_poolTokenAddress);
+        uint256 p2pExchangeRate = marketsManagerForCompound.p2pExchangeRate(_poolTokenAddress);
         uint256 borrowIndex = poolToken.borrowIndex();
         address account = borrowersOnPool[_poolTokenAddress].getHead();
         uint256 iterationCount;
@@ -908,7 +904,7 @@ contract PositionsManagerForCompound is ReentrancyGuard {
     }
 
     /** @dev Finds borrowers in peer-to-peer that match the given `_amount` and move them to Comp.
-     *  @dev Note: p2pUnitExchangeRate must have been updated before calling this function.
+     *  @dev Note: p2pExchangeRate must have been updated before calling this function.
      *  @param _poolTokenAddress The address of the market on which Morpho wants to move users.
      *  @param _amount The amount to match in underlying.
      *  @return remainingToUnmatch The amount remaining to unmatch in underlying.
@@ -919,7 +915,7 @@ contract PositionsManagerForCompound is ReentrancyGuard {
     {
         ICErc20 poolToken = ICErc20(_poolTokenAddress);
         remainingToUnmatch = _amount;
-        uint256 p2pExchangeRate = marketsManagerForCompound.p2pUnitExchangeRate(_poolTokenAddress);
+        uint256 p2pExchangeRate = marketsManagerForCompound.p2pExchangeRate(_poolTokenAddress);
         uint256 borrowIndex = poolToken.borrowIndex();
         address account = borrowersInP2P[_poolTokenAddress].getHead();
 

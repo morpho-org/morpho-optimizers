@@ -11,12 +11,12 @@ const cTokenToUnderlying = (cTokenAmount: BigNumber, exchangeRateCurrent: BigNum
   return cTokenAmount.mul(exchangeRateCurrent).div(WAD);
 };
 
-const underlyingToP2pUnit = (underlyingAmount: BigNumber, p2pUnitExchangeRate: BigNumber): BigNumber => {
-  return underlyingAmount.mul(WAD).div(p2pUnitExchangeRate);
+const underlyingToP2pUnit = (underlyingAmount: BigNumber, p2pExchangeRate: BigNumber): BigNumber => {
+  return underlyingAmount.mul(WAD).div(p2pExchangeRate);
 };
 
-const p2pUnitToUnderlying = (p2pUnitAmount: BigNumber, p2pUnitExchangeRate: BigNumber | string): BigNumber => {
-  return p2pUnitAmount.mul(p2pUnitExchangeRate).div(WAD);
+const p2pUnitToUnderlying = (p2pUnitAmount: BigNumber, p2pExchangeRate: BigNumber | string): BigNumber => {
+  return p2pUnitAmount.mul(p2pExchangeRate).div(WAD);
 };
 
 const underlyingToCdUnit = (underlyingAmount: BigNumber, borrowIndex: BigNumber): BigNumber => {
