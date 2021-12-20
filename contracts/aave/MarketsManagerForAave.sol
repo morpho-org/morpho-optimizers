@@ -142,7 +142,7 @@ contract MarketsManagerForAave is Ownable {
         lastUpdateTimestamp[_marketAddress] = block.timestamp;
         p2pUnitExchangeRate[_marketAddress] = WadRayMath.ray();
         isCreated[_marketAddress] = true;
-        updateState(_marketAddress);
+        _updateSPY(_marketAddress);
         emit MarketCreated(_marketAddress);
     }
 
@@ -178,50 +178,41 @@ contract MarketsManagerForAave is Ownable {
      *  @param _marketAddress The address of the market we want to update.
      */
     function updateState(address _marketAddress) public isMarketCreated(_marketAddress) {
-        DataTypes.ReserveData memory reserveData = lendingPool.getReserveData(
-            IAToken(_marketAddress).UNDERLYING_ASSET_ADDRESS()
-        );
+        uint256 currentTimestamp = block.timestamp;
 
-        // Update p2pUnitExhangeRate
-        _updateP2PUnitExchangeRate(_marketAddress);
-
-        // Update p2pSPY
-        p2pSPY[_marketAddress] = Math
-            .average(reserveData.currentLiquidityRate, reserveData.currentVariableBorrowRate)
-            .div(SECONDS_PER_YEAR); // In ray
-
-        emit P2PSPYUpdated(_marketAddress, p2pSPY[_marketAddress]);
+        if (lastUpdateTimestamp[_marketAddress] != currentTimestamp) {
+            _updateP2PUnitExchangeRate(_marketAddress);
+            _updateSPY(_marketAddress);
+            lastUpdateTimestamp[_marketAddress] = currentTimestamp;
+        }
     }
 
     /* Internal */
 
-    /** @dev Updates the current exchange rate, taking into account the Second Percentage Yield (p2pSPY) since the last time it has been updated.
-     *  @param _marketAddress The address of the market we want to update.
-     *  @return currentExchangeRate to convert from p2pUnit to underlying or from underlying to p2pUnit.
+    /** @dev Updates the P2P exchange rate, taking into account the Second Percentage Yield (`p2pSPY`) since the last time it has been updated.
+     *  @param _marketAddress The address of the market to update.
      */
-    function _updateP2PUnitExchangeRate(address _marketAddress)
-        internal
-        isMarketCreated(_marketAddress)
-        returns (uint256)
-    {
-        uint256 currentTimestamp = block.timestamp;
+    function _updateP2PUnitExchangeRate(address _marketAddress) internal {
+        uint256 timeDifference = block.timestamp - lastUpdateTimestamp[_marketAddress];
+        uint256 newP2PUnitExchangeRate = p2pUnitExchangeRate[_marketAddress].rayMul(
+            (WadRayMath.ray() + p2pSPY[_marketAddress]).rayPow(timeDifference)
+        ); // In ray
 
-        if (lastUpdateTimestamp[_marketAddress] == currentTimestamp) {
-            return p2pUnitExchangeRate[_marketAddress];
-        } else {
-            uint256 timeDifference = currentTimestamp - lastUpdateTimestamp[_marketAddress];
+        p2pUnitExchangeRate[_marketAddress] = newP2PUnitExchangeRate;
+        emit P2PUnitExchangeRateUpdated(_marketAddress, newP2PUnitExchangeRate);
+    }
 
-            // Update lastUpdateTimestamp
-            lastUpdateTimestamp[_marketAddress] = currentTimestamp;
+    /** @dev Updates the Second Percentage Yield (`p2pSPY`).
+     *  @param _marketAddress The address of the market to update.
+     */
+    function _updateSPY(address _marketAddress) internal {
+        DataTypes.ReserveData memory reserveData = lendingPool.getReserveData(
+            IAToken(_marketAddress).UNDERLYING_ASSET_ADDRESS()
+        );
 
-            uint256 newP2PUnitExchangeRate = p2pUnitExchangeRate[_marketAddress].rayMul(
-                (WadRayMath.ray() + p2pSPY[_marketAddress]).rayPow(timeDifference)
-            ); // In ray
-
-            // Update currentExchangeRate
-            p2pUnitExchangeRate[_marketAddress] = newP2PUnitExchangeRate;
-            emit P2PUnitExchangeRateUpdated(_marketAddress, newP2PUnitExchangeRate);
-            return newP2PUnitExchangeRate;
-        }
+        p2pSPY[_marketAddress] = Math
+            .average(reserveData.currentLiquidityRate, reserveData.currentVariableBorrowRate)
+            .div(SECONDS_PER_YEAR); // In ray
+        emit P2PSPYUpdated(_marketAddress, p2pSPY[_marketAddress]);
     }
 }
