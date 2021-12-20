@@ -489,7 +489,7 @@ describe('PositionsManagerForCompound Contract', () => {
       );
 
       // Compoundare remaining to withdraw and the cToken contract balance
-      await marketsManagerForCompound.connect(owner).updateP2pUnitExchangeRate(config.tokens.cDai.address);
+      await marketsManagerForCompound.connect(owner).p2pExchangeRate(config.tokens.cDai.address);
       const p2pExchangeRate2 = await marketsManagerForCompound.p2pExchangeRate(config.tokens.cDai.address);
       const p2pExchangeRate3 = computeNewMorphoExchangeRate(
         p2pExchangeRate2,
@@ -615,7 +615,7 @@ describe('PositionsManagerForCompound Contract', () => {
       );
 
       // Compoundare remaining to withdraw and the cToken contract balance
-      await marketsManagerForCompound.connect(owner).updateP2pUnitExchangeRate(config.tokens.cDai.address);
+      await marketsManagerForCompound.connect(owner).p2pExchangeRate(config.tokens.cDai.address);
       const p2pExchangeRate2 = await marketsManagerForCompound.p2pExchangeRate(config.tokens.cDai.address);
       const p2pExchangeRate3 = computeNewMorphoExchangeRate(
         p2pExchangeRate2,
@@ -744,7 +744,7 @@ describe('PositionsManagerForCompound Contract', () => {
       const borrowerBalanceInP2P = (await positionsManagerForCompound.borrowBalanceInOf(config.tokens.cDai.address, borrower1.getAddress()))
         .inP2P;
       const p2pBPY = await marketsManagerForCompound.p2pBPY(config.tokens.cDai.address);
-      await marketsManagerForCompound.updateP2pUnitExchangeRate(config.tokens.cDai.address);
+      await marketsManagerForCompound.p2pExchangeRate(config.tokens.cDai.address);
       const p2pExchangeRateBefore = await marketsManagerForCompound.p2pExchangeRate(config.tokens.cDai.address);
       // WARNING: Should be one block but the pow function used in contract is not accurate
       const p2pExchangeRate = computeNewMorphoExchangeRate(p2pExchangeRateBefore, p2pBPY, 1, 0).toString();
