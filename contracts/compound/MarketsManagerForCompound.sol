@@ -3,7 +3,7 @@ pragma solidity 0.8.7;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
-import "prb-math/contracts/PRBMathUD60x18.sol";
+import "@prb-math/contracts/PRBMathUD60x18.sol";
 import "./libraries/CompoundMath.sol";
 import "./libraries/ErrorsForCompound.sol";
 
