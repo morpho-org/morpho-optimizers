@@ -556,7 +556,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
         );
     }
 
-    /** @dev Supplies `_amount` for a `_supplier` on a specific market to P2P.
+    /** @dev Supplies up to `_amount` for a `_supplier` on a specific market to P2P.
      *  @param _poolToken The Aave interface of the market the user wants to supply to.
      *  @param _underlyingToken The ERC20 interface of the underlying token of the market to supply to.
      *  @param _supplier The address of the supplier supplying the tokens.
@@ -626,7 +626,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
         );
     }
 
-    /** @dev Borrows `_amount` for `_borrower` from P2P.
+    /** @dev Borrows up to `_amount` for `_borrower` from P2P.
      *  @param _poolToken The Aave interface of the market the user wants to borrow from.
      *  @param _underlyingToken The ERC20 interface of the underlying token of the market to borrow from.
      *  @param _borrower The address of the borrower who is borrowing.
