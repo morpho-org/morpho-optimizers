@@ -22,8 +22,8 @@ contract MarketsManagerForCompound is Ownable {
 
     mapping(address => bool) public isCreated; // Whether or not this market is created.
     mapping(address => uint256) public p2pBPY; // Block Percentage Yield ("midrate").
-    mapping(address => uint256) public p2pUnitExchangeRate; // current exchange rate from p2pUnit to underlying.
-    mapping(address => uint256) public lastUpdateBlockNumber; // Last time p2pUnitExchangeRate was updated.
+    mapping(address => uint256) public p2pExchangeRate; // Current exchange rate from p2pUnit to underlying.
+    mapping(address => uint256) public lastUpdateBlockNumber; // Last time p2pExchangeRate was updated.
 
     IPositionsManagerForCompound public positionsManagerForCompound;
 
@@ -45,11 +45,11 @@ contract MarketsManagerForCompound is Ownable {
      */
     event BPYUpdated(address _marketAddress, uint256 _newValue);
 
-    /** @dev Emitted when the p2pUnitExchangeRate of a market is updated.
+    /** @dev Emitted when the p2pExchangeRate of a market is updated.
      *  @param _marketAddress The address of the market to update.
-     *  @param _newValue The new value of the p2pUnitExchangeRate.
+     *  @param _newValue The new value of the p2pExchangeRate.
      */
-    event P2PUnitExchangeRateUpdated(address _marketAddress, uint256 _newValue);
+    event P2PExchangeRateUpdated(address _marketAddress, uint256 _newValue);
 
     /** @dev Emitted when a threshold of a market is updated.
      *  @param _marketAddress The address of the market to update.
@@ -103,7 +103,7 @@ contract MarketsManagerForCompound is Ownable {
         require(results[0] == 0, Errors.MM_MARKET_CREATED_FAIL_ON_COMP);
         positionsManagerForCompound.setThreshold(_marketAddress, _threshold);
         lastUpdateBlockNumber[_marketAddress] = block.number;
-        p2pUnitExchangeRate[_marketAddress] = 1e18;
+        p2pExchangeRate[_marketAddress] = 1e18;
         isCreated[_marketAddress] = true;
         updateBPY(_marketAddress);
         emit MarketCreated(_marketAddress);
@@ -124,13 +124,13 @@ contract MarketsManagerForCompound is Ownable {
 
     /* Public */
 
-    /** @dev Updates the Block Percentage Yield (`p2pBPY`) and calculates the current exchange rate (`p2pUnitExchangeRate`).
+    /** @dev Updates the Block Percentage Yield (`p2pBPY`) and calculates the current exchange rate (`p2pExchangeRate`).
      *  @param _marketAddress The address of the market we want to update.
      */
     function updateBPY(address _marketAddress) public isMarketCreated(_marketAddress) {
         ICErc20 cErc20Token = ICErc20(_marketAddress);
 
-        // Update p2pUnitExchangeRate
+        // Update p2pExchangeRate
         updateP2pUnitExchangeRate(_marketAddress);
 
         // Update p2pBPY
@@ -153,14 +153,14 @@ contract MarketsManagerForCompound is Ownable {
         uint256 currentBlock = block.number;
 
         if (lastUpdateBlockNumber[_marketAddress] == currentBlock) {
-            return p2pUnitExchangeRate[_marketAddress];
+            return p2pExchangeRate[_marketAddress];
         } else {
             uint256 numberOfBlocksSinceLastUpdate = currentBlock -
                 lastUpdateBlockNumber[_marketAddress];
             // Update lastUpdateBlockNumber
             lastUpdateBlockNumber[_marketAddress] = currentBlock;
 
-            uint256 newP2pUnitExchangeRate = p2pUnitExchangeRate[_marketAddress].mul(
+            uint256 newP2pUnitExchangeRate = p2pExchangeRate[_marketAddress].mul(
                 PRBMathUD60x18.pow(
                     1e18 + p2pBPY[_marketAddress],
                     PRBMathUD60x18.fromUint(numberOfBlocksSinceLastUpdate)
@@ -168,8 +168,8 @@ contract MarketsManagerForCompound is Ownable {
             );
 
             // Update currentExchangeRate
-            p2pUnitExchangeRate[_marketAddress] = newP2pUnitExchangeRate;
-            emit P2PUnitExchangeRateUpdated(_marketAddress, newP2pUnitExchangeRate);
+            p2pExchangeRate[_marketAddress] = newP2pUnitExchangeRate;
+            emit P2PExchangeRateUpdated(_marketAddress, newP2pUnitExchangeRate);
             return newP2pUnitExchangeRate;
         }
     }

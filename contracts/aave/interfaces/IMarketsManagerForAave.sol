@@ -12,7 +12,7 @@ interface IMarketsManagerForAave {
 
     function liquidationIncentive(address _marketAddress) external returns (uint256);
 
-    function p2pUnitExchangeRate(address _marketAddress) external returns (uint256);
+    function p2pExchangeRate(address _marketAddress) external returns (uint256);
 
     function lastUpdateBlockNumber(address _marketAddress) external returns (uint256);
 

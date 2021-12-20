@@ -219,14 +219,13 @@ contract PositionsManagerForAave is ReentrancyGuard {
      *  @param _amount The amount to add to the current supply.
      */
     modifier isBelowCapValue(address _poolTokenAddress, uint256 _amount) {
+        marketsManagerForAave.updateState(_poolTokenAddress);
         if (capValue[_poolTokenAddress] != type(uint256).max) {
             IERC20 underlyingToken = IERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
             uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(
                 address(underlyingToken)
             );
-            uint256 p2pExchangeRate = marketsManagerForAave.updateP2PUnitExchangeRate(
-                _poolTokenAddress
-            );
+            uint256 p2pExchangeRate = marketsManagerForAave.p2pExchangeRate(_poolTokenAddress);
             uint256 totalSupplyInUnderlying = supplyBalanceInOf[_poolTokenAddress][msg.sender]
                 .inP2P
                 .mulWadByRay(p2pExchangeRate) +
@@ -321,7 +320,6 @@ contract PositionsManagerForAave is ReentrancyGuard {
         isAboveThreshold(_poolTokenAddress, _amount)
     {
         _handleMembership(_poolTokenAddress, msg.sender);
-        marketsManagerForAave.updateState(_poolTokenAddress);
         IAToken poolToken = IAToken(_poolTokenAddress);
         IERC20 underlyingToken = IERC20(poolToken.UNDERLYING_ASSET_ADDRESS());
         underlyingToken.safeTransferFrom(msg.sender, address(this), _amount);
@@ -429,7 +427,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
                 lendingPool.getReserveNormalizedVariableDebt(vars.tokenBorrowedAddress)
             ) +
             borrowBalanceInOf[_poolTokenBorrowedAddress][_borrower].inP2P.mulWadByRay(
-                marketsManagerForAave.p2pUnitExchangeRate(_poolTokenBorrowedAddress)
+                marketsManagerForAave.p2pExchangeRate(_poolTokenBorrowedAddress)
             );
         require(
             _amount <= vars.borrowBalance.mul(LIQUIDATION_CLOSE_FACTOR_PERCENT).div(10000),
@@ -466,7 +464,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
                 vars.normalizedIncome
             ) +
             supplyBalanceInOf[_poolTokenCollateralAddress][_borrower].inP2P.mulWadByRay(
-                marketsManagerForAave.p2pUnitExchangeRate(_poolTokenCollateralAddress)
+                marketsManagerForAave.p2pExchangeRate(_poolTokenCollateralAddress)
             );
         require(vars.amountToSeize <= vars.totalCollateral, Errors.PM_TO_SEIZE_ABOVE_COLLATERAL);
 
@@ -600,7 +598,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
         uint256 _amount
     ) internal returns (uint256 matched) {
         address poolTokenAddress = address(_poolToken);
-        uint256 p2pExchangeRate = marketsManagerForAave.p2pUnitExchangeRate(poolTokenAddress);
+        uint256 p2pExchangeRate = marketsManagerForAave.p2pExchangeRate(poolTokenAddress);
         matched = _matchBorrowers(_poolToken, _underlyingToken, _amount); // In underlying
 
         if (matched > 0) {
@@ -670,7 +668,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
         uint256 _amount
     ) internal returns (uint256 matched) {
         address poolTokenAddress = address(_poolToken);
-        uint256 p2pExchangeRate = marketsManagerForAave.p2pUnitExchangeRate(poolTokenAddress);
+        uint256 p2pExchangeRate = marketsManagerForAave.p2pExchangeRate(poolTokenAddress);
         matched = _matchSuppliers(_poolToken, _underlyingToken, _amount); // In underlying
 
         if (matched > 0) {
@@ -746,7 +744,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
         uint256 _amount
     ) internal {
         address poolTokenAddress = address(_poolToken);
-        uint256 p2pExchangeRate = marketsManagerForAave.p2pUnitExchangeRate(poolTokenAddress);
+        uint256 p2pExchangeRate = marketsManagerForAave.p2pExchangeRate(poolTokenAddress);
 
         supplyBalanceInOf[poolTokenAddress][_supplier].inP2P -= Math.min(
             supplyBalanceInOf[poolTokenAddress][_supplier].inP2P,
@@ -839,7 +837,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
         uint256 _amount
     ) internal {
         address poolTokenAddress = address(_poolToken);
-        uint256 p2pExchangeRate = marketsManagerForAave.p2pUnitExchangeRate(poolTokenAddress);
+        uint256 p2pExchangeRate = marketsManagerForAave.p2pExchangeRate(poolTokenAddress);
 
         borrowBalanceInOf[poolTokenAddress][_borrower].inP2P -= Math.min(
             borrowBalanceInOf[poolTokenAddress][_borrower].inP2P,
@@ -932,7 +930,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
     }
 
     /** @dev Finds liquidity on Aave and matches it in P2P.
-     *  @dev Note: p2pUnitExchangeRate must have been updated before calling this function.
+     *  @dev Note: p2pExchangeRate must have been updated before calling this function.
      *  @param _poolToken The Aave interface of the market to find liquidity on.
      *  @param _underlyingToken The ERC20 interface of the underlying token of the market to find liquidity.
      *  @param _amount The amount to search for in underlying.
@@ -948,7 +946,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
             address(_underlyingToken)
         );
         address account = suppliersOnPool[poolTokenAddress].getHead();
-        uint256 p2pExchangeRate = marketsManagerForAave.p2pUnitExchangeRate(poolTokenAddress);
+        uint256 p2pExchangeRate = marketsManagerForAave.p2pExchangeRate(poolTokenAddress);
         uint256 iterationCount;
 
         while (matchedSupply < _amount && account != address(0) && iterationCount < NMAX) {
@@ -982,7 +980,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
     }
 
     /** @dev Finds liquidity in peer-to-peer and unmatches it to reconnect Aave.
-     *  @dev Note: p2pUnitExchangeRate must have been updated before calling this function.
+     *  @dev Note: p2pExchangeRate must have been updated before calling this function.
      *  @param _poolTokenAddress The address of the market on which Morpho want to move users.
      *  @param _amount The amount to search for in underlying.
      *  @return remainingToUnmatch The amount remaining to unmatch in underlying.
@@ -995,7 +993,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
         IERC20 underlyingToken = IERC20(poolToken.UNDERLYING_ASSET_ADDRESS());
         uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(address(underlyingToken));
         remainingToUnmatch = _amount; // In underlying
-        uint256 p2pExchangeRate = marketsManagerForAave.p2pUnitExchangeRate(_poolTokenAddress);
+        uint256 p2pExchangeRate = marketsManagerForAave.p2pExchangeRate(_poolTokenAddress);
         address account = suppliersInP2P[_poolTokenAddress].getHead();
 
         while (remainingToUnmatch > 0 && account != address(0)) {
@@ -1028,7 +1026,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
     }
 
     /** @dev Finds borrowers on Aave that match the given `_amount` and move them in P2P.
-     *  @dev Note: p2pUnitExchangeRate must have been updated before calling this function.
+     *  @dev Note: p2pExchangeRate must have been updated before calling this function.
      *  @param _poolToken The Aave interface of the market to find liquidity on.
      *  @param _underlyingToken The ERC20 interface of the underlying token of the market to find liquidity.
      *  @param _amount The amount to search for in underlying.
@@ -1043,7 +1041,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
         uint256 normalizedVariableDebt = lendingPool.getReserveNormalizedVariableDebt(
             address(_underlyingToken)
         );
-        uint256 p2pExchangeRate = marketsManagerForAave.p2pUnitExchangeRate(poolTokenAddress);
+        uint256 p2pExchangeRate = marketsManagerForAave.p2pExchangeRate(poolTokenAddress);
         address account = borrowersOnPool[poolTokenAddress].getHead();
         uint256 iterationCount;
 
@@ -1078,7 +1076,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
     }
 
     /** @dev Finds borrowers in peer-to-peer that match the given `_amount` and move them to Aave.
-     *  @dev Note: p2pUnitExchangeRate must have been updated before calling this function.
+     *  @dev Note: p2pExchangeRate must have been updated before calling this function.
      *  @param _poolTokenAddress The address of the market on which Morpho wants to move users.
      *  @param _amount The amount to match in underlying.
      *  @return remainingToUnmatch The amount remaining to unmatch in underlying.
@@ -1090,7 +1088,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
         IAToken poolToken = IAToken(_poolTokenAddress);
         IERC20 underlyingToken = IERC20(poolToken.UNDERLYING_ASSET_ADDRESS());
         remainingToUnmatch = _amount;
-        uint256 p2pExchangeRate = marketsManagerForAave.p2pUnitExchangeRate(_poolTokenAddress);
+        uint256 p2pExchangeRate = marketsManagerForAave.p2pExchangeRate(_poolTokenAddress);
         uint256 normalizedVariableDebt = lendingPool.getReserveNormalizedVariableDebt(
             address(underlyingToken)
         );
@@ -1176,7 +1174,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
         for (uint256 i; i < enteredMarkets[_account].length; i++) {
             vars.poolTokenEntered = enteredMarkets[_account][i];
             marketsManagerForAave.updateState(vars.poolTokenEntered);
-            vars.p2pExchangeRate = marketsManagerForAave.p2pUnitExchangeRate(vars.poolTokenEntered);
+            vars.p2pExchangeRate = marketsManagerForAave.p2pExchangeRate(vars.poolTokenEntered);
             // Calculation of the current debt (in underlying)
             vars.underlyingAddress = IAToken(vars.poolTokenEntered).UNDERLYING_ASSET_ADDRESS();
             vars.normalizedVariableDebt = lendingPool.getReserveNormalizedVariableDebt(

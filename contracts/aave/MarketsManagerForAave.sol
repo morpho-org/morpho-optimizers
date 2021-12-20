@@ -29,8 +29,8 @@ contract MarketsManagerForAave is Ownable {
     uint256 internal constant SECONDS_PER_YEAR = 365 days;
     mapping(address => bool) public isCreated; // Whether or not this market is created.
     mapping(address => uint256) public p2pSPY; // Second Percentage Yield ("midrate").
-    mapping(address => uint256) public p2pUnitExchangeRate; // current exchange rate from p2pUnit to underlying.
-    mapping(address => uint256) public lastUpdateTimestamp; // Last time p2pUnitExchangeRate was updated.
+    mapping(address => uint256) public p2pExchangeRate; // Current exchange rate from p2pUnit to underlying.
+    mapping(address => uint256) public lastUpdateTimestamp; // Last time p2pExchangeRate was updated.
 
     IPositionsManagerForAave public positionsManagerForAave;
     ILendingPoolAddressesProvider public addressesProvider;
@@ -59,11 +59,11 @@ contract MarketsManagerForAave is Ownable {
      */
     event P2PSPYUpdated(address _marketAddress, uint256 _newValue);
 
-    /** @dev Emitted when the p2pUnitExchangeRate of a market is updated.
+    /** @dev Emitted when the p2pExchangeRate of a market is updated.
      *  @param _marketAddress The address of the market to update.
-     *  @param _newValue The new value of the p2pUnitExchangeRate.
+     *  @param _newValue The new value of the p2pExchangeRate.
      */
-    event P2PUnitExchangeRateUpdated(address _marketAddress, uint256 _newValue);
+    event P2PExchangeRateUpdated(address _marketAddress, uint256 _newValue);
 
     /** @dev Emitted when a threshold of a market is updated.
      *  @param _marketAddress The address of the market to update.
@@ -140,7 +140,7 @@ contract MarketsManagerForAave is Ownable {
         positionsManagerForAave.setThreshold(_marketAddress, _threshold);
         positionsManagerForAave.setCapValue(_marketAddress, _capValue);
         lastUpdateTimestamp[_marketAddress] = block.timestamp;
-        p2pUnitExchangeRate[_marketAddress] = WadRayMath.ray();
+        p2pExchangeRate[_marketAddress] = WadRayMath.ray();
         isCreated[_marketAddress] = true;
         _updateSPY(_marketAddress);
         emit MarketCreated(_marketAddress);
@@ -174,14 +174,14 @@ contract MarketsManagerForAave is Ownable {
 
     /* Public */
 
-    /** @dev Updates the Second Percentage Yield (`p2pSPY`) and calculates the current exchange rate (`p2pUnitExchangeRate`).
+    /** @dev Updates the Second Percentage Yield (`p2pSPY`) and calculates the current exchange rate (`p2pExchangeRate`).
      *  @param _marketAddress The address of the market we want to update.
      */
     function updateState(address _marketAddress) public isMarketCreated(_marketAddress) {
         uint256 currentTimestamp = block.timestamp;
 
         if (lastUpdateTimestamp[_marketAddress] != currentTimestamp) {
-            _updateP2PUnitExchangeRate(_marketAddress);
+            _updateP2PExchangeRate(_marketAddress);
             _updateSPY(_marketAddress);
             lastUpdateTimestamp[_marketAddress] = currentTimestamp;
         }
@@ -192,14 +192,14 @@ contract MarketsManagerForAave is Ownable {
     /** @dev Updates the P2P exchange rate, taking into account the Second Percentage Yield (`p2pSPY`) since the last time it has been updated.
      *  @param _marketAddress The address of the market to update.
      */
-    function _updateP2PUnitExchangeRate(address _marketAddress) internal {
+    function _updateP2PExchangeRate(address _marketAddress) internal {
         uint256 timeDifference = block.timestamp - lastUpdateTimestamp[_marketAddress];
-        uint256 newP2PUnitExchangeRate = p2pUnitExchangeRate[_marketAddress].rayMul(
+        uint256 newP2PExchangeRate = p2pExchangeRate[_marketAddress].rayMul(
             (WadRayMath.ray() + p2pSPY[_marketAddress]).rayPow(timeDifference)
         ); // In ray
 
-        p2pUnitExchangeRate[_marketAddress] = newP2PUnitExchangeRate;
-        emit P2PUnitExchangeRateUpdated(_marketAddress, newP2PUnitExchangeRate);
+        p2pExchangeRate[_marketAddress] = newP2PExchangeRate;
+        emit P2PExchangeRateUpdated(_marketAddress, newP2PExchangeRate);
     }
 
     /** @dev Updates the Second Percentage Yield (`p2pSPY`).

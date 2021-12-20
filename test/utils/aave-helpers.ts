@@ -13,12 +13,12 @@ const scaledBalanceToUnderlying = (scaledBalance: BigNumber, normalizedIncome: B
   return scaledBalance.mul(normalizedIncome).div(RAY);
 };
 
-const underlyingToP2PUnit = (underlyingAmount: BigNumber, p2pUnitExchangeRate: BigNumber): BigNumber => {
-  return underlyingAmount.mul(RAY).div(p2pUnitExchangeRate);
+const underlyingToP2PUnit = (underlyingAmount: BigNumber, p2pExchangeRate: BigNumber): BigNumber => {
+  return underlyingAmount.mul(RAY).div(p2pExchangeRate);
 };
 
-const p2pUnitToUnderlying = (p2pUnitAmount: BigNumber, p2pUnitExchangeRate: BigNumber): BigNumber => {
-  return p2pUnitAmount.mul(p2pUnitExchangeRate).div(RAY);
+const p2pUnitToUnderlying = (p2pUnitAmount: BigNumber, p2pExchangeRate: BigNumber): BigNumber => {
+  return p2pUnitAmount.mul(p2pExchangeRate).div(RAY);
 };
 
 const underlyingToAdUnit = (underlyingAmount: BigNumber, normalizedVariableDebt: BigNumber): BigNumber => {
