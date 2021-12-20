@@ -178,12 +178,10 @@ contract MarketsManagerForAave is Ownable {
      *  @param _marketAddress The address of the market we want to update.
      */
     function updateState(address _marketAddress) public isMarketCreated(_marketAddress) {
-        uint256 currentTimestamp = block.timestamp;
-
-        if (lastUpdateTimestamp[_marketAddress] != currentTimestamp) {
+        if (lastUpdateTimestamp[_marketAddress] != block.timestamp) {
             _updateP2PExchangeRate(_marketAddress);
             _updateSPY(_marketAddress);
-            lastUpdateTimestamp[_marketAddress] = currentTimestamp;
+            lastUpdateTimestamp[_marketAddress] = block.timestamp;
         }
     }
 
