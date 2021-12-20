@@ -245,6 +245,7 @@ contract PositionsManagerForCompound is ReentrancyGuard {
         isAboveThreshold(_poolTokenAddress, _amount)
     {
         _handleMembership(_poolTokenAddress, msg.sender);
+        marketsManagerForCompound.updateState(_poolTokenAddress);
         ICErc20 poolToken = ICErc20(_poolTokenAddress);
         IERC20 underlyingToken = IERC20(poolToken.underlying());
         underlyingToken.safeTransferFrom(msg.sender, address(this), _amount);
@@ -255,9 +256,7 @@ contract PositionsManagerForCompound is ReentrancyGuard {
 
         /* If some borrowers are waiting on Comp, Morpho matches the supplier in P2P with them as much as possible */
         if (borrowersOnPool[_poolTokenAddress].getHead() != address(0)) {
-            uint256 p2pExchangeRate = marketsManagerForCompound.updateP2pUnitExchangeRate(
-                _poolTokenAddress
-            );
+            uint256 p2pExchangeRate = marketsManagerForCompound.p2pExchangeRate(_poolTokenAddress);
             remainingToSupplyToPool = _matchBorrowers(_poolTokenAddress, _amount); // In underlying
             uint256 matched = _amount - remainingToSupplyToPool;
 
@@ -312,6 +311,7 @@ contract PositionsManagerForCompound is ReentrancyGuard {
     {
         _handleMembership(_poolTokenAddress, msg.sender);
         _checkAccountLiquidity(msg.sender, _poolTokenAddress, 0, _amount);
+        marketsManagerForCompound.updateState(_poolTokenAddress);
         emit Borrowed(msg.sender, _poolTokenAddress, _amount);
         ICErc20 poolToken = ICErc20(_poolTokenAddress);
         IERC20 underlyingToken = IERC20(poolToken.underlying());
@@ -439,9 +439,10 @@ contract PositionsManagerForCompound is ReentrancyGuard {
         vars.collateralOnPoolInUnderlying = supplyBalanceInOf[_poolTokenCollateralAddress][
             _borrower
         ].onPool.mul(poolTokenCollateral.exchangeRateStored());
+        marketsManagerForCompound.updateState(_poolTokenCollateralAddress);
         uint256 totalCollateral = vars.collateralOnPoolInUnderlying +
             supplyBalanceInOf[_poolTokenCollateralAddress][_borrower].inP2P.mul(
-                marketsManagerForCompound.updateP2pUnitExchangeRate(_poolTokenCollateralAddress)
+                marketsManagerForCompound.p2pExchangeRate(_poolTokenCollateralAddress)
             );
         require(vars.amountToSeize <= totalCollateral, Errors.PM_TO_SEIZE_ABOVE_COLLATERAL);
         emit Liquidated(
@@ -471,6 +472,7 @@ contract PositionsManagerForCompound is ReentrancyGuard {
     ) internal isMarketCreated(_poolTokenAddress) {
         require(_amount > 0, Errors.PM_AMOUNT_IS_0);
         _checkAccountLiquidity(_holder, _poolTokenAddress, _amount, 0);
+        marketsManagerForCompound.updateState(_poolTokenAddress);
         emit Withdrawn(_holder, _poolTokenAddress, _amount);
         ICErc20 poolToken = ICErc20(_poolTokenAddress);
         IERC20 underlyingToken = IERC20(poolToken.underlying());
@@ -595,6 +597,7 @@ contract PositionsManagerForCompound is ReentrancyGuard {
         uint256 _amount
     ) internal isMarketCreated(_poolTokenAddress) {
         require(_amount > 0, Errors.PM_AMOUNT_IS_0);
+        marketsManagerForCompound.updateState(_poolTokenAddress);
         ICErc20 poolToken = ICErc20(_poolTokenAddress);
         IERC20 underlyingToken = IERC20(poolToken.underlying());
         underlyingToken.safeTransferFrom(msg.sender, address(this), _amount);
@@ -646,9 +649,7 @@ contract PositionsManagerForCompound is ReentrancyGuard {
 
         /* If there remains some tokens to repay (CASE 2), Morpho breaks credit lines and repair them either with other users or with Comp itself */
         if (remainingToRepay > 0) {
-            uint256 p2pExchangeRate = marketsManagerForCompound.updateP2pUnitExchangeRate(
-                _poolTokenAddress
-            );
+            uint256 p2pExchangeRate = marketsManagerForCompound.p2pExchangeRate(_poolTokenAddress);
             uint256 contractBorrowBalanceOnPool = poolToken.borrowBalanceCurrent(address(this)); // In underlying
             /* CASE 1: Other borrowers are borrowing enough on Comp to compensate user's position */
             if (remainingToRepay <= contractBorrowBalanceOnPool) {
@@ -1000,9 +1001,8 @@ contract PositionsManagerForCompound is ReentrancyGuard {
 
         for (uint256 i; i < enteredMarkets[_account].length; i++) {
             vars.poolTokenEntered = enteredMarkets[_account][i];
-            vars.p2pExchangeRate = marketsManagerForCompound.updateP2pUnitExchangeRate(
-                vars.poolTokenEntered
-            );
+            marketsManagerForCompound.updateState(vars.poolTokenEntered);
+            vars.p2pExchangeRate = marketsManagerForCompound.p2pExchangeRate(vars.poolTokenEntered);
             // Calculation of the current debt (in underlying)
             vars.debtToAdd =
                 borrowBalanceInOf[vars.poolTokenEntered][_account].onPool.mul(
