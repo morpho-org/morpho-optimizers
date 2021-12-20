@@ -1,7 +1,10 @@
 
 -include .env.local
 
-all    :; dapp build
-clean  :; dapp clean
-test   :; dapp test
-deploy :; dapp create Dapptuto
+export NETWORK
+
+solc		:; nix-env -f https://github.com/dapphub/dapptools/archive/master.tar.gz -iA solc-static-versions.solc_0_8_7
+all    	:; dapp build
+clean  	:; dapp clean
+test   	:; dapp test --rpc-url https://${NETWORK}.infura.io/v3/${INFURA_PROJECT_ID}
+deploy 	:; dapp create Dapptuto
