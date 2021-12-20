@@ -12,6 +12,7 @@ import "../PositionsManagerForAave.sol";
 import "../MarketsManagerForAave.sol";
 
 import "@config/Config.sol";
+import "./SimplePriceOracle.sol";
 import "./HEVM.sol";
 import "./User.sol";
 
@@ -21,15 +22,23 @@ contract MarketsManagerForAaveTest is DSTest, Config {
     PositionsManagerForAave internal positionsManager;
     MarketsManagerForAave internal marketsManager;
 
+    ILendingPoolAddressesProvider lendingPoolAddressesProvider;
+    ILendingPool lendingPool;
+
     User supplier1;
     User borrower1;
 
     function setUp() public {
-        marketsManager = new MarketsManagerForAave(lendingPoolAddressesProvider);
+        marketsManager = new MarketsManagerForAave(lendingPoolAddressesProviderAddress);
         positionsManager = new PositionsManagerForAave(
             address(marketsManager),
-            lendingPoolAddressesProvider
+            lendingPoolAddressesProviderAddress
         );
+
+        lendingPoolAddressesProvider = ILendingPoolAddressesProvider(
+            lendingPoolAddressesProviderAddress
+        );
+        lendingPool = ILendingPool(lendingPoolAddressesProvider.getLendingPool());
 
         marketsManager.setPositionsManager(address(positionsManager));
         marketsManager.setLendingPool();
@@ -67,7 +76,7 @@ contract MarketsManagerForAaveTest is DSTest, Config {
 
     // Suppliers on Aave (no borrowers) >> Should revert when providing 0 as collateral
     function testFail_revert_when_providing_0_as_collateral() public {
-        supplier1.pmSupply(aDai, 0);
+        supplier1.supply(aDai, 0);
     }
 
     // Fuzzing
@@ -79,14 +88,11 @@ contract MarketsManagerForAaveTest is DSTest, Config {
         uint256 expectedDaiBalanceAfter = daiBalanceBefore - _amount;
 
         borrower1.approve(dai, address(positionsManager), _amount);
-        borrower1.pmSupply(aDai, _amount);
+        borrower1.supply(aDai, _amount);
 
         uint256 daiBalanceAfter = IERC20(dai).balanceOf(address(borrower1));
         assertEq(daiBalanceAfter, expectedDaiBalanceAfter);
 
-        ILendingPool lendingPool = ILendingPool(
-            ILendingPoolAddressesProvider(lendingPoolAddressesProvider).getLendingPool()
-        );
         uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(usdc);
         uint256 expectedSupplyBalanceOnPool = underlyingToScaledBalance(_amount, normalizedIncome);
 
@@ -98,6 +104,22 @@ contract MarketsManagerForAaveTest is DSTest, Config {
         assertEq(onPool, expectedSupplyBalanceOnPool);
         assertEq(inP2P, 0);
     }
+
+    /*
+    function test_liquidation() public {
+        // Set lendingPoolAddressesProvider owner to this contract
+        hevm.store(address(lendingPoolAddressesProvider), bytes32(0), bytes32(uint256(uint160(address(this)))));
+        SimplePriceOracle oracle = new SimplePriceOracle();
+        lendingPoolAddressesProvider.setPriceOracle(priceOracle);
+
+        uint256 amount = 100 * 10**6;
+        borrower1.approve(usdc, positionsManager, amount);
+        borrower1.supply(aUsdc, amount);
+        (uint256 collateralBalanceInScaledBalance, ) = positionsManager.supplyBalanceInOf(aUsdc, address(borrower1));
+        uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(usdc);
+        uint256 collateralBalanceInUnderlying = scaledBalanceToUnderlying(collateralBalanceInScaledBalance, normalizedIncome);
+    }
+*/
 
     function underlyingToScaledBalance(uint256 _scaledBalance, uint256 _normalizedIncome)
         internal

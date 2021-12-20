@@ -8,7 +8,7 @@ contract Config {
     address aDai = 0x27F8D03b3a2196956ED754baDc28D73be8830A6e;
     address aUsdc = 0x1a13F4Ca1d028320A707D99520AbFefca3998b7F;
 
-    address lendingPoolAddressesProvider = 0xd05e3E715d945B59290df0ae8eF85c1BdB684744;
+    address lendingPoolAddressesProviderAddress = 0xd05e3E715d945B59290df0ae8eF85c1BdB684744;
 
     mapping(address => uint8) slots;
 

@@ -10,14 +10,4 @@ export DAPP_TEST_FUZZ_RUNS=100
 
 export DAPP_REMAPPINGS=$(cat remappings.txt)
 NEWLINE=$'\n'
-case $NETWORK in
-	polygon-mainnet)
-		CONFIG="@config/=config/polygon-mainnet/"		
-		;;
-	
-	*)
-		echo -n "UNKNOW NETWORK"
-		;;
-esac
-
-export DAPP_REMAPPINGS="$DAPP_REMAPPINGS$NEWLINE$CONFIG"
+export DAPP_REMAPPINGS="$DAPP_REMAPPINGS$NEWLINE@config/=config/$NETWORK/"
