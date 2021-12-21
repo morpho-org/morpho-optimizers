@@ -177,7 +177,7 @@ contract MarketsManagerForAave is Ownable {
     /** @dev Updates the Second Percentage Yield (`p2pSPY`) and calculates the current exchange rate (`p2pExchangeRate`).
      *  @param _marketAddress The address of the market we want to update.
      */
-    function updateState(address _marketAddress) public isMarketCreated(_marketAddress) {
+    function updateRates(address _marketAddress) public isMarketCreated(_marketAddress) {
         if (lastUpdateTimestamp[_marketAddress] != block.timestamp) {
             _updateP2PExchangeRate(_marketAddress);
             _updateSPY(_marketAddress);
