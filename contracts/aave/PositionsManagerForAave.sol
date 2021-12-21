@@ -111,37 +111,69 @@ contract PositionsManagerForAave is ReentrancyGuard {
     /** @dev Emitted when a supply happens.
      *  @param _account The address of the supplier.
      *  @param _poolTokenAddress The address of the market where assets are supplied into.
-     *  @param _amount The amount of assets.
+     *  @param _amount The amount of assets supplied (in underlying).
+     *  @param _balanceOnPool The supply balance on pool after update (in underlying).
+     *  @param _balanceInP2P The supply balance in P2P after update (in underlying).
      */
-    event Supplied(address indexed _account, address indexed _poolTokenAddress, uint256 _amount);
+    event Supplied(
+        address indexed _account,
+        address indexed _poolTokenAddress,
+        uint256 _amount,
+        uint256 _balanceOnPool,
+        uint256 _balanceInP2P
+    );
 
     /** @dev Emitted when a withdraw happens.
      *  @param _account The address of the withdrawer.
      *  @param _poolTokenAddress The address of the market from where assets are withdrawn.
-     *  @param _amount The amount of assets.
+     *  @param _amount The amount of assets withdrawn (in underlying).
+     *  @param _balanceOnPool The supply balance on pool after update (in underlying).
+     *  @param _balanceInP2P The supply balance in P2P after update (in underlying).
      */
-    event Withdrawn(address indexed _account, address indexed _poolTokenAddress, uint256 _amount);
+    event Withdrawn(
+        address indexed _account,
+        address indexed _poolTokenAddress,
+        uint256 _amount,
+        uint256 _balanceOnPool,
+        uint256 _balanceInP2P
+    );
 
     /** @dev Emitted when a borrow happens.
      *  @param _account The address of the borrower.
      *  @param _poolTokenAddress The address of the market where assets are borrowed.
-     *  @param _amount The amount of assets.
+     *  @param _amount The amount of assets borrowed (in underlying).
+     *  @param _balanceOnPool The borrow balance on pool after update (in underlying).
+     *  @param _balanceInP2P The borrow balance in P2P after update (in underlying).
      */
-    event Borrowed(address indexed _account, address indexed _poolTokenAddress, uint256 _amount);
+    event Borrowed(
+        address indexed _account,
+        address indexed _poolTokenAddress,
+        uint256 _amount,
+        uint256 _balanceOnPool,
+        uint256 _balanceInP2P
+    );
 
     /** @dev Emitted when a repay happens.
      *  @param _account The address of the repayer.
      *  @param _poolTokenAddress The address of the market where assets are repaid.
-     *  @param _amount The amount of assets.
+     *  @param _amount The amount of assets repaid (in underlying).
+     *  @param _balanceOnPool The borrow balance on pool after update (in underlying).
+     *  @param _balanceInP2P The borrow balance in P2P after update (in underlying).
      */
-    event Repaid(address indexed _account, address indexed _poolTokenAddress, uint256 _amount);
+    event Repaid(
+        address indexed _account,
+        address indexed _poolTokenAddress,
+        uint256 _amount,
+        uint256 _balanceOnPool,
+        uint256 _balanceInP2P
+    );
 
     /** @dev Emitted when a liquidation happens.
      *  @param _liquidator The address of the liquidator.
      *  @param _liquidatee The address of the liquidatee.
-     *  @param _amountRepaid The amount of borrowed asset repaid.
+     *  @param _amountRepaid The amount of borrowed asset repaid (in underlying).
      *  @param _poolTokenBorrowedAddress The address of the borrowed asset.
-     *  @param _amountSeized The amount of collateral asset seized.
+     *  @param _amountSeized The amount of collateral asset seized (in underlying).
      *  @param _poolTokenCollateralAddress The address of the collateral asset seized.
      */
     event Liquidated(
@@ -156,43 +188,27 @@ contract PositionsManagerForAave is ReentrancyGuard {
     /** @dev Emitted when the position of a supplier is updated.
      *  @param _account The address of the supplier.
      *  @param _poolTokenAddress The address of the market.
-     *  @param _amountAddedOnPool The amount added on pool (in underlying).
-     *  @param _amountAddedInP2P The amount added in P2P (in underlying).
-     *  @param _amountRemovedFromPool The amount removed from the pool (in underlying).
-     *  @param _amountRemovedFromP2P The amount removed from P2P (in underlying).
-     *  @param _p2pExchangeRate The P2P exchange rate at the moment.
-     *  @param _normalizedIncome The normalized income at the moment.
+     *  @param _balanceOnPool The supply balance on pool after update (in underlying).
+     *  @param _balanceInP2P The supply balance in P2P after update (in underlying).
      */
     event SupplierPositionUpdated(
         address indexed _account,
         address indexed _poolTokenAddress,
-        uint256 _amountAddedOnPool,
-        uint256 _amountAddedInP2P,
-        uint256 _amountRemovedFromPool,
-        uint256 _amountRemovedFromP2P,
-        uint256 _p2pExchangeRate,
-        uint256 _normalizedIncome
+        uint256 _balanceOnPool,
+        uint256 _balanceInP2P
     );
 
     /** @dev Emitted when the position of a borrower is updated.
      *  @param _account The address of the borrower.
      *  @param _poolTokenAddress The address of the market.
-     *  @param _amountAddedOnPool The amount added on pool (in underlying).
-     *  @param _amountAddedInP2P The amount added in P2P (in underlying).
-     *  @param _amountRemovedFromPool The amount removed from the pool (in underlying).
-     *  @param _amountRemovedFromP2P The amount removed from P2P (in underlying).
-     *  @param _p2pExchangeRate The P2P exchange rate at the moment.
-     *  @param _normalizedVariableDebt The normalized variable debt at the moment.
+     *  @param _balanceOnPool The borrow balance on pool after update (in underlying).
+     *  @param _balanceInP2P The borrow balance in P2P after update (in underlying).
      */
     event BorrowerPositionUpdated(
         address indexed _account,
         address indexed _poolTokenAddress,
-        uint256 _amountAddedOnPool,
-        uint256 _amountAddedInP2P,
-        uint256 _amountRemovedFromPool,
-        uint256 _amountRemovedFromP2P,
-        uint256 _p2pExchangeRate,
-        uint256 _normalizedVariableDebt
+        uint256 _balanceOnPool,
+        uint256 _balanceInP2P
     );
 
     /* Modifiers */
@@ -314,7 +330,13 @@ contract PositionsManagerForAave is ReentrancyGuard {
         if (remainingToSupplyToPool > 0)
             _supplyPositionToPool(poolToken, underlyingToken, msg.sender, remainingToSupplyToPool);
 
-        emit Supplied(msg.sender, _poolTokenAddress, _amount);
+        emit Supplied(
+            msg.sender,
+            _poolTokenAddress,
+            _amount,
+            supplyBalanceInOf[_poolTokenAddress][msg.sender].onPool,
+            supplyBalanceInOf[_poolTokenAddress][msg.sender].inP2P
+        );
     }
 
     /** @dev Borrows ERC20 tokens.
@@ -329,6 +351,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
     {
         _handleMembership(_poolTokenAddress, msg.sender);
         _checkAccountLiquidity(msg.sender, _poolTokenAddress, 0, _amount);
+        marketsManagerForAave.updateState(_poolTokenAddress);
         IAToken poolToken = IAToken(_poolTokenAddress);
         IERC20 underlyingToken = IERC20(poolToken.UNDERLYING_ASSET_ADDRESS());
         uint256 remainingToBorrowOnPool = _amount;
@@ -352,7 +375,13 @@ contract PositionsManagerForAave is ReentrancyGuard {
             );
 
         underlyingToken.safeTransfer(msg.sender, _amount);
-        emit Borrowed(msg.sender, _poolTokenAddress, _amount);
+        emit Borrowed(
+            msg.sender,
+            _poolTokenAddress,
+            _amount,
+            borrowBalanceInOf[_poolTokenAddress][msg.sender].onPool,
+            borrowBalanceInOf[_poolTokenAddress][msg.sender].inP2P
+        );
     }
 
     /** @dev Withdraws ERC20 tokens from supply.
@@ -488,7 +517,13 @@ contract PositionsManagerForAave is ReentrancyGuard {
             _withdrawPositionFromP2P(poolToken, underlyingToken, _supplier, remainingToWithdraw);
 
         underlyingToken.safeTransfer(_receiver, _amount);
-        emit Withdrawn(_supplier, _poolTokenAddress, _amount);
+        emit Withdrawn(
+            _supplier,
+            _poolTokenAddress,
+            _amount,
+            supplyBalanceInOf[_poolTokenAddress][_receiver].onPool,
+            supplyBalanceInOf[_poolTokenAddress][_receiver].inP2P
+        );
     }
 
     /** @dev Implements repay logic.
@@ -522,7 +557,13 @@ contract PositionsManagerForAave is ReentrancyGuard {
         if (remainingToRepay > 0)
             _repayPositionToP2P(poolToken, underlyingToken, _borrower, remainingToRepay);
 
-        emit Repaid(_borrower, _poolTokenAddress, _amount);
+        emit Repaid(
+            _borrower,
+            _poolTokenAddress,
+            _amount,
+            borrowBalanceInOf[_poolTokenAddress][_borrower].onPool,
+            borrowBalanceInOf[_poolTokenAddress][_borrower].inP2P
+        );
     }
 
     /** @dev Supplies `_amount` for a `_supplier` on a specific market to the pool.
@@ -546,17 +587,6 @@ contract PositionsManagerForAave is ReentrancyGuard {
         ); // Scaled Balance
         _updateSupplierList(poolTokenAddress, _supplier);
         _supplyERC20ToPool(_underlyingToken, _amount); // Revert on error
-
-        emit SupplierPositionUpdated(
-            _supplier,
-            poolTokenAddress,
-            _amount,
-            0,
-            0,
-            0,
-            0,
-            normalizedIncome
-        );
     }
 
     /** @dev Supplies up to `_amount` for a `_supplier` on a specific market to P2P.
@@ -581,17 +611,6 @@ contract PositionsManagerForAave is ReentrancyGuard {
                 p2pExchangeRate
             ); // In p2pUnit
             _updateSupplierList(poolTokenAddress, _supplier);
-
-            emit SupplierPositionUpdated(
-                _supplier,
-                poolTokenAddress,
-                0,
-                matched,
-                0,
-                0,
-                p2pExchangeRate,
-                0
-            );
         }
     }
 
@@ -616,17 +635,6 @@ contract PositionsManagerForAave is ReentrancyGuard {
         ); // In adUnit
         _updateBorrowerList(poolTokenAddress, _borrower);
         _borrowERC20FromPool(_underlyingToken, _amount);
-
-        emit BorrowerPositionUpdated(
-            _borrower,
-            poolTokenAddress,
-            _amount,
-            0,
-            0,
-            0,
-            normalizedVariableDebt,
-            0
-        );
     }
 
     /** @dev Borrows up to `_amount` for `_borrower` from P2P.
@@ -651,17 +659,6 @@ contract PositionsManagerForAave is ReentrancyGuard {
                 p2pExchangeRate
             ); // In p2pUnit
             _updateBorrowerList(poolTokenAddress, _borrower);
-
-            emit BorrowerPositionUpdated(
-                _borrower,
-                poolTokenAddress,
-                0,
-                matched,
-                0,
-                0,
-                p2pExchangeRate,
-                0
-            );
         }
     }
 
@@ -693,17 +690,6 @@ contract PositionsManagerForAave is ReentrancyGuard {
         _updateSupplierList(poolTokenAddress, _supplier);
         if (withdrawnInUnderlying > 0)
             _withdrawERC20FromPool(_underlyingToken, withdrawnInUnderlying); // Revert on error
-
-        emit SupplierPositionUpdated(
-            _supplier,
-            poolTokenAddress,
-            0,
-            0,
-            withdrawnInUnderlying,
-            0,
-            0,
-            normalizedIncome
-        );
     }
 
     /** @dev Withdraws `_amount` of the position of a `_supplier` in peer-to-peer.
@@ -746,17 +732,6 @@ contract PositionsManagerForAave is ReentrancyGuard {
             ); // We break some P2P credit lines the supplier had with borrowers and fallback on Aave.
             require(remainingBorrowToUnmatch == 0, Errors.PM_COULD_NOT_UNMATCH_FULL_AMOUNT);
         }
-
-        emit SupplierPositionUpdated(
-            _supplier,
-            poolTokenAddress,
-            0,
-            0,
-            0,
-            _amount,
-            p2pExchangeRate,
-            0
-        );
     }
 
     /** @dev Implements withdraw logic.
@@ -786,17 +761,6 @@ contract PositionsManagerForAave is ReentrancyGuard {
         ); // In adUnit
         _updateBorrowerList(poolTokenAddress, _borrower);
         if (repaidInUnderlying > 0) _repayERC20ToPool(_underlyingToken, repaidInUnderlying); // Revert on error
-
-        emit BorrowerPositionUpdated(
-            _borrower,
-            poolTokenAddress,
-            0,
-            0,
-            repaidInUnderlying,
-            0,
-            0,
-            normalizedVariableDebt
-        );
     }
 
     /** @dev Repays `_amount` of the position of a `_borrower` in peer-to-peer.
@@ -845,17 +809,6 @@ contract PositionsManagerForAave is ReentrancyGuard {
 
             require(remainingSupplyToUnmatch == 0, Errors.PM_COULD_NOT_UNMATCH_FULL_AMOUNT);
         }
-
-        emit BorrowerPositionUpdated(
-            _borrower,
-            poolTokenAddress,
-            0,
-            0,
-            0,
-            _amount,
-            p2pExchangeRate,
-            0
-        );
     }
 
     /** @dev Supplies ERC20 tokens to Aave.
@@ -941,12 +894,8 @@ contract PositionsManagerForAave is ReentrancyGuard {
             emit SupplierPositionUpdated(
                 account,
                 poolTokenAddress,
-                0,
-                toMatch,
-                toMatch,
-                0,
-                p2pExchangeRate,
-                normalizedIncome
+                supplyBalanceInOf[poolTokenAddress][account].onPool,
+                supplyBalanceInOf[poolTokenAddress][account].inP2P
             );
             account = suppliersOnPool[poolTokenAddress].getHead();
         }
@@ -985,12 +934,8 @@ contract PositionsManagerForAave is ReentrancyGuard {
             emit SupplierPositionUpdated(
                 account,
                 _poolTokenAddress,
-                toUnmatch,
-                0,
-                0,
-                toUnmatch,
-                p2pExchangeRate,
-                normalizedIncome
+                supplyBalanceInOf[_poolTokenAddress][account].onPool,
+                supplyBalanceInOf[_poolTokenAddress][account].inP2P
             );
             account = suppliersInP2P[_poolTokenAddress].getHead();
         }
@@ -1037,12 +982,8 @@ contract PositionsManagerForAave is ReentrancyGuard {
             emit BorrowerPositionUpdated(
                 account,
                 poolTokenAddress,
-                0,
-                toMatch,
-                toMatch,
-                0,
-                p2pExchangeRate,
-                normalizedVariableDebt
+                borrowBalanceInOf[poolTokenAddress][account].onPool,
+                borrowBalanceInOf[poolTokenAddress][account].inP2P
             );
             account = borrowersOnPool[poolTokenAddress].getHead();
         }
@@ -1083,12 +1024,8 @@ contract PositionsManagerForAave is ReentrancyGuard {
             emit BorrowerPositionUpdated(
                 account,
                 _poolTokenAddress,
-                toUnmatch,
-                0,
-                0,
-                toUnmatch,
-                p2pExchangeRate,
-                normalizedVariableDebt
+                borrowBalanceInOf[_poolTokenAddress][account].onPool,
+                borrowBalanceInOf[_poolTokenAddress][account].inP2P
             );
             account = borrowersInP2P[_poolTokenAddress].getHead();
         }
