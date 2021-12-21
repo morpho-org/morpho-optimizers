@@ -688,7 +688,8 @@ contract PositionsManagerForAave is ReentrancyGuard {
             withdrawnInUnderlying.divWadByRay(normalizedIncome)
         ); // In poolToken
         _updateSupplierList(poolTokenAddress, _supplier);
-        _withdrawERC20FromPool(_underlyingToken, withdrawnInUnderlying); // Revert on error
+        if (withdrawnInUnderlying > 0)
+            _withdrawERC20FromPool(_underlyingToken, withdrawnInUnderlying); // Revert on error
 
         emit SupplierPositionUpdated(
             _supplier,
@@ -781,7 +782,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
             repaidInUnderlying.divWadByRay(normalizedVariableDebt)
         ); // In adUnit
         _updateBorrowerList(poolTokenAddress, _borrower);
-        _repayERC20ToPool(_underlyingToken, repaidInUnderlying); // Revert on error
+        if (repaidInUnderlying > 0) _repayERC20ToPool(_underlyingToken, repaidInUnderlying); // Revert on error
 
         emit BorrowerPositionUpdated(
             _borrower,
