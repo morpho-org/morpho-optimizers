@@ -553,7 +553,7 @@ describe('PositionsManagerForAave Contract', () => {
       ).to.equal(removeDigitsBigNumber(3, expectedBorrowBalanceInP2P1));
 
       // Compare remaining to withdraw and the aToken contract balance
-      await marketsManagerForAave.connect(owner).updateState(config.tokens.aDai.address);
+      await marketsManagerForAave.connect(owner).updateRates(config.tokens.aDai.address);
       const p2pExchangeRate2 = await marketsManagerForAave.p2pExchangeRate(config.tokens.aDai.address);
       const p2pExchangeRate3 = computeNewMorphoExchangeRate(
         p2pExchangeRate2,
@@ -682,7 +682,7 @@ describe('PositionsManagerForAave Contract', () => {
       ).to.equal(removeDigitsBigNumber(2, expectedBorrowBalanceInP2P1));
 
       // Compare remaining to withdraw and the aToken contract balance
-      await marketsManagerForAave.connect(owner).updateState(config.tokens.aDai.address);
+      await marketsManagerForAave.connect(owner).updateRates(config.tokens.aDai.address);
       const p2pExchangeRate2 = await marketsManagerForAave.p2pExchangeRate(config.tokens.aDai.address);
       const p2pExchangeRate3 = computeNewMorphoExchangeRate(
         p2pExchangeRate2,
@@ -813,7 +813,7 @@ describe('PositionsManagerForAave Contract', () => {
       const borrowerBalanceInP2P = (await positionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower1.getAddress()))
         .inP2P;
       const p2pSPY = await marketsManagerForAave.p2pSPY(config.tokens.aDai.address);
-      await marketsManagerForAave.updateState(config.tokens.aDai.address);
+      await marketsManagerForAave.updateRates(config.tokens.aDai.address);
       const p2pExchangeRateBefore = await marketsManagerForAave.p2pExchangeRate(config.tokens.aDai.address);
       const p2pExchangeRate: BigNumber = computeNewMorphoExchangeRate(p2pExchangeRateBefore, p2pSPY, AVERAGE_BLOCK_TIME, 0);
       const toRepay = p2pUnitToUnderlying(borrowerBalanceInP2P, p2pExchangeRate);

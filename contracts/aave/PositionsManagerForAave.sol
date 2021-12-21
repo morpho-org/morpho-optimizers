@@ -309,7 +309,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
         isAboveThreshold(_poolTokenAddress, _amount)
     {
         _handleMembership(_poolTokenAddress, msg.sender);
-        marketsManagerForAave.updateState(_poolTokenAddress);
+        marketsManagerForAave.updateRates(_poolTokenAddress);
         IAToken poolToken = IAToken(_poolTokenAddress);
         IERC20 underlyingToken = IERC20(poolToken.UNDERLYING_ASSET_ADDRESS());
         if (capValue[_poolTokenAddress] != type(uint256).max)
@@ -351,7 +351,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
     {
         _handleMembership(_poolTokenAddress, msg.sender);
         _checkAccountLiquidity(msg.sender, _poolTokenAddress, 0, _amount);
-        marketsManagerForAave.updateState(_poolTokenAddress);
+        marketsManagerForAave.updateRates(_poolTokenAddress);
         IAToken poolToken = IAToken(_poolTokenAddress);
         IERC20 underlyingToken = IERC20(poolToken.UNDERLYING_ASSET_ADDRESS());
         uint256 remainingToBorrowOnPool = _amount;
@@ -462,7 +462,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
             .div(vars.collateralPrice)
             .div(10000); // Same mechanism as aave. The collateral amount to seize is given.
         vars.normalizedIncome = lendingPool.getReserveNormalizedIncome(vars.tokenCollateralAddress);
-        marketsManagerForAave.updateState(_poolTokenCollateralAddress);
+        marketsManagerForAave.updateRates(_poolTokenCollateralAddress);
         vars.totalCollateral =
             supplyBalanceInOf[_poolTokenCollateralAddress][_borrower].onPool.mulWadByRay(
                 vars.normalizedIncome
@@ -538,7 +538,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
         uint256 _amount
     ) internal isMarketCreated(_poolTokenAddress) {
         require(_amount > 0, Errors.PM_AMOUNT_IS_0);
-        marketsManagerForAave.updateState(_poolTokenAddress);
+        marketsManagerForAave.updateRates(_poolTokenAddress);
         IAToken poolToken = IAToken(_poolTokenAddress);
         IERC20 underlyingToken = IERC20(poolToken.UNDERLYING_ASSET_ADDRESS());
         underlyingToken.safeTransferFrom(msg.sender, address(this), _amount);
@@ -1111,7 +1111,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
 
         for (uint256 i; i < enteredMarkets[_account].length; i++) {
             vars.poolTokenEntered = enteredMarkets[_account][i];
-            marketsManagerForAave.updateState(vars.poolTokenEntered);
+            marketsManagerForAave.updateRates(vars.poolTokenEntered);
             vars.p2pExchangeRate = marketsManagerForAave.p2pExchangeRate(vars.poolTokenEntered);
             // Calculation of the current debt (in underlying)
             vars.underlyingAddress = IAToken(vars.poolTokenEntered).UNDERLYING_ASSET_ADDRESS();

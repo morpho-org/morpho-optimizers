@@ -245,7 +245,7 @@ contract PositionsManagerForCompound is ReentrancyGuard {
         isAboveThreshold(_poolTokenAddress, _amount)
     {
         _handleMembership(_poolTokenAddress, msg.sender);
-        marketsManagerForCompound.updateState(_poolTokenAddress);
+        marketsManagerForCompound.updateRates(_poolTokenAddress);
         ICErc20 poolToken = ICErc20(_poolTokenAddress);
         IERC20 underlyingToken = IERC20(poolToken.underlying());
         underlyingToken.safeTransferFrom(msg.sender, address(this), _amount);
@@ -311,7 +311,7 @@ contract PositionsManagerForCompound is ReentrancyGuard {
     {
         _handleMembership(_poolTokenAddress, msg.sender);
         _checkAccountLiquidity(msg.sender, _poolTokenAddress, 0, _amount);
-        marketsManagerForCompound.updateState(_poolTokenAddress);
+        marketsManagerForCompound.updateRates(_poolTokenAddress);
         emit Borrowed(msg.sender, _poolTokenAddress, _amount);
         ICErc20 poolToken = ICErc20(_poolTokenAddress);
         IERC20 underlyingToken = IERC20(poolToken.underlying());
@@ -439,7 +439,7 @@ contract PositionsManagerForCompound is ReentrancyGuard {
         vars.collateralOnPoolInUnderlying = supplyBalanceInOf[_poolTokenCollateralAddress][
             _borrower
         ].onPool.mul(poolTokenCollateral.exchangeRateStored());
-        marketsManagerForCompound.updateState(_poolTokenCollateralAddress);
+        marketsManagerForCompound.updateRates(_poolTokenCollateralAddress);
         uint256 totalCollateral = vars.collateralOnPoolInUnderlying +
             supplyBalanceInOf[_poolTokenCollateralAddress][_borrower].inP2P.mul(
                 marketsManagerForCompound.p2pExchangeRate(_poolTokenCollateralAddress)
@@ -472,7 +472,7 @@ contract PositionsManagerForCompound is ReentrancyGuard {
     ) internal isMarketCreated(_poolTokenAddress) {
         require(_amount > 0, Errors.PM_AMOUNT_IS_0);
         _checkAccountLiquidity(_holder, _poolTokenAddress, _amount, 0);
-        marketsManagerForCompound.updateState(_poolTokenAddress);
+        marketsManagerForCompound.updateRates(_poolTokenAddress);
         emit Withdrawn(_holder, _poolTokenAddress, _amount);
         ICErc20 poolToken = ICErc20(_poolTokenAddress);
         IERC20 underlyingToken = IERC20(poolToken.underlying());
@@ -597,7 +597,7 @@ contract PositionsManagerForCompound is ReentrancyGuard {
         uint256 _amount
     ) internal isMarketCreated(_poolTokenAddress) {
         require(_amount > 0, Errors.PM_AMOUNT_IS_0);
-        marketsManagerForCompound.updateState(_poolTokenAddress);
+        marketsManagerForCompound.updateRates(_poolTokenAddress);
         ICErc20 poolToken = ICErc20(_poolTokenAddress);
         IERC20 underlyingToken = IERC20(poolToken.underlying());
         underlyingToken.safeTransferFrom(msg.sender, address(this), _amount);
@@ -1001,7 +1001,7 @@ contract PositionsManagerForCompound is ReentrancyGuard {
 
         for (uint256 i; i < enteredMarkets[_account].length; i++) {
             vars.poolTokenEntered = enteredMarkets[_account][i];
-            marketsManagerForCompound.updateState(vars.poolTokenEntered);
+            marketsManagerForCompound.updateRates(vars.poolTokenEntered);
             vars.p2pExchangeRate = marketsManagerForCompound.p2pExchangeRate(vars.poolTokenEntered);
             // Calculation of the current debt (in underlying)
             vars.debtToAdd =

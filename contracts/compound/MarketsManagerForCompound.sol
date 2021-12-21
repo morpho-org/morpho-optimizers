@@ -127,7 +127,7 @@ contract MarketsManagerForCompound is Ownable {
     /** @dev Updates the Block Percentage Yield (`p2pBPY`) and calculates the current exchange rate (`p2pExchangeRate`).
      *  @param _marketAddress The address of the market we want to update.
      */
-    function updateState(address _marketAddress) public isMarketCreated(_marketAddress) {
+    function updateRates(address _marketAddress) public isMarketCreated(_marketAddress) {
         if (lastUpdateBlockNumber[_marketAddress] != block.number) {
             _updateP2PExchangeRate(_marketAddress);
             _updateBPY(_marketAddress);
