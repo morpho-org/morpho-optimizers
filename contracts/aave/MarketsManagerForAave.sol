@@ -23,10 +23,14 @@ contract MarketsManagerForAave is Ownable {
     /// Storage ///
 
     uint256 internal constant SECONDS_PER_YEAR = 365 days;
+    uint256 internal feeFactor; // Proportion of the spread that is taken as a protocol fee, in ray (default is no fee).
+
     mapping(address => bool) public isCreated; // Whether or not this market is created.
-    mapping(address => uint256) public p2pSPY; // Second Percentage Yield ("midrate").
-    mapping(address => uint256) public p2pExchangeRate; // Current exchange rate from p2pUnit to underlying.
-    mapping(address => uint256) public lastUpdateTimestamp; // Last time p2pExchangeRate was updated.
+    mapping(address => uint256) public supplyP2PSPY; // Supply Second Percentage Yield.
+    mapping(address => uint256) public borrowP2PSPY; // Borrow Second Percentage Yield.
+    mapping(address => uint256) public supplyP2PExchangeRate; // Current exchange rate from supply p2pUnit to underlying.
+    mapping(address => uint256) public borrowP2PExchangeRate; // Current exchange rate from borrow p2pUnit to underlying.
+    mapping(address => uint256) public exchangeRatesLastUpdateTimestamp; // Last time p2pExchangeRates were updated.
 
     IPositionsManagerForAave public positionsManagerForAave;
     ILendingPoolAddressesProvider public addressesProvider;
@@ -46,15 +50,25 @@ contract MarketsManagerForAave is Ownable {
     /// @param _positionsManagerForAave The address of the `positionsManagerForAave`.
     event PositionsManagerForAaveSet(address _positionsManagerForAave);
 
-    /// @dev Emitted when the p2pSPY of a market is updated.
+    /// @dev Emitted when the P2P SPYs of a market are updated.
     /// @param _marketAddress The address of the market to update.
-    /// @param _newValue The new value of the p2pSPY.
-    event P2PSPYUpdated(address _marketAddress, uint256 _newValue);
+    /// @param _newSupplyP2PSPY The new value of the supply  P2P SPY.
+    /// @param _newBorrowP2PSPY The new value of the borrow P2P SPY.
+    event P2PSPYsUpdated(
+        address _marketAddress,
+        uint256 _newSupplyP2PSPY,
+        uint256 _newBorrowP2PSPY
+    );
 
     /// @dev Emitted when the p2pExchangeRate of a market is updated.
     /// @param _marketAddress The address of the market to update.
-    /// @param _newValue The new value of the p2pExchangeRate.
-    event P2PExchangeRateUpdated(address _marketAddress, uint256 _newValue);
+    /// @param _newSupplyP2PExchangeRate The new value of the supply exchange rate from p2pUnit to underlying.
+    /// @param _newBorrowP2PExchangeRate The new value of the borrow exchange rate from p2pUnit to underlying.
+    event P2PExchangesRateUpdated(
+        address _marketAddress,
+        uint256 _newSupplyP2PExchangeRate,
+        uint256 _newBorrowP2PExchangeRate
+    );
 
     /// @dev Emitted when a threshold of a market is updated.
     /// @param _marketAddress The address of the market to update.
@@ -120,6 +134,12 @@ contract MarketsManagerForAave is Ownable {
         emit MaxNumberUpdated(_newMaxNumber);
     }
 
+    /// @dev Sets the protocol fee.
+    /// @param _newFeeFactor Factor of the spread that is taken as a protocol fee, in ray.
+    function setFee(uint256 _newFeeFactor) external onlyOwner {
+        feeFactor = _newFeeFactor;
+    }
+
     /// @dev Creates a new market to borrow/supply.
     /// @param _marketAddress The addresses of the markets to add (aToken).
     /// @param _threshold The threshold to set for the market.
@@ -130,12 +150,16 @@ contract MarketsManagerForAave is Ownable {
         uint256 _capValue
     ) external onlyOwner {
         if (isCreated[_marketAddress]) revert MarketAlreadyCreated();
+
         positionsManagerForAave.setThreshold(_marketAddress, _threshold);
         positionsManagerForAave.setCapValue(_marketAddress, _capValue);
-        lastUpdateTimestamp[_marketAddress] = block.timestamp;
-        p2pExchangeRate[_marketAddress] = WadRayMath.ray();
+
+        exchangeRatesLastUpdateTimestamp[_marketAddress] = block.timestamp;
+        supplyP2PExchangeRate[_marketAddress] = WadRayMath.ray();
+        borrowP2PExchangeRate[_marketAddress] = WadRayMath.ray();
         isCreated[_marketAddress] = true;
-        _updateSPY(_marketAddress);
+
+        _updateSPYs(_marketAddress);
         emit MarketCreated(_marketAddress);
     }
 
@@ -165,13 +189,14 @@ contract MarketsManagerForAave is Ownable {
 
     /// Public ///
 
-    /// @dev Updates the Second Percentage Yield (`p2pSPY`) and calculates the current exchange rate (`p2pExchangeRate`).
+    /// @dev Updates the P2P Second Percentage Yield and calculates the current P2P exchange rates.
     /// @param _marketAddress The address of the market we want to update.
     function updateRates(address _marketAddress) public isMarketCreated(_marketAddress) {
-        if (lastUpdateTimestamp[_marketAddress] != block.timestamp) {
-            _updateP2PExchangeRate(_marketAddress);
-            _updateSPY(_marketAddress);
-            lastUpdateTimestamp[_marketAddress] = block.timestamp;
+        if (exchangeRatesLastUpdateTimestamp[_marketAddress] != block.timestamp) {
+            _updateP2PExchangeRates(_marketAddress);
+            _updateSPYs(_marketAddress);
+
+            exchangeRatesLastUpdateTimestamp[_marketAddress] = block.timestamp;
         }
     }
 
@@ -179,26 +204,47 @@ contract MarketsManagerForAave is Ownable {
 
     /// @dev Updates the P2P exchange rate, taking into account the Second Percentage Yield (`p2pSPY`) since the last time it has been updated.
     /// @param _marketAddress The address of the market to update.
-    function _updateP2PExchangeRate(address _marketAddress) internal {
-        uint256 timeDifference = block.timestamp - lastUpdateTimestamp[_marketAddress];
-        uint256 newP2PExchangeRate = p2pExchangeRate[_marketAddress].rayMul(
-            (WadRayMath.ray() + p2pSPY[_marketAddress]).rayPow(timeDifference)
+    function _updateP2PExchangeRates(address _marketAddress) internal {
+        uint256 timeDifference = block.timestamp - exchangeRatesLastUpdateTimestamp[_marketAddress];
+        uint256 newSupplyP2PExchangeRate = supplyP2PExchangeRate[_marketAddress].rayMul(
+            (WadRayMath.ray() + supplyP2PSPY[_marketAddress]).rayPow(timeDifference)
         ); // In ray
+        supplyP2PExchangeRate[_marketAddress] = newSupplyP2PExchangeRate;
 
-        p2pExchangeRate[_marketAddress] = newP2PExchangeRate;
-        emit P2PExchangeRateUpdated(_marketAddress, newP2PExchangeRate);
+        uint256 newBorrowP2PExchangeRate = borrowP2PExchangeRate[_marketAddress].rayMul(
+            (WadRayMath.ray() + borrowP2PSPY[_marketAddress]).rayPow(timeDifference)
+        ); // In ray
+        supplyP2PExchangeRate[_marketAddress] = newBorrowP2PExchangeRate;
+
+        emit P2PExchangesRateUpdated(
+            _marketAddress,
+            newSupplyP2PExchangeRate,
+            newBorrowP2PExchangeRate
+        );
     }
 
-    /// @dev Updates the Second Percentage Yield (`p2pSPY`).
+    /// @dev Updates the P2P Second Percentage Yield of supply and borrow.
     /// @param _marketAddress The address of the market to update.
-    function _updateSPY(address _marketAddress) internal {
+    function _updateSPYs(address _marketAddress) internal {
         DataTypes.ReserveData memory reserveData = lendingPool.getReserveData(
             IAToken(_marketAddress).UNDERLYING_ASSET_ADDRESS()
         );
 
-        p2pSPY[_marketAddress] =
-            Math.average(reserveData.currentLiquidityRate, reserveData.currentVariableBorrowRate) /
-            SECONDS_PER_YEAR; // In ray
-        emit P2PSPYUpdated(_marketAddress, p2pSPY[_marketAddress]);
+        uint256 meanSPY = Math.average(
+            reserveData.currentLiquidityRate,
+            reserveData.currentVariableBorrowRate
+        ) / SECONDS_PER_YEAR; // In ray
+
+        uint256 feeSpread = ((reserveData.currentVariableBorrowRate -
+            reserveData.currentLiquidityRate) / SECONDS_PER_YEAR).rayMul(feeFactor);
+
+        supplyP2PSPY[_marketAddress] = meanSPY - (feeSpread / 2);
+        borrowP2PSPY[_marketAddress] = meanSPY + (feeSpread / 2);
+
+        emit P2PSPYsUpdated(
+            _marketAddress,
+            supplyP2PSPY[_marketAddress],
+            borrowP2PSPY[_marketAddress]
+        );
     }
 }
