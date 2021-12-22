@@ -13,6 +13,14 @@ const bigNumberMin = (a: BigNumber, b: BigNumber): BigNumber => {
 const removeDigitsBigNumber = (decimalsToRemove: number, number: BigNumber): BigNumber =>
   number.sub(number.mod(BigNumber.from(10).pow(decimalsToRemove))).div(BigNumber.from(10).pow(decimalsToRemove));
 
+const roundBigNumber = (decimalsToRemove: number, number: BigNumber): BigNumber => {
+  let precision: BigNumber = BigNumber.from(10).pow(decimalsToRemove);
+  let division: BigNumber = number.div(precision);
+  let floor: BigNumber = precision.mul(division);
+  let ceiling: BigNumber = precision.mul(division.add(1));
+  return number.sub(floor).gt(precision.div(2)) ? ceiling : floor;
+};
+
 const removeDigits = (decimalsToRemove: number, number: number): number =>
   (number - (number % 10 ** decimalsToRemove)) / 10 ** decimalsToRemove;
 
@@ -47,4 +55,4 @@ const getTokens = async (
   return token;
 };
 
-export { WAD, MAX_INT, removeDigitsBigNumber, bigNumberMin, removeDigits, to6Decimals, getTokens };
+export { WAD, MAX_INT, removeDigitsBigNumber, bigNumberMin, removeDigits, to6Decimals, getTokens, roundBigNumber };
