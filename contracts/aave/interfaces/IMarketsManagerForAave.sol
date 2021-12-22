@@ -6,17 +6,17 @@ interface IMarketsManagerForAave {
 
     function isCreated(address _marketAddress) external returns (bool);
 
-    function p2pSPY(address _marketAddress) external returns (uint256);
+    function supplyP2PSPY(address _marketAddress) external returns (uint256);
 
-    function collateralFactor(address _marketAddress) external returns (uint256);
+    function borrowP2PSPY(address _marketAddress) external returns (uint256);
 
     function liquidationIncentive(address _marketAddress) external returns (uint256);
 
-    function p2pExchangeRate(address _marketAddress) external returns (uint256);
+    function supplyP2PExchangeRate(address _marketAddress) external returns (uint256);
+
+    function borrowP2PExchangeRate(address _marketAddress) external returns (uint256);
 
     function lastUpdateBlockNumber(address _marketAddress) external returns (uint256);
-
-    function threshold(address _marketAddress) external returns (uint256);
 
     function updateRates(address _marketAddress) external;
 }
