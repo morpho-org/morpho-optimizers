@@ -42,8 +42,11 @@ contract PositionsManagerForAaveStorage is ReentrancyGuard {
     mapping(address => mapping(address => BorrowBalance)) public borrowBalanceInOf; // For a given market, the borrow balance of user.
     mapping(address => mapping(address => bool)) public accountMembership; // Whether the account is in the market or not.
     mapping(address => address[]) public enteredMarkets; // Markets entered by a user.
-    mapping(address => uint256) public threshold; // Thresholds below the ones suppliers and borrowers cannot enter markets.
-    mapping(address => uint256) public capValue; // Caps above the ones suppliers cannot add more liquidity.
+    mapping(address => uint256) public threshold; // Thresholds below which suppliers and borrowers cannot enter markets.
+    mapping(address => uint256) public capValue; // Caps above which suppliers cannot add more liquidity.
+    mapping(address => uint256) public p2pBalance; // Total amount matched in P2P, in underlying.
+    mapping(address => uint256) public treasuryBalance; // Treasury balance, in underlying.
+    mapping(address => uint256) public treasuryBalanceLastUpdateTimestamp; // Last time treasuryBalance was updated.
 
     IMarketsManagerForAave public marketsManagerForAave;
     ILendingPoolAddressesProvider public addressesProvider;
