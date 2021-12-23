@@ -53,6 +53,7 @@ describe('PositionsManagerForAave Contract', () => {
   let borrower2: Signer;
   let borrower3: Signer;
   let liquidator: Signer;
+  let attacker: Signer;
 
   let underlyingThreshold: BigNumber;
   let snapshotId: number;
@@ -60,7 +61,7 @@ describe('PositionsManagerForAave Contract', () => {
   const initialize = async () => {
     // Signers
     signers = await ethers.getSigners();
-    [owner, supplier1, supplier2, supplier3, borrower1, borrower2, borrower3, liquidator] = signers;
+    [owner, supplier1, supplier2, supplier3, borrower1, borrower2, borrower3, liquidator, attacker] = signers;
     suppliers = [supplier1, supplier2, supplier3];
     borrowers = [borrower1, borrower2, borrower3];
 
@@ -1280,15 +1281,42 @@ describe('PositionsManagerForAave Contract', () => {
     it('Should not be possible to withdraw amount if the position turns to be under-collateralized', async () => {
       const toSupply = utils.parseUnits('100');
       const toBorrow = to6Decimals(utils.parseUnits('50'));
+
       // supplier1 deposits collateral
       await daiToken.connect(supplier1).approve(positionsManagerForAave.address, toSupply);
       await positionsManagerForAave.connect(supplier1).supply(config.tokens.aDai.address, toSupply);
+
       // supplier2 deposits collateral
       await daiToken.connect(supplier2).approve(positionsManagerForAave.address, toSupply);
       await positionsManagerForAave.connect(supplier2).supply(config.tokens.aDai.address, toSupply);
+
       // supplier1 tries to withdraw more than allowed
       await positionsManagerForAave.connect(supplier1).borrow(config.tokens.aUsdc.address, toBorrow);
       expect(positionsManagerForAave.connect(supplier1).withdraw(config.tokens.aDai.address, toSupply)).to.be.reverted;
+    });
+
+    it('Should be possible to withdraw amount while an attacker sends aToken to trick Morpho contract', async () => {
+      const toSupply = utils.parseUnits('100');
+      const toSupplyCollateral = to6Decimals(utils.parseUnits('200'));
+      const toBorrow = toSupply;
+
+      // attacker sends aToken to positionsManager contract
+      await daiToken.connect(attacker).approve(lendingPool.address, toSupply);
+      const attackerAddress = await attacker.getAddress();
+      await lendingPool.connect(attacker).deposit(daiToken.address, toSupply, attackerAddress, 0);
+      await aDaiToken.connect(attacker).transfer(positionsManagerForAave.address, toSupply);
+
+      // supplier1 deposits collateral
+      await daiToken.connect(supplier1).approve(positionsManagerForAave.address, toSupply);
+      await positionsManagerForAave.connect(supplier1).supply(config.tokens.aDai.address, toSupply);
+
+      // borrower1 deposits collateral
+      await usdcToken.connect(borrower1).approve(positionsManagerForAave.address, toSupplyCollateral);
+      await positionsManagerForAave.connect(borrower1).supply(config.tokens.aUsdc.address, toSupplyCollateral);
+
+      // supplier1 tries to withdraw
+      await positionsManagerForAave.connect(borrower1).borrow(config.tokens.aDai.address, toBorrow);
+      await expect(positionsManagerForAave.connect(supplier1).withdraw(config.tokens.aDai.address, toSupply)).to.not.be.reverted;
     });
   });
 });
