@@ -712,18 +712,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
             _amount.divWadByRay(p2pExchangeRate)
         ); // In p2pUnit
         _updateSupplierList(poolTokenAddress, _supplier);
-
-        uint256 poolTokenContractBalance = _poolToken.balanceOf(address(this));
-        uint256 supplyToMatch = Math.min(poolTokenContractBalance, _amount);
-        uint256 matchedSupply;
-        if (supplyToMatch > 0)
-            matchedSupply = _matchSuppliers(_poolToken, _underlyingToken, supplyToMatch);
-
-        require(
-            // If the requested amount is less than what Morpho is supplying, liquidity should be totally available to withdraw because Morpho is supplying it.
-            _amount > poolTokenContractBalance || matchedSupply == supplyToMatch,
-            Errors.PM_COULD_NOT_MATCH_FULL_AMOUNT
-        );
+        uint256 matchedSupply = _matchSuppliers(_poolToken, _underlyingToken, _amount);
 
         if (_amount > matchedSupply) {
             uint256 remainingBorrowToUnmatch = _unmatchBorrowers(
