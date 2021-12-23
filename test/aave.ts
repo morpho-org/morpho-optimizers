@@ -696,8 +696,8 @@ describe('PositionsManagerForAave Contract', () => {
         .onPool;
       const supplyBalanceInP2P2 = (await positionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier1.getAddress()))
         .inP2P;
-      expect(removeDigitsBigNumber(3, supplyBalanceOnPool2)).to.equal(removeDigitsBigNumber(3, expectedSupplyBalanceOnPool2));
-      expect(removeDigitsBigNumber(3, supplyBalanceInP2P2)).to.equal(removeDigitsBigNumber(3, expectedSupplyBalanceInP2P2));
+      expect(removeDigitsBigNumber(4, supplyBalanceOnPool2)).to.equal(removeDigitsBigNumber(4, expectedSupplyBalanceOnPool2));
+      expect(removeDigitsBigNumber(4, supplyBalanceInP2P2)).to.equal(removeDigitsBigNumber(4, expectedSupplyBalanceInP2P2));
 
       // Check borrower1 balances
       const expectedBorrowBalanceInP2P1 = expectedSupplyBalanceInP2P2;
