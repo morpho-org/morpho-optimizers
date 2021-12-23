@@ -1,12 +1,16 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.7;
 
+import "@openzeppelin/contracts/utils/Address.sol";
+
 import "./interfaces/IPositionsUpdator.sol";
 import "./interfaces/IPositionsUpdatorLogic.sol";
 import "./libraries/ErrorsForPositionsUpdator.sol";
 import "./PositionsUpdatorStorage.sol";
 
 contract PositionsUpdator is IPositionsUpdator, PositionsUpdatorStorage {
+    using Address for address;
+
     /* Constructor */
 
     constructor(
@@ -42,15 +46,15 @@ contract PositionsUpdator is IPositionsUpdator, PositionsUpdatorStorage {
         override
         onlyOwner
     {
-        (bool success, ) = address(positionsUpdatorLogic).delegatecall(
+        address(positionsUpdatorLogic).functionDelegateCall(
             abi.encodeWithSelector(
                 positionsUpdatorLogic.updateBorrowerPositions.selector,
                 _poolTokenAddress,
                 _account,
                 maxIterations
-            )
+            ),
+            ErrorsPU.PU_UPDATE_BORROWER_POSITIONS_FAIL
         );
-        require(success, ErrorsPU.PU_UPDATE_BORROWER_POSITIONS_FAIL);
     }
 
     /** @dev Updates suppliers tree with the new balances of a given account.
@@ -62,15 +66,15 @@ contract PositionsUpdator is IPositionsUpdator, PositionsUpdatorStorage {
         override
         onlyOwner
     {
-        (bool success, ) = address(positionsUpdatorLogic).delegatecall(
+        address(positionsUpdatorLogic).functionDelegateCall(
             abi.encodeWithSelector(
                 positionsUpdatorLogic.updateSupplierPositions.selector,
                 _poolTokenAddress,
                 _account,
                 maxIterations
-            )
+            ),
+            ErrorsPU.PU_UPDATE_SUPPLIER_POSITIONS_FAIL
         );
-        require(success, ErrorsPU.PU_UPDATE_SUPPLIER_POSITIONS_FAIL);
     }
 
     function getBorrowerAccountOnPool(address _poolTokenAddress)
@@ -79,13 +83,13 @@ contract PositionsUpdator is IPositionsUpdator, PositionsUpdatorStorage {
         onlyOwner
         returns (address)
     {
-        (bool success, bytes memory result) = address(positionsUpdatorLogic).delegatecall(
+        bytes memory result = address(positionsUpdatorLogic).functionDelegateCall(
             abi.encodeWithSelector(
                 positionsUpdatorLogic.getBorrowerAccountOnPool.selector,
                 _poolTokenAddress
-            )
+            ),
+            ErrorsPU.PU_GET_BORROWER_ACCOUNT_ON_POOL
         );
-        require(success, ErrorsPU.PU_GET_BORROWER_ACCOUNT_ON_POOL);
         return abi.decode(result, (address));
     }
 
@@ -95,13 +99,13 @@ contract PositionsUpdator is IPositionsUpdator, PositionsUpdatorStorage {
         onlyOwner
         returns (address)
     {
-        (bool success, bytes memory result) = address(positionsUpdatorLogic).delegatecall(
+        bytes memory result = address(positionsUpdatorLogic).functionDelegateCall(
             abi.encodeWithSelector(
                 positionsUpdatorLogic.getBorrowerAccountInP2P.selector,
                 _poolTokenAddress
-            )
+            ),
+            ErrorsPU.PU_GET_BORROWER_ACCOUNT_IN_P2P
         );
-        require(success, ErrorsPU.PU_GET_BORROWER_ACCOUNT_IN_P2P);
         return abi.decode(result, (address));
     }
 
@@ -111,13 +115,13 @@ contract PositionsUpdator is IPositionsUpdator, PositionsUpdatorStorage {
         onlyOwner
         returns (address)
     {
-        (bool success, bytes memory result) = address(positionsUpdatorLogic).delegatecall(
+        bytes memory result = address(positionsUpdatorLogic).functionDelegateCall(
             abi.encodeWithSelector(
                 positionsUpdatorLogic.getSupplierAccountOnPool.selector,
                 _poolTokenAddress
-            )
+            ),
+            ErrorsPU.PU_GET_SUPPLIER_ACCOUNT_ON_POOL
         );
-        require(success, ErrorsPU.PU_GET_SUPPLIER_ACCOUNT_ON_POOL);
         return abi.decode(result, (address));
     }
 
@@ -127,13 +131,13 @@ contract PositionsUpdator is IPositionsUpdator, PositionsUpdatorStorage {
         onlyOwner
         returns (address)
     {
-        (bool success, bytes memory result) = address(positionsUpdatorLogic).delegatecall(
+        bytes memory result = address(positionsUpdatorLogic).functionDelegateCall(
             abi.encodeWithSelector(
                 positionsUpdatorLogic.getSupplierAccountInP2P.selector,
                 _poolTokenAddress
-            )
+            ),
+            ErrorsPU.PU_GET_SUPPLIER_ACCOUNT_IN_P2P
         );
-        require(success, ErrorsPU.PU_GET_SUPPLIER_ACCOUNT_IN_P2P);
         return abi.decode(result, (address));
     }
 }
