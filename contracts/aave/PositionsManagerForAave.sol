@@ -772,23 +772,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
             _amount.divWadByRay(p2pExchangeRate)
         ); // In p2pUnit
         _updateBorrowerList(poolTokenAddress, _borrower);
-        DataTypes.ReserveData memory reserveData = lendingPool.getReserveData(
-            address(_underlyingToken)
-        );
-        IVariableDebtToken variableDebtToken = IVariableDebtToken(
-            reserveData.variableDebtTokenAddress
-        );
-        uint256 debtTokenContractBalance = variableDebtToken.scaledBalanceOf(address(this));
-        uint256 borrowToMatch = Math.min(debtTokenContractBalance, _amount);
-        uint256 matchedBorrow;
-        if (borrowToMatch > 0)
-            matchedBorrow = _matchBorrowers(_poolToken, _underlyingToken, borrowToMatch);
-
-        require(
-            // If the requested amount is less than what Morpho is borrowing, liquidity should be totally available to repay because Morpho is borrowing it.
-            _amount > debtTokenContractBalance || matchedBorrow == borrowToMatch,
-            Errors.PM_COULD_NOT_MATCH_FULL_AMOUNT
-        );
+        uint256 matchedBorrow = _matchBorrowers(_poolToken, _underlyingToken, _amount);
 
         if (_amount > matchedBorrow) {
             uint256 remainingSupplyToUnmatch = _unmatchSuppliers(
