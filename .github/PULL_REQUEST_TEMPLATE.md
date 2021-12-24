@@ -18,7 +18,7 @@ These boxes must be checked before the PR is labelled as `ready-for-review`:
 
 - [ ] I have linked the PR to the related issue if any
 - [ ] I re-read the whole issue and all the checklist is done
-- [ ] I have checked all inits in calculations
+- [ ] I have checked all units in calculations
 - [ ] I have followed all naming and comment conventions
 - [ ] I have checked there is no typo in my code
 - [ ] I have added, updated or removed the comments accordingly to my changes
