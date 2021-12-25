@@ -15,7 +15,7 @@ async function main() {
   const marketsManagerForAave = await MarketsManagerForAave.deploy(config.aave.lendingPoolAddressesProvider.address);
   await marketsManagerForAave.deployed();
 
-  await marketsManagerForAave.connect(deployer).setLendingPool();
+  await marketsManagerForAave.connect(deployer).updateLendingPool();
   console.log('🎉 MarketsManagerForAave deployed to address:', marketsManagerForAave.address);
 
   console.log('\n🦋 Verifying MarketsManagerForAave on Tenderly...');
