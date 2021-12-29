@@ -34,7 +34,7 @@
     },
     "usdc": {
       "address": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
-      "whale": "0x004375dff511095cc5a197a54140a24efef3a416",
+      "whale": "0x72a53cdbbcc1b9efa39c834a540550e23463aacb",
       "abi": "@config/abis/mainnet/USDC.json"
     },
     "usdt": {
