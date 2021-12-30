@@ -498,25 +498,65 @@ contract PositionsManagerForAave is ReentrancyGuard {
         address _receiver
     ) internal isMarketCreated(_poolTokenAddress) {
         require(_amount > 0, Errors.PM_AMOUNT_IS_0);
-        _checkAccountLiquidity(_supplier, _poolTokenAddress, _amount, 0);
         IAToken poolToken = IAToken(_poolTokenAddress);
         IERC20 underlyingToken = IERC20(poolToken.UNDERLYING_ASSET_ADDRESS());
-        uint256 remainingToWithdraw = _amount;
-
-        /* If user has some tokens waiting on Aave */
-        if (supplyBalanceInOf[_poolTokenAddress][_supplier].onPool > 0)
-            remainingToWithdraw -= _withdrawPositionFromPool(
-                poolToken,
-                underlyingToken,
+        if (_amount == type(uint256).max) {
+            uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(
+                address(underlyingToken)
+            );
+            uint256 p2pExchangeRate = marketsManagerForAave.p2pExchangeRate(_poolTokenAddress);
+            uint256 onPoolInUnderlying = supplyBalanceInOf[_poolTokenAddress][_supplier]
+                .onPool
+                .mulWadByRay(normalizedIncome);
+            uint256 inP2PInUnderlying = supplyBalanceInOf[_poolTokenAddress][_supplier]
+                .inP2P
+                .mulWadByRay(p2pExchangeRate);
+            _checkAccountLiquidity(
                 _supplier,
-                remainingToWithdraw
+                _poolTokenAddress,
+                onPoolInUnderlying + inP2PInUnderlying,
+                0
             );
 
-        /* If there remains some tokens to withdraw (CASE 2), Morpho breaks credit lines and repair them either with other users or with Aave itself */
-        if (remainingToWithdraw > 0)
-            _withdrawPositionFromP2P(poolToken, underlyingToken, _supplier, remainingToWithdraw);
+            /* If user has some tokens waiting on Aave */
+            if (onPoolInUnderlying > 0)
+                _withdrawPositionFromPool(
+                    poolToken,
+                    underlyingToken,
+                    _supplier,
+                    onPoolInUnderlying
+                );
 
-        underlyingToken.safeTransfer(_receiver, _amount);
+            /* If there remains some tokens to withdraw (CASE 2), Morpho breaks credit lines and repair them either with other users or with Aave itself */
+            if (inP2PInUnderlying > 0)
+                _withdrawPositionFromP2P(poolToken, underlyingToken, _supplier, inP2PInUnderlying);
+
+            underlyingToken.safeTransfer(_receiver, onPoolInUnderlying + inP2PInUnderlying);
+        } else {
+            _checkAccountLiquidity(_supplier, _poolTokenAddress, _amount, 0);
+            uint256 remainingToWithdraw = _amount;
+
+            /* If user has some tokens waiting on Aave */
+            if (supplyBalanceInOf[_poolTokenAddress][_supplier].onPool > 0)
+                remainingToWithdraw -= _withdrawPositionFromPool(
+                    poolToken,
+                    underlyingToken,
+                    _supplier,
+                    remainingToWithdraw
+                );
+
+            /* If there remains some tokens to withdraw (CASE 2), Morpho breaks credit lines and repair them either with other users or with Aave itself */
+            if (remainingToWithdraw > 0)
+                _withdrawPositionFromP2P(
+                    poolToken,
+                    underlyingToken,
+                    _supplier,
+                    remainingToWithdraw
+                );
+
+            underlyingToken.safeTransfer(_receiver, _amount);
+        }
+
         emit Withdrawn(
             _supplier,
             _poolTokenAddress,
