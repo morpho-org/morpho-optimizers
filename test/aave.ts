@@ -257,6 +257,16 @@ describe('PositionsManagerForAave Contract', () => {
         .reverted;
     });
 
+    it('Should be able to withdraw all (on Pool only)', async () => {
+      const amount = utils.parseUnits('20');
+      const daiBalanceBefore = await daiToken.balanceOf(supplier1.getAddress());
+      await daiToken.connect(supplier1).approve(positionsManagerForAave.address, amount);
+      await positionsManagerForAave.connect(supplier1).supply(config.tokens.aDai.address, amount);
+      await positionsManagerForAave.connect(supplier1).withdraw(config.tokens.aDai.address, MAX_INT);
+      const daiBalanceAfter = await daiToken.balanceOf(supplier1.getAddress());
+      expect(daiBalanceAfter).to.be.gt(daiBalanceBefore);
+    });
+
     it('Should be able to supply more ERC20 after already having supply ERC20', async () => {
       const amount = utils.parseUnits('10');
       const amountToApprove = utils.parseUnits('10').mul(2);
@@ -496,6 +506,20 @@ describe('PositionsManagerForAave Contract', () => {
         )
       ).to.equal(removeDigitsBigNumber(2, expectedBalanceOnPool));
       expect(daiBalanceAfter).to.equal(daiBalanceBefore.add(maxToBorrow).sub(toRepay));
+    });
+
+    it('Borrower should be able to repay all (only on Pool)', async () => {
+      const amount = to6Decimals(utils.parseUnits('100'));
+      const toBorrow = utils.parseUnits('50');
+      const hugeAmount = utils.parseUnits('100');
+      await usdcToken.connect(borrower1).approve(positionsManagerForAave.address, amount);
+      await positionsManagerForAave.connect(borrower1).supply(config.tokens.aUsdc.address, amount);
+      await positionsManagerForAave.connect(borrower1).borrow(config.tokens.aDai.address, toBorrow);
+
+      // Repay all
+      await daiToken.connect(borrower1).approve(positionsManagerForAave.address, hugeAmount);
+      await positionsManagerForAave.connect(borrower1).repay(config.tokens.aDai.address, MAX_INT);
+      expect((await positionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower1.getAddress())).onPool).to.equal(0);
     });
   });
 
@@ -1013,6 +1037,45 @@ describe('PositionsManagerForAave Contract', () => {
       expect((await positionsManagerForAave.supplyBalanceInOf(config.tokens.cDai.address, supplier1.getAddress())).onPool).to.be.lte(1);
       expect((await positionsManagerForAave.supplyBalanceInOf(config.tokens.cDai.address, supplier2.getAddress())).onPool).to.be.lte(1);
       expect((await positionsManagerForAave.supplyBalanceInOf(config.tokens.cDai.address, supplier3.getAddress())).onPool).to.be.lte(1);
+    });
+
+    it('Borrower should be able to repay all (on Pool and in P2P)', async () => {
+      const amount = to6Decimals(utils.parseUnits('100'));
+      const toBorrow = utils.parseUnits('50');
+      const hugeAmount = utils.parseUnits('100');
+      const toSupply = utils.parseUnits('20');
+
+      await daiToken.connect(supplier1).approve(positionsManagerForAave.address, toSupply);
+      await positionsManagerForAave.connect(supplier1).supply(config.tokens.aDai.address, toSupply);
+      await usdcToken.connect(borrower1).approve(positionsManagerForAave.address, amount);
+      await positionsManagerForAave.connect(borrower1).supply(config.tokens.aUsdc.address, amount);
+      await positionsManagerForAave.connect(borrower1).borrow(config.tokens.aDai.address, toBorrow);
+
+      // Repay all
+      await daiToken.connect(borrower1).approve(positionsManagerForAave.address, hugeAmount);
+      await positionsManagerForAave.connect(borrower1).repay(config.tokens.aDai.address, MAX_INT);
+      expect((await positionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower1.getAddress())).onPool).to.equal(0);
+      expect((await positionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower1.getAddress())).inP2P).to.equal(0);
+    });
+
+    it('Should be able to withdraw all (in P2P and on Pool)', async () => {
+      const amount = to6Decimals(utils.parseUnits('100'));
+      const toBorrow = utils.parseUnits('50');
+      const toSupply = utils.parseUnits('20');
+
+      const daiBalanceBefore = await daiToken.balanceOf(supplier1.getAddress());
+      await daiToken.connect(supplier1).approve(positionsManagerForAave.address, toSupply);
+      await positionsManagerForAave.connect(supplier1).supply(config.tokens.aDai.address, toSupply);
+      await usdcToken.connect(borrower1).approve(positionsManagerForAave.address, amount);
+      await positionsManagerForAave.connect(borrower1).supply(config.tokens.aUsdc.address, amount);
+      await positionsManagerForAave.connect(borrower1).borrow(config.tokens.aDai.address, toBorrow);
+
+      // Withdraw all
+      await positionsManagerForAave.connect(supplier1).withdraw(config.tokens.aDai.address, MAX_INT);
+      const daiBalanceAfter = await daiToken.balanceOf(supplier1.getAddress());
+      expect((await positionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier1.getAddress())).onPool).to.equal(0);
+      expect((await positionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier1.getAddress())).inP2P).to.equal(0);
+      expect(daiBalanceAfter).to.be.gt(daiBalanceBefore);
     });
   });
 
