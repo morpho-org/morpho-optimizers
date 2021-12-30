@@ -541,21 +541,47 @@ contract PositionsManagerForAave is ReentrancyGuard {
         marketsManagerForAave.updateRates(_poolTokenAddress);
         IAToken poolToken = IAToken(_poolTokenAddress);
         IERC20 underlyingToken = IERC20(poolToken.UNDERLYING_ASSET_ADDRESS());
-        underlyingToken.safeTransferFrom(msg.sender, address(this), _amount);
-        uint256 remainingToRepay = _amount;
-
-        /* If user is borrowing tokens on Aave */
-        if (borrowBalanceInOf[_poolTokenAddress][_borrower].onPool > 0)
-            remainingToRepay -= _repayPositionToPool(
-                poolToken,
-                underlyingToken,
-                _borrower,
-                remainingToRepay
+        if (_amount == type(uint256).max) {
+            uint256 normalizedVariableDebt = lendingPool.getReserveNormalizedVariableDebt(
+                address(underlyingToken)
+            );
+            uint256 p2pExchangeRate = marketsManagerForAave.p2pExchangeRate(_poolTokenAddress);
+            uint256 onPoolInUnderlying = borrowBalanceInOf[_poolTokenAddress][_borrower]
+                .onPool
+                .mulWadByRay(normalizedVariableDebt);
+            uint256 inP2PInUnderlying = borrowBalanceInOf[_poolTokenAddress][_borrower]
+                .inP2P
+                .mulWadByRay(p2pExchangeRate);
+            underlyingToken.safeTransferFrom(
+                msg.sender,
+                address(this),
+                onPoolInUnderlying + inP2PInUnderlying
             );
 
-        /* If there remains some tokens to repay (CASE 2), Morpho breaks credit lines and repair them either with other users or with Aave itself */
-        if (remainingToRepay > 0)
-            _repayPositionToP2P(poolToken, underlyingToken, _borrower, remainingToRepay);
+            /* If user is borrowing tokens on Aave */
+            if (onPoolInUnderlying > 0)
+                _repayPositionToPool(poolToken, underlyingToken, _borrower, onPoolInUnderlying);
+
+            /* If there remains some tokens to repay (CASE 2), Morpho breaks credit lines and repair them either with other users or with Aave itself */
+            if (inP2PInUnderlying > 0)
+                _repayPositionToP2P(poolToken, underlyingToken, _borrower, inP2PInUnderlying);
+        } else {
+            underlyingToken.safeTransferFrom(msg.sender, address(this), _amount);
+            uint256 remainingToRepay = _amount;
+
+            /* If user is borrowing tokens on Aave */
+            if (borrowBalanceInOf[_poolTokenAddress][_borrower].onPool > 0)
+                remainingToRepay -= _repayPositionToPool(
+                    poolToken,
+                    underlyingToken,
+                    _borrower,
+                    remainingToRepay
+                );
+
+            /* If there remains some tokens to repay (CASE 2), Morpho breaks credit lines and repair them either with other users or with Aave itself */
+            if (remainingToRepay > 0)
+                _repayPositionToP2P(poolToken, underlyingToken, _borrower, remainingToRepay);
+        }
 
         emit Repaid(
             _borrower,
