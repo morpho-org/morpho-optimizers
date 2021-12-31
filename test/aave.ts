@@ -457,8 +457,8 @@ describe('PositionsManagerForAave Contract', () => {
 
       // Check Morpho balances
       expect(await daiToken.balanceOf(positionsManagerForAave.address)).to.equal(0);
-      expect(removeDigitsBigNumber(2, await variableDebtDaiToken.balanceOf(positionsManagerForAave.address))).to.equal(
-        removeDigitsBigNumber(2, expectedMorphoBorrowBalance)
+      expect(removeDigitsBigNumber(3, await variableDebtDaiToken.balanceOf(positionsManagerForAave.address))).to.equal(
+        removeDigitsBigNumber(3, expectedMorphoBorrowBalance)
       );
     });
 
@@ -508,7 +508,7 @@ describe('PositionsManagerForAave Contract', () => {
       expect(daiBalanceAfter).to.equal(daiBalanceBefore.add(maxToBorrow).sub(toRepay));
     });
 
-    it('Borrower should be able to repay all (only on Pool)', async () => {
+    it('Borrower should be able to repay all (on Pool only)', async () => {
       const amount = to6Decimals(utils.parseUnits('100'));
       const toBorrow = utils.parseUnits('50');
       const hugeAmount = utils.parseUnits('100');
@@ -1058,7 +1058,7 @@ describe('PositionsManagerForAave Contract', () => {
       expect((await positionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower1.getAddress())).inP2P).to.equal(0);
     });
 
-    it('Should be able to withdraw all (in P2P and on Pool)', async () => {
+    it('Should be able to withdraw all (on Pool and in P2P)', async () => {
       const amount = to6Decimals(utils.parseUnits('100'));
       const toBorrow = utils.parseUnits('50');
       const toSupply = utils.parseUnits('20');
