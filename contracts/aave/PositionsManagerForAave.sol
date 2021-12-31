@@ -509,13 +509,11 @@ contract PositionsManagerForAave is ReentrancyGuard {
                 address(underlyingToken)
             );
             uint256 p2pExchangeRate = marketsManagerForAave.p2pExchangeRate(_poolTokenAddress);
-            uint256 onPoolInUnderlying = supplyBalanceInOf[_poolTokenAddress][_supplier]
-                .onPool
-                .mulWadByRay(normalizedIncome);
-            uint256 inP2PInUnderlying = supplyBalanceInOf[_poolTokenAddress][_supplier]
-                .inP2P
-                .mulWadByRay(p2pExchangeRate);
-            amount = onPoolInUnderlying + inP2PInUnderlying;
+            amount =
+                supplyBalanceInOf[_poolTokenAddress][_supplier].onPool.mulWadByRay(
+                    normalizedIncome
+                ) +
+                supplyBalanceInOf[_poolTokenAddress][_supplier].inP2P.mulWadByRay(p2pExchangeRate);
         }
         /* Withdraw _amount */
         else amount = _amount;
