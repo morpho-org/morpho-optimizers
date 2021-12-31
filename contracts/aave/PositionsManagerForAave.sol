@@ -501,6 +501,8 @@ contract PositionsManagerForAave is ReentrancyGuard {
         marketsManagerForAave.updateRates(_poolTokenAddress);
         IAToken poolToken = IAToken(_poolTokenAddress);
         IERC20 underlyingToken = IERC20(poolToken.UNDERLYING_ASSET_ADDRESS());
+
+        /* Withdraw all */
         if (_amount == type(uint256).max) {
             uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(
                 address(underlyingToken)
@@ -533,7 +535,9 @@ contract PositionsManagerForAave is ReentrancyGuard {
                 _withdrawPositionFromP2P(poolToken, underlyingToken, _supplier, inP2PInUnderlying);
 
             underlyingToken.safeTransfer(_receiver, onPoolInUnderlying + inP2PInUnderlying);
-        } else {
+        }
+        /* Withdraw _amount */
+        else {
             _checkAccountLiquidity(_supplier, _poolTokenAddress, _amount, 0);
             uint256 remainingToWithdraw = _amount;
 
@@ -582,6 +586,8 @@ contract PositionsManagerForAave is ReentrancyGuard {
         marketsManagerForAave.updateRates(_poolTokenAddress);
         IAToken poolToken = IAToken(_poolTokenAddress);
         IERC20 underlyingToken = IERC20(poolToken.UNDERLYING_ASSET_ADDRESS());
+
+        /* Repay all */
         if (_amount == type(uint256).max) {
             uint256 normalizedVariableDebt = lendingPool.getReserveNormalizedVariableDebt(
                 address(underlyingToken)
@@ -606,7 +612,9 @@ contract PositionsManagerForAave is ReentrancyGuard {
             /* If there remains some tokens to repay (CASE 2), Morpho breaks credit lines and repair them either with other users or with Aave itself */
             if (inP2PInUnderlying > 0)
                 _repayPositionToP2P(poolToken, underlyingToken, _borrower, inP2PInUnderlying);
-        } else {
+        }
+        /* Repay _amount */
+        else {
             underlyingToken.safeTransferFrom(msg.sender, address(this), _amount);
             uint256 remainingToRepay = _amount;
 
