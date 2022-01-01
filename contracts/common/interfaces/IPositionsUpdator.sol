@@ -2,6 +2,8 @@
 pragma solidity 0.8.7;
 
 interface IPositionsUpdator {
+    function updateMaxIterations(uint16 _maxIterations) external;
+
     function updateBorrowerPositions(address _poolTokenAddress, address _account) external;
 
     function updateSupplierPositions(address _poolTokenAddress, address _account) external;

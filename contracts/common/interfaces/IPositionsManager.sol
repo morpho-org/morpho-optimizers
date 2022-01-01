@@ -16,7 +16,7 @@ interface IPositionsManager {
 
     function updateMaxIterations(uint16) external;
 
-    function updatePositionsUpdatorLogic(address) external;
+    function updatePositionsUpdator(address) external;
 
     function setThreshold(address, uint256) external;
 

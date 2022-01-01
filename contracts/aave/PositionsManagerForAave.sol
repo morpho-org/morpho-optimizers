@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 
-import "../common/PositionsUpdator.sol";
+import "../common/interfaces/IPositionsUpdator.sol";
 
 import "./libraries/aave/WadRayMath.sol";
 import "./libraries/ErrorsForAave.sol";
@@ -97,8 +97,8 @@ contract PositionsManagerForAave is ReentrancyGuard {
     mapping(address => uint256) public threshold; // Thresholds below the ones suppliers and borrowers cannot enter markets.
     mapping(address => uint256) public capValue; // Caps above the ones suppliers cannot add more liquidity.
 
-    PositionsUpdator public immutable positionsUpdator;
     IMarketsManagerForAave public immutable marketsManager;
+    IPositionsUpdator public positionsUpdator;
     ILendingPoolAddressesProvider public addressesProvider;
     IProtocolDataProvider public dataProvider;
     ILendingPool public lendingPool;
@@ -239,22 +239,12 @@ contract PositionsManagerForAave is ReentrancyGuard {
     /** @dev Constructs the PositionsManagerForAave contract.
      *  @param _marketsManager The address of the aave markets manager.
      *  @param _lendingPoolAddressesProvider The address of the lending pool addresses provider.
-     *  @param _positionsUpdatorLogic The address positions udpator logic.
      */
-    constructor(
-        address _marketsManager,
-        address _lendingPoolAddressesProvider,
-        address _positionsUpdatorLogic
-    ) {
+    constructor(address _marketsManager, address _lendingPoolAddressesProvider) {
         marketsManager = IMarketsManagerForAave(_marketsManager);
         addressesProvider = ILendingPoolAddressesProvider(_lendingPoolAddressesProvider);
         dataProvider = IProtocolDataProvider(addressesProvider.getAddress(DATA_PROVIDER_ID));
         lendingPool = ILendingPool(addressesProvider.getLendingPool());
-        positionsUpdator = new PositionsUpdator(
-            address(this),
-            _positionsUpdatorLogic,
-            maxIterations
-        );
     }
 
     /* External */
@@ -274,11 +264,8 @@ contract PositionsManagerForAave is ReentrancyGuard {
         positionsUpdator.updateMaxIterations(_maxIterations);
     }
 
-    function updatePositionsUpdatorLogic(address _positionsUpdatorLogic)
-        external
-        onlyMarketsManager
-    {
-        positionsUpdator.updatePositionsUpdatorLogic(_positionsUpdatorLogic);
+    function updatePositionsUpdator(address _positionsUpdator) external onlyMarketsManager {
+        positionsUpdator = IPositionsUpdator(_positionsUpdator);
     }
 
     /** @dev Sets the threshold of a market.

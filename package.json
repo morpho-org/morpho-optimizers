@@ -72,6 +72,8 @@
   "dependencies": {
     "@chainlink/contracts": "^0.2.1-beta.0",
     "@openzeppelin/contracts": "^4.2.0",
+    "@openzeppelin/contracts-upgradeable": "^4.4.1",
+    "@openzeppelin/hardhat-upgrades": "^1.12.0",
     "prb-math": "^2.2.0"
   },
   "husky": {

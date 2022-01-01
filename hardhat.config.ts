@@ -1,6 +1,7 @@
 import * as dotenv from 'dotenv';
 dotenv.config({ path: './.env.local' });
 import 'module-alias/register';
+import '@openzeppelin/hardhat-upgrades';
 import '@nomiclabs/hardhat-etherscan';
 import '@tenderly/hardhat-tenderly';
 import '@nomiclabs/hardhat-waffle';

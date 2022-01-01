@@ -1,7 +1,7 @@
 import * as dotenv from 'dotenv';
 dotenv.config({ path: './.env.local' });
 import { utils, BigNumber, Signer, Contract } from 'ethers';
-import hre, { ethers } from 'hardhat';
+import hre, { ethers, upgrades } from 'hardhat';
 import { expect } from 'chai';
 const config = require(`@config/${process.env.NETWORK}-config.json`);
 import { removeDigitsBigNumber, bigNumberMin, to6Decimals, getTokens } from './utils/common-helpers';
@@ -56,28 +56,32 @@ describe('PositionsManagerForCompound Contract', () => {
     suppliers = [supplier1, supplier2, supplier3];
     borrowers = [borrower1, borrower2, borrower3];
 
-    // Deploy PositionsUpdatorLogic
-    const PositionsUpdatorLogic = await ethers.getContractFactory('PositionsUpdatorLogic');
-    const positionsUpdatorLogic = await PositionsUpdatorLogic.deploy();
-    await positionsUpdatorLogic.deployed();
-
     // Deploy MarketsManagerForCompound
     const MarketsManagerForCompound = await ethers.getContractFactory('MarketsManagerForCompound');
-    marketsManagerForCompound = await MarketsManagerForCompound.deploy(config.compound.comptroller.address, positionsUpdatorLogic.address);
+    marketsManagerForCompound = await MarketsManagerForCompound.deploy(config.compound.comptroller.address);
     await marketsManagerForCompound.deployed();
 
-    // Get PositionsManager
+    // Get PositionsManager address
     positionsManagerForCompound = await ethers.getContractAt(
       'PositionsManagerForCompound',
       await marketsManagerForCompound.positionsManager()
     );
 
-    // Deploy PositionsManagerForCompound
+    // Deploy PositionsUpdator
+    const PositionsUpdator = await ethers.getContractFactory('PositionsUpdatorV1');
+    const positionsUpdator = await upgrades.deployProxy(PositionsUpdator, [positionsManagerForCompound.address, 20], {
+      unsafeAllow: ['delegatecall'],
+    });
+    await positionsUpdator.deployed();
+
+    // Set proxy
+    await marketsManagerForCompound.updatePositionsUpdator(positionsUpdator.address);
+
+    // Deploy Fake PositionsManagerForCompound
     const PositionsManagerForCompound = await ethers.getContractFactory('PositionsManagerForCompound');
     fakeCompoundPositionsManager = await PositionsManagerForCompound.deploy(
       marketsManagerForCompound.address,
-      config.compound.comptroller.address,
-      positionsUpdatorLogic.address
+      config.compound.comptroller.address
     );
     await fakeCompoundPositionsManager.deployed();
 

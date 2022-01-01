@@ -1,7 +1,7 @@
 import * as dotenv from 'dotenv';
 dotenv.config({ path: './.env.local' });
 import { utils, BigNumber, Signer, Contract } from 'ethers';
-import hre, { ethers } from 'hardhat';
+import hre, { ethers, upgrades } from 'hardhat';
 import { expect } from 'chai';
 const config = require(`@config/${process.env.NETWORK}-config.json`);
 import { MAX_INT, removeDigitsBigNumber, bigNumberMin, to6Decimals, getTokens } from './utils/common-helpers';
@@ -65,28 +65,29 @@ describe('PositionsManagerForAave Contract', () => {
     suppliers = [supplier1, supplier2, supplier3];
     borrowers = [borrower1, borrower2, borrower3];
 
-    // Deploy PositionsUpdatorLogic
-    const PositionsUpdatorLogic = await ethers.getContractFactory('PositionsUpdatorLogic');
-    const positionsUpdatorLogic = await PositionsUpdatorLogic.deploy();
-    await positionsUpdatorLogic.deployed();
-
     // Deploy MarketsManagerForAave
     const MarketsManagerForAave = await ethers.getContractFactory('MarketsManagerForAave');
-    marketsManagerForAave = await MarketsManagerForAave.deploy(
-      config.aave.lendingPoolAddressesProvider.address,
-      positionsUpdatorLogic.address
-    );
+    marketsManagerForAave = await MarketsManagerForAave.deploy(config.aave.lendingPoolAddressesProvider.address);
     await marketsManagerForAave.deployed();
 
-    // Get PositionsManager
+    // Get PositionsManager address
     positionsManagerForAave = await ethers.getContractAt('PositionsManagerForAave', await marketsManagerForAave.positionsManager());
 
-    // Deploy PositionsManagerForAave
+    // Deploy PositionsUpdator
+    const PositionsUpdator = await ethers.getContractFactory('PositionsUpdatorV1');
+    const positionsUpdator = await upgrades.deployProxy(PositionsUpdator, [positionsManagerForAave.address, 20], {
+      unsafeAllow: ['delegatecall'],
+    });
+    await positionsUpdator.deployed();
+
+    // Set proxy
+    await marketsManagerForAave.updatePositionsUpdator(positionsUpdator.address);
+
+    // Deploy Fake PositionsManagerForAave
     const PositionsManagerForAave = await ethers.getContractFactory('PositionsManagerForAave');
     fakeAavePositionsManager = await PositionsManagerForAave.deploy(
       marketsManagerForAave.address,
-      config.aave.lendingPoolAddressesProvider.address,
-      positionsUpdatorLogic.address
+      config.aave.lendingPoolAddressesProvider.address
     );
     await fakeAavePositionsManager.deployed();
 

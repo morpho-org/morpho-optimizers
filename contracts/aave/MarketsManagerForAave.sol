@@ -90,14 +90,12 @@ contract MarketsManagerForAave is Ownable {
 
     /** @dev Constructs the MarketsManagerForAave contract.
      *  @param _lendingPoolAddressesProvider The address of the lending pool addresses provider.
-     *  @param _positionsUpdatorLogic The address of the positions updator logic.
      */
-    constructor(address _lendingPoolAddressesProvider, address _positionsUpdatorLogic) {
+    constructor(address _lendingPoolAddressesProvider) {
         addressesProvider = ILendingPoolAddressesProvider(_lendingPoolAddressesProvider);
         positionsManager = new PositionsManagerForAave(
             address(this),
-            _lendingPoolAddressesProvider,
-            _positionsUpdatorLogic
+            _lendingPoolAddressesProvider
         );
     }
 
@@ -110,11 +108,11 @@ contract MarketsManagerForAave is Ownable {
         emit LendingPoolSet(address(lendingPool));
     }
 
-    /** @dev Updates the `positionsUpdatorLogic` address.
-     *  @param _positionsUpdatorLogic The new address of the `positionsUpdatorLogic`.
+    /** @dev Updates the `positionsUpdator` address.
+     *  @param _positionsUpdator The new address of the `positionsUpdator`.
      */
-    function updatePositionsUpdatorLogic(address _positionsUpdatorLogic) external onlyOwner {
-        positionsManager.updatePositionsUpdatorLogic(_positionsUpdatorLogic);
+    function updatePositionsUpdator(address _positionsUpdator) external onlyOwner {
+        positionsManager.updatePositionsUpdator(_positionsUpdator);
     }
 
     /** @dev Updates the `maxIterations` number on the `positionsManager`.

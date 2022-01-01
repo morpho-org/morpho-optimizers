@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 
-import "../common/PositionsUpdator.sol";
+import "../common/interfaces/IPositionsUpdator.sol";
 
 import "./libraries/CompoundMath.sol";
 import "./libraries/ErrorsForCompound.sol";
@@ -64,7 +64,7 @@ contract PositionsManagerForCompound is ReentrancyGuard {
     mapping(address => address[]) public enteredMarkets; // Markets entered by a user.
     mapping(address => uint256) public threshold; // Thresholds below the ones suppliers and borrowers cannot enter markets.
 
-    PositionsUpdator public immutable positionsUpdator;
+    IPositionsUpdator public positionsUpdator;
     IComptroller public comptroller;
     IMarketsManagerForCompound public marketsManager;
 
@@ -188,20 +188,10 @@ contract PositionsManagerForCompound is ReentrancyGuard {
     /** @dev Constructs the PositionsManagerForCompound contract.
      *  @param _marketsManager The address of the markets manager.
      *  @param _proxyComptrollerAddress The address of the proxy comptroller.
-     *  @param _positionsUpdatorLogic The address positions udpator logic.
      */
-    constructor(
-        address _marketsManager,
-        address _proxyComptrollerAddress,
-        address _positionsUpdatorLogic
-    ) {
+    constructor(address _marketsManager, address _proxyComptrollerAddress) {
         marketsManager = IMarketsManagerForCompound(_marketsManager);
         comptroller = IComptroller(_proxyComptrollerAddress);
-        positionsUpdator = new PositionsUpdator(
-            address(this),
-            _positionsUpdatorLogic,
-            maxIterations
-        );
     }
 
     /* External */
@@ -225,6 +215,10 @@ contract PositionsManagerForCompound is ReentrancyGuard {
      */
     function updateMaxIterations(uint16 _maxIterations) external onlyMarketsManager {
         maxIterations = _maxIterations;
+    }
+
+    function updatePositionsUpdator(address _positionsUpdator) external onlyMarketsManager {
+        positionsUpdator = IPositionsUpdator(_positionsUpdator);
     }
 
     /** @dev Sets the threshold of a market.

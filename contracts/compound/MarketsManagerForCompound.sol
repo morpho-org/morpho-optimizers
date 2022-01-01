@@ -70,14 +70,9 @@ contract MarketsManagerForCompound is Ownable {
 
     /** @dev Constructs the MarketsManagerForCompound contract.
      *  @param _proxyComptrollerAddress The address of the proxy comptroller.
-     *  @param _positionsUpdatorLogic The address positions udpator logic.
      */
-    constructor(address _proxyComptrollerAddress, address _positionsUpdatorLogic) {
-        positionsManager = new PositionsManagerForCompound(
-            address(this),
-            _proxyComptrollerAddress,
-            _positionsUpdatorLogic
-        );
+    constructor(address _proxyComptrollerAddress) {
+        positionsManager = new PositionsManagerForCompound(address(this), _proxyComptrollerAddress);
     }
 
     /* External */
@@ -88,6 +83,13 @@ contract MarketsManagerForCompound is Ownable {
     function updateMaxIterations(uint16 _maxIterations) external onlyOwner {
         positionsManager.updateMaxIterations(_maxIterations);
         emit MaxNumberUpdated(_maxIterations);
+    }
+
+    /** @dev Updates the `positionsUpdator` address.
+     *  @param _positionsUpdator The new address of the `positionsUpdator`.
+     */
+    function updatePositionsUpdator(address _positionsUpdator) external onlyOwner {
+        positionsManager.updatePositionsUpdator(_positionsUpdator);
     }
 
     /** @dev Creates a new market to borrow/supply.
