@@ -265,6 +265,7 @@ describe('PositionsManagerForAave Contract', () => {
       await positionsManagerForAave.connect(supplier1).withdraw(config.tokens.aDai.address, MAX_INT);
       const daiBalanceAfter = await daiToken.balanceOf(supplier1.getAddress());
       expect(daiBalanceAfter).to.be.gt(daiBalanceBefore);
+      expect((await positionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier1.getAddress())).onPool).to.equal(0);
     });
 
     it('Should be able to supply more ERC20 after already having supply ERC20', async () => {
