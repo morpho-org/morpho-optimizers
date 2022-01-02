@@ -84,12 +84,12 @@ contract PositionsManagerForAave is ReentrancyGuard {
 
     /* Storage */
 
-    uint8 public NO_REFERRAL_CODE = 0;
-    uint8 public VARIABLE_INTEREST_MODE = 2;
-    uint16 public maxIterations = 20;
+    uint8 public NO_REFERRAL_CODE = 0; // No referral code constant for Aave.
+    uint8 public VARIABLE_INTEREST_MODE = 2; // Variable interest mode constant for Aave.
+    uint16 public maxIterations = 20; // Max number of iteration/matches possible.
     uint256 public constant LIQUIDATION_CLOSE_FACTOR_PERCENT = 5000; // In basis points.
     bytes32 public constant DATA_PROVIDER_ID =
-        0x1000000000000000000000000000000000000000000000000000000000000000; // Id of the data provider.
+        0x1000000000000000000000000000000000000000000000000000000000000000; // Id of Aave's data provider.
     mapping(address => mapping(address => SupplyBalance)) public supplyBalanceInOf; // For a given market, the supply balance of user.
     mapping(address => mapping(address => BorrowBalance)) public borrowBalanceInOf; // For a given market, the borrow balance of user.
     mapping(address => mapping(address => bool)) public accountMembership; // Whether the account is in the market or not.

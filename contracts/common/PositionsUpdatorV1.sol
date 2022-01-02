@@ -1,12 +1,19 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.7;
 
+import "./PositionsUpdatorStorageV1.sol";
 import "./libraries/DoubleLinkedList.sol";
 import "./interfaces/IPositionsUpdator.sol";
-import "./PositionsUpdatorStorageV1.sol";
 
 contract PositionsUpdatorV1 is IPositionsUpdator, PositionsUpdatorStorageV1 {
     using DoubleLinkedList for DoubleLinkedList.List;
+
+    modifier onlyPositionsManager() {
+        require(msg.sender == address(positionsManager), "only-positions-manager");
+        _;
+    }
+
+    function _authorizeUpgrade(address) internal override onlyPositionsManager {}
 
     /* Initializer */
 
@@ -79,6 +86,10 @@ contract PositionsUpdatorV1 is IPositionsUpdator, PositionsUpdatorStorageV1 {
             suppliersInP2P[_poolTokenAddress].insertSorted(_account, inP2P, maxIterations);
     }
 
+    /** @dev Returns the borrower's address on Pool to use.
+     *  @param _poolTokenAddress The address of the market.
+     *  @return _account The address of the borrower.
+     */
     function getBorrowerAccountOnPool(address _poolTokenAddress)
         external
         view
@@ -88,6 +99,10 @@ contract PositionsUpdatorV1 is IPositionsUpdator, PositionsUpdatorStorageV1 {
         return borrowersOnPool[_poolTokenAddress].getHead();
     }
 
+    /** @dev Returns the borrower's address in P2P to use.
+     *  @param _poolTokenAddress The address of the market.
+     *  @return _account The address of the borrower.
+     */
     function getBorrowerAccountInP2P(address _poolTokenAddress)
         external
         view
@@ -97,6 +112,10 @@ contract PositionsUpdatorV1 is IPositionsUpdator, PositionsUpdatorStorageV1 {
         return borrowersInP2P[_poolTokenAddress].getHead();
     }
 
+    /** @dev Returns the supplier's address on Pool to use.
+     *  @param _poolTokenAddress The address of the market.
+     *  @return _account The address of the borrower.
+     */
     function getSupplierAccountOnPool(address _poolTokenAddress)
         external
         view
@@ -106,6 +125,10 @@ contract PositionsUpdatorV1 is IPositionsUpdator, PositionsUpdatorStorageV1 {
         return suppliersOnPool[_poolTokenAddress].getHead();
     }
 
+    /** @dev Returns the borrower's address in P2P to use.
+     *  @param _poolTokenAddress The address of the market.
+     *  @return _account The address of the borrower.
+     */
     function getSupplierAccountInP2P(address _poolTokenAddress)
         external
         view
