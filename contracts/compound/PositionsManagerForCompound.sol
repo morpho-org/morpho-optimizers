@@ -22,6 +22,15 @@ contract PositionsManagerForCompound is ReentrancyGuard {
     using SafeERC20 for IERC20;
     using Math for uint256;
 
+    /* Enums */
+
+    enum UserType {
+        SUPPLIERS_IN_P2P,
+        SUPPLIERS_ON_POOL,
+        BORROWERS_IN_P2P,
+        BORROWERS_ON_POOL
+    }
+
     /* Structs */
 
     struct SupplyBalance {
@@ -256,7 +265,10 @@ contract PositionsManagerForCompound is ReentrancyGuard {
         uint256 remainingToSupplyToPool = _amount;
 
         /* If some borrowers are waiting on Comp, Morpho matches the supplier in P2P with them as much as possible */
-        if (positionsUpdator.getBorrowerAccountOnPool(_poolTokenAddress) != address(0)) {
+        if (
+            positionsUpdator.getFirst(uint8(UserType.BORROWERS_ON_POOL), _poolTokenAddress) !=
+            address(0)
+        ) {
             uint256 p2pExchangeRate = marketsManager.p2pExchangeRate(_poolTokenAddress);
             remainingToSupplyToPool = _matchBorrowers(_poolTokenAddress, _amount); // In underlying
             uint256 matched = _amount - remainingToSupplyToPool;
@@ -320,7 +332,10 @@ contract PositionsManagerForCompound is ReentrancyGuard {
         uint256 remainingToBorrowOnPool = _amount;
 
         /* If some suppliers are waiting on Comp, Morpho matches the borrower in P2P with them as much as possible */
-        if (positionsUpdator.getSupplierAccountOnPool(_poolTokenAddress) != address(0)) {
+        if (
+            positionsUpdator.getFirst(uint8(UserType.SUPPLIERS_ON_POOL), _poolTokenAddress) !=
+            address(0)
+        ) {
             uint256 p2pExchangeRate = marketsManager.p2pExchangeRate(_poolTokenAddress);
             remainingToBorrowOnPool = _matchSuppliers(_poolTokenAddress, _amount); // In underlying
             uint256 matched = _amount - remainingToBorrowOnPool;
@@ -768,7 +783,10 @@ contract PositionsManagerForCompound is ReentrancyGuard {
         remainingToMatch = _amount; // In underlying
         uint256 p2pExchangeRate = marketsManager.p2pExchangeRate(_poolTokenAddress);
         uint256 poolTokenExchangeRate = poolToken.exchangeRateCurrent();
-        address account = positionsUpdator.getSupplierAccountOnPool(_poolTokenAddress);
+        address account = positionsUpdator.getFirst(
+            uint8(UserType.SUPPLIERS_ON_POOL),
+            _poolTokenAddress
+        );
         uint256 iterationCount;
 
         while (remainingToMatch > 0 && account != address(0) && iterationCount < maxIterations) {
@@ -798,7 +816,10 @@ contract PositionsManagerForCompound is ReentrancyGuard {
                 p2pExchangeRate,
                 poolTokenExchangeRate
             );
-            account = positionsUpdator.getSupplierAccountOnPool(_poolTokenAddress);
+            account = positionsUpdator.getFirst(
+                uint8(UserType.SUPPLIERS_ON_POOL),
+                _poolTokenAddress
+            );
         }
         // Withdraw from Comp
         uint256 toWithdraw = _amount - remainingToMatch;
@@ -820,7 +841,10 @@ contract PositionsManagerForCompound is ReentrancyGuard {
         remainingToUnmatch = _amount; // In underlying
         uint256 poolTokenExchangeRate = poolToken.exchangeRateCurrent();
         uint256 p2pExchangeRate = marketsManager.p2pExchangeRate(_poolTokenAddress);
-        address account = positionsUpdator.getSupplierAccountInP2P(_poolTokenAddress);
+        address account = positionsUpdator.getFirst(
+            uint8(UserType.SUPPLIERS_IN_P2P),
+            _poolTokenAddress
+        );
 
         while (remainingToUnmatch > 0 && account != address(0)) {
             uint256 inP2P = supplyBalanceInOf[_poolTokenAddress][account].inP2P; // In poolToken
@@ -847,7 +871,10 @@ contract PositionsManagerForCompound is ReentrancyGuard {
                 p2pExchangeRate,
                 poolTokenExchangeRate
             );
-            account = positionsUpdator.getSupplierAccountInP2P(_poolTokenAddress);
+            account = positionsUpdator.getFirst(
+                uint8(UserType.SUPPLIERS_IN_P2P),
+                _poolTokenAddress
+            );
         }
         // Supply on Comp
         uint256 toSupply = _amount - remainingToUnmatch;
@@ -870,7 +897,10 @@ contract PositionsManagerForCompound is ReentrancyGuard {
         remainingToMatch = _amount;
         uint256 p2pExchangeRate = marketsManager.p2pExchangeRate(_poolTokenAddress);
         uint256 borrowIndex = poolToken.borrowIndex();
-        address account = positionsUpdator.getBorrowerAccountOnPool(_poolTokenAddress);
+        address account = positionsUpdator.getFirst(
+            uint8(UserType.BORROWERS_ON_POOL),
+            _poolTokenAddress
+        );
         uint256 iterationCount;
 
         while (remainingToMatch > 0 && account != address(0) && iterationCount < maxIterations) {
@@ -897,7 +927,10 @@ contract PositionsManagerForCompound is ReentrancyGuard {
                 p2pExchangeRate,
                 borrowIndex
             );
-            account = positionsUpdator.getBorrowerAccountOnPool(_poolTokenAddress);
+            account = positionsUpdator.getFirst(
+                uint8(UserType.BORROWERS_ON_POOL),
+                _poolTokenAddress
+            );
         }
         // Repay Comp
         uint256 toRepay = Math.min(
@@ -922,7 +955,10 @@ contract PositionsManagerForCompound is ReentrancyGuard {
         remainingToUnmatch = _amount;
         uint256 p2pExchangeRate = marketsManager.p2pExchangeRate(_poolTokenAddress);
         uint256 borrowIndex = poolToken.borrowIndex();
-        address account = positionsUpdator.getBorrowerAccountInP2P(_poolTokenAddress);
+        address account = positionsUpdator.getFirst(
+            uint8(UserType.BORROWERS_IN_P2P),
+            _poolTokenAddress
+        );
 
         while (remainingToUnmatch > 0 && account != address(0)) {
             uint256 inP2P = borrowBalanceInOf[_poolTokenAddress][account].inP2P;
@@ -947,7 +983,10 @@ contract PositionsManagerForCompound is ReentrancyGuard {
                 p2pExchangeRate,
                 borrowIndex
             );
-            account = positionsUpdator.getBorrowerAccountInP2P(_poolTokenAddress);
+            account = positionsUpdator.getFirst(
+                uint8(UserType.BORROWERS_IN_P2P),
+                _poolTokenAddress
+            );
         }
         // Borrow on Comp
         require(poolToken.borrow(_amount - remainingToUnmatch) == 0);

@@ -30,6 +30,15 @@ contract PositionsManagerForAave is ReentrancyGuard {
     using SafeERC20 for IERC20;
     using Math for uint256;
 
+    /* Enums */
+
+    enum UserType {
+        SUPPLIERS_IN_P2P,
+        SUPPLIERS_ON_POOL,
+        BORROWERS_IN_P2P,
+        BORROWERS_ON_POOL
+    }
+
     /* Structs */
 
     // Struct to avoid stack too deep error
@@ -323,7 +332,10 @@ contract PositionsManagerForAave is ReentrancyGuard {
         uint256 remainingToSupplyToPool = _amount;
 
         /* If some borrowers are waiting on Aave, Morpho matches the supplier in P2P with them as much as possible */
-        if (positionsUpdator.getBorrowerAccountOnPool(_poolTokenAddress) != address(0))
+        if (
+            positionsUpdator.getFirst(uint8(UserType.BORROWERS_ON_POOL), _poolTokenAddress) !=
+            address(0)
+        )
             remainingToSupplyToPool -= _supplyPositionToP2P(
                 poolToken,
                 underlyingToken,
@@ -362,7 +374,10 @@ contract PositionsManagerForAave is ReentrancyGuard {
         uint256 remainingToBorrowOnPool = _amount;
 
         /* If some suppliers are waiting on Aave, Morpho matches the borrower in P2P with them as much as possible */
-        if (positionsUpdator.getSupplierAccountOnPool(_poolTokenAddress) != address(0))
+        if (
+            positionsUpdator.getFirst(uint8(UserType.SUPPLIERS_ON_POOL), _poolTokenAddress) !=
+            address(0)
+        )
             remainingToBorrowOnPool -= _borrowPositionFromP2P(
                 poolToken,
                 underlyingToken,
@@ -890,7 +905,10 @@ contract PositionsManagerForAave is ReentrancyGuard {
         uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(
             address(_underlyingToken)
         );
-        address account = positionsUpdator.getSupplierAccountOnPool(poolTokenAddress);
+        address account = positionsUpdator.getFirst(
+            uint8(UserType.SUPPLIERS_ON_POOL),
+            poolTokenAddress
+        );
         uint256 p2pExchangeRate = marketsManager.p2pExchangeRate(poolTokenAddress);
         uint256 iterationCount;
 
@@ -914,7 +932,10 @@ contract PositionsManagerForAave is ReentrancyGuard {
                 supplyBalanceInOf[poolTokenAddress][account].onPool,
                 supplyBalanceInOf[poolTokenAddress][account].inP2P
             );
-            account = positionsUpdator.getSupplierAccountOnPool(poolTokenAddress);
+            account = positionsUpdator.getFirst(
+                uint8(UserType.SUPPLIERS_ON_POOL),
+                poolTokenAddress
+            );
         }
 
         if (matchedSupply > 0) _withdrawERC20FromPool(_underlyingToken, matchedSupply); // Revert on error
@@ -935,7 +956,10 @@ contract PositionsManagerForAave is ReentrancyGuard {
         uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(address(underlyingToken));
         remainingToUnmatch = _amount; // In underlying
         uint256 p2pExchangeRate = marketsManager.p2pExchangeRate(_poolTokenAddress);
-        address account = positionsUpdator.getSupplierAccountInP2P(_poolTokenAddress);
+        address account = positionsUpdator.getFirst(
+            uint8(UserType.SUPPLIERS_IN_P2P),
+            _poolTokenAddress
+        );
 
         while (remainingToUnmatch > 0 && account != address(0)) {
             uint256 inP2P = supplyBalanceInOf[_poolTokenAddress][account].inP2P; // In poolToken
@@ -954,7 +978,10 @@ contract PositionsManagerForAave is ReentrancyGuard {
                 supplyBalanceInOf[_poolTokenAddress][account].onPool,
                 supplyBalanceInOf[_poolTokenAddress][account].inP2P
             );
-            account = positionsUpdator.getSupplierAccountInP2P(_poolTokenAddress);
+            account = positionsUpdator.getFirst(
+                uint8(UserType.SUPPLIERS_IN_P2P),
+                _poolTokenAddress
+            );
         }
 
         // Supply on Aave
@@ -979,7 +1006,10 @@ contract PositionsManagerForAave is ReentrancyGuard {
             address(_underlyingToken)
         );
         uint256 p2pExchangeRate = marketsManager.p2pExchangeRate(poolTokenAddress);
-        address account = positionsUpdator.getBorrowerAccountOnPool(poolTokenAddress);
+        address account = positionsUpdator.getFirst(
+            uint8(UserType.BORROWERS_ON_POOL),
+            poolTokenAddress
+        );
         uint256 iterationCount;
 
         while (matchedBorrow < _amount && account != address(0) && iterationCount < maxIterations) {
@@ -1002,7 +1032,10 @@ contract PositionsManagerForAave is ReentrancyGuard {
                 borrowBalanceInOf[poolTokenAddress][account].onPool,
                 borrowBalanceInOf[poolTokenAddress][account].inP2P
             );
-            account = positionsUpdator.getBorrowerAccountOnPool(poolTokenAddress);
+            account = positionsUpdator.getFirst(
+                uint8(UserType.BORROWERS_ON_POOL),
+                poolTokenAddress
+            );
         }
 
         if (matchedBorrow > 0) _repayERC20ToPool(_underlyingToken, matchedBorrow); // Revert on error
@@ -1025,7 +1058,10 @@ contract PositionsManagerForAave is ReentrancyGuard {
         uint256 normalizedVariableDebt = lendingPool.getReserveNormalizedVariableDebt(
             address(underlyingToken)
         );
-        address account = positionsUpdator.getBorrowerAccountInP2P(_poolTokenAddress);
+        address account = positionsUpdator.getFirst(
+            uint8(UserType.BORROWERS_IN_P2P),
+            _poolTokenAddress
+        );
 
         while (remainingToUnmatch > 0 && account != address(0)) {
             uint256 inP2P = borrowBalanceInOf[_poolTokenAddress][account].inP2P;
@@ -1044,7 +1080,10 @@ contract PositionsManagerForAave is ReentrancyGuard {
                 borrowBalanceInOf[_poolTokenAddress][account].onPool,
                 borrowBalanceInOf[_poolTokenAddress][account].inP2P
             );
-            account = positionsUpdator.getBorrowerAccountInP2P(_poolTokenAddress);
+            account = positionsUpdator.getFirst(
+                uint8(UserType.BORROWERS_IN_P2P),
+                _poolTokenAddress
+            );
         }
 
         _borrowERC20FromPool(underlyingToken, _amount - remainingToUnmatch);

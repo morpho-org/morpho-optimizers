@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.7;
 
-import "./PositionsUpdatorStorageV1.sol";
 import "./libraries/DoubleLinkedList.sol";
+
 import "./interfaces/IPositionsUpdator.sol";
+
+import "./PositionsUpdatorStorageV1.sol";
 
 contract PositionsUpdatorV1 is IPositionsUpdator, PositionsUpdatorStorageV1 {
     using DoubleLinkedList for DoubleLinkedList.List;
@@ -47,20 +49,32 @@ contract PositionsUpdatorV1 is IPositionsUpdator, PositionsUpdatorStorageV1 {
     {
         uint256 onPool = positionsManager.borrowBalanceInOf(_poolTokenAddress, _account).onPool;
         uint256 inP2P = positionsManager.borrowBalanceInOf(_poolTokenAddress, _account).inP2P;
-        uint256 formerValueOnPool = borrowersOnPool[_poolTokenAddress].getValueOf(_account);
-        uint256 formerValueInP2P = borrowersInP2P[_poolTokenAddress].getValueOf(_account);
+        uint256 formerValueOnPool = data[uint8(UserType.BORROWERS_ON_POOL)][_poolTokenAddress]
+            .getValueOf(_account);
+        uint256 formerValueInP2P = data[uint8(UserType.BORROWERS_IN_P2P)][_poolTokenAddress]
+            .getValueOf(_account);
 
         // Check pool
         bool wasOnPoolAndValueChanged = formerValueOnPool != 0 && formerValueOnPool != onPool;
-        if (wasOnPoolAndValueChanged) borrowersOnPool[_poolTokenAddress].remove(_account);
+        if (wasOnPoolAndValueChanged)
+            data[uint8(UserType.BORROWERS_ON_POOL)][_poolTokenAddress].remove(_account);
         if (onPool > 0 && (wasOnPoolAndValueChanged || formerValueOnPool == 0))
-            borrowersOnPool[_poolTokenAddress].insertSorted(_account, onPool, maxIterations);
+            data[uint8(UserType.BORROWERS_ON_POOL)][_poolTokenAddress].insertSorted(
+                _account,
+                onPool,
+                maxIterations
+            );
 
         // Check P2P
         bool wasInP2PAndValueChanged = formerValueInP2P != 0 && formerValueInP2P != inP2P;
-        if (wasInP2PAndValueChanged) borrowersInP2P[_poolTokenAddress].remove(_account);
+        if (wasInP2PAndValueChanged)
+            data[uint8(UserType.BORROWERS_IN_P2P)][_poolTokenAddress].remove(_account);
         if (inP2P > 0 && (wasInP2PAndValueChanged || formerValueInP2P == 0))
-            borrowersInP2P[_poolTokenAddress].insertSorted(_account, inP2P, maxIterations);
+            data[uint8(UserType.BORROWERS_IN_P2P)][_poolTokenAddress].insertSorted(
+                _account,
+                inP2P,
+                maxIterations
+            );
     }
 
     /** @dev Updates suppliers tree with the new balances of a given account.
@@ -74,72 +88,74 @@ contract PositionsUpdatorV1 is IPositionsUpdator, PositionsUpdatorStorageV1 {
     {
         uint256 onPool = positionsManager.supplyBalanceInOf(_poolTokenAddress, _account).onPool;
         uint256 inP2P = positionsManager.supplyBalanceInOf(_poolTokenAddress, _account).inP2P;
-        uint256 formerValueOnPool = suppliersOnPool[_poolTokenAddress].getValueOf(_account);
-        uint256 formerValueInP2P = suppliersInP2P[_poolTokenAddress].getValueOf(_account);
+        uint256 formerValueOnPool = data[uint8(UserType.SUPPLIERS_ON_POOL)][_poolTokenAddress]
+            .getValueOf(_account);
+        uint256 formerValueInP2P = data[uint8(UserType.SUPPLIERS_IN_P2P)][_poolTokenAddress]
+            .getValueOf(_account);
 
         // Check pool
         bool wasOnPoolAndValueChanged = formerValueOnPool != 0 && formerValueOnPool != onPool;
-        if (wasOnPoolAndValueChanged) suppliersOnPool[_poolTokenAddress].remove(_account);
+        if (wasOnPoolAndValueChanged)
+            data[uint8(UserType.SUPPLIERS_ON_POOL)][_poolTokenAddress].remove(_account);
         if (onPool > 0 && (wasOnPoolAndValueChanged || formerValueOnPool == 0))
-            suppliersOnPool[_poolTokenAddress].insertSorted(_account, onPool, maxIterations);
+            data[uint8(UserType.SUPPLIERS_ON_POOL)][_poolTokenAddress].insertSorted(
+                _account,
+                onPool,
+                maxIterations
+            );
 
         // Check P2P
         bool wasInP2PAndValueChanged = formerValueInP2P != 0 && formerValueInP2P != inP2P;
-        if (wasInP2PAndValueChanged) suppliersInP2P[_poolTokenAddress].remove(_account);
+        if (wasInP2PAndValueChanged)
+            data[uint8(UserType.SUPPLIERS_IN_P2P)][_poolTokenAddress].remove(_account);
         if (inP2P > 0 && (wasInP2PAndValueChanged || formerValueInP2P == 0))
-            suppliersInP2P[_poolTokenAddress].insertSorted(_account, inP2P, maxIterations);
+            data[uint8(UserType.SUPPLIERS_IN_P2P)][_poolTokenAddress].insertSorted(
+                _account,
+                inP2P,
+                maxIterations
+            );
     }
 
-    /** @dev Returns the borrower's address on Pool to use.
-     *  @param _poolTokenAddress The address of the market.
-     *  @return _account The address of the borrower.
-     */
-    function getBorrowerAccountOnPool(address _poolTokenAddress)
+    function getValueOf(
+        uint8 _positionType,
+        address _poolTokenAddress,
+        address _account
+    ) external view override returns (uint256) {
+        return data[_positionType][_poolTokenAddress].getValueOf(_account);
+    }
+
+    function getFirst(uint8 _positionType, address _poolTokenAddress)
         external
         view
         override
         returns (address)
     {
-        return borrowersOnPool[_poolTokenAddress].getHead();
+        return data[_positionType][_poolTokenAddress].getHead();
     }
 
-    /** @dev Returns the borrower's address in P2P to use.
-     *  @param _poolTokenAddress The address of the market.
-     *  @return _account The address of the borrower.
-     */
-    function getBorrowerAccountInP2P(address _poolTokenAddress)
+    function getLast(uint8 _positionType, address _poolTokenAddress)
         external
         view
         override
         returns (address)
     {
-        return borrowersInP2P[_poolTokenAddress].getHead();
+        return data[_positionType][_poolTokenAddress].getTail();
     }
 
-    /** @dev Returns the supplier's address on Pool to use.
-     *  @param _poolTokenAddress The address of the market.
-     *  @return _account The address of the borrower.
-     */
-    function getSupplierAccountOnPool(address _poolTokenAddress)
-        external
-        view
-        override
-        returns (address)
-    {
-        return suppliersOnPool[_poolTokenAddress].getHead();
+    function getNext(
+        uint8 _positionType,
+        address _poolTokenAddress,
+        address _account
+    ) external view override returns (address) {
+        return data[_positionType][_poolTokenAddress].getNext(_account);
     }
 
-    /** @dev Returns the borrower's address in P2P to use.
-     *  @param _poolTokenAddress The address of the market.
-     *  @return _account The address of the borrower.
-     */
-    function getSupplierAccountInP2P(address _poolTokenAddress)
-        external
-        view
-        override
-        returns (address)
-    {
-        return suppliersInP2P[_poolTokenAddress].getHead();
+    function getPrev(
+        uint8 _positionType,
+        address _poolTokenAddress,
+        address _account
+    ) external view override returns (address) {
+        return data[_positionType][_poolTokenAddress].getPrev(_account);
     }
 
     /* Internal */
