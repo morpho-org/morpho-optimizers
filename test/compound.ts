@@ -28,6 +28,7 @@ describe('PositionsManagerForCompound Contract', () => {
   // Contracts
   let positionsManagerForCompound: Contract;
   let marketsManagerForCompound: Contract;
+  let positionsUpdatorProxy: Contract;
   let fakeCompoundPositionsManager: Contract;
   let comptroller: Contract;
   let compoundOracle: Contract;
@@ -69,13 +70,18 @@ describe('PositionsManagerForCompound Contract', () => {
 
     // Deploy PositionsUpdator
     const PositionsUpdator = await ethers.getContractFactory('PositionsUpdatorV1');
-    const positionsUpdator = await upgrades.deployProxy(PositionsUpdator, [positionsManagerForCompound.address, 20], {
+    positionsUpdatorProxy = await upgrades.deployProxy(PositionsUpdator, [positionsManagerForCompound.address], {
+      kind: 'uups',
       unsafeAllow: ['delegatecall'],
     });
-    await positionsUpdator.deployed();
+    await positionsUpdatorProxy.deployed();
+
+    // Upgrade to the same version just to be sure it works
+    await upgrades.upgradeProxy(positionsUpdatorProxy.address, PositionsUpdator, { unsafeAllow: ['delegatecall'] });
 
     // Set proxy
-    await marketsManagerForCompound.updatePositionsUpdator(positionsUpdator.address);
+    await marketsManagerForCompound.updatePositionsUpdator(positionsUpdatorProxy.address);
+    await marketsManagerForCompound.updateMaxIterations(20);
 
     // Deploy Fake PositionsManagerForCompound
     const PositionsManagerForCompound = await ethers.getContractFactory('PositionsManagerForCompound');
@@ -130,6 +136,34 @@ describe('PositionsManagerForCompound Contract', () => {
       // Thresholds
       underlyingThreshold = await positionsManagerForCompound.threshold(config.tokens.cDai.address);
       expect(underlyingThreshold).to.be.equal(WAD);
+    });
+  });
+
+  describe('Test Update Positions Proxy', () => {
+    it('Only owner should be able to upgrade the contract', async () => {
+      const NewPositionsUpdator = await ethers.getContractFactory('PositionsUpdatorV1');
+      const newPositionsUpdator = await NewPositionsUpdator.deploy();
+      await newPositionsUpdator.deployed();
+      expect(positionsUpdatorProxy.connect(supplier1).upgradeTo(newPositionsUpdator.address)).to.be.reverted;
+      expect(positionsUpdatorProxy.connect(borrower1).upgradeTo(newPositionsUpdator.address)).to.be.reverted;
+      await positionsUpdatorProxy.connect(owner).upgradeTo(newPositionsUpdator.address);
+      expect(await positionsUpdatorProxy.positionsManager()).to.be.equal(positionsManagerForCompound.address);
+    });
+
+    it('Only positionsManager should be able to call these functions', async () => {
+      const supplierAddress = await supplier1.getAddress();
+      expect(positionsUpdatorProxy.connect(borrower1).updateBorrowerPositions(config.tokens.cDai.address, supplierAddress)).to.be.reverted;
+      expect(positionsUpdatorProxy.connect(borrower1).updateSupplierPositions(config.tokens.cDai.address, supplierAddress)).to.be.reverted;
+      expect(positionsUpdatorProxy.connect(borrower1).updateMaxIterations(10)).to.be.reverted;
+
+      const positionsManagerAddress = positionsManagerForCompound.address;
+      await hre.network.provider.send('hardhat_impersonateAccount', [positionsManagerAddress]);
+      await hre.network.provider.send('hardhat_setBalance', [positionsManagerAddress, ethers.utils.parseEther('10').toHexString()]);
+      const positionsManagerSigner = await ethers.getSigner(positionsManagerAddress);
+      await positionsUpdatorProxy.connect(positionsManagerSigner).updateBorrowerPositions(config.tokens.cDai.address, supplierAddress);
+      await positionsUpdatorProxy.connect(positionsManagerSigner).updateSupplierPositions(config.tokens.cDai.address, supplierAddress);
+      await positionsUpdatorProxy.connect(positionsManagerSigner).updateMaxIterations(10);
+      expect(await positionsUpdatorProxy.maxIterations()).to.equal(10);
     });
   });
 

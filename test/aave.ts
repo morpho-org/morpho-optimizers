@@ -34,6 +34,7 @@ describe('PositionsManagerForAave Contract', () => {
   // Contracts
   let positionsManagerForAave: Contract;
   let marketsManagerForAave: Contract;
+  let positionsUpdatorProxy: Contract;
   let fakeAavePositionsManager: Contract;
   let lendingPool: Contract;
   let lendingPoolAddressesProvider: Contract;
@@ -75,13 +76,18 @@ describe('PositionsManagerForAave Contract', () => {
 
     // Deploy PositionsUpdator
     const PositionsUpdator = await ethers.getContractFactory('PositionsUpdatorV1');
-    const positionsUpdator = await upgrades.deployProxy(PositionsUpdator, [positionsManagerForAave.address, 20], {
+    positionsUpdatorProxy = await upgrades.deployProxy(PositionsUpdator, [positionsManagerForAave.address], {
+      kind: 'uups',
       unsafeAllow: ['delegatecall'],
     });
-    await positionsUpdator.deployed();
+    await positionsUpdatorProxy.deployed();
+
+    // Upgrade to the same version just to be sure it works
+    await upgrades.upgradeProxy(positionsUpdatorProxy.address, PositionsUpdator, { unsafeAllow: ['delegatecall'] });
 
     // Set proxy
-    await marketsManagerForAave.updatePositionsUpdator(positionsUpdator.address);
+    await marketsManagerForAave.updatePositionsUpdator(positionsUpdatorProxy.address);
+    await marketsManagerForAave.updateMaxIterations(20);
 
     // Deploy Fake PositionsManagerForAave
     const PositionsManagerForAave = await ethers.getContractFactory('PositionsManagerForAave');
@@ -148,6 +154,34 @@ describe('PositionsManagerForAave Contract', () => {
       // Thresholds
       underlyingThreshold = await positionsManagerForAave.threshold(config.tokens.aDai.address);
       expect(underlyingThreshold).to.be.equal(WAD);
+    });
+  });
+
+  describe('Test Update Positions Proxy', () => {
+    it('Only owner should be able to upgrade the contract', async () => {
+      const NewPositionsUpdator = await ethers.getContractFactory('PositionsUpdatorV1');
+      const newPositionsUpdator = await NewPositionsUpdator.deploy();
+      await newPositionsUpdator.deployed();
+      expect(positionsUpdatorProxy.connect(supplier1).upgradeTo(newPositionsUpdator.address)).to.be.reverted;
+      expect(positionsUpdatorProxy.connect(borrower1).upgradeTo(newPositionsUpdator.address)).to.be.reverted;
+      await positionsUpdatorProxy.connect(owner).upgradeTo(newPositionsUpdator.address);
+      expect(await positionsUpdatorProxy.positionsManager()).to.be.equal(positionsManagerForAave.address);
+    });
+
+    it('Only positionsManager should be able to call these functions', async () => {
+      const supplierAddress = await supplier1.getAddress();
+      expect(positionsUpdatorProxy.connect(borrower1).updateBorrowerPositions(config.tokens.aDai.address, supplierAddress)).to.be.reverted;
+      expect(positionsUpdatorProxy.connect(borrower1).updateSupplierPositions(config.tokens.aDai.address, supplierAddress)).to.be.reverted;
+      expect(positionsUpdatorProxy.connect(borrower1).updateMaxIterations(10)).to.be.reverted;
+
+      const positionsManagerAddress = positionsManagerForAave.address;
+      await hre.network.provider.send('hardhat_impersonateAccount', [positionsManagerAddress]);
+      await hre.network.provider.send('hardhat_setBalance', [positionsManagerAddress, ethers.utils.parseEther('10').toHexString()]);
+      const positionsManagerSigner = await ethers.getSigner(positionsManagerAddress);
+      await positionsUpdatorProxy.connect(positionsManagerSigner).updateBorrowerPositions(config.tokens.aDai.address, supplierAddress);
+      await positionsUpdatorProxy.connect(positionsManagerSigner).updateSupplierPositions(config.tokens.aDai.address, supplierAddress);
+      await positionsUpdatorProxy.connect(positionsManagerSigner).updateMaxIterations(10);
+      expect(await positionsUpdatorProxy.maxIterations()).to.equal(10);
     });
   });
 

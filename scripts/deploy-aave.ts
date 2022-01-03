@@ -1,6 +1,6 @@
 /* eslint-disable no-console */
 import { BigNumber } from 'ethers';
-import hre, { ethers } from 'hardhat';
+import hre, { ethers, upgrades } from 'hardhat';
 const config = require(`@config/${process.env.NETWORK}-config.json`);
 
 async function main() {
@@ -41,11 +41,23 @@ async function main() {
   });
   console.log('🎉 PositionsManagerForAave verified!');
 
+  console.log('\n🦋 Deploying PositionsUpdator...');
+  const PositionsUpdator = await ethers.getContractFactory('PositionsUpdatorV1');
+  const positionsUpdatorProxy = await upgrades.deployProxy(PositionsUpdator, [positionsManagerForAave.address], {
+    kind: 'uups',
+    unsafeAllow: ['delegatecall'],
+  });
+  await positionsUpdatorProxy.deployed();
+  console.log('🎉 PositionsUpdator Proxy deployed to address:', positionsUpdatorProxy.address);
+
+  // Set proxy
+  await marketsManagerForAave.updatePositionsUpdator(positionsUpdatorProxy.address);
+  await marketsManagerForAave.updateMaxIterations(20);
+
   console.log('\n🦋 Creating markets...');
   const defaultThreshold = BigNumber.from(10).pow(6);
   const defaultCapValue = BigNumber.from(2);
 
-  await marketsManagerForAave.connect(deployer).setPositionsManager(positionsManagerForAave.address);
   await marketsManagerForAave.connect(deployer).createMarket(config.tokens.aDai.address, defaultThreshold, defaultCapValue);
   await marketsManagerForAave.connect(deployer).createMarket(config.tokens.aUsdc.address, defaultThreshold, defaultCapValue);
   console.log('🎉 Finished!\n');

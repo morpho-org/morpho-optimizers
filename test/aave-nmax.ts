@@ -1,7 +1,8 @@
+/* eslint-disable no-console */
 import * as dotenv from 'dotenv';
 dotenv.config({ path: './.env.local' });
 import { utils, BigNumber, Signer, Contract } from 'ethers';
-import hre, { ethers } from 'hardhat';
+import hre, { ethers, upgrades } from 'hardhat';
 import { expect } from 'chai';
 const config = require(`@config/${process.env.NETWORK}-config.json`);
 import { MAX_INT, to6Decimals, getTokens } from './utils/common-helpers';
@@ -16,7 +17,6 @@ describe('PositionsManagerForAave Contract', () => {
   // Contracts
   let positionsManagerForAave: Contract;
   let marketsManagerForAave: Contract;
-  let fakeAavePositionsManager: Contract;
   let lendingPoolAddressesProvider: Contract;
   let lendingPool: Contract;
   let protocolDataProvider: Contract;
@@ -40,18 +40,20 @@ describe('PositionsManagerForAave Contract', () => {
     marketsManagerForAave = await MarketsManagerForAave.deploy(config.aave.lendingPoolAddressesProvider.address);
     await marketsManagerForAave.deployed();
 
-    // Deploy PositionsManagerForAave
-    const PositionsManagerForAave = await ethers.getContractFactory('PositionsManagerForAave');
-    positionsManagerForAave = await PositionsManagerForAave.deploy(
-      marketsManagerForAave.address,
-      config.aave.lendingPoolAddressesProvider.address
-    );
-    fakeAavePositionsManager = await PositionsManagerForAave.deploy(
-      marketsManagerForAave.address,
-      config.aave.lendingPoolAddressesProvider.address
-    );
-    await positionsManagerForAave.deployed();
-    await fakeAavePositionsManager.deployed();
+    // Get PositionsManager address
+    positionsManagerForAave = await ethers.getContractAt('PositionsManagerForAave', await marketsManagerForAave.positionsManager());
+
+    // Deploy PositionsUpdator
+    const PositionsUpdator = await ethers.getContractFactory('PositionsUpdatorV1');
+    const positionsUpdatorProxy = await upgrades.deployProxy(PositionsUpdator, [positionsManagerForAave.address], {
+      kind: 'uups',
+      unsafeAllow: ['delegatecall'],
+    });
+    await positionsUpdatorProxy.deployed();
+
+    // Set proxy
+    await marketsManagerForAave.updatePositionsUpdator(positionsUpdatorProxy.address);
+    await marketsManagerForAave.updateMaxIterations(20);
 
     // Get contract dependencies
     lendingPool = await ethers.getContractAt(require(config.aave.lendingPool.abi), config.aave.lendingPool.address, owner);
@@ -73,7 +75,6 @@ describe('PositionsManagerForAave Contract', () => {
     wbtcToken = await getTokens(config.tokens.wbtc.whale, 'whale', signers, config.tokens.wbtc, BigNumber.from(10).pow(8));
 
     // Create and list markets
-    await marketsManagerForAave.connect(owner).setPositionsManager(positionsManagerForAave.address);
     await marketsManagerForAave.connect(owner).updateLendingPool();
     await marketsManagerForAave.connect(owner).createMarket(config.tokens.aDai.address, WAD, MAX_INT);
     await marketsManagerForAave.connect(owner).createMarket(config.tokens.aUsdc.address, to6Decimals(WAD), MAX_INT);
@@ -340,7 +341,6 @@ describe('PositionsManagerForAave Contract', () => {
       await priceOracle.deployed();
 
       await lendingPoolAddressesProvider.connect(admin).setPriceOracle(priceOracle.address);
-      const daiPrice = await oracle.getAssetPrice(config.tokens.dai.address);
       priceOracle.setDirectPrice(config.tokens.dai.address, WAD.mul(110).div(100));
       priceOracle.setDirectPrice(config.tokens.usdc.address, WAD);
       priceOracle.setDirectPrice(config.tokens.wbtc.address, WAD);

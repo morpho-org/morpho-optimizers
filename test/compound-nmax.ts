@@ -2,7 +2,7 @@
 import * as dotenv from 'dotenv';
 dotenv.config({ path: './.env.local' });
 import { utils, BigNumber, Signer, Contract } from 'ethers';
-import hre, { ethers } from 'hardhat';
+import hre, { ethers, upgrades } from 'hardhat';
 import { expect } from 'chai';
 const config = require(`@config/${process.env.NETWORK}-config.json`);
 import { to6Decimals, getTokens } from './utils/common-helpers';
@@ -18,7 +18,6 @@ describe('PositionsManagerForCompound Contract', () => {
   // Contracts
   let positionsManagerForCompound: Contract;
   let marketsManagerForCompound: Contract;
-  let fakeCompoundPositionsManager: Contract;
   let comptroller: Contract;
   let compoundOracle: Contract;
   let priceOracle: Contract;
@@ -38,21 +37,26 @@ describe('PositionsManagerForCompound Contract', () => {
 
     // Deploy MarketsManagerForCompound
     const MarketsManagerForCompound = await ethers.getContractFactory('MarketsManagerForCompound');
-    marketsManagerForCompound = await MarketsManagerForCompound.deploy();
+    marketsManagerForCompound = await MarketsManagerForCompound.deploy(config.compound.comptroller.address);
     await marketsManagerForCompound.deployed();
 
-    // Deploy PositionsManagerForCompound
-    const PositionsManagerForCompound = await ethers.getContractFactory('PositionsManagerForCompound');
-    positionsManagerForCompound = await PositionsManagerForCompound.deploy(
-      marketsManagerForCompound.address,
-      config.compound.comptroller.address
+    // Get PositionsManager address
+    positionsManagerForCompound = await ethers.getContractAt(
+      'PositionsManagerForCompound',
+      await marketsManagerForCompound.positionsManager()
     );
-    fakeCompoundPositionsManager = await PositionsManagerForCompound.deploy(
-      marketsManagerForCompound.address,
-      config.compound.comptroller.address
-    );
-    await positionsManagerForCompound.deployed();
-    await fakeCompoundPositionsManager.deployed();
+
+    // Deploy PositionsUpdator
+    const PositionsUpdator = await ethers.getContractFactory('PositionsUpdatorV1');
+    const positionsUpdatorProxy = await upgrades.deployProxy(PositionsUpdator, [positionsManagerForCompound.address], {
+      kind: 'uups',
+      unsafeAllow: ['delegatecall'],
+    });
+    await positionsUpdatorProxy.deployed();
+
+    // Set proxy
+    await marketsManagerForCompound.updatePositionsUpdator(positionsUpdatorProxy.address);
+    await marketsManagerForCompound.updateMaxIterations(20);
 
     // Get contract dependencies
     const cTokenAbi = require(config.tokens.cToken.abi);
@@ -66,7 +70,6 @@ describe('PositionsManagerForCompound Contract', () => {
     uniToken = await getTokens(config.tokens.uni.whale, 'whale', signers, config.tokens.uni, utils.parseUnits('100'));
 
     // Create and list markets
-    await marketsManagerForCompound.connect(owner).setPositionsManager(positionsManagerForCompound.address);
     await marketsManagerForCompound.connect(owner).createMarket(config.tokens.cDai.address, WAD);
     await marketsManagerForCompound.connect(owner).createMarket(config.tokens.cUsdc.address, to6Decimals(WAD));
     await marketsManagerForCompound.connect(owner).createMarket(config.tokens.cUni.address, WAD);
