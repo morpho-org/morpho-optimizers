@@ -55,6 +55,20 @@ contract User {
         positionsManager.repay(_poolTokenAddress, _amount);
     }
 
+    function liquidate(
+        address _poolTokenBorrowedAddress,
+        address _poolTokenCollateralAddress,
+        address _borrower,
+        uint256 _amount
+    ) external {
+        positionsManager.liquidate(
+            _poolTokenBorrowedAddress,
+            _poolTokenCollateralAddress,
+            _borrower,
+            _amount
+        );
+    }
+
     function setMaxNumberOfUsersInTree(uint16 _newMaxNumber) external {
         marketsManager.setMaxNumberOfUsersInTree(_newMaxNumber);
     }

@@ -7,5 +7,5 @@ solc		:; nix-env -f https://github.com/dapphub/dapptools/archive/master.tar.gz -
 all    	:; dapp build
 clean  	:; dapp clean
 test   	:; dapp test --rpc-url https://${NETWORK}.infura.io/v3/${INFURA_PROJECT_ID} --rpc-block 22747272
-test1		:; dapp test --rpc-url https://${NETWORK}.infura.io/v3/${INFURA_PROJECT_ID} --rpc-block 22747272 -m test_supply_more_after_supply
+test1		:; dapp test --rpc-url https://${NETWORK}.infura.io/v3/${INFURA_PROJECT_ID} --rpc-block 22747272 -m test_borrow_on_aave_after_providing_collateral
 #deploy 	:; dapp create Dapptuto

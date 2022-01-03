@@ -5,8 +5,10 @@ contract Utils {
     uint256 internal constant WAD = 1e18;
     uint256 internal constant RAY = 1e27;
     uint256 internal constant SECOND_PER_YEAR = 31536000;
+    uint256 internal constant LIQUIDATION_CLOSE_FACTOR_PERCENT = 5000;
 
     uint256 internal constant PERCENT_BASE = 10000;
+    uint256 internal constant AVERAGE_BLOCK_TIME = 2;
 
     function to6Decimals(uint256 value) internal pure returns (uint256) {
         return value / 1e12;
@@ -71,5 +73,13 @@ contract Utils {
         uint256 multiplier = (val**exponent) * RAY;
 
         return (_currentExchangeRate * multiplier) / RAY;
+    }
+
+    function get_abs_diff(uint256 a, uint256 b) internal pure returns (uint256) {
+        if (a > b) {
+            return a - b;
+        }
+
+        return b - a;
     }
 }

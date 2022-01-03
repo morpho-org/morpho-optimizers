@@ -1,11 +1,6 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.7;
 
-// Display logs:
-// emit log_named_<type>("comarketsManagerentaire", value);
-// Example:
-// emit log_named_uint("supplier1", supplier1.balanceOf(usdc));
-
 import "ds-test/test.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
@@ -34,10 +29,12 @@ contract MarketsManagerForAaveTest is DSTest, Config, Utils {
     User supplier1;
     User supplier2;
     User supplier3;
+    User[] suppliers;
 
     User borrower1;
     User borrower2;
     User borrower3;
+    User[] borrowers;
 
     Attacker attacker;
 
@@ -64,30 +61,35 @@ contract MarketsManagerForAaveTest is DSTest, Config, Utils {
 
         marketsManager.setPositionsManager(address(positionsManager));
         marketsManager.setLendingPool();
+        // !!! WARNING !!!
+        // All token added with createMarket must be added in create_custom_price_oracle function.
         marketsManager.createMarket(aDai, WAD, type(uint256).max);
         marketsManager.createMarket(aUsdc, to6Decimals(WAD), type(uint256).max);
+        marketsManager.createMarket(aWbtc, 10**4, type(uint256).max);
+        marketsManager.createMarket(aUsdt, to6Decimals(WAD), type(uint256).max);
+        marketsManager.createMarket(aWmatic, WAD, type(uint256).max);
 
-        supplier1 = new User(positionsManager, marketsManager);
-        supplier2 = new User(positionsManager, marketsManager);
-        supplier3 = new User(positionsManager, marketsManager);
+        for (uint256 i = 0; i < 3; i++) {
+            suppliers.push(new User(positionsManager, marketsManager));
 
-        write_balanceOf(address(supplier1), dai, 100 ether);
-        write_balanceOf(address(supplier2), dai, 100 ether);
-        write_balanceOf(address(supplier3), dai, 100 ether);
+            write_balanceOf(address(suppliers[i]), dai, 100 ether);
+        }
+        supplier1 = suppliers[0];
+        supplier2 = suppliers[1];
+        supplier3 = suppliers[2];
 
-        borrower1 = new User(positionsManager, marketsManager);
-        borrower2 = new User(positionsManager, marketsManager);
-        borrower3 = new User(positionsManager, marketsManager);
+        for (uint256 i = 0; i < 3; i++) {
+            borrowers.push(new User(positionsManager, marketsManager));
 
-        write_balanceOf(address(borrower1), dai, 100 ether);
-        write_balanceOf(address(borrower1), usdc, 100 ether);
-        write_balanceOf(address(borrower2), dai, 100 ether);
-        write_balanceOf(address(borrower2), usdc, 100 ether);
-        write_balanceOf(address(borrower3), dai, 100 ether);
-        write_balanceOf(address(borrower3), usdc, 100 ether);
+            write_balanceOf(address(borrowers[i]), dai, 100 ether);
+            write_balanceOf(address(borrowers[i]), usdc, 100 ether);
+        }
+        borrower1 = borrowers[0];
+        borrower2 = borrowers[1];
+        borrower3 = borrowers[2];
 
         attacker = new Attacker(lendingPool);
-        write_balanceOf(address(attacker), dai, 100 ether);
+        write_balanceOf(address(attacker), dai, 200 ether);
     }
 
     function write_balanceOf(
@@ -96,6 +98,11 @@ contract MarketsManagerForAaveTest is DSTest, Config, Utils {
         uint256 value
     ) internal {
         hevm.store(acct, keccak256(abi.encode(who, slots[acct])), bytes32(value));
+    }
+
+    function mine_blocks(uint256 _count) internal {
+        hevm.roll(block.number + _count);
+        hevm.warp(block.timestamp + _count * 1000 * AVERAGE_BLOCK_TIME);
     }
 
     // ==============
@@ -248,42 +255,44 @@ contract MarketsManagerForAaveTest is DSTest, Config, Utils {
 
     // Suppliers on Aave (no borrowers)
     // Should be able to withdraw ERC20 right after supply up to max supply balance
-    function test_withdraw_after_supply() public {
-        uint256 amount = 10 * 1e18;
+    function test_withdraw_after_supply_part1() public {
+        uint256 amount = 10 ether;
         uint256 daiBalanceBefore1 = supplier1.balanceOf(dai);
 
         supplier1.approve(dai, address(positionsManager), amount);
         supplier1.supply(aDai, amount);
         uint256 daiBalanceAfter1 = supplier1.balanceOf(dai);
         assertEq(daiBalanceAfter1, daiBalanceBefore1 - amount);
+    }
 
-        (, uint256 supplyBalanceOnPool) = positionsManager.supplyBalanceInOf(
-            aDai,
-            address(supplier1)
-        );
-        uint256 normalizedIncome1 = lendingPool.getReserveNormalizedIncome(dai);
-        uint256 toWithdraw1 = scaledBalanceToUnderlying(supplyBalanceOnPool, normalizedIncome1);
+    function test_withdraw_after_supply_part2() public {
+        uint256 daiBalanceBefore = supplier1.balanceOf(dai);
 
-        // TODO: improve this test to prevent attacks
-        //await expect(positionsManagerForAave.connect(supplier1).withdraw(toWithdraw1.add(utils.parseUnits('0.001')).toString())).to.be.reverted;
+        test_withdraw_after_supply_part1();
 
-        // Here we must calculate the next normalized income
-        uint256 normalizedIncome2 = lendingPool.getReserveNormalizedIncome(dai);
-        uint256 toWithdraw2 = scaledBalanceToUnderlying(supplyBalanceOnPool, normalizedIncome2);
-        supplier1.withdraw(aDai, toWithdraw2);
+        uint256 toWithdraw = get_on_pool_in_underlying(supplier1, aDai, dai);
+        supplier1.withdraw(aDai, toWithdraw);
         uint256 daiBalanceAfter2 = supplier1.balanceOf(dai);
         // Check ERC20 balance
-        assertEq(daiBalanceAfter2, daiBalanceBefore1 - amount + toWithdraw2);
+        assertEq(daiBalanceAfter2, daiBalanceBefore - 10 ether + toWithdraw);
 
         // Check aToken left are only dust in supply balance
         (, uint256 onPool) = positionsManager.supplyBalanceInOf(aDai, address(supplier1));
         assertLt(onPool, 10);
     }
 
-    function testFail_withdraw_after_supply() public {
-        test_withdraw_after_supply();
+    function testFail_withdraw_after_supply_1() public {
+        test_withdraw_after_supply_part1();
 
-        supplier1.withdraw(aDai, (1 / 1000) * 1e18);
+        uint256 toWithdraw = get_on_pool_in_underlying(supplier1, aDai, dai);
+        supplier1.withdraw(aDai, toWithdraw + 1);
+    }
+
+    function testFail_withdraw_after_supply_2() public {
+        test_withdraw_after_supply_part1();
+        test_withdraw_after_supply_part2();
+
+        supplier1.withdraw(aDai, 1 ether / 1000);
     }
 
     // Suppliers on Aave (no borrowers)
@@ -323,7 +332,6 @@ contract MarketsManagerForAaveTest is DSTest, Config, Utils {
         uint256 amount = 10 * 1e18;
         uint256 expectedScaledBalance = 0;
 
-        User[3] memory suppliers = [supplier1, supplier2, supplier3];
         for (uint256 i = 0; i < suppliers.length; i++) {
             User supplier = suppliers[i];
 
@@ -343,12 +351,7 @@ contract MarketsManagerForAaveTest is DSTest, Config, Utils {
             expectedScaledBalance += expectedSupplyBalanceOnPool;
 
             uint256 scaledBalance = IAToken(aDai).scaledBalanceOf(address(positionsManager));
-            uint256 diff;
-            if (scaledBalance > expectedScaledBalance) {
-                diff = scaledBalance - expectedScaledBalance;
-            } else {
-                diff = expectedScaledBalance - scaledBalance;
-            }
+            uint256 diff = get_abs_diff(scaledBalance, expectedScaledBalance);
 
             assertEq(diff, 0);
             (uint256 inP2P, uint256 onPool) = positionsManager.supplyBalanceInOf(
@@ -423,27 +426,26 @@ contract MarketsManagerForAaveTest is DSTest, Config, Utils {
         uint256 normalizedVariableDebt = lendingPool.getReserveNormalizedVariableDebt(dai);
 
         // Check borrower1 balances
-        assertEq(daiBalanceAfter, daiBalanceBefore + maxToBorrow);
+        assertEq(daiBalanceAfter, daiBalanceBefore + maxToBorrow, "Borrower DAI balance");
         (, uint256 onPool) = positionsManager.borrowBalanceInOf(aDai, address(borrower1));
         uint256 borrowBalanceOnPoolInUnderlying = aDUnitToUnderlying(
             onPool,
             normalizedVariableDebt
         );
 
-        uint256 diff;
-        if (borrowBalanceOnPoolInUnderlying > maxToBorrow) {
-            diff =
-                borrowBalanceOnPoolInUnderlying -
-                underlyingToAdUnit(maxToBorrow, normalizedVariableDebt);
-        } else {
-            diff = maxToBorrow - borrowBalanceOnPoolInUnderlying;
-        }
-
-        assertEq(diff, 0);
+        uint256 diff = get_abs_diff(
+            borrowBalanceOnPoolInUnderlying,
+            underlyingToAdUnit(maxToBorrow, normalizedVariableDebt)
+        );
+        assertEq(diff, 0, "Borrow balance onPool in underlying");
 
         // Check Morpho balances
-        assertEq(IERC20(dai).balanceOf(address(positionsManager)), 0);
-        assertEq(IERC20(variableDebtDai).balanceOf(address(positionsManager)), maxToBorrow);
+        assertEq(IERC20(dai).balanceOf(address(positionsManager)), 0, "Morpho DAI balance");
+        assertEq(
+            IERC20(variableDebtDai).balanceOf(address(positionsManager)),
+            maxToBorrow,
+            "Morpho variableDebtDai balance"
+        );
     }
 
     // Borrowers on Aave (no suppliers)
@@ -486,7 +488,8 @@ contract MarketsManagerForAaveTest is DSTest, Config, Utils {
         uint256 expectedMorphoBorrowBalance = 0;
         uint256 previousNormalizedVariableDebt = lendingPool.getReserveNormalizedVariableDebt(dai);
 
-        User[3] memory borrowers = [borrower1, borrower2, borrower3];
+        mine_blocks(1);
+
         for (uint256 i = 0; i < borrowers.length; i++) {
             User borrower = borrowers[i];
 
@@ -504,30 +507,25 @@ contract MarketsManagerForAaveTest is DSTest, Config, Utils {
 
             // All underlyings should have been sent to the borrower
             uint256 daiBalanceAfter = borrower.balanceOf(dai);
-            assertEq(daiBalanceAfter, daiBalanceBefore + borrowedAmount);
+            assertEq(daiBalanceAfter, daiBalanceBefore + borrowedAmount, "Borrower DAI balance");
             (, uint256 onPool) = positionsManager.borrowBalanceInOf(aDai, address(borrower1));
             uint256 borrowBalanceOnPoolInUnderlying = aDUnitToUnderlying(
                 onPool,
                 normalizedVariableDebt
             );
-            uint256 diff;
-            if (borrowBalanceOnPoolInUnderlying > borrowedAmount) {
-                diff = borrowBalanceOnPoolInUnderlying - borrowedAmount;
-            } else {
-                diff = borrowedAmount - borrowBalanceOnPoolInUnderlying;
-            }
-
-            assertEq(diff, 0);
+            assertEq(borrowBalanceOnPoolInUnderlying, borrowedAmount);
             // Update previous borrow index
             previousNormalizedVariableDebt = normalizedVariableDebt;
         }
 
         // Check Morpho balances
-        assertEq(IERC20(dai).balanceOf(address(positionsManager)), 0);
-        assertEq(
+        assertEq(IERC20(dai).balanceOf(address(positionsManager)), 0, "Morpho DAI balance");
+
+        uint256 diffBal = get_abs_diff(
             IERC20(variableDebtDai).balanceOf(address(positionsManager)),
             expectedMorphoBorrowBalance
         );
+        assertLe(diffBal, 1, "Morpho variableDebtDai balance");
     }
 
     // Borrowers on Aave (no suppliers)
@@ -701,359 +699,212 @@ contract MarketsManagerForAaveTest is DSTest, Config, Utils {
     // P2P interactions between supplier and borrowers
     // Supplier should withdraw her liquidity while enough aDaiToken in peer-to-peer contract
     function test_withdraw_liquidity_while_enough_adaitoken_in_p2p() public {
-        /*
-      const supplyAmount = utils.parseUnits('10');
-      let supplier;
-
-      for (const i in suppliers) {
-        supplier = suppliers[i];
-        const daiBalanceBefore = await daiToken.balanceOf(supplier.getAddress());
-        const expectedDaiBalanceAfter = daiBalanceBefore.sub(supplyAmount);
-        await daiToken.connect(supplier).approve(positionsManagerForAave.address, supplyAmount);
-        await positionsManagerForAave.connect(supplier).supply(aDai, supplyAmount);
-        const daiBalanceAfter = await daiToken.balanceOf(supplier.getAddress());
-
-        // Check ERC20 balance
-        expect(daiBalanceAfter).to.equal(expectedDaiBalanceAfter);
-        const normalizedIncome = await lendingPool.getReserveNormalizedIncome(dai);
-        const expectedSupplyBalanceOnPool = underlyingToScaledBalance(supplyAmount, normalizedIncome);
-        expect(
-          removeDigitsBigNumber(
-            4,
-            (await positionsManagerForAave.supplyBalanceInOf(aDai, supplier.getAddress())).onPool
-          )
-        ).to.equal(removeDigitsBigNumber(4, expectedSupplyBalanceOnPool));
-      }
-
-      // Borrower provides collateral
-      const collateralAmount = to6Decimals(utils.parseUnits('100'));
-      await usdcToken.connect(borrower1).approve(positionsManagerForAave.address, collateralAmount);
-      await positionsManagerForAave.connect(borrower1).supply(config.tokens.aUsdc.address, collateralAmount);
-
-      const previousSupplier1SupplyBalanceOnPool = (
-        await positionsManagerForAave.supplyBalanceInOf(aDai, supplier1.getAddress())
-      ).onPool;
-
-      // Borrowers borrows supplier1 amount
-      await positionsManagerForAave.connect(borrower1).borrow(aDai, supplyAmount);
-
-      // Check supplier1 balances
-      const p2pExchangeRate1 = await marketsManagerForAave.p2pUnitExchangeRate(aDai);
-      const normalizedIncome2 = await lendingPool.getReserveNormalizedIncome(dai);
-      // Expected balances of supplier1
-      const expectedSupplyBalanceOnPool2 = previousSupplier1SupplyBalanceOnPool.sub(
-        underlyingToScaledBalance(supplyAmount, normalizedIncome2)
-      );
-      const expectedSupplyBalanceInP2P2 = underlyingToP2PUnit(supplyAmount, p2pExchangeRate1);
-      const supplyBalanceOnPool2 = (await positionsManagerForAave.supplyBalanceInOf(aDai, supplier1.getAddress()))
-        .onPool;
-      const supplyBalanceInP2P2 = (await positionsManagerForAave.supplyBalanceInOf(aDai, supplier1.getAddress()))
-        .inP2P;
-      expect(removeDigitsBigNumber(2, supplyBalanceOnPool2)).to.equal(removeDigitsBigNumber(2, expectedSupplyBalanceOnPool2));
-      expect(removeDigitsBigNumber(2, supplyBalanceInP2P2)).to.equal(removeDigitsBigNumber(2, expectedSupplyBalanceInP2P2));
-
-      // Check borrower1 balances
-      const expectedBorrowBalanceInP2P1 = expectedSupplyBalanceInP2P2;
-      expect((await positionsManagerForAave.borrowBalanceInOf(aDai, borrower1.getAddress())).onPool).to.equal(0);
-      expect(
-        removeDigitsBigNumber(
-          2,
-          (await positionsManagerForAave.borrowBalanceInOf(aDai, borrower1.getAddress())).inP2P
-        )
-      ).to.equal(removeDigitsBigNumber(2, expectedBorrowBalanceInP2P1));
-
-      // Compare remaining to withdraw and the aToken contract balance
-      await marketsManagerForAave.connect(owner).updateP2PUnitExchangeRate(aDai);
-      const p2pExchangeRate2 = await marketsManagerForAave.p2pUnitExchangeRate(aDai);
-      const p2pExchangeRate3 = computeNewMorphoExchangeRate(
-        p2pExchangeRate2,
-        await marketsManagerForAave.p2pSPY(aDai),
-        1,
-        0
-      );
-      const daiBalanceBefore2 = await daiToken.balanceOf(supplier1.getAddress());
-      const supplyBalanceOnPool3 = (await positionsManagerForAave.supplyBalanceInOf(aDai, supplier1.getAddress()))
-        .onPool;
-      const supplyBalanceInP2P3 = (await positionsManagerForAave.supplyBalanceInOf(aDai, supplier1.getAddress()))
-        .inP2P;
-      const normalizedIncome3 = await lendingPool.getReserveNormalizedIncome(dai);
-      const supplyBalanceOnPoolInUnderlying = scaledBalanceToUnderlying(supplyBalanceOnPool3, normalizedIncome3);
-      const amountToWithdraw = supplyBalanceOnPoolInUnderlying.add(p2pUnitToUnderlying(supplyBalanceInP2P3, p2pExchangeRate3));
-      const expectedDaiBalanceAfter2 = daiBalanceBefore2.add(amountToWithdraw);
-      const remainingToWithdraw = amountToWithdraw.sub(supplyBalanceOnPoolInUnderlying);
-      const aTokenContractBalanceInUnderlying = scaledBalanceToUnderlying(
-        await aDaiToken.balanceOf(positionsManagerForAave.address),
-        normalizedIncome3
-      );
-      expect(remainingToWithdraw).to.be.lt(aTokenContractBalanceInUnderlying);
-
-      // supplier3 balances before the withdraw
-      const supplier3SupplyBalanceOnPool = (
-        await positionsManagerForAave.supplyBalanceInOf(aDai, supplier3.getAddress())
-      ).onPool;
-      const supplier3SupplyBalanceInP2P = (
-        await positionsManagerForAave.supplyBalanceInOf(aDai, supplier3.getAddress())
-      ).inP2P;
-
-      // supplier2 balances before the withdraw
-      const supplier2SupplyBalanceOnPool = (
-        await positionsManagerForAave.supplyBalanceInOf(aDai, supplier2.getAddress())
-      ).onPool;
-      const supplier2SupplyBalanceInP2P = (
-        await positionsManagerForAave.supplyBalanceInOf(aDai, supplier2.getAddress())
-      ).inP2P;
-
-      // borrower1 balances before the withdraw
-      const borrower1BorrowBalanceOnPool = (
-        await positionsManagerForAave.borrowBalanceInOf(aDai, borrower1.getAddress())
-      ).onPool;
-      const borrower1BorrowBalanceInP2P = (
-        await positionsManagerForAave.borrowBalanceInOf(aDai, borrower1.getAddress())
-      ).inP2P;
-
-      // Withdraw
-      await positionsManagerForAave.connect(supplier1).withdraw(aDai, amountToWithdraw);
-      const normalizedIncome4 = await lendingPool.getReserveNormalizedIncome(dai);
-      const borrowBalance = await variableDebtDaiToken.balanceOf(positionsManagerForAave.address);
-      const daiBalanceAfter2 = await daiToken.balanceOf(supplier1.getAddress());
-
-      const supplier2SupplyBalanceOnPoolInUnderlying = scaledBalanceToUnderlying(supplier2SupplyBalanceOnPool, normalizedIncome4);
-      const amountToMove = bigNumberMin(supplier2SupplyBalanceOnPoolInUnderlying, remainingToWithdraw);
-      const p2pExchangeRate4 = await marketsManagerForAave.p2pUnitExchangeRate(aDai);
-      const expectedSupplier2SupplyBalanceOnPool = supplier2SupplyBalanceOnPool.sub(
-        underlyingToScaledBalance(amountToMove, normalizedIncome4)
-      );
-      const expectedSupplier2SupplyBalanceInP2P = supplier2SupplyBalanceInP2P.add(underlyingToP2PUnit(amountToMove, p2pExchangeRate4));
-
-      // Check borrow balance of Morpho
-      expect(borrowBalance).to.equal(0);
-
-      // Check supplier1 underlying balance
-      expect(daiBalanceAfter2).to.equal(expectedDaiBalanceAfter2);
-
-      // Check supply balances of supplier1
-      expect(
-        removeDigitsBigNumber(
-          1,
-          (await positionsManagerForAave.supplyBalanceInOf(aDai, supplier1.getAddress())).onPool
-        )
-      ).to.equal(0);
-      expect(
-        removeDigitsBigNumber(
-          5,
-          (await positionsManagerForAave.supplyBalanceInOf(aDai, supplier1.getAddress())).inP2P
-        )
-      ).to.equal(0);
-
-      // Check supply balances of supplier2: supplier2 should have replaced supplier1
-      expect(
-        removeDigitsBigNumber(
-          4,
-          (await positionsManagerForAave.supplyBalanceInOf(aDai, supplier2.getAddress())).onPool
-        )
-      ).to.equal(removeDigitsBigNumber(4, expectedSupplier2SupplyBalanceOnPool));
-      expect(
-        removeDigitsBigNumber(
-          7,
-          (await positionsManagerForAave.supplyBalanceInOf(aDai, supplier2.getAddress())).inP2P
-        )
-      ).to.equal(removeDigitsBigNumber(7, expectedSupplier2SupplyBalanceInP2P));
-
-      // Check supply balances of supplier3: supplier3 balances should not move
-      expect((await positionsManagerForAave.supplyBalanceInOf(aDai, supplier3.getAddress())).onPool).to.equal(
-        supplier3SupplyBalanceOnPool
-      );
-      expect((await positionsManagerForAave.supplyBalanceInOf(aDai, supplier3.getAddress())).inP2P).to.equal(
-        supplier3SupplyBalanceInP2P
-      );
-
-      // Check borrow balances of borrower1: borrower1 balances should not move (except interest earn meanwhile)
-      expect((await positionsManagerForAave.borrowBalanceInOf(aDai, borrower1.getAddress())).onPool).to.equal(
-        borrower1BorrowBalanceOnPool
-      );
-      expect((await positionsManagerForAave.borrowBalanceInOf(aDai, borrower1.getAddress())).inP2P).to.equal(
-        borrower1BorrowBalanceInP2P
-      );
-      */
+        // TODO
     }
 
     // P2P interactions between supplier and borrowers
     // Borrower in peer-to-peer only, should be able to repay all borrow amount
     function test_borrower_in_p2p_only_repay_all_borrow() public {
-        /*
-      // Supplier supplys tokens
-      const supplyAmount = utils.parseUnits('10');
-      await daiToken.connect(supplier1).approve(positionsManagerForAave.address, supplyAmount);
-      await positionsManagerForAave.connect(supplier1).supply(aDai, supplyAmount);
+        // Supplier supplies tokens
+        uint256 supplyAmount = 10 ether;
+        supplier1.approve(dai, address(positionsManager), supplyAmount);
+        supplier1.supply(aDai, supplyAmount);
 
-      // Borrower borrows half of the tokens
-      const collateralAmount = to6Decimals(utils.parseUnits('100'));
-      const daiBalanceBefore = await daiToken.balanceOf(borrower1.getAddress());
-      const toBorrow = supplyAmount.div(2);
+        // Borrower borrows half of the tokens
+        uint256 collateralAmount = to6Decimals(100 ether);
+        uint256 daiBalanceBefore = borrower1.balanceOf(dai);
+        uint256 toBorrow = supplyAmount / 2;
 
-      await usdcToken.connect(borrower1).approve(positionsManagerForAave.address, collateralAmount);
-      await positionsManagerForAave.connect(borrower1).supply(config.tokens.aUsdc.address, collateralAmount);
-      await positionsManagerForAave.connect(borrower1).borrow(aDai, toBorrow);
+        borrower1.approve(usdc, address(positionsManager), collateralAmount);
+        borrower1.supply(aUsdc, collateralAmount);
+        borrower1.borrow(aDai, toBorrow);
 
-      const borrowerBalanceInP2P = (await positionsManagerForAave.borrowBalanceInOf(aDai, borrower1.getAddress()))
-        .inP2P;
-      const p2pSPY = await marketsManagerForAave.p2pSPY(aDai);
-      await marketsManagerForAave.updateP2PUnitExchangeRate(aDai);
-      const p2pUnitExchangeRate = await marketsManagerForAave.p2pUnitExchangeRate(aDai);
-      const p2pExchangeRate: BigNumber = computeNewMorphoExchangeRate(p2pUnitExchangeRate, p2pSPY, AVERAGE_BLOCK_TIME, 0);
-      const toRepay = p2pUnitToUnderlying(borrowerBalanceInP2P, p2pExchangeRate);
-      const expectedDaiBalanceAfter = daiBalanceBefore.add(toBorrow).sub(toRepay);
-      const previousMorphoScaledBalance = await aDaiToken.scaledBalanceOf(positionsManagerForAave.address);
+        (uint256 borrowerBalanceInP2P, ) = positionsManager.borrowBalanceInOf(
+            aDai,
+            address(borrower1)
+        );
+        uint256 p2pSPY = marketsManager.p2pSPY(aDai);
+        marketsManager.updateP2PUnitExchangeRate(aDai);
+        uint256 p2pUnitExchangeRate = marketsManager.p2pUnitExchangeRate(aDai);
+        uint256 p2pExchangeRate = computeNewMorphoExchangeRate(
+            p2pUnitExchangeRate,
+            p2pSPY,
+            AVERAGE_BLOCK_TIME,
+            0
+        );
+        uint256 toRepay = p2pUnitToUnderlying(borrowerBalanceInP2P, p2pExchangeRate);
+        uint256 expectedDaiBalanceAfter = daiBalanceBefore + toBorrow - toRepay;
+        uint256 previousMorphoScaledBalance = IAToken(aDai).scaledBalanceOf(
+            address(positionsManager)
+        );
 
-      // Repay
-      await daiToken.connect(borrower1).approve(positionsManagerForAave.address, toRepay);
-      await positionsManagerForAave.connect(borrower1).repay(aDai, toRepay);
-      const normalizedIncome = await lendingPool.getReserveNormalizedIncome(dai);
-      const expectedMorphoScaledBalance = previousMorphoScaledBalance.add(underlyingToScaledBalance(toRepay, normalizedIncome));
+        // Repay
+        borrower1.approve(dai, address(positionsManager), toRepay);
+        borrower1.repay(aDai, toRepay);
+        uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(dai);
+        uint256 expectedMorphoScaledBalance = previousMorphoScaledBalance +
+            underlyingToScaledBalance(toRepay, normalizedIncome);
 
-      // Check borrower1 balances
-      const daiBalanceAfter = await daiToken.balanceOf(borrower1.getAddress());
-      expect(daiBalanceAfter).to.equal(expectedDaiBalanceAfter);
-      // TODO: implement interest for borrowers to complete this test as borrower's debt is not increasing here
-      expect((await positionsManagerForAave.borrowBalanceInOf(aDai, borrower1.getAddress())).onPool).to.equal(0);
-      // Commented here due to the pow function issue
-      // expect(removeDigitsBigNumber(1, (await positionsManagerForAave.borrowBalanceInOf(borrower1.getAddress())).inP2P)).to.equal(0);
+        // Check borrower1 balances
+        uint256 daiBalanceAfter = borrower1.balanceOf(dai);
+        assertEq(daiBalanceAfter, expectedDaiBalanceAfter);
+        // TODO: implement interest for borrowers to complete this test as borrower's debt is not increasing here
+        (, uint256 onPool) = positionsManager.borrowBalanceInOf(aDai, address(borrower1));
+        assertEq(onPool, 0);
+        // Commented here due to the pow function issue
+        // expect(removeDigitsBigNumber(1, (await positionsManager.borrowBalanceInOf(address(borrower1))).inP2P)).to.equal(0);
 
-      // Check Morpho balances
-      expect(removeDigitsBigNumber(3, await aDaiToken.scaledBalanceOf(positionsManagerForAave.address))).to.equal(
-        removeDigitsBigNumber(3, expectedMorphoScaledBalance)
-      );
-      expect(await variableDebtDaiToken.balanceOf(positionsManagerForAave.address)).to.equal(0);
-      */
+        // Check Morpho balances
+        assertEq(
+            IAToken(aDai).scaledBalanceOf(address(positionsManager)),
+            expectedMorphoScaledBalance
+        );
+        assertEq(IERC20(variableDebtDai).balanceOf(address(positionsManager)), 0);
     }
 
     // P2P interactions between supplier and borrowers
     // Borrower in peer-to-peer and on Aave, should be able to repay all borrow amount
     function test_borrower_in_p2p_and_aave_repay_all_borrow() public {
-        /*
-      // Supplier supplys tokens
-      const supplyAmount = utils.parseUnits('10');
-      const amountToApprove = utils.parseUnits('100000000');
-      await daiToken.connect(supplier1).approve(positionsManagerForAave.address, supplyAmount);
-      await positionsManagerForAave.connect(supplier1).supply(aDai, supplyAmount);
+        /* TODO STACK TOO DEEP
+        // Supplier supplys tokens
+        uint256 supplyAmount = 10 ether;
+        uint256 amountToApprove = 100000000 ether;
+        supplier1.approve(dai, address(positionsManager), supplyAmount);
+        supplier1.supply(aDai, supplyAmount);
 
-      // Borrower borrows two times the amount of tokens;
-      const collateralAmount = to6Decimals(utils.parseUnits('100'));
-      await usdcToken.connect(borrower1).approve(positionsManagerForAave.address, collateralAmount);
-      await positionsManagerForAave.connect(borrower1).supply(config.tokens.aUsdc.address, collateralAmount);
-      const daiBalanceBefore = await daiToken.balanceOf(borrower1.getAddress());
-      const toBorrow = supplyAmount.mul(2);
-      const supplyBalanceOnPool = (await positionsManagerForAave.supplyBalanceInOf(aDai, supplier1.getAddress()))
-        .onPool;
-      await positionsManagerForAave.connect(borrower1).borrow(aDai, toBorrow);
+        // Borrower borrows two times the amount of tokens;
+        uint256 collateralAmount = to6Decimals(100 ether);
+        borrower1.approve(usdc, address(positionsManager), collateralAmount);
+        borrower1.supply(aUsdc, collateralAmount);
+        uint256 daiBalanceBefore = borrower1.balanceOf(dai);
+        uint256 toBorrow = supplyAmount * 2;
+        (, uint256 supplyBalanceOnPool) = positionsManager.supplyBalanceInOf(
+            aDai,
+            address(supplier1)
+        );
+        borrower1.borrow(aDai, toBorrow);
 
-      const normalizedIncome1 = await lendingPool.getReserveNormalizedIncome(dai);
-      const expectedMorphoBorrowBalance1 = toBorrow.sub(scaledBalanceToUnderlying(supplyBalanceOnPool, normalizedIncome1));
-      const morphoBorrowBalanceBefore1 = await variableDebtDaiToken.balanceOf(positionsManagerForAave.address);
-      expect(removeDigitsBigNumber(6, morphoBorrowBalanceBefore1)).to.equal(removeDigitsBigNumber(6, expectedMorphoBorrowBalance1));
-      await daiToken.connect(borrower1).approve(positionsManagerForAave.address, amountToApprove);
+        uint256 expectedMorphoBorrowBalance1 = toBorrow -
+            scaledBalanceToUnderlying(
+                supplyBalanceOnPool,
+                lendingPool.getReserveNormalizedIncome(dai)
+            );
+        assertEq(
+            IERC20(variableDebtDai).balanceOf(address(positionsManager)),
+            expectedMorphoBorrowBalance1
+        );
+        borrower1.approve(dai, address(positionsManager), amountToApprove);
 
-      const borrowerBalanceInP2P = (await positionsManagerForAave.borrowBalanceInOf(aDai, borrower1.getAddress()))
-        .inP2P;
-      const p2pSPY = await marketsManagerForAave.p2pSPY(aDai);
-      const p2pUnitExchangeRate = await marketsManagerForAave.p2pUnitExchangeRate(aDai);
-      const p2pExchangeRate = computeNewMorphoExchangeRate(p2pUnitExchangeRate, p2pSPY, AVERAGE_BLOCK_TIME * 2, 0);
-      const borrowerBalanceInP2PInUnderlying = p2pUnitToUnderlying(borrowerBalanceInP2P, p2pExchangeRate);
+        (uint256 borrowerBalanceInP2P, ) = positionsManager.borrowBalanceInOf(
+            aDai,
+            address(borrower1)
+        );
+        uint256 p2pSPY = marketsManager.p2pSPY(aDai);
+        uint256 p2pUnitExchangeRate = marketsManager.p2pUnitExchangeRate(aDai);
+        uint256 p2pExchangeRate = computeNewMorphoExchangeRate(
+            p2pUnitExchangeRate,
+            p2pSPY,
+            AVERAGE_BLOCK_TIME * 2,
+            0
+        );
+        uint256 borrowerBalanceInP2PInUnderlying = p2pUnitToUnderlying(
+            borrowerBalanceInP2P,
+            p2pExchangeRate
+        );
 
-      // Compute how much to repay
-      const normalizeVariableDebt1 = await lendingPool.getReserveNormalizedVariableDebt(dai);
-      const borrowerBalanceOnPool = (await positionsManagerForAave.borrowBalanceInOf(aDai, borrower1.getAddress()))
-        .onPool;
-      const toRepay = aDUnitToUnderlying(borrowerBalanceOnPool, normalizeVariableDebt1).add(borrowerBalanceInP2PInUnderlying);
-      const expectedDaiBalanceAfter = daiBalanceBefore.add(toBorrow).sub(toRepay);
-      const previousMorphoScaledBalance = await aDaiToken.scaledBalanceOf(positionsManagerForAave.address);
+        // Compute how much to repay
+        uint256 normalizeVariableDebt1 = lendingPool.getReserveNormalizedVariableDebt(dai);
+        (, uint256 borrowerBalanceOnPool) = positionsManager.borrowBalanceInOf(
+            aDai,
+            address(borrower1)
+        );
+        uint256 toRepay = aDUnitToUnderlying(borrowerBalanceOnPool, normalizeVariableDebt1) +
+            borrowerBalanceInP2PInUnderlying;
+        uint256 previousMorphoScaledBalance = IAToken(aDai).scaledBalanceOf(
+            address(positionsManager)
+        );
 
-      // Repay
-      await daiToken.connect(borrower1).approve(positionsManagerForAave.address, toRepay);
-      await positionsManagerForAave.connect(borrower1).repay(aDai, toRepay);
-      const normalizedIncome2 = await lendingPool.getReserveNormalizedIncome(dai);
-      const expectedMorphoScaledBalance = previousMorphoScaledBalance.add(
-        underlyingToScaledBalance(borrowerBalanceInP2PInUnderlying, normalizedIncome2)
-      );
+        // Repay
+        borrower1.approve(dai, address(positionsManager), toRepay);
+        borrower1.repay(aDai, toRepay);
+        uint256 normalizedIncome2 = lendingPool.getReserveNormalizedIncome(dai);
+        uint256 expectedMorphoScaledBalance = previousMorphoScaledBalance +
+            underlyingToScaledBalance(borrowerBalanceInP2PInUnderlying, normalizedIncome2);
 
-      // Check borrower1 balances
-      const daiBalanceAfter = await daiToken.balanceOf(borrower1.getAddress());
-      expect(daiBalanceAfter).to.equal(expectedDaiBalanceAfter);
-      const borrower1BorrowBalanceOnPool = (
-        await positionsManagerForAave.borrowBalanceInOf(aDai, borrower1.getAddress())
-      ).onPool;
-      expect(removeDigitsBigNumber(2, borrower1BorrowBalanceOnPool)).to.equal(0);
-      // WARNING: Commented here due to the pow function issue
-      expect((await positionsManagerForAave.borrowBalanceInOf(aDai, borrower1.getAddress())).inP2P).to.be.lt(
-        1000000000000
-      );
+        // Check borrower1 balances
+        assertEq(borrower1.balanceOf(dai), daiBalanceBefore + toBorrow - toRepay);
+        (uint256 inP2P, uint256 onPool) = positionsManager.borrowBalanceInOf(
+            aDai,
+            address(borrower1)
+        );
+        assertEq(onPool, 0);
+        assertLt(inP2P, 1000000000000);
 
-      // Check Morpho balances
-      expect(removeDigitsBigNumber(13, await aDaiToken.scaledBalanceOf(positionsManagerForAave.address))).to.equal(
-        removeDigitsBigNumber(13, expectedMorphoScaledBalance)
-      );
-      // Issue here: we cannot access the most updated borrow balance as it's updated during the repayBorrow on Aave.
-      // const expectedMorphoBorrowBalance2 = morphoBorrowBalanceBefore2.sub(borrowerBalanceOnPool.mul(normalizeVariableDebt2).div(WAD));
-      // expect(removeDigitsBigNumber(3, await aToken.callStatic.borrowBalanceStored(positionsManagerForAave.address))).to.equal(removeDigitsBigNumber(3, expectedMorphoBorrowBalance2));
-      */
+        // Check Morpho balances
+        assertEq(
+            IAToken(aDai).scaledBalanceOf(address(positionsManager)),
+            expectedMorphoScaledBalance
+        );
+
+        // Issue here: we cannot access the most updated borrow balance as it's updated during the repayBorrow on Aave.
+        // const expectedMorphoBorrowBalance2 = morphoBorrowBalanceBefore2.sub(borrowerBalanceOnPool.mul(normalizeVariableDebt2).div(WAD));
+        // expect(removeDigitsBigNumber(3, await aToken.callStatic.borrowBalanceStored(address(positionsManager)))).to.equal(removeDigitsBigNumber(3, expectedMorphoBorrowBalance2));
+        */
     }
 
     // P2P interactions between supplier and borrowers
     // Supplier should be connected to borrowers on pool when supplying
     function test_supplier_connected_to_borrowers_on_pool_when_supplying() public {
-        /*
-      const collateralAmount = to6Decimals(utils.parseUnits('100'));
-      const supplyAmount = utils.parseUnits('100');
-      const borrowAmount = utils.parseUnits('30');
+        uint256 collateralAmount = to6Decimals(100 ether);
+        uint256 supplyAmount = 100 ether;
+        uint256 borrowAmount = 30 ether;
 
-      // borrower1 borrows
-      await usdcToken.connect(borrower1).approve(positionsManagerForAave.address, collateralAmount);
-      await positionsManagerForAave.connect(borrower1).supply(config.tokens.aUsdc.address, collateralAmount);
-      await positionsManagerForAave.connect(borrower1).borrow(aDai, borrowAmount);
-      const borrower1BorrowBalanceOnPool = (
-        await positionsManagerForAave.borrowBalanceInOf(aDai, borrower1.getAddress())
-      ).onPool;
+        uint256[] memory borrowersBorrowBalanceOnPool = new uint256[](borrowers.length);
+        uint256 borrowersBorrowBalanceOnPoolTotal = 0;
+        for (uint256 i = 0; i < borrowers.length; i++) {
+            // borrower borrows
+            borrowers[i].approve(usdc, address(positionsManager), collateralAmount);
+            borrowers[i].supply(aUsdc, collateralAmount);
+            borrowers[i].borrow(aDai, borrowAmount);
+            (, uint256 borrowerBorrowBalanceOnPool) = positionsManager.borrowBalanceInOf(
+                aDai,
+                address(borrowers[i])
+            );
+            borrowersBorrowBalanceOnPool[i] = borrowerBorrowBalanceOnPool;
+            borrowersBorrowBalanceOnPoolTotal += borrowerBorrowBalanceOnPool;
+        }
 
-      // borrower2 borrows
-      await usdcToken.connect(borrower2).approve(positionsManagerForAave.address, collateralAmount);
-      await positionsManagerForAave.connect(borrower2).supply(config.tokens.aUsdc.address, collateralAmount);
-      await positionsManagerForAave.connect(borrower2).borrow(aDai, borrowAmount);
-      const borrower2BorrowBalanceOnPool = (
-        await positionsManagerForAave.borrowBalanceInOf(aDai, borrower2.getAddress())
-      ).onPool;
+        // supplier1 supply
+        supplier1.approve(dai, address(positionsManager), supplyAmount);
+        supplier1.supply(aDai, supplyAmount);
+        uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(dai);
+        uint256 normalizedVariableDebt = lendingPool.getReserveNormalizedVariableDebt(dai);
+        uint256 p2pUnitExchangeRate = marketsManager.p2pUnitExchangeRate(aDai);
 
-      // borrower3 borrows
-      await usdcToken.connect(borrower3).approve(positionsManagerForAave.address, collateralAmount);
-      await positionsManagerForAave.connect(borrower3).supply(config.tokens.aUsdc.address, collateralAmount);
-      await positionsManagerForAave.connect(borrower3).borrow(aDai, borrowAmount);
-      const borrower3BorrowBalanceOnPool = (
-        await positionsManagerForAave.borrowBalanceInOf(aDai, borrower3.getAddress())
-      ).onPool;
+        // Check balances
+        (uint256 supplyBalanceInP2P, uint256 supplyBalanceOnPool) = positionsManager
+            .supplyBalanceInOf(aDai, address(supplier1));
+        uint256 underlyingMatched = aDUnitToUnderlying(
+            borrowersBorrowBalanceOnPoolTotal,
+            normalizedVariableDebt
+        );
 
-      // supplier1 supply
-      await daiToken.connect(supplier1).approve(positionsManagerForAave.address, supplyAmount);
-      await positionsManagerForAave.connect(supplier1).supply(aDai, supplyAmount);
-      const normalizedIncome = await lendingPool.getReserveNormalizedIncome(dai);
-      const normalizedVariableDebt = await lendingPool.getReserveNormalizedVariableDebt(dai);
-      const p2pUnitExchangeRate = await marketsManagerForAave.p2pUnitExchangeRate(aDai);
+        uint256 expectedSupplyBalanceInP2P = underlyingToAdUnit(
+            underlyingMatched,
+            p2pUnitExchangeRate
+        );
+        uint256 expectedSupplyBalanceOnPool = underlyingToScaledBalance(
+            supplyAmount - underlyingMatched,
+            normalizedIncome
+        );
 
-      // Check balances
-      const supplyBalanceInP2P = (await positionsManagerForAave.supplyBalanceInOf(aDai, supplier1.getAddress()))
-        .inP2P;
-      const supplyBalanceOnPool = (await positionsManagerForAave.supplyBalanceInOf(aDai, supplier1.getAddress()))
-        .onPool;
-      const underlyingMatched = aDUnitToUnderlying(
-        borrower1BorrowBalanceOnPool.add(borrower2BorrowBalanceOnPool).add(borrower3BorrowBalanceOnPool),
-        normalizedVariableDebt
-      );
-      const expectedSupplyBalanceInP2P = underlyingToAdUnit(underlyingMatched, p2pUnitExchangeRate);
-      const expectedSupplyBalanceOnPool = underlyingToScaledBalance(supplyAmount.sub(underlyingMatched), normalizedIncome);
-      expect(removeDigitsBigNumber(2, supplyBalanceInP2P)).to.equal(removeDigitsBigNumber(2, expectedSupplyBalanceInP2P));
-      expect(removeDigitsBigNumber(2, supplyBalanceOnPool)).to.equal(removeDigitsBigNumber(2, expectedSupplyBalanceOnPool));
-      expect((await positionsManagerForAave.borrowBalanceInOf(aDai, borrower1.getAddress())).onPool).to.be.lte(1);
-      expect((await positionsManagerForAave.borrowBalanceInOf(aDai, borrower2.getAddress())).onPool).to.be.lte(1);
-      expect((await positionsManagerForAave.borrowBalanceInOf(aDai, borrower3.getAddress())).onPool).to.be.lte(1);
-      */
+        assertEq(supplyBalanceInP2P, expectedSupplyBalanceInP2P);
+        assertEq(supplyBalanceOnPool, expectedSupplyBalanceOnPool);
+
+        for (uint256 i = 0; i < borrowers.length; i++) {
+            (, uint256 onPool) = positionsManager.borrowBalanceInOf(aDai, address(borrowers[i]));
+            assertLe(onPool, 1);
+        }
     }
 
     // P2P interactions between supplier and borrowers
@@ -1063,29 +914,19 @@ contract MarketsManagerForAaveTest is DSTest, Config, Utils {
         uint256 supplyAmount = 30 ether;
         uint256 borrowAmount = 100 ether;
 
-        // supplier1 supplies
-        supplier1.approve(dai, address(positionsManager), supplyAmount);
-        supplier1.supply(aDai, supplyAmount);
-        (, uint256 supplier1BorrowBalanceOnPool) = positionsManager.supplyBalanceInOf(
-            aDai,
-            address(supplier1)
-        );
-
-        // supplier2 supplies
-        supplier2.approve(dai, address(positionsManager), supplyAmount);
-        supplier2.supply(aDai, supplyAmount);
-        (, uint256 supplier2BorrowBalanceOnPool) = positionsManager.supplyBalanceInOf(
-            aDai,
-            address(supplier2)
-        );
-
-        // supplier3 supplies
-        supplier3.approve(dai, address(positionsManager), supplyAmount);
-        supplier3.supply(aDai, supplyAmount);
-        (, uint256 supplier3BorrowBalanceOnPool) = positionsManager.supplyBalanceInOf(
-            aDai,
-            address(supplier3)
-        );
+        uint256[] memory suppliersBorrowBalanceOnPool = new uint256[](suppliers.length);
+        uint256 suppliersBorrowBalanceOnPoolTotal = 0;
+        for (uint256 i = 0; i < suppliers.length; i++) {
+            // supplier supplies
+            suppliers[i].approve(dai, address(positionsManager), supplyAmount);
+            suppliers[i].supply(aDai, supplyAmount);
+            (, uint256 supplierBorrowBalanceOnPool) = positionsManager.supplyBalanceInOf(
+                aDai,
+                address(suppliers[i])
+            );
+            suppliersBorrowBalanceOnPool[i] = supplierBorrowBalanceOnPool;
+            suppliersBorrowBalanceOnPoolTotal += supplierBorrowBalanceOnPool;
+        }
 
         // borrower1 borrows
         borrower1.approve(usdc, address(positionsManager), collateralAmount);
@@ -1101,9 +942,7 @@ contract MarketsManagerForAaveTest is DSTest, Config, Utils {
             address(borrower1)
         );
         uint256 underlyingMatched = scaledBalanceToUnderlying(
-            supplier1BorrowBalanceOnPool +
-                supplier2BorrowBalanceOnPool +
-                supplier3BorrowBalanceOnPool,
+            suppliersBorrowBalanceOnPoolTotal,
             normalizedIncome
         );
 
@@ -1119,247 +958,200 @@ contract MarketsManagerForAaveTest is DSTest, Config, Utils {
         assertEq(inP2P, expectedBorrowBalanceInP2P);
         assertEq(onPool, expectedBorrowBalanceOnPool);
 
-        (, onPool) = positionsManager.supplyBalanceInOf(aDai, address(supplier1));
-        assertLe(onPool, 1);
-        (, onPool) = positionsManager.supplyBalanceInOf(aDai, address(supplier2));
-        assertLe(onPool, 1);
-        (, onPool) = positionsManager.supplyBalanceInOf(aDai, address(supplier3));
-        assertLe(onPool, 1);
+        for (uint256 i = 0; i < suppliers.length; i++) {
+            (, onPool) = positionsManager.supplyBalanceInOf(aDai, address(suppliers[i]));
+            assertLe(onPool, 1);
+        }
     }
 
     // ====================
     // = Test liquidation =
     // ====================
 
+    function create_custom_price_oracle() public returns (SimplePriceOracle) {
+        SimplePriceOracle customOracle = new SimplePriceOracle();
+
+        hevm.store(
+            address(lendingPoolAddressesProvider),
+            keccak256(abi.encode(bytes32("PRICE_ORACLE"), 2)),
+            bytes32(uint256(uint160(address(customOracle))))
+        );
+
+        // !!! WARNING !!! All tokens added with createMarket must be set
+        customOracle.setDirectPrice(dai, oracle.getAssetPrice(dai));
+        customOracle.setDirectPrice(usdc, oracle.getAssetPrice(usdc));
+        customOracle.setDirectPrice(usdt, oracle.getAssetPrice(usdt));
+        customOracle.setDirectPrice(wbtc, oracle.getAssetPrice(wbtc));
+        customOracle.setDirectPrice(wmatic, oracle.getAssetPrice(wmatic));
+
+        return customOracle;
+    }
+
+    function test_create_custom_price_oracle() public {
+        assertEq(lendingPoolAddressesProvider.getPriceOracle(), address(oracle));
+        SimplePriceOracle customOracle = create_custom_price_oracle();
+
+        assertEq(lendingPoolAddressesProvider.getPriceOracle(), address(customOracle));
+
+        assertEq(customOracle.getAssetPrice(dai), oracle.getAssetPrice(dai));
+        assertEq(customOracle.getAssetPrice(usdc), oracle.getAssetPrice(usdc));
+        assertEq(customOracle.getAssetPrice(usdt), oracle.getAssetPrice(usdt));
+        assertEq(customOracle.getAssetPrice(wbtc), oracle.getAssetPrice(wbtc));
+        assertEq(customOracle.getAssetPrice(wmatic), oracle.getAssetPrice(wmatic));
+    }
+
     // Test liquidation
     // Borrower should be liquidated while supply (collateral) is only on Aave
     function test_borrower_liquidated_while_supply_on_aave() public {
-        /*
-      // Deploy custom price oracle
-      const PriceOracle = await ethers.getContractFactory('contracts/aave/test/SimplePriceOracle.sol:SimplePriceOracle');
-      priceOracle = await PriceOracle.deploy();
-      await priceOracle.deployed();
+        SimplePriceOracle customOracle = create_custom_price_oracle();
 
-      // Install admin user
-      const adminAddress = await lendingPoolAddressesProvider.owner();
-      await hre.network.provider.send('hardhat_impersonateAccount', [adminAddress]);
-      await hre.network.provider.send('hardhat_setBalance', [adminAddress, ethers.utils.parseEther('10').toHexString()]);
-      const admin = await ethers.getSigner(adminAddress);
+        // Deposit
+        uint256 amount = to6Decimals(100 ether);
+        borrower1.approve(usdc, address(positionsManager), amount);
+        borrower1.supply(aUsdc, amount);
 
-      // Deposit
-      const amount = to6Decimals(utils.parseUnits('100'));
-      await usdcToken.connect(borrower1).approve(positionsManagerForAave.address, amount);
-      await positionsManagerForAave.connect(borrower1).supply(config.tokens.aUsdc.address, amount);
-      const collateralBalanceInScaledBalance = (
-        await positionsManagerForAave.supplyBalanceInOf(config.tokens.aUsdc.address, borrower1.getAddress())
-      ).onPool;
-      const normalizedIncome = await lendingPool.getReserveNormalizedIncome(config.tokens.usdc.address);
-      const collateralBalanceInUnderlying = scaledBalanceToUnderlying(collateralBalanceInScaledBalance, normalizedIncome);
-      const { liquidationThreshold } = await protocolDataProvider.getReserveConfigurationData(dai);
-      const usdcPrice = await oracle.getAssetPrice(config.tokens.usdc.address);
-      const usdcDecimals = await usdcToken.decimals();
-      const daiPrice = await oracle.getAssetPrice(dai);
-      const daiDecimals = await daiToken.decimals();
-      const maxToBorrow = collateralBalanceInUnderlying
-        .mul(usdcPrice)
-        .div(BigNumber.from(10).pow(usdcDecimals))
-        .mul(BigNumber.from(10).pow(daiDecimals))
-        .div(daiPrice)
-        .mul(liquidationThreshold)
-        .div(PERCENT_BASE);
+        uint256 collateralInUnderlying = get_on_pool_in_underlying(borrower1, aUsdc, usdc);
+        uint256 maxToBorrow = get_max_to_borrow(collateralInUnderlying, usdc, dai, customOracle);
 
-      // Borrow DAI
-      await positionsManagerForAave.connect(borrower1).borrow(aDai, maxToBorrow);
-      const collateralBalanceBefore = (await positionsManagerForAave.supplyBalanceInOf(config.tokens.aUsdc.address, borrower1.getAddress()))
-        .onPool;
-      const borrowBalanceBefore = (await positionsManagerForAave.borrowBalanceInOf(aDai, borrower1.getAddress()))
-        .onPool;
+        // Borrow DAI
+        borrower1.borrow(aDai, maxToBorrow);
+        (, uint256 collateralBalanceBefore) = positionsManager.supplyBalanceInOf(
+            aUsdc,
+            address(borrower1)
+        );
+        (, uint256 borrowBalanceBefore) = positionsManager.borrowBalanceInOf(
+            aDai,
+            address(borrower1)
+        );
 
-      // Set price oracle
-      await lendingPoolAddressesProvider.connect(admin).setPriceOracle(priceOracle.address);
-      priceOracle.setDirectPrice(dai, BigNumber.from('1070182920000000000'));
-      priceOracle.setDirectPrice(config.tokens.usdc.address, WAD);
-      priceOracle.setDirectPrice(config.tokens.wbtc.address, WAD);
-      priceOracle.setDirectPrice(config.tokens.usdt.address, WAD);
+        // Set price oracle
+        customOracle.setDirectPrice(dai, 1070182920000000000);
 
-      // Mine block
-      await hre.network.provider.send('evm_mine', []);
+        // Mine block
+        mine_blocks(1);
 
-      // Liquidate
-      const toRepay = maxToBorrow.div(2);
-      await daiToken.connect(liquidator).approve(positionsManagerForAave.address, toRepay);
-      const usdcBalanceBefore = await usdcToken.balanceOf(liquidator.getAddress());
-      const daiBalanceBefore = await daiToken.balanceOf(liquidator.getAddress());
-      await positionsManagerForAave
-        .connect(liquidator)
-        .liquidate(aDai, config.tokens.aUsdc.address, borrower1.getAddress(), toRepay);
-      const usdcBalanceAfter = await usdcToken.balanceOf(liquidator.getAddress());
-      const daiBalanceAfter = await daiToken.balanceOf(liquidator.getAddress());
+        // Liquidate
+        uint256 toRepay = maxToBorrow / 2;
+        User liquidator = borrower3;
+        liquidator.approve(dai, address(positionsManager), toRepay);
+        uint256 usdcBalanceBefore = liquidator.balanceOf(usdc);
+        uint256 daiBalanceBefore = liquidator.balanceOf(dai);
+        liquidator.liquidate(aDai, aUsdc, address(borrower1), toRepay);
 
-      // Liquidation parameters
-      const normalizedVariableDebt = await lendingPool.getReserveNormalizedVariableDebt(dai);
-      const cUsdNormalizedIncome = await lendingPool.getReserveNormalizedIncome(config.tokens.usdc.address);
-      const { liquidationBonus } = await protocolDataProvider.getReserveConfigurationData(config.tokens.usdc.address);
-      const collateralAssetPrice = await priceOracle.getAssetPrice(config.tokens.usdc.address);
-      const borrowedAssetPrice = await priceOracle.getAssetPrice(dai);
-      const amountToSeize = toRepay
-        .mul(borrowedAssetPrice)
-        .div(BigNumber.from(10).pow(daiDecimals))
-        .mul(BigNumber.from(10).pow(usdcDecimals))
-        .div(collateralAssetPrice)
-        .mul(liquidationBonus)
-        .div(10000);
-      const expectedCollateralBalanceAfter = collateralBalanceBefore.sub(underlyingToScaledBalance(amountToSeize, cUsdNormalizedIncome));
-      const expectedBorrowBalanceAfter = borrowBalanceBefore.sub(underlyingToAdUnit(toRepay, normalizedVariableDebt));
-      const expectedUsdcBalanceAfter = usdcBalanceBefore.add(amountToSeize);
-      const expectedDaiBalanceAfter = daiBalanceBefore.sub(toRepay);
+        // Liquidation parameters
+        uint256 amountToSeize = get_amount_to_seize(toRepay, usdc, dai, customOracle);
 
-      // Check balances
-      expect(
-        removeDigitsBigNumber(
-          6,
-          (await positionsManagerForAave.supplyBalanceInOf(config.tokens.aUsdc.address, borrower1.getAddress())).onPool
-        )
-      ).to.equal(removeDigitsBigNumber(6, expectedCollateralBalanceAfter));
-      expect(
-        removeDigitsBigNumber(
-          2,
-          (await positionsManagerForAave.borrowBalanceInOf(aDai, borrower1.getAddress())).onPool
-        )
-      ).to.equal(removeDigitsBigNumber(2, expectedBorrowBalanceAfter));
-      expect(removeDigitsBigNumber(2, usdcBalanceAfter)).to.equal(removeDigitsBigNumber(2, expectedUsdcBalanceAfter));
-      expect(daiBalanceAfter).to.equal(expectedDaiBalanceAfter);
-      */
+        // Check balances
+        (, uint256 onPool) = positionsManager.supplyBalanceInOf(aUsdc, address(borrower1));
+        assertEq(
+            onPool,
+            collateralBalanceBefore -
+                underlyingToScaledBalance(
+                    amountToSeize,
+                    lendingPool.getReserveNormalizedIncome(usdc)
+                ),
+            "Borrower USDC supplied balance on pool"
+        );
+
+        (, onPool) = positionsManager.borrowBalanceInOf(aUsdc, address(borrower1));
+        assertEq(
+            onPool,
+            borrowBalanceBefore -
+                underlyingToAdUnit(toRepay, lendingPool.getReserveNormalizedVariableDebt(dai)),
+            "Borrower USDC borrowed balance on pool"
+        );
+
+        assertEq(
+            liquidator.balanceOf(usdc),
+            usdcBalanceBefore + amountToSeize,
+            "Liquidator USDC balance after liquidation"
+        );
+        assertEq(
+            liquidator.balanceOf(dai),
+            daiBalanceBefore - toRepay,
+            "Liquidator DAI balance after liquidation"
+        );
     }
 
     // Test liquidation
     // Borrower should be liquidated while supply (collateral) is on Aave and in peer-to-peer
     function test_borrower_liquidated_while_supply_on_aave_and_p2p() public {
-        /*
-      // Deploy custom price oracle
-      const PriceOracle = await ethers.getContractFactory('contracts/aave/test/SimplePriceOracle.sol:SimplePriceOracle');
-      priceOracle = await PriceOracle.deploy();
-      await priceOracle.deployed();
+        /* STACK TOO DEEP 
+        // Deploy custom price oracle
+        SimplePriceOracle customOracle = create_custom_price_oracle();
 
-      // Install admin user
-      const adminAddress = await lendingPoolAddressesProvider.owner();
-      await hre.network.provider.send('hardhat_impersonateAccount', [adminAddress]);
-      await hre.network.provider.send('hardhat_setBalance', [adminAddress, ethers.utils.parseEther('10').toHexString()]);
-      const admin = await ethers.getSigner(adminAddress);
-      await lendingPoolAddressesProvider.connect(admin).setPriceOracle(oracle.address);
+        // supplier1 supplies DAI
+        supplier1.approve(dai, address(positionsManager), 200 ether);
+        supplier1.supply(aDai, 200 ether);
 
-      // supplier1 supplies DAI
-      await daiToken.connect(supplier1).approve(positionsManagerForAave.address, utils.parseUnits('200'));
-      await positionsManagerForAave.connect(supplier1).supply(aDai, utils.parseUnits('200'));
+        // borrower1 supplies USDC as supply (collateral)
+        uint256 amount = to6Decimals(100 ether);
+        borrower1.approve(usdc, address(positionsManager), amount);
+        borrower1.supply(aUsdc, amount);
 
-      // borrower1 supplies USDC as supply (collateral)
-      const amount = to6Decimals(utils.parseUnits('100'));
-      await usdcToken.connect(borrower1).approve(positionsManagerForAave.address, amount);
-      await positionsManagerForAave.connect(borrower1).supply(config.tokens.aUsdc.address, amount);
+        // borrower2 borrows part of supply of borrower1 -> borrower1 has supply in peer-to-peer and on Aave
+        uint256 toBorrow = amount;
+        borrower2.approve(wbtc, address(positionsManager), 10**8);
+        borrower2.supply(aWbtc, 10**8);
+        borrower2.borrow(aUsdc, toBorrow);
 
-      // borrower2 borrows part of supply of borrower1 -> borrower1 has supply in peer-to-peer and on Aave
-      const toBorrow = amount;
-      const toSupply = BigNumber.from(10).pow(8);
-      await wbtcToken.connect(borrower2).approve(positionsManagerForAave.address, toSupply);
-      await positionsManagerForAave.connect(borrower2).supply(config.tokens.aWbtc.address, toSupply);
-      await positionsManagerForAave.connect(borrower2).borrow(config.tokens.aUsdc.address, toBorrow);
+        // borrower1 borrows DAI
+        (uint256 inP2P, uint256 onPool) = positionsManager.supplyBalanceInOf(
+            aUsdc,
+            address(borrower1)
+        );
 
-      // borrower1 borrows DAI
-      const usdcNormalizedIncome1 = await lendingPool.getReserveNormalizedIncome(config.tokens.usdc.address);
-      const p2pUsdcExchangeRate1 = await marketsManagerForAave.p2pUnitExchangeRate(config.tokens.aUsdc.address);
-      const supplyBalanceOnPool1 = (await positionsManagerForAave.supplyBalanceInOf(config.tokens.aUsdc.address, borrower1.getAddress()))
-        .onPool;
-      const supplyBalanceInP2P1 = (await positionsManagerForAave.supplyBalanceInOf(config.tokens.aUsdc.address, borrower1.getAddress()))
-        .inP2P;
-      const supplyBalanceOnPoolInUnderlying = scaledBalanceToUnderlying(supplyBalanceOnPool1, usdcNormalizedIncome1);
-      const supplyBalanceMorphoInUnderlying = p2pUnitToUnderlying(supplyBalanceInP2P1, p2pUsdcExchangeRate1);
-      const supplyBalanceInUnderlying = supplyBalanceOnPoolInUnderlying.add(supplyBalanceMorphoInUnderlying);
-      const { liquidationThreshold } = await protocolDataProvider.getReserveConfigurationData(dai);
-      const usdcPrice = await oracle.getAssetPrice(config.tokens.usdc.address);
-      const usdcDecimals = await usdcToken.decimals();
-      const daiPrice = await oracle.getAssetPrice(dai);
-      const daiDecimals = await daiToken.decimals();
-      const maxToBorrow = supplyBalanceInUnderlying
-        .mul(usdcPrice)
-        .div(BigNumber.from(10).pow(usdcDecimals))
-        .mul(BigNumber.from(10).pow(daiDecimals))
-        .div(daiPrice)
-        .mul(liquidationThreshold)
-        .div(PERCENT_BASE);
-      await positionsManagerForAave.connect(borrower1).borrow(aDai, maxToBorrow);
-      const collateralBalanceOnPoolBefore = (
-        await positionsManagerForAave.supplyBalanceInOf(config.tokens.aUsdc.address, borrower1.getAddress())
-      ).onPool;
-      const collateralBalanceInP2PBefore = (
-        await positionsManagerForAave.supplyBalanceInOf(config.tokens.aUsdc.address, borrower1.getAddress())
-      ).inP2P;
-      const borrowBalanceInP2PBefore = (await positionsManagerForAave.borrowBalanceInOf(aDai, borrower1.getAddress()))
-        .inP2P;
+        uint256 supplyBalanceInUnderlying = scaledBalanceToUnderlying(
+            onPool,
+            lendingPool.getReserveNormalizedIncome(usdc)
+        ) + p2pUnitToUnderlying(inP2P, marketsManager.p2pUnitExchangeRate(aUsdc));
 
-      // Set price oracle
-      await lendingPoolAddressesProvider.connect(admin).setPriceOracle(priceOracle.address);
-      priceOracle.setDirectPrice(dai, BigNumber.from('1070182920000000000'));
-      priceOracle.setDirectPrice(config.tokens.usdc.address, WAD);
-      priceOracle.setDirectPrice(config.tokens.wbtc.address, WAD);
-      priceOracle.setDirectPrice(config.tokens.usdt.address, WAD);
+        uint256 maxToBorrow = get_max_to_borrow(supplyBalanceInUnderlying, usdc, dai, customOracle);
+        borrower1.borrow(aDai, maxToBorrow);
+        (inP2P, onPool) = positionsManager.supplyBalanceInOf(aUsdc, address(borrower1));
+        (uint256 borrowBalanceInP2PBefore, ) = positionsManager.borrowBalanceInOf(
+            aDai,
+            address(borrower1)
+        );
 
-      // Mine block
-      await hre.network.provider.send('evm_mine', []);
+        // Set price oracle
+        customOracle.setDirectPrice(dai, 1070182920000000000);
 
-      // liquidator liquidates borrower1's position
-      const toRepay = maxToBorrow.mul(LIQUIDATION_CLOSE_FACTOR_PERCENT).div(10000);
-      await daiToken.connect(liquidator).approve(positionsManagerForAave.address, toRepay);
-      const usdcBalanceBefore = await usdcToken.balanceOf(liquidator.getAddress());
-      const daiBalanceBefore = await daiToken.balanceOf(liquidator.getAddress());
-      await positionsManagerForAave
-        .connect(liquidator)
-        .liquidate(aDai, config.tokens.aUsdc.address, borrower1.getAddress(), toRepay);
-      const usdcBalanceAfter = await usdcToken.balanceOf(liquidator.getAddress());
-      const daiBalanceAfter = await daiToken.balanceOf(liquidator.getAddress());
+        // Mine block
+        mine_blocks(1);
 
-      // Liquidation parameters
-      const p2pDaiExchangeRate = await marketsManagerForAave.p2pUnitExchangeRate(aDai);
-      const usdcNormalizedIncome = await lendingPool.getReserveNormalizedIncome(config.tokens.usdc.address);
-      const { liquidationBonus } = await protocolDataProvider.getReserveConfigurationData(config.tokens.usdc.address);
-      const collateralAssetPrice = await priceOracle.getAssetPrice(config.tokens.usdc.address);
-      const borrowedAssetPrice = await priceOracle.getAssetPrice(dai);
-      const amountToSeize = toRepay
-        .mul(borrowedAssetPrice)
-        .mul(BigNumber.from(10).pow(usdcDecimals))
-        .div(BigNumber.from(10).pow(daiDecimals))
-        .div(collateralAssetPrice)
-        .mul(liquidationBonus)
-        .div(PERCENT_BASE);
-      const expectedCollateralBalanceInP2PAfter = collateralBalanceInP2PBefore.sub(
-        amountToSeize.sub(scaledBalanceToUnderlying(collateralBalanceOnPoolBefore, usdcNormalizedIncome))
-      );
-      const expectedBorrowBalanceInP2PAfter = borrowBalanceInP2PBefore.sub(underlyingToP2PUnit(toRepay, p2pDaiExchangeRate));
-      const expectedUsdcBalanceAfter = usdcBalanceBefore.add(amountToSeize);
-      const expectedDaiBalanceAfter = daiBalanceBefore.sub(toRepay);
+        // liquidator liquidates borrower1's position
+        uint256 toRepay = (maxToBorrow * LIQUIDATION_CLOSE_FACTOR_PERCENT) / PERCENT_BASE;
+        User liquidator = borrower3;
+        liquidator.approve(dai, address(positionsManager), toRepay);
+        uint256 usdcBalanceBefore = liquidator.balanceOf(usdc);
+        uint256 daiBalanceBefore = liquidator.balanceOf(dai);
+        liquidator.liquidate(aDai, aUsdc, address(borrower1), toRepay);
 
-      // Check liquidatee balances
-      expect((await positionsManagerForAave.supplyBalanceInOf(config.tokens.aUsdc.address, borrower1.getAddress())).onPool).to.equal(0);
-      expect(
-        removeDigitsBigNumber(
-          2,
-          (await positionsManagerForAave.supplyBalanceInOf(config.tokens.aUsdc.address, borrower1.getAddress())).inP2P
-        )
-      ).to.equal(removeDigitsBigNumber(2, expectedCollateralBalanceInP2PAfter));
-      expect((await positionsManagerForAave.borrowBalanceInOf(aDai, borrower1.getAddress())).onPool).to.equal(0);
-      expect(
-        removeDigitsBigNumber(
-          2,
-          (await positionsManagerForAave.borrowBalanceInOf(aDai, borrower1.getAddress())).inP2P
-        )
-      ).to.equal(removeDigitsBigNumber(2, expectedBorrowBalanceInP2PAfter));
+        // Liquidation parameters
+        uint256 amountToSeize = get_amount_to_seize(toRepay, usdc, dai, customOracle);
+        uint256 expectedCollateralBalanceInP2PAfter = inP2P -
+            amountToSeize -
+            scaledBalanceToUnderlying(onPool, lendingPool.getReserveNormalizedIncome(usdc));
+        uint256 expectedBorrowBalanceInP2PAfter = borrowBalanceInP2PBefore -
+            underlyingToP2PUnit(toRepay, marketsManager.p2pUnitExchangeRate(aDai));
+        uint256 expectedUsdcBalanceAfter = usdcBalanceBefore + amountToSeize;
+        uint256 expectedDaiBalanceAfter = daiBalanceBefore - toRepay;
 
-      // Check liquidator balances
-      let diff;
-      if (usdcBalanceAfter.gt(expectedUsdcBalanceAfter)) diff = usdcBalanceAfter.sub(expectedUsdcBalanceAfter);
-      else diff = expectedUsdcBalanceAfter.sub(usdcBalanceAfter);
-      expect(removeDigitsBigNumber(1, diff)).to.equal(0);
-      expect(daiBalanceAfter).to.equal(expectedDaiBalanceAfter);
-      */
+        // Check liquidatee balances
+        (inP2P, onPool) = positionsManager.supplyBalanceInOf(aUsdc, address(borrower1));
+        assertEq(onPool, 0);
+        assertEq(inP2P, expectedCollateralBalanceInP2PAfter);
+
+        (inP2P, onPool) = positionsManager.borrowBalanceInOf(aDai, address(borrower1));
+        assertEq(onPool, 0);
+        assertEq(inP2P, expectedBorrowBalanceInP2PAfter);
+
+        // Check liquidator balances
+        uint256 diff = get_abs_diff(liquidator.balanceOf(usdc), expectedUsdcBalanceAfter);
+        assertEq(diff, 0);
+        assertEq(liquidator.balanceOf(dai), expectedDaiBalanceAfter);
+        */
     }
 
     // =============
@@ -1409,8 +1201,7 @@ contract MarketsManagerForAaveTest is DSTest, Config, Utils {
         supplier1.borrow(aUsdc, toBorrow);
 
         // Mine 1000 blocks
-        hevm.roll(block.number + 1000);
-        hevm.warp(block.timestamp + 10000);
+        mine_blocks(1000);
 
         address[] memory tokens = new address[](1);
         tokens[0] = variableDebtUsdc;
@@ -1470,5 +1261,62 @@ contract MarketsManagerForAaveTest is DSTest, Config, Utils {
         // supplier1 tries to withdraw
         borrower1.borrow(aDai, toBorrow);
         supplier1.withdraw(aDai, toSupply);
+    }
+
+    // ===================
+    // = Other functions =
+    // ===================
+
+    function get_on_pool_in_underlying(
+        User _user,
+        address _aToken,
+        address _token
+    ) internal view returns (uint256) {
+        (, uint256 onPool) = positionsManager.supplyBalanceInOf(_aToken, address(_user));
+
+        uint256 inUnderlying = scaledBalanceToUnderlying(
+            onPool,
+            lendingPool.getReserveNormalizedIncome(_token)
+        );
+
+        return inUnderlying;
+    }
+
+    function get_max_to_borrow(
+        uint256 _collateralInUnderlying,
+        address _suppliedAsset,
+        address _borrowedAsset,
+        SimplePriceOracle _oracle
+    ) internal view returns (uint256) {
+        (, , uint256 liquidationThreshold, , , , , , , ) = protocolDataProvider
+            .getReserveConfigurationData(_borrowedAsset);
+        uint256 maxToBorrow = (((((_collateralInUnderlying *
+            _oracle.getAssetPrice(_suppliedAsset)) / 10**ERC20(_suppliedAsset).decimals()) *
+            10**ERC20(_borrowedAsset).decimals()) / _oracle.getAssetPrice(_borrowedAsset)) *
+            liquidationThreshold) / PERCENT_BASE;
+        return maxToBorrow;
+    }
+
+    function get_amount_to_seize(
+        uint256 _toRepay,
+        address _suppliedAsset,
+        address _borrowedAsset,
+        SimplePriceOracle _oracle /*view*/
+    ) internal returns (uint256) {
+        (, , , uint256 liquidationBonus, , , , , , ) = protocolDataProvider
+            .getReserveConfigurationData(_borrowedAsset);
+
+        emit log_named_uint("toRepay", _toRepay);
+
+        uint256 collateralAssetPrice = _oracle.getAssetPrice(_suppliedAsset);
+        emit log_named_uint("collateralAssetPrice", collateralAssetPrice);
+        uint256 borrowedAssetPrice = _oracle.getAssetPrice(_borrowedAsset);
+        emit log_named_uint("borrowedAssetPrice", borrowedAssetPrice);
+        uint256 amountToSeize = (((((_toRepay * borrowedAssetPrice) /
+            10**ERC20(_borrowedAsset).decimals()) * 10**ERC20(_suppliedAsset).decimals()) /
+            collateralAssetPrice) * liquidationBonus) / PERCENT_BASE;
+
+        emit log_named_uint("amountToSeize", amountToSeize);
+        return amountToSeize;
     }
 }
