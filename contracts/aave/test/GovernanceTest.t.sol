@@ -29,7 +29,7 @@ contract GovernanceTest is TestSetup {
             SECOND_PER_YEAR;
 
         assertEq(marketsManager.p2pSPY(aDai), expectedSPY);
-        assertEq(marketsManager.p2pUnitExchangeRate(aDai), RAY);
+        assertEq(marketsManager.p2pExchangeRate(aDai), RAY);
         assertEq(positionsManager.threshold(aDai), WAD);
     }
 
@@ -91,7 +91,7 @@ contract GovernanceTest is TestSetup {
 
         assertTrue(marketsManager.isCreated(aAave));
         assertEq(marketsManager.p2pSPY(aAave), expectedSPY);
-        assertEq(marketsManager.p2pUnitExchangeRate(aAave), RAY);
+        assertEq(marketsManager.p2pExchangeRate(aAave), RAY);
     }
 
     // Governance functions

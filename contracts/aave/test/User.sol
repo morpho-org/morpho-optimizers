@@ -73,7 +73,7 @@ contract User {
         marketsManager.setMaxNumberOfUsersInTree(_newMaxNumber);
     }
 
-    function claimRewards(address[] calldata _assets) external {
-        positionsManager.claimRewards(_assets);
+    function claimRewards(address _asset) external {
+        positionsManager.claimRewards(_asset);
     }
 }

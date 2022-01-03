@@ -60,7 +60,7 @@ contract TestSetup is DSTest, Config, Utils {
         oracle = IPriceOracleGetter(lendingPoolAddressesProvider.getPriceOracle());
 
         marketsManager.setPositionsManager(address(positionsManager));
-        marketsManager.setLendingPool();
+        marketsManager.updateLendingPool();
         // !!! WARNING !!!
         // All token added with createMarket must be added in create_custom_price_oracle function.
         marketsManager.createMarket(aDai, WAD, type(uint256).max);
