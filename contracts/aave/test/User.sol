@@ -19,6 +19,10 @@ contract User {
         return IERC20(_token).balanceOf(address(this));
     }
 
+    function approve(address _token, uint256 _amount) external {
+        IERC20(_token).approve(address(positionsManager), _amount);
+    }
+
     function approve(
         address _token,
         address _spender,
