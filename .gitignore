@@ -31,4 +31,4 @@ yarn-error.log*
 /.vscode
 
 # openzeppelin
-.openzeppelin
+.openzeppelin/unknown-*.json
