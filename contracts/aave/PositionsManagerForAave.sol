@@ -227,7 +227,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
         _;
     }
 
-    /** @dev Prevents a user to call function allowed for the markets manager..
+    /** @dev Prevents a user to call function allowed for the markets manager.
      */
     modifier onlyMarketsManager() {
         require(msg.sender == address(marketsManager), Errors.PM_ONLY_MARKETS_MANAGER);
@@ -264,6 +264,9 @@ contract PositionsManagerForAave is ReentrancyGuard {
         positionsUpdator.updateMaxIterations(_maxIterations);
     }
 
+    /** @dev Updates the `positionsUpdator` address.
+     *  @param _positionsUpdator The new address of the `positionsUpdator`.
+     */
     function updatePositionsUpdator(address _positionsUpdator) external onlyMarketsManager {
         positionsUpdator = IPositionsUpdator(_positionsUpdator);
     }

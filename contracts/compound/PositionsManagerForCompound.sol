@@ -217,6 +217,9 @@ contract PositionsManagerForCompound is ReentrancyGuard {
         maxIterations = _maxIterations;
     }
 
+    /** @dev Updates the `positionsUpdator` address.
+     *  @param _positionsUpdator The new address of the `positionsUpdator`.
+     */
     function updatePositionsUpdator(address _positionsUpdator) external onlyMarketsManager {
         positionsUpdator = IPositionsUpdator(_positionsUpdator);
     }

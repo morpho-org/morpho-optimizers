@@ -8,19 +8,23 @@ import "./interfaces/IPositionsUpdator.sol";
 contract PositionsUpdatorV1 is IPositionsUpdator, PositionsUpdatorStorageV1 {
     using DoubleLinkedList for DoubleLinkedList.List;
 
+    /* Modifiers */
+
+    /** @dev Prevents a user to call function allowed for the markets manager.
+     */
     modifier onlyPositionsManager() {
         require(msg.sender == address(positionsManager), "only-positions-manager");
         _;
     }
 
-    function _authorizeUpgrade(address) internal override onlyPositionsManager {}
-
     /* Initializer */
 
-    function initialize(address _positionsManager, uint256 _maxIterations) public initializer {
+    /** @dev Initializes the proxy contract.
+     *  @param _positionsManager The new address of the `positionsManager`.
+     */
+    function initialize(address _positionsManager) public initializer {
         __Ownable_init();
         positionsManager = IPositionsManager(_positionsManager);
-        maxIterations = _maxIterations;
     }
 
     /* External */
@@ -137,4 +141,8 @@ contract PositionsUpdatorV1 is IPositionsUpdator, PositionsUpdatorStorageV1 {
     {
         return suppliersInP2P[_poolTokenAddress].getHead();
     }
+
+    /* Internal */
+
+    function _authorizeUpgrade(address) internal override onlyOwner {}
 }
