@@ -76,8 +76,9 @@ contract BorrowTest is TestSetup {
     function testBorrow_2_4() public {
         uint256 amount = 10000 ether;
 
-        supplier1.approve(dai, amount);
-        supplier1.supply(aDai, amount);
+        borrower1.approve(usdc, to6Decimals(_amount));
+        borrower1.supply(aUsdc, to6Decimals(_amount));
+        borrower1.borrow(aDai, _amount / 2);
 
         borrower1.approve(usdc, to6Decimals(amount * 2));
         borrower1.supply(aUsdc, to6Decimals(amount * 2));
