@@ -208,11 +208,12 @@ contract SupplyTest is TestSetup {
     function test_Supply_1_5(uint256 _amount) public {
         if (_amount <= positionsManager.threshold(aDai)) return;
         if (_amount <= positionsManager.threshold(aUsdc)) return;
+        if (type(uint256).max / 2 < _amount) return; // to avoid overflow on the collateral
 
         uint256 NMAX = positionsManager.NMAX();
 
         uint256 totalBorrowed = 0;
-        uint256 collateral = 10 * _amount;
+        uint256 collateral = 2 * _amount;
 
         for (uint256 i = 0; i < NMAX; i++) {
             borrowers[i].approve(usdc, collateral);
@@ -223,7 +224,7 @@ contract SupplyTest is TestSetup {
         }
 
         supplier1.approve(dai, totalBorrowed);
-        borrower1.supply(aDai, totalBorrowed);
+        supplier1.supply(aDai, totalBorrowed);
 
         uint256 inP2P;
         uint256 onPool;
@@ -246,5 +247,55 @@ contract SupplyTest is TestSetup {
         (inP2P, onPool) = positionsManager.supplyBalanceInOf(aDai, address(supplier1));
         assertEq(inP2P, totalInP2P);
         assertEq(onPool, 0);
+    }
+
+    // 1.6 - The NMAX biggest borrowers don't match all of the supplied amount, after NMAX match, the rest is supplied and set `onPool`.
+    // ⚠️ most gas expensive supply scenario.
+    function test_Supply_1_6(uint256 _amount) public {
+        if (_amount <= positionsManager.threshold(aDai)) return;
+        if (_amount <= positionsManager.threshold(aUsdc)) return;
+        if (type(uint256).max / 2 < _amount) return; // to avoid overflow on the collateral
+
+        //uint256 NMAX = positionsManager.NMAX();
+
+        uint256 totalBorrowed = 0;
+        uint256 collateral = 2 * _amount;
+
+        // NMAX
+        for (uint256 i = 0; i < borrowers.length; i++) {
+            borrowers[i].approve(usdc, collateral);
+            borrowers[i].supply(aUsdc, collateral);
+
+            borrowers[i].borrow(aDai, _amount);
+            totalBorrowed += _amount;
+        }
+
+        supplier1.approve(dai, 2 * totalBorrowed);
+        supplier1.supply(aDai, 2 * totalBorrowed);
+
+        uint256 inP2P;
+        uint256 onPool;
+        uint256 totalInP2P = 0;
+
+        marketsManager.updateRates(aDai);
+        uint256 p2pExchangeRate = marketsManager.p2pExchangeRate(aDai);
+        uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(dai);
+
+        for (uint256 i = 0; i < borrowers.length; i++) {
+            (inP2P, onPool) = positionsManager.borrowBalanceInOf(aDai, address(borrowers[i]));
+
+            uint256 expectedInP2P2 = p2pUnitToUnderlying(inP2P, p2pExchangeRate);
+
+            assertEq(expectedInP2P2, _amount);
+            assertEq(onPool, 0);
+
+            totalInP2P += inP2P;
+        }
+
+        (inP2P, onPool) = positionsManager.supplyBalanceInOf(aDai, address(supplier1));
+        uint256 expectedOnPool = underlyingToScaledBalance(totalBorrowed / 2, normalizedIncome);
+
+        assertEq(inP2P, totalInP2P);
+        assertEq(onPool, expectedOnPool);
     }
 }
