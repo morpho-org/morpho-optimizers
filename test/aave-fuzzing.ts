@@ -29,9 +29,6 @@ import {
 describe('PositionsManagerForAave Contract', function () {
   this.timeout(100_000_000);
 
-describe('PositionsManagerForAave Contract', function () {
-  this.timeout(100_000_000);
-
   const LIQUIDATION_CLOSE_FACTOR_PERCENT: BigNumber = BigNumber.from(5000);
   const SECOND_PER_YEAR: BigNumber = BigNumber.from(31536000);
   const PERCENT_BASE: BigNumber = BigNumber.from(10000);
