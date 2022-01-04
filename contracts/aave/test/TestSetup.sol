@@ -72,7 +72,7 @@ contract TestSetup is DSTest, Config, Utils {
         for (uint256 i = 0; i < 3; i++) {
             suppliers.push(new User(positionsManager, marketsManager));
 
-            write_balanceOf(address(suppliers[i]), dai, 100 ether);
+            write_balanceOf(address(suppliers[i]), dai, type(uint256).max / 2);
         }
         supplier1 = suppliers[0];
         supplier2 = suppliers[1];
@@ -81,15 +81,15 @@ contract TestSetup is DSTest, Config, Utils {
         for (uint256 i = 0; i < 3; i++) {
             borrowers.push(new User(positionsManager, marketsManager));
 
-            write_balanceOf(address(borrowers[i]), dai, 100 ether);
-            write_balanceOf(address(borrowers[i]), usdc, 100 ether);
+            write_balanceOf(address(borrowers[i]), dai, type(uint256).max / 2);
+            write_balanceOf(address(borrowers[i]), usdc, type(uint256).max / 2);
         }
         borrower1 = borrowers[0];
         borrower2 = borrowers[1];
         borrower3 = borrowers[2];
 
         attacker = new Attacker(lendingPool);
-        write_balanceOf(address(attacker), dai, 200 ether);
+        write_balanceOf(address(attacker), dai, type(uint256).max / 2);
     }
 
     function write_balanceOf(
