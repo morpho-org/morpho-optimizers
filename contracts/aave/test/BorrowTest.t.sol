@@ -76,8 +76,9 @@ contract BorrowTest is TestSetup {
     function testBorrow_2_4() public {
         uint256 amount = 10000 ether;
 
-        supplier1.approve(dai, amount);
-        supplier1.supply(aDai, amount);
+        borrower1.approve(usdc, to6Decimals(_amount * 2));
+        borrower1.supply(aUsdc, to6Decimals(_amount * 2));
+        borrower1.borrow(aDai, _amount);
 
         borrower1.approve(usdc, to6Decimals(amount * 2));
         borrower1.supply(aUsdc, to6Decimals(amount * 2));
@@ -88,6 +89,7 @@ contract BorrowTest is TestSetup {
         marketsManager.updateRates(aDai);
         uint256 p2pExchangeRate = marketsManager.p2pExchangeRate(aDai);
         uint256 expectedInP2P = p2pUnitToUnderlying(supplyInP2P, p2pExchangeRate);
+        assertEq(expectedInP2P, _amount, "Supplier1 supply in P2P");
 
         testEquality(expectedInP2P, amount);
 
