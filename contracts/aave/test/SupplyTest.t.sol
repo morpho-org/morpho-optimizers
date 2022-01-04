@@ -16,19 +16,9 @@ import "./User.sol";
 import "./Attacker.sol";
 
 contract SupplyTest is TestSetup {
-    // Should have correct balances at the beginning
-    function test_Supply_init() public {
-        (uint256 onPool, uint256 inP2P) = positionsManager.borrowBalanceInOf(
-            aDai,
-            address(borrower1)
-        );
-
-        assertEq(onPool, 0);
-        assertEq(inP2P, 0);
-    }
-
     // 1.1 - The user supplies less than the threshold of this market, the transaction reverts.
     function testFail_Supply_1_1() public {
+        supplier1.approve(dai, positionsManager.threshold(aDai) - 1);
         supplier1.supply(aDai, positionsManager.threshold(aDai) - 1);
     }
 
@@ -36,98 +26,44 @@ contract SupplyTest is TestSetup {
     function test_Supply_1_2(uint16 _amount) public {
         if (_amount <= positionsManager.threshold(aDai)) return;
 
-        uint256 daiBalanceBefore = supplier1.balanceOf(dai);
-        uint256 expectedDaiBalanceAfter = daiBalanceBefore - _amount;
-
         supplier1.approve(dai, address(positionsManager), _amount);
         supplier1.supply(aDai, _amount);
 
-        uint256 daiBalanceAfter = supplier1.balanceOf(dai);
-        assertEq(daiBalanceAfter, expectedDaiBalanceAfter);
-
+        marketsManager.updateRates(aDai);
         uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(dai);
-        uint256 expectedSupplyBalanceOnPool = underlyingToScaledBalance(_amount, normalizedIncome);
+        uint256 expectedOnPool = underlyingToScaledBalance(_amount, normalizedIncome);
 
         assertEq(IERC20(aDai).balanceOf(address(positionsManager)), _amount);
         (uint256 inP2P, uint256 onPool) = positionsManager.supplyBalanceInOf(
-            aUsdc,
+            aDai,
             address(positionsManager)
         );
-        assertEq(onPool, expectedSupplyBalanceOnPool);
+        assertEq(onPool, expectedOnPool);
         assertEq(inP2P, 0);
     }
 
     // Should be able to supply more ERC20 after already having supply ERC20
     function test_multiple_supply() public {
-        uint256 amount = 10 * 1e18;
-        uint256 amountToApprove = 10 * 1e18 * 2;
-        uint256 daiBalanceBefore = supplier1.balanceOf(dai);
+        uint256 amount = 10 ether;
 
-        supplier1.approve(dai, address(positionsManager), amountToApprove);
+        supplier1.approve(dai, address(positionsManager), 2 * amount);
+
         supplier1.supply(aDai, amount);
-        uint256 normalizedIncome1 = lendingPool.getReserveNormalizedIncome(dai);
         supplier1.supply(aDai, amount);
-        uint256 normalizedIncome2 = lendingPool.getReserveNormalizedIncome(dai);
 
-        // Check ERC20 balance
-        uint256 daiBalanceAfter = supplier1.balanceOf(dai);
-        assertEq(daiBalanceAfter, daiBalanceBefore - amountToApprove);
-
-        // Check supply balance
-        uint256 expectedSupplyBalanceOnPool1 = underlyingToScaledBalance(amount, normalizedIncome1);
-        uint256 expectedSupplyBalanceOnPool2 = underlyingToScaledBalance(amount, normalizedIncome2);
-        uint256 expectedSupplyBalanceOnPool = expectedSupplyBalanceOnPool1 +
-            expectedSupplyBalanceOnPool2;
-        assertEq(
-            IAToken(aDai).scaledBalanceOf(address(positionsManager)),
-            expectedSupplyBalanceOnPool
-        );
+        marketsManager.updateRates(aDai);
+        uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(aDai);
+        uint256 expectedOnPool = underlyingToScaledBalance(2 * amount, normalizedIncome);
 
         (, uint256 onPool) = positionsManager.supplyBalanceInOf(aDai, address(supplier1));
-        assertEq(onPool, expectedSupplyBalanceOnPool);
-    }
-
-    // Several suppliers should be able to supply and have the correct balances
-    function test_multiple_suppliers() public {
-        uint256 amount = 10 * 1e18;
-        uint256 expectedScaledBalance = 0;
-
-        for (uint256 i = 0; i < suppliers.length; i++) {
-            User supplier = suppliers[i];
-
-            uint256 daiBalanceBefore = supplier.balanceOf(dai);
-            uint256 expectedDaiBalanceAfter = daiBalanceBefore - amount;
-            supplier.approve(dai, address(positionsManager), amount);
-            supplier.supply(aDai, amount);
-            uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(dai);
-            uint256 daiBalanceAfter = supplier.balanceOf(dai);
-            uint256 expectedSupplyBalanceOnPool = underlyingToScaledBalance(
-                amount,
-                normalizedIncome
-            );
-
-            // Check ERC20 balance
-            assertEq(daiBalanceAfter, expectedDaiBalanceAfter);
-            expectedScaledBalance += expectedSupplyBalanceOnPool;
-
-            uint256 scaledBalance = IAToken(aDai).scaledBalanceOf(address(positionsManager));
-            uint256 diff = get_abs_diff(scaledBalance, expectedScaledBalance);
-
-            assertEq(diff, 0);
-            (uint256 inP2P, uint256 onPool) = positionsManager.supplyBalanceInOf(
-                aDai,
-                address(supplier)
-            );
-            assertEq(onPool, expectedSupplyBalanceOnPool);
-            assertEq(inP2P, 0);
-        }
+        assertEq(onPool, expectedOnPool);
     }
 
     // 1.3 - There is 1 available borrower, he matches 100% of the supplier liquidity, everything is `inP2P`.
     function test_Supply_1_3(uint16 _amount) public {
         if (_amount <= positionsManager.threshold(aDai)) return;
-        borrower1.approve(usdc, address(positionsManager), 10 * _amount);
-        borrower1.supply(aUsdc, 10 * _amount);
+        borrower1.approve(usdc, address(positionsManager), to6Decimals(2 * _amount));
+        borrower1.supply(aUsdc, to6Decimals(2 * _amount));
         borrower1.borrow(aDai, _amount);
 
         uint256 daiBalanceBefore = supplier1.balanceOf(dai);
@@ -164,8 +100,8 @@ contract SupplyTest is TestSetup {
     // Supplier's balance `inP2P` is equal to the borrower previous amount `onPool`, the rest is set `onPool`.
     function test_Supply_1_4(uint16 _amount) public {
         if (_amount <= positionsManager.threshold(aDai)) return;
-        borrower1.approve(usdc, address(positionsManager), 10 * _amount);
-        borrower1.supply(aUsdc, 10 * _amount);
+        borrower1.approve(usdc, address(positionsManager), to6Decimals(10 * _amount));
+        borrower1.supply(aUsdc, to6Decimals(10 * _amount));
         borrower1.borrow(aDai, _amount / 2);
 
         uint256 daiBalanceBefore = supplier1.balanceOf(dai);
@@ -207,17 +143,17 @@ contract SupplyTest is TestSetup {
     // 1.5 - There are NMAX (or less) borrowers that match the supplied amount, everything is `inP2P` after NMAX (or less) match.
     function test_Supply_1_5(uint256 _amount) public {
         if (_amount <= positionsManager.threshold(aDai)) return;
-        if (_amount <= positionsManager.threshold(aUsdc)) return;
         if (type(uint256).max / 2 < _amount) return; // to avoid overflow on the collateral
 
-        uint256 NMAX = positionsManager.NMAX();
+        //uint256 NMAX = positionsManager.NMAX();
 
         uint256 totalBorrowed = 0;
         uint256 collateral = 2 * _amount;
 
-        for (uint256 i = 0; i < NMAX; i++) {
-            borrowers[i].approve(usdc, collateral);
-            borrowers[i].supply(aUsdc, collateral);
+        // needs to be changed to nmax
+        for (uint256 i = 0; i < borrowers.length; i++) {
+            borrowers[i].approve(usdc, to6Decimals(collateral));
+            borrowers[i].supply(aUsdc, to6Decimals(collateral));
 
             borrowers[i].borrow(aDai, _amount);
             totalBorrowed += _amount;
@@ -236,9 +172,9 @@ contract SupplyTest is TestSetup {
         for (uint256 i = 0; i < borrowers.length; i++) {
             (inP2P, onPool) = positionsManager.borrowBalanceInOf(aDai, address(borrowers[i]));
 
-            uint256 expectedInP2P2 = p2pUnitToUnderlying(inP2P, p2pExchangeRate);
+            uint256 expectedInP2P = p2pUnitToUnderlying(inP2P, p2pExchangeRate);
 
-            assertEq(expectedInP2P2, _amount);
+            assertEq(expectedInP2P, _amount);
             assertEq(onPool, 0);
 
             totalInP2P += inP2P;
@@ -253,7 +189,6 @@ contract SupplyTest is TestSetup {
     // ⚠️ most gas expensive supply scenario.
     function test_Supply_1_6(uint256 _amount) public {
         if (_amount <= positionsManager.threshold(aDai)) return;
-        if (_amount <= positionsManager.threshold(aUsdc)) return;
         if (type(uint256).max / 2 < _amount) return; // to avoid overflow on the collateral
 
         //uint256 NMAX = positionsManager.NMAX();
@@ -263,8 +198,8 @@ contract SupplyTest is TestSetup {
 
         // NMAX
         for (uint256 i = 0; i < borrowers.length; i++) {
-            borrowers[i].approve(usdc, collateral);
-            borrowers[i].supply(aUsdc, collateral);
+            borrowers[i].approve(usdc, to6Decimals(collateral));
+            borrowers[i].supply(aUsdc, to6Decimals(collateral));
 
             borrowers[i].borrow(aDai, _amount);
             totalBorrowed += _amount;
