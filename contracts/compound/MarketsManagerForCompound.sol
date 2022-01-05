@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.7;
 
+import {ICErc20, IComptroller} from "./interfaces/compound/ICompound.sol";
+import "./interfaces/IPositionsManagerForCompound.sol";
+
+import "./libraries/CompoundMath.sol";
+
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "prb-math/contracts/PRBMathUD60x18.sol";
-import "./libraries/CompoundMath.sol";
-import "./libraries/ErrorsForCompound.sol";
-
-import {ICErc20, IComptroller} from "./interfaces/compound/ICompound.sol";
-import "./interfaces/IPositionsManagerForCompound.sol";
 
 /**
  *  @title MarketsManagerForCompound.
@@ -62,12 +62,26 @@ contract MarketsManagerForCompound is Ownable {
      */
     event MaxNumberUpdated(uint16 _newValue);
 
+    /* Errors */
+
+    /// @notice Emitted when the market is not created yet.
+    error MarketNotCreated();
+
+    /// @notice Emitted when the market is already created.
+    error MarketAlreadyCreated();
+
+    /// @notice Emitted when the positionsManager is already set.
+    error PositionsManagerAlreadySet();
+
+    /// @notice Emitted when the creation of a market failed on Compound.
+    error MarketCreationFailedOnCompound();
+
     /* Modifiers */
 
     /** @dev Prevents to update a market not created yet.
      */
     modifier isMarketCreated(address _marketAddress) {
-        require(isCreated[_marketAddress], Errors.MM_MARKET_NOT_CREATED);
+        if (!isCreated[_marketAddress]) revert MarketNotCreated();
         _;
     }
 
@@ -77,10 +91,7 @@ contract MarketsManagerForCompound is Ownable {
      *  @param _positionsManagerForCompound The address of compound module.
      */
     function setPositionsManager(address _positionsManagerForCompound) external onlyOwner {
-        require(
-            address(positionsManagerForCompound) == address(0),
-            Errors.MM_POSITIONS_MANAGER_SET
-        );
+        if (address(positionsManagerForCompound) != address(0)) revert PositionsManagerAlreadySet();
         positionsManagerForCompound = IPositionsManagerForCompound(_positionsManagerForCompound);
         emit PositionsManagerForCompoundSet(_positionsManagerForCompound);
     }
@@ -98,9 +109,9 @@ contract MarketsManagerForCompound is Ownable {
      *  @param _threshold The threshold to set for the market.
      */
     function createMarket(address _marketAddress, uint256 _threshold) external onlyOwner {
-        require(!isCreated[_marketAddress], Errors.MM_MARKET_ALREADY_CREATED);
+        if (isCreated[_marketAddress]) revert MarketAlreadyCreated();
         uint256[] memory results = positionsManagerForCompound.createMarket(_marketAddress);
-        require(results[0] == 0, Errors.MM_MARKET_CREATED_FAIL_ON_COMP);
+        if (results[0] != 0) revert MarketCreationFailedOnCompound();
         positionsManagerForCompound.setThreshold(_marketAddress, _threshold);
         lastUpdateBlockNumber[_marketAddress] = block.number;
         p2pExchangeRate[_marketAddress] = 1e18;
