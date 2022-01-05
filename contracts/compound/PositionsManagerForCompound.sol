@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.7;
 
+import {ICErc20, IComptroller, ICompoundOracle} from "./interfaces/compound/ICompound.sol";
+import "./interfaces/IMarketsManagerForCompound.sol";
+
+import "../common/libraries/DoubleLinkedList.sol";
+import "./libraries/CompoundMath.sol";
+
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
-
-import "../common/libraries/DoubleLinkedList.sol";
-import "./libraries/CompoundMath.sol";
-import "./libraries/ErrorsForCompound.sol";
-import {ICErc20, IComptroller, ICompoundOracle} from "./interfaces/compound/ICompound.sol";
-import "./interfaces/IMarketsManagerForCompound.sol";
 
 /**
  *  @title MorphoPositionsManagerForComp?
@@ -160,16 +160,63 @@ contract PositionsManagerForCompound is ReentrancyGuard {
         uint256 _borrowIndex
     );
 
+    /* Errors */
+
+    /// @notice Emitted when the is equal to 0.
+    error AmountIsZero();
+
+    /// @notice Emitted when the market is not created yet.
+    error MarketNotCreated();
+
+    /// @notice Emitted when the debt value is above the maximum debt value.
+    error DebtValueAboveMax();
+
+    /// @notice Emitted when only the markets manager can call the function.
+    error OnlyMarketsManager();
+
+    /// @notice Emitted when the supply is above the cap value.
+    error SupplyAboveCapValue();
+
+    /// @notice Emitted when the debt value is not above the maximum debt value.
+    error DebtValueNotAboveMax();
+
+    /// @notice Emitted when the amount of collateral to seize is above the collateral.
+    error ToSeizeAboveCollateral();
+
+    /// @notice Emitted when the amount is above the threshold.
+    error AmountNotAboveThreshold();
+
+    /// @notice Emitted when the matching process fails to get the required liquidity.
+    error CouldNotMatchFullAmount();
+
+    /// @notice Emitted when the unmatching process fails to get the required liquidity.
+    error CouldNotUnmatchFullAmount();
+
+    /// @notice Emitted when the amount repaid during the liquidation is above what is allowed to repay.
+    error AmountAboveWhatAllowedToRepay();
+
+    /// @notice Emitted when the Compound's oracle failed.
+    error CompoundOracleFailed();
+
+    /// @notice Emitted when the borrow on Compound failed.
+    error BorrowOnCompoundFailed();
+
+    /// @notice Emitted when the redeem on Compound failed .
+    error RedeemOnCompoundFailed();
+
+    /// @notice Emitted when the repay on Compound failed.
+    error RepayOnCompoundFailed();
+
+    /// @notice Emitted when the mint on Compound failed.
+    error MintOnCompoundFailed();
+
     /* Modifiers */
 
     /** @dev Prevents a user to access a market not created yet.
      *  @param _poolTokenAddress The address of the market.
      */
     modifier isMarketCreated(address _poolTokenAddress) {
-        require(
-            marketsManagerForCompound.isCreated(_poolTokenAddress),
-            Errors.PM_MARKET_NOT_CREATED
-        );
+        if (!marketsManagerForCompound.isCreated(_poolTokenAddress)) revert MarketNotCreated();
         _;
     }
 
@@ -178,14 +225,14 @@ contract PositionsManagerForCompound is ReentrancyGuard {
      *  @param _amount The amount in ERC20 tokens.
      */
     modifier isAboveThreshold(address _poolTokenAddress, uint256 _amount) {
-        require(_amount >= threshold[_poolTokenAddress], Errors.PM_AMOUNT_NOT_ABOVE_THRESHOLD);
+        if (_amount < threshold[_poolTokenAddress]) revert AmountNotAboveThreshold();
         _;
     }
 
     /** @dev Prevents a user to call function only allowed for the markets manager.
      */
     modifier onlyMarketsManager() {
-        require(msg.sender == address(marketsManagerForCompound), Errors.PM_ONLY_MARKETS_MANAGER);
+        if (msg.sender != address(marketsManagerForCompound)) revert OnlyMarketsManager();
         _;
     }
 
@@ -343,7 +390,7 @@ contract PositionsManagerForCompound is ReentrancyGuard {
 
         /* If there aren't enough suppliers waiting on Comp to match all the tokens borrowed, the rest is borrowed from Comp */
         if (remainingToBorrowOnPool > 0) {
-            require(poolToken.borrow(remainingToBorrowOnPool) == 0, Errors.PM_BORROW_ON_COMP_FAIL);
+            if (poolToken.borrow(remainingToBorrowOnPool) != 0) revert BorrowOnCompoundFailed();
             uint256 borrowIndex = poolToken.borrowIndex();
             borrowBalanceInOf[_poolTokenAddress][msg.sender].onPool += remainingToBorrowOnPool.div(
                 borrowIndex
@@ -393,14 +440,14 @@ contract PositionsManagerForCompound is ReentrancyGuard {
         address _borrower,
         uint256 _amount
     ) external nonReentrant {
-        require(_amount > 0, Errors.PM_AMOUNT_IS_0);
+        if (_amount == 0) revert AmountIsZero();
         (uint256 debtValue, uint256 maxDebtValue) = _getUserHypotheticalBalanceStates(
             _borrower,
             address(0),
             0,
             0
         );
-        require(debtValue > maxDebtValue, Errors.PM_DEBT_VALUE_NOT_ABOVE_MAX);
+        if (debtValue <= maxDebtValue) revert DebtValueNotAboveMax();
         LiquidateVars memory vars;
         vars.borrowBalance =
             borrowBalanceInOf[_poolTokenBorrowedAddress][_borrower].onPool.mul(
@@ -409,10 +456,8 @@ contract PositionsManagerForCompound is ReentrancyGuard {
             borrowBalanceInOf[_poolTokenBorrowedAddress][_borrower].inP2P.mul(
                 marketsManagerForCompound.p2pExchangeRate(_poolTokenBorrowedAddress)
             );
-        require(
-            _amount <= vars.borrowBalance.mul(comptroller.closeFactorMantissa()),
-            Errors.PM_AMOUNT_ABOVE_ALLOWED_TO_REPAY
-        );
+        if (_amount > vars.borrowBalance.mul(comptroller.closeFactorMantissa()))
+            revert AmountAboveWhatAllowedToRepay();
 
         _repay(_poolTokenBorrowedAddress, _borrower, _amount);
 
@@ -422,10 +467,8 @@ contract PositionsManagerForCompound is ReentrancyGuard {
             _poolTokenCollateralAddress
         );
         vars.priceBorrowedMantissa = compoundOracle.getUnderlyingPrice(_poolTokenBorrowedAddress);
-        require(
-            vars.priceCollateralMantissa != 0 && vars.priceBorrowedMantissa != 0,
-            Errors.PM_TO_SEIZE_ABOVE_COLLATERAL
-        );
+        if (vars.priceCollateralMantissa == 0 || vars.priceBorrowedMantissa == 0)
+            revert CompoundOracleFailed();
 
         // Get the exchange rate and calculate the number of collateral tokens to seize:
         // seizeAmount = actualRepayAmount * liquidationIncentive * priceBorrowed / priceCollateral
@@ -444,7 +487,7 @@ contract PositionsManagerForCompound is ReentrancyGuard {
             supplyBalanceInOf[_poolTokenCollateralAddress][_borrower].inP2P.mul(
                 marketsManagerForCompound.p2pExchangeRate(_poolTokenCollateralAddress)
             );
-        require(vars.amountToSeize <= totalCollateral, Errors.PM_TO_SEIZE_ABOVE_COLLATERAL);
+        if (vars.amountToSeize > totalCollateral) revert ToSeizeAboveCollateral();
         emit Liquidated(
             msg.sender,
             _borrower,
@@ -470,7 +513,7 @@ contract PositionsManagerForCompound is ReentrancyGuard {
         address _holder,
         address _receiver
     ) internal isMarketCreated(_poolTokenAddress) {
-        require(_amount > 0, Errors.PM_AMOUNT_IS_0);
+        if (_amount == 0) revert AmountIsZero();
         _checkAccountLiquidity(_holder, _poolTokenAddress, _amount, 0);
         marketsManagerForCompound.updateRates(_poolTokenAddress);
         emit Withdrawn(_holder, _poolTokenAddress, _amount);
@@ -506,10 +549,8 @@ contract PositionsManagerForCompound is ReentrancyGuard {
             }
             /* CASE 2: User withdraws more than his Comp supply balance */
             else {
-                require(
-                    poolToken.redeem(supplyBalanceInOf[_poolTokenAddress][_holder].onPool) == 0,
-                    Errors.PM_REDEEM_ON_COMP_FAIL
-                );
+                if (poolToken.redeem(supplyBalanceInOf[_poolTokenAddress][_holder].onPool) != 0)
+                    revert RedeemOnCompoundFailed();
                 supplyBalanceInOf[_poolTokenAddress][_holder].onPool = 0;
                 emit SupplierPositionUpdated(
                     _holder,
@@ -539,10 +580,8 @@ contract PositionsManagerForCompound is ReentrancyGuard {
                     remainingToWithdraw.div(p2pExchangeRate)
                 ); // In p2pUnit
                 _updateSupplierList(_poolTokenAddress, _holder);
-                require(
-                    _matchSuppliers(_poolTokenAddress, remainingToWithdraw) == 0,
-                    Errors.PM_REMAINING_TO_MATCH_IS_NOT_0
-                );
+                if (_matchSuppliers(_poolTokenAddress, remainingToWithdraw) != 0)
+                    revert CouldNotMatchFullAmount();
                 emit SupplierPositionUpdated(
                     _holder,
                     _poolTokenAddress,
@@ -576,10 +615,9 @@ contract PositionsManagerForCompound is ReentrancyGuard {
                     0
                 );
                 remainingToWithdraw -= remaining;
-                require(
-                    _unmatchBorrowers(_poolTokenAddress, remainingToWithdraw) == 0, // We break some P2P credit lines the user had with borrowers and fallback on Comp.
-                    Errors.PM_REMAINING_TO_UNMATCH_IS_NOT_0
-                );
+                // We break some P2P credit lines the user had with borrowers and fallback on Comp.
+                if (_unmatchBorrowers(_poolTokenAddress, remainingToWithdraw) != 0)
+                    revert CouldNotUnmatchFullAmount();
             }
         }
         underlyingToken.safeTransfer(_receiver, _amount);
@@ -596,7 +634,7 @@ contract PositionsManagerForCompound is ReentrancyGuard {
         address _borrower,
         uint256 _amount
     ) internal isMarketCreated(_poolTokenAddress) {
-        require(_amount > 0, Errors.PM_AMOUNT_IS_0);
+        if (_amount == 0) revert AmountIsZero();
         marketsManagerForCompound.updateRates(_poolTokenAddress);
         ICErc20 poolToken = ICErc20(_poolTokenAddress);
         IERC20 underlyingToken = IERC20(poolToken.underlying());
@@ -689,10 +727,9 @@ contract PositionsManagerForCompound is ReentrancyGuard {
                     0
                 );
                 remainingToRepay -= contractBorrowBalanceOnPool;
-                require(
-                    _unmatchSuppliers(_poolTokenAddress, remainingToRepay) == 0, // We break some P2P credit lines the user had with suppliers and fallback on Comp.
-                    Errors.PM_REMAINING_TO_UNMATCH_IS_NOT_0
-                );
+                // We break some P2P credit lines the user had with suppliers and fallback on Comp.
+                if (_unmatchSuppliers(_poolTokenAddress, remainingToRepay) != 0)
+                    revert CouldNotUnmatchFullAmount();
             }
         }
         emit Repaid(_borrower, _poolTokenAddress, _amount);
@@ -706,7 +743,7 @@ contract PositionsManagerForCompound is ReentrancyGuard {
         ICErc20 poolToken = ICErc20(_poolTokenAddress);
         IERC20 underlyingToken = IERC20(poolToken.underlying());
         underlyingToken.safeIncreaseAllowance(_poolTokenAddress, _amount);
-        require(poolToken.mint(_amount) == 0, Errors.PM_MINT_ON_COMP_FAIL);
+        if (poolToken.mint(_amount) != 0) revert MintOnCompoundFailed();
     }
 
     /** @dev Withdraws ERC20 tokens from Comp.
@@ -715,7 +752,7 @@ contract PositionsManagerForCompound is ReentrancyGuard {
      */
     function _withdrawERC20FromComp(address _poolTokenAddress, uint256 _amount) internal {
         ICErc20 poolToken = ICErc20(_poolTokenAddress);
-        require(poolToken.redeemUnderlying(_amount) == 0, Errors.PM_REDEEM_ON_COMP_FAIL);
+        if (poolToken.redeemUnderlying(_amount) != 0) revert RedeemOnCompoundFailed();
     }
 
     /** @dev Returns whether it is unsafe supply/witdhraw due to coumpound's revert on low levels of precision or not.
@@ -901,7 +938,7 @@ contract PositionsManagerForCompound is ReentrancyGuard {
             poolToken.borrowBalanceCurrent(address(this))
         );
         underlyingToken.safeIncreaseAllowance(_poolTokenAddress, toRepay);
-        require(poolToken.repayBorrow(toRepay) == 0, Errors.PM_REPAY_ON_COMP_FAIL);
+        if (poolToken.repayBorrow(toRepay) != 0) revert RepayOnCompoundFailed();
     }
 
     /** @dev Finds borrowers in peer-to-peer that match the given `_amount` and move them to Comp.
@@ -979,7 +1016,7 @@ contract PositionsManagerForCompound is ReentrancyGuard {
             _withdrawnAmount,
             _borrowedAmount
         );
-        require(debtValue <= maxDebtValue, Errors.PM_DEBT_VALUE_ABOVE_MAX);
+        if (debtValue > maxDebtValue) revert DebtValueAboveMax();
     }
 
     /** @dev Returns the debt value, max debt value and collateral value of a given user.
@@ -1017,7 +1054,7 @@ contract PositionsManagerForCompound is ReentrancyGuard {
                 supplyBalanceInOf[vars.poolTokenEntered][_account].inP2P.mul(vars.p2pExchangeRate);
             // Price recovery
             vars.underlyingPrice = compoundOracle.getUnderlyingPrice(vars.poolTokenEntered);
-            require(vars.underlyingPrice != 0, Errors.PM_ORACLE_FAIL);
+            if (vars.underlyingPrice == 0) revert CompoundOracleFailed();
 
             // Add the collateral value in this asset to the global collateral value (in dollars)
             (, uint256 collateralFactorMantissa, ) = comptroller.markets(vars.poolTokenEntered);

@@ -1,12 +1,6 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.7;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/math/Math.sol";
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
-
-import "./libraries/aave/WadRayMath.sol";
-import "./libraries/ErrorsForAave.sol";
 import "./interfaces/aave/ILendingPoolAddressesProvider.sol";
 import "./interfaces/aave/IProtocolDataProvider.sol";
 import "./interfaces/aave/ILendingPool.sol";
@@ -14,6 +8,12 @@ import "./interfaces/aave/DataTypes.sol";
 import {IAToken} from "./interfaces/aave/IAToken.sol";
 import "./interfaces/IPositionsManagerForAave.sol";
 import "./interfaces/IMarketsManagerForAave.sol";
+
+import "./libraries/aave/WadRayMath.sol";
+
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/math/Math.sol";
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
 /**
  *  @title MarketsManagerForAave
@@ -82,12 +82,23 @@ contract MarketsManagerForAave is Ownable {
      */
     event MaxNumberUpdated(uint16 _newValue);
 
+    /* Errors */
+
+    /// @notice Emitted when the market is not created yet.
+    error MarketNotCreated();
+
+    /// @notice Emitted when the market is already created.
+    error MarketAlreadyCreated();
+
+    /// @notice Emitted when the positionsManager is already set.
+    error PositionsManagerAlreadySet();
+
     /* Modifiers */
 
     /** @dev Prevents to update a market not created yet.
      */
     modifier isMarketCreated(address _marketAddress) {
-        require(isCreated[_marketAddress], Errors.MM_MARKET_NOT_CREATED);
+        if (!isCreated[_marketAddress]) revert MarketNotCreated();
         _;
     }
 
@@ -106,7 +117,7 @@ contract MarketsManagerForAave is Ownable {
      *  @param _positionsManagerForAave The address of compound module.
      */
     function setPositionsManager(address _positionsManagerForAave) external onlyOwner {
-        require(address(positionsManagerForAave) == address(0), Errors.MM_POSITIONS_MANAGER_SET);
+        if (address(positionsManagerForAave) != address(0)) revert PositionsManagerAlreadySet();
         positionsManagerForAave = IPositionsManagerForAave(_positionsManagerForAave);
         emit PositionsManagerForAaveSet(_positionsManagerForAave);
     }
@@ -136,7 +147,7 @@ contract MarketsManagerForAave is Ownable {
         uint256 _threshold,
         uint256 _capValue
     ) external onlyOwner {
-        require(!isCreated[_marketAddress], Errors.MM_MARKET_ALREADY_CREATED);
+        if (isCreated[_marketAddress]) revert MarketAlreadyCreated();
         positionsManagerForAave.setThreshold(_marketAddress, _threshold);
         positionsManagerForAave.setCapValue(_marketAddress, _capValue);
         lastUpdateTimestamp[_marketAddress] = block.timestamp;
