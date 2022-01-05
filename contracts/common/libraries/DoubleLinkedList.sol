@@ -14,54 +14,48 @@ library DoubleLinkedList {
         address tail;
     }
 
-    /** @dev Returns the `account` linked to `_id`.
-     *  @param _list The list to search in.
-     *  @param _id The address of the account.
-     *  @return The value of the account.
-     */
+    /// @dev Returns the `account` linked to `_id`.
+    /// @param _list The list to search in.
+    /// @param _id The address of the account.
+    /// @return The value of the account.
     function getValueOf(List storage _list, address _id) internal view returns (uint256) {
         return _list.accounts[_id].value;
     }
 
-    /** @dev Returns the address at the head of the `_list`.
-     *  @param _list The list to get the head.
-     *  @return The address of the head.
-     */
+    /// @dev Returns the address at the head of the `_list`.
+    /// @param _list The list to get the head.
+    /// @return The address of the head.
     function getHead(List storage _list) internal view returns (address) {
         return _list.head;
     }
 
-    /** @dev Returns the address at the tail of the `_list`.
-     *  @param _list The list to get the tail.
-     *  @return The address of the tail.
-     */
+    /// @dev Returns the address at the tail of the `_list`.
+    /// @param _list The list to get the tail.
+    /// @return The address of the tail.
     function getTail(List storage _list) internal view returns (address) {
         return _list.tail;
     }
 
-    /** @dev Returns the next id address from the current `_id`.
-     *  @param _list The list to search in.
-     *  @param _id The address of the account.
-     *  @return The address of the next account.
-     */
+    /// @dev Returns the next id address from the current `_id`.
+    /// @param _list The list to search in.
+    /// @param _id The address of the account.
+    /// @return The address of the next account.
     function getNext(List storage _list, address _id) internal view returns (address) {
         return _list.accounts[_id].next;
     }
 
-    /** @dev Returns the previous id address from the current `_id`.
-     *  @param _list The list to search in.
-     *  @param _id The address of the account.
-     *  @return The address of the previous account.
-     */
+    /// @dev Returns the previous id address from the current `_id`.
+    /// @param _list The list to search in.
+    /// @param _id The address of the account.
+    /// @return The address of the previous account.
     function getPrev(List storage _list, address _id) internal view returns (address) {
         return _list.accounts[_id].prev;
     }
 
-    /** @dev Removes an account of the `_list`.
-     *  @param _list The list to search in.
-     *  @param _id The address of the account.
-     *  @return Whether the account has been removed or not.
-     */
+    /// @dev Removes an account of the `_list`.
+    /// @param _list The list to search in.
+    /// @param _id The address of the account.
+    /// @return Whether the account has been removed or not.
     function remove(List storage _list, address _id) internal returns (bool) {
         if (_list.accounts[_id].value != 0) {
             Account memory account = _list.accounts[_id];
@@ -78,12 +72,11 @@ library DoubleLinkedList {
         }
     }
 
-    /** @dev Inserts an account in the `_list` at the right slot based on its `_value`.
-     *  @param _list The list to search in.
-     *  @param _id The address of the account.
-     *  @param _value The value of the account.
-     *  @param _maxIterations The max number of iterations.
-     */
+    /// @dev Inserts an account in the `_list` at the right slot based on its `_value`.
+    /// @param _list The list to search in.
+    /// @param _id The address of the account.
+    /// @param _value The value of the account.
+    /// @param _maxIterations The max number of iterations.
     function insertSorted(
         List storage _list,
         address _id,

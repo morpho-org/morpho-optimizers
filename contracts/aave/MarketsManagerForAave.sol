@@ -15,16 +15,14 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
-/**
- *  @title MarketsManagerForAave
- *  @dev Smart contract managing the markets used by a MorphoPositionsManagerForAave contract, an other contract interacting with Aave or a fork of Aave.
- */
+/// @title MarketsManagerForAave
+/// @dev Smart contract managing the markets used by a MorphoPositionsManagerForAave contract, an other contract interacting with Aave or a fork of Aave.
 contract MarketsManagerForAave is Ownable {
     using WadRayMath for uint256;
     using SafeMath for uint256;
     using Math for uint256;
 
-    /* Storage */
+    /// Storage ///
 
     uint256 internal constant SECONDS_PER_YEAR = 365 days;
     mapping(address => bool) public isCreated; // Whether or not this market is created.
@@ -36,53 +34,45 @@ contract MarketsManagerForAave is Ownable {
     ILendingPoolAddressesProvider public addressesProvider;
     ILendingPool public lendingPool;
 
-    /* Events */
+    /// Events ///
 
-    /** @dev Emitted when a new market is created.
-     *  @param _marketAddress The address of the market that has been created.
-     */
+    /// @dev Emitted when a new market is created.
+    /// @param _marketAddress The address of the market that has been created.
     event MarketCreated(address _marketAddress);
 
-    /** @dev Emitted when the lendingPool is set on the `positionsManagerForAave`.
-     *  @param _lendingPoolAddress The address of the lending pool.
-     */
+    /// @dev Emitted when the lendingPool is set on the `positionsManagerForAave`.
+    /// @param _lendingPoolAddress The address of the lending pool.
     event LendingPoolSet(address _lendingPoolAddress);
 
-    /** @dev Emitted when the `positionsManagerForAave` is set.
-     *  @param _positionsManagerForAave The address of the `positionsManagerForAave`.
-     */
+    /// @dev Emitted when the `positionsManagerForAave` is set.
+    /// @param _positionsManagerForAave The address of the `positionsManagerForAave`.
     event PositionsManagerForAaveSet(address _positionsManagerForAave);
 
-    /** @dev Emitted when the p2pSPY of a market is updated.
-     *  @param _marketAddress The address of the market to update.
-     *  @param _newValue The new value of the p2pSPY.
-     */
+    /// @dev Emitted when the p2pSPY of a market is updated.
+    /// @param _marketAddress The address of the market to update.
+    /// @param _newValue The new value of the p2pSPY.
     event P2PSPYUpdated(address _marketAddress, uint256 _newValue);
 
-    /** @dev Emitted when the p2pExchangeRate of a market is updated.
-     *  @param _marketAddress The address of the market to update.
-     *  @param _newValue The new value of the p2pExchangeRate.
-     */
+    /// @dev Emitted when the p2pExchangeRate of a market is updated.
+    /// @param _marketAddress The address of the market to update.
+    /// @param _newValue The new value of the p2pExchangeRate.
     event P2PExchangeRateUpdated(address _marketAddress, uint256 _newValue);
 
-    /** @dev Emitted when a threshold of a market is updated.
-     *  @param _marketAddress The address of the market to update.
-     *  @param _newValue The new value of the threshold.
-     */
+    /// @dev Emitted when a threshold of a market is updated.
+    /// @param _marketAddress The address of the market to update.
+    /// @param _newValue The new value of the threshold.
     event ThresholdUpdated(address _marketAddress, uint256 _newValue);
 
-    /** @dev Emitted when a cap value of a market is updated.
-     *  @param _marketAddress The address of the market to update.
-     *  @param _newValue The new value of the cap.
-     */
+    /// @dev Emitted when a cap value of a market is updated.
+    /// @param _marketAddress The address of the market to update.
+    /// @param _newValue The new value of the cap.
     event CapValueUpdated(address _marketAddress, uint256 _newValue);
 
-    /** @dev Emitted the maximum number of users to have in the tree is updated.
-     *  @param _newValue The new value of the maximum number of users to have in the tree.
-     */
+    /// @dev Emitted the maximum number of users to have in the tree is updated.
+    /// @param _newValue The new value of the maximum number of users to have in the tree.
     event MaxNumberUpdated(uint16 _newValue);
 
-    /* Errors */
+    /// Errors ///
 
     /// @notice Emitted when the market is not created yet.
     error MarketNotCreated();
@@ -93,55 +83,49 @@ contract MarketsManagerForAave is Ownable {
     /// @notice Emitted when the positionsManager is already set.
     error PositionsManagerAlreadySet();
 
-    /* Modifiers */
+    /// Modifiers ///
 
-    /** @dev Prevents to update a market not created yet.
-     */
+    /// @dev Prevents to update a market not created yet.
     modifier isMarketCreated(address _marketAddress) {
         if (!isCreated[_marketAddress]) revert MarketNotCreated();
         _;
     }
 
-    /* Constructor */
+    /// Constructor ///
 
-    /** @dev Constructs the MarketsManagerForAave contract.
-     *  @param _lendingPoolAddressesProvider The address of the lending pool addresses provider.
-     */
+    /// @dev Constructs the MarketsManagerForAave contract.
+    /// @param _lendingPoolAddressesProvider The address of the lending pool addresses provider.
     constructor(address _lendingPoolAddressesProvider) {
         addressesProvider = ILendingPoolAddressesProvider(_lendingPoolAddressesProvider);
     }
 
-    /* External */
+    /// External ///
 
-    /** @dev Sets the `positionsManagerForAave` to interact with Aave.
-     *  @param _positionsManagerForAave The address of compound module.
-     */
+    /// @dev Sets the `positionsManagerForAave` to interact with Aave.
+    /// @param _positionsManagerForAave The address of compound module.
     function setPositionsManager(address _positionsManagerForAave) external onlyOwner {
         if (address(positionsManagerForAave) != address(0)) revert PositionsManagerAlreadySet();
         positionsManagerForAave = IPositionsManagerForAave(_positionsManagerForAave);
         emit PositionsManagerForAaveSet(_positionsManagerForAave);
     }
 
-    /** @dev Updates the lending pool.
-     */
+    /// @dev Updates the lending pool.
     function updateLendingPool() external onlyOwner {
         lendingPool = ILendingPool(addressesProvider.getLendingPool());
         emit LendingPoolSet(address(lendingPool));
     }
 
-    /** @dev Sets the maximum number of users in tree.
-     *  @param _newMaxNumber The maximum number of users to have in the tree.
-     */
+    /// @dev Sets the maximum number of users in tree.
+    /// @param _newMaxNumber The maximum number of users to have in the tree.
     function setMaxNumberOfUsersInTree(uint16 _newMaxNumber) external onlyOwner {
         positionsManagerForAave.setMaxNumberOfUsersInTree(_newMaxNumber);
         emit MaxNumberUpdated(_newMaxNumber);
     }
 
-    /** @dev Creates a new market to borrow/supply.
-     *  @param _marketAddress The addresses of the markets to add (aToken).
-     *  @param _threshold The threshold to set for the market.
-     *  @param _capValue The cap value to set for the market.
-     */
+    /// @dev Creates a new market to borrow/supply.
+    /// @param _marketAddress The addresses of the markets to add (aToken).
+    /// @param _threshold The threshold to set for the market.
+    /// @param _capValue The cap value to set for the market.
     function createMarket(
         address _marketAddress,
         uint256 _threshold,
@@ -157,10 +141,9 @@ contract MarketsManagerForAave is Ownable {
         emit MarketCreated(_marketAddress);
     }
 
-    /** @dev Updates the threshold below which suppliers and borrowers cannot join a given market.
-     *  @param _marketAddress The address of the market to change the threshold.
-     *  @param _newThreshold The new threshold to set.
-     */
+    /// @dev Updates the threshold below which suppliers and borrowers cannot join a given market.
+    /// @param _marketAddress The address of the market to change the threshold.
+    /// @param _newThreshold The new threshold to set.
     function updateThreshold(address _marketAddress, uint256 _newThreshold)
         external
         onlyOwner
@@ -170,10 +153,9 @@ contract MarketsManagerForAave is Ownable {
         emit ThresholdUpdated(_marketAddress, _newThreshold);
     }
 
-    /** @dev Updates the cap value above which suppliers cannot supply more tokens.
-     *  @param _marketAddress The address of the market to change the max cap.
-     *  @param _newCapValue The new max cap to set.
-     */
+    /// @dev Updates the cap value above which suppliers cannot supply more tokens.
+    /// @param _marketAddress The address of the market to change the max cap.
+    /// @param _newCapValue The new max cap to set.
     function updateCapValue(address _marketAddress, uint256 _newCapValue)
         external
         onlyOwner
@@ -183,11 +165,10 @@ contract MarketsManagerForAave is Ownable {
         emit CapValueUpdated(_marketAddress, _newCapValue);
     }
 
-    /* Public */
+    /// Public ///
 
-    /** @dev Updates the Second Percentage Yield (`p2pSPY`) and calculates the current exchange rate (`p2pExchangeRate`).
-     *  @param _marketAddress The address of the market we want to update.
-     */
+    /// @dev Updates the Second Percentage Yield (`p2pSPY`) and calculates the current exchange rate (`p2pExchangeRate`).
+    /// @param _marketAddress The address of the market we want to update.
     function updateRates(address _marketAddress) public isMarketCreated(_marketAddress) {
         if (lastUpdateTimestamp[_marketAddress] != block.timestamp) {
             _updateP2PExchangeRate(_marketAddress);
@@ -196,11 +177,10 @@ contract MarketsManagerForAave is Ownable {
         }
     }
 
-    /* Internal */
+    /// Internal ///
 
-    /** @dev Updates the P2P exchange rate, taking into account the Second Percentage Yield (`p2pSPY`) since the last time it has been updated.
-     *  @param _marketAddress The address of the market to update.
-     */
+    /// @dev Updates the P2P exchange rate, taking into account the Second Percentage Yield (`p2pSPY`) since the last time it has been updated.
+    /// @param _marketAddress The address of the market to update.
     function _updateP2PExchangeRate(address _marketAddress) internal {
         uint256 timeDifference = block.timestamp - lastUpdateTimestamp[_marketAddress];
         uint256 newP2PExchangeRate = p2pExchangeRate[_marketAddress].rayMul(
@@ -211,9 +191,8 @@ contract MarketsManagerForAave is Ownable {
         emit P2PExchangeRateUpdated(_marketAddress, newP2PExchangeRate);
     }
 
-    /** @dev Updates the Second Percentage Yield (`p2pSPY`).
-     *  @param _marketAddress The address of the market to update.
-     */
+    /// @dev Updates the Second Percentage Yield (`p2pSPY`).
+    /// @param _marketAddress The address of the market to update.
     function _updateSPY(address _marketAddress) internal {
         DataTypes.ReserveData memory reserveData = lendingPool.getReserveData(
             IAToken(_marketAddress).UNDERLYING_ASSET_ADDRESS()

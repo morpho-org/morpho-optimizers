@@ -12,17 +12,15 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 
-/**
- *  @title MorphoPositionsManagerForComp?
- *  @dev Smart contract interacting with Comp to enable P2P supply/borrow positions that can fallback on Comp's pool using poolToken tokens.
- */
+/// @title MorphoPositionsManagerForComp?
+/// @dev Smart contract interacting with Comp to enable P2P supply/borrow positions that can fallback on Comp's pool using poolToken tokens.
 contract PositionsManagerForCompound is ReentrancyGuard {
     using DoubleLinkedList for DoubleLinkedList.List;
     using CompoundMath for uint256;
     using SafeERC20 for IERC20;
     using Math for uint256;
 
-    /* Structs */
+    /// Structs ///
 
     struct SupplyBalance {
         uint256 inP2P; // In p2pUnit, a unit that grows in value, to keep track of the interests/debt increase when users are in p2p.
@@ -54,7 +52,7 @@ contract PositionsManagerForCompound is ReentrancyGuard {
         uint256 collateralOnPoolInUnderlying; // The amount of underlying the liquidatee has on Comp.
     }
 
-    /* Storage */
+    /// Storage ///
 
     uint16 public NMAX = 20;
     uint8 public constant CTOKEN_DECIMALS = 8;
@@ -71,44 +69,39 @@ contract PositionsManagerForCompound is ReentrancyGuard {
     IComptroller public comptroller;
     IMarketsManagerForCompound public marketsManagerForCompound;
 
-    /* Events */
+    /// Events ///
 
-    /** @dev Emitted when a supply happens.
-     *  @param _account The address of the supplier.
-     *  @param _poolTokenAddress The address of the market where assets are supplied into.
-     *  @param _amount The amount of assets.
-     */
+    /// @dev Emitted when a supply happens.
+    /// @param _account The address of the supplier.
+    /// @param _poolTokenAddress The address of the market where assets are supplied into.
+    /// @param _amount The amount of assets.
     event Supplied(address indexed _account, address indexed _poolTokenAddress, uint256 _amount);
 
-    /** @dev Emitted when a withdraw happens.
-     *  @param _account The address of the withdrawer.
-     *  @param _poolTokenAddress The address of the market from where assets are withdrawn.
-     *  @param _amount The amount of assets.
-     */
+    /// @dev Emitted when a withdraw happens.
+    /// @param _account The address of the withdrawer.
+    /// @param _poolTokenAddress The address of the market from where assets are withdrawn.
+    /// @param _amount The amount of assets.
     event Withdrawn(address indexed _account, address indexed _poolTokenAddress, uint256 _amount);
 
-    /** @dev Emitted when a borrow happens.
-     *  @param _account The address of the borrower.
-     *  @param _poolTokenAddress The address of the market where assets are borrowed.
-     *  @param _amount The amount of assets.
-     */
+    /// @dev Emitted when a borrow happens.
+    /// @param _account The address of the borrower.
+    /// @param _poolTokenAddress The address of the market where assets are borrowed.
+    /// @param _amount The amount of assets.
     event Borrowed(address indexed _account, address indexed _poolTokenAddress, uint256 _amount);
 
-    /** @dev Emitted when a repay happens.
-     *  @param _account The address of the repayer.
-     *  @param _poolTokenAddress The address of the market where assets are repaid.
-     *  @param _amount The amount of assets.
-     */
+    /// @dev Emitted when a repay happens.
+    /// @param _account The address of the repayer.
+    /// @param _poolTokenAddress The address of the market where assets are repaid.
+    /// @param _amount The amount of assets.
     event Repaid(address indexed _account, address indexed _poolTokenAddress, uint256 _amount);
 
-    /** @dev Emitted when a liquidation happens.
-     *  @param _liquidator The address of the liquidator.
-     *  @param _liquidatee The address of the liquidatee.
-     *  @param _amountRepaid The amount of borrowed asset repaid.
-     *  @param _poolTokenBorrowedAddress The address of the borrowed asset.
-     *  @param _amountSeized The amount of collateral asset seized.
-     *  @param _poolTokenCollateralAddress The address of the collateral asset seized.
-     */
+    /// @dev Emitted when a liquidation happens.
+    /// @param _liquidator The address of the liquidator.
+    /// @param _liquidatee The address of the liquidatee.
+    /// @param _amountRepaid The amount of borrowed asset repaid.
+    /// @param _poolTokenBorrowedAddress The address of the borrowed asset.
+    /// @param _amountSeized The amount of collateral asset seized.
+    /// @param _poolTokenCollateralAddress The address of the collateral asset seized.
     event Liquidated(
         address indexed _liquidator,
         address indexed _liquidatee,
@@ -118,16 +111,15 @@ contract PositionsManagerForCompound is ReentrancyGuard {
         address _poolTokenCollateralAddress
     );
 
-    /** @dev Emitted when the position of a supplier is updated.
-     *  @param _account The address of the supplier.
-     *  @param _poolTokenAddress The address of the market.
-     *  @param _amountAddedOnPool The amount added on pool (in underlying).
-     *  @param _amountAddedInP2P The amount added in P2P (in underlying).
-     *  @param _amountRemovedFromPool The amount removed from the pool (in underlying).
-     *  @param _amountRemovedFromP2P The amount removed from P2P (in underlying).
-     *  @param _p2pExchangeRate The P2P exchange rate at the moment.
-     *  @param _poolTokenExchangeRate The poolToken exchange rate at the moment.
-     */
+    /// @dev Emitted when the position of a supplier is updated.
+    /// @param _account The address of the supplier.
+    /// @param _poolTokenAddress The address of the market.
+    /// @param _amountAddedOnPool The amount added on pool (in underlying).
+    /// @param _amountAddedInP2P The amount added in P2P (in underlying).
+    /// @param _amountRemovedFromPool The amount removed from the pool (in underlying).
+    /// @param _amountRemovedFromP2P The amount removed from P2P (in underlying).
+    /// @param _p2pExchangeRate The P2P exchange rate at the moment.
+    /// @param _poolTokenExchangeRate The poolToken exchange rate at the moment.
     event SupplierPositionUpdated(
         address indexed _account,
         address indexed _poolTokenAddress,
@@ -139,16 +131,15 @@ contract PositionsManagerForCompound is ReentrancyGuard {
         uint256 _poolTokenExchangeRate
     );
 
-    /** @dev Emitted when the position of a borrower is updated.
-     *  @param _account The address of the borrower.
-     *  @param _poolTokenAddress The address of the market.
-     *  @param _amountAddedOnPool The amount added on pool (in underlying).
-     *  @param _amountAddedInP2P The amount added in P2P (in underlying).
-     *  @param _amountRemovedFromPool The amount removed from the pool (in underlying).
-     *  @param _amountRemovedFromP2P The amount removed from P2P (in underlying).
-     *  @param _p2pExchangeRate The P2P exchange rate at the moment.
-     *  @param _borrowIndex The borrow index at the moment.
-     */
+    /// @dev Emitted when the position of a borrower is updated.
+    /// @param _account The address of the borrower.
+    /// @param _poolTokenAddress The address of the market.
+    /// @param _amountAddedOnPool The amount added on pool (in underlying).
+    /// @param _amountAddedInP2P The amount added in P2P (in underlying).
+    /// @param _amountRemovedFromPool The amount removed from the pool (in underlying).
+    /// @param _amountRemovedFromP2P The amount removed from P2P (in underlying).
+    /// @param _p2pExchangeRate The P2P exchange rate at the moment.
+    /// @param _borrowIndex The borrow index at the moment.
     event BorrowerPositionUpdated(
         address indexed _account,
         address indexed _poolTokenAddress,
@@ -160,7 +151,7 @@ contract PositionsManagerForCompound is ReentrancyGuard {
         uint256 _borrowIndex
     );
 
-    /* Errors */
+    /// Errors ///
 
     /// @notice Emitted when the is equal to 0.
     error AmountIsZero();
@@ -210,49 +201,44 @@ contract PositionsManagerForCompound is ReentrancyGuard {
     /// @notice Emitted when the mint on Compound failed.
     error MintOnCompoundFailed();
 
-    /* Modifiers */
+    /// Modifiers ///
 
-    /** @dev Prevents a user to access a market not created yet.
-     *  @param _poolTokenAddress The address of the market.
-     */
+    /// @dev Prevents a user to access a market not created yet.
+    /// @param _poolTokenAddress The address of the market.
     modifier isMarketCreated(address _poolTokenAddress) {
         if (!marketsManagerForCompound.isCreated(_poolTokenAddress)) revert MarketNotCreated();
         _;
     }
 
-    /** @dev Prevents a user to supply or borrow less than threshold.
-     *  @param _poolTokenAddress The address of the market.
-     *  @param _amount The amount in ERC20 tokens.
-     */
+    /// @dev Prevents a user to supply or borrow less than threshold.
+    /// @param _poolTokenAddress The address of the market.
+    /// @param _amount The amount in ERC20 tokens.
     modifier isAboveThreshold(address _poolTokenAddress, uint256 _amount) {
         if (_amount < threshold[_poolTokenAddress]) revert AmountNotAboveThreshold();
         _;
     }
 
-    /** @dev Prevents a user to call function only allowed for the markets manager.
-     */
+    /// @dev Prevents a user to call function only allowed for the markets manager.
     modifier onlyMarketsManager() {
         if (msg.sender != address(marketsManagerForCompound)) revert OnlyMarketsManager();
         _;
     }
 
-    /* Constructor */
+    /// Constructor ///
 
-    /** @dev Constructs the PositionsManagerForCompound contract.
-     *  @param _compoundMarketsManager The address of the markets manager.
-     *  @param _proxyComptrollerAddress The address of the proxy comptroller.
-     */
+    /// @dev Constructs the PositionsManagerForCompound contract.
+    /// @param _compoundMarketsManager The address of the markets manager.
+    /// @param _proxyComptrollerAddress The address of the proxy comptroller.
     constructor(address _compoundMarketsManager, address _proxyComptrollerAddress) {
         marketsManagerForCompound = IMarketsManagerForCompound(_compoundMarketsManager);
         comptroller = IComptroller(_proxyComptrollerAddress);
     }
 
-    /* External */
+    /// External ///
 
-    /** @dev Creates Comp's markets.
-     *  @param _poolTokenAddress The address of the market the user wants to supply.
-     *  @return The results of entered.
-     */
+    /// @dev Creates Comp's markets.
+    /// @param _poolTokenAddress The address of the market the user wants to supply.
+    /// @return The results of entered.
     function createMarket(address _poolTokenAddress)
         external
         onlyMarketsManager
@@ -263,17 +249,15 @@ contract PositionsManagerForCompound is ReentrancyGuard {
         return comptroller.enterMarkets(marketToEnter);
     }
 
-    /** @dev Sets the maximum number of users in tree.
-     *  @param _newMaxNumber The maximum number of users to have in the tree.
-     */
+    /// @dev Sets the maximum number of users in tree.
+    /// @param _newMaxNumber The maximum number of users to have in the tree.
     function setMaxNumberOfUsersInTree(uint16 _newMaxNumber) external onlyMarketsManager {
         NMAX = _newMaxNumber;
     }
 
-    /** @dev Sets the threshold of a market.
-     *  @param _poolTokenAddress The address of the market to set the threshold.
-     *  @param _newThreshold The new threshold.
-     */
+    /// @dev Sets the threshold of a market.
+    /// @param _poolTokenAddress The address of the market to set the threshold.
+    /// @param _newThreshold The new threshold.
     function setThreshold(address _poolTokenAddress, uint256 _newThreshold)
         external
         onlyMarketsManager
@@ -281,10 +265,9 @@ contract PositionsManagerForCompound is ReentrancyGuard {
         threshold[_poolTokenAddress] = _newThreshold;
     }
 
-    /** @dev Supplies ERC20 tokens in a specific market.
-     *  @param _poolTokenAddress The address of the market the user wants to supply.
-     *  @param _amount The amount to supply in ERC20 tokens.
-     */
+    /// @dev Supplies ERC20 tokens in a specific market.
+    /// @param _poolTokenAddress The address of the market the user wants to supply.
+    /// @param _amount The amount to supply in ERC20 tokens.
     function supply(address _poolTokenAddress, uint256 _amount)
         external
         nonReentrant
@@ -346,10 +329,9 @@ contract PositionsManagerForCompound is ReentrancyGuard {
         }
     }
 
-    /** @dev Borrows ERC20 tokens.
-     *  @param _poolTokenAddress The address of the markets the user wants to enter.
-     *  @param _amount The amount to borrow in ERC20 tokens.
-     */
+    /// @dev Borrows ERC20 tokens.
+    /// @param _poolTokenAddress The address of the markets the user wants to enter.
+    /// @param _amount The amount to borrow in ERC20 tokens.
     function borrow(address _poolTokenAddress, uint256 _amount)
         external
         nonReentrant
@@ -411,29 +393,26 @@ contract PositionsManagerForCompound is ReentrancyGuard {
         underlyingToken.safeTransfer(msg.sender, _amount);
     }
 
-    /** @dev Withdraws ERC20 tokens from supply.
-     *  @param _poolTokenAddress The address of the market the user wants to interact with.
-     *  @param _amount The amount in tokens to withdraw from supply.
-     */
+    /// @dev Withdraws ERC20 tokens from supply.
+    /// @param _poolTokenAddress The address of the market the user wants to interact with.
+    /// @param _amount The amount in tokens to withdraw from supply.
     function withdraw(address _poolTokenAddress, uint256 _amount) external nonReentrant {
         _withdraw(_poolTokenAddress, _amount, msg.sender, msg.sender);
     }
 
-    /** @dev Repays debt of the user.
-     *  @dev `msg.sender` must have approved Morpho's contract to spend the underlying `_amount`.
-     *  @param _poolTokenAddress The address of the market the user wants to interact with.
-     *  @param _amount The amount in ERC20 tokens to repay.
-     */
+    /// @dev Repays debt of the user.
+    /// @dev `msg.sender` must have approved Morpho's contract to spend the underlying `_amount`.
+    /// @param _poolTokenAddress The address of the market the user wants to interact with.
+    /// @param _amount The amount in ERC20 tokens to repay.
     function repay(address _poolTokenAddress, uint256 _amount) external nonReentrant {
         _repay(_poolTokenAddress, msg.sender, _amount);
     }
 
-    /** @dev Allows someone to liquidate a position.
-     *  @param _poolTokenBorrowedAddress The address of the debt token the liquidator wants to repay.
-     *  @param _poolTokenCollateralAddress The address of the collateral the liquidator wants to seize.
-     *  @param _borrower The address of the borrower to liquidate.
-     *  @param _amount The amount to repay in ERC20 tokens.
-     */
+    /// @dev Allows someone to liquidate a position.
+    /// @param _poolTokenBorrowedAddress The address of the debt token the liquidator wants to repay.
+    /// @param _poolTokenCollateralAddress The address of the collateral the liquidator wants to seize.
+    /// @param _borrower The address of the borrower to liquidate.
+    /// @param _amount The amount to repay in ERC20 tokens.
     function liquidate(
         address _poolTokenBorrowedAddress,
         address _poolTokenCollateralAddress,
@@ -499,14 +478,13 @@ contract PositionsManagerForCompound is ReentrancyGuard {
         _withdraw(_poolTokenCollateralAddress, vars.amountToSeize, _borrower, msg.sender);
     }
 
-    /* Internal */
+    /// Internal ///
 
-    /** @dev Withdraws ERC20 tokens from supply.
-     *  @param _poolTokenAddress The address of the market the user wants to interact with.
-     *  @param _amount The amount in tokens to withdraw from supply.
-     *  @param _holder The user to whom Morpho will withdraw the supply.
-     *  @param _receiver The address of the user that will receive the tokens.
-     */
+    /// @dev Withdraws ERC20 tokens from supply.
+    /// @param _poolTokenAddress The address of the market the user wants to interact with.
+    /// @param _amount The amount in tokens to withdraw from supply.
+    /// @param _holder The user to whom Morpho will withdraw the supply.
+    /// @param _receiver The address of the user that will receive the tokens.
     function _withdraw(
         address _poolTokenAddress,
         uint256 _amount,
@@ -623,12 +601,11 @@ contract PositionsManagerForCompound is ReentrancyGuard {
         underlyingToken.safeTransfer(_receiver, _amount);
     }
 
-    /** @dev Implements repay logic.
-     *  @dev `msg.sender` must have approved this contract to spend the underlying `_amount`.
-     *  @param _poolTokenAddress The address of the market the user wants to interact with.
-     *  @param _borrower The address of the `_borrower` to repay the borrow.
-     *  @param _amount The amount of ERC20 tokens to repay.
-     */
+    /// @dev Implements repay logic.
+    /// @dev `msg.sender` must have approved this contract to spend the underlying `_amount`.
+    /// @param _poolTokenAddress The address of the market the user wants to interact with.
+    /// @param _borrower The address of the `_borrower` to repay the borrow.
+    /// @param _amount The amount of ERC20 tokens to repay.
     function _repay(
         address _poolTokenAddress,
         address _borrower,
@@ -735,10 +712,9 @@ contract PositionsManagerForCompound is ReentrancyGuard {
         emit Repaid(_borrower, _poolTokenAddress, _amount);
     }
 
-    /** @dev Supplies ERC20 tokens to Comp.
-     *  @param _poolTokenAddress The address of the market the user wants to interact with.
-     *  @param _amount The amount in ERC20 tokens to supply.
-     */
+    /// @dev Supplies ERC20 tokens to Comp.
+    /// @param _poolTokenAddress The address of the market the user wants to interact with.
+    /// @param _amount The amount in ERC20 tokens to supply.
     function _supplyERC20ToPool(address _poolTokenAddress, uint256 _amount) internal {
         ICErc20 poolToken = ICErc20(_poolTokenAddress);
         IERC20 underlyingToken = IERC20(poolToken.underlying());
@@ -746,20 +722,18 @@ contract PositionsManagerForCompound is ReentrancyGuard {
         if (poolToken.mint(_amount) != 0) revert MintOnCompoundFailed();
     }
 
-    /** @dev Withdraws ERC20 tokens from Comp.
-     *  @param _poolTokenAddress The address of the market the user wants to interact with.
-     *  @param _amount The amount of tokens to be withdrawn.
-     */
+    /// @dev Withdraws ERC20 tokens from Comp.
+    /// @param _poolTokenAddress The address of the market the user wants to interact with.
+    /// @param _amount The amount of tokens to be withdrawn.
     function _withdrawERC20FromComp(address _poolTokenAddress, uint256 _amount) internal {
         ICErc20 poolToken = ICErc20(_poolTokenAddress);
         if (poolToken.redeemUnderlying(_amount) != 0) revert RedeemOnCompoundFailed();
     }
 
-    /** @dev Returns whether it is unsafe supply/witdhraw due to coumpound's revert on low levels of precision or not.
-     *  @param _amount The amount of token considered for depositing/redeeming.
-     *  @param _poolTokenAddress poolToken address of the considered market.
-     *  @return Whether to continue or not.
-     */
+    /// @dev Returns whether it is unsafe supply/witdhraw due to coumpound's revert on low levels of precision or not.
+    /// @param _amount The amount of token considered for depositing/redeeming.
+    /// @param _poolTokenAddress poolToken address of the considered market.
+    /// @return Whether to continue or not.
     function _isAboveCompoundThreshold(address _poolTokenAddress, uint256 _amount)
         internal
         view
@@ -773,12 +747,11 @@ contract PositionsManagerForCompound is ReentrancyGuard {
         else return true;
     }
 
-    /** @dev Returns whether the amount is above the precision threshold.
-     *  @param _amount The amount moved.
-     *  @param _rate1 The first rate to compare the amount with.
-     *  @param _rate2 The second rate to compare the amount with.
-     *  @return Whether this is above threshold or not.
-     */
+    /// @dev Returns whether the amount is above the precision threshold.
+    /// @param _amount The amount moved.
+    /// @param _rate1 The first rate to compare the amount with.
+    /// @param _rate2 The second rate to compare the amount with.
+    /// @return Whether this is above threshold or not.
     function _isAbovePrecisionThreshold(
         uint256 _amount,
         uint256 _rate1,
@@ -787,12 +760,11 @@ contract PositionsManagerForCompound is ReentrancyGuard {
         return (_amount > _rate1 / 1e18 && _amount > _rate2 / 1e18);
     }
 
-    /** @dev Finds liquidity on Comp and matches it in P2P.
-     *  @dev Note: p2pExchangeRate must have been updated before calling this function.
-     *  @param _poolTokenAddress The address of the market on which Morpho want to move users.
-     *  @param _amount The amount to search for in underlying.
-     *  @return remainingToMatch The remaining liquidity to search for in underlying.
-     */
+    /// @dev Finds liquidity on Comp and matches it in P2P.
+    /// @dev Note: p2pExchangeRate must have been updated before calling this function.
+    /// @param _poolTokenAddress The address of the market on which Morpho want to move users.
+    /// @param _amount The amount to search for in underlying.
+    /// @return remainingToMatch The remaining liquidity to search for in underlying.
     function _matchSuppliers(address _poolTokenAddress, uint256 _amount)
         internal
         returns (uint256 remainingToMatch)
@@ -839,12 +811,11 @@ contract PositionsManagerForCompound is ReentrancyGuard {
             _withdrawERC20FromComp(_poolTokenAddress, toWithdraw);
     }
 
-    /** @dev Finds liquidity in peer-to-peer and unmatches it to reconnect Comp.
-     *  @dev Note: p2pExchangeRate must have been updated before calling this function.
-     *  @param _poolTokenAddress The address of the market on which Morpho want to move users.
-     *  @param _amount The amount to search for in underlying.
-     *  @return remainingToUnmatch The amount remaining to unmatch in underlying.
-     */
+    /// @dev Finds liquidity in peer-to-peer and unmatches it to reconnect Comp.
+    /// @dev Note: p2pExchangeRate must have been updated before calling this function.
+    /// @param _poolTokenAddress The address of the market on which Morpho want to move users.
+    /// @param _amount The amount to search for in underlying.
+    /// @return remainingToUnmatch The amount remaining to unmatch in underlying.
     function _unmatchSuppliers(address _poolTokenAddress, uint256 _amount)
         internal
         returns (uint256 remainingToUnmatch)
@@ -888,12 +859,11 @@ contract PositionsManagerForCompound is ReentrancyGuard {
             _supplyERC20ToPool(_poolTokenAddress, toSupply);
     }
 
-    /** @dev Finds borrowers on Comp that match the given `_amount` and move them in P2P.
-     *  @dev Note: p2pExchangeRate must have been updated before calling this function.
-     *  @param _poolTokenAddress The address of the market on which Morpho wants to move users.
-     *  @param _amount The amount to match in underlying.
-     *  @return remainingToMatch The amount remaining to match in underlying.
-     */
+    /// @dev Finds borrowers on Comp that match the given `_amount` and move them in P2P.
+    /// @dev Note: p2pExchangeRate must have been updated before calling this function.
+    /// @param _poolTokenAddress The address of the market on which Morpho wants to move users.
+    /// @param _amount The amount to match in underlying.
+    /// @return remainingToMatch The amount remaining to match in underlying.
     function _matchBorrowers(address _poolTokenAddress, uint256 _amount)
         internal
         returns (uint256 remainingToMatch)
@@ -941,12 +911,11 @@ contract PositionsManagerForCompound is ReentrancyGuard {
         if (poolToken.repayBorrow(toRepay) != 0) revert RepayOnCompoundFailed();
     }
 
-    /** @dev Finds borrowers in peer-to-peer that match the given `_amount` and move them to Comp.
-     *  @dev Note: p2pExchangeRate must have been updated before calling this function.
-     *  @param _poolTokenAddress The address of the market on which Morpho wants to move users.
-     *  @param _amount The amount to match in underlying.
-     *  @return remainingToUnmatch The amount remaining to unmatch in underlying.
-     */
+    /// @dev Finds borrowers in peer-to-peer that match the given `_amount` and move them to Comp.
+    /// @dev Note: p2pExchangeRate must have been updated before calling this function.
+    /// @param _poolTokenAddress The address of the market on which Morpho wants to move users.
+    /// @param _amount The amount to match in underlying.
+    /// @return remainingToUnmatch The amount remaining to unmatch in underlying.
     function _unmatchBorrowers(address _poolTokenAddress, uint256 _amount)
         internal
         returns (uint256 remainingToUnmatch)
@@ -986,11 +955,9 @@ contract PositionsManagerForCompound is ReentrancyGuard {
         require(poolToken.borrow(_amount - remainingToUnmatch) == 0);
     }
 
-    /**
-     * @dev Enters the user into the market if he is not already there.
-     * @param _account The address of the account to update.
-     * @param _poolTokenAddress The address of the market to check.
-     */
+    ///@dev Enters the user into the market if he is not already there.
+    ///@param _account The address of the account to update.
+    ///@param _poolTokenAddress The address of the market to check.
     function _handleMembership(address _poolTokenAddress, address _account) internal {
         if (!accountMembership[_poolTokenAddress][_account]) {
             accountMembership[_poolTokenAddress][_account] = true;
@@ -998,12 +965,11 @@ contract PositionsManagerForCompound is ReentrancyGuard {
         }
     }
 
-    /** @dev Checks whether the user can borrow/withdraw or not.
-     *  @param _account The user to determine liquidity for.
-     *  @param _poolTokenAddress The market to hypothetically withdraw/borrow in.
-     *  @param _withdrawnAmount The number of tokens to hypothetically withdraw.
-     *  @param _borrowedAmount The amount of underlying to hypothetically borrow.
-     */
+    /// @dev Checks whether the user can borrow/withdraw or not.
+    /// @param _account The user to determine liquidity for.
+    /// @param _poolTokenAddress The market to hypothetically withdraw/borrow in.
+    /// @param _withdrawnAmount The number of tokens to hypothetically withdraw.
+    /// @param _borrowedAmount The amount of underlying to hypothetically borrow.
     function _checkAccountLiquidity(
         address _account,
         address _poolTokenAddress,
@@ -1019,13 +985,12 @@ contract PositionsManagerForCompound is ReentrancyGuard {
         if (debtValue > maxDebtValue) revert DebtValueAboveMax();
     }
 
-    /** @dev Returns the debt value, max debt value and collateral value of a given user.
-     *  @param _account The user to determine liquidity for.
-     *  @param _poolTokenAddress The market to hypothetically withdraw/borrow in.
-     *  @param _withdrawnAmount The number of tokens to hypothetically withdraw.
-     *  @param _borrowedAmount The amount of underlying to hypothetically borrow.
-     *  @return (debtValue, maxDebtValue).
-     */
+    /// @dev Returns the debt value, max debt value and collateral value of a given user.
+    /// @param _account The user to determine liquidity for.
+    /// @param _poolTokenAddress The market to hypothetically withdraw/borrow in.
+    /// @param _withdrawnAmount The number of tokens to hypothetically withdraw.
+    /// @param _borrowedAmount The amount of underlying to hypothetically borrow.
+    /// @return (debtValue, maxDebtValue).
     function _getUserHypotheticalBalanceStates(
         address _account,
         address _poolTokenAddress,
@@ -1074,10 +1039,9 @@ contract PositionsManagerForCompound is ReentrancyGuard {
         return (vars.debtValue, vars.maxDebtValue);
     }
 
-    /** @dev Updates borrowers tree with the new balances of a given account.
-     *  @param _poolTokenAddress The address of the market on which Morpho want to update the borrower lists.
-     *  @param _account The address of the borrower to move.
-     */
+    /// @dev Updates borrowers tree with the new balances of a given account.
+    /// @param _poolTokenAddress The address of the market on which Morpho want to update the borrower lists.
+    /// @param _account The address of the borrower to move.
     function _updateBorrowerList(address _poolTokenAddress, address _account) internal {
         uint256 onPool = borrowBalanceInOf[_poolTokenAddress][_account].onPool;
         uint256 inP2P = borrowBalanceInOf[_poolTokenAddress][_account].inP2P;
@@ -1097,10 +1061,9 @@ contract PositionsManagerForCompound is ReentrancyGuard {
             borrowersInP2P[_poolTokenAddress].insertSorted(_account, inP2P, NMAX);
     }
 
-    /** @dev Updates suppliers tree with the new balances of a given account.
-     *  @param _poolTokenAddress The address of the market on which Morpho want to update the supplier lists.
-     *  @param _account The address of the supplier to move.
-     */
+    /// @dev Updates suppliers tree with the new balances of a given account.
+    /// @param _poolTokenAddress The address of the market on which Morpho want to update the supplier lists.
+    /// @param _account The address of the supplier to move.
     function _updateSupplierList(address _poolTokenAddress, address _account) internal {
         uint256 onPool = supplyBalanceInOf[_poolTokenAddress][_account].onPool;
         uint256 inP2P = supplyBalanceInOf[_poolTokenAddress][_account].inP2P;
