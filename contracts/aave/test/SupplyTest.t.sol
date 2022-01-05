@@ -23,8 +23,10 @@ contract SupplyTest is TestSetup {
     }
 
     // 1.2 - There are no available borrowers: all of the supplied amount is supplied to the pool and set `onPool`.
-    function test_Supply_1_2(uint16 _amount) public {
-        if (_amount <= positionsManager.threshold(aDai)) return;
+    function test_Supply_1_2(uint256 _amount) public {
+        if (type(uint64).max <= _amount) _amount -= type(uint64).max;
+        if (_amount <= positionsManager.threshold(aDai))
+            _amount += positionsManager.threshold(aDai);
 
         supplier1.approve(dai, address(positionsManager), _amount);
         supplier1.supply(aDai, _amount);
@@ -60,8 +62,11 @@ contract SupplyTest is TestSetup {
     }
 
     // 1.3 - There is 1 available borrower, he matches 100% of the supplier liquidity, everything is `inP2P`.
-    function test_Supply_1_3(uint16 _amount) public {
-        if (_amount <= positionsManager.threshold(aDai)) return;
+    function test_Supply_1_3(uint256 _amount) public {
+        if (type(uint64).max <= _amount) _amount -= type(uint64).max;
+        if (_amount <= positionsManager.threshold(aDai))
+            _amount += positionsManager.threshold(aDai);
+
         borrower1.approve(usdc, address(positionsManager), to6Decimals(2 * _amount));
         borrower1.supply(aUsdc, to6Decimals(2 * _amount));
         borrower1.borrow(aDai, _amount);
@@ -84,10 +89,13 @@ contract SupplyTest is TestSetup {
             address(supplier1)
         );
 
-        (uint256 inP2PBorrower, uint256 onPoolBorrower) = positionsManager.supplyBalanceInOf(
+        (uint256 inP2PBorrower, uint256 onPoolBorrower) = positionsManager.borrowBalanceInOf(
             aDai,
             address(borrower1)
         );
+
+        emit log_named_uint("inP2PBorrower", inP2PBorrower);
+        emit log_named_uint("inP2PSupplier", inP2PSupplier);
 
         assertEq(onPoolSupplier, 0);
         assertEq(inP2PSupplier, expectedSupplyBalanceInP2P);
@@ -98,20 +106,17 @@ contract SupplyTest is TestSetup {
 
     // 1.4 - There is 1 available borrower, he doesn't match 100% of the supplier liquidity.
     // Supplier's balance `inP2P` is equal to the borrower previous amount `onPool`, the rest is set `onPool`.
-    function test_Supply_1_4(uint16 _amount) public {
-        if (_amount <= positionsManager.threshold(aDai)) return;
-        borrower1.approve(usdc, address(positionsManager), to6Decimals(10 * _amount));
-        borrower1.supply(aUsdc, to6Decimals(10 * _amount));
-        borrower1.borrow(aDai, _amount / 2);
+    function test_Supply_1_4(uint256 _amount) public {
+        if (type(uint64).max <= _amount) _amount -= type(uint64).max;
+        if (_amount <= positionsManager.threshold(aDai))
+            _amount += positionsManager.threshold(aDai);
 
-        uint256 daiBalanceBefore = supplier1.balanceOf(dai);
-        uint256 expectedDaiBalanceAfter = daiBalanceBefore - _amount;
+        borrower1.approve(usdc, address(positionsManager), to6Decimals(2 * _amount));
+        borrower1.supply(aUsdc, to6Decimals(2 * _amount));
+        borrower1.borrow(aDai, _amount / 2);
 
         supplier1.approve(dai, address(positionsManager), _amount);
         supplier1.supply(aDai, _amount);
-
-        uint256 daiBalanceAfter = supplier1.balanceOf(dai);
-        assertEq(daiBalanceAfter, expectedDaiBalanceAfter);
 
         marketsManager.updateRates(aDai);
         uint256 p2pUnitExchangeRate = marketsManager.p2pExchangeRate(aDai);
@@ -142,14 +147,14 @@ contract SupplyTest is TestSetup {
 
     // 1.5 - There are NMAX (or less) borrowers that match the supplied amount, everything is `inP2P` after NMAX (or less) match.
     function test_Supply_1_5(uint256 _amount) public {
-        if (_amount <= positionsManager.threshold(aDai)) return;
-        if (type(uint256).max / 2 < _amount) return; // to avoid overflow on the collateral
-
-        //uint256 NMAX = positionsManager.NMAX();
+        if (type(uint64).max <= _amount) _amount -= type(uint64).max;
+        if (_amount <= positionsManager.threshold(aDai))
+            _amount += positionsManager.threshold(aDai);
 
         uint256 totalBorrowed = 0;
         uint256 collateral = 2 * _amount;
 
+        //uint256 NMAX = positionsManager.NMAX();
         // needs to be changed to nmax
         for (uint256 i = 0; i < borrowers.length; i++) {
             borrowers[i].approve(usdc, to6Decimals(collateral));
@@ -188,14 +193,14 @@ contract SupplyTest is TestSetup {
     // 1.6 - The NMAX biggest borrowers don't match all of the supplied amount, after NMAX match, the rest is supplied and set `onPool`.
     // ⚠️ most gas expensive supply scenario.
     function test_Supply_1_6(uint256 _amount) public {
-        if (_amount <= positionsManager.threshold(aDai)) return;
-        if (type(uint256).max / 2 < _amount) return; // to avoid overflow on the collateral
-
-        //uint256 NMAX = positionsManager.NMAX();
+        if (type(uint64).max <= _amount) _amount -= type(uint64).max;
+        if (_amount <= positionsManager.threshold(aDai))
+            _amount += positionsManager.threshold(aDai);
 
         uint256 totalBorrowed = 0;
         uint256 collateral = 2 * _amount;
 
+        //uint256 NMAX = positionsManager.NMAX();
         // NMAX
         for (uint256 i = 0; i < borrowers.length; i++) {
             borrowers[i].approve(usdc, to6Decimals(collateral));
