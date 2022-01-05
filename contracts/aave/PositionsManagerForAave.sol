@@ -1,14 +1,7 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.7;
 
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
-import "@openzeppelin/contracts/utils/math/Math.sol";
-
-import "../common/libraries/DoubleLinkedList.sol";
 import "./libraries/aave/WadRayMath.sol";
-import "./libraries/ErrorsForAave.sol";
 import "./interfaces/aave/IPriceOracleGetter.sol";
 import {IVariableDebtToken} from "./interfaces/aave/IVariableDebtToken.sol";
 import {IAToken} from "./interfaces/aave/IAToken.sol";
@@ -18,6 +11,13 @@ import "./interfaces/aave/IProtocolDataProvider.sol";
 import "./interfaces/aave/ILendingPool.sol";
 import "./interfaces/IMarketsManagerForAave.sol";
 import "./interfaces/IGetterIncentivesController.sol";
+
+import "../common/libraries/DoubleLinkedList.sol";
+
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import "@openzeppelin/contracts/utils/math/Math.sol";
 
 /**
  *  @title PositionsManagerForAave
@@ -211,13 +211,45 @@ contract PositionsManagerForAave is ReentrancyGuard {
         uint256 _balanceInP2P
     );
 
+    /* Errors */
+
+    /// @notice Emitted when the is equal to 0.
+    error AmountIsZero();
+
+    /// @notice Emitted when the market is not created yet.
+    error MarketNotCreated();
+
+    /// @notice Emitted when the debt value is above the maximum debt value.
+    error DebtValueAboveMax();
+
+    /// @notice Emitted when only the markets manager can call the function.
+    error OnlyMarketsManager();
+
+    /// @notice Emitted when the supply is above the cap value.
+    error SupplyAboveCapValue();
+
+    /// @notice Emitted when the debt value is not above the maximum debt value.
+    error DebtValueNotAboveMax();
+
+    /// @notice Emitted when the amount of collateral to seize is above the collateral.
+    error ToSeizeAboveCollateral();
+
+    /// @notice Emitted when the amount is above the threshold.
+    error AmountNotAboveThreshold();
+
+    /// @notice Emitted when the unmatching process fails to get the required liquidity.
+    error CouldNotUnmatchFullAmount();
+
+    /// @notice Emitted when the amount repaid during the liquidation is above what is allowed to repay.
+    error AmountAboveWhatAllowedToRepay();
+
     /* Modifiers */
 
     /** @dev Prevents a user to access a market not created yet.
      *  @param _poolTokenAddress The address of the market.
      */
     modifier isMarketCreated(address _poolTokenAddress) {
-        require(marketsManagerForAave.isCreated(_poolTokenAddress), Errors.PM_MARKET_NOT_CREATED);
+        if (!marketsManagerForAave.isCreated(_poolTokenAddress)) revert MarketNotCreated();
         _;
     }
 
@@ -226,14 +258,14 @@ contract PositionsManagerForAave is ReentrancyGuard {
      *  @param _amount The amount in ERC20 tokens.
      */
     modifier isAboveThreshold(address _poolTokenAddress, uint256 _amount) {
-        require(_amount >= threshold[_poolTokenAddress], Errors.PM_AMOUNT_NOT_ABOVE_THRESHOLD);
+        if (_amount < threshold[_poolTokenAddress]) revert AmountNotAboveThreshold();
         _;
     }
 
     /** @dev Prevents a user to call function allowed for the markets manager..
      */
     modifier onlyMarketsManager() {
-        require(msg.sender == address(marketsManagerForAave), Errors.PM_ONLY_MARKETS_MANAGER);
+        if (msg.sender != address(marketsManagerForAave)) revert OnlyMarketsManager();
         _;
     }
 
@@ -453,7 +485,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
         address _borrower,
         uint256 _amount
     ) external nonReentrant {
-        require(_amount > 0, Errors.PM_AMOUNT_IS_0);
+        if (_amount == 0) revert AmountIsZero();
         LiquidateVars memory vars;
         (vars.debtValue, vars.maxDebtValue) = _getUserHypotheticalBalanceStates(
             _borrower,
@@ -461,7 +493,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
             0,
             0
         );
-        require(vars.debtValue > vars.maxDebtValue, Errors.PM_DEBT_VALUE_NOT_ABOVE_MAX);
+        if (vars.debtValue <= vars.maxDebtValue) revert DebtValueNotAboveMax();
         IAToken poolTokenBorrowed = IAToken(_poolTokenBorrowedAddress);
         IAToken poolTokenCollateral = IAToken(_poolTokenCollateralAddress);
         vars.tokenBorrowedAddress = poolTokenBorrowed.UNDERLYING_ASSET_ADDRESS();
@@ -473,10 +505,8 @@ contract PositionsManagerForAave is ReentrancyGuard {
             borrowBalanceInOf[_poolTokenBorrowedAddress][_borrower].inP2P.mulWadByRay(
                 marketsManagerForAave.p2pExchangeRate(_poolTokenBorrowedAddress)
             );
-        require(
-            _amount <= vars.borrowBalance.mul(LIQUIDATION_CLOSE_FACTOR_PERCENT).div(10000),
-            Errors.PM_AMOUNT_ABOVE_ALLOWED_TO_REPAY
-        ); // Same mechanism as Aave. Liquidator cannot repay more than part of the debt (cf close factor on Aave).
+        if (_amount > vars.borrowBalance.mul(LIQUIDATION_CLOSE_FACTOR_PERCENT).div(10000))
+            revert AmountAboveWhatAllowedToRepay(); // Same mechanism as Aave. Liquidator cannot repay more than part of the debt (cf close factor on Aave).
 
         vars.oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
         _repay(_poolTokenBorrowedAddress, _borrower, _amount);
@@ -510,7 +540,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
             supplyBalanceInOf[_poolTokenCollateralAddress][_borrower].inP2P.mulWadByRay(
                 marketsManagerForAave.p2pExchangeRate(_poolTokenCollateralAddress)
             );
-        require(vars.amountToSeize <= vars.totalCollateral, Errors.PM_TO_SEIZE_ABOVE_COLLATERAL);
+        if (vars.amountToSeize > vars.totalCollateral) revert ToSeizeAboveCollateral();
 
         _withdraw(_poolTokenCollateralAddress, vars.amountToSeize, _borrower, msg.sender);
         emit Liquidated(
@@ -537,7 +567,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
         address _supplier,
         address _receiver
     ) internal isMarketCreated(_poolTokenAddress) {
-        require(_amount > 0, Errors.PM_AMOUNT_IS_0);
+        if (_amount == 0) revert AmountIsZero();
         _checkAccountLiquidity(_supplier, _poolTokenAddress, _amount, 0);
         IAToken poolToken = IAToken(_poolTokenAddress);
         IERC20 underlyingToken = IERC20(poolToken.UNDERLYING_ASSET_ADDRESS());
@@ -577,7 +607,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
         address _borrower,
         uint256 _amount
     ) internal isMarketCreated(_poolTokenAddress) {
-        require(_amount > 0, Errors.PM_AMOUNT_IS_0);
+        if (_amount == 0) revert AmountIsZero();
         IAToken poolToken = IAToken(_poolTokenAddress);
         IERC20 underlyingToken = IERC20(poolToken.UNDERLYING_ASSET_ADDRESS());
         uint256 remainingToRepay = _amount;
@@ -758,7 +788,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
                 poolTokenAddress,
                 _amount - matchedSupply
             ); // We break some P2P credit lines the supplier had with borrowers and fallback on Aave.
-            require(remainingBorrowToUnmatch == 0, Errors.PM_COULD_NOT_UNMATCH_FULL_AMOUNT);
+            if (remainingBorrowToUnmatch != 0) revert CouldNotUnmatchFullAmount();
         }
     }
 
@@ -819,7 +849,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
                 _amount - matchedBorrow
             ); // We break some P2P credit lines the borrower had with suppliers and fallback on Aave.
 
-            require(remainingSupplyToUnmatch == 0, Errors.PM_COULD_NOT_UNMATCH_FULL_AMOUNT);
+            if (remainingSupplyToUnmatch != 0) revert CouldNotUnmatchFullAmount();
         }
     }
 
@@ -1065,10 +1095,8 @@ contract PositionsManagerForAave is ReentrancyGuard {
             .inP2P
             .mulWadByRay(p2pExchangeRate) +
             supplyBalanceInOf[_poolTokenAddress][_supplier].onPool.mulWadByRay(normalizedIncome);
-        require(
-            totalSuppliedInUnderlying + _amount <= capValue[_poolTokenAddress],
-            Errors.PM_SUPPLY_ABOVE_CAP_VALUE
-        );
+        if (totalSuppliedInUnderlying + _amount > capValue[_poolTokenAddress])
+            revert SupplyAboveCapValue();
     }
 
     /**
@@ -1101,7 +1129,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
             _withdrawnAmount,
             _borrowedAmount
         );
-        require(debtValue <= maxDebtValue, Errors.PM_DEBT_VALUE_ABOVE_MAX);
+        if (debtValue > maxDebtValue) revert DebtValueAboveMax();
     }
 
     /** @dev Returns the debt value, max debt value and collateral value of a given user.
