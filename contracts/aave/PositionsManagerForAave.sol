@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.7;
 
-import "./libraries/aave/WadRayMath.sol";
 import "./interfaces/aave/IPriceOracleGetter.sol";
 import {IVariableDebtToken} from "./interfaces/aave/IVariableDebtToken.sol";
 import {IAToken} from "./interfaces/aave/IAToken.sol";
@@ -13,16 +12,15 @@ import "./interfaces/IMarketsManagerForAave.sol";
 import "./interfaces/IGetterIncentivesController.sol";
 
 import "../common/libraries/DoubleLinkedList.sol";
+import "./libraries/aave/WadRayMath.sol";
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 
-/**
- *  @title PositionsManagerForAave
- *  @dev Smart contract interacting with Aave to enable P2P supply/borrow positions that can fallback on Aave's pool using poolToken tokens.
- */
+/// @title PositionsManagerForAave
+/// @dev Smart contract interacting with Aave to enable P2P supply/borrow positions that can fallback on Aave's pool using poolToken tokens.
 contract PositionsManagerForAave is ReentrancyGuard {
     using DoubleLinkedList for DoubleLinkedList.List;
     using WadRayMath for uint256;
@@ -30,7 +28,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
     using SafeERC20 for IERC20;
     using Math for uint256;
 
-    /* Structs */
+    /// Structs ///
 
     // Struct to avoid stack too deep error
     struct BalanceStateVars {
@@ -70,8 +68,6 @@ contract PositionsManagerForAave is ReentrancyGuard {
         IPriceOracleGetter oracle; // Aave oracle.
     }
 
-    /* Structs */
-
     struct SupplyBalance {
         uint256 inP2P; // In p2pUnit, a unit that grows in value, to keep track of the interests/debt increase when users are in p2p.
         uint256 onPool; // In aToken.
@@ -82,7 +78,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
         uint256 onPool; // In adUnit, a unit that grows in value, to keep track of the debt increase when users are in Aave. Multiply by current borrowIndex to get the underlying amount.
     }
 
-    /* Storage */
+    /// Storage ///
 
     uint8 public NO_REFERRAL_CODE = 0;
     uint8 public VARIABLE_INTEREST_MODE = 2;
@@ -106,15 +102,14 @@ contract PositionsManagerForAave is ReentrancyGuard {
     IProtocolDataProvider public dataProvider;
     ILendingPool public lendingPool;
 
-    /* Events */
+    /// Events ///
 
-    /** @dev Emitted when a supply happens.
-     *  @param _account The address of the supplier.
-     *  @param _poolTokenAddress The address of the market where assets are supplied into.
-     *  @param _amount The amount of assets supplied (in underlying).
-     *  @param _balanceOnPool The supply balance on pool after update (in underlying).
-     *  @param _balanceInP2P The supply balance in P2P after update (in underlying).
-     */
+    /// @dev Emitted when a supply happens.
+    /// @param _account The address of the supplier.
+    /// @param _poolTokenAddress The address of the market where assets are supplied into.
+    /// @param _amount The amount of assets supplied (in underlying).
+    /// @param _balanceOnPool The supply balance on pool after update (in underlying).
+    /// @param _balanceInP2P The supply balance in P2P after update (in underlying).
     event Supplied(
         address indexed _account,
         address indexed _poolTokenAddress,
@@ -123,13 +118,12 @@ contract PositionsManagerForAave is ReentrancyGuard {
         uint256 _balanceInP2P
     );
 
-    /** @dev Emitted when a withdraw happens.
-     *  @param _account The address of the withdrawer.
-     *  @param _poolTokenAddress The address of the market from where assets are withdrawn.
-     *  @param _amount The amount of assets withdrawn (in underlying).
-     *  @param _balanceOnPool The supply balance on pool after update (in underlying).
-     *  @param _balanceInP2P The supply balance in P2P after update (in underlying).
-     */
+    /// @dev Emitted when a withdraw happens.
+    /// @param _account The address of the withdrawer.
+    /// @param _poolTokenAddress The address of the market from where assets are withdrawn.
+    /// @param _amount The amount of assets withdrawn (in underlying).
+    /// @param _balanceOnPool The supply balance on pool after update (in underlying).
+    /// @param _balanceInP2P The supply balance in P2P after update (in underlying).
     event Withdrawn(
         address indexed _account,
         address indexed _poolTokenAddress,
@@ -138,13 +132,12 @@ contract PositionsManagerForAave is ReentrancyGuard {
         uint256 _balanceInP2P
     );
 
-    /** @dev Emitted when a borrow happens.
-     *  @param _account The address of the borrower.
-     *  @param _poolTokenAddress The address of the market where assets are borrowed.
-     *  @param _amount The amount of assets borrowed (in underlying).
-     *  @param _balanceOnPool The borrow balance on pool after update (in underlying).
-     *  @param _balanceInP2P The borrow balance in P2P after update (in underlying).
-     */
+    /// @dev Emitted when a borrow happens.
+    /// @param _account The address of the borrower.
+    /// @param _poolTokenAddress The address of the market where assets are borrowed.
+    /// @param _amount The amount of assets borrowed (in underlying).
+    /// @param _balanceOnPool The borrow balance on pool after update (in underlying).
+    /// @param _balanceInP2P The borrow balance in P2P after update (in underlying).
     event Borrowed(
         address indexed _account,
         address indexed _poolTokenAddress,
@@ -153,13 +146,12 @@ contract PositionsManagerForAave is ReentrancyGuard {
         uint256 _balanceInP2P
     );
 
-    /** @dev Emitted when a repay happens.
-     *  @param _account The address of the repayer.
-     *  @param _poolTokenAddress The address of the market where assets are repaid.
-     *  @param _amount The amount of assets repaid (in underlying).
-     *  @param _balanceOnPool The borrow balance on pool after update (in underlying).
-     *  @param _balanceInP2P The borrow balance in P2P after update (in underlying).
-     */
+    /// @dev Emitted when a repay happens.
+    /// @param _account The address of the repayer.
+    /// @param _poolTokenAddress The address of the market where assets are repaid.
+    /// @param _amount The amount of assets repaid (in underlying).
+    /// @param _balanceOnPool The borrow balance on pool after update (in underlying).
+    /// @param _balanceInP2P The borrow balance in P2P after update (in underlying).
     event Repaid(
         address indexed _account,
         address indexed _poolTokenAddress,
@@ -168,14 +160,13 @@ contract PositionsManagerForAave is ReentrancyGuard {
         uint256 _balanceInP2P
     );
 
-    /** @dev Emitted when a liquidation happens.
-     *  @param _liquidator The address of the liquidator.
-     *  @param _liquidatee The address of the liquidatee.
-     *  @param _amountRepaid The amount of borrowed asset repaid (in underlying).
-     *  @param _poolTokenBorrowedAddress The address of the borrowed asset.
-     *  @param _amountSeized The amount of collateral asset seized (in underlying).
-     *  @param _poolTokenCollateralAddress The address of the collateral asset seized.
-     */
+    /// @dev Emitted when a liquidation happens.
+    /// @param _liquidator The address of the liquidator.
+    /// @param _liquidatee The address of the liquidatee.
+    /// @param _amountRepaid The amount of borrowed asset repaid (in underlying).
+    /// @param _poolTokenBorrowedAddress The address of the borrowed asset.
+    /// @param _amountSeized The amount of collateral asset seized (in underlying).
+    /// @param _poolTokenCollateralAddress The address of the collateral asset seized.
     event Liquidated(
         address indexed _liquidator,
         address indexed _liquidatee,
@@ -185,12 +176,11 @@ contract PositionsManagerForAave is ReentrancyGuard {
         address _poolTokenCollateralAddress
     );
 
-    /** @dev Emitted when the position of a supplier is updated.
-     *  @param _account The address of the supplier.
-     *  @param _poolTokenAddress The address of the market.
-     *  @param _balanceOnPool The supply balance on pool after update (in underlying).
-     *  @param _balanceInP2P The supply balance in P2P after update (in underlying).
-     */
+    /// @dev Emitted when the position of a supplier is updated.
+    /// @param _account The address of the supplier.
+    /// @param _poolTokenAddress The address of the market.
+    /// @param _balanceOnPool The supply balance on pool after update (in underlying).
+    /// @param _balanceInP2P The supply balance in P2P after update (in underlying).
     event SupplierPositionUpdated(
         address indexed _account,
         address indexed _poolTokenAddress,
@@ -198,12 +188,11 @@ contract PositionsManagerForAave is ReentrancyGuard {
         uint256 _balanceInP2P
     );
 
-    /** @dev Emitted when the position of a borrower is updated.
-     *  @param _account The address of the borrower.
-     *  @param _poolTokenAddress The address of the market.
-     *  @param _balanceOnPool The borrow balance on pool after update (in underlying).
-     *  @param _balanceInP2P The borrow balance in P2P after update (in underlying).
-     */
+    /// @dev Emitted when the position of a borrower is updated.
+    /// @param _account The address of the borrower.
+    /// @param _poolTokenAddress The address of the market.
+    /// @param _balanceOnPool The borrow balance on pool after update (in underlying).
+    /// @param _balanceInP2P The borrow balance in P2P after update (in underlying).
     event BorrowerPositionUpdated(
         address indexed _account,
         address indexed _poolTokenAddress,
@@ -211,7 +200,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
         uint256 _balanceInP2P
     );
 
-    /* Errors */
+    /// Errors ///
 
     /// @notice Emitted when the is equal to 0.
     error AmountIsZero();
@@ -243,38 +232,34 @@ contract PositionsManagerForAave is ReentrancyGuard {
     /// @notice Emitted when the amount repaid during the liquidation is above what is allowed to repay.
     error AmountAboveWhatAllowedToRepay();
 
-    /* Modifiers */
+    /// Modifiers ///
 
-    /** @dev Prevents a user to access a market not created yet.
-     *  @param _poolTokenAddress The address of the market.
-     */
+    /// @dev Prevents a user to access a market not created yet.
+    /// @param _poolTokenAddress The address of the market.
     modifier isMarketCreated(address _poolTokenAddress) {
         if (!marketsManagerForAave.isCreated(_poolTokenAddress)) revert MarketNotCreated();
         _;
     }
 
-    /** @dev Prevents a user to supply or borrow less than threshold.
-     *  @param _poolTokenAddress The address of the market.
-     *  @param _amount The amount in ERC20 tokens.
-     */
+    /// @dev Prevents a user to supply or borrow less than threshold.
+    /// @param _poolTokenAddress The address of the market.
+    /// @param _amount The amount in ERC20 tokens.
     modifier isAboveThreshold(address _poolTokenAddress, uint256 _amount) {
         if (_amount < threshold[_poolTokenAddress]) revert AmountNotAboveThreshold();
         _;
     }
 
-    /** @dev Prevents a user to call function allowed for the markets manager..
-     */
+    /// @dev Prevents a user to call function allowed for the markets manager..
     modifier onlyMarketsManager() {
         if (msg.sender != address(marketsManagerForAave)) revert OnlyMarketsManager();
         _;
     }
 
-    /* Constructor */
+    /// Constructor ///
 
-    /** @dev Constructs the PositionsManagerForAave contract.
-     *  @param _marketsManager The address of the aave markets manager.
-     *  @param _lendingPoolAddressesProvider The address of the lending pool addresses provider.
-     */
+    /// @dev Constructs the PositionsManagerForAave contract.
+    /// @param _marketsManager The address of the aave markets manager.
+    /// @param _lendingPoolAddressesProvider The address of the lending pool addresses provider.
     constructor(address _marketsManager, address _lendingPoolAddressesProvider) {
         marketsManagerForAave = IMarketsManagerForAave(_marketsManager);
         addressesProvider = ILendingPoolAddressesProvider(_lendingPoolAddressesProvider);
@@ -282,26 +267,21 @@ contract PositionsManagerForAave is ReentrancyGuard {
         lendingPool = ILendingPool(addressesProvider.getLendingPool());
     }
 
-    /* External */
-
-    /** @dev Updates the lending pool and the data provider.
-     */
+    /// @dev Updates the lending pool and the data provider.
     function updateAaveContracts() external {
         dataProvider = IProtocolDataProvider(addressesProvider.getAddress(DATA_PROVIDER_ID));
         lendingPool = ILendingPool(addressesProvider.getLendingPool());
     }
 
-    /** @dev Sets the maximum number of users in tree.
-     *  @param _newMaxNumber The maximum number of users to have in the tree.
-     */
+    /// @dev Sets the maximum number of users in tree.
+    /// @param _newMaxNumber The maximum number of users to have in the tree.
     function setMaxNumberOfUsersInTree(uint16 _newMaxNumber) external onlyMarketsManager {
         NMAX = _newMaxNumber;
     }
 
-    /** @dev Sets the threshold of a market.
-     *  @param _poolTokenAddress The address of the market to set the threshold.
-     *  @param _newThreshold The new threshold.
-     */
+    /// @dev Sets the threshold of a market.
+    /// @param _poolTokenAddress The address of the market to set the threshold.
+    /// @param _newThreshold The new threshold.
     function setThreshold(address _poolTokenAddress, uint256 _newThreshold)
         external
         onlyMarketsManager
@@ -309,10 +289,9 @@ contract PositionsManagerForAave is ReentrancyGuard {
         threshold[_poolTokenAddress] = _newThreshold;
     }
 
-    /** @dev Sets the max cap of a market.
-     *  @param _poolTokenAddress The address of the market to set the threshold.
-     *  @param _newCapValue The new threshold.
-     */
+    /// @dev Sets the max cap of a market.
+    /// @param _poolTokenAddress The address of the market to set the threshold.
+    /// @param _newCapValue The new threshold.
     function setCapValue(address _poolTokenAddress, uint256 _newCapValue)
         external
         onlyMarketsManager
@@ -320,9 +299,8 @@ contract PositionsManagerForAave is ReentrancyGuard {
         capValue[_poolTokenAddress] = _newCapValue;
     }
 
-    /** @dev Claims rewards from liquidity mining and transfers them to the DAO.
-     *  @param _asset The asset to get the rewards from (aToken or variable debt token).
-     */
+    /// @dev Claims rewards from liquidity mining and transfers them to the DAO.
+    /// @param _asset The asset to get the rewards from (aToken or variable debt token).
     function claimRewards(address _asset) external {
         address[] memory asset = new address[](1);
         asset[0] = _asset;
@@ -330,10 +308,9 @@ contract PositionsManagerForAave is ReentrancyGuard {
             .claimRewards(asset, type(uint256).max, marketsManagerForAave.owner());
     }
 
-    /** @dev Supplies ERC20 tokens in a specific market.
-     *  @param _poolTokenAddress The address of the market the user wants to supply.
-     *  @param _amount The amount to supply in ERC20 tokens.
-     */
+    /// @dev Supplies ERC20 tokens in a specific market.
+    /// @param _poolTokenAddress The address of the market the user wants to supply.
+    /// @param _amount The amount to supply in ERC20 tokens.
     function supply(address _poolTokenAddress, uint256 _amount)
         external
         nonReentrant
@@ -371,10 +348,9 @@ contract PositionsManagerForAave is ReentrancyGuard {
         );
     }
 
-    /** @dev Borrows ERC20 tokens.
-     *  @param _poolTokenAddress The address of the markets the user wants to enter.
-     *  @param _amount The amount to borrow in ERC20 tokens.
-     */
+    /// @dev Borrows ERC20 tokens.
+    /// @param _poolTokenAddress The address of the markets the user wants to enter.
+    /// @param _amount The amount to borrow in ERC20 tokens.
     function borrow(address _poolTokenAddress, uint256 _amount)
         external
         nonReentrant
@@ -416,11 +392,10 @@ contract PositionsManagerForAave is ReentrancyGuard {
         );
     }
 
-    /** @dev Withdraws ERC20 tokens from supply.
-     *  @dev Note: If `_amount` is equal to the uint256's maximum value, the whole balance is withdrawn.
-     *  @param _poolTokenAddress The address of the market the user wants to interact with.
-     *  @param _amount The amount in tokens to withdraw from supply.
-     */
+    /// @dev Withdraws ERC20 tokens from supply.
+    /// @dev Note: If `_amount` is equal to the uint256's maximum value, the whole balance is withdrawn.
+    /// @param _poolTokenAddress The address of the market the user wants to interact with.
+    /// @param _amount The amount in tokens to withdraw from supply.
     function withdraw(address _poolTokenAddress, uint256 _amount) external nonReentrant {
         marketsManagerForAave.updateRates(_poolTokenAddress);
         IAToken poolToken = IAToken(_poolTokenAddress);
@@ -444,12 +419,11 @@ contract PositionsManagerForAave is ReentrancyGuard {
         _withdraw(_poolTokenAddress, amount, msg.sender, msg.sender);
     }
 
-    /** @dev Repays debt of the user.
-     *  @dev `msg.sender` must have approved Morpho's contract to spend the underlying `_amount`.
-     *  @dev Note: If `_amount` is equal to the uint256's maximum value, the whole debt is repaid.
-     *  @param _poolTokenAddress The address of the market the user wants to interact with.
-     *  @param _amount The amount in ERC20 tokens to repay.
-     */
+    /// @dev Repays debt of the user.
+    /// @dev `msg.sender` must have approved Morpho's contract to spend the underlying `_amount`.
+    /// @dev Note: If `_amount` is equal to the uint256's maximum value, the whole debt is repaid.
+    /// @param _poolTokenAddress The address of the market the user wants to interact with.
+    /// @param _amount The amount in ERC20 tokens to repay.
     function repay(address _poolTokenAddress, uint256 _amount) external nonReentrant {
         marketsManagerForAave.updateRates(_poolTokenAddress);
         IAToken poolToken = IAToken(_poolTokenAddress);
@@ -473,12 +447,11 @@ contract PositionsManagerForAave is ReentrancyGuard {
         _repay(_poolTokenAddress, msg.sender, amount);
     }
 
-    /** @dev Allows someone to liquidate a position.
-     *  @param _poolTokenBorrowedAddress The address of the debt token the liquidator wants to repay.
-     *  @param _poolTokenCollateralAddress The address of the collateral the liquidator wants to seize.
-     *  @param _borrower The address of the borrower to liquidate.
-     *  @param _amount The amount to repay in ERC20 tokens.
-     */
+    /// @dev Allows someone to liquidate a position.
+    /// @param _poolTokenBorrowedAddress The address of the debt token the liquidator wants to repay.
+    /// @param _poolTokenCollateralAddress The address of the collateral the liquidator wants to seize.
+    /// @param _borrower The address of the borrower to liquidate.
+    /// @param _amount The amount to repay in ERC20 tokens.
     function liquidate(
         address _poolTokenBorrowedAddress,
         address _poolTokenCollateralAddress,
@@ -523,7 +496,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
         vars.borrowedTokenUnit = 10**vars.borrowedReserveDecimals;
 
         // Calculate the amount of collateral to seize (cf Aave):
-        // seizeAmount = repayAmount * liquidationBonus * borrowedPrice * collateralTokenUnit / (collateralPrice * borrowedTokenUnit)
+        // seizeAmount = repayAmount///liquidationBonus///borrowedPrice///collateralTokenUnit / (collateralPrice///borrowedTokenUnit)
         vars.amountToSeize = _amount
             .mul(vars.borrowedPrice)
             .mul(vars.collateralTokenUnit)
@@ -553,14 +526,13 @@ contract PositionsManagerForAave is ReentrancyGuard {
         );
     }
 
-    /* Internal */
+    /// Internal ///
 
-    /** @dev Withdraws ERC20 tokens from supply.
-     *  @param _poolTokenAddress The address of the market the user wants to interact with.
-     *  @param _amount The amount in tokens to withdraw from supply.
-     *  @param _supplier The user to whom Morpho will withdraw the supply.
-     *  @param _receiver The address of the user that will receive the tokens.
-     */
+    /// @dev Withdraws ERC20 tokens from supply.
+    /// @param _poolTokenAddress The address of the market the user wants to interact with.
+    /// @param _amount The amount in tokens to withdraw from supply.
+    /// @param _supplier The user to whom Morpho will withdraw the supply.
+    /// @param _receiver The address of the user that will receive the tokens.
     function _withdraw(
         address _poolTokenAddress,
         uint256 _amount,
@@ -596,12 +568,11 @@ contract PositionsManagerForAave is ReentrancyGuard {
         );
     }
 
-    /** @dev Implements repay logic.
-     *  @dev `msg.sender` must have approved this contract to spend the underlying `_amount`.
-     *  @param _poolTokenAddress The address of the market the user wants to interact with.
-     *  @param _borrower The address of the `_borrower` to repay the borrow.
-     *  @param _amount The amount of ERC20 tokens to repay.
-     */
+    /// @dev Implements repay logic.
+    /// @dev `msg.sender` must have approved this contract to spend the underlying `_amount`.
+    /// @param _poolTokenAddress The address of the market the user wants to interact with.
+    /// @param _borrower The address of the `_borrower` to repay the borrow.
+    /// @param _amount The amount of ERC20 tokens to repay.
     function _repay(
         address _poolTokenAddress,
         address _borrower,
@@ -635,12 +606,11 @@ contract PositionsManagerForAave is ReentrancyGuard {
         );
     }
 
-    /** @dev Supplies `_amount` for a `_supplier` on a specific market to the pool.
-     *  @param _poolToken The Aave interface of the market the user wants to supply to.
-     *  @param _underlyingToken The ERC20 interface of the underlying token of the market to supply to.
-     *  @param _supplier The address of the supplier supplying the tokens.
-     *  @param _amount The amount of ERC20 tokens to supply.
-     */
+    /// @dev Supplies `_amount` for a `_supplier` on a specific market to the pool.
+    /// @param _poolToken The Aave interface of the market the user wants to supply to.
+    /// @param _underlyingToken The ERC20 interface of the underlying token of the market to supply to.
+    /// @param _supplier The address of the supplier supplying the tokens.
+    /// @param _amount The amount of ERC20 tokens to supply.
     function _supplyPositionToPool(
         IAToken _poolToken,
         IERC20 _underlyingToken,
@@ -658,13 +628,12 @@ contract PositionsManagerForAave is ReentrancyGuard {
         _supplyERC20ToPool(_underlyingToken, _amount); // Revert on error
     }
 
-    /** @dev Supplies up to `_amount` for a `_supplier` on a specific market to P2P.
-     *  @param _poolToken The Aave interface of the market the user wants to supply to.
-     *  @param _underlyingToken The ERC20 interface of the underlying token of the market to supply to.
-     *  @param _supplier The address of the supplier supplying the tokens.
-     *  @param _amount The amount of ERC20 tokens to supply.
-     *  @return matched The amount matched by the borrowers waiting on Pool.
-     */
+    /// @dev Supplies up to `_amount` for a `_supplier` on a specific market to P2P.
+    /// @param _poolToken The Aave interface of the market the user wants to supply to.
+    /// @param _underlyingToken The ERC20 interface of the underlying token of the market to supply to.
+    /// @param _supplier The address of the supplier supplying the tokens.
+    /// @param _amount The amount of ERC20 tokens to supply.
+    /// @return matched The amount matched by the borrowers waiting on Pool.
     function _supplyPositionToP2P(
         IAToken _poolToken,
         IERC20 _underlyingToken,
@@ -683,12 +652,11 @@ contract PositionsManagerForAave is ReentrancyGuard {
         }
     }
 
-    /** @dev Borrows `_amount` for `_borrower` from pool.
-     *  @param _poolToken The Aave interface of the market the user wants to borrow from.
-     *  @param _underlyingToken The ERC20 interface of the underlying token of the market to borrow from.
-     *  @param _borrower The address of the borrower who is borrowing.
-     *  @param _amount The amount of ERC20 tokens to borrow.
-     */
+    /// @dev Borrows `_amount` for `_borrower` from pool.
+    /// @param _poolToken The Aave interface of the market the user wants to borrow from.
+    /// @param _underlyingToken The ERC20 interface of the underlying token of the market to borrow from.
+    /// @param _borrower The address of the borrower who is borrowing.
+    /// @param _amount The amount of ERC20 tokens to borrow.
     function _borrowPositionFromPool(
         IAToken _poolToken,
         IERC20 _underlyingToken,
@@ -706,13 +674,12 @@ contract PositionsManagerForAave is ReentrancyGuard {
         _borrowERC20FromPool(_underlyingToken, _amount);
     }
 
-    /** @dev Borrows up to `_amount` for `_borrower` from P2P.
-     *  @param _poolToken The Aave interface of the market the user wants to borrow from.
-     *  @param _underlyingToken The ERC20 interface of the underlying token of the market to borrow from.
-     *  @param _borrower The address of the borrower who is borrowing.
-     *  @param _amount The amount of ERC20 tokens to borrow.
-     *  @return matched The amount matched by the suppliers waiting on Pool.
-     */
+    /// @dev Borrows up to `_amount` for `_borrower` from P2P.
+    /// @param _poolToken The Aave interface of the market the user wants to borrow from.
+    /// @param _underlyingToken The ERC20 interface of the underlying token of the market to borrow from.
+    /// @param _borrower The address of the borrower who is borrowing.
+    /// @param _amount The amount of ERC20 tokens to borrow.
+    /// @return matched The amount matched by the suppliers waiting on Pool.
     function _borrowPositionFromP2P(
         IAToken _poolToken,
         IERC20 _underlyingToken,
@@ -731,13 +698,12 @@ contract PositionsManagerForAave is ReentrancyGuard {
         }
     }
 
-    /** @dev Withdraws `_amount` of the position of a `_supplier` on a specific market.
-     *  @param _poolToken The Aave interface of the market the user wants to withdraw from.
-     *  @param _underlyingToken The ERC20 interface of the underlying token of the market to withdraw from.
-     *  @param _supplier The address of the supplier to withdraw for.
-     *  @param _amount The amount of ERC20 tokens to withdraw.
-     *  @return withdrawnInUnderlying The amount withdrawn from the pool.
-     */
+    /// @dev Withdraws `_amount` of the position of a `_supplier` on a specific market.
+    /// @param _poolToken The Aave interface of the market the user wants to withdraw from.
+    /// @param _underlyingToken The ERC20 interface of the underlying token of the market to withdraw from.
+    /// @param _supplier The address of the supplier to withdraw for.
+    /// @param _amount The amount of ERC20 tokens to withdraw.
+    /// @return withdrawnInUnderlying The amount withdrawn from the pool.
     function _withdrawPositionFromPool(
         IAToken _poolToken,
         IERC20 _underlyingToken,
@@ -761,12 +727,11 @@ contract PositionsManagerForAave is ReentrancyGuard {
             _withdrawERC20FromPool(_underlyingToken, withdrawnInUnderlying); // Revert on error
     }
 
-    /** @dev Withdraws `_amount` of the position of a `_supplier` in peer-to-peer.
-     *  @param _poolToken The Aave interface of the market the user wants to withdraw from.
-     *  @param _underlyingToken The ERC20 interface of the underlying token of the market to withdraw from.
-     *  @param _supplier The address of the supplier to withdraw from.
-     *  @param _amount The amount of ERC20 tokens to withdraw.
-     */
+    /// @dev Withdraws `_amount` of the position of a `_supplier` in peer-to-peer.
+    /// @param _poolToken The Aave interface of the market the user wants to withdraw from.
+    /// @param _underlyingToken The ERC20 interface of the underlying token of the market to withdraw from.
+    /// @param _supplier The address of the supplier to withdraw from.
+    /// @param _amount The amount of ERC20 tokens to withdraw.
     function _withdrawPositionFromP2P(
         IAToken _poolToken,
         IERC20 _underlyingToken,
@@ -792,13 +757,12 @@ contract PositionsManagerForAave is ReentrancyGuard {
         }
     }
 
-    /** @dev Implements withdraw logic.
-     *  @param _poolToken The Aave interface of the market the user wants to repay a position to.
-     *  @param _underlyingToken The ERC20 interface of the underlying token of the market to repay a position to.
-     *  @param _borrower The address of the borrower to repay the borrow of.
-     *  @param _amount The amount of ERC20 tokens to repay.
-     *  @return repaidInUnderlying The amount repaid to the pool.
-     */
+    /// @dev Implements withdraw logic.
+    /// @param _poolToken The Aave interface of the market the user wants to repay a position to.
+    /// @param _underlyingToken The ERC20 interface of the underlying token of the market to repay a position to.
+    /// @param _borrower The address of the borrower to repay the borrow of.
+    /// @param _amount The amount of ERC20 tokens to repay.
+    /// @return repaidInUnderlying The amount repaid to the pool.
     function _repayPositionToPool(
         IAToken _poolToken,
         IERC20 _underlyingToken,
@@ -821,12 +785,11 @@ contract PositionsManagerForAave is ReentrancyGuard {
         if (repaidInUnderlying > 0) _repayERC20ToPool(_underlyingToken, repaidInUnderlying); // Revert on error
     }
 
-    /** @dev Repays `_amount` of the position of a `_borrower` in peer-to-peer.
-     *  @param _poolToken The Aave interface of the market the user wants to repay a position to.
-     *  @param _underlyingToken The ERC20 interface of the underlying token of the market to repay a position to.
-     *  @param _borrower The address of the borrower to repay the borrow of.
-     *  @param _amount The amount of ERC20 tokens to repay.
-     */
+    /// @dev Repays `_amount` of the position of a `_borrower` in peer-to-peer.
+    /// @param _poolToken The Aave interface of the market the user wants to repay a position to.
+    /// @param _underlyingToken The ERC20 interface of the underlying token of the market to repay a position to.
+    /// @param _borrower The address of the borrower to repay the borrow of.
+    /// @param _amount The amount of ERC20 tokens to repay.
     function _repayPositionToP2P(
         IAToken _poolToken,
         IERC20 _underlyingToken,
@@ -853,28 +816,25 @@ contract PositionsManagerForAave is ReentrancyGuard {
         }
     }
 
-    /** @dev Supplies ERC20 tokens to Aave.
-     *  @param _underlyingToken The ERC20 interface of the underlying token of the market to supply to.
-     *  @param _amount The amount of tokens to supply.
-     */
+    /// @dev Supplies ERC20 tokens to Aave.
+    /// @param _underlyingToken The ERC20 interface of the underlying token of the market to supply to.
+    /// @param _amount The amount of tokens to supply.
     function _supplyERC20ToPool(IERC20 _underlyingToken, uint256 _amount) internal {
         _underlyingToken.safeIncreaseAllowance(address(lendingPool), _amount);
         lendingPool.deposit(address(_underlyingToken), _amount, address(this), NO_REFERRAL_CODE);
         lendingPool.setUserUseReserveAsCollateral(address(_underlyingToken), true);
     }
 
-    /** @dev Withdraws ERC20 tokens from Aave.
-     *  @param _underlyingToken The ERC20 interface of the underlying token of the market to withdraw from.
-     *  @param _amount The amount of tokens to withdraw.
-     */
+    /// @dev Withdraws ERC20 tokens from Aave.
+    /// @param _underlyingToken The ERC20 interface of the underlying token of the market to withdraw from.
+    /// @param _amount The amount of tokens to withdraw.
     function _withdrawERC20FromPool(IERC20 _underlyingToken, uint256 _amount) internal {
         lendingPool.withdraw(address(_underlyingToken), _amount, address(this));
     }
 
-    /** @dev Borrows ERC20 tokens to Aave.
-     *  @param _underlyingToken The ERC20 interface of the underlying token of the market to borrow from.
-     *  @param _amount The amount of tokens to borrow.
-     */
+    /// @dev Borrows ERC20 tokens to Aave.
+    /// @param _underlyingToken The ERC20 interface of the underlying token of the market to borrow from.
+    /// @param _amount The amount of tokens to borrow.
     function _borrowERC20FromPool(IERC20 _underlyingToken, uint256 _amount) internal {
         lendingPool.borrow(
             address(_underlyingToken),
@@ -885,10 +845,9 @@ contract PositionsManagerForAave is ReentrancyGuard {
         );
     }
 
-    /** @dev Repays ERC20 tokens to Aave.
-     *  @param _underlyingToken The ERC20 interface of the underlying token of the market to repay to.
-     *  @param _amount The amount of tokens to repay.
-     */
+    /// @dev Repays ERC20 tokens to Aave.
+    /// @param _underlyingToken The ERC20 interface of the underlying token of the market to repay to.
+    /// @param _amount The amount of tokens to repay.
     function _repayERC20ToPool(IERC20 _underlyingToken, uint256 _amount) internal {
         _underlyingToken.safeIncreaseAllowance(address(lendingPool), _amount);
         lendingPool.repay(
@@ -899,13 +858,12 @@ contract PositionsManagerForAave is ReentrancyGuard {
         );
     }
 
-    /** @dev Finds liquidity on Aave and matches it in P2P.
-     *  @dev Note: p2pExchangeRate must have been updated before calling this function.
-     *  @param _poolToken The Aave interface of the market to find liquidity on.
-     *  @param _underlyingToken The ERC20 interface of the underlying token of the market to find liquidity.
-     *  @param _amount The amount to search for in underlying.
-     *  @return matchedSupply The amount of liquidity matched in underlying.
-     */
+    /// @dev Finds liquidity on Aave and matches it in P2P.
+    /// @dev Note: p2pExchangeRate must have been updated before calling this function.
+    /// @param _poolToken The Aave interface of the market to find liquidity on.
+    /// @param _underlyingToken The ERC20 interface of the underlying token of the market to find liquidity.
+    /// @param _amount The amount to search for in underlying.
+    /// @return matchedSupply The amount of liquidity matched in underlying.
     function _matchSuppliers(
         IAToken _poolToken,
         IERC20 _underlyingToken,
@@ -945,12 +903,11 @@ contract PositionsManagerForAave is ReentrancyGuard {
         if (matchedSupply > 0) _withdrawERC20FromPool(_underlyingToken, matchedSupply); // Revert on error
     }
 
-    /** @dev Finds liquidity in peer-to-peer and unmatches it to reconnect Aave.
-     *  @dev Note: p2pExchangeRate must have been updated before calling this function.
-     *  @param _poolTokenAddress The address of the market on which Morpho want to move users.
-     *  @param _amount The amount to search for in underlying.
-     *  @return remainingToUnmatch The amount remaining to unmatch in underlying.
-     */
+    /// @dev Finds liquidity in peer-to-peer and unmatches it to reconnect Aave.
+    /// @dev Note: p2pExchangeRate must have been updated before calling this function.
+    /// @param _poolTokenAddress The address of the market on which Morpho want to move users.
+    /// @param _amount The amount to search for in underlying.
+    /// @return remainingToUnmatch The amount remaining to unmatch in underlying.
     function _unmatchSuppliers(address _poolTokenAddress, uint256 _amount)
         internal
         returns (uint256 remainingToUnmatch)
@@ -987,13 +944,12 @@ contract PositionsManagerForAave is ReentrancyGuard {
         if (toSupply > 0) _supplyERC20ToPool(underlyingToken, _amount - remainingToUnmatch); // Revert on error
     }
 
-    /** @dev Finds borrowers on Aave that match the given `_amount` and move them in P2P.
-     *  @dev Note: p2pExchangeRate must have been updated before calling this function.
-     *  @param _poolToken The Aave interface of the market to find liquidity on.
-     *  @param _underlyingToken The ERC20 interface of the underlying token of the market to find liquidity.
-     *  @param _amount The amount to search for in underlying.
-     *  @return matchedBorrow The amount of liquidity matched in underlying.
-     */
+    /// @dev Finds borrowers on Aave that match the given `_amount` and move them in P2P.
+    /// @dev Note: p2pExchangeRate must have been updated before calling this function.
+    /// @param _poolToken The Aave interface of the market to find liquidity on.
+    /// @param _underlyingToken The ERC20 interface of the underlying token of the market to find liquidity.
+    /// @param _amount The amount to search for in underlying.
+    /// @return matchedBorrow The amount of liquidity matched in underlying.
     function _matchBorrowers(
         IAToken _poolToken,
         IERC20 _underlyingToken,
@@ -1033,12 +989,11 @@ contract PositionsManagerForAave is ReentrancyGuard {
         if (matchedBorrow > 0) _repayERC20ToPool(_underlyingToken, matchedBorrow); // Revert on error
     }
 
-    /** @dev Finds borrowers in peer-to-peer that match the given `_amount` and move them to Aave.
-     *  @dev Note: p2pExchangeRate must have been updated before calling this function.
-     *  @param _poolTokenAddress The address of the market on which Morpho wants to move users.
-     *  @param _amount The amount to match in underlying.
-     *  @return remainingToUnmatch The amount remaining to unmatch in underlying.
-     */
+    /// @dev Finds borrowers in peer-to-peer that match the given `_amount` and move them to Aave.
+    /// @dev Note: p2pExchangeRate must have been updated before calling this function.
+    /// @param _poolTokenAddress The address of the market on which Morpho wants to move users.
+    /// @param _amount The amount to match in underlying.
+    /// @return remainingToUnmatch The amount remaining to unmatch in underlying.
     function _unmatchBorrowers(address _poolTokenAddress, uint256 _amount)
         internal
         returns (uint256 remainingToUnmatch)
@@ -1075,12 +1030,11 @@ contract PositionsManagerForAave is ReentrancyGuard {
         _borrowERC20FromPool(underlyingToken, _amount - remainingToUnmatch);
     }
 
-    /** @dev Checks that the total supply of `supplier` is below the cap.
-     *  @param _poolTokenAddress The address of the market to check.
-     *  @param _underlyingToken The ERC20 interface of the underlying token of the market.
-     *  @param _supplier The address of the _supplier to check.
-     *  @param _amount The amount to add to the current supply.
-     */
+    /// @dev Checks that the total supply of `supplier` is below the cap.
+    /// @param _poolTokenAddress The address of the market to check.
+    /// @param _underlyingToken The ERC20 interface of the underlying token of the market.
+    /// @param _supplier The address of the _supplier to check.
+    /// @param _amount The amount to add to the current supply.
     function _checkCapValue(
         address _poolTokenAddress,
         IERC20 _underlyingToken,
@@ -1099,11 +1053,9 @@ contract PositionsManagerForAave is ReentrancyGuard {
             revert SupplyAboveCapValue();
     }
 
-    /**
-     * @dev Enters the user into the market if he is not already there.
-     * @param _account The address of the account to update.
-     * @param _poolTokenAddress The address of the market to check.
-     */
+    ///@dev Enters the user into the market if he is not already there.
+    ///@param _account The address of the account to update.
+    ///@param _poolTokenAddress The address of the market to check.
     function _handleMembership(address _poolTokenAddress, address _account) internal {
         if (!accountMembership[_poolTokenAddress][_account]) {
             accountMembership[_poolTokenAddress][_account] = true;
@@ -1111,12 +1063,11 @@ contract PositionsManagerForAave is ReentrancyGuard {
         }
     }
 
-    /** @dev Checks whether the user can borrow/withdraw or not.
-     *  @param _account The user to determine liquidity for.
-     *  @param _poolTokenAddress The market to hypothetically withdraw/borrow in.
-     *  @param _withdrawnAmount The number of tokens to hypothetically withdraw.
-     *  @param _borrowedAmount The amount of underlying to hypothetically borrow.
-     */
+    /// @dev Checks whether the user can borrow/withdraw or not.
+    /// @param _account The user to determine liquidity for.
+    /// @param _poolTokenAddress The market to hypothetically withdraw/borrow in.
+    /// @param _withdrawnAmount The number of tokens to hypothetically withdraw.
+    /// @param _borrowedAmount The amount of underlying to hypothetically borrow.
     function _checkAccountLiquidity(
         address _account,
         address _poolTokenAddress,
@@ -1132,13 +1083,12 @@ contract PositionsManagerForAave is ReentrancyGuard {
         if (debtValue > maxDebtValue) revert DebtValueAboveMax();
     }
 
-    /** @dev Returns the debt value, max debt value and collateral value of a given user.
-     *  @param _account The user to determine liquidity for.
-     *  @param _poolTokenAddress The market to hypothetically withdraw/borrow in.
-     *  @param _withdrawnAmount The number of tokens to hypothetically withdraw.
-     *  @param _borrowedAmount The amount of underlying to hypothetically borrow.
-     *  @return (debtValue, maxDebtValue).
-     */
+    /// @dev Returns the debt value, max debt value and collateral value of a given user.
+    /// @param _account The user to determine liquidity for.
+    /// @param _poolTokenAddress The market to hypothetically withdraw/borrow in.
+    /// @param _withdrawnAmount The number of tokens to hypothetically withdraw.
+    /// @param _borrowedAmount The amount of underlying to hypothetically borrow.
+    /// @return (debtValue, maxDebtValue).
     function _getUserHypotheticalBalanceStates(
         address _account,
         address _poolTokenAddress,
@@ -1197,10 +1147,9 @@ contract PositionsManagerForAave is ReentrancyGuard {
         return (vars.debtValue, vars.maxDebtValue);
     }
 
-    /** @dev Updates borrowers tree with the new balances of a given account.
-     *  @param _poolTokenAddress The address of the market on which Morpho want to update the borrower lists.
-     *  @param _account The address of the borrower to move.
-     */
+    /// @dev Updates borrowers tree with the new balances of a given account.
+    /// @param _poolTokenAddress The address of the market on which Morpho want to update the borrower lists.
+    /// @param _account The address of the borrower to move.
     function _updateBorrowerList(address _poolTokenAddress, address _account) internal {
         uint256 onPool = borrowBalanceInOf[_poolTokenAddress][_account].onPool;
         uint256 inP2P = borrowBalanceInOf[_poolTokenAddress][_account].inP2P;
@@ -1220,10 +1169,9 @@ contract PositionsManagerForAave is ReentrancyGuard {
             borrowersInP2P[_poolTokenAddress].insertSorted(_account, inP2P, NMAX);
     }
 
-    /** @dev Updates suppliers tree with the new balances of a given account.
-     *  @param _poolTokenAddress The address of the market on which Morpho want to update the supplier lists.
-     *  @param _account The address of the supplier to move.
-     */
+    /// @dev Updates suppliers tree with the new balances of a given account.
+    /// @param _poolTokenAddress The address of the market on which Morpho want to update the supplier lists.
+    /// @param _account The address of the supplier to move.
     function _updateSupplierList(address _poolTokenAddress, address _account) internal {
         uint256 onPool = supplyBalanceInOf[_poolTokenAddress][_account].onPool;
         uint256 inP2P = supplyBalanceInOf[_poolTokenAddress][_account].inP2P;
