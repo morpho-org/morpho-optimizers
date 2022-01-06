@@ -110,12 +110,14 @@ contract PositionsManagerForAave is ReentrancyGuard {
     /// @param _amount The amount of assets supplied (in underlying).
     /// @param _balanceOnPool The supply balance on pool after update (in underlying).
     /// @param _balanceInP2P The supply balance in P2P after update (in underlying).
+    /// @param _referralCode The referral code of an integrator that may receive rewards. 0 if no referral code.
     event Supplied(
         address indexed _account,
         address indexed _poolTokenAddress,
         uint256 _amount,
         uint256 _balanceOnPool,
-        uint256 _balanceInP2P
+        uint256 _balanceInP2P,
+        uint16 indexed _referralCode
     );
 
     /// @dev Emitted when a withdraw happens.
@@ -138,12 +140,14 @@ contract PositionsManagerForAave is ReentrancyGuard {
     /// @param _amount The amount of assets borrowed (in underlying).
     /// @param _balanceOnPool The borrow balance on pool after update (in underlying).
     /// @param _balanceInP2P The borrow balance in P2P after update (in underlying).
+    /// @param _referralCode The referral code of an integrator that may receive rewards. 0 if no referral code.
     event Borrowed(
         address indexed _account,
         address indexed _poolTokenAddress,
         uint256 _amount,
         uint256 _balanceOnPool,
-        uint256 _balanceInP2P
+        uint256 _balanceInP2P,
+        uint16 indexed _referralCode
     );
 
     /// @dev Emitted when a repay happens.
@@ -311,7 +315,12 @@ contract PositionsManagerForAave is ReentrancyGuard {
     /// @dev Supplies ERC20 tokens in a specific market.
     /// @param _poolTokenAddress The address of the market the user wants to supply.
     /// @param _amount The amount to supply in ERC20 tokens.
-    function supply(address _poolTokenAddress, uint256 _amount)
+    /// @param _referralCode The referral code of an integrator that may receive rewards. 0 if no referral code.
+    function supply(
+        address _poolTokenAddress,
+        uint256 _amount,
+        uint16 _referralCode
+    )
         external
         nonReentrant
         isMarketCreated(_poolTokenAddress)
@@ -319,8 +328,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
     {
         _handleMembership(_poolTokenAddress, msg.sender);
         marketsManagerForAave.updateRates(_poolTokenAddress);
-        IAToken poolToken = IAToken(_poolTokenAddress);
-        IERC20 underlyingToken = IERC20(poolToken.UNDERLYING_ASSET_ADDRESS());
+        IERC20 underlyingToken = IERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
         if (capValue[_poolTokenAddress] != type(uint256).max)
             _checkCapValue(_poolTokenAddress, underlyingToken, msg.sender, _amount);
         underlyingToken.safeTransferFrom(msg.sender, address(this), _amount);
@@ -329,7 +337,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
         /* If some borrowers are waiting on Aave, Morpho matches the supplier in P2P with them as much as possible */
         if (borrowersOnPool[_poolTokenAddress].getHead() != address(0))
             remainingToSupplyToPool -= _supplyPositionToP2P(
-                poolToken,
+                IAToken(_poolTokenAddress),
                 underlyingToken,
                 msg.sender,
                 _amount
@@ -337,21 +345,32 @@ contract PositionsManagerForAave is ReentrancyGuard {
 
         /* If there aren't enough borrowers waiting on Aave to match all the tokens supplied, the rest is supplied to Aave */
         if (remainingToSupplyToPool > 0)
-            _supplyPositionToPool(poolToken, underlyingToken, msg.sender, remainingToSupplyToPool);
+            _supplyPositionToPool(
+                IAToken(_poolTokenAddress),
+                underlyingToken,
+                msg.sender,
+                remainingToSupplyToPool
+            );
 
         emit Supplied(
             msg.sender,
             _poolTokenAddress,
             _amount,
             supplyBalanceInOf[_poolTokenAddress][msg.sender].onPool,
-            supplyBalanceInOf[_poolTokenAddress][msg.sender].inP2P
+            supplyBalanceInOf[_poolTokenAddress][msg.sender].inP2P,
+            _referralCode
         );
     }
 
     /// @dev Borrows ERC20 tokens.
     /// @param _poolTokenAddress The address of the markets the user wants to enter.
     /// @param _amount The amount to borrow in ERC20 tokens.
-    function borrow(address _poolTokenAddress, uint256 _amount)
+    /// @param _referralCode The referral code of an integrator that may receive rewards. 0 if no referral code.
+    function borrow(
+        address _poolTokenAddress,
+        uint256 _amount,
+        uint16 _referralCode
+    )
         external
         nonReentrant
         isMarketCreated(_poolTokenAddress)
@@ -360,14 +379,13 @@ contract PositionsManagerForAave is ReentrancyGuard {
         _handleMembership(_poolTokenAddress, msg.sender);
         _checkAccountLiquidity(msg.sender, _poolTokenAddress, 0, _amount);
         marketsManagerForAave.updateRates(_poolTokenAddress);
-        IAToken poolToken = IAToken(_poolTokenAddress);
-        IERC20 underlyingToken = IERC20(poolToken.UNDERLYING_ASSET_ADDRESS());
+        IERC20 underlyingToken = IERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
         uint256 remainingToBorrowOnPool = _amount;
 
         /* If some suppliers are waiting on Aave, Morpho matches the borrower in P2P with them as much as possible */
         if (suppliersOnPool[_poolTokenAddress].getHead() != address(0))
             remainingToBorrowOnPool -= _borrowPositionFromP2P(
-                poolToken,
+                IAToken(_poolTokenAddress),
                 underlyingToken,
                 msg.sender,
                 _amount
@@ -376,7 +394,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
         /* If there aren't enough suppliers waiting on Aave to match all the tokens borrowed, the rest is borrowed from Aave */
         if (remainingToBorrowOnPool > 0)
             _borrowPositionFromPool(
-                poolToken,
+                IAToken(_poolTokenAddress),
                 underlyingToken,
                 msg.sender,
                 remainingToBorrowOnPool
@@ -388,7 +406,8 @@ contract PositionsManagerForAave is ReentrancyGuard {
             _poolTokenAddress,
             _amount,
             borrowBalanceInOf[_poolTokenAddress][msg.sender].onPool,
-            borrowBalanceInOf[_poolTokenAddress][msg.sender].inP2P
+            borrowBalanceInOf[_poolTokenAddress][msg.sender].inP2P,
+            _referralCode
         );
     }
 
