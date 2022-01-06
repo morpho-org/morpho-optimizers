@@ -17,11 +17,16 @@ import "./Attacker.sol";
 
 contract BorrowTest is TestSetup {
     // 2.1 - The user borrows less than the threshold of the given market, the transaction reverts.
-    function testFail_2_1() public {
+    function testFail_borrow_2_1_dai() public {
         uint256 amount = positionsManager.threshold(aDai) - 1;
+        borrower1.approve(dai, amount);
+        borrower1.borrow(aDai, amount);
+    }
+
+    function testFail_borrow_2_1_usdc() public {
+        uint256 amount = positionsManager.threshold(aUsdc) - 1;
         borrower1.approve(usdc, to6Decimals(2 * amount));
         borrower1.borrow(aUsdc, to6Decimals(2 * amount));
-        borrower1.borrow(aDai, amount);
     }
 
     // 2.2 - The borrower tries to borrow more than his collateral allows, the transaction reverts.
@@ -60,9 +65,7 @@ contract BorrowTest is TestSetup {
 
     // 2.3 - There are no available suppliers: all of the borrowed amount is onPool.
     function test_borrow_2_3(uint256 _amount) public {
-        if (type(uint64).max <= _amount) _amount -= type(uint64).max;
-        if (_amount <= positionsManager.threshold(aDai))
-            _amount += positionsManager.threshold(aDai);
+        _amount = range(_amount, aDai);
 
         borrower1.approve(usdc, to6Decimals(2 * _amount));
         borrower1.supply(aUsdc, to6Decimals(2 * _amount));
@@ -83,9 +86,7 @@ contract BorrowTest is TestSetup {
 
     // 2.4 - There is 1 available supplier, he matches 100% of the borrower liquidity, everything is inP2P.
     function test_borrow_2_4(uint256 _amount) public {
-        if (type(uint64).max <= _amount) _amount -= type(uint64).max;
-        if (_amount <= positionsManager.threshold(aDai))
-            _amount += positionsManager.threshold(aDai);
+        _amount = range(_amount, aDai, 1);
 
         supplier1.approve(dai, _amount);
         supplier1.supply(aDai, _amount);
@@ -99,30 +100,29 @@ contract BorrowTest is TestSetup {
         marketsManager.updateRates(aDai);
         uint256 p2pExchangeRate = marketsManager.p2pExchangeRate(aDai);
         uint256 expectedInP2P = p2pUnitToUnderlying(supplyInP2P, p2pExchangeRate);
-        assertEq(expectedInP2P, _amount);
+        assertEq(expectedInP2P, _amount, "Supplier1 supply in P2P");
 
         (uint256 inP2P, uint256 onPool) = positionsManager.borrowBalanceInOf(
             aDai,
             address(borrower1)
         );
 
-        assertEq(onPool, 0);
-        assertEq(inP2P, supplyInP2P);
+        assertEq(onPool, 0, "Borrower1 borrow on pool");
+        assertEq(inP2P, supplyInP2P, "Borrower1 borrow in P2P");
     }
 
     // 2.5 - There is 1 available supplier, he doesn't match 100% of the borrower liquidity.
     // Borrower inP2P is equal to the supplier previous amount onPool, the rest is set onPool.
     function test_borrow_2_5(uint256 _amount) public {
-        if (type(uint64).max <= _amount) _amount -= type(uint64).max;
-        if (_amount <= positionsManager.threshold(aDai))
-            _amount += positionsManager.threshold(aDai);
+        _amount = range(_amount, aDai, 4);
 
         supplier1.approve(dai, _amount);
         supplier1.supply(aDai, _amount);
 
-        borrower1.approve(usdc, to6Decimals(_amount));
-        borrower1.supply(aUsdc, to6Decimals(_amount));
-        borrower1.borrow(aDai, _amount / 2);
+        borrower1.approve(usdc, to6Decimals(4 * _amount));
+        borrower1.supply(aUsdc, to6Decimals(4 * _amount));
+        uint256 borrowAmount = _amount * 2;
+        borrower1.borrow(aDai, borrowAmount);
 
         (uint256 supplyInP2P, ) = positionsManager.supplyBalanceInOf(aDai, address(supplier1));
 
@@ -131,29 +131,28 @@ contract BorrowTest is TestSetup {
             address(borrower1)
         );
 
-        assertEq(inP2P, supplyInP2P);
+        assertEq(inP2P, supplyInP2P, "Borrower1 borrow in P2P");
 
         marketsManager.updateRates(aDai);
         uint256 normalizedVariableDebt = lendingPool.getReserveNormalizedVariableDebt(dai);
-        uint256 expectedOnPool = underlyingToAdUnit(_amount / 2, normalizedVariableDebt);
+        uint256 expectedOnPool = underlyingToAdUnit(_amount, normalizedVariableDebt);
 
-        assertEq(onPool, expectedOnPool);
+        assertEq(onPool, expectedOnPool, "Borrower1 borrow on pool");
     }
 
     // 2.6 - There are NMAX (or less) supplier that match the borrowed amount, everything is inP2P after NMAX (or less) match.
     function test_borrow_2_6(uint256 _amount) public {
-        if (type(uint64).max <= _amount) _amount -= type(uint64).max;
-        if (_amount <= positionsManager.threshold(aDai))
-            _amount += positionsManager.threshold(aDai);
+        marketsManager.setMaxNumberOfUsersInTree(3);
+        uint256 nmax = positionsManager.NMAX();
+        _amount = range(_amount, aDai, 2 * nmax);
 
-        uint256 totalAmount = 0;
         // NEEDS TO BE CHANGED TO NMAX
         for (uint256 i = 0; i < suppliers.length; i++) {
             suppliers[i].approve(dai, _amount);
             suppliers[i].supply(aDai, _amount);
-            totalAmount += _amount;
         }
 
+        uint256 totalAmount = _amount * suppliers.length;
         borrower1.approve(usdc, to6Decimals(2 * totalAmount));
         borrower1.supply(aUsdc, to6Decimals(2 * totalAmount));
         borrower1.borrow(aDai, totalAmount);
@@ -183,18 +182,16 @@ contract BorrowTest is TestSetup {
     // 2.7 - The NMAX biggest supplier don't match all of the borrowed amount, after NMAX match, the rest is borrowed and set onPool.
     // ⚠️ most gas expensive borrow scenario.
     function test_borrow_2_7(uint256 _amount) public {
-        if (type(uint64).max <= _amount) _amount -= type(uint64).max;
-        if (_amount <= positionsManager.threshold(aDai))
-            _amount += positionsManager.threshold(aDai);
-
-        uint256 totalAmount = 0;
+        marketsManager.setMaxNumberOfUsersInTree(3);
+        uint256 nmax = positionsManager.NMAX();
+        _amount = range(_amount, aDai, 4 * nmax);
 
         for (uint256 i = 0; i < suppliers.length; i++) {
             suppliers[i].approve(dai, _amount);
             suppliers[i].supply(aDai, _amount);
-            totalAmount += _amount;
         }
 
+        uint256 totalAmount = _amount * suppliers.length;
         borrower1.approve(usdc, to6Decimals(4 * totalAmount));
         borrower1.supply(aUsdc, to6Decimals(4 * totalAmount));
         borrower1.borrow(aDai, totalAmount * 2);

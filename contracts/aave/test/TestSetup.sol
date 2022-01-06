@@ -105,6 +105,23 @@ contract TestSetup is DSTest, Config, Utils {
         hevm.warp(block.timestamp + _count * 1000 * AVERAGE_BLOCK_TIME);
     }
 
+    function range(uint256 _amount, address _pool) internal view returns (uint256) {
+        return range(_amount, _pool, 1);
+    }
+
+    function range(
+        uint256 _amount,
+        address _pool,
+        uint256 div
+    ) internal view returns (uint256) {
+        _amount %= type(uint64).max / div;
+        if (_amount <= positionsManager.threshold(_pool))
+            _amount += positionsManager.threshold(_pool);
+
+        return _amount;
+    }
+
+
     // // ====================================
     // // = Suppliers on Aave (no borrowers) =
     // // ====================================
