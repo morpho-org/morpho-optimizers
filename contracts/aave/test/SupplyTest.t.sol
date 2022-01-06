@@ -38,8 +38,8 @@ contract SupplyTest is TestSetup {
 
         supplier1.approve(dai, 2 * amount);
 
-        supplier1.supply(aDai, _amount);
-        supplier1.supply(aDai, _amount);
+        supplier1.supply(aDai, amount);
+        supplier1.supply(aDai, amount);
 
         marketsManager.updateRates(aDai);
         uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(dai);
@@ -179,7 +179,7 @@ contract SupplyTest is TestSetup {
 
             borrowers[i].borrow(aDai, amountPerBorrower);
         }
-        uint256 totalBorrowed = _amount * borrowers.length;
+        uint256 totalBorrowed = amount * borrowers.length;
 
         supplier1.approve(dai, amount);
         supplier1.supply(aDai, amount);
