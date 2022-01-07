@@ -12,7 +12,7 @@ contract SupplyTest is TestSetup {
 
     // 1.2 - There are no available borrowers: all of the supplied amount is supplied to the pool and set `onPool`.
     function testSupply_1_2() public {
-        uint256 amount = 100 ether;
+        uint256 amount = 10000 ether;
 
         supplier1.approve(dai, amount);
         supplier1.supply(aDai, amount);
@@ -21,22 +21,20 @@ contract SupplyTest is TestSetup {
         uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(dai);
         uint256 expectedOnPool = underlyingToScaledBalance(amount, normalizedIncome);
 
-        assertEq(
-            IERC20(aDai).balanceOf(address(positionsManager)),
-            amount,
-            "PositionsManager aDai balance"
-        );
+        testEquality(IERC20(aDai).balanceOf(address(positionsManager)), amount);
+
         (uint256 inP2P, uint256 onPool) = positionsManager.supplyBalanceInOf(
             aDai,
             address(supplier1)
         );
-        assertLe(get_abs_diff(onPool, expectedOnPool), 1, "Supplier1 dai on pool");
-        assertEq(inP2P, 0, "Supplier1 dai in P2P");
+
+        testEquality(onPool, expectedOnPool);
+        testEquality(inP2P, 0);
     }
 
     // Should be able to supply more ERC20 after already having supply ERC20
     function testSupplyMultiple() public {
-        uint256 amount = 5 ether;
+        uint256 amount = 10000 ether;
 
         supplier1.approve(dai, 2 * amount);
 
@@ -48,12 +46,12 @@ contract SupplyTest is TestSetup {
         uint256 expectedOnPool = underlyingToScaledBalance(2 * amount, normalizedIncome);
 
         (, uint256 onPool) = positionsManager.supplyBalanceInOf(aDai, address(supplier1));
-        assertLe(get_abs_diff(onPool, expectedOnPool), 1, "Supplier1 on pool");
+        testEquality(onPool, expectedOnPool);
     }
 
     // 1.3 - There is 1 available borrower, he matches 100% of the supplier liquidity, everything is `inP2P`.
     function testSupply_1_3() public {
-        uint256 amount = 100 ether;
+        uint256 amount = 10000 ether;
 
         borrower1.approve(usdc, to6Decimals(2 * amount));
         borrower1.supply(aUsdc, to6Decimals(2 * amount));
@@ -66,7 +64,7 @@ contract SupplyTest is TestSetup {
         supplier1.supply(aDai, amount);
 
         uint256 daiBalanceAfter = supplier1.balanceOf(dai);
-        assertEq(daiBalanceAfter, expectedDaiBalanceAfter);
+        testEquality(daiBalanceAfter, expectedDaiBalanceAfter);
 
         marketsManager.updateRates(aDai);
         uint256 p2pUnitExchangeRate = marketsManager.p2pExchangeRate(aDai);
@@ -82,17 +80,17 @@ contract SupplyTest is TestSetup {
             address(borrower1)
         );
 
-        assertEq(onPoolSupplier, 0);
-        assertEq(inP2PSupplier, expectedSupplyBalanceInP2P);
+        testEquality(onPoolSupplier, 0);
+        testEquality(inP2PSupplier, expectedSupplyBalanceInP2P);
 
-        assertEq(onPoolBorrower, 0);
-        assertEq(inP2PBorrower, inP2PSupplier);
+        testEquality(onPoolBorrower, 0);
+        testEquality(inP2PBorrower, inP2PSupplier);
     }
 
     // 1.4 - There is 1 available borrower, he doesn't match 100% of the supplier liquidity.
     // Supplier's balance `inP2P` is equal to the borrower previous amount `onPool`, the rest is set `onPool`.
     function testSupply_1_4() public {
-        uint256 amount = 100 ether;
+        uint256 amount = 10000 ether;
 
         borrower1.approve(usdc, to6Decimals(2 * amount));
         borrower1.supply(aUsdc, to6Decimals(2 * amount));
@@ -112,23 +110,23 @@ contract SupplyTest is TestSetup {
             aDai,
             address(supplier1)
         );
-        assertLe(get_abs_diff(onPoolSupplier, expectedSupplyBalanceOnPool), 1, "Supplier1 on pool");
-        assertEq(inP2PSupplier, expectedSupplyBalanceInP2P, "Supplier1 in P2P");
+        testEquality(onPoolSupplier, expectedSupplyBalanceOnPool);
+        testEquality(inP2PSupplier, expectedSupplyBalanceInP2P);
 
         (uint256 inP2PBorrower, uint256 onPoolBorrower) = positionsManager.borrowBalanceInOf(
             aDai,
             address(borrower1)
         );
-        assertEq(onPoolBorrower, 0, "Borrower1 on pool");
-        assertEq(inP2PBorrower, inP2PSupplier, "Borrower1 in P2P");
+        testEquality(onPoolBorrower, 0);
+        testEquality(inP2PBorrower, inP2PSupplier);
     }
 
     // 1.5 - There are NMAX (or less) borrowers that match the supplied amount, everything is `inP2P` after NMAX (or less) match.
     function testSupply_1_5() public {
-        uint256 amount = 100 ether;
+        uint256 amount = 10000 ether;
         uint256 collateral = 2 * amount;
 
-        marketsManager.setMaxNumberOfUsersInTree(3);
+        setNMAXAndCreateSigners(20);
         uint256 NMAX = positionsManager.NMAX();
 
         uint256 amountPerBorrower = amount / NMAX;
@@ -153,25 +151,24 @@ contract SupplyTest is TestSetup {
 
             expectedInP2P = p2pUnitToUnderlying(inP2P, p2pExchangeRate);
 
-            assertEq(expectedInP2P, amountPerBorrower);
-            assertEq(onPool, 0);
+            testEquality(expectedInP2P, amountPerBorrower);
+            testEquality(onPool, 0);
         }
 
         (inP2P, onPool) = positionsManager.supplyBalanceInOf(aDai, address(supplier1));
         expectedInP2P = p2pUnitToUnderlying(amount, p2pExchangeRate);
 
-        assertLe(get_abs_diff(inP2P, expectedInP2P), 2);
-        assertLe(get_abs_diff(onPool, 0), 2);
+        testEquality(inP2P, expectedInP2P);
+        testEquality(onPool, 0);
     }
 
     // 1.6 - The NMAX biggest borrowers don't match all of the supplied amount, after NMAX match, the rest is supplied and set `onPool`.
     // ⚠️ most gas expensive supply scenario.
     function testSupply_1_6() public {
-        uint256 amount = 100 ether;
+        uint256 amount = 10000 ether;
         uint256 collateral = 2 * amount;
 
-        setNMAXAndCreateSigners(10);
-        //marketsManager.setMaxNumberOfUsersInTree(3);
+        setNMAXAndCreateSigners(20);
         uint256 NMAX = positionsManager.NMAX();
 
         uint256 amountPerBorrower = amount / (2 * NMAX);
@@ -197,8 +194,8 @@ contract SupplyTest is TestSetup {
 
             expectedInP2P = p2pUnitToUnderlying(inP2P, p2pExchangeRate);
 
-            assertEq(expectedInP2P, amountPerBorrower);
-            assertEq(onPool, 0);
+            testEquality(expectedInP2P, amountPerBorrower);
+            testEquality(onPool, 0);
         }
 
         (inP2P, onPool) = positionsManager.supplyBalanceInOf(aDai, address(supplier1));
@@ -206,7 +203,7 @@ contract SupplyTest is TestSetup {
         expectedInP2P = p2pUnitToUnderlying(amount / 2, p2pExchangeRate);
         uint256 expectedOnPool = underlyingToAdUnit(amount / 2, normalizedIncome);
 
-        assertLe(get_abs_diff(inP2P, expectedInP2P), 3);
-        assertLe(get_abs_diff(onPool, expectedOnPool), 3);
+        testEquality(inP2P, expectedInP2P);
+        testEquality(onPool, expectedOnPool);
     }
 }

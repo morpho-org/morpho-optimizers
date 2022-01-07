@@ -136,6 +136,10 @@ contract TestSetup is DSTest, Config, Utils {
         }
     }
 
+    function testEquality(uint256 _firstValue, uint256 _secondValue) internal {
+        assertLe(get_abs_diff(_firstValue, _secondValue), 10);
+    }
+
     // // = Suppliers on Aave (no borrowers) =
     // // ====================================
 
