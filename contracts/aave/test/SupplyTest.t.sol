@@ -56,11 +56,11 @@ contract SupplyTest is TestSetup {
         supplier1.supply(aDai, amount);
 
         marketsManager.updateRates(aDai);
-        uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(aDai);
+        uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(dai);
         uint256 expectedOnPool = underlyingToScaledBalance(2 * amount, normalizedIncome);
 
         (, uint256 onPool) = positionsManager.supplyBalanceInOf(aDai, address(supplier1));
-        assertEq(onPool, expectedOnPool, "Supplier1 on pool");
+        assertLe(get_abs_diff(onPool, expectedOnPool), 1, "Supplier1 on pool");
     }
 
     // 1.3 - There is 1 available borrower, he matches 100% of the supplier liquidity, everything is `inP2P`.
