@@ -1,19 +1,7 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.7;
 
-import "ds-test/test.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-
-import "../PositionsManagerForAave.sol";
-import "../MarketsManagerForAave.sol";
 import "./TestSetup.sol";
-
-import "@config/Config.sol";
-import "./HEVM.sol";
-import "./Utils.sol";
-import "./SimplePriceOracle.sol";
-import "./User.sol";
-import "./Attacker.sol";
 
 contract SupplyTest is TestSetup {
     // 1.1 - The user supplies less than the threshold of this market, the transaction reverts.
@@ -182,7 +170,8 @@ contract SupplyTest is TestSetup {
         uint256 amount = 100 ether;
         uint256 collateral = 2 * amount;
 
-        marketsManager.setMaxNumberOfUsersInTree(3);
+        setNMAXAndCreateSigners(10);
+        //marketsManager.setMaxNumberOfUsersInTree(3);
         uint256 NMAX = positionsManager.NMAX();
 
         uint256 amountPerBorrower = amount / (2 * NMAX);

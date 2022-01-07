@@ -73,7 +73,7 @@ contract TestSetup is DSTest, Config, Utils {
             suppliers.push(new User(positionsManager, marketsManager));
 
             write_balanceOf(address(suppliers[i]), dai, type(uint256).max / 2);
-            write_balanceOf(address(borrowers[i]), usdc, type(uint256).max / 2);
+            write_balanceOf(address(suppliers[i]), usdc, type(uint256).max / 2);
         }
         supplier1 = suppliers[0];
         supplier2 = suppliers[1];
