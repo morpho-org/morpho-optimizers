@@ -12,6 +12,7 @@ import "./HEVM.sol";
 import "./Utils.sol";
 import "./SimplePriceOracle.sol";
 import "./User.sol";
+import "./Attacker.sol";
 
 contract TestSetup is DSTest, Config, Utils {
     HEVM hevm = HEVM(HEVM_ADDRESS);
@@ -34,6 +35,8 @@ contract TestSetup is DSTest, Config, Utils {
     User borrower2;
     User borrower3;
     User[] borrowers;
+
+    Attacker attacker;
 
     function setUp() public {
         marketsManager = new MarketsManagerForAave(lendingPoolAddressesProviderAddress);
@@ -70,11 +73,7 @@ contract TestSetup is DSTest, Config, Utils {
             suppliers.push(new User(positionsManager, marketsManager));
 
             write_balanceOf(address(suppliers[i]), dai, type(uint256).max / 2);
-<<<<<<< HEAD
             write_balanceOf(address(suppliers[i]), usdc, type(uint256).max / 2);
-=======
-            write_balanceOf(address(borrowers[i]), usdc, type(uint256).max / 2);
->>>>>>> 1e464c8 (feat: Refactor for NMAX and change setup)
         }
         supplier1 = suppliers[0];
         supplier2 = suppliers[1];
@@ -89,6 +88,9 @@ contract TestSetup is DSTest, Config, Utils {
         borrower1 = borrowers[0];
         borrower2 = borrowers[1];
         borrower3 = borrowers[2];
+
+        attacker = new Attacker(lendingPool);
+        write_balanceOf(address(attacker), dai, type(uint256).max / 2);
     }
 
     function write_balanceOf(
@@ -122,13 +124,6 @@ contract TestSetup is DSTest, Config, Utils {
 
     function setNMAXAndCreateSigners(uint16 _NMAX) internal {
         marketsManager.setMaxNumberOfUsersInTree(_NMAX);
-<<<<<<< HEAD
-
-        while (borrowers.length < _NMAX) {
-            borrowers.push(new User(positionsManager, marketsManager));
-            write_balanceOf(address(borrowers[borrowers.length - 1]), dai, type(uint256).max / 2);
-            write_balanceOf(address(borrowers[borrowers.length - 1]), usdc, type(uint256).max / 2);
-=======
 
         while (borrowers.length < _NMAX) {
             borrowers.push(new User(positionsManager, marketsManager));
@@ -139,6 +134,10 @@ contract TestSetup is DSTest, Config, Utils {
             write_balanceOf(address(suppliers[suppliers.length - 1]), dai, type(uint256).max / 2);
             write_balanceOf(address(suppliers[suppliers.length - 1]), usdc, type(uint256).max / 2);
         }
+    }
+
+    function testEquality(uint256 _firstValue, uint256 _secondValue) internal {
+        assertLe(get_abs_diff(_firstValue, _secondValue), 10);
     }
 
     // // = Suppliers on Aave (no borrowers) =
@@ -1243,15 +1242,16 @@ contract TestSetup is DSTest, Config, Utils {
     //         .getReserveConfigurationData(_borrowedAsset);
 
     //     emit log_named_uint("toRepay", _toRepay);
->>>>>>> 1e464c8 (feat: Refactor for NMAX and change setup)
 
-            suppliers.push(new User(positionsManager, marketsManager));
-            write_balanceOf(address(suppliers[suppliers.length - 1]), dai, type(uint256).max / 2);
-            write_balanceOf(address(suppliers[suppliers.length - 1]), usdc, type(uint256).max / 2);
-        }
-    }
+    //     uint256 collateralAssetPrice = _oracle.getAssetPrice(_suppliedAsset);
+    //     emit log_named_uint("collateralAssetPrice", collateralAssetPrice);
+    //     uint256 borrowedAssetPrice = _oracle.getAssetPrice(_borrowedAsset);
+    //     emit log_named_uint("borrowedAssetPrice", borrowedAssetPrice);
+    //     uint256 amountToSeize = (((((_toRepay * borrowedAssetPrice) /
+    //         10**ERC20(_borrowedAsset).decimals()) * 10**ERC20(_suppliedAsset).decimals()) /
+    //         collateralAssetPrice) * liquidationBonus) / PERCENT_BASE;
 
-    function testEquality(uint256 _firstValue, uint256 _secondValue) internal {
-        assertLe(get_abs_diff(_firstValue, _secondValue), 15);
-    }
+    //     emit log_named_uint("amountToSeize", amountToSeize);
+    //     return amountToSeize;
+    // }
 }
