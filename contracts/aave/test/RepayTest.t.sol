@@ -18,7 +18,7 @@ import "./Attacker.sol";
 contract RepayTest is TestSetup {
     // - 4.1 - The borrower repays less than his `onPool` balance. The liquidity is repaid on his `onPool` balance.
     function testRepay_4_1() public {
-        uint256 amount = 10 ether;
+        uint256 amount = 100 ether;
         uint256 collateral = 2 * amount;
 
         borrower1.approve(usdc, to6Decimals(collateral));
@@ -51,7 +51,7 @@ contract RepayTest is TestSetup {
     //   - 4.2.1 - There is a borrower `onPool` available to replace him `inP2P`.
     //             First, his debt `onPool` is repaid, his matched debt is replaced by the available borrower up to his repaid amount.
     function testRepay_4_2_1() public {
-        uint256 suppliedAmount = 10 ether;
+        uint256 suppliedamount = 100 ether;
         uint256 borrowedAmount = 20 ether;
         uint256 collateral = 2 * borrowedAmount;
 
@@ -122,7 +122,7 @@ contract RepayTest is TestSetup {
     //   - 4.2.2 - There are NMAX (or less) borrowers `onPool` available to replace him `inP2P`, they borrow enough to cover for the repaid liquidity.
     //             First, his debt `onPool` is repaid, his matched liquidity is replaced by NMAX (or less) borrowers up to his repaid amount.
     function testRepay_4_2_2() public {
-        uint256 suppliedAmount = 10 ether;
+        uint256 suppliedamount = 100 ether;
         uint256 borrowedAmount = 20 ether;
         uint256 collateral = 2 * borrowedAmount;
 
@@ -155,8 +155,9 @@ contract RepayTest is TestSetup {
         assertLe(get_abs_diff(inP2PSupplier, inP2PBorrower1), 1, "inP2P borrower & supplier");
 
         // NMAX borrowers have 10 ETH (cumulated) of debt waiting on pool
-        //uint256 NMAX = positionsManager.NMAX();
-        uint256 NMAX = borrowers.length;
+        setNMAXAndCreateSigners(20);
+        uint256 NMAX = positionsManager.NMAX();
+
         uint256 amountPerBorrower = (borrowedAmount - suppliedAmount) / (NMAX - 1);
         // minus because borrower1 must not be counted twice !
         for (uint256 i = 0; i < NMAX; i++) {
@@ -217,7 +218,7 @@ contract RepayTest is TestSetup {
     //   - 4.2.3 - There are no borrowers `onPool` to replace him `inP2P`. After repaying the amount `onPool`,
     //             his P2P match(es) will be unmatched and the corresponding supplier(s) will be placed on pool.
     function testRepay_4_2_3() public {
-        uint256 suppliedAmount = 10 ether;
+        uint256 suppliedamount = 100 ether;
         uint256 borrowedAmount = 20 ether;
         uint256 collateral = 2 * borrowedAmount;
 
@@ -276,8 +277,8 @@ contract RepayTest is TestSetup {
             address(supplier1)
         );
 
-        uint256 expectedSupplyBalanceInP2P = underlyingToAdUnit(5 ether, p2pExchangeRate);
-        uint256 expectedSupplyBalanceOnPool = underlyingToP2PUnit(5 ether, normalizedIncome);
+        uint256 expectedSupplyBalanceInP2P = underlyingToP2PUnit(5 ether, p2pExchangeRate);
+        uint256 expectedSupplyBalanceOnPool = underlyingToAdUnit(5 ether, normalizedIncome);
 
         assertLe(get_abs_diff(inP2PSupplier, expectedSupplyBalanceInP2P), 2);
         assertLe(get_abs_diff(onPoolSupplier, expectedSupplyBalanceOnPool), 2);
@@ -287,8 +288,8 @@ contract RepayTest is TestSetup {
     //             First, the `onPool` liquidity is withdrawn, then we proceed to NMAX (or less) matches. Finally, some suppliers are unmatched for an amount equal to the remaining to withdraw.
     //             ⚠️ most gas expensive repay scenario.
     function testRepay_4_2_4() public {
-        uint256 suppliedAmount = 10 ether;
-        uint256 borrowedAmount = 20 ether;
+        uint256 suppliedamount = 100 ether;
+        uint256 borrowedAmount = 2 * suppliedAmount;
         uint256 collateral = 2 * borrowedAmount;
 
         // Borrower1 & supplier1 are matched for 10 ETH
@@ -320,8 +321,9 @@ contract RepayTest is TestSetup {
         assertLe(get_abs_diff(inP2PSupplier, inP2PBorrower1), 1, "inP2P borrower & supplier");
 
         // NMAX borrowers have 10 ETH (cumulated) of debt waiting on pool
-        //uint256 NMAX = positionsManager.NMAX();
-        uint256 NMAX = borrowers.length;
+        marketsManager.setMaxNumberOfUsersInTree(3);
+        uint256 NMAX = positionsManager.NMAX();
+
         uint256 amountPerBorrower = (borrowedAmount - suppliedAmount) / (2 * (NMAX - 1));
         // minus because borrower1 must not be counted twice !
         for (uint256 i = 0; i < NMAX; i++) {

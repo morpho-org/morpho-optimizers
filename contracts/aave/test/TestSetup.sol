@@ -73,6 +73,7 @@ contract TestSetup is DSTest, Config, Utils {
             suppliers.push(new User(positionsManager, marketsManager));
 
             write_balanceOf(address(suppliers[i]), dai, type(uint256).max / 2);
+            write_balanceOf(address(borrowers[i]), usdc, type(uint256).max / 2);
         }
         supplier1 = suppliers[0];
         supplier2 = suppliers[1];
@@ -121,8 +122,20 @@ contract TestSetup is DSTest, Config, Utils {
         return _amount;
     }
 
+    function setNMAXAndCreateSigners(uint16 _NMAX) internal {
+        marketsManager.setMaxNumberOfUsersInTree(_NMAX);
 
-    // // ====================================
+        while (borrowers.length < _NMAX) {
+            borrowers.push(new User(positionsManager, marketsManager));
+            write_balanceOf(address(borrowers[borrowers.length - 1]), dai, type(uint256).max / 2);
+            write_balanceOf(address(borrowers[borrowers.length - 1]), usdc, type(uint256).max / 2);
+
+            suppliers.push(new User(positionsManager, marketsManager));
+            write_balanceOf(address(suppliers[suppliers.length - 1]), dai, type(uint256).max / 2);
+            write_balanceOf(address(suppliers[suppliers.length - 1]), usdc, type(uint256).max / 2);
+        }
+    }
+
     // // = Suppliers on Aave (no borrowers) =
     // // ====================================
 
