@@ -1,12 +1,11 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.7;
 
-import "./interfaces/aave/IAaveIncentivesController.sol";
 import "./interfaces/aave/ILendingPoolAddressesProvider.sol";
+import "./interfaces/aave/IAaveIncentivesController.sol";
 import "./interfaces/aave/IProtocolDataProvider.sol";
 import "./interfaces/aave/ILendingPool.sol";
 import "./interfaces/IMarketsManagerForAave.sol";
-import "./interfaces/IGetterIncentivesController.sol";
 import "./interfaces/IMatchingEngineManager.sol";
 
 import "../common/libraries/DoubleLinkedList.sol";
@@ -46,6 +45,7 @@ contract PositionsManagerForAaveStorage is ReentrancyGuard {
     mapping(address => uint256) public capValue; // Caps above which suppliers cannot add more liquidity.
 
     IMarketsManagerForAave public marketsManagerForAave;
+    IAaveIncentivesController public aaveIncentivesController;
     ILendingPoolAddressesProvider public addressesProvider;
     IProtocolDataProvider public dataProvider;
     ILendingPool public lendingPool;
