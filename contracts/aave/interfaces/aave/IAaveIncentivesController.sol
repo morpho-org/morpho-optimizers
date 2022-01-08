@@ -3,6 +3,12 @@ pragma solidity 0.8.7;
 pragma experimental ABIEncoderV2;
 
 interface IAaveIncentivesController {
+    struct AssetData {
+        uint128 emissionPerSecond;
+        uint128 lastUpdateTimestamp;
+        uint256 index;
+    }
+
     event RewardsAccrued(address indexed user, uint256 amount);
 
     event RewardsClaimed(address indexed user, address indexed to, uint256 amount);
@@ -98,4 +104,8 @@ interface IAaveIncentivesController {
      * @dev for backward compatibility with previous implementation of the Incentives controller
      */
     function REWARD_TOKEN() external view returns (address);
+
+    function DISTRIBUTION_END() external view returns (uint256);
+
+    function assets(address) external view returns (AssetData memory);
 }
