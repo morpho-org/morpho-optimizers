@@ -1,30 +1,37 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.7;
 
-import "./interfaces/aave/IPriceOracleGetter.sol";
 import {IVariableDebtToken} from "./interfaces/aave/IVariableDebtToken.sol";
 import {IAToken} from "./interfaces/aave/IAToken.sol";
-import "./interfaces/aave/IAaveIncentivesController.sol";
-import "./interfaces/aave/ILendingPoolAddressesProvider.sol";
-import "./interfaces/aave/IProtocolDataProvider.sol";
-import "./interfaces/aave/ILendingPool.sol";
-import "./interfaces/IMarketsManagerForAave.sol";
-import "./interfaces/IGetterIncentivesController.sol";
+import "./interfaces/aave/IPriceOracleGetter.sol";
 
+import "@openzeppelin/contracts/utils/Address.sol";
 import "../common/libraries/DoubleLinkedList.sol";
 import "./libraries/aave/WadRayMath.sol";
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
+import "./PositionsManagerForAaveStorage.sol";
+import "./DataUpdator.sol";
 
 /// @title PositionsManagerForAave
 /// @dev Smart contract interacting with Aave to enable P2P supply/borrow positions that can fallback on Aave's pool using poolToken tokens.
-contract PositionsManagerForAave is ReentrancyGuard {
+contract PositionsManagerForAave is PositionsManagerForAaveStorage {
     using DoubleLinkedList for DoubleLinkedList.List;
     using WadRayMath for uint256;
+    using Address for address;
     using SafeERC20 for IERC20;
     using Math for uint256;
+
+    /// Enums ///
+
+    enum UserType {
+        SUPPLIERS_IN_P2P,
+        SUPPLIERS_ON_POOL,
+        BORROWERS_IN_P2P,
+        BORROWERS_ON_POOL
+    }
 
     /// Structs ///
 
@@ -65,40 +72,6 @@ contract PositionsManagerForAave is ReentrancyGuard {
         address tokenCollateralAddress; // The address of the collateral asset.
         IPriceOracleGetter oracle; // Aave oracle.
     }
-
-    struct SupplyBalance {
-        uint256 inP2P; // In p2pUnit, a unit that grows in value, to keep track of the interests/debt increase when users are in p2p.
-        uint256 onPool; // In aToken.
-    }
-
-    struct BorrowBalance {
-        uint256 inP2P; // In p2pUnit.
-        uint256 onPool; // In adUnit, a unit that grows in value, to keep track of the debt increase when users are in Aave. Multiply by current borrowIndex to get the underlying amount.
-    }
-
-    /// Storage ///
-
-    uint8 public NO_REFERRAL_CODE = 0;
-    uint8 public VARIABLE_INTEREST_MODE = 2;
-    uint16 public NMAX = 1000;
-    uint256 public constant LIQUIDATION_CLOSE_FACTOR_PERCENT = 5000; // In basis points.
-    bytes32 public constant DATA_PROVIDER_ID =
-        0x1000000000000000000000000000000000000000000000000000000000000000; // Id of the data provider.
-    mapping(address => DoubleLinkedList.List) internal suppliersInP2P; // Suppliers in peer-to-peer.
-    mapping(address => DoubleLinkedList.List) internal suppliersOnPool; // Suppliers on Aave.
-    mapping(address => DoubleLinkedList.List) internal borrowersInP2P; // Borrowers in peer-to-peer.
-    mapping(address => DoubleLinkedList.List) internal borrowersOnPool; // Borrowers on Aave.
-    mapping(address => mapping(address => SupplyBalance)) public supplyBalanceInOf; // For a given market, the supply balance of user.
-    mapping(address => mapping(address => BorrowBalance)) public borrowBalanceInOf; // For a given market, the borrow balance of user.
-    mapping(address => mapping(address => bool)) public accountMembership; // Whether the account is in the market or not.
-    mapping(address => address[]) public enteredMarkets; // Markets entered by a user.
-    mapping(address => uint256) public threshold; // Thresholds below the ones suppliers and borrowers cannot enter markets.
-    mapping(address => uint256) public capValue; // Caps above the ones suppliers cannot add more liquidity.
-
-    IMarketsManagerForAave public immutable marketsManagerForAave;
-    ILendingPoolAddressesProvider public addressesProvider;
-    IProtocolDataProvider public dataProvider;
-    ILendingPool public lendingPool;
 
     /// Events ///
 
@@ -267,6 +240,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
         addressesProvider = ILendingPoolAddressesProvider(_lendingPoolAddressesProvider);
         dataProvider = IProtocolDataProvider(addressesProvider.getAddress(DATA_PROVIDER_ID));
         lendingPool = ILendingPool(addressesProvider.getLendingPool());
+        dataUpdator = new DataUpdator();
     }
 
     /// @dev Updates the lending pool and the data provider.
@@ -308,6 +282,43 @@ contract PositionsManagerForAave is ReentrancyGuard {
         asset[0] = _asset;
         IAaveIncentivesController(IGetterIncentivesController(_asset).getIncentivesController())
             .claimRewards(asset, type(uint256).max, marketsManagerForAave.owner());
+    }
+
+    /// @dev Gets the head of the data structure on a specific market (for UI).
+    /// @param _poolTokenAddress The address of the market from which to get the head.
+    /// @param _userType The type of user from which to get the head.
+    function getHead(address _poolTokenAddress, uint8 _userType)
+        external
+        view
+        returns (address head)
+    {
+        if (_userType == uint8(UserType.SUPPLIERS_IN_P2P))
+            head = suppliersInP2P[_poolTokenAddress].getHead();
+        else if (_userType == uint8(UserType.SUPPLIERS_ON_POOL))
+            head = suppliersOnPool[_poolTokenAddress].getHead();
+        else if (_userType == uint8(UserType.BORROWERS_IN_P2P))
+            head = borrowersInP2P[_poolTokenAddress].getHead();
+        else if (_userType == uint8(UserType.BORROWERS_ON_POOL))
+            head = borrowersOnPool[_poolTokenAddress].getHead();
+    }
+
+    /// @dev Gets the previous user in the data structure on a specific market (for UI).
+    /// @param _poolTokenAddress The address of the market from which to get the head.
+    /// @param _userType The type of user from which to get the previous account.
+    /// @param _user The address of the user from which to get the previous account.
+    function getPrev(
+        address _poolTokenAddress,
+        uint8 _userType,
+        address _user
+    ) external view returns (address prev) {
+        if (_userType == uint8(UserType.SUPPLIERS_IN_P2P))
+            prev = suppliersInP2P[_poolTokenAddress].getPrev(_user);
+        else if (_userType == uint8(UserType.SUPPLIERS_ON_POOL))
+            prev = suppliersOnPool[_poolTokenAddress].getPrev(_user);
+        else if (_userType == uint8(UserType.BORROWERS_IN_P2P))
+            prev = borrowersInP2P[_poolTokenAddress].getPrev(_user);
+        else if (_userType == uint8(UserType.BORROWERS_ON_POOL))
+            prev = borrowersOnPool[_poolTokenAddress].getPrev(_user);
     }
 
     /// @dev Supplies ERC20 tokens in a specific market.
@@ -1156,47 +1167,29 @@ contract PositionsManagerForAave is ReentrancyGuard {
         return (vars.debtValue, vars.maxDebtValue);
     }
 
-    /// @dev Updates borrowers tree with the new balances of a given account.
+    /// @dev Updates borrowers data structure with the new balances of a given account.
     /// @param _poolTokenAddress The address of the market on which Morpho want to update the borrower lists.
     /// @param _account The address of the borrower to move.
     function _updateBorrowerList(address _poolTokenAddress, address _account) internal {
-        uint256 onPool = borrowBalanceInOf[_poolTokenAddress][_account].onPool;
-        uint256 inP2P = borrowBalanceInOf[_poolTokenAddress][_account].inP2P;
-        uint256 formerValueOnPool = borrowersOnPool[_poolTokenAddress].getValueOf(_account);
-        uint256 formerValueInP2P = borrowersInP2P[_poolTokenAddress].getValueOf(_account);
-
-        // Check pool
-        bool wasOnPoolAndValueChanged = formerValueOnPool != 0 && formerValueOnPool != onPool;
-        if (wasOnPoolAndValueChanged) borrowersOnPool[_poolTokenAddress].remove(_account);
-        if (onPool > 0 && (wasOnPoolAndValueChanged || formerValueOnPool == 0))
-            borrowersOnPool[_poolTokenAddress].insertSorted(_account, onPool, NMAX);
-
-        // Check P2P
-        bool wasInP2PAndValueChanged = formerValueInP2P != 0 && formerValueInP2P != inP2P;
-        if (wasInP2PAndValueChanged) borrowersInP2P[_poolTokenAddress].remove(_account);
-        if (inP2P > 0 && (wasInP2PAndValueChanged || formerValueInP2P == 0))
-            borrowersInP2P[_poolTokenAddress].insertSorted(_account, inP2P, NMAX);
+        address(dataUpdator).functionDelegateCall(
+            abi.encodeWithSelector(
+                dataUpdator.updateBorrowerList.selector,
+                _poolTokenAddress,
+                _account
+            )
+        );
     }
 
-    /// @dev Updates suppliers tree with the new balances of a given account.
+    /// @dev Updates suppliers data structure with the new balances of a given account.
     /// @param _poolTokenAddress The address of the market on which Morpho want to update the supplier lists.
     /// @param _account The address of the supplier to move.
     function _updateSupplierList(address _poolTokenAddress, address _account) internal {
-        uint256 onPool = supplyBalanceInOf[_poolTokenAddress][_account].onPool;
-        uint256 inP2P = supplyBalanceInOf[_poolTokenAddress][_account].inP2P;
-        uint256 formerValueOnPool = suppliersOnPool[_poolTokenAddress].getValueOf(_account);
-        uint256 formerValueInP2P = suppliersInP2P[_poolTokenAddress].getValueOf(_account);
-
-        // Check pool
-        bool wasOnPoolAndValueChanged = formerValueOnPool != 0 && formerValueOnPool != onPool;
-        if (wasOnPoolAndValueChanged) suppliersOnPool[_poolTokenAddress].remove(_account);
-        if (onPool > 0 && (wasOnPoolAndValueChanged || formerValueOnPool == 0))
-            suppliersOnPool[_poolTokenAddress].insertSorted(_account, onPool, NMAX);
-
-        // Check P2P
-        bool wasInP2PAndValueChanged = formerValueInP2P != 0 && formerValueInP2P != inP2P;
-        if (wasInP2PAndValueChanged) suppliersInP2P[_poolTokenAddress].remove(_account);
-        if (inP2P > 0 && (wasInP2PAndValueChanged || formerValueInP2P == 0))
-            suppliersInP2P[_poolTokenAddress].insertSorted(_account, inP2P, NMAX);
+        address(dataUpdator).functionDelegateCall(
+            abi.encodeWithSelector(
+                dataUpdator.updateSupplierList.selector,
+                _poolTokenAddress,
+                _account
+            )
+        );
     }
 }
