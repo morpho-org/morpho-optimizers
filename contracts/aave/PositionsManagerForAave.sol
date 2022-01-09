@@ -16,7 +16,6 @@ import "./libraries/aave/WadRayMath.sol";
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 
 /// @title PositionsManagerForAave
@@ -24,7 +23,6 @@ import "@openzeppelin/contracts/utils/math/Math.sol";
 contract PositionsManagerForAave is ReentrancyGuard {
     using DoubleLinkedList for DoubleLinkedList.List;
     using WadRayMath for uint256;
-    using SafeMath for uint256;
     using SafeERC20 for IERC20;
     using Math for uint256;
 
@@ -478,7 +476,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
             borrowBalanceInOf[_poolTokenBorrowedAddress][_borrower].inP2P.mulWadByRay(
                 marketsManagerForAave.p2pExchangeRate(_poolTokenBorrowedAddress)
             );
-        if (_amount > vars.borrowBalance.mul(LIQUIDATION_CLOSE_FACTOR_PERCENT).div(10000))
+        if (_amount > (vars.borrowBalance * LIQUIDATION_CLOSE_FACTOR_PERCENT) / 10000)
             revert AmountAboveWhatAllowedToRepay(); // Same mechanism as Aave. Liquidator cannot repay more than part of the debt (cf close factor on Aave).
 
         vars.oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
@@ -496,14 +494,10 @@ contract PositionsManagerForAave is ReentrancyGuard {
         vars.borrowedTokenUnit = 10**vars.borrowedReserveDecimals;
 
         // Calculate the amount of collateral to seize (cf Aave):
-        // seizeAmount = repayAmount///liquidationBonus///borrowedPrice///collateralTokenUnit / (collateralPrice///borrowedTokenUnit)
-        vars.amountToSeize = _amount
-            .mul(vars.borrowedPrice)
-            .mul(vars.collateralTokenUnit)
-            .mul(vars.liquidationBonus)
-            .div(vars.borrowedTokenUnit)
-            .div(vars.collateralPrice)
-            .div(10000); // Same mechanism as aave. The collateral amount to seize is given.
+        // seizeAmount = repayAmount * liquidationBonus * borrowedPrice * collateralTokenUnit / (collateralPrice * borrowedTokenUnit)
+        vars.amountToSeize =
+            (_amount * vars.borrowedPrice * vars.collateralTokenUnit * vars.liquidationBonus) /
+            (vars.borrowedTokenUnit * vars.collateralPrice * 10000); // Same mechanism as aave. The collateral amount to seize is given.
         vars.normalizedIncome = lendingPool.getReserveNormalizedIncome(vars.tokenCollateralAddress);
         marketsManagerForAave.updateRates(_poolTokenCollateralAddress);
         vars.totalCollateral =
@@ -1130,18 +1124,14 @@ contract PositionsManagerForAave is ReentrancyGuard {
                 .getReserveConfigurationData(vars.underlyingAddress);
             vars.tokenUnit = 10**vars.reserveDecimals;
             // Conversion of the collateral to ETH
-            vars.collateralToAdd = vars.collateralToAdd.mul(vars.underlyingPrice).div(
-                vars.tokenUnit
-            );
-            vars.maxDebtValue += vars.collateralToAdd.mul(vars.liquidationThreshold).div(10000);
-            vars.debtValue += vars.debtToAdd.mul(vars.underlyingPrice).div(vars.tokenUnit);
+            vars.collateralToAdd = (vars.collateralToAdd * vars.underlyingPrice) / vars.tokenUnit;
+            vars.maxDebtValue += (vars.collateralToAdd * vars.liquidationThreshold) / 10000;
+            vars.debtValue += (vars.debtToAdd * vars.underlyingPrice) / vars.tokenUnit;
             if (_poolTokenAddress == vars.poolTokenEntered) {
-                vars.debtValue += _borrowedAmount.mul(vars.underlyingPrice).div(vars.tokenUnit);
-                vars.maxDebtValue -= _withdrawnAmount
-                    .mul(vars.underlyingPrice)
-                    .div(vars.tokenUnit)
-                    .mul(vars.liquidationThreshold)
-                    .div(10000);
+                vars.debtValue += (_borrowedAmount * vars.underlyingPrice) / vars.tokenUnit;
+                vars.maxDebtValue -=
+                    (_withdrawnAmount * vars.underlyingPrice * vars.liquidationThreshold) /
+                    (vars.tokenUnit * 10000);
             }
         }
         return (vars.debtValue, vars.maxDebtValue);
