@@ -16,20 +16,32 @@ contract DataUpdator is IDataUpdator, PositionsManagerForAaveStorage {
     function updateBorrowerList(address _poolTokenAddress, address _account) external override {
         uint256 onPool = borrowBalanceInOf[_poolTokenAddress][_account].onPool;
         uint256 inP2P = borrowBalanceInOf[_poolTokenAddress][_account].inP2P;
-        uint256 formerValueOnPool = borrowersOnPool[_poolTokenAddress].getValueOf(_account);
-        uint256 formerValueInP2P = borrowersInP2P[_poolTokenAddress].getValueOf(_account);
+        uint256 formerValueOnPool = usersLocation[UserType.BORROWERS_ON_POOL][_poolTokenAddress]
+            .getValueOf(_account);
+        uint256 formerValueInP2P = usersLocation[UserType.BORROWERS_IN_P2P][_poolTokenAddress]
+            .getValueOf(_account);
 
         // Check pool
         bool wasOnPoolAndValueChanged = formerValueOnPool != 0 && formerValueOnPool != onPool;
-        if (wasOnPoolAndValueChanged) borrowersOnPool[_poolTokenAddress].remove(_account);
+        if (wasOnPoolAndValueChanged)
+            usersLocation[UserType.BORROWERS_ON_POOL][_poolTokenAddress].remove(_account);
         if (onPool > 0 && (wasOnPoolAndValueChanged || formerValueOnPool == 0))
-            borrowersOnPool[_poolTokenAddress].insertSorted(_account, onPool, NMAX);
+            usersLocation[UserType.BORROWERS_ON_POOL][_poolTokenAddress].insertSorted(
+                _account,
+                onPool,
+                NMAX
+            );
 
         // Check P2P
         bool wasInP2PAndValueChanged = formerValueInP2P != 0 && formerValueInP2P != inP2P;
-        if (wasInP2PAndValueChanged) borrowersInP2P[_poolTokenAddress].remove(_account);
+        if (wasInP2PAndValueChanged)
+            usersLocation[UserType.BORROWERS_IN_P2P][_poolTokenAddress].remove(_account);
         if (inP2P > 0 && (wasInP2PAndValueChanged || formerValueInP2P == 0))
-            borrowersInP2P[_poolTokenAddress].insertSorted(_account, inP2P, NMAX);
+            usersLocation[UserType.BORROWERS_IN_P2P][_poolTokenAddress].insertSorted(
+                _account,
+                inP2P,
+                NMAX
+            );
     }
 
     /// @dev Updates suppliers data structure  with the new balances of a given account.
@@ -38,19 +50,31 @@ contract DataUpdator is IDataUpdator, PositionsManagerForAaveStorage {
     function updateSupplierList(address _poolTokenAddress, address _account) external override {
         uint256 onPool = supplyBalanceInOf[_poolTokenAddress][_account].onPool;
         uint256 inP2P = supplyBalanceInOf[_poolTokenAddress][_account].inP2P;
-        uint256 formerValueOnPool = suppliersOnPool[_poolTokenAddress].getValueOf(_account);
-        uint256 formerValueInP2P = suppliersInP2P[_poolTokenAddress].getValueOf(_account);
+        uint256 formerValueOnPool = usersLocation[UserType.SUPPLIERS_ON_POOL][_poolTokenAddress]
+            .getValueOf(_account);
+        uint256 formerValueInP2P = usersLocation[UserType.SUPPLIERS_IN_P2P][_poolTokenAddress]
+            .getValueOf(_account);
 
         // Check pool
         bool wasOnPoolAndValueChanged = formerValueOnPool != 0 && formerValueOnPool != onPool;
-        if (wasOnPoolAndValueChanged) suppliersOnPool[_poolTokenAddress].remove(_account);
+        if (wasOnPoolAndValueChanged)
+            usersLocation[UserType.SUPPLIERS_ON_POOL][_poolTokenAddress].remove(_account);
         if (onPool > 0 && (wasOnPoolAndValueChanged || formerValueOnPool == 0))
-            suppliersOnPool[_poolTokenAddress].insertSorted(_account, onPool, NMAX);
+            usersLocation[UserType.SUPPLIERS_ON_POOL][_poolTokenAddress].insertSorted(
+                _account,
+                onPool,
+                NMAX
+            );
 
         // Check P2P
         bool wasInP2PAndValueChanged = formerValueInP2P != 0 && formerValueInP2P != inP2P;
-        if (wasInP2PAndValueChanged) suppliersInP2P[_poolTokenAddress].remove(_account);
+        if (wasInP2PAndValueChanged)
+            usersLocation[UserType.SUPPLIERS_IN_P2P][_poolTokenAddress].remove(_account);
         if (inP2P > 0 && (wasInP2PAndValueChanged || formerValueInP2P == 0))
-            suppliersInP2P[_poolTokenAddress].insertSorted(_account, inP2P, NMAX);
+            usersLocation[UserType.SUPPLIERS_IN_P2P][_poolTokenAddress].insertSorted(
+                _account,
+                inP2P,
+                NMAX
+            );
     }
 }

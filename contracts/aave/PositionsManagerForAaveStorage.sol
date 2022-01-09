@@ -14,6 +14,15 @@ import "../common/libraries/DoubleLinkedList.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 contract PositionsManagerForAaveStorage is ReentrancyGuard {
+    /// Enums ///
+
+    enum UserType {
+        SUPPLIERS_IN_P2P,
+        SUPPLIERS_ON_POOL,
+        BORROWERS_IN_P2P,
+        BORROWERS_ON_POOL
+    }
+
     /// Structs ///
 
     struct SupplyBalance {
@@ -34,10 +43,7 @@ contract PositionsManagerForAaveStorage is ReentrancyGuard {
     uint256 public constant LIQUIDATION_CLOSE_FACTOR_PERCENT = 5000; // In basis points.
     bytes32 public constant DATA_PROVIDER_ID =
         0x1000000000000000000000000000000000000000000000000000000000000000; // Id of the data provider.
-    mapping(address => DoubleLinkedList.List) internal suppliersInP2P; // Suppliers in peer-to-peer.
-    mapping(address => DoubleLinkedList.List) internal suppliersOnPool; // Suppliers on Aave.
-    mapping(address => DoubleLinkedList.List) internal borrowersInP2P; // Borrowers in peer-to-peer.
-    mapping(address => DoubleLinkedList.List) internal borrowersOnPool; // Borrowers on Aave.
+    mapping(UserType => mapping(address => DoubleLinkedList.List)) internal usersLocation; // Users location in the data structure.
     mapping(address => mapping(address => SupplyBalance)) public supplyBalanceInOf; // For a given market, the supply balance of user.
     mapping(address => mapping(address => BorrowBalance)) public borrowBalanceInOf; // For a given market, the borrow balance of user.
     mapping(address => mapping(address => bool)) public accountMembership; // Whether the account is in the market or not.
