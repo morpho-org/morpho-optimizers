@@ -13,13 +13,11 @@ import "./libraries/aave/WadRayMath.sol";
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
 /// @title MarketsManagerForAave
 /// @dev Smart contract managing the markets used by a MorphoPositionsManagerForAave contract, an other contract interacting with Aave or a fork of Aave.
 contract MarketsManagerForAave is Ownable {
     using WadRayMath for uint256;
-    using SafeMath for uint256;
     using Math for uint256;
 
     /// Storage ///
@@ -198,9 +196,9 @@ contract MarketsManagerForAave is Ownable {
             IAToken(_marketAddress).UNDERLYING_ASSET_ADDRESS()
         );
 
-        p2pSPY[_marketAddress] = Math
-            .average(reserveData.currentLiquidityRate, reserveData.currentVariableBorrowRate)
-            .div(SECONDS_PER_YEAR); // In ray
+        p2pSPY[_marketAddress] =
+            Math.average(reserveData.currentLiquidityRate, reserveData.currentVariableBorrowRate) /
+            SECONDS_PER_YEAR; // In ray
         emit P2PSPYUpdated(_marketAddress, p2pSPY[_marketAddress]);
     }
 }
