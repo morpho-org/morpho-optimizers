@@ -19,7 +19,7 @@ contract Utils {
         pure
         returns (uint256)
     {
-        return (_scaledBalance * 1e27) / _normalizedIncome;
+        return (_scaledBalance * RAY) / _normalizedIncome;
     }
 
     function scaledBalanceToUnderlying(uint256 _scaledBalance, uint256 _normalizedIncome)
@@ -27,7 +27,7 @@ contract Utils {
         pure
         returns (uint256)
     {
-        return (_scaledBalance * _normalizedIncome) / 1e27;
+        return (_scaledBalance * _normalizedIncome) / RAY;
     }
 
     function underlyingToAdUnit(uint256 _underlyingAmount, uint256 _normalizedVariableDebt)
@@ -62,20 +62,7 @@ contract Utils {
         return (_p2pUnitAmount * _p2pExchangeRate) / RAY;
     }
 
-    function computeNewMorphoExchangeRate(
-        uint256 _currentExchangeRate,
-        uint256 _p2pSPY,
-        uint256 _currentTimestamp,
-        uint256 _lastUpdateTimestamp
-    ) internal pure returns (uint256) {
-        uint256 exponent = _currentTimestamp - _lastUpdateTimestamp;
-        uint256 val = _p2pSPY / RAY + 1;
-        uint256 multiplier = (val**exponent) * RAY;
-
-        return (_currentExchangeRate * multiplier) / RAY;
-    }
-
-    function get_abs_diff(uint256 a, uint256 b) internal pure returns (uint256) {
+    function getAbsDiff(uint256 a, uint256 b) internal pure returns (uint256) {
         if (a > b) {
             return a - b;
         }

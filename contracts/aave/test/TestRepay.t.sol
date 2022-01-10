@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.7;
 
-import "./TestSetup.sol";
+import "./utils/TestSetup.sol";
 
 contract RepayTest is TestSetup {
     // - 4.1 - The borrower repays less than his `onPool` balance. The liquidity is repaid on his `onPool` balance.
-    function testRepay_4_1() public {
+    function test_repay_4_1() public {
         uint256 amount = 10000 ether;
         uint256 collateral = 2 * amount;
 
@@ -13,23 +13,13 @@ contract RepayTest is TestSetup {
         borrower1.supply(aUsdc, to6Decimals(collateral));
         borrower1.borrow(aDai, amount);
 
+        borrower1.approve(dai, amount);
+        borrower1.repay(aDai, amount);
+
         (uint256 inP2P, uint256 onPool) = positionsManager.borrowBalanceInOf(
             aDai,
             address(borrower1)
         );
-
-        uint256 expectedOnPool = underlyingToAdUnit(
-            amount,
-            lendingPool.getReserveNormalizedVariableDebt(dai)
-        );
-
-        testEquality(inP2P, 0);
-        testEquality(onPool, expectedOnPool);
-
-        borrower1.approve(dai, amount);
-        borrower1.repay(aDai, amount);
-
-        (inP2P, onPool) = positionsManager.borrowBalanceInOf(aDai, address(borrower1));
 
         testEquality(inP2P, 0);
         testEquality(onPool, 0);
@@ -38,7 +28,7 @@ contract RepayTest is TestSetup {
     // - 4.2 - The borrower repays more than his `onPool` balance.
     //   - 4.2.1 - There is a borrower `onPool` available to replace him `inP2P`.
     //             First, his debt `onPool` is repaid, his matched debt is replaced by the available borrower up to his repaid amount.
-    function testRepay_4_2_1() public {
+    function test_repay_4_2_1() public {
         uint256 suppliedAmount = 10000 ether;
         uint256 borrowedAmount = 2 * suppliedAmount;
         uint256 collateral = 2 * borrowedAmount;
@@ -81,7 +71,7 @@ contract RepayTest is TestSetup {
         borrower1.approve(dai, (75 * borrowedAmount) / 100);
         borrower1.repay(aDai, (75 * borrowedAmount) / 100);
 
-        // Check balances for borrower
+        // Check balances for borrower1 & borrower2
         (inP2PBorrower1, onPoolBorrower1) = positionsManager.borrowBalanceInOf(
             aDai,
             address(borrower1)
@@ -89,7 +79,6 @@ contract RepayTest is TestSetup {
 
         (uint256 inP2PAvailableBorrower, uint256 onPoolAvailableBorrower) = positionsManager
             .borrowBalanceInOf(aDai, address(borrower2));
-
         uint256 p2pExchangeRate = marketsManager.p2pExchangeRate(aDai);
         uint256 expectedBorrowBalanceInP2P = underlyingToP2PUnit(
             (25 * borrowedAmount) / 100,
@@ -112,12 +101,12 @@ contract RepayTest is TestSetup {
 
     //   - 4.2.2 - There are NMAX (or less) borrowers `onPool` available to replace him `inP2P`, they borrow enough to cover for the repaid liquidity.
     //             First, his debt `onPool` is repaid, his matched liquidity is replaced by NMAX (or less) borrowers up to his repaid amount.
-    function testRepay_4_2_2() public {
+    function test_repay_4_2_2() public {
         uint256 suppliedAmount = 10000 ether;
         uint256 borrowedAmount = 2 * suppliedAmount;
         uint256 collateral = 2 * borrowedAmount;
 
-        // Borrower1 & supplier1 are matched for 10 ETH
+        // Borrower1 & supplier1 are matched up to suppliedAmount
         borrower1.approve(usdc, to6Decimals(collateral));
         borrower1.supply(aUsdc, to6Decimals(collateral));
         borrower1.borrow(aDai, borrowedAmount);
@@ -146,8 +135,12 @@ contract RepayTest is TestSetup {
         testEquality(inP2PSupplier, inP2PBorrower1);
 
         // NMAX borrowers have debt waiting on pool
-        setNMAXAndCreateSigners(20);
-        uint256 NMAX = positionsManager.NMAX();
+        uint16 NMAX = 20;
+        setNMAXAndCreateSigners(NMAX);
+
+        uint256 inP2P;
+        uint256 onPool;
+        uint256 normalizedVariableDebt = lendingPool.getReserveNormalizedVariableDebt(dai);
 
         uint256 amountPerBorrower = (borrowedAmount - suppliedAmount) / (NMAX - 1);
         // minus because borrower1 must not be counted twice !
@@ -157,6 +150,12 @@ contract RepayTest is TestSetup {
             borrowers[i].approve(usdc, to6Decimals(collateral));
             borrowers[i].supply(aUsdc, to6Decimals(collateral));
             borrowers[i].borrow(aDai, amountPerBorrower);
+
+            (inP2P, onPool) = positionsManager.borrowBalanceInOf(aDai, address(borrowers[i]));
+            expectedOnPool = underlyingToAdUnit(amountPerBorrower, normalizedVariableDebt);
+
+            testEquality(inP2P, 0);
+            testEquality(onPool, expectedOnPool);
         }
 
         // Borrower1 repays all of his debt
@@ -184,9 +183,6 @@ contract RepayTest is TestSetup {
         testEquality(inP2PSupplier, expectedSupplyBalanceInP2P);
         testEquality(onPoolSupplier, 0);
 
-        uint256 inP2P;
-        uint256 onPool;
-
         // Now test for each individual borrower that replaced the original
         for (uint256 i = 0; i < borrowers.length; i++) {
             if (borrowers[i] == borrower1) continue;
@@ -201,7 +197,7 @@ contract RepayTest is TestSetup {
 
     //   - 4.2.3 - There are no borrowers `onPool` to replace him `inP2P`. After repaying the amount `onPool`,
     //             his P2P match(es) will be unmatched and the corresponding supplier(s) will be placed on pool.
-    function testRepay_4_2_3() public {
+    function test_repay_4_2_3() public {
         uint256 suppliedAmount = 10000 ether;
         uint256 borrowedAmount = 2 * suppliedAmount;
         uint256 collateral = 2 * borrowedAmount;
@@ -277,7 +273,7 @@ contract RepayTest is TestSetup {
     //   - 4.2.4 - There are NMAX (or less) borrowers `onPool` available to replace him `inP2P`, they don't borrow enough to cover for the withdrawn liquidity.
     //             First, the `onPool` liquidity is withdrawn, then we proceed to NMAX (or less) matches. Finally, some suppliers are unmatched for an amount equal to the remaining to withdraw.
     //             ⚠️ most gas expensive repay scenario.
-    function testRepay_4_2_4() public {
+    function test_repay_4_2_4() public {
         uint256 suppliedAmount = 10000 ether;
         uint256 borrowedAmount = 2 * suppliedAmount;
         uint256 collateral = 2 * borrowedAmount;
@@ -311,8 +307,8 @@ contract RepayTest is TestSetup {
         testEquality(inP2PSupplier, inP2PBorrower1);
 
         // NMAX borrowers have borrowerAmount/2 (cumulated) of debt waiting on pool
-        setNMAXAndCreateSigners(20);
-        uint256 NMAX = positionsManager.NMAX();
+        uint16 NMAX = 20;
+        setNMAXAndCreateSigners(NMAX);
 
         uint256 amountPerBorrower = (borrowedAmount - suppliedAmount) / (2 * (NMAX - 1));
         // minus because borrower1 must not be counted twice !
