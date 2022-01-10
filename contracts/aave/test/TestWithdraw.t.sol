@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.7;
 
-import "./TestSetup.sol";
+import "./utils/TestSetup.sol";
+import "./utils/Attacker.sol";
 
 contract WithdrawTest is TestSetup {
     // 3.1 - The user withdrawal leads to an under-collateralized position, the withdrawal reverts.
-    function testFailWithdraw_3_1() public {
+    function testFail_withdraw_3_1() public {
         uint256 amount = 10000 ether;
         uint256 collateral = 2 * amount;
 
@@ -18,7 +19,7 @@ contract WithdrawTest is TestSetup {
     }
 
     // 3.2 - The supplier withdraws less than his onPool balance. The liquidity is taken from his onPool balance.
-    function testWithdraw_3_2() public {
+    function test_withdraw_3_2() public {
         uint256 amount = 10000 ether;
 
         supplier1.approve(usdc, to6Decimals(2 * amount));
@@ -48,7 +49,7 @@ contract WithdrawTest is TestSetup {
 
     // 3.3.1 - There is a supplier onPool available to replace him inP2P.
     // First, his liquidity onPool is taken, his matched is replaced by the available supplier up to his withdrawal amount.
-    function testWithdraw_3_3_1() public {
+    function test_withdraw_3_3_1() public {
         uint256 borrowedAmount = 10000 ether;
         uint256 suppliedAmount = 2 * borrowedAmount;
         uint256 collateral = 2 * borrowedAmount;
@@ -100,7 +101,10 @@ contract WithdrawTest is TestSetup {
             aDai,
             address(supplier2)
         );
+        uint256 p2pExchangeRate = marketsManager.p2pExchangeRate(aDai);
+        uint256 expectedInP2P = underlyingToP2PUnit(suppliedAmount / 2, p2pExchangeRate);
         testEquality(onPoolSupplier, expectedOnPool);
+        testEquality(inP2PSupplier, expectedInP2P);
 
         // Check balances for borrower1
         (inP2PBorrower1, onPoolBorrower1) = positionsManager.borrowBalanceInOf(
@@ -113,7 +117,7 @@ contract WithdrawTest is TestSetup {
 
     // 3.3.2 - There are NMAX (or less) suppliers onPool available to replace him inP2P, they supply enough to cover for the withdrawn liquidity.
     // First, his liquidity onPool is taken, his matched is replaced by NMAX (or less) suppliers up to his withdrawal amount.
-    function testWithdraw_3_3_2() public {
+    function test_withdraw_3_3_2() public {
         uint256 borrowedAmount = 100000 ether;
         uint256 suppliedAmount = 2 * borrowedAmount;
         uint256 collateral = 2 * borrowedAmount;
@@ -147,8 +151,8 @@ contract WithdrawTest is TestSetup {
         testEquality(inP2PSupplier, inP2PBorrower);
 
         // NMAX borrowers have debt waiting on pool
-        setNMAXAndCreateSigners(20);
-        uint256 NMAX = positionsManager.NMAX();
+        uint16 NMAX = 20;
+        setNMAXAndCreateSigners(NMAX);
 
         uint256 amountPerSupplier = (suppliedAmount - borrowedAmount) / (NMAX - 1);
         // minus 1 because supplier1 must not be counted twice !
@@ -199,7 +203,7 @@ contract WithdrawTest is TestSetup {
 
     // 3.3.3 - There are no suppliers onPool to replace him inP2P. After withdrawing the amount onPool,
     // his P2P match(es) will be unmatched and the corresponding borrower(s) will be placed on pool.
-    function testWithdraw_3_3_3() public {
+    function test_withdraw_3_3_3() public {
         uint256 borrowedAmount = 10000 ether;
         uint256 suppliedAmount = 2 * borrowedAmount;
         uint256 collateral = 2 * borrowedAmount;
@@ -272,7 +276,7 @@ contract WithdrawTest is TestSetup {
     // 3.3.4 - There are NMAX (or less) suppliers onPool available to replace him inP2P, they don't supply enough to cover the withdrawn liquidity.
     // First, the onPool liquidity is withdrawn, then we proceed to NMAX (or less) matches. Finally, some borrowers are unmatched for an amount equal to the remaining to withdraw.
     // ⚠️ most gas expensive withdraw scenario.
-    function testWithdraw_3_3_4() public {
+    function test_withdraw_3_3_4() public {
         uint256 borrowedAmount = 100000 ether;
         uint256 suppliedAmount = 2 * borrowedAmount;
         uint256 collateral = 2 * borrowedAmount;
@@ -306,8 +310,8 @@ contract WithdrawTest is TestSetup {
         testEquality(inP2PSupplier, inP2PBorrower);
 
         // NMAX borrowers have debt waiting on pool
-        setNMAXAndCreateSigners(20);
-        uint256 NMAX = positionsManager.NMAX();
+        uint16 NMAX = 20;
+        setNMAXAndCreateSigners(NMAX);
 
         uint256 amountPerSupplier = (suppliedAmount - borrowedAmount) / (2 * (NMAX - 1));
         // minus 1 because supplier1 must not be counted twice !
@@ -360,6 +364,56 @@ contract WithdrawTest is TestSetup {
 
             testEquality(expectedInP2P, amountPerSupplier);
             testEquality(onPool, 0);
+
+            (inP2P, onPool) = positionsManager.borrowBalanceInOf(aDai, address(borrowers[i]));
+            testEquality(inP2P, 0);
         }
+    }
+
+    // Test attack
+    // Should not be possible to withdraw amount if the position turns to be under-collateralized
+    function testFail_withdraw_if_under_collaterize() public {
+        uint256 toSupply = 100 ether;
+        uint256 toBorrow = toSupply / 2;
+
+        // supplier1 deposits collateral
+        supplier1.approve(dai, toSupply);
+        supplier1.supply(aDai, toSupply);
+
+        // supplier2 deposits collateral
+        supplier2.approve(dai, toSupply);
+        supplier2.supply(aDai, toSupply);
+
+        // supplier1 tries to withdraw more than allowed
+        supplier1.borrow(aUsdc, to6Decimals(toBorrow));
+        supplier1.withdraw(aDai, toSupply);
+    }
+
+    // Test attack
+    // Should be possible to withdraw amount while an attacker sends aToken to trick Morpho contract
+    function test_withdraw_while_attacker_sends_AToken() public {
+        Attacker attacker = new Attacker(lendingPool);
+        writeBalanceOf(address(attacker), dai, type(uint256).max / 2);
+
+        uint256 toSupply = 100 ether;
+        uint256 collateral = 2 * toSupply;
+        uint256 toBorrow = toSupply;
+
+        // attacker sends aToken to positionsManager contract
+        attacker.approve(dai, address(lendingPool), toSupply);
+        attacker.deposit(dai, toSupply, address(attacker), 0);
+        attacker.transfer(dai, address(positionsManager), toSupply);
+
+        // supplier1 deposits collateral
+        supplier1.approve(dai, toSupply);
+        supplier1.supply(aDai, toSupply);
+
+        // borrower1 deposits collateral
+        borrower1.approve(usdc, to6Decimals(collateral));
+        borrower1.supply(aUsdc, to6Decimals(collateral));
+
+        // supplier1 tries to withdraw
+        borrower1.borrow(aDai, toBorrow);
+        supplier1.withdraw(aDai, toSupply);
     }
 }
