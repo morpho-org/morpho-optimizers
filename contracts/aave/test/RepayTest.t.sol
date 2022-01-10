@@ -23,7 +23,7 @@ contract RepayTest is TestSetup {
             lendingPool.getReserveNormalizedVariableDebt(dai)
         );
 
-        assertEq(inP2P, 0);
+        testEquality(inP2P, 0);
         testEquality(onPool, expectedOnPool);
 
         borrower1.approve(dai, amount);
@@ -31,8 +31,8 @@ contract RepayTest is TestSetup {
 
         (inP2P, onPool) = positionsManager.borrowBalanceInOf(aDai, address(borrower1));
 
-        assertEq(inP2P, 0);
-        assertEq(onPool, 0);
+        testEquality(inP2P, 0);
+        testEquality(onPool, 0);
     }
 
     // - 4.2 - The borrower repays more than his `onPool` balance.
@@ -43,7 +43,7 @@ contract RepayTest is TestSetup {
         uint256 borrowedAmount = 2 * suppliedAmount;
         uint256 collateral = 2 * borrowedAmount;
 
-        // Borrower1 & supplier1 are matched for 10 ETH
+        // Borrower1 & supplier1 are matched for suppliedAmount
         borrower1.approve(usdc, to6Decimals(collateral));
         borrower1.supply(aUsdc, to6Decimals(collateral));
         borrower1.borrow(aDai, borrowedAmount);
@@ -67,7 +67,7 @@ contract RepayTest is TestSetup {
             lendingPool.getReserveNormalizedVariableDebt(dai)
         );
 
-        assertEq(onPoolSupplier, 0);
+        testEquality(onPoolSupplier, 0);
         testEquality(onPoolBorrower1, expectedOnPool);
         testEquality(inP2PSupplier, inP2PBorrower1);
 
@@ -77,7 +77,7 @@ contract RepayTest is TestSetup {
         borrower2.supply(aUsdc, to6Decimals(collateral));
         borrower2.borrow(aDai, availableBorrowerAmount);
 
-        // Borrower1 repays 15 ETH
+        // Borrower1 repays 75% of suppliedAmount
         borrower1.approve(dai, (75 * borrowedAmount) / 100);
         borrower1.repay(aDai, (75 * borrowedAmount) / 100);
 
@@ -179,7 +179,7 @@ contract RepayTest is TestSetup {
         );
 
         uint256 p2pExchangeRate = marketsManager.p2pExchangeRate(aDai);
-        uint256 expectedSupplyBalanceInP2P = underlyingToAdUnit(suppliedAmount, p2pExchangeRate);
+        uint256 expectedSupplyBalanceInP2P = underlyingToP2PUnit(suppliedAmount, p2pExchangeRate);
 
         testEquality(inP2PSupplier, expectedSupplyBalanceInP2P);
         testEquality(onPoolSupplier, 0);
@@ -282,7 +282,7 @@ contract RepayTest is TestSetup {
         uint256 borrowedAmount = 2 * suppliedAmount;
         uint256 collateral = 2 * borrowedAmount;
 
-        // Borrower1 & supplier1 are matched for suppliedAmount ETH
+        // Borrower1 & supplier1 are matched for suppliedAmount
         borrower1.approve(usdc, to6Decimals(collateral));
         borrower1.supply(aUsdc, to6Decimals(collateral));
         borrower1.borrow(aDai, borrowedAmount);
