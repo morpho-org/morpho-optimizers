@@ -5,7 +5,9 @@
 
 This repository contains the core smart contracts for the Morpho Protocol V0 🦋.
 
-## Testing
+### Testing
+
+# Testing in Javascript with Hardhat
 
 First, install dependencies with:
 
@@ -40,17 +42,53 @@ yarn coverage
 
 For the other commands, check the `package.json` file.
 
+# Testing in solidity with Dapptools
+
+First, install [dapptools](https://github.com/dapphub/dapptools#installation) using the official documentation
+
+Also, you should update git submodules to install the ds-test library:
+
+```
+git submodule update
+```
+
+Refer to the `env.example` for the required environment variable.
+Tests are run against a forks of real networks, which allows us to interact directly with liquidity pools of Compound or Aave. Note that you need to have an RPC provider that have access to Ethereum or Polygon.
+We aim a test coverage > 90% of all functions.
+⚠️ Tests cannot substituted to coverage as the coverage command as contracts are compiled without optimization and can alter some patterns.
+To run tests on different platforms, navigate a Unix terminal to the root folder of the project and run the command of your choice:
+
+To run every test:
+
+```
+make test
+```
+
+or to run only the desired section:
+
+```
+make testSupply
+make testBorrow
+make testWithdraw
+make testRepay
+make testLiquidate
+make BorrowTest
+make GovernanceTest
+...
+
 ## Code Formatting
 
 We use prettier with the default configuration mentionned in the [Solidity Prettier Plugin](https://github.com/prettier-solidity/prettier-plugin-solidity).
 We recommend developers using VSCODE to set their local config as below:
 
 ```
+
 {
-	"editor.formatOnSave": true,
-	"solidity.formatter": "prettier",
-	"editor.defaultFormatter": "esbenp.prettier-vscode"
+"editor.formatOnSave": true,
+"solidity.formatter": "prettier",
+"editor.defaultFormatter": "esbenp.prettier-vscode"
 }
+
 ```
 
 In doing so the code will be formatted on each save.
@@ -92,19 +130,23 @@ By default, PR are rebased with `main` before merging to keep a clean historic o
 You can run the following command to deploy Morpho's contracts on top of Aave on Polygon:
 
 ```
+
 yarn deploy:aave:polygon
+
 ```
 
 For the other commands, check the `package.json` file.
 
 ## Publishing and verifying a contract on Etherscan
 
-An etherscn API key is required to verify the contract and placed into your `.env` local file.
+An etherscan API key is required to verify the contract and placed into your `.env` local file.
 The right arguments of the constructor of the smart contract to verify must be write inside `arguments.js`. Then you can run the following command to verify a contract:
 
 ```
+
 npx hardhat verify --network <network-name> --constructor-args scripts/arguments.js <contract-address>
 npx hardhat verify --network <network-name> --constructor-args scripts/arguments.js --contract contracts/Example.sol:ExampleContract <contract-address>
+
 ```
 
 The second is necessary if contracts with different names share the same ABI.
@@ -125,3 +167,4 @@ In your `env.local` file, put your tenderly private key. Then you can deploy and
 ## Questions
 
 For any question you can send an email to [merlin@mopho.best](mailto:merlin@morpho.best) 😊
+```
