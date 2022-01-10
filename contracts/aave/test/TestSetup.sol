@@ -59,7 +59,7 @@ contract TestSetup is DSTest, Config, Utils {
         marketsManager.setPositionsManager(address(positionsManager));
         marketsManager.updateLendingPool();
         // !!! WARNING !!!
-        // All token added with createMarket must be added in create_custom_price_oracle function.
+        // All tokens added with createMarket must be added in create_custom_price_oracle function.
         marketsManager.createMarket(aDai, WAD, type(uint256).max);
         marketsManager.createMarket(aUsdc, to6Decimals(WAD), type(uint256).max);
         marketsManager.createMarket(aWbtc, 10**4, type(uint256).max);
@@ -131,6 +131,6 @@ contract TestSetup is DSTest, Config, Utils {
     }
 
     function testEquality(uint256 _firstValue, uint256 _secondValue) internal {
-        assertLe(get_abs_diff(_firstValue, _secondValue), 15);
+        assertLe(getAbsDiff(_firstValue, _secondValue), 15);
     }
 }
