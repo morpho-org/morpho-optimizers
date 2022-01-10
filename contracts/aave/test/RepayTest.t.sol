@@ -234,9 +234,9 @@ contract RepayTest is TestSetup {
         testEquality(onPoolBorrower1, expectedOnPool);
         testEquality(inP2PSupplier, inP2PBorrower1);
 
-        // Borrower1 repays 75% of supplied amount
-        borrower1.approve(dai, (75 * suppliedAmount) / 100);
-        borrower1.repay(aDai, (75 * suppliedAmount) / 100);
+        // Borrower1 repays 75% of borrowed amount
+        borrower1.approve(dai, (75 * borrowedAmount) / 100);
+        borrower1.repay(aDai, (75 * borrowedAmount) / 100);
 
         // Check balances for borrower
         (inP2PBorrower1, onPoolBorrower1) = positionsManager.borrowBalanceInOf(
@@ -246,8 +246,9 @@ contract RepayTest is TestSetup {
 
         uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(dai);
         uint256 p2pExchangeRate = marketsManager.p2pExchangeRate(aDai);
+
         uint256 expectedBorrowBalanceInP2P = underlyingToP2PUnit(
-            (25 * suppliedAmount) / 100,
+            (25 * borrowedAmount) / 100,
             p2pExchangeRate
         );
 
@@ -261,11 +262,11 @@ contract RepayTest is TestSetup {
         );
 
         uint256 expectedSupplyBalanceInP2P = underlyingToP2PUnit(
-            (25 * suppliedAmount) / 100,
+            suppliedAmount / 2,
             p2pExchangeRate
         );
         uint256 expectedSupplyBalanceOnPool = underlyingToAdUnit(
-            (25 * suppliedAmount) / 100,
+            suppliedAmount / 2,
             normalizedIncome
         );
 
@@ -273,7 +274,7 @@ contract RepayTest is TestSetup {
         testEquality(onPoolSupplier, expectedSupplyBalanceOnPool);
     }
 
-    //   - 4.2.4 - There are NMAX (or less) borrowers `onPool` available to replace him `inP2P`, they don't supply enough to cover for the withdrawn liquidity.
+    //   - 4.2.4 - There are NMAX (or less) borrowers `onPool` available to replace him `inP2P`, they don't borrow enough to cover for the withdrawn liquidity.
     //             First, the `onPool` liquidity is withdrawn, then we proceed to NMAX (or less) matches. Finally, some suppliers are unmatched for an amount equal to the remaining to withdraw.
     //             ⚠️ most gas expensive repay scenario.
     function testRepay_4_2_4() public {
@@ -281,7 +282,7 @@ contract RepayTest is TestSetup {
         uint256 borrowedAmount = 2 * suppliedAmount;
         uint256 collateral = 2 * borrowedAmount;
 
-        // Borrower1 & supplier1 are matched for 10 ETH
+        // Borrower1 & supplier1 are matched for suppliedAmount ETH
         borrower1.approve(usdc, to6Decimals(collateral));
         borrower1.supply(aUsdc, to6Decimals(collateral));
         borrower1.borrow(aDai, borrowedAmount);
@@ -346,11 +347,11 @@ contract RepayTest is TestSetup {
         uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(dai);
 
         uint256 expectedSupplyBalanceOnPool = underlyingToP2PUnit(
-            (25 * suppliedAmount) / 100,
+            suppliedAmount / 2,
             normalizedIncome
         );
         uint256 expectedSupplyBalanceInP2P = underlyingToAdUnit(
-            (25 * suppliedAmount) / 100,
+            suppliedAmount / 2,
             p2pExchangeRate
         );
 
