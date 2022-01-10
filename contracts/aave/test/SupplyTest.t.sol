@@ -5,13 +5,13 @@ import "./TestSetup.sol";
 
 contract SupplyTest is TestSetup {
     // 1.1 - The user supplies less than the threshold of this market, the transaction reverts.
-    function testFail_Supply_1_1() public {
+    function testFail_supply_1_1() public {
         supplier1.approve(dai, positionsManager.threshold(aDai) - 1);
         supplier1.supply(aDai, positionsManager.threshold(aDai) - 1);
     }
 
     // 1.2 - There are no available borrowers: all of the supplied amount is supplied to the pool and set `onPool`.
-    function testSupply_1_2() public {
+    function test_supply_1_2() public {
         uint256 amount = 10000 ether;
 
         supplier1.approve(dai, amount);
@@ -33,7 +33,7 @@ contract SupplyTest is TestSetup {
     }
 
     // Should be able to supply more ERC20 after already having supply ERC20
-    function testSupplyMultiple() public {
+    function test_supply_multiple() public {
         uint256 amount = 10000 ether;
 
         supplier1.approve(dai, 2 * amount);
@@ -50,7 +50,7 @@ contract SupplyTest is TestSetup {
     }
 
     // 1.3 - There is 1 available borrower, he matches 100% of the supplier liquidity, everything is `inP2P`.
-    function testSupply_1_3() public {
+    function test_supply_1_3() public {
         uint256 amount = 10000 ether;
 
         borrower1.approve(usdc, to6Decimals(2 * amount));
@@ -89,7 +89,7 @@ contract SupplyTest is TestSetup {
 
     // 1.4 - There is 1 available borrower, he doesn't match 100% of the supplier liquidity.
     // Supplier's balance `inP2P` is equal to the borrower previous amount `onPool`, the rest is set `onPool`.
-    function testSupply_1_4() public {
+    function test_supply_1_4() public {
         uint256 amount = 10000 ether;
 
         borrower1.approve(usdc, to6Decimals(2 * amount));
@@ -122,7 +122,7 @@ contract SupplyTest is TestSetup {
     }
 
     // 1.5 - There are NMAX (or less) borrowers that match the supplied amount, everything is `inP2P` after NMAX (or less) match.
-    function testSupply_1_5() public {
+    function test_supply_1_5() public {
         uint256 amount = 10000 ether;
         uint256 collateral = 2 * amount;
 
@@ -164,7 +164,7 @@ contract SupplyTest is TestSetup {
 
     // 1.6 - The NMAX biggest borrowers don't match all of the supplied amount, after NMAX match, the rest is supplied and set `onPool`.
     // ⚠️ most gas expensive supply scenario.
-    function testSupply_1_6() public {
+    function test_supply_1_6() public {
         uint256 amount = 10000 ether;
         uint256 collateral = 2 * amount;
 

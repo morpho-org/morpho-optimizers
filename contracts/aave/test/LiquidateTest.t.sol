@@ -5,7 +5,7 @@ import "./TestSetup.sol";
 
 contract LiquidateTest is TestSetup {
     // 5.1 - A user liquidate a borrower that has enough collateral to cover for his debt, the transaction reverts.
-    function testFailLiquidate_5_1() public {
+    function testFail_liquidate_5_1() public {
         uint256 amount = 10000 ether;
         uint256 collateral = 2 * amount;
 
@@ -24,7 +24,7 @@ contract LiquidateTest is TestSetup {
     //       At most, the liquidator can liquidate 50% of the debt of a borrower and take the corresponding collateral (plus a bonus).
     //       Edge-cases here are at most the combination from part 3. and 4. called with the previous amount.
 
-    function testLiquidate_5_2() public {
+    function test_liquidate_5_2() public {
         uint256 collateral = 100000 ether;
         uint256 borrowedAmount = (collateral * 80) / 100;
         uint256 suppliedAmount = borrowedAmount;

@@ -6,7 +6,7 @@ import "./Attacker.sol";
 
 contract WithdrawTest is TestSetup {
     // 3.1 - The user withdrawal leads to an under-collateralized position, the withdrawal reverts.
-    function testFailWithdraw_3_1() public {
+    function testFail_withdraw_3_1() public {
         uint256 amount = 10000 ether;
         uint256 collateral = 2 * amount;
 
@@ -19,7 +19,7 @@ contract WithdrawTest is TestSetup {
     }
 
     // 3.2 - The supplier withdraws less than his onPool balance. The liquidity is taken from his onPool balance.
-    function testWithdraw_3_2() public {
+    function Test_withdraw_3_2() public {
         uint256 amount = 10000 ether;
 
         supplier1.approve(usdc, to6Decimals(2 * amount));
@@ -49,7 +49,7 @@ contract WithdrawTest is TestSetup {
 
     // 3.3.1 - There is a supplier onPool available to replace him inP2P.
     // First, his liquidity onPool is taken, his matched is replaced by the available supplier up to his withdrawal amount.
-    function testWithdraw_3_3_1() public {
+    function Test_withdraw_3_3_1() public {
         uint256 borrowedAmount = 10000 ether;
         uint256 suppliedAmount = 2 * borrowedAmount;
         uint256 collateral = 2 * borrowedAmount;
@@ -114,7 +114,7 @@ contract WithdrawTest is TestSetup {
 
     // 3.3.2 - There are NMAX (or less) suppliers onPool available to replace him inP2P, they supply enough to cover for the withdrawn liquidity.
     // First, his liquidity onPool is taken, his matched is replaced by NMAX (or less) suppliers up to his withdrawal amount.
-    function testWithdraw_3_3_2() public {
+    function Test_withdraw_3_3_2() public {
         uint256 borrowedAmount = 100000 ether;
         uint256 suppliedAmount = 2 * borrowedAmount;
         uint256 collateral = 2 * borrowedAmount;
@@ -200,7 +200,7 @@ contract WithdrawTest is TestSetup {
 
     // 3.3.3 - There are no suppliers onPool to replace him inP2P. After withdrawing the amount onPool,
     // his P2P match(es) will be unmatched and the corresponding borrower(s) will be placed on pool.
-    function testWithdraw_3_3_3() public {
+    function Test_withdraw_3_3_3() public {
         uint256 borrowedAmount = 10000 ether;
         uint256 suppliedAmount = 2 * borrowedAmount;
         uint256 collateral = 2 * borrowedAmount;
@@ -273,7 +273,7 @@ contract WithdrawTest is TestSetup {
     // 3.3.4 - There are NMAX (or less) suppliers onPool available to replace him inP2P, they don't supply enough to cover the withdrawn liquidity.
     // First, the onPool liquidity is withdrawn, then we proceed to NMAX (or less) matches. Finally, some borrowers are unmatched for an amount equal to the remaining to withdraw.
     // ⚠️ most gas expensive withdraw scenario.
-    function testWithdraw_3_3_4() public {
+    function Test_withdraw_3_3_4() public {
         uint256 borrowedAmount = 100000 ether;
         uint256 suppliedAmount = 2 * borrowedAmount;
         uint256 collateral = 2 * borrowedAmount;
@@ -366,7 +366,7 @@ contract WithdrawTest is TestSetup {
 
     // Test attack
     // Should not be possible to withdraw amount if the position turns to be under-collateralized
-    function testFailWithdrawIfUnderCollaterize() public {
+    function testFail_withdraw_if_under_collaterize() public {
         uint256 toSupply = 100 ether;
         uint256 toBorrow = toSupply / 2;
 
@@ -385,7 +385,7 @@ contract WithdrawTest is TestSetup {
 
     // Test attack
     // Should be possible to withdraw amount while an attacker sends aToken to trick Morpho contract
-    function testWithdrawWhileAttackerSendsAToken() public {
+    function Test_withdraw_while_attacker_sends_AToken() public {
         Attacker attacker = new Attacker(lendingPool);
         write_balanceOf(address(attacker), dai, type(uint256).max / 2);
 
