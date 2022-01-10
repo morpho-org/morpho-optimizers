@@ -24,7 +24,7 @@ contract BorrowTest is TestSetup {
         borrower1.approve(usdc, amount);
         borrower1.supply(aUsdc, amount);
 
-        uint256 maxToBorrow = get_max_to_borrow(
+        uint256 maxToBorrow = getMaxToBorrow(
             amount,
             usdc,
             dai,
@@ -34,7 +34,7 @@ contract BorrowTest is TestSetup {
     }
 
     // Should be able to borrow more ERC20 after already having borrowed ERC20
-    function testBorrowMultiple() public {
+    function test_borrow_multiple() public {
         uint256 amount = 10000 ether;
 
         borrower1.approve(usdc, address(positionsManager), to6Decimals(4 * amount));
@@ -52,7 +52,7 @@ contract BorrowTest is TestSetup {
     }
 
     // 2.3 - There are no available suppliers: all of the borrowed amount is onPool.
-    function testBorrow_2_3() public {
+    function test_borrow_2_3() public {
         uint256 amount = 10000 ether;
 
         borrower1.approve(usdc, to6Decimals(2 * amount));
@@ -73,7 +73,7 @@ contract BorrowTest is TestSetup {
     }
 
     // 2.4 - There is 1 available supplier, he matches 100% of the borrower liquidity, everything is inP2P.
-    function testBorrow_2_4() public {
+    function Test_borrow_2_4() public {
         uint256 amount = 10000 ether;
 
         supplier1.approve(dai, amount);
@@ -102,7 +102,7 @@ contract BorrowTest is TestSetup {
 
     // 2.5 - There is 1 available supplier, he doesn't match 100% of the borrower liquidity.
     // Borrower inP2P is equal to the supplier previous amount onPool, the rest is set onPool.
-    function testBorrow_2_5() public {
+    function Test_borrow_2_5() public {
         uint256 amount = 10000 ether;
 
         supplier1.approve(dai, amount);
@@ -130,7 +130,7 @@ contract BorrowTest is TestSetup {
     }
 
     // 2.6 - There are NMAX (or less) supplier that match the borrowed amount, everything is inP2P after NMAX (or less) match.
-    function testBorrow_2_6() public {
+    function Test_borrow_2_6() public {
         uint256 amount = 10000 ether;
         uint256 collateral = 2 * amount;
 
@@ -171,7 +171,7 @@ contract BorrowTest is TestSetup {
 
     // 2.7 - The NMAX biggest supplier don't match all of the borrowed amount, after NMAX match, the rest is borrowed and set onPool.
     // ⚠️ most gas expensive borrow scenario.
-    function testBorrow_2_7() public {
+    function Test_borrow_2_7() public {
         uint256 amount = 10000 ether;
         uint256 collateral = 2 * amount;
 
@@ -215,7 +215,7 @@ contract BorrowTest is TestSetup {
 
     // ----------
 
-    function get_max_to_borrow(
+    function getMaxToBorrow(
         uint256 _collateralInUnderlying,
         address _suppliedAsset,
         address _borrowedAsset,
