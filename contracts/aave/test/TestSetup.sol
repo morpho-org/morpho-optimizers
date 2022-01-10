@@ -12,7 +12,6 @@ import "./HEVM.sol";
 import "./Utils.sol";
 import "./SimplePriceOracle.sol";
 import "./User.sol";
-import "./Attacker.sol";
 
 contract TestSetup is DSTest, Config, Utils {
     HEVM hevm = HEVM(HEVM_ADDRESS);
@@ -35,8 +34,6 @@ contract TestSetup is DSTest, Config, Utils {
     User borrower2;
     User borrower3;
     User[] borrowers;
-
-    Attacker attacker;
 
     function setUp() public {
         marketsManager = new MarketsManagerForAave(lendingPoolAddressesProviderAddress);
@@ -88,9 +85,6 @@ contract TestSetup is DSTest, Config, Utils {
         borrower1 = borrowers[0];
         borrower2 = borrowers[1];
         borrower3 = borrowers[2];
-
-        attacker = new Attacker(lendingPool);
-        write_balanceOf(address(attacker), dai, type(uint256).max / 2);
     }
 
     function write_balanceOf(
@@ -137,6 +131,6 @@ contract TestSetup is DSTest, Config, Utils {
     }
 
     function testEquality(uint256 _firstValue, uint256 _secondValue) internal {
-        assertLe(get_abs_diff(_firstValue, _secondValue), 10);
+        assertLe(get_abs_diff(_firstValue, _secondValue), 15);
     }
 }

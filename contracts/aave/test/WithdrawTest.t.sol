@@ -2,6 +2,7 @@
 pragma solidity 0.8.7;
 
 import "./TestSetup.sol";
+import "./Attacker.sol";
 
 contract WithdrawTest is TestSetup {
     // 3.1 - The user withdrawal leads to an under-collateralized position, the withdrawal reverts.
@@ -361,5 +362,52 @@ contract WithdrawTest is TestSetup {
             testEquality(expectedInP2P, amountPerSupplier);
             testEquality(onPool, 0);
         }
+    }
+
+    // Test attack
+    // Should not be possible to withdraw amount if the position turns to be under-collateralized
+    function testFailWithdrawIfUnderCollaterize() public {
+        uint256 toSupply = 100 ether;
+        uint256 toBorrow = toSupply / 2;
+
+        // supplier1 deposits collateral
+        supplier1.approve(dai, toSupply);
+        supplier1.supply(aDai, toSupply);
+
+        // supplier2 deposits collateral
+        supplier2.approve(dai, toSupply);
+        supplier2.supply(aDai, toSupply);
+
+        // supplier1 tries to withdraw more than allowed
+        supplier1.borrow(aUsdc, to6Decimals(toBorrow));
+        supplier1.withdraw(aDai, toSupply);
+    }
+
+    // Test attack
+    // Should be possible to withdraw amount while an attacker sends aToken to trick Morpho contract
+    function testWithdrawWhileAttackerSendsAToken() public {
+        Attacker attacker = new Attacker(lendingPool);
+        write_balanceOf(address(attacker), dai, type(uint256).max / 2);
+
+        uint256 toSupply = 100 ether;
+        uint256 collateral = 2 * toSupply;
+        uint256 toBorrow = toSupply;
+
+        // attacker sends aToken to positionsManager contract
+        attacker.approve(dai, address(lendingPool), toSupply);
+        attacker.deposit(dai, toSupply, address(attacker), 0);
+        attacker.transfer(dai, address(positionsManager), toSupply);
+
+        // supplier1 deposits collateral
+        supplier1.approve(dai, toSupply);
+        supplier1.supply(aDai, toSupply);
+
+        // borrower1 deposits collateral
+        borrower1.approve(usdc, to6Decimals(collateral));
+        borrower1.supply(aUsdc, to6Decimals(collateral));
+
+        // supplier1 tries to withdraw
+        borrower1.borrow(aDai, toBorrow);
+        supplier1.withdraw(aDai, toSupply);
     }
 }
