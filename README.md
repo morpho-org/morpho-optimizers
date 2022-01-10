@@ -9,10 +9,10 @@ This repository contains the core smart contracts for the Morpho Protocol V0 �
 
 # Testing in Javascript with Hardhat
 
-First, install dependencies with:
+First, install dapptools using the official documentation:
 
 ```
-yarn
+https://github.com/dapphub/dapptools#installation
 ```
 
 Refer to the `env.example` for the required environment variable.
@@ -22,25 +22,25 @@ We aim a test coverage > 90% of all functions.
 
 ⚠️ Tests cannot substituted to coverage as the coverage command as contracts are compiled without optimization and can alter some patterns.
 
-To run tests on different platforms, use these commands:
+To run tests on different platforms, navigate a Unix terminal to the root folder of the project and run the command of your choice:
+
+To run every test:
 
 ```
-yarn test:comp:mainnet
+make test
 ```
 
-or
+or to run only the desired section:
 
 ```
-yarn test:aave:polygon
+make testSupply
+make testBorrow
+make testWithdraw
+make testRepay
+make testLiquidate
 ```
 
-For coverage, run:
-
-```
-yarn coverage
-```
-
-For the other commands, check the `package.json` file.
+For the other commands, check the `Makefile` file.
 
 # Testing in solidity with Dapptools
 
