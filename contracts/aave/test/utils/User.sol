@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.7;
 
-import "../PositionsManagerForAave.sol";
-import "../MarketsManagerForAave.sol";
+import "contracts/aave/PositionsManagerForAave.sol";
+import "contracts/aave/MarketsManagerForAave.sol";
 
 contract User {
     PositionsManagerForAave internal positionsManager;
@@ -44,7 +44,7 @@ contract User {
     }
 
     function supply(address _poolTokenAddress, uint256 _amount) external {
-        positionsManager.supply(_poolTokenAddress, _amount);
+        positionsManager.supply(_poolTokenAddress, _amount, 0);
     }
 
     function withdraw(address _poolTokenAddress, uint256 _amount) external {
@@ -52,7 +52,7 @@ contract User {
     }
 
     function borrow(address _poolTokenAddress, uint256 _amount) external {
-        positionsManager.borrow(_poolTokenAddress, _amount);
+        positionsManager.borrow(_poolTokenAddress, _amount, 0);
     }
 
     function repay(address _poolTokenAddress, uint256 _amount) external {
