@@ -31,7 +31,7 @@ contract MatchingEngineManager is IMatchingEngineManager, PositionsManagerForAav
             (, , address variableDebtTokenAddress) = dataProvider.getReserveTokensAddresses(
                 IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS()
             );
-            _updateUserAssetAndAccruedRewards(
+            rewardsManager.updateUserAssetAndAccruedRewards(
                 _account,
                 variableDebtTokenAddress,
                 formerValueOnPool,
@@ -61,7 +61,7 @@ contract MatchingEngineManager is IMatchingEngineManager, PositionsManagerForAav
         if (wasOnPoolAndValueChanged) suppliersOnPool[_poolTokenAddress].remove(_account);
         if (onPool > 0 && (wasOnPoolAndValueChanged || formerValueOnPool == 0)) {
             uint256 totalStaked = IScaledBalanceToken(_poolTokenAddress).scaledTotalSupply();
-            _updateUserAssetAndAccruedRewards(
+            rewardsManager.updateUserAssetAndAccruedRewards(
                 _account,
                 _poolTokenAddress,
                 formerValueOnPool,

@@ -7,6 +7,7 @@ import "./interfaces/aave/IProtocolDataProvider.sol";
 import "./interfaces/aave/ILendingPool.sol";
 import "./interfaces/IMarketsManagerForAave.sol";
 import "./interfaces/IMatchingEngineManager.sol";
+import "./interfaces/IRewardsManager.sol";
 
 import "../common/libraries/DoubleLinkedList.sol";
 
@@ -43,14 +44,13 @@ contract PositionsManagerForAaveStorage is ReentrancyGuard {
     mapping(address => address[]) public enteredMarkets; // Markets entered by a user.
     mapping(address => uint256) public threshold; // Thresholds below the ones suppliers and borrowers cannot enter markets.
     mapping(address => uint256) public capValue; // Caps above the ones suppliers cannot add more liquidity.
-    mapping(address => mapping(address => uint256)) public userIndex; // The reward index related to an asset for a given user.
-    mapping(address => uint256) public userUnclaimedRewards; // The unclaimed rewards of the user.
 
     IMarketsManagerForAave public marketsManagerForAave;
     IAaveIncentivesController public aaveIncentivesController;
+    IRewardsManager public rewardsManager;
     ILendingPoolAddressesProvider public addressesProvider;
-    IProtocolDataProvider public dataProvider;
     ILendingPool public lendingPool;
+    IProtocolDataProvider public dataProvider;
     IMatchingEngineManager public matchingEngineManager;
     address public treasuryVault;
 }

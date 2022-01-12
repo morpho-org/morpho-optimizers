@@ -34,6 +34,7 @@ describe('PositionsManagerForAave Contract', () => {
   // Contracts
   let positionsManagerForAave: Contract;
   let marketsManagerForAave: Contract;
+  let rewardsManager: Contract;
   let fakeAavePositionsManager: Contract;
   let lendingPool: Contract;
   let lendingPoolAddressesProvider: Contract;
@@ -85,6 +86,11 @@ describe('PositionsManagerForAave Contract', () => {
     await positionsManagerForAave.deployed();
     await fakeAavePositionsManager.deployed();
 
+    // Deploy RewardsManager
+    const RewardsManager = await ethers.getContractFactory('RewardsManager');
+    rewardsManager = await RewardsManager.deploy(config.aave.lendingPoolAddressesProvider.address, positionsManagerForAave.address);
+    await rewardsManager.deployed();
+
     // Get contract dependencies
     const aTokenAbi = require(config.tokens.aToken.abi);
     const variableDebtTokenAbi = require(config.tokens.variableDebtToken.abi);
@@ -117,6 +123,7 @@ describe('PositionsManagerForAave Contract', () => {
 
     // Create and list markets
     await marketsManagerForAave.connect(owner).setPositionsManager(positionsManagerForAave.address);
+    await marketsManagerForAave.connect(owner).updateRewardsManager(rewardsManager.address);
     await marketsManagerForAave.connect(owner).updateLendingPool();
     await positionsManagerForAave.connect(owner).setTreasuryVault(treasuryVault.getAddress());
     await marketsManagerForAave.connect(owner).createMarket(config.tokens.aDai.address, WAD, MAX_INT);
@@ -1338,9 +1345,9 @@ describe('PositionsManagerForAave Contract', () => {
       const { index } = await aaveIncentivesController.assets(config.tokens.aDai.address);
       const rewardTokenBalanceBefore = await wmaticToken.balanceOf(supplier1.getAddress());
       const onPool = (await positionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier1.getAddress())).onPool;
-      const userIndex = await positionsManagerForAave.userIndex(config.tokens.aDai.address, supplier1.getAddress());
+      const userIndex = await rewardsManager.userIndex(config.tokens.aDai.address, supplier1.getAddress());
       expect(userIndex).to.equal(index);
-      expect(await positionsManagerForAave.userUnclaimedRewards(supplier1.getAddress())).to.equal(0);
+      expect(await rewardsManager.userUnclaimedRewards(supplier1.getAddress())).to.equal(0);
 
       await daiToken.connect(supplier2).approve(positionsManagerForAave.address, toSupply);
       await positionsManagerForAave.connect(supplier2).supply(config.tokens.aDai.address, toSupply, 0);
@@ -1426,7 +1433,7 @@ describe('PositionsManagerForAave Contract', () => {
       await positionsManagerForAave.connect(supplier1).claimRewards([config.tokens.aDai.address, config.tokens.variableDebtUsdc.address]);
       const rewardTokenBalanceAfter1 = await wmaticToken.balanceOf(supplier1.getAddress());
       expect(rewardTokenBalanceAfter1).to.be.gt(rewardTokenBalanceBefore);
-      expect(await positionsManagerForAave.userUnclaimedRewards(supplier1.getAddress())).to.equal(0);
+      expect(await rewardsManager.userUnclaimedRewards(supplier1.getAddress())).to.equal(0);
       expect(
         await aaveIncentivesController.getRewardsBalance(
           [config.tokens.aDai.address, config.tokens.variableDebtUsdc.address],
@@ -1466,9 +1473,9 @@ describe('PositionsManagerForAave Contract', () => {
       expect(supplier1RewardTokenBalanceAfter).to.be.gt(supplier1RewardTokenBalanceBefore);
       expect(supplier2RewardTokenBalanceAfter).to.be.gt(supplier2RewardTokenBalanceBefore);
       expect(supplier3RewardTokenBalanceAfter).to.be.gt(supplier3RewardTokenBalanceBefore);
-      expect(await positionsManagerForAave.userUnclaimedRewards(supplier1.getAddress())).to.equal(0);
-      expect(await positionsManagerForAave.userUnclaimedRewards(supplier2.getAddress())).to.equal(0);
-      expect(await positionsManagerForAave.userUnclaimedRewards(supplier3.getAddress())).to.equal(0);
+      expect(await rewardsManager.userUnclaimedRewards(supplier1.getAddress())).to.equal(0);
+      expect(await rewardsManager.userUnclaimedRewards(supplier2.getAddress())).to.equal(0);
+      expect(await rewardsManager.userUnclaimedRewards(supplier3.getAddress())).to.equal(0);
       expect(
         await aaveIncentivesController.getRewardsBalance(
           [config.tokens.aDai.address, config.tokens.variableDebtUsdc.address],
