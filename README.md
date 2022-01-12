@@ -9,10 +9,15 @@ This repository contains the core smart contracts for the Morpho Protocol V0 ðŸ¦
 
 # Testing in Javascript with Hardhat
 
-First, install dapptools using the official documentation:
+First, install [Foundry](https://github.com/gakonst/foundry):
 
 ```
-https://github.com/dapphub/dapptools#installation
+cargo install --git https://github.com/gakonst/foundry --bin forge --locked
+```
+
+Also, you should update git submodules to install the ds-test library:
+```
+git submodule update
 ```
 
 Refer to the `env.example` for the required environment variable.
@@ -33,11 +38,9 @@ make test
 or to run only the desired section:
 
 ```
-make testSupply
-make testBorrow
-make testWithdraw
-make testRepay
-make testLiquidate
+make BorrowTest
+make GovernanceTest
+...
 ```
 
 For the other commands, check the `Makefile` file.
