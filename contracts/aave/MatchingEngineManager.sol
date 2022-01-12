@@ -1,19 +1,21 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.7;
 
-import "./interfaces/IDataUpdator.sol";
+import "./interfaces/IMatchingEngineManager.sol";
 
 import "../common/libraries/DoubleLinkedList.sol";
 
 import "./PositionsManagerForAaveStorage.sol";
 
-contract DataUpdator is IDataUpdator, PositionsManagerForAaveStorage {
+/// @title MatchingEngineManager
+/// @dev Smart contract managing the matching engine.
+contract MatchingEngineManager is IMatchingEngineManager, PositionsManagerForAaveStorage {
     using DoubleLinkedList for DoubleLinkedList.List;
 
-    /// @dev Updates borrowers data structure  with the new balances of a given account.
+    /// @dev Updates borrowers matching engine with the new balances of a given account.
     /// @param _poolTokenAddress The address of the market on which Morpho want to update the borrower lists.
     /// @param _account The address of the borrower to move.
-    function updateBorrowerList(address _poolTokenAddress, address _account) external override {
+    function updateBorrowers(address _poolTokenAddress, address _account) external override {
         uint256 onPool = borrowBalanceInOf[_poolTokenAddress][_account].onPool;
         uint256 inP2P = borrowBalanceInOf[_poolTokenAddress][_account].inP2P;
         uint256 formerValueOnPool = borrowersOnPool[_poolTokenAddress].getValueOf(_account);
@@ -32,10 +34,10 @@ contract DataUpdator is IDataUpdator, PositionsManagerForAaveStorage {
             borrowersInP2P[_poolTokenAddress].insertSorted(_account, inP2P, NMAX);
     }
 
-    /// @dev Updates suppliers data structure  with the new balances of a given account.
+    /// @dev Updates suppliers matchin engine with the new balances of a given account.
     /// @param _poolTokenAddress The address of the market on which Morpho want to update the supplier lists.
     /// @param _account The address of the supplier to move.
-    function updateSupplierList(address _poolTokenAddress, address _account) external override {
+    function updateSuppliers(address _poolTokenAddress, address _account) external override {
         uint256 onPool = supplyBalanceInOf[_poolTokenAddress][_account].onPool;
         uint256 inP2P = supplyBalanceInOf[_poolTokenAddress][_account].inP2P;
         uint256 formerValueOnPool = suppliersOnPool[_poolTokenAddress].getValueOf(_account);

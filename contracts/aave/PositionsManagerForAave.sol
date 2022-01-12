@@ -13,7 +13,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "./PositionsManagerForAaveStorage.sol";
-import "./DataUpdator.sol";
+import "./MatchingEngineManager.sol";
 
 /// @title PositionsManagerForAave
 /// @dev Smart contract interacting with Aave to enable P2P supply/borrow positions that can fallback on Aave's pool using poolToken tokens.
@@ -26,7 +26,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
 
     /// Enums ///
 
-    enum UserType {
+    enum PositionType {
         SUPPLIERS_IN_P2P,
         SUPPLIERS_ON_POOL,
         BORROWERS_IN_P2P,
@@ -240,7 +240,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         addressesProvider = ILendingPoolAddressesProvider(_lendingPoolAddressesProvider);
         dataProvider = IProtocolDataProvider(addressesProvider.getAddress(DATA_PROVIDER_ID));
         lendingPool = ILendingPool(addressesProvider.getLendingPool());
-        dataUpdator = new DataUpdator();
+        matchingEngineManager = new MatchingEngineManager();
     }
 
     /// @dev Updates the lending pool and the data provider.
@@ -286,38 +286,38 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
 
     /// @dev Gets the head of the data structure on a specific market (for UI).
     /// @param _poolTokenAddress The address of the market from which to get the head.
-    /// @param _userType The type of user from which to get the head.
-    function getHead(address _poolTokenAddress, uint8 _userType)
+    /// @param _positionType The type of user from which to get the head.
+    function getHead(address _poolTokenAddress, PositionType _positionType)
         external
         view
         returns (address head)
     {
-        if (_userType == uint8(UserType.SUPPLIERS_IN_P2P))
+        if (_positionType == PositionType.SUPPLIERS_IN_P2P)
             head = suppliersInP2P[_poolTokenAddress].getHead();
-        else if (_userType == uint8(UserType.SUPPLIERS_ON_POOL))
+        else if (_positionType == PositionType.SUPPLIERS_ON_POOL)
             head = suppliersOnPool[_poolTokenAddress].getHead();
-        else if (_userType == uint8(UserType.BORROWERS_IN_P2P))
+        else if (_positionType == PositionType.BORROWERS_IN_P2P)
             head = borrowersInP2P[_poolTokenAddress].getHead();
-        else if (_userType == uint8(UserType.BORROWERS_ON_POOL))
+        else if (_positionType == PositionType.BORROWERS_ON_POOL)
             head = borrowersOnPool[_poolTokenAddress].getHead();
     }
 
     /// @dev Gets the previous user in the data structure on a specific market (for UI).
     /// @param _poolTokenAddress The address of the market from which to get the head.
-    /// @param _userType The type of user from which to get the previous account.
+    /// @param _positionType The type of user from which to get the previous account.
     /// @param _user The address of the user from which to get the previous account.
     function getPrev(
         address _poolTokenAddress,
-        uint8 _userType,
+        PositionType _positionType,
         address _user
     ) external view returns (address prev) {
-        if (_userType == uint8(UserType.SUPPLIERS_IN_P2P))
+        if (_positionType == PositionType.SUPPLIERS_IN_P2P)
             prev = suppliersInP2P[_poolTokenAddress].getPrev(_user);
-        else if (_userType == uint8(UserType.SUPPLIERS_ON_POOL))
+        else if (_positionType == PositionType.SUPPLIERS_ON_POOL)
             prev = suppliersOnPool[_poolTokenAddress].getPrev(_user);
-        else if (_userType == uint8(UserType.BORROWERS_IN_P2P))
+        else if (_positionType == PositionType.BORROWERS_IN_P2P)
             prev = borrowersInP2P[_poolTokenAddress].getPrev(_user);
-        else if (_userType == uint8(UserType.BORROWERS_ON_POOL))
+        else if (_positionType == PositionType.BORROWERS_ON_POOL)
             prev = borrowersOnPool[_poolTokenAddress].getPrev(_user);
     }
 
@@ -648,7 +648,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         supplyBalanceInOf[poolTokenAddress][_supplier].onPool += _amount.divWadByRay(
             normalizedIncome
         ); // Scaled Balance
-        _updateSupplierList(poolTokenAddress, _supplier);
+        _updateSuppliers(poolTokenAddress, _supplier);
         _supplyERC20ToPool(_underlyingToken, _amount); // Revert on error
     }
 
@@ -672,7 +672,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
             supplyBalanceInOf[poolTokenAddress][_supplier].inP2P += matched.divWadByRay(
                 p2pExchangeRate
             ); // In p2pUnit
-            _updateSupplierList(poolTokenAddress, _supplier);
+            _updateSuppliers(poolTokenAddress, _supplier);
         }
     }
 
@@ -694,7 +694,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         borrowBalanceInOf[poolTokenAddress][_borrower].onPool += _amount.divWadByRay(
             normalizedVariableDebt
         ); // In adUnit
-        _updateBorrowerList(poolTokenAddress, _borrower);
+        _updateBorrowers(poolTokenAddress, _borrower);
         _borrowERC20FromPool(_underlyingToken, _amount);
     }
 
@@ -718,7 +718,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
             borrowBalanceInOf[poolTokenAddress][_borrower].inP2P += matched.divWadByRay(
                 p2pExchangeRate
             ); // In p2pUnit
-            _updateBorrowerList(poolTokenAddress, _borrower);
+            _updateBorrowers(poolTokenAddress, _borrower);
         }
     }
 
@@ -746,7 +746,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
             onPoolSupply,
             withdrawnInUnderlying.divWadByRay(normalizedIncome)
         ); // In poolToken
-        _updateSupplierList(poolTokenAddress, _supplier);
+        _updateSuppliers(poolTokenAddress, _supplier);
         if (withdrawnInUnderlying > 0)
             _withdrawERC20FromPool(_underlyingToken, withdrawnInUnderlying); // Revert on error
     }
@@ -769,7 +769,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
             supplyBalanceInOf[poolTokenAddress][_supplier].inP2P,
             _amount.divWadByRay(p2pExchangeRate)
         ); // In p2pUnit
-        _updateSupplierList(poolTokenAddress, _supplier);
+        _updateSuppliers(poolTokenAddress, _supplier);
         uint256 matchedSupply = _matchSuppliers(_poolToken, _underlyingToken, _amount);
 
         if (_amount > matchedSupply) {
@@ -805,7 +805,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
             borrowBalanceInOf[poolTokenAddress][_borrower].onPool,
             repaidInUnderlying.divWadByRay(normalizedVariableDebt)
         ); // In adUnit
-        _updateBorrowerList(poolTokenAddress, _borrower);
+        _updateBorrowers(poolTokenAddress, _borrower);
         if (repaidInUnderlying > 0) _repayERC20ToPool(_underlyingToken, repaidInUnderlying); // Revert on error
     }
 
@@ -827,7 +827,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
             borrowBalanceInOf[poolTokenAddress][_borrower].inP2P,
             _amount.divWadByRay(p2pExchangeRate)
         ); // In p2pUnit
-        _updateBorrowerList(poolTokenAddress, _borrower);
+        _updateBorrowers(poolTokenAddress, _borrower);
         uint256 matchedBorrow = _matchBorrowers(_poolToken, _underlyingToken, _amount);
 
         if (_amount > matchedBorrow) {
@@ -914,7 +914,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
             supplyBalanceInOf[poolTokenAddress][account].inP2P += toMatch.divWadByRay(
                 p2pExchangeRate
             ); // In p2pUnit
-            _updateSupplierList(poolTokenAddress, account);
+            _updateSuppliers(poolTokenAddress, account);
             emit SupplierPositionUpdated(
                 account,
                 poolTokenAddress,
@@ -953,7 +953,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
             supplyBalanceInOf[_poolTokenAddress][account].inP2P -= toUnmatch.divWadByRay(
                 p2pExchangeRate
             ); // In p2pUnit
-            _updateSupplierList(_poolTokenAddress, account);
+            _updateSuppliers(_poolTokenAddress, account);
             emit SupplierPositionUpdated(
                 account,
                 _poolTokenAddress,
@@ -1000,7 +1000,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
             borrowBalanceInOf[poolTokenAddress][account].inP2P += toMatch.divWadByRay(
                 p2pExchangeRate
             );
-            _updateBorrowerList(poolTokenAddress, account);
+            _updateBorrowers(poolTokenAddress, account);
             emit BorrowerPositionUpdated(
                 account,
                 poolTokenAddress,
@@ -1041,7 +1041,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
             borrowBalanceInOf[_poolTokenAddress][account].inP2P -= toUnmatch.divWadByRay(
                 p2pExchangeRate
             );
-            _updateBorrowerList(_poolTokenAddress, account);
+            _updateBorrowers(_poolTokenAddress, account);
             emit BorrowerPositionUpdated(
                 account,
                 _poolTokenAddress,
@@ -1169,26 +1169,26 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         return (vars.debtValue, vars.maxDebtValue);
     }
 
-    /// @dev Updates borrowers data structure with the new balances of a given account.
+    /// @dev Updates borrowers matching engine with the new balances of a given account.
     /// @param _poolTokenAddress The address of the market on which Morpho want to update the borrower lists.
     /// @param _account The address of the borrower to move.
-    function _updateBorrowerList(address _poolTokenAddress, address _account) internal {
-        address(dataUpdator).functionDelegateCall(
+    function _updateBorrowers(address _poolTokenAddress, address _account) internal {
+        address(matchingEngineManager).functionDelegateCall(
             abi.encodeWithSelector(
-                dataUpdator.updateBorrowerList.selector,
+                matchingEngineManager.updateBorrowers.selector,
                 _poolTokenAddress,
                 _account
             )
         );
     }
 
-    /// @dev Updates suppliers data structure with the new balances of a given account.
+    /// @dev Updates suppliers matchin engine with the new balances of a given account.
     /// @param _poolTokenAddress The address of the market on which Morpho want to update the supplier lists.
     /// @param _account The address of the supplier to move.
-    function _updateSupplierList(address _poolTokenAddress, address _account) internal {
-        address(dataUpdator).functionDelegateCall(
+    function _updateSuppliers(address _poolTokenAddress, address _account) internal {
+        address(matchingEngineManager).functionDelegateCall(
             abi.encodeWithSelector(
-                dataUpdator.updateSupplierList.selector,
+                matchingEngineManager.updateSuppliers.selector,
                 _poolTokenAddress,
                 _account
             )
