@@ -2,7 +2,7 @@
 pragma solidity 0.8.7;
 
 import "./TestSetup.sol";
-import "./Attacker.sol";
+import "./utils/Attacker.sol";
 
 contract WithdrawTest is TestSetup {
     // 3.1 - The user withdrawal leads to an under-collateralized position, the withdrawal reverts.

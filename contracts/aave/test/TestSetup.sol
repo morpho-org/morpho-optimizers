@@ -8,10 +8,10 @@ import "../PositionsManagerForAave.sol";
 import "../MarketsManagerForAave.sol";
 
 import "@config/Config.sol";
-import "./HEVM.sol";
-import "./Utils.sol";
-import "./SimplePriceOracle.sol";
-import "./User.sol";
+import "./utils/HEVM.sol";
+import "./utils/Utils.sol";
+import "./utils/SimplePriceOracle.sol";
+import "./utils/User.sol";
 
 contract TestSetup is DSTest, Config, Utils {
     HEVM hevm = HEVM(HEVM_ADDRESS);
