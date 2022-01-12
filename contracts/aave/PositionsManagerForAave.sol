@@ -1159,9 +1159,11 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
             vars.debtValue += (vars.debtToAdd * vars.underlyingPrice) / vars.tokenUnit;
             if (_poolTokenAddress == vars.poolTokenEntered) {
                 vars.debtValue += (_borrowedAmount * vars.underlyingPrice) / vars.tokenUnit;
-                vars.maxDebtValue -=
+                vars.maxDebtValue -= Math.min(
+                    vars.maxDebtValue,
                     (_withdrawnAmount * vars.underlyingPrice * vars.liquidationThreshold) /
-                    (vars.tokenUnit * 10000);
+                        (vars.tokenUnit * 10000)
+                );
             }
         }
         return (vars.debtValue, vars.maxDebtValue);
