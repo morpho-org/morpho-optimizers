@@ -2,7 +2,12 @@
 pragma solidity 0.8.7;
 
 interface IPositionsManagerForAave {
-    function createMarket(address _marketAddress) external returns (uint256[] memory);
+    struct Balance {
+        uint256 inP2P;
+        uint256 onPool;
+    }
+
+    function createMarket(address) external returns (uint256[] memory);
 
     function setNmaxForMatchingEngine(uint16) external;
 
@@ -11,4 +16,10 @@ interface IPositionsManagerForAave {
     function setCapValue(address, uint256) external;
 
     function setTreasuryVault(address) external;
+
+    function updateRewardsManager(address _rewardsManagerAddress) external;
+
+    function borrowBalanceInOf(address, address) external returns (Balance memory);
+
+    function supplyBalanceInOf(address, address) external returns (Balance memory);
 }
