@@ -702,10 +702,10 @@ describe('PositionsManagerForAave Contract', () => {
       expect((await positionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower1.getAddress())).onPool).to.equal(0);
       expect(
         removeDigitsBigNumber(
-          2,
+          3,
           (await positionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower1.getAddress())).inP2P
         )
-      ).to.equal(removeDigitsBigNumber(2, expectedBorrowBalanceInP2P1));
+      ).to.equal(removeDigitsBigNumber(3, expectedBorrowBalanceInP2P1));
 
       // Compare remaining to withdraw and the aToken contract balance
       await marketsManagerForAave.connect(owner).updateRates(config.tokens.aDai.address);
