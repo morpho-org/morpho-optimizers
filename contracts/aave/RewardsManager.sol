@@ -94,70 +94,41 @@ contract RewardsManager {
         returns (uint256)
     {
         uint256 unclaimedRewards = userUnclaimedRewards[_user];
+        uint256 accruedRewards;
 
-
-            DistributionTypes.UserStakeInput[] memory userState
-         = new DistributionTypes.UserStakeInput[](_assets.length);
         for (uint256 i = 0; i < _assets.length; i++) {
             (address aTokenAddress, , address variableDebtTokenAddress) = dataProvider
                 .getReserveTokensAddresses(
                 IGetterUnderlyingAsset(_assets[i]).UNDERLYING_ASSET_ADDRESS()
             );
-            userState[i].underlyingAsset = _assets[i];
-            userState[i].stakedByUser = variableDebtTokenAddress == _assets[i]
+            address underlyingAsset = _assets[i];
+            uint256 stakedByUser = variableDebtTokenAddress == underlyingAsset
                 ? positionsManager.borrowBalanceInOf(aTokenAddress, _user).onPool
                 : positionsManager.supplyBalanceInOf(aTokenAddress, _user).onPool;
-            userState[i].totalStaked = IScaledBalanceToken(_assets[i]).scaledTotalSupply();
+            uint256 totalStaked = IScaledBalanceToken(underlyingAsset).scaledTotalSupply();
+
+            accruedRewards += _updateUserAsset(_user, underlyingAsset, stakedByUser, totalStaked);
         }
 
-        uint256 accruedRewards = _computeAccruedRewards(_user, userState);
         return unclaimedRewards + accruedRewards;
     }
 
     /// Internal ///
-
-    /// @dev Updates the state of an user in several distribution and returns the total accrued rewards.
-    /// @param _user The address of the user.
-    /// @param _stakes The different staking positions of the user to update and their data.
-    /// @return The accrued rewards for the user until the moment.
-    function _computeAccruedRewards(
-        address _user,
-        DistributionTypes.UserStakeInput[] memory _stakes
-    ) internal returns (uint256) {
-        uint256 accruedRewards;
-
-        for (uint256 i = 0; i < _stakes.length; i++) {
-            accruedRewards =
-                accruedRewards +
-                _updateUserAsset(
-                    _user,
-                    _stakes[i].underlyingAsset,
-                    _stakes[i].stakedByUser,
-                    _stakes[i].totalStaked
-                );
-        }
-
-        return accruedRewards;
-    }
 
     /// @dev Updates the state of an user in a distribution.
     /// @param _user The address of the user.
     /// @param _asset The address of the reference asset of the distribution (aToken or variable debt token).
     /// @param _stakedByUser The amount of tokens staked by the user in the distribution at the moment.
     /// @param _totalStaked The total of tokens staked in the distribution.
-    /// @return The accrued rewards for the user until the moment.
+    /// @return accruedRewards The accrued rewards for the user until the moment.
     function _updateUserAsset(
         address _user,
         address _asset,
         uint256 _stakedByUser,
         uint256 _totalStaked
-    ) internal returns (uint256) {
-        IAaveIncentivesController.AssetData memory assetData = aaveIncentivesController.assets(
-            _asset
-        );
+    ) internal returns (uint256 accruedRewards) {
         uint256 formerUserIndex = userIndex[_asset][_user];
-        uint256 accruedRewards;
-        uint256 newIndex = _getUpdatedIndex(assetData, _totalStaked);
+        uint256 newIndex = _getUpdatedIndex(_asset, _totalStaked);
 
         if (formerUserIndex != newIndex) {
             if (_stakedByUser != 0)
@@ -165,26 +136,28 @@ contract RewardsManager {
 
             userIndex[_asset][_user] = newIndex;
         }
-
-        return accruedRewards;
     }
 
     /// @dev Returns the next reward index.
-    /// @param _assetConfig The current config of the asset on Aave.
+    /// @param _asset The address of the reference asset of the distribution (aToken or variable debt token).
     /// @param _totalStaked The total of tokens staked in the distribution.
     /// @return The new distribution index.
-    function _getUpdatedIndex(
-        IAaveIncentivesController.AssetData memory _assetConfig,
-        uint256 _totalStaked
-    ) internal view returns (uint256) {
-        uint256 oldIndex = _assetConfig.index;
-        uint128 lastUpdateTimestamp = _assetConfig.lastUpdateTimestamp;
+    function _getUpdatedIndex(address _asset, uint256 _totalStaked)
+        internal
+        view
+        returns (uint256)
+    {
+        IAaveIncentivesController.AssetData memory assetData = aaveIncentivesController.assets(
+            _asset
+        );
+        uint256 oldIndex = assetData.index;
+        uint128 lastUpdateTimestamp = assetData.lastUpdateTimestamp;
 
         if (block.timestamp == lastUpdateTimestamp) return oldIndex;
         return
             _getAssetIndex(
                 oldIndex,
-                _assetConfig.emissionPerSecond,
+                assetData.emissionPerSecond,
                 lastUpdateTimestamp,
                 _totalStaked
             );
