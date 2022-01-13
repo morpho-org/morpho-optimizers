@@ -5,9 +5,9 @@
 
 This repository contains the core smart contracts for the Morpho Protocol V0 🦋.
 
-### Testing
+# Testing
 
-# Testing in Javascript with Hardhat
+## Testing in Solidity with Foundry
 
 First, install [Foundry](https://github.com/gakonst/foundry):
 
@@ -17,6 +17,7 @@ cargo install --git https://github.com/gakonst/foundry --bin forge --locked
 
 Also, you should update git submodules to install the ds-test library:
 ```
+git submodule init
 git submodule update
 ```
 
@@ -38,46 +39,47 @@ make test
 or to run only the desired section:
 
 ```
-make BorrowTest
-make GovernanceTest
+make TestBorrow
+make TestGovernance
 ...
 ```
 
 For the other commands, check the `Makefile` file.
 
-# Testing in solidity with Dapptools
+## Testing in Javascript with Hardhat
 
-First, install [dapptools](https://github.com/dapphub/dapptools#installation) using the official documentation
-
-Also, you should update git submodules to install the ds-test library:
+First, install dependencies with:
 
 ```
-git submodule update
+yarn
 ```
 
 Refer to the `env.example` for the required environment variable.
+
 Tests are run against a forks of real networks, which allows us to interact directly with liquidity pools of Compound or Aave. Note that you need to have an RPC provider that have access to Ethereum or Polygon.
 We aim a test coverage > 90% of all functions.
+
 ⚠️ Tests cannot substituted to coverage as the coverage command as contracts are compiled without optimization and can alter some patterns.
-To run tests on different platforms, navigate a Unix terminal to the root folder of the project and run the command of your choice:
 
-To run every test:
-
-```
-make test
-```
-
-or to run only the desired section:
+To run tests on different platforms, use these commands:
 
 ```
-make testSupply
-make testBorrow
-make testWithdraw
-make testRepay
-make testLiquidate
-make BorrowTest
-make GovernanceTest
-...
+yarn test:comp:mainnet
+```
+
+or
+
+```
+yarn test:aave:polygon
+```
+
+For coverage, run:
+
+```
+yarn coverage
+```
+
+For the other commands, check the `package.json` file.
 
 ## Code Formatting
 

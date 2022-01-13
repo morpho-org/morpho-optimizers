@@ -4,9 +4,9 @@ pragma solidity 0.8.7;
 import "./utils/TestSetup.sol";
 import "./utils/Attacker.sol";
 
-contract WithdrawTest is TestSetup {
+contract TestWithdraw is TestSetup {
     // 3.1 - The user withdrawal leads to an under-collateralized position, the withdrawal reverts.
-    function testFail_withdraw_3_1() public {
+    function test_withdraw_3_1() public {
         uint256 amount = 10000 ether;
         uint256 collateral = 2 * amount;
 
@@ -15,6 +15,7 @@ contract WithdrawTest is TestSetup {
 
         borrower1.borrow(aDai, amount);
 
+        hevm.expectRevert(abi.encodeWithSignature("DebtValueAboveMax()"));
         borrower1.withdraw(aUsdc, to6Decimals(collateral));
     }
 
@@ -372,7 +373,7 @@ contract WithdrawTest is TestSetup {
 
     // Test attack
     // Should not be possible to withdraw amount if the position turns to be under-collateralized
-    function testFail_withdraw_if_under_collaterize() public {
+    function test_withdraw_if_under_collaterize() public {
         uint256 toSupply = 100 ether;
         uint256 toBorrow = toSupply / 2;
 
@@ -386,6 +387,7 @@ contract WithdrawTest is TestSetup {
 
         // supplier1 tries to withdraw more than allowed
         supplier1.borrow(aUsdc, to6Decimals(toBorrow));
+        hevm.expectRevert(abi.encodeWithSignature("DebtValueAboveMax()"));
         supplier1.withdraw(aDai, toSupply);
     }
 

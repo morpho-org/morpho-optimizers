@@ -3,15 +3,21 @@ pragma solidity 0.8.7;
 
 import "./utils/TestSetup.sol";
 
-contract SupplyTest is TestSetup {
+contract TestSupply is TestSetup {
     // 1.1 - The user supplies less than the threshold of this market, the transaction reverts.
-    function testFail_supply_1_1() public {
-        supplier1.approve(dai, positionsManager.threshold(aDai) - 1);
-        supplier1.supply(aDai, positionsManager.threshold(aDai) - 1);
+    function test_supply_1_1() public {
+        for (uint256 i = 0; i < pools.length; i++) {
+            address pool = pools[i];
+            uint256 amount = positionsManager.threshold(pool) - 1;
+            supplier1.approve(IAToken(pool).UNDERLYING_ASSET_ADDRESS(), amount);
+
+            hevm.expectRevert(abi.encodeWithSignature("AmountNotAboveThreshold()"));
+            supplier1.supply(pool, amount);
+        }
     }
 
     // 1.2 - There are no available borrowers: all of the supplied amount is supplied to the pool and set `onPool`.
-    function test_supply_1_2() public {
+    function test_supply_1_2(uint256 _amount) public {
         uint256 amount = 10000 ether;
 
         supplier1.approve(dai, amount);
