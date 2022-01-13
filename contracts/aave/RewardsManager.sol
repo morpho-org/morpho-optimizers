@@ -23,13 +23,24 @@ contract RewardsManager {
     IProtocolDataProvider public dataProvider;
     IPositionsManagerForAave public positionsManager;
 
+    /// Errors ///
+
+    /// @notice Emitted when only the positions manager can call the function.
     error OnlyPositionsManager();
 
+    /// Modifiers ///
+
+    /// @dev Prevents a user to call function allowed for the positions manager only.
     modifier onlyPositionsManager() {
         if (msg.sender != address(positionsManager)) revert OnlyPositionsManager();
         _;
     }
 
+    /// Constructor ///
+
+    /// @dev Constructs the RewardsManager contract.
+    /// @param _lendingPoolAddressesProvider The address of the lending pool addresses provider.
+    /// @param _positionsManagerAddress The address of the positions manager.
     constructor(address _lendingPoolAddressesProvider, address _positionsManagerAddress) {
         addressesProvider = ILendingPoolAddressesProvider(_lendingPoolAddressesProvider);
         aaveIncentivesController = IAaveIncentivesController(
@@ -39,14 +50,49 @@ contract RewardsManager {
         positionsManager = IPositionsManagerForAave(_positionsManagerAddress);
     }
 
+    /// External ///
+
     /// @dev Accrues unclaimed rewards for the given assets and returns the total unclaimed rewards.
     /// @param _assets The assets for which to accrue rewards (aToken or variable debt token).
-    function accrueRewardsForAssetsBeforeClaiming(
+    /// @param _amount The amount of token rewards to claim.
+    /// @param _user The address of the user.
+    function claimRewards(
         address[] calldata _assets,
         uint256 _amount,
         address _user
-    ) external onlyPositionsManager returns (uint256) {
+    ) external onlyPositionsManager returns (uint256 amountToClaim) {
         if (_amount == 0) return 0;
+
+        uint256 unclaimedRewards = getUserUnclaimedRewards(_assets, _user);
+        if (unclaimedRewards == 0) return 0;
+
+        amountToClaim = _amount > unclaimedRewards ? unclaimedRewards : _amount;
+        userUnclaimedRewards[_user] = unclaimedRewards - amountToClaim;
+    }
+
+    /// @dev Updates the unclaimed rewards of an user.
+    /// @param _user The address of the user.
+    /// @param _asset The address of the reference asset of the distribution (aToken or variable debt token).
+    /// @param _stakedByUser The amount of tokens staked by the user in the distribution at the moment.
+    /// @param _totalStaked The total of tokens staked in the distribution.
+    function updateUserAssetAndAccruedRewards(
+        address _user,
+        address _asset,
+        uint256 _stakedByUser,
+        uint256 _totalStaked
+    ) external onlyPositionsManager {
+        userUnclaimedRewards[_user] += _updateUserAsset(_user, _asset, _stakedByUser, _totalStaked);
+    }
+
+    /// Public ///
+
+    /// @dev Accrues unclaimed rewards for the given assets and returns the total unclaimed rewards.
+    /// @param _assets The assets for which to accrue rewards (aToken or variable debt token).
+    /// @param _user The address of the user.
+    function getUserUnclaimedRewards(address[] calldata _assets, address _user)
+        public
+        returns (uint256)
+    {
         uint256 unclaimedRewards = userUnclaimedRewards[_user];
 
 
@@ -65,31 +111,10 @@ contract RewardsManager {
         }
 
         uint256 accruedRewards = _computeAccruedRewards(_user, userState);
-        if (accruedRewards != 0) {
-            unclaimedRewards = unclaimedRewards + accruedRewards;
-            userUnclaimedRewards[_user] = unclaimedRewards;
-        }
-        if (unclaimedRewards == 0) return 0;
-
-        uint256 amountToClaim = _amount > unclaimedRewards ? unclaimedRewards : _amount;
-        userUnclaimedRewards[_user] = userUnclaimedRewards[_user] - amountToClaim;
-
-        return amountToClaim;
+        return unclaimedRewards + accruedRewards;
     }
 
-    /// @dev Updates the unclaimed rewards of an user.
-    /// @param _user The address of the user.
-    /// @param _asset The address of the reference asset of the distribution (aToken or variable debt token).
-    /// @param _stakedByUser The amount of tokens staked by the user in the distribution at the moment.
-    /// @param _totalStaked The total of tokens staked in the distribution.
-    function updateUserAssetAndAccruedRewards(
-        address _user,
-        address _asset,
-        uint256 _stakedByUser,
-        uint256 _totalStaked
-    ) external onlyPositionsManager {
-        userUnclaimedRewards[_user] += _updateUserAsset(_user, _asset, _stakedByUser, _totalStaked);
-    }
+    /// Internal ///
 
     /// @dev Updates the state of an user in several distribution and returns the total accrued rewards.
     /// @param _user The address of the user.
