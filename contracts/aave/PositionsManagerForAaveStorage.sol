@@ -44,9 +44,6 @@ contract PositionsManagerForAaveStorage is ReentrancyGuard {
     mapping(address => address[]) public enteredMarkets; // Markets entered by a user.
     mapping(address => uint256) public threshold; // Thresholds below which suppliers and borrowers cannot enter markets.
     mapping(address => uint256) public capValue; // Caps above which suppliers cannot add more liquidity.
-    mapping(address => uint256) public p2pBalance; // Total amount matched in P2P.
-    mapping(address => uint256) public treasuryBalance; // Treasury balance earned via protocol fees.
-    mapping(address => uint256) public treasuryBalanceLastUpdateTimestamp; // Last timestamp treasuryBalance was updated.
 
     IMarketsManagerForAave public marketsManagerForAave;
     ILendingPoolAddressesProvider public addressesProvider;
