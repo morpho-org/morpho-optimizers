@@ -1,9 +1,13 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.7;
 
+import "../libraries/aave/WadRayMath.sol";
+
 import "./utils/TestSetup.sol";
 
 contract BorrowTest is TestSetup {
+    using WadRayMath for uint256;
+
     // 2.1 - The user borrows less than the threshold of the given market, the transaction reverts.
     function testFail_borrow_2_1() public {
         uint256 amount = positionsManager.threshold(aDai) - 1;
@@ -25,7 +29,7 @@ contract BorrowTest is TestSetup {
         borrower1.supply(aUsdc, amount);
 
         uint256 maxToBorrow = getMaxToBorrow(
-            amount,
+            address(borrower1),
             usdc,
             dai,
             SimplePriceOracle(lendingPoolAddressesProvider.getPriceOracle())
@@ -211,17 +215,35 @@ contract BorrowTest is TestSetup {
     // ----------
 
     function getMaxToBorrow(
-        uint256 _collateralInUnderlying,
+        address _user,
         address _suppliedAsset,
         address _borrowedAsset,
         SimplePriceOracle _oracle
     ) internal view returns (uint256) {
-        (, , uint256 liquidationThreshold, , , , , , , ) = protocolDataProvider
-            .getReserveConfigurationData(_borrowedAsset);
-        uint256 maxToBorrow = (((((_collateralInUnderlying *
-            _oracle.getAssetPrice(_suppliedAsset)) / 10**ERC20(_suppliedAsset).decimals()) *
-            10**ERC20(_borrowedAsset).decimals()) / _oracle.getAssetPrice(_borrowedAsset)) *
-            liquidationThreshold) / PERCENT_BASE;
-        return maxToBorrow;
+        uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(_suppliedAsset);
+        uint256 p2pExchangeRate = marketsManager.p2pExchangeRate(_suppliedAsset);
+        (uint256 inP2P, uint256 onPool) = positionsManager.supplyBalanceInOf(_suppliedAsset, _user);
+        uint256 collateralToAdd = onPool.mulWadByRay(normalizedIncome) +
+            inP2P.mulWadByRay(p2pExchangeRate);
+        uint256 underlyingPrice = _oracle.getAssetPrice(_suppliedAsset); // In ETH
+
+        (
+            uint256 reserveDecimals,
+            ,
+            uint256 liquidationThreshold,
+            ,
+            ,
+            ,
+            ,
+            ,
+            ,
+
+        ) = protocolDataProvider.getReserveConfigurationData(_borrowedAsset);
+
+        uint256 tokenUnit = 10**reserveDecimals;
+        collateralToAdd = (collateralToAdd * underlyingPrice) / tokenUnit;
+        uint256 maxDebtValue = (collateralToAdd * liquidationThreshold) / 10000;
+
+        return maxDebtValue;
     }
 }

@@ -29,6 +29,12 @@ contract LiquidateTest is TestSetup {
         borrower1.supply(aUsdc, to6Decimals(collateral));
         borrower1.borrow(aDai, amount);
 
+        (, uint256 collateralOnPool) = positionsManager.supplyBalanceInOf(
+            aUsdc,
+            address(borrower1)
+        );
+        emit log_named_uint("collateralOnPool initial", collateralOnPool);
+
         // Change Oracle
         SimplePriceOracle customOracle = createAndSetCustomPriceOracle();
         customOracle.setDirectPrice(usdc, (oracle.getAssetPrice(usdc) * 90) / 100);
@@ -49,17 +55,48 @@ contract LiquidateTest is TestSetup {
             lendingPool.getReserveNormalizedVariableDebt(dai)
         );
         testEquality(expectedBorrowBalanceOnPool, amount / 2);
-        testEquality(inP2PBorrower, 0);
+        assertEq(inP2PBorrower, 0);
 
         // Check borrower1 supply balance
         (inP2PBorrower, onPoolBorrower) = positionsManager.supplyBalanceInOf(
             aUsdc,
             address(borrower1)
         );
+
+        PositionsManagerForAave.LiquidateVars memory vars;
+        (
+            vars.collateralReserveDecimals,
+            ,
+            ,
+            vars.liquidationBonus,
+            ,
+            ,
+            ,
+            ,
+            ,
+
+        ) = protocolDataProvider.getReserveConfigurationData(usdc);
+        vars.collateralPrice = customOracle.getAssetPrice(usdc);
+        vars.collateralTokenUnit = 10**vars.collateralReserveDecimals;
+
+        (vars.borrowedReserveDecimals, , , , , , , , , ) = protocolDataProvider
+            .getReserveConfigurationData(dai);
+        vars.borrowedPrice = customOracle.getAssetPrice(dai);
+        vars.borrowedTokenUnit = 10**vars.borrowedReserveDecimals;
+
+        uint256 amountToSeize = ((amount / 2) *
+            vars.borrowedPrice *
+            vars.collateralTokenUnit *
+            vars.liquidationBonus) / (vars.borrowedTokenUnit * vars.collateralPrice * 10000);
+
         uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(dai);
-        uint256 expectedOnPool = underlyingToAdUnit(amount / 2, normalizedIncome);
+        uint256 expectedOnPool = aDUnitToUnderlying(
+            collateralOnPool - amountToSeize,
+            normalizedIncome
+        );
+
         testEquality(onPoolBorrower, expectedOnPool);
-        testEquality(inP2PBorrower, 0);
+        assertEq(inP2PBorrower, 0);
     }
 
     // 5.3 - The liquidation is made of a Repay and Withdraw performed on a borrower's position on behalf of a liquidator.
