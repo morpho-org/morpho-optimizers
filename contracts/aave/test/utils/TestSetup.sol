@@ -35,6 +35,8 @@ contract TestSetup is DSTest, Config, Utils {
     User borrower3;
     User[] borrowers;
 
+    address[] pools;
+
     function setUp() public {
         marketsManager = new MarketsManagerForAave(lendingPoolAddressesProviderAddress);
         positionsManager = new PositionsManagerForAave(
@@ -59,12 +61,17 @@ contract TestSetup is DSTest, Config, Utils {
         marketsManager.setPositionsManager(address(positionsManager));
         marketsManager.updateLendingPool();
         // !!! WARNING !!!
-        // All tokens added with createMarket must be added in create_custom_price_oracle function.
+        // All tokens must also be added to the pools array, for the correct behavior of TestLiquidate::createAndSetCustomPriceOracle.
         marketsManager.createMarket(aDai, WAD, type(uint256).max);
+        pools.push(aDai);
         marketsManager.createMarket(aUsdc, to6Decimals(WAD), type(uint256).max);
+        pools.push(aUsdc);
         marketsManager.createMarket(aWbtc, 10**4, type(uint256).max);
+        pools.push(aWbtc);
         marketsManager.createMarket(aUsdt, to6Decimals(WAD), type(uint256).max);
+        pools.push(aUsdt);
         marketsManager.createMarket(aWmatic, WAD, type(uint256).max);
+        pools.push(aWmatic);
 
         for (uint256 i = 0; i < 3; i++) {
             suppliers.push(new User(positionsManager, marketsManager));

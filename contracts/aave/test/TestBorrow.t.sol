@@ -1,39 +1,37 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.7;
 
-import "../libraries/aave/WadRayMath.sol";
+import "contracts/aave/libraries/aave/WadRayMath.sol";
 
 import "./utils/TestSetup.sol";
 
-contract BorrowTest is TestSetup {
+contract TestBorrow is TestSetup {
     using WadRayMath for uint256;
 
     // 2.1 - The user borrows less than the threshold of the given market, the transaction reverts.
-    function testFail_borrow_2_1() public {
-        uint256 amount = positionsManager.threshold(aDai) - 1;
-        borrower1.approve(dai, amount);
-        borrower1.borrow(aDai, amount);
-    }
+    function test_borrow_2_1() public {
+        for (uint256 i = 0; i < pools.length; i++) {
+            address pool = pools[i];
+            uint256 amount = positionsManager.threshold(pool) - 1;
+            borrower1.approve(IAToken(pool).UNDERLYING_ASSET_ADDRESS(), amount);
 
-    function testFail_borrow_2_1_usdc() public {
-        uint256 amount = positionsManager.threshold(aUsdc) - 1;
-        borrower1.approve(usdc, to6Decimals(2 * amount));
-        borrower1.borrow(aUsdc, to6Decimals(2 * amount));
+            hevm.expectRevert(abi.encodeWithSignature("AmountNotAboveThreshold()"));
+            borrower1.borrow(pool, amount);
+        }
     }
 
     // 2.2 - The borrower tries to borrow more than what his collateral allows, the transaction reverts.
-    function testFail_borrow_2_2() public {
+    function test_borrow_2_2() public {
         uint256 amount = 10000 ether;
 
-        borrower1.approve(usdc, amount);
-        borrower1.supply(aUsdc, amount);
+        borrower1.approve(usdc, to6Decimals(amount));
+        borrower1.supply(aUsdc, to6Decimals(amount));
 
-        uint256 maxToBorrow = getMaxToBorrow(
-            address(borrower1),
-            usdc,
-            dai,
-            SimplePriceOracle(lendingPoolAddressesProvider.getPriceOracle())
-        );
+        (, , uint256 liquidationThreshold, , , , , , , ) = protocolDataProvider
+            .getReserveConfigurationData(usdc);
+        uint256 maxToBorrow = (amount * liquidationThreshold) / 10000;
+
+        hevm.expectRevert(abi.encodeWithSignature("DebtValueAboveMax()"));
         borrower1.borrow(aDai, maxToBorrow + 1);
     }
 

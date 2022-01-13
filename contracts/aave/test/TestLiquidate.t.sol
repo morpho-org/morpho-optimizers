@@ -3,9 +3,9 @@ pragma solidity 0.8.7;
 
 import "./utils/TestSetup.sol";
 
-contract LiquidateTest is TestSetup {
+contract TestLiquidate is TestSetup {
     // 5.1 - A user liquidates a borrower that has enough collateral to cover for his debt, the transaction reverts.
-    function testFail_liquidate_5_1() public {
+    function test_liquidate_5_1() public {
         uint256 amount = 10000 ether;
         uint256 collateral = 2 * amount;
 
@@ -17,6 +17,8 @@ contract LiquidateTest is TestSetup {
         uint256 toRepay = amount / 2;
         User liquidator = borrower3;
         liquidator.approve(dai, address(positionsManager), toRepay);
+
+        hevm.expectRevert(abi.encodeWithSignature("DebtValueNotAboveMax()"));
         liquidator.liquidate(aDai, aUsdc, address(borrower1), toRepay);
     }
 
@@ -33,7 +35,6 @@ contract LiquidateTest is TestSetup {
             aUsdc,
             address(borrower1)
         );
-        emit log_named_uint("collateralOnPool initial", collateralOnPool);
 
         // Change Oracle
         SimplePriceOracle customOracle = createAndSetCustomPriceOracle();
@@ -169,12 +170,11 @@ contract LiquidateTest is TestSetup {
             bytes32(uint256(uint160(address(customOracle))))
         );
 
-        // !!! WARNING !!! All tokens added with createMarket must be set
-        customOracle.setDirectPrice(dai, oracle.getAssetPrice(dai));
-        customOracle.setDirectPrice(usdc, oracle.getAssetPrice(usdc));
-        customOracle.setDirectPrice(usdt, oracle.getAssetPrice(usdt));
-        customOracle.setDirectPrice(wbtc, oracle.getAssetPrice(wbtc));
-        customOracle.setDirectPrice(wmatic, oracle.getAssetPrice(wmatic));
+        for (uint256 i = 0; i < pools.length; i++) {
+            address underlying = IAToken(pools[i]).UNDERLYING_ASSET_ADDRESS();
+
+            customOracle.setDirectPrice(underlying, oracle.getAssetPrice(underlying));
+        }
 
         return customOracle;
     }
