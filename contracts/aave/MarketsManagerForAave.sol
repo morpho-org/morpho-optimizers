@@ -26,8 +26,8 @@ contract MarketsManagerForAave is Ownable {
     uint256 internal feeFactor; // Proportion of the spread that is taken as a protocol fee, in ray (default is no fee).
 
     mapping(address => bool) public isCreated; // Whether or not this market is created.
-    mapping(address => uint256) public supplyP2PSPY; // Supply Second Percentage Yield.
-    mapping(address => uint256) public borrowP2PSPY; // Borrow Second Percentage Yield.
+    mapping(address => uint256) public supplyP2PSPY; // Supply Second Percentage Yield, in ray.
+    mapping(address => uint256) public borrowP2PSPY; // Borrow Second Percentage Yield, in ray.
     mapping(address => uint256) public supplyP2PExchangeRate; // Current exchange rate from supply p2pUnit to underlying.
     mapping(address => uint256) public borrowP2PExchangeRate; // Current exchange rate from borrow p2pUnit to underlying.
     mapping(address => uint256) public exchangeRatesLastUpdateTimestamp; // Last time p2pExchangeRates were updated.
@@ -235,11 +235,8 @@ contract MarketsManagerForAave is Ownable {
             reserveData.currentVariableBorrowRate
         ) / SECONDS_PER_YEAR; // In ray
 
-        uint256 feeSpread = ((reserveData.currentVariableBorrowRate -
-            reserveData.currentLiquidityRate) / SECONDS_PER_YEAR).rayMul(feeFactor);
-
-        supplyP2PSPY[_marketAddress] = meanSPY - (feeSpread / 2);
-        borrowP2PSPY[_marketAddress] = meanSPY + (feeSpread / 2);
+        supplyP2PSPY[_marketAddress] = meanSPY.rayMul((WadRayMath.ray() - feeFactor) / 2);
+        borrowP2PSPY[_marketAddress] = meanSPY.rayMul((WadRayMath.ray() + feeFactor) / 2);
 
         emit P2PSPYsUpdated(
             _marketAddress,

@@ -330,14 +330,14 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
     /// @dev Transfers protocol fee to the DAO.
     /// @param _poolTokenAddress The address of the market on which we want to claim fees.
     function claimFees(address _poolTokenAddress) external onlyOwner {
-        IAToken poolToken = IAToken(_poolTokenAddress);
         _updateTreasuryBalance(_poolTokenAddress);
 
         uint256 amount = treasuryBalance[_poolTokenAddress];
         treasuryBalance[_poolTokenAddress] = 0;
 
-        lendingPool.withdraw(poolToken.UNDERLYING_ASSET_ADDRESS(), amount, address(this));
-        poolToken.transfer(marketsManagerForAave.owner(), amount);
+        IERC20 underlyingToken = IERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
+        _withdrawERC20FromPool(underlyingToken, amount);
+        underlyingToken.transfer(marketsManagerForAave.owner(), amount);
     }
 
     /// @dev Supplies ERC20 tokens in a specific market.
@@ -1280,9 +1280,10 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         uint256 timeDifference = block.timestamp -
             treasuryBalanceLastUpdateTimestamp[_poolTokenAddress];
 
-        treasuryBalance[_poolTokenAddress] += p2pBalance[_poolTokenAddress].rayMul(
-            (marketsManagerForAave.borrowP2PSPY(_poolTokenAddress) -
-                marketsManagerForAave.supplyP2PSPY(_poolTokenAddress)).rayPow(timeDifference)
+        uint256 p2pSpread = marketsManagerForAave.borrowP2PSPY(_poolTokenAddress) -
+            marketsManagerForAave.supplyP2PSPY(_poolTokenAddress); // In ray
+        treasuryBalance[_poolTokenAddress] += p2pBalance[_poolTokenAddress].mulWadByRay(
+            (WadRayMath.ray() + p2pSpread).rayPow(timeDifference) - WadRayMath.ray()
         );
 
         treasuryBalanceLastUpdateTimestamp[_poolTokenAddress] = block.timestamp;

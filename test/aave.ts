@@ -1345,8 +1345,8 @@ describe('PositionsManagerForAave Contract', () => {
     });
   });
 
-  describe.only('Test claiming fees', () => {
-    it('DAO should be able to withdraw fees', async () => {
+  describe.only('Test fees', () => {
+    it('DAO should be able to claim fees', async () => {
       await marketsManagerForAave.connect(owner).setFee('100000000000000000000000000'); // 10%
 
       const toSupply = utils.parseUnits('100');
@@ -1356,12 +1356,48 @@ describe('PositionsManagerForAave Contract', () => {
       await positionsManagerForAave.connect(supplier1).supply(config.tokens.aDai.address, toSupply, 0);
       await positionsManagerForAave.connect(supplier1).borrow(config.tokens.aDai.address, toBorrow, 0);
 
-      // wait 10 years
-      await hre.network.provider.send('evm_increaseTime', [315360000]);
+      // wait 1 year
+      await hre.network.provider.send('evm_increaseTime', [365 * 24 * 60 * 60]);
 
       await positionsManagerForAave.connect(owner).claimFees(config.tokens.aDai.address);
       const daoBalanceAfter = await daiToken.balanceOf(owner.getAddress());
       expect(daoBalanceAfter).to.be.gt(daoBalanceBefore);
+    });
+
+    it('DAO should not collect fees when factor is null', async () => {
+      await marketsManagerForAave.connect(owner).setFee('0');
+
+      const toSupply = utils.parseUnits('100');
+      const toBorrow = utils.parseUnits('50');
+      const daoBalanceBefore = await daiToken.balanceOf(owner.getAddress());
+      await daiToken.connect(supplier1).approve(positionsManagerForAave.address, toSupply);
+      await positionsManagerForAave.connect(supplier1).supply(config.tokens.aDai.address, toSupply, 0);
+      await positionsManagerForAave.connect(supplier1).borrow(config.tokens.aDai.address, toBorrow, 0);
+
+      // wait 1 year
+      await hre.network.provider.send('evm_increaseTime', [365 * 24 * 60 * 60]);
+
+      await positionsManagerForAave.connect(owner).claimFees(config.tokens.aDai.address);
+      const daoBalanceAfter = await daiToken.balanceOf(owner.getAddress());
+      expect(daoBalanceAfter).to.equal(daoBalanceBefore);
+    });
+
+    it('Borrow should not collect rewards when DAO collect 100% fees', async () => {
+      await marketsManagerForAave.connect(owner).setFee('1000000000000000000000000000'); // 100%
+
+      const toSupply = utils.parseUnits('100');
+      const toBorrow = utils.parseUnits('50');
+      const supplier1BalanceBefore = await daiToken.balanceOf(supplier1.getAddress());
+      await daiToken.connect(supplier1).approve(positionsManagerForAave.address, toSupply);
+      await positionsManagerForAave.connect(supplier1).supply(config.tokens.aDai.address, toSupply, 0);
+      await positionsManagerForAave.connect(supplier1).borrow(config.tokens.aDai.address, toBorrow, 0);
+
+      // wait 1 year
+      await hre.network.provider.send('evm_increaseTime', [365 * 24 * 60 * 60]);
+
+      await positionsManagerForAave.connect(supplier1).withdraw(config.tokens.aDai.address, toSupply);
+      const supplier1BalanceAfter = await daiToken.balanceOf(supplier1.getAddress());
+      expect(supplier1BalanceBefore).to.equal(supplier1BalanceAfter);
     });
   });
 
