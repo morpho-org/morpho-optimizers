@@ -223,7 +223,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         _;
     }
 
-    /// @dev Prevents a user to call function only allowed for the markets manager.
+    /// @dev Prevents a user to call function allowed for the markets manager only.
     modifier onlyMarketsManager() {
         if (msg.sender != address(marketsManagerForAave)) revert OnlyMarketsManager();
         _;
@@ -1264,11 +1264,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
     /// @dev Claims rewards for the given assets and the unclaimed rewards.
     /// @param _assets The assets to claim rewards from (aToken or variable debt token).
     function claimRewards(address[] calldata _assets) external {
-        uint256 amountToClaim = rewardsManager.accrueRewardsForAssetsBeforeClaiming(
-            _assets,
-            type(uint256).max,
-            msg.sender
-        );
+        uint256 amountToClaim = rewardsManager.claimRewards(_assets, type(uint256).max, msg.sender);
         if (amountToClaim > 0)
             aaveIncentivesController.claimRewards(_assets, amountToClaim, msg.sender);
     }
