@@ -195,8 +195,6 @@ contract MarketsManagerForAave is Ownable {
         if (exchangeRatesLastUpdateTimestamp[_marketAddress] != block.timestamp) {
             _updateP2PExchangeRates(_marketAddress);
             _updateSPYs(_marketAddress);
-
-            exchangeRatesLastUpdateTimestamp[_marketAddress] = block.timestamp;
         }
     }
 
@@ -206,6 +204,8 @@ contract MarketsManagerForAave is Ownable {
     /// @param _marketAddress The address of the market to update.
     function _updateP2PExchangeRates(address _marketAddress) internal {
         uint256 timeDifference = block.timestamp - exchangeRatesLastUpdateTimestamp[_marketAddress];
+        exchangeRatesLastUpdateTimestamp[_marketAddress] = block.timestamp;
+
         uint256 newSupplyP2PExchangeRate = supplyP2PExchangeRate[_marketAddress].rayMul(
             (WadRayMath.ray() + supplyP2PSPY[_marketAddress]).rayPow(timeDifference)
         ); // In ray
@@ -214,7 +214,7 @@ contract MarketsManagerForAave is Ownable {
         uint256 newBorrowP2PExchangeRate = borrowP2PExchangeRate[_marketAddress].rayMul(
             (WadRayMath.ray() + borrowP2PSPY[_marketAddress]).rayPow(timeDifference)
         ); // In ray
-        supplyP2PExchangeRate[_marketAddress] = newBorrowP2PExchangeRate;
+        borrowP2PExchangeRate[_marketAddress] = newBorrowP2PExchangeRate;
 
         emit P2PExchangesRateUpdated(
             _marketAddress,
