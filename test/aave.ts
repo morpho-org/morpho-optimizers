@@ -1310,10 +1310,10 @@ describe('PositionsManagerForAave Contract', () => {
       expect((await positionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower1.getAddress())).onPool).to.equal(0);
       expect(
         removeDigitsBigNumber(
-          3,
+          4,
           (await positionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower1.getAddress())).inP2P
         )
-      ).to.equal(removeDigitsBigNumber(3, expectedBorrowBalanceInP2PAfter));
+      ).to.equal(removeDigitsBigNumber(4, expectedBorrowBalanceInP2PAfter));
 
       // Check liquidator balances
       let diff;
