@@ -3,7 +3,7 @@ pragma solidity 0.8.7;
 
 import "./utils/TestSetup.sol";
 
-contract RepayTest is TestSetup {
+contract TestRepay is TestSetup {
     // - 4.1 - The borrower repays less than his `onPool` balance. The liquidity is repaid on his `onPool` balance.
     function test_repay_4_1() public {
         uint256 amount = 10000 ether;

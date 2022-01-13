@@ -34,4 +34,55 @@ interface HEVM {
     // Note that this cheatcode means test authors can execute arbitrary code on user machines as part of a call to dapp test,
     // for this reason all calls to ffi will fail unless the --ffi flag is passed.
     function ffi(string[] calldata) external returns (bytes memory);
+
+    // Sets the *next* call's msg.sender to be the input address
+    function prank(address) external;
+
+    // Sets all subsequent calls' msg.sender to be the input address until `stopPrank` is called
+    function startPrank(address) external;
+
+    // Resets subsequent calls' msg.sender to be `address(this)`
+    function stopPrank() external;
+
+    // Sets an address' balance, (who, newBalance)
+    function deal(address, uint256) external;
+
+    // Sets an address' code, (who, newCode)
+    function etch(address, bytes calldata) external;
+
+    // Expects an error on next call
+    function expectRevert(bytes calldata) external;
+
+    // Record all storage reads and writes
+    function record() external;
+
+    // Gets all accessed reads and write slot from a recording session, for a given address
+    function accesses(address) external returns (bytes32[] memory reads, bytes32[] memory writes);
+
+    // Prepare an expected log with (bool checkTopic1, bool checkTopic2, bool checkTopic3, bool checkData).
+    // Call this function, then emit an event, then call a function. Internally after the call, we check if
+    // logs were emitted in the expected order with the expected topics and data (as specified by the booleans)
+    function expectEmit(
+        bool,
+        bool,
+        bool,
+        bool
+    ) external;
+
+    // Mocks a call to an address, returning specified data.
+    // Calldata can either be strict or a partial match, e.g. if you only
+    // pass a Solidity selector to the expected calldata, then the entire Solidity
+    // function will be mocked.
+    function mockCall(
+        address,
+        bytes calldata,
+        bytes calldata
+    ) external;
+
+    // Clears all mocked calls
+    function clearMockedCalls() external;
+
+    // Expect a call to an address with the specified calldata.
+    // Calldata can either be strict or a partial match
+    function expectCall(address, bytes calldata) external;
 }

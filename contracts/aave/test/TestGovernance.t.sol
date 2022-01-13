@@ -3,7 +3,7 @@ pragma solidity 0.8.7;
 
 import "./utils/TestSetup.sol";
 
-contract GovernanceTest is TestSetup {
+contract TestGovernance is TestSetup {
     // ==============
     // = Deployment =
     // ==============
@@ -26,41 +26,39 @@ contract GovernanceTest is TestSetup {
     // ========================
 
     // Should revert when the function is called with an improper market
-    function testFail_revert_on_not_real_market() public {
+    function test_revert_on_not_real_market() public {
+        hevm.expectRevert("");
         marketsManager.createMarket(usdt, WAD, type(uint256).max);
     }
 
     // Only Owner should be able to create markets in peer-to-peer
-    function testFail_only_owner_can_create_markets_1() public {
-        supplier1.createMarket(usdt, WAD, type(uint256).max);
-    }
+    function test_only_owner_can_create_markets_1() public {
+        for (uint256 i = 0; i < pools.length; i++) {
+            hevm.expectRevert("Ownable: caller is not the owner");
+            supplier1.createMarket(pools[i], WAD, type(uint256).max);
 
-    function testFail_only_owner_can_create_markets_2() public {
-        borrower1.createMarket(usdt, WAD, type(uint256).max);
-    }
+            hevm.expectRevert("Ownable: caller is not the owner");
+            borrower1.createMarket(pools[i], WAD, type(uint256).max);
+        }
 
-    function test_only_owner_can_create_markets() public {
         marketsManager.createMarket(aWeth, WAD, type(uint256).max);
     }
 
     // marketsManagerForAave should not be changed after already set by Owner
-    function testFail_marketsManager_should_not_be_changed() public {
+    function test_marketsManager_should_not_be_changed() public {
+        hevm.expectRevert(abi.encodeWithSignature("PositionsManagerAlreadySet()"));
         marketsManager.setPositionsManager(address(fakePositionsManager));
     }
 
     // Only Owner should be able to update cap value
-    function test_only_owner_can_update_cap_value_1() public {
+    function test_only_owner_can_update_cap_value() public {
         uint256 newCapValue = 2 * 1e18;
         marketsManager.updateCapValue(aUsdc, newCapValue);
-    }
 
-    function testFail_only_owner_can_update_cap_value_2() public {
-        uint256 newCapValue = 2 * 1e18;
+        hevm.expectRevert("Ownable: caller is not the owner");
         supplier1.updateCapValue(aUsdc, newCapValue);
-    }
 
-    function testFail_only_owner_can_update_cap_value_3() public {
-        uint256 newCapValue = 2 * 1e18;
+        hevm.expectRevert("Ownable: caller is not the owner");
         borrower1.updateCapValue(aUsdc, newCapValue);
     }
 
@@ -83,17 +81,14 @@ contract GovernanceTest is TestSetup {
 
         marketsManager.setMaxNumberOfUsersInTree(newNMAX);
         assertEq(positionsManager.NMAX(), newNMAX);
-    }
 
-    function testFail_should_not_update_nmax_1() public {
+        hevm.expectRevert("Ownable: caller is not the owner");
         supplier1.setMaxNumberOfUsersInTree(3000);
-    }
 
-    function testFail_should_not_update_nmax_2() public {
+        hevm.expectRevert("Ownable: caller is not the owner");
         borrower1.setMaxNumberOfUsersInTree(3000);
-    }
 
-    function testFail_should_not_update_nmax_3() public {
+        hevm.expectRevert(abi.encodeWithSignature("OnlyMarketsManager()"));
         positionsManager.setMaxNumberOfUsersInTree(3000);
     }
 }
