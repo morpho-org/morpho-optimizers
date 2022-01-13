@@ -3,9 +3,9 @@ pragma solidity 0.8.7;
 
 import "./utils/TestSetup.sol";
 
-contract LiquidateTest is TestSetup {
+contract TestLiquidate is TestSetup {
     // 5.1 - A user liquidates a borrower that has enough collateral to cover for his debt, the transaction reverts.
-    function testFail_liquidate_5_1() public {
+    function test_liquidate_5_1() public {
         uint256 amount = 10000 ether;
         uint256 collateral = 2 * amount;
 
@@ -17,6 +17,8 @@ contract LiquidateTest is TestSetup {
         uint256 toRepay = amount / 2;
         User liquidator = borrower3;
         liquidator.approve(dai, address(positionsManager), toRepay);
+
+        hevm.expectRevert(abi.encodeWithSignature("DebtValueNotAboveMax()"));
         liquidator.liquidate(aDai, aUsdc, address(borrower1), toRepay);
     }
 

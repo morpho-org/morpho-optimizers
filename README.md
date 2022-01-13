@@ -17,6 +17,7 @@ cargo install --git https://github.com/gakonst/foundry --bin forge --locked
 
 Also, you should update git submodules to install the ds-test library:
 ```
+git submodule init
 git submodule update
 ```
 
