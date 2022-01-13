@@ -137,7 +137,7 @@ contract MarketsManagerForAave is Ownable {
     /// @dev Sets the protocol fee.
     /// @param _newFeeFactor Factor of the spread that is taken as a protocol fee, in ray.
     function setFee(uint256 _newFeeFactor) external onlyOwner {
-        feeFactor = _newFeeFactor;
+        feeFactor = Math.min(WadRayMath.ray(), Math.max(0, _newFeeFactor));
     }
 
     /// @dev Creates a new market to borrow/supply.
