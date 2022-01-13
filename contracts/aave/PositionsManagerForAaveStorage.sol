@@ -38,15 +38,15 @@ contract PositionsManagerForAaveStorage is ReentrancyGuard {
     mapping(address => DoubleLinkedList.List) internal suppliersOnPool; // Suppliers on Aave.
     mapping(address => DoubleLinkedList.List) internal borrowersInP2P; // Borrowers in peer-to-peer.
     mapping(address => DoubleLinkedList.List) internal borrowersOnPool; // Borrowers on Aave.
-    mapping(address => mapping(address => SupplyBalance)) public supplyBalanceInOf; // For a given market, the supply balance of user.
-    mapping(address => mapping(address => BorrowBalance)) public borrowBalanceInOf; // For a given market, the borrow balance of user.
+    mapping(address => mapping(address => SupplyBalance)) public supplyBalanceInOf; // For a given market, the supply balance of a user.
+    mapping(address => mapping(address => BorrowBalance)) public borrowBalanceInOf; // For a given market, the borrow balance of a user.
     mapping(address => mapping(address => bool)) public accountMembership; // Whether the account is in the market or not.
     mapping(address => address[]) public enteredMarkets; // Markets entered by a user.
     mapping(address => uint256) public threshold; // Thresholds below which suppliers and borrowers cannot enter markets.
     mapping(address => uint256) public capValue; // Caps above which suppliers cannot add more liquidity.
-    mapping(address => uint256) public p2pBalance; // Total amount matched in P2P, in underlying.
-    mapping(address => uint256) public treasuryBalance; // Treasury balance, in underlying.
-    mapping(address => uint256) public treasuryBalanceLastUpdateTimestamp; // Last time treasuryBalance was updated.
+    mapping(address => uint256) public p2pBalance; // Total amount matched in P2P.
+    mapping(address => uint256) public treasuryBalance; // Treasury balance earned via protocol fees.
+    mapping(address => uint256) public treasuryBalanceLastUpdateTimestamp; // Last timestamp treasuryBalance was updated.
 
     IMarketsManagerForAave public marketsManagerForAave;
     ILendingPoolAddressesProvider public addressesProvider;
