@@ -1,3 +1,4 @@
+.PHONY: test
 
 -include .env.local
 
@@ -7,7 +8,8 @@ TESTS = \
 	TestLiquidate \
 	TestRepay \
 	TestSupply \
-	TestWithdraw
+	TestWithdraw \
+	TestDoubleLinkedList
 
 test:
 	@echo Run all tests
@@ -15,7 +17,7 @@ test:
 
 test1:
 	@echo Run test matching regexp
-	@forge test --fork-url https://${NETWORK}.infura.io/v3/${INFURA_PROJECT_ID} --fork-block-number 22747272 -vvv --match-test test_liquidate_5_1
+	@forge test --fork-url https://${NETWORK}.infura.io/v3/${INFURA_PROJECT_ID} --fork-block-number 22747272 -vvv --match-test test_borrow_2_2
 
 $(TESTS):
 	@echo Run tests for $@
