@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.7;
 
-import "ds-test/test.sol";
+import "lib/ds-test/src/test.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 import "contracts/aave/PositionsManagerForAave.sol";
