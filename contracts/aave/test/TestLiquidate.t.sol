@@ -35,7 +35,6 @@ contract TestLiquidate is TestSetup {
             aUsdc,
             address(borrower1)
         );
-        emit log_named_uint("collateralOnPool initial", collateralOnPool);
 
         // Change Oracle
         SimplePriceOracle customOracle = createAndSetCustomPriceOracle();
@@ -171,12 +170,11 @@ contract TestLiquidate is TestSetup {
             bytes32(uint256(uint160(address(customOracle))))
         );
 
-        // !!! WARNING !!! All tokens added with createMarket must be set
-        customOracle.setDirectPrice(dai, oracle.getAssetPrice(dai));
-        customOracle.setDirectPrice(usdc, oracle.getAssetPrice(usdc));
-        customOracle.setDirectPrice(usdt, oracle.getAssetPrice(usdt));
-        customOracle.setDirectPrice(wbtc, oracle.getAssetPrice(wbtc));
-        customOracle.setDirectPrice(wmatic, oracle.getAssetPrice(wmatic));
+        for (uint256 i = 0; i < pools.length; i++) {
+            address underlying = IAToken(pools[i]).UNDERLYING_ASSET_ADDRESS();
+
+            customOracle.setDirectPrice(underlying, oracle.getAssetPrice(underlying));
+        }
 
         return customOracle;
     }

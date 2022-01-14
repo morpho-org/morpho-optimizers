@@ -61,7 +61,7 @@ contract TestSetup is DSTest, Config, Utils {
         marketsManager.setPositionsManager(address(positionsManager));
         marketsManager.updateLendingPool();
         // !!! WARNING !!!
-        // All tokens added with createMarket must be added in create_custom_price_oracle function.
+        // All tokens must also be added to the pools array, for the correct behavior of TestLiquidate::createAndSetCustomPriceOracle.
         marketsManager.createMarket(aDai, WAD, type(uint256).max);
         pools.push(aDai);
         marketsManager.createMarket(aUsdc, to6Decimals(WAD), type(uint256).max);
