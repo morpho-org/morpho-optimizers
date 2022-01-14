@@ -52,8 +52,8 @@
 
 ## 5. [`LIQUIDATE`](https://github.com/morpho-labs/morpho-contracts/blob/main/contracts/aave/PositionsManagerForAave.sol#L452)
 
-- 5.1 - A user liquidate a borrower that has enough collateral to cover for his debt, the transaction reverts.
+- 5.1 - A user liquidates a borrower that has enough collateral to cover for his debt, the transaction reverts.
 
-- 5.2 - A user liquidate a borrower that has not enough collateral to cover for his debt.
+- 5.2 - A user liquidates a borrower that has not enough collateral to cover for his debt.
 
-- 5.3 - The liquidation is made of a Repay and Withdraw performed on a borrower's position on behalf of a liquidator. At most, the liquidator can liquidate 50% of the debt of a borrower and take the corresponding collateral (plus a bonus). Edge-cases here are at most the combination from part 3. and 4. called with the previous amount.
+- 5.3 - The liquidation is made of a Repay and a Withdraw performed on a borrower's position on behalf of a liquidator. At most, the liquidator can liquidate 50% of the debt of a borrower and take the corresponding collateral (plus a bonus). Edge-cases here are at most the combination from part 3. and 4. called with the previous amount.
