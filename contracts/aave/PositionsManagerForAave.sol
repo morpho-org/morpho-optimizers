@@ -287,6 +287,13 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
             .claimRewards(asset, type(uint256).max, marketsManagerForAave.owner());
     }
 
+    /// @dev Transfers protocol fee to the DAO.
+    /// @param _poolTokenAddress The address of the market on which we want to claim fees.
+    function claimFees(address _poolTokenAddress) external onlyOwner {
+        IERC20 poolToken = IERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
+        poolToken.transfer(marketsManagerForAave.owner(), poolToken.balanceOf(address(this)));
+    }
+
     /// @dev Gets the head of the data structure on a specific market (for UI).
     /// @param _poolTokenAddress The address of the market from which to get the head.
     /// @param _positionType The type of user from which to get the head.
@@ -322,13 +329,6 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
             prev = borrowersInP2P[_poolTokenAddress].getPrev(_user);
         else if (_positionType == PositionType.BORROWERS_ON_POOL)
             prev = borrowersOnPool[_poolTokenAddress].getPrev(_user);
-    }
-
-    /// @dev Transfers protocol fee to the DAO.
-    /// @param _poolTokenAddress The address of the market on which we want to claim fees.
-    function claimFees(address _poolTokenAddress) external onlyOwner {
-        IERC20 poolToken = IERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
-        poolToken.transfer(marketsManagerForAave.owner(), poolToken.balanceOf(address(this)));
     }
 
     /// @dev Supplies ERC20 tokens in a specific market.
@@ -438,7 +438,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         marketsManagerForAave.updateRates(_poolTokenAddress);
         IAToken poolToken = IAToken(_poolTokenAddress);
 
-        /// Withdraw all
+        // Withdraw all
         if (_amount == type(uint256).max) {
             uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(
                 address(poolToken.UNDERLYING_ASSET_ADDRESS())
@@ -468,7 +468,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         marketsManagerForAave.updateRates(_poolTokenAddress);
         IAToken poolToken = IAToken(_poolTokenAddress);
 
-        /// Repay all
+        // Repay all
         if (_amount == type(uint256).max) {
             uint256 normalizedVariableDebt = lendingPool.getReserveNormalizedVariableDebt(
                 poolToken.UNDERLYING_ASSET_ADDRESS()
