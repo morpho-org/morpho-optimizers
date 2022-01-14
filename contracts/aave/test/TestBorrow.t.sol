@@ -31,7 +31,7 @@ contract TestBorrow is TestSetup {
             .getReserveConfigurationData(usdc);
         uint256 maxToBorrow = (amount * liquidationThreshold) / 10000;
 
-        hevm.expectRevert(abi.encodeWithSignature("DebtValueAboveMax()"));
+        hevm.expectRevert("11");
         borrower1.borrow(aDai, maxToBorrow + 1);
     }
 
