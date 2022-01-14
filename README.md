@@ -89,9 +89,9 @@ We recommend developers using VSCODE to set their local config as below:
 ```
 
 {
-"editor.formatOnSave": true,
-"solidity.formatter": "prettier",
-"editor.defaultFormatter": "esbenp.prettier-vscode"
+    "editor.formatOnSave": true,
+    "solidity.formatter": "prettier",
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
 }
 
 ```
