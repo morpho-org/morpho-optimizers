@@ -22,8 +22,9 @@ contract MarketsManagerForAave is Ownable {
 
     /// Storage ///
 
-    uint256 internal constant SECONDS_PER_YEAR = 365 days;
-    uint256 internal feeFactor; // Proportion of the spread that is taken as a protocol fee, in ray (default is no fee).
+    uint256 public constant MAX_BASIS_POINTS = 10000;
+    uint256 public constant SECONDS_PER_YEAR = 365 days;
+    uint256 public feeFactor; // Proportion of the spread that is taken as a protocol fee, in basis point (default is no fee).
 
     mapping(address => bool) public isCreated; // Whether or not this market is created.
     mapping(address => uint256) public supplyP2PSPY; // Supply Second Percentage Yield, in ray.
@@ -64,7 +65,7 @@ contract MarketsManagerForAave is Ownable {
     /// @param _marketAddress The address of the market to update.
     /// @param _newSupplyP2PExchangeRate The new value of the supply exchange rate from p2pUnit to underlying.
     /// @param _newBorrowP2PExchangeRate The new value of the borrow exchange rate from p2pUnit to underlying.
-    event P2PExchangesRateUpdated(
+    event P2PExchangeRatesUpdated(
         address _marketAddress,
         uint256 _newSupplyP2PExchangeRate,
         uint256 _newBorrowP2PExchangeRate
@@ -135,9 +136,9 @@ contract MarketsManagerForAave is Ownable {
     }
 
     /// @dev Sets the protocol fee.
-    /// @param _newFeeFactor Factor of the spread that is taken as a protocol fee, in ray.
+    /// @param _newFeeFactor Factor of the spread that is taken as a protocol fee, in basis points.
     function setFee(uint256 _newFeeFactor) external onlyOwner {
-        feeFactor = Math.min(WadRayMath.ray(), Math.max(0, _newFeeFactor));
+        feeFactor = Math.min(MAX_BASIS_POINTS, Math.max(0, _newFeeFactor));
     }
 
     /// @dev Creates a new market to borrow/supply.
@@ -216,7 +217,7 @@ contract MarketsManagerForAave is Ownable {
         ); // In ray
         borrowP2PExchangeRate[_marketAddress] = newBorrowP2PExchangeRate;
 
-        emit P2PExchangesRateUpdated(
+        emit P2PExchangeRatesUpdated(
             _marketAddress,
             newSupplyP2PExchangeRate,
             newBorrowP2PExchangeRate
@@ -235,8 +236,12 @@ contract MarketsManagerForAave is Ownable {
             reserveData.currentVariableBorrowRate
         ) / SECONDS_PER_YEAR; // In ray
 
-        supplyP2PSPY[_marketAddress] = meanSPY.rayMul((WadRayMath.ray() - feeFactor) / 2);
-        borrowP2PSPY[_marketAddress] = meanSPY.rayMul((WadRayMath.ray() + feeFactor) / 2);
+        supplyP2PSPY[_marketAddress] =
+            (meanSPY * (MAX_BASIS_POINTS - feeFactor)) /
+            MAX_BASIS_POINTS;
+        borrowP2PSPY[_marketAddress] =
+            (meanSPY * (MAX_BASIS_POINTS + feeFactor)) /
+            MAX_BASIS_POINTS;
 
         emit P2PSPYsUpdated(
             _marketAddress,
