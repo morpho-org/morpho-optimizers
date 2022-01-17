@@ -289,20 +289,25 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         treasuryVault = _newTreasuryVault;
     }
 
-    /// @dev Claims rewards from liquidity mining and transfers them to the DAO.
-    /// @param _asset The asset to get the rewards from (aToken or variable debt token).
-    function claimRewards(address _asset) external {
-        address[] memory asset = new address[](1);
-        asset[0] = _asset;
-        IAaveIncentivesController(IGetterIncentivesController(_asset).getIncentivesController())
-            .claimRewards(asset, type(uint256).max, treasuryVault);
-    }
-
     /// @dev Transfers the protocol reserve to the DAO.
     /// @param _poolTokenAddress The address of the market on which we want to claim the reserve.
     function claimToTreasury(address _poolTokenAddress) external onlyMarketsManagerOwner {
         IERC20 underlyingToken = IERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
         underlyingToken.transfer(treasuryVault, underlyingToken.balanceOf(address(this)));
+    }
+
+    /// @dev Sets the `rewardsManager`.
+    /// @param _rewardsManagerAddress The address of the `rewardsManager`.
+    function setRewardsManager(address _rewardsManagerAddress) external onlyMarketsManager {
+        rewardsManager = IRewardsManager(_rewardsManagerAddress);
+    }
+
+    /// @dev Claims rewards for the given assets and the unclaimed rewards.
+    /// @param _assets The assets to claim rewards from (aToken or variable debt token).
+    function claimRewards(address[] calldata _assets) external {
+        uint256 amountToClaim = rewardsManager.claimRewards(_assets, type(uint256).max, msg.sender);
+        if (amountToClaim > 0)
+            aaveIncentivesController.claimRewards(_assets, amountToClaim, msg.sender);
     }
 
     /// @dev Gets the head of the data structure on a specific market (for UI).
@@ -340,12 +345,6 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
             prev = borrowersInP2P[_poolTokenAddress].getPrev(_user);
         else if (_positionType == PositionType.BORROWERS_ON_POOL)
             prev = borrowersOnPool[_poolTokenAddress].getPrev(_user);
-    }
-
-    /// @dev Updates the rewards manager.
-    /// @param _rewardsManagerAddress The address of the rewards manager.
-    function updateRewardsManager(address _rewardsManagerAddress) external onlyMarketsManager {
-        rewardsManager = IRewardsManager(_rewardsManagerAddress);
     }
 
     /// @dev Supplies ERC20 tokens in a specific market.
@@ -1236,13 +1235,5 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
                 _account
             )
         );
-    }
-
-    /// @dev Claims rewards for the given assets and the unclaimed rewards.
-    /// @param _assets The assets to claim rewards from (aToken or variable debt token).
-    function claimRewards(address[] calldata _assets) external {
-        uint256 amountToClaim = rewardsManager.claimRewards(_assets, type(uint256).max, msg.sender);
-        if (amountToClaim > 0)
-            aaveIncentivesController.claimRewards(_assets, amountToClaim, msg.sender);
     }
 }
