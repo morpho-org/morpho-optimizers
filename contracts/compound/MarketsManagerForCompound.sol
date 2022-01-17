@@ -88,8 +88,8 @@ contract MarketsManagerForCompound is Ownable {
 
     /// @dev Sets the maximum number of users in tree.
     /// @param _newMaxNumber The maximum number of users to have in the tree.
-    function setMaxNumberOfUsersInTree(uint16 _newMaxNumber) external onlyOwner {
-        positionsManagerForCompound.setMaxNumberOfUsersInTree(_newMaxNumber);
+    function setNmaxForMatchingEngine(uint16 _newMaxNumber) external onlyOwner {
+        positionsManagerForCompound.setNmaxForMatchingEngine(_newMaxNumber);
         emit MaxNumberUpdated(_newMaxNumber);
     }
 
