@@ -146,10 +146,10 @@ contract MarketsManagerForAave is Ownable {
         emit ReserveFactorSet(reserveFactor);
     }
 
-    /// @dev Updates the rewards manager.
-    /// @param _rewardsManagerAddress The address of the rewards manager.
-    function updateRewardsManager(address _rewardsManagerAddress) external onlyOwner {
-        positionsManagerForAave.updateRewardsManager(_rewardsManagerAddress);
+    /// @dev Sets the `rewardsManager`.
+    /// @param _rewardsManagerAddress The address of the `rewardsManager`.
+    function setRewardsManager(address _rewardsManagerAddress) external onlyOwner {
+        positionsManagerForAave.setRewardsManager(_rewardsManagerAddress);
     }
 
     /// @dev Creates a new market to borrow/supply.
@@ -175,10 +175,10 @@ contract MarketsManagerForAave is Ownable {
         emit MarketCreated(_marketAddress);
     }
 
-    /// @dev Updates the threshold below which suppliers and borrowers cannot join a given market.
+    /// @dev Sets the threshold below which suppliers and borrowers cannot join a given market.
     /// @param _marketAddress The address of the market to change the threshold.
     /// @param _newThreshold The new threshold to set.
-    function updateThreshold(address _marketAddress, uint256 _newThreshold)
+    function setThreshold(address _marketAddress, uint256 _newThreshold)
         external
         onlyOwner
         isMarketCreated(_marketAddress)

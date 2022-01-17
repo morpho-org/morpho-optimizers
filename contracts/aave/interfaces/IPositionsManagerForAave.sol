@@ -17,7 +17,7 @@ interface IPositionsManagerForAave {
 
     function setTreasuryVault(address) external;
 
-    function updateRewardsManager(address _rewardsManagerAddress) external;
+    function setRewardsManager(address _rewardsManagerAddress) external;
 
     function borrowBalanceInOf(address, address) external returns (Balance memory);
 
