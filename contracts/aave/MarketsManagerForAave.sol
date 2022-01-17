@@ -138,7 +138,7 @@ contract MarketsManagerForAave is Ownable {
     /// @dev Sets the protocol fee.
     /// @param _newFeeFactor Factor of the spread that is taken as a protocol fee, in basis points.
     function setFee(uint256 _newFeeFactor) external onlyOwner {
-        feeFactor = Math.min(MAX_BASIS_POINTS, Math.max(0, _newFeeFactor));
+        feeFactor = Math.min(MAX_BASIS_POINTS, _newFeeFactor);
     }
 
     /// @dev Creates a new market to borrow/supply.
