@@ -50,4 +50,5 @@ contract PositionsManagerForAaveStorage is ReentrancyGuard {
     IProtocolDataProvider public dataProvider;
     ILendingPool public lendingPool;
     IMatchingEngineManager public matchingEngineManager;
+    address public treasuryVault;
 }

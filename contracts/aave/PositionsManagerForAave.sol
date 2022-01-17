@@ -189,6 +189,9 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
     /// @notice Emitted when only the markets manager can call the function.
     error OnlyMarketsManager();
 
+    /// @notice Emitted when only the markets manager's owner can call the function.
+    error OnlyMarketsManagerOwner();
+
     /// @notice Emitted when the supply is above the cap value.
     error SupplyAboveCapValue();
 
@@ -221,15 +224,15 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         _;
     }
 
-    /// @dev Prevents a user to call function allowed for the markets manager..
+    /// @dev Prevents a user to call function only allowed for the markets manager.
     modifier onlyMarketsManager() {
         if (msg.sender != address(marketsManagerForAave)) revert OnlyMarketsManager();
         _;
     }
 
-    /// @dev Prevents a user to call function allowed for the owner.
-    modifier onlyOwner() {
-        require(msg.sender == marketsManagerForAave.owner());
+    /// @dev Prevents a user to call function only allowed for the markets manager's owner.
+    modifier onlyMarketsManagerOwner() {
+        if (msg.sender != marketsManagerForAave.owner()) revert OnlyMarketsManagerOwner();
         _;
     }
 
@@ -278,20 +281,26 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         capValue[_poolTokenAddress] = _newCapValue;
     }
 
+    /// @dev Sets the `treasuryVault`.
+    /// @param _newTreasuryVault The address of the new `treasuryVault`.
+    function setTreasuryVault(address _newTreasuryVault) external onlyMarketsManagerOwner {
+        treasuryVault = _newTreasuryVault;
+    }
+
     /// @dev Claims rewards from liquidity mining and transfers them to the DAO.
     /// @param _asset The asset to get the rewards from (aToken or variable debt token).
     function claimRewards(address _asset) external {
         address[] memory asset = new address[](1);
         asset[0] = _asset;
         IAaveIncentivesController(IGetterIncentivesController(_asset).getIncentivesController())
-            .claimRewards(asset, type(uint256).max, marketsManagerForAave.owner());
+            .claimRewards(asset, type(uint256).max, treasuryVault);
     }
 
     /// @dev Transfers protocol fee to the DAO.
     /// @param _poolTokenAddress The address of the market on which we want to claim fees.
-    function claimFees(address _poolTokenAddress) external onlyOwner {
+    function claimFees(address _poolTokenAddress) external onlyMarketsManagerOwner {
         IERC20 poolToken = IERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
-        poolToken.transfer(marketsManagerForAave.owner(), poolToken.balanceOf(address(this)));
+        poolToken.transfer(treasuryVault, poolToken.balanceOf(address(this)));
     }
 
     /// @dev Gets the head of the data structure on a specific market (for UI).
