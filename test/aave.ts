@@ -1346,6 +1346,11 @@ describe('PositionsManagerForAave Contract', () => {
   });
 
   describe.only('Test fees', () => {
+    it('Should not be possible to set the fee factor higher than 100%', async () => {
+      await marketsManagerForAave.connect(owner).setFee(10001);
+      expect(await marketsManagerForAave.feeFactor()).to.be.equal(10000);
+    });
+
     it('DAO should be able to claim fees', async () => {
       await marketsManagerForAave.connect(owner).setFee('1000'); // 10%
 
