@@ -9,4 +9,6 @@ interface IPositionsManagerForAave {
     function setThreshold(address, uint256) external;
 
     function setCapValue(address, uint256) external;
+
+    function setTreasuryVault(address) external;
 }

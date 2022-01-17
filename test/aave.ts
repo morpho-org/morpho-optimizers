@@ -54,6 +54,7 @@ describe('PositionsManagerForAave Contract', () => {
   let borrower3: Signer;
   let liquidator: Signer;
   let attacker: Signer;
+  let treasuryVault: Signer;
 
   let underlyingThreshold: BigNumber;
   let snapshotId: number;
@@ -61,7 +62,7 @@ describe('PositionsManagerForAave Contract', () => {
   const initialize = async () => {
     // Signers
     signers = await ethers.getSigners();
-    [owner, supplier1, supplier2, supplier3, borrower1, borrower2, borrower3, liquidator, attacker] = signers;
+    [owner, supplier1, supplier2, supplier3, borrower1, borrower2, borrower3, liquidator, attacker, treasuryVault] = signers;
     suppliers = [supplier1, supplier2, supplier3];
     borrowers = [borrower1, borrower2, borrower3];
 
@@ -111,6 +112,7 @@ describe('PositionsManagerForAave Contract', () => {
     // Create and list markets
     await marketsManagerForAave.connect(owner).setPositionsManager(positionsManagerForAave.address);
     await marketsManagerForAave.connect(owner).updateLendingPool();
+    await positionsManagerForAave.connect(owner).setTreasuryVault(treasuryVault.getAddress());
     await marketsManagerForAave.connect(owner).createMarket(config.tokens.aDai.address, WAD, MAX_INT);
     await marketsManagerForAave.connect(owner).createMarket(config.tokens.aUsdc.address, to6Decimals(WAD), MAX_INT);
     await marketsManagerForAave.connect(owner).createMarket(config.tokens.aWbtc.address, BigNumber.from(10).pow(4), MAX_INT);
@@ -1326,7 +1328,7 @@ describe('PositionsManagerForAave Contract', () => {
     it('Anyone should be able to claim rewards on several markets', async () => {
       const toSupply = utils.parseUnits('100');
       const toBorrow = to6Decimals(utils.parseUnits('50'));
-      const rewardTokenBalanceBefore = await wmaticToken.balanceOf(owner.getAddress());
+      const rewardTokenBalanceBefore = await wmaticToken.balanceOf(treasuryVault.getAddress());
       await daiToken.connect(supplier1).approve(positionsManagerForAave.address, toSupply);
       await positionsManagerForAave.connect(supplier1).supply(config.tokens.aDai.address, toSupply, 0);
       await positionsManagerForAave.connect(supplier1).borrow(config.tokens.aUsdc.address, toBorrow, 0);
@@ -1337,18 +1339,25 @@ describe('PositionsManagerForAave Contract', () => {
       }
 
       await positionsManagerForAave.connect(supplier1).claimRewards(config.tokens.variableDebtUsdc.address);
-      const rewardTokenBalanceAfter1 = await wmaticToken.balanceOf(owner.getAddress());
+      const rewardTokenBalanceAfter1 = await wmaticToken.balanceOf(treasuryVault.getAddress());
       expect(rewardTokenBalanceAfter1).to.be.gt(rewardTokenBalanceBefore);
       await positionsManagerForAave.connect(borrower1).claimRewards(config.tokens.aDai.address);
-      const rewardTokenBalanceAfter2 = await wmaticToken.balanceOf(owner.getAddress());
+      const rewardTokenBalanceAfter2 = await wmaticToken.balanceOf(treasuryVault.getAddress());
       expect(rewardTokenBalanceAfter2).to.be.gt(rewardTokenBalanceAfter1);
     });
   });
 
-  describe.only('Test fees', () => {
+  describe('Test fees', () => {
     it('Should not be possible to set the fee factor higher than 100%', async () => {
       await marketsManagerForAave.connect(owner).setFee(10001);
       expect(await marketsManagerForAave.feeFactor()).to.be.equal(10000);
+    });
+
+    it('Only MarketsManager owner can set the treasury vault', async () => {
+      expect(positionsManagerForAave.connect(borrower1).setTreasuryVault()).to.be.reverted;
+      const newTreasuryVaultAddress = await supplier1.getAddress();
+      await positionsManagerForAave.connect(owner).setTreasuryVault(newTreasuryVaultAddress);
+      expect(await positionsManagerForAave.treasuryVault()).to.be.equal(newTreasuryVaultAddress);
     });
 
     it('DAO should be able to claim fees', async () => {
@@ -1356,7 +1365,7 @@ describe('PositionsManagerForAave Contract', () => {
 
       const toSupply = utils.parseUnits('100');
       const toBorrow = utils.parseUnits('50');
-      const daoBalanceBefore = await daiToken.balanceOf(owner.getAddress());
+      const daoBalanceBefore = await daiToken.balanceOf(treasuryVault.getAddress());
       await daiToken.connect(supplier1).approve(positionsManagerForAave.address, toSupply);
       await positionsManagerForAave.connect(supplier1).supply(config.tokens.aDai.address, toSupply, 0);
       await positionsManagerForAave.connect(supplier1).borrow(config.tokens.aDai.address, toBorrow, 0);
@@ -1367,14 +1376,14 @@ describe('PositionsManagerForAave Contract', () => {
       await daiToken.connect(supplier1).approve(positionsManagerForAave.address, MAX_INT);
       await positionsManagerForAave.connect(supplier1).repay(config.tokens.aDai.address, MAX_INT);
       await positionsManagerForAave.connect(owner).claimFees(config.tokens.aDai.address);
-      const daoBalanceAfter = await daiToken.balanceOf(owner.getAddress());
+      const daoBalanceAfter = await daiToken.balanceOf(treasuryVault.getAddress());
       expect(daoBalanceAfter).to.be.gt(daoBalanceBefore);
     });
 
     it('DAO should not collect fees when factor is null', async () => {
       const toSupply = utils.parseUnits('100');
       const toBorrow = utils.parseUnits('50');
-      const daoBalanceBefore = await daiToken.balanceOf(owner.getAddress());
+      const daoBalanceBefore = await daiToken.balanceOf(treasuryVault.getAddress());
       await daiToken.connect(supplier1).approve(positionsManagerForAave.address, toSupply);
       await positionsManagerForAave.connect(supplier1).supply(config.tokens.aDai.address, toSupply, 0);
       await positionsManagerForAave.connect(supplier1).borrow(config.tokens.aDai.address, toBorrow, 0);
@@ -1385,7 +1394,7 @@ describe('PositionsManagerForAave Contract', () => {
       await daiToken.connect(supplier1).approve(positionsManagerForAave.address, MAX_INT);
       await positionsManagerForAave.connect(supplier1).repay(config.tokens.aDai.address, MAX_INT);
       await positionsManagerForAave.connect(owner).claimFees(config.tokens.aDai.address);
-      const daoBalanceAfter = await daiToken.balanceOf(owner.getAddress());
+      const daoBalanceAfter = await daiToken.balanceOf(treasuryVault.getAddress());
       expect(daoBalanceAfter).to.equal(daoBalanceBefore);
     });
 
@@ -1398,9 +1407,9 @@ describe('PositionsManagerForAave Contract', () => {
       const supplier1BalanceBefore = await daiToken.balanceOf(supplier1.getAddress());
       await daiToken.connect(supplier1).approve(positionsManagerForAave.address, toSupply);
       await usdcToken.connect(borrower1).approve(positionsManagerForAave.address, toSupplyCollateral);
-      await positionsManagerForAave.connect(supplier1).supply(config.tokens.aDai.address, toSupply, 0);
       await positionsManagerForAave.connect(borrower1).supply(config.tokens.aUsdc.address, toSupplyCollateral, 0);
       await positionsManagerForAave.connect(borrower1).borrow(config.tokens.aDai.address, toBorrow, 0);
+      await positionsManagerForAave.connect(supplier1).supply(config.tokens.aDai.address, toSupply, 0);
 
       // Wait 1 year
       await hre.network.provider.send('evm_increaseTime', [365 * 24 * 60 * 60]);
