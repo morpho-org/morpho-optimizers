@@ -85,6 +85,10 @@ contract MarketsManagerForAave is Ownable {
     /// @param _newValue The new value of the maximum number of users to have in the tree.
     event MaxNumberUpdated(uint16 _newValue);
 
+    /// @dev Emitted the `feeFactor` is set.
+    /// @param _newValue The new value of the `feeFactor`.
+    event FeeFactorSet(uint256 _newValue);
+
     /// Errors ///
 
     /// @notice Emitted when the market is not created yet.
@@ -139,6 +143,7 @@ contract MarketsManagerForAave is Ownable {
     /// @param _newFeeFactor Factor of the spread that is taken as a protocol fee, in basis points.
     function setFee(uint256 _newFeeFactor) external onlyOwner {
         feeFactor = Math.min(MAX_BASIS_POINTS, _newFeeFactor);
+        emit FeeFactorSet(feeFactor);
     }
 
     /// @dev Creates a new market to borrow/supply.
