@@ -17,7 +17,7 @@ test:
 
 test1:
 	@echo Run test matching regexp
-	@forge test --fork-url https://${NETWORK}.infura.io/v3/${INFURA_PROJECT_ID} --fork-block-number 22747272 -vvv --match-test test_borrow_2_2
+	@forge test --fork-url https://${NETWORK}.infura.io/v3/${INFURA_PROJECT_ID} --fork-block-number 22747272 -vvvvv --match-test test_withdraw_3_3_2
 
 $(TESTS):
 	@echo Run tests for $@

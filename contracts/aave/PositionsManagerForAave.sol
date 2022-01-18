@@ -730,6 +730,10 @@ contract PositionsManagerForAave is ReentrancyGuard {
         uint256 onPoolSupply = supplyBalanceInOf[poolTokenAddress][_supplier].onPool;
         uint256 onPoolSupplyInUnderlying = onPoolSupply.mulWadByRay(normalizedIncome);
         withdrawnInUnderlying = Math.min(onPoolSupplyInUnderlying, _amount);
+        withdrawnInUnderlying = Math.min(
+            withdrawnInUnderlying,
+            _poolToken.balanceOf(address(this))
+        );
 
         supplyBalanceInOf[poolTokenAddress][_supplier].onPool -= Math.min(
             onPoolSupply,
@@ -786,16 +790,17 @@ contract PositionsManagerForAave is ReentrancyGuard {
             address(_underlyingToken)
         );
         address poolTokenAddress = address(_poolToken);
-        uint256 onPoolBorrow = borrowBalanceInOf[poolTokenAddress][_borrower].onPool;
-        uint256 onPoolBorrowInUnderlying = onPoolBorrow.mulWadByRay(normalizedVariableDebt);
-        repaidInUnderlying = Math.min(onPoolBorrowInUnderlying, _amount);
+        uint256 borrowOnPool = borrowBalanceInOf[poolTokenAddress][_borrower].onPool;
+        uint256 borrowOnPoolInUnderlying = borrowOnPool.mulWadByRay(normalizedVariableDebt);
+        repaidInUnderlying = Math.min(borrowOnPoolInUnderlying, _amount);
 
         borrowBalanceInOf[poolTokenAddress][_borrower].onPool -= Math.min(
-            borrowBalanceInOf[poolTokenAddress][_borrower].onPool,
+            borrowOnPool,
             repaidInUnderlying.divWadByRay(normalizedVariableDebt)
         ); // In adUnit
         _updateBorrowerList(poolTokenAddress, _borrower);
-        if (repaidInUnderlying > 0) _repayERC20ToPool(_underlyingToken, repaidInUnderlying); // Revert on error
+        if (repaidInUnderlying > 0)
+            _repayERC20ToPool(_underlyingToken, repaidInUnderlying, normalizedVariableDebt); // Revert on error
     }
 
     /// @dev Repays `_amount` of the position of a `_borrower` in peer-to-peer.
@@ -861,7 +866,21 @@ contract PositionsManagerForAave is ReentrancyGuard {
     /// @dev Repays ERC20 tokens to Aave.
     /// @param _underlyingToken The ERC20 interface of the underlying token of the market to repay to.
     /// @param _amount The amount of tokens to repay.
-    function _repayERC20ToPool(IERC20 _underlyingToken, uint256 _amount) internal {
+    /// @param _normalizedVariableDebt The normalized variable debt on Aave.
+    function _repayERC20ToPool(
+        IERC20 _underlyingToken,
+        uint256 _amount,
+        uint256 _normalizedVariableDebt
+    ) internal {
+        (, , address variableDebtToken) = dataProvider.getReserveTokensAddresses(
+            address(_underlyingToken)
+        );
+        _amount = Math.min(
+            _amount,
+            IVariableDebtToken(variableDebtToken).scaledBalanceOf(address(this)).mulWadByRay(
+                _normalizedVariableDebt
+            )
+        );
         _underlyingToken.safeIncreaseAllowance(address(lendingPool), _amount);
         lendingPool.repay(
             address(_underlyingToken),
@@ -913,7 +932,10 @@ contract PositionsManagerForAave is ReentrancyGuard {
             account = suppliersOnPool[poolTokenAddress].getHead();
         }
 
-        if (matchedSupply > 0) _withdrawERC20FromPool(_underlyingToken, matchedSupply); // Revert on error
+        if (matchedSupply > 0) {
+            matchedSupply = Math.min(matchedSupply, _poolToken.balanceOf(address(this)));
+            _withdrawERC20FromPool(_underlyingToken, matchedSupply); // Revert on error
+        }
     }
 
     /// @dev Finds liquidity in peer-to-peer and unmatches it to reconnect Aave.
@@ -999,7 +1021,8 @@ contract PositionsManagerForAave is ReentrancyGuard {
             account = borrowersOnPool[poolTokenAddress].getHead();
         }
 
-        if (matchedBorrow > 0) _repayERC20ToPool(_underlyingToken, matchedBorrow); // Revert on error
+        if (matchedBorrow > 0)
+            _repayERC20ToPool(_underlyingToken, matchedBorrow, normalizedVariableDebt); // Revert on error
     }
 
     /// @dev Finds borrowers in peer-to-peer that match the given `_amount` and move them to Aave.

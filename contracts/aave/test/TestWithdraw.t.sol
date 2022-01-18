@@ -119,7 +119,7 @@ contract TestWithdraw is TestSetup {
     // 3.3.2 - There are NMAX (or less) suppliers onPool available to replace him inP2P, they supply enough to cover for the withdrawn liquidity.
     // First, his liquidity onPool is taken, his matched is replaced by NMAX (or less) suppliers up to his withdrawal amount.
     function test_withdraw_3_3_2() public {
-        uint256 borrowedAmount = 100000 ether;
+        uint256 borrowedAmount = 10000 ether;
         uint256 suppliedAmount = 2 * borrowedAmount;
         uint256 collateral = 2 * borrowedAmount;
 
