@@ -123,9 +123,9 @@ describe('PositionsManagerForAave Contract', () => {
 
     // Create and list markets
     await marketsManagerForAave.connect(owner).setPositionsManager(positionsManagerForAave.address);
-    await marketsManagerForAave.connect(owner).setRewardsManager(rewardsManager.address);
-    await marketsManagerForAave.connect(owner).updateLendingPool();
+    await positionsManagerForAave.connect(owner).setAaveIncentivesController(config.aave.aaveIncentivesController.address);
     await positionsManagerForAave.connect(owner).setTreasuryVault(treasuryVault.getAddress());
+    await positionsManagerForAave.connect(owner).setRewardsManager(rewardsManager.address);
     await marketsManagerForAave.connect(owner).createMarket(config.tokens.aDai.address, WAD, MAX_INT);
     await marketsManagerForAave.connect(owner).createMarket(config.tokens.aUsdc.address, to6Decimals(WAD), MAX_INT);
     await marketsManagerForAave.connect(owner).createMarket(config.tokens.aWbtc.address, BigNumber.from(10).pow(4), MAX_INT);
@@ -178,12 +178,12 @@ describe('PositionsManagerForAave Contract', () => {
 
     it('Only Owner should be able to update thresholds', async () => {
       const newCapValue = utils.parseUnits('2');
-      await marketsManagerForAave.connect(owner).updateCapValue(config.tokens.aUsdc.address, newCapValue);
+      await marketsManagerForAave.connect(owner).setCapValue(config.tokens.aUsdc.address, newCapValue);
       expect(await positionsManagerForAave.capValue(config.tokens.aUsdc.address)).to.be.equal(newCapValue);
 
       // Other accounts than Owner
-      await expect(marketsManagerForAave.connect(supplier1).updateCapValue(config.tokens.aUsdc.address, newCapValue)).to.be.reverted;
-      await expect(marketsManagerForAave.connect(borrower1).updateCapValue(config.tokens.aUsdc.address, newCapValue)).to.be.reverted;
+      await expect(marketsManagerForAave.connect(supplier1).setCapValue(config.tokens.aUsdc.address, newCapValue)).to.be.reverted;
+      await expect(marketsManagerForAave.connect(borrower1).setCapValue(config.tokens.aUsdc.address, newCapValue)).to.be.reverted;
     });
 
     it('Should create a market the with right values', async () => {
@@ -201,10 +201,9 @@ describe('PositionsManagerForAave Contract', () => {
 
     it('Should update NMAX', async () => {
       const newNMAX = BigNumber.from(3000);
-      expect(marketsManagerForAave.connect(supplier1).setNmaxForMatchingEngine(newNMAX)).to.be.reverted;
-      expect(marketsManagerForAave.connect(borrower1).setNmaxForMatchingEngine(newNMAX)).to.be.reverted;
-      expect(positionsManagerForAave.connect(owner).setNmaxForMatchingEngine(newNMAX)).to.be.reverted;
-      await marketsManagerForAave.connect(owner).setNmaxForMatchingEngine(newNMAX);
+      expect(positionsManagerForAave.connect(supplier1).setNmaxForMatchingEngine(newNMAX)).to.be.reverted;
+      expect(positionsManagerForAave.connect(borrower1).setNmaxForMatchingEngine(newNMAX)).to.be.reverted;
+      await positionsManagerForAave.connect(owner).setNmaxForMatchingEngine(newNMAX);
       expect(await positionsManagerForAave.NMAX()).to.equal(newNMAX);
     });
   });
@@ -1328,7 +1327,7 @@ describe('PositionsManagerForAave Contract', () => {
     it('Should be possible to supply up to cap value', async () => {
       const newCapValue = utils.parseUnits('2');
       const amount = utils.parseUnits('2');
-      await marketsManagerForAave.connect(owner).updateCapValue(config.tokens.aDai.address, newCapValue);
+      await marketsManagerForAave.connect(owner).setCapValue(config.tokens.aDai.address, newCapValue);
 
       await daiToken.connect(supplier1).approve(positionsManagerForAave.address, utils.parseUnits('3'));
       expect(positionsManagerForAave.connect(supplier1).supply(config.tokens.aDai.address, amount, 0)).not.to.be.reverted;
