@@ -7,6 +7,17 @@ This repository contains the core smart contracts for the Morpho Protocol V0 �
 
 # Testing
 
+Tests are run against a forks of real networks, which allows us to interact directly with liquidity pools of Compound or Aave. Note that you need to have an RPC provider that have access to Ethereum or Polygon.
+We aim a test coverage > 90% of all functions.
+
+⚠️ Tests cannot substituted to coverage as the coverage command as contracts are compiled without optimization and can alter some patterns.
+
+For testing, first, install dependencies with:
+
+```
+yarn
+```
+
 ## Testing in Solidity with Foundry
 
 First, install [Foundry](https://github.com/gakonst/foundry):
@@ -15,18 +26,26 @@ First, install [Foundry](https://github.com/gakonst/foundry):
 cargo install --git https://github.com/gakonst/foundry --bin forge --locked
 ```
 
+or on Mac OS,
+
+```
+curl https://raw.githubusercontent.com/gakonst/foundry/master/foundryup/install | bash
+```
+
+Then in a new terminal session or after reloading your PATH, run it to get the latest forge and cast binaries:
+
+```
+foundryup
+```
+
 Also, you should update git submodules to install the ds-test library:
+
 ```
 git submodule init
 git submodule update
 ```
 
 Refer to the `env.example` for the required environment variable.
-
-Tests are run against a forks of real networks, which allows us to interact directly with liquidity pools of Compound or Aave. Note that you need to have an RPC provider that have access to Ethereum or Polygon.
-We aim a test coverage > 90% of all functions.
-
-⚠️ Tests cannot substituted to coverage as the coverage command as contracts are compiled without optimization and can alter some patterns.
 
 To run tests on different platforms, navigate a Unix terminal to the root folder of the project and run the command of your choice:
 
@@ -48,20 +67,9 @@ For the other commands, check the `Makefile` file.
 
 ## Testing in Javascript with Hardhat
 
-First, install dependencies with:
-
-```
-yarn
-```
-
 Refer to the `env.example` for the required environment variable.
 
-Tests are run against a forks of real networks, which allows us to interact directly with liquidity pools of Compound or Aave. Note that you need to have an RPC provider that have access to Ethereum or Polygon.
-We aim a test coverage > 90% of all functions.
-
-⚠️ Tests cannot substituted to coverage as the coverage command as contracts are compiled without optimization and can alter some patterns.
-
-To run tests on different platforms, use these commands:
+You can run test on different platforms with:
 
 ```
 yarn test:comp:mainnet
@@ -172,4 +180,3 @@ In your `env.local` file, put your tenderly private key. Then you can deploy and
 ## Questions
 
 For any question you can send an email to [merlin@mopho.best](mailto:merlin@morpho.best) 😊
-```
