@@ -4,13 +4,12 @@ pragma solidity 0.8.7;
 import "lib/ds-test/src/test.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-import "contracts/aave/PositionsManagerForAave.sol";
-import "contracts/aave/MarketsManagerForAave.sol";
-
+import "@contracts/aave/PositionsManagerForAave.sol";
+import "@contracts/aave/MarketsManagerForAave.sol";
+import "@contracts/aave/test/SimplePriceOracle.sol";
 import "@config/Config.sol";
 import "./HEVM.sol";
 import "./Utils.sol";
-import "./SimplePriceOracle.sol";
 import "./User.sol";
 
 contract TestSetup is DSTest, Config, Utils {
