@@ -4,12 +4,11 @@ pragma solidity 0.8.7;
 import {IAToken} from "./interfaces/aave/IAToken.sol";
 import "./interfaces/aave/IPriceOracleGetter.sol";
 
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "../common/libraries/DoubleLinkedList.sol";
 import "./libraries/aave/WadRayMath.sol";
 
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "./PositionsManagerForAaveStorage.sol";
 import "./MatchingEngineManager.sol";
@@ -19,8 +18,8 @@ import "./MatchingEngineManager.sol";
 contract PositionsManagerForAave is PositionsManagerForAaveStorage {
     using DoubleLinkedList for DoubleLinkedList.List;
     using WadRayMath for uint256;
-    using Address for address;
     using SafeERC20 for IERC20;
+    using Address for address;
 
     /// Enums ///
 
@@ -174,6 +173,32 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         uint256 _balanceInP2P
     );
 
+    /// @dev Emitted the maximum number of users to have in the tree is updated.
+    /// @param _newValue The new value of the maximum number of users to have in the tree.
+    event MaxNumberSet(uint16 _newValue);
+
+    /// @dev Emitted the address of the `treasuryVault` is set.
+    /// @param _newTreasuryVaultAddress The new address of the `treasuryVault`.
+    event TreasuryVaultSet(address _newTreasuryVaultAddress);
+
+    /// @dev Emitted the address of the `rewardsManager` is set.
+    /// @param _newRewardsManagerAddress The new address of the `rewardsManager`.
+    event RewardsManagerSet(address _newRewardsManagerAddress);
+
+    /// @dev Emitted the address of the `aaveIncentivesController` is set.
+    /// @param _aaveIncentivesController The new address of the `rewardsManager`.
+    event AaveIncentivesControllerSet(address _aaveIncentivesController);
+
+    /// @dev Emitted when the DAO claims fees.
+    /// @param _poolTokenAddress The address of the market.
+    /// @param _amountClaimed The amount of underlying token claimed.
+    event FeesClaimed(address _poolTokenAddress, uint256 _amountClaimed);
+
+    /// @dev Emitted when a user claims rewards.
+    /// @param _user The new address of the claimer.
+    /// @param _amountClaimed The amount of reward token claimed.
+    event RewardsClaimed(address _user, uint256 _amountClaimed);
+
     /// Errors ///
 
     /// @notice Emitted when the is equal to 0.
@@ -228,7 +253,6 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         if (msg.sender != address(marketsManagerForAave)) revert OnlyMarketsManager();
         _;
     }
-
     /// @dev Prevents a user to call function only allowed for the markets manager's owner.
     modifier onlyMarketsManagerOwner() {
         if (msg.sender != marketsManagerForAave.owner()) revert OnlyMarketsManagerOwner();
@@ -238,7 +262,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
     /// Constructor ///
 
     /// @dev Constructs the PositionsManagerForAave contract.
-    /// @param _marketsManager The address of the aave markets manager.
+    /// @param _marketsManager The address of the aave `marketsManager`.
     /// @param _lendingPoolAddressesProvider The address of the lending pool addresses provider.
     constructor(address _marketsManager, address _lendingPoolAddressesProvider) {
         marketsManagerForAave = IMarketsManagerForAave(_marketsManager);
@@ -246,9 +270,6 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         dataProvider = IProtocolDataProvider(addressesProvider.getAddress(DATA_PROVIDER_ID));
         lendingPool = ILendingPool(addressesProvider.getLendingPool());
         matchingEngineManager = new MatchingEngineManager();
-        aaveIncentivesController = IAaveIncentivesController(
-            0x357D51124f59836DeD84c8a1730D72B749d8BC23
-        );
     }
 
     /// @dev Updates the lending pool and the data provider.
@@ -257,10 +278,21 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         lendingPool = ILendingPool(addressesProvider.getLendingPool());
     }
 
+    /// @dev Sets the `aaveIncentivesController`.
+    /// @param _aaveIncentivesController The address of the `aaveIncentivesController`.
+    function setAaveIncentivesController(address _aaveIncentivesController)
+        external
+        onlyMarketsManagerOwner
+    {
+        aaveIncentivesController = IAaveIncentivesController(_aaveIncentivesController);
+        emit AaveIncentivesControllerSet(_aaveIncentivesController);
+    }
+
     /// @dev Sets the maximum number of users in tree.
     /// @param _newMaxNumber The maximum number of users to have in the tree.
-    function setNmaxForMatchingEngine(uint16 _newMaxNumber) external onlyMarketsManager {
+    function setNmaxForMatchingEngine(uint16 _newMaxNumber) external onlyMarketsManagerOwner {
         NMAX = _newMaxNumber;
+        emit MaxNumberSet(_newMaxNumber);
     }
 
     /// @dev Sets the threshold of a market.
@@ -283,10 +315,18 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         capValue[_poolTokenAddress] = _newCapValue;
     }
 
-    /// @dev Sets the `treasuryVault`.
-    /// @param _newTreasuryVault The address of the new `treasuryVault`.
-    function setTreasuryVault(address _newTreasuryVault) external onlyMarketsManagerOwner {
-        treasuryVault = _newTreasuryVault;
+    /// @dev Sets the `_newTreasuryVaultAddress`.
+    /// @param _newTreasuryVaultAddress The address of the new `treasuryVault`.
+    function setTreasuryVault(address _newTreasuryVaultAddress) external onlyMarketsManagerOwner {
+        treasuryVault = _newTreasuryVaultAddress;
+        emit TreasuryVaultSet(_newTreasuryVaultAddress);
+    }
+
+    /// @dev Sets the `rewardsManager`.
+    /// @param _rewardsManagerAddress The address of the `rewardsManager`.
+    function setRewardsManager(address _rewardsManagerAddress) external onlyMarketsManagerOwner {
+        rewardsManager = IRewardsManager(_rewardsManagerAddress);
+        emit RewardsManagerSet(_rewardsManagerAddress);
     }
 
     /// @dev Transfers the protocol reserve to the DAO.
@@ -296,18 +336,18 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         underlyingToken.transfer(treasuryVault, underlyingToken.balanceOf(address(this)));
     }
 
-    /// @dev Sets the `rewardsManager`.
-    /// @param _rewardsManagerAddress The address of the `rewardsManager`.
-    function setRewardsManager(address _rewardsManagerAddress) external onlyMarketsManager {
-        rewardsManager = IRewardsManager(_rewardsManagerAddress);
-    }
-
     /// @dev Claims rewards for the given assets and the unclaimed rewards.
     /// @param _assets The assets to claim rewards from (aToken or variable debt token).
     function claimRewards(address[] calldata _assets) external {
         uint256 amountToClaim = rewardsManager.claimRewards(_assets, type(uint256).max, msg.sender);
-        if (amountToClaim > 0)
-            aaveIncentivesController.claimRewards(_assets, amountToClaim, msg.sender);
+        if (amountToClaim > 0) {
+            uint256 amountClaimed = aaveIncentivesController.claimRewards(
+                _assets,
+                amountToClaim,
+                msg.sender
+            );
+            emit RewardsClaimed(msg.sender, amountClaimed);
+        }
     }
 
     /// @dev Gets the head of the data structure on a specific market (for UI).
