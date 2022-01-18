@@ -58,53 +58,47 @@ contract TestLiquidate is TestSetup {
         testEquality(expectedBorrowBalanceOnPool, amount / 2);
         assertEq(inP2PBorrower, 0);
 
-        // // Check borrower1 supply balance
-        // (inP2PBorrower, onPoolBorrower) = positionsManager.supplyBalanceInOf(
-        //     aUsdc,
-        //     address(borrower1)
-        // );
+        // Check borrower1 supply balance
+        (inP2PBorrower, onPoolBorrower) = positionsManager.supplyBalanceInOf(
+            aUsdc,
+            address(borrower1)
+        );
 
-        // PositionsManagerForAave.LiquidateVars memory vars;
-        // (
-        //     vars.collateralReserveDecimals,
-        //     ,
-        //     ,
-        //     vars.liquidationBonus,
-        //     ,
-        //     ,
-        //     ,
-        //     ,
-        //     ,
+        PositionsManagerForAave.LiquidateVars memory vars;
+        (
+            vars.collateralReserveDecimals,
+            ,
+            ,
+            vars.liquidationBonus,
+            ,
+            ,
+            ,
+            ,
+            ,
 
-        // ) = protocolDataProvider.getReserveConfigurationData(usdc);
-        // vars.collateralPrice = customOracle.getAssetPrice(usdc);
-        // vars.collateralTokenUnit = 10**vars.collateralReserveDecimals;
+        ) = protocolDataProvider.getReserveConfigurationData(usdc);
+        vars.collateralPrice = customOracle.getAssetPrice(usdc);
+        vars.collateralTokenUnit = 10**vars.collateralReserveDecimals;
 
-        // (vars.borrowedReserveDecimals, , , , , , , , , ) = protocolDataProvider
-        //     .getReserveConfigurationData(dai);
-        // vars.borrowedPrice = customOracle.getAssetPrice(dai);
-        // vars.borrowedTokenUnit = 10**vars.borrowedReserveDecimals;
+        (vars.borrowedReserveDecimals, , , , , , , , , ) = protocolDataProvider
+            .getReserveConfigurationData(dai);
+        vars.borrowedPrice = customOracle.getAssetPrice(dai);
+        vars.borrowedTokenUnit = 10**vars.borrowedReserveDecimals;
 
-        // uint256 amountToSeize = ((amount / 2) *
-        //     vars.borrowedPrice *
-        //     vars.collateralTokenUnit *
-        //     vars.liquidationBonus) / (vars.borrowedTokenUnit * vars.collateralPrice * 10000);
+        uint256 amountToSeize = ((amount / 2) *
+            vars.borrowedPrice *
+            vars.collateralTokenUnit *
+            vars.liquidationBonus) / (vars.borrowedTokenUnit * vars.collateralPrice * 10000);
 
-        // uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(dai);
-        // uint256 expectedOnPool = aDUnitToUnderlying(
-        //     collateralOnPool - amountToSeize,
-        //     normalizedIncome
-        // );
+        uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(usdc);
+        uint256 expectedOnPool = collateralOnPool -
+            underlyingToScaledBalance(amountToSeize, normalizedIncome);
 
-        // ⚠️⚠️⚠️⚠️⚠️
-        // Testing the collateral balance of the borrower after the liquidation leads to an approximation error as the amountToSeize isn't exactly calculated
-        // ⚠️⚠️⚠️⚠️⚠️
-
-        // testEquality(onPoolBorrower, expectedOnPool);
+        testEquality(onPoolBorrower, expectedOnPool);
         assertEq(inP2PBorrower, 0);
     }
 
-    // 5.3 - The liquidation is made of a Repay and a Withdraw performed on a borrower's position on behalf of a liquidator.
+    // 5.3 - The liquidation is made of a Repay and Withdraw performed on a borrower's position on behalf of a liquidator.
     //       At most, the liquidator can liquidate 50% of the debt of a borrower and take the corresponding collateral (plus a bonus).
     //       Edge-cases here are at most the combination from part 3. and 4. called with the previous amount.
     function test_liquidate_5_3() public {
@@ -161,10 +155,6 @@ contract TestLiquidate is TestSetup {
         );
 
         testEquality(expectedBorrowBalanceOnPool + expectedBorrowBalanceInP2P, borrowedAmount / 2);
-
-        // ⚠️⚠️⚠️⚠️⚠️
-        // Testing the collateral balance of the borrower after the liquidation leads to an approximation error as the amountToSeize isn't exactly calculated
-        // ⚠️⚠️⚠️⚠️⚠️
     }
 
     // ----------
