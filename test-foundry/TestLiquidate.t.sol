@@ -147,8 +147,8 @@ contract TestLiquidate is TestSetup {
             address(borrower1)
         );
 
-        uint256 p2pExchangeRate = marketsManager.p2pExchangeRate(aDai);
-        uint256 expectedBorrowBalanceInP2P = p2pUnitToUnderlying(inP2PBorrower, p2pExchangeRate);
+        uint256 borrowP2PExchangeRate = marketsManager.borrowP2PExchangeRate(aDai);
+        uint256 expectedBorrowBalanceInP2P = p2pUnitToUnderlying(inP2PBorrower, borrowP2PExchangeRate);
         uint256 expectedBorrowBalanceOnPool = aDUnitToUnderlying(
             onPoolBorrower,
             lendingPool.getReserveNormalizedVariableDebt(dai)
