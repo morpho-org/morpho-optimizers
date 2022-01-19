@@ -85,8 +85,8 @@ contract TestBorrow is TestSetup {
 
         (uint256 supplyInP2P, ) = positionsManager.supplyBalanceInOf(aDai, address(supplier1));
 
-        uint256 p2pExchangeRate = marketsManager.p2pExchangeRate(aDai);
-        uint256 expectedInP2P = p2pUnitToUnderlying(supplyInP2P, p2pExchangeRate);
+        uint256 borrowP2PExchangeRate = marketsManager.borrowP2PExchangeRate(aDai);
+        uint256 expectedInP2P = p2pUnitToUnderlying(supplyInP2P, borrowP2PExchangeRate);
 
         testEquality(expectedInP2P, amount);
 
@@ -148,13 +148,13 @@ contract TestBorrow is TestSetup {
 
         uint256 inP2P;
         uint256 onPool;
-        uint256 p2pExchangeRate = marketsManager.p2pExchangeRate(aDai);
+        uint256 supplyP2PExchangeRate = marketsManager.supplyP2PExchangeRate(aDai);
         uint256 expectedInP2P;
 
         for (uint256 i = 0; i < NMAX; i++) {
             (inP2P, onPool) = positionsManager.supplyBalanceInOf(aDai, address(suppliers[i]));
 
-            expectedInP2P = p2pUnitToUnderlying(inP2P, p2pExchangeRate);
+            expectedInP2P = p2pUnitToUnderlying(inP2P, supplyP2PExchangeRate);
 
             testEquality(expectedInP2P, amountPerSupplier);
             testEquality(onPool, 0);
@@ -188,14 +188,14 @@ contract TestBorrow is TestSetup {
 
         uint256 inP2P;
         uint256 onPool;
-        uint256 p2pExchangeRate = marketsManager.p2pExchangeRate(aDai);
+        uint256 supplyP2PExchangeRate = marketsManager.supplyP2PExchangeRate(aDai);
         uint256 normalizedVariableDebt = lendingPool.getReserveNormalizedVariableDebt(dai);
         uint256 expectedInP2P;
 
         for (uint256 i = 0; i < NMAX; i++) {
             (inP2P, onPool) = positionsManager.supplyBalanceInOf(aDai, address(suppliers[i]));
 
-            expectedInP2P = p2pUnitToUnderlying(inP2P, p2pExchangeRate);
+            expectedInP2P = p2pUnitToUnderlying(inP2P, supplyP2PExchangeRate);
 
             testEquality(expectedInP2P, amountPerSupplier);
             testEquality(onPool, 0);
@@ -203,7 +203,7 @@ contract TestBorrow is TestSetup {
 
         (inP2P, onPool) = positionsManager.borrowBalanceInOf(aDai, address(borrower1));
 
-        expectedInP2P = p2pUnitToUnderlying(amount / 2, p2pExchangeRate);
+        expectedInP2P = p2pUnitToUnderlying(amount / 2, supplyP2PExchangeRate);
         uint256 expectedOnPool = underlyingToAdUnit(amount / 2, normalizedVariableDebt);
 
         testEquality(inP2P, expectedInP2P);
@@ -219,10 +219,10 @@ contract TestBorrow is TestSetup {
         SimplePriceOracle _oracle
     ) internal view returns (uint256) {
         uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(_suppliedAsset);
-        uint256 p2pExchangeRate = marketsManager.p2pExchangeRate(_suppliedAsset);
+        uint256 supplyP2PExchangeRate = marketsManager.supplyP2PExchangeRate(_suppliedAsset);
         (uint256 inP2P, uint256 onPool) = positionsManager.supplyBalanceInOf(_suppliedAsset, _user);
         uint256 collateralToAdd = onPool.mulWadByRay(normalizedIncome) +
-            inP2P.mulWadByRay(p2pExchangeRate);
+            inP2P.mulWadByRay(supplyP2PExchangeRate);
         uint256 underlyingPrice = _oracle.getAssetPrice(_suppliedAsset); // In ETH
 
         (
