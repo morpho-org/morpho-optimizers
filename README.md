@@ -55,15 +55,13 @@ To run every test:
 make test
 ```
 
-or to run only the desired section:
+or to run only the desired section or a single test:
 
 ```
-make TestBorrow
-make TestGovernance
+make contract-TestSupply
+make single-test_supply_1_1
 ...
 ```
-
-For the other commands, check the `Makefile` file.
 
 ## Testing in Javascript with Hardhat
 
