@@ -102,7 +102,7 @@ contract TestSetup is DSTest, Config, Utils {
     }
 
     function setNMAXAndCreateSigners(uint16 _NMAX) internal {
-        marketsManager.setMaxNumberOfUsersInTree(_NMAX);
+        marketsManager.setNmaxForMatchingEngine(_NMAX);
 
         while (borrowers.length < _NMAX) {
             borrowers.push(new User(positionsManager, marketsManager));

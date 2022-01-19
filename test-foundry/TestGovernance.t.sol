@@ -79,16 +79,16 @@ contract TestGovernance is TestSetup {
     function test_should_update_nmax() public {
         uint16 newNMAX = 3000;
 
-        marketsManager.setMaxNumberOfUsersInTree(newNMAX);
+        marketsManager.setNmaxForMatchingEngine(newNMAX);
         assertEq(positionsManager.NMAX(), newNMAX);
 
         hevm.expectRevert("Ownable: caller is not the owner");
-        supplier1.setMaxNumberOfUsersInTree(3000);
+        supplier1.setNmaxForMatchingEngine(3000);
 
         hevm.expectRevert("Ownable: caller is not the owner");
-        borrower1.setMaxNumberOfUsersInTree(3000);
+        borrower1.setNmaxForMatchingEngine(3000);
 
         hevm.expectRevert(abi.encodeWithSignature("OnlyMarketsManager()"));
-        positionsManager.setMaxNumberOfUsersInTree(3000);
+        positionsManager.setNmaxForMatchingEngine(3000);
     }
 }
