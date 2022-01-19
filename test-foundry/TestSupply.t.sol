@@ -73,8 +73,8 @@ contract TestSupply is TestSetup {
         testEquality(daiBalanceAfter, expectedDaiBalanceAfter);
 
         marketsManager.updateRates(aDai);
-        uint256 p2pUnitExchangeRate = marketsManager.p2pExchangeRate(aDai);
-        uint256 expectedSupplyBalanceInP2P = underlyingToP2PUnit(amount, p2pUnitExchangeRate);
+        uint256 supplyP2PExchangeRate = marketsManager.supplyP2PExchangeRate(aDai);
+        uint256 expectedSupplyBalanceInP2P = underlyingToP2PUnit(amount, supplyP2PExchangeRate);
 
         (uint256 inP2PSupplier, uint256 onPoolSupplier) = positionsManager.supplyBalanceInOf(
             aDai,
@@ -106,8 +106,8 @@ contract TestSupply is TestSetup {
         supplier1.supply(aDai, 2 * amount);
 
         marketsManager.updateRates(aDai);
-        uint256 p2pUnitExchangeRate = marketsManager.p2pExchangeRate(aDai);
-        uint256 expectedSupplyBalanceInP2P = underlyingToP2PUnit(amount, p2pUnitExchangeRate);
+        uint256 supplyP2PExchangeRate = marketsManager.supplyP2PExchangeRate(aDai);
+        uint256 expectedSupplyBalanceInP2P = underlyingToP2PUnit(amount, supplyP2PExchangeRate);
 
         uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(dai);
         uint256 expectedSupplyBalanceOnPool = underlyingToScaledBalance(amount, normalizedIncome);
@@ -150,19 +150,19 @@ contract TestSupply is TestSetup {
         uint256 inP2P;
         uint256 onPool;
         uint256 expectedInP2P;
-        uint256 p2pExchangeRate = marketsManager.p2pExchangeRate(aDai);
+        uint256 supplyP2PExchangeRate = marketsManager.supplyP2PExchangeRate(aDai);
 
         for (uint256 i = 0; i < NMAX; i++) {
             (inP2P, onPool) = positionsManager.borrowBalanceInOf(aDai, address(borrowers[i]));
 
-            expectedInP2P = p2pUnitToUnderlying(inP2P, p2pExchangeRate);
+            expectedInP2P = p2pUnitToUnderlying(inP2P, supplyP2PExchangeRate);
 
             testEquality(expectedInP2P, amountPerBorrower);
             testEquality(onPool, 0);
         }
 
         (inP2P, onPool) = positionsManager.supplyBalanceInOf(aDai, address(supplier1));
-        expectedInP2P = p2pUnitToUnderlying(amount, p2pExchangeRate);
+        expectedInP2P = p2pUnitToUnderlying(amount, supplyP2PExchangeRate);
 
         testEquality(inP2P, expectedInP2P);
         testEquality(onPool, 0);
@@ -192,13 +192,13 @@ contract TestSupply is TestSetup {
         uint256 inP2P;
         uint256 onPool;
         uint256 expectedInP2P;
-        uint256 p2pExchangeRate = marketsManager.p2pExchangeRate(aDai);
+        uint256 supplyP2PExchangeRate = marketsManager.supplyP2PExchangeRate(aDai);
         uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(dai);
 
         for (uint256 i = 0; i < NMAX; i++) {
             (inP2P, onPool) = positionsManager.borrowBalanceInOf(aDai, address(borrowers[i]));
 
-            expectedInP2P = p2pUnitToUnderlying(inP2P, p2pExchangeRate);
+            expectedInP2P = p2pUnitToUnderlying(inP2P, supplyP2PExchangeRate);
 
             testEquality(expectedInP2P, amountPerBorrower);
             testEquality(onPool, 0);
@@ -206,7 +206,7 @@ contract TestSupply is TestSetup {
 
         (inP2P, onPool) = positionsManager.supplyBalanceInOf(aDai, address(supplier1));
 
-        expectedInP2P = p2pUnitToUnderlying(amount / 2, p2pExchangeRate);
+        expectedInP2P = p2pUnitToUnderlying(amount / 2, supplyP2PExchangeRate);
         uint256 expectedOnPool = underlyingToAdUnit(amount / 2, normalizedIncome);
 
         testEquality(inP2P, expectedInP2P);

@@ -61,7 +61,7 @@ contract MarketsManagerForAave is Ownable {
         uint256 _newBorrowP2PSPY
     );
 
-    /// @dev Emitted when the p2pExchangeRate of a market is updated.
+    /// @dev Emitted when the p2p exchange rates of a market are updated.
     /// @param _marketAddress The address of the market to update.
     /// @param _newSupplyP2PExchangeRate The new value of the supply exchange rate from p2pUnit to underlying.
     /// @param _newBorrowP2PExchangeRate The new value of the borrow exchange rate from p2pUnit to underlying.
