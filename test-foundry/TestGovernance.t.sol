@@ -52,16 +52,16 @@ contract TestGovernance is TestSetup {
         marketsManager.setPositionsManager(address(fakePositionsManager));
     }
 
-    // Only Owner should be able to update cap value
-    function test_only_owner_can_update_cap_value() public {
+    // Only Owner should be able to set cap value
+    function test_only_owner_can_set_cap_value() public {
         uint256 newCapValue = 2 * 1e18;
-        marketsManager.updateCapValue(aUsdc, newCapValue);
+        marketsManager.setCapValue(aUsdc, newCapValue);
 
         hevm.expectRevert("Ownable: caller is not the owner");
-        supplier1.updateCapValue(aUsdc, newCapValue);
+        supplier1.setCapValue(aUsdc, newCapValue);
 
         hevm.expectRevert("Ownable: caller is not the owner");
-        borrower1.updateCapValue(aUsdc, newCapValue);
+        borrower1.setCapValue(aUsdc, newCapValue);
     }
 
     // Should create a market the with right values
@@ -79,20 +79,17 @@ contract TestGovernance is TestSetup {
         assertEq(marketsManager.borrowP2PExchangeRate(aAave), RAY);
     }
 
-    // Should update NMAX
-    function test_should_update_nmax() public {
+    // Should set NMAX
+    function test_should_set_nmax() public {
         uint16 newNMAX = 3000;
 
-        marketsManager.setNmaxForMatchingEngine(newNMAX);
+        positionsManager.setNmaxForMatchingEngine(newNMAX);
         assertEq(positionsManager.NMAX(), newNMAX);
 
-        hevm.expectRevert("Ownable: caller is not the owner");
-        supplier1.setNmaxForMatchingEngine(3000);
+        hevm.expectRevert(abi.encodeWithSignature("OnlyMarketsManagerOwner()"));
+        supplier1.setNmaxForMatchingEngine(newNMAX);
 
-        hevm.expectRevert("Ownable: caller is not the owner");
-        borrower1.setNmaxForMatchingEngine(3000);
-
-        hevm.expectRevert(abi.encodeWithSignature("OnlyMarketsManager()"));
-        positionsManager.setNmaxForMatchingEngine(3000);
+        hevm.expectRevert(abi.encodeWithSignature("OnlyMarketsManagerOwner()"));
+        borrower1.setNmaxForMatchingEngine(newNMAX);
     }
 }
