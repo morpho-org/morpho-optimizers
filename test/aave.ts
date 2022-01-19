@@ -1349,8 +1349,8 @@ describe('PositionsManagerForAave Contract', () => {
 
   describe('Test fees', () => {
     it('Should not be possible to set the fee factor higher than 100%', async () => {
-      await marketsManagerForAave.connect(owner).setFee(10001);
-      expect(await marketsManagerForAave.feeFactor()).to.be.equal(10000);
+      await marketsManagerForAave.connect(owner).setReserveFactor(10001);
+      expect(await marketsManagerForAave.reserveFactor()).to.be.equal(10000);
     });
 
     it('Only MarketsManager owner can set the treasury vault', async () => {
@@ -1361,7 +1361,7 @@ describe('PositionsManagerForAave Contract', () => {
     });
 
     it('DAO should be able to claim fees', async () => {
-      await marketsManagerForAave.connect(owner).setFee('1000'); // 10%
+      await marketsManagerForAave.connect(owner).setReserveFactor('1000'); // 10%
 
       const toSupply = utils.parseUnits('100');
       const toBorrow = utils.parseUnits('50');
@@ -1375,7 +1375,7 @@ describe('PositionsManagerForAave Contract', () => {
 
       await daiToken.connect(supplier1).approve(positionsManagerForAave.address, MAX_INT);
       await positionsManagerForAave.connect(supplier1).repay(config.tokens.aDai.address, MAX_INT);
-      await positionsManagerForAave.connect(owner).claimFees(config.tokens.aDai.address);
+      await positionsManagerForAave.connect(owner).claimToTreasury(config.tokens.aDai.address);
       const daoBalanceAfter = await daiToken.balanceOf(treasuryVault.getAddress());
       expect(daoBalanceAfter).to.be.gt(daoBalanceBefore);
     });
@@ -1393,13 +1393,13 @@ describe('PositionsManagerForAave Contract', () => {
 
       await daiToken.connect(supplier1).approve(positionsManagerForAave.address, MAX_INT);
       await positionsManagerForAave.connect(supplier1).repay(config.tokens.aDai.address, MAX_INT);
-      await positionsManagerForAave.connect(owner).claimFees(config.tokens.aDai.address);
+      await positionsManagerForAave.connect(owner).claimToTreasury(config.tokens.aDai.address);
       const daoBalanceAfter = await daiToken.balanceOf(treasuryVault.getAddress());
       expect(daoBalanceAfter).to.equal(daoBalanceBefore);
     });
 
     it('Suppliers should not earn interests when DAO collect 100% fees', async () => {
-      await marketsManagerForAave.connect(owner).setFee('10000'); // 100%
+      await marketsManagerForAave.connect(owner).setReserveFactor('10000'); // 100%
 
       const toSupply = utils.parseUnits('100');
       const toSupplyCollateral = to6Decimals(utils.parseUnits('200'));

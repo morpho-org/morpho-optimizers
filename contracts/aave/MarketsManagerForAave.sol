@@ -24,7 +24,7 @@ contract MarketsManagerForAave is Ownable {
 
     uint256 public constant MAX_BASIS_POINTS = 10000;
     uint256 public constant SECONDS_PER_YEAR = 365 days;
-    uint256 public feeFactor; // Proportion of the spread that is taken as a protocol fee, in basis point (default is no fee).
+    uint256 public reserveFactor; // Proportion of the interest earned by users sent to the DAO, in basis point (100% = 10000). The default value is 0.
 
     mapping(address => bool) public isCreated; // Whether or not this market is created.
     mapping(address => uint256) public supplyP2PSPY; // Supply Second Percentage Yield, in ray.
@@ -85,9 +85,9 @@ contract MarketsManagerForAave is Ownable {
     /// @param _newValue The new value of the maximum number of users to have in the tree.
     event MaxNumberUpdated(uint16 _newValue);
 
-    /// @dev Emitted the `feeFactor` is set.
-    /// @param _newValue The new value of the `feeFactor`.
-    event FeeFactorSet(uint256 _newValue);
+    /// @dev Emitted the `reserveFactor` is set.
+    /// @param _newValue The new value of the `reserveFactor`.
+    event ReserveFactorSet(uint256 _newValue);
 
     /// Errors ///
 
@@ -139,11 +139,11 @@ contract MarketsManagerForAave is Ownable {
         emit MaxNumberUpdated(_newMaxNumber);
     }
 
-    /// @dev Sets the protocol fee.
-    /// @param _newFeeFactor Factor of the spread that is taken as a protocol fee, in basis points.
-    function setFee(uint256 _newFeeFactor) external onlyOwner {
-        feeFactor = Math.min(MAX_BASIS_POINTS, _newFeeFactor);
-        emit FeeFactorSet(feeFactor);
+    /// @dev Sets the `reserveFactor`.
+    /// @param _newReserveFactor The proportion of the interest earned by users sent to the DAO, in basis point.
+    function setReserveFactor(uint256 _newReserveFactor) external onlyOwner {
+        reserveFactor = Math.min(MAX_BASIS_POINTS, _newReserveFactor);
+        emit ReserveFactorSet(reserveFactor);
     }
 
     /// @dev Creates a new market to borrow/supply.
@@ -242,10 +242,10 @@ contract MarketsManagerForAave is Ownable {
         ) / SECONDS_PER_YEAR; // In ray
 
         supplyP2PSPY[_marketAddress] =
-            (meanSPY * (MAX_BASIS_POINTS - feeFactor)) /
+            (meanSPY * (MAX_BASIS_POINTS - reserveFactor)) /
             MAX_BASIS_POINTS;
         borrowP2PSPY[_marketAddress] =
-            (meanSPY * (MAX_BASIS_POINTS + feeFactor)) /
+            (meanSPY * (MAX_BASIS_POINTS + reserveFactor)) /
             MAX_BASIS_POINTS;
 
         emit P2PSPYsUpdated(
