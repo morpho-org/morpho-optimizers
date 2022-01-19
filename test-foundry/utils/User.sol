@@ -73,8 +73,8 @@ contract User {
         );
     }
 
-    function setMaxNumberOfUsersInTree(uint16 _newMaxNumber) external {
-        marketsManager.setMaxNumberOfUsersInTree(_newMaxNumber);
+    function setNmaxForMatchingEngine(uint16 _newMaxNumber) external {
+        marketsManager.setNmaxForMatchingEngine(_newMaxNumber);
     }
 
     function claimRewards(address _asset) external {
