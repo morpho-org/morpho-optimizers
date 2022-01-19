@@ -28,7 +28,7 @@ contract TestBorrow is TestSetup {
         borrower1.supply(aUsdc, to6Decimals(amount));
 
         (, , uint256 liquidationThreshold, , , , , , , ) = protocolDataProvider
-            .getReserveConfigurationData(usdc);
+        .getReserveConfigurationData(usdc);
         uint256 maxToBorrow = (amount * liquidationThreshold) / 10000;
 
         hevm.expectRevert("11");
@@ -85,7 +85,7 @@ contract TestBorrow is TestSetup {
 
         (uint256 supplyInP2P, ) = positionsManager.supplyBalanceInOf(aDai, address(supplier1));
 
-        uint256 p2pExchangeRate = marketsManager.p2pExchangeRate(aDai);
+        uint256 p2pExchangeRate = marketsManager.supplyP2PExchangeRate(aDai);
         uint256 expectedInP2P = p2pUnitToUnderlying(supplyInP2P, p2pExchangeRate);
 
         testEquality(expectedInP2P, amount);
@@ -148,7 +148,7 @@ contract TestBorrow is TestSetup {
 
         uint256 inP2P;
         uint256 onPool;
-        uint256 p2pExchangeRate = marketsManager.p2pExchangeRate(aDai);
+        uint256 p2pExchangeRate = marketsManager.supplyP2PExchangeRate(aDai);
         uint256 expectedInP2P;
 
         for (uint256 i = 0; i < NMAX; i++) {
@@ -188,7 +188,7 @@ contract TestBorrow is TestSetup {
 
         uint256 inP2P;
         uint256 onPool;
-        uint256 p2pExchangeRate = marketsManager.p2pExchangeRate(aDai);
+        uint256 p2pExchangeRate = marketsManager.supplyP2PExchangeRate(aDai);
         uint256 normalizedVariableDebt = lendingPool.getReserveNormalizedVariableDebt(dai);
         uint256 expectedInP2P;
 
@@ -219,7 +219,7 @@ contract TestBorrow is TestSetup {
         SimplePriceOracle _oracle
     ) internal view returns (uint256) {
         uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(_suppliedAsset);
-        uint256 p2pExchangeRate = marketsManager.p2pExchangeRate(_suppliedAsset);
+        uint256 p2pExchangeRate = marketsManager.supplyP2PExchangeRate(_suppliedAsset);
         (uint256 inP2P, uint256 onPool) = positionsManager.supplyBalanceInOf(_suppliedAsset, _user);
         uint256 collateralToAdd = onPool.mulWadByRay(normalizedIncome) +
             inP2P.mulWadByRay(p2pExchangeRate);

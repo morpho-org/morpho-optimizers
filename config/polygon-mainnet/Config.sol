@@ -27,8 +27,14 @@ contract Config {
     mapping(address => uint8) slots;
 
     constructor() {
-        // A tool to find the slot of tokens' balance: https://github.com/kendricktan/slot20
+        // A tool to find the slot of tokens is in test-foundry/utils/SlotFinder.t.sol
+        // Run with: make single-test_find_slot
+        slots[aave] = 0;
         slots[dai] = 0;
         slots[usdc] = 0;
+        slots[usdt] = 0;
+        slots[wbtc] = 0;
+        slots[weth] = 0;
+        slots[wmatic] = 3;
     }
 }

@@ -17,199 +17,256 @@ contract TestSupply is TestSetup {
     }
 
     // 1.2 - There are no available borrowers: all of the supplied amount is supplied to the pool and set `onPool`.
-    function test_supply_1_2(uint256 _amount) public {
-        uint256 amount = 10000 ether;
+    function test_supply_1_2(uint256 _amount, uint8 _supplyAsset) public {
+        Asset memory supply = getSupplyAsset(_amount, _supplyAsset, true);
 
-        supplier1.approve(dai, amount);
-        supplier1.supply(aDai, amount);
-
-        marketsManager.updateRates(aDai);
-        uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(dai);
-        uint256 expectedOnPool = underlyingToScaledBalance(amount, normalizedIncome);
-
-        testEquality(IERC20(aDai).balanceOf(address(positionsManager)), amount);
-
-        (uint256 inP2P, uint256 onPool) = positionsManager.supplyBalanceInOf(
-            aDai,
+        uint256 morphoBefore = IERC20(supply.poolToken).balanceOf(address(positionsManager));
+        (, uint256 onPoolBefore) = positionsManager.supplyBalanceInOf(
+            supply.poolToken,
             address(supplier1)
         );
 
-        testEquality(onPool, expectedOnPool);
-        testEquality(inP2P, 0);
+        supplier1.approve(supply.underlying, supply.amount);
+        supplier1.supply(supply.poolToken, supply.amount);
+
+        uint256 morphoAfter = IERC20(supply.poolToken).balanceOf(address(positionsManager));
+        assertEq(morphoAfter - morphoBefore, supply.amount, "positionsManager balance");
+
+        marketsManager.updateRates(supply.poolToken);
+        uint256 expectedOnPool = onPoolBefore +
+            underlyingToScaledBalance(
+                supply.amount,
+                lendingPool.getReserveNormalizedIncome(supply.underlying)
+            );
+
+        (uint256 inP2PAfter, uint256 onPoolAfter) = positionsManager.supplyBalanceInOf(
+            supply.poolToken,
+            address(supplier1)
+        );
+
+        assertEqNear(onPoolAfter, expectedOnPool, "supplier on pool");
+        assertEq(inP2PAfter, 0, "supplier1 in P2P");
     }
 
     // Should be able to supply more ERC20 after already having supply ERC20
-    function test_supply_multiple() public {
-        uint256 amount = 10000 ether;
+    function test_supply_multiple(uint256 _amount, uint8 _supplyAsset) public {
+        Asset memory supply = getSupplyAsset(_amount, _supplyAsset, true);
 
-        supplier1.approve(dai, 2 * amount);
-
-        supplier1.supply(aDai, amount);
-        supplier1.supply(aDai, amount);
-
-        marketsManager.updateRates(aDai);
-        uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(dai);
-        uint256 expectedOnPool = underlyingToScaledBalance(2 * amount, normalizedIncome);
-
-        (, uint256 onPool) = positionsManager.supplyBalanceInOf(aDai, address(supplier1));
-        testEquality(onPool, expectedOnPool);
-    }
-
-    // 1.3 - There is 1 available borrower, he matches 100% of the supplier liquidity, everything is `inP2P`.
-    function test_supply_1_3() public {
-        uint256 amount = 10000 ether;
-
-        borrower1.approve(usdc, to6Decimals(2 * amount));
-        borrower1.supply(aUsdc, to6Decimals(2 * amount));
-        borrower1.borrow(aDai, amount);
-
-        uint256 daiBalanceBefore = supplier1.balanceOf(dai);
-        uint256 expectedDaiBalanceAfter = daiBalanceBefore - amount;
-
-        supplier1.approve(dai, address(positionsManager), amount);
-        supplier1.supply(aDai, amount);
-
-        uint256 daiBalanceAfter = supplier1.balanceOf(dai);
-        testEquality(daiBalanceAfter, expectedDaiBalanceAfter);
-
-        marketsManager.updateRates(aDai);
-        uint256 p2pUnitExchangeRate = marketsManager.p2pExchangeRate(aDai);
-        uint256 expectedSupplyBalanceInP2P = underlyingToP2PUnit(amount, p2pUnitExchangeRate);
-
-        (uint256 inP2PSupplier, uint256 onPoolSupplier) = positionsManager.supplyBalanceInOf(
-            aDai,
+        (, uint256 onPoolBefore) = positionsManager.supplyBalanceInOf(
+            supply.poolToken,
             address(supplier1)
         );
 
-        (uint256 inP2PBorrower, uint256 onPoolBorrower) = positionsManager.borrowBalanceInOf(
-            aDai,
-            address(borrower1)
+        supplier1.approve(supply.underlying, 2 * supply.amount);
+
+        supplier1.supply(supply.poolToken, supply.amount);
+        supplier1.supply(supply.poolToken, supply.amount);
+
+        (, uint256 onPoolAfter) = positionsManager.supplyBalanceInOf(
+            supply.poolToken,
+            address(supplier1)
         );
 
-        testEquality(onPoolSupplier, 0);
-        testEquality(inP2PSupplier, expectedSupplyBalanceInP2P);
+        marketsManager.updateRates(supply.poolToken);
+        uint256 expectedOnPool = onPoolBefore +
+            underlyingToScaledBalance(
+                2 * supply.amount,
+                lendingPool.getReserveNormalizedIncome(supply.underlying)
+            );
 
-        testEquality(onPoolBorrower, 0);
-        testEquality(inP2PBorrower, inP2PSupplier);
+        assertEqNear(onPoolAfter, expectedOnPool, "supplier1 on pool");
+    }
+
+    // 1.3 - There is 1 available borrower, he matches 100% of the supplier liquidity, everything is `inP2P`.
+    function test_supply_1_3(
+        uint256 _amount /*,
+        uint8 _supplyAsset,
+        uint8 _borrowAsset */
+    ) public {
+        (Asset memory supply, Asset memory borrow) = getAssets(
+            _amount,
+            1, /*_supplyAsset*/
+            0 /*_borrowAsset*/
+        );
+
+        supply.amount *= 2;
+        borrower1.approve(supply.underlying, supply.amount);
+        borrower1.supply(supply.poolToken, supply.amount);
+
+        borrow.amount = getMaxToBorrow(supply.amount, supply.poolToken, borrow.poolToken);
+        emit log_named_uint("borrow.amount", borrow.amount);
+        borrower1.borrow(borrow.poolToken, borrow.amount);
+
+        uint256 daiBalanceBefore = supplier1.balanceOf(borrow.underlying);
+
+        supplier1.approve(borrow.underlying, borrow.amount);
+        supplier1.supply(borrow.poolToken, borrow.amount);
+
+        uint256 daiBalanceAfter = supplier1.balanceOf(borrow.underlying);
+        assertEq(daiBalanceAfter, daiBalanceBefore - borrow.amount, "supplier1 dai balance");
+
+        marketsManager.updateRates(borrow.poolToken);
+        uint256 expectedSupplyBalanceInP2P = underlyingToP2PUnit(
+            borrow.amount,
+            marketsManager.supplyP2PExchangeRate(borrow.poolToken)
+        );
+
+        (uint256 inP2PSupplier, uint256 onPoolSupplier) = positionsManager.supplyBalanceInOf(
+            borrow.poolToken,
+            address(supplier1)
+        );
+        assertEq(inP2PSupplier, expectedSupplyBalanceInP2P, "supplier1 in P2P");
+        assertEq(onPoolSupplier, 0, "supplier1 on pool");
+
+        (uint256 inP2PBorrower, uint256 onPoolBorrower) = positionsManager.borrowBalanceInOf(
+            borrow.poolToken,
+            address(borrower1)
+        );
+        assertEq(inP2PBorrower, inP2PSupplier, "borrower1 in P2P");
+        assertEq(onPoolBorrower, 0, "borrower1 on pool");
     }
 
     // 1.4 - There is 1 available borrower, he doesn't match 100% of the supplier liquidity.
     // Supplier's balance `inP2P` is equal to the borrower previous amount `onPool`, the rest is set `onPool`.
-    function test_supply_1_4() public {
-        uint256 amount = 10000 ether;
+    function test_supply_1_4(
+        uint256 _amount /*,
+        uint8 _supplyAsset,
+        uint8 _borrowAsset*/
+    ) public {
+        (Asset memory supply, Asset memory borrow) = getAssets(
+            _amount,
+            1, /*_supplyAsset*/
+            0 /*_borrowAsset*/
+        );
 
-        borrower1.approve(usdc, to6Decimals(2 * amount));
-        borrower1.supply(aUsdc, to6Decimals(2 * amount));
-        borrower1.borrow(aDai, amount);
+        borrower1.approve(supply.underlying, 2 * supply.amount);
+        borrower1.supply(supply.poolToken, 2 * supply.amount);
 
-        supplier1.approve(dai, 2 * amount);
-        supplier1.supply(aDai, 2 * amount);
+        borrower1.borrow(borrow.poolToken, borrow.amount);
 
-        marketsManager.updateRates(aDai);
-        uint256 p2pUnitExchangeRate = marketsManager.p2pExchangeRate(aDai);
-        uint256 expectedSupplyBalanceInP2P = underlyingToP2PUnit(amount, p2pUnitExchangeRate);
+        supplier1.approve(borrow.underlying, 2 * borrow.amount);
+        supplier1.supply(borrow.poolToken, 2 * borrow.amount);
 
-        uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(dai);
-        uint256 expectedSupplyBalanceOnPool = underlyingToScaledBalance(amount, normalizedIncome);
-
-        (uint256 inP2PSupplier, uint256 onPoolSupplier) = positionsManager.supplyBalanceInOf(
-            aDai,
+        marketsManager.updateRates(borrow.poolToken);
+        (uint256 inP2PSupplier, ) = positionsManager.supplyBalanceInOf(
+            borrow.poolToken,
             address(supplier1)
         );
-        testEquality(onPoolSupplier, expectedSupplyBalanceOnPool);
-        testEquality(inP2PSupplier, expectedSupplyBalanceInP2P);
 
         (uint256 inP2PBorrower, uint256 onPoolBorrower) = positionsManager.borrowBalanceInOf(
-            aDai,
+            borrow.poolToken,
             address(borrower1)
         );
-        testEquality(onPoolBorrower, 0);
-        testEquality(inP2PBorrower, inP2PSupplier);
+        assertEq(inP2PBorrower, inP2PSupplier, "borrower1 in P2P");
+        assertEq(onPoolBorrower, 0, "borrower1 on pool");
     }
 
     // 1.5 - There are NMAX (or less) borrowers that match the supplied amount, everything is `inP2P` after NMAX (or less) match.
-    function test_supply_1_5() public {
-        uint256 amount = 10000 ether;
-        uint256 collateral = 2 * amount;
+    function test_supply_1_5()
+        public
+    /* uint256 _amount,
+        uint8 _supplyAsset,
+        uint8 _borrowAsset*/
+    {
+        (Asset memory supply, Asset memory borrow) = getAssets(
+            10_000 ether, /* _amount,*/
+            1, /*_supplyAsset*/
+            0 /*_borrowAsset*/
+        );
 
         uint16 NMAX = 20;
         setNMAXAndCreateSigners(NMAX);
-
-        uint256 amountPerBorrower = amount / NMAX;
+        uint256 amount = 10_000 ether;
+        borrow.amount = amount / NMAX;
 
         for (uint256 i = 0; i < NMAX; i++) {
-            borrowers[i].approve(usdc, to6Decimals(collateral));
-            borrowers[i].supply(aUsdc, to6Decimals(collateral));
+            borrowers[i].approve(supply.underlying, 2 * supply.amount);
+            borrowers[i].supply(supply.poolToken, 2 * supply.amount);
 
-            borrowers[i].borrow(aDai, amountPerBorrower);
+            borrowers[i].borrow(borrow.poolToken, borrow.amount);
         }
 
-        supplier1.approve(dai, amount);
-        supplier1.supply(aDai, amount);
+        supplier1.approve(borrow.underlying, amount);
+        supplier1.supply(borrow.poolToken, amount);
 
         uint256 inP2P;
         uint256 onPool;
         uint256 expectedInP2P;
-        uint256 p2pExchangeRate = marketsManager.p2pExchangeRate(aDai);
+        uint256 p2pExchangeRate = marketsManager.supplyP2PExchangeRate(borrow.poolToken);
 
         for (uint256 i = 0; i < NMAX; i++) {
-            (inP2P, onPool) = positionsManager.borrowBalanceInOf(aDai, address(borrowers[i]));
+            (inP2P, onPool) = positionsManager.borrowBalanceInOf(
+                borrow.poolToken,
+                address(borrowers[i])
+            );
 
             expectedInP2P = p2pUnitToUnderlying(inP2P, p2pExchangeRate);
 
-            testEquality(expectedInP2P, amountPerBorrower);
-            testEquality(onPool, 0);
+            assertEq(expectedInP2P, borrow.amount, "borrower1 in P2P");
+            assertEq(onPool, 0, "borrower1 on pool");
         }
 
-        (inP2P, onPool) = positionsManager.supplyBalanceInOf(aDai, address(supplier1));
+        (inP2P, onPool) = positionsManager.supplyBalanceInOf(borrow.poolToken, address(supplier1));
         expectedInP2P = p2pUnitToUnderlying(amount, p2pExchangeRate);
 
-        testEquality(inP2P, expectedInP2P);
-        testEquality(onPool, 0);
+        assertEq(inP2P, expectedInP2P, "supplier1 in P2P");
+        assertEq(onPool, 0, "supplier1 on pool");
     }
 
     // 1.6 - The NMAX biggest borrowers don't match all of the supplied amount, after NMAX match, the rest is supplied and set `onPool`.
     // ⚠️ most gas expensive supply scenario.
-    function test_supply_1_6() public {
-        uint256 amount = 10000 ether;
-        uint256 collateral = 2 * amount;
+    function test_supply_1_6()
+        public
+    /*uint256 _amount,
+        uint8 _supplyAsset,
+        uint8 _borrowAsset*/
+    {
+        (Asset memory supply, Asset memory borrow) = getAssets(
+            10_000 ether, /*_amount */
+            1, /*_supplyAsset*/
+            0 /*_borrowAsset*/
+        );
 
         uint16 NMAX = 20;
         setNMAXAndCreateSigners(NMAX);
 
+        uint256 amount = 10_000 ether;
         uint256 amountPerBorrower = amount / (2 * NMAX);
 
         for (uint256 i = 0; i < NMAX; i++) {
-            borrowers[i].approve(usdc, to6Decimals(collateral));
-            borrowers[i].supply(aUsdc, to6Decimals(collateral));
+            borrowers[i].approve(supply.underlying, 2 * supply.amount);
+            borrowers[i].supply(supply.poolToken, 2 * supply.amount);
 
-            borrowers[i].borrow(aDai, amountPerBorrower);
+            borrowers[i].borrow(borrow.poolToken, amountPerBorrower);
         }
 
-        supplier1.approve(dai, amount);
-        supplier1.supply(aDai, amount);
+        supplier1.approve(borrow.underlying, amount);
+        supplier1.supply(borrow.poolToken, amount);
 
         uint256 inP2P;
         uint256 onPool;
         uint256 expectedInP2P;
-        uint256 p2pExchangeRate = marketsManager.p2pExchangeRate(aDai);
-        uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(dai);
+        uint256 p2pExchangeRate = marketsManager.supplyP2PExchangeRate(borrow.poolToken);
+        uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(borrow.underlying);
 
         for (uint256 i = 0; i < NMAX; i++) {
-            (inP2P, onPool) = positionsManager.borrowBalanceInOf(aDai, address(borrowers[i]));
+            (inP2P, onPool) = positionsManager.borrowBalanceInOf(
+                borrow.poolToken,
+                address(borrowers[i])
+            );
 
             expectedInP2P = p2pUnitToUnderlying(inP2P, p2pExchangeRate);
 
-            testEquality(expectedInP2P, amountPerBorrower);
-            testEquality(onPool, 0);
+            assertEq(expectedInP2P, amountPerBorrower, "borrower in P2P");
+            assertEq(onPool, 0, "borrower on pool");
         }
 
-        (inP2P, onPool) = positionsManager.supplyBalanceInOf(aDai, address(supplier1));
+        (inP2P, onPool) = positionsManager.supplyBalanceInOf(borrow.poolToken, address(supplier1));
 
         expectedInP2P = p2pUnitToUnderlying(amount / 2, p2pExchangeRate);
         uint256 expectedOnPool = underlyingToAdUnit(amount / 2, normalizedIncome);
 
-        testEquality(inP2P, expectedInP2P);
-        testEquality(onPool, expectedOnPool);
+        assertEq(inP2P, expectedInP2P, "supplier1 in P2P");
+        assertEq(onPool, expectedOnPool, "supplier1 on pool");
     }
 }

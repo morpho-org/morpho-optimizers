@@ -81,7 +81,7 @@ contract TestLiquidate is TestSetup {
         vars.collateralTokenUnit = 10**vars.collateralReserveDecimals;
 
         (vars.borrowedReserveDecimals, , , , , , , , , ) = protocolDataProvider
-            .getReserveConfigurationData(dai);
+        .getReserveConfigurationData(dai);
         vars.borrowedPrice = customOracle.getAssetPrice(dai);
         vars.borrowedTokenUnit = 10**vars.borrowedReserveDecimals;
 
@@ -147,7 +147,7 @@ contract TestLiquidate is TestSetup {
             address(borrower1)
         );
 
-        uint256 p2pExchangeRate = marketsManager.p2pExchangeRate(aDai);
+        uint256 p2pExchangeRate = marketsManager.supplyP2PExchangeRate(aDai);
         uint256 expectedBorrowBalanceInP2P = p2pUnitToUnderlying(inP2PBorrower, p2pExchangeRate);
         uint256 expectedBorrowBalanceOnPool = aDUnitToUnderlying(
             onPoolBorrower,

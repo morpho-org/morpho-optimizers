@@ -102,7 +102,7 @@ contract TestWithdraw is TestSetup {
             aDai,
             address(supplier2)
         );
-        uint256 p2pExchangeRate = marketsManager.p2pExchangeRate(aDai);
+        uint256 p2pExchangeRate = marketsManager.supplyP2PExchangeRate(aDai);
         uint256 expectedInP2P = underlyingToP2PUnit(suppliedAmount / 2, p2pExchangeRate);
         testEquality(onPoolSupplier, expectedOnPool);
         testEquality(inP2PSupplier, expectedInP2P);
@@ -181,7 +181,7 @@ contract TestWithdraw is TestSetup {
             address(borrower1)
         );
 
-        uint256 p2pExchangeRate = marketsManager.p2pExchangeRate(aDai);
+        uint256 p2pExchangeRate = marketsManager.supplyP2PExchangeRate(aDai);
         uint256 expectedBorrowBalanceInP2P = underlyingToP2PUnit(borrowedAmount, p2pExchangeRate);
 
         testEquality(inP2PBorrower, expectedBorrowBalanceInP2P);
@@ -246,7 +246,7 @@ contract TestWithdraw is TestSetup {
             address(borrower1)
         );
 
-        uint256 p2pExchangeRate = marketsManager.p2pExchangeRate(aDai);
+        uint256 p2pExchangeRate = marketsManager.supplyP2PExchangeRate(aDai);
         uint256 expectedBorrowBalanceInP2P = underlyingToP2PUnit(
             borrowedAmount / 2,
             p2pExchangeRate
@@ -340,7 +340,7 @@ contract TestWithdraw is TestSetup {
             address(borrower1)
         );
 
-        uint256 p2pExchangeRate = marketsManager.p2pExchangeRate(aDai);
+        uint256 p2pExchangeRate = marketsManager.supplyP2PExchangeRate(aDai);
         uint256 expectedBorrowBalanceInP2P = underlyingToP2PUnit(
             borrowedAmount / 2,
             p2pExchangeRate
