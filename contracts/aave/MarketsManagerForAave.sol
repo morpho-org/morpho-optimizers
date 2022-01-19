@@ -145,13 +145,6 @@ contract MarketsManagerForAave is Ownable {
         emit LendingPoolSet(address(lendingPool));
     }
 
-    /// @dev Sets the maximum number of users in tree.
-    /// @param _newMaxNumber The maximum number of users to have in the tree.
-    function setNmaxForMatchingEngine(uint16 _newMaxNumber) external onlyOwner {
-        positionsManagerForAave.setNmaxForMatchingEngine(_newMaxNumber);
-        emit MaxNumberUpdated(_newMaxNumber);
-    }
-
     /// @dev Sets the `reserveFactor`.
     /// @param _newReserveFactor The proportion of the interest earned by users sent to the DAO, in basis point.
     function setReserveFactor(uint256 _newReserveFactor) external onlyOwner {
