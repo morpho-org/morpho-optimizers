@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 import "@contracts/aave/PositionsManagerForAave.sol";
 import "@contracts/aave/MarketsManagerForAave.sol";
+import "@contracts/aave/RewardsManager.sol";
 import "@contracts/aave/test/SimplePriceOracle.sol";
 import "@config/Config.sol";
 import "./HEVM.sol";
@@ -18,6 +19,7 @@ contract TestSetup is DSTest, Config, Utils {
     PositionsManagerForAave internal positionsManager;
     PositionsManagerForAave internal fakePositionsManager;
     MarketsManagerForAave internal marketsManager;
+    RewardsManager internal rewardsManager;
 
     ILendingPoolAddressesProvider lendingPoolAddressesProvider;
     ILendingPool lendingPool;
@@ -34,6 +36,8 @@ contract TestSetup is DSTest, Config, Utils {
     User borrower3;
     User[] borrowers;
 
+    User treasuryVault;
+
     address[] pools;
 
     function setUp() public {
@@ -48,6 +52,8 @@ contract TestSetup is DSTest, Config, Utils {
             lendingPoolAddressesProviderAddress
         );
 
+        rewardsManager = new RewardsManager(lendingPoolAddressesProviderAddress, address(positionsManager));
+
         lendingPoolAddressesProvider = ILendingPoolAddressesProvider(
             lendingPoolAddressesProviderAddress
         );
@@ -58,7 +64,11 @@ contract TestSetup is DSTest, Config, Utils {
         oracle = IPriceOracleGetter(lendingPoolAddressesProvider.getPriceOracle());
 
         marketsManager.setPositionsManager(address(positionsManager));
+        positionsManager.setAaveIncentivesController(aaveIncentivesControllerAddress);
+        positionsManager.setTreasuryVault(address(treasuryVault));
+        positionsManager.setRewardsManager(address(rewardsManager));
         marketsManager.updateLendingPool();
+
         // !!! WARNING !!!
         // All tokens must also be added to the pools array, for the correct behavior of TestLiquidate::createAndSetCustomPriceOracle.
         marketsManager.createMarket(aDai, WAD, type(uint256).max);
@@ -102,7 +112,7 @@ contract TestSetup is DSTest, Config, Utils {
     }
 
     function setNMAXAndCreateSigners(uint16 _NMAX) internal {
-        marketsManager.setNmaxForMatchingEngine(_NMAX);
+        positionsManager.setNmaxForMatchingEngine(_NMAX);
 
         while (borrowers.length < _NMAX) {
             borrowers.push(new User(positionsManager, marketsManager));
