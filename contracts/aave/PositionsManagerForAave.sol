@@ -296,11 +296,11 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
             .claimRewards(asset, type(uint256).max, treasuryVault);
     }
 
-    /// @dev Transfers protocol fee to the DAO.
-    /// @param _poolTokenAddress The address of the market on which we want to claim fees.
-    function claimFees(address _poolTokenAddress) external onlyMarketsManagerOwner {
-        IERC20 poolToken = IERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
-        poolToken.transfer(treasuryVault, poolToken.balanceOf(address(this)));
+    /// @dev Transfers the protocol reserve to the DAO.
+    /// @param _poolTokenAddress The address of the market on which we want to claim the reserve.
+    function claimToTreasury(address _poolTokenAddress) external onlyMarketsManagerOwner {
+        IERC20 underlyingToken = IERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
+        underlyingToken.transfer(treasuryVault, underlyingToken.balanceOf(address(this)));
     }
 
     /// @dev Gets the head of the data structure on a specific market (for UI).
