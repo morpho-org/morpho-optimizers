@@ -151,7 +151,7 @@ contract TestWithdraw is TestSetup {
         testEquality(onPoolBorrower, 0);
         testEquality(inP2PSupplier, inP2PBorrower);
 
-        // NMAX borrowers have debt waiting on pool
+        // NMAX-1 suppliers have up to suppliedAmount waiting on pool
         uint16 NMAX = 20;
         setNMAXAndCreateSigners(NMAX);
 
@@ -310,7 +310,7 @@ contract TestWithdraw is TestSetup {
         testEquality(onPoolBorrower, 0);
         testEquality(inP2PSupplier, inP2PBorrower);
 
-        // NMAX borrowers have debt waiting on pool
+        // NMAX-1 suppliers have up to suppliedAmount/2 waiting on pool
         uint16 NMAX = 20;
         setNMAXAndCreateSigners(NMAX);
 
