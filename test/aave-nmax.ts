@@ -16,7 +16,6 @@ describe('PositionsManagerForAave Contract', () => {
   // Contracts
   let positionsManagerForAave: Contract;
   let marketsManagerForAave: Contract;
-  let fakeAavePositionsManager: Contract;
   let lendingPoolAddressesProvider: Contract;
   let lendingPool: Contract;
   let protocolDataProvider: Contract;
@@ -27,12 +26,15 @@ describe('PositionsManagerForAave Contract', () => {
   let owner: Signer;
   let liquidator: Signer;
   let alice: Signer;
+  let treasuryVault: Signer;
   let aliceAddress: string;
+
+  const NMAX = 20;
 
   const initialize = async () => {
     // Signers
     signers = await ethers.getSigners();
-    [owner, liquidator, alice] = signers;
+    [owner, liquidator, alice, treasuryVault] = signers;
     aliceAddress = await alice.getAddress();
 
     // Deploy MarketsManagerForAave
@@ -46,12 +48,12 @@ describe('PositionsManagerForAave Contract', () => {
       marketsManagerForAave.address,
       config.aave.lendingPoolAddressesProvider.address
     );
-    fakeAavePositionsManager = await PositionsManagerForAave.deploy(
-      marketsManagerForAave.address,
-      config.aave.lendingPoolAddressesProvider.address
-    );
     await positionsManagerForAave.deployed();
-    await fakeAavePositionsManager.deployed();
+
+    // Deploy RewardsManager
+    const RewardsManager = await ethers.getContractFactory('RewardsManager');
+    const rewardsManager = await RewardsManager.deploy(config.aave.lendingPoolAddressesProvider.address, positionsManagerForAave.address);
+    await rewardsManager.deployed();
 
     // Get contract dependencies
     lendingPool = await ethers.getContractAt(require(config.aave.lendingPool.abi), config.aave.lendingPool.address, owner);
@@ -74,7 +76,9 @@ describe('PositionsManagerForAave Contract', () => {
 
     // Create and list markets
     await marketsManagerForAave.connect(owner).setPositionsManager(positionsManagerForAave.address);
-    await marketsManagerForAave.connect(owner).updateLendingPool();
+    await positionsManagerForAave.connect(owner).setAaveIncentivesController(config.aave.aaveIncentivesController.address);
+    await positionsManagerForAave.connect(owner).setTreasuryVault(treasuryVault.getAddress());
+    await positionsManagerForAave.connect(owner).setRewardsManager(rewardsManager.address);
     await marketsManagerForAave.connect(owner).createMarket(config.tokens.aDai.address, WAD, MAX_INT);
     await marketsManagerForAave.connect(owner).createMarket(config.tokens.aUsdc.address, to6Decimals(WAD), MAX_INT);
     await marketsManagerForAave.connect(owner).createMarket(config.tokens.aWbtc.address, BigNumber.from(10).pow(4), MAX_INT);
@@ -107,8 +111,8 @@ describe('PositionsManagerForAave Contract', () => {
         await usdcToken.connect(whaleUsdc).transfer(smallDaiBorrower, usdcAmount);
 
         await usdcToken.connect(borrower).approve(positionsManagerForAave.address, usdcAmount);
-        await positionsManagerForAave.connect(borrower).supply(config.tokens.aUsdc.address, usdcAmount);
-        await positionsManagerForAave.connect(borrower).borrow(config.tokens.aDai.address, daiAmount);
+        await positionsManagerForAave.connect(borrower).supply(config.tokens.aUsdc.address, usdcAmount, 0);
+        await positionsManagerForAave.connect(borrower).borrow(config.tokens.aDai.address, daiAmount, 0);
       }
     }
   };
@@ -132,7 +136,7 @@ describe('PositionsManagerForAave Contract', () => {
 
       await daiToken.connect(whaleDai).transfer(smallDaiSupplier, daiAmount);
       await daiToken.connect(supplier).approve(positionsManagerForAave.address, daiAmount);
-      await positionsManagerForAave.connect(supplier).supply(config.tokens.aDai.address, daiAmount);
+      await positionsManagerForAave.connect(supplier).supply(config.tokens.aDai.address, daiAmount, 0);
     }
   };
 
@@ -156,7 +160,7 @@ describe('PositionsManagerForAave Contract', () => {
       await daiToken.connect(whaleDai).transfer(treeDaiSupplier, daiAmount);
 
       await daiToken.connect(supplier).approve(positionsManagerForAave.address, daiAmount);
-      await positionsManagerForAave.connect(supplier).supply(config.tokens.aDai.address, daiAmount);
+      await positionsManagerForAave.connect(supplier).supply(config.tokens.aDai.address, daiAmount, 0);
 
       // They also borrow Wbtc so they are matched with Alice's collateral
       const collateralBalanceInUnderlying = daiAmount;
@@ -173,7 +177,7 @@ describe('PositionsManagerForAave Contract', () => {
         .mul(liquidationThreshold)
         .div(PERCENT_BASE);
 
-      await positionsManagerForAave.connect(supplier).borrow(config.tokens.aWbtc.address, maxToBorrow);
+      await positionsManagerForAave.connect(supplier).borrow(config.tokens.aWbtc.address, maxToBorrow, 0);
     }
   };
 
@@ -184,7 +188,7 @@ describe('PositionsManagerForAave Contract', () => {
 
     it('Set new NMAX', async () => {
       expect(await positionsManagerForAave.NMAX()).to.equal(1000);
-      await marketsManagerForAave.connect(owner).setNmaxForMatchingEngine(NMAX);
+      await positionsManagerForAave.connect(owner).setNmaxForMatchingEngine(NMAX);
       expect(await positionsManagerForAave.NMAX()).to.equal(NMAX);
     });
 
@@ -211,8 +215,8 @@ describe('PositionsManagerForAave Contract', () => {
       const whaleWbtc = await ethers.getSigner(config.tokens.wbtc.whale);
       await wbtcToken.connect(whaleWbtc).transfer(aliceAddress, wbtcAmountAlice);
       await wbtcToken.connect(alice).approve(positionsManagerForAave.address, wbtcAmountAlice);
-      await positionsManagerForAave.connect(alice).supply(config.tokens.aWbtc.address, wbtcAmountAlice);
-      await positionsManagerForAave.connect(alice).borrow(config.tokens.aDai.address, daiAmountAlice);
+      await positionsManagerForAave.connect(alice).supply(config.tokens.aWbtc.address, wbtcAmountAlice, 0);
+      await positionsManagerForAave.connect(alice).borrow(config.tokens.aDai.address, daiAmountAlice, 0);
     });
 
     // Now alice decides to leave Morpho, so she proceeds to a repay and a withdraw of her funds.
@@ -228,13 +232,12 @@ describe('PositionsManagerForAave Contract', () => {
       await initialize();
     });
 
-    const NMAX = 20;
     const usdcCollateralAmount = to6Decimals(utils.parseUnits('10000'));
     let daiBorrowAmount: BigNumber;
     let admin: Signer;
 
     it('Set new NMAX', async () => {
-      await marketsManagerForAave.connect(owner).setNmaxForMatchingEngine(NMAX);
+      await positionsManagerForAave.connect(owner).setNmaxForMatchingEngine(NMAX);
       expect(await positionsManagerForAave.NMAX()).to.equal(NMAX);
     });
 
@@ -261,7 +264,7 @@ describe('PositionsManagerForAave Contract', () => {
       await usdcToken.connect(whaleUsdc).transfer(aliceAddress, usdcCollateralAmount);
 
       await usdcToken.connect(alice).approve(positionsManagerForAave.address, usdcCollateralAmount);
-      await positionsManagerForAave.connect(alice).supply(config.tokens.aUsdc.address, usdcCollateralAmount);
+      await positionsManagerForAave.connect(alice).supply(config.tokens.aUsdc.address, usdcCollateralAmount, 0);
 
       const collateralBalanceInScaledBalance = (await positionsManagerForAave.supplyBalanceInOf(config.tokens.aUsdc.address, aliceAddress))
         .onPool;
@@ -280,7 +283,7 @@ describe('PositionsManagerForAave Contract', () => {
         .mul(liquidationThreshold)
         .div(PERCENT_BASE);
 
-      await positionsManagerForAave.connect(alice).borrow(config.tokens.aDai.address, daiBorrowAmount);
+      await positionsManagerForAave.connect(alice).borrow(config.tokens.aDai.address, daiBorrowAmount, 0);
     });
 
     it('Second step, add 2*NMAX Dai suppliers', async () => {
@@ -302,7 +305,7 @@ describe('PositionsManagerForAave Contract', () => {
 
         await daiToken.connect(whaleDai).transfer(smallDaiSupplier, daiAmount);
         await daiToken.connect(supplier).approve(positionsManagerForAave.address, daiAmount);
-        await positionsManagerForAave.connect(supplier).supply(config.tokens.aDai.address, daiAmount);
+        await positionsManagerForAave.connect(supplier).supply(config.tokens.aDai.address, daiAmount, 0);
       }
     });
 
@@ -328,8 +331,8 @@ describe('PositionsManagerForAave Contract', () => {
         await daiToken.connect(whaleDai).transfer(smallUsdcBorrower, daiAmount);
 
         await daiToken.connect(borrower).approve(positionsManagerForAave.address, daiAmount);
-        await positionsManagerForAave.connect(borrower).supply(config.tokens.aDai.address, daiAmount);
-        await positionsManagerForAave.connect(borrower).borrow(config.tokens.aUsdc.address, usdcAmount);
+        await positionsManagerForAave.connect(borrower).supply(config.tokens.aDai.address, daiAmount, 0);
+        await positionsManagerForAave.connect(borrower).borrow(config.tokens.aUsdc.address, usdcAmount, 0);
       }
     });
 
