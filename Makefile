@@ -9,7 +9,9 @@ TESTS = \
 	TestRepay \
 	TestSupply \
 	TestWithdraw \
-	TestDoubleLinkedList
+	TestDoubleLinkedList 
+	# TestNmax 
+	# Add a comment so that the CI doesn't run those NMAX test each time
 
 
 .PHONY: test
@@ -21,6 +23,13 @@ test:  node_modules
 test1: node_modules
 	@echo Run test matching regexp
 	@forge test --fork-url https://${NETWORK}.infura.io/v3/${INFURA_PROJECT_ID} --fork-block-number $(fork-block-number) -vvv --match-test test_borrow_2_2
+
+
+.PHONY: testNmax
+testNmax: node_modules
+	@echo Run test matching regexp
+	@forge test --fork-url https://${NETWORK}.infura.io/v3/${INFURA_PROJECT_ID} --fork-block-number $(fork-block-number) -vvvvv --match-contract TestNmax
+
 
 .PHONY: $(TESTS)
 $(TESTS): node_modules
