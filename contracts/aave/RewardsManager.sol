@@ -92,6 +92,14 @@ contract RewardsManager {
         userUnclaimedRewards[_user] += _updateUserAsset(_user, _asset, _stakedByUser, _totalStaked);
     }
 
+    /// @dev Returns the index of the `_user` for a given `_asset`.
+    /// @param _asset The address of the reference asset of the distribution (aToken or variable debt token).
+    /// @param _user The address of the user.
+    function getUserIndex(address _asset, address _user) external view returns (uint256) {
+        LocalAssetData storage localData = localAssetData[_asset];
+        return localData.userIndex[_user];
+    }
+
     /// Public ///
 
     /// @dev Accrues unclaimed rewards for the given assets and returns the total unclaimed rewards.
