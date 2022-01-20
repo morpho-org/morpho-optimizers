@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.7;
 
+import {IVariableDebtToken} from "./interfaces/aave/IVariableDebtToken.sol";
 import {IAToken} from "./interfaces/aave/IAToken.sol";
 import "./interfaces/aave/IPriceOracleGetter.sol";
 
