@@ -11,10 +11,18 @@ import "./interfaces/IGetterUnderlyingAsset.sol";
 import {DistributionTypes} from "./libraries/aave/DistributionTypes.sol";
 
 contract RewardsManager {
+    /// Structs ///
+
+    struct LocalAssetData {
+        uint256 lastIndex; // The last index for the given market.
+        uint256 lastUpdateTimestamp; // The last time the index has been updated for the given market.
+        mapping(address => uint256) userIndex; // The current index for a given user.
+    }
+
     /// Storage ///
 
-    mapping(address => mapping(address => uint256)) public userIndex; // The reward index related to an asset for a given user.
     mapping(address => uint256) public userUnclaimedRewards; // The unclaimed rewards of the user.
+    mapping(address => LocalAssetData) public localAssetData; // The local data related to a given market.
     bytes32 public constant DATA_PROVIDER_ID =
         0x1000000000000000000000000000000000000000000000000000000000000000; // Id of the data provider.
 
@@ -127,40 +135,50 @@ contract RewardsManager {
         uint256 _stakedByUser,
         uint256 _totalStaked
     ) internal returns (uint256 accruedRewards) {
-        uint256 formerUserIndex = userIndex[_asset][_user];
+        LocalAssetData storage localData = localAssetData[_asset];
+        uint256 formerUserIndex = localData.userIndex[_user];
         uint256 newIndex = _getUpdatedIndex(_asset, _totalStaked);
 
         if (formerUserIndex != newIndex) {
             if (_stakedByUser != 0)
                 accruedRewards = _getRewards(_stakedByUser, newIndex, formerUserIndex);
 
-            userIndex[_asset][_user] = newIndex;
+            localData.userIndex[_user] = newIndex;
         }
     }
 
     /// @dev Returns the next reward index.
     /// @param _asset The address of the reference asset of the distribution (aToken or variable debt token).
     /// @param _totalStaked The total of tokens staked in the distribution.
-    /// @return The new distribution index.
+    /// @return newIndex The new distribution index.
     function _getUpdatedIndex(address _asset, uint256 _totalStaked)
         internal
-        view
-        returns (uint256)
+        returns (uint256 newIndex)
     {
-        IAaveIncentivesController.AssetData memory assetData = aaveIncentivesController.assets(
-            _asset
-        );
-        uint256 oldIndex = assetData.index;
-        uint128 lastUpdateTimestamp = assetData.lastUpdateTimestamp;
+        LocalAssetData storage localData = localAssetData[_asset];
+        uint256 blockTimestamp = block.timestamp;
+        uint256 lastTimestamp = localData.lastUpdateTimestamp;
 
-        if (block.timestamp == lastUpdateTimestamp) return oldIndex;
-        return
-            _getAssetIndex(
-                oldIndex,
-                assetData.emissionPerSecond,
-                lastUpdateTimestamp,
-                _totalStaked
+        if (blockTimestamp == lastTimestamp) return localData.lastIndex;
+        else {
+            IAaveIncentivesController.AssetData memory assetData = aaveIncentivesController.assets(
+                _asset
             );
+            uint256 oldIndex = assetData.index;
+            uint128 lastTimestampOnAave = assetData.lastUpdateTimestamp;
+
+            if (blockTimestamp == lastTimestampOnAave) newIndex = oldIndex;
+            else
+                newIndex = _getAssetIndex(
+                    oldIndex,
+                    assetData.emissionPerSecond,
+                    lastTimestampOnAave,
+                    _totalStaked
+                );
+
+            localData.lastUpdateTimestamp = blockTimestamp;
+            localData.lastIndex = newIndex;
+        }
     }
 
     /// @dev Computes and returns the next value of a specific distribution index.
