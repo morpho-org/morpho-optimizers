@@ -14,11 +14,11 @@ interface IPositionsManagerForAave {
         view
         returns (uint256 withdrawable, uint256 borrowable);
 
-    function setNmaxForMatchingEngine(uint16) external;
+    function setNmaxForMatchingEngine(uint16 _newMaxNumber) external;
 
-    function setThreshold(address, uint256) external;
+    function setThreshold(address _poolTokenAddress, uint256 _newThreshold) external;
 
-    function setCapValue(address, uint256) external;
+    function setCapValue(address _poolTokenAddress, uint256 _newCapValue) external;
 
     function setTreasuryVault(address) external;
 
