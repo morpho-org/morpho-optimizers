@@ -79,22 +79,26 @@ contract TestSupply is TestSetup {
 
     // 1.3 - There is 1 available borrower, he matches 100% of the supplier liquidity, everything is `inP2P`.
     function test_supply_1_3(
-        uint256 _amount /*,
+        uint256 _amount,
         uint8 _supplyAsset,
-        uint8 _borrowAsset */
+        uint8 _borrowAsset
     ) public {
-        (Asset memory supply, Asset memory borrow) = getAssets(
-            _amount,
-            1, /*_supplyAsset*/
-            0 /*_borrowAsset*/
-        );
+        (Asset memory supply, Asset memory borrow) = getAssets(_amount, _supplyAsset, _borrowAsset);
 
         supply.amount *= 2;
         borrower1.approve(supply.underlying, supply.amount);
         borrower1.supply(supply.poolToken, supply.amount);
 
-        borrow.amount = getMaxToBorrow(supply.amount, supply.poolToken, borrow.poolToken);
-        emit log_named_uint("borrow.amount", borrow.amount);
+        emit log_named_decimal_uint(
+            "supply.amount",
+            supply.amount,
+            ERC20(supply.underlying).decimals()
+        );
+        emit log_named_decimal_uint(
+            "borrow.amount",
+            borrow.amount,
+            ERC20(borrow.underlying).decimals()
+        );
         borrower1.borrow(borrow.poolToken, borrow.amount);
 
         uint256 daiBalanceBefore = supplier1.balanceOf(borrow.underlying);
@@ -129,15 +133,11 @@ contract TestSupply is TestSetup {
     // 1.4 - There is 1 available borrower, he doesn't match 100% of the supplier liquidity.
     // Supplier's balance `inP2P` is equal to the borrower previous amount `onPool`, the rest is set `onPool`.
     function test_supply_1_4(
-        uint256 _amount /*,
+        uint256 _amount,
         uint8 _supplyAsset,
-        uint8 _borrowAsset*/
+        uint8 _borrowAsset
     ) public {
-        (Asset memory supply, Asset memory borrow) = getAssets(
-            _amount,
-            1, /*_supplyAsset*/
-            0 /*_borrowAsset*/
-        );
+        (Asset memory supply, Asset memory borrow) = getAssets(_amount, _supplyAsset, _borrowAsset);
 
         borrower1.approve(supply.underlying, 2 * supply.amount);
         borrower1.supply(supply.poolToken, 2 * supply.amount);
@@ -162,22 +162,15 @@ contract TestSupply is TestSetup {
     }
 
     // 1.5 - There are NMAX (or less) borrowers that match the supplied amount, everything is `inP2P` after NMAX (or less) match.
-    function test_supply_1_5()
-        public
-    /* uint256 _amount,
+    function test_supply_1_5(
+        uint256 _amount,
         uint8 _supplyAsset,
-        uint8 _borrowAsset*/
-    {
-        (Asset memory supply, Asset memory borrow) = getAssets(
-            10_000 ether, /* _amount,*/
-            1, /*_supplyAsset*/
-            0 /*_borrowAsset*/
-        );
+        uint8 _borrowAsset
+    ) public {
+        (Asset memory supply, Asset memory borrow) = getAssets(_amount, _supplyAsset, _borrowAsset);
 
         uint16 NMAX = 20;
         setNMAXAndCreateSigners(NMAX);
-        uint256 amount = 10_000 ether;
-        borrow.amount = amount / NMAX;
 
         for (uint256 i = 0; i < NMAX; i++) {
             borrowers[i].approve(supply.underlying, 2 * supply.amount);
@@ -186,8 +179,8 @@ contract TestSupply is TestSetup {
             borrowers[i].borrow(borrow.poolToken, borrow.amount);
         }
 
-        supplier1.approve(borrow.underlying, amount);
-        supplier1.supply(borrow.poolToken, amount);
+        supplier1.approve(borrow.underlying, NMAX * borrow.amount);
+        supplier1.supply(borrow.poolToken, NMAX * borrow.amount);
 
         uint256 inP2P;
         uint256 onPool;
@@ -207,7 +200,7 @@ contract TestSupply is TestSetup {
         }
 
         (inP2P, onPool) = positionsManager.supplyBalanceInOf(borrow.poolToken, address(supplier1));
-        expectedInP2P = p2pUnitToUnderlying(amount, p2pExchangeRate);
+        expectedInP2P = p2pUnitToUnderlying(NMAX * borrow.amount, p2pExchangeRate);
 
         assertEq(inP2P, expectedInP2P, "supplier1 in P2P");
         assertEq(onPool, 0, "supplier1 on pool");
@@ -215,17 +208,12 @@ contract TestSupply is TestSetup {
 
     // 1.6 - The NMAX biggest borrowers don't match all of the supplied amount, after NMAX match, the rest is supplied and set `onPool`.
     // ⚠️ most gas expensive supply scenario.
-    function test_supply_1_6()
-        public
-    /*uint256 _amount,
+    function test_supply_1_6(
+        uint256 _amount,
         uint8 _supplyAsset,
-        uint8 _borrowAsset*/
-    {
-        (Asset memory supply, Asset memory borrow) = getAssets(
-            10_000 ether, /*_amount */
-            1, /*_supplyAsset*/
-            0 /*_borrowAsset*/
-        );
+        uint8 _borrowAsset
+    ) public {
+        (Asset memory supply, Asset memory borrow) = getAssets(_amount, _supplyAsset, _borrowAsset);
 
         uint16 NMAX = 20;
         setNMAXAndCreateSigners(NMAX);

@@ -9,7 +9,7 @@ test:  node_modules
 
 single-%: node_modules
 	@echo Run single test: $*
-	@forge test --fork-url https://${NETWORK}.infura.io/v3/${INFURA_PROJECT_ID} --fork-block-number $(fork-block-number) -vvv -c test-foundry --match-test $*
+	@forge test --fork-url https://${NETWORK}.infura.io/v3/${INFURA_PROJECT_ID} --fork-block-number $(fork-block-number) -vvv -c test-foundry --force --match-test $*
 
 contract-%: node_modules
 	@echo Run tests for $*

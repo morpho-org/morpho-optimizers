@@ -121,17 +121,20 @@ contract TestSetup is DSTest, Config, Utils {
         hevm.store(_acct, keccak256(abi.encode(_who, slots[_acct])), bytes32(_value));
     }
 
+    /**
+     * @dev Set NMAX, create the same number of suppliers and borrowers,
+     *      and fill their balances.
+     * @param _NMAX new NMAX
+     */
     function setNMAXAndCreateSigners(uint16 _NMAX) internal {
         marketsManager.setNmaxForMatchingEngine(_NMAX);
 
         while (borrowers.length < _NMAX) {
             borrowers.push(new User(positionsManager, marketsManager));
-            writeBalanceOf(address(borrowers[borrowers.length - 1]), dai, type(uint256).max / 2);
-            writeBalanceOf(address(borrowers[borrowers.length - 1]), usdc, type(uint256).max / 2);
+            fillBalances(address(borrowers[borrowers.length - 1]));
 
             suppliers.push(new User(positionsManager, marketsManager));
-            writeBalanceOf(address(suppliers[suppliers.length - 1]), dai, type(uint256).max / 2);
-            writeBalanceOf(address(suppliers[suppliers.length - 1]), usdc, type(uint256).max / 2);
+            fillBalances(address(suppliers[suppliers.length - 1]));
         }
     }
 
@@ -204,7 +207,7 @@ contract TestSetup is DSTest, Config, Utils {
     }
 
     /**
-     * @dev Returns the amount, pool token address and underlying address of a borrowed asset.
+     * @dev Returns the pool token address and underlying address of a borrowed asset.
      * @notice The pool token will be different from the supply pool token.
      * @notice An event with the token symbol is emmitted for easier debug.
      * @param _borrowIndex   index of token
@@ -248,13 +251,13 @@ contract TestSetup is DSTest, Config, Utils {
 
         // Adjust the amount so that borrow amount > threshold
         uint256 threshold = positionsManager.threshold(borrow.poolToken);
-        borrow.amount = getMaxToBorrow(
-            denormalizeAmount(supply.amount, supply.underlying),
-            supply.poolToken,
-            borrow.poolToken
-        );
+        borrow.amount = getMaxToBorrow(supply.amount, supply.underlying, borrow.underlying);
+        emit log_named_uint("supply.amount", supply.amount);
+        emit log_named_uint("borrow.amount", borrow.amount);
+        emit log_named_uint("threshold", threshold);
         if (borrow.amount < threshold) {
-            supply.amount *= 10; // TODO more accurate calculation
+            emit log_string("borrow.amount < threshold");
+            supply.amount = (supply.amount * threshold) / borrow.amount;
             borrow.amount = threshold;
         }
 
@@ -281,38 +284,32 @@ contract TestSetup is DSTest, Config, Utils {
 
     /**
      * @dev Returns the maximum to borrow providing `_amount`of supply token.
+     * @notice The result is in borrow underlying token unit.
      * @param _amount amount of supplied token
-     * @param _suppliedPoolToken supply pool token
-     * @param _borrowedPoolToken borrow pool token
+     * @param _supplyUnderlying supply underlying
+     * @param _borrowUnderlying borrow underlying
      */
     function getMaxToBorrow(
         uint256 _amount,
-        address _suppliedPoolToken,
-        address _borrowedPoolToken
+        address _supplyUnderlying,
+        address _borrowUnderlying
     ) internal returns (uint256) {
-        uint256 underlyingPrice = oracle.getAssetPrice(
-            IAToken(_suppliedPoolToken).UNDERLYING_ASSET_ADDRESS()
-        );
+        emit log_named_address("oracle", address(oracle));
 
-        (
-            uint256 reserveDecimals,
-            ,
-            uint256 liquidationThreshold,
-            ,
-            ,
-            ,
-            ,
-            ,
-            ,
+        uint256 supplyPrice = oracle.getAssetPrice(_supplyUnderlying);
+        emit log_named_uint("oracle supply", supplyPrice);
+        uint256 borrowPrice = oracle.getAssetPrice(_borrowUnderlying);
+        emit log_named_uint("oracle borrow", borrowPrice);
 
-        ) = protocolDataProvider.getReserveConfigurationData(
-            IAToken(_borrowedPoolToken).UNDERLYING_ASSET_ADDRESS()
-        );
+        emit log_named_uint("_amount", _amount);
+        uint256 amount = (((_amount * supplyPrice) / borrowPrice) *
+            10**ERC20(_borrowUnderlying).decimals()) / 10**ERC20(_supplyUnderlying).decimals();
+        emit log_named_uint("amount in borrow unit", amount);
 
-        uint256 tokenUnit = 10**reserveDecimals;
-        uint256 collateralToAdd = (_amount * underlyingPrice) / tokenUnit;
-        uint256 maxDebtValue = (collateralToAdd * liquidationThreshold) / PERCENT_BASE;
+        (, , uint256 liquidationThreshold, , , , , , , ) = protocolDataProvider
+        .getReserveConfigurationData(_supplyUnderlying);
 
-        return maxDebtValue;
+        emit log_named_uint("liquidationThreshold", liquidationThreshold);
+        return (amount * liquidationThreshold) / PERCENT_BASE;
     }
 }
