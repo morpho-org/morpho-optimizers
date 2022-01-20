@@ -1344,7 +1344,7 @@ describe('PositionsManagerForAave Contract', () => {
       const { index } = await aaveIncentivesController.assets(config.tokens.aDai.address);
       const rewardTokenBalanceBefore = await wmaticToken.balanceOf(supplier1.getAddress());
       const onPool = (await positionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier1.getAddress())).onPool;
-      const userIndex = await rewardsManager.userIndex(config.tokens.aDai.address, supplier1.getAddress());
+      const userIndex = await rewardsManager.getUserIndex(config.tokens.aDai.address, supplier1.getAddress());
       expect(userIndex).to.equal(index);
       expect(await rewardsManager.userUnclaimedRewards(supplier1.getAddress())).to.equal(0);
 
