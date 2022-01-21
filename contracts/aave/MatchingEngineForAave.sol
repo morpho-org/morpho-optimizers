@@ -89,6 +89,9 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
             user = suppliersOnPool[poolTokenAddress].getHead();
         }
 
+        supplyP2PAmount[poolTokenAddress] += matchedSupply;
+        borrowP2PAmount[poolTokenAddress] += matchedSupply;
+
         if (matchedSupply > 0) {
             matchedSupply = Math.min(matchedSupply, _poolToken.balanceOf(address(this)));
             _withdrawERC20FromPool(poolTokenAddress, _underlyingToken, matchedSupply); // Revert on error
@@ -132,6 +135,8 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         }
 
         supplyP2PDelta[_poolTokenAddress] += remainingToUnmatch;
+        supplyP2PAmount[_poolTokenAddress] -= _amount - remainingToUnmatch;
+        borrowP2PAmount[_poolTokenAddress] -= _amount;
 
         _supplyERC20ToPool(_poolTokenAddress, underlyingToken, _amount); // Revert on error
     }
@@ -177,6 +182,9 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
             );
             user = borrowersOnPool[poolTokenAddress].getHead();
         }
+
+        borrowP2PAmount[poolTokenAddress] += matchedBorrow;
+        supplyP2PAmount[poolTokenAddress] += matchedBorrow;
 
         if (matchedBorrow > 0)
             _repayERC20ToPool(
@@ -226,6 +234,8 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         }
 
         borrowP2PDelta[_poolTokenAddress] += remainingToUnmatch;
+        borrowP2PAmount[_poolTokenAddress] -= _amount - remainingToUnmatch;
+        supplyP2PAmount[_poolTokenAddress] -= _amount;
 
         _borrowERC20FromPool(_poolTokenAddress, underlyingToken, _amount); // Revert on error
     }
