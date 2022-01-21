@@ -25,10 +25,6 @@
     "fix:ts": "yarn prettier --config .prettierrc.json --write './**/*.ts'",
     "fix:sol": "yarn prettier --config .prettierrc.json --write 'contracts/**/*.sol'",
     "build:interfaces": "yarn solidity-interfacer --license 'GNU AGPLv3' 'contracts/{aave,compound}/*.sol'",
-    "hook:fix": "yarn hook:fix:sol && yarn hook:fix:ts",
-    "hook:fix:ts": "yarn prettier --config .prettierrc.json --write $(git diff --staged --name-only | grep '\\.ts$' | xargs)",
-    "hook:fix:sol": "yarn prettier --config .prettierrc.json --write $(git diff --staged --name-only | grep '\\.sol$' | xargs)",
-    "hook:build:interfaces": "git add $(yarn --silent solidity-interfacer $(git diff --staged --name-only | grep '\\.sol$' | xargs) --license 'GNU AGPLv3' --logFiles | xargs)",
     "size": "yarn run hardhat size-contracts",
     "postinstall": "husky install"
   },
@@ -81,7 +77,7 @@
   },
   "husky": {
     "hooks": {
-      "pre-commit": "yarn hook:build:interfaces && yarn hook:fix"
+      "pre-commit": "sh hooks/pre-commit.sh"
     }
   },
   "_moduleAliases": {
