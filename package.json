@@ -22,9 +22,9 @@
     "lint:ts": "eslint . --ext .ts",
     "lint:sol": "solhint 'contracts/**/*.sol'",
     "fix": "yarn fix:sol && yarn fix:ts",
-    "fix:ts": "prettier --config .prettierrc.json './**/*.ts' --write",
-    "fix:sol": "prettier --write ./contracts/**/*.sol",
-    "build:interfaces": "yarn solidity-interfacer contracts/{aave,compound}/*.sol --license 'GNU AGPLv3'",
+    "fix:ts": "yarn prettier --config .prettierrc.json --write './**/*.ts'",
+    "fix:sol": "yarn prettier --config .prettierrc.json --write 'contracts/**/*.sol'",
+    "build:interfaces": "yarn solidity-interfacer --license 'GNU AGPLv3' 'contracts/{aave,compound}/*.sol'",
     "size": "yarn run hardhat size-contracts",
     "postinstall": "husky install"
   },
@@ -77,7 +77,7 @@
   },
   "husky": {
     "hooks": {
-      "pre-commit": "yarn build:interfaces && yarn fix:sol && yarn fix:js"
+      "pre-commit": "yarn build:interfaces && yarn fix"
     }
   },
   "_moduleAliases": {
