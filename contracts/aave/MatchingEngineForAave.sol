@@ -104,8 +104,10 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         uint256 supplyP2PExchangeRate = marketsManager.supplyP2PExchangeRate(_poolTokenAddress);
         address user = suppliersInP2P[_poolTokenAddress].getHead();
         uint256 remainingToUnmatch = _amount; // In underlying
+        uint256 iterationCount;
 
-        while (remainingToUnmatch > 0 && user != address(0)) {
+        while (remainingToUnmatch > 0 && user != address(0) && iterationCount < NMAX) {
+            iterationCount++;
             uint256 inP2P = supplyBalanceInOf[_poolTokenAddress][user].inP2P; // In poolToken
             uint256 toUnmatch = Math.min(
                 inP2P.mulWadByRay(supplyP2PExchangeRate),
@@ -128,9 +130,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
             user = suppliersInP2P[_poolTokenAddress].getHead();
         }
 
-        // Supply the remaining on Aave
-        uint256 toSupply = _amount - remainingToUnmatch;
-        if (toSupply > 0) _supplyERC20ToPool(underlyingToken, toSupply); // Revert on error
+        _supplyERC20ToPool(underlyingToken, _amount); // Revert on error
     }
 
     /// @dev Matches borrowers' liquidity waiting on Aave for the given `_amount` and move it to P2P.
@@ -192,8 +192,10 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         );
         address user = borrowersInP2P[_poolTokenAddress].getHead();
         uint256 remainingToUnmatch = _amount;
+        uint256 iterationCount;
 
-        while (remainingToUnmatch > 0 && user != address(0)) {
+        while (remainingToUnmatch > 0 && user != address(0) && iterationCount < NMAX) {
+            iterationCount++;
             uint256 inP2P = borrowBalanceInOf[_poolTokenAddress][user].inP2P;
             uint256 toUnmatch = Math.min(
                 inP2P.mulWadByRay(borrowP2PExchangeRate),
@@ -216,8 +218,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
             user = borrowersInP2P[_poolTokenAddress].getHead();
         }
 
-        uint256 toBorrow = _amount - remainingToUnmatch;
-        if (toBorrow > 0) _borrowERC20FromPool(underlyingToken, toBorrow); // Revert on error
+        _borrowERC20FromPool(underlyingToken, _amount); // Revert on error
     }
 
     /// @dev Updates borrowers matching engine with the new balances of a given user.
