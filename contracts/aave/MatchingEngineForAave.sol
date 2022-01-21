@@ -181,12 +181,14 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
             supplyP2PDelta[_poolTokenAddress] += remainingToUnmatch.divWadByRay(normalizedIncome);
             emit SupplyP2PDeltaUpdated(_poolTokenAddress, supplyP2PDelta[_poolTokenAddress]);
         }
+
         supplyP2PAmount[_poolTokenAddress] -= (_amount - remainingToUnmatch).divWadByRay(
             supplyP2PExchangeRate
         );
         borrowP2PAmount[_poolTokenAddress] -= _amount.divWadByRay(
             marketsManager.borrowP2PExchangeRate(_poolTokenAddress)
         );
+
         if (toSupply > 0) _supplyERC20ToPool(_poolTokenAddress, underlyingToken, toSupply); // Revert on error
     }
 
