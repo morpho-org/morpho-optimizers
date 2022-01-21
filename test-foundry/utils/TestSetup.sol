@@ -41,8 +41,7 @@ contract TestSetup is Config, Utils {
     User public borrower2;
     User public borrower3;
     User[] public borrowers;
-
-    User public treasuryVault;
+    User public treasury;
 
     address[] public pools;
 
@@ -52,6 +51,8 @@ contract TestSetup is Config, Utils {
             address(marketsManager),
             lendingPoolAddressesProviderAddress
         );
+
+        treasury = new User(positionsManager, marketsManager);
 
         fakePositionsManager = new PositionsManagerForAave(
             address(marketsManager),
@@ -74,8 +75,8 @@ contract TestSetup is Config, Utils {
 
         marketsManager.setPositionsManager(address(positionsManager));
         positionsManager.setAaveIncentivesController(aaveIncentivesControllerAddress);
-        positionsManager.setTreasuryVault(address(treasuryVault));
         positionsManager.setRewardsManager(address(rewardsManager));
+        positionsManager.setTreasuryVault(address(treasury));
         marketsManager.updateLendingPool();
 
         // !!! WARNING !!!
