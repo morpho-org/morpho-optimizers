@@ -84,4 +84,8 @@ contract User {
     function setNoP2P(address _marketAddress, bool _noP2P) external {
         marketsManager.setNoP2P(_marketAddress, _noP2P);
     }
+
+    function setTreasuryVault(address _newTreasuryVault) external {
+        positionsManager.setTreasuryVault(_newTreasuryVault);
+    }
 }

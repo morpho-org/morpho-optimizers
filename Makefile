@@ -11,7 +11,9 @@ TESTS = \
 	TestWithdraw \
 	TestDoubleLinkedList \
 	TestNmax \
-	TestGetters
+	TestGetters \
+	TestFees
+
 
 .PHONY: test
 test: node_modules
