@@ -28,7 +28,7 @@
     "hook:fix": "yarn hook:fix:sol && yarn hook:fix:ts",
     "hook:fix:ts": "yarn prettier --config .prettierrc.json --write $(git diff --staged --name-only | grep '\\.ts$' | xargs)",
     "hook:fix:sol": "yarn prettier --config .prettierrc.json --write $(git diff --staged --name-only | grep '\\.sol$' | xargs)",
-    "hook:build:interfaces": "yarn solidity-interfacer --license 'GNU AGPLv3' $(git diff --staged --name-only | grep '\\.sol$' | xargs)",
+    "hook:build:interfaces": "git add $(yarn --silent solidity-interfacer $(git diff --staged --name-only | grep '\\.sol$' | xargs) --license 'GNU AGPLv3' --logFiles | xargs)",
     "size": "yarn run hardhat size-contracts",
     "postinstall": "husky install"
   },
@@ -71,7 +71,7 @@
     "solhint": "3.3.6",
     "solhint-plugin-prettier": "0.0.5",
     "solidity-coverage": "0.7.16",
-    "solidity-interfacer": "^0.1.8",
+    "solidity-interfacer": "^0.1.10",
     "ts-node": "10.4.0",
     "typescript": "4.5.2"
   },

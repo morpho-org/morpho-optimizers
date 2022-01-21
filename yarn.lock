@@ -8340,10 +8340,10 @@ solidity-coverage@0.7.16:
     shelljs "^0.8.3"
     web3-utils "^1.3.0"
 
-solidity-interfacer@^0.1.8:
-  version "0.1.8"
-  resolved "https://registry.yarnpkg.com/solidity-interfacer/-/solidity-interfacer-0.1.8.tgz#7f69910e55b4858180c0868a4989b07fd24bb37a"
-  integrity sha512-p2ucTVWaF5J1FU++vj9HW0hIxENCpHc+DeuvHu+/45/Qwikxusg3cl9vqDsUZH3pUqT02NNzG3kZBvXG8xEV7Q==
+solidity-interfacer@^0.1.10:
+  version "0.1.10"
+  resolved "https://registry.yarnpkg.com/solidity-interfacer/-/solidity-interfacer-0.1.10.tgz#bb9f0b470ed60f75cdda104a85525cd0470e708a"
+  integrity sha512-16LHFpKu3pKxLDI8udyF3YLiFw3HpaWJAr/r906kS4kk2GFFUq3gWhzO0V7begECYOt0DHoZEUW0Pm+7DrL7BA==
   dependencies:
     "@solidity-parser/parser" "^0.14.0"
     colors "^1.4.0"
