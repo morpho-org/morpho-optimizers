@@ -98,8 +98,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
     /// @param _poolTokenAddress The address of the market from which to unmatch suppliers.
     /// @param _amount The amount to search for (in underlying).
     function unmatchSuppliers(address _poolTokenAddress, uint256 _amount) public override {
-        IAToken poolToken = IAToken(_poolTokenAddress);
-        IERC20 underlyingToken = IERC20(poolToken.UNDERLYING_ASSET_ADDRESS());
+        IERC20 underlyingToken = IERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
         uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(address(underlyingToken));
         uint256 supplyP2PExchangeRate = marketsManager.supplyP2PExchangeRate(_poolTokenAddress);
         address user = suppliersInP2P[_poolTokenAddress].getHead();
@@ -129,6 +128,8 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
             );
             user = suppliersInP2P[_poolTokenAddress].getHead();
         }
+
+        supplyP2PDelta[_poolTokenAddress] += remainingToUnmatch;
 
         _supplyERC20ToPool(underlyingToken, _amount); // Revert on error
     }
@@ -184,8 +185,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
     /// @param _poolTokenAddress The address of the market from which to unmatch borrowers.
     /// @param _amount The amount to unmatch (in underlying).
     function unmatchBorrowers(address _poolTokenAddress, uint256 _amount) public override {
-        IAToken poolToken = IAToken(_poolTokenAddress);
-        IERC20 underlyingToken = IERC20(poolToken.UNDERLYING_ASSET_ADDRESS());
+        IERC20 underlyingToken = IERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
         uint256 borrowP2PExchangeRate = marketsManager.borrowP2PExchangeRate(_poolTokenAddress);
         uint256 normalizedVariableDebt = lendingPool.getReserveNormalizedVariableDebt(
             address(underlyingToken)
@@ -217,6 +217,8 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
             );
             user = borrowersInP2P[_poolTokenAddress].getHead();
         }
+
+        borrowP2PDelta[_poolTokenAddress] += remainingToUnmatch;
 
         _borrowERC20FromPool(underlyingToken, _amount); // Revert on error
     }
