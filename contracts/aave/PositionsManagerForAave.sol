@@ -33,23 +33,23 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
 
     /// Structs ///
 
-    // Struct to avoid stack too deep error
-    struct BalanceStateVars {
-        uint256 debtValue; // The total debt value (in ETH).
-        uint256 maxDebtValue; // The maximum debt value available thanks to the collateral (in ETH).
-        uint256 debtToAdd; // The debt to add at the current iteration (in ETH).
-        uint256 collateralToAdd; // The collateral to add at the current iteration (in ETH).
-        uint256 supplyP2PExchangeRate; // The p2pUnit exchange rate of the `poolTokenEntered`.
-        uint256 borrowP2PExchangeRate; // The p2pUnit exchange rate of the `poolTokenEntered`.
-        uint256 underlyingPrice; // The price of the underlying linked to the `poolTokenEntered` (in ETH).
-        uint256 normalizedVariableDebt; // Normalized variable debt of the market.
-        uint256 normalizedIncome; // Normalized income of the market.
-        uint256 liquidationThreshold; // The liquidation threshold on Aave.
-        uint256 reserveDecimals; // The number of decimals of the asset in the reserve.
-        uint256 tokenUnit; // The unit of tokens considering its decimals.
-        address poolTokenEntered; // The poolToken token entered by the user.
-        address underlyingAddress; // The address of the underlying.
-        IPriceOracleGetter oracle; // Aave oracle.
+    struct AssetLiquidityData {
+        uint256 collateralValue;
+        uint256 maxDebtValue;
+        uint256 debtValue;
+        uint256 tokenUnit;
+        uint256 underlyingPrice;
+        uint256 liquidationThreshold;
+    }
+
+    struct LiquidityData {
+        uint256 maxDebtValue;
+        uint256 debtValue;
+        uint256 collateralValue;
+        uint256 borrowedValue;
+        uint256 underlyingPrice;
+        uint256 tokenUnit;
+        uint256 liquidationThreshold;
     }
 
     // Struct to avoid stack too deep error
@@ -587,7 +587,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
             borrowBalanceInOf[_poolTokenBorrowedAddress][_borrower].inP2P.mulWadByRay(
                 marketsManagerForAave.borrowP2PExchangeRate(_poolTokenBorrowedAddress)
             );
-        if (_amount > (vars.borrowBalance * LIQUIDATION_CLOSE_FACTOR_PERCENT) / 10000)
+        if (_amount > (vars.borrowBalance * LIQUIDATION_CLOSE_FACTOR_PERCENT) / MAX_BASIS_POINTS)
             revert AmountAboveWhatAllowedToRepay(); // Same mechanism as Aave. Liquidator cannot repay more than part of the debt (cf close factor on Aave).
 
         vars.oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
@@ -608,7 +608,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         // seizeAmount = repayAmount * liquidationBonus * borrowedPrice * collateralTokenUnit / (collateralPrice * borrowedTokenUnit)
         vars.amountToSeize =
             (_amount * vars.borrowedPrice * vars.collateralTokenUnit * vars.liquidationBonus) /
-            (vars.borrowedTokenUnit * vars.collateralPrice * 10000); // Same mechanism as aave. The collateral amount to seize is given.
+            (vars.borrowedTokenUnit * vars.collateralPrice * MAX_BASIS_POINTS); // Same mechanism as aave. The collateral amount to seize is given.
         vars.normalizedIncome = lendingPool.getReserveNormalizedIncome(vars.tokenCollateralAddress);
         marketsManagerForAave.updateRates(_poolTokenCollateralAddress);
         vars.totalCollateral =
@@ -629,6 +629,106 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
             vars.amountToSeize,
             _poolTokenCollateralAddress
         );
+    }
+
+    /// Public ///
+
+    /// @dev Returns the borrowable and withdrawable maximum capacities related to `_poolTokenAddress` for the `_user`.
+    /// @param _user The user to determine the capacities for.
+    /// @param _poolTokenAddress The address of the market.
+    /// @return withdrawable The maximum withdrawable amount of underlying allowed.
+    /// @return borrowable The maximum borrowable amount of underlying allowed.
+    function getAssetMaxCapacities(address _user, address _poolTokenAddress)
+        public
+        view
+        returns (uint256 withdrawable, uint256 borrowable)
+    {
+        LiquidityData memory data;
+        AssetLiquidityData memory assetData;
+        IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
+
+        for (uint256 i; i < enteredMarkets[_user].length; i++) {
+            address poolTokenEntered = enteredMarkets[_user][i];
+
+            if (_poolTokenAddress != poolTokenEntered) {
+                assetData = getUserLiquidityDataForAsset(_user, poolTokenEntered, oracle);
+
+                data.maxDebtValue += assetData.maxDebtValue;
+                data.debtValue += assetData.debtValue;
+            }
+        }
+
+        assetData = getUserLiquidityDataForAsset(_user, _poolTokenAddress, oracle);
+
+        data.maxDebtValue += assetData.maxDebtValue;
+        data.debtValue += assetData.debtValue;
+
+        // Not possible to withdraw nor borrow
+        if (data.maxDebtValue < data.debtValue) return (0, 0);
+
+        data.underlyingPrice = assetData.underlyingPrice;
+        data.tokenUnit = assetData.tokenUnit;
+        data.collateralValue = assetData.collateralValue;
+        data.borrowedValue = assetData.debtValue;
+        data.liquidationThreshold = assetData.liquidationThreshold;
+
+        uint256 differenceInUnderlying = ((data.maxDebtValue - data.debtValue) * data.tokenUnit) /
+            data.underlyingPrice;
+
+        withdrawable = Math.min(
+            (differenceInUnderlying * MAX_BASIS_POINTS) / data.liquidationThreshold,
+            (data.collateralValue * data.tokenUnit) / data.underlyingPrice
+        );
+        borrowable = differenceInUnderlying;
+    }
+
+    /// @dev Returns the data related to `_poolTokenAddress` for the `_user`.
+    /// @param _user The user to determine data for.
+    /// @param _poolTokenAddress The address of the market.
+    /// @return assetData The data related to this asset.
+    function getUserLiquidityDataForAsset(
+        address _user,
+        address _poolTokenAddress,
+        IPriceOracleGetter oracle
+    ) public view returns (AssetLiquidityData memory assetData) {
+        uint256 supplyP2PExchangeRate = marketsManagerForAave.supplyP2PExchangeRate(
+            _poolTokenAddress
+        );
+        uint256 borrowP2PExchangeRate = marketsManagerForAave.borrowP2PExchangeRate(
+            _poolTokenAddress
+        );
+
+        // Compute the current debt (in underlying)
+        address underlyingAddress = IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS();
+        uint256 normalizedVariableDebt = lendingPool.getReserveNormalizedVariableDebt(
+            underlyingAddress
+        );
+        assetData.debtValue =
+            borrowBalanceInOf[_poolTokenAddress][_user].onPool.mulWadByRay(normalizedVariableDebt) +
+            borrowBalanceInOf[_poolTokenAddress][_user].inP2P.mulWadByRay(borrowP2PExchangeRate);
+
+        // Compute the current debt (in underlying)
+        uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(underlyingAddress);
+        assetData.collateralValue =
+            supplyBalanceInOf[_poolTokenAddress][_user].onPool.mulWadByRay(normalizedIncome) +
+            supplyBalanceInOf[_poolTokenAddress][_user].inP2P.mulWadByRay(supplyP2PExchangeRate);
+
+        assetData.underlyingPrice = oracle.getAssetPrice(underlyingAddress); // In ETH
+        (uint256 reserveDecimals, , uint256 liquidationThreshold, , , , , , , ) = dataProvider
+        .getReserveConfigurationData(underlyingAddress);
+        assetData.liquidationThreshold = liquidationThreshold;
+        assetData.tokenUnit = 10**reserveDecimals;
+
+        // Convert values to ETH
+        assetData.collateralValue =
+            (assetData.collateralValue * assetData.underlyingPrice) /
+            assetData.tokenUnit;
+        assetData.maxDebtValue =
+            (assetData.collateralValue * liquidationThreshold) /
+            MAX_BASIS_POINTS;
+        assetData.debtValue =
+            (assetData.debtValue * assetData.underlyingPrice) /
+            assetData.tokenUnit;
     }
 
     /// Internal ///
@@ -1173,7 +1273,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         IERC20 _underlyingToken,
         address _supplier,
         uint256 _amount
-    ) internal {
+    ) internal view {
         uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(
             address(_underlyingToken)
         );
@@ -1219,70 +1319,42 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
     }
 
     /// @dev Returns the debt value, max debt value and collateral value of a given user.
-    /// @param _account The user to determine liquidity for.
+    /// @param _user The user to determine liquidity for.
     /// @param _poolTokenAddress The market to hypothetically withdraw/borrow in.
     /// @param _withdrawnAmount The number of tokens to hypothetically withdraw.
     /// @param _borrowedAmount The amount of underlying to hypothetically borrow.
-    /// @return (debtValue, maxDebtValue).
+    /// @return debtValue The current debt value of the user (in ETH).
+    /// @return maxDebtValue The maximum debt value possible of the user (in ETH).
     function _getUserHypotheticalBalanceStates(
-        address _account,
+        address _user,
         address _poolTokenAddress,
         uint256 _withdrawnAmount,
         uint256 _borrowedAmount
-    ) internal returns (uint256, uint256) {
-        // Avoid stack too deep error
-        BalanceStateVars memory vars;
-        vars.oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
+    ) internal returns (uint256 debtValue, uint256 maxDebtValue) {
+        IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
 
-        for (uint256 i; i < enteredMarkets[_account].length; i++) {
-            vars.poolTokenEntered = enteredMarkets[_account][i];
-            marketsManagerForAave.updateRates(vars.poolTokenEntered);
-            vars.supplyP2PExchangeRate = marketsManagerForAave.supplyP2PExchangeRate(
-                vars.poolTokenEntered
+        for (uint256 i; i < enteredMarkets[_user].length; i++) {
+            address poolTokenEntered = enteredMarkets[_user][i];
+            marketsManagerForAave.updateRates(poolTokenEntered);
+            AssetLiquidityData memory assetData = getUserLiquidityDataForAsset(
+                _user,
+                poolTokenEntered,
+                oracle
             );
-            vars.borrowP2PExchangeRate = marketsManagerForAave.borrowP2PExchangeRate(
-                vars.poolTokenEntered
-            );
-            // Calculation of the current debt (in underlying)
-            vars.underlyingAddress = IAToken(vars.poolTokenEntered).UNDERLYING_ASSET_ADDRESS();
-            vars.normalizedVariableDebt = lendingPool.getReserveNormalizedVariableDebt(
-                vars.underlyingAddress
-            );
-            vars.debtToAdd =
-                borrowBalanceInOf[vars.poolTokenEntered][_account].onPool.mulWadByRay(
-                    vars.normalizedVariableDebt
-                ) +
-                borrowBalanceInOf[vars.poolTokenEntered][_account].inP2P.mulWadByRay(
-                    vars.borrowP2PExchangeRate
-                );
-            // Calculation of the current collateral (in underlying)
-            vars.normalizedIncome = lendingPool.getReserveNormalizedIncome(vars.underlyingAddress);
-            vars.collateralToAdd =
-                supplyBalanceInOf[vars.poolTokenEntered][_account].onPool.mulWadByRay(
-                    vars.normalizedIncome
-                ) +
-                supplyBalanceInOf[vars.poolTokenEntered][_account].inP2P.mulWadByRay(
-                    vars.supplyP2PExchangeRate
-                );
-            vars.underlyingPrice = vars.oracle.getAssetPrice(vars.underlyingAddress); // In ETH
 
-            (vars.reserveDecimals, , vars.liquidationThreshold, , , , , , , ) = dataProvider
-            .getReserveConfigurationData(vars.underlyingAddress);
-            vars.tokenUnit = 10**vars.reserveDecimals;
-            // Conversion of the collateral to ETH
-            vars.collateralToAdd = (vars.collateralToAdd * vars.underlyingPrice) / vars.tokenUnit;
-            vars.maxDebtValue += (vars.collateralToAdd * vars.liquidationThreshold) / 10000;
-            vars.debtValue += (vars.debtToAdd * vars.underlyingPrice) / vars.tokenUnit;
-            if (_poolTokenAddress == vars.poolTokenEntered) {
-                vars.debtValue += (_borrowedAmount * vars.underlyingPrice) / vars.tokenUnit;
-                vars.maxDebtValue -= Math.min(
-                    vars.maxDebtValue,
-                    (_withdrawnAmount * vars.underlyingPrice * vars.liquidationThreshold) /
-                        (vars.tokenUnit * 10000)
+            maxDebtValue += assetData.maxDebtValue;
+            debtValue += assetData.debtValue;
+
+            if (_poolTokenAddress == poolTokenEntered) {
+                debtValue += (_borrowedAmount * assetData.underlyingPrice) / assetData.tokenUnit;
+                maxDebtValue -= Math.min(
+                    maxDebtValue,
+                    (_withdrawnAmount *
+                        assetData.underlyingPrice *
+                        assetData.liquidationThreshold) / (assetData.tokenUnit * MAX_BASIS_POINTS)
                 );
             }
         }
-        return (vars.debtValue, vars.maxDebtValue);
     }
 
     /// @dev Updates borrowers matching engine with the new balances of a given account.
