@@ -75,11 +75,6 @@
     "@openzeppelin/contracts": "4.2.0",
     "prb-math": "2.2.0"
   },
-  "husky": {
-    "hooks": {
-      "pre-commit": "sh hooks/pre-commit.sh"
-    }
-  },
   "_moduleAliases": {
     "@config": "config",
     "@test": "test"
