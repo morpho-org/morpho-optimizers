@@ -75,14 +75,14 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
     /// Events ///
 
     /// @dev Emitted when a supply happens.
-    /// @param _account The address of the supplier.
+    /// @param _user The address of the supplier.
     /// @param _poolTokenAddress The address of the market where assets are supplied into.
     /// @param _amount The amount of assets supplied (in underlying).
     /// @param _balanceOnPool The supply balance on pool after update (in underlying).
     /// @param _balanceInP2P The supply balance in P2P after update (in underlying).
     /// @param _referralCode The referral code of an integrator that may receive rewards. 0 if no referral code.
     event Supplied(
-        address indexed _account,
+        address indexed _user,
         address indexed _poolTokenAddress,
         uint256 _amount,
         uint256 _balanceOnPool,
@@ -91,13 +91,13 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
     );
 
     /// @dev Emitted when a withdraw happens.
-    /// @param _account The address of the withdrawer.
+    /// @param _user The address of the withdrawer.
     /// @param _poolTokenAddress The address of the market from where assets are withdrawn.
     /// @param _amount The amount of assets withdrawn (in underlying).
     /// @param _balanceOnPool The supply balance on pool after update (in underlying).
     /// @param _balanceInP2P The supply balance in P2P after update (in underlying).
     event Withdrawn(
-        address indexed _account,
+        address indexed _user,
         address indexed _poolTokenAddress,
         uint256 _amount,
         uint256 _balanceOnPool,
@@ -105,14 +105,14 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
     );
 
     /// @dev Emitted when a borrow happens.
-    /// @param _account The address of the borrower.
+    /// @param _user The address of the borrower.
     /// @param _poolTokenAddress The address of the market where assets are borrowed.
     /// @param _amount The amount of assets borrowed (in underlying).
     /// @param _balanceOnPool The borrow balance on pool after update (in underlying).
     /// @param _balanceInP2P The borrow balance in P2P after update (in underlying).
     /// @param _referralCode The referral code of an integrator that may receive rewards. 0 if no referral code.
     event Borrowed(
-        address indexed _account,
+        address indexed _user,
         address indexed _poolTokenAddress,
         uint256 _amount,
         uint256 _balanceOnPool,
@@ -121,13 +121,13 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
     );
 
     /// @dev Emitted when a repay happens.
-    /// @param _account The address of the repayer.
+    /// @param _user The address of the repayer.
     /// @param _poolTokenAddress The address of the market where assets are repaid.
     /// @param _amount The amount of assets repaid (in underlying).
     /// @param _balanceOnPool The borrow balance on pool after update (in underlying).
     /// @param _balanceInP2P The borrow balance in P2P after update (in underlying).
     event Repaid(
-        address indexed _account,
+        address indexed _user,
         address indexed _poolTokenAddress,
         uint256 _amount,
         uint256 _balanceOnPool,
@@ -151,24 +151,24 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
     );
 
     /// @dev Emitted when the position of a supplier is updated.
-    /// @param _account The address of the supplier.
+    /// @param _user The address of the supplier.
     /// @param _poolTokenAddress The address of the market.
     /// @param _balanceOnPool The supply balance on pool after update (in underlying).
     /// @param _balanceInP2P The supply balance in P2P after update (in underlying).
     event SupplierPositionUpdated(
-        address indexed _account,
+        address indexed _user,
         address indexed _poolTokenAddress,
         uint256 _balanceOnPool,
         uint256 _balanceInP2P
     );
 
     /// @dev Emitted when the position of a borrower is updated.
-    /// @param _account The address of the borrower.
+    /// @param _user The address of the borrower.
     /// @param _poolTokenAddress The address of the market.
     /// @param _balanceOnPool The borrow balance on pool after update (in underlying).
     /// @param _balanceInP2P The borrow balance in P2P after update (in underlying).
     event BorrowerPositionUpdated(
-        address indexed _account,
+        address indexed _user,
         address indexed _poolTokenAddress,
         uint256 _balanceOnPool,
         uint256 _balanceInP2P
@@ -1189,28 +1189,28 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
     }
 
     ///@dev Enters the user into the market if he is not already there.
-    ///@param _account The address of the account to update.
+    ///@param _user The address of the account to update.
     ///@param _poolTokenAddress The address of the market to check.
-    function _handleMembership(address _poolTokenAddress, address _account) internal {
-        if (!accountMembership[_poolTokenAddress][_account]) {
-            accountMembership[_poolTokenAddress][_account] = true;
-            enteredMarkets[_account].push(_poolTokenAddress);
+    function _handleMembership(address _poolTokenAddress, address _user) internal {
+        if (!accountMembership[_poolTokenAddress][_user]) {
+            accountMembership[_poolTokenAddress][_user] = true;
+            enteredMarkets[_user].push(_poolTokenAddress);
         }
     }
 
     /// @dev Checks whether the user can borrow/withdraw or not.
-    /// @param _account The user to determine liquidity for.
+    /// @param _user The user to determine liquidity for.
     /// @param _poolTokenAddress The market to hypothetically withdraw/borrow in.
     /// @param _withdrawnAmount The number of tokens to hypothetically withdraw.
     /// @param _borrowedAmount The amount of underlying to hypothetically borrow.
     function _checkAccountLiquidity(
-        address _account,
+        address _user,
         address _poolTokenAddress,
         uint256 _withdrawnAmount,
         uint256 _borrowedAmount
     ) internal {
         (uint256 debtValue, uint256 maxDebtValue) = _getUserHypotheticalBalanceStates(
-            _account,
+            _user,
             _poolTokenAddress,
             _withdrawnAmount,
             _borrowedAmount
@@ -1287,26 +1287,26 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
 
     /// @dev Updates borrowers matching engine with the new balances of a given account.
     /// @param _poolTokenAddress The address of the market on which Morpho want to update the borrower lists.
-    /// @param _account The address of the borrower to move.
-    function _updateBorrowers(address _poolTokenAddress, address _account) internal {
+    /// @param _user The address of the borrower to move.
+    function _updateBorrowers(address _poolTokenAddress, address _user) internal {
         address(matchingEngineManager).functionDelegateCall(
             abi.encodeWithSelector(
                 matchingEngineManager.updateBorrowers.selector,
                 _poolTokenAddress,
-                _account
+                _user
             )
         );
     }
 
     /// @dev Updates suppliers matchin engine with the new balances of a given account.
     /// @param _poolTokenAddress The address of the market on which Morpho want to update the supplier lists.
-    /// @param _account The address of the supplier to move.
-    function _updateSuppliers(address _poolTokenAddress, address _account) internal {
+    /// @param _user The address of the supplier to move.
+    function _updateSuppliers(address _poolTokenAddress, address _user) internal {
         address(matchingEngineManager).functionDelegateCall(
             abi.encodeWithSelector(
                 matchingEngineManager.updateSuppliers.selector,
                 _poolTokenAddress,
-                _account
+                _user
             )
         );
     }
