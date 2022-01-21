@@ -52,6 +52,8 @@ contract PositionsManagerForAaveStorage is ReentrancyGuard, Pausable {
     mapping(address => mapping(address => BorrowBalance)) public borrowBalanceInOf; // For a given market, the borrow balance of a user.
     mapping(address => uint256) public supplyP2PDelta; // Difference between the stored P2P supply amount and the real P2P supply amount.
     mapping(address => uint256) public borrowP2PDelta; // Difference between the stored P2P borrow amount and the real P2P borrow amount.
+    mapping(address => uint256) public supplyP2PAmount; // Sum of all stored P2P supply.
+    mapping(address => uint256) public borrowP2PAmount; // Sum of all stored P2P borrow.
     mapping(address => mapping(address => bool)) public userMembership; // Whether the user is in the market or not.
     mapping(address => address[]) public enteredMarkets; // The markets entered by a user.
     mapping(address => uint256) public threshold; // Thresholds below the ones suppliers and borrowers cannot enter markets.
