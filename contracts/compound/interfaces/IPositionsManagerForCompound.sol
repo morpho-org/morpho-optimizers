@@ -24,5 +24,10 @@ interface IPositionsManagerForCompound {
 
     function repay(address _poolTokenAddress, uint256 _amount) external;
 
-    function liquidate(address _poolTokenBorrowedAddress, address _poolTokenCollateralAddress, address _borrower, uint256 _amount) external;
+    function liquidate(
+        address _poolTokenBorrowedAddress,
+        address _poolTokenCollateralAddress,
+        address _borrower,
+        uint256 _amount
+    ) external;
 }
