@@ -28,6 +28,7 @@ contract PositionsManagerForAaveStorage is ReentrancyGuard {
 
     /// Storage ///
 
+    uint256 public constant MAX_BASIS_POINTS = 10000;
     uint16 public NMAX = 1000;
     uint8 public constant NO_REFERRAL_CODE = 0;
     uint8 public constant VARIABLE_INTEREST_MODE = 2;

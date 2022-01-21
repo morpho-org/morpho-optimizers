@@ -9,6 +9,11 @@ interface IPositionsManagerForAave {
 
     function createMarket(address) external returns (uint256[] memory);
 
+    function getAssetMaxCapacities(address _user, address _poolTokenAddress)
+        external
+        view
+        returns (uint256 withdrawable, uint256 borrowable);
+
     function setNmaxForMatchingEngine(uint16) external;
 
     function setThreshold(address, uint256) external;
