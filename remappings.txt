@@ -1,4 +1,5 @@
 @openzeppelin/=node_modules/@openzeppelin/
 prb-math/=node_modules/prb-math/
 @config/=config/polygon-mainnet/
+hardhat/=node_modules/hardhat/
 @contracts/=contracts/

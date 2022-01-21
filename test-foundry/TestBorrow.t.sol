@@ -6,8 +6,6 @@ import "@contracts/aave/libraries/aave/WadRayMath.sol";
 import "./utils/TestSetup.sol";
 
 contract TestBorrow is TestSetup {
-    using WadRayMath for uint256;
-
     // 2.1 - The user borrows less than the threshold of the given market, the transaction reverts.
     function test_borrow_2_1() public {
         for (uint256 i = 0; i < pools.length; i++) {
@@ -28,7 +26,7 @@ contract TestBorrow is TestSetup {
         borrower1.supply(aUsdc, to6Decimals(amount));
 
         (, , uint256 liquidationThreshold, , , , , , , ) = protocolDataProvider
-            .getReserveConfigurationData(usdc);
+        .getReserveConfigurationData(usdc);
         uint256 maxToBorrow = (amount * liquidationThreshold) / 10000;
 
         hevm.expectRevert("11");
@@ -208,40 +206,5 @@ contract TestBorrow is TestSetup {
 
         testEquality(inP2P, expectedInP2P);
         testEquality(onPool, expectedOnPool);
-    }
-
-    // ----------
-
-    function getMaxToBorrow(
-        address _user,
-        address _suppliedAsset,
-        address _borrowedAsset,
-        SimplePriceOracle _oracle
-    ) internal view returns (uint256) {
-        uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(_suppliedAsset);
-        uint256 supplyP2PExchangeRate = marketsManager.supplyP2PExchangeRate(_suppliedAsset);
-        (uint256 inP2P, uint256 onPool) = positionsManager.supplyBalanceInOf(_suppliedAsset, _user);
-        uint256 collateralToAdd = onPool.mulWadByRay(normalizedIncome) +
-            inP2P.mulWadByRay(supplyP2PExchangeRate);
-        uint256 underlyingPrice = _oracle.getAssetPrice(_suppliedAsset); // In ETH
-
-        (
-            uint256 reserveDecimals,
-            ,
-            uint256 liquidationThreshold,
-            ,
-            ,
-            ,
-            ,
-            ,
-            ,
-
-        ) = protocolDataProvider.getReserveConfigurationData(_borrowedAsset);
-
-        uint256 tokenUnit = 10**reserveDecimals;
-        collateralToAdd = (collateralToAdd * underlyingPrice) / tokenUnit;
-        uint256 maxDebtValue = (collateralToAdd * liquidationThreshold) / 10000;
-
-        return maxDebtValue;
     }
 }

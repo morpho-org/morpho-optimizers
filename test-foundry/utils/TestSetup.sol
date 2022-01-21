@@ -1,8 +1,11 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.7;
 
+import "hardhat/console.sol";
+
 import "lib/ds-test/src/test.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@contracts/aave/interfaces/aave/IPriceOracleGetter.sol";
 
 import "@contracts/aave/PositionsManagerForAave.sol";
 import "@contracts/aave/MarketsManagerForAave.sol";
@@ -14,31 +17,35 @@ import "./Utils.sol";
 import "./User.sol";
 
 contract TestSetup is DSTest, Config, Utils {
-    HEVM hevm = HEVM(HEVM_ADDRESS);
+    using WadRayMath for uint256;
+
+    uint256 public constant MAX_BASIS_POINTS = 10000;
+
+    HEVM public hevm = HEVM(HEVM_ADDRESS);
 
     PositionsManagerForAave internal positionsManager;
     PositionsManagerForAave internal fakePositionsManager;
     MarketsManagerForAave internal marketsManager;
     RewardsManager internal rewardsManager;
 
-    ILendingPoolAddressesProvider lendingPoolAddressesProvider;
-    ILendingPool lendingPool;
-    IProtocolDataProvider protocolDataProvider;
-    IPriceOracleGetter oracle;
+    ILendingPoolAddressesProvider public lendingPoolAddressesProvider;
+    ILendingPool public lendingPool;
+    IProtocolDataProvider public protocolDataProvider;
+    IPriceOracleGetter public oracle;
 
-    User supplier1;
-    User supplier2;
-    User supplier3;
-    User[] suppliers;
+    User public supplier1;
+    User public supplier2;
+    User public supplier3;
+    User[] public suppliers;
 
-    User borrower1;
-    User borrower2;
-    User borrower3;
-    User[] borrowers;
+    User public borrower1;
+    User public borrower2;
+    User public borrower3;
+    User[] public borrowers;
 
-    User treasuryVault;
+    User public treasuryVault;
 
-    address[] pools;
+    address[] public pools;
 
     function setUp() public {
         marketsManager = new MarketsManagerForAave(lendingPoolAddressesProviderAddress);
@@ -52,7 +59,10 @@ contract TestSetup is DSTest, Config, Utils {
             lendingPoolAddressesProviderAddress
         );
 
-        rewardsManager = new RewardsManager(lendingPoolAddressesProviderAddress, address(positionsManager));
+        rewardsManager = new RewardsManager(
+            lendingPoolAddressesProviderAddress,
+            address(positionsManager)
+        );
 
         lendingPoolAddressesProvider = ILendingPoolAddressesProvider(
             lendingPoolAddressesProviderAddress
