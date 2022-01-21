@@ -10,12 +10,14 @@ TESTS = \
 	TestSupply \
 	TestWithdraw \
 	TestDoubleLinkedList \
-	TestNmax
+	TestNmax \
+	TestGetters
 
 .PHONY: test
 test: node_modules
 	@echo Run all tests
 	@forge test --fork-url https://${NETWORK}.g.alchemy.com/v2/${ALCHEMY_KEY} --fork-block-number $(fork-block-number) -vvv -c test-foundry --no-match-contract TestNmax
+
 
 .PHONY: test1
 test1: node_modules
