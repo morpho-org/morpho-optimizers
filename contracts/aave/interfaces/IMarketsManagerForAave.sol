@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.7;
 
 import "./aave/ILendingPoolAddressesProvider.sol";
@@ -15,13 +15,7 @@ interface IMarketsManagerForAave {
 
     function isCreated(address) external view returns (bool);
 
-    function supplyP2PSPY(address) external view returns (uint256);
-
     function borrowP2PSPY(address) external view returns (uint256);
-
-    function supplyP2PExchangeRate(address) external view returns (uint256);
-
-    function borrowP2PExchangeRate(address) external view returns (uint256);
 
     function exchangeRatesLastUpdateTimestamp(address) external view returns (uint256);
 
