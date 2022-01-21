@@ -17,7 +17,9 @@ contract TestGovernance is TestSetup {
             SECOND_PER_YEAR;
 
         assertEq(marketsManager.supplyP2PSPY(aDai), expectedSPY);
+        assertEq(marketsManager.borrowP2PSPY(aDai), expectedSPY);
         assertEq(marketsManager.supplyP2PExchangeRate(aDai), RAY);
+        assertEq(marketsManager.borrowP2PExchangeRate(aDai), RAY);
         assertEq(positionsManager.threshold(aDai), WAD);
     }
 
@@ -72,7 +74,9 @@ contract TestGovernance is TestSetup {
 
         assertTrue(marketsManager.isCreated(aAave));
         assertEq(marketsManager.supplyP2PSPY(aAave), expectedSPY);
+        assertEq(marketsManager.borrowP2PSPY(aAave), expectedSPY);
         assertEq(marketsManager.supplyP2PExchangeRate(aAave), RAY);
+        assertEq(marketsManager.borrowP2PExchangeRate(aAave), RAY);
     }
 
     // Should update NMAX
