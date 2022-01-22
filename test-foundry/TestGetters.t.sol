@@ -262,4 +262,102 @@ contract TestGetters is TestSetup {
 
         assertEq(newBorrowableWmatic, expectedBorrowable);
     }
+
+    function test_user_balance_states_with_supply_and_borrow() public {
+        uint256 amount = 10000 ether;
+        uint256 toBorrow = to6Decimals(amount / 2);
+
+        borrower1.approve(dai, amount);
+        borrower1.supply(aDai, amount);
+        borrower1.borrow(aUsdc, toBorrow);
+
+        (uint256 collateralValue, uint256 debtValue, uint256 maxDebtValue) = positionsManager
+        .getUserBalanceStates(address(borrower1));
+
+        // USDC data
+        (uint256 reserveDecimalsUsdc, , , , , , , , , ) = protocolDataProvider
+        .getReserveConfigurationData(usdc);
+        uint256 underlyingPriceUsdc = oracle.getAssetPrice(usdc);
+        uint256 tokenUnitUsdc = 10**reserveDecimalsUsdc;
+
+        // DAI data
+        (
+            uint256 reserveDecimalsDai,
+            ,
+            uint256 liquidationThresholdDai,
+            ,
+            ,
+            ,
+            ,
+            ,
+            ,
+
+        ) = protocolDataProvider.getReserveConfigurationData(dai);
+        uint256 underlyingPriceDai = oracle.getAssetPrice(dai);
+        uint256 tokenUnitDai = 10**reserveDecimalsDai;
+        uint256 expectedCollateralValue = (amount * underlyingPriceDai) / tokenUnitDai;
+
+        uint256 expectedDebtValue = (toBorrow * underlyingPriceUsdc) / tokenUnitUsdc;
+        uint256 expectedMaxDebtValue = (expectedCollateralValue * liquidationThresholdDai) /
+            MAX_BASIS_POINTS;
+
+        assertEq(collateralValue, expectedCollateralValue);
+        assertEq(maxDebtValue, expectedMaxDebtValue);
+        assertEq(debtValue, expectedDebtValue);
+    }
+
+    function test_user_balance_states_with_supply_and_borrow_on_several_borrow() public {
+        uint256 amount = 10000 ether;
+        uint256 toBorrow = 100 ether;
+
+        borrower1.approve(usdc, to6Decimals(amount));
+        borrower1.supply(aUsdc, to6Decimals(amount));
+        borrower1.approve(dai, amount);
+        borrower1.supply(aDai, amount);
+
+        borrower1.borrow(aWmatic, toBorrow);
+        borrower1.borrow(aUsdt, to6Decimals(toBorrow));
+
+        uint256 reserveDecimals;
+        uint256 liquidationThreshold;
+        uint256 expectedCollateralValue;
+        uint256 expectedDebtValue;
+        uint256 expectedMaxDebtValue;
+
+        (uint256 collateralValue, uint256 debtValue, uint256 maxDebtValue) = positionsManager
+        .getUserBalanceStates(address(borrower1));
+
+        // USDC data
+        (reserveDecimals, , liquidationThreshold, , , , , , , ) = protocolDataProvider
+        .getReserveConfigurationData(usdc);
+        uint256 collateralValueToAdd = (to6Decimals(amount) * oracle.getAssetPrice(usdc)) /
+            10**reserveDecimals;
+        expectedCollateralValue += collateralValueToAdd;
+        expectedMaxDebtValue += (collateralValueToAdd * liquidationThreshold) / MAX_BASIS_POINTS;
+
+        // DAI data
+        (reserveDecimals, , liquidationThreshold, , , , , , , ) = protocolDataProvider
+        .getReserveConfigurationData(dai);
+        collateralValueToAdd = (amount * oracle.getAssetPrice(dai)) / 10**reserveDecimals;
+        expectedCollateralValue += collateralValueToAdd;
+        expectedMaxDebtValue += (collateralValueToAdd * liquidationThreshold) / MAX_BASIS_POINTS;
+
+        // WMATIC data
+        (reserveDecimals, , , , , , , , , ) = protocolDataProvider.getReserveConfigurationData(
+            wmatic
+        );
+        expectedDebtValue += (toBorrow * oracle.getAssetPrice(wmatic)) / 10**reserveDecimals;
+
+        // USDT data
+        (reserveDecimals, , , , , , , , , ) = protocolDataProvider.getReserveConfigurationData(
+            usdt
+        );
+        expectedDebtValue +=
+            (to6Decimals(toBorrow) * oracle.getAssetPrice(usdt)) /
+            10**reserveDecimals;
+
+        assertEq(collateralValue, expectedCollateralValue);
+        assertEq(debtValue, expectedDebtValue);
+        assertEq(maxDebtValue, expectedMaxDebtValue);
+    }
 }
