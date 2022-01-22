@@ -631,7 +631,35 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         );
     }
 
-    /// Public ///
+    /// @dev Returns the collateral value, debt value and max debt value of a given user.
+    /// @param _user The user to determine liquidity for.
+    /// @return collateralValue The collateral value of the user (in ETH).
+    /// @return debtValue The current debt value of the user (in ETH).
+    /// @return maxDebtValue The maximum debt value possible of the user (in ETH).
+    function getUserBalanceStates(address _user)
+        external
+        view
+        returns (
+            uint256 collateralValue,
+            uint256 debtValue,
+            uint256 maxDebtValue
+        )
+    {
+        IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
+
+        for (uint256 i; i < enteredMarkets[_user].length; i++) {
+            address poolTokenEntered = enteredMarkets[_user][i];
+            AssetLiquidityData memory assetData = getUserLiquidityDataForAsset(
+                _user,
+                poolTokenEntered,
+                oracle
+            );
+
+            collateralValue += assetData.collateralValue;
+            maxDebtValue += assetData.maxDebtValue;
+            debtValue += assetData.debtValue;
+        }
+    }
 
     /// @dev Returns the borrowable and withdrawable maximum capacities related to `_poolTokenAddress` for the `_user`.
     /// @param _user The user to determine the capacities for.
@@ -639,7 +667,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
     /// @return withdrawable The maximum withdrawable amount of underlying allowed.
     /// @return borrowable The maximum borrowable amount of underlying allowed.
     function getAssetMaxCapacities(address _user, address _poolTokenAddress)
-        public
+        external
         view
         returns (uint256 withdrawable, uint256 borrowable)
     {
@@ -681,6 +709,8 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         );
         borrowable = differenceInUnderlying;
     }
+
+    /// Public ///
 
     /// @dev Returns the data related to `_poolTokenAddress` for the `_user`.
     /// @param _user The user to determine data for.
@@ -1318,7 +1348,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         if (debtValue > maxDebtValue) revert DebtValueAboveMax();
     }
 
-    /// @dev Returns the debt value, max debt value and collateral value of a given user.
+    /// @dev Returns the debt value, max debt value of a given user.
     /// @param _user The user to determine liquidity for.
     /// @param _poolTokenAddress The market to hypothetically withdraw/borrow in.
     /// @param _withdrawnAmount The number of tokens to hypothetically withdraw.
