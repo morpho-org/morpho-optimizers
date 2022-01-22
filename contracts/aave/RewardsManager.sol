@@ -113,17 +113,15 @@ contract RewardsManager {
         uint256 accruedRewards;
 
         for (uint256 i = 0; i < _assets.length; i++) {
+            address asset = _assets[i];
             (address aTokenAddress, , address variableDebtTokenAddress) = dataProvider
-            .getReserveTokensAddresses(
-                IGetterUnderlyingAsset(_assets[i]).UNDERLYING_ASSET_ADDRESS()
-            );
-            address underlyingAsset = _assets[i];
-            uint256 stakedByUser = variableDebtTokenAddress == underlyingAsset
+            .getReserveTokensAddresses(IGetterUnderlyingAsset(asset).UNDERLYING_ASSET_ADDRESS());
+            uint256 stakedByUser = variableDebtTokenAddress == asset
                 ? positionsManager.borrowBalanceInOf(aTokenAddress, _user).onPool
                 : positionsManager.supplyBalanceInOf(aTokenAddress, _user).onPool;
-            uint256 totalStaked = IScaledBalanceToken(underlyingAsset).scaledTotalSupply();
+            uint256 totalStaked = IScaledBalanceToken(asset).scaledTotalSupply();
 
-            accruedRewards += _updateUserAsset(_user, underlyingAsset, stakedByUser, totalStaked);
+            accruedRewards += _updateUserAsset(_user, asset, stakedByUser, totalStaked);
         }
 
         return unclaimedRewards + accruedRewards;

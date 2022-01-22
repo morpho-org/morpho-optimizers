@@ -312,7 +312,7 @@ contract PositionsManagerForCompound is ReentrancyGuard {
         if (remainingToSupplyToPool > 0) {
             if (_isAboveCompoundThreshold(_poolTokenAddress, remainingToSupplyToPool)) {
                 supplyBalanceInOf[_poolTokenAddress][msg.sender].onPool += remainingToSupplyToPool
-                    .div(poolTokenExchangeRate); // In poolToken
+                .div(poolTokenExchangeRate); // In poolToken
                 _supplyERC20ToPool(_poolTokenAddress, remainingToSupplyToPool); // Revert on error
                 emit SupplierPositionUpdated(
                     msg.sender,
@@ -455,12 +455,14 @@ contract PositionsManagerForCompound is ReentrancyGuard {
         // = actualRepayAmount * (liquidationIncentive * priceBorrowed) / (priceCollateral * exchangeRate)
         ICErc20 poolTokenCollateral = ICErc20(_poolTokenCollateralAddress);
         vars.amountToSeize = _amount
-            .mul(vars.priceBorrowedMantissa)
-            .mul(comptroller.liquidationIncentiveMantissa())
-            .div(vars.priceCollateralMantissa);
+        .mul(vars.priceBorrowedMantissa)
+        .mul(comptroller.liquidationIncentiveMantissa())
+        .div(vars.priceCollateralMantissa);
         vars.collateralOnPoolInUnderlying = supplyBalanceInOf[_poolTokenCollateralAddress][
             _borrower
-        ].onPool.mul(poolTokenCollateral.exchangeRateStored());
+        ]
+        .onPool
+        .mul(poolTokenCollateral.exchangeRateStored());
         marketsManagerForCompound.updateRates(_poolTokenCollateralAddress);
         uint256 totalCollateral = vars.collateralOnPoolInUnderlying +
             supplyBalanceInOf[_poolTokenCollateralAddress][_borrower].inP2P.mul(
@@ -503,8 +505,8 @@ contract PositionsManagerForCompound is ReentrancyGuard {
         /* If user has some tokens waiting on Comp */
         if (supplyBalanceInOf[_poolTokenAddress][_holder].onPool > 0) {
             uint256 amountOnPoolInUnderlying = supplyBalanceInOf[_poolTokenAddress][_holder]
-                .onPool
-                .mul(poolTokenExchangeRate);
+            .onPool
+            .mul(poolTokenExchangeRate);
             /* CASE 1: User withdraws less than his Comp supply balance */
             if (_amount <= amountOnPoolInUnderlying) {
                 if (_isAboveCompoundThreshold(_poolTokenAddress, _amount)) {

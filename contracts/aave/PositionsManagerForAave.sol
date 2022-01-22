@@ -587,7 +587,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         vars.collateralPrice = vars.oracle.getAssetPrice(vars.tokenCollateralAddress); // In ETH
         vars.borrowedPrice = vars.oracle.getAssetPrice(vars.tokenBorrowedAddress); // In ETH
         (vars.collateralReserveDecimals, , , vars.liquidationBonus, , , , , , ) = dataProvider
-            .getReserveConfigurationData(vars.tokenCollateralAddress);
+        .getReserveConfigurationData(vars.tokenCollateralAddress);
         (vars.borrowedReserveDecimals, , , , , , , , , ) = dataProvider.getReserveConfigurationData(
             vars.tokenBorrowedAddress
         );
@@ -994,8 +994,8 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         while (matchedSupply < _amount && account != address(0) && iterationCount < NMAX) {
             iterationCount++;
             uint256 onPoolInUnderlying = supplyBalanceInOf[poolTokenAddress][account]
-                .onPool
-                .mulWadByRay(normalizedIncome);
+            .onPool
+            .mulWadByRay(normalizedIncome);
             uint256 toMatch = Math.min(onPoolInUnderlying, _amount - matchedSupply);
             matchedSupply += toMatch;
             supplyBalanceInOf[poolTokenAddress][account].onPool -= toMatch.divWadByRay(
@@ -1086,8 +1086,8 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         while (matchedBorrow < _amount && account != address(0) && iterationCount < NMAX) {
             iterationCount++;
             uint256 onPoolInUnderlying = borrowBalanceInOf[poolTokenAddress][account]
-                .onPool
-                .mulWadByRay(normalizedVariableDebt);
+            .onPool
+            .mulWadByRay(normalizedVariableDebt);
             uint256 toMatch = Math.min(onPoolInUnderlying, _amount - matchedBorrow);
             matchedBorrow += toMatch;
             borrowBalanceInOf[poolTokenAddress][account].onPool -= toMatch.divWadByRay(
@@ -1171,8 +1171,8 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
             _poolTokenAddress
         );
         uint256 totalSuppliedInUnderlying = supplyBalanceInOf[_poolTokenAddress][_supplier]
-            .inP2P
-            .mulWadByRay(supplyP2PExchangeRate) +
+        .inP2P
+        .mulWadByRay(supplyP2PExchangeRate) +
             supplyBalanceInOf[_poolTokenAddress][_supplier].onPool.mulWadByRay(normalizedIncome);
         if (totalSuppliedInUnderlying + _amount > capValue[_poolTokenAddress])
             revert SupplyAboveCapValue();
@@ -1257,7 +1257,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
             vars.underlyingPrice = vars.oracle.getAssetPrice(vars.underlyingAddress); // In ETH
 
             (vars.reserveDecimals, , vars.liquidationThreshold, , , , , , , ) = dataProvider
-                .getReserveConfigurationData(vars.underlyingAddress);
+            .getReserveConfigurationData(vars.underlyingAddress);
             vars.tokenUnit = 10**vars.reserveDecimals;
             // Conversion of the collateral to ETH
             vars.collateralToAdd = (vars.collateralToAdd * vars.underlyingPrice) / vars.tokenUnit;
