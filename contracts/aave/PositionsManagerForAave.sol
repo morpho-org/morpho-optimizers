@@ -34,22 +34,18 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
     /// Structs ///
 
     struct AssetLiquidityData {
-        uint256 collateralValue;
-        uint256 maxDebtValue;
-        uint256 debtValue;
-        uint256 tokenUnit;
-        uint256 underlyingPrice;
-        uint256 liquidationThreshold;
+        uint256 collateralValue; // The collateral value of the asset (in ETH).
+        uint256 maxDebtValue; // The maximum debt value possible of the asset (in ETH).
+        uint256 debtValue; // The debt value of the asset (in ETH).
+        uint256 tokenUnit; // The unit of token considering its decimals.
+        uint256 underlyingPrice; // The price of the token (in ETH).
+        uint256 liquidationThreshold; // The liquidation threshold applied on this token.
     }
 
     struct LiquidityData {
-        uint256 maxDebtValue;
-        uint256 debtValue;
-        uint256 collateralValue;
-        uint256 borrowedValue;
-        uint256 underlyingPrice;
-        uint256 tokenUnit;
-        uint256 liquidationThreshold;
+        uint256 collateralValue; // The collateral value (in ETH).
+        uint256 maxDebtValue; // The maximum debt value possible (in ETH).
+        uint256 debtValue; // The debt value (in ETH).
     }
 
     // Struct to avoid stack too deep error
@@ -631,7 +627,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         );
     }
 
-    /// @dev Returns the collateral value, debt value and max debt value of a given user.
+    /// @dev Returns the collateral value, debt value and max debt value of a given user in ETH.
     /// @param _user The user to determine liquidity for.
     /// @return collateralValue The collateral value of the user (in ETH).
     /// @return debtValue The current debt value of the user (in ETH).
@@ -661,12 +657,12 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         }
     }
 
-    /// @dev Returns the borrowable and withdrawable maximum capacities related to `_poolTokenAddress` for the `_user`.
+    /// @dev Returns the borrowable and withdrawable maximum capacities related to `_poolTokenAddress` for the `_user` in underlying.
     /// @param _user The user to determine the capacities for.
     /// @param _poolTokenAddress The address of the market.
-    /// @return withdrawable The maximum withdrawable amount of underlying allowed.
-    /// @return borrowable The maximum borrowable amount of underlying allowed.
-    function getAssetMaxCapacities(address _user, address _poolTokenAddress)
+    /// @return withdrawable The maximum withdrawable amount of underlying allowed (in underlying).
+    /// @return borrowable The maximum borrowable amount of underlying allowed (in underlying).
+    function getUserMaxCapacitiesForAsset(address _user, address _poolTokenAddress)
         external
         view
         returns (uint256 withdrawable, uint256 borrowable)
@@ -694,18 +690,12 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         // Not possible to withdraw nor borrow
         if (data.maxDebtValue < data.debtValue) return (0, 0);
 
-        data.underlyingPrice = assetData.underlyingPrice;
-        data.tokenUnit = assetData.tokenUnit;
-        data.collateralValue = assetData.collateralValue;
-        data.borrowedValue = assetData.debtValue;
-        data.liquidationThreshold = assetData.liquidationThreshold;
-
-        uint256 differenceInUnderlying = ((data.maxDebtValue - data.debtValue) * data.tokenUnit) /
-            data.underlyingPrice;
+        uint256 differenceInUnderlying = ((data.maxDebtValue - data.debtValue) *
+            assetData.tokenUnit) / assetData.underlyingPrice;
 
         withdrawable = Math.min(
-            (differenceInUnderlying * MAX_BASIS_POINTS) / data.liquidationThreshold,
-            (data.collateralValue * data.tokenUnit) / data.underlyingPrice
+            (differenceInUnderlying * MAX_BASIS_POINTS) / assetData.liquidationThreshold,
+            (assetData.collateralValue * assetData.tokenUnit) / assetData.underlyingPrice
         );
         borrowable = differenceInUnderlying;
     }

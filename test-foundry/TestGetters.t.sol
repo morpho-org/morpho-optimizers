@@ -176,7 +176,7 @@ contract TestGetters is TestSetup {
     }
 
     function test_getter_user_with_nothing() public {
-        (uint256 withdrawable, uint256 borrowable) = positionsManager.getAssetMaxCapacities(
+        (uint256 withdrawable, uint256 borrowable) = positionsManager.getUserMaxCapacitiesForAsset(
             address(borrower1),
             aDai
         );
@@ -200,12 +200,15 @@ contract TestGetters is TestSetup {
         uint256 expectedBorrowable = (assetDataUsdc.maxDebtValue * assetDataDai.tokenUnit) /
             assetDataDai.underlyingPrice;
 
-        (uint256 withdrawable, ) = positionsManager.getAssetMaxCapacities(
+        (uint256 withdrawable, ) = positionsManager.getUserMaxCapacitiesForAsset(
             address(borrower1),
             aUsdc
         );
 
-        (, uint256 borrowable) = positionsManager.getAssetMaxCapacities(address(borrower1), aDai);
+        (, uint256 borrowable) = positionsManager.getUserMaxCapacitiesForAsset(
+            address(borrower1),
+            aDai
+        );
 
         assertEq(withdrawable, to6Decimals(amount));
         assertEq(borrowable, expectedBorrowable);
@@ -228,17 +231,17 @@ contract TestGetters is TestSetup {
         PositionsManagerForAave.AssetLiquidityData memory assetDataWmatic = positionsManager
         .getUserLiquidityDataForAsset(address(borrower1), aWmatic, oracle);
 
-        (uint256 withdrawableDai, ) = positionsManager.getAssetMaxCapacities(
+        (uint256 withdrawableDai, ) = positionsManager.getUserMaxCapacitiesForAsset(
             address(borrower1),
             aDai
         );
 
-        (uint256 withdrawableUsdc, ) = positionsManager.getAssetMaxCapacities(
+        (uint256 withdrawableUsdc, ) = positionsManager.getUserMaxCapacitiesForAsset(
             address(borrower1),
             aUsdc
         );
 
-        (, uint256 borrowableWmatic) = positionsManager.getAssetMaxCapacities(
+        (, uint256 borrowableWmatic) = positionsManager.getUserMaxCapacitiesForAsset(
             address(borrower1),
             aWmatic
         );
@@ -253,7 +256,7 @@ contract TestGetters is TestSetup {
         uint256 toBorrow = 100 ether;
         borrower1.borrow(aWmatic, toBorrow);
 
-        (, uint256 newBorrowableWmatic) = positionsManager.getAssetMaxCapacities(
+        (, uint256 newBorrowableWmatic) = positionsManager.getUserMaxCapacitiesForAsset(
             address(borrower1),
             aWmatic
         );
