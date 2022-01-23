@@ -9,7 +9,7 @@ interface IPositionsManagerForAave {
 
     function createMarket(address) external returns (uint256[] memory);
 
-    function getAssetMaxCapacities(address _user, address _poolTokenAddress)
+    function getUserMaxCapacitiesForAsset(address _user, address _poolTokenAddress)
         external
         view
         returns (uint256 withdrawable, uint256 borrowable);
