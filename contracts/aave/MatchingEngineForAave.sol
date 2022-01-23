@@ -64,6 +64,13 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         uint256 supplyP2PExchangeRate = marketsManager.supplyP2PExchangeRate(poolTokenAddress);
         uint256 iterationCount;
 
+        // match supply P2P delta first
+        if (supplyP2PDelta[poolTokenAddress] > 0) {
+            uint256 toMatch = Math.min(supplyP2PDelta[poolTokenAddress], _amount);
+            matchedSupply += toMatch;
+            supplyP2PDelta[poolTokenAddress] -= toMatch;
+        }
+
         while (matchedSupply < _amount && user != address(0) && iterationCount < NMAX) {
             iterationCount++;
             uint256 onPoolInUnderlying = supplyBalanceInOf[poolTokenAddress][user]
@@ -107,6 +114,13 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         address user = suppliersInP2P[_poolTokenAddress].getHead();
         uint256 remainingToUnmatch = _amount; // In underlying
         uint256 iterationCount;
+
+        // reduce borrow P2P delta first
+        if (borrowP2PDelta[_poolTokenAddress] > 0) {
+            uint256 toMatch = Math.min(borrowP2PDelta[_poolTokenAddress], _amount);
+            remainingToUnmatch += toMatch;
+            borrowP2PDelta[_poolTokenAddress] -= toMatch;
+        }
 
         while (remainingToUnmatch > 0 && user != address(0) && iterationCount < NMAX) {
             iterationCount++;
@@ -158,6 +172,13 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         address user = borrowersOnPool[poolTokenAddress].getHead();
         uint256 iterationCount;
 
+        // match borrow P2P delta first
+        if (borrowP2PDelta[poolTokenAddress] > 0) {
+            uint256 toMatch = Math.min(borrowP2PDelta[poolTokenAddress], _amount);
+            matchedBorrow += toMatch;
+            borrowP2PDelta[poolTokenAddress] -= toMatch;
+        }
+
         while (matchedBorrow < _amount && user != address(0) && iterationCount < NMAX) {
             iterationCount++;
             uint256 onPoolInUnderlying = borrowBalanceInOf[poolTokenAddress][user]
@@ -201,6 +222,13 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         address user = borrowersInP2P[_poolTokenAddress].getHead();
         uint256 remainingToUnmatch = _amount;
         uint256 iterationCount;
+
+        // reduce supply P2P delta first
+        if (supplyP2PDelta[_poolTokenAddress] > 0) {
+            uint256 toMatch = Math.min(supplyP2PDelta[_poolTokenAddress], _amount);
+            remainingToUnmatch += toMatch;
+            supplyP2PDelta[_poolTokenAddress] -= toMatch;
+        }
 
         while (remainingToUnmatch > 0 && user != address(0) && iterationCount < NMAX) {
             iterationCount++;
