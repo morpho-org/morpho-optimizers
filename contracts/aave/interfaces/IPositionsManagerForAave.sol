@@ -27,4 +27,12 @@ interface IPositionsManagerForAave {
     function borrowBalanceInOf(address, address) external returns (Balance memory);
 
     function supplyBalanceInOf(address, address) external returns (Balance memory);
+
+    function supplyP2PAmount(address) external returns (uint256);
+
+    function borrowP2PAmount(address) external returns (uint256);
+
+    function supplyP2PDelta(address) external returns (uint256);
+
+    function borrowP2PDelta(address) external returns (uint256);
 }

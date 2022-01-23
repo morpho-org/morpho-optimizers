@@ -32,6 +32,8 @@ contract MarketsManagerForAave is Ownable {
     mapping(address => uint256) public borrowP2PSPY; // Borrow Percentage Yield per second, in ray.
     mapping(address => uint256) public supplyP2PExchangeRate; // Current exchange rate from supply p2pUnit to underlying (in ray).
     mapping(address => uint256) public borrowP2PExchangeRate; // Current exchange rate from borrow p2pUnit to underlying (in ray).
+    mapping(address => uint256) public lastNormalizedIncome; // Normalized income at the time of the last update.
+    mapping(address => uint256) public lastNormalizedVariableDebt; // Normalized debt at the time of the last update.
     mapping(address => uint256) public exchangeRatesLastUpdateTimestamp; // The last time the P2P exchange rates were updated.
     mapping(address => bool) public noP2P; // Whether to put users on pool or not for the given market.
 
@@ -170,6 +172,12 @@ contract MarketsManagerForAave is Ownable {
         exchangeRatesLastUpdateTimestamp[poolTokenAddress] = block.timestamp;
         supplyP2PExchangeRate[poolTokenAddress] = WadRayMath.ray();
         borrowP2PExchangeRate[poolTokenAddress] = WadRayMath.ray();
+        lastNormalizedIncome[poolTokenAddress] = lendingPool.getReserveNormalizedIncome(
+            _underlyingTokenAddress
+        );
+        lastNormalizedVariableDebt[poolTokenAddress] = lendingPool.getReserveNormalizedVariableDebt(
+            _underlyingTokenAddress
+        );
 
         positionsManager.setThreshold(poolTokenAddress, _threshold);
 
@@ -218,18 +226,57 @@ contract MarketsManagerForAave is Ownable {
     /// @notice Updates the P2P exchange rate, taking into account the Second Percentage Yield values.
     /// @param _marketAddress The address of the market to update.
     function _updateP2PExchangeRates(address _marketAddress) internal {
+        address underlyingTokenAddress = IAToken(_marketAddress).UNDERLYING_ASSET_ADDRESS();
         uint256 timeDifference = block.timestamp - exchangeRatesLastUpdateTimestamp[_marketAddress];
         exchangeRatesLastUpdateTimestamp[_marketAddress] = block.timestamp;
 
-        uint256 newSupplyP2PExchangeRate = supplyP2PExchangeRate[_marketAddress].rayMul(
-            (WadRayMath.ray() + supplyP2PSPY[_marketAddress]).rayPow(timeDifference)
-        ); // In ray
-        supplyP2PExchangeRate[_marketAddress] = newSupplyP2PExchangeRate;
+        uint256 newSupplyP2PExchangeRate;
+        if (positionsManager.supplyP2PDelta(_marketAddress) == 0) {
+            newSupplyP2PExchangeRate = supplyP2PExchangeRate[_marketAddress].rayMul(
+                (WadRayMath.ray() + supplyP2PSPY[_marketAddress]).rayPow(timeDifference)
+            ); // In ray
+        } else {
+            uint256 shareOfTheDelta = (positionsManager.supplyP2PDelta(_marketAddress) *
+                MAX_BASIS_POINTS)
+            .rayDiv(positionsManager.supplyP2PAmount(_marketAddress));
 
-        uint256 newBorrowP2PExchangeRate = borrowP2PExchangeRate[_marketAddress].rayMul(
-            (WadRayMath.ray() + borrowP2PSPY[_marketAddress]).rayPow(timeDifference)
-        ); // In ray
+            newSupplyP2PExchangeRate = supplyP2PExchangeRate[_marketAddress].rayMul(
+                ((WadRayMath.ray() + supplyP2PSPY[_marketAddress]).rayPow(timeDifference) *
+                    (MAX_BASIS_POINTS - shareOfTheDelta)) /
+                    MAX_BASIS_POINTS +
+                    (lendingPool.getReserveNormalizedIncome(underlyingTokenAddress) *
+                        shareOfTheDelta.rayDiv(lastNormalizedIncome[_marketAddress])) /
+                    MAX_BASIS_POINTS
+            );
+        }
+        supplyP2PExchangeRate[_marketAddress] = newSupplyP2PExchangeRate;
+        lastNormalizedIncome[_marketAddress] = lendingPool.getReserveNormalizedIncome(
+            underlyingTokenAddress
+        );
+
+        uint256 newBorrowP2PExchangeRate;
+        if (positionsManager.borrowP2PDelta(_marketAddress) == 0) {
+            newBorrowP2PExchangeRate = borrowP2PExchangeRate[_marketAddress].rayMul(
+                (WadRayMath.ray() + borrowP2PSPY[_marketAddress]).rayPow(timeDifference)
+            ); // In ray
+        } else {
+            uint256 shareOfTheDelta = (positionsManager.borrowP2PDelta(_marketAddress) *
+                MAX_BASIS_POINTS)
+            .rayDiv(positionsManager.borrowP2PAmount(_marketAddress));
+
+            newBorrowP2PExchangeRate = borrowP2PExchangeRate[_marketAddress].rayMul(
+                ((WadRayMath.ray() + borrowP2PSPY[_marketAddress]).rayPow(timeDifference) *
+                    (MAX_BASIS_POINTS - shareOfTheDelta)) /
+                    MAX_BASIS_POINTS +
+                    (lendingPool.getReserveNormalizedVariableDebt(underlyingTokenAddress) *
+                        shareOfTheDelta.rayDiv(lastNormalizedVariableDebt[_marketAddress])) /
+                    MAX_BASIS_POINTS
+            );
+        }
         borrowP2PExchangeRate[_marketAddress] = newBorrowP2PExchangeRate;
+        lastNormalizedVariableDebt[_marketAddress] = lendingPool.getReserveNormalizedVariableDebt(
+            underlyingTokenAddress
+        );
 
         emit P2PExchangeRatesUpdated(
             _marketAddress,
