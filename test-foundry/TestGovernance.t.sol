@@ -55,13 +55,13 @@ contract TestGovernance is TestSetup {
     // Only Owner should be able to update cap value
     function test_only_owner_can_update_cap_value() public {
         uint256 newCapValue = 2 * 1e18;
-        marketsManager.updateCapValue(aUsdc, newCapValue);
+        marketsManager.setCapValue(aUsdc, newCapValue);
 
         hevm.expectRevert("Ownable: caller is not the owner");
-        supplier1.updateCapValue(aUsdc, newCapValue);
+        supplier1.setCapValue(aUsdc, newCapValue);
 
         hevm.expectRevert("Ownable: caller is not the owner");
-        borrower1.updateCapValue(aUsdc, newCapValue);
+        borrower1.setCapValue(aUsdc, newCapValue);
     }
 
     // Should create a market the with right values
@@ -83,7 +83,7 @@ contract TestGovernance is TestSetup {
     function test_should_update_nmax() public {
         uint16 newNMAX = 3000;
 
-        marketsManager.setNmaxForMatchingEngine(newNMAX);
+        positionsManager.setNmaxForMatchingEngine(newNMAX);
         assertEq(positionsManager.NMAX(), newNMAX);
 
         hevm.expectRevert("Ownable: caller is not the owner");
@@ -91,8 +91,5 @@ contract TestGovernance is TestSetup {
 
         hevm.expectRevert("Ownable: caller is not the owner");
         borrower1.setNmaxForMatchingEngine(3000);
-
-        hevm.expectRevert(abi.encodeWithSignature("OnlyMarketsManager()"));
-        positionsManager.setNmaxForMatchingEngine(3000);
     }
 }
