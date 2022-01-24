@@ -39,8 +39,8 @@ contract User {
         marketsManager.createMarket(_marketAddress, _threshold, _capValue);
     }
 
-    function updateCapValue(address _marketAddress, uint256 _newCapValue) external {
-        marketsManager.updateCapValue(_marketAddress, _newCapValue);
+    function setCapValue(address _marketAddress, uint256 _newCapValue) external {
+        marketsManager.setCapValue(_marketAddress, _newCapValue);
     }
 
     function supply(address _poolTokenAddress, uint256 _amount) external {
@@ -74,11 +74,11 @@ contract User {
     }
 
     function setNmaxForMatchingEngine(uint16 _newMaxNumber) external {
-        marketsManager.setNmaxForMatchingEngine(_newMaxNumber);
+        positionsManager.setNmaxForMatchingEngine(_newMaxNumber);
     }
 
-    function claimRewards(address _asset) external {
-        positionsManager.claimRewards(_asset);
+    function claimRewards(address[] calldata _assets) external {
+        positionsManager.claimRewards(_assets);
     }
 
     function deposit(address _asset, uint256 _amount) external {
