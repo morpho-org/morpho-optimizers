@@ -268,6 +268,12 @@ contract TestSetup is DSTest, Config, Utils {
         if (borrow.amount < threshold) {
             supply.amount += (supply.amount * threshold) / borrow.amount;
             borrow.amount += threshold;
+
+            emit log_named_decimal_uint(
+                "max to borrow after reajust",
+                getMaxToBorrow(supply.amount, supply.underlying, borrow.underlying),
+                ERC20(borrow.underlying).decimals()
+            );
         }
 
         // Ensure enough liquidity in Aave
@@ -312,7 +318,7 @@ contract TestSetup is DSTest, Config, Utils {
         uint256 _amount,
         address _sourceUnderlying,
         address _targetUnderlying
-    ) internal returns (uint256) {
+    ) internal view returns (uint256) {
         uint256 sourcePrice = oracle.getAssetPrice(_sourceUnderlying);
         uint256 targetPrice = oracle.getAssetPrice(_targetUnderlying);
 
@@ -333,12 +339,13 @@ contract TestSetup is DSTest, Config, Utils {
         uint256 _amount,
         address _supplyUnderlying,
         address _borrowUnderlying
-    ) internal returns (uint256) {
+    ) internal view returns (uint256) {
         uint256 amount = getValueOfIn(_amount, _supplyUnderlying, _borrowUnderlying);
 
-        (, , uint256 liquidationThreshold, , , , , , , ) = protocolDataProvider
-        .getReserveConfigurationData(_supplyUnderlying);
+        (, uint256 ltv, , , , , , , , ) = protocolDataProvider.getReserveConfigurationData(
+            _supplyUnderlying
+        );
 
-        return (amount * liquidationThreshold) / PERCENT_BASE;
+        return (amount * ltv) / PERCENT_BASE;
     }
 }

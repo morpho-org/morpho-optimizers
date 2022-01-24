@@ -19,7 +19,7 @@ contract TestBorrow is TestSetup {
     }
 
     // 2.2 - The borrower tries to borrow more than what his collateral allows, the transaction reverts.
-    function testFail_borrow_2_2(
+    function test_borrow_2_2(
         uint128 _amount,
         uint8 _supplyAsset,
         uint8 _borrowAsset
@@ -27,9 +27,16 @@ contract TestBorrow is TestSetup {
         (Asset memory supply, Asset memory borrow) = getAssets(_amount, _supplyAsset, _borrowAsset);
 
         borrow.amount = getMaxToBorrow(supply.amount, supply.underlying, borrow.underlying) + 1;
+        emit log_named_decimal_uint(
+            "borrow.amount",
+            borrow.amount,
+            ERC20(borrow.underlying).decimals()
+        );
 
         borrower1.approve(supply.underlying, supply.amount);
         borrower1.supply(supply.poolToken, supply.amount);
+
+        hevm.expectRevert(abi.encodeWithSignature("DebtValueAboveMax()"));
         borrower1.borrow(borrow.poolToken, borrow.amount);
     }
 
@@ -69,6 +76,12 @@ contract TestBorrow is TestSetup {
 
         borrower1.approve(supply.underlying, supply.amount);
         borrower1.supply(supply.poolToken, supply.amount);
+
+        (, uint256 onPoolBefore) = positionsManager.borrowBalanceInOf(
+            borrow.poolToken,
+            address(borrower1)
+        );
+
         borrower1.borrow(borrow.poolToken, borrow.amount);
 
         (uint256 inP2P, uint256 onPool) = positionsManager.borrowBalanceInOf(
@@ -79,10 +92,11 @@ contract TestBorrow is TestSetup {
         uint256 normalizedVariableDebt = lendingPool.getReserveNormalizedVariableDebt(
             borrow.underlying
         );
-        uint256 expectedOnPool = underlyingToAdUnit(borrow.amount, normalizedVariableDebt);
+        uint256 expectedOnPool = onPoolBefore +
+            underlyingToAdUnit(borrow.amount, normalizedVariableDebt);
 
         assertEq(inP2P, 0, "borrower1 in P2P2");
-        assertEq(onPool, expectedOnPool, "borrower1 on pool");
+        assertEqNear(onPool, expectedOnPool, "borrower1 on pool");
     }
 
     // 2.4 - There is 1 available supplier, he matches 100% of the borrower liquidity, everything is inP2P.
@@ -101,17 +115,17 @@ contract TestBorrow is TestSetup {
         borrower1.borrow(borrow.poolToken, borrow.amount);
 
         (uint256 supplyInP2P, ) = positionsManager.supplyBalanceInOf(
-            supply.poolToken,
+            borrow.poolToken,
             address(supplier1)
         );
 
-        uint256 borrowP2PExchangeRate = marketsManager.borrowP2PExchangeRate(supply.poolToken);
+        uint256 borrowP2PExchangeRate = marketsManager.borrowP2PExchangeRate(borrow.poolToken);
         uint256 expectedInP2P = p2pUnitToUnderlying(supplyInP2P, borrowP2PExchangeRate);
 
-        assertEq(expectedInP2P, supply.amount, "supplier1 in P2P");
+        assertEq(expectedInP2P, borrow.amount, "supplier1 in P2P");
 
         (uint256 inP2P, uint256 onPool) = positionsManager.borrowBalanceInOf(
-            supply.poolToken,
+            borrow.poolToken,
             address(borrower1)
         );
 
@@ -131,8 +145,14 @@ contract TestBorrow is TestSetup {
         supplier1.approve(borrow.underlying, borrow.amount);
         supplier1.supply(borrow.poolToken, borrow.amount);
 
-        borrower1.approve(supply.underlying, 4 * supply.amount);
-        borrower1.supply(supply.poolToken, 4 * supply.amount);
+        (, uint256 onPoolBefore) = positionsManager.borrowBalanceInOf(
+            borrow.poolToken,
+            address(borrower1)
+        );
+        emit log_named_uint("onPoolBefore", onPoolBefore);
+
+        borrower1.approve(supply.underlying, 2 * supply.amount);
+        borrower1.supply(supply.poolToken, 2 * supply.amount);
         borrower1.borrow(borrow.poolToken, 2 * borrow.amount);
 
         (uint256 supplyInP2P, ) = positionsManager.supplyBalanceInOf(
@@ -150,7 +170,8 @@ contract TestBorrow is TestSetup {
         uint256 normalizedVariableDebt = lendingPool.getReserveNormalizedVariableDebt(
             borrow.underlying
         );
-        uint256 expectedOnPool = underlyingToAdUnit(2 * borrow.amount, normalizedVariableDebt);
+        uint256 expectedOnPool = onPoolBefore +
+            underlyingToAdUnit(borrow.amount, normalizedVariableDebt);
 
         assertEq(onPool, expectedOnPool, "borrower1 on pool");
     }

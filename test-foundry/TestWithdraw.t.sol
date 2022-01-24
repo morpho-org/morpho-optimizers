@@ -44,15 +44,15 @@ contract TestWithdraw is TestSetup {
             lendingPool.getReserveNormalizedIncome(supply.underlying)
         );
 
-        assertEq(inP2P, 0, "supplier1 in P2P");
-        assertEq(onPool, onPoolBefore + expectedOnPool, "supplier1 on pool");
+        assertEq(inP2P, 0, "supplier1 in P2P before withdraw");
+        assertEqNear(onPool, onPoolBefore + expectedOnPool, "supplier1 on pool before withdraw");
 
         supplier1.withdraw(supply.poolToken, supply.amount / 2);
 
         (inP2P, onPool) = positionsManager.supplyBalanceInOf(supply.poolToken, address(supplier1));
 
         assertEq(inP2P, 0, "supplier1 in P2P");
-        assertEq(onPool, onPoolBefore + expectedOnPool / 2, "supplier1 on pool");
+        assertEqNear(onPool, onPoolBefore + expectedOnPool / 2, "supplier1 on pool");
     }
 
     // 3.3 - The supplier withdraws more than his onPool balance
@@ -66,15 +66,20 @@ contract TestWithdraw is TestSetup {
     ) public {
         (Asset memory supply, Asset memory borrow) = getAssets(_amount, _supplyAsset, _borrowAsset);
 
-        supplier1.approve(borrow.underlying, borrow.amount);
-        supplier1.supply(borrow.poolToken, borrow.amount);
+        (, uint256 onPoolSupplierBefore) = positionsManager.supplyBalanceInOf(
+            borrow.poolToken,
+            address(supplier1)
+        );
+
+        supplier1.approve(borrow.underlying, 2 * borrow.amount);
+        supplier1.supply(borrow.poolToken, 2 * borrow.amount);
 
         borrower1.approve(supply.underlying, supply.amount);
         borrower1.supply(supply.poolToken, supply.amount);
         borrower1.borrow(borrow.poolToken, borrow.amount);
 
         // Check balances after match of borrower1 & supplier1
-        (uint256 inP2PBorrower1, uint256 onPoolBorrower1) = positionsManager.borrowBalanceInOf(
+        (uint256 inP2PBorrower, uint256 onPoolBorrower) = positionsManager.borrowBalanceInOf(
             borrow.poolToken,
             address(borrower1)
         );
@@ -84,47 +89,50 @@ contract TestWithdraw is TestSetup {
             address(supplier1)
         );
 
-        uint256 expectedOnPool = underlyingToScaledBalance(
-            borrow.amount,
-            lendingPool.getReserveNormalizedIncome(borrow.underlying)
-        );
+        uint256 expectedOnPool = onPoolSupplierBefore +
+            underlyingToScaledBalance(
+                borrow.amount,
+                lendingPool.getReserveNormalizedIncome(borrow.underlying)
+            );
 
         assertEq(onPoolSupplier, expectedOnPool, "supplier1 on pool");
-        assertEq(onPoolBorrower1, 0, "borrower1 on pool");
-        assertEq(inP2PSupplier, inP2PBorrower1, "supplier1/borrower1 in P2P");
+        assertEq(onPoolBorrower, 0, "borrower1 on pool");
+        assertEq(inP2PSupplier, inP2PBorrower, "supplier1/borrower1 in P2P");
 
         // An available supplier onPool
-        supplier2.approve(borrow.underlying, borrow.amount);
-        supplier2.supply(borrow.poolToken, borrow.amount);
+        supplier2.approve(borrow.underlying, 2 * borrow.amount);
+        supplier2.supply(borrow.poolToken, 2 * borrow.amount);
 
         // supplier withdraws suppliedAmount
-        supplier1.withdraw(borrow.poolToken, borrow.amount);
+        supplier1.withdraw(borrow.poolToken, 2 * borrow.amount);
 
         // Check balances for supplier1
         (inP2PSupplier, onPoolSupplier) = positionsManager.supplyBalanceInOf(
             borrow.poolToken,
             address(supplier1)
         );
-        assertEq(onPoolSupplier, 0, "supplier1 on pool after withdraw");
-        assertEq(inP2PSupplier, 0, "supplier1 in P2P after withdraw");
+        assertEqNear(onPoolSupplier, 0, "supplier1 on pool after withdraw");
+        assertEqNear(inP2PSupplier, 0, "supplier1 in P2P after withdraw");
 
         // Check balances for supplier2
         (inP2PSupplier, onPoolSupplier) = positionsManager.supplyBalanceInOf(
             borrow.poolToken,
             address(supplier2)
         );
-        uint256 supplyP2PExchangeRate = marketsManager.supplyP2PExchangeRate(borrow.poolToken);
-        uint256 expectedInP2P = underlyingToP2PUnit(borrow.amount, supplyP2PExchangeRate);
+        uint256 expectedInP2P = underlyingToP2PUnit(
+            borrow.amount,
+            marketsManager.supplyP2PExchangeRate(borrow.poolToken)
+        );
         assertEq(onPoolSupplier, expectedOnPool, "supplier2 on pool");
         assertEq(inP2PSupplier, expectedInP2P, "supplier2 in P2P");
 
         // Check balances for borrower1
-        (inP2PBorrower1, onPoolBorrower1) = positionsManager.borrowBalanceInOf(
+        (inP2PBorrower, onPoolBorrower) = positionsManager.borrowBalanceInOf(
             borrow.poolToken,
             address(borrower1)
         );
-        assertEq(onPoolBorrower1, 0, "borrower1 on pool");
-        assertEq(inP2PSupplier, inP2PBorrower1, "borrower1 in P2P");
+        assertEq(onPoolBorrower, 0, "borrower1 on pool");
+        assertEqNear(inP2PSupplier, inP2PBorrower, "borrower1 in P2P");
     }
 
     // 3.3.2 - There are NMAX (or less) suppliers onPool available to replace him inP2P, they supply enough to cover for the withdrawn liquidity.
