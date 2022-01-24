@@ -24,7 +24,7 @@
     "fix": "yarn fix:sol && yarn fix:ts",
     "fix:ts": "yarn prettier --config .prettierrc.json --write './**/*.ts'",
     "fix:sol": "yarn prettier --config .prettierrc.json --write 'contracts/**/*.sol'",
-    "build:interfaces": "yarn solidity-interfacer --license 'GNU AGPLv3' 'contracts/{aave,compound}/*.sol'",
+    "build:interfaces": "yarn solidity-interfacer 'contracts/{aave,compound}/*.sol' --onlyRawTypes",
     "size": "yarn run hardhat size-contracts",
     "postinstall": "husky install"
   },
@@ -67,7 +67,7 @@
     "solhint": "3.3.6",
     "solhint-plugin-prettier": "0.0.5",
     "solidity-coverage": "0.7.16",
-    "solidity-interfacer": "^0.1.10",
+    "solidity-interfacer": "^0.2.1",
     "ts-node": "10.4.0",
     "typescript": "4.5.2"
   },

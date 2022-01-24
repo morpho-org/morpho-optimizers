@@ -1,9 +1,13 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.7;
 
-import "./IMarketsManagerForCompound.sol";
+import "./dependencies/@openzeppelin/IReentrancyGuard.sol";
 
-interface IPositionsManagerForCompound {
+interface IPositionsManagerForCompound is IReentrancyGuard {
+    function NMAX() external view returns (uint16);
+
+    function CTOKEN_DECIMALS() external view returns (uint8);
+
     function accountMembership(address, address) external view returns (bool);
 
     function enteredMarkets(address) external view returns (address[] memory);

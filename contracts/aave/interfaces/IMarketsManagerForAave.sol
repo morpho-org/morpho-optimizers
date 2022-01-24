@@ -1,9 +1,14 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.7;
 
-import "./aave/ILendingPoolAddressesProvider.sol";
-import "./aave/ILendingPool.sol";
-import "./IPositionsManagerForAave.sol";
+import "contracts/compound/interfaces/dependencies/@openzeppelin/IOwnable.sol";
+
+interface IMarketsManagerForAave is IOwnable {
+    function MAX_BASIS_POINTS() external view returns (uint256);
+
+    function SECONDS_PER_YEAR() external view returns (uint256);
+
+    function reserveFactor() external view returns (uint256);
 
 interface IMarketsManagerForAave {
     // inherited from Ownable

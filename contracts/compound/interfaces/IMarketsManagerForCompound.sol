@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.7;
 
-import "./IPositionsManagerForCompound.sol";
+import "./dependencies/@openzeppelin/IOwnable.sol";
 
-interface IMarketsManagerForCompound {
+interface IMarketsManagerForCompound is IOwnable {
     function isCreated(address) external view returns (bool);
 
     function p2pBPY(address) external view returns (uint256);
