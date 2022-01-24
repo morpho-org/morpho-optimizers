@@ -23,6 +23,7 @@ contract Config {
 
     address lendingPoolAddressesProviderAddress = 0xd05e3E715d945B59290df0ae8eF85c1BdB684744;
     address protocolDataProviderAddress = 0x7551b5D2763519d4e37e8B81929D336De671d46d;
+    address aaveIncentivesControllerAddress = 0x357D51124f59836DeD84c8a1730D72B749d8BC23;
 
     mapping(address => uint8) slots;
 

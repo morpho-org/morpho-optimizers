@@ -2,12 +2,10 @@
 pragma solidity 0.8.7;
 
 import "./interfaces/aave/ILendingPoolAddressesProvider.sol";
-import "./interfaces/aave/IProtocolDataProvider.sol";
 import "./interfaces/aave/ILendingPool.sol";
 import "./interfaces/aave/DataTypes.sol";
 import {IAToken} from "./interfaces/aave/IAToken.sol";
 import "./interfaces/IPositionsManagerForAave.sol";
-import "./interfaces/IMarketsManagerForAave.sol";
 
 import "./libraries/aave/WadRayMath.sol";
 
@@ -18,7 +16,6 @@ import "@openzeppelin/contracts/utils/math/Math.sol";
 /// @dev Smart contract managing the markets used by a MorphoPositionsManagerForAave contract, an other contract interacting with Aave or a fork of Aave.
 contract MarketsManagerForAave is Ownable {
     using WadRayMath for uint256;
-    using Math for uint256;
 
     /// Storage ///
 
@@ -49,7 +46,21 @@ contract MarketsManagerForAave is Ownable {
 
     /// @dev Emitted when the `positionsManagerForAave` is set.
     /// @param _positionsManagerForAave The address of the `positionsManagerForAave`.
-    event PositionsManagerForAaveSet(address _positionsManagerForAave);
+    event PositionsManagerSet(address _positionsManagerForAave);
+
+    /// @dev Emitted when a threshold of a market is set.
+    /// @param _marketAddress The address of the market to set.
+    /// @param _newValue The new value of the threshold.
+    event ThresholdSet(address _marketAddress, uint256 _newValue);
+
+    /// @dev Emitted when a cap value of a market is set.
+    /// @param _marketAddress The address of the market to set.
+    /// @param _newValue The new value of the cap.
+    event CapValueSet(address _marketAddress, uint256 _newValue);
+
+    /// @dev Emitted the `feeFactor` is set.
+    /// @param _newValue The new value of the `feeFactor`.
+    event FeeFactorSet(uint256 _newValue);
 
     /// @dev Emitted when the P2P SPYs of a market are updated.
     /// @param _marketAddress The address of the market to update.
@@ -61,7 +72,7 @@ contract MarketsManagerForAave is Ownable {
         uint256 _newBorrowP2PSPY
     );
 
-    /// @dev Emitted when the p2pExchangeRate of a market is updated.
+    /// @dev Emitted when the p2p exchange rates of a market are updated.
     /// @param _marketAddress The address of the market to update.
     /// @param _newSupplyP2PExchangeRate The new value of the supply exchange rate from p2pUnit to underlying.
     /// @param _newBorrowP2PExchangeRate The new value of the borrow exchange rate from p2pUnit to underlying.
@@ -114,6 +125,8 @@ contract MarketsManagerForAave is Ownable {
     /// @param _lendingPoolAddressesProvider The address of the lending pool addresses provider.
     constructor(address _lendingPoolAddressesProvider) {
         addressesProvider = ILendingPoolAddressesProvider(_lendingPoolAddressesProvider);
+        lendingPool = ILendingPool(addressesProvider.getLendingPool());
+        emit LendingPoolSet(address(lendingPool));
     }
 
     /// External ///
@@ -123,20 +136,13 @@ contract MarketsManagerForAave is Ownable {
     function setPositionsManager(address _positionsManagerForAave) external onlyOwner {
         if (address(positionsManagerForAave) != address(0)) revert PositionsManagerAlreadySet();
         positionsManagerForAave = IPositionsManagerForAave(_positionsManagerForAave);
-        emit PositionsManagerForAaveSet(_positionsManagerForAave);
+        emit PositionsManagerSet(_positionsManagerForAave);
     }
 
     /// @dev Updates the lending pool.
     function updateLendingPool() external onlyOwner {
         lendingPool = ILendingPool(addressesProvider.getLendingPool());
         emit LendingPoolSet(address(lendingPool));
-    }
-
-    /// @dev Sets the maximum number of users in tree.
-    /// @param _newMaxNumber The maximum number of users to have in the tree.
-    function setNmaxForMatchingEngine(uint16 _newMaxNumber) external onlyOwner {
-        positionsManagerForAave.setNmaxForMatchingEngine(_newMaxNumber);
-        emit MaxNumberUpdated(_newMaxNumber);
     }
 
     /// @dev Sets the `reserveFactor`.
@@ -169,28 +175,28 @@ contract MarketsManagerForAave is Ownable {
         emit MarketCreated(_marketAddress);
     }
 
-    /// @dev Updates the threshold below which suppliers and borrowers cannot join a given market.
+    /// @dev Sets the threshold below which suppliers and borrowers cannot join a given market.
     /// @param _marketAddress The address of the market to change the threshold.
     /// @param _newThreshold The new threshold to set.
-    function updateThreshold(address _marketAddress, uint256 _newThreshold)
+    function setThreshold(address _marketAddress, uint256 _newThreshold)
         external
         onlyOwner
         isMarketCreated(_marketAddress)
     {
         positionsManagerForAave.setThreshold(_marketAddress, _newThreshold);
-        emit ThresholdUpdated(_marketAddress, _newThreshold);
+        emit ThresholdSet(_marketAddress, _newThreshold);
     }
 
-    /// @dev Updates the cap value above which suppliers cannot supply more tokens.
+    /// @dev Sets the cap value above which suppliers cannot supply more tokens.
     /// @param _marketAddress The address of the market to change the max cap.
     /// @param _newCapValue The new max cap to set.
-    function updateCapValue(address _marketAddress, uint256 _newCapValue)
+    function setCapValue(address _marketAddress, uint256 _newCapValue)
         external
         onlyOwner
         isMarketCreated(_marketAddress)
     {
         positionsManagerForAave.setCapValue(_marketAddress, _newCapValue);
-        emit CapValueUpdated(_marketAddress, _newCapValue);
+        emit CapValueSet(_marketAddress, _newCapValue);
     }
 
     /// Public ///

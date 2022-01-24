@@ -5,12 +5,11 @@ import {IVariableDebtToken} from "./interfaces/aave/IVariableDebtToken.sol";
 import {IAToken} from "./interfaces/aave/IAToken.sol";
 import "./interfaces/aave/IPriceOracleGetter.sol";
 
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "../common/libraries/DoubleLinkedList.sol";
 import "./libraries/aave/WadRayMath.sol";
 
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "./PositionsManagerForAaveStorage.sol";
 import "./MatchingEngineManager.sol";
@@ -20,8 +19,8 @@ import "./MatchingEngineManager.sol";
 contract PositionsManagerForAave is PositionsManagerForAaveStorage {
     using DoubleLinkedList for DoubleLinkedList.List;
     using WadRayMath for uint256;
-    using Address for address;
     using SafeERC20 for IERC20;
+    using Address for address;
 
     /// Enums ///
 
@@ -175,6 +174,32 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         uint256 _balanceInP2P
     );
 
+    /// @dev Emitted the maximum number of users to have in the tree is updated.
+    /// @param _newValue The new value of the maximum number of users to have in the tree.
+    event MaxNumberSet(uint16 _newValue);
+
+    /// @dev Emitted the address of the `treasuryVault` is set.
+    /// @param _newTreasuryVaultAddress The new address of the `treasuryVault`.
+    event TreasuryVaultSet(address _newTreasuryVaultAddress);
+
+    /// @dev Emitted the address of the `rewardsManager` is set.
+    /// @param _newRewardsManagerAddress The new address of the `rewardsManager`.
+    event RewardsManagerSet(address _newRewardsManagerAddress);
+
+    /// @dev Emitted the address of the `aaveIncentivesController` is set.
+    /// @param _aaveIncentivesController The new address of the `rewardsManager`.
+    event AaveIncentivesControllerSet(address _aaveIncentivesController);
+
+    /// @dev Emitted when the DAO claims fees.
+    /// @param _poolTokenAddress The address of the market.
+    /// @param _amountClaimed The amount of underlying token claimed.
+    event FeesClaimed(address _poolTokenAddress, uint256 _amountClaimed);
+
+    /// @dev Emitted when a user claims rewards.
+    /// @param _user The new address of the claimer.
+    /// @param _amountClaimed The amount of reward token claimed.
+    event RewardsClaimed(address _user, uint256 _amountClaimed);
+
     /// Errors ///
 
     /// @notice Emitted when the is equal to 0.
@@ -224,12 +249,11 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         _;
     }
 
-    /// @dev Prevents a user to call function only allowed for the markets manager.
+    /// @dev Prevents a user to call function allowed for the markets manager only.
     modifier onlyMarketsManager() {
         if (msg.sender != address(marketsManagerForAave)) revert OnlyMarketsManager();
         _;
     }
-
     /// @dev Prevents a user to call function only allowed for the markets manager's owner.
     modifier onlyMarketsManagerOwner() {
         if (msg.sender != marketsManagerForAave.owner()) revert OnlyMarketsManagerOwner();
@@ -239,7 +263,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
     /// Constructor ///
 
     /// @dev Constructs the PositionsManagerForAave contract.
-    /// @param _marketsManager The address of the aave markets manager.
+    /// @param _marketsManager The address of the aave `marketsManager`.
     /// @param _lendingPoolAddressesProvider The address of the lending pool addresses provider.
     constructor(address _marketsManager, address _lendingPoolAddressesProvider) {
         marketsManagerForAave = IMarketsManagerForAave(_marketsManager);
@@ -255,10 +279,21 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         lendingPool = ILendingPool(addressesProvider.getLendingPool());
     }
 
+    /// @dev Sets the `aaveIncentivesController`.
+    /// @param _aaveIncentivesController The address of the `aaveIncentivesController`.
+    function setAaveIncentivesController(address _aaveIncentivesController)
+        external
+        onlyMarketsManagerOwner
+    {
+        aaveIncentivesController = IAaveIncentivesController(_aaveIncentivesController);
+        emit AaveIncentivesControllerSet(_aaveIncentivesController);
+    }
+
     /// @dev Sets the maximum number of users in tree.
     /// @param _newMaxNumber The maximum number of users to have in the tree.
-    function setNmaxForMatchingEngine(uint16 _newMaxNumber) external onlyMarketsManager {
+    function setNmaxForMatchingEngine(uint16 _newMaxNumber) external onlyMarketsManagerOwner {
         NMAX = _newMaxNumber;
+        emit MaxNumberSet(_newMaxNumber);
     }
 
     /// @dev Sets the threshold of a market.
@@ -281,19 +316,18 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         capValue[_poolTokenAddress] = _newCapValue;
     }
 
-    /// @dev Sets the `treasuryVault`.
-    /// @param _newTreasuryVault The address of the new `treasuryVault`.
-    function setTreasuryVault(address _newTreasuryVault) external onlyMarketsManagerOwner {
-        treasuryVault = _newTreasuryVault;
+    /// @dev Sets the `_newTreasuryVaultAddress`.
+    /// @param _newTreasuryVaultAddress The address of the new `treasuryVault`.
+    function setTreasuryVault(address _newTreasuryVaultAddress) external onlyMarketsManagerOwner {
+        treasuryVault = _newTreasuryVaultAddress;
+        emit TreasuryVaultSet(_newTreasuryVaultAddress);
     }
 
-    /// @dev Claims rewards from liquidity mining and transfers them to the DAO.
-    /// @param _asset The asset to get the rewards from (aToken or variable debt token).
-    function claimRewards(address _asset) external {
-        address[] memory asset = new address[](1);
-        asset[0] = _asset;
-        IAaveIncentivesController(IGetterIncentivesController(_asset).getIncentivesController())
-            .claimRewards(asset, type(uint256).max, treasuryVault);
+    /// @dev Sets the `rewardsManager`.
+    /// @param _rewardsManagerAddress The address of the `rewardsManager`.
+    function setRewardsManager(address _rewardsManagerAddress) external onlyMarketsManagerOwner {
+        rewardsManager = IRewardsManager(_rewardsManagerAddress);
+        emit RewardsManagerSet(_rewardsManagerAddress);
     }
 
     /// @dev Transfers the protocol reserve to the DAO.
@@ -301,6 +335,20 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
     function claimToTreasury(address _poolTokenAddress) external onlyMarketsManagerOwner {
         IERC20 underlyingToken = IERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
         underlyingToken.transfer(treasuryVault, underlyingToken.balanceOf(address(this)));
+    }
+
+    /// @dev Claims rewards for the given assets and the unclaimed rewards.
+    /// @param _assets The assets to claim rewards from (aToken or variable debt token).
+    function claimRewards(address[] calldata _assets) external {
+        uint256 amountToClaim = rewardsManager.claimRewards(_assets, type(uint256).max, msg.sender);
+        if (amountToClaim > 0) {
+            uint256 amountClaimed = aaveIncentivesController.claimRewards(
+                _assets,
+                amountToClaim,
+                msg.sender
+            );
+            emit RewardsClaimed(msg.sender, amountClaimed);
+        }
     }
 
     /// @dev Gets the head of the data structure on a specific market (for UI).
@@ -539,7 +587,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         vars.collateralPrice = vars.oracle.getAssetPrice(vars.tokenCollateralAddress); // In ETH
         vars.borrowedPrice = vars.oracle.getAssetPrice(vars.tokenBorrowedAddress); // In ETH
         (vars.collateralReserveDecimals, , , vars.liquidationBonus, , , , , , ) = dataProvider
-            .getReserveConfigurationData(vars.tokenCollateralAddress);
+        .getReserveConfigurationData(vars.tokenCollateralAddress);
         (vars.borrowedReserveDecimals, , , , , , , , , ) = dataProvider.getReserveConfigurationData(
             vars.tokenBorrowedAddress
         );
@@ -769,6 +817,10 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         uint256 onPoolSupply = supplyBalanceInOf[poolTokenAddress][_supplier].onPool;
         uint256 onPoolSupplyInUnderlying = onPoolSupply.mulWadByRay(normalizedIncome);
         withdrawnInUnderlying = Math.min(onPoolSupplyInUnderlying, _amount);
+        withdrawnInUnderlying = Math.min(
+            withdrawnInUnderlying,
+            _poolToken.balanceOf(address(this))
+        );
 
         supplyBalanceInOf[poolTokenAddress][_supplier].onPool -= Math.min(
             onPoolSupply,
@@ -822,16 +874,17 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
             address(_underlyingToken)
         );
         address poolTokenAddress = address(_poolToken);
-        uint256 onPoolBorrow = borrowBalanceInOf[poolTokenAddress][_borrower].onPool;
-        uint256 onPoolBorrowInUnderlying = onPoolBorrow.mulWadByRay(normalizedVariableDebt);
-        repaidInUnderlying = Math.min(onPoolBorrowInUnderlying, _amount);
+        uint256 borrowedOnPool = borrowBalanceInOf[poolTokenAddress][_borrower].onPool;
+        uint256 borrowedOnPoolInUnderlying = borrowedOnPool.mulWadByRay(normalizedVariableDebt);
+        repaidInUnderlying = Math.min(borrowedOnPoolInUnderlying, _amount);
 
         borrowBalanceInOf[poolTokenAddress][_borrower].onPool -= Math.min(
-            borrowBalanceInOf[poolTokenAddress][_borrower].onPool,
+            borrowedOnPool,
             repaidInUnderlying.divWadByRay(normalizedVariableDebt)
         ); // In adUnit
         _updateBorrowers(poolTokenAddress, _borrower);
-        if (repaidInUnderlying > 0) _repayERC20ToPool(_underlyingToken, repaidInUnderlying); // Revert on error
+        if (repaidInUnderlying > 0)
+            _repayERC20ToPool(_underlyingToken, repaidInUnderlying, normalizedVariableDebt); // Revert on error
     }
 
     /// @dev Repays `_amount` of the position of a `_borrower` in peer-to-peer.
@@ -893,8 +946,22 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
     /// @dev Repays ERC20 tokens to Aave.
     /// @param _underlyingToken The ERC20 interface of the underlying token of the market to repay to.
     /// @param _amount The amount of tokens to repay.
-    function _repayERC20ToPool(IERC20 _underlyingToken, uint256 _amount) internal {
+    /// @param _normalizedVariableDebt The normalized variable debt on Aave.
+    function _repayERC20ToPool(
+        IERC20 _underlyingToken,
+        uint256 _amount,
+        uint256 _normalizedVariableDebt
+    ) internal {
         _underlyingToken.safeIncreaseAllowance(address(lendingPool), _amount);
+        (, , address variableDebtToken) = dataProvider.getReserveTokensAddresses(
+            address(_underlyingToken)
+        );
+        _amount = Math.min(
+            _amount,
+            IVariableDebtToken(variableDebtToken).scaledBalanceOf(address(this)).mulWadByRay(
+                _normalizedVariableDebt
+            )
+        );
         lendingPool.repay(
             address(_underlyingToken),
             _amount,
@@ -927,8 +994,8 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         while (matchedSupply < _amount && account != address(0) && iterationCount < NMAX) {
             iterationCount++;
             uint256 onPoolInUnderlying = supplyBalanceInOf[poolTokenAddress][account]
-                .onPool
-                .mulWadByRay(normalizedIncome);
+            .onPool
+            .mulWadByRay(normalizedIncome);
             uint256 toMatch = Math.min(onPoolInUnderlying, _amount - matchedSupply);
             matchedSupply += toMatch;
             supplyBalanceInOf[poolTokenAddress][account].onPool -= toMatch.divWadByRay(
@@ -947,7 +1014,10 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
             account = suppliersOnPool[poolTokenAddress].getHead();
         }
 
-        if (matchedSupply > 0) _withdrawERC20FromPool(_underlyingToken, matchedSupply); // Revert on error
+        if (matchedSupply > 0) {
+            matchedSupply = Math.min(matchedSupply, _poolToken.balanceOf(address(this)));
+            _withdrawERC20FromPool(_underlyingToken, matchedSupply); // Revert on error
+        }
     }
 
     /// @dev Finds liquidity in peer-to-peer and unmatches it to reconnect Aave.
@@ -1016,8 +1086,8 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         while (matchedBorrow < _amount && account != address(0) && iterationCount < NMAX) {
             iterationCount++;
             uint256 onPoolInUnderlying = borrowBalanceInOf[poolTokenAddress][account]
-                .onPool
-                .mulWadByRay(normalizedVariableDebt);
+            .onPool
+            .mulWadByRay(normalizedVariableDebt);
             uint256 toMatch = Math.min(onPoolInUnderlying, _amount - matchedBorrow);
             matchedBorrow += toMatch;
             borrowBalanceInOf[poolTokenAddress][account].onPool -= toMatch.divWadByRay(
@@ -1036,7 +1106,8 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
             account = borrowersOnPool[poolTokenAddress].getHead();
         }
 
-        if (matchedBorrow > 0) _repayERC20ToPool(_underlyingToken, matchedBorrow); // Revert on error
+        if (matchedBorrow > 0)
+            _repayERC20ToPool(_underlyingToken, matchedBorrow, normalizedVariableDebt); // Revert on error
     }
 
     /// @dev Finds borrowers in peer-to-peer that match the given `_amount` and move them to Aave.
@@ -1100,8 +1171,8 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
             _poolTokenAddress
         );
         uint256 totalSuppliedInUnderlying = supplyBalanceInOf[_poolTokenAddress][_supplier]
-            .inP2P
-            .mulWadByRay(supplyP2PExchangeRate) +
+        .inP2P
+        .mulWadByRay(supplyP2PExchangeRate) +
             supplyBalanceInOf[_poolTokenAddress][_supplier].onPool.mulWadByRay(normalizedIncome);
         if (totalSuppliedInUnderlying + _amount > capValue[_poolTokenAddress])
             revert SupplyAboveCapValue();
@@ -1186,7 +1257,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
             vars.underlyingPrice = vars.oracle.getAssetPrice(vars.underlyingAddress); // In ETH
 
             (vars.reserveDecimals, , vars.liquidationThreshold, , , , , , , ) = dataProvider
-                .getReserveConfigurationData(vars.underlyingAddress);
+            .getReserveConfigurationData(vars.underlyingAddress);
             vars.tokenUnit = 10**vars.reserveDecimals;
             // Conversion of the collateral to ETH
             vars.collateralToAdd = (vars.collateralToAdd * vars.underlyingPrice) / vars.tokenUnit;

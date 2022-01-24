@@ -34,10 +34,12 @@ describe('PositionsManagerForAave Contract', () => {
   // Contracts
   let positionsManagerForAave: Contract;
   let marketsManagerForAave: Contract;
+  let rewardsManager: Contract;
   let fakeAavePositionsManager: Contract;
   let lendingPool: Contract;
   let lendingPoolAddressesProvider: Contract;
   let protocolDataProvider: Contract;
+  let aaveIncentivesController: Contract;
   let oracle: Contract;
   let priceOracle: Contract;
 
@@ -84,6 +86,11 @@ describe('PositionsManagerForAave Contract', () => {
     await positionsManagerForAave.deployed();
     await fakeAavePositionsManager.deployed();
 
+    // Deploy RewardsManager
+    const RewardsManager = await ethers.getContractFactory('RewardsManager');
+    rewardsManager = await RewardsManager.deploy(config.aave.lendingPoolAddressesProvider.address, positionsManagerForAave.address);
+    await rewardsManager.deployed();
+
     // Get contract dependencies
     const aTokenAbi = require(config.tokens.aToken.abi);
     const variableDebtTokenAbi = require(config.tokens.variableDebtToken.abi);
@@ -100,6 +107,11 @@ describe('PositionsManagerForAave Contract', () => {
       lendingPoolAddressesProvider.getAddress('0x1000000000000000000000000000000000000000000000000000000000000000'),
       owner
     );
+    aaveIncentivesController = await ethers.getContractAt(
+      require(config.aave.aaveIncentivesController.abi),
+      config.aave.aaveIncentivesController.address,
+      owner
+    );
     oracle = await ethers.getContractAt(require(config.aave.oracle.abi), lendingPoolAddressesProvider.getPriceOracle(), owner);
 
     // Mint some tokens
@@ -111,8 +123,9 @@ describe('PositionsManagerForAave Contract', () => {
 
     // Create and list markets
     await marketsManagerForAave.connect(owner).setPositionsManager(positionsManagerForAave.address);
-    await marketsManagerForAave.connect(owner).updateLendingPool();
+    await positionsManagerForAave.connect(owner).setAaveIncentivesController(config.aave.aaveIncentivesController.address);
     await positionsManagerForAave.connect(owner).setTreasuryVault(treasuryVault.getAddress());
+    await positionsManagerForAave.connect(owner).setRewardsManager(rewardsManager.address);
     await marketsManagerForAave.connect(owner).createMarket(config.tokens.aDai.address, WAD, MAX_INT);
     await marketsManagerForAave.connect(owner).createMarket(config.tokens.aUsdc.address, to6Decimals(WAD), MAX_INT);
     await marketsManagerForAave.connect(owner).createMarket(config.tokens.aWbtc.address, BigNumber.from(10).pow(4), MAX_INT);
@@ -165,12 +178,12 @@ describe('PositionsManagerForAave Contract', () => {
 
     it('Only Owner should be able to update thresholds', async () => {
       const newCapValue = utils.parseUnits('2');
-      await marketsManagerForAave.connect(owner).updateCapValue(config.tokens.aUsdc.address, newCapValue);
+      await marketsManagerForAave.connect(owner).setCapValue(config.tokens.aUsdc.address, newCapValue);
       expect(await positionsManagerForAave.capValue(config.tokens.aUsdc.address)).to.be.equal(newCapValue);
 
       // Other accounts than Owner
-      await expect(marketsManagerForAave.connect(supplier1).updateCapValue(config.tokens.aUsdc.address, newCapValue)).to.be.reverted;
-      await expect(marketsManagerForAave.connect(borrower1).updateCapValue(config.tokens.aUsdc.address, newCapValue)).to.be.reverted;
+      await expect(marketsManagerForAave.connect(supplier1).setCapValue(config.tokens.aUsdc.address, newCapValue)).to.be.reverted;
+      await expect(marketsManagerForAave.connect(borrower1).setCapValue(config.tokens.aUsdc.address, newCapValue)).to.be.reverted;
     });
 
     it('Should create a market the with right values', async () => {
@@ -188,10 +201,9 @@ describe('PositionsManagerForAave Contract', () => {
 
     it('Should update NMAX', async () => {
       const newNMAX = BigNumber.from(3000);
-      expect(marketsManagerForAave.connect(supplier1).setNmaxForMatchingEngine(newNMAX)).to.be.reverted;
-      expect(marketsManagerForAave.connect(borrower1).setNmaxForMatchingEngine(newNMAX)).to.be.reverted;
-      expect(positionsManagerForAave.connect(owner).setNmaxForMatchingEngine(newNMAX)).to.be.reverted;
-      await marketsManagerForAave.connect(owner).setNmaxForMatchingEngine(newNMAX);
+      expect(positionsManagerForAave.connect(supplier1).setNmaxForMatchingEngine(newNMAX)).to.be.reverted;
+      expect(positionsManagerForAave.connect(borrower1).setNmaxForMatchingEngine(newNMAX)).to.be.reverted;
+      await positionsManagerForAave.connect(owner).setNmaxForMatchingEngine(newNMAX);
       expect(await positionsManagerForAave.NMAX()).to.equal(newNMAX);
     });
   });
@@ -1297,10 +1309,10 @@ describe('PositionsManagerForAave Contract', () => {
       expect((await positionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower1.getAddress())).onPool).to.equal(0);
       expect(
         removeDigitsBigNumber(
-          3,
+          4,
           (await positionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower1.getAddress())).inP2P
         )
-      ).to.equal(removeDigitsBigNumber(3, expectedBorrowBalanceInP2PAfter));
+      ).to.equal(removeDigitsBigNumber(4, expectedBorrowBalanceInP2PAfter));
 
       // Check liquidator balances
       let diff;
@@ -1315,7 +1327,7 @@ describe('PositionsManagerForAave Contract', () => {
     it('Should be possible to supply up to cap value', async () => {
       const newCapValue = utils.parseUnits('2');
       const amount = utils.parseUnits('2');
-      await marketsManagerForAave.connect(owner).updateCapValue(config.tokens.aDai.address, newCapValue);
+      await marketsManagerForAave.connect(owner).setCapValue(config.tokens.aDai.address, newCapValue);
 
       await daiToken.connect(supplier1).approve(positionsManagerForAave.address, utils.parseUnits('3'));
       expect(positionsManagerForAave.connect(supplier1).supply(config.tokens.aDai.address, amount, 0)).not.to.be.reverted;
@@ -1325,25 +1337,150 @@ describe('PositionsManagerForAave Contract', () => {
   });
 
   describe('Test claiming rewards', () => {
-    it('Anyone should be able to claim rewards on several markets', async () => {
+    it('Should claim the right amount of rewards', async () => {
       const toSupply = utils.parseUnits('100');
-      const toBorrow = to6Decimals(utils.parseUnits('50'));
-      const rewardTokenBalanceBefore = await wmaticToken.balanceOf(treasuryVault.getAddress());
       await daiToken.connect(supplier1).approve(positionsManagerForAave.address, toSupply);
       await positionsManagerForAave.connect(supplier1).supply(config.tokens.aDai.address, toSupply, 0);
-      await positionsManagerForAave.connect(supplier1).borrow(config.tokens.aUsdc.address, toBorrow, 0);
+      const { index } = await aaveIncentivesController.assets(config.tokens.aDai.address);
+      const rewardTokenBalanceBefore = await wmaticToken.balanceOf(supplier1.getAddress());
+      const onPool = (await positionsManagerForAave.supplyBalanceInOf(config.tokens.aDai.address, supplier1.getAddress())).onPool;
+      const userIndex = await rewardsManager.getUserIndex(config.tokens.aDai.address, supplier1.getAddress());
+      expect(userIndex).to.equal(index);
+      expect(await rewardsManager.userUnclaimedRewards(supplier1.getAddress())).to.equal(0);
+
+      await daiToken.connect(supplier2).approve(positionsManagerForAave.address, toSupply);
+      await positionsManagerForAave.connect(supplier2).supply(config.tokens.aDai.address, toSupply, 0);
 
       // Mine 1000 blocks
       for (let i = 0; i < 1000; i++) {
         await hre.network.provider.send('evm_mine', []);
       }
 
-      await positionsManagerForAave.connect(supplier1).claimRewards(config.tokens.variableDebtUsdc.address);
-      const rewardTokenBalanceAfter1 = await wmaticToken.balanceOf(treasuryVault.getAddress());
+      await positionsManagerForAave.connect(supplier1).claimRewards([config.tokens.aDai.address]);
+      const { index: reserveIndex } = await aaveIncentivesController.assets(config.tokens.aDai.address);
+
+      const expectedRewardToClaim = onPool.mul(reserveIndex.sub(userIndex)).div(WAD);
+      const rewardTokenBalanceAfter = await wmaticToken.balanceOf(supplier1.getAddress());
+      const expectedRewardBalanceAfter = rewardTokenBalanceBefore.add(expectedRewardToClaim);
+      expect(rewardTokenBalanceAfter).to.be.equal(expectedRewardBalanceAfter);
+    });
+
+    it('Anyone should be able to claim rewards on several markets one after another', async () => {
+      const toSupply = utils.parseUnits('100');
+      const toBorrow = to6Decimals(utils.parseUnits('50'));
+      await daiToken.connect(supplier1).approve(positionsManagerForAave.address, toSupply);
+      await positionsManagerForAave.connect(supplier1).supply(config.tokens.aDai.address, toSupply, 0);
+      await positionsManagerForAave.connect(supplier1).borrow(config.tokens.aUsdc.address, toBorrow, 0);
+      const rewardTokenBalanceBefore = await wmaticToken.balanceOf(supplier1.getAddress());
+
+      // Mine 1000 blocks
+      for (let i = 0; i < 1000; i++) {
+        await hre.network.provider.send('evm_mine', []);
+      }
+
+      await positionsManagerForAave.connect(supplier1).claimRewards([config.tokens.aDai.address]);
+      const rewardTokenBalanceAfter1 = await wmaticToken.balanceOf(supplier1.getAddress());
       expect(rewardTokenBalanceAfter1).to.be.gt(rewardTokenBalanceBefore);
-      await positionsManagerForAave.connect(borrower1).claimRewards(config.tokens.aDai.address);
-      const rewardTokenBalanceAfter2 = await wmaticToken.balanceOf(treasuryVault.getAddress());
+
+      await positionsManagerForAave.connect(supplier1).claimRewards([config.tokens.variableDebtUsdc.address]);
+      const rewardTokenBalanceAfter2 = await wmaticToken.balanceOf(supplier1.getAddress());
       expect(rewardTokenBalanceAfter2).to.be.gt(rewardTokenBalanceAfter1);
+    });
+
+    it('Should not be possible to claim rewards for another asset', async () => {
+      const toSupply1 = utils.parseUnits('100');
+      const toSupply2 = to6Decimals(utils.parseUnits('50'));
+      await daiToken.connect(supplier1).approve(positionsManagerForAave.address, toSupply1);
+      await positionsManagerForAave.connect(supplier1).supply(config.tokens.aDai.address, toSupply1, 0);
+      await usdcToken.connect(supplier2).approve(positionsManagerForAave.address, toSupply2);
+      await positionsManagerForAave.connect(supplier2).supply(config.tokens.aUsdc.address, toSupply2, 0);
+      const rewardTokenBalanceBefore = await wmaticToken.balanceOf(supplier1.getAddress());
+
+      // Mine 1000 blocks
+      for (let i = 0; i < 1000; i++) {
+        await hre.network.provider.send('evm_mine', []);
+      }
+
+      await positionsManagerForAave.connect(supplier1).claimRewards([config.tokens.aUsdc.address]);
+      const rewardTokenBalanceAfter = await wmaticToken.balanceOf(supplier1.getAddress());
+      expect(rewardTokenBalanceAfter).to.equal(rewardTokenBalanceBefore);
+      expect(
+        await aaveIncentivesController.getRewardsBalance(
+          [config.tokens.aDai.address, config.tokens.aUsdc.address],
+          positionsManagerForAave.address
+        )
+      ).to.be.gt(0);
+    });
+
+    it('Anyone should be able to claim rewards on several markets at once', async () => {
+      const toSupply = utils.parseUnits('100');
+      const toBorrow = to6Decimals(utils.parseUnits('50'));
+      await daiToken.connect(supplier1).approve(positionsManagerForAave.address, toSupply);
+      await positionsManagerForAave.connect(supplier1).supply(config.tokens.aDai.address, toSupply, 0);
+      await positionsManagerForAave.connect(supplier1).borrow(config.tokens.aUsdc.address, toBorrow, 0);
+      const rewardTokenBalanceBefore = await wmaticToken.balanceOf(supplier1.getAddress());
+
+      // Mine 1000 blocks
+      for (let i = 0; i < 1000; i++) {
+        await hre.network.provider.send('evm_mine', []);
+      }
+
+      await aaveIncentivesController.getRewardsBalance(
+        [config.tokens.aDai.address, config.tokens.variableDebtUsdc.address],
+        positionsManagerForAave.address
+      );
+      await positionsManagerForAave.connect(supplier1).claimRewards([config.tokens.aDai.address, config.tokens.variableDebtUsdc.address]);
+      const rewardTokenBalanceAfter1 = await wmaticToken.balanceOf(supplier1.getAddress());
+      expect(rewardTokenBalanceAfter1).to.be.gt(rewardTokenBalanceBefore);
+      expect(await rewardsManager.userUnclaimedRewards(supplier1.getAddress())).to.equal(0);
+      expect(
+        await aaveIncentivesController.getRewardsBalance(
+          [config.tokens.aDai.address, config.tokens.variableDebtUsdc.address],
+          positionsManagerForAave.address
+        )
+      ).to.equal(0);
+    });
+
+    it('Several users should claim their rewards independently', async () => {
+      const toSupply = utils.parseUnits('100');
+      const toBorrow = to6Decimals(utils.parseUnits('50'));
+      await daiToken.connect(supplier1).approve(positionsManagerForAave.address, toSupply);
+      await daiToken.connect(supplier2).approve(positionsManagerForAave.address, toSupply);
+      await daiToken.connect(supplier3).approve(positionsManagerForAave.address, toSupply);
+      await positionsManagerForAave.connect(supplier1).supply(config.tokens.aDai.address, toSupply, 0);
+      await positionsManagerForAave.connect(supplier1).borrow(config.tokens.aUsdc.address, toBorrow, 0);
+      await positionsManagerForAave.connect(supplier2).supply(config.tokens.aDai.address, toSupply, 0);
+      await positionsManagerForAave.connect(supplier2).borrow(config.tokens.aUsdc.address, toBorrow, 0);
+      await positionsManagerForAave.connect(supplier3).supply(config.tokens.aDai.address, toSupply, 0);
+      await positionsManagerForAave.connect(supplier3).borrow(config.tokens.aUsdc.address, toBorrow, 0);
+      const supplier1RewardTokenBalanceBefore = await wmaticToken.balanceOf(supplier1.getAddress());
+      const supplier2RewardTokenBalanceBefore = await wmaticToken.balanceOf(supplier2.getAddress());
+      const supplier3RewardTokenBalanceBefore = await wmaticToken.balanceOf(supplier3.getAddress());
+
+      // Mine 1000 blocks
+      for (let i = 0; i < 1000; i++) {
+        await hre.network.provider.send('evm_mine', []);
+      }
+
+      await positionsManagerForAave.connect(supplier1).claimRewards([config.tokens.aDai.address, config.tokens.variableDebtUsdc.address]);
+      await positionsManagerForAave.connect(supplier2).claimRewards([config.tokens.aDai.address, config.tokens.variableDebtUsdc.address]);
+      await positionsManagerForAave.connect(supplier3).claimRewards([config.tokens.aDai.address, config.tokens.variableDebtUsdc.address]);
+      const supplier1RewardTokenBalanceAfter = await wmaticToken.balanceOf(supplier1.getAddress());
+      const supplier2RewardTokenBalanceAfter = await wmaticToken.balanceOf(supplier2.getAddress());
+      const supplier3RewardTokenBalanceAfter = await wmaticToken.balanceOf(supplier3.getAddress());
+
+      expect(supplier1RewardTokenBalanceAfter).to.be.gt(supplier1RewardTokenBalanceBefore);
+      expect(supplier2RewardTokenBalanceAfter).to.be.gt(supplier2RewardTokenBalanceBefore);
+      expect(supplier3RewardTokenBalanceAfter).to.be.gt(supplier3RewardTokenBalanceBefore);
+      expect(await rewardsManager.userUnclaimedRewards(supplier1.getAddress())).to.equal(0);
+      expect(await rewardsManager.userUnclaimedRewards(supplier2.getAddress())).to.equal(0);
+      expect(await rewardsManager.userUnclaimedRewards(supplier3.getAddress())).to.equal(0);
+      expect(
+        await aaveIncentivesController.getRewardsBalance(
+          [config.tokens.aDai.address, config.tokens.variableDebtUsdc.address],
+          positionsManagerForAave.address
+        )
+      ).to.equal(0);
     });
   });
 
