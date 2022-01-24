@@ -10,29 +10,29 @@ TESTS = \
 	TestSupply \
 	TestWithdraw \
 	TestDoubleLinkedList \
-	TestNmax 
+	TestNmax
 
 .PHONY: test
 test:  node_modules
 	@echo Run all tests
-	@forge test --fork-url https://${NETWORK}.infura.io/v3/${INFURA_PROJECT_ID} --fork-block-number $(fork-block-number) -vvv -c test-foundry --no-match-contract TestNmax
+	@forge test --fork-url https://${NETWORK}.g.alchemy.com/v2/${ALCHEMY_KEY} --fork-block-number $(fork-block-number) -vvv -c test-foundry --no-match-contract TestNmax
 
 .PHONY: test1
 test1: node_modules
 	@echo Run test matching regexp
-	@forge test --fork-url https://${NETWORK}.infura.io/v3/${INFURA_PROJECT_ID} --fork-block-number $(fork-block-number) -vvv --match-test test_borrow_2_2
+	@forge test --fork-url https://${NETWORK}.g.alchemy.com/v2/${ALCHEMY_KEY} --fork-block-number $(fork-block-number) -vvv --match-test test_borrow_2_2
 
 
 .PHONY: testNmax
 testNmax: node_modules
 	@echo Run test matching regexp
-	@forge test --fork-url https://${NETWORK}.infura.io/v3/${INFURA_PROJECT_ID} --fork-block-number $(fork-block-number) -vvvvv --match-contract TestNmax
+	@forge test --fork-url https://${NETWORK}.g.alchemy.com/v2/${ALCHEMY_KEY} --fork-block-number $(fork-block-number) -vvvvv --match-contract TestNmax
 
 
 .PHONY: $(TESTS)
 $(TESTS): node_modules
 	@echo Run tests for $@
-	@forge test --fork-url https://${NETWORK}.infura.io/v3/${INFURA_PROJECT_ID} --fork-block-number $(fork-block-number) -vvv --match-contract $@
+	@forge test --fork-url https://${NETWORK}.g.alchemy.com/v2/${ALCHEMY_KEY} --fork-block-number $(fork-block-number) -vvv --match-contract $@
 
 node_modules:
 	@yarn

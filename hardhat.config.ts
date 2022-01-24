@@ -14,7 +14,7 @@ module.exports = {
   networks: {
     hardhat: {
       forking: {
-        url: `https://${process.env.NETWORK}.infura.io/v3/${process.env.INFURA_PROJECT_ID}`,
+        url: `https://${process.env.NETWORK}.g.alchemy.com/v2/${process.env.ALCHEMY_KEY}`,
       },
       allowUnlimitedContractSize: true,
       blockGasLimit: 30000000,
