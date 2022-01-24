@@ -29,6 +29,7 @@ contract MarketsManagerForAave is Ownable {
     mapping(address => uint256) public supplyP2PExchangeRate; // Current exchange rate from supply p2pUnit to underlying.
     mapping(address => uint256) public borrowP2PExchangeRate; // Current exchange rate from borrow p2pUnit to underlying.
     mapping(address => uint256) public exchangeRatesLastUpdateTimestamp; // Last time p2pExchangeRates were updated.
+    mapping(address => bool) public moveToPool; // Whether to put users on pool or not for the given market.
 
     IPositionsManagerForAave public positionsManagerForAave;
     ILendingPoolAddressesProvider public addressesProvider;
@@ -57,6 +58,11 @@ contract MarketsManagerForAave is Ownable {
     /// @param _marketAddress The address of the market to set.
     /// @param _newValue The new value of the cap.
     event CapValueSet(address _marketAddress, uint256 _newValue);
+
+    /// @dev Emitted when a new market strategy is set.
+    /// @param _marketAddress The address of the market to set.
+    /// @param _newStrategy The new strategy adopted.
+    event NewMarketStrategySet(address _marketAddress, bool _newStrategy);
 
     /// @dev Emitted the `feeFactor` is set.
     /// @param _newValue The new value of the `feeFactor`.
@@ -197,6 +203,18 @@ contract MarketsManagerForAave is Ownable {
     {
         positionsManagerForAave.setCapValue(_marketAddress, _newCapValue);
         emit CapValueSet(_marketAddress, _newCapValue);
+    }
+
+    /// @dev Flips the market strategy (whether to put everyone on pool or not).
+    /// @param _marketAddress The address of the market to change its strategy.
+    function flipMarketStrategy(address _marketAddress)
+        external
+        onlyOwner
+        isMarketCreated(_marketAddress)
+    {
+        bool newStrategy = !moveToPool[_marketAddress];
+        moveToPool[_marketAddress] = newStrategy;
+        emit NewMarketStrategySet(_marketAddress, newStrategy);
     }
 
     /// Public ///

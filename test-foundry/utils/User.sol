@@ -80,4 +80,8 @@ contract User {
     function claimRewards(address[] calldata _assets) external {
         positionsManager.claimRewards(_assets);
     }
+
+    function flipMarketStrategy(address _marketAddress) external {
+        marketsManager.flipMarketStrategy(_marketAddress);
+    }
 }
