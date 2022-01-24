@@ -80,4 +80,8 @@ contract User {
     function claimRewards(address[] calldata _assets) external {
         positionsManager.claimRewards(_assets);
     }
+
+    function setNoP2P(address _marketAddress, bool _noP2P) external {
+        marketsManager.setNoP2P(_marketAddress, _noP2P);
+    }
 }
