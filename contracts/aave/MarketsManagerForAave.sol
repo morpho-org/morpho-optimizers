@@ -29,6 +29,7 @@ contract MarketsManagerForAave is Ownable {
     mapping(address => uint256) public supplyP2PExchangeRate; // Current exchange rate from supply p2pUnit to underlying.
     mapping(address => uint256) public borrowP2PExchangeRate; // Current exchange rate from borrow p2pUnit to underlying.
     mapping(address => uint256) public exchangeRatesLastUpdateTimestamp; // Last time p2pExchangeRates were updated.
+    mapping(address => bool) public noP2P; // Whether to put users on pool or not for the given market.
 
     IPositionsManagerForAave public positionsManagerForAave;
     ILendingPoolAddressesProvider public addressesProvider;
@@ -57,6 +58,11 @@ contract MarketsManagerForAave is Ownable {
     /// @param _marketAddress The address of the market to set.
     /// @param _newValue The new value of the cap.
     event CapValueSet(address _marketAddress, uint256 _newValue);
+
+    /// @dev Emitted when a `noP2P` variable is set.
+    /// @param _marketAddress The address of the market to set.
+    /// @param _noP2P The new value of `_noP2P` adopted.
+    event NoP2PSet(address _marketAddress, bool _noP2P);
 
     /// @dev Emitted the `feeFactor` is set.
     /// @param _newValue The new value of the `feeFactor`.
@@ -197,6 +203,18 @@ contract MarketsManagerForAave is Ownable {
     {
         positionsManagerForAave.setCapValue(_marketAddress, _newCapValue);
         emit CapValueSet(_marketAddress, _newCapValue);
+    }
+
+    /// @dev Sets whether to put everyone on pool or not.
+    /// @param _marketAddress The address of the market.
+    /// @param _noP2P Whether to put everyone on pool or not.
+    function setNoP2P(address _marketAddress, bool _noP2P)
+        external
+        onlyOwner
+        isMarketCreated(_marketAddress)
+    {
+        noP2P[_marketAddress] = _noP2P;
+        emit NoP2PSet(_marketAddress, _noP2P);
     }
 
     /// Public ///

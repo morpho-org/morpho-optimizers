@@ -92,4 +92,15 @@ contract TestGovernance is TestSetup {
         hevm.expectRevert(abi.encodeWithSignature("OnlyMarketsManagerOwner()"));
         borrower1.setNmaxForMatchingEngine(newNMAX);
     }
+
+    function test_only_owner_should_flip_market_strategy() public {
+        hevm.expectRevert("Ownable: caller is not the owner");
+        supplier1.setNoP2P(aDai, true);
+
+        hevm.expectRevert("Ownable: caller is not the owner");
+        supplier2.setNoP2P(aDai, true);
+
+        marketsManager.setNoP2P(aDai, true);
+        assertTrue(marketsManager.noP2P(aDai));
+    }
 }

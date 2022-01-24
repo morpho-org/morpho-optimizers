@@ -411,7 +411,10 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         uint256 remainingToSupplyToPool = _amount;
 
         /* If some borrowers are waiting on Aave, Morpho matches the supplier in P2P with them as much as possible */
-        if (borrowersOnPool[_poolTokenAddress].getHead() != address(0))
+        if (
+            borrowersOnPool[_poolTokenAddress].getHead() != address(0) &&
+            !marketsManagerForAave.noP2P(_poolTokenAddress)
+        )
             remainingToSupplyToPool -= _supplyPositionToP2P(
                 IAToken(_poolTokenAddress),
                 underlyingToken,
@@ -459,7 +462,10 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         uint256 remainingToBorrowOnPool = _amount;
 
         /* If some suppliers are waiting on Aave, Morpho matches the borrower in P2P with them as much as possible */
-        if (suppliersOnPool[_poolTokenAddress].getHead() != address(0))
+        if (
+            suppliersOnPool[_poolTokenAddress].getHead() != address(0) &&
+            !marketsManagerForAave.noP2P(_poolTokenAddress)
+        )
             remainingToBorrowOnPool -= _borrowPositionFromP2P(
                 IAToken(_poolTokenAddress),
                 underlyingToken,
