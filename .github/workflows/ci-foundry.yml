@@ -1,8 +1,10 @@
-on:
-  pull_request:
-    paths:
-      - "**.sol"
 name: Solidity tests with Foundry
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
 
 jobs:
   check:
@@ -20,7 +22,7 @@ jobs:
       - name: Node dependencies cache
         uses: actions/cache@v2
         with:
-          path: '**/node_modules'
+          path: "**/node_modules"
           key: yarn-${{ hashFiles('**/yarn.lock') }}
 
       - name: Install dependencies
@@ -35,4 +37,4 @@ jobs:
         run: make test
         env:
           NETWORK: polygon-mainnet
-          INFURA_PROJECT_ID: ${{ secrets.INFURA_PROJECT_ID }}
+          ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}

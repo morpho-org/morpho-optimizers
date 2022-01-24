@@ -1,4 +1,4 @@
-name: Tests
+name: Typescript tests with Hardhat
 
 on:
   push:
@@ -8,7 +8,7 @@ on:
 
 jobs:
   unit-tests:
-    name: Unit Tests
+    name: Hardhat project
     runs-on: ubuntu-latest
 
     steps:
@@ -33,11 +33,6 @@ jobs:
       - name: Run unit tests Aave
         env:
           INFURA_PROJECT_ID: ${{ secrets.INFURA_PROJECT_ID }}
+          ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
           DEPLOYER_PRIVATE_KEY: ${{ secrets.DEPLOYER_PRIVATE_KEY }}
         run: yarn test:aave:polygon
-
-      - name: Run unit tests Compound
-        env:
-          INFURA_PROJECT_ID: ${{ secrets.INFURA_PROJECT_ID }}
-          DEPLOYER_PRIVATE_KEY: ${{ secrets.DEPLOYER_PRIVATE_KEY }}
-        run: yarn test:comp:mainnet
