@@ -19,6 +19,7 @@ contract TestSetup is Config, Utils {
     using WadRayMath for uint256;
 
     uint256 public constant MAX_BASIS_POINTS = 10000;
+    uint256 constant INITIAL_BALANCE = 1_000_000;
 
     HEVM public hevm = HEVM(HEVM_ADDRESS);
 
@@ -112,8 +113,8 @@ contract TestSetup is Config, Utils {
         for (uint256 i = 0; i < 3; i++) {
             suppliers.push(new User(positionsManager, marketsManager, rewardsManager));
 
-            writeBalanceOf(address(suppliers[i]), dai, type(uint256).max / 2);
-            writeBalanceOf(address(suppliers[i]), usdc, type(uint256).max / 2);
+            writeBalanceOf(address(suppliers[i]), dai, INITIAL_BALANCE * WAD);
+            writeBalanceOf(address(suppliers[i]), usdc, INITIAL_BALANCE * 1e6);
         }
         supplier1 = suppliers[0];
         supplier2 = suppliers[1];
@@ -122,8 +123,8 @@ contract TestSetup is Config, Utils {
         for (uint256 i = 0; i < 3; i++) {
             borrowers.push(new User(positionsManager, marketsManager, rewardsManager));
 
-            writeBalanceOf(address(borrowers[i]), dai, type(uint256).max / 2);
-            writeBalanceOf(address(borrowers[i]), usdc, type(uint256).max / 2);
+            writeBalanceOf(address(borrowers[i]), dai, INITIAL_BALANCE * WAD);
+            writeBalanceOf(address(borrowers[i]), usdc, INITIAL_BALANCE * 1e6);
         }
         borrower1 = borrowers[0];
         borrower2 = borrowers[1];
@@ -141,12 +142,12 @@ contract TestSetup is Config, Utils {
     function createSigners(uint8 _nbOfSigners) internal {
         while (borrowers.length < _nbOfSigners) {
             borrowers.push(new User(positionsManager, marketsManager, rewardsManager));
-            writeBalanceOf(address(borrowers[borrowers.length - 1]), dai, type(uint256).max / 2);
-            writeBalanceOf(address(borrowers[borrowers.length - 1]), usdc, type(uint256).max / 2);
+            writeBalanceOf(address(borrowers[borrowers.length - 1]), dai, INITIAL_BALANCE * WAD);
+            writeBalanceOf(address(borrowers[borrowers.length - 1]), usdc, INITIAL_BALANCE * 1e6);
 
             suppliers.push(new User(positionsManager, marketsManager, rewardsManager));
-            writeBalanceOf(address(suppliers[suppliers.length - 1]), dai, type(uint256).max / 2);
-            writeBalanceOf(address(suppliers[suppliers.length - 1]), usdc, type(uint256).max / 2);
+            writeBalanceOf(address(suppliers[suppliers.length - 1]), dai, INITIAL_BALANCE * WAD);
+            writeBalanceOf(address(suppliers[suppliers.length - 1]), usdc, INITIAL_BALANCE * 1e6);
         }
     }
 
