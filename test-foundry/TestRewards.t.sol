@@ -4,8 +4,6 @@ pragma solidity 0.8.7;
 import "@contracts/aave/interfaces/aave/IAaveIncentivesController.sol";
 import "./utils/TestSetup.sol";
 
-// import "hardhat/console.sol";
-
 contract TestRewards is TestSetup {
     // Should claim the right amount of rewards
     function test_claim() public {
@@ -31,7 +29,7 @@ contract TestRewards is TestSetup {
         supplier2.approve(dai, toSupply);
         supplier2.supply(aDai, toSupply);
         hevm.warp(block.timestamp + 365 days);
-        supplier1.claimRewards(aDaiInArray);
+        positionsManager.claimRewards(aDaiInArray);
         index = IAaveIncentivesController(aaveIncentivesControllerAddress).assets(aDai).index;
         uint256 expectedClaimed = (onPool * (index - userIndex)) / WAD;
         uint256 balanceAfter = IERC20(wmatic).balanceOf(address(supplier1));
