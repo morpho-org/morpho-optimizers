@@ -23,6 +23,7 @@ contract MarketsManagerForAave is Ownable {
     uint256 public constant SECONDS_PER_YEAR = 365 days;
     uint256 public reserveFactor; // Proportion of the interest earned by users sent to the DAO, in basis point (100% = 10000). The default value is 0.
 
+    address[] public marketsCreated; // Keeps track of the created markets.
     mapping(address => bool) public isCreated; // Whether or not this market is created.
     mapping(address => uint256) public supplyP2PSPY; // Supply Second Percentage Yield, in ray.
     mapping(address => uint256) public borrowP2PSPY; // Borrow Second Percentage Yield, in ray.
@@ -155,6 +156,9 @@ contract MarketsManagerForAave is Ownable {
     /// @param _newReserveFactor The proportion of the interest earned by users sent to the DAO, in basis point.
     function setReserveFactor(uint256 _newReserveFactor) external onlyOwner {
         reserveFactor = Math.min(MAX_BASIS_POINTS, _newReserveFactor);
+        for (uint256 i; i < marketsCreated.length; i++) {
+            updateRates(marketsCreated[i]);
+        }
         emit ReserveFactorSet(reserveFactor);
     }
 
@@ -178,6 +182,7 @@ contract MarketsManagerForAave is Ownable {
         isCreated[_marketAddress] = true;
 
         _updateSPYs(_marketAddress);
+        marketsCreated.push(_marketAddress);
         emit MarketCreated(_marketAddress);
     }
 
