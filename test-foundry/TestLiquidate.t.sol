@@ -33,6 +33,8 @@ contract TestLiquidate is TestSetup {
     ) public {
         (Asset memory supply, Asset memory borrow) = getAssets(_amount, _supplyAsset, _borrowAsset);
 
+        borrow.amount = getMaxToBorrow(supply.amount, supply.underlying, borrow.underlying);
+
         borrower1.approve(supply.underlying, supply.amount);
         borrower1.supply(supply.poolToken, supply.amount);
         borrower1.borrow(borrow.poolToken, borrow.amount);

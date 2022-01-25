@@ -164,12 +164,22 @@ contract TestSupply is TestSetup {
         uint16 NMAX = 20;
         setNMAXAndCreateSigners(NMAX);
 
+        uint256[] memory inP2PBefore = new uint256[](NMAX);
         for (uint256 i = 0; i < NMAX; i++) {
+            (inP2PBefore[i], ) = positionsManager.borrowBalanceInOf(
+                borrow.poolToken,
+                address(borrowers[i])
+            );
             borrowers[i].approve(supply.underlying, supply.amount);
             borrowers[i].supply(supply.poolToken, supply.amount);
 
             borrowers[i].borrow(borrow.poolToken, borrow.amount);
         }
+
+        (uint256 supplier1InP2PBefore, ) = positionsManager.supplyBalanceInOf(
+            borrow.poolToken,
+            address(supplier1)
+        );
 
         supplier1.approve(borrow.underlying, NMAX * borrow.amount);
         supplier1.supply(borrow.poolToken, NMAX * borrow.amount);
@@ -185,17 +195,22 @@ contract TestSupply is TestSetup {
                 address(borrowers[i])
             );
 
-            expectedInP2P = underlyingToP2PUnit(borrow.amount, supplyP2PExchangeRate);
+            expectedInP2P =
+                inP2PBefore[i] +
+                underlyingToP2PUnit(borrow.amount, supplyP2PExchangeRate);
 
-            assertEq(inP2P, expectedInP2P, "borrower1 in P2P");
-            assertEq(onPool, 0, "borrower1 on pool");
+            emit log_named_uint("Borrow x", i);
+            assertEqNear(inP2P, expectedInP2P, "borrowerX in P2P");
+            assertEq(onPool, 0, "borrowerX on pool");
         }
 
         (inP2P, onPool) = positionsManager.supplyBalanceInOf(borrow.poolToken, address(supplier1));
-        expectedInP2P = p2pUnitToUnderlying(NMAX * borrow.amount, supplyP2PExchangeRate);
+        expectedInP2P =
+            supplier1InP2PBefore +
+            underlyingToP2PUnit(NMAX * borrow.amount, supplyP2PExchangeRate);
 
         assertEq(inP2P, expectedInP2P, "supplier1 in P2P");
-        assertEq(onPool, 0, "supplier1 on pool");
+        assertEqNear(onPool, 0, "supplier1 on pool");
     }
 
     // 1.6 - The NMAX biggest borrowers don't match all of the supplied amount, after NMAX match, the rest is supplied and set `onPool`.
@@ -210,14 +225,20 @@ contract TestSupply is TestSetup {
         uint16 NMAX = 20;
         setNMAXAndCreateSigners(NMAX);
 
+        uint256[] memory borrowInP2PBefore = new uint256[](NMAX);
         for (uint256 i = 0; i < NMAX; i++) {
             borrowers[i].approve(supply.underlying, supply.amount);
             borrowers[i].supply(supply.poolToken, supply.amount);
 
+            (borrowInP2PBefore[i], ) = positionsManager.borrowBalanceInOf(
+                borrow.poolToken,
+                address(borrowers[i])
+            );
+
             borrowers[i].borrow(borrow.poolToken, borrow.amount);
         }
 
-        uint256 suppliedAmount = (NMAX * borrow.amount) / 2;
+        uint256 suppliedAmount = 2 * NMAX * borrow.amount;
         supplier1.approve(borrow.underlying, suppliedAmount);
         supplier1.supply(borrow.poolToken, suppliedAmount);
 
@@ -225,7 +246,6 @@ contract TestSupply is TestSetup {
         uint256 onPool;
         uint256 expectedInP2P;
         uint256 supplyP2PExchangeRate = marketsManager.supplyP2PExchangeRate(borrow.poolToken);
-        uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(borrow.underlying);
 
         for (uint256 i = 0; i < NMAX; i++) {
             (inP2P, onPool) = positionsManager.borrowBalanceInOf(
@@ -233,18 +253,20 @@ contract TestSupply is TestSetup {
                 address(borrowers[i])
             );
 
-            expectedInP2P = p2pUnitToUnderlying(inP2P, supplyP2PExchangeRate);
-
-            assertEq(expectedInP2P, borrow.amount, "borrower in P2P");
-            assertEq(onPool, 0, "borrower on pool");
+            expectedInP2P =
+                borrowInP2PBefore[i] +
+                underlyingToP2PUnit(borrow.amount, supplyP2PExchangeRate);
+            assertEq(inP2P, expectedInP2P, "borrowerX in P2P");
+            assertEq(onPool, 0, "borrowerX on pool");
         }
 
         (inP2P, onPool) = positionsManager.supplyBalanceInOf(borrow.poolToken, address(supplier1));
-
-        expectedInP2P = p2pUnitToUnderlying(suppliedAmount, supplyP2PExchangeRate);
-        uint256 expectedOnPool = underlyingToAdUnit(suppliedAmount, normalizedIncome);
-
+        expectedInP2P = underlyingToP2PUnit(suppliedAmount, supplyP2PExchangeRate);
+        uint256 expectedOnPool = underlyingToAdUnit(
+            suppliedAmount,
+            lendingPool.getReserveNormalizedIncome(borrow.underlying)
+        );
         assertEq(inP2P, expectedInP2P, "supplier1 in P2P");
-        assertEq(onPool, expectedOnPool, "supplier1 on pool");
+        assertEqNear(onPool, expectedOnPool, "supplier1 on pool");
     }
 }

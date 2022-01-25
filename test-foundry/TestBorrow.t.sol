@@ -26,7 +26,10 @@ contract TestBorrow is TestSetup {
     ) public {
         (Asset memory supply, Asset memory borrow) = getAssets(_amount, _supplyAsset, _borrowAsset);
 
-        borrow.amount = getMaxToBorrow(supply.amount, supply.underlying, borrow.underlying) + 1;
+        borrow.amount =
+            getMaxToBorrow(supply.amount, supply.underlying, borrow.underlying) +
+            2 *
+            10**(18 - ERC20(borrow.underlying).decimals());
         emit log_named_decimal_uint(
             "borrow.amount",
             borrow.amount,
@@ -167,11 +170,11 @@ contract TestBorrow is TestSetup {
 
         assertEq(inP2P, supplyInP2P, "borrower1 in P2P");
 
-        uint256 normalizedVariableDebt = lendingPool.getReserveNormalizedVariableDebt(
-            borrow.underlying
-        );
         uint256 expectedOnPool = onPoolBefore +
-            underlyingToAdUnit(borrow.amount, normalizedVariableDebt);
+            underlyingToAdUnit(
+                borrow.amount,
+                lendingPool.getReserveNormalizedVariableDebt(borrow.underlying)
+            );
 
         assertEq(onPool, expectedOnPool, "borrower1 on pool");
     }
@@ -191,7 +194,12 @@ contract TestBorrow is TestSetup {
             borrow.poolToken,
             address(suppliers[0])
         );
+        uint256[] memory supplierInP2PBefore = new uint256[](NMAX);
         for (uint256 i = 0; i < NMAX; i++) {
+            (supplierInP2PBefore[i], ) = positionsManager.supplyBalanceInOf(
+                borrow.poolToken,
+                address(suppliers[i])
+            );
             suppliers[i].approve(borrow.underlying, borrow.amount);
             suppliers[i].supply(borrow.poolToken, borrow.amount);
         }
@@ -211,15 +219,21 @@ contract TestBorrow is TestSetup {
                 address(suppliers[i])
             );
 
-            expectedInP2P = underlyingToP2PUnit(borrow.amount, supplyP2PExchangeRate);
+            expectedInP2P =
+                supplierInP2PBefore[i] +
+                underlyingToP2PUnit(borrow.amount, supplyP2PExchangeRate);
 
             assertEq(inP2P, expectedInP2P, "supplierX in P2P");
             assertEq(onPool, 0, "supplierX on pool");
         }
 
         (inP2P, onPool) = positionsManager.borrowBalanceInOf(borrow.poolToken, address(borrower1));
+        expectedInP2P = underlyingToP2PUnit(
+            NMAX * borrow.amount,
+            marketsManager.borrowP2PExchangeRate(borrow.poolToken)
+        );
 
-        assertEq(inP2P, NMAX * borrow.amount, "borrower1 in P2P2");
+        assertEq(inP2P, expectedInP2P, "borrower1 in P2P2");
         assertEq(onPool, 0, "borrower1 on pool");
     }
 
@@ -236,6 +250,12 @@ contract TestBorrow is TestSetup {
         setNMAXAndCreateSigners(NMAX);
 
         for (uint256 i = 0; i < NMAX; i++) {
+            (uint256 inP2PBefore, uint256 onPoolBefore) = positionsManager.supplyBalanceInOf(
+                borrow.poolToken,
+                address(suppliers[i])
+            );
+            emit log_named_uint("inP2P  before supplierX", inP2PBefore);
+            emit log_named_uint("onPool before supplierX", onPoolBefore);
             suppliers[i].approve(borrow.underlying, borrow.amount);
             suppliers[i].supply(borrow.poolToken, borrow.amount);
         }
@@ -266,7 +286,10 @@ contract TestBorrow is TestSetup {
 
         (inP2P, onPool) = positionsManager.borrowBalanceInOf(borrow.poolToken, address(borrower1));
 
-        expectedInP2P = p2pUnitToUnderlying(NMAX * borrow.amount, supplyP2PExchangeRate);
+        expectedInP2P = p2pUnitToUnderlying(
+            NMAX * borrow.amount,
+            marketsManager.borrowP2PExchangeRate(borrow.poolToken)
+        );
         uint256 expectedOnPool = underlyingToAdUnit(NMAX * borrow.amount, normalizedVariableDebt);
 
         assertEq(inP2P, expectedInP2P, "borrower1 in P2P");

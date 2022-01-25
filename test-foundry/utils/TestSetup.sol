@@ -14,8 +14,6 @@ import "./Utils.sol";
 import "./User.sol";
 
 contract TestSetup is DSTest, Config, Utils {
-    using WadRayMath for uint256;
-
     struct Asset {
         uint256 amount;
         address poolToken;
@@ -23,6 +21,10 @@ contract TestSetup is DSTest, Config, Utils {
     }
 
     HEVM hevm = HEVM(HEVM_ADDRESS);
+
+    // This is used to deposit enough assets on Aave so users can borrow large amount of these assets.
+    // The multiplier is set to the maximum value of NMAX in some tests. It is used in getAssets() function.
+    uint256 depositMultiplier = 100;
 
     PositionsManagerForAave internal positionsManager;
     PositionsManagerForAave internal fakePositionsManager;
@@ -290,8 +292,12 @@ contract TestSetup is DSTest, Config, Utils {
         }
 
         // Ensure enough liquidity in Aave
-        supplier3.approve(borrow.underlying, address(lendingPool), borrow.amount);
-        supplier3.deposit(borrow.underlying, borrow.amount);
+        supplier3.approve(
+            borrow.underlying,
+            address(lendingPool),
+            depositMultiplier * borrow.amount
+        );
+        supplier3.deposit(borrow.underlying, depositMultiplier * borrow.amount);
 
         emit log_named_decimal_uint(
             "supply.amount",
