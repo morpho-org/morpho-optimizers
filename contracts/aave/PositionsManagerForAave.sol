@@ -306,6 +306,103 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         threshold[_poolTokenAddress] = _newThreshold;
     }
 
+    /// @dev Move the biggest user to pool when market strategy is flipped
+    /// @param _poolTokenAddress The address of the market to set the threshold.
+    function putSuppliersOnPool(address _poolTokenAddress) external onlyMarketsManager {
+        uint256 iterationCount;
+        uint256 toSupplyOnPool;
+        address account = suppliersInP2P[_poolTokenAddress].getHead();
+        uint256 totalStaked = IScaledBalanceToken(_poolTokenAddress).scaledTotalSupply();
+        IAToken poolToken = IAToken(_poolTokenAddress);
+        marketsManagerForAave.updateRates(_poolTokenAddress);
+        uint256 amount;
+
+        uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(
+            address(poolToken.UNDERLYING_ASSET_ADDRESS())
+        );
+        uint256 supplyP2PExchangeRate = marketsManagerForAave.supplyP2PExchangeRate(
+            _poolTokenAddress
+        );
+
+        while (account != address(0) && iterationCount < NMAX / 2) {
+            iterationCount += 1;
+
+            amount = suppliersInP2P[_poolTokenAddress].getValueOf(account).mulWadByRay(
+                supplyP2PExchangeRate
+            );
+            toSupplyOnPool += amount;
+
+            rewardsManager.updateUserAssetAndAccruedRewards(
+                account,
+                _poolTokenAddress,
+                amount,
+                totalStaked
+            );
+
+            supplyBalanceInOf[_poolTokenAddress][account].inP2P = 0;
+            supplyBalanceInOf[_poolTokenAddress][account].onPool += amount.divWadByRay(
+                normalizedIncome
+            );
+            suppliersInP2P[_poolTokenAddress].remove(account);
+            _updateSuppliers(_poolTokenAddress, account);
+            account = suppliersInP2P[_poolTokenAddress].getHead();
+        }
+        if (toSupplyOnPool != 0)
+            _supplyERC20ToPool(
+                IERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS()),
+                toSupplyOnPool
+            ); // Revert on error
+    }
+
+    function putBorrowersOnPool(address _poolTokenAddress) external onlyMarketsManager {
+        uint256 toBorrowOnPool;
+        uint256 iterationCount;
+        address account = borrowersInP2P[_poolTokenAddress].getHead();
+        uint256 amount;
+
+        (, , address variableDebtTokenAddress) = dataProvider.getReserveTokensAddresses(
+            IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS()
+        );
+        uint256 totalStaked = IScaledBalanceToken(_poolTokenAddress).scaledTotalSupply();
+        IAToken poolToken = IAToken(_poolTokenAddress);
+        uint256 normalizedVariableDebt = lendingPool.getReserveNormalizedVariableDebt(
+            poolToken.UNDERLYING_ASSET_ADDRESS()
+        );
+        uint256 borrowP2PExchangeRate = marketsManagerForAave.borrowP2PExchangeRate(
+            _poolTokenAddress
+        );
+
+        while (account != address(0) && iterationCount < NMAX / 2) {
+            iterationCount += 1;
+
+            amount = borrowersInP2P[_poolTokenAddress].getValueOf(account).mulWadByRay(
+                borrowP2PExchangeRate
+            );
+            toBorrowOnPool += amount;
+
+            rewardsManager.updateUserAssetAndAccruedRewards(
+                account,
+                variableDebtTokenAddress,
+                amount,
+                totalStaked
+            );
+
+            borrowBalanceInOf[_poolTokenAddress][account].inP2P = 0;
+            borrowBalanceInOf[_poolTokenAddress][account].onPool += amount.divWadByRay(
+                normalizedVariableDebt
+            );
+
+            borrowersInP2P[_poolTokenAddress].remove(account);
+            _updateBorrowers(_poolTokenAddress, account);
+            account = borrowersInP2P[_poolTokenAddress].getHead();
+        }
+        if (toBorrowOnPool != 0)
+            _borrowERC20FromPool(
+                IERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS()),
+                toBorrowOnPool
+            ); // Revert on error
+    }
+
     /// @dev Sets the max cap of a market.
     /// @param _poolTokenAddress The address of the market to set the threshold.
     /// @param _newCapValue The new threshold.

@@ -214,6 +214,10 @@ contract MarketsManagerForAave is Ownable {
     {
         bool newStrategy = !moveToPool[_marketAddress];
         moveToPool[_marketAddress] = newStrategy;
+        if (newStrategy) {
+            positionsManagerForAave.putSuppliersOnPool(_marketAddress);
+            positionsManagerForAave.putBorrowersOnPool(_marketAddress);
+        }
         emit NewMarketStrategySet(_marketAddress, newStrategy);
     }
 
