@@ -7,7 +7,7 @@ STAGED_TS_FILES=$(git diff --staged --name-only | grep '\.ts$' | xargs)
 STAGED_SOL_FILES=$(git diff --staged --name-only | grep '\.sol$' | xargs)
 
 if [ -n "$STAGED_SOL_FILES" ]; then
-    GENERATED_FILES=$(yarn --silent solidity-interfacer $STAGED_SOL_FILES --logFiles | xargs)
+    GENERATED_FILES=$(yarn --silent solidity-interfacer "$STAGED_SOL_FILES" --logFiles | xargs)
 
     if [ -n "$GENERATED_FILES" ]; then
         yarn prettier --config .prettierrc.json --write $GENERATED_FILES
