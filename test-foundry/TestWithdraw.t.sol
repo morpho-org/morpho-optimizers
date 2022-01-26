@@ -408,6 +408,86 @@ contract TestWithdraw is TestSetup {
         }
     }
 
+    // Delta hard withdraw
+    function test_withdraw_3_3_5() public {
+        uint256 borrowedAmount = 1 ether;
+        uint256 collateral = 2 * borrowedAmount;
+        uint256 suppliedAmount = 20 * borrowedAmount;
+
+        // supplier1 and 100 borrowers are matched for suppliedAmount
+        supplier1.approve(dai, suppliedAmount);
+        supplier1.supply(aDai, suppliedAmount);
+
+        positionsManager.setNmaxForMatchingEngine(10);
+        createSigners(30);
+
+        // 2 * NMAX borrowers borrow borrowedAmount
+        for (uint256 i = 0; i < 20; i++) {
+            borrowers[i].approve(usdc, to6Decimals(collateral));
+            borrowers[i].supply(aUsdc, to6Decimals(collateral));
+            borrowers[i].borrow(aDai, borrowedAmount);
+        }
+
+        uint256 supplyP2PExchangeRate = marketsManager.supplyP2PExchangeRate(aDai);
+        uint256 expectedSupplyBalanceInP2P = underlyingToP2PUnit(
+            suppliedAmount,
+            supplyP2PExchangeRate
+        );
+
+        // Check balances after match of supplier1 and borrowers
+        (uint256 inP2PSupplier, uint256 onPoolSupplier) = positionsManager.supplyBalanceInOf(
+            aDai,
+            address(supplier1)
+        );
+        testEquality(onPoolSupplier, 0);
+        testEquality(inP2PSupplier, expectedSupplyBalanceInP2P);
+
+        uint256 borrowP2PExchangeRate = marketsManager.borrowP2PExchangeRate(aDai);
+        uint256 expectedBorrowBalanceInP2P = underlyingToP2PUnit(
+            borrowedAmount,
+            borrowP2PExchangeRate
+        );
+
+        for (uint256 i = 0; i < 20; i++) {
+            (uint256 inP2PBorrower, uint256 onPoolBorrower) = positionsManager.borrowBalanceInOf(
+                aDai,
+                address(borrowers[i])
+            );
+            testEquality(onPoolBorrower, 0);
+            testEquality(inP2PBorrower, expectedBorrowBalanceInP2P);
+        }
+
+        // supplier withdraws max
+        // should create a delta on borrowers side
+        supplier1.withdraw(aDai, type(uint256).max);
+
+        // Check balances for supplier1
+        (inP2PSupplier, onPoolSupplier) = positionsManager.supplyBalanceInOf(
+            aDai,
+            address(supplier1)
+        );
+        testEquality(onPoolSupplier, 0);
+        testEquality(inP2PSupplier, 0);
+
+        // There should be a delta
+        uint256 expectedBorrowP2PDelta = 10 * borrowedAmount;
+        testEquality(positionsManager.borrowP2PDelta(aDai), expectedBorrowP2PDelta);
+
+        // Delta matching
+        supplier2.approve(dai, suppliedAmount);
+        supplier2.supply(aDai, suppliedAmount);
+
+        (inP2PSupplier, onPoolSupplier) = positionsManager.supplyBalanceInOf(
+            aDai,
+            address(supplier2)
+        );
+        expectedSupplyBalanceInP2P = underlyingToP2PUnit(suppliedAmount, supplyP2PExchangeRate);
+
+        testEquality(positionsManager.borrowP2PDelta(aDai), 0);
+        testEquality(onPoolSupplier, 0);
+        testEquality(inP2PSupplier, expectedSupplyBalanceInP2P);
+    }
+
     // Test attack
     // Should not be possible to withdraw amount if the position turns to be under-collateralized
     function test_withdraw_if_under_collaterize() public {
