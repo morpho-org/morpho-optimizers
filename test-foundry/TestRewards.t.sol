@@ -20,7 +20,7 @@ contract TestRewards is TestSetup {
         uint256 userIndex = rewardsManager.getUserIndex(aDai, address(supplier1));
         address[] memory aDaiInArray = new address[](1);
         aDaiInArray[0] = aDai;
-        uint256 unclaimedRewards = rewardsManager.getUserUnclaimedRewards(
+        uint256 unclaimedRewards = rewardsManager.accrueUserUnclaimedRewards(
             aDaiInArray,
             address(supplier1)
         );
@@ -82,7 +82,7 @@ contract TestRewards is TestSetup {
         uint256 rewardBalanceAfter = IERC20(wmatic).balanceOf(address(supplier1));
         assertEq(rewardBalanceAfter, rewardBalanceBefore);
 
-        uint256 unclaimedRewards = rewardsManager.getUserUnclaimedRewards(
+        uint256 unclaimedRewards = rewardsManager.accrueUserUnclaimedRewards(
             aUsdcInArray,
             address(supplier2)
         );
@@ -108,12 +108,12 @@ contract TestRewards is TestSetup {
         tokensInArray[0] = aDai;
         tokensInArray[1] = variableDebtUsdc;
 
-        uint256 unclaimedRewardsForDai = rewardsManager.getUserUnclaimedRewards(
+        uint256 unclaimedRewardsForDai = rewardsManager.accrueUserUnclaimedRewards(
             aDaiInArray,
             address(supplier1)
         );
 
-        uint256 allUnclaimedRewards = rewardsManager.getUserUnclaimedRewards(
+        uint256 allUnclaimedRewards = rewardsManager.accrueUserUnclaimedRewards(
             tokensInArray,
             address(supplier1)
         );
@@ -130,7 +130,7 @@ contract TestRewards is TestSetup {
         console.log("rewardBalanceBefore", rewardBalanceBefore);
         assertGt(rewardBalanceAfter, rewardBalanceBefore);
 
-        allUnclaimedRewards = rewardsManager.getUserUnclaimedRewards(
+        allUnclaimedRewards = rewardsManager.accrueUserUnclaimedRewards(
             tokensInArray,
             address(supplier1)
         );
@@ -181,15 +181,15 @@ contract TestRewards is TestSetup {
         assertGt(balanceAfter2, balanceBefore2);
         assertGt(balanceAfter3, balanceBefore3);
 
-        uint256 unclaimedRewards1 = rewardsManager.getUserUnclaimedRewards(
+        uint256 unclaimedRewards1 = rewardsManager.accrueUserUnclaimedRewards(
             tokensInArray,
             address(supplier1)
         );
-        uint256 unclaimedRewards2 = rewardsManager.getUserUnclaimedRewards(
+        uint256 unclaimedRewards2 = rewardsManager.accrueUserUnclaimedRewards(
             tokensInArray,
             address(supplier2)
         );
-        uint256 unclaimedRewards3 = rewardsManager.getUserUnclaimedRewards(
+        uint256 unclaimedRewards3 = rewardsManager.accrueUserUnclaimedRewards(
             tokensInArray,
             address(supplier3)
         );
