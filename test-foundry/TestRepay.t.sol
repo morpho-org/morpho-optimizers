@@ -374,4 +374,86 @@ contract TestRepay is TestSetup {
             testEquality(onPool, 0);
         }
     }
+
+    // Delta hard repay
+    function test_repay_4_2_5() public {
+        uint256 suppliedAmount = 1 ether;
+        uint256 borrowedAmount = 20 * suppliedAmount;
+        uint256 collateral = 2 * borrowedAmount;
+
+        // borrower1 and 100 suppliers are matched for borrowedAmount
+        borrower1.approve(usdc, to6Decimals(collateral));
+        borrower1.supply(aUsdc, to6Decimals(collateral));
+        borrower1.borrow(aDai, borrowedAmount);
+
+        positionsManager.setNmaxForMatchingEngine(10);
+        createSigners(30);
+
+        // 2 * NMAX suppliers supply suppliedAmount
+        for (uint256 i = 0; i < 20; i++) {
+            suppliers[i].approve(dai, suppliedAmount);
+            suppliers[i].supply(aDai, suppliedAmount);
+        }
+
+        uint256 borrowP2PExchangeRate = marketsManager.borrowP2PExchangeRate(aDai);
+        uint256 expectedBorrowBalanceInP2P = underlyingToP2PUnit(
+            borrowedAmount,
+            borrowP2PExchangeRate
+        );
+
+        // Check balances after match of supplier1
+        (uint256 inP2PBorrower, uint256 onPoolBorrower) = positionsManager.borrowBalanceInOf(
+            aDai,
+            address(borrower1)
+        );
+        testEquality(onPoolBorrower, 0);
+        testEquality(inP2PBorrower, expectedBorrowBalanceInP2P);
+
+        uint256 supplyP2PExchangeRate = marketsManager.supplyP2PExchangeRate(aDai);
+        uint256 expectedSupplyBalanceInP2P = underlyingToP2PUnit(
+            suppliedAmount,
+            supplyP2PExchangeRate
+        );
+
+        for (uint256 i = 0; i < 20; i++) {
+            (uint256 inP2PSupplier, uint256 onPoolSupplier) = positionsManager.supplyBalanceInOf(
+                aDai,
+                address(suppliers[i])
+            );
+            testEquality(onPoolSupplier, 0);
+            testEquality(inP2PSupplier, expectedSupplyBalanceInP2P);
+        }
+
+        // borrower repays max
+        // should create a delta on suppliers side
+        borrower1.approve(dai, type(uint256).max);
+        borrower1.repay(aDai, type(uint256).max);
+
+        // Check balances for borrower1
+        (inP2PBorrower, onPoolBorrower) = positionsManager.supplyBalanceInOf(
+            aDai,
+            address(borrower1)
+        );
+        testEquality(onPoolBorrower, 0);
+        testEquality(inP2PBorrower, 0);
+
+        // There should be a delta
+        uint256 expectedSupplyP2PDelta = 10 * suppliedAmount;
+        testEquality(positionsManager.supplyP2PDelta(aDai), expectedSupplyP2PDelta);
+
+        // Delta matching
+        borrower2.approve(usdc, to6Decimals(collateral));
+        borrower2.supply(aUsdc, to6Decimals(collateral));
+        borrower2.borrow(aDai, borrowedAmount);
+
+        (inP2PBorrower, onPoolBorrower) = positionsManager.borrowBalanceInOf(
+            aDai,
+            address(borrower2)
+        );
+        expectedBorrowBalanceInP2P = underlyingToP2PUnit(borrowedAmount, borrowP2PExchangeRate);
+
+        testEquality(positionsManager.supplyP2PDelta(aDai), 0);
+        testEquality(onPoolBorrower, 0);
+        testEquality(inP2PBorrower, expectedBorrowBalanceInP2P);
+    }
 }
