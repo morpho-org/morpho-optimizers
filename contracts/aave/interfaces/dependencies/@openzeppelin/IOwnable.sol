@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "contracts/compound/interfaces/dependencies/@openzeppelin/IContext.sol";
+import "./IContext.sol";
 
 interface IOwnable is IContext {
     function owner() external returns (address);

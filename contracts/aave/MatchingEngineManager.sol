@@ -11,13 +11,13 @@ import "./PositionsManagerForAaveStorage.sol";
 
 /// @title MatchingEngineManager
 /// @dev Smart contract managing the matching engine.
-contract MatchingEngineManager is IMatchingEngineManager, PositionsManagerForAaveStorage {
+contract MatchingEngineManager is PositionsManagerForAaveStorage {
     using DoubleLinkedList for DoubleLinkedList.List;
 
     /// @dev Updates borrowers matching engine with the new balances of a given account.
     /// @param _poolTokenAddress The address of the market on which Morpho want to update the borrower lists.
     /// @param _account The address of the borrower to move.
-    function updateBorrowers(address _poolTokenAddress, address _account) external override {
+    function updateBorrowers(address _poolTokenAddress, address _account) external {
         uint256 onPool = borrowBalanceInOf[_poolTokenAddress][_account].onPool;
         uint256 inP2P = borrowBalanceInOf[_poolTokenAddress][_account].inP2P;
         uint256 formerValueOnPool = borrowersOnPool[_poolTokenAddress].getValueOf(_account);
@@ -50,7 +50,7 @@ contract MatchingEngineManager is IMatchingEngineManager, PositionsManagerForAav
     /// @dev Updates suppliers matchin engine with the new balances of a given account.
     /// @param _poolTokenAddress The address of the market on which Morpho want to update the supplier lists.
     /// @param _account The address of the supplier to move.
-    function updateSuppliers(address _poolTokenAddress, address _account) external override {
+    function updateSuppliers(address _poolTokenAddress, address _account) external {
         uint256 onPool = supplyBalanceInOf[_poolTokenAddress][_account].onPool;
         uint256 inP2P = supplyBalanceInOf[_poolTokenAddress][_account].inP2P;
         uint256 formerValueOnPool = suppliersOnPool[_poolTokenAddress].getValueOf(_account);

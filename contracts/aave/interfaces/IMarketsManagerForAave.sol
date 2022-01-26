@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.7;
 
-import "contracts/compound/interfaces/dependencies/@openzeppelin/IOwnable.sol";
+import "./dependencies/@openzeppelin/IOwnable.sol";
 
 interface IMarketsManagerForAave is IOwnable {
     function MAX_BASIS_POINTS() external view returns (uint256);
@@ -10,35 +10,37 @@ interface IMarketsManagerForAave is IOwnable {
 
     function reserveFactor() external view returns (uint256);
 
-interface IMarketsManagerForAave {
-    // inherited from Ownable
-    function owner() external returns (address);
-
-    function renounceOwnership() external;
-
-    function transferOwnership(address newOwner) external;
-
     function isCreated(address) external view returns (bool);
+
+    function supplyP2PSPY(address) external view returns (uint256);
 
     function borrowP2PSPY(address) external view returns (uint256);
 
+    function supplyP2PExchangeRate(address) external view returns (uint256);
+
+    function borrowP2PExchangeRate(address) external view returns (uint256);
+
     function exchangeRatesLastUpdateTimestamp(address) external view returns (uint256);
+
+    function noP2P(address) external view returns (bool);
 
     function setPositionsManager(address _positionsManagerForAave) external;
 
-    function noP2P(address _marketAddress) external view returns (bool);
-
-    function supplyP2PSPY(address _marketAddress) external returns (uint256);
-
-    function setNmaxForMatchingEngine(uint16 _newMaxNumber) external;
+    function updateLendingPool() external;
 
     function setReserveFactor(uint256 _newReserveFactor) external;
 
-    function supplyP2PExchangeRate(address _marketAddress) external view returns (uint256);
+    function createMarket(
+        address _marketAddress,
+        uint256 _threshold,
+        uint256 _capValue
+    ) external;
 
-    function borrowP2PExchangeRate(address _marketAddress) external view returns (uint256);
+    function setThreshold(address _marketAddress, uint256 _newThreshold) external;
 
-    function updateCapValue(address _marketAddress, uint256 _newCapValue) external;
+    function setCapValue(address _marketAddress, uint256 _newCapValue) external;
+
+    function setNoP2P(address _marketAddress, bool _noP2P) external;
 
     function updateRates(address _marketAddress) external;
 }
