@@ -15,6 +15,7 @@ module.exports = {
     hardhat: {
       forking: {
         url: `https://${process.env.NETWORK}.g.alchemy.com/v2/${process.env.ALCHEMY_KEY}`,
+        blockNumber: 24032305
       },
       allowUnlimitedContractSize: true,
       blockGasLimit: 30000000,
