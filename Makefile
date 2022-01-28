@@ -1,4 +1,4 @@
-fork-block-number := 22747272
+fork-block-number := 24032305
 
 -include .env.local
 

@@ -136,6 +136,6 @@ contract TestSetup is DSTest, Config, Utils {
     }
 
     function testEquality(uint256 _firstValue, uint256 _secondValue) internal {
-        assertLe(getAbsDiff(_firstValue, _secondValue), 15);
+        assertLe(getAbsDiff(_firstValue, _secondValue), 20);
     }
 }
