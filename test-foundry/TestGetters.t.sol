@@ -13,6 +13,123 @@ contract TestGetters is TestSetup {
         uint256 liquidationThreshold;
     }
 
+    enum PositionType {
+        SUPPLIERS_IN_P2P,
+        SUPPLIERS_ON_POOL,
+        BORROWERS_IN_P2P,
+        BORROWERS_ON_POOL
+    }
+
+    function test_get_head() public {
+        uint256 amount = 10000 ether;
+        uint256 toBorrow = amount / 10;
+
+        borrower1.approve(dai, amount);
+        borrower1.supply(aDai, amount);
+
+        assertEq(
+            address(0),
+            positionsManager.getHead(aDai, PositionsManagerForAave.PositionType.SUPPLIERS_IN_P2P)
+        );
+        assertEq(
+            address(borrower1),
+            positionsManager.getHead(aDai, PositionsManagerForAave.PositionType.SUPPLIERS_ON_POOL)
+        );
+        assertEq(
+            address(0),
+            positionsManager.getHead(aDai, PositionsManagerForAave.PositionType.BORROWERS_IN_P2P)
+        );
+        assertEq(
+            address(0),
+            positionsManager.getHead(aDai, PositionsManagerForAave.PositionType.BORROWERS_ON_POOL)
+        );
+
+        borrower1.borrow(aDai, toBorrow);
+
+        assertEq(
+            address(borrower1),
+            positionsManager.getHead(aDai, PositionsManagerForAave.PositionType.SUPPLIERS_IN_P2P)
+        );
+        assertEq(
+            address(borrower1),
+            positionsManager.getHead(aDai, PositionsManagerForAave.PositionType.SUPPLIERS_ON_POOL)
+        );
+        assertEq(
+            address(borrower1),
+            positionsManager.getHead(aDai, PositionsManagerForAave.PositionType.BORROWERS_IN_P2P)
+        );
+        assertEq(
+            address(0),
+            positionsManager.getHead(aDai, PositionsManagerForAave.PositionType.BORROWERS_ON_POOL)
+        );
+
+        borrower1.borrow(aUsdc, to6Decimals(toBorrow));
+
+        assertEq(
+            address(borrower1),
+            positionsManager.getHead(aUsdc, PositionsManagerForAave.PositionType.BORROWERS_ON_POOL)
+        );
+    }
+
+    function test_get_next() public {
+        uint256 amount = 10000 ether;
+        uint256 toBorrow = to6Decimals(amount / 10);
+
+        setNMAXAndCreateSigners(10);
+        for (uint256 i; i < borrowers.length; i++) {
+            borrowers[i].approve(dai, amount - i);
+            borrowers[i].supply(aDai, amount - i);
+            borrowers[i].borrow(aUsdc, toBorrow - i);
+        }
+
+        address nextSupplyOnPool = address(borrowers[0]);
+        address nextBorrowOnPool = address(borrowers[0]);
+
+        for (uint256 i; i < borrowers.length - 1; i++) {
+            nextSupplyOnPool = positionsManager.getNext(
+                aDai,
+                PositionsManagerForAave.PositionType.SUPPLIERS_ON_POOL,
+                nextSupplyOnPool
+            );
+            nextBorrowOnPool = positionsManager.getNext(
+                aUsdc,
+                PositionsManagerForAave.PositionType.BORROWERS_ON_POOL,
+                nextBorrowOnPool
+            );
+
+            assertEq(nextSupplyOnPool, address(borrowers[i + 1]));
+            assertEq(nextBorrowOnPool, address(borrowers[i + 1]));
+        }
+
+        for (uint256 i; i < borrowers.length; i++) {
+            borrowers[i].borrow(aDai, (amount / 100) - i);
+        }
+
+        for (uint256 i; i < suppliers.length; i++) {
+            suppliers[i].approve(usdc, toBorrow - i);
+            suppliers[i].supply(aUsdc, toBorrow - i);
+        }
+
+        address nextSupplyInP2P = address(suppliers[0]);
+        address nextBorrowInP2P = address(borrowers[0]);
+
+        for (uint256 i; i < borrowers.length - 1; i++) {
+            nextSupplyInP2P = positionsManager.getNext(
+                aUsdc,
+                PositionsManagerForAave.PositionType.SUPPLIERS_IN_P2P,
+                nextSupplyInP2P
+            );
+            nextBorrowInP2P = positionsManager.getNext(
+                aDai,
+                PositionsManagerForAave.PositionType.BORROWERS_IN_P2P,
+                nextBorrowInP2P
+            );
+
+            assertEq(address(suppliers[i + 1]), nextSupplyInP2P);
+            assertEq(address(borrowers[i + 1]), nextBorrowInP2P);
+        }
+    }
+
     function test_user_liquidity_data_for_asset_with_nothing() public {
         PositionsManagerForAave.AssetLiquidityData memory assetData = positionsManager
         .getUserLiquidityDataForAsset(address(borrower1), aDai, oracle);
