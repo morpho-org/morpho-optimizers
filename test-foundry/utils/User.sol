@@ -9,15 +9,20 @@ contract User {
     PositionsManagerForAave internal positionsManager;
     MarketsManagerForAave internal marketsManager;
     RewardsManager internal rewardsManager;
+    ILendingPool public lendingPool;
+    IAaveIncentivesController public aaveIncentivesController;
 
     constructor(
         PositionsManagerForAave _positionsManager,
         MarketsManagerForAave _marketsManager,
-        RewardsManager _rewardsManager
+        RewardsManager _rewardsManager,
+        ILendingPool _lendingPool
     ) {
         positionsManager = _positionsManager;
         marketsManager = _marketsManager;
         rewardsManager = _rewardsManager;
+        lendingPool = _lendingPool;
+        aaveIncentivesController = positionsManager.aaveIncentivesController();
     }
 
     receive() external payable {}
@@ -84,6 +89,19 @@ contract User {
 
     function repay(address _poolTokenAddress, uint256 _amount) external {
         positionsManager.repay(_poolTokenAddress, _amount);
+    }
+
+    function aaveSupply(address _underlyingTokenAddress, uint256 _amount) external {
+        IERC20(_underlyingTokenAddress).approve(address(lendingPool), type(uint256).max);
+        lendingPool.deposit(_underlyingTokenAddress, _amount, address(this), 0); // 0 : no refferal code
+    }
+
+    function aaveBorrow(address _underlyingTokenAddress, uint256 _amount) external {
+        lendingPool.borrow(_underlyingTokenAddress, _amount, 2, 0, address(this)); // 2 : variable rate | 0 : no refferal code
+    }
+
+    function aaveClaimRewards(address[] memory assets) external {
+        aaveIncentivesController.claimRewards(assets, type(uint256).max, address(this));
     }
 
     function liquidate(
