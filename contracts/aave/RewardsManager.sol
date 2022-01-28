@@ -71,7 +71,7 @@ contract RewardsManager {
     ) external onlyPositionsManager returns (uint256 amountToClaim) {
         if (_amount == 0) return 0;
 
-        uint256 unclaimedRewards = getUserUnclaimedRewards(_assets, _user);
+        uint256 unclaimedRewards = accrueUserUnclaimedRewards(_assets, _user);
         if (unclaimedRewards == 0) return 0;
 
         amountToClaim = _amount > unclaimedRewards ? unclaimedRewards : _amount;
@@ -105,12 +105,12 @@ contract RewardsManager {
     /// @dev Accrues unclaimed rewards for the given assets and returns the total unclaimed rewards.
     /// @param _assets The assets for which to accrue rewards (aToken or variable debt token).
     /// @param _user The address of the user.
-    function getUserUnclaimedRewards(address[] calldata _assets, address _user)
+    /// @return unclaimedRewards The user unclaimed rewards.
+    function accrueUserUnclaimedRewards(address[] calldata _assets, address _user)
         public
-        returns (uint256)
+        returns (uint256 unclaimedRewards)
     {
-        uint256 unclaimedRewards = userUnclaimedRewards[_user];
-        uint256 accruedRewards;
+        unclaimedRewards = userUnclaimedRewards[_user];
 
         for (uint256 i = 0; i < _assets.length; i++) {
             address asset = _assets[i];
@@ -121,10 +121,10 @@ contract RewardsManager {
                 : positionsManager.supplyBalanceInOf(aTokenAddress, _user).onPool;
             uint256 totalStaked = IScaledBalanceToken(asset).scaledTotalSupply();
 
-            accruedRewards += _updateUserAsset(_user, asset, stakedByUser, totalStaked);
+            unclaimedRewards += _updateUserAsset(_user, asset, stakedByUser, totalStaked);
         }
 
-        return unclaimedRewards + accruedRewards;
+        userUnclaimedRewards[_user] = unclaimedRewards;
     }
 
     /// Internal ///

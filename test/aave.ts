@@ -1302,10 +1302,10 @@ describe('PositionsManagerForAave Contract', () => {
       expect((await positionsManagerForAave.supplyBalanceInOf(config.tokens.aUsdc.address, borrower1.getAddress())).onPool).to.equal(0);
       expect(
         removeDigitsBigNumber(
-          2,
+          3,
           (await positionsManagerForAave.supplyBalanceInOf(config.tokens.aUsdc.address, borrower1.getAddress())).inP2P
         )
-      ).to.equal(removeDigitsBigNumber(2, expectedCollateralBalanceInP2PAfter));
+      ).to.equal(removeDigitsBigNumber(3, expectedCollateralBalanceInP2PAfter));
       expect((await positionsManagerForAave.borrowBalanceInOf(config.tokens.aDai.address, borrower1.getAddress())).onPool).to.equal(0);
       expect(
         removeDigitsBigNumber(
