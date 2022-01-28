@@ -317,6 +317,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
             );
             emit BorrowP2PDeltaUpdated(_poolTokenAddress, borrowP2PDelta[_poolTokenAddress]);
         }
+
         supplyP2PAmount[_poolTokenAddress] -= _amount.divWadByRay(
             marketsManager.supplyP2PExchangeRate(_poolTokenAddress)
         );
