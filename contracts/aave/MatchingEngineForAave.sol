@@ -96,8 +96,10 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
             user = suppliersOnPool[poolTokenAddress].getHead();
         }
 
-        supplyP2PAmount[poolTokenAddress] += matchedSupply;
-        borrowP2PAmount[poolTokenAddress] += matchedSupply;
+        supplyP2PAmount[poolTokenAddress] += matchedSupply.divWadByRay(supplyP2PExchangeRate);
+        borrowP2PAmount[poolTokenAddress] += matchedSupply.divWadByRay(
+            marketsManager.borrowP2PExchangeRate(poolTokenAddress)
+        );
 
         if (matchedSupply > 0) {
             matchedSupply = Math.min(matchedSupply, _poolToken.balanceOf(address(this)));
@@ -149,8 +151,12 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         }
 
         supplyP2PDelta[_poolTokenAddress] += remainingToUnmatch;
-        supplyP2PAmount[_poolTokenAddress] -= _amount - remainingToUnmatch;
-        borrowP2PAmount[_poolTokenAddress] -= _amount;
+        supplyP2PAmount[_poolTokenAddress] -= (_amount - remainingToUnmatch).divWadByRay(
+            supplyP2PExchangeRate
+        );
+        borrowP2PAmount[_poolTokenAddress] -= _amount.divWadByRay(
+            marketsManager.borrowP2PExchangeRate(_poolTokenAddress)
+        );
 
         _supplyERC20ToPool(_poolTokenAddress, underlyingToken, _amount); // Revert on error
     }
@@ -204,8 +210,10 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
             user = borrowersOnPool[poolTokenAddress].getHead();
         }
 
-        borrowP2PAmount[poolTokenAddress] += matchedBorrow;
-        supplyP2PAmount[poolTokenAddress] += matchedBorrow;
+        supplyP2PAmount[poolTokenAddress] += matchedBorrow.divWadByRay(
+            marketsManager.supplyP2PExchangeRate(poolTokenAddress)
+        );
+        borrowP2PAmount[poolTokenAddress] += matchedBorrow.divWadByRay(borrowP2PExchangeRate);
 
         if (matchedBorrow > 0)
             _repayERC20ToPool(
@@ -262,8 +270,12 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         }
 
         borrowP2PDelta[_poolTokenAddress] += remainingToUnmatch;
-        borrowP2PAmount[_poolTokenAddress] -= _amount - remainingToUnmatch;
-        supplyP2PAmount[_poolTokenAddress] -= _amount;
+        supplyP2PAmount[_poolTokenAddress] -= _amount.divWadByRay(
+            marketsManager.supplyP2PExchangeRate(_poolTokenAddress)
+        );
+        borrowP2PAmount[_poolTokenAddress] -= (_amount - remainingToUnmatch).divWadByRay(
+            borrowP2PExchangeRate
+        );
 
         _borrowERC20FromPool(_poolTokenAddress, underlyingToken, _amount); // Revert on error
     }
