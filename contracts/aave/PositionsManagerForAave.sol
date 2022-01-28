@@ -354,6 +354,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
     /// @dev Gets the head of the data structure on a specific market (for UI).
     /// @param _poolTokenAddress The address of the market from which to get the head.
     /// @param _positionType The type of user from which to get the head.
+    /// @return head The head in the datastructure.
     function getHead(address _poolTokenAddress, PositionType _positionType)
         external
         view
@@ -369,23 +370,24 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
             head = borrowersOnPool[_poolTokenAddress].getHead();
     }
 
-    /// @dev Gets the previous user in the data structure on a specific market (for UI).
-    /// @param _poolTokenAddress The address of the market from which to get the head.
-    /// @param _positionType The type of user from which to get the previous account.
-    /// @param _user The address of the user from which to get the previous account.
-    function getPrev(
+    /// @dev Gets the next user after `_user` in the data structure on a specific market (for UI).
+    /// @param _poolTokenAddress The address of the market from which to get the user.
+    /// @param _positionType The type of user from which to get the next user.
+    /// @param _user The address of the user from which to get the next user.
+    /// @return next The next user in the data structure.
+    function getNext(
         address _poolTokenAddress,
         PositionType _positionType,
         address _user
-    ) external view returns (address prev) {
+    ) external view returns (address next) {
         if (_positionType == PositionType.SUPPLIERS_IN_P2P)
-            prev = suppliersInP2P[_poolTokenAddress].getPrev(_user);
+            next = suppliersInP2P[_poolTokenAddress].getNext(_user);
         else if (_positionType == PositionType.SUPPLIERS_ON_POOL)
-            prev = suppliersOnPool[_poolTokenAddress].getPrev(_user);
+            next = suppliersOnPool[_poolTokenAddress].getNext(_user);
         else if (_positionType == PositionType.BORROWERS_IN_P2P)
-            prev = borrowersInP2P[_poolTokenAddress].getPrev(_user);
+            next = borrowersInP2P[_poolTokenAddress].getNext(_user);
         else if (_positionType == PositionType.BORROWERS_ON_POOL)
-            prev = borrowersOnPool[_poolTokenAddress].getPrev(_user);
+            next = borrowersOnPool[_poolTokenAddress].getNext(_user);
     }
 
     /// @dev Supplies ERC20 tokens in a specific market.
