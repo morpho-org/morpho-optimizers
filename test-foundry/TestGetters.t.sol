@@ -103,12 +103,12 @@ contract TestGetters is TestSetup {
         uint256 maxDebtValue = (collateralValue * liquidationThreshold) / MAX_BASIS_POINTS;
         uint256 debtValue = (toBorrow * underlyingPrice) / tokenUnit;
 
-        assertEq(assetData.liquidationThreshold, liquidationThreshold);
-        assertEq(assetData.underlyingPrice, underlyingPrice);
-        assertEq(assetData.tokenUnit, tokenUnit);
-        assertEq(assetData.collateralValue, collateralValue);
-        assertEq(assetData.maxDebtValue, maxDebtValue);
-        assertEq(assetData.debtValue, debtValue);
+        testEquality(assetData.liquidationThreshold, liquidationThreshold);
+        testEquality(assetData.underlyingPrice, underlyingPrice);
+        testEquality(assetData.tokenUnit, tokenUnit);
+        testEquality(assetData.collateralValue, collateralValue);
+        testEquality(assetData.maxDebtValue, maxDebtValue);
+        testEquality(assetData.debtValue, debtValue);
     }
 
     function test_user_liquidity_data_for_asset_with_supply_and_borrow_with_different_assets()
