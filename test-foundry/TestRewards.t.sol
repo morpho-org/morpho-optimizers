@@ -4,8 +4,6 @@ pragma solidity 0.8.7;
 import "@contracts/aave/interfaces/aave/IAaveIncentivesController.sol";
 import "./utils/TestSetup.sol";
 
-import "hardhat/console.sol";
-
 contract TestRewards is TestSetup {
     // Should claim the right amount of rewards
     function test_claim() public {
@@ -117,17 +115,11 @@ contract TestRewards is TestSetup {
             tokensInArray,
             address(supplier1)
         );
-        console.log("1");
-        console.log("allUnclaimedRewards~~~", allUnclaimedRewards);
-        console.log("unclaimedRewardsForDai", unclaimedRewardsForDai);
         assertGt(allUnclaimedRewards, unclaimedRewardsForDai);
 
         supplier1.claimRewards(tokensInArray);
         uint256 rewardBalanceAfter = IERC20(wmatic).balanceOf(address(supplier1));
 
-        console.log("2");
-        console.log("rewardBalanceAfter~", rewardBalanceAfter);
-        console.log("rewardBalanceBefore", rewardBalanceBefore);
         assertGt(rewardBalanceAfter, rewardBalanceBefore);
 
         allUnclaimedRewards = rewardsManager.getUserUnclaimedRewards(
@@ -135,16 +127,12 @@ contract TestRewards is TestSetup {
             address(supplier1)
         );
 
-        console.log("3");
-        console.log("allUnclaimedRewards", allUnclaimedRewards);
         assertEq(allUnclaimedRewards, 0);
 
         uint256 protocolUnclaimedRewards = IAaveIncentivesController(
             aaveIncentivesControllerAddress
         ).getRewardsBalance(tokensInArray, address(positionsManager));
 
-        console.log("4");
-        console.log("protocolUnclaimedRewards", protocolUnclaimedRewards);
         assertEq(protocolUnclaimedRewards, 0);
     }
 
