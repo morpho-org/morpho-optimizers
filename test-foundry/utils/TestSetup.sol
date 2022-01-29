@@ -3,7 +3,6 @@ pragma solidity 0.8.7;
 
 import "hardhat/console.sol";
 
-import "lib/ds-test/src/test.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@contracts/aave/interfaces/aave/IPriceOracleGetter.sol";
 
@@ -16,7 +15,7 @@ import "./HEVM.sol";
 import "./Utils.sol";
 import "./User.sol";
 
-contract TestSetup is DSTest, Config, Utils {
+contract TestSetup is Config, Utils {
     using WadRayMath for uint256;
 
     uint256 public constant MAX_BASIS_POINTS = 10000;
@@ -133,9 +132,5 @@ contract TestSetup is DSTest, Config, Utils {
             writeBalanceOf(address(suppliers[suppliers.length - 1]), dai, type(uint256).max / 2);
             writeBalanceOf(address(suppliers[suppliers.length - 1]), usdc, type(uint256).max / 2);
         }
-    }
-
-    function testEquality(uint256 _firstValue, uint256 _secondValue) internal {
-        assertLe(getAbsDiff(_firstValue, _secondValue), 20);
     }
 }

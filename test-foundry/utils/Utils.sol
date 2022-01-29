@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.7;
 
-contract Utils {
+import "lib/ds-test/src/test.sol";
+
+contract Utils is DSTest {
     uint256 internal constant WAD = 1e18;
     uint256 internal constant RAY = 1e27;
     uint256 internal constant SECOND_PER_YEAR = 31536000;
@@ -68,5 +70,17 @@ contract Utils {
         }
 
         return b - a;
+    }
+
+    function testEquality(uint256 _firstValue, uint256 _secondValue) internal {
+        assertApproxEq(_firstValue, _secondValue, 20);
+    }
+
+    function testEquality(
+        uint256 _firstValue,
+        uint256 _secondValue,
+        string memory err
+    ) internal {
+        assertApproxEq(_firstValue, _secondValue, 20, err);
     }
 }
