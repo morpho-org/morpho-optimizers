@@ -33,7 +33,7 @@ contract RewardsManager {
 
     /// Errors ///
 
-    /// @notice Emitted when only the positions manager can call the function.
+    /// @notice Thrown when only the positions manager can call the function.
     error OnlyPositionsManager();
 
     /// Modifiers ///
@@ -134,7 +134,7 @@ contract RewardsManager {
     /// @param _asset The address of the reference asset of the distribution (aToken or variable debt token).
     /// @param _stakedByUser The amount of tokens staked by the user in the distribution at the moment.
     /// @param _totalStaked The total of tokens staked in the distribution.
-    /// @return accruedRewards The accrued rewards for the user until the moment.
+    /// @return accruedRewards The accrued rewards for the user until the moment for this asset.
     function _updateUserAsset(
         address _user,
         address _asset,
