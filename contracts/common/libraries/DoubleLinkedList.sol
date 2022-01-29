@@ -83,7 +83,7 @@ library DoubleLinkedList {
         uint256 _value,
         uint256 _maxIterations
     ) internal {
-        require(_list.accounts[_id].value == 0);
+        require(_list.accounts[_id].value == 0, "DLL: account already created");
 
         uint256 numberOfIterations;
         address current = _list.head;
