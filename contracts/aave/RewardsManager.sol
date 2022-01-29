@@ -10,7 +10,9 @@ import "./interfaces/IGetterUnderlyingAsset.sol";
 
 import {DistributionTypes} from "./libraries/aave/DistributionTypes.sol";
 
-contract RewardsManager {
+import "@openzeppelin/contracts/access/Ownable.sol";
+
+contract RewardsManager is Ownable {
     /// Structs ///
 
     struct LocalAssetData {
@@ -30,6 +32,12 @@ contract RewardsManager {
     ILendingPoolAddressesProvider public addressesProvider;
     IProtocolDataProvider public dataProvider;
     IPositionsManagerForAave public positionsManager;
+
+    /// Events ///
+
+    /// @dev Emitted the address of the `aaveIncentivesController` is set.
+    /// @param _aaveIncentivesController The new address of the `aaveIncentivesController`.
+    event AaveIncentivesControllerSet(address _aaveIncentivesController);
 
     /// Errors ///
 
@@ -51,14 +59,18 @@ contract RewardsManager {
     /// @param _positionsManagerAddress The address of the positions manager.
     constructor(address _lendingPoolAddressesProvider, address _positionsManagerAddress) {
         addressesProvider = ILendingPoolAddressesProvider(_lendingPoolAddressesProvider);
-        aaveIncentivesController = IAaveIncentivesController(
-            0x357D51124f59836DeD84c8a1730D72B749d8BC23
-        );
         dataProvider = IProtocolDataProvider(addressesProvider.getAddress(DATA_PROVIDER_ID));
         positionsManager = IPositionsManagerForAave(_positionsManagerAddress);
     }
 
     /// External ///
+
+    /// @dev Sets the `aaveIncentivesController`.
+    /// @param _aaveIncentivesController The address of the `aaveIncentivesController`.
+    function setAaveIncentivesController(address _aaveIncentivesController) external onlyOwner {
+        aaveIncentivesController = IAaveIncentivesController(_aaveIncentivesController);
+        emit AaveIncentivesControllerSet(_aaveIncentivesController);
+    }
 
     /// @dev Accrues unclaimed rewards for the given assets and returns the total unclaimed rewards.
     /// @param _assets The assets for which to accrue rewards (aToken or variable debt token).

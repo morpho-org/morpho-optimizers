@@ -187,7 +187,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
     event RewardsManagerSet(address _newRewardsManagerAddress);
 
     /// @dev Emitted the address of the `aaveIncentivesController` is set.
-    /// @param _aaveIncentivesController The new address of the `rewardsManager`.
+    /// @param _aaveIncentivesController The new address of the `aaveIncentivesController`.
     event AaveIncentivesControllerSet(address _aaveIncentivesController);
 
     /// @dev Emitted when a threshold of a market is set.
@@ -269,6 +269,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         if (msg.sender != address(marketsManagerForAave)) revert OnlyMarketsManager();
         _;
     }
+
     /// @dev Prevents a user to call function only allowed for `marketsManagerForAave`'s owner.
     modifier onlyMarketsManagerOwner() {
         if (msg.sender != marketsManagerForAave.owner()) revert OnlyMarketsManagerOwner();

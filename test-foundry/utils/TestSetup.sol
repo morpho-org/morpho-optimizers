@@ -75,6 +75,7 @@ contract TestSetup is DSTest, Config, Utils {
 
         marketsManager.setPositionsManager(address(positionsManager));
         positionsManager.setAaveIncentivesController(aaveIncentivesControllerAddress);
+        rewardsManager.setAaveIncentivesController(aaveIncentivesControllerAddress);
         positionsManager.setTreasuryVault(address(treasuryVault));
         positionsManager.setRewardsManager(address(rewardsManager));
         marketsManager.updateLendingPool();
@@ -93,7 +94,7 @@ contract TestSetup is DSTest, Config, Utils {
         pools.push(aWmatic);
 
         for (uint256 i = 0; i < 3; i++) {
-            suppliers.push(new User(positionsManager, marketsManager));
+            suppliers.push(new User(positionsManager, marketsManager, rewardsManager));
 
             writeBalanceOf(address(suppliers[i]), dai, type(uint256).max / 2);
             writeBalanceOf(address(suppliers[i]), usdc, type(uint256).max / 2);
@@ -103,7 +104,7 @@ contract TestSetup is DSTest, Config, Utils {
         supplier3 = suppliers[2];
 
         for (uint256 i = 0; i < 3; i++) {
-            borrowers.push(new User(positionsManager, marketsManager));
+            borrowers.push(new User(positionsManager, marketsManager, rewardsManager));
 
             writeBalanceOf(address(borrowers[i]), dai, type(uint256).max / 2);
             writeBalanceOf(address(borrowers[i]), usdc, type(uint256).max / 2);
@@ -125,11 +126,11 @@ contract TestSetup is DSTest, Config, Utils {
         positionsManager.setNmaxForMatchingEngine(_NMAX);
 
         while (borrowers.length < _NMAX) {
-            borrowers.push(new User(positionsManager, marketsManager));
+            borrowers.push(new User(positionsManager, marketsManager, rewardsManager));
             writeBalanceOf(address(borrowers[borrowers.length - 1]), dai, type(uint256).max / 2);
             writeBalanceOf(address(borrowers[borrowers.length - 1]), usdc, type(uint256).max / 2);
 
-            suppliers.push(new User(positionsManager, marketsManager));
+            suppliers.push(new User(positionsManager, marketsManager, rewardsManager));
             writeBalanceOf(address(suppliers[suppliers.length - 1]), dai, type(uint256).max / 2);
             writeBalanceOf(address(suppliers[suppliers.length - 1]), usdc, type(uint256).max / 2);
         }
