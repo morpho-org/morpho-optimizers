@@ -103,4 +103,12 @@ contract TestGovernance is TestSetup {
         marketsManager.setNoP2P(aDai, true);
         assertTrue(marketsManager.noP2P(aDai));
     }
+
+    function test_only_owner_can_set_aave_incentives_controller_on_rewards_manager() public {
+        hevm.expectRevert("Ownable: caller is not the owner");
+        supplier1.setAaveIncentivesControllerOnRewardsManager(address(0));
+
+        rewardsManager.setAaveIncentivesController(address(1));
+        assertEq(address(rewardsManager.aaveIncentivesController()), address(1));
+    }
 }
