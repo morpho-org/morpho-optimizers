@@ -41,7 +41,7 @@ contract TestSetup is Config, Utils {
     User public borrower2;
     User public borrower3;
     User[] public borrowers;
-    User public treasury;
+    User public treasuryVault;
 
     address[] public pools;
 
@@ -52,7 +52,7 @@ contract TestSetup is Config, Utils {
             lendingPoolAddressesProviderAddress
         );
 
-        treasury = new User(positionsManager, marketsManager);
+        treasuryVault = new User(positionsManager, marketsManager, rewardsManager);
 
         fakePositionsManager = new PositionsManagerForAave(
             address(marketsManager),
@@ -75,8 +75,10 @@ contract TestSetup is Config, Utils {
 
         marketsManager.setPositionsManager(address(positionsManager));
         positionsManager.setAaveIncentivesController(aaveIncentivesControllerAddress);
+
+        rewardsManager.setAaveIncentivesController(aaveIncentivesControllerAddress);
+        positionsManager.setTreasuryVault(address(treasuryVault));
         positionsManager.setRewardsManager(address(rewardsManager));
-        positionsManager.setTreasuryVault(address(treasury));
         marketsManager.updateLendingPool();
 
         // !!! WARNING !!!
@@ -93,7 +95,7 @@ contract TestSetup is Config, Utils {
         pools.push(aWmatic);
 
         for (uint256 i = 0; i < 3; i++) {
-            suppliers.push(new User(positionsManager, marketsManager));
+            suppliers.push(new User(positionsManager, marketsManager, rewardsManager));
 
             writeBalanceOf(address(suppliers[i]), dai, type(uint256).max / 2);
             writeBalanceOf(address(suppliers[i]), usdc, type(uint256).max / 2);
@@ -103,7 +105,7 @@ contract TestSetup is Config, Utils {
         supplier3 = suppliers[2];
 
         for (uint256 i = 0; i < 3; i++) {
-            borrowers.push(new User(positionsManager, marketsManager));
+            borrowers.push(new User(positionsManager, marketsManager, rewardsManager));
 
             writeBalanceOf(address(borrowers[i]), dai, type(uint256).max / 2);
             writeBalanceOf(address(borrowers[i]), usdc, type(uint256).max / 2);
@@ -125,11 +127,11 @@ contract TestSetup is Config, Utils {
         positionsManager.setNmaxForMatchingEngine(_NMAX);
 
         while (borrowers.length < _NMAX) {
-            borrowers.push(new User(positionsManager, marketsManager));
+            borrowers.push(new User(positionsManager, marketsManager, rewardsManager));
             writeBalanceOf(address(borrowers[borrowers.length - 1]), dai, type(uint256).max / 2);
             writeBalanceOf(address(borrowers[borrowers.length - 1]), usdc, type(uint256).max / 2);
 
-            suppliers.push(new User(positionsManager, marketsManager));
+            suppliers.push(new User(positionsManager, marketsManager, rewardsManager));
             writeBalanceOf(address(suppliers[suppliers.length - 1]), dai, type(uint256).max / 2);
             writeBalanceOf(address(suppliers[suppliers.length - 1]), usdc, type(uint256).max / 2);
         }

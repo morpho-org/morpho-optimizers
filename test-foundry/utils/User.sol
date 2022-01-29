@@ -3,14 +3,21 @@ pragma solidity 0.8.7;
 
 import "@contracts/aave/PositionsManagerForAave.sol";
 import "@contracts/aave/MarketsManagerForAave.sol";
+import "@contracts/aave/RewardsManager.sol";
 
 contract User {
     PositionsManagerForAave internal positionsManager;
     MarketsManagerForAave internal marketsManager;
+    RewardsManager internal rewardsManager;
 
-    constructor(PositionsManagerForAave _positionsManager, MarketsManagerForAave _marketsManager) {
+    constructor(
+        PositionsManagerForAave _positionsManager,
+        MarketsManagerForAave _marketsManager,
+        RewardsManager _rewardsManager
+    ) {
         positionsManager = _positionsManager;
         marketsManager = _marketsManager;
+        rewardsManager = _rewardsManager;
     }
 
     receive() external payable {}
@@ -87,5 +94,11 @@ contract User {
 
     function setTreasuryVault(address _newTreasuryVault) external {
         positionsManager.setTreasuryVault(_newTreasuryVault);
+    }
+
+    function setAaveIncentivesControllerOnRewardsManager(address _aaveIncentivesController)
+        external
+    {
+        rewardsManager.setAaveIncentivesController(_aaveIncentivesController);
     }
 }

@@ -146,7 +146,6 @@ contract MarketsManagerForAave is Ownable {
     /// @dev Sets the `reserveFactor`.
     /// @param _newReserveFactor The proportion of the interest earned by users sent to the DAO, in basis point.
     function setReserveFactor(uint256 _newReserveFactor) external onlyOwner {
-        reserveFactor = Math.min(50000, _newReserveFactor);
         for (uint256 i; i < marketsCreated.length; i++) {
             updateRates(marketsCreated[i]);
         }

@@ -124,6 +124,7 @@ describe('PositionsManagerForAave Contract', () => {
     // Create and list markets
     await marketsManagerForAave.connect(owner).setPositionsManager(positionsManagerForAave.address);
     await positionsManagerForAave.connect(owner).setAaveIncentivesController(config.aave.aaveIncentivesController.address);
+    await rewardsManager.connect(owner).setAaveIncentivesController(config.aave.aaveIncentivesController.address);
     await positionsManagerForAave.connect(owner).setTreasuryVault(treasuryVault.getAddress());
     await positionsManagerForAave.connect(owner).setRewardsManager(rewardsManager.address);
     await marketsManagerForAave.connect(owner).createMarket(config.tokens.aDai.address, WAD, MAX_INT);
@@ -1485,9 +1486,9 @@ describe('PositionsManagerForAave Contract', () => {
   });
 
   describe('Test fees', () => {
-    it('Should not be possible to set the fee factor higher than 100%', async () => {
-      await marketsManagerForAave.connect(owner).setReserveFactor(10001);
-      expect(await marketsManagerForAave.reserveFactor()).to.be.equal(10000);
+    it('Should not be possible to set the fee factor higher than 50%', async () => {
+      await marketsManagerForAave.connect(owner).setReserveFactor(5001);
+      expect(await marketsManagerForAave.reserveFactor()).to.be.equal(5000);
     });
 
     it('Only MarketsManager owner can set the treasury vault', async () => {
@@ -1533,27 +1534,6 @@ describe('PositionsManagerForAave Contract', () => {
       await positionsManagerForAave.connect(owner).claimToTreasury(config.tokens.aDai.address);
       const daoBalanceAfter = await daiToken.balanceOf(treasuryVault.getAddress());
       expect(daoBalanceAfter).to.equal(daoBalanceBefore);
-    });
-
-    it('Suppliers should not earn interests when DAO collect 100% fees', async () => {
-      await marketsManagerForAave.connect(owner).setReserveFactor('10000'); // 100%
-
-      const toSupply = utils.parseUnits('100');
-      const toSupplyCollateral = to6Decimals(utils.parseUnits('200'));
-      const toBorrow = utils.parseUnits('100');
-      const supplier1BalanceBefore = await daiToken.balanceOf(supplier1.getAddress());
-      await daiToken.connect(supplier1).approve(positionsManagerForAave.address, toSupply);
-      await usdcToken.connect(borrower1).approve(positionsManagerForAave.address, toSupplyCollateral);
-      await positionsManagerForAave.connect(borrower1).supply(config.tokens.aUsdc.address, toSupplyCollateral, 0);
-      await positionsManagerForAave.connect(borrower1).borrow(config.tokens.aDai.address, toBorrow, 0);
-      await positionsManagerForAave.connect(supplier1).supply(config.tokens.aDai.address, toSupply, 0);
-
-      // Wait 1 year
-      await hre.network.provider.send('evm_increaseTime', [365 * 24 * 60 * 60]);
-
-      await positionsManagerForAave.connect(supplier1).withdraw(config.tokens.aDai.address, MAX_INT);
-      const supplier1BalanceAfter = await daiToken.balanceOf(supplier1.getAddress());
-      expect(removeDigitsBigNumber(2, supplier1BalanceBefore)).to.equal(removeDigitsBigNumber(2, supplier1BalanceAfter));
     });
   });
 
