@@ -17,12 +17,12 @@ contract PositionsManagerForAaveStorage is ReentrancyGuard {
     /// Structs ///
 
     struct SupplyBalance {
-        uint256 inP2P; // In p2pUnit, a unit that grows in value, to keep track of the interests/debt increase when users are in p2p.
+        uint256 inP2P; // In supplier's p2pUnit, a unit that grows in value, to keep track of the interests earned when users are in P2P.
         uint256 onPool; // In aToken.
     }
 
     struct BorrowBalance {
-        uint256 inP2P; // In p2pUnit.
+        uint256 inP2P; // In borrower's p2pUnit, a unit that grows in value, to keep track of the interests paid when users are in P2P.
         uint256 onPool; // In adUnit, a unit that grows in value, to keep track of the debt increase when users are in Aave. Multiply by current borrowIndex to get the underlying amount.
     }
 
@@ -32,7 +32,7 @@ contract PositionsManagerForAaveStorage is ReentrancyGuard {
     uint16 public NMAX = 1000;
     uint8 public constant NO_REFERRAL_CODE = 0;
     uint8 public constant VARIABLE_INTEREST_MODE = 2;
-    uint256 public constant LIQUIDATION_CLOSE_FACTOR_PERCENT = 5000; // In basis points.
+    uint256 public constant LIQUIDATION_CLOSE_FACTOR_PERCENT = 5000; // 50 % in basis points.
     bytes32 public constant DATA_PROVIDER_ID =
         0x1000000000000000000000000000000000000000000000000000000000000000; // Id of the data provider.
     mapping(address => DoubleLinkedList.List) internal suppliersInP2P; // Suppliers in peer-to-peer.
@@ -42,9 +42,9 @@ contract PositionsManagerForAaveStorage is ReentrancyGuard {
     mapping(address => mapping(address => SupplyBalance)) public supplyBalanceInOf; // For a given market, the supply balance of a user.
     mapping(address => mapping(address => BorrowBalance)) public borrowBalanceInOf; // For a given market, the borrow balance of a user.
     mapping(address => mapping(address => bool)) public userMembership; // Whether the user is in the market or not.
-    mapping(address => address[]) public enteredMarkets; // Markets entered by a user.
+    mapping(address => address[]) public enteredMarkets; // The markets entered by a user.
     mapping(address => uint256) public threshold; // Thresholds below the ones suppliers and borrowers cannot enter markets.
-    mapping(address => uint256) public capValue; // Caps above the ones suppliers cannot add more liquidity.
+    mapping(address => uint256) public capValue; // Caps above which suppliers cannot add more liquidity.
 
     IMarketsManagerForAave public marketsManagerForAave;
     IAaveIncentivesController public aaveIncentivesController;
