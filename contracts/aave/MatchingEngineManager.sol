@@ -15,7 +15,7 @@ contract MatchingEngineManager is IMatchingEngineManager, PositionsManagerForAav
     using DoubleLinkedList for DoubleLinkedList.List;
 
     /// @dev Updates borrowers matching engine with the new balances of a given account.
-    /// @param _poolTokenAddress The address of the market on which Morpho want to update the borrower lists.
+    /// @param _poolTokenAddress The address of the market on which to update the borrowers data structure.
     /// @param _account The address of the borrower to move.
     function updateBorrowers(address _poolTokenAddress, address _account) external override {
         uint256 onPool = borrowBalanceInOf[_poolTokenAddress][_account].onPool;
@@ -47,8 +47,8 @@ contract MatchingEngineManager is IMatchingEngineManager, PositionsManagerForAav
             borrowersInP2P[_poolTokenAddress].insertSorted(_account, inP2P, NMAX);
     }
 
-    /// @dev Updates suppliers matchin engine with the new balances of a given account.
-    /// @param _poolTokenAddress The address of the market on which Morpho want to update the supplier lists.
+    /// @dev Updates suppliers matching engine with the new balances of a given account.
+    /// @param _poolTokenAddress The address of the market on which to update the suppliers data structure.
     /// @param _account The address of the supplier to move.
     function updateSuppliers(address _poolTokenAddress, address _account) external override {
         uint256 onPool = supplyBalanceInOf[_poolTokenAddress][_account].onPool;
