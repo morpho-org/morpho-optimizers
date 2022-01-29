@@ -29,7 +29,7 @@ contract MarketsManagerForAave is Ownable {
     mapping(address => uint256) public borrowP2PSPY; // Borrow Second Percentage Yield, in ray.
     mapping(address => uint256) public supplyP2PExchangeRate; // Current exchange rate from supply p2pUnit to underlying.
     mapping(address => uint256) public borrowP2PExchangeRate; // Current exchange rate from borrow p2pUnit to underlying.
-    mapping(address => uint256) public exchangeRatesLastUpdateTimestamp; // Last time p2pExchangeRates were updated.
+    mapping(address => uint256) public exchangeRatesLastUpdateTimestamp; // The last time the P2P exchange rates were updated.
     mapping(address => bool) public noP2P; // Whether to put users on pool or not for the given market.
 
     IPositionsManagerForAave public positionsManagerForAave;
@@ -42,9 +42,9 @@ contract MarketsManagerForAave is Ownable {
     /// @param _marketAddress The address of the market that has been created.
     event MarketCreated(address _marketAddress);
 
-    /// @dev Emitted when the lendingPool is set on the `positionsManagerForAave`.
+    /// @dev Emitted when the lendingPool is updated on the `positionsManagerForAave`.
     /// @param _lendingPoolAddress The address of the lending pool.
-    event LendingPoolSet(address _lendingPoolAddress);
+    event LendingPoolUpdated(address _lendingPoolAddress);
 
     /// @dev Emitted when the `positionsManagerForAave` is set.
     /// @param _positionsManagerForAave The address of the `positionsManagerForAave`.
@@ -70,7 +70,7 @@ contract MarketsManagerForAave is Ownable {
     event FeeFactorSet(uint256 _newValue);
 
     /// @dev Emitted when the P2P SPYs of a market are updated.
-    /// @param _marketAddress The address of the market to update.
+    /// @param _marketAddress The address of the market updated.
     /// @param _newSupplyP2PSPY The new value of the supply  P2P SPY.
     /// @param _newBorrowP2PSPY The new value of the borrow P2P SPY.
     event P2PSPYsUpdated(
@@ -80,7 +80,7 @@ contract MarketsManagerForAave is Ownable {
     );
 
     /// @dev Emitted when the p2p exchange rates of a market are updated.
-    /// @param _marketAddress The address of the market to update.
+    /// @param _marketAddress The address of the market updated.
     /// @param _newSupplyP2PExchangeRate The new value of the supply exchange rate from p2pUnit to underlying.
     /// @param _newBorrowP2PExchangeRate The new value of the borrow exchange rate from p2pUnit to underlying.
     event P2PExchangeRatesUpdated(
@@ -89,33 +89,24 @@ contract MarketsManagerForAave is Ownable {
         uint256 _newBorrowP2PExchangeRate
     );
 
-    /// @dev Emitted when a threshold of a market is updated.
-    /// @param _marketAddress The address of the market to update.
-    /// @param _newValue The new value of the threshold.
-    event ThresholdUpdated(address _marketAddress, uint256 _newValue);
-
     /// @dev Emitted when a cap value of a market is updated.
-    /// @param _marketAddress The address of the market to update.
+    /// @param _marketAddress The address of the market updated.
     /// @param _newValue The new value of the cap.
     event CapValueUpdated(address _marketAddress, uint256 _newValue);
 
-    /// @dev Emitted the maximum number of users to have in the tree is updated.
-    /// @param _newValue The new value of the maximum number of users to have in the tree.
-    event MaxNumberUpdated(uint16 _newValue);
-
-    /// @dev Emitted the `reserveFactor` is set.
+    /// @dev Emitted when the `reserveFactor` is set.
     /// @param _newValue The new value of the `reserveFactor`.
     event ReserveFactorSet(uint256 _newValue);
 
     /// Errors ///
 
-    /// @notice Emitted when the market is not created yet.
+    /// @notice Thrown when the market is not created yet.
     error MarketNotCreated();
 
-    /// @notice Emitted when the market is already created.
+    /// @notice Thrown when the market is already created.
     error MarketAlreadyCreated();
 
-    /// @notice Emitted when the positionsManager is already set.
+    /// @notice Thrown when the positionsManager is already set.
     error PositionsManagerAlreadySet();
 
     /// Modifiers ///
@@ -133,13 +124,13 @@ contract MarketsManagerForAave is Ownable {
     constructor(address _lendingPoolAddressesProvider) {
         addressesProvider = ILendingPoolAddressesProvider(_lendingPoolAddressesProvider);
         lendingPool = ILendingPool(addressesProvider.getLendingPool());
-        emit LendingPoolSet(address(lendingPool));
+        emit LendingPoolUpdated(address(lendingPool));
     }
 
     /// External ///
 
     /// @dev Sets the `positionsManagerForAave` to interact with Aave.
-    /// @param _positionsManagerForAave The address of compound module.
+    /// @param _positionsManagerForAave The address of the `positionsManagerForAave`.
     function setPositionsManager(address _positionsManagerForAave) external onlyOwner {
         if (address(positionsManagerForAave) != address(0)) revert PositionsManagerAlreadySet();
         positionsManagerForAave = IPositionsManagerForAave(_positionsManagerForAave);
@@ -149,20 +140,20 @@ contract MarketsManagerForAave is Ownable {
     /// @dev Updates the lending pool.
     function updateLendingPool() external onlyOwner {
         lendingPool = ILendingPool(addressesProvider.getLendingPool());
-        emit LendingPoolSet(address(lendingPool));
+        emit LendingPoolUpdated(address(lendingPool));
     }
 
     /// @dev Sets the `reserveFactor`.
     /// @param _newReserveFactor The proportion of the interest earned by users sent to the DAO, in basis point.
     function setReserveFactor(uint256 _newReserveFactor) external onlyOwner {
-        reserveFactor = Math.min(MAX_BASIS_POINTS, _newReserveFactor);
+        reserveFactor = Math.min(50000, _newReserveFactor);
         for (uint256 i; i < marketsCreated.length; i++) {
             updateRates(marketsCreated[i]);
         }
         emit ReserveFactorSet(reserveFactor);
     }
 
-    /// @dev Creates a new market to borrow/supply.
+    /// @dev Creates a new market to borrow/supply in.
     /// @param _marketAddress The addresses of the markets to add (aToken).
     /// @param _threshold The threshold to set for the market.
     /// @param _capValue The cap value to set for the market.
@@ -173,13 +164,13 @@ contract MarketsManagerForAave is Ownable {
     ) external onlyOwner {
         if (isCreated[_marketAddress]) revert MarketAlreadyCreated();
 
-        positionsManagerForAave.setThreshold(_marketAddress, _threshold);
-        positionsManagerForAave.setCapValue(_marketAddress, _capValue);
-
+        isCreated[_marketAddress] = true;
         exchangeRatesLastUpdateTimestamp[_marketAddress] = block.timestamp;
         supplyP2PExchangeRate[_marketAddress] = WadRayMath.ray();
         borrowP2PExchangeRate[_marketAddress] = WadRayMath.ray();
-        isCreated[_marketAddress] = true;
+
+        positionsManagerForAave.setThreshold(_marketAddress, _threshold);
+        positionsManagerForAave.setCapValue(_marketAddress, _capValue);
 
         _updateSPYs(_marketAddress);
         marketsCreated.push(_marketAddress);
@@ -224,7 +215,7 @@ contract MarketsManagerForAave is Ownable {
 
     /// Public ///
 
-    /// @dev Updates the P2P Second Percentage Yield and calculates the current P2P exchange rates.
+    /// @dev Updates the P2P Second Percentage Yield and the current P2P exchange rates.
     /// @param _marketAddress The address of the market we want to update.
     function updateRates(address _marketAddress) public isMarketCreated(_marketAddress) {
         if (exchangeRatesLastUpdateTimestamp[_marketAddress] != block.timestamp) {
@@ -235,7 +226,7 @@ contract MarketsManagerForAave is Ownable {
 
     /// Internal ///
 
-    /// @dev Updates the P2P exchange rate, taking into account the Second Percentage Yield (`p2pSPY`) since the last time it has been updated.
+    /// @dev Updates the P2P exchange rate, taking into account the Second Percentage Yield values.
     /// @param _marketAddress The address of the market to update.
     function _updateP2PExchangeRates(address _marketAddress) internal {
         uint256 timeDifference = block.timestamp - exchangeRatesLastUpdateTimestamp[_marketAddress];
