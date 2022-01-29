@@ -382,7 +382,7 @@ contract TestWithdraw is TestSetup {
     function test_withdraw_3_3_5() public {
         uint256 borrowedAmount = 1 ether;
         uint256 collateral = 2 * borrowedAmount;
-        uint256 suppliedAmount = 20 * borrowedAmount;
+        uint256 suppliedAmount = 20 * borrowedAmount + 7;
 
         // supplier1 and 100 borrowers are matched for suppliedAmount
         supplier1.approve(dai, suppliedAmount);
