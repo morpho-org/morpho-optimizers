@@ -19,14 +19,15 @@ contract MarketsManagerForAave is Ownable {
 
     /// Storage ///
 
-    uint256 public constant MAX_BASIS_POINTS = 10000;
-    uint256 public constant SECONDS_PER_YEAR = 365 days;
-    uint256 public reserveFactor; // Proportion of the interest earned by users sent to the DAO, in basis point (100% = 10000). The default value is 0.
+    uint16 public constant MAX_BASIS_POINTS = 10000; // 100% in basis point.
+    uint16 public constant HALF_MAX_BASIS_POINTS = 5000; // 50% in basis point.
+    uint16 public reserveFactor; // Proportion of the interest earned by users sent to the DAO, in basis point (100% = 10000). The default value is 0.
+    uint256 public constant SECONDS_PER_YEAR = 365 days; // The number of seconds in one year.
 
     address[] public marketsCreated; // Keeps track of the created markets.
     mapping(address => bool) public isCreated; // Whether or not this market is created.
-    mapping(address => uint256) public supplyP2PSPY; // Supply Second Percentage Yield, in ray.
-    mapping(address => uint256) public borrowP2PSPY; // Borrow Second Percentage Yield, in ray.
+    mapping(address => uint256) public supplyP2PSPY; // Supply Percentage Yield per second, in ray.
+    mapping(address => uint256) public borrowP2PSPY; // Borrow Percentage Yield per second, in ray.
     mapping(address => uint256) public supplyP2PExchangeRate; // Current exchange rate from supply p2pUnit to underlying.
     mapping(address => uint256) public borrowP2PExchangeRate; // Current exchange rate from borrow p2pUnit to underlying.
     mapping(address => uint256) public exchangeRatesLastUpdateTimestamp; // The last time the P2P exchange rates were updated.
@@ -65,10 +66,6 @@ contract MarketsManagerForAave is Ownable {
     /// @param _noP2P The new value of `_noP2P` adopted.
     event NoP2PSet(address _marketAddress, bool _noP2P);
 
-    /// @dev Emitted the `feeFactor` is set.
-    /// @param _newValue The new value of the `feeFactor`.
-    event FeeFactorSet(uint256 _newValue);
-
     /// @dev Emitted when the P2P SPYs of a market are updated.
     /// @param _marketAddress The address of the market updated.
     /// @param _newSupplyP2PSPY The new value of the supply  P2P SPY.
@@ -96,7 +93,7 @@ contract MarketsManagerForAave is Ownable {
 
     /// @dev Emitted when the `reserveFactor` is set.
     /// @param _newValue The new value of the `reserveFactor`.
-    event ReserveFactorSet(uint256 _newValue);
+    event ReserveFactorSet(uint16 _newValue);
 
     /// Errors ///
 
@@ -145,7 +142,10 @@ contract MarketsManagerForAave is Ownable {
 
     /// @dev Sets the `reserveFactor`.
     /// @param _newReserveFactor The proportion of the interest earned by users sent to the DAO, in basis point.
-    function setReserveFactor(uint256 _newReserveFactor) external onlyOwner {
+    function setReserveFactor(uint16 _newReserveFactor) external onlyOwner {
+        reserveFactor = HALF_MAX_BASIS_POINTS <= _newReserveFactor
+            ? HALF_MAX_BASIS_POINTS
+            : _newReserveFactor;
         for (uint256 i; i < marketsCreated.length; i++) {
             updateRates(marketsCreated[i]);
         }
