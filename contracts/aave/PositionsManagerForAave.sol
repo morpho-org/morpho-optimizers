@@ -632,7 +632,6 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
             (_amount * vars.borrowedPrice * vars.collateralTokenUnit * vars.liquidationBonus) /
             (vars.borrowedTokenUnit * vars.collateralPrice * MAX_BASIS_POINTS); // Same mechanism as aave. The collateral amount to seize is given.
         vars.normalizedIncome = lendingPool.getReserveNormalizedIncome(vars.tokenCollateralAddress);
-        marketsManagerForAave.updateRates(_poolTokenCollateralAddress);
         vars.totalCollateral =
             supplyBalanceInOf[_poolTokenCollateralAddress][_borrower].onPool.mulWadByRay(
                 vars.normalizedIncome
@@ -640,6 +639,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
             supplyBalanceInOf[_poolTokenCollateralAddress][_borrower].inP2P.mulWadByRay(
                 marketsManagerForAave.supplyP2PExchangeRate(_poolTokenCollateralAddress)
             );
+
         if (vars.amountToSeize > vars.totalCollateral) revert ToSeizeAboveCollateral();
 
         _withdraw(_poolTokenCollateralAddress, vars.amountToSeize, _borrower, msg.sender);
@@ -972,9 +972,8 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         address poolTokenAddress = address(_poolToken);
         uint256 onPoolSupply = supplyBalanceInOf[poolTokenAddress][_supplier].onPool;
         uint256 onPoolSupplyInUnderlying = onPoolSupply.mulWadByRay(normalizedIncome);
-        withdrawnInUnderlying = Math.min(onPoolSupplyInUnderlying, _amount);
         withdrawnInUnderlying = Math.min(
-            withdrawnInUnderlying,
+            Math.min(onPoolSupplyInUnderlying, _amount),
             _poolToken.balanceOf(address(this))
         );
 
@@ -1076,7 +1075,6 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
     function _supplyERC20ToPool(IERC20 _underlyingToken, uint256 _amount) internal {
         _underlyingToken.safeIncreaseAllowance(address(lendingPool), _amount);
         lendingPool.deposit(address(_underlyingToken), _amount, address(this), NO_REFERRAL_CODE);
-        lendingPool.setUserUseReserveAsCollateral(address(_underlyingToken), true);
     }
 
     /// @dev Withdraws underlying tokens from Aave.
