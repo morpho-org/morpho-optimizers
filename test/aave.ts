@@ -68,13 +68,40 @@ describe('PositionsManagerForAave Contract', () => {
     suppliers = [supplier1, supplier2, supplier3];
     borrowers = [borrower1, borrower2, borrower3];
 
+    const DataLogic= await ethers.getContractFactory('DataLogic');
+    const dataLogic = await DataLogic.deploy();
+    const MatchLogic= await ethers.getContractFactory('MatchLogic', {
+      libraries: {
+        DataLogic: dataLogic.address,
+      },
+    });
+    const matchLogic = await MatchLogic.deploy();
+    const P2PLogic= await ethers.getContractFactory('P2PLogic', {
+      libraries: {
+        DataLogic: dataLogic.address,
+        MatchLogic: matchLogic.address
+      },
+    });
+    const p2pLogic = await P2PLogic.deploy();
+    const PoolLogic= await ethers.getContractFactory('PoolLogic', {
+      libraries: {
+        DataLogic: dataLogic.address,
+      },
+    });
+    const poolLogic = await PoolLogic.deploy();
+
     // Deploy MarketsManagerForAave
-    const MarketsManagerForAave = await ethers.getContractFactory('MarketsManagerForAave');
+    const MarketsManagerForAave = await hre.ethers.getContractFactory('MarketsManagerForAave');
     marketsManagerForAave = await MarketsManagerForAave.deploy(config.aave.lendingPoolAddressesProvider.address);
     await marketsManagerForAave.deployed();
 
     // Deploy PositionsManagerForAave
-    const PositionsManagerForAave = await ethers.getContractFactory('PositionsManagerForAave');
+    const PositionsManagerForAave = await ethers.getContractFactory('PositionsManagerForAave', {
+      libraries: {
+        P2PLogic: p2pLogic.address,
+        PoolLogic: poolLogic.address
+      },
+    });
     positionsManagerForAave = await PositionsManagerForAave.deploy(
       marketsManagerForAave.address,
       config.aave.lendingPoolAddressesProvider.address

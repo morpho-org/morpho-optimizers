@@ -13,7 +13,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 
 /// @title MarketsManagerForAave
-/// @dev Smart contract managing the markets used by a MorphoPositionsManagerForAave contract, an other contract interacting with Aave or a fork of Aave.
+/// @notice Smart contract managing the markets used by a MorphoPositionsManagerForAave contract, an other contract interacting with Aave or a fork of Aave.
 contract MarketsManagerForAave is Ownable {
     using WadRayMath for uint256;
 
@@ -38,34 +38,34 @@ contract MarketsManagerForAave is Ownable {
 
     /// Events ///
 
-    /// @dev Emitted when a new market is created.
+    /// @notice Emitted when a new market is created.
     /// @param _marketAddress The address of the market that has been created.
     event MarketCreated(address _marketAddress);
 
-    /// @dev Emitted when the lendingPool is updated on the `positionsManagerForAave`.
+    /// @notice Emitted when the lendingPool is updated on the `positionsManagerForAave`.
     /// @param _lendingPoolAddress The address of the lending pool.
     event LendingPoolUpdated(address _lendingPoolAddress);
 
-    /// @dev Emitted when the `positionsManagerForAave` is set.
+    /// @notice Emitted when the `positionsManagerForAave` is set.
     /// @param _positionsManagerForAave The address of the `positionsManagerForAave`.
     event PositionsManagerSet(address _positionsManagerForAave);
 
-    /// @dev Emitted when a threshold of a market is set.
+    /// @notice Emitted when a threshold of a market is set.
     /// @param _marketAddress The address of the market to set.
     /// @param _newValue The new value of the threshold.
     event ThresholdSet(address _marketAddress, uint256 _newValue);
 
-    /// @dev Emitted when a cap value of a market is set.
+    /// @notice Emitted when a cap value of a market is set.
     /// @param _marketAddress The address of the market to set.
     /// @param _newValue The new value of the cap.
     event CapValueSet(address _marketAddress, uint256 _newValue);
 
-    /// @dev Emitted when a `noP2P` variable is set.
+    /// @notice Emitted when a `noP2P` variable is set.
     /// @param _marketAddress The address of the market to set.
     /// @param _noP2P The new value of `_noP2P` adopted.
     event NoP2PSet(address _marketAddress, bool _noP2P);
 
-    /// @dev Emitted when the P2P SPYs of a market are updated.
+    /// @notice Emitted when the P2P SPYs of a market are updated.
     /// @param _marketAddress The address of the market updated.
     /// @param _newSupplyP2PSPY The new value of the supply  P2P SPY.
     /// @param _newBorrowP2PSPY The new value of the borrow P2P SPY.
@@ -75,7 +75,7 @@ contract MarketsManagerForAave is Ownable {
         uint256 _newBorrowP2PSPY
     );
 
-    /// @dev Emitted when the p2p exchange rates of a market are updated.
+    /// @notice Emitted when the p2p exchange rates of a market are updated.
     /// @param _marketAddress The address of the market updated.
     /// @param _newSupplyP2PExchangeRate The new value of the supply exchange rate from p2pUnit to underlying.
     /// @param _newBorrowP2PExchangeRate The new value of the borrow exchange rate from p2pUnit to underlying.
@@ -85,12 +85,12 @@ contract MarketsManagerForAave is Ownable {
         uint256 _newBorrowP2PExchangeRate
     );
 
-    /// @dev Emitted when a cap value of a market is updated.
+    /// @notice Emitted when a cap value of a market is updated.
     /// @param _marketAddress The address of the market updated.
     /// @param _newValue The new value of the cap.
     event CapValueUpdated(address _marketAddress, uint256 _newValue);
 
-    /// @dev Emitted when the `reserveFactor` is set.
+    /// @notice Emitted when the `reserveFactor` is set.
     /// @param _newValue The new value of the `reserveFactor`.
     event ReserveFactorSet(uint16 _newValue);
 
@@ -107,7 +107,7 @@ contract MarketsManagerForAave is Ownable {
 
     /// Modifiers ///
 
-    /// @dev Prevents to update a market not created yet.
+    /// @notice Prevents to update a market not created yet.
     modifier isMarketCreated(address _marketAddress) {
         if (!isCreated[_marketAddress]) revert MarketNotCreated();
         _;
@@ -115,7 +115,7 @@ contract MarketsManagerForAave is Ownable {
 
     /// Constructor ///
 
-    /// @dev Constructs the MarketsManagerForAave contract.
+    /// @notice Constructs the MarketsManagerForAave contract.
     /// @param _lendingPoolAddressesProvider The address of the lending pool addresses provider.
     constructor(address _lendingPoolAddressesProvider) {
         addressesProvider = ILendingPoolAddressesProvider(_lendingPoolAddressesProvider);
@@ -125,7 +125,7 @@ contract MarketsManagerForAave is Ownable {
 
     /// External ///
 
-    /// @dev Sets the `positionsManagerForAave` to interact with Aave.
+    /// @notice Sets the `positionsManagerForAave` to interact with Aave.
     /// @param _positionsManagerForAave The address of the `positionsManagerForAave`.
     function setPositionsManager(address _positionsManagerForAave) external onlyOwner {
         if (address(positionsManagerForAave) != address(0)) revert PositionsManagerAlreadySet();
@@ -133,13 +133,13 @@ contract MarketsManagerForAave is Ownable {
         emit PositionsManagerSet(_positionsManagerForAave);
     }
 
-    /// @dev Updates the lending pool.
+    /// @notice Updates the lending pool.
     function updateLendingPool() external onlyOwner {
         lendingPool = ILendingPool(addressesProvider.getLendingPool());
         emit LendingPoolUpdated(address(lendingPool));
     }
 
-    /// @dev Sets the `reserveFactor`.
+    /// @notice Sets the `reserveFactor`.
     /// @param _newReserveFactor The proportion of the interest earned by users sent to the DAO, in basis point.
     function setReserveFactor(uint16 _newReserveFactor) external onlyOwner {
         reserveFactor = HALF_MAX_BASIS_POINTS <= _newReserveFactor
@@ -148,7 +148,7 @@ contract MarketsManagerForAave is Ownable {
         emit ReserveFactorSet(reserveFactor);
     }
 
-    /// @dev Creates a new market to borrow/supply in.
+    /// @notice Creates a new market to borrow/supply in.
     /// @param _marketAddress The addresses of the markets to add (aToken).
     /// @param _threshold The threshold to set for the market.
     /// @param _capValue The cap value to set for the market.
@@ -171,7 +171,7 @@ contract MarketsManagerForAave is Ownable {
         emit MarketCreated(_marketAddress);
     }
 
-    /// @dev Sets the threshold below which suppliers and borrowers cannot join a given market.
+    /// @notice Sets the threshold below which suppliers and borrowers cannot join a given market.
     /// @param _marketAddress The address of the market to change the threshold.
     /// @param _newThreshold The new threshold to set.
     function setThreshold(address _marketAddress, uint256 _newThreshold)
@@ -183,7 +183,7 @@ contract MarketsManagerForAave is Ownable {
         emit ThresholdSet(_marketAddress, _newThreshold);
     }
 
-    /// @dev Sets the cap value above which suppliers cannot supply more tokens.
+    /// @notice Sets the cap value above which suppliers cannot supply more tokens.
     /// @param _marketAddress The address of the market to change the max cap.
     /// @param _newCapValue The new max cap to set.
     function setCapValue(address _marketAddress, uint256 _newCapValue)
@@ -195,7 +195,7 @@ contract MarketsManagerForAave is Ownable {
         emit CapValueSet(_marketAddress, _newCapValue);
     }
 
-    /// @dev Sets whether to put everyone on pool or not.
+    /// @notice Sets whether to put everyone on pool or not.
     /// @param _marketAddress The address of the market.
     /// @param _noP2P Whether to put everyone on pool or not.
     function setNoP2P(address _marketAddress, bool _noP2P)
@@ -209,7 +209,7 @@ contract MarketsManagerForAave is Ownable {
 
     /// Public ///
 
-    /// @dev Updates the P2P Second Percentage Yield and the current P2P exchange rates.
+    /// @notice Updates the P2P Second Percentage Yield and the current P2P exchange rates.
     /// @param _marketAddress The address of the market we want to update.
     function updateRates(address _marketAddress) public isMarketCreated(_marketAddress) {
         if (exchangeRatesLastUpdateTimestamp[_marketAddress] != block.timestamp) {
@@ -220,7 +220,7 @@ contract MarketsManagerForAave is Ownable {
 
     /// Internal ///
 
-    /// @dev Updates the P2P exchange rate, taking into account the Second Percentage Yield values.
+    /// @notice Updates the P2P exchange rate, taking into account the Second Percentage Yield values.
     /// @param _marketAddress The address of the market to update.
     function _updateP2PExchangeRates(address _marketAddress) internal {
         uint256 timeDifference = block.timestamp - exchangeRatesLastUpdateTimestamp[_marketAddress];
@@ -243,7 +243,7 @@ contract MarketsManagerForAave is Ownable {
         );
     }
 
-    /// @dev Updates the P2P Second Percentage Yield of supply and borrow.
+    /// @notice Updates the P2P Second Percentage Yield of supply and borrow.
     /// @param _marketAddress The address of the market to update.
     function _updateSPYs(address _marketAddress) internal {
         DataTypes.ReserveData memory reserveData = lendingPool.getReserveData(
