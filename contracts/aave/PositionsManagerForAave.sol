@@ -498,15 +498,13 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         marketsManagerForAave.updateRates(_poolTokenAddress);
         IAToken poolToken = IAToken(_poolTokenAddress);
 
-        // Withdraw all
-        if (_amount == type(uint256).max) {
-            _amount = _getUserSupplyBalanceInOf(
-                _poolTokenAddress,
-                msg.sender,
-                poolToken.UNDERLYING_ASSET_ADDRESS()
-            );
-        }
+        uint256 supplierBalance = _getUserSupplyBalanceInOf(
+            _poolTokenAddress,
+            msg.sender,
+            poolToken.UNDERLYING_ASSET_ADDRESS()
+        );
 
+        _amount = Math.min(_amount, supplierBalance);
         _withdraw(_poolTokenAddress, _amount, msg.sender, msg.sender);
     }
 
@@ -519,15 +517,13 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         marketsManagerForAave.updateRates(_poolTokenAddress);
         IAToken poolToken = IAToken(_poolTokenAddress);
 
-        // Repay all
-        if (_amount == type(uint256).max) {
-            _amount = _getUserBorrowBalanceInOf(
-                _poolTokenAddress,
-                msg.sender,
-                poolToken.UNDERLYING_ASSET_ADDRESS()
-            );
-        }
+        uint256 borrowerBalance = _getUserBorrowBalanceInOf(
+            _poolTokenAddress,
+            msg.sender,
+            poolToken.UNDERLYING_ASSET_ADDRESS()
+        );
 
+        _amount = Math.min(_amount, borrowerBalance);
         _repay(_poolTokenAddress, msg.sender, _amount);
     }
 

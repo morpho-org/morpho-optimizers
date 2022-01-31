@@ -19,6 +19,20 @@ contract TestWithdraw is TestSetup {
         borrower1.withdraw(aUsdc, to6Decimals(collateral));
     }
 
+    // 3.1 bis - withdrawAll
+    function test_withdraw_3_1_All() public {
+        uint256 amount = 10000 ether;
+        uint256 collateral = 2 * amount;
+
+        borrower1.approve(usdc, to6Decimals(collateral));
+        borrower1.supply(aUsdc, to6Decimals(collateral));
+
+        borrower1.borrow(aDai, amount);
+
+        hevm.expectRevert(abi.encodeWithSignature("DebtValueAboveMax()"));
+        borrower1.withdraw(aUsdc, type(uint256).max);
+    }
+
     // 3.2 - The supplier withdraws less than his onPool balance. The liquidity is taken from his onPool balance.
     function test_withdraw_3_2() public {
         uint256 amount = 10000 ether;
@@ -182,7 +196,10 @@ contract TestWithdraw is TestSetup {
         );
 
         uint256 supplyP2PExchangeRate = marketsManager.supplyP2PExchangeRate(aDai);
-        uint256 expectedBorrowBalanceInP2P = underlyingToP2PUnit(borrowedAmount, supplyP2PExchangeRate);
+        uint256 expectedBorrowBalanceInP2P = underlyingToP2PUnit(
+            borrowedAmount,
+            supplyP2PExchangeRate
+        );
 
         testEquality(inP2PBorrower, expectedBorrowBalanceInP2P);
         testEquality(onPoolBorrower, 0);
@@ -277,6 +294,101 @@ contract TestWithdraw is TestSetup {
     // 3.3.4 - There are NMAX (or less) suppliers onPool available to replace him inP2P, they don't supply enough to cover the withdrawn liquidity.
     // First, the onPool liquidity is withdrawn, then we proceed to NMAX (or less) matches. Finally, some borrowers are unmatched for an amount equal to the remaining to withdraw.
     // ⚠️ most gas expensive withdraw scenario.
+    function test_withdraw_3_3_4_all() public {
+        uint256 borrowedAmount = 100000 ether;
+        uint256 suppliedAmount = 2 * borrowedAmount;
+        uint256 collateral = 2 * borrowedAmount;
+
+        // Borrower1 & supplier1 are matched for suppliedAmount
+        borrower1.approve(usdc, to6Decimals(collateral));
+        borrower1.supply(aUsdc, to6Decimals(collateral));
+        borrower1.borrow(aDai, borrowedAmount);
+
+        supplier1.approve(dai, suppliedAmount);
+        supplier1.supply(aDai, suppliedAmount);
+
+        // Check balances after match of borrower1 & supplier1
+        (uint256 inP2PBorrower, uint256 onPoolBorrower) = positionsManager.borrowBalanceInOf(
+            aDai,
+            address(borrower1)
+        );
+
+        (uint256 inP2PSupplier, uint256 onPoolSupplier) = positionsManager.supplyBalanceInOf(
+            aDai,
+            address(supplier1)
+        );
+
+        uint256 expectedOnPool = underlyingToScaledBalance(
+            suppliedAmount / 2,
+            lendingPool.getReserveNormalizedIncome(dai)
+        );
+
+        testEquality(onPoolSupplier, expectedOnPool);
+        testEquality(onPoolBorrower, 0);
+        testEquality(inP2PSupplier, inP2PBorrower);
+
+        // NMAX-1 suppliers have up to suppliedAmount/2 waiting on pool
+        uint16 NMAX = 20;
+        setNMAXAndCreateSigners(NMAX);
+
+        uint256 amountPerSupplier = (suppliedAmount - borrowedAmount) / (2 * (NMAX - 1));
+        // minus 1 because supplier1 must not be counted twice !
+        for (uint256 i = 0; i < NMAX; i++) {
+            if (suppliers[i] == supplier1) continue;
+
+            suppliers[i].approve(dai, amountPerSupplier);
+            suppliers[i].supply(aDai, amountPerSupplier);
+        }
+
+        // supplier withdraws all
+        supplier1.withdraw(aDai, type(uint256).max);
+
+        // Check balances for supplier1
+        (inP2PSupplier, onPoolSupplier) = positionsManager.supplyBalanceInOf(
+            aDai,
+            address(supplier1)
+        );
+        testEquality(onPoolSupplier, 0);
+        testEquality(inP2PSupplier, 0);
+
+        // Check balances for the borrower
+        (inP2PBorrower, onPoolBorrower) = positionsManager.borrowBalanceInOf(
+            aDai,
+            address(borrower1)
+        );
+
+        uint256 supplyP2PExchangeRate = marketsManager.supplyP2PExchangeRate(aDai);
+        uint256 expectedBorrowBalanceInP2P = underlyingToP2PUnit(
+            borrowedAmount / 2,
+            supplyP2PExchangeRate
+        );
+        uint256 expectedBorrowBalanceOnPool = underlyingToAdUnit(
+            borrowedAmount / 2,
+            lendingPool.getReserveNormalizedVariableDebt(dai)
+        );
+
+        testEquality(inP2PBorrower, expectedBorrowBalanceInP2P);
+        testEquality(onPoolBorrower, expectedBorrowBalanceOnPool);
+
+        uint256 inP2P;
+        uint256 onPool;
+
+        // Now test for each individual supplier that replaced the original
+        for (uint256 i = 0; i < suppliers.length; i++) {
+            if (suppliers[i] == supplier1) continue;
+
+            (inP2P, onPool) = positionsManager.supplyBalanceInOf(aDai, address(suppliers[i]));
+            uint256 expectedInP2P = p2pUnitToUnderlying(inP2P, supplyP2PExchangeRate);
+
+            testEquality(expectedInP2P, amountPerSupplier);
+            testEquality(onPool, 0);
+
+            (inP2P, onPool) = positionsManager.borrowBalanceInOf(aDai, address(borrowers[i]));
+            testEquality(inP2P, 0);
+        }
+    }
+
+    // 3.3.4 bis - withdrawAll
     function test_withdraw_3_3_4() public {
         uint256 borrowedAmount = 100000 ether;
         uint256 suppliedAmount = 2 * borrowedAmount;
