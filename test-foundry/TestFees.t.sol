@@ -15,7 +15,7 @@ contract TestFees is TestSetup {
     }
 
     // Only MarketsManager owner can set the treasury vault
-    function test_non_maket_manager_cant_set_vault() public {
+    function test_non_market_manager_cant_set_vault() public {
         hevm.expectRevert(abi.encodeWithSignature("OnlyMarketsManagerOwner()"));
         supplier1.setTreasuryVault(address(borrower1));
     }
