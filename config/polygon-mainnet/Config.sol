@@ -31,5 +31,6 @@ contract Config {
         // A tool to find the slot of tokens' balance: https://github.com/kendricktan/slot20
         slots[dai] = 0;
         slots[usdc] = 0;
+        slots[wbtc] = 0;
     }
 }
