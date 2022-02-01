@@ -148,6 +148,11 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
             user = suppliersInP2P[_poolTokenAddress].getHead();
         }
 
+        uint256 toSupply = Math.min(
+            _amount,
+            supplyP2PAmount[_poolTokenAddress].mulWadByRay(supplyP2PExchangeRate)
+        );
+
         supplyP2PDelta[_poolTokenAddress] += remainingToUnmatch;
         supplyP2PAmount[_poolTokenAddress] -= (_amount - remainingToUnmatch).divWadByRay(
             supplyP2PExchangeRate
@@ -155,8 +160,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         borrowP2PAmount[_poolTokenAddress] -= _amount.divWadByRay(
             marketsManager.borrowP2PExchangeRate(_poolTokenAddress)
         );
-
-        _supplyERC20ToPool(underlyingToken, _amount); // Revert on error
+        if (toSupply > 0) _supplyERC20ToPool(underlyingToken, toSupply); // Revert on error
     }
 
     /// @notice Matches borrowers' liquidity waiting on Aave for the given `_amount` and move it to P2P.
