@@ -136,4 +136,20 @@ contract TestSetup is Config, Utils {
             writeBalanceOf(address(suppliers[suppliers.length - 1]), usdc, type(uint256).max / 2);
         }
     }
+
+    function createSigners(uint16 _nbOfSigners) internal {
+        while (borrowers.length < _nbOfSigners) {
+            borrowers.push(new User(positionsManager, marketsManager));
+            writeBalanceOf(address(borrowers[borrowers.length - 1]), dai, type(uint256).max / 2);
+            writeBalanceOf(address(borrowers[borrowers.length - 1]), usdc, type(uint256).max / 2);
+
+            suppliers.push(new User(positionsManager, marketsManager));
+            writeBalanceOf(address(suppliers[suppliers.length - 1]), dai, type(uint256).max / 2);
+            writeBalanceOf(address(suppliers[suppliers.length - 1]), usdc, type(uint256).max / 2);
+        }
+    }
+
+    function testEquality(uint256 _firstValue, uint256 _secondValue) internal {
+        assertLe(getAbsDiff(_firstValue, _secondValue), 20);
+    }
 }
