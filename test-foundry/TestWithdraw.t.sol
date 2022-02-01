@@ -153,7 +153,8 @@ contract TestWithdraw is TestSetup {
 
         // NMAX-1 suppliers have up to suppliedAmount waiting on pool
         uint16 NMAX = 20;
-        setNMAXAndCreateSigners(NMAX);
+        positionsManager.setNmaxForMatchingEngine(NMAX);
+        createSigners(NMAX);
 
         uint256 amountPerSupplier = (suppliedAmount - borrowedAmount) / (NMAX - 1);
         // minus 1 because supplier1 must not be counted twice !
@@ -315,7 +316,8 @@ contract TestWithdraw is TestSetup {
 
         // NMAX-1 suppliers have up to suppliedAmount/2 waiting on pool
         uint16 NMAX = 20;
-        setNMAXAndCreateSigners(NMAX);
+        positionsManager.setNmaxForMatchingEngine(NMAX);
+        createSigners(NMAX);
 
         uint256 amountPerSupplier = (suppliedAmount - borrowedAmount) / (2 * (NMAX - 1));
         // minus 1 because supplier1 must not be counted twice !
