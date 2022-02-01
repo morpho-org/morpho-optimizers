@@ -73,7 +73,9 @@ contract TestGetters is TestSetup {
         uint256 amount = 10000 ether;
         uint256 toBorrow = to6Decimals(amount / 10);
 
-        setNMAXAndCreateSigners(10);
+        uint16 NMAX = 10;
+        positionsManager.setNmaxForMatchingEngine(NMAX);
+        createSigners(NMAX);
         for (uint256 i; i < borrowers.length; i++) {
             borrowers[i].approve(dai, amount - i);
             borrowers[i].supply(aDai, amount - i);
