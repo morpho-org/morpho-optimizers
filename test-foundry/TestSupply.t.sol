@@ -133,7 +133,8 @@ contract TestSupply is TestSetup {
         uint256 collateral = 2 * amount;
 
         uint16 NMAX = 20;
-        setNMAXAndCreateSigners(NMAX);
+        positionsManager.setNmaxForMatchingEngine(NMAX);
+        createSigners(NMAX);
 
         uint256 amountPerBorrower = amount / NMAX;
 
@@ -175,7 +176,8 @@ contract TestSupply is TestSetup {
         uint256 collateral = 2 * amount;
 
         uint16 NMAX = 20;
-        setNMAXAndCreateSigners(NMAX);
+        positionsManager.setNmaxForMatchingEngine(NMAX);
+        createSigners(NMAX);
 
         uint256 amountPerBorrower = amount / (2 * NMAX);
 

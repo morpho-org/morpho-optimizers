@@ -9,21 +9,26 @@ contract TestNmax is TestSetup {
     // Define the value of NMAX for the estimations
     uint16 public NMAX = 20;
 
-    // 1: Dai market P2P is full of matches.
+    // 1: DAI P2P is full of big matches so that the insert sorted also loops NMAX times.
     // 2: There are NMAX borrowers waiting on Pool.
     // 3: Alices comes and is matched to NMAX borrowers. The excess has to be supplied on pool.
     function test_supply_NMAX() public {
         // 0: Create Alice, set Nmax & create signers
-        User Alice = (new User(positionsManager, marketsManager));
+        User Alice = (new User(positionsManager, marketsManager, rewardsManager));
         writeBalanceOf(address(Alice), dai, type(uint256).max / 2);
         writeBalanceOf(address(Alice), usdc, type(uint256).max / 2);
         positionsManager.setNmaxForMatchingEngine(NMAX);
         createSigners(2 * NMAX);
 
-        uint256 aliceAmount = (NMAX + 10) * 1e18;
+        // Need to change NMAX to uint256 otherwise this calculation overflows.
+        uint256 NMAX_256 = NMAX;
+        uint256 aliceAmount = (NMAX_256 + 10) * 1e18;
+        // Amount breakdown:
+        // 2: because we need to match 2 times Nmax users
+        // +10*1e18: to have additional unmatched liquidity going to the pool.
 
         // 1: create NMAX big matches on DAI market
-        uint256 matchedAmount = (1000 * NMAX * 1e18);
+        uint256 matchedAmount = (1000 * NMAX_256 * 1e18);
         for (uint256 i = 0; i < NMAX; i++) {
             suppliers[i].approve(dai, matchedAmount);
             suppliers[i].supply(aDai, matchedAmount);
@@ -45,21 +50,26 @@ contract TestNmax is TestSetup {
         Alice.supply(aDai, aliceAmount);
     }
 
-    // 1: Dai market P2P is full of matches.
+    // 1: DAI P2P is full of big matches so that the insert sorted also loops NMAX times.
     // 2: There are NMAX suppliers waiting on Pool.
     // 3: Alices comes and is matched to NMAX suppliers. The excess has to be borrowed on pool.
     function test_borrow_NMAX() public {
         // 0: Create Alice, set Nmax & create signers
-        User Alice = (new User(positionsManager, marketsManager));
+        User Alice = (new User(positionsManager, marketsManager, rewardsManager));
         writeBalanceOf(address(Alice), dai, type(uint256).max / 2);
         writeBalanceOf(address(Alice), usdc, type(uint256).max / 2);
         positionsManager.setNmaxForMatchingEngine(NMAX);
         createSigners(2 * NMAX);
 
-        uint256 aliceAmount = (NMAX + 10) * 1e18;
+        // Need to change NMAX to uint256 otherwise this calculation overflows.
+        uint256 NMAX_256 = NMAX;
+        uint256 aliceAmount = (NMAX_256 + 10) * 1e18;
+        // Amount breakdown:
+        // 2: because we need to match 2 times Nmax users
+        // +10*1e18: to have additional unmatched liquidity going to the pool.
 
         // 1: create NMAX big matches on DAI market
-        uint256 matchedAmount = (1000 * NMAX * 1e18);
+        uint256 matchedAmount = (1000 * NMAX_256 * 1e18);
         for (uint256 i = 0; i < NMAX; i++) {
             suppliers[i].approve(dai, matchedAmount);
             suppliers[i].supply(aDai, matchedAmount);
@@ -76,27 +86,29 @@ contract TestNmax is TestSetup {
         }
 
         // 3: Alices comes and is matched to NMAX borrowers. The excess has to be supplied on pool.
-        Alice.approve(usdc, 2 * aliceAmount);
-        Alice.supply(aUsdc, 2 * aliceAmount);
+        Alice.approve(usdc, to6Decimals(2 * aliceAmount));
+        Alice.supply(aUsdc, to6Decimals(2 * aliceAmount));
         Alice.borrow(aDai, aliceAmount);
     }
 
-    // 1: DAI P2P is full of big matches.
+    // 1: DAI P2P is full of big matches so that the insert sorted also loops NMAX times.
     // 2: Alice supplies DAI, then 2*NMAX borrowers come and match her liquidity.
-    // 3: There are NMAX dai supplier on pool.
+    // 3: There are NMAX dai suppliers on pool.
     // 4: Alice withdraws everything.
     // 5: NMAX match suppliers.
-    // 6: NMAX unmatch borrower.
+    // 6: NMAX unmatch borrowers.
     function test_withdraw_NMAX() public {
-        // 0: Create Alice, set Nmax & create signers
-        User Alice = (new User(positionsManager, marketsManager));
+        // 0: create Alice, set Nmax & create signers.
+        User Alice = (new User(positionsManager, marketsManager, rewardsManager));
         writeBalanceOf(address(Alice), dai, type(uint256).max / 2);
         writeBalanceOf(address(Alice), usdc, type(uint256).max / 2);
         positionsManager.setNmaxForMatchingEngine(NMAX);
         createSigners(3 * NMAX);
 
         // 1: create NMAX big matches on DAI market
-        uint256 matchedAmount = (1000 * NMAX * 1e18);
+        // Need to change NMAX to uint256 otherwise this calculation overflows.
+        uint256 NMAX_256 = NMAX;
+        uint256 matchedAmount = (1000 * NMAX_256 * 1e18);
         for (uint256 i = 0; i < NMAX; i++) {
             suppliers[i].approve(dai, matchedAmount);
             suppliers[i].supply(aDai, matchedAmount);
@@ -107,7 +119,10 @@ contract TestNmax is TestSetup {
         }
 
         // 2: Alice comes to supply DAI & is matched with 2 NMAX borrowers
-        uint256 aliceAmount = 2 * NMAX * 1e18;
+        uint256 aliceAmount = (NMAX_256 + 10) * 1e18 * 2;
+        // Amount breakdown:
+        // 2: because we need to match 2 times Nmax users
+        // +10*1e18: to have additional unmatched liquidity going to the pool.
         Alice.approve(dai, aliceAmount);
         Alice.supply(aDai, aliceAmount);
 
@@ -128,22 +143,24 @@ contract TestNmax is TestSetup {
         Alice.withdraw(aDai, aliceAmount);
     }
 
-    // 1: DAI P2P is full of big matches.
+    // 1: DAI P2P is full of big matches so that the insert sorted also loops NMAX times.
     // 2: Alice borrows DAI, then 2*NMAX suppliers come and match her liquidity.
     // 3: There are NMAX dai borrowers on pool.
     // 4: Alice repays everything.
-    // 5: NMAX match borrower.
-    // 6: NMAX unmatch supplier.
+    // 5: NMAX match borrowers.
+    // 6: NMAX unmatch suppliers.
     function test_repay_NMAX() public {
         // 0: Create Alice, set Nmax & create signers
-        User Alice = (new User(positionsManager, marketsManager));
+        User Alice = (new User(positionsManager, marketsManager, rewardsManager));
         writeBalanceOf(address(Alice), dai, type(uint256).max / 2);
         writeBalanceOf(address(Alice), usdc, type(uint256).max / 2);
         positionsManager.setNmaxForMatchingEngine(NMAX);
         createSigners(3 * NMAX);
 
         // 1: create NMAX big matches on DAI market
-        uint256 matchedAmount = (1000 * NMAX * 1e18);
+        // Need to change NMAX to uint256 otherwise this calculation overflows.
+        uint256 NMAX_256 = NMAX;
+        uint256 matchedAmount = (1000 * NMAX_256 * 1e18);
         for (uint256 i = 0; i < NMAX; i++) {
             suppliers[i].approve(dai, matchedAmount);
             suppliers[i].supply(aDai, matchedAmount);
@@ -154,9 +171,12 @@ contract TestNmax is TestSetup {
         }
 
         // 2: Alice borrows DAI & is matched with 2*NMAX suppliers
-        uint256 aliceAmount = 2 * NMAX * 1e18;
-        Alice.approve(usdc, 2 * aliceAmount);
-        Alice.supply(aUsdc, 2 * aliceAmount);
+        uint256 aliceAmount = (NMAX_256 + 10) * 1e18 * 2;
+        // Amount breakdown:
+        // 2: because we need to match 2 times Nmax users
+        // +10*1e18: to have additional unmatched liquidity going to the pool.
+        Alice.approve(usdc, to6Decimals(2 * aliceAmount));
+        Alice.supply(aUsdc, to6Decimals(2 * aliceAmount));
         Alice.borrow(aDai, aliceAmount);
 
         for (uint256 i = NMAX; i < 3 * NMAX; i++) {
@@ -169,7 +189,7 @@ contract TestNmax is TestSetup {
             suppliers[i].approve(usdc, to6Decimals(2 * 1e18));
             suppliers[i].supply(aUsdc, to6Decimals(2 * 1e18));
 
-            suppliers[i].borrow(dai, 1e18);
+            suppliers[i].borrow(aDai, 1e18);
         }
 
         // 4: Alice repays everything
@@ -177,59 +197,116 @@ contract TestNmax is TestSetup {
         Alice.repay(aDai, aliceAmount);
     }
 
+    // 1: DAI P2P is full of big matches so that the insert sorted also loops NMAX times.
+    // 2: USDC P2P is full of big matches so that the insert sorted also loops NMAX times.
+    // 3: Alice supplies USDC, then 4*NMAX borrowers come and match her liquidity.
+    // 4: Alice borrows DAI, then 4*NMAX suppliers come and match her liquidity.
+    // 5: There are NMAX DAI borrowers on pool.
+    // 6: There are NMAX USDC suppliers on pool.
+    // 7: There is a price variation, Alice gets liquidated.
+    // 8: 50% of her debt is repaid, 50% of her collateral is withdrawn.
+    // 9: This result in NMAX match borrowers, NMAX unmatch suppliers and repaying on Pool.
+    // 10: Then, for the withdraw, NMAX match suppliers, NMAX unmatch borrowers and withdrawing on Pool.
     function test_liquidate_NMAX() public {
+        // 0: Create Alice, set Nmax & create signers
+        User Alice = (new User(positionsManager, marketsManager, rewardsManager));
+        writeBalanceOf(address(Alice), dai, type(uint256).max / 2);
+        writeBalanceOf(address(Alice), usdc, type(uint256).max / 2);
         positionsManager.setNmaxForMatchingEngine(NMAX);
+        createSigners(7 * NMAX);
 
-        while (borrowers.length < 2 * NMAX) {
-            borrowers.push(new User(positionsManager, marketsManager));
-            writeBalanceOf(address(borrowers[borrowers.length - 1]), dai, type(uint256).max / 2);
-            writeBalanceOf(address(borrowers[borrowers.length - 1]), usdc, type(uint256).max / 2);
+        // Need to change NMAX to uint256 otherwise there are overflows.
+        uint256 NMAX_256 = NMAX;
 
-            suppliers.push(new User(positionsManager, marketsManager));
-            writeBalanceOf(address(suppliers[suppliers.length - 1]), dai, type(uint256).max / 2);
-            writeBalanceOf(address(suppliers[suppliers.length - 1]), usdc, type(uint256).max / 2);
+        uint256 individualDaiAmount = 8 ether;
+        uint256 individualUsdcAmount = 10 ether;
+
+        // Amount breakdown:
+        // 4: because we need to match 4 times Nmax users
+        // NMAX_256: to avoid overflow
+        // individualUsdcAmount: representing 1 user's amount
+        // +10*individualUsdcAmount: to have additional unmatched liquidity going to the pool.
+        uint256 aliceCollateralAmount = 4 *
+            NMAX_256 *
+            individualUsdcAmount +
+            10 *
+            individualUsdcAmount;
+        uint256 aliceBorrowedAmount = 4 * NMAX_256 * individualDaiAmount + 10 * individualDaiAmount;
+
+        // 1: create NMAX big matches on DAI market
+        uint256 matchedAmount = 100 * individualDaiAmount * NMAX_256 * 1e18;
+        for (uint256 i = 0; i < NMAX; i++) {
+            suppliers[i].approve(dai, matchedAmount);
+            suppliers[i].supply(aDai, matchedAmount);
+
+            writeBalanceOf(address(borrowers[i]), wbtc, type(uint256).max / 2);
+            borrowers[i].approve(wbtc, 100 * to6Decimals(matchedAmount));
+            borrowers[i].supply(aWbtc, 100 * to6Decimals(matchedAmount));
+            borrowers[i].borrow(aDai, matchedAmount);
         }
 
-        uint256 collateral = 10000 ether;
-        uint256 debt = (collateral * 80) / 100;
+        // 2: create NMAX big matches on USDC market
+        for (uint256 i = NMAX; i < 2 * NMAX; i++) {
+            suppliers[i].approve(usdc, to6Decimals(matchedAmount));
+            suppliers[i].supply(aUsdc, to6Decimals(matchedAmount));
 
-        borrower1.approve(usdc, to6Decimals(collateral));
-        borrower1.supply(aUsdc, to6Decimals(collateral));
-        borrower1.borrow(aDai, debt);
-
-        uint256 suppliedPerUser = (debt) / (2 * NMAX);
-        uint256 borrowerPerUser = (collateral) / (2 * NMAX);
-
-        for (uint256 i = 0; i < 2 * NMAX; i++) {
-            writeBalanceOf(address(suppliers[i]), wbtc, 100 * 1e8);
-            suppliers[i].approve(wbtc, 10 * 1e8); // Just to increase the healf factor
-            suppliers[i].supply(aWbtc, 10 * 1e8); // without affecting matchs/unmatchs
-
-            suppliers[i].approve(dai, suppliedPerUser);
-            suppliers[i].supply(aDai, suppliedPerUser);
-
-            suppliers[i].borrow(aUsdc, to6Decimals(borrowerPerUser));
+            writeBalanceOf(address(borrowers[i]), wbtc, type(uint256).max / 2); // Use WBTC to avoid affecting DAI and USDC markets
+            borrowers[i].approve(wbtc, 100 * to6Decimals(matchedAmount));
+            borrowers[i].supply(aWbtc, 100 * to6Decimals(matchedAmount));
+            borrowers[i].borrow(aUsdc, to6Decimals(matchedAmount));
         }
 
-        // Change Oracle
+        // 3: Alice supplies USDC, then 4*NMAX borrowers come and match her liquidity.
+        Alice.approve(usdc, to6Decimals(aliceCollateralAmount));
+        Alice.supply(aUsdc, to6Decimals(aliceCollateralAmount));
+
+        for (uint256 i = 2 * NMAX; i < 6 * NMAX; i++) {
+            writeBalanceOf(address(borrowers[i]), wbtc, type(uint256).max / 2); // Use WBTC to avoid affecting DAI and USDC markets
+            borrowers[i].approve(wbtc, 100 * to6Decimals(individualUsdcAmount));
+            borrowers[i].supply(aWbtc, 100 * to6Decimals(individualUsdcAmount));
+
+            borrowers[i].borrow(aUsdc, to6Decimals(individualUsdcAmount));
+        }
+
+        // 4: Alice borrows DAI & is matched with 4*NMAX suppliers
+        Alice.borrow(aDai, aliceBorrowedAmount);
+
+        for (uint256 i = 2 * NMAX; i < 6 * NMAX; i++) {
+            suppliers[i].approve(dai, individualDaiAmount);
+            suppliers[i].supply(aDai, individualDaiAmount);
+        }
+
+        // 5: There are NMAX DAI borrowers on pool.
+        for (uint256 i = 6 * NMAX; i < 7 * NMAX; i++) {
+            writeBalanceOf(address(borrowers[i]), wbtc, type(uint256).max / 2); // Use WBTC to avoid affecting DAI and USDC markets
+            borrowers[i].approve(wbtc, 100 * to6Decimals(individualDaiAmount));
+            borrowers[i].supply(aWbtc, 100 * to6Decimals(individualDaiAmount));
+            borrowers[i].borrow(aDai, individualDaiAmount);
+        }
+
+        // 6: There are NMAX USDC suppliers on pool.
+        for (uint256 i = 4 * NMAX; i < 5 * NMAX; i++) {
+            suppliers[i].approve(usdc, to6Decimals(individualUsdcAmount));
+            suppliers[i].supply(aUsdc, to6Decimals(individualUsdcAmount));
+        }
+
+        // 7: There is a price variation, Alice gets liquidated.
         SimplePriceOracle customOracle = createAndSetCustomPriceOracle();
-        customOracle.setDirectPrice(dai, (oracle.getAssetPrice(dai) * 110) / 100);
+        customOracle.setDirectPrice(dai, (oracle.getAssetPrice(dai) * 11) / 10);
 
-        // Get the exact borrow balance in underlying to avoid rounding errors
-        (uint256 inP2PBorrower, uint256 onPoolBorrower) = positionsManager.borrowBalanceInOf(
+        (uint256 inP2PAlice, uint256 onPoolAlice) = positionsManager.borrowBalanceInOf(
             aDai,
-            address(borrower1)
+            address(Alice)
         );
 
-        uint256 totalBorrowed = aDUnitToUnderlying(
-            onPoolBorrower,
+        uint256 totalBorrowedAlice = aDUnitToUnderlying(
+            onPoolAlice,
             lendingPool.getReserveNormalizedVariableDebt(dai)
-        ) + p2pUnitToUnderlying(inP2PBorrower, marketsManager.borrowP2PExchangeRate(aDai));
+        ) + p2pUnitToUnderlying(inP2PAlice, marketsManager.borrowP2PExchangeRate(aDai));
 
-        // Liquidate
-        User liquidator = borrower3;
-        liquidator.approve(dai, address(positionsManager), totalBorrowed / 2);
-        liquidator.liquidate(aDai, aUsdc, address(borrower1), totalBorrowed / 2);
+        User liquidator = borrower1;
+        liquidator.approve(dai, address(positionsManager), totalBorrowedAlice / 2);
+        liquidator.liquidate(aDai, aUsdc, address(Alice), totalBorrowedAlice / 2);
     }
 
     function createAndSetCustomPriceOracle() public returns (SimplePriceOracle) {
