@@ -5,6 +5,8 @@ import "../interfaces/IMatchingEngineManager.sol";
 
 import "@openzeppelin/contracts/utils/Address.sol";
 
+/// @title DataLogic
+/// @notice Implement the base logic for data structure specific functions.
 library DataLogic {
     using Address for address;
 

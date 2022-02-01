@@ -15,6 +15,8 @@ import "./DataLogic.sol";
 
 import "@openzeppelin/contracts/utils/math/Math.sol";
 
+/// @title PoolLogic
+/// @notice Implement the base logic for Pool specific functions.
 library PoolLogic {
     using WadRayMath for uint256;
     using SafeERC20 for IERC20;

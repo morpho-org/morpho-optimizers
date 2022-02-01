@@ -12,6 +12,8 @@ import "./DataLogic.sol";
 
 import "@openzeppelin/contracts/utils/math/Math.sol";
 
+/// @title MatchLogic
+/// @notice Implement the base logic for (un)matching specific functions.
 library MatchLogic {
     using DoubleLinkedList for DoubleLinkedList.List;
     using WadRayMath for uint256;

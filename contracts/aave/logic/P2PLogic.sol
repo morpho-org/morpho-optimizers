@@ -9,6 +9,8 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "../libraries/aave/WadRayMath.sol";
 import "./MatchLogic.sol";
 
+/// @title P2PLogic
+/// @notice Implement the base logic for P2P specific functions.
 library P2PLogic {
     using WadRayMath for uint256;
     using SafeERC20 for IERC20;
