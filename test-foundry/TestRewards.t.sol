@@ -87,7 +87,6 @@ contract TestRewards is TestSetup {
         assertGt(unclaimedRewards, 0);
     }
 
-    // !! this one fails !!
     // Anyone should be able to claim rewards on several markets at once
     function test_claim_several_rewards_at_once() public {
         uint256 toSupply = 100 * WAD;
