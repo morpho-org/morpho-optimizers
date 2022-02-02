@@ -6,7 +6,7 @@ import "./interfaces/aave/IAaveIncentivesController.sol";
 import "./interfaces/aave/IProtocolDataProvider.sol";
 import "./interfaces/aave/ILendingPool.sol";
 import "./interfaces/IMarketsManagerForAave.sol";
-import "./interfaces/IMatchingEngineManager.sol";
+import "./interfaces/IMatchingEngineForAave.sol";
 import "./interfaces/IRewardsManager.sol";
 
 import "../common/libraries/DoubleLinkedList.sol";
@@ -51,6 +51,6 @@ contract PositionsManagerForAaveStorage is ReentrancyGuard {
     ILendingPoolAddressesProvider public addressesProvider;
     ILendingPool public lendingPool;
     IProtocolDataProvider public dataProvider;
-    IMatchingEngineManager public matchingEngineManager;
+    IMatchingEngineForAave public matchingEngineForAave;
     address public treasuryVault;
 }
