@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.7;
 
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+
 interface IPositionsManagerForAave {
     struct Balance {
         uint256 inP2P;
@@ -27,4 +29,16 @@ interface IPositionsManagerForAave {
     function borrowBalanceInOf(address, address) external returns (Balance memory);
 
     function supplyBalanceInOf(address, address) external returns (Balance memory);
+
+    function _supplyERC20ToPool(IERC20, uint256) external;
+
+    function _withdrawERC20FromPool(IERC20, uint256) external;
+
+    function _borrowERC20FromPool(IERC20, uint256) external;
+
+    function _repayERC20ToPool(
+        IERC20,
+        uint256,
+        uint256
+    ) external;
 }
