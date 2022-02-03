@@ -136,9 +136,7 @@ contract RewardsManager is Ownable {
             unclaimedRewards += _updateUserAsset(_user, asset, stakedByUser, totalStaked);
         }
 
-        userUnclaimedRewards[_user] += unclaimedRewards;
-
-        return unclaimedRewards;
+        userUnclaimedRewards[_user] = unclaimedRewards;
     }
 
     /// Internal ///
