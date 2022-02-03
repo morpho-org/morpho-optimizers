@@ -35,16 +35,18 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
 
     struct AssetLiquidityData {
         uint256 collateralValue; // The collateral value of the asset (in ETH).
+        uint256 liquidationValue; // The value which made liquidation possible (in ETH).
         uint256 maxDebtValue; // The maximum possible debt value of the asset (in ETH).
         uint256 debtValue; // The debt value of the asset (in ETH).
         uint256 tokenUnit; // The token unit considering its decimals.
         uint256 underlyingPrice; // The price of the token (in ETH).
         uint256 liquidationThreshold; // The liquidation threshold applied on this token (in basis point).
+        uint256 ltv; // The LTV applied on this token (in basis point).
     }
 
     struct LiquidateVars {
         uint256 debtValue; // The debt value (in ETH).
-        uint256 maxDebtValue; // The maximum debt value possible (in ETH).
+        uint256 liquidationValue; // The value for a possible liquidation (in ETH).
         address tokenBorrowedAddress; // The address of the borrowed asset.
         address tokenCollateralAddress; // The address of the collateral asset.
         uint256 borrowedPrice; // The price of the asset borrowed (in ETH).
@@ -572,13 +574,13 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         if (_amount == 0) revert AmountIsZero();
 
         LiquidateVars memory vars;
-        (vars.debtValue, vars.maxDebtValue) = _getUserHypotheticalBalanceStates(
+        (vars.debtValue, , vars.liquidationValue) = _getUserHypotheticalBalanceStates(
             _borrower,
             address(0),
             0,
             0
         );
-        if (vars.debtValue <= vars.maxDebtValue) revert DebtValueNotAboveMax();
+        if (vars.debtValue <= vars.liquidationValue) revert DebtValueNotAboveMax();
 
         IAToken poolTokenBorrowed = IAToken(_poolTokenBorrowedAddress);
         vars.tokenBorrowedAddress = poolTokenBorrowed.UNDERLYING_ASSET_ADDRESS();
@@ -639,13 +641,15 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
     /// @return collateralValue The collateral value of the user (in ETH).
     /// @return debtValue The current debt value of the user (in ETH).
     /// @return maxDebtValue The maximum possible debt value of the user (in ETH).
+    /// @return liquidationValue The value which made liquidation possible (in ETH).
     function getUserBalanceStates(address _user)
         external
         view
         returns (
             uint256 collateralValue,
             uint256 debtValue,
-            uint256 maxDebtValue
+            uint256 maxDebtValue,
+            uint256 liquidationValue
         )
     {
         IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
@@ -661,6 +665,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
             collateralValue += assetData.collateralValue;
             maxDebtValue += assetData.maxDebtValue;
             debtValue += assetData.debtValue;
+            liquidationValue += assetData.liquidationValue;
         }
     }
 
@@ -701,7 +706,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
             assetData.tokenUnit) / assetData.underlyingPrice;
 
         withdrawable = Math.min(
-            (differenceInUnderlying * MAX_BASIS_POINTS) / assetData.liquidationThreshold,
+            (differenceInUnderlying * MAX_BASIS_POINTS) / assetData.ltv,
             (assetData.collateralValue * assetData.tokenUnit) / assetData.underlyingPrice
         );
         borrowable = differenceInUnderlying;
@@ -734,8 +739,19 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         );
 
         assetData.underlyingPrice = oracle.getAssetPrice(underlyingAddress); // In ETH
-        (uint256 reserveDecimals, , uint256 liquidationThreshold, , , , , , , ) = dataProvider
-        .getReserveConfigurationData(underlyingAddress);
+        (
+            uint256 reserveDecimals,
+            uint256 ltv,
+            uint256 liquidationThreshold,
+            ,
+            ,
+            ,
+            ,
+            ,
+            ,
+
+        ) = dataProvider.getReserveConfigurationData(underlyingAddress);
+        assetData.ltv = ltv;
         assetData.liquidationThreshold = liquidationThreshold;
         assetData.tokenUnit = 10**reserveDecimals;
 
@@ -743,7 +759,8 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         assetData.collateralValue =
             (assetData.collateralValue * assetData.underlyingPrice) /
             assetData.tokenUnit;
-        assetData.maxDebtValue =
+        assetData.maxDebtValue = (assetData.collateralValue * ltv) / MAX_BASIS_POINTS;
+        assetData.liquidationValue =
             (assetData.collateralValue * liquidationThreshold) /
             MAX_BASIS_POINTS;
         assetData.debtValue =
@@ -1322,7 +1339,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         uint256 _withdrawnAmount,
         uint256 _borrowedAmount
     ) internal {
-        (uint256 debtValue, uint256 maxDebtValue) = _getUserHypotheticalBalanceStates(
+        (uint256 debtValue, uint256 maxDebtValue, ) = _getUserHypotheticalBalanceStates(
             _user,
             _poolTokenAddress,
             _withdrawnAmount,
@@ -1343,7 +1360,14 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         address _poolTokenAddress,
         uint256 _withdrawnAmount,
         uint256 _borrowedAmount
-    ) internal returns (uint256 debtValue, uint256 maxDebtValue) {
+    )
+        internal
+        returns (
+            uint256 debtValue,
+            uint256 maxDebtValue,
+            uint256 liquidationValue
+        )
+    {
         IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
 
         for (uint256 i; i < enteredMarkets[_user].length; i++) {
@@ -1355,6 +1379,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
                 oracle
             );
 
+            liquidationValue += assetData.liquidationValue;
             maxDebtValue += assetData.maxDebtValue;
             debtValue += assetData.debtValue;
 
@@ -1362,9 +1387,13 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
                 debtValue += (_borrowedAmount * assetData.underlyingPrice) / assetData.tokenUnit;
                 maxDebtValue -= Math.min(
                     maxDebtValue,
-                    (_withdrawnAmount *
-                        assetData.underlyingPrice *
-                        assetData.liquidationThreshold) / (assetData.tokenUnit * MAX_BASIS_POINTS)
+                    (_withdrawnAmount * assetData.underlyingPrice * assetData.ltv) /
+                        (assetData.tokenUnit * MAX_BASIS_POINTS)
+                );
+                liquidationValue -= Math.min(
+                    liquidationValue,
+                    (_withdrawnAmount * assetData.underlyingPrice * assetData.liquidationValue) /
+                        (assetData.tokenUnit * MAX_BASIS_POINTS)
                 );
             }
         }
