@@ -684,10 +684,16 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         uint256 differenceInUnderlying = ((data.maxDebtValue - data.debtValue) *
             assetData.tokenUnit) / assetData.underlyingPrice;
 
-        withdrawable = Math.min(
-            (differenceInUnderlying * MAX_BASIS_POINTS) / assetData.ltv,
-            (assetData.collateralValue * assetData.tokenUnit) / assetData.underlyingPrice
-        );
+        withdrawable =
+            (assetData.collateralValue * assetData.tokenUnit) /
+            assetData.underlyingPrice;
+        if (assetData.ltv != 0) {
+            withdrawable = Math.min(
+                withdrawable,
+                (differenceInUnderlying * MAX_BASIS_POINTS) / assetData.ltv
+            );
+        }
+
         borrowable = differenceInUnderlying;
     }
 
