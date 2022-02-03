@@ -6,17 +6,24 @@ import {IAToken} from "./interfaces/aave/IAToken.sol";
 import "./interfaces/aave/IPriceOracleGetter.sol";
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/math/Math.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "../common/libraries/DoubleLinkedList.sol";
 import "./libraries/aave/WadRayMath.sol";
 
-import "@openzeppelin/contracts/utils/math/Math.sol";
-import "./PositionsManagerForAaveStorage.sol";
+import "./interfaces/aave/ILendingPoolAddressesProvider.sol";
+import "./interfaces/aave/IAaveIncentivesController.sol";
+import "./interfaces/aave/IProtocolDataProvider.sol";
+import "./interfaces/IMarketsManagerForAave.sol";
+import "./interfaces/IMatchingEngineForAave.sol";
+import "./interfaces/aave/ILendingPool.sol";
+import "./interfaces/IRewardsManager.sol";
 import "./MatchingEngineForAave.sol";
 
 /// @title PositionsManagerForAave
 /// @dev Smart contract interacting with Aave to enable P2P supply/borrow positions that can fallback on Aave's pool using pool tokens.
-contract PositionsManagerForAave is PositionsManagerForAaveStorage {
+contract PositionsManagerForAave is ReentrancyGuard {
     using DoubleLinkedList for DoubleLinkedList.List;
     using WadRayMath for uint256;
     using SafeERC20 for IERC20;
@@ -24,12 +31,10 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
 
     /// Enums ///
 
-    enum PositionType {
-        SUPPLIERS_IN_P2P,
-        SUPPLIERS_ON_POOL,
-        BORROWERS_IN_P2P,
-        BORROWERS_ON_POOL
-    }
+    uint8 public SUPPLIERS_IN_P2P = 0;
+    uint8 public SUPPLIERS_ON_POOL = 1;
+    uint8 public BORROWERS_IN_P2P = 2;
+    uint8 public BORROWERS_ON_POOL = 3;
 
     /// Structs ///
 
@@ -64,6 +69,39 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         uint256 maxDebtValue; // The maximum debt value possible (in ETH).
         uint256 debtValue; // The debt value (in ETH).
     }
+
+    struct SupplyBalance {
+        uint256 inP2P; // In supplier's p2pUnit, a unit that grows in value, to keep track of the interests earned when users are in P2P.
+        uint256 onPool; // In aToken.
+    }
+
+    struct BorrowBalance {
+        uint256 inP2P; // In borrower's p2pUnit, a unit that grows in value, to keep track of the interests paid when users are in P2P.
+        uint256 onPool; // In adUnit, a unit that grows in value, to keep track of the debt increase when users are in Aave. Multiply by current borrowIndex to get the underlying amount.
+    }
+
+    uint256 public constant MAX_BASIS_POINTS = 10000;
+    uint8 public constant NO_REFERRAL_CODE = 0;
+    uint8 public constant VARIABLE_INTEREST_MODE = 2;
+    uint256 public constant LIQUIDATION_CLOSE_FACTOR_PERCENT = 5000; // 50 % in basis points.
+    bytes32 public constant DATA_PROVIDER_ID =
+        0x1000000000000000000000000000000000000000000000000000000000000000; // Id of the data provider.
+    mapping(address => mapping(address => bool)) public userMembership; // Whether the user is in the market or not.
+    mapping(address => address[]) public enteredMarkets; // The markets entered by a user.
+    mapping(address => uint256) public threshold; // Thresholds below the ones suppliers and borrowers cannot enter markets.
+    mapping(address => uint256) public capValue; // Caps above which suppliers cannot add more liquidity.
+
+    mapping(address => mapping(address => SupplyBalance)) public supplyBalanceInOf; // For a given market, the supply balance of a user.
+    mapping(address => mapping(address => BorrowBalance)) public borrowBalanceInOf; // For a given market, the borrow balance of a user.
+
+    IMarketsManagerForAave public marketsManagerForAave;
+    IAaveIncentivesController public aaveIncentivesController;
+    IRewardsManager public rewardsManager;
+    ILendingPoolAddressesProvider public addressesProvider;
+    ILendingPool public lendingPool;
+    IProtocolDataProvider public dataProvider;
+    MatchingEngineForAave public matchingEngineForAave;
+    address public treasuryVault;
 
     /// Events ///
 
@@ -146,10 +184,6 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
     /// @dev Emitted when the `lendingPool` is updated on the `positionsManagerForAave`.
     /// @param _lendingPoolAddress The address of the lending pool.
     event LendingPoolUpdated(address _lendingPoolAddress);
-
-    /// @dev Emitted the maximum number of users to have in the tree is updated.
-    /// @param _newValue The new value of the maximum number of users to have in the tree.
-    event MaxNumberSet(uint16 _newValue);
 
     /// @dev Emitted the address of the `treasuryVault` is set.
     /// @param _newTreasuryVaultAddress The new address of the `treasuryVault`.
@@ -259,7 +293,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         addressesProvider = ILendingPoolAddressesProvider(_lendingPoolAddressesProvider);
         dataProvider = IProtocolDataProvider(addressesProvider.getAddress(DATA_PROVIDER_ID));
         lendingPool = ILendingPool(addressesProvider.getLendingPool());
-        matchingEngineForAave = new MatchingEngineForAave(address(this));
+        matchingEngineForAave = new MatchingEngineForAave(address(this), _marketsManager);
     }
 
     /// @dev Updates the `lendingPool` and the `dataProvider`.
@@ -277,13 +311,6 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
     {
         aaveIncentivesController = IAaveIncentivesController(_aaveIncentivesController);
         emit AaveIncentivesControllerSet(_aaveIncentivesController);
-    }
-
-    /// @dev Sets the maximum number of users in data structure.
-    /// @param _newMaxNumber The maximum number of users to sort in the data structure.
-    function setNmaxForMatchingEngine(uint16 _newMaxNumber) external onlyMarketsManagerOwner {
-        NMAX = _newMaxNumber;
-        emit MaxNumberSet(_newMaxNumber);
     }
 
     /// @dev Sets the threshold of a market.
@@ -349,45 +376,6 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         }
     }
 
-    /// @dev Gets the head of the data structure on a specific market (for UI).
-    /// @param _poolTokenAddress The address of the market from which to get the head.
-    /// @param _positionType The type of user from which to get the head.
-    /// @return head The head in the data structure.
-    function getHead(address _poolTokenAddress, PositionType _positionType)
-        external
-        view
-        returns (address head)
-    {
-        if (_positionType == PositionType.SUPPLIERS_IN_P2P)
-            head = suppliersInP2P[_poolTokenAddress].getHead();
-        else if (_positionType == PositionType.SUPPLIERS_ON_POOL)
-            head = suppliersOnPool[_poolTokenAddress].getHead();
-        else if (_positionType == PositionType.BORROWERS_IN_P2P)
-            head = borrowersInP2P[_poolTokenAddress].getHead();
-        else if (_positionType == PositionType.BORROWERS_ON_POOL)
-            head = borrowersOnPool[_poolTokenAddress].getHead();
-    }
-
-    /// @dev Gets the next user after `_user` in the data structure on a specific market (for UI).
-    /// @param _poolTokenAddress The address of the market from which to get the user.
-    /// @param _positionType The type of user from which to get the next user.
-    /// @param _user The address of the user from which to get the next user.
-    /// @return next The next user in the data structure.
-    function getNext(
-        address _poolTokenAddress,
-        PositionType _positionType,
-        address _user
-    ) external view returns (address next) {
-        if (_positionType == PositionType.SUPPLIERS_IN_P2P)
-            next = suppliersInP2P[_poolTokenAddress].getNext(_user);
-        else if (_positionType == PositionType.SUPPLIERS_ON_POOL)
-            next = suppliersOnPool[_poolTokenAddress].getNext(_user);
-        else if (_positionType == PositionType.BORROWERS_IN_P2P)
-            next = borrowersInP2P[_poolTokenAddress].getNext(_user);
-        else if (_positionType == PositionType.BORROWERS_ON_POOL)
-            next = borrowersOnPool[_poolTokenAddress].getNext(_user);
-    }
-
     /// @dev Supplies underlying tokens in a specific market.
     /// @param _poolTokenAddress The address of the market the user wants to supply.
     /// @param _amount The amount of token (in underlying).
@@ -412,7 +400,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
 
         /* If some borrowers are waiting on Aave, Morpho matches the supplier in P2P with them as much as possible */
         if (
-            borrowersOnPool[_poolTokenAddress].getHead() != address(0) &&
+            matchingEngineForAave.getHead(_poolTokenAddress, BORROWERS_ON_POOL) != address(0) &&
             !marketsManagerForAave.noP2P(_poolTokenAddress)
         )
             remainingToSupplyToPool -= _supplyPositionToP2P(
@@ -463,7 +451,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
 
         /* If some suppliers are waiting on Aave, Morpho matches the borrower in P2P with them as much as possible */
         if (
-            suppliersOnPool[_poolTokenAddress].getHead() != address(0) &&
+            matchingEngineForAave.getHead(_poolTokenAddress, SUPPLIERS_ON_POOL) != address(0) &&
             !marketsManagerForAave.noP2P(_poolTokenAddress)
         )
             remainingToBorrowOnPool -= _borrowPositionFromP2P(
@@ -1209,5 +1197,41 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
             borrowBalanceInOf[_poolTokenAddress][_user].onPool.mulWadByRay(
                 lendingPool.getReserveNormalizedVariableDebt(_underlyingTokenAddress)
             );
+    }
+
+    function updateSupplyBalanceInOfOnPool(
+        address _poolTokenAddress,
+        address _user,
+        int256 _amount
+    ) external {
+        if (_amount > 0) supplyBalanceInOf[_poolTokenAddress][_user].onPool += uint256(_amount);
+        else supplyBalanceInOf[_poolTokenAddress][_user].onPool -= uint256(-_amount);
+    }
+
+    function updateSupplyBalanceInOfInP2P(
+        address _poolTokenAddress,
+        address _user,
+        int256 _amount
+    ) external {
+        if (_amount > 0) supplyBalanceInOf[_poolTokenAddress][_user].inP2P += uint256(_amount);
+        else supplyBalanceInOf[_poolTokenAddress][_user].inP2P -= uint256(-_amount);
+    }
+
+    function updateBorrowBalanceInOfOnPool(
+        address _poolTokenAddress,
+        address _user,
+        int256 _amount
+    ) external {
+        if (_amount > 0) borrowBalanceInOf[_poolTokenAddress][_user].onPool += uint256(_amount);
+        else borrowBalanceInOf[_poolTokenAddress][_user].onPool -= uint256(-_amount);
+    }
+
+    function updateBorrowBalanceInOfInP2P(
+        address _poolTokenAddress,
+        address _user,
+        int256 _amount
+    ) external {
+        if (_amount > 0) borrowBalanceInOf[_poolTokenAddress][_user].inP2P += uint256(_amount);
+        else borrowBalanceInOf[_poolTokenAddress][_user].inP2P -= uint256(-_amount);
     }
 }

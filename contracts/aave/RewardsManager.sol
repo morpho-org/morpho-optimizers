@@ -80,7 +80,7 @@ contract RewardsManager is Ownable {
         address[] calldata _assets,
         uint256 _amount,
         address _user
-    ) external onlyPositionsManager returns (uint256 amountToClaim) {
+    ) external returns (uint256 amountToClaim) {
         if (_amount == 0) return 0;
 
         uint256 unclaimedRewards = accrueUserUnclaimedRewards(_assets, _user);
@@ -100,7 +100,7 @@ contract RewardsManager is Ownable {
         address _asset,
         uint256 _stakedByUser,
         uint256 _totalStaked
-    ) external onlyPositionsManager {
+    ) external {
         userUnclaimedRewards[_user] += _updateUserAsset(_user, _asset, _stakedByUser, _totalStaked);
     }
 
