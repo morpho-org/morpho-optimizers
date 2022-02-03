@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.7;
 
+import {IVariableDebtToken} from "./interfaces/aave/IVariableDebtToken.sol";
 import "./interfaces/aave/ILendingPoolAddressesProvider.sol";
 import "./interfaces/aave/IAaveIncentivesController.sol";
 import "./interfaces/aave/IProtocolDataProvider.sol";
@@ -9,11 +10,18 @@ import "./interfaces/IMarketsManagerForAave.sol";
 import "./interfaces/IMatchingEngineForAave.sol";
 import "./interfaces/IRewardsManager.sol";
 
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/utils/math/Math.sol";
 import "../common/libraries/DoubleLinkedList.sol";
+import "./libraries/aave/WadRayMath.sol";
 
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 contract PositionsManagerForAaveStorage is ReentrancyGuard {
+    using WadRayMath for uint256;
+    using SafeERC20 for IERC20;
+    using Math for uint256;
+
     /// Structs ///
 
     struct SupplyBalance {
@@ -53,4 +61,62 @@ contract PositionsManagerForAaveStorage is ReentrancyGuard {
     IProtocolDataProvider public dataProvider;
     IMatchingEngineForAave public matchingEngineForAave;
     address public treasuryVault;
+
+    /// Internal ///
+
+    /// @dev Supplies undelrying tokens to Aave.
+    /// @param _underlyingToken The underlying token of the market to supply to.
+    /// @param _amount The amount of token (in underlying).
+    function _supplyERC20ToPool(IERC20 _underlyingToken, uint256 _amount) public {
+        _underlyingToken.safeIncreaseAllowance(address(lendingPool), _amount);
+        lendingPool.deposit(address(_underlyingToken), _amount, address(this), NO_REFERRAL_CODE);
+    }
+
+    /// @dev Withdraws underlying tokens from Aave.
+    /// @param _underlyingToken The underlying token of the market to withdraw from.
+    /// @param _amount The amount of token (in underlying).
+    function _withdrawERC20FromPool(IERC20 _underlyingToken, uint256 _amount) public {
+        lendingPool.withdraw(address(_underlyingToken), _amount, address(this));
+    }
+
+    /// @dev Borrows underlying tokens from Aave.
+    /// @param _underlyingToken The underlying token of the market to borrow from.
+    /// @param _amount The amount of token (in underlying).
+    function _borrowERC20FromPool(IERC20 _underlyingToken, uint256 _amount) public {
+        lendingPool.borrow(
+            address(_underlyingToken),
+            _amount,
+            VARIABLE_INTEREST_MODE,
+            NO_REFERRAL_CODE,
+            address(this)
+        );
+    }
+
+    /// @dev Repays underlying tokens to Aave.
+    /// @param _underlyingToken The underlying token of the market to repay to.
+    /// @param _amount The amount of token (in underlying).
+    /// @param _normalizedVariableDebt The normalized variable debt on Aave.
+    function _repayERC20ToPool(
+        IERC20 _underlyingToken,
+        uint256 _amount,
+        uint256 _normalizedVariableDebt
+    ) public {
+        _underlyingToken.safeIncreaseAllowance(address(lendingPool), _amount);
+        (, , address variableDebtToken) = dataProvider.getReserveTokensAddresses(
+            address(_underlyingToken)
+        );
+        // Do not repay more than the contract's debt on Aave
+        _amount = Math.min(
+            _amount,
+            IVariableDebtToken(variableDebtToken).scaledBalanceOf(address(this)).mulWadByRay(
+                _normalizedVariableDebt
+            )
+        );
+        lendingPool.repay(
+            address(_underlyingToken),
+            _amount,
+            VARIABLE_INTEREST_MODE,
+            address(this)
+        );
+    }
 }
