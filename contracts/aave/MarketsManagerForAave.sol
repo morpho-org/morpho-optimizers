@@ -56,11 +56,6 @@ contract MarketsManagerForAave is Ownable {
     /// @param _newValue The new value of the threshold.
     event ThresholdSet(address _marketAddress, uint256 _newValue);
 
-    /// @dev Emitted when a cap value of a market is set.
-    /// @param _marketAddress The address of the market to set.
-    /// @param _newValue The new value of the cap.
-    event CapValueSet(address _marketAddress, uint256 _newValue);
-
     /// @dev Emitted when a `noP2P` variable is set.
     /// @param _marketAddress The address of the market to set.
     /// @param _noP2P The new value of `_noP2P` adopted.
@@ -85,11 +80,6 @@ contract MarketsManagerForAave is Ownable {
         uint256 _newSupplyP2PExchangeRate,
         uint256 _newBorrowP2PExchangeRate
     );
-
-    /// @dev Emitted when a cap value of a market is updated.
-    /// @param _marketAddress The address of the market updated.
-    /// @param _newValue The new value of the cap.
-    event CapValueUpdated(address _marketAddress, uint256 _newValue);
 
     /// @dev Emitted when the `reserveFactor` is set.
     /// @param _newValue The new value of the `reserveFactor`.
@@ -155,12 +145,7 @@ contract MarketsManagerForAave is Ownable {
     /// @dev Creates a new market to borrow/supply in.
     /// @param _marketAddress The addresses of the markets to add (aToken).
     /// @param _threshold The threshold to set for the market.
-    /// @param _capValue The cap value to set for the market.
-    function createMarket(
-        address _marketAddress,
-        uint256 _threshold,
-        uint256 _capValue
-    ) external onlyOwner {
+    function createMarket(address _marketAddress, uint256 _threshold) external onlyOwner {
         if (isCreated[_marketAddress]) revert MarketAlreadyCreated();
 
         isCreated[_marketAddress] = true;
@@ -169,7 +154,6 @@ contract MarketsManagerForAave is Ownable {
         borrowP2PExchangeRate[_marketAddress] = WadRayMath.ray();
 
         positionsManagerForAave.setThreshold(_marketAddress, _threshold);
-        positionsManagerForAave.setCapValue(_marketAddress, _capValue);
 
         _updateSPYs(_marketAddress);
         marketsCreated.push(_marketAddress);
@@ -186,18 +170,6 @@ contract MarketsManagerForAave is Ownable {
     {
         positionsManagerForAave.setThreshold(_marketAddress, _newThreshold);
         emit ThresholdSet(_marketAddress, _newThreshold);
-    }
-
-    /// @dev Sets the cap value above which suppliers cannot supply more tokens.
-    /// @param _marketAddress The address of the market to change the max cap.
-    /// @param _newCapValue The new max cap to set.
-    function setCapValue(address _marketAddress, uint256 _newCapValue)
-        external
-        onlyOwner
-        isMarketCreated(_marketAddress)
-    {
-        positionsManagerForAave.setCapValue(_marketAddress, _newCapValue);
-        emit CapValueSet(_marketAddress, _newCapValue);
     }
 
     /// @dev Sets whether to put everyone on pool or not.

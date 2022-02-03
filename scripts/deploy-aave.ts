@@ -43,11 +43,10 @@ async function main() {
 
   console.log('\n🦋 Creating markets...');
   const defaultThreshold = BigNumber.from(10).pow(6);
-  const defaultCapValue = BigNumber.from(2);
 
   await marketsManagerForAave.connect(deployer).setPositionsManager(positionsManagerForAave.address);
-  await marketsManagerForAave.connect(deployer).createMarket(config.tokens.aDai.address, defaultThreshold, defaultCapValue);
-  await marketsManagerForAave.connect(deployer).createMarket(config.tokens.aUsdc.address, defaultThreshold, defaultCapValue);
+  await marketsManagerForAave.connect(deployer).createMarket(config.tokens.aDai.address, defaultThreshold);
+  await marketsManagerForAave.connect(deployer).createMarket(config.tokens.aUsdc.address, defaultThreshold);
   console.log('🎉 Finished!\n');
 }
 

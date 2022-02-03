@@ -165,9 +165,6 @@ contract PositionsManagerForCompound is ReentrancyGuard {
     /// @notice Emitted when only the markets manager can call the function.
     error OnlyMarketsManager();
 
-    /// @notice Emitted when the supply is above the cap value.
-    error SupplyAboveCapValue();
-
     /// @notice Emitted when the debt value is not above the maximum debt value.
     error DebtValueNotAboveMax();
 
