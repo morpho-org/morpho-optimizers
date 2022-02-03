@@ -44,7 +44,6 @@ contract PositionsManagerForAaveStorage is ReentrancyGuard {
     mapping(address => mapping(address => bool)) public userMembership; // Whether the user is in the market or not.
     mapping(address => address[]) public enteredMarkets; // The markets entered by a user.
     mapping(address => uint256) public threshold; // Thresholds below the ones suppliers and borrowers cannot enter markets.
-    mapping(address => uint256) public capValue; // Caps above which suppliers cannot add more liquidity.
 
     IMarketsManagerForAave public marketsManagerForAave;
     IAaveIncentivesController public aaveIncentivesController;

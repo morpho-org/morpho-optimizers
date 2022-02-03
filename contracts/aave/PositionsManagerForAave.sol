@@ -192,11 +192,6 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
     /// @param _newValue The new value of the threshold.
     event ThresholdSet(address _marketAddress, uint256 _newValue);
 
-    /// @dev Emitted when a cap value of a market is set.
-    /// @param _poolTokenAddress The address of the market to set.
-    /// @param _newValue The new value of the cap.
-    event CapValueSet(address _poolTokenAddress, uint256 _newValue);
-
     /// @dev Emitted when the DAO claims fees.
     /// @param _poolTokenAddress The address of the market.
     /// @param _amountClaimed The amount of underlying token claimed.
@@ -228,9 +223,6 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
 
     /// @notice Thrown when only the markets manager's owner can call the function.
     error OnlyMarketsManagerOwner();
-
-    /// @notice Thrown when the supply is above the cap value.
-    error SupplyAboveCapValue();
 
     /// @notice Thrown when the debt value is not above the maximum debt value.
     error DebtValueNotAboveMax();
@@ -319,17 +311,6 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
     {
         threshold[_poolTokenAddress] = _newThreshold;
         emit ThresholdSet(_poolTokenAddress, _newThreshold);
-    }
-
-    /// @dev Sets the max cap of a market.
-    /// @param _poolTokenAddress The address of the market to set the threshold.
-    /// @param _newCapValue The new threshold.
-    function setCapValue(address _poolTokenAddress, uint256 _newCapValue)
-        external
-        onlyMarketsManager
-    {
-        capValue[_poolTokenAddress] = _newCapValue;
-        emit CapValueSet(_poolTokenAddress, _newCapValue);
     }
 
     /// @dev Sets the `_newTreasuryVaultAddress`.
@@ -429,8 +410,6 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         _handleMembership(_poolTokenAddress, msg.sender);
         marketsManagerForAave.updateRates(_poolTokenAddress);
         IERC20 underlyingToken = IERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
-        if (capValue[_poolTokenAddress] != type(uint256).max)
-            _checkCapValue(_poolTokenAddress, underlyingToken, msg.sender, _amount);
         underlyingToken.safeTransferFrom(msg.sender, address(this), _amount);
         uint256 remainingToSupplyToPool = _amount;
 
@@ -1278,27 +1257,6 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
 
         uint256 toBorrow = _amount - remainingToUnmatch;
         if (toBorrow > 0) _borrowERC20FromPool(underlyingToken, toBorrow); // Revert on error
-    }
-
-    /// @dev Checks that the total supply of `supplier` is below the cap on a specific market.
-    /// @param _poolTokenAddress The address of the market to check.
-    /// @param _underlyingToken The underlying token of the market.
-    /// @param _supplier The address of the _supplier to check.
-    /// @param _amount The amount to add to the current supply.
-    function _checkCapValue(
-        address _poolTokenAddress,
-        IERC20 _underlyingToken,
-        address _supplier,
-        uint256 _amount
-    ) internal view {
-        uint256 totalSuppliedInUnderlying = _getUserSupplyBalanceInOf(
-            _poolTokenAddress,
-            _supplier,
-            address(_underlyingToken)
-        );
-
-        if (totalSuppliedInUnderlying + _amount > capValue[_poolTokenAddress])
-            revert SupplyAboveCapValue();
     }
 
     ///@dev Enters the user into the market if not already there.

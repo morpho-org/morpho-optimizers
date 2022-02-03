@@ -83,15 +83,15 @@ contract TestSetup is Config, Utils {
 
         // !!! WARNING !!!
         // All tokens must also be added to the pools array, for the correct behavior of TestLiquidate::createAndSetCustomPriceOracle.
-        marketsManager.createMarket(aDai, WAD, type(uint256).max);
+        marketsManager.createMarket(aDai, WAD);
         pools.push(aDai);
-        marketsManager.createMarket(aUsdc, to6Decimals(WAD), type(uint256).max);
+        marketsManager.createMarket(aUsdc, to6Decimals(WAD));
         pools.push(aUsdc);
-        marketsManager.createMarket(aWbtc, 10**4, type(uint256).max);
+        marketsManager.createMarket(aWbtc, 10**4);
         pools.push(aWbtc);
-        marketsManager.createMarket(aUsdt, to6Decimals(WAD), type(uint256).max);
+        marketsManager.createMarket(aUsdt, to6Decimals(WAD));
         pools.push(aUsdt);
-        marketsManager.createMarket(aWmatic, WAD, type(uint256).max);
+        marketsManager.createMarket(aWmatic, WAD);
         pools.push(aWmatic);
 
         for (uint256 i = 0; i < 3; i++) {
