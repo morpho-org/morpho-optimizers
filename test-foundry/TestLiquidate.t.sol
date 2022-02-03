@@ -24,11 +24,15 @@ contract TestLiquidate is TestSetup {
 
     // 5.2 - A user liquidates a borrower that has not enough collateral to cover for his debt.
     function test_liquidate_5_2() public {
-        uint256 collateral = 100000 ether;
-        uint256 amount = (collateral * 80) / 100;
+        uint256 collateral = 100_000 ether;
 
         borrower1.approve(usdc, address(positionsManager), to6Decimals(collateral));
         borrower1.supply(aUsdc, to6Decimals(collateral));
+
+        (, uint256 amount) = positionsManager.getUserMaxCapacitiesForAsset(
+            address(borrower1),
+            aDai
+        );
         borrower1.borrow(aDai, amount);
 
         (, uint256 collateralOnPool) = positionsManager.supplyBalanceInOf(
@@ -38,7 +42,7 @@ contract TestLiquidate is TestSetup {
 
         // Change Oracle
         SimplePriceOracle customOracle = createAndSetCustomPriceOracle();
-        customOracle.setDirectPrice(usdc, (oracle.getAssetPrice(usdc) * 90) / 100);
+        customOracle.setDirectPrice(usdc, (oracle.getAssetPrice(usdc) * 93) / 100);
 
         // Liquidate
         uint256 toRepay = amount / 2;
@@ -81,7 +85,7 @@ contract TestLiquidate is TestSetup {
         vars.collateralTokenUnit = 10**vars.collateralReserveDecimals;
 
         (vars.borrowedReserveDecimals, , , , , , , , , ) = protocolDataProvider
-            .getReserveConfigurationData(dai);
+        .getReserveConfigurationData(dai);
         vars.borrowedPrice = customOracle.getAssetPrice(dai);
         vars.borrowedTokenUnit = 10**vars.borrowedReserveDecimals;
 
@@ -102,15 +106,19 @@ contract TestLiquidate is TestSetup {
     //       At most, the liquidator can liquidate 50% of the debt of a borrower and take the corresponding collateral (plus a bonus).
     //       Edge-cases here are at most the combination from part 3. and 4. called with the previous amount.
     function test_liquidate_5_3() public {
-        uint256 collateral = 100000 ether;
-        uint256 borrowedAmount = (collateral * 80) / 100;
-        uint256 suppliedAmount = borrowedAmount;
+        uint256 collateral = 100_000 ether;
 
         // Borrower1 & supplier1 are matched for suppliedAmount
         borrower1.approve(usdc, to6Decimals(collateral));
         borrower1.supply(aUsdc, to6Decimals(collateral));
+
+        (, uint256 borrowedAmount) = positionsManager.getUserMaxCapacitiesForAsset(
+            address(borrower1),
+            aDai
+        );
         borrower1.borrow(aDai, borrowedAmount);
 
+        uint256 suppliedAmount = borrowedAmount;
         supplier1.approve(dai, suppliedAmount);
         supplier1.supply(aDai, suppliedAmount);
 
@@ -120,10 +128,8 @@ contract TestLiquidate is TestSetup {
 
         uint256 amountPerSupplier = (suppliedAmount) / (2 * (NMAX - 1));
         uint256 amountPerBorrower = (borrowedAmount) / (2 * (NMAX - 1));
-        // minus 1 because supplier1 must not be counted twice !
-        for (uint256 i = 0; i < NMAX; i++) {
-            if (suppliers[i] == supplier1) continue;
 
+        for (uint256 i = 1; i < NMAX; i++) {
             suppliers[i].approve(dai, amountPerSupplier);
             suppliers[i].supply(aDai, amountPerSupplier);
 
@@ -134,7 +140,7 @@ contract TestLiquidate is TestSetup {
 
         // Change Oracle
         SimplePriceOracle customOracle = createAndSetCustomPriceOracle();
-        customOracle.setDirectPrice(usdc, (oracle.getAssetPrice(usdc) * 90) / 100);
+        customOracle.setDirectPrice(usdc, (oracle.getAssetPrice(usdc) * 93) / 100);
 
         // Liquidate
         User liquidator = borrower3;
@@ -148,7 +154,10 @@ contract TestLiquidate is TestSetup {
         );
 
         uint256 borrowP2PExchangeRate = marketsManager.borrowP2PExchangeRate(aDai);
-        uint256 expectedBorrowBalanceInP2P = p2pUnitToUnderlying(inP2PBorrower, borrowP2PExchangeRate);
+        uint256 expectedBorrowBalanceInP2P = p2pUnitToUnderlying(
+            inP2PBorrower,
+            borrowP2PExchangeRate
+        );
         uint256 expectedBorrowBalanceOnPool = aDUnitToUnderlying(
             onPoolBorrower,
             lendingPool.getReserveNormalizedVariableDebt(dai)

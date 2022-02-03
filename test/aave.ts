@@ -1121,7 +1121,7 @@ describe('PositionsManagerForAave Contract', () => {
       ).onPool;
       const normalizedIncome = await lendingPool.getReserveNormalizedIncome(config.tokens.usdc.address);
       const collateralBalanceInUnderlying = scaledBalanceToUnderlying(collateralBalanceInScaledBalance, normalizedIncome);
-      const { liquidationThreshold } = await protocolDataProvider.getReserveConfigurationData(config.tokens.dai.address);
+      const { ltv } = await protocolDataProvider.getReserveConfigurationData(config.tokens.dai.address);
       const usdcPrice = await oracle.getAssetPrice(config.tokens.usdc.address);
       const usdcDecimals = await usdcToken.decimals();
       const daiPrice = await oracle.getAssetPrice(config.tokens.dai.address);
@@ -1131,7 +1131,7 @@ describe('PositionsManagerForAave Contract', () => {
         .div(BigNumber.from(10).pow(usdcDecimals))
         .mul(BigNumber.from(10).pow(daiDecimals))
         .div(daiPrice)
-        .mul(liquidationThreshold)
+        .mul(ltv)
         .div(PERCENT_BASE);
 
       // Borrow DAI
@@ -1143,8 +1143,8 @@ describe('PositionsManagerForAave Contract', () => {
 
       // Set price oracle
       await lendingPoolAddressesProvider.connect(admin).setPriceOracle(priceOracle.address);
-      priceOracle.setDirectPrice(config.tokens.dai.address, WAD.mul(11).div(10));
-      priceOracle.setDirectPrice(config.tokens.usdc.address, WAD);
+      priceOracle.setDirectPrice(config.tokens.dai.address, WAD);
+      priceOracle.setDirectPrice(config.tokens.usdc.address, WAD.mul(88).div(100));
       priceOracle.setDirectPrice(config.tokens.wbtc.address, WAD);
       priceOracle.setDirectPrice(config.tokens.usdt.address, WAD);
 
@@ -1236,7 +1236,7 @@ describe('PositionsManagerForAave Contract', () => {
       const supplyBalanceOnPoolInUnderlying = scaledBalanceToUnderlying(supplyBalanceOnPool1, usdcNormalizedIncome1);
       const supplyBalanceMorphoInUnderlying = p2pUnitToUnderlying(supplyBalanceInP2P1, borrowP2PUsdcExchangeRate1);
       const supplyBalanceInUnderlying = supplyBalanceOnPoolInUnderlying.add(supplyBalanceMorphoInUnderlying);
-      const { liquidationThreshold } = await protocolDataProvider.getReserveConfigurationData(config.tokens.dai.address);
+      const { ltv } = await protocolDataProvider.getReserveConfigurationData(config.tokens.dai.address);
       const usdcPrice = await oracle.getAssetPrice(config.tokens.usdc.address);
       const usdcDecimals = await usdcToken.decimals();
       const daiPrice = await oracle.getAssetPrice(config.tokens.dai.address);
@@ -1246,7 +1246,7 @@ describe('PositionsManagerForAave Contract', () => {
         .div(BigNumber.from(10).pow(usdcDecimals))
         .mul(BigNumber.from(10).pow(daiDecimals))
         .div(daiPrice)
-        .mul(liquidationThreshold)
+        .mul(ltv)
         .div(PERCENT_BASE);
       await positionsManagerForAave.connect(borrower1).borrow(config.tokens.aDai.address, maxToBorrow, 0);
       const collateralBalanceOnPoolBefore = (
@@ -1260,7 +1260,7 @@ describe('PositionsManagerForAave Contract', () => {
 
       // Set price oracle
       await lendingPoolAddressesProvider.connect(admin).setPriceOracle(priceOracle.address);
-      priceOracle.setDirectPrice(config.tokens.dai.address, WAD.mul(11).div(10));
+      priceOracle.setDirectPrice(config.tokens.dai.address, WAD.mul(115).div(100));
       priceOracle.setDirectPrice(config.tokens.usdc.address, WAD);
       priceOracle.setDirectPrice(config.tokens.wbtc.address, WAD);
       priceOracle.setDirectPrice(config.tokens.usdt.address, WAD);

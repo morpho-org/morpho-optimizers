@@ -20,17 +20,18 @@ contract TestBorrow is TestSetup {
 
     // 2.2 - The borrower tries to borrow more than what his collateral allows, the transaction reverts.
     function test_borrow_2_2() public {
-        uint256 amount = 10000 ether;
+        uint256 usdcAmount = to6Decimals(10_000 ether);
 
-        borrower1.approve(usdc, to6Decimals(amount));
-        borrower1.supply(aUsdc, to6Decimals(amount));
+        borrower1.approve(usdc, usdcAmount);
+        borrower1.supply(aUsdc, usdcAmount);
 
-        (, , uint256 liquidationThreshold, , , , , , , ) = protocolDataProvider
-        .getReserveConfigurationData(usdc);
-        uint256 maxToBorrow = (amount * liquidationThreshold) / 10000;
+        (, uint256 borrowable) = positionsManager.getUserMaxCapacitiesForAsset(
+            address(borrower1),
+            aDai
+        );
 
-        hevm.expectRevert("11");
-        borrower1.borrow(aDai, maxToBorrow + 1);
+        hevm.expectRevert(abi.encodeWithSignature("DebtValueAboveMax()"));
+        borrower1.borrow(aDai, borrowable + 1e4);
     }
 
     // Should be able to borrow more ERC20 after already having borrowed ERC20
