@@ -33,6 +33,7 @@ describe('PositionsManagerForAave Contract', () => {
 
   // Contracts
   let positionsManagerForAave: Contract;
+  let matchingEngineForAave: Contract;
   let marketsManagerForAave: Contract;
   let rewardsManager: Contract;
   let fakeAavePositionsManager: Contract;
@@ -85,6 +86,9 @@ describe('PositionsManagerForAave Contract', () => {
     );
     await positionsManagerForAave.deployed();
     await fakeAavePositionsManager.deployed();
+
+    const MatchingEngineForAave = await ethers.getContractFactory('MatchingEngineForAave');
+    matchingEngineForAave = await MatchingEngineForAave.attach(positionsManagerForAave.matchingEngineForAaveAddress());
 
     // Deploy RewardsManager
     const RewardsManager = await ethers.getContractFactory('RewardsManager');
@@ -202,10 +206,10 @@ describe('PositionsManagerForAave Contract', () => {
 
     it('Should update NMAX', async () => {
       const newNMAX = BigNumber.from(3000);
-      expect(positionsManagerForAave.connect(supplier1).setNmaxForMatchingEngine(newNMAX)).to.be.reverted;
-      expect(positionsManagerForAave.connect(borrower1).setNmaxForMatchingEngine(newNMAX)).to.be.reverted;
-      await positionsManagerForAave.connect(owner).setNmaxForMatchingEngine(newNMAX);
-      expect(await positionsManagerForAave.NMAX()).to.equal(newNMAX);
+      expect(matchingEngineForAave.connect(supplier1).setNmaxForMatchingEngine(newNMAX)).to.be.reverted;
+      expect(matchingEngineForAave.connect(borrower1).setNmaxForMatchingEngine(newNMAX)).to.be.reverted;
+      await matchingEngineForAave.connect(owner).setNmaxForMatchingEngine(newNMAX);
+      expect(await matchingEngineForAave.NMAX()).to.equal(newNMAX);
     });
   });
 

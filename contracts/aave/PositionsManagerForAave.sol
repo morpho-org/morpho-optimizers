@@ -101,6 +101,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
     ILendingPool public lendingPool;
     IProtocolDataProvider public dataProvider;
     MatchingEngineForAave public matchingEngineForAave;
+    address public matchingEngineForAaveAddress;
     address public treasuryVault;
 
     /// Events ///
@@ -294,6 +295,7 @@ contract PositionsManagerForAave is ReentrancyGuard {
         dataProvider = IProtocolDataProvider(addressesProvider.getAddress(DATA_PROVIDER_ID));
         lendingPool = ILendingPool(addressesProvider.getLendingPool());
         matchingEngineForAave = new MatchingEngineForAave(address(this), _marketsManager);
+        matchingEngineForAaveAddress = address(matchingEngineForAave);
     }
 
     /// @dev Updates the `lendingPool` and the `dataProvider`.
