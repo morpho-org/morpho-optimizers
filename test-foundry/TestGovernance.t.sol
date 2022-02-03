@@ -83,8 +83,8 @@ contract TestGovernance is TestSetup {
     function test_should_set_nmax() public {
         uint16 newNMAX = 3000;
 
-        positionsManager.setNmaxForMatchingEngine(newNMAX);
-        assertEq(positionsManager.NMAX(), newNMAX);
+        positionsManager.matchingEngineForAave().setNmaxForMatchingEngine(newNMAX);
+        assertEq(positionsManager.matchingEngineForAave().NMAX(), newNMAX);
 
         hevm.expectRevert(abi.encodeWithSignature("OnlyMarketsManagerOwner()"));
         supplier1.setNmaxForMatchingEngine(newNMAX);

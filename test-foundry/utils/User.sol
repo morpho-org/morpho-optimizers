@@ -81,7 +81,7 @@ contract User {
     }
 
     function setNmaxForMatchingEngine(uint16 _newMaxNumber) external {
-        positionsManager.setNmaxForMatchingEngine(_newMaxNumber);
+        positionsManager.matchingEngineForAave().setNmaxForMatchingEngine(_newMaxNumber);
     }
 
     function claimRewards(address[] calldata _assets) external {

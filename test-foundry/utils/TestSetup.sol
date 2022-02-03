@@ -124,7 +124,7 @@ contract TestSetup is Config, Utils {
     }
 
     function setNMAXAndCreateSigners(uint16 _NMAX) internal {
-        positionsManager.setNmaxForMatchingEngine(_NMAX);
+        positionsManager.matchingEngineForAave().setNmaxForMatchingEngine(_NMAX);
 
         while (borrowers.length < _NMAX) {
             borrowers.push(new User(positionsManager, marketsManager, rewardsManager));
