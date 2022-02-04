@@ -23,7 +23,7 @@
     "lint:sol": "solhint 'contracts/**/*.sol'",
     "fix": "yarn fix:sol && yarn fix:ts",
     "fix:ts": "prettier --config .prettierrc.json './**/*.ts' --write",
-    "fix:sol": "prettier --write ./contracts/**/*.sol",
+    "fix:sol": "prettier --write './contracts/**/*.sol' && prettier --write './test-foundry/**/*.sol'",
     "size": "yarn run hardhat size-contracts",
     "postinstall": "husky install"
   },

@@ -182,7 +182,10 @@ contract TestWithdraw is TestSetup {
         );
 
         uint256 supplyP2PExchangeRate = marketsManager.supplyP2PExchangeRate(aDai);
-        uint256 expectedBorrowBalanceInP2P = underlyingToP2PUnit(borrowedAmount, supplyP2PExchangeRate);
+        uint256 expectedBorrowBalanceInP2P = underlyingToP2PUnit(
+            borrowedAmount,
+            supplyP2PExchangeRate
+        );
 
         testEquality(inP2PBorrower, expectedBorrowBalanceInP2P);
         testEquality(onPoolBorrower, 0);
