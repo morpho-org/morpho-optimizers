@@ -78,7 +78,7 @@ contract TestRepay is TestSetup {
         );
 
         (uint256 inP2PAvailableBorrower, uint256 onPoolAvailableBorrower) = positionsManager
-            .borrowBalanceInOf(aDai, address(borrower2));
+        .borrowBalanceInOf(aDai, address(borrower2));
         uint256 borrowP2PExchangeRate = marketsManager.borrowP2PExchangeRate(aDai);
         uint256 expectedBorrowBalanceInP2P = underlyingToP2PUnit(
             (25 * borrowedAmount) / 100,
@@ -178,7 +178,10 @@ contract TestRepay is TestSetup {
         );
 
         uint256 borrowP2PExchangeRate = marketsManager.borrowP2PExchangeRate(aDai);
-        uint256 expectedSupplyBalanceInP2P = underlyingToP2PUnit(suppliedAmount, borrowP2PExchangeRate);
+        uint256 expectedSupplyBalanceInP2P = underlyingToP2PUnit(
+            suppliedAmount,
+            borrowP2PExchangeRate
+        );
 
         testEquality(inP2PSupplier, expectedSupplyBalanceInP2P);
         testEquality(onPoolSupplier, 0);
