@@ -392,7 +392,8 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         underlyingToken.safeTransferFrom(msg.sender, address(this), _amount);
         uint256 remainingToSupplyToPool = _amount;
 
-        /* If some borrowers are waiting on Aave, Morpho matches the supplier in P2P with them as much as possible */
+        /// Supply in P2P ///
+
         if (
             borrowersOnPool[_poolTokenAddress].getHead() != address(0) &&
             !marketsManagerForAave.noP2P(_poolTokenAddress)
@@ -415,7 +416,8 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
             remainingToSupplyToPool -= matched;
         }
 
-        /* If there aren't enough borrowers waiting on Aave to match all the tokens supplied, the rest is supplied to Aave */
+        /// Supply on pool ///
+
         if (remainingToSupplyToPool > 0) {
             uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(
                 address(underlyingToken)
@@ -456,7 +458,8 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         IERC20 underlyingToken = IERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
         uint256 remainingToBorrowOnPool = _amount;
 
-        /* If some suppliers are waiting on Aave, Morpho matches the borrower in P2P with them as much as possible */
+        /// Borrow in P2P ///
+
         if (
             suppliersOnPool[_poolTokenAddress].getHead() != address(0) &&
             !marketsManagerForAave.noP2P(_poolTokenAddress)
@@ -480,7 +483,8 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
             remainingToBorrowOnPool -= matched;
         }
 
-        /* If there aren't enough suppliers waiting on Aave to match all the tokens borrowed, the rest is borrowed from Aave */
+        /// Borrow on pool ///
+
         if (remainingToBorrowOnPool > 0) {
             uint256 normalizedVariableDebt = lendingPool.getReserveNormalizedVariableDebt(
                 address(underlyingToken)
@@ -776,7 +780,8 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         IERC20 underlyingToken = IERC20(poolToken.UNDERLYING_ASSET_ADDRESS());
         uint256 remainingToWithdraw = _amount;
 
-        /* If user has some tokens waiting on Aave */
+        /// Soft withdraw ///
+
         if (supplyBalanceInOf[_poolTokenAddress][_supplier].onPool > 0) {
             uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(
                 address(underlyingToken)
@@ -798,7 +803,8 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
             remainingToWithdraw -= withdrawnInUnderlying;
         }
 
-        /* If there remains some tokens to withdraw, Morpho breaks credit lines and repair them either with other users or with Aave itself */
+        /// Transfer withdraw ///
+
         if (remainingToWithdraw > 0) {
             uint256 supplyP2PExchangeRate = marketsManagerForAave.supplyP2PExchangeRate(
                 _poolTokenAddress
@@ -815,7 +821,8 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
                 remainingToWithdraw
             );
 
-            // We break some P2P credit lines the supplier had with borrowers and fallback on Aave.
+            /// Hard withdraw ///
+
             if (remainingToWithdraw > matchedSupply)
                 matchingEngineForAave.unmatchBorrowersDC(
                     _poolTokenAddress,
@@ -850,7 +857,8 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         underlyingToken.safeTransferFrom(msg.sender, address(this), _amount);
         uint256 remainingToRepay = _amount;
 
-        /* If user is borrowing tokens on Aave */
+        /// Soft repay ///
+
         if (borrowBalanceInOf[_poolTokenAddress][_user].onPool > 0) {
             uint256 normalizedVariableDebt = lendingPool.getReserveNormalizedVariableDebt(
                 address(underlyingToken)
@@ -870,7 +878,8 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
             remainingToRepay -= repaidInUnderlying;
         }
 
-        /* If there remains some tokens to repay, Morpho breaks credit lines and repair them either with other users or with Aave itself */
+        /// Transfer repay ///
+
         if (remainingToRepay > 0) {
             address poolTokenAddress = address(poolToken);
             uint256 borrowP2PExchangeRate = marketsManagerForAave.borrowP2PExchangeRate(
@@ -888,7 +897,8 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
                 remainingToRepay
             );
 
-            // We break some P2P credit lines the borrower had with suppliers and fallback on Aave.
+            /// Hard repay ///
+
             if (_amount > matchedBorrow)
                 matchingEngineForAave.unmatchSuppliersDC(
                     poolTokenAddress,
