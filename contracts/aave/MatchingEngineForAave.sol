@@ -63,9 +63,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
             address(_underlyingToken)
         );
         address user = suppliersOnPool[poolTokenAddress].getHead();
-        uint256 supplyP2PExchangeRate = marketsManagerForAave.supplyP2PExchangeRate(
-            poolTokenAddress
-        );
+        uint256 supplyP2PExchangeRate = marketsManager.supplyP2PExchangeRate(poolTokenAddress);
         uint256 iterationCount;
 
         while (matchedSupply < _amount && user != address(0) && iterationCount < NMAX) {
@@ -105,9 +103,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         IAToken poolToken = IAToken(_poolTokenAddress);
         IERC20 underlyingToken = IERC20(poolToken.UNDERLYING_ASSET_ADDRESS());
         uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(address(underlyingToken));
-        uint256 supplyP2PExchangeRate = marketsManagerForAave.supplyP2PExchangeRate(
-            _poolTokenAddress
-        );
+        uint256 supplyP2PExchangeRate = marketsManager.supplyP2PExchangeRate(_poolTokenAddress);
         address user = suppliersInP2P[_poolTokenAddress].getHead();
         uint256 remainingToUnmatch = _amount; // In underlying
 
@@ -154,9 +150,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         uint256 normalizedVariableDebt = lendingPool.getReserveNormalizedVariableDebt(
             address(_underlyingToken)
         );
-        uint256 borrowP2PExchangeRate = marketsManagerForAave.borrowP2PExchangeRate(
-            poolTokenAddress
-        );
+        uint256 borrowP2PExchangeRate = marketsManager.borrowP2PExchangeRate(poolTokenAddress);
         address user = borrowersOnPool[poolTokenAddress].getHead();
         uint256 iterationCount;
 
@@ -194,9 +188,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
     function unmatchBorrowers(address _poolTokenAddress, uint256 _amount) public override {
         IAToken poolToken = IAToken(_poolTokenAddress);
         IERC20 underlyingToken = IERC20(poolToken.UNDERLYING_ASSET_ADDRESS());
-        uint256 borrowP2PExchangeRate = marketsManagerForAave.borrowP2PExchangeRate(
-            _poolTokenAddress
-        );
+        uint256 borrowP2PExchangeRate = marketsManager.borrowP2PExchangeRate(_poolTokenAddress);
         uint256 normalizedVariableDebt = lendingPool.getReserveNormalizedVariableDebt(
             address(underlyingToken)
         );

@@ -53,13 +53,13 @@ contract PositionsManagerForAaveStorage is ReentrancyGuard {
     mapping(address => address[]) public enteredMarkets; // The markets entered by a user.
     mapping(address => uint256) public threshold; // Thresholds below the ones suppliers and borrowers cannot enter markets.
 
-    IMarketsManagerForAave public marketsManagerForAave;
     IAaveIncentivesController public aaveIncentivesController;
     IRewardsManager public rewardsManager;
     ILendingPoolAddressesProvider public addressesProvider;
     ILendingPool public lendingPool;
     IProtocolDataProvider public dataProvider;
-    IMatchingEngineForAave public matchingEngineForAave;
+    IMarketsManagerForAave public marketsManager;
+    IMatchingEngineForAave public matchingEngine;
     address public treasuryVault;
 
     /// Internal ///
