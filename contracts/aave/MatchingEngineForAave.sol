@@ -4,7 +4,6 @@ pragma solidity 0.8.7;
 import {IAToken} from "./interfaces/aave/IAToken.sol";
 import "./interfaces/aave/IScaledBalanceToken.sol";
 import "./interfaces/IMatchingEngineForAave.sol";
-import "./interfaces/IPositionsManagerForAave.sol";
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
@@ -13,7 +12,6 @@ import "./libraries/aave/WadRayMath.sol";
 import "../common/libraries/DoubleLinkedList.sol";
 
 import "./PositionsManagerForAaveStorage.sol";
-import "./PositionsManagerForAave.sol";
 
 /// @title MatchingEngineManager
 /// @dev Smart contract managing the matching engine.

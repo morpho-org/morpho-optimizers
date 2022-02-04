@@ -11,14 +11,14 @@ library MatchingEngineFns {
     using Address for address;
 
     function matchSuppliersDC(
-        IMatchingEngineForAave _mathingEngine,
+        IMatchingEngineForAave _matchingEngine,
         IAToken _poolToken,
         IERC20 _underlyingToken,
         uint256 _amount
     ) internal returns (uint256) {
-        bytes memory data = address(_mathingEngine).functionDelegateCall(
+        bytes memory data = address(_matchingEngine).functionDelegateCall(
             abi.encodeWithSelector(
-                _mathingEngine.matchSuppliers.selector,
+                _matchingEngine.matchSuppliers.selector,
                 _poolToken,
                 _underlyingToken,
                 _amount
@@ -28,13 +28,13 @@ library MatchingEngineFns {
     }
 
     function unmatchSuppliersDC(
-        IMatchingEngineForAave _mathingEngine,
+        IMatchingEngineForAave _matchingEngine,
         address _poolTokenAddress,
         uint256 _amount
     ) internal {
-        address(_mathingEngine).functionDelegateCall(
+        address(_matchingEngine).functionDelegateCall(
             abi.encodeWithSelector(
-                _mathingEngine.unmatchSuppliers.selector,
+                _matchingEngine.unmatchSuppliers.selector,
                 _poolTokenAddress,
                 _amount
             )
@@ -42,14 +42,14 @@ library MatchingEngineFns {
     }
 
     function matchBorrowersDC(
-        IMatchingEngineForAave _mathingEngine,
+        IMatchingEngineForAave _matchingEngine,
         IAToken _poolToken,
         IERC20 _underlyingToken,
         uint256 _amount
     ) internal returns (uint256) {
-        bytes memory data = address(_mathingEngine).functionDelegateCall(
+        bytes memory data = address(_matchingEngine).functionDelegateCall(
             abi.encodeWithSelector(
-                _mathingEngine.matchBorrowers.selector,
+                _matchingEngine.matchBorrowers.selector,
                 _poolToken,
                 _underlyingToken,
                 _amount
@@ -59,13 +59,13 @@ library MatchingEngineFns {
     }
 
     function unmatchBorrowersDC(
-        IMatchingEngineForAave _mathingEngine,
+        IMatchingEngineForAave _matchingEngine,
         address _poolTokenAddress,
         uint256 _amount
     ) internal {
-        address(_mathingEngine).functionDelegateCall(
+        address(_matchingEngine).functionDelegateCall(
             abi.encodeWithSelector(
-                _mathingEngine.unmatchBorrowers.selector,
+                _matchingEngine.unmatchBorrowers.selector,
                 _poolTokenAddress,
                 _amount
             )
@@ -73,13 +73,13 @@ library MatchingEngineFns {
     }
 
     function updateBorrowersDC(
-        IMatchingEngineForAave _mathingEngine,
+        IMatchingEngineForAave _matchingEngine,
         address _poolTokenAddress,
         address _user
     ) internal {
-        address(_mathingEngine).functionDelegateCall(
+        address(_matchingEngine).functionDelegateCall(
             abi.encodeWithSelector(
-                _mathingEngine.updateBorrowers.selector,
+                _matchingEngine.updateBorrowers.selector,
                 _poolTokenAddress,
                 _user
             )
@@ -87,13 +87,13 @@ library MatchingEngineFns {
     }
 
     function updateSuppliersDC(
-        IMatchingEngineForAave _mathingEngine,
+        IMatchingEngineForAave _matchingEngine,
         address _poolTokenAddress,
         address _user
     ) internal {
-        address(_mathingEngine).functionDelegateCall(
+        address(_matchingEngine).functionDelegateCall(
             abi.encodeWithSelector(
-                _mathingEngine.updateSuppliers.selector,
+                _matchingEngine.updateSuppliers.selector,
                 _poolTokenAddress,
                 _user
             )
