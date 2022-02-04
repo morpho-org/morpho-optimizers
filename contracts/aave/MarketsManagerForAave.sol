@@ -2,6 +2,7 @@
 pragma solidity 0.8.7;
 
 import "./interfaces/aave/ILendingPoolAddressesProvider.sol";
+import "./interfaces/aave/IProtocolDataProvider.sol";
 import "./interfaces/aave/ILendingPool.sol";
 import "./interfaces/aave/DataTypes.sol";
 import {IAToken} from "./interfaces/aave/IAToken.sol";
@@ -23,7 +24,8 @@ contract MarketsManagerForAave is Ownable {
     uint16 public constant HALF_MAX_BASIS_POINTS = 5000; // 50% in basis point.
     uint16 public reserveFactor; // Proportion of the interest earned by users sent to the DAO, in basis point (100% = 10000). The default value is 0.
     uint256 public constant SECONDS_PER_YEAR = 365 days; // The number of seconds in one year.
-
+    bytes32 public constant DATA_PROVIDER_ID =
+        0x1000000000000000000000000000000000000000000000000000000000000000; // Id of the data provider.
     address[] public marketsCreated; // Keeps track of the created markets.
     mapping(address => bool) public isCreated; // Whether or not this market is created.
     mapping(address => uint256) public supplyP2PSPY; // Supply Percentage Yield per second, in ray.
@@ -35,6 +37,7 @@ contract MarketsManagerForAave is Ownable {
 
     IPositionsManagerForAave public positionsManager;
     ILendingPoolAddressesProvider public addressesProvider;
+    IProtocolDataProvider public dataProvider;
     ILendingPool public lendingPool;
 
     /// Events ///
@@ -45,7 +48,8 @@ contract MarketsManagerForAave is Ownable {
 
     /// @dev Emitted when the lendingPool is updated on the `positionsManager`.
     /// @param _lendingPoolAddress The address of the lending pool.
-    event LendingPoolUpdated(address _lendingPoolAddress);
+    /// @param _dataProviderAddress The address of the data provider.
+    event AaveContractsUpdated(address _lendingPoolAddress, address _dataProviderAddress);
 
     /// @dev Emitted when the `positionsManager` is set.
     /// @param _positionsManager The address of the `positionsManager`.
@@ -90,6 +94,9 @@ contract MarketsManagerForAave is Ownable {
     /// @notice Thrown when the market is not created yet.
     error MarketNotCreated();
 
+    /// @notice Thrown when the market is not listed on Aave.
+    error MarketIsNotListedOnAave();
+
     /// @notice Thrown when the market is already created.
     error MarketAlreadyCreated();
 
@@ -110,8 +117,9 @@ contract MarketsManagerForAave is Ownable {
     /// @param _lendingPoolAddressesProvider The address of the lending pool addresses provider.
     constructor(address _lendingPoolAddressesProvider) {
         addressesProvider = ILendingPoolAddressesProvider(_lendingPoolAddressesProvider);
+        dataProvider = IProtocolDataProvider(addressesProvider.getAddress(DATA_PROVIDER_ID));
         lendingPool = ILendingPool(addressesProvider.getLendingPool());
-        emit LendingPoolUpdated(address(lendingPool));
+        emit AaveContractsUpdated(address(lendingPool), address(dataProvider));
     }
 
     /// External ///
@@ -124,10 +132,11 @@ contract MarketsManagerForAave is Ownable {
         emit PositionsManagerSet(_positionsManager);
     }
 
-    /// @dev Updates the lending pool.
-    function updateLendingPool() external onlyOwner {
+    /// @dev Updates the `lendingPool` and the `dataProvider`.
+    function updateAaveContracts() external {
+        dataProvider = IProtocolDataProvider(addressesProvider.getAddress(DATA_PROVIDER_ID));
         lendingPool = ILendingPool(addressesProvider.getLendingPool());
-        emit LendingPoolUpdated(address(lendingPool));
+        emit AaveContractsUpdated(address(lendingPool), address(dataProvider));
     }
 
     /// @dev Sets the `reserveFactor`.
@@ -143,21 +152,30 @@ contract MarketsManagerForAave is Ownable {
     }
 
     /// @dev Creates a new market to borrow/supply in.
-    /// @param _marketAddress The addresses of the markets to add (aToken).
+    /// @param _underlyingTokenAddress The underlying address of the given market.
     /// @param _threshold The threshold to set for the market.
-    function createMarket(address _marketAddress, uint256 _threshold) external onlyOwner {
-        if (isCreated[_marketAddress]) revert MarketAlreadyCreated();
+    function createMarket(address _underlyingTokenAddress, uint256 _threshold) external onlyOwner {
+        (, , , , , , , , bool isActive, ) = dataProvider.getReserveConfigurationData(
+            _underlyingTokenAddress
+        );
+        if (!isActive) revert MarketIsNotListedOnAave();
 
-        isCreated[_marketAddress] = true;
-        exchangeRatesLastUpdateTimestamp[_marketAddress] = block.timestamp;
-        supplyP2PExchangeRate[_marketAddress] = WadRayMath.ray();
-        borrowP2PExchangeRate[_marketAddress] = WadRayMath.ray();
+        (address poolTokenAddress, , ) = dataProvider.getReserveTokensAddresses(
+            _underlyingTokenAddress
+        );
 
-        positionsManager.setThreshold(_marketAddress, _threshold);
+        if (isCreated[poolTokenAddress]) revert MarketAlreadyCreated();
+        isCreated[poolTokenAddress] = true;
 
-        _updateSPYs(_marketAddress);
-        marketsCreated.push(_marketAddress);
-        emit MarketCreated(_marketAddress);
+        exchangeRatesLastUpdateTimestamp[poolTokenAddress] = block.timestamp;
+        supplyP2PExchangeRate[poolTokenAddress] = WadRayMath.ray();
+        borrowP2PExchangeRate[poolTokenAddress] = WadRayMath.ray();
+
+        positionsManager.setThreshold(poolTokenAddress, _threshold);
+
+        _updateSPYs(poolTokenAddress);
+        marketsCreated.push(poolTokenAddress);
+        emit MarketCreated(poolTokenAddress);
     }
 
     /// @dev Sets the threshold below which suppliers and borrowers cannot join a given market.

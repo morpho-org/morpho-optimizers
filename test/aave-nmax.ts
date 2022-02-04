@@ -80,11 +80,11 @@ describe('PositionsManagerForAave Contract', () => {
     await rewardsManager.connect(owner).setAaveIncentivesController(config.aave.aaveIncentivesController.address);
     await positionsManagerForAave.connect(owner).setTreasuryVault(treasuryVault.getAddress());
     await positionsManagerForAave.connect(owner).setRewardsManager(rewardsManager.address);
-    await marketsManagerForAave.connect(owner).createMarket(config.tokens.aDai.address, WAD, MAX_INT);
-    await marketsManagerForAave.connect(owner).createMarket(config.tokens.aUsdc.address, to6Decimals(WAD), MAX_INT);
-    await marketsManagerForAave.connect(owner).createMarket(config.tokens.aWbtc.address, BigNumber.from(10).pow(4), MAX_INT);
-    await marketsManagerForAave.connect(owner).createMarket(config.tokens.aUsdt.address, to6Decimals(WAD), MAX_INT);
-    await marketsManagerForAave.connect(owner).createMarket(config.tokens.aWmatic.address, WAD, MAX_INT);
+    await marketsManagerForAave.connect(owner).createMarket(config.tokens.dai.address, WAD, MAX_INT);
+    await marketsManagerForAave.connect(owner).createMarket(config.tokens.usdc.address, to6Decimals(WAD), MAX_INT);
+    await marketsManagerForAave.connect(owner).createMarket(config.tokens.wbtc.address, BigNumber.from(10).pow(4), MAX_INT);
+    await marketsManagerForAave.connect(owner).createMarket(config.tokens.usdt.address, to6Decimals(WAD), MAX_INT);
+    await marketsManagerForAave.connect(owner).createMarket(config.tokens.wmatic.address, WAD, MAX_INT);
   };
 
   before(initialize);
