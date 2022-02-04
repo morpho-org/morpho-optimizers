@@ -1355,6 +1355,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
     /// @param _borrowedAmount The amount of tokens to hypothetically borrow (in underlying).
     /// @return debtValue The current debt value of the user (in ETH).
     /// @return maxDebtValue The maximum debt value possible of the user (in ETH).
+    /// @return liquidationValue The value when liquidation is possible (in ETH).
     function _getUserHypotheticalBalanceStates(
         address _user,
         address _poolTokenAddress,
