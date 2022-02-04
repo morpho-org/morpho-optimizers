@@ -29,21 +29,21 @@ contract TestGovernance is TestSetup {
 
     // Should revert when the function is called with an improper market
     function test_revert_on_not_real_market() public {
-        hevm.expectRevert("");
-        marketsManager.createMarket(usdt, WAD);
+        hevm.expectRevert(abi.encodeWithSignature("MarketIsNotListedOnAave()"));
+        marketsManager.createMarket(address(supplier1), WAD);
     }
 
     // Only Owner should be able to create markets in peer-to-peer
     function test_only_owner_can_create_markets_1() public {
         for (uint256 i = 0; i < pools.length; i++) {
             hevm.expectRevert("Ownable: caller is not the owner");
-            supplier1.createMarket(pools[i], WAD);
+            supplier1.createMarket(underlyings[i], WAD);
 
             hevm.expectRevert("Ownable: caller is not the owner");
-            borrower1.createMarket(pools[i], WAD);
+            borrower1.createMarket(underlyings[i], WAD);
         }
 
-        marketsManager.createMarket(aWeth, WAD);
+        marketsManager.createMarket(weth, WAD);
     }
 
     // marketsManagerForAave should not be changed after already set by Owner
@@ -58,7 +58,7 @@ contract TestGovernance is TestSetup {
         uint256 expectedSPY = (data.currentLiquidityRate + data.currentVariableBorrowRate) /
             2 /
             SECOND_PER_YEAR;
-        marketsManager.createMarket(aAave, WAD);
+        marketsManager.createMarket(aave, WAD);
 
         assertTrue(marketsManager.isCreated(aAave));
         assertEq(marketsManager.supplyP2PSPY(aAave), expectedSPY);
