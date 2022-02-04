@@ -44,6 +44,7 @@ contract TestSetup is Config, Utils {
     User public treasuryVault;
 
     address[] public pools;
+    address[] public underlyings;
 
     function setUp() public {
         marketsManager = new MarketsManagerForAave(lendingPoolAddressesProviderAddress);
@@ -79,20 +80,25 @@ contract TestSetup is Config, Utils {
         rewardsManager.setAaveIncentivesController(aaveIncentivesControllerAddress);
         positionsManager.setTreasuryVault(address(treasuryVault));
         positionsManager.setRewardsManager(address(rewardsManager));
-        marketsManager.updateLendingPool();
+        marketsManager.updateAaveContracts();
 
         // !!! WARNING !!!
         // All tokens must also be added to the pools array, for the correct behavior of TestLiquidate::createAndSetCustomPriceOracle.
-        marketsManager.createMarket(aDai, WAD);
+        marketsManager.createMarket(dai, WAD);
         pools.push(aDai);
-        marketsManager.createMarket(aUsdc, to6Decimals(WAD));
+        underlyings.push(dai);
+        marketsManager.createMarket(usdc, to6Decimals(WAD));
         pools.push(aUsdc);
-        marketsManager.createMarket(aWbtc, 10**4);
+        underlyings.push(usdc);
+        marketsManager.createMarket(wbtc, 10**4);
         pools.push(aWbtc);
-        marketsManager.createMarket(aUsdt, to6Decimals(WAD));
+        underlyings.push(wbtc);
+        marketsManager.createMarket(usdt, to6Decimals(WAD));
         pools.push(aUsdt);
-        marketsManager.createMarket(aWmatic, WAD);
+        underlyings.push(usdt);
+        marketsManager.createMarket(wmatic, WAD);
         pools.push(aWmatic);
+        underlyings.push(wmatic);
 
         for (uint256 i = 0; i < 3; i++) {
             suppliers.push(new User(positionsManager, marketsManager, rewardsManager));

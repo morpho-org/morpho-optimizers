@@ -147,9 +147,10 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         address _poolTokenCollateralAddress
     );
 
-    /// @dev Emitted when the `lendingPool` is updated on the `positionsManagerForAave`.
+    /// @dev Emitted when the lendingPool is updated on the `positionsManagerForAave`.
     /// @param _lendingPoolAddress The address of the lending pool.
-    event LendingPoolUpdated(address _lendingPoolAddress);
+    /// @param _dataProviderAddress The address of the data provider.
+    event AaveContractsUpdated(address _lendingPoolAddress, address _dataProviderAddress);
 
     /// @dev Emitted the maximum number of users to have in the tree is updated.
     /// @param _newValue The new value of the maximum number of users to have in the tree.
@@ -194,6 +195,9 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
 
     /// @notice Thrown when the market is not created yet.
     error MarketNotCreated();
+
+    /// @notice Thrown when the market is not listed on Aave.
+    error MarketIsNotListedOnAave();
 
     /// @notice Thrown when the debt value is above the maximum debt value.
     error DebtValueAboveMax();
@@ -262,7 +266,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
     function updateAaveContracts() external {
         dataProvider = IProtocolDataProvider(addressesProvider.getAddress(DATA_PROVIDER_ID));
         lendingPool = ILendingPool(addressesProvider.getLendingPool());
-        emit LendingPoolUpdated(address(lendingPool));
+        emit AaveContractsUpdated(address(lendingPool), address(dataProvider));
     }
 
     /// @dev Sets the `aaveIncentivesController`.
@@ -323,6 +327,13 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
     /// @dev Claims rewards for the given assets and the unclaimed rewards.
     /// @param _assets The assets to claim rewards from (aToken or variable debt token).
     function claimRewards(address[] calldata _assets) external {
+        for (uint256 i; i < _assets.length; i++) {
+            (address aTokenAddress, , ) = dataProvider.getReserveTokensAddresses(
+                IAToken(_assets[i]).UNDERLYING_ASSET_ADDRESS()
+            );
+            if (!marketsManager.isCreated(aTokenAddress)) revert MarketNotCreated();
+        }
+
         uint256 amountToClaim = rewardsManager.claimRewards(_assets, type(uint256).max, msg.sender);
         if (amountToClaim > 0) {
             uint256 amountClaimed = aaveIncentivesController.claimRewards(

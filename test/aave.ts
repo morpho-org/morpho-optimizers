@@ -127,11 +127,11 @@ describe('PositionsManagerForAave Contract', () => {
     await rewardsManager.connect(owner).setAaveIncentivesController(config.aave.aaveIncentivesController.address);
     await positionsManagerForAave.connect(owner).setTreasuryVault(treasuryVault.getAddress());
     await positionsManagerForAave.connect(owner).setRewardsManager(rewardsManager.address);
-    await marketsManagerForAave.connect(owner).createMarket(config.tokens.aDai.address, WAD);
-    await marketsManagerForAave.connect(owner).createMarket(config.tokens.aUsdc.address, to6Decimals(WAD));
-    await marketsManagerForAave.connect(owner).createMarket(config.tokens.aWbtc.address, BigNumber.from(10).pow(4));
-    await marketsManagerForAave.connect(owner).createMarket(config.tokens.aUsdt.address, to6Decimals(WAD));
-    await marketsManagerForAave.connect(owner).createMarket(config.tokens.aWmatic.address, WAD);
+    await marketsManagerForAave.connect(owner).createMarket(config.tokens.dai.address, WAD);
+    await marketsManagerForAave.connect(owner).createMarket(config.tokens.usdc.address, to6Decimals(WAD));
+    await marketsManagerForAave.connect(owner).createMarket(config.tokens.wbtc.address, BigNumber.from(10).pow(4));
+    await marketsManagerForAave.connect(owner).createMarket(config.tokens.usdt.address, to6Decimals(WAD));
+    await marketsManagerForAave.connect(owner).createMarket(config.tokens.wmatic.address, WAD);
   };
 
   before(initialize);
@@ -168,9 +168,9 @@ describe('PositionsManagerForAave Contract', () => {
     });
 
     it('Only Owner should be able to create markets in peer-to-peer', async () => {
-      expect(marketsManagerForAave.connect(supplier1).createMarket(config.tokens.aWeth.address, WAD)).to.be.reverted;
-      expect(marketsManagerForAave.connect(borrower1).createMarket(config.tokens.aWeth.address, WAD)).to.be.reverted;
-      expect(marketsManagerForAave.connect(owner).createMarket(config.tokens.aWeth.address, WAD)).not.be.reverted;
+      expect(marketsManagerForAave.connect(supplier1).createMarket(config.tokens.weth.address, WAD)).to.be.reverted;
+      expect(marketsManagerForAave.connect(borrower1).createMarket(config.tokens.weth.address, WAD)).to.be.reverted;
+      expect(marketsManagerForAave.connect(owner).createMarket(config.tokens.weth.address, WAD)).not.be.reverted;
     });
 
     it('marketsManagerForAave should not be changed after already set by Owner', async () => {
@@ -182,7 +182,7 @@ describe('PositionsManagerForAave Contract', () => {
       const currentLiquidityRate = reserveData.currentLiquidityRate;
       const currentVariableBorrowRate = reserveData.currentVariableBorrowRate;
       const expectedSPY = currentLiquidityRate.add(currentVariableBorrowRate).div(2).div(SECOND_PER_YEAR);
-      await marketsManagerForAave.connect(owner).createMarket(config.tokens.aAave.address, WAD);
+      await marketsManagerForAave.connect(owner).createMarket(config.tokens.aave.address, WAD);
       expect(await marketsManagerForAave.isCreated(config.tokens.aAave.address)).to.be.true;
       expect(await marketsManagerForAave.supplyP2PSPY(config.tokens.aAave.address)).to.equal(expectedSPY);
       expect(await marketsManagerForAave.borrowP2PSPY(config.tokens.aAave.address)).to.equal(expectedSPY);
