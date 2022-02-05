@@ -441,19 +441,34 @@ contract TestRepay is TestSetup {
         uint256 expectedSupplyP2PDelta = 10 * suppliedAmount;
         testEquality(positionsManager.supplyP2PDelta(aDai), expectedSupplyP2PDelta);
 
-        // Delta matching
+        // Supply delta matching by a new borrower
         borrower2.approve(usdc, to6Decimals(collateral));
         borrower2.supply(aUsdc, to6Decimals(collateral));
-        borrower2.borrow(aDai, borrowedAmount);
+        borrower2.borrow(aDai, expectedSupplyP2PDelta / 2);
 
         (inP2PBorrower, onPoolBorrower) = positionsManager.borrowBalanceInOf(
             aDai,
             address(borrower2)
         );
-        expectedBorrowBalanceInP2P = underlyingToP2PUnit(borrowedAmount, borrowP2PExchangeRate);
+        expectedBorrowBalanceInP2P = underlyingToP2PUnit(
+            expectedSupplyP2PDelta / 2,
+            borrowP2PExchangeRate
+        );
+
+        testEquality(positionsManager.supplyP2PDelta(aDai), expectedSupplyP2PDelta / 2);
+        testEquality(onPoolBorrower, 0);
+        testEquality(inP2PBorrower, expectedBorrowBalanceInP2P);
+
+        // Supply delta reduction with suppliers withdrawing
+        for (uint256 i = 0; i < 10; i++) {
+            suppliers[i].withdraw(aDai, suppliedAmount);
+        }
 
         testEquality(positionsManager.supplyP2PDelta(aDai), 0);
-        testEquality(onPoolBorrower, 0);
+        (inP2PBorrower, onPoolBorrower) = positionsManager.borrowBalanceInOf(
+            aDai,
+            address(borrower2)
+        );
         testEquality(inP2PBorrower, expectedBorrowBalanceInP2P);
     }
 }
