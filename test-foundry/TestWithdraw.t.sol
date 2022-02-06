@@ -152,7 +152,7 @@ contract TestWithdraw is TestSetup {
         testEquality(inP2PSupplier, inP2PBorrower);
 
         // NMAX-1 suppliers have up to suppliedAmount waiting on pool
-        uint16 NMAX = 20;
+        uint8 NMAX = 20;
         positionsManager.setNmaxForMatchingEngine(NMAX);
         createSigners(NMAX);
 
@@ -315,7 +315,7 @@ contract TestWithdraw is TestSetup {
         testEquality(inP2PSupplier, inP2PBorrower);
 
         // NMAX-1 suppliers have up to suppliedAmount/2 waiting on pool
-        uint16 NMAX = 20;
+        uint8 NMAX = 20;
         positionsManager.setNmaxForMatchingEngine(NMAX);
         createSigners(NMAX);
 

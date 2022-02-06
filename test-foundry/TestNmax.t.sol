@@ -7,7 +7,7 @@ import "./utils/TestSetup.sol";
 
 contract TestNmax is TestSetup {
     // Define the value of NMAX for the estimations
-    uint16 public NMAX = 20;
+    uint8 public NMAX = 20;
 
     // 1: DAI P2P is full of big matches so that the insert sorted also loops NMAX times.
     // 2: There are NMAX borrowers waiting on Pool.
@@ -161,6 +161,7 @@ contract TestNmax is TestSetup {
         // Need to change NMAX to uint256 otherwise this calculation overflows.
         uint256 NMAX_256 = NMAX;
         uint256 matchedAmount = (1000 * NMAX_256 * 1e18);
+
         for (uint256 i = 0; i < NMAX; i++) {
             suppliers[i].approve(dai, matchedAmount);
             suppliers[i].supply(aDai, matchedAmount);
