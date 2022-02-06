@@ -131,7 +131,7 @@ contract TestBorrow is TestSetup {
         uint256 amount = 10000 ether;
         uint256 collateral = 2 * amount;
 
-        uint16 NMAX = 20;
+        uint8 NMAX = 20;
         positionsManager.setNmaxForMatchingEngine(NMAX);
         createSigners(NMAX);
 
@@ -172,7 +172,7 @@ contract TestBorrow is TestSetup {
         uint256 amount = 10000 ether;
         uint256 collateral = 2 * amount;
 
-        uint16 NMAX = 20;
+        uint8 NMAX = 20;
         positionsManager.setNmaxForMatchingEngine(NMAX);
         createSigners(NMAX);
 

@@ -123,7 +123,7 @@ contract TestSetup is Config, Utils {
         hevm.store(acct, keccak256(abi.encode(who, slots[acct])), bytes32(value));
     }
 
-    function createSigners(uint16 _nbOfSigners) internal {
+    function createSigners(uint8 _nbOfSigners) internal {
         while (borrowers.length < _nbOfSigners) {
             borrowers.push(new User(positionsManager, marketsManager, rewardsManager));
             writeBalanceOf(address(borrowers[borrowers.length - 1]), dai, type(uint256).max / 2);

@@ -135,7 +135,7 @@ contract TestRepay is TestSetup {
         testEquality(inP2PSupplier, inP2PBorrower1);
 
         // NMAX borrowers have debt waiting on pool
-        uint16 NMAX = 20;
+        uint8 NMAX = 20;
         positionsManager.setNmaxForMatchingEngine(NMAX);
         createSigners(NMAX);
 
@@ -311,7 +311,7 @@ contract TestRepay is TestSetup {
         testEquality(inP2PSupplier, inP2PBorrower1);
 
         // NMAX borrowers have borrowerAmount/2 (cumulated) of debt waiting on pool
-        uint16 NMAX = 20;
+        uint8 NMAX = 20;
         positionsManager.setNmaxForMatchingEngine(NMAX);
         createSigners(NMAX);
 

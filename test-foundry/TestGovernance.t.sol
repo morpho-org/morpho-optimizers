@@ -69,7 +69,7 @@ contract TestGovernance is TestSetup {
 
     // Should set NMAX
     function test_should_set_nmax() public {
-        uint16 newNMAX = 3000;
+        uint8 newNMAX = 30;
 
         positionsManager.setNmaxForMatchingEngine(newNMAX);
         assertEq(positionsManager.NMAX(), newNMAX);
