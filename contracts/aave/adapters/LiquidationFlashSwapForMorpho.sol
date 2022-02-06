@@ -14,7 +14,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-contract LiquidatorForAave is Ownable, IFlashLoanReceiver {
+contract FlashSwapLiquidatorForMorpho is Ownable, IFlashLoanReceiver {
     using PercentageMath for uint256;
     using SafeERC20 for IERC20;
 
@@ -155,7 +155,10 @@ contract LiquidatorForAave is Ownable, IFlashLoanReceiver {
         params.debtBalanceBefore = params.debtToken.balanceOf(address(this));
         params.collateralBalanceBefore = params.collateralToken.balanceOf(address(this));
 
-        if ((params.initiator == address(this) || msg.sender == owner()) && params.debtBalanceBefore >= _amount) {
+        if (
+            (params.initiator == address(this) || msg.sender == owner()) &&
+            params.debtBalanceBefore >= _amount
+        ) {
             // the contract will keep funds & have already enough funds to cover the debt
             // we do not need to use a flash swap
 
@@ -200,7 +203,9 @@ contract LiquidatorForAave is Ownable, IFlashLoanReceiver {
             );
             params.usingSwap = true;
         }
-        params.rewarded = params.collateralToken.balanceOf(address(this)) - params.collateralBalanceBefore;
+        params.rewarded =
+            params.collateralToken.balanceOf(address(this)) -
+            params.collateralBalanceBefore;
         emit Liquidated(
             msg.sender,
             _borrower,
@@ -213,10 +218,14 @@ contract LiquidatorForAave is Ownable, IFlashLoanReceiver {
         params.debtBalanceAfter = params.debtToken.balanceOf(address(this));
         if (params.initiator != address(this) && params.debtBalanceBefore < params.debtBalanceAfter)
             // withdraw if there is dust on debtToken
-            params.debtToken.safeTransfer(params.initiator, params.debtBalanceAfter - params.debtBalanceBefore);
+            params.debtToken.safeTransfer(
+                params.initiator,
+                params.debtBalanceAfter - params.debtBalanceBefore
+            );
 
         // transfer rewarded funds to the initiator if needed
-        if (params.initiator != address(this)) params.collateralToken.safeTransfer(params.initiator, params.rewarded);
+        if (params.initiator != address(this))
+            params.collateralToken.safeTransfer(params.initiator, params.rewarded);
     }
 
     /**
