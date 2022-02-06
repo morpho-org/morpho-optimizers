@@ -229,60 +229,61 @@ contract MarketsManagerForAave is Ownable {
         uint256 timeDifference = block.timestamp - exchangeRatesLastUpdateTimestamp[_marketAddress];
         exchangeRatesLastUpdateTimestamp[_marketAddress] = block.timestamp;
 
-        uint256 newSupplyP2PExchangeRate;
         if (positionsManager.supplyP2PDelta(_marketAddress) == 0) {
-            newSupplyP2PExchangeRate = supplyP2PExchangeRate[_marketAddress].rayMul(
+            supplyP2PExchangeRate[_marketAddress] = supplyP2PExchangeRate[_marketAddress].rayMul(
                 (WadRayMath.ray() + supplyP2PSPY[_marketAddress]).rayPow(timeDifference)
             ); // In ray
+            lastNormalizedIncome[_marketAddress] = lendingPool.getReserveNormalizedIncome(
+                _marketAddress
+            );
         } else {
+            uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(_marketAddress);
             uint256 shareOfTheDelta = (positionsManager.supplyP2PDelta(_marketAddress) *
                 MAX_BASIS_POINTS)
             .rayMul(supplyP2PExchangeRate[_marketAddress])
             .rayDiv(positionsManager.supplyP2PAmount(_marketAddress));
 
-            newSupplyP2PExchangeRate = supplyP2PExchangeRate[_marketAddress].rayMul(
+            supplyP2PExchangeRate[_marketAddress] = supplyP2PExchangeRate[_marketAddress].rayMul(
                 ((WadRayMath.ray() + supplyP2PSPY[_marketAddress]).rayPow(timeDifference) *
                     (MAX_BASIS_POINTS - shareOfTheDelta)) /
                     MAX_BASIS_POINTS +
-                    (lendingPool.getReserveNormalizedIncome(_marketAddress) *
+                    (normalizedIncome *
                         shareOfTheDelta.rayDiv(lastNormalizedIncome[_marketAddress])) /
                     MAX_BASIS_POINTS
             );
+            lastNormalizedIncome[_marketAddress] = normalizedIncome;
         }
-        supplyP2PExchangeRate[_marketAddress] = newSupplyP2PExchangeRate;
-        lastNormalizedIncome[_marketAddress] = lendingPool.getReserveNormalizedIncome(
-            _marketAddress
-        );
 
-        uint256 newBorrowP2PExchangeRate;
         if (positionsManager.borrowP2PDelta(_marketAddress) == 0) {
-            newBorrowP2PExchangeRate = borrowP2PExchangeRate[_marketAddress].rayMul(
+            borrowP2PExchangeRate[_marketAddress] = borrowP2PExchangeRate[_marketAddress].rayMul(
                 (WadRayMath.ray() + borrowP2PSPY[_marketAddress]).rayPow(timeDifference)
             ); // In ray
+            lastNormalizedVariableDebt[_marketAddress] = lendingPool
+            .getReserveNormalizedVariableDebt(_marketAddress);
         } else {
+            uint256 normalizedVariableDebt = lendingPool.getReserveNormalizedVariableDebt(
+                _marketAddress
+            );
             uint256 shareOfTheDelta = (positionsManager.borrowP2PDelta(_marketAddress) *
                 MAX_BASIS_POINTS)
             .rayMul(borrowP2PExchangeRate[_marketAddress])
             .rayDiv(positionsManager.borrowP2PAmount(_marketAddress));
 
-            newBorrowP2PExchangeRate = borrowP2PExchangeRate[_marketAddress].rayMul(
+            borrowP2PExchangeRate[_marketAddress] = borrowP2PExchangeRate[_marketAddress].rayMul(
                 ((WadRayMath.ray() + borrowP2PSPY[_marketAddress]).rayPow(timeDifference) *
                     (MAX_BASIS_POINTS - shareOfTheDelta)) /
                     MAX_BASIS_POINTS +
-                    (lendingPool.getReserveNormalizedVariableDebt(_marketAddress) *
+                    (normalizedVariableDebt *
                         shareOfTheDelta.rayDiv(lastNormalizedVariableDebt[_marketAddress])) /
                     MAX_BASIS_POINTS
             );
+            lastNormalizedVariableDebt[_marketAddress] = normalizedVariableDebt;
         }
-        borrowP2PExchangeRate[_marketAddress] = newBorrowP2PExchangeRate;
-        lastNormalizedVariableDebt[_marketAddress] = lendingPool.getReserveNormalizedVariableDebt(
-            _marketAddress
-        );
 
         emit P2PExchangeRatesUpdated(
             _marketAddress,
-            newSupplyP2PExchangeRate,
-            newBorrowP2PExchangeRate
+            supplyP2PExchangeRate[_marketAddress],
+            borrowP2PExchangeRate[_marketAddress]
         );
     }
 
