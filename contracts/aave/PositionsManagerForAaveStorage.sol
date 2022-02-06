@@ -67,7 +67,7 @@ contract PositionsManagerForAaveStorage is ReentrancyGuard {
     /// @dev Supplies undelrying tokens to Aave.
     /// @param _underlyingToken The underlying token of the market to supply to.
     /// @param _amount The amount of token (in underlying).
-    function _supplyERC20ToPool(IERC20 _underlyingToken, uint256 _amount) public {
+    function _supplyERC20ToPool(IERC20 _underlyingToken, uint256 _amount) internal {
         _underlyingToken.safeIncreaseAllowance(address(lendingPool), _amount);
         lendingPool.deposit(address(_underlyingToken), _amount, address(this), NO_REFERRAL_CODE);
     }
@@ -75,14 +75,14 @@ contract PositionsManagerForAaveStorage is ReentrancyGuard {
     /// @dev Withdraws underlying tokens from Aave.
     /// @param _underlyingToken The underlying token of the market to withdraw from.
     /// @param _amount The amount of token (in underlying).
-    function _withdrawERC20FromPool(IERC20 _underlyingToken, uint256 _amount) public {
+    function _withdrawERC20FromPool(IERC20 _underlyingToken, uint256 _amount) internal {
         lendingPool.withdraw(address(_underlyingToken), _amount, address(this));
     }
 
     /// @dev Borrows underlying tokens from Aave.
     /// @param _underlyingToken The underlying token of the market to borrow from.
     /// @param _amount The amount of token (in underlying).
-    function _borrowERC20FromPool(IERC20 _underlyingToken, uint256 _amount) public {
+    function _borrowERC20FromPool(IERC20 _underlyingToken, uint256 _amount) internal {
         lendingPool.borrow(
             address(_underlyingToken),
             _amount,
@@ -100,7 +100,7 @@ contract PositionsManagerForAaveStorage is ReentrancyGuard {
         IERC20 _underlyingToken,
         uint256 _amount,
         uint256 _normalizedVariableDebt
-    ) public {
+    ) internal {
         _underlyingToken.safeIncreaseAllowance(address(lendingPool), _amount);
         (, , address variableDebtToken) = dataProvider.getReserveTokensAddresses(
             address(_underlyingToken)

@@ -27,16 +27,4 @@ interface IPositionsManagerForAave {
     function borrowBalanceInOf(address, address) external returns (Balance memory);
 
     function supplyBalanceInOf(address, address) external returns (Balance memory);
-
-    function _supplyERC20ToPool(IERC20, uint256) external;
-
-    function _withdrawERC20FromPool(IERC20, uint256) external;
-
-    function _borrowERC20FromPool(IERC20, uint256) external;
-
-    function _repayERC20ToPool(
-        IERC20,
-        uint256,
-        uint256
-    ) external;
 }
