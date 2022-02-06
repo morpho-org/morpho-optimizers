@@ -45,6 +45,17 @@ contract LiquidatorForAave is Ownable, IFlashLoanReceiver {
         uint256 debtToCover; // the amount of the debt to liquidate
         uint24 fees; // the fees corresponding to the uniswap swap of collateralAsset => borrowedAsset
     }
+    struct ContractBalanceParams {
+        address initiator; // the address of the user which will receive funds
+        IERC20 debtToken;
+        IERC20 collateralToken;
+        uint256 debtBalanceBefore;
+        uint256 collateralBalanceBefore;
+        uint256 debtBalanceAfter;
+        uint256 collateralBalanceAfter;
+        uint256 rewarded;
+        bool usingSwap;
+    }
 
     struct LiquidationCallLocalVars {
         uint256 initFlashBorrowedBalance;
@@ -76,7 +87,8 @@ contract LiquidatorForAave is Ownable, IFlashLoanReceiver {
         address indexed _debtMarket,
         address indexed _poolTokenCollateralAddress,
         uint256 _amount,
-        uint256 _amountRewarded // in collateral unit
+        uint256 _amountRewarded, // in collateral unit
+        bool _usingSwap
     );
 
     /// @dev Emitted when the `lendingPool` is updated on the `liquidationForMorpho` contract.
@@ -136,40 +148,32 @@ contract LiquidatorForAave is Ownable, IFlashLoanReceiver {
         address _onBehalfOf
     ) public {
         // init assets
-        address initiator = _onBehalfOf == address(0) ? msg.sender : _onBehalfOf;
-        IERC20 debtToken = IERC20(IAToken(_repayPoolToken).UNDERLYING_ASSET_ADDRESS());
-        IERC20 collateralToken = IERC20(IAToken(_seizePoolToken).UNDERLYING_ASSET_ADDRESS());
-        uint256 debtBalanceBefore = debtToken.balanceOf(address(this));
-        uint256 collateralBalanceBefore = collateralToken.balanceOf(address(this));
-        uint256 rewarded;
+        ContractBalanceParams memory params;
+        params.initiator = _onBehalfOf == address(0) ? msg.sender : _onBehalfOf;
+        params.debtToken = IERC20(IAToken(_repayPoolToken).UNDERLYING_ASSET_ADDRESS());
+        params.collateralToken = IERC20(IAToken(_seizePoolToken).UNDERLYING_ASSET_ADDRESS());
+        params.debtBalanceBefore = params.debtToken.balanceOf(address(this));
+        params.collateralBalanceBefore = params.collateralToken.balanceOf(address(this));
 
-        if ((initiator == address(this) || msg.sender == owner()) && debtBalanceBefore >= _amount) {
+        if ((params.initiator == address(this) || msg.sender == owner()) && params.debtBalanceBefore >= _amount) {
             // the contract will keep funds & have already enough funds to cover the debt
             // we do not need to use a flash swap
 
             // Liquidate the borrower position and release the underlying collateral
             positionsManager.liquidate(_repayPoolToken, _seizePoolToken, _borrower, _amount);
-            rewarded = collateralToken.balanceOf(address(this)) - collateralBalanceBefore;
-            emit Liquidated(
-                msg.sender,
-                _borrower,
-                _repayPoolToken,
-                _seizePoolToken,
-                _amount,
-                rewarded
-            );
+            params.usingSwap = false;
         } else {
             // Initiate flash loan params
             FlashLoanParams memory flashLoansParams;
 
             flashLoansParams.marketsToLoan = new address[](1);
-            flashLoansParams.marketsToLoan[0] = address(debtToken);
+            flashLoansParams.marketsToLoan[0] = address(params.debtToken);
             flashLoansParams.receiverAddress = address(this);
 
             // Transfer data to proceed to the liquidation
             flashLoansParams.data = abi.encode(
-                address(collateralToken),
-                address(debtToken),
+                address(params.collateralToken),
+                address(params.debtToken),
                 _seizePoolToken,
                 _repayPoolToken,
                 _borrower,
@@ -194,26 +198,25 @@ contract LiquidatorForAave is Ownable, IFlashLoanReceiver {
                 flashLoansParams.data,
                 0
             );
-
-            // withdraw liquidated amount to the liquidator
-            rewarded = collateralToken.balanceOf(address(this)) - collateralBalanceBefore;
-
-            emit Liquidated(
-                msg.sender,
-                _borrower,
-                _repayPoolToken,
-                _seizePoolToken,
-                _amount,
-                rewarded
-            );
+            params.usingSwap = true;
         }
-        uint256 debtBalanceAfter = debtToken.balanceOf(address(this));
-        if (initiator != address(this) && debtBalanceBefore < debtBalanceAfter)
+        params.rewarded = params.collateralToken.balanceOf(address(this)) - params.collateralBalanceBefore;
+        emit Liquidated(
+            msg.sender,
+            _borrower,
+            _repayPoolToken,
+            _seizePoolToken,
+            _amount,
+            params.rewarded,
+            params.usingSwap
+        );
+        params.debtBalanceAfter = params.debtToken.balanceOf(address(this));
+        if (params.initiator != address(this) && params.debtBalanceBefore < params.debtBalanceAfter)
             // withdraw if there is dust on debtToken
-            debtToken.safeTransfer(initiator, debtBalanceAfter - debtBalanceBefore);
+            params.debtToken.safeTransfer(params.initiator, params.debtBalanceAfter - params.debtBalanceBefore);
 
         // transfer rewarded funds to the initiator if needed
-        if (initiator != address(this)) collateralToken.safeTransfer(initiator, rewarded);
+        if (params.initiator != address(this)) params.collateralToken.safeTransfer(params.initiator, params.rewarded);
     }
 
     /**
