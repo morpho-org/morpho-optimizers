@@ -220,66 +220,66 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         if (toBorrow > 0) _borrowERC20FromPool(underlyingToken, toBorrow); // Revert on error
     }
 
-    /// @dev Updates borrowers matching engine with the new balances of a given account.
+    /// @dev Updates borrowers matching engine with the new balances of a given user.
     /// @param _poolTokenAddress The address of the market on which to update the borrowers data structure.
-    /// @param _account The address of the borrower to move.
-    function updateBorrowers(address _poolTokenAddress, address _account) public override {
-        uint256 onPool = borrowBalanceInOf[_poolTokenAddress][_account].onPool;
-        uint256 inP2P = borrowBalanceInOf[_poolTokenAddress][_account].inP2P;
-        uint256 formerValueOnPool = borrowersOnPool[_poolTokenAddress].getValueOf(_account);
-        uint256 formerValueInP2P = borrowersInP2P[_poolTokenAddress].getValueOf(_account);
+    /// @param _user The address of the user.
+    function updateBorrowers(address _poolTokenAddress, address _user) public override {
+        uint256 onPool = borrowBalanceInOf[_poolTokenAddress][_user].onPool;
+        uint256 inP2P = borrowBalanceInOf[_poolTokenAddress][_user].inP2P;
+        uint256 formerValueOnPool = borrowersOnPool[_poolTokenAddress].getValueOf(_user);
+        uint256 formerValueInP2P = borrowersInP2P[_poolTokenAddress].getValueOf(_user);
 
         // Check pool
         bool wasOnPoolAndValueChanged = formerValueOnPool != 0 && formerValueOnPool != onPool;
-        if (wasOnPoolAndValueChanged) borrowersOnPool[_poolTokenAddress].remove(_account);
+        if (wasOnPoolAndValueChanged) borrowersOnPool[_poolTokenAddress].remove(_user);
         if (onPool > 0 && (wasOnPoolAndValueChanged || formerValueOnPool == 0)) {
             uint256 totalStaked = IScaledBalanceToken(_poolTokenAddress).scaledTotalSupply();
             (, , address variableDebtTokenAddress) = dataProvider.getReserveTokensAddresses(
                 IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS()
             );
             rewardsManager.updateUserAssetAndAccruedRewards(
-                _account,
+                _user,
                 variableDebtTokenAddress,
                 formerValueOnPool,
                 totalStaked
             );
-            borrowersOnPool[_poolTokenAddress].insertSorted(_account, onPool, NMAX);
+            borrowersOnPool[_poolTokenAddress].insertSorted(_user, onPool, NMAX);
         }
 
         // Check P2P
         bool wasInP2PAndValueChanged = formerValueInP2P != 0 && formerValueInP2P != inP2P;
-        if (wasInP2PAndValueChanged) borrowersInP2P[_poolTokenAddress].remove(_account);
+        if (wasInP2PAndValueChanged) borrowersInP2P[_poolTokenAddress].remove(_user);
         if (inP2P > 0 && (wasInP2PAndValueChanged || formerValueInP2P == 0))
-            borrowersInP2P[_poolTokenAddress].insertSorted(_account, inP2P, NMAX);
+            borrowersInP2P[_poolTokenAddress].insertSorted(_user, inP2P, NMAX);
     }
 
-    /// @dev Updates suppliers matching engine with the new balances of a given account.
+    /// @dev Updates suppliers matching engine with the new balances of a given user.
     /// @param _poolTokenAddress The address of the market on which to update the suppliers data structure.
-    /// @param _account The address of the supplier to move.
-    function updateSuppliers(address _poolTokenAddress, address _account) public override {
-        uint256 onPool = supplyBalanceInOf[_poolTokenAddress][_account].onPool;
-        uint256 inP2P = supplyBalanceInOf[_poolTokenAddress][_account].inP2P;
-        uint256 formerValueOnPool = suppliersOnPool[_poolTokenAddress].getValueOf(_account);
-        uint256 formerValueInP2P = suppliersInP2P[_poolTokenAddress].getValueOf(_account);
+    /// @param _user The address of the user.
+    function updateSuppliers(address _poolTokenAddress, address _user) public override {
+        uint256 onPool = supplyBalanceInOf[_poolTokenAddress][_user].onPool;
+        uint256 inP2P = supplyBalanceInOf[_poolTokenAddress][_user].inP2P;
+        uint256 formerValueOnPool = suppliersOnPool[_poolTokenAddress].getValueOf(_user);
+        uint256 formerValueInP2P = suppliersInP2P[_poolTokenAddress].getValueOf(_user);
 
         // Check pool
         bool wasOnPoolAndValueChanged = formerValueOnPool != 0 && formerValueOnPool != onPool;
-        if (wasOnPoolAndValueChanged) suppliersOnPool[_poolTokenAddress].remove(_account);
+        if (wasOnPoolAndValueChanged) suppliersOnPool[_poolTokenAddress].remove(_user);
         if (onPool > 0 && (wasOnPoolAndValueChanged || formerValueOnPool == 0)) {
             uint256 totalStaked = IScaledBalanceToken(_poolTokenAddress).scaledTotalSupply();
             rewardsManager.updateUserAssetAndAccruedRewards(
-                _account,
+                _user,
                 _poolTokenAddress,
                 formerValueOnPool,
                 totalStaked
             );
-            suppliersOnPool[_poolTokenAddress].insertSorted(_account, onPool, NMAX);
+            suppliersOnPool[_poolTokenAddress].insertSorted(_user, onPool, NMAX);
         }
 
         // Check P2P
         bool wasInP2PAndValueChanged = formerValueInP2P != 0 && formerValueInP2P != inP2P;
-        if (wasInP2PAndValueChanged) suppliersInP2P[_poolTokenAddress].remove(_account);
+        if (wasInP2PAndValueChanged) suppliersInP2P[_poolTokenAddress].remove(_user);
         if (inP2P > 0 && (wasInP2PAndValueChanged || formerValueInP2P == 0))
-            suppliersInP2P[_poolTokenAddress].insertSorted(_account, inP2P, NMAX);
+            suppliersInP2P[_poolTokenAddress].insertSorted(_user, inP2P, NMAX);
     }
 }
