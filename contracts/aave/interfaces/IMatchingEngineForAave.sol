@@ -21,7 +21,7 @@ interface IMatchingEngineForAave {
 
     function unmatchBorrowers(address, uint256) external;
 
-    function updateBorrowers(address _poolTokenAddress, address _account) external;
+    function updateBorrowers(address _poolTokenAddress, address _user) external;
 
-    function updateSuppliers(address _poolTokenAddress, address _account) external;
+    function updateSuppliers(address _poolTokenAddress, address _user) external;
 }

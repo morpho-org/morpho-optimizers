@@ -33,7 +33,7 @@ contract MarketsManagerForAave is Ownable {
     mapping(address => uint256) public exchangeRatesLastUpdateTimestamp; // The last time the P2P exchange rates were updated.
     mapping(address => bool) public noP2P; // Whether to put users on pool or not for the given market.
 
-    IPositionsManagerForAave public positionsManagerForAave;
+    IPositionsManagerForAave public positionsManager;
     ILendingPoolAddressesProvider public addressesProvider;
     ILendingPool public lendingPool;
 
@@ -43,13 +43,13 @@ contract MarketsManagerForAave is Ownable {
     /// @param _marketAddress The address of the market that has been created.
     event MarketCreated(address _marketAddress);
 
-    /// @dev Emitted when the lendingPool is updated on the `positionsManagerForAave`.
+    /// @dev Emitted when the lendingPool is updated on the `positionsManager`.
     /// @param _lendingPoolAddress The address of the lending pool.
     event LendingPoolUpdated(address _lendingPoolAddress);
 
-    /// @dev Emitted when the `positionsManagerForAave` is set.
-    /// @param _positionsManagerForAave The address of the `positionsManagerForAave`.
-    event PositionsManagerSet(address _positionsManagerForAave);
+    /// @dev Emitted when the `positionsManager` is set.
+    /// @param _positionsManager The address of the `positionsManager`.
+    event PositionsManagerSet(address _positionsManager);
 
     /// @dev Emitted when a threshold of a market is set.
     /// @param _marketAddress The address of the market to set.
@@ -116,12 +116,12 @@ contract MarketsManagerForAave is Ownable {
 
     /// External ///
 
-    /// @dev Sets the `positionsManagerForAave` to interact with Aave.
-    /// @param _positionsManagerForAave The address of the `positionsManagerForAave`.
-    function setPositionsManager(address _positionsManagerForAave) external onlyOwner {
-        if (address(positionsManagerForAave) != address(0)) revert PositionsManagerAlreadySet();
-        positionsManagerForAave = IPositionsManagerForAave(_positionsManagerForAave);
-        emit PositionsManagerSet(_positionsManagerForAave);
+    /// @dev Sets the `positionsManager` to interact with Aave.
+    /// @param _positionsManager The address of the `positionsManager`.
+    function setPositionsManager(address _positionsManager) external onlyOwner {
+        if (address(positionsManager) != address(0)) revert PositionsManagerAlreadySet();
+        positionsManager = IPositionsManagerForAave(_positionsManager);
+        emit PositionsManagerSet(_positionsManager);
     }
 
     /// @dev Updates the lending pool.
@@ -153,7 +153,7 @@ contract MarketsManagerForAave is Ownable {
         supplyP2PExchangeRate[_marketAddress] = WadRayMath.ray();
         borrowP2PExchangeRate[_marketAddress] = WadRayMath.ray();
 
-        positionsManagerForAave.setThreshold(_marketAddress, _threshold);
+        positionsManager.setThreshold(_marketAddress, _threshold);
 
         _updateSPYs(_marketAddress);
         marketsCreated.push(_marketAddress);
@@ -168,7 +168,7 @@ contract MarketsManagerForAave is Ownable {
         onlyOwner
         isMarketCreated(_marketAddress)
     {
-        positionsManagerForAave.setThreshold(_marketAddress, _newThreshold);
+        positionsManager.setThreshold(_marketAddress, _newThreshold);
         emit ThresholdSet(_marketAddress, _newThreshold);
     }
 
