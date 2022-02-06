@@ -277,7 +277,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
 
     /// @dev Sets the maximum number of users in data structure.
     /// @param _newMaxNumber The maximum number of users to sort in the data structure.
-    function setNmaxForMatchingEngine(uint16 _newMaxNumber) external onlyMarketsManagerOwner {
+    function setNmaxForMatchingEngine(uint8 _newMaxNumber) external onlyMarketsManagerOwner {
         NMAX = _newMaxNumber;
         emit MaxNumberSet(_newMaxNumber);
     }

@@ -72,7 +72,7 @@ contract User {
         );
     }
 
-    function setNmaxForMatchingEngine(uint16 _newMaxNumber) external {
+    function setNmaxForMatchingEngine(uint8 _newMaxNumber) external {
         positionsManager.setNmaxForMatchingEngine(_newMaxNumber);
     }
 

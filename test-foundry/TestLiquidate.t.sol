@@ -123,7 +123,7 @@ contract TestLiquidate is TestSetup {
         supplier1.supply(aDai, suppliedAmount);
 
         // NMAX borrowers have debt waiting on pool
-        uint16 NMAX = 20;
+        uint8 NMAX = 20;
         positionsManager.setNmaxForMatchingEngine(NMAX);
         createSigners(NMAX);
 

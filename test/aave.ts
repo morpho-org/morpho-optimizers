@@ -191,7 +191,7 @@ describe('PositionsManagerForAave Contract', () => {
     });
 
     it('Should update NMAX', async () => {
-      const newNMAX = BigNumber.from(3000);
+      const newNMAX = BigNumber.from(30);
       expect(positionsManagerForAave.connect(supplier1).setNmaxForMatchingEngine(newNMAX)).to.be.reverted;
       expect(positionsManagerForAave.connect(borrower1).setNmaxForMatchingEngine(newNMAX)).to.be.reverted;
       await positionsManagerForAave.connect(owner).setNmaxForMatchingEngine(newNMAX);
