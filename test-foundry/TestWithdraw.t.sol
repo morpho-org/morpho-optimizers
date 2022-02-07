@@ -470,19 +470,23 @@ contract TestWithdraw is TestSetup {
         testEquality(inP2PSupplier, 0);
 
         // There should be a delta
-        uint256 expectedBorrowP2PDelta = 10 * borrowedAmount;
+        uint256 expectedBorrowP2PDeltaInUnderlying = 10 * borrowedAmount;
+        uint256 expectedBorrowP2PDelta = underlyingToAdUnit(
+            expectedBorrowP2PDeltaInUnderlying,
+            lendingPool.getReserveNormalizedVariableDebt(dai)
+        );
         testEquality(positionsManager.borrowP2PDelta(aDai), expectedBorrowP2PDelta);
 
         // Borrow delta matching by new supplier
-        supplier2.approve(dai, expectedBorrowP2PDelta / 2);
-        supplier2.supply(aDai, expectedBorrowP2PDelta / 2);
+        supplier2.approve(dai, expectedBorrowP2PDeltaInUnderlying / 2);
+        supplier2.supply(aDai, expectedBorrowP2PDeltaInUnderlying / 2);
 
         (inP2PSupplier, onPoolSupplier) = positionsManager.supplyBalanceInOf(
             aDai,
             address(supplier2)
         );
         expectedSupplyBalanceInP2P = underlyingToP2PUnit(
-            expectedBorrowP2PDelta / 2,
+            expectedBorrowP2PDeltaInUnderlying / 2,
             supplyP2PExchangeRate
         );
 
