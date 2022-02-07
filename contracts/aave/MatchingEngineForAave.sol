@@ -66,7 +66,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         uint256 supplyP2PExchangeRate = marketsManager.supplyP2PExchangeRate(poolTokenAddress);
         uint256 iterationCount;
 
-        // match supply P2P delta first
+        // Match supply P2P delta first
         if (supplyP2PDelta[poolTokenAddress] > 0) {
             uint256 toMatch = Math.min(supplyP2PDelta[poolTokenAddress], _amount);
             matchedSupply += toMatch;
@@ -119,7 +119,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         uint256 remainingToUnmatch = _amount; // In underlying
         uint256 iterationCount;
 
-        // reduce borrow P2P delta first
+        // Reduce borrow P2P delta first
         if (borrowP2PDelta[_poolTokenAddress] > 0) {
             uint256 toMatch = Math.min(borrowP2PDelta[_poolTokenAddress], _amount);
             remainingToUnmatch -= toMatch;
@@ -150,6 +150,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
             user = suppliersInP2P[_poolTokenAddress].getHead();
         }
 
+        // If P2PAmount < _amount, the rest stays on the contract (reserve factor)
         uint256 toSupply = Math.min(
             _amount,
             supplyP2PAmount[_poolTokenAddress].mulWadByRay(supplyP2PExchangeRate)
@@ -184,7 +185,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         address user = borrowersOnPool[poolTokenAddress].getHead();
         uint256 iterationCount;
 
-        // match borrow P2P delta first
+        // Match borrow P2P delta first
         if (borrowP2PDelta[poolTokenAddress] > 0) {
             uint256 toMatch = Math.min(borrowP2PDelta[poolTokenAddress], _amount);
             matchedBorrow += toMatch;
@@ -242,7 +243,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         uint256 remainingToUnmatch = _amount;
         uint256 iterationCount;
 
-        // reduce supply P2P delta first
+        // Reduce supply P2P delta first
         if (supplyP2PDelta[_poolTokenAddress] > 0) {
             uint256 toMatch = Math.min(supplyP2PDelta[_poolTokenAddress], _amount);
             remainingToUnmatch -= toMatch;
