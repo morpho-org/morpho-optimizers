@@ -148,5 +148,11 @@
       "address": "0x357D51124f59836DeD84c8a1730D72B749d8BC23",
       "abi": "@config/abis/polygon/AaveIncentivesController.json"
     }
+  },
+  "uni-v3": {
+    "swapRouter": {
+      "address": "0xE592427A0AEce92De3Edee1F18E0157C05861564",
+      "abi": "@config/abis/polygon/SwapRouter.json"
+    }
   }
 }
