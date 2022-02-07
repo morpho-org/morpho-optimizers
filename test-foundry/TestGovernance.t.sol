@@ -34,7 +34,7 @@ contract TestGovernance is TestSetup {
     }
 
     // Only Owner should be able to create markets in peer-to-peer
-    function test_only_owner_can_create_markets_1() public {
+    function test_only_owner_can_create_markets() public {
         for (uint256 i = 0; i < pools.length; i++) {
             hevm.expectRevert("Ownable: caller is not the owner");
             supplier1.createMarket(underlyings[i], WAD);

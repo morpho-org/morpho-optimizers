@@ -93,4 +93,8 @@ contract User {
     {
         rewardsManager.setAaveIncentivesController(_aaveIncentivesController);
     }
+
+    function deposit(address _asset, uint256 _amount) external {
+        positionsManager.lendingPool().deposit(_asset, _amount, address(this), 0);
+    }
 }
