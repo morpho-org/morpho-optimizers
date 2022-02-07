@@ -125,8 +125,8 @@ contract User {
         positionsManager.setMaxGas(_maxGas);
     }
 
-    function claimRewards(address[] calldata _assets) external {
-        positionsManager.claimRewards(_assets);
+    function claimRewards(address[] calldata _assets, bool _toSwap) external {
+        positionsManager.claimRewards(_assets, _toSwap);
     }
 
     function setNoP2P(address _marketAddress, bool _noP2P) external {
