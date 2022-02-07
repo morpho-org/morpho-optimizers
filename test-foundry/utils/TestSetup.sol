@@ -4,22 +4,26 @@ pragma solidity 0.8.7;
 import "hardhat/console.sol";
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
 import "@contracts/aave/interfaces/aave/IPriceOracleGetter.sol";
 
 import "@contracts/aave/PositionsManagerForAave.sol";
 import "@contracts/aave/MarketsManagerForAave.sol";
 import "@contracts/aave/RewardsManager.sol";
+import "@contracts/aave/SwapManager.sol";
 import "@contracts/aave/test/SimplePriceOracle.sol";
 import "@config/Config.sol";
 import "./HEVM.sol";
 import "./Utils.sol";
 import "./User.sol";
+import "./MorphoToken.sol";
+import "./UniswapPoolCreator.sol";
 
 contract TestSetup is Config, Utils {
     using WadRayMath for uint256;
 
     uint256 public constant MAX_BASIS_POINTS = 10000;
-    uint256 constant INITIAL_BALANCE = 1_000_000;
+    uint256 public constant INITIAL_BALANCE = 1_000_000;
 
     HEVM public hevm = HEVM(HEVM_ADDRESS);
 
@@ -27,6 +31,9 @@ contract TestSetup is Config, Utils {
     PositionsManagerForAave internal fakePositionsManager;
     MarketsManagerForAave internal marketsManager;
     RewardsManager internal rewardsManager;
+    SwapManager public swapManager;
+    UniswapPoolCreator public uniswapPoolCreator;
+    MorphoToken public morphoToken;
 
     ILendingPoolAddressesProvider public lendingPoolAddressesProvider;
     ILendingPool public lendingPool;
@@ -47,17 +54,26 @@ contract TestSetup is Config, Utils {
     address[] public pools;
 
     function setUp() public {
+        // Create a MORPHO / WETH pool
+        // uniswapPoolCreator = new UniswapPoolCreator();
+        // writeBalanceOf(address(uniswapPoolCreator), weth, INITIAL_BALANCE * WAD);
+        // morphoToken = new MorphoToken(address(uniswapPoolCreator));
+        // uniswapPoolCreator.createPoolAndMintPosition(address(morphoToken));
+        swapManager = new SwapManager();
+
         marketsManager = new MarketsManagerForAave(lendingPoolAddressesProviderAddress);
         positionsManager = new PositionsManagerForAave(
             address(marketsManager),
-            lendingPoolAddressesProviderAddress
+            lendingPoolAddressesProviderAddress,
+            swapManager
         );
 
         treasuryVault = new User(positionsManager, marketsManager, rewardsManager, lendingPool);
 
         fakePositionsManager = new PositionsManagerForAave(
             address(marketsManager),
-            lendingPoolAddressesProviderAddress
+            lendingPoolAddressesProviderAddress,
+            swapManager
         );
 
         rewardsManager = new RewardsManager(
