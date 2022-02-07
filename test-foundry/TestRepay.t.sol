@@ -462,20 +462,24 @@ contract TestRepay is TestSetup {
         testEquality(inP2PBorrower, 0);
 
         // There should be a delta
-        uint256 expectedSupplyP2PDelta = 10 * suppliedAmount;
+        uint256 expectedSupplyP2PDeltaInUnderlying = 10 * suppliedAmount;
+        uint256 expectedSupplyP2PDelta = underlyingToScaledBalance(
+            expectedSupplyP2PDeltaInUnderlying,
+            lendingPool.getReserveNormalizedIncome(dai)
+        );
         testEquality(positionsManager.supplyP2PDelta(aDai), expectedSupplyP2PDelta);
 
         // Supply delta matching by a new borrower
         borrower2.approve(usdc, to6Decimals(collateral));
         borrower2.supply(aUsdc, to6Decimals(collateral));
-        borrower2.borrow(aDai, expectedSupplyP2PDelta / 2);
+        borrower2.borrow(aDai, expectedSupplyP2PDeltaInUnderlying / 2);
 
         (inP2PBorrower, onPoolBorrower) = positionsManager.borrowBalanceInOf(
             aDai,
             address(borrower2)
         );
         expectedBorrowBalanceInP2P = underlyingToP2PUnit(
-            expectedSupplyP2PDelta / 2,
+            expectedSupplyP2PDeltaInUnderlying / 2,
             borrowP2PExchangeRate
         );
 
