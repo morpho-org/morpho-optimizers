@@ -71,6 +71,7 @@
   },
   "dependencies": {
     "@openzeppelin/contracts": "4.2.0",
+    "@uniswap/v3-periphery": "^1.4.0",
     "prb-math": "2.2.0"
   },
   "husky": {
