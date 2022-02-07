@@ -457,8 +457,8 @@ contract TestWithdraw is TestSetup {
             testEquality(inP2PBorrower, expectedBorrowBalanceInP2P);
         }
 
-        // supplier withdraws max
-        // should create a delta on borrowers side
+        // Supplier withdraws max
+        // Should create a delta on borrowers side
         supplier1.withdraw(aDai, type(uint256).max);
 
         // Check balances for supplier1
