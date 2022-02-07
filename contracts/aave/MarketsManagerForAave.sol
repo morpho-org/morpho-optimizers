@@ -244,6 +244,7 @@ contract MarketsManagerForAave is Ownable {
             uint256 shareOfTheDelta = positionsManager
             .supplyP2PDelta(_marketAddress)
             .rayMul(supplyP2PExchangeRate[_marketAddress])
+            .rayDiv(normalizedIncome)
             .rayDiv(positionsManager.supplyP2PAmount(_marketAddress)); // in RAY
 
             supplyP2PExchangeRate[_marketAddress] = supplyP2PExchangeRate[_marketAddress].rayMul(
@@ -274,6 +275,7 @@ contract MarketsManagerForAave is Ownable {
             uint256 shareOfTheDelta = positionsManager
             .borrowP2PDelta(_marketAddress)
             .rayMul(borrowP2PExchangeRate[_marketAddress])
+            .rayDiv(normalizedVariableDebt)
             .rayDiv(positionsManager.borrowP2PAmount(_marketAddress)); // in RAY
 
             borrowP2PExchangeRate[_marketAddress] = borrowP2PExchangeRate[_marketAddress].rayMul(
