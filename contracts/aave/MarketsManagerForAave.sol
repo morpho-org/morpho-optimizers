@@ -28,8 +28,8 @@ contract MarketsManagerForAave is Ownable {
     mapping(address => bool) public isCreated; // Whether or not this market is created.
     mapping(address => uint256) public supplyP2PSPY; // Supply Percentage Yield per second, in ray.
     mapping(address => uint256) public borrowP2PSPY; // Borrow Percentage Yield per second, in ray.
-    mapping(address => uint256) public supplyP2PExchangeRate; // Current exchange rate from supply p2pUnit to underlying.
-    mapping(address => uint256) public borrowP2PExchangeRate; // Current exchange rate from borrow p2pUnit to underlying.
+    mapping(address => uint256) public supplyP2PExchangeRate; // Current exchange rate from supply p2pUnit to underlying (in ray).
+    mapping(address => uint256) public borrowP2PExchangeRate; // Current exchange rate from borrow p2pUnit to underlying (in ray).
     mapping(address => uint256) public exchangeRatesLastUpdateTimestamp; // The last time the P2P exchange rates were updated.
     mapping(address => bool) public noP2P; // Whether to put users on pool or not for the given market.
 
