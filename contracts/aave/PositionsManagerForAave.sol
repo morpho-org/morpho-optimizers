@@ -187,6 +187,12 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
     /// @param _amountClaimed The amount of reward token claimed.
     event RewardsClaimed(address _user, uint256 _amountClaimed);
 
+    /// @dev Emitted when a user claims rewards and swap them to Morpho tokens.
+    /// @param _user The address of the claimer.
+    /// @param _amountIn The amount of reward token swapped.
+    /// @param _amountOut The amount of tokens received.
+    event RewardsClaimedAndSwapped(address _user, uint256 _amountIn, uint256 _amountOut);
+
     /// Errors ///
 
     /// @notice Thrown when the amount is equal to 0.
@@ -250,12 +256,18 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
     /// @dev Constructs the PositionsManagerForAave contract.
     /// @param _marketsManager The address of the aave `marketsManager`.
     /// @param _lendingPoolAddressesProvider The address of the `addressesProvider`.
-    constructor(address _marketsManager, address _lendingPoolAddressesProvider) {
+    /// @param _swapManager The `swapManager`.
+    constructor(
+        address _marketsManager,
+        address _lendingPoolAddressesProvider,
+        ISwapManager _swapManager
+    ) {
         marketsManager = IMarketsManagerForAave(_marketsManager);
         addressesProvider = ILendingPoolAddressesProvider(_lendingPoolAddressesProvider);
         dataProvider = IProtocolDataProvider(addressesProvider.getAddress(DATA_PROVIDER_ID));
         lendingPool = ILendingPool(addressesProvider.getLendingPool());
         matchingEngine = new MatchingEngineForAave();
+        swapManager = _swapManager;
     }
 
     /// @dev Updates the `lendingPool` and the `dataProvider`.
@@ -322,15 +334,30 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
 
     /// @dev Claims rewards for the given assets and the unclaimed rewards.
     /// @param _assets The assets to claim rewards from (aToken or variable debt token).
-    function claimRewards(address[] calldata _assets) external {
+    /// @param _toSwap Whether or not to swap trewards okens for Morpho token.
+    function claimRewards(address[] calldata _assets, bool _toSwap) external {
         uint256 amountToClaim = rewardsManager.claimRewards(_assets, type(uint256).max, msg.sender);
+
         if (amountToClaim > 0) {
             uint256 amountClaimed = aaveIncentivesController.claimRewards(
                 _assets,
                 amountToClaim,
-                msg.sender
+                address(this)
             );
-            emit RewardsClaimed(msg.sender, amountClaimed);
+            IERC20 rewardToken = IERC20(aaveIncentivesController.REWARD_TOKEN());
+
+            if (_toSwap) {
+                rewardToken.safeIncreaseAllowance(address(swapManager), amountClaimed);
+                uint256 amountOut = swapManager.swapToMorphoToken(
+                    address(rewardToken),
+                    amountClaimed,
+                    msg.sender
+                );
+                emit RewardsClaimedAndSwapped(msg.sender, amountClaimed, amountOut);
+            } else {
+                rewardToken.transfer(msg.sender, amountClaimed);
+                emit RewardsClaimed(msg.sender, amountClaimed);
+            }
         }
     }
 

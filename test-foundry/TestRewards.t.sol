@@ -13,7 +13,7 @@ contract TestRewards is TestSetup {
         uint256 index = IAaveIncentivesController(aaveIncentivesControllerAddress)
         .assets(aDai)
         .index;
-        uint256 balanceBefore = IERC20(wmatic).balanceOf(address(supplier1));
+        uint256 balanceBefore = supplier1.balanceOf(wmatic);
         (, uint256 onPool) = positionsManager.supplyBalanceInOf(aDai, address(supplier1));
         uint256 userIndex = rewardsManager.getUserIndex(aDai, address(supplier1));
         address[] memory aDaiInArray = new address[](1);
@@ -29,10 +29,10 @@ contract TestRewards is TestSetup {
         supplier2.approve(dai, toSupply);
         supplier2.supply(aDai, toSupply);
         hevm.warp(block.timestamp + 365 days);
-        positionsManager.claimRewards(aDaiInArray);
+        positionsManager.claimRewards(aDaiInArray, false);
         index = IAaveIncentivesController(aaveIncentivesControllerAddress).assets(aDai).index;
         uint256 expectedClaimed = (onPool * (index - userIndex)) / WAD;
-        uint256 balanceAfter = IERC20(wmatic).balanceOf(address(supplier1));
+        uint256 balanceAfter = supplier1.balanceOf(wmatic);
         uint256 expectedNewBalance = expectedClaimed + balanceBefore;
         assertEq(balanceAfter, expectedNewBalance);
     }
@@ -44,20 +44,20 @@ contract TestRewards is TestSetup {
         supplier1.approve(dai, toSupply);
         supplier1.supply(aDai, toSupply);
         supplier1.borrow(aUsdc, toBorrow);
-        uint256 rewardBalanceBefore = IERC20(wmatic).balanceOf(address(supplier1));
+        uint256 rewardBalanceBefore = supplier1.balanceOf(wmatic);
 
         hevm.warp(block.timestamp + 365 days);
 
         address[] memory aDaiInArray = new address[](1);
         aDaiInArray[0] = aDai;
-        supplier1.claimRewards(aDaiInArray);
-        uint256 rewardBalanceAfter1 = IERC20(wmatic).balanceOf(address(supplier1));
+        supplier1.claimRewards(aDaiInArray, false);
+        uint256 rewardBalanceAfter1 = supplier1.balanceOf(wmatic);
         assertGt(rewardBalanceAfter1, rewardBalanceBefore);
 
         address[] memory debtUsdcInArray = new address[](1);
         debtUsdcInArray[0] = variableDebtUsdc;
-        supplier1.claimRewards(debtUsdcInArray);
-        uint256 rewardBalanceAfter2 = IERC20(wmatic).balanceOf(address(supplier1));
+        supplier1.claimRewards(debtUsdcInArray, false);
+        uint256 rewardBalanceAfter2 = supplier1.balanceOf(wmatic);
         assertGt(rewardBalanceAfter2, rewardBalanceAfter1);
     }
 
@@ -69,14 +69,14 @@ contract TestRewards is TestSetup {
         supplier1.supply(aDai, toSupply);
         supplier2.approve(usdc, toSupply2);
         supplier2.supply(aUsdc, toSupply2);
-        uint256 rewardBalanceBefore = IERC20(wmatic).balanceOf(address(supplier1));
+        uint256 rewardBalanceBefore = supplier1.balanceOf(wmatic);
 
         hevm.warp(block.timestamp + 365 days);
 
         address[] memory aUsdcInArray = new address[](1);
         aUsdcInArray[0] = aUsdc;
-        supplier1.claimRewards(aUsdcInArray);
-        uint256 rewardBalanceAfter = IERC20(wmatic).balanceOf(address(supplier1));
+        supplier1.claimRewards(aUsdcInArray, false);
+        uint256 rewardBalanceAfter = supplier1.balanceOf(wmatic);
         assertEq(rewardBalanceAfter, rewardBalanceBefore);
 
         uint256 unclaimedRewards = rewardsManager.accrueUserUnclaimedRewards(
@@ -93,7 +93,7 @@ contract TestRewards is TestSetup {
         supplier1.approve(dai, toSupply);
         supplier1.supply(aDai, toSupply);
         supplier1.borrow(aUsdc, toBorrow);
-        uint256 rewardBalanceBefore = IERC20(wmatic).balanceOf(address(supplier1));
+        uint256 rewardBalanceBefore = supplier1.balanceOf(wmatic);
 
         hevm.warp(block.timestamp + 365 days);
 
@@ -115,8 +115,8 @@ contract TestRewards is TestSetup {
         );
         assertGt(allUnclaimedRewards, unclaimedRewardsForDai);
 
-        supplier1.claimRewards(tokensInArray);
-        uint256 rewardBalanceAfter = IERC20(wmatic).balanceOf(address(supplier1));
+        supplier1.claimRewards(tokensInArray, false);
+        uint256 rewardBalanceAfter = supplier1.balanceOf(wmatic);
 
         assertGt(rewardBalanceAfter, rewardBalanceBefore);
 
@@ -149,9 +149,9 @@ contract TestRewards is TestSetup {
         address[] memory tokensInArray = new address[](2);
         tokensInArray[0] = aDai;
         tokensInArray[1] = variableDebtUsdc;
-        supplier1.claimRewards(tokensInArray);
-        supplier2.claimRewards(tokensInArray);
-        supplier3.claimRewards(tokensInArray);
+        supplier1.claimRewards(tokensInArray, false);
+        supplier2.claimRewards(tokensInArray, false);
+        supplier3.claimRewards(tokensInArray, false);
 
         uint256[4] memory balanceAfter;
         balanceAfter[1] = IERC20(wmatic).balanceOf(address(supplier1));
@@ -250,5 +250,25 @@ contract TestRewards is TestSetup {
         supplier2.borrow(aUsdc, toBorrow);
         supplier3.supply(aDai, toSupply);
         supplier3.borrow(aUsdc, toBorrow);
+    }
+
+    function test_claim_and_swap() public {
+        uint256 toSupply = 100 * WAD;
+        supplier1.approve(dai, toSupply);
+        supplier1.supply(aDai, toSupply);
+
+        uint256 morphoBalanceBefore = supplier1.balanceOf(dai);
+        uint256 rewardBalanceBefore = supplier1.balanceOf(wmatic);
+
+        address[] memory aDaiInArray = new address[](1);
+        aDaiInArray[0] = aDai;
+
+        hevm.warp(block.timestamp + 365 days);
+        supplier1.claimRewards(aDaiInArray, true);
+
+        uint256 morphoBalanceAfter = supplier1.balanceOf(dai);
+        uint256 rewardBalanceAfter = supplier1.balanceOf(wmatic);
+        assertGt(morphoBalanceAfter, morphoBalanceBefore);
+        assertEq(rewardBalanceBefore, rewardBalanceAfter);
     }
 }

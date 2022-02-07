@@ -9,6 +9,7 @@ import "./interfaces/aave/ILendingPool.sol";
 import "./interfaces/IMarketsManagerForAave.sol";
 import "./interfaces/IMatchingEngineForAave.sol";
 import "./interfaces/IRewardsManager.sol";
+import "./interfaces/ISwapManager.sol";
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
@@ -60,6 +61,7 @@ contract PositionsManagerForAaveStorage is ReentrancyGuard {
     IProtocolDataProvider public dataProvider;
     IMarketsManagerForAave public marketsManager;
     IMatchingEngineForAave public matchingEngine;
+    ISwapManager public swapManager;
     address public treasuryVault;
 
     /// Internal ///
