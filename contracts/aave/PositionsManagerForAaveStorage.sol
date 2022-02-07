@@ -49,8 +49,8 @@ contract PositionsManagerForAaveStorage is ReentrancyGuard {
     mapping(address => DoubleLinkedList.List) internal borrowersOnPool; // Borrowers on Aave.
     mapping(address => mapping(address => SupplyBalance)) public supplyBalanceInOf; // For a given market, the supply balance of a user.
     mapping(address => mapping(address => BorrowBalance)) public borrowBalanceInOf; // For a given market, the borrow balance of a user.
-    mapping(address => uint256) public supplyP2PDelta; // Difference between the stored P2P supply amount and the real P2P supply amount (in underlying).
-    mapping(address => uint256) public borrowP2PDelta; // Difference between the stored P2P borrow amount and the real P2P borrow amount (in underlying).
+    mapping(address => uint256) public supplyP2PDelta; // Difference between the stored P2P supply amount and the real P2P supply amount (in aToken).
+    mapping(address => uint256) public borrowP2PDelta; // Difference between the stored P2P borrow amount and the real P2P borrow amount (in adUnit).
     mapping(address => uint256) public supplyP2PAmount; // Sum of all stored P2P supply (in P2P unit).
     mapping(address => uint256) public borrowP2PAmount; // Sum of all stored P2P borrow (in P2P unit).
     mapping(address => mapping(address => bool)) public userMembership; // Whether the user is in the market or not.
