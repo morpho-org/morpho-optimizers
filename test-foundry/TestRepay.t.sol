@@ -424,8 +424,8 @@ contract TestRepay is TestSetup {
             testEquality(inP2PSupplier, expectedSupplyBalanceInP2P);
         }
 
-        // borrower repays max
-        // should create a delta on suppliers side
+        // Borrower repays max
+        // Should create a delta on suppliers side
         borrower1.approve(dai, type(uint256).max);
         borrower1.repay(aDai, type(uint256).max);
 
