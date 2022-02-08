@@ -2,6 +2,7 @@
 pragma solidity 0.8.7;
 
 import "./utils/TestSetup.sol";
+import "hardhat/console.sol";
 
 contract TestGovernance is TestSetup {
     // ==============
@@ -44,6 +45,33 @@ contract TestGovernance is TestSetup {
         }
 
         marketsManager.createMarket(aWeth, WAD);
+    }
+
+    // Only Owner should be able to change threshold
+    function test_only_owner_can_change_threshold() public {
+        for (uint256 i = 0; i < pools.length; i++) {
+            hevm.expectRevert("Ownable: caller is not the owner");
+            supplier1.setThreshold(pools[i], WAD);
+
+            hevm.expectRevert("Ownable: caller is not the owner");
+            borrower1.setThreshold(pools[i], WAD);
+        }
+
+        marketsManager.setThreshold(aDai, WAD);
+    }
+
+    // Only Owner should be able to change reserve factor
+    function test_only_owner_can_change_reserveFactor() public {
+        for (uint256 i = 0; i < pools.length; i++) {
+            hevm.expectRevert("Ownable: caller is not the owner");
+            supplier1.setReserveFactor(1111);
+
+            hevm.expectRevert("Ownable: caller is not the owner");
+            borrower1.setReserveFactor(1111);
+        }
+
+        marketsManager.setReserveFactor(1111);
+        assertEq(marketsManager.reserveFactor(), 1111);
     }
 
     // marketsManagerForAave should not be changed after already set by Owner
