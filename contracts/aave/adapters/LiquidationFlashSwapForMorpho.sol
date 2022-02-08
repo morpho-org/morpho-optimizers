@@ -7,12 +7,14 @@ import "../interfaces/aave/IFlashLoanReceiver.sol";
 import "../interfaces/aave/ILendingPoolAddressesProvider.sol";
 import "../interfaces/aave/ILendingPool.sol";
 import "../interfaces/uniswap/ISwapRouter.sol";
-import "../PositionsManagerForAave.sol";
-import "../libraries/math/PercentageMath.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+
+import "../libraries/math/PercentageMath.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "../PositionsManagerForAave.sol";
 
 contract FlashSwapLiquidatorForMorpho is Ownable, IFlashLoanReceiver {
     using PercentageMath for uint256;
@@ -28,25 +30,26 @@ contract FlashSwapLiquidatorForMorpho is Ownable, IFlashLoanReceiver {
     ///  Structs  ///
 
     struct FlashLoanParams {
-        address receiverAddress;
         address[] marketsToLoan;
         uint256[] amounts;
         uint256[] modes;
+        address receiverAddress;
         uint24 fees;
         bytes data;
     }
 
     struct LiquidationParams {
-        address collateralAsset; // the address of the collateral underlying
-        address borrowedAsset; // the address of the borrowed (debt) underlying
-        address poolTokenCollateralAddress; // the address of the pool token corresponding to the collateral asset
-        address poolTokenBorrowedAddress; // the address of the pool token correspondinf to the borrowed asset
-        address borrower; // the borrower address
-        uint256 debtToCover; // the amount of the debt to liquidate
-        uint24 fees; // the fees corresponding to the uniswap swap of collateralAsset => borrowedAsset
+        address collateralAsset; // The address of the collateral underlying
+        address borrowedAsset; // The address of the borrowed (debt) underlying
+        address poolTokenCollateralAddress; // The address of the pool token corresponding to the collateral asset
+        address poolTokenBorrowedAddress; // The address of the pool token correspondinf to the borrowed asset
+        address borrower; // The borrower address
+        uint256 debtToCover; // The amount of the debt to liquidate
+        uint24 fees; // The fees corresponding to the uniswap swap of collateralAsset => borrowedAsset
     }
+
     struct ContractBalanceParams {
-        address initiator; // the address of the user which will receive funds
+        address initiator; // The address of the user which will receive funds
         IERC20 debtToken;
         IERC20 collateralToken;
         uint256 debtBalanceBefore;
@@ -79,6 +82,7 @@ contract FlashSwapLiquidatorForMorpho is Ownable, IFlashLoanReceiver {
     );
 
     event Withdraw(address indexed _asset, uint256 _amount);
+
     event Deposit(address indexed _sender, address indexed _asset, uint256 _amount);
 
     event Liquidated(
@@ -128,17 +132,15 @@ contract FlashSwapLiquidatorForMorpho is Ownable, IFlashLoanReceiver {
         emit LendingPoolUpdated(address(lendingPool));
     }
 
-    /**
-     * Main Function
-     * Liquidate a Morpho borrower with a flash swap
-     *
-     * @param _borrower (address): the Morpho borrower to liquidate
-     * @param _repayPoolToken (address): a poolToken for which the borrower is in debt
-     * @param _seizePoolToken (address): a poolToken for which the borrower has a supply balance
-     * @param _amount (uint): the amount (specified in units of _repayPoolToken.underlying) to flash loan and pay off
-     * @param _fees (uint): fees for swap 3000 for normalSwap, 1000 for stable swap, 5000 for exotic swap
-     * @param _onBehalfOf (address): address where the funds will be send to. if is set to this contract, the contract will keep the funds
-     */
+    /// Main Function
+    /// Liquidate a Morpho borrower with a flash swap
+    ///
+    /// @param _borrower (address): the Morpho borrower to liquidate
+    /// @param _repayPoolToken (address): a poolToken for which the borrower is in debt
+    /// @param _seizePoolToken (address): a poolToken for which the borrower has a supply balance
+    /// @param _amount (uint): the amount (specified in units of _repayPoolToken.underlying) to flash loan and pay off
+    /// @param _fees (uint): fees for swap 3000 for normalSwap, 1000 for stable swap, 5000 for exotic swap
+    /// @param _onBehalfOf (address): address where the funds will be send to. if is set to this contract, the contract will keep the funds
     function liquidate(
         address _borrower,
         address _repayPoolToken,
@@ -146,7 +148,7 @@ contract FlashSwapLiquidatorForMorpho is Ownable, IFlashLoanReceiver {
         uint256 _amount,
         uint24 _fees,
         address _onBehalfOf
-    ) public {
+    ) external {
         // init assets
         ContractBalanceParams memory params;
         params.initiator = _onBehalfOf == address(0) ? msg.sender : _onBehalfOf;
@@ -154,6 +156,9 @@ contract FlashSwapLiquidatorForMorpho is Ownable, IFlashLoanReceiver {
         params.collateralToken = IERC20(IAToken(_seizePoolToken).UNDERLYING_ASSET_ADDRESS());
         params.debtBalanceBefore = params.debtToken.balanceOf(address(this));
         params.collateralBalanceBefore = params.collateralToken.balanceOf(address(this));
+
+        // Approve LendingPool to use debt token for liquidation
+        params.debtToken.safeApprove(address(positionsManager), _amount);
 
         if (
             (params.initiator == address(this) || msg.sender == owner()) &&
@@ -164,7 +169,6 @@ contract FlashSwapLiquidatorForMorpho is Ownable, IFlashLoanReceiver {
 
             // Liquidate the borrower position and release the underlying collateral
             positionsManager.liquidate(_repayPoolToken, _seizePoolToken, _borrower, _amount);
-            params.usingSwap = false;
         } else {
             // Initiate flash loan params
             FlashLoanParams memory flashLoansParams;
@@ -190,7 +194,7 @@ contract FlashSwapLiquidatorForMorpho is Ownable, IFlashLoanReceiver {
             flashLoansParams.fees = _fees;
 
             flashLoansParams.modes = new uint256[](1);
-            flashLoansParams.modes[0] = uint256(0);
+            flashLoansParams.modes[0] = 0;
 
             lendingPool.flashLoan(
                 flashLoansParams.receiverAddress,
@@ -207,7 +211,7 @@ contract FlashSwapLiquidatorForMorpho is Ownable, IFlashLoanReceiver {
             params.collateralToken.balanceOf(address(this)) -
             params.collateralBalanceBefore;
         emit Liquidated(
-            msg.sender,
+            params.initiator,
             _borrower,
             _repayPoolToken,
             _seizePoolToken,
@@ -228,14 +232,12 @@ contract FlashSwapLiquidatorForMorpho is Ownable, IFlashLoanReceiver {
             params.collateralToken.safeTransfer(params.initiator, params.rewarded);
     }
 
-    /**
-    * @notice Function called by Flash loans execution
-    * @param assets : assets that recieved a flash loans
-    * @param amounts : corresponding flashed amounts
-    * @param premiums : fees for each flash loan, corresponding to 0.09% of the amount flashed
-    * @param initiator : address to the caller
-    $ @param params : encoded params transfered for liquidation & swap call
-    **/
+    /// @notice Function called by Flash loans execution
+    /// @param assets : assets that recieved a flash loans
+    /// @param amounts : corresponding flashed amounts
+    /// @param premiums : fees for each flash loan, corresponding to 0.09% of the amount flashed
+    /// @param initiator : address to the caller
+    /// @param params : encoded params transfered for liquidation & swap call
     function executeOperation(
         address[] calldata assets,
         uint256[] calldata amounts,
@@ -265,12 +267,6 @@ contract FlashSwapLiquidatorForMorpho is Ownable, IFlashLoanReceiver {
         }
         vars.flashLoanDebt = flashBorrowedAmount + premium;
 
-        // Approve LendingPool to use debt token for liquidation
-        IERC20(decodedParams.borrowedAsset).approve(
-            address(lendingPool),
-            decodedParams.debtToCover
-        );
-
         // Liquidate the borrower position and release the underlying collateral
         positionsManager.liquidate(
             decodedParams.poolTokenBorrowedAddress,
@@ -296,7 +292,7 @@ contract FlashSwapLiquidatorForMorpho is Ownable, IFlashLoanReceiver {
             // Use only flash loan borrowed assets, not current asset balance of the contract
             vars.diffFlashBorrowedBalance = flashBorrowedAssetAfter - vars.borrowedAssetLeftovers;
             uint256 amountToSwap = vars.flashLoanDebt - vars.diffFlashBorrowedBalance;
-            // Swap released collateral into the debt asset, to repay the flash loan
+            // Swap releasing collateral into the debt asset, to repay the flash loan
             vars.soldAmount = _swapTokensForExactTokens(
                 decodedParams.collateralAsset,
                 decodedParams.borrowedAsset,
@@ -335,7 +331,7 @@ contract FlashSwapLiquidatorForMorpho is Ownable, IFlashLoanReceiver {
 
     /// @notice add funds to prevent flash swap use and save fees.
     /// @dev this funds can be only withdraw by the contract owner.
-    function addFunds(address _assetAddress, uint256 _amount) external {
+    function deposit(address _assetAddress, uint256 _amount) external {
         IERC20(_assetAddress).safeTransferFrom(msg.sender, address(this), _amount);
 
         emit Deposit(msg.sender, _assetAddress, _amount);
@@ -363,7 +359,8 @@ contract FlashSwapLiquidatorForMorpho is Ownable, IFlashLoanReceiver {
             PercentageMath.PERCENTAGE_FACTOR + ((fees + 1) / (10**2))
         ) *
             (10**fromAssetDecimals) *
-            toAssetPrice) / (fromAssetPrice * (10**toAssetDecimals)); // is a good method to add 0.01 % to prevent reverted swap ?
+            toAssetPrice) / (fromAssetPrice * (10**toAssetDecimals));
+        // is a good method to add 0.01 % to prevent reverted swap ?
 
         if (amountToSwap > maxAmountToSwap) revert AmountToSwapExceedMaxSlippage();
 
@@ -410,19 +407,15 @@ contract FlashSwapLiquidatorForMorpho is Ownable, IFlashLoanReceiver {
             );
     }
 
-    /**
-     * @dev Get the price of the asset from the oracle denominated in eth
-     * @param asset address
-     * @return eth price for the asset
-     */
+    /// @dev Get the price of the asset from the oracle denominated in eth
+    /// @param asset address
+    /// @return eth price for the asset
     function _getPrice(address asset) internal view returns (uint256) {
         return IPriceOracleGetter(addressesProvider.getPriceOracle()).getAssetPrice(asset);
     }
 
-    /**
-     * @dev Get the decimals of an asset
-     * @return number of decimals of the asset
-     */
+    /// @dev Get the decimals of an asset
+    /// @return number of decimals of the asset
     function _getDecimals(address asset) internal view returns (uint256) {
         return IERC20Metadata(asset).decimals();
     }
