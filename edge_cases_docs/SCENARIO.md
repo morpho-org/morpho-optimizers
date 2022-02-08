@@ -38,7 +38,7 @@
   - 3.3.1 - There is a supplier `onPool` available to replace him `inP2P`. First, his liquidity `onPool` is taken, his matched is replaced by the available supplier up to his withdrawal amount.
   - 3.3.2 - There are NMAX (or less) suppliers `onPool` available to replace him `inP2P`, they supply enough to cover for the withdrawn liquidity. First, his liquidity `onPool` is taken, his matched is replaced by NMAX (or less) suppliers up to his withdrawal amount.
   - 3.3.3 - There are no suppliers `onPool` to replace him `inP2P`. After withdrawing the amount `onPool`, his P2P match(es) will be unmatched and the corresponding borrower(s) will be placed on pool.
-  - 3.3.4 - There are NMAX (or less) suppliers `onPool` available to replace him `inP2P`, they don't supply enough to cover the withdrawn liquidity. First, the `onPool` liquidity is withdrawn, then we proceed to NMAX (or less) matches. Finally, some borrowers are unmatched for an amount equal to the remaining to withdraw. ⚠️ most gas expensive withdraw scenario.
+  - 3.3.4 - The supplier is matched to 2\*NMAX borrowers. There are NMAX suppliers `onPool` available to replace him `inP2P`, they don't supply enough to cover the withdrawn liquidity. First, the `onPool` liquidity is withdrawn, then we proceed to NMAX `match supplier`. Finally, we proceed to NMAX `unmatch borrower` for an amount equal to the remaining to withdraw. ⚠️ most gas expensive withdraw scenario.
 
 ## 4. [`REPAY`](https://github.com/morpho-labs/morpho-contracts/blob/main/contracts/aave/PositionsManagerForAave.sol#L642)
 
@@ -48,7 +48,7 @@
   - 4.2.1 - There is a borrower `onPool` available to replace him `inP2P`. First, his debt `onPool` is repaid, his matched debt is replaced by the available borrower up to his repaid amount.
   - 4.2.2 - There are NMAX (or less) borrowers `onPool` available to replace him `inP2P`, they borrow enough to cover for the repaid liquidity. First, his debt `onPool` is repaid, his matched liquidity is replaced by NMAX (or less) borrowers up to his repaid amount.
   - 4.2.3 - There are no borrowers `onPool` to replace him `inP2P`. After repaying the amount `onPool`, his P2P match(es) will be unmatched and the corresponding supplier(s) will be placed on pool.
-  - 4.2.4 - There are NMAX (or less) borrowers `onPool` available to replace him `inP2P`, they don't supply enough to cover for the withdrawn liquidity. First, the `onPool` liquidity is withdrawn, then we proceed to NMAX (or less) matches. Finally, some suppliers are unmatched for an amount equal to the remaining to withdraw. ⚠️ most gas expensive repay scenario.
+  - 4.2.4 - The borrower is matched to 2\*NMAX suppliers. There are NMAX borrowers `onPool` available to replace him `inP2P`, they don't supply enough to cover for the repaid liquidity. First, the `onPool` liquidity is repaid, then we proceed to NMAX `match borrower`. Finally, we proceed to NMAX `unmatch supplier` for an amount equal to the remaining to withdraw. ⚠️ most gas expensive repay scenario.
 
 ## 5. [`LIQUIDATE`](https://github.com/morpho-labs/morpho-contracts/blob/main/contracts/aave/PositionsManagerForAave.sol#L452)
 
@@ -56,4 +56,4 @@
 
 - 5.2 - A user liquidates a borrower that has not enough collateral to cover for his debt.
 
-- 5.3 - The liquidation is made of a Repay and a Withdraw performed on a borrower's position on behalf of a liquidator. At most, the liquidator can liquidate 50% of the debt of a borrower and take the corresponding collateral (plus a bonus). Edge-cases here are at most the combination from part 3. and 4. called with the previous amount.
+- 5.3 - The liquidation is made of a Repay and a Withdraw performed on a borrower's position on behalf of a liquidator. At most, the liquidator can liquidate 50% of the debt of a borrower and take the corresponding collateral (plus a bonus). Edge-cases here are at most the combination from part 3. and 4: Alice is matched with 4\*NMAX users on her collateral and her debt. She gets liquidated, the repay and withdraw are generating: first, NMAX `match supplier`, then NMAX `unmatch borrower` and for the withdraw NMAX `match borrower` and NMAX `unmatch supplier`.

@@ -274,9 +274,10 @@ contract TestRepay is TestSetup {
         testEquality(onPoolSupplier, expectedSupplyBalanceOnPool);
     }
 
-    //   - 4.2.4 - There are NMAX (or less) borrowers `onPool` available to replace him `inP2P`, they don't borrow enough to cover for the withdrawn liquidity.
-    //             First, the `onPool` liquidity is withdrawn, then we proceed to NMAX (or less) matches. Finally, some suppliers are unmatched for an amount equal to the remaining to withdraw.
-    //             ⚠️ most gas expensive repay scenario.
+    //   4.2.4 - The borrower is matched to 2\*NMAX suppliers. There are NMAX borrowers `onPool` available to replace him `inP2P`,
+    //           they don't supply enough to cover for the repaid liquidity. First, the `onPool` liquidity is repaid, then we proceed to NMAX `match borrower`.
+    //           Finally, we proceed to NMAX `unmatch supplier` for an amount equal to the remaining to withdraw.
+    //           ⚠️ most gas expensive repay scenario.
     function test_repay_4_2_4() public {
         uint256 suppliedAmount = 10000 ether;
         uint256 borrowedAmount = 2 * suppliedAmount;

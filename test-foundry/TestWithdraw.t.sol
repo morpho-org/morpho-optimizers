@@ -278,9 +278,11 @@ contract TestWithdraw is TestSetup {
         testEquality(onPoolSupplier, 0);
     }
 
-    // 3.3.4 - There are NMAX (or less) suppliers onPool available to replace him inP2P, they don't supply enough to cover the withdrawn liquidity.
-    // First, the onPool liquidity is withdrawn, then we proceed to NMAX (or less) matches. Finally, some borrowers are unmatched for an amount equal to the remaining to withdraw.
-    // ⚠️ most gas expensive withdraw scenario.
+    // 3.3.4 - The supplier is matched to 2*NMAX borrowers. There are NMAX suppliers `onPool` available to replace him `inP2P`,
+    //         they don't supply enough to cover the withdrawn liquidity.
+    //         First, the `onPool` liquidity is withdrawn, then we proceed to NMAX `match supplier`.
+    //         Finally, we proceed to NMAX `unmatch borrower` for an amount equal to the remaining to withdraw.
+    //         ⚠️ most gas expensive withdraw scenario.
     function test_withdraw_3_3_4() public {
         uint256 borrowedAmount = 100000 ether;
         uint256 suppliedAmount = 2 * borrowedAmount;
