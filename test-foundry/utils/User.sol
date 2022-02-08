@@ -42,6 +42,18 @@ contract User {
         marketsManager.createMarket(_underlyingTokenAddress, _threshold);
     }
 
+    function setThreshold(address _marketAddress, uint256 _threshold) external {
+        marketsManager.setThreshold(_marketAddress, _threshold);
+    }
+
+    function setReserveFactor(uint16 _threshold) external {
+        marketsManager.setReserveFactor(_threshold);
+    }
+
+    function updateRates(address _marketAddress) external {
+        marketsManager.updateRates(_marketAddress);
+    }
+
     function supply(address _poolTokenAddress, uint256 _amount) external {
         positionsManager.supply(_poolTokenAddress, _amount, 0);
     }
