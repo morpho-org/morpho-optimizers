@@ -4,6 +4,7 @@ pragma solidity 0.8.7;
 import "hardhat/console.sol";
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
 import "@contracts/aave/interfaces/aave/IPriceOracleGetter.sol";
 
 import "@contracts/aave/PositionsManagerForAave.sol";
@@ -54,31 +55,40 @@ contract TestSetup is Config, Utils, HevmHelper {
 
     function setUp() public {
         marketsManager = new MarketsManagerForAave(lendingPoolAddressesProviderAddress);
+        hevm.label(address(marketsManager), "marketsManager");
+
         positionsManager = new PositionsManagerForAave(
             address(marketsManager),
             lendingPoolAddressesProviderAddress
         );
+        hevm.label(address(positionsManager), "positionsManager");
 
         treasuryVault = new User(positionsManager, marketsManager, rewardsManager);
+        hevm.label(address(treasuryVault), "treasuryVault");
 
         fakePositionsManager = new PositionsManagerForAave(
             address(marketsManager),
             lendingPoolAddressesProviderAddress
         );
+        hevm.label(address(fakePositionsManager), "fakePositionsManager");
 
         rewardsManager = new RewardsManager(
             lendingPoolAddressesProviderAddress,
             address(positionsManager)
         );
+        hevm.label(address(rewardsManager), "rewardsManager");
 
         lendingPoolAddressesProvider = ILendingPoolAddressesProvider(
             lendingPoolAddressesProviderAddress
         );
         lendingPool = ILendingPool(lendingPoolAddressesProvider.getLendingPool());
+        hevm.label(address(lendingPool), "lendingPool");
 
         protocolDataProvider = IProtocolDataProvider(protocolDataProviderAddress);
+        hevm.label(address(protocolDataProvider), "protocolDataProvider");
 
         oracle = IPriceOracleGetter(lendingPoolAddressesProvider.getPriceOracle());
+        hevm.label(address(oracle), "oracle");
 
         marketsManager.setPositionsManager(address(positionsManager));
         positionsManager.setAaveIncentivesController(aaveIncentivesControllerAddress);
@@ -109,6 +119,10 @@ contract TestSetup is Config, Utils, HevmHelper {
         for (uint256 i = 0; i < 3; i++) {
             suppliers.push(new User(positionsManager, marketsManager, rewardsManager));
             fillBalances(address(suppliers[i]));
+            hevm.label(
+                address(suppliers[i]),
+                string(abi.encodePacked("supplier", Strings.toString(i + 1)))
+            );
         }
         supplier1 = suppliers[0];
         supplier2 = suppliers[1];
@@ -117,6 +131,10 @@ contract TestSetup is Config, Utils, HevmHelper {
         for (uint256 i = 0; i < 3; i++) {
             borrowers.push(new User(positionsManager, marketsManager, rewardsManager));
             fillBalances(address(borrowers[i]));
+            hevm.label(
+                address(borrowers[i]),
+                string(abi.encodePacked("borrower", Strings.toString(i + 1)))
+            );
         }
         borrower1 = borrowers[0];
         borrower2 = borrowers[1];

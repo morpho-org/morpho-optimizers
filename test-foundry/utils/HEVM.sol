@@ -85,4 +85,10 @@ interface HEVM {
     // Expect a call to an address with the specified calldata.
     // Calldata can either be strict or a partial match
     function expectCall(address, bytes calldata) external;
+
+    // Gets the code from an artifact file. Takes in the relative path to the json file
+    function getCode(string calldata) external returns (bytes memory);
+
+    // Labels an address in call traces
+    function label(address, string calldata) external;
 }

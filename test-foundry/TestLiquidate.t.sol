@@ -26,17 +26,17 @@ contract TestLiquidate is TestSetup {
     }
 
     // 5.2 - A user liquidates a borrower that has not enough collateral to cover for his debt.
-    function test_liquidate_5_2(
-        uint128 _amount,
-        uint8 _supplyAsset,
-        uint8 _borrowAsset
-    ) public {
-        (Asset memory supply, Asset memory borrow) = getAssets(_amount, _supplyAsset, _borrowAsset);
-
-        //borrow.amount = getMaxToBorrow(supply.amount, supply.underlying, borrow.underlying) - 1;
+    function test_liquidate_5_2() public {
+        (Asset memory supply, Asset memory borrow) = getAssets(100_000 ether, 1, 0);
 
         borrower1.approve(supply.underlying, supply.amount);
         borrower1.supply(supply.poolToken, supply.amount);
+
+        (, borrow.amount) = positionsManager.getUserMaxCapacitiesForAsset(
+            address(borrower1),
+            borrow.poolToken
+        );
+
         borrower1.borrow(borrow.poolToken, borrow.amount);
 
         (, uint256 collateralOnPool) = positionsManager.supplyBalanceInOf(
@@ -48,7 +48,7 @@ contract TestLiquidate is TestSetup {
         SimplePriceOracle customOracle = createAndSetCustomPriceOracle();
         customOracle.setDirectPrice(
             supply.underlying,
-            (oracle.getAssetPrice(supply.underlying) * 75) / 100
+            (oracle.getAssetPrice(supply.underlying) * 93) / 100
         );
 
         // Liquidate
