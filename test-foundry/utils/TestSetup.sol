@@ -53,7 +53,7 @@ contract TestSetup is Config, Utils {
             lendingPoolAddressesProviderAddress
         );
 
-        treasuryVault = new User(positionsManager, marketsManager, rewardsManager);
+        treasuryVault = new User(positionsManager, marketsManager, rewardsManager, lendingPool);
 
         fakePositionsManager = new PositionsManagerForAave(
             address(marketsManager),
@@ -96,7 +96,7 @@ contract TestSetup is Config, Utils {
         pools.push(aWmatic);
 
         for (uint256 i = 0; i < 3; i++) {
-            suppliers.push(new User(positionsManager, marketsManager, rewardsManager));
+            suppliers.push(new User(positionsManager, marketsManager, rewardsManager, lendingPool));
 
             writeBalanceOf(address(suppliers[i]), dai, INITIAL_BALANCE * WAD);
             writeBalanceOf(address(suppliers[i]), usdc, INITIAL_BALANCE * 1e6);
@@ -106,7 +106,7 @@ contract TestSetup is Config, Utils {
         supplier3 = suppliers[2];
 
         for (uint256 i = 0; i < 3; i++) {
-            borrowers.push(new User(positionsManager, marketsManager, rewardsManager));
+            borrowers.push(new User(positionsManager, marketsManager, rewardsManager, lendingPool));
 
             writeBalanceOf(address(borrowers[i]), dai, INITIAL_BALANCE * WAD);
             writeBalanceOf(address(borrowers[i]), usdc, INITIAL_BALANCE * 1e6);
@@ -126,11 +126,11 @@ contract TestSetup is Config, Utils {
 
     function createSigners(uint8 _nbOfSigners) internal {
         while (borrowers.length < _nbOfSigners) {
-            borrowers.push(new User(positionsManager, marketsManager, rewardsManager));
+            borrowers.push(new User(positionsManager, marketsManager, rewardsManager, lendingPool));
             writeBalanceOf(address(borrowers[borrowers.length - 1]), dai, INITIAL_BALANCE * WAD);
             writeBalanceOf(address(borrowers[borrowers.length - 1]), usdc, INITIAL_BALANCE * 1e6);
 
-            suppliers.push(new User(positionsManager, marketsManager, rewardsManager));
+            suppliers.push(new User(positionsManager, marketsManager, rewardsManager, lendingPool));
             writeBalanceOf(address(suppliers[suppliers.length - 1]), dai, INITIAL_BALANCE * WAD);
             writeBalanceOf(address(suppliers[suppliers.length - 1]), usdc, INITIAL_BALANCE * 1e6);
         }

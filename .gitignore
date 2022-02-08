@@ -32,3 +32,4 @@ yarn-error.log*
 /.vscode
 
 trace.txt
+trace*
