@@ -46,7 +46,7 @@ contract TestSetup is Config, Utils {
     address[] public pools;
     address[] public underlyings;
 
-    function setUp() public {
+    function setUp() public virtual {
         marketsManager = new MarketsManagerForAave(lendingPoolAddressesProviderAddress);
         positionsManager = new PositionsManagerForAave(
             address(marketsManager),
