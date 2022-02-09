@@ -173,10 +173,10 @@ contract MarketsManagerForAave is Ownable {
         supplyP2PExchangeRate[poolTokenAddress] = WadRayMath.ray();
         borrowP2PExchangeRate[poolTokenAddress] = WadRayMath.ray();
         lastNormalizedIncome[poolTokenAddress] = lendingPool.getReserveNormalizedIncome(
-            poolTokenAddress
+            _underlyingTokenAddress
         );
         lastNormalizedVariableDebt[poolTokenAddress] = lendingPool.getReserveNormalizedVariableDebt(
-            poolTokenAddress
+            _underlyingTokenAddress
         );
 
         positionsManager.setThreshold(poolTokenAddress, _threshold);
@@ -226,6 +226,7 @@ contract MarketsManagerForAave is Ownable {
     /// @dev Updates the P2P exchange rate, taking into account the Second Percentage Yield values.
     /// @param _marketAddress The address of the market to update.
     function _updateP2PExchangeRates(address _marketAddress) internal {
+        address underlyingTokenAddress = IAToken(_marketAddress).UNDERLYING_ASSET_ADDRESS();
         uint256 timeDifference = block.timestamp - exchangeRatesLastUpdateTimestamp[_marketAddress];
         exchangeRatesLastUpdateTimestamp[_marketAddress] = block.timestamp;
 
@@ -234,10 +235,12 @@ contract MarketsManagerForAave is Ownable {
                 (WadRayMath.ray() + supplyP2PSPY[_marketAddress]).rayPow(timeDifference)
             ); // In ray
             lastNormalizedIncome[_marketAddress] = lendingPool.getReserveNormalizedIncome(
-                _marketAddress
+                underlyingTokenAddress
             );
         } else {
-            uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(_marketAddress);
+            uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(
+                underlyingTokenAddress
+            );
             uint256 shareOfTheDelta = positionsManager
             .supplyP2PDelta(_marketAddress)
             .rayMul(supplyP2PExchangeRate[_marketAddress])
@@ -264,10 +267,10 @@ contract MarketsManagerForAave is Ownable {
                 (WadRayMath.ray() + borrowP2PSPY[_marketAddress]).rayPow(timeDifference)
             ); // In ray
             lastNormalizedVariableDebt[_marketAddress] = lendingPool
-            .getReserveNormalizedVariableDebt(_marketAddress);
+            .getReserveNormalizedVariableDebt(underlyingTokenAddress);
         } else {
             uint256 normalizedVariableDebt = lendingPool.getReserveNormalizedVariableDebt(
-                _marketAddress
+                underlyingTokenAddress
             );
             uint256 shareOfTheDelta = positionsManager
             .borrowP2PDelta(_marketAddress)
