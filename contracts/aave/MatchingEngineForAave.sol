@@ -45,6 +45,16 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         uint256 _balanceInP2P
     );
 
+    /// @notice Emitted when the borrow P2P delta is updated.
+    /// @param _poolTokenAddress The address of the market.
+    /// @param _borrowP2PDelta The borrow P2P delta after update.
+    event BorrowP2PDeltaUpdated(address indexed _poolTokenAddress, uint256 _borrowP2PDelta);
+
+    /// @notice Emitted when the borrow P2P delta is updated.
+    /// @param _poolTokenAddress The address of the market.
+    /// @param _supplyP2PDelta The supply P2P delta after update.
+    event SupplyP2PDeltaUpdated(address indexed _poolTokenAddress, uint256 _supplyP2PDelta);
+
     /// @notice Matches suppliers' liquidity waiting on Aave for the given `_amount` and move it to P2P.
     /// @dev Note: p2pExchangeRates must have been updated before calling this function.
     /// @param _poolToken The pool token of the market from which to match suppliers.
@@ -72,6 +82,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
             );
             matchedSupply += toMatch;
             supplyP2PDelta[poolTokenAddress] -= toMatch.divWadByRay(normalizedIncome);
+            emit SupplyP2PDeltaUpdated(poolTokenAddress, supplyP2PDelta[poolTokenAddress]);
         }
 
         while (matchedSupply < _amount && user != address(0) && iterationCount < NMAX) {
@@ -131,6 +142,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
             );
             remainingToUnmatch -= toMatch;
             borrowP2PDelta[_poolTokenAddress] -= toMatch.divWadByRay(normalizedVariableDebt);
+            emit BorrowP2PDeltaUpdated(_poolTokenAddress, borrowP2PDelta[_poolTokenAddress]);
         }
 
         while (remainingToUnmatch > 0 && user != address(0) && iterationCount < NMAX) {
@@ -163,7 +175,10 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
             supplyP2PAmount[_poolTokenAddress].mulWadByRay(supplyP2PExchangeRate)
         );
 
-        supplyP2PDelta[_poolTokenAddress] += remainingToUnmatch.divWadByRay(normalizedIncome);
+        if (remainingToUnmatch > 0) {
+            supplyP2PDelta[_poolTokenAddress] += remainingToUnmatch.divWadByRay(normalizedIncome);
+            emit SupplyP2PDeltaUpdated(_poolTokenAddress, supplyP2PDelta[_poolTokenAddress]);
+        }
         supplyP2PAmount[_poolTokenAddress] -= (_amount - remainingToUnmatch).divWadByRay(
             supplyP2PExchangeRate
         );
@@ -200,6 +215,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
             );
             matchedBorrow += toMatch;
             borrowP2PDelta[poolTokenAddress] -= toMatch.divWadByRay(normalizedVariableDebt);
+            emit BorrowP2PDeltaUpdated(poolTokenAddress, borrowP2PDelta[poolTokenAddress]);
         }
 
         while (matchedBorrow < _amount && user != address(0) && iterationCount < NMAX) {
@@ -259,6 +275,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
             );
             remainingToUnmatch -= toMatch;
             supplyP2PDelta[_poolTokenAddress] -= toMatch.divWadByRay(normalizedIncome);
+            emit SupplyP2PDeltaUpdated(_poolTokenAddress, supplyP2PDelta[_poolTokenAddress]);
         }
 
         while (remainingToUnmatch > 0 && user != address(0) && iterationCount < NMAX) {
@@ -285,7 +302,12 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
             user = borrowersInP2P[_poolTokenAddress].getHead();
         }
 
-        borrowP2PDelta[_poolTokenAddress] += remainingToUnmatch.divWadByRay(normalizedVariableDebt);
+        if (remainingToUnmatch > 0) {
+            borrowP2PDelta[_poolTokenAddress] += remainingToUnmatch.divWadByRay(
+                normalizedVariableDebt
+            );
+            emit BorrowP2PDeltaUpdated(_poolTokenAddress, borrowP2PDelta[_poolTokenAddress]);
+        }
         supplyP2PAmount[_poolTokenAddress] -= _amount.divWadByRay(
             marketsManager.supplyP2PExchangeRate(_poolTokenAddress)
         );
