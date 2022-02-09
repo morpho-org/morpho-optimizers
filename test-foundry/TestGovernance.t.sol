@@ -36,11 +36,12 @@ contract TestGovernance is TestSetup {
     // Only Owner should be able to create markets in peer-to-peer
     function test_only_owner_can_create_markets() public {
         for (uint256 i = 0; i < pools.length; i++) {
+            address underlying = IAToken(pools[i]).UNDERLYING_ASSET_ADDRESS();
             hevm.expectRevert("Ownable: caller is not the owner");
-            supplier1.createMarket(underlyings[i], WAD);
+            supplier1.createMarket(underlying, WAD);
 
             hevm.expectRevert("Ownable: caller is not the owner");
-            borrower1.createMarket(underlyings[i], WAD);
+            borrower1.createMarket(underlying, WAD);
         }
 
         marketsManager.createMarket(weth, WAD);

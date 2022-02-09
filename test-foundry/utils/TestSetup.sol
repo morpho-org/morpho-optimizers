@@ -51,7 +51,6 @@ contract TestSetup is Config, Utils, HevmHelper {
     User public treasuryVault;
 
     address[] public pools;
-    address[] public underlyings;
 
     function setUp() public {
         marketsManager = new MarketsManagerForAave(lendingPoolAddressesProviderAddress);
@@ -98,23 +97,11 @@ contract TestSetup is Config, Utils, HevmHelper {
         positionsManager.setRewardsManager(address(rewardsManager));
         marketsManager.updateAaveContracts();
 
-        // !!! WARNING !!!
-        // All tokens must also be added to the pools array, for the correct behavior of TestLiquidate::createAndSetCustomPriceOracle.
-        marketsManager.createMarket(dai, WAD);
-        pools.push(aDai);
-        underlyings.push(dai);
-        marketsManager.createMarket(usdc, to6Decimals(WAD));
-        pools.push(aUsdc);
-        underlyings.push(usdc);
-        marketsManager.createMarket(wbtc, 10**4);
-        pools.push(aWbtc);
-        underlyings.push(wbtc);
-        marketsManager.createMarket(usdt, to6Decimals(WAD));
-        pools.push(aUsdt);
-        underlyings.push(usdt);
-        marketsManager.createMarket(wmatic, WAD);
-        pools.push(aWmatic);
-        underlyings.push(wmatic);
+        createMarket(aDai, WAD);
+        createMarket(aUsdc, to6Decimals(WAD));
+        createMarket(aWbtc, 10**4);
+        createMarket(aUsdt, to6Decimals(WAD));
+        createMarket(aWmatic, WAD);
 
         for (uint256 i = 0; i < 3; i++) {
             suppliers.push(new User(positionsManager, marketsManager, rewardsManager));
@@ -139,6 +126,23 @@ contract TestSetup is Config, Utils, HevmHelper {
         borrower1 = borrowers[0];
         borrower2 = borrowers[1];
         borrower3 = borrowers[2];
+    }
+
+    /**
+     * @dev Call create market, add the poolToken to pools list, and add the labels for logs.
+     * @param _poolToken poolToken address
+     * @param _threshold threshold for this poolToken
+     */
+    function createMarket(address _poolToken, uint256 _threshold) internal {
+        address underlying = IAToken(_poolToken).UNDERLYING_ASSET_ADDRESS();
+
+        marketsManager.createMarket(underlying, _threshold);
+
+        // All tokens must also be added to the pools array, for the correct behavior of TestLiquidate::createAndSetCustomPriceOracle.
+        pools.push(_poolToken);
+
+        hevm.label(_poolToken, ERC20(_poolToken).symbol());
+        hevm.label(underlying, ERC20(underlying).symbol());
     }
 
     /**
@@ -315,20 +319,6 @@ contract TestSetup is Config, Utils, HevmHelper {
         );
 
         return (supply, borrow);
-    }
-
-    /**
-     * @dev AssertEq with a tolerance of 1 wei
-     * @param _value value to check
-     * @param _expected expected value
-     * @param _msg debug message
-     */
-    function assertEqNear(
-        uint256 _value,
-        uint256 _expected,
-        string memory _msg
-    ) internal {
-        assertLe(getAbsDiff(_value, _expected), 1, _msg);
     }
 
     /**

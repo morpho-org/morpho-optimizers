@@ -45,14 +45,19 @@ contract TestWithdraw is TestSetup {
         );
 
         assertEq(inP2P, 0, "supplier1 in P2P before withdraw");
-        assertEqNear(onPool, onPoolBefore + expectedOnPool, "supplier1 on pool before withdraw");
+        assertApproxEq(
+            onPool,
+            onPoolBefore + expectedOnPool,
+            1,
+            "supplier1 on pool before withdraw"
+        );
 
         supplier1.withdraw(supply.poolToken, supply.amount / 2);
 
         (inP2P, onPool) = positionsManager.supplyBalanceInOf(supply.poolToken, address(supplier1));
 
         assertEq(inP2P, 0, "supplier1 in P2P");
-        assertEqNear(onPool, onPoolBefore + expectedOnPool / 2, "supplier1 on pool");
+        assertApproxEq(onPool, onPoolBefore + expectedOnPool / 2, 1, "supplier1 on pool");
     }
 
     // 3.3 - The supplier withdraws more than his onPool balance
@@ -233,13 +238,9 @@ contract TestWithdraw is TestSetup {
 
     // 3.3.3 - There are no suppliers onPool to replace him inP2P. After withdrawing the amount onPool,
     // his P2P match(es) will be unmatched and the corresponding borrower(s) will be placed on pool.
-    function test_withdraw_3_3_3(
-        uint128 _amount,
-        uint8 _supplyAsset,
-        uint8 _borrowAsset
-    ) public {
+    function test_withdraw_3_3_3() public {
         //(Asset memory supply, Asset memory borrow) = getAssets(10_000 ether, 1, 0);
-        (Asset memory supply, Asset memory borrow) = getAssets(_amount, _supplyAsset, _borrowAsset);
+        (Asset memory supply, Asset memory borrow) = getAssets(0, 0, 0);
 
         // Borrower1 & supplier1 are matched for borrow.amount
         borrower1.approve(supply.underlying, supply.amount);
@@ -271,15 +272,12 @@ contract TestWithdraw is TestSetup {
                 lendingPool.getReserveNormalizedIncome(borrow.underlying)
             );
 
-        emit log_named_uint("expectedOnPool", expectedOnPool);
-        emit log_named_uint("onPoolSupplier", onPoolSupplier);
-
         assertEq(onPoolSupplier, expectedOnPool, "supplier 1 on pool");
         assertEq(onPoolBorrower, 0, "borrower1 on pool");
         assertEq(inP2PSupplier, inP2PBorrower, "supplier1/borrower in P2P");
 
         // Supplier1 withdraws 75% of supplied amount
-        supplier1.withdraw(borrow.poolToken, (75 * borrow.amount) / 100);
+        supplier1.withdraw(borrow.poolToken, (75 * 2 * borrow.amount) / 100);
 
         // Check balances for the borrower
         (inP2PBorrower, onPoolBorrower) = positionsManager.borrowBalanceInOf(
@@ -289,11 +287,11 @@ contract TestWithdraw is TestSetup {
 
         uint256 supplyP2PExchangeRate = marketsManager.supplyP2PExchangeRate(borrow.poolToken);
         uint256 expectedBorrowBalanceInP2P = underlyingToP2PUnit(
-            borrow.amount,
+            borrow.amount / 2,
             supplyP2PExchangeRate
         );
         uint256 expectedBorrowBalanceOnPool = underlyingToAdUnit(
-            borrow.amount,
+            borrow.amount / 2,
             lendingPool.getReserveNormalizedVariableDebt(borrow.underlying)
         );
 
@@ -317,7 +315,7 @@ contract TestWithdraw is TestSetup {
         );
 
         uint256 expectedSupplyBalanceInP2P = underlyingToP2PUnit(
-            (25 * borrow.amount) / 100,
+            (25 * 2 * borrow.amount) / 100,
             supplyP2PExchangeRate
         );
 

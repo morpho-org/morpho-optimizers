@@ -31,17 +31,13 @@ contract TestRepay is TestSetup {
     // - 4.2 - The borrower repays more than his `onPool` balance.
     //   - 4.2.1 - There is a borrower `onPool` available to replace him `inP2P`.
     //             First, his debt `onPool` is repaid, his matched debt is replaced by the available borrower up to his repaid amount.
-    function test_repay_4_2_1(
-        uint128 _amount,
-        uint8 _supplyAsset,
-        uint8 _borrowAsset
-    ) public {
-        (Asset memory supply, Asset memory borrow) = getAssets(_amount, _supplyAsset, _borrowAsset);
+    function test_repay_4_2_1() public {
+        (Asset memory supply, Asset memory borrow) = getAssets(10_000 ether, 1, 0);
 
         // Borrower1 & supplier1 are matched for borrow.amount
-        borrower1.approve(supply.underlying, 4 * supply.amount);
-        borrower1.supply(supply.poolToken, 4 * supply.amount);
-        borrower1.borrow(borrow.poolToken, 4 * borrow.amount);
+        borrower1.approve(supply.underlying, 2 * supply.amount);
+        borrower1.supply(supply.poolToken, 2 * supply.amount);
+        borrower1.borrow(borrow.poolToken, 2 * borrow.amount);
 
         supplier1.approve(borrow.underlying, borrow.amount);
         supplier1.supply(borrow.poolToken, borrow.amount);
@@ -58,7 +54,7 @@ contract TestRepay is TestSetup {
         );
 
         uint256 expectedOnPool = underlyingToAdUnit(
-            3 * borrow.amount,
+            borrow.amount,
             lendingPool.getReserveNormalizedVariableDebt(borrow.underlying)
         );
 
@@ -69,11 +65,11 @@ contract TestRepay is TestSetup {
         // An available borrower onPool
         borrower2.approve(supply.underlying, supply.amount);
         borrower2.supply(supply.poolToken, supply.amount);
-        borrower2.borrow(borrow.poolToken, borrow.amount);
+        borrower2.borrow(borrow.poolToken, borrow.amount / 2);
 
         // Borrower1 repays 75% of suppliedAmount
-        borrower1.approve(borrow.underlying, 3 * borrow.amount);
-        borrower1.repay(borrow.poolToken, 3 * borrow.amount);
+        borrower1.approve(borrow.underlying, (borrow.amount * 2 * 75) / 100);
+        borrower1.repay(borrow.poolToken, (borrow.amount * 2 * 75) / 100);
 
         // Check balances for borrower1 & borrower2
         (inP2PBorrower1, onPoolBorrower1) = positionsManager.borrowBalanceInOf(
@@ -86,13 +82,18 @@ contract TestRepay is TestSetup {
             address(borrower2)
         );
         uint256 expectedBorrowBalanceInP2P = underlyingToP2PUnit(
-            borrow.amount,
+            (borrow.amount * 2 * 25) / 100,
             marketsManager.borrowP2PExchangeRate(borrow.poolToken)
         );
 
-        assertEq(inP2PBorrower1, expectedBorrowBalanceInP2P, "borrower1 in P2P after repay");
+        assertApproxEq(
+            inP2PBorrower1,
+            expectedBorrowBalanceInP2P,
+            1,
+            "borrower1 in P2P after repay"
+        );
         assertEq(onPoolBorrower1, 0, "borrower1 on pool after repay");
-        assertEq(inP2PBorrower2, inP2PBorrower1, "borrower2/borrower1 in P2P");
+        assertApproxEq(inP2PBorrower2, inP2PBorrower1, 1, "borrower2/borrower1 in P2P");
         assertEq(onPoolBorrower2, 0, "borrower2 on pool");
 
         // Check balances for supplier
@@ -100,8 +101,8 @@ contract TestRepay is TestSetup {
             borrow.poolToken,
             address(supplier1)
         );
-        assertEq(inP2PSupplier, 2 * inP2PBorrower1, "supplier1 in P2P after repay");
-        assertEq(onPoolSupplier, 0, "supplier1 on pool after repay");
+        assertApproxEq(inP2PSupplier, 2 * inP2PBorrower1, 1, "supplier1 in P2P after repay");
+        assertApproxEq(onPoolSupplier, 0, 1, "supplier1 on pool after repay");
     }
 
     //   - 4.2.2 - There are NMAX (or less) borrowers `onPool` available to replace him `inP2P`, they borrow enough to cover for the repaid liquidity.
@@ -206,34 +207,31 @@ contract TestRepay is TestSetup {
 
     //   - 4.2.3 - There are no borrowers `onPool` to replace him `inP2P`. After repaying the amount `onPool`,
     //             his P2P match(es) will be unmatched and the corresponding supplier(s) will be placed on pool.
-    function test_repay_4_2_3(
-        uint128 _amount,
-        uint8 _supplyAsset,
-        uint8 _borrowAsset
-    ) public {
-        (Asset memory supply, Asset memory borrow) = getAssets(_amount, _supplyAsset, _borrowAsset);
+    function test_repay_4_2_3() public {
+        //(Asset memory supply, Asset memory borrow) = getAssets(_amount, _supplyAsset, _borrowAsset);
+        (Asset memory supply, Asset memory borrow) = getAssets(10_000 ether, 1, 0);
 
         // Borrower1 & supplier1 are matched for supplierAmount
-        borrower1.approve(supply.underlying, 4 * supply.amount);
-        borrower1.supply(supply.poolToken, 4 * supply.amount);
-        borrower1.borrow(borrow.poolToken, 4 * borrow.amount);
+        borrower1.approve(supply.underlying, 2 * supply.amount);
+        borrower1.supply(supply.poolToken, 2 * supply.amount);
+        borrower1.borrow(borrow.poolToken, 2 * borrow.amount);
 
-        supplier1.approve(borrow.underlying, 4 * borrow.amount);
-        supplier1.supply(borrow.poolToken, 4 * borrow.amount);
+        supplier1.approve(borrow.underlying, borrow.amount);
+        supplier1.supply(borrow.poolToken, borrow.amount);
 
         // Check balances after match of borrower1 & supplier1
         (uint256 inP2PBorrower1, uint256 onPoolBorrower1) = positionsManager.borrowBalanceInOf(
-            aDai,
+            borrow.poolToken,
             address(borrower1)
         );
 
         (uint256 inP2PSupplier, uint256 onPoolSupplier) = positionsManager.supplyBalanceInOf(
-            aDai,
+            borrow.poolToken,
             address(supplier1)
         );
 
         uint256 expectedOnPool = underlyingToAdUnit(
-            4 * borrow.amount,
+            borrow.amount,
             lendingPool.getReserveNormalizedVariableDebt(borrow.underlying)
         );
 
@@ -242,8 +240,8 @@ contract TestRepay is TestSetup {
         assertEq(onPoolBorrower1, expectedOnPool, "borrower1 on pool");
 
         // Borrower1 repays 75% of borrowed amount
-        borrower1.approve(borrow.underlying, 3 * borrow.amount);
-        borrower1.repay(borrow.poolToken, 3 * borrow.amount);
+        borrower1.approve(borrow.underlying, (borrow.amount * 2 * 75) / 100);
+        borrower1.repay(borrow.poolToken, (borrow.amount * 2 * 75) / 100);
 
         // Check balances for borrower
         (inP2PBorrower1, onPoolBorrower1) = positionsManager.borrowBalanceInOf(
@@ -254,11 +252,16 @@ contract TestRepay is TestSetup {
         uint256 borrowP2PExchangeRate = marketsManager.borrowP2PExchangeRate(aDai);
 
         uint256 expectedBorrowBalanceInP2P = underlyingToP2PUnit(
-            borrow.amount,
+            (borrow.amount * 2 * 25) / 100,
             borrowP2PExchangeRate
         );
 
-        assertEq(inP2PBorrower1, expectedBorrowBalanceInP2P, "borrower1 in P2P after repay");
+        assertApproxEq(
+            inP2PBorrower1,
+            expectedBorrowBalanceInP2P,
+            1,
+            "borrower1 in P2P after repay"
+        );
         assertEq(onPoolBorrower1, 0, "borrower1 on pool after repay");
 
         // Check balances for supplier
@@ -268,16 +271,16 @@ contract TestRepay is TestSetup {
         );
 
         uint256 expectedSupplyBalanceInP2P = underlyingToP2PUnit(
-            borrow.amount,
+            borrow.amount / 2,
             borrowP2PExchangeRate
         );
         uint256 expectedSupplyBalanceOnPool = underlyingToAdUnit(
-            borrow.amount,
+            borrow.amount / 2,
             lendingPool.getReserveNormalizedIncome(dai)
         );
 
-        assertEq(inP2PSupplier, expectedSupplyBalanceInP2P, "supplier1 in P2P");
-        assertEq(onPoolSupplier, expectedSupplyBalanceOnPool, "supplier1 on pool");
+        assertApproxEq(inP2PSupplier, expectedSupplyBalanceInP2P, 1, "supplier1 in P2P");
+        assertApproxEq(onPoolSupplier, expectedSupplyBalanceOnPool, 1, "supplier1 on pool");
     }
 
     //   4.2.4 - The borrower is matched to 2\*NMAX suppliers. There are NMAX borrowers `onPool` available to replace him `inP2P`,
