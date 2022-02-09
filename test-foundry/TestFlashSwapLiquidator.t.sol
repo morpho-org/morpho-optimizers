@@ -2,15 +2,24 @@
 pragma solidity 0.8.7;
 
 import "./utils/TestSetupAdapters.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 contract TestFlashSwapLiquidator is TestSetupAdapters {
     // 5.1 - A user liquidates a borrower using a flash loan.
     function test_liquidate_5_8() public {
-        uint256 collateral = 100_000 ether;
+        uint256 collateralDecimals = 10**IERC20Metadata(usdc).decimals();
+        uint256 debtDecimals = 10**IERC20Metadata(dai).decimals();
+        uint256 collateral = 1 * collateralDecimals;
 
-        borrower1.approve(usdc, address(positionsManager), to6Decimals(collateral));
-        borrower1.supply(aUsdc, to6Decimals(collateral));
+        // Change Oracle
+        SimplePriceOracle customOracle = createAndSetCustomPriceOracle();
+        // set usdc & dai price to 1:1
+        customOracle.setDirectPrice(usdc, collateralDecimals);
+        customOracle.setDirectPrice(dai, debtDecimals);
+        borrower1.approve(usdc, address(positionsManager), collateral);
+        borrower1.supply(aUsdc, collateral);
 
+        // amount = collateral * LTV (80% for usdc )
         (, uint256 amount) = positionsManager.getUserMaxCapacitiesForAsset(
             address(borrower1),
             aDai
@@ -22,11 +31,13 @@ contract TestFlashSwapLiquidator is TestSetupAdapters {
             address(borrower1)
         );
 
-        // Change Oracle
-        SimplePriceOracle customOracle = createAndSetCustomPriceOracle();
-        customOracle.setDirectPrice(usdc, (oracle.getAssetPrice(usdc) * 93) / 100);
+        // set price of collateral to borrow LT % of usdc as collateral ( previousPrice * LTV / LT ) with previousPrice = 1
+        // we use 90 for LT instead of 85 for dust prevention
+        // this change render the borrower under collateralized
+        uint256 newUsdcPrice = (80 * collateralDecimals) / 90;
+        customOracle.setDirectPrice(usdc, newUsdcPrice);
 
-        // Liquidate
+        // Liquidate borrower
         uint256 toRepay = amount / 2;
         User liquidator = borrower3;
         flashSwapLiquidator.liquidate(
