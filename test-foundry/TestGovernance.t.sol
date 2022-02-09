@@ -2,9 +2,12 @@
 pragma solidity 0.8.7;
 
 import "./utils/TestSetup.sol";
-import "hardhat/console.sol";
+
+import "@contracts/aave/libraries/aave/WadRayMath.sol";
 
 contract TestGovernance is TestSetup {
+    using WadRayMath for uint256;
+
     // ==============
     // = Deployment =
     // ==============
@@ -47,8 +50,8 @@ contract TestGovernance is TestSetup {
         marketsManager.createMarket(weth, WAD);
     }
 
-    // Only Owner should be able to change threshold
-    function test_only_owner_can_change_threshold() public {
+    // Only Owner should be able to set threshold
+    function test_only_owner_can_set_threshold() public {
         for (uint256 i = 0; i < pools.length; i++) {
             hevm.expectRevert("Ownable: caller is not the owner");
             supplier1.setThreshold(pools[i], WAD);
@@ -60,8 +63,14 @@ contract TestGovernance is TestSetup {
         marketsManager.setThreshold(aDai, WAD);
     }
 
-    // Only Owner should be able to change reserve factor
-    function test_only_owner_can_change_reserveFactor() public {
+    // Threshold should be updated
+    function test_threshold_should_be_updated() public {
+        marketsManager.setThreshold(aDai, 5 * WAD);
+        assertEq(positionsManager.threshold(aDai), 5 * WAD);
+    }
+
+    // Only Owner should be able to set reserve factor
+    function test_only_owner_can_set_reserveFactor() public {
         for (uint256 i = 0; i < pools.length; i++) {
             hevm.expectRevert("Ownable: caller is not the owner");
             supplier1.setReserveFactor(1111);
@@ -71,11 +80,64 @@ contract TestGovernance is TestSetup {
         }
 
         marketsManager.setReserveFactor(1111);
+    }
+
+    // Reserve factor should be updated
+    function test_reserveFactor_should_be_updated() public {
+        marketsManager.setReserveFactor(1111);
         assertEq(marketsManager.reserveFactor(), 1111);
     }
 
+    // Anyone can update the rates
+    function test_rates_should_be_updated() public {
+        borrower1.updateRates(aDai);
+        uint256 firstBlockTimestamp = block.timestamp;
+
+        DataTypes.ReserveData memory data = lendingPool.getReserveData(dai);
+        uint256 expectedSPY = (data.currentLiquidityRate + data.currentVariableBorrowRate) /
+            2 /
+            SECOND_PER_YEAR;
+
+        uint256 borrowP2PExchangeRate = marketsManager.borrowP2PExchangeRate(aDai);
+        uint256 supplyP2PExchangeRate = marketsManager.supplyP2PExchangeRate(aDai);
+
+        assertEq(marketsManager.supplyP2PSPY(aDai), expectedSPY);
+        assertEq(marketsManager.borrowP2PSPY(aDai), expectedSPY);
+        assertEq(supplyP2PExchangeRate, RAY);
+        assertEq(borrowP2PExchangeRate, RAY);
+
+        hevm.warp(block.timestamp + 100000);
+        borrower1.updateRates(aDai);
+        uint256 secondBlockTimestamp = block.timestamp;
+
+        data = lendingPool.getReserveData(dai);
+        expectedSPY =
+            (data.currentLiquidityRate + data.currentVariableBorrowRate) /
+            2 /
+            SECOND_PER_YEAR;
+
+        uint256 supplySPY = (expectedSPY * (MAX_BASIS_POINTS - marketsManager.reserveFactor())) /
+            MAX_BASIS_POINTS;
+        uint256 borrowSPY = (expectedSPY * (MAX_BASIS_POINTS + marketsManager.reserveFactor())) /
+            MAX_BASIS_POINTS;
+        assertEq(marketsManager.supplyP2PSPY(aDai), supplySPY);
+        assertEq(marketsManager.borrowP2PSPY(aDai), borrowSPY);
+
+        uint256 newBorrowP2PExchangeRate = borrowP2PExchangeRate.rayMul(
+            (WadRayMath.ray() + borrowSPY).rayPow(secondBlockTimestamp - firstBlockTimestamp)
+        );
+        uint256 newSupplyP2PExchangeRate = supplyP2PExchangeRate.rayMul(
+            (WadRayMath.ray() + supplySPY).rayPow(secondBlockTimestamp - firstBlockTimestamp)
+        );
+
+        borrowP2PExchangeRate = marketsManager.borrowP2PExchangeRate(aDai);
+        supplyP2PExchangeRate = marketsManager.supplyP2PExchangeRate(aDai);
+        assertEq(supplyP2PExchangeRate, newSupplyP2PExchangeRate);
+        assertEq(borrowP2PExchangeRate, newBorrowP2PExchangeRate);
+    }
+
     // marketsManagerForAave should not be changed after already set by Owner
-    function test_marketsManager_should_not_be_changed() public {
+    function test_positionsManager_should_not_be_changed() public {
         hevm.expectRevert(abi.encodeWithSignature("PositionsManagerAlreadySet()"));
         marketsManager.setPositionsManager(address(fakePositionsManager));
     }
