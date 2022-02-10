@@ -16,8 +16,9 @@ import "../common/libraries/DoubleLinkedList.sol";
 import "./libraries/aave/WadRayMath.sol";
 
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/security/Pausable.sol";
 
-contract PositionsManagerForAaveStorage is ReentrancyGuard {
+contract PositionsManagerForAaveStorage is ReentrancyGuard, Pausable {
     using WadRayMath for uint256;
     using SafeERC20 for IERC20;
     using Math for uint256;
