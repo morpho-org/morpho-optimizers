@@ -311,10 +311,18 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         emit RewardsManagerSet(_rewardsManagerAddress);
     }
 
+    /// @dev Sets the pause status in case of emergency.
+    /// @dev Note: the events are emitted through the Pausable contract.
+    function setPauseStatus() external onlyMarketsManagerOwner {
+        if (paused()) _unpause();
+        else _pause();
+    }
+
     /// @dev Transfers the protocol reserve fee to the DAO.
     /// @param _poolTokenAddress The address of the market on which we want to claim the reserve fee.
     function claimToTreasury(address _poolTokenAddress)
         external
+        whenNotPaused
         onlyMarketsManagerOwner
         isMarketCreated(_poolTokenAddress)
     {
@@ -326,7 +334,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
 
     /// @dev Claims rewards for the given assets and the unclaimed rewards.
     /// @param _assets The assets to claim rewards from (aToken or variable debt token).
-    function claimRewards(address[] calldata _assets) external {
+    function claimRewards(address[] calldata _assets) external whenNotPaused {
         for (uint256 i; i < _assets.length; i++) {
             (address aTokenAddress, , ) = dataProvider.getReserveTokensAddresses(
                 IAToken(_assets[i]).UNDERLYING_ASSET_ADDRESS()
@@ -395,6 +403,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
     )
         external
         nonReentrant
+        whenNotPaused
         isMarketCreated(_poolTokenAddress)
         isAboveThreshold(_poolTokenAddress, _amount)
     {
@@ -459,6 +468,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
     )
         external
         nonReentrant
+        whenNotPaused
         isMarketCreated(_poolTokenAddress)
         isAboveThreshold(_poolTokenAddress, _amount)
     {
@@ -518,7 +528,11 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
     /// @dev Note: If `_amount` is equal to the uint256's maximum value, the whole balance is withdrawn.
     /// @param _poolTokenAddress The address of the market the user wants to interact with.
     /// @param _amount The amount in tokens to withdraw from supply.
-    function withdraw(address _poolTokenAddress, uint256 _amount) external nonReentrant {
+    function withdraw(address _poolTokenAddress, uint256 _amount)
+        external
+        nonReentrant
+        whenNotPaused
+    {
         marketsManager.updateRates(_poolTokenAddress);
         IAToken poolToken = IAToken(_poolTokenAddress);
 
@@ -539,7 +553,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
     /// @dev Note: If `_amount` is equal to the uint256's maximum value, the whole debt is repaid.
     /// @param _poolTokenAddress The address of the market the user wants to interact with.
     /// @param _amount The amount of token (in underlying).
-    function repay(address _poolTokenAddress, uint256 _amount) external nonReentrant {
+    function repay(address _poolTokenAddress, uint256 _amount) external nonReentrant whenNotPaused {
         marketsManager.updateRates(_poolTokenAddress);
         IAToken poolToken = IAToken(_poolTokenAddress);
 
@@ -565,7 +579,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         address _poolTokenCollateralAddress,
         address _borrower,
         uint256 _amount
-    ) external nonReentrant {
+    ) external nonReentrant whenNotPaused {
         if (_amount == 0) revert AmountIsZero();
 
         LiquidateVars memory vars;
