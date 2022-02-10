@@ -423,7 +423,8 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
             uint256 matched = matchingEngine.matchBorrowersDC(
                 IAToken(_poolTokenAddress),
                 underlyingToken,
-                _amount
+                _amount,
+                false
             ); // In underlying
 
             if (matched > 0) {
@@ -487,7 +488,8 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
             uint256 matched = matchingEngine.matchSuppliersDC(
                 IAToken(_poolTokenAddress),
                 underlyingToken,
-                _amount
+                _amount,
+                false
             ); // In underlying
 
             if (matched > 0) {
@@ -543,7 +545,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
             _amount
         );
 
-        _withdraw(_poolTokenAddress, toWithdraw, msg.sender, msg.sender);
+        _withdraw(_poolTokenAddress, _amount, msg.sender, msg.sender, false);
     }
 
     /// @notice Repays debt of the user.
@@ -563,7 +565,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
             _amount
         );
 
-        _repay(_poolTokenAddress, msg.sender, toRepay);
+        _repay(_poolTokenAddress, msg.sender, _amount, false);
     }
 
     /// @notice Allows someone to liquidate a position.
@@ -600,7 +602,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         if (_amount > (vars.borrowBalance * LIQUIDATION_CLOSE_FACTOR_PERCENT) / MAX_BASIS_POINTS)
             revert AmountAboveWhatAllowedToRepay(); // Same mechanism as Aave. Liquidator cannot repay more than part of the debt (cf close factor on Aave).
 
-        _repay(_poolTokenBorrowedAddress, _borrower, _amount);
+        _repay(_poolTokenBorrowedAddress, _borrower, _amount, true);
 
         IAToken poolTokenCollateral = IAToken(_poolTokenCollateralAddress);
         vars.tokenCollateralAddress = poolTokenCollateral.UNDERLYING_ASSET_ADDRESS();
@@ -631,7 +633,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
 
         if (vars.amountToSeize > vars.supplyBalance) revert ToSeizeAboveCollateral();
 
-        _withdraw(_poolTokenCollateralAddress, vars.amountToSeize, _borrower, msg.sender);
+        _withdraw(_poolTokenCollateralAddress, vars.amountToSeize, _borrower, msg.sender, true);
         emit Liquidated(
             msg.sender,
             _borrower,
@@ -791,7 +793,8 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         address _poolTokenAddress,
         uint256 _amount,
         address _supplier,
-        address _receiver
+        address _receiver,
+        bool _isLiquidation
     ) internal isMarketCreated(_poolTokenAddress) {
         if (_amount == 0) revert AmountIsZero();
         _checkUserLiquidity(_supplier, _poolTokenAddress, _amount, 0);
@@ -835,7 +838,8 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
             uint256 matchedSupply = matchingEngine.matchSuppliersDC(
                 poolToken,
                 underlyingToken,
-                remainingToWithdraw
+                remainingToWithdraw,
+                _isLiquidation
             );
 
             /// Hard withdraw ///
@@ -843,8 +847,9 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
             if (remainingToWithdraw > matchedSupply)
                 matchingEngine.unmatchBorrowersDC(
                     _poolTokenAddress,
-                    remainingToWithdraw - matchedSupply
-                ); // Revert on error
+                    remainingToWithdraw - matchedSupply,
+                    _isLiquidation
+                );
         }
 
         underlyingToken.safeTransfer(_receiver, _amount);
@@ -865,7 +870,8 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
     function _repay(
         address _poolTokenAddress,
         address _user,
-        uint256 _amount
+        uint256 _amount,
+        bool _isLiquidation
     ) internal isMarketCreated(_poolTokenAddress) {
         if (_amount == 0) revert AmountIsZero();
 
@@ -914,7 +920,8 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
             uint256 matchedBorrow = matchingEngine.matchBorrowersDC(
                 poolToken,
                 underlyingToken,
-                remainingToRepay
+                remainingToRepay,
+                _isLiquidation
             );
 
             /// Hard repay ///
@@ -922,7 +929,8 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
             if (_amount > matchedBorrow)
                 matchingEngine.unmatchSuppliersDC(
                     poolTokenAddress,
-                    remainingToRepay - matchedBorrow
+                    remainingToRepay - matchedBorrow,
+                    _isLiquidation
                 ); // Revert on error
         }
 
