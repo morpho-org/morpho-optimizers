@@ -8,18 +8,28 @@ interface IMatchingEngineForAave {
     function matchSuppliers(
         IAToken,
         IERC20,
-        uint256
+        uint256,
+        bool
     ) external returns (uint256);
 
-    function unmatchSuppliers(address, uint256) external;
+    function unmatchSuppliers(
+        address,
+        uint256,
+        bool
+    ) external;
 
     function matchBorrowers(
         IAToken,
         IERC20,
-        uint256
+        uint256,
+        bool
     ) external returns (uint256);
 
-    function unmatchBorrowers(address, uint256) external;
+    function unmatchBorrowers(
+        address,
+        uint256,
+        bool
+    ) external;
 
     function updateBorrowers(address _poolTokenAddress, address _user) external;
 
