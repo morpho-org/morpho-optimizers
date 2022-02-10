@@ -378,6 +378,31 @@ contract TestGetters is TestSetup {
         assertEq(borrowable, expectedBorrowableDai, "borrowable DAI");
     }
 
+    function test_asset_max_capacities_with_only_usdc() public {
+        uint256 collateral = 10 ether;
+
+        borrower1.approve(usdc, address(positionsManager), to6Decimals(collateral));
+        borrower1.supply(aUsdc, to6Decimals(collateral));
+
+        // amount = collateral * LTV (80% for usdc )
+        (, uint256 amount) = positionsManager.getUserMaxCapacitiesForAsset(
+            address(borrower1),
+            aDai
+        );
+
+        PositionsManagerForAave.AssetLiquidityData memory assetDataUsdc = positionsManager
+        .getUserLiquidityDataForAsset(address(borrower1), aUsdc, oracle);
+
+        PositionsManagerForAave.AssetLiquidityData memory assetDataDai = positionsManager
+        .getUserLiquidityDataForAsset(address(borrower1), aDai, oracle);
+
+        borrower1.borrow(aDai, amount);
+        uint256 expectBorrowable = ((assetDataUsdc.maxDebtValue) * assetDataDai.tokenUnit) /
+            assetDataDai.underlyingPrice;
+
+        assertEq(amount, expectBorrowable);
+    }
+
     function test_asset_max_capacities_with_supply_on_several_assets_and_borrow() public {
         uint256 amount = 10000 ether;
 
