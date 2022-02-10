@@ -28,7 +28,6 @@ contract TestFees is TestSetup {
         hevm.warp(block.timestamp + 1);
 
         uint256 balanceBefore = IERC20(dai).balanceOf(positionsManager.treasuryVault());
-        supplier1.approve(dai, type(uint256).max);
         supplier1.supply(aDai, 100 * WAD);
         supplier1.borrow(aDai, 50 * WAD);
 
@@ -67,7 +66,6 @@ contract TestFees is TestSetup {
             (50 * WAD).rayMul(newSupplyExRate);
 
         uint256 balanceBefore = IERC20(dai).balanceOf(positionsManager.treasuryVault());
-        supplier1.approve(dai, type(uint256).max);
         supplier1.supply(aDai, 100 * WAD);
         supplier1.borrow(aDai, 50 * WAD);
 
@@ -89,7 +87,6 @@ contract TestFees is TestSetup {
         hevm.warp(block.timestamp + 1);
 
         uint256 balanceBefore = IERC20(dai).balanceOf(positionsManager.treasuryVault());
-        supplier1.approve(dai, type(uint256).max);
         supplier1.supply(aDai, 100 * WAD);
         supplier1.borrow(aDai, 50 * WAD);
 

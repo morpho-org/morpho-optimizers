@@ -11,7 +11,6 @@ contract TestBorrow is TestSetup {
         for (uint256 i = 0; i < pools.length; i++) {
             address pool = pools[i];
             uint256 amount = positionsManager.threshold(pool) - 1;
-            borrower1.approve(IAToken(pool).UNDERLYING_ASSET_ADDRESS(), amount);
 
             hevm.expectRevert(abi.encodeWithSignature("AmountNotAboveThreshold()"));
             borrower1.borrow(pool, amount);
@@ -30,7 +29,6 @@ contract TestBorrow is TestSetup {
             getMaxToBorrow(supply.amount, supply.underlying, borrow.underlying) +
             denormalizeAmount(2 ether, borrow.underlying);
 
-        borrower1.approve(supply.underlying, supply.amount);
         borrower1.supply(supply.poolToken, supply.amount);
 
         hevm.expectRevert(abi.encodeWithSignature("DebtValueAboveMax()"));
@@ -45,7 +43,6 @@ contract TestBorrow is TestSetup {
     ) public {
         (Asset memory supply, Asset memory borrow) = getAssets(_amount, _supplyAsset, _borrowAsset);
 
-        borrower1.approve(supply.underlying, 2 * supply.amount);
         borrower1.supply(supply.poolToken, 2 * supply.amount);
 
         (, uint256 onPoolBefore) = positionsManager.borrowBalanceInOf(
@@ -67,7 +64,7 @@ contract TestBorrow is TestSetup {
         uint256 expectedOnPool = onPoolBefore +
             underlyingToAdUnit(2 * borrow.amount, normalizedVariableDebt);
 
-        assertApproxEq(onPool, expectedOnPool, 1, "borrower1 on pool");
+        assertApproxEq(onPool, expectedOnPool, 2, "borrower1 on pool");
     }
 
     // 2.3 - There are no available suppliers: all of the borrowed amount is onPool.
@@ -78,7 +75,6 @@ contract TestBorrow is TestSetup {
     ) public {
         (Asset memory supply, Asset memory borrow) = getAssets(_amount, _supplyAsset, _borrowAsset);
 
-        borrower1.approve(supply.underlying, supply.amount);
         borrower1.supply(supply.poolToken, supply.amount);
 
         borrower1.borrow(borrow.poolToken, borrow.amount);
@@ -93,8 +89,8 @@ contract TestBorrow is TestSetup {
             lendingPool.getReserveNormalizedVariableDebt(borrow.underlying)
         );
 
-        assertEq(inP2P, 0, "borrower1 in P2P2");
-        assertApproxEq(onPool, expectedOnPool, 1, "borrower1 on pool");
+        assertApproxEq(inP2P, 0, 2, "borrower1 in P2P2");
+        assertApproxEq(onPool, expectedOnPool, 2, "borrower1 on pool");
     }
 
     // 2.4 - There is 1 available supplier, he matches 100% of the borrower liquidity, everything is inP2P.
@@ -105,10 +101,8 @@ contract TestBorrow is TestSetup {
     ) public {
         (Asset memory supply, Asset memory borrow) = getAssets(_amount, _supplyAsset, _borrowAsset);
 
-        supplier1.approve(borrow.underlying, borrow.amount);
         supplier1.supply(borrow.poolToken, borrow.amount);
 
-        borrower1.approve(supply.underlying, supply.amount);
         borrower1.supply(supply.poolToken, supply.amount);
         borrower1.borrow(borrow.poolToken, borrow.amount);
 
@@ -122,15 +116,15 @@ contract TestBorrow is TestSetup {
             marketsManager.borrowP2PExchangeRate(borrow.poolToken)
         );
 
-        assertEq(expectedInP2P, borrow.amount, "supplier1 in P2P");
+        assertApproxEq(expectedInP2P, borrow.amount, 2, "supplier1 in P2P");
 
         (uint256 inP2P, uint256 onPool) = positionsManager.borrowBalanceInOf(
             borrow.poolToken,
             address(borrower1)
         );
 
-        assertEq(inP2P, supplyInP2P, "borrower1 in P2P");
-        assertApproxEq(onPool, 0, 1, "borrower1 on pool");
+        assertApproxEq(inP2P, supplyInP2P, 2, "borrower1 in P2P");
+        assertApproxEq(onPool, 0, 2, "borrower1 on pool");
     }
 
     // 2.5 - There is 1 available supplier, he doesn't match 100% of the borrower liquidity.
@@ -142,10 +136,8 @@ contract TestBorrow is TestSetup {
     ) public {
         (Asset memory supply, Asset memory borrow) = getAssets(_amount, _supplyAsset, _borrowAsset);
 
-        supplier1.approve(borrow.underlying, borrow.amount);
         supplier1.supply(borrow.poolToken, borrow.amount);
 
-        borrower1.approve(supply.underlying, 2 * supply.amount);
         borrower1.supply(supply.poolToken, 2 * supply.amount);
         borrower1.borrow(borrow.poolToken, 2 * borrow.amount);
 
@@ -159,7 +151,7 @@ contract TestBorrow is TestSetup {
             address(borrower1)
         );
 
-        assertEq(inP2P, supplyInP2P, "borrower1 in P2P");
+        assertApproxEq(inP2P, supplyInP2P, 2, "borrower1 in P2P");
     }
 
     // 2.6 - There are NMAX (or less) suppliers that match the borrowed amount, everything is inP2P after NMAX (or less) match.
@@ -174,11 +166,9 @@ contract TestBorrow is TestSetup {
         uint256 amountPerSupplier = amount / NMAX;
 
         for (uint256 i = 0; i < NMAX; i++) {
-            suppliers[i].approve(dai, amountPerSupplier);
             suppliers[i].supply(aDai, amountPerSupplier);
         }
 
-        borrower1.approve(usdc, to6Decimals(collateral));
         borrower1.supply(aUsdc, to6Decimals(collateral));
         borrower1.borrow(aDai, amount);
 
@@ -215,11 +205,9 @@ contract TestBorrow is TestSetup {
         uint256 amountPerSupplier = amount / (2 * NMAX);
 
         for (uint256 i = 0; i < NMAX; i++) {
-            suppliers[i].approve(dai, amountPerSupplier);
             suppliers[i].supply(aDai, amountPerSupplier);
         }
 
-        borrower1.approve(usdc, to6Decimals(collateral));
         borrower1.supply(aUsdc, to6Decimals(collateral));
         borrower1.borrow(aDai, amount);
 

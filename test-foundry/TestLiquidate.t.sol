@@ -12,14 +12,12 @@ contract TestLiquidate is TestSetup {
     ) public {
         (Asset memory supply, Asset memory borrow) = getAssets(_amount, _supplyAsset, _borrowAsset);
 
-        borrower1.approve(supply.underlying, supply.amount);
         borrower1.supply(supply.poolToken, supply.amount);
         borrower1.borrow(borrow.poolToken, borrow.amount);
 
         // Liquidate
         uint256 toRepay = borrow.amount / 2;
         User liquidator = borrower3;
-        liquidator.approve(borrow.underlying, address(positionsManager), toRepay);
 
         hevm.expectRevert(abi.encodeWithSignature("DebtValueNotAboveMax()"));
         liquidator.liquidate(borrow.poolToken, supply.poolToken, address(borrower1), toRepay);
@@ -27,51 +25,47 @@ contract TestLiquidate is TestSetup {
 
     // 5.2 - A user liquidates a borrower that has not enough collateral to cover for his debt.
     function test_liquidate_5_2() public {
-        (Asset memory supply, Asset memory borrow) = getAssets(100_000 ether, 1, 0);
+        uint256 collateral = 100_000 ether;
 
-        borrower1.approve(supply.underlying, supply.amount);
-        borrower1.supply(supply.poolToken, supply.amount);
+        borrower1.approve(usdc, address(positionsManager), to6Decimals(collateral));
+        borrower1.supply(aUsdc, to6Decimals(collateral));
 
-        (, borrow.amount) = positionsManager.getUserMaxCapacitiesForAsset(
+        (, uint256 amount) = positionsManager.getUserMaxCapacitiesForAsset(
             address(borrower1),
-            borrow.poolToken
+            aDai
         );
-
-        borrower1.borrow(borrow.poolToken, borrow.amount);
+        borrower1.borrow(aDai, amount);
 
         (, uint256 collateralOnPool) = positionsManager.supplyBalanceInOf(
-            supply.poolToken,
+            aUsdc,
             address(borrower1)
         );
 
         // Change Oracle
         SimplePriceOracle customOracle = createAndSetCustomPriceOracle();
-        customOracle.setDirectPrice(
-            supply.underlying,
-            (oracle.getAssetPrice(supply.underlying) * 93) / 100
-        );
+        customOracle.setDirectPrice(usdc, (oracle.getAssetPrice(usdc) * 93) / 100);
 
         // Liquidate
-        uint256 toRepay = borrow.amount / 2;
+        uint256 toRepay = amount / 2;
         User liquidator = borrower3;
-        liquidator.approve(borrow.underlying, toRepay);
-        liquidator.liquidate(borrow.poolToken, supply.poolToken, address(borrower1), toRepay);
+        liquidator.approve(dai, address(positionsManager), toRepay);
+        liquidator.liquidate(aDai, aUsdc, address(borrower1), toRepay);
 
         // Check borrower1 borrow balance
         (uint256 inP2PBorrower, uint256 onPoolBorrower) = positionsManager.borrowBalanceInOf(
-            borrow.poolToken,
+            aDai,
             address(borrower1)
         );
         uint256 expectedBorrowBalanceOnPool = aDUnitToUnderlying(
             onPoolBorrower,
-            lendingPool.getReserveNormalizedVariableDebt(borrow.underlying)
+            lendingPool.getReserveNormalizedVariableDebt(dai)
         );
-        testEquality(expectedBorrowBalanceOnPool, borrow.amount / 2);
+        testEquality(expectedBorrowBalanceOnPool, amount / 2);
         assertEq(inP2PBorrower, 0);
 
         // Check borrower1 supply balance
         (inP2PBorrower, onPoolBorrower) = positionsManager.supplyBalanceInOf(
-            supply.poolToken,
+            aUsdc,
             address(borrower1)
         );
 
@@ -87,21 +81,21 @@ contract TestLiquidate is TestSetup {
             ,
             ,
 
-        ) = protocolDataProvider.getReserveConfigurationData(supply.underlying);
-        vars.collateralPrice = customOracle.getAssetPrice(supply.underlying);
+        ) = protocolDataProvider.getReserveConfigurationData(usdc);
+        vars.collateralPrice = customOracle.getAssetPrice(usdc);
         vars.collateralTokenUnit = 10**vars.collateralReserveDecimals;
 
         (vars.borrowedReserveDecimals, , , , , , , , , ) = protocolDataProvider
-        .getReserveConfigurationData(borrow.underlying);
-        vars.borrowedPrice = customOracle.getAssetPrice(borrow.underlying);
+        .getReserveConfigurationData(dai);
+        vars.borrowedPrice = customOracle.getAssetPrice(dai);
         vars.borrowedTokenUnit = 10**vars.borrowedReserveDecimals;
 
-        uint256 amountToSeize = ((borrow.amount / 2) *
+        uint256 amountToSeize = ((amount / 2) *
             vars.borrowedPrice *
             vars.collateralTokenUnit *
             vars.liquidationBonus) / (vars.borrowedTokenUnit * vars.collateralPrice * 10000);
 
-        uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(supply.underlying);
+        uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(usdc);
         uint256 expectedOnPool = collateralOnPool -
             underlyingToScaledBalance(amountToSeize, normalizedIncome);
 
@@ -118,7 +112,6 @@ contract TestLiquidate is TestSetup {
         uint256 collateral = 100_000 ether;
 
         // Borrower1 & supplier1 are matched for suppliedAmount
-        borrower1.approve(usdc, to6Decimals(collateral));
         borrower1.supply(aUsdc, to6Decimals(collateral));
 
         (, uint256 borrowedAmount) = positionsManager.getUserMaxCapacitiesForAsset(
@@ -128,7 +121,6 @@ contract TestLiquidate is TestSetup {
         borrower1.borrow(aDai, borrowedAmount);
 
         uint256 suppliedAmount = borrowedAmount;
-        supplier1.approve(dai, suppliedAmount);
         supplier1.supply(aDai, suppliedAmount);
 
         // NMAX borrowers have debt waiting on pool
@@ -140,10 +132,8 @@ contract TestLiquidate is TestSetup {
         uint256 amountPerBorrower = (borrowedAmount) / (2 * (NMAX - 1));
 
         for (uint256 i = 1; i < NMAX; i++) {
-            suppliers[i].approve(dai, amountPerSupplier);
             suppliers[i].supply(aDai, amountPerSupplier);
 
-            borrowers[i].approve(usdc, to6Decimals(collateral));
             borrowers[i].supply(aUsdc, to6Decimals(collateral));
             borrowers[i].borrow(aDai, amountPerBorrower);
         }
@@ -154,7 +144,6 @@ contract TestLiquidate is TestSetup {
 
         // Liquidate
         User liquidator = borrower3;
-        liquidator.approve(dai, address(positionsManager), borrowedAmount / 2);
         liquidator.liquidate(aDai, aUsdc, address(borrower1), borrowedAmount / 2);
 
         // Check borrower1 balance

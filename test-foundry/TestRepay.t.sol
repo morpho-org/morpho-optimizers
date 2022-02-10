@@ -12,11 +12,9 @@ contract TestRepay is TestSetup {
     ) public {
         (Asset memory supply, Asset memory borrow) = getAssets(_amount, _supplyAsset, _borrowAsset);
 
-        borrower1.approve(supply.underlying, supply.amount + 1);
         borrower1.supply(supply.poolToken, supply.amount + 1);
         borrower1.borrow(borrow.poolToken, borrow.amount);
 
-        borrower1.approve(borrow.underlying, borrow.amount);
         borrower1.repay(borrow.poolToken, borrow.amount);
 
         (uint256 inP2P, uint256 onPool) = positionsManager.borrowBalanceInOf(
@@ -35,11 +33,9 @@ contract TestRepay is TestSetup {
         (Asset memory supply, Asset memory borrow) = getAssets(10_000 ether, 1, 0);
 
         // Borrower1 & supplier1 are matched for borrow.amount
-        borrower1.approve(supply.underlying, 2 * supply.amount);
         borrower1.supply(supply.poolToken, 2 * supply.amount);
         borrower1.borrow(borrow.poolToken, 2 * borrow.amount);
 
-        supplier1.approve(borrow.underlying, borrow.amount);
         supplier1.supply(borrow.poolToken, borrow.amount);
 
         // Check balances after match of borrower1 & supplier1
@@ -63,12 +59,10 @@ contract TestRepay is TestSetup {
         assertEq(inP2PSupplier, inP2PBorrower1, "borrower1 / supplier1 in P2P");
 
         // An available borrower onPool
-        borrower2.approve(supply.underlying, supply.amount);
         borrower2.supply(supply.poolToken, supply.amount);
         borrower2.borrow(borrow.poolToken, borrow.amount / 2);
 
         // Borrower1 repays 75% of suppliedAmount
-        borrower1.approve(borrow.underlying, (borrow.amount * 2 * 75) / 100);
         borrower1.repay(borrow.poolToken, (borrow.amount * 2 * 75) / 100);
 
         // Check balances for borrower1 & borrower2
@@ -113,11 +107,9 @@ contract TestRepay is TestSetup {
         uint256 collateral = 2 * borrowedAmount;
 
         // Borrower1 & supplier1 are matched up to suppliedAmount
-        borrower1.approve(usdc, to6Decimals(collateral));
         borrower1.supply(aUsdc, to6Decimals(collateral));
         borrower1.borrow(aDai, borrowedAmount);
 
-        supplier1.approve(dai, suppliedAmount);
         supplier1.supply(aDai, suppliedAmount);
 
         // Check balances after match of borrower1 & supplier1
@@ -154,7 +146,6 @@ contract TestRepay is TestSetup {
         for (uint256 i = 0; i < NMAX; i++) {
             if (borrowers[i] == borrower1) continue;
 
-            borrowers[i].approve(usdc, to6Decimals(collateral));
             borrowers[i].supply(aUsdc, to6Decimals(collateral));
             borrowers[i].borrow(aDai, amountPerBorrower);
 
@@ -166,7 +157,6 @@ contract TestRepay is TestSetup {
         }
 
         // Borrower1 repays all of his debt
-        borrower1.approve(dai, borrowedAmount);
         borrower1.repay(aDai, borrowedAmount);
 
         // His balance should be set to 0
@@ -212,11 +202,9 @@ contract TestRepay is TestSetup {
         (Asset memory supply, Asset memory borrow) = getAssets(10_000 ether, 1, 0);
 
         // Borrower1 & supplier1 are matched for supplierAmount
-        borrower1.approve(supply.underlying, 2 * supply.amount);
         borrower1.supply(supply.poolToken, 2 * supply.amount);
         borrower1.borrow(borrow.poolToken, 2 * borrow.amount);
 
-        supplier1.approve(borrow.underlying, borrow.amount);
         supplier1.supply(borrow.poolToken, borrow.amount);
 
         // Check balances after match of borrower1 & supplier1
@@ -240,7 +228,6 @@ contract TestRepay is TestSetup {
         assertEq(onPoolBorrower1, expectedOnPool, "borrower1 on pool");
 
         // Borrower1 repays 75% of borrowed amount
-        borrower1.approve(borrow.underlying, (borrow.amount * 2 * 75) / 100);
         borrower1.repay(borrow.poolToken, (borrow.amount * 2 * 75) / 100);
 
         // Check balances for borrower
@@ -293,11 +280,9 @@ contract TestRepay is TestSetup {
         uint256 collateral = 2 * borrowedAmount;
 
         // Borrower1 & supplier1 are matched for suppliedAmount
-        borrower1.approve(usdc, to6Decimals(collateral));
         borrower1.supply(aUsdc, to6Decimals(collateral));
         borrower1.borrow(aDai, borrowedAmount);
 
-        supplier1.approve(dai, suppliedAmount);
         supplier1.supply(aDai, suppliedAmount);
 
         // Check balances after match of borrower1 & supplier1
@@ -330,13 +315,11 @@ contract TestRepay is TestSetup {
         for (uint256 i = 0; i < NMAX; i++) {
             if (borrowers[i] == borrower1) continue;
 
-            borrowers[i].approve(usdc, to6Decimals(collateral));
             borrowers[i].supply(aUsdc, to6Decimals(collateral));
             borrowers[i].borrow(aDai, amountPerBorrower);
         }
 
         // Borrower1 repays all of his debt
-        borrower1.approve(dai, borrowedAmount);
         borrower1.repay(aDai, borrowedAmount);
 
         // His balance should be set to 0

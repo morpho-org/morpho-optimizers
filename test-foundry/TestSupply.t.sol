@@ -9,7 +9,6 @@ contract TestSupply is TestSetup {
         for (uint256 i = 0; i < pools.length; i++) {
             address pool = pools[i];
             uint256 amount = positionsManager.threshold(pool) - 1;
-            supplier1.approve(IAToken(pool).UNDERLYING_ASSET_ADDRESS(), amount);
 
             hevm.expectRevert(abi.encodeWithSignature("AmountNotAboveThreshold()"));
             supplier1.supply(pool, amount);
@@ -26,11 +25,10 @@ contract TestSupply is TestSetup {
             address(supplier1)
         );
 
-        supplier1.approve(supply.underlying, supply.amount);
         supplier1.supply(supply.poolToken, supply.amount);
 
         uint256 morphoAfter = IERC20(supply.poolToken).balanceOf(address(positionsManager));
-        assertApproxEq(morphoAfter - morphoBefore, supply.amount, 1, "positionsManager balance");
+        assertApproxEq(morphoAfter - morphoBefore, supply.amount, 2, "positionsManager balance");
 
         marketsManager.updateRates(supply.poolToken);
         uint256 expectedOnPool = onPoolBefore +
@@ -44,8 +42,8 @@ contract TestSupply is TestSetup {
             address(supplier1)
         );
 
-        assertApproxEq(onPool, expectedOnPool, 1, "supplier1 on pool");
-        assertEq(inP2P, 0, "supplier1 in P2P2");
+        assertApproxEq(onPool, expectedOnPool, 2, "supplier1 on pool");
+        assertApproxEq(inP2P, 0, 2, "supplier1 in P2P2");
     }
 
     // Should be able to supply more ERC20 after already having supply ERC20
@@ -56,8 +54,6 @@ contract TestSupply is TestSetup {
             supply.poolToken,
             address(supplier1)
         );
-
-        supplier1.approve(supply.underlying, 2 * supply.amount);
 
         supplier1.supply(supply.poolToken, supply.amount);
         supplier1.supply(supply.poolToken, supply.amount);
@@ -74,7 +70,7 @@ contract TestSupply is TestSetup {
                 lendingPool.getReserveNormalizedIncome(supply.underlying)
             );
 
-        assertApproxEq(onPoolAfter, expectedOnPool, 1, "supplier1 on pool");
+        assertApproxEq(onPoolAfter, expectedOnPool, 2, "supplier1 on pool");
     }
 
     // 1.3 - There is 1 available borrower, he matches 100% of the supplier liquidity, everything is `inP2P`.
@@ -85,14 +81,12 @@ contract TestSupply is TestSetup {
     ) public {
         (Asset memory supply, Asset memory borrow) = getAssets(_amount, _supplyAsset, _borrowAsset);
 
-        borrower1.approve(supply.underlying, supply.amount);
         borrower1.supply(supply.poolToken, supply.amount);
 
         borrower1.borrow(borrow.poolToken, borrow.amount);
 
         uint256 underlyingBalanceBefore = supplier1.balanceOf(borrow.underlying);
 
-        supplier1.approve(borrow.underlying, borrow.amount);
         supplier1.supply(borrow.poolToken, borrow.amount);
 
         uint256 underlyingBalanceAfter = supplier1.balanceOf(borrow.underlying);
@@ -132,12 +126,10 @@ contract TestSupply is TestSetup {
     ) public {
         (Asset memory supply, Asset memory borrow) = getAssets(_amount, _supplyAsset, _borrowAsset);
 
-        borrower1.approve(supply.underlying, supply.amount);
         borrower1.supply(supply.poolToken, supply.amount);
 
         borrower1.borrow(borrow.poolToken, borrow.amount);
 
-        supplier1.approve(borrow.underlying, 2 * borrow.amount);
         supplier1.supply(borrow.poolToken, 2 * borrow.amount);
 
         marketsManager.updateRates(aDai);
@@ -166,13 +158,11 @@ contract TestSupply is TestSetup {
         uint256 amountPerBorrower = amount / NMAX;
 
         for (uint256 i = 0; i < NMAX; i++) {
-            borrowers[i].approve(usdc, to6Decimals(collateral));
             borrowers[i].supply(aUsdc, to6Decimals(collateral));
 
             borrowers[i].borrow(aDai, amountPerBorrower);
         }
 
-        supplier1.approve(dai, amount);
         supplier1.supply(aDai, amount);
 
         uint256 inP2P;
@@ -209,13 +199,11 @@ contract TestSupply is TestSetup {
         uint256 amountPerBorrower = amount / (2 * NMAX);
 
         for (uint256 i = 0; i < NMAX; i++) {
-            borrowers[i].approve(usdc, to6Decimals(collateral));
             borrowers[i].supply(aUsdc, to6Decimals(collateral));
 
             borrowers[i].borrow(aDai, amountPerBorrower);
         }
 
-        supplier1.approve(dai, amount);
         supplier1.supply(aDai, amount);
 
         uint256 inP2P;

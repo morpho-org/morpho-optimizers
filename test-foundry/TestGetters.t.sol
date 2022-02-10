@@ -22,7 +22,6 @@ contract TestGetters is TestSetup {
         uint256 amount = 10000 ether;
         uint256 toBorrow = amount / 10;
 
-        borrower1.approve(dai, amount);
         borrower1.supply(aDai, amount);
 
         assertEq(
@@ -77,7 +76,6 @@ contract TestGetters is TestSetup {
         positionsManager.setNmaxForMatchingEngine(NMAX);
         createSigners(NMAX);
         for (uint256 i; i < borrowers.length; i++) {
-            borrowers[i].approve(dai, amount - i);
             borrowers[i].supply(aDai, amount - i);
             borrowers[i].borrow(aUsdc, toBorrow - i);
         }
@@ -106,7 +104,6 @@ contract TestGetters is TestSetup {
         }
 
         for (uint256 i; i < suppliers.length; i++) {
-            suppliers[i].approve(usdc, toBorrow - i);
             suppliers[i].supply(aUsdc, toBorrow - i);
         }
 
@@ -161,7 +158,6 @@ contract TestGetters is TestSetup {
     function test_user_liquidity_data_for_asset_with_supply() public {
         uint256 amount = 10000 ether;
 
-        borrower1.approve(dai, amount);
         borrower1.supply(aDai, amount);
 
         PositionsManagerForAave.AssetLiquidityData memory assetData = positionsManager
@@ -199,7 +195,6 @@ contract TestGetters is TestSetup {
         uint256 amount = 10000 ether;
         uint256 toBorrow = amount / 2;
 
-        borrower1.approve(dai, amount);
         borrower1.supply(aDai, amount);
         borrower1.borrow(aDai, toBorrow);
 
@@ -240,7 +235,6 @@ contract TestGetters is TestSetup {
         uint256 amount = 10000 ether;
         uint256 toBorrow = to6Decimals(amount / 2);
 
-        borrower1.approve(dai, amount);
         borrower1.supply(aDai, amount);
         borrower1.borrow(aUsdc, toBorrow);
 
@@ -347,7 +341,6 @@ contract TestGetters is TestSetup {
     function test_asset_max_capacities_with_supply_on_one_asset() public {
         uint256 amount = 10000 ether;
 
-        borrower1.approve(usdc, to6Decimals(amount));
         borrower1.supply(aUsdc, to6Decimals(amount));
 
         PositionsManagerForAave.AssetLiquidityData memory assetDataUsdc = positionsManager
@@ -381,9 +374,7 @@ contract TestGetters is TestSetup {
     function test_asset_max_capacities_with_supply_on_several_assets_and_borrow() public {
         uint256 amount = 10000 ether;
 
-        borrower1.approve(usdc, to6Decimals(amount));
         borrower1.supply(aUsdc, to6Decimals(amount));
-        borrower1.approve(dai, amount);
         borrower1.supply(aDai, amount);
 
         PositionsManagerForAave.AssetLiquidityData memory assetDataUsdc = positionsManager
@@ -434,7 +425,6 @@ contract TestGetters is TestSetup {
         uint256 amount = 10000 ether;
         uint256 toBorrow = to6Decimals(amount / 2);
 
-        borrower1.approve(dai, amount);
         borrower1.supply(aDai, amount);
         borrower1.borrow(aUsdc, toBorrow);
 
@@ -487,9 +477,7 @@ contract TestGetters is TestSetup {
         uint256 amount = 10000 ether;
         uint256 toBorrow = 100 ether;
 
-        borrower1.approve(usdc, to6Decimals(amount));
         borrower1.supply(aUsdc, to6Decimals(amount));
-        borrower1.approve(dai, amount);
         borrower1.supply(aDai, amount);
 
         borrower1.borrow(aWmatic, toBorrow);
@@ -557,7 +545,6 @@ contract TestGetters is TestSetup {
         uint256 usdtAmount = to6Decimals(10_000 ether);
 
         writeBalanceOf(address(borrower1), usdt, usdtAmount);
-        borrower1.approve(usdt, usdtAmount);
         borrower1.supply(aUsdt, usdtAmount);
 
         (uint256 withdrawableUsdt, uint256 borrowableUsdt) = positionsManager
@@ -578,9 +565,7 @@ contract TestGetters is TestSetup {
         uint256 toBorrow = 100 ether;
 
         writeBalanceOf(address(borrower1), usdt, to6Decimals(amount));
-        borrower1.approve(usdt, to6Decimals(amount));
         borrower1.supply(aUsdt, to6Decimals(amount));
-        borrower1.approve(dai, amount);
         borrower1.supply(aDai, amount);
 
         borrower1.borrow(aWmatic, toBorrow);

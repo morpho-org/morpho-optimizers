@@ -15,12 +15,10 @@ contract TestMarketStrategy is TestSetup {
         // Flip strategy
         marketsManager.setNoP2P(aDai, true);
 
-        borrower1.approve(usdc, to6Decimals(amount));
         borrower1.supply(aUsdc, to6Decimals(amount));
 
         borrower1.borrow(aDai, toBorrow);
 
-        supplier1.approve(dai, toBorrow);
         supplier1.supply(aDai, toBorrow);
 
         // supplier1 and borrower1 should not be in P2P
@@ -46,10 +44,8 @@ contract TestMarketStrategy is TestSetup {
         // Flip strategy
         marketsManager.setNoP2P(aDai, true);
 
-        supplier1.approve(dai, toBorrow);
         supplier1.supply(aDai, toBorrow);
 
-        borrower1.approve(usdc, to6Decimals(amount));
         borrower1.supply(aUsdc, to6Decimals(amount));
 
         borrower1.borrow(aDai, toBorrow);
@@ -78,12 +74,10 @@ contract TestMarketStrategy is TestSetup {
         marketsManager.setNoP2P(aDai, true);
 
         for (uint256 i = 0; i < 3; i++) {
-            borrowers[i].approve(usdc, to6Decimals(amount));
             borrowers[i].supply(aUsdc, to6Decimals(amount));
             borrowers[i].borrow(aDai, toBorrow);
         }
 
-        supplier1.approve(dai, toBorrow);
         supplier1.supply(aDai, toBorrow);
 
         uint256 borrowInP2P;
@@ -116,11 +110,9 @@ contract TestMarketStrategy is TestSetup {
         marketsManager.setNoP2P(aDai, true);
 
         for (uint256 i = 0; i < 3; i++) {
-            suppliers[i].approve(dai, toSupply);
             suppliers[i].supply(aDai, toSupply);
         }
 
-        borrower1.approve(usdc, to6Decimals(amount));
         borrower1.supply(aUsdc, to6Decimals(amount));
 
         borrower1.borrow(aDai, toBorrow);

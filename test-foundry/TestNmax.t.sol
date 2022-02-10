@@ -30,23 +30,19 @@ contract TestNmax is TestSetup {
         // 1: create NMAX big matches on DAI market
         uint256 matchedAmount = (1000 * NMAX_256 * 1e18);
         for (uint256 i = 0; i < NMAX; i++) {
-            suppliers[i].approve(dai, matchedAmount);
             suppliers[i].supply(aDai, matchedAmount);
 
-            borrowers[i].approve(usdc, to6Decimals(2 * matchedAmount));
             borrowers[i].supply(aUsdc, to6Decimals(2 * matchedAmount));
             borrowers[i].borrow(aDai, matchedAmount);
         }
 
         // 2: There are NMAX borrowers waiting on Pool.
         for (uint256 i = 0; i < NMAX; i++) {
-            borrowers[i].approve(usdc, to6Decimals(2 * 1e18));
             borrowers[i].supply(aUsdc, to6Decimals(2 * 1e18));
             borrowers[i].borrow(aDai, 1e18);
         }
 
         // 3: Alices comes and is matched to NMAX borrowers. The excess has to be supplied on pool.
-        Alice.approve(dai, aliceAmount);
         Alice.supply(aDai, aliceAmount);
     }
 
@@ -71,22 +67,18 @@ contract TestNmax is TestSetup {
         // 1: create NMAX big matches on DAI market
         uint256 matchedAmount = (1000 * NMAX_256 * 1e18);
         for (uint256 i = 0; i < NMAX; i++) {
-            suppliers[i].approve(dai, matchedAmount);
             suppliers[i].supply(aDai, matchedAmount);
 
-            borrowers[i].approve(usdc, to6Decimals(2 * matchedAmount));
             borrowers[i].supply(aUsdc, to6Decimals(2 * matchedAmount));
             borrowers[i].borrow(aDai, matchedAmount);
         }
 
         // 2: There are NMAX suppliers waiting on Pool.
         for (uint256 i = 0; i < NMAX; i++) {
-            suppliers[i].approve(dai, 1e18);
             suppliers[i].supply(aDai, 1e18);
         }
 
         // 3: Alices comes and is matched to NMAX borrowers. The excess has to be supplied on pool.
-        Alice.approve(usdc, to6Decimals(2 * aliceAmount));
         Alice.supply(aUsdc, to6Decimals(2 * aliceAmount));
         Alice.borrow(aDai, aliceAmount);
     }
@@ -110,10 +102,8 @@ contract TestNmax is TestSetup {
         uint256 NMAX_256 = NMAX;
         uint256 matchedAmount = (1000 * NMAX_256 * 1e18);
         for (uint256 i = 0; i < NMAX; i++) {
-            suppliers[i].approve(dai, matchedAmount);
             suppliers[i].supply(aDai, matchedAmount);
 
-            borrowers[i].approve(usdc, to6Decimals(2 * matchedAmount));
             borrowers[i].supply(aUsdc, to6Decimals(2 * matchedAmount));
             borrowers[i].borrow(aDai, matchedAmount);
         }
@@ -123,11 +113,9 @@ contract TestNmax is TestSetup {
         // Amount breakdown:
         // 2: because we need to match 2 times Nmax users
         // +10*1e18: to have additional unmatched liquidity going to the pool.
-        Alice.approve(dai, aliceAmount);
         Alice.supply(aDai, aliceAmount);
 
         for (uint256 i = NMAX; i < 3 * NMAX; i++) {
-            borrowers[i].approve(usdc, to6Decimals(2 * 1e18));
             borrowers[i].supply(aUsdc, to6Decimals(2 * 1e18));
 
             borrowers[i].borrow(aDai, 1e18);
@@ -135,7 +123,6 @@ contract TestNmax is TestSetup {
 
         // 3: There are NMAX Dai suppliers on Pool
         for (uint256 i = NMAX; i < 2 * NMAX; i++) {
-            suppliers[i].approve(dai, 1e18);
             suppliers[i].supply(aDai, 1e18);
         }
 
@@ -163,10 +150,8 @@ contract TestNmax is TestSetup {
         uint256 matchedAmount = (1000 * NMAX_256 * 1e18);
 
         for (uint256 i = 0; i < NMAX; i++) {
-            suppliers[i].approve(dai, matchedAmount);
             suppliers[i].supply(aDai, matchedAmount);
 
-            borrowers[i].approve(usdc, to6Decimals(2 * matchedAmount));
             borrowers[i].supply(aUsdc, to6Decimals(2 * matchedAmount));
             borrowers[i].borrow(aDai, matchedAmount);
         }
@@ -176,25 +161,21 @@ contract TestNmax is TestSetup {
         // Amount breakdown:
         // 2: because we need to match 2 times Nmax users
         // +10*1e18: to have additional unmatched liquidity going to the pool.
-        Alice.approve(usdc, to6Decimals(2 * aliceAmount));
         Alice.supply(aUsdc, to6Decimals(2 * aliceAmount));
         Alice.borrow(aDai, aliceAmount);
 
         for (uint256 i = NMAX; i < 3 * NMAX; i++) {
-            suppliers[i].approve(dai, 1e18);
             suppliers[i].supply(aDai, 1e18);
         }
 
         // 3: There are NMAX Dai borrowers on Pool
         for (uint256 i = NMAX; i < 2 * NMAX; i++) {
-            suppliers[i].approve(usdc, to6Decimals(2 * 1e18));
             suppliers[i].supply(aUsdc, to6Decimals(2 * 1e18));
 
             suppliers[i].borrow(aDai, 1e18);
         }
 
         // 4: Alice repays everything
-        Alice.approve(dai, aliceAmount);
         Alice.repay(aDai, aliceAmount);
     }
 
@@ -237,33 +218,27 @@ contract TestNmax is TestSetup {
         // 1: create NMAX big matches on DAI market
         uint256 matchedAmount = 100 * individualDaiAmount * NMAX_256 * 1e18;
         for (uint256 i = 0; i < NMAX; i++) {
-            suppliers[i].approve(dai, matchedAmount);
             suppliers[i].supply(aDai, matchedAmount);
 
             writeBalanceOf(address(borrowers[i]), wbtc, type(uint256).max / 2);
-            borrowers[i].approve(wbtc, 100 * to6Decimals(matchedAmount));
             borrowers[i].supply(aWbtc, 100 * to6Decimals(matchedAmount));
             borrowers[i].borrow(aDai, matchedAmount);
         }
 
         // 2: create NMAX big matches on USDC market
         for (uint256 i = NMAX; i < 2 * NMAX; i++) {
-            suppliers[i].approve(usdc, to6Decimals(matchedAmount));
             suppliers[i].supply(aUsdc, to6Decimals(matchedAmount));
 
             writeBalanceOf(address(borrowers[i]), wbtc, type(uint256).max / 2); // Use WBTC to avoid affecting DAI and USDC markets
-            borrowers[i].approve(wbtc, 100 * to6Decimals(matchedAmount));
             borrowers[i].supply(aWbtc, 100 * to6Decimals(matchedAmount));
             borrowers[i].borrow(aUsdc, to6Decimals(matchedAmount));
         }
 
         // 3: Alice supplies USDC, then 4*NMAX borrowers come and match her liquidity.
-        Alice.approve(usdc, to6Decimals(aliceCollateralAmount));
         Alice.supply(aUsdc, to6Decimals(aliceCollateralAmount));
 
         for (uint256 i = 2 * NMAX; i < 6 * NMAX; i++) {
             writeBalanceOf(address(borrowers[i]), wbtc, type(uint256).max / 2); // Use WBTC to avoid affecting DAI and USDC markets
-            borrowers[i].approve(wbtc, 100 * to6Decimals(individualUsdcAmount));
             borrowers[i].supply(aWbtc, 100 * to6Decimals(individualUsdcAmount));
 
             borrowers[i].borrow(aUsdc, to6Decimals(individualUsdcAmount));
@@ -273,21 +248,18 @@ contract TestNmax is TestSetup {
         Alice.borrow(aDai, aliceBorrowedAmount);
 
         for (uint256 i = 2 * NMAX; i < 6 * NMAX; i++) {
-            suppliers[i].approve(dai, individualDaiAmount);
             suppliers[i].supply(aDai, individualDaiAmount);
         }
 
         // 5: There are NMAX DAI borrowers on pool.
         for (uint256 i = 6 * NMAX; i < 7 * NMAX; i++) {
             writeBalanceOf(address(borrowers[i]), wbtc, type(uint256).max / 2); // Use WBTC to avoid affecting DAI and USDC markets
-            borrowers[i].approve(wbtc, 100 * to6Decimals(individualDaiAmount));
             borrowers[i].supply(aWbtc, 100 * to6Decimals(individualDaiAmount));
             borrowers[i].borrow(aDai, individualDaiAmount);
         }
 
         // 6: There are NMAX USDC suppliers on pool.
         for (uint256 i = 4 * NMAX; i < 5 * NMAX; i++) {
-            suppliers[i].approve(usdc, to6Decimals(individualUsdcAmount));
             suppliers[i].supply(aUsdc, to6Decimals(individualUsdcAmount));
         }
 
@@ -306,7 +278,6 @@ contract TestNmax is TestSetup {
         ) + p2pUnitToUnderlying(inP2PAlice, marketsManager.borrowP2PExchangeRate(aDai));
 
         User liquidator = borrower1;
-        liquidator.approve(dai, address(positionsManager), totalBorrowedAlice / 2);
         liquidator.liquidate(aDai, aUsdc, address(Alice), totalBorrowedAlice / 2);
     }
 
