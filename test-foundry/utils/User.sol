@@ -88,6 +88,10 @@ contract User {
         positionsManager.setTreasuryVault(_newTreasuryVault);
     }
 
+    function setPauseStatus() external {
+        positionsManager.setPauseStatus();
+    }
+
     function setAaveIncentivesControllerOnRewardsManager(address _aaveIncentivesController)
         external
     {
