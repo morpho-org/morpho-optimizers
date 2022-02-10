@@ -697,25 +697,29 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         // Not possible to withdraw nor borrow
         if (data.maxDebtValue < data.debtValue) return (0, 0);
 
-        uint256 differenceInUnderlying = ((data.maxDebtValue - data.debtValue) *
-            assetData.tokenUnit) / assetData.underlyingPrice;
+        uint256 differenceInUnderlying = (((data.maxDebtValue - data.debtValue) * 1e18) /
+            assetData.underlyingPrice);
 
-        withdrawable =
-            (assetData.collateralValue * assetData.tokenUnit) /
-            assetData.underlyingPrice;
+        borrowable = (differenceInUnderlying * assetData.tokenUnit) / 1e18;
+        withdrawable = _getUserSupplyBalanceInOf(
+            _poolTokenAddress,
+            _user,
+            IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS()
+        );
+
         if (assetData.ltv != 0) {
             withdrawable = Math.min(
                 withdrawable,
-                (differenceInUnderlying * MAX_BASIS_POINTS) / assetData.ltv
+                (((differenceInUnderlying * MAX_BASIS_POINTS) / assetData.ltv) *
+                    assetData.tokenUnit)
             );
         }
-
-        borrowable = differenceInUnderlying;
     }
 
     /// Public ///
 
     /// @dev Returns the data related to `_poolTokenAddress` for the `_user`.
+    /// @notice values are returned in TokenUnits, not necessarily 1e18.
     /// @param _user The user to determine data for.
     /// @param _poolTokenAddress The address of the market.
     /// @return assetData The data related to this asset.
@@ -760,6 +764,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         assetData.collateralValue =
             (assetData.collateralValue * assetData.underlyingPrice) /
             assetData.tokenUnit;
+
         assetData.maxDebtValue = (assetData.collateralValue * ltv) / MAX_BASIS_POINTS;
         assetData.liquidationValue =
             (assetData.collateralValue * liquidationThreshold) /
