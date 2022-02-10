@@ -14,14 +14,16 @@ library MatchingEngineFns {
         IMatchingEngineForAave _matchingEngine,
         IAToken _poolToken,
         IERC20 _underlyingToken,
-        uint256 _amount
+        uint256 _amount,
+        bool _isLiquidation
     ) internal returns (uint256) {
         bytes memory data = address(_matchingEngine).functionDelegateCall(
             abi.encodeWithSelector(
                 _matchingEngine.matchSuppliers.selector,
                 _poolToken,
                 _underlyingToken,
-                _amount
+                _amount,
+                _isLiquidation
             )
         );
         return abi.decode(data, (uint256));
@@ -30,13 +32,15 @@ library MatchingEngineFns {
     function unmatchSuppliersDC(
         IMatchingEngineForAave _matchingEngine,
         address _poolTokenAddress,
-        uint256 _amount
+        uint256 _amount,
+        bool _isLiquidation
     ) internal {
         address(_matchingEngine).functionDelegateCall(
             abi.encodeWithSelector(
                 _matchingEngine.unmatchSuppliers.selector,
                 _poolTokenAddress,
-                _amount
+                _amount,
+                _isLiquidation
             )
         );
     }
@@ -45,14 +49,16 @@ library MatchingEngineFns {
         IMatchingEngineForAave _matchingEngine,
         IAToken _poolToken,
         IERC20 _underlyingToken,
-        uint256 _amount
+        uint256 _amount,
+        bool _isLiquidation
     ) internal returns (uint256) {
         bytes memory data = address(_matchingEngine).functionDelegateCall(
             abi.encodeWithSelector(
                 _matchingEngine.matchBorrowers.selector,
                 _poolToken,
                 _underlyingToken,
-                _amount
+                _amount,
+                _isLiquidation
             )
         );
         return abi.decode(data, (uint256));
@@ -61,13 +67,15 @@ library MatchingEngineFns {
     function unmatchBorrowersDC(
         IMatchingEngineForAave _matchingEngine,
         address _poolTokenAddress,
-        uint256 _amount
+        uint256 _amount,
+        bool _isLiquidation
     ) internal {
         address(_matchingEngine).functionDelegateCall(
             abi.encodeWithSelector(
                 _matchingEngine.unmatchBorrowers.selector,
                 _poolTokenAddress,
-                _amount
+                _amount,
+                _isLiquidation
             )
         );
     }
