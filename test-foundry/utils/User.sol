@@ -63,12 +63,12 @@ contract User {
         positionsManager.repay(_poolTokenAddress, _amount);
     }
 
-    function aaveSupply(address _underlyingTokenAddress, uint256 _amount) external{
+    function aaveSupply(address _underlyingTokenAddress, uint256 _amount) external {
         IERC20(_underlyingTokenAddress).approve(address(lendingPool), type(uint256).max);
         lendingPool.deposit(_underlyingTokenAddress, _amount, address(this), 0); // 0 : no refferal code
     }
 
-    function aaveBorrow(address _underlyingTokenAddress, uint256 _amount) external{
+    function aaveBorrow(address _underlyingTokenAddress, uint256 _amount) external {
         lendingPool.borrow(_underlyingTokenAddress, _amount, 2, 0, address(this)); // 2 : variable rate | 0 : no refferal code
     }
 

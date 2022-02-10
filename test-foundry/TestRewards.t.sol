@@ -4,7 +4,7 @@ pragma solidity 0.8.7;
 import "@contracts/aave/interfaces/aave/IAaveIncentivesController.sol";
 import "./utils/TestSetup.sol";
 
-import "hardhat/console.sol";
+// import "hardhat/console.sol";
 
 contract TestRewards is TestSetup {
     // Should claim the right amount of rewards
@@ -138,7 +138,8 @@ contract TestRewards is TestSetup {
 
     // Several users should claim their rewards independently
     function test_independant_claims() public {
-        orderHelper(true);
+        interactWithAave();
+        interactWithMorpho();
 
         uint256[4] memory balanceBefore;
         balanceBefore[1] = IERC20(wmatic).balanceOf(address(supplier1));
@@ -178,16 +179,21 @@ contract TestRewards is TestSetup {
         claimedFromMorpho[2] = balanceAfter[2] - balanceBefore[2];
         claimedFromMorpho[3] = balanceAfter[3] - balanceBefore[3];
 
-        console.log("claimedFromAave[1]",claimedFromAave[1]);
-        console.log("claimedFromMorpho[1]",claimedFromMorpho[1]);
-        console.log("diff", claimedFromAave[1] > claimedFromMorpho[1] ? claimedFromAave[1] - claimedFromMorpho[1] : claimedFromMorpho[1] - claimedFromAave[1]);
+        // console.log("claimedFromAave[1]", claimedFromAave[1]);
+        // console.log("claimedFromMorpho[1]", claimedFromMorpho[1]);
+        // console.log(
+        //     "diff",
+        //     claimedFromAave[1] > claimedFromMorpho[1]
+        //         ? claimedFromAave[1] - claimedFromMorpho[1]
+        //         : claimedFromMorpho[1] - claimedFromAave[1]
+        // );
 
         assertEq(claimedFromAave[1], claimedFromMorpho[1]);
         assertEq(claimedFromAave[2], claimedFromMorpho[2]);
         assertEq(claimedFromAave[3], claimedFromMorpho[3]);
 
-        console.log("balanceAfter[1]",balanceAfter[1]);
-        console.log("balanceBefore[1]",balanceBefore[1]);
+        // console.log("balanceAfter[1]", balanceAfter[1]);
+        // console.log("balanceBefore[1]", balanceBefore[1]);
 
         assertGt(balanceAfter[1], balanceBefore[1]);
         assertGt(balanceAfter[2], balanceBefore[2]);
@@ -206,7 +212,7 @@ contract TestRewards is TestSetup {
             address(supplier3)
         );
 
-        console.log("unclaimedRewards1",unclaimedRewards1);
+        // console.log("unclaimedRewards1", unclaimedRewards1);
 
         assertEq(unclaimedRewards1, 0);
         assertEq(unclaimedRewards2, 0);
@@ -216,22 +222,12 @@ contract TestRewards is TestSetup {
             aaveIncentivesControllerAddress
         ).getRewardsBalance(tokensInArray, address(positionsManager));
 
-        console.log("protocolUnclaimedRewards",protocolUnclaimedRewards);
+        // console.log("protocolUnclaimedRewards", protocolUnclaimedRewards);
 
         assertApproxEq(protocolUnclaimedRewards, 0, 2);
     }
 
-    function orderHelper(bool aaveFirst) internal {
-        if (aaveFirst){
-            tempHelperA();
-            tempHelperB();
-        } else {
-            tempHelperB();
-            tempHelperA();
-        }
-    }
-
-    function tempHelperA() internal {
+    function interactWithAave() internal {
         uint256 toSupply = 100 * WAD;
         uint256 toBorrow = 50 * 1e6;
 
@@ -243,7 +239,7 @@ contract TestRewards is TestSetup {
         supplier3.aaveBorrow(usdc, toBorrow);
     }
 
-    function tempHelperB() internal {
+    function interactWithMorpho() internal {
         uint256 toSupply = 100 * WAD;
         uint256 toBorrow = 50 * 1e6;
 
