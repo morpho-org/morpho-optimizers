@@ -15,7 +15,7 @@ import "./PositionsManagerForAaveStorage.sol";
 import "./MatchingEngineForAave.sol";
 
 /// @title PositionsManagerForAave
-/// @dev Smart contract interacting with Aave to enable P2P supply/borrow positions that can fallback on Aave's pool using pool tokens.
+/// @notice Smart contract interacting with Aave to enable P2P supply/borrow positions that can fallback on Aave's pool using pool tokens.
 contract PositionsManagerForAave is PositionsManagerForAaveStorage {
     using DoubleLinkedList for DoubleLinkedList.List;
     using MatchingEngineFns for IMatchingEngineForAave;
@@ -71,7 +71,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
 
     /// Events ///
 
-    /// @dev Emitted when a supply happens.
+    /// @notice Emitted when a supply happens.
     /// @param _user The address of the supplier.
     /// @param _poolTokenAddress The address of the market where assets are supplied into.
     /// @param _amount The amount of assets supplied (in underlying).
@@ -87,7 +87,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         uint16 indexed _referralCode
     );
 
-    /// @dev Emitted when a withdrawal happens.
+    /// @notice Emitted when a withdrawal happens.
     /// @param _user The address of the withdrawer.
     /// @param _poolTokenAddress The address of the market from where assets are withdrawn.
     /// @param _amount The amount of assets withdrawn (in underlying).
@@ -101,7 +101,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         uint256 _balanceInP2P
     );
 
-    /// @dev Emitted when a borrow happens.
+    /// @notice Emitted when a borrow happens.
     /// @param _user The address of the borrower.
     /// @param _poolTokenAddress The address of the market where assets are borrowed.
     /// @param _amount The amount of assets borrowed (in underlying).
@@ -117,7 +117,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         uint16 indexed _referralCode
     );
 
-    /// @dev Emitted when a repay happens.
+    /// @notice Emitted when a repay happens.
     /// @param _user The address of the repayer.
     /// @param _poolTokenAddress The address of the market where assets are repaid.
     /// @param _amount The amount of assets repaid (in underlying).
@@ -131,7 +131,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         uint256 _balanceInP2P
     );
 
-    /// @dev Emitted when a liquidation happens.
+    /// @notice Emitted when a liquidation happens.
     /// @param _liquidator The address of the liquidator.
     /// @param _liquidatee The address of the liquidatee.
     /// @param _amountRepaid The amount of borrowed asset repaid (in underlying).
@@ -147,43 +147,43 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         address _poolTokenCollateralAddress
     );
 
-    /// @dev Emitted when the lendingPool is updated on the `positionsManagerForAave`.
+    /// @notice Emitted when the lendingPool is updated on the `positionsManagerForAave`.
     /// @param _lendingPoolAddress The address of the lending pool.
     /// @param _dataProviderAddress The address of the data provider.
     event AaveContractsUpdated(address _lendingPoolAddress, address _dataProviderAddress);
 
-    /// @dev Emitted the maximum number of users to have in the tree is updated.
+    /// @notice Emitted the maximum number of users to have in the tree is updated.
     /// @param _newValue The new value of the maximum number of users to have in the tree.
     event MaxNumberSet(uint16 _newValue);
 
-    /// @dev Emitted the address of the `treasuryVault` is set.
+    /// @notice Emitted the address of the `treasuryVault` is set.
     /// @param _newTreasuryVaultAddress The new address of the `treasuryVault`.
     event TreasuryVaultSet(address _newTreasuryVaultAddress);
 
-    /// @dev Emitted the address of the `rewardsManager` is set.
+    /// @notice Emitted the address of the `rewardsManager` is set.
     /// @param _newRewardsManagerAddress The new address of the `rewardsManager`.
     event RewardsManagerSet(address _newRewardsManagerAddress);
 
-    /// @dev Emitted the address of the `aaveIncentivesController` is set.
+    /// @notice Emitted the address of the `aaveIncentivesController` is set.
     /// @param _aaveIncentivesController The new address of the `aaveIncentivesController`.
     event AaveIncentivesControllerSet(address _aaveIncentivesController);
 
-    /// @dev Emitted when a threshold of a market is set.
+    /// @notice Emitted when a threshold of a market is set.
     /// @param _marketAddress The address of the market to set.
     /// @param _newValue The new value of the threshold.
     event ThresholdSet(address _marketAddress, uint256 _newValue);
 
-    /// @dev Emitted when the DAO claims fees.
+    /// @notice Emitted when the DAO claims fees.
     /// @param _poolTokenAddress The address of the market.
     /// @param _amountClaimed The amount of underlying token claimed.
     event FeesClaimed(address _poolTokenAddress, uint256 _amountClaimed);
 
-    /// @dev Emitted when a reserve fee is claimed.
+    /// @notice Emitted when a reserve fee is claimed.
     /// @param _poolTokenAddress The address of the market.
     /// @param _amountClaimed The amount of reward token claimed.
     event ReserveFeeClaimed(address _poolTokenAddress, uint256 _amountClaimed);
 
-    /// @dev Emitted when a user claims rewards.
+    /// @notice Emitted when a user claims rewards.
     /// @param _user The address of the claimer.
     /// @param _amountClaimed The amount of reward token claimed.
     event RewardsClaimed(address _user, uint256 _amountClaimed);
@@ -222,14 +222,14 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
 
     /// Modifiers ///
 
-    /// @dev Prevents a user to access a market not created yet.
+    /// @notice Prevents a user to access a market not created yet.
     /// @param _poolTokenAddress The address of the market.
     modifier isMarketCreated(address _poolTokenAddress) {
         if (!marketsManager.isCreated(_poolTokenAddress)) revert MarketNotCreated();
         _;
     }
 
-    /// @dev Prevents a user to supply or borrow less than threshold.
+    /// @notice Prevents a user to supply or borrow less than threshold.
     /// @param _poolTokenAddress The address of the market.
     /// @param _amount The amount of token (in underlying).
     modifier isAboveThreshold(address _poolTokenAddress, uint256 _amount) {
@@ -237,13 +237,13 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         _;
     }
 
-    /// @dev Prevents a user to call function only allowed for the `marketsManager`.
+    /// @notice Prevents a user to call function only allowed for the `marketsManager`.
     modifier onlyMarketsManager() {
         if (msg.sender != address(marketsManager)) revert OnlyMarketsManager();
         _;
     }
 
-    /// @dev Prevents a user to call function only allowed for `marketsManager`'s owner.
+    /// @notice Prevents a user to call function only allowed for `marketsManager`'s owner.
     modifier onlyMarketsManagerOwner() {
         if (msg.sender != marketsManager.owner()) revert OnlyMarketsManagerOwner();
         _;
@@ -251,7 +251,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
 
     /// Constructor ///
 
-    /// @dev Constructs the PositionsManagerForAave contract.
+    /// @notice Constructs the PositionsManagerForAave contract.
     /// @param _marketsManager The address of the aave `marketsManager`.
     /// @param _lendingPoolAddressesProvider The address of the `addressesProvider`.
     constructor(address _marketsManager, address _lendingPoolAddressesProvider) {
@@ -262,14 +262,14 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         matchingEngine = new MatchingEngineForAave();
     }
 
-    /// @dev Updates the `lendingPool` and the `dataProvider`.
+    /// @notice Updates the `lendingPool` and the `dataProvider`.
     function updateAaveContracts() external {
         dataProvider = IProtocolDataProvider(addressesProvider.getAddress(DATA_PROVIDER_ID));
         lendingPool = ILendingPool(addressesProvider.getLendingPool());
         emit AaveContractsUpdated(address(lendingPool), address(dataProvider));
     }
 
-    /// @dev Sets the `aaveIncentivesController`.
+    /// @notice Sets the `aaveIncentivesController`.
     /// @param _aaveIncentivesController The address of the `aaveIncentivesController`.
     function setAaveIncentivesController(address _aaveIncentivesController)
         external
@@ -279,14 +279,14 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         emit AaveIncentivesControllerSet(_aaveIncentivesController);
     }
 
-    /// @dev Sets the maximum number of users in data structure.
+    /// @notice Sets the maximum number of users in data structure.
     /// @param _newMaxNumber The maximum number of users to sort in the data structure.
     function setNmaxForMatchingEngine(uint8 _newMaxNumber) external onlyMarketsManagerOwner {
         NMAX = _newMaxNumber;
         emit MaxNumberSet(_newMaxNumber);
     }
 
-    /// @dev Sets the threshold of a market.
+    /// @notice Sets the threshold of a market.
     /// @param _poolTokenAddress The address of the market to set the threshold.
     /// @param _newThreshold The new threshold.
     function setThreshold(address _poolTokenAddress, uint256 _newThreshold)
@@ -297,28 +297,28 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         emit ThresholdSet(_poolTokenAddress, _newThreshold);
     }
 
-    /// @dev Sets the `_newTreasuryVaultAddress`.
+    /// @notice Sets the `_newTreasuryVaultAddress`.
     /// @param _newTreasuryVaultAddress The address of the new `treasuryVault`.
     function setTreasuryVault(address _newTreasuryVaultAddress) external onlyMarketsManagerOwner {
         treasuryVault = _newTreasuryVaultAddress;
         emit TreasuryVaultSet(_newTreasuryVaultAddress);
     }
 
-    /// @dev Sets the `rewardsManager`.
+    /// @notice Sets the `rewardsManager`.
     /// @param _rewardsManagerAddress The address of the `rewardsManager`.
     function setRewardsManager(address _rewardsManagerAddress) external onlyMarketsManagerOwner {
         rewardsManager = IRewardsManager(_rewardsManagerAddress);
         emit RewardsManagerSet(_rewardsManagerAddress);
     }
 
-    /// @dev Sets the pause status in case of emergency.
+    /// @notice Sets the pause status in case of emergency.
     /// @dev Note: the events are emitted through the Pausable contract.
     function setPauseStatus() external onlyMarketsManagerOwner {
         if (paused()) _unpause();
         else _pause();
     }
 
-    /// @dev Transfers the protocol reserve fee to the DAO.
+    /// @notice Transfers the protocol reserve fee to the DAO.
     /// @param _poolTokenAddress The address of the market on which we want to claim the reserve fee.
     function claimToTreasury(address _poolTokenAddress)
         external
@@ -332,7 +332,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         emit ReserveFeeClaimed(_poolTokenAddress, amountToClaim);
     }
 
-    /// @dev Claims rewards for the given assets and the unclaimed rewards.
+    /// @notice Claims rewards for the given assets and the unclaimed rewards.
     /// @param _assets The assets to claim rewards from (aToken or variable debt token).
     function claimRewards(address[] calldata _assets) external whenNotPaused {
         for (uint256 i; i < _assets.length; i++) {
@@ -353,7 +353,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         }
     }
 
-    /// @dev Gets the head of the data structure on a specific market (for UI).
+    /// @notice Gets the head of the data structure on a specific market (for UI).
     /// @param _poolTokenAddress The address of the market from which to get the head.
     /// @param _positionType The type of user from which to get the head.
     /// @return head The head in the data structure.
@@ -372,7 +372,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
             head = borrowersOnPool[_poolTokenAddress].getHead();
     }
 
-    /// @dev Gets the next user after `_user` in the data structure on a specific market (for UI).
+    /// @notice Gets the next user after `_user` in the data structure on a specific market (for UI).
     /// @param _poolTokenAddress The address of the market from which to get the user.
     /// @param _positionType The type of user from which to get the next user.
     /// @param _user The address of the user from which to get the next user.
@@ -392,7 +392,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
             next = borrowersOnPool[_poolTokenAddress].getNext(_user);
     }
 
-    /// @dev Supplies underlying tokens in a specific market.
+    /// @notice Supplies underlying tokens in a specific market.
     /// @param _poolTokenAddress The address of the market the user wants to supply.
     /// @param _amount The amount of token (in underlying).
     /// @param _referralCode The referral code of an integrator that may receive rewards. 0 if no referral code.
@@ -457,7 +457,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         );
     }
 
-    /// @dev Borrows underlying tokens in a specific market.
+    /// @notice Borrows underlying tokens in a specific market.
     /// @param _poolTokenAddress The address of the markets the user wants to enter.
     /// @param _amount The amount of token (in underlying).
     /// @param _referralCode The referral code of an integrator that may receive rewards. 0 if no referral code.
@@ -524,7 +524,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         );
     }
 
-    /// @dev Withdraws underlying tokens in a specific market.
+    /// @notice Withdraws underlying tokens in a specific market.
     /// @dev Note: If `_amount` is equal to the uint256's maximum value, the whole balance is withdrawn.
     /// @param _poolTokenAddress The address of the market the user wants to interact with.
     /// @param _amount The amount in tokens to withdraw from supply.
@@ -548,7 +548,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         _withdraw(_poolTokenAddress, _amount, msg.sender, msg.sender);
     }
 
-    /// @dev Repays debt of the user.
+    /// @notice Repays debt of the user.
     /// @dev `msg.sender` must have approved Morpho's contract to spend the underlying `_amount`.
     /// @dev Note: If `_amount` is equal to the uint256's maximum value, the whole debt is repaid.
     /// @param _poolTokenAddress The address of the market the user wants to interact with.
@@ -569,7 +569,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         _repay(_poolTokenAddress, msg.sender, _amount);
     }
 
-    /// @dev Allows someone to liquidate a position.
+    /// @notice Allows someone to liquidate a position.
     /// @param _poolTokenBorrowedAddress The address of the pool token the liquidator wants to repay.
     /// @param _poolTokenCollateralAddress The address of the collateral pool token the liquidator wants to seize.
     /// @param _borrower The address of the borrower to liquidate.
@@ -645,7 +645,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         );
     }
 
-    /// @dev Returns the collateral value, debt value and max debt value of a given user (in ETH).
+    /// @notice Returns the collateral value, debt value and max debt value of a given user (in ETH).
     /// @param _user The user to determine liquidity for.
     /// @return collateralValue The collateral value of the user (in ETH).
     /// @return debtValue The current debt value of the user (in ETH).
@@ -678,7 +678,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         }
     }
 
-    /// @dev Returns the maximum amount available for withdraw and borrow for `_user` related to `_poolTokenAddress` (in underlyings).
+    /// @notice Returns the maximum amount available for withdraw and borrow for `_user` related to `_poolTokenAddress` (in underlyings).
     /// @param _user The user to determine the capacities for.
     /// @param _poolTokenAddress The address of the market.
     /// @return withdrawable The maximum withdrawable amount of underlying token allowed (in underlying).
@@ -729,7 +729,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
 
     /// Public ///
 
-    /// @dev Returns the data related to `_poolTokenAddress` for the `_user`.
+    /// @notice Returns the data related to `_poolTokenAddress` for the `_user`.
     /// @param _user The user to determine data for.
     /// @param _poolTokenAddress The address of the market.
     /// @return assetData The data related to this asset.
@@ -785,7 +785,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
 
     /// Internal ///
 
-    /// @dev Implements withdraw logic.
+    /// @notice Implements withdraw logic.
     /// @param _poolTokenAddress The address of the market the user wants to interact with.
     /// @param _amount The amount of token (in underlying).
     /// @param _supplier The address of the supplier.
@@ -860,8 +860,8 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         );
     }
 
-    /// @dev Implements repay logic.
-    /// @dev `msg.sender` must have approved this contract to spend the underlying `_amount`.
+    /// @notice Implements repay logic.
+    /// @dev Note: `msg.sender` must have approved this contract to spend the underlying `_amount`.
     /// @param _poolTokenAddress The address of the market the user wants to interact with.
     /// @param _user The address of the user.
     /// @param _amount The amount of token (in underlying).
@@ -933,7 +933,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         );
     }
 
-    ///@dev Enters the user into the market if not already there.
+    ///@notice Enters the user into the market if not already there.
     ///@param _user The address of the user to update.
     ///@param _poolTokenAddress The address of the market to check.
     function _handleMembership(address _poolTokenAddress, address _user) internal {
@@ -943,7 +943,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         }
     }
 
-    /// @dev Checks whether the user can borrow/withdraw or not.
+    /// @notice Checks whether the user can borrow/withdraw or not.
     /// @param _user The user to determine liquidity for.
     /// @param _poolTokenAddress The market to hypothetically withdraw/borrow in.
     /// @param _withdrawnAmount The number of tokens to hypothetically withdraw (in underlying).
@@ -963,7 +963,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         if (debtValue > maxDebtValue) revert DebtValueAboveMax();
     }
 
-    /// @dev Returns the debt value, max debt value of a given user.
+    /// @notice Returns the debt value, max debt value of a given user.
     /// @param _user The user to determine liquidity for.
     /// @param _poolTokenAddress The market to hypothetically withdraw/borrow in.
     /// @param _withdrawnAmount The number of tokens to hypothetically withdraw (in underlying).
@@ -1015,7 +1015,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         }
     }
 
-    /// @dev Returns the supply balance of `_user` in the `_poolTokenAddress` market.
+    /// @notice Returns the supply balance of `_user` in the `_poolTokenAddress` market.
     /// @param _user The address of the user.
     /// @param _poolTokenAddress The market where to get the supply amount.
     /// @param _underlyingTokenAddress The underlying token address related to this market.
@@ -1034,7 +1034,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
             );
     }
 
-    /// @dev Returns the borrow balance of `_user` in the `_poolTokenAddress` market.
+    /// @notice Returns the borrow balance of `_user` in the `_poolTokenAddress` market.
     /// @param _user The address of the user.
     /// @param _poolTokenAddress The market where to get the borrow amount.
     /// @param _underlyingTokenAddress The underlying token address related to this market.
