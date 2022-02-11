@@ -140,7 +140,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
                 borrowP2PDelta[_poolTokenAddress].mulWadByRay(normalizedVariableDebt),
                 _amount
             );
-            remainingToUnmatch += toMatch;
+            remainingToUnmatch -= toMatch;
             borrowP2PDelta[_poolTokenAddress] -= toMatch.divWadByRay(normalizedVariableDebt);
             emit BorrowP2PDeltaUpdated(_poolTokenAddress, borrowP2PDelta[_poolTokenAddress]);
         }
@@ -179,12 +179,14 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
             supplyP2PDelta[_poolTokenAddress] += remainingToUnmatch.divWadByRay(normalizedIncome);
             emit SupplyP2PDeltaUpdated(_poolTokenAddress, supplyP2PDelta[_poolTokenAddress]);
         }
+
         supplyP2PAmount[_poolTokenAddress] -= (_amount - remainingToUnmatch).divWadByRay(
             supplyP2PExchangeRate
         );
         borrowP2PAmount[_poolTokenAddress] -= _amount.divWadByRay(
             marketsManager.borrowP2PExchangeRate(_poolTokenAddress)
         );
+
         if (toSupply > 0) _supplyERC20ToPool(underlyingToken, toSupply); // Revert on error
     }
 
@@ -210,11 +212,11 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         // Match borrow P2P delta first
         if (borrowP2PDelta[poolTokenAddress] > 0) {
             uint256 toMatch = Math.min(
-                borrowP2PDelta[poolTokenAddress].divWadByRay(normalizedVariableDebt),
+                borrowP2PDelta[poolTokenAddress].mulWadByRay(normalizedVariableDebt),
                 _amount
             );
             matchedBorrow += toMatch;
-            borrowP2PDelta[poolTokenAddress] -= toMatch.mulWadByRay(normalizedVariableDebt);
+            borrowP2PDelta[poolTokenAddress] -= toMatch.divWadByRay(normalizedVariableDebt);
             emit BorrowP2PDeltaUpdated(poolTokenAddress, borrowP2PDelta[poolTokenAddress]);
         }
 
@@ -273,7 +275,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
                 supplyP2PDelta[_poolTokenAddress].mulWadByRay(normalizedIncome),
                 _amount
             );
-            remainingToUnmatch += toMatch;
+            remainingToUnmatch -= toMatch;
             supplyP2PDelta[_poolTokenAddress] -= toMatch.divWadByRay(normalizedIncome);
             emit SupplyP2PDeltaUpdated(_poolTokenAddress, supplyP2PDelta[_poolTokenAddress]);
         }
@@ -308,6 +310,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
             );
             emit BorrowP2PDeltaUpdated(_poolTokenAddress, borrowP2PDelta[_poolTokenAddress]);
         }
+
         supplyP2PAmount[_poolTokenAddress] -= _amount.divWadByRay(
             marketsManager.supplyP2PExchangeRate(_poolTokenAddress)
         );
