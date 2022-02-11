@@ -14,14 +14,14 @@ import "../common/libraries/DoubleLinkedList.sol";
 import "./PositionsManagerForAaveStorage.sol";
 
 /// @title MatchingEngineManager
-/// @dev Smart contract managing the matching engine.
+/// @notice Smart contract managing the matching engine.
 contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAaveStorage {
     using DoubleLinkedList for DoubleLinkedList.List;
     using WadRayMath for uint256;
     using SafeERC20 for IERC20;
     using Address for address;
 
-    /// @dev Emitted when the position of a supplier is updated.
+    /// @notice Emitted when the position of a supplier is updated.
     /// @param _user The address of the supplier.
     /// @param _poolTokenAddress The address of the market.
     /// @param _balanceOnPool The supply balance on pool after update.
@@ -33,7 +33,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         uint256 _balanceInP2P
     );
 
-    /// @dev Emitted when the position of a borrower is updated.
+    /// @notice Emitted when the position of a borrower is updated.
     /// @param _user The address of the borrower.
     /// @param _poolTokenAddress The address of the market.
     /// @param _balanceOnPool The borrow balance on pool after update.
@@ -45,7 +45,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         uint256 _balanceInP2P
     );
 
-    /// @dev Matches suppliers' liquidity waiting on Aave for the given `_amount` and move it to P2P.
+    /// @notice Matches suppliers' liquidity waiting on Aave for the given `_amount` and move it to P2P.
     /// @dev Note: p2pExchangeRates must have been updated before calling this function.
     /// @param _poolToken The pool token of the market from which to match suppliers.
     /// @param _underlyingToken The underlying token of the market to find liquidity.
@@ -93,7 +93,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         }
     }
 
-    /// @dev Unmatches suppliers' liquidity in P2P for the given `_amount` and move it to Aave.
+    /// @notice Unmatches suppliers' liquidity in P2P for the given `_amount` and move it to Aave.
     /// @dev Note: p2pExchangeRates must have been updated before calling this function.
     /// @param _poolTokenAddress The address of the market from which to unmatch suppliers.
     /// @param _amount The amount to search for (in underlying).
@@ -133,7 +133,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         if (toSupply > 0) _supplyERC20ToPool(underlyingToken, toSupply); // Revert on error
     }
 
-    /// @dev Matches borrowers' liquidity waiting on Aave for the given `_amount` and move it to P2P.
+    /// @notice Matches borrowers' liquidity waiting on Aave for the given `_amount` and move it to P2P.
     /// @dev Note: p2pExchangeRates must have been updated before calling this function.
     /// @param _poolToken The pool token of the market from which to match borrowers.
     /// @param _underlyingToken The underlying token of the market to find liquidity.
@@ -179,7 +179,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
             _repayERC20ToPool(_underlyingToken, matchedBorrow, normalizedVariableDebt); // Revert on error
     }
 
-    /// @dev Unmatches borrowers' liquidity in P2P for the given `_amount` and move it to Aave.
+    /// @notice Unmatches borrowers' liquidity in P2P for the given `_amount` and move it to Aave.
     /// @dev Note: p2pExchangeRates must have been updated before calling this function.
     /// @param _poolTokenAddress The address of the market from which to unmatch borrowers.
     /// @param _amount The amount to unmatch (in underlying).
@@ -220,7 +220,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         if (toBorrow > 0) _borrowERC20FromPool(underlyingToken, toBorrow); // Revert on error
     }
 
-    /// @dev Updates borrowers matching engine with the new balances of a given user.
+    /// @notice Updates borrowers matching engine with the new balances of a given user.
     /// @param _poolTokenAddress The address of the market on which to update the borrowers data structure.
     /// @param _user The address of the user.
     function updateBorrowers(address _poolTokenAddress, address _user) public override {
@@ -253,7 +253,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
             borrowersInP2P[_poolTokenAddress].insertSorted(_user, inP2P, NMAX);
     }
 
-    /// @dev Updates suppliers matching engine with the new balances of a given user.
+    /// @notice Updates suppliers matching engine with the new balances of a given user.
     /// @param _poolTokenAddress The address of the market on which to update the suppliers data structure.
     /// @param _user The address of the user.
     function updateSuppliers(address _poolTokenAddress, address _user) public override {

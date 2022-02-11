@@ -35,7 +35,7 @@ contract RewardsManager is Ownable {
 
     /// Events ///
 
-    /// @dev Emitted the address of the `aaveIncentivesController` is set.
+    /// @notice Emitted the address of the `aaveIncentivesController` is set.
     /// @param _aaveIncentivesController The new address of the `aaveIncentivesController`.
     event AaveIncentivesControllerSet(address _aaveIncentivesController);
 
@@ -46,7 +46,7 @@ contract RewardsManager is Ownable {
 
     /// Modifiers ///
 
-    /// @dev Prevents a user to call function allowed for the positions manager only.
+    /// @notice Prevents a user to call function allowed for the positions manager only.
     modifier onlyPositionsManager() {
         if (msg.sender != address(positionsManager)) revert OnlyPositionsManager();
         _;
@@ -54,7 +54,7 @@ contract RewardsManager is Ownable {
 
     /// Constructor ///
 
-    /// @dev Constructs the RewardsManager contract.
+    /// @notice Constructs the RewardsManager contract.
     /// @param _lendingPoolAddressesProvider The address of the lending pool addresses provider.
     /// @param _positionsManagerAddress The address of the positions manager.
     constructor(address _lendingPoolAddressesProvider, address _positionsManagerAddress) {
@@ -65,14 +65,14 @@ contract RewardsManager is Ownable {
 
     /// External ///
 
-    /// @dev Sets the `aaveIncentivesController`.
+    /// @notice Sets the `aaveIncentivesController`.
     /// @param _aaveIncentivesController The address of the `aaveIncentivesController`.
     function setAaveIncentivesController(address _aaveIncentivesController) external onlyOwner {
         aaveIncentivesController = IAaveIncentivesController(_aaveIncentivesController);
         emit AaveIncentivesControllerSet(_aaveIncentivesController);
     }
 
-    /// @dev Accrues unclaimed rewards for the given assets and returns the total unclaimed rewards.
+    /// @notice Accrues unclaimed rewards for the given assets and returns the total unclaimed rewards.
     /// @param _assets The assets for which to accrue rewards (aToken or variable debt token).
     /// @param _amount The amount of token rewards to claim.
     /// @param _user The address of the user.
@@ -90,7 +90,7 @@ contract RewardsManager is Ownable {
         userUnclaimedRewards[_user] = unclaimedRewards - amountToClaim;
     }
 
-    /// @dev Updates the unclaimed rewards of an user.
+    /// @notice Updates the unclaimed rewards of an user.
     /// @param _user The address of the user.
     /// @param _asset The address of the reference asset of the distribution (aToken or variable debt token).
     /// @param _stakedByUser The amount of tokens staked by the user in the distribution at the moment.
@@ -104,7 +104,7 @@ contract RewardsManager is Ownable {
         userUnclaimedRewards[_user] += _updateUserAsset(_user, _asset, _stakedByUser, _totalStaked);
     }
 
-    /// @dev Returns the index of the `_user` for a given `_asset`.
+    /// @notice Returns the index of the `_user` for a given `_asset`.
     /// @param _asset The address of the reference asset of the distribution (aToken or variable debt token).
     /// @param _user The address of the user.
     function getUserIndex(address _asset, address _user) external view returns (uint256) {
@@ -114,7 +114,7 @@ contract RewardsManager is Ownable {
 
     /// Public ///
 
-    /// @dev Accrues unclaimed rewards for the given assets and returns the total unclaimed rewards.
+    /// @notice Accrues unclaimed rewards for the given assets and returns the total unclaimed rewards.
     /// @param _assets The assets for which to accrue rewards (aToken or variable debt token).
     /// @param _user The address of the user.
     /// @return unclaimedRewards The user unclaimed rewards.
@@ -141,7 +141,7 @@ contract RewardsManager is Ownable {
 
     /// Internal ///
 
-    /// @dev Updates the state of an user in a distribution.
+    /// @notice Updates the state of an user in a distribution.
     /// @param _user The address of the user.
     /// @param _asset The address of the reference asset of the distribution (aToken or variable debt token).
     /// @param _stakedByUser The amount of tokens staked by the user in the distribution at the moment.
@@ -165,7 +165,7 @@ contract RewardsManager is Ownable {
         }
     }
 
-    /// @dev Returns the next reward index.
+    /// @notice Returns the next reward index.
     /// @param _asset The address of the reference asset of the distribution (aToken or variable debt token).
     /// @param _totalStaked The total of tokens staked in the distribution.
     /// @return newIndex The new distribution index.
@@ -199,7 +199,7 @@ contract RewardsManager is Ownable {
         }
     }
 
-    /// @dev Computes and returns the next value of a specific distribution index.
+    /// @notice Computes and returns the next value of a specific distribution index.
     /// @param _currentIndex The current index of the distribution.
     /// @param _emissionPerSecond The total rewards distributed per second per asset unit, on the distribution.
     /// @param _lastUpdateTimestamp The last moment this distribution was updated.
@@ -228,7 +228,7 @@ contract RewardsManager is Ownable {
         return ((_emissionPerSecond * timeDelta * 1e18) / _totalBalance) + _currentIndex;
     }
 
-    /// @dev Computes and returns the rewards on a distribution.
+    /// @notice Computes and returns the rewards on a distribution.
     /// @param _principalUserBalance The amount staked by the user on a distribution.
     /// @param _reserveIndex The current index of the distribution.
     /// @param _userIndex The index stored for the user, representing his staking moment.
