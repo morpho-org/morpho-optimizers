@@ -65,7 +65,7 @@ contract PositionsManagerForAaveStorage is ReentrancyGuard, Pausable {
 
     /// Internal ///
 
-    /// @dev Supplies undelrying tokens to Aave.
+    /// @notice Supplies undelrying tokens to Aave.
     /// @param _underlyingToken The underlying token of the market to supply to.
     /// @param _amount The amount of token (in underlying).
     function _supplyERC20ToPool(IERC20 _underlyingToken, uint256 _amount) internal {
@@ -73,14 +73,14 @@ contract PositionsManagerForAaveStorage is ReentrancyGuard, Pausable {
         lendingPool.deposit(address(_underlyingToken), _amount, address(this), NO_REFERRAL_CODE);
     }
 
-    /// @dev Withdraws underlying tokens from Aave.
+    /// @notice Withdraws underlying tokens from Aave.
     /// @param _underlyingToken The underlying token of the market to withdraw from.
     /// @param _amount The amount of token (in underlying).
     function _withdrawERC20FromPool(IERC20 _underlyingToken, uint256 _amount) internal {
         lendingPool.withdraw(address(_underlyingToken), _amount, address(this));
     }
 
-    /// @dev Borrows underlying tokens from Aave.
+    /// @notice Borrows underlying tokens from Aave.
     /// @param _underlyingToken The underlying token of the market to borrow from.
     /// @param _amount The amount of token (in underlying).
     function _borrowERC20FromPool(IERC20 _underlyingToken, uint256 _amount) internal {
@@ -93,7 +93,7 @@ contract PositionsManagerForAaveStorage is ReentrancyGuard, Pausable {
         );
     }
 
-    /// @dev Repays underlying tokens to Aave.
+    /// @notice Repays underlying tokens to Aave.
     /// @param _underlyingToken The underlying token of the market to repay to.
     /// @param _amount The amount of token (in underlying).
     /// @param _normalizedVariableDebt The normalized variable debt on Aave.
