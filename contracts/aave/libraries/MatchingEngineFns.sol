@@ -2,7 +2,6 @@
 pragma solidity 0.8.7;
 
 import {IAToken} from "../interfaces/aave/IAToken.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "../interfaces/IMatchingEngineForAave.sol";
 
 import "@openzeppelin/contracts/utils/Address.sol";
@@ -15,7 +14,7 @@ library MatchingEngineFns {
         IAToken _poolToken,
         IERC20 _underlyingToken,
         uint256 _amount,
-        bool _isLiquidation
+        Case _case
     ) internal returns (uint256) {
         bytes memory data = address(_matchingEngine).functionDelegateCall(
             abi.encodeWithSelector(
@@ -23,7 +22,7 @@ library MatchingEngineFns {
                 _poolToken,
                 _underlyingToken,
                 _amount,
-                _isLiquidation
+                _case
             )
         );
         return abi.decode(data, (uint256));
@@ -33,14 +32,14 @@ library MatchingEngineFns {
         IMatchingEngineForAave _matchingEngine,
         address _poolTokenAddress,
         uint256 _amount,
-        bool _isLiquidation
+        Case _case
     ) internal {
         address(_matchingEngine).functionDelegateCall(
             abi.encodeWithSelector(
                 _matchingEngine.unmatchSuppliers.selector,
                 _poolTokenAddress,
                 _amount,
-                _isLiquidation
+                _case
             )
         );
     }
@@ -50,7 +49,7 @@ library MatchingEngineFns {
         IAToken _poolToken,
         IERC20 _underlyingToken,
         uint256 _amount,
-        bool _isLiquidation
+        Case _case
     ) internal returns (uint256) {
         bytes memory data = address(_matchingEngine).functionDelegateCall(
             abi.encodeWithSelector(
@@ -58,7 +57,7 @@ library MatchingEngineFns {
                 _poolToken,
                 _underlyingToken,
                 _amount,
-                _isLiquidation
+                _case
             )
         );
         return abi.decode(data, (uint256));
@@ -68,14 +67,14 @@ library MatchingEngineFns {
         IMatchingEngineForAave _matchingEngine,
         address _poolTokenAddress,
         uint256 _amount,
-        bool _isLiquidation
+        Case _case
     ) internal {
         address(_matchingEngine).functionDelegateCall(
             abi.encodeWithSelector(
                 _matchingEngine.unmatchBorrowers.selector,
                 _poolTokenAddress,
                 _amount,
-                _isLiquidation
+                _case
             )
         );
     }
