@@ -7,9 +7,8 @@ import "./interfaces/IMatchingEngineForAave.sol";
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
-import "./libraries/aave/WadRayMath.sol";
-
 import "../common/libraries/DoubleLinkedList.sol";
+import "./libraries/aave/WadRayMath.sol";
 
 import "./PositionsManagerForAaveStorage.sol";
 
@@ -65,7 +64,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         IAToken _poolToken,
         IERC20 _underlyingToken,
         uint256 _amount,
-        bool _isLiquidation
+        Case _case
     ) public override returns (uint256 matchedSupply) {
         address poolTokenAddress = address(_poolToken);
         uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(
@@ -73,6 +72,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         );
         address user = suppliersOnPool[poolTokenAddress].getHead();
         uint256 supplyP2PExchangeRate = marketsManager.supplyP2PExchangeRate(poolTokenAddress);
+        uint256 iterationCount;
 
         // Match supply P2P delta first
         if (supplyP2PDelta[poolTokenAddress] > 0) {
@@ -85,8 +85,13 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
             emit SupplyP2PDeltaUpdated(poolTokenAddress, supplyP2PDelta[poolTokenAddress]);
         }
 
-        if (!_isLiquidation) {
-            while (matchedSupply < _amount && user != address(0) && gasleft() > MIN_GAS_LEFT) {
+        if (_case != Case.AVOID_LOOP) {
+            while (
+                matchedSupply < _amount &&
+                user != address(0) &&
+                (_case == Case.USE_NMAX ? iterationCount < NMAX : gasleft() > MIN_GAS_LEFT)
+            ) {
+                iterationCount++;
                 uint256 onPoolInUnderlying = supplyBalanceInOf[poolTokenAddress][user]
                 .onPool
                 .mulWadByRay(normalizedIncome);
@@ -129,7 +134,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
     function unmatchSuppliers(
         address _poolTokenAddress,
         uint256 _amount,
-        bool _isLiquidation
+        Case _case
     ) public override {
         IERC20 underlyingToken = IERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
         address user = suppliersInP2P[_poolTokenAddress].getHead();
@@ -152,7 +157,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
             emit BorrowP2PDeltaUpdated(_poolTokenAddress, borrowP2PDelta[_poolTokenAddress]);
         }
 
-        if (!_isLiquidation) {
+        if (_case != Case.AVOID_LOOP) {
             while (remainingToUnmatch > 0 && user != address(0) && iterationCount < NMAX) {
                 iterationCount++;
                 uint256 toUnmatch = Math.min(
@@ -210,7 +215,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         IAToken _poolToken,
         IERC20 _underlyingToken,
         uint256 _amount,
-        bool _isLiquidation
+        Case _case
     ) public override returns (uint256 matchedBorrow) {
         address poolTokenAddress = address(_poolToken);
         uint256 normalizedVariableDebt = lendingPool.getReserveNormalizedVariableDebt(
@@ -218,6 +223,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         );
         uint256 borrowP2PExchangeRate = marketsManager.borrowP2PExchangeRate(poolTokenAddress);
         address user = borrowersOnPool[poolTokenAddress].getHead();
+        uint256 iterationCount;
 
         // Match borrow P2P delta first
         if (borrowP2PDelta[poolTokenAddress] > 0) {
@@ -230,8 +236,13 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
             emit BorrowP2PDeltaUpdated(poolTokenAddress, borrowP2PDelta[poolTokenAddress]);
         }
 
-        if (!_isLiquidation) {
-            while (matchedBorrow < _amount && user != address(0) && gasleft() > MIN_GAS_LEFT) {
+        if (_case != Case.AVOID_LOOP) {
+            while (
+                matchedBorrow < _amount &&
+                user != address(0) &&
+                (_case == Case.USE_NMAX ? iterationCount < NMAX : gasleft() > MIN_GAS_LEFT)
+            ) {
+                iterationCount++;
                 uint256 onPoolInUnderlying = borrowBalanceInOf[poolTokenAddress][user]
                 .onPool
                 .mulWadByRay(normalizedVariableDebt);
@@ -272,7 +283,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
     function unmatchBorrowers(
         address _poolTokenAddress,
         uint256 _amount,
-        bool _isLiquidation
+        Case _case
     ) public override {
         IERC20 underlyingToken = IERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
         uint256 borrowP2PExchangeRate = marketsManager.borrowP2PExchangeRate(_poolTokenAddress);
@@ -297,7 +308,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
             emit SupplyP2PDeltaUpdated(_poolTokenAddress, supplyP2PDelta[_poolTokenAddress]);
         }
 
-        if (!_isLiquidation) {
+        if (_case != Case.AVOID_LOOP) {
             while (remainingToUnmatch > 0 && user != address(0) && iterationCount < NMAX) {
                 iterationCount++;
                 uint256 toUnmatch = Math.min(
