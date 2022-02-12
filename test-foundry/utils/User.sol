@@ -72,8 +72,12 @@ contract User {
         );
     }
 
-    function setNmaxForMatchingEngine(uint8 _newMaxNumber) external {
-        positionsManager.setNmaxForMatchingEngine(_newMaxNumber);
+    function setNMAX(uint8 _newNMAX) external {
+        positionsManager.setNMAX(_newNMAX);
+    }
+
+    function setNDS(uint8 _newNDS) external {
+        positionsManager.setNDS(_newNDS);
     }
 
     function claimRewards(address[] calldata _assets) external {

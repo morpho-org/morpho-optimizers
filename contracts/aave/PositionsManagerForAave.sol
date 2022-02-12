@@ -152,9 +152,13 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
     /// @param _dataProviderAddress The address of the data provider.
     event AaveContractsUpdated(address _lendingPoolAddress, address _dataProviderAddress);
 
-    /// @notice Emitted the maximum number of users to have in the tree is updated.
-    /// @param _newValue The new value of the maximum number of users to have in the tree.
-    event MaxNumberSet(uint16 _newValue);
+    /// @dev Emitted when a new value for `NMAX` is set.
+    /// @param _newValue The new value of `NMAX`.
+    event NMAXSet(uint8 _newValue);
+
+    /// @dev Emitted when a new value for `NDS` is set.
+    /// @param _newValue The new value of `NDS`.
+    event NDSSet(uint8 _newValue);
 
     /// @notice Emitted the address of the `treasuryVault` is set.
     /// @param _newTreasuryVaultAddress The new address of the `treasuryVault`.
@@ -279,11 +283,18 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         emit AaveIncentivesControllerSet(_aaveIncentivesController);
     }
 
-    /// @notice Sets the maximum number of users in data structure.
-    /// @param _newMaxNumber The maximum number of users to sort in the data structure.
-    function setNmaxForMatchingEngine(uint8 _newMaxNumber) external onlyMarketsManagerOwner {
-        NMAX = _newMaxNumber;
-        emit MaxNumberSet(_newMaxNumber);
+    /// @dev Sets `NMAX`.
+    /// @param _newNMAX The new `NMAX` value.
+    function setNMAX(uint8 _newNMAX) external onlyMarketsManagerOwner {
+        NMAX = _newNMAX;
+        emit NMAXSet(_newNMAX);
+    }
+
+    /// @dev Sets `NDS`.
+    /// @param _newNDS The new `NDS` value.
+    function setNDS(uint8 _newNDS) external onlyMarketsManagerOwner {
+        NDS = _newNDS;
+        emit NDSSet(_newNDS);
     }
 
     /// @notice Sets the threshold of a market.

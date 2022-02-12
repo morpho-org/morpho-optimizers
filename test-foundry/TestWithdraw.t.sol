@@ -156,7 +156,7 @@ contract TestWithdraw is TestSetup {
 
         // NMAX-1 suppliers have up to suppliedAmount waiting on pool
         uint8 NMAX = 20;
-        positionsManager.setNmaxForMatchingEngine(NMAX);
+        positionsManager.setNMAX(NMAX);
         createSigners(NMAX);
 
         uint256 amountPerSupplier = (suppliedAmount - borrowedAmount) / (NMAX - 1);
@@ -321,7 +321,7 @@ contract TestWithdraw is TestSetup {
 
         // NMAX-1 suppliers have up to suppliedAmount/2 waiting on pool
         uint8 NMAX = 20;
-        positionsManager.setNmaxForMatchingEngine(NMAX);
+        positionsManager.setNMAX(NMAX);
         createSigners(NMAX);
 
         uint256 amountPerSupplier = (suppliedAmount - borrowedAmount) / (2 * (NMAX - 1));
@@ -402,7 +402,7 @@ contract TestWithdraw is TestSetup {
         supplier1.approve(dai, suppliedAmount);
         supplier1.supply(aDai, suppliedAmount);
 
-        positionsManager.setNmaxForMatchingEngine(10);
+        positionsManager.setNMAX(10);
         createSigners(30);
 
         // 2 * NMAX borrowers borrow borrowedAmount
