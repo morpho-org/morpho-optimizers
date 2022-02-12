@@ -170,10 +170,10 @@ describe('PositionsManagerForCompound Contract', () => {
 
     it('Should update NMAX', async () => {
       const newNMAX = BigNumber.from(3000);
-      expect(marketsManagerForCompound.connect(supplier1).setNmaxForMatchingEngine(newNMAX)).to.be.reverted;
-      expect(marketsManagerForCompound.connect(borrower1).setNmaxForMatchingEngine(newNMAX)).to.be.reverted;
-      expect(positionsManagerForCompound.connect(owner).setNmaxForMatchingEngine(newNMAX)).to.be.reverted;
-      await marketsManagerForCompound.connect(owner).setNmaxForMatchingEngine(newNMAX);
+      expect(marketsManagerForCompound.connect(supplier1).setNMAX(newNMAX)).to.be.reverted;
+      expect(marketsManagerForCompound.connect(borrower1).setNMAX(newNMAX)).to.be.reverted;
+      expect(positionsManagerForCompound.connect(owner).setNMAX(newNMAX)).to.be.reverted;
+      await marketsManagerForCompound.connect(owner).setNMAX(newNMAX);
       expect(await positionsManagerForCompound.NMAX()).to.equal(newNMAX);
     });
   });

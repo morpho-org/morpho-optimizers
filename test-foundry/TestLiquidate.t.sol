@@ -126,7 +126,7 @@ contract TestLiquidate is TestSetup {
 
         // NMAX borrowers have debt waiting on pool
         uint8 NMAX = 20;
-        positionsManager.setNmaxForMatchingEngine(NMAX);
+        positionsManager.setNMAX(NMAX);
         createSigners(NMAX);
 
         uint256 amountPerSupplier = (suppliedAmount) / (2 * (NMAX - 1));
