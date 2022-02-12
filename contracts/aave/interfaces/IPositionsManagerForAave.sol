@@ -16,7 +16,7 @@ interface IPositionsManagerForAave {
         view
         returns (uint256 withdrawable, uint256 borrowable);
 
-    function setNmaxForMatchingEngine(uint16) external;
+    function setNMAX(uint16) external;
 
     function setThreshold(address, uint256) external;
 

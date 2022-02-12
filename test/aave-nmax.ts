@@ -189,7 +189,7 @@ describe('PositionsManagerForAave Contract', () => {
 
     it('Set new NMAX', async () => {
       expect(await positionsManagerForAave.NMAX()).to.equal(1000);
-      await positionsManagerForAave.connect(owner).setNmaxForMatchingEngine(NMAX);
+      await positionsManagerForAave.connect(owner).setNMAX(NMAX);
       expect(await positionsManagerForAave.NMAX()).to.equal(NMAX);
     });
 
@@ -238,7 +238,7 @@ describe('PositionsManagerForAave Contract', () => {
     let admin: Signer;
 
     it('Set new NMAX', async () => {
-      await positionsManagerForAave.connect(owner).setNmaxForMatchingEngine(NMAX);
+      await positionsManagerForAave.connect(owner).setNMAX(NMAX);
       expect(await positionsManagerForAave.NMAX()).to.equal(NMAX);
     });
 
