@@ -74,7 +74,7 @@ contract TestGetters is TestSetup {
         uint256 toBorrow = to6Decimals(amount / 10);
 
         uint8 NMAX = 10;
-        positionsManager.setNmaxForMatchingEngine(NMAX);
+        positionsManager.setNMAX(NMAX);
         createSigners(NMAX);
         for (uint256 i; i < borrowers.length; i++) {
             borrowers[i].approve(dai, amount - i);

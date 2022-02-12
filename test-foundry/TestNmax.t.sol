@@ -17,7 +17,7 @@ contract TestNmax is TestSetup {
         User Alice = (new User(positionsManager, marketsManager, rewardsManager));
         writeBalanceOf(address(Alice), dai, type(uint256).max / 2);
         writeBalanceOf(address(Alice), usdc, type(uint256).max / 2);
-        positionsManager.setNmaxForMatchingEngine(NMAX);
+        positionsManager.setNMAX(NMAX);
         createSigners(2 * NMAX);
 
         // Need to change NMAX to uint256 otherwise this calculation overflows.
@@ -58,7 +58,7 @@ contract TestNmax is TestSetup {
         User Alice = (new User(positionsManager, marketsManager, rewardsManager));
         writeBalanceOf(address(Alice), dai, type(uint256).max / 2);
         writeBalanceOf(address(Alice), usdc, type(uint256).max / 2);
-        positionsManager.setNmaxForMatchingEngine(NMAX);
+        positionsManager.setNMAX(NMAX);
         createSigners(2 * NMAX);
 
         // Need to change NMAX to uint256 otherwise this calculation overflows.
@@ -102,7 +102,7 @@ contract TestNmax is TestSetup {
         User Alice = (new User(positionsManager, marketsManager, rewardsManager));
         writeBalanceOf(address(Alice), dai, type(uint256).max / 2);
         writeBalanceOf(address(Alice), usdc, type(uint256).max / 2);
-        positionsManager.setNmaxForMatchingEngine(NMAX);
+        positionsManager.setNMAX(NMAX);
         createSigners(3 * NMAX);
 
         // 1: create NMAX big matches on DAI market
@@ -154,7 +154,7 @@ contract TestNmax is TestSetup {
         User Alice = (new User(positionsManager, marketsManager, rewardsManager));
         writeBalanceOf(address(Alice), dai, type(uint256).max / 2);
         writeBalanceOf(address(Alice), usdc, type(uint256).max / 2);
-        positionsManager.setNmaxForMatchingEngine(NMAX);
+        positionsManager.setNMAX(NMAX);
         createSigners(3 * NMAX);
 
         // 1: create NMAX big matches on DAI market
@@ -213,7 +213,7 @@ contract TestNmax is TestSetup {
         User Alice = (new User(positionsManager, marketsManager, rewardsManager));
         writeBalanceOf(address(Alice), dai, type(uint256).max / 2);
         writeBalanceOf(address(Alice), usdc, type(uint256).max / 2);
-        positionsManager.setNmaxForMatchingEngine(NMAX);
+        positionsManager.setNMAX(NMAX);
         createSigners(7 * NMAX);
 
         // Need to change NMAX to uint256 otherwise there are overflows.

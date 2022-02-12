@@ -157,18 +157,32 @@ contract TestGovernance is TestSetup {
         assertEq(marketsManager.borrowP2PExchangeRate(aAave), RAY);
     }
 
-    // Should set NMAX
+    // Only MarketsaManager's Owner should set NMAX
     function test_should_set_nmax() public {
         uint8 newNMAX = 30;
 
-        positionsManager.setNmaxForMatchingEngine(newNMAX);
+        positionsManager.setNMAX(newNMAX);
         assertEq(positionsManager.NMAX(), newNMAX);
 
         hevm.expectRevert(abi.encodeWithSignature("OnlyMarketsManagerOwner()"));
-        supplier1.setNmaxForMatchingEngine(newNMAX);
+        supplier1.setNMAX(newNMAX);
 
         hevm.expectRevert(abi.encodeWithSignature("OnlyMarketsManagerOwner()"));
-        borrower1.setNmaxForMatchingEngine(newNMAX);
+        borrower1.setNMAX(newNMAX);
+    }
+
+    // Only MarketsaManager's Owner should set NDS
+    function test_should_set_nds() public {
+        uint8 newNDS = 30;
+
+        positionsManager.setNDS(newNDS);
+        assertEq(positionsManager.NDS(), newNDS);
+
+        hevm.expectRevert(abi.encodeWithSignature("OnlyMarketsManagerOwner()"));
+        supplier1.setNDS(newNDS);
+
+        hevm.expectRevert(abi.encodeWithSignature("OnlyMarketsManagerOwner()"));
+        borrower1.setNDS(newNDS);
     }
 
     function test_only_owner_should_flip_market_strategy() public {

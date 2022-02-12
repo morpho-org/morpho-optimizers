@@ -164,7 +164,7 @@ describe('PositionsManagerForCompound Contract', () => {
 
     it('Set new NMAX', async () => {
       expect(await positionsManagerForCompound.NMAX()).to.equal(20);
-      await marketsManagerForCompound.connect(owner).setNmaxForMatchingEngine(NMAX);
+      await marketsManagerForCompound.connect(owner).setNMAX(NMAX);
       expect(await positionsManagerForCompound.NMAX()).to.equal(NMAX);
     });
 
@@ -214,7 +214,7 @@ describe('PositionsManagerForCompound Contract', () => {
     let admin: Signer;
 
     it('Set new NMAX', async () => {
-      await marketsManagerForCompound.connect(owner).setNmaxForMatchingEngine(NMAX);
+      await marketsManagerForCompound.connect(owner).setNMAX(NMAX);
       expect(await positionsManagerForCompound.NMAX()).to.equal(NMAX);
     });
 
