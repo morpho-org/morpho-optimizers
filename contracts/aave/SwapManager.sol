@@ -24,8 +24,8 @@ contract SwapManager is ISwapManager {
     // Hard coded addresses as they are the same accross chains
     address public constant FACTORY = 0x1F98431c8aD98523631AE4a59f267346ea31F984; // The address of the Uniswap V3 factory.
     address public constant WETH9 = 0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619; // Intermediate token address.
-    address public constant DAI = 0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063; // Dai address for now.
     ISwapRouter public swapRouter = ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564);
+    address public immutable MORPHO; // Morpho token.
 
     /// Events ///
 
@@ -35,13 +35,6 @@ contract SwapManager is ISwapManager {
     /// @param _amountOut The amount of tokens received.
     event Swap(address _receiver, uint256 _amountIn, uint256 _amountOut);
 
-    /// Errors ///
-
-    /// @notice Thrown when the amount received exceeds slippage tolerated.
-    /// @param _expectedAmount The expected amount to receive.
-    /// @param _amountReceived The amount of tokens received.
-    error TooMuchSlippage(uint256 _expectedAmount, uint256 _amountReceived);
-
     /// Structs ///
 
     // Struct to avoid stack too deep error
@@ -50,7 +43,13 @@ contract SwapManager is ISwapManager {
         uint256 priceX961;
         uint256 numerator;
         uint256 denominator;
-        uint256 expectedAmountOut;
+        uint256 expectedAmountOutMinimum;
+    }
+
+    /// Constructor ///
+
+    constructor(address _morphoToken) {
+        MORPHO = _morphoToken;
     }
 
     function swapToMorphoToken(
@@ -67,7 +66,7 @@ contract SwapManager is ISwapManager {
             PoolAddress.computeAddress(FACTORY, PoolAddress.getPoolKey(_tokenIn, WETH9, POOL_FEE))
         );
         IUniswapV3Pool pool1 = IUniswapV3Pool(
-            PoolAddress.computeAddress(FACTORY, PoolAddress.getPoolKey(WETH9, DAI, POOL_FEE))
+            PoolAddress.computeAddress(FACTORY, PoolAddress.getPoolKey(WETH9, MORPHO, POOL_FEE))
         );
 
         uint32[] memory secondsAgo = new uint32[](2);
@@ -108,26 +107,20 @@ contract SwapManager is ISwapManager {
             vars.denominator = vars.priceX960 * vars.priceX961;
         }
 
-        vars.expectedAmountOut = vars.numerator / vars.denominator;
+        vars.expectedAmountOutMinimum =
+            (vars.numerator * (MAX_BASIS_POINTS - ONE_PERCENT)) /
+            (vars.denominator * MAX_BASIS_POINTS);
 
         ISwapRouter.ExactInputParams memory params = ISwapRouter.ExactInputParams({
-            path: abi.encodePacked(_tokenIn, POOL_FEE, WETH9, POOL_FEE, DAI),
+            path: abi.encodePacked(_tokenIn, POOL_FEE, WETH9, POOL_FEE, MORPHO),
             recipient: _receiver,
             deadline: block.timestamp,
             amountIn: _amountIn,
-            amountOutMinimum: 0
+            amountOutMinimum: vars.expectedAmountOutMinimum
         });
 
         // Executes the swap
         amountOut = swapRouter.exactInput(params);
-
-        // Done to avoid market price manipulation
-        if (
-            amountOut >=
-            (vars.expectedAmountOut * (MAX_BASIS_POINTS + ONE_PERCENT)) / MAX_BASIS_POINTS ||
-            amountOut <=
-            (vars.expectedAmountOut * (MAX_BASIS_POINTS - ONE_PERCENT)) / MAX_BASIS_POINTS
-        ) revert TooMuchSlippage(vars.expectedAmountOut, amountOut);
 
         emit Swap(_receiver, _amountIn, amountOut);
     }
