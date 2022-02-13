@@ -13,7 +13,7 @@ contract-% c-%: node_modules
 
 single-% s-%: node_modules
 	@echo Run single test: $*
-	@forge test --fork-url https://${NETWORK}.g.alchemy.com/v2/${ALCHEMY_KEY} --fork-block-number $(fork-block-number) -vvv -c test-foundry --match-test $* > traces.ansi
+	@forge test --fork-url https://${NETWORK}.g.alchemy.com/v2/${ALCHEMY_KEY} --fork-block-number $(fork-block-number) -vvv -c test-foundry --match-test $*
 
 node_modules:
 	@yarn
