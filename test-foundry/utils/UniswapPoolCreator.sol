@@ -1,7 +1,5 @@
 pragma solidity 0.8.7;
 
-import "hardhat/console.sol";
-
 /// WARNING: do not use in production ///
 
 import "@uniswap/v3-core/contracts/interfaces/IUniswapV3Factory.sol";
@@ -36,8 +34,8 @@ contract UniswapPoolCreator is Utils, IERC721Receiver {
 
     // For this example, we will provide equal amounts of liquidity in both assets.
     // Providing liquidity in both assets means liquidity will be earning fees and is considered in-range.
-    uint256 public amount0ToMint = 1000;
-    uint256 public amount1ToMint = 1000;
+    uint256 public amount0ToMint = 1000e18;
+    uint256 public amount1ToMint = 1000e18;
 
     function createPoolAndMintPosition(address _token0) external {
         uint160 sqrt_ = 1e27;
@@ -111,7 +109,6 @@ contract UniswapPoolCreator is Utils, IERC721Receiver {
         uint256 tokenId,
         bytes calldata
     ) external override returns (bytes4) {
-        emit log("called onERC721Received");
         // get position information
         _createDeposit(operator, tokenId);
         return this.onERC721Received.selector;
