@@ -3,7 +3,7 @@ pragma solidity 0.8.7;
 
 import "lib/ds-test/src/test.sol";
 
-import "@contracts/test/TestDoubleLinkedList.sol";
+import "./utils/TestDoubleLinkedList.sol";
 
 contract TestDoubleLinkedListSuite is DSTest {
     uint256 NMAX = 50;

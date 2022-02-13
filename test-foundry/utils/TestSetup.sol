@@ -11,12 +11,12 @@ import "@contracts/aave/PositionsManagerForAave.sol";
 import "@contracts/aave/MarketsManagerForAave.sol";
 import "@contracts/aave/RewardsManager.sol";
 import "@contracts/aave/SwapManager.sol";
-import "@contracts/aave/test/SimplePriceOracle.sol";
 import "@config/Config.sol";
 import "./HEVM.sol";
 import "./Utils.sol";
 import "./User.sol";
 import "./MorphoToken.sol";
+import "./SimplePriceOracle.sol";
 import "./UniswapPoolCreator.sol";
 
 contract TestSetup is Config, Utils {
