@@ -257,7 +257,7 @@ contract TestRewards is TestSetup {
         supplier1.approve(dai, toSupply);
         supplier1.supply(aDai, toSupply);
 
-        uint256 morphoBalanceBefore = supplier1.balanceOf(dai);
+        uint256 morphoBalanceBefore = supplier1.balanceOf(address(morphoToken));
         uint256 rewardBalanceBefore = supplier1.balanceOf(wmatic);
 
         address[] memory aDaiInArray = new address[](1);
@@ -266,7 +266,7 @@ contract TestRewards is TestSetup {
         hevm.warp(block.timestamp + 365 days);
         supplier1.claimRewards(aDaiInArray, true);
 
-        uint256 morphoBalanceAfter = supplier1.balanceOf(dai);
+        uint256 morphoBalanceAfter = supplier1.balanceOf(address(morphoToken));
         uint256 rewardBalanceAfter = supplier1.balanceOf(wmatic);
         assertGt(morphoBalanceAfter, morphoBalanceBefore);
         assertEq(rewardBalanceBefore, rewardBalanceAfter);
