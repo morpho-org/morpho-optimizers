@@ -39,34 +39,22 @@ contract UniswapPoolCreator is Utils, IERC721Receiver {
     uint256 public amount0ToMint = 1000;
     uint256 public amount1ToMint = 1000;
 
-    function sqrt(uint256 x) public pure returns (uint256 y) {
-        uint256 z = (x + 1) / 2;
-        y = x;
-        while (z < y) {
-            y = z;
-            z = (x / z + z) / 2;
-        }
-    }
-
     function createPoolAndMintPosition(address _token0) external {
-        emit log_named_address("contract add", address(this));
-        uint160 srqt_ = 1e27;
+        uint160 sqrt_ = 1e27;
 
-        emit log_named_uint("sqrt", srqt_);
-        emit log_named_uint("bal0", IERC20(_token0).balanceOf(address(this)));
-        emit log_named_uint("bal1", IERC20(WETH9).balanceOf(address(this)));
-
-        address pool = nonfungiblePositionManager.createAndInitializePoolIfNecessary(
+        nonfungiblePositionManager.createAndInitializePoolIfNecessary(
             _token0,
             WETH9,
             POOL_FEE,
-            srqt_
+            sqrt_
         );
 
-        emit log_named_address("pool", pool);
-        emit log("done");
-
         mintNewPosition(_token0);
+    }
+
+    function getAdjustedTicks(int24 ticks) internal view returns (int24) {
+        int24 tickSpacing = uniswapFactory.feeAmountTickSpacing(POOL_FEE);
+        return (ticks / tickSpacing) * tickSpacing;
     }
 
     function mintNewPosition(address _token0)
@@ -82,15 +70,13 @@ contract UniswapPoolCreator is Utils, IERC721Receiver {
         TransferHelper.safeApprove(_token0, address(nonfungiblePositionManager), amount0ToMint);
         TransferHelper.safeApprove(WETH9, address(nonfungiblePositionManager), amount1ToMint);
 
-        emit log("approved");
-
         INonfungiblePositionManager.MintParams memory params = INonfungiblePositionManager
         .MintParams({
             token0: _token0,
             token1: WETH9,
             fee: POOL_FEE,
-            tickLower: MIN_TICK,
-            tickUpper: MAX_TICK,
+            tickLower: getAdjustedTicks(MIN_TICK),
+            tickUpper: getAdjustedTicks(MAX_TICK),
             amount0Desired: amount0ToMint,
             amount1Desired: amount1ToMint,
             amount0Min: 0,
@@ -99,10 +85,7 @@ contract UniswapPoolCreator is Utils, IERC721Receiver {
             deadline: block.timestamp
         });
 
-        emit log("params made");
-
         // Note that the pool defined and fee tier 0.3% must already be created and initialized in order to mint
-        // TODO: fix this call
         (tokenId, liquidity, amount0, amount1) = nonfungiblePositionManager.mint(params);
 
         // Create a deposit
@@ -128,7 +111,7 @@ contract UniswapPoolCreator is Utils, IERC721Receiver {
         uint256 tokenId,
         bytes calldata
     ) external override returns (bytes4) {
-        emit log("called");
+        emit log("called onERC721Received");
         // get position information
         _createDeposit(operator, tokenId);
         return this.onERC721Received.selector;

@@ -55,10 +55,10 @@ contract TestSetup is Config, Utils {
 
     function setUp() public {
         // Create a MORPHO / WETH pool
-        // uniswapPoolCreator = new UniswapPoolCreator();
-        // writeBalanceOf(address(uniswapPoolCreator), weth, INITIAL_BALANCE * WAD);
-        // morphoToken = new MorphoToken(address(uniswapPoolCreator));
-        // uniswapPoolCreator.createPoolAndMintPosition(address(morphoToken));
+        uniswapPoolCreator = new UniswapPoolCreator();
+        writeBalanceOf(address(uniswapPoolCreator), weth, INITIAL_BALANCE * WAD);
+        morphoToken = new MorphoToken(address(uniswapPoolCreator));
+        uniswapPoolCreator.createPoolAndMintPosition(address(morphoToken));
         swapManager = new SwapManager();
 
         marketsManager = new MarketsManagerForAave(lendingPoolAddressesProviderAddress);
