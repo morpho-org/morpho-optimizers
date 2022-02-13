@@ -2,6 +2,7 @@
 pragma solidity 0.8.7;
 
 import "./utils/TestSetupAdapters.sol";
+import "@contracts/aave/interfaces/uniswap/ISwapRouter.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 contract TestFlashSwapLiquidator is TestSetupAdapters {
@@ -9,13 +10,15 @@ contract TestFlashSwapLiquidator is TestSetupAdapters {
     function test_liquidate_5_8() public {
         uint256 collateralDecimals = 10**IERC20Metadata(usdc).decimals();
         uint256 debtDecimals = 10**IERC20Metadata(dai).decimals();
-        uint256 collateral = 1 * collateralDecimals;
+        uint256 etherUnit = 1e18;
+        uint256 baseUSDPrice = 323686400000000;
+        uint256 collateral = 100 * collateralDecimals;
 
         // Change Oracle
         SimplePriceOracle customOracle = createAndSetCustomPriceOracle();
         // set usdc & dai price to 1:1
-        customOracle.setDirectPrice(usdc, collateralDecimals);
-        customOracle.setDirectPrice(dai, debtDecimals);
+        customOracle.setDirectPrice(usdc, baseUSDPrice);
+        customOracle.setDirectPrice(dai, baseUSDPrice);
         borrower1.approve(usdc, address(positionsManager), collateral);
         borrower1.supply(aUsdc, collateral);
 
@@ -32,9 +35,8 @@ contract TestFlashSwapLiquidator is TestSetupAdapters {
         );
 
         // set price of collateral to borrow LT % of usdc as collateral ( previousPrice * LTV / LT ) with previousPrice = 1
-        // we use 90 for LT instead of 85 for dust prevention
         // this change render the borrower under collateralized
-        uint256 newUsdcPrice = (80 * collateralDecimals) / 90;
+        uint256 newUsdcPrice = (80 * baseUSDPrice) / 85;
         customOracle.setDirectPrice(usdc, newUsdcPrice);
 
         // Liquidate borrower
