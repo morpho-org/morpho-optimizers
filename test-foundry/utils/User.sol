@@ -15,13 +15,12 @@ contract User {
     constructor(
         PositionsManagerForAave _positionsManager,
         MarketsManagerForAave _marketsManager,
-        RewardsManager _rewardsManager,
-        ILendingPool _lendingPool
+        RewardsManager _rewardsManager
     ) {
         positionsManager = _positionsManager;
         marketsManager = _marketsManager;
         rewardsManager = _rewardsManager;
-        lendingPool = _lendingPool;
+        lendingPool = positionsManager.lendingPool();
         aaveIncentivesController = positionsManager.aaveIncentivesController();
     }
 
