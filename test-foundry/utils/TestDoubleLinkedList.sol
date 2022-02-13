@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.7;
 
-import "../common/libraries/DoubleLinkedList.sol";
+import "@contracts/common/libraries/DoubleLinkedList.sol";
 
 contract TestDoubleLinkedList {
     using DoubleLinkedList for DoubleLinkedList.List;
