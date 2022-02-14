@@ -34,7 +34,7 @@ jobs:
           version: nightly
 
       - name: Run tests
-        run: make test
+        run: FOUNDRY_PROFILE=ci make test
         env:
           NETWORK: polygon-mainnet
           ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
