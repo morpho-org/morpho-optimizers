@@ -47,17 +47,26 @@ contract TestSetup is Config, Utils {
     address[] public underlyings;
 
     function setUp() public {
+        PositionsManagerForAave.MGTC memory mgtc = PositionsManagerForAaveStorage.MGTC({
+            supply: 1.5e6,
+            borrow: 1.5e6,
+            withdraw: 3e6,
+            repay: 3e6
+        });
+
         marketsManager = new MarketsManagerForAave(lendingPoolAddressesProviderAddress);
         positionsManager = new PositionsManagerForAave(
             address(marketsManager),
-            lendingPoolAddressesProviderAddress
+            lendingPoolAddressesProviderAddress,
+            mgtc
         );
 
         treasuryVault = new User(positionsManager, marketsManager, rewardsManager);
 
         fakePositionsManager = new PositionsManagerForAave(
             address(marketsManager),
-            lendingPoolAddressesProviderAddress
+            lendingPoolAddressesProviderAddress,
+            mgtc
         );
 
         rewardsManager = new RewardsManager(
