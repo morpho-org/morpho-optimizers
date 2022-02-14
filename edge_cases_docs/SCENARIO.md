@@ -55,5 +55,3 @@
 - 5.1 - A user liquidates a borrower that has enough collateral to cover for his debt, the transaction reverts.
 
 - 5.2 - A user liquidates a borrower that has not enough collateral to cover for his debt.
-
-- 5.3 - The liquidation is made of a Repay and a Withdraw performed on a borrower's position on behalf of a liquidator. At most, the liquidator can liquidate 50% of the debt of a borrower and take the corresponding collateral (plus a bonus). Edge-cases here are at most the combination from part 3. and 4: Alice is matched with 4\*NMAX users on her collateral and her debt. She gets liquidated, the repay and withdraw are generating: first, NMAX `match supplier`, then NMAX `unmatch borrower` and for the withdraw NMAX `match borrower` and NMAX `unmatch supplier`.

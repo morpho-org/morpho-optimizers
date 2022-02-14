@@ -128,11 +128,18 @@ contract TestBorrow is TestSetup {
 
     // 2.6 - There are NMAX (or less) suppliers that match the borrowed amount, everything is inP2P after NMAX (or less) match.
     function test_borrow_2_6() public {
+        PositionsManagerForAaveStorage.MGTC memory newMgtc = PositionsManagerForAaveStorage.MGTC({
+            supply: type(uint64).max,
+            borrow: type(uint64).max,
+            withdraw: type(uint64).max,
+            repay: type(uint64).max
+        });
+        positionsManager.setMgtc(newMgtc);
+
         uint256 amount = 10000 ether;
         uint256 collateral = 2 * amount;
 
         uint8 NMAX = 20;
-        positionsManager.setNMAX(NMAX);
         createSigners(NMAX);
 
         uint256 amountPerSupplier = amount / NMAX;
@@ -169,11 +176,18 @@ contract TestBorrow is TestSetup {
     // 2.7 - The NMAX biggest suppliers don't match all of the borrowed amount, after NMAX match, the rest is borrowed and set onPool.
     // ⚠️ most gas expensive borrow scenario.
     function test_borrow_2_7() public {
+        PositionsManagerForAaveStorage.MGTC memory newMgtc = PositionsManagerForAaveStorage.MGTC({
+            supply: type(uint64).max,
+            borrow: type(uint64).max,
+            withdraw: type(uint64).max,
+            repay: type(uint64).max
+        });
+        positionsManager.setMgtc(newMgtc);
+
         uint256 amount = 10000 ether;
         uint256 collateral = 2 * amount;
 
         uint8 NMAX = 20;
-        positionsManager.setNMAX(NMAX);
         createSigners(NMAX);
 
         uint256 amountPerSupplier = amount / (2 * NMAX);
