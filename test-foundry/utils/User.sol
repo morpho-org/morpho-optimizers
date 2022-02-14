@@ -88,6 +88,10 @@ contract User {
         positionsManager.setNDS(_newNDS);
     }
 
+    function setMgtc(PositionsManagerForAave.MGTC memory _mgtc) external {
+        positionsManager.setMgtc(_mgtc);
+    }
+
     function claimRewards(address[] calldata _assets) external {
         positionsManager.claimRewards(_assets);
     }
