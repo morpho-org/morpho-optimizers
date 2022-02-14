@@ -187,7 +187,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
     /// @param _amountClaimed The amount of reward token claimed.
     event RewardsClaimed(address _user, uint256 _amountClaimed);
 
-    /// @dev Emitted when a user claims rewards and swap them to Morpho tokens.
+    /// @dev Emitted when a user claims rewards and swaps them to Morpho tokens.
     /// @param _user The address of the claimer.
     /// @param _amountIn The amount of reward token swapped.
     /// @param _amountOut The amount of tokens received.

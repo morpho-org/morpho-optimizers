@@ -1,17 +1,18 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.7;
 
+import "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
+import "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
 import "./interfaces/ISwapManager.sol";
 
-import "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@uniswap/v3-core/contracts/libraries/FixedPoint96.sol";
-import "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
+import "./libraries/uniswap/PoolAddress.sol";
 import "./libraries/uniswap/FullMath.sol";
 import "./libraries/uniswap/TickMath.sol";
-import "./libraries/uniswap/PoolAddress.sol";
 
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-
+/// @title SwapManager.
+/// @dev Smart contract managing the swap of reward token to Morpho token.
 contract SwapManager is ISwapManager {
     using SafeERC20 for IERC20;
 
@@ -48,10 +49,19 @@ contract SwapManager is ISwapManager {
 
     /// Constructor ///
 
+    /// @notice Constructs the SwapManager contract.
+    /// @param _morphoToken The Morpho token address.
     constructor(address _morphoToken) {
         MORPHO = _morphoToken;
     }
 
+    /// External ///
+
+    /// @dev Swaps reward tokens to Morpho token.
+    /// @param _tokenIn The address of the reward token.
+    /// @param _amountIn The amount of reward token to swap.
+    /// @param _receiver The address of the receiver of the Morpho tokens.
+    /// @return amountOut The amount of Morpho tokens sent.
     function swapToMorphoToken(
         address _tokenIn,
         uint256 _amountIn,
@@ -89,8 +99,6 @@ contract SwapManager is ISwapManager {
         );
         vars.priceX960 = getPriceX96FromSqrtPriceX96(sqrtPriceX960);
         vars.priceX961 = getPriceX96FromSqrtPriceX96(sqrtPriceX961);
-        vars.numerator;
-        vars.denominator;
 
         // Computation depends on the position of token in pools
         if (_tokenIn == pool0.token0() && WETH9 == pool1.token0()) {
@@ -107,6 +115,7 @@ contract SwapManager is ISwapManager {
             vars.denominator = vars.priceX960 * vars.priceX961;
         }
 
+        // Max slippage of 1% for the trade
         vars.expectedAmountOutMinimum =
             (vars.numerator * (MAX_BASIS_POINTS - ONE_PERCENT)) /
             (vars.denominator * MAX_BASIS_POINTS);
@@ -125,11 +134,16 @@ contract SwapManager is ISwapManager {
         emit Swap(_receiver, _amountIn, amountOut);
     }
 
-    function getPriceX96FromSqrtPriceX96(uint160 sqrtPriceX96)
+    /// public ///
+
+    /// @dev Returns the price in fixed point 96 from the square of the price in fixed point 96.
+    /// @param _sqrtPriceX96 The square of the price in fixed point 96.
+    /// @return priceX96 The price in fixed point 96.
+    function getPriceX96FromSqrtPriceX96(uint160 _sqrtPriceX96)
         public
         pure
         returns (uint256 priceX96)
     {
-        return FullMath.mulDiv(sqrtPriceX96, sqrtPriceX96, FixedPoint96.Q96);
+        return FullMath.mulDiv(_sqrtPriceX96, _sqrtPriceX96, FixedPoint96.Q96);
     }
 }

@@ -13,7 +13,7 @@ import "../common/libraries/DoubleLinkedList.sol";
 
 import "./PositionsManagerForAaveStorage.sol";
 
-/// @title MatchingEngineManager
+/// @title MatchingEngineManager.
 /// @dev Smart contract managing the matching engine.
 contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAaveStorage {
     using DoubleLinkedList for DoubleLinkedList.List;
