@@ -46,6 +46,36 @@ contract TestWithdraw is TestSetup {
         testEquality(onPool, expectedOnPool / 2);
     }
 
+    // 3.2 BIS - withdraw all
+    function test_withdraw_3_2_BIS() public {
+        uint256 amount = 10000 ether;
+
+        supplier1.approve(usdc, to6Decimals(amount));
+        supplier1.supply(aUsdc, to6Decimals(amount));
+
+        uint256 balanceBefore = supplier1.balanceOf(usdc);
+        (uint256 inP2P, uint256 onPool) = positionsManager.supplyBalanceInOf(
+            aUsdc,
+            address(supplier1)
+        );
+
+        uint256 expectedOnPool = to6Decimals(
+            underlyingToScaledBalance(amount, lendingPool.getReserveNormalizedIncome(usdc))
+        );
+
+        testEquality(inP2P, 0);
+        testEquality(onPool, expectedOnPool);
+
+        supplier1.withdraw(aUsdc, type(uint256).max);
+
+        uint256 balanceAfter = supplier1.balanceOf(usdc);
+        (inP2P, onPool) = positionsManager.supplyBalanceInOf(aUsdc, address(supplier1));
+
+        testEquality(inP2P, 0);
+        testEquality(onPool, 0);
+        testEquality(balanceAfter - balanceBefore, to6Decimals(amount));
+    }
+
     // 3.3 - The supplier withdraws more than his onPool balance
 
     // 3.3.1 - There is a supplier onPool available to replace him inP2P.

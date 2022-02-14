@@ -25,6 +25,30 @@ contract TestRepay is TestSetup {
         testEquality(onPool, 0);
     }
 
+    // - 4.1 BIS - repay all
+    function test_repay_4_1_BIS() public {
+        uint256 amount = 10000 ether;
+        uint256 collateral = 2 * amount;
+
+        borrower1.approve(usdc, to6Decimals(collateral));
+        borrower1.supply(aUsdc, to6Decimals(collateral));
+        borrower1.borrow(aDai, amount);
+
+        uint256 balanceBefore = borrower1.balanceOf(dai);
+        borrower1.approve(dai, amount);
+        borrower1.repay(aDai, type(uint256).max);
+
+        (uint256 inP2P, uint256 onPool) = positionsManager.borrowBalanceInOf(
+            aDai,
+            address(borrower1)
+        );
+        uint256 balanceAfter = supplier1.balanceOf(dai);
+
+        testEquality(inP2P, 0);
+        testEquality(onPool, 0);
+        testEquality(balanceBefore - balanceAfter, amount);
+    }
+
     // - 4.2 - The borrower repays more than his `onPool` balance.
     //   - 4.2.1 - There is a borrower `onPool` available to replace him `inP2P`.
     //             First, his debt `onPool` is repaid, his matched debt is replaced by the available borrower up to his repaid amount.
