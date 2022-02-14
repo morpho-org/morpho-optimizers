@@ -20,6 +20,13 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
     using SafeERC20 for IERC20;
     using Address for address;
 
+    /// Structs ///
+
+    struct GasVars {
+        uint256 gasConsumed;
+        uint256 gasBefore;
+    }
+
     /// @notice Emitted when the position of a supplier is updated.
     /// @param _user The address of the supplier.
     /// @param _poolTokenAddress The address of the market.
@@ -66,7 +73,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         IAToken _poolToken,
         IERC20 _underlyingToken,
         uint256 _amount,
-        Case _case
+        uint256 _maxGasToConsume
     ) public override returns (uint256 matchedSupply) {
         address poolTokenAddress = address(_poolToken);
         uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(
@@ -74,7 +81,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         );
         address user = suppliersOnPool[poolTokenAddress].getHead();
         uint256 supplyP2PExchangeRate = marketsManager.supplyP2PExchangeRate(poolTokenAddress);
-        uint256 iterationCount;
+        GasVars memory vars;
 
         // Match supply P2P delta first
         if (supplyP2PDelta[poolTokenAddress] > 0) {
@@ -87,13 +94,11 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
             emit SupplyP2PDeltaUpdated(poolTokenAddress, supplyP2PDelta[poolTokenAddress]);
         }
 
-        if (_case != Case.AVOID_LOOP) {
+        if (_maxGasToConsume != 0) {
             while (
-                matchedSupply < _amount &&
-                user != address(0) &&
-                (_case == Case.USE_NMAX ? iterationCount < NMAX : gasleft() > MIN_GAS_LEFT)
+                matchedSupply < _amount && user != address(0) && vars.gasConsumed < _maxGasToConsume
             ) {
-                iterationCount++;
+                vars.gasBefore = gasleft();
                 uint256 onPoolInUnderlying = supplyBalanceInOf[poolTokenAddress][user]
                 .onPool
                 .mulWadByRay(normalizedIncome);
@@ -115,6 +120,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
                 );
 
                 user = suppliersOnPool[poolTokenAddress].getHead();
+                vars.gasConsumed += (vars.gasBefore - gasleft());
             }
         }
 
@@ -136,14 +142,14 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
     function unmatchSuppliers(
         address _poolTokenAddress,
         uint256 _amount,
-        Case _case
+        uint256 _maxGasToConsume
     ) public override {
         IERC20 underlyingToken = IERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
         address user = suppliersInP2P[_poolTokenAddress].getHead();
         uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(address(underlyingToken));
         uint256 supplyP2PExchangeRate = marketsManager.supplyP2PExchangeRate(_poolTokenAddress);
         uint256 remainingToUnmatch = _amount; // In underlying
-        uint256 iterationCount;
+        GasVars memory vars;
 
         // Reduce borrow P2P delta first
         if (borrowP2PDelta[_poolTokenAddress] > 0) {
@@ -159,9 +165,11 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
             emit BorrowP2PDeltaUpdated(_poolTokenAddress, borrowP2PDelta[_poolTokenAddress]);
         }
 
-        if (_case != Case.AVOID_LOOP) {
-            while (remainingToUnmatch > 0 && user != address(0) && iterationCount < NMAX) {
-                iterationCount++;
+        if (_maxGasToConsume != 0) {
+            while (
+                remainingToUnmatch > 0 && user != address(0) && vars.gasConsumed < _maxGasToConsume
+            ) {
+                vars.gasBefore = gasleft();
                 uint256 toUnmatch = Math.min(
                     supplyBalanceInOf[_poolTokenAddress][user].inP2P.mulWadByRay(
                         supplyP2PExchangeRate
@@ -185,6 +193,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
                 );
 
                 user = suppliersInP2P[_poolTokenAddress].getHead();
+                vars.gasConsumed += (vars.gasBefore - gasleft());
             }
         }
 
@@ -217,7 +226,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         IAToken _poolToken,
         IERC20 _underlyingToken,
         uint256 _amount,
-        Case _case
+        uint256 _maxGasToConsume
     ) public override returns (uint256 matchedBorrow) {
         address poolTokenAddress = address(_poolToken);
         uint256 normalizedVariableDebt = lendingPool.getReserveNormalizedVariableDebt(
@@ -225,7 +234,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         );
         uint256 borrowP2PExchangeRate = marketsManager.borrowP2PExchangeRate(poolTokenAddress);
         address user = borrowersOnPool[poolTokenAddress].getHead();
-        uint256 iterationCount;
+        GasVars memory vars;
 
         // Match borrow P2P delta first
         if (borrowP2PDelta[poolTokenAddress] > 0) {
@@ -238,13 +247,11 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
             emit BorrowP2PDeltaUpdated(poolTokenAddress, borrowP2PDelta[poolTokenAddress]);
         }
 
-        if (_case != Case.AVOID_LOOP) {
+        if (_maxGasToConsume != 0) {
             while (
-                matchedBorrow < _amount &&
-                user != address(0) &&
-                (_case == Case.USE_NMAX ? iterationCount < NMAX : gasleft() > MIN_GAS_LEFT)
+                matchedBorrow < _amount && user != address(0) && vars.gasConsumed < _maxGasToConsume
             ) {
-                iterationCount++;
+                vars.gasBefore = gasleft();
                 uint256 onPoolInUnderlying = borrowBalanceInOf[poolTokenAddress][user]
                 .onPool
                 .mulWadByRay(normalizedVariableDebt);
@@ -266,6 +273,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
                 );
 
                 user = borrowersOnPool[poolTokenAddress].getHead();
+                vars.gasConsumed += (vars.gasBefore - gasleft());
             }
         }
 
@@ -290,7 +298,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
     function unmatchBorrowers(
         address _poolTokenAddress,
         uint256 _amount,
-        Case _case
+        uint256 _maxGasToConsume
     ) public override {
         IERC20 underlyingToken = IERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
         uint256 borrowP2PExchangeRate = marketsManager.borrowP2PExchangeRate(_poolTokenAddress);
@@ -299,7 +307,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         );
         address user = borrowersInP2P[_poolTokenAddress].getHead();
         uint256 remainingToUnmatch = _amount;
-        uint256 iterationCount;
+        GasVars memory vars;
 
         // Reduce supply P2P delta first
         if (supplyP2PDelta[_poolTokenAddress] > 0) {
@@ -315,9 +323,11 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
             emit SupplyP2PDeltaUpdated(_poolTokenAddress, supplyP2PDelta[_poolTokenAddress]);
         }
 
-        if (_case != Case.AVOID_LOOP) {
-            while (remainingToUnmatch > 0 && user != address(0) && iterationCount < NMAX) {
-                iterationCount++;
+        if (_maxGasToConsume != 0) {
+            while (
+                remainingToUnmatch > 0 && user != address(0) && vars.gasConsumed < _maxGasToConsume
+            ) {
+                vars.gasBefore = gasleft();
                 uint256 toUnmatch = Math.min(
                     borrowBalanceInOf[_poolTokenAddress][user].inP2P.mulWadByRay(
                         borrowP2PExchangeRate
@@ -341,6 +351,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
                 );
 
                 user = borrowersInP2P[_poolTokenAddress].getHead();
+                vars.gasConsumed += (vars.gasBefore - gasleft());
             }
         }
 

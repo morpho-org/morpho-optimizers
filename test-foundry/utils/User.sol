@@ -84,10 +84,6 @@ contract User {
         );
     }
 
-    function setNMAX(uint8 _newNMAX) external {
-        positionsManager.setNMAX(_newNMAX);
-    }
-
     function setNDS(uint8 _newNDS) external {
         positionsManager.setNDS(_newNDS);
     }
