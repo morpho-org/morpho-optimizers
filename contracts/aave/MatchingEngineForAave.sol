@@ -12,7 +12,7 @@ import "./libraries/aave/WadRayMath.sol";
 
 import "./PositionsManagerForAaveStorage.sol";
 
-/// @title MatchingEngineManager
+/// @title MatchingEngineManager.
 /// @notice Smart contract managing the matching engine.
 contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAaveStorage {
     using DoubleLinkedList for DoubleLinkedList.List;
