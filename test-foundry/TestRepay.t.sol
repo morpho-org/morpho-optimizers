@@ -102,9 +102,17 @@ contract TestRepay is TestSetup {
         testEquality(onPoolSupplier, 0);
     }
 
-    //   - 4.2.2 - There are NMAX (or less) borrowers `onPool` available to replace him `inP2P`, they borrow enough to cover for the repaid liquidity.
-    //             First, his debt `onPool` is repaid, his matched liquidity is replaced by NMAX (or less) borrowers up to his repaid amount.
+    // //   - 4.2.2 - There are NMAX (or less) borrowers `onPool` available to replace him `inP2P`, they borrow enough to cover for the repaid liquidity.
+    // //             First, his debt `onPool` is repaid, his matched liquidity is replaced by NMAX (or less) borrowers up to his repaid amount.
     function test_repay_4_2_2() public {
+        PositionsManagerForAaveStorage.MGTC memory newMgtc = PositionsManagerForAaveStorage.MGTC({
+            supply: type(uint64).max,
+            borrow: type(uint64).max,
+            withdraw: type(uint64).max,
+            repay: type(uint64).max
+        });
+        positionsManager.setMgtc(newMgtc);
+
         uint256 suppliedAmount = 10000 ether;
         uint256 borrowedAmount = 2 * suppliedAmount;
         uint256 collateral = 2 * borrowedAmount;
@@ -139,7 +147,6 @@ contract TestRepay is TestSetup {
 
         // NMAX borrowers have debt waiting on pool
         uint8 NMAX = 20;
-        positionsManager.setNMAX(NMAX);
         createSigners(NMAX);
 
         uint256 inP2P;
@@ -282,6 +289,14 @@ contract TestRepay is TestSetup {
     //           Finally, we proceed to NMAX `unmatch supplier` for an amount equal to the remaining to withdraw.
     //           ⚠️ most gas expensive repay scenario.
     function test_repay_4_2_4() public {
+        PositionsManagerForAaveStorage.MGTC memory newMgtc = PositionsManagerForAaveStorage.MGTC({
+            supply: type(uint64).max,
+            borrow: type(uint64).max,
+            withdraw: type(uint64).max,
+            repay: type(uint64).max
+        });
+        positionsManager.setMgtc(newMgtc);
+
         uint256 suppliedAmount = 10000 ether;
         uint256 borrowedAmount = 2 * suppliedAmount;
         uint256 collateral = 2 * borrowedAmount;
@@ -316,7 +331,6 @@ contract TestRepay is TestSetup {
 
         // NMAX borrowers have borrowerAmount/2 (cumulated) of debt waiting on pool
         uint8 NMAX = 20;
-        positionsManager.setNMAX(NMAX);
         createSigners(NMAX);
 
         uint256 amountPerBorrower = (borrowedAmount - suppliedAmount) / (2 * (NMAX - 1));

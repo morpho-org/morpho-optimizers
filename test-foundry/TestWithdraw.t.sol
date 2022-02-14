@@ -122,6 +122,14 @@ contract TestWithdraw is TestSetup {
     // 3.3.2 - There are NMAX (or less) suppliers onPool available to replace him inP2P, they supply enough to cover for the withdrawn liquidity.
     // First, his liquidity onPool is taken, his matched is replaced by NMAX (or less) suppliers up to his withdrawal amount.
     function test_withdraw_3_3_2() public {
+        PositionsManagerForAaveStorage.MGTC memory newMgtc = PositionsManagerForAaveStorage.MGTC({
+            supply: type(uint64).max,
+            borrow: type(uint64).max,
+            withdraw: type(uint64).max,
+            repay: type(uint64).max
+        });
+        positionsManager.setMgtc(newMgtc);
+
         uint256 borrowedAmount = 100000 ether;
         uint256 suppliedAmount = 2 * borrowedAmount;
         uint256 collateral = 2 * borrowedAmount;
@@ -156,7 +164,6 @@ contract TestWithdraw is TestSetup {
 
         // NMAX-1 suppliers have up to suppliedAmount waiting on pool
         uint8 NMAX = 20;
-        positionsManager.setNMAX(NMAX);
         createSigners(NMAX);
 
         uint256 amountPerSupplier = (suppliedAmount - borrowedAmount) / (NMAX - 1);
@@ -287,6 +294,14 @@ contract TestWithdraw is TestSetup {
     //         Finally, we proceed to NMAX `unmatch borrower` for an amount equal to the remaining to withdraw.
     //         ⚠️ most gas expensive withdraw scenario.
     function test_withdraw_3_3_4() public {
+        PositionsManagerForAaveStorage.MGTC memory newMgtc = PositionsManagerForAaveStorage.MGTC({
+            supply: type(uint64).max,
+            borrow: type(uint64).max,
+            withdraw: type(uint64).max,
+            repay: type(uint64).max
+        });
+        positionsManager.setMgtc(newMgtc);
+
         uint256 borrowedAmount = 100000 ether;
         uint256 suppliedAmount = 2 * borrowedAmount;
         uint256 collateral = 2 * borrowedAmount;
@@ -321,7 +336,6 @@ contract TestWithdraw is TestSetup {
 
         // NMAX-1 suppliers have up to suppliedAmount/2 waiting on pool
         uint8 NMAX = 20;
-        positionsManager.setNMAX(NMAX);
         createSigners(NMAX);
 
         uint256 amountPerSupplier = (suppliedAmount - borrowedAmount) / (2 * (NMAX - 1));
