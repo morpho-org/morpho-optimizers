@@ -158,17 +158,26 @@ contract TestGovernance is TestSetup {
     }
 
     // Only MarketsaManager's Owner should set NMAX
-    function test_should_set_nmax() public {
-        uint8 newNMAX = 30;
+    function test_should_set_mgtc() public {
+        PositionsManagerForAaveStorage.MGTC memory newMgtc = PositionsManagerForAaveStorage.MGTC({
+            supply: 1,
+            borrow: 1,
+            withdraw: 1,
+            repay: 1
+        });
 
-        positionsManager.setNMAX(newNMAX);
-        assertEq(positionsManager.NMAX(), newNMAX);
+        positionsManager.setMgtc(newMgtc);
+        (uint64 supply, uint64 borrow, uint64 withdraw, uint64 repay) = positionsManager.mgtc();
+        assertEq(supply, newMgtc.supply);
+        assertEq(borrow, newMgtc.borrow);
+        assertEq(withdraw, newMgtc.withdraw);
+        assertEq(repay, newMgtc.repay);
 
         hevm.expectRevert(abi.encodeWithSignature("OnlyMarketsManagerOwner()"));
-        supplier1.setNMAX(newNMAX);
+        supplier1.setMgtc(newMgtc);
 
         hevm.expectRevert(abi.encodeWithSignature("OnlyMarketsManagerOwner()"));
-        borrower1.setNMAX(newNMAX);
+        borrower1.setMgtc(newMgtc);
     }
 
     // Only MarketsaManager's Owner should set NDS
