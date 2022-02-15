@@ -7,17 +7,13 @@ import "@contracts/aave/RewardsManager.sol";
 
 contract User {
     PositionsManagerForAave internal positionsManager;
-    MarketsManagerForAave internal marketsManager;
-    RewardsManager internal rewardsManager;
+    IMarketsManagerForAave internal marketsManager;
+    IRewardsManager internal rewardsManager;
 
-    constructor(
-        PositionsManagerForAave _positionsManager,
-        MarketsManagerForAave _marketsManager,
-        RewardsManager _rewardsManager
-    ) {
+    constructor(PositionsManagerForAave _positionsManager) {
         positionsManager = _positionsManager;
-        marketsManager = _marketsManager;
-        rewardsManager = _rewardsManager;
+        marketsManager = IMarketsManagerForAave(positionsManager.marketsManager());
+        rewardsManager = IRewardsManager(positionsManager.rewardsManager());
     }
 
     receive() external payable {}

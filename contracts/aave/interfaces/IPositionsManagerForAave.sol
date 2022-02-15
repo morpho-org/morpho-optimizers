@@ -9,8 +9,6 @@ interface IPositionsManagerForAave {
         uint256 onPool;
     }
 
-    function createMarket(address) external returns (uint256[] memory);
-
     function getUserMaxCapacitiesForAsset(address _user, address _poolTokenAddress)
         external
         view

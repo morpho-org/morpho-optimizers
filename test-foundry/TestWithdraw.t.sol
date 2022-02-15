@@ -85,16 +85,10 @@ contract TestWithdraw is TestSetup {
             address(supplier1)
         );
 
-        emit log_named_uint("inP2PSupplier", inP2PSupplier);
-        emit log_named_uint("onPoolSupplier", onPoolSupplier);
-
         (uint256 inP2PBorrower, uint256 onPoolBorrower) = positionsManager.borrowBalanceInOf(
             borrow.poolToken,
             address(borrower1)
         );
-
-        emit log_named_uint("inP2PBorrower", inP2PSupplier);
-        emit log_named_uint("onPoolBorrower", onPoolSupplier);
 
         uint256 expectedOnPool = onPoolSupplierBefore +
             underlyingToScaledBalance(

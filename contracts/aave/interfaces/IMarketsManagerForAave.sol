@@ -4,9 +4,11 @@ pragma solidity 0.8.7;
 interface IMarketsManagerForAave {
     function owner() external returns (address);
 
+    function createMarket(address _underlyingTokenAddress, uint256 _threshold) external;
+
     function isCreated(address _marketAddress) external returns (bool);
 
-    function noP2P(address _marketAddress) external view returns (bool);
+    function setNoP2P(address _marketAddress, bool _noP2P) external;
 
     function supplyP2PSPY(address _marketAddress) external returns (uint256);
 

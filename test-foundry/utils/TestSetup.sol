@@ -128,11 +128,9 @@ contract TestSetup is Config, Utils, HevmHelper {
         borrower3 = borrowers[2];
     }
 
-    /**
-     * @dev Call create market, add the poolToken to pools list, and add the labels for logs.
-     * @param _poolToken poolToken address
-     * @param _threshold threshold for this poolToken
-     */
+    /// @dev Call create market, add the poolToken to pools list, and add the labels for logs.
+    /// @param _poolToken poolToken address
+    /// @param _threshold threshold for this poolToken
     function createMarket(address _poolToken, uint256 _threshold) internal {
         address underlying = IAToken(_poolToken).UNDERLYING_ASSET_ADDRESS();
 
@@ -145,20 +143,16 @@ contract TestSetup is Config, Utils, HevmHelper {
         hevm.label(underlying, ERC20(underlying).symbol());
     }
 
-    /**
-     * @dev Fill all user's balances of tokens in pools with uint128 max value.
-     * @param _user  user address
-     */
+    /// @dev Fill all user's balances of tokens in pools with uint128 max value.
+    /// @param _user user address
     function fillBalances(address _user) internal {
         for (uint256 i = 0; i < pools.length; i++) {
             writeBalanceOf(_user, IAToken(pools[i]).UNDERLYING_ASSET_ADDRESS(), type(uint128).max);
         }
     }
 
-    /**
-     * @dev Create signers and fill their balances.
-     * @param _nbOfSigners   number of signers to add
-     */
+    /// @dev Create signers and fill their balances.
+    /// @param _nbOfSigners number of signers to add
     function createSigners(uint8 _nbOfSigners) internal {
         while (borrowers.length < _nbOfSigners) {
             borrowers.push(new User(positionsManager, marketsManager, rewardsManager));
@@ -169,13 +163,15 @@ contract TestSetup is Config, Utils, HevmHelper {
         }
     }
 
-    /**
-     * @dev Returns an amount which is greater than the supplied asset threshold.
-     * @notice It caps the amount to 15 billions
-     * @param _amount    amount of asset
-     * @param _supplyAsset   aToken address
-     */
-    function getSupplyAmount(uint256 _amount, address _supplyAsset) internal returns (uint256) {
+    /// @dev Returns an amount which is greater than the supplied asset threshold.
+    /// @notice It caps the amount to 15 billions
+    /// @param _amount amount of asset
+    /// @param _supplyAsset aToken address
+    function getSupplyAmount(uint256 _amount, address _supplyAsset)
+        internal
+        view
+        returns (uint256)
+    {
         address underlying = IAToken(_supplyAsset).UNDERLYING_ASSET_ADDRESS();
         _amount = denormalizeAmount(_amount, underlying);
 
@@ -185,17 +181,13 @@ contract TestSetup is Config, Utils, HevmHelper {
             : getValueOfIn(_amount, underlying, usdc);
         uint256 value15b = 15 * 10**(6 + 9);
         if (amountInUsdc > value15b) {
-            emit log_string("amountInUsdc > value15b");
             _amount = underlying == usdc ? value15b : getValueOfIn(value15b, usdc, underlying);
-            emit log_named_decimal_uint("new amount", _amount, ERC20(underlying).decimals());
         }
 
         // Check that amount is greater than threshold
         uint256 threshold = positionsManager.threshold(_supplyAsset);
         if (_amount < threshold) {
-            emit log_string("_amount < threshold");
             _amount += threshold + 1;
-            emit log_named_decimal_uint("new amount", _amount, ERC20(underlying).decimals());
         }
 
         return _amount;
@@ -207,18 +199,16 @@ contract TestSetup is Config, Utils, HevmHelper {
         return decimals == 18 ? _amount : _amount / 10**(18 - decimals);
     }
 
-    /**
-     * @dev Returns the amount, pool token address and underlying address for a supplied asset.
-     * @notice An event with the token symbol is emmitted for easier debug.
-     * @param _amount    amount to check
-     * @param _index     index of pool token
-     * @param _useUsdt   use USDT as supply token
-     */
+    /// @dev Returns the amount, pool token address and underlying address for a supplied asset.
+    /// @notice An event with the token symbol is emmitted for easier debug.
+    /// @param _amount amount to check
+    /// @param _index index of pool token
+    /// @param _useUsdt use USDT as supply token
     function getSupplyAsset(
         uint256 _amount,
         uint8 _index,
         bool _useUsdt
-    ) internal returns (Asset memory) {
+    ) internal view returns (Asset memory) {
         uint256 index = _index % pools.length;
 
         if (!_useUsdt && pools[index] == aUsdt) {
@@ -226,7 +216,6 @@ contract TestSetup is Config, Utils, HevmHelper {
         }
 
         address underlying = IAToken(pools[index]).UNDERLYING_ASSET_ADDRESS();
-        emit log_named_string("supply", ERC20(underlying).symbol());
 
         Asset memory asset = Asset(
             getSupplyAmount(_amount, pools[index]),
@@ -237,49 +226,31 @@ contract TestSetup is Config, Utils, HevmHelper {
         return asset;
     }
 
-    /**
-     * @dev Returns the pool token address and underlying address of a borrowed asset.
-     * @notice The pool token will be different from the supply pool token.
-     * @notice An event with the token symbol is emmitted for easier debug.
-     * @param _borrowIndex   index of token
-     * @param _supplyPoolToken   pool token for supply
-     */
-    function getBorrowAsset(uint8 _borrowIndex, address _supplyPoolToken)
-        internal
-        returns (Asset memory)
-    {
+    /// @dev Returns the pool token address and underlying address of a borrowed asset.
+    /// @notice The pool token will be different from the supply pool token.
+    /// @notice An event with the token symbol is emmitted for easier debug.
+    /// @param _borrowIndex index of token
+    function getBorrowAsset(uint8 _borrowIndex) internal view returns (Asset memory) {
         uint256 borrowIndex = _borrowIndex % pools.length;
 
-        // Check borrow token is different from supply token
-        if (pools[borrowIndex] == _supplyPoolToken) {
-            if (borrowIndex == 0) {
-                borrowIndex = pools.length - 1;
-            } else {
-                borrowIndex--;
-            }
-        }
-
         address underlying = IAToken(pools[borrowIndex]).UNDERLYING_ASSET_ADDRESS();
-        emit log_named_string("borrow", ERC20(underlying).symbol());
 
         return Asset(0, pools[borrowIndex], underlying);
     }
 
-    /**
-     * @dev Returns the supply and borrow asset, checking for threshold and borrow threshold.
-     * @dev The borrow amount is set to the maximum borrowable minus 10%.
-     * @notice A direct deposit is done to AAVE to ensure enough liquidity to borrow.
-     * @param _amount    amount
-     * @param _supplyIndex   index of pool token supply
-     * @param _borrowIndex   index of pool token borrow
-     */
+    /// @dev Returns the supply and borrow asset, checking for threshold and borrow threshold.
+    /// @dev The borrow amount is set to the maximum borrowable minus 10%.
+    /// @notice A direct deposit is done to AAVE to ensure enough liquidity to borrow.
+    /// @param _amount amount
+    /// @param _supplyIndex index of pool token supply
+    /// @param _borrowIndex index of pool token borrow
     function getAssets(
         uint256 _amount,
         uint8 _supplyIndex,
         uint8 _borrowIndex
     ) internal returns (Asset memory, Asset memory) {
         Asset memory supply = getSupplyAsset(_amount, _supplyIndex, false);
-        Asset memory borrow = getBorrowAsset(_borrowIndex, supply.poolToken);
+        Asset memory borrow = getBorrowAsset(_borrowIndex);
 
         uint256 threshold = positionsManager.threshold(borrow.poolToken);
 
@@ -291,42 +262,20 @@ contract TestSetup is Config, Utils, HevmHelper {
         if (borrow.amount < threshold) {
             supply.amount += (supply.amount * threshold) / borrow.amount;
             borrow.amount += threshold;
-
-            emit log_named_decimal_uint(
-                "max to borrow after reajust",
-                getMaxToBorrow(supply.amount, supply.underlying, borrow.underlying),
-                ERC20(borrow.underlying).decimals()
-            );
         }
 
         // Ensure enough liquidity in Aave
-        supplier3.approve(
-            borrow.underlying,
-            address(lendingPool),
-            depositMultiplier * borrow.amount
-        );
-        supplier3.deposit(borrow.underlying, depositMultiplier * borrow.amount);
-
-        emit log_named_decimal_uint(
-            "supply.amount",
-            supply.amount,
-            ERC20(supply.underlying).decimals()
-        );
-        emit log_named_decimal_uint(
-            "borrow.amount",
-            borrow.amount,
-            ERC20(borrow.underlying).decimals()
-        );
+        writeBalanceOf(address(this), borrow.underlying, type(uint128).max);
+        ERC20(borrow.underlying).approve(address(lendingPool), depositMultiplier * borrow.amount);
+        lendingPool.deposit(borrow.underlying, depositMultiplier * borrow.amount);
 
         return (supply, borrow);
     }
 
-    /**
-     * @dev Returns the value of `_amount` token unit in another unit.
-     * @param _amount value of source token
-     * @param _sourceUnderlying unit of source token
-     * @param _targetUnderlying unit of target token
-     */
+    /// @dev Returns the value of `_amount` token unit in another unit.
+    /// @param _amount value of source token
+    /// @param _sourceUnderlying unit of source token
+    /// @param _targetUnderlying unit of target token
     function getValueOfIn(
         uint256 _amount,
         address _sourceUnderlying,
@@ -335,19 +284,18 @@ contract TestSetup is Config, Utils, HevmHelper {
         uint256 sourcePrice = oracle.getAssetPrice(_sourceUnderlying);
         uint256 targetPrice = oracle.getAssetPrice(_targetUnderlying);
 
-        uint256 amount = (((_amount * sourcePrice) / targetPrice) *
-            10**ERC20(_targetUnderlying).decimals()) / 10**ERC20(_sourceUnderlying).decimals();
+        uint256 amount = ((_amount * sourcePrice) * 10**ERC20(_targetUnderlying).decimals()) /
+            10**ERC20(_sourceUnderlying).decimals() /
+            targetPrice;
 
         return amount;
     }
 
-    /**
-     * @dev Returns the maximum to borrow providing `_amount`of supply token.
-     * @notice The result is in borrow underlying token unit.
-     * @param _amount amount of supplied token
-     * @param _supplyUnderlying supply underlying
-     * @param _borrowUnderlying borrow underlying
-     */
+    /// @dev Returns the maximum to borrow providing `_amount`of supply token.
+    /// @notice The result is in borrow underlying token unit.
+    /// @param _amount amount of supplied token
+    /// @param _supplyUnderlying supply underlying
+    /// @param _borrowUnderlying borrow underlying
     function getMaxToBorrow(
         uint256 _amount,
         address _supplyUnderlying,
