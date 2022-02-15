@@ -271,4 +271,17 @@ contract TestRewards is TestSetup {
         assertGt(morphoBalanceAfter, morphoBalanceBefore);
         assertEq(rewardBalanceBefore, rewardBalanceAfter);
     }
+
+    function test_swap_with_too_much_slippage() public {
+        uint256 toSupply = 1000 * WAD;
+        supplier1.approve(dai, toSupply);
+        supplier1.supply(aDai, toSupply);
+
+        address[] memory aDaiInArray = new address[](1);
+        aDaiInArray[0] = aDai;
+
+        hevm.warp(block.timestamp + 365 days);
+        hevm.expectRevert("Too little received");
+        supplier1.claimRewards(aDaiInArray, true);
+    }
 }
