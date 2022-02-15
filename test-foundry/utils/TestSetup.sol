@@ -156,6 +156,15 @@ contract TestSetup is Config, Utils, HevmHelper {
     }
 
     /**
+     * @dev Returns a random number in basis points
+     * @param _key random key for the random number
+     */
+    function getBasisPoints(address _key) internal returns (uint256 _amount) {
+        _amount = uint256(keccak256(abi.encodePacked(_key))) % MAX_BASIS_POINTS;
+        return _amount;
+    }
+
+    /**
      * @dev Create signers and fill their balances.
      * @param _nbOfSigners   number of signers to add
      */
@@ -267,7 +276,7 @@ contract TestSetup is Config, Utils, HevmHelper {
 
     /**
      * @dev Returns the supply and borrow asset, checking for threshold and borrow threshold.
-     * @dev The borrow amount is set to the maximum borrowable minus 10%.
+     * @dev The borrow amount is a random proportion of the MaxToBorrow
      * @notice A direct deposit is done to AAVE to ensure enough liquidity to borrow.
      * @param _amount    amount
      * @param _supplyIndex   index of pool token supply
@@ -284,19 +293,14 @@ contract TestSetup is Config, Utils, HevmHelper {
         uint256 threshold = positionsManager.threshold(borrow.poolToken);
 
         borrow.amount =
-            (getMaxToBorrow(supply.amount, supply.underlying, borrow.underlying) * 90) /
-            100;
+            (getMaxToBorrow(supply.amount, supply.underlying, borrow.underlying) *
+                getBasisPoints(address(supplier3))) /
+            MAX_BASIS_POINTS;
 
         // Adjust the amount so that borrow amount > threshold
         if (borrow.amount < threshold) {
             supply.amount += (supply.amount * threshold) / borrow.amount;
             borrow.amount += threshold;
-
-            emit log_named_decimal_uint(
-                "max to borrow after reajust",
-                getMaxToBorrow(supply.amount, supply.underlying, borrow.underlying),
-                ERC20(borrow.underlying).decimals()
-            );
         }
 
         // Ensure enough liquidity in Aave
@@ -306,18 +310,6 @@ contract TestSetup is Config, Utils, HevmHelper {
             depositMultiplier * borrow.amount
         );
         supplier3.deposit(borrow.underlying, depositMultiplier * borrow.amount);
-
-        emit log_named_decimal_uint(
-            "supply.amount",
-            supply.amount,
-            ERC20(supply.underlying).decimals()
-        );
-        emit log_named_decimal_uint(
-            "borrow.amount",
-            borrow.amount,
-            ERC20(borrow.underlying).decimals()
-        );
-
         return (supply, borrow);
     }
 
