@@ -8,6 +8,8 @@ interface IMarketsManagerForAave {
 
     function isCreated(address _marketAddress) external returns (bool);
 
+    function noP2P(address _marketAddress) external view returns (bool);
+
     function setNoP2P(address _marketAddress, bool _noP2P) external;
 
     function supplyP2PSPY(address _marketAddress) external returns (uint256);
