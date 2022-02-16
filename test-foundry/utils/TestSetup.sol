@@ -48,10 +48,10 @@ contract TestSetup is Config, Utils {
 
     function setUp() public {
         PositionsManagerForAave.MGTC memory mgtc = PositionsManagerForAaveStorage.MGTC({
-            supply: 1.5e6,
-            borrow: 1.5e6,
-            withdraw: 3e6,
-            repay: 3e6
+            supply: 3e6,
+            borrow: 3e6,
+            withdraw: 1.5e6,
+            repay: 1.5e6
         });
 
         marketsManager = new MarketsManagerForAave(lendingPoolAddressesProviderAddress);
@@ -148,5 +148,23 @@ contract TestSetup is Config, Utils {
             writeBalanceOf(address(suppliers[suppliers.length - 1]), dai, type(uint256).max / 2);
             writeBalanceOf(address(suppliers[suppliers.length - 1]), usdc, type(uint256).max / 2);
         }
+    }
+
+    function createAndSetCustomPriceOracle() public returns (SimplePriceOracle) {
+        SimplePriceOracle customOracle = new SimplePriceOracle();
+
+        hevm.store(
+            address(lendingPoolAddressesProvider),
+            keccak256(abi.encode(bytes32("PRICE_ORACLE"), 2)),
+            bytes32(uint256(uint160(address(customOracle))))
+        );
+
+        for (uint256 i = 0; i < pools.length; i++) {
+            address underlying = IAToken(pools[i]).UNDERLYING_ASSET_ADDRESS();
+
+            customOracle.setDirectPrice(underlying, oracle.getAssetPrice(underlying));
+        }
+
+        return customOracle;
     }
 }
