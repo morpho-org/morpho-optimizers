@@ -10,7 +10,7 @@ import "@contracts/aave/interfaces/aave/IPriceOracleGetter.sol";
 import "@contracts/aave/PositionsManagerForAave.sol";
 import "@contracts/aave/MarketsManagerForAave.sol";
 import "@contracts/aave/RewardsManager.sol";
-import "@contracts/aave/SwapManager.sol";
+import "@contracts/common/SwapManager.sol";
 import "@config/Config.sol";
 import "./HEVM.sol";
 import "./Utils.sol";
