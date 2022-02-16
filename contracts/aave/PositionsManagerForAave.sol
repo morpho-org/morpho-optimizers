@@ -474,7 +474,6 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
     {
         _handleMembership(_poolTokenAddress, msg.sender);
         _checkUserLiquidity(msg.sender, _poolTokenAddress, 0, _amount);
-        marketsManager.updateRates(_poolTokenAddress);
         IERC20 underlyingToken = IERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
         uint256 remainingToBorrowOnPool = _amount;
 
