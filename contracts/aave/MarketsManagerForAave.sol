@@ -107,7 +107,8 @@ contract MarketsManagerForAave is Ownable {
 
     /// Modifiers ///
 
-    /// @dev Prevents to update a market not created yet.
+    /// @notice Prevents to update a market not created yet.
+    /// @param _marketAddress The address of the market to check.
     modifier isMarketCreated(address _marketAddress) {
         if (!isCreated[_marketAddress]) revert MarketNotCreated();
         _;
@@ -245,7 +246,7 @@ contract MarketsManagerForAave is Ownable {
             .supplyP2PDelta(_marketAddress)
             .rayMul(supplyP2PExchangeRate[_marketAddress])
             .rayDiv(normalizedIncome)
-            .rayDiv(positionsManager.supplyP2PAmount(_marketAddress)); // in RAY
+            .rayDiv(positionsManager.supplyP2PAmount(_marketAddress)); // In ray
 
             supplyP2PExchangeRate[_marketAddress] = supplyP2PExchangeRate[_marketAddress].rayMul(
                 (
@@ -276,7 +277,7 @@ contract MarketsManagerForAave is Ownable {
             .borrowP2PDelta(_marketAddress)
             .rayMul(borrowP2PExchangeRate[_marketAddress])
             .rayDiv(normalizedVariableDebt)
-            .rayDiv(positionsManager.borrowP2PAmount(_marketAddress)); // in RAY
+            .rayDiv(positionsManager.borrowP2PAmount(_marketAddress)); // In ray
 
             borrowP2PExchangeRate[_marketAddress] = borrowP2PExchangeRate[_marketAddress].rayMul(
                 (

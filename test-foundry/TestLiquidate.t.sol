@@ -101,24 +101,4 @@ contract TestLiquidate is TestSetup {
         testEquality(onPoolBorrower, expectedOnPool);
         assertEq(inP2PBorrower, 0);
     }
-
-    // ----------
-
-    function createAndSetCustomPriceOracle() public returns (SimplePriceOracle) {
-        SimplePriceOracle customOracle = new SimplePriceOracle();
-
-        hevm.store(
-            address(lendingPoolAddressesProvider),
-            keccak256(abi.encode(bytes32("PRICE_ORACLE"), 2)),
-            bytes32(uint256(uint160(address(customOracle))))
-        );
-
-        for (uint256 i = 0; i < pools.length; i++) {
-            address underlying = IAToken(pools[i]).UNDERLYING_ASSET_ADDRESS();
-
-            customOracle.setDirectPrice(underlying, oracle.getAssetPrice(underlying));
-        }
-
-        return customOracle;
-    }
 }

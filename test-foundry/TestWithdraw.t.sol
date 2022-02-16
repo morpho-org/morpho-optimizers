@@ -407,6 +407,14 @@ contract TestWithdraw is TestSetup {
 
     // Delta hard withdraw
     function test_withdraw_3_3_5() public {
+        PositionsManagerForAaveStorage.MGTC memory newMgtc = PositionsManagerForAaveStorage.MGTC({
+            supply: 3e6,
+            borrow: 3e6,
+            withdraw: 1.3e6, // Allows only 10 unmatch borrowers
+            repay: 3e6
+        });
+        positionsManager.setMgtc(newMgtc);
+
         uint256 borrowedAmount = 1 ether;
         uint256 collateral = 2 * borrowedAmount;
         uint256 suppliedAmount = 20 * borrowedAmount + 7;
@@ -416,14 +424,13 @@ contract TestWithdraw is TestSetup {
         supplier1.approve(dai, suppliedAmount);
         supplier1.supply(aDai, suppliedAmount);
 
-        positionsManager.setNMAX(10);
         createSigners(30);
 
         // 2 * NMAX borrowers borrow borrowedAmount
         for (uint256 i = 0; i < 20; i++) {
             borrowers[i].approve(usdc, to6Decimals(collateral));
             borrowers[i].supply(aUsdc, to6Decimals(collateral));
-            borrowers[i].borrow(aDai, borrowedAmount);
+            borrowers[i].borrow(aDai, borrowedAmount, type(uint64).max);
         }
 
         {
@@ -469,7 +476,11 @@ contract TestWithdraw is TestSetup {
                 expectedBorrowP2PDeltaInUnderlying,
                 lendingPool.getReserveNormalizedVariableDebt(dai)
             );
-            testEquality(positionsManager.borrowP2PDelta(aDai), expectedBorrowP2PDelta);
+            testEquality(
+                positionsManager.borrowP2PDelta(aDai),
+                expectedBorrowP2PDelta,
+                "borrow Delta not expected 1"
+            );
 
             // Borrow delta matching by new supplier
             supplier2.approve(dai, expectedBorrowP2PDeltaInUnderlying / 2);
@@ -484,9 +495,13 @@ contract TestWithdraw is TestSetup {
                 supplyP2PExchangeRate
             );
 
-            testEquality(positionsManager.borrowP2PDelta(aDai), expectedBorrowP2PDelta / 2);
-            testEquality(onPoolSupplier, 0);
-            testEquality(inP2PSupplier, expectedSupplyBalanceInP2P);
+            testEquality(
+                positionsManager.borrowP2PDelta(aDai),
+                expectedBorrowP2PDelta / 2,
+                "borrow Delta not expected 2"
+            );
+            testEquality(onPoolSupplier, 0, "on pool supplier not 0");
+            testEquality(inP2PSupplier, expectedSupplyBalanceInP2P, "in P2P supplier not expected");
         }
 
         {
