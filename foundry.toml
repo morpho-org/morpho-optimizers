@@ -1,8 +1,0 @@
-[default]
-src='test-foundry'
-verbosity=3
-fuzz_runs=1
-
-[ci]
-verbosity=2
-fuzz_runs=256
