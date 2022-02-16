@@ -334,30 +334,25 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
 
     /// @dev Claims rewards for the given assets and the unclaimed rewards.
     /// @param _assets The assets to claim rewards from (aToken or variable debt token).
-    /// @param _toSwap Whether or not to swap trewards okens for Morpho token.
-    function claimRewards(address[] calldata _assets, bool _toSwap) external {
+    /// @param _swap Whether or not to swap rewards okens for Morpho token.
+    function claimRewards(address[] calldata _assets, bool _swap) external {
         uint256 amountToClaim = rewardsManager.claimRewards(_assets, type(uint256).max, msg.sender);
 
-        if (amountToClaim > 0) {
+        if (_swap) {
             uint256 amountClaimed = aaveIncentivesController.claimRewards(
                 _assets,
                 amountToClaim,
-                address(this)
+                address(swapManager)
             );
-            IERC20 rewardToken = IERC20(aaveIncentivesController.REWARD_TOKEN());
-
-            if (_toSwap) {
-                rewardToken.safeIncreaseAllowance(address(swapManager), amountClaimed);
-                uint256 amountOut = swapManager.swapToMorphoToken(
-                    address(rewardToken),
-                    amountClaimed,
-                    msg.sender
-                );
-                emit RewardsClaimedAndSwapped(msg.sender, amountClaimed, amountOut);
-            } else {
-                rewardToken.transfer(msg.sender, amountClaimed);
-                emit RewardsClaimed(msg.sender, amountClaimed);
-            }
+            uint256 amountOut = swapManager.swapToMorphoToken(amountClaimed, msg.sender);
+            emit RewardsClaimedAndSwapped(msg.sender, amountClaimed, amountOut);
+        } else {
+            uint256 amountClaimed = aaveIncentivesController.claimRewards(
+                _assets,
+                amountToClaim,
+                msg.sender
+            );
+            emit RewardsClaimed(msg.sender, amountClaimed);
         }
     }
 

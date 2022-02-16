@@ -59,7 +59,7 @@ contract TestSetup is Config, Utils {
         writeBalanceOf(address(uniswapPoolCreator), weth, INITIAL_BALANCE * WAD);
         morphoToken = new MorphoToken(address(uniswapPoolCreator));
         uniswapPoolCreator.createPoolAndMintPosition(address(morphoToken));
-        swapManager = new SwapManager(address(morphoToken));
+        swapManager = new SwapManager(address(morphoToken), wmatic);
 
         marketsManager = new MarketsManagerForAave(lendingPoolAddressesProviderAddress);
         positionsManager = new PositionsManagerForAave(
