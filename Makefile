@@ -8,7 +8,7 @@ export FOUNDRY_FORK_BLOCK_NUMBER=$(fork-block-number)
 .PHONY: test
 test: node_modules
 	@echo Run all tests
-	@forge test --no-match-contract TestNmax
+	@forge test --force --no-match-contract TestNmax
 
 contract-% c-%: node_modules
 	@echo Run tests for contract $*
