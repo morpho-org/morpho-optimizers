@@ -45,6 +45,8 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         uint256 _balanceInP2P
     );
 
+    /// External ///
+
     /// @notice Matches suppliers' liquidity waiting on Aave for the given `_amount` and move it to P2P.
     /// @dev Note: p2pExchangeRates must have been updated before calling this function.
     /// @param _poolToken The pool token of the market from which to match suppliers.
@@ -55,7 +57,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         IAToken _poolToken,
         IERC20 _underlyingToken,
         uint256 _amount
-    ) public override returns (uint256 matchedSupply) {
+    ) external override returns (uint256 matchedSupply) {
         address poolTokenAddress = address(_poolToken);
         uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(
             address(_underlyingToken)
@@ -97,7 +99,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
     /// @dev Note: p2pExchangeRates must have been updated before calling this function.
     /// @param _poolTokenAddress The address of the market from which to unmatch suppliers.
     /// @param _amount The amount to search for (in underlying).
-    function unmatchSuppliers(address _poolTokenAddress, uint256 _amount) public override {
+    function unmatchSuppliers(address _poolTokenAddress, uint256 _amount) external override {
         IAToken poolToken = IAToken(_poolTokenAddress);
         IERC20 underlyingToken = IERC20(poolToken.UNDERLYING_ASSET_ADDRESS());
         uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(address(underlyingToken));
@@ -143,7 +145,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         IAToken _poolToken,
         IERC20 _underlyingToken,
         uint256 _amount
-    ) public override returns (uint256 matchedBorrow) {
+    ) external override returns (uint256 matchedBorrow) {
         address poolTokenAddress = address(_poolToken);
         uint256 normalizedVariableDebt = lendingPool.getReserveNormalizedVariableDebt(
             address(_underlyingToken)
@@ -183,7 +185,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
     /// @dev Note: p2pExchangeRates must have been updated before calling this function.
     /// @param _poolTokenAddress The address of the market from which to unmatch borrowers.
     /// @param _amount The amount to unmatch (in underlying).
-    function unmatchBorrowers(address _poolTokenAddress, uint256 _amount) public override {
+    function unmatchBorrowers(address _poolTokenAddress, uint256 _amount) external override {
         IAToken poolToken = IAToken(_poolTokenAddress);
         IERC20 underlyingToken = IERC20(poolToken.UNDERLYING_ASSET_ADDRESS());
         uint256 borrowP2PExchangeRate = marketsManager.borrowP2PExchangeRate(_poolTokenAddress);
@@ -219,6 +221,8 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         uint256 toBorrow = _amount - remainingToUnmatch;
         if (toBorrow > 0) _borrowERC20FromPool(underlyingToken, toBorrow); // Revert on error
     }
+
+    /// Public ///
 
     /// @notice Updates borrowers matching engine with the new balances of a given user.
     /// @param _poolTokenAddress The address of the market on which to update the borrowers data structure.
