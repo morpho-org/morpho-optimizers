@@ -428,6 +428,14 @@ contract TestRepay is TestSetup {
 
     // Delta hard repay
     function test_repay_4_2_5() public {
+        PositionsManagerForAaveStorage.MGTC memory newMgtc = PositionsManagerForAaveStorage.MGTC({
+            supply: 3e6,
+            borrow: 3e6,
+            withdraw: 3e6,
+            repay: 1.2e6 // Allows only 10 unmatch suppliers
+        });
+        positionsManager.setMgtc(newMgtc);
+
         uint256 suppliedAmount = 1 ether;
         uint256 borrowedAmount = 20 * suppliedAmount;
         uint256 collateral = 2 * borrowedAmount;
@@ -438,7 +446,6 @@ contract TestRepay is TestSetup {
         borrower1.supply(aUsdc, to6Decimals(collateral));
         borrower1.borrow(aDai, borrowedAmount);
 
-        positionsManager.setNMAX(10);
         createSigners(30);
 
         // 2 * NMAX suppliers supply suppliedAmount

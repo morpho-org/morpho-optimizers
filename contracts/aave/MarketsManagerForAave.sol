@@ -110,7 +110,8 @@ contract MarketsManagerForAave is Ownable {
 
     /// Modifiers ///
 
-    /// @dev Prevents to update a market not created yet.
+    /// @notice Prevents to update a market not created yet.
+    /// @param _marketAddress The address of the market to check.
     modifier isMarketCreated(address _marketAddress) {
         if (!isCreated[_marketAddress]) revert MarketNotCreated();
         _;
