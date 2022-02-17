@@ -55,35 +55,52 @@ contract PositionsManagerForAaveStorage is ReentrancyGuard, Pausable {
     mapping(address => uint256) public threshold; // Thresholds below the ones suppliers and borrowers cannot enter markets.
 
     IAaveIncentivesController public aaveIncentivesController;
-    IRewardsManager public rewardsManager;
     ILendingPoolAddressesProvider public addressesProvider;
-    ILendingPool public lendingPool;
     IProtocolDataProvider public dataProvider;
+    ILendingPool public lendingPool;
     IMarketsManagerForAave public marketsManager;
     IMatchingEngineForAave public matchingEngine;
+    IRewardsManager public rewardsManager;
     address public treasuryVault;
 
     /// Internal ///
 
     /// @notice Supplies undelrying tokens to Aave.
+    /// @param _poolTokenAddress The address of the market
     /// @param _underlyingToken The underlying token of the market to supply to.
     /// @param _amount The amount of token (in underlying).
-    function _supplyERC20ToPool(IERC20 _underlyingToken, uint256 _amount) internal {
+    function _supplyERC20ToPool(
+        address _poolTokenAddress,
+        IERC20 _underlyingToken,
+        uint256 _amount
+    ) internal {
         _underlyingToken.safeIncreaseAllowance(address(lendingPool), _amount);
         lendingPool.deposit(address(_underlyingToken), _amount, address(this), NO_REFERRAL_CODE);
+        marketsManager.updateSPYs(_poolTokenAddress);
     }
 
     /// @notice Withdraws underlying tokens from Aave.
+    /// @param _poolTokenAddress The address of the market.
     /// @param _underlyingToken The underlying token of the market to withdraw from.
     /// @param _amount The amount of token (in underlying).
-    function _withdrawERC20FromPool(IERC20 _underlyingToken, uint256 _amount) internal {
+    function _withdrawERC20FromPool(
+        address _poolTokenAddress,
+        IERC20 _underlyingToken,
+        uint256 _amount
+    ) internal {
         lendingPool.withdraw(address(_underlyingToken), _amount, address(this));
+        marketsManager.updateSPYs(_poolTokenAddress);
     }
 
     /// @notice Borrows underlying tokens from Aave.
+    /// @param _poolTokenAddress The address of the market.
     /// @param _underlyingToken The underlying token of the market to borrow from.
     /// @param _amount The amount of token (in underlying).
-    function _borrowERC20FromPool(IERC20 _underlyingToken, uint256 _amount) internal {
+    function _borrowERC20FromPool(
+        address _poolTokenAddress,
+        IERC20 _underlyingToken,
+        uint256 _amount
+    ) internal {
         lendingPool.borrow(
             address(_underlyingToken),
             _amount,
@@ -91,13 +108,16 @@ contract PositionsManagerForAaveStorage is ReentrancyGuard, Pausable {
             NO_REFERRAL_CODE,
             address(this)
         );
+        marketsManager.updateSPYs(_poolTokenAddress);
     }
 
     /// @notice Repays underlying tokens to Aave.
+    /// @param _poolTokenAddress The address of the market.
     /// @param _underlyingToken The underlying token of the market to repay to.
     /// @param _amount The amount of token (in underlying).
     /// @param _normalizedVariableDebt The normalized variable debt on Aave.
     function _repayERC20ToPool(
+        address _poolTokenAddress,
         IERC20 _underlyingToken,
         uint256 _amount,
         uint256 _normalizedVariableDebt
@@ -119,5 +139,6 @@ contract PositionsManagerForAaveStorage is ReentrancyGuard, Pausable {
             VARIABLE_INTEREST_MODE,
             address(this)
         );
+        marketsManager.updateSPYs(_poolTokenAddress);
     }
 }

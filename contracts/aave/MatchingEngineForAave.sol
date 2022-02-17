@@ -91,7 +91,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
 
         if (matchedSupply > 0) {
             matchedSupply = Math.min(matchedSupply, _poolToken.balanceOf(address(this)));
-            _withdrawERC20FromPool(_underlyingToken, matchedSupply); // Revert on error
+            _withdrawERC20FromPool(poolTokenAddress, _underlyingToken, matchedSupply); // Revert on error
         }
     }
 
@@ -132,7 +132,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
 
         // Supply the remaining on Aave
         uint256 toSupply = _amount - remainingToUnmatch;
-        if (toSupply > 0) _supplyERC20ToPool(underlyingToken, toSupply); // Revert on error
+        if (toSupply > 0) _supplyERC20ToPool(_poolTokenAddress, underlyingToken, toSupply); // Revert on error
     }
 
     /// @notice Matches borrowers' liquidity waiting on Aave for the given `_amount` and move it to P2P.
@@ -178,7 +178,12 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         }
 
         if (matchedBorrow > 0)
-            _repayERC20ToPool(_underlyingToken, matchedBorrow, normalizedVariableDebt); // Revert on error
+            _repayERC20ToPool(
+                poolTokenAddress,
+                _underlyingToken,
+                matchedBorrow,
+                normalizedVariableDebt
+            ); // Revert on error
     }
 
     /// @notice Unmatches borrowers' liquidity in P2P for the given `_amount` and move it to Aave.
@@ -219,7 +224,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         }
 
         uint256 toBorrow = _amount - remainingToUnmatch;
-        if (toBorrow > 0) _borrowERC20FromPool(underlyingToken, toBorrow); // Revert on error
+        if (toBorrow > 0) _borrowERC20FromPool(_poolTokenAddress, underlyingToken, toBorrow); // Revert on error
     }
 
     /// Public ///

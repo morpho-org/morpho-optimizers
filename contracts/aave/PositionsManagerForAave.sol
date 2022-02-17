@@ -408,7 +408,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         isAboveThreshold(_poolTokenAddress, _amount)
     {
         _handleMembership(_poolTokenAddress, msg.sender);
-        marketsManager.updateRates(_poolTokenAddress);
+        marketsManager.updateP2PExchangeRates(_poolTokenAddress);
         IERC20 underlyingToken = IERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
         underlyingToken.safeTransferFrom(msg.sender, address(this), _amount);
         uint256 remainingToSupplyToPool = _amount;
@@ -444,7 +444,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
             supplyBalanceInOf[_poolTokenAddress][msg.sender].onPool += remainingToSupplyToPool
             .divWadByRay(normalizedIncome); // Scaled Balance
             matchingEngine.updateSuppliersDC(_poolTokenAddress, msg.sender);
-            _supplyERC20ToPool(underlyingToken, remainingToSupplyToPool); // Revert on error
+            _supplyERC20ToPool(_poolTokenAddress, underlyingToken, remainingToSupplyToPool); // Revert on error
         }
 
         emit Supplied(
@@ -509,7 +509,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
             borrowBalanceInOf[_poolTokenAddress][msg.sender].onPool += remainingToBorrowOnPool
             .divWadByRay(normalizedVariableDebt); // In adUnit
             matchingEngine.updateBorrowersDC(_poolTokenAddress, msg.sender);
-            _borrowERC20FromPool(underlyingToken, remainingToBorrowOnPool);
+            _borrowERC20FromPool(_poolTokenAddress, underlyingToken, remainingToBorrowOnPool);
         }
 
         underlyingToken.safeTransfer(msg.sender, _amount);
@@ -531,7 +531,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         nonReentrant
         whenNotPaused
     {
-        marketsManager.updateRates(_poolTokenAddress);
+        marketsManager.updateP2PExchangeRates(_poolTokenAddress);
         IAToken poolToken = IAToken(_poolTokenAddress);
 
         uint256 toWithdraw = Math.min(
@@ -551,7 +551,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
     /// @param _poolTokenAddress The address of the market the user wants to interact with.
     /// @param _amount The amount of token (in underlying).
     function repay(address _poolTokenAddress, uint256 _amount) external nonReentrant whenNotPaused {
-        marketsManager.updateRates(_poolTokenAddress);
+        marketsManager.updateP2PExchangeRates(_poolTokenAddress);
         IAToken poolToken = IAToken(_poolTokenAddress);
 
         uint256 toRepay = Math.min(
@@ -818,7 +818,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
             ); // In poolToken
             matchingEngine.updateSuppliersDC(_poolTokenAddress, _supplier);
             if (withdrawnInUnderlying > 0)
-                _withdrawERC20FromPool(underlyingToken, withdrawnInUnderlying); // Revert on error
+                _withdrawERC20FromPool(_poolTokenAddress, underlyingToken, withdrawnInUnderlying); // Revert on error
             remainingToWithdraw -= withdrawnInUnderlying;
         }
 
@@ -891,7 +891,12 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
             ); // In adUnit
             matchingEngine.updateBorrowersDC(poolTokenAddress, _user);
             if (repaidInUnderlying > 0)
-                _repayERC20ToPool(underlyingToken, repaidInUnderlying, normalizedVariableDebt); // Revert on error
+                _repayERC20ToPool(
+                    _poolTokenAddress,
+                    underlyingToken,
+                    repaidInUnderlying,
+                    normalizedVariableDebt
+                ); // Revert on error
             remainingToRepay -= repaidInUnderlying;
         }
 
@@ -985,7 +990,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
 
         for (uint256 i; i < enteredMarkets[_user].length; i++) {
             address poolTokenEntered = enteredMarkets[_user][i];
-            marketsManager.updateRates(poolTokenEntered);
+            marketsManager.updateP2PExchangeRates(poolTokenEntered);
             AssetLiquidityData memory assetData = getUserLiquidityDataForAsset(
                 _user,
                 poolTokenEntered,
