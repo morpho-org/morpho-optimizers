@@ -328,7 +328,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
     {
         IERC20 underlyingToken = IERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
         uint256 amountToClaim = underlyingToken.balanceOf(address(this));
-        underlyingToken.transfer(treasuryVault, amountToClaim);
+        underlyingToken.safeTransfer(treasuryVault, amountToClaim);
         emit ReserveFeeClaimed(_poolTokenAddress, amountToClaim);
     }
 
