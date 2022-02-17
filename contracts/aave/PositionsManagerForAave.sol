@@ -524,7 +524,6 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
     }
 
     /// @notice Withdraws underlying tokens in a specific market.
-    /// @dev Note: If `_amount` is equal to the uint256's maximum value, the whole balance is withdrawn.
     /// @param _poolTokenAddress The address of the market the user wants to interact with.
     /// @param _amount The amount in tokens to withdraw from supply.
     function withdraw(address _poolTokenAddress, uint256 _amount)
@@ -535,37 +534,36 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         marketsManager.updateRates(_poolTokenAddress);
         IAToken poolToken = IAToken(_poolTokenAddress);
 
-        // Withdraw all
-        if (_amount == type(uint256).max) {
-            _amount = _getUserSupplyBalanceInOf(
+        uint256 toWithdraw = Math.min(
+            _getUserSupplyBalanceInOf(
                 _poolTokenAddress,
                 msg.sender,
                 poolToken.UNDERLYING_ASSET_ADDRESS()
-            );
-        }
+            ),
+            _amount
+        );
 
-        _withdraw(_poolTokenAddress, _amount, msg.sender, msg.sender);
+        _withdraw(_poolTokenAddress, toWithdraw, msg.sender, msg.sender);
     }
 
     /// @notice Repays debt of the user.
     /// @dev `msg.sender` must have approved Morpho's contract to spend the underlying `_amount`.
-    /// @dev Note: If `_amount` is equal to the uint256's maximum value, the whole debt is repaid.
     /// @param _poolTokenAddress The address of the market the user wants to interact with.
     /// @param _amount The amount of token (in underlying).
     function repay(address _poolTokenAddress, uint256 _amount) external nonReentrant whenNotPaused {
         marketsManager.updateRates(_poolTokenAddress);
         IAToken poolToken = IAToken(_poolTokenAddress);
 
-        // Repay all
-        if (_amount == type(uint256).max) {
-            _amount = _getUserBorrowBalanceInOf(
+        uint256 toRepay = Math.min(
+            _getUserBorrowBalanceInOf(
                 _poolTokenAddress,
                 msg.sender,
                 poolToken.UNDERLYING_ASSET_ADDRESS()
-            );
-        }
+            ),
+            _amount
+        );
 
-        _repay(_poolTokenAddress, msg.sender, _amount);
+        _repay(_poolTokenAddress, msg.sender, toRepay);
     }
 
     /// @notice Allows someone to liquidate a position.
