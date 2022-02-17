@@ -21,4 +21,8 @@ interface IMarketsManagerForAave {
     function lastUpdateBlockNumber(address _marketAddress) external returns (uint256);
 
     function updateRates(address _marketAddress) external;
+
+    function updateP2PExchangeRates(address _marketAddress) external;
+
+    function updateSPYs(address _marketAddress) external;
 }

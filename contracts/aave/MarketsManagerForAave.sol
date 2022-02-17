@@ -103,11 +103,20 @@ contract MarketsManagerForAave is Ownable {
     /// @notice Thrown when the positionsManager is already set.
     error PositionsManagerAlreadySet();
 
+    /// @notice Thrown when only the positions manager can call the function.
+    error OnlyPositionsManager();
+
     /// Modifiers ///
 
     /// @dev Prevents to update a market not created yet.
     modifier isMarketCreated(address _marketAddress) {
         if (!isCreated[_marketAddress]) revert MarketNotCreated();
+        _;
+    }
+
+    /// @dev Prevents a user to call function only allowed for `positionsManager` owner.
+    modifier onlyPositionsManager() {
+        if (msg.sender != address(positionsManager)) revert OnlyPositionsManager();
         _;
     }
 
@@ -130,13 +139,6 @@ contract MarketsManagerForAave is Ownable {
         if (address(positionsManager) != address(0)) revert PositionsManagerAlreadySet();
         positionsManager = IPositionsManagerForAave(_positionsManager);
         emit PositionsManagerSet(_positionsManager);
-    }
-
-    /// @notice Updates the `lendingPool` and the `dataProvider`.
-    function updateAaveContracts() external {
-        dataProvider = IProtocolDataProvider(addressesProvider.getAddress(DATA_PROVIDER_ID));
-        lendingPool = ILendingPool(addressesProvider.getLendingPool());
-        emit AaveContractsUpdated(address(lendingPool), address(dataProvider));
     }
 
     /// @notice Sets the `reserveFactor`.
@@ -200,6 +202,25 @@ contract MarketsManagerForAave is Ownable {
     {
         noP2P[_marketAddress] = _noP2P;
         emit NoP2PSet(_marketAddress, _noP2P);
+    }
+
+    /// @notice Updates the `lendingPool` and the `dataProvider`.
+    function updateAaveContracts() external {
+        dataProvider = IProtocolDataProvider(addressesProvider.getAddress(DATA_PROVIDER_ID));
+        lendingPool = ILendingPool(addressesProvider.getLendingPool());
+        emit AaveContractsUpdated(address(lendingPool), address(dataProvider));
+    }
+
+    /// @notice Updates the P2P exchange rate, taking into account the Second Percentage Yield values.
+    /// @param _marketAddress The address of the market to update.
+    function updateP2PExchangeRates(address _marketAddress) external onlyPositionsManager {
+        _updateP2PExchangeRates(_marketAddress);
+    }
+
+    /// @notice Updates the P2P Second Percentage Yield of supply and borrow.
+    /// @param _marketAddress The address of the market to update.
+    function updateSPYs(address _marketAddress) external onlyPositionsManager {
+        _updateSPYs(_marketAddress);
     }
 
     /// Public ///
