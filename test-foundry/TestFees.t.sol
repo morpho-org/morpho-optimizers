@@ -48,6 +48,11 @@ contract TestFees is TestSetup {
         // Increase time so that rates update
         hevm.warp(block.timestamp + 1);
 
+        uint256 balanceBefore = IERC20(dai).balanceOf(positionsManager.treasuryVault());
+        supplier1.approve(dai, type(uint256).max);
+        supplier1.supply(aDai, 100 * WAD);
+        supplier1.borrow(aDai, 50 * WAD);
+
         DataTypes.ReserveData memory reserveData = lendingPool.getReserveData(
             IAToken(aDai).UNDERLYING_ASSET_ADDRESS()
         );
@@ -65,11 +70,6 @@ contract TestFees is TestSetup {
 
         uint256 expectedFees = (50 * WAD).rayMul(newBorrowExRate) -
             (50 * WAD).rayMul(newSupplyExRate);
-
-        uint256 balanceBefore = IERC20(dai).balanceOf(positionsManager.treasuryVault());
-        supplier1.approve(dai, type(uint256).max);
-        supplier1.supply(aDai, 100 * WAD);
-        supplier1.borrow(aDai, 50 * WAD);
 
         hevm.warp(block.timestamp + (365 days));
 
