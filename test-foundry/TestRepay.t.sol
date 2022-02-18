@@ -481,7 +481,8 @@ contract TestRepay is TestSetup {
                 expectedSupplyP2PDeltaInUnderlying,
                 lendingPool.getReserveNormalizedIncome(dai)
             );
-            testEquality(positionsManager.supplyP2PDelta(aDai), expectedSupplyP2PDelta);
+            (uint256 supplyDelta, , , ) = positionsManager.deltas(aDai);
+            testEquality(supplyDelta, expectedSupplyP2PDelta);
 
             // Supply delta matching by a new borrower
             borrower2.approve(usdc, to6Decimals(collateral));
@@ -497,7 +498,8 @@ contract TestRepay is TestSetup {
                 borrowP2PExchangeRate
             );
 
-            testEquality(positionsManager.supplyP2PDelta(aDai), expectedSupplyP2PDelta / 2);
+            (supplyDelta, , , ) = positionsManager.deltas(aDai);
+            testEquality(supplyDelta, expectedSupplyP2PDelta / 2);
             testEquality(onPoolBorrower, 0);
             testEquality(inP2PBorrower, expectedBorrowBalanceInP2P);
         }
@@ -506,9 +508,8 @@ contract TestRepay is TestSetup {
             Vars memory oldVars;
             Vars memory newVars;
 
-            oldVars.SP2PD = positionsManager.supplyP2PDelta(aDai);
+            (oldVars.SP2PD, , oldVars.SP2PA, ) = positionsManager.deltas(aDai);
             oldVars.NI = lendingPool.getReserveNormalizedIncome(dai);
-            oldVars.SP2PA = positionsManager.supplyP2PAmount(aDai);
             oldVars.SP2PER = marketsManager.supplyP2PExchangeRate(aDai);
             oldVars.SPY = marketsManager.supplyP2PSPY(aDai);
 
@@ -516,9 +517,8 @@ contract TestRepay is TestSetup {
 
             marketsManager.updateRates(aDai);
 
-            newVars.SP2PD = positionsManager.supplyP2PDelta(aDai);
+            (newVars.SP2PD, , newVars.SP2PA, ) = positionsManager.deltas(aDai);
             newVars.NI = lendingPool.getReserveNormalizedIncome(dai);
-            newVars.SP2PA = positionsManager.supplyP2PAmount(aDai);
             newVars.SP2PER = marketsManager.supplyP2PExchangeRate(aDai);
             newVars.LR = lendingPool.getReserveData(dai).currentLiquidityRate;
             newVars.VBR = lendingPool.getReserveData(dai).currentVariableBorrowRate;
@@ -558,7 +558,8 @@ contract TestRepay is TestSetup {
             suppliers[i].withdraw(aDai, suppliedAmount);
         }
 
-        testEquality(positionsManager.supplyP2PDelta(aDai), 0);
+        (uint256 supplyDeltaAfter, , , ) = positionsManager.deltas(aDai);
+        testEquality(supplyDeltaAfter, 0);
 
         (uint256 inP2PBorrower2, uint256 onPoolBorrower2) = positionsManager.borrowBalanceInOf(
             aDai,

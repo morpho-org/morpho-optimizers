@@ -260,8 +260,9 @@ contract MarketsManagerForAave is Ownable {
         uint256 timeDifference = block.timestamp - exchangeRatesLastUpdateTimestamp[_marketAddress];
         exchangeRatesLastUpdateTimestamp[_marketAddress] = block.timestamp;
         LastAaveRates storage aaveMarketRates = lastAaveRates[_marketAddress];
+        IPositionsManagerForAave.Delta memory delta = positionsManager.deltas(_marketAddress);
 
-        if (positionsManager.supplyP2PDelta(_marketAddress) == 0) {
+        if (delta.supplyDelta == 0) {
             supplyP2PExchangeRate[_marketAddress] = supplyP2PExchangeRate[_marketAddress].rayMul(
                 (WadRayMath.ray() + supplyP2PSPY[_marketAddress]).rayPow(timeDifference)
             ); // In ray
@@ -272,12 +273,12 @@ contract MarketsManagerForAave is Ownable {
             uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(
                 underlyingTokenAddress
             );
-            uint256 shareOfTheDelta = positionsManager
-            .supplyP2PDelta(_marketAddress)
+            uint256 shareOfTheDelta = delta
+            .supplyDelta
             .wadToRay()
             .rayMul(supplyP2PExchangeRate[_marketAddress])
             .rayDiv(normalizedIncome)
-            .rayDiv(positionsManager.supplyP2PAmount(_marketAddress).wadToRay()); // in RAY
+            .rayDiv(delta.supplyP2PAmount.wadToRay()); // in RAY
 
             supplyP2PExchangeRate[_marketAddress] = supplyP2PExchangeRate[_marketAddress].rayMul(
                 (
@@ -294,7 +295,7 @@ contract MarketsManagerForAave is Ownable {
             aaveMarketRates.lastNormalizedIncome = normalizedIncome;
         }
 
-        if (positionsManager.borrowP2PDelta(_marketAddress) == 0) {
+        if (delta.borrowP2PDelta == 0) {
             borrowP2PExchangeRate[_marketAddress] = borrowP2PExchangeRate[_marketAddress].rayMul(
                 (WadRayMath.ray() + borrowP2PSPY[_marketAddress]).rayPow(timeDifference)
             ); // In ray
@@ -304,12 +305,12 @@ contract MarketsManagerForAave is Ownable {
             uint256 normalizedVariableDebt = lendingPool.getReserveNormalizedVariableDebt(
                 underlyingTokenAddress
             );
-            uint256 shareOfTheDelta = positionsManager
-            .borrowP2PDelta(_marketAddress)
+            uint256 shareOfTheDelta = delta
+            .borrowP2PDelta
             .wadToRay()
             .rayMul(borrowP2PExchangeRate[_marketAddress])
             .rayDiv(normalizedVariableDebt)
-            .rayDiv(positionsManager.borrowP2PAmount(_marketAddress).wadToRay()); // in RAY
+            .rayDiv(delta.borrowP2PAmount.wadToRay()); // in RAY
 
             borrowP2PExchangeRate[_marketAddress] = borrowP2PExchangeRate[_marketAddress].rayMul(
                 (
