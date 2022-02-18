@@ -4,6 +4,7 @@ pragma solidity 0.8.7;
 import "./utils/TestSetup.sol";
 import "./utils/Attacker.sol";
 import "@contracts/aave/libraries/aave/WadRayMath.sol";
+import "@contracts/aave/interfaces/IPositionsManagerForAave.sol";
 
 contract TestWithdraw is TestSetup {
     using WadRayMath for uint256;
@@ -489,11 +490,9 @@ contract TestWithdraw is TestSetup {
                 expectedBorrowP2PDeltaInUnderlying,
                 lendingPool.getReserveNormalizedVariableDebt(dai)
             );
-            testEquality(
-                positionsManager.borrowP2PDelta(aDai),
-                expectedBorrowP2PDelta,
-                "borrow Delta not expected 1"
-            );
+
+            (, uint256 borrowP2PDelta, , ) = positionsManager.deltas(aDai);
+            testEquality(borrowP2PDelta, expectedBorrowP2PDelta, "borrow Delta not expected 1");
 
             // Borrow delta matching by new supplier
             supplier2.approve(dai, expectedBorrowP2PDeltaInUnderlying / 2);
@@ -508,11 +507,8 @@ contract TestWithdraw is TestSetup {
                 supplyP2PExchangeRate
             );
 
-            testEquality(
-                positionsManager.borrowP2PDelta(aDai),
-                expectedBorrowP2PDelta / 2,
-                "borrow Delta not expected 2"
-            );
+            (, borrowP2PDelta, , ) = positionsManager.deltas(aDai);
+            testEquality(borrowP2PDelta, expectedBorrowP2PDelta / 2, "borrow Delta not expected 2");
             testEquality(onPoolSupplier, 0, "on pool supplier not 0");
             testEquality(inP2PSupplier, expectedSupplyBalanceInP2P, "in P2P supplier not expected");
         }
@@ -521,9 +517,8 @@ contract TestWithdraw is TestSetup {
             Vars memory oldVars;
             Vars memory newVars;
 
-            oldVars.BP2PD = positionsManager.borrowP2PDelta(aDai);
+            (, oldVars.BP2PD, , oldVars.BP2PA) = positionsManager.deltas(aDai);
             oldVars.NVD = lendingPool.getReserveNormalizedVariableDebt(dai);
-            oldVars.BP2PA = positionsManager.borrowP2PAmount(aDai);
             oldVars.BP2PER = marketsManager.borrowP2PExchangeRate(aDai);
             oldVars.SPY = marketsManager.borrowP2PSPY(aDai);
 
@@ -531,9 +526,8 @@ contract TestWithdraw is TestSetup {
 
             marketsManager.updateRates(aDai);
 
-            newVars.BP2PD = positionsManager.borrowP2PDelta(aDai);
+            (, newVars.BP2PD, , newVars.BP2PA) = positionsManager.deltas(aDai);
             newVars.NVD = lendingPool.getReserveNormalizedVariableDebt(dai);
-            newVars.BP2PA = positionsManager.borrowP2PAmount(aDai);
             newVars.BP2PER = marketsManager.borrowP2PExchangeRate(aDai);
             newVars.SPY = marketsManager.borrowP2PSPY(aDai);
             newVars.LR = lendingPool.getReserveData(dai).currentLiquidityRate;
@@ -575,7 +569,8 @@ contract TestWithdraw is TestSetup {
             borrowers[i].repay(aDai, borrowedAmount);
         }
 
-        testEquality(positionsManager.borrowP2PDelta(aDai), 0);
+        (, uint256 borrowP2PDeltaAfter, , ) = positionsManager.deltas(aDai);
+        testEquality(borrowP2PDeltaAfter, 0);
 
         (uint256 inP2PSupplier2, uint256 onPoolSupplier2) = positionsManager.supplyBalanceInOf(
             aDai,
