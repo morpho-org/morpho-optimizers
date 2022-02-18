@@ -430,6 +430,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
     /// @param _poolTokenAddress The address of the market the user wants to supply.
     /// @param _amount The amount of token (in underlying).
     /// @param _referralCode The referral code of an integrator that may receive rewards. 0 if no referral code.
+    /// @param _maxGasToConsume The maximum amount of gas to consume within a loop.
     function supply(
         address _poolTokenAddress,
         uint256 _amount,
@@ -466,6 +467,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
     /// @param _poolTokenAddress The address of the market the user wants to supply.
     /// @param _amount The amount of token (in underlying).
     /// @param _referralCode The referral code of an integrator that may receive rewards. 0 if no referral code.
+    /// @param _maxGasToConsume The maximum amount of gas to consume within a loop.
     function borrow(
         address _poolTokenAddress,
         uint256 _amount,
@@ -739,10 +741,11 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
 
     /// Internal ///
 
-    /// @dev Supplies underlying tokens in a specific market.
+    /// @dev Implements supply logic.
     /// @param _poolTokenAddress The address of the market the user wants to supply.
     /// @param _amount The amount of token (in underlying).
     /// @param _referralCode The referral code of an integrator that may receive rewards. 0 if no referral code.
+    /// @param _maxGasToConsume The maximum amount of gas to consume within a loop.
     function _supply(
         address _poolTokenAddress,
         uint256 _amount,
@@ -800,10 +803,11 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         );
     }
 
-    /// @dev Borrows underlying tokens in a specific market.
+    /// @dev Implements borrow logic.
     /// @param _poolTokenAddress The address of the markets the user wants to enter.
     /// @param _amount The amount of token (in underlying).
     /// @param _referralCode The referral code of an integrator that may receive rewards. 0 if no referral code.
+    /// @param _maxGasToConsume The maximum amount of gas to consume within a loop.
     function _borrow(
         address _poolTokenAddress,
         uint256 _amount,
@@ -868,6 +872,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
     /// @param _amount The amount of token (in underlying).
     /// @param _supplier The address of the supplier.
     /// @param _receiver The address of the user who will receive the tokens.
+    /// @param _maxGasToConsume The maximum amount of gas to consume within a loop.
     function _withdraw(
         address _poolTokenAddress,
         uint256 _amount,
@@ -946,6 +951,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
     /// @param _poolTokenAddress The address of the market the user wants to interact with.
     /// @param _user The address of the user.
     /// @param _amount The amount of token (in underlying).
+    /// @param _maxGasToConsume The maximum amount of gas to consume within a loop.
     function _repay(
         address _poolTokenAddress,
         address _user,
