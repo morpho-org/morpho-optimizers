@@ -18,6 +18,13 @@ import "@openzeppelin/contracts/utils/math/Math.sol";
 contract MarketsManagerForAave is Ownable {
     using WadRayMath for uint256;
 
+    /// Structs ///
+
+    struct LastAaveRates {
+        uint256 lastNormalizedIncome; // Normalized income at the time of the last update.
+        uint256 lastNormalizedVariableDebt; // Normalized debt at the time of the last update.
+    }
+
     /// Storage ///
 
     uint16 public constant MAX_BASIS_POINTS = 10000; // 100% in basis point.
@@ -32,9 +39,8 @@ contract MarketsManagerForAave is Ownable {
     mapping(address => uint256) public borrowP2PSPY; // Borrow Percentage Yield per second, in ray.
     mapping(address => uint256) public supplyP2PExchangeRate; // Current exchange rate from supply p2pUnit to underlying (in ray).
     mapping(address => uint256) public borrowP2PExchangeRate; // Current exchange rate from borrow p2pUnit to underlying (in ray).
-    mapping(address => uint256) public lastNormalizedIncome; // Normalized income at the time of the last update.
-    mapping(address => uint256) public lastNormalizedVariableDebt; // Normalized debt at the time of the last update.
     mapping(address => uint256) public exchangeRatesLastUpdateTimestamp; // The last time the P2P exchange rates were updated.
+    mapping(address => LastAaveRates) public lastAaveRates; // Last Aave rates stored.
     mapping(address => bool) public noP2P; // Whether to put users on pool or not for the given market.
 
     IPositionsManagerForAave public positionsManager;
@@ -175,10 +181,12 @@ contract MarketsManagerForAave is Ownable {
         exchangeRatesLastUpdateTimestamp[poolTokenAddress] = block.timestamp;
         supplyP2PExchangeRate[poolTokenAddress] = WadRayMath.ray();
         borrowP2PExchangeRate[poolTokenAddress] = WadRayMath.ray();
-        lastNormalizedIncome[poolTokenAddress] = lendingPool.getReserveNormalizedIncome(
+
+        LastAaveRates storage aaveMarketRates = lastAaveRates[poolTokenAddress];
+        aaveMarketRates.lastNormalizedIncome = lendingPool.getReserveNormalizedIncome(
             _underlyingTokenAddress
         );
-        lastNormalizedVariableDebt[poolTokenAddress] = lendingPool.getReserveNormalizedVariableDebt(
+        aaveMarketRates.lastNormalizedVariableDebt = lendingPool.getReserveNormalizedVariableDebt(
             _underlyingTokenAddress
         );
 
@@ -251,12 +259,13 @@ contract MarketsManagerForAave is Ownable {
         address underlyingTokenAddress = IAToken(_marketAddress).UNDERLYING_ASSET_ADDRESS();
         uint256 timeDifference = block.timestamp - exchangeRatesLastUpdateTimestamp[_marketAddress];
         exchangeRatesLastUpdateTimestamp[_marketAddress] = block.timestamp;
+        LastAaveRates storage aaveMarketRates = lastAaveRates[_marketAddress];
 
         if (positionsManager.supplyP2PDelta(_marketAddress) == 0) {
             supplyP2PExchangeRate[_marketAddress] = supplyP2PExchangeRate[_marketAddress].rayMul(
                 (WadRayMath.ray() + supplyP2PSPY[_marketAddress]).rayPow(timeDifference)
             ); // In ray
-            lastNormalizedIncome[_marketAddress] = lendingPool.getReserveNormalizedIncome(
+            aaveMarketRates.lastNormalizedIncome = lendingPool.getReserveNormalizedIncome(
                 underlyingTokenAddress
             );
         } else {
@@ -278,18 +287,18 @@ contract MarketsManagerForAave is Ownable {
                 ) +
                     (
                         shareOfTheDelta.rayMul(normalizedIncome).rayDiv(
-                            lastNormalizedIncome[_marketAddress]
+                            aaveMarketRates.lastNormalizedIncome
                         )
                     )
             );
-            lastNormalizedIncome[_marketAddress] = normalizedIncome;
+            aaveMarketRates.lastNormalizedIncome = normalizedIncome;
         }
 
         if (positionsManager.borrowP2PDelta(_marketAddress) == 0) {
             borrowP2PExchangeRate[_marketAddress] = borrowP2PExchangeRate[_marketAddress].rayMul(
                 (WadRayMath.ray() + borrowP2PSPY[_marketAddress]).rayPow(timeDifference)
             ); // In ray
-            lastNormalizedVariableDebt[_marketAddress] = lendingPool
+            aaveMarketRates.lastNormalizedVariableDebt = lendingPool
             .getReserveNormalizedVariableDebt(underlyingTokenAddress);
         } else {
             uint256 normalizedVariableDebt = lendingPool.getReserveNormalizedVariableDebt(
@@ -310,11 +319,11 @@ contract MarketsManagerForAave is Ownable {
                 ) +
                     (
                         shareOfTheDelta.rayMul(normalizedVariableDebt).rayDiv(
-                            lastNormalizedVariableDebt[_marketAddress]
+                            aaveMarketRates.lastNormalizedVariableDebt
                         )
                     )
             );
-            lastNormalizedVariableDebt[_marketAddress] = normalizedVariableDebt;
+            aaveMarketRates.lastNormalizedVariableDebt = normalizedVariableDebt;
         }
 
         emit P2PExchangeRatesUpdated(
