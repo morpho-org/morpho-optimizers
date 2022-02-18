@@ -68,6 +68,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
     /// @param _poolToken The pool token of the market from which to match suppliers.
     /// @param _underlyingToken The underlying token of the market to find liquidity.
     /// @param _amount The token amount to search for (in underlying).
+    /// @param _maxGasToConsume The maximum amount of gas to consume within a loop.
     /// @return matchedSupply The amount of liquidity matched (in underlying).
     function matchSuppliers(
         IAToken _poolToken,
@@ -139,6 +140,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
     /// @dev Note: p2pExchangeRates must have been updated before calling this function.
     /// @param _poolTokenAddress The address of the market from which to unmatch suppliers.
     /// @param _amount The amount to search for (in underlying).
+    /// @param _maxGasToConsume The maximum amount of gas to consume within a loop.
     function unmatchSuppliers(
         address _poolTokenAddress,
         uint256 _amount,
@@ -221,6 +223,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
     /// @param _poolToken The pool token of the market from which to match borrowers.
     /// @param _underlyingToken The underlying token of the market to find liquidity.
     /// @param _amount The amount to search for (in underlying).
+    /// @param _maxGasToConsume The maximum amount of gas to consume within a loop.
     /// @return matchedBorrow The amount of liquidity matched (in underlying).
     function matchBorrowers(
         IAToken _poolToken,
@@ -290,6 +293,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
     /// @dev Note: p2pExchangeRates must have been updated before calling this function.
     /// @param _poolTokenAddress The address of the market from which to unmatch borrowers.
     /// @param _amount The amount to unmatch (in underlying).
+    /// @param _maxGasToConsume The maximum amount of gas to consume within a loop.
     function unmatchBorrowers(
         address _poolTokenAddress,
         uint256 _amount,
