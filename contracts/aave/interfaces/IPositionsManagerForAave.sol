@@ -9,6 +9,13 @@ interface IPositionsManagerForAave {
         uint256 onPool;
     }
 
+    struct Delta {
+        uint256 supplyDelta;
+        uint256 borrowP2PDelta;
+        uint256 supplyP2PAmount;
+        uint256 borrowP2PAmount;
+    }
+
     function createMarket(address) external returns (uint256[] memory);
 
     function getUserMaxCapacitiesForAsset(address _user, address _poolTokenAddress)
@@ -28,11 +35,5 @@ interface IPositionsManagerForAave {
 
     function supplyBalanceInOf(address, address) external returns (Balance memory);
 
-    function supplyP2PAmount(address) external returns (uint256);
-
-    function borrowP2PAmount(address) external returns (uint256);
-
-    function supplyP2PDelta(address) external returns (uint256);
-
-    function borrowP2PDelta(address) external returns (uint256);
+    function deltas(address) external returns (Delta memory);
 }

@@ -27,7 +27,7 @@ contract PositionsManagerForAaveStorage is ReentrancyGuard, Pausable {
 
     struct SupplyBalance {
         uint256 inP2P; // In supplier's p2pUnit, a unit that grows in value, to keep track of the interests earned when users are in P2P.
-        uint256 onPool; // In aToken.
+        uint256 onPool; // In scaled balance.
     }
 
     struct BorrowBalance {
@@ -41,6 +41,13 @@ contract PositionsManagerForAaveStorage is ReentrancyGuard, Pausable {
         uint64 borrow;
         uint64 withdraw;
         uint64 repay;
+    }
+
+    struct Delta {
+        uint256 supplyDelta; // Difference between the stored P2P supply amount and the real P2P supply amount (in scaled balance).
+        uint256 borrowP2PDelta; // Difference between the stored P2P borrow amount and the real P2P borrow amount (in adUnit).
+        uint256 supplyP2PAmount; // Sum of all stored P2P supply (in P2P unit).
+        uint256 borrowP2PAmount; // Sum of all stored P2P borrow (in P2P unit).
     }
 
     /// Storage ///
@@ -59,13 +66,10 @@ contract PositionsManagerForAaveStorage is ReentrancyGuard, Pausable {
     mapping(address => DoubleLinkedList.List) internal borrowersOnPool; // Borrowers on Aave.
     mapping(address => mapping(address => SupplyBalance)) public supplyBalanceInOf; // For a given market, the supply balance of a user.
     mapping(address => mapping(address => BorrowBalance)) public borrowBalanceInOf; // For a given market, the borrow balance of a user.
-    mapping(address => uint256) public supplyP2PDelta; // Difference between the stored P2P supply amount and the real P2P supply amount (in scaled balance).
-    mapping(address => uint256) public borrowP2PDelta; // Difference between the stored P2P borrow amount and the real P2P borrow amount (in adUnit).
-    mapping(address => uint256) public supplyP2PAmount; // Sum of all stored P2P supply (in P2P unit).
-    mapping(address => uint256) public borrowP2PAmount; // Sum of all stored P2P borrow (in P2P unit).
     mapping(address => mapping(address => bool)) public userMembership; // Whether the user is in the market or not.
     mapping(address => address[]) public enteredMarkets; // The markets entered by a user.
     mapping(address => uint256) public threshold; // Thresholds below the ones suppliers and borrowers cannot enter markets.
+    mapping(address => Delta) public deltas; // Delta parameters for each market.
 
     IAaveIncentivesController public aaveIncentivesController;
     ILendingPoolAddressesProvider public addressesProvider;
