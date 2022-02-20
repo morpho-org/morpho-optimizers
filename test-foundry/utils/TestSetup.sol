@@ -47,7 +47,7 @@ contract TestSetup is Config, Utils {
     address[] public underlyings;
 
     function setUp() public {
-        PositionsManagerForAave.MGTC memory mgtc = PositionsManagerForAaveStorage.MGTC({
+        PositionsManagerForAave.MaxGas memory maxGas = PositionsManagerForAaveStorage.MaxGas({
             supply: 3e6,
             borrow: 3e6,
             withdraw: 1.5e6,
@@ -58,7 +58,7 @@ contract TestSetup is Config, Utils {
         positionsManager = new PositionsManagerForAave(
             address(marketsManager),
             lendingPoolAddressesProviderAddress,
-            mgtc
+            maxGas
         );
 
         treasuryVault = new User(positionsManager, marketsManager, rewardsManager);
@@ -66,7 +66,7 @@ contract TestSetup is Config, Utils {
         fakePositionsManager = new PositionsManagerForAave(
             address(marketsManager),
             lendingPoolAddressesProviderAddress,
-            mgtc
+            maxGas
         );
 
         rewardsManager = new RewardsManager(

@@ -7,7 +7,7 @@ import "@contracts/aave/libraries/aave/WadRayMath.sol";
 contract TestGasConsumption is TestSetup {
     uint8 public NDS = 20;
 
-    function test_match_supplier_single() external {
+    function test_match_single_supplier() external {
         uint256 amount = 100 ether;
         uint256 collateral = 4 * amount;
 
