@@ -521,9 +521,10 @@ contract TestRepay is TestSetup {
 
             uint256 shareOfTheDelta = newVars
             .SP2PD
+            .wadToRay()
             .rayMul(oldVars.SP2PER)
             .rayDiv(newVars.NI)
-            .rayDiv(newVars.SP2PA);
+            .rayDiv(newVars.SP2PA.wadToRay());
 
             uint256 expectedSP2PER = oldVars.SP2PER.rayMul(
                 (RAY + oldVars.SPY).rayPow(365 days).rayMul(RAY - shareOfTheDelta) +
