@@ -152,14 +152,7 @@ contract TestWithdraw is TestSetup {
     // 3.3.2 - There are NMAX (or less) suppliers onPool available to replace him inP2P, they supply enough to cover for the withdrawn liquidity.
     // First, his liquidity onPool is taken, his matched is replaced by NMAX (or less) suppliers up to his withdrawal amount.
     function test_withdraw_3_3_2() public {
-        PositionsManagerForAaveStorage.MaxGas memory newMaxGas = PositionsManagerForAaveStorage
-        .MaxGas({
-            supply: type(uint64).max,
-            borrow: type(uint64).max,
-            withdraw: type(uint64).max,
-            repay: type(uint64).max
-        });
-        positionsManager.setMaxGas(newMaxGas);
+        setMaxGasHelper(type(uint64).max, type(uint64).max, type(uint64).max, type(uint64).max);
 
         uint256 borrowedAmount = 100000 ether;
         uint256 suppliedAmount = 2 * borrowedAmount;
@@ -325,14 +318,7 @@ contract TestWithdraw is TestSetup {
     //         Finally, we proceed to NMAX `unmatch borrower` for an amount equal to the remaining to withdraw.
     //         ⚠️ most gas expensive withdraw scenario.
     function test_withdraw_3_3_4() public {
-        PositionsManagerForAaveStorage.MaxGas memory newMaxGas = PositionsManagerForAaveStorage
-        .MaxGas({
-            supply: type(uint64).max,
-            borrow: type(uint64).max,
-            withdraw: type(uint64).max,
-            repay: type(uint64).max
-        });
-        positionsManager.setMaxGas(newMaxGas);
+        setMaxGasHelper(type(uint64).max, type(uint64).max, type(uint64).max, type(uint64).max);
 
         uint256 borrowedAmount = 100000 ether;
         uint256 suppliedAmount = 2 * borrowedAmount;
@@ -439,14 +425,8 @@ contract TestWithdraw is TestSetup {
 
     // Delta hard withdraw
     function test_withdraw_3_3_5() public {
-        PositionsManagerForAaveStorage.MaxGas memory newMaxGas = PositionsManagerForAaveStorage
-        .MaxGas({
-            supply: 3e6,
-            borrow: 3e6,
-            withdraw: 1.3e6, // Allows only 10 unmatch borrowers
-            repay: 3e6
-        });
-        positionsManager.setMaxGas(newMaxGas);
+        // 1.3e6 allows only 10 unmatch borrowers
+        setMaxGasHelper(3e6, 3e6, 1.3e6, 3e6);
 
         uint256 borrowedAmount = 1 ether;
         uint256 collateral = 2 * borrowedAmount;

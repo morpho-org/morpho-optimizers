@@ -790,7 +790,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
             supplyBalanceInOf[_poolTokenAddress][msg.sender].onPool += remainingToSupplyToPool
             .divWadByRay(normalizedIncome); // Scaled Balance
             matchingEngine.updateSuppliersDC(_poolTokenAddress, msg.sender);
-            _supplyERC20ToPool(underlyingToken, remainingToSupplyToPool); // Revert on error
+            _supplyERC20ToPool(_poolTokenAddress, underlyingToken, remainingToSupplyToPool); // Revert on error
         }
 
         emit Supplied(
@@ -853,7 +853,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
             borrowBalanceInOf[_poolTokenAddress][msg.sender].onPool += remainingToBorrowOnPool
             .divWadByRay(normalizedVariableDebt); // In adUnit
             matchingEngine.updateBorrowersDC(_poolTokenAddress, msg.sender);
-            _borrowERC20FromPool(underlyingToken, remainingToBorrowOnPool);
+            _borrowERC20FromPool(_poolTokenAddress, underlyingToken, remainingToBorrowOnPool);
         }
 
         underlyingToken.safeTransfer(msg.sender, _amount);
