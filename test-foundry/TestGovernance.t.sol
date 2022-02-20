@@ -68,26 +68,22 @@ contract TestGovernance is TestSetup {
     }
 
     // Only MarketsaManager's Owner should set NMAX
-    function test_should_set_mgtc() public {
-        PositionsManagerForAaveStorage.MGTC memory newMgtc = PositionsManagerForAaveStorage.MGTC({
-            supply: 1,
-            borrow: 1,
-            withdraw: 1,
-            repay: 1
-        });
+    function test_should_set_maxGas() public {
+        PositionsManagerForAaveStorage.MaxGas memory newMaxGas = PositionsManagerForAaveStorage
+        .MaxGas({supply: 1, borrow: 1, withdraw: 1, repay: 1});
 
-        positionsManager.setMgtc(newMgtc);
-        (uint64 supply, uint64 borrow, uint64 withdraw, uint64 repay) = positionsManager.mgtc();
-        assertEq(supply, newMgtc.supply);
-        assertEq(borrow, newMgtc.borrow);
-        assertEq(withdraw, newMgtc.withdraw);
-        assertEq(repay, newMgtc.repay);
+        positionsManager.setMaxGas(newMaxGas);
+        (uint64 supply, uint64 borrow, uint64 withdraw, uint64 repay) = positionsManager.maxGas();
+        assertEq(supply, newMaxGas.supply);
+        assertEq(borrow, newMaxGas.borrow);
+        assertEq(withdraw, newMaxGas.withdraw);
+        assertEq(repay, newMaxGas.repay);
 
         hevm.expectRevert(abi.encodeWithSignature("OnlyMarketsManagerOwner()"));
-        supplier1.setMgtc(newMgtc);
+        supplier1.setMaxGas(newMaxGas);
 
         hevm.expectRevert(abi.encodeWithSignature("OnlyMarketsManagerOwner()"));
-        borrower1.setMgtc(newMgtc);
+        borrower1.setMaxGas(newMaxGas);
     }
 
     // Only MarketsaManager's Owner should set NDS
