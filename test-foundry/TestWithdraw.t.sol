@@ -13,7 +13,6 @@ contract TestWithdraw is TestSetup {
         uint256 amount = 10000 ether;
         uint256 collateral = 2 * amount;
 
-        borrower1.approve(usdc, to6Decimals(collateral));
         borrower1.supply(aUsdc, to6Decimals(collateral));
 
         borrower1.borrow(aDai, amount);
@@ -26,7 +25,6 @@ contract TestWithdraw is TestSetup {
     function test_withdraw_3_2() public {
         uint256 amount = 10000 ether;
 
-        supplier1.approve(usdc, to6Decimals(2 * amount));
         supplier1.supply(aUsdc, to6Decimals(2 * amount));
 
         (uint256 inP2P, uint256 onPool) = positionsManager.supplyBalanceInOf(
@@ -58,10 +56,8 @@ contract TestWithdraw is TestSetup {
         uint256 suppliedAmount = 2 * borrowedAmount;
         uint256 collateral = 2 * borrowedAmount;
 
-        supplier1.approve(dai, suppliedAmount);
         supplier1.supply(aDai, suppliedAmount);
 
-        borrower1.approve(usdc, to6Decimals(collateral));
         borrower1.supply(aUsdc, to6Decimals(collateral));
         borrower1.borrow(aDai, borrowedAmount);
 
@@ -86,7 +82,6 @@ contract TestWithdraw is TestSetup {
         testEquality(inP2PSupplier, inP2PBorrower1);
 
         // An available supplier onPool
-        supplier2.approve(dai, suppliedAmount);
         supplier2.supply(aDai, suppliedAmount);
 
         // supplier withdraws suppliedAmount
@@ -136,11 +131,9 @@ contract TestWithdraw is TestSetup {
         uint256 collateral = 2 * borrowedAmount;
 
         // Borrower1 & supplier1 are matched for suppliedAmount
-        borrower1.approve(usdc, to6Decimals(collateral));
         borrower1.supply(aUsdc, to6Decimals(collateral));
         borrower1.borrow(aDai, borrowedAmount);
 
-        supplier1.approve(dai, suppliedAmount);
         supplier1.supply(aDai, suppliedAmount);
 
         // Check balances after match of borrower1 & supplier1
@@ -172,7 +165,6 @@ contract TestWithdraw is TestSetup {
         for (uint256 i = 0; i < NMAX; i++) {
             if (suppliers[i] == supplier1) continue;
 
-            suppliers[i].approve(dai, amountPerSupplier);
             suppliers[i].supply(aDai, amountPerSupplier);
         }
 
@@ -225,11 +217,9 @@ contract TestWithdraw is TestSetup {
         uint256 collateral = 2 * borrowedAmount;
 
         // Borrower1 & supplier1 are matched for suppliedAmount
-        borrower1.approve(usdc, to6Decimals(collateral));
         borrower1.supply(aUsdc, to6Decimals(collateral));
         borrower1.borrow(aDai, borrowedAmount);
 
-        supplier1.approve(dai, suppliedAmount);
         supplier1.supply(aDai, suppliedAmount);
 
         // Check balances after match of borrower1 & supplier1
@@ -309,11 +299,9 @@ contract TestWithdraw is TestSetup {
         uint256 collateral = 2 * borrowedAmount;
 
         // Borrower1 & supplier1 are matched for suppliedAmount
-        borrower1.approve(usdc, to6Decimals(collateral));
         borrower1.supply(aUsdc, to6Decimals(collateral));
         borrower1.borrow(aDai, borrowedAmount);
 
-        supplier1.approve(dai, suppliedAmount);
         supplier1.supply(aDai, suppliedAmount);
 
         // Check balances after match of borrower1 & supplier1
@@ -345,7 +333,6 @@ contract TestWithdraw is TestSetup {
         for (uint256 i = 0; i < NMAX; i++) {
             if (suppliers[i] == supplier1) continue;
 
-            suppliers[i].approve(dai, amountPerSupplier);
             suppliers[i].supply(aDai, amountPerSupplier);
         }
 
@@ -424,14 +411,12 @@ contract TestWithdraw is TestSetup {
         uint256 expectedSupplyBalanceInP2P;
 
         // supplier1 and 20 borrowers are matched for suppliedAmount
-        supplier1.approve(dai, suppliedAmount);
         supplier1.supply(aDai, suppliedAmount);
 
         createSigners(30);
 
         // 2 * NMAX borrowers borrow borrowedAmount
         for (uint256 i = 0; i < 20; i++) {
-            borrowers[i].approve(usdc, to6Decimals(collateral));
             borrowers[i].supply(aUsdc, to6Decimals(collateral));
             borrowers[i].borrow(aDai, borrowedAmount, type(uint64).max);
         }
@@ -486,7 +471,6 @@ contract TestWithdraw is TestSetup {
             );
 
             // Borrow delta matching by new supplier
-            supplier2.approve(dai, expectedBorrowP2PDeltaInUnderlying / 2);
             supplier2.supply(aDai, expectedBorrowP2PDeltaInUnderlying / 2);
 
             (inP2PSupplier, onPoolSupplier) = positionsManager.supplyBalanceInOf(
@@ -560,7 +544,6 @@ contract TestWithdraw is TestSetup {
 
         // Borrow delta reduction with borrowers repaying
         for (uint256 i = 0; i < 10; i++) {
-            borrowers[i].approve(dai, borrowedAmount);
             borrowers[i].repay(aDai, borrowedAmount);
         }
 
@@ -582,11 +565,9 @@ contract TestWithdraw is TestSetup {
         uint256 toBorrow = toSupply / 2;
 
         // supplier1 deposits collateral
-        supplier1.approve(dai, toSupply);
         supplier1.supply(aDai, toSupply);
 
         // supplier2 deposits collateral
-        supplier2.approve(dai, toSupply);
         supplier2.supply(aDai, toSupply);
 
         // supplier1 tries to withdraw more than allowed
@@ -611,11 +592,9 @@ contract TestWithdraw is TestSetup {
         attacker.transfer(dai, address(positionsManager), toSupply);
 
         // supplier1 deposits collateral
-        supplier1.approve(dai, toSupply);
         supplier1.supply(aDai, toSupply);
 
         // borrower1 deposits collateral
-        borrower1.approve(usdc, to6Decimals(collateral));
         borrower1.supply(aUsdc, to6Decimals(collateral));
 
         // supplier1 tries to withdraw

@@ -11,10 +11,8 @@ contract TestGasConsumption is TestSetup {
         uint256 amount = 100 ether;
         uint256 collateral = 4 * amount;
 
-        supplier1.approve(dai, amount);
         supplier1.supply(aDai, amount);
 
-        borrower1.approve(usdc, to6Decimals(collateral));
         borrower1.supply(aUsdc, to6Decimals(collateral));
 
         // 1 match supplier
@@ -28,10 +26,8 @@ contract TestGasConsumption is TestSetup {
         // Create NDS matches on DAI market to fill the FIFO
         uint256 matchedAmount = (uint256(NDS) * 1000 ether);
         for (uint8 i = 0; i < NDS; i++) {
-            suppliers[i].approve(dai, matchedAmount);
             suppliers[i].supply(aDai, matchedAmount);
 
-            borrowers[i].approve(usdc, to6Decimals(2 * matchedAmount));
             borrowers[i].supply(aUsdc, to6Decimals(2 * matchedAmount));
             borrowers[i].borrow(aDai, matchedAmount);
         }
@@ -40,11 +36,8 @@ contract TestGasConsumption is TestSetup {
         uint256 collateral = 4 * amount;
 
         // borrower1 waiting on pool
-        borrower1.approve(usdc, to6Decimals(collateral));
         borrower1.supply(aUsdc, to6Decimals(collateral));
         borrower1.borrow(aDai, amount / 2);
-
-        supplier1.approve(dai, 2 * amount);
 
         // 0 match
         supplier1.supply(aDai, amount, 0);
@@ -63,10 +56,8 @@ contract TestGasConsumption is TestSetup {
         // Create NDS matches on DAI market to fill the FIFO
         uint256 matchedAmount = (uint256(NDS) * 1000 ether);
         for (uint8 i = 0; i < NDS; i++) {
-            suppliers[i].approve(dai, matchedAmount);
             suppliers[i].supply(aDai, matchedAmount);
 
-            borrowers[i].approve(usdc, to6Decimals(2 * matchedAmount));
             borrowers[i].supply(aUsdc, to6Decimals(2 * matchedAmount));
             borrowers[i].borrow(aDai, matchedAmount);
         }
@@ -75,10 +66,8 @@ contract TestGasConsumption is TestSetup {
         uint256 collateral = 8 * amount;
 
         // supplier1 waiting on pool
-        supplier1.approve(dai, amount);
         supplier1.supply(aDai, amount);
 
-        borrower1.approve(usdc, to6Decimals(collateral));
         borrower1.supply(aUsdc, to6Decimals(collateral));
 
         // 0 match
@@ -96,14 +85,11 @@ contract TestGasConsumption is TestSetup {
         uint256 amount = 100 ether;
         uint256 collateral = 4 * amount;
 
-        borrower1.approve(usdc, to6Decimals(collateral));
         borrower1.supply(aUsdc, to6Decimals(collateral));
         borrower1.borrow(aDai, amount);
 
-        supplier1.approve(dai, 4 * amount);
         supplier1.supply(aDai, amount, type(uint64).max);
 
-        supplier2.approve(dai, 4 * amount);
         supplier2.supply(aDai, amount, type(uint64).max);
 
         // 1 match suppliers
@@ -115,23 +101,19 @@ contract TestGasConsumption is TestSetup {
         // Create NDS matches on DAI market to fill the FIFO
         uint256 matchedAmount = (uint256(NDS) * 1000 ether);
         for (uint8 i = 0; i < NDS; i++) {
-            suppliers[i].approve(dai, matchedAmount);
             suppliers[i].supply(aDai, matchedAmount);
 
-            borrowers[i].approve(usdc, to6Decimals(2 * matchedAmount));
             borrowers[i].supply(aUsdc, to6Decimals(2 * matchedAmount));
             borrowers[i].borrow(aDai, matchedAmount);
         }
 
         // supplier2 supplies another amount
-        supplier2.approve(dai, amount);
         supplier2.supply(aDai, amount, type(uint64).max);
 
         // borrower1 is matched with supplier2 for 2 * amount
         borrower1.borrow(aDai, amount, type(uint64).max);
 
         // supplier1 is waiting on pool
-        supplier1.approve(dai, amount);
         supplier1.supply(aDai, amount, type(uint64).max);
 
         // 1 match suppliers
@@ -146,22 +128,18 @@ contract TestGasConsumption is TestSetup {
         uint256 amount = 100 ether;
         uint256 collateral = 4 * amount;
 
-        borrower1.approve(usdc, to6Decimals(collateral));
         borrower1.supply(aUsdc, to6Decimals(collateral));
         borrower1.borrow(aDai, amount);
 
-        supplier1.approve(dai, 4 * amount);
         supplier1.supply(aDai, amount, type(uint64).max);
 
         // supplier1 and borrower1 are matched with amount
 
-        borrower2.approve(usdc, to6Decimals(collateral));
         borrower2.supply(aUsdc, to6Decimals(collateral));
         borrower2.borrow(aDai, amount);
 
         // 1 match borrowers
         // 0 unmatch suppliers
-        borrower1.approve(dai, amount);
         borrower1.repay(aDai, amount);
 
         // supplier1 and borrower2 are matched with amount
@@ -169,38 +147,31 @@ contract TestGasConsumption is TestSetup {
         // Create NDS matches on DAI market to fill the FIFO
         uint256 matchedAmount = (uint256(NDS) * 1000 ether);
         for (uint8 i = 0; i < NDS; i++) {
-            suppliers[i].approve(dai, matchedAmount);
             suppliers[i].supply(aDai, matchedAmount);
 
-            borrowers[i].approve(usdc, to6Decimals(2 * matchedAmount));
             borrowers[i].supply(aUsdc, to6Decimals(2 * matchedAmount));
             borrowers[i].borrow(aDai, matchedAmount);
         }
 
         // borrower2 borrowers another amount
-        borrower2.approve(usdc, to6Decimals(collateral));
         borrower2.supply(aUsdc, to6Decimals(collateral));
         borrower2.borrow(aDai, amount);
 
         // supplier1 is matched with borrower2 for 2 * amount
-        supplier1.approve(dai, amount);
         supplier1.supply(aDai, amount, type(uint64).max);
 
         // borrower1 is waiting on pool
-        borrower1.approve(usdc, to6Decimals(collateral));
         borrower1.supply(aUsdc, to6Decimals(collateral));
         borrower1.borrow(aDai, amount);
 
         // 1 match borrowers
         // 1 unmatch suppliers
-        borrower2.approve(dai, 2 * amount);
         borrower2.repay(aDai, 2 * amount);
     }
 
     function test_liquidate_gas_consumption() public {
         uint256 collateral = 100_000 ether;
 
-        borrower1.approve(usdc, address(positionsManager), to6Decimals(collateral));
         borrower1.supply(aUsdc, to6Decimals(collateral));
 
         (, uint256 amount) = positionsManager.getUserMaxCapacitiesForAsset(
@@ -209,7 +180,6 @@ contract TestGasConsumption is TestSetup {
         );
         borrower1.borrow(aDai, amount);
 
-        supplier1.approve(dai, amount);
         supplier1.supply(aDai, (amount * 4) / 5); // For on pool + in P2P
         // nothing // For on pool
         // supplier1.supply(aDai, amount); // For in P2P
@@ -221,7 +191,6 @@ contract TestGasConsumption is TestSetup {
         // Liquidate
         uint256 toRepay = (amount * 999) / 2000;
         User liquidator = borrower3;
-        liquidator.approve(dai, address(positionsManager), toRepay);
         liquidator.liquidate(aDai, aUsdc, address(borrower1), toRepay);
     }
 }

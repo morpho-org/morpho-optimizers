@@ -22,7 +22,6 @@ contract TestBorrow is TestSetup {
     function test_borrow_2_2() public {
         uint256 usdcAmount = to6Decimals(10_000 ether);
 
-        borrower1.approve(usdc, usdcAmount);
         borrower1.supply(aUsdc, usdcAmount);
 
         (, uint256 borrowable) = positionsManager.getUserMaxCapacitiesForAsset(
@@ -38,7 +37,6 @@ contract TestBorrow is TestSetup {
     function test_borrow_multiple() public {
         uint256 amount = 10000 ether;
 
-        borrower1.approve(usdc, address(positionsManager), to6Decimals(4 * amount));
         borrower1.supply(aUsdc, to6Decimals(4 * amount));
 
         borrower1.borrow(aDai, amount);
@@ -55,7 +53,6 @@ contract TestBorrow is TestSetup {
     function test_borrow_2_3() public {
         uint256 amount = 10000 ether;
 
-        borrower1.approve(usdc, to6Decimals(2 * amount));
         borrower1.supply(aUsdc, to6Decimals(2 * amount));
         borrower1.borrow(aDai, amount);
 
@@ -75,10 +72,8 @@ contract TestBorrow is TestSetup {
     function test_borrow_2_4() public {
         uint256 amount = 10000 ether;
 
-        supplier1.approve(dai, amount);
         supplier1.supply(aDai, amount);
 
-        borrower1.approve(usdc, to6Decimals(amount * 2));
         borrower1.supply(aUsdc, to6Decimals(amount * 2));
         borrower1.borrow(aDai, amount);
 
@@ -146,11 +141,9 @@ contract TestBorrow is TestSetup {
         uint256 amountPerSupplier = amount / NMAX;
 
         for (uint256 i = 0; i < NMAX; i++) {
-            suppliers[i].approve(dai, amountPerSupplier);
             suppliers[i].supply(aDai, amountPerSupplier);
         }
 
-        borrower1.approve(usdc, to6Decimals(collateral));
         borrower1.supply(aUsdc, to6Decimals(collateral));
         borrower1.borrow(aDai, amount);
 
@@ -195,11 +188,9 @@ contract TestBorrow is TestSetup {
         uint256 amountPerSupplier = amount / (2 * NMAX);
 
         for (uint256 i = 0; i < NMAX; i++) {
-            suppliers[i].approve(dai, amountPerSupplier);
             suppliers[i].supply(aDai, amountPerSupplier);
         }
 
-        borrower1.approve(usdc, to6Decimals(collateral));
         borrower1.supply(aUsdc, to6Decimals(collateral));
         borrower1.borrow(aDai, amount);
 

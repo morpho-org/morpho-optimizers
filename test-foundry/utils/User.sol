@@ -43,6 +43,10 @@ contract User {
     }
 
     function supply(address _poolTokenAddress, uint256 _amount) external {
+        IERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS()).approve(
+            address(positionsManager),
+            _amount
+        );
         positionsManager.supply(_poolTokenAddress, _amount, 0);
     }
 
@@ -71,6 +75,10 @@ contract User {
     }
 
     function repay(address _poolTokenAddress, uint256 _amount) external {
+        IERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS()).approve(
+            address(positionsManager),
+            _amount
+        );
         positionsManager.repay(_poolTokenAddress, _amount);
     }
 
@@ -80,6 +88,10 @@ contract User {
         address _borrower,
         uint256 _amount
     ) external {
+        IERC20(IAToken(_poolTokenBorrowedAddress).UNDERLYING_ASSET_ADDRESS()).approve(
+            address(positionsManager),
+            _amount
+        );
         positionsManager.liquidate(
             _poolTokenBorrowedAddress,
             _poolTokenCollateralAddress,

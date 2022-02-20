@@ -28,9 +28,6 @@ contract TestPausable is TestSetup {
         uint256 amount = 10000 ether;
         uint256 toBorrow = to6Decimals(amount / 2);
 
-        supplier1.approve(dai, amount);
-        supplier1.approve(usdc, toBorrow);
-
         supplier1.supply(aDai, amount);
         supplier1.borrow(aUsdc, toBorrow);
         supplier1.repay(aUsdc, toBorrow);
@@ -52,9 +49,6 @@ contract TestPausable is TestSetup {
         uint256 toBorrow = to6Decimals(amount / 2);
 
         positionsManager.setPauseStatus();
-
-        supplier1.approve(dai, amount);
-        supplier1.approve(usdc, toBorrow);
 
         hevm.expectRevert("Pausable: paused");
         supplier1.supply(aDai, amount);

@@ -20,7 +20,6 @@ contract TestSupply is TestSetup {
     function test_supply_1_2(uint256 _amount) public {
         uint256 amount = 10000 ether;
 
-        supplier1.approve(dai, amount);
         supplier1.supply(aDai, amount);
 
         marketsManager.updateRates(aDai);
@@ -42,8 +41,6 @@ contract TestSupply is TestSetup {
     function test_supply_multiple() public {
         uint256 amount = 10000 ether;
 
-        supplier1.approve(dai, 2 * amount);
-
         supplier1.supply(aDai, amount);
         supplier1.supply(aDai, amount);
 
@@ -59,14 +56,12 @@ contract TestSupply is TestSetup {
     function test_supply_1_3() public {
         uint256 amount = 10000 ether;
 
-        borrower1.approve(usdc, to6Decimals(2 * amount));
         borrower1.supply(aUsdc, to6Decimals(2 * amount));
         borrower1.borrow(aDai, amount);
 
         uint256 daiBalanceBefore = supplier1.balanceOf(dai);
         uint256 expectedDaiBalanceAfter = daiBalanceBefore - amount;
 
-        supplier1.approve(dai, address(positionsManager), amount);
         supplier1.supply(aDai, amount);
 
         uint256 daiBalanceAfter = supplier1.balanceOf(dai);
@@ -98,11 +93,9 @@ contract TestSupply is TestSetup {
     function test_supply_1_4() public {
         uint256 amount = 10000 ether;
 
-        borrower1.approve(usdc, to6Decimals(2 * amount));
         borrower1.supply(aUsdc, to6Decimals(2 * amount));
         borrower1.borrow(aDai, amount);
 
-        supplier1.approve(dai, 2 * amount);
         supplier1.supply(aDai, 2 * amount);
 
         marketsManager.updateRates(aDai);
@@ -147,13 +140,11 @@ contract TestSupply is TestSetup {
         uint256 amountPerBorrower = amount / NMAX;
 
         for (uint256 i = 0; i < NMAX; i++) {
-            borrowers[i].approve(usdc, to6Decimals(collateral));
             borrowers[i].supply(aUsdc, to6Decimals(collateral));
 
             borrowers[i].borrow(aDai, amountPerBorrower);
         }
 
-        supplier1.approve(dai, amount);
         supplier1.supply(aDai, amount);
 
         uint256 inP2P;
@@ -198,13 +189,11 @@ contract TestSupply is TestSetup {
         uint256 amountPerBorrower = amount / (2 * NMAX);
 
         for (uint256 i = 0; i < NMAX; i++) {
-            borrowers[i].approve(usdc, to6Decimals(collateral));
             borrowers[i].supply(aUsdc, to6Decimals(collateral));
 
             borrowers[i].borrow(aDai, amountPerBorrower);
         }
 
-        supplier1.approve(dai, amount);
         supplier1.supply(aDai, amount);
 
         uint256 inP2P;

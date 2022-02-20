@@ -9,14 +9,12 @@ contract TestLiquidate is TestSetup {
         uint256 amount = 10000 ether;
         uint256 collateral = 2 * amount;
 
-        borrower1.approve(usdc, address(positionsManager), to6Decimals(collateral));
         borrower1.supply(aUsdc, to6Decimals(collateral));
         borrower1.borrow(aDai, amount);
 
         // Liquidate
         uint256 toRepay = amount / 2;
         User liquidator = borrower3;
-        liquidator.approve(dai, address(positionsManager), toRepay);
 
         hevm.expectRevert(abi.encodeWithSignature("DebtValueNotAboveMax()"));
         liquidator.liquidate(aDai, aUsdc, address(borrower1), toRepay);
@@ -47,7 +45,6 @@ contract TestLiquidate is TestSetup {
         // Liquidate
         uint256 toRepay = amount / 2;
         User liquidator = borrower3;
-        liquidator.approve(dai, address(positionsManager), toRepay);
         liquidator.liquidate(aDai, aUsdc, address(borrower1), toRepay);
 
         // Check borrower1 borrow balance
