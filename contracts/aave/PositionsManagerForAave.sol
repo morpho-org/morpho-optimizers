@@ -156,9 +156,9 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
     /// @param _newValue The new value of `NDS`.
     event NDSSet(uint8 _newValue);
 
-    /// @dev Emitted when a new `mgtc` is set.
-    /// @param _mgtc The new `mgtc`.
-    event MgtcSet(MGTC _mgtc);
+    /// @dev Emitted when a new `maxGas` is set.
+    /// @param _maxGas The new `maxGas`.
+    event MaxGasSet(MaxGas _maxGas);
 
     /// @dev Emitted the address of the `treasuryVault` is set.
     /// @param _newTreasuryVaultAddress The new address of the `treasuryVault`.
@@ -261,9 +261,9 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
     constructor(
         address _marketsManager,
         address _lendingPoolAddressesProvider,
-        MGTC memory _mgtc
+        MaxGas memory _maxGas
     ) {
-        mgtc = _mgtc;
+        maxGas = _maxGas;
         marketsManager = IMarketsManagerForAave(_marketsManager);
         addressesProvider = ILendingPoolAddressesProvider(_lendingPoolAddressesProvider);
         dataProvider = IProtocolDataProvider(addressesProvider.getAddress(DATA_PROVIDER_ID));
@@ -295,11 +295,11 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         emit NDSSet(_newNDS);
     }
 
-    /// @dev Sets `mgtc`.
-    /// @param _mgtc The new `mgtc`.
-    function setMgtc(MGTC memory _mgtc) external onlyMarketsManagerOwner {
-        mgtc = _mgtc;
-        emit MgtcSet(_mgtc);
+    /// @dev Sets `maxGas`.
+    /// @param _maxGas The new `maxGas`.
+    function setMaxGas(MaxGas memory _maxGas) external onlyMarketsManagerOwner {
+        maxGas = _maxGas;
+        emit MaxGasSet(_maxGas);
     }
 
     /// @dev Sets the threshold of a market.
@@ -423,14 +423,14 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         isMarketCreated(_poolTokenAddress)
         isAboveThreshold(_poolTokenAddress, _amount)
     {
-        _supply(_poolTokenAddress, _amount, _referralCode, mgtc.supply);
+        _supply(_poolTokenAddress, _amount, _referralCode, maxGas.supply);
     }
 
     /// @dev Supplies underlying tokens in a specific market.
     /// @param _poolTokenAddress The address of the market the user wants to supply.
     /// @param _amount The amount of token (in underlying).
     /// @param _referralCode The referral code of an integrator that may receive rewards. 0 if no referral code.
-    /// @param _maxGasToConsume The maximum amount of gas to consume within a loop.
+    /// @param _maxGasToConsume The maximum amount of gas to consume within a matching engine loop.
     function supply(
         address _poolTokenAddress,
         uint256 _amount,
@@ -460,14 +460,14 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         isMarketCreated(_poolTokenAddress)
         isAboveThreshold(_poolTokenAddress, _amount)
     {
-        _borrow(_poolTokenAddress, _amount, _referralCode, mgtc.borrow);
+        _borrow(_poolTokenAddress, _amount, _referralCode, maxGas.borrow);
     }
 
     /// @dev Supplies underlying tokens in a specific market.
     /// @param _poolTokenAddress The address of the market the user wants to supply.
     /// @param _amount The amount of token (in underlying).
     /// @param _referralCode The referral code of an integrator that may receive rewards. 0 if no referral code.
-    /// @param _maxGasToConsume The maximum amount of gas to consume within a loop.
+    /// @param _maxGasToConsume The maximum amount of gas to consume within a matching engine loop.
     function borrow(
         address _poolTokenAddress,
         uint256 _amount,
@@ -502,7 +502,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
             _amount
         );
 
-        _withdraw(_poolTokenAddress, toWithdraw, msg.sender, msg.sender, mgtc.withdraw);
+        _withdraw(_poolTokenAddress, toWithdraw, msg.sender, msg.sender, maxGas.withdraw);
     }
 
     /// @notice Repays debt of the user.
@@ -522,7 +522,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
             _amount
         );
 
-        _repay(_poolTokenAddress, msg.sender, toRepay, mgtc.repay);
+        _repay(_poolTokenAddress, msg.sender, toRepay, maxGas.repay);
     }
 
     /// @notice Allows someone to liquidate a position.
@@ -745,7 +745,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
     /// @param _poolTokenAddress The address of the market the user wants to supply.
     /// @param _amount The amount of token (in underlying).
     /// @param _referralCode The referral code of an integrator that may receive rewards. 0 if no referral code.
-    /// @param _maxGasToConsume The maximum amount of gas to consume within a loop.
+    /// @param _maxGasToConsume The maximum amount of gas to consume within a matching engine loop.
     function _supply(
         address _poolTokenAddress,
         uint256 _amount,
@@ -807,7 +807,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
     /// @param _poolTokenAddress The address of the markets the user wants to enter.
     /// @param _amount The amount of token (in underlying).
     /// @param _referralCode The referral code of an integrator that may receive rewards. 0 if no referral code.
-    /// @param _maxGasToConsume The maximum amount of gas to consume within a loop.
+    /// @param _maxGasToConsume The maximum amount of gas to consume within a matching engine loop.
     function _borrow(
         address _poolTokenAddress,
         uint256 _amount,
@@ -872,7 +872,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
     /// @param _amount The amount of token (in underlying).
     /// @param _supplier The address of the supplier.
     /// @param _receiver The address of the user who will receive the tokens.
-    /// @param _maxGasToConsume The maximum amount of gas to consume within a loop.
+    /// @param _maxGasToConsume The maximum amount of gas to consume within a matching engine loop.
     function _withdraw(
         address _poolTokenAddress,
         uint256 _amount,
@@ -951,7 +951,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
     /// @param _poolTokenAddress The address of the market the user wants to interact with.
     /// @param _user The address of the user.
     /// @param _amount The amount of token (in underlying).
-    /// @param _maxGasToConsume The maximum amount of gas to consume within a loop.
+    /// @param _maxGasToConsume The maximum amount of gas to consume within a matching engine loop.
     function _repay(
         address _poolTokenAddress,
         address _user,
