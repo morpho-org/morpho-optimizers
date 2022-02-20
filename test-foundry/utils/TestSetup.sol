@@ -167,4 +167,16 @@ contract TestSetup is Config, Utils {
 
         return customOracle;
     }
+
+    function setMaxGasHelper(
+        uint64 _supply,
+        uint64 _borrow,
+        uint64 _withdraw,
+        uint64 _repay
+    ) public {
+        PositionsManagerForAaveStorage.MaxGas memory newMaxGas = PositionsManagerForAaveStorage
+        .MaxGas({supply: _supply, borrow: _borrow, withdraw: _withdraw, repay: _repay});
+
+        positionsManager.setMaxGas(newMaxGas);
+    }
 }
