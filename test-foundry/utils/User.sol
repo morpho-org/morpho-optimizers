@@ -104,8 +104,8 @@ contract User {
         positionsManager.setNDS(_newNDS);
     }
 
-    function setMgtc(PositionsManagerForAave.MGTC memory _mgtc) external {
-        positionsManager.setMgtc(_mgtc);
+    function setMaxGas(PositionsManagerForAave.MaxGas memory _maxGas) external {
+        positionsManager.setMaxGas(_maxGas);
     }
 
     function claimRewards(address[] calldata _assets) external {

@@ -36,7 +36,7 @@ contract PositionsManagerForAaveStorage is ReentrancyGuard, Pausable {
     }
 
     // Max gas to consume for supply, borrow, withdraw and repay functions.
-    struct MGTC {
+    struct MaxGas {
         uint64 supply;
         uint64 borrow;
         uint64 withdraw;
@@ -45,7 +45,7 @@ contract PositionsManagerForAaveStorage is ReentrancyGuard, Pausable {
 
     /// Storage ///
 
-    MGTC public mgtc; // Max gas to consume within loops in matching engine functions.
+    MaxGas public maxGas; // Max gas to consume within loops in matching engine functions.
     uint8 public NDS = 20; // Max number of iterations in data structure sorting process.
     uint8 public constant NO_REFERRAL_CODE = 0;
     uint8 public constant VARIABLE_INTEREST_MODE = 2;
