@@ -42,7 +42,7 @@ contract TestPausable is TestSetup {
 
         address[] memory assets = new address[](1);
         assets[0] = aDai;
-        supplier1.claimRewards(assets);
+        supplier1.claimRewards(assets, false);
 
         positionsManager.claimToTreasury(aDai);
     }
@@ -71,7 +71,7 @@ contract TestPausable is TestSetup {
         address[] memory assets = new address[](1);
         assets[0] = aDai;
         hevm.expectRevert("Pausable: paused");
-        supplier1.claimRewards(assets);
+        supplier1.claimRewards(assets, false);
 
         hevm.expectRevert("Pausable: paused");
         positionsManager.claimToTreasury(aDai);
