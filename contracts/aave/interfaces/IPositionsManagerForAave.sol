@@ -10,7 +10,7 @@ interface IPositionsManagerForAave {
     }
 
     struct Delta {
-        uint256 supplyDelta;
+        uint256 supplyP2PDelta;
         uint256 borrowP2PDelta;
         uint256 supplyP2PAmount;
         uint256 borrowP2PAmount;
