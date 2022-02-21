@@ -76,7 +76,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         IERC20 _underlyingToken,
         uint256 _amount,
         uint256 _maxGasToConsume
-    ) public override returns (uint256 matched) {
+    ) external override returns (uint256 matched) {
         Vars memory vars;
         address poolTokenAddress = address(_poolToken);
         address user = suppliersOnPool[poolTokenAddress].getHead();
@@ -143,7 +143,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         address _poolTokenAddress,
         uint256 _amount,
         uint256 _maxGasToConsume
-    ) public override {
+    ) external override {
         Vars memory vars;
         IERC20 underlyingToken = IERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
         address user = suppliersInP2P[_poolTokenAddress].getHead();
@@ -224,7 +224,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         IERC20 _underlyingToken,
         uint256 _amount,
         uint256 _maxGasToConsume
-    ) public override returns (uint256 matched) {
+    ) external override returns (uint256 matched) {
         Vars memory vars;
         address poolTokenAddress = address(_poolToken);
         address user = borrowersOnPool[poolTokenAddress].getHead();
@@ -289,7 +289,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         address _poolTokenAddress,
         uint256 _amount,
         uint256 _maxGasToConsume
-    ) public override {
+    ) external override {
         Vars memory vars;
         IERC20 underlyingToken = IERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
         address user = borrowersInP2P[_poolTokenAddress].getHead();
