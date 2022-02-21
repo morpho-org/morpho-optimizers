@@ -502,7 +502,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
             _amount
         );
 
-        _withdraw(_poolTokenAddress, _amount, msg.sender, msg.sender, maxGas.withdraw);
+        _withdraw(_poolTokenAddress, toWithdraw, msg.sender, msg.sender, maxGas.withdraw);
     }
 
     /// @notice Repays debt of the user.
@@ -522,7 +522,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
             _amount
         );
 
-        _repay(_poolTokenAddress, msg.sender, _amount, maxGas.repay);
+        _repay(_poolTokenAddress, msg.sender, toRepay, maxGas.repay);
     }
 
     /// @notice Allows someone to liquidate a position.
