@@ -95,11 +95,11 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         Delta storage delta = deltas[poolTokenAddress];
 
         // Match supply P2P delta first
-        if (delta.supplyDelta > 0) {
-            uint256 toMatch = Math.min(delta.supplyDelta.mulWadByRay(vars.normalizer), _amount);
+        if (delta.supplyP2PDelta > 0) {
+            uint256 toMatch = Math.min(delta.supplyP2PDelta.mulWadByRay(vars.normalizer), _amount);
             matched += toMatch;
-            delta.supplyDelta -= toMatch.divWadByRay(vars.normalizer);
-            emit SupplyP2PDeltaUpdated(poolTokenAddress, delta.supplyDelta);
+            delta.supplyP2PDelta -= toMatch.divWadByRay(vars.normalizer);
+            emit SupplyP2PDeltaUpdated(poolTokenAddress, delta.supplyP2PDelta);
         }
 
         if (_maxGasToConsume != 0) {
@@ -212,8 +212,8 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         uint256 toSupply = Math.min(_amount, delta.supplyP2PAmount.mulWadByRay(vars.p2pRate));
 
         if (remainingToUnmatch > 0) {
-            delta.supplyDelta += remainingToUnmatch.divWadByRay(vars.normalizer);
-            emit SupplyP2PDeltaUpdated(_poolTokenAddress, delta.supplyDelta);
+            delta.supplyP2PDelta += remainingToUnmatch.divWadByRay(vars.normalizer);
+            emit SupplyP2PDeltaUpdated(_poolTokenAddress, delta.supplyP2PDelta);
         }
 
         delta.supplyP2PAmount -= (_amount - remainingToUnmatch).divWadByRay(vars.p2pRate);
@@ -313,14 +313,17 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         Delta storage delta = deltas[_poolTokenAddress];
 
         // Reduce supply P2P delta first
-        if (delta.supplyDelta > 0) {
+        if (delta.supplyP2PDelta > 0) {
             uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(
                 address(underlyingToken)
             );
-            uint256 toUnmatch = Math.min(delta.supplyDelta.mulWadByRay(normalizedIncome), _amount);
+            uint256 toUnmatch = Math.min(
+                delta.supplyP2PDelta.mulWadByRay(normalizedIncome),
+                _amount
+            );
             remainingToUnmatch -= toUnmatch;
-            delta.supplyDelta -= toUnmatch.divWadByRay(normalizedIncome);
-            emit SupplyP2PDeltaUpdated(_poolTokenAddress, delta.supplyDelta);
+            delta.supplyP2PDelta -= toUnmatch.divWadByRay(normalizedIncome);
+            emit SupplyP2PDeltaUpdated(_poolTokenAddress, delta.supplyP2PDelta);
         }
 
         if (_maxGasToConsume != 0) {
