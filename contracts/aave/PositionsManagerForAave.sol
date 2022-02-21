@@ -360,7 +360,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
     /// @notice Claims rewards for the given assets and the unclaimed rewards.
     /// @param _assets The assets to claim rewards from (aToken or variable debt token).
     /// @param _swap Whether or not to swap reward tokens for Morpho tokens.
-    function claimRewards(address[] calldata _assets, bool _swap) external {
+    function claimRewards(address[] calldata _assets, bool _swap) external whenNotPaused {
         uint256 amountToClaim = rewardsManager.claimRewards(_assets, type(uint256).max, msg.sender);
 
         if (amountToClaim > 0) {
