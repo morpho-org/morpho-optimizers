@@ -62,6 +62,16 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
     /// @param _supplyP2PDelta The supply P2P delta after update.
     event SupplyP2PDeltaUpdated(address indexed _poolTokenAddress, uint256 _supplyP2PDelta);
 
+    /// @notice Emitted when the supply and borrow P2P amounts are updated.
+    /// @param _poolTokenAddress The address of the market.
+    /// @param _supplyP2PAmount The supply P2P amount after update.
+    /// @param _borrowP2PAmount The borrow P2P amount after update.
+    event P2PAmountsUpdated(
+        address indexed _poolTokenAddress,
+        uint256 _supplyP2PAmount,
+        uint256 _borrowP2PAmount
+    );
+
     /// External ///
 
     /// @notice Matches suppliers' liquidity waiting on Aave for the given `_amount` and move it to P2P.
@@ -127,6 +137,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         delta.borrowP2PAmount += matched.divWadByRay(
             marketsManager.borrowP2PExchangeRate(poolTokenAddress)
         );
+        emit P2PAmountsUpdated(poolTokenAddress, delta.supplyP2PAmount, delta.borrowP2PAmount);
 
         if (matched > 0) {
             matched = Math.min(matched, _poolToken.balanceOf(address(this)));
@@ -209,6 +220,8 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         delta.borrowP2PAmount -= _amount.divWadByRay(
             marketsManager.borrowP2PExchangeRate(_poolTokenAddress)
         );
+        emit P2PAmountsUpdated(_poolTokenAddress, delta.supplyP2PAmount, delta.borrowP2PAmount);
+
         if (toSupply > 0) _supplyERC20ToPool(_poolTokenAddress, underlyingToken, toSupply); // Revert on error
     }
 
@@ -275,6 +288,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
             marketsManager.supplyP2PExchangeRate(poolTokenAddress)
         );
         delta.borrowP2PAmount += matched.divWadByRay(vars.p2pRate);
+        emit P2PAmountsUpdated(poolTokenAddress, delta.supplyP2PAmount, delta.borrowP2PAmount);
 
         if (matched > 0)
             _repayERC20ToPool(poolTokenAddress, _underlyingToken, matched, vars.normalizer); // Revert on error
@@ -349,6 +363,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
             marketsManager.supplyP2PExchangeRate(_poolTokenAddress)
         );
         delta.borrowP2PAmount -= (_amount - remainingToUnmatch).divWadByRay(vars.p2pRate);
+        emit P2PAmountsUpdated(_poolTokenAddress, delta.supplyP2PAmount, delta.borrowP2PAmount);
 
         _borrowERC20FromPool(_poolTokenAddress, underlyingToken, _amount); // Revert on error
     }
