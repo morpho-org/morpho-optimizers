@@ -2,10 +2,10 @@
 pragma solidity 0.8.7;
 
 import "./interfaces/aave/ILendingPoolAddressesProvider.sol";
+import {IAToken} from "./interfaces/aave/IAToken.sol";
 import "./interfaces/aave/IProtocolDataProvider.sol";
 import "./interfaces/aave/ILendingPool.sol";
 import "./interfaces/aave/DataTypes.sol";
-import {IAToken} from "./interfaces/aave/IAToken.sol";
 import "./interfaces/IPositionsManagerForAave.sol";
 
 import "./libraries/aave/WadRayMath.sol";
@@ -27,9 +27,9 @@ contract MarketsManagerForAave is Ownable {
 
     /// Storage ///
 
+    uint16 public reserveFactor; // Proportion of the interest earned by users sent to the DAO, in basis point (100% = 10000). The default value is 0.
     uint16 public constant MAX_BASIS_POINTS = 10000; // 100% in basis point.
     uint16 public constant HALF_MAX_BASIS_POINTS = 5000; // 50% in basis point.
-    uint16 public reserveFactor; // Proportion of the interest earned by users sent to the DAO, in basis point (100% = 10000). The default value is 0.
     uint256 public constant SECONDS_PER_YEAR = 365 days; // The number of seconds in one year.
     bytes32 public constant DATA_PROVIDER_ID =
         0x1000000000000000000000000000000000000000000000000000000000000000; // Id of the data provider.
