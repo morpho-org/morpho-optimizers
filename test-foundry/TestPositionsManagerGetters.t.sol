@@ -3,7 +3,7 @@ pragma solidity 0.8.7;
 
 import "./utils/TestSetup.sol";
 
-contract TestGetters is TestSetup {
+contract TestPositionsManagerGetters is TestSetup {
     struct UserBalanceStates {
         uint256 collateralValue;
         uint256 debtValue;
