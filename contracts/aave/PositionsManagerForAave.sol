@@ -7,8 +7,8 @@ import "./interfaces/IMatchingEngineForAave.sol";
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "../common/libraries/DoubleLinkedList.sol";
-import "./libraries/aave/WadRayMath.sol";
 import "./libraries/MatchingEngineFns.sol";
+import "./libraries/aave/WadRayMath.sol";
 
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "./PositionsManagerForAaveStorage.sol";
