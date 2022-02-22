@@ -1,14 +1,12 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.7;
 
-import "./interfaces/aave/IAaveIncentivesController.sol";
 import "./interfaces/aave/ILendingPoolAddressesProvider.sol";
+import "./interfaces/aave/IAaveIncentivesController.sol";
 import "./interfaces/aave/IProtocolDataProvider.sol";
 import "./interfaces/aave/IScaledBalanceToken.sol";
 import "./interfaces/IPositionsManagerForAave.sol";
 import "./interfaces/IGetterUnderlyingAsset.sol";
-
-import {DistributionTypes} from "./libraries/aave/DistributionTypes.sol";
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 
