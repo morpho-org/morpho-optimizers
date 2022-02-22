@@ -20,6 +20,10 @@ test: node_modules
 	@echo Run all tests on ${NETWORK}
 	@forge test -vvv -c test-foundry
 
+gas:
+	@echo Create report
+	@forge test --fork-url https://${NETWORK}.g.alchemy.com/v2/${ALCHEMY_KEY} --fork-block-number $(fork-block-number) -vvv -c test-foundry --gas-report --match-test test_supply_gas_consumption > gas_report_with_Merlin.ansi
+
 contract-% c-%: node_modules
 	@echo Run tests for contract $* on ${NETWORK}
 	@forge test -vvv -c test-foundry --match-contract $*
