@@ -1,55 +1,31 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.7;
 
-import {IVariableDebtToken} from "./interfaces/aave/IVariableDebtToken.sol";
-import "./interfaces/aave/ILendingPoolAddressesProvider.sol";
-import "./interfaces/aave/IAaveIncentivesController.sol";
-import "./interfaces/aave/IProtocolDataProvider.sol";
-import "./interfaces/aave/ILendingPool.sol";
-import "./interfaces/IMarketsManagerForAave.sol";
-import "./interfaces/IMatchingEngineForAave.sol";
-import "./interfaces/IRewardsManager.sol";
-import "../common/interfaces/ISwapManager.sol";
+import {IVariableDebtToken} from "../interfaces/aave/IVariableDebtToken.sol";
+import "../interfaces/aave/ILendingPoolAddressesProvider.sol";
+import "../interfaces/aave/IAaveIncentivesController.sol";
+import "../interfaces/aave/IProtocolDataProvider.sol";
+import "../interfaces/aave/ILendingPool.sol";
+import "../interfaces/IMarketsManagerForAave.sol";
+import "../interfaces/IMatchingEngineForAave.sol";
+import "../interfaces/IRewardsManager.sol";
+import "../../common/interfaces/ISwapManager.sol";
 
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/utils/math/Math.sol";
-import "../common/libraries/DoubleLinkedList.sol";
-import "./libraries/aave/WadRayMath.sol";
+import "../../common/libraries/DoubleLinkedList.sol";
+import "../libraries/aave/WadRayMath.sol";
 
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/utils/math/Math.sol";
 
-contract PositionsManagerForAaveStorage is ReentrancyGuard, Pausable {
+import "./PositionsManagerForAaveTypes.sol";
+
+/// @notice Storage, Modifiers and helpers functions for Aave interactions, For PositionsManagerForAave
+contract PositionsManagerForAaveStorage is ReentrancyGuard, Pausable, PositionsManagerForAaveTypes {
     using WadRayMath for uint256;
     using SafeERC20 for IERC20;
     using Math for uint256;
-
-    /// Structs ///
-
-    struct SupplyBalance {
-        uint256 inP2P; // In supplier's p2pUnit, a unit that grows in value, to keep track of the interests earned when users are in P2P.
-        uint256 onPool; // In scaled balance.
-    }
-
-    struct BorrowBalance {
-        uint256 inP2P; // In borrower's p2pUnit, a unit that grows in value, to keep track of the interests paid when users are in P2P.
-        uint256 onPool; // In adUnit, a unit that grows in value, to keep track of the debt increase when users are in Aave. Multiply by current borrowIndex to get the underlying amount.
-    }
-
-    // Max gas to consume for supply, borrow, withdraw and repay functions.
-    struct MaxGas {
-        uint64 supply;
-        uint64 borrow;
-        uint64 withdraw;
-        uint64 repay;
-    }
-
-    struct Delta {
-        uint256 supplyDelta; // Difference between the stored P2P supply amount and the real P2P supply amount (in scaled balance).
-        uint256 borrowP2PDelta; // Difference between the stored P2P borrow amount and the real P2P borrow amount (in adUnit).
-        uint256 supplyP2PAmount; // Sum of all stored P2P supply (in P2P unit).
-        uint256 borrowP2PAmount; // Sum of all stored P2P borrow (in P2P unit).
-    }
 
     /// Storage ///
 
@@ -159,5 +135,34 @@ contract PositionsManagerForAaveStorage is ReentrancyGuard, Pausable {
             address(this)
         );
         marketsManager.updateSPYs(_poolTokenAddress);
+    }
+
+    /// Modifiers ///
+
+    /// @notice Prevents a user to access a market not created yet.
+    /// @param _poolTokenAddress The address of the market.
+    modifier isMarketCreated(address _poolTokenAddress) {
+        if (!marketsManager.isCreated(_poolTokenAddress)) revert MarketNotCreated();
+        _;
+    }
+
+    /// @notice Prevents a user to supply or borrow less than threshold.
+    /// @param _poolTokenAddress The address of the market.
+    /// @param _amount The amount of token (in underlying).
+    modifier isAboveThreshold(address _poolTokenAddress, uint256 _amount) {
+        if (_amount < threshold[_poolTokenAddress]) revert AmountNotAboveThreshold();
+        _;
+    }
+
+    /// @notice Prevents a user to call function only allowed for the `marketsManager`.
+    modifier onlyMarketsManager() {
+        if (msg.sender != address(marketsManager)) revert OnlyMarketsManager();
+        _;
+    }
+
+    /// @notice Prevents a user to call function only allowed for `marketsManager`'s owner.
+    modifier onlyMarketsManagerOwner() {
+        if (msg.sender != marketsManager.owner()) revert OnlyMarketsManagerOwner();
+        _;
     }
 }
