@@ -35,5 +35,7 @@ interface IPositionsManagerForAave {
 
     function supplyBalanceInOf(address, address) external returns (Balance memory);
 
-    function deltas(address) external returns (Delta memory);
+    function deltas(address) external view returns (Delta memory);
+
+    function threshold(address) external view returns (uint256);
 }
