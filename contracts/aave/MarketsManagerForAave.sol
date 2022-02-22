@@ -240,6 +240,61 @@ contract MarketsManagerForAave is Ownable {
         _updateSPYs(_marketAddress);
     }
 
+    /// @notice Returns all created markets.
+    /// @return The list of market adresses.
+    function getAllMarkets() external view returns (address[] memory) {
+        return marketsCreated;
+    }
+
+    /// @notice Returns market's data.
+    /// @return The supply P2P SPY of the market.
+    /// @return The borrow P2P SPY of the market.
+    /// @return The supply P2P exchange rate of the market.
+    /// @return The borrow P2P exchange rate of the market.
+    /// @return The last timestamp when P2P exchange rates where updated.
+    /// @return The delta data of the market.
+    function getMarketData(address _marketAddress)
+        external
+        view
+        returns (
+            uint256,
+            uint256,
+            uint256,
+            uint256,
+            uint256,
+            IPositionsManagerForAave.Delta memory
+        )
+    {
+        return (
+            supplyP2PSPY[_marketAddress],
+            borrowP2PSPY[_marketAddress],
+            supplyP2PExchangeRate[_marketAddress],
+            borrowP2PExchangeRate[_marketAddress],
+            exchangeRatesLastUpdateTimestamp[_marketAddress],
+            positionsManager.deltas(_marketAddress)
+        );
+    }
+
+    /// @notice Returns market's configuration.
+    /// @return Whether the market is created or not.
+    /// @return Whether user are put in P2P or not.
+    /// @return The threshold of the market.
+    function getMarketConfiguration(address _marketAddress)
+        external
+        view
+        returns (
+            bool,
+            bool,
+            uint256
+        )
+    {
+        return (
+            isCreated[_marketAddress],
+            noP2P[_marketAddress],
+            positionsManager.threshold(_marketAddress)
+        );
+    }
+
     /// Public ///
 
     /// @notice Updates the P2P Second Percentage Yield and the current P2P exchange rates.
