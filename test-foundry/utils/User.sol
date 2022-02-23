@@ -137,8 +137,8 @@ contract User {
         positionsManager.setTreasuryVault(_newTreasuryVault);
     }
 
-    function setPauseStatus() external {
-        positionsManager.setPauseStatus();
+    function setPauseStatus(address _poolTokenAddress) external {
+        positionsManager.setPauseStatus(_poolTokenAddress);
     }
 
     function setAaveIncentivesControllerOnRewardsManager(address _aaveIncentivesController)
