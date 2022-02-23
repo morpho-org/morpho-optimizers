@@ -17,9 +17,8 @@ import "../common/libraries/DoubleLinkedList.sol";
 import "./libraries/aave/WadRayMath.sol";
 
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/security/Pausable.sol";
 
-contract PositionsManagerForAaveStorage is ReentrancyGuard, Pausable {
+contract PositionsManagerForAaveStorage is ReentrancyGuard {
     using WadRayMath for uint256;
     using SafeERC20 for IERC20;
     using Math for uint256;
@@ -71,6 +70,7 @@ contract PositionsManagerForAaveStorage is ReentrancyGuard, Pausable {
     mapping(address => address[]) public enteredMarkets; // The markets entered by a user.
     mapping(address => uint256) public threshold; // Thresholds below the ones suppliers and borrowers cannot enter markets.
     mapping(address => Delta) public deltas; // Delta parameters for each market.
+    mapping(address => bool) public paused; // Whether a market is paused or not.
 
     IAaveIncentivesController public aaveIncentivesController;
     ILendingPoolAddressesProvider public addressesProvider;
