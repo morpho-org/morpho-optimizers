@@ -172,17 +172,22 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
     event AaveIncentivesControllerSet(address _aaveIncentivesController);
 
     /// @notice Emitted when a threshold of a market is set.
-    /// @param _marketAddress The address of the market to set.
+    /// @param _poolTokenAddress The address of the pool token concerned.
     /// @param _newValue The new value of the threshold.
-    event ThresholdSet(address _marketAddress, uint256 _newValue);
+    event ThresholdSet(address _poolTokenAddress, uint256 _newValue);
+
+    /// @notice Emitted when a market is paused or unpaused.
+    /// @param _poolTokenAddress The address of the pool token concerned..
+    /// @param _newStatus The new pause status of the market.
+    event PauseStatusSet(address _poolTokenAddress, bool _newStatus);
 
     /// @notice Emitted when the DAO claims fees.
-    /// @param _poolTokenAddress The address of the market.
+    /// @param _poolTokenAddress The address of the pool token concerned.
     /// @param _amountClaimed The amount of underlying token claimed.
     event FeesClaimed(address _poolTokenAddress, uint256 _amountClaimed);
 
     /// @notice Emitted when a reserve fee is claimed.
-    /// @param _poolTokenAddress The address of the market.
+    /// @param _poolTokenAddress The address of the pool token concerned.
     /// @param _amountClaimed The amount of reward token claimed.
     event ReserveFeeClaimed(address _poolTokenAddress, uint256 _amountClaimed);
 
@@ -204,6 +209,9 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
 
     /// @notice Thrown when the market is not created yet.
     error MarketNotCreated();
+
+    /// @notice Thrown when the market is paused.
+    error MarketPaused();
 
     /// @notice Thrown when the market is not listed on Aave.
     error MarketIsNotListedOnAave();
@@ -231,10 +239,11 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
 
     /// Modifiers ///
 
-    /// @notice Prevents a user to access a market not created yet.
-    /// @param _poolTokenAddress The address of the market.
-    modifier isMarketCreated(address _poolTokenAddress) {
+    /// @notice Prevents a user to trigger a function when market is not created or paused.
+    /// @param _poolTokenAddress The address of the market to check.
+    modifier isMarketCreatedAndNotPaused(address _poolTokenAddress) {
         if (!marketsManager.isCreated(_poolTokenAddress)) revert MarketNotCreated();
+        if (paused[_poolTokenAddress]) revert MarketPaused();
         _;
     }
 
@@ -335,20 +344,20 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         emit RewardsManagerSet(_rewardsManagerAddress);
     }
 
-    /// @notice Sets the pause status in case of emergency.
-    /// @dev Note: the events are emitted through the Pausable contract.
-    function setPauseStatus() external onlyMarketsManagerOwner {
-        if (paused()) _unpause();
-        else _pause();
+    /// @notice Sets the pause status on a specific market in case of emergency.
+    /// @param _poolTokenAddress The address of the market to pause/unpause.
+    function setPauseStatus(address _poolTokenAddress) external onlyMarketsManagerOwner {
+        bool newPauseStatus = !paused[_poolTokenAddress];
+        paused[_poolTokenAddress] = newPauseStatus;
+        emit PauseStatusSet(_poolTokenAddress, newPauseStatus);
     }
 
     /// @notice Transfers the protocol reserve fee to the DAO.
     /// @param _poolTokenAddress The address of the market on which we want to claim the reserve fee.
     function claimToTreasury(address _poolTokenAddress)
         external
-        whenNotPaused
         onlyMarketsManagerOwner
-        isMarketCreated(_poolTokenAddress)
+        isMarketCreatedAndNotPaused(_poolTokenAddress)
     {
         IERC20 underlyingToken = IERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
         uint256 amountToClaim = underlyingToken.balanceOf(address(this));
@@ -359,7 +368,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
     /// @notice Claims rewards for the given assets and the unclaimed rewards.
     /// @param _assets The assets to claim rewards from (aToken or variable debt token).
     /// @param _swap Whether or not to swap reward tokens for Morpho tokens.
-    function claimRewards(address[] calldata _assets, bool _swap) external whenNotPaused {
+    function claimRewards(address[] calldata _assets, bool _swap) external {
         uint256 amountToClaim = rewardsManager.claimRewards(_assets, type(uint256).max, msg.sender);
 
         if (amountToClaim > 0) {
@@ -429,14 +438,17 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         address _poolTokenAddress,
         uint256 _amount,
         uint16 _referralCode
-    )
-        external
-        nonReentrant
-        whenNotPaused
-        isMarketCreated(_poolTokenAddress)
-        isAboveThreshold(_poolTokenAddress, _amount)
-    {
-        _supply(_poolTokenAddress, _amount, _referralCode, maxGas.supply);
+    ) external nonReentrant {
+        _supply(_poolTokenAddress, _amount, maxGas.supply);
+
+        emit Supplied(
+            msg.sender,
+            _poolTokenAddress,
+            _amount,
+            supplyBalanceInOf[_poolTokenAddress][msg.sender].onPool,
+            supplyBalanceInOf[_poolTokenAddress][msg.sender].inP2P,
+            _referralCode
+        );
     }
 
     /// @dev Supplies underlying tokens in a specific market.
@@ -449,13 +461,17 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         uint256 _amount,
         uint16 _referralCode,
         uint256 _maxGasToConsume
-    )
-        external
-        nonReentrant
-        isMarketCreated(_poolTokenAddress)
-        isAboveThreshold(_poolTokenAddress, _amount)
-    {
-        _supply(_poolTokenAddress, _amount, _referralCode, _maxGasToConsume);
+    ) external nonReentrant {
+        _supply(_poolTokenAddress, _amount, _maxGasToConsume);
+
+        emit Supplied(
+            msg.sender,
+            _poolTokenAddress,
+            _amount,
+            supplyBalanceInOf[_poolTokenAddress][msg.sender].onPool,
+            supplyBalanceInOf[_poolTokenAddress][msg.sender].inP2P,
+            _referralCode
+        );
     }
 
     /// @notice Borrows underlying tokens in a specific market.
@@ -466,14 +482,17 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         address _poolTokenAddress,
         uint256 _amount,
         uint16 _referralCode
-    )
-        external
-        nonReentrant
-        whenNotPaused
-        isMarketCreated(_poolTokenAddress)
-        isAboveThreshold(_poolTokenAddress, _amount)
-    {
-        _borrow(_poolTokenAddress, _amount, _referralCode, maxGas.borrow);
+    ) external nonReentrant {
+        _borrow(_poolTokenAddress, _amount, maxGas.borrow);
+
+        emit Borrowed(
+            msg.sender,
+            _poolTokenAddress,
+            _amount,
+            borrowBalanceInOf[_poolTokenAddress][msg.sender].onPool,
+            borrowBalanceInOf[_poolTokenAddress][msg.sender].inP2P,
+            _referralCode
+        );
     }
 
     /// @dev Supplies underlying tokens in a specific market.
@@ -486,23 +505,23 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         uint256 _amount,
         uint16 _referralCode,
         uint256 _maxGasToConsume
-    )
-        external
-        nonReentrant
-        isMarketCreated(_poolTokenAddress)
-        isAboveThreshold(_poolTokenAddress, _amount)
-    {
-        _borrow(_poolTokenAddress, _amount, _referralCode, _maxGasToConsume);
+    ) external nonReentrant {
+        _borrow(_poolTokenAddress, _amount, _maxGasToConsume);
+
+        emit Borrowed(
+            msg.sender,
+            _poolTokenAddress,
+            _amount,
+            borrowBalanceInOf[_poolTokenAddress][msg.sender].onPool,
+            borrowBalanceInOf[_poolTokenAddress][msg.sender].inP2P,
+            _referralCode
+        );
     }
 
     /// @notice Withdraws underlying tokens in a specific market.
     /// @param _poolTokenAddress The address of the market the user wants to interact with.
     /// @param _amount The amount in tokens to withdraw from supply.
-    function withdraw(address _poolTokenAddress, uint256 _amount)
-        external
-        nonReentrant
-        whenNotPaused
-    {
+    function withdraw(address _poolTokenAddress, uint256 _amount) external nonReentrant {
         marketsManager.updateP2PExchangeRates(_poolTokenAddress);
 
         uint256 toWithdraw = Math.min(
@@ -522,7 +541,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
     /// @dev `msg.sender` must have approved Morpho's contract to spend the underlying `_amount`.
     /// @param _poolTokenAddress The address of the market the user wants to interact with.
     /// @param _amount The amount of token (in underlying).
-    function repay(address _poolTokenAddress, uint256 _amount) external nonReentrant whenNotPaused {
+    function repay(address _poolTokenAddress, uint256 _amount) external nonReentrant {
         marketsManager.updateP2PExchangeRates(_poolTokenAddress);
 
         uint256 toRepay = Math.min(
@@ -547,7 +566,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         address _poolTokenCollateralAddress,
         address _borrower,
         uint256 _amount
-    ) external nonReentrant whenNotPaused {
+    ) external nonReentrant {
         if (_amount == 0) revert AmountIsZero();
 
         LiquidateVars memory vars;
@@ -757,14 +776,16 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
     /// @dev Implements supply logic.
     /// @param _poolTokenAddress The address of the market the user wants to supply.
     /// @param _amount The amount of token (in underlying).
-    /// @param _referralCode The referral code of an integrator that may receive rewards. 0 if no referral code.
     /// @param _maxGasToConsume The maximum amount of gas to consume within a matching engine loop.
     function _supply(
         address _poolTokenAddress,
         uint256 _amount,
-        uint16 _referralCode,
         uint256 _maxGasToConsume
-    ) internal {
+    )
+        internal
+        isMarketCreatedAndNotPaused(_poolTokenAddress)
+        isAboveThreshold(_poolTokenAddress, _amount)
+    {
         _handleMembership(_poolTokenAddress, msg.sender);
         marketsManager.updateRates(_poolTokenAddress);
         IERC20 underlyingToken = IERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
@@ -805,31 +826,23 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
             matchingEngine.updateSuppliersDC(_poolTokenAddress, msg.sender);
             _supplyERC20ToPool(_poolTokenAddress, underlyingToken, remainingToSupplyToPool); // Revert on error
         }
-
-        emit Supplied(
-            msg.sender,
-            _poolTokenAddress,
-            _amount,
-            supplyBalanceInOf[_poolTokenAddress][msg.sender].onPool,
-            supplyBalanceInOf[_poolTokenAddress][msg.sender].inP2P,
-            _referralCode
-        );
     }
 
     /// @dev Implements borrow logic.
     /// @param _poolTokenAddress The address of the markets the user wants to enter.
     /// @param _amount The amount of token (in underlying).
-    /// @param _referralCode The referral code of an integrator that may receive rewards. 0 if no referral code.
     /// @param _maxGasToConsume The maximum amount of gas to consume within a matching engine loop.
     function _borrow(
         address _poolTokenAddress,
         uint256 _amount,
-        uint16 _referralCode,
         uint256 _maxGasToConsume
-    ) internal {
+    )
+        internal
+        isMarketCreatedAndNotPaused(_poolTokenAddress)
+        isAboveThreshold(_poolTokenAddress, _amount)
+    {
         _handleMembership(_poolTokenAddress, msg.sender);
         _checkUserLiquidity(msg.sender, _poolTokenAddress, 0, _amount);
-        marketsManager.updateRates(_poolTokenAddress);
         IERC20 underlyingToken = IERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
         uint256 remainingToBorrowOnPool = _amount;
 
@@ -870,14 +883,6 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         }
 
         underlyingToken.safeTransfer(msg.sender, _amount);
-        emit Borrowed(
-            msg.sender,
-            _poolTokenAddress,
-            _amount,
-            borrowBalanceInOf[_poolTokenAddress][msg.sender].onPool,
-            borrowBalanceInOf[_poolTokenAddress][msg.sender].inP2P,
-            _referralCode
-        );
     }
 
     /// @dev Implements withdraw logic.
@@ -892,7 +897,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         address _supplier,
         address _receiver,
         uint256 _maxGasToConsume
-    ) internal isMarketCreated(_poolTokenAddress) {
+    ) internal isMarketCreatedAndNotPaused(_poolTokenAddress) {
         if (_amount == 0) revert AmountIsZero();
         IAToken poolToken = IAToken(_poolTokenAddress);
         IERC20 underlyingToken = IERC20(poolToken.UNDERLYING_ASSET_ADDRESS());
@@ -949,6 +954,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         }
 
         underlyingToken.safeTransfer(_receiver, _amount);
+
         emit Withdrawn(
             _supplier,
             _poolTokenAddress,
@@ -969,7 +975,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         address _user,
         uint256 _amount,
         uint256 _maxGasToConsume
-    ) internal isMarketCreated(_poolTokenAddress) {
+    ) internal isMarketCreatedAndNotPaused(_poolTokenAddress) {
         if (_amount == 0) revert AmountIsZero();
 
         IAToken poolToken = IAToken(_poolTokenAddress);
