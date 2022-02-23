@@ -19,7 +19,10 @@ contract TestMarketsManagerGetters is TestSetup {
             uint256 supplyP2PExchangeRate,
             uint256 borrowP2PExchangeRate,
             uint256 exchangeRatesLastUpdateTimestamp,
-            IPositionsManagerForAave.Delta memory delta
+            uint256 supplyP2PDelta_,
+            uint256 borrowP2PDelta_,
+            uint256 supplyP2PAmount_,
+            uint256 borrowP2PAmount_
         ) = marketsManager.getMarketData(aDai);
 
         assertEq(supplyP2PSPY, marketsManager.supplyP2PSPY(aDai));
@@ -37,10 +40,10 @@ contract TestMarketsManagerGetters is TestSetup {
             uint256 borrowP2PAmount
         ) = positionsManager.deltas(aDai);
 
-        assertEq(delta.supplyP2PDelta, supplyP2PDelta);
-        assertEq(delta.borrowP2PDelta, borrowP2PDelta);
-        assertEq(delta.supplyP2PAmount, supplyP2PAmount);
-        assertEq(delta.borrowP2PAmount, borrowP2PAmount);
+        assertEq(supplyP2PDelta_, supplyP2PDelta);
+        assertEq(borrowP2PDelta_, borrowP2PDelta);
+        assertEq(supplyP2PAmount_, supplyP2PAmount);
+        assertEq(borrowP2PAmount_, borrowP2PAmount);
     }
 
     function test_getMarketConfiguration() public {
