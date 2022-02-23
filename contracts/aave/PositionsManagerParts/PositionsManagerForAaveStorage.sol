@@ -21,7 +21,8 @@ import "@openzeppelin/contracts/utils/math/Math.sol";
 
 import "./PositionsManagerForAaveTypes.sol";
 
-/// @notice Storage, Modifiers and helpers functions for Aave interactions, For PositionsManagerForAave
+/// @title PositionsManagerForAaveStorage.
+/// @notice Storage, Modifiers and Helper functions for Aave interactions, for PositionsManagerForAave.
 contract PositionsManagerForAaveStorage is ReentrancyGuard, Pausable, PositionsManagerForAaveTypes {
     using WadRayMath for uint256;
     using SafeERC20 for IERC20;
@@ -57,6 +58,35 @@ contract PositionsManagerForAaveStorage is ReentrancyGuard, Pausable, PositionsM
     IRewardsManager public rewardsManager;
     ISwapManager public swapManager;
     address public treasuryVault;
+
+    /// Modifiers ///
+
+    /// @notice Prevents a user to access a market not created yet.
+    /// @param _poolTokenAddress The address of the market.
+    modifier isMarketCreated(address _poolTokenAddress) {
+        if (!marketsManager.isCreated(_poolTokenAddress)) revert MarketNotCreated();
+        _;
+    }
+
+    /// @notice Prevents a user to supply or borrow less than threshold.
+    /// @param _poolTokenAddress The address of the market.
+    /// @param _amount The amount of token (in underlying).
+    modifier isAboveThreshold(address _poolTokenAddress, uint256 _amount) {
+        if (_amount < threshold[_poolTokenAddress]) revert AmountNotAboveThreshold();
+        _;
+    }
+
+    /// @notice Prevents a user to call function only allowed for the `marketsManager`.
+    modifier onlyMarketsManager() {
+        if (msg.sender != address(marketsManager)) revert OnlyMarketsManager();
+        _;
+    }
+
+    /// @notice Prevents a user to call function only allowed for `marketsManager`'s owner.
+    modifier onlyMarketsManagerOwner() {
+        if (msg.sender != marketsManager.owner()) revert OnlyMarketsManagerOwner();
+        _;
+    }
 
     /// Internal ///
 
@@ -135,34 +165,5 @@ contract PositionsManagerForAaveStorage is ReentrancyGuard, Pausable, PositionsM
             address(this)
         );
         marketsManager.updateSPYs(_poolTokenAddress);
-    }
-
-    /// Modifiers ///
-
-    /// @notice Prevents a user to access a market not created yet.
-    /// @param _poolTokenAddress The address of the market.
-    modifier isMarketCreated(address _poolTokenAddress) {
-        if (!marketsManager.isCreated(_poolTokenAddress)) revert MarketNotCreated();
-        _;
-    }
-
-    /// @notice Prevents a user to supply or borrow less than threshold.
-    /// @param _poolTokenAddress The address of the market.
-    /// @param _amount The amount of token (in underlying).
-    modifier isAboveThreshold(address _poolTokenAddress, uint256 _amount) {
-        if (_amount < threshold[_poolTokenAddress]) revert AmountNotAboveThreshold();
-        _;
-    }
-
-    /// @notice Prevents a user to call function only allowed for the `marketsManager`.
-    modifier onlyMarketsManager() {
-        if (msg.sender != address(marketsManager)) revert OnlyMarketsManager();
-        _;
-    }
-
-    /// @notice Prevents a user to call function only allowed for `marketsManager`'s owner.
-    modifier onlyMarketsManagerOwner() {
-        if (msg.sender != marketsManager.owner()) revert OnlyMarketsManagerOwner();
-        _;
     }
 }

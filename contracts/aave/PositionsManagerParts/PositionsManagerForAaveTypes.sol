@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.7;
 
-/// @title PositionsManagerForAaveTypes
-/// @notice Enum, Events, Structs and Errors for PositionsManagerForAave
+/// @title PositionsManagerForAaveTypes.
+/// @notice Enum, Events, Structs and Errors for PositionsManagerForAave.
 contract PositionsManagerForAaveTypes {
     /// Enums ///
 

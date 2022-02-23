@@ -33,6 +33,8 @@ contract PositionsManagerForAave is PositionsManagerForAaveCore {
         swapManager = _swapManager;
     }
 
+    /// External ///
+
     /// @notice Transfers the protocol reserve fee to the DAO.
     /// @param _poolTokenAddress The address of the market on which we want to claim the reserve fee.
     function claimToTreasury(address _poolTokenAddress)
@@ -188,5 +190,81 @@ contract PositionsManagerForAave is PositionsManagerForAaveCore {
         );
 
         _repay(_poolTokenAddress, msg.sender, toRepay, maxGas.repay);
+    }
+
+    /// @notice Allows someone to liquidate a position.
+    /// @param _poolTokenBorrowedAddress The address of the pool token the liquidator wants to repay.
+    /// @param _poolTokenCollateralAddress The address of the collateral pool token the liquidator wants to seize.
+    /// @param _borrower The address of the borrower to liquidate.
+    /// @param _amount The amount of token (in underlying).
+    function liquidate(
+        address _poolTokenBorrowedAddress,
+        address _poolTokenCollateralAddress,
+        address _borrower,
+        uint256 _amount
+    ) external nonReentrant whenNotPaused {
+        if (_amount == 0) revert AmountIsZero();
+
+        LiquidateVars memory vars;
+        (vars.debtValue, , vars.liquidationValue) = _getUserHypotheticalBalanceStates(
+            _borrower,
+            address(0),
+            0,
+            0
+        );
+        if (vars.debtValue <= vars.liquidationValue) revert DebtValueNotAboveMax();
+
+        IAToken poolTokenBorrowed = IAToken(_poolTokenBorrowedAddress);
+        vars.tokenBorrowedAddress = poolTokenBorrowed.UNDERLYING_ASSET_ADDRESS();
+
+        vars.borrowBalance = _getUserBorrowBalanceInOf(
+            _poolTokenBorrowedAddress,
+            _borrower,
+            vars.tokenBorrowedAddress
+        );
+
+        if (_amount > (vars.borrowBalance * LIQUIDATION_CLOSE_FACTOR_PERCENT) / MAX_BASIS_POINTS)
+            revert AmountAboveWhatAllowedToRepay(); // Same mechanism as Aave. Liquidator cannot repay more than part of the debt (cf close factor on Aave).
+
+        _repay(_poolTokenBorrowedAddress, _borrower, _amount, 0);
+
+        IAToken poolTokenCollateral = IAToken(_poolTokenCollateralAddress);
+        vars.tokenCollateralAddress = poolTokenCollateral.UNDERLYING_ASSET_ADDRESS();
+
+        IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
+        vars.borrowedPrice = oracle.getAssetPrice(vars.tokenBorrowedAddress); // In ETH
+        vars.collateralPrice = oracle.getAssetPrice(vars.tokenCollateralAddress); // In ETH
+
+        (vars.collateralReserveDecimals, , , vars.liquidationBonus, , , , , , ) = dataProvider
+        .getReserveConfigurationData(vars.tokenCollateralAddress);
+        (vars.borrowedReserveDecimals, , , , , , , , , ) = dataProvider.getReserveConfigurationData(
+            vars.tokenBorrowedAddress
+        );
+        vars.collateralTokenUnit = 10**vars.collateralReserveDecimals;
+        vars.borrowedTokenUnit = 10**vars.borrowedReserveDecimals;
+
+        // Calculate the amount of collateral to seize (cf Aave):
+        // seizeAmount = repayAmount * liquidationBonus * borrowedPrice * collateralTokenUnit / (collateralPrice * borrowedTokenUnit)
+        vars.amountToSeize =
+            (_amount * vars.borrowedPrice * vars.collateralTokenUnit * vars.liquidationBonus) /
+            (vars.borrowedTokenUnit * vars.collateralPrice * MAX_BASIS_POINTS); // Same mechanism as aave. The collateral amount to seize is given.
+
+        vars.supplyBalance = _getUserSupplyBalanceInOf(
+            _poolTokenCollateralAddress,
+            _borrower,
+            vars.tokenCollateralAddress
+        );
+
+        if (vars.amountToSeize > vars.supplyBalance) revert ToSeizeAboveCollateral();
+
+        _withdraw(_poolTokenCollateralAddress, vars.amountToSeize, _borrower, msg.sender, 0);
+        emit Liquidated(
+            msg.sender,
+            _borrower,
+            _amount,
+            _poolTokenBorrowedAddress,
+            vars.amountToSeize,
+            _poolTokenCollateralAddress
+        );
     }
 }

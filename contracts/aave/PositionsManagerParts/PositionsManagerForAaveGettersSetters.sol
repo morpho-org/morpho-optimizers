@@ -5,10 +5,13 @@ import "../interfaces/aave/IPriceOracleGetter.sol";
 
 import "./PositionsManagerForAaveStorage.sol";
 
-/// @notice getters and setters for PositionsManagerForAave, including externals, inernals, user-accessible and admin-only functions
+/// @title PositionsManagerForAaveGettersSetters.
+/// @notice Getters and setters for PositionsManagerForAave, including externals, inernals, user-accessible and admin-only functions.
 contract PositionsManagerForAaveGettersSetters is PositionsManagerForAaveStorage {
     using DoubleLinkedList for DoubleLinkedList.List;
     using WadRayMath for uint256;
+
+    /// External ///
 
     /// @notice Updates the `lendingPool` and the `dataProvider`.
     function updateAaveContracts() external {
@@ -250,6 +253,28 @@ contract PositionsManagerForAaveGettersSetters is PositionsManagerForAaveStorage
             assetData.tokenUnit;
     }
 
+    /// Internal ///
+
+    /// @notice Checks whether the user can borrow/withdraw or not.
+    /// @param _user The user to determine liquidity for.
+    /// @param _poolTokenAddress The market to hypothetically withdraw/borrow in.
+    /// @param _withdrawnAmount The number of tokens to hypothetically withdraw (in underlying).
+    /// @param _borrowedAmount The amount of tokens to hypothetically borrow (in underlying).
+    function _checkUserLiquidity(
+        address _user,
+        address _poolTokenAddress,
+        uint256 _withdrawnAmount,
+        uint256 _borrowedAmount
+    ) internal {
+        (uint256 debtValue, uint256 maxDebtValue, ) = _getUserHypotheticalBalanceStates(
+            _user,
+            _poolTokenAddress,
+            _withdrawnAmount,
+            _borrowedAmount
+        );
+        if (debtValue > maxDebtValue) revert DebtValueAboveMax();
+    }
+
     /// @notice Returns the debt value, max debt value of a given user.
     /// @param _user The user to determine liquidity for.
     /// @param _poolTokenAddress The market to hypothetically withdraw/borrow in.
@@ -340,8 +365,6 @@ contract PositionsManagerForAaveGettersSetters is PositionsManagerForAaveStorage
             );
     }
 
-    /// Internal ///
-
     ///@notice Enters the user into the market if not already there.
     ///@param _user The address of the user to update.
     ///@param _poolTokenAddress The address of the market to check.
@@ -350,25 +373,5 @@ contract PositionsManagerForAaveGettersSetters is PositionsManagerForAaveStorage
             userMembership[_poolTokenAddress][_user] = true;
             enteredMarkets[_user].push(_poolTokenAddress);
         }
-    }
-
-    /// @notice Checks whether the user can borrow/withdraw or not.
-    /// @param _user The user to determine liquidity for.
-    /// @param _poolTokenAddress The market to hypothetically withdraw/borrow in.
-    /// @param _withdrawnAmount The number of tokens to hypothetically withdraw (in underlying).
-    /// @param _borrowedAmount The amount of tokens to hypothetically borrow (in underlying).
-    function _checkUserLiquidity(
-        address _user,
-        address _poolTokenAddress,
-        uint256 _withdrawnAmount,
-        uint256 _borrowedAmount
-    ) internal {
-        (uint256 debtValue, uint256 maxDebtValue, ) = _getUserHypotheticalBalanceStates(
-            _user,
-            _poolTokenAddress,
-            _withdrawnAmount,
-            _borrowedAmount
-        );
-        if (debtValue > maxDebtValue) revert DebtValueAboveMax();
     }
 }
