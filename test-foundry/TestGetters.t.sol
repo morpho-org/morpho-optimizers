@@ -27,45 +27,72 @@ contract TestGetters is TestSetup {
 
         assertEq(
             address(0),
-            positionsManager.getHead(aDai, PositionsManagerForAave.PositionType.SUPPLIERS_IN_P2P)
+            positionsManager.getHead(
+                aDai,
+                PositionsManagerForAaveTypes.PositionType.SUPPLIERS_IN_P2P
+            )
         );
         assertEq(
             address(borrower1),
-            positionsManager.getHead(aDai, PositionsManagerForAave.PositionType.SUPPLIERS_ON_POOL)
+            positionsManager.getHead(
+                aDai,
+                PositionsManagerForAaveTypes.PositionType.SUPPLIERS_ON_POOL
+            )
         );
         assertEq(
             address(0),
-            positionsManager.getHead(aDai, PositionsManagerForAave.PositionType.BORROWERS_IN_P2P)
+            positionsManager.getHead(
+                aDai,
+                PositionsManagerForAaveTypes.PositionType.BORROWERS_IN_P2P
+            )
         );
         assertEq(
             address(0),
-            positionsManager.getHead(aDai, PositionsManagerForAave.PositionType.BORROWERS_ON_POOL)
+            positionsManager.getHead(
+                aDai,
+                PositionsManagerForAaveTypes.PositionType.BORROWERS_ON_POOL
+            )
         );
 
         borrower1.borrow(aDai, toBorrow);
 
         assertEq(
             address(borrower1),
-            positionsManager.getHead(aDai, PositionsManagerForAave.PositionType.SUPPLIERS_IN_P2P)
+            positionsManager.getHead(
+                aDai,
+                PositionsManagerForAaveTypes.PositionType.SUPPLIERS_IN_P2P
+            )
         );
         assertEq(
             address(borrower1),
-            positionsManager.getHead(aDai, PositionsManagerForAave.PositionType.SUPPLIERS_ON_POOL)
+            positionsManager.getHead(
+                aDai,
+                PositionsManagerForAaveTypes.PositionType.SUPPLIERS_ON_POOL
+            )
         );
         assertEq(
             address(borrower1),
-            positionsManager.getHead(aDai, PositionsManagerForAave.PositionType.BORROWERS_IN_P2P)
+            positionsManager.getHead(
+                aDai,
+                PositionsManagerForAaveTypes.PositionType.BORROWERS_IN_P2P
+            )
         );
         assertEq(
             address(0),
-            positionsManager.getHead(aDai, PositionsManagerForAave.PositionType.BORROWERS_ON_POOL)
+            positionsManager.getHead(
+                aDai,
+                PositionsManagerForAaveTypes.PositionType.BORROWERS_ON_POOL
+            )
         );
 
         borrower1.borrow(aUsdc, to6Decimals(toBorrow));
 
         assertEq(
             address(borrower1),
-            positionsManager.getHead(aUsdc, PositionsManagerForAave.PositionType.BORROWERS_ON_POOL)
+            positionsManager.getHead(
+                aUsdc,
+                PositionsManagerForAaveTypes.PositionType.BORROWERS_ON_POOL
+            )
         );
     }
 
@@ -88,12 +115,12 @@ contract TestGetters is TestSetup {
         for (uint256 i; i < borrowers.length - 1; i++) {
             nextSupplyOnPool = positionsManager.getNext(
                 aDai,
-                PositionsManagerForAave.PositionType.SUPPLIERS_ON_POOL,
+                PositionsManagerForAaveTypes.PositionType.SUPPLIERS_ON_POOL,
                 nextSupplyOnPool
             );
             nextBorrowOnPool = positionsManager.getNext(
                 aUsdc,
-                PositionsManagerForAave.PositionType.BORROWERS_ON_POOL,
+                PositionsManagerForAaveTypes.PositionType.BORROWERS_ON_POOL,
                 nextBorrowOnPool
             );
 
@@ -116,12 +143,12 @@ contract TestGetters is TestSetup {
         for (uint256 i; i < borrowers.length - 1; i++) {
             nextSupplyInP2P = positionsManager.getNext(
                 aUsdc,
-                PositionsManagerForAave.PositionType.SUPPLIERS_IN_P2P,
+                PositionsManagerForAaveTypes.PositionType.SUPPLIERS_IN_P2P,
                 nextSupplyInP2P
             );
             nextBorrowInP2P = positionsManager.getNext(
                 aDai,
-                PositionsManagerForAave.PositionType.BORROWERS_IN_P2P,
+                PositionsManagerForAaveTypes.PositionType.BORROWERS_IN_P2P,
                 nextBorrowInP2P
             );
 

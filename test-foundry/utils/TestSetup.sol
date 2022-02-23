@@ -55,7 +55,7 @@ contract TestSetup is Config, Utils {
     address[] public underlyings;
 
     function setUp() public {
-        PositionsManagerForAave.MaxGas memory maxGas = PositionsManagerForAaveStorage.MaxGas({
+        PositionsManagerForAave.MaxGas memory maxGas = PositionsManagerForAaveTypes.MaxGas({
             supply: 3e6,
             borrow: 3e6,
             withdraw: 1.5e6,
@@ -191,8 +191,12 @@ contract TestSetup is Config, Utils {
         uint64 _withdraw,
         uint64 _repay
     ) public {
-        PositionsManagerForAaveStorage.MaxGas memory newMaxGas = PositionsManagerForAaveStorage
-        .MaxGas({supply: _supply, borrow: _borrow, withdraw: _withdraw, repay: _repay});
+        PositionsManagerForAaveTypes.MaxGas memory newMaxGas = PositionsManagerForAaveTypes.MaxGas({
+            supply: _supply,
+            borrow: _borrow,
+            withdraw: _withdraw,
+            repay: _repay
+        });
 
         positionsManager.setMaxGas(newMaxGas);
     }

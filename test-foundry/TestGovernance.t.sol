@@ -159,8 +159,12 @@ contract TestGovernance is TestSetup {
 
     // Only MarketsaManager's Owner should set NMAX
     function test_should_set_maxGas() public {
-        PositionsManagerForAaveStorage.MaxGas memory newMaxGas = PositionsManagerForAaveStorage
-        .MaxGas({supply: 1, borrow: 1, withdraw: 1, repay: 1});
+        PositionsManagerForAaveTypes.MaxGas memory newMaxGas = PositionsManagerForAaveTypes.MaxGas({
+            supply: 1,
+            borrow: 1,
+            withdraw: 1,
+            repay: 1
+        });
 
         positionsManager.setMaxGas(newMaxGas);
         (uint64 supply, uint64 borrow, uint64 withdraw, uint64 repay) = positionsManager.maxGas();
