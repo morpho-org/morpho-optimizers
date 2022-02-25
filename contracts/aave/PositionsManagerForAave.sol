@@ -17,11 +17,10 @@ import "./MatchingEngineForAave.sol";
 /// @title PositionsManagerForAave
 /// @notice Smart contract interacting with Aave to enable P2P supply/borrow positions that can fallback on Aave's pool using pool tokens.
 contract PositionsManagerForAave is PositionsManagerForAaveStorage {
-    using DoubleLinkedList for DoubleLinkedList.List;
     using MatchingEngineFns for IMatchingEngineForAave;
+    using DoubleLinkedList for DoubleLinkedList.List;
     using WadRayMath for uint256;
     using SafeERC20 for IERC20;
-    using Address for address;
 
     /// Enums ///
 
