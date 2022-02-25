@@ -10,7 +10,7 @@ import "@openzeppelin/contracts/utils/math/Math.sol";
 import "../common/libraries/DoubleLinkedList.sol";
 import "./libraries/aave/WadRayMath.sol";
 
-import "./PositionsManagerParts/PositionsManagerForAaveStorage.sol";
+import "./positions-manager-parts/PositionsManagerForAaveStorage.sol";
 
 /// @title MatchingEngineManager.
 /// @notice Smart contract managing the matching engine.

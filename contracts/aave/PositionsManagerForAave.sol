@@ -3,7 +3,7 @@ pragma solidity 0.8.7;
 
 import "./MatchingEngineForAave.sol";
 
-import "./PositionsManagerParts/PositionsManagerForAaveCore.sol";
+import "./positions-manager-parts/PositionsManagerForAaveCore.sol";
 
 /// @title PositionsManagerForAave
 /// @notice Smart contract interacting with Aave to enable P2P supply/borrow positions that can fallback on Aave's pool using pool tokens.
