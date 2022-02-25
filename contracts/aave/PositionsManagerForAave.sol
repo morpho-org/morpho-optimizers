@@ -505,17 +505,17 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         whenNotPaused
     {
         marketsManager.updateP2PExchangeRates(_poolTokenAddress);
-        IAToken poolToken = IAToken(_poolTokenAddress);
 
         uint256 toWithdraw = Math.min(
             _getUserSupplyBalanceInOf(
                 _poolTokenAddress,
                 msg.sender,
-                poolToken.UNDERLYING_ASSET_ADDRESS()
+                IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS()
             ),
             _amount
         );
 
+        _checkUserLiquidity(msg.sender, _poolTokenAddress, toWithdraw, 0);
         _withdraw(_poolTokenAddress, toWithdraw, msg.sender, msg.sender, maxGas.withdraw);
     }
 
@@ -525,13 +525,12 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
     /// @param _amount The amount of token (in underlying).
     function repay(address _poolTokenAddress, uint256 _amount) external nonReentrant whenNotPaused {
         marketsManager.updateP2PExchangeRates(_poolTokenAddress);
-        IAToken poolToken = IAToken(_poolTokenAddress);
 
         uint256 toRepay = Math.min(
             _getUserBorrowBalanceInOf(
                 _poolTokenAddress,
                 msg.sender,
-                poolToken.UNDERLYING_ASSET_ADDRESS()
+                IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS()
             ),
             _amount
         );
@@ -605,6 +604,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         if (vars.amountToSeize > vars.supplyBalance) revert ToSeizeAboveCollateral();
 
         _withdraw(_poolTokenCollateralAddress, vars.amountToSeize, _borrower, msg.sender, 0);
+
         emit Liquidated(
             msg.sender,
             _borrower,
@@ -895,7 +895,6 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         uint256 _maxGasToConsume
     ) internal isMarketCreated(_poolTokenAddress) {
         if (_amount == 0) revert AmountIsZero();
-        _checkUserLiquidity(_supplier, _poolTokenAddress, _amount, 0);
         IAToken poolToken = IAToken(_poolTokenAddress);
         IERC20 underlyingToken = IERC20(poolToken.UNDERLYING_ASSET_ADDRESS());
         uint256 remainingToWithdraw = _amount;
