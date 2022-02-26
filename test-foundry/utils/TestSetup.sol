@@ -69,7 +69,12 @@ contract TestSetup is Config, Utils {
         uniswapPoolCreator.createPoolAndMintPosition(address(morphoToken));
         swapManager = new SwapManager(address(morphoToken), wmatic);
 
-        marketsManager = new MarketsManagerForAave(lendingPoolAddressesProviderAddress);
+        lendingPoolAddressesProvider = ILendingPoolAddressesProvider(
+            lendingPoolAddressesProviderAddress
+        );
+        lendingPool = ILendingPool(lendingPoolAddressesProvider.getLendingPool());
+
+        marketsManager = new MarketsManagerForAave(lendingPool);
         positionsManager = new PositionsManagerForAave(
             address(marketsManager),
             lendingPoolAddressesProviderAddress,
@@ -91,11 +96,6 @@ contract TestSetup is Config, Utils {
             address(positionsManager)
         );
 
-        lendingPoolAddressesProvider = ILendingPoolAddressesProvider(
-            lendingPoolAddressesProviderAddress
-        );
-        lendingPool = ILendingPool(lendingPoolAddressesProvider.getLendingPool());
-
         protocolDataProvider = IProtocolDataProvider(protocolDataProviderAddress);
 
         oracle = IPriceOracleGetter(lendingPoolAddressesProvider.getPriceOracle());
@@ -106,7 +106,6 @@ contract TestSetup is Config, Utils {
         rewardsManager.setAaveIncentivesController(aaveIncentivesControllerAddress);
         positionsManager.setTreasuryVault(address(treasuryVault));
         positionsManager.setRewardsManager(address(rewardsManager));
-        marketsManager.updateAaveContracts();
 
         // !!! WARNING !!!
         // All tokens must also be added to the pools array, for the correct behavior of TestLiquidate::createAndSetCustomPriceOracle.
