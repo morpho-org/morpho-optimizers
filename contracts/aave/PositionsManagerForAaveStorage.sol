@@ -51,7 +51,7 @@ contract PositionsManagerForAaveStorage is ReentrancyGuard {
     uint16 public constant MAX_BASIS_POINTS = 10000; // 100% in basis points.
     uint16 public constant LIQUIDATION_CLOSE_FACTOR_PERCENT = 5000; // 50% in basis points.
     bytes32 public constant DATA_PROVIDER_ID =
-        0x1000000000000000000000000000000000000000000000000000000000000000; // Id of the data provider.
+        0x0100000000000000000000000000000000000000000000000000000000000000; // Id of the data provider.
     mapping(address => DoubleLinkedList.List) internal suppliersInP2P; // Suppliers in peer-to-peer.
     mapping(address => DoubleLinkedList.List) internal suppliersOnPool; // Suppliers on Aave.
     mapping(address => DoubleLinkedList.List) internal borrowersInP2P; // Borrowers in peer-to-peer.

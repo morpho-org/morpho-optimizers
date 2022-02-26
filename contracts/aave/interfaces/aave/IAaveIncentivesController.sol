@@ -1,17 +1,55 @@
 // SPDX-License-Identifier: agpl-3.0
 pragma solidity 0.8.7;
-pragma experimental ABIEncoderV2;
 
-interface IAaveIncentivesController {
-    struct AssetData {
-        uint128 emissionPerSecond;
-        uint128 lastUpdateTimestamp;
-        uint256 index;
-    }
+interface IAaveDistributionManager {
+    event AssetConfigUpdated(address indexed asset, uint256 emission);
+    event AssetIndexUpdated(address indexed asset, uint256 index);
+    event UserIndexUpdated(address indexed user, address indexed asset, uint256 index);
+    event DistributionEndUpdated(uint256 newDistributionEnd);
 
+    /**
+     * @dev Sets the end date for the distribution
+     * @param distributionEnd The end date timestamp
+     **/
+    function setDistributionEnd(uint256 distributionEnd) external;
+
+    /**
+     * @dev Gets the end date for the distribution
+     * @return The end of the distribution
+     **/
+    function getDistributionEnd() external view returns (uint256);
+
+    /**
+     * @dev for backwards compatibility with the previous DistributionManager used
+     * @return The end of the distribution
+     **/
+    function DISTRIBUTION_END() external view returns (uint256);
+
+    /**
+     * @dev Returns the data of an user on a distribution
+     * @param user Address of the user
+     * @param asset The address of the reference asset of the distribution
+     * @return The new index
+     **/
+    function getUserAssetData(address user, address asset) external view returns (uint256);
+
+    /**
+     * @dev Returns the configuration of the distribution for a certain asset
+     * @param asset The address of the reference asset of the distribution
+     * @return The asset index, the emission per second and the last updated timestamp
+     **/
+    function getAssetData(address asset)
+        external
+        view
+        returns (
+            uint256,
+            uint256,
+            uint256
+        );
+}
+
+interface IAaveIncentivesController is IAaveDistributionManager {
     event RewardsAccrued(address indexed user, uint256 amount);
-
-    event RewardsClaimed(address indexed user, address indexed to, uint256 amount);
 
     event RewardsClaimed(
         address indexed user,
@@ -104,8 +142,4 @@ interface IAaveIncentivesController {
      * @dev for backward compatibility with previous implementation of the Incentives controller
      */
     function REWARD_TOKEN() external view returns (address);
-
-    function DISTRIBUTION_END() external view returns (uint256);
-
-    function assets(address) external view returns (AssetData memory);
 }

@@ -78,7 +78,7 @@ contract TestFees is TestSetup {
         uint256 balanceAfter = IERC20(dai).balanceOf(positionsManager.treasuryVault());
         uint256 gainedByDAO = balanceAfter - balanceBefore;
 
-        assertEq(gainedByDAO, expectedFees);
+        assertApproxEq(gainedByDAO, expectedFees, 2);
     }
 
     // DAO should not collect fees when factor is null

@@ -8,7 +8,7 @@ contract Config {
     address usdt = 0xc7198437980c041c805A1EDcbA50c1Ce5db95118;
     address wbtc = 0x50b7545627a5162F82A992c33b87aDc75187B218;
     address weth = 0x49D5c2BdFfac6CE2BFdB6640F4F80f226bc10bAB;
-    address wmatic = 0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7; // WAVAX
+    address wavax = 0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7;
 
     address aAave = 0xD45B7c061016102f9FA220502908f2c0f1add1D7;
     address aDai = 0x47AFa96Cdc9fAb46904A55a6ad4bf6660B53c38a;
@@ -16,7 +16,7 @@ contract Config {
     address aUsdt = 0x532E6537FEA298397212F09A61e03311686f548e;
     address aWbtc = 0x686bEF2417b6Dc32C50a3cBfbCC3bb60E1e9a15D;
     address aWeth = 0x53f7c5869a859F0AeC3D334ee8B4Cf01E3492f21;
-    address aWmatic = 0xDFE521292EcE2A4f44242efBcD66Bc594CA9714B; // avWAVAX
+    address avWAVAX = 0xDFE521292EcE2A4f44242efBcD66Bc594CA9714B;
 
     address variableDebtDai = 0x1852DC24d1a8956a0B356AA18eDe954c7a0Ca5ae;
     address variableDebtUsdc = 0x848c080d2700CBE1B894a3374AD5E887E5cCb89c;

@@ -31,7 +31,7 @@ contract MarketsManagerForAave is Ownable {
     uint16 public constant HALF_MAX_BASIS_POINTS = 5000; // 50% in basis point.
     uint256 public constant SECONDS_PER_YEAR = 365 days; // The number of seconds in one year.
     bytes32 public constant DATA_PROVIDER_ID =
-        0x1000000000000000000000000000000000000000000000000000000000000000; // Id of the data provider.
+        0x0100000000000000000000000000000000000000000000000000000000000000; // Id of the data provider.
     address[] public marketsCreated; // Keeps track of the created markets.
     mapping(address => bool) public isCreated; // Whether or not this market is created.
     mapping(address => uint256) public supplyP2PSPY; // Supply Percentage Yield per second (in ray).
