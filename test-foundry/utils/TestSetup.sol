@@ -67,7 +67,10 @@ contract TestSetup is Config, Utils {
         uniswapPoolCreator = new UniswapPoolCreator();
         writeBalanceOf(address(uniswapPoolCreator), weth, INITIAL_BALANCE * WAD);
         morphoToken = new MorphoToken(address(uniswapPoolCreator));
-        uniswapPoolCreator.createPoolAndMintPosition(address(morphoToken));
+        if (aave != 0x63a72806098Bd3D9520cC43356dD78afe5D386D9) {
+            // Not Avalanche network
+            uniswapPoolCreator.createPoolAndMintPosition(address(morphoToken));
+        }
         swapManager = new SwapManager(address(morphoToken), wmatic);
 
         lendingPoolAddressesProvider = ILendingPoolAddressesProvider(

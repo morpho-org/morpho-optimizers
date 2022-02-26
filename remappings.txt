@@ -1,7 +1,7 @@
+ds-test/=lib\ds-test\src/
 @openzeppelin/=node_modules/@openzeppelin/
 @uniswap/v3-periphery/=node_modules/@uniswap/v3-periphery/
 @uniswap/v3-core/=node_modules/@uniswap/v3-core/
 prb-math/=node_modules/prb-math/
-@config/=config/polygon-mainnet/
 hardhat/=node_modules/hardhat/
 @contracts/=contracts/
