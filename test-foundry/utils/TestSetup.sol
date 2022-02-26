@@ -5,6 +5,7 @@ import "hardhat/console.sol";
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
+import "@contracts/aave/interfaces/aave/IAaveIncentivesController.sol";
 import "@contracts/aave/interfaces/aave/IPriceOracleGetter.sol";
 import "@contracts/aave/interfaces/aave/IProtocolDataProvider.sol";
 
@@ -35,6 +36,8 @@ contract TestSetup is Config, Utils {
     SwapManager public swapManager;
     UniswapPoolCreator public uniswapPoolCreator;
     MorphoToken public morphoToken;
+    address public REWARD_TOKEN =
+        IAaveIncentivesController(aaveIncentivesControllerAddress).REWARD_TOKEN();
 
     ILendingPoolAddressesProvider public lendingPoolAddressesProvider;
     ILendingPool public lendingPool;
@@ -71,7 +74,7 @@ contract TestSetup is Config, Utils {
             // Not Avalanche network
             uniswapPoolCreator.createPoolAndMintPosition(address(morphoToken));
         }
-        swapManager = new SwapManager(address(morphoToken), wmatic);
+        swapManager = new SwapManager(address(morphoToken), REWARD_TOKEN);
 
         lendingPoolAddressesProvider = ILendingPoolAddressesProvider(
             lendingPoolAddressesProviderAddress
@@ -116,15 +119,12 @@ contract TestSetup is Config, Utils {
         marketsManager.createMarket(usdc, to6Decimals(WAD));
         pools.push(aUsdc);
         underlyings.push(usdc);
-        marketsManager.createMarket(wbtc, 10**4);
+        marketsManager.createMarket(wbtc, 100);
         pools.push(aWbtc);
         underlyings.push(wbtc);
         marketsManager.createMarket(usdt, to6Decimals(WAD));
         pools.push(aUsdt);
         underlyings.push(usdt);
-        marketsManager.createMarket(wmatic, WAD);
-        pools.push(aWmatic);
-        underlyings.push(wmatic);
 
         for (uint256 i = 0; i < 3; i++) {
             suppliers.push(new User(positionsManager, marketsManager, rewardsManager));

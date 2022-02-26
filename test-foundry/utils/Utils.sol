@@ -16,6 +16,10 @@ contract Utils is DSTest {
         return value / 1e12;
     }
 
+    function to8Decimals(uint256 value) internal pure returns (uint256) {
+        return value / 1e10;
+    }
+
     function underlyingToScaledBalance(uint256 _scaledBalance, uint256 _normalizedIncome)
         internal
         pure

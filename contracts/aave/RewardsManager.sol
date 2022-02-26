@@ -175,17 +175,17 @@ contract RewardsManager is Ownable {
 
         if (blockTimestamp == lastTimestamp) return localData.lastIndex;
         else {
-            IAaveIncentivesController.AssetData memory assetData = aaveIncentivesController.assets(
-                _asset
-            );
-            uint256 oldIndex = assetData.index;
-            uint128 lastTimestampOnAave = assetData.lastUpdateTimestamp;
+            (
+                uint256 oldIndex,
+                uint256 emissionPerSecond,
+                uint256 lastTimestampOnAave
+            ) = aaveIncentivesController.getAssetData(_asset);
 
             if (blockTimestamp == lastTimestampOnAave) newIndex = oldIndex;
             else
                 newIndex = _getAssetIndex(
                     oldIndex,
-                    assetData.emissionPerSecond,
+                    emissionPerSecond,
                     lastTimestampOnAave,
                     _totalStaked
                 );
@@ -204,7 +204,7 @@ contract RewardsManager is Ownable {
     function _getAssetIndex(
         uint256 _currentIndex,
         uint256 _emissionPerSecond,
-        uint128 _lastUpdateTimestamp,
+        uint256 _lastUpdateTimestamp,
         uint256 _totalBalance
     ) internal view returns (uint256) {
         uint256 distributionEnd = aaveIncentivesController.DISTRIBUTION_END();
