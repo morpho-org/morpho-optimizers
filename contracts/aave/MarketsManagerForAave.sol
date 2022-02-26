@@ -3,11 +3,10 @@ pragma solidity 0.8.7;
 
 import "./interfaces/aave/ILendingPoolAddressesProvider.sol";
 import {IAToken} from "./interfaces/aave/IAToken.sol";
-import "./interfaces/aave/IProtocolDataProvider.sol";
 import "./interfaces/aave/ILendingPool.sol";
-import "./interfaces/aave/DataTypes.sol";
 import "./interfaces/IPositionsManagerForAave.sol";
 
+import {ReserveConfiguration} from "./libraries/aave/ReserveConfiguration.sol";
 import "./libraries/aave/WadRayMath.sol";
 
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -16,6 +15,7 @@ import "@openzeppelin/contracts/utils/math/Math.sol";
 /// @title MarketsManagerForAave
 /// @notice Smart contract managing the markets used by a MorphoPositionsManagerForAave contract, an other contract interacting with Aave or a fork of Aave.
 contract MarketsManagerForAave is Ownable {
+    using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
     using WadRayMath for uint256;
 
     /// Structs ///
@@ -45,7 +45,6 @@ contract MarketsManagerForAave is Ownable {
 
     IPositionsManagerForAave public positionsManager;
     ILendingPoolAddressesProvider public addressesProvider;
-    IProtocolDataProvider public dataProvider;
     ILendingPool public lendingPool;
 
     /// Events ///
@@ -56,8 +55,7 @@ contract MarketsManagerForAave is Ownable {
 
     /// @notice Emitted when the lendingPool is updated on the `positionsManager`.
     /// @param _lendingPoolAddress The address of the lending pool.
-    /// @param _dataProviderAddress The address of the data provider.
-    event AaveContractsUpdated(address _lendingPoolAddress, address _dataProviderAddress);
+    event AaveContractsUpdated(address _lendingPoolAddress);
 
     /// @notice Emitted when the `positionsManager` is set.
     /// @param _positionsManager The address of the `positionsManager`.
@@ -135,9 +133,8 @@ contract MarketsManagerForAave is Ownable {
     /// @param _lendingPoolAddressesProvider The address of the lending pool addresses provider.
     constructor(address _lendingPoolAddressesProvider) {
         addressesProvider = ILendingPoolAddressesProvider(_lendingPoolAddressesProvider);
-        dataProvider = IProtocolDataProvider(addressesProvider.getAddress(DATA_PROVIDER_ID));
         lendingPool = ILendingPool(addressesProvider.getLendingPool());
-        emit AaveContractsUpdated(address(lendingPool), address(dataProvider));
+        emit AaveContractsUpdated(address(lendingPool));
     }
 
     /// External ///
@@ -166,14 +163,15 @@ contract MarketsManagerForAave is Ownable {
     /// @param _underlyingTokenAddress The underlying address of the given market.
     /// @param _threshold The threshold to set for the market.
     function createMarket(address _underlyingTokenAddress, uint256 _threshold) external onlyOwner {
-        (, , , , , , , , bool isActive, ) = dataProvider.getReserveConfigurationData(
+        DataTypes.ReserveConfigurationMap memory configuration = lendingPool.getConfiguration(
             _underlyingTokenAddress
         );
+        (bool isActive, , , ) = configuration.getFlagsMemory();
         if (!isActive) revert MarketIsNotListedOnAave();
 
-        (address poolTokenAddress, , ) = dataProvider.getReserveTokensAddresses(
-            _underlyingTokenAddress
-        );
+        address poolTokenAddress = lendingPool
+        .getReserveData(_underlyingTokenAddress)
+        .aTokenAddress;
 
         if (isCreated[poolTokenAddress]) revert MarketAlreadyCreated();
         isCreated[poolTokenAddress] = true;
@@ -221,11 +219,10 @@ contract MarketsManagerForAave is Ownable {
         emit NoP2PSet(_marketAddress, _noP2P);
     }
 
-    /// @notice Updates the `lendingPool` and the `dataProvider`.
+    /// @notice Updates the `lendingPool`.
     function updateAaveContracts() external {
-        dataProvider = IProtocolDataProvider(addressesProvider.getAddress(DATA_PROVIDER_ID));
         lendingPool = ILendingPool(addressesProvider.getLendingPool());
-        emit AaveContractsUpdated(address(lendingPool), address(dataProvider));
+        emit AaveContractsUpdated(address(lendingPool));
     }
 
     /// @notice Updates the P2P exchange rate, taking into account the Second Percentage Yield values.
