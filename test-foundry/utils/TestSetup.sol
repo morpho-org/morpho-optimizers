@@ -140,7 +140,10 @@ contract TestSetup is Config, Utils, HevmHelper {
         marketsManager.createMarket(usdc, to6Decimals(WAD));
         pools.push(aUsdc);
         underlyings.push(usdc);
+<<<<<<< HEAD
 
+=======
+>>>>>>> 58541eb (✅ (avax) tests pass except rewards)
         marketsManager.createMarket(wbtc, 100);
         pools.push(aWbtc);
         underlyings.push(wbtc);
