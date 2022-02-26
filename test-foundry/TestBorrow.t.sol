@@ -31,7 +31,7 @@ contract TestBorrow is TestSetup {
         );
 
         hevm.expectRevert(abi.encodeWithSignature("DebtValueAboveMax()"));
-        borrower1.borrow(aDai, borrowable + 1e4);
+        borrower1.borrow(aDai, borrowable + 1e12);
     }
 
     // Should be able to borrow more ERC20 after already having borrowed ERC20
