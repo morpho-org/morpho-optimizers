@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.7;
 
-import "./interfaces/aave/ILendingPoolAddressesProvider.sol";
 import {IAToken} from "./interfaces/aave/IAToken.sol";
 import "./interfaces/aave/ILendingPool.sol";
 import "./interfaces/IPositionsManagerForAave.sol";
@@ -44,7 +43,6 @@ contract MarketsManagerForAave is Ownable {
     mapping(address => bool) public noP2P; // Whether to put users on pool or not for the given market.
 
     IPositionsManagerForAave public positionsManager;
-    ILendingPoolAddressesProvider public addressesProvider;
     ILendingPool public lendingPool;
 
     /// Events ///
@@ -52,10 +50,6 @@ contract MarketsManagerForAave is Ownable {
     /// @notice Emitted when a new market is created.
     /// @param _marketAddress The address of the market that has been created.
     event MarketCreated(address _marketAddress);
-
-    /// @notice Emitted when the lendingPool is updated on the `positionsManager`.
-    /// @param _lendingPoolAddress The address of the lending pool.
-    event AaveContractsUpdated(address _lendingPoolAddress);
 
     /// @notice Emitted when the `positionsManager` is set.
     /// @param _positionsManager The address of the `positionsManager`.
@@ -130,11 +124,9 @@ contract MarketsManagerForAave is Ownable {
     /// Constructor ///
 
     /// @notice Constructs the MarketsManagerForAave contract.
-    /// @param _lendingPoolAddressesProvider The address of the lending pool addresses provider.
-    constructor(address _lendingPoolAddressesProvider) {
-        addressesProvider = ILendingPoolAddressesProvider(_lendingPoolAddressesProvider);
-        lendingPool = ILendingPool(addressesProvider.getLendingPool());
-        emit AaveContractsUpdated(address(lendingPool));
+    /// @param _lendingPool The lending pool.
+    constructor(ILendingPool _lendingPool) {
+        lendingPool = ILendingPool(_lendingPool);
     }
 
     /// External ///
@@ -217,12 +209,6 @@ contract MarketsManagerForAave is Ownable {
     {
         noP2P[_marketAddress] = _noP2P;
         emit NoP2PSet(_marketAddress, _noP2P);
-    }
-
-    /// @notice Updates the `lendingPool`.
-    function updateAaveContracts() external {
-        lendingPool = ILendingPool(addressesProvider.getLendingPool());
-        emit AaveContractsUpdated(address(lendingPool));
     }
 
     /// @notice Updates the P2P exchange rate, taking into account the Second Percentage Yield values.
