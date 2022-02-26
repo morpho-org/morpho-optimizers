@@ -1,6 +1,11 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.7;
 
+<<<<<<< HEAD
+=======
+import "./interfaces/aave/ILendingPoolAddressesProvider.sol";
+import "./interfaces/aave/ILendingPool.sol";
+>>>>>>> cdaa64a (⚡️ (data-provider) remove data provider from markets manager)
 import {IAToken} from "./interfaces/aave/IAToken.sol";
 import "./interfaces/aave/ILendingPool.sol";
 import "./interfaces/IPositionsManagerForAave.sol";
