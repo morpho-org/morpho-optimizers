@@ -1,4 +1,4 @@
-ds-test/=lib\ds-test\src/
+ds-test/=lib/ds-test/src/
 @openzeppelin/=node_modules/@openzeppelin/
 @uniswap/v3-periphery/=node_modules/@uniswap/v3-periphery/
 @uniswap/v3-core/=node_modules/@uniswap/v3-core/
