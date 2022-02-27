@@ -6,6 +6,7 @@ import "hardhat/console.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
 import "@contracts/aave/interfaces/aave/IPriceOracleGetter.sol";
+import "@contracts/aave/interfaces/aave/IProtocolDataProvider.sol";
 
 import "@contracts/aave/PositionsManagerForAave.sol";
 import "@contracts/aave/MarketsManagerForAave.sol";
@@ -91,10 +92,7 @@ contract TestSetup is Config, Utils {
             maxGas
         );
 
-        rewardsManager = new RewardsManager(
-            lendingPoolAddressesProviderAddress,
-            address(positionsManager)
-        );
+        rewardsManager = new RewardsManager(lendingPool, address(positionsManager));
 
         protocolDataProvider = IProtocolDataProvider(protocolDataProviderAddress);
 

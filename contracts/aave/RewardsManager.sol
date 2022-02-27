@@ -3,8 +3,8 @@ pragma solidity 0.8.7;
 
 import "./interfaces/aave/ILendingPoolAddressesProvider.sol";
 import "./interfaces/aave/IAaveIncentivesController.sol";
-import "./interfaces/aave/IProtocolDataProvider.sol";
 import "./interfaces/aave/IScaledBalanceToken.sol";
+import "./interfaces/aave/ILendingPool.sol";
 import "./interfaces/IPositionsManagerForAave.sol";
 import "./interfaces/IGetterUnderlyingAsset.sol";
 
@@ -23,12 +23,10 @@ contract RewardsManager is Ownable {
 
     mapping(address => uint256) public userUnclaimedRewards; // The unclaimed rewards of the user.
     mapping(address => LocalAssetData) public localAssetData; // The local data related to a given market.
-    bytes32 public constant DATA_PROVIDER_ID =
-        0x1000000000000000000000000000000000000000000000000000000000000000; // Id of the data provider.
 
     IAaveIncentivesController public aaveIncentivesController;
     ILendingPoolAddressesProvider public addressesProvider;
-    IProtocolDataProvider public dataProvider;
+    ILendingPool public lendingPool;
     IPositionsManagerForAave public positionsManager;
 
     /// Events ///
@@ -53,11 +51,10 @@ contract RewardsManager is Ownable {
     /// Constructor ///
 
     /// @notice Constructs the RewardsManager contract.
-    /// @param _lendingPoolAddressesProvider The address of the lending pool addresses provider.
+    /// @param _lendingPool The lending pool on Aave.
     /// @param _positionsManagerAddress The address of the positions manager.
-    constructor(address _lendingPoolAddressesProvider, address _positionsManagerAddress) {
-        addressesProvider = ILendingPoolAddressesProvider(_lendingPoolAddressesProvider);
-        dataProvider = IProtocolDataProvider(addressesProvider.getAddress(DATA_PROVIDER_ID));
+    constructor(ILendingPool _lendingPool, address _positionsManagerAddress) {
+        lendingPool = _lendingPool;
         positionsManager = IPositionsManagerForAave(_positionsManagerAddress);
     }
 
@@ -124,11 +121,12 @@ contract RewardsManager is Ownable {
 
         for (uint256 i = 0; i < _assets.length; i++) {
             address asset = _assets[i];
-            (address aTokenAddress, , address variableDebtTokenAddress) = dataProvider
-            .getReserveTokensAddresses(IGetterUnderlyingAsset(asset).UNDERLYING_ASSET_ADDRESS());
-            uint256 stakedByUser = variableDebtTokenAddress == asset
-                ? positionsManager.borrowBalanceInOf(aTokenAddress, _user).onPool
-                : positionsManager.supplyBalanceInOf(aTokenAddress, _user).onPool;
+            DataTypes.ReserveData memory reserve = lendingPool.getReserveData(
+                IGetterUnderlyingAsset(asset).UNDERLYING_ASSET_ADDRESS()
+            );
+            uint256 stakedByUser = reserve.variableDebtTokenAddress == asset
+                ? positionsManager.borrowBalanceInOf(reserve.aTokenAddress, _user).onPool
+                : positionsManager.supplyBalanceInOf(reserve.aTokenAddress, _user).onPool;
             uint256 totalStaked = IScaledBalanceToken(asset).scaledTotalSupply();
 
             unclaimedRewards += _updateUserAsset(_user, asset, stakedByUser, totalStaked);
