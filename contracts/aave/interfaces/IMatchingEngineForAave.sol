@@ -17,7 +17,7 @@ interface IMatchingEngineForAave {
         address,
         uint256,
         uint256
-    ) external;
+    ) external returns (uint256);
 
     function matchBorrowers(
         IAToken,
