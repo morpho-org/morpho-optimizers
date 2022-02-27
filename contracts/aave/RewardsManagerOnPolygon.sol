@@ -7,21 +7,13 @@ import "./interfaces/aave/IScaledBalanceToken.sol";
 import "./interfaces/aave/ILendingPool.sol";
 import "./interfaces/IPositionsManagerForAave.sol";
 import "./interfaces/IGetterUnderlyingAsset.sol";
-<<<<<<<< HEAD:contracts/aave/RewardsManagerForAave.sol
-import "./interfaces/IRewardsManagerForAave.sol";
-
-import "@openzeppelin/contracts/access/Ownable.sol";
-
-abstract contract RewardsManagerForAave is IRewardsManagerForAave, Ownable {
-========
 import "./interfaces/IRewardsManager.sol";
 
 import {DistributionTypes} from "./libraries/aave/DistributionTypes.sol";
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract RewardsManagerOnAvalanche is IRewardsManager, Ownable {
->>>>>>>> bef71c5 (🐛 (avax) create different rewards manager for diff networks):contracts/aave/RewardsManagerOnAvalanche.sol
+contract RewardsManagerOnPolygon is IRewardsManager, Ownable {
     /// Structs ///
 
     struct LocalAssetData {
@@ -63,10 +55,10 @@ contract RewardsManagerOnAvalanche is IRewardsManager, Ownable {
 
     /// @notice Constructs the RewardsManager contract.
     /// @param _lendingPool The lending pool on Aave.
-    /// @param _positionsManager The positions manager.
-    constructor(ILendingPool _lendingPool, IPositionsManagerForAave _positionsManager) {
+    /// @param _positionsManagerAddress The address of the positions manager.
+    constructor(ILendingPool _lendingPool, address _positionsManagerAddress) {
         lendingPool = _lendingPool;
-        positionsManager = _positionsManager;
+        positionsManager = IPositionsManagerForAave(_positionsManagerAddress);
     }
 
     /// External ///
@@ -177,6 +169,40 @@ contract RewardsManagerOnAvalanche is IRewardsManager, Ownable {
         }
     }
 
+    /// @notice Returns the next reward index.
+    /// @param _asset The address of the reference asset of the distribution (aToken or variable debt token).
+    /// @param _totalStaked The total of tokens staked in the distribution.
+    /// @return newIndex The new distribution index.
+    function _getUpdatedIndex(address _asset, uint256 _totalStaked)
+        internal
+        returns (uint256 newIndex)
+    {
+        LocalAssetData storage localData = localAssetData[_asset];
+        uint256 blockTimestamp = block.timestamp;
+        uint256 lastTimestamp = localData.lastUpdateTimestamp;
+
+        if (blockTimestamp == lastTimestamp) return localData.lastIndex;
+        else {
+            IAaveIncentivesController.AssetData memory assetData = aaveIncentivesController.assets(
+                _asset
+            );
+            uint256 oldIndex = assetData.index;
+            uint128 lastTimestampOnAave = assetData.lastUpdateTimestamp;
+
+            if (blockTimestamp == lastTimestampOnAave) newIndex = oldIndex;
+            else
+                newIndex = _getAssetIndex(
+                    oldIndex,
+                    assetData.emissionPerSecond,
+                    lastTimestampOnAave,
+                    _totalStaked
+                );
+
+            localData.lastUpdateTimestamp = blockTimestamp;
+            localData.lastIndex = newIndex;
+        }
+    }
+
     /// @notice Computes and returns the next value of a specific distribution index.
     /// @param _currentIndex The current index of the distribution.
     /// @param _emissionPerSecond The total rewards distributed per second per asset unit, on the distribution.
@@ -218,13 +244,4 @@ contract RewardsManagerOnAvalanche is IRewardsManager, Ownable {
     ) internal pure returns (uint256) {
         return (_principalUserBalance * (_reserveIndex - _userIndex)) / 1e18;
     }
-
-    /// @notice Returns the next reward index.
-    /// @param _asset The address of the reference asset of the distribution (aToken or variable debt token).
-    /// @param _totalStaked The total of tokens staked in the distribution.
-    /// @return newIndex The new distribution index.
-    function _getUpdatedIndex(address _asset, uint256 _totalStaked)
-        internal
-        virtual
-        returns (uint256 newIndex);
 }
