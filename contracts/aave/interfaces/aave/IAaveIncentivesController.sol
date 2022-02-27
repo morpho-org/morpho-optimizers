@@ -142,4 +142,12 @@ interface IAaveIncentivesController is IAaveDistributionManager {
      * @dev for backward compatibility with previous implementation of the Incentives controller
      */
     function REWARD_TOKEN() external view returns (address);
+
+    struct AssetData {
+        uint128 emissionPerSecond;
+        uint128 lastUpdateTimestamp;
+        uint256 index;
+    }
+
+    function assets(address) external view returns (AssetData memory);
 }

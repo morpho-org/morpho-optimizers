@@ -8,10 +8,12 @@ import "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
 import "@contracts/aave/interfaces/aave/IAaveIncentivesController.sol";
 import "@contracts/aave/interfaces/aave/IPriceOracleGetter.sol";
 import "@contracts/aave/interfaces/aave/IProtocolDataProvider.sol";
+import "@contracts/aave/interfaces/IRewardsManager.sol";
 
 import "@contracts/aave/PositionsManagerForAave.sol";
 import "@contracts/aave/MarketsManagerForAave.sol";
-import "@contracts/aave/RewardsManager.sol";
+import "@contracts/aave/RewardsManagerOnAvalanche.sol";
+import "@contracts/aave/RewardsManagerOnPolygon.sol";
 import "@contracts/common/SwapManager.sol";
 import "@config/Config.sol";
 import "./HEVM.sol";
@@ -32,7 +34,7 @@ contract TestSetup is Config, Utils {
     PositionsManagerForAave internal positionsManager;
     PositionsManagerForAave internal fakePositionsManager;
     MarketsManagerForAave internal marketsManager;
-    RewardsManager internal rewardsManager;
+    IRewardsManager internal rewardsManager;
     SwapManager public swapManager;
     UniswapPoolCreator public uniswapPoolCreator;
     MorphoToken public morphoToken;
@@ -66,14 +68,6 @@ contract TestSetup is Config, Utils {
             repay: 1.5e6
         });
 
-        // Create a MORPHO / WETH pool
-        uniswapPoolCreator = new UniswapPoolCreator();
-        writeBalanceOf(address(uniswapPoolCreator), weth, INITIAL_BALANCE * WAD);
-        morphoToken = new MorphoToken(address(uniswapPoolCreator));
-        if (aave != 0x63a72806098Bd3D9520cC43356dD78afe5D386D9) {
-            // Not Avalanche network
-            uniswapPoolCreator.createPoolAndMintPosition(address(morphoToken));
-        }
         swapManager = new SwapManager(address(morphoToken), REWARD_TOKEN);
 
         lendingPoolAddressesProvider = ILendingPoolAddressesProvider(
@@ -89,6 +83,18 @@ contract TestSetup is Config, Utils {
             maxGas
         );
 
+        // Create a MORPHO / WETH pool
+        uniswapPoolCreator = new UniswapPoolCreator();
+        writeBalanceOf(address(uniswapPoolCreator), weth, INITIAL_BALANCE * WAD);
+        morphoToken = new MorphoToken(address(uniswapPoolCreator));
+        if (aave != 0x63a72806098Bd3D9520cC43356dD78afe5D386D9) {
+            // Not Avalanche network
+            rewardsManager = new RewardsManagerOnPolygon(lendingPool, address(positionsManager));
+            uniswapPoolCreator.createPoolAndMintPosition(address(morphoToken));
+        } else {
+            rewardsManager = new RewardsManagerOnAvalanche(lendingPool, address(positionsManager));
+        }
+
         treasuryVault = new User(positionsManager, marketsManager, rewardsManager);
 
         fakePositionsManager = new PositionsManagerForAave(
@@ -97,8 +103,6 @@ contract TestSetup is Config, Utils {
             swapManager,
             maxGas
         );
-
-        rewardsManager = new RewardsManager(lendingPool, address(positionsManager));
 
         protocolDataProvider = IProtocolDataProvider(protocolDataProviderAddress);
 
