@@ -4,7 +4,6 @@ pragma solidity 0.8.7;
 import {IVariableDebtToken} from "./interfaces/aave/IVariableDebtToken.sol";
 import "./interfaces/aave/ILendingPoolAddressesProvider.sol";
 import "./interfaces/aave/IAaveIncentivesController.sol";
-import "./interfaces/aave/IProtocolDataProvider.sol";
 import "./interfaces/aave/ILendingPool.sol";
 import "./interfaces/IMarketsManagerForAave.sol";
 import "./interfaces/IMatchingEngineForAave.sol";
@@ -74,7 +73,6 @@ contract PositionsManagerForAaveStorage is ReentrancyGuard {
 
     IAaveIncentivesController public aaveIncentivesController;
     ILendingPoolAddressesProvider public addressesProvider;
-    IProtocolDataProvider public dataProvider;
     ILendingPool public lendingPool;
     IMarketsManagerForAave public marketsManager;
     IMatchingEngineForAave public matchingEngine;
@@ -142,15 +140,13 @@ contract PositionsManagerForAaveStorage is ReentrancyGuard {
         uint256 _normalizedVariableDebt
     ) internal {
         _underlyingToken.safeIncreaseAllowance(address(lendingPool), _amount);
-        (, , address variableDebtToken) = dataProvider.getReserveTokensAddresses(
-            address(_underlyingToken)
+        IVariableDebtToken variableDebtToken = IVariableDebtToken(
+            lendingPool.getReserveData(address(_underlyingToken)).variableDebtTokenAddress
         );
         // Do not repay more than the contract's debt on Aave
         _amount = Math.min(
             _amount,
-            IVariableDebtToken(variableDebtToken).scaledBalanceOf(address(this)).mulWadByRay(
-                _normalizedVariableDebt
-            )
+            variableDebtToken.scaledBalanceOf(address(this)).mulWadByRay(_normalizedVariableDebt)
         );
         lendingPool.repay(
             address(_underlyingToken),
