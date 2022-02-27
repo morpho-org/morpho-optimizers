@@ -5,6 +5,7 @@ import {IAToken} from "./interfaces/aave/IAToken.sol";
 import "./interfaces/aave/IPriceOracleGetter.sol";
 import "./interfaces/IMatchingEngineForAave.sol";
 
+import {ReserveConfiguration} from "./libraries/aave/ReserveConfiguration.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "../common/libraries/DoubleLinkedList.sol";
 import "./libraries/MatchingEngineFns.sol";
@@ -17,6 +18,7 @@ import "./MatchingEngineForAave.sol";
 /// @title PositionsManagerForAave
 /// @notice Smart contract interacting with Aave to enable P2P supply/borrow positions that can fallback on Aave's pool using pool tokens.
 contract PositionsManagerForAave is PositionsManagerForAaveStorage {
+    using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
     using MatchingEngineFns for IMatchingEngineForAave;
     using DoubleLinkedList for DoubleLinkedList.List;
     using WadRayMath for uint256;
@@ -146,11 +148,6 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         address _poolTokenCollateralAddress
     );
 
-    /// @notice Emitted when the lendingPool is updated on the `positionsManagerForAave`.
-    /// @param _lendingPoolAddress The address of the lending pool.
-    /// @param _dataProviderAddress The address of the data provider.
-    event AaveContractsUpdated(address _lendingPoolAddress, address _dataProviderAddress);
-
     /// @dev Emitted when a new value for `NDS` is set.
     /// @param _newValue The new value of `NDS`.
     event NDSSet(uint8 _newValue);
@@ -273,17 +270,9 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         maxGas = _maxGas;
         marketsManager = IMarketsManagerForAave(_marketsManager);
         addressesProvider = ILendingPoolAddressesProvider(_lendingPoolAddressesProvider);
-        dataProvider = IProtocolDataProvider(addressesProvider.getAddress(DATA_PROVIDER_ID));
         lendingPool = ILendingPool(addressesProvider.getLendingPool());
         matchingEngine = new MatchingEngineForAave();
         swapManager = _swapManager;
-    }
-
-    /// @notice Updates the `lendingPool` and the `dataProvider`.
-    function updateAaveContracts() external {
-        dataProvider = IProtocolDataProvider(addressesProvider.getAddress(DATA_PROVIDER_ID));
-        lendingPool = ILendingPool(addressesProvider.getLendingPool());
-        emit AaveContractsUpdated(address(lendingPool), address(dataProvider));
     }
 
     /// @notice Sets the `aaveIncentivesController`.
@@ -580,11 +569,12 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         vars.borrowedPrice = oracle.getAssetPrice(vars.tokenBorrowedAddress); // In ETH
         vars.collateralPrice = oracle.getAssetPrice(vars.tokenCollateralAddress); // In ETH
 
-        (vars.collateralReserveDecimals, , , vars.liquidationBonus, , , , , , ) = dataProvider
-        .getReserveConfigurationData(vars.tokenCollateralAddress);
-        (vars.borrowedReserveDecimals, , , , , , , , , ) = dataProvider.getReserveConfigurationData(
-            vars.tokenBorrowedAddress
-        );
+        (, , vars.liquidationBonus, vars.collateralReserveDecimals, ) = lendingPool
+        .getConfiguration(vars.tokenCollateralAddress)
+        .getParamsMemory();
+        (, , , vars.borrowedReserveDecimals, ) = lendingPool
+        .getConfiguration(vars.tokenBorrowedAddress)
+        .getParamsMemory();
         vars.collateralTokenUnit = 10**vars.collateralReserveDecimals;
         vars.borrowedTokenUnit = 10**vars.borrowedReserveDecimals;
 
@@ -723,18 +713,9 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         );
 
         assetData.underlyingPrice = oracle.getAssetPrice(underlyingAddress); // In ETH
-        (
-            uint256 reserveDecimals,
-            uint256 ltv,
-            uint256 liquidationThreshold,
-            ,
-            ,
-            ,
-            ,
-            ,
-            ,
-
-        ) = dataProvider.getReserveConfigurationData(underlyingAddress);
+        (uint256 ltv, uint256 liquidationThreshold, , uint256 reserveDecimals, ) = lendingPool
+        .getConfiguration(underlyingAddress)
+        .getParamsMemory();
         assetData.ltv = ltv;
         assetData.liquidationThreshold = liquidationThreshold;
         assetData.tokenUnit = 10**reserveDecimals;

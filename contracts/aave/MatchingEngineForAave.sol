@@ -387,9 +387,9 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         if (wasOnPoolAndValueChanged) borrowersOnPool[_poolTokenAddress].remove(_user);
         if (onPool > 0 && (wasOnPoolAndValueChanged || formerValueOnPool == 0)) {
             uint256 totalStaked = IScaledBalanceToken(_poolTokenAddress).scaledTotalSupply();
-            (, , address variableDebtTokenAddress) = dataProvider.getReserveTokensAddresses(
-                IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS()
-            );
+            address variableDebtTokenAddress = lendingPool
+            .getReserveData(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS())
+            .variableDebtTokenAddress;
             rewardsManager.updateUserAssetAndAccruedRewards(
                 _user,
                 variableDebtTokenAddress,
