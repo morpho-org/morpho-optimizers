@@ -7,10 +7,11 @@ import "./interfaces/aave/IScaledBalanceToken.sol";
 import "./interfaces/aave/ILendingPool.sol";
 import "./interfaces/IPositionsManagerForAave.sol";
 import "./interfaces/IGetterUnderlyingAsset.sol";
+import "./interfaces/IRewardsManager.sol";
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract RewardsManager is Ownable {
+contract RewardsManagerOnAvalanche is IRewardsManager, Ownable {
     /// Structs ///
 
     struct LocalAssetData {
@@ -24,7 +25,7 @@ contract RewardsManager is Ownable {
     mapping(address => uint256) public userUnclaimedRewards; // The unclaimed rewards of the user.
     mapping(address => LocalAssetData) public localAssetData; // The local data related to a given market.
 
-    IAaveIncentivesController public aaveIncentivesController;
+    IAaveIncentivesController public override aaveIncentivesController;
     ILendingPoolAddressesProvider public addressesProvider;
     ILendingPool public lendingPool;
     IPositionsManagerForAave public positionsManager;
@@ -62,7 +63,11 @@ contract RewardsManager is Ownable {
 
     /// @notice Sets the `aaveIncentivesController`.
     /// @param _aaveIncentivesController The address of the `aaveIncentivesController`.
-    function setAaveIncentivesController(address _aaveIncentivesController) external onlyOwner {
+    function setAaveIncentivesController(address _aaveIncentivesController)
+        external
+        override
+        onlyOwner
+    {
         aaveIncentivesController = IAaveIncentivesController(_aaveIncentivesController);
         emit AaveIncentivesControllerSet(_aaveIncentivesController);
     }
@@ -75,7 +80,7 @@ contract RewardsManager is Ownable {
         address[] calldata _assets,
         uint256 _amount,
         address _user
-    ) external onlyPositionsManager returns (uint256 amountToClaim) {
+    ) external override onlyPositionsManager returns (uint256 amountToClaim) {
         if (_amount == 0) return 0;
 
         uint256 unclaimedRewards = accrueUserUnclaimedRewards(_assets, _user);
@@ -95,14 +100,14 @@ contract RewardsManager is Ownable {
         address _asset,
         uint256 _stakedByUser,
         uint256 _totalStaked
-    ) external onlyPositionsManager {
+    ) external override onlyPositionsManager {
         userUnclaimedRewards[_user] += _updateUserAsset(_user, _asset, _stakedByUser, _totalStaked);
     }
 
     /// @notice Returns the index of the `_user` for a given `_asset`.
     /// @param _asset The address of the reference asset of the distribution (aToken or variable debt token).
     /// @param _user The address of the user.
-    function getUserIndex(address _asset, address _user) external view returns (uint256) {
+    function getUserIndex(address _asset, address _user) external view override returns (uint256) {
         LocalAssetData storage localData = localAssetData[_asset];
         return localData.userIndex[_user];
     }
@@ -115,6 +120,7 @@ contract RewardsManager is Ownable {
     /// @return unclaimedRewards The user unclaimed rewards.
     function accrueUserUnclaimedRewards(address[] calldata _assets, address _user)
         public
+        override
         returns (uint256 unclaimedRewards)
     {
         unclaimedRewards = userUnclaimedRewards[_user];
