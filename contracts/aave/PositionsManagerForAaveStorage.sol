@@ -10,18 +10,11 @@ import "./interfaces/IMatchingEngineForAave.sol";
 import "./interfaces/IRewardsManager.sol";
 import "../common/interfaces/ISwapManager.sol";
 
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/utils/math/Math.sol";
 import "../common/libraries/DoubleLinkedList.sol";
-import "./libraries/aave/WadRayMath.sol";
 
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 contract PositionsManagerForAaveStorage is ReentrancyGuard {
-    using WadRayMath for uint256;
-    using SafeERC20 for IERC20;
-    using Math for uint256;
-
     /// Structs ///
 
     struct SupplyBalance {
@@ -79,81 +72,4 @@ contract PositionsManagerForAaveStorage is ReentrancyGuard {
     IRewardsManager public rewardsManager;
     ISwapManager public swapManager;
     address public treasuryVault;
-
-    /// Internal ///
-
-    /// @notice Supplies undelrying tokens to Aave.
-    /// @param _poolTokenAddress The address of the market
-    /// @param _underlyingToken The underlying token of the market to supply to.
-    /// @param _amount The amount of token (in underlying).
-    function _supplyERC20ToPool(
-        address _poolTokenAddress,
-        IERC20 _underlyingToken,
-        uint256 _amount
-    ) internal {
-        _underlyingToken.safeIncreaseAllowance(address(lendingPool), _amount);
-        lendingPool.deposit(address(_underlyingToken), _amount, address(this), NO_REFERRAL_CODE);
-        marketsManager.updateSPYs(_poolTokenAddress);
-    }
-
-    /// @notice Withdraws underlying tokens from Aave.
-    /// @param _poolTokenAddress The address of the market.
-    /// @param _underlyingToken The underlying token of the market to withdraw from.
-    /// @param _amount The amount of token (in underlying).
-    function _withdrawERC20FromPool(
-        address _poolTokenAddress,
-        IERC20 _underlyingToken,
-        uint256 _amount
-    ) internal {
-        lendingPool.withdraw(address(_underlyingToken), _amount, address(this));
-        marketsManager.updateSPYs(_poolTokenAddress);
-    }
-
-    /// @notice Borrows underlying tokens from Aave.
-    /// @param _poolTokenAddress The address of the market.
-    /// @param _underlyingToken The underlying token of the market to borrow from.
-    /// @param _amount The amount of token (in underlying).
-    function _borrowERC20FromPool(
-        address _poolTokenAddress,
-        IERC20 _underlyingToken,
-        uint256 _amount
-    ) internal {
-        lendingPool.borrow(
-            address(_underlyingToken),
-            _amount,
-            VARIABLE_INTEREST_MODE,
-            NO_REFERRAL_CODE,
-            address(this)
-        );
-        marketsManager.updateSPYs(_poolTokenAddress);
-    }
-
-    /// @notice Repays underlying tokens to Aave.
-    /// @param _poolTokenAddress The address of the market.
-    /// @param _underlyingToken The underlying token of the market to repay to.
-    /// @param _amount The amount of token (in underlying).
-    /// @param _normalizedVariableDebt The normalized variable debt on Aave.
-    function _repayERC20ToPool(
-        address _poolTokenAddress,
-        IERC20 _underlyingToken,
-        uint256 _amount,
-        uint256 _normalizedVariableDebt
-    ) internal {
-        _underlyingToken.safeIncreaseAllowance(address(lendingPool), _amount);
-        IVariableDebtToken variableDebtToken = IVariableDebtToken(
-            lendingPool.getReserveData(address(_underlyingToken)).variableDebtTokenAddress
-        );
-        // Do not repay more than the contract's debt on Aave
-        _amount = Math.min(
-            _amount,
-            variableDebtToken.scaledBalanceOf(address(this)).mulWadByRay(_normalizedVariableDebt)
-        );
-        lendingPool.repay(
-            address(_underlyingToken),
-            _amount,
-            VARIABLE_INTEREST_MODE,
-            address(this)
-        );
-        marketsManager.updateSPYs(_poolTokenAddress);
-    }
 }
