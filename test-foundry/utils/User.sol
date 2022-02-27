@@ -3,19 +3,19 @@ pragma solidity 0.8.7;
 
 import "@contracts/aave/PositionsManagerForAave.sol";
 import "@contracts/aave/MarketsManagerForAave.sol";
-import "@contracts/aave/RewardsManager.sol";
+import "@contracts/aave/interfaces/IRewardsManager.sol";
 
 contract User {
     PositionsManagerForAave internal positionsManager;
     MarketsManagerForAave internal marketsManager;
-    RewardsManager internal rewardsManager;
+    IRewardsManager internal rewardsManager;
     ILendingPool public lendingPool;
     IAaveIncentivesController public aaveIncentivesController;
 
     constructor(
         PositionsManagerForAave _positionsManager,
         MarketsManagerForAave _marketsManager,
-        RewardsManager _rewardsManager
+        IRewardsManager _rewardsManager
     ) {
         positionsManager = _positionsManager;
         marketsManager = _marketsManager;
