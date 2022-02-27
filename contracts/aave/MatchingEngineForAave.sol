@@ -26,6 +26,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
     struct Vars {
         uint256 p2pRate;
         uint256 normalizer;
+        uint256 gasLeftAtTheBeginning;
     }
 
     /// @notice Emitted when the position of a supplier is updated.
@@ -103,11 +104,11 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         }
 
         if (_maxGasToConsume != 0) {
-            uint256 gasLeftAtTheBeginning = gasleft();
+            vars.gasLeftAtTheBeginning = gasleft();
             while (
                 matched < _amount &&
                 user != address(0) &&
-                gasLeftAtTheBeginning - gasleft() < _maxGasToConsume
+                vars.gasLeftAtTheBeginning - gasleft() < _maxGasToConsume
             ) {
                 uint256 onPoolInUnderlying = supplyBalanceInOf[poolTokenAddress][user]
                 .onPool
@@ -138,11 +139,6 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
             marketsManager.borrowP2PExchangeRate(poolTokenAddress)
         );
         emit P2PAmountsUpdated(poolTokenAddress, delta.supplyP2PAmount, delta.borrowP2PAmount);
-
-        if (matched > 0) {
-            matched = Math.min(matched, _poolToken.balanceOf(address(this)));
-            _withdrawERC20FromPool(poolTokenAddress, _underlyingToken, matched); // Revert on error
-        }
     }
 
     /// @notice Unmatches suppliers' liquidity in P2P for the given `_amount` and move it to Aave.
@@ -154,7 +150,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         address _poolTokenAddress,
         uint256 _amount,
         uint256 _maxGasToConsume
-    ) external override {
+    ) external override returns (uint256 toSupply) {
         Vars memory vars;
         IERC20 underlyingToken = IERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
         address user = suppliersInP2P[_poolTokenAddress].getHead();
@@ -178,11 +174,11 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         }
 
         if (_maxGasToConsume != 0) {
-            uint256 gasLeftAtTheBeginning = gasleft();
+            vars.gasLeftAtTheBeginning = gasleft();
             while (
                 remainingToUnmatch > 0 &&
                 user != address(0) &&
-                gasLeftAtTheBeginning - gasleft() < _maxGasToConsume
+                vars.gasLeftAtTheBeginning - gasleft() < _maxGasToConsume
             ) {
                 uint256 toUnmatch = Math.min(
                     supplyBalanceInOf[_poolTokenAddress][user].inP2P.mulWadByRay(vars.p2pRate),
@@ -209,7 +205,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         }
 
         // If P2P supply amount < _amount, the rest stays on the contract (reserve factor)
-        uint256 toSupply = Math.min(_amount, delta.supplyP2PAmount.mulWadByRay(vars.p2pRate));
+        toSupply = Math.min(_amount, delta.supplyP2PAmount.mulWadByRay(vars.p2pRate));
 
         if (remainingToUnmatch > 0) {
             delta.supplyP2PDelta += remainingToUnmatch.divWadByRay(vars.normalizer);
@@ -221,8 +217,6 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
             marketsManager.borrowP2PExchangeRate(_poolTokenAddress)
         );
         emit P2PAmountsUpdated(_poolTokenAddress, delta.supplyP2PAmount, delta.borrowP2PAmount);
-
-        if (toSupply > 0) _supplyERC20ToPool(_poolTokenAddress, underlyingToken, toSupply); // Revert on error
     }
 
     /// @notice Matches borrowers' liquidity waiting on Aave for the given `_amount` and move it to P2P.
@@ -254,11 +248,11 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         }
 
         if (_maxGasToConsume != 0) {
-            uint256 gasLeftAtTheBeginning = gasleft();
+            vars.gasLeftAtTheBeginning = gasleft();
             while (
                 matched < _amount &&
                 user != address(0) &&
-                gasLeftAtTheBeginning - gasleft() < _maxGasToConsume
+                vars.gasLeftAtTheBeginning - gasleft() < _maxGasToConsume
             ) {
                 uint256 onPoolInUnderlying = borrowBalanceInOf[poolTokenAddress][user]
                 .onPool
@@ -289,9 +283,6 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         );
         delta.borrowP2PAmount += matched.divWadByRay(vars.p2pRate);
         emit P2PAmountsUpdated(poolTokenAddress, delta.supplyP2PAmount, delta.borrowP2PAmount);
-
-        if (matched > 0)
-            _repayERC20ToPool(poolTokenAddress, _underlyingToken, matched, vars.normalizer); // Revert on error
     }
 
     /// @notice Unmatches borrowers' liquidity in P2P for the given `_amount` and move it to Aave.
@@ -327,11 +318,11 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         }
 
         if (_maxGasToConsume != 0) {
-            uint256 gasLeftAtTheBeginning = gasleft();
+            vars.gasLeftAtTheBeginning = gasleft();
             while (
                 remainingToUnmatch > 0 &&
                 user != address(0) &&
-                gasLeftAtTheBeginning - gasleft() < _maxGasToConsume
+                vars.gasLeftAtTheBeginning - gasleft() < _maxGasToConsume
             ) {
                 uint256 toUnmatch = Math.min(
                     borrowBalanceInOf[_poolTokenAddress][user].inP2P.mulWadByRay(vars.p2pRate),
@@ -367,8 +358,6 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         );
         delta.borrowP2PAmount -= (_amount - remainingToUnmatch).divWadByRay(vars.p2pRate);
         emit P2PAmountsUpdated(_poolTokenAddress, delta.supplyP2PAmount, delta.borrowP2PAmount);
-
-        _borrowERC20FromPool(_poolTokenAddress, underlyingToken, _amount); // Revert on error
     }
 
     /// Public ///
