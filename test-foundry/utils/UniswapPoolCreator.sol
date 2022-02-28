@@ -29,25 +29,34 @@ contract UniswapPoolCreator is Utils, IERC721Receiver {
         IUniswapV3Factory(0x1F98431c8aD98523631AE4a59f267346ea31F984);
     INonfungiblePositionManager public nonfungiblePositionManager =
         INonfungiblePositionManager(0xC36442b4a4522E871399CD717aBDD847Ab11FE88);
-    address public constant WETH9 = 0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619; // Intermediate token address.
+    address public WETH9; // Intermediate token address.
     uint24 public constant POOL_FEE = 3000;
 
     // For this example, we will provide equal amounts of liquidity in both assets.
     // Providing liquidity in both assets means liquidity will be earning fees and is considered in-range.
-    uint256 public amount0ToMint = 1000e18;
-    uint256 public amount1ToMint = 1000e18;
+    uint256 public amountToMint = 1000e18;
+
+    constructor() {
+        WETH9 = nonfungiblePositionManager.WETH9();
+    }
 
     function createPoolAndMintPosition(address _token0) external {
         uint160 sqrt_ = 1e27;
 
+        address token0 = _token0;
+        address token1 = WETH9;
+        if (token1 < token0) {
+            // createAndInitializePoolIfNecessary requires that token 0 address < token 1 address
+            (token0, token1) = (token1, token0);
+        }
         nonfungiblePositionManager.createAndInitializePoolIfNecessary(
-            _token0,
-            WETH9,
+            token0,
+            token1,
             POOL_FEE,
             sqrt_
         );
 
-        mintNewPosition(_token0);
+        mintNewPosition(token0, token1);
     }
 
     function getAdjustedTicks(int24 ticks) internal view returns (int24) {
@@ -55,7 +64,7 @@ contract UniswapPoolCreator is Utils, IERC721Receiver {
         return (ticks / tickSpacing) * tickSpacing;
     }
 
-    function mintNewPosition(address _token0)
+    function mintNewPosition(address _token0, address _token1)
         public
         returns (
             uint256 tokenId,
@@ -65,18 +74,18 @@ contract UniswapPoolCreator is Utils, IERC721Receiver {
         )
     {
         // Approve the position manager
-        TransferHelper.safeApprove(_token0, address(nonfungiblePositionManager), amount0ToMint);
-        TransferHelper.safeApprove(WETH9, address(nonfungiblePositionManager), amount1ToMint);
+        TransferHelper.safeApprove(_token0, address(nonfungiblePositionManager), amountToMint);
+        TransferHelper.safeApprove(_token1, address(nonfungiblePositionManager), amountToMint);
 
         INonfungiblePositionManager.MintParams memory params = INonfungiblePositionManager
         .MintParams({
             token0: _token0,
-            token1: WETH9,
+            token1: _token1,
             fee: POOL_FEE,
             tickLower: getAdjustedTicks(MIN_TICK),
             tickUpper: getAdjustedTicks(MAX_TICK),
-            amount0Desired: amount0ToMint,
-            amount1Desired: amount1ToMint,
+            amount0Desired: amountToMint,
+            amount1Desired: amountToMint,
             amount0Min: 0,
             amount1Min: 0,
             recipient: address(this),
@@ -90,16 +99,16 @@ contract UniswapPoolCreator is Utils, IERC721Receiver {
         _createDeposit(msg.sender, tokenId);
 
         // Remove allowance and refund in both assets.
-        if (amount0 < amount0ToMint) {
+        if (amount0 < amountToMint) {
             TransferHelper.safeApprove(_token0, address(nonfungiblePositionManager), 0);
-            uint256 refund0 = amount0ToMint - amount0;
+            uint256 refund0 = amountToMint - amount0;
             TransferHelper.safeTransfer(_token0, msg.sender, refund0);
         }
 
-        if (amount1 < amount1ToMint) {
-            TransferHelper.safeApprove(WETH9, address(nonfungiblePositionManager), 0);
-            uint256 refund1 = amount1ToMint - amount1;
-            TransferHelper.safeTransfer(WETH9, msg.sender, refund1);
+        if (amount1 < amountToMint) {
+            TransferHelper.safeApprove(_token1, address(nonfungiblePositionManager), 0);
+            uint256 refund1 = amountToMint - amount1;
+            TransferHelper.safeTransfer(_token1, msg.sender, refund1);
         }
     }
 

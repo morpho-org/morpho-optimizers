@@ -1,11 +1,16 @@
 -include .env.local
 
 ifeq (${NETWORK}, avalanche-mainnet)
-export FOUNDRY_ETH_RPC_URL=https://api.avax.network/ext/bc/C/rpc
-export FOUNDRY_FORK_BLOCK_NUMBER=9833154
+  export FOUNDRY_ETH_RPC_URL=https://api.avax.network/ext/bc/C/rpc
+  export FOUNDRY_FORK_BLOCK_NUMBER=9833154
 else
-export FOUNDRY_ETH_RPC_URL=https://${NETWORK}.g.alchemy.com/v2/${ALCHEMY_KEY}
-export FOUNDRY_FORK_BLOCK_NUMBER=24032305
+  export FOUNDRY_ETH_RPC_URL=https://${NETWORK}.g.alchemy.com/v2/${ALCHEMY_KEY}
+
+  ifeq (${NETWORK}, eth-mainnet)
+    export FOUNDRY_FORK_BLOCK_NUMBER=14292587
+  else ifeq (${NETWORK}, eth-mainnet)
+    export FOUNDRY_FORK_BLOCK_NUMBER=24032305
+  endif
 endif
 
 export DAPP_REMAPPINGS=@config/=config/$(NETWORK)
