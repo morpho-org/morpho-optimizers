@@ -7,9 +7,8 @@ import "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import "@uniswap/v3-periphery/contracts/libraries/TransferHelper.sol";
 import "./interfaces/INonfungiblePositionManager.sol";
-import "../helpers/Utils.sol";
 
-contract UniswapPoolCreator is Utils, IERC721Receiver {
+contract UniswapPoolCreator is IERC721Receiver {
     /// @notice Represents the deposit of an NFT
     struct Deposit {
         address owner;
