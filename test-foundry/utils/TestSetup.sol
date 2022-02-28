@@ -95,11 +95,6 @@ contract TestSetup is Config, Utils {
                 IPositionsManagerForAave(address(positionsManager))
             );
             uniswapPoolCreator.createPoolAndMintPosition(address(morphoToken));
-        } else {
-            rewardsManager = new RewardsManagerForAaveOnAvalanche(
-                lendingPool,
-                IPositionsManagerForAave(address(positionsManager))
-            );
         }
 
         treasuryVault = new User(positionsManager, marketsManager, rewardsManager);
