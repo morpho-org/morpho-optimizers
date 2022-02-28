@@ -25,13 +25,4 @@ contract Config {
     address protocolDataProviderAddress = 0x7551b5D2763519d4e37e8B81929D336De671d46d;
     address aaveIncentivesControllerAddress = 0x357D51124f59836DeD84c8a1730D72B749d8BC23;
     address swapRouterAddress = 0xE592427A0AEce92De3Edee1F18E0157C05861564;
-
-    mapping(address => uint8) slots;
-
-    constructor() {
-        // A tool to find the slot of tokens' balance: https://github.com/kendricktan/slot20
-        slots[dai] = 0;
-        slots[usdc] = 0;
-        slots[wbtc] = 0;
-    }
 }
