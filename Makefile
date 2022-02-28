@@ -8,7 +8,7 @@ else
 
   ifeq (${NETWORK}, eth-mainnet)
     export FOUNDRY_FORK_BLOCK_NUMBER=14292587
-  else ifeq (${NETWORK}, eth-mainnet)
+  else ifeq (${NETWORK}, polygon-mainnet)
     export FOUNDRY_FORK_BLOCK_NUMBER=24032305
   endif
 endif
@@ -27,6 +27,10 @@ contract-% c-%: node_modules
 single-% s-%: node_modules
 	@echo Run single test: $*
 	@forge test -vvv -c test-foundry --match-test $*
+
+.PHONY: config
+config:
+	forge config
 
 node_modules:
 	@yarn
