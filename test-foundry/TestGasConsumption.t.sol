@@ -100,10 +100,10 @@ contract TestGasConsumption is TestSetup {
         borrower1.supply(aUsdc, to6Decimals(collateral));
         borrower1.borrow(aDai, amount);
 
-        supplier1.approve(dai, 4 * amount);
+        supplier1.approve(dai, amount);
         supplier1.supply(aDai, amount, type(uint64).max);
 
-        supplier2.approve(dai, 4 * amount);
+        supplier2.approve(dai, amount);
         supplier2.supply(aDai, amount, type(uint64).max);
 
         // 1 match suppliers
@@ -150,7 +150,7 @@ contract TestGasConsumption is TestSetup {
         borrower1.supply(aUsdc, to6Decimals(collateral));
         borrower1.borrow(aDai, amount);
 
-        supplier1.approve(dai, 4 * amount);
+        supplier1.approve(dai, amount);
         supplier1.supply(aDai, amount, type(uint64).max);
 
         // supplier1 and borrower1 are matched with amount
