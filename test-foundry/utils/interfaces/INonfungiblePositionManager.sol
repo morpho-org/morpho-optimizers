@@ -64,4 +64,6 @@ interface INonfungiblePositionManager {
         uint24 fee,
         uint160 sqrtPriceX96
     ) external returns (address pool);
+
+    function WETH9() external view returns (address);
 }

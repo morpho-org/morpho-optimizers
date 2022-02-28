@@ -94,11 +94,6 @@ contract TestSetup is Config, Utils {
                 IPositionsManagerForAave(address(positionsManager))
             );
             uniswapPoolCreator.createPoolAndMintPosition(address(morphoToken));
-        } else {
-            rewardsManager = new RewardsManagerForAaveOnAvalanche(
-                lendingPool,
-                IPositionsManagerForAave(address(positionsManager))
-            );
         }
 
         treasuryVault = new User(positionsManager, marketsManager, rewardsManager);
@@ -126,12 +121,15 @@ contract TestSetup is Config, Utils {
         marketsManager.createMarket(dai, WAD);
         pools.push(aDai);
         underlyings.push(dai);
+
         marketsManager.createMarket(usdc, to6Decimals(WAD));
         pools.push(aUsdc);
         underlyings.push(usdc);
+
         marketsManager.createMarket(wbtc, 100);
         pools.push(aWbtc);
         underlyings.push(wbtc);
+
         marketsManager.createMarket(usdt, to6Decimals(WAD));
         pools.push(aUsdt);
         underlyings.push(usdt);
