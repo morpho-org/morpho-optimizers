@@ -24,6 +24,18 @@ contract Config {
     address aaveIncentivesControllerAddress = 0xd784927Ff2f95ba542BfC824c8a8a98F3495f6b5;
     address swapRouterAddress = 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;
 
+<<<<<<< HEAD
     uint24 morphoPoolFee = 3000;
     uint24 rewardPoolFee = 10000;
+=======
+    mapping(address => uint8) slots;
+
+    constructor() {
+        slots[dai] = 2;
+        slots[usdc] = 9;
+        slots[wbtc] = 0;
+        slots[usdt] = 2;
+        slots[weth] = 3;
+    }
+>>>>>>> 6d98522 (🔧✅ Update conf and tests for mainnet)
 }
