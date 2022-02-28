@@ -16,20 +16,18 @@ import "@contracts/aave/PositionsManagerForAave.sol";
 import "@contracts/aave/MarketsManagerForAave.sol";
 import "@contracts/common/SwapManager.sol";
 import "@config/Config.sol";
-import "./HEVM.sol";
+import "./HevmHelper.sol";
 import "./Utils.sol";
 import "./User.sol";
 import "./MorphoToken.sol";
 import "./SimplePriceOracle.sol";
 import "./UniswapPoolCreator.sol";
 
-contract TestSetup is Config, Utils {
+contract TestSetup is Config, Utils, HevmHelper {
     using WadRayMath for uint256;
 
     uint256 public constant MAX_BASIS_POINTS = 10000;
     uint256 public constant INITIAL_BALANCE = 1_000_000;
-
-    HEVM public hevm = HEVM(HEVM_ADDRESS);
 
     PositionsManagerForAave internal positionsManager;
     PositionsManagerForAave internal fakePositionsManager;
@@ -153,14 +151,6 @@ contract TestSetup is Config, Utils {
         borrower1 = borrowers[0];
         borrower2 = borrowers[1];
         borrower3 = borrowers[2];
-    }
-
-    function writeBalanceOf(
-        address who,
-        address acct,
-        uint256 value
-    ) internal {
-        hevm.store(acct, keccak256(abi.encode(who, slots[acct])), bytes32(value));
     }
 
     function createSigners(uint8 _nbOfSigners) internal {

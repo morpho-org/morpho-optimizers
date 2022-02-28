@@ -25,12 +25,4 @@ contract Config {
     address protocolDataProviderAddress = 0x65285E9dfab318f57051ab2b139ccCf232945451;
     address aaveIncentivesControllerAddress = 0x01D83Fe6A10D2f2B7AF17034343746188272cAc9;
     address swapRouterAddress = 0x60aE616a2155Ee3d9A68541Ba4544862310933d4;
-
-    mapping(address => uint8) slots;
-
-    constructor() {
-        slots[dai] = 0;
-        slots[usdc] = 0;
-        slots[wbtc] = 0;
-    }
 }
