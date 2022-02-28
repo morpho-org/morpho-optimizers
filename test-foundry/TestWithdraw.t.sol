@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.7;
 
-import "./utils/TestSetup.sol";
-import "./utils/Attacker.sol";
+import "./setup/TestSetup.sol";
+import "./helpers/Attacker.sol";
 import "@contracts/aave/libraries/aave/WadRayMath.sol";
 import "@contracts/aave/interfaces/IPositionsManagerForAave.sol";
 

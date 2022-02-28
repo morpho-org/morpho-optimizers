@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.7;
 
-import "./utils/TestSetup.sol";
+import "./setup/TestSetup.sol";
 
 contract TestSupply is TestSetup {
     // 1.1 - The user supplies less than the threshold of this market, the transaction reverts.

@@ -2,7 +2,7 @@
 pragma solidity 0.8.7;
 
 import "@contracts/aave/interfaces/aave/IAaveIncentivesController.sol";
-import "./utils/TestSetup.sol";
+import "./setup/TestSetup.sol";
 
 contract TestRewards is TestSetup {
     // Should claim the right amount of rewards

@@ -4,7 +4,7 @@ pragma solidity 0.8.7;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./HEVM.sol";
 
-contract HevmHelper {
+contract HevmAdapter {
     HEVM public hevm = HEVM(address(bytes20(uint160(uint256(keccak256("hevm cheat code"))))));
 
     mapping(address => uint8) public slots; // Token slot for balance storage.

@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.7;
 
-import "./utils/TestSetup.sol";
-import "@contracts/aave/libraries/aave/WadRayMath.sol";
+import "./setup/TestSetup.sol";
 
 contract TestGasConsumption is TestSetup {
     uint8 public NDS = 20;

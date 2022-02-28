@@ -85,4 +85,12 @@ interface HEVM {
     // Expect a call to an address with the specified calldata.
     // Calldata can either be strict or a partial match
     function expectCall(address, bytes calldata) external;
+
+    function getCode(string calldata) external returns (bytes memory);
+
+    // Label an address in test traces
+    function label(address addr, string calldata label) external;
+
+    // When fuzzing, generate new inputs if conditional not met
+    function assume(bool) external;
 }

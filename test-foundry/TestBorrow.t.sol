@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.7;
 
-import "@contracts/aave/libraries/aave/WadRayMath.sol";
-
-import "./utils/TestSetup.sol";
+import "./setup/TestSetup.sol";
 
 contract TestBorrow is TestSetup {
     // 2.1 - The user borrows less than the threshold of the given market, the transaction reverts.
