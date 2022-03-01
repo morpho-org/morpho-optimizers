@@ -29,6 +29,8 @@ import "../uniswap/UniswapPoolCreator.sol";
 contract TestSetup is DSTest, Config, Utils, HevmAdapter {
     using WadRayMath for uint256;
 
+    uint256 public constant AVALANCHE_MAINNET = 43114;
+
     uint256 public constant MAX_BASIS_POINTS = 10000;
     uint256 public constant INITIAL_BALANCE = 1_000_000;
 
@@ -79,7 +81,7 @@ contract TestSetup is DSTest, Config, Utils, HevmAdapter {
         );
         lendingPool = ILendingPool(lendingPoolAddressesProvider.getLendingPool());
 
-        if (block.chainid != 43114) {
+        if (block.chainid != AVALANCHE_MAINNET) {
             // NOT Avalanche network
             // Create a MORPHO / WETH pool
             uniswapPoolCreator = new UniswapPoolCreator();
@@ -105,7 +107,7 @@ contract TestSetup is DSTest, Config, Utils, HevmAdapter {
             maxGas
         );
 
-        if (block.chainid == 43114) {
+        if (block.chainid == AVALANCHE_MAINNET) {
             // Avalanche network
             rewardsManager = new RewardsManagerForAaveOnAvalanche(
                 lendingPool,

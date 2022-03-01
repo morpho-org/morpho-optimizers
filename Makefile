@@ -18,7 +18,7 @@ export DAPP_REMAPPINGS=@config/=config/$(NETWORK)
 .PHONY: test
 test: node_modules
 	@echo Run all tests on ${NETWORK}
-	@forge test -vvv -c test-foundry
+	@forge test -vv -c test-foundry
 
 contract-% c-%: node_modules
 	@echo Run tests for contract $* on ${NETWORK}
