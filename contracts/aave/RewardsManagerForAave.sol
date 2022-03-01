@@ -7,21 +7,11 @@ import "./interfaces/aave/IScaledBalanceToken.sol";
 import "./interfaces/aave/ILendingPool.sol";
 import "./interfaces/IPositionsManagerForAave.sol";
 import "./interfaces/IGetterUnderlyingAsset.sol";
-<<<<<<<< HEAD:contracts/aave/RewardsManagerForAave.sol
 import "./interfaces/IRewardsManagerForAave.sol";
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 abstract contract RewardsManagerForAave is IRewardsManagerForAave, Ownable {
-========
-import "./interfaces/IRewardsManager.sol";
-
-import {DistributionTypes} from "./libraries/aave/DistributionTypes.sol";
-
-import "@openzeppelin/contracts/access/Ownable.sol";
-
-contract RewardsManagerOnAvalanche is IRewardsManager, Ownable {
->>>>>>>> bef71c5 (🐛 (avax) create different rewards manager for diff networks):contracts/aave/RewardsManagerOnAvalanche.sol
     /// Structs ///
 
     struct LocalAssetData {
