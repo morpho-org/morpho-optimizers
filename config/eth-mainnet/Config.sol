@@ -23,4 +23,7 @@ contract Config {
     address protocolDataProviderAddress = 0x057835Ad21a177dbdd3090bB1CAE03EaCF78Fc6d;
     address aaveIncentivesControllerAddress = 0xd784927Ff2f95ba542BfC824c8a8a98F3495f6b5;
     address swapRouterAddress = 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;
+
+    uint24 morphoPoolFee = 3000;
+    uint24 rewardPoolFee = 10000;
 }
