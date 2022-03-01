@@ -71,12 +71,23 @@ contract TestSetup is Config, Utils, HevmHelper {
         );
         lendingPool = ILendingPool(lendingPoolAddressesProvider.getLendingPool());
 
-        // Create a MORPHO / WETH pool
-        uniswapPoolCreator = new UniswapPoolCreator();
-        writeBalanceOf(address(uniswapPoolCreator), weth, INITIAL_BALANCE * WAD);
-        morphoToken = new MorphoToken(address(uniswapPoolCreator));
-
-        swapManager = new SwapManager(address(morphoToken), REWARD_TOKEN);
+        if (block.chainid != 43114) {
+            // NOT Avalanche network
+            // Create a MORPHO / WETH pool
+            uniswapPoolCreator = new UniswapPoolCreator();
+            writeBalanceOf(
+                address(uniswapPoolCreator),
+                uniswapPoolCreator.WETH9(),
+                INITIAL_BALANCE * WAD
+            );
+            morphoToken = new MorphoToken(address(uniswapPoolCreator));
+            swapManager = new SwapManager(
+                address(morphoToken),
+                morphoPoolFee,
+                REWARD_TOKEN,
+                rewardPoolFee
+            );
+        }
 
         marketsManager = new MarketsManagerForAave(lendingPool);
         positionsManager = new PositionsManagerForAave(
@@ -86,7 +97,13 @@ contract TestSetup is Config, Utils, HevmHelper {
             maxGas
         );
 
-        if (block.chainid != 43114) {
+        if (block.chainid == 43114) {
+            // Avalanche network
+            rewardsManager = new RewardsManagerForAaveOnAvalanche(
+                lendingPool,
+                IPositionsManagerForAave(address(positionsManager))
+            );
+        } else {
             rewardsManager = new RewardsManagerForAaveOnPolygon(
                 lendingPool,
                 IPositionsManagerForAave(address(positionsManager))

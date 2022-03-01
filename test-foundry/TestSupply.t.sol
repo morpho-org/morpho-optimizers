@@ -17,7 +17,7 @@ contract TestSupply is TestSetup {
     }
 
     // 1.2 - There are no available borrowers: all of the supplied amount is supplied to the pool and set `onPool`.
-    function test_supply_1_2(uint256 _amount) public {
+    function test_supply_1_2() public {
         uint256 amount = 10000 ether;
 
         supplier1.approve(dai, amount);
