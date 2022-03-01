@@ -929,7 +929,10 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
             matchingEngine.updateSuppliersDC(_poolTokenAddress, _supplier);
 
             uint256 matched;
-            if (suppliersOnPool[_poolTokenAddress].getHead() != address(0)) {
+            if (
+                suppliersOnPool[_poolTokenAddress].getHead() != address(0) &&
+                !marketsManager.noP2P(_poolTokenAddress)
+            ) {
                 matched = matchingEngine.matchSuppliersDC(
                     poolToken,
                     underlyingToken,
@@ -1027,7 +1030,10 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
             ); // In p2pUnit
             matchingEngine.updateBorrowersDC(poolTokenAddress, _user);
 
-            if (borrowersOnPool[_poolTokenAddress].getHead() != address(0)) {
+            if (
+                borrowersOnPool[_poolTokenAddress].getHead() != address(0) &&
+                !marketsManager.noP2P(_poolTokenAddress)
+            ) {
                 matched = matchingEngine.matchBorrowersDC(
                     poolToken,
                     underlyingToken,
