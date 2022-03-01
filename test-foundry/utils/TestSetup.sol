@@ -88,8 +88,7 @@ contract TestSetup is Config, Utils {
             maxGas
         );
 
-        if (aave != 0x63a72806098Bd3D9520cC43356dD78afe5D386D9) {
-            // Not Avalanche network
+        if (block.chainid != 43114) {
             rewardsManager = new RewardsManagerForAaveOnPolygon(
                 lendingPool,
                 IPositionsManagerForAave(address(positionsManager))
