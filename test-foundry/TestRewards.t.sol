@@ -6,23 +6,23 @@ import "./utils/TestSetup.sol";
 
 contract TestRewards is TestSetup {
     // Should claim the right amount of rewards
-    function test_claim() public {
+    function test_claim_simple() public {
         uint256 toSupply = 100 * WAD;
         supplier1.approve(dai, toSupply);
         supplier1.supply(aDai, toSupply);
         uint256 balanceBefore = supplier1.balanceOf(REWARD_TOKEN);
         uint256 index;
 
-        if (block.chainid != 43114) {
-            // Not Avalanche network
+        if (block.chainid == 43114 || block.chainid == 1) {
+            (index, , ) = IAaveIncentivesController(aaveIncentivesControllerAddress).getAssetData(
+                aDai
+            );
+        } else {
+            // Polygon network
             IAaveIncentivesController.AssetData memory assetData = IAaveIncentivesController(
                 aaveIncentivesControllerAddress
             ).assets(aDai);
             index = assetData.index;
-        } else {
-            (index, , ) = IAaveIncentivesController(aaveIncentivesControllerAddress).getAssetData(
-                aDai
-            );
         }
 
         (, uint256 onPool) = positionsManager.supplyBalanceInOf(aDai, address(supplier1));
@@ -43,22 +43,23 @@ contract TestRewards is TestSetup {
         hevm.warp(block.timestamp + 365 days);
         positionsManager.claimRewards(aDaiInArray, false);
 
-        if (block.chainid != 43114) {
-            // Not Avalanche network
+        if (block.chainid == 43114 || block.chainid == 1) {
+            (index, , ) = IAaveIncentivesController(aaveIncentivesControllerAddress).getAssetData(
+                aDai
+            );
+        } else {
+            // Polygon network
             IAaveIncentivesController.AssetData memory assetData = IAaveIncentivesController(
                 aaveIncentivesControllerAddress
             ).assets(aDai);
             index = assetData.index;
-        } else {
-            (index, , ) = IAaveIncentivesController(aaveIncentivesControllerAddress).getAssetData(
-                aDai
-            );
         }
+
         uint256 expectedClaimed = (onPool * (index - userIndex)) / WAD;
         uint256 balanceAfter = supplier1.balanceOf(REWARD_TOKEN);
         uint256 expectedNewBalance = expectedClaimed + balanceBefore;
 
-        assertEq(balanceAfter, expectedNewBalance);
+        assertEq(balanceAfter, expectedNewBalance, "balance after wrong");
     }
 
     // Anyone should be able to claim rewards on several markets one after another
@@ -287,7 +288,7 @@ contract TestRewards is TestSetup {
         // Pass for now if on Avalanche
         // TODO: create a pool to swap tokens
         if (block.chainid != 43114) {
-            uint256 toSupply = 1000 * WAD;
+            uint256 toSupply = 10000 * WAD;
             supplier1.approve(dai, toSupply);
             supplier1.supply(aDai, toSupply);
 
