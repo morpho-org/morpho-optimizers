@@ -16,7 +16,7 @@ contract Config {
     address aUsdt = 0x532E6537FEA298397212F09A61e03311686f548e;
     address aWbtc = 0x686bEF2417b6Dc32C50a3cBfbCC3bb60E1e9a15D;
     address aWeth = 0x53f7c5869a859F0AeC3D334ee8B4Cf01E3492f21;
-    address avWAVAX = 0xDFE521292EcE2A4f44242efBcD66Bc594CA9714B;
+    address avWavax = 0xDFE521292EcE2A4f44242efBcD66Bc594CA9714B;
 
     address variableDebtDai = 0x1852DC24d1a8956a0B356AA18eDe954c7a0Ca5ae;
     address variableDebtUsdc = 0x848c080d2700CBE1B894a3374AD5E887E5cCb89c;

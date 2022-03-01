@@ -13,7 +13,7 @@ contract TestRewards is TestSetup {
         uint256 balanceBefore = supplier1.balanceOf(REWARD_TOKEN);
         uint256 index;
 
-        if (aave != 0x63a72806098Bd3D9520cC43356dD78afe5D386D9) {
+        if (block.chainid != 43114) {
             // Not Avalanche network
             IAaveIncentivesController.AssetData memory assetData = IAaveIncentivesController(
                 aaveIncentivesControllerAddress
@@ -43,7 +43,7 @@ contract TestRewards is TestSetup {
         hevm.warp(block.timestamp + 365 days);
         positionsManager.claimRewards(aDaiInArray, false);
 
-        if (aave != 0x63a72806098Bd3D9520cC43356dD78afe5D386D9) {
+        if (block.chainid != 43114) {
             // Not Avalanche network
             IAaveIncentivesController.AssetData memory assetData = IAaveIncentivesController(
                 aaveIncentivesControllerAddress
@@ -262,7 +262,7 @@ contract TestRewards is TestSetup {
     function test_claim_and_swap() public {
         // Pass for now if on Avalanche
         // TODO: create a pool to swap tokens
-        if (aave != 0x63a72806098Bd3D9520cC43356dD78afe5D386D9) {
+        if (block.chainid != 43114) {
             uint256 toSupply = 100 * WAD;
             supplier1.approve(dai, toSupply);
             supplier1.supply(aDai, toSupply);
@@ -286,7 +286,7 @@ contract TestRewards is TestSetup {
     function test_swap_with_too_much_slippage() public {
         // Pass for now if on Avalanche
         // TODO: create a pool to swap tokens
-        if (aave != 0x63a72806098Bd3D9520cC43356dD78afe5D386D9) {
+        if (block.chainid != 43114) {
             uint256 toSupply = 1000 * WAD;
             supplier1.approve(dai, toSupply);
             supplier1.supply(aDai, toSupply);
