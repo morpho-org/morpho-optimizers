@@ -104,7 +104,15 @@ contract TestSetup is Config, Utils, HevmHelper {
                 lendingPool,
                 IPositionsManagerForAave(address(positionsManager))
             );
+        } else if (block.chainid == 1) {
+            // Mainnet network
+            rewardsManager = new RewardsManagerForAaveOnAvalanche(
+                lendingPool,
+                IPositionsManagerForAave(address(positionsManager))
+            );
+            uniswapPoolCreator.createPoolAndMintPosition(address(morphoToken));
         } else {
+            // Polygon network
             rewardsManager = new RewardsManagerForAaveOnPolygon(
                 lendingPool,
                 IPositionsManagerForAave(address(positionsManager))

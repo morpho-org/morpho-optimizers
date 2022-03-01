@@ -24,6 +24,7 @@ contract RewardsManagerForAaveOnAvalanche is RewardsManagerForAave {
                 uint256 emissionPerSecond,
                 uint256 lastTimestampOnAave
             ) = aaveIncentivesController.getAssetData(_asset);
+
             if (blockTimestamp == lastTimestampOnAave) newIndex = oldIndex;
             else
                 newIndex = _getAssetIndex(

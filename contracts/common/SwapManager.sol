@@ -100,7 +100,7 @@ contract SwapManager is ISwapManager {
         pool1 = IUniswapV3Pool(
             PoolAddress.computeAddress(
                 FACTORY,
-                PoolAddress.getPoolKey(_morphoToken, WETH9, _morphoPoolFee)
+                PoolAddress.getPoolKey(WETH9, _morphoToken, _morphoPoolFee)
             )
         );
     }
@@ -116,18 +116,16 @@ contract SwapManager is ISwapManager {
         override
         returns (uint256 amountOut)
     {
-        if (singlePath) {
-            return swapToMorphoTokenSinglePath(_amountIn, _receiver);
-        }
+        if (singlePath) return _swapToMorphoTokenSinglePath(_amountIn, _receiver);
 
-        return swapToMorphoTokenMultiplePath(_amountIn, _receiver);
+        return _swapToMorphoTokenMultiplePath(_amountIn, _receiver);
     }
 
     /// @dev Swaps reward tokens to Morpho token, by path: reward -> weth9 -> morpho.
     /// @param _amountIn The amount of reward token to swap.
     /// @param _receiver The address of the receiver of the Morpho tokens.
     /// @return amountOut The amount of Morpho tokens sent.
-    function swapToMorphoTokenMultiplePath(uint256 _amountIn, address _receiver)
+    function _swapToMorphoTokenMultiplePath(uint256 _amountIn, address _receiver)
         internal
         returns (uint256 amountOut)
     {
@@ -195,7 +193,7 @@ contract SwapManager is ISwapManager {
     /// @param _amountIn The amount of reward token to swap.
     /// @param _receiver The address of the receiver of the Morpho tokens.
     /// @return amountOut The amount of Morpho tokens sent.
-    function swapToMorphoTokenSinglePath(uint256 _amountIn, address _receiver)
+    function _swapToMorphoTokenSinglePath(uint256 _amountIn, address _receiver)
         internal
         returns (uint256 amountOut)
     {
@@ -212,8 +210,18 @@ contract SwapManager is ISwapManager {
         uint160 sqrtPriceX961 = TickMath.getSqrtRatioAtTick(
             int24((tickCumulatives1[1] - tickCumulatives1[0]) / int24(uint24(TWAP_INTERVAL)))
         );
-        uint256 numerator = 2**96 * _amountIn;
-        uint256 denominator = getPriceX96FromSqrtPriceX96(sqrtPriceX961);
+
+        uint256 numerator;
+        uint256 denominator;
+
+        // Computation depends on the position of token in pool
+        if (pool1.token0() == REWARD_TOKEN) {
+            numerator = 2**96 * _amountIn;
+            denominator = getPriceX96FromSqrtPriceX96(sqrtPriceX961);
+        } else {
+            numerator = getPriceX96FromSqrtPriceX96(sqrtPriceX961);
+            denominator = 2**96 * _amountIn;
+        }
 
         // Max slippage of 1% for the trade
         uint256 expectedAmountOutMinimum = (numerator * (MAX_BASIS_POINTS - ONE_PERCENT)) /
