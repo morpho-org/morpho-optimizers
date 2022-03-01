@@ -901,9 +901,8 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
                 address(underlyingToken)
             );
             uint256 onPoolSupply = supplyBalanceInOf[_poolTokenAddress][_supplier].onPool;
-            uint256 onPoolSupplyInUnderlying = onPoolSupply.mulWadByRay(normalizedIncome);
             uint256 withdrawnInUnderlying = Math.min(
-                Math.min(onPoolSupplyInUnderlying, remainingToWithdraw),
+                Math.min(onPoolSupply.mulWadByRay(normalizedIncome), remainingToWithdraw),
                 poolToken.balanceOf(address(this))
             );
 
@@ -912,6 +911,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
                 withdrawnInUnderlying.divWadByRay(normalizedIncome)
             ); // In poolToken
             matchingEngine.updateSuppliersDC(_poolTokenAddress, _supplier);
+
             if (withdrawnInUnderlying > 0)
                 _withdrawERC20FromPool(_poolTokenAddress, underlyingToken, withdrawnInUnderlying); // Revert on error
             remainingToWithdraw -= withdrawnInUnderlying;
@@ -920,23 +920,30 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         /// Transfer withdraw ///
 
         if (remainingToWithdraw > 0) {
-            uint256 supplyP2PExchangeRate = marketsManager.supplyP2PExchangeRate(_poolTokenAddress);
-
             supplyBalanceInOf[_poolTokenAddress][_supplier].inP2P -= Math.min(
                 supplyBalanceInOf[_poolTokenAddress][_supplier].inP2P,
-                remainingToWithdraw.divWadByRay(supplyP2PExchangeRate)
+                remainingToWithdraw.divWadByRay(
+                    marketsManager.supplyP2PExchangeRate(_poolTokenAddress)
+                )
             ); // In p2pUnit
             matchingEngine.updateSuppliersDC(_poolTokenAddress, _supplier);
-            uint256 matched = matchingEngine.matchSuppliersDC(
-                poolToken,
-                underlyingToken,
-                remainingToWithdraw,
-                _maxGasToConsume
-            );
 
-            if (matched > 0) {
-                matched = Math.min(matched, IAToken(_poolTokenAddress).balanceOf(address(this)));
-                _withdrawERC20FromPool(_poolTokenAddress, underlyingToken, matched); // Revert on error
+            uint256 matched;
+            if (suppliersOnPool[_poolTokenAddress].getHead() != address(0)) {
+                matched = matchingEngine.matchSuppliersDC(
+                    poolToken,
+                    underlyingToken,
+                    remainingToWithdraw,
+                    _maxGasToConsume
+                );
+
+                if (matched > 0) {
+                    matched = Math.min(
+                        matched,
+                        IAToken(_poolTokenAddress).balanceOf(address(this))
+                    );
+                    _withdrawERC20FromPool(_poolTokenAddress, underlyingToken, matched); // Revert on error
+                }
             }
 
             /// Hard withdraw ///
@@ -985,16 +992,18 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
             uint256 normalizedVariableDebt = lendingPool.getReserveNormalizedVariableDebt(
                 address(underlyingToken)
             );
-            address poolTokenAddress = address(poolToken);
-            uint256 borrowedOnPool = borrowBalanceInOf[poolTokenAddress][_user].onPool;
-            uint256 borrowedOnPoolInUnderlying = borrowedOnPool.mulWadByRay(normalizedVariableDebt);
-            uint256 repaidInUnderlying = Math.min(borrowedOnPoolInUnderlying, remainingToRepay);
+            uint256 borrowedOnPool = borrowBalanceInOf[_poolTokenAddress][_user].onPool;
+            uint256 repaidInUnderlying = Math.min(
+                borrowedOnPool.mulWadByRay(normalizedVariableDebt),
+                remainingToRepay
+            );
 
-            borrowBalanceInOf[poolTokenAddress][_user].onPool -= Math.min(
+            borrowBalanceInOf[_poolTokenAddress][_user].onPool -= Math.min(
                 borrowedOnPool,
                 repaidInUnderlying.divWadByRay(normalizedVariableDebt)
             ); // In adUnit
-            matchingEngine.updateBorrowersDC(poolTokenAddress, _user);
+            matchingEngine.updateBorrowersDC(_poolTokenAddress, _user);
+
             if (repaidInUnderlying > 0)
                 _repayERC20ToPool(
                     _poolTokenAddress,
@@ -1010,26 +1019,29 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         if (remainingToRepay > 0) {
             address poolTokenAddress = address(poolToken);
             uint256 borrowP2PExchangeRate = marketsManager.borrowP2PExchangeRate(poolTokenAddress);
+            uint256 matched;
 
             borrowBalanceInOf[poolTokenAddress][_user].inP2P -= Math.min(
                 borrowBalanceInOf[poolTokenAddress][_user].inP2P,
                 remainingToRepay.divWadByRay(borrowP2PExchangeRate)
             ); // In p2pUnit
             matchingEngine.updateBorrowersDC(poolTokenAddress, _user);
-            uint256 matched = matchingEngine.matchBorrowersDC(
-                poolToken,
-                underlyingToken,
-                remainingToRepay,
-                _maxGasToConsume
-            );
 
-            if (matched > 0)
+            if (borrowersOnPool[_poolTokenAddress].getHead() != address(0)) {
+                matched = matchingEngine.matchBorrowersDC(
+                    poolToken,
+                    underlyingToken,
+                    remainingToRepay,
+                    _maxGasToConsume
+                );
+
                 _repayERC20ToPool(
                     poolTokenAddress,
                     underlyingToken,
                     matched,
                     lendingPool.getReserveNormalizedVariableDebt(address(underlyingToken))
                 ); // Revert on error
+            }
 
             /// Hard repay ///
 
