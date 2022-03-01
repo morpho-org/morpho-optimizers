@@ -3,7 +3,7 @@ pragma solidity 0.8.7;
 
 import "./aave/IAaveIncentivesController.sol";
 
-interface IRewardsManager {
+interface IRewardsManagerForAave {
     function aaveIncentivesController() external view returns (IAaveIncentivesController);
 
     function setAaveIncentivesController(address) external;

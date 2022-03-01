@@ -329,7 +329,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
     /// @notice Sets the `rewardsManager`.
     /// @param _rewardsManagerAddress The address of the `rewardsManager`.
     function setRewardsManager(address _rewardsManagerAddress) external onlyMarketsManagerOwner {
-        rewardsManager = IRewardsManager(_rewardsManagerAddress);
+        rewardsManager = IRewardsManagerForAave(_rewardsManagerAddress);
         emit RewardsManagerSet(_rewardsManagerAddress);
     }
 
