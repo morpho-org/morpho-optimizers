@@ -15,9 +15,9 @@ interface Weth9Provider {
     function WETH9() external view returns (address);
 }
 
-/// @title SwapManager.
-/// @dev Smart contract managing the swap of reward token to Morpho token.
-contract SwapManager is ISwapManager {
+/// @title SwapManagerUniV3.
+/// @dev Smart contract managing the swap of reward token to Morpho token on Uniswap V3.
+contract SwapManagerUniV3 is ISwapManager {
     using SafeTransferLib for ERC20;
 
     /// Storage ///
@@ -73,7 +73,7 @@ contract SwapManager is ISwapManager {
 
     /// Constructor ///
 
-    /// @notice Constructs the SwapManager contract.
+    /// @notice Constructs the SwapManagerUniV3 contract.
     /// @param _morphoToken The Morpho token address.
     /// @param _rewardToken The reward token address.
     constructor(
