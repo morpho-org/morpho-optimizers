@@ -16,7 +16,7 @@ import {RewardsManagerForAaveOnPolygon} from "@contracts/aave/markets-managers/R
 import {PositionsManagerForAave} from "@contracts/aave/PositionsManagerForAave.sol";
 import {User} from "./User.sol";
 import "@contracts/aave/MarketsManagerForAave.sol";
-import "@contracts/common/SwapManager.sol";
+import "@contracts/common/SwapManagerUniV3.sol";
 import "@config/Config.sol";
 import "./HevmHelper.sol";
 import "./Utils.sol";
@@ -34,7 +34,7 @@ contract TestSetup is Config, Utils, HevmHelper {
     PositionsManagerForAave internal fakePositionsManager;
     MarketsManagerForAave internal marketsManager;
     IRewardsManagerForAave internal rewardsManager;
-    SwapManager public swapManager;
+    SwapManagerUniV3 public swapManager;
     UniswapPoolCreator public uniswapPoolCreator;
     MorphoToken public morphoToken;
     address public REWARD_TOKEN =
@@ -82,7 +82,7 @@ contract TestSetup is Config, Utils, HevmHelper {
                 INITIAL_BALANCE * WAD
             );
             morphoToken = new MorphoToken(address(uniswapPoolCreator));
-            swapManager = new SwapManager(
+            swapManager = new SwapManagerUniV3(
                 address(morphoToken),
                 morphoPoolFee,
                 REWARD_TOKEN,
