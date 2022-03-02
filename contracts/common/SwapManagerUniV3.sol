@@ -23,8 +23,8 @@ contract SwapManagerUniV3 is ISwapManager {
     /// Storage ///
 
     uint256 public constant ONE_PERCENT = 100; // 1% in basis points.
-    uint256 public constant MAX_BASIS_POINTS = 10000; // 100% in basis points.
     uint32 public constant TWAP_INTERVAL = 3600; // 1 hour interval.
+    uint256 public constant MAX_BASIS_POINTS = 10000; // 100% in basis points.
 
     // Hard coded addresses as they are the same accross chains
     address public constant FACTORY = 0x1F98431c8aD98523631AE4a59f267346ea31F984; // The address of the Uniswap V3 factory.
@@ -116,18 +116,31 @@ contract SwapManagerUniV3 is ISwapManager {
         override
         returns (uint256 amountOut)
     {
-        if (singlePath) return _swapToMorphoTokenSinglePath(_amountIn, _receiver);
+        uint256 expectedAmountOutMinimum;
+        bytes memory path;
 
-        return _swapToMorphoTokenMultiplePath(_amountIn, _receiver);
+        if (singlePath) (expectedAmountOutMinimum, path) = _getSinglePathParams(_amountIn);
+        else (expectedAmountOutMinimum, path) = _getMultiplePathParams(_amountIn);
+
+        ISwapRouter.ExactInputParams memory params = ISwapRouter.ExactInputParams({
+            path: path,
+            recipient: _receiver,
+            deadline: block.timestamp,
+            amountIn: _amountIn,
+            amountOutMinimum: expectedAmountOutMinimum
+        });
+
+        // Execute the swap
+        ERC20(REWARD_TOKEN).safeApprove(address(swapRouter), _amountIn);
+        amountOut = swapRouter.exactInput(params);
+
+        emit Swapped(_receiver, _amountIn, amountOut);
     }
 
-    /// @dev Swaps reward tokens to Morpho token, by path: reward -> weth9 -> morpho.
-    /// @param _amountIn The amount of reward token to swap.
-    /// @param _receiver The address of the receiver of the Morpho tokens.
-    /// @return amountOut The amount of Morpho tokens sent.
-    function _swapToMorphoTokenMultiplePath(uint256 _amountIn, address _receiver)
+    function _getMultiplePathParams(uint256 _amountIn)
         internal
-        returns (uint256 amountOut)
+        view
+        returns (uint256 expectedAmountOutMinimum, bytes memory path)
     {
         SwapVars memory vars;
         uint32[] memory secondsAgo = new uint32[](2);
@@ -170,32 +183,16 @@ contract SwapManagerUniV3 is ISwapManager {
         }
 
         // Max slippage of 1% for the trade
-        vars.expectedAmountOutMinimum =
-            (vars.numerator * (MAX_BASIS_POINTS - ONE_PERCENT)) /
-            (vars.denominator * MAX_BASIS_POINTS);
-
-        ISwapRouter.ExactInputParams memory params = ISwapRouter.ExactInputParams({
-            path: abi.encodePacked(REWARD_TOKEN, REWARD_POOL_FEE, WETH9, MORPHO_POOL_FEE, MORPHO),
-            recipient: _receiver,
-            deadline: block.timestamp,
-            amountIn: _amountIn,
-            amountOutMinimum: vars.expectedAmountOutMinimum
-        });
-
-        // Execute the swap
-        ERC20(REWARD_TOKEN).safeApprove(address(swapRouter), _amountIn);
-        amountOut = swapRouter.exactInput(params);
-
-        emit Swapped(_receiver, _amountIn, amountOut);
+        expectedAmountOutMinimum =
+            ((vars.numerator / vars.denominator) * (MAX_BASIS_POINTS - ONE_PERCENT)) /
+            MAX_BASIS_POINTS;
+        path = abi.encodePacked(REWARD_TOKEN, REWARD_POOL_FEE, WETH9, MORPHO_POOL_FEE, MORPHO);
     }
 
-    /// @dev Swaps reward tokens to Morpho token, by path: reward -> morpho.
-    /// @param _amountIn The amount of reward token to swap.
-    /// @param _receiver The address of the receiver of the Morpho tokens.
-    /// @return amountOut The amount of Morpho tokens sent.
-    function _swapToMorphoTokenSinglePath(uint256 _amountIn, address _receiver)
+    function _getSinglePathParams(uint256 _amountIn)
         internal
-        returns (uint256 amountOut)
+        view
+        returns (uint256 expectedAmountOutMinimum, bytes memory path)
     {
         uint32[] memory secondsAgo = new uint32[](2);
         secondsAgo[0] = TWAP_INTERVAL;
@@ -224,22 +221,10 @@ contract SwapManagerUniV3 is ISwapManager {
         }
 
         // Max slippage of 1% for the trade
-        uint256 expectedAmountOutMinimum = (numerator * (MAX_BASIS_POINTS - ONE_PERCENT)) /
+        expectedAmountOutMinimum =
+            (numerator * (MAX_BASIS_POINTS - ONE_PERCENT)) /
             (denominator * MAX_BASIS_POINTS);
-
-        ISwapRouter.ExactInputParams memory params = ISwapRouter.ExactInputParams({
-            path: abi.encodePacked(REWARD_TOKEN, MORPHO_POOL_FEE, MORPHO),
-            recipient: _receiver,
-            deadline: block.timestamp,
-            amountIn: _amountIn,
-            amountOutMinimum: expectedAmountOutMinimum
-        });
-
-        // Execute the swap
-        ERC20(REWARD_TOKEN).safeApprove(address(swapRouter), _amountIn);
-        amountOut = swapRouter.exactInput(params);
-
-        emit Swapped(_receiver, _amountIn, amountOut);
+        path = abi.encodePacked(REWARD_TOKEN, MORPHO_POOL_FEE, MORPHO);
     }
 
     /// public ///
