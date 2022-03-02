@@ -129,6 +129,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         );
 
         if (matched > 0) {
+            // we prevent a possible rounding error of negligeable value that would cause a revert
             matched = Math.min(matched, _poolToken.balanceOf(address(this)));
             _withdrawERC20FromPool(poolTokenAddress, _underlyingToken, matched); // Revert on error
         }
@@ -290,6 +291,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         uint256 _amount,
         uint256 _maxGasToConsume
     ) external override {
+        // no return value : function is only used in hard withdraws, all unmatched liquidity is always forwarded to pool
         Vars memory vars;
         IERC20 underlyingToken = IERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
         address user = borrowersInP2P[_poolTokenAddress].getHead();
