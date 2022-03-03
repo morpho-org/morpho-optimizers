@@ -169,10 +169,10 @@ contract TestGovernance is TestSetup {
         assertEq(withdraw, newMaxGas.withdraw);
         assertEq(repay, newMaxGas.repay);
 
-        hevm.expectRevert(abi.encodeWithSignature("OnlyMarketsManagerOwner()"));
+        hevm.expectRevert("Ownable: caller is not the owner");
         supplier1.setMaxGas(newMaxGas);
 
-        hevm.expectRevert(abi.encodeWithSignature("OnlyMarketsManagerOwner()"));
+        hevm.expectRevert("Ownable: caller is not the owner");
         borrower1.setMaxGas(newMaxGas);
     }
 
@@ -183,10 +183,10 @@ contract TestGovernance is TestSetup {
         positionsManager.setNDS(newNDS);
         assertEq(positionsManager.NDS(), newNDS);
 
-        hevm.expectRevert(abi.encodeWithSignature("OnlyMarketsManagerOwner()"));
+        hevm.expectRevert("Ownable: caller is not the owner");
         supplier1.setNDS(newNDS);
 
-        hevm.expectRevert(abi.encodeWithSignature("OnlyMarketsManagerOwner()"));
+        hevm.expectRevert("Ownable: caller is not the owner");
         borrower1.setNDS(newNDS);
     }
 

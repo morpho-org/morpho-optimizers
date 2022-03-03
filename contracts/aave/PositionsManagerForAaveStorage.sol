@@ -13,8 +13,9 @@ import "../common/interfaces/ISwapManager.sol";
 import "../common/libraries/DoubleLinkedList.sol";
 
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract PositionsManagerForAaveStorage is ReentrancyGuard {
+contract PositionsManagerForAaveStorage is Ownable, ReentrancyGuard {
     /// Structs ///
 
     struct SupplyBalance {
