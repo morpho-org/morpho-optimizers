@@ -213,11 +213,11 @@ contract SwapManagerUniV3 is ISwapManager {
 
         // Computation depends on the position of token in pool
         if (pool1.token0() == REWARD_TOKEN) {
+            numerator = getPriceX96FromSqrtPriceX96(sqrtPriceX961) * _amountIn;
+            denominator = 2**96;
+        } else {
             numerator = 2**96 * _amountIn;
             denominator = getPriceX96FromSqrtPriceX96(sqrtPriceX961);
-        } else {
-            numerator = getPriceX96FromSqrtPriceX96(sqrtPriceX961);
-            denominator = 2**96 * _amountIn;
         }
 
         // Max slippage of 1% for the trade
