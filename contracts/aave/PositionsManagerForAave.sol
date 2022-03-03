@@ -319,21 +319,21 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         emit ThresholdSet(_poolTokenAddress, _newThreshold);
     }
 
-    /// @notice Sets the `_newTreasuryVaultAddress`.
+    /// @dev Sets the `_newTreasuryVaultAddress`.
     /// @param _newTreasuryVaultAddress The address of the new `treasuryVault`.
     function setTreasuryVault(address _newTreasuryVaultAddress) external onlyMarketsManagerOwner {
         treasuryVault = _newTreasuryVaultAddress;
         emit TreasuryVaultSet(_newTreasuryVaultAddress);
     }
 
-    /// @notice Sets the `rewardsManager`.
+    /// @dev Sets the `rewardsManager`.
     /// @param _rewardsManagerAddress The address of the `rewardsManager`.
     function setRewardsManager(address _rewardsManagerAddress) external onlyMarketsManagerOwner {
         rewardsManager = IRewardsManagerForAave(_rewardsManagerAddress);
         emit RewardsManagerSet(_rewardsManagerAddress);
     }
 
-    /// @notice Sets the pause status on a specific market in case of emergency.
+    /// @dev Sets the pause status on a specific market in case of emergency.
     /// @param _poolTokenAddress The address of the market to pause/unpause.
     function setPauseStatus(address _poolTokenAddress) external onlyMarketsManagerOwner {
         bool newPauseStatus = !paused[_poolTokenAddress];
@@ -341,7 +341,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         emit PauseStatusSet(_poolTokenAddress, newPauseStatus);
     }
 
-    /// @notice Transfers the protocol reserve fee to the DAO.
+    /// @dev Transfers the protocol reserve fee to the DAO.
     /// @param _poolTokenAddress The address of the market on which we want to claim the reserve fee.
     function claimToTreasury(address _poolTokenAddress)
         external
@@ -440,7 +440,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         );
     }
 
-    /// @dev Supplies underlying tokens in a specific market.
+    /// @notice Supplies underlying tokens in a specific market.
     /// @param _poolTokenAddress The address of the market the user wants to supply.
     /// @param _amount The amount of token (in underlying).
     /// @param _referralCode The referral code of an integrator that may receive rewards. 0 if no referral code.
@@ -484,7 +484,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         );
     }
 
-    /// @dev Supplies underlying tokens in a specific market.
+    /// @notice Supplies underlying tokens in a specific market.
     /// @param _poolTokenAddress The address of the market the user wants to supply.
     /// @param _amount The amount of token (in underlying).
     /// @param _referralCode The referral code of an integrator that may receive rewards. 0 if no referral code.
@@ -970,7 +970,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         );
     }
 
-    /// @notice Implements repay logic.
+    /// @dev Implements repay logic.
     /// @dev Note: `msg.sender` must have approved this contract to spend the underlying `_amount`.
     /// @param _poolTokenAddress The address of the market the user wants to interact with.
     /// @param _user The address of the user.
@@ -1071,7 +1071,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         );
     }
 
-    ///@notice Enters the user into the market if not already there.
+    ///@dev Enters the user into the market if not already there.
     ///@param _user The address of the user to update.
     ///@param _poolTokenAddress The address of the market to check.
     function _handleMembership(address _poolTokenAddress, address _user) internal {
@@ -1081,7 +1081,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         }
     }
 
-    /// @notice Checks whether the user can borrow/withdraw or not.
+    /// @dev Checks whether the user can borrow/withdraw or not.
     /// @param _user The user to determine liquidity for.
     /// @param _poolTokenAddress The market to hypothetically withdraw/borrow in.
     /// @param _withdrawnAmount The number of tokens to hypothetically withdraw (in underlying).
@@ -1101,7 +1101,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         if (debtValue > maxDebtValue) revert DebtValueAboveMax();
     }
 
-    /// @notice Returns the debt value, max debt value of a given user.
+    /// @dev Returns the debt value, max debt value of a given user.
     /// @param _user The user to determine liquidity for.
     /// @param _poolTokenAddress The market to hypothetically withdraw/borrow in.
     /// @param _withdrawnAmount The number of tokens to hypothetically withdraw (in underlying).
@@ -1153,7 +1153,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         }
     }
 
-    /// @notice Returns the supply balance of `_user` in the `_poolTokenAddress` market.
+    /// @dev Returns the supply balance of `_user` in the `_poolTokenAddress` market.
     /// @param _user The address of the user.
     /// @param _poolTokenAddress The market where to get the supply amount.
     /// @param _underlyingTokenAddress The underlying token address related to this market.
@@ -1172,7 +1172,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
             );
     }
 
-    /// @notice Returns the borrow balance of `_user` in the `_poolTokenAddress` market.
+    /// @dev Returns the borrow balance of `_user` in the `_poolTokenAddress` market.
     /// @param _user The address of the user.
     /// @param _poolTokenAddress The market where to get the borrow amount.
     /// @param _underlyingTokenAddress The underlying token address related to this market.
@@ -1191,7 +1191,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
             );
     }
 
-    /// @notice Supplies undelrying tokens to Aave.
+    /// @dev Supplies undelrying tokens to Aave.
     /// @param _poolTokenAddress The address of the market
     /// @param _underlyingToken The underlying token of the market to supply to.
     /// @param _amount The amount of token (in underlying).
@@ -1205,7 +1205,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         marketsManager.updateSPYs(_poolTokenAddress);
     }
 
-    /// @notice Withdraws underlying tokens from Aave.
+    /// @dev Withdraws underlying tokens from Aave.
     /// @param _poolTokenAddress The address of the market.
     /// @param _underlyingToken The underlying token of the market to withdraw from.
     /// @param _amount The amount of token (in underlying).
@@ -1218,7 +1218,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         marketsManager.updateSPYs(_poolTokenAddress);
     }
 
-    /// @notice Borrows underlying tokens from Aave.
+    /// @dev Borrows underlying tokens from Aave.
     /// @param _poolTokenAddress The address of the market.
     /// @param _underlyingToken The underlying token of the market to borrow from.
     /// @param _amount The amount of token (in underlying).
@@ -1237,7 +1237,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         marketsManager.updateSPYs(_poolTokenAddress);
     }
 
-    /// @notice Repays underlying tokens to Aave.
+    /// @dev Repays underlying tokens to Aave.
     /// @param _poolTokenAddress The address of the market.
     /// @param _underlyingToken The underlying token of the market to repay to.
     /// @param _amount The amount of token (in underlying).
