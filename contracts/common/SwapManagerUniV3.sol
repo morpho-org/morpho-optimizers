@@ -19,6 +19,7 @@ interface Weth9Provider {
 /// @dev Smart contract managing the swap of reward token to Morpho token on Uniswap V3.
 contract SwapManagerUniV3 is ISwapManager {
     using SafeTransferLib for ERC20;
+    using FullMath for uint256;
 
     /// Storage ///
 
@@ -28,29 +29,17 @@ contract SwapManagerUniV3 is ISwapManager {
 
     // Hard coded addresses as they are the same accross chains
     address public constant FACTORY = 0x1F98431c8aD98523631AE4a59f267346ea31F984; // The address of the Uniswap V3 factory.
-    ISwapRouter public swapRouter = ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564);
-    address public WETH9; // Intermediate token address.
+    ISwapRouter public swapRouter = ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564); // The Uniswap V3 router.
 
+    address public WETH9; // Intermediate token address.
     address public immutable REWARD_TOKEN; // The reward token address.
-    address public immutable MORPHO; // Morpho token address.
-    uint24 public immutable REWARD_POOL_FEE; // Fee on Uniswap for reward/weth9 pool.
-    uint24 public immutable MORPHO_POOL_FEE; // Fee on Uniswap for Morpho/weth9 pool.
+    address public immutable MORPHO; // The Morpho token address.
+    uint24 public immutable REWARD_POOL_FEE; // Fee on Uniswap for REWARD_TOKEN/WETH9 pool.
+    uint24 public immutable MORPHO_POOL_FEE; // Fee on Uniswap for MORPHO/WETH9 pool.
 
     IUniswapV3Pool public pool0;
     IUniswapV3Pool public pool1;
     bool public singlePath;
-
-    struct SwapVars {
-        uint160 sqrtPriceX960;
-        uint160 sqrtPriceX961;
-        uint256 priceX960;
-        uint256 priceX961;
-        uint256 numerator;
-        uint256 denominator;
-        uint256 expectedAmountOutMinimum;
-        int56[] tickCumulatives0;
-        int56[] tickCumulatives1;
-    }
 
     /// Events ///
 
@@ -59,17 +48,6 @@ contract SwapManagerUniV3 is ISwapManager {
     /// @param _amountIn The amount of reward token swapped.
     /// @param _amountOut The amount of Morpho token received.
     event Swapped(address _receiver, uint256 _amountIn, uint256 _amountOut);
-
-    /// Structs ///
-
-    // Struct to avoid stack too deep error
-    struct OracleTwapVars {
-        uint256 priceX960;
-        uint256 priceX961;
-        uint256 numerator;
-        uint256 denominator;
-        uint256 expectedAmountOutMinimum;
-    }
 
     /// Constructor ///
 
@@ -107,7 +85,7 @@ contract SwapManagerUniV3 is ISwapManager {
 
     /// External ///
 
-    /// @dev Swaps reward tokens to Morpho token.
+    /// @notice Swaps reward tokens to Morpho token.
     /// @param _amountIn The amount of reward token to swap.
     /// @param _receiver The address of the receiver of the Morpho tokens.
     /// @return amountOut The amount of Morpho tokens sent.
@@ -137,55 +115,66 @@ contract SwapManagerUniV3 is ISwapManager {
         emit Swapped(_receiver, _amountIn, amountOut);
     }
 
+    /// Internal ///
+
+    /// @dev Returns the minimum expected amount of Morpho token to receive and the multiple path for a swap.
+    /// @param _amountIn The amount of reward token to swap.
+    /// @return expectedAmountOutMinimum The minimum amount of Morpho tokens to receive.
+    /// @return path The path for the swap.
     function _getMultiplePathParams(uint256 _amountIn)
         internal
         view
         returns (uint256 expectedAmountOutMinimum, bytes memory path)
     {
-        SwapVars memory vars;
         uint32[] memory secondsAgo = new uint32[](2);
         secondsAgo[0] = TWAP_INTERVAL;
         secondsAgo[1] = 0;
 
-        (vars.tickCumulatives0, ) = pool0.observe(secondsAgo);
-        (vars.tickCumulatives1, ) = pool1.observe(secondsAgo);
+        (int56[] memory tickCumulatives0, ) = pool0.observe(secondsAgo);
+        (int56[] memory tickCumulatives1, ) = pool1.observe(secondsAgo);
 
         // For the pair token0/token1 -> 1.0001 * readingTick = price = token1 / token0
         // So token1 = price * token0
 
         // Ticks (imprecise as it's an integer) to price
-        vars.sqrtPriceX960 = TickMath.getSqrtRatioAtTick(
-            int24(
-                (vars.tickCumulatives0[1] - vars.tickCumulatives0[0]) / int24(uint24(TWAP_INTERVAL))
-            )
+        uint160 sqrtPriceX960 = TickMath.getSqrtRatioAtTick(
+            int24((tickCumulatives0[1] - tickCumulatives0[0]) / int24(uint24(TWAP_INTERVAL)))
         );
-        vars.sqrtPriceX961 = TickMath.getSqrtRatioAtTick(
-            int24(
-                (vars.tickCumulatives1[1] - vars.tickCumulatives1[0]) / int24(uint24(TWAP_INTERVAL))
-            )
+        uint160 sqrtPriceX961 = TickMath.getSqrtRatioAtTick(
+            int24((tickCumulatives1[1] - tickCumulatives1[0]) / int24(uint24(TWAP_INTERVAL)))
         );
-        vars.priceX960 = getPriceX96FromSqrtPriceX96(vars.sqrtPriceX960);
-        vars.priceX961 = getPriceX96FromSqrtPriceX96(vars.sqrtPriceX961);
+
+        uint256 priceX960 = _getPriceX96FromSqrtPriceX96(sqrtPriceX960);
+        uint256 priceX961 = _getPriceX96FromSqrtPriceX96(sqrtPriceX961);
 
         // Computation depends on the position of token in pools
         if (REWARD_TOKEN == pool0.token0() && WETH9 == pool1.token0()) {
-            vars.numerator = vars.priceX960 * vars.priceX961 * _amountIn;
-            vars.denominator = 2**96 * 2**96;
+            expectedAmountOutMinimum = _amountIn.mulDiv(priceX960, FixedPoint96.Q96).mulDiv(
+                priceX961,
+                FixedPoint96.Q96
+            );
         } else if (REWARD_TOKEN == pool0.token1() && WETH9 == pool1.token0()) {
-            vars.numerator = 2**96 * vars.priceX961 * _amountIn;
-            vars.denominator = vars.priceX960 * 2**96;
+            expectedAmountOutMinimum = _amountIn.mulDiv(FixedPoint96.Q96, priceX960).mulDiv(
+                priceX961,
+                FixedPoint96.Q96
+            );
         } else if (REWARD_TOKEN == pool0.token0() && WETH9 == pool1.token1()) {
-            vars.numerator = 2**96 * vars.priceX960 * _amountIn;
-            vars.denominator = vars.priceX961 * 2**96;
+            expectedAmountOutMinimum = _amountIn.mulDiv(FixedPoint96.Q96, priceX961).mulDiv(
+                priceX960,
+                FixedPoint96.Q96
+            );
         } else {
-            vars.numerator = 2**96 * 2**96 * _amountIn;
-            vars.denominator = vars.priceX960 * vars.priceX961;
+            expectedAmountOutMinimum = _amountIn.mulDiv(FixedPoint96.Q96, priceX960).mulDiv(
+                FixedPoint96.Q96,
+                priceX961
+            );
         }
 
         // Max slippage of 1% for the trade
-        expectedAmountOutMinimum =
-            ((vars.numerator / vars.denominator) * (MAX_BASIS_POINTS - ONE_PERCENT)) /
-            MAX_BASIS_POINTS;
+        expectedAmountOutMinimum = expectedAmountOutMinimum.mulDiv(
+            MAX_BASIS_POINTS - ONE_PERCENT,
+            MAX_BASIS_POINTS
+        );
         path = abi.encodePacked(REWARD_TOKEN, REWARD_POOL_FEE, WETH9, MORPHO_POOL_FEE, MORPHO);
     }
 
@@ -208,32 +197,31 @@ contract SwapManagerUniV3 is ISwapManager {
             int24((tickCumulatives1[1] - tickCumulatives1[0]) / int24(uint24(TWAP_INTERVAL)))
         );
 
-        uint256 numerator;
-        uint256 denominator;
-
         // Computation depends on the position of token in pool
         if (pool1.token0() == REWARD_TOKEN) {
-            numerator = getPriceX96FromSqrtPriceX96(sqrtPriceX961) * _amountIn;
-            denominator = 2**96;
+            expectedAmountOutMinimum = _amountIn.mulDiv(
+                _getPriceX96FromSqrtPriceX96(sqrtPriceX961),
+                FixedPoint96.Q96
+            );
         } else {
-            numerator = 2**96 * _amountIn;
-            denominator = getPriceX96FromSqrtPriceX96(sqrtPriceX961);
+            expectedAmountOutMinimum = _amountIn.mulDiv(
+                FixedPoint96.Q96,
+                _getPriceX96FromSqrtPriceX96(sqrtPriceX961)
+            );
         }
 
         // Max slippage of 1% for the trade
         expectedAmountOutMinimum =
-            (numerator * (MAX_BASIS_POINTS - ONE_PERCENT)) /
-            (denominator * MAX_BASIS_POINTS);
+            (expectedAmountOutMinimum * (MAX_BASIS_POINTS - ONE_PERCENT)) /
+            MAX_BASIS_POINTS;
         path = abi.encodePacked(REWARD_TOKEN, MORPHO_POOL_FEE, MORPHO);
     }
-
-    /// public ///
 
     /// @dev Returns the price in fixed point 96 from the square of the price in fixed point 96.
     /// @param _sqrtPriceX96 The square of the price in fixed point 96.
     /// @return priceX96 The price in fixed point 96.
-    function getPriceX96FromSqrtPriceX96(uint160 _sqrtPriceX96)
-        public
+    function _getPriceX96FromSqrtPriceX96(uint160 _sqrtPriceX96)
+        internal
         pure
         returns (uint256 priceX96)
     {
