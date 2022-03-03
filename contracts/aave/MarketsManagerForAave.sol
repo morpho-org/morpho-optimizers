@@ -113,7 +113,7 @@ contract MarketsManagerForAave is Ownable {
         _;
     }
 
-    /// @dev Prevents a user to call function only allowed for `positionsManager` owner.
+    /// @notice Prevents a user to call function only allowed for `positionsManager` owner.
     modifier onlyPositionsManager() {
         if (msg.sender != address(positionsManager)) revert OnlyPositionsManager();
         _;
