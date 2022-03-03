@@ -261,43 +261,40 @@ contract TestRewards is TestSetup {
     }
 
     function test_claim_and_swap() public {
-        // Pass for now if on Avalanche
-        // TODO: create a pool to swap tokens
-        if (block.chainid != 43114) {
-            uint256 toSupply = 100 * WAD;
-            supplier1.approve(dai, toSupply);
-            supplier1.supply(aDai, toSupply);
+        uint256 toSupply = 100 * WAD;
+        supplier1.approve(dai, toSupply);
+        supplier1.supply(aDai, toSupply);
 
-            uint256 morphoBalanceBefore = supplier1.balanceOf(address(morphoToken));
-            uint256 rewardBalanceBefore = supplier1.balanceOf(REWARD_TOKEN);
+        uint256 morphoBalanceBefore = supplier1.balanceOf(address(morphoToken));
+        uint256 rewardBalanceBefore = supplier1.balanceOf(REWARD_TOKEN);
 
-            address[] memory aDaiInArray = new address[](1);
-            aDaiInArray[0] = aDai;
+        address[] memory aDaiInArray = new address[](1);
+        aDaiInArray[0] = aDai;
 
-            hevm.warp(block.timestamp + 365 days);
-            supplier1.claimRewards(aDaiInArray, true);
+        hevm.warp(block.timestamp + 365 days);
+        supplier1.claimRewards(aDaiInArray, true);
 
-            uint256 morphoBalanceAfter = supplier1.balanceOf(address(morphoToken));
-            uint256 rewardBalanceAfter = supplier1.balanceOf(REWARD_TOKEN);
-            assertGt(morphoBalanceAfter, morphoBalanceBefore);
-            assertEq(rewardBalanceBefore, rewardBalanceAfter);
-        }
+        uint256 morphoBalanceAfter = supplier1.balanceOf(address(morphoToken));
+        uint256 rewardBalanceAfter = supplier1.balanceOf(REWARD_TOKEN);
+        assertGt(morphoBalanceAfter, morphoBalanceBefore);
+        assertEq(rewardBalanceBefore, rewardBalanceAfter);
     }
 
     function test_swap_with_too_much_slippage() public {
-        // Pass for now if on Avalanche
-        // TODO: create a pool to swap tokens
-        if (block.chainid != 43114) {
-            uint256 toSupply = 10000 * WAD;
-            supplier1.approve(dai, toSupply);
-            supplier1.supply(aDai, toSupply);
+        uint256 toSupply = 10_000_000 * WAD;
+        writeBalanceOf(address(supplier1), dai, toSupply);
+        supplier1.approve(dai, toSupply);
+        supplier1.supply(aDai, toSupply);
 
-            address[] memory aDaiInArray = new address[](1);
-            aDaiInArray[0] = aDai;
+        address[] memory aDaiInArray = new address[](1);
+        aDaiInArray[0] = aDai;
 
-            hevm.warp(block.timestamp + 365 days);
+        hevm.warp(block.timestamp + 365 days);
+        if (block.chainid == 43114) {
+            hevm.expectRevert("JoeRouter: INSUFFICIENT_OUTPUT_AMOUNT");
+        } else {
             hevm.expectRevert("Too little received");
-            supplier1.claimRewards(aDaiInArray, true);
         }
+        supplier1.claimRewards(aDaiInArray, true);
     }
 }
