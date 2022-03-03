@@ -7,9 +7,8 @@ import "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import "@uniswap/v3-periphery/contracts/libraries/TransferHelper.sol";
 import "./interfaces/INonfungiblePositionManager.sol";
-import "./Utils.sol";
 
-contract UniswapPoolCreator is Utils, IERC721Receiver {
+contract UniswapPoolCreator is IERC721Receiver {
     /// @notice Represents the deposit of an NFT
     struct Deposit {
         address owner;
@@ -79,8 +78,8 @@ contract UniswapPoolCreator is Utils, IERC721Receiver {
 
         INonfungiblePositionManager.MintParams memory params = INonfungiblePositionManager
         .MintParams({
-            token0: _token0,
-            token1: _token1,
+            token0: _token0 < WETH9 ? _token0 : WETH9,
+            token1: _token0 < WETH9 ? WETH9 : _token0,
             fee: POOL_FEE,
             tickLower: getAdjustedTicks(MIN_TICK),
             tickUpper: getAdjustedTicks(MAX_TICK),
