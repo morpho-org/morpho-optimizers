@@ -26,7 +26,6 @@ import {User} from "./User.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@contracts/aave/PositionsManagerForAave.sol";
 import "@contracts/aave/MarketsManagerForAave.sol";
-import {SwapManagerUniV2} from "@contracts/common/SwapManagerUniV2.sol";
 import "@config/Config.sol";
 import "./HevmAdapter.sol";
 import "./MorphoToken.sol";
