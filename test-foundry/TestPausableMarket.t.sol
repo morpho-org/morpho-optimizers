@@ -5,7 +5,7 @@ import "./utils/TestSetup.sol";
 
 contract TestPausableMarket is TestSetup {
     function test_only_markets_owner_can_trigger_pause_function() public {
-        hevm.expectRevert(abi.encodeWithSignature("OnlyMarketsManagerOwner()"));
+        hevm.expectRevert("Ownable: caller is not the owner");
         supplier1.setPauseStatus(aDai);
 
         positionsManager.setPauseStatus(aDai);

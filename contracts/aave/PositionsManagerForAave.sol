@@ -219,9 +219,6 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
     /// @notice Thrown when only the markets manager can call the function.
     error OnlyMarketsManager();
 
-    /// @notice Thrown when only the markets manager's owner can call the function.
-    error OnlyMarketsManagerOwner();
-
     /// @notice Thrown when the debt value is not above the maximum debt value.
     error DebtValueNotAboveMax();
 
@@ -258,12 +255,6 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         _;
     }
 
-    /// @notice Prevents a user to call function only allowed for `marketsManager`'s owner.
-    modifier onlyMarketsManagerOwner() {
-        if (msg.sender != marketsManager.owner()) revert OnlyMarketsManagerOwner();
-        _;
-    }
-
     /// Constructor ///
 
     /// @notice Constructs the PositionsManagerForAave contract.
@@ -286,24 +277,21 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
 
     /// @notice Sets the `aaveIncentivesController`.
     /// @param _aaveIncentivesController The address of the `aaveIncentivesController`.
-    function setAaveIncentivesController(address _aaveIncentivesController)
-        external
-        onlyMarketsManagerOwner
-    {
+    function setAaveIncentivesController(address _aaveIncentivesController) external onlyOwner {
         aaveIncentivesController = IAaveIncentivesController(_aaveIncentivesController);
         emit AaveIncentivesControllerSet(_aaveIncentivesController);
     }
 
     /// @dev Sets `NDS`.
     /// @param _newNDS The new `NDS` value.
-    function setNDS(uint8 _newNDS) external onlyMarketsManagerOwner {
+    function setNDS(uint8 _newNDS) external onlyOwner {
         NDS = _newNDS;
         emit NDSSet(_newNDS);
     }
 
     /// @dev Sets `maxGas`.
     /// @param _maxGas The new `maxGas`.
-    function setMaxGas(MaxGas memory _maxGas) external onlyMarketsManagerOwner {
+    function setMaxGas(MaxGas memory _maxGas) external onlyOwner {
         maxGas = _maxGas;
         emit MaxGasSet(_maxGas);
     }
@@ -321,21 +309,21 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
 
     /// @dev Sets the `_newTreasuryVaultAddress`.
     /// @param _newTreasuryVaultAddress The address of the new `treasuryVault`.
-    function setTreasuryVault(address _newTreasuryVaultAddress) external onlyMarketsManagerOwner {
+    function setTreasuryVault(address _newTreasuryVaultAddress) external onlyOwner {
         treasuryVault = _newTreasuryVaultAddress;
         emit TreasuryVaultSet(_newTreasuryVaultAddress);
     }
 
     /// @dev Sets the `rewardsManager`.
     /// @param _rewardsManagerAddress The address of the `rewardsManager`.
-    function setRewardsManager(address _rewardsManagerAddress) external onlyMarketsManagerOwner {
+    function setRewardsManager(address _rewardsManagerAddress) external onlyOwner {
         rewardsManager = IRewardsManagerForAave(_rewardsManagerAddress);
         emit RewardsManagerSet(_rewardsManagerAddress);
     }
 
     /// @dev Sets the pause status on a specific market in case of emergency.
     /// @param _poolTokenAddress The address of the market to pause/unpause.
-    function setPauseStatus(address _poolTokenAddress) external onlyMarketsManagerOwner {
+    function setPauseStatus(address _poolTokenAddress) external onlyOwner {
         bool newPauseStatus = !paused[_poolTokenAddress];
         paused[_poolTokenAddress] = newPauseStatus;
         emit PauseStatusSet(_poolTokenAddress, newPauseStatus);
@@ -345,7 +333,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
     /// @param _poolTokenAddress The address of the market on which we want to claim the reserve fee.
     function claimToTreasury(address _poolTokenAddress)
         external
-        onlyMarketsManagerOwner
+        onlyOwner
         isMarketCreatedAndNotPaused(_poolTokenAddress)
     {
         ERC20 underlyingToken = ERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
