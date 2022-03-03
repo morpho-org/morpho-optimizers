@@ -8,15 +8,15 @@ import "./utils/TestSetup.sol";
 contract TestFees is TestSetup {
     using WadRayMath for uint256;
 
-    // Should not be possible to set the fee factor higher than 100%
+    // Should not be possible to set the fee factor higher than 50%
     function test_higher_than_max_fees() public {
-        marketsManager.setReserveFactor(10_001);
+        marketsManager.setReserveFactor(5_001);
         testEquality(marketsManager.reserveFactor(), 5000);
     }
 
     // Only MarketsManager owner can set the treasury vault
     function test_non_market_manager_cant_set_vault() public {
-        hevm.expectRevert(abi.encodeWithSignature("OnlyMarketsManagerOwner()"));
+        hevm.expectRevert("Ownable: caller is not the owner");
         supplier1.setTreasuryVault(address(borrower1));
     }
 
