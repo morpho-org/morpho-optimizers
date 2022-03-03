@@ -149,7 +149,7 @@ abstract contract RewardsManagerForAave is IRewardsManagerForAave, Ownable {
 
     /// Internal ///
 
-    /// @notice Updates the state of an user in a distribution.
+    /// @dev Updates the state of an user in a distribution.
     /// @param _user The address of the user.
     /// @param _asset The address of the reference asset of the distribution (aToken or variable debt token).
     /// @param _stakedByUser The amount of tokens staked by the user in the distribution at the moment.
@@ -175,7 +175,7 @@ abstract contract RewardsManagerForAave is IRewardsManagerForAave, Ownable {
         }
     }
 
-    /// @notice Computes and returns the next value of a specific distribution index.
+    /// @dev Computes and returns the next value of a specific distribution index.
     /// @param _currentIndex The current index of the distribution.
     /// @param _emissionPerSecond The total rewards distributed per second per asset unit, on the distribution.
     /// @param _lastUpdateTimestamp The last moment this distribution was updated.
@@ -204,7 +204,7 @@ abstract contract RewardsManagerForAave is IRewardsManagerForAave, Ownable {
         return ((_emissionPerSecond * timeDelta * 1e18) / _totalBalance) + _currentIndex;
     }
 
-    /// @notice Computes and returns the rewards on a distribution.
+    /// @dev Computes and returns the rewards on a distribution.
     /// @param _principalUserBalance The amount staked by the user on a distribution.
     /// @param _reserveIndex The current index of the distribution.
     /// @param _userIndex The index stored for the user, representing his staking moment.
@@ -217,7 +217,7 @@ abstract contract RewardsManagerForAave is IRewardsManagerForAave, Ownable {
         return (_principalUserBalance * (_reserveIndex - _userIndex)) / 1e18;
     }
 
-    /// @notice Returns the next reward index.
+    /// @dev Returns the next reward index.
     /// @param _asset The address of the reference asset of the distribution (aToken or variable debt token).
     /// @param _totalStaked The total of tokens staked in the distribution.
     /// @return newIndex The new distribution index.
