@@ -9,14 +9,15 @@ import "@contracts/aave/interfaces/aave/IAaveIncentivesController.sol";
 import "@contracts/aave/interfaces/aave/IPriceOracleGetter.sol";
 import "@contracts/aave/interfaces/aave/IProtocolDataProvider.sol";
 import "@contracts/aave/interfaces/IRewardsManagerForAave.sol";
+import "@contracts/common/interfaces/ISwapManager.sol";
 
-import {RewardsManagerForAaveOnAvalanche} from "@contracts/aave/markets-managers/RewardsManagerForAaveOnAvalanche.sol";
-import {PositionsManagerForAaveStorage} from "@contracts/aave/PositionsManagerForAaveStorage.sol";
+import {RewardsManagerForAaveOnEthAndAvax} from "@contracts/aave/markets-managers/RewardsManagerForAaveOnEthAndAvax.sol";
 import {RewardsManagerForAaveOnPolygon} from "@contracts/aave/markets-managers/RewardsManagerForAaveOnPolygon.sol";
-import {PositionsManagerForAave} from "@contracts/aave/PositionsManagerForAave.sol";
-import {User} from "./User.sol";
+import {SwapManagerUniV3OnEth} from "@contracts/common/SwapManagerUniV3OnEth.sol";
+import {SwapManagerUniV3} from "@contracts/common/SwapManagerUniV3.sol";
+import "@contracts/aave/PositionsManagerForAave.sol";
 import "@contracts/aave/MarketsManagerForAave.sol";
-import "@contracts/common/SwapManagerUniV3.sol";
+import {User} from "./User.sol";
 import "@config/Config.sol";
 import "./HevmHelper.sol";
 import "./Utils.sol";
@@ -34,7 +35,7 @@ contract TestSetup is Config, Utils, HevmHelper {
     PositionsManagerForAave internal fakePositionsManager;
     MarketsManagerForAave internal marketsManager;
     IRewardsManagerForAave internal rewardsManager;
-    SwapManagerUniV3 public swapManager;
+    ISwapManager public swapManager;
     UniswapPoolCreator public uniswapPoolCreator;
     MorphoToken public morphoToken;
     address public REWARD_TOKEN =
@@ -72,8 +73,19 @@ contract TestSetup is Config, Utils, HevmHelper {
         );
         lendingPool = ILendingPool(lendingPoolAddressesProvider.getLendingPool());
 
-        if (block.chainid != 43114) {
-            // NOT Avalanche network
+        if (block.chainid == 1) {
+            // Mainnet network
+            // Create a MORPHO / WETH pool
+            uniswapPoolCreator = new UniswapPoolCreator();
+            writeBalanceOf(
+                address(uniswapPoolCreator),
+                uniswapPoolCreator.WETH9(),
+                INITIAL_BALANCE * WAD
+            );
+            morphoToken = new MorphoToken(address(uniswapPoolCreator));
+            swapManager = new SwapManagerUniV3OnEth(address(morphoToken), morphoPoolFee);
+        } else if (block.chainid == 137) {
+            // Polygon network
             // Create a MORPHO / WETH pool
             uniswapPoolCreator = new UniswapPoolCreator();
             writeBalanceOf(
@@ -98,20 +110,20 @@ contract TestSetup is Config, Utils, HevmHelper {
             maxGas
         );
 
-        if (block.chainid == 43114) {
-            // Avalanche network
-            rewardsManager = new RewardsManagerForAaveOnAvalanche(
-                lendingPool,
-                IPositionsManagerForAave(address(positionsManager))
-            );
-        } else if (block.chainid == 1) {
+        if (block.chainid == 1) {
             // Mainnet network
-            rewardsManager = new RewardsManagerForAaveOnAvalanche(
+            rewardsManager = new RewardsManagerForAaveOnEthAndAvax(
                 lendingPool,
                 IPositionsManagerForAave(address(positionsManager))
             );
             uniswapPoolCreator.createPoolAndMintPosition(address(morphoToken));
-        } else {
+        } else if (block.chainid == 43114) {
+            // Avalanche network
+            rewardsManager = new RewardsManagerForAaveOnEthAndAvax(
+                lendingPool,
+                IPositionsManagerForAave(address(positionsManager))
+            );
+        } else if (block.chainid == 137) {
             // Polygon network
             rewardsManager = new RewardsManagerForAaveOnPolygon(
                 lendingPool,
