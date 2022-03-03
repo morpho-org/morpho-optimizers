@@ -17,7 +17,7 @@ contract Config {
     address aWeth = 0x030bA81f1c18d280636F32af80b9AAd02Cf0854e;
 
     address variableDebtDai = 0x1852DC24d1a8956a0B356AA18eDe954c7a0Ca5ae;
-    address variableDebtUsdc = 0x848c080d2700CBE1B894a3374AD5E887E5cCb89c;
+    address variableDebtUsdc = 0x619beb58998eD2278e08620f97007e1116D5D25b;
 
     address lendingPoolAddressesProviderAddress = 0xB53C1a33016B2DC2fF3653530bfF1848a515c8c5;
     address protocolDataProviderAddress = 0x057835Ad21a177dbdd3090bB1CAE03EaCF78Fc6d;
