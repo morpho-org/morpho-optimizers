@@ -15,7 +15,7 @@ module.exports = {
     hardhat: {
       forking: {
         url: `https://${process.env.NETWORK}.g.alchemy.com/v2/${process.env.ALCHEMY_KEY}`,
-        blockNumber: 24032305
+        blockNumber: 24032305,
       },
       allowUnlimitedContractSize: true,
       blockGasLimit: 30000000,
@@ -46,6 +46,12 @@ module.exports = {
     mumbai: {
       accounts: [process.env.DEPLOYER_PRIVATE_KEY],
       url: `https://polygon-mumbai.infura.io/v3/${process.env.INFURA_PROJECT_ID}`,
+      gas: 2100000,
+      gasPrice: 8000000000,
+    },
+    fuji: {
+      accounts: [process.env.DEPLOYER_PRIVATE_KEY],
+      url: 'https://api.avax-test.network/ext/bc/C/rpc',
       gas: 2100000,
       gasPrice: 8000000000,
     },

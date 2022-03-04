@@ -1,0 +1,36 @@
+{
+  "tokens": {
+    "morpho": {
+      "address": "0x23AD223BE4146B85c84F832a5bB2d598a5395d98"
+    },
+    "dai": {
+      "address": "0x51BC2DfB9D12d9dB50C855A5330fBA0faF761D15"
+    },
+    "usdt": {
+      "address": "0x02823f9B469960Bb3b1de0B3746D4b95B7E35543"
+    },
+    "wbtc": {
+      "address": "0x9C1DCacB57ADa1E9e2D3a8280B7cfC7EB936186F"
+    },
+    "wavax": {
+      "address": "0xd00ae08403B9bbb9124bB305C09058E32C39A48c"
+    },
+    "weth": {
+      "address": "0x9668f5f55f2712Dd2dfa316256609b516292D554"
+    },
+    "aave": {
+      "address": "0x47183584aCbc1C45608d7B61cce1C562Ee180E7e"
+    }
+  },
+  "aave": {
+    "lendingPoolAddressesProvider": {
+      "address": "0x7fdC1FdF79BE3309bf82f4abdAD9f111A6590C0f"
+    },
+    "lendingPool": {
+      "address": "0x76cc67FF2CC77821A70ED14321111Ce381C2594D"
+    },
+    "aaveIncentivesController": {
+      "address": "0xa1EF206fb9a8D8186157FC817fCddcC47727ED55"
+    }
+  }
+}

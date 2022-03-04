@@ -17,6 +17,7 @@
     "deploy:compound:ropsten": "NETWORK=ropsten npx hardhat run scripts/deploy-compound.ts --network ropsten",
     "deploy:aave:polygon": "NETWORK=polygon-mainnet npx hardhat run scripts/deploy-aave.ts --network polygon",
     "deploy:aave:mumbai": "NETWORK=polygon-mumbai npx hardhat run scripts/deploy-aave.ts --network mumbai",
+    "deploy:aave:fuji": "NETWORK=avalanche-fuji npx hardhat run scripts/deploy-aave-fuji.ts --network fuji",
     "coverage": "NETWORK=polygon-mainnet npx hardhat coverage --testfiles 'test/cream-polygon-test.ts'",
     "lint": "yarn run lint:sol && yarn run lint:ts",
     "lint:ts": "eslint . --ext .ts",
