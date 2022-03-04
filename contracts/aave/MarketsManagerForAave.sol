@@ -53,11 +53,6 @@ contract MarketsManagerForAave is Ownable {
     /// @param _positionsManager The address of the `positionsManager`.
     event PositionsManagerSet(address _positionsManager);
 
-    /// @notice Emitted when a threshold of a market is set.
-    /// @param _marketAddress The address of the market to set.
-    /// @param _newValue The new value of the threshold.
-    event ThresholdSet(address _marketAddress, uint256 _newValue);
-
     /// @notice Emitted when a `noP2P` variable is set.
     /// @param _marketAddress The address of the market to set.
     /// @param _noP2P The new value of `_noP2P` adopted.
@@ -151,8 +146,7 @@ contract MarketsManagerForAave is Ownable {
 
     /// @notice Creates a new market to borrow/supply in.
     /// @param _underlyingTokenAddress The underlying address of the given market.
-    /// @param _threshold The threshold to set for the market.
-    function createMarket(address _underlyingTokenAddress, uint256 _threshold) external onlyOwner {
+    function createMarket(address _underlyingTokenAddress) external onlyOwner {
         DataTypes.ReserveConfigurationMap memory configuration = lendingPool.getConfiguration(
             _underlyingTokenAddress
         );
@@ -178,23 +172,9 @@ contract MarketsManagerForAave is Ownable {
             _underlyingTokenAddress
         );
 
-        positionsManager.setThreshold(poolTokenAddress, _threshold);
-
         _updateSPYs(poolTokenAddress);
         marketsCreated.push(poolTokenAddress);
         emit MarketCreated(poolTokenAddress);
-    }
-
-    /// @notice Sets the threshold below which suppliers and borrowers cannot join a given market.
-    /// @param _marketAddress The address of the market to change the threshold.
-    /// @param _newThreshold The new threshold to set.
-    function setThreshold(address _marketAddress, uint256 _newThreshold)
-        external
-        onlyOwner
-        isMarketCreated(_marketAddress)
-    {
-        positionsManager.setThreshold(_marketAddress, _newThreshold);
-        emit ThresholdSet(_marketAddress, _newThreshold);
     }
 
     /// @notice Sets whether to put everyone on pool or not.
@@ -268,21 +248,10 @@ contract MarketsManagerForAave is Ownable {
     }
 
     /// @notice Returns market's configuration.
-    /// @return isMarketCreated_ Whether the market is created or not.
-    /// @return isP2PAllowed_ Whether user are put in P2P or not.
-    /// @return threshold_ The threshold of the market.
-    function getMarketConfiguration(address _marketAddress)
-        external
-        view
-        returns (
-            bool isMarketCreated_,
-            bool isP2PAllowed_,
-            uint256 threshold_
-        )
-    {
-        isMarketCreated_ = isCreated[_marketAddress];
-        isP2PAllowed_ = noP2P[_marketAddress];
-        threshold_ = positionsManager.threshold(_marketAddress);
+    /// @return Whether the market is created or not.
+    /// @return Whether user are put in P2P or not.
+    function getMarketConfiguration(address _marketAddress) external view returns (bool, bool) {
+        return (isCreated[_marketAddress], noP2P[_marketAddress]);
     }
 
     /// Public ///
