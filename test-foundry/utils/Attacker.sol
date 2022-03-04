@@ -5,6 +5,8 @@ import "@contracts/aave/PositionsManagerForAave.sol";
 import "@contracts/aave/MarketsManagerForAave.sol";
 
 contract Attacker {
+    using SafeTransferLib for ERC20;
+
     ILendingPool internal lendingPool;
 
     constructor(ILendingPool _lendingPool) {
@@ -18,7 +20,7 @@ contract Attacker {
         address _spender,
         uint256 _amount
     ) external {
-        IERC20(_token).approve(_spender, _amount);
+        ERC20(_token).safeApprove(_spender, _amount);
     }
 
     function transfer(
@@ -26,7 +28,7 @@ contract Attacker {
         address _recipient,
         uint256 _amount
     ) external {
-        IERC20(_token).transfer(_recipient, _amount);
+        ERC20(_token).safeTransfer(_recipient, _amount);
     }
 
     function deposit(
