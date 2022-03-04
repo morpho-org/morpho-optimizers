@@ -10,12 +10,10 @@ contract HevmAdapter {
     mapping(address => uint8) public slots; // Token slot for balance storage.
     mapping(address => bool) public isSlotSet; // Set if the slot is assigned.
 
-    /**
-     * @dev Write the balance of `_who` for `_acct` token with `_value` amount.
-     * @param _who  user address
-     * @param _acct  token address
-     * @param _value  amount
-     */
+    /// @dev Write the balance of `_who` for `_acct` token with `_value` amount.
+    /// @param _who  user address
+    /// @param _acct  token address
+    /// @param _value  amount
     function writeBalanceOf(
         address _who,
         address _acct,
@@ -27,10 +25,8 @@ contract HevmAdapter {
         hevm.store(_acct, keccak256(abi.encode(_who, slots[_acct])), bytes32(_value));
     }
 
-    /**
-     * @dev Find and set the  slot for the given asset.
-     * @param _asset	ERC20 asset
-     */
+    /// @dev Find and set the  slot for the given asset.
+    /// @param _asset	ERC20 asset
     function findAndSetSlot(address _asset) internal {
         bool found = false;
         for (uint8 slot = 0; slot < type(uint8).max; slot++) {
@@ -52,10 +48,8 @@ contract HevmAdapter {
         require(found, "Slot not found.");
     }
 
-    /**
-     * @dev Mine `_nbBlocks`: adjust block number and timestamp with 10s/block
-     * @param _nbBlocks  number of blocks
-     */
+    /// @dev Mine `_nbBlocks`: adjust block number and timestamp with 10s/block
+    /// @param _nbBlocks  number of blocks
     function mineBlocks(uint256 _nbBlocks) internal {
         hevm.warp(block.timestamp + 10 * _nbBlocks);
         hevm.roll(block.number + _nbBlocks);
