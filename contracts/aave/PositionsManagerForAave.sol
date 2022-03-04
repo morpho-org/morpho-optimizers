@@ -252,6 +252,8 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         lendingPool = ILendingPool(addressesProvider.getLendingPool());
         matchingEngine = new MatchingEngineForAave();
         swapManager = _swapManager;
+
+        NDS = 20;
     }
 
     /// @notice Sets the `aaveIncentivesController`.
