@@ -12,7 +12,7 @@ async function main() {
 
   console.log('\n🦋 Deploying SwapManagerUniV2...');
   const SwapManager = await ethers.getContractFactory('SwapManagerUniV2');
-  const swapManager = await SwapManager.deploy(config.morpho.address, config.wavax.address);
+  const swapManager = await SwapManager.deploy(config.joeRouter.address, config.tokens.morpho.address, config.tokens.wavax.address);
   await swapManager.deployed();
   console.log('🎉 SwapManagerUniV2 deployed to address:', swapManager.address);
 
@@ -70,11 +70,10 @@ async function main() {
   await rewardsManager.setAaveIncentivesController(config.aave.aaveIncentivesController.address);
 
   console.log('\n🦋 Creating markets...');
-  const defaultThreshold = BigNumber.from(10).pow(6);
-  await marketsManager.connect(deployer).createMarket(config.tokens.wavax.address, defaultThreshold);
-  await marketsManager.connect(deployer).createMarket(config.tokens.weth.address, defaultThreshold);
-  await marketsManager.connect(deployer).createMarket(config.tokens.wbtc.address, defaultThreshold);
-  await marketsManager.connect(deployer).createMarket(config.tokens.usdt.address, defaultThreshold);
+  await marketsManager.connect(deployer).createMarket(config.tokens.wavax.address, BigNumber.from(10).pow(18));
+  await marketsManager.connect(deployer).createMarket(config.tokens.weth.address, BigNumber.from(10).pow(18));
+  await marketsManager.connect(deployer).createMarket(config.tokens.wbtc.address, BigNumber.from(100));
+  await marketsManager.connect(deployer).createMarket(config.tokens.usdt.address, BigNumber.from(10).pow(6));
 
   console.log('🎉 Finished!\n');
 }

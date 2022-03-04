@@ -52,8 +52,7 @@ module.exports = {
     fuji: {
       accounts: [process.env.DEPLOYER_PRIVATE_KEY],
       url: 'https://api.avax-test.network/ext/bc/C/rpc',
-      gas: 2100000,
-      gasPrice: 8000000000,
+      gasMultiplier: 2,
     },
   },
   namedAccounts: {

@@ -25,8 +25,7 @@ contract SwapManagerUniV2 is ISwapManager {
     uint256 public constant ONE_PERCENT = 100; // 1% in basis points.
     uint256 public constant MAX_BASIS_POINTS = 10000; // 100% in basis points.
 
-    IUniswapV2Router02 public swapRouter =
-        IUniswapV2Router02(0x60aE616a2155Ee3d9A68541Ba4544862310933d4); // JoeRouter
+    IUniswapV2Router02 public swapRouter; // JoeRouter
 
     address public immutable REWARD_TOKEN; // The reward token address.
     address public immutable MORPHO; // Morpho token address.
@@ -52,7 +51,12 @@ contract SwapManagerUniV2 is ISwapManager {
     /// @notice Constructs the SwapManager contract.
     /// @param _morphoToken The Morpho token address.
     /// @param _rewardToken The reward token address.
-    constructor(address _morphoToken, address _rewardToken) {
+    constructor(
+        address _swapRouter,
+        address _morphoToken,
+        address _rewardToken
+    ) {
+        swapRouter = IUniswapV2Router02(_swapRouter);
         MORPHO = _morphoToken;
         REWARD_TOKEN = _rewardToken;
 

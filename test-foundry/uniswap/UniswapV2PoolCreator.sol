@@ -51,14 +51,4 @@ contract UniswapV2PoolCreator {
             TransferHelper.safeTransfer(WETH9, msg.sender, refund1);
         }
     }
-
-    function swap(address _morphoToken, uint256 _amount) external {
-        address[] memory path = new address[](2);
-        path[0] = WETH9;
-        path[1] = _morphoToken;
-
-        // Execute the swap
-        IERC20(WETH9).safeApprove(address(swapRouter), _amount);
-        swapRouter.swapExactTokensForTokens(_amount, 0, path, address(this), block.timestamp);
-    }
 }
