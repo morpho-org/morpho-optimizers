@@ -5,8 +5,9 @@ import {IAToken} from "./interfaces/aave/IAToken.sol";
 import "./interfaces/aave/IScaledBalanceToken.sol";
 import "./interfaces/IMatchingEngineForAave.sol";
 
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
+import "@openzeppelin/contracts/utils/Address.sol";
 import "../common/libraries/DoubleLinkedList.sol";
 import "./libraries/aave/WadRayMath.sol";
 
@@ -17,7 +18,6 @@ import "./PositionsManagerForAaveStorage.sol";
 contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAaveStorage {
     using DoubleLinkedList for DoubleLinkedList.List;
     using WadRayMath for uint256;
-    using SafeERC20 for IERC20;
     using Address for address;
 
     /// Structs ///
@@ -84,7 +84,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
     /// @return matched The amount of liquidity matched (in underlying).
     function matchSuppliers(
         IAToken _poolToken,
-        IERC20 _underlyingToken,
+        ERC20 _underlyingToken,
         uint256 _amount,
         uint256 _maxGasToConsume
     ) external override returns (uint256 matched) {
@@ -152,7 +152,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         uint256 _maxGasToConsume
     ) external override returns (uint256 toSupply) {
         Vars memory vars;
-        IERC20 underlyingToken = IERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
+        ERC20 underlyingToken = ERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
         address user = suppliersInP2P[_poolTokenAddress].getHead();
         vars.normalizer = lendingPool.getReserveNormalizedIncome(address(underlyingToken));
         vars.p2pRate = marketsManager.supplyP2PExchangeRate(_poolTokenAddress);
@@ -228,7 +228,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
     /// @return matched The amount of liquidity matched (in underlying).
     function matchBorrowers(
         IAToken _poolToken,
-        IERC20 _underlyingToken,
+        ERC20 _underlyingToken,
         uint256 _amount,
         uint256 _maxGasToConsume
     ) external override returns (uint256 matched) {
@@ -296,7 +296,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         uint256 _maxGasToConsume
     ) external override {
         Vars memory vars;
-        IERC20 underlyingToken = IERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
+        ERC20 underlyingToken = ERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
         address user = borrowersInP2P[_poolTokenAddress].getHead();
         uint256 remainingToUnmatch = _amount;
         vars.normalizer = lendingPool.getReserveNormalizedVariableDebt(address(underlyingToken));

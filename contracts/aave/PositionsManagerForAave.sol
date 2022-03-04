@@ -6,7 +6,7 @@ import "./interfaces/aave/IPriceOracleGetter.sol";
 import "./interfaces/IMatchingEngineForAave.sol";
 
 import {ReserveConfiguration} from "./libraries/aave/ReserveConfiguration.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 import "../common/libraries/DoubleLinkedList.sol";
 import "./libraries/MatchingEngineFns.sol";
 import "./libraries/aave/WadRayMath.sol";
@@ -21,8 +21,8 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
     using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
     using MatchingEngineFns for IMatchingEngineForAave;
     using DoubleLinkedList for DoubleLinkedList.List;
+    using SafeTransferLib for ERC20;
     using WadRayMath for uint256;
-    using SafeERC20 for IERC20;
 
     /// Enums ///
 
@@ -348,7 +348,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         onlyMarketsManagerOwner
         isMarketCreatedAndNotPaused(_poolTokenAddress)
     {
-        IERC20 underlyingToken = IERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
+        ERC20 underlyingToken = ERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
         uint256 amountToClaim = underlyingToken.balanceOf(address(this));
         underlyingToken.safeTransfer(treasuryVault, amountToClaim);
         emit ReserveFeeClaimed(_poolTokenAddress, amountToClaim);
@@ -769,7 +769,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
     {
         _handleMembership(_poolTokenAddress, msg.sender);
         marketsManager.updateRates(_poolTokenAddress);
-        IERC20 underlyingToken = IERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
+        ERC20 underlyingToken = ERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
         underlyingToken.safeTransferFrom(msg.sender, address(this), _amount);
         uint256 remainingToSupplyToPool = _amount;
 
@@ -831,7 +831,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
     {
         _handleMembership(_poolTokenAddress, msg.sender);
         _checkUserLiquidity(msg.sender, _poolTokenAddress, 0, _amount);
-        IERC20 underlyingToken = IERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
+        ERC20 underlyingToken = ERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
         uint256 remainingToBorrowOnPool = _amount;
 
         /// Borrow in P2P ///
@@ -891,7 +891,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
     ) internal isMarketCreatedAndNotPaused(_poolTokenAddress) {
         if (_amount == 0) revert AmountIsZero();
         IAToken poolToken = IAToken(_poolTokenAddress);
-        IERC20 underlyingToken = IERC20(poolToken.UNDERLYING_ASSET_ADDRESS());
+        ERC20 underlyingToken = ERC20(poolToken.UNDERLYING_ASSET_ADDRESS());
         uint256 remainingToWithdraw = _amount;
 
         /// Soft withdraw ///
@@ -985,7 +985,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         if (_amount == 0) revert AmountIsZero();
 
         IAToken poolToken = IAToken(_poolTokenAddress);
-        IERC20 underlyingToken = IERC20(poolToken.UNDERLYING_ASSET_ADDRESS());
+        ERC20 underlyingToken = ERC20(poolToken.UNDERLYING_ASSET_ADDRESS());
         underlyingToken.safeTransferFrom(msg.sender, address(this), _amount);
         uint256 remainingToRepay = _amount;
 
@@ -1197,10 +1197,10 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
     /// @param _amount The amount of token (in underlying).
     function _supplyERC20ToPool(
         address _poolTokenAddress,
-        IERC20 _underlyingToken,
+        ERC20 _underlyingToken,
         uint256 _amount
     ) internal {
-        _underlyingToken.safeIncreaseAllowance(address(lendingPool), _amount);
+        _underlyingToken.safeApprove(address(lendingPool), _amount);
         lendingPool.deposit(address(_underlyingToken), _amount, address(this), NO_REFERRAL_CODE);
         marketsManager.updateSPYs(_poolTokenAddress);
     }
@@ -1211,7 +1211,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
     /// @param _amount The amount of token (in underlying).
     function _withdrawERC20FromPool(
         address _poolTokenAddress,
-        IERC20 _underlyingToken,
+        ERC20 _underlyingToken,
         uint256 _amount
     ) internal {
         lendingPool.withdraw(address(_underlyingToken), _amount, address(this));
@@ -1224,7 +1224,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
     /// @param _amount The amount of token (in underlying).
     function _borrowERC20FromPool(
         address _poolTokenAddress,
-        IERC20 _underlyingToken,
+        ERC20 _underlyingToken,
         uint256 _amount
     ) internal {
         lendingPool.borrow(
@@ -1244,11 +1244,11 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
     /// @param _normalizedVariableDebt The normalized variable debt on Aave.
     function _repayERC20ToPool(
         address _poolTokenAddress,
-        IERC20 _underlyingToken,
+        ERC20 _underlyingToken,
         uint256 _amount,
         uint256 _normalizedVariableDebt
     ) internal {
-        _underlyingToken.safeIncreaseAllowance(address(lendingPool), _amount);
+        _underlyingToken.safeApprove(address(lendingPool), _amount);
         IVariableDebtToken variableDebtToken = IVariableDebtToken(
             lendingPool.getReserveData(address(_underlyingToken)).variableDebtTokenAddress
         );

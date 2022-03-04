@@ -2,7 +2,7 @@
 pragma solidity 0.8.7;
 
 import "./utils/TestSetup.sol";
-import "./utils/Attacker.sol";
+import {Attacker} from "./utils/Attacker.sol";
 import "@contracts/aave/libraries/aave/WadRayMath.sol";
 import "@contracts/aave/interfaces/IPositionsManagerForAave.sol";
 

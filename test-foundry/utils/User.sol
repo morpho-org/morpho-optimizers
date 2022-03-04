@@ -6,6 +6,8 @@ import "@contracts/aave/MarketsManagerForAave.sol";
 import "@contracts/aave/interfaces/IRewardsManagerForAave.sol";
 
 contract User {
+    using SafeTransferLib for ERC20;
+
     PositionsManagerForAave internal positionsManager;
     MarketsManagerForAave internal marketsManager;
     IRewardsManagerForAave internal rewardsManager;
@@ -27,11 +29,11 @@ contract User {
     receive() external payable {}
 
     function balanceOf(address _token) external view returns (uint256) {
-        return IERC20(_token).balanceOf(address(this));
+        return ERC20(_token).balanceOf(address(this));
     }
 
     function approve(address _token, uint256 _amount) external {
-        IERC20(_token).approve(address(positionsManager), _amount);
+        ERC20(_token).safeApprove(address(positionsManager), _amount);
     }
 
     function approve(
@@ -39,7 +41,7 @@ contract User {
         address _spender,
         uint256 _amount
     ) external {
-        IERC20(_token).approve(_spender, _amount);
+        ERC20(_token).safeApprove(_spender, _amount);
     }
 
     function createMarket(address _underlyingTokenAddress, uint256 _threshold) external {
@@ -91,7 +93,7 @@ contract User {
     }
 
     function aaveSupply(address _underlyingTokenAddress, uint256 _amount) external {
-        IERC20(_underlyingTokenAddress).approve(address(lendingPool), type(uint256).max);
+        ERC20(_underlyingTokenAddress).safeApprove(address(lendingPool), type(uint256).max);
         lendingPool.deposit(_underlyingTokenAddress, _amount, address(this), 0); // 0 : no refferal code
     }
 
