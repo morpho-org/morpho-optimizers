@@ -4,6 +4,7 @@ pragma solidity 0.8.7;
 import {IAToken} from "./interfaces/aave/IAToken.sol";
 import "./interfaces/aave/ILendingPool.sol";
 import "./interfaces/IPositionsManagerForAave.sol";
+import "./interfaces/IMarketsManagerForAave.sol";
 
 import {ReserveConfiguration} from "./libraries/aave/ReserveConfiguration.sol";
 import "./libraries/aave/WadRayMath.sol";
@@ -13,7 +14,7 @@ import "@openzeppelin/contracts/utils/math/Math.sol";
 
 /// @title MarketsManagerForAave
 /// @notice Smart contract managing the markets used by a MorphoPositionsManagerForAave contract, an other contract interacting with Aave or a fork of Aave.
-contract MarketsManagerForAave is Ownable {
+contract MarketsManagerForAave is IMarketsManagerForAave, Ownable {
     using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
     using WadRayMath for uint256;
 
@@ -31,14 +32,14 @@ contract MarketsManagerForAave is Ownable {
     uint16 public constant HALF_MAX_BASIS_POINTS = 5000; // 50% in basis point.
     uint256 public constant SECONDS_PER_YEAR = 365 days; // The number of seconds in one year.
     address[] public marketsCreated; // Keeps track of the created markets.
-    mapping(address => bool) public isCreated; // Whether or not this market is created.
-    mapping(address => uint256) public supplyP2PSPY; // Supply Percentage Yield per second (in ray).
-    mapping(address => uint256) public borrowP2PSPY; // Borrow Percentage Yield per second (in ray).
-    mapping(address => uint256) public supplyP2PExchangeRate; // Current exchange rate from supply p2pUnit to underlying (in ray).
-    mapping(address => uint256) public borrowP2PExchangeRate; // Current exchange rate from borrow p2pUnit to underlying (in ray).
-    mapping(address => uint256) public exchangeRatesLastUpdateTimestamp; // The last time the P2P exchange rates were updated.
+    mapping(address => bool) public override isCreated; // Whether or not this market is created.
+    mapping(address => uint256) public override supplyP2PSPY; // Supply Percentage Yield per second (in ray).
+    mapping(address => uint256) public override borrowP2PSPY; // Borrow Percentage Yield per second (in ray).
+    mapping(address => uint256) public override supplyP2PExchangeRate; // Current exchange rate from supply p2pUnit to underlying (in ray).
+    mapping(address => uint256) public override borrowP2PExchangeRate; // Current exchange rate from borrow p2pUnit to underlying (in ray).
+    mapping(address => uint256) public override exchangeRatesLastUpdateTimestamp; // The last time the P2P exchange rates were updated.
     mapping(address => LastPoolIndexes) public lastPoolIndexes; // Last pool index stored.
-    mapping(address => bool) public noP2P; // Whether to put users on pool or not for the given market.
+    mapping(address => bool) public override noP2P; // Whether to put users on pool or not for the given market.
 
     IPositionsManagerForAave public positionsManager;
     ILendingPool public lendingPool;
@@ -191,13 +192,13 @@ contract MarketsManagerForAave is Ownable {
 
     /// @notice Updates the P2P exchange rate, taking into account the Second Percentage Yield values.
     /// @param _marketAddress The address of the market to update.
-    function updateP2PExchangeRates(address _marketAddress) external onlyPositionsManager {
+    function updateP2PExchangeRates(address _marketAddress) external override onlyPositionsManager {
         _updateP2PExchangeRates(_marketAddress);
     }
 
     /// @notice Updates the P2P Second Percentage Yield of supply and borrow.
     /// @param _marketAddress The address of the market to update.
-    function updateSPYs(address _marketAddress) external onlyPositionsManager {
+    function updateSPYs(address _marketAddress) external override onlyPositionsManager {
         _updateSPYs(_marketAddress);
     }
 
@@ -263,7 +264,7 @@ contract MarketsManagerForAave is Ownable {
 
     /// @notice Updates the P2P Second Percentage Yield and the current P2P exchange rates.
     /// @param _marketAddress The address of the market we want to update.
-    function updateRates(address _marketAddress) public isMarketCreated(_marketAddress) {
+    function updateRates(address _marketAddress) public override isMarketCreated(_marketAddress) {
         if (exchangeRatesLastUpdateTimestamp[_marketAddress] != block.timestamp) {
             _updateP2PExchangeRates(_marketAddress);
             _updateSPYs(_marketAddress);
