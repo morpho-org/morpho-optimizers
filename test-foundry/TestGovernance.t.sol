@@ -119,7 +119,7 @@ contract TestGovernance is TestSetup {
     // marketsManagerForAave should not be changed after already set by Owner
     function test_positionsManager_should_not_be_changed() public {
         hevm.expectRevert(abi.encodeWithSignature("PositionsManagerAlreadySet()"));
-        marketsManager.setPositionsManager(address(fakePositionsManager));
+        marketsManager.setPositionsManager(address(fakePositionsManagerImpl));
     }
 
     // Should create a market the with right values
