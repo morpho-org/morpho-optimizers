@@ -424,4 +424,9 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         if (inP2P > 0 && (wasInP2PAndValueChanged || formerValueInP2P == 0))
             suppliersInP2P[_poolTokenAddress].insertSorted(_user, inP2P, NDS);
     }
+
+    /// @dev Overrides `_authorizeUpgrade` OZ function with revert.
+    function _authorizeUpgrade(address) internal override {
+        revert();
+    }
 }

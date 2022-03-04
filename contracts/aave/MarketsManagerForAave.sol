@@ -9,12 +9,14 @@ import "./interfaces/IMarketsManagerForAave.sol";
 import {ReserveConfiguration} from "./libraries/aave/ReserveConfiguration.sol";
 import "./libraries/aave/WadRayMath.sol";
 
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 
 /// @title MarketsManagerForAave
 /// @notice Smart contract managing the markets used by a MorphoPositionsManagerForAave contract, an other contract interacting with Aave or a fork of Aave.
-contract MarketsManagerForAave is IMarketsManagerForAave, Ownable {
+contract MarketsManagerForAave is IMarketsManagerForAave, UUPSUpgradeable, OwnableUpgradeable {
     using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
     using WadRayMath for uint256;
 
@@ -115,15 +117,16 @@ contract MarketsManagerForAave is IMarketsManagerForAave, Ownable {
         _;
     }
 
-    /// Constructor ///
+    /// External ///
 
-    /// @notice Constructs the MarketsManagerForAave contract.
+    /// @notice Initializes the MarketsManagerForAave contract.
     /// @param _lendingPool The lending pool.
-    constructor(ILendingPool _lendingPool) {
+    function initialize(ILendingPool _lendingPool) external initializer {
+        __UUPSUpgradeable_init();
+        __Ownable_init();
+
         lendingPool = ILendingPool(_lendingPool);
     }
-
-    /// External ///
 
     /// @notice Sets the `positionsManager` to interact with Aave.
     /// @param _positionsManager The address of the `positionsManager`.
@@ -456,4 +459,7 @@ contract MarketsManagerForAave is IMarketsManagerForAave, Ownable {
                 );
         }
     }
+
+    /// @dev Overrides `_authorizeUpgrade` OZ function with onlyOwner Access Control.
+    function _authorizeUpgrade(address) internal override onlyOwner {}
 }

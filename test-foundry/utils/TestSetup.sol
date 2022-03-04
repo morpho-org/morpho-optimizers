@@ -106,8 +106,10 @@ contract TestSetup is Config, Utils, HevmHelper {
             );
         }
 
-        marketsManager = new MarketsManagerForAave(lendingPool);
-        positionsManager = new PositionsManagerForAave(
+        marketsManager = new MarketsManagerForAave();
+        marketsManager.initialize(lendingPool);
+        positionsManager = new PositionsManagerForAave();
+        positionsManager.initialize(
             marketsManager,
             ILendingPoolAddressesProvider(lendingPoolAddressesProviderAddress),
             swapManager,
@@ -138,7 +140,8 @@ contract TestSetup is Config, Utils, HevmHelper {
 
         treasuryVault = new User(positionsManager, marketsManager, rewardsManager);
 
-        fakePositionsManager = new PositionsManagerForAave(
+        fakePositionsManager = new PositionsManagerForAave();
+        fakePositionsManager.initialize(
             marketsManager,
             ILendingPoolAddressesProvider(lendingPoolAddressesProviderAddress),
             swapManager,

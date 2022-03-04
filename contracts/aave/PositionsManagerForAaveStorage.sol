@@ -12,10 +12,15 @@ import "../common/interfaces/ISwapManager.sol";
 
 import "../common/libraries/DoubleLinkedList.sol";
 
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
-contract PositionsManagerForAaveStorage is Ownable, ReentrancyGuard {
+abstract contract PositionsManagerForAaveStorage is
+    UUPSUpgradeable,
+    OwnableUpgradeable,
+    ReentrancyGuardUpgradeable
+{
     /// Structs ///
 
     struct SupplyBalance {
