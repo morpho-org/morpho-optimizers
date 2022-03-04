@@ -31,9 +31,10 @@
     },
     "aaveIncentivesController": {
       "address": "0xa1EF206fb9a8D8186157FC817fCddcC47727ED55"
-    },
-    "joeRouter": {
-      "address": "0x0fb3Bd0086Eaea80c799323F49AD740cD066FcF7"
     }
+  },
+
+  "joeRouter": {
+    "address": "0x0fb3Bd0086Eaea80c799323F49AD740cD066FcF7"
   }
 }

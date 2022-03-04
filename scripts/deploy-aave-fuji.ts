@@ -6,8 +6,9 @@ const config = require(`@config/${process.env.NETWORK}-config.json`);
 async function main() {
   const [deployer] = await ethers.getSigners();
 
+  const deployerAddress = await deployer.getAddress();
   console.log('\n🦋 Deploying Morpho contracts for Aave');
-  console.log('👩 Deployer account:', await deployer.getAddress());
+  console.log('👩 Deployer account:', deployerAddress);
   console.log('🤑 Account balance:', (await deployer.getBalance()).toString());
 
   console.log('\n🦋 Deploying SwapManagerUniV2...');
@@ -54,7 +55,7 @@ async function main() {
 
   console.log('\n🦋 Deploying RewardsManagerForAaveOnAvalanche...');
   const RewardsManager = await ethers.getContractFactory('RewardsManagerForAaveOnAvalanche');
-  const rewardsManager = await RewardsManager.deploy(config.aave.lendingPool, positionsManager);
+  const rewardsManager = await RewardsManager.deploy(config.aave.lendingPool.address, positionsManager.address);
   await rewardsManager.deployed();
   console.log('🎉 RewardsManagerForAaveOnAvalanche deployed to address:', rewardsManager.address);
 
@@ -63,17 +64,17 @@ async function main() {
 
   console.log('\n🦋 Configure PositionsManagerForAave...');
   await positionsManager.setAaveIncentivesController(config.aave.aaveIncentivesController.address);
-  await positionsManager.setTreasuryVault(await deployer.getAddress());
+  await positionsManager.setTreasuryVault(deployerAddress);
   await positionsManager.setRewardsManager(rewardsManager.address);
 
   console.log('\n🦋 Configure RewardsManagerForAave...');
   await rewardsManager.setAaveIncentivesController(config.aave.aaveIncentivesController.address);
 
   console.log('\n🦋 Creating markets...');
-  await marketsManager.connect(deployer).createMarket(config.tokens.wavax.address, BigNumber.from(10).pow(18));
-  await marketsManager.connect(deployer).createMarket(config.tokens.weth.address, BigNumber.from(10).pow(18));
-  await marketsManager.connect(deployer).createMarket(config.tokens.wbtc.address, BigNumber.from(100));
-  await marketsManager.connect(deployer).createMarket(config.tokens.usdt.address, BigNumber.from(10).pow(6));
+  await marketsManager.createMarket(config.tokens.wavax.address, BigNumber.from(10).pow(18));
+  await marketsManager.createMarket(config.tokens.weth.address, BigNumber.from(10).pow(18));
+  await marketsManager.createMarket(config.tokens.wbtc.address, BigNumber.from(100));
+  await marketsManager.createMarket(config.tokens.usdt.address, BigNumber.from(10).pow(6));
 
   console.log('🎉 Finished!\n');
 }
