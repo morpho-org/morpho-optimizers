@@ -12,7 +12,7 @@ library MatchingEngineFns {
     function matchSuppliersDC(
         IMatchingEngineForAave _matchingEngine,
         IAToken _poolToken,
-        IERC20 _underlyingToken,
+        ERC20 _underlyingToken,
         uint256 _amount,
         uint256 _maxGasToConsume
     ) internal returns (uint256) {
@@ -48,7 +48,7 @@ library MatchingEngineFns {
     function matchBorrowersDC(
         IMatchingEngineForAave _matchingEngine,
         IAToken _poolToken,
-        IERC20 _underlyingToken,
+        ERC20 _underlyingToken,
         uint256 _amount,
         uint256 _maxGasToConsume
     ) internal returns (uint256) {

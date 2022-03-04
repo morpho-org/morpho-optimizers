@@ -1,5 +1,6 @@
 ds-test/=lib/ds-test/src/
 @openzeppelin/=node_modules/@openzeppelin/
+@rari-capital/=node_modules/@rari-capital
 @uniswap/v3-periphery/=node_modules/@uniswap/v3-periphery/
 @uniswap/v3-core/=node_modules/@uniswap/v3-core/
 prb-math/=node_modules/prb-math/

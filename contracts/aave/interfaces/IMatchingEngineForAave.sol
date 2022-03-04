@@ -3,12 +3,12 @@ pragma solidity 0.8.7;
 
 import {IAToken} from "./aave/IAToken.sol";
 
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 
 interface IMatchingEngineForAave {
     function matchSuppliers(
         IAToken,
-        IERC20,
+        ERC20,
         uint256,
         uint256
     ) external returns (uint256);
@@ -21,7 +21,7 @@ interface IMatchingEngineForAave {
 
     function matchBorrowers(
         IAToken,
-        IERC20,
+        ERC20,
         uint256,
         uint256
     ) external returns (uint256);
