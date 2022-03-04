@@ -108,8 +108,8 @@ contract TestSetup is Config, Utils, HevmHelper {
 
         marketsManager = new MarketsManagerForAave(lendingPool);
         positionsManager = new PositionsManagerForAave(
-            address(marketsManager),
-            lendingPoolAddressesProviderAddress,
+            marketsManager,
+            ILendingPoolAddressesProvider(lendingPoolAddressesProviderAddress),
             swapManager,
             maxGas
         );
@@ -139,8 +139,8 @@ contract TestSetup is Config, Utils, HevmHelper {
         treasuryVault = new User(positionsManager, marketsManager, rewardsManager);
 
         fakePositionsManager = new PositionsManagerForAave(
-            address(marketsManager),
-            lendingPoolAddressesProviderAddress,
+            marketsManager,
+            ILendingPoolAddressesProvider(lendingPoolAddressesProviderAddress),
             swapManager,
             maxGas
         );
