@@ -233,18 +233,18 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
     /// Constructor ///
 
     /// @notice Constructs the PositionsManagerForAave contract.
-    /// @param _marketsManager The address of the aave `marketsManager`.
-    /// @param _lendingPoolAddressesProvider The address of the `addressesProvider`.
+    /// @param _marketsManager The `marketsManager`.
+    /// @param _lendingPoolAddressesProvider The `addressesProvider`.
     /// @param _swapManager The `swapManager`.
     constructor(
-        address _marketsManager,
-        address _lendingPoolAddressesProvider,
+        IMarketsManagerForAave _marketsManager,
+        ILendingPoolAddressesProvider _lendingPoolAddressesProvider,
         ISwapManager _swapManager,
         MaxGas memory _maxGas
     ) {
         maxGas = _maxGas;
-        marketsManager = IMarketsManagerForAave(_marketsManager);
-        addressesProvider = ILendingPoolAddressesProvider(_lendingPoolAddressesProvider);
+        marketsManager = _marketsManager;
+        addressesProvider = _lendingPoolAddressesProvider;
         lendingPool = ILendingPool(addressesProvider.getLendingPool());
         matchingEngine = new MatchingEngineForAave();
         swapManager = _swapManager;
