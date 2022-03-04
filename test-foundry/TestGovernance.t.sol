@@ -24,7 +24,6 @@ contract TestGovernance is TestSetup {
         assertEq(marketsManager.borrowP2PSPY(aDai), expectedSPY);
         assertEq(marketsManager.supplyP2PExchangeRate(aDai), RAY);
         assertEq(marketsManager.borrowP2PExchangeRate(aDai), RAY);
-        assertEq(positionsManager.threshold(aDai), WAD);
     }
 
     // ========================
@@ -34,39 +33,20 @@ contract TestGovernance is TestSetup {
     // Should revert when the function is called with an improper market
     function test_revert_on_not_real_market() public {
         hevm.expectRevert(abi.encodeWithSignature("MarketIsNotListedOnAave()"));
-        marketsManager.createMarket(address(supplier1), WAD);
+        marketsManager.createMarket(address(supplier1));
     }
 
     // Only Owner should be able to create markets in peer-to-peer
     function test_only_owner_can_create_markets_1() public {
         for (uint256 i = 0; i < pools.length; i++) {
             hevm.expectRevert("Ownable: caller is not the owner");
-            supplier1.createMarket(underlyings[i], WAD);
+            supplier1.createMarket(underlyings[i]);
 
             hevm.expectRevert("Ownable: caller is not the owner");
-            borrower1.createMarket(underlyings[i], WAD);
+            borrower1.createMarket(underlyings[i]);
         }
 
-        marketsManager.createMarket(weth, WAD);
-    }
-
-    // Only Owner should be able to set threshold
-    function test_only_owner_can_set_threshold() public {
-        for (uint256 i = 0; i < pools.length; i++) {
-            hevm.expectRevert("Ownable: caller is not the owner");
-            supplier1.setThreshold(pools[i], WAD);
-
-            hevm.expectRevert("Ownable: caller is not the owner");
-            borrower1.setThreshold(pools[i], WAD);
-        }
-
-        marketsManager.setThreshold(aDai, WAD);
-    }
-
-    // Threshold should be updated
-    function test_threshold_should_be_updated() public {
-        marketsManager.setThreshold(aDai, 5 * WAD);
-        assertEq(positionsManager.threshold(aDai), 5 * WAD);
+        marketsManager.createMarket(weth);
     }
 
     // Only Owner should be able to set reserve factor
@@ -148,7 +128,7 @@ contract TestGovernance is TestSetup {
         uint256 expectedSPY = (data.currentLiquidityRate + data.currentVariableBorrowRate) /
             2 /
             SECOND_PER_YEAR;
-        marketsManager.createMarket(aave, WAD);
+        marketsManager.createMarket(aave);
 
         assertTrue(marketsManager.isCreated(aAave));
         assertEq(marketsManager.supplyP2PSPY(aAave), expectedSPY);

@@ -168,11 +168,6 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
     /// @param _aaveIncentivesController The new address of the `aaveIncentivesController`.
     event AaveIncentivesControllerSet(address _aaveIncentivesController);
 
-    /// @notice Emitted when a threshold of a market is set.
-    /// @param _poolTokenAddress The address of the pool token concerned.
-    /// @param _newValue The new value of the threshold.
-    event ThresholdSet(address _poolTokenAddress, uint256 _newValue);
-
     /// @notice Emitted when a market is paused or unpaused.
     /// @param _poolTokenAddress The address of the pool token concerned..
     /// @param _newStatus The new pause status of the market.
@@ -225,9 +220,6 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
     /// @notice Thrown when the amount of collateral to seize is above the collateral amount.
     error ToSeizeAboveCollateral();
 
-    /// @notice Thrown when the amount is not above the threshold.
-    error AmountNotAboveThreshold();
-
     /// @notice Thrown when the amount repaid during the liquidation is above what is allowed to be repaid.
     error AmountAboveWhatAllowedToRepay();
 
@@ -238,14 +230,6 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
     modifier isMarketCreatedAndNotPaused(address _poolTokenAddress) {
         if (!marketsManager.isCreated(_poolTokenAddress)) revert MarketNotCreated();
         if (paused[_poolTokenAddress]) revert MarketPaused();
-        _;
-    }
-
-    /// @notice Prevents a user to supply or borrow less than threshold.
-    /// @param _poolTokenAddress The address of the market.
-    /// @param _amount The amount of token (in underlying).
-    modifier isAboveThreshold(address _poolTokenAddress, uint256 _amount) {
-        if (_amount < threshold[_poolTokenAddress]) revert AmountNotAboveThreshold();
         _;
     }
 
@@ -296,18 +280,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         emit MaxGasSet(_maxGas);
     }
 
-    /// @dev Sets the threshold of a market.
-    /// @param _poolTokenAddress The address of the market to set the threshold.
-    /// @param _newThreshold The new threshold.
-    function setThreshold(address _poolTokenAddress, uint256 _newThreshold)
-        external
-        onlyMarketsManager
-    {
-        threshold[_poolTokenAddress] = _newThreshold;
-        emit ThresholdSet(_poolTokenAddress, _newThreshold);
-    }
-
-    /// @dev Sets the `_newTreasuryVaultAddress`.
+    /// @notice Sets the `_newTreasuryVaultAddress`.
     /// @param _newTreasuryVaultAddress The address of the new `treasuryVault`.
     function setTreasuryVault(address _newTreasuryVaultAddress) external onlyOwner {
         treasuryVault = _newTreasuryVaultAddress;
@@ -750,11 +723,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         address _poolTokenAddress,
         uint256 _amount,
         uint256 _maxGasToConsume
-    )
-        internal
-        isMarketCreatedAndNotPaused(_poolTokenAddress)
-        isAboveThreshold(_poolTokenAddress, _amount)
-    {
+    ) internal isMarketCreatedAndNotPaused(_poolTokenAddress) {
         _handleMembership(_poolTokenAddress, msg.sender);
         marketsManager.updateRates(_poolTokenAddress);
         ERC20 underlyingToken = ERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
@@ -812,11 +781,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         address _poolTokenAddress,
         uint256 _amount,
         uint256 _maxGasToConsume
-    )
-        internal
-        isMarketCreatedAndNotPaused(_poolTokenAddress)
-        isAboveThreshold(_poolTokenAddress, _amount)
-    {
+    ) internal isMarketCreatedAndNotPaused(_poolTokenAddress) {
         _handleMembership(_poolTokenAddress, msg.sender);
         _checkUserLiquidity(msg.sender, _poolTokenAddress, 0, _amount);
         ERC20 underlyingToken = ERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
