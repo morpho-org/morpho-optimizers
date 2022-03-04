@@ -222,9 +222,9 @@ contract MarketsManagerForAave is Ownable {
     }
 
     /// @notice Returns all created markets.
-    /// @return The list of market adresses.
-    function getAllMarkets() external view returns (address[] memory) {
-        return marketsCreated;
+    /// @return marketsCreated_ The list of market adresses.
+    function getAllMarkets() external view returns (address[] memory marketsCreated_) {
+        marketsCreated_ = marketsCreated;
     }
 
     /// @notice Returns market's data.
@@ -268,23 +268,21 @@ contract MarketsManagerForAave is Ownable {
     }
 
     /// @notice Returns market's configuration.
-    /// @return Whether the market is created or not.
-    /// @return Whether user are put in P2P or not.
-    /// @return The threshold of the market.
+    /// @return isMarketCreated_ Whether the market is created or not.
+    /// @return isP2PAllowed_ Whether user are put in P2P or not.
+    /// @return threshold_ The threshold of the market.
     function getMarketConfiguration(address _marketAddress)
         external
         view
         returns (
-            bool,
-            bool,
-            uint256
+            bool isMarketCreated_,
+            bool isP2PAllowed_,
+            uint256 threshold_
         )
     {
-        return (
-            isCreated[_marketAddress],
-            noP2P[_marketAddress],
-            positionsManager.threshold(_marketAddress)
-        );
+        isMarketCreated_ = isCreated[_marketAddress];
+        isP2PAllowed_ = noP2P[_marketAddress];
+        threshold_ = positionsManager.threshold(_marketAddress);
     }
 
     /// Public ///
@@ -300,50 +298,48 @@ contract MarketsManagerForAave is Ownable {
 
     /// @notice Returns the updated supply P2P exchange rate.
     /// @param _marketAddress The address of the market to update.
-    /// @return The supply P2P exchange rate after udpate.
+    /// @return updatedSupplyP2P_ The supply P2P exchange rate after udpate.
     function getUpdatedSupplyP2PExchangeRate(address _marketAddress)
         external
         view
-        returns (uint256)
+        returns (uint256 updatedSupplyP2P_)
     {
         address underlyingTokenAddress = IAToken(_marketAddress).UNDERLYING_ASSET_ADDRESS();
         IPositionsManagerForAave.Delta memory delta = positionsManager.deltas(_marketAddress);
         uint256 timeDifference = block.timestamp - exchangeRatesLastUpdateTimestamp[_marketAddress];
 
-        return
-            _computeNewP2PExchangeRate(
-                delta.supplyP2PDelta,
-                delta.supplyP2PAmount,
-                supplyP2PExchangeRate[_marketAddress],
-                supplyP2PSPY[_marketAddress],
-                lendingPool.getReserveNormalizedIncome(underlyingTokenAddress),
-                lastPoolIndexes[_marketAddress].lastSupplyPoolIndex,
-                timeDifference
-            );
+        updatedSupplyP2P_ = _computeNewP2PExchangeRate(
+            delta.supplyP2PDelta,
+            delta.supplyP2PAmount,
+            supplyP2PExchangeRate[_marketAddress],
+            supplyP2PSPY[_marketAddress],
+            lendingPool.getReserveNormalizedIncome(underlyingTokenAddress),
+            lastPoolIndexes[_marketAddress].lastSupplyPoolIndex,
+            timeDifference
+        );
     }
 
     /// @notice Returns the updated borrow P2P exchange rate.
     /// @param _marketAddress The address of the market to update.
-    /// @return The borrow P2P exchange rate after udpate.
+    /// @return updatedBorrowP2P_ The borrow P2P exchange rate after udpate.
     function getUpdatedBorrowP2PExchangeRate(address _marketAddress)
         external
         view
-        returns (uint256)
+        returns (uint256 updatedBorrowP2P_)
     {
         address underlyingTokenAddress = IAToken(_marketAddress).UNDERLYING_ASSET_ADDRESS();
         IPositionsManagerForAave.Delta memory delta = positionsManager.deltas(_marketAddress);
         uint256 timeDifference = block.timestamp - exchangeRatesLastUpdateTimestamp[_marketAddress];
 
-        return
-            _computeNewP2PExchangeRate(
-                delta.borrowP2PDelta,
-                delta.borrowP2PAmount,
-                borrowP2PExchangeRate[_marketAddress],
-                borrowP2PSPY[_marketAddress],
-                lendingPool.getReserveNormalizedVariableDebt(underlyingTokenAddress),
-                lastPoolIndexes[_marketAddress].lastBorrowPoolIndex,
-                timeDifference
-            );
+        updatedBorrowP2P_ = _computeNewP2PExchangeRate(
+            delta.borrowP2PDelta,
+            delta.borrowP2PAmount,
+            borrowP2PExchangeRate[_marketAddress],
+            borrowP2PSPY[_marketAddress],
+            lendingPool.getReserveNormalizedVariableDebt(underlyingTokenAddress),
+            lastPoolIndexes[_marketAddress].lastBorrowPoolIndex,
+            timeDifference
+        );
     }
 
     /// Internal ///
