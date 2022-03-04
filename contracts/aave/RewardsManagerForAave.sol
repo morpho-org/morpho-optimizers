@@ -113,9 +113,15 @@ abstract contract RewardsManagerForAave is IRewardsManagerForAave, Ownable {
     /// @notice Returns the index of the `_user` for a given `_asset`.
     /// @param _asset The address of the reference asset of the distribution (aToken or variable debt token).
     /// @param _user The address of the user.
-    function getUserIndex(address _asset, address _user) external view override returns (uint256) {
+    /// @return userIndex_ The index of the user.
+    function getUserIndex(address _asset, address _user)
+        external
+        view
+        override
+        returns (uint256 userIndex_)
+    {
         LocalAssetData storage localData = localAssetData[_asset];
-        return localData.userIndex[_user];
+        userIndex_ = localData.userIndex[_user];
     }
 
     /// Public ///
