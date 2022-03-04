@@ -42,16 +42,12 @@ contract User {
         IERC20(_token).approve(_spender, _amount);
     }
 
-    function createMarket(address _underlyingTokenAddress, uint256 _threshold) external {
-        marketsManager.createMarket(_underlyingTokenAddress, _threshold);
+    function createMarket(address _underlyingTokenAddress) external {
+        marketsManager.createMarket(_underlyingTokenAddress);
     }
 
-    function setThreshold(address _marketAddress, uint256 _threshold) external {
-        marketsManager.setThreshold(_marketAddress, _threshold);
-    }
-
-    function setReserveFactor(uint16 _threshold) external {
-        marketsManager.setReserveFactor(_threshold);
+    function setReserveFactor(uint16 _reserveFactor) external {
+        marketsManager.setReserveFactor(_reserveFactor);
     }
 
     function updateRates(address _marketAddress) external {

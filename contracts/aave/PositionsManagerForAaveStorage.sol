@@ -59,7 +59,6 @@ contract PositionsManagerForAaveStorage is Ownable, ReentrancyGuard {
     mapping(address => mapping(address => BorrowBalance)) public borrowBalanceInOf; // For a given market, the borrow balance of a user.
     mapping(address => mapping(address => bool)) public userMembership; // Whether the user is in the market or not.
     mapping(address => address[]) public enteredMarkets; // The markets entered by a user.
-    mapping(address => uint256) public threshold; // Thresholds below the ones suppliers and borrowers cannot enter markets.
     mapping(address => Delta) public deltas; // Delta parameters for each market.
     mapping(address => bool) public paused; // Whether a market is paused or not.
 

@@ -25,8 +25,6 @@ interface IPositionsManagerForAave {
 
     function setNMAX(uint16) external;
 
-    function setThreshold(address, uint256) external;
-
     function setTreasuryVault(address) external;
 
     function setRewardsManager(address _rewardsManagerAddress) external;
@@ -36,6 +34,4 @@ interface IPositionsManagerForAave {
     function supplyBalanceInOf(address, address) external returns (Balance memory);
 
     function deltas(address) external view returns (Delta memory);
-
-    function threshold(address) external view returns (uint256);
 }
