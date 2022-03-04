@@ -230,18 +230,22 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         _;
     }
 
-    /// Constructor ///
+    /// External ///
 
-    /// @notice Constructs the PositionsManagerForAave contract.
+    /// @notice Initializes the PositionsManagerForAave contract.
     /// @param _marketsManager The `marketsManager`.
     /// @param _lendingPoolAddressesProvider The `addressesProvider`.
     /// @param _swapManager The `swapManager`.
-    constructor(
+    function initialize(
         IMarketsManagerForAave _marketsManager,
         ILendingPoolAddressesProvider _lendingPoolAddressesProvider,
         ISwapManager _swapManager,
         MaxGas memory _maxGas
-    ) {
+    ) external initializer {
+        __UUPSUpgradeable_init();
+        __ReentrancyGuard_init();
+        __Ownable_init();
+
         maxGas = _maxGas;
         marketsManager = _marketsManager;
         addressesProvider = _lendingPoolAddressesProvider;
@@ -1209,4 +1213,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         );
         marketsManager.updateSPYs(_poolTokenAddress);
     }
+
+    /// @dev Overrides `_authorizeUpgrade` OZ function with onlyOwner Access Control.
+    function _authorizeUpgrade(address) internal override onlyOwner {}
 }
