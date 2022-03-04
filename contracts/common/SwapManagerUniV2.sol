@@ -1,13 +1,11 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.7;
 
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-
 import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol";
 import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol";
 import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
-
 import "./interfaces/ISwapManager.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /// @title SwapManager for Uniswap V2.
 /// @dev Smart contract managing the swap of reward token to Morpho token.
@@ -16,10 +14,8 @@ contract SwapManagerUniV2 is ISwapManager {
 
     /// Storage ///
 
-    uint24 public constant POOL_FEE = 3000; // Fee on Uniswap.
     uint256 public constant ONE_PERCENT = 100; // 1% in basis points.
     uint256 public constant MAX_BASIS_POINTS = 10000; // 100% in basis points.
-    uint32 public constant TWAP_INTERVAL = 3600; // 1 hour interval.
 
     IUniswapV2Router02 public swapRouter =
         IUniswapV2Router02(0x60aE616a2155Ee3d9A68541Ba4544862310933d4); // JoeRouter
@@ -28,6 +24,12 @@ contract SwapManagerUniV2 is ISwapManager {
     address public immutable MORPHO; // Morpho token address.
 
     IUniswapV2Pair public pair;
+
+    uint256 public price0CumulativeLast;
+    uint256 public price1CumulativeLast;
+    uint256 public blockTimestampLast;
+    uint256 public price0Average;
+    uint256 public price1Average;
 
     /// Events ///
 
@@ -62,13 +64,32 @@ contract SwapManagerUniV2 is ISwapManager {
         override
         returns (uint256 amountOut)
     {
-        (, , uint256 blockTimestampLast) = pair.getReserves();
-        uint256 timeElapsed = block.timestamp - blockTimestampLast;
-        if (timeElapsed == 0) timeElapsed = 1;
-        if (MORPHO == pair.token0()) {
-            amountOut = (pair.price0CumulativeLast() * _amountIn) / timeElapsed;
+        (uint256 reserve0, uint256 reserve1, uint256 blockTimestampReserve) = pair.getReserves();
+        uint256 price0Cumulative = pair.price0CumulativeLast();
+        if (price0Cumulative == 0) {
+            // No swap yet
+            price0CumulativeLast = reserve1 / reserve0;
+            price1CumulativeLast = reserve0 / reserve1;
+
+            price0Average = price0CumulativeLast;
+            price1Average = price1CumulativeLast;
         } else {
-            amountOut = (pair.price1CumulativeLast() * _amountIn) / timeElapsed;
+            uint256 timeElapsed = block.timestamp - blockTimestampReserve;
+            if (timeElapsed > 0) {
+                uint256 price1Cumulative = pair.price1CumulativeLast();
+                price0Average = (price0Cumulative - price0CumulativeLast) / timeElapsed;
+                price1Average = (price1Cumulative - price1CumulativeLast) / timeElapsed;
+
+                price0CumulativeLast = price0Cumulative;
+                price1CumulativeLast = price1Cumulative;
+                blockTimestampLast = block.timestamp;
+            }
+        }
+
+        if (MORPHO == pair.token0()) {
+            amountOut = (price1Average * _amountIn) / price0Average;
+        } else {
+            amountOut = (price0Average * _amountIn) / price1Average;
         }
 
         // Max slippage of 1% for the trade
