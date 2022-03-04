@@ -11,6 +11,8 @@ import "@contracts/aave/interfaces/aave/IProtocolDataProvider.sol";
 import "@contracts/aave/interfaces/IRewardsManagerForAave.sol";
 import "@contracts/common/interfaces/ISwapManager.sol";
 
+import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+
 import {RewardsManagerForAaveOnEthAndAvax} from "@contracts/aave/markets-managers/RewardsManagerForAaveOnEthAndAvax.sol";
 import {RewardsManagerForAaveOnPolygon} from "@contracts/aave/markets-managers/RewardsManagerForAaveOnPolygon.sol";
 import {SwapManagerUniV3OnEth} from "@contracts/common/SwapManagerUniV3OnEth.sol";
@@ -35,9 +37,14 @@ contract TestSetup is Config, Utils, HevmHelper {
     uint256 public constant MAX_BASIS_POINTS = 10000;
     uint256 public constant INITIAL_BALANCE = 1_000_000;
 
+    ERC1967Proxy public positionsManagerProxy;
+    ERC1967Proxy public marketsManagerProxy;
+
+    PositionsManagerForAave internal positionsManagerImpl;
     PositionsManagerForAave internal positionsManager;
-    PositionsManagerForAave internal fakePositionsManager;
+    PositionsManagerForAave internal fakePositionsManagerImpl;
     MarketsManagerForAave internal marketsManager;
+    MarketsManagerForAave internal marketsManagerImpl;
     IRewardsManagerForAave internal rewardsManager;
     ISwapManager public swapManager;
     UniswapPoolCreator public uniswapPoolCreator;
@@ -106,9 +113,16 @@ contract TestSetup is Config, Utils, HevmHelper {
             );
         }
 
-        marketsManager = new MarketsManagerForAave();
+        // Deploy proxy
+
+        marketsManagerImpl = new MarketsManagerForAave();
+        marketsManagerProxy = new ERC1967Proxy(address(marketsManagerImpl), "");
+        marketsManager = MarketsManagerForAave(address(marketsManagerProxy));
         marketsManager.initialize(lendingPool);
-        positionsManager = new PositionsManagerForAave();
+
+        positionsManagerImpl = new PositionsManagerForAave();
+        positionsManagerProxy = new ERC1967Proxy(address(positionsManagerImpl), "");
+        positionsManager = PositionsManagerForAave(address(positionsManagerProxy));
         positionsManager.initialize(
             marketsManager,
             ILendingPoolAddressesProvider(lendingPoolAddressesProviderAddress),
@@ -140,13 +154,7 @@ contract TestSetup is Config, Utils, HevmHelper {
 
         treasuryVault = new User(positionsManager, marketsManager, rewardsManager);
 
-        fakePositionsManager = new PositionsManagerForAave();
-        fakePositionsManager.initialize(
-            marketsManager,
-            ILendingPoolAddressesProvider(lendingPoolAddressesProviderAddress),
-            swapManager,
-            maxGas
-        );
+        fakePositionsManagerImpl = new PositionsManagerForAave();
 
         protocolDataProvider = IProtocolDataProvider(protocolDataProviderAddress);
 
