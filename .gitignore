@@ -31,4 +31,5 @@ yarn-error.log*
 #vscode
 /.vscode
 
-trace.txt
+# ansi
+*.ansi

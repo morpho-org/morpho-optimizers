@@ -26,7 +26,7 @@ contract-% c-%: node_modules
 
 single-% s-%: node_modules
 	@echo Run single test $* on ${NETWORK}
-	@forge test -vvv -c test-foundry --match-test $*
+	@forge test -vvv -c test-foundry --match-test $* > trace.ansi
 
 .PHONY: config
 config:
