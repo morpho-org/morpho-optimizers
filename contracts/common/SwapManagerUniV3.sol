@@ -24,6 +24,7 @@ contract SwapManagerUniV3 is ISwapManager {
     /// Storage ///
 
     uint256 public constant ONE_PERCENT = 100; // 1% in basis points.
+    uint256 public constant TWO_PERCENT = 200; // 2% in basis points.
     uint32 public constant TWAP_INTERVAL = 3600; // 1 hour interval.
     uint256 public constant MAX_BASIS_POINTS = 10000; // 100% in basis points.
 
@@ -170,9 +171,9 @@ contract SwapManagerUniV3 is ISwapManager {
             );
         }
 
-        // Max slippage of 1% for the trade
+        // Max slippage of 2% for the trade
         expectedAmountOutMinimum = expectedAmountOutMinimum.mulDiv(
-            MAX_BASIS_POINTS - ONE_PERCENT,
+            MAX_BASIS_POINTS - TWO_PERCENT,
             MAX_BASIS_POINTS
         );
         path = abi.encodePacked(REWARD_TOKEN, REWARD_POOL_FEE, WETH9, MORPHO_POOL_FEE, MORPHO);

@@ -19,7 +19,7 @@ contract SwapManagerUniV3OnEth is ISwapManager {
 
     /// Storage ///
 
-    uint256 public constant ONE_PERCENT = 100; // 1% in basis points.
+    uint256 public constant THREE_PERCENT = 300; // 3% in basis points.
     uint32 public constant TWAP_INTERVAL = 3600; // 1 hour interval.
     uint256 public constant MAX_BASIS_POINTS = 10000; // 100% in basis points.
 
@@ -175,9 +175,9 @@ contract SwapManagerUniV3OnEth is ISwapManager {
             .mulDiv(FixedPoint96.Q96, priceX962);
         }
 
-        // Max slippage of 1% for the trade
+        // Max slippage of 3% for the trade
         expectedAmountOutMinimum = expectedAmountOutMinimum.mulDiv(
-            MAX_BASIS_POINTS - ONE_PERCENT,
+            MAX_BASIS_POINTS - THREE_PERCENT,
             MAX_BASIS_POINTS
         );
         path = abi.encodePacked(
