@@ -25,4 +25,8 @@ interface IMarketsManagerForAave {
     function updateP2PExchangeRates(address _marketAddress) external;
 
     function updateSPYs(address _marketAddress) external;
+
+    function createMarket(address _underlyingTokenAddress, uint256 _threshold) external;
+
+    function setPositionsManager(address _positionsManager) external;
 }

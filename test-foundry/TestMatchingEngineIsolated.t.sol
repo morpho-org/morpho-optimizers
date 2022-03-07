@@ -4,7 +4,13 @@ pragma solidity 0.8.7;
 // import "@config/Config.sol";
 import "lib/ds-test/src/test.sol";
 import "@contracts/aave/MatchingEngineForAave.sol";
+import "@contracts/aave/MarketsManagerForAave.sol";
 import "@contracts/common/libraries/DoubleLinkedList.sol";
+import "@contracts/aave/PositionsManagerForAave.sol";
+import "@config/Config.sol";
+import "@contracts/common/SwapManager.sol";
+import "./utils/MorphoToken.sol";
+import "./utils/UniswapPoolCreator.sol";
 
 import "hardhat/console.sol";
 
@@ -41,7 +47,8 @@ contract MockProtocolDataProvider {
     }
 }
 
-contract TestMatchingEngine is DSTest, MatchingEngineForAave {
+// calls to external contracts are mocked (unitary approach)
+contract TestMatchingEngineIsolated is DSTest, MatchingEngineForAave {
     using DoubleLinkedList for DoubleLinkedList.List;
     address private token;
 
@@ -119,12 +126,4 @@ contract TestMatchingEngine is DSTest, MatchingEngineForAave {
         require(borrowersOnPool[token].getNext(user) == borrowersOnPool[token].getPrev(user));
         require(borrowersOnPool[token].getNext(user) == address(0));
     }
-
-    // should match p2p delta only when delta > amount
-    // function test_match_suppliers() public {
-    //     this.matchSuppliers(IAToken(token), IERC20(address(new MockScaledBalanceToken())), 1000, 0);
-    //     deltas[token] = Delta({
-    //         supplyDelta : 2000
-    //     });
-    // }
 }

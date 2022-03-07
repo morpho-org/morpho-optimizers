@@ -491,7 +491,7 @@ contract TestWithdraw is TestSetup {
                 lendingPool.getReserveNormalizedVariableDebt(dai)
             );
 
-            (, uint256 borrowP2PDelta, , ) = positionsManager.deltas(aDai);
+            (, uint256 borrowP2PDelta, , ) = positionsManager.p2ps(aDai);
             testEquality(borrowP2PDelta, expectedBorrowP2PDelta, "borrow Delta not expected 1");
 
             // Borrow delta matching by new supplier
@@ -507,7 +507,7 @@ contract TestWithdraw is TestSetup {
                 supplyP2PExchangeRate
             );
 
-            (, borrowP2PDelta, , ) = positionsManager.deltas(aDai);
+            (, borrowP2PDelta, , ) = positionsManager.p2ps(aDai);
             testEquality(borrowP2PDelta, expectedBorrowP2PDelta / 2, "borrow Delta not expected 2");
             testEquality(onPoolSupplier, 0, "on pool supplier not 0");
             testEquality(inP2PSupplier, expectedSupplyBalanceInP2P, "in P2P supplier not expected");
@@ -517,7 +517,7 @@ contract TestWithdraw is TestSetup {
             Vars memory oldVars;
             Vars memory newVars;
 
-            (, oldVars.BP2PD, , oldVars.BP2PA) = positionsManager.deltas(aDai);
+            (, oldVars.BP2PD, , oldVars.BP2PA) = positionsManager.p2ps(aDai);
             oldVars.NVD = lendingPool.getReserveNormalizedVariableDebt(dai);
             oldVars.BP2PER = marketsManager.borrowP2PExchangeRate(aDai);
             oldVars.SPY = marketsManager.borrowP2PSPY(aDai);
@@ -526,7 +526,7 @@ contract TestWithdraw is TestSetup {
 
             marketsManager.updateRates(aDai);
 
-            (, newVars.BP2PD, , newVars.BP2PA) = positionsManager.deltas(aDai);
+            (, newVars.BP2PD, , newVars.BP2PA) = positionsManager.p2ps(aDai);
             newVars.NVD = lendingPool.getReserveNormalizedVariableDebt(dai);
             newVars.BP2PER = marketsManager.borrowP2PExchangeRate(aDai);
             newVars.SPY = marketsManager.borrowP2PSPY(aDai);
@@ -569,7 +569,7 @@ contract TestWithdraw is TestSetup {
             borrowers[i].repay(aDai, borrowedAmount);
         }
 
-        (, uint256 borrowP2PDeltaAfter, , ) = positionsManager.deltas(aDai);
+        (, uint256 borrowP2PDeltaAfter, , ) = positionsManager.p2ps(aDai);
         testEquality(borrowP2PDeltaAfter, 0);
 
         (uint256 inP2PSupplier2, uint256 onPoolSupplier2) = positionsManager.supplyBalanceInOf(

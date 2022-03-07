@@ -146,4 +146,12 @@ contract User {
     {
         rewardsManager.setAaveIncentivesController(_aaveIncentivesController);
     }
+
+    function sendTokens(
+        address token,
+        address to,
+        uint256 amount
+    ) external {
+        IERC20(token).transfer(to, amount);
+    }
 }

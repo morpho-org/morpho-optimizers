@@ -44,11 +44,11 @@ contract PositionsManagerForAaveStorage is ReentrancyGuard, Pausable {
         uint64 repay;
     }
 
-    struct Delta {
+    struct P2P {
         uint256 supplyDelta; // Difference between the stored P2P supply amount and the real P2P supply amount (in scaled balance).
-        uint256 borrowP2PDelta; // Difference between the stored P2P borrow amount and the real P2P borrow amount (in adUnit).
-        uint256 supplyP2PAmount; // Sum of all stored P2P supply (in P2P unit).
-        uint256 borrowP2PAmount; // Sum of all stored P2P borrow (in P2P unit).
+        uint256 borrowDelta; // Difference between the stored P2P borrow amount and the real P2P borrow amount (in adUnit).
+        uint256 supplyAmount; // Sum of all stored P2P supply (in P2P unit).
+        uint256 borrowAmount; // Sum of all stored P2P borrow (in P2P unit).
     }
 
     /// Storage ///
@@ -70,7 +70,7 @@ contract PositionsManagerForAaveStorage is ReentrancyGuard, Pausable {
     mapping(address => mapping(address => bool)) public userMembership; // Whether the user is in the market or not.
     mapping(address => address[]) public enteredMarkets; // The markets entered by a user.
     mapping(address => uint256) public threshold; // Thresholds below the ones suppliers and borrowers cannot enter markets.
-    mapping(address => Delta) public deltas; // Delta parameters for each market.
+    mapping(address => P2P) public p2ps; // P2P parameters for each market.
 
     IAaveIncentivesController public aaveIncentivesController;
     ILendingPoolAddressesProvider public addressesProvider;
