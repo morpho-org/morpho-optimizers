@@ -1,32 +1,28 @@
 ## 1. [`SUPPLY`](https://github.com/morpho-labs/morpho-contracts/blob/main/contracts/aave/PositionsManagerForAave.sol#L290)
 
-- 1.1 - The user supplies less than the threshold of the given market, the transaction reverts.
+- 1.1 - There are no available borrowers: all of the supplied amount is supplied to the pool and set `onPool`.
 
-- 1.2 - There are no available borrowers: all of the supplied amount is supplied to the pool and set `onPool`.
+- 1.2 - There is 1 available borrower, he matches 100% of the supplier liquidity, everything is `inP2P`.
 
-- 1.3 - There is 1 available borrower, he matches 100% of the supplier liquidity, everything is `inP2P`.
+- 1.3 - There is 1 available borrower, he doesn't match 100% of the supplier liquidity. Supplier's balance `inP2P` is equal to the borrower previous amount `onPool`, the rest is set `onPool`.
 
-- 1.4 - There is 1 available borrower, he doesn't match 100% of the supplier liquidity. Supplier's balance `inP2P` is equal to the borrower previous amount `onPool`, the rest is set `onPool`.
+- 1.4 - There are NMAX (or less) borrowers that match the supplied amount, everything is `inP2P` after NMAX (or less) match.
 
-- 1.5 - There are NMAX (or less) borrowers that match the supplied amount, everything is `inP2P` after NMAX (or less) match.
-
-- 1.6 - The NMAX biggest borrowers don't match all of the supplied amount, after NMAX match, the rest is supplied and set `onPool`. ⚠️ most gas expensive supply scenario.
+- 1.5 - The NMAX biggest borrowers don't match all of the supplied amount, after NMAX match, the rest is supplied and set `onPool`. ⚠️ most gas expensive supply scenario.
 
 ## 2. [`BORROW`](https://github.com/morpho-labs/morpho-contracts/blob/main/contracts/aave/PositionsManagerForAave.sol#L361)
 
-- 2.1 - The user borrows less than the threshold of the given market, the transaction reverts.
+- 2.1 - The borrower tries to borrow more than his collateral allows (also taking in account pre existing borrow positions), the transaction reverts.
 
-- 2.2 - The borrower tries to borrow more than his collateral allows (also taking in account pre existing borrow positions), the transaction reverts.
+- 2.2 - There are no available suppliers: all of the borrowed amount is `onPool`.
 
-- 2.3 - There are no available suppliers: all of the borrowed amount is `onPool`.
+- 2.3 - There is 1 available supplier, he matches 100% of the borrower liquidity, everything is `inP2P`.
 
-- 2.4 - There is 1 available supplier, he matches 100% of the borrower liquidity, everything is `inP2P`.
+- 2.4 - There is 1 available supplier, he doesn't match 100% of the borrower liquidity. Borrower `inP2P` is equal to the supplier previous amount `onPool`, the rest is set `onPool`.
 
-- 2.5 - There is 1 available supplier, he doesn't match 100% of the borrower liquidity. Borrower `inP2P` is equal to the supplier previous amount `onPool`, the rest is set `onPool`.
+- 2.5 - There are NMAX (or less) supplier that match the borrowed amount, everything is `inP2P` after NMAX (or less) match.
 
-- 2.6 - There are NMAX (or less) supplier that match the borrowed amount, everything is `inP2P` after NMAX (or less) match.
-
-- 2.7 - The NMAX biggest supplier don't match all of the borrowed amount, after NMAX match, the rest is borrowed and set `onPool`. ⚠️ most gas expensive borrow scenario.
+- 2.6 - The NMAX biggest supplier don't match all of the borrowed amount, after NMAX match, the rest is borrowed and set `onPool`. ⚠️ most gas expensive borrow scenario.
 
 ## 3. [`WITHDRAW`](https://github.com/morpho-labs/morpho-contracts/blob/main/contracts/aave/PositionsManagerForAave.sol#L534)
 

@@ -211,9 +211,6 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
     /// @notice Thrown when the debt value is above the maximum debt value.
     error DebtValueAboveMax();
 
-    /// @notice Thrown when only the markets manager can call the function.
-    error OnlyMarketsManager();
-
     /// @notice Thrown when the debt value is not above the maximum debt value.
     error DebtValueNotAboveMax();
 
@@ -230,12 +227,6 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
     modifier isMarketCreatedAndNotPaused(address _poolTokenAddress) {
         if (!marketsManager.isCreated(_poolTokenAddress)) revert MarketNotCreated();
         if (paused[_poolTokenAddress]) revert MarketPaused();
-        _;
-    }
-
-    /// @notice Prevents a user to call function only allowed for the `marketsManager`.
-    modifier onlyMarketsManager() {
-        if (msg.sender != address(marketsManager)) revert OnlyMarketsManager();
         _;
     }
 
