@@ -248,10 +248,15 @@ contract MarketsManagerForAave is Ownable {
     }
 
     /// @notice Returns market's configuration.
-    /// @return Whether the market is created or not.
-    /// @return Whether user are put in P2P or not.
-    function getMarketConfiguration(address _marketAddress) external view returns (bool, bool) {
-        return (isCreated[_marketAddress], noP2P[_marketAddress]);
+    /// @return isCreated_ Whether the market is created or not.
+    /// @return noP2P_ Whether user are put in P2P or not.
+    function getMarketConfiguration(address _marketAddress)
+        external
+        view
+        returns (bool isCreated_, bool noP2P_)
+    {
+        isCreated_ = isCreated[_marketAddress];
+        noP2P_ = noP2P[_marketAddress];
     }
 
     /// Public ///
