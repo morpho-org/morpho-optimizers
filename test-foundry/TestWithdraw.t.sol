@@ -541,7 +541,7 @@ contract TestWithdraw is TestSetup {
             .rayDiv(newVars.BP2PA.wadToRay());
 
             uint256 expectedBP2PER = oldVars.BP2PER.rayMul(
-                (RAY + oldVars.SPY).rayPow(365 days).rayMul(RAY - shareOfTheDelta) +
+                computeCompoundedInterest(oldVars.SPY, 365 days).rayMul(RAY - shareOfTheDelta) +
                     shareOfTheDelta.rayMul(newVars.NVD).rayDiv(oldVars.NVD)
             );
 

@@ -104,10 +104,10 @@ contract TestGovernance is TestSetup {
         assertEq(marketsManager.borrowP2PSPY(aDai), borrowSPY);
 
         uint256 newBorrowP2PExchangeRate = borrowP2PExchangeRate.rayMul(
-            (WadRayMath.ray() + borrowSPY).rayPow(secondBlockTimestamp - firstBlockTimestamp)
+            computeCompoundedInterest(borrowSPY, secondBlockTimestamp - firstBlockTimestamp)
         );
         uint256 newSupplyP2PExchangeRate = supplyP2PExchangeRate.rayMul(
-            (WadRayMath.ray() + supplySPY).rayPow(secondBlockTimestamp - firstBlockTimestamp)
+            computeCompoundedInterest(supplySPY, secondBlockTimestamp - firstBlockTimestamp)
         );
 
         borrowP2PExchangeRate = marketsManager.borrowP2PExchangeRate(aDai);
