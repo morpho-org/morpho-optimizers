@@ -83,7 +83,7 @@ contract TestSetup is Config, Utils, HevmHelper {
                 INITIAL_BALANCE * WAD
             );
             morphoToken = new MorphoToken(address(uniswapPoolCreator));
-            swapManager = new SwapManagerUniV3OnEth(address(morphoToken), morphoPoolFee);
+            swapManager = new SwapManagerUniV3OnEth(address(morphoToken), MORPHO_UNIV3_FEE);
         } else if (block.chainid == 137) {
             // Polygon network
             // Create a MORPHO / WETH pool
@@ -96,9 +96,9 @@ contract TestSetup is Config, Utils, HevmHelper {
             morphoToken = new MorphoToken(address(uniswapPoolCreator));
             swapManager = new SwapManagerUniV3(
                 address(morphoToken),
-                morphoPoolFee,
+                MORPHO_UNIV3_FEE,
                 REWARD_TOKEN,
-                rewardPoolFee
+                REWARD_UNIV3_FEE
             );
         }
 
