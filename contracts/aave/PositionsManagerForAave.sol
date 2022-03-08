@@ -881,7 +881,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
                     poolToken,
                     underlyingToken,
                     remainingToWithdraw,
-                    _maxGasToConsume
+                    _maxGasToConsume / 2
                 );
 
                 if (matched > 0) {
@@ -897,7 +897,11 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
 
             if (remainingToWithdraw > matched) {
                 uint256 toUnmatch = remainingToWithdraw - matched;
-                matchingEngine.unmatchBorrowersDC(_poolTokenAddress, toUnmatch, _maxGasToConsume);
+                matchingEngine.unmatchBorrowersDC(
+                    _poolTokenAddress,
+                    toUnmatch,
+                    _maxGasToConsume / 2
+                );
 
                 _borrowERC20FromPool(_poolTokenAddress, underlyingToken, toUnmatch); // Revert on error
             }
@@ -982,7 +986,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
                     poolToken,
                     underlyingToken,
                     remainingToRepay,
-                    _maxGasToConsume
+                    _maxGasToConsume / 2
                 );
 
                 _repayERC20ToPool(
@@ -999,7 +1003,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
                 uint256 toSupply = matchingEngine.unmatchSuppliersDC(
                     poolTokenAddress,
                     remainingToRepay - matched,
-                    _maxGasToConsume
+                    _maxGasToConsume / 2
                 ); // Revert on error
 
                 if (toSupply > 0) _supplyERC20ToPool(_poolTokenAddress, underlyingToken, toSupply); // Revert on error

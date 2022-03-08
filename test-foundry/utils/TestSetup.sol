@@ -68,8 +68,8 @@ contract TestSetup is Config, Utils, HevmHelper {
         PositionsManagerForAave.MaxGas memory maxGas = PositionsManagerForAaveStorage.MaxGas({
             supply: 3e6,
             borrow: 3e6,
-            withdraw: 1.5e6,
-            repay: 1.5e6
+            withdraw: 3e6,
+            repay: 3e6
         });
 
         lendingPoolAddressesProvider = ILendingPoolAddressesProvider(
