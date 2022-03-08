@@ -5,12 +5,17 @@ import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol";
 import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol";
 import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
 import "./interfaces/ISwapManager.sol";
+
+import "@uniswap/v2-periphery/contracts/libraries/UniswapV2OracleLibrary.sol";
+
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /// @title SwapManager for Uniswap V2.
 /// @dev Smart contract managing the swap of reward token to Morpho token.
 contract SwapManagerUniV2 is ISwapManager {
     using SafeERC20 for IERC20;
+
+    uint256 public constant PERIOD = 1 hours;
 
     /// Storage ///
 
@@ -51,6 +56,49 @@ contract SwapManagerUniV2 is ISwapManager {
         pair = IUniswapV2Pair(
             IUniswapV2Factory(swapRouter.factory()).getPair(_morphoToken, _rewardToken)
         );
+
+        uint256 reserve0;
+        uint256 reserve1;
+        (reserve0, reserve1, blockTimestampLast) = pair.getReserves();
+        price0CumulativeLast = reserve1 / reserve0;
+        price1CumulativeLast = reserve0 / reserve1;
+
+        price0Average = price0CumulativeLast;
+        price1Average = price1CumulativeLast;
+    }
+
+    /// Update average prices on PERIOD fixed window.
+    /// @dev From https://github.com/Uniswap/v2-periphery/blob/master/contracts/examples/ExampleOracleSimple.sol
+    function update() internal {
+        (
+            uint256 price0Cumulative,
+            uint256 price1Cumulative,
+            uint256 blockTimestamp
+        ) = UniswapV2OracleLibrary.currentCumulativePrices(address(pair));
+        uint256 timeElapsed = blockTimestamp - blockTimestampLast; // overflow is desired
+
+        // ensure that at least one full period has passed since the last update
+        if (timeElapsed >= PERIOD) {
+            return;
+        }
+
+        // overflow is desired, casting never truncates
+        // cumulative price is in (uq112x112 price * seconds) units so we simply wrap it after division by time elapsed
+        price0Average = (price0Cumulative - price0CumulativeLast) / timeElapsed;
+        price1Average = (price1Cumulative - price1CumulativeLast) / timeElapsed;
+
+        price0CumulativeLast = price0Cumulative;
+        price1CumulativeLast = price1Cumulative;
+        blockTimestampLast = blockTimestamp;
+    }
+
+    /// Get the amount according to the price average.
+    function consult(address token, uint256 amountIn) internal view returns (uint256 amountOut) {
+        if (token == MORPHO) {
+            amountOut = price0Average * amountIn;
+        } else {
+            amountOut = price1Average * amountIn;
+        }
     }
 
     /// External ///
@@ -64,33 +112,8 @@ contract SwapManagerUniV2 is ISwapManager {
         override
         returns (uint256 amountOut)
     {
-        (uint256 reserve0, uint256 reserve1, uint256 blockTimestampReserve) = pair.getReserves();
-        uint256 price0Cumulative = pair.price0CumulativeLast();
-        if (price0Cumulative == 0) {
-            // No swap yet
-            price0CumulativeLast = reserve1 / reserve0;
-            price1CumulativeLast = reserve0 / reserve1;
-
-            price0Average = price0CumulativeLast;
-            price1Average = price1CumulativeLast;
-        } else {
-            uint256 timeElapsed = block.timestamp - blockTimestampReserve;
-            if (timeElapsed > 0) {
-                uint256 price1Cumulative = pair.price1CumulativeLast();
-                price0Average = (price0Cumulative - price0CumulativeLast) / timeElapsed;
-                price1Average = (price1Cumulative - price1CumulativeLast) / timeElapsed;
-
-                price0CumulativeLast = price0Cumulative;
-                price1CumulativeLast = price1Cumulative;
-                blockTimestampLast = block.timestamp;
-            }
-        }
-
-        if (MORPHO == pair.token0()) {
-            amountOut = (price1Average * _amountIn) / price0Average;
-        } else {
-            amountOut = (price0Average * _amountIn) / price1Average;
-        }
+        update();
+        amountOut = consult(MORPHO, _amountIn);
 
         // Max slippage of 1% for the trade
         uint256 expectedAmountOutMinimum = (amountOut * (MAX_BASIS_POINTS - ONE_PERCENT)) /
