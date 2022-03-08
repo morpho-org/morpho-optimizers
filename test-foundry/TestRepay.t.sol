@@ -531,7 +531,7 @@ contract TestRepay is TestSetup {
             .rayDiv(newVars.SP2PA.wadToRay());
 
             uint256 expectedSP2PER = oldVars.SP2PER.rayMul(
-                (RAY + oldVars.SPY).rayPow(365 days).rayMul(RAY - shareOfTheDelta) +
+                computeCompoundedInterest(oldVars.SPY, 365 days).rayMul(RAY - shareOfTheDelta) +
                     shareOfTheDelta.rayMul(newVars.NI).rayDiv(oldVars.NI)
             );
 

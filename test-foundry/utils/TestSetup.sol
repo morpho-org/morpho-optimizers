@@ -15,18 +15,22 @@ import {RewardsManagerForAaveOnEthAndAvax} from "@contracts/aave/markets-manager
 import {RewardsManagerForAaveOnPolygon} from "@contracts/aave/markets-managers/RewardsManagerForAaveOnPolygon.sol";
 import {SwapManagerUniV3OnEth} from "@contracts/common/SwapManagerUniV3OnEth.sol";
 import {SwapManagerUniV3} from "@contracts/common/SwapManagerUniV3.sol";
+import {PositionsManagerForAave} from "@contracts/aave/PositionsManagerForAave.sol";
+import {UniswapPoolCreator} from "./UniswapPoolCreator.sol";
+import {Utils} from "./Utils.sol";
+import {User} from "./User.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@contracts/aave/PositionsManagerForAave.sol";
 import "@contracts/aave/MarketsManagerForAave.sol";
-import {User} from "./User.sol";
 import "@config/Config.sol";
 import "./HevmHelper.sol";
-import "./Utils.sol";
+import "./HEVM.sol";
 import "./MorphoToken.sol";
 import "./SimplePriceOracle.sol";
-import "./UniswapPoolCreator.sol";
 
 contract TestSetup is Config, Utils, HevmHelper {
     using WadRayMath for uint256;
+    using SafeERC20 for IERC20;
 
     uint256 public constant MAX_BASIS_POINTS = 10000;
     uint256 public constant INITIAL_BALANCE = 1_000_000;
