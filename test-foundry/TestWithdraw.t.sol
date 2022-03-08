@@ -427,7 +427,7 @@ contract TestWithdraw is TestSetup {
     // Delta hard withdraw
     function test_withdraw_3_3_5() public {
         // 1.3e6 allows only 10 unmatch borrowers
-        setMaxGasHelper(3e6, 3e6, 1.3e6, 3e6);
+        setMaxGasHelper(3e6, 3e6, 2.6e6, 3e6);
 
         uint256 borrowedAmount = 1 ether;
         uint256 collateral = 2 * borrowedAmount;
