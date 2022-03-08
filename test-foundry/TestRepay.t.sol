@@ -417,7 +417,7 @@ contract TestRepay is TestSetup {
     // Delta hard repay
     function test_repay_4_2_5() public {
         // Allows only 10 unmatch suppliers
-        setMaxGasHelper(3e6, 3e6, 3e6, 1.2e6);
+        setMaxGasHelper(3e6, 3e6, 3e6, 2.4e6);
 
         uint256 suppliedAmount = 1 ether;
         uint256 borrowedAmount = 20 * suppliedAmount;
