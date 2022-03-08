@@ -65,8 +65,8 @@ contract TestFees is TestSetup {
         uint256 supplyP2PSPY = (meanSPY * 9000) / MAX_BASIS_POINTS;
         uint256 borrowP2PSPY = (meanSPY * 11000) / MAX_BASIS_POINTS;
 
-        uint256 newSupplyExRate = RAY.rayMul(RAY + supplyP2PSPY).rayPow(365 days);
-        uint256 newBorrowExRate = RAY.rayMul(RAY + borrowP2PSPY).rayPow(365 days);
+        uint256 newSupplyExRate = RAY.rayMul(computeCompoundedInterest(supplyP2PSPY, 365 days));
+        uint256 newBorrowExRate = RAY.rayMul(computeCompoundedInterest(borrowP2PSPY, 365 days));
 
         uint256 expectedFees = (50 * WAD).rayMul(newBorrowExRate) -
             (50 * WAD).rayMul(newSupplyExRate);
