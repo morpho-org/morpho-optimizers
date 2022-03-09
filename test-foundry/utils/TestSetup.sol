@@ -120,7 +120,11 @@ contract TestSetup is Config, Utils, HevmAdapter {
             writeBalanceOf(address(uniswapV2PoolCreator), REWARD_TOKEN, INITIAL_BALANCE * WAD);
             morphoToken = new MorphoToken(address(uniswapV2PoolCreator));
             uniswapV2PoolCreator.createPoolAndAddLiquidity(address(morphoToken));
-            swapManager = new SwapManagerUniV2(address(morphoToken), REWARD_TOKEN);
+            swapManager = new SwapManagerUniV2(
+                swapRouterAddress,
+                address(morphoToken),
+                REWARD_TOKEN
+            );
         }
 
         // Deploy proxy

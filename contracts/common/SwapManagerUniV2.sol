@@ -27,7 +27,7 @@ contract SwapManagerUniV2 is ISwapManager {
 
     IUniswapV2Router02 public swapRouter; // JoeRouter
 
-    address public immutable REWARD_TOKEN; // The reward token address.
+    address public immutable WAVAX; // The reward token address.
     address public immutable MORPHO; // Morpho token address.
 
     IUniswapV2Pair public pair;
@@ -58,7 +58,7 @@ contract SwapManagerUniV2 is ISwapManager {
     ) {
         swapRouter = IUniswapV2Router02(_swapRouter);
         MORPHO = _morphoToken;
-        REWARD_TOKEN = _rewardToken;
+        WAVAX = _rewardToken;
 
         pair = IUniswapV2Pair(
             IUniswapV2Factory(swapRouter.factory()).getPair(_morphoToken, _rewardToken)
@@ -133,11 +133,11 @@ contract SwapManagerUniV2 is ISwapManager {
             MAX_BASIS_POINTS;
 
         address[] memory path = new address[](2);
-        path[0] = REWARD_TOKEN;
+        path[0] = WAVAX;
         path[1] = MORPHO;
 
         // Execute the swap
-        IERC20(REWARD_TOKEN).safeApprove(address(swapRouter), _amountIn);
+        IERC20(WAVAX).safeApprove(address(swapRouter), _amountIn);
         uint256[] memory amountsOut = swapRouter.swapExactTokensForTokens(
             _amountIn,
             expectedAmountOutMinimum,

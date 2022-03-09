@@ -23,13 +23,6 @@ async function main() {
   await marketsManager.deployed();
   console.log('🎉 MarketsManagerForAave deployed to address:', marketsManager.address);
 
-  //console.log('\n🦋 Verifying MarketsManagerForAave on Tenderly...');
-  //await hre.tenderly.verify({
-  //  name: 'MarketsManagerForAave',
-  //  address: marketsManagerForAave.address,
-  //});
-  //console.log('🎉 MarketsManagerForAave verified!');
-
   console.log('\n🦋 Deploying PositionsManagerForAave...');
   const PositionsManager = await ethers.getContractFactory('PositionsManagerForAave');
   const positionsManager = await PositionsManager.deploy(
@@ -45,13 +38,6 @@ async function main() {
   );
   await positionsManager.deployed();
   console.log('🎉 PositionsManagerForAave deployed to address:', positionsManager.address);
-
-  //console.log('\n🦋 Verifying PositionsManagerForAave on Tenderly...');
-  //await hre.tenderly.verify({
-  //  name: 'PositionsManagerForAave',
-  //  address: positionsManagerForAave.address,
-  //});
-  //console.log('🎉 PositionsManagerForAave verified!');
 
   console.log('\n🦋 Deploying RewardsManagerForAaveOnAvalanche...');
   const RewardsManager = await ethers.getContractFactory('RewardsManagerForAaveOnAvalanche');

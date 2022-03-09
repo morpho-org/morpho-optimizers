@@ -11,7 +11,7 @@ contract UniswapV2PoolCreator {
 
     IUniswapV2Router02 public swapRouter =
         IUniswapV2Router02(0x60aE616a2155Ee3d9A68541Ba4544862310933d4); // JoeRouter
-    address public constant WETH9 = 0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7; // Intermediate token address.
+    address public constant WAVAX = 0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7; // Intermediate token address.
 
     uint256 public amount0ToMint = 1000e18;
     uint256 public amount1ToMint = 1000e18;
@@ -25,11 +25,11 @@ contract UniswapV2PoolCreator {
         )
     {
         TransferHelper.safeApprove(_token0, address(swapRouter), amount0ToMint);
-        TransferHelper.safeApprove(WETH9, address(swapRouter), amount1ToMint);
+        TransferHelper.safeApprove(WAVAX, address(swapRouter), amount1ToMint);
 
         (amount0, amount1, liquidity) = swapRouter.addLiquidity(
             _token0,
-            WETH9,
+            WAVAX,
             amount0ToMint,
             amount1ToMint,
             0,
@@ -46,9 +46,9 @@ contract UniswapV2PoolCreator {
         }
 
         if (amount1 < amount1ToMint) {
-            TransferHelper.safeApprove(WETH9, address(swapRouter), 0);
+            TransferHelper.safeApprove(WAVAX, address(swapRouter), 0);
             uint256 refund1 = amount1ToMint - amount1;
-            TransferHelper.safeTransfer(WETH9, msg.sender, refund1);
+            TransferHelper.safeTransfer(WAVAX, msg.sender, refund1);
         }
     }
 }
