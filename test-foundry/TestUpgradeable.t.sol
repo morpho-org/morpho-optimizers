@@ -5,13 +5,13 @@ import "./utils/TestSetup.sol";
 
 contract TestUpgradeable is TestSetup {
     function test_upgrade_markets_manager() public {
-        marketsManager.setReserveFactor(1);
+        marketsManager.setReserveFactor(aDai, 1);
 
         MarketsManagerForAave marketsManagerImplV2 = new MarketsManagerForAave();
         marketsManager.upgradeTo(address(marketsManagerImplV2));
 
         // Should not change
-        assertEq(marketsManager.reserveFactor(), 1);
+        assertEq(marketsManager.reserveFactor(aDai), 1);
     }
 
     function test_upgrade_positions_manager() public {

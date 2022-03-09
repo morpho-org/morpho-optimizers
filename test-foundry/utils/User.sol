@@ -48,8 +48,8 @@ contract User {
         marketsManager.createMarket(_underlyingTokenAddress);
     }
 
-    function setReserveFactor(uint16 _reserveFactor) external {
-        marketsManager.setReserveFactor(_reserveFactor);
+    function setReserveFactor(address _poolTokenAddress, uint16 _reserveFactor) external {
+        marketsManager.setReserveFactor(_poolTokenAddress, _reserveFactor);
     }
 
     function updateRates(address _marketAddress) external {
