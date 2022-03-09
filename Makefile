@@ -1,19 +1,40 @@
-fork-block-number := 24032305
-
 -include .env.local
+
+ifeq (${NETWORK}, avalanche-mainnet)
+  export FOUNDRY_ETH_RPC_URL=https://api.avax.network/ext/bc/C/rpc
+  export FOUNDRY_FORK_BLOCK_NUMBER=9833154
+else
+  export FOUNDRY_ETH_RPC_URL=https://${NETWORK}.g.alchemy.com/v2/${ALCHEMY_KEY}
+
+  ifeq (${NETWORK}, eth-mainnet)
+    export FOUNDRY_FORK_BLOCK_NUMBER=14292587
+  else ifeq (${NETWORK}, polygon-mainnet)
+    export FOUNDRY_FORK_BLOCK_NUMBER=24032305
+  endif
+endif
+
+export DAPP_REMAPPINGS=@config/=config/$(NETWORK)
 
 .PHONY: test
 test: node_modules
-	@echo Run all tests
-	@forge test --fork-url https://${NETWORK}.g.alchemy.com/v2/${ALCHEMY_KEY} --fork-block-number $(fork-block-number) -vvv -c test-foundry --no-match-contract TestNmax
+	@echo Run all tests on ${NETWORK}
+	@forge test -vvv -c test-foundry
+
+gas:
+	@echo Create report
+	@forge test -vvv -c test-foundry --gas-report --match-test test_updateBorrowers > gas_report.ansi
 
 contract-% c-%: node_modules
-	@echo Run tests for contract $*
-	@forge test --fork-url https://${NETWORK}.g.alchemy.com/v2/${ALCHEMY_KEY} --fork-block-number $(fork-block-number) -vvv -c test-foundry --match-contract $*
+	@echo Run tests for contract $* on ${NETWORK}
+	@forge test -vvv -c test-foundry --match-contract $*
 
 single-% s-%: node_modules
-	@echo Run single test: $*
-	@forge test --fork-url https://${NETWORK}.g.alchemy.com/v2/${ALCHEMY_KEY} --fork-block-number $(fork-block-number) -vvv -c test-foundry --match-test $*
+	@echo Run single test $* on ${NETWORK}
+	@forge test -vvv -c test-foundry --match-test $* > trace.ansi
+
+.PHONY: config
+config:
+	forge config
 
 node_modules:
 	@yarn

@@ -3,31 +3,37 @@ pragma solidity 0.8.7;
 
 import "@contracts/aave/PositionsManagerForAave.sol";
 import "@contracts/aave/MarketsManagerForAave.sol";
-import "@contracts/aave/RewardsManager.sol";
+import "@contracts/aave/interfaces/IRewardsManagerForAave.sol";
 
 contract User {
+    using SafeTransferLib for ERC20;
+
     PositionsManagerForAave internal positionsManager;
     MarketsManagerForAave internal marketsManager;
-    RewardsManager internal rewardsManager;
+    IRewardsManagerForAave internal rewardsManager;
+    ILendingPool public lendingPool;
+    IAaveIncentivesController public aaveIncentivesController;
 
     constructor(
         PositionsManagerForAave _positionsManager,
         MarketsManagerForAave _marketsManager,
-        RewardsManager _rewardsManager
+        IRewardsManagerForAave _rewardsManager
     ) {
         positionsManager = _positionsManager;
         marketsManager = _marketsManager;
         rewardsManager = _rewardsManager;
+        lendingPool = positionsManager.lendingPool();
+        aaveIncentivesController = positionsManager.aaveIncentivesController();
     }
 
     receive() external payable {}
 
     function balanceOf(address _token) external view returns (uint256) {
-        return IERC20(_token).balanceOf(address(this));
+        return ERC20(_token).balanceOf(address(this));
     }
 
     function approve(address _token, uint256 _amount) external {
-        IERC20(_token).approve(address(positionsManager), _amount);
+        ERC20(_token).safeApprove(address(positionsManager), _amount);
     }
 
     function approve(
@@ -35,15 +41,31 @@ contract User {
         address _spender,
         uint256 _amount
     ) external {
-        IERC20(_token).approve(_spender, _amount);
+        ERC20(_token).safeApprove(_spender, _amount);
     }
 
-    function createMarket(address _marketAddress, uint256 _threshold) external {
-        marketsManager.createMarket(_marketAddress, _threshold);
+    function createMarket(address _underlyingTokenAddress) external {
+        marketsManager.createMarket(_underlyingTokenAddress);
+    }
+
+    function setReserveFactor(address _poolTokenAddress, uint16 _reserveFactor) external {
+        marketsManager.setReserveFactor(_poolTokenAddress, _reserveFactor);
+    }
+
+    function updateRates(address _marketAddress) external {
+        marketsManager.updateRates(_marketAddress);
     }
 
     function supply(address _poolTokenAddress, uint256 _amount) external {
         positionsManager.supply(_poolTokenAddress, _amount, 0);
+    }
+
+    function supply(
+        address _poolTokenAddress,
+        uint256 _amount,
+        uint256 _maxGasToConsume
+    ) external {
+        positionsManager.supply(_poolTokenAddress, _amount, 0, _maxGasToConsume);
     }
 
     function withdraw(address _poolTokenAddress, uint256 _amount) external {
@@ -54,8 +76,29 @@ contract User {
         positionsManager.borrow(_poolTokenAddress, _amount, 0);
     }
 
+    function borrow(
+        address _poolTokenAddress,
+        uint256 _amount,
+        uint256 _maxGasToConsume
+    ) external {
+        positionsManager.borrow(_poolTokenAddress, _amount, 0, _maxGasToConsume);
+    }
+
     function repay(address _poolTokenAddress, uint256 _amount) external {
         positionsManager.repay(_poolTokenAddress, _amount);
+    }
+
+    function aaveSupply(address _underlyingTokenAddress, uint256 _amount) external {
+        ERC20(_underlyingTokenAddress).safeApprove(address(lendingPool), type(uint256).max);
+        lendingPool.deposit(_underlyingTokenAddress, _amount, address(this), 0); // 0 : no refferal code
+    }
+
+    function aaveBorrow(address _underlyingTokenAddress, uint256 _amount) external {
+        lendingPool.borrow(_underlyingTokenAddress, _amount, 2, 0, address(this)); // 2 : variable rate | 0 : no refferal code
+    }
+
+    function aaveClaimRewards(address[] memory assets) external {
+        aaveIncentivesController.claimRewards(assets, type(uint256).max, address(this));
     }
 
     function liquidate(
@@ -72,12 +115,16 @@ contract User {
         );
     }
 
-    function setNmaxForMatchingEngine(uint16 _newMaxNumber) external {
-        positionsManager.setNmaxForMatchingEngine(_newMaxNumber);
+    function setNDS(uint8 _newNDS) external {
+        positionsManager.setNDS(_newNDS);
     }
 
-    function claimRewards(address[] calldata _assets) external {
-        positionsManager.claimRewards(_assets);
+    function setMaxGas(PositionsManagerForAave.MaxGas memory _maxGas) external {
+        positionsManager.setMaxGas(_maxGas);
+    }
+
+    function claimRewards(address[] calldata _assets, bool _toSwap) external {
+        positionsManager.claimRewards(_assets, _toSwap);
     }
 
     function setNoP2P(address _marketAddress, bool _noP2P) external {
@@ -86,6 +133,10 @@ contract User {
 
     function setTreasuryVault(address _newTreasuryVault) external {
         positionsManager.setTreasuryVault(_newTreasuryVault);
+    }
+
+    function setPauseStatus(address _poolTokenAddress) external {
+        positionsManager.setPauseStatus(_poolTokenAddress);
     }
 
     function setAaveIncentivesControllerOnRewardsManager(address _aaveIncentivesController)

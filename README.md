@@ -58,8 +58,16 @@ make test
 or to run only the desired section:
 
 ```
-make TestBorrow
-make TestGovernance
+make c-TestBorrow
+make c-TestGovernance
+...
+```
+
+or to run individual tests:
+
+```
+make s-test_higher_than_max_fees
+make s-test_claim_fees
 ...
 ```
 

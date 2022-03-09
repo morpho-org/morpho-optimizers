@@ -1,67 +1,67 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.7;
 
-import "./interfaces/aave/ILendingPoolAddressesProvider.sol";
-import "./interfaces/aave/ILendingPool.sol";
-import "./interfaces/aave/DataTypes.sol";
 import {IAToken} from "./interfaces/aave/IAToken.sol";
+import "./interfaces/aave/ILendingPool.sol";
 import "./interfaces/IPositionsManagerForAave.sol";
+import "./interfaces/IMarketsManagerForAave.sol";
 
+import {ReserveConfiguration} from "./libraries/aave/ReserveConfiguration.sol";
 import "./libraries/aave/WadRayMath.sol";
 
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 
 /// @title MarketsManagerForAave
-/// @dev Smart contract managing the markets used by a MorphoPositionsManagerForAave contract, an other contract interacting with Aave or a fork of Aave.
-contract MarketsManagerForAave is Ownable {
+/// @notice Smart contract managing the markets used by a MorphoPositionsManagerForAave contract, an other contract interacting with Aave or a fork of Aave.
+contract MarketsManagerForAave is IMarketsManagerForAave, UUPSUpgradeable, OwnableUpgradeable {
+    using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
     using WadRayMath for uint256;
+
+    /// Structs ///
+
+    struct LastPoolIndexes {
+        uint256 lastSupplyPoolIndex; // Last supply pool index (normalized income) stored.
+        uint256 lastBorrowPoolIndex; // Last borrow pool index (normalized variable debt) stored.
+    }
 
     /// Storage ///
 
     uint16 public constant MAX_BASIS_POINTS = 10000; // 100% in basis point.
     uint16 public constant HALF_MAX_BASIS_POINTS = 5000; // 50% in basis point.
-    uint16 public reserveFactor; // Proportion of the interest earned by users sent to the DAO, in basis point (100% = 10000). The default value is 0.
     uint256 public constant SECONDS_PER_YEAR = 365 days; // The number of seconds in one year.
-
     address[] public marketsCreated; // Keeps track of the created markets.
-    mapping(address => bool) public isCreated; // Whether or not this market is created.
-    mapping(address => uint256) public supplyP2PSPY; // Supply Percentage Yield per second, in ray.
-    mapping(address => uint256) public borrowP2PSPY; // Borrow Percentage Yield per second, in ray.
-    mapping(address => uint256) public supplyP2PExchangeRate; // Current exchange rate from supply p2pUnit to underlying.
-    mapping(address => uint256) public borrowP2PExchangeRate; // Current exchange rate from borrow p2pUnit to underlying.
-    mapping(address => uint256) public exchangeRatesLastUpdateTimestamp; // The last time the P2P exchange rates were updated.
-    mapping(address => bool) public noP2P; // Whether to put users on pool or not for the given market.
+    mapping(address => bool) public override isCreated; // Whether or not this market is created.
+    mapping(address => uint16) public reserveFactor; // Proportion of the interest earned by users sent to the DAO for each market, in basis point (100% = 10000). The default value is 0.
+    mapping(address => uint256) public override supplyP2PSPY; // Supply Percentage Yield per second (in ray).
+    mapping(address => uint256) public override borrowP2PSPY; // Borrow Percentage Yield per second (in ray).
+    mapping(address => uint256) public override supplyP2PExchangeRate; // Current exchange rate from supply p2pUnit to underlying (in ray).
+    mapping(address => uint256) public override borrowP2PExchangeRate; // Current exchange rate from borrow p2pUnit to underlying (in ray).
+    mapping(address => uint256) public override exchangeRatesLastUpdateTimestamp; // The last time the P2P exchange rates were updated.
+    mapping(address => LastPoolIndexes) public lastPoolIndexes; // Last pool index stored.
+    mapping(address => bool) public override noP2P; // Whether to put users on pool or not for the given market.
 
-    IPositionsManagerForAave public positionsManagerForAave;
-    ILendingPoolAddressesProvider public addressesProvider;
+    IPositionsManagerForAave public positionsManager;
     ILendingPool public lendingPool;
 
     /// Events ///
 
-    /// @dev Emitted when a new market is created.
+    /// @notice Emitted when a new market is created.
     /// @param _marketAddress The address of the market that has been created.
     event MarketCreated(address _marketAddress);
 
-    /// @dev Emitted when the lendingPool is updated on the `positionsManagerForAave`.
-    /// @param _lendingPoolAddress The address of the lending pool.
-    event LendingPoolUpdated(address _lendingPoolAddress);
+    /// @notice Emitted when the `positionsManager` is set.
+    /// @param _positionsManager The address of the `positionsManager`.
+    event PositionsManagerSet(address _positionsManager);
 
-    /// @dev Emitted when the `positionsManagerForAave` is set.
-    /// @param _positionsManagerForAave The address of the `positionsManagerForAave`.
-    event PositionsManagerSet(address _positionsManagerForAave);
-
-    /// @dev Emitted when a threshold of a market is set.
-    /// @param _marketAddress The address of the market to set.
-    /// @param _newValue The new value of the threshold.
-    event ThresholdSet(address _marketAddress, uint256 _newValue);
-
-    /// @dev Emitted when a `noP2P` variable is set.
+    /// @notice Emitted when a `noP2P` variable is set.
     /// @param _marketAddress The address of the market to set.
     /// @param _noP2P The new value of `_noP2P` adopted.
     event NoP2PSet(address _marketAddress, bool _noP2P);
 
-    /// @dev Emitted when the P2P SPYs of a market are updated.
+    /// @notice Emitted when the P2P SPYs of a market are updated.
     /// @param _marketAddress The address of the market updated.
     /// @param _newSupplyP2PSPY The new value of the supply  P2P SPY.
     /// @param _newBorrowP2PSPY The new value of the borrow P2P SPY.
@@ -71,7 +71,7 @@ contract MarketsManagerForAave is Ownable {
         uint256 _newBorrowP2PSPY
     );
 
-    /// @dev Emitted when the p2p exchange rates of a market are updated.
+    /// @notice Emitted when the p2p exchange rates of a market are updated.
     /// @param _marketAddress The address of the market updated.
     /// @param _newSupplyP2PExchangeRate The new value of the supply exchange rate from p2pUnit to underlying.
     /// @param _newBorrowP2PExchangeRate The new value of the borrow exchange rate from p2pUnit to underlying.
@@ -81,14 +81,18 @@ contract MarketsManagerForAave is Ownable {
         uint256 _newBorrowP2PExchangeRate
     );
 
-    /// @dev Emitted when the `reserveFactor` is set.
+    /// @notice Emitted when the `reserveFactor` is set.
+    /// @param _marketAddress The address of the market set.
     /// @param _newValue The new value of the `reserveFactor`.
-    event ReserveFactorSet(uint16 _newValue);
+    event ReserveFactorSet(address _marketAddress, uint16 _newValue);
 
     /// Errors ///
 
     /// @notice Thrown when the market is not created yet.
     error MarketNotCreated();
+
+    /// @notice Thrown when the market is not listed on Aave.
+    error MarketIsNotListedOnAave();
 
     /// @notice Thrown when the market is already created.
     error MarketAlreadyCreated();
@@ -96,83 +100,90 @@ contract MarketsManagerForAave is Ownable {
     /// @notice Thrown when the positionsManager is already set.
     error PositionsManagerAlreadySet();
 
+    /// @notice Thrown when only the positions manager can call the function.
+    error OnlyPositionsManager();
+
     /// Modifiers ///
 
-    /// @dev Prevents to update a market not created yet.
+    /// @notice Prevents to update a market not created yet.
+    /// @param _marketAddress The address of the market to check.
     modifier isMarketCreated(address _marketAddress) {
         if (!isCreated[_marketAddress]) revert MarketNotCreated();
         _;
     }
 
-    /// Constructor ///
-
-    /// @dev Constructs the MarketsManagerForAave contract.
-    /// @param _lendingPoolAddressesProvider The address of the lending pool addresses provider.
-    constructor(address _lendingPoolAddressesProvider) {
-        addressesProvider = ILendingPoolAddressesProvider(_lendingPoolAddressesProvider);
-        lendingPool = ILendingPool(addressesProvider.getLendingPool());
-        emit LendingPoolUpdated(address(lendingPool));
+    /// @notice Prevents a user to call function only allowed for `positionsManager` owner.
+    modifier onlyPositionsManager() {
+        if (msg.sender != address(positionsManager)) revert OnlyPositionsManager();
+        _;
     }
 
     /// External ///
 
-    /// @dev Sets the `positionsManagerForAave` to interact with Aave.
-    /// @param _positionsManagerForAave The address of the `positionsManagerForAave`.
-    function setPositionsManager(address _positionsManagerForAave) external onlyOwner {
-        if (address(positionsManagerForAave) != address(0)) revert PositionsManagerAlreadySet();
-        positionsManagerForAave = IPositionsManagerForAave(_positionsManagerForAave);
-        emit PositionsManagerSet(_positionsManagerForAave);
+    /// @notice Initializes the MarketsManagerForAave contract.
+    /// @param _lendingPool The lending pool.
+    function initialize(ILendingPool _lendingPool) external initializer {
+        __UUPSUpgradeable_init();
+        __Ownable_init();
+
+        lendingPool = ILendingPool(_lendingPool);
     }
 
-    /// @dev Updates the lending pool.
-    function updateLendingPool() external onlyOwner {
-        lendingPool = ILendingPool(addressesProvider.getLendingPool());
-        emit LendingPoolUpdated(address(lendingPool));
+    /// @notice Sets the `positionsManager` to interact with Aave.
+    /// @param _positionsManager The address of the `positionsManager`.
+    function setPositionsManager(address _positionsManager) external onlyOwner {
+        if (address(positionsManager) != address(0)) revert PositionsManagerAlreadySet();
+        positionsManager = IPositionsManagerForAave(_positionsManager);
+        emit PositionsManagerSet(_positionsManager);
     }
 
-    /// @dev Sets the `reserveFactor`.
+    /// @notice Sets the `reserveFactor`.
+    /// @param _marketAddress The market on which to set the `_newReserveFactor`.
     /// @param _newReserveFactor The proportion of the interest earned by users sent to the DAO, in basis point.
-    function setReserveFactor(uint16 _newReserveFactor) external onlyOwner {
-        reserveFactor = HALF_MAX_BASIS_POINTS <= _newReserveFactor
+    function setReserveFactor(address _marketAddress, uint16 _newReserveFactor) external onlyOwner {
+        reserveFactor[_marketAddress] = HALF_MAX_BASIS_POINTS <= _newReserveFactor
             ? HALF_MAX_BASIS_POINTS
             : _newReserveFactor;
-        for (uint256 i; i < marketsCreated.length; i++) {
-            updateRates(marketsCreated[i]);
-        }
-        emit ReserveFactorSet(reserveFactor);
+
+        updateRates(_marketAddress);
+
+        emit ReserveFactorSet(_marketAddress, reserveFactor[_marketAddress]);
     }
 
-    /// @dev Creates a new market to borrow/supply in.
-    /// @param _marketAddress The addresses of the markets to add (aToken).
-    /// @param _threshold The threshold to set for the market.
-    function createMarket(address _marketAddress, uint256 _threshold) external onlyOwner {
-        if (isCreated[_marketAddress]) revert MarketAlreadyCreated();
+    /// @notice Creates a new market to borrow/supply in.
+    /// @param _underlyingTokenAddress The underlying address of the given market.
+    function createMarket(address _underlyingTokenAddress) external onlyOwner {
+        DataTypes.ReserveConfigurationMap memory configuration = lendingPool.getConfiguration(
+            _underlyingTokenAddress
+        );
+        (bool isActive, , , ) = configuration.getFlagsMemory();
+        if (!isActive) revert MarketIsNotListedOnAave();
 
-        isCreated[_marketAddress] = true;
-        exchangeRatesLastUpdateTimestamp[_marketAddress] = block.timestamp;
-        supplyP2PExchangeRate[_marketAddress] = WadRayMath.ray();
-        borrowP2PExchangeRate[_marketAddress] = WadRayMath.ray();
+        address poolTokenAddress = lendingPool
+        .getReserveData(_underlyingTokenAddress)
+        .aTokenAddress;
 
-        positionsManagerForAave.setThreshold(_marketAddress, _threshold);
+        if (isCreated[poolTokenAddress]) revert MarketAlreadyCreated();
+        isCreated[poolTokenAddress] = true;
 
-        _updateSPYs(_marketAddress);
-        marketsCreated.push(_marketAddress);
-        emit MarketCreated(_marketAddress);
+        exchangeRatesLastUpdateTimestamp[poolTokenAddress] = block.timestamp;
+        supplyP2PExchangeRate[poolTokenAddress] = WadRayMath.ray();
+        borrowP2PExchangeRate[poolTokenAddress] = WadRayMath.ray();
+
+        LastPoolIndexes storage poolIndexes = lastPoolIndexes[poolTokenAddress];
+        poolIndexes.lastSupplyPoolIndex = lendingPool.getReserveNormalizedIncome(
+            _underlyingTokenAddress
+        );
+        poolIndexes.lastBorrowPoolIndex = lendingPool.getReserveNormalizedVariableDebt(
+            _underlyingTokenAddress
+        );
+
+        _updateSPYs(poolTokenAddress);
+        marketsCreated.push(poolTokenAddress);
+        emit MarketCreated(poolTokenAddress);
     }
 
-    /// @dev Sets the threshold below which suppliers and borrowers cannot join a given market.
-    /// @param _marketAddress The address of the market to change the threshold.
-    /// @param _newThreshold The new threshold to set.
-    function setThreshold(address _marketAddress, uint256 _newThreshold)
-        external
-        onlyOwner
-        isMarketCreated(_marketAddress)
-    {
-        positionsManagerForAave.setThreshold(_marketAddress, _newThreshold);
-        emit ThresholdSet(_marketAddress, _newThreshold);
-    }
-
-    /// @dev Sets whether to put everyone on pool or not.
+    /// @notice Sets whether to put everyone on pool or not.
     /// @param _marketAddress The address of the market.
     /// @param _noP2P Whether to put everyone on pool or not.
     function setNoP2P(address _marketAddress, bool _noP2P)
@@ -184,43 +195,210 @@ contract MarketsManagerForAave is Ownable {
         emit NoP2PSet(_marketAddress, _noP2P);
     }
 
+    /// @notice Updates the P2P exchange rate, taking into account the Second Percentage Yield values.
+    /// @param _marketAddress The address of the market to update.
+    function updateP2PExchangeRates(address _marketAddress) external override onlyPositionsManager {
+        _updateP2PExchangeRates(_marketAddress);
+    }
+
+    /// @notice Updates the P2P Second Percentage Yield of supply and borrow.
+    /// @param _marketAddress The address of the market to update.
+    function updateSPYs(address _marketAddress) external override onlyPositionsManager {
+        _updateSPYs(_marketAddress);
+    }
+
+    /// @notice Returns all created markets.
+    /// @return marketsCreated_ The list of market adresses.
+    function getAllMarkets() external view returns (address[] memory marketsCreated_) {
+        marketsCreated_ = marketsCreated;
+    }
+
+    /// @notice Returns market's data.
+    /// @return supplyP2PSPY_ The supply P2P SPY of the market.
+    /// @return borrowP2PSPY_ The borrow P2P SPY of the market.
+    /// @return supplyP2PExchangeRate_ The supply P2P exchange rate of the market.
+    /// @return borrowP2PExchangeRate_ The borrow P2P exchange rate of the market.
+    /// @return exchangeRatesLastUpdateTimestamp_ The last timestamp when P2P exchange rates where updated.
+    /// @return supplyP2PDelta_ The supply P2P delta (in scaled balance).
+    /// @return borrowP2PDelta_ The borrow P2P delta (in adUnit).
+    /// @return supplyP2PAmount_ The supply P2P amount (in P2P unit).
+    /// @return borrowP2PAmount_ The borrow P2P amount (in P2P unit).
+    function getMarketData(address _marketAddress)
+        external
+        view
+        returns (
+            uint256 supplyP2PSPY_,
+            uint256 borrowP2PSPY_,
+            uint256 supplyP2PExchangeRate_,
+            uint256 borrowP2PExchangeRate_,
+            uint256 exchangeRatesLastUpdateTimestamp_,
+            uint256 supplyP2PDelta_,
+            uint256 borrowP2PDelta_,
+            uint256 supplyP2PAmount_,
+            uint256 borrowP2PAmount_
+        )
+    {
+        {
+            IPositionsManagerForAave.Delta memory delta = positionsManager.deltas(_marketAddress);
+            supplyP2PDelta_ = delta.supplyP2PDelta;
+            borrowP2PDelta_ = delta.borrowP2PDelta;
+            supplyP2PAmount_ = delta.supplyP2PAmount;
+            borrowP2PAmount_ = delta.borrowP2PAmount;
+        }
+
+        supplyP2PSPY_ = supplyP2PSPY[_marketAddress];
+        borrowP2PSPY_ = borrowP2PSPY[_marketAddress];
+        supplyP2PExchangeRate_ = supplyP2PExchangeRate[_marketAddress];
+        borrowP2PExchangeRate_ = borrowP2PExchangeRate[_marketAddress];
+        exchangeRatesLastUpdateTimestamp_ = exchangeRatesLastUpdateTimestamp[_marketAddress];
+    }
+
+    /// @notice Returns market's configuration.
+    /// @return isCreated_ Whether the market is created or not.
+    /// @return noP2P_ Whether user are put in P2P or not.
+    function getMarketConfiguration(address _marketAddress)
+        external
+        view
+        returns (bool isCreated_, bool noP2P_)
+    {
+        isCreated_ = isCreated[_marketAddress];
+        noP2P_ = noP2P[_marketAddress];
+    }
+
     /// Public ///
 
-    /// @dev Updates the P2P Second Percentage Yield and the current P2P exchange rates.
+    /// @notice Updates the P2P Second Percentage Yield and the current P2P exchange rates.
     /// @param _marketAddress The address of the market we want to update.
-    function updateRates(address _marketAddress) public isMarketCreated(_marketAddress) {
+    function updateRates(address _marketAddress) public override isMarketCreated(_marketAddress) {
         if (exchangeRatesLastUpdateTimestamp[_marketAddress] != block.timestamp) {
             _updateP2PExchangeRates(_marketAddress);
             _updateSPYs(_marketAddress);
         }
     }
 
-    /// Internal ///
-
-    /// @dev Updates the P2P exchange rate, taking into account the Second Percentage Yield values.
+    /// @notice Returns the updated supply P2P exchange rate.
     /// @param _marketAddress The address of the market to update.
-    function _updateP2PExchangeRates(address _marketAddress) internal {
+    /// @return updatedSupplyP2P_ The supply P2P exchange rate after udpate.
+    function getUpdatedSupplyP2PExchangeRate(address _marketAddress)
+        external
+        view
+        returns (uint256 updatedSupplyP2P_)
+    {
+        address underlyingTokenAddress = IAToken(_marketAddress).UNDERLYING_ASSET_ADDRESS();
+        IPositionsManagerForAave.Delta memory delta = positionsManager.deltas(_marketAddress);
         uint256 timeDifference = block.timestamp - exchangeRatesLastUpdateTimestamp[_marketAddress];
-        exchangeRatesLastUpdateTimestamp[_marketAddress] = block.timestamp;
 
-        uint256 newSupplyP2PExchangeRate = supplyP2PExchangeRate[_marketAddress].rayMul(
-            (WadRayMath.ray() + supplyP2PSPY[_marketAddress]).rayPow(timeDifference)
-        ); // In ray
-        supplyP2PExchangeRate[_marketAddress] = newSupplyP2PExchangeRate;
-
-        uint256 newBorrowP2PExchangeRate = borrowP2PExchangeRate[_marketAddress].rayMul(
-            (WadRayMath.ray() + borrowP2PSPY[_marketAddress]).rayPow(timeDifference)
-        ); // In ray
-        borrowP2PExchangeRate[_marketAddress] = newBorrowP2PExchangeRate;
-
-        emit P2PExchangeRatesUpdated(
-            _marketAddress,
-            newSupplyP2PExchangeRate,
-            newBorrowP2PExchangeRate
+        updatedSupplyP2P_ = _computeNewP2PExchangeRate(
+            delta.supplyP2PDelta,
+            delta.supplyP2PAmount,
+            supplyP2PExchangeRate[_marketAddress],
+            supplyP2PSPY[_marketAddress],
+            lendingPool.getReserveNormalizedIncome(underlyingTokenAddress),
+            lastPoolIndexes[_marketAddress].lastSupplyPoolIndex,
+            timeDifference
         );
     }
 
-    /// @dev Updates the P2P Second Percentage Yield of supply and borrow.
+    /// @notice Returns the updated borrow P2P exchange rate.
+    /// @param _marketAddress The address of the market to update.
+    /// @return updatedBorrowP2P_ The borrow P2P exchange rate after udpate.
+    function getUpdatedBorrowP2PExchangeRate(address _marketAddress)
+        external
+        view
+        returns (uint256 updatedBorrowP2P_)
+    {
+        address underlyingTokenAddress = IAToken(_marketAddress).UNDERLYING_ASSET_ADDRESS();
+        IPositionsManagerForAave.Delta memory delta = positionsManager.deltas(_marketAddress);
+        uint256 timeDifference = block.timestamp - exchangeRatesLastUpdateTimestamp[_marketAddress];
+
+        updatedBorrowP2P_ = _computeNewP2PExchangeRate(
+            delta.borrowP2PDelta,
+            delta.borrowP2PAmount,
+            borrowP2PExchangeRate[_marketAddress],
+            borrowP2PSPY[_marketAddress],
+            lendingPool.getReserveNormalizedVariableDebt(underlyingTokenAddress),
+            lastPoolIndexes[_marketAddress].lastBorrowPoolIndex,
+            timeDifference
+        );
+    }
+
+    /// Internal ///
+
+    /// @dev calculates compounded interest over a period of time.
+    ///   To avoid expensive exponentiation, the calculation is performed using a binomial approximation:
+    ///   (1+x)^n = 1+n*x+[n/2*(n-1)]*x^2+[n/6*(n-1)*(n-2)*x^3...
+    /// @param _rate The SPY to use in the computation.
+    /// @param _elapsedTime The amount of time during to get the interest for.
+    /// @return results in ray
+    function _computeCompoundedInterest(uint256 _rate, uint256 _elapsedTime)
+        internal
+        pure
+        returns (uint256)
+    {
+        if (_elapsedTime == 0) {
+            return WadRayMath.ray();
+        }
+
+        if (_elapsedTime == 1) {
+            return WadRayMath.ray() + _rate;
+        }
+
+        uint256 ratePowerTwo = _rate.rayMul(_rate);
+        uint256 ratePowerThree = ratePowerTwo.rayMul(_rate);
+
+        return
+            WadRayMath.ray() +
+            _rate *
+            _elapsedTime +
+            (_elapsedTime * (_elapsedTime - 1) * ratePowerTwo) /
+            2 +
+            (_elapsedTime * (_elapsedTime - 1) * (_elapsedTime - 2) * ratePowerThree) /
+            6;
+    }
+
+    /// @notice Updates the P2P exchange rates, taking into account the Second Percentage Yield values.
+    /// @param _marketAddress The address of the market to update.
+    function _updateP2PExchangeRates(address _marketAddress) internal {
+        address underlyingTokenAddress = IAToken(_marketAddress).UNDERLYING_ASSET_ADDRESS();
+        uint256 timeDifference = block.timestamp - exchangeRatesLastUpdateTimestamp[_marketAddress];
+        exchangeRatesLastUpdateTimestamp[_marketAddress] = block.timestamp;
+        LastPoolIndexes storage poolIndexes = lastPoolIndexes[_marketAddress];
+        IPositionsManagerForAave.Delta memory delta = positionsManager.deltas(_marketAddress);
+
+        uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(underlyingTokenAddress);
+        supplyP2PExchangeRate[_marketAddress] = _computeNewP2PExchangeRate(
+            delta.supplyP2PDelta,
+            delta.supplyP2PAmount,
+            supplyP2PExchangeRate[_marketAddress],
+            supplyP2PSPY[_marketAddress],
+            normalizedIncome,
+            poolIndexes.lastSupplyPoolIndex,
+            timeDifference
+        );
+        poolIndexes.lastSupplyPoolIndex = normalizedIncome;
+
+        uint256 normalizedVariableDebt = lendingPool.getReserveNormalizedVariableDebt(
+            underlyingTokenAddress
+        );
+        borrowP2PExchangeRate[_marketAddress] = _computeNewP2PExchangeRate(
+            delta.borrowP2PDelta,
+            delta.borrowP2PAmount,
+            borrowP2PExchangeRate[_marketAddress],
+            borrowP2PSPY[_marketAddress],
+            normalizedVariableDebt,
+            poolIndexes.lastBorrowPoolIndex,
+            timeDifference
+        );
+        poolIndexes.lastBorrowPoolIndex = normalizedVariableDebt;
+
+        emit P2PExchangeRatesUpdated(
+            _marketAddress,
+            supplyP2PExchangeRate[_marketAddress],
+            borrowP2PExchangeRate[_marketAddress]
+        );
+    }
+
+    /// @notice Updates the P2P Second Percentage Yield of supply and borrow.
     /// @param _marketAddress The address of the market to update.
     function _updateSPYs(address _marketAddress) internal {
         DataTypes.ReserveData memory reserveData = lendingPool.getReserveData(
@@ -233,10 +411,10 @@ contract MarketsManagerForAave is Ownable {
         ) / SECONDS_PER_YEAR; // In ray
 
         supplyP2PSPY[_marketAddress] =
-            (meanSPY * (MAX_BASIS_POINTS - reserveFactor)) /
+            (meanSPY * (MAX_BASIS_POINTS - reserveFactor[_marketAddress])) /
             MAX_BASIS_POINTS;
         borrowP2PSPY[_marketAddress] =
-            (meanSPY * (MAX_BASIS_POINTS + reserveFactor)) /
+            (meanSPY * (MAX_BASIS_POINTS + reserveFactor[_marketAddress])) /
             MAX_BASIS_POINTS;
 
         emit P2PSPYsUpdated(
@@ -245,4 +423,45 @@ contract MarketsManagerForAave is Ownable {
             borrowP2PSPY[_marketAddress]
         );
     }
+
+    /// @notice Computes the new P2P exchange rate from arguments.
+    /// @param _p2pDelta The P2P delta.
+    /// @param _p2pAmount The P2P amount.
+    /// @param _p2pRate The P2P exchange rate.
+    /// @param _p2pSPY The P2P SPY.
+    /// @param _poolIndex The pool index (normalized income for supply) or (normalized debt variable for borrow) of the market.
+    /// @param _lastPoolIndex The last pool index (normalized income for supply) or (normalized debt variable for borrow) of the market.
+    /// @param _timeDifference The time difference since the last update.
+    /// @return The new P2P exchange rate.
+    function _computeNewP2PExchangeRate(
+        uint256 _p2pDelta,
+        uint256 _p2pAmount,
+        uint256 _p2pRate,
+        uint256 _p2pSPY,
+        uint256 _poolIndex,
+        uint256 _lastPoolIndex,
+        uint256 _timeDifference
+    ) internal pure returns (uint256) {
+        if (_p2pDelta == 0)
+            return _p2pRate.rayMul(_computeCompoundedInterest(_p2pSPY, _timeDifference));
+        else {
+            uint256 shareOfTheDelta = _p2pDelta
+            .wadToRay()
+            .rayMul(_p2pRate)
+            .rayDiv(_poolIndex)
+            .rayDiv(_p2pAmount.wadToRay());
+
+            return
+                _p2pRate.rayMul(
+                    (
+                        _computeCompoundedInterest(_p2pSPY, _timeDifference).rayMul(
+                            WadRayMath.ray() - shareOfTheDelta
+                        )
+                    ) + (shareOfTheDelta.rayMul(_poolIndex).rayDiv(_lastPoolIndex))
+                );
+        }
+    }
+
+    /// @dev Overrides `_authorizeUpgrade` OZ function with onlyOwner Access Control.
+    function _authorizeUpgrade(address) internal override onlyOwner {}
 }

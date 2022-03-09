@@ -3,7 +3,7 @@ pragma solidity 0.8.7;
 
 import "./utils/TestSetup.sol";
 
-contract TestGetters is TestSetup {
+contract TestPositionsManagerGetters is TestSetup {
     struct UserBalanceStates {
         uint256 collateralValue;
         uint256 debtValue;
@@ -73,7 +73,9 @@ contract TestGetters is TestSetup {
         uint256 amount = 10000 ether;
         uint256 toBorrow = to6Decimals(amount / 10);
 
-        setNMAXAndCreateSigners(10);
+        uint8 NDS = 10;
+        positionsManager.setNDS(NDS);
+        createSigners(NDS);
         for (uint256 i; i < borrowers.length; i++) {
             borrowers[i].approve(dai, amount - i);
             borrowers[i].supply(aDai, amount - i);
@@ -390,8 +392,8 @@ contract TestGetters is TestSetup {
         PositionsManagerForAave.AssetLiquidityData memory assetDataDai = positionsManager
         .getUserLiquidityDataForAsset(address(borrower1), aDai, oracle);
 
-        PositionsManagerForAave.AssetLiquidityData memory assetDataWmatic = positionsManager
-        .getUserLiquidityDataForAsset(address(borrower1), aWmatic, oracle);
+        PositionsManagerForAave.AssetLiquidityData memory assetDataUsdt = positionsManager
+        .getUserLiquidityDataForAsset(address(borrower1), aUsdt, oracle);
 
         (uint256 withdrawableDai, ) = positionsManager.getUserMaxCapacitiesForAsset(
             address(borrower1),
@@ -403,29 +405,29 @@ contract TestGetters is TestSetup {
             aUsdc
         );
 
-        (, uint256 borrowableWmatic) = positionsManager.getUserMaxCapacitiesForAsset(
+        (, uint256 borrowableUsdt) = positionsManager.getUserMaxCapacitiesForAsset(
             address(borrower1),
-            aWmatic
+            aUsdt
         );
 
         uint256 expectedBorrowable = ((assetDataUsdc.maxDebtValue + assetDataDai.maxDebtValue) *
-            assetDataWmatic.tokenUnit) / assetDataWmatic.underlyingPrice;
+            assetDataUsdt.tokenUnit) / assetDataUsdt.underlyingPrice;
 
         assertEq(withdrawableUsdc, to6Decimals(amount));
         assertEq(withdrawableDai, amount);
-        assertEq(borrowableWmatic, expectedBorrowable);
+        assertEq(borrowableUsdt, expectedBorrowable);
 
-        uint256 toBorrow = 100 ether;
-        borrower1.borrow(aWmatic, toBorrow);
+        uint256 toBorrow = to6Decimals(100 ether);
+        borrower1.borrow(aUsdt, toBorrow);
 
-        (, uint256 newBorrowableWmatic) = positionsManager.getUserMaxCapacitiesForAsset(
+        (, uint256 newBorrowableUsdt) = positionsManager.getUserMaxCapacitiesForAsset(
             address(borrower1),
-            aWmatic
+            aUsdt
         );
 
         expectedBorrowable -= toBorrow;
 
-        assertEq(newBorrowableWmatic, expectedBorrowable);
+        assertEq(newBorrowableUsdt, expectedBorrowable);
     }
 
     function test_user_balance_states_with_supply_and_borrow() public {
@@ -481,16 +483,17 @@ contract TestGetters is TestSetup {
         assertEq(states.debtValue, expectedStates.debtValue);
     }
 
-    function test_user_balance_states_with_supply_and_borrow_on_several_borrow() public {
+    function test_user_balance_states_with_supply_and_borrow_on_several_assets() public {
         uint256 amount = 10000 ether;
         uint256 toBorrow = 100 ether;
+        uint256 toBorrowWbtc = to6Decimals(0.001 ether);
 
         borrower1.approve(usdc, to6Decimals(amount));
         borrower1.supply(aUsdc, to6Decimals(amount));
         borrower1.approve(dai, amount);
         borrower1.supply(aDai, amount);
 
-        borrower1.borrow(aWmatic, toBorrow);
+        borrower1.borrow(aWbtc, toBorrowWbtc);
         borrower1.borrow(aUsdt, to6Decimals(toBorrow));
 
         uint256 reserveDecimals;
@@ -529,11 +532,13 @@ contract TestGetters is TestSetup {
             (collateralValueToAdd * liquidationThreshold) /
             MAX_BASIS_POINTS;
 
-        // WMATIC data
+        // WBTC data
         (reserveDecimals, , , , , , , , , ) = protocolDataProvider.getReserveConfigurationData(
-            wmatic
+            wbtc
         );
-        expectedStates.debtValue += (toBorrow * oracle.getAssetPrice(wmatic)) / 10**reserveDecimals;
+        expectedStates.debtValue +=
+            (toBorrowWbtc * oracle.getAssetPrice(wbtc)) /
+            10**reserveDecimals;
 
         // USDT data
         (reserveDecimals, , , , , , , , , ) = protocolDataProvider.getReserveConfigurationData(
@@ -581,7 +586,7 @@ contract TestGetters is TestSetup {
         borrower1.approve(dai, amount);
         borrower1.supply(aDai, amount);
 
-        borrower1.borrow(aWmatic, toBorrow);
+        borrower1.borrow(aUsdc, to6Decimals(toBorrow));
         borrower1.borrow(aUsdt, to6Decimals(toBorrow));
 
         uint256 reserveDecimals;
@@ -620,11 +625,13 @@ contract TestGetters is TestSetup {
             (collateralValueToAdd * liquidationThreshold) /
             MAX_BASIS_POINTS;
 
-        // WMATIC data
+        // USDC data
         (reserveDecimals, , , , , , , , , ) = protocolDataProvider.getReserveConfigurationData(
-            wmatic
+            usdc
         );
-        expectedStates.debtValue += (toBorrow * oracle.getAssetPrice(wmatic)) / 10**reserveDecimals;
+        expectedStates.debtValue +=
+            (to6Decimals(toBorrow) * oracle.getAssetPrice(usdc)) /
+            10**reserveDecimals;
 
         // USDT data
         (reserveDecimals, , , , , , , , , ) = protocolDataProvider.getReserveConfigurationData(

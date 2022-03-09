@@ -1,18 +1,17 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.7;
 
-import "./interfaces/aave/IAaveIncentivesController.sol";
 import "./interfaces/aave/ILendingPoolAddressesProvider.sol";
-import "./interfaces/aave/IProtocolDataProvider.sol";
+import "./interfaces/aave/IAaveIncentivesController.sol";
 import "./interfaces/aave/IScaledBalanceToken.sol";
+import "./interfaces/aave/ILendingPool.sol";
 import "./interfaces/IPositionsManagerForAave.sol";
 import "./interfaces/IGetterUnderlyingAsset.sol";
-
-import {DistributionTypes} from "./libraries/aave/DistributionTypes.sol";
+import "./interfaces/IRewardsManagerForAave.sol";
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract RewardsManager is Ownable {
+abstract contract RewardsManagerForAave is IRewardsManagerForAave, Ownable {
     /// Structs ///
 
     struct LocalAssetData {
@@ -25,19 +24,23 @@ contract RewardsManager is Ownable {
 
     mapping(address => uint256) public userUnclaimedRewards; // The unclaimed rewards of the user.
     mapping(address => LocalAssetData) public localAssetData; // The local data related to a given market.
-    bytes32 public constant DATA_PROVIDER_ID =
-        0x1000000000000000000000000000000000000000000000000000000000000000; // Id of the data provider.
 
-    IAaveIncentivesController public aaveIncentivesController;
+    IAaveIncentivesController public override aaveIncentivesController;
     ILendingPoolAddressesProvider public addressesProvider;
-    IProtocolDataProvider public dataProvider;
+    ILendingPool public lendingPool;
     IPositionsManagerForAave public positionsManager;
 
     /// Events ///
 
-    /// @dev Emitted the address of the `aaveIncentivesController` is set.
+    /// @notice Emitted the address of the `aaveIncentivesController` is set.
     /// @param _aaveIncentivesController The new address of the `aaveIncentivesController`.
     event AaveIncentivesControllerSet(address _aaveIncentivesController);
+
+    /// @notice Emitted when the user's index is updated.
+    /// @param _user The address of the user whose index has been updated.
+    /// @param _poolTokenAddress The address of the market from where the index is updated.
+    /// @param _index The new index value.
+    event UserIndexUpdated(address _user, address _poolTokenAddress, uint256 _index);
 
     /// Errors ///
 
@@ -46,7 +49,7 @@ contract RewardsManager is Ownable {
 
     /// Modifiers ///
 
-    /// @dev Prevents a user to call function allowed for the positions manager only.
+    /// @notice Prevents a user to call function allowed for the positions manager only.
     modifier onlyPositionsManager() {
         if (msg.sender != address(positionsManager)) revert OnlyPositionsManager();
         _;
@@ -54,25 +57,28 @@ contract RewardsManager is Ownable {
 
     /// Constructor ///
 
-    /// @dev Constructs the RewardsManager contract.
-    /// @param _lendingPoolAddressesProvider The address of the lending pool addresses provider.
-    /// @param _positionsManagerAddress The address of the positions manager.
-    constructor(address _lendingPoolAddressesProvider, address _positionsManagerAddress) {
-        addressesProvider = ILendingPoolAddressesProvider(_lendingPoolAddressesProvider);
-        dataProvider = IProtocolDataProvider(addressesProvider.getAddress(DATA_PROVIDER_ID));
-        positionsManager = IPositionsManagerForAave(_positionsManagerAddress);
+    /// @notice Constructs the RewardsManager contract.
+    /// @param _lendingPool The lending pool on Aave.
+    /// @param _positionsManager The positions manager.
+    constructor(ILendingPool _lendingPool, IPositionsManagerForAave _positionsManager) {
+        lendingPool = _lendingPool;
+        positionsManager = _positionsManager;
     }
 
     /// External ///
 
-    /// @dev Sets the `aaveIncentivesController`.
+    /// @notice Sets the `aaveIncentivesController`.
     /// @param _aaveIncentivesController The address of the `aaveIncentivesController`.
-    function setAaveIncentivesController(address _aaveIncentivesController) external onlyOwner {
+    function setAaveIncentivesController(address _aaveIncentivesController)
+        external
+        override
+        onlyOwner
+    {
         aaveIncentivesController = IAaveIncentivesController(_aaveIncentivesController);
         emit AaveIncentivesControllerSet(_aaveIncentivesController);
     }
 
-    /// @dev Accrues unclaimed rewards for the given assets and returns the total unclaimed rewards.
+    /// @notice Accrues unclaimed rewards for the given assets and returns the total unclaimed rewards.
     /// @param _assets The assets for which to accrue rewards (aToken or variable debt token).
     /// @param _amount The amount of token rewards to claim.
     /// @param _user The address of the user.
@@ -80,7 +86,7 @@ contract RewardsManager is Ownable {
         address[] calldata _assets,
         uint256 _amount,
         address _user
-    ) external onlyPositionsManager returns (uint256 amountToClaim) {
+    ) external override onlyPositionsManager returns (uint256 amountToClaim) {
         if (_amount == 0) return 0;
 
         uint256 unclaimedRewards = accrueUserUnclaimedRewards(_assets, _user);
@@ -90,7 +96,7 @@ contract RewardsManager is Ownable {
         userUnclaimedRewards[_user] = unclaimedRewards - amountToClaim;
     }
 
-    /// @dev Updates the unclaimed rewards of an user.
+    /// @notice Updates the unclaimed rewards of an user.
     /// @param _user The address of the user.
     /// @param _asset The address of the reference asset of the distribution (aToken or variable debt token).
     /// @param _stakedByUser The amount of tokens staked by the user in the distribution at the moment.
@@ -100,37 +106,45 @@ contract RewardsManager is Ownable {
         address _asset,
         uint256 _stakedByUser,
         uint256 _totalStaked
-    ) external onlyPositionsManager {
+    ) external override onlyPositionsManager {
         userUnclaimedRewards[_user] += _updateUserAsset(_user, _asset, _stakedByUser, _totalStaked);
     }
 
-    /// @dev Returns the index of the `_user` for a given `_asset`.
+    /// @notice Returns the index of the `_user` for a given `_asset`.
     /// @param _asset The address of the reference asset of the distribution (aToken or variable debt token).
     /// @param _user The address of the user.
-    function getUserIndex(address _asset, address _user) external view returns (uint256) {
+    /// @return userIndex_ The index of the user.
+    function getUserIndex(address _asset, address _user)
+        external
+        view
+        override
+        returns (uint256 userIndex_)
+    {
         LocalAssetData storage localData = localAssetData[_asset];
-        return localData.userIndex[_user];
+        userIndex_ = localData.userIndex[_user];
     }
 
     /// Public ///
 
-    /// @dev Accrues unclaimed rewards for the given assets and returns the total unclaimed rewards.
+    /// @notice Accrues unclaimed rewards for the given assets and returns the total unclaimed rewards.
     /// @param _assets The assets for which to accrue rewards (aToken or variable debt token).
     /// @param _user The address of the user.
     /// @return unclaimedRewards The user unclaimed rewards.
     function accrueUserUnclaimedRewards(address[] calldata _assets, address _user)
         public
+        override
         returns (uint256 unclaimedRewards)
     {
         unclaimedRewards = userUnclaimedRewards[_user];
 
         for (uint256 i = 0; i < _assets.length; i++) {
             address asset = _assets[i];
-            (address aTokenAddress, , address variableDebtTokenAddress) = dataProvider
-            .getReserveTokensAddresses(IGetterUnderlyingAsset(asset).UNDERLYING_ASSET_ADDRESS());
-            uint256 stakedByUser = variableDebtTokenAddress == asset
-                ? positionsManager.borrowBalanceInOf(aTokenAddress, _user).onPool
-                : positionsManager.supplyBalanceInOf(aTokenAddress, _user).onPool;
+            DataTypes.ReserveData memory reserve = lendingPool.getReserveData(
+                IGetterUnderlyingAsset(asset).UNDERLYING_ASSET_ADDRESS()
+            );
+            uint256 stakedByUser = reserve.variableDebtTokenAddress == asset
+                ? positionsManager.borrowBalanceInOf(reserve.aTokenAddress, _user).onPool
+                : positionsManager.supplyBalanceInOf(reserve.aTokenAddress, _user).onPool;
             uint256 totalStaked = IScaledBalanceToken(asset).scaledTotalSupply();
 
             unclaimedRewards += _updateUserAsset(_user, asset, stakedByUser, totalStaked);
@@ -162,40 +176,8 @@ contract RewardsManager is Ownable {
                 accruedRewards = _getRewards(_stakedByUser, newIndex, formerUserIndex);
 
             localData.userIndex[_user] = newIndex;
-        }
-    }
 
-    /// @dev Returns the next reward index.
-    /// @param _asset The address of the reference asset of the distribution (aToken or variable debt token).
-    /// @param _totalStaked The total of tokens staked in the distribution.
-    /// @return newIndex The new distribution index.
-    function _getUpdatedIndex(address _asset, uint256 _totalStaked)
-        internal
-        returns (uint256 newIndex)
-    {
-        LocalAssetData storage localData = localAssetData[_asset];
-        uint256 blockTimestamp = block.timestamp;
-        uint256 lastTimestamp = localData.lastUpdateTimestamp;
-
-        if (blockTimestamp == lastTimestamp) return localData.lastIndex;
-        else {
-            IAaveIncentivesController.AssetData memory assetData = aaveIncentivesController.assets(
-                _asset
-            );
-            uint256 oldIndex = assetData.index;
-            uint128 lastTimestampOnAave = assetData.lastUpdateTimestamp;
-
-            if (blockTimestamp == lastTimestampOnAave) newIndex = oldIndex;
-            else
-                newIndex = _getAssetIndex(
-                    oldIndex,
-                    assetData.emissionPerSecond,
-                    lastTimestampOnAave,
-                    _totalStaked
-                );
-
-            localData.lastUpdateTimestamp = blockTimestamp;
-            localData.lastIndex = newIndex;
+            emit UserIndexUpdated(_user, _asset, newIndex);
         }
     }
 
@@ -208,7 +190,7 @@ contract RewardsManager is Ownable {
     function _getAssetIndex(
         uint256 _currentIndex,
         uint256 _emissionPerSecond,
-        uint128 _lastUpdateTimestamp,
+        uint256 _lastUpdateTimestamp,
         uint256 _totalBalance
     ) internal view returns (uint256) {
         uint256 distributionEnd = aaveIncentivesController.DISTRIBUTION_END();
@@ -240,4 +222,13 @@ contract RewardsManager is Ownable {
     ) internal pure returns (uint256) {
         return (_principalUserBalance * (_reserveIndex - _userIndex)) / 1e18;
     }
+
+    /// @dev Returns the next reward index.
+    /// @param _asset The address of the reference asset of the distribution (aToken or variable debt token).
+    /// @param _totalStaked The total of tokens staked in the distribution.
+    /// @return newIndex The new distribution index.
+    function _getUpdatedIndex(address _asset, uint256 _totalStaked)
+        internal
+        virtual
+        returns (uint256 newIndex);
 }

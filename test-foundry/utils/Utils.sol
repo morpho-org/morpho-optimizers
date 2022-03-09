@@ -1,9 +1,12 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.7;
 
-import "lib/ds-test/src/test.sol";
+import "contracts/aave/libraries/aave/WadRayMath.sol";
+import "ds-test/test.sol";
 
 contract Utils is DSTest {
+    using WadRayMath for uint256;
+
     uint256 internal constant WAD = 1e18;
     uint256 internal constant RAY = 1e27;
     uint256 internal constant SECOND_PER_YEAR = 31536000;
@@ -14,6 +17,10 @@ contract Utils is DSTest {
 
     function to6Decimals(uint256 value) internal pure returns (uint256) {
         return value / 1e12;
+    }
+
+    function to8Decimals(uint256 value) internal pure returns (uint256) {
+        return value / 1e10;
     }
 
     function underlyingToScaledBalance(uint256 _scaledBalance, uint256 _normalizedIncome)
@@ -82,5 +89,37 @@ contract Utils is DSTest {
         string memory err
     ) internal {
         assertApproxEq(_firstValue, _secondValue, 20, err);
+    }
+
+    /// @dev calculates compounded interest over a period of time.
+    ///   To avoid expensive exponentiation, the calculation is performed using a binomial approximation:
+    ///   (1+x)^n = 1+n*x+[n/2*(n-1)]*x^2+[n/6*(n-1)*(n-2)*x^3...
+    /// @param _rate The SPY to use in the computation.
+    /// @param _elapsedTime The amount of time during to get the interest for.
+    /// @return results in ray
+    function computeCompoundedInterest(uint256 _rate, uint256 _elapsedTime)
+        internal
+        pure
+        returns (uint256)
+    {
+        if (_elapsedTime == 0) {
+            return WadRayMath.ray();
+        }
+
+        if (_elapsedTime == 1) {
+            return WadRayMath.ray() + _rate;
+        }
+
+        uint256 ratePowerTwo = _rate.rayMul(_rate);
+        uint256 ratePowerThree = ratePowerTwo.rayMul(_rate);
+
+        return
+            WadRayMath.ray() +
+            _rate *
+            _elapsedTime +
+            (_elapsedTime * (_elapsedTime - 1) * ratePowerTwo) /
+            2 +
+            (_elapsedTime * (_elapsedTime - 1) * (_elapsedTime - 2) * ratePowerThree) /
+            6;
     }
 }

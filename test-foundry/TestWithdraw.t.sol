@@ -2,9 +2,13 @@
 pragma solidity 0.8.7;
 
 import "./utils/TestSetup.sol";
-import "./utils/Attacker.sol";
+import {Attacker} from "./utils/Attacker.sol";
+import "@contracts/aave/libraries/aave/WadRayMath.sol";
+import "@contracts/aave/interfaces/IPositionsManagerForAave.sol";
 
 contract TestWithdraw is TestSetup {
+    using WadRayMath for uint256;
+
     // 3.1 - The user withdrawal leads to an under-collateralized position, the withdrawal reverts.
     function test_withdraw_3_1() public {
         uint256 amount = 10000 ether;
@@ -44,6 +48,36 @@ contract TestWithdraw is TestSetup {
 
         testEquality(inP2P, 0);
         testEquality(onPool, expectedOnPool / 2);
+    }
+
+    // 3.2 BIS - withdraw all
+    function test_withdraw_3_2_BIS() public {
+        uint256 amount = 10000 ether;
+
+        supplier1.approve(usdc, to6Decimals(amount));
+        supplier1.supply(aUsdc, to6Decimals(amount));
+
+        uint256 balanceBefore = supplier1.balanceOf(usdc);
+        (uint256 inP2P, uint256 onPool) = positionsManager.supplyBalanceInOf(
+            aUsdc,
+            address(supplier1)
+        );
+
+        uint256 expectedOnPool = to6Decimals(
+            underlyingToScaledBalance(amount, lendingPool.getReserveNormalizedIncome(usdc))
+        );
+
+        testEquality(inP2P, 0);
+        testEquality(onPool, expectedOnPool);
+
+        supplier1.withdraw(aUsdc, type(uint256).max);
+
+        uint256 balanceAfter = supplier1.balanceOf(usdc);
+        (inP2P, onPool) = positionsManager.supplyBalanceInOf(aUsdc, address(supplier1));
+
+        testEquality(inP2P, 0);
+        testEquality(onPool, 0);
+        testEquality(balanceAfter - balanceBefore, to6Decimals(amount));
     }
 
     // 3.3 - The supplier withdraws more than his onPool balance
@@ -119,6 +153,8 @@ contract TestWithdraw is TestSetup {
     // 3.3.2 - There are NMAX (or less) suppliers onPool available to replace him inP2P, they supply enough to cover for the withdrawn liquidity.
     // First, his liquidity onPool is taken, his matched is replaced by NMAX (or less) suppliers up to his withdrawal amount.
     function test_withdraw_3_3_2() public {
+        setMaxGasHelper(type(uint64).max, type(uint64).max, type(uint64).max, type(uint64).max);
+
         uint256 borrowedAmount = 100000 ether;
         uint256 suppliedAmount = 2 * borrowedAmount;
         uint256 collateral = 2 * borrowedAmount;
@@ -152,8 +188,8 @@ contract TestWithdraw is TestSetup {
         testEquality(inP2PSupplier, inP2PBorrower);
 
         // NMAX-1 suppliers have up to suppliedAmount waiting on pool
-        uint16 NMAX = 20;
-        setNMAXAndCreateSigners(NMAX);
+        uint8 NMAX = 20;
+        createSigners(NMAX);
 
         uint256 amountPerSupplier = (suppliedAmount - borrowedAmount) / (NMAX - 1);
         // minus 1 because supplier1 must not be counted twice !
@@ -277,10 +313,14 @@ contract TestWithdraw is TestSetup {
         testEquality(onPoolSupplier, 0);
     }
 
-    // 3.3.4 - There are NMAX (or less) suppliers onPool available to replace him inP2P, they don't supply enough to cover the withdrawn liquidity.
-    // First, the onPool liquidity is withdrawn, then we proceed to NMAX (or less) matches. Finally, some borrowers are unmatched for an amount equal to the remaining to withdraw.
-    // ⚠️ most gas expensive withdraw scenario.
+    // 3.3.4 - The supplier is matched to 2*NMAX borrowers. There are NMAX suppliers `onPool` available to replace him `inP2P`,
+    //         they don't supply enough to cover the withdrawn liquidity.
+    //         First, the `onPool` liquidity is withdrawn, then we proceed to NMAX `match supplier`.
+    //         Finally, we proceed to NMAX `unmatch borrower` for an amount equal to the remaining to withdraw.
+    //         ⚠️ most gas expensive withdraw scenario.
     function test_withdraw_3_3_4() public {
+        setMaxGasHelper(type(uint64).max, type(uint64).max, type(uint64).max, type(uint64).max);
+
         uint256 borrowedAmount = 100000 ether;
         uint256 suppliedAmount = 2 * borrowedAmount;
         uint256 collateral = 2 * borrowedAmount;
@@ -314,8 +354,8 @@ contract TestWithdraw is TestSetup {
         testEquality(inP2PSupplier, inP2PBorrower);
 
         // NMAX-1 suppliers have up to suppliedAmount/2 waiting on pool
-        uint16 NMAX = 20;
-        setNMAXAndCreateSigners(NMAX);
+        uint8 NMAX = 20;
+        createSigners(NMAX);
 
         uint256 amountPerSupplier = (suppliedAmount - borrowedAmount) / (2 * (NMAX - 1));
         // minus 1 because supplier1 must not be counted twice !
@@ -374,9 +414,176 @@ contract TestWithdraw is TestSetup {
         }
     }
 
+    struct Vars {
+        uint256 LR;
+        uint256 SPY;
+        uint256 VBR;
+        uint256 NVD;
+        uint256 BP2PD;
+        uint256 BP2PA;
+        uint256 BP2PER;
+    }
+
+    // Delta hard withdraw
+    function test_withdraw_3_3_5() public {
+        // 1.3e6 allows only 10 unmatch borrowers
+        setMaxGasHelper(3e6, 3e6, 2.6e6, 3e6);
+
+        uint256 borrowedAmount = 1 ether;
+        uint256 collateral = 2 * borrowedAmount;
+        uint256 suppliedAmount = 20 * borrowedAmount + 7;
+        uint256 expectedSupplyBalanceInP2P;
+
+        // supplier1 and 20 borrowers are matched for suppliedAmount
+        supplier1.approve(dai, suppliedAmount);
+        supplier1.supply(aDai, suppliedAmount);
+
+        createSigners(30);
+
+        // 2 * NMAX borrowers borrow borrowedAmount
+        for (uint256 i = 0; i < 20; i++) {
+            borrowers[i].approve(usdc, to6Decimals(collateral));
+            borrowers[i].supply(aUsdc, to6Decimals(collateral));
+            borrowers[i].borrow(aDai, borrowedAmount, type(uint64).max);
+        }
+
+        {
+            uint256 supplyP2PExchangeRate = marketsManager.supplyP2PExchangeRate(aDai);
+            expectedSupplyBalanceInP2P = underlyingToP2PUnit(suppliedAmount, supplyP2PExchangeRate);
+
+            // Check balances after match of supplier1 and borrowers
+            (uint256 inP2PSupplier, uint256 onPoolSupplier) = positionsManager.supplyBalanceInOf(
+                aDai,
+                address(supplier1)
+            );
+            testEquality(onPoolSupplier, 0);
+            testEquality(inP2PSupplier, expectedSupplyBalanceInP2P);
+
+            uint256 borrowP2PExchangeRate = marketsManager.borrowP2PExchangeRate(aDai);
+            uint256 expectedBorrowBalanceInP2P = underlyingToP2PUnit(
+                borrowedAmount,
+                borrowP2PExchangeRate
+            );
+
+            for (uint256 i = 0; i < 20; i++) {
+                (uint256 inP2PBorrower, uint256 onPoolBorrower) = positionsManager
+                .borrowBalanceInOf(aDai, address(borrowers[i]));
+                testEquality(onPoolBorrower, 0);
+                testEquality(inP2PBorrower, expectedBorrowBalanceInP2P);
+            }
+
+            // Supplier withdraws max
+            // Should create a delta on borrowers side
+            supplier1.withdraw(aDai, type(uint256).max);
+
+            // Check balances for supplier1
+            (inP2PSupplier, onPoolSupplier) = positionsManager.supplyBalanceInOf(
+                aDai,
+                address(supplier1)
+            );
+            testEquality(onPoolSupplier, 0);
+            testEquality(inP2PSupplier, 0);
+
+            // There should be a delta
+            uint256 expectedBorrowP2PDeltaInUnderlying = 10 * borrowedAmount;
+            uint256 expectedBorrowP2PDelta = underlyingToAdUnit(
+                expectedBorrowP2PDeltaInUnderlying,
+                lendingPool.getReserveNormalizedVariableDebt(dai)
+            );
+
+            (, uint256 borrowP2PDelta, , ) = positionsManager.deltas(aDai);
+            testEquality(borrowP2PDelta, expectedBorrowP2PDelta, "borrow Delta not expected 1");
+
+            // Borrow delta matching by new supplier
+            supplier2.approve(dai, expectedBorrowP2PDeltaInUnderlying / 2);
+            supplier2.supply(aDai, expectedBorrowP2PDeltaInUnderlying / 2);
+
+            (inP2PSupplier, onPoolSupplier) = positionsManager.supplyBalanceInOf(
+                aDai,
+                address(supplier2)
+            );
+            expectedSupplyBalanceInP2P = underlyingToP2PUnit(
+                expectedBorrowP2PDeltaInUnderlying / 2,
+                supplyP2PExchangeRate
+            );
+
+            (, borrowP2PDelta, , ) = positionsManager.deltas(aDai);
+            testEquality(borrowP2PDelta, expectedBorrowP2PDelta / 2, "borrow Delta not expected 2");
+            testEquality(onPoolSupplier, 0, "on pool supplier not 0");
+            testEquality(inP2PSupplier, expectedSupplyBalanceInP2P, "in P2P supplier not expected");
+        }
+
+        {
+            Vars memory oldVars;
+            Vars memory newVars;
+
+            (, oldVars.BP2PD, , oldVars.BP2PA) = positionsManager.deltas(aDai);
+            oldVars.NVD = lendingPool.getReserveNormalizedVariableDebt(dai);
+            oldVars.BP2PER = marketsManager.borrowP2PExchangeRate(aDai);
+            oldVars.SPY = marketsManager.borrowP2PSPY(aDai);
+
+            hevm.warp(block.timestamp + (365 days));
+
+            marketsManager.updateRates(aDai);
+
+            (, newVars.BP2PD, , newVars.BP2PA) = positionsManager.deltas(aDai);
+            newVars.NVD = lendingPool.getReserveNormalizedVariableDebt(dai);
+            newVars.BP2PER = marketsManager.borrowP2PExchangeRate(aDai);
+            newVars.SPY = marketsManager.borrowP2PSPY(aDai);
+            newVars.LR = lendingPool.getReserveData(dai).currentLiquidityRate;
+            newVars.VBR = lendingPool.getReserveData(dai).currentVariableBorrowRate;
+
+            uint256 shareOfTheDelta = newVars
+            .BP2PD
+            .wadToRay()
+            .rayMul(oldVars.BP2PER)
+            .rayDiv(newVars.NVD)
+            .rayDiv(newVars.BP2PA.wadToRay());
+
+            uint256 expectedBP2PER = oldVars.BP2PER.rayMul(
+                computeCompoundedInterest(oldVars.SPY, 365 days).rayMul(RAY - shareOfTheDelta) +
+                    shareOfTheDelta.rayMul(newVars.NVD).rayDiv(oldVars.NVD)
+            );
+
+            testEquality(expectedBP2PER, newVars.BP2PER, "BP2PER not expected");
+
+            uint256 expectedBorrowBalanceInUnderlying = borrowedAmount
+            .divWadByRay(oldVars.BP2PER)
+            .mulWadByRay(expectedBP2PER);
+
+            for (uint256 i = 0; i < 10; i++) {
+                (uint256 inP2PBorrower, uint256 onPoolBorrower) = positionsManager
+                .borrowBalanceInOf(aDai, address(borrowers[i]));
+                testEquality(
+                    p2pUnitToUnderlying(inP2PBorrower, newVars.BP2PER),
+                    expectedBorrowBalanceInUnderlying,
+                    "not expected underlying balance"
+                );
+                testEquality(onPoolBorrower, 0);
+            }
+        }
+
+        // Borrow delta reduction with borrowers repaying
+        for (uint256 i = 0; i < 10; i++) {
+            borrowers[i].approve(dai, borrowedAmount);
+            borrowers[i].repay(aDai, borrowedAmount);
+        }
+
+        (, uint256 borrowP2PDeltaAfter, , ) = positionsManager.deltas(aDai);
+        testEquality(borrowP2PDeltaAfter, 0);
+
+        (uint256 inP2PSupplier2, uint256 onPoolSupplier2) = positionsManager.supplyBalanceInOf(
+            aDai,
+            address(supplier2)
+        );
+
+        testEquality(inP2PSupplier2, expectedSupplyBalanceInP2P);
+        testEquality(onPoolSupplier2, 0);
+    }
+
     // Test attack
     // Should not be possible to withdraw amount if the position turns to be under-collateralized
-    function test_withdraw_if_under_collaterize() public {
+    function test_withdraw_if_under_collaterized() public {
         uint256 toSupply = 100 ether;
         uint256 toBorrow = toSupply / 2;
 

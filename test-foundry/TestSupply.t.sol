@@ -4,26 +4,13 @@ pragma solidity 0.8.7;
 import "./utils/TestSetup.sol";
 
 contract TestSupply is TestSetup {
-    // 1.1 - The user supplies less than the threshold of this market, the transaction reverts.
+    // 1.1 - There are no available borrowers: all of the supplied amount is supplied to the pool and set `onPool`.
     function test_supply_1_1() public {
-        for (uint256 i = 0; i < pools.length; i++) {
-            address pool = pools[i];
-            uint256 amount = positionsManager.threshold(pool) - 1;
-            supplier1.approve(IAToken(pool).UNDERLYING_ASSET_ADDRESS(), amount);
-
-            hevm.expectRevert(abi.encodeWithSignature("AmountNotAboveThreshold()"));
-            supplier1.supply(pool, amount);
-        }
-    }
-
-    // 1.2 - There are no available borrowers: all of the supplied amount is supplied to the pool and set `onPool`.
-    function test_supply_1_2(uint256 _amount) public {
         uint256 amount = 10000 ether;
 
         supplier1.approve(dai, amount);
         supplier1.supply(aDai, amount);
 
-        marketsManager.updateRates(aDai);
         uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(dai);
         uint256 expectedOnPool = underlyingToScaledBalance(amount, normalizedIncome);
 
@@ -47,7 +34,6 @@ contract TestSupply is TestSetup {
         supplier1.supply(aDai, amount);
         supplier1.supply(aDai, amount);
 
-        marketsManager.updateRates(aDai);
         uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(dai);
         uint256 expectedOnPool = underlyingToScaledBalance(2 * amount, normalizedIncome);
 
@@ -55,8 +41,8 @@ contract TestSupply is TestSetup {
         testEquality(onPool, expectedOnPool);
     }
 
-    // 1.3 - There is 1 available borrower, he matches 100% of the supplier liquidity, everything is `inP2P`.
-    function test_supply_1_3() public {
+    // 1.2 - There is 1 available borrower, he matches 100% of the supplier liquidity, everything is `inP2P`.
+    function test_supply_1_2() public {
         uint256 amount = 10000 ether;
 
         borrower1.approve(usdc, to6Decimals(2 * amount));
@@ -72,8 +58,7 @@ contract TestSupply is TestSetup {
         uint256 daiBalanceAfter = supplier1.balanceOf(dai);
         testEquality(daiBalanceAfter, expectedDaiBalanceAfter);
 
-        marketsManager.updateRates(aDai);
-        uint256 supplyP2PExchangeRate = marketsManager.supplyP2PExchangeRate(aDai);
+        uint256 supplyP2PExchangeRate = marketsManager.getUpdatedSupplyP2PExchangeRate(aDai);
         uint256 expectedSupplyBalanceInP2P = underlyingToP2PUnit(amount, supplyP2PExchangeRate);
 
         (uint256 inP2PSupplier, uint256 onPoolSupplier) = positionsManager.supplyBalanceInOf(
@@ -93,9 +78,9 @@ contract TestSupply is TestSetup {
         testEquality(inP2PBorrower, inP2PSupplier);
     }
 
-    // 1.4 - There is 1 available borrower, he doesn't match 100% of the supplier liquidity.
+    // 1.3 - There is 1 available borrower, he doesn't match 100% of the supplier liquidity.
     // Supplier's balance `inP2P` is equal to the borrower previous amount `onPool`, the rest is set `onPool`.
-    function test_supply_1_4() public {
+    function test_supply_1_3() public {
         uint256 amount = 10000 ether;
 
         borrower1.approve(usdc, to6Decimals(2 * amount));
@@ -105,8 +90,7 @@ contract TestSupply is TestSetup {
         supplier1.approve(dai, 2 * amount);
         supplier1.supply(aDai, 2 * amount);
 
-        marketsManager.updateRates(aDai);
-        uint256 supplyP2PExchangeRate = marketsManager.supplyP2PExchangeRate(aDai);
+        uint256 supplyP2PExchangeRate = marketsManager.getUpdatedSupplyP2PExchangeRate(aDai);
         uint256 expectedSupplyBalanceInP2P = underlyingToP2PUnit(amount, supplyP2PExchangeRate);
 
         uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(dai);
@@ -127,13 +111,15 @@ contract TestSupply is TestSetup {
         testEquality(inP2PBorrower, inP2PSupplier);
     }
 
-    // 1.5 - There are NMAX (or less) borrowers that match the supplied amount, everything is `inP2P` after NMAX (or less) match.
-    function test_supply_1_5() public {
+    // 1.4 - There are NMAX (or less) borrowers that match the supplied amount, everything is `inP2P` after NMAX (or less) match.
+    function test_supply_1_4() public {
+        setMaxGasHelper(type(uint64).max, type(uint64).max, type(uint64).max, type(uint64).max);
+
         uint256 amount = 10000 ether;
         uint256 collateral = 2 * amount;
 
-        uint16 NMAX = 20;
-        setNMAXAndCreateSigners(NMAX);
+        uint8 NMAX = 20;
+        createSigners(NMAX);
 
         uint256 amountPerBorrower = amount / NMAX;
 
@@ -168,14 +154,16 @@ contract TestSupply is TestSetup {
         testEquality(onPool, 0);
     }
 
-    // 1.6 - The NMAX biggest borrowers don't match all of the supplied amount, after NMAX match, the rest is supplied and set `onPool`.
+    // 1.5 - The NMAX biggest borrowers don't match all of the supplied amount, after NMAX match, the rest is supplied and set `onPool`.
     // ⚠️ most gas expensive supply scenario.
-    function test_supply_1_6() public {
+    function test_supply_1_5() public {
+        setMaxGasHelper(type(uint64).max, type(uint64).max, type(uint64).max, type(uint64).max);
+
         uint256 amount = 10000 ether;
         uint256 collateral = 2 * amount;
 
-        uint16 NMAX = 20;
-        setNMAXAndCreateSigners(NMAX);
+        uint8 NMAX = 20;
+        createSigners(NMAX);
 
         uint256 amountPerBorrower = amount / (2 * NMAX);
 

@@ -71,6 +71,9 @@
   },
   "dependencies": {
     "@openzeppelin/contracts": "4.2.0",
+    "@rari-capital/solmate": "6.2.0",
+    "@openzeppelin/contracts-upgradeable": "4.5.2",
+    "@uniswap/v3-periphery": "1.4.0",
     "prb-math": "2.2.0"
   },
   "husky": {
