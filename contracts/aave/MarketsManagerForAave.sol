@@ -29,12 +29,12 @@ contract MarketsManagerForAave is IMarketsManagerForAave, UUPSUpgradeable, Ownab
 
     /// Storage ///
 
-    uint16 public reserveFactor; // Proportion of the interest earned by users sent to the DAO, in basis point (100% = 10000). The default value is 0.
     uint16 public constant MAX_BASIS_POINTS = 10000; // 100% in basis point.
     uint16 public constant HALF_MAX_BASIS_POINTS = 5000; // 50% in basis point.
     uint256 public constant SECONDS_PER_YEAR = 365 days; // The number of seconds in one year.
     address[] public marketsCreated; // Keeps track of the created markets.
     mapping(address => bool) public override isCreated; // Whether or not this market is created.
+    mapping(address => uint16) public reserveFactor; // Proportion of the interest earned by users sent to the DAO for each market, in basis point (100% = 10000). The default value is 0.
     mapping(address => uint256) public override supplyP2PSPY; // Supply Percentage Yield per second (in ray).
     mapping(address => uint256) public override borrowP2PSPY; // Borrow Percentage Yield per second (in ray).
     mapping(address => uint256) public override supplyP2PExchangeRate; // Current exchange rate from supply p2pUnit to underlying (in ray).
@@ -82,8 +82,9 @@ contract MarketsManagerForAave is IMarketsManagerForAave, UUPSUpgradeable, Ownab
     );
 
     /// @notice Emitted when the `reserveFactor` is set.
+    /// @param _marketAddress The address of the market set.
     /// @param _newValue The new value of the `reserveFactor`.
-    event ReserveFactorSet(uint16 _newValue);
+    event ReserveFactorSet(address _marketAddress, uint16 _newValue);
 
     /// Errors ///
 
@@ -137,15 +138,16 @@ contract MarketsManagerForAave is IMarketsManagerForAave, UUPSUpgradeable, Ownab
     }
 
     /// @notice Sets the `reserveFactor`.
+    /// @param _marketAddress The market on which to set the `_newReserveFactor`.
     /// @param _newReserveFactor The proportion of the interest earned by users sent to the DAO, in basis point.
-    function setReserveFactor(uint16 _newReserveFactor) external onlyOwner {
-        reserveFactor = HALF_MAX_BASIS_POINTS <= _newReserveFactor
+    function setReserveFactor(address _marketAddress, uint16 _newReserveFactor) external onlyOwner {
+        reserveFactor[_marketAddress] = HALF_MAX_BASIS_POINTS <= _newReserveFactor
             ? HALF_MAX_BASIS_POINTS
             : _newReserveFactor;
-        for (uint256 i; i < marketsCreated.length; i++) {
-            updateRates(marketsCreated[i]);
-        }
-        emit ReserveFactorSet(reserveFactor);
+
+        updateRates(_marketAddress);
+
+        emit ReserveFactorSet(_marketAddress, reserveFactor[_marketAddress]);
     }
 
     /// @notice Creates a new market to borrow/supply in.
@@ -409,10 +411,10 @@ contract MarketsManagerForAave is IMarketsManagerForAave, UUPSUpgradeable, Ownab
         ) / SECONDS_PER_YEAR; // In ray
 
         supplyP2PSPY[_marketAddress] =
-            (meanSPY * (MAX_BASIS_POINTS - reserveFactor)) /
+            (meanSPY * (MAX_BASIS_POINTS - reserveFactor[_marketAddress])) /
             MAX_BASIS_POINTS;
         borrowP2PSPY[_marketAddress] =
-            (meanSPY * (MAX_BASIS_POINTS + reserveFactor)) /
+            (meanSPY * (MAX_BASIS_POINTS + reserveFactor[_marketAddress])) /
             MAX_BASIS_POINTS;
 
         emit P2PSPYsUpdated(

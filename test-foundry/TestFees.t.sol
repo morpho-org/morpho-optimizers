@@ -10,8 +10,8 @@ contract TestFees is TestSetup {
 
     // Should not be possible to set the fee factor higher than 50%
     function test_higher_than_max_fees() public {
-        marketsManager.setReserveFactor(5_001);
-        testEquality(marketsManager.reserveFactor(), 5000);
+        marketsManager.setReserveFactor(aUsdc, 5_001);
+        testEquality(marketsManager.reserveFactor(aUsdc), 5000);
     }
 
     // Only MarketsManager owner can set the treasury vault
@@ -22,7 +22,7 @@ contract TestFees is TestSetup {
 
     // DAO should be able to claim fees
     function test_claim_fees() public {
-        marketsManager.setReserveFactor(1000); // 10%
+        marketsManager.setReserveFactor(aDai, 1000); // 10%
 
         // Increase time so that rates update
         hevm.warp(block.timestamp + 1);
@@ -43,7 +43,7 @@ contract TestFees is TestSetup {
 
     // Collected fees should be of the correct amount
     function test_fee_amount() public {
-        marketsManager.setReserveFactor(1000); // 10%
+        marketsManager.setReserveFactor(aDai, 1000); // 10%
 
         // Increase time so that rates update
         hevm.warp(block.timestamp + 1);
@@ -83,7 +83,7 @@ contract TestFees is TestSetup {
 
     // DAO should not collect fees when factor is null
     function test_claim_nothing() public {
-        marketsManager.setReserveFactor(0);
+        marketsManager.setReserveFactor(aDai, 0);
 
         // Increase time so that rates update
         hevm.warp(block.timestamp + 1);
