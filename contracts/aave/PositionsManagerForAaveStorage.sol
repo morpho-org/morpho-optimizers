@@ -15,10 +15,7 @@ import "../common/libraries/DoubleLinkedList.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
-abstract contract PositionsManagerForAaveStorage is
-    UUPSUpgradeable,
-    OwnableUpgradeable
-{
+abstract contract PositionsManagerForAaveStorage is UUPSUpgradeable, OwnableUpgradeable {
     /// Structs ///
 
     struct SupplyBalance {
