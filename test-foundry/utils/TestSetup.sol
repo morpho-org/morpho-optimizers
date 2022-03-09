@@ -17,6 +17,7 @@ import {RewardsManagerForAaveOnEthAndAvax} from "@contracts/aave/markets-manager
 import {RewardsManagerForAaveOnPolygon} from "@contracts/aave/markets-managers/RewardsManagerForAaveOnPolygon.sol";
 import {SwapManagerUniV3OnEth} from "@contracts/common/SwapManagerUniV3OnEth.sol";
 import {SwapManagerUniV3} from "@contracts/common/SwapManagerUniV3.sol";
+import {SwapManagerUniV2} from "@contracts/common/SwapManagerUniV2.sol";
 import {PositionsManagerForAave} from "@contracts/aave/PositionsManagerForAave.sol";
 import {UniswapPoolCreator} from "../uniswap/UniswapPoolCreator.sol";
 import {UniswapV2PoolCreator} from "../uniswap/UniswapV2PoolCreator.sol";
@@ -25,11 +26,9 @@ import {User} from "./User.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@contracts/aave/PositionsManagerForAave.sol";
 import "@contracts/aave/MarketsManagerForAave.sol";
-import "@contracts/common/SwapManager.sol";
 import {SwapManagerUniV2} from "@contracts/common/SwapManagerUniV2.sol";
 import "@config/Config.sol";
 import "./HevmAdapter.sol";
-import "./Utils.sol";
 import "./MorphoToken.sol";
 import "./SimplePriceOracle.sol";
 
@@ -51,6 +50,7 @@ contract TestSetup is Config, Utils, HevmAdapter {
     IRewardsManagerForAave internal rewardsManager;
     ISwapManager public swapManager;
     UniswapPoolCreator public uniswapPoolCreator;
+    UniswapV2PoolCreator public uniswapV2PoolCreator;
     MorphoToken public morphoToken;
     address public REWARD_TOKEN =
         IAaveIncentivesController(aaveIncentivesControllerAddress).REWARD_TOKEN();
@@ -100,7 +100,7 @@ contract TestSetup is Config, Utils, HevmAdapter {
             swapManager = new SwapManagerUniV3OnEth(address(morphoToken), MORPHO_UNIV3_FEE);
         } else if (block.chainid == 137) {
             // Polygon network
-            // Create a MORPHO / WETH pool
+            // Create a MORPHO / WMATIC pool
             uniswapPoolCreator = new UniswapPoolCreator();
             writeBalanceOf(
                 address(uniswapPoolCreator),
@@ -114,6 +114,17 @@ contract TestSetup is Config, Utils, HevmAdapter {
                 REWARD_TOKEN,
                 REWARD_UNIV3_FEE
             );
+        } else if (block.chainid == 137) {
+            // Avalanche network
+            // Create a MORPHO / WMATIC pool
+            uniswapV2PoolCreator = new UniswapV2PoolCreator();
+            writeBalanceOf(
+                address(uniswapV2PoolCreator),
+                uniswapPoolCreator.WETH9(),
+                INITIAL_BALANCE * WAD
+            );
+            morphoToken = new MorphoToken(address(uniswapV2PoolCreator));
+            swapManager = new SwapManagerUniV2(address(morphoToken), REWARD_TOKEN);
         }
 
         // Deploy proxy
@@ -146,6 +157,7 @@ contract TestSetup is Config, Utils, HevmAdapter {
                 lendingPool,
                 IPositionsManagerForAave(address(positionsManager))
             );
+            uniswapV2PoolCreator.createPoolAndAddLiquidity(address(morphoToken));
         } else if (block.chainid == 137) {
             // Polygon network
             rewardsManager = new RewardsManagerForAaveOnPolygon(
