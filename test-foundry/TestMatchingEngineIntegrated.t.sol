@@ -18,31 +18,12 @@ import "./utils/HEVM.sol";
 
 import "hardhat/console.sol";
 
-// contract MockPositionsManager is PositionsManagerForAave {
-//     constructor(
-//         address _marketsManager,
-//         address _lendingPoolAddressesProvider,
-//         ISwapManager _swapManager,
-//         MaxGas memory _maxGas
-//     )
-//         PositionsManagerForAave(
-//             _marketsManager,
-//             _lendingPoolAddressesProvider,
-//             _swapManager,
-//             _maxGas
-//         )
-//     {}
-
-//     function changeMarketManager(address newMm) external {}
-
-//     // function setThreshold(address _poolTokenAddress, uint256 _newThreshold) external override {}
-// }
-
 // external contracts are called from forked chain (semi-isolated approach)
 contract TestMatchingEngineIntegrated is DSTest, MatchingEngineForAave, Config {
     using DoubleLinkedList for DoubleLinkedList.List;
+    using WadRayMath for uint256;
     address private token;
-    User user;
+    User private user;
 
     HEVM public hevm = HEVM(HEVM_ADDRESS);
 
@@ -81,21 +62,32 @@ contract TestMatchingEngineIntegrated is DSTest, MatchingEngineForAave, Config {
         user.sendTokens(aDai, address(this), 1000 ether);
     }
 
+    // multiple suppliers should be moved to p2p
     function test_match_suppliers() public {
         marketsManager.createMarket(dai, 1000);
+
+        uint256 normalizer = lendingPool.getReserveNormalizedIncome(dai);
+        uint256 p2pRate = marketsManager.supplyP2PExchangeRate(aDai);
+
+        uint256 expectedInUnderlying = uint256(1 ether).mulWadByRay(normalizer);
+        uint256 expectedInP2P = expectedInUnderlying.divWadByRay(p2pRate);
 
         suppliersOnPool[aDai].insertSorted(address(1), 1 ether, 20);
         suppliersOnPool[aDai].insertSorted(address(2), 1 ether, 20);
         supplyBalanceInOf[aDai][address(1)].onPool = 1 ether;
         supplyBalanceInOf[aDai][address(2)].onPool = 1 ether;
 
-        // marketsManager.setPositionsManager(address(this));
-        this.matchSuppliers(IAToken(aDai), IERC20(dai), 2 ether, type(uint256).max);
+        this.matchSuppliers(
+            IAToken(aDai),
+            IERC20(dai),
+            2 * expectedInUnderlying,
+            type(uint256).max
+        );
 
         assertEq(supplyBalanceInOf[aDai][address(1)].onPool, 0, "supplyBalanceInOf 1");
         assertEq(supplyBalanceInOf[aDai][address(2)].onPool, 0, "supplyBalanceInOf 2");
-        assertEq(suppliersInP2P[aDai].getValueOf(address(1)), 1 ether, "array value 1");
-        assertEq(suppliersInP2P[aDai].getValueOf(address(2)), 1 ether, "array value 2");
+        assertEq(suppliersInP2P[aDai].getValueOf(address(1)), expectedInP2P, "array value 1");
+        assertEq(suppliersInP2P[aDai].getValueOf(address(2)), expectedInP2P, "array value 2");
     }
 
     /// Internal ///
