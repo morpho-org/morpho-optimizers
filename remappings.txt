@@ -7,3 +7,4 @@ prb-math/=node_modules/prb-math/
 hardhat/=node_modules/hardhat/
 @contracts/=contracts/
 @config/=config/polygon-mainnet
+@aave/core-v3=node_modules/@aave/core-v3

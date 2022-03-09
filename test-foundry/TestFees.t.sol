@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GNU AGPLv3
-pragma solidity 0.8.7;
+pragma solidity 0.8.10;
 
 import "@contracts/aave/libraries/aave/WadRayMath.sol";
 
@@ -53,7 +53,7 @@ contract TestFees is TestSetup {
         supplier1.supply(aDai, 100 * WAD);
         supplier1.borrow(aDai, 50 * WAD);
 
-        DataTypes.ReserveData memory reserveData = lendingPool.getReserveData(
+        DataTypes.ReserveData memory reserveData = pool.getReserveData(
             IAToken(aDai).UNDERLYING_ASSET_ADDRESS()
         );
 

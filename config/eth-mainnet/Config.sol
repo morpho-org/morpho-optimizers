@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GNU AGPLv3
-pragma solidity 0.8.7;
+pragma solidity 0.8.10;
 
 contract Config {
     address aave = 0x7Fc66500c84A76Ad7e9c93437bFc5Ac33E2DDaE9;
@@ -19,8 +19,7 @@ contract Config {
     address variableDebtDai = 0x1852DC24d1a8956a0B356AA18eDe954c7a0Ca5ae;
     address variableDebtUsdc = 0x619beb58998eD2278e08620f97007e1116D5D25b;
 
-    address lendingPoolAddressesProviderAddress = 0xB53C1a33016B2DC2fF3653530bfF1848a515c8c5;
-    address protocolDataProviderAddress = 0x057835Ad21a177dbdd3090bB1CAE03EaCF78Fc6d;
+    address poolAddressesProviderAddress = 0xB53C1a33016B2DC2fF3653530bfF1848a515c8c5;
     address aaveIncentivesControllerAddress = 0xd784927Ff2f95ba542BfC824c8a8a98F3495f6b5;
     address swapRouterAddress = 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;
 

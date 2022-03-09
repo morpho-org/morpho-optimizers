@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GNU AGPLv3
-pragma solidity 0.8.7;
+pragma solidity 0.8.10;
 
-import {IAToken} from "./aave/IAToken.sol";
+import {IAToken} from "@aave/core-v3/contracts/interfaces/IAToken.sol";
 
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 

@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: GNU AGPLv3
-pragma solidity 0.8.7;
+pragma solidity 0.8.10;
 
 import "../RewardsManagerForAave.sol";
 
 contract RewardsManagerForAaveOnPolygon is RewardsManagerForAave {
-    constructor(ILendingPool _lendingPool, IPositionsManagerForAave _positionsManager)
-        RewardsManagerForAave(_lendingPool, _positionsManager)
+    constructor(IPool _pool, IPositionsManagerForAave _positionsManager)
+        RewardsManagerForAave(_pool, _positionsManager)
     {}
 
     /// @inheritdoc RewardsManagerForAave
@@ -20,21 +20,20 @@ contract RewardsManagerForAaveOnPolygon is RewardsManagerForAave {
 
         if (blockTimestamp == lastTimestamp) return localData.lastIndex;
         else {
-            IAaveIncentivesController.AssetData memory assetData = aaveIncentivesController.assets(
-                _asset
-            );
-            uint256 oldIndex = assetData.index;
-            uint128 lastTimestampOnAave = assetData.lastUpdateTimestamp;
+            (
+                uint256 oldIndex,
+                uint256 emissionPerSecond,
+                uint256 lastTimestampOnAave
+            ) = aaveIncentivesController.getAssetData(_asset);
 
             if (blockTimestamp == lastTimestampOnAave) newIndex = oldIndex;
             else
                 newIndex = _getAssetIndex(
                     oldIndex,
-                    assetData.emissionPerSecond,
+                    emissionPerSecond,
                     lastTimestampOnAave,
                     _totalStaked
                 );
-
             localData.lastUpdateTimestamp = blockTimestamp;
             localData.lastIndex = newIndex;
         }

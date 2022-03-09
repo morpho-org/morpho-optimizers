@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GNU AGPLv3
-pragma solidity 0.8.7;
+pragma solidity 0.8.10;
 
-import {IAToken} from "./interfaces/aave/IAToken.sol";
-import "./interfaces/aave/IScaledBalanceToken.sol";
+import {IAToken} from "@aave/core-v3/contracts/interfaces/IAToken.sol";
+import "@aave/core-v3/contracts/interfaces/IScaledBalanceToken.sol";
 import "./interfaces/IMatchingEngineForAave.sol";
 
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
@@ -91,7 +91,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         Vars memory vars;
         address poolTokenAddress = address(_poolToken);
         address user = suppliersOnPool[poolTokenAddress].getHead();
-        vars.normalizer = lendingPool.getReserveNormalizedIncome(address(_underlyingToken));
+        vars.normalizer = pool.getReserveNormalizedIncome(address(_underlyingToken));
         vars.p2pRate = marketsManager.supplyP2PExchangeRate(poolTokenAddress);
         Delta storage delta = deltas[poolTokenAddress];
 
@@ -154,14 +154,14 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         Vars memory vars;
         ERC20 underlyingToken = ERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
         address user = suppliersInP2P[_poolTokenAddress].getHead();
-        vars.normalizer = lendingPool.getReserveNormalizedIncome(address(underlyingToken));
+        vars.normalizer = pool.getReserveNormalizedIncome(address(underlyingToken));
         vars.p2pRate = marketsManager.supplyP2PExchangeRate(_poolTokenAddress);
         uint256 remainingToUnmatch = _amount; // In underlying
         Delta storage delta = deltas[_poolTokenAddress];
 
         // Reduce borrow P2P delta first
         if (delta.borrowP2PDelta > 0) {
-            uint256 normalizedVariableDebt = lendingPool.getReserveNormalizedVariableDebt(
+            uint256 normalizedVariableDebt = pool.getReserveNormalizedVariableDebt(
                 address(underlyingToken)
             );
             uint256 toMatch = Math.min(
@@ -235,7 +235,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         Vars memory vars;
         address poolTokenAddress = address(_poolToken);
         address user = borrowersOnPool[poolTokenAddress].getHead();
-        vars.normalizer = lendingPool.getReserveNormalizedVariableDebt(address(_underlyingToken));
+        vars.normalizer = pool.getReserveNormalizedVariableDebt(address(_underlyingToken));
         vars.p2pRate = marketsManager.borrowP2PExchangeRate(poolTokenAddress);
         Delta storage delta = deltas[poolTokenAddress];
 
@@ -299,15 +299,13 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         ERC20 underlyingToken = ERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
         address user = borrowersInP2P[_poolTokenAddress].getHead();
         uint256 remainingToUnmatch = _amount;
-        vars.normalizer = lendingPool.getReserveNormalizedVariableDebt(address(underlyingToken));
+        vars.normalizer = pool.getReserveNormalizedVariableDebt(address(underlyingToken));
         vars.p2pRate = marketsManager.borrowP2PExchangeRate(_poolTokenAddress);
         Delta storage delta = deltas[_poolTokenAddress];
 
         // Reduce supply P2P delta first
         if (delta.supplyP2PDelta > 0) {
-            uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(
-                address(underlyingToken)
-            );
+            uint256 normalizedIncome = pool.getReserveNormalizedIncome(address(underlyingToken));
             uint256 toUnmatch = Math.min(
                 delta.supplyP2PDelta.mulWadByRay(normalizedIncome),
                 _amount
@@ -375,16 +373,18 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         bool wasOnPoolAndValueChanged = formerValueOnPool != 0 && formerValueOnPool != onPool;
         if (wasOnPoolAndValueChanged) borrowersOnPool[_poolTokenAddress].remove(_user);
         if (onPool > 0 && (wasOnPoolAndValueChanged || formerValueOnPool == 0)) {
-            uint256 totalStaked = IScaledBalanceToken(_poolTokenAddress).scaledTotalSupply();
-            address variableDebtTokenAddress = lendingPool
-            .getReserveData(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS())
-            .variableDebtTokenAddress;
-            rewardsManager.updateUserAssetAndAccruedRewards(
-                _user,
-                variableDebtTokenAddress,
-                formerValueOnPool,
-                totalStaked
-            );
+            if (rewardsActivate) {
+                uint256 totalStaked = IScaledBalanceToken(_poolTokenAddress).scaledTotalSupply();
+                address variableDebtTokenAddress = pool
+                .getReserveData(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS())
+                .variableDebtTokenAddress;
+                rewardsManager.updateUserAssetAndAccruedRewards(
+                    _user,
+                    variableDebtTokenAddress,
+                    formerValueOnPool,
+                    totalStaked
+                );
+            }
             borrowersOnPool[_poolTokenAddress].insertSorted(_user, onPool, NDS);
         }
 
@@ -408,13 +408,15 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         bool wasOnPoolAndValueChanged = formerValueOnPool != 0 && formerValueOnPool != onPool;
         if (wasOnPoolAndValueChanged) suppliersOnPool[_poolTokenAddress].remove(_user);
         if (onPool > 0 && (wasOnPoolAndValueChanged || formerValueOnPool == 0)) {
-            uint256 totalStaked = IScaledBalanceToken(_poolTokenAddress).scaledTotalSupply();
-            rewardsManager.updateUserAssetAndAccruedRewards(
-                _user,
-                _poolTokenAddress,
-                formerValueOnPool,
-                totalStaked
-            );
+            if (rewardsActivate) {
+                uint256 totalStaked = IScaledBalanceToken(_poolTokenAddress).scaledTotalSupply();
+                rewardsManager.updateUserAssetAndAccruedRewards(
+                    _user,
+                    _poolTokenAddress,
+                    formerValueOnPool,
+                    totalStaked
+                );
+            }
             suppliersOnPool[_poolTokenAddress].insertSorted(_user, onPool, NDS);
         }
 

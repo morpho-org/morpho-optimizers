@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GNU AGPLv3
-pragma solidity 0.8.7;
+pragma solidity 0.8.10;
 
-import {IAToken} from "../interfaces/aave/IAToken.sol";
+import {IAToken} from "@aave/core-v3/contracts/interfaces/IAToken.sol";
 import "../interfaces/IMatchingEngineForAave.sol";
 
 import "@openzeppelin/contracts/utils/Address.sol";

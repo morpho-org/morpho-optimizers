@@ -12,7 +12,7 @@ async function main() {
 
   console.log('\n🦋 Deploying MarketsManagerForAave...');
   const MarketsManagerForAave = await ethers.getContractFactory('MarketsManagerForAave');
-  const marketsManagerForAave = await MarketsManagerForAave.deploy(config.aave.lendingPoolAddressesProvider.address);
+  const marketsManagerForAave = await MarketsManagerForAave.deploy(config.aave.poolAddressesProvider.address);
   await marketsManagerForAave.deployed();
 
   await marketsManagerForAave.connect(deployer).updateLendingPool();
@@ -29,7 +29,7 @@ async function main() {
   const PositionsManagerForAave = await ethers.getContractFactory('PositionsManagerForAave');
   const positionsManagerForAave = await PositionsManagerForAave.deploy(
     marketsManagerForAave.address,
-    config.aave.lendingPoolAddressesProvider.address
+    config.aave.poolAddressesProvider.address
   );
   await positionsManagerForAave.deployed();
   console.log('🎉 PositionsManagerForAave deployed to address:', positionsManagerForAave.address);

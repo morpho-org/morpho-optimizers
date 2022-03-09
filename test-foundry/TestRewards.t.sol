@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GNU AGPLv3
-pragma solidity 0.8.7;
+pragma solidity 0.8.10;
 
-import "@contracts/aave/interfaces/aave/IAaveIncentivesController.sol";
 import "./utils/TestSetup.sol";
 
 contract TestRewards is TestSetup {
@@ -19,10 +18,10 @@ contract TestRewards is TestSetup {
             );
         } else {
             // Polygon network
-            IAaveIncentivesController.AssetData memory assetData = IAaveIncentivesController(
-                aaveIncentivesControllerAddress
-            ).assets(aDai);
-            index = assetData.index;
+
+            (index, , ) = IAaveIncentivesController(aaveIncentivesControllerAddress).getAssetData(
+                aDai
+            );
         }
 
         (, uint256 onPool) = positionsManager.supplyBalanceInOf(aDai, address(supplier1));
@@ -49,10 +48,9 @@ contract TestRewards is TestSetup {
             );
         } else {
             // Polygon network
-            IAaveIncentivesController.AssetData memory assetData = IAaveIncentivesController(
-                aaveIncentivesControllerAddress
-            ).assets(aDai);
-            index = assetData.index;
+            (index, , ) = IAaveIncentivesController(aaveIncentivesControllerAddress).getAssetData(
+                aDai
+            );
         }
 
         uint256 expectedClaimed = (onPool * (index - userIndex)) / WAD;

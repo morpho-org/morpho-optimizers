@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GNU AGPLv3
-pragma solidity 0.8.7;
+pragma solidity 0.8.10;
 
 import "./utils/TestSetup.sol";
 
@@ -11,7 +11,7 @@ contract TestSupply is TestSetup {
         supplier1.approve(dai, amount);
         supplier1.supply(aDai, amount);
 
-        uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(dai);
+        uint256 normalizedIncome = pool.getReserveNormalizedIncome(dai);
         uint256 expectedOnPool = underlyingToScaledBalance(amount, normalizedIncome);
 
         testEquality(IERC20(aDai).balanceOf(address(positionsManager)), amount);
@@ -34,7 +34,7 @@ contract TestSupply is TestSetup {
         supplier1.supply(aDai, amount);
         supplier1.supply(aDai, amount);
 
-        uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(dai);
+        uint256 normalizedIncome = pool.getReserveNormalizedIncome(dai);
         uint256 expectedOnPool = underlyingToScaledBalance(2 * amount, normalizedIncome);
 
         (, uint256 onPool) = positionsManager.supplyBalanceInOf(aDai, address(supplier1));
@@ -93,7 +93,7 @@ contract TestSupply is TestSetup {
         uint256 supplyP2PExchangeRate = marketsManager.getUpdatedSupplyP2PExchangeRate(aDai);
         uint256 expectedSupplyBalanceInP2P = underlyingToP2PUnit(amount, supplyP2PExchangeRate);
 
-        uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(dai);
+        uint256 normalizedIncome = pool.getReserveNormalizedIncome(dai);
         uint256 expectedSupplyBalanceOnPool = underlyingToScaledBalance(amount, normalizedIncome);
 
         (uint256 inP2PSupplier, uint256 onPoolSupplier) = positionsManager.supplyBalanceInOf(
@@ -181,7 +181,7 @@ contract TestSupply is TestSetup {
         uint256 onPool;
         uint256 expectedInP2P;
         uint256 supplyP2PExchangeRate = marketsManager.supplyP2PExchangeRate(aDai);
-        uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(dai);
+        uint256 normalizedIncome = pool.getReserveNormalizedIncome(dai);
 
         for (uint256 i = 0; i < NMAX; i++) {
             (inP2P, onPool) = positionsManager.borrowBalanceInOf(aDai, address(borrowers[i]));

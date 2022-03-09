@@ -128,11 +128,11 @@
     }
   },
   "aave": {
-    "lendingPoolAddressesProvider": {
+    "poolAddressesProvider": {
       "address": "0xd05e3E715d945B59290df0ae8eF85c1BdB684744",
       "abi": "@config/abis/polygon/LendingPoolAddressesProvider.json"
     },
-    "lendingPool": {
+    "pool": {
       "address": "0x8dff5e27ea6b7ac08ebfdf9eb090f32ee9a30fcf",
       "abi": "@config/abis/polygon/LendingPool.json"
     },

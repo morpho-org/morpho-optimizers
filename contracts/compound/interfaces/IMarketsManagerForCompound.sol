@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GNU AGPLv3
-pragma solidity 0.8.7;
+pragma solidity 0.8.10;
 
 interface IMarketsManagerForCompound {
     function isCreated(address _marketAddress) external returns (bool);

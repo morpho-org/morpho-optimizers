@@ -1,16 +1,17 @@
 // SPDX-License-Identifier: GNU AGPLv3
-pragma solidity 0.8.7;
+pragma solidity 0.8.10;
 
 import "hardhat/console.sol";
 
-import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
+import "@aave/core-v3/contracts/interfaces/IAaveIncentivesController.sol";
+import "@aave/core-v3/contracts/interfaces/IPoolAddressesProvider.sol";
+import "@aave/core-v3/contracts/interfaces/IPriceOracleGetter.sol";
 import "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
-import "@contracts/aave/interfaces/aave/IAaveIncentivesController.sol";
-import "@contracts/aave/interfaces/aave/IPriceOracleGetter.sol";
-import "@contracts/aave/interfaces/aave/IProtocolDataProvider.sol";
+import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 import "@contracts/aave/interfaces/IRewardsManagerForAave.sol";
 import "@contracts/common/interfaces/ISwapManager.sol";
 
+import {ReserveConfiguration} from "@aave/core-v3/contracts/protocol/libraries/configuration/ReserveConfiguration.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 import {RewardsManagerForAaveOnEthAndAvax} from "@contracts/aave/markets-managers/RewardsManagerForAaveOnEthAndAvax.sol";
@@ -49,13 +50,11 @@ contract TestSetup is Config, Utils, HevmHelper {
     ISwapManager public swapManager;
     UniswapPoolCreator public uniswapPoolCreator;
     MorphoToken public morphoToken;
-    address public REWARD_TOKEN =
-        IAaveIncentivesController(aaveIncentivesControllerAddress).REWARD_TOKEN();
+    address public REWARD_TOKEN; // TODO: udpate it
 
-    ILendingPoolAddressesProvider public lendingPoolAddressesProvider;
-    ILendingPool public lendingPool;
-    IProtocolDataProvider public protocolDataProvider;
+    IPoolAddressesProvider public poolAddressesProvider;
     IPriceOracleGetter public oracle;
+    IPool public pool;
 
     User public supplier1;
     User public supplier2;
@@ -79,10 +78,8 @@ contract TestSetup is Config, Utils, HevmHelper {
             repay: 3e6
         });
 
-        lendingPoolAddressesProvider = ILendingPoolAddressesProvider(
-            lendingPoolAddressesProviderAddress
-        );
-        lendingPool = ILendingPool(lendingPoolAddressesProvider.getLendingPool());
+        poolAddressesProvider = IPoolAddressesProvider(poolAddressesProviderAddress);
+        pool = IPool(poolAddressesProvider.getPool());
 
         if (block.chainid == 1) {
             // Mainnet network
@@ -118,14 +115,13 @@ contract TestSetup is Config, Utils, HevmHelper {
         marketsManagerImpl = new MarketsManagerForAave();
         marketsManagerProxy = new ERC1967Proxy(address(marketsManagerImpl), "");
         marketsManager = MarketsManagerForAave(address(marketsManagerProxy));
-        marketsManager.initialize(lendingPool);
-
+        marketsManager.initialize(pool);
         positionsManagerImpl = new PositionsManagerForAave();
         positionsManagerProxy = new ERC1967Proxy(address(positionsManagerImpl), "");
         positionsManager = PositionsManagerForAave(address(positionsManagerProxy));
         positionsManager.initialize(
             marketsManager,
-            ILendingPoolAddressesProvider(lendingPoolAddressesProviderAddress),
+            IPoolAddressesProvider(poolAddressesProviderAddress),
             swapManager,
             maxGas
         );
@@ -133,20 +129,20 @@ contract TestSetup is Config, Utils, HevmHelper {
         if (block.chainid == 1) {
             // Mainnet network
             rewardsManager = new RewardsManagerForAaveOnEthAndAvax(
-                lendingPool,
+                pool,
                 IPositionsManagerForAave(address(positionsManager))
             );
             uniswapPoolCreator.createPoolAndMintPosition(address(morphoToken));
         } else if (block.chainid == 43114) {
             // Avalanche network
             rewardsManager = new RewardsManagerForAaveOnEthAndAvax(
-                lendingPool,
+                pool,
                 IPositionsManagerForAave(address(positionsManager))
             );
         } else if (block.chainid == 137) {
             // Polygon network
             rewardsManager = new RewardsManagerForAaveOnPolygon(
-                lendingPool,
+                pool,
                 IPositionsManagerForAave(address(positionsManager))
             );
             uniswapPoolCreator.createPoolAndMintPosition(address(morphoToken));
@@ -155,15 +151,13 @@ contract TestSetup is Config, Utils, HevmHelper {
         treasuryVault = new User(positionsManager, marketsManager, rewardsManager);
 
         fakePositionsManagerImpl = new PositionsManagerForAave();
-
-        protocolDataProvider = IProtocolDataProvider(protocolDataProviderAddress);
-
-        oracle = IPriceOracleGetter(lendingPoolAddressesProvider.getPriceOracle());
-
+        oracle = IPriceOracleGetter(poolAddressesProvider.getPriceOracle());
         marketsManager.setPositionsManager(address(positionsManager));
-        positionsManager.setAaveIncentivesController(aaveIncentivesControllerAddress);
 
-        rewardsManager.setAaveIncentivesController(aaveIncentivesControllerAddress);
+        // TODO
+        // positionsManager.setAaveIncentivesController(aaveIncentivesControllerAddress);
+        // rewardsManager.setAaveIncentivesController(aaveIncentivesControllerAddress);
+
         positionsManager.setTreasuryVault(address(treasuryVault));
         positionsManager.setRewardsManager(address(rewardsManager));
 
@@ -188,6 +182,7 @@ contract TestSetup is Config, Utils, HevmHelper {
             writeBalanceOf(address(suppliers[i]), dai, INITIAL_BALANCE * WAD);
             writeBalanceOf(address(suppliers[i]), usdc, INITIAL_BALANCE * 1e6);
         }
+
         supplier1 = suppliers[0];
         supplier2 = suppliers[1];
         supplier3 = suppliers[2];
@@ -219,7 +214,7 @@ contract TestSetup is Config, Utils, HevmHelper {
         SimplePriceOracle customOracle = new SimplePriceOracle();
 
         hevm.store(
-            address(lendingPoolAddressesProvider),
+            address(poolAddressesProvider),
             keccak256(abi.encode(bytes32("PRICE_ORACLE"), 2)),
             bytes32(uint256(uint160(address(customOracle))))
         );

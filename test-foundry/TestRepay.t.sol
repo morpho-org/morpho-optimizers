@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GNU AGPLv3
-pragma solidity 0.8.7;
+pragma solidity 0.8.10;
 
 import "./utils/TestSetup.sol";
 import "@contracts/aave/libraries/aave/WadRayMath.sol";
@@ -16,6 +16,8 @@ contract TestRepay is TestSetup {
         borrower1.supply(aUsdc, to6Decimals(collateral));
         borrower1.borrow(aDai, amount);
 
+        hevm.warp(block.timestamp + 1);
+
         borrower1.approve(dai, amount);
         borrower1.repay(aDai, amount);
 
@@ -24,8 +26,8 @@ contract TestRepay is TestSetup {
             address(borrower1)
         );
 
-        testEquality(inP2P, 0);
-        testEquality(onPool, 0);
+        assertApproxEq(inP2P, 0, 1e15);
+        assertApproxEq(onPool, 0, 1e15);
     }
 
     // - 4.1 BIS - repay all
@@ -38,7 +40,10 @@ contract TestRepay is TestSetup {
         borrower1.borrow(aDai, amount);
 
         uint256 balanceBefore = borrower1.balanceOf(dai);
-        borrower1.approve(dai, amount);
+
+        hevm.warp(block.timestamp + 1);
+
+        borrower1.approve(dai, type(uint256).max);
         borrower1.repay(aDai, type(uint256).max);
 
         (uint256 inP2P, uint256 onPool) = positionsManager.borrowBalanceInOf(
@@ -65,6 +70,8 @@ contract TestRepay is TestSetup {
         borrower1.supply(aUsdc, to6Decimals(collateral));
         borrower1.borrow(aDai, borrowedAmount);
 
+        hevm.warp(block.timestamp + 1);
+
         supplier1.approve(dai, suppliedAmount);
         supplier1.supply(aDai, suppliedAmount);
 
@@ -81,18 +88,20 @@ contract TestRepay is TestSetup {
 
         uint256 expectedOnPool = underlyingToAdUnit(
             suppliedAmount,
-            lendingPool.getReserveNormalizedVariableDebt(dai)
+            pool.getReserveNormalizedVariableDebt(dai)
         );
 
         testEquality(onPoolSupplier, 0);
-        testEquality(onPoolBorrower1, expectedOnPool);
-        testEquality(inP2PSupplier, inP2PBorrower1);
+        assertApproxEq(onPoolBorrower1, expectedOnPool, 1e15);
+        assertApproxEq(inP2PSupplier, inP2PBorrower1, 1e15);
 
         // An available borrower onPool
         uint256 availableBorrowerAmount = borrowedAmount / 4;
         borrower2.approve(usdc, to6Decimals(collateral));
         borrower2.supply(aUsdc, to6Decimals(collateral));
         borrower2.borrow(aDai, availableBorrowerAmount);
+
+        mineBlocks(1);
 
         // Borrower1 repays 75% of suppliedAmount
         borrower1.approve(dai, (75 * borrowedAmount) / 100);
@@ -156,7 +165,7 @@ contract TestRepay is TestSetup {
 
         uint256 expectedOnPool = underlyingToAdUnit(
             suppliedAmount,
-            lendingPool.getReserveNormalizedVariableDebt(dai)
+            pool.getReserveNormalizedVariableDebt(dai)
         );
 
         testEquality(onPoolSupplier, 0);
@@ -169,7 +178,7 @@ contract TestRepay is TestSetup {
 
         uint256 inP2P;
         uint256 onPool;
-        uint256 normalizedVariableDebt = lendingPool.getReserveNormalizedVariableDebt(dai);
+        uint256 normalizedVariableDebt = pool.getReserveNormalizedVariableDebt(dai);
 
         uint256 amountPerBorrower = (borrowedAmount - suppliedAmount) / (NMAX - 1);
         // minus because borrower1 must not be counted twice !
@@ -186,6 +195,8 @@ contract TestRepay is TestSetup {
             testEquality(inP2P, 0);
             testEquality(onPool, expectedOnPool);
         }
+
+        hevm.warp(block.timestamp + 1);
 
         // Borrower1 repays all of his debt
         borrower1.approve(dai, borrowedAmount);
@@ -255,12 +266,14 @@ contract TestRepay is TestSetup {
 
         uint256 expectedOnPool = underlyingToAdUnit(
             suppliedAmount,
-            lendingPool.getReserveNormalizedVariableDebt(dai)
+            pool.getReserveNormalizedVariableDebt(dai)
         );
 
         testEquality(onPoolSupplier, 0);
         testEquality(onPoolBorrower1, expectedOnPool);
         testEquality(inP2PSupplier, inP2PBorrower1);
+
+        hevm.warp(block.timestamp + 1);
 
         // Borrower1 repays 75% of borrowed amount
         borrower1.approve(dai, (75 * borrowedAmount) / 100);
@@ -272,7 +285,7 @@ contract TestRepay is TestSetup {
             address(borrower1)
         );
 
-        uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(dai);
+        uint256 normalizedIncome = pool.getReserveNormalizedIncome(dai);
         uint256 borrowP2PExchangeRate = marketsManager.borrowP2PExchangeRate(aDai);
 
         uint256 expectedBorrowBalanceInP2P = underlyingToP2PUnit(
@@ -334,7 +347,7 @@ contract TestRepay is TestSetup {
 
         uint256 expectedOnPool = underlyingToAdUnit(
             suppliedAmount,
-            lendingPool.getReserveNormalizedVariableDebt(dai)
+            pool.getReserveNormalizedVariableDebt(dai)
         );
 
         testEquality(onPoolSupplier, 0);
@@ -354,6 +367,8 @@ contract TestRepay is TestSetup {
             borrowers[i].supply(aUsdc, to6Decimals(collateral));
             borrowers[i].borrow(aDai, amountPerBorrower);
         }
+
+        hevm.warp(block.timestamp + 1);
 
         // Borrower1 repays all of his debt
         borrower1.approve(dai, borrowedAmount);
@@ -375,7 +390,7 @@ contract TestRepay is TestSetup {
         );
 
         uint256 borrowP2PExchangeRate = marketsManager.borrowP2PExchangeRate(aDai);
-        uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(dai);
+        uint256 normalizedIncome = pool.getReserveNormalizedIncome(dai);
 
         uint256 expectedSupplyBalanceOnPool = underlyingToP2PUnit(
             suppliedAmount / 2,
@@ -462,6 +477,8 @@ contract TestRepay is TestSetup {
                 testEquality(inP2PSupplier, expectedSupplyBalanceInP2P);
             }
 
+            hevm.warp(block.timestamp + 1);
+
             // Borrower repays max
             // Should create a delta on suppliers side
             borrower1.approve(dai, type(uint256).max);
@@ -479,7 +496,7 @@ contract TestRepay is TestSetup {
             uint256 expectedSupplyP2PDeltaInUnderlying = 10 * suppliedAmount;
             uint256 expectedSupplyP2PDelta = underlyingToScaledBalance(
                 expectedSupplyP2PDeltaInUnderlying,
-                lendingPool.getReserveNormalizedIncome(dai)
+                pool.getReserveNormalizedIncome(dai)
             );
             (uint256 supplyP2PDelta, , , ) = positionsManager.deltas(aDai);
             testEquality(supplyP2PDelta, expectedSupplyP2PDelta);
@@ -509,7 +526,7 @@ contract TestRepay is TestSetup {
             Vars memory newVars;
 
             (oldVars.SP2PD, , oldVars.SP2PA, ) = positionsManager.deltas(aDai);
-            oldVars.NI = lendingPool.getReserveNormalizedIncome(dai);
+            oldVars.NI = pool.getReserveNormalizedIncome(dai);
             oldVars.SP2PER = marketsManager.supplyP2PExchangeRate(aDai);
             oldVars.SPY = marketsManager.supplyP2PSPY(aDai);
 
@@ -518,10 +535,10 @@ contract TestRepay is TestSetup {
             marketsManager.updateRates(aDai);
 
             (newVars.SP2PD, , newVars.SP2PA, ) = positionsManager.deltas(aDai);
-            newVars.NI = lendingPool.getReserveNormalizedIncome(dai);
+            newVars.NI = pool.getReserveNormalizedIncome(dai);
             newVars.SP2PER = marketsManager.supplyP2PExchangeRate(aDai);
-            newVars.LR = lendingPool.getReserveData(dai).currentLiquidityRate;
-            newVars.VBR = lendingPool.getReserveData(dai).currentVariableBorrowRate;
+            newVars.LR = pool.getReserveData(dai).currentLiquidityRate;
+            newVars.VBR = pool.getReserveData(dai).currentVariableBorrowRate;
 
             uint256 shareOfTheDelta = newVars
             .SP2PD

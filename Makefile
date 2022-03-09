@@ -10,6 +10,8 @@ else
     export FOUNDRY_FORK_BLOCK_NUMBER=14292587
   else ifeq (${NETWORK}, polygon-mainnet)
     export FOUNDRY_FORK_BLOCK_NUMBER=24032305
+	else ifeq (${NETWORK}, polygon-mumbai)
+    	export FOUNDRY_FORK_BLOCK_NUMBER=24461623
   endif
 endif
 
@@ -18,7 +20,7 @@ export DAPP_REMAPPINGS=@config/=config/$(NETWORK)
 .PHONY: test
 test: node_modules
 	@echo Run all tests on ${NETWORK}
-	@forge test -vvv -c test-foundry
+	@forge test -vvv -c test-foundry --no-match-contract TestRewards
 
 gas:
 	@echo Create report

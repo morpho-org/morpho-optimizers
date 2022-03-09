@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GNU AGPLv3
-pragma solidity 0.8.7;
+pragma solidity 0.8.10;
 
-import "./aave/IAaveIncentivesController.sol";
+import "@aave/core-v3/contracts/interfaces/IAaveIncentivesController.sol";
 
 interface IRewardsManagerForAave {
     function aaveIncentivesController() external view returns (IAaveIncentivesController);

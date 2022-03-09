@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GNU AGPLv3
-pragma solidity 0.8.7;
+pragma solidity 0.8.10;
 
-import {IVariableDebtToken} from "./interfaces/aave/IVariableDebtToken.sol";
-import "./interfaces/aave/ILendingPoolAddressesProvider.sol";
-import "./interfaces/aave/IAaveIncentivesController.sol";
-import "./interfaces/aave/ILendingPool.sol";
+import {IVariableDebtToken} from "@aave/core-v3/contracts/interfaces/IVariableDebtToken.sol";
+import "@aave/core-v3/contracts/interfaces/IPoolAddressesProvider.sol";
+import "@aave/core-v3/contracts/interfaces/IAaveIncentivesController.sol";
+import "@aave/core-v3/contracts/interfaces/IPool.sol";
 import "./interfaces/IMarketsManagerForAave.sol";
 import "./interfaces/IMatchingEngineForAave.sol";
 import "./interfaces/IRewardsManagerForAave.sol";
@@ -50,6 +50,7 @@ abstract contract PositionsManagerForAaveStorage is
 
     /// Storage ///
 
+    bool rewardsActivate;
     MaxGas public maxGas; // Max gas to consume within loops in matching engine functions.
     uint8 public NDS; // Max number of iterations in data structure sorting process.
     uint8 public constant NO_REFERRAL_CODE = 0;
@@ -68,8 +69,8 @@ abstract contract PositionsManagerForAaveStorage is
     mapping(address => bool) public paused; // Whether a market is paused or not.
 
     IAaveIncentivesController public aaveIncentivesController;
-    ILendingPoolAddressesProvider public addressesProvider;
-    ILendingPool public lendingPool;
+    IPoolAddressesProvider public addressesProvider;
+    IPool public pool;
     IMarketsManagerForAave public marketsManager;
     IMatchingEngineForAave public matchingEngine;
     IRewardsManagerForAave public rewardsManager;

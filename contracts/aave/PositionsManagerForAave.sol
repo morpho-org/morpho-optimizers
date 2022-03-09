@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: GNU AGPLv3
-pragma solidity 0.8.7;
+pragma solidity 0.8.10;
 
-import {IAToken} from "./interfaces/aave/IAToken.sol";
-import "./interfaces/aave/IPriceOracleGetter.sol";
+import {IAToken} from "@aave/core-v3/contracts/interfaces/IAToken.sol";
+import "@aave/core-v3/contracts/interfaces/IPriceOracleGetter.sol";
 import "./interfaces/IMatchingEngineForAave.sol";
 
-import {ReserveConfiguration} from "./libraries/aave/ReserveConfiguration.sol";
+import {ReserveConfiguration} from "@aave/core-v3/contracts/protocol/libraries/configuration/ReserveConfiguration.sol";
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 import "../common/libraries/DoubleLinkedList.sol";
 import "./libraries/MatchingEngineFns.sol";
@@ -238,7 +238,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
     /// @param _swapManager The `swapManager`.
     function initialize(
         IMarketsManagerForAave _marketsManager,
-        ILendingPoolAddressesProvider _lendingPoolAddressesProvider,
+        IPoolAddressesProvider _lendingPoolAddressesProvider,
         ISwapManager _swapManager,
         MaxGas memory _maxGas
     ) external initializer {
@@ -249,7 +249,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         maxGas = _maxGas;
         marketsManager = _marketsManager;
         addressesProvider = _lendingPoolAddressesProvider;
-        lendingPool = ILendingPool(addressesProvider.getLendingPool());
+        pool = IPool(addressesProvider.getPool());
         matchingEngine = new MatchingEngineForAave();
         swapManager = _swapManager;
 
@@ -546,12 +546,12 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         vars.borrowedPrice = oracle.getAssetPrice(vars.tokenBorrowedAddress); // In ETH
         vars.collateralPrice = oracle.getAssetPrice(vars.tokenCollateralAddress); // In ETH
 
-        (, , vars.liquidationBonus, vars.collateralReserveDecimals, ) = lendingPool
+        (, , vars.liquidationBonus, vars.collateralReserveDecimals, , ) = pool
         .getConfiguration(vars.tokenCollateralAddress)
-        .getParamsMemory();
-        (, , , vars.borrowedReserveDecimals, ) = lendingPool
+        .getParams();
+        (, , , vars.borrowedReserveDecimals, , ) = pool
         .getConfiguration(vars.tokenBorrowedAddress)
-        .getParamsMemory();
+        .getParams();
         vars.collateralTokenUnit = 10**vars.collateralReserveDecimals;
         vars.borrowedTokenUnit = 10**vars.borrowedReserveDecimals;
 
@@ -690,9 +690,9 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         );
 
         assetData.underlyingPrice = oracle.getAssetPrice(underlyingAddress); // In ETH
-        (uint256 ltv, uint256 liquidationThreshold, , uint256 reserveDecimals, ) = lendingPool
+        (uint256 ltv, uint256 liquidationThreshold, , uint256 reserveDecimals, , ) = pool
         .getConfiguration(underlyingAddress)
-        .getParamsMemory();
+        .getParams();
         assetData.ltv = ltv;
         assetData.liquidationThreshold = liquidationThreshold;
         assetData.tokenUnit = 10**reserveDecimals;
@@ -746,7 +746,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
                     _poolTokenAddress,
                     underlyingToken,
                     matched,
-                    lendingPool.getReserveNormalizedVariableDebt(address(underlyingToken))
+                    pool.getReserveNormalizedVariableDebt(address(underlyingToken))
                 ); // Revert on error
 
                 supplyBalanceInOf[_poolTokenAddress][msg.sender].inP2P += matched.divWadByRay(
@@ -760,9 +760,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         /// Supply on pool ///
 
         if (remainingToSupplyToPool > 0) {
-            uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(
-                address(underlyingToken)
-            );
+            uint256 normalizedIncome = pool.getReserveNormalizedIncome(address(underlyingToken));
             supplyBalanceInOf[_poolTokenAddress][msg.sender].onPool += remainingToSupplyToPool
             .divWadByRay(normalizedIncome); // Scaled Balance
             matchingEngine.updateSuppliersDC(_poolTokenAddress, msg.sender);
@@ -814,7 +812,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         /// Borrow on pool ///
 
         if (remainingToBorrowOnPool > 0) {
-            uint256 normalizedVariableDebt = lendingPool.getReserveNormalizedVariableDebt(
+            uint256 normalizedVariableDebt = pool.getReserveNormalizedVariableDebt(
                 address(underlyingToken)
             );
             borrowBalanceInOf[_poolTokenAddress][msg.sender].onPool += remainingToBorrowOnPool
@@ -847,9 +845,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         /// Soft withdraw ///
 
         if (supplyBalanceInOf[_poolTokenAddress][_supplier].onPool > 0) {
-            uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(
-                address(underlyingToken)
-            );
+            uint256 normalizedIncome = pool.getReserveNormalizedIncome(address(underlyingToken));
             uint256 onPoolSupply = supplyBalanceInOf[_poolTokenAddress][_supplier].onPool;
             uint256 withdrawnInUnderlying = Math.min(
                 Math.min(onPoolSupply.mulWadByRay(normalizedIncome), remainingToWithdraw),
@@ -946,7 +942,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         /// Soft repay ///
 
         if (borrowBalanceInOf[_poolTokenAddress][_user].onPool > 0) {
-            uint256 normalizedVariableDebt = lendingPool.getReserveNormalizedVariableDebt(
+            uint256 normalizedVariableDebt = pool.getReserveNormalizedVariableDebt(
                 address(underlyingToken)
             );
             uint256 borrowedOnPool = borrowBalanceInOf[_poolTokenAddress][_user].onPool;
@@ -999,7 +995,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
                     poolTokenAddress,
                     underlyingToken,
                     matched,
-                    lendingPool.getReserveNormalizedVariableDebt(address(underlyingToken))
+                    pool.getReserveNormalizedVariableDebt(address(underlyingToken))
                 ); // Revert on error
             }
 
@@ -1122,7 +1118,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
                 marketsManager.supplyP2PExchangeRate(_poolTokenAddress)
             ) +
             supplyBalanceInOf[_poolTokenAddress][_user].onPool.mulWadByRay(
-                lendingPool.getReserveNormalizedIncome(_underlyingTokenAddress)
+                pool.getReserveNormalizedIncome(_underlyingTokenAddress)
             );
     }
 
@@ -1141,7 +1137,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
                 marketsManager.borrowP2PExchangeRate(_poolTokenAddress)
             ) +
             borrowBalanceInOf[_poolTokenAddress][_user].onPool.mulWadByRay(
-                lendingPool.getReserveNormalizedVariableDebt(_underlyingTokenAddress)
+                pool.getReserveNormalizedVariableDebt(_underlyingTokenAddress)
             );
     }
 
@@ -1154,8 +1150,8 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         ERC20 _underlyingToken,
         uint256 _amount
     ) internal {
-        _underlyingToken.safeApprove(address(lendingPool), _amount);
-        lendingPool.deposit(address(_underlyingToken), _amount, address(this), NO_REFERRAL_CODE);
+        _underlyingToken.safeApprove(address(pool), _amount);
+        pool.deposit(address(_underlyingToken), _amount, address(this), NO_REFERRAL_CODE);
         marketsManager.updateSPYs(_poolTokenAddress);
     }
 
@@ -1168,7 +1164,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         ERC20 _underlyingToken,
         uint256 _amount
     ) internal {
-        lendingPool.withdraw(address(_underlyingToken), _amount, address(this));
+        pool.withdraw(address(_underlyingToken), _amount, address(this));
         marketsManager.updateSPYs(_poolTokenAddress);
     }
 
@@ -1181,7 +1177,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         ERC20 _underlyingToken,
         uint256 _amount
     ) internal {
-        lendingPool.borrow(
+        pool.borrow(
             address(_underlyingToken),
             _amount,
             VARIABLE_INTEREST_MODE,
@@ -1202,21 +1198,16 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         uint256 _amount,
         uint256 _normalizedVariableDebt
     ) internal {
-        _underlyingToken.safeApprove(address(lendingPool), _amount);
+        _underlyingToken.safeApprove(address(pool), _amount);
         IVariableDebtToken variableDebtToken = IVariableDebtToken(
-            lendingPool.getReserveData(address(_underlyingToken)).variableDebtTokenAddress
+            pool.getReserveData(address(_underlyingToken)).variableDebtTokenAddress
         );
         // Do not repay more than the contract's debt on Aave
         _amount = Math.min(
             _amount,
             variableDebtToken.scaledBalanceOf(address(this)).mulWadByRay(_normalizedVariableDebt)
         );
-        lendingPool.repay(
-            address(_underlyingToken),
-            _amount,
-            VARIABLE_INTEREST_MODE,
-            address(this)
-        );
+        pool.repay(address(_underlyingToken), _amount, VARIABLE_INTEREST_MODE, address(this));
         marketsManager.updateSPYs(_poolTokenAddress);
     }
 

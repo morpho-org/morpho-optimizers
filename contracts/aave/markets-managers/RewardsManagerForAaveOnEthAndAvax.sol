@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: GNU AGPLv3
-pragma solidity 0.8.7;
+pragma solidity 0.8.10;
 
 import "../RewardsManagerForAave.sol";
 
 contract RewardsManagerForAaveOnEthAndAvax is RewardsManagerForAave {
-    constructor(ILendingPool _lendingPool, IPositionsManagerForAave _positionsManager)
-        RewardsManagerForAave(_lendingPool, _positionsManager)
+    constructor(IPool _pool, IPositionsManagerForAave _positionsManager)
+        RewardsManagerForAave(_pool, _positionsManager)
     {}
 
     /// @inheritdoc RewardsManagerForAave

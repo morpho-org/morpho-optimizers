@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GNU AGPLv3
-pragma solidity 0.8.7;
+pragma solidity 0.8.10;
 
 import "./utils/TestSetup.sol";
 
@@ -18,7 +18,7 @@ contract TestUpgradeable is TestSetup {
         uint256 amount = 10000 ether;
         supplier1.approve(dai, amount);
         supplier1.supply(aDai, amount);
-        uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(dai);
+        uint256 normalizedIncome = pool.getReserveNormalizedIncome(dai);
         uint256 expectedOnPool = underlyingToScaledBalance(amount, normalizedIncome);
 
         PositionsManagerForAave positionsManagerImplV2 = new PositionsManagerForAave();

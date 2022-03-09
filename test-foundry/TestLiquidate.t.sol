@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: GNU AGPLv3
-pragma solidity 0.8.7;
+pragma solidity 0.8.10;
 
 import "./utils/TestSetup.sol";
 
 contract TestLiquidate is TestSetup {
+    using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
+
     // 5.1 - A user liquidates a borrower that has enough collateral to cover for his debt, the transaction reverts.
     function test_liquidate_5_1() public {
         uint256 amount = 10000 ether;
@@ -57,7 +59,7 @@ contract TestLiquidate is TestSetup {
         );
         uint256 expectedBorrowBalanceOnPool = aDUnitToUnderlying(
             onPoolBorrower,
-            lendingPool.getReserveNormalizedVariableDebt(dai)
+            pool.getReserveNormalizedVariableDebt(dai)
         );
         testEquality(expectedBorrowBalanceOnPool, amount / 2);
         assertEq(inP2PBorrower, 0);
@@ -69,23 +71,13 @@ contract TestLiquidate is TestSetup {
         );
 
         PositionsManagerForAave.LiquidateVars memory vars;
-        (
-            vars.collateralReserveDecimals,
-            ,
-            ,
-            vars.liquidationBonus,
-            ,
-            ,
-            ,
-            ,
-            ,
-
-        ) = protocolDataProvider.getReserveConfigurationData(usdc);
+        (, , vars.liquidationBonus, vars.collateralReserveDecimals, , ) = pool
+        .getConfiguration(usdc)
+        .getParams();
         vars.collateralPrice = customOracle.getAssetPrice(usdc);
         vars.collateralTokenUnit = 10**vars.collateralReserveDecimals;
 
-        (vars.borrowedReserveDecimals, , , , , , , , , ) = protocolDataProvider
-        .getReserveConfigurationData(dai);
+        (, , , vars.borrowedReserveDecimals, , ) = pool.getConfiguration(dai).getParams();
         vars.borrowedPrice = customOracle.getAssetPrice(dai);
         vars.borrowedTokenUnit = 10**vars.borrowedReserveDecimals;
 
@@ -94,7 +86,7 @@ contract TestLiquidate is TestSetup {
             vars.collateralTokenUnit *
             vars.liquidationBonus) / (vars.borrowedTokenUnit * vars.collateralPrice * 10000);
 
-        uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(usdc);
+        uint256 normalizedIncome = pool.getReserveNormalizedIncome(usdc);
         uint256 expectedOnPool = collateralOnPool -
             underlyingToScaledBalance(amountToSeize, normalizedIncome);
 

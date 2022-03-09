@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GNU AGPLv3
-pragma solidity 0.8.7;
+pragma solidity 0.8.10;
 
-import "./interfaces/aave/ILendingPoolAddressesProvider.sol";
-import "./interfaces/aave/IAaveIncentivesController.sol";
-import "./interfaces/aave/IScaledBalanceToken.sol";
-import "./interfaces/aave/ILendingPool.sol";
+import "@aave/core-v3/contracts/interfaces/IAaveIncentivesController.sol";
+import "@aave/core-v3/contracts/interfaces/IPoolAddressesProvider.sol";
+import "@aave/core-v3/contracts/interfaces/IScaledBalanceToken.sol";
+import "@aave/core-v3/contracts/interfaces/IPool.sol";
 import "./interfaces/IPositionsManagerForAave.sol";
 import "./interfaces/IGetterUnderlyingAsset.sol";
 import "./interfaces/IRewardsManagerForAave.sol";
@@ -26,8 +26,8 @@ abstract contract RewardsManagerForAave is IRewardsManagerForAave, Ownable {
     mapping(address => LocalAssetData) public localAssetData; // The local data related to a given market.
 
     IAaveIncentivesController public override aaveIncentivesController;
-    ILendingPoolAddressesProvider public addressesProvider;
-    ILendingPool public lendingPool;
+    IPoolAddressesProvider public addressesProvider;
+    IPool public pool;
     IPositionsManagerForAave public positionsManager;
 
     /// Events ///
@@ -58,10 +58,10 @@ abstract contract RewardsManagerForAave is IRewardsManagerForAave, Ownable {
     /// Constructor ///
 
     /// @notice Constructs the RewardsManager contract.
-    /// @param _lendingPool The lending pool on Aave.
+    /// @param _pool The lending pool on Aave.
     /// @param _positionsManager The positions manager.
-    constructor(ILendingPool _lendingPool, IPositionsManagerForAave _positionsManager) {
-        lendingPool = _lendingPool;
+    constructor(IPool _pool, IPositionsManagerForAave _positionsManager) {
+        pool = _pool;
         positionsManager = _positionsManager;
     }
 
@@ -139,7 +139,7 @@ abstract contract RewardsManagerForAave is IRewardsManagerForAave, Ownable {
 
         for (uint256 i = 0; i < _assets.length; i++) {
             address asset = _assets[i];
-            DataTypes.ReserveData memory reserve = lendingPool.getReserveData(
+            DataTypes.ReserveData memory reserve = pool.getReserveData(
                 IGetterUnderlyingAsset(asset).UNDERLYING_ASSET_ADDRESS()
             );
             uint256 stakedByUser = reserve.variableDebtTokenAddress == asset

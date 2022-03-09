@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: GNU AGPLv3
-pragma solidity 0.8.7;
+pragma solidity 0.8.10;
 
-import {IAToken} from "./interfaces/aave/IAToken.sol";
-import "./interfaces/aave/ILendingPool.sol";
+import {IAToken} from "@aave/core-v3/contracts/interfaces/IAToken.sol";
+import "@aave/core-v3/contracts/interfaces/IPool.sol";
 import "./interfaces/IPositionsManagerForAave.sol";
 import "./interfaces/IMarketsManagerForAave.sol";
 
-import {ReserveConfiguration} from "./libraries/aave/ReserveConfiguration.sol";
+import {ReserveConfiguration} from "@aave/core-v3/contracts/protocol/libraries/configuration/ReserveConfiguration.sol";
 import "./libraries/aave/WadRayMath.sol";
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
@@ -44,7 +44,7 @@ contract MarketsManagerForAave is IMarketsManagerForAave, UUPSUpgradeable, Ownab
     mapping(address => bool) public override noP2P; // Whether to put users on pool or not for the given market.
 
     IPositionsManagerForAave public positionsManager;
-    ILendingPool public lendingPool;
+    IPool public pool;
 
     /// Events ///
 
@@ -120,12 +120,12 @@ contract MarketsManagerForAave is IMarketsManagerForAave, UUPSUpgradeable, Ownab
     /// External ///
 
     /// @notice Initializes the MarketsManagerForAave contract.
-    /// @param _lendingPool The lending pool.
-    function initialize(ILendingPool _lendingPool) external initializer {
+    /// @param _pool The lending pool.
+    function initialize(IPool _pool) external initializer {
         __UUPSUpgradeable_init();
         __Ownable_init();
 
-        lendingPool = ILendingPool(_lendingPool);
+        pool = IPool(_pool);
     }
 
     /// @notice Sets the `positionsManager` to interact with Aave.
@@ -151,28 +151,24 @@ contract MarketsManagerForAave is IMarketsManagerForAave, UUPSUpgradeable, Ownab
     /// @notice Creates a new market to borrow/supply in.
     /// @param _underlyingTokenAddress The underlying address of the given market.
     function createMarket(address _underlyingTokenAddress) external onlyOwner {
-        DataTypes.ReserveConfigurationMap memory configuration = lendingPool.getConfiguration(
+        DataTypes.ReserveConfigurationMap memory configuration = pool.getConfiguration(
             _underlyingTokenAddress
         );
-        (bool isActive, , , ) = configuration.getFlagsMemory();
+        (bool isActive, , , , ) = configuration.getFlags();
         if (!isActive) revert MarketIsNotListedOnAave();
 
-        address poolTokenAddress = lendingPool
-        .getReserveData(_underlyingTokenAddress)
-        .aTokenAddress;
+        address poolTokenAddress = pool.getReserveData(_underlyingTokenAddress).aTokenAddress;
 
         if (isCreated[poolTokenAddress]) revert MarketAlreadyCreated();
         isCreated[poolTokenAddress] = true;
 
         exchangeRatesLastUpdateTimestamp[poolTokenAddress] = block.timestamp;
-        supplyP2PExchangeRate[poolTokenAddress] = WadRayMath.ray();
-        borrowP2PExchangeRate[poolTokenAddress] = WadRayMath.ray();
+        supplyP2PExchangeRate[poolTokenAddress] = WadRayMath.RAY;
+        borrowP2PExchangeRate[poolTokenAddress] = WadRayMath.RAY;
 
         LastPoolIndexes storage poolIndexes = lastPoolIndexes[poolTokenAddress];
-        poolIndexes.lastSupplyPoolIndex = lendingPool.getReserveNormalizedIncome(
-            _underlyingTokenAddress
-        );
-        poolIndexes.lastBorrowPoolIndex = lendingPool.getReserveNormalizedVariableDebt(
+        poolIndexes.lastSupplyPoolIndex = pool.getReserveNormalizedIncome(_underlyingTokenAddress);
+        poolIndexes.lastBorrowPoolIndex = pool.getReserveNormalizedVariableDebt(
             _underlyingTokenAddress
         );
 
@@ -291,7 +287,7 @@ contract MarketsManagerForAave is IMarketsManagerForAave, UUPSUpgradeable, Ownab
             delta.supplyP2PAmount,
             supplyP2PExchangeRate[_marketAddress],
             supplyP2PSPY[_marketAddress],
-            lendingPool.getReserveNormalizedIncome(underlyingTokenAddress),
+            pool.getReserveNormalizedIncome(underlyingTokenAddress),
             lastPoolIndexes[_marketAddress].lastSupplyPoolIndex,
             timeDifference
         );
@@ -314,7 +310,7 @@ contract MarketsManagerForAave is IMarketsManagerForAave, UUPSUpgradeable, Ownab
             delta.borrowP2PAmount,
             borrowP2PExchangeRate[_marketAddress],
             borrowP2PSPY[_marketAddress],
-            lendingPool.getReserveNormalizedVariableDebt(underlyingTokenAddress),
+            pool.getReserveNormalizedVariableDebt(underlyingTokenAddress),
             lastPoolIndexes[_marketAddress].lastBorrowPoolIndex,
             timeDifference
         );
@@ -334,18 +330,18 @@ contract MarketsManagerForAave is IMarketsManagerForAave, UUPSUpgradeable, Ownab
         returns (uint256)
     {
         if (_elapsedTime == 0) {
-            return WadRayMath.ray();
+            return WadRayMath.RAY;
         }
 
         if (_elapsedTime == 1) {
-            return WadRayMath.ray() + _rate;
+            return WadRayMath.RAY + _rate;
         }
 
         uint256 ratePowerTwo = _rate.rayMul(_rate);
         uint256 ratePowerThree = ratePowerTwo.rayMul(_rate);
 
         return
-            WadRayMath.ray() +
+            WadRayMath.RAY +
             _rate *
             _elapsedTime +
             (_elapsedTime * (_elapsedTime - 1) * ratePowerTwo) /
@@ -363,7 +359,7 @@ contract MarketsManagerForAave is IMarketsManagerForAave, UUPSUpgradeable, Ownab
         LastPoolIndexes storage poolIndexes = lastPoolIndexes[_marketAddress];
         IPositionsManagerForAave.Delta memory delta = positionsManager.deltas(_marketAddress);
 
-        uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(underlyingTokenAddress);
+        uint256 normalizedIncome = pool.getReserveNormalizedIncome(underlyingTokenAddress);
         supplyP2PExchangeRate[_marketAddress] = _computeNewP2PExchangeRate(
             delta.supplyP2PDelta,
             delta.supplyP2PAmount,
@@ -375,7 +371,7 @@ contract MarketsManagerForAave is IMarketsManagerForAave, UUPSUpgradeable, Ownab
         );
         poolIndexes.lastSupplyPoolIndex = normalizedIncome;
 
-        uint256 normalizedVariableDebt = lendingPool.getReserveNormalizedVariableDebt(
+        uint256 normalizedVariableDebt = pool.getReserveNormalizedVariableDebt(
             underlyingTokenAddress
         );
         borrowP2PExchangeRate[_marketAddress] = _computeNewP2PExchangeRate(
@@ -399,7 +395,7 @@ contract MarketsManagerForAave is IMarketsManagerForAave, UUPSUpgradeable, Ownab
     /// @notice Updates the P2P Second Percentage Yield of supply and borrow.
     /// @param _marketAddress The address of the market to update.
     function _updateSPYs(address _marketAddress) internal {
-        DataTypes.ReserveData memory reserveData = lendingPool.getReserveData(
+        DataTypes.ReserveData memory reserveData = pool.getReserveData(
             IAToken(_marketAddress).UNDERLYING_ASSET_ADDRESS()
         );
 
@@ -453,7 +449,7 @@ contract MarketsManagerForAave is IMarketsManagerForAave, UUPSUpgradeable, Ownab
                 _p2pRate.rayMul(
                     (
                         _computeCompoundedInterest(_p2pSPY, _timeDifference).rayMul(
-                            WadRayMath.ray() - shareOfTheDelta
+                            WadRayMath.RAY - shareOfTheDelta
                         )
                     ) + (shareOfTheDelta.rayMul(_poolIndex).rayDiv(_lastPoolIndex))
                 );
