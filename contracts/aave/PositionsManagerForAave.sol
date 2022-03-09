@@ -14,9 +14,11 @@ import "@openzeppelin/contracts/utils/math/Math.sol";
 import "./PositionsManagerForAaveStorage.sol";
 import "./MatchingEngineForAave.sol";
 
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+
 /// @title PositionsManagerForAave
 /// @dev Smart contract interacting with Aave to enable P2P supply/borrow positions that can fallback on Aave's pool using pool tokens.
-contract PositionsManagerForAave is PositionsManagerForAaveStorage {
+contract PositionsManagerForAave is PositionsManagerForAaveStorage, ReentrancyGuard {
     using DoubleLinkedList for DoubleLinkedList.List;
     using MatchingEngineFns for IMatchingEngineForAave;
     using WadRayMath for uint256;
