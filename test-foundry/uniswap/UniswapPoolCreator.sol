@@ -55,7 +55,7 @@ contract UniswapPoolCreator is IERC721Receiver {
             sqrt_
         );
 
-        mintNewPosition(token0, token1);
+        mintNewPosition(_token0);
     }
 
     function getAdjustedTicks(int24 ticks) internal view returns (int24) {
@@ -63,7 +63,7 @@ contract UniswapPoolCreator is IERC721Receiver {
         return (ticks / tickSpacing) * tickSpacing;
     }
 
-    function mintNewPosition(address _token0, address _token1)
+    function mintNewPosition(address _token0)
         public
         returns (
             uint256 tokenId,
@@ -74,7 +74,7 @@ contract UniswapPoolCreator is IERC721Receiver {
     {
         // Approve the position manager
         TransferHelper.safeApprove(_token0, address(nonfungiblePositionManager), amountToMint);
-        TransferHelper.safeApprove(_token1, address(nonfungiblePositionManager), amountToMint);
+        TransferHelper.safeApprove(WETH9, address(nonfungiblePositionManager), amountToMint);
 
         INonfungiblePositionManager.MintParams memory params = INonfungiblePositionManager
         .MintParams({
@@ -105,9 +105,9 @@ contract UniswapPoolCreator is IERC721Receiver {
         }
 
         if (amount1 < amountToMint) {
-            TransferHelper.safeApprove(_token1, address(nonfungiblePositionManager), 0);
+            TransferHelper.safeApprove(WETH9, address(nonfungiblePositionManager), 0);
             uint256 refund1 = amountToMint - amount1;
-            TransferHelper.safeTransfer(_token1, msg.sender, refund1);
+            TransferHelper.safeTransfer(WETH9, msg.sender, refund1);
         }
     }
 
