@@ -53,19 +53,19 @@ contract TestGovernance is TestSetup {
     function test_only_owner_can_set_reserveFactor() public {
         for (uint256 i = 0; i < pools.length; i++) {
             hevm.expectRevert("Ownable: caller is not the owner");
-            supplier1.setReserveFactor(1111);
+            supplier1.setReserveFactor(aDai, 1111);
 
             hevm.expectRevert("Ownable: caller is not the owner");
-            borrower1.setReserveFactor(1111);
+            borrower1.setReserveFactor(aDai, 1111);
         }
 
-        marketsManager.setReserveFactor(1111);
+        marketsManager.setReserveFactor(aDai, 1111);
     }
 
     // Reserve factor should be updated
     function test_reserveFactor_should_be_updated() public {
-        marketsManager.setReserveFactor(1111);
-        assertEq(marketsManager.reserveFactor(), 1111);
+        marketsManager.setReserveFactor(aDai, 1111);
+        assertEq(marketsManager.reserveFactor(aDai), 1111);
     }
 
     // Anyone can update the rates
@@ -96,10 +96,10 @@ contract TestGovernance is TestSetup {
             2 /
             SECOND_PER_YEAR;
 
-        uint256 supplySPY = (expectedSPY * (MAX_BASIS_POINTS - marketsManager.reserveFactor())) /
-            MAX_BASIS_POINTS;
-        uint256 borrowSPY = (expectedSPY * (MAX_BASIS_POINTS + marketsManager.reserveFactor())) /
-            MAX_BASIS_POINTS;
+        uint256 supplySPY = (expectedSPY *
+            (MAX_BASIS_POINTS - marketsManager.reserveFactor(aDai))) / MAX_BASIS_POINTS;
+        uint256 borrowSPY = (expectedSPY *
+            (MAX_BASIS_POINTS + marketsManager.reserveFactor(aDai))) / MAX_BASIS_POINTS;
         assertEq(marketsManager.supplyP2PSPY(aDai), supplySPY);
         assertEq(marketsManager.borrowP2PSPY(aDai), borrowSPY);
 
