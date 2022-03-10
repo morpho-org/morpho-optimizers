@@ -230,9 +230,9 @@ contract TestPositionsManagerGetters is TestSetup {
         uint256 reserveDecimalsUsdc;
 
         (
-            ,
             expectedDataUsdc.ltv,
             expectedDataUsdc.liquidationThreshold,
+            ,
             reserveDecimalsUsdc,
             ,
 
