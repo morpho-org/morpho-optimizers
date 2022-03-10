@@ -114,9 +114,9 @@ contract TestSetup is Config, Utils, HevmAdapter {
                 REWARD_TOKEN,
                 REWARD_UNIV3_FEE
             );
-        } else if (block.chainid == 137) {
+        } else if (block.chainid == 43114) {
             // Avalanche network
-            // Create a MORPHO / WMATIC pool
+            // Create a MORPHO / WAVAX pool
             uniswapV2PoolCreator = new UniswapV2PoolCreator();
             writeBalanceOf(
                 address(uniswapV2PoolCreator),

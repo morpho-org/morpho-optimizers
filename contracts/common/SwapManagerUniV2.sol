@@ -6,6 +6,7 @@ import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol";
 import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
 import "./interfaces/ISwapManager.sol";
 
+import "@uniswap/lib/contracts/libraries/FixedPoint.sol";
 import "@uniswap/v2-periphery/contracts/libraries/UniswapV2OracleLibrary.sol";
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -14,6 +15,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 /// @dev Smart contract managing the swap of reward token to Morpho token.
 contract SwapManagerUniV2 is ISwapManager {
     using SafeERC20 for IERC20;
+    using FixedPoint for *;
 
     uint256 public constant PERIOD = 1 hours;
 
@@ -33,8 +35,8 @@ contract SwapManagerUniV2 is ISwapManager {
     uint256 public price0CumulativeLast;
     uint256 public price1CumulativeLast;
     uint256 public blockTimestampLast;
-    uint256 public price0Average;
-    uint256 public price1Average;
+    FixedPoint.uq112x112 public price0Average;
+    FixedPoint.uq112x112 public price1Average;
 
     /// Events ///
 
@@ -63,8 +65,8 @@ contract SwapManagerUniV2 is ISwapManager {
         price0CumulativeLast = reserve1 / reserve0;
         price1CumulativeLast = reserve0 / reserve1;
 
-        price0Average = price0CumulativeLast;
-        price1Average = price1CumulativeLast;
+        price0Average = FixedPoint.uq112x112(uint224(price0CumulativeLast));
+        price1Average = FixedPoint.uq112x112(uint224(price1CumulativeLast));
     }
 
     /// Update average prices on PERIOD fixed window.
@@ -84,8 +86,12 @@ contract SwapManagerUniV2 is ISwapManager {
 
         // overflow is desired, casting never truncates
         // cumulative price is in (uq112x112 price * seconds) units so we simply wrap it after division by time elapsed
-        price0Average = (price0Cumulative - price0CumulativeLast) / timeElapsed;
-        price1Average = (price1Cumulative - price1CumulativeLast) / timeElapsed;
+        price0Average = FixedPoint.uq112x112(
+            uint224((price0Cumulative - price0CumulativeLast) / timeElapsed)
+        );
+        price1Average = FixedPoint.uq112x112(
+            uint224((price1Cumulative - price1CumulativeLast) / timeElapsed)
+        );
 
         price0CumulativeLast = price0Cumulative;
         price1CumulativeLast = price1Cumulative;
@@ -95,9 +101,9 @@ contract SwapManagerUniV2 is ISwapManager {
     /// Get the amount according to the price average.
     function consult(address token, uint256 amountIn) internal view returns (uint256 amountOut) {
         if (token == MORPHO) {
-            amountOut = price0Average * amountIn;
+            amountOut = price0Average.mul(amountIn).decode144();
         } else {
-            amountOut = price1Average * amountIn;
+            amountOut = price1Average.mul(amountIn).decode144();
         }
     }
 
