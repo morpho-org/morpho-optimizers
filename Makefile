@@ -15,6 +15,11 @@ else
   endif
 endif
 
+ifeq (${NETWORK}, avalanche-testnet)
+  export FOUNDRY_ETH_RPC_URL=https://api.avax-test.network/ext/bc/C/rpc
+  export FOUNDRY_FORK_BLOCK_NUMBER=7126700
+endif
+
 export DAPP_REMAPPINGS=@config/=config/$(NETWORK)
 
 .PHONY: test
