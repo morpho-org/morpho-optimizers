@@ -29,6 +29,8 @@ contract TestPausableMarket is TestSetup {
 
         supplier1.borrow(aUsdc, toBorrow);
 
+        mineBlocks(1);
+
         supplier1.approve(usdc, toBorrow);
         supplier1.repay(aUsdc, toBorrow);
 
@@ -42,6 +44,7 @@ contract TestPausableMarket is TestSetup {
         uint256 toLiquidate = toBorrow / 2;
         User liquidator = borrower3;
         liquidator.approve(usdc, toLiquidate);
+        mineBlocks(1);
         liquidator.liquidate(aUsdc, aDai, address(supplier1), toLiquidate);
 
         supplier1.withdraw(aDai, 1);

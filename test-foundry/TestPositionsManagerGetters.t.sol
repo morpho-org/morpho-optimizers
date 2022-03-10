@@ -137,18 +137,18 @@ contract TestPositionsManagerGetters is TestSetup {
         .getUserLiquidityDataForAsset(address(borrower1), aDai, oracle);
 
         (uint256 ltv, uint256 liquidationThreshold, , uint256 reserveDecimals, , ) = pool
-        .getConfiguration(usdc)
+        .getConfiguration(dai)
         .getParams();
         uint256 underlyingPrice = oracle.getAssetPrice(dai);
         uint256 tokenUnit = 10**reserveDecimals;
 
-        assertEq(assetData.liquidationThreshold, liquidationThreshold);
-        assertEq(assetData.ltv, ltv);
-        assertEq(assetData.underlyingPrice, underlyingPrice);
-        assertEq(assetData.tokenUnit, tokenUnit);
-        assertEq(assetData.collateralValue, 0);
-        assertEq(assetData.maxDebtValue, 0);
-        assertEq(assetData.debtValue, 0);
+        assertEq(assetData.liquidationThreshold, liquidationThreshold, "liquidationThreshold");
+        assertEq(assetData.ltv, ltv, "ltv");
+        assertEq(assetData.underlyingPrice, underlyingPrice, "underlyingPrice");
+        assertEq(assetData.tokenUnit, tokenUnit, "tokenUnit");
+        assertEq(assetData.collateralValue, 0, "collateralValue");
+        assertEq(assetData.maxDebtValue, 0, "maxDebtValue");
+        assertEq(assetData.debtValue, 0, "debtValue");
     }
 
     function test_user_liquidity_data_for_asset_with_supply() public {
@@ -230,10 +230,10 @@ contract TestPositionsManagerGetters is TestSetup {
         uint256 reserveDecimalsUsdc;
 
         (
-            reserveDecimalsUsdc,
+            ,
             expectedDataUsdc.ltv,
             expectedDataUsdc.liquidationThreshold,
-            ,
+            reserveDecimalsUsdc,
             ,
 
         ) = pool.getConfiguration(usdc).getParams();
@@ -411,7 +411,7 @@ contract TestPositionsManagerGetters is TestSetup {
         ) = positionsManager.getUserBalanceStates(address(borrower1));
 
         // USDC data
-        (uint256 reserveDecimalsUsdc, , , , , ) = pool.getConfiguration(usdc).getParams();
+        (, , , uint256 reserveDecimalsUsdc, , ) = pool.getConfiguration(usdc).getParams();
         uint256 underlyingPriceUsdc = oracle.getAssetPrice(usdc);
         uint256 tokenUnitUsdc = 10**reserveDecimalsUsdc;
 
@@ -485,13 +485,13 @@ contract TestPositionsManagerGetters is TestSetup {
             MAX_BASIS_POINTS;
 
         // WBTC data
-        (reserveDecimals, , , , , ) = pool.getConfiguration(wbtc).getParams();
+        (, , , reserveDecimals, , ) = pool.getConfiguration(wbtc).getParams();
         expectedStates.debtValue +=
             (toBorrowWbtc * oracle.getAssetPrice(wbtc)) /
             10**reserveDecimals;
 
         // USDT data
-        (reserveDecimals, , , , , ) = pool.getConfiguration(usdt).getParams();
+        (, , , reserveDecimals, , ) = pool.getConfiguration(usdt).getParams();
         expectedStates.debtValue +=
             (to6Decimals(toBorrow) * oracle.getAssetPrice(usdt)) /
             10**reserveDecimals;
@@ -500,28 +500,6 @@ contract TestPositionsManagerGetters is TestSetup {
         assertEq(states.debtValue, expectedStates.debtValue);
         assertEq(states.maxDebtValue, expectedStates.maxDebtValue);
         assertEq(states.liquidationValue, expectedStates.liquidationValue);
-    }
-
-    /// This test is to check that a call to getUserLiquidityDataForAsset with USDT doesn't end
-    ///   with error "Division or modulo by zero", as Aave returns 0 for USDT liquidationThreshold.
-    function test_get_user_liquidity_data_for_usdt() public {
-        uint256 usdtAmount = to6Decimals(10_000 ether);
-
-        writeBalanceOf(address(borrower1), usdt, usdtAmount);
-        borrower1.approve(usdt, usdtAmount);
-        borrower1.supply(aUsdt, usdtAmount);
-
-        (uint256 withdrawableUsdt, uint256 borrowableUsdt) = positionsManager
-        .getUserMaxCapacitiesForAsset(address(borrower1), aUsdt);
-
-        assertEq(withdrawableUsdt, usdtAmount, "withdrawable USDT");
-        assertEq(borrowableUsdt, 0, "borrowable USDT");
-
-        (uint256 withdrawableDai, uint256 borrowableDai) = positionsManager
-        .getUserMaxCapacitiesForAsset(address(borrower1), aDai);
-
-        assertEq(withdrawableDai, 0, "withdrawable DAI");
-        assertEq(borrowableDai, 0, "borrowable DAI");
     }
 
     function test_get_user_liquidity_data_with_differents_assets_and_usdt() public {
@@ -536,7 +514,6 @@ contract TestPositionsManagerGetters is TestSetup {
 
         borrower1.borrow(aUsdc, to6Decimals(toBorrow));
         borrower1.borrow(aUsdt, to6Decimals(toBorrow));
-
         uint256 reserveDecimals;
         uint256 ltv;
         uint256 liquidationThreshold;

@@ -6,6 +6,7 @@ import "@aave/core-v3/contracts/interfaces/IPriceOracleGetter.sol";
 import "./interfaces/IMatchingEngineForAave.sol";
 
 import {ReserveConfiguration} from "@aave/core-v3/contracts/protocol/libraries/configuration/ReserveConfiguration.sol";
+import {UserConfiguration} from "@aave/core-v3/contracts/protocol/libraries/configuration/UserConfiguration.sol";
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 import "../common/libraries/DoubleLinkedList.sol";
 import "./libraries/MatchingEngineFns.sol";
@@ -19,6 +20,7 @@ import "./MatchingEngineForAave.sol";
 /// @notice Smart contract interacting with Aave to enable P2P supply/borrow positions that can fallback on Aave's pool using pool tokens.
 contract PositionsManagerForAave is PositionsManagerForAaveStorage {
     using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
+    using UserConfiguration for DataTypes.UserConfigurationMap;
     using MatchingEngineFns for IMatchingEngineForAave;
     using DoubleLinkedList for DoubleLinkedList.List;
     using SafeTransferLib for ERC20;
@@ -682,12 +684,18 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
             underlyingAddress
         );
 
-        // Compute the current collateral amount (in underlying)
-        assetData.collateralValue = _getUserSupplyBalanceInOf(
-            _poolTokenAddress,
-            _user,
-            underlyingAddress
+        DataTypes.ReserveData memory reserve = pool.getReserveData(underlyingAddress);
+        bool isUsingAsCollateral = pool.getUserConfiguration(address(this)).isUsingAsCollateral(
+            reserve.id
         );
+
+        // Compute the current collateral amount (in underlying)
+        if (isUsingAsCollateral)
+            assetData.collateralValue = _getUserSupplyBalanceInOf(
+                _poolTokenAddress,
+                _user,
+                underlyingAddress
+            );
 
         assetData.underlyingPrice = oracle.getAssetPrice(underlyingAddress); // In ETH
         (uint256 ltv, uint256 liquidationThreshold, , uint256 reserveDecimals, , ) = pool
@@ -697,14 +705,16 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         assetData.liquidationThreshold = liquidationThreshold;
         assetData.tokenUnit = 10**reserveDecimals;
 
-        // Then, convert values to ETH
-        assetData.collateralValue =
-            (assetData.collateralValue * assetData.underlyingPrice) /
-            assetData.tokenUnit;
-        assetData.maxDebtValue = (assetData.collateralValue * ltv) / MAX_BASIS_POINTS;
-        assetData.liquidationValue =
-            (assetData.collateralValue * liquidationThreshold) /
-            MAX_BASIS_POINTS;
+        // Then, convert values to base currency
+        if (isUsingAsCollateral) {
+            assetData.collateralValue =
+                (assetData.collateralValue * assetData.underlyingPrice) /
+                assetData.tokenUnit;
+            assetData.maxDebtValue = (assetData.collateralValue * ltv) / MAX_BASIS_POINTS;
+            assetData.liquidationValue =
+                (assetData.collateralValue * liquidationThreshold) /
+                MAX_BASIS_POINTS;
+        }
         assetData.debtValue =
             (assetData.debtValue * assetData.underlyingPrice) /
             assetData.tokenUnit;
@@ -1151,7 +1161,10 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         uint256 _amount
     ) internal {
         _underlyingToken.safeApprove(address(pool), _amount);
-        pool.deposit(address(_underlyingToken), _amount, address(this), NO_REFERRAL_CODE);
+        pool.supply(address(_underlyingToken), _amount, address(this), NO_REFERRAL_CODE);
+        (uint256 ltv, , , , , ) = pool.getConfiguration(address(_underlyingToken)).getParams();
+        // TODO: improve this.
+        if (ltv == 0) pool.setUserUseReserveAsCollateral(address(_underlyingToken), false);
         marketsManager.updateSPYs(_poolTokenAddress);
     }
 
