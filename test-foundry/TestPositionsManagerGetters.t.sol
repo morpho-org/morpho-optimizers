@@ -503,8 +503,8 @@ contract TestPositionsManagerGetters is TestSetup {
     }
 
     function test_get_user_liquidity_data_with_differents_assets_and_usdt() public {
-        uint256 amount = 10000 ether;
-        uint256 toBorrow = 100 ether;
+        uint256 amount = 100 ether;
+        uint256 toBorrow = 10 ether;
 
         writeBalanceOf(address(borrower1), usdt, to6Decimals(amount));
         borrower1.approve(usdt, to6Decimals(amount));
@@ -533,17 +533,10 @@ contract TestPositionsManagerGetters is TestSetup {
         (ltv, liquidationThreshold, , reserveDecimals, , ) = pool
         .getConfiguration(usdt)
         .getParams();
-        uint256 collateralValueToAdd = (to6Decimals(amount) * oracle.getAssetPrice(usdt)) /
-            10**reserveDecimals;
-        expectedStates.collateralValue += collateralValueToAdd;
-        expectedStates.maxDebtValue += (collateralValueToAdd * ltv) / MAX_BASIS_POINTS;
-        expectedStates.liquidationValue +=
-            (collateralValueToAdd * liquidationThreshold) /
-            MAX_BASIS_POINTS;
 
         // DAI data
         (ltv, liquidationThreshold, , reserveDecimals, , ) = pool.getConfiguration(dai).getParams();
-        collateralValueToAdd = (amount * oracle.getAssetPrice(dai)) / 10**reserveDecimals;
+        uint256 collateralValueToAdd = (amount * oracle.getAssetPrice(dai)) / 10**reserveDecimals;
         expectedStates.collateralValue += collateralValueToAdd;
         expectedStates.maxDebtValue += (collateralValueToAdd * ltv) / MAX_BASIS_POINTS;
         expectedStates.liquidationValue +=

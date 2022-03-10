@@ -1162,9 +1162,15 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
     ) internal {
         _underlyingToken.safeApprove(address(pool), _amount);
         pool.supply(address(_underlyingToken), _amount, address(this), NO_REFERRAL_CODE);
-        (uint256 ltv, , , , , ) = pool.getConfiguration(address(_underlyingToken)).getParams();
+        DataTypes.ReserveConfigurationMap memory configuration = pool.getConfiguration(
+            address(_underlyingToken)
+        );
+        (uint256 ltv, , , , , ) = configuration.getParams();
+        uint256 debtCeiling = configuration.getDebtCeiling();
         // TODO: improve this.
-        if (ltv == 0) pool.setUserUseReserveAsCollateral(address(_underlyingToken), false);
+        if (ltv == 0 || debtCeiling != 0)
+            pool.setUserUseReserveAsCollateral(address(_underlyingToken), false);
+        else pool.setUserUseReserveAsCollateral(address(_underlyingToken), true);
         marketsManager.updateSPYs(_poolTokenAddress);
     }
 
