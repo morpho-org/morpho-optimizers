@@ -118,7 +118,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         uint16 indexed _referralCode
     );
 
-    /// @notice Emitted when a repay happens.
+    /// @notice Emitted when a repayment happens.
     /// @param _user The address of the repayer.
     /// @param _poolTokenAddress The address of the market where assets are repaid.
     /// @param _amount The amount of assets repaid (in underlying).
@@ -378,8 +378,9 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
     }
 
     /// @notice Supplies underlying tokens in a specific market.
-    /// @param _poolTokenAddress The address of the market the user wants to supply.
-    /// @param _amount The amount of token (in underlying).
+    /// @dev `msg.sender` must have approved Morpho's contract to spend the underlying `_amount`.
+    /// @param _poolTokenAddress The address of the market the user wants to interact with.
+    /// @param _amount The amount of token (in underlying) to supply.
     /// @param _referralCode The referral code of an integrator that may receive rewards. 0 if no referral code.
     function supply(
         address _poolTokenAddress,
@@ -399,8 +400,9 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
     }
 
     /// @notice Supplies underlying tokens in a specific market.
-    /// @param _poolTokenAddress The address of the market the user wants to supply.
-    /// @param _amount The amount of token (in underlying).
+    /// @dev `msg.sender` must have approved Morpho's contract to spend the underlying `_amount`.
+    /// @param _poolTokenAddress The address of the market the user wants to interact with.
+    /// @param _amount The amount of token (in underlying) to supply.
     /// @param _referralCode The referral code of an integrator that may receive rewards. 0 if no referral code.
     /// @param _maxGasToConsume The maximum amount of gas to consume within a matching engine loop.
     function supply(
@@ -422,7 +424,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
     }
 
     /// @notice Borrows underlying tokens in a specific market.
-    /// @param _poolTokenAddress The address of the markets the user wants to enter.
+    /// @param _poolTokenAddress The address of the market the user wants to interact with.
     /// @param _amount The amount of token (in underlying).
     /// @param _referralCode The referral code of an integrator that may receive rewards. 0 if no referral code.
     function borrow(
@@ -442,8 +444,8 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         );
     }
 
-    /// @notice Supplies underlying tokens in a specific market.
-    /// @param _poolTokenAddress The address of the market the user wants to supply.
+    /// @notice Borrows underlying tokens in a specific market.
+    /// @param _poolTokenAddress The address of the market the user wants to interact with.
     /// @param _amount The amount of token (in underlying).
     /// @param _referralCode The referral code of an integrator that may receive rewards. 0 if no referral code.
     /// @param _maxGasToConsume The maximum amount of gas to consume within a matching engine loop.
@@ -467,7 +469,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
 
     /// @notice Withdraws underlying tokens in a specific market.
     /// @param _poolTokenAddress The address of the market the user wants to interact with.
-    /// @param _amount The amount in tokens to withdraw from supply.
+    /// @param _amount The amount of tokens (in underlying) to withdraw from supply.
     function withdraw(address _poolTokenAddress, uint256 _amount) external nonReentrant {
         marketsManager.updateP2PExchangeRates(_poolTokenAddress);
 
@@ -487,7 +489,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
     /// @notice Repays debt of the user.
     /// @dev `msg.sender` must have approved Morpho's contract to spend the underlying `_amount`.
     /// @param _poolTokenAddress The address of the market the user wants to interact with.
-    /// @param _amount The amount of token (in underlying).
+    /// @param _amount The amount of token (in underlying) to repay from borrow.
     function repay(address _poolTokenAddress, uint256 _amount) external nonReentrant {
         marketsManager.updateP2PExchangeRates(_poolTokenAddress);
 
@@ -503,11 +505,11 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         _repay(_poolTokenAddress, msg.sender, toRepay, maxGas.repay);
     }
 
-    /// @notice Allows someone to liquidate a position.
+    /// @notice Liquidates a position.
     /// @param _poolTokenBorrowedAddress The address of the pool token the liquidator wants to repay.
     /// @param _poolTokenCollateralAddress The address of the collateral pool token the liquidator wants to seize.
     /// @param _borrower The address of the borrower to liquidate.
-    /// @param _amount The amount of token (in underlying).
+    /// @param _amount The amount of token (in underlying) to repay.
     function liquidate(
         address _poolTokenBorrowedAddress,
         address _poolTokenCollateralAddress,
@@ -614,7 +616,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
         }
     }
 
-    /// @notice Returns the maximum amount available for withdraw and borrow for `_user` related to `_poolTokenAddress` (in underlyings).
+    /// @notice Returns the maximum amount available to withdraw and borrow for `_user` related to `_poolTokenAddress` (in underlyings).
     /// @param _user The user to determine the capacities for.
     /// @param _poolTokenAddress The address of the market.
     /// @return withdrawable The maximum withdrawable amount of underlying token allowed (in underlying).
@@ -713,7 +715,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
     /// Internal ///
 
     /// @dev Implements supply logic.
-    /// @param _poolTokenAddress The address of the market the user wants to supply.
+    /// @param _poolTokenAddress The address of the market the user wants to interact with.
     /// @param _amount The amount of token (in underlying).
     /// @param _maxGasToConsume The maximum amount of gas to consume within a matching engine loop.
     function _supply(
@@ -747,7 +749,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
                     underlyingToken,
                     matched,
                     lendingPool.getReserveNormalizedVariableDebt(address(underlyingToken))
-                ); // Revert on error
+                ); // Reverts on error
 
                 supplyBalanceInOf[_poolTokenAddress][msg.sender].inP2P += matched.divWadByRay(
                     supplyP2PExchangeRate
@@ -766,12 +768,12 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
             supplyBalanceInOf[_poolTokenAddress][msg.sender].onPool += remainingToSupplyToPool
             .divWadByRay(normalizedIncome); // Scaled Balance
             matchingEngine.updateSuppliersDC(_poolTokenAddress, msg.sender);
-            _supplyERC20ToPool(_poolTokenAddress, underlyingToken, remainingToSupplyToPool); // Revert on error
+            _supplyERC20ToPool(_poolTokenAddress, underlyingToken, remainingToSupplyToPool); // Reverts on error
         }
     }
 
     /// @dev Implements borrow logic.
-    /// @param _poolTokenAddress The address of the markets the user wants to enter.
+    /// @param _poolTokenAddress The address of the market the user wants to interact with.
     /// @param _amount The amount of token (in underlying).
     /// @param _maxGasToConsume The maximum amount of gas to consume within a matching engine loop.
     function _borrow(
@@ -800,7 +802,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
 
             if (matched > 0) {
                 matched = Math.min(matched, IAToken(_poolTokenAddress).balanceOf(address(this)));
-                _withdrawERC20FromPool(_poolTokenAddress, underlyingToken, matched); // Revert on error
+                _withdrawERC20FromPool(_poolTokenAddress, underlyingToken, matched); // Reverts on error
 
                 borrowBalanceInOf[_poolTokenAddress][msg.sender].inP2P += matched.divWadByRay(
                     borrowP2PExchangeRate
@@ -863,7 +865,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
             matchingEngine.updateSuppliersDC(_poolTokenAddress, _supplier);
 
             if (withdrawnInUnderlying > 0)
-                _withdrawERC20FromPool(_poolTokenAddress, underlyingToken, withdrawnInUnderlying); // Revert on error
+                _withdrawERC20FromPool(_poolTokenAddress, underlyingToken, withdrawnInUnderlying); // Reverts on error
             remainingToWithdraw -= withdrawnInUnderlying;
         }
 
@@ -895,7 +897,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
                         matched,
                         IAToken(_poolTokenAddress).balanceOf(address(this))
                     );
-                    _withdrawERC20FromPool(_poolTokenAddress, underlyingToken, matched); // Revert on error
+                    _withdrawERC20FromPool(_poolTokenAddress, underlyingToken, matched); // Reverts on error
                     remainingToWithdraw -= matched;
                 }
             }
@@ -909,7 +911,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
                     _maxGasToConsume / 2
                 );
 
-                _borrowERC20FromPool(_poolTokenAddress, underlyingToken, remainingToWithdraw); // Revert on error
+                _borrowERC20FromPool(_poolTokenAddress, underlyingToken, remainingToWithdraw); // Reverts on error
             }
         }
 
@@ -967,7 +969,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
                     underlyingToken,
                     repaidInUnderlying,
                     normalizedVariableDebt
-                ); // Revert on error
+                ); // Reverts on error
             remainingToRepay -= repaidInUnderlying;
         }
 
@@ -1000,7 +1002,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
                     underlyingToken,
                     matched,
                     lendingPool.getReserveNormalizedVariableDebt(address(underlyingToken))
-                ); // Revert on error
+                ); // Reverts on error
                 remainingToRepay -= matched;
             }
 
@@ -1011,9 +1013,9 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
                     poolTokenAddress,
                     remainingToRepay,
                     _maxGasToConsume / 2
-                ); // Revert on error
+                ); // Reverts on error
 
-                if (toSupply > 0) _supplyERC20ToPool(_poolTokenAddress, underlyingToken, toSupply); // Revert on error
+                if (toSupply > 0) _supplyERC20ToPool(_poolTokenAddress, underlyingToken, toSupply); // Reverts on error
             }
         }
 
@@ -1146,8 +1148,8 @@ contract PositionsManagerForAave is PositionsManagerForAaveStorage {
             );
     }
 
-    /// @dev Supplies undelrying tokens to Aave.
-    /// @param _poolTokenAddress The address of the market
+    /// @dev Supplies underlying tokens to Aave.
+    /// @param _poolTokenAddress The address of the market.
     /// @param _underlyingToken The underlying token of the market to supply to.
     /// @param _amount The amount of token (in underlying).
     function _supplyERC20ToPool(
