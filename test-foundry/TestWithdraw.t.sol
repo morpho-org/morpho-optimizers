@@ -155,7 +155,7 @@ contract TestWithdraw is TestSetup {
     function test_withdraw_3_3_2() public {
         setMaxGasHelper(type(uint64).max, type(uint64).max, type(uint64).max, type(uint64).max);
 
-        uint256 borrowedAmount = 100000 ether;
+        uint256 borrowedAmount = 100 ether;
         uint256 suppliedAmount = 2 * borrowedAmount;
         uint256 collateral = 2 * borrowedAmount;
 
@@ -321,7 +321,7 @@ contract TestWithdraw is TestSetup {
     function test_withdraw_3_3_4() public {
         setMaxGasHelper(type(uint64).max, type(uint64).max, type(uint64).max, type(uint64).max);
 
-        uint256 borrowedAmount = 100000 ether;
+        uint256 borrowedAmount = 100 ether;
         uint256 suppliedAmount = 2 * borrowedAmount;
         uint256 collateral = 2 * borrowedAmount;
 

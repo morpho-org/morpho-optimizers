@@ -26,7 +26,7 @@ contract TestLiquidate is TestSetup {
 
     // 5.2 - A user liquidates a borrower that has not enough collateral to cover for his debt.
     function test_liquidate_5_2() public {
-        uint256 collateral = 100_000 ether;
+        uint256 collateral = 100 ether;
 
         borrower1.approve(usdc, address(positionsManager), to6Decimals(collateral));
         borrower1.supply(aUsdc, to6Decimals(collateral));
