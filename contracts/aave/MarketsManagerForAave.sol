@@ -183,9 +183,9 @@ contract MarketsManagerForAave is IMarketsManagerForAave, UUPSUpgradeable, Ownab
         emit MarketCreated(poolTokenAddress);
     }
 
-    /// @notice Sets whether to put everyone on pool or not.
+    /// @notice Sets whether to match people P2P or not.
     /// @param _marketAddress The address of the market.
-    /// @param _noP2P Whether to put everyone on pool or not.
+    /// @param _noP2P Whether to match people P2P or not.
     function setNoP2P(address _marketAddress, bool _noP2P)
         external
         onlyOwner
@@ -195,7 +195,7 @@ contract MarketsManagerForAave is IMarketsManagerForAave, UUPSUpgradeable, Ownab
         emit NoP2PSet(_marketAddress, _noP2P);
     }
 
-    /// @notice Updates the P2P exchange rate, taking into account the Second Percentage Yield values.
+    /// @notice Updates the P2P exchange rates, taking into account the Second Percentage Yield values.
     /// @param _marketAddress The address of the market to update.
     function updateP2PExchangeRates(address _marketAddress) external override onlyPositionsManager {
         _updateP2PExchangeRates(_marketAddress);
@@ -329,7 +329,7 @@ contract MarketsManagerForAave is IMarketsManagerForAave, UUPSUpgradeable, Ownab
     ///   (1+x)^n = 1+n*x+[n/2*(n-1)]*x^2+[n/6*(n-1)*(n-2)*x^3...
     /// @param _rate The SPY to use in the computation.
     /// @param _elapsedTime The amount of time during to get the interest for.
-    /// @return results in ray
+    /// @return results in ray.
     function _computeCompoundedInterest(uint256 _rate, uint256 _elapsedTime)
         internal
         pure
