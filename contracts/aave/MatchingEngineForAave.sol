@@ -426,7 +426,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
     }
 
     /// @dev Overrides `_authorizeUpgrade` OZ function with revert.
-    function _authorizeUpgrade(address) internal override {
+    function _authorizeUpgrade(address) internal pure override {
         revert();
     }
 }
