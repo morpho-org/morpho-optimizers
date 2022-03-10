@@ -8,9 +8,11 @@ else
 
   ifeq (${NETWORK}, eth-mainnet)
     export FOUNDRY_FORK_BLOCK_NUMBER=14292587
+  else ifeq (${NETWORK}, eth-rinkeby)
+    export FOUNDRY_FORK_BLOCK_NUMBER=10300881
   else ifeq (${NETWORK}, polygon-mainnet)
     export FOUNDRY_FORK_BLOCK_NUMBER=24032305
-	else ifeq (${NETWORK}, polygon-mumbai)
+  else ifeq (${NETWORK}, polygon-mumbai)
     	export FOUNDRY_FORK_BLOCK_NUMBER=24461623
   endif
 endif
