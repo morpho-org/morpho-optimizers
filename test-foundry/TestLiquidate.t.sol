@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.7;
 
-import "./utils/TestSetup.sol";
+import "./setup/TestSetup.sol";
 
 contract TestLiquidate is TestSetup {
     // 5.1 - A user liquidates a borrower that has enough collateral to cover for his debt, the transaction reverts.

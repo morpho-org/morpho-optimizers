@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.7;
 
-import "hardhat/console.sol";
-
-import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 import "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
 import "@contracts/aave/interfaces/aave/IAaveIncentivesController.sol";
 import "@contracts/aave/interfaces/aave/IPriceOracleGetter.sol";
@@ -12,7 +9,8 @@ import "@contracts/aave/interfaces/IRewardsManagerForAave.sol";
 import "@contracts/common/interfaces/ISwapManager.sol";
 
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
-
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
 import {RewardsManagerForAaveOnEthAndAvax} from "@contracts/aave/markets-managers/RewardsManagerForAaveOnEthAndAvax.sol";
 import {RewardsManagerForAaveOnPolygon} from "@contracts/aave/markets-managers/RewardsManagerForAaveOnPolygon.sol";
 import {SwapManagerUniV3OnEth} from "@contracts/common/SwapManagerUniV3OnEth.sol";
@@ -21,16 +19,15 @@ import {SwapManagerUniV2} from "@contracts/common/SwapManagerUniV2.sol";
 import {PositionsManagerForAave} from "@contracts/aave/PositionsManagerForAave.sol";
 import {UniswapPoolCreator} from "../uniswap/UniswapPoolCreator.sol";
 import {UniswapV2PoolCreator} from "../uniswap/UniswapV2PoolCreator.sol";
-import {Utils} from "./Utils.sol";
-import {User} from "./User.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "../helpers/MorphoToken.sol";
+import "../helpers/SimplePriceOracle.sol";
+import {User} from "../helpers/User.sol";
 import "@contracts/aave/PositionsManagerForAave.sol";
 import "@contracts/aave/MarketsManagerForAave.sol";
-import {SwapManagerUniV2} from "@contracts/common/SwapManagerUniV2.sol";
-import "@config/Config.sol";
 import "./HevmAdapter.sol";
-import "./MorphoToken.sol";
-import "./SimplePriceOracle.sol";
+import {Utils} from "./Utils.sol";
+import "hardhat/console.sol";
+import "@config/Config.sol";
 
 contract TestSetup is Config, Utils, HevmAdapter {
     using WadRayMath for uint256;
@@ -72,9 +69,14 @@ contract TestSetup is Config, Utils, HevmAdapter {
     User public treasuryVault;
 
     address[] public pools;
-    address[] public underlyings;
 
     function setUp() public {
+        initContracts();
+        setContractsLabels();
+        initUsers();
+    }
+
+    function initContracts() internal {
         PositionsManagerForAave.MaxGas memory maxGas = PositionsManagerForAaveStorage.MaxGas({
             supply: 3e6,
             borrow: 3e6,
@@ -163,7 +165,7 @@ contract TestSetup is Config, Utils, HevmAdapter {
             uniswapPoolCreator.createPoolAndMintPosition(address(morphoToken));
         }
 
-        treasuryVault = new User(positionsManager, marketsManager, rewardsManager);
+        treasuryVault = new User(positionsManager);
 
         fakePositionsManagerImpl = new PositionsManagerForAave();
 
@@ -178,51 +180,76 @@ contract TestSetup is Config, Utils, HevmAdapter {
         positionsManager.setTreasuryVault(address(treasuryVault));
         positionsManager.setRewardsManager(address(rewardsManager));
 
-        // !!! WARNING !!!
+        createMarket(aDai);
+        createMarket(aUsdc);
+        createMarket(aWbtc);
+        createMarket(aUsdt);
+    }
+
+    function createMarket(address _aToken) internal {
+        address underlying = IAToken(_aToken).UNDERLYING_ASSET_ADDRESS();
+        marketsManager.createMarket(underlying);
+
         // All tokens must also be added to the pools array, for the correct behavior of TestLiquidate::createAndSetCustomPriceOracle.
-        marketsManager.createMarket(dai);
-        pools.push(aDai);
-        underlyings.push(dai);
-        marketsManager.createMarket(usdc);
-        pools.push(aUsdc);
-        underlyings.push(usdc);
-        marketsManager.createMarket(wbtc);
-        pools.push(aWbtc);
-        underlyings.push(wbtc);
-        marketsManager.createMarket(usdt);
-        pools.push(aUsdt);
-        underlyings.push(usdt);
+        pools.push(_aToken);
 
+        hevm.label(_aToken, ERC20(_aToken).symbol());
+        hevm.label(underlying, ERC20(underlying).symbol());
+    }
+
+    function initUsers() internal {
         for (uint256 i = 0; i < 3; i++) {
-            suppliers.push(new User(positionsManager, marketsManager, rewardsManager));
-
-            writeBalanceOf(address(suppliers[i]), dai, INITIAL_BALANCE * WAD);
-            writeBalanceOf(address(suppliers[i]), usdc, INITIAL_BALANCE * 1e6);
+            suppliers.push(new User(positionsManager));
+            hevm.label(
+                address(suppliers[i]),
+                string(abi.encodePacked("Supplier", Strings.toString(i + 1)))
+            );
+            fillUserBalances(suppliers[i]);
         }
         supplier1 = suppliers[0];
         supplier2 = suppliers[1];
         supplier3 = suppliers[2];
 
         for (uint256 i = 0; i < 3; i++) {
-            borrowers.push(new User(positionsManager, marketsManager, rewardsManager));
-
-            writeBalanceOf(address(borrowers[i]), dai, INITIAL_BALANCE * WAD);
-            writeBalanceOf(address(borrowers[i]), usdc, INITIAL_BALANCE * 1e6);
+            borrowers.push(new User(positionsManager));
+            hevm.label(
+                address(borrowers[i]),
+                string(abi.encodePacked("Borrower", Strings.toString(i + 1)))
+            );
+            fillUserBalances(borrowers[i]);
         }
         borrower1 = borrowers[0];
         borrower2 = borrowers[1];
         borrower3 = borrowers[2];
     }
 
+    function fillUserBalances(User _user) internal {
+        writeBalanceOf(address(_user), dai, INITIAL_BALANCE * WAD);
+        writeBalanceOf(address(_user), usdc, INITIAL_BALANCE * 1e6);
+    }
+
+    function setContractsLabels() internal {
+        hevm.label(address(positionsManager), "PositionsManager");
+        hevm.label(address(marketsManager), "MarketsManager");
+        hevm.label(address(rewardsManager), "RewardsManager");
+        hevm.label(address(swapManager), "SwapManager");
+        hevm.label(address(uniswapPoolCreator), "UniswapPoolCreator");
+        hevm.label(address(morphoToken), "MorphoToken");
+        hevm.label(aaveIncentivesControllerAddress, "AaveIncentivesController");
+        hevm.label(address(lendingPoolAddressesProvider), "LendingPoolAddressesProvider");
+        hevm.label(address(lendingPool), "LendingPool");
+        hevm.label(address(protocolDataProvider), "ProtocolDataProvider");
+        hevm.label(address(oracle), "AaveOracle");
+        hevm.label(address(treasuryVault), "TreasuryVault");
+    }
+
     function createSigners(uint8 _nbOfSigners) internal {
         while (borrowers.length < _nbOfSigners) {
-            borrowers.push(new User(positionsManager, marketsManager, rewardsManager));
-            writeBalanceOf(address(borrowers[borrowers.length - 1]), dai, INITIAL_BALANCE * WAD);
-            writeBalanceOf(address(borrowers[borrowers.length - 1]), usdc, INITIAL_BALANCE * 1e6);
+            borrowers.push(new User(positionsManager));
+            fillUserBalances(borrowers[borrowers.length - 1]);
 
-            suppliers.push(new User(positionsManager, marketsManager, rewardsManager));
-            writeBalanceOf(address(suppliers[suppliers.length - 1]), dai, INITIAL_BALANCE * WAD);
-            writeBalanceOf(address(suppliers[suppliers.length - 1]), usdc, INITIAL_BALANCE * 1e6);
+            suppliers.push(new User(positionsManager));
+            fillUserBalances(suppliers[suppliers.length - 1]);
         }
     }
 

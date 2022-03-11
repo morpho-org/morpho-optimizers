@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.7;
 
-import "./utils/TestSetup.sol";
-
 import "@contracts/aave/libraries/aave/WadRayMath.sol";
+
+import "./setup/TestSetup.sol";
 
 contract TestGovernance is TestSetup {
     using WadRayMath for uint256;
@@ -39,11 +39,12 @@ contract TestGovernance is TestSetup {
     // Only Owner should be able to create markets in peer-to-peer
     function test_only_owner_can_create_markets_1() public {
         for (uint256 i = 0; i < pools.length; i++) {
+            address underlying = IAToken(pools[i]).UNDERLYING_ASSET_ADDRESS();
             hevm.expectRevert("Ownable: caller is not the owner");
-            supplier1.createMarket(underlyings[i]);
+            supplier1.createMarket(underlying);
 
             hevm.expectRevert("Ownable: caller is not the owner");
-            borrower1.createMarket(underlyings[i]);
+            borrower1.createMarket(underlying);
         }
 
         marketsManager.createMarket(weth);

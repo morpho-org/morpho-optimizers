@@ -3,7 +3,7 @@ pragma solidity 0.8.7;
 
 import "@contracts/aave/libraries/aave/WadRayMath.sol";
 
-import "./utils/TestSetup.sol";
+import "./setup/TestSetup.sol";
 
 contract TestBorrow is TestSetup {
     // 2.1 - The borrower tries to borrow more than what his collateral allows, the transaction reverts.

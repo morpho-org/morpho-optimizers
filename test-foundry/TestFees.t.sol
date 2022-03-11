@@ -3,7 +3,7 @@ pragma solidity 0.8.7;
 
 import "@contracts/aave/libraries/aave/WadRayMath.sol";
 
-import "./utils/TestSetup.sol";
+import "./setup/TestSetup.sol";
 
 contract TestFees is TestSetup {
     using WadRayMath for uint256;
