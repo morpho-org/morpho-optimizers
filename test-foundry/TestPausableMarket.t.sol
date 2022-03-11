@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.7;
 
-import "./utils/TestSetup.sol";
+import "./setup/TestSetup.sol";
 
 contract TestPausableMarket is TestSetup {
     function test_only_markets_owner_can_trigger_pause_function() public {
