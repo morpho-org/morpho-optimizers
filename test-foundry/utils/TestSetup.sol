@@ -118,12 +118,9 @@ contract TestSetup is Config, Utils, HevmAdapter {
             // Avalanche network
             // Create a MORPHO / WAVAX pool
             uniswapV2PoolCreator = new UniswapV2PoolCreator();
-            writeBalanceOf(
-                address(uniswapV2PoolCreator),
-                uniswapPoolCreator.WETH9(),
-                INITIAL_BALANCE * WAD
-            );
+            writeBalanceOf(address(uniswapV2PoolCreator), REWARD_TOKEN, INITIAL_BALANCE * WAD);
             morphoToken = new MorphoToken(address(uniswapV2PoolCreator));
+            uniswapV2PoolCreator.createPoolAndAddLiquidity(address(morphoToken));
             swapManager = new SwapManagerUniV2(address(morphoToken), REWARD_TOKEN);
         }
 
@@ -157,7 +154,6 @@ contract TestSetup is Config, Utils, HevmAdapter {
                 lendingPool,
                 IPositionsManagerForAave(address(positionsManager))
             );
-            uniswapV2PoolCreator.createPoolAndAddLiquidity(address(morphoToken));
         } else if (block.chainid == 137) {
             // Polygon network
             rewardsManager = new RewardsManagerForAaveOnPolygon(
