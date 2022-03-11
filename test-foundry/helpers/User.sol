@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.7;
 
+import "@contracts/aave/interfaces/aave/ILendingPool.sol";
+import "@contracts/aave/interfaces/IRewardsManagerForAave.sol";
+
 import "@contracts/aave/PositionsManagerForAave.sol";
 import "@contracts/aave/MarketsManagerForAave.sol";
-import "@contracts/aave/interfaces/IRewardsManagerForAave.sol";
 
 contract User {
     using SafeTransferLib for ERC20;
@@ -14,14 +16,10 @@ contract User {
     ILendingPool public lendingPool;
     IAaveIncentivesController public aaveIncentivesController;
 
-    constructor(
-        PositionsManagerForAave _positionsManager,
-        MarketsManagerForAave _marketsManager,
-        IRewardsManagerForAave _rewardsManager
-    ) {
+    constructor(PositionsManagerForAave _positionsManager) {
         positionsManager = _positionsManager;
-        marketsManager = _marketsManager;
-        rewardsManager = _rewardsManager;
+        marketsManager = MarketsManagerForAave(address(_positionsManager.marketsManager()));
+        rewardsManager = _positionsManager.rewardsManager();
         lendingPool = positionsManager.lendingPool();
         aaveIncentivesController = positionsManager.aaveIncentivesController();
     }

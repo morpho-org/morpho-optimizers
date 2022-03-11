@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.7;
 
-import "contracts/aave/libraries/aave/WadRayMath.sol";
+import "@contracts/aave/libraries/aave/WadRayMath.sol";
+
 import "ds-test/test.sol";
 
 contract Utils is DSTest {
