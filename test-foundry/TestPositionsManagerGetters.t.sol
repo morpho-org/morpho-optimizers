@@ -106,8 +106,9 @@ contract TestPositionsManagerGetters is TestSetup {
         for (uint256 i; i < borrowers.length; i++) {
             borrowers[i].borrow(aDai, (amount / 100) - i);
         }
-
+        
         for (uint256 i; i < suppliers.length; i++) {
+            mineBlocks(1);
             suppliers[i].approve(usdc, toBorrow - i);
             suppliers[i].supply(aUsdc, toBorrow - i);
         }

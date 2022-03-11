@@ -58,7 +58,7 @@ contract TestSupply is TestSetup {
         supplier1.supply(aDai, amount);
 
         uint256 daiBalanceAfter = supplier1.balanceOf(dai);
-        testEquality(daiBalanceAfter, expectedDaiBalanceAfter);
+        assertApproxEq(daiBalanceAfter, expectedDaiBalanceAfter,1e15);
 
         uint256 supplyP2PExchangeRate = marketsManager.getUpdatedSupplyP2PExchangeRate(aDai);
         uint256 expectedSupplyBalanceInP2P = underlyingToP2PUnit(amount, supplyP2PExchangeRate);
@@ -73,11 +73,11 @@ contract TestSupply is TestSetup {
             address(borrower1)
         );
 
-        assertApproxEq(onPoolSupplier, 0, 1e6);
-        assertApproxEq(inP2PSupplier, expectedSupplyBalanceInP2P, 1e6);
+        assertApproxEq(onPoolSupplier, 0,1e15);
+        assertApproxEq(inP2PSupplier, expectedSupplyBalanceInP2P,1e15);
 
-        assertApproxEq(onPoolBorrower, 0, 1e6);
-        assertApproxEq(inP2PBorrower, inP2PSupplier, 1e6);
+        assertApproxEq(onPoolBorrower, 0,1e15);
+        assertApproxEq(inP2PBorrower, inP2PSupplier,1e15);
     }
 
     // 1.3 - There is 1 available borrower, he doesn't match 100% of the supplier liquidity.
@@ -88,6 +88,8 @@ contract TestSupply is TestSetup {
         borrower1.approve(usdc, to6Decimals(2 * amount));
         borrower1.supply(aUsdc, to6Decimals(2 * amount));
         borrower1.borrow(aDai, amount);
+
+        mineBlocks(1);
 
         supplier1.approve(dai, 2 * amount);
         supplier1.supply(aDai, 2 * amount);
@@ -102,15 +104,15 @@ contract TestSupply is TestSetup {
             aDai,
             address(supplier1)
         );
-        testEquality(onPoolSupplier, expectedSupplyBalanceOnPool);
-        testEquality(inP2PSupplier, expectedSupplyBalanceInP2P);
+        assertApproxEq(onPoolSupplier, expectedSupplyBalanceOnPool,1e15);
+        assertApproxEq(inP2PSupplier, expectedSupplyBalanceInP2P,1e15);
 
         (uint256 inP2PBorrower, uint256 onPoolBorrower) = positionsManager.borrowBalanceInOf(
             aDai,
             address(borrower1)
         );
-        testEquality(onPoolBorrower, 0);
-        testEquality(inP2PBorrower, inP2PSupplier);
+        assertApproxEq(onPoolBorrower, 0,1e15);
+        assertApproxEq(inP2PBorrower, inP2PSupplier,1e15);
     }
 
     // 1.4 - There are NMAX (or less) borrowers that match the supplied amount, everything is `inP2P` after NMAX (or less) match.
@@ -132,6 +134,8 @@ contract TestSupply is TestSetup {
             borrowers[i].borrow(aDai, amountPerBorrower);
         }
 
+        mineBlocks(1);
+        
         supplier1.approve(dai, amount);
         supplier1.supply(aDai, amount);
 
@@ -145,15 +149,15 @@ contract TestSupply is TestSetup {
 
             expectedInP2P = p2pUnitToUnderlying(inP2P, supplyP2PExchangeRate);
 
-            testEquality(expectedInP2P, amountPerBorrower);
-            testEquality(onPool, 0);
+            assertApproxEq(expectedInP2P, amountPerBorrower,1e15);
+            assertApproxEq(onPool, 0,1e15);
         }
 
         (inP2P, onPool) = positionsManager.supplyBalanceInOf(aDai, address(supplier1));
         expectedInP2P = p2pUnitToUnderlying(amount, supplyP2PExchangeRate);
 
-        testEquality(inP2P, expectedInP2P);
-        testEquality(onPool, 0);
+        assertApproxEq(inP2P, expectedInP2P,1e15);
+        assertApproxEq(onPool, 0,1e15);
     }
 
     // 1.5 - The NMAX biggest borrowers don't match all of the supplied amount, after NMAX match, the rest is supplied and set `onPool`.
@@ -176,6 +180,8 @@ contract TestSupply is TestSetup {
             borrowers[i].borrow(aDai, amountPerBorrower);
         }
 
+        mineBlocks(1);
+        
         supplier1.approve(dai, amount);
         supplier1.supply(aDai, amount);
 
@@ -190,8 +196,8 @@ contract TestSupply is TestSetup {
 
             expectedInP2P = p2pUnitToUnderlying(inP2P, supplyP2PExchangeRate);
 
-            testEquality(expectedInP2P, amountPerBorrower);
-            testEquality(onPool, 0);
+            assertApproxEq(expectedInP2P, amountPerBorrower,1e15);
+            assertApproxEq(onPool, 0,1e15);
         }
 
         (inP2P, onPool) = positionsManager.supplyBalanceInOf(aDai, address(supplier1));
@@ -199,7 +205,7 @@ contract TestSupply is TestSetup {
         expectedInP2P = p2pUnitToUnderlying(amount / 2, supplyP2PExchangeRate);
         uint256 expectedOnPool = underlyingToAdUnit(amount / 2, normalizedIncome);
 
-        testEquality(inP2P, expectedInP2P);
-        testEquality(onPool, expectedOnPool);
+        assertApproxEq(inP2P, expectedInP2P,1e15);
+        assertApproxEq(onPool, expectedOnPool,1e15);
     }
 }

@@ -164,6 +164,8 @@ contract TestWithdraw is TestSetup {
         borrower1.supply(aUsdc, to6Decimals(collateral));
         borrower1.borrow(aDai, borrowedAmount);
 
+        mineBlocks(1);
+
         supplier1.approve(dai, suppliedAmount);
         supplier1.supply(aDai, suppliedAmount);
 
@@ -183,9 +185,9 @@ contract TestWithdraw is TestSetup {
             pool.getReserveNormalizedIncome(dai)
         );
 
-        testEquality(onPoolSupplier, expectedOnPool);
-        testEquality(onPoolBorrower, 0);
-        testEquality(inP2PSupplier, inP2PBorrower);
+        assertApproxEq(onPoolSupplier, expectedOnPool,1e15);
+        assertApproxEq(onPoolBorrower, 0,1e15);
+        assertApproxEq(inP2PSupplier, inP2PBorrower,1e15);
 
         // NMAX-1 suppliers have up to suppliedAmount waiting on pool
         uint8 NMAX = 20;
@@ -195,12 +197,13 @@ contract TestWithdraw is TestSetup {
         // minus 1 because supplier1 must not be counted twice !
         for (uint256 i = 0; i < NMAX; i++) {
             if (suppliers[i] == supplier1) continue;
-
+            mineBlocks(1);
             suppliers[i].approve(dai, amountPerSupplier);
             suppliers[i].supply(aDai, amountPerSupplier);
         }
 
         // supplier withdraws suppliedAmount
+        mineBlocks(1);
         supplier1.withdraw(aDai, suppliedAmount);
 
         // Check balances for supplier1
@@ -208,8 +211,8 @@ contract TestWithdraw is TestSetup {
             aDai,
             address(supplier1)
         );
-        testEquality(onPoolSupplier, 0);
-        testEquality(inP2PSupplier, 0);
+        assertApproxEq(onPoolSupplier, 0,1e15);
+        assertApproxEq(inP2PSupplier, 0,1e15);
 
         // Check balances for the borrower
         (inP2PBorrower, onPoolBorrower) = positionsManager.borrowBalanceInOf(
@@ -223,8 +226,8 @@ contract TestWithdraw is TestSetup {
             supplyP2PExchangeRate
         );
 
-        testEquality(inP2PBorrower, expectedBorrowBalanceInP2P);
-        testEquality(onPoolBorrower, 0);
+        assertApproxEq(inP2PBorrower, expectedBorrowBalanceInP2P,1e15);
+        assertApproxEq(onPoolBorrower, 0,1e15);
 
         uint256 inP2P;
         uint256 onPool;
@@ -236,8 +239,8 @@ contract TestWithdraw is TestSetup {
             (inP2P, onPool) = positionsManager.supplyBalanceInOf(aDai, address(suppliers[i]));
             uint256 expectedInP2P = p2pUnitToUnderlying(inP2P, supplyP2PExchangeRate);
 
-            testEquality(expectedInP2P, amountPerSupplier);
-            testEquality(onPool, 0);
+            assertApproxEq(expectedInP2P, amountPerSupplier,1e15);
+            assertApproxEq(onPool, 0,1e15);
         }
     }
 
@@ -253,6 +256,8 @@ contract TestWithdraw is TestSetup {
         borrower1.supply(aUsdc, to6Decimals(collateral));
         borrower1.borrow(aDai, borrowedAmount);
 
+        mineBlocks(1);
+
         supplier1.approve(dai, suppliedAmount);
         supplier1.supply(aDai, suppliedAmount);
 
@@ -272,11 +277,12 @@ contract TestWithdraw is TestSetup {
             pool.getReserveNormalizedIncome(dai)
         );
 
-        testEquality(onPoolSupplier, expectedOnPool);
-        testEquality(onPoolBorrower, 0);
-        testEquality(inP2PSupplier, inP2PBorrower);
+        assertApproxEq(onPoolSupplier, expectedOnPool,1e15);
+        assertApproxEq(onPoolBorrower, 0,1e15);
+        assertApproxEq(inP2PSupplier, inP2PBorrower,1e15);
 
         // Supplier1 withdraws 75% of supplied amount
+        mineBlocks(1);
         supplier1.withdraw(aDai, (75 * suppliedAmount) / 100);
 
         // Check balances for the borrower
@@ -295,8 +301,8 @@ contract TestWithdraw is TestSetup {
             pool.getReserveNormalizedVariableDebt(dai)
         );
 
-        testEquality(inP2PBorrower, expectedBorrowBalanceInP2P);
-        testEquality(onPoolBorrower, expectedBorrowBalanceOnPool);
+        assertApproxEq(inP2PBorrower, expectedBorrowBalanceInP2P,1e15);
+        assertApproxEq(onPoolBorrower, expectedBorrowBalanceOnPool,1e15);
 
         // Check balances for supplier
         (inP2PSupplier, onPoolSupplier) = positionsManager.supplyBalanceInOf(
@@ -309,8 +315,8 @@ contract TestWithdraw is TestSetup {
             supplyP2PExchangeRate
         );
 
-        testEquality(inP2PSupplier, expectedSupplyBalanceInP2P);
-        testEquality(onPoolSupplier, 0);
+        assertApproxEq(inP2PSupplier, expectedSupplyBalanceInP2P,1e15);
+        assertApproxEq(onPoolSupplier, 0,1e15);
     }
 
     // 3.3.4 - The supplier is matched to 2*NMAX borrowers. There are NMAX suppliers `onPool` available to replace him `inP2P`,
@@ -330,6 +336,8 @@ contract TestWithdraw is TestSetup {
         borrower1.supply(aUsdc, to6Decimals(collateral));
         borrower1.borrow(aDai, borrowedAmount);
 
+        mineBlocks(1);
+
         supplier1.approve(dai, suppliedAmount);
         supplier1.supply(aDai, suppliedAmount);
 
@@ -349,9 +357,9 @@ contract TestWithdraw is TestSetup {
             pool.getReserveNormalizedIncome(dai)
         );
 
-        testEquality(onPoolSupplier, expectedOnPool);
-        testEquality(onPoolBorrower, 0);
-        testEquality(inP2PSupplier, inP2PBorrower);
+        assertApproxEq(onPoolSupplier, expectedOnPool, 1e15);
+        assertApproxEq(onPoolBorrower, 0, 1e15);
+        assertApproxEq(inP2PSupplier, inP2PBorrower, 1e15);
 
         // NMAX-1 suppliers have up to suppliedAmount/2 waiting on pool
         uint8 NMAX = 20;
@@ -361,12 +369,14 @@ contract TestWithdraw is TestSetup {
         // minus 1 because supplier1 must not be counted twice !
         for (uint256 i = 0; i < NMAX; i++) {
             if (suppliers[i] == supplier1) continue;
+            mineBlocks(1);
 
             suppliers[i].approve(dai, amountPerSupplier);
             suppliers[i].supply(aDai, amountPerSupplier);
         }
 
-        // supplier withdraws suppliedAmount
+        // supplier withdraws suppliedAmounts
+        mineBlocks(1);
         supplier1.withdraw(aDai, suppliedAmount);
 
         // Check balances for supplier1
@@ -374,8 +384,8 @@ contract TestWithdraw is TestSetup {
             aDai,
             address(supplier1)
         );
-        testEquality(onPoolSupplier, 0);
-        testEquality(inP2PSupplier, 0);
+        assertApproxEq(onPoolSupplier, 0, 1e15);
+        assertApproxEq(inP2PSupplier, 0, 1e15);
 
         // Check balances for the borrower
         (inP2PBorrower, onPoolBorrower) = positionsManager.borrowBalanceInOf(
@@ -393,8 +403,8 @@ contract TestWithdraw is TestSetup {
             pool.getReserveNormalizedVariableDebt(dai)
         );
 
-        testEquality(inP2PBorrower, expectedBorrowBalanceInP2P);
-        testEquality(onPoolBorrower, expectedBorrowBalanceOnPool);
+        assertApproxEq(inP2PBorrower, expectedBorrowBalanceInP2P, 1e15);
+        assertApproxEq(onPoolBorrower, expectedBorrowBalanceOnPool, 1e15);
 
         uint256 inP2P;
         uint256 onPool;
@@ -406,11 +416,11 @@ contract TestWithdraw is TestSetup {
             (inP2P, onPool) = positionsManager.supplyBalanceInOf(aDai, address(suppliers[i]));
             uint256 expectedInP2P = p2pUnitToUnderlying(inP2P, supplyP2PExchangeRate);
 
-            testEquality(expectedInP2P, amountPerSupplier);
-            testEquality(onPool, 0);
+            assertApproxEq(expectedInP2P, amountPerSupplier, 1e15);
+            assertApproxEq(onPool, 0, 1e15);
 
             (inP2P, onPool) = positionsManager.borrowBalanceInOf(aDai, address(borrowers[i]));
-            testEquality(inP2P, 0);
+            assertApproxEq(inP2P, 0, 1e15);
         }
     }
 
