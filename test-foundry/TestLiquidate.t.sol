@@ -35,7 +35,9 @@ contract TestLiquidate is TestSetup {
             address(borrower1),
             aDai
         );
+        mineBlocks(1);
         borrower1.borrow(aDai, amount);
+        mineBlocks(1);
 
         (, uint256 collateralOnPool) = positionsManager.supplyBalanceInOf(
             aUsdc,
@@ -61,8 +63,8 @@ contract TestLiquidate is TestSetup {
             onPoolBorrower,
             pool.getReserveNormalizedVariableDebt(dai)
         );
-        testEquality(expectedBorrowBalanceOnPool, amount / 2);
-        assertEq(inP2PBorrower, 0);
+        assertApproxEq(expectedBorrowBalanceOnPool, amount / 2, 1e15);
+        assertApproxEq(inP2PBorrower, 0, 1e15);
 
         // Check borrower1 supply balance
         (inP2PBorrower, onPoolBorrower) = positionsManager.supplyBalanceInOf(
@@ -90,7 +92,7 @@ contract TestLiquidate is TestSetup {
         uint256 expectedOnPool = collateralOnPool -
             underlyingToScaledBalance(amountToSeize, normalizedIncome);
 
-        testEquality(onPoolBorrower, expectedOnPool);
-        assertEq(inP2PBorrower, 0);
+        assertApproxEq(onPoolBorrower, expectedOnPool, 1e15);
+        assertApproxEq(inP2PBorrower, 0, 1e15);
     }
 }

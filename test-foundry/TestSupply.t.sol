@@ -47,12 +47,14 @@ contract TestSupply is TestSetup {
 
         borrower1.approve(usdc, to6Decimals(2 * amount));
         borrower1.supply(aUsdc, to6Decimals(2 * amount));
+        mineBlocks(1);
         borrower1.borrow(aDai, amount);
 
         uint256 daiBalanceBefore = supplier1.balanceOf(dai);
         uint256 expectedDaiBalanceAfter = daiBalanceBefore - amount;
 
         supplier1.approve(dai, address(positionsManager), amount);
+        mineBlocks(1);
         supplier1.supply(aDai, amount);
 
         uint256 daiBalanceAfter = supplier1.balanceOf(dai);
@@ -71,17 +73,17 @@ contract TestSupply is TestSetup {
             address(borrower1)
         );
 
-        testEquality(onPoolSupplier, 0);
-        testEquality(inP2PSupplier, expectedSupplyBalanceInP2P);
+        assertApproxEq(onPoolSupplier, 0, 1e6);
+        assertApproxEq(inP2PSupplier, expectedSupplyBalanceInP2P, 1e6);
 
-        testEquality(onPoolBorrower, 0);
-        testEquality(inP2PBorrower, inP2PSupplier);
+        assertApproxEq(onPoolBorrower, 0, 1e6);
+        assertApproxEq(inP2PBorrower, inP2PSupplier, 1e6);
     }
 
     // 1.3 - There is 1 available borrower, he doesn't match 100% of the supplier liquidity.
     // Supplier's balance `inP2P` is equal to the borrower previous amount `onPool`, the rest is set `onPool`.
     function test_supply_1_3() public {
-        uint256 amount = 10000 ether;
+        uint256 amount = 1 ether;
 
         borrower1.approve(usdc, to6Decimals(2 * amount));
         borrower1.supply(aUsdc, to6Decimals(2 * amount));
@@ -115,7 +117,7 @@ contract TestSupply is TestSetup {
     function test_supply_1_4() public {
         setMaxGasHelper(type(uint64).max, type(uint64).max, type(uint64).max, type(uint64).max);
 
-        uint256 amount = 10000 ether;
+        uint256 amount = 1 ether;
         uint256 collateral = 2 * amount;
 
         uint8 NMAX = 20;
@@ -159,7 +161,7 @@ contract TestSupply is TestSetup {
     function test_supply_1_5() public {
         setMaxGasHelper(type(uint64).max, type(uint64).max, type(uint64).max, type(uint64).max);
 
-        uint256 amount = 10000 ether;
+        uint256 amount = 1 ether;
         uint256 collateral = 2 * amount;
 
         uint8 NMAX = 20;
