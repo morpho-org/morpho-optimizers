@@ -86,12 +86,14 @@ contract SwapManagerUniV2 is ISwapManager {
 
         // overflow is desired, casting never truncates
         // cumulative price is in (uq112x112 price * seconds) units so we simply wrap it after division by time elapsed
-        price0Average = FixedPoint.uq112x112(
-            uint224((price0Cumulative - price0CumulativeLast) / timeElapsed)
-        );
-        price1Average = FixedPoint.uq112x112(
-            uint224((price1Cumulative - price1CumulativeLast) / timeElapsed)
-        );
+        unchecked {
+            price0Average = FixedPoint.uq112x112(
+                uint224((price0Cumulative - price0CumulativeLast) / timeElapsed)
+            );
+            price1Average = FixedPoint.uq112x112(
+                uint224((price1Cumulative - price1CumulativeLast) / timeElapsed)
+            );
+        }
 
         price0CumulativeLast = price0Cumulative;
         price1CumulativeLast = price1Cumulative;
