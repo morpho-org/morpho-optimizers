@@ -70,7 +70,7 @@ library MatchingEngineFns {
         uint256 _amount,
         uint256 _maxGasToConsume
     ) internal {
-        bytes memory data = address(_matchingEngine).functionDelegateCall(
+        address(_matchingEngine).functionDelegateCall(
             abi.encodeWithSelector(
                 _matchingEngine.unmatchBorrowers.selector,
                 _poolTokenAddress,

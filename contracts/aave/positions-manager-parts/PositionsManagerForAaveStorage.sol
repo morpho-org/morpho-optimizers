@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.7;
 
-import {IVariableDebtToken} from "./interfaces/aave/IVariableDebtToken.sol";
-import "./interfaces/aave/ILendingPoolAddressesProvider.sol";
-import "./interfaces/aave/IAaveIncentivesController.sol";
-import "./interfaces/aave/ILendingPool.sol";
-import "./interfaces/IMarketsManagerForAave.sol";
-import "./interfaces/IMatchingEngineForAave.sol";
-import "./interfaces/IRewardsManagerForAave.sol";
-import "../common/interfaces/ISwapManager.sol";
+import {IVariableDebtToken} from "../interfaces/aave/IVariableDebtToken.sol";
+import "../interfaces/aave/ILendingPoolAddressesProvider.sol";
+import "../interfaces/aave/IAaveIncentivesController.sol";
+import "../interfaces/aave/ILendingPool.sol";
+import "../interfaces/IMarketsManagerForAave.sol";
+import "../interfaces/IMatchingEngineForAave.sol";
+import "../interfaces/IRewardsManagerForAave.sol";
+import "../../common/interfaces/ISwapManager.sol";
 
-import "../common/libraries/DoubleLinkedList.sol";
+import "../../common/libraries/DoubleLinkedList.sol";
 
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
@@ -21,7 +21,16 @@ abstract contract PositionsManagerForAaveStorage is
     OwnableUpgradeable,
     ReentrancyGuardUpgradeable
 {
-    /// Structs ///
+    /// ENUMS ///
+
+    enum PositionType {
+        SUPPLIERS_IN_P2P,
+        SUPPLIERS_ON_POOL,
+        BORROWERS_IN_P2P,
+        BORROWERS_ON_POOL
+    }
+
+    /// STRUCTS ///
 
     struct SupplyBalance {
         uint256 inP2P; // In supplier's p2pUnit, a unit that grows in value, to keep track of the interests earned when users are in P2P.
@@ -48,7 +57,42 @@ abstract contract PositionsManagerForAaveStorage is
         uint256 borrowP2PAmount; // Sum of all stored P2P borrow (in P2P unit).
     }
 
-    /// Storage ///
+    struct AssetLiquidityData {
+        uint256 collateralValue; // The collateral value of the asset (in ETH).
+        uint256 liquidationValue; // The value which made liquidation possible (in ETH).
+        uint256 maxDebtValue; // The maximum possible debt value of the asset (in ETH).
+        uint256 debtValue; // The debt value of the asset (in ETH).
+        uint256 tokenUnit; // The token unit considering its decimals.
+        uint256 underlyingPrice; // The price of the token (in ETH).
+        uint256 liquidationThreshold; // The liquidation threshold applied on this token (in basis point).
+        uint256 ltv; // The LTV applied on this token (in basis point).
+    }
+
+    struct LiquidateVars {
+        address tokenBorrowedAddress; // The address of the borrowed asset.
+        address tokenCollateralAddress; // The address of the collateral asset.
+        uint256 debtValue; // The debt value (in ETH).
+        uint256 maxDebtValue; // The maximum debt value possible (in ETH).
+        uint256 liquidationValue; // The value for a possible liquidation (in ETH).
+        uint256 borrowedPrice; // The price of the asset borrowed (in ETH).
+        uint256 collateralPrice; // The price of the collateral asset (in ETH).
+        uint256 borrowBalance; // Total borrow balance of the user for a given asset (in underlying).
+        uint256 supplyBalance; // The total of collateral of the user (in underlying).
+        uint256 amountToSeize; // The amount of collateral the liquidator can seize (in underlying).
+        uint256 liquidationBonus; // The liquidation bonus on Aave.
+        uint256 collateralReserveDecimals; // The number of decimals of the collateral asset in the reserve.
+        uint256 collateralTokenUnit; // The collateral token unit considering its decimals.
+        uint256 borrowedReserveDecimals; // The number of decimals of the borrowed asset in the reserve.
+        uint256 borrowedTokenUnit; // The unit of borrowed token considering its decimals.
+    }
+
+    struct LiquidityData {
+        uint256 collateralValue; // The collateral value (in ETH).
+        uint256 maxDebtValue; // The maximum debt value possible (in ETH).
+        uint256 debtValue; // The debt value (in ETH).
+    }
+
+    /// STORAGE ///
 
     MaxGas public maxGas; // Max gas to consume within loops in matching engine functions.
     uint8 public NDS; // Max number of iterations in the data structure sorting process.
