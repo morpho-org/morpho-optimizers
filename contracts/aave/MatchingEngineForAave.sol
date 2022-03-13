@@ -3,15 +3,13 @@ pragma solidity 0.8.7;
 
 import {IAToken} from "./interfaces/aave/IAToken.sol";
 import "./interfaces/aave/IScaledBalanceToken.sol";
-import "./interfaces/IMatchingEngineForAave.sol";
 
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
-import "../common/libraries/DoubleLinkedList.sol";
 import "./libraries/aave/WadRayMath.sol";
 
-import "./PositionsManagerForAaveStorage.sol";
+import "./positions-manager-parts/PositionsManagerForAaveStorage.sol";
 
 /// @title MatchingEngineManager.
 /// @notice Smart contract managing the matching engine.
