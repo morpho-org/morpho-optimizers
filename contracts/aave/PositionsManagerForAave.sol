@@ -189,8 +189,11 @@ contract PositionsManagerForAave is PositionsManagerForAaveLogic {
         (, , , vars.borrowedReserveDecimals, ) = lendingPool
         .getConfiguration(vars.tokenBorrowedAddress)
         .getParamsMemory();
-        vars.collateralTokenUnit = 10**vars.collateralReserveDecimals;
-        vars.borrowedTokenUnit = 10**vars.borrowedReserveDecimals;
+
+        unchecked {
+            vars.collateralTokenUnit = 10**vars.collateralReserveDecimals;
+            vars.borrowedTokenUnit = 10**vars.borrowedReserveDecimals;
+        }
 
         // Calculate the amount of collateral to seize (cf Aave):
         // seizeAmount = repayAmount * liquidationBonus * borrowedPrice * collateralTokenUnit / (collateralPrice * borrowedTokenUnit)
