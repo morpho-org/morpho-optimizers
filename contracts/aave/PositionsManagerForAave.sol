@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.7;
 
-import "./positions-manager-parts/PositionsManagerForAaveCore.sol";
+import "./positions-manager-parts/PositionsManagerForAaveLogic.sol";
 
 /// @title PositionsManagerForAave.
 /// @notice Smart contract interacting with Aave to enable P2P supply/borrow positions that can fallback on Aave's pool using pool tokens.
-contract PositionsManagerForAave is PositionsManagerForAaveCore {
+contract PositionsManagerForAave is PositionsManagerForAaveLogic {
     using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
     using MatchingEngineFns for IMatchingEngineForAave;
     using DoubleLinkedList for DoubleLinkedList.List;
