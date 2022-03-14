@@ -22,8 +22,11 @@ import "hardhat/console.sol";
 contract TestMatchingEngineIntegrated is DSTest, MatchingEngineForAave, Config {
     using DoubleLinkedList for DoubleLinkedList.List;
     using WadRayMath for uint256;
-    address private token;
+    address private eoa1;
+    address private eoa2;
     User private user;
+    uint256 private normalizer;
+    uint256 private p2pRate;
 
     HEVM public hevm = HEVM(HEVM_ADDRESS);
 
@@ -60,15 +63,22 @@ contract TestMatchingEngineIntegrated is DSTest, MatchingEngineForAave, Config {
         writeBalanceOf(address(user), dai, 100_000_000 ether);
         user.aaveSupply(dai, 1000 ether);
         user.sendTokens(aDai, address(this), 1000 ether);
+        marketsManager.createMarket(dai, 1000);
+    }
+
+    function setUp() public {
+        normalizer = lendingPool.getReserveNormalizedIncome(dai);
+        p2pRate = marketsManager.supplyP2PExchangeRate(aDai);
+        supplyBalanceInOf[aDai][address(1)].onPool = 0;
+        supplyBalanceInOf[aDai][address(2)].onPool = 0;
+        supplyBalanceInOf[aDai][address(1)].inP2P = 0;
+        supplyBalanceInOf[aDai][address(2)].inP2P = 0;
+        emptyList(suppliersOnPool[aDai]);
+        emptyList(suppliersInP2P[aDai]);
     }
 
     // multiple suppliers should be moved to p2p
     function test_match_suppliers() public {
-        marketsManager.createMarket(dai, 1000);
-
-        uint256 normalizer = lendingPool.getReserveNormalizedIncome(dai);
-        uint256 p2pRate = marketsManager.supplyP2PExchangeRate(aDai);
-
         uint256 expectedInUnderlying = uint256(1 ether).mulWadByRay(normalizer);
         uint256 expectedInP2P = expectedInUnderlying.divWadByRay(p2pRate);
 
@@ -90,6 +100,19 @@ contract TestMatchingEngineIntegrated is DSTest, MatchingEngineForAave, Config {
         assertEq(suppliersInP2P[aDai].getValueOf(address(2)), expectedInP2P, "array value 2");
     }
 
+    // should match delta first
+    function test_match_suppliers_delta() public {
+        uint256 expectedInUnderlying = uint256(1 ether).mulWadByRay(normalizer);
+        uint256 expectedInP2P = expectedInUnderlying.divWadByRay(p2pRate);
+        p2ps[aDai].supplyDelta = 2 * expectedInP2P;
+
+        this.matchSuppliers(IAToken(aDai), IERC20(dai), expectedInUnderlying, type(uint256).max);
+
+        assertEq(p2ps[aDai].supplyDelta, expectedInP2P, "supplyDelta not matched as expected");
+        assertEq(p2ps[aDai].supplyAmount, expectedInP2P);
+        require(suppliersInP2P[aDai].getHead() == address(0));
+    }
+
     /// Internal ///
 
     function writeBalanceOf(
@@ -98,5 +121,13 @@ contract TestMatchingEngineIntegrated is DSTest, MatchingEngineForAave, Config {
         uint256 value
     ) internal {
         hevm.store(acct, keccak256(abi.encode(who, slots[acct])), bytes32(value));
+    }
+
+    function emptyList(DoubleLinkedList.List storage list) private {
+        address head = list.getHead();
+        while (head != address(0)) {
+            list.remove(head);
+            head = list.getHead();
+        }
     }
 }
