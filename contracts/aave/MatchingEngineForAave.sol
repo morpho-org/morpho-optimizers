@@ -17,7 +17,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
     using WadRayMath for uint256;
     using Address for address;
 
-    /// Structs ///
+    /// STRUCTS ///
 
     // Struct to avoid stack too deep
     struct Vars {
@@ -70,7 +70,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         uint256 _borrowP2PAmount
     );
 
-    /// External ///
+    /// EXTERNAL ///
 
     /// @notice Matches suppliers' liquidity waiting on Aave up to the given `_amount` and move it to P2P.
     /// @dev Note: p2pExchangeRates must have been updated before calling this function.
@@ -357,7 +357,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         emit P2PAmountsUpdated(_poolTokenAddress, delta.supplyP2PAmount, delta.borrowP2PAmount);
     }
 
-    /// Public ///
+    /// PUBLIC ///
 
     /// @notice Updates borrowers matching engine with the new balances of a given user.
     /// @param _poolTokenAddress The address of the market on which to update the borrowers data structure.
