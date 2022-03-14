@@ -14,8 +14,9 @@ import "../helpers/Chains.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
-import {RewardsManagerForAaveOnEthAndAvax} from "@contracts/aave/markets-managers/RewardsManagerForAaveOnEthAndAvax.sol";
-import {RewardsManagerForAaveOnPolygon} from "@contracts/aave/markets-managers/RewardsManagerForAaveOnPolygon.sol";
+
+import {RewardsManagerForAaveOnEthAndAvax} from "@contracts/aave/rewards-managers/RewardsManagerForAaveOnEthAndAvax.sol";
+import {RewardsManagerForAaveOnPolygon} from "@contracts/aave/rewards-managers/RewardsManagerForAaveOnPolygon.sol";
 import {SwapManagerUniV3OnEth} from "@contracts/common/SwapManagerUniV3OnEth.sol";
 import {SwapManagerUniV3} from "@contracts/common/SwapManagerUniV3.sol";
 import {SwapManagerUniV2} from "@contracts/common/SwapManagerUniV2.sol";
