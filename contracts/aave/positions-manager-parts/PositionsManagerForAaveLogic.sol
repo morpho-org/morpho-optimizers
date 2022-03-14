@@ -7,9 +7,9 @@ import "../libraries/MatchingEngineFns.sol";
 import "./PositionsManagerForAaveGettersSetters.sol";
 import "../MatchingEngineForAave.sol";
 
-/// @title PositionsManagerForAaveCore.
+/// @title PositionsManagerForAaveLogic.
 /// @notice Main Logic of Morpho Protocol, implementation of the 5 main functionalities: supply, borrow, withdraw, repay, liquidate.
-contract PositionsManagerForAaveCore is PositionsManagerForAaveGettersSetters {
+contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
     using MatchingEngineFns for IMatchingEngineForAave;
     using DoubleLinkedList for DoubleLinkedList.List;
     using SafeTransferLib for ERC20;
