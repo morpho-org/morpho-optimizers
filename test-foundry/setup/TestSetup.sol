@@ -8,6 +8,9 @@ import "@contracts/aave/interfaces/aave/IProtocolDataProvider.sol";
 import "@contracts/aave/interfaces/IRewardsManagerForAave.sol";
 import "@contracts/common/interfaces/ISwapManager.sol";
 
+import "hardhat/console.sol";
+import "../helpers/Chains.sol";
+
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
@@ -26,7 +29,6 @@ import "@contracts/aave/PositionsManagerForAave.sol";
 import "@contracts/aave/MarketsManagerForAave.sol";
 import "./HevmAdapter.sol";
 import {Utils} from "./Utils.sol";
-import "hardhat/console.sol";
 import "@config/Config.sol";
 
 contract TestSetup is Config, Utils, HevmAdapter {
@@ -89,7 +91,7 @@ contract TestSetup is Config, Utils, HevmAdapter {
         );
         lendingPool = ILendingPool(lendingPoolAddressesProvider.getLendingPool());
 
-        if (block.chainid == 1) {
+        if (block.chainid == Chains.ETH_MAINNET) {
             // Mainnet network
             // Create a MORPHO / WETH pool
             uniswapPoolCreator = new UniswapPoolCreator();
@@ -100,7 +102,7 @@ contract TestSetup is Config, Utils, HevmAdapter {
             );
             morphoToken = new MorphoToken(address(uniswapPoolCreator));
             swapManager = new SwapManagerUniV3OnEth(address(morphoToken), MORPHO_UNIV3_FEE);
-        } else if (block.chainid == 137) {
+        } else if (block.chainid == Chains.POLYGON_MAINNET) {
             // Polygon network
             // Create a MORPHO / WMATIC pool
             uniswapPoolCreator = new UniswapPoolCreator();
@@ -116,7 +118,7 @@ contract TestSetup is Config, Utils, HevmAdapter {
                 REWARD_TOKEN,
                 REWARD_UNIV3_FEE
             );
-        } else if (block.chainid == 43114) {
+        } else if (block.chainid == Chains.AVALANCHE_MAINNET) {
             // Avalanche network
             // Create a MORPHO / WAVAX pool
             uniswapV2PoolCreator = new UniswapV2PoolCreator();
@@ -143,20 +145,20 @@ contract TestSetup is Config, Utils, HevmAdapter {
             maxGas
         );
 
-        if (block.chainid == 1) {
+        if (block.chainid == Chains.ETH_MAINNET) {
             // Mainnet network
             rewardsManager = new RewardsManagerForAaveOnEthAndAvax(
                 lendingPool,
                 IPositionsManagerForAave(address(positionsManager))
             );
             uniswapPoolCreator.createPoolAndMintPosition(address(morphoToken));
-        } else if (block.chainid == 43114) {
+        } else if (block.chainid == Chains.AVALANCHE_MAINNET) {
             // Avalanche network
             rewardsManager = new RewardsManagerForAaveOnEthAndAvax(
                 lendingPool,
                 IPositionsManagerForAave(address(positionsManager))
             );
-        } else if (block.chainid == 137) {
+        } else if (block.chainid == Chains.POLYGON_MAINNET) {
             // Polygon network
             rewardsManager = new RewardsManagerForAaveOnPolygon(
                 lendingPool,

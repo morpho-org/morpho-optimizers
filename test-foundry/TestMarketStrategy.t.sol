@@ -1,13 +1,9 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.7;
 
-import "@contracts/aave/libraries/aave/WadRayMath.sol";
-
 import "./setup/TestSetup.sol";
 
 contract TestMarketStrategy is TestSetup {
-    using WadRayMath for uint256;
-
     function test_borrow_flip_strategy_move_to_pool_borrower_first() public {
         uint256 amount = 10000 ether;
         uint256 toBorrow = 500 ether;
