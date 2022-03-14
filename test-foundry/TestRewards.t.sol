@@ -14,7 +14,7 @@ contract TestRewards is TestSetup {
         uint256 balanceBefore = supplier1.balanceOf(REWARD_TOKEN);
         uint256 index;
 
-        if (block.chainid == 43114 || block.chainid == 1) {
+        if (block.chainid == Chains.AVALANCHE_MAINNET || block.chainid == Chains.ETH_MAINNET) {
             (index, , ) = IAaveIncentivesController(aaveIncentivesControllerAddress).getAssetData(
                 aDai
             );
@@ -44,7 +44,7 @@ contract TestRewards is TestSetup {
         hevm.warp(block.timestamp + 365 days);
         positionsManager.claimRewards(aDaiInArray, false);
 
-        if (block.chainid == 43114 || block.chainid == 1) {
+        if (block.chainid == Chains.AVALANCHE_MAINNET || block.chainid == Chains.ETH_MAINNET) {
             (index, , ) = IAaveIncentivesController(aaveIncentivesControllerAddress).getAssetData(
                 aDai
             );
@@ -291,7 +291,7 @@ contract TestRewards is TestSetup {
         aDaiInArray[0] = aDai;
 
         hevm.warp(block.timestamp + 365 days);
-        if (block.chainid == 43114) {
+        if (block.chainid == Chains.AVALANCHE_MAINNET) {
             hevm.expectRevert("JoeRouter: INSUFFICIENT_OUTPUT_AMOUNT");
         } else {
             hevm.expectRevert("Too little received");
