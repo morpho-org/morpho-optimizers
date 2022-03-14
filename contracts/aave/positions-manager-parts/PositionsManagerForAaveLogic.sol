@@ -410,8 +410,10 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
         )
     {
         IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
+        uint256 numberOfEnteredMarkets = enteredMarkets[_user].length;
+        uint256 i;
 
-        for (uint256 i; i < enteredMarkets[_user].length; i++) {
+        while (i < numberOfEnteredMarkets) {
             address poolTokenEntered = enteredMarkets[_user][i];
             marketsManager.updateP2PExchangeRates(poolTokenEntered);
             AssetLiquidityData memory assetData = getUserLiquidityDataForAsset(
@@ -420,22 +422,29 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
                 oracle
             );
 
-            liquidationValue += assetData.liquidationValue;
-            maxDebtValue += assetData.maxDebtValue;
-            debtValue += assetData.debtValue;
+            unchecked {
+                liquidationValue += assetData.liquidationValue;
+                maxDebtValue += assetData.maxDebtValue;
+                debtValue += assetData.debtValue;
+                ++i;
+            }
 
             if (_poolTokenAddress == poolTokenEntered) {
                 debtValue += (_borrowedAmount * assetData.underlyingPrice) / assetData.tokenUnit;
-                maxDebtValue -= Math.min(
-                    maxDebtValue,
-                    (_withdrawnAmount * assetData.underlyingPrice * assetData.ltv) /
-                        (assetData.tokenUnit * MAX_BASIS_POINTS)
-                );
-                liquidationValue -= Math.min(
-                    liquidationValue,
-                    (_withdrawnAmount * assetData.underlyingPrice * assetData.liquidationValue) /
-                        (assetData.tokenUnit * MAX_BASIS_POINTS)
-                );
+
+                uint256 maxDebtValueSub = (_withdrawnAmount *
+                    assetData.underlyingPrice *
+                    assetData.ltv) / (assetData.tokenUnit * MAX_BASIS_POINTS);
+                uint256 liquidationValueSub = (_withdrawnAmount *
+                    assetData.underlyingPrice *
+                    assetData.liquidationValue) / (assetData.tokenUnit * MAX_BASIS_POINTS);
+
+                unchecked {
+                    maxDebtValue -= maxDebtValue < maxDebtValueSub ? maxDebtValue : maxDebtValueSub;
+                    liquidationValue -= liquidationValue < liquidationValueSub
+                        ? liquidationValue
+                        : liquidationValueSub;
+                }
             }
         }
     }

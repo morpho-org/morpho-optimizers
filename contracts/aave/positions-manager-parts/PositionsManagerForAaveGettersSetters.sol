@@ -129,8 +129,10 @@ abstract contract PositionsManagerForAaveGettersSetters is PositionsManagerForAa
         )
     {
         IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
+        uint256 numberOfEnteredMarkets = enteredMarkets[_user].length;
+        uint256 i;
 
-        for (uint256 i; i < enteredMarkets[_user].length; i++) {
+        while (i < numberOfEnteredMarkets) {
             address poolTokenEntered = enteredMarkets[_user][i];
             AssetLiquidityData memory assetData = getUserLiquidityDataForAsset(
                 _user,
@@ -138,10 +140,13 @@ abstract contract PositionsManagerForAaveGettersSetters is PositionsManagerForAa
                 oracle
             );
 
-            collateralValue += assetData.collateralValue;
-            maxDebtValue += assetData.maxDebtValue;
-            debtValue += assetData.debtValue;
-            liquidationValue += assetData.liquidationValue;
+            unchecked {
+                collateralValue += assetData.collateralValue;
+                maxDebtValue += assetData.maxDebtValue;
+                debtValue += assetData.debtValue;
+                liquidationValue += assetData.liquidationValue;
+                ++i;
+            }
         }
     }
 
@@ -158,22 +163,32 @@ abstract contract PositionsManagerForAaveGettersSetters is PositionsManagerForAa
         LiquidityData memory data;
         AssetLiquidityData memory assetData;
         IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
+        uint256 numberOfEnteredMarkets = enteredMarkets[_user].length;
+        uint256 i;
 
-        for (uint256 i; i < enteredMarkets[_user].length; i++) {
+        while (i < numberOfEnteredMarkets) {
             address poolTokenEntered = enteredMarkets[_user][i];
 
             if (_poolTokenAddress != poolTokenEntered) {
                 assetData = getUserLiquidityDataForAsset(_user, poolTokenEntered, oracle);
 
-                data.maxDebtValue += assetData.maxDebtValue;
-                data.debtValue += assetData.debtValue;
+                unchecked {
+                    data.maxDebtValue += assetData.maxDebtValue;
+                    data.debtValue += assetData.debtValue;
+                }
+            }
+
+            unchecked {
+                ++i;
             }
         }
 
         assetData = getUserLiquidityDataForAsset(_user, _poolTokenAddress, oracle);
 
-        data.maxDebtValue += assetData.maxDebtValue;
-        data.debtValue += assetData.debtValue;
+        unchecked {
+            data.maxDebtValue += assetData.maxDebtValue;
+            data.debtValue += assetData.debtValue;
+        }
 
         // Not possible to withdraw nor borrow
         if (data.maxDebtValue < data.debtValue) return (0, 0);
@@ -224,19 +239,25 @@ abstract contract PositionsManagerForAaveGettersSetters is PositionsManagerForAa
         .getParamsMemory();
         assetData.ltv = ltv;
         assetData.liquidationThreshold = liquidationThreshold;
-        assetData.tokenUnit = 10**reserveDecimals;
+
+        unchecked {
+            assetData.tokenUnit = 10**reserveDecimals;
+        }
 
         // Then, convert values to ETH
-        assetData.collateralValue =
-            (assetData.collateralValue * assetData.underlyingPrice) /
-            assetData.tokenUnit;
-        assetData.maxDebtValue = (assetData.collateralValue * ltv) / MAX_BASIS_POINTS;
-        assetData.liquidationValue =
-            (assetData.collateralValue * liquidationThreshold) /
-            MAX_BASIS_POINTS;
-        assetData.debtValue =
-            (assetData.debtValue * assetData.underlyingPrice) /
-            assetData.tokenUnit;
+        assetData.collateralValue = assetData.collateralValue * assetData.underlyingPrice;
+        unchecked {
+            assetData.collateralValue /= assetData.tokenUnit;
+        }
+
+        assetData.maxDebtValue = assetData.collateralValue * ltv;
+        assetData.liquidationValue = assetData.collateralValue * liquidationThreshold;
+        assetData.debtValue = assetData.debtValue * assetData.underlyingPrice;
+        unchecked {
+            assetData.maxDebtValue /= MAX_BASIS_POINTS;
+            assetData.liquidationValue /= MAX_BASIS_POINTS;
+            assetData.debtValue /= assetData.tokenUnit;
+        }
     }
 
     /// @dev Returns the supply balance of `_user` in the `_poolTokenAddress` market.
