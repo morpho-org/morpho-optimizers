@@ -12,7 +12,7 @@ import "./interfaces/IRewardsManagerForAave.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 abstract contract RewardsManagerForAave is IRewardsManagerForAave, Ownable {
-    /// Structs ///
+    /// STRUCTS ///
 
     struct LocalAssetData {
         uint256 lastIndex; // The last index for the given market.
@@ -20,7 +20,7 @@ abstract contract RewardsManagerForAave is IRewardsManagerForAave, Ownable {
         mapping(address => uint256) userIndex; // The current index for a given user.
     }
 
-    /// Storage ///
+    /// STORAGE ///
 
     mapping(address => uint256) public userUnclaimedRewards; // The unclaimed rewards of the user.
     mapping(address => LocalAssetData) public localAssetData; // The local data related to a given market.
@@ -30,7 +30,7 @@ abstract contract RewardsManagerForAave is IRewardsManagerForAave, Ownable {
     ILendingPool public lendingPool;
     IPositionsManagerForAave public positionsManager;
 
-    /// Events ///
+    /// EVENTS ///
 
     /// @notice Emitted the address of the `aaveIncentivesController` is set.
     /// @param _aaveIncentivesController The new address of the `aaveIncentivesController`.
@@ -42,12 +42,12 @@ abstract contract RewardsManagerForAave is IRewardsManagerForAave, Ownable {
     /// @param _index The new index value.
     event UserIndexUpdated(address _user, address _poolTokenAddress, uint256 _index);
 
-    /// Errors ///
+    /// ERRORS ///
 
     /// @notice Thrown when only the positions manager can call the function.
     error OnlyPositionsManager();
 
-    /// Modifiers ///
+    /// MODIFIERS ///
 
     /// @notice Prevents a user to call function allowed for the positions manager only.
     modifier onlyPositionsManager() {
@@ -55,7 +55,7 @@ abstract contract RewardsManagerForAave is IRewardsManagerForAave, Ownable {
         _;
     }
 
-    /// Constructor ///
+    /// CONSTRUCTOR ///
 
     /// @notice Constructs the RewardsManager contract.
     /// @param _lendingPool The lending pool on Aave.
@@ -65,7 +65,7 @@ abstract contract RewardsManagerForAave is IRewardsManagerForAave, Ownable {
         positionsManager = _positionsManager;
     }
 
-    /// External ///
+    /// EXTERNAL ///
 
     /// @notice Sets the `aaveIncentivesController`.
     /// @param _aaveIncentivesController The address of the `aaveIncentivesController`.
@@ -124,7 +124,7 @@ abstract contract RewardsManagerForAave is IRewardsManagerForAave, Ownable {
         userIndex_ = localData.userIndex[_user];
     }
 
-    /// Public ///
+    /// PUBLIC ///
 
     /// @notice Accrues unclaimed rewards for the given assets and returns the total unclaimed rewards.
     /// @param _assets The assets for which to accrue rewards (aToken or variable debt token).
@@ -153,7 +153,7 @@ abstract contract RewardsManagerForAave is IRewardsManagerForAave, Ownable {
         userUnclaimedRewards[_user] = unclaimedRewards;
     }
 
-    /// Internal ///
+    /// INTERNAL ///
 
     /// @dev Updates the state of an user in a distribution.
     /// @param _user The address of the user.

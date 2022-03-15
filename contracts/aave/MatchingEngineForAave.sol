@@ -122,7 +122,9 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
                     vars.normalizer
                 );
                 unchecked {
-                    vars.toMatch = Math.min(vars.inUnderlying, _amount - matched);
+                    vars.toMatch = vars.inUnderlying < _amount - matched
+                        ? vars.inUnderlying
+                        : _amount - matched;
                     matched += vars.toMatch;
                 }
 
@@ -194,7 +196,9 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
                     vars.p2pRate
                 );
                 unchecked {
-                    vars.toUnmatch = Math.min(vars.inUnderlying, remainingToUnmatch); // In underlying
+                    vars.toUnmatch = vars.inUnderlying < remainingToUnmatch
+                        ? vars.inUnderlying
+                        : remainingToUnmatch; // In underlying
                     remainingToUnmatch -= vars.toUnmatch;
                 }
 
@@ -270,7 +274,9 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
                     vars.normalizer
                 );
                 unchecked {
-                    vars.toMatch = Math.min(vars.inUnderlying, _amount - matched);
+                    vars.toMatch = vars.inUnderlying < _amount - matched
+                        ? vars.inUnderlying
+                        : _amount - matched;
                     matched += vars.toMatch;
                 }
 
@@ -339,7 +345,9 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
                     vars.p2pRate
                 );
                 unchecked {
-                    vars.toUnmatch = Math.min(vars.inUnderlying, remainingToUnmatch); // In underlying
+                    vars.toUnmatch = vars.inUnderlying < remainingToUnmatch
+                        ? vars.inUnderlying
+                        : remainingToUnmatch; // In underlying
                     remainingToUnmatch -= vars.toUnmatch;
                 }
 
