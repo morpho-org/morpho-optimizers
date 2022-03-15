@@ -5,7 +5,6 @@ import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 import "../libraries/MatchingEngineFns.sol";
 
 import "./PositionsManagerForAaveGettersSetters.sol";
-import "../MatchingEngineForAave.sol";
 
 /// @title PositionsManagerForAaveLogic.
 /// @notice Main Logic of Morpho Protocol, implementation of the 5 main functionalities: supply, borrow, withdraw, repay, liquidate.
@@ -19,13 +18,16 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
 
     /// @notice Initializes the PositionsManagerForAave contract.
     /// @param _marketsManager The `marketsManager`.
+    /// @param _matchingEngine The `matchingEngine`.
     /// @param _lendingPoolAddressesProvider The `addressesProvider`.
     /// @param _swapManager The `swapManager`.
     function initialize(
         IMarketsManagerForAave _marketsManager,
+        IMatchingEngineForAave _matchingEngine,
         ILendingPoolAddressesProvider _lendingPoolAddressesProvider,
         ISwapManager _swapManager,
-        MaxGas memory _maxGas
+        MaxGas memory _maxGas,
+        uint8 _NDS
     ) external initializer {
         __UUPSUpgradeable_init();
         __ReentrancyGuard_init();
@@ -33,12 +35,12 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
 
         maxGas = _maxGas;
         marketsManager = _marketsManager;
+        matchingEngine = _matchingEngine;
         addressesProvider = _lendingPoolAddressesProvider;
         lendingPool = ILendingPool(addressesProvider.getLendingPool());
-        matchingEngine = new MatchingEngineForAave();
         swapManager = _swapManager;
 
-        NDS = 20;
+        NDS = _NDS;
     }
 
     /// @dev Overrides `_authorizeUpgrade` OZ function with onlyOwner Access Control.

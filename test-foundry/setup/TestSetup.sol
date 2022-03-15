@@ -28,6 +28,7 @@ import "../helpers/SimplePriceOracle.sol";
 import {User} from "../helpers/User.sol";
 import "@contracts/aave/PositionsManagerForAave.sol";
 import "@contracts/aave/MarketsManagerForAave.sol";
+import "@contracts/aave/MatchingEngineForAave.sol";
 import "./HevmAdapter.sol";
 import {Utils} from "./Utils.sol";
 import "@config/Config.sol";
@@ -42,6 +43,7 @@ contract TestSetup is Config, Utils, HevmAdapter {
     ERC1967Proxy public positionsManagerProxy;
     ERC1967Proxy public marketsManagerProxy;
 
+    MatchingEngineForAave internal matchingEngine;
     PositionsManagerForAave internal positionsManagerImpl;
     PositionsManagerForAave internal positionsManager;
     PositionsManagerForAave internal fakePositionsManagerImpl;
@@ -139,11 +141,14 @@ contract TestSetup is Config, Utils, HevmAdapter {
         positionsManagerImpl = new PositionsManagerForAave();
         positionsManagerProxy = new ERC1967Proxy(address(positionsManagerImpl), "");
         positionsManager = PositionsManagerForAave(address(positionsManagerProxy));
+        matchingEngine = new MatchingEngineForAave();
         positionsManager.initialize(
             marketsManager,
+            matchingEngine,
             ILendingPoolAddressesProvider(lendingPoolAddressesProviderAddress),
             swapManager,
-            maxGas
+            maxGas,
+            20
         );
 
         if (block.chainid == Chains.ETH_MAINNET) {

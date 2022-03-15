@@ -10,7 +10,6 @@ import {ReserveConfiguration} from "./libraries/aave/ReserveConfiguration.sol";
 import "./libraries/aave/WadRayMath.sol";
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 
