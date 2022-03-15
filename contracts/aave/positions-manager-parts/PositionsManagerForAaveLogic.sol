@@ -29,7 +29,6 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
         MaxGas memory _maxGas,
         uint8 _NDS
     ) external initializer {
-        __UUPSUpgradeable_init();
         __ReentrancyGuard_init();
         __Ownable_init();
 
@@ -42,9 +41,6 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
 
         NDS = _NDS;
     }
-
-    /// @dev Overrides `_authorizeUpgrade` OZ function with onlyOwner Access Control.
-    function _authorizeUpgrade(address) internal override onlyOwner {}
 
     /// LOGIC ///
 

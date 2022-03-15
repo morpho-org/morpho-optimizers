@@ -11,7 +11,8 @@ import "@contracts/common/interfaces/ISwapManager.sol";
 import "hardhat/console.sol";
 import "../helpers/Chains.sol";
 
-import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 
@@ -40,15 +41,16 @@ contract TestSetup is Config, Utils, HevmAdapter {
     uint256 public constant MAX_BASIS_POINTS = 10000;
     uint256 public constant INITIAL_BALANCE = 1_000_000;
 
-    ERC1967Proxy public positionsManagerProxy;
-    ERC1967Proxy public marketsManagerProxy;
+    ProxyAdmin proxyAdmin;
+    TransparentUpgradeableProxy public positionsManagerProxy;
+    TransparentUpgradeableProxy public marketsManagerProxy;
 
     MatchingEngineForAave internal matchingEngine;
-    PositionsManagerForAave internal positionsManagerImpl;
+    PositionsManagerForAave internal positionsManagerImplV1;
     PositionsManagerForAave internal positionsManager;
     PositionsManagerForAave internal fakePositionsManagerImpl;
     MarketsManagerForAave internal marketsManager;
-    MarketsManagerForAave internal marketsManagerImpl;
+    MarketsManagerForAave internal marketsManagerImplV1;
     IRewardsManagerForAave internal rewardsManager;
     ISwapManager public swapManager;
     UniswapPoolCreator public uniswapPoolCreator;
@@ -131,17 +133,30 @@ contract TestSetup is Config, Utils, HevmAdapter {
             swapManager = new SwapManagerUniV2(address(morphoToken), REWARD_TOKEN);
         }
 
+        matchingEngine = new MatchingEngineForAave();
+
         // Deploy proxy
 
-        marketsManagerImpl = new MarketsManagerForAave();
-        marketsManagerProxy = new ERC1967Proxy(address(marketsManagerImpl), "");
+        proxyAdmin = new ProxyAdmin();
+
+        marketsManagerImplV1 = new MarketsManagerForAave();
+        marketsManagerProxy = new TransparentUpgradeableProxy(
+            address(marketsManagerImplV1),
+            address(this),
+            ""
+        );
+        marketsManagerProxy.changeAdmin(address(proxyAdmin));
         marketsManager = MarketsManagerForAave(address(marketsManagerProxy));
         marketsManager.initialize(lendingPool);
 
-        positionsManagerImpl = new PositionsManagerForAave();
-        positionsManagerProxy = new ERC1967Proxy(address(positionsManagerImpl), "");
+        positionsManagerImplV1 = new PositionsManagerForAave();
+        positionsManagerProxy = new TransparentUpgradeableProxy(
+            address(positionsManagerImplV1),
+            address(this),
+            ""
+        );
+        positionsManagerProxy.changeAdmin(address(proxyAdmin));
         positionsManager = PositionsManagerForAave(address(positionsManagerProxy));
-        matchingEngine = new MatchingEngineForAave();
         positionsManager.initialize(
             marketsManager,
             matchingEngine,

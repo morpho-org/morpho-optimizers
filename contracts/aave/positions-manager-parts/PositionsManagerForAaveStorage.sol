@@ -13,14 +13,9 @@ import "../../common/interfaces/ISwapManager.sol";
 import "../../common/libraries/DoubleLinkedList.sol";
 
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
-abstract contract PositionsManagerForAaveStorage is
-    UUPSUpgradeable,
-    OwnableUpgradeable,
-    ReentrancyGuardUpgradeable
-{
+abstract contract PositionsManagerForAaveStorage is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     /// ENUMS ///
 
     enum PositionType {
