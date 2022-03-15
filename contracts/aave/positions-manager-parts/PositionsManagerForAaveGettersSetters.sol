@@ -250,10 +250,10 @@ abstract contract PositionsManagerForAaveGettersSetters is PositionsManagerForAa
             assetData.collateralValue /= assetData.tokenUnit;
         }
 
-        assetData.maxDebtValue = assetData.collateralValue * ltv;
-        assetData.liquidationValue = assetData.collateralValue * liquidationThreshold;
         assetData.debtValue = assetData.debtValue * assetData.underlyingPrice;
         unchecked {
+            assetData.maxDebtValue = assetData.collateralValue * ltv;
+            assetData.liquidationValue = assetData.collateralValue * liquidationThreshold;
             assetData.maxDebtValue /= MAX_BASIS_POINTS;
             assetData.liquidationValue /= MAX_BASIS_POINTS;
             assetData.debtValue /= assetData.tokenUnit;
