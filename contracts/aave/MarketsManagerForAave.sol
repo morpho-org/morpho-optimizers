@@ -17,14 +17,14 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
     using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
     using WadRayMath for uint256;
 
-    /// Structs ///
+    /// STRUCTS ///
 
     struct LastPoolIndexes {
         uint256 lastSupplyPoolIndex; // Last supply pool index (normalized income) stored.
         uint256 lastBorrowPoolIndex; // Last borrow pool index (normalized variable debt) stored.
     }
 
-    /// Storage ///
+    /// STORAGE ///
 
     uint16 public constant MAX_BASIS_POINTS = 10000; // 100% in basis point.
     uint16 public constant HALF_MAX_BASIS_POINTS = 5000; // 50% in basis point.
@@ -43,7 +43,7 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
     IPositionsManagerForAave public positionsManager;
     ILendingPool public lendingPool;
 
-    /// Events ///
+    /// EVENTS ///
 
     /// @notice Emitted when a new market is created.
     /// @param _marketAddress The address of the market that has been created.
@@ -83,7 +83,7 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
     /// @param _newValue The new value of the `reserveFactor`.
     event ReserveFactorSet(address _marketAddress, uint16 _newValue);
 
-    /// Errors ///
+    /// ERRORS ///
 
     /// @notice Thrown when the market is not created yet.
     error MarketNotCreated();
@@ -100,7 +100,7 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
     /// @notice Thrown when only the positions manager can call the function.
     error OnlyPositionsManager();
 
-    /// Modifiers ///
+    /// MODIFIERS ///
 
     /// @notice Prevents to update a market not created yet.
     /// @param _marketAddress The address of the market to check.
@@ -115,7 +115,7 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
         _;
     }
 
-    /// External ///
+    /// UPGRADE ///
 
     /// @notice Initializes the MarketsManagerForAave contract.
     /// @param _lendingPool The lending pool.
@@ -124,6 +124,8 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
 
         lendingPool = ILendingPool(_lendingPool);
     }
+
+    /// EXTERNAL ///
 
     /// @notice Sets the `positionsManager` to interact with Aave.
     /// @param _positionsManager The address of the `positionsManager`.
@@ -261,7 +263,7 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
         noP2P_ = noP2P[_marketAddress];
     }
 
-    /// Public ///
+    /// PUBLIC ///
 
     /// @notice Updates the P2P Second Percentage Yield and the current P2P exchange rates.
     /// @param _marketAddress The address of the market we want to update.
@@ -318,7 +320,7 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
         );
     }
 
-    /// Internal ///
+    /// INTERNAL ///
 
     /// @dev calculates compounded interest over a period of time.
     ///   To avoid expensive exponentiation, the calculation is performed using a binomial approximation:
