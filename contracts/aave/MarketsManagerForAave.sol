@@ -12,7 +12,6 @@ import "./libraries/aave/WadRayMath.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import "@openzeppelin/contracts/utils/math/Math.sol";
 
 /// @title MarketsManagerForAave
 /// @notice Smart contract managing the markets used by a MorphoPositionsManagerForAave contract, an other contract interacting with Aave or a fork of Aave.
@@ -405,10 +404,12 @@ contract MarketsManagerForAave is IMarketsManagerForAave, UUPSUpgradeable, Ownab
             IAToken(_marketAddress).UNDERLYING_ASSET_ADDRESS()
         );
 
-        uint256 meanSPY = Math.average(
-            reserveData.currentLiquidityRate,
-            reserveData.currentVariableBorrowRate
-        ) / SECONDS_PER_YEAR; // In ray
+        uint256 meanSPY;
+        unchecked {
+            meanSPY =
+                (reserveData.currentLiquidityRate + reserveData.currentVariableBorrowRate) /
+                (2 * SECONDS_PER_YEAR);
+        }
 
         supplyP2PSPY[_marketAddress] =
             (meanSPY * (MAX_BASIS_POINTS - reserveFactor[_marketAddress])) /

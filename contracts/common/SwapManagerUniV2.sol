@@ -9,12 +9,12 @@ import "./interfaces/ISwapManager.sol";
 import "@uniswap/lib/contracts/libraries/FixedPoint.sol";
 import "@uniswap/v2-periphery/contracts/libraries/UniswapV2OracleLibrary.sol";
 
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 
 /// @title SwapManager for Uniswap V2.
 /// @dev Smart contract managing the swap of reward token to Morpho token.
 contract SwapManagerUniV2 is ISwapManager {
-    using SafeERC20 for IERC20;
+    using SafeTransferLib for ERC20;
     using FixedPoint for *;
 
     uint256 public constant PERIOD = 1 hours;
@@ -132,7 +132,7 @@ contract SwapManagerUniV2 is ISwapManager {
         path[1] = MORPHO;
 
         // Execute the swap
-        IERC20(REWARD_TOKEN).safeApprove(address(swapRouter), _amountIn);
+        ERC20(REWARD_TOKEN).safeApprove(address(swapRouter), _amountIn);
         uint256[] memory amountsOut = swapRouter.swapExactTokensForTokens(
             _amountIn,
             expectedAmountOutMinimum,
