@@ -8,7 +8,7 @@ contract TestUpgradeable is TestSetup {
         marketsManager.setReserveFactor(aDai, 1);
 
         MarketsManagerForAave marketsManagerImplV2 = new MarketsManagerForAave();
-        marketsManager.upgradeTo(address(marketsManagerImplV2));
+        proxyAdmin.upgrade(marketsManagerProxy, address(marketsManagerImplV2));
 
         // Should not change
         assertEq(marketsManager.reserveFactor(aDai), 1);
@@ -22,7 +22,7 @@ contract TestUpgradeable is TestSetup {
         uint256 expectedOnPool = underlyingToScaledBalance(amount, normalizedIncome);
 
         PositionsManagerForAave positionsManagerImplV2 = new PositionsManagerForAave();
-        positionsManager.upgradeTo(address(positionsManagerImplV2));
+        proxyAdmin.upgrade(positionsManagerProxy, address(positionsManagerImplV2));
 
         // Should not change
         (, uint256 onPool) = positionsManager.supplyBalanceInOf(aDai, address(supplier1));
@@ -34,9 +34,9 @@ contract TestUpgradeable is TestSetup {
 
         hevm.prank(address(supplier1));
         hevm.expectRevert("Ownable: caller is not the owner");
-        marketsManager.upgradeTo(address(marketsManagerImplV2));
+        proxyAdmin.upgrade(marketsManagerProxy, address(marketsManagerImplV2));
 
-        marketsManager.upgradeTo(address(marketsManagerImplV2));
+        proxyAdmin.upgrade(marketsManagerProxy, address(marketsManagerImplV2));
     }
 
     function test_only_owner_of_proxy_admin_can_upgrade_and_call_markets_manager() public {
@@ -44,32 +44,32 @@ contract TestUpgradeable is TestSetup {
 
         hevm.prank(address(supplier1));
         hevm.expectRevert("Ownable: caller is not the owner");
-        marketsManager.upgradeToAndCall(address(marketsManagerImplV2), "");
+        proxyAdmin.upgradeAndCall(marketsManagerProxy, address(marketsManagerImplV2), "");
 
         // Revert for wrong data not wrong caller
         hevm.expectRevert("Address: low-level delegate call failed");
-        marketsManager.upgradeToAndCall(address(marketsManagerImplV2), "");
+        proxyAdmin.upgradeAndCall(marketsManagerProxy, address(marketsManagerImplV2), "");
     }
 
     function test_only_owner_of_proxy_admin_can_upgrade_positions_manager() public {
-        PositionsManagerForAave positionsManager2 = new PositionsManagerForAave();
+        PositionsManagerForAave positionsManagerImplV2 = new PositionsManagerForAave();
 
         hevm.prank(address(supplier1));
         hevm.expectRevert("Ownable: caller is not the owner");
-        positionsManager.upgradeTo(address(positionsManager2));
+        proxyAdmin.upgrade(positionsManagerProxy, address(positionsManagerImplV2));
 
-        positionsManager.upgradeTo(address(positionsManager2));
+        proxyAdmin.upgrade(positionsManagerProxy, address(positionsManagerImplV2));
     }
 
     function test_only_owner_of_proxy_admin_can_upgrade_and_call_positions_manager() public {
-        PositionsManagerForAave positionsManager2 = new PositionsManagerForAave();
+        PositionsManagerForAave positionsManagerImplV2 = new PositionsManagerForAave();
 
         hevm.prank(address(supplier1));
         hevm.expectRevert("Ownable: caller is not the owner");
-        positionsManager.upgradeToAndCall(address(positionsManager2), "");
+        proxyAdmin.upgradeAndCall(positionsManagerProxy, address(positionsManagerImplV2), "");
 
         // Revert for wrong data not wrong caller
         hevm.expectRevert("Address: low-level delegate call failed");
-        positionsManager.upgradeToAndCall(address(positionsManager2), "");
+        proxyAdmin.upgradeAndCall(positionsManagerProxy, address(positionsManagerImplV2), "");
     }
 }
