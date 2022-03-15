@@ -56,7 +56,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
     /// @param _borrowP2PDelta The borrow P2P delta after update.
     event BorrowP2PDeltaUpdated(address indexed _poolTokenAddress, uint256 _borrowP2PDelta);
 
-    /// @notice Emitted when the borrow P2P delta is updated.
+    /// @notice Emitted when the supply P2P delta is updated.
     /// @param _poolTokenAddress The address of the market.
     /// @param _supplyP2PDelta The supply P2P delta after update.
     event SupplyP2PDeltaUpdated(address indexed _poolTokenAddress, uint256 _supplyP2PDelta);
@@ -73,7 +73,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
 
     /// External ///
 
-    /// @notice Matches suppliers' liquidity waiting on Aave for the given `_amount` and move it to P2P.
+    /// @notice Matches suppliers' liquidity waiting on Aave up to the given `_amount` and move it to P2P.
     /// @dev Note: p2pExchangeRates must have been updated before calling this function.
     /// @param _poolToken The pool token of the market from which to match suppliers.
     /// @param _underlyingToken The underlying token of the market to find liquidity.
@@ -139,7 +139,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         emit P2PAmountsUpdated(poolTokenAddress, delta.supplyP2PAmount, delta.borrowP2PAmount);
     }
 
-    /// @notice Unmatches suppliers' liquidity in P2P for the given `_amount` and move it to Aave.
+    /// @notice Unmatches suppliers' liquidity in P2P up to the given `_amount` and move it to Aave.
     /// @dev Note: p2pExchangeRates must have been updated before calling this function.
     /// @param _poolTokenAddress The address of the market from which to unmatch suppliers.
     /// @param _amount The amount to search for (in underlying).
@@ -217,7 +217,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         emit P2PAmountsUpdated(_poolTokenAddress, delta.supplyP2PAmount, delta.borrowP2PAmount);
     }
 
-    /// @notice Matches borrowers' liquidity waiting on Aave for the given `_amount` and move it to P2P.
+    /// @notice Matches borrowers' liquidity waiting on Aave up to the given `_amount` and move it to P2P.
     /// @dev Note: p2pExchangeRates must have been updated before calling this function.
     /// @param _poolToken The pool token of the market from which to match borrowers.
     /// @param _underlyingToken The underlying token of the market to find liquidity.
