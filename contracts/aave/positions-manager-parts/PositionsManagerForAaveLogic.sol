@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.7;
 
+import "hardhat/console.sol";
+
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 import "../libraries/MatchingEngineFns.sol";
 
@@ -196,9 +198,27 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
             ); // In poolToken
             matchingEngine.updateSuppliersDC(_poolTokenAddress, _supplier);
 
-            if (withdrawnInUnderlying > 0)
-                _withdrawERC20FromPool(_poolTokenAddress, underlyingToken, withdrawnInUnderlying); // Reverts on error
+            (
+                ,
+                // uint256 totalCollateralETH,
+                uint256 totalDebtETH,
+                ,
+                ,
+                // uint256 availableBorrowsETH,
+                // uint256 currentLiquidationThreshold,
+                uint256 ltv,
+                uint256 healthFactor
+            ) = lendingPool.getUserAccountData(address(this));
+            // console.log("totalCollateralETH", totalCollateralETH);
+            console.log("totalDebtETH", totalDebtETH);
+            // console.log("availableBorrowsETH", availableBorrowsETH);
+            // console.log("currentLiquidationThreshold", currentLiquidationThreshold);
+            console.log("ltv", ltv);
+            console.log("healthFactor", healthFactor);
+
+            _withdrawERC20FromPool(_poolTokenAddress, underlyingToken, withdrawnInUnderlying); // Reverts on error
             remainingToWithdraw -= withdrawnInUnderlying;
+            console.log("after");
         }
 
         /// Transfer withdraw ///
@@ -224,14 +244,14 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
                     _maxGasToConsume / 2
                 );
 
+                matched = Math.min(matched, IAToken(_poolTokenAddress).balanceOf(address(this)));
+
                 if (matched > 0) {
-                    matched = Math.min(
-                        matched,
-                        IAToken(_poolTokenAddress).balanceOf(address(this))
-                    );
                     _withdrawERC20FromPool(_poolTokenAddress, underlyingToken, matched); // Reverts on error
                     remainingToWithdraw -= matched;
                 }
+
+                console.log("after");
             }
 
             /// Hard withdraw ///

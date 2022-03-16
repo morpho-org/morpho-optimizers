@@ -428,8 +428,8 @@ contract TestWithdraw is TestSetup {
 
     // Delta hard withdraw
     function test_withdraw_3_3_5() public {
-        // 1.3e6 allows only 10 unmatch borrowers
-        setMaxGasHelper(3e6, 3e6, 2.6e6, 3e6);
+        // 2.6e6 allows only 10 unmatch borrowers
+        setMaxGasHelper(3e6, 3e6, 2.6e6, 2.6e6);
 
         uint256 borrowedAmount = 1 ether;
         uint256 collateral = 2 * borrowedAmount;
@@ -585,8 +585,8 @@ contract TestWithdraw is TestSetup {
 
     // Test delta rate issue
     function test_withdraw_3_3_6() public {
-        // 1.3e6 allows only 10 unmatch borrowers
-        setMaxGasHelper(3e6, 3e6, 2.6e6, 3e6);
+        // 2.6e6 allows only 10 unmatch borrowers
+        setMaxGasHelper(3e6, 3e6, 2.6e6, 2.6e6);
 
         uint256 borrowedAmount = 1 ether;
         uint256 collateral = 2 * borrowedAmount;
@@ -612,9 +612,9 @@ contract TestWithdraw is TestSetup {
         hevm.warp(block.timestamp + (365 days));
 
         for (uint256 i = 0; i < 20; i++) {
-            borrowers[i].approve(dai, type(uint64).max);
-            borrowers[i].repay(aDai, type(uint64).max); // not enough tokens are repaid here, because of the rate begin too low
-            borrowers[i].withdraw(usdc, type(uint64).max); // Reverts here, because of the Morpho's position on the pool
+            borrowers[i].approve(dai, type(uint256).max);
+            borrowers[i].repay(aDai, type(uint256).max); // not enough tokens are repaid here, because of the rate begin too low
+            borrowers[i].withdraw(aUsdc, type(uint256).max); // Reverts here, because of the Morpho's position on the pool
         }
     }
 

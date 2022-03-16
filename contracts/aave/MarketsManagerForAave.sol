@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.7;
 
+import "hardhat/console.sol";
+
 import {IAToken} from "./interfaces/aave/IAToken.sol";
 import "./interfaces/aave/ILendingPool.sol";
 import "./interfaces/IPositionsManagerForAave.sol";
@@ -14,7 +16,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 
-/// @title MarketsManagerForAave
+/// @title MarketsManagerForAave.
 /// @notice Smart contract managing the markets used by a MorphoPositionsManagerForAave contract, an other contract interacting with Aave or a fork of Aave.
 contract MarketsManagerForAave is IMarketsManagerForAave, UUPSUpgradeable, OwnableUpgradeable {
     using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
@@ -324,39 +326,7 @@ contract MarketsManagerForAave is IMarketsManagerForAave, UUPSUpgradeable, Ownab
 
     /// Internal ///
 
-    /// @dev calculates compounded interest over a period of time.
-    ///   To avoid expensive exponentiation, the calculation is performed using a binomial approximation:
-    ///   (1+x)^n = 1+n*x+[n/2*(n-1)]*x^2+[n/6*(n-1)*(n-2)*x^3...
-    /// @param _rate The SPY to use in the computation.
-    /// @param _elapsedTime The amount of time during to get the interest for.
-    /// @return results in ray.
-    function _computeCompoundedInterest(uint256 _rate, uint256 _elapsedTime)
-        internal
-        pure
-        returns (uint256)
-    {
-        if (_elapsedTime == 0) {
-            return WadRayMath.ray();
-        }
-
-        if (_elapsedTime == 1) {
-            return WadRayMath.ray() + _rate;
-        }
-
-        uint256 ratePowerTwo = _rate.rayMul(_rate);
-        uint256 ratePowerThree = ratePowerTwo.rayMul(_rate);
-
-        return
-            WadRayMath.ray() +
-            _rate *
-            _elapsedTime +
-            (_elapsedTime * (_elapsedTime - 1) * ratePowerTwo) /
-            2 +
-            (_elapsedTime * (_elapsedTime - 1) * (_elapsedTime - 2) * ratePowerThree) /
-            6;
-    }
-
-    /// @notice Updates the P2P exchange rates, taking into account the Second Percentage Yield values.
+    /// @dev Updates the P2P exchange rates, taking into account the Second Percentage Yield values.
     /// @param _marketAddress The address of the market to update.
     function _updateP2PExchangeRates(address _marketAddress) internal {
         address underlyingTokenAddress = IAToken(_marketAddress).UNDERLYING_ASSET_ADDRESS();
@@ -398,7 +368,7 @@ contract MarketsManagerForAave is IMarketsManagerForAave, UUPSUpgradeable, Ownab
         );
     }
 
-    /// @notice Updates the P2P Second Percentage Yield of supply and borrow.
+    /// @dev Updates the P2P Second Percentage Yield of supply and borrow.
     /// @param _marketAddress The address of the market to update.
     function _updateSPYs(address _marketAddress) internal {
         DataTypes.ReserveData memory reserveData = lendingPool.getReserveData(
@@ -460,6 +430,38 @@ contract MarketsManagerForAave is IMarketsManagerForAave, UUPSUpgradeable, Ownab
                     ) + (shareOfTheDelta.rayMul(_poolIndex).rayDiv(_lastPoolIndex))
                 );
         }
+    }
+
+    /// @dev Calculates compounded interest over a period of time.
+    ///   To avoid expensive exponentiation, the calculation is performed using a binomial approximation:
+    ///   (1+x)^n = 1+n*x+[n/2*(n-1)]*x^2+[n/6*(n-1)*(n-2)*x^3...
+    /// @param _rate The SPY to use in the computation.
+    /// @param _elapsedTime The amount of time during to get the interest for.
+    /// @return Result in ray.
+    function _computeCompoundedInterest(uint256 _rate, uint256 _elapsedTime)
+        internal
+        pure
+        returns (uint256)
+    {
+        if (_elapsedTime == 0) {
+            return WadRayMath.ray();
+        }
+
+        if (_elapsedTime == 1) {
+            return WadRayMath.ray() + _rate;
+        }
+
+        uint256 ratePowerTwo = _rate.rayMul(_rate);
+        uint256 ratePowerThree = ratePowerTwo.rayMul(_rate);
+
+        return
+            WadRayMath.ray() +
+            _rate *
+            _elapsedTime +
+            (_elapsedTime * (_elapsedTime - 1) * ratePowerTwo) /
+            2 +
+            (_elapsedTime * (_elapsedTime - 1) * (_elapsedTime - 2) * ratePowerThree) /
+            6;
     }
 
     /// @dev Overrides `_authorizeUpgrade` OZ function with onlyOwner Access Control.
