@@ -609,6 +609,13 @@ contract TestWithdraw is TestSetup {
         // Should create a delta on borrowers side
         supplier1.withdraw(aDai, type(uint256).max); // Rates updated AT THE BEGINNING ONLY. Borrow rates are too low.
 
+        // Allows the test to pass
+        // hevm.prank(address(supplier1));
+        // IERC20(dai).transfer(address(this), 1000 ether);
+        // IERC20(dai).approve(address(lendingPool), 1000 ether);
+        // lendingPool.deposit(dai, 1000 ether, address(this), 0);
+        // IERC20(aDai).transfer(address(positionsManager), 999 ether);
+
         hevm.warp(block.timestamp + (365 days));
 
         for (uint256 i = 0; i < 20; i++) {
