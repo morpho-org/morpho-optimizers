@@ -4,7 +4,6 @@ pragma solidity 0.8.7;
 import {IAToken} from "./interfaces/aave/IAToken.sol";
 import "./interfaces/aave/IScaledBalanceToken.sol";
 
-import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "./libraries/aave/WadRayMath.sol";
