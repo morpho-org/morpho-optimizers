@@ -435,7 +435,7 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
 
         for (uint256 i; i < enteredMarkets[_user].length; i++) {
             address poolTokenEntered = enteredMarkets[_user][i];
-            marketsManager.updateP2PExchangeRates(poolTokenEntered);
+            marketsManager.updateRates(poolTokenEntered);
             AssetLiquidityData memory assetData = getUserLiquidityDataForAsset(
                 _user,
                 poolTokenEntered,

@@ -106,7 +106,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveLogic {
     /// @param _poolTokenAddress The address of the market the user wants to interact with.
     /// @param _amount The amount of tokens (in underlying) to withdraw from supply.
     function withdraw(address _poolTokenAddress, uint256 _amount) external nonReentrant {
-        marketsManager.updateP2PExchangeRates(_poolTokenAddress);
+        marketsManager.updateRates(_poolTokenAddress);
 
         uint256 toWithdraw = Math.min(
             _getUserSupplyBalanceInOf(
@@ -126,7 +126,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveLogic {
     /// @param _poolTokenAddress The address of the market the user wants to interact with.
     /// @param _amount The amount of token (in underlying) to repay from borrow.
     function repay(address _poolTokenAddress, uint256 _amount) external nonReentrant {
-        marketsManager.updateP2PExchangeRates(_poolTokenAddress);
+        marketsManager.updateRates(_poolTokenAddress);
 
         uint256 toRepay = Math.min(
             _getUserBorrowBalanceInOf(
