@@ -6,7 +6,7 @@ import "@contracts/aave/interfaces/IPositionsManagerForAave.sol";
 import "@contracts/aave/libraries/aave/WadRayMath.sol";
 
 import "./setup/TestSetup.sol";
-import {Attacker} from "./helpers/Attacker.sol";
+import {Attacker} from "../common/helpers/Attacker.sol";
 
 contract TestWithdraw is TestSetup {
     using WadRayMath for uint256;
