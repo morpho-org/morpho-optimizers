@@ -132,29 +132,24 @@ contract SwapManagerUniV3OnEth is ISwapManager {
         secondsAgo[0] = TWAP_INTERVAL;
         secondsAgo[1] = 0;
 
-        uint256 priceX960;
         uint256 priceX961;
         uint256 priceX962;
 
         {
-            (int56[] memory tickCumulatives0, ) = pool0.observe(secondsAgo);
+            // pool0 is not observed as aave and stkaave are pegged
+            // we consider 1 aave = 1 stkaave as the fair price
             (int56[] memory tickCumulatives1, ) = pool1.observe(secondsAgo);
             (int56[] memory tickCumulatives2, ) = pool2.observe(secondsAgo);
 
             // For the pair token0/token1 -> 1.0001 * readingTick = price = token1 / token0
             // So token1 = price * token0
 
-            // Ticks (imprecise as it's an integer) to price
-            uint160 sqrtPriceX960 = TickMath.getSqrtRatioAtTick(
-                int24((tickCumulatives0[1] - tickCumulatives0[0]) / int24(uint24(TWAP_INTERVAL)))
-            );
             uint160 sqrtPriceX961 = TickMath.getSqrtRatioAtTick(
                 int24((tickCumulatives1[1] - tickCumulatives1[0]) / int24(uint24(TWAP_INTERVAL)))
             );
             uint160 sqrtPriceX962 = TickMath.getSqrtRatioAtTick(
                 int24((tickCumulatives2[1] - tickCumulatives2[0]) / int24(uint24(TWAP_INTERVAL)))
             );
-            priceX960 = _getPriceX96FromSqrtPriceX96(sqrtPriceX960);
             priceX961 = _getPriceX96FromSqrtPriceX96(sqrtPriceX961);
             priceX962 = _getPriceX96FromSqrtPriceX96(sqrtPriceX962);
         }
@@ -164,15 +159,15 @@ contract SwapManagerUniV3OnEth is ISwapManager {
 
         // Computation depends on the position of token in pool
         if (pool2.token0() == WETH9) {
-            expectedAmountOutMinimum = _amountIn
-            .mulDiv(priceX960, FixedPoint96.Q96)
-            .mulDiv(priceX961, FixedPoint96.Q96)
-            .mulDiv(priceX962, FixedPoint96.Q96);
+            expectedAmountOutMinimum = _amountIn.mulDiv(priceX961, FixedPoint96.Q96).mulDiv(
+                priceX962,
+                FixedPoint96.Q96
+            );
         } else {
-            expectedAmountOutMinimum = _amountIn
-            .mulDiv(priceX960, FixedPoint96.Q96)
-            .mulDiv(priceX961, FixedPoint96.Q96)
-            .mulDiv(FixedPoint96.Q96, priceX962);
+            expectedAmountOutMinimum = _amountIn.mulDiv(priceX961, FixedPoint96.Q96).mulDiv(
+                FixedPoint96.Q96,
+                priceX962
+            );
         }
 
         // Max slippage of 3% for the trade
