@@ -570,4 +570,37 @@ contract TestRepay is TestSetup {
         testEquality(inP2PBorrower2, expectedBorrowBalanceInP2P);
         testEquality(onPoolBorrower2, 0);
     }
+
+    function test_repay_4_2_6() public {
+        // Allows only 10 unmatch suppliers
+        setMaxGasHelper(3e6, 3e6, 3e6, 2.4e6);
+
+        uint256 suppliedAmount = 1 ether;
+        uint256 borrowedAmount = 20 * suppliedAmount;
+        uint256 collateral = 2 * borrowedAmount;
+
+        // borrower1 and 100 suppliers are matched for borrowedAmount
+        borrower1.approve(usdc, to6Decimals(collateral));
+        borrower1.supply(aUsdc, to6Decimals(collateral));
+        borrower1.borrow(aDai, borrowedAmount);
+
+        createSigners(30);
+
+        // 2 * NMAX suppliers supply suppliedAmount
+        for (uint256 i = 0; i < 20; i++) {
+            suppliers[i].approve(dai, suppliedAmount);
+            suppliers[i].supply(aDai, suppliedAmount);
+        }
+
+        // Borrower repays max
+        // Should create a delta on suppliers side
+        borrower1.approve(dai, type(uint256).max);
+        borrower1.repay(aDai, type(uint256).max);
+
+        hevm.warp(block.timestamp + (365 days));
+
+        for (uint256 i = 0; i < 20; i++) {
+            suppliers[i].withdraw(aDai, type(uint256).max);
+        }
+    }
 }

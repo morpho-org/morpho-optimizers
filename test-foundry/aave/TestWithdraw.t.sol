@@ -583,6 +583,41 @@ contract TestWithdraw is TestSetup {
         testEquality(onPoolSupplier2, 0);
     }
 
+    // Test delta rate issue
+    function test_withdraw_3_3_6() public {
+        // 1.3e6 allows only 10 unmatch borrowers
+        setMaxGasHelper(3e6, 3e6, 2.6e6, 3e6);
+
+        uint256 borrowedAmount = 1 ether;
+        uint256 collateral = 2 * borrowedAmount;
+        uint256 suppliedAmount = 20 * borrowedAmount + 7;
+
+        // supplier1 and 20 borrowers are matched for suppliedAmount
+        supplier1.approve(dai, suppliedAmount);
+        supplier1.supply(aDai, suppliedAmount);
+
+        createSigners(30);
+
+        // 2 * NMAX borrowers borrow borrowedAmount
+        for (uint256 i = 0; i < 20; i++) {
+            borrowers[i].approve(usdc, to6Decimals(collateral));
+            borrowers[i].supply(aUsdc, to6Decimals(collateral));
+            borrowers[i].borrow(aDai, borrowedAmount, type(uint64).max);
+        }
+
+        // Supplier withdraws max
+        // Should create a delta on borrowers side
+        supplier1.withdraw(aDai, type(uint256).max);
+
+        hevm.warp(block.timestamp + (365 days));
+
+        for (uint256 i = 0; i < 20; i++) {
+            borrowers[i].approve(dai, type(uint64).max);
+            borrowers[i].repay(aDai, type(uint64).max);
+            borrowers[i].withdraw(aUsdc, type(uint64).max);
+        }
+    }
+
     // Test attack
     // Should not be possible to withdraw amount if the position turns to be under-collateralized
     function test_withdraw_if_under_collaterized() public {
