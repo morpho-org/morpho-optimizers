@@ -208,23 +208,19 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
             ); // In p2pUnit
             matchingEngine.updateSuppliersDC(_poolTokenAddress, _supplier);
 
-            uint256 matched;
             if (
                 suppliersOnPool[_poolTokenAddress].getHead() != address(0) &&
                 !marketsManager.noP2P(_poolTokenAddress)
             ) {
-                matched = matchingEngine.matchSuppliersDC(
+                uint256 matched = matchingEngine.matchSuppliersDC(
                     poolToken,
                     underlyingToken,
                     remainingToWithdraw,
                     _maxGasToConsume / 2
                 );
 
+                matched = Math.min(matched, IAToken(_poolTokenAddress).balanceOf(address(this)));
                 if (matched > 0) {
-                    matched = Math.min(
-                        matched,
-                        IAToken(_poolTokenAddress).balanceOf(address(this))
-                    );
                     _withdrawERC20FromPool(underlyingToken, matched); // Reverts on error
                     remainingToWithdraw -= matched;
                 }
