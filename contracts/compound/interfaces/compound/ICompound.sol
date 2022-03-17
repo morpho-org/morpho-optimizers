@@ -6,7 +6,7 @@ interface ICErc20 {
 
     function borrowRate() external returns (uint256);
 
-    function borrowIndex() external returns (uint256);
+    function borrowIndex() external view returns (uint256);
 
     function borrowBalanceStored(address) external returns (uint256);
 
@@ -94,10 +94,11 @@ interface IComptroller {
 
     function closeFactorMantissa() external returns (uint256);
 
-    function oracle() external returns (address);
+    function oracle() external view returns (address);
 
     function markets(address)
         external
+        view
         returns (
             bool,
             uint256,
@@ -306,6 +307,20 @@ interface ICToken {
         address borrower,
         uint256 seizeTokens
     ) external returns (uint256);
+
+    function borrowRate() external returns (uint256);
+
+    function borrowIndex() external view returns (uint256);
+
+    function borrow(uint256) external returns (uint256);
+
+    function repayBorrow(uint256) external returns (uint256);
+
+    function underlying() external view returns (address);
+
+    function mint(uint256) external returns (uint256);
+
+    function redeemUnderlying(uint256) external returns (uint256);
 
     /*** Admin Functions ***/
 
