@@ -26,7 +26,7 @@ import "@contracts/compound/MatchingEngineForCompound.sol";
 
 import "../../common/helpers/MorphoToken.sol";
 import "../../common/helpers/SimplePriceOracle.sol";
-import {User} from "../../common/helpers/User.sol";
+import {User} from "../helpers/User.sol";
 import "../../common/setup/HevmAdapter.sol";
 import {Utils} from "./Utils.sol";
 import "@config/Config.sol";
@@ -116,7 +116,7 @@ contract TestSetup is Config, Utils, HevmAdapter {
 
         fakePositionsManagerImpl = new PositionsManagerForCompound();
 
-        oracle = IComptroller(comptroller.getPriceOracle());
+        oracle = comptroller.oracle();
 
         marketsManager.setPositionsManager(address(positionsManager));
         positionsManager.setTreasuryVault(address(treasuryVault));
@@ -176,10 +176,7 @@ contract TestSetup is Config, Utils, HevmAdapter {
         hevm.label(address(swapManager), "SwapManager");
         hevm.label(address(uniswapPoolCreator), "UniswapPoolCreator");
         hevm.label(address(morphoToken), "MorphoToken");
-        hevm.label(compoundIncentivesControllerAddress, "CompoundIncentivesController");
-        hevm.label(address(lendingPoolAddressesProvider), "LendingPoolAddressesProvider");
-        hevm.label(address(lendingPool), "LendingPool");
-        hevm.label(address(protocolDataProvider), "ProtocolDataProvider");
+        hevm.label(address(comptroller), "Comptroller");
         hevm.label(address(oracle), "CompoundOracle");
         hevm.label(address(treasuryVault), "TreasuryVault");
     }
@@ -198,15 +195,15 @@ contract TestSetup is Config, Utils, HevmAdapter {
         SimplePriceOracle customOracle = new SimplePriceOracle();
 
         hevm.store(
-            address(lendingPoolAddressesProvider),
-            keccak256(abi.encode(bytes32("PRICE_ORACLE"), 2)),
+            address(comptroller),
+            keccak256(abi.encode(bytes32("oracle"), 2)),
             bytes32(uint256(uint160(address(customOracle))))
         );
 
         for (uint256 i = 0; i < pools.length; i++) {
-            address underlying = IAToken(pools[i]).underlying();
+            address underlying = ICToken(pools[i]).underlying();
 
-            customOracle.setDirectPrice(underlying, oracle.getAssetPrice(underlying));
+            customOracle.setDirectPrice(underlying, oracle.getUnderlyinPrice(underlying));
         }
 
         return customOracle;
