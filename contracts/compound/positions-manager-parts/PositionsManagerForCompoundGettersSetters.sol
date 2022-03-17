@@ -22,6 +22,12 @@ abstract contract PositionsManagerForCompoundGettersSetters is
         _;
     }
 
+    /// @dev Prevents a user to call function only allowed for the markets manager.
+    modifier onlyMarketsManager() {
+        if (msg.sender != address(marketsManager)) revert OnlyMarketsManager();
+        _;
+    }
+
     /// UPGRADE ///
 
     /// @notice Initializes the PositionsManagerForCompound contract.
@@ -86,6 +92,19 @@ abstract contract PositionsManagerForCompoundGettersSetters is
         bool newPauseStatus = !paused[_poolTokenAddress];
         paused[_poolTokenAddress] = newPauseStatus;
         emit PauseStatusSet(_poolTokenAddress, newPauseStatus);
+    }
+
+    /// @dev Creates markets.
+    /// @param _poolTokenAddress The address of the market the user wants to supply.
+    /// @return The results of entered.
+    function createMarket(address _poolTokenAddress)
+        external
+        onlyMarketsManager
+        returns (uint256[] memory)
+    {
+        address[] memory marketToEnter = new address[](1);
+        marketToEnter[0] = _poolTokenAddress;
+        return comptroller.enterMarkets(marketToEnter);
     }
 
     /// GETTERS ///

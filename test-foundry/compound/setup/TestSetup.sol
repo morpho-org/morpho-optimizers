@@ -2,10 +2,8 @@
 pragma solidity 0.8.7;
 
 import "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
-import "@contracts/aave/interfaces/aave/IAaveIncentivesController.sol";
-import "@contracts/aave/interfaces/aave/IPriceOracleGetter.sol";
-import "@contracts/aave/interfaces/aave/IProtocolDataProvider.sol";
-import "@contracts/aave/interfaces/IRewardsManagerForAave.sol";
+import {ICToken, ICompoundOracle} from "@contracts/compound/interfaces/compound/ICompound.sol";
+import "@contracts/compound/interfaces/IRewardsManagerForCompound.sol";
 import "@contracts/common/interfaces/ISwapManager.sol";
 
 import "hardhat/console.sol";
@@ -17,16 +15,14 @@ import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 
-import {RewardsManagerForAaveOnEthAndAvax} from "@contracts/aave/rewards-managers/RewardsManagerForAaveOnEthAndAvax.sol";
-import {RewardsManagerForAaveOnPolygon} from "@contracts/aave/rewards-managers/RewardsManagerForAaveOnPolygon.sol";
 import {SwapManagerUniV3OnEth} from "@contracts/common/SwapManagerUniV3OnEth.sol";
 import {SwapManagerUniV3} from "@contracts/common/SwapManagerUniV3.sol";
 import {SwapManagerUniV2} from "@contracts/common/SwapManagerUniV2.sol";
 import {UniswapPoolCreator} from "../../common/uniswap/UniswapPoolCreator.sol";
 import {UniswapV2PoolCreator} from "../../common/uniswap/UniswapV2PoolCreator.sol";
-import "@contracts/aave/PositionsManagerForAave.sol";
-import "@contracts/aave/MarketsManagerForAave.sol";
-import "@contracts/aave/MatchingEngineForAave.sol";
+import "@contracts/compound/PositionsManagerForCompound.sol";
+import "@contracts/compound/MarketsManagerForCompound.sol";
+import "@contracts/compound/MatchingEngineForCompound.sol";
 
 import "../../common/helpers/MorphoToken.sol";
 import "../../common/helpers/SimplePriceOracle.sol";
@@ -36,34 +32,29 @@ import {Utils} from "./Utils.sol";
 import "@config/Config.sol";
 
 contract TestSetup is Config, Utils, HevmAdapter {
-    using WadRayMath for uint256;
     using SafeERC20 for IERC20;
 
-    uint256 public constant MAX_BASIS_POINTS = 10000;
+    uint256 public constant MAX_BASIS_POINTS = 10_000;
     uint256 public constant INITIAL_BALANCE = 1_000_000;
 
-    ProxyAdmin proxyAdmin;
+    ProxyAdmin public proxyAdmin;
     TransparentUpgradeableProxy public positionsManagerProxy;
     TransparentUpgradeableProxy public marketsManagerProxy;
 
-    MatchingEngineForAave internal matchingEngine;
-    PositionsManagerForAave internal positionsManagerImplV1;
-    PositionsManagerForAave internal positionsManager;
-    PositionsManagerForAave internal fakePositionsManagerImpl;
-    MarketsManagerForAave internal marketsManager;
-    MarketsManagerForAave internal marketsManagerImplV1;
-    IRewardsManagerForAave internal rewardsManager;
+    MatchingEngineForCompound internal matchingEngine;
+    PositionsManagerForCompound internal positionsManagerImplV1;
+    PositionsManagerForCompound internal positionsManager;
+    PositionsManagerForCompound internal fakePositionsManagerImpl;
+    MarketsManagerForCompound internal marketsManager;
+    MarketsManagerForCompound internal marketsManagerImplV1;
+    IRewardsManagerForCompound internal rewardsManager;
     ISwapManager public swapManager;
     UniswapPoolCreator public uniswapPoolCreator;
     UniswapV2PoolCreator public uniswapV2PoolCreator;
     MorphoToken public morphoToken;
-    address public REWARD_TOKEN =
-        IAaveIncentivesController(aaveIncentivesControllerAddress).REWARD_TOKEN();
 
-    ILendingPoolAddressesProvider public lendingPoolAddressesProvider;
-    ILendingPool public lendingPool;
-    IProtocolDataProvider public protocolDataProvider;
-    IPriceOracleGetter public oracle;
+    IComptroller public comptroller;
+    ICompoundOracle public oracle;
 
     User public supplier1;
     User public supplier2;
@@ -85,124 +76,50 @@ contract TestSetup is Config, Utils, HevmAdapter {
     }
 
     function initContracts() internal {
-        PositionsManagerForAave.MaxGas memory maxGas = PositionsManagerForAaveStorage.MaxGas({
-            supply: 3e6,
-            borrow: 3e6,
-            withdraw: 3e6,
-            repay: 3e6
-        });
+        PositionsManagerForCompound.MaxGas memory maxGas = PositionsManagerForCompoundStorage
+        .MaxGas({supply: 3e6, borrow: 3e6, withdraw: 3e6, repay: 3e6});
 
-        lendingPoolAddressesProvider = ILendingPoolAddressesProvider(
-            lendingPoolAddressesProviderAddress
-        );
-        lendingPool = ILendingPool(lendingPoolAddressesProvider.getLendingPool());
-
-        if (block.chainid == Chains.ETH_MAINNET) {
-            // Mainnet network
-            // Create a MORPHO / WETH pool
-            uniswapPoolCreator = new UniswapPoolCreator();
-            writeBalanceOf(
-                address(uniswapPoolCreator),
-                uniswapPoolCreator.WETH9(),
-                INITIAL_BALANCE * WAD
-            );
-            morphoToken = new MorphoToken(address(uniswapPoolCreator));
-            swapManager = new SwapManagerUniV3OnEth(address(morphoToken), MORPHO_UNIV3_FEE);
-        } else if (block.chainid == Chains.POLYGON_MAINNET) {
-            // Polygon network
-            // Create a MORPHO / WMATIC pool
-            uniswapPoolCreator = new UniswapPoolCreator();
-            writeBalanceOf(
-                address(uniswapPoolCreator),
-                uniswapPoolCreator.WETH9(),
-                INITIAL_BALANCE * WAD
-            );
-            morphoToken = new MorphoToken(address(uniswapPoolCreator));
-            swapManager = new SwapManagerUniV3(
-                address(morphoToken),
-                MORPHO_UNIV3_FEE,
-                REWARD_TOKEN,
-                REWARD_UNIV3_FEE
-            );
-        } else if (block.chainid == Chains.AVALANCHE_MAINNET) {
-            // Avalanche network
-            // Create a MORPHO / WAVAX pool
-            uniswapV2PoolCreator = new UniswapV2PoolCreator();
-            writeBalanceOf(address(uniswapV2PoolCreator), REWARD_TOKEN, INITIAL_BALANCE * WAD);
-            morphoToken = new MorphoToken(address(uniswapV2PoolCreator));
-            uniswapV2PoolCreator.createPoolAndAddLiquidity(address(morphoToken));
-            swapManager = new SwapManagerUniV2(address(morphoToken), REWARD_TOKEN);
-        }
-
-        matchingEngine = new MatchingEngineForAave();
+        matchingEngine = new MatchingEngineForCompound();
 
         // Deploy proxy
 
         proxyAdmin = new ProxyAdmin();
 
-        marketsManagerImplV1 = new MarketsManagerForAave();
+        marketsManagerImplV1 = new MarketsManagerForCompound();
         marketsManagerProxy = new TransparentUpgradeableProxy(
             address(marketsManagerImplV1),
             address(this),
             ""
         );
         marketsManagerProxy.changeAdmin(address(proxyAdmin));
-        marketsManager = MarketsManagerForAave(address(marketsManagerProxy));
-        marketsManager.initialize(lendingPool);
+        marketsManager = MarketsManagerForCompound(address(marketsManagerProxy));
+        marketsManager.initialize(comptroller);
 
-        positionsManagerImplV1 = new PositionsManagerForAave();
+        positionsManagerImplV1 = new PositionsManagerForCompound();
         positionsManagerProxy = new TransparentUpgradeableProxy(
             address(positionsManagerImplV1),
             address(this),
             ""
         );
         positionsManagerProxy.changeAdmin(address(proxyAdmin));
-        positionsManager = PositionsManagerForAave(address(positionsManagerProxy));
+        positionsManager = PositionsManagerForCompound(address(positionsManagerProxy));
         positionsManager.initialize(
             marketsManager,
             matchingEngine,
-            ILendingPoolAddressesProvider(lendingPoolAddressesProviderAddress),
+            comptroller,
             swapManager,
             maxGas,
             20
         );
 
-        if (block.chainid == Chains.ETH_MAINNET) {
-            // Mainnet network
-            rewardsManager = new RewardsManagerForAaveOnEthAndAvax(
-                lendingPool,
-                IPositionsManagerForAave(address(positionsManager))
-            );
-            uniswapPoolCreator.createPoolAndMintPosition(address(morphoToken));
-        } else if (block.chainid == Chains.AVALANCHE_MAINNET) {
-            // Avalanche network
-            rewardsManager = new RewardsManagerForAaveOnEthAndAvax(
-                lendingPool,
-                IPositionsManagerForAave(address(positionsManager))
-            );
-        } else if (block.chainid == Chains.POLYGON_MAINNET) {
-            // Polygon network
-            rewardsManager = new RewardsManagerForAaveOnPolygon(
-                lendingPool,
-                IPositionsManagerForAave(address(positionsManager))
-            );
-            uniswapPoolCreator.createPoolAndMintPosition(address(morphoToken));
-        }
-
         treasuryVault = new User(positionsManager);
 
-        fakePositionsManagerImpl = new PositionsManagerForAave();
+        fakePositionsManagerImpl = new PositionsManagerForCompound();
 
-        protocolDataProvider = IProtocolDataProvider(protocolDataProviderAddress);
-
-        oracle = IPriceOracleGetter(lendingPoolAddressesProvider.getPriceOracle());
+        oracle = IComptroller(comptroller.getPriceOracle());
 
         marketsManager.setPositionsManager(address(positionsManager));
-        positionsManager.setAaveIncentivesController(aaveIncentivesControllerAddress);
-
-        rewardsManager.setAaveIncentivesController(aaveIncentivesControllerAddress);
         positionsManager.setTreasuryVault(address(treasuryVault));
-        positionsManager.setRewardsManager(address(rewardsManager));
 
         createMarket(aDai);
         createMarket(aUsdc);
@@ -211,7 +128,7 @@ contract TestSetup is Config, Utils, HevmAdapter {
     }
 
     function createMarket(address _aToken) internal {
-        address underlying = IAToken(_aToken).UNDERLYING_ASSET_ADDRESS();
+        address underlying = ICToken(_aToken).underlying();
         marketsManager.createMarket(underlying);
 
         // All tokens must also be added to the pools array, for the correct behavior of TestLiquidate::createAndSetCustomPriceOracle.
@@ -259,11 +176,11 @@ contract TestSetup is Config, Utils, HevmAdapter {
         hevm.label(address(swapManager), "SwapManager");
         hevm.label(address(uniswapPoolCreator), "UniswapPoolCreator");
         hevm.label(address(morphoToken), "MorphoToken");
-        hevm.label(aaveIncentivesControllerAddress, "AaveIncentivesController");
+        hevm.label(compoundIncentivesControllerAddress, "CompoundIncentivesController");
         hevm.label(address(lendingPoolAddressesProvider), "LendingPoolAddressesProvider");
         hevm.label(address(lendingPool), "LendingPool");
         hevm.label(address(protocolDataProvider), "ProtocolDataProvider");
-        hevm.label(address(oracle), "AaveOracle");
+        hevm.label(address(oracle), "CompoundOracle");
         hevm.label(address(treasuryVault), "TreasuryVault");
     }
 
@@ -287,7 +204,7 @@ contract TestSetup is Config, Utils, HevmAdapter {
         );
 
         for (uint256 i = 0; i < pools.length; i++) {
-            address underlying = IAToken(pools[i]).UNDERLYING_ASSET_ADDRESS();
+            address underlying = IAToken(pools[i]).underlying();
 
             customOracle.setDirectPrice(underlying, oracle.getAssetPrice(underlying));
         }
@@ -301,8 +218,14 @@ contract TestSetup is Config, Utils, HevmAdapter {
         uint64 _withdraw,
         uint64 _repay
     ) public {
-        PositionsManagerForAaveStorage.MaxGas memory newMaxGas = PositionsManagerForAaveStorage
-        .MaxGas({supply: _supply, borrow: _borrow, withdraw: _withdraw, repay: _repay});
+
+            PositionsManagerForCompoundStorage.MaxGas memory newMaxGas
+         = PositionsManagerForCompoundStorage.MaxGas({
+            supply: _supply,
+            borrow: _borrow,
+            withdraw: _withdraw,
+            repay: _repay
+        });
 
         positionsManager.setMaxGas(newMaxGas);
     }
