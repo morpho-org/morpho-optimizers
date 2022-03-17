@@ -30,7 +30,7 @@ import "@contracts/aave/InterestRatesV1.sol";
 
 import "../../common/helpers/MorphoToken.sol";
 import "../../common/helpers/SimplePriceOracle.sol";
-import {User} from "../../common/helpers/User.sol";
+import {User} from "../helpers/User.sol";
 import {Utils} from "./Utils.sol";
 import "forge-std/stdlib.sol";
 

@@ -214,29 +214,10 @@ contract PositionsManagerForCompound is PositionsManagerForCompoundLogic {
         emit ReserveFeeClaimed(_poolTokenAddress, amountToClaim);
     }
 
-    // /// @notice Claims rewards for the given assets and the unclaimed rewards.
-    // /// @param _assets The assets to claim rewards from (aToken or variable debt token).
-    // /// @param _swap Whether or not to swap reward tokens for Morpho tokens.
-    // function claimRewards(address[] calldata _assets, bool _swap) external {
-    //     uint256 amountToClaim = rewardsManager.claimRewards(_assets, type(uint256).max, msg.sender);
-
-    //     if (amountToClaim > 0) {
-    //         if (_swap) {
-    //             uint256 amountClaimed = aaveIncentivesController.claimRewards(
-    //                 _assets,
-    //                 amountToClaim,
-    //                 address(swapManager)
-    //             );
-    //             uint256 amountOut = swapManager.swapToMorphoToken(amountClaimed, msg.sender);
-    //             emit RewardsClaimedAndSwapped(msg.sender, amountClaimed, amountOut);
-    //         } else {
-    //             uint256 amountClaimed = aaveIncentivesController.claimRewards(
-    //                 _assets,
-    //                 amountToClaim,
-    //                 msg.sender
-    //             );
-    //             emit RewardsClaimed(msg.sender, amountClaimed);
-    //         }
-    //     }
-    // }
+    /// @notice Claims rewards for the given assets and the unclaimed rewards.
+    /// @param _assets The assets to claim rewards from (aToken or variable debt token).
+    /// @param _swap Whether or not to swap reward tokens for Morpho tokens.
+    function claimRewards(address[] calldata _assets, bool _swap) external {
+        // TODO: implement this function.
+    }
 }
