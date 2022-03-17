@@ -1,50 +1,6 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-interface ICErc20 {
-    function accrueInterest() external returns (uint256);
-
-    function borrowRate() external returns (uint256);
-
-    function borrowIndex() external view returns (uint256);
-
-    function borrowBalanceStored(address) external returns (uint256);
-
-    function mint(uint256) external returns (uint256);
-
-    function exchangeRateCurrent() external returns (uint256);
-
-    function exchangeRateStored() external view returns (uint256);
-
-    function supplyRatePerBlock() external returns (uint256);
-
-    function redeem(uint256) external returns (uint256);
-
-    function redeemUnderlying(uint256) external returns (uint256);
-
-    function transferFrom(
-        address,
-        address,
-        uint256
-    ) external returns (bool);
-
-    function transfer(address dst, uint256 amount) external returns (bool);
-
-    function balanceOf(address) external returns (uint256);
-
-    function balanceOfUnderlying(address account) external returns (uint256); // The user's underlying balance, representing their assets in the protocol, is equal to the user's cToken balance multiplied by the Exchange Rate.
-
-    function borrow(uint256) external returns (uint256);
-
-    function borrowRatePerBlock() external view returns (uint256);
-
-    function borrowBalanceCurrent(address) external returns (uint256);
-
-    function repayBorrow(uint256) external returns (uint256);
-
-    function underlying() external view returns (address);
-}
-
 interface ICEth {
     function accrueInterest() external returns (uint256);
 
