@@ -67,17 +67,6 @@ abstract contract PositionsManagerForCompoundStorage is
         uint256 debtValue; // The debt value.
     }
 
-    // Struct to avoid stack too deep.
-    struct LiquidateVars {
-        uint256 debtValue;
-        uint256 maxDebtValue;
-        uint256 borrowBalance;
-        uint256 supplyBalance;
-        uint256 collateralPrice;
-        uint256 borrowedPrice;
-        uint256 amountToSeize;
-    }
-
     /// STORAGE ///
 
     MaxGas public maxGas; // Max gas to consume within loops in matching engine functions.

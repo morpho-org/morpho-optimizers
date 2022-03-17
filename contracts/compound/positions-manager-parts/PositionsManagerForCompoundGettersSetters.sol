@@ -149,7 +149,6 @@ abstract contract PositionsManagerForCompoundGettersSetters is
     }
 
     /// @notice Returns the collateral value, debt value and max debt value of a given user.
-    /// @dev Note: must be called after calling `accrueInterest()` on the cToken to have the most up to date values.
     /// @param _user The user to determine liquidity for.
     /// @return collateralValue The collateral value of the user.
     /// @return debtValue The current debt value of the user.
@@ -258,12 +257,8 @@ abstract contract PositionsManagerForCompoundGettersSetters is
         assetData.underlyingPrice = _oracle.getUnderlyingPrice(_poolTokenAddress);
         (, assetData.collateralFactor, ) = comptroller.markets(_poolTokenAddress);
 
-        assetData.collateralValue = _getUserSupplyBalanceInOf(_poolTokenAddress, _user).mul(
-            assetData.underlyingPrice
-        );
-        assetData.debtValue = _getUserBorrowBalanceInOf(_poolTokenAddress, _user).mul(
-            assetData.underlyingPrice
-        );
+        assetData.collateralValue = assetData.collateralValue.mul(assetData.underlyingPrice);
+        assetData.debtValue = assetData.debtValue.mul(assetData.underlyingPrice);
         assetData.maxDebtValue = assetData.collateralValue.mul(assetData.collateralFactor);
     }
 
