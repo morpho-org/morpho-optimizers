@@ -144,6 +144,9 @@ abstract contract PositionsManagerForCompoundEventsErrors is PositionsManagerFor
     /// @notice Thrown when the market is not listed on Compound.
     error MarketIsNotListedOnCompound();
 
+    /// @notice Thrown when only the markets manager can call the function.
+    error OnlyMarketsManager();
+
     /// @notice Thrown when the debt value is above the maximum debt value.
     error DebtValueAboveMax();
 
