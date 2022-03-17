@@ -17,7 +17,7 @@ contract MatchingEngineForCompound is
 
     /// STRUCTS ///
 
-    // Struct to avoid stack too deep
+    // Struct to avoid stack too deep.
     struct UnmatchVars {
         uint256 p2pRate;
         uint256 toUnmatch;
@@ -26,7 +26,7 @@ contract MatchingEngineForCompound is
         uint256 gasLeftAtTheBeginning;
     }
 
-    // Struct to avoid stack too deep
+    // Struct to avoid stack too deep.
     struct MatchVars {
         uint256 p2pRate;
         uint256 toMatch;
@@ -208,7 +208,7 @@ contract MatchingEngineForCompound is
             }
         }
 
-        // If P2P supply amount < _amount, the rest stays on the contract (reserve factor)
+        // If P2P supply amount < _amount, the rest stays on the contract (reserve factor).
         toSupply = Math.min(_amount, delta.supplyP2PAmount.mul(vars.p2pRate));
 
         if (remainingToUnmatch > 0) {
@@ -306,7 +306,7 @@ contract MatchingEngineForCompound is
         vars.p2pRate = marketsManager.borrowP2PExchangeRate(_poolTokenAddress);
         Delta storage delta = deltas[_poolTokenAddress];
 
-        // Reduce supply P2P delta first
+        // Reduce supply P2P delta first.
         if (delta.supplyP2PDelta > 0) {
             uint256 supplyPoolIndex = ICToken(_poolTokenAddress).exchangeRateCurrent();
             vars.toUnmatch = Math.min(delta.supplyP2PDelta.mul(supplyPoolIndex), _amount);
@@ -373,13 +373,13 @@ contract MatchingEngineForCompound is
         uint256 formerValueOnPool = borrowersOnPool[_poolTokenAddress].getValueOf(_user);
         uint256 formerValueInP2P = borrowersInP2P[_poolTokenAddress].getValueOf(_user);
 
-        // Check pool
+        // Check pool.
         bool wasOnPoolAndValueChanged = formerValueOnPool != 0 && formerValueOnPool != onPool;
         if (wasOnPoolAndValueChanged) borrowersOnPool[_poolTokenAddress].remove(_user);
         if (onPool > 0 && (wasOnPoolAndValueChanged || formerValueOnPool == 0))
             borrowersOnPool[_poolTokenAddress].insertSorted(_user, onPool, NDS);
 
-        // Check P2P
+        // Check P2P.
         bool wasInP2PAndValueChanged = formerValueInP2P != 0 && formerValueInP2P != inP2P;
         if (wasInP2PAndValueChanged) borrowersInP2P[_poolTokenAddress].remove(_user);
         if (inP2P > 0 && (wasInP2PAndValueChanged || formerValueInP2P == 0))
@@ -395,13 +395,13 @@ contract MatchingEngineForCompound is
         uint256 formerValueOnPool = suppliersOnPool[_poolTokenAddress].getValueOf(_user);
         uint256 formerValueInP2P = suppliersInP2P[_poolTokenAddress].getValueOf(_user);
 
-        // Check pool
+        // Check pool.
         bool wasOnPoolAndValueChanged = formerValueOnPool != 0 && formerValueOnPool != onPool;
         if (wasOnPoolAndValueChanged) suppliersOnPool[_poolTokenAddress].remove(_user);
         if (onPool > 0 && (wasOnPoolAndValueChanged || formerValueOnPool == 0))
             suppliersOnPool[_poolTokenAddress].insertSorted(_user, onPool, NDS);
 
-        // Check P2P
+        // Check P2P.
         bool wasInP2PAndValueChanged = formerValueInP2P != 0 && formerValueInP2P != inP2P;
         if (wasInP2PAndValueChanged) suppliersInP2P[_poolTokenAddress].remove(_user);
         if (inP2P > 0 && (wasInP2PAndValueChanged || formerValueInP2P == 0))
