@@ -44,20 +44,20 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
                 _maxGasToConsume
             ); // In underlying
 
-            if (matched > 0) {
+            if ((_isAboveCompoundThreshold(_poolTokenAddress, matched))) {
                 _repayToPool(_poolTokenAddress, underlyingToken, matched); // Reverts on error
 
                 supplyBalanceInOf[_poolTokenAddress][msg.sender].inP2P += matched.div(
                     supplyP2PExchangeRate
                 ); // In p2pUnit
                 matchingEngine.updateSuppliersDC(_poolTokenAddress, msg.sender);
+                remainingToSupplyToPool -= matched;
             }
-            remainingToSupplyToPool -= matched;
         }
 
         /// Supply on pool ///
 
-        if (remainingToSupplyToPool > 0) {
+        if (_isAboveCompoundThreshold(_poolTokenAddress, remainingToSupplyToPool)) {
             supplyBalanceInOf[_poolTokenAddress][msg.sender].onPool += remainingToSupplyToPool.div(
                 ICToken(_poolTokenAddress).exchangeRateCurrent()
             ); // Scaled Balance
@@ -92,7 +92,7 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
                 _maxGasToConsume
             ); // In underlying
 
-            if (matched > 0) {
+            if (_isAboveCompoundThreshold(_poolTokenAddress, matched)) {
                 matched = Math.min(matched, ICToken(_poolTokenAddress).balanceOf(address(this)));
                 _withdrawFromPool(_poolTokenAddress, matched); // Reverts on error
 
@@ -106,7 +106,7 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
 
         /// Borrow on pool ///
 
-        if (remainingToBorrowOnPool > 0) {
+        if (_isAboveCompoundThreshold(_poolTokenAddress, remainingToBorrowOnPool)) {
             borrowBalanceInOf[_poolTokenAddress][msg.sender].onPool += remainingToBorrowOnPool.div(
                 ICToken(_poolTokenAddress).borrowIndex()
             ); // In cdUnit
@@ -150,7 +150,7 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
             ); // In poolToken
             matchingEngine.updateSuppliersDC(_poolTokenAddress, _supplier);
 
-            if (withdrawnInUnderlying > 0) {
+            if (_isAboveCompoundThreshold(_poolTokenAddress, withdrawnInUnderlying)) {
                 _withdrawFromPool(_poolTokenAddress, withdrawnInUnderlying); // Reverts on error
                 remainingToWithdraw -= withdrawnInUnderlying;
             }
@@ -176,7 +176,7 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
                     _maxGasToConsume / 2
                 );
 
-                if (matched > 0) {
+                if (_isAboveCompoundThreshold(_poolTokenAddress, matched)) {
                     _withdrawFromPool(_poolTokenAddress, matched); // Reverts on error
                     remainingToWithdraw -= matched;
                 }
@@ -184,7 +184,7 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
 
             /// Hard withdraw ///
 
-            if (remainingToWithdraw > 0) {
+            if (_isAboveCompoundThreshold(_poolTokenAddress, remainingToWithdraw)) {
                 matchingEngine.unmatchBorrowersDC(
                     _poolTokenAddress,
                     remainingToWithdraw,
@@ -268,8 +268,10 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
                     _maxGasToConsume / 2
                 );
 
-                _repayToPool(_poolTokenAddress, underlyingToken, matched); // Reverts on error
-                remainingToRepay -= matched;
+                if ((_isAboveCompoundThreshold(_poolTokenAddress, matched))) {
+                    _repayToPool(_poolTokenAddress, underlyingToken, matched); // Reverts on error
+                    remainingToRepay -= matched;
+                }
             }
 
             /// Hard repay ///
@@ -281,7 +283,8 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
                     _maxGasToConsume / 2
                 ); // Reverts on error
 
-                if (toSupply > 0) _supplyToPool(_poolTokenAddress, underlyingToken, toSupply); // Reverts on error
+                if (_isAboveCompoundThreshold(_poolTokenAddress, toSupply))
+                    _supplyToPool(_poolTokenAddress, underlyingToken, toSupply); // Reverts on error
             }
         }
 
@@ -413,5 +416,24 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
         _underlyingToken.safeApprove(_poolTokenAddress, _amount);
         if (ICToken(_poolTokenAddress).repayBorrow(_amount) != 0) revert RepayOnCompoundFailed();
         marketsManager.updateBPYs(_poolTokenAddress);
+    }
+
+    /// @dev Returns whether it is unsafe supply/witdhraw due to coumpound's revert on low levels of precision or not.
+    /// @param _amount The amount of token considered for depositing/redeeming.
+    /// @param _poolTokenAddress poolToken address of the considered market.
+    /// @return Whether to continue or not.
+    function _isAboveCompoundThreshold(address _poolTokenAddress, uint256 _amount)
+        internal
+        view
+        returns (bool)
+    {
+        ERC20 underlyingToken = ERC20(ICToken(_poolTokenAddress).underlying());
+        uint8 tokenDecimals = underlyingToken.decimals();
+        if (tokenDecimals > CTOKEN_DECIMALS) {
+            // Multiply by 2 to have a safety buffer.
+            unchecked {
+                return (_amount > 2 * 10**(tokenDecimals - CTOKEN_DECIMALS));
+            }
+        } else return true;
     }
 }
