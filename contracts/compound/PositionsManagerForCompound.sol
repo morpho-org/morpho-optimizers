@@ -131,16 +131,6 @@ contract PositionsManagerForCompound is PositionsManagerForCompoundLogic {
         _repay(_poolTokenAddress, msg.sender, toRepay, maxGas.repay);
     }
 
-    struct LiquidateVars {
-        uint256 debtValue;
-        uint256 maxDebtValue;
-        uint256 borrowBalance;
-        uint256 supplyBalance;
-        uint256 collateralPrice;
-        uint256 borrowedPrice;
-        uint256 amountToSeize;
-    }
-
     /// @notice Liquidates a position.
     /// @param _poolTokenBorrowedAddress The address of the pool token the liquidator wants to repay.
     /// @param _poolTokenCollateralAddress The address of the collateral pool token the liquidator wants to seize.
@@ -181,8 +171,8 @@ contract PositionsManagerForCompound is PositionsManagerForCompoundLogic {
         // seizeTokens = seizeAmount / exchangeRate
         // = actualRepayAmount * (liquidationIncentive * priceBorrowed) / (priceCollateral * exchangeRate)
         vars.amountToSeize = _amount
-        .mul(vars.borrowedPrice)
         .mul(comptroller.liquidationIncentiveMantissa())
+        .mul(vars.borrowedPrice)
         .div(vars.collateralPrice);
 
         vars.supplyBalance = _getUserSupplyBalanceInOf(_poolTokenCollateralAddress, _borrower);
