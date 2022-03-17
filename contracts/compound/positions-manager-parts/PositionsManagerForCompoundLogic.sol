@@ -351,7 +351,7 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
             address poolTokenEntered = enteredMarkets[_user][i];
             marketsManager.updateP2PExchangeRates(poolTokenEntered);
 
-            // Calling accrueInterest so that computation in getUserLiquidityDataForAsset are the most accurate ones.
+            // Calling accrueInterest so that computation in getUserLiquidityDataForAsset() are the most accurate ones.
             ICToken(poolTokenEntered).accrueInterest();
             AssetLiquidityData memory assetData = getUserLiquidityDataForAsset(
                 _user,
