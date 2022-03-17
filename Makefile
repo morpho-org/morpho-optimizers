@@ -18,7 +18,7 @@ export DAPP_REMAPPINGS=@config/=config/$(NETWORK)
 .PHONY: test
 test: node_modules
 	@echo Run all tests on ${NETWORK}
-	@forge test -vv -c test-foundry --no-match-contract TestGasConsumption
+	@forge test -vvvv -c test-foundry/compound --no-match-contract TestGasConsumption
 
 gas:
 	@echo Create report
@@ -26,11 +26,11 @@ gas:
 
 contract-% c-%: node_modules
 	@echo Run tests for contract $* on ${NETWORK}
-	@forge test -vvv -c test-foundry --match-contract $*
+	@forge test -vvv -c test-foundry/compound --match-contract $*
 
 single-% s-%: node_modules
 	@echo Run single test $* on ${NETWORK}
-	@forge test -vvv -c test-foundry --match-test $* > trace.ansi
+	@forge test -vvv -c test-foundry/compound --match-test $*
 
 .PHONY: config
 config:
