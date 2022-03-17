@@ -54,17 +54,17 @@ abstract contract PositionsManagerForCompoundStorage is
     }
 
     struct AssetLiquidityData {
-        uint256 collateralValue; // The collateral value of the asset (in ETH).
-        uint256 maxDebtValue; // The maximum possible debt value of the asset (in ETH).
-        uint256 debtValue; // The debt value of the asset (in ETH).
-        uint256 underlyingPrice; // The price of the token (in ETH).
+        uint256 collateralValue; // The collateral value of the asset.
+        uint256 maxDebtValue; // The maximum possible debt value of the asset.
+        uint256 debtValue; // The debt value of the asset.
+        uint256 underlyingPrice; // The price of the token.
         uint256 collateralFactor; // The liquidation threshold applied on this token (in basis point).
     }
 
     struct LiquidityData {
-        uint256 collateralValue; // The collateral value (in ETH).
-        uint256 maxDebtValue; // The maximum debt value possible (in ETH).
-        uint256 debtValue; // The debt value (in ETH).
+        uint256 collateralValue; // The collateral value.
+        uint256 maxDebtValue; // The maximum debt value possible.
+        uint256 debtValue; // The debt value.
     }
 
     // Struct to avoid stack too deep.
