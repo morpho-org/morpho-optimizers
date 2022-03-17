@@ -148,7 +148,8 @@ abstract contract PositionsManagerForCompoundGettersSetters is
             next = borrowersOnPool[_poolTokenAddress].getNext(_user);
     }
 
-    /// @notice Returns the collateral value, debt value and max debt value of a given user (in ETH).
+    /// @notice Returns the collateral value, debt value and max debt value of a given user.
+    /// @dev Note: must be called after calling `accrueInterest()` on the cToken to have the most up to date values.
     /// @param _user The user to determine liquidity for.
     /// @return collateralValue The collateral value of the user (in ETH).
     /// @return debtValue The current debt value of the user (in ETH).
@@ -184,6 +185,7 @@ abstract contract PositionsManagerForCompoundGettersSetters is
     }
 
     /// @notice Returns the maximum amount available to withdraw and borrow for `_user` related to `_poolTokenAddress` (in underlyings).
+    /// @dev Note: must be called after calling `accrueInterest()` on the cToken to have the most up to date values.
     /// @param _user The user to determine the capacities for.
     /// @param _poolTokenAddress The address of the market.
     /// @return withdrawable The maximum withdrawable amount of underlying token allowed (in underlying).
@@ -242,6 +244,7 @@ abstract contract PositionsManagerForCompoundGettersSetters is
     }
 
     /// @notice Returns the data related to `_poolTokenAddress` for the `_user`.
+    /// @dev Note: must be called after calling `accrueInterest()` on the cToken to have the most up to date values.
     /// @param _user The user to determine data for.
     /// @param _poolTokenAddress The address of the market.
     /// @param _poolTokenAddress The address of the market.
@@ -269,6 +272,7 @@ abstract contract PositionsManagerForCompoundGettersSetters is
     }
 
     /// @dev Returns the supply balance of `_user` in the `_poolTokenAddress` market.
+    /// @dev Note: compute the result with the exchange rate stored and not the most up to date.
     /// @param _user The address of the user.
     /// @param _poolTokenAddress The market where to get the supply amount.
     /// @return The supply balance of the user (in underlying).
@@ -283,7 +287,7 @@ abstract contract PositionsManagerForCompoundGettersSetters is
             ) +
             supplyBalanceInOf[_poolTokenAddress][_user].onPool.mul(
                 ICToken(_poolTokenAddress).exchangeRateStored()
-            ); // TODO: check if needed to use Current one.
+            );
     }
 
     /// @dev Returns the borrow balance of `_user` in the `_poolTokenAddress` market.
