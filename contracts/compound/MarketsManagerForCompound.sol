@@ -28,10 +28,10 @@ contract MarketsManagerForCompound is IMarketsManagerForCompound, OwnableUpgrade
     address[] public marketsCreated; // Keeps track of the created markets.
     mapping(address => bool) public override isCreated; // Whether or not this market is created.
     mapping(address => uint16) public reserveFactor; // Proportion of the interest earned by users sent to the DAO for each market, in basis point (100% = 10000). The default value is 0.
-    mapping(address => uint256) public override supplyP2PBPY; // Supply Percentage Yield per second (in ray).
-    mapping(address => uint256) public override borrowP2PBPY; // Borrow Percentage Yield per second (in ray).
-    mapping(address => uint256) public override supplyP2PExchangeRate; // Current exchange rate from supply p2pUnit to underlying (in ray).
-    mapping(address => uint256) public override borrowP2PExchangeRate; // Current exchange rate from borrow p2pUnit to underlying (in ray).
+    mapping(address => uint256) public override supplyP2PBPY; // Supply Percentage Yield per block (in wad).
+    mapping(address => uint256) public override borrowP2PBPY; // Borrow Percentage Yield per block (in wad).
+    mapping(address => uint256) public override supplyP2PExchangeRate; // Current exchange rate from supply p2pUnit to underlying (in wad).
+    mapping(address => uint256) public override borrowP2PExchangeRate; // Current exchange rate from borrow p2pUnit to underlying (in wad).
     mapping(address => uint256) public override lastUpdateBlockNumber; // The last time the P2P exchange rates were updated.
     mapping(address => LastPoolIndexes) public lastPoolIndexes; // Last pool index stored.
     mapping(address => bool) public override noP2P; // Whether to put users on pool or not for the given market.
@@ -108,7 +108,7 @@ contract MarketsManagerForCompound is IMarketsManagerForCompound, OwnableUpgrade
         _;
     }
 
-    /// @notice Prevents a user to call function only allowed for `positionsManager` owner.
+    /// @notice Prevents a user to call function only allowed for `positionsManager`.
     modifier onlyPositionsManager() {
         if (msg.sender != address(positionsManager)) revert OnlyPositionsManager();
         _;
@@ -188,7 +188,7 @@ contract MarketsManagerForCompound is IMarketsManagerForCompound, OwnableUpgrade
         emit NoP2PSet(_poolTokenAddress, _noP2P);
     }
 
-    /// @notice Updates the P2P exchange rates, taking into account the Second Percentage Yield values.
+    /// @notice Updates the P2P exchange rates, taking into account the Block Percentage Yield values.
     /// @param _poolTokenAddress The address of the market to update.
     function updateP2PExchangeRates(address _poolTokenAddress)
         external
@@ -198,7 +198,7 @@ contract MarketsManagerForCompound is IMarketsManagerForCompound, OwnableUpgrade
         _updateP2PExchangeRates(_poolTokenAddress);
     }
 
-    /// @notice Updates the P2P Second Percentage Yield of supply and borrow.
+    /// @notice Updates the P2P Block Percentage Yield of supply and borrow.
     /// @param _poolTokenAddress The address of the market to update.
     function updateBPYs(address _poolTokenAddress) external override onlyPositionsManager {
         _updateBPYs(_poolTokenAddress);
@@ -217,7 +217,7 @@ contract MarketsManagerForCompound is IMarketsManagerForCompound, OwnableUpgrade
     /// @return borrowP2PExchangeRate_ The borrow P2P exchange rate of the market.
     /// @return lastUpdateBlockNumber_ The last block number when P2P exchange rates where updated.
     /// @return supplyP2PDelta_ The supply P2P delta (in scaled balance).
-    /// @return borrowP2PDelta_ The borrow P2P delta (in adUnit).
+    /// @return borrowP2PDelta_ The borrow P2P delta (in cdUnit).
     /// @return supplyP2PAmount_ The supply P2P amount (in P2P unit).
     /// @return borrowP2PAmount_ The borrow P2P amount (in P2P unit).
     function getMarketData(address _poolTokenAddress)
@@ -331,7 +331,7 @@ contract MarketsManagerForCompound is IMarketsManagerForCompound, OwnableUpgrade
 
     /// INTERNAL ///
 
-    /// @notice Updates the P2P exchange rates, taking into account the Second Percentage Yield values.
+    /// @notice Updates the P2P exchange rates, taking into account the Block Percentage Yield values.
     /// @param _poolTokenAddress The address of the market to update.
     function _updateP2PExchangeRates(address _poolTokenAddress) internal {
         ICToken poolToken = ICToken(_poolTokenAddress);
