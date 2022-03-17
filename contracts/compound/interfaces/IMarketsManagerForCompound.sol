@@ -2,19 +2,23 @@
 pragma solidity 0.8.13;
 
 interface IMarketsManagerForCompound {
-    function isCreated(address _marketAddress) external returns (bool);
+    function isCreated(address _poolTokenAddress) external returns (bool);
 
-    function p2pBPY(address _marketAddress) external returns (uint256);
+    function noP2P(address _poolTokenAddress) external view returns (bool);
 
-    function collateralFactor(address _marketAddress) external returns (uint256);
+    function supplyP2PBPY(address _poolTokenAddress) external returns (uint256);
 
-    function liquidationIncentive(address _marketAddress) external returns (uint256);
+    function borrowP2PBPY(address _poolTokenAddress) external returns (uint256);
 
-    function p2pExchangeRate(address _marketAddress) external returns (uint256);
+    function supplyP2PExchangeRate(address _poolTokenAddress) external view returns (uint256);
 
-    function lastUpdateBlockNumber(address _marketAddress) external returns (uint256);
+    function borrowP2PExchangeRate(address _poolTokenAddress) external view returns (uint256);
 
-    function threshold(address _marketAddress) external returns (uint256);
+    function lastUpdateBlockNumber(address _poolTokenAddress) external view returns (uint256);
 
-    function updateRates(address _marketAddress) external;
+    function updateRates(address _poolTokenAddress) external;
+
+    function updateP2PExchangeRates(address _marketAddress) external;
+
+    function updateBPYs(address _poolTokenAddress) external;
 }
