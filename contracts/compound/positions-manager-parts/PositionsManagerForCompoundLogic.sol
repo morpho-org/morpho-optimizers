@@ -332,8 +332,8 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
     /// @param _poolTokenAddress The market to hypothetically withdraw/borrow in.
     /// @param _withdrawnAmount The number of tokens to hypothetically withdraw (in underlying).
     /// @param _borrowedAmount The amount of tokens to hypothetically borrow (in underlying).
-    /// @return debtValue The current debt value of the user (in ETH).
-    /// @return maxDebtValue The maximum debt value possible of the user (in ETH).
+    /// @return debtValue The current debt value of the user.
+    /// @return maxDebtValue The maximum debt value possible of the user.
     function _getUserHypotheticalBalanceStates(
         address _user,
         address _poolTokenAddress,
