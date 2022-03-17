@@ -30,7 +30,7 @@ import "@contracts/aave/MatchingEngineForAave.sol";
 
 import "../../common/helpers/MorphoToken.sol";
 import "../../common/helpers/SimplePriceOracle.sol";
-import {User} from "../../common/helpers/User.sol";
+import {User} from "../helpers/User.sol";
 import "../../common/setup/HevmAdapter.sol";
 import {Utils} from "./Utils.sol";
 import "@config/Config.sol";
