@@ -116,7 +116,7 @@ contract TestSetup is Config, Utils, HevmAdapter {
 
         fakePositionsManagerImpl = new PositionsManagerForCompound();
 
-        oracle = comptroller.oracle();
+        oracle = ICompoundOracle(comptroller.oracle());
 
         marketsManager.setPositionsManager(address(positionsManager));
         positionsManager.setTreasuryVault(address(treasuryVault));
@@ -203,7 +203,7 @@ contract TestSetup is Config, Utils, HevmAdapter {
         for (uint256 i = 0; i < pools.length; i++) {
             address underlying = ICToken(pools[i]).underlying();
 
-            customOracle.setDirectPrice(underlying, oracle.getUnderlyinPrice(underlying));
+            customOracle.setDirectPrice(underlying, oracle.getUnderlyingPrice(underlying));
         }
 
         return customOracle;
