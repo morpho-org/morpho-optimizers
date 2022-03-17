@@ -256,8 +256,6 @@ interface ICToken {
 
     function getCash() external view returns (uint256);
 
-    function accrueInterest() external returns (uint256);
-
     function seize(
         address liquidator,
         address borrower,
@@ -277,6 +275,8 @@ interface ICToken {
     function mint(uint256) external returns (uint256);
 
     function redeemUnderlying(uint256) external returns (uint256);
+
+    function accrueInterest() external returns (uint256);
 
     /*** Admin Functions ***/
 
