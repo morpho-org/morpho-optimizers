@@ -90,7 +90,7 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
                 ICToken(_poolTokenAddress),
                 _amount,
                 _maxGasToConsume
-            ); // In underlying
+            ); // In underlying.
 
             if (_isAboveCompoundThreshold(_poolTokenAddress, matched)) {
                 matched = Math.min(matched, ICToken(_poolTokenAddress).balanceOf(address(this)));
@@ -98,7 +98,7 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
 
                 borrowBalanceInOf[_poolTokenAddress][msg.sender].inP2P += matched.div(
                     borrowP2PExchangeRate
-                ); // In p2pUnit
+                ); // In p2pUnit.
                 matchingEngine.updateBorrowersDC(_poolTokenAddress, msg.sender);
                 remainingToBorrowOnPool -= matched;
             }
@@ -109,7 +109,7 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
         if (_isAboveCompoundThreshold(_poolTokenAddress, remainingToBorrowOnPool)) {
             borrowBalanceInOf[_poolTokenAddress][msg.sender].onPool += remainingToBorrowOnPool.div(
                 ICToken(_poolTokenAddress).borrowIndex()
-            ); // In cdUnit
+            ); // In cdUnit.
             matchingEngine.updateBorrowersDC(_poolTokenAddress, msg.sender);
             _borrowFromPool(_poolTokenAddress, remainingToBorrowOnPool);
         }
@@ -147,11 +147,11 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
             supplyBalanceInOf[_poolTokenAddress][_supplier].onPool -= Math.min(
                 supplyOnPool,
                 withdrawnInUnderlying.div(supplyPoolIndex)
-            ); // In poolToken
+            ); // In poolToken.
             matchingEngine.updateSuppliersDC(_poolTokenAddress, _supplier);
 
             if (_isAboveCompoundThreshold(_poolTokenAddress, withdrawnInUnderlying)) {
-                _withdrawFromPool(_poolTokenAddress, withdrawnInUnderlying); // Reverts on error
+                _withdrawFromPool(_poolTokenAddress, withdrawnInUnderlying); // Reverts on error.
                 remainingToWithdraw -= withdrawnInUnderlying;
             }
         }
@@ -162,7 +162,7 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
             supplyBalanceInOf[_poolTokenAddress][_supplier].inP2P -= Math.min(
                 supplyBalanceInOf[_poolTokenAddress][_supplier].inP2P,
                 remainingToWithdraw.div(marketsManager.supplyP2PExchangeRate(_poolTokenAddress))
-            ); // In p2pUnit
+            ); // In p2pUnit.
             matchingEngine.updateSuppliersDC(_poolTokenAddress, _supplier);
 
             uint256 matched;
@@ -177,7 +177,7 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
                 );
 
                 if (_isAboveCompoundThreshold(_poolTokenAddress, matched)) {
-                    _withdrawFromPool(_poolTokenAddress, matched); // Reverts on error
+                    _withdrawFromPool(_poolTokenAddress, matched); // Reverts on error.
                     remainingToWithdraw -= matched;
                 }
             }
@@ -191,7 +191,7 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
                     _maxGasToConsume / 2
                 );
 
-                _borrowFromPool(_poolTokenAddress, remainingToWithdraw); // Reverts on error
+                _borrowFromPool(_poolTokenAddress, remainingToWithdraw); // Reverts on error.
             }
         }
 
@@ -238,11 +238,11 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
             borrowBalanceInOf[_poolTokenAddress][_user].onPool -= Math.min(
                 borrowedOnPool,
                 remainingToRepay.div(borrowPoolIndex)
-            ); // In cdUnit
+            ); // In cdUnit.
             matchingEngine.updateBorrowersDC(_poolTokenAddress, _user);
 
             if (repaidInUnderlying > 0) {
-                _repayToPool(_poolTokenAddress, underlyingToken, repaidInUnderlying); // Reverts on error
+                _repayToPool(_poolTokenAddress, underlyingToken, repaidInUnderlying); // Reverts on error.
                 remainingToRepay -= repaidInUnderlying;
             }
         }
@@ -255,7 +255,7 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
             borrowBalanceInOf[_poolTokenAddress][_user].inP2P -= Math.min(
                 borrowBalanceInOf[_poolTokenAddress][_user].inP2P,
                 remainingToRepay.div(marketsManager.borrowP2PExchangeRate(_poolTokenAddress))
-            ); // In p2pUnit
+            ); // In p2pUnit.
             matchingEngine.updateBorrowersDC(_poolTokenAddress, _user);
 
             if (
@@ -269,7 +269,7 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
                 );
 
                 if ((_isAboveCompoundThreshold(_poolTokenAddress, matched))) {
-                    _repayToPool(_poolTokenAddress, underlyingToken, matched); // Reverts on error
+                    _repayToPool(_poolTokenAddress, underlyingToken, matched); // Reverts on error.
                     remainingToRepay -= matched;
                 }
             }
@@ -281,10 +281,10 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
                     _poolTokenAddress,
                     remainingToRepay,
                     _maxGasToConsume / 2
-                ); // Reverts on error
+                ); // Reverts on error.
 
                 if (_isAboveCompoundThreshold(_poolTokenAddress, toSupply))
-                    _supplyToPool(_poolTokenAddress, underlyingToken, toSupply); // Reverts on error
+                    _supplyToPool(_poolTokenAddress, underlyingToken, toSupply); // Reverts on error.
             }
         }
 
@@ -348,7 +348,7 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
             address poolTokenEntered = enteredMarkets[_user][i];
             marketsManager.updateP2PExchangeRates(poolTokenEntered);
 
-            // Calling accrueInterest so that computation in getUserLiquidityDataForAsset are the most accurate ones.
+            // Calling accrueInterest so that computation in getUserLiquidityDataForAsset() are the most accurate ones.
             ICToken(poolTokenEntered).accrueInterest();
             AssetLiquidityData memory assetData = getUserLiquidityDataForAsset(
                 _user,
