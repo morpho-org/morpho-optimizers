@@ -151,9 +151,9 @@ abstract contract PositionsManagerForCompoundGettersSetters is
     /// @notice Returns the collateral value, debt value and max debt value of a given user.
     /// @dev Note: must be called after calling `accrueInterest()` on the cToken to have the most up to date values.
     /// @param _user The user to determine liquidity for.
-    /// @return collateralValue The collateral value of the user (in ETH).
-    /// @return debtValue The current debt value of the user (in ETH).
-    /// @return maxDebtValue The maximum possible debt value of the user (in ETH).
+    /// @return collateralValue The collateral value of the user.
+    /// @return debtValue The current debt value of the user.
+    /// @return maxDebtValue The maximum possible debt value of the user.
     function getUserBalanceStates(address _user)
         external
         view
