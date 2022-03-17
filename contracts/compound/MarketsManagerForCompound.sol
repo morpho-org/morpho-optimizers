@@ -5,11 +5,15 @@ import {ICToken, IComptroller} from "./interfaces/compound/ICompound.sol";
 import "./interfaces/IPositionsManagerForCompound.sol";
 import "./interfaces/IMarketsManagerForCompound.sol";
 
+import "./libraries/CompoundMath.sol";
+
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
 /// @title MarketsManagerForCompound.
 /// @notice Smart contract managing the markets used by a MorphoPositionsManagerForCompound contract, an other contract interacting with Compound or a fork of Compound.
 contract MarketsManagerForCompound is IMarketsManagerForCompound, OwnableUpgradeable {
+    using CompoundMath for uint256;
+
     /// STRUCTS ///
 
     struct LastPoolIndexes {
@@ -327,14 +331,6 @@ contract MarketsManagerForCompound is IMarketsManagerForCompound, OwnableUpgrade
 
     /// INTERNAL ///
 
-    // TODO: ref
-    function _computeCompoundedInterest(uint256 _rate, uint256 _elapsedTime)
-        internal
-        returns (uint256)
-    {
-        return 1;
-    }
-
     /// @notice Updates the P2P exchange rates, taking into account the Second Percentage Yield values.
     /// @param _poolTokenAddress The address of the market to update.
     function _updateP2PExchangeRates(address _poolTokenAddress) internal {
@@ -422,25 +418,15 @@ contract MarketsManagerForCompound is IMarketsManagerForCompound, OwnableUpgrade
         uint256 _lastPoolIndex,
         uint256 _blockDifference
     ) internal pure returns (uint256) {
-        // TODO: update this function
-        // if (_p2pDelta == 0)
-        //     return _p2pRate.rayMul(_computeCompoundedInterest(_p2pBPY, _blockDifference));
-        // else {
-        //     uint256 shareOfTheDelta = _p2pDelta
-        //     .wadToRay()
-        //     .rayMul(_p2pRate)
-        //     .rayDiv(_poolIndex)
-        //     .rayDiv(_p2pAmount.wadToRay());
+        if (_p2pDelta == 0) return _p2pRate.mul(_p2pBPY * _blockDifference);
+        else {
+            uint256 shareOfTheDelta = _p2pDelta.mul(_p2pRate).div(_poolIndex).div(_p2pAmount);
 
-        //     return
-        //         _p2pRate.rayMul(
-        //             (
-        //                 _computeCompoundedInterest(_p2pBPY, _blockDifference).rayMul(
-        //                     WadRayMath.ray() - shareOfTheDelta
-        //                 )
-        //             ) + (shareOfTheDelta.rayMul(_poolIndex).rayDiv(_lastPoolIndex))
-        //         );
-        // }
-        return 1;
+            return
+                _p2pRate.mul(
+                    (_p2pBPY * _blockDifference).mul(1e18 - shareOfTheDelta) +
+                        shareOfTheDelta.mul(_poolIndex).div(_lastPoolIndex)
+                );
+        }
     }
 }
