@@ -605,29 +605,29 @@ contract TestWithdraw is TestSetup {
 
     // Test attack
     // Should be possible to withdraw amount while an attacker sends aToken to trick Morpho contract
-    function test_withdraw_while_attacker_sends_AToken() public {
-        Attacker attacker = new Attacker(lendingPool);
-        writeBalanceOf(address(attacker), dai, type(uint256).max / 2);
+    // function test_withdraw_while_attacker_sends_AToken() public {
+    //     Attacker attacker = new Attacker(lendingPool);
+    //     writeBalanceOf(address(attacker), dai, type(uint256).max / 2);
 
-        uint256 toSupply = 100 ether;
-        uint256 collateral = 2 * toSupply;
-        uint256 toBorrow = toSupply;
+    //     uint256 toSupply = 100 ether;
+    //     uint256 collateral = 2 * toSupply;
+    //     uint256 toBorrow = toSupply;
 
-        // attacker sends aToken to positionsManager contract
-        attacker.approve(dai, address(lendingPool), toSupply);
-        attacker.deposit(dai, toSupply, address(attacker), 0);
-        attacker.transfer(dai, address(positionsManager), toSupply);
+    //     // attacker sends aToken to positionsManager contract
+    //     attacker.approve(dai, address(lendingPool), toSupply);
+    //     attacker.deposit(dai, toSupply, address(attacker), 0);
+    //     attacker.transfer(dai, address(positionsManager), toSupply);
 
-        // supplier1 deposits collateral
-        supplier1.approve(dai, toSupply);
-        supplier1.supply(aDai, toSupply);
+    //     // supplier1 deposits collateral
+    //     supplier1.approve(dai, toSupply);
+    //     supplier1.supply(aDai, toSupply);
 
-        // borrower1 deposits collateral
-        borrower1.approve(usdc, to6Decimals(collateral));
-        borrower1.supply(aUsdc, to6Decimals(collateral));
+    //     // borrower1 deposits collateral
+    //     borrower1.approve(usdc, to6Decimals(collateral));
+    //     borrower1.supply(aUsdc, to6Decimals(collateral));
 
-        // supplier1 tries to withdraw
-        borrower1.borrow(aDai, toBorrow);
-        supplier1.withdraw(aDai, toSupply);
-    }
+    //     // supplier1 tries to withdraw
+    //     borrower1.borrow(aDai, toBorrow);
+    //     supplier1.withdraw(aDai, toSupply);
+    // }
 }

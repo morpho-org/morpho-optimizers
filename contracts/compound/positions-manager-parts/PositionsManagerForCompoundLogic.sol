@@ -93,10 +93,6 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
             ); // In underlying.
 
             if (_isAboveCompoundThreshold(_poolTokenAddress, matched)) {
-                matched = Math.min(
-                    matched,
-                    ICToken(_poolTokenAddress).balanceOfUnderlying(address(this))
-                );
                 _withdrawFromPool(_poolTokenAddress, matched); // Reverts on error
 
                 borrowBalanceInOf[_poolTokenAddress][msg.sender].inP2P += matched.div(
