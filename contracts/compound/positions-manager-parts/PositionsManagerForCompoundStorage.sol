@@ -71,6 +71,7 @@ abstract contract PositionsManagerForCompoundStorage is
 
     MaxGas public maxGas; // Max gas to consume within loops in matching engine functions.
     uint8 public NDS; // Max number of iterations in the data structure sorting process.
+    uint8 public constant CTOKEN_DECIMALS = 8; // The number of decimals for cToken.
     uint16 public constant MAX_BASIS_POINTS = 10000; // 100% in basis points.
     uint16 public constant LIQUIDATION_CLOSE_FACTOR_PERCENT = 5000; // 50% in basis points.
     mapping(address => DoubleLinkedList.List) internal suppliersInP2P; // For a given market, the suppliers in peer-to-peer.
