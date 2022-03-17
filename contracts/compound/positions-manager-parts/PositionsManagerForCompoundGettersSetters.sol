@@ -255,19 +255,15 @@ abstract contract PositionsManagerForCompoundGettersSetters is
         address _poolTokenAddress,
         ICompoundOracle _oracle
     ) public view returns (AssetLiquidityData memory assetData) {
-        // Compute the current debt amount (in underlying).
-        address underlyingAddress = ICToken(_poolTokenAddress).underlying();
-        assetData.debtValue = _getUserBorrowBalanceInOf(_poolTokenAddress, _user);
-
-        // Compute the current collateral amount (in underlying).
-        assetData.collateralValue = _getUserSupplyBalanceInOf(_poolTokenAddress, _user);
-
-        assetData.underlyingPrice = _oracle.getUnderlyingPrice(underlyingAddress);
+        assetData.underlyingPrice = _oracle.getUnderlyingPrice(_poolTokenAddress);
         (, assetData.collateralFactor, ) = comptroller.markets(_poolTokenAddress);
 
-        // Then, convert values to ETH
-        assetData.collateralValue = assetData.collateralValue.mul(assetData.underlyingPrice);
-        assetData.debtValue = assetData.debtValue.mul(assetData.underlyingPrice);
+        assetData.collateralValue = _getUserSupplyBalanceInOf(_poolTokenAddress, _user).mul(
+            assetData.underlyingPrice
+        );
+        assetData.debtValue = _getUserBorrowBalanceInOf(_poolTokenAddress, _user).mul(
+            assetData.underlyingPrice
+        );
         assetData.maxDebtValue = assetData.collateralValue.mul(assetData.collateralFactor);
     }
 
