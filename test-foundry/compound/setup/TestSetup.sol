@@ -79,6 +79,7 @@ contract TestSetup is Config, Utils, HevmAdapter {
         PositionsManagerForCompound.MaxGas memory maxGas = PositionsManagerForCompoundStorage
         .MaxGas({supply: 3e6, borrow: 3e6, withdraw: 3e6, repay: 3e6});
 
+        comptroller = IComptroller(comptrollerAddress);
         matchingEngine = new MatchingEngineForCompound();
 
         // Deploy proxy
@@ -115,26 +116,25 @@ contract TestSetup is Config, Utils, HevmAdapter {
         treasuryVault = new User(positionsManager);
 
         fakePositionsManagerImpl = new PositionsManagerForCompound();
-
         oracle = ICompoundOracle(comptroller.oracle());
 
         marketsManager.setPositionsManager(address(positionsManager));
         positionsManager.setTreasuryVault(address(treasuryVault));
 
-        createMarket(aDai);
-        createMarket(aUsdc);
-        createMarket(aWbtc);
-        createMarket(aUsdt);
+        createMarket(cDai);
+        createMarket(cUsdc);
+        createMarket(cWbtc);
+        createMarket(cUsdt);
     }
 
-    function createMarket(address _aToken) internal {
-        address underlying = ICToken(_aToken).underlying();
-        marketsManager.createMarket(underlying);
+    function createMarket(address _cToken) internal {
+        marketsManager.createMarket(_cToken);
 
         // All tokens must also be added to the pools array, for the correct behavior of TestLiquidate::createAndSetCustomPriceOracle.
-        pools.push(_aToken);
+        pools.push(_cToken);
 
-        hevm.label(_aToken, ERC20(_aToken).symbol());
+        hevm.label(_cToken, ERC20(_cToken).symbol());
+        address underlying = ICToken(_cToken).underlying();
         hevm.label(underlying, ERC20(underlying).symbol());
     }
 
