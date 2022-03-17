@@ -347,6 +347,9 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
         while (i < numberOfEnteredMarkets) {
             address poolTokenEntered = enteredMarkets[_user][i];
             marketsManager.updateP2PExchangeRates(poolTokenEntered);
+
+            // Calling accrueInterest so that computation in getUserLiquidityDataForAsset are the most accurate ones.
+            ICToken(poolTokenEntered).accrueInterest();
             AssetLiquidityData memory assetData = getUserLiquidityDataForAsset(
                 _user,
                 poolTokenEntered,
@@ -361,7 +364,6 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
 
             if (_poolTokenAddress == poolTokenEntered) {
                 debtValue += _borrowedAmount.mul(assetData.underlyingPrice);
-
                 uint256 maxDebtValueSub = _withdrawnAmount.mul(assetData.underlyingPrice).mul(
                     assetData.collateralFactor
                 );
