@@ -228,7 +228,7 @@ abstract contract PositionsManagerForCompoundGettersSetters is
         // Not possible to withdraw nor borrow
         if (data.maxDebtValue < data.debtValue) return (0, 0);
 
-        uint256 differenceInUnderlying = (data.maxDebtValue - data.debtValue).mul(
+        uint256 differenceInUnderlying = (data.maxDebtValue - data.debtValue).div(
             assetData.underlyingPrice
         );
 
