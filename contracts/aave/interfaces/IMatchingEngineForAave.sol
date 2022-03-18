@@ -30,7 +30,7 @@ interface IMatchingEngineForAave {
         address,
         uint256,
         uint256
-    ) external;
+    ) external returns (uint256);
 
     function updateBorrowers(address _poolTokenAddress, address _user) external;
 
