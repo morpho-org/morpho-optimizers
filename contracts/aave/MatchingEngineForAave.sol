@@ -62,26 +62,6 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         uint256 _balanceInP2P
     );
 
-    /// @notice Emitted when the borrow P2P delta is updated.
-    /// @param _poolTokenAddress The address of the market.
-    /// @param _borrowP2PDelta The borrow P2P delta after update.
-    event BorrowP2PDeltaUpdated(address indexed _poolTokenAddress, uint256 _borrowP2PDelta);
-
-    /// @notice Emitted when the supply P2P delta is updated.
-    /// @param _poolTokenAddress The address of the market.
-    /// @param _supplyP2PDelta The supply P2P delta after update.
-    event SupplyP2PDeltaUpdated(address indexed _poolTokenAddress, uint256 _supplyP2PDelta);
-
-    /// @notice Emitted when the supply and borrow P2P amounts are updated.
-    /// @param _poolTokenAddress The address of the market.
-    /// @param _supplyP2PAmount The supply P2P amount after update.
-    /// @param _borrowP2PAmount The borrow P2P amount after update.
-    event P2PAmountsUpdated(
-        address indexed _poolTokenAddress,
-        uint256 _supplyP2PAmount,
-        uint256 _borrowP2PAmount
-    );
-
     /// EXTERNAL ///
 
     /// @notice Matches suppliers' liquidity waiting on Aave up to the given `_amount` and move it to P2P.
@@ -102,17 +82,6 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         address user = suppliersOnPool[poolTokenAddress].getHead();
         vars.normalizer = lendingPool.getReserveNormalizedIncome(address(_underlyingToken));
         vars.p2pRate = marketsManager.supplyP2PExchangeRate(poolTokenAddress);
-        Delta storage delta = deltas[poolTokenAddress];
-
-        // Match supply P2P delta first
-        if (delta.supplyP2PDelta > 0) {
-            vars.toMatch = Math.min(delta.supplyP2PDelta.mulWadByRay(vars.normalizer), _amount);
-            unchecked {
-                matched += vars.toMatch;
-            }
-            delta.supplyP2PDelta -= vars.toMatch.divWadByRay(vars.normalizer);
-            emit SupplyP2PDeltaUpdated(poolTokenAddress, delta.supplyP2PDelta);
-        }
 
         if (_maxGasToConsume != 0) {
             vars.gasLeftAtTheBeginning = gasleft();
@@ -148,12 +117,6 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
                 user = suppliersOnPool[poolTokenAddress].getHead();
             }
         }
-
-        delta.supplyP2PAmount += matched.divWadByRay(vars.p2pRate);
-        delta.borrowP2PAmount += matched.divWadByRay(
-            marketsManager.borrowP2PExchangeRate(poolTokenAddress)
-        );
-        emit P2PAmountsUpdated(poolTokenAddress, delta.supplyP2PAmount, delta.borrowP2PAmount);
     }
 
     /// @notice Unmatches suppliers' liquidity in P2P up to the given `_amount` and move it to Aave.
@@ -165,28 +128,13 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         address _poolTokenAddress,
         uint256 _amount,
         uint256 _maxGasToConsume
-    ) external override returns (uint256 toSupply) {
+    ) external override returns (uint256) {
         UnmatchVars memory vars;
         ERC20 underlyingToken = ERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
         address user = suppliersInP2P[_poolTokenAddress].getHead();
         vars.normalizer = lendingPool.getReserveNormalizedIncome(address(underlyingToken));
         vars.p2pRate = marketsManager.supplyP2PExchangeRate(_poolTokenAddress);
         vars.remainingToUnmatch = _amount; // In underlying
-        Delta storage delta = deltas[_poolTokenAddress];
-
-        // Reduce borrow P2P delta first
-        if (delta.borrowP2PDelta > 0) {
-            uint256 normalizedVariableDebt = lendingPool.getReserveNormalizedVariableDebt(
-                address(underlyingToken)
-            );
-            vars.toUnmatch = Math.min(
-                delta.borrowP2PDelta.mulWadByRay(normalizedVariableDebt),
-                _amount
-            );
-            vars.remainingToUnmatch -= vars.toUnmatch;
-            delta.borrowP2PDelta -= vars.toUnmatch.divWadByRay(normalizedVariableDebt);
-            emit BorrowP2PDeltaUpdated(_poolTokenAddress, delta.borrowP2PDelta);
-        }
 
         if (_maxGasToConsume != 0) {
             vars.gasLeftAtTheBeginning = gasleft();
@@ -222,20 +170,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
                 user = suppliersInP2P[_poolTokenAddress].getHead();
             }
         }
-
-        // If P2P supply amount < _amount, the rest stays on the contract (reserve factor)
-        toSupply = Math.min(_amount, delta.supplyP2PAmount.mulWadByRay(vars.p2pRate));
-
-        if (vars.remainingToUnmatch > 0) {
-            delta.supplyP2PDelta += vars.remainingToUnmatch.divWadByRay(vars.normalizer);
-            emit SupplyP2PDeltaUpdated(_poolTokenAddress, delta.supplyP2PDelta);
-        }
-
-        delta.supplyP2PAmount -= (_amount - vars.remainingToUnmatch).divWadByRay(vars.p2pRate);
-        delta.borrowP2PAmount -= _amount.divWadByRay(
-            marketsManager.borrowP2PExchangeRate(_poolTokenAddress)
-        );
-        emit P2PAmountsUpdated(_poolTokenAddress, delta.supplyP2PAmount, delta.borrowP2PAmount);
+        return _amount - vars.remainingToUnmatch;
     }
 
     /// @notice Matches borrowers' liquidity waiting on Aave up to the given `_amount` and move it to P2P.
@@ -256,17 +191,6 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         address user = borrowersOnPool[poolTokenAddress].getHead();
         vars.normalizer = lendingPool.getReserveNormalizedVariableDebt(address(_underlyingToken));
         vars.p2pRate = marketsManager.borrowP2PExchangeRate(poolTokenAddress);
-        Delta storage delta = deltas[poolTokenAddress];
-
-        // Match borrow P2P delta first
-        if (delta.borrowP2PDelta > 0) {
-            vars.toMatch = Math.min(delta.borrowP2PDelta.mulWadByRay(vars.normalizer), _amount);
-            unchecked {
-                matched += vars.toMatch;
-            }
-            delta.borrowP2PDelta -= vars.toMatch.divWadByRay(vars.normalizer);
-            emit BorrowP2PDeltaUpdated(poolTokenAddress, delta.borrowP2PDelta);
-        }
 
         if (_maxGasToConsume != 0) {
             vars.gasLeftAtTheBeginning = gasleft();
@@ -302,12 +226,6 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
                 user = borrowersOnPool[poolTokenAddress].getHead();
             }
         }
-
-        delta.supplyP2PAmount += matched.divWadByRay(
-            marketsManager.supplyP2PExchangeRate(poolTokenAddress)
-        );
-        delta.borrowP2PAmount += matched.divWadByRay(vars.p2pRate);
-        emit P2PAmountsUpdated(poolTokenAddress, delta.supplyP2PAmount, delta.borrowP2PAmount);
     }
 
     /// @notice Unmatches borrowers' liquidity in P2P for the given `_amount` and move it to Aave.
@@ -319,25 +237,13 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         address _poolTokenAddress,
         uint256 _amount,
         uint256 _maxGasToConsume
-    ) external override {
+    ) external override returns (uint256) {
         UnmatchVars memory vars;
         ERC20 underlyingToken = ERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
         address user = borrowersInP2P[_poolTokenAddress].getHead();
         vars.remainingToUnmatch = _amount;
         vars.normalizer = lendingPool.getReserveNormalizedVariableDebt(address(underlyingToken));
         vars.p2pRate = marketsManager.borrowP2PExchangeRate(_poolTokenAddress);
-        Delta storage delta = deltas[_poolTokenAddress];
-
-        // Reduce supply P2P delta first
-        if (delta.supplyP2PDelta > 0) {
-            uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(
-                address(underlyingToken)
-            );
-            vars.toUnmatch = Math.min(delta.supplyP2PDelta.mulWadByRay(normalizedIncome), _amount);
-            vars.remainingToUnmatch -= vars.toUnmatch;
-            delta.supplyP2PDelta -= vars.toUnmatch.divWadByRay(normalizedIncome);
-            emit SupplyP2PDeltaUpdated(_poolTokenAddress, delta.supplyP2PDelta);
-        }
 
         if (_maxGasToConsume != 0) {
             vars.gasLeftAtTheBeginning = gasleft();
@@ -374,16 +280,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
             }
         }
 
-        if (vars.remainingToUnmatch > 0) {
-            delta.borrowP2PDelta += vars.remainingToUnmatch.divWadByRay(vars.normalizer);
-            emit BorrowP2PDeltaUpdated(_poolTokenAddress, delta.borrowP2PDelta);
-        }
-
-        delta.supplyP2PAmount -= _amount.divWadByRay(
-            marketsManager.supplyP2PExchangeRate(_poolTokenAddress)
-        );
-        delta.borrowP2PAmount -= (_amount - vars.remainingToUnmatch).divWadByRay(vars.p2pRate);
-        emit P2PAmountsUpdated(_poolTokenAddress, delta.supplyP2PAmount, delta.borrowP2PAmount);
+        return _amount - vars.remainingToUnmatch;
     }
 
     /// PUBLIC ///

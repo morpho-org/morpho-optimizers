@@ -69,8 +69,8 @@ library MatchingEngineFns {
         address _poolTokenAddress,
         uint256 _amount,
         uint256 _maxGasToConsume
-    ) internal {
-        address(_matchingEngine).functionDelegateCall(
+    ) internal returns (uint256) {
+        bytes memory data = address(_matchingEngine).functionDelegateCall(
             abi.encodeWithSelector(
                 _matchingEngine.unmatchBorrowers.selector,
                 _poolTokenAddress,
@@ -78,6 +78,7 @@ library MatchingEngineFns {
                 _maxGasToConsume
             )
         );
+        return abi.decode(data, (uint256));
     }
 
     function updateBorrowersDC(
