@@ -322,38 +322,6 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
 
     /// INTERNAL ///
 
-    /// @dev calculates compounded interest over a period of time.
-    ///   To avoid expensive exponentiation, the calculation is performed using a binomial approximation:
-    ///   (1+x)^n = 1+n*x+[n/2*(n-1)]*x^2+[n/6*(n-1)*(n-2)*x^3...
-    /// @param _rate The SPY to use in the computation.
-    /// @param _elapsedTime The amount of time during to get the interest for.
-    /// @return results in ray.
-    function _computeCompoundedInterest(uint256 _rate, uint256 _elapsedTime)
-        internal
-        pure
-        returns (uint256)
-    {
-        if (_elapsedTime == 0) {
-            return WadRayMath.ray();
-        }
-
-        if (_elapsedTime == 1) {
-            return WadRayMath.ray() + _rate;
-        }
-
-        uint256 ratePowerTwo = _rate.rayMul(_rate);
-        uint256 ratePowerThree = ratePowerTwo.rayMul(_rate);
-
-        return
-            WadRayMath.ray() +
-            _rate *
-            _elapsedTime +
-            (_elapsedTime * (_elapsedTime - 1) * ratePowerTwo) /
-            2 +
-            (_elapsedTime * (_elapsedTime - 1) * (_elapsedTime - 2) * ratePowerThree) /
-            6;
-    }
-
     /// @notice Updates the P2P exchange rates, taking into account the Second Percentage Yield values.
     /// @param _marketAddress The address of the market to update.
     function _updateP2PExchangeRates(address _marketAddress) internal {
@@ -460,5 +428,32 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
                     ) + (shareOfTheDelta.rayMul(_poolIndex).rayDiv(_lastPoolIndex))
                 );
         }
+    }
+
+    /// @dev Computes the compounded interest over a period of time.
+    ///   To avoid expensive exponentiation, the calculation is performed using a binomial approximation:
+    ///   (1+x)^n = 1+n*x+[n/2*(n-1)]*x^2+[n/6*(n-1)*(n-2)*x^3...
+    /// @param _rate The SPY to use in the computation.
+    /// @param _elapsedTime The amount of time during to get the interest for.
+    /// @return The result in ray.
+    function _computeCompoundedInterest(uint256 _rate, uint256 _elapsedTime)
+        internal
+        pure
+        returns (uint256)
+    {
+        if (_elapsedTime == 0) return WadRayMath.ray();
+        if (_elapsedTime == 1) return WadRayMath.ray() + _rate;
+
+        uint256 ratePowerTwo = _rate.rayMul(_rate);
+        uint256 ratePowerThree = ratePowerTwo.rayMul(_rate);
+
+        return
+            WadRayMath.ray() +
+            _rate *
+            _elapsedTime +
+            (_elapsedTime * (_elapsedTime - 1) * ratePowerTwo) /
+            2 +
+            (_elapsedTime * (_elapsedTime - 1) * (_elapsedTime - 2) * ratePowerThree) /
+            6;
     }
 }

@@ -23,6 +23,7 @@ contract MarketsManagerForCompound is IMarketsManagerForCompound, OwnableUpgrade
 
     /// STORAGE ///
 
+    uint256 public constant WAD = 1e18;
     uint16 public constant MAX_BASIS_POINTS = 10000; // 100% in basis point.
     uint16 public constant HALF_MAX_BASIS_POINTS = 5000; // 50% in basis point.
     address[] public marketsCreated; // Keeps track of the created markets.
@@ -418,15 +419,44 @@ contract MarketsManagerForCompound is IMarketsManagerForCompound, OwnableUpgrade
         uint256 _lastPoolIndex,
         uint256 _blockDifference
     ) internal pure returns (uint256) {
-        if (_p2pDelta == 0) return _p2pRate.mul(_p2pBPY * _blockDifference);
+        if (_p2pDelta == 0)
+            return _p2pRate.mul(_computeCompoundedInterest(_p2pBPY, _blockDifference));
         else {
             uint256 shareOfTheDelta = _p2pDelta.mul(_p2pRate).div(_poolIndex).div(_p2pAmount);
 
             return
                 _p2pRate.mul(
-                    (_p2pBPY * _blockDifference).mul(1e18 - shareOfTheDelta) +
-                        shareOfTheDelta.mul(_poolIndex).div(_lastPoolIndex)
+                    _computeCompoundedInterest(_p2pBPY, _blockDifference).mul(
+                        1e18 - shareOfTheDelta
+                    ) + shareOfTheDelta.mul(_poolIndex).div(_lastPoolIndex)
                 );
         }
+    }
+
+    /// @dev Computes the compounded interest over a number of blocks.
+    ///   To avoid expensive exponentiation, the calculation is performed using a binomial approximation:
+    ///   (1+x)^n = 1+n*x+[n/2*(n-1)]*x^2+[n/6*(n-1)*(n-2)*x^3...
+    /// @param _rate The BPY to use in the computation.
+    /// @param _elapsedBlocks The number of blocks passed since te last computation.
+    /// @return The result in wad.
+    function _computeCompoundedInterest(uint256 _rate, uint256 _elapsedBlocks)
+        internal
+        pure
+        returns (uint256)
+    {
+        if (_elapsedBlocks == 0) return WAD;
+        if (_elapsedBlocks == 1) return WAD + _rate;
+
+        uint256 ratePowerTwo = _rate.mul(_rate);
+        uint256 ratePowerThree = ratePowerTwo.mul(_rate);
+
+        return
+            WAD +
+            _rate *
+            _elapsedBlocks +
+            (_elapsedBlocks * (_elapsedBlocks - 1) * ratePowerTwo) /
+            2 +
+            (_elapsedBlocks * (_elapsedBlocks - 1) * (_elapsedBlocks - 2) * ratePowerThree) /
+            6;
     }
 }
