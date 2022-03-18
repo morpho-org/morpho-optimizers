@@ -419,16 +419,15 @@ contract MarketsManagerForCompound is IMarketsManagerForCompound, OwnableUpgrade
         uint256 _lastPoolIndex,
         uint256 _blockDifference
     ) internal pure returns (uint256) {
-        if (_p2pDelta == 0)
-            return _p2pRate.mul(_computeCompoundedInterest(_p2pBPY, _blockDifference));
+        uint256 multiplier = _blockDifference == 0 ? 1e18 : _p2pBPY * _blockDifference;
+        if (_p2pDelta == 0) return _p2pRate.mul(multiplier);
         else {
             uint256 shareOfTheDelta = _p2pDelta.mul(_p2pRate).div(_poolIndex).div(_p2pAmount);
 
             return
                 _p2pRate.mul(
-                    _computeCompoundedInterest(_p2pBPY, _blockDifference).mul(
-                        1e18 - shareOfTheDelta
-                    ) + shareOfTheDelta.mul(_poolIndex).div(_lastPoolIndex)
+                    multiplier.mul(1e18 - shareOfTheDelta) +
+                        shareOfTheDelta.mul(_poolIndex).div(_lastPoolIndex)
                 );
         }
     }
