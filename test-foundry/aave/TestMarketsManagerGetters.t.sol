@@ -38,7 +38,7 @@ contract TestMarketsManagerGetters is TestSetup {
             uint256 borrowP2PDelta,
             uint256 supplyP2PAmount,
             uint256 borrowP2PAmount
-        ) = positionsManager.deltas(aDai);
+        ) = positionsManager.p2ps(aDai);
 
         assertEq(supplyP2PDelta_, supplyP2PDelta);
         assertEq(borrowP2PDelta_, borrowP2PDelta);

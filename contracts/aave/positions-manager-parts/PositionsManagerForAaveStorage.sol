@@ -45,11 +45,11 @@ abstract contract PositionsManagerForAaveStorage is OwnableUpgradeable, Reentran
         uint64 repay;
     }
 
-    struct Delta {
-        uint256 supplyP2PDelta; // Difference between the stored P2P supply amount and the real P2P supply amount (in scaled balance).
-        uint256 borrowP2PDelta; // Difference between the stored P2P borrow amount and the real P2P borrow amount (in adUnit).
-        uint256 supplyP2PAmount; // Sum of all stored P2P supply (in P2P unit).
-        uint256 borrowP2PAmount; // Sum of all stored P2P borrow (in P2P unit).
+    struct P2P {
+        uint256 supplyDelta; // Difference between the stored P2P supply amount and the real P2P supply amount (in scaled balance).
+        uint256 borrowDelta; // Difference between the stored P2P borrow amount and the real P2P borrow amount (in adUnit).
+        uint256 supplyAmount; // Sum of all stored P2P supply (in P2P unit).
+        uint256 borrowAmount; // Sum of all stored P2P borrow (in P2P unit).
     }
 
     struct AssetLiquidityData {
@@ -103,7 +103,7 @@ abstract contract PositionsManagerForAaveStorage is OwnableUpgradeable, Reentran
     mapping(address => mapping(address => BorrowBalance)) public borrowBalanceInOf; // For a given market, the borrow balance of a user.
     mapping(address => mapping(address => bool)) public userMembership; // Whether the user is in the market or not.
     mapping(address => address[]) public enteredMarkets; // The markets entered by a user.
-    mapping(address => Delta) public deltas; // Delta parameters for each market.
+    mapping(address => P2P) public p2ps; // Delta parameters for each market.
     mapping(address => bool) public paused; // Whether a market is paused or not.
 
     IAaveIncentivesController public aaveIncentivesController;
