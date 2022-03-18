@@ -461,12 +461,12 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
         }
     }
 
-    /// @dev Computes compounded interest over a period of time.
+    /// @dev Computes the compounded interest over a period of time.
     ///   To avoid expensive exponentiation, the calculation is performed using a binomial approximation:
     ///   (1+x)^n = 1+n*x+[n/2*(n-1)]*x^2+[n/6*(n-1)*(n-2)*x^3...
     /// @param _rate The SPY to use in the computation.
     /// @param _elapsedTime The amount of time during to get the interest for.
-    /// @return Thee result in ray.
+    /// @return The result in ray.
     function _computeCompoundedInterest(uint256 _rate, uint256 _elapsedTime)
         internal
         pure
@@ -475,7 +475,6 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
         uint256 rate = _rate / SECONDS_PER_YEAR;
 
         if (_elapsedTime == 0) return Math.ray();
-
         if (_elapsedTime == 1) return Math.ray() + rate;
 
         uint256 ratePowerTwo = rate.rayMul(rate);
