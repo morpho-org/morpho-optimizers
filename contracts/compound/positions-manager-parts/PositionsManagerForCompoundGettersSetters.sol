@@ -10,6 +10,7 @@ abstract contract PositionsManagerForCompoundGettersSetters is
     PositionsManagerForCompoundEventsErrors
 {
     using DoubleLinkedList for DoubleLinkedList.List;
+    using FixedPointMathLib for uint256;
     using CompoundMath for uint256;
 
     /// MODIFIERS ///
@@ -278,10 +279,10 @@ abstract contract PositionsManagerForCompoundGettersSetters is
         returns (uint256)
     {
         return
-            supplyBalanceInOf[_poolTokenAddress][_user].inP2P.mul(
+            supplyBalanceInOf[_poolTokenAddress][_user].inP2P.mulWadUp(
                 marketsManager.supplyP2PExchangeRate(_poolTokenAddress)
             ) +
-            supplyBalanceInOf[_poolTokenAddress][_user].onPool.mul(
+            supplyBalanceInOf[_poolTokenAddress][_user].onPool.mulWadUp(
                 ICToken(_poolTokenAddress).exchangeRateStored()
             );
     }
