@@ -445,8 +445,9 @@ contract TestPositionsManagerGetters is TestSetup {
         assertEq(states.liquidationValue, expectedStates.liquidationValue);
     }
 
+    // TODO: check this test
     /// This test is to check that a call to getUserLiquidityDataForAsset with USDT doesn't end
-    ///   with error "Division or modulo by zero", as Aave returns 0 for USDT liquidationThreshold.
+    ///   with error "Division or modulo by zero", as Compound returns 0 for USDT liquidationThreshold.
     function test_get_user_liquidity_data_for_usdt() public {
         uint256 usdtAmount = to6Decimals(10_000 ether);
 

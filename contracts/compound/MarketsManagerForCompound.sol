@@ -378,9 +378,9 @@ contract MarketsManagerForCompound is IMarketsManagerForCompound, OwnableUpgrade
     /// @notice Updates the P2P Block Percentage Yield of supply and borrow.
     /// @param _poolTokenAddress The address of the market to update.
     function _updateBPYs(address _poolTokenAddress) internal {
-        ICToken cErc20Token = ICToken(_poolTokenAddress);
-        uint256 supplyBPY = cErc20Token.supplyRatePerBlock();
-        uint256 borrowBPY = cErc20Token.borrowRatePerBlock();
+        ICToken cToken = ICToken(_poolTokenAddress);
+        uint256 supplyBPY = cToken.supplyRatePerBlock();
+        uint256 borrowBPY = cToken.borrowRatePerBlock();
 
         uint256 meanBPY;
         unchecked {

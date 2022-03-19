@@ -1,15 +1,18 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.7;
-import "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
+
 import {ICToken, ICompoundOracle} from "@contracts/compound/interfaces/compound/ICompound.sol";
+import "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
 import "@contracts/compound/interfaces/IRewardsManagerForCompound.sol";
 import "@contracts/common/interfaces/ISwapManager.sol";
+
 import "hardhat/console.sol";
-import "../../common/helpers/Chains.sol";
+
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
+
 import {SwapManagerUniV3OnEth} from "@contracts/common/SwapManagerUniV3OnEth.sol";
 import {SwapManagerUniV3} from "@contracts/common/SwapManagerUniV3.sol";
 import {SwapManagerUniV2} from "@contracts/common/SwapManagerUniV2.sol";
@@ -18,10 +21,12 @@ import {UniswapV2PoolCreator} from "../../common/uniswap/UniswapV2PoolCreator.so
 import "@contracts/compound/PositionsManagerForCompound.sol";
 import "@contracts/compound/MarketsManagerForCompound.sol";
 import "@contracts/compound/MatchingEngineForCompound.sol";
-import "../../common/helpers/MorphoToken.sol";
 import "../../common/helpers/SimplePriceOracle.sol";
-import {User} from "../helpers/User.sol";
+import "../../common/helpers/MorphoToken.sol";
+
 import "../../common/setup/HevmAdapter.sol";
+import "../../common/helpers/Chains.sol";
+import {User} from "../helpers/User.sol";
 import {Utils} from "./Utils.sol";
 import "@config/Config.sol";
 
@@ -33,9 +38,12 @@ interface IAdminComptroller {
 
 contract TestSetup is Config, Utils, HevmAdapter {
     using SafeERC20 for IERC20;
+
     uint256 public constant MAX_BASIS_POINTS = 10_000;
     uint256 public constant INITIAL_BALANCE = 1_000_000;
+
     ProxyAdmin public proxyAdmin;
+
     TransparentUpgradeableProxy public positionsManagerProxy;
     TransparentUpgradeableProxy public marketsManagerProxy;
     MatchingEngineForCompound internal matchingEngine;
@@ -44,13 +52,16 @@ contract TestSetup is Config, Utils, HevmAdapter {
     PositionsManagerForCompound internal fakePositionsManagerImpl;
     MarketsManagerForCompound internal marketsManager;
     MarketsManagerForCompound internal marketsManagerImplV1;
+
     IRewardsManagerForCompound internal rewardsManager;
     ISwapManager public swapManager;
+
     UniswapPoolCreator public uniswapPoolCreator;
     UniswapV2PoolCreator public uniswapV2PoolCreator;
     MorphoToken public morphoToken;
     IComptroller public comptroller;
     ICompoundOracle public oracle;
+
     User public supplier1;
     User public supplier2;
     User public supplier3;
@@ -60,6 +71,7 @@ contract TestSetup is Config, Utils, HevmAdapter {
     User public borrower3;
     User[] public borrowers;
     User public treasuryVault;
+
     address[] public pools;
 
     function setUp() public {

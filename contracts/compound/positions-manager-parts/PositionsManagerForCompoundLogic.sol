@@ -267,7 +267,7 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
                     _maxGasToConsume / 2
                 );
 
-                if ((_isAboveCompoundThreshold(_poolTokenAddress, matched))) {
+                if (_isAboveCompoundThreshold(_poolTokenAddress, matched)) {
                     _repayToPool(_poolTokenAddress, underlyingToken, matched); // Reverts on error.
                     remainingToRepay -= matched;
                 }
