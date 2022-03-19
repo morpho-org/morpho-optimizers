@@ -4,6 +4,8 @@ pragma solidity 0.8.7;
 import "./setup/TestSetup.sol";
 
 contract TestGovernance is TestSetup {
+    using CompoundMath for uint256;
+
     // ==============
     // = Deployment =
     // ==============
@@ -65,7 +67,6 @@ contract TestGovernance is TestSetup {
     // Anyone can update the rates
     function test_rates_should_be_updated() public {
         borrower1.updateRates(cDai);
-        uint256 firstBlockTimestamp = block.timestamp;
 
         ICToken cToken = ICToken(cDai);
         uint256 expectedBPY = (cToken.supplyRatePerBlock() + cToken.borrowRatePerBlock()) / 2;
@@ -78,9 +79,20 @@ contract TestGovernance is TestSetup {
         assertEq(supplyP2PExchangeRate, WAD);
         assertEq(borrowP2PExchangeRate, WAD);
 
-        hevm.warp(block.timestamp + 100000);
+        hevm.roll(block.number + 100);
         borrower1.updateRates(cDai);
-        uint256 secondBlockTimestamp = block.timestamp;
+
+        uint256 newBorrowP2PExchangeRate = borrowP2PExchangeRate.mul(
+            _computeCompoundedInterest(expectedBPY, 100)
+        );
+        uint256 newSupplyP2PExchangeRate = supplyP2PExchangeRate.mul(
+            _computeCompoundedInterest(expectedBPY, 100)
+        );
+
+        borrowP2PExchangeRate = marketsManager.borrowP2PExchangeRate(cDai);
+        supplyP2PExchangeRate = marketsManager.supplyP2PExchangeRate(cDai);
+        assertEq(supplyP2PExchangeRate, newSupplyP2PExchangeRate);
+        assertEq(borrowP2PExchangeRate, newBorrowP2PExchangeRate);
 
         expectedBPY = (cToken.supplyRatePerBlock() + cToken.borrowRatePerBlock()) / 2;
 
@@ -90,19 +102,6 @@ contract TestGovernance is TestSetup {
             (MAX_BASIS_POINTS + marketsManager.reserveFactor(cDai))) / MAX_BASIS_POINTS;
         assertEq(marketsManager.supplyP2PBPY(cDai), supplyBPY);
         assertEq(marketsManager.borrowP2PBPY(cDai), borrowBPY);
-
-        // TODO
-        // uint256 newBorrowP2PExchangeRate = borrowP2PExchangeRate.mul(
-        //     _computeCompoundedInterest(borrowBPY, secondBlockTimestamp - firstBlockTimestamp)
-        // );
-        // uint256 newSupplyP2PExchangeRate = supplyP2PExchangeRate.mul(
-        //     _computeCompoundedInterest(supplyBPY, secondBlockTimestamp - firstBlockTimestamp)
-        // );
-
-        // borrowP2PExchangeRate = marketsManager.borrowP2PExchangeRate(cDai);
-        // supplyP2PExchangeRate = marketsManager.supplyP2PExchangeRate(cDai);
-        // assertEq(supplyP2PExchangeRate, newSupplyP2PExchangeRate);
-        // assertEq(borrowP2PExchangeRate, newBorrowP2PExchangeRate);
     }
 
     // MarketsManagerForCompound should not be changed after already set by Owner
@@ -114,8 +113,8 @@ contract TestGovernance is TestSetup {
     // Should create a market the with right values
     function test_create_market_with_right_values() public {
         ICToken cToken = ICToken(cAave);
-        uint256 expectedBPY = (cToken.supplyRatePerBlock() + cToken.borrowRatePerBlock()) / 2;
         marketsManager.createMarket(cAave);
+        uint256 expectedBPY = (cToken.supplyRatePerBlock() + cToken.borrowRatePerBlock()) / 2;
 
         assertTrue(marketsManager.isCreated(cAave));
         assertEq(marketsManager.supplyP2PBPY(cAave), expectedBPY);

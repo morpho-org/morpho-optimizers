@@ -29,7 +29,7 @@ import "@contracts/aave/MatchingEngineForAave.sol";
 import "@contracts/aave/InterestRatesV1.sol";
 
 import "../../common/helpers/MorphoToken.sol";
-import "../../common/helpers/SimplePriceOracle.sol";
+import "../helpers/SimplePriceOracle.sol";
 import {User} from "../helpers/User.sol";
 import {Utils} from "./Utils.sol";
 import "forge-std/stdlib.sol";
