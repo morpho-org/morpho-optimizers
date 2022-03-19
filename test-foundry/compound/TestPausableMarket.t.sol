@@ -2,7 +2,6 @@
 pragma solidity 0.8.7;
 
 import "./setup/TestSetup.sol";
-import "hardhat/console.sol";
 
 contract TestPausableMarket is TestSetup {
     using CompoundMath for uint256;
@@ -38,16 +37,16 @@ contract TestPausableMarket is TestSetup {
         (, toBorrow) = positionsManager.getUserMaxCapacitiesForAsset(address(supplier1), cUsdc);
         supplier1.borrow(cUsdc, toBorrow);
 
-        // Change Oracle
+        // Change Oracle.
         SimplePriceOracle customOracle = createAndSetCustomPriceOracle();
-        customOracle.setDirectPrice(dai, (oracle.getUnderlyingPrice(cDai) * 93) / 100);
+        customOracle.setUnderlyingPrice(cDai, (oracle.getUnderlyingPrice(cDai) * 95) / 100);
 
         uint256 toLiquidate = toBorrow / 2;
         User liquidator = borrower3;
         liquidator.approve(usdc, toLiquidate);
         liquidator.liquidate(cUsdc, cDai, address(supplier1), toLiquidate);
 
-        supplier1.withdraw(cDai, 1);
+        supplier1.withdraw(cDai, 1 ether);
 
         positionsManager.claimToTreasury(cDai);
     }
@@ -81,9 +80,9 @@ contract TestPausableMarket is TestSetup {
 
         // Change Oracle
         SimplePriceOracle customOracle = createAndSetCustomPriceOracle();
-        customOracle.setDirectPrice(dai, (oracle.getUnderlyingPrice(dai) * 93) / 100);
+        customOracle.setUnderlyingPrice(cDai, (oracle.getUnderlyingPrice(cDai) * 95) / 100);
 
-        uint256 toLiquidate = toBorrow / 2;
+        uint256 toLiquidate = (toBorrow - 2) / 2; // Minus 2 only due to roundings.
         User liquidator = borrower3;
         liquidator.approve(usdc, toLiquidate);
 
