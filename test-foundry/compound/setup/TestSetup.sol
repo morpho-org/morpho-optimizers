@@ -18,8 +18,11 @@ import {UniswapV2PoolCreator} from "../../common/uniswap/UniswapV2PoolCreator.so
 import "@contracts/compound/PositionsManagerForCompound.sol";
 import "@contracts/compound/MarketsManagerForCompound.sol";
 import "@contracts/compound/MatchingEngineForCompound.sol";
+import "@contracts/compound/InterestRatesV1.sol";
 import "../../common/helpers/MorphoToken.sol";
-import "../../common/helpers/SimplePriceOracle.sol";
+import "../../common/helpers/Chains.sol";
+
+import "../helpers/SimplePriceOracle.sol";
 import {User} from "../helpers/User.sol";
 import {Utils} from "./Utils.sol";
 import "forge-std/stdlib.sol";
@@ -48,6 +51,7 @@ contract TestSetup is Config, Utils, stdCheats {
     MarketsManagerForCompound internal marketsManager;
     MarketsManagerForCompound internal marketsManagerImplV1;
     IRewardsManagerForCompound internal rewardsManager;
+    IInterestRates internal interestRates;
     ISwapManager public swapManager;
     UniswapV3PoolCreator public uniswapV3PoolCreator;
     UniswapV2PoolCreator public uniswapV2PoolCreator;
@@ -78,6 +82,8 @@ contract TestSetup is Config, Utils, stdCheats {
         comptroller = IComptroller(comptrollerAddress);
         matchingEngine = new MatchingEngineForCompound();
 
+        interestRates = new InterestRatesV1();
+
         // Deploy proxy
         proxyAdmin = new ProxyAdmin();
         marketsManagerImplV1 = new MarketsManagerForCompound();
@@ -89,7 +95,7 @@ contract TestSetup is Config, Utils, stdCheats {
 
         marketsManagerProxy.changeAdmin(address(proxyAdmin));
         marketsManager = MarketsManagerForCompound(address(marketsManagerProxy));
-        marketsManager.initialize(comptroller);
+        marketsManager.initialize(comptroller, interestRates);
         positionsManagerImplV1 = new PositionsManagerForCompound();
         positionsManagerProxy = new TransparentUpgradeableProxy(
             address(positionsManagerImplV1),
@@ -99,14 +105,7 @@ contract TestSetup is Config, Utils, stdCheats {
 
         positionsManagerProxy.changeAdmin(address(proxyAdmin));
         positionsManager = PositionsManagerForCompound(address(positionsManagerProxy));
-        positionsManager.initialize(
-            marketsManager,
-            matchingEngine,
-            comptroller,
-            swapManager,
-            maxGas,
-            20
-        );
+        positionsManager.initialize(marketsManager, matchingEngine, comptroller, maxGas, 20);
 
         treasuryVault = new User(positionsManager);
         fakePositionsManagerImpl = new PositionsManagerForCompound();
@@ -117,6 +116,7 @@ contract TestSetup is Config, Utils, stdCheats {
         createMarket(cUsdc);
         createMarket(cWbtc);
         createMarket(cUsdt);
+        createMarket(cBat);
     }
 
     function createMarket(address _cToken) internal {
@@ -196,7 +196,7 @@ contract TestSetup is Config, Utils, stdCheats {
         require(result == 0); // No error
 
         for (uint256 i = 0; i < pools.length; i++) {
-            customOracle.setDirectPrice(pools[i], oracle.getUnderlyingPrice(pools[i]));
+            customOracle.setUnderlyingPrice(pools[i], oracle.getUnderlyingPrice(pools[i]));
         }
         return customOracle;
     }

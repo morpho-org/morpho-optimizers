@@ -18,7 +18,7 @@ export DAPP_REMAPPINGS=@config/=config/$(NETWORK)
 .PHONY: test
 test: node_modules
 	@echo Run all tests on ${NETWORK}
-	@forge test -vvvv -c test-foundry/compound --no-match-contract TestGasConsumption
+	@forge test -vv -c test-foundry/compound --no-match-contract TestGasConsumption
 
 gas:
 	@echo Create report
