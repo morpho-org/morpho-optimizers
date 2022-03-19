@@ -5,32 +5,32 @@ import "./setup/TestSetup.sol";
 
 contract TestUpgradeable is TestSetup {
     function test_upgrade_markets_manager() public {
-        marketsManager.setReserveFactor(aDai, 1);
+        marketsManager.setReserveFactor(cDai, 1);
 
-        MarketsManagerForAave marketsManagerImplV2 = new MarketsManagerForAave();
+        MarketsManagerForCompound marketsManagerImplV2 = new MarketsManagerForCompound();
         proxyAdmin.upgrade(marketsManagerProxy, address(marketsManagerImplV2));
 
         // Should not change
-        assertEq(marketsManager.reserveFactor(aDai), 1);
+        assertEq(marketsManager.reserveFactor(cDai), 1);
     }
 
     function test_upgrade_positions_manager() public {
         uint256 amount = 10000 ether;
         supplier1.approve(dai, amount);
-        supplier1.supply(aDai, amount);
-        uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(dai);
-        uint256 expectedOnPool = underlyingToScaledBalance(amount, normalizedIncome);
+        supplier1.supply(cDai, amount);
+        uint256 supplyPoolIndex = ICToken(cDai).exchangeRateCurrent();
+        uint256 expectedOnPool = underlyingToPoolSupplyBalance(amount, supplyPoolIndex);
 
-        PositionsManagerForAave positionsManagerImplV2 = new PositionsManagerForAave();
+        PositionsManagerForCompound positionsManagerImplV2 = new PositionsManagerForCompound();
         proxyAdmin.upgrade(positionsManagerProxy, address(positionsManagerImplV2));
 
         // Should not change
-        (, uint256 onPool) = positionsManager.supplyBalanceInOf(aDai, address(supplier1));
+        (, uint256 onPool) = positionsManager.supplyBalanceInOf(cDai, address(supplier1));
         testEquality(onPool, expectedOnPool);
     }
 
     function test_only_owner_of_proxy_admin_can_upgrade_markets_manager() public {
-        MarketsManagerForAave marketsManagerImplV2 = new MarketsManagerForAave();
+        MarketsManagerForCompound marketsManagerImplV2 = new MarketsManagerForCompound();
 
         hevm.prank(address(supplier1));
         hevm.expectRevert("Ownable: caller is not the owner");
@@ -40,7 +40,7 @@ contract TestUpgradeable is TestSetup {
     }
 
     function test_only_owner_of_proxy_admin_can_upgrade_and_call_markets_manager() public {
-        MarketsManagerForAave marketsManagerImplV2 = new MarketsManagerForAave();
+        MarketsManagerForCompound marketsManagerImplV2 = new MarketsManagerForCompound();
 
         hevm.prank(address(supplier1));
         hevm.expectRevert("Ownable: caller is not the owner");
@@ -52,7 +52,7 @@ contract TestUpgradeable is TestSetup {
     }
 
     function test_only_owner_of_proxy_admin_can_upgrade_positions_manager() public {
-        PositionsManagerForAave positionsManagerImplV2 = new PositionsManagerForAave();
+        PositionsManagerForCompound positionsManagerImplV2 = new PositionsManagerForCompound();
 
         hevm.prank(address(supplier1));
         hevm.expectRevert("Ownable: caller is not the owner");
@@ -62,7 +62,7 @@ contract TestUpgradeable is TestSetup {
     }
 
     function test_only_owner_of_proxy_admin_can_upgrade_and_call_positions_manager() public {
-        PositionsManagerForAave positionsManagerImplV2 = new PositionsManagerForAave();
+        PositionsManagerForCompound positionsManagerImplV2 = new PositionsManagerForCompound();
 
         hevm.prank(address(supplier1));
         hevm.expectRevert("Ownable: caller is not the owner");

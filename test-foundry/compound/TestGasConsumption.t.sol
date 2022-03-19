@@ -17,11 +17,11 @@ contract TestGasConsumption is TestSetup {
         uint256 matchedAmount = (uint256(NDS) * 1000 ether);
         for (uint8 i = 0; i < NDS; i++) {
             suppliers[i].approve(dai, matchedAmount);
-            suppliers[i].supply(aDai, matchedAmount);
+            suppliers[i].supply(cDai, matchedAmount);
 
             borrowers[i].approve(usdc, to6Decimals(2 * matchedAmount));
-            borrowers[i].supply(aUsdc, to6Decimals(2 * matchedAmount));
-            borrowers[i].borrow(aDai, matchedAmount);
+            borrowers[i].supply(cUsdc, to6Decimals(2 * matchedAmount));
+            borrowers[i].borrow(cDai, matchedAmount);
         }
 
         uint256 amount = matchedAmount / 10;
@@ -30,12 +30,12 @@ contract TestGasConsumption is TestSetup {
         // 2: There are numberOfMatches borrowers waiting on Pool.
         for (uint256 i = NDS; i < numberOfMatches + NDS; i++) {
             borrowers[i].approve(usdc, to6Decimals(collateral));
-            borrowers[i].supply(aUsdc, to6Decimals(collateral));
-            borrowers[i].borrow(aDai, amount / numberOfMatches);
+            borrowers[i].supply(cUsdc, to6Decimals(collateral));
+            borrowers[i].borrow(cDai, amount / numberOfMatches);
         }
 
         // Must supply more than borrowed by borrowers[NDS] to trigger the supply on pool mechanism
         suppliers[numberOfMatches + NDS].approve(dai, 2 * amount);
-        suppliers[numberOfMatches + NDS].supply(aDai, 2 * amount, type(uint256).max);
+        suppliers[numberOfMatches + NDS].supply(cDai, 2 * amount, type(uint256).max);
     }
 }

@@ -34,7 +34,7 @@ contract TestBorrow is TestSetup {
         (, uint256 onPool) = positionsManager.borrowBalanceInOf(cDai, address(borrower1));
 
         uint256 borrowIndex = ICToken(cDai).borrowIndex();
-        uint256 expectedOnPool = underlyingToCdUnit(2 * amount, borrowIndex);
+        uint256 expectedOnPool = underlyingToDebtUnit(2 * amount, borrowIndex);
         testEquality(onPool, expectedOnPool);
     }
 
@@ -52,7 +52,7 @@ contract TestBorrow is TestSetup {
         );
 
         uint256 borrowIndex = ICToken(cDai).borrowIndex();
-        uint256 expectedOnPool = underlyingToCdUnit(amount, borrowIndex);
+        uint256 expectedOnPool = underlyingToDebtUnit(amount, borrowIndex);
 
         testEquality(onPool, expectedOnPool);
         testEquality(inP2P, 0);
@@ -72,7 +72,7 @@ contract TestBorrow is TestSetup {
         (uint256 supplyInP2P, ) = positionsManager.supplyBalanceInOf(cDai, address(supplier1));
 
         uint256 borrowP2PExchangeRate = marketsManager.borrowP2PExchangeRate(cDai);
-        uint256 expectedInP2P = underlyingToMUnit(amount, borrowP2PExchangeRate);
+        uint256 expectedInP2P = underlyingToP2PUnit(amount, borrowP2PExchangeRate);
 
         testEquality(supplyInP2P, expectedInP2P);
 
@@ -108,7 +108,7 @@ contract TestBorrow is TestSetup {
         testEquality(inP2P, supplyInP2P);
 
         uint256 borrowIndex = ICToken(cDai).borrowIndex();
-        uint256 expectedOnPool = underlyingToCdUnit(amount, borrowIndex);
+        uint256 expectedOnPool = underlyingToDebtUnit(amount, borrowIndex);
         testEquality(onPool, expectedOnPool);
     }
 
@@ -141,7 +141,7 @@ contract TestBorrow is TestSetup {
         for (uint256 i = 0; i < NMAX; i++) {
             (inP2P, onPool) = positionsManager.supplyBalanceInOf(cDai, address(suppliers[i]));
 
-            expectedInP2P = underlyingToMUnit(amountPerSupplier, supplyP2PExchangeRate);
+            expectedInP2P = underlyingToP2PUnit(amountPerSupplier, supplyP2PExchangeRate);
 
             testEquality(inP2P, expectedInP2P);
             testEquality(onPool, 0);
@@ -183,7 +183,7 @@ contract TestBorrow is TestSetup {
         for (uint256 i = 0; i < NMAX; i++) {
             (inP2P, onPool) = positionsManager.supplyBalanceInOf(cDai, address(suppliers[i]));
 
-            expectedInP2P = underlyingToMUnit(amountPerSupplier, supplyP2PExchangeRate);
+            expectedInP2P = underlyingToP2PUnit(amountPerSupplier, supplyP2PExchangeRate);
 
             testEquality(inP2P, expectedInP2P);
             testEquality(onPool, 0);
@@ -193,7 +193,7 @@ contract TestBorrow is TestSetup {
 
         expectedInP2P = p2pUnitToUnderlying(amount / 2, supplyP2PExchangeRate);
         uint256 borrowIndex = ICToken(cDai).borrowIndex();
-        uint256 expectedOnPool = underlyingToCdUnit(amount / 2, borrowIndex);
+        uint256 expectedOnPool = underlyingToDebtUnit(amount / 2, borrowIndex);
 
         testEquality(inP2P, expectedInP2P);
         testEquality(onPool, expectedOnPool);
