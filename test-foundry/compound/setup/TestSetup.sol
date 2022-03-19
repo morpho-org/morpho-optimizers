@@ -21,8 +21,8 @@ import {UniswapV2PoolCreator} from "../../common/uniswap/UniswapV2PoolCreator.so
 import "@contracts/compound/PositionsManagerForCompound.sol";
 import "@contracts/compound/MarketsManagerForCompound.sol";
 import "@contracts/compound/MatchingEngineForCompound.sol";
-import "../../common/helpers/SimplePriceOracle.sol";
 import "../../common/helpers/MorphoToken.sol";
+import "../helpers/SimplePriceOracle.sol";
 
 import "../../common/setup/HevmAdapter.sol";
 import "../../common/helpers/Chains.sol";
@@ -205,7 +205,7 @@ contract TestSetup is Config, Utils, HevmAdapter {
         require(result == 0); // No error
 
         for (uint256 i = 0; i < pools.length; i++) {
-            customOracle.setDirectPrice(pools[i], oracle.getUnderlyingPrice(pools[i]));
+            customOracle.setUnderlyingPrice(pools[i], oracle.getUnderlyingPrice(pools[i]));
         }
         return customOracle;
     }

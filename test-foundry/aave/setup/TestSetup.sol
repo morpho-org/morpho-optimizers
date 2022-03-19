@@ -29,7 +29,7 @@ import "@contracts/aave/MarketsManagerForAave.sol";
 import "@contracts/aave/MatchingEngineForAave.sol";
 
 import "../../common/helpers/MorphoToken.sol";
-import "../../common/helpers/SimplePriceOracle.sol";
+import "../helpers/SimplePriceOracle.sol";
 import {User} from "../helpers/User.sol";
 import "../../common/setup/HevmAdapter.sol";
 import {Utils} from "./Utils.sol";
