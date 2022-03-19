@@ -13,6 +13,7 @@ contract MatchingEngineForCompound is
     PositionsManagerForCompoundStorage
 {
     using DoubleLinkedList for DoubleLinkedList.List;
+    using FixedPointMathLib for uint256;
     using CompoundMath for uint256;
 
     /// STRUCTS ///
@@ -193,7 +194,7 @@ contract MatchingEngineForCompound is
                 supplyBalanceInOf[_poolTokenAddress][user].onPool += vars.toUnmatch.div(
                     vars.poolIndex
                 );
-                supplyBalanceInOf[_poolTokenAddress][user].inP2P -= vars.toUnmatch.div(
+                supplyBalanceInOf[_poolTokenAddress][user].inP2P -= vars.toUnmatch.divWadUp(
                     vars.p2pRate
                 ); // In p2pUnit
                 updateSuppliers(_poolTokenAddress, user);
