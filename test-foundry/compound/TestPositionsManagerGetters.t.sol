@@ -408,46 +408,45 @@ contract TestPositionsManagerGetters is TestSetup {
     function test_user_balance_states_with_supply_and_borrow_on_several_assets() public {
         uint256 amount = 10000 ether;
         uint256 toBorrow = 100 ether;
-        uint256 toBorrowWbtc = to6Decimals(0.001 ether);
+
+        // Avoid stack too deep error
+        UserBalanceStates memory states;
+        UserBalanceStates memory expectedStates;
 
         borrower1.approve(usdc, to6Decimals(amount));
         borrower1.supply(cUsdc, to6Decimals(amount));
         borrower1.approve(dai, amount);
         borrower1.supply(cDai, amount);
 
-        borrower1.borrow(cWbtc, toBorrowWbtc);
+        borrower1.borrow(cBat, toBorrow);
         borrower1.borrow(cUsdt, to6Decimals(toBorrow));
 
-        // Avoid stack too deep error
-        UserBalanceStates memory states;
-        UserBalanceStates memory expectedStates;
-
-        (states.collateralValue, states.debtValue, states.maxDebtValue) = positionsManager
-        .getUserBalanceStates(address(borrower1));
-
         // USDC data
-        (, uint256 collateralFactor, ) = comptroller.markets(cUsdc);
-        uint256 collateralValueToAdd = to6Decimals(amount).mul(collateralFactor);
+        uint256 collateralValueToAdd = to6Decimals(amount).mul(oracle.getUnderlyingPrice(cUsdc));
         expectedStates.collateralValue += collateralValueToAdd;
+        (, uint256 collateralFactor, ) = comptroller.markets(cUsdc);
         expectedStates.maxDebtValue += collateralValueToAdd.mul(collateralFactor);
 
         // DAI data
         collateralValueToAdd = amount.mul(oracle.getUnderlyingPrice(cDai));
         expectedStates.collateralValue += collateralValueToAdd;
-        expectedStates.maxDebtValue += (collateralValueToAdd.mul(collateralFactor));
+        (, collateralFactor, ) = comptroller.markets(cDai);
+        expectedStates.maxDebtValue += collateralValueToAdd.mul(collateralFactor);
 
-        expectedStates.debtValue += toBorrowWbtc.mul(oracle.getUnderlyingPrice(cWbtc));
-        expectedStates.debtValue += to6Decimals(toBorrow).mul(oracle.getUnderlyingPrice(usdt));
+        expectedStates.debtValue += toBorrow.mul(oracle.getUnderlyingPrice(cBat));
+        expectedStates.debtValue += to6Decimals(toBorrow).mul(oracle.getUnderlyingPrice(cUsdt));
 
-        assertEq(states.collateralValue, expectedStates.collateralValue);
-        assertEq(states.debtValue, expectedStates.debtValue);
-        assertEq(states.maxDebtValue, expectedStates.maxDebtValue);
-        assertEq(states.liquidationValue, expectedStates.liquidationValue);
+        (states.collateralValue, states.debtValue, states.maxDebtValue) = positionsManager
+        .getUserBalanceStates(address(borrower1));
+
+        assertApproxEq(states.collateralValue, expectedStates.collateralValue, 1e9);
+        assertApproxEq(states.debtValue, expectedStates.debtValue, 1e12);
+        assertApproxEq(states.maxDebtValue, expectedStates.maxDebtValue, 1e9);
     }
 
     // TODO: check this test
     /// This test is to check that a call to getUserLiquidityDataForAsset with USDT doesn't end
-    ///   with error "Division or modulo by zero", as Compound returns 0 for USDT liquidationThreshold.
+    ///   with error "Division or modulo by zero", as Compound returns 0 for USDT collateralFactor.
     function test_get_user_liquidity_data_for_usdt() public {
         uint256 usdtAmount = to6Decimals(10_000 ether);
 
@@ -500,17 +499,16 @@ contract TestPositionsManagerGetters is TestSetup {
         (, collateralFactor, ) = comptroller.markets(cDai);
         collateralValueToAdd = amount.mul(oracle.getUnderlyingPrice(cDai));
         expectedStates.collateralValue += collateralValueToAdd;
-        expectedStates.maxDebtValue += (collateralValueToAdd.mul(collateralFactor));
+        expectedStates.maxDebtValue += collateralValueToAdd.mul(collateralFactor);
 
         // USDC data
         expectedStates.debtValue += to6Decimals(toBorrow).mul(oracle.getUnderlyingPrice(cUsdc));
 
         // USDT data
-        expectedStates.debtValue += to6Decimals(toBorrow).mul(oracle.getUnderlyingPrice(usdt));
+        expectedStates.debtValue += to6Decimals(toBorrow).mul(oracle.getUnderlyingPrice(cUsdt));
 
-        testEquality(states.collateralValue, expectedStates.collateralValue, "collateralValue");
-        testEquality(states.debtValue, expectedStates.debtValue, "debtValue");
-        testEquality(states.maxDebtValue, expectedStates.maxDebtValue, "maxDebtValue");
-        testEquality(states.liquidationValue, expectedStates.liquidationValue, "liquidationValue");
+        assertApproxEq(states.collateralValue, expectedStates.collateralValue, 1e9);
+        assertApproxEq(states.debtValue, expectedStates.debtValue, 1e9);
+        assertApproxEq(states.maxDebtValue, expectedStates.maxDebtValue, 1e9);
     }
 }

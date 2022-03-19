@@ -176,8 +176,8 @@ contract MarketsManagerForCompound is IMarketsManagerForCompound, OwnableUpgrade
         isCreated[_poolTokenAddress] = true;
 
         lastUpdateBlockNumber[_poolTokenAddress] = block.number;
-        supplyP2PExchangeRate[_poolTokenAddress] = 1e18;
-        borrowP2PExchangeRate[_poolTokenAddress] = 1e18;
+        supplyP2PExchangeRate[_poolTokenAddress] = WAD;
+        borrowP2PExchangeRate[_poolTokenAddress] = WAD;
 
         LastPoolIndexes storage poolIndexes = lastPoolIndexes[_poolTokenAddress];
         ICToken poolToken = ICToken(_poolTokenAddress);
