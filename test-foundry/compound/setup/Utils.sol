@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.7;
 
-import "@contracts/aave/libraries/aave/WadRayMath.sol";
-
 import "ds-test/test.sol";
+import "@contracts/compound/libraries/CompoundMath.sol";
 
 contract Utils is DSTest {
-    using WadRayMath for uint256;
+    using CompoundMath for uint256;
 
+    uint256 internal constant SCALE = 1e18;
     uint256 internal constant WAD = 1e18;
     uint256 internal constant RAY = 1e27;
     uint256 internal constant SECOND_PER_YEAR = 31536000;
@@ -22,6 +22,22 @@ contract Utils is DSTest {
 
     function to8Decimals(uint256 value) internal pure returns (uint256) {
         return value / 1e10;
+    }
+
+    function underlyingToCdUnit(uint256 _amount, uint256 _borrowIndex)
+        internal
+        view
+        returns (uint256)
+    {
+        return _amount.mul(SCALE).div(_borrowIndex);
+    }
+
+    function underlyingToMUnit(uint256 _amount, uint256 _exchangeRate)
+        internal
+        pure
+        returns (uint256)
+    {
+        return _amount.mul(SCALE).div(_exchangeRate);
     }
 
     function underlyingToScaledBalance(uint256 _scaledBalance, uint256 _normalizedIncome)
@@ -104,18 +120,18 @@ contract Utils is DSTest {
         returns (uint256)
     {
         if (_elapsedTime == 0) {
-            return WadRayMath.ray();
+            return RAY;
         }
 
         if (_elapsedTime == 1) {
-            return WadRayMath.ray() + _rate;
+            return RAY + _rate;
         }
 
-        uint256 ratePowerTwo = _rate.rayMul(_rate);
-        uint256 ratePowerThree = ratePowerTwo.rayMul(_rate);
+        uint256 ratePowerTwo = _rate * _rate;
+        uint256 ratePowerThree = ratePowerTwo * _rate;
 
         return
-            WadRayMath.ray() +
+            RAY +
             _rate *
             _elapsedTime +
             (_elapsedTime * (_elapsedTime - 1) * ratePowerTwo) /

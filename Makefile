@@ -26,11 +26,11 @@ gas:
 
 contract-% c-%: node_modules
 	@echo Run tests for contract $* on ${NETWORK}
-	@forge test -vvv -c test-foundry --match-contract $*
+	@forge test -vvv -c test-foundry/compound --match-contract $*
 
 single-% s-%: node_modules
 	@echo Run single test $* on ${NETWORK}
-	@forge test -vvv -c test-foundry --match-test $* > trace.ansi
+	@forge test -vvv -c test-foundry/compound --match-test $*
 
 .PHONY: config
 config:

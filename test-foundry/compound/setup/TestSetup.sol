@@ -31,6 +31,12 @@ import "../../common/setup/HevmAdapter.sol";
 import {Utils} from "./Utils.sol";
 import "@config/Config.sol";
 
+interface IAdminComptroller {
+    function _setPriceOracle(SimplePriceOracle newOracle) external returns (uint256);
+
+    function admin() external view returns (address);
+}
+
 contract TestSetup is Config, Utils, HevmAdapter {
     using SafeERC20 for IERC20;
 
@@ -170,9 +176,13 @@ contract TestSetup is Config, Utils, HevmAdapter {
     }
 
     function setContractsLabels() internal {
+        hevm.label(address(proxyAdmin), "ProxyAdmin");
+        hevm.label(address(positionsManagerImplV1), "PositionsManagerImplV1");
         hevm.label(address(positionsManager), "PositionsManager");
+        hevm.label(address(marketsManagerImplV1), "MarketsManagerImplV1");
         hevm.label(address(marketsManager), "MarketsManager");
         hevm.label(address(rewardsManager), "RewardsManager");
+        hevm.label(address(matchingEngine), "MatchingEngine");
         hevm.label(address(swapManager), "SwapManager");
         hevm.label(address(uniswapPoolCreator), "UniswapPoolCreator");
         hevm.label(address(morphoToken), "MorphoToken");
@@ -194,11 +204,10 @@ contract TestSetup is Config, Utils, HevmAdapter {
     function createAndSetCustomPriceOracle() public returns (SimplePriceOracle) {
         SimplePriceOracle customOracle = new SimplePriceOracle();
 
-        hevm.store(
-            address(comptroller),
-            keccak256(abi.encode(bytes32("oracle"), 2)),
-            bytes32(uint256(uint160(address(customOracle))))
-        );
+        IAdminComptroller adminComptroller = IAdminComptroller(address(comptroller));
+        hevm.prank(adminComptroller.admin());
+        uint256 result = adminComptroller._setPriceOracle(customOracle);
+        require(result == 0); // No error
 
         for (uint256 i = 0; i < pools.length; i++) {
             address underlying = ICToken(pools[i]).underlying();
