@@ -49,7 +49,7 @@ contract TestSetup is Config, Utils, stdCheats {
     MarketsManagerForCompound internal marketsManagerImplV1;
     IRewardsManagerForCompound internal rewardsManager;
     ISwapManager public swapManager;
-    UniswapV3PoolCreator public uniswapPoolCreator;
+    UniswapV3PoolCreator public uniswapV3PoolCreator;
     UniswapV2PoolCreator public uniswapV2PoolCreator;
     MorphoToken public morphoToken;
     IComptroller public comptroller;
@@ -171,7 +171,7 @@ contract TestSetup is Config, Utils, stdCheats {
         hevm.label(address(rewardsManager), "RewardsManager");
         hevm.label(address(matchingEngine), "MatchingEngine");
         hevm.label(address(swapManager), "SwapManager");
-        hevm.label(address(uniswapPoolCreator), "UniswapV3PoolCreator");
+        hevm.label(address(uniswapV3PoolCreator), "UniswapV3PoolCreator");
         hevm.label(address(morphoToken), "MorphoToken");
         hevm.label(address(comptroller), "Comptroller");
         hevm.label(address(oracle), "CompoundOracle");
