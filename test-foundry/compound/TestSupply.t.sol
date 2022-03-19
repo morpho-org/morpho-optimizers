@@ -14,15 +14,23 @@ contract TestSupply is TestSetup {
         uint256 supplyPoolIndex = ICToken(cDai).exchangeRateCurrent();
         uint256 expectedOnPool = underlyingToPoolSupplyBalance(amount, supplyPoolIndex);
 
-        testEquality(IERC20(cDai).balanceOf(address(positionsManager)), amount);
+        assertApproxEq(
+            poolSupplyBalanceToUnderlying(
+                IERC20(cDai).balanceOf(address(positionsManager)),
+                supplyPoolIndex
+            ),
+            amount,
+            1e9,
+            "balance of cToken"
+        );
 
         (uint256 inP2P, uint256 onPool) = positionsManager.supplyBalanceInOf(
             cDai,
             address(supplier1)
         );
 
-        testEquality(onPool, expectedOnPool);
-        testEquality(inP2P, 0);
+        testEquality(onPool, expectedOnPool, "on pool");
+        testEquality(inP2P, 0, "in P2P");
     }
 
     // Should be able to supply more ERC20 after already having supply ERC20
@@ -146,15 +154,15 @@ contract TestSupply is TestSetup {
 
             expectedInP2P = p2pUnitToUnderlying(inP2P, supplyP2PExchangeRate);
 
-            testEquality(expectedInP2P, amountPerBorrower);
-            testEquality(onPool, 0);
+            testEquality(expectedInP2P, amountPerBorrower, "amount per borrower");
+            testEquality(onPool, 0, "on pool per borrower");
         }
 
         (inP2P, onPool) = positionsManager.supplyBalanceInOf(cDai, address(supplier1));
         expectedInP2P = p2pUnitToUnderlying(amount, supplyP2PExchangeRate);
 
-        testEquality(inP2P, expectedInP2P);
-        testEquality(onPool, 0);
+        assertApproxEq(inP2P, expectedInP2P, 1e3, "in P2P");
+        testEquality(onPool, 0, "on pool");
     }
 
     // 1.5 - The NMAX biggest borrowers don't match all of the supplied amount, after NMAX match, the rest is supplied and set `onPool`.
@@ -200,7 +208,7 @@ contract TestSupply is TestSetup {
         expectedInP2P = p2pUnitToUnderlying(amount / 2, supplyP2PExchangeRate);
         uint256 expectedOnPool = underlyingToPoolSupplyBalance(amount / 2, supplyPoolIndex);
 
-        testEquality(inP2P, expectedInP2P);
-        testEquality(onPool, expectedOnPool);
+        assertApproxEq(inP2P, expectedInP2P, 1e3, "in P2P");
+        testEquality(onPool, expectedOnPool, "in pool");
     }
 }

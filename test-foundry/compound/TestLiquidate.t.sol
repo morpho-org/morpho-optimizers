@@ -70,8 +70,8 @@ contract TestLiquidate is TestSetup {
             address(borrower1)
         );
 
-        uint256 collateralPrice = customOracle.getAssetPrice(cUsdc);
-        uint256 borrowedPrice = customOracle.getAssetPrice(cDai);
+        uint256 collateralPrice = customOracle.getUnderlyingPrice(cUsdc);
+        uint256 borrowedPrice = customOracle.getUnderlyingPrice(cDai);
 
         uint256 amountToSeize = toRepay
         .mul(comptroller.liquidationIncentiveMantissa())
