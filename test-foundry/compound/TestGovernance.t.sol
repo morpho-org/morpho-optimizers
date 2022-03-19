@@ -16,8 +16,8 @@ contract TestGovernance is TestSetup {
 
         assertEq(marketsManager.supplyP2PBPY(cDai), expectedBPY);
         assertEq(marketsManager.borrowP2PBPY(cDai), expectedBPY);
-        assertEq(marketsManager.supplyP2PExchangeRate(cDai), RAY);
-        assertEq(marketsManager.borrowP2PExchangeRate(cDai), RAY);
+        assertEq(marketsManager.supplyP2PExchangeRate(cDai), WAD);
+        assertEq(marketsManager.borrowP2PExchangeRate(cDai), WAD);
     }
 
     // ========================
@@ -75,8 +75,8 @@ contract TestGovernance is TestSetup {
 
         assertEq(marketsManager.supplyP2PBPY(cDai), expectedBPY);
         assertEq(marketsManager.borrowP2PBPY(cDai), expectedBPY);
-        assertEq(supplyP2PExchangeRate, RAY);
-        assertEq(borrowP2PExchangeRate, RAY);
+        assertEq(supplyP2PExchangeRate, WAD);
+        assertEq(borrowP2PExchangeRate, WAD);
 
         hevm.warp(block.timestamp + 100000);
         borrower1.updateRates(cDai);
@@ -92,11 +92,11 @@ contract TestGovernance is TestSetup {
         assertEq(marketsManager.borrowP2PBPY(cDai), borrowBPY);
 
         // TODO
-        // uint256 newBorrowP2PExchangeRate = borrowP2PExchangeRate.rayMul(
-        //     computeCompoundedInterest(borrowBPY, secondBlockTimestamp - firstBlockTimestamp)
+        // uint256 newBorrowP2PExchangeRate = borrowP2PExchangeRate.mul(
+        //     _computeCompoundedInterest(borrowBPY, secondBlockTimestamp - firstBlockTimestamp)
         // );
-        // uint256 newSupplyP2PExchangeRate = supplyP2PExchangeRate.rayMul(
-        //     computeCompoundedInterest(supplyBPY, secondBlockTimestamp - firstBlockTimestamp)
+        // uint256 newSupplyP2PExchangeRate = supplyP2PExchangeRate.mul(
+        //     _computeCompoundedInterest(supplyBPY, secondBlockTimestamp - firstBlockTimestamp)
         // );
 
         // borrowP2PExchangeRate = marketsManager.borrowP2PExchangeRate(cDai);
@@ -105,7 +105,7 @@ contract TestGovernance is TestSetup {
         // assertEq(borrowP2PExchangeRate, newBorrowP2PExchangeRate);
     }
 
-    // marketsManagerForAave should not be changed after already set by Owner
+    // MarketsManagerForCompound should not be changed after already set by Owner
     function test_positionsManager_should_not_be_changed() public {
         hevm.expectRevert(MarketsManagerForCompound.PositionsManagerAlreadySet.selector);
         marketsManager.setPositionsManager(address(fakePositionsManagerImpl));
@@ -120,8 +120,8 @@ contract TestGovernance is TestSetup {
         assertTrue(marketsManager.isCreated(cAave));
         assertEq(marketsManager.supplyP2PBPY(cAave), expectedBPY);
         assertEq(marketsManager.borrowP2PBPY(cAave), expectedBPY);
-        assertEq(marketsManager.supplyP2PExchangeRate(cAave), RAY);
-        assertEq(marketsManager.borrowP2PExchangeRate(cAave), RAY);
+        assertEq(marketsManager.supplyP2PExchangeRate(cAave), WAD);
+        assertEq(marketsManager.borrowP2PExchangeRate(cAave), WAD);
     }
 
     // Only MarketsaManager's Owner should set NMAX
@@ -168,14 +168,4 @@ contract TestGovernance is TestSetup {
         marketsManager.setNoP2P(cDai, true);
         assertTrue(marketsManager.noP2P(cDai));
     }
-
-    // TODO no incentives ?
-
-    // function test_only_owner_can_set_aave_incentives_controller_on_rewards_manager() public {
-    //     hevm.expectRevert("Ownable: caller is not the owner");
-    //     supplier1.setCompoundIncentivesControllerOnRewardsManager(address(0));
-
-    //     rewardsManager.setAaveIncentivesController(address(1));
-    //     assertEq(address(rewardsManager.aaveIncentivesController()), address(1));
-    // }
 }
