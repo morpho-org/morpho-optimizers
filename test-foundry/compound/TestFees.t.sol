@@ -6,31 +6,31 @@ import "./setup/TestSetup.sol";
 contract TestFees is TestSetup {
     using CompoundMath for uint256;
 
-    // Should not be possible to set the fee factor higher than 50%
+    // Should not be possible to set the fee factor higher than 50%.
     function test_higher_than_max_fees() public {
         marketsManager.setReserveFactor(cUsdc, 5_001);
         testEquality(marketsManager.reserveFactor(cUsdc), 5000);
     }
 
-    // Only MarketsManager owner can set the treasury vault
+    // Only MarketsManager owner can set the treasury vault.
     function test_non_market_manager_cant_set_vault() public {
         hevm.expectRevert("Ownable: caller is not the owner");
         supplier1.setTreasuryVault(address(borrower1));
     }
 
-    // DAO should be able to claim fees
+    // DAO should be able to claim fees.
     function test_claim_fees() public {
         marketsManager.setReserveFactor(cDai, 1000); // 10%
 
-        // Increase time so that rates update
-        hevm.warp(block.timestamp + 1);
+        // Increase blocks so that rates update.
+        hevm.roll(block.number + 1);
 
         uint256 balanceBefore = IERC20(dai).balanceOf(positionsManager.treasuryVault());
         supplier1.approve(dai, type(uint256).max);
         supplier1.supply(cDai, 100 * WAD);
         supplier1.borrow(cDai, 50 * WAD);
 
-        hevm.warp(block.timestamp + (365 days));
+        hevm.roll(block.number + 100);
 
         supplier1.repay(cDai, type(uint256).max);
         positionsManager.claimToTreasury(cDai);
@@ -43,8 +43,8 @@ contract TestFees is TestSetup {
     function test_fee_amount() public {
         marketsManager.setReserveFactor(cDai, 1000); // 10%
 
-        // Increase time so that rates update
-        hevm.warp(block.timestamp + 1);
+        // Increase blocks so that rates update.
+        hevm.warp(block.number + 1);
 
         uint256 balanceBefore = IERC20(dai).balanceOf(positionsManager.treasuryVault());
         supplier1.approve(dai, type(uint256).max);
@@ -75,19 +75,19 @@ contract TestFees is TestSetup {
         assertApproxEq(gainedByDAO, expectedFees, 2);
     }
 
-    // DAO should not collect fees when factor is null
+    // DAO should not collect fees when factor is null.
     function test_claim_nothing() public {
         marketsManager.setReserveFactor(cDai, 0);
 
-        // Increase time so that rates update
-        hevm.warp(block.timestamp + 1);
+        // Increase blocks so that rates update.
+        hevm.roll(block.number + 1);
 
         uint256 balanceBefore = IERC20(dai).balanceOf(positionsManager.treasuryVault());
         supplier1.approve(dai, type(uint256).max);
         supplier1.supply(cDai, 100 * WAD);
         supplier1.borrow(cDai, 50 * WAD);
 
-        hevm.warp(block.timestamp + (365 days));
+        hevm.roll(block.number + 100);
 
         supplier1.repay(cDai, type(uint256).max);
         positionsManager.claimToTreasury(cDai);
