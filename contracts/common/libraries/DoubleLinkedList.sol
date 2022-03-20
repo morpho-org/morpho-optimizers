@@ -88,9 +88,9 @@ library DoubleLinkedList {
         uint256 numberOfIterations;
         address current = _list.head;
         while (
-            numberOfIterations <= _maxIterations &&
+            numberOfIterations < _maxIterations &&
             current != _list.tail &&
-            _list.accounts[current].value > _value
+            _list.accounts[current].value >= _value
         ) {
             current = _list.accounts[current].next;
             numberOfIterations++;
@@ -98,7 +98,7 @@ library DoubleLinkedList {
 
         address nextId;
         address prevId;
-        if (numberOfIterations < _maxIterations && current != _list.tail) {
+        if (_list.accounts[current].value < _value) {
             prevId = _list.accounts[current].prev;
             nextId = current;
         } else prevId = _list.tail;
