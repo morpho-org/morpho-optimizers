@@ -34,6 +34,7 @@ contract Config {
     address public cUsdt = 0xf650C3d88D12dB855b8bf7D11Be6C55A4e07dCC9;
     address public cWbtc = 0xC11b1268C1A384e55C48c2391d8d480264A3A7F4;
     address public cEth = 0x4Ddc2D193948926D02f9B1fE9e1daa0718270ED5;
+    address public cBat = 0x6C8c6b02E7b2BE14d4fA6022Dfd6d75921D90E4E;
 
     address public comptrollerAddress = 0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B;
 

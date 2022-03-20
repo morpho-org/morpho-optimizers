@@ -126,6 +126,7 @@ contract TestSetup is Config, Utils, HevmAdapter {
         createMarket(cUsdc);
         createMarket(cWbtc);
         createMarket(cUsdt);
+        createMarket(cBat);
     }
 
     function createMarket(address _cToken) internal {
