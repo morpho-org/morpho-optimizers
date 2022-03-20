@@ -217,10 +217,10 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
     /// @return supplyP2PExchangeRate_ The supply P2P exchange rate of the market.
     /// @return borrowP2PExchangeRate_ The borrow P2P exchange rate of the market.
     /// @return exchangeRatesLastUpdateTimestamp_ The last timestamp when P2P exchange rates where updated.
-    /// @return supplyP2PDelta_ The supply P2P delta (in scaled balance).
-    /// @return borrowP2PDelta_ The borrow P2P delta (in adUnit).
-    /// @return supplyP2PAmount_ The supply P2P amount (in P2P unit).
-    /// @return borrowP2PAmount_ The borrow P2P amount (in P2P unit).
+    /// @return supplyp2p_ The supply P2P p2p (in scaled balance).
+    /// @return borrowp2p_ The borrow P2P p2p (in adUnit).
+    /// @return supplyAmount_ The supply P2P amount (in P2P unit).
+    /// @return borrowAmount_ The borrow P2P amount (in P2P unit).
     function getMarketData(address _marketAddress)
         external
         view
@@ -230,18 +230,18 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
             uint256 supplyP2PExchangeRate_,
             uint256 borrowP2PExchangeRate_,
             uint256 exchangeRatesLastUpdateTimestamp_,
-            uint256 supplyP2PDelta_,
-            uint256 borrowP2PDelta_,
-            uint256 supplyP2PAmount_,
-            uint256 borrowP2PAmount_
+            uint256 supplyp2p_,
+            uint256 borrowp2p_,
+            uint256 supplyAmount_,
+            uint256 borrowAmount_
         )
     {
         {
-            IPositionsManagerForAave.Delta memory delta = positionsManager.deltas(_marketAddress);
-            supplyP2PDelta_ = delta.supplyP2PDelta;
-            borrowP2PDelta_ = delta.borrowP2PDelta;
-            supplyP2PAmount_ = delta.supplyP2PAmount;
-            borrowP2PAmount_ = delta.borrowP2PAmount;
+            IPositionsManagerForAave.P2P memory p2p = positionsManager.p2ps(_marketAddress);
+            supplyp2p_ = p2p.supplyDelta;
+            borrowp2p_ = p2p.borrowDelta;
+            supplyAmount_ = p2p.supplyAmount;
+            borrowAmount_ = p2p.borrowAmount;
         }
 
         supplyP2PSPY_ = supplyP2PSPY[_marketAddress];
@@ -283,12 +283,12 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
         returns (uint256 updatedSupplyP2P_)
     {
         address underlyingTokenAddress = IAToken(_marketAddress).UNDERLYING_ASSET_ADDRESS();
-        IPositionsManagerForAave.Delta memory delta = positionsManager.deltas(_marketAddress);
+        IPositionsManagerForAave.P2P memory p2p = positionsManager.p2ps(_marketAddress);
         uint256 timeDifference = block.timestamp - exchangeRatesLastUpdateTimestamp[_marketAddress];
 
         updatedSupplyP2P_ = _computeNewP2PExchangeRate(
-            delta.supplyP2PDelta,
-            delta.supplyP2PAmount,
+            p2p.supplyDelta,
+            p2p.supplyAmount,
             supplyP2PExchangeRate[_marketAddress],
             supplyP2PSPY[_marketAddress],
             lendingPool.getReserveNormalizedIncome(underlyingTokenAddress),
@@ -306,12 +306,12 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
         returns (uint256 updatedBorrowP2P_)
     {
         address underlyingTokenAddress = IAToken(_marketAddress).UNDERLYING_ASSET_ADDRESS();
-        IPositionsManagerForAave.Delta memory delta = positionsManager.deltas(_marketAddress);
+        IPositionsManagerForAave.P2P memory p2p = positionsManager.p2ps(_marketAddress);
         uint256 timeDifference = block.timestamp - exchangeRatesLastUpdateTimestamp[_marketAddress];
 
         updatedBorrowP2P_ = _computeNewP2PExchangeRate(
-            delta.borrowP2PDelta,
-            delta.borrowP2PAmount,
+            p2p.borrowDelta,
+            p2p.borrowAmount,
             borrowP2PExchangeRate[_marketAddress],
             borrowP2PSPY[_marketAddress],
             lendingPool.getReserveNormalizedVariableDebt(underlyingTokenAddress),
@@ -361,12 +361,12 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
         uint256 timeDifference = block.timestamp - exchangeRatesLastUpdateTimestamp[_marketAddress];
         exchangeRatesLastUpdateTimestamp[_marketAddress] = block.timestamp;
         LastPoolIndexes storage poolIndexes = lastPoolIndexes[_marketAddress];
-        IPositionsManagerForAave.Delta memory delta = positionsManager.deltas(_marketAddress);
+        IPositionsManagerForAave.P2P memory p2p = positionsManager.p2ps(_marketAddress);
 
         uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(underlyingTokenAddress);
         supplyP2PExchangeRate[_marketAddress] = _computeNewP2PExchangeRate(
-            delta.supplyP2PDelta,
-            delta.supplyP2PAmount,
+            p2p.supplyDelta,
+            p2p.supplyAmount,
             supplyP2PExchangeRate[_marketAddress],
             supplyP2PSPY[_marketAddress],
             normalizedIncome,
@@ -379,8 +379,8 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
             underlyingTokenAddress
         );
         borrowP2PExchangeRate[_marketAddress] = _computeNewP2PExchangeRate(
-            delta.borrowP2PDelta,
-            delta.borrowP2PAmount,
+            p2p.borrowDelta,
+            p2p.borrowAmount,
             borrowP2PExchangeRate[_marketAddress],
             borrowP2PSPY[_marketAddress],
             normalizedVariableDebt,
@@ -425,7 +425,7 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
     }
 
     /// @notice Computes the new P2P exchange rate from arguments.
-    /// @param _p2pDelta The P2P delta.
+    /// @param _p2pp2p The P2P p2p.
     /// @param _p2pAmount The P2P amount.
     /// @param _p2pRate The P2P exchange rate.
     /// @param _p2pSPY The P2P SPY.
@@ -434,7 +434,7 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
     /// @param _timeDifference The time difference since the last update.
     /// @return The new P2P exchange rate.
     function _computeNewP2PExchangeRate(
-        uint256 _p2pDelta,
+        uint256 _p2pp2p,
         uint256 _p2pAmount,
         uint256 _p2pRate,
         uint256 _p2pSPY,
@@ -442,22 +442,20 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
         uint256 _lastPoolIndex,
         uint256 _timeDifference
     ) internal pure returns (uint256) {
-        if (_p2pDelta == 0)
+        if (_p2pp2p == 0)
             return _p2pRate.rayMul(_computeCompoundedInterest(_p2pSPY, _timeDifference));
         else {
-            uint256 shareOfTheDelta = _p2pDelta
-            .wadToRay()
-            .rayMul(_p2pRate)
-            .rayDiv(_poolIndex)
-            .rayDiv(_p2pAmount.wadToRay());
+            uint256 shareOfThep2p = _p2pp2p.wadToRay().rayMul(_p2pRate).rayDiv(_poolIndex).rayDiv(
+                _p2pAmount.wadToRay()
+            );
 
             return
                 _p2pRate.rayMul(
                     (
                         _computeCompoundedInterest(_p2pSPY, _timeDifference).rayMul(
-                            WadRayMath.ray() - shareOfTheDelta
+                            WadRayMath.ray() - shareOfThep2p
                         )
-                    ) + (shareOfTheDelta.rayMul(_poolIndex).rayDiv(_lastPoolIndex))
+                    ) + (shareOfThep2p.rayMul(_poolIndex).rayDiv(_lastPoolIndex))
                 );
         }
     }

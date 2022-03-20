@@ -7,11 +7,11 @@ interface IPositionsManagerForAave {
         uint256 onPool;
     }
 
-    struct Delta {
-        uint256 supplyP2PDelta;
-        uint256 borrowP2PDelta;
-        uint256 supplyP2PAmount;
-        uint256 borrowP2PAmount;
+    struct P2P {
+        uint256 supplyDelta;
+        uint256 borrowDelta;
+        uint256 supplyAmount;
+        uint256 borrowAmount;
     }
 
     function createMarket(address) external returns (uint256[] memory);
@@ -31,5 +31,5 @@ interface IPositionsManagerForAave {
 
     function supplyBalanceInOf(address, address) external returns (Balance memory);
 
-    function deltas(address) external view returns (Delta memory);
+    function p2ps(address) external view returns (P2P memory);
 }
