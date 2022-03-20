@@ -267,7 +267,7 @@ contract MatchingEngineForCompound is
                     matched += vars.toMatch;
                 }
 
-                borrowBalanceInOf[poolTokenAddress][user].onPool -= vars.toMatch.div(
+                borrowBalanceInOf[poolTokenAddress][user].onPool -= vars.toMatch.divWadUp(
                     vars.poolIndex
                 );
                 borrowBalanceInOf[poolTokenAddress][user].inP2P += vars.toMatch.div(vars.p2pRate);
