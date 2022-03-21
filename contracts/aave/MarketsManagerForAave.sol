@@ -196,8 +196,7 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
     /// @notice Updates the P2P exchange rates, taking into account the Second Percentage Yield values.
     /// @param _marketAddress The address of the market to update.
     function updateP2PExchangeRates(address _marketAddress) external override onlyPositionsManager {
-        if (exchangeRatesLastUpdateTimestamp[_marketAddress] != block.timestamp)
-            _updateP2PExchangeRates(_marketAddress);
+        _updateP2PExchangeRates(_marketAddress);
     }
 
     /// @notice Updates the P2P Second Percentage Yield of supply and borrow.
@@ -269,8 +268,7 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
     /// @notice Updates the P2P Second Percentage Yield and the current P2P exchange rates.
     /// @param _marketAddress The address of the market we want to update.
     function updateRates(address _marketAddress) public override isMarketCreated(_marketAddress) {
-        if (exchangeRatesLastUpdateTimestamp[_marketAddress] != block.timestamp)
-            _updateP2PExchangeRates(_marketAddress);
+        _updateP2PExchangeRates(_marketAddress);
         _updateSPYs(_marketAddress);
     }
 
@@ -283,13 +281,13 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
         override
         returns (uint256 updatedSupplyP2P_)
     {
-        address underlyingTokenAddress = IAToken(_marketAddress).UNDERLYING_ASSET_ADDRESS();
-        IPositionsManagerForAave.Delta memory delta = positionsManager.deltas(_marketAddress);
         uint256 timeDifference = block.timestamp - exchangeRatesLastUpdateTimestamp[_marketAddress];
 
-        if (exchangeRatesLastUpdateTimestamp[_marketAddress] == block.timestamp)
-            updatedSupplyP2P_ = supplyP2PExchangeRate[_marketAddress];
-        else
+        if (timeDifference == 0) updatedSupplyP2P_ = supplyP2PExchangeRate[_marketAddress];
+        else {
+            address underlyingTokenAddress = IAToken(_marketAddress).UNDERLYING_ASSET_ADDRESS();
+            IPositionsManagerForAave.Delta memory delta = positionsManager.deltas(_marketAddress);
+
             updatedSupplyP2P_ = _computeNewP2PExchangeRate(
                 delta.supplyP2PDelta,
                 delta.supplyP2PAmount,
@@ -299,6 +297,7 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
                 lastPoolIndexes[_marketAddress].lastSupplyPoolIndex,
                 timeDifference
             );
+        }
     }
 
     /// @notice Returns the updated borrow P2P exchange rate.
@@ -310,13 +309,13 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
         override
         returns (uint256 updatedBorrowP2P_)
     {
-        address underlyingTokenAddress = IAToken(_marketAddress).UNDERLYING_ASSET_ADDRESS();
-        IPositionsManagerForAave.Delta memory delta = positionsManager.deltas(_marketAddress);
         uint256 timeDifference = block.timestamp - exchangeRatesLastUpdateTimestamp[_marketAddress];
 
-        if (exchangeRatesLastUpdateTimestamp[_marketAddress] == block.timestamp)
-            updatedBorrowP2P_ = borrowP2PExchangeRate[_marketAddress];
-        else
+        if (timeDifference == 0) updatedBorrowP2P_ = borrowP2PExchangeRate[_marketAddress];
+        else {
+            address underlyingTokenAddress = IAToken(_marketAddress).UNDERLYING_ASSET_ADDRESS();
+            IPositionsManagerForAave.Delta memory delta = positionsManager.deltas(_marketAddress);
+
             updatedBorrowP2P_ = _computeNewP2PExchangeRate(
                 delta.borrowP2PDelta,
                 delta.borrowP2PAmount,
@@ -326,6 +325,7 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
                 lastPoolIndexes[_marketAddress].lastBorrowPoolIndex,
                 timeDifference
             );
+        }
     }
 
     /// INTERNAL ///
@@ -365,43 +365,48 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
     /// @notice Updates the P2P exchange rates, taking into account the Second Percentage Yield values.
     /// @param _marketAddress The address of the market to update.
     function _updateP2PExchangeRates(address _marketAddress) internal {
-        address underlyingTokenAddress = IAToken(_marketAddress).UNDERLYING_ASSET_ADDRESS();
         uint256 timeDifference = block.timestamp - exchangeRatesLastUpdateTimestamp[_marketAddress];
-        exchangeRatesLastUpdateTimestamp[_marketAddress] = block.timestamp;
-        LastPoolIndexes storage poolIndexes = lastPoolIndexes[_marketAddress];
-        IPositionsManagerForAave.Delta memory delta = positionsManager.deltas(_marketAddress);
 
-        uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(underlyingTokenAddress);
-        supplyP2PExchangeRate[_marketAddress] = _computeNewP2PExchangeRate(
-            delta.supplyP2PDelta,
-            delta.supplyP2PAmount,
-            supplyP2PExchangeRate[_marketAddress],
-            supplyP2PSPY[_marketAddress],
-            normalizedIncome,
-            poolIndexes.lastSupplyPoolIndex,
-            timeDifference
-        );
-        poolIndexes.lastSupplyPoolIndex = normalizedIncome;
+        if (timeDifference > 0) {
+            address underlyingTokenAddress = IAToken(_marketAddress).UNDERLYING_ASSET_ADDRESS();
+            exchangeRatesLastUpdateTimestamp[_marketAddress] = block.timestamp;
+            LastPoolIndexes storage poolIndexes = lastPoolIndexes[_marketAddress];
+            IPositionsManagerForAave.Delta memory delta = positionsManager.deltas(_marketAddress);
 
-        uint256 normalizedVariableDebt = lendingPool.getReserveNormalizedVariableDebt(
-            underlyingTokenAddress
-        );
-        borrowP2PExchangeRate[_marketAddress] = _computeNewP2PExchangeRate(
-            delta.borrowP2PDelta,
-            delta.borrowP2PAmount,
-            borrowP2PExchangeRate[_marketAddress],
-            borrowP2PSPY[_marketAddress],
-            normalizedVariableDebt,
-            poolIndexes.lastBorrowPoolIndex,
-            timeDifference
-        );
-        poolIndexes.lastBorrowPoolIndex = normalizedVariableDebt;
+            uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(
+                underlyingTokenAddress
+            );
+            supplyP2PExchangeRate[_marketAddress] = _computeNewP2PExchangeRate(
+                delta.supplyP2PDelta,
+                delta.supplyP2PAmount,
+                supplyP2PExchangeRate[_marketAddress],
+                supplyP2PSPY[_marketAddress],
+                normalizedIncome,
+                poolIndexes.lastSupplyPoolIndex,
+                timeDifference
+            );
+            poolIndexes.lastSupplyPoolIndex = normalizedIncome;
 
-        emit P2PExchangeRatesUpdated(
-            _marketAddress,
-            supplyP2PExchangeRate[_marketAddress],
-            borrowP2PExchangeRate[_marketAddress]
-        );
+            uint256 normalizedVariableDebt = lendingPool.getReserveNormalizedVariableDebt(
+                underlyingTokenAddress
+            );
+            borrowP2PExchangeRate[_marketAddress] = _computeNewP2PExchangeRate(
+                delta.borrowP2PDelta,
+                delta.borrowP2PAmount,
+                borrowP2PExchangeRate[_marketAddress],
+                borrowP2PSPY[_marketAddress],
+                normalizedVariableDebt,
+                poolIndexes.lastBorrowPoolIndex,
+                timeDifference
+            );
+            poolIndexes.lastBorrowPoolIndex = normalizedVariableDebt;
+
+            emit P2PExchangeRatesUpdated(
+                _marketAddress,
+                supplyP2PExchangeRate[_marketAddress],
+                borrowP2PExchangeRate[_marketAddress]
+            );
+        }
     }
 
     /// @notice Updates the P2P Second Percentage Yield of supply and borrow.
