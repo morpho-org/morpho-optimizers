@@ -22,6 +22,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveLogic {
         uint256 _amount,
         uint16 _referralCode
     ) external nonReentrant {
+        marketsManager.updateP2PExchangeRates(_poolTokenAddress);
         _supply(_poolTokenAddress, _amount, maxGas.supply);
 
         emit Supplied(
@@ -46,6 +47,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveLogic {
         uint16 _referralCode,
         uint256 _maxGasToConsume
     ) external nonReentrant {
+        marketsManager.updateP2PExchangeRates(_poolTokenAddress);
         _supply(_poolTokenAddress, _amount, _maxGasToConsume);
 
         emit Supplied(
@@ -67,6 +69,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveLogic {
         uint256 _amount,
         uint16 _referralCode
     ) external nonReentrant {
+        marketsManager.updateP2PExchangeRates(_poolTokenAddress);
         _borrow(_poolTokenAddress, _amount, maxGas.borrow);
 
         emit Borrowed(
@@ -90,6 +93,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveLogic {
         uint16 _referralCode,
         uint256 _maxGasToConsume
     ) external nonReentrant {
+        marketsManager.updateP2PExchangeRates(_poolTokenAddress);
         _borrow(_poolTokenAddress, _amount, _maxGasToConsume);
 
         emit Borrowed(
@@ -152,6 +156,8 @@ contract PositionsManagerForAave is PositionsManagerForAaveLogic {
         uint256 _amount
     ) external nonReentrant {
         if (_amount == 0) revert AmountIsZero();
+        marketsManager.updateP2PExchangeRates(_poolTokenBorrowedAddress);
+        marketsManager.updateP2PExchangeRates(_poolTokenCollateralAddress);
 
         LiquidateVars memory vars;
         (vars.debtValue, , vars.liquidationValue) = _getUserHypotheticalBalanceStates(

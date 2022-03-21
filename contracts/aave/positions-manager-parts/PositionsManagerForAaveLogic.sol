@@ -54,7 +54,6 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
         uint256 _maxGasToConsume
     ) internal isMarketCreatedAndNotPaused(_poolTokenAddress) {
         _handleMembership(_poolTokenAddress, msg.sender);
-        marketsManager.updateRates(_poolTokenAddress);
         ERC20 underlyingToken = ERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
         underlyingToken.safeTransferFrom(msg.sender, address(this), _amount);
         uint256 remainingToSupplyToPool = _amount;
@@ -269,7 +268,6 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
         uint256 _maxGasToConsume
     ) internal isMarketCreatedAndNotPaused(_poolTokenAddress) {
         if (_amount == 0) revert AmountIsZero();
-
         IAToken poolToken = IAToken(_poolTokenAddress);
         ERC20 underlyingToken = ERC20(poolToken.UNDERLYING_ASSET_ADDRESS());
         underlyingToken.safeTransferFrom(msg.sender, address(this), _amount);
