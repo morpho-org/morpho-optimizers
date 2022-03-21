@@ -280,6 +280,7 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
     function getUpdatedSupplyP2PExchangeRate(address _marketAddress)
         external
         view
+        override
         returns (uint256 updatedSupplyP2P_)
     {
         address underlyingTokenAddress = IAToken(_marketAddress).UNDERLYING_ASSET_ADDRESS();
@@ -303,6 +304,7 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
     function getUpdatedBorrowP2PExchangeRate(address _marketAddress)
         external
         view
+        override
         returns (uint256 updatedBorrowP2P_)
     {
         address underlyingTokenAddress = IAToken(_marketAddress).UNDERLYING_ASSET_ADDRESS();

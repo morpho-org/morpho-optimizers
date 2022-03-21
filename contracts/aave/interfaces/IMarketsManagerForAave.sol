@@ -21,4 +21,14 @@ interface IMarketsManagerForAave {
     function updateP2PExchangeRates(address _marketAddress) external;
 
     function updateSPYs(address _marketAddress) external;
+
+    function getUpdatedSupplyP2PExchangeRate(address _marketAddress)
+        external
+        view
+        returns (uint256);
+
+    function getUpdatedBorrowP2PExchangeRate(address _marketAddress)
+        external
+        view
+        returns (uint256);
 }
