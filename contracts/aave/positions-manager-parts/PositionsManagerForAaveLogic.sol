@@ -376,7 +376,7 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
         address _poolTokenAddress,
         uint256 _withdrawnAmount,
         uint256 _borrowedAmount
-    ) internal {
+    ) internal view {
         (uint256 debtValue, uint256 maxDebtValue, ) = _getUserHypotheticalBalanceStates(
             _user,
             _poolTokenAddress,
@@ -401,6 +401,7 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
         uint256 _borrowedAmount
     )
         internal
+        view
         returns (
             uint256 debtValue,
             uint256 maxDebtValue,
@@ -413,7 +414,6 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
 
         while (i < numberOfEnteredMarkets) {
             address poolTokenEntered = enteredMarkets[_user][i];
-            marketsManager.updateP2PExchangeRates(poolTokenEntered);
             AssetLiquidityData memory assetData = getUserLiquidityDataForAsset(
                 _user,
                 poolTokenEntered,
