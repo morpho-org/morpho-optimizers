@@ -287,15 +287,18 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
         IPositionsManagerForAave.Delta memory delta = positionsManager.deltas(_marketAddress);
         uint256 timeDifference = block.timestamp - exchangeRatesLastUpdateTimestamp[_marketAddress];
 
-        updatedSupplyP2P_ = _computeNewP2PExchangeRate(
-            delta.supplyP2PDelta,
-            delta.supplyP2PAmount,
-            supplyP2PExchangeRate[_marketAddress],
-            supplyP2PSPY[_marketAddress],
-            lendingPool.getReserveNormalizedIncome(underlyingTokenAddress),
-            lastPoolIndexes[_marketAddress].lastSupplyPoolIndex,
-            timeDifference
-        );
+        if (exchangeRatesLastUpdateTimestamp[_marketAddress] == block.timestamp)
+            updatedSupplyP2P_ = supplyP2PExchangeRate[_marketAddress];
+        else
+            updatedSupplyP2P_ = _computeNewP2PExchangeRate(
+                delta.supplyP2PDelta,
+                delta.supplyP2PAmount,
+                supplyP2PExchangeRate[_marketAddress],
+                supplyP2PSPY[_marketAddress],
+                lendingPool.getReserveNormalizedIncome(underlyingTokenAddress),
+                lastPoolIndexes[_marketAddress].lastSupplyPoolIndex,
+                timeDifference
+            );
     }
 
     /// @notice Returns the updated borrow P2P exchange rate.
@@ -311,15 +314,18 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
         IPositionsManagerForAave.Delta memory delta = positionsManager.deltas(_marketAddress);
         uint256 timeDifference = block.timestamp - exchangeRatesLastUpdateTimestamp[_marketAddress];
 
-        updatedBorrowP2P_ = _computeNewP2PExchangeRate(
-            delta.borrowP2PDelta,
-            delta.borrowP2PAmount,
-            borrowP2PExchangeRate[_marketAddress],
-            borrowP2PSPY[_marketAddress],
-            lendingPool.getReserveNormalizedVariableDebt(underlyingTokenAddress),
-            lastPoolIndexes[_marketAddress].lastBorrowPoolIndex,
-            timeDifference
-        );
+        if (exchangeRatesLastUpdateTimestamp[_marketAddress] == block.timestamp)
+            updatedBorrowP2P_ = borrowP2PExchangeRate[_marketAddress];
+        else
+            updatedBorrowP2P_ = _computeNewP2PExchangeRate(
+                delta.borrowP2PDelta,
+                delta.borrowP2PAmount,
+                borrowP2PExchangeRate[_marketAddress],
+                borrowP2PSPY[_marketAddress],
+                lendingPool.getReserveNormalizedVariableDebt(underlyingTokenAddress),
+                lastPoolIndexes[_marketAddress].lastBorrowPoolIndex,
+                timeDifference
+            );
     }
 
     /// INTERNAL ///
