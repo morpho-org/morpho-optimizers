@@ -196,7 +196,8 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
     /// @notice Updates the P2P exchange rates, taking into account the Second Percentage Yield values.
     /// @param _marketAddress The address of the market to update.
     function updateP2PExchangeRates(address _marketAddress) external override onlyPositionsManager {
-        _updateP2PExchangeRates(_marketAddress);
+        if (exchangeRatesLastUpdateTimestamp[_marketAddress] != block.timestamp)
+            _updateP2PExchangeRates(_marketAddress);
     }
 
     /// @notice Updates the P2P Second Percentage Yield of supply and borrow.
@@ -268,10 +269,9 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
     /// @notice Updates the P2P Second Percentage Yield and the current P2P exchange rates.
     /// @param _marketAddress The address of the market we want to update.
     function updateRates(address _marketAddress) public override isMarketCreated(_marketAddress) {
-        if (exchangeRatesLastUpdateTimestamp[_marketAddress] != block.timestamp) {
+        if (exchangeRatesLastUpdateTimestamp[_marketAddress] != block.timestamp)
             _updateP2PExchangeRates(_marketAddress);
-            _updateSPYs(_marketAddress);
-        }
+        _updateSPYs(_marketAddress);
     }
 
     /// @notice Returns the updated supply P2P exchange rate.
@@ -398,6 +398,7 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
 
     /// @notice Updates the P2P Second Percentage Yield of supply and borrow.
     /// @param _marketAddress The address of the market to update.
+    /// @dev Note: that the exchange rate must have been updated in the same block before calling this.
     function _updateSPYs(address _marketAddress) internal {
         DataTypes.ReserveData memory reserveData = lendingPool.getReserveData(
             IAToken(_marketAddress).UNDERLYING_ASSET_ADDRESS()
