@@ -272,7 +272,7 @@ abstract contract PositionsManagerForAaveGettersSetters is PositionsManagerForAa
     ) internal view returns (uint256) {
         return
             supplyBalanceInOf[_poolTokenAddress][_user].inP2P.mulWadByRay(
-                marketsManager.supplyP2PExchangeRate(_poolTokenAddress)
+                marketsManager.getUpdatedSupplyP2PExchangeRate(_poolTokenAddress)
             ) +
             supplyBalanceInOf[_poolTokenAddress][_user].onPool.mulWadByRay(
                 lendingPool.getReserveNormalizedIncome(_underlyingTokenAddress)
@@ -291,7 +291,7 @@ abstract contract PositionsManagerForAaveGettersSetters is PositionsManagerForAa
     ) internal view returns (uint256) {
         return
             borrowBalanceInOf[_poolTokenAddress][_user].inP2P.mulWadByRay(
-                marketsManager.borrowP2PExchangeRate(_poolTokenAddress)
+                marketsManager.getUpdatedBorrowP2PExchangeRate(_poolTokenAddress)
             ) +
             borrowBalanceInOf[_poolTokenAddress][_user].onPool.mulWadByRay(
                 lendingPool.getReserveNormalizedVariableDebt(_underlyingTokenAddress)
