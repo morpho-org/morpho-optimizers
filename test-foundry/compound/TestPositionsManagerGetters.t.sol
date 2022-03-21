@@ -100,15 +100,15 @@ contract TestPositionsManagerGetters is TestSetup {
 
     function testGetNext() public {
         uint256 amount = 10000 ether;
-        uint256 toBorrow = to6Decimals(amount / 10);
+        uint256 toBorrow = amount / 10;
 
         uint8 NDS = 10;
         positionsManager.setNDS(NDS);
         createSigners(NDS);
         for (uint256 i; i < borrowers.length; i++) {
-            borrowers[i].approve(dai, amount - i);
-            borrowers[i].supply(cDai, amount - i);
-            borrowers[i].borrow(cUsdc, toBorrow - i);
+            borrowers[i].approve(dai, amount - i * 1e18);
+            borrowers[i].supply(cDai, amount - i * 1e18);
+            borrowers[i].borrow(cUsdc, to6Decimals(toBorrow - i * 1e18));
         }
 
         address nextSupplyOnPool = address(borrowers[0]);
@@ -131,12 +131,12 @@ contract TestPositionsManagerGetters is TestSetup {
         }
 
         for (uint256 i; i < borrowers.length; i++) {
-            borrowers[i].borrow(cDai, (amount / 100) - i);
+            borrowers[i].borrow(cDai, (amount / 100) - i * 1e18);
         }
 
         for (uint256 i; i < suppliers.length; i++) {
-            suppliers[i].approve(usdc, toBorrow - i);
-            suppliers[i].supply(cUsdc, toBorrow - i);
+            suppliers[i].approve(usdc, to6Decimals(toBorrow - i * 1e18));
+            suppliers[i].supply(cUsdc, to6Decimals(toBorrow - i * 1e18));
         }
 
         address nextSupplyInP2P = address(suppliers[0]);
