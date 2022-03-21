@@ -268,10 +268,9 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
     /// @notice Updates the P2P Second Percentage Yield and the current P2P exchange rates.
     /// @param _marketAddress The address of the market we want to update.
     function updateRates(address _marketAddress) public override isMarketCreated(_marketAddress) {
-        if (exchangeRatesLastUpdateTimestamp[_marketAddress] != block.timestamp) {
+        if (exchangeRatesLastUpdateTimestamp[_marketAddress] != block.timestamp)
             _updateP2PExchangeRates(_marketAddress);
-            _updateSPYs(_marketAddress);
-        }
+        _updateSPYs(_marketAddress);
     }
 
     /// @notice Returns the updated supply P2P exchange rate.
