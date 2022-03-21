@@ -86,6 +86,7 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
                 );
                 remainingToSupplyToPool -= matchedDelta;
                 delta.borrowP2PDelta -= matchedDelta.divWadByRay(borrowPoolIndex);
+                emit BorrowP2PDeltaUpdated(_poolTokenAddress, delta.borrowP2PDelta);
             }
 
             uint256 matched;
@@ -104,6 +105,8 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
             delta.borrowP2PAmount += matched.divWadByRay(
                 marketsManager.borrowP2PExchangeRate(_poolTokenAddress)
             );
+
+            emit P2PAmountsUpdated(_poolTokenAddress, delta.supplyP2PAmount, delta.borrowP2PAmount);
 
             if (matched + matchedDelta > 0) {
                 _repayERC20ToPool(
@@ -167,6 +170,7 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
                 );
                 remainingToBorrowOnPool -= matchedDelta;
                 delta.supplyP2PDelta -= matchedDelta.divWadByRay(supplyPoolIndex);
+                emit SupplyP2PDeltaUpdated(_poolTokenAddress, delta.borrowP2PDelta);
             }
 
             uint256 matched;
@@ -186,6 +190,8 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
             deltas[_poolTokenAddress].borrowP2PAmount += (matched + matchedDelta).divWadByRay(
                 borrowP2PExchangeRate
             );
+
+            emit P2PAmountsUpdated(_poolTokenAddress, delta.supplyP2PAmount, delta.borrowP2PAmount);
 
             if (matched + matchedDelta > 0) {
                 matched = Math.min(matched, IAToken(_poolTokenAddress).balanceOf(address(this)));
@@ -284,6 +290,7 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
                     remainingToWithdraw -= matchedDelta;
                     delta.supplyP2PDelta -= matchedDelta.divWadByRay(vars.supplyPoolIndex);
                     delta.supplyP2PAmount -= matchedDelta.divWadByRay(vars.supplyP2pExchangeRate);
+                    emit SupplyP2PDeltaUpdated(_poolTokenAddress, delta.supplyP2PDelta);
                 }
 
                 // match suppliers
@@ -317,6 +324,7 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
                     delta.borrowP2PDelta += (remainingToWithdraw - matched).divWadByRay(
                         vars.borrowPoolIndex
                     );
+                    emit BorrowP2PDeltaUpdated(_poolTokenAddress, delta.borrowP2PAmount);
                 }
 
                 delta.supplyP2PAmount -= remainingToWithdraw.divWadByRay(
@@ -325,6 +333,11 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
                 delta.borrowP2PAmount -= matched.divWadByRay(vars.borrowP2pExchangeRate);
 
                 _borrowERC20FromPool(underlyingToken, remainingToWithdraw); // Reverts on error
+                emit P2PAmountsUpdated(
+                    _poolTokenAddress,
+                    delta.supplyP2PAmount,
+                    delta.borrowP2PAmount
+                );
             }
         }
 
@@ -404,6 +417,7 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
                     remainingToRepay -= matchedDelta;
                     delta.borrowP2PDelta -= matchedDelta.divWadByRay(vars.borrowPoolIndex);
                     delta.borrowP2PAmount -= matchedDelta.divWadByRay(vars.borrowP2pExchangeRate);
+                    emit BorrowP2PDeltaUpdated(_poolTokenAddress, delta.borrowP2PDelta);
                 }
 
                 if (remainingToRepay > 0) {
@@ -438,6 +452,7 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
                     delta.supplyP2PDelta += (remainingToRepay - matched).divWadByRay(
                         vars.borrowPoolIndex
                     );
+                    emit BorrowP2PDeltaUpdated(_poolTokenAddress, delta.borrowP2PDelta);
                 }
 
                 delta.supplyP2PAmount -= matched.divWadByRay(vars.supplyP2pExchangeRate);
@@ -450,6 +465,11 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
                 );
 
                 if (remainingToRepay > 0) _supplyERC20ToPool(underlyingToken, remainingToRepay); // Reverts on error
+                emit P2PAmountsUpdated(
+                    _poolTokenAddress,
+                    delta.supplyP2PAmount,
+                    delta.borrowP2PAmount
+                );
             }
         }
     }
