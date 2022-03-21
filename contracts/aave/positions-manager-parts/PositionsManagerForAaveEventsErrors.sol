@@ -84,6 +84,26 @@ abstract contract PositionsManagerForAaveEventsErrors is PositionsManagerForAave
         address _poolTokenCollateralAddress
     );
 
+    /// @notice Emitted when the borrow P2P delta is updated.
+    /// @param _poolTokenAddress The address of the market.
+    /// @param _borrowP2PDelta The borrow P2P delta after update.
+    event BorrowP2PDeltaUpdated(address indexed _poolTokenAddress, uint256 _borrowP2PDelta);
+
+    /// @notice Emitted when the supply P2P delta is updated.
+    /// @param _poolTokenAddress The address of the market.
+    /// @param _supplyP2PDelta The supply P2P delta after update.
+    event SupplyP2PDeltaUpdated(address indexed _poolTokenAddress, uint256 _supplyP2PDelta);
+
+    /// @notice Emitted when the supply and borrow P2P amounts are updated.
+    /// @param _poolTokenAddress The address of the market.
+    /// @param _supplyP2PAmount The supply P2P amount after update.
+    /// @param _borrowP2PAmount The borrow P2P amount after update.
+    event P2PAmountsUpdated(
+        address indexed _poolTokenAddress,
+        uint256 _supplyP2PAmount,
+        uint256 _borrowP2PAmount
+    );
+
     /// @dev Emitted when a new value for `NDS` is set.
     /// @param _newValue The new value of `NDS`.
     event NDSSet(uint8 _newValue);
