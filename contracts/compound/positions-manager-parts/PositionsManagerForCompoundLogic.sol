@@ -26,7 +26,6 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
         uint256 _maxGasToConsume
     ) internal isMarketCreatedAndNotPaused(_poolTokenAddress) {
         _handleMembership(_poolTokenAddress, msg.sender);
-        marketsManager.updateRates(_poolTokenAddress);
         ERC20 underlyingToken = ERC20(ICToken(_poolTokenAddress).underlying());
         underlyingToken.safeTransferFrom(msg.sender, address(this), _amount);
         uint256 remainingToSupplyToPool = _amount;
@@ -349,7 +348,6 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
 
         while (i < numberOfEnteredMarkets) {
             address poolTokenEntered = enteredMarkets[_user][i];
-            marketsManager.updateP2PExchangeRates(poolTokenEntered);
 
             // Calling accrueInterest so that computation in getUserLiquidityDataForAsset() are the most accurate ones.
             ICToken(poolTokenEntered).accrueInterest();
