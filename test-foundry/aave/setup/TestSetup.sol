@@ -13,7 +13,6 @@ import "../../common/helpers/Chains.sol";
 
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
-
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 
@@ -31,13 +30,16 @@ import "@contracts/aave/MatchingEngineForAave.sol";
 import "../../common/helpers/MorphoToken.sol";
 import "../../common/helpers/SimplePriceOracle.sol";
 import {User} from "../../common/helpers/User.sol";
-import "../../common/setup/HevmAdapter.sol";
 import {Utils} from "./Utils.sol";
+import "forge-std/stdlib.sol";
+
 import "@config/Config.sol";
 
-contract TestSetup is Config, Utils, HevmAdapter {
+contract TestSetup is Config, Utils, stdCheats {
     using WadRayMath for uint256;
     using SafeERC20 for IERC20;
+
+    Vm public hevm = Vm(HEVM_ADDRESS);
 
     uint256 public constant MAX_BASIS_POINTS = 10000;
     uint256 public constant INITIAL_BALANCE = 1_000_000;
@@ -101,9 +103,9 @@ contract TestSetup is Config, Utils, HevmAdapter {
             // Mainnet network
             // Create a MORPHO / WETH pool
             uniswapPoolCreator = new UniswapPoolCreator();
-            writeBalanceOf(
-                address(uniswapPoolCreator),
+            tip(
                 uniswapPoolCreator.WETH9(),
+                address(uniswapPoolCreator),
                 INITIAL_BALANCE * WAD
             );
             morphoToken = new MorphoToken(address(uniswapPoolCreator));
@@ -112,9 +114,9 @@ contract TestSetup is Config, Utils, HevmAdapter {
             // Polygon network
             // Create a MORPHO / WMATIC pool
             uniswapPoolCreator = new UniswapPoolCreator();
-            writeBalanceOf(
-                address(uniswapPoolCreator),
+            tip(
                 uniswapPoolCreator.WETH9(),
+                address(uniswapPoolCreator),
                 INITIAL_BALANCE * WAD
             );
             morphoToken = new MorphoToken(address(uniswapPoolCreator));
@@ -128,7 +130,7 @@ contract TestSetup is Config, Utils, HevmAdapter {
             // Avalanche network
             // Create a MORPHO / WAVAX pool
             uniswapV2PoolCreator = new UniswapV2PoolCreator();
-            writeBalanceOf(address(uniswapV2PoolCreator), REWARD_TOKEN, INITIAL_BALANCE * WAD);
+            tip(REWARD_TOKEN, address(uniswapV2PoolCreator), INITIAL_BALANCE * WAD);
             morphoToken = new MorphoToken(address(uniswapV2PoolCreator));
             uniswapV2PoolCreator.createPoolAndAddLiquidity(address(morphoToken));
             swapManager = new SwapManagerUniV2(address(morphoToken), REWARD_TOKEN);
@@ -248,8 +250,8 @@ contract TestSetup is Config, Utils, HevmAdapter {
     }
 
     function fillUserBalances(User _user) internal {
-        writeBalanceOf(address(_user), dai, INITIAL_BALANCE * WAD);
-        writeBalanceOf(address(_user), usdc, INITIAL_BALANCE * 1e6);
+        tip(dai, address(_user), INITIAL_BALANCE * WAD);
+        tip(usdc, address(_user), INITIAL_BALANCE * 1e6);
     }
 
     function setContractsLabels() internal {
