@@ -21,6 +21,7 @@ contract PositionsManagerForCompound is PositionsManagerForCompoundLogic {
         uint256 _amount,
         uint16 _referralCode
     ) external nonReentrant {
+        marketsManager.updateP2PExchangeRates(_poolTokenAddress);
         _supply(_poolTokenAddress, _amount, maxGas.supply);
 
         emit Supplied(
@@ -45,6 +46,7 @@ contract PositionsManagerForCompound is PositionsManagerForCompoundLogic {
         uint16 _referralCode,
         uint256 _maxGasToConsume
     ) external nonReentrant {
+        marketsManager.updateP2PExchangeRates(_poolTokenAddress);
         _supply(_poolTokenAddress, _amount, _maxGasToConsume);
 
         emit Supplied(
@@ -66,6 +68,7 @@ contract PositionsManagerForCompound is PositionsManagerForCompoundLogic {
         uint256 _amount,
         uint16 _referralCode
     ) external nonReentrant {
+        marketsManager.updateP2PExchangeRates(_poolTokenAddress);
         _borrow(_poolTokenAddress, _amount, maxGas.borrow);
 
         emit Borrowed(
@@ -89,6 +92,7 @@ contract PositionsManagerForCompound is PositionsManagerForCompoundLogic {
         uint16 _referralCode,
         uint256 _maxGasToConsume
     ) external nonReentrant {
+        marketsManager.updateP2PExchangeRates(_poolTokenAddress);
         _borrow(_poolTokenAddress, _amount, _maxGasToConsume);
 
         emit Borrowed(
@@ -143,6 +147,8 @@ contract PositionsManagerForCompound is PositionsManagerForCompoundLogic {
         uint256 _amount
     ) external nonReentrant {
         if (_amount == 0) revert AmountIsZero();
+        marketsManager.updateP2PExchangeRates(_poolTokenCollateralAddress);
+        marketsManager.updateP2PExchangeRates(_poolTokenBorrowedAddress);
         LiquidateVars memory vars;
 
         (vars.debtValue, vars.maxDebtValue) = _getUserHypotheticalBalanceStates(
