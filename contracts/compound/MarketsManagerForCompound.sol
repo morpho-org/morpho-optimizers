@@ -274,10 +274,8 @@ contract MarketsManagerForCompound is IMarketsManagerForCompound, OwnableUpgrade
         override
         isMarketCreated(_poolTokenAddress)
     {
-        if (lastUpdateBlockNumber[_poolTokenAddress] != block.number) {
-            _updateP2PExchangeRates(_poolTokenAddress);
-            _updateBPYs(_poolTokenAddress);
-        }
+        _updateP2PExchangeRates(_poolTokenAddress);
+        _updateBPYs(_poolTokenAddress);
     }
 
     /// @notice Returns the updated supply P2P exchange rate.
@@ -286,23 +284,28 @@ contract MarketsManagerForCompound is IMarketsManagerForCompound, OwnableUpgrade
     function getUpdatedSupplyP2PExchangeRate(address _poolTokenAddress)
         external
         view
+        override
         returns (uint256 updatedSupplyP2P_)
     {
-        ICToken poolToken = ICToken(_poolTokenAddress);
-        IPositionsManagerForCompound.Delta memory delta = positionsManager.deltas(
-            _poolTokenAddress
-        );
         uint256 blockDifference = block.number - lastUpdateBlockNumber[_poolTokenAddress];
 
-        updatedSupplyP2P_ = _computeNewP2PExchangeRate(
-            delta.supplyP2PDelta,
-            delta.supplyP2PAmount,
-            supplyP2PExchangeRate[_poolTokenAddress],
-            supplyP2PBPY[_poolTokenAddress],
-            poolToken.exchangeRateStored(),
-            lastPoolIndexes[_poolTokenAddress].lastSupplyPoolIndex,
-            blockDifference
-        );
+        if (blockDifference == 0) return supplyP2PExchangeRate[_poolTokenAddress];
+        else {
+            ICToken poolToken = ICToken(_poolTokenAddress);
+            IPositionsManagerForCompound.Delta memory delta = positionsManager.deltas(
+                _poolTokenAddress
+            );
+
+            updatedSupplyP2P_ = _computeNewP2PExchangeRate(
+                delta.supplyP2PDelta,
+                delta.supplyP2PAmount,
+                supplyP2PExchangeRate[_poolTokenAddress],
+                supplyP2PBPY[_poolTokenAddress],
+                poolToken.exchangeRateStored(),
+                lastPoolIndexes[_poolTokenAddress].lastSupplyPoolIndex,
+                blockDifference
+            );
+        }
     }
 
     /// @notice Returns the updated borrow P2P exchange rate.
@@ -311,23 +314,28 @@ contract MarketsManagerForCompound is IMarketsManagerForCompound, OwnableUpgrade
     function getUpdatedBorrowP2PExchangeRate(address _poolTokenAddress)
         external
         view
+        override
         returns (uint256 updatedBorrowP2P_)
     {
-        ICToken poolToken = ICToken(_poolTokenAddress);
-        IPositionsManagerForCompound.Delta memory delta = positionsManager.deltas(
-            _poolTokenAddress
-        );
         uint256 blockDifference = block.number - lastUpdateBlockNumber[_poolTokenAddress];
 
-        updatedBorrowP2P_ = _computeNewP2PExchangeRate(
-            delta.borrowP2PDelta,
-            delta.borrowP2PAmount,
-            borrowP2PExchangeRate[_poolTokenAddress],
-            borrowP2PBPY[_poolTokenAddress],
-            poolToken.borrowIndex(),
-            lastPoolIndexes[_poolTokenAddress].lastBorrowPoolIndex,
-            blockDifference
-        );
+        if (blockDifference == 0) return borrowP2PExchangeRate[_poolTokenAddress];
+        else {
+            ICToken poolToken = ICToken(_poolTokenAddress);
+            IPositionsManagerForCompound.Delta memory delta = positionsManager.deltas(
+                _poolTokenAddress
+            );
+
+            updatedBorrowP2P_ = _computeNewP2PExchangeRate(
+                delta.borrowP2PDelta,
+                delta.borrowP2PAmount,
+                borrowP2PExchangeRate[_poolTokenAddress],
+                borrowP2PBPY[_poolTokenAddress],
+                poolToken.borrowIndex(),
+                lastPoolIndexes[_poolTokenAddress].lastBorrowPoolIndex,
+                blockDifference
+            );
+        }
     }
 
     /// INTERNAL ///

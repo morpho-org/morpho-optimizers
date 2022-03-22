@@ -279,7 +279,7 @@ abstract contract PositionsManagerForCompoundGettersSetters is
     {
         return
             supplyBalanceInOf[_poolTokenAddress][_user].inP2P.mul(
-                marketsManager.supplyP2PExchangeRate(_poolTokenAddress)
+                marketsManager.getUpdatedSupplyP2PExchangeRate(_poolTokenAddress)
             ) +
             supplyBalanceInOf[_poolTokenAddress][_user].onPool.mul(
                 ICToken(_poolTokenAddress).exchangeRateStored()
@@ -297,7 +297,7 @@ abstract contract PositionsManagerForCompoundGettersSetters is
     {
         return
             borrowBalanceInOf[_poolTokenAddress][_user].inP2P.mul(
-                marketsManager.borrowP2PExchangeRate(_poolTokenAddress)
+                marketsManager.getUpdatedBorrowP2PExchangeRate(_poolTokenAddress)
             ) +
             borrowBalanceInOf[_poolTokenAddress][_user].onPool.mul(
                 ICToken(_poolTokenAddress).borrowIndex()
