@@ -283,7 +283,7 @@ contract TestRewards is TestSetup {
 
     function test_swap_with_too_much_slippage() public {
         uint256 toSupply = 10_000_000 * WAD;
-        writeBalanceOf(address(supplier1), dai, toSupply);
+        tip(dai, address(supplier1), toSupply);
         supplier1.approve(dai, toSupply);
         supplier1.supply(aDai, toSupply);
 
