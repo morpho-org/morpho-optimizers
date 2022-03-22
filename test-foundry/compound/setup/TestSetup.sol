@@ -27,12 +27,14 @@ import "@contracts/compound/MatchingEngineForCompound.sol";
 import "../../common/helpers/MorphoToken.sol";
 import "../../common/helpers/SimplePriceOracle.sol";
 import {User} from "../helpers/User.sol";
-import "../../common/setup/HevmAdapter.sol";
 import {Utils} from "./Utils.sol";
+import "forge-std/stdlib.sol";
 import "@config/Config.sol";
 
-contract TestSetup is Config, Utils, HevmAdapter {
+contract TestSetup is Config, Utils, stdCheats {
     using SafeERC20 for IERC20;
+
+    Vm public hevm = Vm(HEVM_ADDRESS);
 
     uint256 public constant MAX_BASIS_POINTS = 10_000;
     uint256 public constant INITIAL_BALANCE = 1_000_000;
@@ -165,8 +167,8 @@ contract TestSetup is Config, Utils, HevmAdapter {
     }
 
     function fillUserBalances(User _user) internal {
-        writeBalanceOf(address(_user), dai, INITIAL_BALANCE * WAD);
-        writeBalanceOf(address(_user), usdc, INITIAL_BALANCE * 1e6);
+        tip(dai, address(_user), INITIAL_BALANCE * WAD);
+        tip(usdc, address(_user), INITIAL_BALANCE * 1e6);
     }
 
     function setContractsLabels() internal {
