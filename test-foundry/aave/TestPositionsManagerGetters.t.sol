@@ -586,7 +586,7 @@ contract TestPositionsManagerGetters is TestSetup {
     function test_get_user_liquidity_data_for_usdt() public {
         uint256 usdtAmount = to6Decimals(10_000 ether);
 
-        writeBalanceOf(address(borrower1), usdt, usdtAmount);
+        tip(usdt, address(borrower1), usdtAmount);
         borrower1.approve(usdt, usdtAmount);
         borrower1.supply(aUsdt, usdtAmount);
 
@@ -607,7 +607,7 @@ contract TestPositionsManagerGetters is TestSetup {
         uint256 amount = 10000 ether;
         uint256 toBorrow = 100 ether;
 
-        writeBalanceOf(address(borrower1), usdt, to6Decimals(amount));
+        tip(usdt, address(borrower1), to6Decimals(amount));
         borrower1.approve(usdt, to6Decimals(amount));
         borrower1.supply(aUsdt, to6Decimals(amount));
         borrower1.approve(dai, amount);
