@@ -21,4 +21,14 @@ interface IMarketsManagerForCompound {
     function updateP2PExchangeRates(address _marketAddress) external;
 
     function updateBPYs(address _poolTokenAddress) external;
+
+    function getUpdatedSupplyP2PExchangeRate(address _poolTokenAddress)
+        external
+        view
+        returns (uint256);
+
+    function getUpdatedBorrowP2PExchangeRate(address _poolTokenAddress)
+        external
+        view
+        returns (uint256);
 }
