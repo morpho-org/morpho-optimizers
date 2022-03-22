@@ -11,6 +11,8 @@ import "./libraries/aave/WadRayMath.sol";
 
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
+import "hardhat/console.sol";
+
 /// @title MarketsManagerForAave
 /// @notice Smart contract managing the markets used by a MorphoPositionsManagerForAave contract, an other contract interacting with Aave or a fork of Aave.
 contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
@@ -424,14 +426,18 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
         uint256 _lastPoolIndex,
         uint256 _timeDifference
     ) internal pure returns (uint256) {
-        if (_p2pDelta == 0)
+        if (_p2pAmount == 0 || _p2pDelta == 0)
             return _p2pRate.rayMul(_computeCompoundedInterest(_p2pSPY, _timeDifference));
         else {
             uint256 shareOfTheDelta = _p2pDelta
             .wadToRay()
-            .rayMul(_p2pRate)
-            .rayDiv(_poolIndex)
+            .rayMul(_poolIndex)
+            .rayDiv(_p2pRate)
             .rayDiv(_p2pAmount.wadToRay());
+
+            shareOfTheDelta = shareOfTheDelta <= WadRayMath.ray()
+                ? shareOfTheDelta
+                : WadRayMath.ray();
 
             return
                 _p2pRate.rayMul(
