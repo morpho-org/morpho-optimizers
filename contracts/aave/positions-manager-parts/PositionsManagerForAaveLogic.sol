@@ -208,11 +208,8 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
         /// Borrow on pool ///
 
         if (remainingToBorrow > 0) {
-            uint256 normalizedVariableDebt = lendingPool.getReserveNormalizedVariableDebt(
-                address(underlyingToken)
-            );
             borrowBalanceInOf[_poolTokenAddress][msg.sender].onPool += remainingToBorrow
-            .divWadByRay(normalizedVariableDebt); // In adUnit
+            .divWadByRay(lendingPool.getReserveNormalizedVariableDebt(address(underlyingToken))); // In adUnit
             matchingEngine.updateBorrowersDC(_poolTokenAddress, msg.sender);
             _borrowERC20FromPool(underlyingToken, remainingToBorrow);
         }
@@ -235,7 +232,6 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
     ) internal isMarketCreatedAndNotPaused(_poolTokenAddress) {
         if (_amount == 0) revert AmountIsZero();
         Vars memory vars;
-        Delta storage delta = deltas[_poolTokenAddress];
         IAToken poolToken = IAToken(_poolTokenAddress);
         ERC20 underlyingToken = ERC20(poolToken.UNDERLYING_ASSET_ADDRESS());
         uint256 remainingToWithdraw = _amount;
@@ -262,14 +258,17 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
             ); // In poolToken
             matchingEngine.updateSuppliersDC(_poolTokenAddress, _supplier);
 
-            if (withdrawnInUnderlying > 0)
+            if (withdrawnInUnderlying > 0) {
                 _withdrawERC20FromPool(underlyingToken, withdrawnInUnderlying); // Reverts on error
-            remainingToWithdraw -= withdrawnInUnderlying;
+                remainingToWithdraw -= withdrawnInUnderlying;
+            }
         }
 
         /// Transfer withdraw ///
 
         if (remainingToWithdraw > 0) {
+            Delta storage delta = deltas[_poolTokenAddress];
+
             supplyBalanceInOf[_poolTokenAddress][_supplier].inP2P -= Math.min(
                 supplyBalanceInOf[_poolTokenAddress][_supplier].inP2P,
                 remainingToWithdraw.divWadByRay(vars.supplyP2pExchangeRate)
@@ -281,9 +280,8 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
                 !marketsManager.noP2P(_poolTokenAddress)
             ) {
                 // Reduce supply P2P delta first.
-                uint256 matchedDelta;
                 if (delta.supplyP2PDelta > 0) {
-                    matchedDelta = Math.min(
+                    uint256 matchedDelta = Math.min(
                         delta.supplyP2PDelta.mulWadByRay(vars.supplyPoolIndex),
                         remainingToWithdraw
                     );
@@ -358,7 +356,6 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
         uint256 _maxGasToConsume
     ) internal isMarketCreatedAndNotPaused(_poolTokenAddress) {
         Vars memory vars;
-        Delta storage delta = deltas[_poolTokenAddress];
         if (_amount == 0) revert AmountIsZero();
         IAToken poolToken = IAToken(_poolTokenAddress);
         ERC20 underlyingToken = ERC20(poolToken.UNDERLYING_ASSET_ADDRESS());
@@ -387,14 +384,17 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
             ); // In adUnit
             matchingEngine.updateBorrowersDC(_poolTokenAddress, _user);
 
-            if (repaidInUnderlying > 0)
+            if (repaidInUnderlying > 0) {
                 _repayERC20ToPool(underlyingToken, repaidInUnderlying, vars.borrowPoolIndex); // Reverts on error
-            remainingToRepay -= repaidInUnderlying;
+                remainingToRepay -= repaidInUnderlying;
+            }
         }
 
         /// Transfer repay ///
 
         if (remainingToRepay > 0) {
+            Delta storage delta = deltas[_poolTokenAddress];
+
             borrowBalanceInOf[_poolTokenAddress][_user].inP2P -= Math.min(
                 borrowBalanceInOf[_poolTokenAddress][_user].inP2P,
                 remainingToRepay.divWadByRay(vars.borrowP2pExchangeRate)
@@ -441,36 +441,35 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
             /// Hard repay ///
 
             if (remainingToRepay > 0) {
-                uint256 unmatched;
-                unmatched = matchingEngine.unmatchSuppliersDC(
+                uint256 unmatched = matchingEngine.unmatchSuppliersDC(
                     _poolTokenAddress,
                     remainingToRepay,
                     _maxGasToConsume / 2
                 ); // Reverts on error
 
-                // If new supply P2P delta.
-                if (unmatched < remainingToRepay) {
-                    delta.supplyP2PDelta += (remainingToRepay - unmatched).divWadByRay(
-                        vars.borrowPoolIndex
-                    );
-                    emit BorrowP2PDeltaUpdated(_poolTokenAddress, delta.borrowP2PDelta);
-                }
-
-                delta.supplyP2PAmount -= unmatched.divWadByRay(vars.supplyP2pExchangeRate);
-                delta.borrowP2PAmount -= remainingToRepay.divWadByRay(vars.borrowP2pExchangeRate);
-
                 // If P2P supply supplyAmount < remainingToRepay, the rest stays on the contract (reserve factor).
-                remainingToRepay = Math.min(
+                uint256 toSupply = Math.min(
                     remainingToRepay,
                     delta.supplyP2PAmount.mulWadByRay(vars.supplyP2pExchangeRate)
                 );
 
-                if (remainingToRepay > 0) _supplyERC20ToPool(underlyingToken, remainingToRepay); // Reverts on error
+                // If new supply P2P delta.
+                if (unmatched < remainingToRepay) {
+                    delta.supplyP2PDelta += (remainingToRepay - unmatched).divWadByRay(
+                        vars.supplyPoolIndex
+                    );
+                    emit SupplyP2PDeltaUpdated(_poolTokenAddress, delta.borrowP2PDelta);
+                }
+
+                delta.supplyP2PAmount -= unmatched.divWadByRay(vars.supplyP2pExchangeRate);
+                delta.borrowP2PAmount -= remainingToRepay.divWadByRay(vars.borrowP2pExchangeRate);
                 emit P2PAmountsUpdated(
                     _poolTokenAddress,
                     delta.supplyP2PAmount,
                     delta.borrowP2PAmount
                 );
+
+                if (toSupply > 0) _supplyERC20ToPool(underlyingToken, toSupply); // Reverts on error.
             }
         }
     }
