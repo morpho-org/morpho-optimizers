@@ -284,8 +284,9 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
                 !marketsManager.noP2P(_poolTokenAddress)
             ) {
                 // Reduce supply P2P delta first.
+                uint256 matchedDelta;
                 if (delta.supplyP2PDelta > 0) {
-                    uint256 matchedDelta = Math.min(
+                    matchedDelta = Math.min(
                         delta.supplyP2PDelta.mulWadByRay(vars.supplyPoolIndex),
                         remainingToWithdraw
                     );
@@ -311,11 +312,10 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
                         IAToken(_poolTokenAddress).balanceOf(address(this))
                     );
 
-                    if (matched > 0) {
-                        _withdrawERC20FromPool(underlyingToken, matched); // Reverts on error.
-                        remainingToWithdraw -= matched;
-                    }
+                    remainingToWithdraw -= matched;
                 }
+
+                _withdrawERC20FromPool(underlyingToken, matched + matchedDelta); // Reverts on error.
             }
 
             /// Hard withdraw ///
@@ -348,9 +348,6 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
                 _borrowERC20FromPool(underlyingToken, remainingToWithdraw); // Reverts on error
             }
         }
-
-        console.log("bal", underlyingToken.balanceOf(address(this)));
-        console.log("_amount", _amount);
 
         underlyingToken.safeTransfer(_receiver, _amount);
     }
