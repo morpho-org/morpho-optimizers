@@ -304,12 +304,17 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
                         remainingToWithdraw,
                         _maxGasToConsume / 2
                     );
-                    remainingToWithdraw -= matched;
-                }
 
-                matched = Math.min(matched, IAToken(_poolTokenAddress).balanceOf(address(this)));
-                if (matched > 0) {
-                    _withdrawERC20FromPool(underlyingToken, matched); // Reverts on error
+                    // Update with the true amount available on Aave.
+                    matched = Math.min(
+                        matched,
+                        IAToken(_poolTokenAddress).balanceOf(address(this))
+                    );
+
+                    if (matched > 0) {
+                        _withdrawERC20FromPool(underlyingToken, matched); // Reverts on error.
+                        remainingToWithdraw -= matched;
+                    }
                 }
             }
 
@@ -334,13 +339,13 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
                     vars.supplyP2pExchangeRate
                 );
                 delta.borrowP2PAmount -= unmatched.divWadByRay(vars.borrowP2pExchangeRate);
-
-                _borrowERC20FromPool(underlyingToken, remainingToWithdraw); // Reverts on error
                 emit P2PAmountsUpdated(
                     _poolTokenAddress,
                     delta.supplyP2PAmount,
                     delta.borrowP2PAmount
                 );
+
+                _borrowERC20FromPool(underlyingToken, remainingToWithdraw); // Reverts on error
             }
         }
 
