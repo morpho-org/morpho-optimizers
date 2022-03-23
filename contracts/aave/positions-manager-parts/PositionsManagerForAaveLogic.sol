@@ -158,21 +158,20 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
             !marketsManager.noP2P(_poolTokenAddress)
         ) {
             Delta storage delta = deltas[_poolTokenAddress];
-            uint256 borrowP2PExchangeRate = marketsManager.borrowP2PExchangeRate(_poolTokenAddress);
-            uint256 poolBorrowIndex = lendingPool.getReserveNormalizedVariableDebt(
+            uint256 poolSupplyIndex = lendingPool.getReserveNormalizedIncome(
                 address(underlyingToken)
             );
 
             uint256 matchedDelta;
-            // Match borrow P2P delta first if any.
-            if (delta.borrowP2PDelta > 0) {
+            // Match supply P2P delta first if any.
+            if (delta.supplyP2PDelta > 0) {
                 matchedDelta = Math.min(
-                    delta.borrowP2PDelta.mulWadByRay(poolBorrowIndex),
+                    delta.supplyP2PDelta.mulWadByRay(poolSupplyIndex),
                     remainingToBorrow
                 );
                 remainingToBorrow -= matchedDelta;
-                delta.borrowP2PDelta -= matchedDelta.divWadByRay(poolBorrowIndex);
-                emit BorrowP2PDeltaUpdated(_poolTokenAddress, delta.borrowP2PDelta);
+                delta.supplyP2PDelta -= matchedDelta.divWadByRay(poolSupplyIndex);
+                emit SupplyP2PDeltaUpdated(_poolTokenAddress, delta.supplyP2PDelta);
             }
 
             uint256 matched;
@@ -197,6 +196,7 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
 
             // totalMatched is strictly greater than 0.
             uint256 totalMatched = matched + matchedDelta;
+            uint256 borrowP2PExchangeRate = marketsManager.borrowP2PExchangeRate(_poolTokenAddress);
             deltas[_poolTokenAddress].borrowP2PAmount += totalMatched.divWadByRay(
                 borrowP2PExchangeRate
             );
