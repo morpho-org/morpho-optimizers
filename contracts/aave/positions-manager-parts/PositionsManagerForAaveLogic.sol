@@ -164,7 +164,7 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
             );
 
             uint256 matchedDelta;
-            // Match borrow P2P delta first.
+            // Match borrow P2P delta first if any.
             if (delta.borrowP2PDelta > 0) {
                 matchedDelta = Math.min(
                     delta.borrowP2PDelta.mulWadByRay(poolBorrowIndex),
@@ -182,27 +182,31 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
                     underlyingToken,
                     remainingToBorrow,
                     _maxGasToConsume
-                ); // In underlying
-                remainingToBorrow -= matched;
+                ); // In underlying.
+
+                // Update with the true amount available on Aave.
+                matched = Math.min(matched, IAToken(_poolTokenAddress).balanceOf(address(this)));
             }
 
-            deltas[_poolTokenAddress].supplyP2PAmount += matched.divWadByRay(
-                marketsManager.supplyP2PExchangeRate(_poolTokenAddress)
-            );
-            deltas[_poolTokenAddress].borrowP2PAmount += (matched + matchedDelta).divWadByRay(
+            if (matched > 0) {
+                remainingToBorrow -= matched;
+                deltas[_poolTokenAddress].supplyP2PAmount += matched.divWadByRay(
+                    marketsManager.supplyP2PExchangeRate(_poolTokenAddress)
+                );
+            }
+
+            // totalMatched is strictly greater than 0.
+            uint256 totalMatched = matched + matchedDelta;
+            deltas[_poolTokenAddress].borrowP2PAmount += totalMatched.divWadByRay(
                 borrowP2PExchangeRate
             );
-
             emit P2PAmountsUpdated(_poolTokenAddress, delta.supplyP2PAmount, delta.borrowP2PAmount);
 
-            if (matched + matchedDelta > 0) {
-                matched = Math.min(matched, IAToken(_poolTokenAddress).balanceOf(address(this)));
-                _withdrawERC20FromPool(underlyingToken, matched + matchedDelta); // Reverts on error
-
-                borrowBalanceInOf[_poolTokenAddress][msg.sender].inP2P += (matched + matchedDelta)
-                .divWadByRay(borrowP2PExchangeRate); // In p2pUnit
-                matchingEngine.updateBorrowersDC(_poolTokenAddress, msg.sender);
-            }
+            _withdrawERC20FromPool(underlyingToken, totalMatched); // Reverts on error.
+            borrowBalanceInOf[_poolTokenAddress][msg.sender].inP2P += totalMatched.divWadByRay(
+                borrowP2PExchangeRate
+            ); // In p2pUnit.
+            matchingEngine.updateBorrowersDC(_poolTokenAddress, msg.sender);
         }
 
         /// Borrow on pool ///
