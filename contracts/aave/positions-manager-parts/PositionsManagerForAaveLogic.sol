@@ -74,7 +74,6 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
 
             if (matched > 0) {
                 _repayERC20ToPool(
-                    _poolTokenAddress,
                     underlyingToken,
                     matched,
                     lendingPool.getReserveNormalizedVariableDebt(address(underlyingToken))
@@ -97,7 +96,7 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
             supplyBalanceInOf[_poolTokenAddress][msg.sender].onPool += remainingToSupplyToPool
             .divWadByRay(normalizedIncome); // Scaled Balance
             matchingEngine.updateSuppliersDC(_poolTokenAddress, msg.sender);
-            _supplyERC20ToPool(_poolTokenAddress, underlyingToken, remainingToSupplyToPool); // Reverts on error
+            _supplyERC20ToPool(underlyingToken, remainingToSupplyToPool); // Reverts on error
         }
     }
 
@@ -131,7 +130,7 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
 
             if (matched > 0) {
                 matched = Math.min(matched, IAToken(_poolTokenAddress).balanceOf(address(this)));
-                _withdrawERC20FromPool(_poolTokenAddress, underlyingToken, matched); // Reverts on error
+                _withdrawERC20FromPool(underlyingToken, matched); // Reverts on error
 
                 borrowBalanceInOf[_poolTokenAddress][msg.sender].inP2P += matched.divWadByRay(
                     borrowP2PExchangeRate
@@ -151,7 +150,7 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
             borrowBalanceInOf[_poolTokenAddress][msg.sender].onPool += remainingToBorrowOnPool
             .divWadByRay(normalizedVariableDebt); // In adUnit
             matchingEngine.updateBorrowersDC(_poolTokenAddress, msg.sender);
-            _borrowERC20FromPool(_poolTokenAddress, underlyingToken, remainingToBorrowOnPool);
+            _borrowERC20FromPool(underlyingToken, remainingToBorrowOnPool);
         }
 
         underlyingToken.safeTransfer(msg.sender, _amount);
@@ -194,7 +193,7 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
             matchingEngine.updateSuppliersDC(_poolTokenAddress, _supplier);
 
             if (withdrawnInUnderlying > 0)
-                _withdrawERC20FromPool(_poolTokenAddress, underlyingToken, withdrawnInUnderlying); // Reverts on error
+                _withdrawERC20FromPool(underlyingToken, withdrawnInUnderlying); // Reverts on error
             remainingToWithdraw -= withdrawnInUnderlying;
         }
 
@@ -226,7 +225,7 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
                         matched,
                         IAToken(_poolTokenAddress).balanceOf(address(this))
                     );
-                    _withdrawERC20FromPool(_poolTokenAddress, underlyingToken, matched); // Reverts on error
+                    _withdrawERC20FromPool(underlyingToken, matched); // Reverts on error
                     remainingToWithdraw -= matched;
                 }
             }
@@ -240,7 +239,7 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
                     _maxGasToConsume / 2
                 );
 
-                _borrowERC20FromPool(_poolTokenAddress, underlyingToken, remainingToWithdraw); // Reverts on error
+                _borrowERC20FromPool(underlyingToken, remainingToWithdraw); // Reverts on error
             }
         }
 
@@ -292,12 +291,7 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
             matchingEngine.updateBorrowersDC(_poolTokenAddress, _user);
 
             if (repaidInUnderlying > 0)
-                _repayERC20ToPool(
-                    _poolTokenAddress,
-                    underlyingToken,
-                    repaidInUnderlying,
-                    normalizedVariableDebt
-                ); // Reverts on error
+                _repayERC20ToPool(underlyingToken, repaidInUnderlying, normalizedVariableDebt); // Reverts on error
             remainingToRepay -= repaidInUnderlying;
         }
 
@@ -326,7 +320,6 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
                 );
 
                 _repayERC20ToPool(
-                    poolTokenAddress,
                     underlyingToken,
                     matched,
                     lendingPool.getReserveNormalizedVariableDebt(address(underlyingToken))
@@ -343,7 +336,7 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
                     _maxGasToConsume / 2
                 ); // Reverts on error
 
-                if (toSupply > 0) _supplyERC20ToPool(_poolTokenAddress, underlyingToken, toSupply); // Reverts on error
+                if (toSupply > 0) _supplyERC20ToPool(underlyingToken, toSupply); // Reverts on error
             }
         }
 
@@ -448,41 +441,24 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
     }
 
     /// @dev Supplies underlying tokens to Aave.
-    /// @param _poolTokenAddress The address of the market.
     /// @param _underlyingToken The underlying token of the market to supply to.
     /// @param _amount The amount of token (in underlying).
-    function _supplyERC20ToPool(
-        address _poolTokenAddress,
-        ERC20 _underlyingToken,
-        uint256 _amount
-    ) internal {
+    function _supplyERC20ToPool(ERC20 _underlyingToken, uint256 _amount) internal {
         _underlyingToken.safeApprove(address(lendingPool), _amount);
         lendingPool.deposit(address(_underlyingToken), _amount, address(this), NO_REFERRAL_CODE);
-        marketsManager.updateSPYs(_poolTokenAddress);
     }
 
     /// @dev Withdraws underlying tokens from Aave.
-    /// @param _poolTokenAddress The address of the market.
     /// @param _underlyingToken The underlying token of the market to withdraw from.
     /// @param _amount The amount of token (in underlying).
-    function _withdrawERC20FromPool(
-        address _poolTokenAddress,
-        ERC20 _underlyingToken,
-        uint256 _amount
-    ) internal {
+    function _withdrawERC20FromPool(ERC20 _underlyingToken, uint256 _amount) internal {
         lendingPool.withdraw(address(_underlyingToken), _amount, address(this));
-        marketsManager.updateSPYs(_poolTokenAddress);
     }
 
     /// @dev Borrows underlying tokens from Aave.
-    /// @param _poolTokenAddress The address of the market.
     /// @param _underlyingToken The underlying token of the market to borrow from.
     /// @param _amount The amount of token (in underlying).
-    function _borrowERC20FromPool(
-        address _poolTokenAddress,
-        ERC20 _underlyingToken,
-        uint256 _amount
-    ) internal {
+    function _borrowERC20FromPool(ERC20 _underlyingToken, uint256 _amount) internal {
         lendingPool.borrow(
             address(_underlyingToken),
             _amount,
@@ -490,16 +466,13 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
             NO_REFERRAL_CODE,
             address(this)
         );
-        marketsManager.updateSPYs(_poolTokenAddress);
     }
 
     /// @dev Repays underlying tokens to Aave.
-    /// @param _poolTokenAddress The address of the market.
     /// @param _underlyingToken The underlying token of the market to repay to.
     /// @param _amount The amount of token (in underlying).
     /// @param _normalizedVariableDebt The normalized variable debt on Aave.
     function _repayERC20ToPool(
-        address _poolTokenAddress,
         ERC20 _underlyingToken,
         uint256 _amount,
         uint256 _normalizedVariableDebt
@@ -519,6 +492,5 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
             VARIABLE_INTEREST_MODE,
             address(this)
         );
-        marketsManager.updateSPYs(_poolTokenAddress);
     }
 }
