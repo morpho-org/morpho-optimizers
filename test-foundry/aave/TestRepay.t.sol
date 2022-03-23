@@ -500,9 +500,9 @@ contract TestRepay is TestSetup {
             );
 
             (supplyP2PDelta, , , ) = positionsManager.deltas(aDai);
-            testEquality(supplyP2PDelta, expectedSupplyP2PDelta / 2);
-            testEquality(onPoolBorrower, 0);
-            testEquality(inP2PBorrower, expectedBorrowBalanceInP2P);
+            testEquality(supplyP2PDelta, expectedSupplyP2PDelta / 2, "supply delta unexpected");
+            testEquality(onPoolBorrower, 0, "on pool not unexpected");
+            testEquality(inP2PBorrower, expectedBorrowBalanceInP2P, "in P2P unexpected");
         }
 
         {
