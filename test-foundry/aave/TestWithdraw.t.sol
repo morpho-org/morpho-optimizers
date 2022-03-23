@@ -538,8 +538,8 @@ contract TestWithdraw is TestSetup {
             uint256 shareOfTheDelta = newVars
             .BP2PD
             .wadToRay()
-            .rayMul(oldVars.BP2PER)
-            .rayDiv(newVars.NVD)
+            .rayMul(newVars.NVD)
+            .rayDiv(oldVars.BP2PER)
             .rayDiv(newVars.BP2PA.wadToRay());
 
             uint256 expectedBP2PER = oldVars.BP2PER.rayMul(
