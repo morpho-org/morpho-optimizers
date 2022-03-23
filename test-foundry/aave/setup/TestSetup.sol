@@ -44,7 +44,7 @@ contract TestSetup is Config, Utils, stdCheats {
     uint256 public constant MAX_BASIS_POINTS = 10000;
     uint256 public constant INITIAL_BALANCE = 1_000_000;
 
-    ProxyAdmin proxyAdmin;
+    ProxyAdmin public proxyAdmin;
     TransparentUpgradeableProxy public positionsManagerProxy;
     TransparentUpgradeableProxy public marketsManagerProxy;
 
@@ -103,22 +103,14 @@ contract TestSetup is Config, Utils, stdCheats {
             // Mainnet network
             // Create a MORPHO / WETH pool
             uniswapPoolCreator = new UniswapPoolCreator();
-            tip(
-                uniswapPoolCreator.WETH9(),
-                address(uniswapPoolCreator),
-                INITIAL_BALANCE * WAD
-            );
+            tip(uniswapPoolCreator.WETH9(), address(uniswapPoolCreator), INITIAL_BALANCE * WAD);
             morphoToken = new MorphoToken(address(uniswapPoolCreator));
             swapManager = new SwapManagerUniV3OnEth(address(morphoToken), MORPHO_UNIV3_FEE);
         } else if (block.chainid == Chains.POLYGON_MAINNET) {
             // Polygon network
             // Create a MORPHO / WMATIC pool
             uniswapPoolCreator = new UniswapPoolCreator();
-            tip(
-                uniswapPoolCreator.WETH9(),
-                address(uniswapPoolCreator),
-                INITIAL_BALANCE * WAD
-            );
+            tip(uniswapPoolCreator.WETH9(), address(uniswapPoolCreator), INITIAL_BALANCE * WAD);
             morphoToken = new MorphoToken(address(uniswapPoolCreator));
             swapManager = new SwapManagerUniV3(
                 address(morphoToken),
