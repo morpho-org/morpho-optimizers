@@ -87,46 +87,46 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
 
         /// Supply in P2P ///
 
-        // Match borrow P2P delta first if any.
-        uint256 matchedDelta;
-        if (delta.borrowP2PDelta > 0) {
-            matchedDelta = Math.min(
-                delta.borrowP2PDelta.mulWadByRay(borrowPoolIndex),
-                Math.min(remainingToSupply, maxToRepay)
-            );
-        }
-
-        if (matchedDelta > 0) {
-            toRepay += matchedDelta;
-            maxToRepay -= matchedDelta;
-            remainingToSupply -= matchedDelta;
-            delta.borrowP2PDelta -= matchedDelta.divWadByRay(borrowPoolIndex);
-            emit BorrowP2PDeltaUpdated(_poolTokenAddress, delta.borrowP2PDelta);
-        }
-
-        // Match pool suppliers if any.
-        if (
-            remainingToSupply > 0 &&
-            borrowersOnPool[_poolTokenAddress].getHead() != address(0) &&
-            !marketsManager.noP2P(_poolTokenAddress)
-        ) {
-            uint256 matched = Math.min(
-                matchingEngine.matchBorrowersDC(
-                    IAToken(_poolTokenAddress),
-                    underlyingToken,
-                    remainingToSupply,
-                    _maxGasToConsume
-                ),
-                maxToRepay
-            ); // In underlying.
-
-            if (matched > 0) {
-                toRepay += matched;
-                matchedDelta += matched;
-                remainingToSupply -= matched;
-                delta.borrowP2PAmount += matched.divWadByRay(
-                    marketsManager.borrowP2PExchangeRate(_poolTokenAddress)
+        if (!marketsManager.noP2P(_poolTokenAddress)) {
+            // Match borrow P2P delta first if any.
+            uint256 matchedDelta;
+            if (delta.borrowP2PDelta > 0) {
+                matchedDelta = Math.min(
+                    delta.borrowP2PDelta.mulWadByRay(borrowPoolIndex),
+                    Math.min(remainingToSupply, maxToRepay)
                 );
+            }
+
+            if (matchedDelta > 0) {
+                toRepay += matchedDelta;
+                maxToRepay -= matchedDelta;
+                remainingToSupply -= matchedDelta;
+                delta.borrowP2PDelta -= matchedDelta.divWadByRay(borrowPoolIndex);
+                emit BorrowP2PDeltaUpdated(_poolTokenAddress, delta.borrowP2PDelta);
+            }
+
+            // Match pool suppliers if any.
+            if (
+                remainingToSupply > 0 && borrowersOnPool[_poolTokenAddress].getHead() != address(0)
+            ) {
+                uint256 matched = Math.min(
+                    matchingEngine.matchBorrowersDC(
+                        IAToken(_poolTokenAddress),
+                        underlyingToken,
+                        remainingToSupply,
+                        _maxGasToConsume
+                    ),
+                    maxToRepay
+                ); // In underlying.
+
+                if (matched > 0) {
+                    toRepay += matched;
+                    matchedDelta += matched;
+                    remainingToSupply -= matched;
+                    delta.borrowP2PAmount += matched.divWadByRay(
+                        marketsManager.borrowP2PExchangeRate(_poolTokenAddress)
+                    );
+                }
             }
         }
 
@@ -173,45 +173,45 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
 
         /// Borrow in P2P ///
 
-        // Match supply P2P delta first if any.
-        uint256 matchedDelta;
-        if (delta.supplyP2PDelta > 0)
-            matchedDelta = Math.min(
-                delta.supplyP2PDelta.mulWadByRay(poolSupplyIndex),
-                Math.min(remainingToBorrow, maxToWithdraw)
-            );
-
-        if (matchedDelta > 0) {
-            toWithdraw += matchedDelta;
-            maxToWithdraw -= matchedDelta;
-            remainingToBorrow -= matchedDelta;
-            delta.supplyP2PDelta -= matchedDelta.divWadByRay(poolSupplyIndex);
-            emit SupplyP2PDeltaUpdated(_poolTokenAddress, delta.supplyP2PDelta);
-        }
-
-        // Match pool suppliers if any.
-        if (
-            remainingToBorrow > 0 &&
-            suppliersOnPool[_poolTokenAddress].getHead() != address(0) &&
-            !marketsManager.noP2P(_poolTokenAddress)
-        ) {
-            uint256 matched = Math.min(
-                matchingEngine.matchSuppliersDC(
-                    IAToken(_poolTokenAddress),
-                    underlyingToken,
-                    remainingToBorrow,
-                    _maxGasToConsume
-                ),
-                maxToWithdraw
-            ); // In underlying.
-
-            if (matched > 0) {
-                toWithdraw += matched;
-                maxToWithdraw -= matched;
-                remainingToBorrow -= matched;
-                deltas[_poolTokenAddress].supplyP2PAmount += matched.divWadByRay(
-                    marketsManager.supplyP2PExchangeRate(_poolTokenAddress)
+        if (!marketsManager.noP2P(_poolTokenAddress)) {
+            // Match supply P2P delta first if any.
+            uint256 matchedDelta;
+            if (delta.supplyP2PDelta > 0)
+                matchedDelta = Math.min(
+                    delta.supplyP2PDelta.mulWadByRay(poolSupplyIndex),
+                    Math.min(remainingToBorrow, maxToWithdraw)
                 );
+
+            if (matchedDelta > 0) {
+                toWithdraw += matchedDelta;
+                maxToWithdraw -= matchedDelta;
+                remainingToBorrow -= matchedDelta;
+                delta.supplyP2PDelta -= matchedDelta.divWadByRay(poolSupplyIndex);
+                emit SupplyP2PDeltaUpdated(_poolTokenAddress, delta.supplyP2PDelta);
+            }
+
+            // Match pool suppliers if any.
+            if (
+                remainingToBorrow > 0 && suppliersOnPool[_poolTokenAddress].getHead() != address(0)
+            ) {
+                uint256 matched = Math.min(
+                    matchingEngine.matchSuppliersDC(
+                        IAToken(_poolTokenAddress),
+                        underlyingToken,
+                        remainingToBorrow,
+                        _maxGasToConsume
+                    ),
+                    maxToWithdraw
+                ); // In underlying.
+
+                if (matched > 0) {
+                    toWithdraw += matched;
+                    maxToWithdraw -= matched;
+                    remainingToBorrow -= matched;
+                    deltas[_poolTokenAddress].supplyP2PAmount += matched.divWadByRay(
+                        marketsManager.supplyP2PExchangeRate(_poolTokenAddress)
+                    );
+                }
             }
         }
 
@@ -284,7 +284,7 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
 
         /// Transfer withdraw ///
 
-        if (vars.remainingToWithdraw > 0) {
+        if (vars.remainingToWithdraw > 0 && !marketsManager.noP2P(_poolTokenAddress)) {
             supplyBalanceInOf[_poolTokenAddress][_supplier].inP2P -= Math.min(
                 supplyBalanceInOf[_poolTokenAddress][_supplier].inP2P,
                 vars.remainingToWithdraw.divWadByRay(supplyP2PExchangeRate)
@@ -312,8 +312,7 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
             // Match pool suppliers if any.
             if (
                 vars.remainingToWithdraw > 0 &&
-                suppliersOnPool[_poolTokenAddress].getHead() != address(0) &&
-                !marketsManager.noP2P(_poolTokenAddress)
+                suppliersOnPool[_poolTokenAddress].getHead() != address(0)
             ) {
                 // Match suppliers.
                 uint256 matched = Math.min(
@@ -408,12 +407,12 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
             matchingEngine.updateBorrowersDC(_poolTokenAddress, _user);
         }
 
-        /// Transfer repay ///
-
         Delta storage delta = deltas[_poolTokenAddress];
         uint256 borrowP2PExchangeRate = marketsManager.borrowP2PExchangeRate(_poolTokenAddress);
 
-        if (vars.remainingToRepay > 0) {
+        /// Transfer repay ///
+
+        if (vars.remainingToRepay > 0 && !marketsManager.noP2P(_poolTokenAddress)) {
             borrowBalanceInOf[_poolTokenAddress][_user].inP2P -= Math.min(
                 borrowBalanceInOf[_poolTokenAddress][_user].inP2P,
                 vars.remainingToRepay.divWadByRay(borrowP2PExchangeRate)
@@ -437,11 +436,7 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
                 }
             }
 
-            if (
-                vars.remainingToRepay > 0 &&
-                borrowersOnPool[_poolTokenAddress].getHead() != address(0) &&
-                !marketsManager.noP2P(_poolTokenAddress)
-            ) {
+            if (borrowersOnPool[_poolTokenAddress].getHead() != address(0)) {
                 // Match borrowers.
                 uint256 matched = Math.min(
                     matchingEngine.matchBorrowersDC(
