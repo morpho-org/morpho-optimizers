@@ -7,7 +7,7 @@ import "./interfaces/IPositionsManagerForAave.sol";
 import "./interfaces/IMarketsManagerForAave.sol";
 
 import {ReserveConfiguration} from "./libraries/aave/ReserveConfiguration.sol";
-import "./libraries/aave/WadRayMath.sol";
+import "./libraries/Math.sol";
 
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
@@ -17,7 +17,7 @@ import "hardhat/console.sol";
 /// @notice Smart contract managing the markets used by a MorphoPositionsManagerForAave contract, an other contract interacting with Aave or a fork of Aave.
 contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
     using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
-    using WadRayMath for uint256;
+    using Math for uint256;
 
     /// STRUCTS ///
 
@@ -167,8 +167,8 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
         isCreated[poolTokenAddress] = true;
 
         exchangeRatesLastUpdateTimestamp[poolTokenAddress] = block.timestamp;
-        supplyP2PExchangeRate[poolTokenAddress] = WadRayMath.ray();
-        borrowP2PExchangeRate[poolTokenAddress] = WadRayMath.ray();
+        supplyP2PExchangeRate[poolTokenAddress] = Math.ray();
+        borrowP2PExchangeRate[poolTokenAddress] = Math.ray();
 
         LastPoolIndexes storage poolIndexes = lastPoolIndexes[poolTokenAddress];
         poolIndexes.lastSupplyPoolIndex = lendingPool.getReserveNormalizedIncome(
@@ -435,15 +435,13 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
             .rayDiv(_p2pRate)
             .rayDiv(_p2pAmount.wadToRay());
 
-            shareOfTheDelta = shareOfTheDelta <= WadRayMath.ray()
-                ? shareOfTheDelta
-                : WadRayMath.ray();
+            shareOfTheDelta = shareOfTheDelta <= Math.ray() ? shareOfTheDelta : Math.ray();
 
             return
                 _p2pRate.rayMul(
                     (
                         _computeCompoundedInterest(_p2pSPY, _timeDifference).rayMul(
-                            WadRayMath.ray() - shareOfTheDelta
+                            Math.ray() - shareOfTheDelta
                         )
                     ) + (shareOfTheDelta.rayMul(_poolIndex).rayDiv(_lastPoolIndex))
                 );
@@ -461,15 +459,15 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
         pure
         returns (uint256)
     {
-        if (_elapsedTime == 0) return WadRayMath.ray();
+        if (_elapsedTime == 0) return Math.ray();
 
-        if (_elapsedTime == 1) return WadRayMath.ray() + _rate;
+        if (_elapsedTime == 1) return Math.ray() + _rate;
 
         uint256 ratePowerTwo = _rate.rayMul(_rate);
         uint256 ratePowerThree = ratePowerTwo.rayMul(_rate);
 
         return
-            WadRayMath.ray() +
+            Math.ray() +
             _rate *
             _elapsedTime +
             (_elapsedTime * (_elapsedTime - 1) * ratePowerTwo) /

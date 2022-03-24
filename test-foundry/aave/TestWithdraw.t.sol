@@ -3,13 +3,13 @@ pragma solidity 0.8.7;
 
 import "@contracts/aave/interfaces/IPositionsManagerForAave.sol";
 
-import "@contracts/aave/libraries/aave/WadRayMath.sol";
+import "@contracts/aave/libraries/Math.sol";
 
 import "./setup/TestSetup.sol";
 import {Attacker} from "../common/helpers/Attacker.sol";
 
 contract TestWithdraw is TestSetup {
-    using WadRayMath for uint256;
+    using Math for uint256;
 
     // 3.1 - The user withdrawal leads to an under-collateralized position, the withdrawal reverts.
     function test_withdraw_3_1() public {

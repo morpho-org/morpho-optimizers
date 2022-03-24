@@ -4,9 +4,8 @@ pragma solidity 0.8.7;
 import {IAToken} from "./interfaces/aave/IAToken.sol";
 import "./interfaces/aave/IScaledBalanceToken.sol";
 
-import "@openzeppelin/contracts/utils/math/Math.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
-import "./libraries/aave/WadRayMath.sol";
+import "./libraries/Math.sol";
 
 import "./positions-manager-parts/PositionsManagerForAaveStorage.sol";
 
@@ -14,7 +13,7 @@ import "./positions-manager-parts/PositionsManagerForAaveStorage.sol";
 /// @notice Smart contract managing the matching engine.
 contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAaveStorage {
     using DoubleLinkedList for DoubleLinkedList.List;
-    using WadRayMath for uint256;
+    using Math for uint256;
     using Address for address;
 
     /// STRUCTS ///
