@@ -88,6 +88,19 @@ contract Utils is DSTest {
         assertApproxEq(_firstValue, _secondValue, 20, err);
     }
 
+    /// @dev compounds track balances deposited by divising the amount by a rate to obtain cToken Units.
+    ///      When needed, it goes back to underlying by multiplying by the said rate.
+    ///      However, for the same rate, the following computation will slighty under estimate the amount
+    ///      deposited. This function is usefull to determine compound's users balances.
+    function getBalanceOnCompound(uint256 _amountInUnderlying, uint256 _rate)
+        internal
+        pure
+        returns (uint256)
+    {
+        uint256 cTokenAmount = (_amountInUnderlying * 1e18) / _rate;
+        return ((cTokenAmount * _rate) / 1e18);
+    }
+
     /// @dev Computes the compounded interest over a number of blocks.
     ///   To avoid expensive exponentiation, the calculation is performed using a binomial approximation:
     ///   (1+x)^n = 1+n*x+[n/2*(n-1)]*x^2+[n/6*(n-1)*(n-2)*x^3...
