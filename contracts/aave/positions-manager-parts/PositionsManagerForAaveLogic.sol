@@ -95,14 +95,14 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
                     delta.borrowP2PDelta.mulWadByRay(borrowPoolIndex),
                     Math.min(remainingToSupply, maxToRepay)
                 );
-            }
 
-            if (matchedDelta > 0) {
-                toRepay += matchedDelta;
-                maxToRepay -= matchedDelta;
-                remainingToSupply -= matchedDelta;
-                delta.borrowP2PDelta -= matchedDelta.divWadByRay(borrowPoolIndex);
-                emit BorrowP2PDeltaUpdated(_poolTokenAddress, delta.borrowP2PDelta);
+                if (matchedDelta > 0) {
+                    toRepay += matchedDelta;
+                    maxToRepay -= matchedDelta;
+                    remainingToSupply -= matchedDelta;
+                    delta.borrowP2PDelta -= matchedDelta.divWadByRay(borrowPoolIndex);
+                    emit BorrowP2PDeltaUpdated(_poolTokenAddress, delta.borrowP2PDelta);
+                }
             }
 
             // Match pool suppliers if any.
@@ -176,18 +176,19 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
         if (!marketsManager.noP2P(_poolTokenAddress)) {
             // Match supply P2P delta first if any.
             uint256 matchedDelta;
-            if (delta.supplyP2PDelta > 0)
+            if (delta.supplyP2PDelta > 0) {
                 matchedDelta = Math.min(
                     delta.supplyP2PDelta.mulWadByRay(poolSupplyIndex),
                     Math.min(remainingToBorrow, maxToWithdraw)
                 );
 
-            if (matchedDelta > 0) {
-                toWithdraw += matchedDelta;
-                maxToWithdraw -= matchedDelta;
-                remainingToBorrow -= matchedDelta;
-                delta.supplyP2PDelta -= matchedDelta.divWadByRay(poolSupplyIndex);
-                emit SupplyP2PDeltaUpdated(_poolTokenAddress, delta.supplyP2PDelta);
+                if (matchedDelta > 0) {
+                    toWithdraw += matchedDelta;
+                    maxToWithdraw -= matchedDelta;
+                    remainingToBorrow -= matchedDelta;
+                    delta.supplyP2PDelta -= matchedDelta.divWadByRay(poolSupplyIndex);
+                    emit SupplyP2PDeltaUpdated(_poolTokenAddress, delta.supplyP2PDelta);
+                }
             }
 
             // Match pool suppliers if any.
@@ -436,7 +437,10 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
                 }
             }
 
-            if (borrowersOnPool[_poolTokenAddress].getHead() != address(0)) {
+            if (
+                vars.remainingToRepay > 0 &&
+                borrowersOnPool[_poolTokenAddress].getHead() != address(0)
+            ) {
                 // Match borrowers.
                 uint256 matched = Math.min(
                     matchingEngine.matchBorrowersDC(
