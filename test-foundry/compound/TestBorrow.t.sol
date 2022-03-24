@@ -85,6 +85,7 @@ contract TestBorrow is TestSetup {
         testEquality(inP2P, supplyInP2P, "Borrower1 in P2P");
     }
 
+
     // 2.4 - There is 1 available supplier, he doesn't match 100% of the borrower liquidity.
     // Borrower inP2P is equal to the supplier previous amount onPool, the rest is set onPool.
     function test_borrow_2_4() public {
@@ -107,8 +108,9 @@ contract TestBorrow is TestSetup {
 
         testEquality(inP2P, supplyInP2P);
 
-        uint256 borrowIndex = ICToken(cDai).borrowIndex();
-        uint256 expectedOnPool = underlyingToDebtUnit(amount, borrowIndex);
+        uint256 normalizedVariableDebt = ICToken(cDai).borrowIndex();
+        uint256 expectedOnPool = (amount * 1e18)/normalizedVariableDebt;
+
         testEquality(onPool, expectedOnPool);
     }
 
@@ -119,7 +121,7 @@ contract TestBorrow is TestSetup {
         uint256 amount = 10000 ether;
         uint256 collateral = 2 * amount;
 
-        uint8 NMAX = 20;
+        uint8 NMAX = 5;
         createSigners(NMAX);
 
         uint256 amountPerSupplier = amount / NMAX;
@@ -135,15 +137,15 @@ contract TestBorrow is TestSetup {
 
         uint256 inP2P;
         uint256 onPool;
-        uint256 supplyP2PExchangeRate = marketsManager.supplyP2PExchangeRate(cDai);
+        uint256 supplyP2PExchangeRate = ICToken(cDai).exchangeRateStored();
         uint256 expectedInP2P;
 
         for (uint256 i = 0; i < NMAX; i++) {
             (inP2P, onPool) = positionsManager.supplyBalanceInOf(cDai, address(suppliers[i]));
 
-            expectedInP2P = underlyingToP2PUnit(amountPerSupplier, supplyP2PExchangeRate);
+            expectedInP2P = p2pUnitToUnderlying(inP2P, supplyP2PExchangeRate);
 
-            testEquality(inP2P, expectedInP2P);
+            testEquality(expectedInP2P, amountPerSupplier);
             testEquality(onPool, 0);
         }
 
@@ -161,7 +163,7 @@ contract TestBorrow is TestSetup {
         uint256 amount = 10000 ether;
         uint256 collateral = 2 * amount;
 
-        uint8 NMAX = 20;
+        uint8 NMAX = 5;
         createSigners(NMAX);
 
         uint256 amountPerSupplier = amount / (2 * NMAX);
@@ -177,23 +179,23 @@ contract TestBorrow is TestSetup {
 
         uint256 inP2P;
         uint256 onPool;
-        uint256 supplyP2PExchangeRate = marketsManager.supplyP2PExchangeRate(cDai);
+        uint256 supplyP2PExchangeRate = ICToken(cDai).exchangeRateStored();
+        uint256 normalizedVariableDebt = ICToken(cDai).borrowIndex();
         uint256 expectedInP2P;
 
         for (uint256 i = 0; i < NMAX; i++) {
             (inP2P, onPool) = positionsManager.supplyBalanceInOf(cDai, address(suppliers[i]));
 
-            expectedInP2P = underlyingToP2PUnit(amountPerSupplier, supplyP2PExchangeRate);
+            expectedInP2P = p2pUnitToUnderlying(inP2P, supplyP2PExchangeRate);
 
-            testEquality(inP2P, expectedInP2P);
+            testEquality(expectedInP2P, amountPerSupplier);
             testEquality(onPool, 0);
         }
 
         (inP2P, onPool) = positionsManager.borrowBalanceInOf(cDai, address(borrower1));
 
         expectedInP2P = p2pUnitToUnderlying(amount / 2, supplyP2PExchangeRate);
-        uint256 borrowIndex = ICToken(cDai).borrowIndex();
-        uint256 expectedOnPool = underlyingToDebtUnit(amount / 2, borrowIndex);
+        uint256 expectedOnPool = underlyingToDebtUnit(amount / 2, normalizedVariableDebt);
 
         testEquality(inP2P, expectedInP2P);
         testEquality(onPool, expectedOnPool);

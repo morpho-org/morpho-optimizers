@@ -8,7 +8,6 @@ import "../interfaces/IRewardsManagerForCompound.sol";
 import "../../common/interfaces/ISwapManager.sol";
 
 import "../../common/libraries/DoubleLinkedList.sol";
-import "../libraries/FixedPointMathLib.sol";
 import "../libraries/CompoundMath.sol";
 
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";

@@ -92,6 +92,8 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
                 _maxGasToConsume
             ); // In underlying.
 
+            matched = Math.min(matched, ICToken(_poolTokenAddress).balanceOfUnderlying(address(this)));
+
             if (_isAboveCompoundThreshold(_poolTokenAddress, matched)) {
                 _withdrawFromPool(_poolTokenAddress, matched); // Reverts on error
 
@@ -266,7 +268,7 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
                     remainingToRepay,
                     _maxGasToConsume / 2
                 );
-
+                // Maybe add min on this matched too, to avoid repaying more than debt on comp?
                 if (_isAboveCompoundThreshold(_poolTokenAddress, matched)) {
                     _repayToPool(_poolTokenAddress, underlyingToken, matched); // Reverts on error.
                     remainingToRepay -= matched;
