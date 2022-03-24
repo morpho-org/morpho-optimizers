@@ -97,7 +97,6 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
                 );
                 if (matchedDelta > 0) {
                     toRepay += matchedDelta;
-                    maxToRepay -= matchedDelta;
                     remainingToSupply -= matchedDelta;
                     delta.borrowP2PDelta -= matchedDelta.divWadByRay(borrowPoolIndex);
                     emit BorrowP2PDeltaUpdated(_poolTokenAddress, delta.borrowP2PDelta);
@@ -115,7 +114,7 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
                         remainingToSupply,
                         _maxGasToConsume
                     ),
-                    maxToRepay
+                    maxToRepay - toRepay
                 ); // In underlying.
 
                 if (matched > 0) {
@@ -182,7 +181,6 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
                 );
                 if (matchedDelta > 0) {
                     toWithdraw += matchedDelta;
-                    maxToWithdraw -= matchedDelta;
                     remainingToBorrow -= matchedDelta;
                     delta.supplyP2PDelta -= matchedDelta.divWadByRay(poolSupplyIndex);
                     emit SupplyP2PDeltaUpdated(_poolTokenAddress, delta.supplyP2PDelta);
@@ -200,7 +198,7 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
                         remainingToBorrow,
                         _maxGasToConsume
                     ),
-                    maxToWithdraw
+                    maxToWithdraw - toWithdraw
                 ); // In underlying.
 
                 if (matched > 0) {
@@ -268,7 +266,6 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
                 onPoolSupply.mulWadByRay(vars.supplyPoolIndex),
                 Math.min(vars.remainingToWithdraw, vars.maxToWithdraw)
             );
-            vars.maxToWithdraw -= vars.toWithdraw;
             vars.remainingToWithdraw -= vars.toWithdraw;
 
             supplyBalanceInOf[_poolTokenAddress][_supplier].onPool -= Math.min(
@@ -295,12 +292,11 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
                 uint256 matchedDelta;
                 matchedDelta = Math.min(
                     delta.supplyP2PDelta.mulWadByRay(vars.supplyPoolIndex),
-                    Math.min(vars.remainingToWithdraw, vars.maxToWithdraw)
+                    Math.min(vars.remainingToWithdraw, vars.maxToWithdraw - vars.toWithdraw)
                 );
 
                 if (matchedDelta > 0) {
                     vars.toWithdraw += matchedDelta;
-                    vars.maxToWithdraw -= matchedDelta;
                     vars.remainingToWithdraw -= matchedDelta;
                     delta.supplyP2PDelta -= matchedDelta.divWadByRay(vars.supplyPoolIndex);
                     delta.supplyP2PAmount -= matchedDelta.divWadByRay(supplyP2PExchangeRate);
@@ -321,7 +317,7 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
                         vars.remainingToWithdraw,
                         _maxGasToConsume / 2
                     ),
-                    vars.maxToWithdraw
+                    vars.maxToWithdraw - vars.toWithdraw
                 );
 
                 if (matched > 0) {
@@ -396,7 +392,6 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
                 borrowedOnPool.mulWadByRay(vars.borrowPoolIndex),
                 Math.min(vars.remainingToRepay, vars.maxToRepay)
             );
-            vars.maxToRepay -= vars.toRepay;
             vars.remainingToRepay -= vars.toRepay;
 
             borrowBalanceInOf[_poolTokenAddress][_user].onPool -= Math.min(
@@ -422,12 +417,11 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
             if (delta.borrowP2PDelta > 0) {
                 uint256 matchedDelta = Math.min(
                     delta.borrowP2PDelta.mulWadByRay(vars.borrowPoolIndex),
-                    Math.min(vars.remainingToRepay, vars.maxToRepay)
+                    Math.min(vars.remainingToRepay, vars.maxToRepay - vars.toRepay)
                 );
 
                 if (matchedDelta > 0) {
                     vars.toRepay += matchedDelta;
-                    vars.maxToRepay -= matchedDelta;
                     vars.remainingToRepay -= matchedDelta;
                     delta.borrowP2PDelta -= matchedDelta.divWadByRay(vars.borrowPoolIndex);
                     delta.borrowP2PAmount -= matchedDelta.divWadByRay(borrowP2PExchangeRate);
@@ -447,7 +441,7 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
                         vars.remainingToRepay,
                         _maxGasToConsume / 2
                     ),
-                    vars.maxToRepay
+                    vars.maxToRepay - vars.toRepay
                 );
 
                 if (matched > 0) {
