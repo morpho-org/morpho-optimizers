@@ -52,11 +52,12 @@ contract TestWithdraw is TestSetup {
         supplier1.approve(usdc, to6Decimals(amount));
         supplier1.supply(cUsdc, to6Decimals(amount));
 
-        uint256 balanceBefore = supplier1.balanceOf(usdc);
         (uint256 inP2P, uint256 onPool) = positionsManager.supplyBalanceInOf(
             cUsdc,
             address(supplier1)
         );
+
+        uint256 balanceBefore = supplier1.balanceOf(usdc);
 
         uint256 expectedOnPool = to6Decimals(
             underlyingToPoolSupplyBalance(amount, ICToken(cUsdc).exchangeRateCurrent())
@@ -72,7 +73,10 @@ contract TestWithdraw is TestSetup {
 
         testEquality(inP2P, 0);
         testEquality(onPool, 0);
-        testEquality(balanceAfter - balanceBefore, to6Decimals(amount));
+        testEquality(
+            balanceAfter - balanceBefore,
+            getBalanceOnCompound(to6Decimals(amount), ICToken(cUsdc).exchangeRateStored())
+        );
     }
 
     // 3.3 - The supplier withdraws more than his onPool balance
@@ -259,9 +263,7 @@ contract TestWithdraw is TestSetup {
     // TODO
     // Test attack
     // Should be possible to withdraw amount while an attacker sends aToken to trick Morpho contract
-    function testWithdrawWhileAttackerSendsAToken() public {
-        supplier1.withdraw(aDai, toSupply);
-    }
+    function testWithdrawWhileAttackerSendsAToken() public {}
 
     function testFailWithdrawZero() public {
         positionsManager.withdraw(cDai, 0);
