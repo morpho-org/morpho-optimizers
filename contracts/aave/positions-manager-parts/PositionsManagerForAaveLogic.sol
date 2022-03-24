@@ -95,14 +95,11 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
             // Match pool suppliers.
             uint256 matched;
             if (remainingToSupply > 0) {
-                matched = Math.min(
-                    matchingEngine.matchBorrowersDC(
-                        IAToken(_poolTokenAddress),
-                        underlyingToken,
-                        remainingToSupply,
-                        _maxGasToConsume
-                    ),
-                    borrowBalanceOnPool - matchedDelta
+                matched = matchingEngine.matchBorrowersDC(
+                    IAToken(_poolTokenAddress),
+                    underlyingToken,
+                    remainingToSupply,
+                    _maxGasToConsume
                 ); // In underlying
                 remainingToSupply -= matched;
             }
