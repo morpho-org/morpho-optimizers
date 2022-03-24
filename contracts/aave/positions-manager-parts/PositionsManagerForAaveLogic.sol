@@ -14,6 +14,22 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
     using SafeTransferLib for ERC20;
     using WadRayMath for uint256;
 
+    /// STRUCTS ///
+
+    struct WithdrawVars {
+        uint256 remainingToWithdraw;
+        uint256 supplyPoolIndex;
+        uint256 maxToWithdraw;
+        uint256 toWithdraw;
+    }
+
+    struct RepayVars {
+        uint256 remainingToRepay;
+        uint256 borrowPoolIndex;
+        uint256 maxToRepay;
+        uint256 toRepay;
+    }
+
     /// UPGRADE ///
 
     /// @notice Initializes the PositionsManagerForAave contract.
@@ -226,13 +242,6 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
         underlyingToken.safeTransfer(msg.sender, _amount);
     }
 
-    struct WithdrawVars {
-        uint256 remainingToWithdraw;
-        uint256 supplyPoolIndex;
-        uint256 maxToWithdraw;
-        uint256 toWithdraw;
-    }
-
     /// @dev Implements withdraw logic.
     /// @param _poolTokenAddress The address of the market the user wants to interact with.
     /// @param _amount The amount of token (in underlying).
@@ -355,13 +364,6 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
         }
 
         underlyingToken.safeTransfer(_receiver, _amount);
-    }
-
-    struct RepayVars {
-        uint256 remainingToRepay;
-        uint256 borrowPoolIndex;
-        uint256 maxToRepay;
-        uint256 toRepay;
     }
 
     /// @dev Implements repay logic.
