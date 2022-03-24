@@ -29,8 +29,8 @@ contract TestFees is TestSetup {
 
         uint256 balanceBefore = IERC20(dai).balanceOf(positionsManager.treasuryVault());
         supplier1.approve(dai, type(uint256).max);
-        supplier1.supply(cDai, 100 * WAD);
-        supplier1.borrow(cDai, 50 * WAD);
+        supplier1.supply(cDai, 100 ether);
+        supplier1.borrow(cDai, 50 ether);
 
         hevm.roll(block.number + 100);
 
