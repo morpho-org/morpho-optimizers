@@ -95,17 +95,15 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
             borrowersOnPool[_poolTokenAddress].getHead() != address(0) &&
             !marketsManager.noP2P(_poolTokenAddress)
         ) {
-            uint256 matched;
-            if (remainingToSupply > 0)
-                matched = Math.min(
-                    matchingEngine.matchBorrowersDC(
-                        IAToken(_poolTokenAddress),
-                        underlyingToken,
-                        remainingToSupply,
-                        _maxGasToConsume
-                    ),
-                    maxToRepay
-                ); // In underlying.
+            uint256 matched = Math.min(
+                matchingEngine.matchBorrowersDC(
+                    IAToken(_poolTokenAddress),
+                    underlyingToken,
+                    remainingToSupply,
+                    _maxGasToConsume
+                ),
+                maxToRepay
+            ); // In underlying.
 
             if (matched > 0) {
                 toRepay += matched;
@@ -183,17 +181,15 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
             suppliersOnPool[_poolTokenAddress].getHead() != address(0) &&
             !marketsManager.noP2P(_poolTokenAddress)
         ) {
-            uint256 matched;
-            if (remainingToBorrow > 0)
-                matched = Math.min(
-                    matchingEngine.matchSuppliersDC(
-                        IAToken(_poolTokenAddress),
-                        underlyingToken,
-                        remainingToBorrow,
-                        _maxGasToConsume
-                    ),
-                    maxToWithdraw
-                ); // In underlying.
+            uint256 matched = Math.min(
+                matchingEngine.matchSuppliersDC(
+                    IAToken(_poolTokenAddress),
+                    underlyingToken,
+                    remainingToBorrow,
+                    _maxGasToConsume
+                ),
+                maxToWithdraw
+            ); // In underlying.
 
             if (matched > 0) {
                 toWithdraw += matched;
@@ -443,22 +439,20 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
             }
 
             if (
+                vars.remainingToRepay > 0 &&
                 borrowersOnPool[_poolTokenAddress].getHead() != address(0) &&
                 !marketsManager.noP2P(_poolTokenAddress)
             ) {
                 // Match borrowers.
-                uint256 matched;
-                if (vars.remainingToRepay > 0) {
-                    matched = Math.min(
-                        matchingEngine.matchBorrowersDC(
-                            poolToken,
-                            underlyingToken,
-                            vars.remainingToRepay,
-                            _maxGasToConsume / 2
-                        ),
-                        vars.maxToRepay
-                    );
-                }
+                uint256 matched = Math.min(
+                    matchingEngine.matchBorrowersDC(
+                        poolToken,
+                        underlyingToken,
+                        vars.remainingToRepay,
+                        _maxGasToConsume / 2
+                    ),
+                    vars.maxToRepay
+                );
 
                 if (matched > 0) {
                     vars.remainingToRepay -= matched;
