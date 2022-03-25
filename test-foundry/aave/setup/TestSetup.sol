@@ -36,8 +36,8 @@ import "forge-std/stdlib.sol";
 import "@config/Config.sol";
 
 contract TestSetup is Config, Utils, stdCheats {
-    using WadRayMath for uint256;
     using SafeERC20 for IERC20;
+    using Math for uint256;
 
     Vm public hevm = Vm(HEVM_ADDRESS);
 

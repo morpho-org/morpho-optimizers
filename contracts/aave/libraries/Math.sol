@@ -1,13 +1,11 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.7;
 
-/******************
-@title WadRayMath library
-@author Aave
-@dev Provides mul and div function for wads (decimal numbers with 18 digits precision) and rays (decimals with 27 digits)
- */
+/// @title Math library.
+/// @dev Aave math modified and basic math library.
+library Math {
+    /// AAVE MATH ///
 
-library WadRayMath {
     uint256 internal constant WAD = 1e18;
     uint256 internal constant halfWAD = WAD / 2;
 
@@ -68,5 +66,24 @@ library WadRayMath {
 
     function mulWadByRay(uint256 a, uint256 b) internal pure returns (uint256) {
         return rayToWad(rayMul(wadToRay(a), b));
+    }
+
+    /// GENERAL ///
+
+    function min(
+        uint256 a,
+        uint256 b,
+        uint256 c
+    ) internal pure returns (uint256) {
+        return a < b ? a < c ? a : c : b < c ? b : c;
+    }
+
+    function min(uint256 a, uint256 b) internal pure returns (uint256) {
+        return a < b ? a : b;
+    }
+
+    function average(uint256 a, uint256 b) internal pure returns (uint256) {
+        // (a + b) / 2 can overflow, so we distribute.
+        return (a / 2) + (b / 2) + (((a % 2) + (b % 2)) / 2);
     }
 }
