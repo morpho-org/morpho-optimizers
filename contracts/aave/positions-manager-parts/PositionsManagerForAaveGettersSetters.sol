@@ -4,9 +4,8 @@ pragma solidity 0.8.7;
 import "../interfaces/aave/IPriceOracleGetter.sol";
 
 import {ReserveConfiguration} from "../libraries/aave/ReserveConfiguration.sol";
-import "../libraries/aave/WadRayMath.sol";
+import "../libraries/Math.sol";
 
-import "@openzeppelin/contracts/utils/math/Math.sol";
 import "./PositionsManagerForAaveEventsErrors.sol";
 
 /// @title PositionsManagerForAaveGettersSetters.
@@ -14,7 +13,7 @@ import "./PositionsManagerForAaveEventsErrors.sol";
 abstract contract PositionsManagerForAaveGettersSetters is PositionsManagerForAaveEventsErrors {
     using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
     using DoubleLinkedList for DoubleLinkedList.List;
-    using WadRayMath for uint256;
+    using Math for uint256;
 
     /// MODIFIERS ///
 
