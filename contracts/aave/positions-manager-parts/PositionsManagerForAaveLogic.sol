@@ -120,7 +120,6 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
 
                 if (matched > 0) {
                     toRepay += matched;
-                    matchedDelta += matched;
                     remainingToSupply -= matched;
                     delta.borrowP2PAmount += matched.divWadByRay(
                         marketsManager.borrowP2PExchangeRate(_poolTokenAddress)
