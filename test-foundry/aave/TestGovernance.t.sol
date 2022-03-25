@@ -1,12 +1,10 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.7;
 
-import "@contracts/aave/libraries/aave/WadRayMath.sol";
-
 import "./setup/TestSetup.sol";
 
 contract TestGovernance is TestSetup {
-    using WadRayMath for uint256;
+    using Math for uint256;
 
     // ==============
     // = Deployment =

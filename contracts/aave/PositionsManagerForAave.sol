@@ -10,7 +10,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveLogic {
     using MatchingEngineFns for IMatchingEngineForAave;
     using DoubleLinkedList for DoubleLinkedList.List;
     using SafeTransferLib for ERC20;
-    using WadRayMath for uint256;
+    using Math for uint256;
 
     /// @notice Supplies underlying tokens in a specific market.
     /// @dev `msg.sender` must have approved Morpho's contract to spend the underlying `_amount`.
