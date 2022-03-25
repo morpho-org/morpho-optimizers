@@ -26,7 +26,7 @@ contract TestDoubleLinkedList is DSTest {
     }
 
     // Should insert one single account
-    function test_insert_one_single_account() public {
+    function testInsertOneSingleAccount() public {
         list.insertSorted(accounts[0], 1, NDS);
 
         assertEq(list.getHead(), accounts[0]);
@@ -49,7 +49,7 @@ contract TestDoubleLinkedList is DSTest {
     }
 
     // Should remove one single account
-    function test_remove_one_single_account() public {
+    function testRemoveOneSingleAccount() public {
         list.insertSorted(accounts[0], 1, NDS);
         list.remove(accounts[0]);
 
@@ -61,7 +61,7 @@ contract TestDoubleLinkedList is DSTest {
     }
 
     // Should insert 2 accounts
-    function test_insert_two_accounts() public {
+    function testInsertTwoAccounts() public {
         list.insertSorted(accounts[0], 2, NDS);
         list.insertSorted(accounts[1], 1, NDS);
 
@@ -76,7 +76,7 @@ contract TestDoubleLinkedList is DSTest {
     }
 
     // Should insert 3 accounts
-    function test_insert_three_accounts() public {
+    function testInsertThreeAccounts() public {
         list.insertSorted(accounts[0], 3, NDS);
         list.insertSorted(accounts[1], 2, NDS);
         list.insertSorted(accounts[2], 1, NDS);
@@ -95,7 +95,7 @@ contract TestDoubleLinkedList is DSTest {
     }
 
     // Should remove 1 account over 2
-    function test_remove_one_account_over_two() public {
+    function testRemoveOneAccountOverTwo() public {
         list.insertSorted(accounts[0], 2, NDS);
         list.insertSorted(accounts[1], 1, NDS);
         list.remove(accounts[0]);
@@ -109,7 +109,7 @@ contract TestDoubleLinkedList is DSTest {
     }
 
     // Should remove both accounts
-    function test_remove_both_accounts() public {
+    function testRemoveBothAccounts() public {
         list.insertSorted(accounts[0], 2, NDS);
         list.insertSorted(accounts[1], 1, NDS);
         list.remove(accounts[0]);
@@ -120,7 +120,7 @@ contract TestDoubleLinkedList is DSTest {
     }
 
     // Should insert 3 accounts and remove them
-    function test_insert_three_accounts_and_remove_them() public {
+    function testInsertThreeAccountsAndRemoveThem() public {
         list.insertSorted(accounts[0], 3, NDS);
         list.insertSorted(accounts[1], 2, NDS);
         list.insertSorted(accounts[2], 1, NDS);
@@ -152,7 +152,7 @@ contract TestDoubleLinkedList is DSTest {
     }
 
     // Should insert accounts all sorted
-    function test_insert_accounts_all_sorted() public {
+    function testInsertAccountsAllSorted() public {
         for (uint256 i = 0; i < accounts.length; i++) {
             list.insertSorted(accounts[i], NDS - i, NDS);
         }
@@ -174,7 +174,7 @@ contract TestDoubleLinkedList is DSTest {
     }
 
     // Should remove all sorted accounts
-    function test_remove_all_sorted_account() public {
+    function testRemoveAllSortedAccount() public {
         for (uint256 i = 0; i < accounts.length; i++) {
             list.insertSorted(accounts[i], NDS - i, NDS);
         }
@@ -188,7 +188,7 @@ contract TestDoubleLinkedList is DSTest {
     }
 
     // Should insert account sorted at the beginning until NDS
-    function test_insert_account_sorted_at_the_beginning_until_NDS() public {
+    function testInsertAccountSortedAtTheBeginningUntilNDS() public {
         uint256 value = 50;
         uint256 newNDS = 10;
 
