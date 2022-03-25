@@ -2,11 +2,14 @@
 pragma solidity 0.8.7;
 
 import "ds-test/test.sol";
+import "forge-std/stdlib.sol";
 
 import "@contracts/common/libraries/DoubleLinkedList.sol";
 
 contract TestDoubleLinkedList is DSTest {
     using DoubleLinkedList for DoubleLinkedList.List;
+
+    Vm public hevm = Vm(HEVM_ADDRESS);
 
     uint256 public NDS = 50;
     address[] public accounts;
@@ -31,6 +34,18 @@ contract TestDoubleLinkedList is DSTest {
         assertEq(list.getValueOf(accounts[0]), 1);
         assertEq(list.getPrev(accounts[0]), ADDR_ZERO);
         assertEq(list.getNext(accounts[0]), ADDR_ZERO);
+    }
+
+    function testShouldNotInsertAccountWithZeroValue() public {
+        hevm.expectRevert("DLL: _value must be != 0");
+        list.insertSorted(accounts[0], 0, NDS);
+    }
+
+    function testShouldHaveTheRightOrder() public {
+        list.insertSorted(accounts[0], 20, NDS);
+        list.insertSorted(accounts[1], 40, NDS);
+        assertEq(list.getHead(), accounts[1]);
+        assertEq(list.getTail(), accounts[0]);
     }
 
     // Should remove one single account
