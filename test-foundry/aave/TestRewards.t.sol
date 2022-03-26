@@ -8,7 +8,7 @@ import "./setup/TestSetup.sol";
 contract TestRewards is TestSetup {
     // Should claim the right amount of rewards
     function test_claim_simple() public {
-        uint256 toSupply = 100 * WAD;
+        uint256 toSupply = 100 ether;
         supplier1.approve(dai, toSupply);
         supplier1.supply(aDai, toSupply);
         uint256 balanceBefore = supplier1.balanceOf(REWARD_TOKEN);
@@ -65,7 +65,7 @@ contract TestRewards is TestSetup {
 
     // Anyone should be able to claim rewards on several markets one after another
     function test_claim_on_several_markets() public {
-        uint256 toSupply = 100 * WAD;
+        uint256 toSupply = 100 ether;
         uint256 toBorrow = 50 * 1e6;
         supplier1.approve(dai, toSupply);
         supplier1.supply(aDai, toSupply);
@@ -89,7 +89,7 @@ contract TestRewards is TestSetup {
 
     // Should not be possible to claim rewards for another asset
     function test_no_reward_on_other_market() public {
-        uint256 toSupply = 100 * WAD;
+        uint256 toSupply = 100 ether;
         uint256 toSupply2 = 50 * 1e6;
         supplier1.approve(dai, toSupply);
         supplier1.supply(aDai, toSupply);
@@ -114,7 +114,7 @@ contract TestRewards is TestSetup {
 
     // Anyone should be able to claim rewards on several markets at once
     function test_claim_several_rewards_at_once() public {
-        uint256 toSupply = 100 * WAD;
+        uint256 toSupply = 100 ether;
         uint256 toBorrow = 50 * 1e6;
         supplier1.approve(dai, toSupply);
         supplier1.supply(aDai, toSupply);
@@ -235,7 +235,7 @@ contract TestRewards is TestSetup {
     }
 
     function interactWithAave() internal {
-        uint256 toSupply = 100 * WAD;
+        uint256 toSupply = 100 ether;
         uint256 toBorrow = 50 * 1e6;
 
         supplier1.aaveSupply(dai, toSupply);
@@ -247,7 +247,7 @@ contract TestRewards is TestSetup {
     }
 
     function interactWithMorpho() internal {
-        uint256 toSupply = 100 * WAD;
+        uint256 toSupply = 100 ether;
         uint256 toBorrow = 50 * 1e6;
 
         supplier1.approve(dai, toSupply);
@@ -262,7 +262,7 @@ contract TestRewards is TestSetup {
     }
 
     function test_claim_and_swap() public {
-        uint256 toSupply = 100 * WAD;
+        uint256 toSupply = 100 ether;
         supplier1.approve(dai, toSupply);
         supplier1.supply(aDai, toSupply);
 
@@ -282,7 +282,7 @@ contract TestRewards is TestSetup {
     }
 
     function test_swap_with_too_much_slippage() public {
-        uint256 toSupply = 10_000_000 * WAD;
+        uint256 toSupply = 10_000_000 ether;
         tip(dai, address(supplier1), toSupply);
         supplier1.approve(dai, toSupply);
         supplier1.supply(aDai, toSupply);
@@ -291,11 +291,10 @@ contract TestRewards is TestSetup {
         aDaiInArray[0] = aDai;
 
         hevm.warp(block.timestamp + 365 days);
-        if (block.chainid == Chains.AVALANCHE_MAINNET) {
+        if (block.chainid == Chains.AVALANCHE_MAINNET)
             hevm.expectRevert("JoeRouter: INSUFFICIENT_OUTPUT_AMOUNT");
-        } else {
-            hevm.expectRevert("Too little received");
-        }
+        else hevm.expectRevert("Too little received");
+
         supplier1.claimRewards(aDaiInArray, true);
     }
 }
