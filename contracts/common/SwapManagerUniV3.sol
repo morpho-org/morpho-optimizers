@@ -7,9 +7,9 @@ import "./interfaces/ISwapManager.sol";
 
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 import "@uniswap/v3-core/contracts/libraries/FixedPoint96.sol";
+import "@uniswap/v3-core/contracts/libraries/FullMath.sol";
+import "@uniswap/v3-core/contracts/libraries/TickMath.sol";
 import "./libraries/uniswap/PoolAddress.sol";
-import "./libraries/uniswap/FullMath.sol";
-import "./libraries/uniswap/TickMath.sol";
 
 interface Weth9Provider {
     function WETH9() external view returns (address);

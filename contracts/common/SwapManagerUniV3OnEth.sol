@@ -7,9 +7,9 @@ import "./interfaces/ISwapManager.sol";
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@uniswap/v3-core/contracts/libraries/FixedPoint96.sol";
+import "@uniswap/v3-core/contracts/libraries/FullMath.sol";
+import "@uniswap/v3-core/contracts/libraries/TickMath.sol";
 import "./libraries/uniswap/PoolAddress.sol";
-import "./libraries/uniswap/FullMath.sol";
-import "./libraries/uniswap/TickMath.sol";
 
 /// @title SwapManagerUniV3OnEth.
 /// @dev Smart contract managing the swap of reward token to Morpho token on Uniswap V3 on mainnet.
