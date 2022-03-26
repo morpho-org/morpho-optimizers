@@ -125,7 +125,11 @@ contract TestSetup is Config, Utils, stdCheats {
             tip(REWARD_TOKEN, address(uniswapV2PoolCreator), INITIAL_BALANCE * WAD);
             morphoToken = new MorphoToken(address(uniswapV2PoolCreator));
             uniswapV2PoolCreator.createPoolAndAddLiquidity(address(morphoToken));
-            swapManager = new SwapManagerUniV2(address(morphoToken), REWARD_TOKEN);
+            swapManager = new SwapManagerUniV2(
+                0x60aE616a2155Ee3d9A68541Ba4544862310933d4,
+                address(morphoToken),
+                REWARD_TOKEN
+            );
         }
 
         matchingEngine = new MatchingEngineForAave();

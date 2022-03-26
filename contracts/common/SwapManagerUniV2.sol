@@ -33,8 +33,7 @@ contract SwapManagerUniV2 is ISwapManager {
     address public immutable token0;
     address public immutable token1;
 
-    IUniswapV2Router02 public swapRouter =
-        IUniswapV2Router02(0x60aE616a2155Ee3d9A68541Ba4544862310933d4); // JoeRouter.
+    IUniswapV2Router02 public swapRouter;
     IUniswapV2Pair public pair;
 
     /// EVENTS ///
@@ -48,9 +47,15 @@ contract SwapManagerUniV2 is ISwapManager {
     /// CONSTRUCTOR ///
 
     /// @notice Constructs the SwapManager contract.
+    /// @param _swapRouter The swap router address.
     /// @param _morphoToken The Morpho token address.
     /// @param _rewardToken The reward token address.
-    constructor(address _morphoToken, address _rewardToken) {
+    constructor(
+        address _swapRouter,
+        address _morphoToken,
+        address _rewardToken
+    ) {
+        swapRouter = IUniswapV2Router02(_swapRouter);
         MORPHO = _morphoToken;
         REWARD_TOKEN = _rewardToken;
 
