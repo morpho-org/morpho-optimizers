@@ -55,21 +55,16 @@ library DoubleLinkedList {
     /// @notice Removes an account of the `_list`.
     /// @param _list The list to search in.
     /// @param _id The address of the account.
-    /// @return Whether the account has been removed or not.
-    function remove(List storage _list, address _id) internal returns (bool) {
-        if (_list.accounts[_id].value != 0) {
-            Account memory account = _list.accounts[_id];
+    function remove(List storage _list, address _id) internal {
+        require(_list.accounts[_id].value != 0, "DLL: account must exist");
+        Account memory account = _list.accounts[_id];
 
-            if (account.prev != address(0)) _list.accounts[account.prev].next = account.next;
-            else _list.head = account.next;
-            if (account.next != address(0)) _list.accounts[account.next].prev = account.prev;
-            else _list.tail = account.prev;
+        if (account.prev != address(0)) _list.accounts[account.prev].next = account.next;
+        else _list.head = account.next;
+        if (account.next != address(0)) _list.accounts[account.next].prev = account.prev;
+        else _list.tail = account.prev;
 
-            delete _list.accounts[_id];
-            return true;
-        } else {
-            return false;
-        }
+        delete _list.accounts[_id];
     }
 
     /// @notice Inserts an account in the `_list` at the right slot based on its `_value`.
