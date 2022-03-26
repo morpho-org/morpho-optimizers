@@ -31,7 +31,7 @@ jobs:
       - name: Install Foundry
         uses: onbjerg/foundry-toolchain@v1
         with:
-          version: nightly
+          version: nightly-865bc46c37830b1be11d5eae00f3e9596c2e8be5
 
       - name: Run tests
         run: make test
