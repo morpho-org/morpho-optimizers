@@ -17,19 +17,19 @@ contract SwapManagerUniV2 is ISwapManager {
     using SafeTransferLib for ERC20;
     using FixedPoint for *;
 
-    uint256 public constant PERIOD = 1 hours;
-
     /// Storage ///
 
+    uint256 public constant PERIOD = 1 hours;
     uint256 public constant ONE_PERCENT = 100; // 1% in basis points.
-    uint256 public constant MAX_BASIS_POINTS = 10000; // 100% in basis points.
-
-    IUniswapV2Router02 public swapRouter =
-        IUniswapV2Router02(0x60aE616a2155Ee3d9A68541Ba4544862310933d4); // JoeRouter.
+    uint256 public constant MAX_BASIS_POINTS = 10_000; // 100% in basis points.
 
     address public immutable REWARD_TOKEN; // The reward token address.
     address public immutable MORPHO; // Morpho token address.
+    address public immutable token0;
+    address public immutable token1;
 
+    IUniswapV2Router02 public swapRouter =
+        IUniswapV2Router02(0x60aE616a2155Ee3d9A68541Ba4544862310933d4); // JoeRouter.
     IUniswapV2Pair public pair;
 
     uint256 public price0CumulativeLast;
@@ -59,31 +59,35 @@ contract SwapManagerUniV2 is ISwapManager {
             IUniswapV2Factory(swapRouter.factory()).getPair(_morphoToken, _rewardToken)
         );
 
-        uint256 reserve0;
-        uint256 reserve1;
-        (reserve0, reserve1, blockTimestampLast) = pair.getReserves();
-        price0CumulativeLast = reserve1 / reserve0;
-        price1CumulativeLast = reserve0 / reserve1;
+        token0 = pair.token0();
+        token1 = pair.token1();
+
+        price0CumulativeLast = pair.price0CumulativeLast(); // Fetch the current accumulated price value (1 / 0).
+        price1CumulativeLast = pair.price1CumulativeLast(); // Fetch the current accumulated price value (0 / 1).
 
         price0Average = FixedPoint.uq112x112(uint224(price0CumulativeLast));
         price1Average = FixedPoint.uq112x112(uint224(price1CumulativeLast));
     }
 
-    /// Update average prices on PERIOD fixed window.
+    /// @notice Updates average prices on PERIOD fixed window.
     /// @dev From https://github.com/Uniswap/v2-periphery/blob/master/contracts/examples/ExampleOracleSimple.sol
-    function update() internal {
+    function update() public {
         (
             uint256 price0Cumulative,
             uint256 price1Cumulative,
             uint256 blockTimestamp
         ) = UniswapV2OracleLibrary.currentCumulativePrices(address(pair));
-        uint256 timeElapsed = blockTimestamp - blockTimestampLast; // overflow is desired
+        uint256 timeElapsed;
 
-        // ensure that at least one full period has passed since the last update
+        unchecked {
+            timeElapsed = blockTimestamp - blockTimestampLast; // Overflow is desired.
+        }
+
+        // Ensure that at least one full period has passed since the last update.
         if (timeElapsed < PERIOD) return;
 
-        // overflow is desired, casting never truncates
-        // cumulative price is in (uq112x112 price * seconds) units so we simply wrap it after division by time elapsed
+        // An overflow is desired, casting never truncates
+        // cumulative price is in (uq112x112 price * seconds) units so we simply wrap it after division by time elapsed.
         unchecked {
             price0Average = FixedPoint.uq112x112(
                 uint224((price0Cumulative - price0CumulativeLast) / timeElapsed)
@@ -98,13 +102,10 @@ contract SwapManagerUniV2 is ISwapManager {
         blockTimestampLast = blockTimestamp;
     }
 
-    /// Get the amount according to the price average.
-    function consult(address token, uint256 amountIn) internal view returns (uint256 amountOut) {
-        if (token == MORPHO) {
-            amountOut = price0Average.mul(amountIn).decode144();
-        } else {
-            amountOut = price1Average.mul(amountIn).decode144();
-        }
+    /// Gets the amount according to the price average.
+    function consult(uint256 amountIn) internal view returns (uint256) {
+        if (MORPHO == token0) return price0Average.mul(amountIn).decode144();
+        else return price1Average.mul(amountIn).decode144();
     }
 
     /// External ///
@@ -119,9 +120,9 @@ contract SwapManagerUniV2 is ISwapManager {
         returns (uint256 amountOut)
     {
         update();
-        amountOut = consult(MORPHO, _amountIn);
+        amountOut = consult(_amountIn);
 
-        // Max slippage of 1% for the trade
+        // Max slippage of 1% for the trade.
         uint256 expectedAmountOutMinimum = (amountOut * (MAX_BASIS_POINTS - ONE_PERCENT)) /
             MAX_BASIS_POINTS;
 
@@ -129,7 +130,7 @@ contract SwapManagerUniV2 is ISwapManager {
         path[0] = REWARD_TOKEN;
         path[1] = MORPHO;
 
-        // Execute the swap
+        // Execute the swap.
         ERC20(REWARD_TOKEN).safeApprove(address(swapRouter), _amountIn);
         uint256[] memory amountsOut = swapRouter.swapExactTokensForTokens(
             _amountIn,
