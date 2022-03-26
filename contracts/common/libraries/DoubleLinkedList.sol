@@ -82,30 +82,48 @@ library DoubleLinkedList {
         require(_list.accounts[_id].value == 0, "DLL: account already created");
 
         uint256 numberOfIterations;
-        address current = _list.head;
+        address next = _list.head;
+
         while (
             numberOfIterations < _maxIterations &&
-            current != _list.tail &&
-            _list.accounts[current].value >= _value
+            next != _list.tail &&
+            _list.accounts[next].value >= _value
         ) {
-            current = _list.accounts[current].next;
+            next = _list.accounts[next].next;
             unchecked {
                 ++numberOfIterations;
             }
         }
 
-        address nextId;
-        address prevId;
-        if (_list.accounts[current].value < _value) {
-            prevId = _list.accounts[current].prev;
-            nextId = current;
-        } else prevId = _list.tail;
-
-        _list.accounts[_id] = Account(prevId, nextId, _value);
-
-        if (prevId != address(0)) _list.accounts[prevId].next = _id;
-        else _list.head = _id;
-        if (nextId != address(0)) _list.accounts[nextId].prev = _id;
-        else _list.tail = _id;
+        // Account is not the new tail.
+        if (next != address(0) && _list.accounts[next].value < _value) {
+            // Account is the new head.
+            if (next == _list.head) {
+                _list.accounts[_id] = Account(address(0), next, _value);
+                _list.head = _id;
+                _list.accounts[next].prev = _id;
+            }
+            // Account is not the new head.
+            else {
+                _list.accounts[_id] = Account(_list.accounts[next].prev, next, _value);
+                _list.accounts[_list.accounts[next].prev].next = _id;
+                _list.accounts[next].prev = _id;
+            }
+        }
+        // Account is the new tail.
+        else {
+            // Account is the new head.
+            if (_list.head == address(0)) {
+                _list.accounts[_id] = Account(address(0), address(0), _value);
+                _list.head = _id;
+                _list.tail = _id;
+            }
+            // Account is not the new head.
+            else {
+                _list.accounts[_id] = Account(_list.tail, address(0), _value);
+                _list.accounts[_list.tail].next = _id;
+                _list.tail = _id;
+            }
+        }
     }
 }
