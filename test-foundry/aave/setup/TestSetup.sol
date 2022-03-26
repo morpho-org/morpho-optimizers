@@ -21,8 +21,8 @@ import {RewardsManagerForAaveOnPolygon} from "@contracts/aave/rewards-managers/R
 import {SwapManagerUniV3OnEth} from "@contracts/common/SwapManagerUniV3OnEth.sol";
 import {SwapManagerUniV3} from "@contracts/common/SwapManagerUniV3.sol";
 import {SwapManagerUniV2} from "@contracts/common/SwapManagerUniV2.sol";
-import {UniswapPoolCreator} from "../../common/uniswap/UniswapPoolCreator.sol";
-import {UniswapV2PoolCreator} from "../../common/uniswap/UniswapV2PoolCreator.sol";
+import "../../common/uniswap/UniswapV3PoolCreator.sol";
+import "../../common/uniswap/UniswapV2PoolCreator.sol";
 import "@contracts/aave/PositionsManagerForAave.sol";
 import "@contracts/aave/MarketsManagerForAave.sol";
 import "@contracts/aave/MatchingEngineForAave.sol";
@@ -56,7 +56,7 @@ contract TestSetup is Config, Utils, stdCheats {
     MarketsManagerForAave internal marketsManagerImplV1;
     IRewardsManagerForAave internal rewardsManager;
     ISwapManager public swapManager;
-    UniswapPoolCreator public uniswapPoolCreator;
+    UniswapV3PoolCreator public uniswapV3PoolCreator;
     UniswapV2PoolCreator public uniswapV2PoolCreator;
     MorphoToken public morphoToken;
     address public REWARD_TOKEN =
@@ -100,18 +100,18 @@ contract TestSetup is Config, Utils, stdCheats {
         lendingPool = ILendingPool(lendingPoolAddressesProvider.getLendingPool());
 
         if (block.chainid == Chains.ETH_MAINNET) {
-            // Mainnet network
-            // Create a MORPHO / WETH pool
-            uniswapPoolCreator = new UniswapPoolCreator();
-            tip(uniswapPoolCreator.WETH9(), address(uniswapPoolCreator), INITIAL_BALANCE * WAD);
-            morphoToken = new MorphoToken(address(uniswapPoolCreator));
+            // Mainnet network.
+            // Create a MORPHO / WETH pool.
+            uniswapV3PoolCreator = new UniswapV3PoolCreator();
+            tip(uniswapV3PoolCreator.WETH9(), address(uniswapV3PoolCreator), INITIAL_BALANCE * WAD);
+            morphoToken = new MorphoToken(address(uniswapV3PoolCreator));
             swapManager = new SwapManagerUniV3OnEth(address(morphoToken), MORPHO_UNIV3_FEE);
         } else if (block.chainid == Chains.POLYGON_MAINNET) {
-            // Polygon network
-            // Create a MORPHO / WMATIC pool
-            uniswapPoolCreator = new UniswapPoolCreator();
-            tip(uniswapPoolCreator.WETH9(), address(uniswapPoolCreator), INITIAL_BALANCE * WAD);
-            morphoToken = new MorphoToken(address(uniswapPoolCreator));
+            // Polygon network.
+            // Create a MORPHO / WMATIC pool.
+            uniswapV3PoolCreator = new UniswapV3PoolCreator();
+            tip(uniswapV3PoolCreator.WETH9(), address(uniswapV3PoolCreator), INITIAL_BALANCE * WAD);
+            morphoToken = new MorphoToken(address(uniswapV3PoolCreator));
             swapManager = new SwapManagerUniV3(
                 address(morphoToken),
                 MORPHO_UNIV3_FEE,
@@ -119,8 +119,8 @@ contract TestSetup is Config, Utils, stdCheats {
                 REWARD_UNIV3_FEE
             );
         } else if (block.chainid == Chains.AVALANCHE_MAINNET) {
-            // Avalanche network
-            // Create a MORPHO / WAVAX pool
+            // Avalanche network.
+            // Create a MORPHO / WAVAX pool.
             uniswapV2PoolCreator = new UniswapV2PoolCreator();
             tip(REWARD_TOKEN, address(uniswapV2PoolCreator), INITIAL_BALANCE * WAD);
             morphoToken = new MorphoToken(address(uniswapV2PoolCreator));
@@ -167,7 +167,7 @@ contract TestSetup is Config, Utils, stdCheats {
                 lendingPool,
                 IPositionsManagerForAave(address(positionsManager))
             );
-            uniswapPoolCreator.createPoolAndMintPosition(address(morphoToken));
+            uniswapV3PoolCreator.createPoolAndMintPosition(address(morphoToken));
         } else if (block.chainid == Chains.AVALANCHE_MAINNET) {
             // Avalanche network
             rewardsManager = new RewardsManagerForAaveOnEthAndAvax(
@@ -180,7 +180,7 @@ contract TestSetup is Config, Utils, stdCheats {
                 lendingPool,
                 IPositionsManagerForAave(address(positionsManager))
             );
-            uniswapPoolCreator.createPoolAndMintPosition(address(morphoToken));
+            uniswapV3PoolCreator.createPoolAndMintPosition(address(morphoToken));
         }
 
         treasuryVault = new User(positionsManager);
@@ -251,7 +251,7 @@ contract TestSetup is Config, Utils, stdCheats {
         hevm.label(address(marketsManager), "MarketsManager");
         hevm.label(address(rewardsManager), "RewardsManager");
         hevm.label(address(swapManager), "SwapManager");
-        hevm.label(address(uniswapPoolCreator), "UniswapPoolCreator");
+        hevm.label(address(uniswapV3PoolCreator), "UniswapV3PoolCreator");
         hevm.label(address(morphoToken), "MorphoToken");
         hevm.label(aaveIncentivesControllerAddress, "AaveIncentivesController");
         hevm.label(address(lendingPoolAddressesProvider), "LendingPoolAddressesProvider");
