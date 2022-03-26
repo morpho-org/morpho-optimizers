@@ -80,9 +80,7 @@ contract SwapManagerUniV2 is ISwapManager {
         uint256 timeElapsed = blockTimestamp - blockTimestampLast; // overflow is desired
 
         // ensure that at least one full period has passed since the last update
-        if (timeElapsed >= PERIOD) {
-            return;
-        }
+        if (timeElapsed < PERIOD) return;
 
         // overflow is desired, casting never truncates
         // cumulative price is in (uq112x112 price * seconds) units so we simply wrap it after division by time elapsed
