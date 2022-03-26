@@ -595,4 +595,23 @@ contract TestRepay is TestSetup {
     function testFailRepayZero() public {
         positionsManager.repay(aDai, 0);
     }
+
+    function testRepayRepayOnBehalf() public {
+        uint256 amount = 1 ether;
+
+        // Borrow on pool.
+        borrower1.approve(usdc, to6Decimals(2 * amount));
+        borrower1.supply(aUsdc, to6Decimals(2 * amount));
+        borrower1.borrow(aDai, amount);
+
+        // Someone repays on behalf of Morpho.
+        supplier1.approve(dai, address(lendingPool), amount);
+        hevm.prank(address(supplier1));
+        lendingPool.repay(dai, amount, 2, address(positionsManager));
+        hevm.stopPrank();
+
+        // Repay max. Not supposed to revert !
+        borrower1.approve(dai, type(uint256).max);
+        borrower1.repay(aDai, type(uint256).max);
+    }
 }
