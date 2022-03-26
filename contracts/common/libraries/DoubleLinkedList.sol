@@ -94,7 +94,9 @@ library DoubleLinkedList {
             _list.accounts[current].value >= _value
         ) {
             current = _list.accounts[current].next;
-            numberOfIterations++;
+            unchecked {
+                ++numberOfIterations;
+            }
         }
 
         address nextId;
