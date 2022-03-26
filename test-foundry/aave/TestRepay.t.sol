@@ -607,4 +607,26 @@ contract TestRepay is TestSetup {
         hevm.expectRevert(abi.encodeWithSignature("AmountIsZero()"));
         positionsManager.repay(aDai, 0);
     }
+
+    function test_issue_repay_on_behalf() public {
+        // Allows 10 matchs.
+        setMaxGasHelper(2.4e6, 2.4e6, 2.4e6, 2.4e6);
+
+        uint256 collateral = 2 ether;
+        uint256 borrowedAmount = 1 ether;
+
+        // Borrow on pool.
+        borrower1.approve(usdc, to6Decimals(collateral));
+        borrower1.supply(aUsdc, to6Decimals(collateral));
+        borrower1.borrow(aDai, borrowedAmount);
+
+        // Someone repays on behalf of Morpho.
+        supplier1.approve(dai, address(lendingPool), type(uint256).max);
+        hevm.prank(address(supplier1));
+        lendingPool.repay(dai, borrowedAmount, 2, address(positionsManager));
+
+        // Repay max. Not supposed to revert !
+        borrower1.approve(dai, type(uint256).max);
+        borrower1.repay(aDai, type(uint256).max);
+    }
 }
