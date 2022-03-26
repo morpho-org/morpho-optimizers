@@ -12,16 +12,21 @@ import "@uniswap/v2-periphery/contracts/libraries/UniswapV2OracleLibrary.sol";
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 
 /// @title SwapManager for Uniswap V2.
-/// @dev Smart contract managing the swap of reward token to Morpho token.
+/// @notice Smart contract managing the swap of reward tokens to Morpho tokens.
 contract SwapManagerUniV2 is ISwapManager {
     using SafeTransferLib for ERC20;
     using FixedPoint for *;
 
-    /// Storage ///
+    /// STORAGE ///
 
     uint256 public constant PERIOD = 1 hours;
     uint256 public constant ONE_PERCENT = 100; // 1% in basis points.
     uint256 public constant MAX_BASIS_POINTS = 10_000; // 100% in basis points.
+    uint256 public price0CumulativeLast;
+    uint256 public price1CumulativeLast;
+    uint256 public blockTimestampLast;
+    FixedPoint.uq112x112 public price0Average;
+    FixedPoint.uq112x112 public price1Average;
 
     address public immutable REWARD_TOKEN; // The reward token address.
     address public immutable MORPHO; // Morpho token address.
@@ -32,13 +37,7 @@ contract SwapManagerUniV2 is ISwapManager {
         IUniswapV2Router02(0x60aE616a2155Ee3d9A68541Ba4544862310933d4); // JoeRouter.
     IUniswapV2Pair public pair;
 
-    uint256 public price0CumulativeLast;
-    uint256 public price1CumulativeLast;
-    uint256 public blockTimestampLast;
-    FixedPoint.uq112x112 public price0Average;
-    FixedPoint.uq112x112 public price1Average;
-
-    /// Events ///
+    /// EVENTS ///
 
     /// @notice Emitted when a swap to Morpho tokens happens.
     /// @param _receiver The address of the receiver.
@@ -46,7 +45,7 @@ contract SwapManagerUniV2 is ISwapManager {
     /// @param _amountOut The amount of Morpho token received.
     event Swapped(address _receiver, uint256 _amountIn, uint256 _amountOut);
 
-    /// Constructor ///
+    /// CONSTRUCTOR ///
 
     /// @notice Constructs the SwapManager contract.
     /// @param _morphoToken The Morpho token address.
@@ -68,6 +67,8 @@ contract SwapManagerUniV2 is ISwapManager {
         price0Average = FixedPoint.uq112x112(uint224(price0CumulativeLast));
         price1Average = FixedPoint.uq112x112(uint224(price1CumulativeLast));
     }
+
+    /// PUBLIC ///
 
     /// @notice Updates average prices on PERIOD fixed window.
     /// @dev From https://github.com/Uniswap/v2-periphery/blob/master/contracts/examples/ExampleOracleSimple.sol
@@ -102,15 +103,17 @@ contract SwapManagerUniV2 is ISwapManager {
         blockTimestampLast = blockTimestamp;
     }
 
-    /// Gets the amount according to the price average.
-    function consult(uint256 amountIn) internal view returns (uint256) {
-        if (MORPHO == token0) return price0Average.mul(amountIn).decode144();
-        else return price1Average.mul(amountIn).decode144();
+    /// @notice Returns the amount of Morpho tokens according to the price average and the `_amountIn` of reward tokens.
+    /// @param _amountIn The amount of reward tokens as input.
+    /// @return The amount of Morpho tokens given the `_amountIn` as input.
+    function consult(uint256 _amountIn) public view returns (uint256) {
+        if (MORPHO == token0) return price0Average.mul(_amountIn).decode144();
+        else return price1Average.mul(_amountIn).decode144();
     }
 
-    /// External ///
+    /// EXTERNAL ///
 
-    /// @dev Swaps reward tokens to Morpho token.
+    /// @dev Swaps reward tokens to Morpho tokens.
     /// @param _amountIn The amount of reward token to swap.
     /// @param _receiver The address of the receiver of the Morpho tokens.
     /// @return amountOut The amount of Morpho tokens sent.
