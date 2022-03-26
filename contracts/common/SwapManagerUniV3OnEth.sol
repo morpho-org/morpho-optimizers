@@ -11,34 +11,33 @@ import "@uniswap/v3-core/contracts/libraries/FullMath.sol";
 import "@uniswap/v3-core/contracts/libraries/TickMath.sol";
 import "./libraries/uniswap/PoolAddress.sol";
 
-/// @title SwapManagerUniV3OnEth.
-/// @dev Smart contract managing the swap of reward token to Morpho token on Uniswap V3 on mainnet.
+/// @title SwapManager for Uniswap V3 on ethereum mainnet.
+/// @dev Smart contract managing the swap of reward tokens to Morpho tokens on Uniswap V3 on ethereum mainnet.
 contract SwapManagerUniV3OnEth is ISwapManager {
     using SafeERC20 for IERC20;
     using FullMath for uint256;
 
-    /// Storage ///
+    /// STORAGE ///
 
-    uint256 public constant THREE_PERCENT = 300; // 3% in basis points.
-    uint32 public constant TWAP_INTERVAL = 3600; // 1 hour interval.
-    uint256 public constant MAX_BASIS_POINTS = 10000; // 100% in basis points.
-
-    address public constant FACTORY = 0x1F98431c8aD98523631AE4a59f267346ea31F984; // The address of the Uniswap V3 factory.
-    ISwapRouter public swapRouter = ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564); // The Uniswap V3 router.
-    address public constant stkAAVE = 0x4da27a545c0c5B758a6BA100e3a049001de870f5; // The address of stkAAVE token.
-    address public constant AAVE = 0x7Fc66500c84A76Ad7e9c93437bFc5Ac33E2DDaE9; // The address of AAVE token.
-    address public constant WETH9 = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2; // The address of WETH9 token.
-
-    address public immutable MORPHO; // Morpho token address.
+    uint32 public constant TWAP_INTERVAL = 3_600; // 1 hour interval.
     uint24 public constant FIRST_POOL_FEE = 3000; // Fee on Uniswap for stkAAVE/AAVE pool.
     uint24 public constant SECOND_POOL_FEE = 3000; // Fee on Uniswap for AAVE/WETH9 pool.
     uint24 public immutable MORPHO_POOL_FEE; // Fee on Uniswap for WETH9/MORPHO pool.
+    uint256 public constant THREE_PERCENT = 300; // 3% in basis points.
+    uint256 public constant MAX_BASIS_POINTS = 10_000; // 100% in basis points.
 
+    address public constant FACTORY = 0x1F98431c8aD98523631AE4a59f267346ea31F984; // The address of the Uniswap V3 factory.
+    address public constant stkAAVE = 0x4da27a545c0c5B758a6BA100e3a049001de870f5; // The address of stkAAVE token.
+    address public constant AAVE = 0x7Fc66500c84A76Ad7e9c93437bFc5Ac33E2DDaE9; // The address of AAVE token.
+    address public constant WETH9 = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2; // The address of WETH9 token.
+    address public immutable MORPHO; // Morpho token address.
+
+    ISwapRouter public swapRouter = ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564); // The Uniswap V3 router.
     IUniswapV3Pool public pool0;
     IUniswapV3Pool public pool1;
     IUniswapV3Pool public pool2;
 
-    /// Events ///
+    /// EVENTS ///
 
     /// @notice Emitted when a swap to Morpho tokens happens.
     /// @param _receiver The address of the receiver.
@@ -46,9 +45,9 @@ contract SwapManagerUniV3OnEth is ISwapManager {
     /// @param _amountOut The amount of Morpho token received.
     event Swapped(address _receiver, uint256 _amountIn, uint256 _amountOut);
 
-    /// Structs ///
+    /// STRUCTS ///
 
-    // Struct to avoid stack too deep error
+    // Struct to avoid stack too deep error.
     struct OracleTwapVars {
         uint256 priceX960;
         uint256 priceX961;
@@ -57,7 +56,7 @@ contract SwapManagerUniV3OnEth is ISwapManager {
         uint256 expectedAmountOutMinimum;
     }
 
-    /// Constructor ///
+    /// CONSTRUCTOR ///
 
     /// @notice Constructs the SwapManagerUniV3 contract.
     /// @param _morphoToken The Morpho token address.
@@ -86,7 +85,7 @@ contract SwapManagerUniV3OnEth is ISwapManager {
         );
     }
 
-    /// External ///
+    /// EXTERNAL ///
 
     /// @notice Swaps reward tokens to Morpho token.
     /// @param _amountIn The amount of reward token to swap.
@@ -110,7 +109,7 @@ contract SwapManagerUniV3OnEth is ISwapManager {
             amountOutMinimum: expectedAmountOutMinimum
         });
 
-        // Execute the swap
+        // Execute the swap.
         IERC20(stkAAVE).safeApprove(address(swapRouter), _amountIn);
         amountOut = swapRouter.exactInput(params);
 
@@ -137,7 +136,7 @@ contract SwapManagerUniV3OnEth is ISwapManager {
 
         {
             // pool0 is not observed as aave and stkaave are pegged
-            // we consider 1 aave = 1 stkaave as the fair price
+            // we consider 1 aave = 1 stkaave as the fair price.
             (int56[] memory tickCumulatives1, ) = pool1.observe(secondsAgo);
             (int56[] memory tickCumulatives2, ) = pool2.observe(secondsAgo);
 
@@ -157,7 +156,7 @@ contract SwapManagerUniV3OnEth is ISwapManager {
         // stkAAVE/AAVE -> token0 = stkAAVE
         // AAVE/WETH9 -> token0 = AAVE
 
-        // Computation depends on the position of token in pool
+        // Computation depends on the position of token in pool.
         if (pool2.token0() == WETH9) {
             expectedAmountOutMinimum = _amountIn.mulDiv(priceX961, FixedPoint96.Q96).mulDiv(
                 priceX962,
@@ -170,7 +169,7 @@ contract SwapManagerUniV3OnEth is ISwapManager {
             );
         }
 
-        // Max slippage of 3% for the trade
+        // Max slippage of 3% for the trade.
         expectedAmountOutMinimum = expectedAmountOutMinimum.mulDiv(
             MAX_BASIS_POINTS - THREE_PERCENT,
             MAX_BASIS_POINTS
