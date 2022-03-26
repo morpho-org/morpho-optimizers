@@ -15,20 +15,20 @@ interface Weth9Provider {
     function WETH9() external view returns (address);
 }
 
-/// @title SwapManagerUniV3.
-/// @dev Smart contract managing the swap of reward token to Morpho token on Uniswap V3.
+/// @title SwapManager for Uniswap V3.
+/// @notice Smart contract managing the swap of reward tokens to Morpho tokens on Uniswap V3.
 contract SwapManagerUniV3 is ISwapManager {
     using SafeTransferLib for ERC20;
     using FullMath for uint256;
 
-    /// Storage ///
+    /// STORAGE ///
 
     uint256 public constant ONE_PERCENT = 100; // 1% in basis points.
     uint256 public constant TWO_PERCENT = 200; // 2% in basis points.
-    uint32 public constant TWAP_INTERVAL = 3600; // 1 hour interval.
-    uint256 public constant MAX_BASIS_POINTS = 10000; // 100% in basis points.
+    uint32 public constant TWAP_INTERVAL = 1 hours; // 1 hour interval.
+    uint256 public constant MAX_BASIS_POINTS = 10_000; // 100% in basis points.
 
-    // Hard coded addresses as they are the same accross chains
+    // Hard coded addresses as they are the same accross chains.
     address public constant FACTORY = 0x1F98431c8aD98523631AE4a59f267346ea31F984; // The address of the Uniswap V3 factory.
     ISwapRouter public swapRouter = ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564); // The Uniswap V3 router.
 
@@ -42,7 +42,7 @@ contract SwapManagerUniV3 is ISwapManager {
     IUniswapV3Pool public pool1;
     bool public singlePath;
 
-    /// Events ///
+    /// EVENTS ///
 
     /// @notice Emitted when a swap to Morpho tokens happens.
     /// @param _receiver The address of the receiver.
@@ -50,11 +50,13 @@ contract SwapManagerUniV3 is ISwapManager {
     /// @param _amountOut The amount of Morpho token received.
     event Swapped(address _receiver, uint256 _amountIn, uint256 _amountOut);
 
-    /// Constructor ///
+    /// CONSTRUCTOR ///
 
     /// @notice Constructs the SwapManagerUniV3 contract.
     /// @param _morphoToken The Morpho token address.
+    /// @param _morphoPoolFee The fee on Uniswap for REWARD_TOKEN/WETH9 pool.
     /// @param _rewardToken The reward token address.
+    /// @param _rewardPoolFee The fee on Uniswap for MORPHO/WETH9 pool.
     constructor(
         address _morphoToken,
         uint24 _morphoPoolFee,
@@ -84,7 +86,7 @@ contract SwapManagerUniV3 is ISwapManager {
         );
     }
 
-    /// External ///
+    /// EXTERNAL ///
 
     /// @notice Swaps reward tokens to Morpho token.
     /// @param _amountIn The amount of reward token to swap.
@@ -116,7 +118,7 @@ contract SwapManagerUniV3 is ISwapManager {
         emit Swapped(_receiver, _amountIn, amountOut);
     }
 
-    /// Internal ///
+    /// INTERNAL ///
 
     /// @dev Returns the minimum expected amount of Morpho token to receive and the multiple path for a swap.
     /// @param _amountIn The amount of reward token to swap.
@@ -137,7 +139,7 @@ contract SwapManagerUniV3 is ISwapManager {
         // For the pair token0/token1 -> 1.0001 * readingTick = price = token1 / token0
         // So token1 = price * token0
 
-        // Ticks (imprecise as it's an integer) to price
+        // Ticks (imprecise as it's an integer) to price.
         uint160 sqrtPriceX960 = TickMath.getSqrtRatioAtTick(
             int24((tickCumulatives0[1] - tickCumulatives0[0]) / int24(uint24(TWAP_INTERVAL)))
         );
@@ -148,7 +150,7 @@ contract SwapManagerUniV3 is ISwapManager {
         uint256 priceX960 = _getPriceX96FromSqrtPriceX96(sqrtPriceX960);
         uint256 priceX961 = _getPriceX96FromSqrtPriceX96(sqrtPriceX961);
 
-        // Computation depends on the position of token in pools
+        // Computation depends on the position of token in pools.
         if (REWARD_TOKEN == pool0.token0() && WETH9 == pool1.token0()) {
             expectedAmountOutMinimum = _amountIn.mulDiv(priceX960, FixedPoint96.Q96).mulDiv(
                 priceX961,
@@ -193,12 +195,12 @@ contract SwapManagerUniV3 is ISwapManager {
         // For the pair token0/token1 -> 1.0001 * readingTick = price = token1 / token0
         // So token1 = price * token0
 
-        // Ticks (imprecise as it's an integer) to price
+        // Ticks (imprecise as it's an integer) to price.
         uint160 sqrtPriceX961 = TickMath.getSqrtRatioAtTick(
             int24((tickCumulatives1[1] - tickCumulatives1[0]) / int24(uint24(TWAP_INTERVAL)))
         );
 
-        // Computation depends on the position of token in pool
+        // Computation depends on the position of token in pool.
         if (pool1.token0() == REWARD_TOKEN) {
             expectedAmountOutMinimum = _amountIn.mulDiv(
                 _getPriceX96FromSqrtPriceX96(sqrtPriceX961),
@@ -211,7 +213,7 @@ contract SwapManagerUniV3 is ISwapManager {
             );
         }
 
-        // Max slippage of 1% for the trade
+        // Max slippage of 1% for the trade.
         expectedAmountOutMinimum =
             (expectedAmountOutMinimum * (MAX_BASIS_POINTS - ONE_PERCENT)) /
             MAX_BASIS_POINTS;
