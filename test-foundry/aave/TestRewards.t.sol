@@ -12,6 +12,15 @@ contract TestRewards is TestSetup {
         positionsManager.claimRewards(aDaiInArray, false);
     }
 
+    function testShouldRevertWhenAccruingRewardsForInvalidAsset() public {
+        address[] memory array = new address[](2);
+        array[0] = aDai;
+        array[1] = stableDebtDai;
+
+        hevm.expectRevert(abi.encodeWithSignature("InvalidAsset()"));
+        rewardsManager.accrueUserUnclaimedRewards(array, address(supplier1));
+    }
+
     // Should claim the right amount of rewards.
     function testClaimSupplyRewardsSimple() public {
         uint256 toSupply = 100 ether;
