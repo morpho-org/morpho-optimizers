@@ -47,23 +47,23 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
 
     /// @notice Emitted when a new market is created.
     /// @param _marketAddress The address of the market that has been created.
-    event MarketCreated(address _marketAddress);
+    event MarketCreated(address indexed _marketAddress);
 
     /// @notice Emitted when the `positionsManager` is set.
     /// @param _positionsManager The address of the `positionsManager`.
-    event PositionsManagerSet(address _positionsManager);
+    event PositionsManagerSet(address indexed _positionsManager);
 
     /// @notice Emitted when a `noP2P` variable is set.
     /// @param _marketAddress The address of the market to set.
     /// @param _noP2P The new value of `_noP2P` adopted.
-    event NoP2PSet(address _marketAddress, bool _noP2P);
+    event NoP2PSet(address indexed _marketAddress, bool _noP2P);
 
     /// @notice Emitted when the P2P SPYs of a market are updated.
     /// @param _marketAddress The address of the market updated.
     /// @param _newSupplyP2PSPY The new value of the supply  P2P SPY.
     /// @param _newBorrowP2PSPY The new value of the borrow P2P SPY.
     event P2PSPYsUpdated(
-        address _marketAddress,
+        address indexed _marketAddress,
         uint256 _newSupplyP2PSPY,
         uint256 _newBorrowP2PSPY
     );
@@ -73,7 +73,7 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
     /// @param _newSupplyP2PExchangeRate The new value of the supply exchange rate from p2pUnit to underlying.
     /// @param _newBorrowP2PExchangeRate The new value of the borrow exchange rate from p2pUnit to underlying.
     event P2PExchangeRatesUpdated(
-        address _marketAddress,
+        address indexed _marketAddress,
         uint256 _newSupplyP2PExchangeRate,
         uint256 _newBorrowP2PExchangeRate
     );
@@ -81,7 +81,7 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
     /// @notice Emitted when the `reserveFactor` is set.
     /// @param _marketAddress The address of the market set.
     /// @param _newValue The new value of the `reserveFactor`.
-    event ReserveFactorSet(address _marketAddress, uint16 _newValue);
+    event ReserveFactorSet(address indexed _marketAddress, uint16 _newValue);
 
     /// ERRORS ///
 
