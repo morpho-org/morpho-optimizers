@@ -300,16 +300,19 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         bool wasOnPoolAndValueChanged = formerValueOnPool != 0 && formerValueOnPool != onPool;
         if (wasOnPoolAndValueChanged) borrowersOnPool[_poolTokenAddress].remove(_user);
         if (onPool > 0 && (wasOnPoolAndValueChanged || formerValueOnPool == 0)) {
-            address variableDebtTokenAddress = lendingPool
-            .getReserveData(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS())
-            .variableDebtTokenAddress;
-            uint256 totalStaked = IScaledBalanceToken(variableDebtTokenAddress).scaledTotalSupply();
-            rewardsManager.updateUserAssetAndAccruedRewards(
-                _user,
-                variableDebtTokenAddress,
-                formerValueOnPool,
-                totalStaked
-            );
+            if (address(rewardsManager) != address(0)) {
+                address variableDebtTokenAddress = lendingPool
+                .getReserveData(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS())
+                .variableDebtTokenAddress;
+                uint256 totalStaked = IScaledBalanceToken(variableDebtTokenAddress)
+                .scaledTotalSupply();
+                rewardsManager.updateUserAssetAndAccruedRewards(
+                    _user,
+                    variableDebtTokenAddress,
+                    formerValueOnPool,
+                    totalStaked
+                );
+            }
             borrowersOnPool[_poolTokenAddress].insertSorted(_user, onPool, NDS);
         }
 
@@ -333,13 +336,15 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         bool wasOnPoolAndValueChanged = formerValueOnPool != 0 && formerValueOnPool != onPool;
         if (wasOnPoolAndValueChanged) suppliersOnPool[_poolTokenAddress].remove(_user);
         if (onPool > 0 && (wasOnPoolAndValueChanged || formerValueOnPool == 0)) {
-            uint256 totalStaked = IScaledBalanceToken(_poolTokenAddress).scaledTotalSupply();
-            rewardsManager.updateUserAssetAndAccruedRewards(
-                _user,
-                _poolTokenAddress,
-                formerValueOnPool,
-                totalStaked
-            );
+            if (address(rewardsManager) != address(0)) {
+                uint256 totalStaked = IScaledBalanceToken(_poolTokenAddress).scaledTotalSupply();
+                rewardsManager.updateUserAssetAndAccruedRewards(
+                    _user,
+                    _poolTokenAddress,
+                    formerValueOnPool,
+                    totalStaked
+                );
+            }
             suppliersOnPool[_poolTokenAddress].insertSorted(_user, onPool, NDS);
         }
 
