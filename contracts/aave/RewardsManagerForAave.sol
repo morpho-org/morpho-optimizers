@@ -45,6 +45,9 @@ abstract contract RewardsManagerForAave is IRewardsManagerForAave, Ownable {
     /// @notice Thrown when only the positions manager can call the function.
     error OnlyPositionsManager();
 
+    /// @notice Thrown when an invalid asset is passed to accrue rewards.
+    error InvalidAsset();
+
     /// MODIFIERS ///
 
     /// @notice Prevents a user to call function allowed for the positions manager only.
@@ -140,9 +143,17 @@ abstract contract RewardsManagerForAave is IRewardsManagerForAave, Ownable {
             DataTypes.ReserveData memory reserve = lendingPool.getReserveData(
                 IGetterUnderlyingAsset(asset).UNDERLYING_ASSET_ADDRESS()
             );
-            uint256 stakedByUser = reserve.variableDebtTokenAddress == asset
-                ? positionsManager.borrowBalanceInOf(reserve.aTokenAddress, _user).onPool
-                : positionsManager.supplyBalanceInOf(reserve.aTokenAddress, _user).onPool;
+            uint256 stakedByUser;
+            if (asset == reserve.aTokenAddress)
+                stakedByUser = positionsManager
+                .supplyBalanceInOf(reserve.aTokenAddress, _user)
+                .onPool;
+            else if (asset == reserve.variableDebtTokenAddress)
+                stakedByUser = positionsManager
+                .borrowBalanceInOf(reserve.aTokenAddress, _user)
+                .onPool;
+            else revert InvalidAsset();
+
             uint256 totalStaked = IScaledBalanceToken(asset).scaledTotalSupply();
 
             unclaimedRewards += _updateUserAsset(_user, asset, stakedByUser, totalStaked);
