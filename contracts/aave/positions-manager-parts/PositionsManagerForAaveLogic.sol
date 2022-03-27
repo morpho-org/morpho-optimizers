@@ -27,7 +27,6 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
         uint256 remainingToRepay;
         uint256 borrowPoolIndex;
         uint256 supplyPoolIndex;
-        uint256 maxToRepay;
         uint256 toRepay;
     }
 
@@ -386,10 +385,6 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
         vars.borrowPoolIndex = lendingPool.getReserveNormalizedVariableDebt(
             address(underlyingToken)
         );
-        vars.maxToRepay = IVariableDebtToken(
-            lendingPool.getReserveData(address(underlyingToken)).variableDebtTokenAddress
-        ).scaledBalanceOf(address(this))
-        .mulWadByRay(vars.borrowPoolIndex); // The debt of the contract.
 
         /// Soft repay ///
 
@@ -397,8 +392,7 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
             uint256 borrowedOnPool = borrowBalanceInOf[_poolTokenAddress][_user].onPool;
             vars.toRepay = Math.min(
                 borrowedOnPool.mulWadByRay(vars.borrowPoolIndex),
-                vars.remainingToRepay,
-                vars.maxToRepay
+                vars.remainingToRepay
             );
             vars.remainingToRepay -= vars.toRepay;
 
@@ -409,6 +403,15 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
             matchingEngine.updateBorrowersDC(_poolTokenAddress, _user);
 
             if (vars.remainingToRepay == 0) {
+                vars.toRepay = Math.min(
+                    vars.toRepay,
+                    IVariableDebtToken(
+                        lendingPool
+                        .getReserveData(address(underlyingToken))
+                        .variableDebtTokenAddress
+                    ).scaledBalanceOf(address(this))
+                    .mulWadByRay(vars.borrowPoolIndex) // The debt of the contract.
+                );
                 if (vars.toRepay > 0) _repayERC20ToPool(underlyingToken, vars.toRepay); // Reverts on error.
                 _leaveMarkerIfNeeded(_poolTokenAddress, _user);
                 return;
@@ -443,8 +446,7 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
             if (delta.borrowP2PDelta > 0) {
                 uint256 matchedDelta = Math.min(
                     delta.borrowP2PDelta.mulWadByRay(vars.borrowPoolIndex),
-                    vars.remainingToRepay,
-                    vars.maxToRepay - vars.toRepay
+                    vars.remainingToRepay
                 );
 
                 if (matchedDelta > 0) {
@@ -461,14 +463,11 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
                 borrowersOnPool[_poolTokenAddress].getHead() != address(0)
             ) {
                 // Match borrowers.
-                uint256 matched = Math.min(
-                    matchingEngine.matchBorrowersDC(
-                        poolToken,
-                        underlyingToken,
-                        vars.remainingToRepay,
-                        _maxGasToConsume / 2
-                    ),
-                    vars.maxToRepay - vars.toRepay
+                uint256 matched = matchingEngine.matchBorrowersDC(
+                    poolToken,
+                    underlyingToken,
+                    vars.remainingToRepay,
+                    _maxGasToConsume / 2
                 );
 
                 if (matched > 0) {
@@ -477,6 +476,16 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
                 }
             }
         }
+
+        // Manages the case where someone has repaid on behalf of Morpho.
+        // The remaining tokens stay on the contract, and will be claimed as reserve by the governance.
+        vars.toRepay = Math.min(
+            vars.toRepay,
+            IVariableDebtToken(
+                lendingPool.getReserveData(address(underlyingToken)).variableDebtTokenAddress
+            ).scaledBalanceOf(address(this))
+            .mulWadByRay(vars.borrowPoolIndex) // The debt of the contract.
+        );
 
         if (vars.toRepay > 0) _repayERC20ToPool(underlyingToken, vars.toRepay); // Reverts on error.
 
