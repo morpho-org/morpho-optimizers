@@ -255,6 +255,7 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
         vars.remainingToWithdraw = _amount;
         vars.maxToWithdraw = poolToken.balanceOf(address(this));
         vars.supplyPoolIndex = lendingPool.getReserveNormalizedIncome(address(underlyingToken));
+        uint256 remainingGas = _maxGasToConsume;
 
         /// Soft withdraw ///
 
@@ -313,19 +314,22 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
 
             // Match pool suppliers if any.
             if (
+                remainingGas > 0 &&
                 vars.remainingToWithdraw > 0 &&
                 suppliersOnPool[_poolTokenAddress].getHead() != address(0)
             ) {
                 // Match suppliers.
+                uint256 gasLeftBeforeMatching = gasleft();
                 uint256 matched = Math.min(
                     matchingEngine.matchSuppliersDC(
                         poolToken,
                         underlyingToken,
                         vars.remainingToWithdraw,
-                        _maxGasToConsume / 2
+                        remainingGas
                     ),
                     vars.maxToWithdraw - vars.toWithdraw
                 );
+                remainingGas -= gasLeftBeforeMatching - gasleft();
 
                 if (matched > 0) {
                     vars.remainingToWithdraw -= matched;
@@ -339,11 +343,13 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
         /// Hard withdraw ///
 
         if (vars.remainingToWithdraw > 0) {
-            uint256 unmatched = matchingEngine.unmatchBorrowersDC(
-                _poolTokenAddress,
-                vars.remainingToWithdraw,
-                _maxGasToConsume / 2
-            );
+            uint256 unmatched;
+            if (remainingGas > 0)
+                unmatched = matchingEngine.unmatchBorrowersDC(
+                    _poolTokenAddress,
+                    vars.remainingToWithdraw,
+                    remainingGas
+                );
 
             // If unmatched does not cover remainingToWithdraw, the difference is added to the borrow P2P delta.
             if (unmatched < vars.remainingToWithdraw) {
@@ -390,6 +396,7 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
             lendingPool.getReserveData(address(underlyingToken)).variableDebtTokenAddress
         ).scaledBalanceOf(address(this))
         .mulWadByRay(vars.borrowPoolIndex); // The debt of the contract.
+        uint256 remainingGas = _maxGasToConsume;
 
         /// Soft repay ///
 
@@ -457,19 +464,22 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
             }
 
             if (
+                remainingGas > 0 &&
                 vars.remainingToRepay > 0 &&
                 borrowersOnPool[_poolTokenAddress].getHead() != address(0)
             ) {
                 // Match borrowers.
+                uint256 gasLeftBeforeMatching = gasleft();
                 uint256 matched = Math.min(
                     matchingEngine.matchBorrowersDC(
                         poolToken,
                         underlyingToken,
                         vars.remainingToRepay,
-                        _maxGasToConsume / 2
+                        remainingGas
                     ),
                     vars.maxToRepay - vars.toRepay
                 );
+                remainingGas -= gasLeftBeforeMatching - gasleft();
 
                 if (matched > 0) {
                     vars.remainingToRepay -= matched;
@@ -483,11 +493,13 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
         /// Hard repay ///
 
         if (vars.remainingToRepay > 0) {
-            uint256 unmatched = matchingEngine.unmatchSuppliersDC(
-                _poolTokenAddress,
-                vars.remainingToRepay,
-                _maxGasToConsume / 2
-            ); // Reverts on error.
+            uint256 unmatched;
+            if (remainingGas > 0)
+                unmatched = matchingEngine.unmatchSuppliersDC(
+                    _poolTokenAddress,
+                    vars.remainingToRepay,
+                    remainingGas
+                ); // Reverts on error.
 
             // If unmatched does not cover remainingToRepay, the difference is added to the supply P2P delta.
             if (unmatched < vars.remainingToRepay) {
