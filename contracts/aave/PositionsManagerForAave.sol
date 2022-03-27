@@ -282,7 +282,8 @@ contract PositionsManagerForAave is PositionsManagerForAaveLogic {
     function claimRewards(address[] calldata _assets, bool _swap) external nonReentrant {
         uint256 amountToClaim = rewardsManager.claimRewards(_assets, type(uint256).max, msg.sender);
 
-        if (amountToClaim > 0) {
+        if (amountToClaim == 0) revert AmountIsZero();
+        else {
             if (_swap) {
                 uint256 amountClaimed = aaveIncentivesController.claimRewards(
                     _assets,
