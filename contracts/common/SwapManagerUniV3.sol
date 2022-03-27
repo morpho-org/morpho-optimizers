@@ -52,7 +52,7 @@ contract SwapManagerUniV3 is ISwapManager, Ownable {
     /// @param _receiver The address of the receiver.
     /// @param _amountIn The amount of reward token swapped.
     /// @param _amountOut The amount of Morpho token received.
-    event Swapped(address _receiver, uint256 _amountIn, uint256 _amountOut);
+    event Swapped(address indexed _receiver, uint256 _amountIn, uint256 _amountOut);
 
     /// @notice Emitted when TWAP intervals are set.
     /// @param _rewardTwapInterval The new `rewardTwapInterval`.

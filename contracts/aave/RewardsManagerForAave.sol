@@ -43,7 +43,11 @@ abstract contract RewardsManagerForAave is IRewardsManagerForAave, Ownable {
     /// @param _user The address of the user whose index has been updated.
     /// @param _poolTokenAddress The address of the market from where the index is updated.
     /// @param _index The new index value.
-    event UserIndexUpdated(address _user, address _poolTokenAddress, uint256 _index);
+    event UserIndexUpdated(
+        address indexed _user,
+        address indexed _poolTokenAddress,
+        uint256 _index
+    );
 
     /// ERRORS ///
 
