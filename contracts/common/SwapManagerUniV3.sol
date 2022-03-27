@@ -23,24 +23,25 @@ contract SwapManagerUniV3 is ISwapManager {
 
     /// STORAGE ///
 
+    bool public singlePath; // Wether a single or a multiple paths is used for the swap.
+    uint32 public constant TWAP_INTERVAL = 1 hours; // 1 hour interval.
+    uint24 public immutable REWARD_POOL_FEE; // Fee on Uniswap for REWARD_TOKEN/WETH9 pool.
+    uint24 public immutable MORPHO_POOL_FEE; // Fee on Uniswap for MORPHO/WETH9 pool.
     uint256 public constant ONE_PERCENT = 100; // 1% in basis points.
     uint256 public constant TWO_PERCENT = 200; // 2% in basis points.
-    uint32 public constant TWAP_INTERVAL = 1 hours; // 1 hour interval.
     uint256 public constant MAX_BASIS_POINTS = 10_000; // 100% in basis points.
+
+    address public immutable REWARD_TOKEN; // The reward token address.
+    address public immutable MORPHO; // The Morpho token address.
+    address public WETH9; // Intermediate token address.
 
     // Hard coded addresses as they are the same accross chains.
     address public constant FACTORY = 0x1F98431c8aD98523631AE4a59f267346ea31F984; // The address of the Uniswap V3 factory.
-    ISwapRouter public swapRouter = ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564); // The Uniswap V3 router.
-
-    address public WETH9; // Intermediate token address.
-    address public immutable REWARD_TOKEN; // The reward token address.
-    address public immutable MORPHO; // The Morpho token address.
-    uint24 public immutable REWARD_POOL_FEE; // Fee on Uniswap for REWARD_TOKEN/WETH9 pool.
-    uint24 public immutable MORPHO_POOL_FEE; // Fee on Uniswap for MORPHO/WETH9 pool.
+    ISwapRouter public constant SWAP_ROUTER =
+        ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564); // The Uniswap V3 router.
 
     IUniswapV3Pool public pool0;
     IUniswapV3Pool public pool1;
-    bool public singlePath;
 
     /// EVENTS ///
 
@@ -67,7 +68,7 @@ contract SwapManagerUniV3 is ISwapManager {
         MORPHO_POOL_FEE = _morphoPoolFee;
         REWARD_TOKEN = _rewardToken;
         REWARD_POOL_FEE = _rewardPoolFee;
-        WETH9 = Weth9Provider(address(swapRouter)).WETH9();
+        WETH9 = Weth9Provider(address(SWAP_ROUTER)).WETH9();
 
         singlePath = _rewardToken == WETH9;
         if (!singlePath) {
@@ -112,8 +113,8 @@ contract SwapManagerUniV3 is ISwapManager {
         });
 
         // Execute the swap
-        ERC20(REWARD_TOKEN).safeApprove(address(swapRouter), _amountIn);
-        amountOut = swapRouter.exactInput(params);
+        ERC20(REWARD_TOKEN).safeApprove(address(SWAP_ROUTER), _amountIn);
+        amountOut = SWAP_ROUTER.exactInput(params);
 
         emit Swapped(_receiver, _amountIn, amountOut);
     }

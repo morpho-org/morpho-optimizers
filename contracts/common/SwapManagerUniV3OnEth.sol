@@ -26,16 +26,18 @@ contract SwapManagerUniV3OnEth is ISwapManager {
     uint256 public constant THREE_PERCENT = 300; // 3% in basis points.
     uint256 public constant MAX_BASIS_POINTS = 10_000; // 100% in basis points.
 
+    address public immutable MORPHO; // Morpho token address.
     address public constant FACTORY = 0x1F98431c8aD98523631AE4a59f267346ea31F984; // The address of the Uniswap V3 factory.
     address public constant stkAAVE = 0x4da27a545c0c5B758a6BA100e3a049001de870f5; // The address of stkAAVE token.
     address public constant AAVE = 0x7Fc66500c84A76Ad7e9c93437bFc5Ac33E2DDaE9; // The address of AAVE token.
     address public constant WETH9 = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2; // The address of WETH9 token.
-    address public immutable MORPHO; // Morpho token address.
 
-    ISwapRouter public swapRouter = ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564); // The Uniswap V3 router.
-    IUniswapV3Pool public pool0;
-    IUniswapV3Pool public pool1;
-    IUniswapV3Pool public pool2;
+    ISwapRouter public constant SWAP_ROUTER =
+        ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564); // The Uniswap V3 router.
+
+    IUniswapV3Pool public immutable pool0;
+    IUniswapV3Pool public immutable pool1;
+    IUniswapV3Pool public immutable pool2;
 
     /// EVENTS ///
 
@@ -110,8 +112,8 @@ contract SwapManagerUniV3OnEth is ISwapManager {
         });
 
         // Execute the swap.
-        IERC20(stkAAVE).safeApprove(address(swapRouter), _amountIn);
-        amountOut = swapRouter.exactInput(params);
+        IERC20(stkAAVE).safeApprove(address(SWAP_ROUTER), _amountIn);
+        amountOut = SWAP_ROUTER.exactInput(params);
 
         emit Swapped(_receiver, _amountIn, amountOut);
     }
