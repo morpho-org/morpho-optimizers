@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.7;
 
-import "./interfaces/aave/ILendingPoolAddressesProvider.sol";
 import "./interfaces/aave/IAaveIncentivesController.sol";
 import "./interfaces/aave/IScaledBalanceToken.sol";
 import "./interfaces/aave/ILendingPool.sol";
@@ -26,9 +25,8 @@ abstract contract RewardsManagerForAave is IRewardsManagerForAave, Ownable {
     mapping(address => LocalAssetData) public localAssetData; // The local data related to a given market.
 
     IAaveIncentivesController public override aaveIncentivesController;
-    ILendingPoolAddressesProvider public addressesProvider;
-    ILendingPool public lendingPool;
-    IPositionsManagerForAave public positionsManager;
+    IPositionsManagerForAave public immutable positionsManager;
+    ILendingPool public immutable lendingPool;
 
     /// EVENTS ///
 
