@@ -6,6 +6,14 @@ import "@contracts/aave/interfaces/aave/IAaveIncentivesController.sol";
 import "./setup/TestSetup.sol";
 
 contract TestRewards is TestSetup {
+    function testShouldRevertClaimingZero() public {
+        address[] memory aDaiInArray = new address[](1);
+        aDaiInArray[0] = aDai;
+
+        hevm.expectRevert(abi.encodeWithSignature("AmountIsZero()"));
+        positionsManager.claimRewards(aDaiInArray, false);
+    }
+
     // Should claim the right amount of rewards
     function test_claim_simple() public {
         uint256 toSupply = 100 ether;
@@ -42,7 +50,7 @@ contract TestRewards is TestSetup {
         supplier2.supply(aDai, toSupply);
 
         hevm.warp(block.timestamp + 365 days);
-        positionsManager.claimRewards(aDaiInArray, false);
+        supplier1.claimRewards(aDaiInArray, false);
 
         if (block.chainid == Chains.AVALANCHE_MAINNET || block.chainid == Chains.ETH_MAINNET) {
             (index, , ) = IAaveIncentivesController(aaveIncentivesControllerAddress).getAssetData(
@@ -95,21 +103,14 @@ contract TestRewards is TestSetup {
         supplier1.supply(aDai, toSupply);
         supplier2.approve(usdc, toSupply2);
         supplier2.supply(aUsdc, toSupply2);
-        uint256 rewardBalanceBefore = supplier1.balanceOf(REWARD_TOKEN);
 
         hevm.warp(block.timestamp + 365 days);
 
         address[] memory aUsdcInArray = new address[](1);
         aUsdcInArray[0] = aUsdc;
-        supplier1.claimRewards(aUsdcInArray, false);
-        uint256 rewardBalanceAfter = supplier1.balanceOf(REWARD_TOKEN);
-        assertEq(rewardBalanceAfter, rewardBalanceBefore);
 
-        uint256 unclaimedRewards = rewardsManager.accrueUserUnclaimedRewards(
-            aUsdcInArray,
-            address(supplier2)
-        );
-        assertGt(unclaimedRewards, 0);
+        hevm.expectRevert(abi.encodeWithSignature("AmountIsZero()"));
+        supplier1.claimRewards(aUsdcInArray, false);
     }
 
     // Anyone should be able to claim rewards on several markets at once
