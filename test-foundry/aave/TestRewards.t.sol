@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.7;
 
-import "@contracts/aave/interfaces/aave/IAaveIncentivesController.sol";
-
 import "./setup/TestSetup.sol";
 
 contract TestRewards is TestSetup {
@@ -14,8 +12,8 @@ contract TestRewards is TestSetup {
         positionsManager.claimRewards(aDaiInArray, false);
     }
 
-    // Should claim the right amount of rewards
-    function test_claim_simple() public {
+    // Should claim the right amount of rewards.
+    function testClaimSimple() public {
         uint256 toSupply = 100 ether;
         supplier1.approve(dai, toSupply);
         supplier1.supply(aDai, toSupply);
@@ -71,8 +69,8 @@ contract TestRewards is TestSetup {
         assertEq(balanceAfter, expectedNewBalance, "balance after wrong");
     }
 
-    // Anyone should be able to claim rewards on several markets one after another
-    function test_claim_on_several_markets() public {
+    // Anyone should be able to claim rewards on several markets one after another.
+    function testClaimOnSeveralMarkets() public {
         uint256 toSupply = 100 ether;
         uint256 toBorrow = 50 * 1e6;
         supplier1.approve(dai, toSupply);
@@ -95,8 +93,8 @@ contract TestRewards is TestSetup {
         assertGt(rewardBalanceAfter2, rewardBalanceAfter1);
     }
 
-    // Should not be possible to claim rewards for another asset
-    function test_no_reward_on_other_market() public {
+    // Should not be possible to claim rewards for another asset.
+    function testNoRewardOnOtherMarket() public {
         uint256 toSupply = 100 ether;
         uint256 toSupply2 = 50 * 1e6;
         supplier1.approve(dai, toSupply);
@@ -113,8 +111,8 @@ contract TestRewards is TestSetup {
         supplier1.claimRewards(aUsdcInArray, false);
     }
 
-    // Anyone should be able to claim rewards on several markets at once
-    function test_claim_several_rewards_at_once() public {
+    // Anyone should be able to claim rewards on several markets at once.
+    function testClaimSeveralRewardsAtOnce() public {
         uint256 toSupply = 100 ether;
         uint256 toBorrow = 50 * 1e6;
         supplier1.approve(dai, toSupply);
@@ -161,8 +159,8 @@ contract TestRewards is TestSetup {
         assertEq(protocolUnclaimedRewards, 0);
     }
 
-    // Several users should claim their rewards independently
-    function test_independant_claims() public {
+    // Several users should claim their rewards independently.
+    function testIndependantClaims() public {
         interactWithAave();
         interactWithMorpho();
 
@@ -262,7 +260,7 @@ contract TestRewards is TestSetup {
         supplier3.borrow(aUsdc, toBorrow);
     }
 
-    function test_claim_and_swap() public {
+    function testClaimAndSwap() public {
         uint256 toSupply = 100 ether;
         supplier1.approve(dai, toSupply);
         supplier1.supply(aDai, toSupply);
@@ -282,7 +280,7 @@ contract TestRewards is TestSetup {
         assertEq(rewardBalanceBefore, rewardBalanceAfter);
     }
 
-    function test_swap_with_too_much_slippage() public {
+    function testSwapWithTooMuchSlippage() public {
         uint256 toSupply = 10_000_000 ether;
         tip(dai, address(supplier1), toSupply);
         supplier1.approve(dai, toSupply);
