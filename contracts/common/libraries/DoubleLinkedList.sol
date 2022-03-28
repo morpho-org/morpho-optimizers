@@ -2,6 +2,8 @@
 pragma solidity 0.8.7;
 
 library DoubleLinkedList {
+    /// STRUCTS ///
+
     struct Account {
         address prev;
         address next;
@@ -13,6 +15,19 @@ library DoubleLinkedList {
         address head;
         address tail;
     }
+
+    /// ERRORS ///
+
+    /// @notice Thrown when the account is already inserted in the double linked list.
+    error AccountAlreadyInserted();
+
+    /// @notice Thrown when the account to remove does not exist.
+    error AccountDoesNotExist();
+
+    /// @notice Thrown when the value is zero at insertion.
+    error ValueIsZero();
+
+    /// INTERNAL ///
 
     /// @notice Returns the `account` linked to `_id`.
     /// @param _list The list to search in.
@@ -56,7 +71,7 @@ library DoubleLinkedList {
     /// @param _list The list to search in.
     /// @param _id The address of the account.
     function remove(List storage _list, address _id) internal {
-        require(_list.accounts[_id].value != 0, "DLL: account must exist");
+        if (_list.accounts[_id].value == 0) revert AccountDoesNotExist();
         Account memory account = _list.accounts[_id];
 
         if (account.prev != address(0)) _list.accounts[account.prev].next = account.next;
@@ -78,11 +93,11 @@ library DoubleLinkedList {
         uint256 _value,
         uint256 _maxIterations
     ) internal {
-        require(_value != 0, "DLL: _value must be != 0");
-        require(_list.accounts[_id].value == 0, "DLL: account already created");
+        if (_value == 0) revert ValueIsZero();
+        if (_list.accounts[_id].value != 0) revert AccountAlreadyInserted();
 
         uint256 numberOfIterations;
-        address next = _list.head;
+        address next = _list.head; // If not added at the end of the list `_id` will be inserted before `next`.
 
         while (
             numberOfIterations < _maxIterations &&
