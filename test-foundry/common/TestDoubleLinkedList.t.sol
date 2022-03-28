@@ -37,8 +37,19 @@ contract TestDoubleLinkedList is DSTest {
     }
 
     function testShouldNotInsertAccountWithZeroValue() public {
-        hevm.expectRevert("DLL: _value must be != 0");
+        hevm.expectRevert(abi.encodeWithSignature("ValueIsZero()"));
         list.insertSorted(accounts[0], 0, NDS);
+    }
+
+    function testShouldNotRemoveAccountThatDoesNotExist() public {
+        hevm.expectRevert(abi.encodeWithSignature("AccountDoesNotExist()"));
+        list.remove(accounts[0]);
+    }
+
+    function testShouldInsertSeveralTimesTheSameAccount() public {
+        list.insertSorted(accounts[0], 1, NDS);
+        hevm.expectRevert(abi.encodeWithSignature("AccountAlreadyInserted()"));
+        list.insertSorted(accounts[0], 2, NDS);
     }
 
     function testShouldHaveTheRightOrder() public {
