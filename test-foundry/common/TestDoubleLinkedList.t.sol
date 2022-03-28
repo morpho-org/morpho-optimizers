@@ -25,7 +25,6 @@ contract TestDoubleLinkedList is DSTest {
         }
     }
 
-    // Should insert one single account
     function testInsertOneSingleAccount() public {
         list.insertSorted(accounts[0], 1, NDS);
 
@@ -59,8 +58,7 @@ contract TestDoubleLinkedList is DSTest {
         assertEq(list.getTail(), accounts[0]);
     }
 
-    // Should remove one single account
-    function testRemoveOneSingleAccount() public {
+    function testShouldRemoveOneSingleAccount() public {
         list.insertSorted(accounts[0], 1, NDS);
         list.remove(accounts[0]);
 
@@ -71,8 +69,7 @@ contract TestDoubleLinkedList is DSTest {
         assertEq(list.getNext(accounts[0]), ADDR_ZERO);
     }
 
-    // Should insert 2 accounts
-    function testInsertTwoAccounts() public {
+    function testShouldInsertTwoAccounts() public {
         list.insertSorted(accounts[0], 2, NDS);
         list.insertSorted(accounts[1], 1, NDS);
 
@@ -86,8 +83,7 @@ contract TestDoubleLinkedList is DSTest {
         assertEq(list.getNext(accounts[1]), ADDR_ZERO);
     }
 
-    // Should insert 3 accounts
-    function testInsertThreeAccounts() public {
+    function testShouldInsertThreeAccounts() public {
         list.insertSorted(accounts[0], 3, NDS);
         list.insertSorted(accounts[1], 2, NDS);
         list.insertSorted(accounts[2], 1, NDS);
@@ -105,8 +101,7 @@ contract TestDoubleLinkedList is DSTest {
         assertEq(list.getNext(accounts[2]), ADDR_ZERO);
     }
 
-    // Should remove 1 account over 2
-    function testRemoveOneAccountOverTwo() public {
+    function testShouldRemoveOneAccountOverTwo() public {
         list.insertSorted(accounts[0], 2, NDS);
         list.insertSorted(accounts[1], 1, NDS);
         list.remove(accounts[0]);
@@ -119,8 +114,7 @@ contract TestDoubleLinkedList is DSTest {
         assertEq(list.getNext(accounts[1]), ADDR_ZERO);
     }
 
-    // Should remove both accounts
-    function testRemoveBothAccounts() public {
+    function testShouldRemoveBothAccounts() public {
         list.insertSorted(accounts[0], 2, NDS);
         list.insertSorted(accounts[1], 1, NDS);
         list.remove(accounts[0]);
@@ -130,8 +124,7 @@ contract TestDoubleLinkedList is DSTest {
         assertEq(list.getTail(), ADDR_ZERO);
     }
 
-    // Should insert 3 accounts and remove them
-    function testInsertThreeAccountsAndRemoveThem() public {
+    function testShouldInsertThreeAccountsAndRemoveThem() public {
         list.insertSorted(accounts[0], 3, NDS);
         list.insertSorted(accounts[1], 2, NDS);
         list.insertSorted(accounts[2], 1, NDS);
@@ -139,7 +132,7 @@ contract TestDoubleLinkedList is DSTest {
         assertEq(list.getHead(), accounts[0]);
         assertEq(list.getTail(), accounts[2]);
 
-        // Remove account 0
+        // Remove account 0.
         list.remove(accounts[0]);
         assertEq(list.getHead(), accounts[1]);
         assertEq(list.getTail(), accounts[2]);
@@ -149,21 +142,20 @@ contract TestDoubleLinkedList is DSTest {
         assertEq(list.getPrev(accounts[2]), accounts[1]);
         assertEq(list.getNext(accounts[2]), ADDR_ZERO);
 
-        // Remove account 1
+        // Remove account 1.
         list.remove(accounts[1]);
         assertEq(list.getHead(), accounts[2]);
         assertEq(list.getTail(), accounts[2]);
         assertEq(list.getPrev(accounts[2]), ADDR_ZERO);
         assertEq(list.getNext(accounts[2]), ADDR_ZERO);
 
-        // Remove account 2
+        // Remove account 2.
         list.remove(accounts[2]);
         assertEq(list.getHead(), ADDR_ZERO);
         assertEq(list.getTail(), ADDR_ZERO);
     }
 
-    // Should insert accounts all sorted
-    function testInsertAccountsAllSorted() public {
+    function testShouldInsertAccountsAllSorted() public {
         for (uint256 i = 0; i < accounts.length; i++) {
             list.insertSorted(accounts[i], NDS - i, NDS);
         }
@@ -184,8 +176,7 @@ contract TestDoubleLinkedList is DSTest {
         }
     }
 
-    // Should remove all sorted accounts
-    function testRemoveAllSortedAccount() public {
+    function testShouldRemoveAllSortedAccount() public {
         for (uint256 i = 0; i < accounts.length; i++) {
             list.insertSorted(accounts[i], NDS - i, NDS);
         }
@@ -198,12 +189,11 @@ contract TestDoubleLinkedList is DSTest {
         assertEq(list.getTail(), ADDR_ZERO);
     }
 
-    // Should insert account sorted at the beginning until NDS
-    function testInsertAccountSortedAtTheBeginningUntilNDS() public {
+    function testShouldInsertAccountSortedAtTheBeginningUntilNDS() public {
         uint256 value = 50;
         uint256 newNDS = 10;
 
-        // Add first 10 accounts with decreasing value
+        // Add first 10 accounts with decreasing value.
         for (uint256 i = 0; i < 10; i++) {
             list.insertSorted(accounts[i], value - i, newNDS);
         }
@@ -223,7 +213,7 @@ contract TestDoubleLinkedList is DSTest {
             assertEq(prevAccount, accounts[10 - i - 2]);
         }
 
-        // Add last 10 accounts at the same value
+        // Add last 10 accounts at the same value.
         for (uint256 i = NDS - 10; i < NDS; i++) {
             list.insertSorted(accounts[i], 10, newNDS);
         }
