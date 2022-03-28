@@ -123,7 +123,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
     /// @param _poolTokenAddress The address of the market from which to unmatch suppliers.
     /// @param _amount The amount to search for (in underlying).
     /// @param _maxGasToConsume The maximum amount of gas to consume within a matching engine loop.
-    /// @return The amount unmatched.
+    /// @return The amount unmatched (in underlying).
     function unmatchSuppliers(
         address _poolTokenAddress,
         uint256 _amount,
@@ -234,6 +234,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
     /// @param _poolTokenAddress The address of the market from which to unmatch borrowers.
     /// @param _amount The amount to unmatch (in underlying).
     /// @param _maxGasToConsume The maximum amount of gas to consume within a matching engine loop.
+    /// @return The amount unmatched (in underlying).
     function unmatchBorrowers(
         address _poolTokenAddress,
         uint256 _amount,
