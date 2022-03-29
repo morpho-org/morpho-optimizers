@@ -128,6 +128,14 @@ contract PositionsManagerForAave is PositionsManagerForAaveLogic {
         _checkUserLiquidity(msg.sender, _poolTokenAddress, toWithdraw, 0);
         _withdraw(_poolTokenAddress, toWithdraw, msg.sender, msg.sender, maxGas.withdraw);
         marketsManager.updateSPYs(_poolTokenAddress);
+
+        emit Withdrawn(
+            msg.sender,
+            _poolTokenAddress,
+            _amount,
+            supplyBalanceInOf[_poolTokenAddress][msg.sender].onPool,
+            supplyBalanceInOf[_poolTokenAddress][msg.sender].inP2P
+        );
     }
 
     /// @notice Repays debt of the user.
@@ -148,6 +156,14 @@ contract PositionsManagerForAave is PositionsManagerForAaveLogic {
 
         _repay(_poolTokenAddress, msg.sender, toRepay, maxGas.repay);
         marketsManager.updateSPYs(_poolTokenAddress);
+
+        emit Repaid(
+            msg.sender,
+            _poolTokenAddress,
+            _amount,
+            borrowBalanceInOf[_poolTokenAddress][msg.sender].onPool,
+            borrowBalanceInOf[_poolTokenAddress][msg.sender].inP2P
+        );
     }
 
     /// @notice Liquidates a position.
