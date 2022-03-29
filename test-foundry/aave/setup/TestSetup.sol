@@ -168,7 +168,6 @@ contract TestSetup is Config, Utils, stdCheats {
             marketsManager,
             matchingEngine,
             ILendingPoolAddressesProvider(lendingPoolAddressesProviderAddress),
-            swapManager,
             maxGas,
             20
         );
@@ -177,20 +176,23 @@ contract TestSetup is Config, Utils, stdCheats {
             // Mainnet network
             rewardsManager = new RewardsManagerForAaveOnEthAndAvax(
                 lendingPool,
-                IPositionsManagerForAave(address(positionsManager))
+                IPositionsManagerForAave(address(positionsManager)),
+                address(swapManager)
             );
             uniswapV3PoolCreator.createPoolAndMintPosition(address(morphoToken));
         } else if (block.chainid == Chains.AVALANCHE_MAINNET) {
             // Avalanche network
             rewardsManager = new RewardsManagerForAaveOnEthAndAvax(
                 lendingPool,
-                IPositionsManagerForAave(address(positionsManager))
+                IPositionsManagerForAave(address(positionsManager)),
+                address(swapManager)
             );
         } else if (block.chainid == Chains.POLYGON_MAINNET) {
             // Polygon network
             rewardsManager = new RewardsManagerForAaveOnPolygon(
                 lendingPool,
-                IPositionsManagerForAave(address(positionsManager))
+                IPositionsManagerForAave(address(positionsManager)),
+                address(swapManager)
             );
             uniswapV3PoolCreator.createPoolAndMintPosition(address(morphoToken));
         }

@@ -27,12 +27,17 @@ abstract contract RewardsManagerForAave is IRewardsManagerForAave, Ownable {
     IAaveIncentivesController public override aaveIncentivesController;
     IPositionsManagerForAave public immutable positionsManager;
     ILendingPool public immutable lendingPool;
+    address public override swapManager;
 
     /// EVENTS ///
 
     /// @notice Emitted the address of the `aaveIncentivesController` is set.
     /// @param _aaveIncentivesController The new address of the `aaveIncentivesController`.
-    event AaveIncentivesControllerSet(address _aaveIncentivesController);
+    event AaveIncentivesControllerSet(address indexed _aaveIncentivesController);
+
+    /// @notice Emitted the address of the `swapManager` is set.
+    /// @param _swapManager The new address of the `swapManager`.
+    event SwapManagerSet(address indexed _swapManager);
 
     /// @notice Emitted when the user's index is updated.
     /// @param _user The address of the user whose index has been updated.
@@ -59,11 +64,17 @@ abstract contract RewardsManagerForAave is IRewardsManagerForAave, Ownable {
     /// CONSTRUCTOR ///
 
     /// @notice Constructs the RewardsManager contract.
-    /// @param _lendingPool The lending pool on Aave.
-    /// @param _positionsManager The positions manager.
-    constructor(ILendingPool _lendingPool, IPositionsManagerForAave _positionsManager) {
+    /// @param _lendingPool The `lendingPool`.
+    /// @param _positionsManager The `positionsManager`.
+    /// @param _swapManager The address of the `swapManager`.
+    constructor(
+        ILendingPool _lendingPool,
+        IPositionsManagerForAave _positionsManager,
+        address _swapManager
+    ) {
         lendingPool = _lendingPool;
         positionsManager = _positionsManager;
+        swapManager = _swapManager;
     }
 
     /// EXTERNAL ///
@@ -77,6 +88,13 @@ abstract contract RewardsManagerForAave is IRewardsManagerForAave, Ownable {
     {
         aaveIncentivesController = IAaveIncentivesController(_aaveIncentivesController);
         emit AaveIncentivesControllerSet(_aaveIncentivesController);
+    }
+
+    /// @notice Sets the `swapManager`.
+    /// @param _swapManager The address of the `swapManager`.
+    function setSwapManager(address _swapManager) external onlyOwner {
+        swapManager = _swapManager;
+        emit SwapManagerSet(_swapManager);
     }
 
     /// @notice Accrues unclaimed rewards for the given assets and returns the total unclaimed rewards.

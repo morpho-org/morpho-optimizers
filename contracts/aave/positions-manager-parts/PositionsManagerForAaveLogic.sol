@@ -36,12 +36,10 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
     /// @param _marketsManager The `marketsManager`.
     /// @param _matchingEngine The `matchingEngine`.
     /// @param _lendingPoolAddressesProvider The `addressesProvider`.
-    /// @param _swapManager The `swapManager`.
     function initialize(
         IMarketsManagerForAave _marketsManager,
         IMatchingEngineForAave _matchingEngine,
         ILendingPoolAddressesProvider _lendingPoolAddressesProvider,
-        ISwapManager _swapManager,
         MaxGas memory _maxGas,
         uint8 _NDS
     ) external initializer {
@@ -53,7 +51,6 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
         matchingEngine = _matchingEngine;
         addressesProvider = _lendingPoolAddressesProvider;
         lendingPool = ILendingPool(addressesProvider.getLendingPool());
-        swapManager = _swapManager;
 
         NDS = _NDS;
     }
