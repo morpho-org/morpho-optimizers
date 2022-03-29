@@ -431,7 +431,7 @@ contract TestRepay is TestSetup {
         createSigners(30);
 
         // 2 * NMAX suppliers supply suppliedAmount
-        for (uint256 i = 0; i < 20; i++) {
+        for (uint256 i; i < 20; i++) {
             suppliers[i].approve(dai, suppliedAmount);
             suppliers[i].supply(aDai, suppliedAmount);
         }
@@ -540,20 +540,20 @@ contract TestRepay is TestSetup {
             .divWadByRay(oldVars.SP2PER)
             .mulWadByRay(expectedSP2PER);
 
-            for (uint256 i = 0; i < 10; i++) {
+            for (uint256 i = 10; i < 20; i++) {
                 (uint256 inP2PSupplier, uint256 onPoolSupplier) = positionsManager
                 .supplyBalanceInOf(aDai, address(suppliers[i]));
                 testEquality(
                     p2pUnitToUnderlying(inP2PSupplier, newVars.SP2PER),
                     expectedSupplyBalanceInUnderlying,
-                    "not expected balance"
+                    "not expected balance P2P"
                 );
-                testEquality(onPoolSupplier, 0);
+                testEquality(onPoolSupplier, 0, "not expected balance pool");
             }
         }
 
         // Supply delta reduction with suppliers withdrawing
-        for (uint256 i = 0; i < 10; i++) {
+        for (uint256 i = 10; i < 20; i++) {
             suppliers[i].withdraw(aDai, suppliedAmount);
         }
 
