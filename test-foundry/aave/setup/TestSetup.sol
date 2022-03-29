@@ -105,7 +105,12 @@ contract TestSetup is Config, Utils, stdCheats {
             uniswapV3PoolCreator = new UniswapV3PoolCreator();
             tip(uniswapV3PoolCreator.WETH9(), address(uniswapV3PoolCreator), INITIAL_BALANCE * WAD);
             morphoToken = new MorphoToken(address(uniswapV3PoolCreator));
-            swapManager = new SwapManagerUniV3OnMainnet(address(morphoToken), MORPHO_UNIV3_FEE);
+            swapManager = new SwapManagerUniV3OnMainnet(
+                address(morphoToken),
+                MORPHO_UNIV3_FEE,
+                1 hours,
+                1 hours
+            );
         } else if (block.chainid == Chains.POLYGON_MAINNET) {
             // Polygon network.
             // Create a MORPHO / WMATIC pool.
@@ -116,7 +121,9 @@ contract TestSetup is Config, Utils, stdCheats {
                 address(morphoToken),
                 MORPHO_UNIV3_FEE,
                 REWARD_TOKEN,
-                REWARD_UNIV3_FEE
+                REWARD_UNIV3_FEE,
+                1 hours,
+                1 hours
             );
         } else if (block.chainid == Chains.AVALANCHE_MAINNET) {
             // Avalanche network.
