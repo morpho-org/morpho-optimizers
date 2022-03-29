@@ -112,6 +112,5 @@ abstract contract PositionsManagerForAaveStorage is OwnableUpgradeable, Reentran
     IMarketsManagerForAave public marketsManager;
     IMatchingEngineForAave public matchingEngine;
     IRewardsManagerForAave public rewardsManager;
-    ISwapManager public swapManager;
     address public treasuryVault;
 }
