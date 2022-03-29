@@ -601,4 +601,10 @@ contract TestRepay is TestSetup {
             suppliers[i].withdraw(aDai, type(uint256).max);
         }
     }
+
+    // should be uncallable with _amount == 0
+    function test_no_repay_zero() public {
+        hevm.expectRevert(abi.encodeWithSignature("AmountIsZero()"));
+        positionsManager.repay(aDai, 0);
+    }
 }

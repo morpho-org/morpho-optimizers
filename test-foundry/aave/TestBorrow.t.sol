@@ -198,4 +198,10 @@ contract TestBorrow is TestSetup {
         testEquality(inP2P, expectedInP2P);
         testEquality(onPool, expectedOnPool);
     }
+
+    // should be uncallable with _amount == 0
+    function test_no_borrow_zero() public {
+        hevm.expectRevert(abi.encodeWithSignature("AmountIsZero()"));
+        positionsManager.borrow(aDai, 0, 1, type(uint256).max);
+    }
 }

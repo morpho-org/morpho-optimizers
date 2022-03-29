@@ -663,4 +663,10 @@ contract TestWithdraw is TestSetup {
         borrower1.borrow(aDai, toBorrow);
         supplier1.withdraw(aDai, toSupply);
     }
+
+    // should be uncallable with _amount == 0
+    function test_no_withdraw_zero() public {
+        hevm.expectRevert(abi.encodeWithSignature("AmountIsZero()"));
+        positionsManager.withdraw(aDai, 0);
+    }
 }
