@@ -21,8 +21,7 @@ contract TestRewards is TestSetup {
         rewardsManager.accrueUserUnclaimedRewards(array, address(supplier1));
     }
 
-    // Should claim the right amount of rewards.
-    function testClaimSupplyRewardsSimple() public {
+    function testShouldClaimRightAmountOfSupplyRewards() public {
         uint256 toSupply = 100 ether;
         supplier1.approve(dai, toSupply);
         supplier1.supply(aDai, toSupply);
@@ -78,8 +77,7 @@ contract TestRewards is TestSetup {
         assertEq(balanceAfter, expectedNewBalance, "balance after wrong");
     }
 
-    // Should claim the right amount of rewards.
-    function testClaimBorrowRewardsSimple() public {
+    function testShouldClaimRightAmountOfBorrowRewards() public {
         uint256 toSupply = 100 ether;
         supplier1.approve(dai, toSupply);
         supplier1.supply(aDai, toSupply);
@@ -133,8 +131,7 @@ contract TestRewards is TestSetup {
         assertEq(balanceAfter, expectedNewBalance, "balance after wrong");
     }
 
-    // Anyone should be able to claim rewards on several markets one after another.
-    function testClaimOnSeveralMarkets() public {
+    function testShouldClaimOnSeveralMarkets() public {
         uint256 toSupply = 100 ether;
         uint256 toBorrow = 50 * 1e6;
         supplier1.approve(dai, toSupply);
@@ -157,8 +154,7 @@ contract TestRewards is TestSetup {
         assertGt(rewardBalanceAfter2, rewardBalanceAfter1);
     }
 
-    // Should not be possible to claim rewards for another asset.
-    function testNoRewardOnOtherMarket() public {
+    function testShouldNotBePossibleToClaimRewardsOnOtherMarket() public {
         uint256 toSupply = 100 ether;
         uint256 toSupply2 = 50 * 1e6;
         supplier1.approve(dai, toSupply);
@@ -175,8 +171,7 @@ contract TestRewards is TestSetup {
         supplier1.claimRewards(aUsdcInArray, false);
     }
 
-    // Anyone should be able to claim rewards on several markets at once.
-    function testClaimSeveralRewardsAtOnce() public {
+    function testShouldClaimRewardsOnSeveralMarketsAtOnce() public {
         uint256 toSupply = 100 ether;
         uint256 toBorrow = 50 * 1e6;
         supplier1.approve(dai, toSupply);
@@ -223,8 +218,7 @@ contract TestRewards is TestSetup {
         assertEq(protocolUnclaimedRewards, 0);
     }
 
-    // Several users should claim their rewards independently.
-    function testIndependantClaims() public {
+    function testUsersShouldClaimRewardsIndependently() public {
         interactWithAave();
         interactWithMorpho();
 
@@ -324,7 +318,7 @@ contract TestRewards is TestSetup {
         supplier3.borrow(aUsdc, toBorrow);
     }
 
-    function testClaimAndSwap() public {
+    function testShouldClaimRewardsAndSwap() public {
         uint256 toSupply = 100 ether;
         supplier1.approve(dai, toSupply);
         supplier1.supply(aDai, toSupply);
@@ -344,7 +338,7 @@ contract TestRewards is TestSetup {
         assertEq(rewardBalanceBefore, rewardBalanceAfter);
     }
 
-    function testSwapWithTooMuchSlippage() public {
+    function testShouldNotBePossibleToSwapIfTooMuchSlippage() public {
         uint256 toSupply = 10_000_000 ether;
         tip(dai, address(supplier1), toSupply);
         supplier1.approve(dai, toSupply);

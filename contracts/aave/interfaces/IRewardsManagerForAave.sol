@@ -10,6 +10,8 @@ interface IRewardsManagerForAave {
 
     function setAaveIncentivesController(address) external;
 
+    function setSwapManager(address) external;
+
     function getUserIndex(address, address) external returns (uint256);
 
     function accrueUserUnclaimedRewards(address[] calldata, address) external returns (uint256);
