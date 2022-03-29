@@ -441,7 +441,7 @@ contract TestWithdraw is TestSetup {
         createSigners(30);
 
         // 2 * NMAX borrowers borrow borrowedAmount
-        for (uint256 i = 0; i < 20; i++) {
+        for (uint256 i; i < 20; i++) {
             borrowers[i].approve(usdc, to6Decimals(collateral));
             borrowers[i].supply(aUsdc, to6Decimals(collateral));
             borrowers[i].borrow(aDai, borrowedAmount, type(uint64).max);
@@ -465,7 +465,7 @@ contract TestWithdraw is TestSetup {
                 borrowP2PExchangeRate
             );
 
-            for (uint256 i = 0; i < 20; i++) {
+            for (uint256 i = 10; i < 20; i++) {
                 (uint256 inP2PBorrower, uint256 onPoolBorrower) = positionsManager
                 .borrowBalanceInOf(aDai, address(borrowers[i]));
                 testEquality(onPoolBorrower, 0);
@@ -551,7 +551,7 @@ contract TestWithdraw is TestSetup {
             .divWadByRay(oldVars.BP2PER)
             .mulWadByRay(expectedBP2PER);
 
-            for (uint256 i = 0; i < 10; i++) {
+            for (uint256 i = 10; i < 20; i++) {
                 (uint256 inP2PBorrower, uint256 onPoolBorrower) = positionsManager
                 .borrowBalanceInOf(aDai, address(borrowers[i]));
                 testEquality(
@@ -564,7 +564,7 @@ contract TestWithdraw is TestSetup {
         }
 
         // Borrow delta reduction with borrowers repaying
-        for (uint256 i = 0; i < 10; i++) {
+        for (uint256 i = 10; i < 20; i++) {
             borrowers[i].approve(dai, borrowedAmount);
             borrowers[i].repay(aDai, borrowedAmount);
         }
