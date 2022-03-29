@@ -101,4 +101,10 @@ contract TestLiquidate is TestSetup {
         testEquality(onPoolBorrower, expectedOnPool);
         assertEq(inP2PBorrower, 0);
     }
+
+    // should be uncallable with _amount == 0
+    function test_no_liquidate_zero() public {
+        hevm.expectRevert(abi.encodeWithSignature("AmountIsZero()"));
+        positionsManager.liquidate(aDai, aDai, aDai, 0);
+    }
 }

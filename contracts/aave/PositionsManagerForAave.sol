@@ -22,6 +22,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveLogic {
         uint256 _amount,
         uint16 _referralCode
     ) external nonReentrant {
+        if (_amount == 0) revert AmountIsZero();
         marketsManager.updateP2PExchangeRates(_poolTokenAddress);
         _supply(_poolTokenAddress, _amount, maxGas.supply);
         marketsManager.updateSPYs(_poolTokenAddress);
@@ -48,6 +49,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveLogic {
         uint16 _referralCode,
         uint256 _maxGasToConsume
     ) external nonReentrant {
+        if (_amount == 0) revert AmountIsZero();
         marketsManager.updateP2PExchangeRates(_poolTokenAddress);
         _supply(_poolTokenAddress, _amount, _maxGasToConsume);
         marketsManager.updateSPYs(_poolTokenAddress);
@@ -71,6 +73,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveLogic {
         uint256 _amount,
         uint16 _referralCode
     ) external nonReentrant {
+        if (_amount == 0) revert AmountIsZero();
         marketsManager.updateP2PExchangeRates(_poolTokenAddress);
         _borrow(_poolTokenAddress, _amount, maxGas.borrow);
         marketsManager.updateSPYs(_poolTokenAddress);
@@ -96,6 +99,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveLogic {
         uint16 _referralCode,
         uint256 _maxGasToConsume
     ) external nonReentrant {
+        if (_amount == 0) revert AmountIsZero();
         marketsManager.updateP2PExchangeRates(_poolTokenAddress);
         _borrow(_poolTokenAddress, _amount, _maxGasToConsume);
         marketsManager.updateSPYs(_poolTokenAddress);
@@ -114,6 +118,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveLogic {
     /// @param _poolTokenAddress The address of the market the user wants to interact with.
     /// @param _amount The amount of tokens (in underlying) to withdraw from supply.
     function withdraw(address _poolTokenAddress, uint256 _amount) external nonReentrant {
+        if (_amount == 0) revert AmountIsZero();
         marketsManager.updateP2PExchangeRates(_poolTokenAddress);
 
         uint256 toWithdraw = Math.min(
@@ -143,6 +148,7 @@ contract PositionsManagerForAave is PositionsManagerForAaveLogic {
     /// @param _poolTokenAddress The address of the market the user wants to interact with.
     /// @param _amount The amount of token (in underlying) to repay from borrow.
     function repay(address _poolTokenAddress, uint256 _amount) external nonReentrant {
+        if (_amount == 0) revert AmountIsZero();
         marketsManager.updateP2PExchangeRates(_poolTokenAddress);
 
         uint256 toRepay = Math.min(

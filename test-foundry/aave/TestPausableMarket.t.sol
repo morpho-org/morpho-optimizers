@@ -68,7 +68,7 @@ contract TestPausableMarket is TestSetup {
         supplier1.supply(aDai, amount);
 
         hevm.expectRevert(abi.encodeWithSignature("MarketPaused()"));
-        supplier1.borrow(aUsdc, 0);
+        supplier1.borrow(aUsdc, 1);
 
         supplier1.approve(usdc, toBorrow);
         hevm.expectRevert(abi.encodeWithSignature("MarketPaused()"));

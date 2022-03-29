@@ -200,4 +200,10 @@ contract TestSupply is TestSetup {
         testEquality(inP2P, expectedInP2P);
         testEquality(onPool, expectedOnPool);
     }
+
+    // should be uncallable with _amount == 0
+    function test_no_supply_zero() public {
+        hevm.expectRevert(abi.encodeWithSignature("AmountIsZero()"));
+        positionsManager.supply(aDai, 0, 1, type(uint256).max);
+    }
 }
