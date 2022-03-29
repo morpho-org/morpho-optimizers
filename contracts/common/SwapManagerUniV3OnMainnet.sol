@@ -11,17 +11,20 @@ import "@uniswap/v3-core/contracts/libraries/FullMath.sol";
 import "@uniswap/v3-core/contracts/libraries/TickMath.sol";
 import "./libraries/uniswap/PoolAddress.sol";
 
+import "@openzeppelin/contracts/access/Ownable.sol";
+
 /// @title SwapManager for Uniswap V3 on ethereum mainnet.
 /// @dev Smart contract managing the swap of reward tokens to Morpho tokens on Uniswap V3 on ethereum mainnet.
-contract SwapManagerUniV3OnMainnet is ISwapManager {
+contract SwapManagerUniV3OnMainnet is ISwapManager, Ownable {
     using SafeERC20 for IERC20;
     using FullMath for uint256;
 
     /// STORAGE ///
 
-    uint32 public constant TWAP_INTERVAL = 3_600; // 1 hour interval.
-    uint24 public constant FIRST_POOL_FEE = 3000; // Fee on Uniswap for stkAAVE/AAVE pool.
-    uint24 public constant SECOND_POOL_FEE = 3000; // Fee on Uniswap for AAVE/WETH9 pool.
+    uint32 public aaveTwapInterval; // The interval for the Time-Weighted Average Price for AAVE/WETH9 pool.
+    uint32 public morphoTwapInterval; // The interval for the Time-Weighted Average Price for MORPHO/WETH9 pool.
+    uint24 public constant FIRST_POOL_FEE = 3_000; // Fee on Uniswap for stkAAVE/AAVE pool.
+    uint24 public constant SECOND_POOL_FEE = 3_000; // Fee on Uniswap for AAVE/WETH9 pool.
     uint24 public immutable MORPHO_POOL_FEE; // Fee on Uniswap for WETH9/MORPHO pool.
     uint256 public constant THREE_PERCENT = 300; // 3% in basis points.
     uint256 public constant MAX_BASIS_POINTS = 10_000; // 100% in basis points.
@@ -47,25 +50,35 @@ contract SwapManagerUniV3OnMainnet is ISwapManager {
     /// @param _amountOut The amount of Morpho token received.
     event Swapped(address _receiver, uint256 _amountIn, uint256 _amountOut);
 
-    /// STRUCTS ///
+    /// @notice Emitted when TWAP intervals are set.
+    /// @param _aaveTwapInterval The new `aaveTwapInterval`.
+    /// @param _morphoTwapInterval The new `morphoTwapInterval`.
+    event TwapIntervalsSet(uint32 _aaveTwapInterval, uint32 _morphoTwapInterval);
 
-    // Struct to avoid stack too deep error.
-    struct OracleTwapVars {
-        uint256 priceX960;
-        uint256 priceX961;
-        uint256 numerator;
-        uint256 denominator;
-        uint256 expectedAmountOutMinimum;
-    }
+    /// ERRORS ///
+
+    /// @notice Thrown when a TWAP interval is too short.
+    error TwapTooShort();
 
     /// CONSTRUCTOR ///
 
     /// @notice Constructs the SwapManagerUniV3 contract.
     /// @param _morphoToken The Morpho token address.
     /// @param _morphoPoolFee The reward token address.
-    constructor(address _morphoToken, uint24 _morphoPoolFee) {
+    /// @param _aaveTwapInterval The interval for the Time-Weighted Average Price for AAVE/WETH9 pool.
+    /// @param _morphoTwapInterval The interval for the Time-Weighted Average Price MORPHO/WETH9 pool.
+    constructor(
+        address _morphoToken,
+        uint24 _morphoPoolFee,
+        uint32 _aaveTwapInterval,
+        uint32 _morphoTwapInterval
+    ) {
+        if (_aaveTwapInterval < 5 minutes || _morphoTwapInterval < 5 minutes) revert TwapTooShort();
+
         MORPHO = _morphoToken;
         MORPHO_POOL_FEE = _morphoPoolFee;
+        aaveTwapInterval = _aaveTwapInterval;
+        morphoTwapInterval = _morphoTwapInterval;
 
         pool0 = IUniswapV3Pool(
             PoolAddress.computeAddress(
@@ -88,6 +101,21 @@ contract SwapManagerUniV3OnMainnet is ISwapManager {
     }
 
     /// EXTERNAL ///
+
+    /// @notice Sets TWAP intervals.
+    /// @param _aaveTwapInterval The new `aaveTwapInterval`.
+    /// @param _morphoTwapInterval The new `morphoTwapInterval`.
+    function setTwapIntervals(uint32 _aaveTwapInterval, uint32 _morphoTwapInterval)
+        external
+        onlyOwner
+    {
+        if (_aaveTwapInterval < 5 minutes || _morphoTwapInterval < 5 minutes) revert TwapTooShort();
+
+        aaveTwapInterval = _aaveTwapInterval;
+        morphoTwapInterval = _morphoTwapInterval;
+
+        emit TwapIntervalsSet(_aaveTwapInterval, _morphoTwapInterval);
+    }
 
     /// @notice Swaps reward tokens to Morpho token.
     /// @param _amountIn The amount of reward token to swap.
@@ -118,7 +146,7 @@ contract SwapManagerUniV3OnMainnet is ISwapManager {
         emit Swapped(_receiver, _amountIn, amountOut);
     }
 
-    /// Internal ///
+    /// INTERNAL ///
 
     /// @dev Returns the minimum expected amount of Morpho token to receive and the multiple path for a swap.
     /// @param _amountIn The amount of reward token to swap.
@@ -129,27 +157,33 @@ contract SwapManagerUniV3OnMainnet is ISwapManager {
         view
         returns (uint256 expectedAmountOutMinimum, bytes memory path)
     {
-        uint32[] memory secondsAgo = new uint32[](2);
-        secondsAgo[0] = TWAP_INTERVAL;
-        secondsAgo[1] = 0;
+        uint32[] memory aaveSecondsAgo = new uint32[](2);
+        aaveSecondsAgo[0] = aaveTwapInterval;
+        aaveSecondsAgo[1] = 0;
+
+        uint32[] memory morphoSecondsAgo = new uint32[](2);
+        morphoSecondsAgo[0] = morphoTwapInterval;
+        morphoSecondsAgo[1] = 0;
 
         uint256 priceX961;
         uint256 priceX962;
 
         {
-            // pool0 is not observed as aave and stkaave are pegged
-            // we consider 1 aave = 1 stkaave as the fair price.
-            (int56[] memory tickCumulatives1, ) = pool1.observe(secondsAgo);
-            (int56[] memory tickCumulatives2, ) = pool2.observe(secondsAgo);
+            // pool0 is not observed as AAVE and stkAAVE are pegged.
+            // We consider 1 aave = 1 stkaave as the fair price.
+            (int56[] memory tickCumulatives1, ) = pool1.observe(aaveSecondsAgo);
+            (int56[] memory tickCumulatives2, ) = pool2.observe(morphoSecondsAgo);
 
             // For the pair token0/token1 -> 1.0001 * readingTick = price = token1 / token0
-            // So token1 = price * token0
+            // So token1 = price * token0.
 
             uint160 sqrtPriceX961 = TickMath.getSqrtRatioAtTick(
-                int24((tickCumulatives1[1] - tickCumulatives1[0]) / int24(uint24(TWAP_INTERVAL)))
+                int24((tickCumulatives1[1] - tickCumulatives1[0]) / int24(uint24(aaveTwapInterval)))
             );
             uint160 sqrtPriceX962 = TickMath.getSqrtRatioAtTick(
-                int24((tickCumulatives2[1] - tickCumulatives2[0]) / int24(uint24(TWAP_INTERVAL)))
+                int24(
+                    (tickCumulatives2[1] - tickCumulatives2[0]) / int24(uint24(morphoTwapInterval))
+                )
             );
             priceX961 = _getPriceX96FromSqrtPriceX96(sqrtPriceX961);
             priceX962 = _getPriceX96FromSqrtPriceX96(sqrtPriceX962);
