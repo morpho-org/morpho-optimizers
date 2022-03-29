@@ -4,9 +4,11 @@ pragma solidity 0.8.7;
 import "../RewardsManagerForAave.sol";
 
 contract RewardsManagerForAaveOnPolygon is RewardsManagerForAave {
-    constructor(ILendingPool _lendingPool, IPositionsManagerForAave _positionsManager)
-        RewardsManagerForAave(_lendingPool, _positionsManager)
-    {}
+    constructor(
+        ILendingPool _lendingPool,
+        IPositionsManagerForAave _positionsManager,
+        address _swapManager
+    ) RewardsManagerForAave(_lendingPool, _positionsManager, _swapManager) {}
 
     /// @inheritdoc RewardsManagerForAave
     function _getUpdatedIndex(address _asset, uint256 _totalStaked)

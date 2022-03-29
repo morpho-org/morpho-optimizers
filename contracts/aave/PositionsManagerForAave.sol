@@ -280,12 +280,16 @@ contract PositionsManagerForAave is PositionsManagerForAaveLogic {
         if (amountToClaim == 0) revert AmountIsZero();
         else {
             if (_swap) {
+                address swapManager = rewardsManager.swapManager();
                 uint256 amountClaimed = aaveIncentivesController.claimRewards(
                     _assets,
                     amountToClaim,
-                    address(swapManager)
+                    swapManager
                 );
-                uint256 amountOut = swapManager.swapToMorphoToken(amountClaimed, msg.sender);
+                uint256 amountOut = ISwapManager(swapManager).swapToMorphoToken(
+                    amountClaimed,
+                    msg.sender
+                );
                 emit RewardsClaimedAndSwapped(msg.sender, amountClaimed, amountOut);
             } else {
                 uint256 amountClaimed = aaveIncentivesController.claimRewards(
