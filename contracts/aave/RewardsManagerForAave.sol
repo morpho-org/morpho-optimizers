@@ -92,7 +92,7 @@ abstract contract RewardsManagerForAave is IRewardsManagerForAave, Ownable {
 
     /// @notice Sets the `swapManager`.
     /// @param _swapManager The address of the `swapManager`.
-    function setSwapManager(address _swapManager) external onlyOwner {
+    function setSwapManager(address _swapManager) external override onlyOwner {
         swapManager = _swapManager;
         emit SwapManagerSet(_swapManager);
     }
