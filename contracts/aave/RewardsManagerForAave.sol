@@ -118,15 +118,15 @@ abstract contract RewardsManagerForAave is IRewardsManagerForAave, Ownable {
     /// @notice Updates the unclaimed rewards of an user.
     /// @param _user The address of the user.
     /// @param _asset The address of the reference asset of the distribution (aToken or variable debt token).
-    /// @param _stakedByUser The amount of tokens staked by the user in the distribution at the moment.
-    /// @param _totalStaked The total of tokens staked in the distribution.
+    /// @param _userBalance The user balance of tokens in the distribution.
+    /// @param _totalBalance The total balance of tokens in the distribution.
     function updateUserAssetAndAccruedRewards(
         address _user,
         address _asset,
-        uint256 _stakedByUser,
-        uint256 _totalStaked
+        uint256 _userBalance,
+        uint256 _totalBalance
     ) external override onlyPositionsManager {
-        userUnclaimedRewards[_user] += _updateUserAsset(_user, _asset, _stakedByUser, _totalStaked);
+        userUnclaimedRewards[_user] += _updateUserAsset(_user, _asset, _userBalance, _totalBalance);
     }
 
     /// @notice Returns the index of the `_user` for a given `_asset`.
@@ -161,20 +161,20 @@ abstract contract RewardsManagerForAave is IRewardsManagerForAave, Ownable {
             DataTypes.ReserveData memory reserve = lendingPool.getReserveData(
                 IGetterUnderlyingAsset(asset).UNDERLYING_ASSET_ADDRESS()
             );
-            uint256 stakedByUser;
+            uint256 userBalance;
             if (asset == reserve.aTokenAddress)
-                stakedByUser = positionsManager
+                userBalance = positionsManager
                 .supplyBalanceInOf(reserve.aTokenAddress, _user)
                 .onPool;
             else if (asset == reserve.variableDebtTokenAddress)
-                stakedByUser = positionsManager
+                userBalance = positionsManager
                 .borrowBalanceInOf(reserve.aTokenAddress, _user)
                 .onPool;
             else revert InvalidAsset();
 
-            uint256 totalStaked = IScaledBalanceToken(asset).scaledTotalSupply();
+            uint256 totalBalance = IScaledBalanceToken(asset).scaledTotalSupply();
 
-            unclaimedRewards += _updateUserAsset(_user, asset, stakedByUser, totalStaked);
+            unclaimedRewards += _updateUserAsset(_user, asset, userBalance, totalBalance);
         }
 
         userUnclaimedRewards[_user] = unclaimedRewards;
@@ -185,22 +185,22 @@ abstract contract RewardsManagerForAave is IRewardsManagerForAave, Ownable {
     /// @dev Updates the state of an user in a distribution.
     /// @param _user The address of the user.
     /// @param _asset The address of the reference asset of the distribution (aToken or variable debt token).
-    /// @param _stakedByUser The amount of tokens staked by the user in the distribution at the moment.
-    /// @param _totalStaked The total of tokens staked in the distribution.
+    /// @param _userBalance The user balance of tokens in the distribution.
+    /// @param _totalBalance The total balance of tokens in the distribution.
     /// @return accruedRewards The accrued rewards for the user until the moment for this asset.
     function _updateUserAsset(
         address _user,
         address _asset,
-        uint256 _stakedByUser,
-        uint256 _totalStaked
+        uint256 _userBalance,
+        uint256 _totalBalance
     ) internal returns (uint256 accruedRewards) {
         LocalAssetData storage localData = localAssetData[_asset];
         uint256 formerUserIndex = localData.userIndex[_user];
-        uint256 newIndex = _getUpdatedIndex(_asset, _totalStaked);
+        uint256 newIndex = _getUpdatedIndex(_asset, _totalBalance);
 
         if (formerUserIndex != newIndex) {
-            if (_stakedByUser != 0)
-                accruedRewards = _getRewards(_stakedByUser, newIndex, formerUserIndex);
+            if (_userBalance != 0)
+                accruedRewards = _getRewards(_userBalance, newIndex, formerUserIndex);
 
             localData.userIndex[_user] = newIndex;
 
@@ -212,7 +212,7 @@ abstract contract RewardsManagerForAave is IRewardsManagerForAave, Ownable {
     /// @param _currentIndex The current index of the distribution.
     /// @param _emissionPerSecond The total rewards distributed per second per asset unit, on the distribution.
     /// @param _lastUpdateTimestamp The last moment this distribution was updated.
-    /// @param _totalBalance The total balance of tokens considered for the distribution.
+    /// @param _totalBalance The total balance of tokens in the distribution.
     /// @return The new index.
     function _getAssetIndex(
         uint256 _currentIndex,
@@ -238,23 +238,23 @@ abstract contract RewardsManagerForAave is IRewardsManagerForAave, Ownable {
     }
 
     /// @dev Computes and returns the rewards on a distribution.
-    /// @param _principalUserBalance The amount staked by the user on a distribution.
+    /// @param _userBalance The user balance of tokens in the distribution.
     /// @param _reserveIndex The current index of the distribution.
     /// @param _userIndex The index stored for the user, representing his staking moment.
     /// @return The rewards.
     function _getRewards(
-        uint256 _principalUserBalance,
+        uint256 _userBalance,
         uint256 _reserveIndex,
         uint256 _userIndex
     ) internal pure returns (uint256) {
-        return (_principalUserBalance * (_reserveIndex - _userIndex)) / 1e18;
+        return (_userBalance * (_reserveIndex - _userIndex)) / 1e18;
     }
 
     /// @dev Returns the next reward index.
     /// @param _asset The address of the reference asset of the distribution (aToken or variable debt token).
-    /// @param _totalStaked The total of tokens staked in the distribution.
+    /// @param _totalBalance The total balance of tokens in the distribution.
     /// @return newIndex The new distribution index.
-    function _getUpdatedIndex(address _asset, uint256 _totalStaked)
+    function _getUpdatedIndex(address _asset, uint256 _totalBalance)
         internal
         virtual
         returns (uint256 newIndex);
