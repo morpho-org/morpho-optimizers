@@ -41,7 +41,7 @@ contract TestSetup is Config, Utils, stdCheats {
 
     Vm public hevm = Vm(HEVM_ADDRESS);
 
-    uint256 public constant MAX_BASIS_POINTS = 10000;
+    uint256 public constant MAX_BASIS_POINTS = 10_000;
     uint256 public constant INITIAL_BALANCE = 1_000_000;
 
     ProxyAdmin public proxyAdmin;
@@ -135,7 +135,8 @@ contract TestSetup is Config, Utils, stdCheats {
             swapManager = new SwapManagerUniV2(
                 0x60aE616a2155Ee3d9A68541Ba4544862310933d4,
                 address(morphoToken),
-                REWARD_TOKEN
+                REWARD_TOKEN,
+                1 hours
             );
         }
 
