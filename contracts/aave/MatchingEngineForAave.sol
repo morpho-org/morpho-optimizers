@@ -304,13 +304,13 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
                 address variableDebtTokenAddress = lendingPool
                 .getReserveData(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS())
                 .variableDebtTokenAddress;
-                uint256 totalStaked = IScaledBalanceToken(variableDebtTokenAddress)
+                uint256 totalBorrowed = IScaledBalanceToken(variableDebtTokenAddress)
                 .scaledTotalSupply();
                 rewardsManager.updateUserAssetAndAccruedRewards(
                     _user,
                     variableDebtTokenAddress,
                     formerValueOnPool,
-                    totalStaked
+                    totalBorrowed
                 );
             }
             borrowersOnPool[_poolTokenAddress].insertSorted(_user, onPool, NDS);
@@ -337,12 +337,12 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         if (wasOnPoolAndValueChanged) suppliersOnPool[_poolTokenAddress].remove(_user);
         if (onPool > 0 && (wasOnPoolAndValueChanged || formerValueOnPool == 0)) {
             if (address(rewardsManager) != address(0)) {
-                uint256 totalStaked = IScaledBalanceToken(_poolTokenAddress).scaledTotalSupply();
+                uint256 totalSupplied = IScaledBalanceToken(_poolTokenAddress).scaledTotalSupply();
                 rewardsManager.updateUserAssetAndAccruedRewards(
                     _user,
                     _poolTokenAddress,
                     formerValueOnPool,
-                    totalStaked
+                    totalSupplied
                 );
             }
             suppliersOnPool[_poolTokenAddress].insertSorted(_user, onPool, NDS);
