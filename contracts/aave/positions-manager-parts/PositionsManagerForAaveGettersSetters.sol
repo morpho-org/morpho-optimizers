@@ -48,7 +48,7 @@ abstract contract PositionsManagerForAaveGettersSetters is PositionsManagerForAa
         emit MaxGasSet(_maxGas);
     }
 
-    /// @notice Sets the `_newTreasuryVaultAddress`.
+    /// @notice Sets the `treasuryVault`.
     /// @param _newTreasuryVaultAddress The address of the new `treasuryVault`.
     function setTreasuryVault(address _newTreasuryVaultAddress) external onlyOwner {
         treasuryVault = _newTreasuryVaultAddress;
@@ -111,7 +111,7 @@ abstract contract PositionsManagerForAaveGettersSetters is PositionsManagerForAa
             next = borrowersOnPool[_poolTokenAddress].getNext(_user);
     }
 
-    /// @notice Returns the collateral value, debt value and max debt value of a given user (in ETH).
+    /// @notice Returns the collateral value, debt value, max debt and liquidation value of a given user (in ETH).
     /// @param _user The user to determine liquidity for.
     /// @return collateralValue The collateral value of the user (in ETH).
     /// @return debtValue The current debt value of the user (in ETH).
