@@ -6,7 +6,7 @@ import "./setup/TestSetup.sol";
 contract TestLiquidate is TestSetup {
     // 5.1 - A user liquidates a borrower that has enough collateral to cover for his debt, the transaction reverts.
     function test_liquidate_5_1() public {
-        uint256 amount = 10000 ether;
+        uint256 amount = 10_000 ether;
         uint256 collateral = 2 * amount;
 
         borrower1.approve(usdc, address(positionsManager), to6Decimals(collateral));
@@ -92,7 +92,7 @@ contract TestLiquidate is TestSetup {
         uint256 amountToSeize = ((amount / 2) *
             vars.borrowedPrice *
             vars.collateralTokenUnit *
-            vars.liquidationBonus) / (vars.borrowedTokenUnit * vars.collateralPrice * 10000);
+            vars.liquidationBonus) / (vars.borrowedTokenUnit * vars.collateralPrice * 10_000);
 
         uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(usdc);
         uint256 expectedOnPool = collateralOnPool -

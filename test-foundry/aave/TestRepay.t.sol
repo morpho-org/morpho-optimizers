@@ -8,7 +8,7 @@ contract TestRepay is TestSetup {
 
     // - 4.1 - The borrower repays less than his `onPool` balance. The liquidity is repaid on his `onPool` balance.
     function test_repay_4_1() public {
-        uint256 amount = 10000 ether;
+        uint256 amount = 10_000 ether;
         uint256 collateral = 2 * amount;
 
         borrower1.approve(usdc, to6Decimals(collateral));
@@ -29,7 +29,7 @@ contract TestRepay is TestSetup {
 
     // - 4.1 BIS - repay all
     function test_repay_4_1_BIS() public {
-        uint256 amount = 10000 ether;
+        uint256 amount = 10_000 ether;
         uint256 collateral = 2 * amount;
 
         borrower1.approve(usdc, to6Decimals(collateral));
@@ -55,7 +55,7 @@ contract TestRepay is TestSetup {
     //   - 4.2.1 - There is a borrower `onPool` available to replace him `inP2P`.
     //             First, his debt `onPool` is repaid, his matched debt is replaced by the available borrower up to his repaid amount.
     function test_repay_4_2_1() public {
-        uint256 suppliedAmount = 10000 ether;
+        uint256 suppliedAmount = 10_000 ether;
         uint256 borrowedAmount = 2 * suppliedAmount;
         uint256 collateral = 2 * borrowedAmount;
 
@@ -130,7 +130,7 @@ contract TestRepay is TestSetup {
     function test_repay_4_2_2() public {
         setMaxGasHelper(type(uint64).max, type(uint64).max, type(uint64).max, type(uint64).max);
 
-        uint256 suppliedAmount = 10000 ether;
+        uint256 suppliedAmount = 10_000 ether;
         uint256 borrowedAmount = 2 * suppliedAmount;
         uint256 collateral = 2 * borrowedAmount;
 
@@ -229,7 +229,7 @@ contract TestRepay is TestSetup {
     //   - 4.2.3 - There are no borrowers `onPool` to replace him `inP2P`. After repaying the amount `onPool`,
     //             his P2P match(es) will be unmatched and the corresponding supplier(s) will be placed on pool.
     function test_repay_4_2_3() public {
-        uint256 suppliedAmount = 10000 ether;
+        uint256 suppliedAmount = 10_000 ether;
         uint256 borrowedAmount = 2 * suppliedAmount;
         uint256 collateral = 2 * borrowedAmount;
 
@@ -308,7 +308,7 @@ contract TestRepay is TestSetup {
     function test_repay_4_2_4() public {
         setMaxGasHelper(type(uint64).max, type(uint64).max, type(uint64).max, type(uint64).max);
 
-        uint256 suppliedAmount = 10000 ether;
+        uint256 suppliedAmount = 10_000 ether;
         uint256 borrowedAmount = 2 * suppliedAmount;
         uint256 collateral = 2 * borrowedAmount;
 

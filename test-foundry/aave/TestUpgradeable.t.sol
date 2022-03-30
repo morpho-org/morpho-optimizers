@@ -15,7 +15,7 @@ contract TestUpgradeable is TestSetup {
     }
 
     function test_upgrade_positions_manager() public {
-        uint256 amount = 10000 ether;
+        uint256 amount = 10_000 ether;
         supplier1.approve(dai, amount);
         supplier1.supply(aDai, amount);
         uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(dai);
