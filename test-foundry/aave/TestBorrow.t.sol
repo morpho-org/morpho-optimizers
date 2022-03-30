@@ -22,7 +22,7 @@ contract TestBorrow is TestSetup {
 
     // Should be able to borrow more ERC20 after already having borrowed ERC20
     function test_borrow_multiple() public {
-        uint256 amount = 10000 ether;
+        uint256 amount = 10_000 ether;
 
         borrower1.approve(usdc, address(positionsManager), to6Decimals(4 * amount));
         borrower1.supply(aUsdc, to6Decimals(4 * amount));
@@ -39,7 +39,7 @@ contract TestBorrow is TestSetup {
 
     // 2.2 - There are no available suppliers: all of the borrowed amount is onPool.
     function test_borrow_2_2() public {
-        uint256 amount = 10000 ether;
+        uint256 amount = 10_000 ether;
 
         borrower1.approve(usdc, to6Decimals(2 * amount));
         borrower1.supply(aUsdc, to6Decimals(2 * amount));
@@ -59,7 +59,7 @@ contract TestBorrow is TestSetup {
 
     // 2.3 - There is 1 available supplier, he matches 100% of the borrower liquidity, everything is inP2P.
     function test_borrow_2_3() public {
-        uint256 amount = 10000 ether;
+        uint256 amount = 10_000 ether;
 
         supplier1.approve(dai, amount);
         supplier1.supply(aDai, amount);
@@ -87,7 +87,7 @@ contract TestBorrow is TestSetup {
     // 2.4 - There is 1 available supplier, he doesn't match 100% of the borrower liquidity.
     // Borrower inP2P is equal to the supplier previous amount onPool, the rest is set onPool.
     function test_borrow_2_4() public {
-        uint256 amount = 10000 ether;
+        uint256 amount = 10_000 ether;
 
         supplier1.approve(dai, amount);
         supplier1.supply(aDai, amount);
@@ -116,7 +116,7 @@ contract TestBorrow is TestSetup {
     function test_borrow_2_5() public {
         setMaxGasHelper(type(uint64).max, type(uint64).max, type(uint64).max, type(uint64).max);
 
-        uint256 amount = 10000 ether;
+        uint256 amount = 10_000 ether;
         uint256 collateral = 2 * amount;
 
         uint8 NMAX = 20;
@@ -158,7 +158,7 @@ contract TestBorrow is TestSetup {
     function test_borrow_2_6() public {
         setMaxGasHelper(type(uint64).max, type(uint64).max, type(uint64).max, type(uint64).max);
 
-        uint256 amount = 10000 ether;
+        uint256 amount = 10_000 ether;
         uint256 collateral = 2 * amount;
 
         uint8 NMAX = 20;

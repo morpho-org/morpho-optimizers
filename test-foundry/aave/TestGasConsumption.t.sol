@@ -14,7 +14,7 @@ contract TestGasConsumption is TestSetup {
         createSigners(NDS + numberOfMatches + 1);
 
         // 1: Create NDS matches on DAI market to fill the FIFO
-        uint256 matchedAmount = (uint256(NDS) * 1000 ether);
+        uint256 matchedAmount = (uint256(NDS) * 1_000 ether);
         for (uint8 i = 0; i < NDS; i++) {
             suppliers[i].approve(dai, matchedAmount);
             suppliers[i].supply(aDai, matchedAmount);

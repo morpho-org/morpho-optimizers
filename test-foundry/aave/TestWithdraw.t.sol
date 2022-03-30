@@ -11,7 +11,7 @@ contract TestWithdraw is TestSetup {
 
     // 3.1 - The user withdrawal leads to an under-collateralized position, the withdrawal reverts.
     function test_withdraw_3_1() public {
-        uint256 amount = 10000 ether;
+        uint256 amount = 10_000 ether;
         uint256 collateral = 2 * amount;
 
         borrower1.approve(usdc, to6Decimals(collateral));
@@ -25,7 +25,7 @@ contract TestWithdraw is TestSetup {
 
     // 3.2 - The supplier withdraws less than his onPool balance. The liquidity is taken from his onPool balance.
     function test_withdraw_3_2() public {
-        uint256 amount = 10000 ether;
+        uint256 amount = 10_000 ether;
 
         supplier1.approve(usdc, to6Decimals(2 * amount));
         supplier1.supply(aUsdc, to6Decimals(2 * amount));
@@ -52,7 +52,7 @@ contract TestWithdraw is TestSetup {
 
     // 3.2 BIS - withdraw all
     function test_withdraw_3_2_BIS() public {
-        uint256 amount = 10000 ether;
+        uint256 amount = 10_000 ether;
 
         supplier1.approve(usdc, to6Decimals(amount));
         supplier1.supply(aUsdc, to6Decimals(amount));
@@ -85,7 +85,7 @@ contract TestWithdraw is TestSetup {
     // 3.3.1 - There is a supplier onPool available to replace him inP2P.
     // First, his liquidity onPool is taken, his matched is replaced by the available supplier up to his withdrawal amount.
     function test_withdraw_3_3_1() public {
-        uint256 borrowedAmount = 10000 ether;
+        uint256 borrowedAmount = 10_000 ether;
         uint256 suppliedAmount = 2 * borrowedAmount;
         uint256 collateral = 2 * borrowedAmount;
 
@@ -155,7 +155,7 @@ contract TestWithdraw is TestSetup {
     function test_withdraw_3_3_2() public {
         setMaxGasHelper(type(uint64).max, type(uint64).max, type(uint64).max, type(uint64).max);
 
-        uint256 borrowedAmount = 100000 ether;
+        uint256 borrowedAmount = 100_000 ether;
         uint256 suppliedAmount = 2 * borrowedAmount;
         uint256 collateral = 2 * borrowedAmount;
 
@@ -244,7 +244,7 @@ contract TestWithdraw is TestSetup {
     // 3.3.3 - There are no suppliers onPool to replace him inP2P. After withdrawing the amount onPool,
     // his P2P match(es) will be unmatched and the corresponding borrower(s) will be placed on pool.
     function test_withdraw_3_3_3() public {
-        uint256 borrowedAmount = 10000 ether;
+        uint256 borrowedAmount = 10_000 ether;
         uint256 suppliedAmount = 2 * borrowedAmount;
         uint256 collateral = 2 * borrowedAmount;
 
@@ -321,7 +321,7 @@ contract TestWithdraw is TestSetup {
     function test_withdraw_3_3_4() public {
         setMaxGasHelper(type(uint64).max, type(uint64).max, type(uint64).max, type(uint64).max);
 
-        uint256 borrowedAmount = 100000 ether;
+        uint256 borrowedAmount = 100_000 ether;
         uint256 suppliedAmount = 2 * borrowedAmount;
         uint256 collateral = 2 * borrowedAmount;
 
