@@ -13,7 +13,7 @@ contract TestFees is TestSetup {
 
     function testShouldNotBePossibleToSetFeesHigherThan50Percent() public {
         marketsManager.setReserveFactor(aUsdc, 5_001);
-        testEquality(marketsManager.reserveFactor(aUsdc), 5000);
+        testEquality(marketsManager.reserveFactor(aUsdc), 5_000);
     }
 
     function testOnlyOwnerCanSetTreasuryVault() public {
@@ -22,7 +22,7 @@ contract TestFees is TestSetup {
     }
 
     function testOwnerShouldBeAbleToClaimFees() public {
-        marketsManager.setReserveFactor(aDai, 1000); // 10%
+        marketsManager.setReserveFactor(aDai, 1_000); // 10%
 
         // Increase time so that rates update.
         hevm.warp(block.timestamp + 1);
@@ -45,7 +45,7 @@ contract TestFees is TestSetup {
         // Set treasury vault to 0x.
         positionsManager.setTreasuryVault(address(0));
 
-        marketsManager.setReserveFactor(aDai, 1000); // 10%
+        marketsManager.setReserveFactor(aDai, 1_000); // 10%
 
         // Increase time so that rates update.
         hevm.warp(block.timestamp + 1);
@@ -82,8 +82,8 @@ contract TestFees is TestSetup {
             reserveData.currentVariableBorrowRate
         ) / (365 days); // In ray.
 
-        uint256 supplyP2PSPY = (meanSPY * 9000) / MAX_BASIS_POINTS;
-        uint256 borrowP2PSPY = (meanSPY * 11000) / MAX_BASIS_POINTS;
+        uint256 supplyP2PSPY = (meanSPY * 9_000) / MAX_BASIS_POINTS;
+        uint256 borrowP2PSPY = (meanSPY * 11_000) / MAX_BASIS_POINTS;
 
         uint256 newSupplyExRate = RAY.rayMul(computeCompoundedInterest(supplyP2PSPY, 365 days));
         uint256 newBorrowExRate = RAY.rayMul(computeCompoundedInterest(borrowP2PSPY, 365 days));

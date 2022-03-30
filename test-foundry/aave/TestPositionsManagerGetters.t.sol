@@ -19,7 +19,7 @@ contract TestPositionsManagerGetters is TestSetup {
     }
 
     function test_get_head() public {
-        uint256 amount = 10000 ether;
+        uint256 amount = 10_000 ether;
         uint256 toBorrow = amount / 10;
 
         borrower1.approve(dai, amount);
@@ -97,7 +97,7 @@ contract TestPositionsManagerGetters is TestSetup {
     }
 
     function test_get_next() public {
-        uint256 amount = 10000 ether;
+        uint256 amount = 10_000 ether;
         uint256 toBorrow = to6Decimals(amount / 10);
 
         uint8 NDS = 10;
@@ -186,7 +186,7 @@ contract TestPositionsManagerGetters is TestSetup {
     }
 
     function test_user_liquidity_data_for_asset_with_supply() public {
-        uint256 amount = 10000 ether;
+        uint256 amount = 10_000 ether;
 
         borrower1.approve(dai, amount);
         borrower1.supply(aDai, amount);
@@ -223,7 +223,7 @@ contract TestPositionsManagerGetters is TestSetup {
     }
 
     function test_user_liquidity_data_for_asset_with_supply_and_borrow() public {
-        uint256 amount = 10000 ether;
+        uint256 amount = 10_000 ether;
         uint256 toBorrow = amount / 2;
 
         borrower1.approve(dai, amount);
@@ -264,7 +264,7 @@ contract TestPositionsManagerGetters is TestSetup {
     function test_user_liquidity_data_for_asset_with_supply_and_borrow_with_different_assets()
         public
     {
-        uint256 amount = 10000 ether;
+        uint256 amount = 10_000 ether;
         uint256 toBorrow = to6Decimals(amount / 2);
 
         borrower1.approve(dai, amount);
@@ -372,7 +372,7 @@ contract TestPositionsManagerGetters is TestSetup {
     }
 
     function test_asset_max_capacities_with_supply_on_one_asset() public {
-        uint256 amount = 10000 ether;
+        uint256 amount = 10_000 ether;
 
         borrower1.approve(usdc, to6Decimals(amount));
         borrower1.supply(aUsdc, to6Decimals(amount));
@@ -406,7 +406,7 @@ contract TestPositionsManagerGetters is TestSetup {
     }
 
     function test_asset_max_capacities_with_supply_on_several_assets_and_borrow() public {
-        uint256 amount = 10000 ether;
+        uint256 amount = 10_000 ether;
 
         borrower1.approve(usdc, to6Decimals(amount));
         borrower1.supply(aUsdc, to6Decimals(amount));
@@ -458,7 +458,7 @@ contract TestPositionsManagerGetters is TestSetup {
     }
 
     function test_user_balance_states_with_supply_and_borrow() public {
-        uint256 amount = 10000 ether;
+        uint256 amount = 10_000 ether;
         uint256 toBorrow = to6Decimals(amount / 2);
 
         borrower1.approve(dai, amount);
@@ -511,7 +511,7 @@ contract TestPositionsManagerGetters is TestSetup {
     }
 
     function test_user_balance_states_with_supply_and_borrow_on_several_assets() public {
-        uint256 amount = 10000 ether;
+        uint256 amount = 10_000 ether;
         uint256 toBorrow = 100 ether;
         uint256 toBorrowWbtc = to6Decimals(0.001 ether);
 
@@ -604,7 +604,7 @@ contract TestPositionsManagerGetters is TestSetup {
     }
 
     function test_get_user_liquidity_data_with_differents_assets_and_usdt() public {
-        uint256 amount = 10000 ether;
+        uint256 amount = 10_000 ether;
         uint256 toBorrow = 100 ether;
 
         tip(usdt, address(borrower1), to6Decimals(amount));

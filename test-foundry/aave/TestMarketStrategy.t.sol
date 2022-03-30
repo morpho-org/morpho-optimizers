@@ -5,7 +5,7 @@ import "./setup/TestSetup.sol";
 
 contract TestMarketStrategy is TestSetup {
     function test_borrow_flip_strategy_move_to_pool_borrower_first() public {
-        uint256 amount = 10000 ether;
+        uint256 amount = 10_000 ether;
         uint256 toBorrow = 500 ether;
 
         // Flip strategy
@@ -36,7 +36,7 @@ contract TestMarketStrategy is TestSetup {
     }
 
     function test_borrow_flip_strategy_move_to_pool_supplier_first() public {
-        uint256 amount = 10000 ether;
+        uint256 amount = 10_000 ether;
         uint256 toBorrow = 500 ether;
 
         // Flip strategy
@@ -67,7 +67,7 @@ contract TestMarketStrategy is TestSetup {
     }
 
     function test_borrow_flip_strategy_move_to_pool_borrowers_first() public {
-        uint256 amount = 10000 ether;
+        uint256 amount = 10_000 ether;
         uint256 toBorrow = 100 ether;
 
         // Flip strategy
@@ -104,7 +104,7 @@ contract TestMarketStrategy is TestSetup {
     }
 
     function test_borrow_flip_strategy_move_to_pool_suppliers_first() public {
-        uint256 amount = 10000 ether;
+        uint256 amount = 10_000 ether;
         uint256 toBorrow = 400 ether;
         uint256 toSupply = 100 ether;
 

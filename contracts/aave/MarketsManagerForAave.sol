@@ -26,8 +26,8 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
 
     /// STORAGE ///
 
-    uint16 public constant MAX_BASIS_POINTS = 10000; // 100% in basis point.
-    uint16 public constant HALF_MAX_BASIS_POINTS = 5000; // 50% in basis point.
+    uint16 public constant MAX_BASIS_POINTS = 10_000; // 100% in basis point.
+    uint16 public constant HALF_MAX_BASIS_POINTS = 5_000; // 50% in basis point.
     uint256 public constant SECONDS_PER_YEAR = 365 days; // The number of seconds in one year.
     address[] public marketsCreated; // Keeps track of the created markets.
     mapping(address => bool) public override isCreated; // Whether or not this market is created.
