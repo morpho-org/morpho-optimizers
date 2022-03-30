@@ -344,7 +344,8 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
             uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(
                 underlyingTokenAddress
             );
-            supplyP2PExchangeRate[_marketAddress] = _computeNewP2PExchangeRate(
+
+            uint256 newSupplyP2PExchangeRate = _computeNewP2PExchangeRate(
                 delta.supplyP2PDelta,
                 delta.supplyP2PAmount,
                 supplyP2PExchangeRate[_marketAddress],
@@ -353,12 +354,16 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
                 poolIndexes.lastSupplyPoolIndex,
                 timeDifference
             );
+
+            supplyP2PExchangeRate[_marketAddress] = newSupplyP2PExchangeRate;
+
             poolIndexes.lastSupplyPoolIndex = normalizedIncome;
 
             uint256 normalizedVariableDebt = lendingPool.getReserveNormalizedVariableDebt(
                 underlyingTokenAddress
             );
-            borrowP2PExchangeRate[_marketAddress] = _computeNewP2PExchangeRate(
+
+            uint256 newBorrowP2PExchangeRate = _computeNewP2PExchangeRate(
                 delta.borrowP2PDelta,
                 delta.borrowP2PAmount,
                 borrowP2PExchangeRate[_marketAddress],
@@ -367,12 +372,15 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
                 poolIndexes.lastBorrowPoolIndex,
                 timeDifference
             );
+
+            borrowP2PExchangeRate[_marketAddress] = newBorrowP2PExchangeRate;
+
             poolIndexes.lastBorrowPoolIndex = normalizedVariableDebt;
 
             emit P2PExchangeRatesUpdated(
                 _marketAddress,
-                supplyP2PExchangeRate[_marketAddress],
-                borrowP2PExchangeRate[_marketAddress]
+                newSupplyP2PExchangeRate,
+                newBorrowP2PExchangeRate
             );
         }
     }
@@ -392,18 +400,15 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
                 (2 * SECONDS_PER_YEAR);
         }
 
-        supplyP2PSPY[_marketAddress] =
-            (meanSPY * (MAX_BASIS_POINTS - reserveFactor[_marketAddress])) /
+        uint256 newSupplyP2PSPY = (meanSPY * (MAX_BASIS_POINTS - reserveFactor[_marketAddress])) /
             MAX_BASIS_POINTS;
-        borrowP2PSPY[_marketAddress] =
-            (meanSPY * (MAX_BASIS_POINTS + reserveFactor[_marketAddress])) /
+        uint256 newBorrowP2PSPY = (meanSPY * (MAX_BASIS_POINTS + reserveFactor[_marketAddress])) /
             MAX_BASIS_POINTS;
 
-        emit P2PSPYsUpdated(
-            _marketAddress,
-            supplyP2PSPY[_marketAddress],
-            borrowP2PSPY[_marketAddress]
-        );
+        supplyP2PSPY[_marketAddress] = newSupplyP2PSPY;
+        borrowP2PSPY[_marketAddress] = newBorrowP2PSPY;
+
+        emit P2PSPYsUpdated(_marketAddress, newSupplyP2PSPY, newBorrowP2PSPY);
     }
 
     /// @notice Computes the new P2P exchange rate from arguments.
