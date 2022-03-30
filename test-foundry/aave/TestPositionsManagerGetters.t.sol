@@ -673,4 +673,34 @@ contract TestPositionsManagerGetters is TestSetup {
         assertEq(states.maxDebtValue, expectedStates.maxDebtValue, "maxDebtValue");
         assertEq(states.liquidationValue, expectedStates.liquidationValue, "liquidationValue");
     }
+
+    function testEnteredMarkets() public {
+        borrower1.approve(dai, 10 ether);
+        borrower1.supply(aDai, 10 ether);
+
+        borrower1.approve(usdc, to6Decimals(10 ether));
+        borrower1.supply(aUsdc, to6Decimals(10 ether));
+
+        assertEq(positionsManager.enteredMarkets(address(borrower1), 0), aDai);
+        assertEq(positionsManager.enteredMarkets(address(borrower1), 1), aUsdc);
+
+        // Borrower1 withdraw, USDC should be the first in enteredMarkets.
+        borrower1.withdraw(aDai, 10 ether);
+
+        assertEq(positionsManager.enteredMarkets(address(borrower1), 0), aUsdc);
+    }
+
+    function testFailUserLeftMarkets() public {
+        borrower1.approve(dai, 10 ether);
+        borrower1.supply(aDai, 10 ether);
+
+        // Check that borrower1 entered Dai market.
+        assertEq(positionsManager.enteredMarkets(address(borrower1), 0), aDai);
+
+        // Borrower1 withdraw everything from the Dai market.
+        borrower1.withdraw(aDai, 10 ether);
+
+        // Test should fail because there is no element in the array.
+        address firstMarket = positionsManager.enteredMarkets(address(borrower1), 0);
+    }
 }
