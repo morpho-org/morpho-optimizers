@@ -155,6 +155,9 @@ abstract contract PositionsManagerForAaveEventsErrors is PositionsManagerForAave
     /// @notice Thrown when the amount is equal to 0.
     error AmountIsZero();
 
+    /// @notice Thrown when the address is the zero address.
+    error ZeroAddress();
+
     /// @notice Thrown when the market is not created yet.
     error MarketNotCreated();
 

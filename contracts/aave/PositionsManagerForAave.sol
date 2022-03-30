@@ -265,8 +265,13 @@ contract PositionsManagerForAave is PositionsManagerForAaveLogic {
         onlyOwner
         isMarketCreatedAndNotPaused(_poolTokenAddress)
     {
+        if (treasuryVault == address(0)) revert ZeroAddress();
+
         ERC20 underlyingToken = ERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
         uint256 amountToClaim = underlyingToken.balanceOf(address(this));
+
+        if (amountToClaim == 0) revert AmountIsZero();
+
         underlyingToken.safeTransfer(treasuryVault, amountToClaim);
         emit ReserveFeeClaimed(_poolTokenAddress, amountToClaim);
     }
