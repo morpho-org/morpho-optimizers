@@ -46,6 +46,7 @@ contract TestPausableMarket is TestSetup {
 
         supplier1.withdraw(aDai, 1);
 
+        hevm.expectRevert(abi.encodeWithSignature("AmountIsZero()"));
         positionsManager.claimToTreasury(aDai);
     }
 
