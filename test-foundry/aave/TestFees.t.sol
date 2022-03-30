@@ -6,6 +6,11 @@ import "./setup/TestSetup.sol";
 contract TestFees is TestSetup {
     using Math for uint256;
 
+    function testShouldRevertWhenClaimingZeroAmount() public {
+        hevm.expectRevert(abi.encodeWithSignature("AmountIsZero()"));
+        positionsManager.claimToTreasury(aDai);
+    }
+
     // Should not be possible to set the fee factor higher than 50%
     function test_higher_than_max_fees() public {
         marketsManager.setReserveFactor(aUsdc, 5_001);
@@ -22,7 +27,7 @@ contract TestFees is TestSetup {
     function test_claim_fees() public {
         marketsManager.setReserveFactor(aDai, 1000); // 10%
 
-        // Increase time so that rates update
+        // Increase time so that rates update.
         hevm.warp(block.timestamp + 1);
 
         uint256 balanceBefore = IERC20(dai).balanceOf(positionsManager.treasuryVault());
@@ -37,6 +42,27 @@ contract TestFees is TestSetup {
         uint256 balanceAfter = IERC20(dai).balanceOf(positionsManager.treasuryVault());
 
         assertLt(balanceBefore, balanceAfter);
+    }
+
+    function testShouldRevertWhenClaimingToZeroAddress() public {
+        // Set treasury vault to 0x.
+        positionsManager.setTreasuryVault(address(0));
+
+        marketsManager.setReserveFactor(aDai, 1000); // 10%
+
+        // Increase time so that rates update.
+        hevm.warp(block.timestamp + 1);
+
+        supplier1.approve(dai, type(uint256).max);
+        supplier1.supply(aDai, 100 * WAD);
+        supplier1.borrow(aDai, 50 * WAD);
+
+        hevm.warp(block.timestamp + (365 days));
+
+        supplier1.repay(aDai, type(uint256).max);
+
+        hevm.expectRevert(abi.encodeWithSignature("ZeroAddress()"));
+        positionsManager.claimToTreasury(aDai);
     }
 
     // Collected fees should be of the correct amount
@@ -83,10 +109,9 @@ contract TestFees is TestSetup {
     function test_claim_nothing() public {
         marketsManager.setReserveFactor(aDai, 0);
 
-        // Increase time so that rates update
+        // Increase time so that rates update.
         hevm.warp(block.timestamp + 1);
 
-        uint256 balanceBefore = IERC20(dai).balanceOf(positionsManager.treasuryVault());
         supplier1.approve(dai, type(uint256).max);
         supplier1.supply(aDai, 100 * WAD);
         supplier1.borrow(aDai, 50 * WAD);
@@ -94,9 +119,8 @@ contract TestFees is TestSetup {
         hevm.warp(block.timestamp + (365 days));
 
         supplier1.repay(aDai, type(uint256).max);
-        positionsManager.claimToTreasury(aDai);
-        uint256 balanceAfter = IERC20(dai).balanceOf(positionsManager.treasuryVault());
 
-        testEquality(balanceBefore, balanceAfter);
+        hevm.expectRevert(abi.encodeWithSignature("AmountIsZero()"));
+        positionsManager.claimToTreasury(aDai);
     }
 }
