@@ -6,20 +6,21 @@ import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol";
 import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
 import "./interfaces/ISwapManager.sol";
 
-import "@uniswap/lib/contracts/libraries/FixedPoint.sol";
 import "@uniswap/v2-periphery/contracts/libraries/UniswapV2OracleLibrary.sol";
-
+import "@uniswap/lib/contracts/libraries/FixedPoint.sol";
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
+
+import "@openzeppelin/contracts/access/Ownable.sol";
 
 /// @title SwapManager for Uniswap V2.
 /// @notice Smart contract managing the swap of reward tokens to Morpho tokens.
-contract SwapManagerUniV2 is ISwapManager {
+contract SwapManagerUniV2 is ISwapManager, Ownable {
     using SafeTransferLib for ERC20;
     using FixedPoint for *;
 
     /// STORAGE ///
 
-    uint256 public constant PERIOD = 1 hours;
+    uint256 public twapInterval;
     uint256 public constant ONE_PERCENT = 100; // 1% in basis points.
     uint256 public constant MAX_BASIS_POINTS = 10_000; // 100% in basis points.
     uint256 public price0CumulativeLast;
@@ -44,20 +45,34 @@ contract SwapManagerUniV2 is ISwapManager {
     /// @param _amountOut The amount of Morpho token received.
     event Swapped(address _receiver, uint256 _amountIn, uint256 _amountOut);
 
+    /// @notice Emitted when the TWAP interval is set.
+    /// @param _twapInterval The new `twapInterval`.
+    event TwapIntervalSet(uint256 _twapInterval);
+
+    /// ERRORS ///
+
+    /// @notice Thrown when the TWAP interval is too short.
+    error TwapTooShort();
+
     /// CONSTRUCTOR ///
 
     /// @notice Constructs the SwapManager contract.
     /// @param _swapRouter The swap router address.
     /// @param _morphoToken The Morpho token address.
     /// @param _rewardToken The reward token address.
+    /// @param _twapInterval The interval for the Time-Weighted Average Price for the pair.
     constructor(
         address _swapRouter,
         address _morphoToken,
-        address _rewardToken
+        address _rewardToken,
+        uint256 _twapInterval
     ) {
+        if (_twapInterval < 5 minutes) revert TwapTooShort();
+
         swapRouter = IUniswapV2Router02(_swapRouter);
         MORPHO = _morphoToken;
         REWARD_TOKEN = _rewardToken;
+        twapInterval = _twapInterval;
 
         pair = IUniswapV2Pair(
             IUniswapV2Factory(swapRouter.factory()).getPair(_morphoToken, _rewardToken)
@@ -73,50 +88,15 @@ contract SwapManagerUniV2 is ISwapManager {
         price1Average = FixedPoint.uq112x112(uint224(price1CumulativeLast));
     }
 
-    /// PUBLIC ///
-
-    /// @notice Updates average prices on PERIOD fixed window.
-    /// @dev From https://github.com/Uniswap/v2-periphery/blob/master/contracts/examples/ExampleOracleSimple.sol
-    function update() public {
-        (
-            uint256 price0Cumulative,
-            uint256 price1Cumulative,
-            uint256 blockTimestamp
-        ) = UniswapV2OracleLibrary.currentCumulativePrices(address(pair));
-        uint256 timeElapsed;
-
-        unchecked {
-            timeElapsed = blockTimestamp - blockTimestampLast; // Overflow is desired.
-        }
-
-        // Ensure that at least one full period has passed since the last update.
-        if (timeElapsed < PERIOD) return;
-
-        // An overflow is desired, casting never truncates
-        // cumulative price is in (uq112x112 price * seconds) units so we simply wrap it after division by time elapsed.
-        unchecked {
-            price0Average = FixedPoint.uq112x112(
-                uint224((price0Cumulative - price0CumulativeLast) / timeElapsed)
-            );
-            price1Average = FixedPoint.uq112x112(
-                uint224((price1Cumulative - price1CumulativeLast) / timeElapsed)
-            );
-        }
-
-        price0CumulativeLast = price0Cumulative;
-        price1CumulativeLast = price1Cumulative;
-        blockTimestampLast = blockTimestamp;
-    }
-
-    /// @notice Returns the amount of Morpho tokens according to the price average and the `_amountIn` of reward tokens.
-    /// @param _amountIn The amount of reward tokens as input.
-    /// @return The amount of Morpho tokens given the `_amountIn` as input.
-    function consult(uint256 _amountIn) public view returns (uint256) {
-        if (MORPHO == token0) return price0Average.mul(_amountIn).decode144();
-        else return price1Average.mul(_amountIn).decode144();
-    }
-
     /// EXTERNAL ///
+
+    /// @notice Sets TWAP intervals.
+    /// @param _twapInterval The new `twapInterval`.
+    function setTwapIntervals(uint32 _twapInterval) external onlyOwner {
+        if (_twapInterval < 5 minutes) revert TwapTooShort();
+        twapInterval = _twapInterval;
+        emit TwapIntervalSet(_twapInterval);
+    }
 
     /// @dev Swaps reward tokens to Morpho tokens.
     /// @param _amountIn The amount of reward token to swap.
@@ -151,5 +131,48 @@ contract SwapManagerUniV2 is ISwapManager {
         amountOut = amountsOut[1];
 
         emit Swapped(_receiver, _amountIn, amountOut);
+    }
+
+    /// PUBLIC ///
+
+    /// @notice Updates average prices on twapInterval fixed window.
+    /// @dev From https://github.com/Uniswap/v2-periphery/blob/master/contracts/examples/ExampleOracleSimple.sol
+    function update() public {
+        (
+            uint256 price0Cumulative,
+            uint256 price1Cumulative,
+            uint256 blockTimestamp
+        ) = UniswapV2OracleLibrary.currentCumulativePrices(address(pair));
+        uint256 timeElapsed;
+
+        unchecked {
+            timeElapsed = blockTimestamp - blockTimestampLast; // Overflow is desired.
+        }
+
+        // Ensure that at least one full period has passed since the last update.
+        if (timeElapsed < twapInterval) return;
+
+        // An overflow is desired, casting never truncates
+        // cumulative price is in (uq112x112 price * seconds) units so we simply wrap it after division by time elapsed.
+        unchecked {
+            price0Average = FixedPoint.uq112x112(
+                uint224((price0Cumulative - price0CumulativeLast) / timeElapsed)
+            );
+            price1Average = FixedPoint.uq112x112(
+                uint224((price1Cumulative - price1CumulativeLast) / timeElapsed)
+            );
+        }
+
+        price0CumulativeLast = price0Cumulative;
+        price1CumulativeLast = price1Cumulative;
+        blockTimestampLast = blockTimestamp;
+    }
+
+    /// @notice Returns the amount of Morpho tokens according to the price average and the `_amountIn` of reward tokens.
+    /// @param _amountIn The amount of reward tokens as input.
+    /// @return The amount of Morpho tokens given the `_amountIn` as input.
+    function consult(uint256 _amountIn) public view returns (uint256) {
+        if (MORPHO == token0) return price0Average.mul(_amountIn).decode144();
+        else return price1Average.mul(_amountIn).decode144();
     }
 }
