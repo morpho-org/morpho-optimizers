@@ -66,7 +66,7 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
         uint256 _amount,
         uint256 _maxGasToConsume
     ) internal isMarketCreatedAndNotPaused(_poolTokenAddress) {
-        _handleMembership(_poolTokenAddress, msg.sender);
+        _enterMarketIfNeeded(_poolTokenAddress, msg.sender);
 
         ERC20 underlyingToken = ERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
         underlyingToken.safeTransferFrom(msg.sender, address(this), _amount);
@@ -157,7 +157,7 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
         uint256 _amount,
         uint256 _maxGasToConsume
     ) internal isMarketCreatedAndNotPaused(_poolTokenAddress) {
-        _handleMembership(_poolTokenAddress, msg.sender);
+        _enterMarketIfNeeded(_poolTokenAddress, msg.sender);
         _checkUserLiquidity(msg.sender, _poolTokenAddress, 0, _amount);
         ERC20 underlyingToken = ERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
         uint256 remainingToBorrow = _amount;
@@ -355,6 +355,7 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
         }
 
         underlyingToken.safeTransfer(_receiver, _amount);
+        _leaveMarkerIfNeeded(_poolTokenAddress, _supplier);
     }
 
     /// @dev Implements repay logic.
@@ -484,15 +485,41 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
 
             if (toSupply > 0) _supplyERC20ToPool(underlyingToken, toSupply); // Reverts on error.
         }
+        _leaveMarkerIfNeeded(_poolTokenAddress, _user);
     }
 
-    ///@dev Enters the user into the market if not already there.
-    ///@param _user The address of the user to update.
-    ///@param _poolTokenAddress The address of the market to check.
-    function _handleMembership(address _poolTokenAddress, address _user) internal {
+    /// @dev Enters the user into the market if not already there.
+    /// @param _user The address of the user to update.
+    /// @param _poolTokenAddress The address of the market to check.
+    function _enterMarketIfNeeded(address _poolTokenAddress, address _user) internal {
         if (!userMembership[_poolTokenAddress][_user]) {
             userMembership[_poolTokenAddress][_user] = true;
             enteredMarkets[_user].push(_poolTokenAddress);
+        }
+    }
+
+    /// @dev Removes the user from the market if he has no funds or borrow on it.
+    /// @param _user The address of the user to update.
+    /// @param _poolTokenAddress The address of the market to check.
+    function _leaveMarkerIfNeeded(address _poolTokenAddress, address _user) internal {
+        if (
+            supplyBalanceInOf[_poolTokenAddress][_user].inP2P == 0 &&
+            supplyBalanceInOf[_poolTokenAddress][_user].onPool == 0 &&
+            borrowBalanceInOf[_poolTokenAddress][_user].inP2P == 0 &&
+            borrowBalanceInOf[_poolTokenAddress][_user].onPool == 0
+        ) {
+            uint256 index;
+            while (enteredMarkets[_user][index] != _poolTokenAddress) {
+                unchecked {
+                    ++index;
+                }
+            }
+            userMembership[_poolTokenAddress][_user] = false;
+
+            uint256 length = enteredMarkets[_user].length;
+            if (index != length - 1)
+                enteredMarkets[_user][index] = enteredMarkets[_user][length - 1];
+            enteredMarkets[_user].pop();
         }
     }
 
