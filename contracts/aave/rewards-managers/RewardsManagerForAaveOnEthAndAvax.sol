@@ -11,7 +11,7 @@ contract RewardsManagerForAaveOnEthAndAvax is RewardsManagerForAave {
     ) RewardsManagerForAave(_lendingPool, _positionsManager, _swapManager) {}
 
     /// @inheritdoc RewardsManagerForAave
-    function _getUpdatedIndex(address _asset, uint256 _totalStaked)
+    function _getUpdatedIndex(address _asset, uint256 _totalBalance)
         internal
         override
         returns (uint256 newIndex)
@@ -33,7 +33,7 @@ contract RewardsManagerForAaveOnEthAndAvax is RewardsManagerForAave {
                     oldIndex,
                     emissionPerSecond,
                     lastTimestampOnAave,
-                    _totalStaked
+                    _totalBalance
                 );
             localData.lastUpdateTimestamp = blockTimestamp;
             localData.lastIndex = newIndex;
