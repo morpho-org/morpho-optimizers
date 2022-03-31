@@ -14,7 +14,8 @@ library MatchingEngineFns {
         IAToken _poolToken,
         ERC20 _underlyingToken,
         uint256 _amount,
-        uint256 _maxGasToConsume
+        uint256 _maxGasToConsume,
+        uint256 _gasLeftBeforeMatching
     ) internal returns (uint256) {
         bytes memory data = address(_matchingEngine).functionDelegateCall(
             abi.encodeWithSelector(
@@ -22,7 +23,8 @@ library MatchingEngineFns {
                 _poolToken,
                 _underlyingToken,
                 _amount,
-                _maxGasToConsume
+                _maxGasToConsume,
+                _gasLeftBeforeMatching
             )
         );
         return abi.decode(data, (uint256));
@@ -32,14 +34,16 @@ library MatchingEngineFns {
         IMatchingEngineForAave _matchingEngine,
         address _poolTokenAddress,
         uint256 _amount,
-        uint256 _maxGasToConsume
+        uint256 _maxGasToConsume,
+        uint256 _gasLeftBeforeMatching
     ) internal returns (uint256) {
         bytes memory data = address(_matchingEngine).functionDelegateCall(
             abi.encodeWithSelector(
                 _matchingEngine.unmatchSuppliers.selector,
                 _poolTokenAddress,
                 _amount,
-                _maxGasToConsume
+                _maxGasToConsume,
+                _gasLeftBeforeMatching
             )
         );
         return abi.decode(data, (uint256));
@@ -50,7 +54,8 @@ library MatchingEngineFns {
         IAToken _poolToken,
         ERC20 _underlyingToken,
         uint256 _amount,
-        uint256 _maxGasToConsume
+        uint256 _maxGasToConsume,
+        uint256 _gasLeftBeforeMatching
     ) internal returns (uint256) {
         bytes memory data = address(_matchingEngine).functionDelegateCall(
             abi.encodeWithSelector(
@@ -58,7 +63,8 @@ library MatchingEngineFns {
                 _poolToken,
                 _underlyingToken,
                 _amount,
-                _maxGasToConsume
+                _maxGasToConsume,
+                _gasLeftBeforeMatching
             )
         );
         return abi.decode(data, (uint256));
@@ -68,14 +74,16 @@ library MatchingEngineFns {
         IMatchingEngineForAave _matchingEngine,
         address _poolTokenAddress,
         uint256 _amount,
-        uint256 _maxGasToConsume
+        uint256 _maxGasToConsume,
+        uint256 _gasLeftBeforeMatching
     ) internal returns (uint256) {
         bytes memory data = address(_matchingEngine).functionDelegateCall(
             abi.encodeWithSelector(
                 _matchingEngine.unmatchBorrowers.selector,
                 _poolTokenAddress,
                 _amount,
-                _maxGasToConsume
+                _maxGasToConsume,
+                _gasLeftBeforeMatching
             )
         );
         return abi.decode(data, (uint256));

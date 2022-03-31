@@ -111,7 +111,8 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
                         IAToken(_poolTokenAddress),
                         underlyingToken,
                         remainingToSupply,
-                        _maxGasToConsume
+                        _maxGasToConsume,
+                        gasleft()
                     ),
                     maxToRepay - toRepay
                 ); // In underlying.
@@ -195,7 +196,8 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
                         IAToken(_poolTokenAddress),
                         underlyingToken,
                         remainingToBorrow,
-                        _maxGasToConsume
+                        _maxGasToConsume,
+                        gasleft()
                     ),
                     maxToWithdraw - toWithdraw
                 ); // In underlying.
@@ -325,7 +327,8 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
                         poolToken,
                         underlyingToken,
                         vars.remainingToWithdraw,
-                        remainingGas
+                        remainingGas,
+                        gasLeftBeforeMatching
                     ),
                     vars.maxToWithdraw - vars.toWithdraw
                 );
@@ -348,7 +351,8 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
                 unmatched = matchingEngine.unmatchBorrowersDC(
                     _poolTokenAddress,
                     vars.remainingToWithdraw,
-                    remainingGas
+                    remainingGas,
+                    gasleft()
                 );
 
             // If unmatched does not cover remainingToWithdraw, the difference is added to the borrow P2P delta.
@@ -475,7 +479,8 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
                         poolToken,
                         underlyingToken,
                         vars.remainingToRepay,
-                        remainingGas
+                        remainingGas,
+                        gasLeftBeforeMatching
                     ),
                     vars.maxToRepay - vars.toRepay
                 );
@@ -498,7 +503,8 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
                 unmatched = matchingEngine.unmatchSuppliersDC(
                     _poolTokenAddress,
                     vars.remainingToRepay,
-                    remainingGas
+                    remainingGas,
+                    gasleft()
                 ); // Reverts on error.
 
             // If unmatched does not cover remainingToRepay, the difference is added to the supply P2P delta.

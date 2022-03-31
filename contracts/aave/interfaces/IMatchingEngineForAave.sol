@@ -10,11 +10,13 @@ interface IMatchingEngineForAave {
         IAToken,
         ERC20,
         uint256,
+        uint256,
         uint256
     ) external returns (uint256);
 
     function unmatchSuppliers(
         address,
+        uint256,
         uint256,
         uint256
     ) external returns (uint256);
@@ -23,11 +25,13 @@ interface IMatchingEngineForAave {
         IAToken,
         ERC20,
         uint256,
+        uint256,
         uint256
     ) external returns (uint256);
 
     function unmatchBorrowers(
         address,
+        uint256,
         uint256,
         uint256
     ) external returns (uint256);

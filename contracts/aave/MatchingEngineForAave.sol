@@ -80,7 +80,8 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         IAToken _poolToken,
         ERC20 _underlyingToken,
         uint256 _amount,
-        uint256 _maxGasToConsume
+        uint256 _maxGasToConsume,
+        uint256 _gasLeftBeforeMatching
     ) external override returns (uint256 matched) {
         MatchVars memory vars;
         address poolTokenAddress = address(_poolToken);
@@ -89,11 +90,10 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         vars.p2pRate = marketsManager.supplyP2PExchangeRate(poolTokenAddress);
 
         if (_maxGasToConsume != 0) {
-            vars.gasLeftAtTheBeginning = gasleft();
             while (
                 matched < _amount &&
                 user != address(0) &&
-                vars.gasLeftAtTheBeginning - gasleft() < _maxGasToConsume
+                _gasLeftBeforeMatching - gasleft() < _maxGasToConsume
             ) {
                 vars.inUnderlying = supplyBalanceInOf[poolTokenAddress][user].onPool.mulWadByRay(
                     vars.normalizer
@@ -133,7 +133,8 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
     function unmatchSuppliers(
         address _poolTokenAddress,
         uint256 _amount,
-        uint256 _maxGasToConsume
+        uint256 _maxGasToConsume,
+        uint256 _gasLeftBeforeMatching
     ) external override returns (uint256) {
         UnmatchVars memory vars;
         ERC20 underlyingToken = ERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
@@ -143,11 +144,10 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         vars.remainingToUnmatch = _amount; // In underlying
 
         if (_maxGasToConsume != 0) {
-            vars.gasLeftAtTheBeginning = gasleft();
             while (
                 vars.remainingToUnmatch > 0 &&
                 user != address(0) &&
-                vars.gasLeftAtTheBeginning - gasleft() < _maxGasToConsume
+                _gasLeftBeforeMatching - gasleft() < _maxGasToConsume
             ) {
                 vars.inUnderlying = supplyBalanceInOf[_poolTokenAddress][user].inP2P.mulWadByRay(
                     vars.p2pRate
@@ -191,7 +191,8 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         IAToken _poolToken,
         ERC20 _underlyingToken,
         uint256 _amount,
-        uint256 _maxGasToConsume
+        uint256 _maxGasToConsume,
+        uint256 _gasLeftBeforeMatching
     ) external override returns (uint256 matched) {
         MatchVars memory vars;
         address poolTokenAddress = address(_poolToken);
@@ -200,11 +201,10 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         vars.p2pRate = marketsManager.borrowP2PExchangeRate(poolTokenAddress);
 
         if (_maxGasToConsume != 0) {
-            vars.gasLeftAtTheBeginning = gasleft();
             while (
                 matched < _amount &&
                 user != address(0) &&
-                vars.gasLeftAtTheBeginning - gasleft() < _maxGasToConsume
+                _gasLeftBeforeMatching - gasleft() < _maxGasToConsume
             ) {
                 vars.inUnderlying = borrowBalanceInOf[poolTokenAddress][user].onPool.mulWadByRay(
                     vars.normalizer
@@ -244,7 +244,8 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
     function unmatchBorrowers(
         address _poolTokenAddress,
         uint256 _amount,
-        uint256 _maxGasToConsume
+        uint256 _maxGasToConsume,
+        uint256 _gasLeftBeforeMatching
     ) external override returns (uint256) {
         UnmatchVars memory vars;
         ERC20 underlyingToken = ERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
@@ -254,11 +255,10 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         vars.p2pRate = marketsManager.borrowP2PExchangeRate(_poolTokenAddress);
 
         if (_maxGasToConsume != 0) {
-            vars.gasLeftAtTheBeginning = gasleft();
             while (
                 vars.remainingToUnmatch > 0 &&
                 user != address(0) &&
-                vars.gasLeftAtTheBeginning - gasleft() < _maxGasToConsume
+                _gasLeftBeforeMatching - gasleft() < _maxGasToConsume
             ) {
                 vars.inUnderlying = borrowBalanceInOf[_poolTokenAddress][user].inP2P.mulWadByRay(
                     vars.p2pRate
