@@ -23,8 +23,7 @@ contract SwapManagerUniV3OnMainnet is ISwapManager, Ownable {
 
     uint32 public aaveTwapInterval; // The interval for the Time-Weighted Average Price for AAVE/WETH9 pool.
     uint32 public morphoTwapInterval; // The interval for the Time-Weighted Average Price for MORPHO/WETH9 pool.
-    uint24 public constant FIRST_POOL_FEE = 3_000; // Fee on Uniswap for stkAAVE/AAVE pool.
-    uint24 public constant SECOND_POOL_FEE = 3_000; // Fee on Uniswap for AAVE/WETH9 pool.
+    uint24 public constant POOL_FEE = 3_000; // Fee on Uniswap for first pools.
     uint24 public immutable MORPHO_POOL_FEE; // Fee on Uniswap for WETH9/MORPHO pool.
     uint256 public constant THREE_PERCENT = 300; // 3% in basis points.
     uint256 public constant MAX_BASIS_POINTS = 10_000; // 100% in basis points.
@@ -81,16 +80,10 @@ contract SwapManagerUniV3OnMainnet is ISwapManager, Ownable {
         morphoTwapInterval = _morphoTwapInterval;
 
         pool0 = IUniswapV3Pool(
-            PoolAddress.computeAddress(
-                FACTORY,
-                PoolAddress.getPoolKey(stkAAVE, AAVE, FIRST_POOL_FEE)
-            )
+            PoolAddress.computeAddress(FACTORY, PoolAddress.getPoolKey(stkAAVE, AAVE, POOL_FEE))
         );
         pool1 = IUniswapV3Pool(
-            PoolAddress.computeAddress(
-                FACTORY,
-                PoolAddress.getPoolKey(AAVE, WETH9, SECOND_POOL_FEE)
-            )
+            PoolAddress.computeAddress(FACTORY, PoolAddress.getPoolKey(AAVE, WETH9, POOL_FEE))
         );
         pool2 = IUniswapV3Pool(
             PoolAddress.computeAddress(
@@ -210,15 +203,7 @@ contract SwapManagerUniV3OnMainnet is ISwapManager, Ownable {
             MAX_BASIS_POINTS - THREE_PERCENT,
             MAX_BASIS_POINTS
         );
-        path = abi.encodePacked(
-            stkAAVE,
-            FIRST_POOL_FEE,
-            AAVE,
-            SECOND_POOL_FEE,
-            WETH9,
-            MORPHO_POOL_FEE,
-            MORPHO
-        );
+        path = abi.encodePacked(stkAAVE, POOL_FEE, AAVE, POOL_FEE, WETH9, MORPHO_POOL_FEE, MORPHO);
     }
 
     /// @dev Returns the price in fixed point 96 from the square of the price in fixed point 96.
