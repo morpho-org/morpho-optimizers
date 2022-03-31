@@ -565,7 +565,7 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
                     assetData.ltv) / (assetData.tokenUnit * MAX_BASIS_POINTS);
                 uint256 liquidationValueSub = (_withdrawnAmount *
                     assetData.underlyingPrice *
-                    assetData.liquidationValue) / (assetData.tokenUnit * MAX_BASIS_POINTS);
+                    assetData.liquidationThreshold) / (assetData.tokenUnit * MAX_BASIS_POINTS);
 
                 unchecked {
                     maxDebtValue -= maxDebtValue < maxDebtValueSub ? maxDebtValue : maxDebtValueSub;
