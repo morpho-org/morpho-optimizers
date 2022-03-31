@@ -18,7 +18,7 @@ import "@openzeppelin/contracts/utils/Strings.sol";
 
 import {RewardsManagerForAaveOnEthAndAvax} from "@contracts/aave/rewards-managers/RewardsManagerForAaveOnEthAndAvax.sol";
 import {RewardsManagerForAaveOnPolygon} from "@contracts/aave/rewards-managers/RewardsManagerForAaveOnPolygon.sol";
-import {SwapManagerUniV3OnEth} from "@contracts/common/SwapManagerUniV3OnEth.sol";
+import {SwapManagerUniV3OnMainnet} from "@contracts/common/SwapManagerUniV3OnMainnet.sol";
 import {SwapManagerUniV3} from "@contracts/common/SwapManagerUniV3.sol";
 import {SwapManagerUniV2} from "@contracts/common/SwapManagerUniV2.sol";
 import "../../common/uniswap/UniswapV3PoolCreator.sol";
@@ -105,7 +105,7 @@ contract TestSetup is Config, Utils, stdCheats {
             uniswapV3PoolCreator = new UniswapV3PoolCreator();
             tip(uniswapV3PoolCreator.WETH9(), address(uniswapV3PoolCreator), INITIAL_BALANCE * WAD);
             morphoToken = new MorphoToken(address(uniswapV3PoolCreator));
-            swapManager = new SwapManagerUniV3OnEth(address(morphoToken), MORPHO_UNIV3_FEE);
+            swapManager = new SwapManagerUniV3OnMainnet(address(morphoToken), MORPHO_UNIV3_FEE);
         } else if (block.chainid == Chains.POLYGON_MAINNET) {
             // Polygon network.
             // Create a MORPHO / WMATIC pool.

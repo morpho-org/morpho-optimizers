@@ -13,7 +13,7 @@ import "./libraries/uniswap/PoolAddress.sol";
 
 /// @title SwapManager for Uniswap V3 on ethereum mainnet.
 /// @dev Smart contract managing the swap of reward tokens to Morpho tokens on Uniswap V3 on ethereum mainnet.
-contract SwapManagerUniV3OnEth is ISwapManager {
+contract SwapManagerUniV3OnMainnet is ISwapManager {
     using SafeERC20 for IERC20;
     using FullMath for uint256;
 
