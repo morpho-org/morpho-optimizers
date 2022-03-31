@@ -402,7 +402,7 @@ contract TestRepay is TestSetup {
 
     function testDeltaRepay() public {
         // Allows only 10 unmatch suppliers
-        setMaxGasHelper(3e6, 3e6, 3e6, 2.6e6);
+        setMaxGasHelper(3e6, 3e6, 3e6, 1.3e6);
 
         uint256 suppliedAmount = 1 ether;
         uint256 borrowedAmount = 20 * suppliedAmount;
@@ -443,8 +443,8 @@ contract TestRepay is TestSetup {
             for (uint256 i = 0; i < 20; i++) {
                 (uint256 inP2PSupplier, uint256 onPoolSupplier) = positionsManager
                 .supplyBalanceInOf(aDai, address(suppliers[i]));
-                testEquality(onPoolSupplier, 0);
-                testEquality(inP2PSupplier, expectedSupplyBalanceInP2P);
+                testEquality(onPoolSupplier, 0, "onPoolSupplier 1");
+                testEquality(inP2PSupplier, expectedSupplyBalanceInP2P, "inP2PSupplier 1");
             }
 
             // Borrower repays max
@@ -457,8 +457,8 @@ contract TestRepay is TestSetup {
                 aDai,
                 address(borrower1)
             );
-            testEquality(onPoolBorrower1, 0);
-            testEquality(inP2PBorrower1, 0);
+            testEquality(onPoolBorrower1, 0, "onPoolBorrower1");
+            testEquality(inP2PBorrower1, 0, "inP2PBorrower1");
 
             // There should be a delta
             uint256 expectedSupplyP2PDeltaInUnderlying = 10 * suppliedAmount;
@@ -467,7 +467,7 @@ contract TestRepay is TestSetup {
                 lendingPool.getReserveNormalizedIncome(dai)
             );
             (uint256 supplyP2PDelta, , , ) = positionsManager.deltas(aDai);
-            testEquality(supplyP2PDelta, expectedSupplyP2PDelta);
+            testEquality(supplyP2PDelta, expectedSupplyP2PDelta, "supplyP2PDelta 1");
 
             // Supply delta matching by a new borrower
             borrower2.approve(usdc, to6Decimals(collateral));
@@ -484,9 +484,9 @@ contract TestRepay is TestSetup {
             );
 
             (supplyP2PDelta, , , ) = positionsManager.deltas(aDai);
-            testEquality(supplyP2PDelta, expectedSupplyP2PDelta / 2, "supply delta unexpected");
-            testEquality(onPoolBorrower, 0, "on pool not unexpected");
-            testEquality(inP2PBorrower, expectedBorrowBalanceInP2P, "in P2P unexpected");
+            testEquality(supplyP2PDelta, expectedSupplyP2PDelta / 2, "supplyP2PDelta 2");
+            testEquality(onPoolBorrower, 0, "onPoolBorrower 2");
+            testEquality(inP2PBorrower, expectedBorrowBalanceInP2P, "inP2PBorrower 2");
         }
 
         {
@@ -538,7 +538,7 @@ contract TestRepay is TestSetup {
                     (expectedSupplyBalanceInUnderlying * 2) / 100,
                     "not expected balance P2P"
                 );
-                testEquality(onPoolSupplier, 0, "not expected balance pool");
+                testEquality(onPoolSupplier, 0, "onPoolSupplier 3");
             }
         }
 
@@ -548,15 +548,15 @@ contract TestRepay is TestSetup {
         }
 
         (uint256 supplyP2PDeltaAfter, , , ) = positionsManager.deltas(aDai);
-        testEquality(supplyP2PDeltaAfter, 0);
+        testEquality(supplyP2PDeltaAfter, 0, "supplyP2PDeltaAfter");
 
         (uint256 inP2PBorrower2, uint256 onPoolBorrower2) = positionsManager.borrowBalanceInOf(
             aDai,
             address(borrower2)
         );
 
-        testEquality(inP2PBorrower2, expectedBorrowBalanceInP2P);
-        testEquality(onPoolBorrower2, 0);
+        testEquality(inP2PBorrower2, expectedBorrowBalanceInP2P, "inP2PBorrower2");
+        testEquality(onPoolBorrower2, 0, "onPoolBorrower2");
     }
 
     function testDeltaRepayAll() public {
