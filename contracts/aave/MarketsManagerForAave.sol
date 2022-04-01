@@ -5,6 +5,7 @@ import {IAToken} from "./interfaces/aave/IAToken.sol";
 import "./interfaces/aave/ILendingPool.sol";
 import "./interfaces/IPositionsManagerForAave.sol";
 import "./interfaces/IMarketsManagerForAave.sol";
+import "./interfaces/IInterestRates.sol";
 
 import {ReserveConfiguration} from "./libraries/aave/ReserveConfiguration.sol";
 import "./libraries/Math.sol";
@@ -26,7 +27,6 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
 
     /// STORAGE ///
 
-    uint16 public constant MAX_BASIS_POINTS = 10_000; // 100% in basis point.
     uint16 public constant HALF_MAX_BASIS_POINTS = 5_000; // 50% in basis point.
     uint256 public constant SECONDS_PER_YEAR = 365 days; // The number of seconds in one year.
     address[] public marketsCreated; // Keeps track of the created markets.
@@ -41,6 +41,7 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
     mapping(address => bool) public override noP2P; // Whether to put users on pool or not for the given market.
 
     IPositionsManagerForAave public positionsManager;
+    IInterestRates public interestRates;
     ILendingPool public lendingPool;
 
     /// EVENTS ///
@@ -52,6 +53,10 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
     /// @notice Emitted when the `positionsManager` is set.
     /// @param _positionsManager The address of the `positionsManager`.
     event PositionsManagerSet(address indexed _positionsManager);
+
+    /// @notice Emitted when the `interestRates` is set.
+    /// @param _interestRates The address of the `interestRates`.
+    event InterestRatesSet(address _interestRates);
 
     /// @notice Emitted when a `noP2P` variable is set.
     /// @param _marketAddress The address of the market to set.
@@ -118,11 +123,16 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
     /// UPGRADE ///
 
     /// @notice Initializes the MarketsManagerForAave contract.
-    /// @param _lendingPool The lending pool.
-    function initialize(ILendingPool _lendingPool) external initializer {
+    /// @param _lendingPool The `lendingPool`.
+    /// @param _interestRates The `interestRates`.
+    function initialize(ILendingPool _lendingPool, IInterestRates _interestRates)
+        external
+        initializer
+    {
         __Ownable_init();
 
-        lendingPool = ILendingPool(_lendingPool);
+        lendingPool = _lendingPool;
+        interestRates = _interestRates;
     }
 
     /// EXTERNAL ///
@@ -133,6 +143,13 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
         if (address(positionsManager) != address(0)) revert PositionsManagerAlreadySet();
         positionsManager = IPositionsManagerForAave(_positionsManager);
         emit PositionsManagerSet(_positionsManager);
+    }
+
+    /// @notice Sets the `intersRates`.
+    /// @param _interestRates The new `interestRates` contract.
+    function setInteresRates(IInterestRates _interestRates) external onlyOwner {
+        interestRates = _interestRates;
+        emit InterestRatesSet(address(_interestRates));
     }
 
     /// @notice Sets the `reserveFactor`.
@@ -393,17 +410,11 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
             IAToken(_marketAddress).UNDERLYING_ASSET_ADDRESS()
         );
 
-        uint256 meanSPY;
-        unchecked {
-            meanSPY =
-                (reserveData.currentLiquidityRate + reserveData.currentVariableBorrowRate) /
-                (2 * SECONDS_PER_YEAR);
-        }
-
-        uint256 newSupplyP2PSPY = (meanSPY * (MAX_BASIS_POINTS - reserveFactor[_marketAddress])) /
-            MAX_BASIS_POINTS;
-        uint256 newBorrowP2PSPY = (meanSPY * (MAX_BASIS_POINTS + reserveFactor[_marketAddress])) /
-            MAX_BASIS_POINTS;
+        (uint256 newSupplyP2PSPY, uint256 newBorrowP2PSPY) = interestRates.computeRates(
+            reserveData.currentLiquidityRate,
+            reserveData.currentVariableBorrowRate,
+            reserveFactor[_marketAddress]
+        );
 
         supplyP2PSPY[_marketAddress] = newSupplyP2PSPY;
         borrowP2PSPY[_marketAddress] = newBorrowP2PSPY;
@@ -462,16 +473,18 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
         pure
         returns (uint256)
     {
+        uint256 rate = _rate / SECONDS_PER_YEAR;
+
         if (_elapsedTime == 0) return Math.ray();
 
-        if (_elapsedTime == 1) return Math.ray() + _rate;
+        if (_elapsedTime == 1) return Math.ray() + rate;
 
-        uint256 ratePowerTwo = _rate.rayMul(_rate);
-        uint256 ratePowerThree = ratePowerTwo.rayMul(_rate);
+        uint256 ratePowerTwo = rate.rayMul(rate);
+        uint256 ratePowerThree = ratePowerTwo.rayMul(rate);
 
         return
             Math.ray() +
-            _rate *
+            rate *
             _elapsedTime +
             (_elapsedTime * (_elapsedTime - 1) * ratePowerTwo) /
             2 +
