@@ -89,25 +89,16 @@ abstract contract PositionsManagerForAaveStorage is OwnableUpgradeable, Reentran
 
     /// STORAGE ///
 
-    // Constants of non-value type not yet implemented. solidity(9259)
-    // todo : set actual values // minimal / maximal values settable for maxGas
-    uint256 internal constant MAX_GAS_SUPPLY_FLOOR = 0;
-    uint256 internal constant MAX_GAS_BORROW_FLOOR = 0;
-    uint256 internal constant MAX_GAS_WITHDRAW_FLOOR = 0;
-    uint256 internal constant MAX_GAS_REPAY_FLOOR = 0;
-    uint256 internal constant MAX_GAS_SUPPLY_CEILING = type(uint256).max;
-    uint256 internal constant MAX_GAS_BORROW_CEILING = type(uint256).max;
-    uint256 internal constant MAX_GAS_WITHDRAW_CEILING = type(uint256).max;
-    uint256 internal constant MAX_GAS_REPAY_CEILING = type(uint256).max;
-
+    MaxGas internal maxGasFloor; // minimum values settable for maxGas, immutable after initializing.
+    MaxGas internal maxGasCeiling; // maximum values settable for maxGas, immutable after initializing.
     MaxGas public maxGas; // Max gas to consume within loops in matching engine functions.
-    uint8 public NDS; // Max number of iterations in the data structure sorting process.
+    uint32 public NDS; // Max number of iterations in the data structure sorting process.
     uint8 public constant NO_REFERRAL_CODE = 0;
     uint8 public constant VARIABLE_INTEREST_MODE = 2;
     uint16 public constant MAX_BASIS_POINTS = 10_000; // 100% in basis points.
     uint16 public constant LIQUIDATION_CLOSE_FACTOR_PERCENT = 5_000; // 50% in basis points.
-    uint8 internal constant NDS_FLOOR = 0; // todo : set actual value // minimal value settable for NDS
-    uint8 internal constant NDS_CEILING = type(uint8).max; // todo : set actual value // maximum value settable for NDS
+    uint32 internal NDS_FLOOR; // minimal value settable for NDS, immutable after initializing.
+    uint32 internal NDS_CEILING; // maximum value settable for NDS, immutable after initializing.
     mapping(address => DoubleLinkedList.List) internal suppliersInP2P; // For a given market, the suppliers in peer-to-peer.
     mapping(address => DoubleLinkedList.List) internal suppliersOnPool; // For a given market, the suppliers on Aave.
     mapping(address => DoubleLinkedList.List) internal borrowersInP2P; // For a given market, the borrowers in peer-to-peer.

@@ -36,25 +36,36 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
     /// @param _marketsManager The `marketsManager`.
     /// @param _matchingEngine The `matchingEngine`.
     /// @param _lendingPoolAddressesProvider The `addressesProvider`.
+    /// @param _maxGas Max gas to consume within loops in matching engine functions.
+    /// @param _maxGasFloor permanent minimum values settable for maxGas.
+    /// @param _maxGasCeiling permanent maximum values settable for maxGas.
     function initialize(
         IMarketsManagerForAave _marketsManager,
         IMatchingEngineForAave _matchingEngine,
         ILendingPoolAddressesProvider _lendingPoolAddressesProvider,
         MaxGas memory _maxGas,
-        uint8 _NDS
+        MaxGas memory _maxGasFloor,
+        MaxGas memory _maxGasCeiling,
+        uint32 _NDS,
+        uint32 _NDS_FLOOR,
+        uint32 _NDS_CEILING
     ) external initializer {
-        checkMaxGasBounds(_maxGas);
-        if (_NDS > NDS_CEILING || _NDS < NDS_FLOOR) revert NdsOutOfBounds();
+        if (_NDS > _NDS_CEILING || _NDS < _NDS_FLOOR) revert NdsOutOfBounds();
 
         __ReentrancyGuard_init();
         __Ownable_init();
 
+        maxGasFloor = _maxGasFloor;
+        maxGasCeiling = _maxGasCeiling;
+        checkMaxGasBounds(_maxGas);
         maxGas = _maxGas;
         marketsManager = _marketsManager;
         matchingEngine = _matchingEngine;
         addressesProvider = _lendingPoolAddressesProvider;
         lendingPool = ILendingPool(addressesProvider.getLendingPool());
-        this.setNDS(_NDS);
+        NDS = _NDS;
+        NDS_FLOOR = _NDS_FLOOR;
+        NDS_CEILING = _NDS_CEILING;
     }
 
     /// LOGIC ///

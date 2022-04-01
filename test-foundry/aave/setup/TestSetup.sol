@@ -94,6 +94,16 @@ contract TestSetup is Config, Utils, stdCheats {
             repay: 3e6
         });
 
+        PositionsManagerForAave.MaxGas memory maxGasFloor = PositionsManagerForAaveStorage.MaxGas({
+            supply: 1,
+            borrow: 1,
+            withdraw: 1,
+            repay: 1
+        });
+
+        PositionsManagerForAave.MaxGas memory maxGasCeiling = PositionsManagerForAaveStorage
+        .MaxGas({supply: 30e6, borrow: 30e6, withdraw: 30e6, repay: 30e6});
+
         lendingPoolAddressesProvider = ILendingPoolAddressesProvider(
             lendingPoolAddressesProviderAddress
         );
@@ -169,7 +179,11 @@ contract TestSetup is Config, Utils, stdCheats {
             matchingEngine,
             ILendingPoolAddressesProvider(lendingPoolAddressesProviderAddress),
             maxGas,
-            20
+            maxGasFloor,
+            maxGasCeiling,
+            20,
+            1,
+            100_000
         );
 
         if (block.chainid == Chains.ETH_MAINNET) {

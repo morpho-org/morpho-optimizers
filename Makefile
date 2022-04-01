@@ -26,7 +26,7 @@ gas:
 
 contract-% c-%: node_modules
 	@echo Run tests for contract $* on ${NETWORK}
-	@forge test -vvv -c test-foundry --match-contract $*
+	@forge test -vvv -c test-foundry --match-contract $* > trace.ansi
 
 single-% s-%: node_modules
 	@echo Run single test $* on ${NETWORK}
