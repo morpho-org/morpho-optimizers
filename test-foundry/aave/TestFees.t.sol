@@ -11,9 +11,9 @@ contract TestFees is TestSetup {
         positionsManager.claimToTreasury(aDai);
     }
 
-    function testShouldNotBePossibleToSetFeesHigherThan50Percent() public {
-        marketsManager.setReserveFactor(aUsdc, 5_001);
-        testEquality(marketsManager.reserveFactor(aUsdc), 5_000);
+    function testShouldNotBePossibleToSetFeesHigherThan100Percent() public {
+        marketsManager.setReserveFactor(aUsdc, 10_001);
+        testEquality(marketsManager.reserveFactor(aUsdc), 10_000);
     }
 
     function testOnlyOwnerCanSetTreasuryVault() public {
