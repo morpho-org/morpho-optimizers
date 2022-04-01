@@ -27,7 +27,7 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
 
     /// STORAGE ///
 
-    uint16 public constant HALF_MAX_BASIS_POINTS = 5_000; // 50% in basis point.
+    uint16 public constant MAX_BASIS_POINTS = 10_000; // 100% (in basis point).
     uint256 public constant SECONDS_PER_YEAR = 365 days; // The number of seconds in one year.
     address[] public marketsCreated; // Keeps track of the created markets.
     mapping(address => bool) public override isCreated; // Whether or not this market is created.
@@ -154,10 +154,10 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
 
     /// @notice Sets the `reserveFactor`.
     /// @param _marketAddress The market on which to set the `_newReserveFactor`.
-    /// @param _newReserveFactor The proportion of the interest earned by users sent to the DAO, in basis point.
+    /// @param _newReserveFactor The proportion of the interest earned by users sent to the DAO, (in basis point).
     function setReserveFactor(address _marketAddress, uint16 _newReserveFactor) external onlyOwner {
-        reserveFactor[_marketAddress] = HALF_MAX_BASIS_POINTS <= _newReserveFactor
-            ? HALF_MAX_BASIS_POINTS
+        reserveFactor[_marketAddress] = MAX_BASIS_POINTS <= _newReserveFactor
+            ? MAX_BASIS_POINTS
             : _newReserveFactor;
 
         updateRates(_marketAddress);

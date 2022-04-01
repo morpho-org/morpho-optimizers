@@ -8,7 +8,7 @@ import "./libraries/Math.sol";
 contract InterestRatesV1 is IInterestRates {
     /// STORAGE ///
 
-    uint256 public constant MAX_BASIS_POINTS = 10_000; // 100% in basis point.
+    uint256 public constant MAX_BASIS_POINTS = 10_000; // 100% (in basis point).
 
     /// EXTERNAL ///
 
