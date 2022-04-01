@@ -169,9 +169,9 @@ contract TestMarketsManager is TestSetup {
 
         hevm.prank(address(0));
         hevm.expectRevert("Ownable: caller is not the owner");
-        marketsManager.setInteresRates(interestRatesV2);
+        marketsManager.setInterestRates(interestRatesV2);
 
-        marketsManager.setInteresRates(interestRatesV2);
+        marketsManager.setInterestRates(interestRatesV2);
         assertEq(address(marketsManager.interestRates()), address(interestRatesV2));
     }
 }
