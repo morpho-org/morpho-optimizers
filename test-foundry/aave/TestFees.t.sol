@@ -63,7 +63,7 @@ contract TestFees is TestSetup {
     }
 
     function testShouldCollectTheRightAmountOfFees() public {
-        uint16 reserveFactor = 1_000;
+        uint256 reserveFactor = 1_000;
         marketsManager.setReserveFactor(aDai, reserveFactor); // 10%
 
         // Increase time so that rates update.
