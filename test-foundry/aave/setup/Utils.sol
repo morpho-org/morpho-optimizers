@@ -10,7 +10,7 @@ contract Utils is DSTest {
 
     uint256 internal constant WAD = 1e18;
     uint256 internal constant RAY = 1e27;
-    uint256 internal constant SECOND_PER_YEAR = 365 days;
+    uint256 internal constant SECONDS_PER_YEAR = 365 days;
     uint256 internal constant LIQUIDATION_CLOSE_FACTOR_PERCENT = 5_000;
 
     uint256 internal constant PERCENT_BASE = 10_000;
@@ -99,24 +99,22 @@ contract Utils is DSTest {
     /// @param _elapsedTime The amount of time during to get the interest for.
     /// @return results in ray
     function computeCompoundedInterest(uint256 _rate, uint256 _elapsedTime)
-        internal
+        public
         pure
         returns (uint256)
     {
-        if (_elapsedTime == 0) {
-            return Math.ray();
-        }
+        uint256 rate = _rate / SECONDS_PER_YEAR;
 
-        if (_elapsedTime == 1) {
-            return Math.ray() + _rate;
-        }
+        if (_elapsedTime == 0) return Math.ray();
 
-        uint256 ratePowerTwo = _rate.rayMul(_rate);
-        uint256 ratePowerThree = ratePowerTwo.rayMul(_rate);
+        if (_elapsedTime == 1) return Math.ray() + rate;
+
+        uint256 ratePowerTwo = rate.rayMul(rate);
+        uint256 ratePowerThree = ratePowerTwo.rayMul(rate);
 
         return
             Math.ray() +
-            _rate *
+            rate *
             _elapsedTime +
             (_elapsedTime * (_elapsedTime - 1) * ratePowerTwo) /
             2 +

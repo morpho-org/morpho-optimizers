@@ -26,6 +26,7 @@ import "../../common/uniswap/UniswapV2PoolCreator.sol";
 import "@contracts/aave/PositionsManagerForAave.sol";
 import "@contracts/aave/MarketsManagerForAave.sol";
 import "@contracts/aave/MatchingEngineForAave.sol";
+import "@contracts/aave/InterestRatesV1.sol";
 
 import "../../common/helpers/MorphoToken.sol";
 import "../../common/helpers/SimplePriceOracle.sol";
@@ -55,6 +56,7 @@ contract TestSetup is Config, Utils, stdCheats {
     MarketsManagerForAave internal marketsManager;
     MarketsManagerForAave internal marketsManagerImplV1;
     IRewardsManagerForAave internal rewardsManager;
+    IInterestRates internal interestRates;
     ISwapManager public swapManager;
     UniswapV3PoolCreator public uniswapV3PoolCreator;
     UniswapV2PoolCreator public uniswapV2PoolCreator;
@@ -98,6 +100,8 @@ contract TestSetup is Config, Utils, stdCheats {
             lendingPoolAddressesProviderAddress
         );
         lendingPool = ILendingPool(lendingPoolAddressesProvider.getLendingPool());
+
+        interestRates = new InterestRatesV1();
 
         if (block.chainid == Chains.ETH_MAINNET) {
             // Mainnet network.
@@ -154,7 +158,7 @@ contract TestSetup is Config, Utils, stdCheats {
         );
         marketsManagerProxy.changeAdmin(address(proxyAdmin));
         marketsManager = MarketsManagerForAave(address(marketsManagerProxy));
-        marketsManager.initialize(lendingPool);
+        marketsManager.initialize(lendingPool, interestRates);
 
         positionsManagerImplV1 = new PositionsManagerForAave();
         positionsManagerProxy = new TransparentUpgradeableProxy(
@@ -273,6 +277,7 @@ contract TestSetup is Config, Utils, stdCheats {
         hevm.label(address(protocolDataProvider), "ProtocolDataProvider");
         hevm.label(address(oracle), "AaveOracle");
         hevm.label(address(treasuryVault), "TreasuryVault");
+        hevm.label(address(interestRates), "InterestRates");
     }
 
     function createSigners(uint8 _nbOfSigners) internal {
