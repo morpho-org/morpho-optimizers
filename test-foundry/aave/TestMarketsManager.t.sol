@@ -6,9 +6,7 @@ import "./setup/TestSetup.sol";
 contract TestMarketsManager is TestSetup {
     using Math for uint256;
 
-    // Deployment
-    // Should deploy the contract with the right values
-    function test_deploy_contract() public {
+    function testShoudDeployContractWithTheRightValues() public {
         DataTypes.ReserveData memory data = lendingPool.getReserveData(dai);
         (uint256 expectedSPY, ) = interestRates.computeRates(
             data.currentLiquidityRate,
@@ -22,18 +20,12 @@ contract TestMarketsManager is TestSetup {
         assertEq(marketsManager.borrowP2PExchangeRate(aDai), RAY);
     }
 
-    // ========================
-    // = Governance functions =
-    // ========================
-
-    // Should revert when the function is called with an improper market
-    function test_revert_on_not_real_market() public {
+    function testShouldRevertWhenCreatingMarketWithAnImproperMarket() public {
         hevm.expectRevert(abi.encodeWithSignature("MarketIsNotListedOnAave()"));
         marketsManager.createMarket(address(supplier1));
     }
 
-    // Only Owner should be able to create markets in peer-to-peer
-    function test_only_owner_can_create_markets_1() public {
+    function testOnlyOwnerCanCreateMarkets() public {
         for (uint256 i = 0; i < pools.length; i++) {
             address underlying = IAToken(pools[i]).UNDERLYING_ASSET_ADDRESS();
             hevm.expectRevert("Ownable: caller is not the owner");
@@ -46,8 +38,7 @@ contract TestMarketsManager is TestSetup {
         marketsManager.createMarket(weth);
     }
 
-    // Only Owner should be able to set reserve factor
-    function test_only_owner_can_set_reserveFactor() public {
+    function testOnlyOwnerCanSetReserveFactor() public {
         for (uint256 i = 0; i < pools.length; i++) {
             hevm.expectRevert("Ownable: caller is not the owner");
             supplier1.setReserveFactor(aDai, 1111);
@@ -59,14 +50,12 @@ contract TestMarketsManager is TestSetup {
         marketsManager.setReserveFactor(aDai, 1111);
     }
 
-    // Reserve factor should be updated
-    function test_reserveFactor_should_be_updated() public {
+    function testReserveFactorShouldBeUpdatedWithRightValue() public {
         marketsManager.setReserveFactor(aDai, 1111);
         assertEq(marketsManager.reserveFactor(aDai), 1111);
     }
 
-    // Anyone can update the rates
-    function test_rates_should_be_updated() public {
+    function testRatesShouldBeUpdatedWithTheRightValues() public {
         borrower1.updateRates(aDai);
         uint256 firstBlockTimestamp = block.timestamp;
 
@@ -112,14 +101,12 @@ contract TestMarketsManager is TestSetup {
         assertEq(borrowP2PExchangeRate, newBorrowP2PExchangeRate);
     }
 
-    // marketsManagerForAave should not be changed after already set by Owner
-    function test_positionsManager_should_not_be_changed() public {
+    function testPositionsManagerShouldBeSetOnlyOnce() public {
         hevm.expectRevert(abi.encodeWithSignature("PositionsManagerAlreadySet()"));
         marketsManager.setPositionsManager(address(fakePositionsManagerImpl));
     }
 
-    // Should create a market the with right values
-    function test_create_market_with_right_values() public {
+    function testShouldCreateMarketWithTheRightValues() public {
         DataTypes.ReserveData memory data = lendingPool.getReserveData(aave);
         (uint256 expectedSPY, ) = interestRates.computeRates(
             data.currentLiquidityRate,
@@ -135,8 +122,7 @@ contract TestMarketsManager is TestSetup {
         assertEq(marketsManager.borrowP2PExchangeRate(aAave), RAY);
     }
 
-    // Only MarketsaManager's Owner should set NMAX
-    function test_should_set_maxGas() public {
+    function testShouldSetmaxGasWithRightValues() public {
         PositionsManagerForAaveStorage.MaxGas memory newMaxGas = PositionsManagerForAaveStorage
         .MaxGas({supply: 1, borrow: 1, withdraw: 1, repay: 1});
 
@@ -154,8 +140,7 @@ contract TestMarketsManager is TestSetup {
         borrower1.setMaxGas(newMaxGas);
     }
 
-    // Only MarketsaManager's Owner should set NDS
-    function test_should_set_nds() public {
+    function testOnlyOwnerCanSetNDS() public {
         uint8 newNDS = 30;
 
         positionsManager.setNDS(newNDS);
@@ -168,7 +153,7 @@ contract TestMarketsManager is TestSetup {
         borrower1.setNDS(newNDS);
     }
 
-    function test_only_owner_should_flip_market_strategy() public {
+    function testOnlyOwnerCanFlipMarketStrategy() public {
         hevm.expectRevert("Ownable: caller is not the owner");
         supplier1.setNoP2P(aDai, true);
 
