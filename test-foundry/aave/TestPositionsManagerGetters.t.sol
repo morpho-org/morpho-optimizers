@@ -701,6 +701,6 @@ contract TestPositionsManagerGetters is TestSetup {
         borrower1.withdraw(aDai, 10 ether);
 
         // Test should fail because there is no element in the array.
-        address firstMarket = positionsManager.enteredMarkets(address(borrower1), 0);
+        positionsManager.enteredMarkets(address(borrower1), 0);
     }
 }
