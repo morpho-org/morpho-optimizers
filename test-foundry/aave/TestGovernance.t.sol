@@ -10,9 +10,11 @@ contract TestGovernance is TestSetup {
     // Should deploy the contract with the right values
     function test_deploy_contract() public {
         DataTypes.ReserveData memory data = lendingPool.getReserveData(dai);
-        uint256 expectedSPY = (data.currentLiquidityRate + data.currentVariableBorrowRate) /
-            2 /
-            SECOND_PER_YEAR;
+        (uint256 expectedSPY, ) = interestRates.computeRates(
+            data.currentLiquidityRate,
+            data.currentVariableBorrowRate,
+            0
+        );
 
         assertEq(marketsManager.supplyP2PSPY(aDai), expectedSPY);
         assertEq(marketsManager.borrowP2PSPY(aDai), expectedSPY);
@@ -69,9 +71,11 @@ contract TestGovernance is TestSetup {
         uint256 firstBlockTimestamp = block.timestamp;
 
         DataTypes.ReserveData memory data = lendingPool.getReserveData(dai);
-        uint256 expectedSPY = (data.currentLiquidityRate + data.currentVariableBorrowRate) /
-            2 /
-            SECOND_PER_YEAR;
+        (uint256 expectedSPY, ) = interestRates.computeRates(
+            data.currentLiquidityRate,
+            data.currentVariableBorrowRate,
+            0
+        );
 
         uint256 borrowP2PExchangeRate = marketsManager.borrowP2PExchangeRate(aDai);
         uint256 supplyP2PExchangeRate = marketsManager.supplyP2PExchangeRate(aDai);
@@ -86,15 +90,12 @@ contract TestGovernance is TestSetup {
         uint256 secondBlockTimestamp = block.timestamp;
 
         data = lendingPool.getReserveData(dai);
-        expectedSPY =
-            (data.currentLiquidityRate + data.currentVariableBorrowRate) /
-            2 /
-            SECOND_PER_YEAR;
+        (uint256 supplySPY, uint256 borrowSPY) = interestRates.computeRates(
+            data.currentLiquidityRate,
+            data.currentVariableBorrowRate,
+            0
+        );
 
-        uint256 supplySPY = (expectedSPY *
-            (MAX_BASIS_POINTS - marketsManager.reserveFactor(aDai))) / MAX_BASIS_POINTS;
-        uint256 borrowSPY = (expectedSPY *
-            (MAX_BASIS_POINTS + marketsManager.reserveFactor(aDai))) / MAX_BASIS_POINTS;
         assertEq(marketsManager.supplyP2PSPY(aDai), supplySPY);
         assertEq(marketsManager.borrowP2PSPY(aDai), borrowSPY);
 
@@ -120,9 +121,11 @@ contract TestGovernance is TestSetup {
     // Should create a market the with right values
     function test_create_market_with_right_values() public {
         DataTypes.ReserveData memory data = lendingPool.getReserveData(aave);
-        uint256 expectedSPY = (data.currentLiquidityRate + data.currentVariableBorrowRate) /
-            2 /
-            SECOND_PER_YEAR;
+        (uint256 expectedSPY, ) = interestRates.computeRates(
+            data.currentLiquidityRate,
+            data.currentVariableBorrowRate,
+            0
+        );
         marketsManager.createMarket(aave);
 
         assertTrue(marketsManager.isCreated(aAave));
@@ -174,5 +177,16 @@ contract TestGovernance is TestSetup {
 
         marketsManager.setNoP2P(aDai, true);
         assertTrue(marketsManager.noP2P(aDai));
+    }
+
+    function testOnlyOwnerShouldBeAbleToUpdateInterestRates() public {
+        IInterestRates interestRatesV2 = new InterestRatesV1();
+
+        hevm.prank(address(0));
+        hevm.expectRevert("Ownable: caller is not the owner");
+        marketsManager.setInteresRates(interestRatesV2);
+
+        marketsManager.setInteresRates(interestRatesV2);
+        assertEq(address(marketsManager.interestRates()), address(interestRatesV2));
     }
 }
