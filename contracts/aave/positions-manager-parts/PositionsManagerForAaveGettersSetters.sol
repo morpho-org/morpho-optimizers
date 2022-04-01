@@ -37,13 +37,30 @@ abstract contract PositionsManagerForAaveGettersSetters is PositionsManagerForAa
     /// @dev Sets `NDS`.
     /// @param _newNDS The new `NDS` value.
     function setNDS(uint8 _newNDS) external onlyOwner {
+        if (_newNDS > NDS_CEILING || _newNDS < NDS_FLOOR) revert NdsOutOfBounds();
         NDS = _newNDS;
         emit NDSSet(_newNDS);
+    }
+
+    /// @dev Reverts if a value in `_maxGas` is out of bounds
+    /// @param _maxGas the maxGas values to check
+    function checkMaxGasBounds(MaxGas memory _maxGas) internal pure {
+        if (
+            _maxGas.supply > MAX_GAS_SUPPLY_CEILING ||
+            _maxGas.supply < MAX_GAS_SUPPLY_FLOOR ||
+            _maxGas.borrow > MAX_GAS_BORROW_CEILING ||
+            _maxGas.borrow < MAX_GAS_BORROW_FLOOR ||
+            _maxGas.withdraw > MAX_GAS_WITHDRAW_CEILING ||
+            _maxGas.withdraw < MAX_GAS_WITHDRAW_FLOOR ||
+            _maxGas.repay > MAX_GAS_REPAY_CEILING ||
+            _maxGas.repay < MAX_GAS_REPAY_FLOOR
+        ) revert MaxGasOutOfBounds();
     }
 
     /// @dev Sets `maxGas`.
     /// @param _maxGas The new `maxGas`.
     function setMaxGas(MaxGas memory _maxGas) external onlyOwner {
+        checkMaxGasBounds(_maxGas);
         maxGas = _maxGas;
         emit MaxGasSet(_maxGas);
     }

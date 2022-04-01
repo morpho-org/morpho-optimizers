@@ -173,4 +173,10 @@ abstract contract PositionsManagerForAaveEventsErrors is PositionsManagerForAave
 
     /// @notice Thrown when the amount repaid during the liquidation is above what is allowed to be repaid.
     error AmountAboveWhatAllowedToRepay();
+
+    /// @notice Thrown when maxGas is set with a value too low or too high
+    error MaxGasOutOfBounds();
+
+    /// @notice Thrown when NDS is set with a value too low or too high
+    error NdsOutOfBounds();
 }

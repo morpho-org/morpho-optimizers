@@ -43,6 +43,9 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
         MaxGas memory _maxGas,
         uint8 _NDS
     ) external initializer {
+        checkMaxGasBounds(_maxGas);
+        if (_NDS > NDS_CEILING || _NDS < NDS_FLOOR) revert NdsOutOfBounds();
+
         __ReentrancyGuard_init();
         __Ownable_init();
 
@@ -51,8 +54,7 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
         matchingEngine = _matchingEngine;
         addressesProvider = _lendingPoolAddressesProvider;
         lendingPool = ILendingPool(addressesProvider.getLendingPool());
-
-        NDS = _NDS;
+        this.setNDS(_NDS);
     }
 
     /// LOGIC ///
