@@ -1,16 +1,12 @@
-# Morpho Protocol V0 🦋
+# Morpho Protocol V1 🦋
 
-[![Tests](https://github.com/morpho-protocol/morpho-contracts/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/morpho-protocol/morpho-contracts/actions/workflows/tests.yml)
-[![codecov](https://codecov.io/gh/morpho-protocol/morpho-contracts/branch/main/graph/badge.svg?token=ZSX5RRQG36)](https://codecov.io/gh/morpho-protocol/morpho-contracts)
+[![Test](https://github.com/morpho-labs/morpho-contracts/actions/workflows/ci-foundry.yml/badge.svg)](https://github.com/morpho-labs/morpho-contracts/actions/workflows/ci-foundry.yml)
 
-This repository contains the core smart contracts for the Morpho Protocol V0 🦋.
+This repository contains the core smart contracts for the Morpho Protocol V1 🦋.
 
-# Testing
+# Testing with Foundry
 
 Tests are run against a forks of real networks, which allows us to interact directly with liquidity pools of Compound or Aave. Note that you need to have an RPC provider that have access to Ethereum or Polygon.
-We aim a test coverage > 90% of all functions.
-
-⚠️ Tests cannot substituted to coverage as the coverage command as contracts are compiled without optimization and can alter some patterns.
 
 For testing, first, install dependencies with:
 
@@ -18,19 +14,15 @@ For testing, first, install dependencies with:
 yarn
 ```
 
-## Testing in Solidity with Foundry
+Then, install [Foundry](https://github.com/gakonst/foundry):
 
-First, install [Foundry](https://github.com/gakonst/foundry):
-
-```
-cargo install --git https://github.com/gakonst/foundry --bin forge --locked
-```
-
-or on Mac OS,
+Run the command below to get foundryup, the Foundry toolchain installer:
 
 ```
-curl https://raw.githubusercontent.com/gakonst/foundry/master/foundryup/install | bash
+curl -L https://foundry.paradigm.xyz | bash
 ```
+
+If you do not want to use the redirect, feel free to manually download the foundryup installation script from [here](https://github.com/gakonst/foundry).
 
 Then in a new terminal session or after reloading your PATH, run it to get the latest forge and cast binaries:
 
@@ -38,7 +30,7 @@ Then in a new terminal session or after reloading your PATH, run it to get the l
 foundryup
 ```
 
-Also, you should update git submodules to install the ds-test library:
+Finally, update git submodules:
 
 ```
 git submodule init
@@ -73,43 +65,17 @@ make s-test_claim_fees
 
 For the other commands, check the `Makefile` file.
 
-## Testing in Javascript with Hardhat
-
-Refer to the `env.example` for the required environment variable.
-
-You can run test on different platforms with:
-
-```
-yarn test:comp:mainnet
-```
-
-or
-
-```
-yarn test:aave:polygon
-```
-
-For coverage, run:
-
-```
-yarn coverage
-```
-
-For the other commands, check the `package.json` file.
-
 ## Code Formatting
 
 We use prettier with the default configuration mentionned in the [Solidity Prettier Plugin](https://github.com/prettier-solidity/prettier-plugin-solidity).
 We recommend developers using VSCODE to set their local config as below:
 
 ```
-
 {
     "editor.formatOnSave": true,
     "solidity.formatter": "prettier",
     "editor.defaultFormatter": "esbenp.prettier-vscode"
 }
-
 ```
 
 In doing so the code will be formatted on each save.
@@ -142,32 +108,28 @@ Before merging a PR:
 - CI must pass.
 
 For smart contract reviews, a complete report must have been done, not just a reading of the changes in the code. This is very important as a simple change on one line of code can bring dramatic consequences on a smart contracts (bad copy/paste have already lead to hacks).
-For the guidelines on "How to review contracts and write a report?", you can follow this [link](https://abiding-machine-635.notion.site/Solidity-Guidelines-7c9a201413df47d6b72577374f93a697).
+For the guidelines on "How to review contracts and write a report?", you can follow this [link](https://morpho-labs.notion.site/How-to-do-a-Smart-Contract-Review-81d1dc692259463993cc7d81544767d1).
 
 By default, PR are rebased with `main` before merging to keep a clean historic of commits and the branch is deleted.
 
 ## Deploying a contract on a network
 
-You can run the following command to deploy Morpho's contracts on top of Aave on Polygon:
+You can run the following command to deploy Morpho's contracts for Aave on Polygon:
 
 ```
-
 yarn deploy:aave:polygon
-
 ```
 
 For the other commands, check the `package.json` file.
 
 ## Publishing and verifying a contract on Etherscan
 
-An etherscan API key is required to verify the contract and placed into your `.env` local file.
+An etherscan API key is required to verify the contract and placed into your `.env.local` file.
 The right arguments of the constructor of the smart contract to verify must be write inside `arguments.js`. Then you can run the following command to verify a contract:
 
 ```
-
 npx hardhat verify --network <network-name> --constructor-args scripts/arguments.js <contract-address>
 npx hardhat verify --network <network-name> --constructor-args scripts/arguments.js --contract contracts/Example.sol:ExampleContract <contract-address>
-
 ```
 
 The second is necessary if contracts with different names share the same ABI.
@@ -178,12 +140,11 @@ In your `env.local` file, put your tenderly private key. Then you can deploy and
 
 ## External resources & documentation
 
+- [General documentation](https://morpho-labs.gitbook.io/morpho-documentation/)
+- [Developer documentation](https://morpho-labs.gitbook.io/technical-documentation/)
+- [Whitepaper](https://whitepaper.morpho.best)
+- [Foundry](https://github.com/gakonst/foundry)
 - [Solidity Prettier Plugin](https://github.com/prettier-solidity/prettier-plugin-solidity)
-- [Codecov](https://github.com/codecov/example-node)
-- [PRBMath](https://github.com/hifi-finance/prb-math): we use this library to handle fixed-point math.
-- [Red Black Binary Tree](https://en.wikipedia.org/wiki/Red%E2%80%93black_tree): binary tree used to sort users for the matching engine
-- [Red Black Binary Tree Solidity Implementation 1](https://github.com/bokkypoobah/BokkyPooBahsRedBlackTreeLibrary): base solidity implementation of a Red Black Binary Tree.
-- [Red Black Binary Tree Solidity Implementation 2](https://github.com/rob-Hitchens/OrderStatisticsTree): solidity implementation of a Red Black Binary Tree based on the previous version. Our modified version makes keys unique items instead of just (key, value) unique pairs.
 
 ## Questions
 
