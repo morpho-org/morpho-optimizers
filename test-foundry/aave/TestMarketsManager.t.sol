@@ -3,7 +3,7 @@ pragma solidity 0.8.7;
 
 import "./setup/TestSetup.sol";
 
-contract TestGovernance is TestSetup {
+contract TestMarketsManager is TestSetup {
     using Math for uint256;
 
     // Deployment
