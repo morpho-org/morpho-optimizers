@@ -147,7 +147,7 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
 
     /// @notice Sets the `intersRates`.
     /// @param _interestRates The new `interestRates` contract.
-    function setInteresRates(IInterestRates _interestRates) external onlyOwner {
+    function setInterestRates(IInterestRates _interestRates) external onlyOwner {
         interestRates = _interestRates;
         emit InterestRatesSet(address(_interestRates));
     }
