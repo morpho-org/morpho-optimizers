@@ -23,7 +23,7 @@ contract TestInterestRates is TestSetup {
         assertEq(supplyRate, borrowRate);
     }
 
-    function testShouldReturnRatesWhen100PercentReserveFactor() public {
+    function testShouldReturnPoolRatesWhen100PercentReserveFactor() public {
         (uint256 supplyRate, uint256 borrowRate) = interestRates.computeRates(20, 80, 10_000);
 
         assertEq(supplyRate, 20);
