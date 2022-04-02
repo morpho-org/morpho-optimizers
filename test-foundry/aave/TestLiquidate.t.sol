@@ -5,7 +5,7 @@ import "./setup/TestSetup.sol";
 
 contract TestLiquidate is TestSetup {
     // 5.1 - A user liquidates a borrower that has enough collateral to cover for his debt, the transaction reverts.
-    function test_liquidate_5_1() public {
+    function testShouldNotBePossibleToLiquidateUserAboveWater() public {
         uint256 amount = 10_000 ether;
         uint256 collateral = 2 * amount;
 
@@ -23,7 +23,7 @@ contract TestLiquidate is TestSetup {
     }
 
     // 5.2 - A user liquidates a borrower that has not enough collateral to cover for his debt.
-    function test_liquidate_5_2() public {
+    function testShouldLiquidateUser() public {
         uint256 collateral = 100_000 ether;
 
         borrower1.approve(usdc, address(positionsManager), to6Decimals(collateral));
@@ -102,9 +102,7 @@ contract TestLiquidate is TestSetup {
         assertEq(inP2PBorrower, 0);
     }
 
-    // should be uncallable with _amount == 0
-    function test_no_liquidate_zero() public {
-        hevm.expectRevert(abi.encodeWithSignature("AmountIsZero()"));
+    function testFailLiquidateZero() public {
         positionsManager.liquidate(aDai, aDai, aDai, 0);
     }
 }

@@ -4,7 +4,7 @@ pragma solidity 0.8.7;
 import "./setup/TestSetup.sol";
 
 contract TestUpgradeable is TestSetup {
-    function test_upgrade_markets_manager() public {
+    function testUpgradeMarketsManager() public {
         marketsManager.setReserveFactor(aDai, 1);
 
         MarketsManagerForAave marketsManagerImplV2 = new MarketsManagerForAave();
@@ -14,7 +14,7 @@ contract TestUpgradeable is TestSetup {
         assertEq(marketsManager.reserveFactor(aDai), 1);
     }
 
-    function test_upgrade_positions_manager() public {
+    function testUpgradePositionsManager() public {
         uint256 amount = 10_000 ether;
         supplier1.approve(dai, amount);
         supplier1.supply(aDai, amount);
@@ -29,7 +29,7 @@ contract TestUpgradeable is TestSetup {
         testEquality(onPool, expectedOnPool);
     }
 
-    function test_only_owner_of_proxy_admin_can_upgrade_markets_manager() public {
+    function testOnlyProxyOwnerCanUpgradeMarketsManager() public {
         MarketsManagerForAave marketsManagerImplV2 = new MarketsManagerForAave();
 
         hevm.prank(address(supplier1));
@@ -39,7 +39,7 @@ contract TestUpgradeable is TestSetup {
         proxyAdmin.upgrade(marketsManagerProxy, address(marketsManagerImplV2));
     }
 
-    function test_only_owner_of_proxy_admin_can_upgrade_and_call_markets_manager() public {
+    function testOnlyProxyOwnerCanUpgradeAndCallMarketsManager() public {
         MarketsManagerForAave marketsManagerImplV2 = new MarketsManagerForAave();
 
         hevm.prank(address(supplier1));
@@ -51,7 +51,7 @@ contract TestUpgradeable is TestSetup {
         proxyAdmin.upgradeAndCall(marketsManagerProxy, address(marketsManagerImplV2), "");
     }
 
-    function test_only_owner_of_proxy_admin_can_upgrade_positions_manager() public {
+    function testOnlyProxyOwnerCanUpgradePositionsManager() public {
         PositionsManagerForAave positionsManagerImplV2 = new PositionsManagerForAave();
 
         hevm.prank(address(supplier1));
@@ -61,7 +61,7 @@ contract TestUpgradeable is TestSetup {
         proxyAdmin.upgrade(positionsManagerProxy, address(positionsManagerImplV2));
     }
 
-    function test_only_owner_of_proxy_admin_can_upgrade_and_call_positions_manager() public {
+    function testOnlyProxyOwnerCanUpgradeAndCallPositionsManager() public {
         PositionsManagerForAave positionsManagerImplV2 = new PositionsManagerForAave();
 
         hevm.prank(address(supplier1));
