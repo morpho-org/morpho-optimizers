@@ -543,67 +543,6 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
         if (debtValue > maxDebtValue) revert DebtValueAboveMax();
     }
 
-    /// @dev Returns the debt value, max debt value of a given user.
-    /// @param _user The user to determine liquidity for.
-    /// @param _poolTokenAddress The market to hypothetically withdraw/borrow in.
-    /// @param _withdrawnAmount The number of tokens to hypothetically withdraw (in underlying).
-    /// @param _borrowedAmount The amount of tokens to hypothetically borrow (in underlying).
-    /// @return debtValue The current debt value of the user (in ETH).
-    /// @return maxDebtValue The maximum debt value possible of the user (in ETH).
-    /// @return liquidationValue The value when liquidation is possible (in ETH).
-    function _getUserHypotheticalBalanceStates(
-        address _user,
-        address _poolTokenAddress,
-        uint256 _withdrawnAmount,
-        uint256 _borrowedAmount
-    )
-        internal
-        view
-        returns (
-            uint256 debtValue,
-            uint256 maxDebtValue,
-            uint256 liquidationValue
-        )
-    {
-        IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
-        uint256 numberOfEnteredMarkets = enteredMarkets[_user].length;
-        uint256 i;
-
-        while (i < numberOfEnteredMarkets) {
-            address poolTokenEntered = enteredMarkets[_user][i];
-            AssetLiquidityData memory assetData = getUserLiquidityDataForAsset(
-                _user,
-                poolTokenEntered,
-                oracle
-            );
-
-            unchecked {
-                liquidationValue += assetData.liquidationValue;
-                maxDebtValue += assetData.maxDebtValue;
-                debtValue += assetData.debtValue;
-                ++i;
-            }
-
-            if (_poolTokenAddress == poolTokenEntered) {
-                debtValue += (_borrowedAmount * assetData.underlyingPrice) / assetData.tokenUnit;
-
-                uint256 maxDebtValueSub = (_withdrawnAmount *
-                    assetData.underlyingPrice *
-                    assetData.ltv) / (assetData.tokenUnit * MAX_BASIS_POINTS);
-                uint256 liquidationValueSub = (_withdrawnAmount *
-                    assetData.underlyingPrice *
-                    assetData.liquidationThreshold) / (assetData.tokenUnit * MAX_BASIS_POINTS);
-
-                unchecked {
-                    maxDebtValue -= maxDebtValue < maxDebtValueSub ? maxDebtValue : maxDebtValueSub;
-                    liquidationValue -= liquidationValue < liquidationValueSub
-                        ? liquidationValue
-                        : liquidationValueSub;
-                }
-            }
-        }
-    }
-
     /// @dev Supplies underlying tokens to Aave.
     /// @param _underlyingToken The underlying token of the market to supply to.
     /// @param _amount The amount of token (in underlying).
