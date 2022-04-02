@@ -310,7 +310,7 @@ contract PositionsManagerForCompound is ReentrancyGuard {
             if (_isAboveCompoundThreshold(_poolTokenAddress, remainingToSupplyToPool)) {
                 supplyBalanceInOf[_poolTokenAddress][msg.sender].onPool += remainingToSupplyToPool
                 .div(poolTokenExchangeRate); // In poolToken
-                _supplyERC20ToPool(_poolTokenAddress, remainingToSupplyToPool); // Revert on error
+                _supplyToPool(_poolTokenAddress, remainingToSupplyToPool); // Revert on error
                 emit SupplierPositionUpdated(
                     msg.sender,
                     _poolTokenAddress,
@@ -714,7 +714,7 @@ contract PositionsManagerForCompound is ReentrancyGuard {
     /// @dev Supplies ERC20 tokens to Comp.
     /// @param _poolTokenAddress The address of the market the user wants to interact with.
     /// @param _amount The amount in ERC20 tokens to supply.
-    function _supplyERC20ToPool(address _poolTokenAddress, uint256 _amount) internal {
+    function _supplyToPool(address _poolTokenAddress, uint256 _amount) internal {
         ICErc20 poolToken = ICErc20(_poolTokenAddress);
         IERC20 underlyingToken = IERC20(poolToken.underlying());
         underlyingToken.safeIncreaseAllowance(_poolTokenAddress, _amount);
@@ -855,7 +855,7 @@ contract PositionsManagerForCompound is ReentrancyGuard {
         // Supply on Comp
         uint256 toSupply = _amount - remainingToUnmatch;
         if (_isAboveCompoundThreshold(_poolTokenAddress, toSupply))
-            _supplyERC20ToPool(_poolTokenAddress, toSupply);
+            _supplyToPool(_poolTokenAddress, toSupply);
     }
 
     /// @dev Finds borrowers on Comp that match the given `_amount` and move them in P2P.
