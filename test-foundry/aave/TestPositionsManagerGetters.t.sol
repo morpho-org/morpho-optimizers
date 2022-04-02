@@ -18,7 +18,7 @@ contract TestPositionsManagerGetters is TestSetup {
         BORROWERS_ON_POOL
     }
 
-    function test_get_head() public {
+    function testGetHead() public {
         uint256 amount = 10_000 ether;
         uint256 toBorrow = amount / 10;
 
@@ -96,7 +96,7 @@ contract TestPositionsManagerGetters is TestSetup {
         );
     }
 
-    function test_get_next() public {
+    function testGetNext() public {
         uint256 amount = 10_000 ether;
         uint256 toBorrow = to6Decimals(amount / 10);
 
@@ -157,7 +157,7 @@ contract TestPositionsManagerGetters is TestSetup {
         }
     }
 
-    function test_user_liquidity_data_for_asset_with_nothing() public {
+    function testUserLiquidityDataForAssetWithNothing() public {
         PositionsManagerForAave.AssetLiquidityData memory assetData = positionsManager
         .getUserLiquidityDataForAsset(address(borrower1), aDai, oracle);
 
@@ -185,7 +185,7 @@ contract TestPositionsManagerGetters is TestSetup {
         assertEq(assetData.debtValue, 0);
     }
 
-    function test_user_liquidity_data_for_asset_with_supply() public {
+    function testUserLiquidityDataForAssetWithSupply() public {
         uint256 amount = 10_000 ether;
 
         borrower1.approve(dai, amount);
@@ -222,7 +222,7 @@ contract TestPositionsManagerGetters is TestSetup {
         assertEq(assetData.debtValue, 0, "debtValue");
     }
 
-    function test_user_liquidity_data_for_asset_with_supply_and_borrow() public {
+    function testUserLiquidityDataForAssetWithSupplyAndBorrow() public {
         uint256 amount = 10_000 ether;
         uint256 toBorrow = amount / 2;
 
@@ -261,9 +261,7 @@ contract TestPositionsManagerGetters is TestSetup {
         testEquality(assetData.debtValue, debtValue, "debtValue");
     }
 
-    function test_user_liquidity_data_for_asset_with_supply_and_borrow_with_different_assets()
-        public
-    {
+    function testUserLiquidityDataForAssetWithSupplyAndBorrowWithMultipleAssets() public {
         uint256 amount = 10_000 ether;
         uint256 toBorrow = to6Decimals(amount / 2);
 
@@ -361,7 +359,7 @@ contract TestPositionsManagerGetters is TestSetup {
         assertEq(assetDataDai.debtValue, 0, "debtValueDai");
     }
 
-    function test_getter_user_with_nothing() public {
+    function testMaxCapicitiesWithNothing() public {
         (uint256 withdrawable, uint256 borrowable) = positionsManager.getUserMaxCapacitiesForAsset(
             address(borrower1),
             aDai
@@ -371,7 +369,7 @@ contract TestPositionsManagerGetters is TestSetup {
         assertEq(borrowable, 0);
     }
 
-    function test_asset_max_capacities_with_supply_on_one_asset() public {
+    function testMaxCapicitiesWithNothingWithSupply() public {
         uint256 amount = 10_000 ether;
 
         borrower1.approve(usdc, to6Decimals(amount));
@@ -405,7 +403,7 @@ contract TestPositionsManagerGetters is TestSetup {
         assertEq(borrowable, expectedBorrowableDai, "borrowable DAI");
     }
 
-    function test_asset_max_capacities_with_supply_on_several_assets_and_borrow() public {
+    function testMaxCapicitiesWithNothingWithSupplyWithMultipleAssetsAndBorrow() public {
         uint256 amount = 10_000 ether;
 
         borrower1.approve(usdc, to6Decimals(amount));
@@ -457,7 +455,7 @@ contract TestPositionsManagerGetters is TestSetup {
         assertEq(newBorrowableUsdt, expectedBorrowable);
     }
 
-    function test_user_balance_states_with_supply_and_borrow() public {
+    function testUserBalanceStatesWithSupplyAndBorrow() public {
         uint256 amount = 10_000 ether;
         uint256 toBorrow = to6Decimals(amount / 2);
 
@@ -510,7 +508,7 @@ contract TestPositionsManagerGetters is TestSetup {
         assertEq(states.debtValue, expectedStates.debtValue);
     }
 
-    function test_user_balance_states_with_supply_and_borrow_on_several_assets() public {
+    function testUserBalanceStatesWithSupplyAndBorrowWithMultipleAssets() public {
         uint256 amount = 10_000 ether;
         uint256 toBorrow = 100 ether;
         uint256 toBorrowWbtc = to6Decimals(0.001 ether);
@@ -583,7 +581,7 @@ contract TestPositionsManagerGetters is TestSetup {
 
     /// This test is to check that a call to getUserLiquidityDataForAsset with USDT doesn't end
     ///   with error "Division or modulo by zero", as Aave returns 0 for USDT liquidationThreshold.
-    function test_get_user_liquidity_data_for_usdt() public {
+    function testLiquidityDataForUSDT() public {
         uint256 usdtAmount = to6Decimals(10_000 ether);
 
         tip(usdt, address(borrower1), usdtAmount);
@@ -603,7 +601,7 @@ contract TestPositionsManagerGetters is TestSetup {
         assertEq(borrowableDai, 0, "borrowable DAI");
     }
 
-    function test_get_user_liquidity_data_with_differents_assets_and_usdt() public {
+    function testLiquidityDataWithMultipleAssetsAndUSDT() public {
         uint256 amount = 10_000 ether;
         uint256 toBorrow = 100 ether;
 
@@ -701,6 +699,6 @@ contract TestPositionsManagerGetters is TestSetup {
         borrower1.withdraw(aDai, 10 ether);
 
         // Test should fail because there is no element in the array.
-        address firstMarket = positionsManager.enteredMarkets(address(borrower1), 0);
+        positionsManager.enteredMarkets(address(borrower1), 0);
     }
 }

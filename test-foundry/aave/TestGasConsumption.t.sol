@@ -9,7 +9,7 @@ contract TestGasConsumption is TestSetup {
     uint8 public numberOfMatches = 25;
 
     // Give you the cost of a loop (MatchBorrowers)
-    function test_updateBorrowers() external {
+    function testGasConsumptionOfMatchBorrowers() external {
         positionsManager.setNDS(NDS);
         createSigners(NDS + numberOfMatches + 1);
 
