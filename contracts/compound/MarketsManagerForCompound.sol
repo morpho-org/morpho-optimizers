@@ -4,6 +4,7 @@ pragma solidity 0.8.7;
 import {ICToken, IComptroller} from "./interfaces/compound/ICompound.sol";
 import "./interfaces/IPositionsManagerForCompound.sol";
 import "./interfaces/IMarketsManagerForCompound.sol";
+import "./interfaces/IInterestRates.sol";
 
 import "./libraries/CompoundMath.sol";
 
@@ -24,11 +25,10 @@ contract MarketsManagerForCompound is IMarketsManagerForCompound, OwnableUpgrade
     /// STORAGE ///
 
     uint256 public constant WAD = 1e18;
-    uint16 public constant MAX_BASIS_POINTS = 10000; // 100% in basis point.
-    uint16 public constant HALF_MAX_BASIS_POINTS = 5000; // 50% in basis point.
+    uint16 public constant MAX_BASIS_POINTS = 10_000; // 100% (in basis point).
     address[] public marketsCreated; // Keeps track of the created markets.
     mapping(address => bool) public override isCreated; // Whether or not this market is created.
-    mapping(address => uint16) public reserveFactor; // Proportion of the interest earned by users sent to the DAO for each market, in basis point (100% = 10000). The default value is 0.
+    mapping(address => uint256) public reserveFactor; // Proportion of the interest earned by users sent to the DAO for each market, in basis point (100% = 10000). The default value is 0.
     mapping(address => uint256) public override supplyP2PBPY; // Supply Percentage Yield per block (in wad).
     mapping(address => uint256) public override borrowP2PBPY; // Borrow Percentage Yield per block (in wad).
     mapping(address => uint256) public override supplyP2PExchangeRate; // Current exchange rate from supply p2pUnit to underlying (in wad).
@@ -38,6 +38,7 @@ contract MarketsManagerForCompound is IMarketsManagerForCompound, OwnableUpgrade
     mapping(address => bool) public override noP2P; // Whether to put users on pool or not for the given market.
 
     IPositionsManagerForCompound public positionsManager;
+    IInterestRates public interestRates;
     IComptroller public comptroller;
 
     /// EVENTS ///
@@ -50,17 +51,21 @@ contract MarketsManagerForCompound is IMarketsManagerForCompound, OwnableUpgrade
     /// @param _positionsManager The address of the `positionsManager`.
     event PositionsManagerSet(address _positionsManager);
 
+    /// @notice Emitted when the `interestRates` is set.
+    /// @param _interestRates The address of the `interestRates`.
+    event InterestRatesSet(address _interestRates);
+
     /// @notice Emitted when a `noP2P` variable is set.
     /// @param _poolTokenAddress The address of the market to set.
     /// @param _noP2P The new value of `_noP2P` adopted.
-    event NoP2PSet(address _poolTokenAddress, bool _noP2P);
+    event NoP2PSet(address indexed _poolTokenAddress, bool _noP2P);
 
     /// @notice Emitted when the P2P BPYs of a market are updated.
     /// @param _poolTokenAddress The address of the market updated.
     /// @param _newSupplyP2PBPY The new value of the supply  P2P BPY.
     /// @param _newBorrowP2PBPY The new value of the borrow P2P BPY.
     event P2PBPYsUpdated(
-        address _poolTokenAddress,
+        address indexed _poolTokenAddress,
         uint256 _newSupplyP2PBPY,
         uint256 _newBorrowP2PBPY
     );
@@ -70,7 +75,7 @@ contract MarketsManagerForCompound is IMarketsManagerForCompound, OwnableUpgrade
     /// @param _newSupplyP2PExchangeRate The new value of the supply exchange rate from p2pUnit to underlying.
     /// @param _newBorrowP2PExchangeRate The new value of the borrow exchange rate from p2pUnit to underlying.
     event P2PExchangeRatesUpdated(
-        address _poolTokenAddress,
+        address indexed _poolTokenAddress,
         uint256 _newSupplyP2PExchangeRate,
         uint256 _newBorrowP2PExchangeRate
     );
@@ -78,7 +83,7 @@ contract MarketsManagerForCompound is IMarketsManagerForCompound, OwnableUpgrade
     /// @notice Emitted when the `reserveFactor` is set.
     /// @param _poolTokenAddress The address of the market set.
     /// @param _newValue The new value of the `reserveFactor`.
-    event ReserveFactorSet(address _poolTokenAddress, uint16 _newValue);
+    event ReserveFactorSet(address indexed _poolTokenAddress, uint256 _newValue);
 
     /// ERRORS ///
 
@@ -119,10 +124,15 @@ contract MarketsManagerForCompound is IMarketsManagerForCompound, OwnableUpgrade
 
     /// @notice Initializes the MarketsManagerForCompound contract.
     /// @param _comptroller The comptroller.
-    function initialize(IComptroller _comptroller) external initializer {
+    /// @param _interestRates The `interestRates`.
+    function initialize(IComptroller _comptroller, IInterestRates _interestRates)
+        external
+        initializer
+    {
         __Ownable_init();
 
         comptroller = _comptroller;
+        interestRates = _interestRates;
     }
 
     /// EXTERNAL ///
@@ -135,19 +145,22 @@ contract MarketsManagerForCompound is IMarketsManagerForCompound, OwnableUpgrade
         emit PositionsManagerSet(_positionsManager);
     }
 
+    /// @notice Sets the `intersRates`.
+    /// @param _interestRates The new `interestRates` contract.
+    function setInterestRates(IInterestRates _interestRates) external onlyOwner {
+        interestRates = _interestRates;
+        emit InterestRatesSet(address(_interestRates));
+    }
+
     /// @notice Sets the `reserveFactor`.
     /// @param _poolTokenAddress The market on which to set the `_newReserveFactor`.
     /// @param _newReserveFactor The proportion of the interest earned by users sent to the DAO, in basis point.
-    function setReserveFactor(address _poolTokenAddress, uint16 _newReserveFactor)
+    function setReserveFactor(address _poolTokenAddress, uint256 _newReserveFactor)
         external
         onlyOwner
     {
-        reserveFactor[_poolTokenAddress] = HALF_MAX_BASIS_POINTS <= _newReserveFactor
-            ? HALF_MAX_BASIS_POINTS
-            : _newReserveFactor;
-
+        reserveFactor[_poolTokenAddress] = CompoundMath.min(MAX_BASIS_POINTS, _newReserveFactor);
         updateRates(_poolTokenAddress);
-
         emit ReserveFactorSet(_poolTokenAddress, reserveFactor[_poolTokenAddress]);
     }
 
@@ -390,23 +403,16 @@ contract MarketsManagerForCompound is IMarketsManagerForCompound, OwnableUpgrade
         uint256 supplyBPY = cErc20Token.supplyRatePerBlock();
         uint256 borrowBPY = cErc20Token.borrowRatePerBlock();
 
-        uint256 meanBPY;
-        unchecked {
-            meanBPY = (supplyBPY + borrowBPY) / 2;
-        }
-
-        supplyP2PBPY[_poolTokenAddress] =
-            (meanBPY * (MAX_BASIS_POINTS - reserveFactor[_poolTokenAddress])) /
-            MAX_BASIS_POINTS;
-        borrowP2PBPY[_poolTokenAddress] =
-            (meanBPY * (MAX_BASIS_POINTS + reserveFactor[_poolTokenAddress])) /
-            MAX_BASIS_POINTS;
-
-        emit P2PBPYsUpdated(
-            _poolTokenAddress,
-            supplyP2PBPY[_poolTokenAddress],
-            borrowP2PBPY[_poolTokenAddress]
+        (uint256 newSupplyP2PBPY, uint256 newBorrowP2PBPY) = interestRates.computeRates(
+            supplyBPY,
+            borrowBPY,
+            reserveFactor[_poolTokenAddress]
         );
+
+        supplyP2PBPY[_poolTokenAddress] = newSupplyP2PBPY;
+        borrowP2PBPY[_poolTokenAddress] = newBorrowP2PBPY;
+
+        emit P2PBPYsUpdated(_poolTokenAddress, newSupplyP2PBPY, newBorrowP2PBPY);
     }
 
     /// @notice Computes the new P2P exchange rate from arguments.
@@ -427,10 +433,10 @@ contract MarketsManagerForCompound is IMarketsManagerForCompound, OwnableUpgrade
         uint256 _lastPoolIndex,
         uint256 _blockDifference
     ) internal pure returns (uint256) {
-        if (_p2pDelta == 0)
+        if (_p2pAmount == 0 || _p2pDelta == 0)
             return _p2pRate.mul(_computeCompoundedInterest(_p2pBPY, _blockDifference));
         else {
-            uint256 shareOfTheDelta = _p2pDelta.mul(_p2pRate).div(_poolIndex).div(_p2pAmount);
+            uint256 shareOfTheDelta = _p2pDelta.mul(_poolIndex).div(_p2pRate).div(_p2pAmount);
 
             return
                 _p2pRate.mul(

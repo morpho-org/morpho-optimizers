@@ -21,8 +21,10 @@ contract PositionsManagerForCompound is PositionsManagerForCompoundLogic {
         uint256 _amount,
         uint16 _referralCode
     ) external nonReentrant {
+        if (_amount == 0) revert AmountIsZero();
         marketsManager.updateP2PExchangeRates(_poolTokenAddress);
         _supply(_poolTokenAddress, _amount, maxGas.supply);
+        marketsManager.updateBPYs(_poolTokenAddress);
 
         emit Supplied(
             msg.sender,
@@ -46,8 +48,10 @@ contract PositionsManagerForCompound is PositionsManagerForCompoundLogic {
         uint16 _referralCode,
         uint256 _maxGasToConsume
     ) external nonReentrant {
+        if (_amount == 0) revert AmountIsZero();
         marketsManager.updateP2PExchangeRates(_poolTokenAddress);
         _supply(_poolTokenAddress, _amount, _maxGasToConsume);
+        marketsManager.updateBPYs(_poolTokenAddress);
 
         emit Supplied(
             msg.sender,
@@ -68,8 +72,10 @@ contract PositionsManagerForCompound is PositionsManagerForCompoundLogic {
         uint256 _amount,
         uint16 _referralCode
     ) external nonReentrant {
+        if (_amount == 0) revert AmountIsZero();
         marketsManager.updateP2PExchangeRates(_poolTokenAddress);
         _borrow(_poolTokenAddress, _amount, maxGas.borrow);
+        marketsManager.updateBPYs(_poolTokenAddress);
 
         emit Borrowed(
             msg.sender,
@@ -92,8 +98,10 @@ contract PositionsManagerForCompound is PositionsManagerForCompoundLogic {
         uint16 _referralCode,
         uint256 _maxGasToConsume
     ) external nonReentrant {
+        if (_amount == 0) revert AmountIsZero();
         marketsManager.updateP2PExchangeRates(_poolTokenAddress);
         _borrow(_poolTokenAddress, _amount, _maxGasToConsume);
+        marketsManager.updateBPYs(_poolTokenAddress);
 
         emit Borrowed(
             msg.sender,
@@ -109,6 +117,7 @@ contract PositionsManagerForCompound is PositionsManagerForCompoundLogic {
     /// @param _poolTokenAddress The address of the market the user wants to interact with.
     /// @param _amount The amount of tokens (in underlying) to withdraw from supply.
     function withdraw(address _poolTokenAddress, uint256 _amount) external nonReentrant {
+        if (_amount == 0) revert AmountIsZero();
         marketsManager.updateP2PExchangeRates(_poolTokenAddress);
 
         uint256 toWithdraw = Math.min(
@@ -118,6 +127,15 @@ contract PositionsManagerForCompound is PositionsManagerForCompoundLogic {
 
         _checkUserLiquidity(msg.sender, _poolTokenAddress, toWithdraw, 0);
         _withdraw(_poolTokenAddress, toWithdraw, msg.sender, msg.sender, maxGas.withdraw);
+        marketsManager.updateBPYs(_poolTokenAddress);
+
+        emit Withdrawn(
+            msg.sender,
+            _poolTokenAddress,
+            _amount,
+            supplyBalanceInOf[_poolTokenAddress][msg.sender].onPool,
+            supplyBalanceInOf[_poolTokenAddress][msg.sender].inP2P
+        );
     }
 
     /// @notice Repays debt of the user.
@@ -125,6 +143,7 @@ contract PositionsManagerForCompound is PositionsManagerForCompoundLogic {
     /// @param _poolTokenAddress The address of the market the user wants to interact with.
     /// @param _amount The amount of token (in underlying) to repay from borrow.
     function repay(address _poolTokenAddress, uint256 _amount) external nonReentrant {
+        if (_amount == 0) revert AmountIsZero();
         marketsManager.updateP2PExchangeRates(_poolTokenAddress);
 
         uint256 toRepay = Math.min(
@@ -133,6 +152,15 @@ contract PositionsManagerForCompound is PositionsManagerForCompoundLogic {
         );
 
         _repay(_poolTokenAddress, msg.sender, toRepay, maxGas.repay);
+        marketsManager.updateBPYs(_poolTokenAddress);
+
+        emit Repaid(
+            msg.sender,
+            _poolTokenAddress,
+            _amount,
+            borrowBalanceInOf[_poolTokenAddress][msg.sender].onPool,
+            borrowBalanceInOf[_poolTokenAddress][msg.sender].inP2P
+        );
     }
 
     /// @notice Liquidates a position.
@@ -147,8 +175,8 @@ contract PositionsManagerForCompound is PositionsManagerForCompoundLogic {
         uint256 _amount
     ) external nonReentrant {
         if (_amount == 0) revert AmountIsZero();
-        marketsManager.updateP2PExchangeRates(_poolTokenCollateralAddress);
         marketsManager.updateP2PExchangeRates(_poolTokenBorrowedAddress);
+        marketsManager.updateP2PExchangeRates(_poolTokenCollateralAddress);
         LiquidateVars memory vars;
 
         (vars.debtValue, vars.maxDebtValue) = _getUserHypotheticalBalanceStates(
@@ -187,6 +215,9 @@ contract PositionsManagerForCompound is PositionsManagerForCompoundLogic {
 
         _withdraw(_poolTokenCollateralAddress, vars.amountToSeize, _borrower, msg.sender, 0);
 
+        marketsManager.updateBPYs(_poolTokenBorrowedAddress);
+        marketsManager.updateBPYs(_poolTokenCollateralAddress);
+
         emit Liquidated(
             msg.sender,
             _borrower,
@@ -204,8 +235,13 @@ contract PositionsManagerForCompound is PositionsManagerForCompoundLogic {
         onlyOwner
         isMarketCreatedAndNotPaused(_poolTokenAddress)
     {
+        if (treasuryVault == address(0)) revert ZeroAddress();
+
         ERC20 underlyingToken = ERC20(ICToken(_poolTokenAddress).underlying());
         uint256 amountToClaim = underlyingToken.balanceOf(address(this));
+
+        if (amountToClaim == 0) revert AmountIsZero();
+
         underlyingToken.safeTransfer(treasuryVault, amountToClaim);
         emit ReserveFeeClaimed(_poolTokenAddress, amountToClaim);
     }

@@ -30,12 +30,12 @@ abstract contract PositionsManagerForCompoundStorage is
 
     struct SupplyBalance {
         uint256 inP2P; // In supplier's p2pUnit, a unit that grows in value, to keep track of the interests earned when users are in P2P.
-        uint256 onPool; // In scaled balance.
+        uint256 onPool; // In cToken.
     }
 
     struct BorrowBalance {
         uint256 inP2P; // In borrower's p2pUnit, a unit that grows in value, to keep track of the interests paid when users are in P2P.
-        uint256 onPool; // In adUnit, a unit that grows in value, to keep track of the debt increase when users are in Compound. Multiply by current borrowIndex to get the underlying amount.
+        uint256 onPool; // In cdUnit, a unit that grows in value, to keep track of the debt increase when users are in Compound. Multiply by current borrowIndex to get the underlying amount.
     }
 
     // Max gas to consume for supply, borrow, withdraw and repay functions.
@@ -47,8 +47,8 @@ abstract contract PositionsManagerForCompoundStorage is
     }
 
     struct Delta {
-        uint256 supplyP2PDelta; // Difference between the stored P2P supply amount and the real P2P supply amount (in scaled balance).
-        uint256 borrowP2PDelta; // Difference between the stored P2P borrow amount and the real P2P borrow amount (in adUnit).
+        uint256 supplyP2PDelta; // Difference between the stored P2P supply amount and the real P2P supply amount (in cToken).
+        uint256 borrowP2PDelta; // Difference between the stored P2P borrow amount and the real P2P borrow amount (in cdUnit).
         uint256 supplyP2PAmount; // Sum of all stored P2P supply (in P2P unit).
         uint256 borrowP2PAmount; // Sum of all stored P2P borrow (in P2P unit).
     }
@@ -83,8 +83,8 @@ abstract contract PositionsManagerForCompoundStorage is
     MaxGas public maxGas; // Max gas to consume within loops in matching engine functions.
     uint8 public NDS; // Max number of iterations in the data structure sorting process.
     uint8 public constant CTOKEN_DECIMALS = 8; // The number of decimals for cToken.
-    uint16 public constant MAX_BASIS_POINTS = 10000; // 100% in basis points.
-    uint16 public constant LIQUIDATION_CLOSE_FACTOR_PERCENT = 5000; // 50% in basis points.
+    uint16 public constant MAX_BASIS_POINTS = 10_000; // 100% in basis points.
+    uint16 public constant LIQUIDATION_CLOSE_FACTOR_PERCENT = 5_000; // 50% in basis points.
     mapping(address => DoubleLinkedList.List) internal suppliersInP2P; // For a given market, the suppliers in peer-to-peer.
     mapping(address => DoubleLinkedList.List) internal suppliersOnPool; // For a given market, the suppliers on Compound.
     mapping(address => DoubleLinkedList.List) internal borrowersInP2P; // For a given market, the borrowers in peer-to-peer.
