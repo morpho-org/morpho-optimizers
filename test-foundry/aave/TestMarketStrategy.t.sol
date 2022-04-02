@@ -4,7 +4,7 @@ pragma solidity 0.8.7;
 import "./setup/TestSetup.sol";
 
 contract TestMarketStrategy is TestSetup {
-    function test_borrow_flip_strategy_move_to_pool_borrower_first() public {
+    function testShouldPutBorrowerOnPool() public {
         uint256 amount = 10_000 ether;
         uint256 toBorrow = 500 ether;
 
@@ -35,7 +35,7 @@ contract TestMarketStrategy is TestSetup {
         assertGt(supplyOnPool, 0);
     }
 
-    function test_borrow_flip_strategy_move_to_pool_supplier_first() public {
+    function testShouldPutSupplierOnPool() public {
         uint256 amount = 10_000 ether;
         uint256 toBorrow = 500 ether;
 
@@ -66,7 +66,7 @@ contract TestMarketStrategy is TestSetup {
         assertGt(supplyOnPool, 0);
     }
 
-    function test_borrow_flip_strategy_move_to_pool_borrowers_first() public {
+    function testShouldPutBorrowersOnPool() public {
         uint256 amount = 10_000 ether;
         uint256 toBorrow = 100 ether;
 
@@ -103,7 +103,7 @@ contract TestMarketStrategy is TestSetup {
         assertGt(supplyOnPool, 0);
     }
 
-    function test_borrow_flip_strategy_move_to_pool_suppliers_first() public {
+    function testShouldPutSuppliersOnPool() public {
         uint256 amount = 10_000 ether;
         uint256 toBorrow = 400 ether;
         uint256 toSupply = 100 ether;
