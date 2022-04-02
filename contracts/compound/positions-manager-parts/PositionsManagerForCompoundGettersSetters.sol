@@ -28,34 +28,6 @@ abstract contract PositionsManagerForCompoundGettersSetters is
         _;
     }
 
-    /// UPGRADE ///
-
-    /// @notice Initializes the PositionsManagerForCompound contract.
-    /// @param _marketsManager The `marketsManager`.
-    /// @param _comptroller The `comptroller`.
-    /// @param _swapManager The `swapManager`.
-    /// @param _maxGas The `maxGas`.
-    /// @param _NDS The `NDS`.
-    function initialize(
-        IMarketsManagerForCompound _marketsManager,
-        IMatchingEngineForCompound _matchingEngine,
-        IComptroller _comptroller,
-        ISwapManager _swapManager,
-        MaxGas memory _maxGas,
-        uint8 _NDS
-    ) external initializer {
-        __ReentrancyGuard_init();
-        __Ownable_init();
-
-        marketsManager = _marketsManager;
-        matchingEngine = _matchingEngine;
-        comptroller = _comptroller;
-        swapManager = _swapManager;
-
-        maxGas = _maxGas;
-        NDS = _NDS;
-    }
-
     /// SETTERS ///
 
     /// @dev Sets `NDS`.
@@ -265,6 +237,53 @@ abstract contract PositionsManagerForCompoundGettersSetters is
             assetData.underlyingPrice
         );
         assetData.maxDebtValue = assetData.collateralValue.mul(assetData.collateralFactor);
+    }
+
+    /// @dev Returns the debt value, max debt value of a given user.
+    /// @param _user The user to determine liquidity for.
+    /// @param _poolTokenAddress The market to hypothetically withdraw/borrow in.
+    /// @param _withdrawnAmount The number of tokens to hypothetically withdraw (in underlying).
+    /// @param _borrowedAmount The amount of tokens to hypothetically borrow (in underlying).
+    /// @return debtValue The current debt value of the user.
+    /// @return maxDebtValue The maximum debt value possible of the user.
+    function _getUserHypotheticalBalanceStates(
+        address _user,
+        address _poolTokenAddress,
+        uint256 _withdrawnAmount,
+        uint256 _borrowedAmount
+    ) internal returns (uint256 debtValue, uint256 maxDebtValue) {
+        ICompoundOracle oracle = ICompoundOracle(comptroller.oracle());
+        uint256 numberOfEnteredMarkets = enteredMarkets[_user].length;
+        uint256 i;
+
+        while (i < numberOfEnteredMarkets) {
+            address poolTokenEntered = enteredMarkets[_user][i];
+
+            // Calling accrueInterest so that computation in getUserLiquidityDataForAsset() are the most accurate ones.
+            ICToken(poolTokenEntered).accrueInterest();
+            AssetLiquidityData memory assetData = getUserLiquidityDataForAsset(
+                _user,
+                poolTokenEntered,
+                oracle
+            );
+
+            unchecked {
+                maxDebtValue += assetData.maxDebtValue;
+                debtValue += assetData.debtValue;
+                ++i;
+            }
+
+            if (_poolTokenAddress == poolTokenEntered) {
+                debtValue += _borrowedAmount.mul(assetData.underlyingPrice);
+                uint256 maxDebtValueSub = _withdrawnAmount.mul(assetData.underlyingPrice).mul(
+                    assetData.collateralFactor
+                );
+
+                unchecked {
+                    maxDebtValue -= maxDebtValue < maxDebtValueSub ? maxDebtValue : maxDebtValueSub;
+                }
+            }
+        }
     }
 
     /// @dev Returns the supply balance of `_user` in the `_poolTokenAddress` market.
