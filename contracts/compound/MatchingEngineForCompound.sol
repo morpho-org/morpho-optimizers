@@ -59,26 +59,6 @@ contract MatchingEngineForCompound is
         uint256 _balanceInP2P
     );
 
-    /// @notice Emitted when the borrow P2P delta is updated.
-    /// @param _poolTokenAddress The address of the market.
-    /// @param _borrowP2PDelta The borrow P2P delta after update.
-    event BorrowP2PDeltaUpdated(address indexed _poolTokenAddress, uint256 _borrowP2PDelta);
-
-    /// @notice Emitted when the supply P2P delta is updated.
-    /// @param _poolTokenAddress The address of the market.
-    /// @param _supplyP2PDelta The supply P2P delta after update.
-    event SupplyP2PDeltaUpdated(address indexed _poolTokenAddress, uint256 _supplyP2PDelta);
-
-    /// @notice Emitted when the supply and borrow P2P amounts are updated.
-    /// @param _poolTokenAddress The address of the market.
-    /// @param _supplyP2PAmount The supply P2P amount after update.
-    /// @param _borrowP2PAmount The borrow P2P amount after update.
-    event P2PAmountsUpdated(
-        address indexed _poolTokenAddress,
-        uint256 _supplyP2PAmount,
-        uint256 _borrowP2PAmount
-    );
-
     /// EXTERNAL ///
 
     /// @notice Matches suppliers' liquidity waiting on Compound up to the given `_amount` and move it to P2P.
@@ -97,15 +77,6 @@ contract MatchingEngineForCompound is
         address user = suppliersOnPool[poolTokenAddress].getHead();
         vars.poolIndex = _poolToken.exchangeRateCurrent();
         vars.p2pRate = marketsManager.supplyP2PExchangeRate(poolTokenAddress);
-        Delta storage delta = deltas[poolTokenAddress];
-
-        // Match supply P2P delta first
-        if (delta.supplyP2PDelta > 0) {
-            vars.toMatch = Math.min(delta.supplyP2PDelta.mul(vars.poolIndex), _amount);
-            matched += vars.toMatch;
-            delta.supplyP2PDelta -= vars.toMatch.div(vars.poolIndex);
-            emit SupplyP2PDeltaUpdated(poolTokenAddress, delta.supplyP2PDelta);
-        }
 
         if (_maxGasToConsume != 0) {
             vars.gasLeftAtTheBeginning = gasleft();
@@ -139,12 +110,6 @@ contract MatchingEngineForCompound is
                 user = suppliersOnPool[poolTokenAddress].getHead();
             }
         }
-
-        delta.supplyP2PAmount += matched.div(vars.p2pRate);
-        delta.borrowP2PAmount += matched.div(
-            marketsManager.borrowP2PExchangeRate(poolTokenAddress)
-        );
-        emit P2PAmountsUpdated(poolTokenAddress, delta.supplyP2PAmount, delta.borrowP2PAmount);
     }
 
     /// @notice Unmatches suppliers' liquidity in P2P up to the given `_amount` and move it to Compound.
@@ -156,22 +121,12 @@ contract MatchingEngineForCompound is
         address _poolTokenAddress,
         uint256 _amount,
         uint256 _maxGasToConsume
-    ) external override returns (uint256 toSupply) {
+    ) external override returns (uint256) {
         UnmatchVars memory vars;
         address user = suppliersInP2P[_poolTokenAddress].getHead();
         vars.poolIndex = ICToken(_poolTokenAddress).exchangeRateCurrent();
         vars.p2pRate = marketsManager.supplyP2PExchangeRate(_poolTokenAddress);
         uint256 remainingToUnmatch = _amount; // In underlying
-        Delta storage delta = deltas[_poolTokenAddress];
-
-        // Reduce borrow P2P delta first
-        if (delta.borrowP2PDelta > 0) {
-            uint256 borrowPoolIndex = ICToken(_poolTokenAddress).borrowIndex();
-            vars.toUnmatch = Math.min(delta.borrowP2PDelta.mul(borrowPoolIndex), _amount);
-            remainingToUnmatch -= vars.toUnmatch;
-            delta.borrowP2PDelta -= vars.toUnmatch.div(borrowPoolIndex);
-            emit BorrowP2PDeltaUpdated(_poolTokenAddress, delta.borrowP2PDelta);
-        }
 
         if (_maxGasToConsume != 0) {
             vars.gasLeftAtTheBeginning = gasleft();
@@ -208,19 +163,7 @@ contract MatchingEngineForCompound is
             }
         }
 
-        // If P2P supply amount < _amount, the rest stays on the contract (reserve factor).
-        toSupply = Math.min(_amount, delta.supplyP2PAmount.mul(vars.p2pRate));
-
-        if (remainingToUnmatch > 0) {
-            delta.supplyP2PDelta += remainingToUnmatch.div(vars.poolIndex);
-            emit SupplyP2PDeltaUpdated(_poolTokenAddress, delta.supplyP2PDelta);
-        }
-
-        delta.supplyP2PAmount -= (_amount - remainingToUnmatch).div(vars.p2pRate);
-        delta.borrowP2PAmount -= _amount.div(
-            marketsManager.borrowP2PExchangeRate(_poolTokenAddress)
-        );
-        emit P2PAmountsUpdated(_poolTokenAddress, delta.supplyP2PAmount, delta.borrowP2PAmount);
+        return _amount - remainingToUnmatch;
     }
 
     /// @notice Matches borrowers' liquidity waiting on Compound up to the given `_amount` and move it to P2P.
@@ -239,15 +182,6 @@ contract MatchingEngineForCompound is
         address user = borrowersOnPool[poolTokenAddress].getHead();
         vars.poolIndex = _poolToken.borrowIndex();
         vars.p2pRate = marketsManager.borrowP2PExchangeRate(poolTokenAddress);
-        Delta storage delta = deltas[poolTokenAddress];
-
-        // Match borrow P2P delta first
-        if (delta.borrowP2PDelta > 0) {
-            vars.toMatch = Math.min(delta.borrowP2PDelta.mul(vars.poolIndex), _amount);
-            matched += vars.toMatch;
-            delta.borrowP2PDelta -= vars.toMatch.div(vars.poolIndex);
-            emit BorrowP2PDeltaUpdated(poolTokenAddress, delta.borrowP2PDelta);
-        }
 
         if (_maxGasToConsume != 0) {
             vars.gasLeftAtTheBeginning = gasleft();
@@ -281,12 +215,6 @@ contract MatchingEngineForCompound is
                 user = borrowersOnPool[poolTokenAddress].getHead();
             }
         }
-
-        delta.supplyP2PAmount += matched.div(
-            marketsManager.supplyP2PExchangeRate(poolTokenAddress)
-        );
-        delta.borrowP2PAmount += matched.div(vars.p2pRate);
-        emit P2PAmountsUpdated(poolTokenAddress, delta.supplyP2PAmount, delta.borrowP2PAmount);
     }
 
     /// @notice Unmatches borrowers' liquidity in P2P for the given `_amount` and move it to Compound.
@@ -294,26 +222,17 @@ contract MatchingEngineForCompound is
     /// @param _poolTokenAddress The address of the market from which to unmatch borrowers.
     /// @param _amount The amount to unmatch (in underlying).
     /// @param _maxGasToConsume The maximum amount of gas to consume within a matching engine loop.
+    /// @return The amount unmatched (in underlying).
     function unmatchBorrowers(
         address _poolTokenAddress,
         uint256 _amount,
         uint256 _maxGasToConsume
-    ) external override {
+    ) external override returns (uint256) {
         UnmatchVars memory vars;
         address user = borrowersInP2P[_poolTokenAddress].getHead();
         uint256 remainingToUnmatch = _amount;
         vars.poolIndex = ICToken(_poolTokenAddress).borrowIndex();
         vars.p2pRate = marketsManager.borrowP2PExchangeRate(_poolTokenAddress);
-        Delta storage delta = deltas[_poolTokenAddress];
-
-        // Reduce supply P2P delta first.
-        if (delta.supplyP2PDelta > 0) {
-            uint256 supplyPoolIndex = ICToken(_poolTokenAddress).exchangeRateCurrent();
-            vars.toUnmatch = Math.min(delta.supplyP2PDelta.mul(supplyPoolIndex), _amount);
-            remainingToUnmatch -= vars.toUnmatch;
-            delta.supplyP2PDelta -= vars.toUnmatch.div(supplyPoolIndex);
-            emit SupplyP2PDeltaUpdated(_poolTokenAddress, delta.supplyP2PDelta);
-        }
 
         if (_maxGasToConsume != 0) {
             vars.gasLeftAtTheBeginning = gasleft();
@@ -350,16 +269,7 @@ contract MatchingEngineForCompound is
             }
         }
 
-        if (remainingToUnmatch > 0) {
-            delta.borrowP2PDelta += remainingToUnmatch.div(vars.poolIndex);
-            emit BorrowP2PDeltaUpdated(_poolTokenAddress, delta.borrowP2PDelta);
-        }
-
-        delta.supplyP2PAmount -= _amount.div(
-            marketsManager.supplyP2PExchangeRate(_poolTokenAddress)
-        );
-        delta.borrowP2PAmount -= (_amount - remainingToUnmatch).div(vars.p2pRate);
-        emit P2PAmountsUpdated(_poolTokenAddress, delta.supplyP2PAmount, delta.borrowP2PAmount);
+        return _amount - remainingToUnmatch;
     }
 
     /// PUBLIC ///
