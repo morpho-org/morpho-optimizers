@@ -76,12 +76,32 @@ abstract contract PositionsManagerForCompoundEventsErrors is PositionsManagerFor
     /// @param _amountSeized The amount of collateral asset seized (in underlying).
     /// @param _poolTokenCollateralAddress The address of the collateral asset seized.
     event Liquidated(
-        address indexed _liquidator,
+        address _liquidator,
         address indexed _liquidatee,
         uint256 _amountRepaid,
-        address _poolTokenBorrowedAddress,
+        address indexed _poolTokenBorrowedAddress,
         uint256 _amountSeized,
-        address _poolTokenCollateralAddress
+        address indexed _poolTokenCollateralAddress
+    );
+
+    /// @notice Emitted when the borrow P2P delta is updated.
+    /// @param _poolTokenAddress The address of the market.
+    /// @param _borrowP2PDelta The borrow P2P delta after update.
+    event BorrowP2PDeltaUpdated(address indexed _poolTokenAddress, uint256 _borrowP2PDelta);
+
+    /// @notice Emitted when the supply P2P delta is updated.
+    /// @param _poolTokenAddress The address of the market.
+    /// @param _supplyP2PDelta The supply P2P delta after update.
+    event SupplyP2PDeltaUpdated(address indexed _poolTokenAddress, uint256 _supplyP2PDelta);
+
+    /// @notice Emitted when the supply and borrow P2P amounts are updated.
+    /// @param _poolTokenAddress The address of the market.
+    /// @param _supplyP2PAmount The supply P2P amount after update.
+    /// @param _borrowP2PAmount The borrow P2P amount after update.
+    event P2PAmountsUpdated(
+        address indexed _poolTokenAddress,
+        uint256 _supplyP2PAmount,
+        uint256 _borrowP2PAmount
     );
 
     /// @dev Emitted when a new value for `NDS` is set.
@@ -94,11 +114,11 @@ abstract contract PositionsManagerForCompoundEventsErrors is PositionsManagerFor
 
     /// @dev Emitted the address of the `treasuryVault` is set.
     /// @param _newTreasuryVaultAddress The new address of the `treasuryVault`.
-    event TreasuryVaultSet(address _newTreasuryVaultAddress);
+    event TreasuryVaultSet(address indexed _newTreasuryVaultAddress);
 
     /// @notice Emitted the address of the `rewardsManager` is set.
     /// @param _newRewardsManagerAddress The new address of the `rewardsManager`.
-    event RewardsManagerSet(address _newRewardsManagerAddress);
+    event RewardsManagerSet(address indexed _newRewardsManagerAddress);
 
     /// @notice Emitted the address of the `aaveIncentivesController` is set.
     /// @param _aaveIncentivesController The new address of the `aaveIncentivesController`.
@@ -107,33 +127,31 @@ abstract contract PositionsManagerForCompoundEventsErrors is PositionsManagerFor
     /// @notice Emitted when a market is paused or unpaused.
     /// @param _poolTokenAddress The address of the pool token concerned..
     /// @param _newStatus The new pause status of the market.
-    event PauseStatusSet(address _poolTokenAddress, bool _newStatus);
-
-    /// @notice Emitted when the DAO claims fees.
-    /// @param _poolTokenAddress The address of the pool token concerned.
-    /// @param _amountClaimed The amount of underlying token claimed.
-    event FeesClaimed(address _poolTokenAddress, uint256 _amountClaimed);
+    event PauseStatusSet(address indexed _poolTokenAddress, bool _newStatus);
 
     /// @notice Emitted when a reserve fee is claimed.
     /// @param _poolTokenAddress The address of the pool token concerned.
     /// @param _amountClaimed The amount of reward token claimed.
-    event ReserveFeeClaimed(address _poolTokenAddress, uint256 _amountClaimed);
+    event ReserveFeeClaimed(address indexed _poolTokenAddress, uint256 _amountClaimed);
 
     /// @notice Emitted when a user claims rewards.
     /// @param _user The address of the claimer.
     /// @param _amountClaimed The amount of reward token claimed.
-    event RewardsClaimed(address _user, uint256 _amountClaimed);
+    event RewardsClaimed(address indexed _user, uint256 _amountClaimed);
 
     /// @dev Emitted when a user claims rewards and swaps them to Morpho tokens.
     /// @param _user The address of the claimer.
     /// @param _amountIn The amount of reward token swapped.
     /// @param _amountOut The amount of tokens received.
-    event RewardsClaimedAndSwapped(address _user, uint256 _amountIn, uint256 _amountOut);
+    event RewardsClaimedAndSwapped(address indexed _user, uint256 _amountIn, uint256 _amountOut);
 
     /// ERRORS ///
 
     /// @notice Thrown when the amount is equal to 0.
     error AmountIsZero();
+
+    /// @notice Thrown when the address is the zero address.
+    error ZeroAddress();
 
     /// @notice Thrown when the market is not created yet.
     error MarketNotCreated();
