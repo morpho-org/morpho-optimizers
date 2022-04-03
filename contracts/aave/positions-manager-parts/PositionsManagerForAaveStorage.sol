@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
+import "hardhat/console.sol";
+
 import {IVariableDebtToken} from "../interfaces/aave/IVariableDebtToken.sol";
 import "../interfaces/aave/ILendingPoolAddressesProvider.sol";
 import "../interfaces/aave/IAaveIncentivesController.sol";

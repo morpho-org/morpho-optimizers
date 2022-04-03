@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
+import "hardhat/console.sol";
+
 import {IAToken} from "../interfaces/aave/IAToken.sol";
 import "../interfaces/IMatchingEngineForAave.sol";
 
@@ -17,6 +19,7 @@ library MatchingEngineFns {
         uint256 _maxGasToConsume,
         uint256 _gasLeftBeforeMatching
     ) internal returns (uint256) {
+        console.log("gasleft0", gasleft());
         bytes memory data = address(_matchingEngine).functionDelegateCall(
             abi.encodeWithSelector(
                 _matchingEngine.matchSuppliers.selector,

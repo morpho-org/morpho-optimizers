@@ -30,28 +30,32 @@ contract TestPositionsManagerGetters is TestSetup {
             positionsManager.getHead(
                 aDai,
                 PositionsManagerForAaveStorage.PositionType.SUPPLIERS_IN_P2P
-            )
+            ),
+            "SUPPLIERS_IN_P2P 1"
         );
         assertEq(
             address(borrower1),
             positionsManager.getHead(
                 aDai,
                 PositionsManagerForAaveStorage.PositionType.SUPPLIERS_ON_POOL
-            )
+            ),
+            "SUPPLIERS_ON_POOL 1"
         );
         assertEq(
             address(0),
             positionsManager.getHead(
                 aDai,
                 PositionsManagerForAaveStorage.PositionType.BORROWERS_IN_P2P
-            )
+            ),
+            "BORROWERS_IN_P2P 1"
         );
         assertEq(
             address(0),
             positionsManager.getHead(
                 aDai,
                 PositionsManagerForAaveStorage.PositionType.BORROWERS_ON_POOL
-            )
+            ),
+            "BORROWERS_ON_POOL 1"
         );
 
         borrower1.borrow(aDai, toBorrow);
@@ -61,28 +65,32 @@ contract TestPositionsManagerGetters is TestSetup {
             positionsManager.getHead(
                 aDai,
                 PositionsManagerForAaveStorage.PositionType.SUPPLIERS_IN_P2P
-            )
+            ),
+            "SUPPLIERS_IN_P2P 2"
         );
         assertEq(
             address(borrower1),
             positionsManager.getHead(
                 aDai,
                 PositionsManagerForAaveStorage.PositionType.SUPPLIERS_ON_POOL
-            )
+            ),
+            "SUPPLIERS_ON_POOL 2"
         );
         assertEq(
             address(borrower1),
             positionsManager.getHead(
                 aDai,
                 PositionsManagerForAaveStorage.PositionType.BORROWERS_IN_P2P
-            )
+            ),
+            "BORROWERS_IN_P2P 1"
         );
         assertEq(
             address(0),
             positionsManager.getHead(
                 aDai,
                 PositionsManagerForAaveStorage.PositionType.BORROWERS_ON_POOL
-            )
+            ),
+            "BORROWERS_ON_POOL 1"
         );
 
         borrower1.borrow(aUsdc, to6Decimals(toBorrow));
@@ -92,7 +100,8 @@ contract TestPositionsManagerGetters is TestSetup {
             positionsManager.getHead(
                 aUsdc,
                 PositionsManagerForAaveStorage.PositionType.BORROWERS_ON_POOL
-            )
+            ),
+            "BORROWERS_ON_POOL 2"
         );
     }
 

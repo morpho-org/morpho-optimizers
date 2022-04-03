@@ -83,12 +83,16 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         uint256 _maxGasToConsume,
         uint256 _gasLeftBeforeMatching
     ) external override returns (uint256 matched) {
+        console.log("gasleft1", gasleft());
+        console.log("_gasLeftBeforeMatching", _gasLeftBeforeMatching);
         MatchVars memory vars;
         address poolTokenAddress = address(_poolToken);
         address user = suppliersOnPool[poolTokenAddress].getHead();
         vars.normalizer = lendingPool.getReserveNormalizedIncome(address(_underlyingToken));
         vars.p2pRate = marketsManager.supplyP2PExchangeRate(poolTokenAddress);
 
+        console.log("gasleft2", gasleft());
+        console.log("_gasLeftBeforeMatching - gasleft()", _gasLeftBeforeMatching - gasleft());
         if (_maxGasToConsume != 0) {
             while (
                 matched < _amount &&
