@@ -6,7 +6,7 @@ import "./setup/TestSetup.sol";
 contract TestPausableMarket is TestSetup {
     using CompoundMath for uint256;
 
-    function test_only_markets_owner_can_trigger_pause_function() public {
+    function testOnlyOwnerShouldTriggerPauseFunction() public {
         hevm.expectRevert("Ownable: caller is not the owner");
         supplier1.setPauseStatus(dai);
 
@@ -14,7 +14,7 @@ contract TestPausableMarket is TestSetup {
         assertTrue(positionsManager.paused(dai), "paused is false");
     }
 
-    function test_pause_unpause() public {
+    function testPauseUnpause() public {
         positionsManager.setPauseStatus(dai);
         assertTrue(positionsManager.paused(dai), "paused is false");
 
@@ -22,7 +22,7 @@ contract TestPausableMarket is TestSetup {
         assertFalse(positionsManager.paused(dai), "paused is true");
     }
 
-    function test_ability_to_trigger_functions_when_not_paused() public {
+    function testShouldTriggerFunctionsWhenNotPaused() public {
         uint256 amount = 10000 ether;
         uint256 toBorrow = to6Decimals(amount / 2);
 
@@ -51,7 +51,7 @@ contract TestPausableMarket is TestSetup {
         positionsManager.claimToTreasury(cDai);
     }
 
-    function test_not_possible_to_trigger_functions_when_paused() public {
+    function testShouldNotTriggerFunctionsWhenPaused() public {
         uint256 amount = 10000 ether;
 
         supplier1.approve(dai, 2 * amount);
