@@ -7,8 +7,7 @@ import "./setup/TestSetup.sol";
 import {Attacker} from "../common/helpers/Attacker.sol";
 
 contract TestWithdraw is TestSetup {
-    // 3.1 - The user withdrawal leads to an under-collateralized position, the withdrawal reverts.
-    function test_withdraw_3_1() public {
+    function testWithdraw1() public {
         uint256 amount = 10000 ether;
         uint256 collateral = 2 * amount;
 
@@ -21,8 +20,7 @@ contract TestWithdraw is TestSetup {
         borrower1.withdraw(cUsdc, to6Decimals(collateral));
     }
 
-    // 3.2 - The supplier withdraws less than his onPool balance. The liquidity is taken from his onPool balance.
-    function test_withdraw_3_2() public {
+    function testWithdraw2() public {
         uint256 amount = 10000 ether;
 
         supplier1.approve(usdc, to6Decimals(2 * amount));
@@ -48,8 +46,7 @@ contract TestWithdraw is TestSetup {
         testEquality(onPool, expectedOnPool / 2);
     }
 
-    // 3.2 BIS - withdraw all
-    function test_withdraw_3_2_BIS() public {
+    function testWithdrawAll() public {
         uint256 amount = 10000 ether;
 
         supplier1.approve(usdc, to6Decimals(amount));
@@ -82,7 +79,7 @@ contract TestWithdraw is TestSetup {
 
     // 3.3.1 - There is a supplier onPool available to replace him inP2P.
     // First, his liquidity onPool is taken, his matched is replaced by the available supplier up to his withdrawal amount.
-    function test_withdraw_3_3_1() public {
+    function testWithdraw3_1() public {
         uint256 borrowedAmount = 10000 ether;
         uint256 suppliedAmount = 2 * borrowedAmount;
         uint256 collateral = 2 * borrowedAmount;
@@ -148,8 +145,6 @@ contract TestWithdraw is TestSetup {
         testEquality(inP2PSupplier, inP2PBorrower1);
     }
 
-    // 3.3.2 - There are NMAX (or less) suppliers onPool available to replace him inP2P, they supply enough to cover for the withdrawn liquidity.
-    // First, his liquidity onPool is taken, his matched is replaced by NMAX (or less) suppliers up to his withdrawal amount.
     function test_withdraw_3_3_2() public {
         setMaxGasHelper(type(uint64).max, type(uint64).max, type(uint64).max, type(uint64).max);
 
@@ -237,5 +232,38 @@ contract TestWithdraw is TestSetup {
             testEquality(expectedInP2P, amountPerSupplier);
             testEquality(onPool, 0);
         }
+    }
+
+    // TODO
+    function testWithdraw3_3() public {}
+
+    // TODO
+    function testWithdraw3_4() public {}
+
+    struct Vars {
+        uint256 LR;
+        uint256 SPY;
+        uint256 VBR;
+        uint256 NVD;
+        uint256 BP2PD;
+        uint256 BP2PA;
+        uint256 BP2PER;
+    }
+
+    // TODO
+    function testDeltaWithdraw() public {}
+
+    // TODO
+    function testShouldNotWithdrawWhenUnderCollaterized() public {}
+
+    // TODO
+    // Test attack
+    // Should be possible to withdraw amount while an attacker sends aToken to trick Morpho contract
+    function testWithdrawWhileAttackerSendsAToken() public {
+        supplier1.withdraw(aDai, toSupply);
+    }
+
+    function testFailWithdrawZero() public {
+        positionsManager.withdraw(cDai, 0);
     }
 }
