@@ -6,8 +6,7 @@ import "./setup/TestSetup.sol";
 contract TestRepay is TestSetup {
     using CompoundMath for uint256;
 
-    // - 4.1 - The borrower repays less than his `onPool` balance. The liquidity is repaid on his `onPool` balance.
-    function test_repay_4_1() public {
+    function testRepay1() public {
         uint256 amount = 10000 ether;
         uint256 collateral = 2 * amount;
 
@@ -27,8 +26,7 @@ contract TestRepay is TestSetup {
         testEquality(onPool, 0);
     }
 
-    // - 4.1 BIS - repay all
-    function test_repay_4_1_BIS() public {
+    function testRepayAll() public {
         uint256 amount = 10000 ether;
         uint256 collateral = 2 * amount;
 
@@ -51,10 +49,7 @@ contract TestRepay is TestSetup {
         testEquality(balanceBefore - balanceAfter, amount);
     }
 
-    // - 4.2 - The borrower repays more than his `onPool` balance.
-    //   - 4.2.1 - There is a borrower `onPool` available to replace him `inP2P`.
-    //             First, his debt `onPool` is repaid, his matched debt is replaced by the available borrower up to his repaid amount.
-    function test_repay_4_2_1() public {
+    function testRepay2_1() public {
         uint256 suppliedAmount = 10000 ether;
         uint256 borrowedAmount = 2 * suppliedAmount;
         uint256 collateral = 2 * borrowedAmount;
@@ -125,9 +120,7 @@ contract TestRepay is TestSetup {
         testEquality(onPoolSupplier, 0);
     }
 
-    // //   - 4.2.2 - There are NMAX (or less) borrowers `onPool` available to replace him `inP2P`, they borrow enough to cover for the repaid liquidity.
-    // //             First, his debt `onPool` is repaid, his matched liquidity is replaced by NMAX (or less) borrowers up to his repaid amount.
-    function test_repay_4_2_2() public {
+    function testRepay2_2() public {
         setMaxGasHelper(type(uint64).max, type(uint64).max, type(uint64).max, type(uint64).max);
 
         uint256 suppliedAmount = 10000 ether;
@@ -226,9 +219,7 @@ contract TestRepay is TestSetup {
         }
     }
 
-    //   - 4.2.3 - There are no borrowers `onPool` to replace him `inP2P`. After repaying the amount `onPool`,
-    //             his P2P match(es) will be unmatched and the corresponding supplier(s) will be placed on pool.
-    function test_repay_4_2_3() public {
+    function testRepay2_3() public {
         uint256 suppliedAmount = 10000 ether;
         uint256 borrowedAmount = 2 * suppliedAmount;
         uint256 collateral = 2 * borrowedAmount;
@@ -301,11 +292,7 @@ contract TestRepay is TestSetup {
         testEquality(onPoolSupplier, expectedSupplyBalanceOnPool);
     }
 
-    //   4.2.4 - The borrower is matched to 2\*NMAX suppliers. There are NMAX borrowers `onPool` available to replace him `inP2P`,
-    //           they don't supply enough to cover for the repaid liquidity. First, the `onPool` liquidity is repaid, then we proceed to NMAX `match borrower`.
-    //           Finally, we proceed to NMAX `unmatch supplier` for an amount equal to the remaiSPIng to withdraw.
-    //           ⚠️ most gas expensive repay scenario.
-    function test_repay_4_2_4() public {
+    function testRepay2_4() public {
         setMaxGasHelper(type(uint64).max, type(uint64).max, type(uint64).max, type(uint64).max);
 
         uint256 suppliedAmount = 10000 ether;
@@ -413,8 +400,7 @@ contract TestRepay is TestSetup {
         uint256 SP2PER;
     }
 
-    // Delta hard repay
-    function test_repay_4_2_5() public {
+    function testDeltaRepay() public {
         // Allows only 10 unmatch suppliers
         setMaxGasHelper(3e6, 3e6, 3e6, 2.4e6);
 
@@ -565,4 +551,10 @@ contract TestRepay is TestSetup {
         testEquality(inP2PBorrower2, expectedBorrowBalanceInP2P);
         testEquality(onPoolBorrower2, 0);
     }
+
+    // TODO
+    function testDeltaRepayAll() public {}
+
+    // TODO
+    function testFailRepayZero() public {}
 }
