@@ -7,7 +7,7 @@ contract TestLiquidate is TestSetup {
     using CompoundMath for uint256;
 
     // 5.1 - A user liquidates a borrower that has enough collateral to cover for his debt, the transaction reverts.
-    function test_liquidate_5_1() public {
+    function testShouldNotBePossibleToLiquidateUserAboveWater() public {
         uint256 amount = 10000 ether;
         uint256 collateral = 2 * amount;
 
@@ -25,7 +25,7 @@ contract TestLiquidate is TestSetup {
     }
 
     // 5.2 - A user liquidates a borrower that has not enough collateral to cover for his debt.
-    function test_liquidate_5_2() public {
+    function testShouldLiquidateUser() public {
         uint256 collateral = 100_000 ether;
 
         borrower1.approve(usdc, address(positionsManager), to6Decimals(collateral));
@@ -83,5 +83,9 @@ contract TestLiquidate is TestSetup {
 
         testEquality(onPoolBorrower, expectedOnPool);
         assertEq(inP2PBorrower, 0);
+    }
+
+    function testFailLiquidateZero() public {
+        positionsManager.liquidate(cDai, cDai, cDai, 0);
     }
 }
