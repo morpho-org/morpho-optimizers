@@ -4,7 +4,7 @@ pragma solidity 0.8.7;
 import "./setup/TestSetup.sol";
 
 contract TestMarketsManagerGetters is TestSetup {
-    function test_getAllMarkets() public {
+    function testGetAllMarkets() public {
         address[] memory allMarkets = marketsManager.getAllMarkets();
 
         for (uint256 i; i < pools.length; i++) {
@@ -12,7 +12,7 @@ contract TestMarketsManagerGetters is TestSetup {
         }
     }
 
-    function test_getMarketData() public {
+    function testGetMarketData() public {
         (
             uint256 supplyP2PBPY,
             uint256 borrowP2PBPY,
@@ -43,14 +43,14 @@ contract TestMarketsManagerGetters is TestSetup {
         assertEq(borrowP2PAmount_, borrowP2PAmount);
     }
 
-    function test_getMarketConfiguration() public {
+    function testGetMarketConfiguration() public {
         (bool isCreated, bool noP2P) = marketsManager.getMarketConfiguration(cDai);
 
         assertTrue(isCreated == marketsManager.isCreated(cDai));
         assertTrue(noP2P == marketsManager.noP2P(cDai));
     }
 
-    function test_getUpdatedBorrowP2PExchangeRate() public {
+    function testGetUpdatedBorrowP2PExchangeRate() public {
         hevm.warp(block.timestamp + (365 days));
 
         uint256 newBorrowP2PExchangeRate = marketsManager.getUpdatedBorrowP2PExchangeRate(cDai);
@@ -58,7 +58,7 @@ contract TestMarketsManagerGetters is TestSetup {
         assertEq(newBorrowP2PExchangeRate, marketsManager.borrowP2PExchangeRate(cDai));
     }
 
-    function test_getUpdatedSupplyP2PExchangeRate() public {
+    function testGetUpdatedSupplyP2PExchangeRate() public {
         hevm.warp(block.timestamp + (365 days));
 
         uint256 newSupplyP2PExchangeRate = marketsManager.getUpdatedSupplyP2PExchangeRate(cDai);
