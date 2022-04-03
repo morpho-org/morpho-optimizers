@@ -3,16 +3,10 @@ pragma solidity 0.8.7;
 
 import "./setup/TestSetup.sol";
 
-contract TestGovernance is TestSetup {
+contract TestMarketsManager is TestSetup {
     using CompoundMath for uint256;
 
-    // ==============
-    // = Deployment =
-    // ==============
-
-    // Deployment
-    // Should deploy the contract with the right values
-    function test_deploy_contract() public {
+    function testShoudDeployContractWithTheRightValues() public {
         ICToken cToken = ICToken(cDai);
         uint256 expectedBPY = (cToken.supplyRatePerBlock() + cToken.borrowRatePerBlock()) / 2;
 
@@ -22,18 +16,12 @@ contract TestGovernance is TestSetup {
         assertEq(marketsManager.borrowP2PExchangeRate(cDai), WAD);
     }
 
-    // ========================
-    // = Governance functions =
-    // ========================
-
-    // Should revert when the function is called with an improper market
-    function test_revert_on_not_real_market() public {
+    function testShouldRevertWhenCreatingMarketWithAnImproperMarket() public {
         hevm.expectRevert(MarketsManagerForCompound.MarketCreationFailedOnCompound.selector);
         marketsManager.createMarket(address(supplier1));
     }
 
-    // Only Owner should be able to create markets in peer-to-peer
-    function test_only_owner_can_create_markets_1() public {
+    function testOnlyOwnerCanCreateMarkets() public {
         for (uint256 i = 0; i < pools.length; i++) {
             hevm.expectRevert("Ownable: caller is not the owner");
             supplier1.createMarket(pools[i]);
@@ -45,8 +33,7 @@ contract TestGovernance is TestSetup {
         marketsManager.createMarket(cEth);
     }
 
-    // Only Owner should be able to set reserve factor
-    function test_only_owner_can_set_reserveFactor() public {
+    function testOnlyOwnerCanSetReserveFactor() public {
         for (uint256 i = 0; i < pools.length; i++) {
             hevm.expectRevert("Ownable: caller is not the owner");
             supplier1.setReserveFactor(cDai, 1111);
@@ -58,14 +45,12 @@ contract TestGovernance is TestSetup {
         marketsManager.setReserveFactor(cDai, 1111);
     }
 
-    // Reserve factor should be updated
-    function test_reserveFactor_should_be_updated() public {
+    function testReserveFactorShouldBeUpdatedWithRightValue() public {
         marketsManager.setReserveFactor(cDai, 1111);
         assertEq(marketsManager.reserveFactor(cDai), 1111);
     }
 
-    // Anyone can update the rates
-    function test_rates_should_be_updated() public {
+    function testRatesShouldBeUpdatedWithTheRightValues() public {
         borrower1.updateRates(cDai);
 
         ICToken cToken = ICToken(cDai);
@@ -104,14 +89,12 @@ contract TestGovernance is TestSetup {
         assertEq(marketsManager.borrowP2PBPY(cDai), borrowBPY);
     }
 
-    // MarketsManagerForCompound should not be changed after already set by Owner
-    function test_positionsManager_should_not_be_changed() public {
+    function testPositionsManagerShouldBeSetOnlyOnce() public {
         hevm.expectRevert(MarketsManagerForCompound.PositionsManagerAlreadySet.selector);
         marketsManager.setPositionsManager(address(fakePositionsManagerImpl));
     }
 
-    // Should create a market the with right values
-    function test_create_market_with_right_values() public {
+    function testShouldCreateMarketWithTheRightValues() public {
         ICToken cToken = ICToken(cAave);
         marketsManager.createMarket(cAave);
         uint256 expectedBPY = (cToken.supplyRatePerBlock() + cToken.borrowRatePerBlock()) / 2;
@@ -123,8 +106,7 @@ contract TestGovernance is TestSetup {
         assertEq(marketsManager.borrowP2PExchangeRate(cAave), WAD);
     }
 
-    // Only MarketsaManager's Owner should set NMAX
-    function test_should_set_maxGas() public {
+    function testShouldSetmaxGasWithRightValues() public {
 
             PositionsManagerForCompoundStorage.MaxGas memory newMaxGas
          = PositionsManagerForCompoundStorage.MaxGas({supply: 1, borrow: 1, withdraw: 1, repay: 1});
@@ -143,8 +125,7 @@ contract TestGovernance is TestSetup {
         borrower1.setMaxGas(newMaxGas);
     }
 
-    // Only MarketsaManager's Owner should set NDS
-    function test_should_set_nds() public {
+    function testOnlyOwnerCanSetNDS() public {
         uint8 newNDS = 30;
 
         positionsManager.setNDS(newNDS);
@@ -166,5 +147,16 @@ contract TestGovernance is TestSetup {
 
         marketsManager.setNoP2P(cDai, true);
         assertTrue(marketsManager.noP2P(cDai));
+    }
+
+    function testOnlyOwnerShouldBeAbleToUpdateInterestRates() public {
+        IInterestRates interestRatesV2 = new InterestRatesV1();
+
+        hevm.prank(address(0));
+        hevm.expectRevert("Ownable: caller is not the owner");
+        marketsManager.setInterestRates(interestRatesV2);
+
+        marketsManager.setInterestRates(interestRatesV2);
+        assertEq(address(marketsManager.interestRates()), address(interestRatesV2));
     }
 }
