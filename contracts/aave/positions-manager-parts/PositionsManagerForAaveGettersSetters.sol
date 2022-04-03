@@ -36,32 +36,17 @@ abstract contract PositionsManagerForAaveGettersSetters is PositionsManagerForAa
 
     /// @dev Sets `NDS`.
     /// @param _newNDS The new `NDS` value.
-    function setNDS(uint32 _newNDS) external onlyOwner {
-        if (NDS > NDS_CEILING || NDS < NDS_FLOOR) revert NdsOutOfBounds();
+    function setNDS(uint256 _newNDS) external onlyOwner {
+        if (_newNDS > NDS_CEILING || _newNDS < NDS_FLOOR) revert NdsOutOfBounds();
 
         NDS = _newNDS;
         emit NDSSet(_newNDS);
     }
 
-    /// @dev Reverts if a value in `_maxGas` is out of bounds
-    /// @param _maxGas the maxGas values to check
-    function checkMaxGasBounds(MaxGas memory _maxGas) internal view {
-        if (
-            _maxGas.supply > maxGasCeiling.supply ||
-            _maxGas.supply < maxGasFloor.supply ||
-            _maxGas.borrow > maxGasCeiling.borrow ||
-            _maxGas.borrow < maxGasFloor.borrow ||
-            _maxGas.withdraw > maxGasCeiling.withdraw ||
-            _maxGas.withdraw < maxGasFloor.withdraw ||
-            _maxGas.repay > maxGasCeiling.repay ||
-            _maxGas.repay < maxGasFloor.repay
-        ) revert MaxGasOutOfBounds();
-    }
-
     /// @dev Sets `maxGas`.
     /// @param _maxGas The new `maxGas`.
     function setMaxGas(MaxGas memory _maxGas) external onlyOwner {
-        checkMaxGasBounds(_maxGas);
+        _checkMaxGasBounds(_maxGas);
         maxGas = _maxGas;
         emit MaxGasSet(_maxGas);
     }
@@ -313,5 +298,20 @@ abstract contract PositionsManagerForAaveGettersSetters is PositionsManagerForAa
             borrowBalanceInOf[_poolTokenAddress][_user].onPool.mulWadByRay(
                 lendingPool.getReserveNormalizedVariableDebt(_underlyingTokenAddress)
             );
+    }
+
+    /// @dev Reverts if a value in `_maxGas` is out of bounds.
+    /// @param _maxGas the maxGas values to check.
+    function _checkMaxGasBounds(MaxGas memory _maxGas) internal view {
+        if (
+            _maxGas.supply > MAX_GAS_CEILING.supply ||
+            _maxGas.supply < MAX_GAS_FLOOR.supply ||
+            _maxGas.borrow > MAX_GAS_CEILING.borrow ||
+            _maxGas.borrow < MAX_GAS_FLOOR.borrow ||
+            _maxGas.withdraw > MAX_GAS_CEILING.withdraw ||
+            _maxGas.withdraw < MAX_GAS_FLOOR.withdraw ||
+            _maxGas.repay > MAX_GAS_CEILING.repay ||
+            _maxGas.repay < MAX_GAS_FLOOR.repay
+        ) revert MaxGasOutOfBounds();
     }
 }

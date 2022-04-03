@@ -37,8 +37,8 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
     /// @param _matchingEngine The `matchingEngine`.
     /// @param _lendingPoolAddressesProvider The `addressesProvider`.
     /// @param _maxGas Max gas to consume within loops in matching engine functions.
-    /// @param _maxGasFloor permanent minimum values settable for maxGas.
-    /// @param _maxGasCeiling permanent maximum values settable for maxGas.
+    /// @param _maxGasFloor Permanent minimum values settable for maxGas.
+    /// @param _maxGasCeiling Permanent maximum values settable for maxGas.
     function initialize(
         IMarketsManagerForAave _marketsManager,
         IMatchingEngineForAave _matchingEngine,
@@ -46,18 +46,18 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
         MaxGas memory _maxGas,
         MaxGas memory _maxGasFloor,
         MaxGas memory _maxGasCeiling,
-        uint32 _NDS,
-        uint32 _NDS_FLOOR,
-        uint32 _NDS_CEILING
+        uint256 _NDS,
+        uint256 _NDS_FLOOR,
+        uint256 _NDS_CEILING
     ) external initializer {
         if (_NDS > _NDS_CEILING || _NDS < _NDS_FLOOR) revert NdsOutOfBounds();
 
         __ReentrancyGuard_init();
         __Ownable_init();
 
-        maxGasFloor = _maxGasFloor;
-        maxGasCeiling = _maxGasCeiling;
-        checkMaxGasBounds(_maxGas);
+        MAX_GAS_FLOOR = _maxGasFloor;
+        MAX_GAS_CEILING = _maxGasCeiling;
+        _checkMaxGasBounds(_maxGas);
         maxGas = _maxGas;
         marketsManager = _marketsManager;
         matchingEngine = _matchingEngine;

@@ -106,7 +106,7 @@ abstract contract PositionsManagerForAaveEventsErrors is PositionsManagerForAave
 
     /// @dev Emitted when a new value for `NDS` is set.
     /// @param _newValue The new value of `NDS`.
-    event NDSSet(uint32 _newValue);
+    event NDSSet(uint256 _newValue);
 
     /// @dev Emitted when a new `maxGas` is set.
     /// @param _maxGas The new `maxGas`.
@@ -174,7 +174,7 @@ abstract contract PositionsManagerForAaveEventsErrors is PositionsManagerForAave
     /// @notice Thrown when the amount repaid during the liquidation is above what is allowed to be repaid.
     error AmountAboveWhatAllowedToRepay();
 
-    /// @notice Thrown when maxGas is set with a value too low or too high
+    /// @notice Thrown when maxGas is set with a value too low or too high.
     error MaxGasOutOfBounds();
 
     /// @notice Thrown when NDS is set with a value too low or too high

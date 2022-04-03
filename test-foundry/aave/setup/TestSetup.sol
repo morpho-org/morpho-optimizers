@@ -95,14 +95,19 @@ contract TestSetup is Config, Utils, stdCheats {
         });
 
         PositionsManagerForAave.MaxGas memory maxGasFloor = PositionsManagerForAaveStorage.MaxGas({
-            supply: 1,
-            borrow: 1,
-            withdraw: 1,
-            repay: 1
+            supply: 0,
+            borrow: 0,
+            withdraw: 0,
+            repay: 0
         });
 
         PositionsManagerForAave.MaxGas memory maxGasCeiling = PositionsManagerForAaveStorage
-        .MaxGas({supply: 30e6, borrow: 30e6, withdraw: 30e6, repay: 30e6});
+        .MaxGas({
+            supply: type(uint64).max,
+            borrow: type(uint64).max,
+            withdraw: type(uint64).max,
+            repay: type(uint64).max
+        });
 
         lendingPoolAddressesProvider = ILendingPoolAddressesProvider(
             lendingPoolAddressesProviderAddress
@@ -182,8 +187,8 @@ contract TestSetup is Config, Utils, stdCheats {
             maxGasFloor,
             maxGasCeiling,
             20,
-            1,
-            100_000
+            0,
+            type(uint256).max
         );
 
         if (block.chainid == Chains.ETH_MAINNET) {
