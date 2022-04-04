@@ -225,18 +225,16 @@ abstract contract RewardsManagerForAave is IRewardsManagerForAave, Ownable {
         uint256 _totalBalance
     ) internal view returns (uint256) {
         uint256 distributionEnd = aaveIncentivesController.DISTRIBUTION_END();
+        uint256 currentTimestamp = block.timestamp;
+
         if (
+            _lastUpdateTimestamp == currentTimestamp ||
             _emissionPerSecond == 0 ||
             _totalBalance == 0 ||
-            _lastUpdateTimestamp == block.timestamp ||
             _lastUpdateTimestamp >= distributionEnd
-        ) {
-            return _currentIndex;
-        }
+        ) return _currentIndex;
 
-        uint256 currentTimestamp = block.timestamp > distributionEnd
-            ? distributionEnd
-            : block.timestamp;
+        if (currentTimestamp > distributionEnd) currentTimestamp = distributionEnd;
         uint256 timeDelta = currentTimestamp - _lastUpdateTimestamp;
         return ((_emissionPerSecond * timeDelta * 1e18) / _totalBalance) + _currentIndex;
     }

@@ -27,14 +27,12 @@ contract RewardsManagerForAaveOnEthAndAvax is RewardsManagerForAave {
                 uint256 lastTimestampOnAave
             ) = aaveIncentivesController.getAssetData(_asset);
 
-            if (blockTimestamp == lastTimestampOnAave) newIndex = oldIndex;
-            else
-                newIndex = _getAssetIndex(
-                    oldIndex,
-                    emissionPerSecond,
-                    lastTimestampOnAave,
-                    _totalBalance
-                );
+            newIndex = _getAssetIndex(
+                oldIndex,
+                emissionPerSecond,
+                lastTimestampOnAave,
+                _totalBalance
+            );
             localData.lastUpdateTimestamp = blockTimestamp;
             localData.lastIndex = newIndex;
         }

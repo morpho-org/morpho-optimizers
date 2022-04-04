@@ -28,15 +28,12 @@ contract RewardsManagerForAaveOnPolygon is RewardsManagerForAave {
             uint256 oldIndex = assetData.index;
             uint128 lastTimestampOnAave = assetData.lastUpdateTimestamp;
 
-            if (blockTimestamp == lastTimestampOnAave) newIndex = oldIndex;
-            else
-                newIndex = _getAssetIndex(
-                    oldIndex,
-                    assetData.emissionPerSecond,
-                    lastTimestampOnAave,
-                    _totalBalance
-                );
-
+            newIndex = _getAssetIndex(
+                oldIndex,
+                assetData.emissionPerSecond,
+                lastTimestampOnAave,
+                _totalBalance
+            );
             localData.lastUpdateTimestamp = blockTimestamp;
             localData.lastIndex = newIndex;
         }
