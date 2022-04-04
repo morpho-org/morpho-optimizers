@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.7;
 
+import "./libraries/FixedPointMathLib.sol";
+
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 
@@ -13,6 +15,7 @@ contract MatchingEngineForCompound is
     PositionsManagerForCompoundStorage
 {
     using DoubleLinkedList for DoubleLinkedList.List;
+    using FixedPointMathLib for uint256;
     using CompoundMath for uint256;
 
     /// STRUCTS ///
@@ -190,7 +193,7 @@ contract MatchingEngineForCompound is
                 user != address(0) &&
                 vars.gasLeftAtTheBeginning - gasleft() < _maxGasToConsume
             ) {
-                vars.inUnderlying = borrowBalanceInOf[poolTokenAddress][user].onPool.mul(
+                vars.inUnderlying = borrowBalanceInOf[poolTokenAddress][user].onPool.mulWadUp( // Putting mulWadUp here to avoid rounding errors.
                     vars.poolIndex
                 );
                 unchecked {
