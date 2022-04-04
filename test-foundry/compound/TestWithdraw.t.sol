@@ -259,9 +259,7 @@ contract TestWithdraw is TestSetup {
     // TODO
     // Test attack
     // Should be possible to withdraw amount while an attacker sends aToken to trick Morpho contract
-    function testWithdrawWhileAttackerSendsAToken() public {
-        supplier1.withdraw(aDai, toSupply);
-    }
+    function testWithdrawWhileAttackerSendsAToken() public {}
 
     function testFailWithdrawZero() public {
         positionsManager.withdraw(cDai, 0);
