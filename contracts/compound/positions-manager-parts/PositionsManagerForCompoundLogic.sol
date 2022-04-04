@@ -249,7 +249,7 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
         ERC20 underlyingToken = ERC20(poolToken.underlying());
         WithdrawVars memory vars;
         vars.remainingToWithdraw = _amount;
-        vars.maxToWithdraw = poolToken.balanceOf(address(this));
+        vars.maxToWithdraw = poolToken.balanceOfUnderlying(address(this));
         vars.supplyPoolIndex = poolToken.exchangeRateCurrent();
 
         /// Soft withdraw ///
