@@ -16,7 +16,7 @@ import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 
-import {RewardsManagerForAaveOnEthAndAvax} from "@contracts/aave/rewards-managers/RewardsManagerForAaveOnEthAndAvax.sol";
+import {RewardsManagerForAaveOnMainnetAndAvalanche} from "@contracts/aave/rewards-managers/RewardsManagerForAaveOnMainnetAndAvalanche.sol";
 import {RewardsManagerForAaveOnPolygon} from "@contracts/aave/rewards-managers/RewardsManagerForAaveOnPolygon.sol";
 import {SwapManagerUniV3OnMainnet} from "@contracts/common/SwapManagerUniV3OnMainnet.sol";
 import {SwapManagerUniV3} from "@contracts/common/SwapManagerUniV3.sol";
@@ -178,7 +178,7 @@ contract TestSetup is Config, Utils, stdCheats {
 
         if (block.chainid == Chains.ETH_MAINNET) {
             // Mainnet network
-            rewardsManager = new RewardsManagerForAaveOnEthAndAvax(
+            rewardsManager = new RewardsManagerForAaveOnMainnetAndAvalanche(
                 lendingPool,
                 IPositionsManagerForAave(address(positionsManager)),
                 address(swapManager)
@@ -186,7 +186,7 @@ contract TestSetup is Config, Utils, stdCheats {
             uniswapV3PoolCreator.createPoolAndMintPosition(address(morphoToken));
         } else if (block.chainid == Chains.AVALANCHE_MAINNET) {
             // Avalanche network
-            rewardsManager = new RewardsManagerForAaveOnEthAndAvax(
+            rewardsManager = new RewardsManagerForAaveOnMainnetAndAvalanche(
                 lendingPool,
                 IPositionsManagerForAave(address(positionsManager)),
                 address(swapManager)
