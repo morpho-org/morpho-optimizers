@@ -86,7 +86,7 @@ contract TestBorrow is TestSetup {
         testEquality(inP2P, supplyInP2P);
 
         uint256 normalizedVariableDebt = ICToken(cDai).borrowIndex();
-        uint256 expectedOnPool = (amount * 1e18)/normalizedVariableDebt;
+        uint256 expectedOnPool = (amount * 1e18) / normalizedVariableDebt;
 
         testEquality(onPool, expectedOnPool);
     }
