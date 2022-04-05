@@ -2,6 +2,7 @@
 pragma solidity 0.8.7;
 
 import {ICToken, IComptroller} from "./interfaces/compound/ICompound.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "./interfaces/IPositionsManagerForCompound.sol";
 import "./interfaces/IMarketsManagerForCompound.sol";
 import "./interfaces/IInterestRates.sol";
@@ -175,12 +176,16 @@ contract MarketsManagerForCompound is IMarketsManagerForCompound, OwnableUpgrade
         if (isCreated[_poolTokenAddress]) revert MarketAlreadyCreated();
         isCreated[_poolTokenAddress] = true;
 
+        ICToken poolToken = ICToken(_poolTokenAddress);
         lastUpdateBlockNumber[_poolTokenAddress] = block.number;
-        supplyP2PExchangeRate[_poolTokenAddress] = WAD;
-        borrowP2PExchangeRate[_poolTokenAddress] = WAD;
+
+        // Same initial exchange rate as Compound.
+        uint256 initialExchangeRate = 2 *
+            10**(16 + IERC20Metadata(poolToken.underlying()).decimals() - 8);
+        supplyP2PExchangeRate[_poolTokenAddress] = initialExchangeRate;
+        borrowP2PExchangeRate[_poolTokenAddress] = initialExchangeRate;
 
         LastPoolIndexes storage poolIndexes = lastPoolIndexes[_poolTokenAddress];
-        ICToken poolToken = ICToken(_poolTokenAddress);
 
         poolIndexes.lastSupplyPoolIndex = poolToken.exchangeRateCurrent();
         poolIndexes.lastBorrowPoolIndex = poolToken.borrowIndex();

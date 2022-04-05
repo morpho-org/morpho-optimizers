@@ -88,9 +88,8 @@ contract MatchingEngineForCompound is
                 user != address(0) &&
                 vars.gasLeftAtTheBeginning - gasleft() < _maxGasToConsume
             ) {
-                vars.inUnderlying = supplyBalanceInOf[poolTokenAddress][user].onPool.mul(
-                    vars.poolIndex
-                );
+                uint256 onPool = supplyBalanceInOf[poolTokenAddress][user].onPool;
+                vars.inUnderlying = onPool.mul(vars.poolIndex);
                 unchecked {
                     vars.toMatch = vars.inUnderlying < _amount - matched
                         ? vars.inUnderlying
@@ -101,6 +100,8 @@ contract MatchingEngineForCompound is
                 supplyBalanceInOf[poolTokenAddress][user].onPool -= vars.toMatch.div(
                     vars.poolIndex
                 );
+                if (supplyBalanceInOf[poolTokenAddress][user].onPool == 1)
+                    supplyBalanceInOf[poolTokenAddress][user].onPool = 0;
                 supplyBalanceInOf[poolTokenAddress][user].inP2P += vars.toMatch.div(vars.p2pRate); // In p2pUnit
                 updateSuppliers(poolTokenAddress, user);
                 emit SupplierPositionUpdated(
