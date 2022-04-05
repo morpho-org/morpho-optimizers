@@ -13,7 +13,8 @@ contract UniswapV2PoolCreator {
         IUniswapV2Router02(0x60aE616a2155Ee3d9A68541Ba4544862310933d4); // JoeRouter.
     address public constant WETH9 = 0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7; // Intermediate token address.
 
-    uint256 public amount0ToMint = 10 ether;
+    // Destabilize the pool to make sire the swap manager is working fine.
+    uint256 public amount0ToMint = 0.001 ether;
     uint256 public amount1ToMint = 10 ether;
 
     function createPoolAndAddLiquidity(address _token0)
