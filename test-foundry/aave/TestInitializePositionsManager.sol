@@ -1,52 +1,168 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.7;
 
-import {Utils} from "./setup/Utils.sol";
-import "@config/Config.sol";
-import "@contracts/aave/PositionsManagerForAave.sol";
-import "@contracts/aave/positions-manager-parts/PositionsManagerForAaveStorage.sol";
 import "@contracts/aave/positions-manager-parts/PositionsManagerForAaveEventsErrors.sol";
+import "@contracts/aave/positions-manager-parts/PositionsManagerForAaveStorage.sol";
+import "@contracts/aave/PositionsManagerForAave.sol";
+
+import {Utils} from "./setup/Utils.sol";
 import "forge-std/stdlib.sol";
 import "hardhat/console.sol";
+import "@config/Config.sol";
 
 contract TestInitializePositionsManager is stdCheats, Config, Utils {
     Vm public hevm = Vm(HEVM_ADDRESS);
-    PositionsManagerForAave pos;
+    PositionsManagerForAave public pos;
+
+    uint64 public MAX_GAS = 10_000;
+    uint64 public MAX_GAS_FLOOR = 1_000;
+    uint64 public MAX_GAS_CEILING = 100_000;
+
+    uint256 public NDS = 50;
+    uint256 public NDS_FLOOR = 10;
+    uint256 public NDS_CEILING = 100;
 
     constructor() {
         pos = new PositionsManagerForAave();
+
         pos.initialize(
             IMarketsManagerForAave(address(1)),
             IMatchingEngineForAave(address(2)),
             ILendingPoolAddressesProvider(lendingPoolAddressesProviderAddress),
-            PositionsManagerForAaveStorage.MaxGas(100_000, 100_000, 100_000, 100_000),
-            PositionsManagerForAaveStorage.MaxGas(1_000, 1_000, 1_000, 1_000),
+            PositionsManagerForAaveStorage.MaxGas(MAX_GAS, MAX_GAS, MAX_GAS, MAX_GAS),
             PositionsManagerForAaveStorage.MaxGas(
-                type(uint64).max,
-                type(uint64).max,
-                type(uint64).max,
-                type(uint64).max
+                MAX_GAS_FLOOR,
+                MAX_GAS_FLOOR,
+                MAX_GAS_FLOOR,
+                MAX_GAS_FLOOR
             ),
-            50,
-            0,
-            1000
+            PositionsManagerForAaveStorage.MaxGas(
+                MAX_GAS_CEILING,
+                MAX_GAS_CEILING,
+                MAX_GAS_CEILING,
+                MAX_GAS_CEILING
+            ),
+            NDS,
+            NDS_FLOOR,
+            NDS_CEILING
         );
     }
 
     function testNDSBounds() public {
-        hevm.expectRevert(PositionsManagerForAaveEventsErrors.NdsOutOfBounds.selector);
-        pos.setNDS(2000);
+        hevm.expectRevert(PositionsManagerForAaveEventsErrors.NDSOutOfBounds.selector);
+        pos.setNDS(NDS_FLOOR - 1);
 
-        pos.setNDS(500);
-        testEquality(pos.NDS(), 500);
+        hevm.expectRevert(PositionsManagerForAaveEventsErrors.NDSOutOfBounds.selector);
+        pos.setNDS(NDS_CEILING + 1);
+
+        pos.setNDS(NDS_FLOOR);
+        testEquality(pos.NDS(), NDS_FLOOR);
+
+        pos.setNDS(NDS_CEILING);
+        testEquality(pos.NDS(), NDS_CEILING);
     }
 
     function testMaxGasBounds() public {
         hevm.expectRevert(PositionsManagerForAaveEventsErrors.MaxGasOutOfBounds.selector);
-        pos.setMaxGas(PositionsManagerForAaveStorage.MaxGas(100_000, 100_000, 500, 100_000));
+        pos.setMaxGas(
+            PositionsManagerForAaveStorage.MaxGas(
+                MAX_GAS_FLOOR - 1,
+                MAX_GAS_FLOOR,
+                MAX_GAS_FLOOR,
+                MAX_GAS_FLOOR
+            )
+        );
+        hevm.expectRevert(PositionsManagerForAaveEventsErrors.MaxGasOutOfBounds.selector);
+        pos.setMaxGas(
+            PositionsManagerForAaveStorage.MaxGas(
+                MAX_GAS_FLOOR,
+                MAX_GAS_FLOOR - 1,
+                MAX_GAS_FLOOR,
+                MAX_GAS_FLOOR
+            )
+        );
+        hevm.expectRevert(PositionsManagerForAaveEventsErrors.MaxGasOutOfBounds.selector);
+        pos.setMaxGas(
+            PositionsManagerForAaveStorage.MaxGas(
+                MAX_GAS_FLOOR,
+                MAX_GAS_FLOOR,
+                MAX_GAS_FLOOR - 1,
+                MAX_GAS_FLOOR
+            )
+        );
+        hevm.expectRevert(PositionsManagerForAaveEventsErrors.MaxGasOutOfBounds.selector);
+        pos.setMaxGas(
+            PositionsManagerForAaveStorage.MaxGas(
+                MAX_GAS_FLOOR,
+                MAX_GAS_FLOOR,
+                MAX_GAS_FLOOR,
+                MAX_GAS_FLOOR - 1
+            )
+        );
 
-        pos.setMaxGas(PositionsManagerForAaveStorage.MaxGas(100_000, 2_000, 100_000, 100_000));
-        (, uint256 maxGasBorrowValue, , ) = pos.maxGas();
-        testEquality(maxGasBorrowValue, 2_000);
+        hevm.expectRevert(PositionsManagerForAaveEventsErrors.MaxGasOutOfBounds.selector);
+        pos.setMaxGas(
+            PositionsManagerForAaveStorage.MaxGas(
+                MAX_GAS_CEILING + 1,
+                MAX_GAS_CEILING,
+                MAX_GAS_CEILING,
+                MAX_GAS_CEILING
+            )
+        );
+        hevm.expectRevert(PositionsManagerForAaveEventsErrors.MaxGasOutOfBounds.selector);
+        pos.setMaxGas(
+            PositionsManagerForAaveStorage.MaxGas(
+                MAX_GAS_CEILING,
+                MAX_GAS_CEILING + 1,
+                MAX_GAS_CEILING,
+                MAX_GAS_CEILING
+            )
+        );
+        hevm.expectRevert(PositionsManagerForAaveEventsErrors.MaxGasOutOfBounds.selector);
+        pos.setMaxGas(
+            PositionsManagerForAaveStorage.MaxGas(
+                MAX_GAS_CEILING,
+                MAX_GAS_CEILING,
+                MAX_GAS_CEILING + 1,
+                MAX_GAS_CEILING
+            )
+        );
+        hevm.expectRevert(PositionsManagerForAaveEventsErrors.MaxGasOutOfBounds.selector);
+        pos.setMaxGas(
+            PositionsManagerForAaveStorage.MaxGas(
+                MAX_GAS_CEILING,
+                MAX_GAS_CEILING,
+                MAX_GAS_CEILING,
+                MAX_GAS_CEILING + 1
+            )
+        );
+
+        pos.setMaxGas(
+            PositionsManagerForAaveStorage.MaxGas(
+                MAX_GAS_FLOOR,
+                MAX_GAS_FLOOR,
+                MAX_GAS_FLOOR,
+                MAX_GAS_FLOOR
+            )
+        );
+        (uint256 a, uint256 b, uint256 c, uint256 d) = pos.maxGas();
+        testEquality(a, MAX_GAS_FLOOR);
+        testEquality(b, MAX_GAS_FLOOR);
+        testEquality(c, MAX_GAS_FLOOR);
+        testEquality(d, MAX_GAS_FLOOR);
+
+        pos.setMaxGas(
+            PositionsManagerForAaveStorage.MaxGas(
+                MAX_GAS_CEILING,
+                MAX_GAS_CEILING,
+                MAX_GAS_CEILING,
+                MAX_GAS_CEILING
+            )
+        );
+        (a, b, c, d) = pos.maxGas();
+        testEquality(a, MAX_GAS_CEILING);
+        testEquality(b, MAX_GAS_CEILING);
+        testEquality(c, MAX_GAS_CEILING);
+        testEquality(d, MAX_GAS_CEILING);
     }
 }
