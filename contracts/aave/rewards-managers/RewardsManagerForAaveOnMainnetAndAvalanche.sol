@@ -3,7 +3,7 @@ pragma solidity 0.8.7;
 
 import "../RewardsManagerForAave.sol";
 
-contract RewardsManagerForAaveOnEthAndAvax is RewardsManagerForAave {
+contract RewardsManagerForAaveOnMainnetAndAvalanche is RewardsManagerForAave {
     constructor(
         ILendingPool _lendingPool,
         IPositionsManagerForAave _positionsManager,
