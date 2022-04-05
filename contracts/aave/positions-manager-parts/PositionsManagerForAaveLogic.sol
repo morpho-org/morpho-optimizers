@@ -50,22 +50,21 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
         uint256 _NDS_FLOOR,
         uint256 _NDS_CEILING
     ) external initializer {
-        if (_NDS > _NDS_CEILING || _NDS < _NDS_FLOOR) revert NdsOutOfBounds();
-
         __ReentrancyGuard_init();
         __Ownable_init();
 
         MAX_GAS_FLOOR = _maxGasFloor;
         MAX_GAS_CEILING = _maxGasCeiling;
-        _checkMaxGasBounds(_maxGas);
-        maxGas = _maxGas;
+        setMaxGas(_maxGas);
+
+        NDS_FLOOR = _NDS_FLOOR;
+        NDS_CEILING = _NDS_CEILING;
+        setNDS(_NDS);
+
         marketsManager = _marketsManager;
         matchingEngine = _matchingEngine;
         addressesProvider = _lendingPoolAddressesProvider;
         lendingPool = ILendingPool(addressesProvider.getLendingPool());
-        NDS = _NDS;
-        NDS_FLOOR = _NDS_FLOOR;
-        NDS_CEILING = _NDS_CEILING;
     }
 
     /// LOGIC ///

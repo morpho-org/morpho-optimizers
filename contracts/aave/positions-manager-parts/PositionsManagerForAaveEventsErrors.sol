@@ -178,5 +178,5 @@ abstract contract PositionsManagerForAaveEventsErrors is PositionsManagerForAave
     error MaxGasOutOfBounds();
 
     /// @notice Thrown when NDS is set with a value too low or too high
-    error NdsOutOfBounds();
+    error NDSOutOfBounds();
 }

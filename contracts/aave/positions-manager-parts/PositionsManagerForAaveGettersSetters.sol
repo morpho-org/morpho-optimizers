@@ -36,16 +36,15 @@ abstract contract PositionsManagerForAaveGettersSetters is PositionsManagerForAa
 
     /// @dev Sets `NDS`.
     /// @param _newNDS The new `NDS` value.
-    function setNDS(uint256 _newNDS) external onlyOwner {
-        if (_newNDS > NDS_CEILING || _newNDS < NDS_FLOOR) revert NdsOutOfBounds();
-
+    function setNDS(uint256 _newNDS) public onlyOwner {
+        if (_newNDS > NDS_CEILING || _newNDS < NDS_FLOOR) revert NDSOutOfBounds();
         NDS = _newNDS;
         emit NDSSet(_newNDS);
     }
 
     /// @dev Sets `maxGas`.
     /// @param _maxGas The new `maxGas`.
-    function setMaxGas(MaxGas memory _maxGas) external onlyOwner {
+    function setMaxGas(MaxGas memory _maxGas) public onlyOwner {
         _checkMaxGasBounds(_maxGas);
         maxGas = _maxGas;
         emit MaxGasSet(_maxGas);

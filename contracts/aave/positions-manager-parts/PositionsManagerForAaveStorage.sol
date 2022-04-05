@@ -89,16 +89,18 @@ abstract contract PositionsManagerForAaveStorage is OwnableUpgradeable, Reentran
 
     /// STORAGE ///
 
-    MaxGas internal MAX_GAS_FLOOR; // Minimum values settable for maxGas, immutable after initializing.
-    MaxGas internal MAX_GAS_CEILING; // Maximum values settable for maxGas, immutable after initializing.
-    MaxGas public maxGas; // Max gas to consume within loops in matching engine functions.
-    uint256 internal NDS_FLOOR; // Minimal value settable for NDS, immutable after initializing.
-    uint256 internal NDS_CEILING; // Maximum value settable for NDS, immutable after initializing.
-    uint256 public NDS; // Max number of iterations in the data structure sorting process.
     uint8 public constant NO_REFERRAL_CODE = 0;
     uint8 public constant VARIABLE_INTEREST_MODE = 2;
     uint16 public constant MAX_BASIS_POINTS = 10_000; // 100% in basis points.
     uint16 public constant LIQUIDATION_CLOSE_FACTOR_PERCENT = 5_000; // 50% in basis points.
+
+    MaxGas public MAX_GAS_FLOOR; // Minimum values settable for maxGas, immutable after initializing.
+    MaxGas public MAX_GAS_CEILING; // Maximum values settable for maxGas, immutable after initializing.
+    MaxGas public maxGas; // Max gas to consume within loops in matching engine functions.
+    uint256 public NDS_FLOOR; // Minimal value settable for NDS, immutable after initializing.
+    uint256 public NDS_CEILING; // Maximum value settable for NDS, immutable after initializing.
+    uint256 public NDS; // Max number of iterations in the data structure sorting process.
+
     mapping(address => DoubleLinkedList.List) internal suppliersInP2P; // For a given market, the suppliers in peer-to-peer.
     mapping(address => DoubleLinkedList.List) internal suppliersOnPool; // For a given market, the suppliers on Aave.
     mapping(address => DoubleLinkedList.List) internal borrowersInP2P; // For a given market, the borrowers in peer-to-peer.
