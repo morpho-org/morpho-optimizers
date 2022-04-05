@@ -22,6 +22,8 @@ import "@contracts/compound/InterestRatesV1.sol";
 import "../../common/helpers/MorphoToken.sol";
 import "../../common/helpers/Chains.sol";
 
+import "@contracts/compound/libraries/FixedPointMathLib.sol";
+
 import "../helpers/SimplePriceOracle.sol";
 import {User} from "../helpers/User.sol";
 import {Utils} from "./Utils.sol";
