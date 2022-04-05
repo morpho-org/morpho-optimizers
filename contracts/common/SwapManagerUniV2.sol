@@ -172,7 +172,7 @@ contract SwapManagerUniV2 is ISwapManager, Ownable {
     /// @param _amountIn The amount of reward tokens as input.
     /// @return The amount of Morpho tokens given the `_amountIn` as input.
     function consult(uint256 _amountIn) public view returns (uint256) {
-        if (MORPHO == token0) return price0Average.mul(_amountIn).decode144();
-        else return price1Average.mul(_amountIn).decode144();
+        if (MORPHO == token0) return price1Average.mul(_amountIn).decode144();
+        else return price0Average.mul(_amountIn).decode144();
     }
 }
