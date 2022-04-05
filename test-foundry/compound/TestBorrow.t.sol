@@ -5,6 +5,9 @@ import "./setup/TestSetup.sol";
 import "@contracts/compound/positions-manager-parts/PositionsManagerForCompoundEventsErrors.sol";
 
 contract TestBorrow is TestSetup {
+    using FixedPointMathLib for uint256;
+    using CompoundMath for uint256;
+
     function testBorrow1() public {
         uint256 usdcAmount = to6Decimals(10_000 ether);
 
@@ -33,36 +36,42 @@ contract TestBorrow is TestSetup {
         );
 
         uint256 borrowIndex = ICToken(cDai).borrowIndex();
-        uint256 expectedOnPool = underlyingToDebtUnit(amount, borrowIndex);
+        uint256 expectedOnPool = amount.div(borrowIndex);
 
         testEquality(onPool, expectedOnPool);
         testEquality(inP2P, 0);
     }
 
     function testBorrow3() public {
-        uint256 amount = 10000 ether;
+        uint256 amount = 10_000 ether;
 
         supplier1.approve(dai, amount);
         supplier1.supply(cDai, amount);
 
         borrower1.approve(usdc, to6Decimals(amount * 2));
         borrower1.supply(cUsdc, to6Decimals(amount * 2));
+
+        uint256 cDaiExchangeRate = ICToken(cDai).exchangeRateCurrent();
         borrower1.borrow(cDai, amount);
 
         (uint256 supplyInP2P, ) = positionsManager.supplyBalanceInOf(cDai, address(supplier1));
 
         uint256 borrowP2PExchangeRate = marketsManager.borrowP2PExchangeRate(cDai);
-        uint256 expectedInP2P = underlyingToP2PUnit(amount, borrowP2PExchangeRate);
 
-        testEquality(supplyInP2P, expectedInP2P);
+        uint256 expectedSupplyInP2P = amount.div(borrowP2PExchangeRate);
+        uint256 expectedBorrowInP2P = getBalanceOnCompound(amount, cDaiExchangeRate).div(
+            borrowP2PExchangeRate
+        );
+
+        testEquality(supplyInP2P, expectedSupplyInP2P, "Supplier1 in P2P");
 
         (uint256 inP2P, uint256 onPool) = positionsManager.borrowBalanceInOf(
             cDai,
             address(borrower1)
         );
 
-        testEquality(onPool, 0, "Borrower1 on pool");
-        testEquality(inP2P, supplyInP2P, "Borrower1 in P2P");
+        testEquality(0, onPool, "Borrower1 on pool");
+        testEquality(expectedBorrowInP2P, inP2P, "Borrower1 in P2P");
     }
 
     function testBorrow4() public {
@@ -86,7 +95,7 @@ contract TestBorrow is TestSetup {
         testEquality(inP2P, supplyInP2P);
 
         uint256 normalizedVariableDebt = ICToken(cDai).borrowIndex();
-        uint256 expectedOnPool = (amount * 1e18)/normalizedVariableDebt;
+        uint256 expectedOnPool = (amount * 1e18) / normalizedVariableDebt;
 
         testEquality(onPool, expectedOnPool);
     }
@@ -154,13 +163,13 @@ contract TestBorrow is TestSetup {
         uint256 inP2P;
         uint256 onPool;
         uint256 supplyP2PExchangeRate = ICToken(cDai).exchangeRateStored();
-        uint256 normalizedVariableDebt = ICToken(cDai).borrowIndex();
+        uint256 borrowIndex = ICToken(cDai).borrowIndex();
         uint256 expectedInP2P;
 
         for (uint256 i = 0; i < NMAX; i++) {
             (inP2P, onPool) = positionsManager.supplyBalanceInOf(cDai, address(suppliers[i]));
 
-            expectedInP2P = p2pUnitToUnderlying(inP2P, supplyP2PExchangeRate);
+            expectedInP2P = inP2P.mul(supplyP2PExchangeRate);
 
             testEquality(expectedInP2P, amountPerSupplier);
             testEquality(onPool, 0);
@@ -168,8 +177,8 @@ contract TestBorrow is TestSetup {
 
         (inP2P, onPool) = positionsManager.borrowBalanceInOf(cDai, address(borrower1));
 
-        expectedInP2P = p2pUnitToUnderlying(amount / 2, supplyP2PExchangeRate);
-        uint256 expectedOnPool = underlyingToDebtUnit(amount / 2, normalizedVariableDebt);
+        expectedInP2P = (amount / 2).mul(supplyP2PExchangeRate);
+        uint256 expectedOnPool = (amount / 2).div(borrowIndex);
 
         testEquality(inP2P, expectedInP2P);
         testEquality(onPool, expectedOnPool);
@@ -188,7 +197,7 @@ contract TestBorrow is TestSetup {
         (, uint256 onPool) = positionsManager.borrowBalanceInOf(cDai, address(borrower1));
 
         uint256 borrowIndex = ICToken(cDai).borrowIndex();
-        uint256 expectedOnPool = underlyingToDebtUnit(2 * amount, borrowIndex);
+        uint256 expectedOnPool = (2 * amount).div(borrowIndex);
         testEquality(onPool, expectedOnPool);
     }
 }
