@@ -117,6 +117,8 @@ contract TestSetup is Config, Utils, stdCheats {
         createMarket(cWbtc);
         createMarket(cUsdt);
         createMarket(cBat);
+
+        hevm.roll(block.number + 100); // To ensure that P2P Borrow & Supply rate != 1
     }
 
     function createMarket(address _cToken) internal {
