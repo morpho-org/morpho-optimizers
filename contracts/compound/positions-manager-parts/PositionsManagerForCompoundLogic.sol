@@ -157,6 +157,7 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
         _checkUserLiquidity(msg.sender, _poolTokenAddress, 0, _amount);
 
         ERC20 underlyingToken = ERC20(ICToken(_poolTokenAddress).underlying());
+        uint256 balanceBefore = underlyingToken.balanceOf(address(this));
         uint256 remainingToBorrow = _amount;
         uint256 toWithdraw;
         Delta storage delta = deltas[_poolTokenAddress];
@@ -221,7 +222,7 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
 
         /// Borrow on pool ///
 
-        if (remainingToBorrow > 0) {
+        if (_isAboveCompoundThreshold(_poolTokenAddress, remainingToBorrow)) {
             borrowBalanceInOf[_poolTokenAddress][msg.sender].onPool += remainingToBorrow.div(
                 ICToken(_poolTokenAddress).borrowIndex()
             ); // In cdUnit.
@@ -229,7 +230,10 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
             _borrowFromPool(_poolTokenAddress, remainingToBorrow);
         }
 
-        underlyingToken.safeTransfer(msg.sender, _amount);
+        // Due to rounding errors the balance may be lower than expected.
+        uint256 balanceAfter = underlyingToken.balanceOf(address(this));
+
+        underlyingToken.safeTransfer(msg.sender, balanceAfter - balanceBefore);
     }
 
     /// @dev Implements withdraw logic.

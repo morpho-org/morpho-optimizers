@@ -88,7 +88,7 @@ contract MatchingEngineForCompound is
                 user != address(0) &&
                 vars.gasLeftAtTheBeginning - gasleft() < _maxGasToConsume
             ) {
-                vars.inUnderlying = supplyBalanceInOf[poolTokenAddress][user].onPool.mul(
+                vars.inUnderlying = supplyBalanceInOf[poolTokenAddress][user].onPool.mulWadUp(
                     vars.poolIndex
                 );
                 unchecked {
@@ -138,7 +138,7 @@ contract MatchingEngineForCompound is
                 user != address(0) &&
                 vars.gasLeftAtTheBeginning - gasleft() < _maxGasToConsume
             ) {
-                vars.inUnderlying = supplyBalanceInOf[_poolTokenAddress][user].inP2P.mul(
+                vars.inUnderlying = supplyBalanceInOf[_poolTokenAddress][user].inP2P.mulWadUp(
                     vars.p2pRate
                 );
                 unchecked {
@@ -244,7 +244,7 @@ contract MatchingEngineForCompound is
                 user != address(0) &&
                 vars.gasLeftAtTheBeginning - gasleft() < _maxGasToConsume
             ) {
-                vars.inUnderlying = borrowBalanceInOf[_poolTokenAddress][user].inP2P.mul(
+                vars.inUnderlying = borrowBalanceInOf[_poolTokenAddress][user].inP2P.mulWadUp(
                     vars.p2pRate
                 );
                 unchecked {

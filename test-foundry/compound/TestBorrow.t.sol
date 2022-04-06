@@ -123,6 +123,7 @@ contract TestBorrow is TestSetup {
         uint8 numberOfSupplier = 5;
         createSigners(numberOfSupplier);
 
+        uint256 daiExchangeRate = ICToken(cDai).exchangeRateCurrent();
         uint256 amountPerSupplier = amount / numberOfSupplier;
 
         for (uint256 i = 0; i < numberOfSupplier; i++) {
@@ -136,33 +137,21 @@ contract TestBorrow is TestSetup {
 
         uint256 inP2P;
         uint256 onPool;
-        uint256 amountSuppliedOnComp = getBalanceOnCompound(
-            amountPerSupplier,
-            ICToken(cDai).exchangeRateStored()
-        );
+        uint256 amountSuppliedOnComp = getBalanceOnCompound(amountPerSupplier, daiExchangeRate);
+        uint256 supplyP2PExchangeRate = marketsManager.supplyP2PExchangeRate(cDai);
         uint256 dustNotMatched;
 
         for (uint256 i = 0; i < numberOfSupplier; i++) {
             (inP2P, onPool) = positionsManager.supplyBalanceInOf(cDai, address(suppliers[i]));
 
             testEquality(
-                inP2P.mul(marketsManager.supplyP2PExchangeRate(cDai)),
+                inP2P.mul(supplyP2PExchangeRate),
                 amountSuppliedOnComp,
                 "P2P per Supplier"
             );
             testEquality(onPool, 0, "onPool per Supplier");
 
             dustNotMatched += amountPerSupplier - amountSuppliedOnComp;
-
-            console.log("in p2p units             ", inP2P);
-            console.log(
-                "in underlyings           ",
-                inP2P.mul(marketsManager.supplyP2PExchangeRate(cDai))
-            );
-            console.log("p2p exchange rate        ", marketsManager.supplyP2PExchangeRate(cDai));
-            console.log("pool supply rate stored  ", ICToken(cDai).exchangeRateStored());
-            console.log("pool borrow rate stored  ", ICToken(cDai).borrowIndex());
-            console.log("===================");
         }
 
         (inP2P, onPool) = positionsManager.borrowBalanceInOf(cDai, address(borrower1));
@@ -172,10 +161,9 @@ contract TestBorrow is TestSetup {
             amount - dustNotMatched,
             "P2P for Borrower"
         );
-
         testEquality(
-            onPool.mul(ICToken(cDai).exchangeRateStored()),
-            getBalanceOnCompound(dustNotMatched, ICToken(cDai).exchangeRateStored()),
+            onPool.mul(daiExchangeRate),
+            getBalanceOnCompound(dustNotMatched, daiExchangeRate),
             "onPool for Borrower"
         );
     }
