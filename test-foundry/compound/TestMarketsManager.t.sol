@@ -8,12 +8,18 @@ contract TestMarketsManager is TestSetup {
 
     function testShoudDeployContractWithTheRightValues() public {
         ICToken cToken = ICToken(cDai);
-        uint256 expectedBPY = (cToken.supplyRatePerBlock() + cToken.borrowRatePerBlock()) / 2;
+        uint256 expectedBPY = (2 * cToken.supplyRatePerBlock() + cToken.borrowRatePerBlock()) / 3;
 
         assertEq(marketsManager.supplyP2PBPY(cDai), expectedBPY);
         assertEq(marketsManager.borrowP2PBPY(cDai), expectedBPY);
-        assertEq(marketsManager.supplyP2PExchangeRate(cDai), WAD);
-        assertEq(marketsManager.borrowP2PExchangeRate(cDai), WAD);
+        assertEq(
+            marketsManager.supplyP2PExchangeRate(cDai),
+            2 * 10**(16 + IERC20Metadata(ICToken(cDai).underlying()).decimals() - 8)
+        );
+        assertEq(
+            marketsManager.borrowP2PExchangeRate(cDai),
+            2 * 10**(16 + IERC20Metadata(ICToken(cDai).underlying()).decimals() - 8)
+        );
     }
 
     function testShouldRevertWhenCreatingMarketWithAnImproperMarket() public {
@@ -30,7 +36,7 @@ contract TestMarketsManager is TestSetup {
             borrower1.createMarket(pools[i]);
         }
 
-        marketsManager.createMarket(cEth);
+        marketsManager.createMarket(cAave);
     }
 
     function testOnlyOwnerCanSetReserveFactor() public {
@@ -54,15 +60,13 @@ contract TestMarketsManager is TestSetup {
         borrower1.updateRates(cDai);
 
         ICToken cToken = ICToken(cDai);
-        uint256 expectedBPY = (cToken.supplyRatePerBlock() + cToken.borrowRatePerBlock()) / 2;
+        uint256 expectedBPY = (2 * cToken.supplyRatePerBlock() + cToken.borrowRatePerBlock()) / 3;
 
         uint256 borrowP2PExchangeRate = marketsManager.borrowP2PExchangeRate(cDai);
         uint256 supplyP2PExchangeRate = marketsManager.supplyP2PExchangeRate(cDai);
 
         assertEq(marketsManager.supplyP2PBPY(cDai), expectedBPY);
         assertEq(marketsManager.borrowP2PBPY(cDai), expectedBPY);
-        assertEq(supplyP2PExchangeRate, WAD);
-        assertEq(borrowP2PExchangeRate, WAD);
 
         hevm.roll(block.number + 100);
         borrower1.updateRates(cDai);
@@ -79,7 +83,7 @@ contract TestMarketsManager is TestSetup {
         assertEq(supplyP2PExchangeRate, newSupplyP2PExchangeRate);
         assertEq(borrowP2PExchangeRate, newBorrowP2PExchangeRate);
 
-        expectedBPY = (cToken.supplyRatePerBlock() + cToken.borrowRatePerBlock()) / 2;
+        expectedBPY = (2 * cToken.supplyRatePerBlock() + cToken.borrowRatePerBlock()) / 3;
 
         uint256 supplyBPY = (expectedBPY *
             (MAX_BASIS_POINTS - marketsManager.reserveFactor(cDai))) / MAX_BASIS_POINTS;
@@ -97,13 +101,19 @@ contract TestMarketsManager is TestSetup {
     function testShouldCreateMarketWithTheRightValues() public {
         ICToken cToken = ICToken(cAave);
         marketsManager.createMarket(cAave);
-        uint256 expectedBPY = (cToken.supplyRatePerBlock() + cToken.borrowRatePerBlock()) / 2;
+        uint256 expectedBPY = (2 * cToken.supplyRatePerBlock() + cToken.borrowRatePerBlock()) / 3;
 
         assertTrue(marketsManager.isCreated(cAave));
         assertEq(marketsManager.supplyP2PBPY(cAave), expectedBPY);
         assertEq(marketsManager.borrowP2PBPY(cAave), expectedBPY);
-        assertEq(marketsManager.supplyP2PExchangeRate(cAave), WAD);
-        assertEq(marketsManager.borrowP2PExchangeRate(cAave), WAD);
+        assertEq(
+            marketsManager.supplyP2PExchangeRate(cAave),
+            2 * 10**(16 + IERC20Metadata(cToken.underlying()).decimals() - 8)
+        );
+        assertEq(
+            marketsManager.borrowP2PExchangeRate(cAave),
+            2 * 10**(16 + IERC20Metadata(cToken.underlying()).decimals() - 8)
+        );
     }
 
     function testShouldSetmaxGasWithRightValues() public {

@@ -48,6 +48,7 @@ contract TestPausableMarket is TestSetup {
 
         supplier1.withdraw(cDai, 1 ether);
 
+        hevm.expectRevert(PositionsManagerForCompoundEventsErrors.AmountIsZero.selector);
         positionsManager.claimToTreasury(cDai);
     }
 
@@ -70,7 +71,7 @@ contract TestPausableMarket is TestSetup {
         supplier1.supply(cDai, amount);
 
         hevm.expectRevert(abi.encodeWithSignature("MarketPaused()"));
-        supplier1.borrow(cUsdc, 0);
+        supplier1.borrow(cUsdc, 1);
 
         supplier1.approve(usdc, toBorrow);
         hevm.expectRevert(abi.encodeWithSignature("MarketPaused()"));
