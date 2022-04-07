@@ -137,6 +137,39 @@ abstract contract RewardsManagerForAave is IRewardsManagerForAave, Ownable {
         userIndex_ = localData.userIndex[_user];
     }
 
+    /// @notice Get the unclaimed rewards for the given assets and returns the total unclaimed rewards.
+    /// @param _assets The assets for which to accrue rewards (aToken or variable debt token).
+    /// @param _user The address of the user.
+    /// @return unclaimedRewards The user unclaimed rewards.
+    function getUserUnclaimedRewards(address[] calldata _assets, address _user)
+        external 
+        view
+        returns (uint256 unclaimedRewards)
+    {
+        unclaimedRewards = userUnclaimedRewards[_user];
+
+        for (uint256 i = 0; i < _assets.length; i++) {
+            address asset = _assets[i];
+            DataTypes.ReserveData memory reserve = lendingPool.getReserveData(
+                IGetterUnderlyingAsset(asset).UNDERLYING_ASSET_ADDRESS()
+            );
+            uint256 userBalance;
+            if (asset == reserve.aTokenAddress)
+                userBalance = positionsManager
+                .supplyBalanceInOf(reserve.aTokenAddress, _user)
+                .onPool;
+            else if (asset == reserve.variableDebtTokenAddress)
+                userBalance = positionsManager
+                .borrowBalanceInOf(reserve.aTokenAddress, _user)
+                .onPool;
+            else revert InvalidAsset();
+
+            uint256 totalBalance = IScaledBalanceToken(asset).scaledTotalSupply();
+
+            unclaimedRewards += _getUserAsset(_user, asset, userBalance, totalBalance);
+        }
+    }
+
     /// PUBLIC ///
 
     /// @notice Accrues unclaimed rewards for the given assets and returns the total unclaimed rewards.
@@ -200,6 +233,29 @@ abstract contract RewardsManagerForAave is IRewardsManagerForAave, Ownable {
         }
     }
 
+    /// @dev Get the state of an user in a distribution.
+    /// @dev This function is the equivalent of _updateUserAsset but as a view.
+    /// @param _user The address of the user.
+    /// @param _asset The address of the reference asset of the distribution (aToken or variable debt token).
+    /// @param _userBalance The user balance of tokens in the distribution.
+    /// @param _totalBalance The total balance of tokens in the distribution.
+    /// @return accruedRewards The accrued rewards for the user until the moment for this asset.
+    function _getUserAsset(
+        address _user,
+        address _asset,
+        uint256 _userBalance,
+        uint256 _totalBalance
+    ) internal view returns (uint256 accruedRewards) {
+        LocalAssetData storage localData = localAssetData[_asset];
+        uint256 formerUserIndex = localData.userIndex[_user];
+        uint256 newIndex = _getNewIndex(_asset, _totalBalance);
+
+        if (formerUserIndex != newIndex) {
+            if (_userBalance != 0)
+                accruedRewards = _getRewards(_userBalance, newIndex, formerUserIndex);
+        }
+    }
+
     /// @dev Computes and returns the next value of a specific distribution index.
     /// @param _currentIndex The current index of the distribution.
     /// @param _emissionPerSecond The total rewards distributed per second per asset unit, on the distribution.
@@ -246,6 +302,16 @@ abstract contract RewardsManagerForAave is IRewardsManagerForAave, Ownable {
     /// @return newIndex The new distribution index.
     function _getUpdatedIndex(address _asset, uint256 _totalBalance)
         internal
+        virtual
+        returns (uint256 newIndex);
+
+    /// @dev Returns the next reward index.
+    /// @dev This function is the equivalent of _getUpdatedIndex, but as a view.
+    /// @param _asset The address of the reference asset of the distribution (aToken or variable debt token).
+    /// @param _totalBalance The total balance of tokens in the distribution.
+    /// @return newIndex The new distribution index.
+    function _getNewIndex(address _asset, uint256 _totalBalance)
+        internal view
         virtual
         returns (uint256 newIndex);
 }
