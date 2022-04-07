@@ -39,16 +39,6 @@ abstract contract RewardsManagerForAave is IRewardsManagerForAave, Ownable {
     /// @param _swapManager The new address of the `swapManager`.
     event SwapManagerSet(address indexed _swapManager);
 
-    /// @notice Emitted when the user's index is updated.
-    /// @param _user The address of the user whose index has been updated.
-    /// @param _poolTokenAddress The address of the market from where the index is updated.
-    /// @param _index The new index value.
-    event UserIndexUpdated(
-        address indexed _user,
-        address indexed _poolTokenAddress,
-        uint256 _index
-    );
-
     /// ERRORS ///
 
     /// @notice Thrown when only the positions manager can call the function.
@@ -207,8 +197,6 @@ abstract contract RewardsManagerForAave is IRewardsManagerForAave, Ownable {
                 accruedRewards = _getRewards(_userBalance, newIndex, formerUserIndex);
 
             localData.userIndex[_user] = newIndex;
-
-            emit UserIndexUpdated(_user, _asset, newIndex);
         }
     }
 
