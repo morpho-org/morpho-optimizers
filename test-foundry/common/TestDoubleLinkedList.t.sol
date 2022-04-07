@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GNU AGPLv3
-pragma solidity 0.8.7;
+pragma solidity 0.8.13;
 
 import "ds-test/test.sol";
 import "forge-std/stdlib.sol";
