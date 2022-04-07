@@ -34,8 +34,8 @@ contract SwapManagerUniV2 is ISwapManager, Ownable {
     address public immutable token0;
     address public immutable token1;
 
-    IUniswapV2Router02 public swapRouter;
-    IUniswapV2Pair public pair;
+    IUniswapV2Router02 public immutable swapRouter;
+    IUniswapV2Pair public immutable pair;
 
     /// EVENTS ///
 
