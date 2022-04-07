@@ -61,6 +61,12 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         uint256 _balanceInP2P
     );
 
+    /// CONSTRUCTOR ///
+
+    /// @notice Constructs the MatchingEngineForAave contract.
+    /// @dev The contract is automatically marked as initialized when deployed.
+    constructor() initializer {}
+
     /// EXTERNAL ///
 
     /// @notice Matches suppliers' liquidity waiting on Aave up to the given `_amount` and move it to P2P.
