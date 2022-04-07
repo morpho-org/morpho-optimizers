@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-2-Clause
-pragma solidity 0.8.7;
+pragma solidity 0.8.13;
 
 /// @title CompoundMath
 /// @dev library emulating in solidity 0.8+ the behavior of Compound's mulScalarTruncate and divScalarByExpTruncate functions.
