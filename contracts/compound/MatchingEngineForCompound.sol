@@ -142,6 +142,7 @@ contract MatchingEngineForCompound is
                 vars.inUnderlying = supplyBalanceInOf[_poolTokenAddress][user].inP2P.mul(
                     vars.p2pRate
                 );
+
                 unchecked {
                     vars.toUnmatch = vars.inUnderlying < remainingToUnmatch
                         ? vars.inUnderlying
@@ -152,9 +153,14 @@ contract MatchingEngineForCompound is
                 supplyBalanceInOf[_poolTokenAddress][user].onPool += vars.toUnmatch.div(
                     vars.poolIndex
                 );
-                supplyBalanceInOf[_poolTokenAddress][user].inP2P -= vars.toUnmatch.div(
-                    vars.p2pRate
-                ); // In p2pUnit
+                supplyBalanceInOf[_poolTokenAddress][user].inP2P = (supplyBalanceInOf[
+                    _poolTokenAddress
+                ][user]
+                .inP2P - vars.toUnmatch.div(vars.p2pRate)) == 1
+                    ? 0
+                    : supplyBalanceInOf[_poolTokenAddress][user].inP2P -
+                        vars.toUnmatch.div(vars.p2pRate); // In p2pUnit
+
                 updateSuppliers(_poolTokenAddress, user);
                 emit SupplierPositionUpdated(
                     user,
