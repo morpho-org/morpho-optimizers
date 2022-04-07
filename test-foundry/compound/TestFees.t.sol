@@ -8,7 +8,7 @@ contract TestFees is TestSetup {
 
     function testShouldRevertWhenClaimingZeroAmount() public {
         hevm.expectRevert(abi.encodeWithSignature("AmountIsZero()"));
-        positionsManager.claimToTreasury(aDai);
+        positionsManager.claimToTreasury(cDai);
     }
 
     function testShouldNotBePossibleToSetFeesHigherThan100Percent() public {
@@ -47,22 +47,16 @@ contract TestFees is TestSetup {
     function testShouldCollectTheRightAmountOfFees() public {
         marketsManager.setReserveFactor(cDai, 1000); // 10%
 
-        // Increase blocks so that rates update.
-        hevm.warp(block.number + 1);
-
         uint256 balanceBefore = IERC20(dai).balanceOf(positionsManager.treasuryVault());
         supplier1.approve(dai, type(uint256).max);
         supplier1.supply(cDai, 100 * WAD);
         supplier1.borrow(cDai, 50 * WAD);
 
         ICToken cToken = ICToken(cDai);
-        uint256 supplyBPY = cToken.supplyRatePerBlock();
-        uint256 borrowBPY = cToken.borrowRatePerBlock();
+        uint256 expectedBPY = (2 * cToken.supplyRatePerBlock() + cToken.borrowRatePerBlock()) / 3;
 
-        uint256 meanBPY = (supplyBPY + borrowBPY) / 2;
-
-        uint256 supplyP2PBPY = (meanBPY * 9000) / MAX_BASIS_POINTS;
-        uint256 borrowP2PBPY = (meanBPY * 11000) / MAX_BASIS_POINTS;
+        uint256 supplyP2PBPY = (expectedBPY * 9000) / MAX_BASIS_POINTS;
+        uint256 borrowP2PBPY = (expectedBPY * 11000) / MAX_BASIS_POINTS;
 
         uint256 newSupplyExRate = WAD.mul(_computeCompoundedInterest(supplyP2PBPY, 100));
         uint256 newBorrowExRate = WAD.mul(_computeCompoundedInterest(borrowP2PBPY, 100));
@@ -76,7 +70,7 @@ contract TestFees is TestSetup {
         uint256 balanceAfter = IERC20(dai).balanceOf(positionsManager.treasuryVault());
         uint256 gainedByDAO = balanceAfter - balanceBefore;
 
-        assertApproxEq(gainedByDAO, expectedFees, 2);
+        assertEq(gainedByDAO, expectedFees, "Fees collected");
     }
 
     function testShouldNotClaimFeesIfFactorIsZero() public {
@@ -93,6 +87,7 @@ contract TestFees is TestSetup {
         hevm.roll(block.number + 100);
 
         supplier1.repay(cDai, type(uint256).max);
+        hevm.expectRevert(PositionsManagerForCompoundEventsErrors.AmountIsZero.selector);
         positionsManager.claimToTreasury(cDai);
         uint256 balanceAfter = IERC20(dai).balanceOf(positionsManager.treasuryVault());
 
