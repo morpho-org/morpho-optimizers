@@ -194,7 +194,7 @@ contract MatchingEngineForCompound is
                 user != address(0) &&
                 vars.gasLeftAtTheBeginning - gasleft() < _maxGasToConsume
             ) {
-                vars.inUnderlying = borrowBalanceInOf[poolTokenAddress][user].onPool.mulWadUp( // Putting mulWadUp here to avoid rounding errors.
+                vars.inUnderlying = borrowBalanceInOf[poolTokenAddress][user].onPool.mul( // Putting mulWadUp here to avoid rounding errors.
                     vars.poolIndex
                 );
                 unchecked {
@@ -207,6 +207,8 @@ contract MatchingEngineForCompound is
                 borrowBalanceInOf[poolTokenAddress][user].onPool -= vars.toMatch.div(
                     vars.poolIndex
                 );
+                if (borrowBalanceInOf[poolTokenAddress][user].onPool == 1)
+                    borrowBalanceInOf[poolTokenAddress][user].onPool = 0;
                 borrowBalanceInOf[poolTokenAddress][user].inP2P += vars.toMatch.div(vars.p2pRate);
                 updateBorrowers(poolTokenAddress, user);
                 emit BorrowerPositionUpdated(
