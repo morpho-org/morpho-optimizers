@@ -35,14 +35,14 @@ contract TestWithdraw is TestSetup {
 
         uint256 expectedOnPool = to6Decimals(2 * amount).div(ICToken(cUsdc).exchangeRateCurrent());
 
-        testEquality(inP2P, 0);
-        testEquality(onPool, expectedOnPool);
+        assertEq(inP2P, 0);
+        assertEq(onPool, expectedOnPool);
 
         supplier1.withdraw(cUsdc, to6Decimals(amount));
 
         (inP2P, onPool) = positionsManager.supplyBalanceInOf(cUsdc, address(supplier1));
 
-        testEquality(inP2P, 0);
+        assertEq(inP2P, 0);
         testEquality(onPool, expectedOnPool / 2);
     }
 
@@ -60,15 +60,15 @@ contract TestWithdraw is TestSetup {
 
         uint256 expectedOnPool = to6Decimals(amount).div(ICToken(cUsdc).exchangeRateCurrent());
 
-        testEquality(inP2P, 0);
-        testEquality(onPool, expectedOnPool);
+        assertEq(inP2P, 0);
+        assertEq(onPool, expectedOnPool);
 
         supplier1.withdraw(cUsdc, type(uint256).max);
 
         uint256 balanceAfter = supplier1.balanceOf(usdc);
         (inP2P, onPool) = positionsManager.supplyBalanceInOf(cUsdc, address(supplier1));
 
-        testEquality(inP2P, 0, "in P2P");
+        assertEq(inP2P, 0, "in P2P");
         assertApproxEq(onPool, 0, 1e5, "on Pool");
         testEquality(balanceAfter - balanceBefore, to6Decimals(amount), "balance");
     }
@@ -100,7 +100,7 @@ contract TestWithdraw is TestSetup {
 
         testEquality(onPoolSupplier, expectedOnPool);
         testEquality(onPoolBorrower1, 0);
-        testEquality(inP2PSupplier, inP2PBorrower1);
+        assertEq(inP2PSupplier, inP2PBorrower1);
 
         // An available supplier onPool
         supplier2.approve(dai, suppliedAmount);
@@ -132,7 +132,7 @@ contract TestWithdraw is TestSetup {
             cDai,
             address(borrower1)
         );
-        testEquality(onPoolBorrower1, 0);
+        assertEq(onPoolBorrower1, 0);
         testEquality(inP2PSupplier, inP2PBorrower1);
     }
 
@@ -163,9 +163,9 @@ contract TestWithdraw is TestSetup {
 
         uint256 expectedOnPool = (suppliedAmount / 2).div(ICToken(cDai).exchangeRateCurrent());
 
-        testEquality(onPoolSupplier, expectedOnPool);
-        testEquality(onPoolBorrower, 0);
-        testEquality(inP2PSupplier, inP2PBorrower);
+        assertEq(onPoolSupplier, expectedOnPool);
+        assertEq(onPoolBorrower, 0);
+        assertEq(inP2PSupplier, inP2PBorrower);
 
         // NMAX-1 suppliers have up to suppliedAmount waiting on pool
         uint8 NMAX = 20;
@@ -217,8 +217,8 @@ contract TestWithdraw is TestSetup {
                 marketsManager.supplyP2PExchangeRate(cDai)
             );
 
-            testEquality(inP2P, expectedInP2P, "in P2P");
-            testEquality(onPool, 0, "on pool");
+            assertEq(inP2P, expectedInP2P, "in P2P");
+            assertEq(onPool, 0, "on pool");
         }
     }
 
@@ -248,9 +248,9 @@ contract TestWithdraw is TestSetup {
 
         uint256 expectedOnPool = (suppliedAmount / 2).div(ICToken(cDai).exchangeRateCurrent());
 
-        testEquality(onPoolSupplier, expectedOnPool);
-        testEquality(onPoolBorrower, 0);
-        testEquality(inP2PSupplier, inP2PBorrower);
+        assertEq(onPoolSupplier, expectedOnPool);
+        assertEq(onPoolBorrower, 0);
+        assertEq(inP2PSupplier, inP2PBorrower);
 
         // Supplier1 withdraws 75% of supplied amount
         uint256 toWithdraw = (75 * suppliedAmount) / 100;
@@ -270,7 +270,7 @@ contract TestWithdraw is TestSetup {
             onPoolSupplier.mul(ICToken(cDai).exchangeRateCurrent()))
         .div(ICToken(cDai).borrowIndex());
 
-        testEquality(inP2PBorrower, expectedBorrowBalanceInP2P, "borrower in P2P");
+        assertEq(inP2PBorrower, expectedBorrowBalanceInP2P, "borrower in P2P");
         assertApproxEq(onPoolBorrower, expectedBorrowBalanceOnPool, 1e3, "borrower on Pool");
 
         // Check balances for supplier
@@ -285,7 +285,7 @@ contract TestWithdraw is TestSetup {
         );
 
         testEquality(inP2PSupplier, expectedSupplyBalanceInP2P, "supplier in P2P");
-        testEquality(onPoolSupplier, 0, "supplier on Pool");
+        assertEq(onPoolSupplier, 0, "supplier on Pool");
     }
 
     function testWithdraw3_4() public {
@@ -384,17 +384,17 @@ contract TestWithdraw is TestSetup {
 
             (inP2P, onPool) = positionsManager.supplyBalanceInOf(cDai, address(suppliers[i]));
 
-            testEquality(
+            assertEq(
                 inP2P,
                 getBalanceOnCompound(amountPerSupplier, rates[i]).div(
                     marketsManager.supplyP2PExchangeRate(cDai)
                 ),
                 "supplier in P2P"
             );
-            testEquality(onPool, 0, "supplier on pool");
+            assertEq(onPool, 0, "supplier on pool");
 
             (inP2P, onPool) = positionsManager.borrowBalanceInOf(cDai, address(borrowers[i]));
-            testEquality(inP2P, 0, "borrower in P2P");
+            assertEq(inP2P, 0, "borrower in P2P");
         }
     }
 
@@ -451,8 +451,8 @@ contract TestWithdraw is TestSetup {
             for (uint256 i = 10; i < 20; i++) {
                 (uint256 inP2PBorrower, uint256 onPoolBorrower) = positionsManager
                 .borrowBalanceInOf(cDai, address(borrowers[i]));
-                testEquality(onPoolBorrower, 0);
-                testEquality(inP2PBorrower, expectedBorrowBalanceInP2P);
+                assertEq(onPoolBorrower, 0);
+                assertEq(inP2PBorrower, expectedBorrowBalanceInP2P);
             }
 
             // Supplier withdraws max.
@@ -479,7 +479,7 @@ contract TestWithdraw is TestSetup {
             .div(ICToken(cDai).borrowIndex());
 
             (, uint256 borrowP2PDelta, , ) = positionsManager.deltas(cDai);
-            testEquality(borrowP2PDelta, expectedBorrowP2PDelta, "borrow Delta not expected 1");
+            assertEq(borrowP2PDelta, expectedBorrowP2PDelta, "borrow Delta not expected 1");
 
             // Borrow delta matching by new supplier.
             supplier2.approve(dai, expectedBorrowP2PDeltaInUnderlying / 2);
@@ -496,7 +496,7 @@ contract TestWithdraw is TestSetup {
             (, borrowP2PDelta, , ) = positionsManager.deltas(cDai);
             testEquality(borrowP2PDelta, expectedBorrowP2PDelta / 2, "borrow Delta not expected 2");
             testEquality(onPoolSupplier, 0, "on pool supplier not 0");
-            testEquality(inP2PSupplier, expectedSupplyBalanceInP2P, "in P2P supplier not expected");
+            assertEq(inP2PSupplier, expectedSupplyBalanceInP2P, "in P2P supplier not expected");
         }
 
         {
@@ -528,7 +528,7 @@ contract TestWithdraw is TestSetup {
                     shareOfTheDelta.mul(newVars.NVD).div(oldVars.NVD)
             );
 
-            testEquality(expectedBP2PER, newVars.BP2PER, "BP2PER not expected");
+            assertEq(expectedBP2PER, newVars.BP2PER, "BP2PER not expected");
 
             uint256 expectedBorrowBalanceInUnderlying = borrowedAmount.div(oldVars.BP2PER).mul(
                 expectedBP2PER
@@ -537,12 +537,12 @@ contract TestWithdraw is TestSetup {
             for (uint256 i = 10; i < 20; i++) {
                 (uint256 inP2PBorrower, uint256 onPoolBorrower) = positionsManager
                 .borrowBalanceInOf(cDai, address(borrowers[i]));
-                testEquality(
+                assertEq(
                     p2pUnitToUnderlying(inP2PBorrower, newVars.BP2PER),
                     expectedBorrowBalanceInUnderlying,
                     "not expected underlying balance"
                 );
-                testEquality(onPoolBorrower, 0);
+                assertEq(onPoolBorrower, 0);
             }
         }
 
@@ -560,8 +560,8 @@ contract TestWithdraw is TestSetup {
             address(supplier2)
         );
 
-        testEquality(inP2PSupplier2, expectedSupplyBalanceInP2P);
-        testEquality(onPoolSupplier2, 0);
+        assertEq(inP2PSupplier2, expectedSupplyBalanceInP2P);
+        assertEq(onPoolSupplier2, 0);
     }
 
     function testDeltaWithdrawAll() public {
