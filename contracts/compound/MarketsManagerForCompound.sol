@@ -441,7 +441,7 @@ contract MarketsManagerForCompound is IMarketsManagerForCompound, OwnableUpgrade
         uint256 _poolIndex,
         uint256 _lastPoolIndex,
         uint256 _blockDifference
-    ) internal view returns (uint256) {
+    ) internal pure returns (uint256) {
         if (_p2pAmount == 0 || _p2pDelta == 0)
             return _p2pRate.mul(_computeCompoundedInterest(_p2pBPY, _blockDifference));
         else {
