@@ -389,10 +389,10 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
             );
             vars.remainingToRepay -= vars.toRepay;
 
-            borrowBalanceInOf[_poolTokenAddress][_user].onPool -= CompoundMath.min(
-                borrowedOnPool,
-                vars.toRepay.div(vars.borrowPoolIndex)
-            ); // In adUnit
+            // Handle case where only 1 wei stays on the position.
+            uint256 diff = borrowBalanceInOf[_poolTokenAddress][_user].onPool -
+                CompoundMath.min(borrowedOnPool, vars.toRepay.div(vars.borrowPoolIndex));
+            borrowBalanceInOf[_poolTokenAddress][_user].onPool = diff == 1 ? 0 : diff; // In cdUnit.
             matchingEngine.updateBorrowersDC(_poolTokenAddress, _user);
         }
 
@@ -402,10 +402,13 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
         /// Transfer repay ///
 
         if (vars.remainingToRepay > 0 && !marketsManager.noP2P(_poolTokenAddress)) {
-            borrowBalanceInOf[_poolTokenAddress][_user].inP2P -= CompoundMath.min(
-                borrowBalanceInOf[_poolTokenAddress][_user].inP2P,
-                vars.remainingToRepay.div(borrowP2PExchangeRate)
-            ); // In p2pUnit
+            // Handle case where only 1 wei stays on the position.
+            uint256 diff = borrowBalanceInOf[_poolTokenAddress][_user].inP2P -
+                CompoundMath.min(
+                    borrowBalanceInOf[_poolTokenAddress][_user].inP2P,
+                    vars.remainingToRepay.div(borrowP2PExchangeRate)
+                );
+            borrowBalanceInOf[_poolTokenAddress][_user].inP2P = diff == 1 ? 0 : diff; // In p2pUnit.
             matchingEngine.updateBorrowersDC(_poolTokenAddress, _user);
 
             // Match Delta if any.
@@ -479,6 +482,7 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
 
             if (toSupply > 0) _supplyToPool(_poolTokenAddress, underlyingToken, toSupply); // Reverts on error.
         }
+
         _leaveMarkerIfNeeded(_poolTokenAddress, _user);
     }
 
