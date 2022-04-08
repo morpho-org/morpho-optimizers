@@ -77,6 +77,62 @@ contract TestRewards is TestSetup {
         assertEq(balanceAfter, expectedNewBalance, "balance after wrong");
     }
 
+    function testShouldGetRightAmountOfSupplyRewards() public {
+        uint256 toSupply = 100 ether;
+        supplier1.approve(dai, toSupply);
+        supplier1.supply(aDai, toSupply);
+        uint256 index;
+
+        if (block.chainid == Chains.AVALANCHE_MAINNET || block.chainid == Chains.ETH_MAINNET) {
+            (index, , ) = IAaveIncentivesController(aaveIncentivesControllerAddress).getAssetData(
+                aDai
+            );
+        } else {
+            // Polygon network
+            IAaveIncentivesController.AssetData memory assetData = IAaveIncentivesController(
+                aaveIncentivesControllerAddress
+            ).assets(aDai);
+            index = assetData.index;
+        }
+
+        (, uint256 onPool) = positionsManager.supplyBalanceInOf(aDai, address(supplier1));
+        uint256 userIndex = rewardsManager.getUserIndex(aDai, address(supplier1));
+        address[] memory aDaiInArray = new address[](1);
+        aDaiInArray[0] = aDai;
+        uint256 unclaimedRewards = rewardsManager.getUserUnclaimedRewards(
+            aDaiInArray,
+            address(supplier1)
+        );
+
+        assertEq(index, userIndex, "user index wrong");
+        assertEq(unclaimedRewards, 0, "unclaimed rewards should be 0");
+
+        supplier2.approve(dai, toSupply);
+        supplier2.supply(aDai, toSupply);
+
+        hevm.warp(block.timestamp + 365 days);
+        unclaimedRewards = rewardsManager.getUserUnclaimedRewards(
+            aDaiInArray,
+            address(supplier1)
+        );
+
+        supplier1.claimRewards(aDaiInArray, false);
+        if (block.chainid == Chains.AVALANCHE_MAINNET || block.chainid == Chains.ETH_MAINNET) {
+            (index, , ) = IAaveIncentivesController(aaveIncentivesControllerAddress).getAssetData(
+                aDai
+            );
+        } else {
+            // Polygon network
+            IAaveIncentivesController.AssetData memory assetData = IAaveIncentivesController(
+                aaveIncentivesControllerAddress
+            ).assets(aDai);
+            index = assetData.index;
+        }
+
+        uint256 expectedClaimed = (onPool * (index - userIndex)) / WAD;
+        assertEq(unclaimedRewards, expectedClaimed);
+    }
+
     function testShouldClaimRightAmountOfBorrowRewards() public {
         uint256 toSupply = 100 ether;
         supplier1.approve(dai, toSupply);
@@ -129,6 +185,60 @@ contract TestRewards is TestSetup {
         uint256 expectedNewBalance = expectedClaimed + balanceBefore;
 
         assertEq(balanceAfter, expectedNewBalance, "balance after wrong");
+    }
+
+    function testShouldGetRightAmountOfBorrowRewards() public {
+        uint256 toSupply = 100 ether;
+        supplier1.approve(dai, toSupply);
+        supplier1.supply(aDai, toSupply);
+        supplier1.borrow(aUsdc, to6Decimals(50 ether));
+        uint256 index;
+
+        if (block.chainid == Chains.AVALANCHE_MAINNET || block.chainid == Chains.ETH_MAINNET) {
+            (index, , ) = IAaveIncentivesController(aaveIncentivesControllerAddress).getAssetData(
+                variableDebtUsdc
+            );
+        } else {
+            // Polygon network
+            IAaveIncentivesController.AssetData memory assetData = IAaveIncentivesController(
+                aaveIncentivesControllerAddress
+            ).assets(variableDebtUsdc);
+            index = assetData.index;
+        }
+
+        (, uint256 onPool) = positionsManager.borrowBalanceInOf(aUsdc, address(supplier1));
+        uint256 userIndex = rewardsManager.getUserIndex(variableDebtUsdc, address(supplier1));
+        address[] memory variableDebtUsdcArray = new address[](1);
+        variableDebtUsdcArray[0] = variableDebtUsdc;
+        uint256 unclaimedRewards = rewardsManager.getUserUnclaimedRewards(
+            variableDebtUsdcArray,
+            address(supplier1)
+        );
+
+        assertEq(index, userIndex, "user index wrong");
+        assertEq(unclaimedRewards, 0, "unclaimed rewards should be 0");
+
+        hevm.warp(block.timestamp + 365 days);
+        unclaimedRewards = rewardsManager.getUserUnclaimedRewards(
+            variableDebtUsdcArray,
+            address(supplier1)
+        );
+
+        supplier1.claimRewards(variableDebtUsdcArray, false);
+        if (block.chainid == Chains.AVALANCHE_MAINNET || block.chainid == Chains.ETH_MAINNET) {
+            (index, , ) = IAaveIncentivesController(aaveIncentivesControllerAddress).getAssetData(
+                variableDebtUsdc
+            );
+        } else {
+            // Polygon network
+            IAaveIncentivesController.AssetData memory assetData = IAaveIncentivesController(
+                aaveIncentivesControllerAddress
+            ).assets(variableDebtUsdc);
+            index = assetData.index;
+        }
+
+        uint256 expectedClaimed = (onPool * (index - userIndex)) / WAD;
+        assertEq(unclaimedRewards, expectedClaimed);
     }
 
     function testShouldClaimOnSeveralMarkets() public {

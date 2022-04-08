@@ -143,7 +143,7 @@ abstract contract RewardsManagerForAave is IRewardsManagerForAave, Ownable {
     /// @return unclaimedRewards The user unclaimed rewards.
     function getUserUnclaimedRewards(address[] calldata _assets, address _user)
         external 
-        view
+        view override
         returns (uint256 unclaimedRewards)
     {
         unclaimedRewards = userUnclaimedRewards[_user];
