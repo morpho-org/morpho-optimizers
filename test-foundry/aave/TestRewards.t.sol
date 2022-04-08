@@ -298,15 +298,25 @@ contract TestRewards is TestSetup {
         tokensInArray[0] = aDai;
         tokensInArray[1] = variableDebtUsdc;
 
+        uint256 unclaimedRewardsForDaiView = rewardsManager.getUserUnclaimedRewards(
+            aDaiInArray,
+            address(supplier1)
+        );
         uint256 unclaimedRewardsForDai = rewardsManager.accrueUserUnclaimedRewards(
             aDaiInArray,
             address(supplier1)
         );
+        assertEq(unclaimedRewardsForDaiView, unclaimedRewardsForDai);
 
+        uint256 allUnclaimedRewardsView = rewardsManager.getUserUnclaimedRewards(
+            tokensInArray,
+            address(supplier1)
+        );
         uint256 allUnclaimedRewards = rewardsManager.accrueUserUnclaimedRewards(
             tokensInArray,
             address(supplier1)
         );
+        assertEq(allUnclaimedRewardsView, allUnclaimedRewards);
         assertGt(allUnclaimedRewards, unclaimedRewardsForDai);
 
         supplier1.claimRewards(tokensInArray, false);
@@ -314,11 +324,15 @@ contract TestRewards is TestSetup {
 
         assertGt(rewardBalanceAfter, rewardBalanceBefore);
 
+        allUnclaimedRewardsView = rewardsManager.getUserUnclaimedRewards(
+            tokensInArray,
+            address(supplier1)
+        );
         allUnclaimedRewards = rewardsManager.accrueUserUnclaimedRewards(
             tokensInArray,
             address(supplier1)
         );
-
+        assertEq(allUnclaimedRewardsView, allUnclaimedRewards);
         assertEq(allUnclaimedRewards, 0);
 
         uint256 protocolUnclaimedRewards = IAaveIncentivesController(
