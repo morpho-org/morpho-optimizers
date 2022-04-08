@@ -409,32 +409,35 @@ contract TestWithdraw is TestSetup {
     }
 
     function testDeltaWithdraw() public {
-        // 1.3e6 allows only 10 unmatch borrowers
-        setMaxGasHelper(3e6, 3e6, 2.6e6, 3e6);
+        // 3.2e6 allows only 10 unmatch borrowers.
+        setMaxGasHelper(3e6, 3e6, 3.2e6, 3e6);
 
         uint256 borrowedAmount = 1 ether;
         uint256 collateral = 2 * borrowedAmount;
         uint256 suppliedAmount = 20 * borrowedAmount + 7;
         uint256 expectedSupplyBalanceInP2P;
 
-        // supplier1 and 20 borrowers are matched for suppliedAmount
+        // supplier1 and 20 borrowers are matched for suppliedAmount.
         supplier1.approve(dai, suppliedAmount);
         supplier1.supply(cDai, suppliedAmount);
 
         createSigners(30);
 
-        // 2 * NMAX borrowers borrow borrowedAmount
+        uint256 matched;
+
+        // 2 * NMAX borrowers borrow borrowedAmount.
         for (uint256 i; i < 20; i++) {
             borrowers[i].approve(usdc, to6Decimals(collateral));
             borrowers[i].supply(cUsdc, to6Decimals(collateral));
             borrowers[i].borrow(cDai, borrowedAmount, type(uint64).max);
+            matched += borrowedAmount.div(marketsManager.borrowP2PExchangeRate(cDai));
         }
 
         {
             uint256 supplyP2PExchangeRate = marketsManager.supplyP2PExchangeRate(cDai);
             expectedSupplyBalanceInP2P = suppliedAmount.div(supplyP2PExchangeRate);
 
-            // Check balances after match of supplier1 and borrowers
+            // Check balances after match of supplier1 and borrowers.
             (uint256 inP2PSupplier, uint256 onPoolSupplier) = positionsManager.supplyBalanceInOf(
                 cDai,
                 address(supplier1)
@@ -452,11 +455,11 @@ contract TestWithdraw is TestSetup {
                 testEquality(inP2PBorrower, expectedBorrowBalanceInP2P);
             }
 
-            // Supplier withdraws max
-            // Should create a delta on borrowers side
+            // Supplier withdraws max.
+            // Should create a delta on borrowers side.
             supplier1.withdraw(cDai, type(uint256).max);
 
-            // Check balances for supplier1
+            // Check balances for supplier1.
             (inP2PSupplier, onPoolSupplier) = positionsManager.supplyBalanceInOf(
                 cDai,
                 address(supplier1)
@@ -464,16 +467,21 @@ contract TestWithdraw is TestSetup {
             testEquality(onPoolSupplier, 0);
             testEquality(inP2PSupplier, 0);
 
-            // There should be a delta
-            uint256 expectedBorrowP2PDeltaInUnderlying = 10 * borrowedAmount;
-            uint256 expectedBorrowP2PDelta = expectedBorrowP2PDeltaInUnderlying.div(
-                ICToken(cDai).borrowIndex()
-            );
+            // There should be a delta.
+            uint256 unmatched = 10 *
+                expectedBorrowBalanceInP2P.mul(marketsManager.borrowP2PExchangeRate(cDai));
+            uint256 expectedBorrowP2PDeltaInUnderlying = (matched.mul(
+                marketsManager.borrowP2PExchangeRate(cDai)
+            ) - unmatched);
+            uint256 expectedBorrowP2PDelta = (matched.mul(
+                marketsManager.borrowP2PExchangeRate(cDai)
+            ) - unmatched)
+            .div(ICToken(cDai).borrowIndex());
 
             (, uint256 borrowP2PDelta, , ) = positionsManager.deltas(cDai);
             testEquality(borrowP2PDelta, expectedBorrowP2PDelta, "borrow Delta not expected 1");
 
-            // Borrow delta matching by new supplier
+            // Borrow delta matching by new supplier.
             supplier2.approve(dai, expectedBorrowP2PDeltaInUnderlying / 2);
             supplier2.supply(cDai, expectedBorrowP2PDeltaInUnderlying / 2);
 
@@ -500,7 +508,7 @@ contract TestWithdraw is TestSetup {
             oldVars.BP2PER = marketsManager.borrowP2PExchangeRate(cDai);
             oldVars.SPY = marketsManager.borrowP2PBPY(cDai);
 
-            hevm.roll(block.timestamp + 1000);
+            hevm.roll(block.number + 1000);
 
             marketsManager.updateRates(cDai);
 
@@ -557,46 +565,50 @@ contract TestWithdraw is TestSetup {
     }
 
     function testDeltaWithdrawAll() public {
-        // 1.3e6 allows only 10 unmatch borrowers
-        setMaxGasHelper(3e6, 3e6, 2.6e6, 3e6);
+        // 1.3e6 allows only 10 unmatch borrowers.
+        setMaxGasHelper(3e6, 3e6, 3.2e6, 3e6);
 
         uint256 borrowedAmount = 1 ether;
         uint256 collateral = 2 * borrowedAmount;
         uint256 suppliedAmount = 20 * borrowedAmount + 7;
 
-        // supplier1 and 20 borrowers are matched for suppliedAmount
+        // supplier1 and 20 borrowers are matched for suppliedAmount.
         supplier1.approve(dai, suppliedAmount);
         supplier1.supply(cDai, suppliedAmount);
 
         createSigners(20);
 
-        // 2 * NMAX borrowers borrow borrowedAmount
+        // 2 * NMAX borrowers borrow borrowedAmount.
         for (uint256 i = 0; i < 20; i++) {
             borrowers[i].approve(usdc, to6Decimals(collateral));
             borrowers[i].supply(cUsdc, to6Decimals(collateral));
             borrowers[i].borrow(cDai, borrowedAmount, type(uint64).max);
         }
 
-        // Supplier withdraws max
-        // Should create a delta on borrowers side
+        // Supplier withdraws max.
+        // Should create a delta on borrowers side.
         supplier1.withdraw(cDai, type(uint256).max);
 
         hevm.warp(block.number + 1000);
 
         for (uint256 i = 0; i < 20; i++) {
-            borrowers[i].approve(dai, type(uint64).max);
-            borrowers[i].repay(cDai, type(uint64).max);
-            borrowers[i].withdraw(cUsdc, type(uint64).max);
+            borrowers[i].approve(dai, type(uint256).max);
+            borrowers[i].repay(cDai, type(uint256).max);
+            borrowers[i].withdraw(cUsdc, type(uint256).max);
         }
     }
 
     // TODO
-    function testShouldNotWithdrawWhenUnderCollaterized() public {}
+    function testShouldNotWithdrawWhenUnderCollaterized() public {
+        revert();
+    }
 
     // TODO
     // Test attack
     // Should be possible to withdraw amount while an attacker sends aToken to trick Morpho contract
-    function testWithdrawWhileAttackerSendsAToken() public {}
+    function testWithdrawWhileAttackerSendsAToken() public {
+        revert();
+    }
 
     function testFailWithdrawZero() public {
         positionsManager.withdraw(cDai, 0);
