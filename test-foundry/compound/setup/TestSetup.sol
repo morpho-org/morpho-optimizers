@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GNU AGPLv3
-pragma solidity 0.8.7;
+pragma solidity 0.8.13;
 import "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
 import {ICToken, ICompoundOracle} from "@contracts/compound/interfaces/compound/ICompound.sol";
 import "@contracts/compound/interfaces/IRewardsManagerForCompound.sol";
