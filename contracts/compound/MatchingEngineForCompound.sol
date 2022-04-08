@@ -97,11 +97,10 @@ contract MatchingEngineForCompound is
                     matched += vars.toMatch;
                 }
 
-                supplyBalanceInOf[poolTokenAddress][user].onPool -= vars.toMatch.div(
-                    vars.poolIndex
-                );
-                if (supplyBalanceInOf[poolTokenAddress][user].onPool == 1)
-                    supplyBalanceInOf[poolTokenAddress][user].onPool = 0;
+                // Handle rounding error of 1 wei.
+                uint256 diff = supplyBalanceInOf[poolTokenAddress][user].onPool -
+                    vars.toMatch.div(vars.poolIndex);
+                supplyBalanceInOf[poolTokenAddress][user].onPool = diff == 1 ? 0 : diff;
                 supplyBalanceInOf[poolTokenAddress][user].inP2P += vars.toMatch.div(vars.p2pRate); // In p2pUnit
                 updateSuppliers(poolTokenAddress, user);
                 emit SupplierPositionUpdated(
@@ -142,7 +141,6 @@ contract MatchingEngineForCompound is
                 vars.inUnderlying = supplyBalanceInOf[_poolTokenAddress][user].inP2P.mul(
                     vars.p2pRate
                 );
-
                 unchecked {
                     vars.toUnmatch = vars.inUnderlying < remainingToUnmatch
                         ? vars.inUnderlying
@@ -153,14 +151,10 @@ contract MatchingEngineForCompound is
                 supplyBalanceInOf[_poolTokenAddress][user].onPool += vars.toUnmatch.div(
                     vars.poolIndex
                 );
-                supplyBalanceInOf[_poolTokenAddress][user].inP2P = (supplyBalanceInOf[
-                    _poolTokenAddress
-                ][user]
-                .inP2P - vars.toUnmatch.div(vars.p2pRate)) == 1
-                    ? 0
-                    : supplyBalanceInOf[_poolTokenAddress][user].inP2P -
-                        vars.toUnmatch.div(vars.p2pRate); // In p2pUnit
-
+                // Handle rounding error of 1 wei.
+                uint256 diff = supplyBalanceInOf[_poolTokenAddress][user].inP2P -
+                    vars.toUnmatch.div(vars.p2pRate);
+                supplyBalanceInOf[_poolTokenAddress][user].inP2P = diff == 1 ? 0 : diff; // In p2pUnit
                 updateSuppliers(_poolTokenAddress, user);
                 emit SupplierPositionUpdated(
                     user,
@@ -200,7 +194,7 @@ contract MatchingEngineForCompound is
                 user != address(0) &&
                 vars.gasLeftAtTheBeginning - gasleft() < _maxGasToConsume
             ) {
-                vars.inUnderlying = borrowBalanceInOf[poolTokenAddress][user].onPool.mul( // Putting mulWadUp here to avoid rounding errors.
+                vars.inUnderlying = borrowBalanceInOf[poolTokenAddress][user].onPool.mul(
                     vars.poolIndex
                 );
                 unchecked {
@@ -210,11 +204,10 @@ contract MatchingEngineForCompound is
                     matched += vars.toMatch;
                 }
 
-                borrowBalanceInOf[poolTokenAddress][user].onPool -= vars.toMatch.div(
-                    vars.poolIndex
-                );
-                if (borrowBalanceInOf[poolTokenAddress][user].onPool == 1)
-                    borrowBalanceInOf[poolTokenAddress][user].onPool = 0;
+                // Handle rounding error of 1 wei.
+                uint256 diff = borrowBalanceInOf[poolTokenAddress][user].onPool -
+                    vars.toMatch.div(vars.poolIndex);
+                borrowBalanceInOf[poolTokenAddress][user].onPool = diff == 1 ? 0 : diff;
                 borrowBalanceInOf[poolTokenAddress][user].inP2P += vars.toMatch.div(vars.p2pRate);
                 updateBorrowers(poolTokenAddress, user);
                 emit BorrowerPositionUpdated(
