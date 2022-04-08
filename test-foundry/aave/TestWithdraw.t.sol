@@ -3,8 +3,8 @@ pragma solidity 0.8.13;
 
 import "@contracts/aave/interfaces/IPositionsManagerForAave.sol";
 
+import {Attacker} from "./helpers/Attacker.sol";
 import "./setup/TestSetup.sol";
-import {Attacker} from "../common/helpers/Attacker.sol";
 
 contract TestWithdraw is TestSetup {
     using Math for uint256;
