@@ -3,8 +3,8 @@ pragma solidity 0.8.7;
 
 import "@contracts/compound/interfaces/IPositionsManagerForCompound.sol";
 
+import {Attacker} from "./helpers/Attacker.sol";
 import "./setup/TestSetup.sol";
-import {Attacker} from "../common/helpers/Attacker.sol";
 
 contract TestWithdraw is TestSetup {
     using CompoundMath for uint256;
@@ -598,16 +598,50 @@ contract TestWithdraw is TestSetup {
         }
     }
 
-    // TODO
     function testShouldNotWithdrawWhenUnderCollaterized() public {
-        revert();
+        uint256 toSupply = 100 ether;
+        uint256 toBorrow = toSupply / 2;
+
+        // supplier1 deposits collateral.
+        supplier1.approve(dai, toSupply);
+        supplier1.supply(cDai, toSupply);
+
+        // supplier2 deposits collateral.
+        supplier2.approve(dai, toSupply);
+        supplier2.supply(cDai, toSupply);
+
+        // supplier1 tries to withdraw more than allowed.
+        supplier1.borrow(cUsdc, to6Decimals(toBorrow));
+        hevm.expectRevert(abi.encodeWithSignature("DebtValueAboveMax()"));
+        supplier1.withdraw(cDai, toSupply);
     }
 
-    // TODO
-    // Test attack
-    // Should be possible to withdraw amount while an attacker sends aToken to trick Morpho contract
-    function testWithdrawWhileAttackerSendsAToken() public {
-        revert();
+    // Test attack.
+    // Should be possible to withdraw amount while an attacker sends cToken to trick Morpho contract.
+    function testWithdrawWhileAttackerSendsCToken() public {
+        Attacker attacker = new Attacker();
+        tip(dai, address(attacker), type(uint256).max / 2);
+
+        uint256 toSupply = 100 ether;
+        uint256 collateral = 2 * toSupply;
+        uint256 toBorrow = toSupply;
+
+        // Attacker sends cToken to positionsManager contract.
+        attacker.approve(dai, cDai, toSupply);
+        attacker.deposit(cDai, toSupply);
+        attacker.transfer(dai, address(positionsManager), toSupply);
+
+        // supplier1 deposits collateral.
+        supplier1.approve(dai, toSupply);
+        supplier1.supply(cDai, toSupply);
+
+        // borrower1 deposits collateral.
+        borrower1.approve(usdc, to6Decimals(collateral));
+        borrower1.supply(cUsdc, to6Decimals(collateral));
+
+        // supplier1 tries to withdraw.
+        borrower1.borrow(cDai, toBorrow);
+        supplier1.withdraw(cDai, toSupply);
     }
 
     function testFailWithdrawZero() public {
