@@ -362,43 +362,47 @@ contract MarketsManagerForCompound is IMarketsManagerForCompound, OwnableUpgrade
     /// @param _poolTokenAddress The address of the market to update.
     function _updateP2PExchangeRates(address _poolTokenAddress) internal {
         ICToken poolToken = ICToken(_poolTokenAddress);
-
         uint256 blockDifference = block.number - lastUpdateBlockNumber[_poolTokenAddress];
-        lastUpdateBlockNumber[_poolTokenAddress] = block.number;
-        LastPoolIndexes storage poolIndexes = lastPoolIndexes[_poolTokenAddress];
-        IPositionsManagerForCompound.Delta memory delta = positionsManager.deltas(
-            _poolTokenAddress
-        );
 
-        uint256 supplyPoolIndex = poolToken.exchangeRateCurrent();
-        supplyP2PExchangeRate[_poolTokenAddress] = _computeNewP2PExchangeRate(
-            delta.supplyP2PDelta,
-            delta.supplyP2PAmount,
-            supplyP2PExchangeRate[_poolTokenAddress],
-            supplyP2PBPY[_poolTokenAddress],
-            supplyPoolIndex,
-            poolIndexes.lastSupplyPoolIndex,
-            blockDifference
-        );
-        poolIndexes.lastSupplyPoolIndex = supplyPoolIndex;
+        if (blockDifference > 0) {
+            lastUpdateBlockNumber[_poolTokenAddress] = block.number;
+            LastPoolIndexes storage poolIndexes = lastPoolIndexes[_poolTokenAddress];
+            IPositionsManagerForCompound.Delta memory delta = positionsManager.deltas(
+                _poolTokenAddress
+            );
 
-        uint256 borrowPoolIndex = poolToken.borrowIndex();
-        borrowP2PExchangeRate[_poolTokenAddress] = _computeNewP2PExchangeRate(
-            delta.borrowP2PDelta,
-            delta.borrowP2PAmount,
-            borrowP2PExchangeRate[_poolTokenAddress],
-            borrowP2PBPY[_poolTokenAddress],
-            borrowPoolIndex,
-            poolIndexes.lastBorrowPoolIndex,
-            blockDifference
-        );
-        poolIndexes.lastBorrowPoolIndex = borrowPoolIndex;
+            uint256 supplyPoolIndex = poolToken.exchangeRateCurrent();
+            uint256 newSupplyP2PExchangeRate = _computeNewP2PExchangeRate(
+                delta.supplyP2PDelta,
+                delta.supplyP2PAmount,
+                supplyP2PExchangeRate[_poolTokenAddress],
+                supplyP2PBPY[_poolTokenAddress],
+                supplyPoolIndex,
+                poolIndexes.lastSupplyPoolIndex,
+                blockDifference
+            );
+            supplyP2PExchangeRate[_poolTokenAddress] = newSupplyP2PExchangeRate;
+            poolIndexes.lastSupplyPoolIndex = supplyPoolIndex;
 
-        emit P2PExchangeRatesUpdated(
-            _poolTokenAddress,
-            supplyP2PExchangeRate[_poolTokenAddress],
-            borrowP2PExchangeRate[_poolTokenAddress]
-        );
+            uint256 borrowPoolIndex = poolToken.borrowIndex();
+            uint256 newBorrowP2PExchangeRate = _computeNewP2PExchangeRate(
+                delta.borrowP2PDelta,
+                delta.borrowP2PAmount,
+                borrowP2PExchangeRate[_poolTokenAddress],
+                borrowP2PBPY[_poolTokenAddress],
+                borrowPoolIndex,
+                poolIndexes.lastBorrowPoolIndex,
+                blockDifference
+            );
+            borrowP2PExchangeRate[_poolTokenAddress] = newBorrowP2PExchangeRate;
+            poolIndexes.lastBorrowPoolIndex = borrowPoolIndex;
+
+            emit P2PExchangeRatesUpdated(
+                _poolTokenAddress,
+                newSupplyP2PExchangeRate,
+                newBorrowP2PExchangeRate
+            );
+        }
     }
 
     /// @notice Updates the P2P Block Percentage Yield of supply and borrow.
@@ -437,12 +441,12 @@ contract MarketsManagerForCompound is IMarketsManagerForCompound, OwnableUpgrade
         uint256 _poolIndex,
         uint256 _lastPoolIndex,
         uint256 _blockDifference
-    ) internal pure returns (uint256) {
+    ) internal view returns (uint256) {
         if (_p2pAmount == 0 || _p2pDelta == 0)
             return _p2pRate.mul(_computeCompoundedInterest(_p2pBPY, _blockDifference));
         else {
             uint256 shareOfTheDelta = _p2pDelta.mul(_poolIndex).div(_p2pRate).div(_p2pAmount);
-
+            if (shareOfTheDelta > WAD) shareOfTheDelta = WAD;
             return
                 _p2pRate.mul(
                     _computeCompoundedInterest(_p2pBPY, _blockDifference).mul(
