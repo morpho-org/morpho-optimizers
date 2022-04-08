@@ -16,6 +16,8 @@ interface IRewardsManagerForAave {
 
     function accrueUserUnclaimedRewards(address[] calldata, address) external returns (uint256);
 
+    function getUserUnclaimedRewards(address[] calldata, address) external view returns (uint256);
+
     function claimRewards(
         address[] calldata,
         uint256,
