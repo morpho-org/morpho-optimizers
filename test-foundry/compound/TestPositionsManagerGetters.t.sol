@@ -500,7 +500,6 @@ contract TestPositionsManagerGetters is TestSetup {
         testEquality(states.maxDebtValue, expectedStates.maxDebtValue, "Max Debt Value");
     }
 
-    // TODO: check this test
     /// This test is to check that a call to getUserLiquidityDataForAsset with USDT doesn't end
     ///   with error "Division or modulo by zero", as Compound returns 0 for USDT collateralFactor.
     function testLiquidityDataForUSDT() public {
