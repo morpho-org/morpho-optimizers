@@ -422,7 +422,6 @@ contract TestWithdraw is TestSetup {
         supplier1.supply(cDai, suppliedAmount);
 
         createSigners(30);
-
         uint256 matched;
 
         // 2 * NMAX borrowers borrow borrowedAmount.
@@ -468,8 +467,10 @@ contract TestWithdraw is TestSetup {
             testEquality(inP2PSupplier, 0);
 
             // There should be a delta.
+            // The amount unmatched during the withdraw.
             uint256 unmatched = 10 *
                 expectedBorrowBalanceInP2P.mul(marketsManager.borrowP2PExchangeRate(cDai));
+            // The difference between the previous matched amount and the amout unmatched creates a delta.
             uint256 expectedBorrowP2PDeltaInUnderlying = (matched.mul(
                 marketsManager.borrowP2PExchangeRate(cDai)
             ) - unmatched);
