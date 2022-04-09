@@ -8,7 +8,7 @@ contract TestLiquidate is TestSetup {
 
     // 5.1 - A user liquidates a borrower that has enough collateral to cover for his debt, the transaction reverts.
     function testShouldNotBePossibleToLiquidateUserAboveWater() public {
-        uint256 amount = 10000 ether;
+        uint256 amount = 10_000 ether;
         uint256 collateral = 2 * amount;
 
         borrower1.approve(usdc, address(positionsManager), to6Decimals(collateral));
@@ -42,29 +42,26 @@ contract TestLiquidate is TestSetup {
             address(borrower1)
         );
 
-        // Change Oracle
+        // Change Oracle.
         SimplePriceOracle customOracle = createAndSetCustomPriceOracle();
-        customOracle.setDirectPrice(usdc, (oracle.getUnderlyingPrice(cUsdc) * 93) / 100);
+        customOracle.setDirectPrice(usdc, (oracle.getUnderlyingPrice(cUsdc) * 94) / 100);
 
-        // Liquidate
+        // Liquidate.
         uint256 toRepay = amount / 2;
         User liquidator = borrower3;
         liquidator.approve(dai, address(positionsManager), toRepay);
         liquidator.liquidate(cDai, cUsdc, address(borrower1), toRepay);
 
-        // Check borrower1 borrow balance
+        // Check borrower1 borrow balance.
         (uint256 inP2PBorrower, uint256 onPoolBorrower) = positionsManager.borrowBalanceInOf(
             cDai,
             address(borrower1)
         );
-        uint256 expectedBorrowBalanceOnPool = debtUnitToUnderlying(
-            onPoolBorrower,
-            ICToken(cDai).exchangeRateCurrent()
-        );
-        testEquality(expectedBorrowBalanceOnPool, amount / 2);
-        assertEq(inP2PBorrower, 0);
+        uint256 expectedBorrowBalanceOnPool = toRepay.div(ICToken(cDai).borrowIndex());
+        testEquality(onPoolBorrower, expectedBorrowBalanceOnPool, "borrower borrow on pool");
+        assertEq(inP2PBorrower, 0, "borrower borrow in P2P");
 
-        // Check borrower1 supply balance
+        // Check borrower1 supply balance.
         (inP2PBorrower, onPoolBorrower) = positionsManager.supplyBalanceInOf(
             cUsdc,
             address(borrower1)
@@ -81,8 +78,8 @@ contract TestLiquidate is TestSetup {
         uint256 expectedOnPool = collateralOnPool -
             underlyingToPoolSupplyBalance(amountToSeize, ICToken(cUsdc).exchangeRateCurrent());
 
-        testEquality(onPoolBorrower, expectedOnPool);
-        assertEq(inP2PBorrower, 0);
+        testEquality(onPoolBorrower, expectedOnPool, "borrower supply on pool");
+        assertEq(inP2PBorrower, 0, "borrower supply in P2P");
     }
 
     function testFailLiquidateZero() public {
