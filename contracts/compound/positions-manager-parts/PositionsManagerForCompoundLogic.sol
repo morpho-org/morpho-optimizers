@@ -267,10 +267,10 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
             );
             vars.remainingToWithdraw -= vars.toWithdraw;
 
-            supplyBalanceInOf[_poolTokenAddress][_supplier].onPool -= CompoundMath.min(
-                onPoolSupply,
-                vars.toWithdraw.div(vars.supplyPoolIndex)
-            ); // In poolToken.
+            // Handle case where only 1 wei stays on the position.
+            uint256 diff = supplyBalanceInOf[_poolTokenAddress][_supplier].onPool -
+                CompoundMath.min(onPoolSupply, vars.toWithdraw.div(vars.supplyPoolIndex));
+            supplyBalanceInOf[_poolTokenAddress][_supplier].onPool = diff == 1 ? 0 : diff;
             matchingEngine.updateSuppliersDC(_poolTokenAddress, _supplier);
         }
 
