@@ -21,7 +21,7 @@ contract TestPositionsManagerGetters is TestSetup {
     }
 
     function testGetHead() public {
-        uint256 amount = 10000 ether;
+        uint256 amount = 10_000 ether;
         uint256 toBorrow = amount / 10;
 
         borrower1.approve(dai, amount);
@@ -99,7 +99,7 @@ contract TestPositionsManagerGetters is TestSetup {
     }
 
     function testGetNext() public {
-        uint256 amount = 10000 ether;
+        uint256 amount = 10_000 ether;
         uint256 toBorrow = amount / 10;
 
         uint8 NDS = 10;
@@ -174,7 +174,7 @@ contract TestPositionsManagerGetters is TestSetup {
     }
 
     function testUserLiquidityDataForAssetWithSupply() public {
-        uint256 amount = 10000 ether;
+        uint256 amount = 10_000 ether;
 
         borrower1.approve(dai, amount);
         borrower1.supply(cDai, amount);
@@ -196,13 +196,23 @@ contract TestPositionsManagerGetters is TestSetup {
         assertEq(assetData.debtValue, 0, "debtValue");
     }
 
+    struct Indexes {
+        uint256 exchangeRate1;
+        uint256 exchangeRate2;
+    }
+
     function testUserLiquidityDataForAssetWithSupplyAndBorrow() public {
-        uint256 amount = 10000 ether;
+        Indexes memory indexes;
+        uint256 amount = 10_000 ether;
         uint256 toBorrow = amount / 2;
 
         borrower1.approve(dai, amount);
+        indexes.exchangeRate1 = ICToken(cDai).exchangeRateCurrent();
         borrower1.supply(cDai, amount);
+        uint256 borrowP2PExchangeRate = marketsManager.borrowP2PExchangeRate(cDai);
         borrower1.borrow(cDai, toBorrow);
+
+        indexes.exchangeRate2 = ICToken(cDai).exchangeRateCurrent();
 
         PositionsManagerForCompound.AssetLiquidityData memory assetData = positionsManager
         .getUserLiquidityDataForAsset(address(borrower1), cDai, oracle);
@@ -210,10 +220,21 @@ contract TestPositionsManagerGetters is TestSetup {
         (, uint256 collateralFactor, ) = comptroller.markets(cDai);
         uint256 underlyingPrice = oracle.getUnderlyingPrice(cDai);
 
-        uint256 collateralValue = getBalanceOnCompound(amount, ICToken(cDai).exchangeRateStored())
-        .mul(underlyingPrice);
+        uint256 total;
+
+        {
+            uint256 onPool = amount.div(indexes.exchangeRate1);
+            uint256 matchedInP2P = toBorrow.div(marketsManager.supplyP2PExchangeRate(cDai));
+            uint256 onPoolAfter = onPool - toBorrow.div(indexes.exchangeRate2);
+            total =
+                onPoolAfter.mul(indexes.exchangeRate2) +
+                matchedInP2P.mul(marketsManager.supplyP2PExchangeRate(cDai));
+        }
+
+        uint256 collateralValue = total.mul(underlyingPrice);
         uint256 maxDebtValue = collateralValue.mul(collateralFactor);
-        uint256 debtValue = getBalanceOnCompound(toBorrow, ICToken(cDai).borrowIndex()).mul(
+        // Divide and multiply to take into account rouding errors.
+        uint256 debtValue = toBorrow.div(borrowP2PExchangeRate).mul(borrowP2PExchangeRate).mul(
             underlyingPrice
         );
 
@@ -224,7 +245,7 @@ contract TestPositionsManagerGetters is TestSetup {
     }
 
     function testUserLiquidityDataForAssetWithSupplyAndBorrowWithMultipleAssets() public {
-        uint256 amount = 10000 ether;
+        uint256 amount = 10_000 ether;
         uint256 toBorrow = to6Decimals(amount / 2);
 
         borrower1.approve(dai, amount);
@@ -237,7 +258,7 @@ contract TestPositionsManagerGetters is TestSetup {
         PositionsManagerForCompound.AssetLiquidityData memory assetDatacUsdc = positionsManager
         .getUserLiquidityDataForAsset(address(borrower1), cUsdc, oracle);
 
-        // Avoid stack too deep error
+        // Avoid stack too deep error.
         PositionsManagerForCompound.AssetLiquidityData memory expectedDatcUsdc;
         (, uint256 collateralFactor, ) = comptroller.markets(cUsdc);
         expectedDatcUsdc.underlyingPrice = oracle.getUnderlyingPrice(cUsdc);
@@ -254,10 +275,10 @@ contract TestPositionsManagerGetters is TestSetup {
         testEquality(assetDatacUsdc.maxDebtValue, 0, "maxDebtValue");
         testEquality(assetDatacUsdc.debtValue, expectedDatcUsdc.debtValue, "debtValueUsdc");
 
-        // Avoid stack too deep error
+        // Avoid stack too deep error.
         PositionsManagerForCompound.AssetLiquidityData memory expectedDatacDai;
 
-        (, collateralFactor, ) = comptroller.markets(cDai);
+        (, expectedDatacDai.collateralFactor, ) = comptroller.markets(cDai);
 
         expectedDatacDai.underlyingPrice = oracle.getUnderlyingPrice(cDai);
         expectedDatacDai.collateralValue = getBalanceOnCompound(
@@ -284,7 +305,7 @@ contract TestPositionsManagerGetters is TestSetup {
         assertEq(assetDatacDai.debtValue, 0, "debtValueDai");
     }
 
-    function test_getter_user_with_nothing() public {
+    function testGetterUserWithNothing() public {
         (uint256 withdrawable, uint256 borrowable) = positionsManager.getUserMaxCapacitiesForAsset(
             address(borrower1),
             cDai
@@ -335,7 +356,7 @@ contract TestPositionsManagerGetters is TestSetup {
     }
 
     function testMaxCapicitiesWithNothingWithSupplyWithMultipleAssetsAndBorrow() public {
-        uint256 amount = 10000 ether;
+        uint256 amount = 10_000 ether;
 
         borrower1.approve(usdc, to6Decimals(amount));
         borrower1.supply(cUsdc, to6Decimals(amount));
@@ -366,12 +387,20 @@ contract TestPositionsManagerGetters is TestSetup {
             cUsdt
         );
 
-        uint256 expectedBorrowableUsdt = (assetDatacDai.maxDebtValue * assetDatacUsdc.maxDebtValue)
+        uint256 expectedBorrowableUsdt = (assetDatacDai.maxDebtValue + assetDatacUsdc.maxDebtValue)
         .div(assetDatacUsdt.underlyingPrice);
 
-        assertEq(withdrawableUsdc, to6Decimals(amount));
-        assertEq(withdrawableDai, amount);
-        assertEq(borrowableUsdt, expectedBorrowableUsdt);
+        assertEq(
+            withdrawableUsdc,
+            getBalanceOnCompound(to6Decimals(amount), ICToken(cUsdc).exchangeRateCurrent()),
+            "withdrawable USDC"
+        );
+        testEquality(
+            withdrawableDai,
+            getBalanceOnCompound(amount, ICToken(cDai).exchangeRateCurrent()),
+            "withdrawable DAI"
+        );
+        assertEq(borrowableUsdt, expectedBorrowableUsdt, "borrowable USDT before");
 
         uint256 toBorrow = to6Decimals(100 ether);
         borrower1.borrow(cUsdt, toBorrow);
@@ -383,11 +412,11 @@ contract TestPositionsManagerGetters is TestSetup {
 
         expectedBorrowableUsdt -= toBorrow;
 
-        assertEq(newBorrowableUsdt, expectedBorrowableUsdt);
+        testEquality(newBorrowableUsdt, expectedBorrowableUsdt, "borrowable USDT after");
     }
 
     function testUserBalanceStatesWithSupplyAndBorrow() public {
-        uint256 amount = 10000 ether;
+        uint256 amount = 10_000 ether;
         uint256 toBorrow = to6Decimals(amount / 2);
 
         borrower1.approve(dai, amount);
@@ -421,7 +450,7 @@ contract TestPositionsManagerGetters is TestSetup {
     }
 
     function testUserBalanceStatesWithSupplyAndBorrowWithMultipleAssets() public {
-        uint256 amount = 10000 ether;
+        uint256 amount = 10_000 ether;
         uint256 toBorrow = 100 ether;
 
         // Avoid stack too deep error
@@ -500,41 +529,52 @@ contract TestPositionsManagerGetters is TestSetup {
     }
 
     function testLiquidityDataWithMultipleAssetsAndUSDT() public {
-        uint256 amount = 10000 ether;
+        Indexes memory indexes;
+        uint256 amount = 10_000 ether;
         uint256 toBorrow = to6Decimals(100 ether);
 
         tip(usdt, address(borrower1), to6Decimals(amount));
         borrower1.approve(usdt, to6Decimals(amount));
+        indexes.exchangeRate1 = ICToken(cUsdt).exchangeRateCurrent();
         borrower1.supply(cUsdt, to6Decimals(amount));
         borrower1.approve(dai, amount);
         borrower1.supply(cDai, amount);
 
         borrower1.borrow(cUsdc, toBorrow);
+        indexes.exchangeRate2 = ICToken(cUsdt).exchangeRateCurrent();
         borrower1.borrow(cUsdt, toBorrow);
 
-        // Avoid stack too deep error
+        // Avoid stack too deep error.
         UserBalanceStates memory states;
         UserBalanceStates memory expectedStates;
 
         (states.collateralValue, states.debtValue, states.maxDebtValue) = positionsManager
         .getUserBalanceStates(address(borrower1));
 
+        // We must take into account that not everything is on pool as borrower1 is matched to itself.
+        uint256 total;
+
+        {
+            uint256 onPool = to6Decimals(amount).div(indexes.exchangeRate1);
+            uint256 matchedInP2P = toBorrow.div(marketsManager.supplyP2PExchangeRate(cUsdt));
+            uint256 onPoolAfter = onPool - toBorrow.div(indexes.exchangeRate2);
+            total =
+                onPoolAfter.mul(indexes.exchangeRate2) +
+                matchedInP2P.mul(marketsManager.supplyP2PExchangeRate(cUsdt));
+        }
+
         // USDT data
         (, uint256 collateralFactor, ) = comptroller.markets(cUsdt);
         uint256 underlyingPrice = oracle.getUnderlyingPrice(cUsdt);
 
-        uint256 collateralValueToAdd = getBalanceOnCompound(
-            to6Decimals(amount),
-            ICToken(cUsdt).exchangeRateStored()
-        ).mul(underlyingPrice);
+        uint256 collateralValueToAdd = total.mul(underlyingPrice);
         expectedStates.collateralValue += collateralValueToAdd;
         expectedStates.maxDebtValue += collateralValueToAdd.mul(collateralFactor);
 
         // DAI data
         (, collateralFactor, ) = comptroller.markets(cDai);
-        collateralValueToAdd = getBalanceOnCompound(amount, ICToken(cDai).exchangeRateStored()).mul(
-            oracle.getUnderlyingPrice(cDai)
-        );
+        collateralValueToAdd = getBalanceOnCompound(amount, ICToken(cDai).exchangeRateCurrent())
+        .mul(oracle.getUnderlyingPrice(cDai));
         expectedStates.collateralValue += collateralValueToAdd;
         expectedStates.maxDebtValue += collateralValueToAdd.mul(collateralFactor);
 
@@ -551,9 +591,33 @@ contract TestPositionsManagerGetters is TestSetup {
         testEquality(states.maxDebtValue, expectedStates.maxDebtValue, "Max Debt Value");
     }
 
-    // TODO
-    function testEnteredMarkets() public {}
+    function testEnteredMarkets() public {
+        borrower1.approve(dai, 10 ether);
+        borrower1.supply(cDai, 10 ether);
 
-    // TODO
-    function testFailUserLeftMarkets() public {}
+        borrower1.approve(usdc, to6Decimals(10 ether));
+        borrower1.supply(cUsdc, to6Decimals(10 ether));
+
+        assertEq(positionsManager.enteredMarkets(address(borrower1), 0), cDai);
+        assertEq(positionsManager.enteredMarkets(address(borrower1), 1), cUsdc);
+
+        // Borrower1 withdraw, USDC should be the first in enteredMarkets.
+        borrower1.withdraw(cDai, type(uint256).max);
+
+        assertEq(positionsManager.enteredMarkets(address(borrower1), 0), cUsdc);
+    }
+
+    function testFailUserLeftMarkets() public {
+        borrower1.approve(dai, 10 ether);
+        borrower1.supply(cDai, 10 ether);
+
+        // Check that borrower1 entered Dai market.
+        assertEq(positionsManager.enteredMarkets(address(borrower1), 0), cDai);
+
+        // Borrower1 withdraw everything from the Dai market.
+        borrower1.withdraw(cDai, 10 ether);
+
+        // Test should fail because there is no element in the array.
+        positionsManager.enteredMarkets(address(borrower1), 0);
+    }
 }
