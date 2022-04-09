@@ -41,8 +41,23 @@ contract TestFees is TestSetup {
         assertLt(balanceBefore, balanceAfter);
     }
 
-    // TODO
-    function testShouldRevertWhenClaimingToZeroAddress() public {}
+    function testShouldRevertWhenClaimingToZeroAddress() public {
+        // Set treasury vault to 0x.
+        positionsManager.setTreasuryVault(address(0));
+
+        marketsManager.setReserveFactor(cDai, 1_000); // 10%
+
+        supplier1.approve(dai, type(uint256).max);
+        supplier1.supply(cDai, 100 * WAD);
+        supplier1.borrow(cDai, 50 * WAD);
+
+        hevm.warp(block.timestamp + (365 days));
+
+        supplier1.repay(cDai, type(uint256).max);
+
+        hevm.expectRevert(abi.encodeWithSignature("ZeroAddress()"));
+        positionsManager.claimToTreasury(cDai);
+    }
 
     function testShouldCollectTheRightAmountOfFees() public {
         uint256 reserveFactor = 1_000;
