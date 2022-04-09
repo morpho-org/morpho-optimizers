@@ -45,18 +45,21 @@ contract TestFees is TestSetup {
     function testShouldRevertWhenClaimingToZeroAddress() public {}
 
     function testShouldCollectTheRightAmountOfFees() public {
-        marketsManager.setReserveFactor(cDai, 1000); // 10%
+        uint256 reserveFactor = 1_000;
+        marketsManager.setReserveFactor(cDai, reserveFactor); // 10%
 
         uint256 balanceBefore = IERC20(dai).balanceOf(positionsManager.treasuryVault());
         supplier1.approve(dai, type(uint256).max);
-        supplier1.supply(cDai, 100 * WAD);
-        supplier1.borrow(cDai, 50 * WAD);
+        supplier1.supply(cDai, 100 ether);
+        supplier1.borrow(cDai, 50 ether);
 
         ICToken cToken = ICToken(cDai);
-        uint256 expectedBPY = (2 * cToken.supplyRatePerBlock() + cToken.borrowRatePerBlock()) / 3;
 
-        uint256 supplyP2PBPY = (expectedBPY * 9000) / MAX_BASIS_POINTS;
-        uint256 borrowP2PBPY = (expectedBPY * 11000) / MAX_BASIS_POINTS;
+        (uint256 supplyP2PBPY, uint256 borrowP2PBPY) = interestRates.computeRates(
+            cToken.supplyRatePerBlock(),
+            cToken.borrowRatePerBlock(),
+            reserveFactor
+        );
 
         uint256 newSupplyExRate = WAD.mul(_computeCompoundedInterest(supplyP2PBPY, 100));
         uint256 newBorrowExRate = WAD.mul(_computeCompoundedInterest(borrowP2PBPY, 100));
@@ -70,7 +73,7 @@ contract TestFees is TestSetup {
         uint256 balanceAfter = IERC20(dai).balanceOf(positionsManager.treasuryVault());
         uint256 gainedByDAO = balanceAfter - balanceBefore;
 
-        assertEq(gainedByDAO, expectedFees, "Fees collected");
+        testEquality(gainedByDAO, expectedFees, "Fees collected");
     }
 
     function testShouldNotClaimFeesIfFactorIsZero() public {
