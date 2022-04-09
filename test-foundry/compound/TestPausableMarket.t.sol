@@ -23,7 +23,7 @@ contract TestPausableMarket is TestSetup {
     }
 
     function testShouldTriggerFunctionsWhenNotPaused() public {
-        uint256 amount = 10000 ether;
+        uint256 amount = 10_000 ether;
         uint256 toBorrow = to6Decimals(amount / 2);
 
         supplier1.approve(dai, amount);
@@ -35,6 +35,7 @@ contract TestPausableMarket is TestSetup {
         supplier1.repay(cUsdc, toBorrow);
 
         (, toBorrow) = positionsManager.getUserMaxCapacitiesForAsset(address(supplier1), cUsdc);
+        hevm.expectRevert(PositionsManagerForCompoundEventsErrors.BorrowOnCompoundFailed.selector);
         supplier1.borrow(cUsdc, toBorrow);
 
         // Change Oracle.
@@ -44,6 +45,7 @@ contract TestPausableMarket is TestSetup {
         uint256 toLiquidate = toBorrow / 2;
         User liquidator = borrower3;
         liquidator.approve(usdc, toLiquidate);
+        hevm.expectRevert(PositionsManagerForCompoundEventsErrors.DebtValueNotAboveMax.selector);
         liquidator.liquidate(cUsdc, cDai, address(supplier1), toLiquidate);
 
         supplier1.withdraw(cDai, 1 ether);
