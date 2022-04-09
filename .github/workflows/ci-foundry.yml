@@ -36,5 +36,5 @@ jobs:
       - name: Run tests
         run: make test
         env:
-          NETWORK: polygon-mainnet
+          NETWORK: eth-mainnet
           ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
