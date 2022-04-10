@@ -555,6 +555,17 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
         if (debtValue > maxDebtValue) revert DebtValueAboveMax();
     }
 
+    /// @dev Checks whether ETH have been sent to the contract or normal ERC 20 tokens.
+    /// @return Whether ETH have been sent or not.
+    /// @return The amount of ETH or tokens sent.
+    function _checkIfETHSent(uint256 _amount) internal view returns (bool, uint256) {
+        if (msg.value > 0) {
+            if (_amount > 0) revert CannotSendEthAndTokensAtTheSameTime();
+            return (true, msg.value);
+        } else if (_amount > 0) return (false, _amount);
+        else revert AmountIsZero();
+    }
+
     /// @dev Supplies underlying tokens to Compound.
     /// @param _poolTokenAddress The address of the pool token.
     /// @param _underlyingToken The underlying token of the market to supply to.
