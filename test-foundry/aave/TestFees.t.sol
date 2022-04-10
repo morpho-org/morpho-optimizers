@@ -78,7 +78,7 @@ contract TestFees is TestSetup {
             IAToken(aDai).UNDERLYING_ASSET_ADDRESS()
         );
 
-        (uint256 supplyP2PSPY, uint256 borrowP2PSPY) = interestRates.computeRates(
+        (uint256 supplyP2PSPY, uint256 borrowP2PSPY) = computeTheoreticalRates(
             reserveData.currentLiquidityRate,
             reserveData.currentVariableBorrowRate,
             reserveFactor
