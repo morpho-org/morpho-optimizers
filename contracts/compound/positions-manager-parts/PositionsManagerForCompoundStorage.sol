@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import {ICToken, IComptroller, ICompoundOracle} from "../interfaces/compound/ICompound.sol";
+import {ICToken, ICEther, IComptroller, ICompoundOracle} from "../interfaces/compound/ICompound.sol";
 import "../interfaces/IMarketsManagerForCompound.sol";
 import "../interfaces/IMatchingEngineForCompound.sol";
 import "../interfaces/IRewardsManagerForCompound.sol";

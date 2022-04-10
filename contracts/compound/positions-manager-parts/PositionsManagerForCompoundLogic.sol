@@ -65,12 +65,16 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
     function _supply(
         address _poolTokenAddress,
         uint256 _amount,
-        uint256 _maxGasToConsume
+        uint256 _maxGasToConsume,
+        bool _isETH
     ) internal isMarketCreatedAndNotPaused(_poolTokenAddress) {
         _enterMarketIfNeeded(_poolTokenAddress, msg.sender);
+        ERC20 underlyingToken;
 
-        ERC20 underlyingToken = ERC20(ICToken(_poolTokenAddress).underlying());
-        underlyingToken.safeTransferFrom(msg.sender, address(this), _amount);
+        if (!_isETH) {
+            underlyingToken = ERC20(ICToken(_poolTokenAddress).underlying());
+            underlyingToken.safeTransferFrom(msg.sender, address(this), _amount);
+        }
 
         Delta storage delta = deltas[_poolTokenAddress];
         uint256 borrowPoolIndex = ICToken(_poolTokenAddress).borrowIndex();
@@ -232,8 +236,10 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
 
         // Due to rounding errors the balance may be lower than expected.
         uint256 balanceAfter = underlyingToken.balanceOf(address(this));
+        uint256 toTransfer = balanceAfter - balanceBefore;
 
-        underlyingToken.safeTransfer(msg.sender, balanceAfter - balanceBefore);
+        if (address(underlyingToken) == address(0)) payable(msg.sender).transfer(toTransfer);
+        else underlyingToken.safeTransfer(msg.sender, toTransfer);
     }
 
     /// @dev Implements withdraw logic.
@@ -354,7 +360,9 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
             _borrowFromPool(_poolTokenAddress, vars.remainingToWithdraw); // Reverts on error.
         }
 
-        underlyingToken.safeTransfer(_receiver, _amount);
+        if (address(underlyingToken) == address(0)) payable(_receiver).transfer(_amount);
+        else underlyingToken.safeTransfer(_receiver, _amount);
+
         _leaveMarkerIfNeeded(_poolTokenAddress, _supplier);
     }
 
@@ -368,11 +376,17 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
         address _poolTokenAddress,
         address _user,
         uint256 _amount,
-        uint256 _maxGasToConsume
+        uint256 _maxGasToConsume,
+        bool _isETH
     ) internal isMarketCreatedAndNotPaused(_poolTokenAddress) {
         ICToken poolToken = ICToken(_poolTokenAddress);
-        ERC20 underlyingToken = ERC20(poolToken.underlying());
-        underlyingToken.safeTransferFrom(msg.sender, address(this), _amount);
+        ERC20 underlyingToken;
+
+        if (!_isETH) {
+            underlyingToken = ERC20(ICToken(_poolTokenAddress).underlying());
+            underlyingToken.safeTransferFrom(msg.sender, address(this), _amount);
+        }
+
         RepayVars memory vars;
         vars.remainingToRepay = _amount;
         vars.borrowPoolIndex = poolToken.borrowIndex();
@@ -550,8 +564,12 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
         ERC20 _underlyingToken,
         uint256 _amount
     ) internal {
-        _underlyingToken.safeApprove(_poolTokenAddress, _amount);
-        if (ICToken(_poolTokenAddress).mint(_amount) != 0) revert MintOnCompoundFailed();
+        if (address(_underlyingToken) == address(0))
+            ICEther(_poolTokenAddress).mint{value: _amount}();
+        else {
+            _underlyingToken.safeApprove(_poolTokenAddress, _amount);
+            if (ICToken(_poolTokenAddress).mint(_amount) != 0) revert MintOnCompoundFailed();
+        }
     }
 
     /// @dev Withdraws underlying tokens from Compound.
@@ -578,8 +596,13 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
         ERC20 _underlyingToken,
         uint256 _amount
     ) internal {
-        _underlyingToken.safeApprove(_poolTokenAddress, _amount);
-        if (ICToken(_poolTokenAddress).repayBorrow(_amount) != 0) revert RepayOnCompoundFailed();
+        if (address(_underlyingToken) == address(0))
+            ICEther(_poolTokenAddress).repayBorrow{value: _amount}();
+        else {
+            _underlyingToken.safeApprove(_poolTokenAddress, _amount);
+            if (ICToken(_poolTokenAddress).repayBorrow(_amount) != 0)
+                revert RepayOnCompoundFailed();
+        }
     }
 
     /// @dev Returns whether it is unsafe supply/witdhraw due to coumpound's revert on low levels of precision or not.

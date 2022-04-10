@@ -20,10 +20,18 @@ contract PositionsManagerForCompound is PositionsManagerForCompoundLogic {
         address _poolTokenAddress,
         uint256 _amount,
         uint16 _referralCode
-    ) external nonReentrant {
-        if (_amount == 0) revert AmountIsZero();
+    ) external payable nonReentrant {
+        if (_amount == 0 && msg.value == 0) revert AmountIsZero();
+        if (_amount > 0 && msg.value > 0) revert CannotSendEthAndTokensAtTheSameTime();
+
+        bool isETH;
+        if (msg.value > 0) {
+            _amount = msg.value;
+            isETH = true;
+        }
+
         marketsManager.updateP2PExchangeRates(_poolTokenAddress);
-        _supply(_poolTokenAddress, _amount, maxGas.supply);
+        _supply(_poolTokenAddress, _amount, maxGas.supply, isETH);
         marketsManager.updateBPYs(_poolTokenAddress);
 
         emit Supplied(
@@ -47,10 +55,18 @@ contract PositionsManagerForCompound is PositionsManagerForCompoundLogic {
         uint256 _amount,
         uint16 _referralCode,
         uint256 _maxGasToConsume
-    ) external nonReentrant {
-        if (_amount == 0) revert AmountIsZero();
+    ) external payable nonReentrant {
+        if (_amount == 0 && msg.value == 0) revert AmountIsZero();
+        if (_amount > 0 && msg.value > 0) revert CannotSendEthAndTokensAtTheSameTime();
+
+        bool isETH;
+        if (msg.value > 0) {
+            _amount = msg.value;
+            isETH = true;
+        }
+
         marketsManager.updateP2PExchangeRates(_poolTokenAddress);
-        _supply(_poolTokenAddress, _amount, _maxGasToConsume);
+        _supply(_poolTokenAddress, _amount, _maxGasToConsume, isETH);
         marketsManager.updateBPYs(_poolTokenAddress);
 
         emit Supplied(
@@ -142,8 +158,16 @@ contract PositionsManagerForCompound is PositionsManagerForCompoundLogic {
     /// @dev `msg.sender` must have approved Morpho's contract to spend the underlying `_amount`.
     /// @param _poolTokenAddress The address of the market the user wants to interact with.
     /// @param _amount The amount of token (in underlying) to repay from borrow.
-    function repay(address _poolTokenAddress, uint256 _amount) external nonReentrant {
-        if (_amount == 0) revert AmountIsZero();
+    function repay(address _poolTokenAddress, uint256 _amount) external payable nonReentrant {
+        if (_amount == 0 && msg.value == 0) revert AmountIsZero();
+        if (_amount > 0 && msg.value > 0) revert CannotSendEthAndTokensAtTheSameTime();
+
+        bool isETH;
+        if (msg.value > 0) {
+            _amount = msg.value;
+            isETH = true;
+        }
+
         marketsManager.updateP2PExchangeRates(_poolTokenAddress);
 
         uint256 toRepay = Math.min(
@@ -151,7 +175,7 @@ contract PositionsManagerForCompound is PositionsManagerForCompoundLogic {
             _amount
         );
 
-        _repay(_poolTokenAddress, msg.sender, toRepay, maxGas.repay);
+        _repay(_poolTokenAddress, msg.sender, toRepay, maxGas.repay, isETH);
         marketsManager.updateBPYs(_poolTokenAddress);
 
         emit Repaid(
@@ -173,8 +197,16 @@ contract PositionsManagerForCompound is PositionsManagerForCompoundLogic {
         address _poolTokenCollateralAddress,
         address _borrower,
         uint256 _amount
-    ) external nonReentrant {
-        if (_amount == 0) revert AmountIsZero();
+    ) external payable nonReentrant {
+        if (_amount == 0 && msg.value == 0) revert AmountIsZero();
+        if (_amount > 0 && msg.value > 0) revert CannotSendEthAndTokensAtTheSameTime();
+
+        bool isETH;
+        if (msg.value > 0) {
+            _amount = msg.value;
+            isETH = true;
+        }
+
         marketsManager.updateP2PExchangeRates(_poolTokenBorrowedAddress);
         marketsManager.updateP2PExchangeRates(_poolTokenCollateralAddress);
         LiquidateVars memory vars;
@@ -192,7 +224,7 @@ contract PositionsManagerForCompound is PositionsManagerForCompoundLogic {
         if (_amount > (vars.borrowBalance * LIQUIDATION_CLOSE_FACTOR_PERCENT) / MAX_BASIS_POINTS)
             revert AmountAboveWhatAllowedToRepay(); // Same mechanism as Compound. Liquidator cannot repay more than part of the debt (cf close factor on Compound).
 
-        _repay(_poolTokenBorrowedAddress, _borrower, _amount, 0);
+        _repay(_poolTokenBorrowedAddress, _borrower, _amount, 0, isETH);
 
         // Calculate the amount of token to seize from collateral
         ICompoundOracle compoundOracle = ICompoundOracle(comptroller.oracle());
