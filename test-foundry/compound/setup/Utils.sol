@@ -77,7 +77,7 @@ contract Utils is DSTest {
     }
 
     function testEquality(uint256 _firstValue, uint256 _secondValue) internal {
-        assertApproxEq(_firstValue, _secondValue, 20);
+        assertApproxEq(_firstValue, _secondValue, 22);
     }
 
     function testEquality(
@@ -85,7 +85,7 @@ contract Utils is DSTest {
         uint256 _secondValue,
         string memory err
     ) internal {
-        assertApproxEq(_firstValue, _secondValue, 20, err);
+        assertApproxEq(_firstValue, _secondValue, 22, err);
     }
 
     /// @dev compounds track balances deposited by divising the amount by a rate to obtain cToken Units.

@@ -4,6 +4,7 @@ pragma solidity 0.8.13;
 import "./setup/TestSetup.sol";
 
 contract TestPositionsManagerGetters is TestSetup {
+    using FixedPointMathLib for uint256;
     using CompoundMath for uint256;
 
     struct UserBalanceStates {
@@ -225,7 +226,7 @@ contract TestPositionsManagerGetters is TestSetup {
         {
             uint256 onPool = amount.div(indexes.exchangeRate1);
             uint256 matchedInP2P = toBorrow.div(marketsManager.supplyP2PExchangeRate(cDai));
-            uint256 onPoolAfter = onPool - toBorrow.div(indexes.exchangeRate2);
+            uint256 onPoolAfter = onPool - toBorrow.divWadUp(indexes.exchangeRate2);
             total =
                 onPoolAfter.mul(indexes.exchangeRate2) +
                 matchedInP2P.mul(marketsManager.supplyP2PExchangeRate(cDai));

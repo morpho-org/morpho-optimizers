@@ -3,6 +3,7 @@ pragma solidity 0.8.13;
 
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 import "../libraries/MatchingEngineFns.sol";
+import "../libraries/FixedPointMathLib.sol";
 
 import "./PositionsManagerForCompoundGettersSetters.sol";
 
@@ -11,6 +12,7 @@ import "./PositionsManagerForCompoundGettersSetters.sol";
 contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersSetters {
     using MatchingEngineFns for IMatchingEngineForCompound;
     using DoubleLinkedList for DoubleLinkedList.List;
+    using FixedPointMathLib for uint256;
     using SafeTransferLib for ERC20;
     using CompoundMath for uint256;
 
@@ -267,10 +269,10 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
             );
             vars.remainingToWithdraw -= vars.toWithdraw;
 
-            // Handle case where only 1 wei stays on the position.
-            uint256 diff = supplyBalanceInOf[_poolTokenAddress][_supplier].onPool -
-                CompoundMath.min(onPoolSupply, vars.toWithdraw.div(vars.supplyPoolIndex));
-            supplyBalanceInOf[_poolTokenAddress][_supplier].onPool = diff == 1 ? 0 : diff;
+            supplyBalanceInOf[_poolTokenAddress][_supplier].onPool -= CompoundMath.min(
+                onPoolSupply,
+                vars.toWithdraw.divWadUp(vars.supplyPoolIndex) // Handle case where only 1 wei stays on the position.
+            );
             matchingEngine.updateSuppliersDC(_poolTokenAddress, _supplier);
         }
 
@@ -282,7 +284,7 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
         if (vars.remainingToWithdraw > 0 && !marketsManager.noP2P(_poolTokenAddress)) {
             supplyBalanceInOf[_poolTokenAddress][_supplier].inP2P -= CompoundMath.min(
                 supplyBalanceInOf[_poolTokenAddress][_supplier].inP2P,
-                vars.remainingToWithdraw.div(supplyP2PExchangeRate)
+                vars.remainingToWithdraw.divWadUp(supplyP2PExchangeRate)
             ); // In p2pUnit
             matchingEngine.updateSuppliersDC(_poolTokenAddress, _supplier);
 
@@ -389,10 +391,10 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
             );
             vars.remainingToRepay -= vars.toRepay;
 
-            // Handle case where only 1 wei stays on the position.
-            uint256 diff = borrowBalanceInOf[_poolTokenAddress][_user].onPool -
-                CompoundMath.min(borrowedOnPool, vars.toRepay.div(vars.borrowPoolIndex));
-            borrowBalanceInOf[_poolTokenAddress][_user].onPool = diff == 1 ? 0 : diff; // In cdUnit.
+            borrowBalanceInOf[_poolTokenAddress][_user].onPool -= CompoundMath.min(
+                borrowedOnPool,
+                vars.toRepay.divWadUp(vars.borrowPoolIndex) // Handle case where only 1 wei stays on the position.
+            ); // In cdUnit.
             matchingEngine.updateBorrowersDC(_poolTokenAddress, _user);
         }
 
@@ -402,13 +404,10 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
         /// Transfer repay ///
 
         if (vars.remainingToRepay > 0 && !marketsManager.noP2P(_poolTokenAddress)) {
-            // Handle case where only 1 wei stays on the position.
-            uint256 diff = borrowBalanceInOf[_poolTokenAddress][_user].inP2P -
-                CompoundMath.min(
-                    borrowBalanceInOf[_poolTokenAddress][_user].inP2P,
-                    vars.remainingToRepay.div(borrowP2PExchangeRate)
-                );
-            borrowBalanceInOf[_poolTokenAddress][_user].inP2P = diff == 1 ? 0 : diff; // In p2pUnit.
+            borrowBalanceInOf[_poolTokenAddress][_user].inP2P -= CompoundMath.min(
+                borrowBalanceInOf[_poolTokenAddress][_user].inP2P,
+                vars.remainingToRepay.divWadUp(borrowP2PExchangeRate) // Handle case where only 1 wei stays on the position.
+            ); // In p2pUnit.
             matchingEngine.updateBorrowersDC(_poolTokenAddress, _user);
 
             // Match Delta if any.
