@@ -192,7 +192,6 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
             _underlyingTokenAddress
         );
 
-        _updateSPYs(poolTokenAddress);
         marketsCreated.push(poolTokenAddress);
         emit MarketCreated(poolTokenAddress);
     }
@@ -213,12 +212,6 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
     /// @param _marketAddress The address of the market to update.
     function updateP2PExchangeRates(address _marketAddress) external override onlyPositionsManager {
         _updateP2PExchangeRates(_marketAddress);
-    }
-
-    /// @notice Updates the P2P Second Percentage Yield of supply and borrow.
-    /// @param _marketAddress The address of the market to update.
-    function updateSPYs(address _marketAddress) external override onlyPositionsManager {
-        _updateSPYs(_marketAddress);
     }
 
     /// @notice Returns all created markets.
@@ -285,61 +278,70 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
     /// @param _marketAddress The address of the market we want to update.
     function updateRates(address _marketAddress) public override isMarketCreated(_marketAddress) {
         _updateP2PExchangeRates(_marketAddress);
-        _updateSPYs(_marketAddress);
     }
 
     /// @notice Returns the updated supply P2P exchange rate.
     /// @param _marketAddress The address of the market to update.
-    /// @return updatedSupplyP2P_ The supply P2P exchange rate after udpate.
+    /// @return newSupplyP2PExchangeRate The supply P2P exchange rate after udpate.
     function getUpdatedSupplyP2PExchangeRate(address _marketAddress)
         external
         view
         override
-        returns (uint256 updatedSupplyP2P_)
+        returns (uint256 newSupplyP2PExchangeRate)
     {
-        uint256 timeDifference = block.timestamp - exchangeRatesLastUpdateTimestamp[_marketAddress];
-
-        if (timeDifference == 0) updatedSupplyP2P_ = supplyP2PExchangeRate[_marketAddress];
+        if (block.timestamp == exchangeRatesLastUpdateTimestamp[_marketAddress])
+            newSupplyP2PExchangeRate = supplyP2PExchangeRate[_marketAddress];
         else {
             address underlyingTokenAddress = IAToken(_marketAddress).UNDERLYING_ASSET_ADDRESS();
-            IPositionsManagerForAave.Delta memory delta = positionsManager.deltas(_marketAddress);
+            LastPoolIndexes storage poolIndexes = lastPoolIndexes[_marketAddress];
 
-            updatedSupplyP2P_ = _computeNewP2PExchangeRate(
-                delta.supplyP2PDelta,
-                delta.supplyP2PAmount,
+            uint256 poolSupplyExchangeRate = lendingPool.getReserveNormalizedIncome(
+                underlyingTokenAddress
+            );
+            uint256 poolBorrowExchangeRate = lendingPool.getReserveNormalizedVariableDebt(
+                underlyingTokenAddress
+            );
+
+            newSupplyP2PExchangeRate = computeSupplyP2PExchangeRate(
+                _marketAddress,
                 supplyP2PExchangeRate[_marketAddress],
-                supplyP2PSPY[_marketAddress],
-                lendingPool.getReserveNormalizedIncome(underlyingTokenAddress),
-                lastPoolIndexes[_marketAddress].lastSupplyPoolIndex,
-                timeDifference
+                poolSupplyExchangeRate,
+                poolBorrowExchangeRate,
+                poolIndexes.lastSupplyPoolIndex,
+                poolIndexes.lastBorrowPoolIndex
             );
         }
     }
 
     /// @notice Returns the updated borrow P2P exchange rate.
     /// @param _marketAddress The address of the market to update.
-    /// @return updatedBorrowP2P_ The borrow P2P exchange rate after udpate.
+    /// @return newBorrowP2PExchangeRate The borrow P2P exchange rate after udpate.
     function getUpdatedBorrowP2PExchangeRate(address _marketAddress)
         external
         view
         override
-        returns (uint256 updatedBorrowP2P_)
+        returns (uint256 newBorrowP2PExchangeRate)
     {
-        uint256 timeDifference = block.timestamp - exchangeRatesLastUpdateTimestamp[_marketAddress];
-
-        if (timeDifference == 0) updatedBorrowP2P_ = borrowP2PExchangeRate[_marketAddress];
+        if (block.timestamp == exchangeRatesLastUpdateTimestamp[_marketAddress])
+            newBorrowP2PExchangeRate = borrowP2PExchangeRate[_marketAddress];
         else {
             address underlyingTokenAddress = IAToken(_marketAddress).UNDERLYING_ASSET_ADDRESS();
-            IPositionsManagerForAave.Delta memory delta = positionsManager.deltas(_marketAddress);
+            LastPoolIndexes storage poolIndexes = lastPoolIndexes[_marketAddress];
 
-            updatedBorrowP2P_ = _computeNewP2PExchangeRate(
-                delta.borrowP2PDelta,
-                delta.borrowP2PAmount,
+            uint256 poolSupplyExchangeRate = lendingPool.getReserveNormalizedIncome(
+                underlyingTokenAddress
+            );
+            uint256 poolBorrowExchangeRate = lendingPool.getReserveNormalizedVariableDebt(
+                underlyingTokenAddress
+            );
+
+            newBorrowP2PExchangeRate = computeBorrowP2PExchangeRate(
+                _marketAddress,
                 borrowP2PExchangeRate[_marketAddress],
-                borrowP2PSPY[_marketAddress],
-                lendingPool.getReserveNormalizedVariableDebt(underlyingTokenAddress),
-                lastPoolIndexes[_marketAddress].lastBorrowPoolIndex,
-                timeDifference
+                poolSupplyExchangeRate,
+                poolBorrowExchangeRate,
+                poolIndexes.lastSupplyPoolIndex,
+                poolIndexes.lastBorrowPoolIndex
             );
         }
     }
@@ -355,43 +357,36 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
             address underlyingTokenAddress = IAToken(_marketAddress).UNDERLYING_ASSET_ADDRESS();
             exchangeRatesLastUpdateTimestamp[_marketAddress] = block.timestamp;
             LastPoolIndexes storage poolIndexes = lastPoolIndexes[_marketAddress];
-            IPositionsManagerForAave.Delta memory delta = positionsManager.deltas(_marketAddress);
 
-            uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(
+            uint256 poolSupplyExchangeRate = lendingPool.getReserveNormalizedIncome(
+                underlyingTokenAddress
+            );
+            uint256 poolBorrowExchangeRate = lendingPool.getReserveNormalizedVariableDebt(
                 underlyingTokenAddress
             );
 
-            uint256 newSupplyP2PExchangeRate = _computeNewP2PExchangeRate(
-                delta.supplyP2PDelta,
-                delta.supplyP2PAmount,
+            uint256 newSupplyP2PExchangeRate = computeSupplyP2PExchangeRate(
+                _marketAddress,
                 supplyP2PExchangeRate[_marketAddress],
-                supplyP2PSPY[_marketAddress],
-                normalizedIncome,
+                poolSupplyExchangeRate,
+                poolBorrowExchangeRate,
                 poolIndexes.lastSupplyPoolIndex,
-                timeDifference
+                poolIndexes.lastBorrowPoolIndex
+            );
+
+            uint256 newBorrowP2PExchangeRate = computeBorrowP2PExchangeRate(
+                _marketAddress,
+                borrowP2PExchangeRate[_marketAddress],
+                poolSupplyExchangeRate,
+                poolBorrowExchangeRate,
+                poolIndexes.lastSupplyPoolIndex,
+                poolIndexes.lastBorrowPoolIndex
             );
 
             supplyP2PExchangeRate[_marketAddress] = newSupplyP2PExchangeRate;
-
-            poolIndexes.lastSupplyPoolIndex = normalizedIncome;
-
-            uint256 normalizedVariableDebt = lendingPool.getReserveNormalizedVariableDebt(
-                underlyingTokenAddress
-            );
-
-            uint256 newBorrowP2PExchangeRate = _computeNewP2PExchangeRate(
-                delta.borrowP2PDelta,
-                delta.borrowP2PAmount,
-                borrowP2PExchangeRate[_marketAddress],
-                borrowP2PSPY[_marketAddress],
-                normalizedVariableDebt,
-                poolIndexes.lastBorrowPoolIndex,
-                timeDifference
-            );
-
             borrowP2PExchangeRate[_marketAddress] = newBorrowP2PExchangeRate;
-
-            poolIndexes.lastBorrowPoolIndex = normalizedVariableDebt;
+            poolIndexes.lastSupplyPoolIndex = poolSupplyExchangeRate;
+            poolIndexes.lastBorrowPoolIndex = poolBorrowExchangeRate;
 
             emit P2PExchangeRatesUpdated(
                 _marketAddress,
@@ -401,93 +396,82 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
         }
     }
 
-    /// @notice Updates the P2P Second Percentage Yield of supply and borrow.
-    /// @param _marketAddress The address of the market to update.
-    /// @dev Note: that the exchange rate must have been updated in the same block before calling this.
-    function _updateSPYs(address _marketAddress) internal {
-        DataTypes.ReserveData memory reserveData = lendingPool.getReserveData(
-            IAToken(_marketAddress).UNDERLYING_ASSET_ADDRESS()
-        );
-
-        (uint256 newSupplyP2PSPY, uint256 newBorrowP2PSPY) = interestRates.computeRates(
-            reserveData.currentLiquidityRate,
-            reserveData.currentVariableBorrowRate,
-            reserveFactor[_marketAddress]
-        );
-
-        supplyP2PSPY[_marketAddress] = newSupplyP2PSPY;
-        borrowP2PSPY[_marketAddress] = newBorrowP2PSPY;
-
-        emit P2PSPYsUpdated(_marketAddress, newSupplyP2PSPY, newBorrowP2PSPY);
+    struct Vars {
+        uint256 shareOfTheDelta;
+        uint256 poolIncrease;
     }
 
-    /// @notice Computes the new P2P exchange rate from arguments.
-    /// @param _p2pDelta The P2P delta.
-    /// @param _p2pAmount The P2P amount.
-    /// @param _p2pRate The P2P exchange rate.
-    /// @param _p2pSPY The P2P SPY.
-    /// @param _poolIndex The pool index (normalized income for supply) or (normalized debt variable for borrow) of the market.
-    /// @param _lastPoolIndex The last pool index (normalized income for supply) or (normalized debt variable for borrow) of the market.
-    /// @param _timeDifference The time difference since the last update.
-    /// @return The new P2P exchange rate.
-    function _computeNewP2PExchangeRate(
-        uint256 _p2pDelta,
-        uint256 _p2pAmount,
-        uint256 _p2pRate,
-        uint256 _p2pSPY,
-        uint256 _poolIndex,
-        uint256 _lastPoolIndex,
-        uint256 _timeDifference
-    ) internal pure returns (uint256) {
-        if (_p2pAmount == 0 || _p2pDelta == 0)
-            return _p2pRate.rayMul(_computeCompoundedInterest(_p2pSPY, _timeDifference));
-        else {
-            uint256 shareOfTheDelta = _p2pDelta
-            .wadToRay()
-            .rayMul(_poolIndex)
-            .rayDiv(_p2pRate)
-            .rayDiv(_p2pAmount.wadToRay());
+    function computeSupplyP2PExchangeRate(
+        address _poolTokenAddress,
+        uint256 _supplyP2pExchangeRate,
+        uint256 _poolSupplyExchangeRate,
+        uint256 _poolBorrowExchangeRate,
+        uint256 _lastPoolSupplyExchangeRate,
+        uint256 _lastPoolBorrowExchangeRate
+    ) public view returns (uint256 newSupplyP2PExchangeRate) {
+        Vars memory vars;
+        IPositionsManagerForAave.Delta memory delta = positionsManager.deltas(_poolTokenAddress);
+        vars.poolIncrease =
+            ((2 * _poolSupplyExchangeRate).rayDiv(_lastPoolSupplyExchangeRate) +
+                _poolBorrowExchangeRate.rayDiv(_lastPoolBorrowExchangeRate)) /
+            3;
 
-            shareOfTheDelta = shareOfTheDelta <= Math.ray() ? shareOfTheDelta : Math.ray();
+        if (delta.supplyP2PAmount == 0 || delta.supplyP2PDelta == 0) {
+            newSupplyP2PExchangeRate = _supplyP2pExchangeRate.rayMul(vars.poolIncrease);
+        } else {
+            vars.shareOfTheDelta = Math.min(
+                delta
+                .supplyP2PDelta
+                .wadToRay()
+                .rayMul(_poolSupplyExchangeRate)
+                .rayDiv(_supplyP2pExchangeRate)
+                .rayDiv(delta.supplyP2PAmount.wadToRay()),
+                Math.ray() // To avoid shareOfTheDelta > 1 with rounding errors.
+            );
 
-            return
-                _p2pRate.rayMul(
-                    (
-                        _computeCompoundedInterest(_p2pSPY, _timeDifference).rayMul(
-                            Math.ray() - shareOfTheDelta
-                        )
-                    ) + (shareOfTheDelta.rayMul(_poolIndex).rayDiv(_lastPoolIndex))
-                );
+            newSupplyP2PExchangeRate = _supplyP2pExchangeRate.rayMul(
+                vars.poolIncrease.rayMul(Math.ray() - vars.shareOfTheDelta) +
+                    vars.shareOfTheDelta.rayMul(_poolSupplyExchangeRate).rayDiv(
+                        _lastPoolSupplyExchangeRate
+                    )
+            );
         }
     }
 
-    /// @dev Computes compounded interest over a period of time.
-    ///   To avoid expensive exponentiation, the calculation is performed using a binomial approximation:
-    ///   (1+x)^n = 1+n*x+[n/2*(n-1)]*x^2+[n/6*(n-1)*(n-2)*x^3...
-    /// @param _rate The SPY to use in the computation.
-    /// @param _elapsedTime The amount of time during to get the interest for.
-    /// @return Thee result in ray.
-    function _computeCompoundedInterest(uint256 _rate, uint256 _elapsedTime)
-        internal
-        pure
-        returns (uint256)
-    {
-        uint256 rate = _rate / SECONDS_PER_YEAR;
+    function computeBorrowP2PExchangeRate(
+        address _poolTokenAddress,
+        uint256 _borrowP2pExchangeRate,
+        uint256 _poolSupplyExchangeRate,
+        uint256 _poolBorrowExchangeRate,
+        uint256 _lastPoolSupplyExchangeRate,
+        uint256 _lastPoolBorrowExchangeRate
+    ) public view returns (uint256 newBorrowP2PExchangeRate) {
+        Vars memory vars;
+        IPositionsManagerForAave.Delta memory delta = positionsManager.deltas(_poolTokenAddress);
+        vars.poolIncrease =
+            ((2 * _poolSupplyExchangeRate).rayDiv(_lastPoolSupplyExchangeRate) +
+                _poolBorrowExchangeRate.rayDiv(_lastPoolBorrowExchangeRate)) /
+            3;
 
-        if (_elapsedTime == 0) return Math.ray();
+        if (delta.borrowP2PAmount == 0 || delta.borrowP2PDelta == 0) {
+            newBorrowP2PExchangeRate = _borrowP2pExchangeRate.rayMul(vars.poolIncrease);
+        } else {
+            vars.shareOfTheDelta = Math.min(
+                delta
+                .borrowP2PDelta
+                .wadToRay()
+                .rayMul(_poolBorrowExchangeRate)
+                .rayDiv(_borrowP2pExchangeRate)
+                .rayDiv(delta.borrowP2PAmount.wadToRay()),
+                Math.ray() // To avoid shareOfTheDelta > 1 with rounding errors.
+            );
 
-        if (_elapsedTime == 1) return Math.ray() + rate;
-
-        uint256 ratePowerTwo = rate.rayMul(rate);
-        uint256 ratePowerThree = ratePowerTwo.rayMul(rate);
-
-        return
-            Math.ray() +
-            rate *
-            _elapsedTime +
-            (_elapsedTime * (_elapsedTime - 1) * ratePowerTwo) /
-            2 +
-            (_elapsedTime * (_elapsedTime - 1) * (_elapsedTime - 2) * ratePowerThree) /
-            6;
+            newBorrowP2PExchangeRate = _borrowP2pExchangeRate.rayMul(
+                vars.poolIncrease.rayMul(Math.ray() - vars.shareOfTheDelta) +
+                    vars.shareOfTheDelta.rayMul(_poolBorrowExchangeRate).rayDiv(
+                        _lastPoolBorrowExchangeRate
+                    )
+            );
+        }
     }
 }
