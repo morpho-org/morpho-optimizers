@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import "./libraries/FixedPointMathLib.sol";
-
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
+import "./libraries/FixedPointMathLib.sol";
 
 import "./positions-manager-parts/PositionsManagerForCompoundStorage.sol";
 
@@ -97,10 +96,9 @@ contract MatchingEngineForCompound is
                     matched += vars.toMatch;
                 }
 
-                // Handle rounding error of 1 wei.
-                uint256 diff = supplyBalanceInOf[poolTokenAddress][user].onPool -
-                    vars.toMatch.div(vars.poolIndex);
-                supplyBalanceInOf[poolTokenAddress][user].onPool = diff == 1 ? 0 : diff;
+                supplyBalanceInOf[poolTokenAddress][user].onPool -= vars.toMatch.divWadUp(
+                    vars.poolIndex
+                );
                 supplyBalanceInOf[poolTokenAddress][user].inP2P += vars.toMatch.div(vars.p2pRate); // In p2pUnit
                 updateSuppliers(poolTokenAddress, user);
                 emit SupplierPositionUpdated(
@@ -151,10 +149,9 @@ contract MatchingEngineForCompound is
                 supplyBalanceInOf[_poolTokenAddress][user].onPool += vars.toUnmatch.div(
                     vars.poolIndex
                 );
-                // Handle rounding error of 1 wei.
-                uint256 diff = supplyBalanceInOf[_poolTokenAddress][user].inP2P -
-                    vars.toUnmatch.div(vars.p2pRate);
-                supplyBalanceInOf[_poolTokenAddress][user].inP2P = diff == 1 ? 0 : diff; // In p2pUnit
+                supplyBalanceInOf[_poolTokenAddress][user].inP2P -= vars.toUnmatch.divWadUp(
+                    vars.p2pRate
+                ); // In p2pUnit
                 updateSuppliers(_poolTokenAddress, user);
                 emit SupplierPositionUpdated(
                     user,
@@ -204,10 +201,9 @@ contract MatchingEngineForCompound is
                     matched += vars.toMatch;
                 }
 
-                // Handle rounding error of 1 wei.
-                uint256 diff = borrowBalanceInOf[poolTokenAddress][user].onPool -
-                    vars.toMatch.div(vars.poolIndex);
-                borrowBalanceInOf[poolTokenAddress][user].onPool = diff == 1 ? 0 : diff;
+                borrowBalanceInOf[poolTokenAddress][user].onPool -= vars.toMatch.divWadUp(
+                    vars.poolIndex
+                );
                 borrowBalanceInOf[poolTokenAddress][user].inP2P += vars.toMatch.div(vars.p2pRate);
                 updateBorrowers(poolTokenAddress, user);
                 emit BorrowerPositionUpdated(
@@ -259,7 +255,7 @@ contract MatchingEngineForCompound is
                 borrowBalanceInOf[_poolTokenAddress][user].onPool += vars.toUnmatch.div(
                     vars.poolIndex
                 );
-                borrowBalanceInOf[_poolTokenAddress][user].inP2P -= vars.toUnmatch.div(
+                borrowBalanceInOf[_poolTokenAddress][user].inP2P -= vars.toUnmatch.divWadUp(
                     vars.p2pRate
                 );
                 updateBorrowers(_poolTokenAddress, user);
