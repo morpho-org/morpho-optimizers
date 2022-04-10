@@ -74,7 +74,7 @@ contract MatchingEngineForCompound is
         ICToken _poolToken,
         uint256 _amount,
         uint256 _maxGasToConsume
-    ) external override returns (uint256 matched) {
+    ) external payable override returns (uint256 matched) {
         MatchVars memory vars;
         address poolTokenAddress = address(_poolToken);
         address user = suppliersOnPool[poolTokenAddress].getHead();
@@ -124,7 +124,7 @@ contract MatchingEngineForCompound is
         address _poolTokenAddress,
         uint256 _amount,
         uint256 _maxGasToConsume
-    ) external override returns (uint256) {
+    ) external payable override returns (uint256) {
         UnmatchVars memory vars;
         address user = suppliersInP2P[_poolTokenAddress].getHead();
         vars.poolIndex = ICToken(_poolTokenAddress).exchangeRateCurrent();
@@ -180,7 +180,7 @@ contract MatchingEngineForCompound is
         ICToken _poolToken,
         uint256 _amount,
         uint256 _maxGasToConsume
-    ) external override returns (uint256 matched) {
+    ) external payable override returns (uint256 matched) {
         MatchVars memory vars;
         address poolTokenAddress = address(_poolToken);
         address user = borrowersOnPool[poolTokenAddress].getHead();
@@ -232,7 +232,7 @@ contract MatchingEngineForCompound is
         address _poolTokenAddress,
         uint256 _amount,
         uint256 _maxGasToConsume
-    ) external override returns (uint256) {
+    ) external payable override returns (uint256) {
         UnmatchVars memory vars;
         address user = borrowersInP2P[_poolTokenAddress].getHead();
         uint256 remainingToUnmatch = _amount;
@@ -282,7 +282,7 @@ contract MatchingEngineForCompound is
     /// @notice Updates borrowers matching engine with the new balances of a given user.
     /// @param _poolTokenAddress The address of the market on which to update the borrowers data structure.
     /// @param _user The address of the user.
-    function updateBorrowers(address _poolTokenAddress, address _user) public override {
+    function updateBorrowers(address _poolTokenAddress, address _user) public payable override {
         uint256 onPool = borrowBalanceInOf[_poolTokenAddress][_user].onPool;
         uint256 inP2P = borrowBalanceInOf[_poolTokenAddress][_user].inP2P;
         uint256 formerValueOnPool = borrowersOnPool[_poolTokenAddress].getValueOf(_user);
@@ -304,7 +304,7 @@ contract MatchingEngineForCompound is
     /// @notice Updates suppliers matching engine with the new balances of a given user.
     /// @param _poolTokenAddress The address of the market on which to update the suppliers data structure.
     /// @param _user The address of the user.
-    function updateSuppliers(address _poolTokenAddress, address _user) public override {
+    function updateSuppliers(address _poolTokenAddress, address _user) public payable override {
         uint256 onPool = supplyBalanceInOf[_poolTokenAddress][_user].onPool;
         uint256 inP2P = supplyBalanceInOf[_poolTokenAddress][_user].inP2P;
         uint256 formerValueOnPool = suppliersOnPool[_poolTokenAddress].getValueOf(_user);

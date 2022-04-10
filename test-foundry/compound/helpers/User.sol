@@ -49,7 +49,7 @@ contract User {
         marketsManager.updateRates(_marketAddress);
     }
 
-    function supply(address _poolTokenAddress, uint256 _amount) external {
+    function supply(address _poolTokenAddress, uint256 _amount) external payable {
         positionsManager.supply(_poolTokenAddress, _amount, 0);
     }
 
@@ -57,7 +57,7 @@ contract User {
         address _poolTokenAddress,
         uint256 _amount,
         uint256 _maxGasToConsume
-    ) external {
+    ) external payable {
         positionsManager.supply(_poolTokenAddress, _amount, 0, _maxGasToConsume);
     }
 
@@ -77,7 +77,7 @@ contract User {
         positionsManager.borrow(_poolTokenAddress, _amount, 0, _maxGasToConsume);
     }
 
-    function repay(address _poolTokenAddress, uint256 _amount) external {
+    function repay(address _poolTokenAddress, uint256 _amount) external payable {
         positionsManager.repay(_poolTokenAddress, _amount);
     }
 
@@ -86,7 +86,7 @@ contract User {
         address _poolTokenCollateralAddress,
         address _borrower,
         uint256 _amount
-    ) external {
+    ) external payable {
         positionsManager.liquidate(
             _poolTokenBorrowedAddress,
             _poolTokenCollateralAddress,

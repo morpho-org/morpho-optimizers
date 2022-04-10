@@ -9,27 +9,27 @@ interface IMatchingEngineForCompound {
         ICToken,
         uint256,
         uint256
-    ) external returns (uint256);
+    ) external payable returns (uint256);
 
     function unmatchSuppliers(
         address,
         uint256,
         uint256
-    ) external returns (uint256);
+    ) external payable returns (uint256);
 
     function matchBorrowers(
         ICToken,
         uint256,
         uint256
-    ) external returns (uint256);
+    ) external payable returns (uint256);
 
     function unmatchBorrowers(
         address,
         uint256,
         uint256
-    ) external returns (uint256);
+    ) external payable returns (uint256);
 
-    function updateBorrowers(address _poolTokenAddress, address _user) external;
+    function updateBorrowers(address _poolTokenAddress, address _user) external payable;
 
-    function updateSuppliers(address _poolTokenAddress, address _user) external;
+    function updateSuppliers(address _poolTokenAddress, address _user) external payable;
 }

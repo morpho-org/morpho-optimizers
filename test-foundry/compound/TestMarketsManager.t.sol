@@ -28,13 +28,11 @@ contract TestMarketsManager is TestSetup {
     }
 
     function testOnlyOwnerCanCreateMarkets() public {
-        for (uint256 i = 0; i < pools.length; i++) {
-            hevm.expectRevert("Ownable: caller is not the owner");
-            supplier1.createMarket(pools[i]);
+        hevm.expectRevert("Ownable: caller is not the owner");
+        supplier1.createMarket(cAave);
 
-            hevm.expectRevert("Ownable: caller is not the owner");
-            borrower1.createMarket(pools[i]);
-        }
+        hevm.expectRevert("Ownable: caller is not the owner");
+        borrower1.createMarket(cAave);
 
         marketsManager.createMarket(cAave);
     }

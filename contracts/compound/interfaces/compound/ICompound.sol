@@ -214,6 +214,8 @@ interface IInterestRateModel {
 }
 
 interface ICToken {
+    function symbol() external view returns (string memory);
+
     function transfer(address dst, uint256 amount) external returns (bool);
 
     function transferFrom(

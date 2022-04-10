@@ -160,12 +160,19 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
         _enterMarketIfNeeded(_poolTokenAddress, msg.sender);
         _checkUserLiquidity(msg.sender, _poolTokenAddress, 0, _amount);
 
-        ERC20 underlyingToken = ERC20(ICToken(_poolTokenAddress).underlying());
-        uint256 balanceBefore = underlyingToken.balanceOf(address(this));
+        ERC20 underlyingToken;
+        uint256 balanceBefore;
+        try ICToken(_poolTokenAddress).underlying() {
+            underlyingToken = ERC20(ICToken(_poolTokenAddress).underlying());
+            balanceBefore = underlyingToken.balanceOf(address(this));
+        } catch {
+            balanceBefore = address(this).balance;
+        }
+
         uint256 remainingToBorrow = _amount;
         uint256 toWithdraw;
         Delta storage delta = deltas[_poolTokenAddress];
-        uint256 poolSupplyIndex = ICToken(_poolTokenAddress).exchangeRateCurrent();
+        uint256 poolSupplyIndex = ICToken(_poolTokenAddress).exchangeRateStored();
         uint256 maxToWithdraw = ICToken(_poolTokenAddress).balanceOfUnderlying(address(this)); // The balance on pool.
 
         /// Borrow in P2P ///
@@ -226,7 +233,7 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
 
         /// Borrow on pool ///
 
-        if (_isAboveCompoundThreshold(_poolTokenAddress, remainingToBorrow)) {
+        if (_isAboveCompoundThreshold(underlyingToken, remainingToBorrow)) {
             borrowBalanceInOf[_poolTokenAddress][msg.sender].onPool += remainingToBorrow.div(
                 ICToken(_poolTokenAddress).borrowIndex()
             ); // In cdUnit.
@@ -234,12 +241,13 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
             _borrowFromPool(_poolTokenAddress, remainingToBorrow);
         }
 
-        // Due to rounding errors the balance may be lower than expected.
-        uint256 balanceAfter = underlyingToken.balanceOf(address(this));
-        uint256 toTransfer = balanceAfter - balanceBefore;
-
-        if (address(underlyingToken) == address(0)) payable(msg.sender).transfer(toTransfer);
-        else underlyingToken.safeTransfer(msg.sender, toTransfer);
+        if (address(underlyingToken) == address(0))
+            payable(msg.sender).transfer(address(this).balance - balanceBefore);
+        else
+            underlyingToken.safeTransfer(
+                msg.sender,
+                underlyingToken.balanceOf(address(this)) - balanceBefore
+            );
     }
 
     /// @dev Implements withdraw logic.
@@ -256,7 +264,12 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
         uint256 _maxGasToConsume
     ) internal isMarketCreatedAndNotPaused(_poolTokenAddress) {
         ICToken poolToken = ICToken(_poolTokenAddress);
-        ERC20 underlyingToken = ERC20(poolToken.underlying());
+
+        ERC20 underlyingToken;
+        try ICToken(_poolTokenAddress).underlying() {
+            underlyingToken = ERC20(ICToken(_poolTokenAddress).underlying());
+        } catch {}
+
         WithdrawVars memory vars;
         vars.remainingToWithdraw = _amount;
         vars.maxToWithdraw = poolToken.balanceOfUnderlying(address(this));
@@ -617,16 +630,18 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
     }
 
     /// @dev Returns whether it is unsafe supply/witdhraw due to coumpound's revert on low levels of precision or not.
+    /// @param _underlyingToken The underlying token.
     /// @param _amount The amount of token considered for depositing/redeeming.
-    /// @param _poolTokenAddress poolToken address of the considered market.
     /// @return Whether to continue or not.
-    function _isAboveCompoundThreshold(address _poolTokenAddress, uint256 _amount)
+    function _isAboveCompoundThreshold(ERC20 _underlyingToken, uint256 _amount)
         internal
         view
         returns (bool)
     {
-        ERC20 underlyingToken = ERC20(ICToken(_poolTokenAddress).underlying());
-        uint8 tokenDecimals = underlyingToken.decimals();
+        // cETH does not have underlying token.
+        uint8 tokenDecimals = address(_underlyingToken) == address(0)
+            ? 18
+            : _underlyingToken.decimals();
         if (tokenDecimals > CTOKEN_DECIMALS) {
             // Multiply by 2 to have a safety buffer.
             unchecked {
@@ -634,4 +649,6 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
             }
         } else return true;
     }
+
+    receive() external payable {}
 }

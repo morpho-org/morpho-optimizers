@@ -180,8 +180,15 @@ contract MarketsManagerForCompound is IMarketsManagerForCompound, OwnableUpgrade
         lastUpdateBlockNumber[_poolTokenAddress] = block.number;
 
         // Same initial exchange rate as Compound.
-        uint256 initialExchangeRate = 2 *
-            10**(16 + IERC20Metadata(poolToken.underlying()).decimals() - 8);
+        uint256 initialExchangeRate;
+        try poolToken.underlying() {
+            initialExchangeRate =
+                2 *
+                10**(16 + IERC20Metadata(poolToken.underlying()).decimals() - 8);
+        } catch {
+            initialExchangeRate = 2e26;
+        }
+
         supplyP2PExchangeRate[_poolTokenAddress] = initialExchangeRate;
         borrowP2PExchangeRate[_poolTokenAddress] = initialExchangeRate;
 

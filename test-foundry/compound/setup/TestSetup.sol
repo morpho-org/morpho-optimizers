@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
+
 import "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
 import {ICToken, ICompoundOracle} from "@contracts/compound/interfaces/compound/ICompound.sol";
 import "@contracts/compound/interfaces/IRewardsManagerForCompound.sol";
@@ -106,7 +107,7 @@ contract TestSetup is Config, Utils, stdCheats {
         );
 
         positionsManagerProxy.changeAdmin(address(proxyAdmin));
-        positionsManager = PositionsManagerForCompound(address(positionsManagerProxy));
+        positionsManager = PositionsManagerForCompound(payable(address(positionsManagerProxy)));
         positionsManager.initialize(marketsManager, matchingEngine, comptroller, maxGas, 20);
 
         treasuryVault = new User(positionsManager);
@@ -119,6 +120,7 @@ contract TestSetup is Config, Utils, stdCheats {
         createMarket(cWbtc);
         createMarket(cUsdt);
         createMarket(cBat);
+        createMarket(cEth);
 
         hevm.roll(block.number + 1);
     }
@@ -130,8 +132,13 @@ contract TestSetup is Config, Utils, stdCheats {
         pools.push(_cToken);
 
         hevm.label(_cToken, ERC20(_cToken).symbol());
-        address underlying = ICToken(_cToken).underlying();
-        hevm.label(underlying, ERC20(underlying).symbol());
+
+        try ICToken(_cToken).underlying() {
+            address underlying = ICToken(_cToken).underlying();
+            hevm.label(underlying, ERC20(underlying).symbol());
+        } catch {
+            return;
+        }
     }
 
     function initUsers() internal {
