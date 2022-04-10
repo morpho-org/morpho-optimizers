@@ -93,12 +93,14 @@ contract SwapManagerUniV3 is ISwapManager, Ownable {
         morphoTwapInterval = _morphoTwapInterval;
 
         singlePath = _rewardToken == WETH9;
-        pool0 = singlePath ? IUniswapV3Pool(address(0)) : IUniswapV3Pool(
-            PoolAddress.computeAddress(
-                FACTORY,
-                PoolAddress.getPoolKey(_rewardToken, WETH9, _rewardPoolFee)
-            )
-        );
+        pool0 = singlePath
+            ? IUniswapV3Pool(address(0))
+            : IUniswapV3Pool(
+                PoolAddress.computeAddress(
+                    FACTORY,
+                    PoolAddress.getPoolKey(_rewardToken, WETH9, _rewardPoolFee)
+                )
+            );
         pool1 = IUniswapV3Pool(
             PoolAddress.computeAddress(
                 FACTORY,
