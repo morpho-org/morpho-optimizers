@@ -22,8 +22,8 @@ contract TestRepay is TestSetup {
             address(borrower1)
         );
 
-        testEquality(inP2P, 0);
-        testEquality(onPool, 0);
+        assertEq(inP2P, 0);
+        assertEq(onPool, 0);
     }
 
     function testRepayAll() public {
@@ -44,9 +44,9 @@ contract TestRepay is TestSetup {
         );
         uint256 balanceAfter = supplier1.balanceOf(dai);
 
-        testEquality(inP2P, 0);
-        testEquality(onPool, 0);
-        testEquality(balanceBefore - balanceAfter, amount);
+        assertEq(inP2P, 0);
+        assertEq(onPool, 0);
+        assertEq(balanceBefore - balanceAfter, amount);
     }
 
     function testRepay2_1() public {
@@ -75,9 +75,9 @@ contract TestRepay is TestSetup {
 
         uint256 expectedOnPool = suppliedAmount.div(ICToken(cDai).borrowIndex());
 
-        testEquality(onPoolSupplier, 0, "supplier on pool");
-        testEquality(onPoolBorrower1, expectedOnPool, "borrower on pool");
-        testEquality(inP2PSupplier, inP2PBorrower1, "in P2P");
+        assertEq(onPoolSupplier, 0, "supplier on pool");
+        assertEq(onPoolBorrower1, expectedOnPool, "borrower on pool");
+        assertEq(inP2PSupplier, inP2PBorrower1, "in P2P");
 
         // An available borrower onPool.
         uint256 availableBorrowerAmount = borrowedAmount / 4;
@@ -102,18 +102,18 @@ contract TestRepay is TestSetup {
             borrowP2PExchangeRate
         );
 
-        testEquality(inP2PBorrower1, inP2PAvailableBorrower);
-        testEquality(inP2PBorrower1, expectedBorrowBalanceInP2P);
-        testEquality(onPoolBorrower1, 0);
-        testEquality(onPoolAvailableBorrower, 0);
+        assertEq(inP2PBorrower1, inP2PAvailableBorrower);
+        assertEq(inP2PBorrower1, expectedBorrowBalanceInP2P);
+        assertEq(onPoolBorrower1, 0);
+        assertEq(onPoolAvailableBorrower, 0);
 
         // Check balances for supplier.
         (inP2PSupplier, onPoolSupplier) = positionsManager.supplyBalanceInOf(
             cDai,
             address(supplier1)
         );
-        testEquality(2 * inP2PBorrower1, inP2PSupplier);
-        testEquality(onPoolSupplier, 0);
+        assertEq(2 * inP2PBorrower1, inP2PSupplier);
+        assertEq(onPoolSupplier, 0);
     }
 
     function testRepay2_2() public {
@@ -144,9 +144,9 @@ contract TestRepay is TestSetup {
 
         uint256 expectedOnPool = suppliedAmount.div(ICToken(cDai).borrowIndex());
 
-        testEquality(onPoolSupplier, 0);
-        testEquality(onPoolBorrower1, expectedOnPool, "borrower1 on pool");
-        testEquality(inP2PSupplier, inP2PBorrower1, "supplier1 in P2P");
+        assertEq(onPoolSupplier, 0);
+        assertEq(onPoolBorrower1, expectedOnPool, "borrower1 on pool");
+        assertEq(inP2PSupplier, inP2PBorrower1, "supplier1 in P2P");
 
         // NMAX borrowers have debt waiting on pool.
         uint8 NMAX = 20;
@@ -169,8 +169,8 @@ contract TestRepay is TestSetup {
             (inP2P, onPool) = positionsManager.borrowBalanceInOf(cDai, address(borrowers[i]));
             expectedOnPool = amountPerBorrower.div(borrowIndex);
 
-            testEquality(inP2P, 0);
-            testEquality(onPool, expectedOnPool);
+            assertEq(inP2P, 0);
+            assertEq(onPool, expectedOnPool);
         }
 
         // Borrower1 repays all of his debt.
@@ -183,8 +183,8 @@ contract TestRepay is TestSetup {
             address(borrower1)
         );
 
-        testEquality(onPoolBorrower1, 0);
-        testEquality(inP2PBorrower1, 0);
+        assertEq(onPoolBorrower1, 0);
+        assertEq(inP2PBorrower1, 0);
 
         // Check balances for the supplier.
         (inP2PSupplier, onPoolSupplier) = positionsManager.supplyBalanceInOf(
@@ -196,8 +196,8 @@ contract TestRepay is TestSetup {
             marketsManager.borrowP2PExchangeRate(cDai)
         );
 
-        testEquality(inP2PSupplier, expectedSupplyBalanceInP2P, "supplier in P2P");
-        testEquality(onPoolSupplier, 0, "supplier on pool");
+        assertEq(inP2PSupplier, expectedSupplyBalanceInP2P, "supplier in P2P");
+        assertEq(onPoolSupplier, 0, "supplier on pool");
 
         // Now test for each individual borrower that replaced the original.
         for (uint256 i = 0; i < borrowers.length; i++) {
@@ -208,7 +208,7 @@ contract TestRepay is TestSetup {
                 marketsManager.borrowP2PExchangeRate(cDai)
             );
 
-            testEquality(inP2P, expectedInP2P, "borrower in P2P");
+            assertEq(inP2P, expectedInP2P, "borrower in P2P");
             assertApproxEq(onPool, 0, 1e9, "borrower on pool");
         }
     }
@@ -239,9 +239,9 @@ contract TestRepay is TestSetup {
 
         uint256 expectedOnPool = (suppliedAmount).div(ICToken(cDai).borrowIndex());
 
-        testEquality(onPoolSupplier, 0);
-        testEquality(onPoolBorrower1, expectedOnPool);
-        testEquality(inP2PSupplier, inP2PBorrower1);
+        assertEq(onPoolSupplier, 0);
+        assertEq(onPoolBorrower1, expectedOnPool);
+        assertEq(inP2PSupplier, inP2PBorrower1);
 
         // Borrower1 repays 75% of borrowed amount.
         borrower1.approve(dai, (75 * borrowedAmount) / 100);
@@ -260,8 +260,8 @@ contract TestRepay is TestSetup {
             borrowP2PExchangeRate
         );
 
-        testEquality(inP2PBorrower1, expectedBorrowBalanceInP2P);
-        testEquality(onPoolBorrower1, 0);
+        assertEq(inP2PBorrower1, expectedBorrowBalanceInP2P);
+        assertEq(onPoolBorrower1, 0);
 
         // Check balances for supplier.
         (inP2PSupplier, onPoolSupplier) = positionsManager.supplyBalanceInOf(
@@ -272,8 +272,8 @@ contract TestRepay is TestSetup {
         uint256 expectedSupplyBalanceInP2P = (suppliedAmount / 2).div(borrowP2PExchangeRate);
         uint256 expectedSupplyBalanceOnPool = (suppliedAmount / 2).div(supplyPoolIndex);
 
-        testEquality(inP2PSupplier, expectedSupplyBalanceInP2P);
-        testEquality(onPoolSupplier, expectedSupplyBalanceOnPool);
+        assertEq(inP2PSupplier, expectedSupplyBalanceInP2P);
+        assertEq(onPoolSupplier, expectedSupplyBalanceOnPool);
     }
 
     function testRepay2_4() public {
@@ -304,9 +304,9 @@ contract TestRepay is TestSetup {
 
         uint256 expectedOnPool = suppliedAmount.div(ICToken(cDai).borrowIndex());
 
-        testEquality(onPoolSupplier, 0);
-        testEquality(onPoolBorrower1, expectedOnPool);
-        testEquality(inP2PSupplier, inP2PBorrower1);
+        assertEq(onPoolSupplier, 0);
+        assertEq(onPoolBorrower1, expectedOnPool);
+        assertEq(inP2PSupplier, inP2PBorrower1);
 
         // NMAX borrowers have borrowerAmount/2 (cumulated) of debt waiting on pool.
         uint8 NMAX = 20;
@@ -333,8 +333,8 @@ contract TestRepay is TestSetup {
             address(borrower1)
         );
 
-        testEquality(onPoolBorrower1, 0);
-        testEquality(inP2PBorrower1, 0);
+        assertEq(onPoolBorrower1, 0);
+        assertEq(inP2PBorrower1, 0);
 
         // Check balances for the supplier.
         (inP2PSupplier, onPoolSupplier) = positionsManager.supplyBalanceInOf(
@@ -349,8 +349,8 @@ contract TestRepay is TestSetup {
             marketsManager.borrowP2PExchangeRate(cDai)
         );
 
-        testEquality(inP2PSupplier, expectedSupplyBalanceInP2P, "supplier in P2P");
-        testEquality(onPoolSupplier, expectedSupplyBalanceOnPool, "supplier on pool");
+        assertApproxEq(inP2PSupplier, expectedSupplyBalanceInP2P, 1, "supplier in P2P");
+        assertApproxEq(onPoolSupplier, expectedSupplyBalanceOnPool, 1, "supplier on pool");
 
         uint256 inP2P;
         uint256 onPool;
@@ -365,8 +365,8 @@ contract TestRepay is TestSetup {
                 marketsManager.borrowP2PExchangeRate(cDai)
             );
 
-            testEquality(inP2P, expectedInP2P, "borrower in P2P");
-            testEquality(onPool, 0, "borrower on pool");
+            assertEq(inP2P, expectedInP2P, "borrower in P2P");
+            assertEq(onPool, 0, "borrower on pool");
         }
     }
 
@@ -413,8 +413,8 @@ contract TestRepay is TestSetup {
                 cDai,
                 address(borrower1)
             );
-            testEquality(onPoolBorrower, 0, "borrower on pool");
-            testEquality(inP2PBorrower, expectedBorrowBalanceInP2P, "borrower in P2P");
+            assertApproxEq(onPoolBorrower, 0, 10, "borrower on pool");
+            assertApproxEq(inP2PBorrower, expectedBorrowBalanceInP2P, 10, "borrower in P2P");
 
             uint256 supplyP2PExchangeRate = marketsManager.supplyP2PExchangeRate(cDai);
             uint256 expectedSupplyBalanceInP2P = suppliedAmount.div(supplyP2PExchangeRate);
@@ -422,8 +422,8 @@ contract TestRepay is TestSetup {
             for (uint256 i = 0; i < 20; i++) {
                 (uint256 inP2PSupplier, uint256 onPoolSupplier) = positionsManager
                 .supplyBalanceInOf(cDai, address(suppliers[i]));
-                testEquality(onPoolSupplier, 0, "supplier on pool 1");
-                testEquality(inP2PSupplier, expectedSupplyBalanceInP2P, "supplier in P2P 1");
+                assertEq(onPoolSupplier, 0, "supplier on pool 1");
+                assertEq(inP2PSupplier, expectedSupplyBalanceInP2P, "supplier in P2P 1");
             }
 
             // Borrower repays max.
@@ -436,8 +436,8 @@ contract TestRepay is TestSetup {
                 (uint256 inP2PBorrower1, uint256 onPoolBorrower1) = positionsManager
                 .supplyBalanceInOf(cDai, address(borrower1));
 
-                testEquality(onPoolBorrower1, 0);
-                testEquality(inP2PBorrower1, 0);
+                assertEq(onPoolBorrower1, 0);
+                assertEq(inP2PBorrower1, 0);
             }
 
             // There should be a delta.
@@ -454,7 +454,7 @@ contract TestRepay is TestSetup {
             .div(ICToken(cDai).exchangeRateCurrent());
 
             (uint256 supplyP2PDelta, , , ) = positionsManager.deltas(cDai);
-            testEquality(supplyP2PDelta, expectedSupplyP2PDelta, "supply delta 1");
+            assertEq(supplyP2PDelta, expectedSupplyP2PDelta, "supply delta 1");
 
             // Supply delta matching by a new borrower.
             borrower2.approve(usdc, to6Decimals(collateral));
@@ -470,9 +470,9 @@ contract TestRepay is TestSetup {
             );
 
             (supplyP2PDelta, , , ) = positionsManager.deltas(cDai);
-            testEquality(supplyP2PDelta, expectedSupplyP2PDelta / 2, "supply delta unexpected");
-            testEquality(onPoolBorrower, 0, "on pool not unexpected");
-            testEquality(inP2PBorrower, expectedBorrowBalanceInP2P, "in P2P unexpected");
+            assertEq(supplyP2PDelta, expectedSupplyP2PDelta / 2, "supply delta unexpected");
+            assertEq(onPoolBorrower, 0, "on pool not unexpected");
+            assertEq(inP2PBorrower, expectedBorrowBalanceInP2P, "in P2P unexpected");
         }
 
         {
@@ -503,7 +503,7 @@ contract TestRepay is TestSetup {
                     shareOfTheDelta.mul(newVars.SPI).div(oldVars.SPI)
             );
 
-            testEquality(expectedSP2PER, newVars.SP2PER, "SP2PER not expected");
+            assertEq(expectedSP2PER, newVars.SP2PER, "SP2PER not expected");
 
             uint256 expectedSupplyBalanceInUnderlying = suppliedAmount.div(oldVars.SP2PER).mul(
                 expectedSP2PER
@@ -513,12 +513,12 @@ contract TestRepay is TestSetup {
                 (uint256 inP2PSupplier, uint256 onPoolSupplier) = positionsManager
                 .supplyBalanceInOf(cDai, address(suppliers[i]));
 
-                testEquality(
+                assertEq(
                     inP2PSupplier.mul(newVars.SP2PER),
                     expectedSupplyBalanceInUnderlying,
                     "supplier in P2P 2"
                 );
-                testEquality(onPoolSupplier, 0, "supplier on pool 2");
+                assertEq(onPoolSupplier, 0, "supplier on pool 2");
             }
         }
 
@@ -528,15 +528,15 @@ contract TestRepay is TestSetup {
         }
 
         (uint256 supplyP2PDeltaAfter, , , ) = positionsManager.deltas(cDai);
-        testEquality(supplyP2PDeltaAfter, 0, "supply delta after");
+        assertApproxEq(supplyP2PDeltaAfter, 0, 1, "supply delta after");
 
         (uint256 inP2PBorrower2, uint256 onPoolBorrower2) = positionsManager.borrowBalanceInOf(
             cDai,
             address(borrower2)
         );
 
-        testEquality(inP2PBorrower2, expectedBorrowBalanceInP2P, "borrower2 in P2P");
-        testEquality(onPoolBorrower2, 0, "borrower2 on pool");
+        assertEq(inP2PBorrower2, expectedBorrowBalanceInP2P, "borrower2 in P2P");
+        assertEq(onPoolBorrower2, 0, "borrower2 on pool");
     }
 
     function testDeltaRepayAll() public {

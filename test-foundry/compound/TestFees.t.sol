@@ -12,8 +12,8 @@ contract TestFees is TestSetup {
     }
 
     function testShouldNotBePossibleToSetFeesHigherThan100Percent() public {
-        marketsManager.setReserveFactor(cUsdc, 5_001);
-        testEquality(marketsManager.reserveFactor(cUsdc), 5000);
+        marketsManager.setReserveFactor(cUsdc, 10_001);
+        assertEq(marketsManager.reserveFactor(cUsdc), 10_000);
     }
 
     function testOnlyOwnerCanSetTreasuryVault() public {
@@ -88,7 +88,7 @@ contract TestFees is TestSetup {
         uint256 balanceAfter = IERC20(dai).balanceOf(positionsManager.treasuryVault());
         uint256 gainedByDAO = balanceAfter - balanceBefore;
 
-        testEquality(gainedByDAO, expectedFees, "Fees collected");
+        assertApproxEq(gainedByDAO, expectedFees, 2, "Fees collected");
     }
 
     function testShouldNotClaimFeesIfFactorIsZero() public {
@@ -109,6 +109,6 @@ contract TestFees is TestSetup {
         positionsManager.claimToTreasury(cDai);
         uint256 balanceAfter = IERC20(dai).balanceOf(positionsManager.treasuryVault());
 
-        testEquality(balanceBefore, balanceAfter);
+        assertEq(balanceBefore, balanceAfter);
     }
 }
