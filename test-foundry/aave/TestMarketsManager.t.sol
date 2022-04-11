@@ -7,15 +7,6 @@ contract TestMarketsManager is TestSetup {
     using Math for uint256;
 
     function testShoudDeployContractWithTheRightValues() public {
-        DataTypes.ReserveData memory data = lendingPool.getReserveData(dai);
-        (uint256 expectedSPY, ) = interestRates.computeRates(
-            data.currentLiquidityRate,
-            data.currentVariableBorrowRate,
-            0
-        );
-
-        assertEq(marketsManager.supplyP2PSPY(aDai), expectedSPY);
-        assertEq(marketsManager.borrowP2PSPY(aDai), expectedSPY);
         assertEq(marketsManager.supplyP2PExchangeRate(aDai), RAY);
         assertEq(marketsManager.borrowP2PExchangeRate(aDai), RAY);
     }
@@ -53,52 +44,6 @@ contract TestMarketsManager is TestSetup {
     function testReserveFactorShouldBeUpdatedWithRightValue() public {
         marketsManager.setReserveFactor(aDai, 1111);
         assertEq(marketsManager.reserveFactor(aDai), 1111);
-    }
-
-    function testRatesShouldBeUpdatedWithTheRightValues() public {
-        borrower1.updateRates(aDai);
-        uint256 firstBlockTimestamp = block.timestamp;
-
-        DataTypes.ReserveData memory data = lendingPool.getReserveData(dai);
-        (uint256 expectedSPY, ) = interestRates.computeRates(
-            data.currentLiquidityRate,
-            data.currentVariableBorrowRate,
-            0
-        );
-
-        uint256 borrowP2PExchangeRate = marketsManager.borrowP2PExchangeRate(aDai);
-        uint256 supplyP2PExchangeRate = marketsManager.supplyP2PExchangeRate(aDai);
-
-        assertEq(marketsManager.supplyP2PSPY(aDai), expectedSPY);
-        assertEq(marketsManager.borrowP2PSPY(aDai), expectedSPY);
-        assertEq(supplyP2PExchangeRate, RAY);
-        assertEq(borrowP2PExchangeRate, RAY);
-
-        hevm.warp(block.timestamp + 100000);
-        borrower1.updateRates(aDai);
-        uint256 secondBlockTimestamp = block.timestamp;
-
-        data = lendingPool.getReserveData(dai);
-        (uint256 supplySPY, uint256 borrowSPY) = interestRates.computeRates(
-            data.currentLiquidityRate,
-            data.currentVariableBorrowRate,
-            0
-        );
-
-        assertEq(marketsManager.supplyP2PSPY(aDai), supplySPY);
-        assertEq(marketsManager.borrowP2PSPY(aDai), borrowSPY);
-
-        uint256 newBorrowP2PExchangeRate = borrowP2PExchangeRate.rayMul(
-            computeCompoundedInterest(borrowSPY, secondBlockTimestamp - firstBlockTimestamp)
-        );
-        uint256 newSupplyP2PExchangeRate = supplyP2PExchangeRate.rayMul(
-            computeCompoundedInterest(supplySPY, secondBlockTimestamp - firstBlockTimestamp)
-        );
-
-        borrowP2PExchangeRate = marketsManager.borrowP2PExchangeRate(aDai);
-        supplyP2PExchangeRate = marketsManager.supplyP2PExchangeRate(aDai);
-        assertEq(supplyP2PExchangeRate, newSupplyP2PExchangeRate);
-        assertEq(borrowP2PExchangeRate, newBorrowP2PExchangeRate);
     }
 
     function testPositionsManagerShouldBeSetOnlyOnce() public {
