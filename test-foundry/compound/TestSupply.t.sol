@@ -44,7 +44,7 @@ contract TestSupply is TestSetup {
         supplier1.supply(cDai, amount);
 
         uint256 daiBalanceAfter = supplier1.balanceOf(dai);
-        testEquality(daiBalanceAfter, expectedDaiBalanceAfter);
+        assertEq(daiBalanceAfter, expectedDaiBalanceAfter);
 
         uint256 supplyP2PExchangeRate = marketsManager.getUpdatedSupplyP2PExchangeRate(cDai);
         uint256 expectedSupplyBalanceInP2P = amount.div(supplyP2PExchangeRate);
