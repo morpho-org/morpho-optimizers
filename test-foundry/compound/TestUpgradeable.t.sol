@@ -26,7 +26,7 @@ contract TestUpgradeable is TestSetup {
 
         // Should not change
         (, uint256 onPool) = positionsManager.supplyBalanceInOf(cDai, address(supplier1));
-        testEquality(onPool, expectedOnPool);
+        assertEq(onPool, expectedOnPool);
     }
 
     function testOnlyProxyOwnerCanUpgradeMarketsManager() public {

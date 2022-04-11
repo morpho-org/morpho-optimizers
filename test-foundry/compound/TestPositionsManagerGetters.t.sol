@@ -189,10 +189,10 @@ contract TestPositionsManagerGetters is TestSetup {
         .mul(underlyingPrice);
         uint256 maxDebtValue = collateralValue.mul(collateralFactor);
 
-        testEquality(assetData.collateralFactor, collateralFactor, "collateralFactor");
-        testEquality(assetData.underlyingPrice, underlyingPrice, "underlyingPrice");
-        testEquality(assetData.collateralValue, collateralValue, "collateralValue");
-        testEquality(assetData.maxDebtValue, maxDebtValue, "maxDebtValue");
+        assertEq(assetData.collateralFactor, collateralFactor, "collateralFactor");
+        assertEq(assetData.underlyingPrice, underlyingPrice, "underlyingPrice");
+        assertEq(assetData.collateralValue, collateralValue, "collateralValue");
+        assertEq(assetData.maxDebtValue, maxDebtValue, "maxDebtValue");
         assertEq(assetData.debtValue, 0, "debtValue");
     }
 
@@ -238,10 +238,10 @@ contract TestPositionsManagerGetters is TestSetup {
             underlyingPrice
         );
 
-        testEquality(assetData.underlyingPrice, underlyingPrice, "underlyingPrice");
-        testEquality(assetData.collateralValue, collateralValue, "collateralValue");
-        testEquality(assetData.maxDebtValue, maxDebtValue, "maxDebtValue");
-        testEquality(assetData.debtValue, debtValue, "debtValue");
+        assertEq(assetData.underlyingPrice, underlyingPrice, "underlyingPrice");
+        assertEq(assetData.collateralValue, collateralValue, "collateralValue");
+        assertEq(assetData.maxDebtValue, maxDebtValue, "maxDebtValue");
+        assertEq(assetData.debtValue, debtValue, "debtValue");
     }
 
     function testUserLiquidityDataForAssetWithSupplyAndBorrowWithMultipleAssets() public {
@@ -266,14 +266,14 @@ contract TestPositionsManagerGetters is TestSetup {
         expectedDatcUsdc.debtValue = getBalanceOnCompound(toBorrow, ICToken(cUsdc).borrowIndex())
         .mul(expectedDatcUsdc.underlyingPrice);
 
-        testEquality(
+        assertEq(
             assetDatacUsdc.underlyingPrice,
             expectedDatcUsdc.underlyingPrice,
             "underlyingPriceUsdc"
         );
-        testEquality(assetDatacUsdc.collateralValue, 0, "collateralValue");
-        testEquality(assetDatacUsdc.maxDebtValue, 0, "maxDebtValue");
-        testEquality(assetDatacUsdc.debtValue, expectedDatcUsdc.debtValue, "debtValueUsdc");
+        assertEq(assetDatacUsdc.collateralValue, 0, "collateralValue");
+        assertEq(assetDatacUsdc.maxDebtValue, 0, "maxDebtValue");
+        assertEq(assetDatacUsdc.debtValue, expectedDatcUsdc.debtValue, "debtValueUsdc");
 
         // Avoid stack too deep error.
         PositionsManagerForCompound.AssetLiquidityData memory expectedDatacDai;
@@ -289,19 +289,19 @@ contract TestPositionsManagerGetters is TestSetup {
             expectedDatacDai.collateralFactor
         );
 
-        testEquality(assetDatacDai.collateralFactor, collateralFactor, "collateralFactor");
-        testEquality(
+        assertEq(assetDatacDai.collateralFactor, collateralFactor, "collateralFactor");
+        assertEq(
             assetDatacDai.underlyingPrice,
             expectedDatacDai.underlyingPrice,
             "underlyingPriceDai"
         );
 
-        testEquality(
+        assertEq(
             assetDatacDai.collateralValue,
             expectedDatacDai.collateralValue,
             "collateralValueDai"
         );
-        testEquality(assetDatacDai.maxDebtValue, expectedDatacDai.maxDebtValue, "maxDebtValueDai");
+        assertEq(assetDatacDai.maxDebtValue, expectedDatacDai.maxDebtValue, "maxDebtValueDai");
         assertEq(assetDatacDai.debtValue, 0, "debtValueDai");
     }
 
@@ -339,9 +339,10 @@ contract TestPositionsManagerGetters is TestSetup {
             cUsdc
         );
 
-        testEquality(
+        assertApproxEq(
             withdrawable,
             getBalanceOnCompound(amount, ICToken(cUsdc).exchangeRateStored()),
+            1,
             "withdrawable USDC"
         );
         assertEq(borrowable, expectedBorrowableUsdc, "borrowable USDC");
@@ -395,9 +396,10 @@ contract TestPositionsManagerGetters is TestSetup {
             getBalanceOnCompound(to6Decimals(amount), ICToken(cUsdc).exchangeRateCurrent()),
             "withdrawable USDC"
         );
-        testEquality(
+        assertApproxEq(
             withdrawableDai,
             getBalanceOnCompound(amount, ICToken(cDai).exchangeRateCurrent()),
+            1,
             "withdrawable DAI"
         );
         assertEq(borrowableUsdt, expectedBorrowableUsdt, "borrowable USDT before");
@@ -412,7 +414,7 @@ contract TestPositionsManagerGetters is TestSetup {
 
         expectedBorrowableUsdt -= toBorrow;
 
-        testEquality(newBorrowableUsdt, expectedBorrowableUsdt, "borrowable USDT after");
+        assertApproxEq(newBorrowableUsdt, expectedBorrowableUsdt, 1, "borrowable USDT after");
     }
 
     function testUserBalanceStatesWithSupplyAndBorrow() public {
@@ -444,9 +446,9 @@ contract TestPositionsManagerGetters is TestSetup {
         );
         expectedStates.maxDebtValue = expectedStates.collateralValue.mul(collateralFactor);
 
-        testEquality(states.collateralValue, expectedStates.collateralValue, "Collateral Value");
-        testEquality(states.maxDebtValue, expectedStates.maxDebtValue, "Max Debt Value");
-        testEquality(states.debtValue, expectedStates.debtValue, "Debt Value");
+        assertEq(states.collateralValue, expectedStates.collateralValue, "Collateral Value");
+        assertEq(states.maxDebtValue, expectedStates.maxDebtValue, "Max Debt Value");
+        assertEq(states.debtValue, expectedStates.debtValue, "Debt Value");
     }
 
     function testUserBalanceStatesWithSupplyAndBorrowWithMultipleAssets() public {
@@ -495,9 +497,9 @@ contract TestPositionsManagerGetters is TestSetup {
         (states.collateralValue, states.debtValue, states.maxDebtValue) = positionsManager
         .getUserBalanceStates(address(borrower1));
 
-        testEquality(states.collateralValue, expectedStates.collateralValue, "Collateral Value");
-        testEquality(states.debtValue, expectedStates.debtValue, "Debt Value");
-        testEquality(states.maxDebtValue, expectedStates.maxDebtValue, "Max Debt Value");
+        assertEq(states.collateralValue, expectedStates.collateralValue, "Collateral Value");
+        assertEq(states.debtValue, expectedStates.debtValue, "Debt Value");
+        assertEq(states.maxDebtValue, expectedStates.maxDebtValue, "Max Debt Value");
     }
 
     /// This test is to check that a call to getUserLiquidityDataForAsset with USDT doesn't end
@@ -585,9 +587,9 @@ contract TestPositionsManagerGetters is TestSetup {
         expectedStates.debtValue += getBalanceOnCompound(toBorrow, ICToken(cUsdt).borrowIndex())
         .mul(oracle.getUnderlyingPrice(cUsdt));
 
-        testEquality(states.collateralValue, expectedStates.collateralValue, "Collateral Value");
-        testEquality(states.debtValue, expectedStates.debtValue, "Debt Value");
-        testEquality(states.maxDebtValue, expectedStates.maxDebtValue, "Max Debt Value");
+        assertEq(states.collateralValue, expectedStates.collateralValue, "Collateral Value");
+        assertEq(states.debtValue, expectedStates.debtValue, "Debt Value");
+        assertEq(states.maxDebtValue, expectedStates.maxDebtValue, "Max Debt Value");
     }
 
     function testEnteredMarkets() public {
