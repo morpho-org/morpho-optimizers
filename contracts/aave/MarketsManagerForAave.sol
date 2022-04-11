@@ -399,6 +399,7 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
     struct Vars {
         uint256 shareOfTheDelta;
         uint256 poolIncrease;
+        IPositionsManagerForAave.Delta delta;
     }
 
     function computeSupplyP2PExchangeRate(
@@ -410,22 +411,25 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
         uint256 _lastPoolBorrowExchangeRate
     ) public view returns (uint256 newSupplyP2PExchangeRate) {
         Vars memory vars;
-        IPositionsManagerForAave.Delta memory delta = positionsManager.deltas(_poolTokenAddress);
+        vars.delta = positionsManager.deltas(_poolTokenAddress);
         vars.poolIncrease =
             ((2 * _poolSupplyExchangeRate).rayDiv(_lastPoolSupplyExchangeRate) +
-                _poolBorrowExchangeRate.rayDiv(_lastPoolBorrowExchangeRate)) /
+                _poolBorrowExchangeRate
+                .rayMul(MAX_BASIS_POINTS - reserveFactor[_poolTokenAddress])
+                .rayDiv(_lastPoolBorrowExchangeRate)) /
             3;
 
-        if (delta.supplyP2PAmount == 0 || delta.supplyP2PDelta == 0) {
+        if (vars.delta.supplyP2PAmount == 0 || vars.delta.supplyP2PDelta == 0) {
             newSupplyP2PExchangeRate = _supplyP2pExchangeRate.rayMul(vars.poolIncrease);
         } else {
             vars.shareOfTheDelta = Math.min(
-                delta
+                vars
+                .delta
                 .supplyP2PDelta
                 .wadToRay()
                 .rayMul(_poolSupplyExchangeRate)
                 .rayDiv(_supplyP2pExchangeRate)
-                .rayDiv(delta.supplyP2PAmount.wadToRay()),
+                .rayDiv(vars.delta.supplyP2PAmount.wadToRay()),
                 Math.ray() // To avoid shareOfTheDelta > 1 with rounding errors.
             );
 
@@ -447,22 +451,25 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
         uint256 _lastPoolBorrowExchangeRate
     ) public view returns (uint256 newBorrowP2PExchangeRate) {
         Vars memory vars;
-        IPositionsManagerForAave.Delta memory delta = positionsManager.deltas(_poolTokenAddress);
+        vars.delta = positionsManager.deltas(_poolTokenAddress);
         vars.poolIncrease =
-            ((2 * _poolSupplyExchangeRate).rayDiv(_lastPoolSupplyExchangeRate) +
+            ((2 * _poolSupplyExchangeRate)
+            .rayMul(MAX_BASIS_POINTS - reserveFactor[_poolTokenAddress])
+            .rayDiv(_lastPoolSupplyExchangeRate) +
                 _poolBorrowExchangeRate.rayDiv(_lastPoolBorrowExchangeRate)) /
             3;
 
-        if (delta.borrowP2PAmount == 0 || delta.borrowP2PDelta == 0) {
+        if (vars.delta.borrowP2PAmount == 0 || vars.delta.borrowP2PDelta == 0) {
             newBorrowP2PExchangeRate = _borrowP2pExchangeRate.rayMul(vars.poolIncrease);
         } else {
             vars.shareOfTheDelta = Math.min(
-                delta
+                vars
+                .delta
                 .borrowP2PDelta
                 .wadToRay()
                 .rayMul(_poolBorrowExchangeRate)
                 .rayDiv(_borrowP2pExchangeRate)
-                .rayDiv(delta.borrowP2PAmount.wadToRay()),
+                .rayDiv(vars.delta.borrowP2PAmount.wadToRay()),
                 Math.ray() // To avoid shareOfTheDelta > 1 with rounding errors.
             );
 
