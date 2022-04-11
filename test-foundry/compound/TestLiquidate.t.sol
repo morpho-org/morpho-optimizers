@@ -58,7 +58,7 @@ contract TestLiquidate is TestSetup {
             address(borrower1)
         );
         uint256 expectedBorrowBalanceOnPool = toRepay.div(ICToken(cDai).borrowIndex());
-        testEquality(onPoolBorrower, expectedBorrowBalanceOnPool, "borrower borrow on pool");
+        assertApproxEq(onPoolBorrower, expectedBorrowBalanceOnPool, 5, "borrower borrow on pool");
         assertEq(inP2PBorrower, 0, "borrower borrow in P2P");
 
         // Check borrower1 supply balance.
@@ -78,7 +78,7 @@ contract TestLiquidate is TestSetup {
         uint256 expectedOnPool = collateralOnPool -
             underlyingToPoolSupplyBalance(amountToSeize, ICToken(cUsdc).exchangeRateCurrent());
 
-        testEquality(onPoolBorrower, expectedOnPool, "borrower supply on pool");
+        assertEq(onPoolBorrower, expectedOnPool, "borrower supply on pool");
         assertEq(inP2PBorrower, 0, "borrower supply in P2P");
     }
 
