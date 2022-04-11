@@ -146,7 +146,7 @@ contract TestBorrow is TestSetup {
             marketsManager.borrowP2PExchangeRate(cDai)
         );
 
-        testEquality(inP2P, expectedBorrowInP2P, "Borrower1 in P2P");
+        assertApproxEq(inP2P, expectedBorrowInP2P, 1, "Borrower1 in P2P");
         assertEq(onPool, 0, "Borrower1 on pool");
     }
 
@@ -202,7 +202,7 @@ contract TestBorrow is TestSetup {
         );
         uint256 expectedBorrowOnPool = (amount - matchedAmount).div(borrowIndex);
 
-        testEquality(inP2P, expectedBorrowInP2P, "Borrower1 in P2P");
+        assertApproxEq(inP2P, expectedBorrowInP2P, 5, "Borrower1 in P2P");
         assertEq(onPool, expectedBorrowOnPool, "Borrower1 on pool");
     }
 
