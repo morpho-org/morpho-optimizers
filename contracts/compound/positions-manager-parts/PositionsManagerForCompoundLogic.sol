@@ -38,12 +38,14 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
     /// @param _marketsManager The `marketsManager`.
     /// @param _matchingEngine The `matchingEngine`.
     /// @param _comptroller The `comptroller`.
+    /// @param _dustThreshold The `dustThreshold`.
     /// @param _maxGas The `maxGas`.
     /// @param _NDS The `NDS`.
     function initialize(
         IMarketsManagerForCompound _marketsManager,
         IMatchingEngineForCompound _matchingEngine,
         IComptroller _comptroller,
+        uint256 _dustThreshold,
         MaxGas memory _maxGas,
         uint8 _NDS
     ) external initializer {
@@ -54,6 +56,7 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
         matchingEngine = _matchingEngine;
         comptroller = _comptroller;
 
+        dustThreshold = _dustThreshold;
         maxGas = _maxGas;
         NDS = _NDS;
     }

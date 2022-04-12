@@ -44,6 +44,13 @@ abstract contract PositionsManagerForCompoundGettersSetters is
         emit MaxGasSet(_maxGas);
     }
 
+    /// @dev Sets `dustThreshold`.
+    /// @param _dustThreshold The new `dustThreshold`.
+    function setDustThreshold(uint256 _dustThreshold) external onlyOwner {
+        dustThreshold = _dustThreshold;
+        emit DustThresholdSet(_dustThreshold);
+    }
+
     /// @notice Sets the `_newTreasuryVaultAddress`.
     /// @param _newTreasuryVaultAddress The address of the new `treasuryVault`.
     function setTreasuryVault(address _newTreasuryVaultAddress) external onlyOwner {

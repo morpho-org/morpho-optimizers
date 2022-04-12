@@ -107,7 +107,7 @@ contract TestSetup is Config, Utils, stdCheats {
 
         positionsManagerProxy.changeAdmin(address(proxyAdmin));
         positionsManager = PositionsManagerForCompound(address(positionsManagerProxy));
-        positionsManager.initialize(marketsManager, matchingEngine, comptroller, maxGas, 20);
+        positionsManager.initialize(marketsManager, matchingEngine, comptroller, 1, maxGas, 20);
 
         treasuryVault = new User(positionsManager);
         fakePositionsManagerImpl = new PositionsManagerForCompound();

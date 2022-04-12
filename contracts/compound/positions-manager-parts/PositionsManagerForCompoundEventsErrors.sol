@@ -112,6 +112,10 @@ abstract contract PositionsManagerForCompoundEventsErrors is PositionsManagerFor
     /// @param _maxGas The new `maxGas`.
     event MaxGasSet(MaxGas _maxGas);
 
+    /// @dev Emitted when a new `dustThreshold` is set.
+    /// @param _dustThreshold The new `dustThreshold`.
+    event DustThresholdSet(uint256 _dustThreshold);
+
     /// @dev Emitted the address of the `treasuryVault` is set.
     /// @param _newTreasuryVaultAddress The new address of the `treasuryVault`.
     event TreasuryVaultSet(address indexed _newTreasuryVaultAddress);
