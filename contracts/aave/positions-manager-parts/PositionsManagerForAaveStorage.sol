@@ -8,6 +8,7 @@ import "../interfaces/aave/ILendingPool.sol";
 import "../interfaces/IMarketsManagerForAave.sol";
 import "../interfaces/IMatchingEngineForAave.sol";
 import "../interfaces/IRewardsManagerForAave.sol";
+import "../interfaces/ITypesForAave.sol";
 import "../../common/interfaces/ISwapManager.sol";
 
 import "../../common/libraries/DoubleLinkedList.sol";
@@ -15,7 +16,11 @@ import "../../common/libraries/DoubleLinkedList.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
-abstract contract PositionsManagerForAaveStorage is OwnableUpgradeable, ReentrancyGuardUpgradeable {
+abstract contract PositionsManagerForAaveStorage is
+    OwnableUpgradeable,
+    ReentrancyGuardUpgradeable,
+    ITypesForAave
+{
     /// ENUMS ///
 
     enum PositionType {
@@ -43,13 +48,6 @@ abstract contract PositionsManagerForAaveStorage is OwnableUpgradeable, Reentran
         uint64 borrow;
         uint64 withdraw;
         uint64 repay;
-    }
-
-    struct Delta {
-        uint256 supplyP2PDelta; // Difference between the stored P2P supply amount and the real P2P supply amount (in scaled balance).
-        uint256 borrowP2PDelta; // Difference between the stored P2P borrow amount and the real P2P borrow amount (in adUnit).
-        uint256 supplyP2PAmount; // Sum of all stored P2P supply (in P2P unit).
-        uint256 borrowP2PAmount; // Sum of all stored P2P borrow (in P2P unit).
     }
 
     struct AssetLiquidityData {

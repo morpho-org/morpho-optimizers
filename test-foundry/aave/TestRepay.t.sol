@@ -500,8 +500,6 @@ contract TestRepay is TestSetup {
 
             move1YearForward(aDai);
 
-            marketsManager.updateRates(aDai);
-
             (newVars.SP2PD, , newVars.SP2PA, ) = positionsManager.deltas(aDai);
             newVars.NI = lendingPool.getReserveNormalizedIncome(dai);
             newVars.SP2PER = marketsManager.supplyP2PExchangeRate(aDai);

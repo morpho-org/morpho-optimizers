@@ -50,10 +50,6 @@ contract User {
         marketsManager.setReserveFactor(_poolTokenAddress, _reserveFactor);
     }
 
-    function updateRates(address _marketAddress) external {
-        marketsManager.updateRates(_marketAddress);
-    }
-
     function supply(address _poolTokenAddress, uint256 _amount) external {
         positionsManager.supply(_poolTokenAddress, _amount, 0);
     }
