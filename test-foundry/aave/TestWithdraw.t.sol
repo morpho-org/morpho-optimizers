@@ -507,8 +507,6 @@ contract TestWithdraw is TestSetup {
 
             move1YearForward(aDai);
 
-            marketsManager.updateRates(aDai);
-
             (, newVars.BP2PD, , newVars.BP2PA) = positionsManager.deltas(aDai);
             newVars.NVD = lendingPool.getReserveNormalizedVariableDebt(dai);
             newVars.BP2PER = marketsManager.borrowP2PExchangeRate(aDai);

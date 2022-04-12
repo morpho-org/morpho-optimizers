@@ -1,17 +1,12 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-interface IPositionsManagerForAave {
+import "./ITypesForAave.sol";
+
+interface IPositionsManagerForAave is ITypesForAave {
     struct Balance {
         uint256 inP2P;
         uint256 onPool;
-    }
-
-    struct Delta {
-        uint256 supplyP2PDelta;
-        uint256 borrowP2PDelta;
-        uint256 supplyP2PAmount;
-        uint256 borrowP2PAmount;
     }
 
     function createMarket(address) external returns (uint256[] memory);

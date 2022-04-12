@@ -53,7 +53,7 @@ contract TestMarketsManagerGetters is TestSetup {
         hevm.warp(block.timestamp + (365 days));
 
         uint256 newBorrowP2PExchangeRate = marketsManager.getUpdatedBorrowP2PExchangeRate(aDai);
-        marketsManager.updateRates(aDai);
+        marketsManager.updateP2PExchangeRates(aDai);
         assertEq(newBorrowP2PExchangeRate, marketsManager.borrowP2PExchangeRate(aDai));
     }
 
@@ -61,7 +61,7 @@ contract TestMarketsManagerGetters is TestSetup {
         hevm.warp(block.timestamp + (365 days));
 
         uint256 newSupplyP2PExchangeRate = marketsManager.getUpdatedSupplyP2PExchangeRate(aDai);
-        marketsManager.updateRates(aDai);
+        marketsManager.updateP2PExchangeRates(aDai);
         assertEq(newSupplyP2PExchangeRate, marketsManager.supplyP2PExchangeRate(aDai));
     }
 }
