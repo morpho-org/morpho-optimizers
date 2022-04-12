@@ -6,10 +6,6 @@ interface IMarketsManagerForAave {
 
     function noP2P(address _marketAddress) external view returns (bool);
 
-    function supplyP2PSPY(address _marketAddress) external returns (uint256);
-
-    function borrowP2PSPY(address _marketAddress) external returns (uint256);
-
     function supplyP2PExchangeRate(address _marketAddress) external view returns (uint256);
 
     function borrowP2PExchangeRate(address _marketAddress) external view returns (uint256);
@@ -29,4 +25,6 @@ interface IMarketsManagerForAave {
         external
         view
         returns (uint256);
+
+    function getApproxP2PSPY(address _marketAddress) external view returns (uint256, uint256);
 }
