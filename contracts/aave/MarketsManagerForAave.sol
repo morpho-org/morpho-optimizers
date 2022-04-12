@@ -32,8 +32,6 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
     address[] public marketsCreated; // Keeps track of the created markets.
     mapping(address => bool) public override isCreated; // Whether or not this market is created.
     mapping(address => uint256) public reserveFactor; // Proportion of the interest earned by users sent to the DAO for each market, in basis point (100% = 10000). The default value is 0.
-    mapping(address => uint256) public override supplyP2PSPY; // Supply Percentage Yield per second (in ray).
-    mapping(address => uint256) public override borrowP2PSPY; // Borrow Percentage Yield per second (in ray).
     mapping(address => uint256) public override supplyP2PExchangeRate; // Current exchange rate from supply p2pUnit to underlying (in ray).
     mapping(address => uint256) public override borrowP2PExchangeRate; // Current exchange rate from borrow p2pUnit to underlying (in ray).
     mapping(address => uint256) public override exchangeRatesLastUpdateTimestamp; // The last time the P2P exchange rates were updated.
@@ -62,16 +60,6 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
     /// @param _marketAddress The address of the market to set.
     /// @param _noP2P The new value of `_noP2P` adopted.
     event NoP2PSet(address indexed _marketAddress, bool _noP2P);
-
-    /// @notice Emitted when the P2P SPYs of a market are updated.
-    /// @param _marketAddress The address of the market updated.
-    /// @param _newSupplyP2PSPY The new value of the supply  P2P SPY.
-    /// @param _newBorrowP2PSPY The new value of the borrow P2P SPY.
-    event P2PSPYsUpdated(
-        address indexed _marketAddress,
-        uint256 _newSupplyP2PSPY,
-        uint256 _newBorrowP2PSPY
-    );
 
     /// @notice Emitted when the p2p exchange rates of a market are updated.
     /// @param _marketAddress The address of the market updated.
@@ -221,8 +209,6 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
     }
 
     /// @notice Returns market's data.
-    /// @return supplyP2PSPY_ The supply P2P SPY of the market.
-    /// @return borrowP2PSPY_ The borrow P2P SPY of the market.
     /// @return supplyP2PExchangeRate_ The supply P2P exchange rate of the market.
     /// @return borrowP2PExchangeRate_ The borrow P2P exchange rate of the market.
     /// @return exchangeRatesLastUpdateTimestamp_ The last timestamp when P2P exchange rates where updated.
@@ -234,8 +220,6 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
         external
         view
         returns (
-            uint256 supplyP2PSPY_,
-            uint256 borrowP2PSPY_,
             uint256 supplyP2PExchangeRate_,
             uint256 borrowP2PExchangeRate_,
             uint256 exchangeRatesLastUpdateTimestamp_,
@@ -253,8 +237,6 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
             borrowP2PAmount_ = delta.borrowP2PAmount;
         }
 
-        supplyP2PSPY_ = supplyP2PSPY[_marketAddress];
-        borrowP2PSPY_ = borrowP2PSPY[_marketAddress];
         supplyP2PExchangeRate_ = supplyP2PExchangeRate[_marketAddress];
         borrowP2PExchangeRate_ = borrowP2PExchangeRate[_marketAddress];
         exchangeRatesLastUpdateTimestamp_ = exchangeRatesLastUpdateTimestamp[_marketAddress];
@@ -270,6 +252,22 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
     {
         isCreated_ = isCreated[_marketAddress];
         noP2P_ = noP2P[_marketAddress];
+    }
+
+    function getApproxP2PSPY(address _marketAddress)
+        external
+        view
+        returns (uint256 supplyP2PSPY, uint256 borrowP2PSPY)
+    {
+        DataTypes.ReserveData memory reserveData = lendingPool.getReserveData(
+            IAToken(_marketAddress).UNDERLYING_ASSET_ADDRESS()
+        );
+
+        (supplyP2PSPY, borrowP2PSPY) = interestRates.computeRates(
+            reserveData.currentLiquidityRate,
+            reserveData.currentVariableBorrowRate,
+            reserveFactor[_marketAddress]
+        );
     }
 
     /// PUBLIC ///

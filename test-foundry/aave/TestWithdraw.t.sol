@@ -503,7 +503,7 @@ contract TestWithdraw is TestSetup {
             (, oldVars.BP2PD, , oldVars.BP2PA) = positionsManager.deltas(aDai);
             oldVars.NVD = lendingPool.getReserveNormalizedVariableDebt(dai);
             oldVars.BP2PER = marketsManager.borrowP2PExchangeRate(aDai);
-            oldVars.SPY = marketsManager.borrowP2PSPY(aDai);
+            (, oldVars.SPY) = marketsManager.getApproxP2PSPY(aDai);
 
             move1YearForward(aDai);
 
@@ -512,7 +512,6 @@ contract TestWithdraw is TestSetup {
             (, newVars.BP2PD, , newVars.BP2PA) = positionsManager.deltas(aDai);
             newVars.NVD = lendingPool.getReserveNormalizedVariableDebt(dai);
             newVars.BP2PER = marketsManager.borrowP2PExchangeRate(aDai);
-            newVars.SPY = marketsManager.borrowP2PSPY(aDai);
             newVars.LR = lendingPool.getReserveData(dai).currentLiquidityRate;
             newVars.VBR = lendingPool.getReserveData(dai).currentVariableBorrowRate;
 
