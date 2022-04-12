@@ -498,7 +498,7 @@ contract TestRepay is TestSetup {
             oldVars.SP2PER = marketsManager.supplyP2PExchangeRate(aDai);
             oldVars.SPY = marketsManager.supplyP2PSPY(aDai);
 
-            hevm.warp(block.timestamp + (365 days));
+            move1YearForward(aDai);
 
             marketsManager.updateRates(aDai);
 
@@ -520,7 +520,12 @@ contract TestRepay is TestSetup {
                     shareOfTheDelta.rayMul(newVars.NI).rayDiv(oldVars.NI)
             );
 
-            testEquality(expectedSP2PER, newVars.SP2PER, "SP2PER not expected");
+            assertApproxEq(
+                expectedSP2PER,
+                newVars.SP2PER,
+                (expectedSP2PER * 2) / 100,
+                "SP2PER not expected"
+            );
 
             uint256 expectedSupplyBalanceInUnderlying = suppliedAmount
             .divWadByRay(oldVars.SP2PER)
@@ -529,9 +534,10 @@ contract TestRepay is TestSetup {
             for (uint256 i = 10; i < 20; i++) {
                 (uint256 inP2PSupplier, uint256 onPoolSupplier) = positionsManager
                 .supplyBalanceInOf(aDai, address(suppliers[i]));
-                testEquality(
+                assertApproxEq(
                     p2pUnitToUnderlying(inP2PSupplier, newVars.SP2PER),
                     expectedSupplyBalanceInUnderlying,
+                    (expectedSupplyBalanceInUnderlying * 2) / 100,
                     "not expected balance P2P"
                 );
                 testEquality(onPoolSupplier, 0, "not expected balance pool");
