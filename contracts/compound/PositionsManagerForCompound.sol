@@ -194,7 +194,6 @@ contract PositionsManagerForCompound is PositionsManagerForCompoundLogic {
         if (vars.debtValue <= vars.maxDebtValue) revert DebtValueNotAboveMax();
 
         vars.borrowBalance = _getUserBorrowBalanceInOf(_poolTokenBorrowedAddress, _borrower);
-
         if (amount > (vars.borrowBalance * LIQUIDATION_CLOSE_FACTOR_PERCENT) / MAX_BASIS_POINTS)
             revert AmountAboveWhatAllowedToRepay(); // Same mechanism as Compound. Liquidator cannot repay more than part of the debt (cf close factor on Compound).
 

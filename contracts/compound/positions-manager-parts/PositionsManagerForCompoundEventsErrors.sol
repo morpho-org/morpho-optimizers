@@ -192,6 +192,6 @@ abstract contract PositionsManagerForCompoundEventsErrors is PositionsManagerFor
     /// @notice Thrown when the mint on Compound failed.
     error MintOnCompoundFailed();
 
-    /// @notice Thrown when an amount of token and eth are sent at the same time.
+    /// @notice Thrown when an amount of token and ETH are sent at the same time.
     error CannotSendEthAndTokensAtTheSameTime();
 }

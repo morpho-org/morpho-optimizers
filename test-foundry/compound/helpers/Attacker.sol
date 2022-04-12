@@ -29,6 +29,6 @@ contract Attacker {
     }
 
     function deposit(address _asset, uint256 _amount) external {
-        console.log("result", ICToken(_asset).mint(_amount));
+        ICToken(_asset).mint(_amount);
     }
 }

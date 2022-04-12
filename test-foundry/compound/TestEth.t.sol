@@ -212,4 +212,132 @@ contract TestEth is TestSetup {
         assertEq(inP2P, 0);
         assertEq(balanceAfter, balanceBefore, "balance");
     }
+
+    function testShouldLiquidateUserWithEthBorrowed() public {
+        uint256 collateral = to6Decimals(100_000 ether);
+
+        // supplier1 suppliers excedent of USDC to put Morpho clearly above water.
+        supplier1.approve(usdc, address(positionsManager), collateral);
+        supplier1.supply(cUsdc, collateral);
+
+        borrower1.approve(usdc, address(positionsManager), collateral);
+        borrower1.supply(cUsdc, collateral);
+
+        (, uint256 amount) = positionsManager.getUserMaxCapacitiesForAsset(
+            address(borrower1),
+            cEth
+        );
+        borrower1.borrow(cEth, amount);
+
+        (, uint256 collateralOnPool) = positionsManager.supplyBalanceInOf(
+            cUsdc,
+            address(borrower1)
+        );
+
+        // Change Oracle.
+        SimplePriceOracle customOracle = createAndSetCustomPriceOracle();
+        customOracle.setDirectPrice(usdc, (oracle.getUnderlyingPrice(cUsdc) * 95) / 100);
+
+        // Liquidate.
+        uint256 toRepay = (amount * 1) / 3;
+        User liquidator = borrower3;
+        payable(address(liquidator)).transfer(toRepay * 10);
+        uint256 balanceBefore = address(liquidator).balance;
+        hevm.prank(address(liquidator));
+        positionsManager.liquidate{value: toRepay}(cEth, cUsdc, address(borrower1), 0);
+        uint256 balanceAfter = address(liquidator).balance;
+
+        // Check borrower1 borrow balance.
+        (uint256 inP2PBorrower, uint256 onPoolBorrower) = positionsManager.borrowBalanceInOf(
+            cEth,
+            address(borrower1)
+        );
+        uint256 expectedBorrowBalanceOnPool = (amount - toRepay).div(ICToken(cEth).borrowIndex());
+        testEquality(onPoolBorrower, expectedBorrowBalanceOnPool, "borrower borrow on pool");
+        assertEq(inP2PBorrower, 0, "borrower borrow in P2P");
+
+        // Check borrower1 supply balance.
+        (inP2PBorrower, onPoolBorrower) = positionsManager.supplyBalanceInOf(
+            cUsdc,
+            address(borrower1)
+        );
+
+        uint256 collateralPrice = customOracle.getUnderlyingPrice(cUsdc);
+        uint256 borrowedPrice = customOracle.getUnderlyingPrice(cEth);
+
+        uint256 amountToSeize = toRepay
+        .mul(comptroller.liquidationIncentiveMantissa())
+        .mul(borrowedPrice)
+        .div(collateralPrice);
+
+        uint256 expectedOnPool = collateralOnPool -
+            amountToSeize.div(ICToken(cUsdc).exchangeRateCurrent());
+
+        testEquality(onPoolBorrower, expectedOnPool, "borrower supply on pool");
+        assertEq(balanceAfter, balanceBefore - toRepay, "amount seized");
+        assertEq(inP2PBorrower, 0, "borrower supply in P2P");
+    }
+
+    function testShouldLiquidateUserWithEthAsCollateral() public {
+        uint256 collateral = 1 ether;
+        uint256 toSupplyMore = to6Decimals(100_000 ether);
+
+        // supplier1 suppliers excedent of USDC to put Morpho clearly above water.
+        supplier1.approve(usdc, address(positionsManager), toSupplyMore);
+        supplier1.supply(cUsdc, toSupplyMore);
+
+        payable(address(borrower1)).transfer(collateral * 10);
+        hevm.prank(address(borrower1));
+        positionsManager.supply{value: collateral}(cEth, 0, 0);
+
+        (, uint256 amount) = positionsManager.getUserMaxCapacitiesForAsset(
+            address(borrower1),
+            cDai
+        );
+        borrower1.borrow(cDai, amount);
+
+        (, uint256 collateralOnPool) = positionsManager.supplyBalanceInOf(cEth, address(borrower1));
+
+        // Change Oracle.
+        SimplePriceOracle customOracle = createAndSetCustomPriceOracle();
+        customOracle.setDirectPrice(dai, (oracle.getUnderlyingPrice(cDai) * 105) / 100);
+
+        // Liquidate.
+        uint256 toRepay = (amount * 1) / 3;
+        User liquidator = borrower3;
+        uint256 balanceBefore = address(liquidator).balance;
+        liquidator.approve(dai, address(positionsManager), toRepay);
+        liquidator.liquidate(cDai, cEth, address(borrower1), toRepay);
+        uint256 balanceAfter = address(liquidator).balance;
+
+        // Check borrower1 borrow balance.
+        (uint256 inP2PBorrower, uint256 onPoolBorrower) = positionsManager.borrowBalanceInOf(
+            cDai,
+            address(borrower1)
+        );
+        uint256 expectedBorrowBalanceOnPool = (amount - toRepay).div(ICToken(cDai).borrowIndex());
+        testEquality(onPoolBorrower, expectedBorrowBalanceOnPool, "borrower borrow on pool");
+        assertEq(inP2PBorrower, 0, "borrower borrow in P2P");
+
+        // Check borrower1 supply balance.
+        (inP2PBorrower, onPoolBorrower) = positionsManager.supplyBalanceInOf(
+            cEth,
+            address(borrower1)
+        );
+
+        uint256 collateralPrice = customOracle.getUnderlyingPrice(cEth);
+        uint256 borrowedPrice = customOracle.getUnderlyingPrice(cDai);
+
+        uint256 amountToSeize = toRepay
+        .mul(comptroller.liquidationIncentiveMantissa())
+        .mul(borrowedPrice)
+        .div(collateralPrice);
+
+        uint256 expectedOnPool = collateralOnPool -
+            amountToSeize.div(ICToken(cEth).exchangeRateCurrent());
+
+        testEquality(onPoolBorrower, expectedOnPool, "borrower supply on pool");
+        assertEq(balanceAfter, balanceBefore + amountToSeize, "amount seized");
+        assertEq(inP2PBorrower, 0, "borrower supply in P2P");
+    }
 }

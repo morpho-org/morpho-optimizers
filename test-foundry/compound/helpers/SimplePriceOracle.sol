@@ -1,10 +1,13 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
+import "hardhat/console.sol";
+
 import {ICToken, ICToken} from "@contracts/compound/interfaces/compound/ICompound.sol";
 
 /// Price Oracle for liquidation tests
 contract SimplePriceOracle {
+    address public constant ethHash = address(bytes20(keccak256(abi.encodePacked("ETH"))));
     mapping(address => uint256) public prices;
 
     function getUnderlyingPrice(address _cToken) public view returns (uint256) {
@@ -12,7 +15,7 @@ contract SimplePriceOracle {
         try ICToken(_cToken).underlying() {
             return prices[ICToken(_cToken).underlying()];
         } catch {
-            return 1e18;
+            return prices[address(ethHash)];
         }
     }
 
@@ -22,7 +25,7 @@ contract SimplePriceOracle {
             address asset = ICToken(_cToken).underlying();
             prices[asset] = _underlyingPriceMantissa;
         } catch {
-            return;
+            prices[address(ethHash)] = _underlyingPriceMantissa;
         }
     }
 
