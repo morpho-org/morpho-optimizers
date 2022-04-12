@@ -142,8 +142,9 @@ abstract contract RewardsManagerForAave is IRewardsManagerForAave, Ownable {
     /// @param _user The address of the user.
     /// @return unclaimedRewards The user unclaimed rewards.
     function getUserUnclaimedRewards(address[] calldata _assets, address _user)
-        external 
-        view override
+        external
+        view
+        override
         returns (uint256 unclaimedRewards)
     {
         unclaimedRewards = userUnclaimedRewards[_user];
@@ -209,7 +210,7 @@ abstract contract RewardsManagerForAave is IRewardsManagerForAave, Ownable {
 
     /// INTERNAL ///
 
-    /// @dev Updates the state of an user in a distribution.
+    /// @dev Updates the state of a user in a distribution.
     /// @param _user The address of the user.
     /// @param _asset The address of the reference asset of the distribution (aToken or variable debt token).
     /// @param _userBalance The user balance of tokens in the distribution.
@@ -233,7 +234,7 @@ abstract contract RewardsManagerForAave is IRewardsManagerForAave, Ownable {
         }
     }
 
-    /// @dev Get the state of an user in a distribution.
+    /// @dev Gets the state of a user in a distribution.
     /// @dev This function is the equivalent of _updateUserAsset but as a view.
     /// @param _user The address of the user.
     /// @param _asset The address of the reference asset of the distribution (aToken or variable debt token).
@@ -311,7 +312,8 @@ abstract contract RewardsManagerForAave is IRewardsManagerForAave, Ownable {
     /// @param _totalBalance The total balance of tokens in the distribution.
     /// @return newIndex The new distribution index.
     function _getNewIndex(address _asset, uint256 _totalBalance)
-        internal view
+        internal
+        view
         virtual
         returns (uint256 newIndex);
 }
