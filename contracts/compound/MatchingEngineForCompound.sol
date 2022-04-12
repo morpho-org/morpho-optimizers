@@ -96,7 +96,7 @@ contract MatchingEngineForCompound is
                     matched += vars.toMatch;
                 }
 
-                supplyBalanceInOf[poolTokenAddress][user].onPool -= vars.toMatch.divWadUp(
+                supplyBalanceInOf[poolTokenAddress][user].onPool -= vars.toMatch.div(
                     vars.poolIndex
                 );
                 supplyBalanceInOf[poolTokenAddress][user].inP2P += vars.toMatch.div(vars.p2pRate); // In p2pUnit
@@ -149,7 +149,7 @@ contract MatchingEngineForCompound is
                 supplyBalanceInOf[_poolTokenAddress][user].onPool += vars.toUnmatch.div(
                     vars.poolIndex
                 );
-                supplyBalanceInOf[_poolTokenAddress][user].inP2P -= vars.toUnmatch.divWadUp(
+                supplyBalanceInOf[_poolTokenAddress][user].inP2P -= vars.toUnmatch.div(
                     vars.p2pRate
                 ); // In p2pUnit
                 updateSuppliers(_poolTokenAddress, user);
@@ -201,7 +201,7 @@ contract MatchingEngineForCompound is
                     matched += vars.toMatch;
                 }
 
-                borrowBalanceInOf[poolTokenAddress][user].onPool -= vars.toMatch.divWadUp(
+                borrowBalanceInOf[poolTokenAddress][user].onPool -= vars.toMatch.div(
                     vars.poolIndex
                 );
                 borrowBalanceInOf[poolTokenAddress][user].inP2P += vars.toMatch.div(vars.p2pRate);
@@ -255,7 +255,7 @@ contract MatchingEngineForCompound is
                 borrowBalanceInOf[_poolTokenAddress][user].onPool += vars.toUnmatch.div(
                     vars.poolIndex
                 );
-                borrowBalanceInOf[_poolTokenAddress][user].inP2P -= vars.toUnmatch.divWadUp(
+                borrowBalanceInOf[_poolTokenAddress][user].inP2P -= vars.toUnmatch.div(
                     vars.p2pRate
                 );
                 updateBorrowers(_poolTokenAddress, user);
@@ -285,12 +285,20 @@ contract MatchingEngineForCompound is
         uint256 formerValueInP2P = borrowersInP2P[_poolTokenAddress].getValueOf(_user);
 
         // Check pool.
+        if (onPool <= 1) {
+            borrowBalanceInOf[_poolTokenAddress][_user].onPool = 0;
+            onPool = 0;
+        }
         bool wasOnPoolAndValueChanged = formerValueOnPool != 0 && formerValueOnPool != onPool;
         if (wasOnPoolAndValueChanged) borrowersOnPool[_poolTokenAddress].remove(_user);
         if (onPool > 0 && (wasOnPoolAndValueChanged || formerValueOnPool == 0))
             borrowersOnPool[_poolTokenAddress].insertSorted(_user, onPool, NDS);
 
         // Check P2P.
+        if (inP2P <= 1) {
+            borrowBalanceInOf[_poolTokenAddress][_user].inP2P = 0;
+            inP2P = 0;
+        }
         bool wasInP2PAndValueChanged = formerValueInP2P != 0 && formerValueInP2P != inP2P;
         if (wasInP2PAndValueChanged) borrowersInP2P[_poolTokenAddress].remove(_user);
         if (inP2P > 0 && (wasInP2PAndValueChanged || formerValueInP2P == 0))
@@ -307,12 +315,20 @@ contract MatchingEngineForCompound is
         uint256 formerValueInP2P = suppliersInP2P[_poolTokenAddress].getValueOf(_user);
 
         // Check pool.
+        if (onPool <= 1) {
+            supplyBalanceInOf[_poolTokenAddress][_user].onPool = 0;
+            onPool = 0;
+        }
         bool wasOnPoolAndValueChanged = formerValueOnPool != 0 && formerValueOnPool != onPool;
         if (wasOnPoolAndValueChanged) suppliersOnPool[_poolTokenAddress].remove(_user);
         if (onPool > 0 && (wasOnPoolAndValueChanged || formerValueOnPool == 0))
             suppliersOnPool[_poolTokenAddress].insertSorted(_user, onPool, NDS);
 
         // Check P2P.
+        if (inP2P <= 1) {
+            supplyBalanceInOf[_poolTokenAddress][_user].inP2P = 0;
+            inP2P = 0;
+        }
         bool wasInP2PAndValueChanged = formerValueInP2P != 0 && formerValueInP2P != inP2P;
         if (wasInP2PAndValueChanged) suppliersInP2P[_poolTokenAddress].remove(_user);
         if (inP2P > 0 && (wasInP2PAndValueChanged || formerValueInP2P == 0))

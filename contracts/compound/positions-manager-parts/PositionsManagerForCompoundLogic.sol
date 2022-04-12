@@ -271,7 +271,7 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
 
             supplyBalanceInOf[_poolTokenAddress][_supplier].onPool -= CompoundMath.min(
                 onPoolSupply,
-                vars.toWithdraw.divWadUp(vars.supplyPoolIndex) // Handle case where only 1 wei stays on the position.
+                vars.toWithdraw.div(vars.supplyPoolIndex) // Handle case where only 1 wei stays on the position.
             );
             matchingEngine.updateSuppliersDC(_poolTokenAddress, _supplier);
         }
@@ -284,7 +284,7 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
         if (vars.remainingToWithdraw > 0 && !marketsManager.noP2P(_poolTokenAddress)) {
             supplyBalanceInOf[_poolTokenAddress][_supplier].inP2P -= CompoundMath.min(
                 supplyBalanceInOf[_poolTokenAddress][_supplier].inP2P,
-                vars.remainingToWithdraw.divWadUp(supplyP2PExchangeRate)
+                vars.remainingToWithdraw.div(supplyP2PExchangeRate)
             ); // In p2pUnit
             matchingEngine.updateSuppliersDC(_poolTokenAddress, _supplier);
 
@@ -393,7 +393,7 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
 
             borrowBalanceInOf[_poolTokenAddress][_user].onPool -= CompoundMath.min(
                 borrowedOnPool,
-                vars.toRepay.divWadUp(vars.borrowPoolIndex) // Handle case where only 1 wei stays on the position.
+                vars.toRepay.div(vars.borrowPoolIndex) // Handle case where only 1 wei stays on the position.
             ); // In cdUnit.
             matchingEngine.updateBorrowersDC(_poolTokenAddress, _user);
         }
@@ -406,7 +406,7 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
         if (vars.remainingToRepay > 0 && !marketsManager.noP2P(_poolTokenAddress)) {
             borrowBalanceInOf[_poolTokenAddress][_user].inP2P -= CompoundMath.min(
                 borrowBalanceInOf[_poolTokenAddress][_user].inP2P,
-                vars.remainingToRepay.divWadUp(borrowP2PExchangeRate) // Handle case where only 1 wei stays on the position.
+                vars.remainingToRepay.div(borrowP2PExchangeRate) // Handle case where only 1 wei stays on the position.
             ); // In p2pUnit.
             matchingEngine.updateBorrowersDC(_poolTokenAddress, _user);
 

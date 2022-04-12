@@ -29,73 +29,82 @@ contract TestPositionsManagerGetters is TestSetup {
         borrower1.supply(cDai, amount);
 
         assertEq(
-            address(0),
             positionsManager.getHead(
                 cDai,
                 PositionsManagerForCompoundStorage.PositionType.SUPPLIERS_IN_P2P
-            )
+            ),
+            address(0),
+            "SUPPLIERS_IN_P2P 1"
         );
         assertEq(
-            address(borrower1),
             positionsManager.getHead(
                 cDai,
                 PositionsManagerForCompoundStorage.PositionType.SUPPLIERS_ON_POOL
-            )
+            ),
+            address(borrower1),
+            "SUPPLIERS_ON_POOL 1"
         );
         assertEq(
-            address(0),
             positionsManager.getHead(
                 cDai,
                 PositionsManagerForCompoundStorage.PositionType.BORROWERS_IN_P2P
-            )
+            ),
+            address(0),
+            "BORROWERS_IN_P2P 1"
         );
         assertEq(
-            address(0),
             positionsManager.getHead(
                 cDai,
                 PositionsManagerForCompoundStorage.PositionType.BORROWERS_ON_POOL
-            )
+            ),
+            address(0),
+            "BORROWERS_ON_POOL 1"
         );
 
         borrower1.borrow(cDai, toBorrow);
 
         assertEq(
-            address(borrower1),
             positionsManager.getHead(
                 cDai,
                 PositionsManagerForCompoundStorage.PositionType.SUPPLIERS_IN_P2P
-            )
+            ),
+            address(borrower1),
+            "SUPPLIERS_IN_P2P 2"
         );
         assertEq(
-            address(borrower1),
             positionsManager.getHead(
                 cDai,
                 PositionsManagerForCompoundStorage.PositionType.SUPPLIERS_ON_POOL
-            )
+            ),
+            address(borrower1),
+            "SUPPLIERS_ON_POOL 2"
         );
         assertEq(
-            address(borrower1),
             positionsManager.getHead(
                 cDai,
                 PositionsManagerForCompoundStorage.PositionType.BORROWERS_IN_P2P
-            )
+            ),
+            address(borrower1),
+            "BORROWERS_IN_P2P 2"
         );
         assertEq(
-            address(0),
             positionsManager.getHead(
                 cDai,
                 PositionsManagerForCompoundStorage.PositionType.BORROWERS_ON_POOL
-            )
+            ),
+            address(0),
+            "BORROWERS_ON_POOL 2"
         );
 
         borrower1.borrow(cUsdc, to6Decimals(toBorrow));
 
         assertEq(
-            address(borrower1),
             positionsManager.getHead(
                 cUsdc,
                 PositionsManagerForCompoundStorage.PositionType.BORROWERS_ON_POOL
-            )
+            ),
+            address(borrower1),
+            "BORROWERS_ON_POOL 3"
         );
     }
 
@@ -226,7 +235,7 @@ contract TestPositionsManagerGetters is TestSetup {
         {
             uint256 onPool = amount.div(indexes.exchangeRate1);
             uint256 matchedInP2P = toBorrow.div(marketsManager.supplyP2PExchangeRate(cDai));
-            uint256 onPoolAfter = onPool - toBorrow.divWadUp(indexes.exchangeRate2);
+            uint256 onPoolAfter = onPool - toBorrow.div(indexes.exchangeRate2);
             total =
                 onPoolAfter.mul(indexes.exchangeRate2) +
                 matchedInP2P.mul(marketsManager.supplyP2PExchangeRate(cDai));

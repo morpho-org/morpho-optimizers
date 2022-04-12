@@ -269,7 +269,7 @@ contract TestWithdraw is TestSetup {
         // The amount withdrawn from supplier1 minus what is on pool will be removed from the borrower P2P's position.
         uint256 expectedBorrowBalanceOnPool = (toWithdraw -
             onPoolSupplier.mul(ICToken(cDai).exchangeRateCurrent()))
-        .divWadUp(ICToken(cDai).borrowIndex());
+        .div(ICToken(cDai).borrowIndex());
 
         assertApproxEq(inP2PBorrower, expectedBorrowBalanceInP2P, 1e4, "borrower in P2P");
         assertApproxEq(onPoolBorrower, expectedBorrowBalanceOnPool, 1e3, "borrower on Pool");
