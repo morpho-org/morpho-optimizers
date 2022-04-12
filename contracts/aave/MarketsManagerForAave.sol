@@ -412,12 +412,14 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
     ) public view returns (uint256 newSupplyP2PExchangeRate) {
         Vars memory vars;
         vars.delta = positionsManager.deltas(_poolTokenAddress);
-        vars.poolIncrease =
-            ((2 * _poolSupplyExchangeRate).rayDiv(_lastPoolSupplyExchangeRate) +
-                _poolBorrowExchangeRate
-                .rayMul(MAX_BASIS_POINTS - reserveFactor[_poolTokenAddress])
-                .rayDiv(_lastPoolBorrowExchangeRate)) /
-            3;
+
+        vars.poolIncrease = computeSupplyPoolIncrease(
+            _poolSupplyExchangeRate,
+            _poolBorrowExchangeRate,
+            _lastPoolSupplyExchangeRate,
+            _lastPoolBorrowExchangeRate,
+            reserveFactor[_poolTokenAddress]
+        );
 
         if (vars.delta.supplyP2PAmount == 0 || vars.delta.supplyP2PDelta == 0) {
             newSupplyP2PExchangeRate = _supplyP2pExchangeRate.rayMul(vars.poolIncrease);
@@ -434,7 +436,7 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
             );
 
             newSupplyP2PExchangeRate = _supplyP2pExchangeRate.rayMul(
-                vars.poolIncrease.rayMul(Math.ray() - vars.shareOfTheDelta) +
+                (Math.ray() - vars.shareOfTheDelta).rayMul(vars.poolIncrease) +
                     vars.shareOfTheDelta.rayMul(_poolSupplyExchangeRate).rayDiv(
                         _lastPoolSupplyExchangeRate
                     )
@@ -452,12 +454,14 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
     ) public view returns (uint256 newBorrowP2PExchangeRate) {
         Vars memory vars;
         vars.delta = positionsManager.deltas(_poolTokenAddress);
-        vars.poolIncrease =
-            ((2 * _poolSupplyExchangeRate)
-            .rayMul(MAX_BASIS_POINTS - reserveFactor[_poolTokenAddress])
-            .rayDiv(_lastPoolSupplyExchangeRate) +
-                _poolBorrowExchangeRate.rayDiv(_lastPoolBorrowExchangeRate)) /
-            3;
+
+        vars.poolIncrease = computeBorrowPoolIncrease(
+            _poolSupplyExchangeRate,
+            _poolBorrowExchangeRate,
+            _lastPoolSupplyExchangeRate,
+            _lastPoolBorrowExchangeRate,
+            reserveFactor[_poolTokenAddress]
+        );
 
         if (vars.delta.borrowP2PAmount == 0 || vars.delta.borrowP2PDelta == 0) {
             newBorrowP2PExchangeRate = _borrowP2pExchangeRate.rayMul(vars.poolIncrease);
@@ -474,11 +478,47 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
             );
 
             newBorrowP2PExchangeRate = _borrowP2pExchangeRate.rayMul(
-                vars.poolIncrease.rayMul(Math.ray() - vars.shareOfTheDelta) +
+                (Math.ray() - vars.shareOfTheDelta).rayMul(vars.poolIncrease) +
                     vars.shareOfTheDelta.rayMul(_poolBorrowExchangeRate).rayDiv(
                         _lastPoolBorrowExchangeRate
                     )
             );
         }
+    }
+
+    function computeSupplyPoolIncrease(
+        uint256 _poolSupplyExchangeRate,
+        uint256 _poolBorrowExchangeRate,
+        uint256 _lastPoolSupplyExchangeRate,
+        uint256 _lastPoolBorrowExchangeRate,
+        uint256 _reserveFactor
+    ) internal pure returns (uint256) {
+        return
+            ((MAX_BASIS_POINTS - _reserveFactor) *
+                (2 *
+                    _poolSupplyExchangeRate.rayDiv(_lastPoolSupplyExchangeRate) +
+                    _poolBorrowExchangeRate.rayDiv(_lastPoolBorrowExchangeRate))) /
+            MAX_BASIS_POINTS /
+            3 -
+            (_reserveFactor * _poolSupplyExchangeRate.rayDiv(_lastPoolSupplyExchangeRate)) /
+            MAX_BASIS_POINTS;
+    }
+
+    function computeBorrowPoolIncrease(
+        uint256 _poolSupplyExchangeRate,
+        uint256 _poolBorrowExchangeRate,
+        uint256 _lastPoolSupplyExchangeRate,
+        uint256 _lastPoolBorrowExchangeRate,
+        uint256 _reserveFactor
+    ) internal pure returns (uint256) {
+        return
+            ((MAX_BASIS_POINTS - _reserveFactor) *
+                (2 *
+                    _poolSupplyExchangeRate.rayDiv(_lastPoolSupplyExchangeRate) +
+                    _poolBorrowExchangeRate.rayDiv(_lastPoolBorrowExchangeRate))) /
+            MAX_BASIS_POINTS /
+            3 +
+            (_reserveFactor * _poolBorrowExchangeRate.rayDiv(_lastPoolBorrowExchangeRate)) /
+            MAX_BASIS_POINTS;
     }
 }

@@ -319,4 +319,11 @@ contract TestSetup is Config, Utils, stdCheats {
 
         positionsManager.setMaxGas(newMaxGas);
     }
+
+    function move1YearForward(address _marketAddress) public {
+        for (uint256 k; k < 365; k++) {
+            hevm.warp(block.timestamp + (1 days));
+            marketsManager.updateRates(_marketAddress);
+        }
+    }
 }
