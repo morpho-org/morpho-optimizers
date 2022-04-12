@@ -52,17 +52,9 @@ contract TestMarketsManager is TestSetup {
     }
 
     function testShouldCreateMarketWithTheRightValues() public {
-        DataTypes.ReserveData memory data = lendingPool.getReserveData(aave);
-        (uint256 expectedSPY, ) = interestRates.computeRates(
-            data.currentLiquidityRate,
-            data.currentVariableBorrowRate,
-            0
-        );
         marketsManager.createMarket(aave);
 
         assertTrue(marketsManager.isCreated(aAave));
-        assertEq(marketsManager.supplyP2PSPY(aAave), expectedSPY);
-        assertEq(marketsManager.borrowP2PSPY(aAave), expectedSPY);
         assertEq(marketsManager.supplyP2PExchangeRate(aAave), RAY);
         assertEq(marketsManager.borrowP2PExchangeRate(aAave), RAY);
     }

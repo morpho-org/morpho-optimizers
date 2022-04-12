@@ -14,8 +14,6 @@ contract TestMarketsManagerGetters is TestSetup {
 
     function testGetMarketData() public {
         (
-            uint256 supplyP2PSPY,
-            uint256 borrowP2PSPY,
             uint256 supplyP2PExchangeRate,
             uint256 borrowP2PExchangeRate,
             uint256 exchangeRatesLastUpdateTimestamp,
@@ -25,8 +23,6 @@ contract TestMarketsManagerGetters is TestSetup {
             uint256 borrowP2PAmount_
         ) = marketsManager.getMarketData(aDai);
 
-        assertEq(supplyP2PSPY, marketsManager.supplyP2PSPY(aDai));
-        assertEq(borrowP2PSPY, marketsManager.borrowP2PSPY(aDai));
         assertEq(supplyP2PExchangeRate, marketsManager.supplyP2PExchangeRate(aDai));
         assertEq(borrowP2PExchangeRate, marketsManager.borrowP2PExchangeRate(aDai));
         assertEq(
