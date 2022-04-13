@@ -22,7 +22,7 @@ test: node_modules
 
 gas:
 	@echo Create report
-	@forge test -vvv -c test-foundry --gas-report --match-test test_updateBorrowers > gas_report.ansi
+	@forge test -vvv -c test-foundry --gas-report --match-test testGasConsumptionOfMatchBorrowers > gas_report.ansi
 
 contract-% c-%: node_modules
 	@echo Run tests for contract $* on ${NETWORK}
