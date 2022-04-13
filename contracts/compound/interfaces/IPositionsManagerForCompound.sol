@@ -1,17 +1,12 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
+import "../libraries/Types.sol";
+
 interface IPositionsManagerForCompound {
     struct Balance {
         uint256 inP2P;
         uint256 onPool;
-    }
-
-    struct Delta {
-        uint256 supplyP2PDelta;
-        uint256 borrowP2PDelta;
-        uint256 supplyP2PAmount;
-        uint256 borrowP2PAmount;
     }
 
     function createMarket(address) external returns (uint256[] memory);
@@ -31,7 +26,7 @@ interface IPositionsManagerForCompound {
 
     function supplyBalanceInOf(address, address) external returns (Balance memory);
 
-    function deltas(address) external view returns (Delta memory);
+    function deltas(address) external view returns (Types.Delta memory);
 
     function cEth() external view returns (address);
 }
