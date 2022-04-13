@@ -272,6 +272,13 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
                 vars.toWithdraw.divWadByRay(vars.supplyPoolIndex)
             ); // In poolToken.
             matchingEngine.updateSuppliersDC(_poolTokenAddress, _supplier);
+
+            if (vars.remainingToWithdraw == 0) {
+                if (vars.toWithdraw > 0) _withdrawFromPool(underlyingToken, vars.toWithdraw); // Reverts on error.
+                underlyingToken.safeTransfer(_receiver, _amount);
+                _leaveMarkerIfNeeded(_poolTokenAddress, _supplier);
+                return;
+            }
         }
 
         Types.Delta storage delta = deltas[_poolTokenAddress];
@@ -400,6 +407,12 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
                 vars.toRepay.divWadByRay(vars.borrowPoolIndex)
             ); // In adUnit
             matchingEngine.updateBorrowersDC(_poolTokenAddress, _user);
+
+            if (vars.remainingToRepay == 0) {
+                if (vars.toRepay > 0) _repayERC20ToPool(underlyingToken, vars.toRepay); // Reverts on error.
+                _leaveMarkerIfNeeded(_poolTokenAddress, _user);
+                return;
+            }
         }
 
         Types.Delta storage delta = deltas[_poolTokenAddress];
