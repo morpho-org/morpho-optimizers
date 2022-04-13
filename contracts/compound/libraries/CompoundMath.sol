@@ -4,6 +4,10 @@ pragma solidity 0.8.13;
 /// @title CompoundMath.
 /// @dev library emulating in solidity 8+ the behavior of Compound's mulScalarTruncate and divScalarByExpTruncate functions.
 library CompoundMath {
+    function wad() internal pure returns (uint256) {
+        return 1e18;
+    }
+
     function mul(uint256 x, uint256 y) internal pure returns (uint256) {
         return (x * y) / 1e18;
     }
