@@ -5,6 +5,7 @@ import "./interfaces/IInterestRates.sol";
 import "./positions-manager-parts/PositionsManagerForAaveStorage.sol";
 
 import "./libraries/Math.sol";
+import "./libraries/Types.sol";
 
 contract InterestRatesV1 is IInterestRates {
     using Math for uint256;
@@ -35,7 +36,7 @@ contract InterestRatesV1 is IInterestRates {
     ///             delta The deltas and P2P amounts.
     /// @return newSupplyP2PExchangeRate The updated supplyP2PExchangeRate.
     /// @return newBorrowP2PExchangeRate The updated borrowP2PExchangeRate.
-    function computeP2PExchangeRates(Params memory _params)
+    function computeP2PExchangeRates(Types.Params memory _params)
         public
         pure
         returns (uint256 newSupplyP2PExchangeRate, uint256 newBorrowP2PExchangeRate)
