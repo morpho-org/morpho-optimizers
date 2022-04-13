@@ -8,10 +8,4 @@ interface IInterestRates {
         external
         pure
         returns (uint256 newSupplyP2PExchangeRate, uint256 newBorrowP2PExchangeRate);
-
-    function computeApproxRates(
-        uint256 _poolSupplyRate,
-        uint256 _poolBorrowRate,
-        uint256 _reserveFactor
-    ) external pure returns (uint256 p2pSupplyRate, uint256 p2pBorrowRate);
 }
