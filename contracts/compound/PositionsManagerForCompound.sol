@@ -247,9 +247,27 @@ contract PositionsManagerForCompound is PositionsManagerForCompoundLogic {
     }
 
     /// @notice Claims rewards for the given assets and the unclaimed rewards.
-    /// @param _assets The assets to claim rewards from (aToken or variable debt token).
-    /// @param _swap Whether or not to swap reward tokens for Morpho tokens.
-    function claimRewards(address[] calldata _assets, bool _swap) external {
-        // TODO: implement this function.
+    /// @param _claimMorpho Whether or not to claim Morpho tokens instead of token reward.
+    function claimRewards(address[] calldata _cTokenAddresses, bool _claimMorpho)
+        external
+        nonReentrant
+    {
+        uint256 amountToClaim = rewardsManager.claimRewards(_cTokenAddresses, msg.sender);
+
+        if (amountToClaim == 0) revert AmountIsZero();
+        else {
+            if (_claimMorpho) {
+                // address swapManager = rewardsManager.swapManager();
+                comptroller.claimComp(address(this));
+                // uint256 amountOut = ISwapManager(swapManager).swapToMorphoToken(
+                //     amountClaimed,
+                //     msg.sender
+                // );
+                // emit RewardsClaimedAnd(msg.sender, amountClaimed, amountOut);
+            } else {
+                comptroller.claimComp(address(this));
+                // emit RewardsClaimed(msg.sender, amountClaimed);
+            }
+        }
     }
 }

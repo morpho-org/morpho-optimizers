@@ -46,6 +46,13 @@ interface ICEth {
 }
 
 interface IComptroller {
+    struct CompMarketState {
+        /// @notice The market's last updated compBorrowIndex or compSupplyIndex
+        uint224 index;
+        /// @notice The block number the index was last updated at
+        uint32 block;
+    }
+
     function liquidationIncentiveMantissa() external returns (uint256);
 
     function closeFactorMantissa() external returns (uint256);
@@ -196,6 +203,16 @@ interface IComptroller {
         );
 
     function checkMembership(address, address) external view returns (bool);
+
+    function claimComp(address holder) external;
+
+    function claimComp(address holder, address[] memory cTokens) external;
+
+    function compSpeeds(address) external returns (uint256);
+
+    function compSupplyState(address) external view returns (CompMarketState memory);
+
+    function compBorrowState(address) external view returns (CompMarketState memory);
 }
 
 interface IInterestRateModel {
@@ -278,6 +295,10 @@ interface ICToken {
 
     function accrueInterest() external returns (uint256);
 
+    function totalSupply() external view returns (uint256);
+
+    function totalBorrows() external view returns (uint256);
+
     /*** Admin Functions ***/
 
     function _setPendingAdmin(address payable newPendingAdmin) external returns (uint256);
@@ -297,4 +318,8 @@ interface ICToken {
 
 interface ICompoundOracle {
     function getUnderlyingPrice(address) external view returns (uint256);
+
+    function accrueUserUnclaimedRewards(address[] calldata, address)
+        external
+        returns (uint256 unclaimedRewards);
 }

@@ -111,10 +111,7 @@ contract TestRewards is TestSetup {
         supplier2.supply(aDai, toSupply);
 
         hevm.warp(block.timestamp + 365 days);
-        unclaimedRewards = rewardsManager.getUserUnclaimedRewards(
-            aDaiInArray,
-            address(supplier1)
-        );
+        unclaimedRewards = rewardsManager.getUserUnclaimedRewards(aDaiInArray, address(supplier1));
 
         supplier1.claimRewards(aDaiInArray, false);
         if (block.chainid == Chains.AVALANCHE_MAINNET || block.chainid == Chains.ETH_MAINNET) {

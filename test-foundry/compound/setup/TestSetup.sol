@@ -1,30 +1,26 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
-import "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
-import {ICToken, ICompoundOracle} from "@contracts/compound/interfaces/compound/ICompound.sol";
-import "@contracts/compound/interfaces/IRewardsManagerForCompound.sol";
-import "@contracts/common/interfaces/ISwapManager.sol";
+
 import "hardhat/console.sol";
-import "../../common/helpers/Chains.sol";
+
+import "@contracts/compound/interfaces/IRewardsManagerForCompound.sol";
+import "@contracts/compound/interfaces/compound/ICompound.sol";
+import "@contracts/common/interfaces/ISwapManager.sol";
+
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
-import {SwapManagerUniV3OnMainnet} from "@contracts/common/SwapManagerUniV3OnMainnet.sol";
-import {SwapManagerUniV3} from "@contracts/common/SwapManagerUniV3.sol";
-import {SwapManagerUniV2} from "@contracts/common/SwapManagerUniV2.sol";
-import {UniswapV3PoolCreator} from "../../common/uniswap/UniswapV3PoolCreator.sol";
-import {UniswapV2PoolCreator} from "../../common/uniswap/UniswapV2PoolCreator.sol";
+
 import "@contracts/compound/PositionsManagerForCompound.sol";
 import "@contracts/compound/MarketsManagerForCompound.sol";
 import "@contracts/compound/MatchingEngineForCompound.sol";
 import "@contracts/compound/InterestRatesV1.sol";
-import "../../common/helpers/MorphoToken.sol";
-import "../../common/helpers/Chains.sol";
-
 import "@contracts/compound/libraries/FixedPointMathLib.sol";
 
+import "../../common/helpers/MorphoToken.sol";
+import "../../common/helpers/Chains.sol";
 import "../helpers/SimplePriceOracle.sol";
+import "../helpers/IncentivesVault.sol";
 import {User} from "../helpers/User.sol";
 import {Utils} from "./Utils.sol";
 import "forge-std/stdlib.sol";
@@ -37,12 +33,11 @@ interface IAdminComptroller {
 }
 
 contract TestSetup is Config, Utils, stdCheats {
-    using SafeERC20 for IERC20;
-
     Vm public hevm = Vm(HEVM_ADDRESS);
 
     uint256 public constant MAX_BASIS_POINTS = 10_000;
     uint256 public constant INITIAL_BALANCE = 1_000_000;
+
     ProxyAdmin public proxyAdmin;
     TransparentUpgradeableProxy public positionsManagerProxy;
     TransparentUpgradeableProxy public marketsManagerProxy;
@@ -54,12 +49,12 @@ contract TestSetup is Config, Utils, stdCheats {
     MarketsManagerForCompound internal marketsManagerImplV1;
     IRewardsManagerForCompound internal rewardsManager;
     IInterestRates internal interestRates;
-    ISwapManager public swapManager;
-    UniswapV3PoolCreator public uniswapV3PoolCreator;
-    UniswapV2PoolCreator public uniswapV2PoolCreator;
+
+    IncentivesVault public incentivesVault;
     MorphoToken public morphoToken;
     IComptroller public comptroller;
     ICompoundOracle public oracle;
+
     User public supplier1;
     User public supplier2;
     User public supplier3;
@@ -69,6 +64,7 @@ contract TestSetup is Config, Utils, stdCheats {
     User public borrower3;
     User[] public borrowers;
     User public treasuryVault;
+
     address[] public pools;
 
     function setUp() public {
@@ -83,10 +79,10 @@ contract TestSetup is Config, Utils, stdCheats {
 
         comptroller = IComptroller(comptrollerAddress);
         matchingEngine = new MatchingEngineForCompound();
-
         interestRates = new InterestRatesV1();
 
-        // Deploy proxy
+        /// Deploy proxies ///
+
         proxyAdmin = new ProxyAdmin();
         marketsManagerImplV1 = new MarketsManagerForCompound();
         marketsManagerProxy = new TransparentUpgradeableProxy(
@@ -114,13 +110,21 @@ contract TestSetup is Config, Utils, stdCheats {
         oracle = ICompoundOracle(comptroller.oracle());
         marketsManager.setPositionsManager(address(positionsManager));
         positionsManager.setTreasuryVault(address(treasuryVault));
+
+        /// Create markets ///
+
         createMarket(cDai);
         createMarket(cUsdc);
         createMarket(cWbtc);
         createMarket(cUsdt);
         createMarket(cBat);
-
         hevm.roll(block.number + 1);
+
+        ///  Create Morpho token and deploy IncentivesVault ///
+
+        morphoToken = new MorphoToken(address(this));
+        incentivesVault = new IncentivesVault(address(positionsManager), address(morphoToken));
+        morphoToken.transfer(address(incentivesVault), 1_000_000 ether);
     }
 
     function createMarket(address _cToken) internal {
@@ -174,8 +178,6 @@ contract TestSetup is Config, Utils, stdCheats {
         hevm.label(address(marketsManager), "MarketsManager");
         hevm.label(address(rewardsManager), "RewardsManager");
         hevm.label(address(matchingEngine), "MatchingEngine");
-        hevm.label(address(swapManager), "SwapManager");
-        hevm.label(address(uniswapV3PoolCreator), "UniswapV3PoolCreator");
         hevm.label(address(morphoToken), "MorphoToken");
         hevm.label(address(comptroller), "Comptroller");
         hevm.label(address(oracle), "CompoundOracle");
