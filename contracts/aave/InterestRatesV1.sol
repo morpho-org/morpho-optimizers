@@ -16,6 +16,8 @@ contract InterestRatesV1 is IInterestRates {
         uint256 shareOfTheDelta; // Share of delta in the total P2P amount.
         uint256 supplyP2PGrowthFactor; // Supply growth factor (between now and the last update).
         uint256 borrowP2PGrowthFactor; // Borrow growth factor (between now and the last update).
+        uint256 supplyPoolGrowthFactor; // Borrow growth factor (between now and the last update).
+        uint256 borrowPoolGrowthFactor; // Borrow growth factor (between now and the last update).
     }
 
     /// STORAGE ///
@@ -42,7 +44,12 @@ contract InterestRatesV1 is IInterestRates {
         returns (uint256 newSupplyP2PExchangeRate, uint256 newBorrowP2PExchangeRate)
     {
         Vars memory vars;
-        (vars.supplyP2PGrowthFactor, vars.borrowP2PGrowthFactor) = _computeGrowthFactors(
+        (
+            vars.supplyP2PGrowthFactor,
+            vars.borrowP2PGrowthFactor,
+            vars.supplyPoolGrowthFactor,
+            vars.borrowPoolGrowthFactor
+        ) = _computeGrowthFactors(
             _params.poolSupplyExchangeRate,
             _params.poolBorrowExchangeRate,
             _params.lastPoolSupplyExchangeRate,
@@ -68,11 +75,10 @@ contract InterestRatesV1 is IInterestRates {
 
             newSupplyP2PExchangeRate = _params.supplyP2pExchangeRate.rayMul(
                 (Math.ray() - vars.shareOfTheDelta).rayMul(vars.supplyP2PGrowthFactor) +
-                    vars.shareOfTheDelta.rayMul(_params.poolSupplyExchangeRate).rayDiv(
-                        _params.lastPoolSupplyExchangeRate
-                    )
+                    vars.shareOfTheDelta.rayMul(vars.supplyPoolGrowthFactor)
             );
         }
+
         if (_params.delta.borrowP2PAmount == 0 || _params.delta.borrowP2PDelta == 0) {
             newBorrowP2PExchangeRate = _params.borrowP2pExchangeRate.rayMul(
                 vars.borrowP2PGrowthFactor
@@ -91,9 +97,7 @@ contract InterestRatesV1 is IInterestRates {
 
             newBorrowP2PExchangeRate = _params.borrowP2pExchangeRate.rayMul(
                 (Math.ray() - vars.shareOfTheDelta).rayMul(vars.borrowP2PGrowthFactor) +
-                    vars.shareOfTheDelta.rayMul(_params.poolBorrowExchangeRate).rayDiv(
-                        _params.lastPoolBorrowExchangeRate
-                    )
+                    vars.shareOfTheDelta.rayMul(vars.borrowPoolGrowthFactor)
             );
         }
     }
@@ -106,30 +110,40 @@ contract InterestRatesV1 is IInterestRates {
     /// @param _reserveFactor The reserve factor percentage (10 000 = 100%).
     /// @return supplyP2PGrowthFactor The supply P2P growthfactor.
     /// @return borrowP2PGrowthFactor The borrow P2P growthfactor.
+    /// @return supplyPoolGrowthFactor The supply pool growthfactor.
+    /// @return borrowPoolGrowthFactor The borrow pool growthfactor.
     function _computeGrowthFactors(
         uint256 _poolSupplyExchangeRate,
         uint256 _poolBorrowExchangeRate,
         uint256 _lastPoolSupplyExchangeRate,
         uint256 _lastPoolBorrowExchangeRate,
         uint256 _reserveFactor
-    ) internal pure returns (uint256 supplyP2PGrowthFactor, uint256 borrowP2PGrowthFactor) {
+    )
+        internal
+        pure
+        returns (
+            uint256 supplyP2PGrowthFactor,
+            uint256 borrowP2PGrowthFactor,
+            uint256 supplyPoolGrowthFactor,
+            uint256 borrowPoolGrowthFactor
+        )
+    {
+        supplyPoolGrowthFactor = _poolSupplyExchangeRate.rayDiv(_lastPoolSupplyExchangeRate);
+        borrowPoolGrowthFactor = _poolBorrowExchangeRate.rayDiv(_lastPoolBorrowExchangeRate);
         supplyP2PGrowthFactor =
             ((MAX_BASIS_POINTS - _reserveFactor) *
-                (2 *
-                    _poolSupplyExchangeRate.rayDiv(_lastPoolSupplyExchangeRate) +
-                    _poolBorrowExchangeRate.rayDiv(_lastPoolBorrowExchangeRate))) /
-            MAX_BASIS_POINTS /
-            3 -
-            (_reserveFactor * _poolSupplyExchangeRate.rayDiv(_lastPoolSupplyExchangeRate)) /
+                (2 * supplyPoolGrowthFactor + borrowPoolGrowthFactor)) /
+            3 /
+            MAX_BASIS_POINTS -
+            (_reserveFactor * supplyPoolGrowthFactor) /
             MAX_BASIS_POINTS;
+
         borrowP2PGrowthFactor =
             ((MAX_BASIS_POINTS - _reserveFactor) *
-                (2 *
-                    _poolSupplyExchangeRate.rayDiv(_lastPoolSupplyExchangeRate) +
-                    _poolBorrowExchangeRate.rayDiv(_lastPoolBorrowExchangeRate))) /
-            MAX_BASIS_POINTS /
-            3 +
-            (_reserveFactor * _poolBorrowExchangeRate.rayDiv(_lastPoolBorrowExchangeRate)) /
+                (2 * supplyPoolGrowthFactor + borrowPoolGrowthFactor)) /
+            3 /
+            MAX_BASIS_POINTS +
+            (_reserveFactor * borrowPoolGrowthFactor) /
             MAX_BASIS_POINTS;
     }
 
