@@ -250,18 +250,18 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable, IT
     }
 
     /// @notice Returns the approximate P2P rates.
-    /// @return supplyP2PSPY_ The supply P2P rate.
-    /// @return borrowP2PSPY_ The borrow P2P rate.
-    function getApproxP2PSPY(address _marketAddress)
+    /// @return supplyP2PAPR_ The supply P2P rate.
+    /// @return borrowP2PAPR_ The borrow P2P rate.
+    function getApproxP2PAPRs(address _marketAddress)
         external
         view
-        returns (uint256 supplyP2PSPY_, uint256 borrowP2PSPY_)
+        returns (uint256 supplyP2PAPR_, uint256 borrowP2PAPR_)
     {
         DataTypes.ReserveData memory reserveData = lendingPool.getReserveData(
             IAToken(_marketAddress).UNDERLYING_ASSET_ADDRESS()
         );
 
-        (supplyP2PSPY_, borrowP2PSPY_) = interestRates.computeRates(
+        (supplyP2PAPR_, borrowP2PAPR_) = interestRates.computeApproxRates(
             reserveData.currentLiquidityRate,
             reserveData.currentVariableBorrowRate,
             reserveFactor[_marketAddress]
@@ -303,7 +303,7 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable, IT
                 positionsManager.deltas(_marketAddress)
             );
 
-            (newSupplyP2PExchangeRate, ) = interestRates.computeP2PExchangeRate(params);
+            (newSupplyP2PExchangeRate, ) = interestRates.computeP2PExchangeRates(params);
         }
     }
 
@@ -340,7 +340,7 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable, IT
                 positionsManager.deltas(_marketAddress)
             );
 
-            (, newBorrowP2PExchangeRate) = interestRates.computeP2PExchangeRate(params);
+            (, newBorrowP2PExchangeRate) = interestRates.computeP2PExchangeRates(params);
         }
     }
 
@@ -373,7 +373,7 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable, IT
             );
 
             (uint256 newSupplyP2PExchangeRate, uint256 newBorrowP2PExchangeRate) = interestRates
-            .computeP2PExchangeRate(params);
+            .computeP2PExchangeRates(params);
 
             supplyP2PExchangeRate[_marketAddress] = newSupplyP2PExchangeRate;
             borrowP2PExchangeRate[_marketAddress] = newBorrowP2PExchangeRate;
