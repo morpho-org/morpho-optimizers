@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract MorphoToken is ERC20, Ownable {
     constructor(address _receiver) ERC20("MorphoToken", "MORPHO", 18) {
-        _mint(_receiver, 1000000000 * 10**18);
+        _mint(_receiver, 1_000_000_000 ether);
     }
 
     function mint(address to, uint256 amount) public onlyOwner {

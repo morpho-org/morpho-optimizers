@@ -16,6 +16,16 @@ library CompoundMath {
         return ((1e18 * x * 1e18) / y) / 1e18;
     }
 
+    function safe224(uint256 n, string memory errorMessage) internal pure returns (uint224) {
+        require(n < 2**224, errorMessage);
+        return uint224(n);
+    }
+
+    function safe32(uint256 n, string memory errorMessage) internal pure returns (uint32) {
+        require(n < 2**32, errorMessage);
+        return uint32(n);
+    }
+
     function min(
         uint256 a,
         uint256 b,
