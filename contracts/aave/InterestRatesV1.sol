@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import "./interfaces/IInterestRates.sol";
+import "./interfaces/IInterestRatesV1.sol";
 import "./positions-manager-parts/PositionsManagerForAaveStorage.sol";
 
 import "./libraries/Math.sol";
 import "./libraries/Types.sol";
 
-contract InterestRatesV1 is IInterestRates {
+contract InterestRatesV1 is IInterestRatesV1 {
     using Math for uint256;
 
     /// STRUCT ///
@@ -23,6 +23,24 @@ contract InterestRatesV1 is IInterestRates {
     /// STORAGE ///
 
     uint256 public constant MAX_BASIS_POINTS = 10_000; // 100% (in basis point).
+    mapping(address => uint256) public supplyWeight; // supply rate weigth in the weigthed mean.
+    mapping(address => uint256) public borrowWeight; // borrow rate weigth in the weigthed mean.
+
+    /// PUBLIC ///
+
+    function createMarket(address _marketAddress) public {
+        supplyWeight[_marketAddress] = 1;
+        borrowWeight[_marketAddress] = 1;
+    }
+
+    function setWeights(
+        address _marketAddress,
+        uint256 _supplyWeigth,
+        uint256 _borrowWeigth
+    ) public {
+        supplyWeight[_marketAddress] = _supplyWeigth;
+        borrowWeight[_marketAddress] = _borrowWeigth;
+    }
 
     /// EXTERNAL ///
 
@@ -40,7 +58,7 @@ contract InterestRatesV1 is IInterestRates {
     /// @return newBorrowP2PExchangeRate The updated borrowP2PExchangeRate.
     function computeP2PExchangeRates(Types.Params memory _params)
         public
-        pure
+        view
         returns (uint256 newSupplyP2PExchangeRate, uint256 newBorrowP2PExchangeRate)
     {
         Vars memory vars;
@@ -50,6 +68,7 @@ contract InterestRatesV1 is IInterestRates {
             vars.supplyPoolGrowthFactor,
             vars.borrowPoolGrowthFactor
         ) = _computeGrowthFactors(
+            _params.poolTokenAddress,
             _params.poolSupplyExchangeRate,
             _params.poolBorrowExchangeRate,
             _params.lastPoolSupplyExchangeRate,
@@ -113,6 +132,7 @@ contract InterestRatesV1 is IInterestRates {
     /// @return supplyPoolGrowthFactor The supply pool growthfactor.
     /// @return borrowPoolGrowthFactor The borrow pool growthfactor.
     function _computeGrowthFactors(
+        address _poolTokenAddress,
         uint256 _poolSupplyExchangeRate,
         uint256 _poolBorrowExchangeRate,
         uint256 _lastPoolSupplyExchangeRate,
@@ -120,7 +140,7 @@ contract InterestRatesV1 is IInterestRates {
         uint256 _reserveFactor
     )
         internal
-        pure
+        view
         returns (
             uint256 supplyP2PGrowthFactor,
             uint256 borrowP2PGrowthFactor,
@@ -130,19 +150,26 @@ contract InterestRatesV1 is IInterestRates {
     {
         supplyPoolGrowthFactor = _poolSupplyExchangeRate.rayDiv(_lastPoolSupplyExchangeRate);
         borrowPoolGrowthFactor = _poolBorrowExchangeRate.rayDiv(_lastPoolBorrowExchangeRate);
+
+        uint256 memorySupplyWeight = supplyWeight[_poolTokenAddress];
+        uint256 memoryBorrowWeight = borrowWeight[_poolTokenAddress];
+        uint256 WeightsSum = memorySupplyWeight + memoryBorrowWeight;
+
+        uint256 memoryVariable = ((MAX_BASIS_POINTS - _reserveFactor) *
+            (memorySupplyWeight *
+                supplyPoolGrowthFactor +
+                memoryBorrowWeight *
+                borrowPoolGrowthFactor)) /
+            WeightsSum /
+            MAX_BASIS_POINTS;
+
         supplyP2PGrowthFactor =
-            ((MAX_BASIS_POINTS - _reserveFactor) *
-                (2 * supplyPoolGrowthFactor + borrowPoolGrowthFactor)) /
-            3 /
-            MAX_BASIS_POINTS -
+            memoryVariable -
             (_reserveFactor * supplyPoolGrowthFactor) /
             MAX_BASIS_POINTS;
 
         borrowP2PGrowthFactor =
-            ((MAX_BASIS_POINTS - _reserveFactor) *
-                (2 * supplyPoolGrowthFactor + borrowPoolGrowthFactor)) /
-            3 /
-            MAX_BASIS_POINTS +
+            memoryVariable +
             (_reserveFactor * borrowPoolGrowthFactor) /
             MAX_BASIS_POINTS;
     }

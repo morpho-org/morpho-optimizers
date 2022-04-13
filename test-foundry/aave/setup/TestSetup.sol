@@ -6,6 +6,7 @@ import "@contracts/aave/interfaces/aave/IAaveIncentivesController.sol";
 import "@contracts/aave/interfaces/aave/IPriceOracleGetter.sol";
 import "@contracts/aave/interfaces/aave/IProtocolDataProvider.sol";
 import "@contracts/aave/interfaces/IRewardsManagerForAave.sol";
+import "@contracts/aave/interfaces/IInterestRatesV1.sol";
 import "@contracts/common/interfaces/ISwapManager.sol";
 
 import "hardhat/console.sol";
@@ -56,7 +57,7 @@ contract TestSetup is Config, Utils, stdCheats {
     MarketsManagerForAave internal marketsManager;
     MarketsManagerForAave internal marketsManagerImplV1;
     IRewardsManagerForAave internal rewardsManager;
-    IInterestRates internal interestRates;
+    IInterestRatesV1 internal interestRates;
     ISwapManager public swapManager;
     UniswapV3PoolCreator public uniswapV3PoolCreator;
     UniswapV2PoolCreator public uniswapV2PoolCreator;
@@ -225,6 +226,7 @@ contract TestSetup is Config, Utils, stdCheats {
     function createMarket(address _aToken) internal {
         address underlying = IAToken(_aToken).UNDERLYING_ASSET_ADDRESS();
         marketsManager.createMarket(underlying);
+        interestRates.setWeights(_aToken, 2, 1);
 
         // All tokens must also be added to the pools array, for the correct behavior of TestLiquidate::createAndSetCustomPriceOracle.
         pools.push(_aToken);

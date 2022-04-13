@@ -4,8 +4,15 @@ pragma solidity 0.8.13;
 import "./setup/TestSetup.sol";
 
 contract TestInterestRates is TestSetup {
+    function testCreateMarket() public {
+        marketsManager.createMarket(weth);
+        assertEq(interestRates.supplyWeight(aWeth), 1);
+        assertEq(interestRates.borrowWeight(aWeth), 1);
+    }
+
     function testExchangeRateComputation() public {
         Types.Params memory params = Types.Params(
+            aDai,
             1 * RAY, // supplyP2pExchangeRate;
             1 * RAY, // borrowP2pExchangeRate
             2 * RAY, // poolSupplyExchangeRate;

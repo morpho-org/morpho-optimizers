@@ -187,6 +187,8 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
             _underlyingTokenAddress
         );
 
+        interestRates.createMarket(poolTokenAddress);
+
         marketsCreated.push(poolTokenAddress);
         emit MarketCreated(poolTokenAddress);
     }
@@ -282,6 +284,7 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
             );
 
             Types.Params memory params = Types.Params(
+                _marketAddress,
                 supplyP2PExchangeRate[_marketAddress],
                 borrowP2PExchangeRate[_marketAddress],
                 poolSupplyExchangeRate,
@@ -315,6 +318,7 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
             );
 
             Types.Params memory params = Types.Params(
+                _marketAddress,
                 supplyP2PExchangeRate[_marketAddress],
                 borrowP2PExchangeRate[_marketAddress],
                 poolSupplyExchangeRate,

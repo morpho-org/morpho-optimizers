@@ -3,6 +3,7 @@ pragma solidity 0.8.13;
 
 library Types {
     struct Params {
+        address poolTokenAddress;
         uint256 supplyP2pExchangeRate;
         uint256 borrowP2pExchangeRate;
         uint256 poolSupplyExchangeRate;
