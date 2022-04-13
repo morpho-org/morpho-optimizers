@@ -255,25 +255,6 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
         noP2P_ = noP2P[_marketAddress];
     }
 
-    /// @notice Returns the approximate P2P rates.
-    /// @return supplyP2PAPR_ The supply P2P rate.
-    /// @return borrowP2PAPR_ The borrow P2P rate.
-    function getApproxP2PAPRs(address _marketAddress)
-        external
-        view
-        returns (uint256 supplyP2PAPR_, uint256 borrowP2PAPR_)
-    {
-        DataTypes.ReserveData memory reserveData = lendingPool.getReserveData(
-            IAToken(_marketAddress).UNDERLYING_ASSET_ADDRESS()
-        );
-
-        (supplyP2PAPR_, borrowP2PAPR_) = interestRates.computeApproxRates(
-            reserveData.currentLiquidityRate,
-            reserveData.currentVariableBorrowRate,
-            reserveFactor[_marketAddress]
-        );
-    }
-
     /// PUBLIC ///
 
     /// @notice Returns the updated P2P exchange rates.
