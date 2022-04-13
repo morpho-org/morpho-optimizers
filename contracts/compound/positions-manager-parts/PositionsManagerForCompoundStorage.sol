@@ -77,6 +77,7 @@ abstract contract PositionsManagerForCompoundStorage is
     /// STORAGE ///
 
     MaxGas public maxGas; // Max gas to consume within loops in matching engine functions.
+    bool public isCompRewardsActive; // True if the Compound reward is active.
     uint8 public NDS; // Max number of iterations in the data structure sorting process.
     uint8 public constant CTOKEN_DECIMALS = 8; // The number of decimals for cToken.
     uint16 public constant MAX_BASIS_POINTS = 10_000; // 100% in basis points.

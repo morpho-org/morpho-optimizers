@@ -12,14 +12,30 @@ contract User {
     PositionsManagerForCompound internal positionsManager;
     MarketsManagerForCompound internal marketsManager;
     IRewardsManagerForCompound internal rewardsManager;
+    IComptroller internal comptroller;
 
     constructor(PositionsManagerForCompound _positionsManager) {
         positionsManager = _positionsManager;
         marketsManager = MarketsManagerForCompound(address(_positionsManager.marketsManager()));
         rewardsManager = _positionsManager.rewardsManager();
+        comptroller = positionsManager.comptroller();
     }
 
     receive() external payable {}
+
+    function compoundSupply(address _cTokenAddress, uint256 _amount) external {
+        address underlying = ICToken(_cTokenAddress).underlying();
+        ERC20(underlying).safeApprove(address(comptroller), type(uint256).max);
+        ICToken(_cTokenAddress).mint(_amount);
+    }
+
+    function compoundBorrow(address _cTokenAddress, uint256 _amount) external {
+        ICToken(_cTokenAddress).borrow(_amount);
+    }
+
+    function compoundClaimRewards(address[] memory assets) external {
+        comptroller.claimComp(address(this), assets);
+    }
 
     function balanceOf(address _token) external view returns (uint256) {
         return ERC20(_token).balanceOf(address(this));
