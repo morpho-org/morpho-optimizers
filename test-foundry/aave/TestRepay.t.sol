@@ -393,7 +393,7 @@ contract TestRepay is TestSetup {
     struct Vars {
         uint256 LR;
         uint256 NI;
-        uint256 SPY;
+        uint256 APR;
         uint256 VBR;
         uint256 SP2PD;
         uint256 SP2PA;
@@ -496,7 +496,7 @@ contract TestRepay is TestSetup {
             (oldVars.SP2PD, , oldVars.SP2PA, ) = positionsManager.deltas(aDai);
             oldVars.NI = lendingPool.getReserveNormalizedIncome(dai);
             oldVars.SP2PER = marketsManager.supplyP2PExchangeRate(aDai);
-            (oldVars.SPY, ) = marketsManager.getApproxP2PSPY(aDai);
+            (oldVars.APR, ) = marketsManager.getApproxP2PAPRs(aDai);
 
             move1YearForward(aDai);
 
@@ -514,7 +514,7 @@ contract TestRepay is TestSetup {
             .rayDiv(newVars.SP2PA.wadToRay());
 
             uint256 expectedSP2PER = oldVars.SP2PER.rayMul(
-                computeCompoundedInterest(oldVars.SPY, 365 days).rayMul(RAY - shareOfTheDelta) +
+                computeCompoundedInterest(oldVars.APR, 365 days).rayMul(RAY - shareOfTheDelta) +
                     shareOfTheDelta.rayMul(newVars.NI).rayDiv(oldVars.NI)
             );
 
