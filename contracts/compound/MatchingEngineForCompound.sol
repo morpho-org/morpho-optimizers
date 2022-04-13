@@ -299,6 +299,13 @@ contract MatchingEngineForCompound is
         if (wasInP2PAndValueChanged) borrowersInP2P[_poolTokenAddress].remove(_user);
         if (inP2P > 0 && (wasInP2PAndValueChanged || formerValueInP2P == 0))
             borrowersInP2P[_poolTokenAddress].insertSorted(_user, inP2P, NDS);
+
+        if (isCompRewardsActive)
+            rewardsManager.accrueUserBorrowUnclaimedRewards(
+                _user,
+                _poolTokenAddress,
+                formerValueOnPool
+            );
     }
 
     /// @notice Updates suppliers matching engine with the new balances of a given user.
@@ -313,13 +320,21 @@ contract MatchingEngineForCompound is
         // Check pool.
         bool wasOnPoolAndValueChanged = formerValueOnPool != 0 && formerValueOnPool != onPool;
         if (wasOnPoolAndValueChanged) suppliersOnPool[_poolTokenAddress].remove(_user);
-        if (onPool > 0 && (wasOnPoolAndValueChanged || formerValueOnPool == 0))
+        if (onPool > 0 && (wasOnPoolAndValueChanged || formerValueOnPool == 0)) {
             suppliersOnPool[_poolTokenAddress].insertSorted(_user, onPool, NDS);
+        }
 
         // Check P2P.
         bool wasInP2PAndValueChanged = formerValueInP2P != 0 && formerValueInP2P != inP2P;
         if (wasInP2PAndValueChanged) suppliersInP2P[_poolTokenAddress].remove(_user);
         if (inP2P > 0 && (wasInP2PAndValueChanged || formerValueInP2P == 0))
             suppliersInP2P[_poolTokenAddress].insertSorted(_user, inP2P, NDS);
+
+        if (isCompRewardsActive)
+            rewardsManager.accrueUserSupplyUnclaimedRewards(
+                _user,
+                _poolTokenAddress,
+                formerValueOnPool
+            );
     }
 }
