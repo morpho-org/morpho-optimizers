@@ -559,7 +559,7 @@ contract TestWithdraw is TestSetup {
         }
 
         (, uint256 borrowP2PDeltaAfter, , ) = positionsManager.deltas(cDai);
-        assertApproxEq(borrowP2PDeltaAfter, 0, 1);
+        assertApproxEq(borrowP2PDeltaAfter, 0, 1, "borrow Delta 2");
 
         (uint256 inP2PSupplier2, uint256 onPoolSupplier2) = positionsManager.supplyBalanceInOf(
             cDai,
