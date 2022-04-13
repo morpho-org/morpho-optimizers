@@ -276,55 +276,20 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
 
     /// PUBLIC ///
 
-    /// @notice Returns the updated supply P2P exchange rate.
+    /// @notice Returns the updated P2P exchange rates.
     /// @param _marketAddress The address of the market to update.
     /// @return newSupplyP2PExchangeRate The supply P2P exchange rate after udpate.
-    function getUpdatedSupplyP2PExchangeRate(address _marketAddress)
+    /// @return newBorrowP2PExchangeRate The supply P2P exchange rate after udpate.
+    function getUpdatedP2PExchangeRates(address _marketAddress)
         external
         view
         override
-        returns (uint256 newSupplyP2PExchangeRate)
+        returns (uint256 newSupplyP2PExchangeRate, uint256 newBorrowP2PExchangeRate)
     {
-        if (block.timestamp == exchangeRatesLastUpdateTimestamp[_marketAddress])
+        if (block.timestamp == exchangeRatesLastUpdateTimestamp[_marketAddress]) {
             newSupplyP2PExchangeRate = supplyP2PExchangeRate[_marketAddress];
-        else {
-            address underlyingTokenAddress = IAToken(_marketAddress).UNDERLYING_ASSET_ADDRESS();
-            LastPoolIndexes storage poolIndexes = lastPoolIndexes[_marketAddress];
-
-            uint256 poolSupplyExchangeRate = lendingPool.getReserveNormalizedIncome(
-                underlyingTokenAddress
-            );
-            uint256 poolBorrowExchangeRate = lendingPool.getReserveNormalizedVariableDebt(
-                underlyingTokenAddress
-            );
-
-            Types.Params memory params = Types.Params(
-                supplyP2PExchangeRate[_marketAddress],
-                borrowP2PExchangeRate[_marketAddress],
-                poolSupplyExchangeRate,
-                poolBorrowExchangeRate,
-                poolIndexes.lastSupplyPoolIndex,
-                poolIndexes.lastBorrowPoolIndex,
-                reserveFactor[_marketAddress],
-                positionsManager.deltas(_marketAddress)
-            );
-
-            (newSupplyP2PExchangeRate, ) = interestRates.computeP2PExchangeRates(params);
-        }
-    }
-
-    /// @notice Returns the updated borrow P2P exchange rate.
-    /// @param _marketAddress The address of the market to update.
-    /// @return newBorrowP2PExchangeRate The borrow P2P exchange rate after udpate.
-    function getUpdatedBorrowP2PExchangeRate(address _marketAddress)
-        external
-        view
-        override
-        returns (uint256 newBorrowP2PExchangeRate)
-    {
-        if (block.timestamp == exchangeRatesLastUpdateTimestamp[_marketAddress])
             newBorrowP2PExchangeRate = borrowP2PExchangeRate[_marketAddress];
-        else {
+        } else {
             address underlyingTokenAddress = IAToken(_marketAddress).UNDERLYING_ASSET_ADDRESS();
             LastPoolIndexes storage poolIndexes = lastPoolIndexes[_marketAddress];
 
@@ -346,7 +311,8 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
                 positionsManager.deltas(_marketAddress)
             );
 
-            (, newBorrowP2PExchangeRate) = interestRates.computeP2PExchangeRates(params);
+            (newSupplyP2PExchangeRate, newBorrowP2PExchangeRate) = interestRates
+            .computeP2PExchangeRates(params);
         }
     }
 
