@@ -24,7 +24,6 @@ contract PositionsManagerForCompound is PositionsManagerForCompoundLogic {
         if (_amount == 0) revert AmountIsZero();
         marketsManager.updateP2PExchangeRates(_poolTokenAddress);
         _supply(_poolTokenAddress, _amount, maxGas.supply);
-        marketsManager.updateBPYs(_poolTokenAddress);
 
         emit Supplied(
             msg.sender,
@@ -51,7 +50,6 @@ contract PositionsManagerForCompound is PositionsManagerForCompoundLogic {
         if (_amount == 0) revert AmountIsZero();
         marketsManager.updateP2PExchangeRates(_poolTokenAddress);
         _supply(_poolTokenAddress, _amount, _maxGasToConsume);
-        marketsManager.updateBPYs(_poolTokenAddress);
 
         emit Supplied(
             msg.sender,
@@ -75,7 +73,6 @@ contract PositionsManagerForCompound is PositionsManagerForCompoundLogic {
         if (_amount == 0) revert AmountIsZero();
         marketsManager.updateP2PExchangeRates(_poolTokenAddress);
         _borrow(_poolTokenAddress, _amount, maxGas.borrow);
-        marketsManager.updateBPYs(_poolTokenAddress);
 
         emit Borrowed(
             msg.sender,
@@ -101,7 +98,6 @@ contract PositionsManagerForCompound is PositionsManagerForCompoundLogic {
         if (_amount == 0) revert AmountIsZero();
         marketsManager.updateP2PExchangeRates(_poolTokenAddress);
         _borrow(_poolTokenAddress, _amount, _maxGasToConsume);
-        marketsManager.updateBPYs(_poolTokenAddress);
 
         emit Borrowed(
             msg.sender,
@@ -127,7 +123,6 @@ contract PositionsManagerForCompound is PositionsManagerForCompoundLogic {
 
         _checkUserLiquidity(msg.sender, _poolTokenAddress, toWithdraw, 0);
         _withdraw(_poolTokenAddress, toWithdraw, msg.sender, msg.sender, maxGas.withdraw);
-        marketsManager.updateBPYs(_poolTokenAddress);
 
         emit Withdrawn(
             msg.sender,
@@ -152,7 +147,6 @@ contract PositionsManagerForCompound is PositionsManagerForCompoundLogic {
         );
 
         _repay(_poolTokenAddress, msg.sender, toRepay, maxGas.repay);
-        marketsManager.updateBPYs(_poolTokenAddress);
 
         emit Repaid(
             msg.sender,
@@ -214,9 +208,6 @@ contract PositionsManagerForCompound is PositionsManagerForCompoundLogic {
         if (vars.amountToSeize > vars.supplyBalance) revert ToSeizeAboveCollateral();
 
         _withdraw(_poolTokenCollateralAddress, vars.amountToSeize, _borrower, msg.sender, 0);
-
-        marketsManager.updateBPYs(_poolTokenBorrowedAddress);
-        marketsManager.updateBPYs(_poolTokenCollateralAddress);
 
         emit Liquidated(
             msg.sender,

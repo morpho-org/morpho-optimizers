@@ -80,7 +80,7 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
         ERC20 underlyingToken = _getUnderlying(_poolTokenAddress);
         underlyingToken.safeTransferFrom(msg.sender, address(this), _amount);
 
-        Delta storage delta = deltas[_poolTokenAddress];
+        Types.Delta storage delta = deltas[_poolTokenAddress];
         uint256 borrowPoolIndex = ICToken(_poolTokenAddress).borrowIndex();
         uint256 remainingToSupply = _amount;
         uint256 toRepay;
@@ -169,7 +169,7 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
         uint256 balanceBefore = underlyingToken.balanceOf(address(this));
         uint256 remainingToBorrow = _amount;
         uint256 toWithdraw;
-        Delta storage delta = deltas[_poolTokenAddress];
+        Types.Delta storage delta = deltas[_poolTokenAddress];
         uint256 poolSupplyIndex = ICToken(_poolTokenAddress).exchangeRateCurrent();
         uint256 withdrawable = ICToken(_poolTokenAddress).balanceOfUnderlying(address(this)); // The balance on pool.
 
@@ -286,7 +286,7 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
             }
         }
 
-        Delta storage delta = deltas[_poolTokenAddress];
+        Types.Delta storage delta = deltas[_poolTokenAddress];
         uint256 supplyP2PExchangeRate = marketsManager.supplyP2PExchangeRate(_poolTokenAddress);
 
         /// Transfer withdraw ///
@@ -416,7 +416,7 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
             }
         }
 
-        Delta storage delta = deltas[_poolTokenAddress];
+        Types.Delta storage delta = deltas[_poolTokenAddress];
         vars.supplyP2PExchangeRate = marketsManager.supplyP2PExchangeRate(_poolTokenAddress);
         vars.borrowP2PExchangeRate = marketsManager.borrowP2PExchangeRate(_poolTokenAddress);
         // Handle case where only 1 wei stays on the position.
