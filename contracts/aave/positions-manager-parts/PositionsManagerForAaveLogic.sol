@@ -71,7 +71,7 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
         ERC20 underlyingToken = ERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
         underlyingToken.safeTransferFrom(msg.sender, address(this), _amount);
 
-        Delta storage delta = deltas[_poolTokenAddress];
+        Types.Delta storage delta = deltas[_poolTokenAddress];
         uint256 borrowPoolIndex = lendingPool.getReserveNormalizedVariableDebt(
             address(underlyingToken)
         );
@@ -162,7 +162,7 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
         ERC20 underlyingToken = ERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
         uint256 remainingToBorrow = _amount;
         uint256 toWithdraw;
-        Delta storage delta = deltas[_poolTokenAddress];
+        Types.Delta storage delta = deltas[_poolTokenAddress];
         uint256 poolSupplyIndex = lendingPool.getReserveNormalizedIncome(address(underlyingToken));
         uint256 maxToWithdraw = IAToken(_poolTokenAddress).balanceOf(address(this)); // The balance on pool.
 
@@ -273,7 +273,7 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
             matchingEngine.updateSuppliersDC(_poolTokenAddress, _supplier);
         }
 
-        Delta storage delta = deltas[_poolTokenAddress];
+        Types.Delta storage delta = deltas[_poolTokenAddress];
         uint256 supplyP2PExchangeRate = marketsManager.supplyP2PExchangeRate(_poolTokenAddress);
 
         /// Transfer withdraw ///
@@ -401,7 +401,7 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
             matchingEngine.updateBorrowersDC(_poolTokenAddress, _user);
         }
 
-        Delta storage delta = deltas[_poolTokenAddress];
+        Types.Delta storage delta = deltas[_poolTokenAddress];
         uint256 borrowP2PExchangeRate = marketsManager.borrowP2PExchangeRate(_poolTokenAddress);
 
         /// Transfer repay ///
