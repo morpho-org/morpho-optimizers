@@ -6,16 +6,16 @@ import "./interfaces/aave/ILendingPool.sol";
 import "./interfaces/IPositionsManagerForAave.sol";
 import "./interfaces/IMarketsManagerForAave.sol";
 import "./interfaces/IInterestRates.sol";
-import "./interfaces/ITypesForAave.sol";
 
 import {ReserveConfiguration} from "./libraries/aave/ReserveConfiguration.sol";
 import "./libraries/Math.sol";
+import "./libraries/Types.sol";
 
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
 /// @title MarketsManagerForAave
 /// @notice Smart contract managing the markets used by a MorphoPositionsManagerForAave contract, an other contract interacting with Aave or a fork of Aave.
-contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable, ITypesForAave {
+contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
     using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
     using Math for uint256;
 
@@ -24,6 +24,12 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable, IT
     struct LastPoolIndexes {
         uint256 lastSupplyPoolIndex; // Last supply pool index (normalized income) stored.
         uint256 lastBorrowPoolIndex; // Last borrow pool index (normalized variable debt) stored.
+    }
+
+    struct Vars {
+        uint256 shareOfTheDelta;
+        uint256 poolIncrease;
+        Types.Delta delta;
     }
 
     /// STORAGE ///
@@ -225,7 +231,7 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable, IT
         )
     {
         {
-            IPositionsManagerForAave.Delta memory delta = positionsManager.deltas(_marketAddress);
+            Types.Delta memory delta = positionsManager.deltas(_marketAddress);
             supplyP2PDelta_ = delta.supplyP2PDelta;
             borrowP2PDelta_ = delta.borrowP2PDelta;
             supplyP2PAmount_ = delta.supplyP2PAmount;
@@ -292,7 +298,7 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable, IT
                 underlyingTokenAddress
             );
 
-            Params memory params = Params(
+            Types.Params memory params = Types.Params(
                 supplyP2PExchangeRate[_marketAddress],
                 borrowP2PExchangeRate[_marketAddress],
                 poolSupplyExchangeRate,
@@ -329,7 +335,7 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable, IT
                 underlyingTokenAddress
             );
 
-            Params memory params = Params(
+            Types.Params memory params = Types.Params(
                 supplyP2PExchangeRate[_marketAddress],
                 borrowP2PExchangeRate[_marketAddress],
                 poolSupplyExchangeRate,
@@ -361,7 +367,7 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable, IT
                 underlyingTokenAddress
             );
 
-            Params memory params = Params(
+            Types.Params memory params = Types.Params(
                 supplyP2PExchangeRate[_marketAddress],
                 borrowP2PExchangeRate[_marketAddress],
                 poolSupplyExchangeRate,

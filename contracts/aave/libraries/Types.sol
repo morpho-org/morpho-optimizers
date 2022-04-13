@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-interface ITypesForAave {
+library Types {
     struct Params {
         uint256 supplyP2pExchangeRate;
         uint256 borrowP2pExchangeRate;

@@ -8,19 +8,15 @@ import "../interfaces/aave/ILendingPool.sol";
 import "../interfaces/IMarketsManagerForAave.sol";
 import "../interfaces/IMatchingEngineForAave.sol";
 import "../interfaces/IRewardsManagerForAave.sol";
-import "../interfaces/ITypesForAave.sol";
 import "../../common/interfaces/ISwapManager.sol";
 
 import "../../common/libraries/DoubleLinkedList.sol";
+import "../libraries/Types.sol";
 
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
-abstract contract PositionsManagerForAaveStorage is
-    OwnableUpgradeable,
-    ReentrancyGuardUpgradeable,
-    ITypesForAave
-{
+abstract contract PositionsManagerForAaveStorage is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     /// ENUMS ///
 
     enum PositionType {
@@ -101,7 +97,7 @@ abstract contract PositionsManagerForAaveStorage is
     mapping(address => mapping(address => BorrowBalance)) public borrowBalanceInOf; // For a given market, the borrow balance of a user.
     mapping(address => mapping(address => bool)) public userMembership; // Whether the user is in the market or not.
     mapping(address => address[]) public enteredMarkets; // The markets entered by a user.
-    mapping(address => Delta) public deltas; // Delta parameters for each market.
+    mapping(address => Types.Delta) public deltas; // Delta parameters for each market.
     mapping(address => bool) public paused; // Whether a market is paused or not.
 
     IAaveIncentivesController public aaveIncentivesController;
