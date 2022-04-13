@@ -102,7 +102,7 @@ contract TestMarketsManager is TestSetup {
     }
 
     function testOnlyOwnerShouldBeAbleToUpdateInterestRates() public {
-        IInterestRates interestRatesV2 = new InterestRatesV1();
+        IInterestRates interestRatesV2 = new InterestRatesV1(address(marketsManager));
 
         hevm.prank(address(0));
         hevm.expectRevert("Ownable: caller is not the owner");

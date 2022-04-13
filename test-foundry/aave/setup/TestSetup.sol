@@ -102,7 +102,7 @@ contract TestSetup is Config, Utils, stdCheats {
         );
         lendingPool = ILendingPool(lendingPoolAddressesProvider.getLendingPool());
 
-        interestRates = new InterestRatesV1();
+        interestRates = new InterestRatesV1(address(matchingEngine));
 
         if (block.chainid == Chains.ETH_MAINNET) {
             // Mainnet network.

@@ -7,7 +7,9 @@ import "./positions-manager-parts/PositionsManagerForAaveStorage.sol";
 import "./libraries/Math.sol";
 import "./libraries/Types.sol";
 
-contract InterestRatesV1 is IInterestRatesV1 {
+import "@openzeppelin/contracts/access/Ownable.sol";
+
+contract InterestRatesV1 is IInterestRatesV1, Ownable {
     using Math for uint256;
 
     /// STRUCT ///
@@ -23,12 +25,29 @@ contract InterestRatesV1 is IInterestRatesV1 {
     /// STORAGE ///
 
     uint256 public constant MAX_BASIS_POINTS = 10_000; // 100% (in basis point).
+    address private marketsManagerAddress;
     mapping(address => uint256) public supplyWeight; // supply rate weigth in the weigthed mean.
     mapping(address => uint256) public borrowWeight; // borrow rate weigth in the weigthed mean.
 
-    /// PUBLIC ///
+    /// MODIFIER ///
 
-    function createMarket(address _marketAddress) public {
+    /**
+     * @dev Throws if called by any account other than the owner.
+     */
+    modifier onlyMarketsManager() {
+        require(marketsManagerAddress == msg.sender);
+        _;
+    }
+
+    /// CONSTRUCTOR ///
+
+    constructor(address _marketsManagerAddress) {
+        marketsManagerAddress = _marketsManagerAddress;
+    }
+
+    /// EXTERNAL ///
+
+    function createMarket(address _marketAddress) external {
         supplyWeight[_marketAddress] = 1;
         borrowWeight[_marketAddress] = 1;
     }
@@ -37,12 +56,10 @@ contract InterestRatesV1 is IInterestRatesV1 {
         address _marketAddress,
         uint256 _supplyWeigth,
         uint256 _borrowWeigth
-    ) public {
+    ) external onlyOwner {
         supplyWeight[_marketAddress] = _supplyWeigth;
         borrowWeight[_marketAddress] = _borrowWeigth;
     }
-
-    /// EXTERNAL ///
 
     /// @notice Computes and return new P2P exchange rates.
     /// @param _params Parameters:
@@ -57,7 +74,7 @@ contract InterestRatesV1 is IInterestRatesV1 {
     /// @return newSupplyP2PExchangeRate The updated supplyP2PExchangeRate.
     /// @return newBorrowP2PExchangeRate The updated borrowP2PExchangeRate.
     function computeP2PExchangeRates(Types.Params memory _params)
-        public
+        external
         view
         returns (uint256 newSupplyP2PExchangeRate, uint256 newBorrowP2PExchangeRate)
     {
