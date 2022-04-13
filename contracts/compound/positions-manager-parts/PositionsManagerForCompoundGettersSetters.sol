@@ -128,7 +128,6 @@ abstract contract PositionsManagerForCompoundGettersSetters is
     /// @return maxDebtValue The maximum possible debt value of the user.
     function getUserBalanceStates(address _user)
         external
-        view
         returns (
             uint256 collateralValue,
             uint256 debtValue,
@@ -164,7 +163,6 @@ abstract contract PositionsManagerForCompoundGettersSetters is
     /// @return borrowable The maximum borrowable amount of underlying token allowed (in underlying).
     function getUserMaxCapacitiesForAsset(address _user, address _poolTokenAddress)
         external
-        view
         returns (uint256 withdrawable, uint256 borrowable)
     {
         LiquidityData memory data;
@@ -226,7 +224,7 @@ abstract contract PositionsManagerForCompoundGettersSetters is
         address _user,
         address _poolTokenAddress,
         ICompoundOracle _oracle
-    ) public view returns (AssetLiquidityData memory assetData) {
+    ) public returns (AssetLiquidityData memory assetData) {
         assetData.underlyingPrice = _oracle.getUnderlyingPrice(_poolTokenAddress);
         (, assetData.collateralFactor, ) = comptroller.markets(_poolTokenAddress);
 
@@ -293,13 +291,14 @@ abstract contract PositionsManagerForCompoundGettersSetters is
     /// @return The supply balance of the user (in underlying).
     function _getUserSupplyBalanceInOf(address _poolTokenAddress, address _user)
         internal
-        view
         returns (uint256)
     {
+        (uint256 supplyP2PExchangeRate, ) = marketsManager.getUpdatedP2PExchangeRates(
+            _poolTokenAddress
+        );
+
         return
-            supplyBalanceInOf[_poolTokenAddress][_user].inP2P.mul(
-                marketsManager.getUpdatedSupplyP2PExchangeRate(_poolTokenAddress)
-            ) +
+            supplyBalanceInOf[_poolTokenAddress][_user].inP2P.mul(supplyP2PExchangeRate) +
             supplyBalanceInOf[_poolTokenAddress][_user].onPool.mul(
                 ICToken(_poolTokenAddress).exchangeRateStored()
             );
@@ -311,13 +310,14 @@ abstract contract PositionsManagerForCompoundGettersSetters is
     /// @return The borrow balance of the user (in underlying).
     function _getUserBorrowBalanceInOf(address _poolTokenAddress, address _user)
         internal
-        view
         returns (uint256)
     {
+        (, uint256 borrowP2PExchangeRate) = marketsManager.getUpdatedP2PExchangeRates(
+            _poolTokenAddress
+        );
+
         return
-            borrowBalanceInOf[_poolTokenAddress][_user].inP2P.mul(
-                marketsManager.getUpdatedBorrowP2PExchangeRate(_poolTokenAddress)
-            ) +
+            borrowBalanceInOf[_poolTokenAddress][_user].inP2P.mul(borrowP2PExchangeRate) +
             borrowBalanceInOf[_poolTokenAddress][_user].onPool.mul(
                 ICToken(_poolTokenAddress).borrowIndex()
             );
