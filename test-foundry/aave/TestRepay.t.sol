@@ -496,7 +496,7 @@ contract TestRepay is TestSetup {
             (oldVars.SP2PD, , oldVars.SP2PA, ) = positionsManager.deltas(aDai);
             oldVars.NI = lendingPool.getReserveNormalizedIncome(dai);
             oldVars.SP2PER = marketsManager.supplyP2PExchangeRate(aDai);
-            (oldVars.APR, ) = marketsManager.getApproxP2PAPRs(aDai);
+            (oldVars.APR, ) = getApproxAPRs(aDai);
 
             move1YearForward(aDai);
 

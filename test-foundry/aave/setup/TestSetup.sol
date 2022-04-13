@@ -326,4 +326,28 @@ contract TestSetup is Config, Utils, stdCheats {
             marketsManager.updateP2PExchangeRates(_marketAddress);
         }
     }
+
+    /// @notice Computes and returns P2P rates for a specific market (without taking into account deltas !).
+    /// @param _marketAddress The market address.
+    /// @return p2pSupplyRate_ The market's supply rate in P2P (in ray).
+    /// @return p2pBorrowRate_ The market's borrow rate in P2P (in ray).
+    function getApproxAPRs(address _marketAddress)
+        public
+        view
+        returns (uint256 p2pSupplyRate_, uint256 p2pBorrowRate_)
+    {
+        DataTypes.ReserveData memory reserveData = lendingPool.getReserveData(
+            IAToken(_marketAddress).UNDERLYING_ASSET_ADDRESS()
+        );
+
+        uint256 poolSupplyAPR = reserveData.currentLiquidityRate;
+        uint256 poolBorrowAPR = reserveData.currentVariableBorrowRate;
+        uint256 reserveFactor = marketsManager.reserveFactor(_marketAddress);
+
+        // rate = 2/3 * poolSupplyRate + 1/3 * poolBorrowRate.
+        uint256 rate = (2 * poolSupplyAPR + poolBorrowAPR) / 3;
+
+        p2pSupplyRate_ = rate - (reserveFactor * (rate - poolSupplyAPR)) / 10_000;
+        p2pBorrowRate_ = rate + (reserveFactor * (poolBorrowAPR - rate)) / 10_000;
+    }
 }

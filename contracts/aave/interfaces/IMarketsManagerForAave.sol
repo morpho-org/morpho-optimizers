@@ -18,6 +18,4 @@ interface IMarketsManagerForAave {
         external
         view
         returns (uint256, uint256);
-
-    function getApproxP2PAPRs(address _marketAddress) external view returns (uint256, uint256);
 }
