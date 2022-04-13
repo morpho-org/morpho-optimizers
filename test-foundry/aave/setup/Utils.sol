@@ -95,7 +95,7 @@ contract Utils is DSTest {
     /// @dev calculates compounded interest over a period of time.
     ///   To avoid expensive exponentiation, the calculation is performed using a binomial approximation:
     ///   (1+x)^n = 1+n*x+[n/2*(n-1)]*x^2+[n/6*(n-1)*(n-2)*x^3...
-    /// @param _rate The SPY to use in the computation.
+    /// @param _rate The APR to use in the computation.
     /// @param _elapsedTime The amount of time during to get the interest for.
     /// @return results in ray
     function computeCompoundedInterest(uint256 _rate, uint256 _elapsedTime)

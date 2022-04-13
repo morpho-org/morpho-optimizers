@@ -400,7 +400,7 @@ contract TestWithdraw is TestSetup {
 
     struct Vars {
         uint256 LR;
-        uint256 SPY;
+        uint256 APR;
         uint256 VBR;
         uint256 NVD;
         uint256 BP2PD;
@@ -503,7 +503,7 @@ contract TestWithdraw is TestSetup {
             (, oldVars.BP2PD, , oldVars.BP2PA) = positionsManager.deltas(aDai);
             oldVars.NVD = lendingPool.getReserveNormalizedVariableDebt(dai);
             oldVars.BP2PER = marketsManager.borrowP2PExchangeRate(aDai);
-            (, oldVars.SPY) = marketsManager.getApproxP2PSPY(aDai);
+            (, oldVars.APR) = marketsManager.getApproxP2PAPRs(aDai);
 
             move1YearForward(aDai);
 
@@ -521,7 +521,7 @@ contract TestWithdraw is TestSetup {
             .rayDiv(newVars.BP2PA.wadToRay());
 
             uint256 expectedBP2PER = oldVars.BP2PER.rayMul(
-                computeCompoundedInterest(oldVars.SPY, 365 days).rayMul(RAY - shareOfTheDelta) +
+                computeCompoundedInterest(oldVars.APR, 365 days).rayMul(RAY - shareOfTheDelta) +
                     shareOfTheDelta.rayMul(newVars.NVD).rayDiv(oldVars.NVD)
             );
 
