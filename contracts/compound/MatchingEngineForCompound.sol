@@ -97,15 +97,16 @@ contract MatchingEngineForCompound is
                     matched += vars.toMatch;
                 }
 
-                // Handle rounding error of 1 wei.
-                uint256 diff = supplyBalanceInOf[poolTokenAddress][user].onPool -
-                    vars.toMatch.div(vars.poolIndex);
-                supplyBalanceInOf[poolTokenAddress][user].onPool = diff == 1 ? 0 : diff;
-                supplyBalanceInOf[poolTokenAddress][user].inP2P += vars.toMatch.div(vars.p2pRate); // In p2pUnit
+                supplyBalanceInOf[poolTokenAddress][user].onPool -= vars.toMatch.divWadUp(
+                    vars.poolIndex
+                );
+                supplyBalanceInOf[poolTokenAddress][user].inP2P += vars.toMatch.divWadUp(
+                    vars.p2pRate
+                ); // In p2pUnit
                 updateSuppliers(poolTokenAddress, user);
                 emit SupplierPositionUpdated(
                     user,
-                    poolTokenAddress,
+                    poolTokenAddress, // Handle rounding error of 1 wei.
                     supplyBalanceInOf[poolTokenAddress][user].onPool,
                     supplyBalanceInOf[poolTokenAddress][user].inP2P
                 );
@@ -148,13 +149,13 @@ contract MatchingEngineForCompound is
                     remainingToUnmatch -= vars.toUnmatch;
                 }
 
-                supplyBalanceInOf[_poolTokenAddress][user].onPool += vars.toUnmatch.div(
+                supplyBalanceInOf[_poolTokenAddress][user].onPool += vars.toUnmatch.divWadUp(
                     vars.poolIndex
                 );
-                // Handle rounding error of 1 wei.
-                uint256 diff = supplyBalanceInOf[_poolTokenAddress][user].inP2P -
-                    vars.toUnmatch.div(vars.p2pRate);
-                supplyBalanceInOf[_poolTokenAddress][user].inP2P = diff == 1 ? 0 : diff; // In p2pUnit
+
+                supplyBalanceInOf[_poolTokenAddress][user].inP2P -= vars.toUnmatch.divWadUp(
+                    vars.p2pRate
+                );
                 updateSuppliers(_poolTokenAddress, user);
                 emit SupplierPositionUpdated(
                     user,
@@ -204,11 +205,12 @@ contract MatchingEngineForCompound is
                     matched += vars.toMatch;
                 }
 
-                // Handle rounding error of 1 wei.
-                uint256 diff = borrowBalanceInOf[poolTokenAddress][user].onPool -
-                    vars.toMatch.div(vars.poolIndex);
-                borrowBalanceInOf[poolTokenAddress][user].onPool = diff == 1 ? 0 : diff;
-                borrowBalanceInOf[poolTokenAddress][user].inP2P += vars.toMatch.div(vars.p2pRate);
+                borrowBalanceInOf[poolTokenAddress][user].onPool -= vars.toMatch.divWadUp(
+                    vars.poolIndex
+                );
+                borrowBalanceInOf[poolTokenAddress][user].inP2P += vars.toMatch.divWadUp(
+                    vars.p2pRate
+                );
                 updateBorrowers(poolTokenAddress, user);
                 emit BorrowerPositionUpdated(
                     user,
@@ -256,10 +258,10 @@ contract MatchingEngineForCompound is
                     remainingToUnmatch -= vars.toUnmatch;
                 }
 
-                borrowBalanceInOf[_poolTokenAddress][user].onPool += vars.toUnmatch.div(
+                borrowBalanceInOf[_poolTokenAddress][user].onPool += vars.toUnmatch.divWadUp(
                     vars.poolIndex
                 );
-                borrowBalanceInOf[_poolTokenAddress][user].inP2P -= vars.toUnmatch.div(
+                borrowBalanceInOf[_poolTokenAddress][user].inP2P -= vars.toUnmatch.divWadUp(
                     vars.p2pRate
                 );
                 updateBorrowers(_poolTokenAddress, user);

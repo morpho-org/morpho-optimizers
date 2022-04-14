@@ -7,6 +7,7 @@ import "./interfaces/IPositionsManagerForCompound.sol";
 import "./interfaces/IMarketsManagerForCompound.sol";
 import "./interfaces/IInterestRates.sol";
 
+import "./libraries/FixedPointMathLib.sol";
 import "./libraries/CompoundMath.sol";
 
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
@@ -14,6 +15,7 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 /// @title MarketsManagerForCompound.
 /// @notice Smart contract managing the markets used by a MorphoPositionsManagerForCompound contract, an other contract interacting with Compound or a fork of Compound.
 contract MarketsManagerForCompound is IMarketsManagerForCompound, OwnableUpgradeable {
+    using FixedPointMathLib for uint256;
     using CompoundMath for uint256;
 
     /// STRUCTS ///
@@ -445,13 +447,13 @@ contract MarketsManagerForCompound is IMarketsManagerForCompound, OwnableUpgrade
         if (_p2pAmount == 0 || _p2pDelta == 0)
             return _p2pRate.mul(_computeCompoundedInterest(_p2pBPY, _blockDifference));
         else {
-            uint256 shareOfTheDelta = _p2pDelta.mul(_poolIndex).div(_p2pRate).div(_p2pAmount);
+            uint256 shareOfTheDelta = _p2pDelta.mul(_poolIndex).divWadUp(_p2pRate).div(_p2pAmount);
             if (shareOfTheDelta > WAD) shareOfTheDelta = WAD;
             return
                 _p2pRate.mul(
                     _computeCompoundedInterest(_p2pBPY, _blockDifference).mul(
                         1e18 - shareOfTheDelta
-                    ) + shareOfTheDelta.mul(_poolIndex).div(_lastPoolIndex)
+                    ) + shareOfTheDelta.mul(_poolIndex).divWadUp(_lastPoolIndex)
                 );
         }
     }
