@@ -237,7 +237,7 @@ contract PositionsManagerForCompound is PositionsManagerForCompoundLogic {
     {
         if (treasuryVault == address(0)) revert ZeroAddress();
 
-        ERC20 underlyingToken = ERC20(ICToken(_poolTokenAddress).underlying());
+        ERC20 underlyingToken = _getUnderlying(_poolTokenAddress);
         uint256 amountToClaim = underlyingToken.balanceOf(address(this));
 
         if (amountToClaim == 0) revert AmountIsZero();
