@@ -1,19 +1,23 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import {ICToken, ICToken} from "@contracts/compound/interfaces/compound/ICompound.sol";
+import "@contracts/compound/interfaces/compound/ICompound.sol";
 
 /// Price Oracle for liquidation tests
 contract SimplePriceOracle {
+    address public constant weth = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+    address public constant cEth = 0x4Ddc2D193948926D02f9B1fE9e1daa0718270ED5;
+
     mapping(address => uint256) public prices;
 
     function getUnderlyingPrice(address _cToken) public view returns (uint256) {
-        return prices[address(ICToken(_cToken).underlying())];
+        if (_cToken == cEth) return prices[weth];
+        return prices[ICToken(_cToken).underlying()];
     }
 
     function setUnderlyingPrice(address _cToken, uint256 _underlyingPriceMantissa) public {
-        address asset = address(ICToken(_cToken).underlying());
-        prices[asset] = _underlyingPriceMantissa;
+        if (_cToken == cEth) prices[weth] = _underlyingPriceMantissa;
+        else prices[ICToken(_cToken).underlying()] = _underlyingPriceMantissa;
     }
 
     function setDirectPrice(address _asset, uint256 _price) public {
