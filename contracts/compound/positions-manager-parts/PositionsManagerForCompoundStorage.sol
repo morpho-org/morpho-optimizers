@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import {ICToken, IComptroller, ICompoundOracle} from "../interfaces/compound/ICompound.sol";
 import "../interfaces/IMarketsManagerForCompound.sol";
 import "../interfaces/IMatchingEngineForCompound.sol";
 import "../interfaces/IRewardsManagerForCompound.sol";
 import "../../common/interfaces/ISwapManager.sol";
+import "../interfaces/compound/ICompound.sol";
+import "../interfaces/IWETH.sol";
 
+import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 import "../../common/libraries/DoubleLinkedList.sol";
 import "../libraries/CompoundMath.sol";
 
@@ -102,4 +104,6 @@ abstract contract PositionsManagerForCompoundStorage is
     IRewardsManagerForCompound public rewardsManager;
     ISwapManager public swapManager;
     address public treasuryVault;
+    address public cEth;
+    address public weth;
 }
