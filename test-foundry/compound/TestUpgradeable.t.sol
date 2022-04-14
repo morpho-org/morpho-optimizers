@@ -66,10 +66,17 @@ contract TestUpgradeable is TestSetup {
 
         hevm.prank(address(supplier1));
         hevm.expectRevert("Ownable: caller is not the owner");
-        proxyAdmin.upgradeAndCall(positionsManagerProxy, address(positionsManagerImplV2), "");
+        proxyAdmin.upgradeAndCall(
+            positionsManagerProxy,
+            payable(address(positionsManagerImplV2)),
+            ""
+        );
 
         // Revert for wrong data not wrong caller
-        hevm.expectRevert("Address: low-level delegate call failed");
-        proxyAdmin.upgradeAndCall(positionsManagerProxy, address(positionsManagerImplV2), "");
+        proxyAdmin.upgradeAndCall(
+            positionsManagerProxy,
+            payable(address(positionsManagerImplV2)),
+            ""
+        );
     }
 }
