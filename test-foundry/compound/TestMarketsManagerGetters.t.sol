@@ -14,8 +14,6 @@ contract TestMarketsManagerGetters is TestSetup {
 
     function testGetMarketData() public {
         (
-            uint256 supplyP2PBPY,
-            uint256 borrowP2PBPY,
             uint256 supplyP2PExchangeRate,
             uint256 borrowP2PExchangeRate,
             uint256 lastUpdateBlockNumber,
@@ -25,8 +23,6 @@ contract TestMarketsManagerGetters is TestSetup {
             uint256 borrowP2PAmount_
         ) = marketsManager.getMarketData(cDai);
 
-        assertEq(supplyP2PBPY, marketsManager.supplyP2PBPY(cDai));
-        assertEq(borrowP2PBPY, marketsManager.borrowP2PBPY(cDai));
         assertEq(supplyP2PExchangeRate, marketsManager.supplyP2PExchangeRate(cDai));
         assertEq(borrowP2PExchangeRate, marketsManager.borrowP2PExchangeRate(cDai));
         assertEq(lastUpdateBlockNumber, marketsManager.lastUpdateBlockNumber(cDai));
@@ -50,19 +46,13 @@ contract TestMarketsManagerGetters is TestSetup {
         assertTrue(noP2P == marketsManager.noP2P(cDai));
     }
 
-    function testGetUpdatedBorrowP2PExchangeRate() public {
+    function testGetUpdatedP2PExchangeRates() public {
         hevm.warp(block.timestamp + (365 days));
+        marketsManager.updateP2PExchangeRates(cDai);
 
-        uint256 newBorrowP2PExchangeRate = marketsManager.getUpdatedBorrowP2PExchangeRate(cDai);
-        marketsManager.updateRates(cDai);
+        (uint256 newSupplyP2PExchangeRate, uint256 newBorrowP2PExchangeRate) = marketsManager
+        .getUpdatedP2PExchangeRates(cDai);
         assertEq(newBorrowP2PExchangeRate, marketsManager.borrowP2PExchangeRate(cDai));
-    }
-
-    function testGetUpdatedSupplyP2PExchangeRate() public {
-        hevm.warp(block.timestamp + (365 days));
-
-        uint256 newSupplyP2PExchangeRate = marketsManager.getUpdatedSupplyP2PExchangeRate(cDai);
-        marketsManager.updateRates(cDai);
         assertEq(newSupplyP2PExchangeRate, marketsManager.supplyP2PExchangeRate(cDai));
     }
 }

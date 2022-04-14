@@ -400,7 +400,7 @@ contract TestWithdraw is TestSetup {
 
     struct Vars {
         uint256 LR;
-        uint256 SPY;
+        uint256 BPY;
         uint256 VBR;
         uint256 NVD;
         uint256 BP2PD;
@@ -512,16 +512,14 @@ contract TestWithdraw is TestSetup {
             (, oldVars.BP2PD, , oldVars.BP2PA) = positionsManager.deltas(cDai);
             oldVars.NVD = ICToken(cDai).borrowIndex();
             oldVars.BP2PER = marketsManager.borrowP2PExchangeRate(cDai);
-            oldVars.SPY = marketsManager.borrowP2PBPY(cDai);
+            (, oldVars.BPY) = getApproxBPYs(cDai);
 
-            hevm.roll(block.number + 1000);
-
-            marketsManager.updateRates(cDai);
+            move1000BlocksForward(cDai);
 
             (, newVars.BP2PD, , newVars.BP2PA) = positionsManager.deltas(cDai);
             newVars.NVD = ICToken(cDai).borrowIndex();
             newVars.BP2PER = marketsManager.borrowP2PExchangeRate(cDai);
-            newVars.SPY = marketsManager.borrowP2PBPY(cDai);
+            (, newVars.BPY) = getApproxBPYs(cDai);
             newVars.LR = ICToken(cDai).supplyRatePerBlock();
             newVars.VBR = ICToken(cDai).borrowRatePerBlock();
 
@@ -530,11 +528,16 @@ contract TestWithdraw is TestSetup {
             );
 
             uint256 expectedBP2PER = oldVars.BP2PER.mul(
-                _computeCompoundedInterest(oldVars.SPY, 1000).mul(WAD - shareOfTheDelta) +
+                _computeCompoundedInterest(oldVars.BPY, 1000).mul(WAD - shareOfTheDelta) +
                     shareOfTheDelta.mul(newVars.NVD).div(oldVars.NVD)
             );
 
-            assertEq(expectedBP2PER, newVars.BP2PER, "BP2PER not expected");
+            assertApproxEq(
+                expectedBP2PER,
+                newVars.BP2PER,
+                (expectedBP2PER * 2) / 100,
+                "BP2PER not expected"
+            );
 
             uint256 expectedBorrowBalanceInUnderlying = borrowedAmount.div(oldVars.BP2PER).mul(
                 expectedBP2PER
@@ -543,9 +546,10 @@ contract TestWithdraw is TestSetup {
             for (uint256 i = 10; i < 20; i++) {
                 (uint256 inP2PBorrower, uint256 onPoolBorrower) = positionsManager
                 .borrowBalanceInOf(cDai, address(borrowers[i]));
-                assertEq(
+                assertApproxEq(
                     p2pUnitToUnderlying(inP2PBorrower, newVars.BP2PER),
                     expectedBorrowBalanceInUnderlying,
+                    (expectedBorrowBalanceInUnderlying * 2) / 100,
                     "not expected underlying balance"
                 );
                 assertEq(onPoolBorrower, 0);
@@ -595,7 +599,7 @@ contract TestWithdraw is TestSetup {
         // Should create a delta on borrowers side.
         supplier1.withdraw(cDai, type(uint256).max);
 
-        hevm.warp(block.number + 1000);
+        move1000BlocksForward(cDai);
 
         for (uint256 i = 0; i < 20; i++) {
             borrowers[i].approve(dai, type(uint256).max);

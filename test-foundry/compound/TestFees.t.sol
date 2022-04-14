@@ -2,6 +2,7 @@
 pragma solidity 0.8.13;
 
 import "./setup/TestSetup.sol";
+import "hardhat/console.sol";
 
 contract TestFees is TestSetup {
     using CompoundMath for uint256;
@@ -32,7 +33,7 @@ contract TestFees is TestSetup {
         supplier1.supply(cDai, 100 ether);
         supplier1.borrow(cDai, 50 ether);
 
-        hevm.roll(block.number + 100);
+        move1000BlocksForward(cDai);
 
         supplier1.repay(cDai, type(uint256).max);
         positionsManager.claimToTreasury(cDai);
@@ -68,27 +69,30 @@ contract TestFees is TestSetup {
         supplier1.supply(cDai, 100 ether);
         supplier1.borrow(cDai, 50 ether);
 
-        ICToken cToken = ICToken(cDai);
+        uint256 oldSupplyExRate = marketsManager.supplyP2PExchangeRate(cDai);
+        uint256 oldBorrowExRate = marketsManager.borrowP2PExchangeRate(cDai);
 
-        (uint256 supplyP2PBPY, uint256 borrowP2PBPY) = interestRates.computeRates(
-            cToken.supplyRatePerBlock(),
-            cToken.borrowRatePerBlock(),
-            reserveFactor
+        (uint256 supplyP2PBPY, uint256 borrowP2PBPY) = getApproxBPYs(cDai);
+
+        uint256 newSupplyExRate = oldSupplyExRate.mul(
+            _computeCompoundedInterest(supplyP2PBPY, 1000)
+        );
+        uint256 newBorrowExRate = oldBorrowExRate.mul(
+            _computeCompoundedInterest(borrowP2PBPY, 1000)
         );
 
-        uint256 newSupplyExRate = WAD.mul(_computeCompoundedInterest(supplyP2PBPY, 100));
-        uint256 newBorrowExRate = WAD.mul(_computeCompoundedInterest(borrowP2PBPY, 100));
+        uint256 expectedFees = (50 * WAD).mul(
+            newBorrowExRate.div(oldBorrowExRate) - newSupplyExRate.div(oldSupplyExRate)
+        );
 
-        uint256 expectedFees = (50 * WAD).mul(newBorrowExRate) - (50 * WAD).mul(newSupplyExRate);
-
-        hevm.roll(block.number + 100);
+        move1000BlocksForward(cDai);
 
         supplier1.repay(cDai, type(uint256).max);
         positionsManager.claimToTreasury(cDai);
         uint256 balanceAfter = IERC20(dai).balanceOf(positionsManager.treasuryVault());
         uint256 gainedByDAO = balanceAfter - balanceBefore;
 
-        assertApproxEq(gainedByDAO, expectedFees, 2, "Fees collected");
+        assertApproxEq(gainedByDAO, expectedFees, (expectedFees * 1) / 100000, "Fees collected");
     }
 
     function testShouldNotClaimFeesIfFactorIsZero() public {

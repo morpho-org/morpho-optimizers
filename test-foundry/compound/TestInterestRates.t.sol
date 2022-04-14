@@ -4,29 +4,22 @@ pragma solidity 0.8.13;
 import "./setup/TestSetup.sol";
 
 contract TestInterestRates is TestSetup {
-    function testShouldReturnZero() public {
-        (uint256 supplyRate, uint256 borrowRate) = interestRates.computeRates(0, 0, 0);
-        assertEq(supplyRate, 0);
-        assertEq(borrowRate, 0);
-    }
+    function testExchangeRateComputation() public {
+        Types.Params memory params = Types.Params(
+            1 * WAD, // supplyP2PExchangeRate;
+            1 * WAD, // borrowP2PExchangeRate
+            2 * WAD, // poolSupplyExchangeRate;
+            3 * WAD, // poolBorrowExchangeRate;
+            1 * WAD, // lastPoolSupplyExchangeRate;
+            1 * WAD, // lastPoolBorrowExchangeRate;
+            0, // reserveFactor;
+            Types.Delta(0, 0, 0, 0) // delta;
+        );
 
-    function testShouldReturnSameRatesIfSameRatesAsInputAndNoReserveFactor() public {
-        (uint256 supplyRate, uint256 borrowRate) = interestRates.computeRates(100, 100, 0);
-        assertEq(supplyRate, 100);
-        assertEq(borrowRate, 100);
-    }
+        (uint256 newSupplyP2PExchangeRate, uint256 newBorrowP2PExchangeRate) = interestRates
+        .computeP2PExchangeRates(params);
 
-    function testShouldReturnTheRightQuantities() public {
-        (uint256 supplyRate, uint256 borrowRate) = interestRates.computeRates(0, 100, 0);
-
-        assertEq(supplyRate, 33);
-        assertEq(supplyRate, borrowRate);
-    }
-
-    function testShouldReturnPoolRatesWhen100PercentReserveFactor() public {
-        (uint256 supplyRate, uint256 borrowRate) = interestRates.computeRates(20, 80, 10_000);
-
-        assertEq(supplyRate, 20);
-        assertEq(borrowRate, 80);
+        assertEq(newSupplyP2PExchangeRate, (7 * WAD) / 3);
+        assertEq(newBorrowP2PExchangeRate, (7 * WAD) / 3);
     }
 }
