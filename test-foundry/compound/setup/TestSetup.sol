@@ -234,4 +234,34 @@ contract TestSetup is Config, Utils, stdCheats {
         });
         positionsManager.setMaxGas(newMaxGas);
     }
+
+    function move1000BlocksForward(address _marketAddress) public {
+        for (uint256 k; k < 100; k++) {
+            hevm.roll(block.number + 10);
+            hevm.warp(block.timestamp + 1);
+            marketsManager.updateP2PExchangeRates(_marketAddress);
+        }
+    }
+
+    /// @notice Computes and returns P2P rates for a specific market (without taking into account deltas !).
+    /// @param _poolTokenAddress The market address.
+    /// @return p2pSupplyRate_ The market's supply rate in P2P (in ray).
+    /// @return p2pBorrowRate_ The market's borrow rate in P2P (in ray).
+    function getApproxBPYs(address _poolTokenAddress)
+        public
+        view
+        returns (uint256 p2pSupplyRate_, uint256 p2pBorrowRate_)
+    {
+        ICToken cToken = ICToken(_poolTokenAddress);
+
+        uint256 poolSupplyBPY = cToken.supplyRatePerBlock();
+        uint256 poolBorrowBPY = cToken.borrowRatePerBlock();
+        uint256 reserveFactor = marketsManager.reserveFactor(_poolTokenAddress);
+
+        // rate = 2/3 * poolSupplyRate + 1/3 * poolBorrowRate.
+        uint256 rate = (2 * poolSupplyBPY + poolBorrowBPY) / 3;
+
+        p2pSupplyRate_ = rate - (reserveFactor * (rate - poolSupplyBPY)) / 10_000;
+        p2pBorrowRate_ = rate + (reserveFactor * (poolBorrowBPY - rate)) / 10_000;
+    }
 }
