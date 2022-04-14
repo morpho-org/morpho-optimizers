@@ -139,15 +139,15 @@ contract MarketsManagerForCompound is Ownable {
     function _updateP2PExchangeRate(address _marketAddress) internal {
         uint256 numberOfBlocksSinceLastUpdate = block.number -
             lastUpdateBlockNumber[_marketAddress];
-        uint256 newP2pUnitExchangeRate = p2pExchangeRate[_marketAddress].mul(
+        uint256 newP2PUnitExchangeRate = p2pExchangeRate[_marketAddress].mul(
             PRBMathUD60x18.pow(
                 1e18 + p2pBPY[_marketAddress],
                 PRBMathUD60x18.fromUint(numberOfBlocksSinceLastUpdate)
             )
         );
 
-        p2pExchangeRate[_marketAddress] = newP2pUnitExchangeRate;
-        emit P2PExchangeRateUpdated(_marketAddress, newP2pUnitExchangeRate);
+        p2pExchangeRate[_marketAddress] = newP2PUnitExchangeRate;
+        emit P2PExchangeRateUpdated(_marketAddress, newP2PUnitExchangeRate);
     }
 
     /// @dev Updates the Block Percentage Yield (`p2pBPY`).

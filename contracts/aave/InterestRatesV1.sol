@@ -28,8 +28,8 @@ contract InterestRatesV1 is IInterestRates {
 
     /// @notice Computes and return new P2P exchange rates.
     /// @param _params Parameters:
-    ///             supplyP2pExchangeRate The current supply P2P exchange rate.
-    ///             borrowP2pExchangeRate The current borrow P2P exchange rate.
+    ///             supplyP2PEchangeRate The current supply P2P exchange rate.
+    ///             borrowP2PExchangeRate The current borrow P2P exchange rate.
     ///             poolSupplyExchangeRate The current pool supply exchange rate.
     ///             poolBorrowExchangeRate The current pool borrow exchange rate.
     ///             lastPoolSupplyExchangeRate The pool supply exchange rate at last update.
@@ -58,7 +58,7 @@ contract InterestRatesV1 is IInterestRates {
         );
 
         if (_params.delta.supplyP2PAmount == 0 || _params.delta.supplyP2PDelta == 0) {
-            newSupplyP2PExchangeRate = _params.supplyP2pExchangeRate.rayMul(
+            newSupplyP2PExchangeRate = _params.supplyP2PExchangeRate.rayMul(
                 vars.supplyP2PGrowthFactor
             );
         } else {
@@ -68,19 +68,19 @@ contract InterestRatesV1 is IInterestRates {
                 .supplyP2PDelta
                 .wadToRay()
                 .rayMul(_params.poolSupplyExchangeRate)
-                .rayDiv(_params.supplyP2pExchangeRate)
+                .rayDiv(_params.supplyP2PExchangeRate)
                 .rayDiv(_params.delta.supplyP2PAmount.wadToRay()),
                 Math.ray() // To avoid shareOfTheDelta > 1 with rounding errors.
             );
 
-            newSupplyP2PExchangeRate = _params.supplyP2pExchangeRate.rayMul(
+            newSupplyP2PExchangeRate = _params.supplyP2PExchangeRate.rayMul(
                 (Math.ray() - vars.shareOfTheDelta).rayMul(vars.supplyP2PGrowthFactor) +
                     vars.shareOfTheDelta.rayMul(vars.supplyPoolGrowthFactor)
             );
         }
 
         if (_params.delta.borrowP2PAmount == 0 || _params.delta.borrowP2PDelta == 0) {
-            newBorrowP2PExchangeRate = _params.borrowP2pExchangeRate.rayMul(
+            newBorrowP2PExchangeRate = _params.borrowP2PExchangeRate.rayMul(
                 vars.borrowP2PGrowthFactor
             );
         } else {
@@ -90,28 +90,28 @@ contract InterestRatesV1 is IInterestRates {
                 .borrowP2PDelta
                 .wadToRay()
                 .rayMul(_params.poolBorrowExchangeRate)
-                .rayDiv(_params.borrowP2pExchangeRate)
+                .rayDiv(_params.borrowP2PExchangeRate)
                 .rayDiv(_params.delta.borrowP2PAmount.wadToRay()),
                 Math.ray() // To avoid shareOfTheDelta > 1 with rounding errors.
             );
 
-            newBorrowP2PExchangeRate = _params.borrowP2pExchangeRate.rayMul(
+            newBorrowP2PExchangeRate = _params.borrowP2PExchangeRate.rayMul(
                 (Math.ray() - vars.shareOfTheDelta).rayMul(vars.borrowP2PGrowthFactor) +
                     vars.shareOfTheDelta.rayMul(vars.borrowPoolGrowthFactor)
             );
         }
     }
 
-    /// @notice Computes and returns supply P2P growthfactor and borrow P2P growthfactor.
+    /// @notice Computes and returns supply P2P growth factor and borrow P2P growth factor.
     /// @param _poolSupplyExchangeRate The current pool supply exchange rate.
     /// @param _poolBorrowExchangeRate The current pool borrow exchange rate.
     /// @param _lastPoolSupplyExchangeRate The pool supply exchange rate at last update.
     /// @param _lastPoolBorrowExchangeRate The pool borrow exchange rate at last update.
     /// @param _reserveFactor The reserve factor percentage (10 000 = 100%).
-    /// @return supplyP2PGrowthFactor The supply P2P growthfactor.
-    /// @return borrowP2PGrowthFactor The borrow P2P growthfactor.
-    /// @return supplyPoolGrowthFactor The supply pool growthfactor.
-    /// @return borrowPoolGrowthFactor The borrow pool growthfactor.
+    /// @return supplyP2PGrowthFactor The supply P2P growth factor.
+    /// @return borrowP2PGrowthFactor The borrow P2P growth factor.
+    /// @return supplyPoolGrowthFactor The supply pool growth factor.
+    /// @return borrowPoolGrowthFactor The borrow pool growth factor.
     function _computeGrowthFactors(
         uint256 _poolSupplyExchangeRate,
         uint256 _poolBorrowExchangeRate,
