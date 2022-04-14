@@ -106,8 +106,16 @@ contract TestSetup is Config, Utils, stdCheats {
         );
 
         positionsManagerProxy.changeAdmin(address(proxyAdmin));
-        positionsManager = PositionsManagerForCompound(address(positionsManagerProxy));
-        positionsManager.initialize(marketsManager, matchingEngine, comptroller, maxGas, 20);
+        positionsManager = PositionsManagerForCompound(payable(address(positionsManagerProxy)));
+        positionsManager.initialize(
+            marketsManager,
+            matchingEngine,
+            comptroller,
+            maxGas,
+            20,
+            cEth,
+            weth
+        );
 
         treasuryVault = new User(positionsManager);
         fakePositionsManagerImpl = new PositionsManagerForCompound();
@@ -119,6 +127,7 @@ contract TestSetup is Config, Utils, stdCheats {
         createMarket(cWbtc);
         createMarket(cUsdt);
         createMarket(cBat);
+        createMarket(cEth);
 
         hevm.roll(block.number + 1);
     }
@@ -130,8 +139,11 @@ contract TestSetup is Config, Utils, stdCheats {
         pools.push(_cToken);
 
         hevm.label(_cToken, ERC20(_cToken).symbol());
-        address underlying = ICToken(_cToken).underlying();
-        hevm.label(underlying, ERC20(underlying).symbol());
+        if (_cToken == cEth) hevm.label(weth, "WETH");
+        else {
+            address underlying = ICToken(_cToken).underlying();
+            hevm.label(underlying, ERC20(underlying).symbol());
+        }
     }
 
     function initUsers() internal {
@@ -163,6 +175,7 @@ contract TestSetup is Config, Utils, stdCheats {
 
     function fillUserBalances(User _user) internal {
         tip(dai, address(_user), INITIAL_BALANCE * WAD);
+        tip(weth, address(_user), INITIAL_BALANCE * WAD);
         tip(usdc, address(_user), INITIAL_BALANCE * 1e6);
     }
 
