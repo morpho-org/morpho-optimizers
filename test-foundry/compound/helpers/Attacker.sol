@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import "hardhat/console.sol";
-
 import "@contracts/compound/interfaces/compound/ICompound.sol";
 
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
@@ -29,6 +27,6 @@ contract Attacker {
     }
 
     function deposit(address _asset, uint256 _amount) external {
-        console.log("result", ICToken(_asset).mint(_amount));
+        ICToken(_asset).mint(_amount);
     }
 }
