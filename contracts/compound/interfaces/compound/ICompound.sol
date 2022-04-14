@@ -295,6 +295,12 @@ interface ICToken {
         returns (uint256);
 }
 
+interface ICEther is ICToken {
+    function mint() external payable;
+
+    function repayBorrow() external payable;
+}
+
 interface ICompoundOracle {
     function getUnderlyingPrice(address) external view returns (uint256);
 }
