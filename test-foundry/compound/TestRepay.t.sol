@@ -482,11 +482,11 @@ contract TestRepay is TestSetup {
             (oldVars.SP2PD, , oldVars.SP2PA, ) = positionsManager.deltas(cDai);
             oldVars.SPI = ICToken(cDai).exchangeRateCurrent();
             oldVars.SP2PER = marketsManager.supplyP2PExchangeRate(cDai);
-            oldVars.BPY = marketsManager.supplyP2PBPY(cDai);
+            (oldVars.BPY, ) = getApproxBPYs(cDai);
 
-            hevm.roll(block.number + 1_000);
+            move1000BlocksForward(cDai);
 
-            marketsManager.updateRates(cDai);
+            marketsManager.updateP2PExchangeRates(cDai);
 
             (newVars.SP2PD, , newVars.SP2PA, ) = positionsManager.deltas(cDai);
             newVars.SPI = ICToken(cDai).exchangeRateCurrent();
@@ -503,7 +503,12 @@ contract TestRepay is TestSetup {
                     shareOfTheDelta.mul(newVars.SPI).div(oldVars.SPI)
             );
 
-            assertEq(expectedSP2PER, newVars.SP2PER, "SP2PER not expected");
+            assertApproxEq(
+                expectedSP2PER,
+                newVars.SP2PER,
+                (expectedSP2PER * 2) / 100,
+                "SP2PER not expected"
+            );
 
             uint256 expectedSupplyBalanceInUnderlying = suppliedAmount.div(oldVars.SP2PER).mul(
                 expectedSP2PER
@@ -513,9 +518,10 @@ contract TestRepay is TestSetup {
                 (uint256 inP2PSupplier, uint256 onPoolSupplier) = positionsManager
                 .supplyBalanceInOf(cDai, address(suppliers[i]));
 
-                assertEq(
+                assertApproxEq(
                     inP2PSupplier.mul(newVars.SP2PER),
                     expectedSupplyBalanceInUnderlying,
+                    (expectedSupplyBalanceInUnderlying * 2) / 100,
                     "supplier in P2P 2"
                 );
                 assertEq(onPoolSupplier, 0, "supplier on pool 2");
@@ -565,7 +571,7 @@ contract TestRepay is TestSetup {
         borrower1.approve(dai, type(uint256).max);
         borrower1.repay(cDai, type(uint256).max);
 
-        hevm.warp(block.number + 1000);
+        move1000BlocksForward(cDai);
 
         for (uint256 i; i < 20; i++) {
             suppliers[i].withdraw(cDai, type(uint256).max);
