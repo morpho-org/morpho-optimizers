@@ -322,4 +322,21 @@ abstract contract PositionsManagerForCompoundGettersSetters is
                 ICToken(_poolTokenAddress).borrowIndex()
             );
     }
+
+    /// @dev Returns the underlying ERC20 token related to the pool token.
+    /// @param _poolTokenAddress The address of the pool token.
+    /// @return The underlying ERC20 token.
+    function _getUnderlying(address _poolTokenAddress) internal view returns (ERC20) {
+        if (_isCeth(_poolTokenAddress))
+            // cETH has no underlying() function.
+            return ERC20(weth);
+        else return ERC20(ICToken(_poolTokenAddress).underlying());
+    }
+
+    /// @dev Returns whether the pool token is cETH.
+    /// @param _poolTokenAddress The address of the pool token.
+    /// @return True if the pool token is cETH.
+    function _isCeth(address _poolTokenAddress) internal view returns (bool) {
+        return _poolTokenAddress == cEth;
+    }
 }

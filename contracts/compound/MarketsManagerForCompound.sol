@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import {ICToken, IComptroller} from "./interfaces/compound/ICompound.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "./interfaces/IPositionsManagerForCompound.sol";
 import "./interfaces/IMarketsManagerForCompound.sol";
+import "./interfaces/compound/ICompound.sol";
 import "./interfaces/IInterestRates.sol";
 
 import "./libraries/CompoundMath.sol";
@@ -180,8 +180,12 @@ contract MarketsManagerForCompound is IMarketsManagerForCompound, OwnableUpgrade
         lastUpdateBlockNumber[_poolTokenAddress] = block.number;
 
         // Same initial exchange rate as Compound.
-        uint256 initialExchangeRate = 2 *
-            10**(16 + IERC20Metadata(poolToken.underlying()).decimals() - 8);
+        uint256 initialExchangeRate;
+        if (_poolTokenAddress == positionsManager.cEth()) initialExchangeRate = 2e26;
+        else
+            initialExchangeRate =
+                2 *
+                10**(16 + IERC20Metadata(poolToken.underlying()).decimals() - 8);
         supplyP2PExchangeRate[_poolTokenAddress] = initialExchangeRate;
         borrowP2PExchangeRate[_poolTokenAddress] = initialExchangeRate;
 
