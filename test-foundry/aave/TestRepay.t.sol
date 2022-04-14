@@ -614,4 +614,36 @@ contract TestRepay is TestSetup {
         borrower1.approve(dai, type(uint256).max);
         borrower1.repay(aDai, type(uint256).max);
     }
+
+    function testUsdtAllowance() public {
+        uint256 amount = to6Decimals(10 ether);
+
+        borrower1.approve(usdc, 10 * amount);
+        borrower1.supply(aUsdc, 10 * amount);
+        // Borrow amount
+        borrower1.borrow(aUsdt, amount);
+
+        uint256 initialDebt = IVariableDebtToken(
+            lendingPool.getReserveData(usdt).variableDebtTokenAddress
+        ).scaledBalanceOf(address(positionsManager));
+
+        // Repay on-behalf of positionsManager
+        tip(usdt, address(this), amount / 2);
+        ERC20(usdt).approve(address(lendingPool), amount / 2);
+        lendingPool.repay(usdt, amount / 2, 2, address(positionsManager));
+
+        uint256 remainingDebt = IVariableDebtToken(
+            lendingPool.getReserveData(usdt).variableDebtTokenAddress
+        ).scaledBalanceOf(address(positionsManager));
+
+        assertLt(remainingDebt, initialDebt);
+
+        // Borrower1 comes to repay all his debt ignoring the previous
+        // Repay on Behalf of Positions Manager
+        borrower1.approve(usdt, amount);
+        borrower1.repay(aUsdt, amount);
+
+        // Make sure that USDT's Position Manager allowance is set to 0
+        assertEq(ERC20(usdt).allowance(address(positionsManager), address(lendingPool)), 0);
+    }
 }
