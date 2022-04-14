@@ -48,7 +48,7 @@ contract TestSupply is TestSetup {
         uint256 daiBalanceAfter = supplier1.balanceOf(dai);
         assertEq(daiBalanceAfter, expectedDaiBalanceAfter);
 
-        uint256 supplyP2PExchangeRate = marketsManager.getUpdatedSupplyP2PExchangeRate(cDai);
+        (uint256 supplyP2PExchangeRate, ) = marketsManager.getUpdatedP2PExchangeRates(cDai);
         uint256 expectedSupplyBalanceInP2P = amount.div(supplyP2PExchangeRate);
 
         (uint256 inP2PSupplier, uint256 onPoolSupplier) = positionsManager.supplyBalanceInOf(
@@ -78,7 +78,7 @@ contract TestSupply is TestSetup {
         supplier1.approve(dai, 2 * amount);
         supplier1.supply(cDai, 2 * amount);
 
-        uint256 supplyP2PExchangeRate = marketsManager.getUpdatedSupplyP2PExchangeRate(cDai);
+        (uint256 supplyP2PExchangeRate, ) = marketsManager.getUpdatedP2PExchangeRates(cDai);
         uint256 expectedSupplyBalanceInP2P = amount.div(supplyP2PExchangeRate);
 
         uint256 supplyPoolIndex = ICToken(cDai).exchangeRateCurrent();
