@@ -6,8 +6,8 @@ import "./setup/TestSetup.sol";
 contract TestInterestRates is TestSetup {
     function testExchangeRateComputation() public {
         Types.Params memory params = Types.Params(
-            1 * RAY, // supplyP2pExchangeRate;
-            1 * RAY, // borrowP2pExchangeRate
+            1 * RAY, // supplyP2PExchangeRate;
+            1 * RAY, // borrowP2PExchangeRate
             2 * RAY, // poolSupplyExchangeRate;
             3 * RAY, // poolBorrowExchangeRate;
             1 * RAY, // lastPoolSupplyExchangeRate;
