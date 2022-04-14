@@ -31,8 +31,8 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
         uint256 remainingToRepay;
         uint256 borrowPoolIndex;
         uint256 maxToRepay;
+        uint256 feeToRepay;
         uint256 toRepay;
-        uint256 fee;
     }
 
     /// UPGRADE ///
@@ -277,6 +277,13 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
                 CompoundMath.min(onPoolSupply, vars.toWithdraw.div(vars.supplyPoolIndex));
             supplyBalanceInOf[_poolTokenAddress][_supplier].onPool = diff == 1 ? 0 : diff;
             matchingEngine.updateSuppliersDC(_poolTokenAddress, _supplier);
+
+            if (vars.remainingToWithdraw == 0) {
+                if (vars.toWithdraw > 0) _withdrawFromPool(_poolTokenAddress, vars.toWithdraw); // Reverts on error.
+                underlyingToken.safeTransfer(_receiver, _amount);
+                _leaveMarkerIfNeeded(_poolTokenAddress, _supplier);
+                return;
+            }
         }
 
         Delta storage delta = deltas[_poolTokenAddress];
@@ -395,53 +402,47 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
             vars.remainingToRepay -= vars.toRepay;
 
             // Handle case where only 1 wei stays on the position.
-            uint256 diff = borrowBalanceInOf[_poolTokenAddress][_user].onPool -
+            uint256 diffPool = borrowBalanceInOf[_poolTokenAddress][_user].onPool -
                 CompoundMath.min(borrowedOnPool, vars.toRepay.div(vars.borrowPoolIndex));
-            borrowBalanceInOf[_poolTokenAddress][_user].onPool = diff == 1 ? 0 : diff; // In cdUnit.
+            borrowBalanceInOf[_poolTokenAddress][_user].onPool = diffPool == 1 ? 0 : diffPool; // In cdUnit.
             matchingEngine.updateBorrowersDC(_poolTokenAddress, _user);
+
+            if (vars.remainingToRepay == 0) {
+                if (vars.toRepay > 0)
+                    _repayToPool(_poolTokenAddress, underlyingToken, vars.toRepay); // Reverts on error.
+                _leaveMarkerIfNeeded(_poolTokenAddress, _user);
+                return;
+            }
         }
 
         Delta storage delta = deltas[_poolTokenAddress];
         vars.supplyP2PExchangeRate = marketsManager.supplyP2PExchangeRate(_poolTokenAddress);
         vars.borrowP2PExchangeRate = marketsManager.borrowP2PExchangeRate(_poolTokenAddress);
+        // Handle case where only 1 wei stays on the position.
+        uint256 inP2P = borrowBalanceInOf[_poolTokenAddress][_user].inP2P;
+        uint256 diffP2P = inP2P -
+            CompoundMath.min(inP2P, vars.remainingToRepay.div(vars.borrowP2PExchangeRate));
+        borrowBalanceInOf[_poolTokenAddress][_user].inP2P = diffP2P == 1 ? 0 : diffP2P; // In p2pUnit.
+        matchingEngine.updateBorrowersDC(_poolTokenAddress, _user);
 
-        /// Fees computation ///
+        /// Fee repay ///
 
         vars.realSupplyP2PAmount = (delta.supplyP2PAmount.mul(vars.supplyP2PExchangeRate) -
             delta.supplyP2PDelta.mul(poolToken.exchangeRateStored()));
         vars.realBorrowP2PAmount = (delta.borrowP2PAmount.mul(vars.borrowP2PExchangeRate) -
             delta.borrowP2PDelta.mul(vars.borrowPoolIndex));
         // Fee = (supplyP2P - supplyP2PDelta) - (borrowP2P - borrowP2PDelta)
-        vars.fee = CompoundMath.min(
+        vars.feeToRepay = CompoundMath.min(
             vars.realBorrowP2PAmount <= vars.realSupplyP2PAmount
                 ? 0
                 : vars.realBorrowP2PAmount - vars.realSupplyP2PAmount, // Done to avoid rounding errors.
             vars.remainingToRepay
         );
-
-        if (vars.fee > 0) {
-            vars.remainingToRepay -= vars.fee;
-            delta.borrowP2PAmount -= CompoundMath.min(
-                delta.borrowP2PAmount,
-                vars.fee.div(vars.borrowP2PExchangeRate)
-            );
-            uint256 inP2P = borrowBalanceInOf[_poolTokenAddress][_user].inP2P;
-            uint256 diff = inP2P -
-                CompoundMath.min(inP2P, vars.fee.div(vars.borrowP2PExchangeRate));
-            borrowBalanceInOf[_poolTokenAddress][_user].inP2P = diff == 1 ? 0 : diff; // In cdUnit.
-            matchingEngine.updateBorrowersDC(_poolTokenAddress, _user);
-        }
+        vars.remainingToRepay -= vars.feeToRepay;
 
         /// Transfer repay ///
 
         if (vars.remainingToRepay > 0 && !marketsManager.noP2P(_poolTokenAddress)) {
-            // Handle case where only 1 wei stays on the position.
-            uint256 inP2P = borrowBalanceInOf[_poolTokenAddress][_user].inP2P;
-            uint256 diff = inP2P -
-                CompoundMath.min(inP2P, vars.remainingToRepay.div(vars.borrowP2PExchangeRate));
-            borrowBalanceInOf[_poolTokenAddress][_user].inP2P = diff == 1 ? 0 : diff; // In p2pUnit.
-            matchingEngine.updateBorrowersDC(_poolTokenAddress, _user);
-
             // Match Delta if any.
             if (delta.borrowP2PDelta > 0) {
                 uint256 matchedDelta = CompoundMath.min(
