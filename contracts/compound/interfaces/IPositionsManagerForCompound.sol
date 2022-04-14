@@ -32,4 +32,6 @@ interface IPositionsManagerForCompound {
     function supplyBalanceInOf(address, address) external returns (Balance memory);
 
     function deltas(address) external view returns (Delta memory);
+
+    function cEth() external view returns (address);
 }

@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 import "../libraries/MatchingEngineFns.sol";
 
 import "./PositionsManagerForCompoundGettersSetters.sol";
@@ -38,12 +37,16 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
     /// @param _comptroller The `comptroller`.
     /// @param _maxGas The `maxGas`.
     /// @param _NDS The `NDS`.
+    /// @param _cEth The cETH address.
+    /// @param _weth The wETH address.
     function initialize(
         IMarketsManagerForCompound _marketsManager,
         IMatchingEngineForCompound _matchingEngine,
         IComptroller _comptroller,
         MaxGas memory _maxGas,
-        uint8 _NDS
+        uint8 _NDS,
+        address _cEth,
+        address _weth
     ) external initializer {
         __ReentrancyGuard_init();
         __Ownable_init();
@@ -54,6 +57,9 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
 
         maxGas = _maxGas;
         NDS = _NDS;
+
+        cEth = _cEth;
+        weth = _weth;
     }
 
     /// LOGIC ///
@@ -69,7 +75,7 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
     ) internal isMarketCreatedAndNotPaused(_poolTokenAddress) {
         _enterMarketIfNeeded(_poolTokenAddress, msg.sender);
 
-        ERC20 underlyingToken = ERC20(ICToken(_poolTokenAddress).underlying());
+        ERC20 underlyingToken = _getUnderlying(_poolTokenAddress);
         underlyingToken.safeTransferFrom(msg.sender, address(this), _amount);
 
         Delta storage delta = deltas[_poolTokenAddress];
@@ -156,7 +162,7 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
         _enterMarketIfNeeded(_poolTokenAddress, msg.sender);
         _checkUserLiquidity(msg.sender, _poolTokenAddress, 0, _amount);
 
-        ERC20 underlyingToken = ERC20(ICToken(_poolTokenAddress).underlying());
+        ERC20 underlyingToken = _getUnderlying(_poolTokenAddress);
         uint256 balanceBefore = underlyingToken.balanceOf(address(this));
         uint256 remainingToBorrow = _amount;
         uint256 toWithdraw;
@@ -250,7 +256,7 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
         uint256 _maxGasToConsume
     ) internal isMarketCreatedAndNotPaused(_poolTokenAddress) {
         ICToken poolToken = ICToken(_poolTokenAddress);
-        ERC20 underlyingToken = ERC20(poolToken.underlying());
+        ERC20 underlyingToken = _getUnderlying(_poolTokenAddress);
         WithdrawVars memory vars;
         vars.remainingToWithdraw = _amount;
         vars.maxToWithdraw = poolToken.balanceOfUnderlying(address(this));
@@ -371,7 +377,7 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
         uint256 _maxGasToConsume
     ) internal isMarketCreatedAndNotPaused(_poolTokenAddress) {
         ICToken poolToken = ICToken(_poolTokenAddress);
-        ERC20 underlyingToken = ERC20(poolToken.underlying());
+        ERC20 underlyingToken = _getUnderlying(_poolTokenAddress);
         underlyingToken.safeTransferFrom(msg.sender, address(this), _amount);
         RepayVars memory vars;
         vars.remainingToRepay = _amount;
@@ -550,8 +556,13 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
         ERC20 _underlyingToken,
         uint256 _amount
     ) internal {
-        _underlyingToken.safeApprove(_poolTokenAddress, _amount);
-        if (ICToken(_poolTokenAddress).mint(_amount) != 0) revert MintOnCompoundFailed();
+        if (address(_underlyingToken) == weth) {
+            IWETH(weth).withdraw(_amount); // Turn wETH into ETH.
+            ICEther(_poolTokenAddress).mint{value: _amount}();
+        } else {
+            _underlyingToken.safeApprove(_poolTokenAddress, _amount);
+            if (ICToken(_poolTokenAddress).mint(_amount) != 0) revert MintOnCompoundFailed();
+        }
     }
 
     /// @dev Withdraws underlying tokens from Compound.
@@ -560,6 +571,7 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
     function _withdrawFromPool(address _poolTokenAddress, uint256 _amount) internal {
         if (ICToken(_poolTokenAddress).redeemUnderlying(_amount) != 0)
             revert RedeemOnCompoundFailed();
+        if (_isCeth(_poolTokenAddress)) IWETH(address(weth)).deposit{value: _amount}(); // Turn the ETH recceived in wETH.
     }
 
     /// @dev Borrows underlying tokens from Compound.
@@ -567,6 +579,7 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
     /// @param _amount The amount of token (in underlying).
     function _borrowFromPool(address _poolTokenAddress, uint256 _amount) internal {
         if ((ICToken(_poolTokenAddress).borrow(_amount) != 0)) revert BorrowOnCompoundFailed();
+        if (_isCeth(_poolTokenAddress)) IWETH(address(weth)).deposit{value: _amount}(); // Turn the ETH recceived in wETH.
     }
 
     /// @dev Repays underlying tokens to Compound.
@@ -578,8 +591,14 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
         ERC20 _underlyingToken,
         uint256 _amount
     ) internal {
-        _underlyingToken.safeApprove(_poolTokenAddress, _amount);
-        if (ICToken(_poolTokenAddress).repayBorrow(_amount) != 0) revert RepayOnCompoundFailed();
+        if (address(_underlyingToken) == weth) {
+            IWETH(weth).withdraw(_amount); // Turn wETH into ETH.
+            ICEther(_poolTokenAddress).repayBorrow{value: _amount}();
+        } else {
+            _underlyingToken.safeApprove(_poolTokenAddress, _amount);
+            if (ICToken(_poolTokenAddress).repayBorrow(_amount) != 0)
+                revert RepayOnCompoundFailed();
+        }
     }
 
     /// @dev Returns whether it is unsafe supply/witdhraw due to coumpound's revert on low levels of precision or not.
@@ -591,8 +610,7 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
         view
         returns (bool)
     {
-        ERC20 underlyingToken = ERC20(ICToken(_poolTokenAddress).underlying());
-        uint8 tokenDecimals = underlyingToken.decimals();
+        uint8 tokenDecimals = _getUnderlying(_poolTokenAddress).decimals();
         if (tokenDecimals > CTOKEN_DECIMALS) {
             // Multiply by 2 to have a safety buffer.
             unchecked {
@@ -600,4 +618,7 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
             }
         } else return true;
     }
+
+    // Allows to receive ETH.
+    receive() external payable {}
 }
