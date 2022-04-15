@@ -41,7 +41,8 @@ contract RewardsManagerForAaveOnPolygon is RewardsManagerForAave {
 
     /// @inheritdoc RewardsManagerForAave
     function _getNewIndex(address _asset, uint256 _totalBalance)
-        internal view
+        internal
+        view
         override
         returns (uint256 newIndex)
     {
