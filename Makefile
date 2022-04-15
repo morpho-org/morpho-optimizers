@@ -1,5 +1,19 @@
 -include .env.local
 
+ifeq (aave, $(filter aave,$(MAKECMDGOALS)))
+	export PROTOCOL=aave
+	ifeq (avalanche, $(filter avalanche,$(MAKECMDGOALS)))
+		export NETWORK=avalanche-mainnet
+	else
+		export NETWORK=polygon-mainnet
+		export ALCHEMY_KEY=${ALCHEMY_KEY_POLYGON_MAINNET}
+	endif
+else ifeq (compound, $(filter compound,$(MAKECMDGOALS)))
+	export PROTOCOL=compound
+	export NETWORK=eth-mainnet
+	export ALCHEMY_KEY=${ALCHEMY_KEY_ETH_MAINNET}
+endif
+
 ifeq (${NETWORK}, avalanche-mainnet)
   export FOUNDRY_ETH_RPC_URL=https://api.avax.network/ext/bc/C/rpc
   export FOUNDRY_FORK_BLOCK_NUMBER=9833154
@@ -15,22 +29,26 @@ endif
 
 export DAPP_REMAPPINGS=@config/=config/$(NETWORK)
 
+
+aave compound: ;
+polygon avalanche: ;
+
 .PHONY: test
 test: node_modules
 	@echo Run all tests on ${NETWORK}
-	@forge test -v -c test-foundry/compound --no-match-contract TestGasConsumption
+	@forge test -v -c test-foundry/${PROTOCOL} --no-match-contract TestGasConsumption
 
 gas:
 	@echo Create report
-	@forge test -vvv -c test-foundry --gas-report --match-test test_updateBorrowers > gas_report.ansi
+	@forge test -vvv -c test-foundry/${PROTOCOL} --gas-report --match-test test_updateBorrowers > gas_report.ansi
 
 contract-% c-%: node_modules
 	@echo Run tests for contract $* on ${NETWORK}
-	@forge test -vvv -c test-foundry/compound --match-contract $*
+	@forge test -vvv -c test-foundry/${PROTOCOL} --match-contract $*
 
 single-% s-%: node_modules
 	@echo Run single test $* on ${NETWORK}
-	@forge test -vvv -c test-foundry/compound --match-test $* > trace.ansi
+	@forge test -vvv -c test-foundry/${PROTOCOL} --match-test $* > trace.ansi
 
 .PHONY: config
 config:
