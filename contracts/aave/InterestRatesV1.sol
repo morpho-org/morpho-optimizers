@@ -134,7 +134,7 @@ contract InterestRatesV1 is IInterestRates {
             ((MAX_BASIS_POINTS - _reserveFactor) *
                 (2 * supplyPoolGrowthFactor + borrowPoolGrowthFactor)) /
             3 /
-            MAX_BASIS_POINTS -
+            MAX_BASIS_POINTS +
             (_reserveFactor * supplyPoolGrowthFactor) /
             MAX_BASIS_POINTS;
 
