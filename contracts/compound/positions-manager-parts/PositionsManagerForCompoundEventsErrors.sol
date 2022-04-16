@@ -134,6 +134,9 @@ abstract contract PositionsManagerForCompoundEventsErrors is PositionsManagerFor
     /// @param _amountClaimed The amount of reward token claimed.
     event ReserveFeeClaimed(address indexed _poolTokenAddress, uint256 _amountClaimed);
 
+    /// @notice Emitted when a COMP reward status is changed.
+    event CompRewardsActive(bool _isCompRewardsActive);
+
     /// @notice Emitted when a user claims rewards.
     /// @param _user The address of the claimer.
     /// @param _amountClaimed The amount of reward token claimed.
