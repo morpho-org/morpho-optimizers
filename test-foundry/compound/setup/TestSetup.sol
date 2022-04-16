@@ -14,6 +14,7 @@ import "@openzeppelin/contracts/utils/Strings.sol";
 import "@contracts/compound/PositionsManagerForCompound.sol";
 import "@contracts/compound/MarketsManagerForCompound.sol";
 import "@contracts/compound/MatchingEngineForCompound.sol";
+import "@contracts/compound/RewardsManagerForCompound.sol";
 import "@contracts/compound/InterestRatesV1.sol";
 import "@contracts/compound/libraries/FixedPointMathLib.sol";
 
@@ -120,11 +121,16 @@ contract TestSetup is Config, Utils, stdCheats {
         createMarket(cBat);
         hevm.roll(block.number + 1);
 
-        ///  Create Morpho token and deploy IncentivesVault ///
+        ///  Create Morpho token, deploy IncentivesVault and activate COMP rewards ///
 
         morphoToken = new MorphoToken(address(this));
         incentivesVault = new IncentivesVault(address(positionsManager), address(morphoToken));
         morphoToken.transfer(address(incentivesVault), 1_000_000 ether);
+
+        rewardsManager = new RewardsManagerForCompound(address(positionsManager), comptroller);
+
+        positionsManager.setRewardsManager(address(rewardsManager));
+        positionsManager.setCompRewardsActive();
     }
 
     function createMarket(address _cToken) internal {

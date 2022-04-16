@@ -25,7 +25,7 @@ contract User {
 
     function compoundSupply(address _cTokenAddress, uint256 _amount) external {
         address underlying = ICToken(_cTokenAddress).underlying();
-        ERC20(underlying).safeApprove(address(comptroller), type(uint256).max);
+        ERC20(underlying).safeApprove(_cTokenAddress, type(uint256).max);
         ICToken(_cTokenAddress).mint(_amount);
     }
 
