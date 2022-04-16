@@ -8,7 +8,6 @@ interface IRewardsManagerForCompound {
 
     function accrueUserUnclaimedRewards(address[] calldata _cTokenAddresses, address)
         external
-        view
         returns (uint256);
 
     function userUnclaimedCompRewards(address) external view returns (uint256);
@@ -21,15 +20,19 @@ interface IRewardsManagerForCompound {
 
     function compBorrowerIndex(address, address) external view returns (uint256);
 
-    function localCompSupplyState(address)
+    function getLocalCompSupplyState(address)
         external
         view
         returns (IComptroller.CompMarketState memory);
 
-    function localCompBorrowState(address)
+    function getLocalCompBorrowState(address)
         external
         view
         returns (IComptroller.CompMarketState memory);
+
+    function getUpdatedSupplyIndex(address) external view returns (uint256);
+
+    function getUpdatedBorrowIndex(address) external view returns (uint256);
 
     function accrueUserSupplyUnclaimedRewards(
         address,
