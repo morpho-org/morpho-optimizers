@@ -8,7 +8,7 @@ contract Config {
     address public usdt = 0xdAC17F958D2ee523a2206206994597C13D831ec7;
     address public wbtc = 0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599;
     address public wEth = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
-    address public comp = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2; // TODO: change the address
+    address public comp = 0xc00e94Cb662C3520282E6f5717214004A7f26888;
 
     // Aave
 
