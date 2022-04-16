@@ -75,10 +75,6 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
         uint256 borrowPoolIndex = lendingPool.getReserveNormalizedVariableDebt(
             address(underlyingToken)
         );
-        uint256 maxToRepay = IVariableDebtToken(
-            lendingPool.getReserveData(address(underlyingToken)).variableDebtTokenAddress
-        ).scaledBalanceOf(address(this))
-        .mulWadByRay(borrowPoolIndex); // The maximum to repay is the current Morpho's debt on Aave.
         uint256 remainingToSupply = _amount;
         uint256 toRepay;
 
@@ -86,12 +82,10 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
 
         if (!marketsManager.noP2P(_poolTokenAddress)) {
             // Match borrow P2P delta first if any.
-            uint256 matchedDelta;
             if (delta.borrowP2PDelta > 0) {
-                matchedDelta = Math.min(
+                uint256 matchedDelta = Math.min(
                     delta.borrowP2PDelta.mulWadByRay(borrowPoolIndex),
-                    remainingToSupply,
-                    maxToRepay
+                    remainingToSupply
                 );
                 if (matchedDelta > 0) {
                     toRepay += matchedDelta;
@@ -105,14 +99,11 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
             if (
                 remainingToSupply > 0 && borrowersOnPool[_poolTokenAddress].getHead() != address(0)
             ) {
-                uint256 matched = Math.min(
-                    matchingEngine.matchBorrowersDC(
-                        IAToken(_poolTokenAddress),
-                        underlyingToken,
-                        remainingToSupply,
-                        _maxGasToConsume
-                    ),
-                    maxToRepay - toRepay
+                uint256 matched = matchingEngine.matchBorrowersDC(
+                    IAToken(_poolTokenAddress),
+                    underlyingToken,
+                    remainingToSupply,
+                    _maxGasToConsume
                 ); // In underlying.
 
                 if (matched > 0) {
@@ -134,7 +125,15 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
             supplyBalanceInOf[_poolTokenAddress][msg.sender].inP2P += toAddInP2P;
             matchingEngine.updateSuppliersDC(_poolTokenAddress, msg.sender);
 
-            _repayERC20ToPool(underlyingToken, toRepay); // Reverts on error.
+            toRepay = Math.min(
+                toRepay,
+                IVariableDebtToken(
+                    lendingPool.getReserveData(address(underlyingToken)).variableDebtTokenAddress
+                ).scaledBalanceOf(address(this))
+                .mulWadByRay(borrowPoolIndex) // Current Morpho's debt on Aave.
+            );
+
+            if (toRepay > 0) _repayERC20ToPool(underlyingToken, toRepay); // Reverts on error.
             emit P2PAmountsUpdated(_poolTokenAddress, delta.supplyP2PAmount, delta.borrowP2PAmount);
         }
 
