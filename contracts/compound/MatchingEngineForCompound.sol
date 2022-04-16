@@ -300,7 +300,7 @@ contract MatchingEngineForCompound is
         if (inP2P > 0 && (wasInP2PAndValueChanged || formerValueInP2P == 0))
             borrowersInP2P[_poolTokenAddress].insertSorted(_user, inP2P, NDS);
 
-        if (isCompRewardsActive)
+        if (isCompRewardsActive && address(rewardsManager) != address(0))
             rewardsManager.accrueUserBorrowUnclaimedRewards(
                 _user,
                 _poolTokenAddress,
@@ -330,7 +330,7 @@ contract MatchingEngineForCompound is
         if (inP2P > 0 && (wasInP2PAndValueChanged || formerValueInP2P == 0))
             suppliersInP2P[_poolTokenAddress].insertSorted(_user, inP2P, NDS);
 
-        if (isCompRewardsActive)
+        if (isCompRewardsActive && address(rewardsManager) != address(0))
             rewardsManager.accrueUserSupplyUnclaimedRewards(
                 _user,
                 _poolTokenAddress,
