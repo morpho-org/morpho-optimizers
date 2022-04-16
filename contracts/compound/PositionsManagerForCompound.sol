@@ -247,8 +247,8 @@ contract PositionsManagerForCompound is PositionsManagerForCompoundLogic {
     }
 
     /// @notice Claims rewards for the given assets and the unclaimed rewards.
-    /// @param _claimMorpho Whether or not to claim Morpho tokens instead of token reward.
-    function claimRewards(address[] calldata _cTokenAddresses, bool _claimMorpho)
+    /// @param _claimMorphoToken Whether or not to claim Morpho tokens instead of token reward.
+    function claimRewards(address[] calldata _cTokenAddresses, bool _claimMorphoToken)
         external
         nonReentrant
     {
@@ -258,13 +258,13 @@ contract PositionsManagerForCompound is PositionsManagerForCompoundLogic {
         else {
             comptroller.claimComp(address(this), _cTokenAddresses);
             ERC20 comp = ERC20(comptroller.getCompAddress());
-            if (_claimMorpho) {
-                // TODO: consult price.
-                // TODO: convert to Morpho tokens.
-                // emit RewardsClaimedAndConverted(msg.sender, amountClaimed, amountOut);
+            if (_claimMorphoToken) {
+                comp.safeApprove(address(incentivesVault), amountOfRewards);
+                incentivesVault.convertCompToMorphoTokens(msg.sender, amountOfRewards);
+                emit RewardsClaimedAndConverted(msg.sender, amountOfRewards);
             } else {
                 comp.safeTransfer(msg.sender, amountOfRewards);
-                // emit RewardsClaimed(msg.sender, amountClaimed);
+                emit RewardsClaimed(msg.sender, amountOfRewards);
             }
         }
     }
