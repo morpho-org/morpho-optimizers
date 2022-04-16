@@ -245,13 +245,10 @@ contract PositionsManagerForCompound is PositionsManagerForCompoundLogic {
     {
         uint256 amountOfRewards = rewardsManager.claimRewards(_cTokenAddresses, msg.sender);
 
-        console.log("amountOfRewards", amountOfRewards);
-
         if (amountOfRewards == 0) revert AmountIsZero();
         else {
             comptroller.claimComp(address(this), _cTokenAddresses);
             ERC20 comp = ERC20(comptroller.getCompAddress());
-            console.log("bal comp", ERC20(comptroller.getCompAddress()).balanceOf(address(this)));
             if (_claimMorpho) {
                 // TODO: consult price.
                 // TODO: convert to Morpho tokens.
