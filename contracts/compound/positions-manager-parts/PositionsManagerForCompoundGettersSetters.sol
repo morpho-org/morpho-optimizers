@@ -58,6 +58,13 @@ abstract contract PositionsManagerForCompoundGettersSetters is
         emit RewardsManagerSet(_rewardsManagerAddress);
     }
 
+    /// @dev Sets the activation of COMP rewards.-
+    function setCompRewardsActive() external onlyOwner {
+        bool newCompRewardsActive = !isCompRewardsActive;
+        isCompRewardsActive = newCompRewardsActive;
+        emit CompRewardsActive(newCompRewardsActive);
+    }
+
     /// @dev Sets the pause status on a specific market in case of emergency.
     /// @param _poolTokenAddress The address of the market to pause/unpause.
     function setPauseStatus(address _poolTokenAddress) external onlyOwner {

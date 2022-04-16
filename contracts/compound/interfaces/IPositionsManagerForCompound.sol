@@ -22,9 +22,9 @@ interface IPositionsManagerForCompound {
 
     function setRewardsManager(address _rewardsManagerAddress) external;
 
-    function borrowBalanceInOf(address, address) external returns (Balance memory);
+    function borrowBalanceInOf(address, address) external view returns (Balance memory);
 
-    function supplyBalanceInOf(address, address) external returns (Balance memory);
+    function supplyBalanceInOf(address, address) external view returns (Balance memory);
 
     function deltas(address) external view returns (Types.Delta memory);
 

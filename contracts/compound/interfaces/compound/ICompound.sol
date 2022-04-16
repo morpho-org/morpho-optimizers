@@ -208,11 +208,17 @@ interface IComptroller {
 
     function claimComp(address holder, address[] memory cTokens) external;
 
-    function compSpeeds(address) external returns (uint256);
+    function compSpeeds(address) external view returns (uint256);
+
+    function compSupplySpeeds(address) external view returns (uint256);
+
+    function compBorrowSpeeds(address) external view returns (uint256);
 
     function compSupplyState(address) external view returns (CompMarketState memory);
 
     function compBorrowState(address) external view returns (CompMarketState memory);
+
+    function getCompAddress() external view returns (address);
 }
 
 interface IInterestRateModel {
@@ -231,6 +237,8 @@ interface IInterestRateModel {
 }
 
 interface ICToken {
+    function isCToken() external returns (bool);
+
     function transfer(address dst, uint256 amount) external returns (bool);
 
     function transferFrom(
