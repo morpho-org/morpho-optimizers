@@ -105,5 +105,5 @@ abstract contract PositionsManagerForCompoundStorage is
     ISwapManager public swapManager;
     address public treasuryVault;
     address public cEth;
-    address public weth;
+    address public wEth;
 }

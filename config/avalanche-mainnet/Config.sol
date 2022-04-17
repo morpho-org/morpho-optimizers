@@ -7,7 +7,7 @@ contract Config {
     address usdc = 0xA7D7079b0FEaD91F3e65f86E8915Cb59c1a4C664;
     address usdt = 0xc7198437980c041c805A1EDcbA50c1Ce5db95118;
     address wbtc = 0x50b7545627a5162F82A992c33b87aDc75187B218;
-    address weth = 0x49D5c2BdFfac6CE2BFdB6640F4F80f226bc10bAB;
+    address wEth = 0x49D5c2BdFfac6CE2BFdB6640F4F80f226bc10bAB;
     address wavax = 0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7;
 
     address aAave = 0xD45B7c061016102f9FA220502908f2c0f1add1D7;
