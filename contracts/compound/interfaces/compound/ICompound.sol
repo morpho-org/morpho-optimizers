@@ -63,9 +63,9 @@ interface IComptroller {
         external
         view
         returns (
-            bool,
-            uint256,
-            bool
+            bool isListed,
+            uint256 collateralFactorMantissa,
+            bool isComped
         );
 
     function enterMarkets(address[] calldata cTokens) external returns (uint256[] memory);
