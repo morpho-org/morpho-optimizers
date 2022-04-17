@@ -114,7 +114,7 @@ contract TestSetup is Config, Utils, stdCheats {
             maxGas,
             20,
             cEth,
-            weth
+            wEth
         );
 
         treasuryVault = new User(positionsManager);
@@ -139,7 +139,7 @@ contract TestSetup is Config, Utils, stdCheats {
         pools.push(_cToken);
 
         hevm.label(_cToken, ERC20(_cToken).symbol());
-        if (_cToken == cEth) hevm.label(weth, "WETH");
+        if (_cToken == cEth) hevm.label(wEth, "WETH");
         else {
             address underlying = ICToken(_cToken).underlying();
             hevm.label(underlying, ERC20(underlying).symbol());
@@ -175,7 +175,7 @@ contract TestSetup is Config, Utils, stdCheats {
 
     function fillUserBalances(User _user) internal {
         tip(dai, address(_user), INITIAL_BALANCE * WAD);
-        tip(weth, address(_user), INITIAL_BALANCE * WAD);
+        tip(wEth, address(_user), INITIAL_BALANCE * WAD);
         tip(usdc, address(_user), INITIAL_BALANCE * 1e6);
     }
 

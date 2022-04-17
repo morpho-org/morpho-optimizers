@@ -8,7 +8,7 @@
         "name": "fallbackOracle",
         "type": "address"
       },
-      { "internalType": "address", "name": "weth", "type": "address" }
+      { "internalType": "address", "name": "wEth", "type": "address" }
     ],
     "stateMutability": "nonpayable",
     "type": "constructor"
@@ -70,7 +70,7 @@
       {
         "indexed": true,
         "internalType": "address",
-        "name": "weth",
+        "name": "wEth",
         "type": "address"
       }
     ],
