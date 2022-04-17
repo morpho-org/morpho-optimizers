@@ -3,6 +3,8 @@ pragma solidity 0.8.13;
 
 import "./setup/TestSetup.sol";
 
+import "hardhat/console.sol";
+
 contract TestSupply is TestSetup {
     using CompoundMath for uint256;
 
@@ -201,5 +203,22 @@ contract TestSupply is TestSetup {
 
     function testFailSupplyZero() public {
         positionsManager.supply(cDai, 0, 1, type(uint256).max);
+    }
+
+    function testSupplyRepayOnBehalf() public {
+        uint256 amount = 1 ether;
+        borrower1.approve(usdc, to6Decimals(2 * amount));
+        borrower1.supply(cUsdc, to6Decimals(2 * amount));
+        borrower1.borrow(cDai, amount);
+
+        // Someone repays on behalf of the positionsManager.
+        supplier2.approve(dai, cDai, amount);
+        hevm.prank(address(supplier2));
+        ICToken(cDai).repayBorrowBehalf(address(positionsManager), amount);
+        hevm.stopPrank();
+
+        // Supplier supplies in P2P. Not supposed to revert.
+        supplier1.approve(dai, amount);
+        supplier1.supply(cDai, amount);
     }
 }
