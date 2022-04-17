@@ -4,7 +4,9 @@
 
 This repository contains the core smart contracts for the Morpho Protocol V1 🦋.
 
-# Testing with Foundry
+---
+
+## Testing with Foundry 🔨
 
 Tests are run against a forks of real networks, which allows us to interact directly with liquidity pools of Compound or Aave. Note that you need to have an RPC provider that have access to Ethereum or Polygon.
 
@@ -65,10 +67,14 @@ make s-test_claim_fees
 
 For the other commands, check the `Makefile` file.
 
-## Code Formatting
+---
+
+## Style guide 💅
+
+### Code Formatting
 
 We use prettier with the default configuration mentionned in the [Solidity Prettier Plugin](https://github.com/prettier-solidity/prettier-plugin-solidity).
-We recommend developers using VSCODE to set their local config as below:
+We recommend developers using VS Code to set their local config as below:
 
 ```
 {
@@ -82,7 +88,14 @@ In doing so the code will be formatted on each save.
 
 We use Husky hook to format code before being pushed to any remote branch to enforce coding style among all developers.
 
-## Contributing
+### Code Style
+
+We follow the Solidity style guide from the [Solidity Documentation](https://docs.soliditylang.org/en/latest/style-guide.html) and the [NatSpec format](https://docs.soliditylang.org/en/latest/natspec-format.html) using this pattern `///`.
+Comments should begin with a capital letter and end with a period. You can check the current code to have an overview of what is expected.
+
+---
+
+## Contributing 💪
 
 In this section, you will find some guidelines to read before contributing to the project.
 
@@ -96,7 +109,7 @@ Guidelines for creating issues and PRs:
 - PRs must be labelled with the relevant labels.
 - Issues must be linked to PRs so that once the PR is merged related issues are closed at the same time.
 - Reviewers must be added to the PR.
-- For commits, we use the [conventional commits pattern](https://www.conventionalcommits.org/en/v1.0.0/).
+- For commits, install the gitmoji VS Code extension and use the appropriate emoji for each commit. It should match this pattern: `<emoji> (<branch-name>) <commit-message>`. For a real world example: `✨ (feat/new-feature) Add new feature`.
 
 ### Before merging a PR
 
@@ -110,9 +123,9 @@ Before merging a PR:
 For smart contract reviews, a complete report must have been done, not just a reading of the changes in the code. This is very important as a simple change on one line of code can bring dramatic consequences on a smart contracts (bad copy/paste have already lead to hacks).
 For the guidelines on "How to review contracts and write a report?", you can follow this [link](https://morpho-labs.notion.site/How-to-do-a-Smart-Contract-Review-81d1dc692259463993cc7d81544767d1).
 
-By default, PR are rebased with `main` before merging to keep a clean historic of commits and the branch is deleted.
+By default, PR are rebased with `dev` before merging to keep a clean historic of commits and the branch is deleted. The same process is done from `dev` to `main`.
 
-## Deploying a contract on a network
+## Deploying a contract on a network 🚀
 
 You can run the following command to deploy Morpho's contracts for Aave on Polygon:
 
@@ -122,7 +135,7 @@ yarn deploy:aave:polygon
 
 For the other commands, check the `package.json` file.
 
-## Publishing and verifying a contract on Etherscan
+## Publishing and verifying a contract on Etherscan 📡
 
 An etherscan API key is required to verify the contract and placed into your `.env.local` file.
 The right arguments of the constructor of the smart contract to verify must be write inside `arguments.js`. Then you can run the following command to verify a contract:
@@ -134,11 +147,11 @@ npx hardhat verify --network <network-name> --constructor-args scripts/arguments
 
 The second is necessary if contracts with different names share the same ABI.
 
-## Verification on Tenderly
+## Verification on Tenderly 📡
 
 In your `env.local` file, put your tenderly private key. Then you can deploy and directly verify contracts on your tenderly dashboard.
 
-## External resources & documentation
+## External resources & documentation 📚
 
 - [General documentation](https://morpho-labs.gitbook.io/morpho-documentation/)
 - [Developer documentation](https://morpho-labs.gitbook.io/technical-documentation/)
@@ -146,6 +159,6 @@ In your `env.local` file, put your tenderly private key. Then you can deploy and
 - [Foundry](https://github.com/gakonst/foundry)
 - [Solidity Prettier Plugin](https://github.com/prettier-solidity/prettier-plugin-solidity)
 
-## Questions
+## Questions & Feedback 💬
 
 For any question you can send an email to [merlin@mopho.best](mailto:merlin@morpho.best) 😊
