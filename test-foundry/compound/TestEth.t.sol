@@ -9,10 +9,10 @@ contract TestEth is TestSetup {
     function testSupplyEthOnPool() public {
         uint256 toSupply = 100 ether;
 
-        uint256 balanceBefore = supplier1.balanceOf(weth);
-        supplier1.approve(weth, address(positionsManager), toSupply);
+        uint256 balanceBefore = supplier1.balanceOf(wEth);
+        supplier1.approve(wEth, address(positionsManager), toSupply);
         supplier1.supply(cEth, toSupply);
-        uint256 balanceAfter = supplier1.balanceOf(weth);
+        uint256 balanceAfter = supplier1.balanceOf(wEth);
 
         uint256 supplyPoolIndex = ICToken(cEth).exchangeRateCurrent();
         uint256 expectedOnPool = toSupply.div(supplyPoolIndex);
@@ -42,10 +42,10 @@ contract TestEth is TestSetup {
         borrower1.supply(cUsdc, collateral);
         borrower1.borrow(cEth, toBorrow);
 
-        uint256 balanceBefore = supplier1.balanceOf(weth);
-        supplier1.approve(weth, address(positionsManager), toSupply);
+        uint256 balanceBefore = supplier1.balanceOf(wEth);
+        supplier1.approve(wEth, address(positionsManager), toSupply);
         supplier1.supply(cEth, toSupply);
-        uint256 balanceAfter = supplier1.balanceOf(weth);
+        uint256 balanceAfter = supplier1.balanceOf(wEth);
 
         uint256 expectedInP2P = toSupply.div(marketsManager.getUpdatedSupplyP2PExchangeRate(cEth));
 
@@ -66,9 +66,9 @@ contract TestEth is TestSetup {
 
         borrower1.approve(usdc, address(positionsManager), collateral);
         borrower1.supply(cUsdc, collateral);
-        uint256 balanceBefore = borrower1.balanceOf(weth);
+        uint256 balanceBefore = borrower1.balanceOf(wEth);
         borrower1.borrow(cEth, toBorrow);
-        uint256 balanceAfter = borrower1.balanceOf(weth);
+        uint256 balanceAfter = borrower1.balanceOf(wEth);
 
         (uint256 inP2P, uint256 onPool) = positionsManager.borrowBalanceInOf(
             cEth,
@@ -87,14 +87,14 @@ contract TestEth is TestSetup {
         uint256 toSupply = 1 ether;
         uint256 toBorrow = 1 ether;
 
-        supplier1.approve(weth, address(positionsManager), toSupply);
+        supplier1.approve(wEth, address(positionsManager), toSupply);
         supplier1.supply(cEth, toSupply);
 
         borrower1.approve(usdc, address(positionsManager), collateral);
         borrower1.supply(cUsdc, collateral);
-        uint256 balanceBefore = borrower1.balanceOf(weth);
+        uint256 balanceBefore = borrower1.balanceOf(wEth);
         borrower1.borrow(cEth, toBorrow);
-        uint256 balanceAfter = borrower1.balanceOf(weth);
+        uint256 balanceAfter = borrower1.balanceOf(wEth);
 
         uint256 expectedInP2P = toSupply.div(marketsManager.borrowP2PExchangeRate(cEth));
 
@@ -111,12 +111,12 @@ contract TestEth is TestSetup {
     function testWithdrawEthOnPool() public {
         uint256 toSupply = 1 ether;
 
-        uint256 balanceBefore = supplier1.balanceOf(weth);
-        supplier1.approve(weth, address(positionsManager), toSupply);
+        uint256 balanceBefore = supplier1.balanceOf(wEth);
+        supplier1.approve(wEth, address(positionsManager), toSupply);
         supplier1.supply(cEth, toSupply);
 
         supplier1.withdraw(cEth, toSupply);
-        uint256 balanceAfter = supplier1.balanceOf(weth);
+        uint256 balanceAfter = supplier1.balanceOf(wEth);
 
         (uint256 inP2P, uint256 onPool) = positionsManager.supplyBalanceInOf(
             cEth,
@@ -133,8 +133,8 @@ contract TestEth is TestSetup {
         uint256 toSupply = 1 ether;
         uint256 toBorrow = 1 ether;
 
-        uint256 balanceBefore = supplier1.balanceOf(weth);
-        supplier1.approve(weth, address(positionsManager), toSupply);
+        uint256 balanceBefore = supplier1.balanceOf(wEth);
+        supplier1.approve(wEth, address(positionsManager), toSupply);
         supplier1.supply(cEth, toSupply);
 
         borrower1.approve(usdc, collateral);
@@ -142,7 +142,7 @@ contract TestEth is TestSetup {
         borrower1.borrow(cEth, toBorrow);
 
         supplier1.withdraw(cEth, toSupply);
-        uint256 balanceAfter = supplier1.balanceOf(weth);
+        uint256 balanceAfter = supplier1.balanceOf(wEth);
 
         (uint256 inP2P, uint256 onPool) = positionsManager.supplyBalanceInOf(
             cEth,
@@ -160,12 +160,12 @@ contract TestEth is TestSetup {
 
         borrower1.approve(usdc, address(positionsManager), collateral);
         borrower1.supply(cUsdc, collateral);
-        uint256 balanceBefore = borrower1.balanceOf(weth);
+        uint256 balanceBefore = borrower1.balanceOf(wEth);
         borrower1.borrow(cEth, toBorrow);
 
-        borrower1.approve(weth, address(positionsManager), toBorrow);
+        borrower1.approve(wEth, address(positionsManager), toBorrow);
         borrower1.repay(cEth, toBorrow);
-        uint256 balanceAfter = borrower1.balanceOf(weth);
+        uint256 balanceAfter = borrower1.balanceOf(wEth);
 
         (uint256 inP2P, uint256 onPool) = positionsManager.borrowBalanceInOf(
             cEth,
@@ -183,17 +183,17 @@ contract TestEth is TestSetup {
         uint256 toBorrow = 1 ether;
         uint256 toRepay = 1 ether;
 
-        borrower1.approve(weth, address(positionsManager), toSupply);
+        borrower1.approve(wEth, address(positionsManager), toSupply);
         borrower1.supply(cEth, toSupply);
 
         borrower1.approve(usdc, address(positionsManager), collateral);
         borrower1.supply(cUsdc, collateral);
-        uint256 balanceBefore = borrower1.balanceOf(weth);
+        uint256 balanceBefore = borrower1.balanceOf(wEth);
         borrower1.borrow(cEth, toBorrow);
 
-        borrower1.approve(weth, address(positionsManager), toRepay);
+        borrower1.approve(wEth, address(positionsManager), toRepay);
         borrower1.repay(cEth, toRepay);
-        uint256 balanceAfter = borrower1.balanceOf(weth);
+        uint256 balanceAfter = borrower1.balanceOf(wEth);
 
         (uint256 inP2P, uint256 onPool) = positionsManager.borrowBalanceInOf(
             cEth,
@@ -208,7 +208,7 @@ contract TestEth is TestSetup {
     function testShouldLiquidateUserWithEthBorrowed() public {
         uint256 collateral = to6Decimals(100_000 ether);
 
-        // supplier1 suppliers excedent of USDC to put Morpho clearly above water.
+        // supplier1 supplies excedent of USDC to put Morpho clearly above water.
         supplier1.approve(usdc, address(positionsManager), collateral);
         supplier1.supply(cUsdc, collateral);
 
@@ -233,11 +233,11 @@ contract TestEth is TestSetup {
         // Liquidate.
         uint256 toRepay = (amount * 1) / 3;
         User liquidator = borrower3;
-        uint256 balanceBefore = liquidator.balanceOf(weth);
+        uint256 balanceBefore = liquidator.balanceOf(wEth);
 
-        liquidator.approve(weth, address(positionsManager), toRepay);
+        liquidator.approve(wEth, address(positionsManager), toRepay);
         liquidator.liquidate(cEth, cUsdc, address(borrower1), toRepay);
-        uint256 balanceAfter = liquidator.balanceOf(weth);
+        uint256 balanceAfter = liquidator.balanceOf(wEth);
 
         // Check borrower1 borrow balance.
         (uint256 inP2PBorrower, uint256 onPoolBorrower) = positionsManager.borrowBalanceInOf(
@@ -274,11 +274,11 @@ contract TestEth is TestSetup {
         uint256 collateral = 1 ether;
         uint256 toSupplyMore = to6Decimals(100_000 ether);
 
-        // supplier1 suppliers excedent of USDC to put Morpho clearly above water.
+        // supplier1 supplies excedent of USDC to put Morpho clearly above water.
         supplier1.approve(usdc, address(positionsManager), toSupplyMore);
         supplier1.supply(cUsdc, toSupplyMore);
 
-        borrower1.approve(weth, address(positionsManager), collateral);
+        borrower1.approve(wEth, address(positionsManager), collateral);
         borrower1.supply(cEth, collateral);
 
         (, uint256 amount) = positionsManager.getUserMaxCapacitiesForAsset(
@@ -296,10 +296,10 @@ contract TestEth is TestSetup {
         // Liquidate.
         uint256 toRepay = (amount * 1) / 3;
         User liquidator = borrower3;
-        uint256 balanceBefore = liquidator.balanceOf(weth);
+        uint256 balanceBefore = liquidator.balanceOf(wEth);
         liquidator.approve(dai, address(positionsManager), toRepay);
         liquidator.liquidate(cDai, cEth, address(borrower1), toRepay);
-        uint256 balanceAfter = liquidator.balanceOf(weth);
+        uint256 balanceAfter = liquidator.balanceOf(wEth);
 
         // Check borrower1 borrow balance.
         (uint256 inP2PBorrower, uint256 onPoolBorrower) = positionsManager.borrowBalanceInOf(
