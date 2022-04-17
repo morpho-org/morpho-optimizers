@@ -7,7 +7,7 @@ import {ICToken, IComptroller, ICompoundOracle} from "../interfaces/compound/ICo
 import "../interfaces/IMarketsManagerForCompound.sol";
 import "../interfaces/IMatchingEngineForCompound.sol";
 import "../interfaces/IRewardsManagerForCompound.sol";
-import "../../common/interfaces/ISwapManager.sol";
+import "../interfaces/IIncentivesVault.sol";
 
 import "../../common/libraries/DoubleLinkedList.sol";
 import "../libraries/CompoundMath.sol";
@@ -103,6 +103,6 @@ abstract contract PositionsManagerForCompoundStorage is
     IMarketsManagerForCompound public marketsManager;
     IMatchingEngineForCompound public matchingEngine;
     IRewardsManagerForCompound public rewardsManager;
-    ISwapManager public swapManager;
+    IIncentivesVault public incentivesVault;
     address public treasuryVault;
 }

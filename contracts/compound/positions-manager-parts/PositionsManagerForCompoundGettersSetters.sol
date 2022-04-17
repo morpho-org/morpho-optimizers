@@ -44,11 +44,18 @@ abstract contract PositionsManagerForCompoundGettersSetters is
         emit MaxGasSet(_maxGas);
     }
 
-    /// @notice Sets the `_newTreasuryVaultAddress`.
+    /// @notice Sets the `treasuryVault`.
     /// @param _newTreasuryVaultAddress The address of the new `treasuryVault`.
     function setTreasuryVault(address _newTreasuryVaultAddress) external onlyOwner {
         treasuryVault = _newTreasuryVaultAddress;
         emit TreasuryVaultSet(_newTreasuryVaultAddress);
+    }
+
+    /// @notice Sets the `incentivesVault`.
+    /// @param _newIncentivesVault The address of the new `incentivesVault`.
+    function setIncentivesVault(address _newIncentivesVault) external onlyOwner {
+        incentivesVault = IIncentivesVault(_newIncentivesVault);
+        emit IncentivesVaultSet(_newIncentivesVault);
     }
 
     /// @dev Sets the `rewardsManager`.
