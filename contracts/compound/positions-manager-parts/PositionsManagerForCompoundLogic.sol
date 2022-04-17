@@ -27,7 +27,6 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
         uint256 borrowP2PExchangeRate;
         uint256 remainingToRepay;
         uint256 borrowPoolIndex;
-        uint256 maxToRepay;
         uint256 feeToRepay;
         uint256 toRepay;
     }
@@ -83,7 +82,6 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
 
         Delta storage delta = deltas[_poolTokenAddress];
         uint256 borrowPoolIndex = ICToken(_poolTokenAddress).borrowIndex();
-        uint256 maxToRepay = ICToken(_poolTokenAddress).borrowBalanceCurrent(address(this)); // The maximum to repay is the current Morpho's debt on Compound.
         uint256 remainingToSupply = _amount;
         uint256 toRepay;
 
@@ -95,8 +93,7 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
             if (delta.borrowP2PDelta > 0) {
                 matchedDelta = CompoundMath.min(
                     delta.borrowP2PDelta.mul(borrowPoolIndex),
-                    remainingToSupply,
-                    maxToRepay
+                    remainingToSupply
                 );
                 if (matchedDelta > 0) {
                     toRepay += matchedDelta;
@@ -110,13 +107,10 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
             if (
                 remainingToSupply > 0 && borrowersOnPool[_poolTokenAddress].getHead() != address(0)
             ) {
-                uint256 matched = CompoundMath.min(
-                    matchingEngine.matchBorrowersDC(
-                        ICToken(_poolTokenAddress),
-                        remainingToSupply,
-                        _maxGasToConsume
-                    ),
-                    maxToRepay - toRepay
+                uint256 matched = matchingEngine.matchBorrowersDC(
+                    ICToken(_poolTokenAddress),
+                    remainingToSupply,
+                    _maxGasToConsume
                 ); // In underlying.
 
                 if (matched > 0) {
@@ -137,6 +131,12 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
             delta.supplyP2PAmount += toAddInP2P;
             supplyBalanceInOf[_poolTokenAddress][msg.sender].inP2P += toAddInP2P;
             matchingEngine.updateSuppliersDC(_poolTokenAddress, msg.sender);
+
+            // Repay only what is necessary. The remaining tokens stays on the contracts and are claimable by the DAO.
+            toRepay = Math.min(
+                toRepay,
+                ICToken(_poolTokenAddress).borrowBalanceCurrent(address(this)) // The debt of the contract.
+            );
 
             _repayToPool(_poolTokenAddress, underlyingToken, toRepay); // Reverts on error.
             emit P2PAmountsUpdated(_poolTokenAddress, delta.supplyP2PAmount, delta.borrowP2PAmount);
@@ -392,7 +392,6 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
         RepayVars memory vars;
         vars.remainingToRepay = _amount;
         vars.borrowPoolIndex = poolToken.borrowIndex();
-        vars.maxToRepay = poolToken.borrowBalanceCurrent(address(this)); // The debt of the contract.
 
         /// Soft repay ///
 
@@ -400,8 +399,7 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
             uint256 borrowedOnPool = borrowBalanceInOf[_poolTokenAddress][_user].onPool;
             vars.toRepay = CompoundMath.min(
                 borrowedOnPool.mul(vars.borrowPoolIndex),
-                vars.remainingToRepay,
-                vars.maxToRepay
+                vars.remainingToRepay
             );
             vars.remainingToRepay -= vars.toRepay;
 
@@ -412,6 +410,12 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
             matchingEngine.updateBorrowersDC(_poolTokenAddress, _user);
 
             if (vars.remainingToRepay == 0) {
+                // Repay only what is necessary. The remaining tokens stays on the contracts and are claimable by the DAO.
+                vars.toRepay = Math.min(
+                    vars.toRepay,
+                    ICToken(_poolTokenAddress).borrowBalanceCurrent(address(this)) // The debt of the contract.
+                );
+
                 if (vars.toRepay > 0)
                     _repayToPool(_poolTokenAddress, underlyingToken, vars.toRepay); // Reverts on error.
                 _leaveMarkerIfNeeded(_poolTokenAddress, _user);
@@ -447,8 +451,7 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
             if (delta.borrowP2PDelta > 0) {
                 uint256 matchedDelta = CompoundMath.min(
                     delta.borrowP2PDelta.mul(vars.borrowPoolIndex),
-                    vars.remainingToRepay,
-                    vars.maxToRepay - vars.toRepay
+                    vars.remainingToRepay
                 );
 
                 if (matchedDelta > 0) {
@@ -465,13 +468,10 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
                 borrowersOnPool[_poolTokenAddress].getHead() != address(0)
             ) {
                 // Match borrowers.
-                uint256 matched = CompoundMath.min(
-                    matchingEngine.matchBorrowersDC(
-                        poolToken,
-                        vars.remainingToRepay,
-                        _maxGasToConsume / 2
-                    ),
-                    vars.maxToRepay - vars.toRepay
+                uint256 matched = matchingEngine.matchBorrowersDC(
+                    poolToken,
+                    vars.remainingToRepay,
+                    _maxGasToConsume / 2
                 );
 
                 if (matched > 0) {
@@ -480,6 +480,12 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
                 }
             }
         }
+
+        // Repay only what is necessary. The remaining tokens stays on the contracts and are claimable by the DAO.
+        vars.toRepay = Math.min(
+            vars.toRepay,
+            ICToken(_poolTokenAddress).borrowBalanceCurrent(address(this)) // The debt of the contract.
+        );
 
         if (vars.toRepay > 0) _repayToPool(_poolTokenAddress, underlyingToken, vars.toRepay); // Reverts on error.
 
