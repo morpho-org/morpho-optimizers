@@ -339,6 +339,23 @@ contract TestRewards is TestSetup {
         supplier3.borrow(cUsdc, toBorrow);
     }
 
-    // TODO: Implement this test
-    function testShouldClaimRewardsAndConvertToMorpkoToken() public {}
+    function testShouldClaimRewardsAndConvertToMorpkoToken() public {
+        uint256 toSupply = 100 ether;
+        supplier1.approve(dai, toSupply);
+        supplier1.supply(cDai, toSupply);
+
+        uint256 morphoBalanceBefore = supplier1.balanceOf(address(morphoToken));
+        uint256 rewardBalanceBefore = supplier1.balanceOf(comp);
+
+        address[] memory cTokens = new address[](1);
+        cTokens[0] = cDai;
+
+        hevm.roll(block.number + 1_000);
+        supplier1.claimRewards(cTokens, true);
+
+        uint256 morphoBalanceAfter = supplier1.balanceOf(address(morphoToken));
+        uint256 rewardBalanceAfter = supplier1.balanceOf(comp);
+        assertGt(morphoBalanceAfter, morphoBalanceBefore);
+        assertEq(rewardBalanceBefore, rewardBalanceAfter);
+    }
 }
