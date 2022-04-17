@@ -197,4 +197,22 @@ contract TestSupply is TestSetup {
     function testFailSupplyZero() public {
         positionsManager.supply(aDai, 0, 1, type(uint256).max);
     }
+
+    function testSupplyRepayOnBehalf() public {
+        uint256 amount = 10 ether;
+
+        borrower1.approve(usdc, to6Decimals(2 * amount));
+        borrower1.supply(aUsdc, to6Decimals(2 * amount));
+        borrower1.borrow(aDai, amount);
+
+        // Someone repays on behalf of Morpho.
+        supplier2.approve(dai, address(lendingPool), amount);
+        hevm.prank(address(supplier2));
+        lendingPool.repay(dai, amount, 2, address(positionsManager));
+        hevm.stopPrank();
+
+        // Supplier 1 supply in P2P. Not supposed to revert.
+        supplier1.approve(dai, amount);
+        supplier1.supply(aDai, amount);
+    }
 }
