@@ -329,7 +329,7 @@ abstract contract PositionsManagerForCompoundGettersSetters is
     function _getUnderlying(address _poolTokenAddress) internal view returns (ERC20) {
         if (_isCeth(_poolTokenAddress))
             // cETH has no underlying() function.
-            return ERC20(weth);
+            return ERC20(wEth);
         else return ERC20(ICToken(_poolTokenAddress).underlying());
     }
 
