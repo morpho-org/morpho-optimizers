@@ -6,14 +6,14 @@ import "./interfaces/compound/ICompound.sol";
 import "./interfaces/IInterestRates.sol";
 
 contract InitDiamond {
-  struct Args {
-    IComptroller comptroller;
-    IInterestRates interestRates;
-  }
+    struct Args {
+        IComptroller comptroller;
+        IInterestRates interestRates;
+    }
 
-  function init(Args memory _args) external {
-    MarketsStorage storage ms = LibStorage.marketsStorage();
-    ms.comptroller = _args.comptroller;
-    ms.interestRates = _args.interestRates;
-  }
+    function init(Args memory _args) external {
+        MarketsStorage storage ms = LibStorage.marketsStorage();
+        ms.comptroller = _args.comptroller;
+        ms.interestRates = _args.interestRates;
+    }
 }

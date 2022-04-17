@@ -5,7 +5,6 @@ import "../interfaces/compound/ICompound.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 library LibMarketsManager {
-
     /// @notice Emitted when a new market is created.
     /// @param _poolTokenAddress The address of the market that has been created.
     event MarketCreated(address _poolTokenAddress);
@@ -63,6 +62,7 @@ library LibMarketsManager {
         ms().marketsCreated.push(_poolTokenAddress);
         emit MarketCreated(_poolTokenAddress);
     }
+
     /// @notice Returns the updated P2P exchange rates.
     /// @param _poolTokenAddress The address of the market to update.
     /// @return newSupplyP2PExchangeRate The supply P2P exchange rate after udpate.

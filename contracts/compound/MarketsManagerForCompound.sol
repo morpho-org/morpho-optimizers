@@ -109,7 +109,10 @@ contract MarketsManagerForCompound is WithStorageAndModifiers {
         onlyOwner
     {
         LibMarketsManager.updateP2PExchangeRates(_poolTokenAddress);
-        ms().reserveFactor[_poolTokenAddress] = CompoundMath.min(MAX_BASIS_POINTS, _newReserveFactor);
+        ms().reserveFactor[_poolTokenAddress] = CompoundMath.min(
+            MAX_BASIS_POINTS,
+            _newReserveFactor
+        );
         emit ReserveFactorSet(_poolTokenAddress, ms().reserveFactor[_poolTokenAddress]);
     }
 
@@ -203,30 +206,46 @@ contract MarketsManagerForCompound is WithStorageAndModifiers {
     /// @notice Whether or not this market is created.
     function isCreated(address _market) external view returns (bool isCreated_) {
         isCreated_ = ms().isCreated[_market];
-    }    
-    
+    }
+
     /// @notice Proportion of the interest earned by users sent to the DAO for each market, in basis point (100% = 10000). The default value is 0.
     function reserveFactor(address _market) external view returns (uint256 reserveFactor_) {
         reserveFactor_ = ms().reserveFactor[_market];
     }
 
     /// @notice Current exchange rate from supply p2pUnit to underlying (in wad).
-    function supplyP2PExchangeRate(address _market) external view returns (uint256 supplyP2PExchangeRate_) {
+    function supplyP2PExchangeRate(address _market)
+        external
+        view
+        returns (uint256 supplyP2PExchangeRate_)
+    {
         supplyP2PExchangeRate_ = ms().supplyP2PExchangeRate[_market];
     }
 
     /// @notice Current exchange rate from borrow p2pUnit to underlying (in wad).
-    function borrowP2PExchangeRate(address _market) external view returns (uint256 borrowP2PExchangeRate_) {
+    function borrowP2PExchangeRate(address _market)
+        external
+        view
+        returns (uint256 borrowP2PExchangeRate_)
+    {
         borrowP2PExchangeRate_ = ms().borrowP2PExchangeRate[_market];
     }
 
     /// @notice Last block number when P2P exchange rates where updated.
-    function lastUpdateBlockNumber(address _market) external view returns (uint256 lastUpdateBlockNumber_) {
+    function lastUpdateBlockNumber(address _market)
+        external
+        view
+        returns (uint256 lastUpdateBlockNumber_)
+    {
         lastUpdateBlockNumber_ = ms().lastUpdateBlockNumber[_market];
     }
 
     /// @notice Last pool index stored.
-    function lastPoolIndexes(address _market) external view returns (LastPoolIndexes memory lastPoolIndexes_) {
+    function lastPoolIndexes(address _market)
+        external
+        view
+        returns (LastPoolIndexes memory lastPoolIndexes_)
+    {
         lastPoolIndexes_ = ms().lastPoolIndexes[_market];
     }
 
