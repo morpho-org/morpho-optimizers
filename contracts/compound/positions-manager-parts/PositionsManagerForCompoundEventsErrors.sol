@@ -104,17 +104,21 @@ abstract contract PositionsManagerForCompoundEventsErrors is PositionsManagerFor
         uint256 _borrowP2PAmount
     );
 
-    /// @dev Emitted when a new value for `NDS` is set.
+    /// @notice Emitted when a new value for `NDS` is set.
     /// @param _newValue The new value of `NDS`.
     event NDSSet(uint8 _newValue);
 
-    /// @dev Emitted when a new `maxGas` is set.
+    /// @notice Emitted when a new `maxGas` is set.
     /// @param _maxGas The new `maxGas`.
     event MaxGasSet(MaxGas _maxGas);
 
-    /// @dev Emitted the address of the `treasuryVault` is set.
+    /// @notice Emitted the address of the `treasuryVault` is set.
     /// @param _newTreasuryVaultAddress The new address of the `treasuryVault`.
     event TreasuryVaultSet(address indexed _newTreasuryVaultAddress);
+
+    /// @notice Emitted the address of the `incentivesVault` is set.
+    /// @param _newIncentivesVaultAddress The new address of the `incentivesVault`.
+    event IncentivesVaultSet(address indexed _newIncentivesVaultAddress);
 
     /// @notice Emitted the address of the `rewardsManager` is set.
     /// @param _newRewardsManagerAddress The new address of the `rewardsManager`.
@@ -135,6 +139,7 @@ abstract contract PositionsManagerForCompoundEventsErrors is PositionsManagerFor
     event ReserveFeeClaimed(address indexed _poolTokenAddress, uint256 _amountClaimed);
 
     /// @notice Emitted when a COMP reward status is changed.
+    /// @param _isCompRewardsActive The new COMP reward status.
     event CompRewardsActive(bool _isCompRewardsActive);
 
     /// @notice Emitted when a user claims rewards.
@@ -142,11 +147,10 @@ abstract contract PositionsManagerForCompoundEventsErrors is PositionsManagerFor
     /// @param _amountClaimed The amount of reward token claimed.
     event RewardsClaimed(address indexed _user, uint256 _amountClaimed);
 
-    /// @dev Emitted when a user claims rewards and swaps them to Morpho tokens.
+    /// @dev Emitted when a user claims rewards and converts them to Morpho tokens.
     /// @param _user The address of the claimer.
-    /// @param _amountIn The amount of reward token swapped.
-    /// @param _amountOut The amount of tokens received.
-    event RewardsClaimedAndSwapped(address indexed _user, uint256 _amountIn, uint256 _amountOut);
+    /// @param _amountSent The amount of reward token sent to the vault.
+    event RewardsClaimedAndConverted(address indexed _user, uint256 _amountSent);
 
     /// ERRORS ///
 
