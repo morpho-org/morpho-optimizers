@@ -19,7 +19,7 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
     struct WithdrawVars {
         uint256 remainingToWithdraw;
         uint256 supplyPoolIndex;
-        uint256 maxToWithdraw;
+        uint256 withdrawable;
         uint256 toWithdraw;
     }
 
@@ -163,7 +163,7 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
         uint256 toWithdraw;
         Types.Delta storage delta = deltas[_poolTokenAddress];
         uint256 poolSupplyIndex = lendingPool.getReserveNormalizedIncome(address(underlyingToken));
-        uint256 maxToWithdraw = IAToken(_poolTokenAddress).balanceOf(address(this)); // The balance on pool.
+        uint256 withdrawable = IAToken(_poolTokenAddress).balanceOf(address(this)); // The balance on pool.
 
         /// Borrow in P2P ///
 
@@ -174,7 +174,7 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
                 matchedDelta = Math.min(
                     delta.supplyP2PDelta.mulWadByRay(poolSupplyIndex),
                     remainingToBorrow,
-                    maxToWithdraw
+                    withdrawable
                 );
                 if (matchedDelta > 0) {
                     toWithdraw += matchedDelta;
@@ -188,19 +188,15 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
             if (
                 remainingToBorrow > 0 && suppliersOnPool[_poolTokenAddress].getHead() != address(0)
             ) {
-                uint256 matched = Math.min(
-                    matchingEngine.matchSuppliersDC(
-                        IAToken(_poolTokenAddress),
-                        underlyingToken,
-                        remainingToBorrow,
-                        _maxGasToConsume
-                    ),
-                    maxToWithdraw - toWithdraw
+                uint256 matched = matchingEngine.matchSuppliersDC(
+                    IAToken(_poolTokenAddress),
+                    underlyingToken,
+                    Math.min(remainingToBorrow, withdrawable - toWithdraw),
+                    _maxGasToConsume
                 ); // In underlying.
 
                 if (matched > 0) {
                     toWithdraw += matched;
-                    maxToWithdraw -= matched;
                     remainingToBorrow -= matched;
                     deltas[_poolTokenAddress].supplyP2PAmount += matched.divWadByRay(
                         marketsManager.supplyP2PExchangeRate(_poolTokenAddress)
@@ -251,7 +247,7 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
         ERC20 underlyingToken = ERC20(poolToken.UNDERLYING_ASSET_ADDRESS());
         WithdrawVars memory vars;
         vars.remainingToWithdraw = _amount;
-        vars.maxToWithdraw = poolToken.balanceOf(address(this));
+        vars.withdrawable = poolToken.balanceOf(address(this));
         vars.supplyPoolIndex = lendingPool.getReserveNormalizedIncome(address(underlyingToken));
 
         /// Soft withdraw ///
@@ -261,7 +257,7 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
             vars.toWithdraw = Math.min(
                 onPoolSupply.mulWadByRay(vars.supplyPoolIndex),
                 vars.remainingToWithdraw,
-                vars.maxToWithdraw
+                vars.withdrawable
             );
             vars.remainingToWithdraw -= vars.toWithdraw;
 
@@ -297,7 +293,7 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
                 matchedDelta = Math.min(
                     delta.supplyP2PDelta.mulWadByRay(vars.supplyPoolIndex),
                     vars.remainingToWithdraw,
-                    vars.maxToWithdraw - vars.toWithdraw
+                    vars.withdrawable - vars.toWithdraw
                 );
 
                 if (matchedDelta > 0) {
@@ -315,14 +311,11 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
                 suppliersOnPool[_poolTokenAddress].getHead() != address(0)
             ) {
                 // Match suppliers.
-                uint256 matched = Math.min(
-                    matchingEngine.matchSuppliersDC(
-                        poolToken,
-                        underlyingToken,
-                        vars.remainingToWithdraw,
-                        _maxGasToConsume / 2
-                    ),
-                    vars.maxToWithdraw - vars.toWithdraw
+                uint256 matched = matchingEngine.matchSuppliersDC(
+                    poolToken,
+                    underlyingToken,
+                    Math.min(vars.remainingToWithdraw, vars.withdrawable - vars.toWithdraw),
+                    _maxGasToConsume / 2
                 );
 
                 if (matched > 0) {
