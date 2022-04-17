@@ -9,25 +9,18 @@ import "./interfaces/IInterestRates.sol";
 
 import "./libraries/CompoundMath.sol";
 import "./libraries/Types.sol";
+import "./libraries/LibStorage.sol";
 
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
 /// @title MarketsManagerForCompound.
 /// @notice Smart contract managing the markets used by a MorphoPositionsManagerForCompound contract, an other contract interacting with Compound or a fork of Compound.
-contract MarketsManagerForCompound is IMarketsManagerForCompound, OwnableUpgradeable {
+contract MarketsManagerForCompound is WithStorage, IMarketsManagerForCompound, OwnableUpgradeable {
     using CompoundMath for uint256;
 
-    /// STRUCTS ///
+    /// @dev WAD is kept here to demonstrate a constant used exclusively for this facet
+    uint256 internal constant WAD = 1e18;
 
-    struct LastPoolIndexes {
-        uint256 lastSupplyPoolIndex; // Last supply pool index (current exchange rate) stored.
-        uint256 lastBorrowPoolIndex; // Last borrow pool index (borrow index) stored.
-    }
-
-    /// STORAGE ///
-
-    uint256 public constant WAD = 1e18;
-    uint16 public constant MAX_BASIS_POINTS = 10_000; // 100% (in basis point).
     address[] public marketsCreated; // Keeps track of the created markets.
     mapping(address => bool) public override isCreated; // Whether or not this market is created.
     mapping(address => uint256) public reserveFactor; // Proportion of the interest earned by users sent to the DAO for each market, in basis point (100% = 10000). The default value is 0.
@@ -110,13 +103,13 @@ contract MarketsManagerForCompound is IMarketsManagerForCompound, OwnableUpgrade
     /// @notice Prevents to update a market not created yet.
     /// @param _poolTokenAddress The address of the market to check.
     modifier isMarketCreated(address _poolTokenAddress) {
-        if (!isCreated[_poolTokenAddress]) revert MarketNotCreated();
+        if (!ms().isCreated[_poolTokenAddress]) revert MarketNotCreated();
         _;
     }
 
     /// @notice Prevents a user to call function only allowed for `positionsManager`.
     modifier onlyPositionsManager() {
-        if (msg.sender != address(positionsManager)) revert OnlyPositionsManager();
+        if (msg.sender != address(ms().positionsManager)) revert OnlyPositionsManager();
         _;
     }
 
@@ -131,8 +124,9 @@ contract MarketsManagerForCompound is IMarketsManagerForCompound, OwnableUpgrade
     {
         __Ownable_init();
 
-        comptroller = _comptroller;
-        interestRates = _interestRates;
+        MarketsStorage storage ms = ms();
+        ms.comptroller = _comptroller;
+        ms.interestRates = _interestRates;
     }
 
     /// EXTERNAL ///
