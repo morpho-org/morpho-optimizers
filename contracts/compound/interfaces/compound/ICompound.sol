@@ -270,6 +270,8 @@ interface ICToken {
 
     function repayBorrow(uint256) external returns (uint256);
 
+    function repayBorrowBehalf(address borrower, uint256 repayAmount) external returns (uint256);
+
     function underlying() external view returns (address);
 
     function mint(uint256) external returns (uint256);

@@ -575,4 +575,21 @@ contract TestRepay is TestSetup {
     function testFailRepayZero() public {
         positionsManager.repay(cDai, 0);
     }
+
+    function testRepayRepayOnBehalf() public {
+        uint256 amount = 1 ether;
+        borrower1.approve(usdc, to6Decimals(2 * amount));
+        borrower1.supply(cUsdc, to6Decimals(2 * amount));
+        borrower1.borrow(cDai, amount);
+
+        // Someone repays on behalf of the positionsManager.
+        supplier2.approve(dai, cDai, amount);
+        hevm.prank(address(supplier2));
+        ICToken(cDai).repayBorrowBehalf(address(positionsManager), amount);
+        hevm.stopPrank();
+
+        // Borrower1 repays on pool. Not supposed to revert.
+        borrower1.approve(dai, amount);
+        borrower1.repay(cDai, amount);
+    }
 }
