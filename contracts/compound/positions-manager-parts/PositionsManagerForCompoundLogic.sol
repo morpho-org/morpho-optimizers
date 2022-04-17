@@ -59,7 +59,7 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
         NDS = _NDS;
 
         cEth = _cEth;
-        weth = _weth;
+        wEth = _weth;
     }
 
     /// LOGIC ///
@@ -556,8 +556,8 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
         ERC20 _underlyingToken,
         uint256 _amount
     ) internal {
-        if (address(_underlyingToken) == weth) {
-            IWETH(weth).withdraw(_amount); // Turn wETH into ETH.
+        if (address(_underlyingToken) == wEth) {
+            IWETH(wEth).withdraw(_amount); // Turn wETH into ETH.
             ICEther(_poolTokenAddress).mint{value: _amount}();
         } else {
             _underlyingToken.safeApprove(_poolTokenAddress, _amount);
@@ -571,7 +571,7 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
     function _withdrawFromPool(address _poolTokenAddress, uint256 _amount) internal {
         if (ICToken(_poolTokenAddress).redeemUnderlying(_amount) != 0)
             revert RedeemOnCompoundFailed();
-        if (_isCeth(_poolTokenAddress)) IWETH(address(weth)).deposit{value: _amount}(); // Turn the ETH recceived in wETH.
+        if (_isCeth(_poolTokenAddress)) IWETH(address(wEth)).deposit{value: _amount}(); // Turn the ETH recceived in wETH.
     }
 
     /// @dev Borrows underlying tokens from Compound.
@@ -579,7 +579,7 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
     /// @param _amount The amount of token (in underlying).
     function _borrowFromPool(address _poolTokenAddress, uint256 _amount) internal {
         if ((ICToken(_poolTokenAddress).borrow(_amount) != 0)) revert BorrowOnCompoundFailed();
-        if (_isCeth(_poolTokenAddress)) IWETH(address(weth)).deposit{value: _amount}(); // Turn the ETH recceived in wETH.
+        if (_isCeth(_poolTokenAddress)) IWETH(address(wEth)).deposit{value: _amount}(); // Turn the ETH recceived in wETH.
     }
 
     /// @dev Repays underlying tokens to Compound.
@@ -591,8 +591,8 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
         ERC20 _underlyingToken,
         uint256 _amount
     ) internal {
-        if (address(_underlyingToken) == weth) {
-            IWETH(weth).withdraw(_amount); // Turn wETH into ETH.
+        if (address(_underlyingToken) == wEth) {
+            IWETH(wEth).withdraw(_amount); // Turn wETH into ETH.
             ICEther(_poolTokenAddress).repayBorrow{value: _amount}();
         } else {
             _underlyingToken.safeApprove(_poolTokenAddress, _amount);

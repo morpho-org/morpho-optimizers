@@ -25,7 +25,7 @@
       "whale": "0x8a2f72e86eb3b4a336d09b099f83a4255ef21d25",
       "abi": "@config/abis/polygon/WMATIC.json"
     },
-    "weth": {
+    "wEth": {
       "address": "0x3C68CE8504087f89c640D02d133646d98e64ddd9",
       "abi": "@config/abis/polygon/WETH.json"
     },
