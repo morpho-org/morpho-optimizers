@@ -1,11 +1,9 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "./interfaces/IPositionsManagerForCompound.sol";
 import "./interfaces/IMarketsManagerForCompound.sol";
 import "./interfaces/compound/ICompound.sol";
-import "./interfaces/IInterestRates.sol";
 
 import "./libraries/CompoundMath.sol";
 import "./libraries/Types.sol";
@@ -27,24 +25,7 @@ contract MarketsManagerForCompound is WithStorageAndModifiers {
     /// @dev WAD is kept here to demonstrate a constant used exclusively for this facet
     uint256 internal constant WAD = 1e18;
 
-    address[] public marketsCreated; // Keeps track of the created markets.
-    mapping(address => bool) public isCreated; // Whether or not this market is created.
-    mapping(address => uint256) public reserveFactor; // Proportion of the interest earned by users sent to the DAO for each market, in basis point (100% = 10000). The default value is 0.
-    mapping(address => uint256) public supplyP2PExchangeRate; // Current exchange rate from supply p2pUnit to underlying (in wad).
-    mapping(address => uint256) public borrowP2PExchangeRate; // Current exchange rate from borrow p2pUnit to underlying (in wad).
-    mapping(address => uint256) public lastUpdateBlockNumber; // The last time the P2P exchange rates were updated.
-    mapping(address => LastPoolIndexes) public lastPoolIndexes; // Last pool index stored.
-    mapping(address => bool) public noP2P; // Whether to put users on pool or not for the given market.
-
-    IPositionsManagerForCompound public positionsManager;
-    IInterestRates public interestRates;
-    IComptroller public comptroller;
-
     /// EVENTS ///
-
-    /// @notice Emitted when a new market is created.
-    /// @param _poolTokenAddress The address of the market that has been created.
-    event MarketCreated(address _poolTokenAddress);
 
     /// @notice Emitted when the `positionsManager` is set.
     /// @param _positionsManager The address of the `positionsManager`.
@@ -82,17 +63,11 @@ contract MarketsManagerForCompound is WithStorageAndModifiers {
     /// @notice Thrown when the market is not listed on Compound.
     error MarketIsNotListedOnCompound();
 
-    /// @notice Thrown when the market is already created.
-    error MarketAlreadyCreated();
-
     /// @notice Thrown when the positionsManager is already set.
     error PositionsManagerAlreadySet();
 
     /// @notice Thrown when only the positions manager can call the function.
     error OnlyPositionsManager();
-
-    /// @notice Thrown when the creation of a market failed on Compound.
-    error MarketCreationFailedOnCompound();
 
     /// MODIFIERS ///
 
@@ -109,35 +84,20 @@ contract MarketsManagerForCompound is WithStorageAndModifiers {
         _;
     }
 
-    /* TODO: Integrate this block into an initDiamond contract
-
-    /// @notice Initializes the MarketsManagerForCompound contract.
-    /// @param _comptroller The comptroller.
-    /// @param _interestRates The `interestRates`.
-    function initialize(IComptroller _comptroller, IInterestRates _interestRates)
-        external
-        
-    {
-
-        MarketsStorage storage ms = ms();
-        ms.comptroller = _comptroller;
-        ms.interestRates = _interestRates;
-    }
-*/
     /// EXTERNAL ///
 
     /// @notice Sets the `positionsManager` to interact with Compound.
     /// @param _positionsManager The address of the `positionsManager`.
     function setPositionsManager(address _positionsManager) external onlyOwner {
-        if (address(positionsManager) != address(0)) revert PositionsManagerAlreadySet();
-        positionsManager = IPositionsManagerForCompound(_positionsManager);
+        if (address(ms().positionsManager) != address(0)) revert PositionsManagerAlreadySet();
+        ms().positionsManager = IPositionsManagerForCompound(_positionsManager);
         emit PositionsManagerSet(_positionsManager);
     }
 
     /// @notice Sets the `intersRates`.
     /// @param _interestRates The new `interestRates` contract.
     function setInterestRates(IInterestRates _interestRates) external onlyOwner {
-        interestRates = _interestRates;
+        ms().interestRates = _interestRates;
         emit InterestRatesSet(address(_interestRates));
     }
 
@@ -148,42 +108,15 @@ contract MarketsManagerForCompound is WithStorageAndModifiers {
         external
         onlyOwner
     {
-        updateP2PExchangeRates(_poolTokenAddress);
-        reserveFactor[_poolTokenAddress] = CompoundMath.min(MAX_BASIS_POINTS, _newReserveFactor);
-        emit ReserveFactorSet(_poolTokenAddress, reserveFactor[_poolTokenAddress]);
+        LibMarketsManager.updateP2PExchangeRates(_poolTokenAddress);
+        ms().reserveFactor[_poolTokenAddress] = CompoundMath.min(MAX_BASIS_POINTS, _newReserveFactor);
+        emit ReserveFactorSet(_poolTokenAddress, ms().reserveFactor[_poolTokenAddress]);
     }
 
     /// @notice Creates a new market to borrow/supply in.
     /// @param _poolTokenAddress The pool token address of the given market.
     function createMarket(address _poolTokenAddress) external onlyOwner {
-        address[] memory marketToEnter = new address[](1);
-        marketToEnter[0] = _poolTokenAddress;
-        uint256[] memory results = positionsManager.createMarket(_poolTokenAddress);
-        if (results[0] != 0) revert MarketCreationFailedOnCompound();
-
-        if (isCreated[_poolTokenAddress]) revert MarketAlreadyCreated();
-        isCreated[_poolTokenAddress] = true;
-
-        ICToken poolToken = ICToken(_poolTokenAddress);
-        lastUpdateBlockNumber[_poolTokenAddress] = block.number;
-
-        // Same initial exchange rate as Compound.
-        uint256 initialExchangeRate;
-        if (_poolTokenAddress == positionsManager.cEth()) initialExchangeRate = 2e26;
-        else
-            initialExchangeRate =
-                2 *
-                10**(16 + IERC20Metadata(poolToken.underlying()).decimals() - 8);
-        supplyP2PExchangeRate[_poolTokenAddress] = initialExchangeRate;
-        borrowP2PExchangeRate[_poolTokenAddress] = initialExchangeRate;
-
-        LastPoolIndexes storage poolIndexes = lastPoolIndexes[_poolTokenAddress];
-
-        poolIndexes.lastSupplyPoolIndex = poolToken.exchangeRateCurrent();
-        poolIndexes.lastBorrowPoolIndex = poolToken.borrowIndex();
-
-        marketsCreated.push(_poolTokenAddress);
-        emit MarketCreated(_poolTokenAddress);
+        LibMarketsManager.createMarket(_poolTokenAddress);
     }
 
     /// @notice Sets whether to match people P2P or not.
@@ -194,14 +127,14 @@ contract MarketsManagerForCompound is WithStorageAndModifiers {
         onlyOwner
         isMarketCreated(_poolTokenAddress)
     {
-        noP2P[_poolTokenAddress] = _noP2P;
+        ms().noP2P[_poolTokenAddress] = _noP2P;
         emit NoP2PSet(_poolTokenAddress, _noP2P);
     }
 
     /// @notice Returns all created markets.
     /// @return marketsCreated_ The list of market adresses.
     function getAllMarkets() external view returns (address[] memory marketsCreated_) {
-        marketsCreated_ = marketsCreated;
+        marketsCreated_ = ms().marketsCreated;
     }
 
     /// @notice Returns market's data.
@@ -226,15 +159,15 @@ contract MarketsManagerForCompound is WithStorageAndModifiers {
         )
     {
         {
-            Types.Delta memory delta = positionsManager.deltas(_poolTokenAddress);
+            Types.Delta memory delta = ms().positionsManager.deltas(_poolTokenAddress);
             supplyP2PDelta_ = delta.supplyP2PDelta;
             borrowP2PDelta_ = delta.borrowP2PDelta;
             supplyP2PAmount_ = delta.supplyP2PAmount;
             borrowP2PAmount_ = delta.borrowP2PAmount;
         }
-        supplyP2PExchangeRate_ = supplyP2PExchangeRate[_poolTokenAddress];
-        borrowP2PExchangeRate_ = borrowP2PExchangeRate[_poolTokenAddress];
-        lastUpdateBlockNumber_ = lastUpdateBlockNumber[_poolTokenAddress];
+        supplyP2PExchangeRate_ = ms().supplyP2PExchangeRate[_poolTokenAddress];
+        borrowP2PExchangeRate_ = ms().borrowP2PExchangeRate[_poolTokenAddress];
+        lastUpdateBlockNumber_ = ms().lastUpdateBlockNumber[_poolTokenAddress];
     }
 
     /// @notice Returns market's configuration.
@@ -245,8 +178,8 @@ contract MarketsManagerForCompound is WithStorageAndModifiers {
         view
         returns (bool isCreated_, bool noP2P_)
     {
-        isCreated_ = isCreated[_poolTokenAddress];
-        noP2P_ = noP2P[_poolTokenAddress];
+        isCreated_ = ms().isCreated[_poolTokenAddress];
+        noP2P_ = ms().noP2P[_poolTokenAddress];
     }
 
     /// @notice Returns the updated P2P exchange rates.
@@ -258,34 +191,59 @@ contract MarketsManagerForCompound is WithStorageAndModifiers {
         view
         returns (uint256 newSupplyP2PExchangeRate, uint256 newBorrowP2PExchangeRate)
     {
-        if (block.timestamp == lastUpdateBlockNumber[_poolTokenAddress]) {
-            newSupplyP2PExchangeRate = supplyP2PExchangeRate[_poolTokenAddress];
-            newBorrowP2PExchangeRate = borrowP2PExchangeRate[_poolTokenAddress];
-        } else {
-            ICToken poolToken = ICToken(_poolTokenAddress);
-            LastPoolIndexes storage poolIndexes = lastPoolIndexes[_poolTokenAddress];
-
-            Types.Params memory params = Types.Params(
-                supplyP2PExchangeRate[_poolTokenAddress],
-                borrowP2PExchangeRate[_poolTokenAddress],
-                poolToken.exchangeRateStored(),
-                poolToken.borrowIndex(),
-                poolIndexes.lastSupplyPoolIndex,
-                poolIndexes.lastBorrowPoolIndex,
-                reserveFactor[_poolTokenAddress],
-                positionsManager.deltas(_poolTokenAddress)
-            );
-
-            (newSupplyP2PExchangeRate, newBorrowP2PExchangeRate) = interestRates
-            .computeP2PExchangeRates(params);
-        }
+        return LibMarketsManager.getUpdatedP2PExchangeRates(_poolTokenAddress);
     }
-
-    /// PUBLIC ///
 
     /// @notice Updates the P2P exchange rates, taking into account the Second Percentage Yield values.
     /// @param _poolTokenAddress The address of the market to update.
-    function updateP2PExchangeRates(address _poolTokenAddress) public {
+    function updateP2PExchangeRates(address _poolTokenAddress) external {
         LibMarketsManager.updateP2PExchangeRates(_poolTokenAddress);
+    }
+
+    /// @notice Whether or not this market is created.
+    function isCreated(address _market) external view returns (bool isCreated_) {
+        isCreated_ = ms().isCreated[_market];
+    }    
+    
+    /// @notice Proportion of the interest earned by users sent to the DAO for each market, in basis point (100% = 10000). The default value is 0.
+    function reserveFactor(address _market) external view returns (uint256 reserveFactor_) {
+        reserveFactor_ = ms().reserveFactor[_market];
+    }
+
+    /// @notice Current exchange rate from supply p2pUnit to underlying (in wad).
+    function supplyP2PExchangeRate(address _market) external view returns (uint256 supplyP2PExchangeRate_) {
+        supplyP2PExchangeRate_ = ms().supplyP2PExchangeRate[_market];
+    }
+
+    /// @notice Current exchange rate from borrow p2pUnit to underlying (in wad).
+    function borrowP2PExchangeRate(address _market) external view returns (uint256 borrowP2PExchangeRate_) {
+        borrowP2PExchangeRate_ = ms().borrowP2PExchangeRate[_market];
+    }
+
+    /// @notice Last block number when P2P exchange rates where updated.
+    function lastUpdateBlockNumber(address _market) external view returns (uint256 lastUpdateBlockNumber_) {
+        lastUpdateBlockNumber_ = ms().lastUpdateBlockNumber[_market];
+    }
+
+    /// @notice Last pool index stored.
+    function lastPoolIndexes(address _market) external view returns (LastPoolIndexes memory lastPoolIndexes_) {
+        lastPoolIndexes_ = ms().lastPoolIndexes[_market];
+    }
+
+    /// @notice Whether to put users on pool or not for the given market.
+    function noP2P(address _market) external view returns (bool noP2P_) {
+        noP2P_ = ms().noP2P[_market];
+    }
+
+    function positionsManager() external view returns (address) {
+        return address(ms().positionsManager);
+    }
+
+    function interestRates() external view returns (address) {
+        return address(ms().interestRates);
+    }
+
+    function comptroller() external view returns (address) {
+        return address(ms().comptroller);
     }
 }
