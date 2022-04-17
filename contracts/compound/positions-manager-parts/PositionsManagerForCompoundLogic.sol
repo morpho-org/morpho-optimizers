@@ -18,7 +18,7 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
     struct WithdrawVars {
         uint256 remainingToWithdraw;
         uint256 supplyPoolIndex;
-        uint256 maxToWithdraw;
+        uint256 withdrawable;
         uint256 toWithdraw;
     }
 
@@ -171,7 +171,7 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
         uint256 toWithdraw;
         Delta storage delta = deltas[_poolTokenAddress];
         uint256 poolSupplyIndex = ICToken(_poolTokenAddress).exchangeRateCurrent();
-        uint256 maxToWithdraw = ICToken(_poolTokenAddress).balanceOfUnderlying(address(this)); // The balance on pool.
+        uint256 withdrawable = ICToken(_poolTokenAddress).balanceOfUnderlying(address(this)); // The balance on pool.
 
         /// Borrow in P2P ///
 
@@ -182,7 +182,7 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
                 matchedDelta = CompoundMath.min(
                     delta.supplyP2PDelta.mul(poolSupplyIndex),
                     remainingToBorrow,
-                    maxToWithdraw
+                    withdrawable
                 );
                 if (matchedDelta > 0) {
                     toWithdraw += matchedDelta;
@@ -196,18 +196,14 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
             if (
                 remainingToBorrow > 0 && suppliersOnPool[_poolTokenAddress].getHead() != address(0)
             ) {
-                uint256 matched = CompoundMath.min(
-                    matchingEngine.matchSuppliersDC(
-                        ICToken(_poolTokenAddress),
-                        remainingToBorrow,
-                        _maxGasToConsume
-                    ),
-                    maxToWithdraw - toWithdraw
+                uint256 matched = matchingEngine.matchSuppliersDC(
+                    ICToken(_poolTokenAddress),
+                    CompoundMath.min(remainingToBorrow, withdrawable - toWithdraw),
+                    _maxGasToConsume
                 ); // In underlying.
 
                 if (matched > 0) {
                     toWithdraw += matched;
-                    maxToWithdraw -= matched;
                     remainingToBorrow -= matched;
                     deltas[_poolTokenAddress].supplyP2PAmount += matched.div(
                         marketsManager.supplyP2PExchangeRate(_poolTokenAddress)
@@ -262,7 +258,7 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
         ERC20 underlyingToken = _getUnderlying(_poolTokenAddress);
         WithdrawVars memory vars;
         vars.remainingToWithdraw = _amount;
-        vars.maxToWithdraw = poolToken.balanceOfUnderlying(address(this));
+        vars.withdrawable = poolToken.balanceOfUnderlying(address(this));
         vars.supplyPoolIndex = poolToken.exchangeRateCurrent();
 
         /// Soft withdraw ///
@@ -272,7 +268,7 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
             vars.toWithdraw = CompoundMath.min(
                 onPoolSupply.mul(vars.supplyPoolIndex),
                 vars.remainingToWithdraw,
-                vars.maxToWithdraw
+                vars.withdrawable
             );
             vars.remainingToWithdraw -= vars.toWithdraw;
 
@@ -308,7 +304,7 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
                 matchedDelta = CompoundMath.min(
                     delta.supplyP2PDelta.mul(vars.supplyPoolIndex),
                     vars.remainingToWithdraw,
-                    vars.maxToWithdraw - vars.toWithdraw
+                    vars.withdrawable - vars.toWithdraw
                 );
 
                 if (matchedDelta > 0) {
@@ -326,13 +322,10 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
                 suppliersOnPool[_poolTokenAddress].getHead() != address(0)
             ) {
                 // Match suppliers.
-                uint256 matched = CompoundMath.min(
-                    matchingEngine.matchSuppliersDC(
-                        poolToken,
-                        vars.remainingToWithdraw,
-                        _maxGasToConsume / 2
-                    ),
-                    vars.maxToWithdraw - vars.toWithdraw
+                uint256 matched = matchingEngine.matchSuppliersDC(
+                    poolToken,
+                    CompoundMath.min(vars.remainingToWithdraw, vars.withdrawable - vars.toWithdraw),
+                    _maxGasToConsume / 2
                 );
 
                 if (matched > 0) {
