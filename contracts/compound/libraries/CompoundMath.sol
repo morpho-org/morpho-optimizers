@@ -24,6 +24,10 @@ library CompoundMath {
         return a < b ? a : b;
     }
 
+    function safeSub(uint256 a, uint256 b) internal pure returns (uint256) {
+        return a >= b ? a - b : 0;
+    }
+
     function average(uint256 a, uint256 b) internal pure returns (uint256) {
         // (a + b) / 2 can overflow, so we distribute.
         return (a / 2) + (b / 2) + (((a % 2) + (b % 2)) / 2);
