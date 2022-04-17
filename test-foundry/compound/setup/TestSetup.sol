@@ -22,6 +22,7 @@ import "../../common/helpers/MorphoToken.sol";
 import "../../common/helpers/Chains.sol";
 import "../helpers/SimplePriceOracle.sol";
 import "../helpers/IncentivesVault.sol";
+import "../helpers/DumbOracle.sol";
 import {User} from "../helpers/User.sol";
 import {Utils} from "./Utils.sol";
 import "forge-std/stdlib.sol";
@@ -52,6 +53,7 @@ contract TestSetup is Config, Utils, stdCheats {
     IInterestRates internal interestRates;
 
     IncentivesVault public incentivesVault;
+    DumbOracle internal dumbOracle;
     MorphoToken public morphoToken;
     IComptroller public comptroller;
     ICompoundOracle public oracle;
@@ -121,15 +123,21 @@ contract TestSetup is Config, Utils, stdCheats {
         createMarket(cBat);
         hevm.roll(block.number + 1);
 
-        ///  Create Morpho token, deploy IncentivesVault and activate COMP rewards ///
+        ///  Create Morpho token, deploy Incentives Vault and activate COMP rewards ///
 
         morphoToken = new MorphoToken(address(this));
-        incentivesVault = new IncentivesVault(address(positionsManager), address(morphoToken));
+        dumbOracle = new DumbOracle();
+        incentivesVault = new IncentivesVault(
+            address(positionsManager),
+            address(morphoToken),
+            address(dumbOracle)
+        );
         morphoToken.transfer(address(incentivesVault), 1_000_000 ether);
 
         rewardsManager = new RewardsManagerForCompound(address(positionsManager), comptroller);
 
         positionsManager.setRewardsManager(address(rewardsManager));
+        positionsManager.setIncentivesVault(address(incentivesVault));
         positionsManager.setCompRewardsActive();
     }
 
@@ -187,6 +195,8 @@ contract TestSetup is Config, Utils, stdCheats {
         hevm.label(address(morphoToken), "MorphoToken");
         hevm.label(address(comptroller), "Comptroller");
         hevm.label(address(oracle), "CompoundOracle");
+        hevm.label(address(dumbOracle), "DumbOracle");
+        hevm.label(address(incentivesVault), "IncentivesVault");
         hevm.label(address(treasuryVault), "TreasuryVault");
     }
 
