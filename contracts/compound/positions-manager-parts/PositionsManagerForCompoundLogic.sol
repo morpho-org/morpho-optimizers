@@ -25,8 +25,6 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
     struct RepayVars {
         uint256 supplyP2PExchangeRate;
         uint256 borrowP2PExchangeRate;
-        uint256 realSupplyP2PAmount;
-        uint256 realBorrowP2PAmount;
         uint256 remainingToRepay;
         uint256 borrowPoolIndex;
         uint256 maxToRepay;
@@ -433,16 +431,12 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
 
         /// Fee repay ///
 
-        vars.realSupplyP2PAmount = (delta.supplyP2PAmount.mul(vars.supplyP2PExchangeRate) -
-            delta.supplyP2PDelta.mul(poolToken.exchangeRateStored()));
-        vars.realBorrowP2PAmount = (delta.borrowP2PAmount.mul(vars.borrowP2PExchangeRate) -
-            delta.borrowP2PDelta.mul(vars.borrowPoolIndex));
         // Fee = (supplyP2P - supplyP2PDelta) - (borrowP2P - borrowP2PDelta)
-        vars.feeToRepay = CompoundMath.min(
-            vars.realBorrowP2PAmount <= vars.realSupplyP2PAmount
-                ? 0
-                : vars.realBorrowP2PAmount - vars.realSupplyP2PAmount, // Done to avoid rounding errors.
-            vars.remainingToRepay
+        vars.feeToRepay = CompoundMath.safeSub(
+            (delta.borrowP2PAmount.mul(vars.borrowP2PExchangeRate) -
+                delta.borrowP2PDelta.mul(vars.borrowPoolIndex)),
+            (delta.supplyP2PAmount.mul(vars.supplyP2PExchangeRate) -
+                delta.supplyP2PDelta.mul(poolToken.exchangeRateStored()))
         );
         vars.remainingToRepay -= vars.feeToRepay;
 
