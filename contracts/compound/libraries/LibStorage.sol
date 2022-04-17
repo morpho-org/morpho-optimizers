@@ -5,6 +5,7 @@ import "../interfaces/IPositionsManagerForCompound.sol";
 import "../interfaces/IMarketsManagerForCompound.sol";
 import "../interfaces/compound/ICompound.sol";
 import "../interfaces/IInterestRates.sol";
+import "../../common/diamond/libraries/LibDiamond.sol";
 
 /// TYPE STRUCTS ///
 
@@ -43,17 +44,22 @@ library LibStorage {
 }
 
 /**
- * The `WithStorage` contract provides a base contract for Facet contracts to inherit.
+ * The `WithStorageAndModifiers` contract provides a base contract for Facet contracts to inherit.
  *
- * It mainly provides internal helpers to access the storage structs, which reduces
+ * It provides internal helpers to access the storage structs, which reduces
  * calls like `LibStorage.gameStorage()` to just `gs()`.
  *
  * To understand why the storage stucts must be accessed using a function instead of a
  * state variable, please refer to the documentation above `LibStorage` in this file.
  */
-contract WithStorage {
+contract WithStorageAndModifiers {
     /// COMMON CONSTANTS ///
     uint16 public constant MAX_BASIS_POINTS = 10_000; // 100% (in basis point).
+
+    modifier onlyOwner() {
+        LibDiamond.enforceIsContractOwner();
+        _;
+    }
 
     function ms() internal pure returns (MarketsStorage storage) {
         return LibStorage.marketsStorage();

@@ -11,11 +11,16 @@ import "./libraries/CompoundMath.sol";
 import "./libraries/Types.sol";
 import "./libraries/LibStorage.sol";
 
-import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+/** TODO: 
+    1. Convert this contract into a facet
+        a. Change all functions to use inherited storage functions
+        b. Remove this contract's storage variables
+        c. Move logic, events, errors into libraries, use facet functions primarily as external entry points into logic
+        d. Move init to an initDiamond contract*/
 
 /// @title MarketsManagerForCompound.
 /// @notice Smart contract managing the markets used by a MorphoPositionsManagerForCompound contract, an other contract interacting with Compound or a fork of Compound.
-contract MarketsManagerForCompound is WithStorage, IMarketsManagerForCompound, OwnableUpgradeable {
+contract MarketsManagerForCompound is WithStorageAndModifiers {
     using CompoundMath for uint256;
 
     /// @dev WAD is kept here to demonstrate a constant used exclusively for this facet
@@ -113,22 +118,21 @@ contract MarketsManagerForCompound is WithStorage, IMarketsManagerForCompound, O
         _;
     }
 
-    /// UPGRADE ///
+    /* TODO: Integrate this block into an initDiamond contract
 
     /// @notice Initializes the MarketsManagerForCompound contract.
     /// @param _comptroller The comptroller.
     /// @param _interestRates The `interestRates`.
     function initialize(IComptroller _comptroller, IInterestRates _interestRates)
         external
-        initializer
+        
     {
-        __Ownable_init();
 
         MarketsStorage storage ms = ms();
         ms.comptroller = _comptroller;
         ms.interestRates = _interestRates;
     }
-
+*/
     /// EXTERNAL ///
 
     /// @notice Sets the `positionsManager` to interact with Compound.
