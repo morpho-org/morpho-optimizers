@@ -10,6 +10,7 @@ import "./interfaces/IInterestRates.sol";
 import "./libraries/CompoundMath.sol";
 import "./libraries/Types.sol";
 import "./libraries/LibStorage.sol";
+import "./libraries/LibMarketsManager.sol";
 
 /** TODO: 
     1. Convert this contract into a facet
@@ -27,13 +28,13 @@ contract MarketsManagerForCompound is WithStorageAndModifiers {
     uint256 internal constant WAD = 1e18;
 
     address[] public marketsCreated; // Keeps track of the created markets.
-    mapping(address => bool) public override isCreated; // Whether or not this market is created.
+    mapping(address => bool) public isCreated; // Whether or not this market is created.
     mapping(address => uint256) public reserveFactor; // Proportion of the interest earned by users sent to the DAO for each market, in basis point (100% = 10000). The default value is 0.
-    mapping(address => uint256) public override supplyP2PExchangeRate; // Current exchange rate from supply p2pUnit to underlying (in wad).
-    mapping(address => uint256) public override borrowP2PExchangeRate; // Current exchange rate from borrow p2pUnit to underlying (in wad).
-    mapping(address => uint256) public override lastUpdateBlockNumber; // The last time the P2P exchange rates were updated.
+    mapping(address => uint256) public supplyP2PExchangeRate; // Current exchange rate from supply p2pUnit to underlying (in wad).
+    mapping(address => uint256) public borrowP2PExchangeRate; // Current exchange rate from borrow p2pUnit to underlying (in wad).
+    mapping(address => uint256) public lastUpdateBlockNumber; // The last time the P2P exchange rates were updated.
     mapping(address => LastPoolIndexes) public lastPoolIndexes; // Last pool index stored.
-    mapping(address => bool) public override noP2P; // Whether to put users on pool or not for the given market.
+    mapping(address => bool) public noP2P; // Whether to put users on pool or not for the given market.
 
     IPositionsManagerForCompound public positionsManager;
     IInterestRates public interestRates;
@@ -66,16 +67,6 @@ contract MarketsManagerForCompound is WithStorageAndModifiers {
         address indexed _poolTokenAddress,
         uint256 _newSupplyP2PBPY,
         uint256 _newBorrowP2PBPY
-    );
-
-    /// @notice Emitted when the p2p exchange rates of a market are updated.
-    /// @param _poolTokenAddress The address of the market updated.
-    /// @param _newSupplyP2PExchangeRate The new value of the supply exchange rate from p2pUnit to underlying.
-    /// @param _newBorrowP2PExchangeRate The new value of the borrow exchange rate from p2pUnit to underlying.
-    event P2PExchangeRatesUpdated(
-        address indexed _poolTokenAddress,
-        uint256 _newSupplyP2PExchangeRate,
-        uint256 _newBorrowP2PExchangeRate
     );
 
     /// @notice Emitted when the `reserveFactor` is set.
@@ -265,7 +256,6 @@ contract MarketsManagerForCompound is WithStorageAndModifiers {
     function getUpdatedP2PExchangeRates(address _poolTokenAddress)
         external
         view
-        override
         returns (uint256 newSupplyP2PExchangeRate, uint256 newBorrowP2PExchangeRate)
     {
         if (block.timestamp == lastUpdateBlockNumber[_poolTokenAddress]) {
@@ -296,38 +286,6 @@ contract MarketsManagerForCompound is WithStorageAndModifiers {
     /// @notice Updates the P2P exchange rates, taking into account the Second Percentage Yield values.
     /// @param _poolTokenAddress The address of the market to update.
     function updateP2PExchangeRates(address _poolTokenAddress) public {
-        if (block.timestamp > lastUpdateBlockNumber[_poolTokenAddress]) {
-            ICToken poolToken = ICToken(_poolTokenAddress);
-            lastUpdateBlockNumber[_poolTokenAddress] = block.timestamp;
-            LastPoolIndexes storage poolIndexes = lastPoolIndexes[_poolTokenAddress];
-
-            uint256 poolSupplyExchangeRate = poolToken.exchangeRateCurrent();
-            uint256 poolBorrowExchangeRate = poolToken.borrowIndex();
-
-            Types.Params memory params = Types.Params(
-                supplyP2PExchangeRate[_poolTokenAddress],
-                borrowP2PExchangeRate[_poolTokenAddress],
-                poolSupplyExchangeRate,
-                poolBorrowExchangeRate,
-                poolIndexes.lastSupplyPoolIndex,
-                poolIndexes.lastBorrowPoolIndex,
-                reserveFactor[_poolTokenAddress],
-                positionsManager.deltas(_poolTokenAddress)
-            );
-
-            (uint256 newSupplyP2PExchangeRate, uint256 newBorrowP2PExchangeRate) = interestRates
-            .computeP2PExchangeRates(params);
-
-            supplyP2PExchangeRate[_poolTokenAddress] = newSupplyP2PExchangeRate;
-            borrowP2PExchangeRate[_poolTokenAddress] = newBorrowP2PExchangeRate;
-            poolIndexes.lastSupplyPoolIndex = poolSupplyExchangeRate;
-            poolIndexes.lastBorrowPoolIndex = poolBorrowExchangeRate;
-
-            emit P2PExchangeRatesUpdated(
-                _poolTokenAddress,
-                newSupplyP2PExchangeRate,
-                newBorrowP2PExchangeRate
-            );
-        }
+        LibMarketsManager.updateP2PExchangeRates(_poolTokenAddress);
     }
 }
