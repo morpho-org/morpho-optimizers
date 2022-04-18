@@ -290,13 +290,13 @@ contract MatchingEngineForCompound is
 
         // Check pool.
         if (formerValueOnPool != onPool) {
-            if (formerValueOnPool != 0) borrowersOnPool[_poolTokenAddress].remove(_user);
+            if (formerValueOnPool > 0) borrowersOnPool[_poolTokenAddress].remove(_user);
             if (onPool > 0) borrowersOnPool[_poolTokenAddress].insertSorted(_user, onPool, NDS);
         }
 
         // Check P2P.
         if (formerValueInP2P != inP2P) {
-            if (formerValueInP2P != 0) borrowersInP2P[_poolTokenAddress].remove(_user);
+            if (formerValueInP2P > 0) borrowersInP2P[_poolTokenAddress].remove(_user);
             if (inP2P > 0) borrowersInP2P[_poolTokenAddress].insertSorted(_user, inP2P, NDS);
         }
 
@@ -319,13 +319,13 @@ contract MatchingEngineForCompound is
 
         // Check pool.
         if (formerValueOnPool != onPool) {
-            if (formerValueOnPool != 0) suppliersOnPool[_poolTokenAddress].remove(_user);
+            if (formerValueOnPool > 0) suppliersOnPool[_poolTokenAddress].remove(_user);
             if (onPool > 0) suppliersOnPool[_poolTokenAddress].insertSorted(_user, onPool, NDS);
         }
 
         // Check P2P.
         if (formerValueInP2P != inP2P) {
-            if (formerValueInP2P != 0) suppliersInP2P[_poolTokenAddress].remove(_user);
+            if (formerValueInP2P > 0) suppliersInP2P[_poolTokenAddress].remove(_user);
             if (inP2P > 0) suppliersInP2P[_poolTokenAddress].insertSorted(_user, inP2P, NDS);
         }
 
