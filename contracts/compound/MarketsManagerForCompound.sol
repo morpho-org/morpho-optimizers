@@ -266,6 +266,7 @@ contract MarketsManagerForCompound is IMarketsManagerForCompound, OwnableUpgrade
     /// @return newBorrowP2PExchangeRate The supply P2P exchange rate after udpate.
     function getUpdatedP2PExchangeRates(address _poolTokenAddress)
         external
+        view
         override
         returns (uint256 newSupplyP2PExchangeRate, uint256 newBorrowP2PExchangeRate)
     {
@@ -279,7 +280,7 @@ contract MarketsManagerForCompound is IMarketsManagerForCompound, OwnableUpgrade
             Types.Params memory params = Types.Params(
                 supplyP2PExchangeRate[_poolTokenAddress],
                 borrowP2PExchangeRate[_poolTokenAddress],
-                poolToken.exchangeRateCurrent(),
+                poolToken.exchangeRateStored(),
                 poolToken.borrowIndex(),
                 poolIndexes.lastSupplyPoolIndex,
                 poolIndexes.lastBorrowPoolIndex,
@@ -297,7 +298,7 @@ contract MarketsManagerForCompound is IMarketsManagerForCompound, OwnableUpgrade
     /// @notice Updates the P2P exchange rates, taking into account the Second Percentage Yield values.
     /// @param _poolTokenAddress The address of the market to update.
     function updateP2PExchangeRates(address _poolTokenAddress) public {
-        if (block.timestamp - lastUpdateBlockNumber[_poolTokenAddress] > 0) {
+        if (block.timestamp > lastUpdateBlockNumber[_poolTokenAddress]) {
             ICToken poolToken = ICToken(_poolTokenAddress);
             lastUpdateBlockNumber[_poolTokenAddress] = block.timestamp;
             LastPoolIndexes storage poolIndexes = lastPoolIndexes[_poolTokenAddress];
