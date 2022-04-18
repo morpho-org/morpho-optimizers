@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import {ICToken, IComptroller} from "./interfaces/compound/ICompound.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "./interfaces/IPositionsManagerForCompound.sol";
 import "./interfaces/IMarketsManagerForCompound.sol";
+import "./interfaces/compound/ICompound.sol";
 import "./interfaces/IInterestRates.sol";
 
 import "./libraries/CompoundMath.sol";

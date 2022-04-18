@@ -147,7 +147,7 @@ abstract contract PositionsManagerForCompoundEventsErrors is PositionsManagerFor
     /// @param _amountClaimed The amount of reward token claimed.
     event RewardsClaimed(address indexed _user, uint256 _amountClaimed);
 
-    /// @dev Emitted when a user claims rewards and converts them to Morpho tokens.
+    /// @notice Emitted when a user claims rewards and converts them to Morpho tokens.
     /// @param _user The address of the claimer.
     /// @param _amountSent The amount of reward token sent to the vault.
     event RewardsClaimedAndConverted(address indexed _user, uint256 _amountSent);
