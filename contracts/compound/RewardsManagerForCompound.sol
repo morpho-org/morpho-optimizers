@@ -55,6 +55,8 @@ contract RewardsManagerForCompound is IRewardsManagerForCompound, Ownable {
     /// EXTERNAL ///
 
     /// @notice Accrues unclaimed COMP rewards for the given cToken addresses and returns the total COMP unclaimed rewards.
+    /// @dev This function is called by the `positionsManager` to accrue COMP rewards and reset them to 0.
+    /// @dev The transfer of tokens is done in the `positionsManager`.
     /// @param _cTokenAddresses The cToken addresses for which to claim rewards.
     /// @param _user The address of the user.
     function claimRewards(address[] calldata _cTokenAddresses, address _user)
@@ -353,14 +355,10 @@ contract RewardsManagerForCompound is IRewardsManagerForCompound, Ownable {
                         : localSupplyState.index;
                     uint256 index = formerIndex + ratio;
                     localCompSupplyState[_cTokenAddress] = IComptroller.CompMarketState({
-                        index: CompoundMath.safe224(index, "new index exceeds 224 bits"),
-                        block: CompoundMath.safe32(blockNumber, "block number exceeds 32 bits")
+                        index: CompoundMath.safe224(index),
+                        block: CompoundMath.safe32(blockNumber)
                     });
-                } else
-                    localSupplyState.block = CompoundMath.safe32(
-                        blockNumber,
-                        "block number exceeds 32 bits"
-                    );
+                } else localSupplyState.block = CompoundMath.safe32(blockNumber);
             }
         }
     }
@@ -398,19 +396,9 @@ contract RewardsManagerForCompound is IRewardsManagerForCompound, Ownable {
                         ? borrowState.index
                         : localBorrowState.index;
                     uint256 index = formerIndex + ratio;
-                    localBorrowState.index = CompoundMath.safe224(
-                        index,
-                        "new index exceeds 224 bits"
-                    );
-                    localBorrowState.block = CompoundMath.safe32(
-                        blockNumber,
-                        "block number exceeds 32 bits"
-                    );
-                } else
-                    localBorrowState.block = CompoundMath.safe32(
-                        blockNumber,
-                        "block number exceeds 32 bits"
-                    );
+                    localBorrowState.index = CompoundMath.safe224(index);
+                    localBorrowState.block = CompoundMath.safe32(blockNumber);
+                } else localBorrowState.block = CompoundMath.safe32(blockNumber);
             }
         }
     }
