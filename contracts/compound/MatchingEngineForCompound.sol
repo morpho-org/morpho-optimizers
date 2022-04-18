@@ -289,16 +289,16 @@ contract MatchingEngineForCompound is
         uint256 formerValueInP2P = borrowersInP2P[_poolTokenAddress].getValueOf(_user);
 
         // Check pool.
-        bool wasOnPoolAndValueChanged = formerValueOnPool != 0 && formerValueOnPool != onPool;
-        if (wasOnPoolAndValueChanged) borrowersOnPool[_poolTokenAddress].remove(_user);
-        if (onPool > 0 && (wasOnPoolAndValueChanged || formerValueOnPool == 0))
-            borrowersOnPool[_poolTokenAddress].insertSorted(_user, onPool, NDS);
+        if (formerValueOnPool != onPool) {
+            if (formerValueOnPool != 0) borrowersOnPool[_poolTokenAddress].remove(_user);
+            if (onPool > 0) borrowersOnPool[_poolTokenAddress].insertSorted(_user, onPool, NDS);
+        }
 
         // Check P2P.
-        bool wasInP2PAndValueChanged = formerValueInP2P != 0 && formerValueInP2P != inP2P;
-        if (wasInP2PAndValueChanged) borrowersInP2P[_poolTokenAddress].remove(_user);
-        if (inP2P > 0 && (wasInP2PAndValueChanged || formerValueInP2P == 0))
-            borrowersInP2P[_poolTokenAddress].insertSorted(_user, inP2P, NDS);
+        if (formerValueInP2P != inP2P) {
+            if (formerValueInP2P != 0) borrowersInP2P[_poolTokenAddress].remove(_user);
+            if (inP2P > 0) borrowersInP2P[_poolTokenAddress].insertSorted(_user, inP2P, NDS);
+        }
 
         if (isCompRewardsActive && address(rewardsManager) != address(0))
             rewardsManager.accrueUserBorrowUnclaimedRewards(
@@ -318,17 +318,16 @@ contract MatchingEngineForCompound is
         uint256 formerValueInP2P = suppliersInP2P[_poolTokenAddress].getValueOf(_user);
 
         // Check pool.
-        bool wasOnPoolAndValueChanged = formerValueOnPool != 0 && formerValueOnPool != onPool;
-        if (wasOnPoolAndValueChanged) suppliersOnPool[_poolTokenAddress].remove(_user);
-        if (onPool > 0 && (wasOnPoolAndValueChanged || formerValueOnPool == 0)) {
-            suppliersOnPool[_poolTokenAddress].insertSorted(_user, onPool, NDS);
+        if (formerValueOnPool != onPool) {
+            if (formerValueOnPool != 0) suppliersOnPool[_poolTokenAddress].remove(_user);
+            if (onPool > 0) suppliersOnPool[_poolTokenAddress].insertSorted(_user, onPool, NDS);
         }
 
         // Check P2P.
-        bool wasInP2PAndValueChanged = formerValueInP2P != 0 && formerValueInP2P != inP2P;
-        if (wasInP2PAndValueChanged) suppliersInP2P[_poolTokenAddress].remove(_user);
-        if (inP2P > 0 && (wasInP2PAndValueChanged || formerValueInP2P == 0))
-            suppliersInP2P[_poolTokenAddress].insertSorted(_user, inP2P, NDS);
+        if (formerValueInP2P != inP2P) {
+            if (formerValueInP2P != 0) suppliersInP2P[_poolTokenAddress].remove(_user);
+            if (inP2P > 0) suppliersInP2P[_poolTokenAddress].insertSorted(_user, inP2P, NDS);
+        }
 
         if (isCompRewardsActive && address(rewardsManager) != address(0))
             rewardsManager.accrueUserSupplyUnclaimedRewards(
