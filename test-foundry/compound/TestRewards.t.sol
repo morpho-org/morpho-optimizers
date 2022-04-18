@@ -48,7 +48,6 @@ contract TestRewards is TestSetup {
 
         index = comptroller.compSupplyState(cDai).index;
 
-        // TODO: computation
         uint256 expectedClaimed = (onPool * (index - userIndex)) / 1e36;
         uint256 balanceAfter = supplier1.balanceOf(comp);
         uint256 expectedNewBalance = expectedClaimed + balanceBefore;
@@ -56,7 +55,6 @@ contract TestRewards is TestSetup {
         assertEq(balanceAfter, expectedNewBalance, "balance after wrong");
     }
 
-    // TODO update with real getter
     function testShouldGetRightAmountOfSupplyRewards() public {
         uint256 toSupply = 100 ether;
         supplier1.approve(dai, toSupply);
@@ -68,7 +66,7 @@ contract TestRewards is TestSetup {
         uint256 userIndex = rewardsManager.compSupplierIndex(cDai, address(supplier1));
         address[] memory cTokens = new address[](1);
         cTokens[0] = cDai;
-        uint256 unclaimedRewards = rewardsManager.accrueUserUnclaimedRewards(
+        uint256 unclaimedRewards = rewardsManager.getUserUnclaimedRewards(
             cTokens,
             address(supplier1)
         );
@@ -80,7 +78,7 @@ contract TestRewards is TestSetup {
         supplier2.supply(cDai, toSupply);
 
         hevm.roll(block.number + 1_000);
-        unclaimedRewards = rewardsManager.accrueUserUnclaimedRewards(cTokens, address(supplier1));
+        unclaimedRewards = rewardsManager.getUserUnclaimedRewards(cTokens, address(supplier1));
 
         supplier1.claimRewards(cTokens, false);
         index = comptroller.compSupplyState(cDai).index;
@@ -132,16 +130,17 @@ contract TestRewards is TestSetup {
         uint256 userIndex = rewardsManager.compBorrowerIndex(cUsdc, address(supplier1));
         address[] memory cTokens = new address[](1);
         cTokens[0] = cUsdc;
-        rewardsManager.accrueUserUnclaimedRewards(cTokens, address(supplier1));
-        uint256 unclaimedRewards = rewardsManager.userUnclaimedCompRewards(address(supplier1));
+        uint256 unclaimedRewards = rewardsManager.getUserUnclaimedRewards(
+            cTokens,
+            address(supplier1)
+        );
 
         assertEq(index, userIndex, "user index wrong");
         assertEq(unclaimedRewards, 0, "unclaimed rewards should be 0");
 
         hevm.roll(block.number + 1_000);
 
-        rewardsManager.accrueUserUnclaimedRewards(cTokens, address(supplier1));
-        unclaimedRewards = rewardsManager.userUnclaimedCompRewards(address(supplier1));
+        unclaimedRewards = rewardsManager.getUserUnclaimedRewards(cTokens, address(supplier1));
 
         supplier1.claimRewards(cTokens, false);
         index = comptroller.compBorrowState(cUsdc).index;
