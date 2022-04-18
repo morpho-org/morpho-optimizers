@@ -16,5 +16,6 @@ interface IMarketsManagerForCompound {
 
     function getUpdatedP2PExchangeRates(address _poolTokenAddress)
         external
+        view
         returns (uint256, uint256);
 }
