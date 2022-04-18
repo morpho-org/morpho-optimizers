@@ -4,6 +4,16 @@ pragma solidity 0.8.13;
 /// @title CompoundMath.
 /// @dev library emulating in solidity 8+ the behavior of Compound's mulScalarTruncate and divScalarByExpTruncate functions.
 library CompoundMath {
+    /// ERRORS ///
+
+    /// @notice Reverts when the number exceeds 224 bits.
+    error NumberExceeds224Bits();
+
+    /// @notice Reverts when the number exceeds 32 bits.
+    error NumberExceeds32Bits();
+
+    /// INTERNAL ///
+
     function mul(uint256 x, uint256 y) internal pure returns (uint256) {
         return (x * y) / 1e18;
     }
@@ -12,13 +22,13 @@ library CompoundMath {
         return ((1e18 * x * 1e18) / y) / 1e18;
     }
 
-    function safe224(uint256 n, string memory errorMessage) internal pure returns (uint224) {
-        require(n < 2**224, errorMessage);
+    function safe224(uint256 n) internal pure returns (uint224) {
+        if (n >= 2**224) revert NumberExceeds224Bits();
         return uint224(n);
     }
 
-    function safe32(uint256 n, string memory errorMessage) internal pure returns (uint32) {
-        require(n < 2**32, errorMessage);
+    function safe32(uint256 n) internal pure returns (uint32) {
+        if (n >= 2**32) revert NumberExceeds32Bits();
         return uint32(n);
     }
 
