@@ -148,7 +148,7 @@ contract TestSetup is Config, Utils, stdCheats {
 
         positionsManager.setRewardsManager(address(rewardsManager));
         positionsManager.setIncentivesVault(address(incentivesVault));
-        positionsManager.setCompRewardsActive();
+        positionsManager.toggleCompRewardsActivation();
     }
 
     function createMarket(address _cToken) internal {

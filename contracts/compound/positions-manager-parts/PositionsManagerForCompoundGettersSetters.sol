@@ -22,7 +22,7 @@ abstract contract PositionsManagerForCompoundGettersSetters is
         _;
     }
 
-    /// @dev Prevents a user to call function only allowed for the markets manager.
+    /// @notice Prevents a user to call function only allowed for the markets manager.
     modifier onlyMarketsManager() {
         if (msg.sender != address(marketsManager)) revert OnlyMarketsManager();
         _;
@@ -30,14 +30,14 @@ abstract contract PositionsManagerForCompoundGettersSetters is
 
     /// SETTERS ///
 
-    /// @dev Sets `NDS`.
+    /// @notice Sets `NDS`.
     /// @param _newNDS The new `NDS` value.
     function setNDS(uint8 _newNDS) external onlyOwner {
         NDS = _newNDS;
         emit NDSSet(_newNDS);
     }
 
-    /// @dev Sets `maxGas`.
+    /// @notice Sets `maxGas`.
     /// @param _maxGas The new `maxGas`.
     function setMaxGas(MaxGas memory _maxGas) external onlyOwner {
         maxGas = _maxGas;
@@ -58,21 +58,21 @@ abstract contract PositionsManagerForCompoundGettersSetters is
         emit IncentivesVaultSet(_newIncentivesVault);
     }
 
-    /// @dev Sets the `rewardsManager`.
+    /// @notice Sets the `rewardsManager`.
     /// @param _rewardsManagerAddress The address of the `rewardsManager`.
     function setRewardsManager(address _rewardsManagerAddress) external onlyOwner {
         rewardsManager = IRewardsManagerForCompound(_rewardsManagerAddress);
         emit RewardsManagerSet(_rewardsManagerAddress);
     }
 
-    /// @dev Sets the activation of COMP rewards.-
-    function setCompRewardsActive() external onlyOwner {
+    /// @notice Toggles the activation of COMP rewards.
+    function toggleCompRewardsActivation() external onlyOwner {
         bool newCompRewardsActive = !isCompRewardsActive;
         isCompRewardsActive = newCompRewardsActive;
         emit CompRewardsActive(newCompRewardsActive);
     }
 
-    /// @dev Sets the pause status on a specific market in case of emergency.
+    /// @notice Sets the pause status on a specific market in case of emergency.
     /// @param _poolTokenAddress The address of the market to pause/unpause.
     function setPauseStatus(address _poolTokenAddress) external onlyOwner {
         bool newPauseStatus = !paused[_poolTokenAddress];
@@ -80,7 +80,7 @@ abstract contract PositionsManagerForCompoundGettersSetters is
         emit PauseStatusSet(_poolTokenAddress, newPauseStatus);
     }
 
-    /// @dev Creates markets.
+    /// @notice Creates markets.
     /// @param _poolTokenAddress The address of the market the user wants to supply.
     /// @return The results of entered.
     function createMarket(address _poolTokenAddress)
