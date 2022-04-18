@@ -29,4 +29,6 @@ interface IPositionsManagerForCompound {
     function deltas(address) external view returns (Types.Delta memory);
 
     function cEth() external view returns (address);
+
+    function comptroller() external view returns (address);
 }
