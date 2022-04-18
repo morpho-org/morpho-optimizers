@@ -134,7 +134,7 @@ contract TestSetup is Config, Utils, stdCheats {
         );
         morphoToken.transfer(address(incentivesVault), 1_000_000 ether);
 
-        rewardsManager = new RewardsManagerForCompound(address(positionsManager), comptroller);
+        rewardsManager = new RewardsManagerForCompound(address(positionsManager));
 
         positionsManager.setRewardsManager(address(rewardsManager));
         positionsManager.setIncentivesVault(address(incentivesVault));

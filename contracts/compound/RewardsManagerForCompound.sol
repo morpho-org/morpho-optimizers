@@ -32,8 +32,8 @@ contract RewardsManagerForCompound is IRewardsManagerForCompound, Ownable {
     /// @notice Thrown when only the positions manager can call the function.
     error OnlyPositionsManager();
 
-    /// @notice Thrown when an invalid asset is passed to accrue rewards.
-    error InvalidAsset();
+    /// @notice Thrown when an invalid cToken address is passed to accrue rewards.
+    error InvalidCToken();
 
     /// MODIFIERS ///
 
@@ -47,10 +47,9 @@ contract RewardsManagerForCompound is IRewardsManagerForCompound, Ownable {
 
     /// @notice Constructs the RewardsManager contract.
     /// @param _positionsManager The `positionsManager`.
-    /// @param _comptroller The `comptroller`.
-    constructor(address _positionsManager, IComptroller _comptroller) {
+    constructor(address _positionsManager) {
         positionsManager = IPositionsManagerForCompound(_positionsManager);
-        comptroller = _comptroller;
+        comptroller = IComptroller(positionsManager.comptroller());
     }
 
     /// EXTERNAL ///
@@ -107,7 +106,7 @@ contract RewardsManagerForCompound is IRewardsManagerForCompound, Ownable {
             address cTokenAddress = _cTokenAddresses[i];
 
             (bool isListed, , ) = comptroller.markets(cTokenAddress);
-            if (!isListed) revert InvalidAsset();
+            if (!isListed) revert InvalidCToken();
 
             unclaimedRewards += getAccruedSupplierComp(
                 _user,
@@ -162,7 +161,7 @@ contract RewardsManagerForCompound is IRewardsManagerForCompound, Ownable {
             address cTokenAddress = _cTokenAddresses[i];
 
             (bool isListed, , ) = comptroller.markets(cTokenAddress);
-            if (!isListed) revert InvalidAsset();
+            if (!isListed) revert InvalidCToken();
 
             _updateSupplyIndex(cTokenAddress);
             unclaimedRewards += _accrueSupplierComp(

@@ -12,11 +12,12 @@ contract TestRewards is TestSetup {
         positionsManager.claimRewards(cTokens, false);
     }
 
-    function testFailShouldRevertWhenAccruingRewardsForInvalidAsset() public {
+    function testShouldRevertWhenAccruingRewardsForInvalidCToken() public {
         address[] memory cTokens = new address[](2);
         cTokens[0] = cDai;
         cTokens[1] = dai;
 
+        hevm.expectRevert(RewardsManagerForCompound.InvalidCToken.selector);
         rewardsManager.accrueUserUnclaimedRewards(cTokens, address(supplier1));
     }
 
