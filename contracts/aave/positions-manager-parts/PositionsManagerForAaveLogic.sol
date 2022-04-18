@@ -20,6 +20,7 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
         uint256 remainingToWithdraw;
         uint256 supplyPoolIndex;
         uint256 maxToWithdraw;
+        uint256 remainingGas;
         uint256 toWithdraw;
     }
 
@@ -27,6 +28,7 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
         uint256 remainingToRepay;
         uint256 borrowPoolIndex;
         uint256 supplyPoolIndex;
+        uint256 remainingGas;
         uint256 maxToRepay;
         uint256 toRepay;
     }
@@ -257,7 +259,7 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
         vars.remainingToWithdraw = _amount;
         vars.maxToWithdraw = poolToken.balanceOf(address(this));
         vars.supplyPoolIndex = lendingPool.getReserveNormalizedIncome(address(underlyingToken));
-        uint256 remainingGas = _maxGasToConsume;
+        vars.remainingGas = _maxGasToConsume;
 
         /// Soft withdraw ///
 
@@ -316,7 +318,7 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
 
             // Match pool suppliers if any.
             if (
-                remainingGas > 0 &&
+                vars.remainingGas > 0 &&
                 vars.remainingToWithdraw > 0 &&
                 suppliersOnPool[_poolTokenAddress].getHead() != address(0)
             ) {
@@ -327,12 +329,12 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
                         poolToken,
                         underlyingToken,
                         vars.remainingToWithdraw,
-                        remainingGas,
+                        vars.remainingGas,
                         gasLeftBeforeMatching
                     ),
                     vars.maxToWithdraw - vars.toWithdraw
                 );
-                remainingGas -= gasLeftBeforeMatching - gasleft();
+                vars.remainingGas -= gasLeftBeforeMatching - gasleft();
 
                 if (matched > 0) {
                     vars.remainingToWithdraw -= matched;
@@ -347,11 +349,11 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
 
         if (vars.remainingToWithdraw > 0) {
             uint256 unmatched;
-            if (remainingGas > 0)
+            if (vars.remainingGas > 0)
                 unmatched = matchingEngine.unmatchBorrowersDC(
                     _poolTokenAddress,
                     vars.remainingToWithdraw,
-                    remainingGas,
+                    vars.remainingGas,
                     gasleft()
                 );
 
@@ -400,7 +402,7 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
             lendingPool.getReserveData(address(underlyingToken)).variableDebtTokenAddress
         ).scaledBalanceOf(address(this))
         .mulWadByRay(vars.borrowPoolIndex); // The debt of the contract.
-        uint256 remainingGas = _maxGasToConsume;
+        vars.remainingGas = _maxGasToConsume;
 
         /// Soft repay ///
 
@@ -468,7 +470,7 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
             }
 
             if (
-                remainingGas > 0 &&
+                vars.remainingGas > 0 &&
                 vars.remainingToRepay > 0 &&
                 borrowersOnPool[_poolTokenAddress].getHead() != address(0)
             ) {
@@ -479,12 +481,12 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
                         poolToken,
                         underlyingToken,
                         vars.remainingToRepay,
-                        remainingGas,
+                        vars.remainingGas,
                         gasLeftBeforeMatching
                     ),
                     vars.maxToRepay - vars.toRepay
                 );
-                remainingGas -= gasLeftBeforeMatching - gasleft();
+                vars.remainingGas -= gasLeftBeforeMatching - gasleft();
 
                 if (matched > 0) {
                     vars.remainingToRepay -= matched;
@@ -499,11 +501,11 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
 
         if (vars.remainingToRepay > 0) {
             uint256 unmatched;
-            if (remainingGas > 0)
+            if (vars.remainingGas > 0)
                 unmatched = matchingEngine.unmatchSuppliersDC(
                     _poolTokenAddress,
                     vars.remainingToRepay,
-                    remainingGas,
+                    vars.remainingGas,
                     gasleft()
                 ); // Reverts on error.
 
