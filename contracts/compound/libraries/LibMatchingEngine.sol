@@ -4,8 +4,6 @@ pragma solidity 0.8.13;
 import "../interfaces/compound/ICompound.sol";
 
 import {LibStorage, MarketsStorage, PositionsStorage} from "./LibStorage.sol";
-import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
-import "@openzeppelin/contracts/utils/math/Math.sol";
 import "../../common/libraries/DoubleLinkedList.sol";
 import "./CompoundMath.sol";
 
@@ -57,6 +55,8 @@ library LibMatchingEngine {
         uint256 _balanceInP2P
     );
 
+    /// STORAGE GETTERS ///
+
     function ms() internal pure returns (MarketsStorage storage) {
         return LibStorage.marketsStorage();
     }
@@ -65,9 +65,9 @@ library LibMatchingEngine {
         return LibStorage.positionsStorage();
     }
 
-    /// EXTERNAL ///
+    /// INTERNAL ///
 
-    /// @notice Matches suppliers' liquidity waiting on Compound up to the given `_amount` and move it to P2P.
+    /// @dev Matches suppliers' liquidity waiting on Compound up to the given `_amount` and move it to P2P.
     /// @dev Note: p2pExchangeRates must have been updated before calling this function.
     /// @param _poolToken The pool token of the market from which to match suppliers.
     /// @param _amount The token amount to search for (in underlying).
@@ -77,10 +77,11 @@ library LibMatchingEngine {
         ICToken _poolToken,
         uint256 _amount,
         uint256 _maxGasToConsume
-    ) external returns (uint256 matched) {
+    ) internal returns (uint256 matched) {
+        PositionsStorage storage p = ps();
         MatchVars memory vars;
         address poolTokenAddress = address(_poolToken);
-        address user = ps().suppliersOnPool[poolTokenAddress].getHead();
+        address user = p.suppliersOnPool[poolTokenAddress].getHead();
         vars.poolIndex = _poolToken.exchangeRateCurrent();
         vars.p2pRate = ms().supplyP2PExchangeRate[poolTokenAddress];
 
@@ -91,7 +92,7 @@ library LibMatchingEngine {
                 user != address(0) &&
                 vars.gasLeftAtTheBeginning - gasleft() < _maxGasToConsume
             ) {
-                uint256 onPool = ps().supplyBalanceInOf[poolTokenAddress][user].onPool;
+                uint256 onPool = p.supplyBalanceInOf[poolTokenAddress][user].onPool;
                 vars.inUnderlying = onPool.mul(vars.poolIndex);
                 unchecked {
                     vars.toMatch = vars.inUnderlying < _amount - matched
@@ -101,26 +102,24 @@ library LibMatchingEngine {
                 }
 
                 // Handle rounding error of 1 wei.
-                uint256 diff = ps().supplyBalanceInOf[poolTokenAddress][user].onPool -
+                uint256 diff = p.supplyBalanceInOf[poolTokenAddress][user].onPool -
                     vars.toMatch.div(vars.poolIndex);
-                ps().supplyBalanceInOf[poolTokenAddress][user].onPool = diff == 1 ? 0 : diff;
-                ps().supplyBalanceInOf[poolTokenAddress][user].inP2P += vars.toMatch.div(
-                    vars.p2pRate
-                ); // In p2pUnit
+                p.supplyBalanceInOf[poolTokenAddress][user].onPool = diff == 1 ? 0 : diff;
+                p.supplyBalanceInOf[poolTokenAddress][user].inP2P += vars.toMatch.div(vars.p2pRate); // In p2pUnit
                 updateSuppliers(poolTokenAddress, user);
                 emit SupplierPositionUpdated(
                     user,
                     poolTokenAddress,
-                    ps().supplyBalanceInOf[poolTokenAddress][user].onPool,
-                    ps().supplyBalanceInOf[poolTokenAddress][user].inP2P
+                    p.supplyBalanceInOf[poolTokenAddress][user].onPool,
+                    p.supplyBalanceInOf[poolTokenAddress][user].inP2P
                 );
 
-                user = ps().suppliersOnPool[poolTokenAddress].getHead();
+                user = p.suppliersOnPool[poolTokenAddress].getHead();
             }
         }
     }
 
-    /// @notice Unmatches suppliers' liquidity in P2P up to the given `_amount` and move it to Compound.
+    /// @dev Unmatches suppliers' liquidity in P2P up to the given `_amount` and move it to Compound.
     /// @dev Note: p2pExchangeRates must have been updated before calling this function.
     /// @param _poolTokenAddress The address of the market from which to unmatch suppliers.
     /// @param _amount The amount to search for (in underlying).
@@ -129,9 +128,10 @@ library LibMatchingEngine {
         address _poolTokenAddress,
         uint256 _amount,
         uint256 _maxGasToConsume
-    ) external returns (uint256) {
+    ) internal returns (uint256) {
+        PositionsStorage storage p = ps();
         UnmatchVars memory vars;
-        address user = ps().suppliersInP2P[_poolTokenAddress].getHead();
+        address user = p.suppliersInP2P[_poolTokenAddress].getHead();
         vars.poolIndex = ICToken(_poolTokenAddress).exchangeRateCurrent();
         vars.p2pRate = ms().supplyP2PExchangeRate[_poolTokenAddress];
         uint256 remainingToUnmatch = _amount; // In underlying
@@ -143,7 +143,7 @@ library LibMatchingEngine {
                 user != address(0) &&
                 vars.gasLeftAtTheBeginning - gasleft() < _maxGasToConsume
             ) {
-                vars.inUnderlying = ps().supplyBalanceInOf[_poolTokenAddress][user].inP2P.mul(
+                vars.inUnderlying = p.supplyBalanceInOf[_poolTokenAddress][user].inP2P.mul(
                     vars.p2pRate
                 );
                 unchecked {
@@ -153,29 +153,29 @@ library LibMatchingEngine {
                     remainingToUnmatch -= vars.toUnmatch;
                 }
 
-                ps().supplyBalanceInOf[_poolTokenAddress][user].onPool += vars.toUnmatch.div(
+                p.supplyBalanceInOf[_poolTokenAddress][user].onPool += vars.toUnmatch.div(
                     vars.poolIndex
                 );
                 // Handle rounding error of 1 wei.
-                uint256 diff = ps().supplyBalanceInOf[_poolTokenAddress][user].inP2P -
+                uint256 diff = p.supplyBalanceInOf[_poolTokenAddress][user].inP2P -
                     vars.toUnmatch.div(vars.p2pRate);
-                ps().supplyBalanceInOf[_poolTokenAddress][user].inP2P = diff == 1 ? 0 : diff; // In p2pUnit
+                p.supplyBalanceInOf[_poolTokenAddress][user].inP2P = diff == 1 ? 0 : diff; // In p2pUnit
                 updateSuppliers(_poolTokenAddress, user);
                 emit SupplierPositionUpdated(
                     user,
                     _poolTokenAddress,
-                    ps().supplyBalanceInOf[_poolTokenAddress][user].onPool,
-                    ps().supplyBalanceInOf[_poolTokenAddress][user].inP2P
+                    p.supplyBalanceInOf[_poolTokenAddress][user].onPool,
+                    p.supplyBalanceInOf[_poolTokenAddress][user].inP2P
                 );
 
-                user = ps().suppliersInP2P[_poolTokenAddress].getHead();
+                user = p.suppliersInP2P[_poolTokenAddress].getHead();
             }
         }
 
         return _amount - remainingToUnmatch;
     }
 
-    /// @notice Matches borrowers' liquidity waiting on Compound up to the given `_amount` and move it to P2P.
+    /// @dev Matches borrowers' liquidity waiting on Compound up to the given `_amount` and move it to P2P.
     /// @dev Note: p2pExchangeRates must have been updated before calling this function.
     /// @param _poolToken The pool token of the market from which to match borrowers.
     /// @param _amount The amount to search for (in underlying).
@@ -185,10 +185,11 @@ library LibMatchingEngine {
         ICToken _poolToken,
         uint256 _amount,
         uint256 _maxGasToConsume
-    ) external returns (uint256 matched) {
+    ) internal returns (uint256 matched) {
+        PositionsStorage storage p = ps();
         MatchVars memory vars;
         address poolTokenAddress = address(_poolToken);
-        address user = ps().borrowersOnPool[poolTokenAddress].getHead();
+        address user = p.borrowersOnPool[poolTokenAddress].getHead();
         vars.poolIndex = _poolToken.borrowIndex();
         vars.p2pRate = ms().borrowP2PExchangeRate[poolTokenAddress];
 
@@ -199,7 +200,7 @@ library LibMatchingEngine {
                 user != address(0) &&
                 vars.gasLeftAtTheBeginning - gasleft() < _maxGasToConsume
             ) {
-                vars.inUnderlying = ps().borrowBalanceInOf[poolTokenAddress][user].onPool.mul(
+                vars.inUnderlying = p.borrowBalanceInOf[poolTokenAddress][user].onPool.mul(
                     vars.poolIndex
                 );
                 unchecked {
@@ -210,26 +211,24 @@ library LibMatchingEngine {
                 }
 
                 // Handle rounding error of 1 wei.
-                uint256 diff = ps().borrowBalanceInOf[poolTokenAddress][user].onPool -
+                uint256 diff = p.borrowBalanceInOf[poolTokenAddress][user].onPool -
                     vars.toMatch.div(vars.poolIndex);
-                ps().borrowBalanceInOf[poolTokenAddress][user].onPool = diff == 1 ? 0 : diff;
-                ps().borrowBalanceInOf[poolTokenAddress][user].inP2P += vars.toMatch.div(
-                    vars.p2pRate
-                );
+                p.borrowBalanceInOf[poolTokenAddress][user].onPool = diff == 1 ? 0 : diff;
+                p.borrowBalanceInOf[poolTokenAddress][user].inP2P += vars.toMatch.div(vars.p2pRate);
                 updateBorrowers(poolTokenAddress, user);
                 emit BorrowerPositionUpdated(
                     user,
                     poolTokenAddress,
-                    ps().borrowBalanceInOf[poolTokenAddress][user].onPool,
-                    ps().borrowBalanceInOf[poolTokenAddress][user].inP2P
+                    p.borrowBalanceInOf[poolTokenAddress][user].onPool,
+                    p.borrowBalanceInOf[poolTokenAddress][user].inP2P
                 );
 
-                user = ps().borrowersOnPool[poolTokenAddress].getHead();
+                user = p.borrowersOnPool[poolTokenAddress].getHead();
             }
         }
     }
 
-    /// @notice Unmatches borrowers' liquidity in P2P for the given `_amount` and move it to Compound.
+    /// @dev Unmatches borrowers' liquidity in P2P for the given `_amount` and move it to Compound.
     /// @dev Note: p2pExchangeRates must have been updated before calling this function.
     /// @param _poolTokenAddress The address of the market from which to unmatch borrowers.
     /// @param _amount The amount to unmatch (in underlying).
@@ -239,9 +238,10 @@ library LibMatchingEngine {
         address _poolTokenAddress,
         uint256 _amount,
         uint256 _maxGasToConsume
-    ) external returns (uint256) {
+    ) internal returns (uint256) {
+        PositionsStorage storage p = ps();
         UnmatchVars memory vars;
-        address user = ps().borrowersInP2P[_poolTokenAddress].getHead();
+        address user = p.borrowersInP2P[_poolTokenAddress].getHead();
         uint256 remainingToUnmatch = _amount;
         vars.poolIndex = ICToken(_poolTokenAddress).borrowIndex();
         vars.p2pRate = ms().borrowP2PExchangeRate[_poolTokenAddress];
@@ -253,7 +253,7 @@ library LibMatchingEngine {
                 user != address(0) &&
                 vars.gasLeftAtTheBeginning - gasleft() < _maxGasToConsume
             ) {
-                vars.inUnderlying = ps().borrowBalanceInOf[_poolTokenAddress][user].inP2P.mul(
+                vars.inUnderlying = p.borrowBalanceInOf[_poolTokenAddress][user].inP2P.mul(
                     vars.p2pRate
                 );
                 unchecked {
@@ -263,21 +263,21 @@ library LibMatchingEngine {
                     remainingToUnmatch -= vars.toUnmatch;
                 }
 
-                ps().borrowBalanceInOf[_poolTokenAddress][user].onPool += vars.toUnmatch.div(
+                p.borrowBalanceInOf[_poolTokenAddress][user].onPool += vars.toUnmatch.div(
                     vars.poolIndex
                 );
-                ps().borrowBalanceInOf[_poolTokenAddress][user].inP2P -= vars.toUnmatch.div(
+                p.borrowBalanceInOf[_poolTokenAddress][user].inP2P -= vars.toUnmatch.div(
                     vars.p2pRate
                 );
                 updateBorrowers(_poolTokenAddress, user);
                 emit BorrowerPositionUpdated(
                     user,
                     _poolTokenAddress,
-                    ps().borrowBalanceInOf[_poolTokenAddress][user].onPool,
-                    ps().borrowBalanceInOf[_poolTokenAddress][user].inP2P
+                    p.borrowBalanceInOf[_poolTokenAddress][user].onPool,
+                    p.borrowBalanceInOf[_poolTokenAddress][user].inP2P
                 );
 
-                user = ps().borrowersInP2P[_poolTokenAddress].getHead();
+                user = p.borrowersInP2P[_poolTokenAddress].getHead();
             }
         }
 
@@ -286,62 +286,60 @@ library LibMatchingEngine {
 
     /// PUBLIC ///
 
-    /// @notice Updates borrowers matching engine with the new balances of a given user.
+    /// @dev Updates borrowers matching engine with the new balances of a given user.
     /// @param _poolTokenAddress The address of the market on which to update the borrowers data structure.
     /// @param _user The address of the user.
-    function updateBorrowers(address _poolTokenAddress, address _user) public {
-        uint256 onPool = ps().borrowBalanceInOf[_poolTokenAddress][_user].onPool;
-        uint256 inP2P = ps().borrowBalanceInOf[_poolTokenAddress][_user].inP2P;
-        uint256 formerValueOnPool = ps().borrowersOnPool[_poolTokenAddress].getValueOf(_user);
-        uint256 formerValueInP2P = ps().borrowersInP2P[_poolTokenAddress].getValueOf(_user);
+    function updateBorrowers(address _poolTokenAddress, address _user) internal {
+        PositionsStorage storage p = ps();
+        uint256 onPool = p.borrowBalanceInOf[_poolTokenAddress][_user].onPool;
+        uint256 inP2P = p.borrowBalanceInOf[_poolTokenAddress][_user].inP2P;
+        uint256 formerValueOnPool = p.borrowersOnPool[_poolTokenAddress].getValueOf(_user);
+        uint256 formerValueInP2P = p.borrowersInP2P[_poolTokenAddress].getValueOf(_user);
 
         // Check pool.
         if (formerValueOnPool != onPool) {
-            if (formerValueOnPool > 0) ps().borrowersOnPool[_poolTokenAddress].remove(_user);
-            if (onPool > 0)
-                ps().borrowersOnPool[_poolTokenAddress].insertSorted(_user, onPool, ps().NDS);
+            if (formerValueOnPool > 0) p.borrowersOnPool[_poolTokenAddress].remove(_user);
+            if (onPool > 0) p.borrowersOnPool[_poolTokenAddress].insertSorted(_user, onPool, p.NDS);
         }
 
         // Check P2P.
         if (formerValueInP2P != inP2P) {
-            if (formerValueInP2P > 0) ps().borrowersInP2P[_poolTokenAddress].remove(_user);
-            if (inP2P > 0)
-                ps().borrowersInP2P[_poolTokenAddress].insertSorted(_user, inP2P, ps().NDS);
+            if (formerValueInP2P > 0) p.borrowersInP2P[_poolTokenAddress].remove(_user);
+            if (inP2P > 0) p.borrowersInP2P[_poolTokenAddress].insertSorted(_user, inP2P, p.NDS);
         }
 
-        if (ps().isCompRewardsActive && address(ps().rewardsManager) != address(0))
-            ps().rewardsManager.accrueUserBorrowUnclaimedRewards(
+        if (p.isCompRewardsActive && address(p.rewardsManager) != address(0))
+            p.rewardsManager.accrueUserBorrowUnclaimedRewards(
                 _user,
                 _poolTokenAddress,
                 formerValueOnPool
             );
     }
 
-    /// @notice Updates suppliers matching engine with the new balances of a given user.
+    /// @dev Updates suppliers matching engine with the new balances of a given user.
     /// @param _poolTokenAddress The address of the market on which to update the suppliers data structure.
     /// @param _user The address of the user.
-    function updateSuppliers(address _poolTokenAddress, address _user) public {
-        uint256 onPool = ps().supplyBalanceInOf[_poolTokenAddress][_user].onPool;
-        uint256 inP2P = ps().supplyBalanceInOf[_poolTokenAddress][_user].inP2P;
-        uint256 formerValueOnPool = ps().suppliersOnPool[_poolTokenAddress].getValueOf(_user);
-        uint256 formerValueInP2P = ps().suppliersInP2P[_poolTokenAddress].getValueOf(_user);
+    function updateSuppliers(address _poolTokenAddress, address _user) internal {
+        PositionsStorage storage p = ps();
+        uint256 onPool = p.supplyBalanceInOf[_poolTokenAddress][_user].onPool;
+        uint256 inP2P = p.supplyBalanceInOf[_poolTokenAddress][_user].inP2P;
+        uint256 formerValueOnPool = p.suppliersOnPool[_poolTokenAddress].getValueOf(_user);
+        uint256 formerValueInP2P = p.suppliersInP2P[_poolTokenAddress].getValueOf(_user);
 
         // Check pool.
         if (formerValueOnPool != onPool) {
-            if (formerValueOnPool > 0) ps().suppliersOnPool[_poolTokenAddress].remove(_user);
-            if (onPool > 0)
-                ps().suppliersOnPool[_poolTokenAddress].insertSorted(_user, onPool, ps().NDS);
+            if (formerValueOnPool > 0) p.suppliersOnPool[_poolTokenAddress].remove(_user);
+            if (onPool > 0) p.suppliersOnPool[_poolTokenAddress].insertSorted(_user, onPool, p.NDS);
         }
 
         // Check P2P.
         if (formerValueInP2P != inP2P) {
-            if (formerValueInP2P > 0) ps().suppliersInP2P[_poolTokenAddress].remove(_user);
-            if (inP2P > 0)
-                ps().suppliersInP2P[_poolTokenAddress].insertSorted(_user, inP2P, ps().NDS);
+            if (formerValueInP2P > 0) p.suppliersInP2P[_poolTokenAddress].remove(_user);
+            if (inP2P > 0) p.suppliersInP2P[_poolTokenAddress].insertSorted(_user, inP2P, p.NDS);
         }
 
-        if (ps().isCompRewardsActive && address(ps().rewardsManager) != address(0))
-            ps().rewardsManager.accrueUserSupplyUnclaimedRewards(
+        if (p.isCompRewardsActive && address(p.rewardsManager) != address(0))
+            p.rewardsManager.accrueUserSupplyUnclaimedRewards(
                 _user,
                 _poolTokenAddress,
                 formerValueOnPool

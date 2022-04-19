@@ -35,7 +35,7 @@ library LibMarketsManager {
     /// @notice Thrown when the creation of a market failed on Compound.
     error MarketCreationFailedOnCompound();
 
-    /// INTERNAL ///
+    /// STORAGE GETTERS ///
 
     function ms() internal pure returns (MarketsStorage storage) {
         return LibStorage.marketsStorage();
@@ -45,7 +45,9 @@ library LibMarketsManager {
         return LibStorage.positionsStorage();
     }
 
-    /// @notice Creates a new market to borrow/supply in.
+    /// INTERNAL ///
+
+    /// @dev Creates a new market to borrow/supply in.
     /// @param _poolTokenAddress The pool token address of the given market.
     function createMarket(address _poolTokenAddress) internal {
         MarketsStorage storage m = ms();
@@ -79,7 +81,7 @@ library LibMarketsManager {
         emit MarketCreated(_poolTokenAddress);
     }
 
-    /// @notice Returns the updated P2P exchange rates.
+    /// @dev Returns the updated P2P exchange rates.
     /// @param _poolTokenAddress The address of the market to update.
     /// @return newSupplyP2PExchangeRate The supply P2P exchange rate after udpate.
     /// @return newBorrowP2PExchangeRate The supply P2P exchange rate after udpate.
@@ -113,7 +115,7 @@ library LibMarketsManager {
         }
     }
 
-    /// @notice Updates the P2P exchange rates, taking into account the Second Percentage Yield values.
+    /// @dev Updates the P2P exchange rates, taking into account the Second Percentage Yield values.
     /// @param _poolTokenAddress The address of the market to update.
     function updateP2PExchangeRates(address _poolTokenAddress) internal {
         MarketsStorage storage m = ms();
