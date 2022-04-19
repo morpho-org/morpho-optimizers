@@ -3,6 +3,8 @@ pragma solidity 0.8.13;
 
 import "@contracts/compound/interfaces/IRewardsManagerForCompound.sol";
 
+import "@contracts/compound/libraries/Types.sol";
+
 import "@contracts/compound/PositionsManagerForCompound.sol";
 import "@contracts/compound/MarketsManagerForCompound.sol";
 
@@ -14,11 +16,11 @@ contract User {
     IRewardsManagerForCompound internal rewardsManager;
     IComptroller internal comptroller;
 
-    constructor(PositionsManagerForCompound _positionsManager) {
-        positionsManager = _positionsManager;
-        marketsManager = MarketsManagerForCompound(address(_positionsManager.marketsManager()));
-        rewardsManager = _positionsManager.rewardsManager();
-        comptroller = positionsManager.comptroller();
+    constructor(address _diamond) {
+        positionsManager = PositionsManagerForCompound(payable(_diamond));
+        marketsManager = MarketsManagerForCompound(_diamond);
+        rewardsManager = positionsManager.rewardsManager();
+        comptroller = marketsManager.comptroller();
     }
 
     receive() external payable {}
@@ -111,7 +113,7 @@ contract User {
         positionsManager.setNDS(_newNDS);
     }
 
-    function setMaxGas(PositionsManagerForCompound.MaxGas memory _maxGas) external {
+    function setMaxGas(Types.MaxGas memory _maxGas) external {
         positionsManager.setMaxGas(_maxGas);
     }
 

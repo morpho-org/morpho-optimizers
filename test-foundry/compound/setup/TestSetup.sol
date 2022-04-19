@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import "hardhat/console.sol";
-
 import "@contracts/compound/interfaces/IRewardsManagerForCompound.sol";
 import "@contracts/compound/interfaces/compound/ICompound.sol";
 import "@contracts/common/interfaces/ISwapManager.sol";
@@ -16,8 +14,10 @@ import "@contracts/compound/MarketsManagerForCompound.sol"; // Now a facet
 import "@contracts/compound/MatchingEngineForCompound.sol";
 import "@contracts/compound/RewardsManagerForCompound.sol";
 import "@contracts/compound/InterestRatesV1.sol";
-import "@contracts/compound/libraries/FixedPointMathLib.sol";
 import "@contracts/compound/InitDiamond.sol";
+
+import "@contracts/compound/libraries/FixedPointMathLib.sol";
+import "@contracts/compound/libraries/Types.sol";
 
 import "@contracts/common/diamond/Diamond.sol";
 import "@contracts/common/diamond/facets/DiamondCutFacet.sol";
@@ -32,6 +32,7 @@ import "../helpers/IncentivesVault.sol";
 import "../helpers/DumbOracle.sol";
 import {User} from "../helpers/User.sol";
 import {Utils} from "./Utils.sol";
+import "forge-std/console.sol";
 import "forge-std/stdlib.sol";
 import "@config/Config.sol";
 
@@ -55,9 +56,9 @@ contract TestSetup is Config, Utils, stdCheats {
     ProxyAdmin public proxyAdmin;
     TransparentUpgradeableProxy public positionsManagerProxy;
     TransparentUpgradeableProxy public marketsManagerProxy;
-    MatchingEngineForCompound internal matchingEngine;
     PositionsManagerForCompound internal positionsManagerImplV1;
     PositionsManagerForCompound internal positionsManager;
+    PositionsManagerForCompound internal positionsManagerFacet;
     PositionsManagerForCompound internal fakePositionsManagerImpl;
     MarketsManagerForCompound internal marketsManager;
     MarketsManagerForCompound internal marketsManagerImplV1;
@@ -92,11 +93,14 @@ contract TestSetup is Config, Utils, stdCheats {
     }
 
     function initContracts() internal {
-        PositionsManagerForCompound.MaxGas memory maxGas = PositionsManagerForCompoundStorage
-        .MaxGas({supply: 3e6, borrow: 3e6, withdraw: 3e6, repay: 3e6});
+        Types.MaxGas memory maxGas = Types.MaxGas({
+            supply: 3e6,
+            borrow: 3e6,
+            withdraw: 3e6,
+            repay: 3e6
+        });
 
         comptroller = IComptroller(comptrollerAddress);
-        matchingEngine = new MatchingEngineForCompound();
         interestRates = new InterestRatesV1();
 
         /// Diamond ///
@@ -108,14 +112,12 @@ contract TestSetup is Config, Utils, stdCheats {
         console.log("Diamond deployed");
         diamondCutFacet = DiamondCutFacet(address(diamond));
         marketsManagerFacet = new MarketsManagerForCompound();
+        positionsManagerFacet = new PositionsManagerForCompound();
         InitDiamond initDiamond = new InitDiamond();
 
-        bytes4[] memory marketsManagerFunctionSelectors = new bytes4[](20);
+        bytes4[] memory marketsManagerFunctionSelectors = new bytes4[](18);
         {
             uint256 index;
-            marketsManagerFunctionSelectors[index++] = marketsManagerFacet
-            .setPositionsManager
-            .selector;
             marketsManagerFunctionSelectors[index++] = marketsManagerFacet
             .setInterestRates
             .selector;
@@ -149,19 +151,97 @@ contract TestSetup is Config, Utils, stdCheats {
             .lastUpdateBlockNumber
             .selector;
             marketsManagerFunctionSelectors[index++] = marketsManagerFacet.noP2P.selector;
-            marketsManagerFunctionSelectors[index++] = marketsManagerFacet
-            .positionsManager
-            .selector;
             marketsManagerFunctionSelectors[index++] = marketsManagerFacet.comptroller.selector;
         }
-        console.log("Diamond Cut");
-        IDiamondCut.FacetCut memory cut = IDiamondCut.FacetCut({
+
+        // for (uint256 i = 0; i < marketsManagerFunctionSelectors.length; i++) {
+        //     console.logBytes4(marketsManagerFunctionSelectors[i]);
+        // }
+
+        console.log("Diamond cut markets");
+
+        IDiamondCut.FacetCut memory marketsCut = IDiamondCut.FacetCut({
             facetAddress: address(marketsManagerFacet),
             action: IDiamondCut.FacetCutAction.Add,
             functionSelectors: marketsManagerFunctionSelectors
         });
 
-        cuts.push(cut);
+        console.log("Markets facet added");
+
+        bytes4[] memory positionsManagerFunctionSelectors = new bytes4[](18);
+        {
+            uint256 index;
+            positionsManagerFunctionSelectors[index++] = bytes4(
+                keccak256("supply(address,uint256,uint16)")
+            );
+            positionsManagerFunctionSelectors[index++] = bytes4(
+                keccak256("supply(address,uint256,uint16,uint256)")
+            );
+            positionsManagerFunctionSelectors[index++] = bytes4(
+                keccak256("borrow(address,uint256,uint16)")
+            );
+            positionsManagerFunctionSelectors[index++] = bytes4(
+                keccak256("borrow(address,uint256,uint16,uint256)")
+            );
+            positionsManagerFunctionSelectors[index++] = bytes4(
+                keccak256("withdraw(address,uint256)")
+            );
+            positionsManagerFunctionSelectors[index++] = bytes4(
+                keccak256("repay(address,uint256)")
+            );
+            positionsManagerFunctionSelectors[index++] = positionsManagerFacet
+            .claimToTreasury
+            .selector;
+            positionsManagerFunctionSelectors[index++] = positionsManagerFacet
+            .claimRewards
+            .selector;
+            positionsManagerFunctionSelectors[index++] = positionsManagerFacet.setNDS.selector;
+            positionsManagerFunctionSelectors[index++] = positionsManagerFacet.setMaxGas.selector;
+            positionsManagerFunctionSelectors[index++] = positionsManagerFacet
+            .setTreasuryVault
+            .selector;
+            positionsManagerFunctionSelectors[index++] = positionsManagerFacet
+            .setIncentivesVault
+            .selector;
+            positionsManagerFunctionSelectors[index++] = positionsManagerFacet
+            .setRewardsManager
+            .selector;
+            positionsManagerFunctionSelectors[index++] = positionsManagerFacet
+            .toggleCompRewardsActivation
+            .selector;
+            positionsManagerFunctionSelectors[index++] = positionsManagerFacet
+            .setPauseStatus
+            .selector;
+            positionsManagerFunctionSelectors[index++] = positionsManagerFacet
+            .rewardsManager
+            .selector;
+            positionsManagerFunctionSelectors[index++] = positionsManagerFacet
+            .supplyBalanceInOf
+            .selector;
+            positionsManagerFunctionSelectors[index++] = positionsManagerFacet
+            .borrowBalanceInOf
+            .selector;
+        }
+
+        // for (uint256 i = 0; i < positionsManagerFunctionSelectors.length; i++) {
+        //     console.logBytes4(positionsManagerFunctionSelectors[i]);
+        // }
+
+        console.log("Diamond cut positions");
+
+        IDiamondCut.FacetCut memory positionsCut = IDiamondCut.FacetCut({
+            facetAddress: address(positionsManagerFacet),
+            action: IDiamondCut.FacetCutAction.Add,
+            functionSelectors: positionsManagerFunctionSelectors
+        });
+
+        console.log("Positions facet added");
+
+        cuts.push(marketsCut);
+        cuts.push(positionsCut);
+
+        console.log("address marketsManagerFacet", address(marketsManagerFacet));
+        console.log("address positionsManagerFacet", address(positionsManagerFacet));
 
         IDiamondCut(address(diamond)).diamondCut(
             cuts,
@@ -170,41 +250,23 @@ contract TestSetup is Config, Utils, stdCheats {
                 initDiamond.init.selector,
                 InitDiamond.Args({
                     comptroller: IComptroller(address(comptroller)),
-                    interestRates: IInterestRates(address(interestRates))
+                    interestRates: IInterestRates(address(interestRates)),
+                    maxGas: maxGas,
+                    NDS: 20,
+                    cEth: cEth,
+                    wEth: wEth
                 })
             )
         );
 
         console.log("Diamond Cut Complete");
 
-        /// Deploy proxies ///
-        proxyAdmin = new ProxyAdmin();
-
         marketsManager = MarketsManagerForCompound(address(diamond));
-        //marketsManager.initialize(comptroller, interestRates);
-        positionsManagerImplV1 = new PositionsManagerForCompound();
-        positionsManagerProxy = new TransparentUpgradeableProxy(
-            address(positionsManagerImplV1),
-            address(this),
-            ""
-        );
+        positionsManager = PositionsManagerForCompound(payable(address(diamond)));
 
-        positionsManagerProxy.changeAdmin(address(proxyAdmin));
-        positionsManager = PositionsManagerForCompound(payable(address(positionsManagerProxy)));
-        positionsManager.initialize(
-            IMarketsManagerForCompound(address(marketsManager)),
-            matchingEngine,
-            comptroller,
-            maxGas,
-            20,
-            cEth,
-            wEth
-        );
-
-        treasuryVault = new User(positionsManager);
+        treasuryVault = new User(address(diamond));
         fakePositionsManagerImpl = new PositionsManagerForCompound();
         oracle = ICompoundOracle(comptroller.oracle());
-        marketsManager.setPositionsManager(address(positionsManager));
         positionsManager.setTreasuryVault(address(treasuryVault));
 
         /// Create markets ///
@@ -252,7 +314,7 @@ contract TestSetup is Config, Utils, stdCheats {
 
     function initUsers() internal {
         for (uint256 i = 0; i < 3; i++) {
-            suppliers.push(new User(positionsManager));
+            suppliers.push(new User(address(diamond)));
             hevm.label(
                 address(suppliers[i]),
                 string(abi.encodePacked("Supplier", Strings.toString(i + 1)))
@@ -264,7 +326,7 @@ contract TestSetup is Config, Utils, stdCheats {
         supplier3 = suppliers[2];
 
         for (uint256 i = 0; i < 3; i++) {
-            borrowers.push(new User(positionsManager));
+            borrowers.push(new User(address(diamond)));
             hevm.label(
                 address(borrowers[i]),
                 string(abi.encodePacked("Borrower", Strings.toString(i + 1)))
@@ -290,7 +352,6 @@ contract TestSetup is Config, Utils, stdCheats {
         hevm.label(address(marketsManagerImplV1), "MarketsManagerImplV1");
         hevm.label(address(marketsManager), "MarketsManager");
         hevm.label(address(rewardsManager), "RewardsManager");
-        hevm.label(address(matchingEngine), "MatchingEngine");
         hevm.label(address(morphoToken), "MorphoToken");
         hevm.label(address(comptroller), "Comptroller");
         hevm.label(address(oracle), "CompoundOracle");
@@ -301,9 +362,9 @@ contract TestSetup is Config, Utils, stdCheats {
 
     function createSigners(uint8 _nbOfSigners) internal {
         while (borrowers.length < _nbOfSigners) {
-            borrowers.push(new User(positionsManager));
+            borrowers.push(new User(address(diamond)));
             fillUserBalances(borrowers[borrowers.length - 1]);
-            suppliers.push(new User(positionsManager));
+            suppliers.push(new User(address(diamond)));
             fillUserBalances(suppliers[suppliers.length - 1]);
         }
     }
@@ -328,9 +389,7 @@ contract TestSetup is Config, Utils, stdCheats {
         uint64 _withdraw,
         uint64 _repay
     ) public {
-
-            PositionsManagerForCompoundStorage.MaxGas memory newMaxGas
-         = PositionsManagerForCompoundStorage.MaxGas({
+        Types.MaxGas memory newMaxGas = Types.MaxGas({
             supply: _supply,
             borrow: _borrow,
             withdraw: _withdraw,

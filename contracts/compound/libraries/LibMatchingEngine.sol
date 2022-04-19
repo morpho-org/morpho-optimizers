@@ -1,20 +1,16 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
+import "../interfaces/compound/ICompound.sol";
+
+import {LibStorage, MarketsStorage, PositionsStorage} from "./LibStorage.sol";
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
-import "./libraries/FixedPointMathLib.sol";
+import "../../common/libraries/DoubleLinkedList.sol";
+import "./CompoundMath.sol";
 
-import "./positions-manager-parts/PositionsManagerForCompoundStorage.sol";
-
-/// @title MatchingEngineManager.
-/// @notice Smart contract managing the matching engine.
-contract MatchingEngineForCompound is
-    IMatchingEngineForCompound,
-    PositionsManagerForCompoundStorage
-{
+library LibMatchingEngine {
     using DoubleLinkedList for DoubleLinkedList.List;
-    using FixedPointMathLib for uint256;
     using CompoundMath for uint256;
 
     /// STRUCTS ///
@@ -61,6 +57,14 @@ contract MatchingEngineForCompound is
         uint256 _balanceInP2P
     );
 
+    function ms() internal pure returns (MarketsStorage storage) {
+        return LibStorage.marketsStorage();
+    }
+
+    function ps() internal pure returns (PositionsStorage storage) {
+        return LibStorage.positionsStorage();
+    }
+
     /// EXTERNAL ///
 
     /// @notice Matches suppliers' liquidity waiting on Compound up to the given `_amount` and move it to P2P.
@@ -73,12 +77,12 @@ contract MatchingEngineForCompound is
         ICToken _poolToken,
         uint256 _amount,
         uint256 _maxGasToConsume
-    ) external override returns (uint256 matched) {
+    ) external returns (uint256 matched) {
         MatchVars memory vars;
         address poolTokenAddress = address(_poolToken);
-        address user = suppliersOnPool[poolTokenAddress].getHead();
+        address user = ps().suppliersOnPool[poolTokenAddress].getHead();
         vars.poolIndex = _poolToken.exchangeRateCurrent();
-        vars.p2pRate = marketsManager.supplyP2PExchangeRate(poolTokenAddress);
+        vars.p2pRate = ms().supplyP2PExchangeRate[poolTokenAddress];
 
         if (_maxGasToConsume != 0) {
             vars.gasLeftAtTheBeginning = gasleft();
@@ -87,7 +91,7 @@ contract MatchingEngineForCompound is
                 user != address(0) &&
                 vars.gasLeftAtTheBeginning - gasleft() < _maxGasToConsume
             ) {
-                uint256 onPool = supplyBalanceInOf[poolTokenAddress][user].onPool;
+                uint256 onPool = ps().supplyBalanceInOf[poolTokenAddress][user].onPool;
                 vars.inUnderlying = onPool.mul(vars.poolIndex);
                 unchecked {
                     vars.toMatch = vars.inUnderlying < _amount - matched
@@ -97,19 +101,21 @@ contract MatchingEngineForCompound is
                 }
 
                 // Handle rounding error of 1 wei.
-                uint256 diff = supplyBalanceInOf[poolTokenAddress][user].onPool -
+                uint256 diff = ps().supplyBalanceInOf[poolTokenAddress][user].onPool -
                     vars.toMatch.div(vars.poolIndex);
-                supplyBalanceInOf[poolTokenAddress][user].onPool = diff == 1 ? 0 : diff;
-                supplyBalanceInOf[poolTokenAddress][user].inP2P += vars.toMatch.div(vars.p2pRate); // In p2pUnit
+                ps().supplyBalanceInOf[poolTokenAddress][user].onPool = diff == 1 ? 0 : diff;
+                ps().supplyBalanceInOf[poolTokenAddress][user].inP2P += vars.toMatch.div(
+                    vars.p2pRate
+                ); // In p2pUnit
                 updateSuppliers(poolTokenAddress, user);
                 emit SupplierPositionUpdated(
                     user,
                     poolTokenAddress,
-                    supplyBalanceInOf[poolTokenAddress][user].onPool,
-                    supplyBalanceInOf[poolTokenAddress][user].inP2P
+                    ps().supplyBalanceInOf[poolTokenAddress][user].onPool,
+                    ps().supplyBalanceInOf[poolTokenAddress][user].inP2P
                 );
 
-                user = suppliersOnPool[poolTokenAddress].getHead();
+                user = ps().suppliersOnPool[poolTokenAddress].getHead();
             }
         }
     }
@@ -123,11 +129,11 @@ contract MatchingEngineForCompound is
         address _poolTokenAddress,
         uint256 _amount,
         uint256 _maxGasToConsume
-    ) external override returns (uint256) {
+    ) external returns (uint256) {
         UnmatchVars memory vars;
-        address user = suppliersInP2P[_poolTokenAddress].getHead();
+        address user = ps().suppliersInP2P[_poolTokenAddress].getHead();
         vars.poolIndex = ICToken(_poolTokenAddress).exchangeRateCurrent();
-        vars.p2pRate = marketsManager.supplyP2PExchangeRate(_poolTokenAddress);
+        vars.p2pRate = ms().supplyP2PExchangeRate[_poolTokenAddress];
         uint256 remainingToUnmatch = _amount; // In underlying
 
         if (_maxGasToConsume != 0) {
@@ -137,7 +143,7 @@ contract MatchingEngineForCompound is
                 user != address(0) &&
                 vars.gasLeftAtTheBeginning - gasleft() < _maxGasToConsume
             ) {
-                vars.inUnderlying = supplyBalanceInOf[_poolTokenAddress][user].inP2P.mul(
+                vars.inUnderlying = ps().supplyBalanceInOf[_poolTokenAddress][user].inP2P.mul(
                     vars.p2pRate
                 );
                 unchecked {
@@ -147,22 +153,22 @@ contract MatchingEngineForCompound is
                     remainingToUnmatch -= vars.toUnmatch;
                 }
 
-                supplyBalanceInOf[_poolTokenAddress][user].onPool += vars.toUnmatch.div(
+                ps().supplyBalanceInOf[_poolTokenAddress][user].onPool += vars.toUnmatch.div(
                     vars.poolIndex
                 );
                 // Handle rounding error of 1 wei.
-                uint256 diff = supplyBalanceInOf[_poolTokenAddress][user].inP2P -
+                uint256 diff = ps().supplyBalanceInOf[_poolTokenAddress][user].inP2P -
                     vars.toUnmatch.div(vars.p2pRate);
-                supplyBalanceInOf[_poolTokenAddress][user].inP2P = diff == 1 ? 0 : diff; // In p2pUnit
+                ps().supplyBalanceInOf[_poolTokenAddress][user].inP2P = diff == 1 ? 0 : diff; // In p2pUnit
                 updateSuppliers(_poolTokenAddress, user);
                 emit SupplierPositionUpdated(
                     user,
                     _poolTokenAddress,
-                    supplyBalanceInOf[_poolTokenAddress][user].onPool,
-                    supplyBalanceInOf[_poolTokenAddress][user].inP2P
+                    ps().supplyBalanceInOf[_poolTokenAddress][user].onPool,
+                    ps().supplyBalanceInOf[_poolTokenAddress][user].inP2P
                 );
 
-                user = suppliersInP2P[_poolTokenAddress].getHead();
+                user = ps().suppliersInP2P[_poolTokenAddress].getHead();
             }
         }
 
@@ -179,12 +185,12 @@ contract MatchingEngineForCompound is
         ICToken _poolToken,
         uint256 _amount,
         uint256 _maxGasToConsume
-    ) external override returns (uint256 matched) {
+    ) external returns (uint256 matched) {
         MatchVars memory vars;
         address poolTokenAddress = address(_poolToken);
-        address user = borrowersOnPool[poolTokenAddress].getHead();
+        address user = ps().borrowersOnPool[poolTokenAddress].getHead();
         vars.poolIndex = _poolToken.borrowIndex();
-        vars.p2pRate = marketsManager.borrowP2PExchangeRate(poolTokenAddress);
+        vars.p2pRate = ms().borrowP2PExchangeRate[poolTokenAddress];
 
         if (_maxGasToConsume != 0) {
             vars.gasLeftAtTheBeginning = gasleft();
@@ -193,7 +199,7 @@ contract MatchingEngineForCompound is
                 user != address(0) &&
                 vars.gasLeftAtTheBeginning - gasleft() < _maxGasToConsume
             ) {
-                vars.inUnderlying = borrowBalanceInOf[poolTokenAddress][user].onPool.mul(
+                vars.inUnderlying = ps().borrowBalanceInOf[poolTokenAddress][user].onPool.mul(
                     vars.poolIndex
                 );
                 unchecked {
@@ -204,19 +210,21 @@ contract MatchingEngineForCompound is
                 }
 
                 // Handle rounding error of 1 wei.
-                uint256 diff = borrowBalanceInOf[poolTokenAddress][user].onPool -
+                uint256 diff = ps().borrowBalanceInOf[poolTokenAddress][user].onPool -
                     vars.toMatch.div(vars.poolIndex);
-                borrowBalanceInOf[poolTokenAddress][user].onPool = diff == 1 ? 0 : diff;
-                borrowBalanceInOf[poolTokenAddress][user].inP2P += vars.toMatch.div(vars.p2pRate);
+                ps().borrowBalanceInOf[poolTokenAddress][user].onPool = diff == 1 ? 0 : diff;
+                ps().borrowBalanceInOf[poolTokenAddress][user].inP2P += vars.toMatch.div(
+                    vars.p2pRate
+                );
                 updateBorrowers(poolTokenAddress, user);
                 emit BorrowerPositionUpdated(
                     user,
                     poolTokenAddress,
-                    borrowBalanceInOf[poolTokenAddress][user].onPool,
-                    borrowBalanceInOf[poolTokenAddress][user].inP2P
+                    ps().borrowBalanceInOf[poolTokenAddress][user].onPool,
+                    ps().borrowBalanceInOf[poolTokenAddress][user].inP2P
                 );
 
-                user = borrowersOnPool[poolTokenAddress].getHead();
+                user = ps().borrowersOnPool[poolTokenAddress].getHead();
             }
         }
     }
@@ -231,12 +239,12 @@ contract MatchingEngineForCompound is
         address _poolTokenAddress,
         uint256 _amount,
         uint256 _maxGasToConsume
-    ) external override returns (uint256) {
+    ) external returns (uint256) {
         UnmatchVars memory vars;
-        address user = borrowersInP2P[_poolTokenAddress].getHead();
+        address user = ps().borrowersInP2P[_poolTokenAddress].getHead();
         uint256 remainingToUnmatch = _amount;
         vars.poolIndex = ICToken(_poolTokenAddress).borrowIndex();
-        vars.p2pRate = marketsManager.borrowP2PExchangeRate(_poolTokenAddress);
+        vars.p2pRate = ms().borrowP2PExchangeRate[_poolTokenAddress];
 
         if (_maxGasToConsume != 0) {
             vars.gasLeftAtTheBeginning = gasleft();
@@ -245,7 +253,7 @@ contract MatchingEngineForCompound is
                 user != address(0) &&
                 vars.gasLeftAtTheBeginning - gasleft() < _maxGasToConsume
             ) {
-                vars.inUnderlying = borrowBalanceInOf[_poolTokenAddress][user].inP2P.mul(
+                vars.inUnderlying = ps().borrowBalanceInOf[_poolTokenAddress][user].inP2P.mul(
                     vars.p2pRate
                 );
                 unchecked {
@@ -255,21 +263,21 @@ contract MatchingEngineForCompound is
                     remainingToUnmatch -= vars.toUnmatch;
                 }
 
-                borrowBalanceInOf[_poolTokenAddress][user].onPool += vars.toUnmatch.div(
+                ps().borrowBalanceInOf[_poolTokenAddress][user].onPool += vars.toUnmatch.div(
                     vars.poolIndex
                 );
-                borrowBalanceInOf[_poolTokenAddress][user].inP2P -= vars.toUnmatch.div(
+                ps().borrowBalanceInOf[_poolTokenAddress][user].inP2P -= vars.toUnmatch.div(
                     vars.p2pRate
                 );
                 updateBorrowers(_poolTokenAddress, user);
                 emit BorrowerPositionUpdated(
                     user,
                     _poolTokenAddress,
-                    borrowBalanceInOf[_poolTokenAddress][user].onPool,
-                    borrowBalanceInOf[_poolTokenAddress][user].inP2P
+                    ps().borrowBalanceInOf[_poolTokenAddress][user].onPool,
+                    ps().borrowBalanceInOf[_poolTokenAddress][user].inP2P
                 );
 
-                user = borrowersInP2P[_poolTokenAddress].getHead();
+                user = ps().borrowersInP2P[_poolTokenAddress].getHead();
             }
         }
 
@@ -281,26 +289,28 @@ contract MatchingEngineForCompound is
     /// @notice Updates borrowers matching engine with the new balances of a given user.
     /// @param _poolTokenAddress The address of the market on which to update the borrowers data structure.
     /// @param _user The address of the user.
-    function updateBorrowers(address _poolTokenAddress, address _user) public override {
-        uint256 onPool = borrowBalanceInOf[_poolTokenAddress][_user].onPool;
-        uint256 inP2P = borrowBalanceInOf[_poolTokenAddress][_user].inP2P;
-        uint256 formerValueOnPool = borrowersOnPool[_poolTokenAddress].getValueOf(_user);
-        uint256 formerValueInP2P = borrowersInP2P[_poolTokenAddress].getValueOf(_user);
+    function updateBorrowers(address _poolTokenAddress, address _user) public {
+        uint256 onPool = ps().borrowBalanceInOf[_poolTokenAddress][_user].onPool;
+        uint256 inP2P = ps().borrowBalanceInOf[_poolTokenAddress][_user].inP2P;
+        uint256 formerValueOnPool = ps().borrowersOnPool[_poolTokenAddress].getValueOf(_user);
+        uint256 formerValueInP2P = ps().borrowersInP2P[_poolTokenAddress].getValueOf(_user);
 
         // Check pool.
         if (formerValueOnPool != onPool) {
-            if (formerValueOnPool > 0) borrowersOnPool[_poolTokenAddress].remove(_user);
-            if (onPool > 0) borrowersOnPool[_poolTokenAddress].insertSorted(_user, onPool, NDS);
+            if (formerValueOnPool > 0) ps().borrowersOnPool[_poolTokenAddress].remove(_user);
+            if (onPool > 0)
+                ps().borrowersOnPool[_poolTokenAddress].insertSorted(_user, onPool, ps().NDS);
         }
 
         // Check P2P.
         if (formerValueInP2P != inP2P) {
-            if (formerValueInP2P > 0) borrowersInP2P[_poolTokenAddress].remove(_user);
-            if (inP2P > 0) borrowersInP2P[_poolTokenAddress].insertSorted(_user, inP2P, NDS);
+            if (formerValueInP2P > 0) ps().borrowersInP2P[_poolTokenAddress].remove(_user);
+            if (inP2P > 0)
+                ps().borrowersInP2P[_poolTokenAddress].insertSorted(_user, inP2P, ps().NDS);
         }
 
-        if (isCompRewardsActive && address(rewardsManager) != address(0))
-            rewardsManager.accrueUserBorrowUnclaimedRewards(
+        if (ps().isCompRewardsActive && address(ps().rewardsManager) != address(0))
+            ps().rewardsManager.accrueUserBorrowUnclaimedRewards(
                 _user,
                 _poolTokenAddress,
                 formerValueOnPool
@@ -310,26 +320,28 @@ contract MatchingEngineForCompound is
     /// @notice Updates suppliers matching engine with the new balances of a given user.
     /// @param _poolTokenAddress The address of the market on which to update the suppliers data structure.
     /// @param _user The address of the user.
-    function updateSuppliers(address _poolTokenAddress, address _user) public override {
-        uint256 onPool = supplyBalanceInOf[_poolTokenAddress][_user].onPool;
-        uint256 inP2P = supplyBalanceInOf[_poolTokenAddress][_user].inP2P;
-        uint256 formerValueOnPool = suppliersOnPool[_poolTokenAddress].getValueOf(_user);
-        uint256 formerValueInP2P = suppliersInP2P[_poolTokenAddress].getValueOf(_user);
+    function updateSuppliers(address _poolTokenAddress, address _user) public {
+        uint256 onPool = ps().supplyBalanceInOf[_poolTokenAddress][_user].onPool;
+        uint256 inP2P = ps().supplyBalanceInOf[_poolTokenAddress][_user].inP2P;
+        uint256 formerValueOnPool = ps().suppliersOnPool[_poolTokenAddress].getValueOf(_user);
+        uint256 formerValueInP2P = ps().suppliersInP2P[_poolTokenAddress].getValueOf(_user);
 
         // Check pool.
         if (formerValueOnPool != onPool) {
-            if (formerValueOnPool > 0) suppliersOnPool[_poolTokenAddress].remove(_user);
-            if (onPool > 0) suppliersOnPool[_poolTokenAddress].insertSorted(_user, onPool, NDS);
+            if (formerValueOnPool > 0) ps().suppliersOnPool[_poolTokenAddress].remove(_user);
+            if (onPool > 0)
+                ps().suppliersOnPool[_poolTokenAddress].insertSorted(_user, onPool, ps().NDS);
         }
 
         // Check P2P.
         if (formerValueInP2P != inP2P) {
-            if (formerValueInP2P > 0) suppliersInP2P[_poolTokenAddress].remove(_user);
-            if (inP2P > 0) suppliersInP2P[_poolTokenAddress].insertSorted(_user, inP2P, NDS);
+            if (formerValueInP2P > 0) ps().suppliersInP2P[_poolTokenAddress].remove(_user);
+            if (inP2P > 0)
+                ps().suppliersInP2P[_poolTokenAddress].insertSorted(_user, inP2P, ps().NDS);
         }
 
-        if (isCompRewardsActive && address(rewardsManager) != address(0))
-            rewardsManager.accrueUserSupplyUnclaimedRewards(
+        if (ps().isCompRewardsActive && address(ps().rewardsManager) != address(0))
+            ps().rewardsManager.accrueUserSupplyUnclaimedRewards(
                 _user,
                 _poolTokenAddress,
                 formerValueOnPool

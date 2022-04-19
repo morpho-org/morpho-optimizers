@@ -1,19 +1,32 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.13;
 
-import {LibStorage, MarketsStorage} from "./libraries/LibStorage.sol";
+import "./interfaces/IMarketsManagerForCompound.sol";
 import "./interfaces/compound/ICompound.sol";
 import "./interfaces/IInterestRates.sol";
 
+import {LibStorage, MarketsStorage, PositionsStorage} from "./libraries/LibStorage.sol";
+import "./libraries/Types.sol";
+
 contract InitDiamond {
     struct Args {
-        IComptroller comptroller;
         IInterestRates interestRates;
+        IComptroller comptroller;
+        uint8 NDS;
+        address cEth;
+        address wEth;
+        Types.MaxGas maxGas;
     }
 
     function init(Args memory _args) external {
         MarketsStorage storage ms = LibStorage.marketsStorage();
         ms.comptroller = _args.comptroller;
         ms.interestRates = _args.interestRates;
+
+        PositionsStorage storage ps = LibStorage.positionsStorage();
+        ps.maxGas = _args.maxGas;
+        ps.NDS = _args.NDS;
+        ps.cEth = _args.cEth;
+        ps.wEth = _args.wEth;
     }
 }

@@ -57,9 +57,6 @@ contract TestInterestRates is TestSetup {
         (uint256 newSupplyP2PExchangeRate, uint256 newBorrowP2PExchangeRate) = interestRates
         .computeP2PExchangeRates(params);
 
-        console.log(newSupplyP2PExchangeRate);
-        console.log(newBorrowP2PExchangeRate);
-
         assertEq(newSupplyP2PExchangeRate, ((7 * WAD) / 3 + 2 * WAD) / 2);
         assertEq(newBorrowP2PExchangeRate, ((7 * WAD) / 3 + 3 * WAD) / 2);
     }

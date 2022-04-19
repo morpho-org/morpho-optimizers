@@ -1,13 +1,17 @@
+// SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
-import {LibStorage, MarketsStorage, LastPoolIndexes} from "./LibStorage.sol";
-import "./Types.sol";
-import "../interfaces/compound/ICompound.sol";
-import "./CompoundMath.sol";
 
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import "../interfaces/compound/ICompound.sol";
+
+import {LibStorage, MarketsStorage, PositionsStorage} from "./LibStorage.sol";
+import "./CompoundMath.sol";
+import "./Types.sol";
 
 library LibMarketsManager {
     using CompoundMath for uint256;
+
+    /// EVENTS ///
 
     /// @notice Emitted when a new market is created.
     /// @param _poolTokenAddress The address of the market that has been created.
@@ -23,47 +27,55 @@ library LibMarketsManager {
         uint256 _newBorrowP2PExchangeRate
     );
 
+    /// ERRORS ///
+
     /// @notice Thrown when the market is already created.
     error MarketAlreadyCreated();
 
     /// @notice Thrown when the creation of a market failed on Compound.
     error MarketCreationFailedOnCompound();
 
+    /// INTERNAL ///
+
     function ms() internal pure returns (MarketsStorage storage) {
         return LibStorage.marketsStorage();
+    }
+
+    function ps() internal pure returns (PositionsStorage storage) {
+        return LibStorage.positionsStorage();
     }
 
     /// @notice Creates a new market to borrow/supply in.
     /// @param _poolTokenAddress The pool token address of the given market.
     function createMarket(address _poolTokenAddress) internal {
-        MarketsStorage storage s = ms();
+        MarketsStorage storage m = ms();
         address[] memory marketToEnter = new address[](1);
         marketToEnter[0] = _poolTokenAddress;
-        uint256[] memory results = ms().positionsManager.createMarket(_poolTokenAddress);
+        uint256[] memory results = m.comptroller.enterMarkets(marketToEnter);
         if (results[0] != 0) revert MarketCreationFailedOnCompound();
 
-        if (s.isCreated[_poolTokenAddress]) revert MarketAlreadyCreated();
-        ms().isCreated[_poolTokenAddress] = true;
+        if (m.isCreated[_poolTokenAddress]) revert MarketAlreadyCreated();
+        m.isCreated[_poolTokenAddress] = true;
 
         ICToken poolToken = ICToken(_poolTokenAddress);
-        ms().lastUpdateBlockNumber[_poolTokenAddress] = block.number;
+        m.lastUpdateBlockNumber[_poolTokenAddress] = block.number;
 
         // Same initial exchange rate as Compound.
         uint256 initialExchangeRate;
-        if (_poolTokenAddress == ms().positionsManager.cEth()) initialExchangeRate = 2e26;
+        if (_poolTokenAddress == ps().cEth) initialExchangeRate = 2e26;
         else
             initialExchangeRate =
                 2 *
                 10**(16 + IERC20Metadata(poolToken.underlying()).decimals() - 8);
-        ms().supplyP2PExchangeRate[_poolTokenAddress] = initialExchangeRate;
-        ms().borrowP2PExchangeRate[_poolTokenAddress] = initialExchangeRate;
+        m.supplyP2PExchangeRate[_poolTokenAddress] = initialExchangeRate;
+        m.borrowP2PExchangeRate[_poolTokenAddress] = initialExchangeRate;
 
-        LastPoolIndexes storage poolIndexes = ms().lastPoolIndexes[_poolTokenAddress];
+        Types.LastPoolIndexes storage poolIndexes = m.lastPoolIndexes[_poolTokenAddress];
 
         poolIndexes.lastSupplyPoolIndex = poolToken.exchangeRateCurrent();
         poolIndexes.lastBorrowPoolIndex = poolToken.borrowIndex();
 
-        ms().marketsCreated.push(_poolTokenAddress);
+        m.marketsCreated.push(_poolTokenAddress);
         emit MarketCreated(_poolTokenAddress);
     }
 
@@ -82,7 +94,7 @@ library LibMarketsManager {
             newBorrowP2PExchangeRate = ms().borrowP2PExchangeRate[_poolTokenAddress];
         } else {
             ICToken poolToken = ICToken(_poolTokenAddress);
-            LastPoolIndexes storage poolIndexes = ms().lastPoolIndexes[_poolTokenAddress];
+            Types.LastPoolIndexes storage poolIndexes = ms().lastPoolIndexes[_poolTokenAddress];
 
             Types.Params memory params = Types.Params(
                 ms().supplyP2PExchangeRate[_poolTokenAddress],
@@ -108,7 +120,7 @@ library LibMarketsManager {
         if (block.timestamp > ms().lastUpdateBlockNumber[_poolTokenAddress]) {
             ICToken poolToken = ICToken(_poolTokenAddress);
             ms().lastUpdateBlockNumber[_poolTokenAddress] = block.timestamp;
-            LastPoolIndexes storage poolIndexes = ms().lastPoolIndexes[_poolTokenAddress];
+            Types.LastPoolIndexes storage poolIndexes = ms().lastPoolIndexes[_poolTokenAddress];
 
             uint256 poolSupplyExchangeRate = poolToken.exchangeRateCurrent();
             uint256 poolBorrowExchangeRate = poolToken.borrowIndex();

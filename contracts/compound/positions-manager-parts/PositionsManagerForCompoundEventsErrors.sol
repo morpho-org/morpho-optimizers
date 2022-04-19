@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import "./PositionsManagerForCompoundStorage.sol";
+import "../libraries/Types.sol";
 
 /// @title PositionsManagerForCompoundEventsErrors.
 /// @notice Events and Errors for PositionsManagerForCompound.
-abstract contract PositionsManagerForCompoundEventsErrors is PositionsManagerForCompoundStorage {
+contract PositionsManagerForCompoundEventsErrors {
     /// EVENTS ///
 
     /// @notice Emitted when a supply happens.
@@ -110,7 +110,7 @@ abstract contract PositionsManagerForCompoundEventsErrors is PositionsManagerFor
 
     /// @notice Emitted when a new `maxGas` is set.
     /// @param _maxGas The new `maxGas`.
-    event MaxGasSet(MaxGas _maxGas);
+    event MaxGasSet(Types.MaxGas _maxGas);
 
     /// @notice Emitted the address of the `treasuryVault` is set.
     /// @param _newTreasuryVaultAddress The new address of the `treasuryVault`.

@@ -51,11 +51,6 @@ contract TestMarketsManager is TestSetup {
         assertEq(marketsManager.reserveFactor(cDai), 1111);
     }
 
-    function testPositionsManagerShouldBeSetOnlyOnce() public {
-        hevm.expectRevert(MarketsManagerForCompound.PositionsManagerAlreadySet.selector);
-        marketsManager.setPositionsManager(address(fakePositionsManagerImpl));
-    }
-
     function testShouldCreateMarketWithTheRightValues() public {
         ICToken cToken = ICToken(cAave);
         marketsManager.createMarket(cAave);
@@ -72,9 +67,7 @@ contract TestMarketsManager is TestSetup {
     }
 
     function testShouldSetmaxGasWithRightValues() public {
-
-            PositionsManagerForCompoundStorage.MaxGas memory newMaxGas
-         = PositionsManagerForCompoundStorage.MaxGas({supply: 1, borrow: 1, withdraw: 1, repay: 1});
+        Types.MaxGas memory newMaxGas = Types.MaxGas({supply: 1, borrow: 1, withdraw: 1, repay: 1});
 
         positionsManager.setMaxGas(newMaxGas);
         (uint64 supply, uint64 borrow, uint64 withdraw, uint64 repay) = positionsManager.maxGas();

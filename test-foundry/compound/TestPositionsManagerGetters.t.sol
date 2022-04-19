@@ -27,74 +27,35 @@ contract TestPositionsManagerGetters is TestSetup {
         borrower1.approve(dai, amount);
         borrower1.supply(cDai, amount);
 
-        assertEq(
-            address(0),
-            positionsManager.getHead(
-                cDai,
-                PositionsManagerForCompoundStorage.PositionType.SUPPLIERS_IN_P2P
-            )
-        );
+        assertEq(address(0), positionsManager.getHead(cDai, Types.PositionType.SUPPLIERS_IN_P2P));
         assertEq(
             address(borrower1),
-            positionsManager.getHead(
-                cDai,
-                PositionsManagerForCompoundStorage.PositionType.SUPPLIERS_ON_POOL
-            )
+            positionsManager.getHead(cDai, Types.PositionType.SUPPLIERS_ON_POOL)
         );
-        assertEq(
-            address(0),
-            positionsManager.getHead(
-                cDai,
-                PositionsManagerForCompoundStorage.PositionType.BORROWERS_IN_P2P
-            )
-        );
-        assertEq(
-            address(0),
-            positionsManager.getHead(
-                cDai,
-                PositionsManagerForCompoundStorage.PositionType.BORROWERS_ON_POOL
-            )
-        );
+        assertEq(address(0), positionsManager.getHead(cDai, Types.PositionType.BORROWERS_IN_P2P));
+        assertEq(address(0), positionsManager.getHead(cDai, Types.PositionType.BORROWERS_ON_POOL));
 
         borrower1.borrow(cDai, toBorrow);
 
         assertEq(
             address(borrower1),
-            positionsManager.getHead(
-                cDai,
-                PositionsManagerForCompoundStorage.PositionType.SUPPLIERS_IN_P2P
-            )
+            positionsManager.getHead(cDai, Types.PositionType.SUPPLIERS_IN_P2P)
         );
         assertEq(
             address(borrower1),
-            positionsManager.getHead(
-                cDai,
-                PositionsManagerForCompoundStorage.PositionType.SUPPLIERS_ON_POOL
-            )
+            positionsManager.getHead(cDai, Types.PositionType.SUPPLIERS_ON_POOL)
         );
         assertEq(
             address(borrower1),
-            positionsManager.getHead(
-                cDai,
-                PositionsManagerForCompoundStorage.PositionType.BORROWERS_IN_P2P
-            )
+            positionsManager.getHead(cDai, Types.PositionType.BORROWERS_IN_P2P)
         );
-        assertEq(
-            address(0),
-            positionsManager.getHead(
-                cDai,
-                PositionsManagerForCompoundStorage.PositionType.BORROWERS_ON_POOL
-            )
-        );
+        assertEq(address(0), positionsManager.getHead(cDai, Types.PositionType.BORROWERS_ON_POOL));
 
         borrower1.borrow(cUsdc, to6Decimals(toBorrow));
 
         assertEq(
             address(borrower1),
-            positionsManager.getHead(
-                cUsdc,
-                PositionsManagerForCompoundStorage.PositionType.BORROWERS_ON_POOL
-            )
+            positionsManager.getHead(cUsdc, Types.PositionType.BORROWERS_ON_POOL)
         );
     }
 
@@ -117,12 +78,12 @@ contract TestPositionsManagerGetters is TestSetup {
         for (uint256 i; i < borrowers.length - 1; i++) {
             nextSupplyOnPool = positionsManager.getNext(
                 cDai,
-                PositionsManagerForCompoundStorage.PositionType.SUPPLIERS_ON_POOL,
+                Types.PositionType.SUPPLIERS_ON_POOL,
                 nextSupplyOnPool
             );
             nextBorrowOnPool = positionsManager.getNext(
                 cUsdc,
-                PositionsManagerForCompoundStorage.PositionType.BORROWERS_ON_POOL,
+                Types.PositionType.BORROWERS_ON_POOL,
                 nextBorrowOnPool
             );
 
@@ -145,12 +106,12 @@ contract TestPositionsManagerGetters is TestSetup {
         for (uint256 i; i < borrowers.length - 1; i++) {
             nextSupplyInP2P = positionsManager.getNext(
                 cUsdc,
-                PositionsManagerForCompoundStorage.PositionType.SUPPLIERS_IN_P2P,
+                Types.PositionType.SUPPLIERS_IN_P2P,
                 nextSupplyInP2P
             );
             nextBorrowInP2P = positionsManager.getNext(
                 cDai,
-                PositionsManagerForCompoundStorage.PositionType.BORROWERS_IN_P2P,
+                Types.PositionType.BORROWERS_IN_P2P,
                 nextBorrowInP2P
             );
 
@@ -160,8 +121,11 @@ contract TestPositionsManagerGetters is TestSetup {
     }
 
     function testUserLiquidityDataForAssetWithNothing() public {
-        PositionsManagerForCompound.AssetLiquidityData memory assetData = positionsManager
-        .getUserLiquidityDataForAsset(address(borrower1), cDai, oracle);
+        Types.AssetLiquidityData memory assetData = positionsManager.getUserLiquidityDataForAsset(
+            address(borrower1),
+            cDai,
+            oracle
+        );
 
         (, uint256 collateralFactor, ) = comptroller.markets(cDai);
         uint256 underlyingPrice = oracle.getUnderlyingPrice(cDai);
@@ -179,8 +143,11 @@ contract TestPositionsManagerGetters is TestSetup {
         borrower1.approve(dai, amount);
         borrower1.supply(cDai, amount);
 
-        PositionsManagerForCompound.AssetLiquidityData memory assetData = positionsManager
-        .getUserLiquidityDataForAsset(address(borrower1), cDai, oracle);
+        Types.AssetLiquidityData memory assetData = positionsManager.getUserLiquidityDataForAsset(
+            address(borrower1),
+            cDai,
+            oracle
+        );
 
         (, uint256 collateralFactor, ) = comptroller.markets(cDai);
         uint256 underlyingPrice = oracle.getUnderlyingPrice(cDai);
@@ -214,8 +181,11 @@ contract TestPositionsManagerGetters is TestSetup {
 
         indexes.exchangeRate2 = ICToken(cDai).exchangeRateCurrent();
 
-        PositionsManagerForCompound.AssetLiquidityData memory assetData = positionsManager
-        .getUserLiquidityDataForAsset(address(borrower1), cDai, oracle);
+        Types.AssetLiquidityData memory assetData = positionsManager.getUserLiquidityDataForAsset(
+            address(borrower1),
+            cDai,
+            oracle
+        );
 
         (, uint256 collateralFactor, ) = comptroller.markets(cDai);
         uint256 underlyingPrice = oracle.getUnderlyingPrice(cDai);
@@ -252,14 +222,14 @@ contract TestPositionsManagerGetters is TestSetup {
         borrower1.supply(cDai, amount);
         borrower1.borrow(cUsdc, toBorrow);
 
-        PositionsManagerForCompound.AssetLiquidityData memory assetDatacDai = positionsManager
+        Types.AssetLiquidityData memory assetDatacDai = positionsManager
         .getUserLiquidityDataForAsset(address(borrower1), cDai, oracle);
 
-        PositionsManagerForCompound.AssetLiquidityData memory assetDatacUsdc = positionsManager
+        Types.AssetLiquidityData memory assetDatacUsdc = positionsManager
         .getUserLiquidityDataForAsset(address(borrower1), cUsdc, oracle);
 
         // Avoid stack too deep error.
-        PositionsManagerForCompound.AssetLiquidityData memory expectedDatcUsdc;
+        Types.AssetLiquidityData memory expectedDatcUsdc;
         (, uint256 collateralFactor, ) = comptroller.markets(cUsdc);
         expectedDatcUsdc.underlyingPrice = oracle.getUnderlyingPrice(cUsdc);
 
@@ -276,7 +246,7 @@ contract TestPositionsManagerGetters is TestSetup {
         assertEq(assetDatacUsdc.debtValue, expectedDatcUsdc.debtValue, "debtValueUsdc");
 
         // Avoid stack too deep error.
-        PositionsManagerForCompound.AssetLiquidityData memory expectedDatacDai;
+        Types.AssetLiquidityData memory expectedDatacDai;
 
         (, expectedDatacDai.collateralFactor, ) = comptroller.markets(cDai);
 
@@ -321,10 +291,10 @@ contract TestPositionsManagerGetters is TestSetup {
         borrower1.approve(usdc, amount);
         borrower1.supply(cUsdc, amount);
 
-        PositionsManagerForCompound.AssetLiquidityData memory assetDatacUsdc = positionsManager
+        Types.AssetLiquidityData memory assetDatacUsdc = positionsManager
         .getUserLiquidityDataForAsset(address(borrower1), cUsdc, oracle);
 
-        PositionsManagerForCompound.AssetLiquidityData memory assetDatacDai = positionsManager
+        Types.AssetLiquidityData memory assetDatacDai = positionsManager
         .getUserLiquidityDataForAsset(address(borrower1), cDai, oracle);
 
         uint256 expectedBorrowableUsdc = assetDatacUsdc.maxDebtValue.div(
@@ -364,13 +334,13 @@ contract TestPositionsManagerGetters is TestSetup {
         borrower1.approve(dai, amount);
         borrower1.supply(cDai, amount);
 
-        PositionsManagerForCompound.AssetLiquidityData memory assetDatacUsdc = positionsManager
+        Types.AssetLiquidityData memory assetDatacUsdc = positionsManager
         .getUserLiquidityDataForAsset(address(borrower1), cUsdc, oracle);
 
-        PositionsManagerForCompound.AssetLiquidityData memory assetDatacDai = positionsManager
+        Types.AssetLiquidityData memory assetDatacDai = positionsManager
         .getUserLiquidityDataForAsset(address(borrower1), cDai, oracle);
 
-        PositionsManagerForCompound.AssetLiquidityData memory assetDatacUsdt = positionsManager
+        Types.AssetLiquidityData memory assetDatacUsdt = positionsManager
         .getUserLiquidityDataForAsset(address(borrower1), cUsdt, oracle);
 
         (uint256 withdrawableDai, ) = positionsManager.getUserMaxCapacitiesForAsset(

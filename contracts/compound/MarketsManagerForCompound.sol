@@ -4,12 +4,12 @@ pragma solidity 0.8.13;
 import "./interfaces/IPositionsManagerForCompound.sol";
 import "./interfaces/compound/ICompound.sol";
 
-import "./libraries/CompoundMath.sol";
-import "./libraries/Types.sol";
-import "./libraries/LibStorage.sol";
 import "./libraries/LibMarketsManager.sol";
+import "./libraries/CompoundMath.sol";
+import "./libraries/LibStorage.sol";
+import "./libraries/Types.sol";
 
-/** TODO: 
+/** TODO:
     1. Convert this contract into a facet
         a. Change all functions to use inherited storage functions
         b. Remove this contract's storage variables
@@ -20,9 +20,6 @@ import "./libraries/LibMarketsManager.sol";
 /// @notice Smart contract managing the markets used by a MorphoPositionsManagerForCompound contract, an other contract interacting with Compound or a fork of Compound.
 contract MarketsManagerForCompound is WithStorageAndModifiers {
     using CompoundMath for uint256;
-
-    /// @dev WAD is kept here to demonstrate a constant used exclusively for this facet
-    uint256 internal constant WAD = 1e18;
 
     /// EVENTS ///
 
@@ -56,9 +53,6 @@ contract MarketsManagerForCompound is WithStorageAndModifiers {
 
     /// ERRORS ///
 
-    /// @notice Thrown when the market is not created yet.
-    error MarketNotCreated();
-
     /// @notice Thrown when the market is not listed on Compound.
     error MarketIsNotListedOnCompound();
 
@@ -67,6 +61,9 @@ contract MarketsManagerForCompound is WithStorageAndModifiers {
 
     /// @notice Thrown when only the positions manager can call the function.
     error OnlyPositionsManager();
+
+    /// @notice Thrown when the market is not created yet.
+    error MarketNotCreated();
 
     /// MODIFIERS ///
 
@@ -77,21 +74,7 @@ contract MarketsManagerForCompound is WithStorageAndModifiers {
         _;
     }
 
-    /// @notice Prevents a user to call function only allowed for `positionsManager`.
-    modifier onlyPositionsManager() {
-        if (msg.sender != address(ms().positionsManager)) revert OnlyPositionsManager();
-        _;
-    }
-
     /// EXTERNAL ///
-
-    /// @notice Sets the `positionsManager` to interact with Compound.
-    /// @param _positionsManager The address of the `positionsManager`.
-    function setPositionsManager(address _positionsManager) external onlyOwner {
-        if (address(ms().positionsManager) != address(0)) revert PositionsManagerAlreadySet();
-        ms().positionsManager = IPositionsManagerForCompound(_positionsManager);
-        emit PositionsManagerSet(_positionsManager);
-    }
 
     /// @notice Sets the `intersRates`.
     /// @param _interestRates The new `interestRates` contract.
@@ -243,7 +226,7 @@ contract MarketsManagerForCompound is WithStorageAndModifiers {
     function lastPoolIndexes(address _market)
         external
         view
-        returns (LastPoolIndexes memory lastPoolIndexes_)
+        returns (Types.LastPoolIndexes memory lastPoolIndexes_)
     {
         lastPoolIndexes_ = ms().lastPoolIndexes[_market];
     }
@@ -251,14 +234,6 @@ contract MarketsManagerForCompound is WithStorageAndModifiers {
     /// @notice Whether to put users on pool or not for the given market.
     function noP2P(address _market) external view returns (bool noP2P_) {
         noP2P_ = ms().noP2P[_market];
-    }
-
-    function positionsManager()
-        external
-        view
-        returns (IPositionsManagerForCompound positionsManager_)
-    {
-        positionsManager_ = ms().positionsManager;
     }
 
     function interestRates() external view returns (IInterestRates interestRates_) {
