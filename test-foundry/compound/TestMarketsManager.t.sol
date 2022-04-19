@@ -76,10 +76,10 @@ contract TestMarketsManager is TestSetup {
         assertEq(withdraw, newMaxGas.withdraw);
         assertEq(repay, newMaxGas.repay);
 
-        hevm.expectRevert("Ownable: caller is not the owner");
+        hevm.expectRevert("LibDiamond: Must be contract owner");
         supplier1.setMaxGas(newMaxGas);
 
-        hevm.expectRevert("Ownable: caller is not the owner");
+        hevm.expectRevert("LibDiamond: Must be contract owner");
         borrower1.setMaxGas(newMaxGas);
     }
 
@@ -89,10 +89,10 @@ contract TestMarketsManager is TestSetup {
         positionsManager.setNDS(newNDS);
         assertEq(positionsManager.NDS(), newNDS);
 
-        hevm.expectRevert("Ownable: caller is not the owner");
+        hevm.expectRevert("LibDiamond: Must be contract owner");
         supplier1.setNDS(newNDS);
 
-        hevm.expectRevert("Ownable: caller is not the owner");
+        hevm.expectRevert("LibDiamond: Must be contract owner");
         borrower1.setNDS(newNDS);
     }
 

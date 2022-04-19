@@ -7,7 +7,7 @@ contract TestPausableMarket is TestSetup {
     using CompoundMath for uint256;
 
     function testOnlyOwnerShouldTriggerPauseFunction() public {
-        hevm.expectRevert("Ownable: caller is not the owner");
+        hevm.expectRevert("LibDiamond: Must be contract owner");
         supplier1.setPauseStatus(dai);
 
         positionsManager.setPauseStatus(dai);

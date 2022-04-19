@@ -17,7 +17,7 @@ contract TestFees is TestSetup {
     }
 
     function testOnlyOwnerCanSetTreasuryVault() public {
-        hevm.expectRevert("Ownable: caller is not the owner");
+        hevm.expectRevert("LibDiamond: Must be contract owner");
         supplier1.setTreasuryVault(address(borrower1));
     }
 
