@@ -1,8 +1,4 @@
 // SPDX-License-Identifier: MIT
-/**
- * Vendored on February 16, 2022 from:
- * https://github.com/mudgen/diamond-2-hardhat/blob/0cf47c8/contracts/Diamond.sol
- */
 pragma solidity ^0.8.0;
 
 import {LibDiamond} from "../libraries/LibDiamond.sol";

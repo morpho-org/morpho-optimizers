@@ -1,8 +1,4 @@
 // SPDX-License-Identifier: MIT
-/**
- * Vendored on December 23, 2021 from:
- * https://github.com/mudgen/diamond-3-hardhat/blob/7feb995/contracts/interfaces/IDiamondLoupe.sol
- */
 pragma solidity ^0.8.0;
 
 /******************************************************************************\

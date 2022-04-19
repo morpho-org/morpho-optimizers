@@ -1,8 +1,4 @@
 // SPDX-License-Identifier: MIT
-/**
- * Vendored on February 16, 2022 from:
- * https://github.com/mudgen/diamond-2-hardhat/blob/0cf47c8/contracts/Diamond.sol
- */
 pragma solidity ^0.8.0;
 
 /******************************************************************************\
@@ -41,7 +37,7 @@ contract Diamond {
             ds.slot := position
         }
         // get facet from function selector
-        address facet = address(bytes20(ds.facets[msg.sig]));
+        address facet = ds.facetAddressAndSelectorPosition[msg.sig].facetAddress;
         require(facet != address(0), "Diamond: Function does not exist");
         // Execute external function from facet using delegatecall and return any value.
         assembly {
