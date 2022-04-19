@@ -53,15 +53,6 @@ contract MarketsManagerForCompound is WithStorageAndModifiers {
 
     /// ERRORS ///
 
-    /// @notice Thrown when the market is not listed on Compound.
-    error MarketIsNotListedOnCompound();
-
-    /// @notice Thrown when the positionsManager is already set.
-    error PositionsManagerAlreadySet();
-
-    /// @notice Thrown when only the positions manager can call the function.
-    error OnlyPositionsManager();
-
     /// @notice Thrown when the market is not created yet.
     error MarketNotCreated();
 

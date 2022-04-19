@@ -349,8 +349,10 @@ contract TestSetup is Config, Utils, stdCheats {
         hevm.label(address(proxyAdmin), "ProxyAdmin");
         hevm.label(address(positionsManagerImplV1), "PositionsManagerImplV1");
         hevm.label(address(positionsManager), "PositionsManager");
+        hevm.label(address(positionsManagerFacet), "positionsManagerFacet");
         hevm.label(address(marketsManagerImplV1), "MarketsManagerImplV1");
         hevm.label(address(marketsManager), "MarketsManager");
+        hevm.label(address(marketsManagerFacet), "marketsManagerFacet");
         hevm.label(address(rewardsManager), "RewardsManager");
         hevm.label(address(morphoToken), "MorphoToken");
         hevm.label(address(comptroller), "Comptroller");

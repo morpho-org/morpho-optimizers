@@ -88,26 +88,26 @@ library LibMarketsManager {
         view
         returns (uint256 newSupplyP2PExchangeRate, uint256 newBorrowP2PExchangeRate)
     {
-        MarketsStorage storage s = ms();
-        if (block.timestamp == ms().lastUpdateBlockNumber[_poolTokenAddress]) {
-            newSupplyP2PExchangeRate = ms().supplyP2PExchangeRate[_poolTokenAddress];
-            newBorrowP2PExchangeRate = ms().borrowP2PExchangeRate[_poolTokenAddress];
+        MarketsStorage storage m = ms();
+        if (block.timestamp == m.lastUpdateBlockNumber[_poolTokenAddress]) {
+            newSupplyP2PExchangeRate = m.supplyP2PExchangeRate[_poolTokenAddress];
+            newBorrowP2PExchangeRate = m.borrowP2PExchangeRate[_poolTokenAddress];
         } else {
             ICToken poolToken = ICToken(_poolTokenAddress);
-            Types.LastPoolIndexes storage poolIndexes = ms().lastPoolIndexes[_poolTokenAddress];
+            Types.LastPoolIndexes storage poolIndexes = m.lastPoolIndexes[_poolTokenAddress];
 
             Types.Params memory params = Types.Params(
-                ms().supplyP2PExchangeRate[_poolTokenAddress],
-                ms().borrowP2PExchangeRate[_poolTokenAddress],
+                m.supplyP2PExchangeRate[_poolTokenAddress],
+                m.borrowP2PExchangeRate[_poolTokenAddress],
                 poolToken.exchangeRateStored(),
                 poolToken.borrowIndex(),
                 poolIndexes.lastSupplyPoolIndex,
                 poolIndexes.lastBorrowPoolIndex,
-                ms().reserveFactor[_poolTokenAddress],
-                ms().positionsManager.deltas(_poolTokenAddress)
+                m.reserveFactor[_poolTokenAddress],
+                m.positionsManager.deltas(_poolTokenAddress)
             );
 
-            (newSupplyP2PExchangeRate, newBorrowP2PExchangeRate) = s
+            (newSupplyP2PExchangeRate, newBorrowP2PExchangeRate) = m
             .interestRates
             .computeP2PExchangeRates(params);
         }
@@ -116,32 +116,32 @@ library LibMarketsManager {
     /// @notice Updates the P2P exchange rates, taking into account the Second Percentage Yield values.
     /// @param _poolTokenAddress The address of the market to update.
     function updateP2PExchangeRates(address _poolTokenAddress) internal {
-        MarketsStorage storage s = ms();
-        if (block.timestamp > ms().lastUpdateBlockNumber[_poolTokenAddress]) {
+        MarketsStorage storage m = ms();
+        if (block.timestamp > m.lastUpdateBlockNumber[_poolTokenAddress]) {
             ICToken poolToken = ICToken(_poolTokenAddress);
-            ms().lastUpdateBlockNumber[_poolTokenAddress] = block.timestamp;
-            Types.LastPoolIndexes storage poolIndexes = ms().lastPoolIndexes[_poolTokenAddress];
+            m.lastUpdateBlockNumber[_poolTokenAddress] = block.timestamp;
+            Types.LastPoolIndexes storage poolIndexes = m.lastPoolIndexes[_poolTokenAddress];
 
             uint256 poolSupplyExchangeRate = poolToken.exchangeRateCurrent();
             uint256 poolBorrowExchangeRate = poolToken.borrowIndex();
 
             Types.Params memory params = Types.Params(
-                ms().supplyP2PExchangeRate[_poolTokenAddress],
-                ms().borrowP2PExchangeRate[_poolTokenAddress],
+                m.supplyP2PExchangeRate[_poolTokenAddress],
+                m.borrowP2PExchangeRate[_poolTokenAddress],
                 poolSupplyExchangeRate,
                 poolBorrowExchangeRate,
                 poolIndexes.lastSupplyPoolIndex,
                 poolIndexes.lastBorrowPoolIndex,
-                ms().reserveFactor[_poolTokenAddress],
-                ms().positionsManager.deltas(_poolTokenAddress)
+                m.reserveFactor[_poolTokenAddress],
+                ps().deltas[_poolTokenAddress]
             );
 
-            (uint256 newSupplyP2PExchangeRate, uint256 newBorrowP2PExchangeRate) = s
+            (uint256 newSupplyP2PExchangeRate, uint256 newBorrowP2PExchangeRate) = m
             .interestRates
             .computeP2PExchangeRates(params);
 
-            ms().supplyP2PExchangeRate[_poolTokenAddress] = newSupplyP2PExchangeRate;
-            ms().borrowP2PExchangeRate[_poolTokenAddress] = newBorrowP2PExchangeRate;
+            m.supplyP2PExchangeRate[_poolTokenAddress] = newSupplyP2PExchangeRate;
+            m.borrowP2PExchangeRate[_poolTokenAddress] = newBorrowP2PExchangeRate;
             poolIndexes.lastSupplyPoolIndex = poolSupplyExchangeRate;
             poolIndexes.lastBorrowPoolIndex = poolBorrowExchangeRate;
 
