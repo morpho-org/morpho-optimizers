@@ -10,8 +10,7 @@ import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 
 import "@contracts/compound/PositionsManagerForCompound.sol";
-import "@contracts/compound/MarketsManagerForCompound.sol"; // Now a facet
-import "@contracts/compound/MatchingEngineForCompound.sol";
+import "@contracts/compound/MarketsManagerForCompound.sol";
 import "@contracts/compound/RewardsManagerForCompound.sol";
 import "@contracts/compound/InterestRatesV1.sol";
 import "@contracts/compound/InitDiamond.sol";
@@ -154,10 +153,6 @@ contract TestSetup is Config, Utils, stdCheats {
             marketsManagerFunctionSelectors[index++] = marketsManagerFacet.comptroller.selector;
         }
 
-        // for (uint256 i = 0; i < marketsManagerFunctionSelectors.length; i++) {
-        //     console.logBytes4(marketsManagerFunctionSelectors[i]);
-        // }
-
         console.log("Diamond cut markets");
 
         IDiamondCut.FacetCut memory marketsCut = IDiamondCut.FacetCut({
@@ -168,7 +163,7 @@ contract TestSetup is Config, Utils, stdCheats {
 
         console.log("Markets facet added");
 
-        bytes4[] memory positionsManagerFunctionSelectors = new bytes4[](18);
+        bytes4[] memory positionsManagerFunctionSelectors = new bytes4[](31);
         {
             uint256 index;
             positionsManagerFunctionSelectors[index++] = bytes4(
@@ -189,6 +184,7 @@ contract TestSetup is Config, Utils, stdCheats {
             positionsManagerFunctionSelectors[index++] = bytes4(
                 keccak256("repay(address,uint256)")
             );
+            positionsManagerFunctionSelectors[index++] = positionsManagerFacet.liquidate.selector;
             positionsManagerFunctionSelectors[index++] = positionsManagerFacet
             .claimToTreasury
             .selector;
@@ -216,16 +212,36 @@ contract TestSetup is Config, Utils, stdCheats {
             .rewardsManager
             .selector;
             positionsManagerFunctionSelectors[index++] = positionsManagerFacet
+            .treasuryVault
+            .selector;
+            positionsManagerFunctionSelectors[index++] = positionsManagerFacet
+            .isCompRewardsActive
+            .selector;
+            positionsManagerFunctionSelectors[index++] = positionsManagerFacet.paused.selector;
+            positionsManagerFunctionSelectors[index++] = positionsManagerFacet.NDS.selector;
+            positionsManagerFunctionSelectors[index++] = positionsManagerFacet.maxGas.selector;
+            positionsManagerFunctionSelectors[index++] = positionsManagerFacet
             .supplyBalanceInOf
             .selector;
             positionsManagerFunctionSelectors[index++] = positionsManagerFacet
             .borrowBalanceInOf
             .selector;
+            positionsManagerFunctionSelectors[index++] = positionsManagerFacet
+            .getUserBalanceStates
+            .selector;
+            positionsManagerFunctionSelectors[index++] = positionsManagerFacet
+            .getUserMaxCapacitiesForAsset
+            .selector;
+            positionsManagerFunctionSelectors[index++] = positionsManagerFacet
+            .getUserLiquidityDataForAsset
+            .selector;
+            positionsManagerFunctionSelectors[index++] = positionsManagerFacet.deltas.selector;
+            positionsManagerFunctionSelectors[index++] = positionsManagerFacet.getHead.selector;
+            positionsManagerFunctionSelectors[index++] = positionsManagerFacet.getNext.selector;
+            positionsManagerFunctionSelectors[index++] = positionsManagerFacet
+            .enteredMarkets
+            .selector;
         }
-
-        // for (uint256 i = 0; i < positionsManagerFunctionSelectors.length; i++) {
-        //     console.logBytes4(positionsManagerFunctionSelectors[i]);
-        // }
 
         console.log("Diamond cut positions");
 
