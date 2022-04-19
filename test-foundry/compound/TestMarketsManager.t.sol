@@ -69,7 +69,7 @@ contract TestMarketsManager is TestSetup {
     function testShouldSetmaxGasWithRightValues() public {
         Types.MaxGas memory newMaxGas = Types.MaxGas({supply: 1, borrow: 1, withdraw: 1, repay: 1});
 
-        positionsManager.setMaxGas(newMaxGas);
+        morphoCompound.setMaxGas(newMaxGas);
         (uint64 supply, uint64 borrow, uint64 withdraw, uint64 repay) = morphoLens.maxGas();
         assertEq(supply, newMaxGas.supply);
         assertEq(borrow, newMaxGas.borrow);
@@ -86,7 +86,7 @@ contract TestMarketsManager is TestSetup {
     function testOnlyOwnerCanSetNDS() public {
         uint8 newNDS = 30;
 
-        positionsManager.setNDS(newNDS);
+        morphoCompound.setNDS(newNDS);
         assertEq(morphoLens.NDS(), newNDS);
 
         hevm.expectRevert("LibDiamond: Must be contract owner");

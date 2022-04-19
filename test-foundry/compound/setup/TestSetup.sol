@@ -10,11 +10,13 @@ import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 
 import "@contracts/compound/PositionsManagerForCompound.sol";
+import "@contracts/compound/PositionsManagerForCompoundSettersAndGetters.sol";
 import "@contracts/compound/MarketsManagerForCompound.sol";
 import "@contracts/compound/RewardsManagerForCompound.sol";
 import "@contracts/compound/MorphoLensForCompound.sol";
 import "@contracts/compound/InterestRatesV1.sol";
 import "@contracts/compound/InitDiamond.sol";
+import "@contracts/compound/interfaces/IMorphoCompound.sol";
 
 import "@contracts/compound/libraries/FixedPointMathLib.sol";
 import "@contracts/compound/libraries/Types.sol";
@@ -60,6 +62,8 @@ contract TestSetup is Config, Utils, stdCheats {
     PositionsManagerForCompound internal positionsManager;
     PositionsManagerForCompound internal positionsManagerFacet;
     PositionsManagerForCompound internal fakePositionsManagerImpl;
+    PositionsManagerForCompoundSettersAndGetters internal positionsManagerSettersAndGettersFacet;
+    PositionsManagerForCompoundSettersAndGetters internal positionsManagerSettersAndGetters;
     MarketsManagerForCompound internal marketsManager;
     MarketsManagerForCompound internal marketsManagerImplV1;
     MarketsManagerForCompound internal marketsManagerFacet;
@@ -67,6 +71,8 @@ contract TestSetup is Config, Utils, stdCheats {
     MorphoLensForCompound internal morphoLensFacet;
     MorphoLensForCompound internal morphoLens;
     IInterestRates internal interestRates;
+
+    IMorphoCompound internal morphoCompound;
 
     IncentivesVault public incentivesVault;
     DumbOracle internal dumbOracle;
@@ -114,145 +120,179 @@ contract TestSetup is Config, Utils, stdCheats {
         diamondCutFacet = DiamondCutFacet(address(diamond));
         marketsManagerFacet = new MarketsManagerForCompound();
         positionsManagerFacet = new PositionsManagerForCompound();
+        positionsManagerSettersAndGettersFacet = new PositionsManagerForCompoundSettersAndGetters();
         morphoLensFacet = new MorphoLensForCompound();
         InitDiamond initDiamond = new InitDiamond();
 
-        bytes4[] memory marketsManagerFunctionSelectors = new bytes4[](18);
         {
-            uint256 index;
-            marketsManagerFunctionSelectors[index++] = marketsManagerFacet
-            .setInterestRates
-            .selector;
-            marketsManagerFunctionSelectors[index++] = marketsManagerFacet.interestRates.selector;
-            marketsManagerFunctionSelectors[index++] = marketsManagerFacet
-            .setReserveFactor
-            .selector;
-            marketsManagerFunctionSelectors[index++] = marketsManagerFacet.createMarket.selector;
-            marketsManagerFunctionSelectors[index++] = marketsManagerFacet.setNoP2P.selector;
-            marketsManagerFunctionSelectors[index++] = marketsManagerFacet.getAllMarkets.selector;
-            marketsManagerFunctionSelectors[index++] = marketsManagerFacet.getMarketData.selector;
-            marketsManagerFunctionSelectors[index++] = marketsManagerFacet
-            .getMarketConfiguration
-            .selector;
-            marketsManagerFunctionSelectors[index++] = marketsManagerFacet
-            .getUpdatedP2PExchangeRates
-            .selector;
-            marketsManagerFunctionSelectors[index++] = marketsManagerFacet
-            .updateP2PExchangeRates
-            .selector;
-            marketsManagerFunctionSelectors[index++] = marketsManagerFacet.isCreated.selector;
-            marketsManagerFunctionSelectors[index++] = marketsManagerFacet.reserveFactor.selector;
-            marketsManagerFunctionSelectors[index++] = marketsManagerFacet
-            .supplyP2PExchangeRate
-            .selector;
-            marketsManagerFunctionSelectors[index++] = marketsManagerFacet
-            .borrowP2PExchangeRate
-            .selector;
-            marketsManagerFunctionSelectors[index++] = marketsManagerFacet.lastPoolIndexes.selector;
-            marketsManagerFunctionSelectors[index++] = marketsManagerFacet
-            .lastUpdateBlockNumber
-            .selector;
-            marketsManagerFunctionSelectors[index++] = marketsManagerFacet.noP2P.selector;
-            marketsManagerFunctionSelectors[index++] = marketsManagerFacet.comptroller.selector;
+            bytes4[] memory marketsManagerFunctionSelectors = new bytes4[](18);
+            {
+                uint256 index;
+                marketsManagerFunctionSelectors[index++] = marketsManagerFacet
+                .setInterestRates
+                .selector;
+                marketsManagerFunctionSelectors[index++] = marketsManagerFacet
+                .interestRates
+                .selector;
+                marketsManagerFunctionSelectors[index++] = marketsManagerFacet
+                .setReserveFactor
+                .selector;
+                marketsManagerFunctionSelectors[index++] = marketsManagerFacet
+                .createMarket
+                .selector;
+                marketsManagerFunctionSelectors[index++] = marketsManagerFacet.setNoP2P.selector;
+                marketsManagerFunctionSelectors[index++] = marketsManagerFacet
+                .getAllMarkets
+                .selector;
+                marketsManagerFunctionSelectors[index++] = marketsManagerFacet
+                .getMarketData
+                .selector;
+                marketsManagerFunctionSelectors[index++] = marketsManagerFacet
+                .getMarketConfiguration
+                .selector;
+                marketsManagerFunctionSelectors[index++] = marketsManagerFacet
+                .getUpdatedP2PExchangeRates
+                .selector;
+                marketsManagerFunctionSelectors[index++] = marketsManagerFacet
+                .updateP2PExchangeRates
+                .selector;
+                marketsManagerFunctionSelectors[index++] = marketsManagerFacet.isCreated.selector;
+                marketsManagerFunctionSelectors[index++] = marketsManagerFacet
+                .reserveFactor
+                .selector;
+                marketsManagerFunctionSelectors[index++] = marketsManagerFacet
+                .supplyP2PExchangeRate
+                .selector;
+                marketsManagerFunctionSelectors[index++] = marketsManagerFacet
+                .borrowP2PExchangeRate
+                .selector;
+                marketsManagerFunctionSelectors[index++] = marketsManagerFacet
+                .lastPoolIndexes
+                .selector;
+                marketsManagerFunctionSelectors[index++] = marketsManagerFacet
+                .lastUpdateBlockNumber
+                .selector;
+                marketsManagerFunctionSelectors[index++] = marketsManagerFacet.noP2P.selector;
+                marketsManagerFunctionSelectors[index++] = marketsManagerFacet.comptroller.selector;
+            }
+
+            IDiamondCut.FacetCut memory marketsCut = IDiamondCut.FacetCut({
+                facetAddress: address(marketsManagerFacet),
+                action: IDiamondCut.FacetCutAction.Add,
+                functionSelectors: marketsManagerFunctionSelectors
+            });
+
+            bytes4[] memory positionsManagerFunctionSelectors = new bytes4[](7);
+            {
+                uint256 index;
+                positionsManagerFunctionSelectors[index++] = bytes4(
+                    keccak256("supply(address,uint256,uint16)")
+                );
+                positionsManagerFunctionSelectors[index++] = bytes4(
+                    keccak256("supply(address,uint256,uint16,uint256)")
+                );
+                positionsManagerFunctionSelectors[index++] = bytes4(
+                    keccak256("borrow(address,uint256,uint16)")
+                );
+                positionsManagerFunctionSelectors[index++] = bytes4(
+                    keccak256("borrow(address,uint256,uint16,uint256)")
+                );
+                positionsManagerFunctionSelectors[index++] = bytes4(
+                    keccak256("withdraw(address,uint256)")
+                );
+                positionsManagerFunctionSelectors[index++] = bytes4(
+                    keccak256("repay(address,uint256)")
+                );
+                positionsManagerFunctionSelectors[index++] = positionsManagerFacet
+                .liquidate
+                .selector;
+            }
+
+            IDiamondCut.FacetCut memory positionsCut = IDiamondCut.FacetCut({
+                facetAddress: address(positionsManagerFacet),
+                action: IDiamondCut.FacetCutAction.Add,
+                functionSelectors: positionsManagerFunctionSelectors
+            });
+
+            bytes4[] memory positionsManagerSettersAndGettersFunctionSelectors = new bytes4[](11);
+            {
+                uint256 index;
+                positionsManagerSettersAndGettersFunctionSelectors[
+                    index++
+                ] = positionsManagerSettersAndGettersFacet.claimToTreasury.selector;
+                positionsManagerSettersAndGettersFunctionSelectors[
+                    index++
+                ] = positionsManagerSettersAndGettersFacet.claimRewards.selector;
+                positionsManagerSettersAndGettersFunctionSelectors[
+                    index++
+                ] = positionsManagerSettersAndGettersFacet.supplyBalanceInOf.selector;
+                positionsManagerSettersAndGettersFunctionSelectors[
+                    index++
+                ] = positionsManagerSettersAndGettersFacet.borrowBalanceInOf.selector;
+                positionsManagerSettersAndGettersFunctionSelectors[
+                    index++
+                ] = positionsManagerSettersAndGettersFacet.setNDS.selector;
+                positionsManagerSettersAndGettersFunctionSelectors[
+                    index++
+                ] = positionsManagerSettersAndGettersFacet.setMaxGas.selector;
+                positionsManagerSettersAndGettersFunctionSelectors[
+                    index++
+                ] = positionsManagerSettersAndGettersFacet.setTreasuryVault.selector;
+                positionsManagerSettersAndGettersFunctionSelectors[
+                    index++
+                ] = positionsManagerSettersAndGettersFacet.setIncentivesVault.selector;
+                positionsManagerSettersAndGettersFunctionSelectors[
+                    index++
+                ] = positionsManagerSettersAndGettersFacet.setRewardsManager.selector;
+                positionsManagerSettersAndGettersFunctionSelectors[
+                    index++
+                ] = positionsManagerSettersAndGettersFacet.toggleCompRewardsActivation.selector;
+                positionsManagerSettersAndGettersFunctionSelectors[
+                    index++
+                ] = positionsManagerSettersAndGettersFacet.setPauseStatus.selector;
+            }
+
+            IDiamondCut.FacetCut memory positionsSettersAndGettersCut = IDiamondCut.FacetCut({
+                facetAddress: address(positionsManagerSettersAndGettersFacet),
+                action: IDiamondCut.FacetCutAction.Add,
+                functionSelectors: positionsManagerSettersAndGettersFunctionSelectors
+            });
+
+            bytes4[] memory morphoLensFunctionSelectors = new bytes4[](13);
+            {
+                uint256 index;
+                morphoLensFunctionSelectors[index++] = morphoLensFacet.deltas.selector;
+                morphoLensFunctionSelectors[index++] = morphoLensFacet.rewardsManager.selector;
+                morphoLensFunctionSelectors[index++] = morphoLensFacet.treasuryVault.selector;
+                morphoLensFunctionSelectors[index++] = morphoLensFacet.isCompRewardsActive.selector;
+                morphoLensFunctionSelectors[index++] = morphoLensFacet.paused.selector;
+                morphoLensFunctionSelectors[index++] = morphoLensFacet.NDS.selector;
+                morphoLensFunctionSelectors[index++] = morphoLensFacet.maxGas.selector;
+                morphoLensFunctionSelectors[index++] = morphoLensFacet.getHead.selector;
+                morphoLensFunctionSelectors[index++] = morphoLensFacet.getNext.selector;
+                morphoLensFunctionSelectors[index++] = morphoLensFacet.enteredMarkets.selector;
+                morphoLensFunctionSelectors[index++] = morphoLensFacet
+                .getUserBalanceStates
+                .selector;
+                morphoLensFunctionSelectors[index++] = morphoLensFacet
+                .getUserLiquidityDataForAsset
+                .selector;
+                morphoLensFunctionSelectors[index++] = morphoLensFacet
+                .getUserMaxCapacitiesForAsset
+                .selector;
+            }
+
+            IDiamondCut.FacetCut memory lensCut = IDiamondCut.FacetCut({
+                facetAddress: address(morphoLensFacet),
+                action: IDiamondCut.FacetCutAction.Add,
+                functionSelectors: morphoLensFunctionSelectors
+            });
+
+            cuts.push(marketsCut);
+            cuts.push(positionsCut);
+            cuts.push(positionsSettersAndGettersCut);
+            cuts.push(lensCut);
         }
-
-        IDiamondCut.FacetCut memory marketsCut = IDiamondCut.FacetCut({
-            facetAddress: address(marketsManagerFacet),
-            action: IDiamondCut.FacetCutAction.Add,
-            functionSelectors: marketsManagerFunctionSelectors
-        });
-
-        bytes4[] memory positionsManagerFunctionSelectors = new bytes4[](18);
-        {
-            uint256 index;
-            positionsManagerFunctionSelectors[index++] = bytes4(
-                keccak256("supply(address,uint256,uint16)")
-            );
-            positionsManagerFunctionSelectors[index++] = bytes4(
-                keccak256("supply(address,uint256,uint16,uint256)")
-            );
-            positionsManagerFunctionSelectors[index++] = bytes4(
-                keccak256("borrow(address,uint256,uint16)")
-            );
-            positionsManagerFunctionSelectors[index++] = bytes4(
-                keccak256("borrow(address,uint256,uint16,uint256)")
-            );
-            positionsManagerFunctionSelectors[index++] = bytes4(
-                keccak256("withdraw(address,uint256)")
-            );
-            positionsManagerFunctionSelectors[index++] = bytes4(
-                keccak256("repay(address,uint256)")
-            );
-            positionsManagerFunctionSelectors[index++] = positionsManagerFacet.liquidate.selector;
-            positionsManagerFunctionSelectors[index++] = positionsManagerFacet
-            .claimToTreasury
-            .selector;
-            positionsManagerFunctionSelectors[index++] = positionsManagerFacet
-            .claimRewards
-            .selector;
-            positionsManagerFunctionSelectors[index++] = positionsManagerFacet
-            .supplyBalanceInOf
-            .selector;
-            positionsManagerFunctionSelectors[index++] = positionsManagerFacet
-            .borrowBalanceInOf
-            .selector;
-            positionsManagerFunctionSelectors[index++] = positionsManagerFacet.setNDS.selector;
-            positionsManagerFunctionSelectors[index++] = positionsManagerFacet.setMaxGas.selector;
-            positionsManagerFunctionSelectors[index++] = positionsManagerFacet
-            .setTreasuryVault
-            .selector;
-            positionsManagerFunctionSelectors[index++] = positionsManagerFacet
-            .setIncentivesVault
-            .selector;
-            positionsManagerFunctionSelectors[index++] = positionsManagerFacet
-            .setRewardsManager
-            .selector;
-            positionsManagerFunctionSelectors[index++] = positionsManagerFacet
-            .toggleCompRewardsActivation
-            .selector;
-            positionsManagerFunctionSelectors[index++] = positionsManagerFacet
-            .setPauseStatus
-            .selector;
-        }
-
-        IDiamondCut.FacetCut memory positionsCut = IDiamondCut.FacetCut({
-            facetAddress: address(positionsManagerFacet),
-            action: IDiamondCut.FacetCutAction.Add,
-            functionSelectors: positionsManagerFunctionSelectors
-        });
-
-        bytes4[] memory morphoLensFunctionSelectors = new bytes4[](13);
-        {
-            uint256 index;
-            morphoLensFunctionSelectors[index++] = morphoLensFacet.deltas.selector;
-            morphoLensFunctionSelectors[index++] = morphoLensFacet.rewardsManager.selector;
-            morphoLensFunctionSelectors[index++] = morphoLensFacet.treasuryVault.selector;
-            morphoLensFunctionSelectors[index++] = morphoLensFacet.isCompRewardsActive.selector;
-            morphoLensFunctionSelectors[index++] = morphoLensFacet.paused.selector;
-            morphoLensFunctionSelectors[index++] = morphoLensFacet.NDS.selector;
-            morphoLensFunctionSelectors[index++] = morphoLensFacet.maxGas.selector;
-            morphoLensFunctionSelectors[index++] = morphoLensFacet.getHead.selector;
-            morphoLensFunctionSelectors[index++] = morphoLensFacet.getNext.selector;
-            morphoLensFunctionSelectors[index++] = morphoLensFacet.enteredMarkets.selector;
-            morphoLensFunctionSelectors[index++] = morphoLensFacet.getUserBalanceStates.selector;
-            morphoLensFunctionSelectors[index++] = morphoLensFacet
-            .getUserLiquidityDataForAsset
-            .selector;
-            morphoLensFunctionSelectors[index++] = morphoLensFacet
-            .getUserMaxCapacitiesForAsset
-            .selector;
-        }
-
-        IDiamondCut.FacetCut memory lensCut = IDiamondCut.FacetCut({
-            facetAddress: address(morphoLensFacet),
-            action: IDiamondCut.FacetCutAction.Add,
-            functionSelectors: morphoLensFunctionSelectors
-        });
-
-        cuts.push(marketsCut);
-        cuts.push(positionsCut);
-        cuts.push(lensCut);
-
         IDiamondCut(address(diamond)).diamondCut(
             cuts,
             address(initDiamond),
@@ -270,13 +310,17 @@ contract TestSetup is Config, Utils, stdCheats {
         );
 
         positionsManager = PositionsManagerForCompound(payable(address(diamond)));
+        positionsManagerSettersAndGetters = PositionsManagerForCompoundSettersAndGetters(
+            address(diamond)
+        );
         marketsManager = MarketsManagerForCompound(address(diamond));
         morphoLens = MorphoLensForCompound(address(diamond));
+        morphoCompound = IMorphoCompound(address(diamond));
 
         treasuryVault = new User(address(diamond));
         fakePositionsManagerImpl = new PositionsManagerForCompound();
         oracle = ICompoundOracle(comptroller.oracle());
-        positionsManager.setTreasuryVault(address(treasuryVault));
+        morphoCompound.setTreasuryVault(address(treasuryVault));
 
         /// Create markets ///
 
@@ -302,9 +346,9 @@ contract TestSetup is Config, Utils, stdCheats {
 
         rewardsManager = new RewardsManagerForCompound(address(positionsManager));
 
-        positionsManager.setRewardsManager(address(rewardsManager));
-        positionsManager.setIncentivesVault(address(incentivesVault));
-        positionsManager.toggleCompRewardsActivation();
+        morphoCompound.setRewardsManager(address(rewardsManager));
+        morphoCompound.setIncentivesVault(address(incentivesVault));
+        morphoCompound.toggleCompRewardsActivation();
     }
 
     function createMarket(address _cToken) internal {
@@ -355,6 +399,7 @@ contract TestSetup is Config, Utils, stdCheats {
     }
 
     function setContractsLabels() internal {
+        hevm.label(address(diamond), "morphoCompound");
         hevm.label(address(proxyAdmin), "ProxyAdmin");
         hevm.label(address(positionsManagerImplV1), "PositionsManagerImplV1");
         hevm.label(address(positionsManager), "PositionsManager");
@@ -406,7 +451,7 @@ contract TestSetup is Config, Utils, stdCheats {
             withdraw: _withdraw,
             repay: _repay
         });
-        positionsManager.setMaxGas(newMaxGas);
+        morphoCompound.setMaxGas(newMaxGas);
     }
 
     function move1000BlocksForward(address _marketAddress) public {

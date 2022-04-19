@@ -8,7 +8,7 @@ contract TestFees is TestSetup {
 
     function testShouldRevertWhenClaimingZeroAmount() public {
         hevm.expectRevert(abi.encodeWithSignature("AmountIsZero()"));
-        positionsManager.claimToTreasury(cDai);
+        morphoCompound.claimToTreasury(cDai);
     }
 
     function testShouldNotBePossibleToSetFeesHigherThan100Percent() public {
@@ -35,7 +35,7 @@ contract TestFees is TestSetup {
         move1000BlocksForward(cDai);
 
         supplier1.repay(cDai, type(uint256).max);
-        positionsManager.claimToTreasury(cDai);
+        morphoCompound.claimToTreasury(cDai);
         uint256 balanceAfter = IERC20(dai).balanceOf(morphoLens.treasuryVault());
 
         assertLt(balanceBefore, balanceAfter);
@@ -43,7 +43,7 @@ contract TestFees is TestSetup {
 
     function testShouldRevertWhenClaimingToZeroAddress() public {
         // Set treasury vault to 0x.
-        positionsManager.setTreasuryVault(address(0));
+        morphoCompound.setTreasuryVault(address(0));
 
         marketsManager.setReserveFactor(cDai, 1_000); // 10%
 
@@ -56,7 +56,7 @@ contract TestFees is TestSetup {
         supplier1.repay(cDai, type(uint256).max);
 
         hevm.expectRevert(abi.encodeWithSignature("ZeroAddress()"));
-        positionsManager.claimToTreasury(cDai);
+        morphoCompound.claimToTreasury(cDai);
     }
 
     function testShouldCollectTheRightAmountOfFees() public {
@@ -87,7 +87,7 @@ contract TestFees is TestSetup {
         move1000BlocksForward(cDai);
 
         supplier1.repay(cDai, type(uint256).max);
-        positionsManager.claimToTreasury(cDai);
+        morphoCompound.claimToTreasury(cDai);
         uint256 balanceAfter = IERC20(dai).balanceOf(morphoLens.treasuryVault());
         uint256 gainedByDAO = balanceAfter - balanceBefore;
 
@@ -109,7 +109,7 @@ contract TestFees is TestSetup {
 
         supplier1.repay(cDai, type(uint256).max);
         hevm.expectRevert(PositionsManagerForCompoundEventsErrors.AmountIsZero.selector);
-        positionsManager.claimToTreasury(cDai);
+        morphoCompound.claimToTreasury(cDai);
         uint256 balanceAfter = IERC20(dai).balanceOf(morphoLens.treasuryVault());
 
         assertEq(balanceBefore, balanceAfter);

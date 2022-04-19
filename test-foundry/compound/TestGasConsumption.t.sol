@@ -10,7 +10,7 @@ contract TestGasConsumption is TestSetup {
 
     // Give you the cost of a loop (MatchBorrowers)
     function testGasConsumptionOfMatchBorrowers() external {
-        positionsManager.setNDS(NDS);
+        morphoCompound.setNDS(NDS);
         createSigners(NDS + numberOfMatches + 1);
 
         // 1: Create NDS matches on DAI market to fill the FIFO

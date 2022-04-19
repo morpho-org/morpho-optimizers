@@ -23,7 +23,7 @@ contract TestEth is TestSetup {
             "balance of cToken"
         );
 
-        (uint256 inP2P, uint256 onPool) = positionsManager.supplyBalanceInOf(
+        (uint256 inP2P, uint256 onPool) = morphoCompound.supplyBalanceInOf(
             cEth,
             address(supplier1)
         );
@@ -51,7 +51,7 @@ contract TestEth is TestSetup {
 
         uint256 expectedInP2P = toSupply.div(supplyP2PExchangeRate);
 
-        (uint256 inP2P, uint256 onPool) = positionsManager.supplyBalanceInOf(
+        (uint256 inP2P, uint256 onPool) = morphoCompound.supplyBalanceInOf(
             cEth,
             address(supplier1)
         );
@@ -72,7 +72,7 @@ contract TestEth is TestSetup {
         borrower1.borrow(cEth, toBorrow);
         uint256 balanceAfter = borrower1.balanceOf(wEth);
 
-        (uint256 inP2P, uint256 onPool) = positionsManager.borrowBalanceInOf(
+        (uint256 inP2P, uint256 onPool) = morphoCompound.borrowBalanceInOf(
             cEth,
             address(borrower1)
         );
@@ -100,7 +100,7 @@ contract TestEth is TestSetup {
 
         uint256 expectedInP2P = toSupply.div(marketsManager.borrowP2PExchangeRate(cEth));
 
-        (uint256 inP2P, uint256 onPool) = positionsManager.borrowBalanceInOf(
+        (uint256 inP2P, uint256 onPool) = morphoCompound.borrowBalanceInOf(
             cEth,
             address(borrower1)
         );
@@ -120,7 +120,7 @@ contract TestEth is TestSetup {
         supplier1.withdraw(cEth, toSupply);
         uint256 balanceAfter = supplier1.balanceOf(wEth);
 
-        (uint256 inP2P, uint256 onPool) = positionsManager.supplyBalanceInOf(
+        (uint256 inP2P, uint256 onPool) = morphoCompound.supplyBalanceInOf(
             cEth,
             address(borrower1)
         );
@@ -146,7 +146,7 @@ contract TestEth is TestSetup {
         supplier1.withdraw(cEth, toSupply);
         uint256 balanceAfter = supplier1.balanceOf(wEth);
 
-        (uint256 inP2P, uint256 onPool) = positionsManager.supplyBalanceInOf(
+        (uint256 inP2P, uint256 onPool) = morphoCompound.supplyBalanceInOf(
             cEth,
             address(borrower1)
         );
@@ -169,7 +169,7 @@ contract TestEth is TestSetup {
         borrower1.repay(cEth, toBorrow);
         uint256 balanceAfter = borrower1.balanceOf(wEth);
 
-        (uint256 inP2P, uint256 onPool) = positionsManager.borrowBalanceInOf(
+        (uint256 inP2P, uint256 onPool) = morphoCompound.borrowBalanceInOf(
             cEth,
             address(borrower1)
         );
@@ -197,7 +197,7 @@ contract TestEth is TestSetup {
         borrower1.repay(cEth, toRepay);
         uint256 balanceAfter = borrower1.balanceOf(wEth);
 
-        (uint256 inP2P, uint256 onPool) = positionsManager.borrowBalanceInOf(
+        (uint256 inP2P, uint256 onPool) = morphoCompound.borrowBalanceInOf(
             cEth,
             address(borrower1)
         );
@@ -220,10 +220,7 @@ contract TestEth is TestSetup {
         (, uint256 amount) = morphoLens.getUserMaxCapacitiesForAsset(address(borrower1), cEth);
         borrower1.borrow(cEth, amount);
 
-        (, uint256 collateralOnPool) = positionsManager.supplyBalanceInOf(
-            cUsdc,
-            address(borrower1)
-        );
+        (, uint256 collateralOnPool) = morphoCompound.supplyBalanceInOf(cUsdc, address(borrower1));
 
         // Change Oracle.
         SimplePriceOracle customOracle = createAndSetCustomPriceOracle();
@@ -239,7 +236,7 @@ contract TestEth is TestSetup {
         uint256 balanceAfter = liquidator.balanceOf(wEth);
 
         // Check borrower1 borrow balance.
-        (uint256 inP2PBorrower, uint256 onPoolBorrower) = positionsManager.borrowBalanceInOf(
+        (uint256 inP2PBorrower, uint256 onPoolBorrower) = morphoCompound.borrowBalanceInOf(
             cEth,
             address(borrower1)
         );
@@ -248,7 +245,7 @@ contract TestEth is TestSetup {
         assertEq(inP2PBorrower, 0, "borrower borrow in P2P");
 
         // Check borrower1 supply balance.
-        (inP2PBorrower, onPoolBorrower) = positionsManager.supplyBalanceInOf(
+        (inP2PBorrower, onPoolBorrower) = morphoCompound.supplyBalanceInOf(
             cUsdc,
             address(borrower1)
         );
@@ -283,7 +280,7 @@ contract TestEth is TestSetup {
         (, uint256 amount) = morphoLens.getUserMaxCapacitiesForAsset(address(borrower1), cDai);
         borrower1.borrow(cDai, amount);
 
-        (, uint256 collateralOnPool) = positionsManager.supplyBalanceInOf(cEth, address(borrower1));
+        (, uint256 collateralOnPool) = morphoCompound.supplyBalanceInOf(cEth, address(borrower1));
 
         // Change Oracle.
         SimplePriceOracle customOracle = createAndSetCustomPriceOracle();
@@ -298,7 +295,7 @@ contract TestEth is TestSetup {
         uint256 balanceAfter = liquidator.balanceOf(wEth);
 
         // Check borrower1 borrow balance.
-        (uint256 inP2PBorrower, uint256 onPoolBorrower) = positionsManager.borrowBalanceInOf(
+        (uint256 inP2PBorrower, uint256 onPoolBorrower) = morphoCompound.borrowBalanceInOf(
             cDai,
             address(borrower1)
         );
@@ -307,7 +304,7 @@ contract TestEth is TestSetup {
         assertEq(inP2PBorrower, 0, "borrower borrow in P2P");
 
         // Check borrower1 supply balance.
-        (inP2PBorrower, onPoolBorrower) = positionsManager.supplyBalanceInOf(
+        (inP2PBorrower, onPoolBorrower) = morphoCompound.supplyBalanceInOf(
             cEth,
             address(borrower1)
         );

@@ -15,6 +15,10 @@ import "./Types.sol";
 
 /// STORAGE STRUCTS ///
 
+struct ContractStorage {
+    uint256 status; // re-entry indicator
+}
+
 struct MarketsStorage {
     address[] marketsCreated; // Keeps track of the created markets.
     mapping(address => bool) isCreated; // Whether or not this market is created.
@@ -53,11 +57,21 @@ struct PositionsStorage {
 library LibStorage {
     /// STORAGE POSITIONS ///
 
+    bytes32 public constant CONTRACT_STORAGE_POSITION = keccak256("morpho.storage.contract");
+
     bytes32 public constant MARKETS_STORAGE_POSITION = keccak256("morpho.storage.markets");
 
     bytes32 public constant POSITIONS_STORAGE_POSITION = keccak256("morpho.storage.positions");
 
     /// STORAGE POINTER GETTERS ///
+
+    function contractStorage() internal pure returns (ContractStorage storage cs) {
+        bytes32 position = CONTRACT_STORAGE_POSITION;
+        assembly {
+            cs.slot := position
+        }
+    }
+
     function marketsStorage() internal pure returns (MarketsStorage storage ms) {
         bytes32 position = MARKETS_STORAGE_POSITION;
         assembly {
@@ -91,6 +105,11 @@ contract WithStorageAndModifiers {
 
     uint16 public constant LIQUIDATION_CLOSE_FACTOR_PERCENT = 5_000; // 50% in basis points
 
+    /// REENTRY GUARD VARS ///
+
+    uint256 private constant _NOT_ENTERED = 1;
+    uint256 private constant _ENTERED = 2;
+
     /// MODIFIERS ///
 
     modifier onlyOwner() {
@@ -98,7 +117,25 @@ contract WithStorageAndModifiers {
         _;
     }
 
+    modifier nonReentrant() {
+        // On the first call to nonReentrant, _notEntered will be true
+        require(cs().status != _ENTERED, "ReentrancyGuard: reentrant call");
+
+        // Any calls to nonReentrant after this point will fail
+        cs().status = _ENTERED;
+
+        _;
+
+        // By storing the original value once again, a refund is triggered (see
+        // https://eips.ethereum.org/EIPS/eip-2200)
+        cs().status = _NOT_ENTERED;
+    }
+
     /// STORAGE GETTERS ///
+
+    function cs() internal pure returns (ContractStorage storage) {
+        return LibStorage.contractStorage();
+    }
 
     function ms() internal pure returns (MarketsStorage storage) {
         return LibStorage.marketsStorage();

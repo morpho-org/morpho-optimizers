@@ -9,7 +9,7 @@ contract TestRewards is TestSetup {
         cTokens[0] = cDai;
 
         hevm.expectRevert(PositionsManagerForCompoundEventsErrors.AmountIsZero.selector);
-        positionsManager.claimRewards(cTokens, false);
+        morphoCompound.claimRewards(cTokens, false);
     }
 
     function testShouldRevertWhenAccruingRewardsForInvalidCToken() public {
@@ -27,7 +27,7 @@ contract TestRewards is TestSetup {
         supplier1.supply(cDai, toSupply);
         uint256 balanceBefore = supplier1.balanceOf(comp);
 
-        (, uint256 onPool) = positionsManager.supplyBalanceInOf(cDai, address(supplier1));
+        (, uint256 onPool) = morphoCompound.supplyBalanceInOf(cDai, address(supplier1));
         uint256 userIndex = rewardsManager.compSupplierIndex(cDai, address(supplier1));
         address[] memory cTokens = new address[](1);
         cTokens[0] = cDai;
@@ -63,7 +63,7 @@ contract TestRewards is TestSetup {
 
         uint256 index = comptroller.compSupplyState(cDai).index;
 
-        (, uint256 onPool) = positionsManager.supplyBalanceInOf(cDai, address(supplier1));
+        (, uint256 onPool) = morphoCompound.supplyBalanceInOf(cDai, address(supplier1));
         uint256 userIndex = rewardsManager.compSupplierIndex(cDai, address(supplier1));
         address[] memory cTokens = new address[](1);
         cTokens[0] = cDai;
@@ -96,7 +96,7 @@ contract TestRewards is TestSetup {
 
         uint256 index = comptroller.compBorrowState(cUsdc).index;
 
-        (, uint256 onPool) = positionsManager.borrowBalanceInOf(cUsdc, address(supplier1));
+        (, uint256 onPool) = morphoCompound.borrowBalanceInOf(cUsdc, address(supplier1));
         uint256 userIndex = rewardsManager.compBorrowerIndex(cUsdc, address(supplier1));
         address[] memory cTokens = new address[](1);
         cTokens[0] = cUsdc;
@@ -127,7 +127,7 @@ contract TestRewards is TestSetup {
 
         uint256 index = comptroller.compBorrowState(cUsdc).index;
 
-        (, uint256 onPool) = positionsManager.borrowBalanceInOf(cUsdc, address(supplier1));
+        (, uint256 onPool) = morphoCompound.borrowBalanceInOf(cUsdc, address(supplier1));
         uint256 userIndex = rewardsManager.compBorrowerIndex(cUsdc, address(supplier1));
         address[] memory cTokens = new address[](1);
         cTokens[0] = cUsdc;

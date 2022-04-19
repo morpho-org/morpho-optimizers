@@ -21,7 +21,7 @@ contract TestSupply is TestSetup {
             "balance of cToken"
         );
 
-        (uint256 inP2P, uint256 onPool) = positionsManager.supplyBalanceInOf(
+        (uint256 inP2P, uint256 onPool) = morphoCompound.supplyBalanceInOf(
             cDai,
             address(supplier1)
         );
@@ -49,12 +49,12 @@ contract TestSupply is TestSetup {
         (uint256 supplyP2PExchangeRate, ) = marketsManager.getUpdatedP2PExchangeRates(cDai);
         uint256 expectedSupplyBalanceInP2P = amount.div(supplyP2PExchangeRate);
 
-        (uint256 inP2PSupplier, uint256 onPoolSupplier) = positionsManager.supplyBalanceInOf(
+        (uint256 inP2PSupplier, uint256 onPoolSupplier) = morphoCompound.supplyBalanceInOf(
             cDai,
             address(supplier1)
         );
 
-        (uint256 inP2PBorrower, uint256 onPoolBorrower) = positionsManager.borrowBalanceInOf(
+        (uint256 inP2PBorrower, uint256 onPoolBorrower) = morphoCompound.borrowBalanceInOf(
             cDai,
             address(borrower1)
         );
@@ -82,14 +82,14 @@ contract TestSupply is TestSetup {
         uint256 supplyPoolIndex = ICToken(cDai).exchangeRateCurrent();
         uint256 expectedSupplyBalanceOnPool = amount.div(supplyPoolIndex);
 
-        (uint256 inP2PSupplier, uint256 onPoolSupplier) = positionsManager.supplyBalanceInOf(
+        (uint256 inP2PSupplier, uint256 onPoolSupplier) = morphoCompound.supplyBalanceInOf(
             cDai,
             address(supplier1)
         );
         assertEq(onPoolSupplier, expectedSupplyBalanceOnPool, "on pool supplier");
         assertEq(inP2PSupplier, expectedSupplyBalanceInP2P, "in P2P supplier");
 
-        (uint256 inP2PBorrower, uint256 onPoolBorrower) = positionsManager.borrowBalanceInOf(
+        (uint256 inP2PBorrower, uint256 onPoolBorrower) = morphoCompound.borrowBalanceInOf(
             cDai,
             address(borrower1)
         );
@@ -124,7 +124,7 @@ contract TestSupply is TestSetup {
         uint256 supplyP2PExchangeRate = marketsManager.supplyP2PExchangeRate(cDai);
 
         for (uint256 i = 0; i < NMAX; i++) {
-            (inP2P, onPool) = positionsManager.borrowBalanceInOf(cDai, address(borrowers[i]));
+            (inP2P, onPool) = morphoCompound.borrowBalanceInOf(cDai, address(borrowers[i]));
 
             expectedInP2P = amountPerBorrower.div(marketsManager.borrowP2PExchangeRate(cDai));
 
@@ -132,7 +132,7 @@ contract TestSupply is TestSetup {
             assertEq(onPool, 0, "on pool per borrower");
         }
 
-        (inP2P, onPool) = positionsManager.supplyBalanceInOf(cDai, address(supplier1));
+        (inP2P, onPool) = morphoCompound.supplyBalanceInOf(cDai, address(supplier1));
         expectedInP2P = amount.div(supplyP2PExchangeRate);
 
         assertEq(inP2P, expectedInP2P, "in P2P");
@@ -167,7 +167,7 @@ contract TestSupply is TestSetup {
         uint256 supplyPoolIndex = ICToken(cDai).exchangeRateCurrent();
 
         for (uint256 i = 0; i < NMAX; i++) {
-            (inP2P, onPool) = positionsManager.borrowBalanceInOf(cDai, address(borrowers[i]));
+            (inP2P, onPool) = morphoCompound.borrowBalanceInOf(cDai, address(borrowers[i]));
 
             expectedInP2P = amountPerBorrower.div(marketsManager.borrowP2PExchangeRate(cDai));
 
@@ -175,7 +175,7 @@ contract TestSupply is TestSetup {
             assertEq(onPool, 0, "borrower on pool");
         }
 
-        (inP2P, onPool) = positionsManager.supplyBalanceInOf(cDai, address(supplier1));
+        (inP2P, onPool) = morphoCompound.supplyBalanceInOf(cDai, address(supplier1));
 
         expectedInP2P = (amount / 2).div(supplyP2PExchangeRate);
         uint256 expectedOnPool = (amount / 2).div(supplyPoolIndex);
@@ -195,7 +195,7 @@ contract TestSupply is TestSetup {
         uint256 supplyPoolIndex = ICToken(cDai).exchangeRateCurrent();
         uint256 expectedOnPool = (2 * amount).div(supplyPoolIndex);
 
-        (, uint256 onPool) = positionsManager.supplyBalanceInOf(cDai, address(supplier1));
+        (, uint256 onPool) = morphoCompound.supplyBalanceInOf(cDai, address(supplier1));
         assertEq(onPool, expectedOnPool);
     }
 

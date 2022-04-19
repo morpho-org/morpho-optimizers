@@ -58,7 +58,7 @@ contract TestPositionsManagerGetters is TestSetup {
         uint256 toBorrow = amount / 10;
 
         uint8 NDS = 10;
-        positionsManager.setNDS(NDS);
+        morphoCompound.setNDS(NDS);
         createSigners(NDS);
         for (uint256 i; i < borrowers.length; i++) {
             borrowers[i].approve(dai, amount - i * 1e18);

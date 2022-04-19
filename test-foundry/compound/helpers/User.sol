@@ -2,6 +2,7 @@
 pragma solidity 0.8.13;
 
 import "@contracts/compound/interfaces/IRewardsManagerForCompound.sol";
+import "@contracts/compound/interfaces/IMorphoCompound.sol";
 
 import "@contracts/compound/libraries/Types.sol";
 
@@ -15,12 +16,14 @@ contract User {
     PositionsManagerForCompound internal positionsManager;
     MarketsManagerForCompound internal marketsManager;
     IRewardsManagerForCompound internal rewardsManager;
+    IMorphoCompound internal morphoCompound;
     IComptroller internal comptroller;
 
     constructor(address _diamond) {
         positionsManager = PositionsManagerForCompound(payable(_diamond));
         marketsManager = MarketsManagerForCompound(_diamond);
         rewardsManager = MorphoLensForCompound(_diamond).rewardsManager();
+        morphoCompound = IMorphoCompound(_diamond);
         comptroller = marketsManager.comptroller();
     }
 
@@ -111,26 +114,26 @@ contract User {
     }
 
     function setNDS(uint8 _newNDS) external {
-        positionsManager.setNDS(_newNDS);
+        morphoCompound.setNDS(_newNDS);
     }
 
     function setMaxGas(Types.MaxGas memory _maxGas) external {
-        positionsManager.setMaxGas(_maxGas);
+        morphoCompound.setMaxGas(_maxGas);
     }
 
     function claimRewards(address[] calldata _assets, bool _toSwap) external {
-        positionsManager.claimRewards(_assets, _toSwap);
+        morphoCompound.claimRewards(_assets, _toSwap);
     }
 
     function setNoP2P(address _marketAddress, bool _noP2P) external {
-        marketsManager.setNoP2P(_marketAddress, _noP2P);
+        morphoCompound.setNoP2P(_marketAddress, _noP2P);
     }
 
     function setTreasuryVault(address _newTreasuryVault) external {
-        positionsManager.setTreasuryVault(_newTreasuryVault);
+        morphoCompound.setTreasuryVault(_newTreasuryVault);
     }
 
     function setPauseStatus(address _poolTokenAddress) external {
-        positionsManager.setPauseStatus(_poolTokenAddress);
+        morphoCompound.setPauseStatus(_poolTokenAddress);
     }
 }

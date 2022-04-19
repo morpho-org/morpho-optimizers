@@ -10,15 +10,15 @@ contract TestPausableMarket is TestSetup {
         hevm.expectRevert("LibDiamond: Must be contract owner");
         supplier1.setPauseStatus(dai);
 
-        positionsManager.setPauseStatus(dai);
+        morphoCompound.setPauseStatus(dai);
         assertTrue(morphoLens.paused(dai), "paused is false");
     }
 
     function testPauseUnpause() public {
-        positionsManager.setPauseStatus(dai);
+        morphoCompound.setPauseStatus(dai);
         assertTrue(morphoLens.paused(dai), "paused is false");
 
-        positionsManager.setPauseStatus(dai);
+        morphoCompound.setPauseStatus(dai);
         assertFalse(morphoLens.paused(dai), "paused is true");
     }
 
@@ -51,7 +51,7 @@ contract TestPausableMarket is TestSetup {
         supplier1.withdraw(cDai, 1 ether);
 
         hevm.expectRevert(PositionsManagerForCompoundEventsErrors.AmountIsZero.selector);
-        positionsManager.claimToTreasury(cDai);
+        morphoCompound.claimToTreasury(cDai);
     }
 
     function testShouldNotTriggerFunctionsWhenPaused() public {
@@ -63,8 +63,8 @@ contract TestPausableMarket is TestSetup {
         (, uint256 toBorrow) = morphoLens.getUserMaxCapacitiesForAsset(address(supplier1), cUsdc);
         supplier1.borrow(cUsdc, toBorrow);
 
-        positionsManager.setPauseStatus(cDai);
-        positionsManager.setPauseStatus(cUsdc);
+        morphoCompound.setPauseStatus(cDai);
+        morphoCompound.setPauseStatus(cUsdc);
 
         hevm.expectRevert(abi.encodeWithSignature("MarketPaused()"));
         supplier1.supply(cDai, amount);
@@ -90,6 +90,6 @@ contract TestPausableMarket is TestSetup {
         liquidator.liquidate(cUsdc, cDai, address(supplier1), toLiquidate);
 
         hevm.expectRevert(abi.encodeWithSignature("MarketPaused()"));
-        positionsManager.claimToTreasury(cDai);
+        morphoCompound.claimToTreasury(cDai);
     }
 }

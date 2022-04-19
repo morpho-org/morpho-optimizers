@@ -20,11 +20,11 @@ contract TestMarketStrategy is TestSetup {
         supplier1.supply(cDai, toBorrow);
 
         // supplier1 and borrower1 should not be in P2P
-        (uint256 borrowInP2P, uint256 borrowOnPool) = positionsManager.borrowBalanceInOf(
+        (uint256 borrowInP2P, uint256 borrowOnPool) = morphoCompound.borrowBalanceInOf(
             cDai,
             address(borrower1)
         );
-        (uint256 supplyInP2P, uint256 supplyOnPool) = positionsManager.supplyBalanceInOf(
+        (uint256 supplyInP2P, uint256 supplyOnPool) = morphoCompound.supplyBalanceInOf(
             cDai,
             address(supplier1)
         );
@@ -51,11 +51,11 @@ contract TestMarketStrategy is TestSetup {
         borrower1.borrow(cDai, toBorrow);
 
         // supplier1 and borrower1 should not be in P2P
-        (uint256 borrowInP2P, uint256 borrowOnPool) = positionsManager.borrowBalanceInOf(
+        (uint256 borrowInP2P, uint256 borrowOnPool) = morphoCompound.borrowBalanceInOf(
             cDai,
             address(borrower1)
         );
-        (uint256 supplyInP2P, uint256 supplyOnPool) = positionsManager.supplyBalanceInOf(
+        (uint256 supplyInP2P, uint256 supplyOnPool) = morphoCompound.supplyBalanceInOf(
             cDai,
             address(supplier1)
         );
@@ -86,7 +86,7 @@ contract TestMarketStrategy is TestSetup {
         uint256 borrowOnPool;
 
         for (uint256 i = 0; i < 3; i++) {
-            (borrowInP2P, borrowOnPool) = positionsManager.borrowBalanceInOf(
+            (borrowInP2P, borrowOnPool) = morphoCompound.borrowBalanceInOf(
                 cDai,
                 address(borrowers[i])
             );
@@ -94,7 +94,7 @@ contract TestMarketStrategy is TestSetup {
             assertGt(borrowOnPool, 0);
         }
 
-        (uint256 supplyInP2P, uint256 supplyOnPool) = positionsManager.supplyBalanceInOf(
+        (uint256 supplyInP2P, uint256 supplyOnPool) = morphoCompound.supplyBalanceInOf(
             cDai,
             address(supplier1)
         );
@@ -125,7 +125,7 @@ contract TestMarketStrategy is TestSetup {
         uint256 supplyOnPool;
 
         for (uint256 i = 0; i < 3; i++) {
-            (supplyInP2P, supplyOnPool) = positionsManager.supplyBalanceInOf(
+            (supplyInP2P, supplyOnPool) = morphoCompound.supplyBalanceInOf(
                 cDai,
                 address(suppliers[i])
             );
@@ -133,7 +133,7 @@ contract TestMarketStrategy is TestSetup {
             assertGt(supplyOnPool, 0);
         }
 
-        (uint256 borrowInP2P, uint256 borrowOnPool) = positionsManager.borrowBalanceInOf(
+        (uint256 borrowInP2P, uint256 borrowOnPool) = morphoCompound.borrowBalanceInOf(
             cDai,
             address(borrower1)
         );

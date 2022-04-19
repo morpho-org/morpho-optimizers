@@ -35,10 +35,7 @@ contract TestLiquidate is TestSetup {
         (, uint256 amount) = morphoLens.getUserMaxCapacitiesForAsset(address(borrower1), cDai);
         borrower1.borrow(cDai, amount);
 
-        (, uint256 collateralOnPool) = positionsManager.supplyBalanceInOf(
-            cUsdc,
-            address(borrower1)
-        );
+        (, uint256 collateralOnPool) = morphoCompound.supplyBalanceInOf(cUsdc, address(borrower1));
 
         // Change Oracle.
         SimplePriceOracle customOracle = createAndSetCustomPriceOracle();
@@ -51,7 +48,7 @@ contract TestLiquidate is TestSetup {
         liquidator.liquidate(cDai, cUsdc, address(borrower1), toRepay);
 
         // Check borrower1 borrow balance.
-        (uint256 inP2PBorrower, uint256 onPoolBorrower) = positionsManager.borrowBalanceInOf(
+        (uint256 inP2PBorrower, uint256 onPoolBorrower) = morphoCompound.borrowBalanceInOf(
             cDai,
             address(borrower1)
         );
@@ -60,7 +57,7 @@ contract TestLiquidate is TestSetup {
         assertEq(inP2PBorrower, 0, "borrower borrow in P2P");
 
         // Check borrower1 supply balance.
-        (inP2PBorrower, onPoolBorrower) = positionsManager.supplyBalanceInOf(
+        (inP2PBorrower, onPoolBorrower) = morphoCompound.supplyBalanceInOf(
             cUsdc,
             address(borrower1)
         );
@@ -101,12 +98,12 @@ contract TestLiquidate is TestSetup {
         supplier1.borrow(cDai, supplierDebt);
         borrower1.borrow(cUsdc, borrowerDebt);
 
-        (uint256 inP2PUsdc, uint256 onPoolUsdc) = positionsManager.borrowBalanceInOf(
+        (uint256 inP2PUsdc, uint256 onPoolUsdc) = morphoCompound.borrowBalanceInOf(
             cUsdc,
             address(borrower1)
         );
 
-        (uint256 inP2PDai, uint256 onPoolDai) = positionsManager.supplyBalanceInOf(
+        (uint256 inP2PDai, uint256 onPoolDai) = morphoCompound.supplyBalanceInOf(
             cDai,
             address(borrower1)
         );
@@ -122,7 +119,7 @@ contract TestLiquidate is TestSetup {
         liquidator.liquidate(cUsdc, cDai, address(borrower1), toRepay);
 
         // Check borrower1 borrow balance.
-        (uint256 inP2PBorrower, uint256 onPoolBorrower) = positionsManager.borrowBalanceInOf(
+        (uint256 inP2PBorrower, uint256 onPoolBorrower) = morphoCompound.borrowBalanceInOf(
             cUsdc,
             address(borrower1)
         );
@@ -139,7 +136,7 @@ contract TestLiquidate is TestSetup {
         );
 
         // Check borrower1 supply balance.
-        (inP2PBorrower, onPoolBorrower) = positionsManager.supplyBalanceInOf(
+        (inP2PBorrower, onPoolBorrower) = morphoCompound.supplyBalanceInOf(
             cDai,
             address(borrower1)
         );
@@ -178,12 +175,12 @@ contract TestLiquidate is TestSetup {
         supplier1.borrow(cDai, supplierDebt);
         borrower1.borrow(cUsdc, borrowerDebt);
 
-        (uint256 inP2PUsdc, uint256 onPoolUsdc) = positionsManager.borrowBalanceInOf(
+        (uint256 inP2PUsdc, uint256 onPoolUsdc) = morphoCompound.borrowBalanceInOf(
             cUsdc,
             address(borrower1)
         );
 
-        (uint256 inP2PDai, uint256 onPoolDai) = positionsManager.supplyBalanceInOf(
+        (uint256 inP2PDai, uint256 onPoolDai) = morphoCompound.supplyBalanceInOf(
             cDai,
             address(borrower1)
         );
@@ -199,7 +196,7 @@ contract TestLiquidate is TestSetup {
         liquidator.liquidate(cUsdc, cDai, address(borrower1), toRepay);
 
         // Check borrower1 borrow balance.
-        (uint256 inP2PBorrower, uint256 onPoolBorrower) = positionsManager.borrowBalanceInOf(
+        (uint256 inP2PBorrower, uint256 onPoolBorrower) = morphoCompound.borrowBalanceInOf(
             cUsdc,
             address(borrower1)
         );
@@ -215,7 +212,7 @@ contract TestLiquidate is TestSetup {
         assertEq(inP2PBorrower, inP2PUsdc, "borrower borrow in P2P");
 
         // Check borrower1 supply balance.
-        (inP2PBorrower, onPoolBorrower) = positionsManager.supplyBalanceInOf(
+        (inP2PBorrower, onPoolBorrower) = morphoCompound.supplyBalanceInOf(
             cDai,
             address(borrower1)
         );
