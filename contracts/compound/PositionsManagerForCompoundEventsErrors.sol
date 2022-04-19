@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import "../libraries/Types.sol";
+import "./libraries/Types.sol";
 
 /// @title PositionsManagerForCompoundEventsErrors.
 /// @notice Events and Errors for PositionsManagerForCompound.
@@ -84,26 +84,6 @@ contract PositionsManagerForCompoundEventsErrors {
         address indexed _poolTokenCollateralAddress
     );
 
-    /// @notice Emitted when the borrow P2P delta is updated.
-    /// @param _poolTokenAddress The address of the market.
-    /// @param _borrowP2PDelta The borrow P2P delta after update.
-    event BorrowP2PDeltaUpdated(address indexed _poolTokenAddress, uint256 _borrowP2PDelta);
-
-    /// @notice Emitted when the supply P2P delta is updated.
-    /// @param _poolTokenAddress The address of the market.
-    /// @param _supplyP2PDelta The supply P2P delta after update.
-    event SupplyP2PDeltaUpdated(address indexed _poolTokenAddress, uint256 _supplyP2PDelta);
-
-    /// @notice Emitted when the supply and borrow P2P amounts are updated.
-    /// @param _poolTokenAddress The address of the market.
-    /// @param _supplyP2PAmount The supply P2P amount after update.
-    /// @param _borrowP2PAmount The borrow P2P amount after update.
-    event P2PAmountsUpdated(
-        address indexed _poolTokenAddress,
-        uint256 _supplyP2PAmount,
-        uint256 _borrowP2PAmount
-    );
-
     /// @notice Emitted when a new value for `NDS` is set.
     /// @param _newValue The new value of `NDS`.
     event NDSSet(uint8 _newValue);
@@ -123,10 +103,6 @@ contract PositionsManagerForCompoundEventsErrors {
     /// @notice Emitted the address of the `rewardsManager` is set.
     /// @param _newRewardsManagerAddress The new address of the `rewardsManager`.
     event RewardsManagerSet(address indexed _newRewardsManagerAddress);
-
-    /// @notice Emitted the address of the `aaveIncentivesController` is set.
-    /// @param _aaveIncentivesController The new address of the `aaveIncentivesController`.
-    event CompoundIncentivesControllerSet(address _aaveIncentivesController);
 
     /// @notice Emitted when a market is paused or unpaused.
     /// @param _poolTokenAddress The address of the pool token concerned..
@@ -154,48 +130,27 @@ contract PositionsManagerForCompoundEventsErrors {
 
     /// ERRORS ///
 
-    /// @notice Thrown when the amount is equal to 0.
-    error AmountIsZero();
-
-    /// @notice Thrown when the address is the zero address.
-    error ZeroAddress();
-
-    /// @notice Thrown when the market is not created yet.
-    error MarketNotCreated();
-
-    /// @notice Thrown when the market is paused.
-    error MarketPaused();
-
-    /// @notice Thrown when the market is not listed on Compound.
-    error MarketIsNotListedOnCompound();
-
-    /// @notice Thrown when only the markets manager can call the function.
-    error OnlyMarketsManager();
-
-    /// @notice Thrown when the debt value is above the maximum debt value.
-    error DebtValueAboveMax();
-
-    /// @notice Thrown when the debt value is not above the maximum debt value.
-    error DebtValueNotAboveMax();
+    /// @notice Thrown when the amount repaid during the liquidation is above what is allowed to be repaid.
+    error AmountAboveWhatAllowedToRepay();
 
     /// @notice Thrown when the amount of collateral to seize is above the collateral amount.
     error ToSeizeAboveCollateral();
 
-    /// @notice Thrown when the amount repaid during the liquidation is above what is allowed to be repaid.
-    error AmountAboveWhatAllowedToRepay();
+    /// @notice Thrown when the debt value is not above the maximum debt value.
+    error DebtValueNotAboveMax();
 
     /// @notice Thrown when the Compound's oracle failed.
     error CompoundOracleFailed();
 
-    /// @notice Thrown when the borrow on Compound failed.
-    error BorrowOnCompoundFailed();
+    /// @notice Thrown when the market is not created yet.
+    error MarketNotCreated();
 
-    /// @notice Thrown when the redeem on Compound failed .
-    error RedeemOnCompoundFailed();
+    /// @notice Thrown when the amount is equal to 0.
+    error AmountIsZero();
 
-    /// @notice Thrown when the repay on Compound failed.
-    error RepayOnCompoundFailed();
+    /// @notice Thrown when the market is paused.
+    error MarketPaused();
 
-    /// @notice Thrown when the mint on Compound failed.
-    error MintOnCompoundFailed();
+    /// @notice Thrown when the address is the zero address.
+    error ZeroAddress();
 }

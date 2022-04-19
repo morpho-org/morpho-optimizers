@@ -2,7 +2,6 @@
 pragma solidity 0.8.13;
 
 import "../interfaces/compound/ICompound.sol";
-import "../interfaces/IWETH.sol";
 
 import {LibStorage, MarketsStorage, PositionsStorage} from "./LibStorage.sol";
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
@@ -16,6 +15,8 @@ library LibPositionsManagerGetters {
     using DoubleLinkedList for DoubleLinkedList.List;
     using CompoundMath for uint256;
 
+    /// STORAGE GETTERS ///
+
     function ms() internal pure returns (MarketsStorage storage) {
         return LibStorage.marketsStorage();
     }
@@ -23,6 +24,8 @@ library LibPositionsManagerGetters {
     function ps() internal pure returns (PositionsStorage storage) {
         return LibStorage.positionsStorage();
     }
+
+    /// GETTERS ///
 
     /// @notice Gets the head of the data structure on a specific market (for UI).
     /// @param _poolTokenAddress The address of the market from which to get the head.
@@ -99,6 +102,7 @@ library LibPositionsManagerGetters {
         }
     }
 
+    // TODO: Move this function in a lens contract.
     /// @notice Returns the maximum amount available to withdraw and borrow for `_user` related to `_poolTokenAddress` (in underlyings).
     /// @dev Note: must be called after calling `accrueInterest()` on the cToken to have the most up to date values.
     /// @param _user The user to determine the capacities for.

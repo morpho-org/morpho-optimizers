@@ -2,7 +2,7 @@
 pragma solidity 0.8.13;
 
 import "./setup/TestSetup.sol";
-import "@contracts/compound/positions-manager-parts/PositionsManagerForCompoundEventsErrors.sol";
+import "@contracts/compound/PositionsManagerForCompoundEventsErrors.sol";
 
 contract TestBorrow is TestSetup {
     using FixedPointMathLib for uint256;
@@ -19,7 +19,7 @@ contract TestBorrow is TestSetup {
             cDai
         );
 
-        hevm.expectRevert(PositionsManagerForCompoundEventsErrors.DebtValueAboveMax.selector);
+        hevm.expectRevert(LibPositionsManager.DebtValueAboveMax.selector);
         borrower1.borrow(cDai, borrowable + 1e12);
     }
 

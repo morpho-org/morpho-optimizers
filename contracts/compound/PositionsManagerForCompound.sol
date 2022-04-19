@@ -6,30 +6,34 @@ import "./libraries/LibMarketsManager.sol";
 import "./libraries/CompoundMath.sol";
 import "./libraries/LibStorage.sol";
 
-import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol"; // TODO: hceck if upgradabble version necessary necessary
-
-import "./positions-manager-parts/PositionsManagerForCompoundEventsErrors.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "./PositionsManagerForCompoundEventsErrors.sol";
 
 /// @title PositionsManagerForCompound.
 /// @notice Smart contract interacting with Compound to enable P2P supply/borrow positions that can fallback on Compound's pool using pool tokens.
 contract PositionsManagerForCompound is
+    PositionsManagerForCompoundEventsErrors,
     WithStorageAndModifiers,
-    ReentrancyGuardUpgradeable,
-    PositionsManagerForCompoundEventsErrors
+    ReentrancyGuard
 {
     using DoubleLinkedList for DoubleLinkedList.List;
     using SafeTransferLib for ERC20;
     using CompoundMath for uint256;
 
-    // TODO: remove these modifiers
+    /// STRUCTS ///
 
-    /// @notice Prevents a user to trigger a function when market is not created or paused.
-    /// @param _poolTokenAddress The address of the market to check.
-    modifier isMarketCreatedAndNotPaused(address _poolTokenAddress) {
-        if (!ms().isCreated[_poolTokenAddress]) revert MarketNotCreated();
-        if (ps().paused[_poolTokenAddress]) revert MarketPaused();
-        _;
+    // Struct to avoid stack too deep.
+    struct LiquidateVars {
+        uint256 debtValue;
+        uint256 maxDebtValue;
+        uint256 borrowBalance;
+        uint256 supplyBalance;
+        uint256 collateralPrice;
+        uint256 borrowedPrice;
+        uint256 amountToSeize;
     }
+
+    /// EXTERNAL ///
 
     receive() external payable {}
 
@@ -199,7 +203,7 @@ contract PositionsManagerForCompound is
         if (_amount == 0) revert AmountIsZero();
         LibMarketsManager.updateP2PExchangeRates(_poolTokenBorrowedAddress);
         LibMarketsManager.updateP2PExchangeRates(_poolTokenCollateralAddress);
-        Types.LiquidateVars memory vars;
+        LiquidateVars memory vars;
 
         (vars.debtValue, vars.maxDebtValue) = LibPositionsManagerGetters
         .getUserHypotheticalBalanceStates(_borrower, address(0), 0, 0);
@@ -257,11 +261,9 @@ contract PositionsManagerForCompound is
 
     /// @dev Transfers the protocol reserve fee to the DAO.
     /// @param _poolTokenAddress The address of the market on which we want to claim the reserve fee.
-    function claimToTreasury(address _poolTokenAddress)
-        external
-        onlyOwner
-        isMarketCreatedAndNotPaused(_poolTokenAddress)
-    {
+    function claimToTreasury(address _poolTokenAddress) external onlyOwner {
+        if (!ms().isCreated[_poolTokenAddress]) revert MarketNotCreated();
+        if (ps().paused[_poolTokenAddress]) revert MarketPaused();
         if (ps().treasuryVault == address(0)) revert ZeroAddress();
 
         ERC20 underlyingToken = LibPositionsManagerGetters.getUnderlying(_poolTokenAddress);
@@ -333,19 +335,19 @@ contract PositionsManagerForCompound is
         emit RewardsManagerSet(_rewardsManagerAddress);
     }
 
-    /// @notice Toggles the activation of COMP rewards.
-    function toggleCompRewardsActivation() external onlyOwner {
-        bool newCompRewardsActive = !ps().isCompRewardsActive;
-        ps().isCompRewardsActive = newCompRewardsActive;
-        emit CompRewardsActive(newCompRewardsActive);
-    }
-
     /// @notice Sets the pause status on a specific market in case of emergency.
     /// @param _poolTokenAddress The address of the market to pause/unpause.
     function setPauseStatus(address _poolTokenAddress) external onlyOwner {
         bool newPauseStatus = !ps().paused[_poolTokenAddress];
         ps().paused[_poolTokenAddress] = newPauseStatus;
         emit PauseStatusSet(_poolTokenAddress, newPauseStatus);
+    }
+
+    /// @notice Toggles the activation of COMP rewards.
+    function toggleCompRewardsActivation() external onlyOwner {
+        bool newCompRewardsActive = !ps().isCompRewardsActive;
+        ps().isCompRewardsActive = newCompRewardsActive;
+        emit CompRewardsActive(newCompRewardsActive);
     }
 
     /// GETTERS ///

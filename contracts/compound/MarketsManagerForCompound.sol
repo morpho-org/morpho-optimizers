@@ -9,23 +9,12 @@ import "./libraries/CompoundMath.sol";
 import "./libraries/LibStorage.sol";
 import "./libraries/Types.sol";
 
-/** TODO:
-    1. Convert this contract into a facet
-        a. Change all functions to use inherited storage functions
-        b. Remove this contract's storage variables
-        c. Move logic, events, errors into libraries, use facet functions primarily as external entry points into logic
-        d. Move init to an initDiamond contract*/
-
 /// @title MarketsManagerForCompound.
 /// @notice Smart contract managing the markets used by a MorphoPositionsManagerForCompound contract, an other contract interacting with Compound or a fork of Compound.
 contract MarketsManagerForCompound is WithStorageAndModifiers {
     using CompoundMath for uint256;
 
     /// EVENTS ///
-
-    /// @notice Emitted when the `positionsManager` is set.
-    /// @param _positionsManager The address of the `positionsManager`.
-    event PositionsManagerSet(address _positionsManager);
 
     /// @notice Emitted when the `interestRates` is set.
     /// @param _interestRates The address of the `interestRates`.
@@ -35,16 +24,6 @@ contract MarketsManagerForCompound is WithStorageAndModifiers {
     /// @param _poolTokenAddress The address of the market to set.
     /// @param _noP2P The new value of `_noP2P` adopted.
     event NoP2PSet(address indexed _poolTokenAddress, bool _noP2P);
-
-    /// @notice Emitted when the P2P BPYs of a market are updated.
-    /// @param _poolTokenAddress The address of the market updated.
-    /// @param _newSupplyP2PBPY The new value of the supply  P2P BPY.
-    /// @param _newBorrowP2PBPY The new value of the borrow P2P BPY.
-    event P2PBPYsUpdated(
-        address indexed _poolTokenAddress,
-        uint256 _newSupplyP2PBPY,
-        uint256 _newBorrowP2PBPY
-    );
 
     /// @notice Emitted when the `reserveFactor` is set.
     /// @param _poolTokenAddress The address of the market set.
@@ -66,6 +45,20 @@ contract MarketsManagerForCompound is WithStorageAndModifiers {
     }
 
     /// EXTERNAL ///
+
+    /// @notice Creates a new market to borrow/supply in.
+    /// @param _poolTokenAddress The pool token address of the given market.
+    function createMarket(address _poolTokenAddress) external onlyOwner {
+        LibMarketsManager.createMarket(_poolTokenAddress);
+    }
+
+    /// @notice Updates the P2P exchange rates, taking into account the Second Percentage Yield values.
+    /// @param _poolTokenAddress The address of the market to update.
+    function updateP2PExchangeRates(address _poolTokenAddress) external {
+        LibMarketsManager.updateP2PExchangeRates(_poolTokenAddress);
+    }
+
+    /// SETTERS ///
 
     /// @notice Sets the `intersRates`.
     /// @param _interestRates The new `interestRates` contract.
@@ -89,12 +82,6 @@ contract MarketsManagerForCompound is WithStorageAndModifiers {
         emit ReserveFactorSet(_poolTokenAddress, ms().reserveFactor[_poolTokenAddress]);
     }
 
-    /// @notice Creates a new market to borrow/supply in.
-    /// @param _poolTokenAddress The pool token address of the given market.
-    function createMarket(address _poolTokenAddress) external onlyOwner {
-        LibMarketsManager.createMarket(_poolTokenAddress);
-    }
-
     /// @notice Sets whether to match people P2P or not.
     /// @param _poolTokenAddress The address of the market.
     /// @param _noP2P Whether to match people P2P or not.
@@ -106,6 +93,8 @@ contract MarketsManagerForCompound is WithStorageAndModifiers {
         ms().noP2P[_poolTokenAddress] = _noP2P;
         emit NoP2PSet(_poolTokenAddress, _noP2P);
     }
+
+    /// GETTERS ///
 
     /// @notice Returns all created markets.
     /// @return marketsCreated_ The list of market adresses.
@@ -168,12 +157,6 @@ contract MarketsManagerForCompound is WithStorageAndModifiers {
         returns (uint256 newSupplyP2PExchangeRate, uint256 newBorrowP2PExchangeRate)
     {
         return LibMarketsManager.getUpdatedP2PExchangeRates(_poolTokenAddress);
-    }
-
-    /// @notice Updates the P2P exchange rates, taking into account the Second Percentage Yield values.
-    /// @param _poolTokenAddress The address of the market to update.
-    function updateP2PExchangeRates(address _poolTokenAddress) external {
-        LibMarketsManager.updateP2PExchangeRates(_poolTokenAddress);
     }
 
     /// @notice Whether or not this market is created.

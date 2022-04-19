@@ -153,15 +153,11 @@ contract TestSetup is Config, Utils, stdCheats {
             marketsManagerFunctionSelectors[index++] = marketsManagerFacet.comptroller.selector;
         }
 
-        console.log("Diamond cut markets");
-
         IDiamondCut.FacetCut memory marketsCut = IDiamondCut.FacetCut({
             facetAddress: address(marketsManagerFacet),
             action: IDiamondCut.FacetCutAction.Add,
             functionSelectors: marketsManagerFunctionSelectors
         });
-
-        console.log("Markets facet added");
 
         bytes4[] memory positionsManagerFunctionSelectors = new bytes4[](31);
         {
@@ -243,21 +239,14 @@ contract TestSetup is Config, Utils, stdCheats {
             .selector;
         }
 
-        console.log("Diamond cut positions");
-
         IDiamondCut.FacetCut memory positionsCut = IDiamondCut.FacetCut({
             facetAddress: address(positionsManagerFacet),
             action: IDiamondCut.FacetCutAction.Add,
             functionSelectors: positionsManagerFunctionSelectors
         });
 
-        console.log("Positions facet added");
-
         cuts.push(marketsCut);
         cuts.push(positionsCut);
-
-        console.log("address marketsManagerFacet", address(marketsManagerFacet));
-        console.log("address positionsManagerFacet", address(positionsManagerFacet));
 
         IDiamondCut(address(diamond)).diamondCut(
             cuts,
@@ -274,8 +263,6 @@ contract TestSetup is Config, Utils, stdCheats {
                 })
             )
         );
-
-        console.log("Diamond Cut Complete");
 
         marketsManager = MarketsManagerForCompound(address(diamond));
         positionsManager = PositionsManagerForCompound(payable(address(diamond)));
@@ -296,7 +283,7 @@ contract TestSetup is Config, Utils, stdCheats {
 
         hevm.roll(block.number + 1);
 
-        ///  Create Morpho token, deploy Incentives Vault and activate COMP rewards ///
+        /// Create Morpho token, deploy Incentives Vault and activate COMP rewards ///
 
         morphoToken = new MorphoToken(address(this));
         dumbOracle = new DumbOracle();
