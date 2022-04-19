@@ -17,6 +17,7 @@ import "@contracts/compound/MatchingEngineForCompound.sol";
 import "@contracts/compound/RewardsManagerForCompound.sol";
 import "@contracts/compound/InterestRatesV1.sol";
 import "@contracts/compound/libraries/FixedPointMathLib.sol";
+import "@contracts/compound/InitDiamond.sol";
 
 import "@contracts/common/diamond/Diamond.sol";
 import "@contracts/common/diamond/facets/DiamondCutFacet.sol";
@@ -107,8 +108,9 @@ contract TestSetup is Config, Utils, stdCheats {
         console.log("Diamond deployed");
         diamondCutFacet = DiamondCutFacet(address(diamond));
         marketsManagerFacet = new MarketsManagerForCompound();
+        InitDiamond initDiamond = new InitDiamond();
 
-        bytes4[] memory marketsManagerFunctionSelectors = new bytes4[](19);
+        bytes4[] memory marketsManagerFunctionSelectors = new bytes4[](20);
         {
             uint256 index;
             marketsManagerFunctionSelectors[index++] = marketsManagerFacet
@@ -117,6 +119,7 @@ contract TestSetup is Config, Utils, stdCheats {
             marketsManagerFunctionSelectors[index++] = marketsManagerFacet
             .setInterestRates
             .selector;
+            marketsManagerFunctionSelectors[index++] = marketsManagerFacet.interestRates.selector;
             marketsManagerFunctionSelectors[index++] = marketsManagerFacet
             .setReserveFactor
             .selector;
@@ -157,8 +160,20 @@ contract TestSetup is Config, Utils, stdCheats {
             action: IDiamondCut.FacetCutAction.Add,
             functionSelectors: marketsManagerFunctionSelectors
         });
+
         cuts.push(cut);
-        IDiamondCut(address(diamond)).diamondCut(cuts, address(0), "");
+
+        IDiamondCut(address(diamond)).diamondCut(
+            cuts,
+            address(initDiamond),
+            abi.encodeWithSelector(
+                initDiamond.init.selector,
+                InitDiamond.Args({
+                    comptroller: IComptroller(address(comptroller)),
+                    interestRates: IInterestRates(address(interestRates))
+                })
+            )
+        );
 
         console.log("Diamond Cut Complete");
 

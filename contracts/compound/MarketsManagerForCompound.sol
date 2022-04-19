@@ -253,15 +253,19 @@ contract MarketsManagerForCompound is WithStorageAndModifiers {
         noP2P_ = ms().noP2P[_market];
     }
 
-    function positionsManager() external view returns (address) {
-        return address(ms().positionsManager);
+    function positionsManager()
+        external
+        view
+        returns (IPositionsManagerForCompound positionsManager_)
+    {
+        positionsManager_ = ms().positionsManager;
     }
 
-    function interestRates() external view returns (address) {
-        return address(ms().interestRates);
+    function interestRates() external view returns (IInterestRates interestRates_) {
+        interestRates_ = ms().interestRates;
     }
 
-    function comptroller() external view returns (address) {
-        return address(ms().comptroller);
+    function comptroller() external view returns (IComptroller comptroller_) {
+        comptroller_ = ms().comptroller;
     }
 }
