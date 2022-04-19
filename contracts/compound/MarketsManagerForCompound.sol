@@ -135,7 +135,7 @@ contract MarketsManagerForCompound is WithStorageAndModifiers {
         )
     {
         {
-            Types.Delta memory delta = ms().positionsManager.deltas(_poolTokenAddress);
+            Types.Delta memory delta = ps().deltas[_poolTokenAddress];
             supplyP2PDelta_ = delta.supplyP2PDelta;
             borrowP2PDelta_ = delta.borrowP2PDelta;
             supplyP2PAmount_ = delta.supplyP2PAmount;
