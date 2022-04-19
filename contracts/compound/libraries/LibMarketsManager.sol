@@ -104,7 +104,7 @@ library LibMarketsManager {
                 poolIndexes.lastSupplyPoolIndex,
                 poolIndexes.lastBorrowPoolIndex,
                 m.reserveFactor[_poolTokenAddress],
-                m.positionsManager.deltas(_poolTokenAddress)
+                ps().deltas[_poolTokenAddress]
             );
 
             (newSupplyP2PExchangeRate, newBorrowP2PExchangeRate) = m
