@@ -12,11 +12,17 @@ import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 
 import "@contracts/compound/PositionsManagerForCompound.sol";
-import "@contracts/compound/MarketsManagerForCompound.sol";
+import "@contracts/compound/MarketsManagerForCompound.sol"; // Now a facet
 import "@contracts/compound/MatchingEngineForCompound.sol";
 import "@contracts/compound/RewardsManagerForCompound.sol";
 import "@contracts/compound/InterestRatesV1.sol";
 import "@contracts/compound/libraries/FixedPointMathLib.sol";
+
+import "@contracts/common/diamond/Diamond.sol";
+import "@contracts/common/diamond/facets/DiamondCutFacet.sol";
+import "@contracts/common/diamond/facets/DiamondLoupeFacet.sol";
+import "@contracts/common/diamond/facets/OwnershipFacet.sol";
+import "@contracts/common/diamond/interfaces/IDiamondCut.sol";
 
 import "../../common/helpers/MorphoToken.sol";
 import "../../common/helpers/Chains.sol";
@@ -40,6 +46,11 @@ contract TestSetup is Config, Utils, stdCheats {
     uint256 public constant MAX_BASIS_POINTS = 10_000;
     uint256 public constant INITIAL_BALANCE = 1_000_000;
 
+    Diamond public diamond;
+    DiamondCutFacet public diamondCutFacet;
+    DiamondLoupeFacet public diamondLoupeFacet;
+    OwnershipFacet public ownershipFacet;
+
     ProxyAdmin public proxyAdmin;
     TransparentUpgradeableProxy public positionsManagerProxy;
     TransparentUpgradeableProxy public marketsManagerProxy;
@@ -49,6 +60,7 @@ contract TestSetup is Config, Utils, stdCheats {
     PositionsManagerForCompound internal fakePositionsManagerImpl;
     MarketsManagerForCompound internal marketsManager;
     MarketsManagerForCompound internal marketsManagerImplV1;
+    MarketsManagerForCompound internal marketsManagerFacet;
     IRewardsManagerForCompound internal rewardsManager;
     IInterestRates internal interestRates;
 
@@ -68,6 +80,8 @@ contract TestSetup is Config, Utils, stdCheats {
     User[] public borrowers;
     User public treasuryVault;
 
+    IDiamondCut.FacetCut[] private cuts;
+
     address[] public pools;
 
     function setUp() public {
@@ -84,19 +98,75 @@ contract TestSetup is Config, Utils, stdCheats {
         matchingEngine = new MatchingEngineForCompound();
         interestRates = new InterestRatesV1();
 
+        /// Diamond ///
+        diamondCutFacet = new DiamondCutFacet();
+        diamondLoupeFacet = new DiamondLoupeFacet();
+        ownershipFacet = new OwnershipFacet();
+
+        diamond = new Diamond(address(this), address(diamondCutFacet));
+        console.log("Diamond deployed");
+        diamondCutFacet = DiamondCutFacet(address(diamond));
+        marketsManagerFacet = new MarketsManagerForCompound();
+
+        bytes4[] memory marketsManagerFunctionSelectors = new bytes4[](19);
+        {
+            uint256 index;
+            marketsManagerFunctionSelectors[index++] = marketsManagerFacet
+            .setPositionsManager
+            .selector;
+            marketsManagerFunctionSelectors[index++] = marketsManagerFacet
+            .setInterestRates
+            .selector;
+            marketsManagerFunctionSelectors[index++] = marketsManagerFacet
+            .setReserveFactor
+            .selector;
+            marketsManagerFunctionSelectors[index++] = marketsManagerFacet.createMarket.selector;
+            marketsManagerFunctionSelectors[index++] = marketsManagerFacet.setNoP2P.selector;
+            marketsManagerFunctionSelectors[index++] = marketsManagerFacet.getAllMarkets.selector;
+            marketsManagerFunctionSelectors[index++] = marketsManagerFacet.getMarketData.selector;
+            marketsManagerFunctionSelectors[index++] = marketsManagerFacet
+            .getMarketConfiguration
+            .selector;
+            marketsManagerFunctionSelectors[index++] = marketsManagerFacet
+            .getUpdatedP2PExchangeRates
+            .selector;
+            marketsManagerFunctionSelectors[index++] = marketsManagerFacet
+            .updateP2PExchangeRates
+            .selector;
+            marketsManagerFunctionSelectors[index++] = marketsManagerFacet.isCreated.selector;
+            marketsManagerFunctionSelectors[index++] = marketsManagerFacet.reserveFactor.selector;
+            marketsManagerFunctionSelectors[index++] = marketsManagerFacet
+            .supplyP2PExchangeRate
+            .selector;
+            marketsManagerFunctionSelectors[index++] = marketsManagerFacet
+            .borrowP2PExchangeRate
+            .selector;
+            marketsManagerFunctionSelectors[index++] = marketsManagerFacet.lastPoolIndexes.selector;
+            marketsManagerFunctionSelectors[index++] = marketsManagerFacet
+            .lastUpdateBlockNumber
+            .selector;
+            marketsManagerFunctionSelectors[index++] = marketsManagerFacet.noP2P.selector;
+            marketsManagerFunctionSelectors[index++] = marketsManagerFacet
+            .positionsManager
+            .selector;
+            marketsManagerFunctionSelectors[index++] = marketsManagerFacet.comptroller.selector;
+        }
+        console.log("Diamond Cut");
+        IDiamondCut.FacetCut memory cut = IDiamondCut.FacetCut({
+            facetAddress: address(marketsManagerFacet),
+            action: IDiamondCut.FacetCutAction.Add,
+            functionSelectors: marketsManagerFunctionSelectors
+        });
+        cuts.push(cut);
+        IDiamondCut(address(diamond)).diamondCut(cuts, address(0), "");
+
+        console.log("Diamond Cut Complete");
+
         /// Deploy proxies ///
-
         proxyAdmin = new ProxyAdmin();
-        marketsManagerImplV1 = new MarketsManagerForCompound();
-        marketsManagerProxy = new TransparentUpgradeableProxy(
-            address(marketsManagerImplV1),
-            address(this),
-            ""
-        );
 
-        marketsManagerProxy.changeAdmin(address(proxyAdmin));
-        marketsManager = MarketsManagerForCompound(address(marketsManagerProxy));
-        marketsManager.initialize(comptroller, interestRates);
+        marketsManager = MarketsManagerForCompound(address(diamond));
+        //marketsManager.initialize(comptroller, interestRates);
         positionsManagerImplV1 = new PositionsManagerForCompound();
         positionsManagerProxy = new TransparentUpgradeableProxy(
             address(positionsManagerImplV1),
@@ -107,7 +177,7 @@ contract TestSetup is Config, Utils, stdCheats {
         positionsManagerProxy.changeAdmin(address(proxyAdmin));
         positionsManager = PositionsManagerForCompound(payable(address(positionsManagerProxy)));
         positionsManager.initialize(
-            marketsManager,
+            IMarketsManagerForCompound(address(marketsManager)),
             matchingEngine,
             comptroller,
             maxGas,

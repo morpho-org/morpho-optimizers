@@ -2,7 +2,6 @@
 pragma solidity 0.8.13;
 
 import "./interfaces/IPositionsManagerForCompound.sol";
-import "./interfaces/IMarketsManagerForCompound.sol";
 import "./interfaces/compound/ICompound.sol";
 
 import "./libraries/CompoundMath.sol";

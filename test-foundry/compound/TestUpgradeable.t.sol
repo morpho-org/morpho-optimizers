@@ -4,6 +4,7 @@ pragma solidity 0.8.13;
 import "./setup/TestSetup.sol";
 
 contract TestUpgradeable is TestSetup {
+    /*
     function testUpgradeMarketsManager() public {
         marketsManager.setReserveFactor(cDai, 1);
 
@@ -12,7 +13,7 @@ contract TestUpgradeable is TestSetup {
 
         // Should not change
         assertEq(marketsManager.reserveFactor(cDai), 1);
-    }
+    }*/
 
     function testUpgradePositionsManager() public {
         uint256 amount = 10000 ether;
@@ -29,6 +30,7 @@ contract TestUpgradeable is TestSetup {
         assertEq(onPool, expectedOnPool);
     }
 
+    /*
     function testOnlyProxyOwnerCanUpgradeMarketsManager() public {
         MarketsManagerForCompound marketsManagerImplV2 = new MarketsManagerForCompound();
 
@@ -49,7 +51,7 @@ contract TestUpgradeable is TestSetup {
         // Revert for wrong data not wrong caller
         hevm.expectRevert("Address: low-level delegate call failed");
         proxyAdmin.upgradeAndCall(marketsManagerProxy, address(marketsManagerImplV2), "");
-    }
+    }*/
 
     function testOnlyProxyOwnerCanUpgradePositionsManager() public {
         PositionsManagerForCompound positionsManagerImplV2 = new PositionsManagerForCompound();

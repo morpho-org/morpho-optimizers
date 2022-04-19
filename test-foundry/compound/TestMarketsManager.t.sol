@@ -18,16 +18,16 @@ contract TestMarketsManager is TestSetup {
     }
 
     function testShouldRevertWhenCreatingMarketWithAnImproperMarket() public {
-        hevm.expectRevert(MarketsManagerForCompound.MarketCreationFailedOnCompound.selector);
+        hevm.expectRevert(LibMarketsManager.MarketCreationFailedOnCompound.selector);
         marketsManager.createMarket(address(supplier1));
     }
 
     function testOnlyOwnerCanCreateMarkets() public {
         for (uint256 i = 0; i < pools.length; i++) {
-            hevm.expectRevert("Ownable: caller is not the owner");
+            hevm.expectRevert("LibDiamond: Must be contract owner");
             supplier1.createMarket(pools[i]);
 
-            hevm.expectRevert("Ownable: caller is not the owner");
+            hevm.expectRevert("LibDiamond: Must be contract owner");
             borrower1.createMarket(pools[i]);
         }
 
@@ -36,10 +36,10 @@ contract TestMarketsManager is TestSetup {
 
     function testOnlyOwnerCanSetReserveFactor() public {
         for (uint256 i = 0; i < pools.length; i++) {
-            hevm.expectRevert("Ownable: caller is not the owner");
+            hevm.expectRevert("LibDiamond: Must be contract owner");
             supplier1.setReserveFactor(cDai, 1111);
 
-            hevm.expectRevert("Ownable: caller is not the owner");
+            hevm.expectRevert("LibDiamond: Must be contract owner");
             borrower1.setReserveFactor(cDai, 1111);
         }
 
@@ -104,10 +104,10 @@ contract TestMarketsManager is TestSetup {
     }
 
     function test_only_owner_should_flip_market_strategy() public {
-        hevm.expectRevert("Ownable: caller is not the owner");
+        hevm.expectRevert("LibDiamond: Must be contract owner");
         supplier1.setNoP2P(cDai, true);
 
-        hevm.expectRevert("Ownable: caller is not the owner");
+        hevm.expectRevert("LibDiamond: Must be contract owner");
         supplier2.setNoP2P(cDai, true);
 
         marketsManager.setNoP2P(cDai, true);
@@ -118,7 +118,7 @@ contract TestMarketsManager is TestSetup {
         IInterestRates interestRatesV2 = new InterestRatesV1();
 
         hevm.prank(address(0));
-        hevm.expectRevert("Ownable: caller is not the owner");
+        hevm.expectRevert("LibDiamond: Must be contract owner");
         marketsManager.setInterestRates(interestRatesV2);
 
         marketsManager.setInterestRates(interestRatesV2);

@@ -2,9 +2,13 @@ pragma solidity 0.8.13;
 import {LibStorage, MarketsStorage, LastPoolIndexes} from "./LibStorage.sol";
 import "./Types.sol";
 import "../interfaces/compound/ICompound.sol";
+import "./CompoundMath.sol";
+
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 library LibMarketsManager {
+    using CompoundMath for uint256;
+
     /// @notice Emitted when a new market is created.
     /// @param _poolTokenAddress The address of the market that has been created.
     event MarketCreated(address _poolTokenAddress);
