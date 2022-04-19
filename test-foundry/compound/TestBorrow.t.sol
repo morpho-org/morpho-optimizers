@@ -14,10 +14,7 @@ contract TestBorrow is TestSetup {
         borrower1.approve(usdc, usdcAmount);
         borrower1.supply(cUsdc, usdcAmount);
 
-        (, uint256 borrowable) = positionsManager.getUserMaxCapacitiesForAsset(
-            address(borrower1),
-            cDai
-        );
+        (, uint256 borrowable) = morphoLens.getUserMaxCapacitiesForAsset(address(borrower1), cDai);
 
         hevm.expectRevert(LibPositionsManager.DebtValueAboveMax.selector);
         borrower1.borrow(cDai, borrowable + 1e12);

@@ -11,15 +11,15 @@ contract TestPausableMarket is TestSetup {
         supplier1.setPauseStatus(dai);
 
         positionsManager.setPauseStatus(dai);
-        assertTrue(positionsManager.paused(dai), "paused is false");
+        assertTrue(morphoLens.paused(dai), "paused is false");
     }
 
     function testPauseUnpause() public {
         positionsManager.setPauseStatus(dai);
-        assertTrue(positionsManager.paused(dai), "paused is false");
+        assertTrue(morphoLens.paused(dai), "paused is false");
 
         positionsManager.setPauseStatus(dai);
-        assertFalse(positionsManager.paused(dai), "paused is true");
+        assertFalse(morphoLens.paused(dai), "paused is true");
     }
 
     function testShouldTriggerFunctionsWhenNotPaused() public {
@@ -34,7 +34,7 @@ contract TestPausableMarket is TestSetup {
         supplier1.approve(usdc, toBorrow);
         supplier1.repay(cUsdc, toBorrow);
 
-        (, toBorrow) = positionsManager.getUserMaxCapacitiesForAsset(address(supplier1), cUsdc);
+        (, toBorrow) = morphoLens.getUserMaxCapacitiesForAsset(address(supplier1), cUsdc);
         hevm.expectRevert(LibPositionsManager.BorrowOnCompoundFailed.selector);
         supplier1.borrow(cUsdc, toBorrow);
 
@@ -60,10 +60,7 @@ contract TestPausableMarket is TestSetup {
         supplier1.approve(dai, 2 * amount);
         supplier1.supply(cDai, amount);
 
-        (, uint256 toBorrow) = positionsManager.getUserMaxCapacitiesForAsset(
-            address(supplier1),
-            cUsdc
-        );
+        (, uint256 toBorrow) = morphoLens.getUserMaxCapacitiesForAsset(address(supplier1), cUsdc);
         supplier1.borrow(cUsdc, toBorrow);
 
         positionsManager.setPauseStatus(cDai);

@@ -27,7 +27,7 @@ contract TestFees is TestSetup {
         // Increase blocks so that rates update.
         hevm.roll(block.number + 1);
 
-        uint256 balanceBefore = IERC20(dai).balanceOf(positionsManager.treasuryVault());
+        uint256 balanceBefore = IERC20(dai).balanceOf(morphoLens.treasuryVault());
         supplier1.approve(dai, type(uint256).max);
         supplier1.supply(cDai, 100 ether);
         supplier1.borrow(cDai, 50 ether);
@@ -36,7 +36,7 @@ contract TestFees is TestSetup {
 
         supplier1.repay(cDai, type(uint256).max);
         positionsManager.claimToTreasury(cDai);
-        uint256 balanceAfter = IERC20(dai).balanceOf(positionsManager.treasuryVault());
+        uint256 balanceAfter = IERC20(dai).balanceOf(morphoLens.treasuryVault());
 
         assertLt(balanceBefore, balanceAfter);
     }
@@ -63,7 +63,7 @@ contract TestFees is TestSetup {
         uint256 reserveFactor = 1_000;
         marketsManager.setReserveFactor(cDai, reserveFactor); // 10%
 
-        uint256 balanceBefore = IERC20(dai).balanceOf(positionsManager.treasuryVault());
+        uint256 balanceBefore = IERC20(dai).balanceOf(morphoLens.treasuryVault());
         supplier1.approve(dai, type(uint256).max);
         supplier1.supply(cDai, 100 ether);
         supplier1.borrow(cDai, 50 ether);
@@ -88,7 +88,7 @@ contract TestFees is TestSetup {
 
         supplier1.repay(cDai, type(uint256).max);
         positionsManager.claimToTreasury(cDai);
-        uint256 balanceAfter = IERC20(dai).balanceOf(positionsManager.treasuryVault());
+        uint256 balanceAfter = IERC20(dai).balanceOf(morphoLens.treasuryVault());
         uint256 gainedByDAO = balanceAfter - balanceBefore;
 
         assertApproxEq(gainedByDAO, expectedFees, (expectedFees * 1) / 100000, "Fees collected");
@@ -100,7 +100,7 @@ contract TestFees is TestSetup {
         // Increase blocks so that rates update.
         hevm.roll(block.number + 1);
 
-        uint256 balanceBefore = IERC20(dai).balanceOf(positionsManager.treasuryVault());
+        uint256 balanceBefore = IERC20(dai).balanceOf(morphoLens.treasuryVault());
         supplier1.approve(dai, type(uint256).max);
         supplier1.supply(cDai, 100 * WAD);
         supplier1.borrow(cDai, 50 * WAD);
@@ -110,7 +110,7 @@ contract TestFees is TestSetup {
         supplier1.repay(cDai, type(uint256).max);
         hevm.expectRevert(PositionsManagerForCompoundEventsErrors.AmountIsZero.selector);
         positionsManager.claimToTreasury(cDai);
-        uint256 balanceAfter = IERC20(dai).balanceOf(positionsManager.treasuryVault());
+        uint256 balanceAfter = IERC20(dai).balanceOf(morphoLens.treasuryVault());
 
         assertEq(balanceBefore, balanceAfter);
     }

@@ -27,45 +27,6 @@ library LibPositionsManagerGetters {
 
     /// GETTERS ///
 
-    /// @notice Gets the head of the data structure on a specific market (for UI).
-    /// @param _poolTokenAddress The address of the market from which to get the head.
-    /// @param _positionType The type of user from which to get the head.
-    /// @return head The head in the data structure.
-    function getHead(address _poolTokenAddress, Types.PositionType _positionType)
-        internal
-        view
-        returns (address head)
-    {
-        if (_positionType == Types.PositionType.SUPPLIERS_IN_P2P)
-            head = ps().suppliersInP2P[_poolTokenAddress].getHead();
-        else if (_positionType == Types.PositionType.SUPPLIERS_ON_POOL)
-            head = ps().suppliersOnPool[_poolTokenAddress].getHead();
-        else if (_positionType == Types.PositionType.BORROWERS_IN_P2P)
-            head = ps().borrowersInP2P[_poolTokenAddress].getHead();
-        else if (_positionType == Types.PositionType.BORROWERS_ON_POOL)
-            head = ps().borrowersOnPool[_poolTokenAddress].getHead();
-    }
-
-    /// @notice Gets the next user after `_user` in the data structure on a specific market (for UI).
-    /// @param _poolTokenAddress The address of the market from which to get the user.
-    /// @param _positionType The type of user from which to get the next user.
-    /// @param _user The address of the user from which to get the next user.
-    /// @return next The next user in the data structure.
-    function getNext(
-        address _poolTokenAddress,
-        Types.PositionType _positionType,
-        address _user
-    ) internal view returns (address next) {
-        if (_positionType == Types.PositionType.SUPPLIERS_IN_P2P)
-            next = ps().suppliersInP2P[_poolTokenAddress].getNext(_user);
-        else if (_positionType == Types.PositionType.SUPPLIERS_ON_POOL)
-            next = ps().suppliersOnPool[_poolTokenAddress].getNext(_user);
-        else if (_positionType == Types.PositionType.BORROWERS_IN_P2P)
-            next = ps().borrowersInP2P[_poolTokenAddress].getNext(_user);
-        else if (_positionType == Types.PositionType.BORROWERS_ON_POOL)
-            next = ps().borrowersOnPool[_poolTokenAddress].getNext(_user);
-    }
-
     /// @notice Returns the collateral value, debt value and max debt value of a given user.
     /// @dev Note: must be called after calling `accrueInterest()` on the cToken to have the most up to date values.
     /// @param _user The user to determine liquidity for.
@@ -100,66 +61,6 @@ library LibPositionsManagerGetters {
                 ++i;
             }
         }
-    }
-
-    // TODO: Move this function in a lens contract.
-    /// @notice Returns the maximum amount available to withdraw and borrow for `_user` related to `_poolTokenAddress` (in underlyings).
-    /// @dev Note: must be called after calling `accrueInterest()` on the cToken to have the most up to date values.
-    /// @param _user The user to determine the capacities for.
-    /// @param _poolTokenAddress The address of the market.
-    /// @return withdrawable The maximum withdrawable amount of underlying token allowed (in underlying).
-    /// @return borrowable The maximum borrowable amount of underlying token allowed (in underlying).
-    function getUserMaxCapacitiesForAsset(address _user, address _poolTokenAddress)
-        internal
-        view
-        returns (uint256 withdrawable, uint256 borrowable)
-    {
-        Types.LiquidityData memory data;
-        Types.AssetLiquidityData memory assetData;
-        ICompoundOracle oracle = ICompoundOracle(ms().comptroller.oracle());
-        uint256 numberOfEnteredMarkets = ps().enteredMarkets[_user].length;
-        uint256 i;
-
-        while (i < numberOfEnteredMarkets) {
-            address poolTokenEntered = ps().enteredMarkets[_user][i];
-
-            if (_poolTokenAddress != poolTokenEntered) {
-                assetData = getUserLiquidityDataForAsset(_user, poolTokenEntered, oracle);
-
-                unchecked {
-                    data.maxDebtValue += assetData.maxDebtValue;
-                    data.debtValue += assetData.debtValue;
-                }
-            }
-
-            unchecked {
-                ++i;
-            }
-        }
-
-        assetData = getUserLiquidityDataForAsset(_user, _poolTokenAddress, oracle);
-
-        unchecked {
-            data.maxDebtValue += assetData.maxDebtValue;
-            data.debtValue += assetData.debtValue;
-        }
-
-        // Not possible to withdraw nor borrow.
-        if (data.maxDebtValue < data.debtValue) return (0, 0);
-
-        uint256 differenceInUnderlying = (data.maxDebtValue - data.debtValue).div(
-            assetData.underlyingPrice
-        );
-
-        withdrawable = assetData.collateralValue.div(assetData.underlyingPrice);
-        if (assetData.collateralFactor != 0) {
-            withdrawable = Math.min(
-                withdrawable,
-                differenceInUnderlying.div(assetData.collateralFactor)
-            );
-        }
-
-        borrowable = differenceInUnderlying;
     }
 
     /// @notice Returns the data related to `_poolTokenAddress` for the `_user`.

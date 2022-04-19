@@ -453,7 +453,7 @@ contract TestRepay is TestSetup {
             ) - unmatched)
             .div(ICToken(cDai).exchangeRateCurrent());
 
-            (uint256 supplyP2PDelta, , , ) = positionsManager.deltas(cDai);
+            (uint256 supplyP2PDelta, , , ) = morphoLens.deltas(cDai);
             assertEq(supplyP2PDelta, expectedSupplyP2PDelta, "supply delta 1");
 
             // Supply delta matching by a new borrower.
@@ -469,7 +469,7 @@ contract TestRepay is TestSetup {
                 borrowP2PExchangeRate
             );
 
-            (supplyP2PDelta, , , ) = positionsManager.deltas(cDai);
+            (supplyP2PDelta, , , ) = morphoLens.deltas(cDai);
             assertEq(supplyP2PDelta, expectedSupplyP2PDelta / 2, "supply delta unexpected");
             assertEq(onPoolBorrower, 0, "on pool not unexpected");
             assertEq(inP2PBorrower, expectedBorrowBalanceInP2P, "in P2P unexpected");
@@ -479,7 +479,7 @@ contract TestRepay is TestSetup {
             Vars memory oldVars;
             Vars memory newVars;
 
-            (oldVars.SP2PD, , oldVars.SP2PA, ) = positionsManager.deltas(cDai);
+            (oldVars.SP2PD, , oldVars.SP2PA, ) = morphoLens.deltas(cDai);
             oldVars.SPI = ICToken(cDai).exchangeRateCurrent();
             oldVars.SP2PER = marketsManager.supplyP2PExchangeRate(cDai);
             (oldVars.BPY, ) = getApproxBPYs(cDai);
@@ -488,7 +488,7 @@ contract TestRepay is TestSetup {
 
             marketsManager.updateP2PExchangeRates(cDai);
 
-            (newVars.SP2PD, , newVars.SP2PA, ) = positionsManager.deltas(cDai);
+            (newVars.SP2PD, , newVars.SP2PA, ) = morphoLens.deltas(cDai);
             newVars.SPI = ICToken(cDai).exchangeRateCurrent();
             newVars.SP2PER = marketsManager.supplyP2PExchangeRate(cDai);
             newVars.LR = ICToken(cDai).supplyRatePerBlock();
@@ -533,7 +533,7 @@ contract TestRepay is TestSetup {
             suppliers[i].withdraw(cDai, suppliedAmount);
         }
 
-        (uint256 supplyP2PDeltaAfter, , , ) = positionsManager.deltas(cDai);
+        (uint256 supplyP2PDeltaAfter, , , ) = morphoLens.deltas(cDai);
         assertApproxEq(supplyP2PDeltaAfter, 0, 1, "supply delta after");
 
         (uint256 inP2PBorrower2, uint256 onPoolBorrower2) = positionsManager.borrowBalanceInOf(

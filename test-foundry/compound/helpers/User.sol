@@ -7,6 +7,7 @@ import "@contracts/compound/libraries/Types.sol";
 
 import "@contracts/compound/PositionsManagerForCompound.sol";
 import "@contracts/compound/MarketsManagerForCompound.sol";
+import "@contracts/compound/MorphoLensForCompound.sol";
 
 contract User {
     using SafeTransferLib for ERC20;
@@ -19,7 +20,7 @@ contract User {
     constructor(address _diamond) {
         positionsManager = PositionsManagerForCompound(payable(_diamond));
         marketsManager = MarketsManagerForCompound(_diamond);
-        rewardsManager = positionsManager.rewardsManager();
+        rewardsManager = MorphoLensForCompound(_diamond).rewardsManager();
         comptroller = marketsManager.comptroller();
     }
 

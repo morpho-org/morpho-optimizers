@@ -217,10 +217,7 @@ contract TestEth is TestSetup {
         borrower1.approve(usdc, address(positionsManager), collateral);
         borrower1.supply(cUsdc, collateral);
 
-        (, uint256 amount) = positionsManager.getUserMaxCapacitiesForAsset(
-            address(borrower1),
-            cEth
-        );
+        (, uint256 amount) = morphoLens.getUserMaxCapacitiesForAsset(address(borrower1), cEth);
         borrower1.borrow(cEth, amount);
 
         (, uint256 collateralOnPool) = positionsManager.supplyBalanceInOf(
@@ -283,10 +280,7 @@ contract TestEth is TestSetup {
         borrower1.approve(wEth, address(positionsManager), collateral);
         borrower1.supply(cEth, collateral);
 
-        (, uint256 amount) = positionsManager.getUserMaxCapacitiesForAsset(
-            address(borrower1),
-            cDai
-        );
+        (, uint256 amount) = morphoLens.getUserMaxCapacitiesForAsset(address(borrower1), cDai);
         borrower1.borrow(cDai, amount);
 
         (, uint256 collateralOnPool) = positionsManager.supplyBalanceInOf(cEth, address(borrower1));

@@ -32,10 +32,7 @@ contract TestLiquidate is TestSetup {
         borrower1.approve(usdc, address(positionsManager), to6Decimals(collateral));
         borrower1.supply(cUsdc, to6Decimals(collateral));
 
-        (, uint256 amount) = positionsManager.getUserMaxCapacitiesForAsset(
-            address(borrower1),
-            cDai
-        );
+        (, uint256 amount) = morphoLens.getUserMaxCapacitiesForAsset(address(borrower1), cDai);
         borrower1.borrow(cDai, amount);
 
         (, uint256 collateralOnPool) = positionsManager.supplyBalanceInOf(
@@ -92,11 +89,11 @@ contract TestLiquidate is TestSetup {
         borrower1.approve(dai, collateral);
         borrower1.supply(cDai, collateral);
 
-        (, uint256 borrowerDebt) = positionsManager.getUserMaxCapacitiesForAsset(
+        (, uint256 borrowerDebt) = morphoLens.getUserMaxCapacitiesForAsset(
             address(borrower1),
             cUsdc
         );
-        (, uint256 supplierDebt) = positionsManager.getUserMaxCapacitiesForAsset(
+        (, uint256 supplierDebt) = morphoLens.getUserMaxCapacitiesForAsset(
             address(supplier1),
             cDai
         );
@@ -169,11 +166,11 @@ contract TestLiquidate is TestSetup {
         borrower1.approve(dai, collateral);
         borrower1.supply(cDai, collateral);
 
-        (, uint256 borrowerDebt) = positionsManager.getUserMaxCapacitiesForAsset(
+        (, uint256 borrowerDebt) = morphoLens.getUserMaxCapacitiesForAsset(
             address(borrower1),
             cUsdc
         );
-        (, uint256 supplierDebt) = positionsManager.getUserMaxCapacitiesForAsset(
+        (, uint256 supplierDebt) = morphoLens.getUserMaxCapacitiesForAsset(
             address(supplier1),
             cDai
         );

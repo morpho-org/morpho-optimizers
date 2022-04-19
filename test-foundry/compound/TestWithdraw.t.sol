@@ -479,7 +479,7 @@ contract TestWithdraw is TestSetup {
             ) - unmatched)
             .div(ICToken(cDai).borrowIndex());
 
-            (, uint256 borrowP2PDelta, , ) = positionsManager.deltas(cDai);
+            (, uint256 borrowP2PDelta, , ) = morphoLens.deltas(cDai);
             assertEq(borrowP2PDelta, expectedBorrowP2PDelta, "borrow Delta not expected 1");
 
             // Borrow delta matching by new supplier.
@@ -494,7 +494,7 @@ contract TestWithdraw is TestSetup {
                 supplyP2PExchangeRate
             );
 
-            (, borrowP2PDelta, , ) = positionsManager.deltas(cDai);
+            (, borrowP2PDelta, , ) = morphoLens.deltas(cDai);
             assertApproxEq(
                 borrowP2PDelta,
                 expectedBorrowP2PDelta / 2,
@@ -509,14 +509,14 @@ contract TestWithdraw is TestSetup {
             Vars memory oldVars;
             Vars memory newVars;
 
-            (, oldVars.BP2PD, , oldVars.BP2PA) = positionsManager.deltas(cDai);
+            (, oldVars.BP2PD, , oldVars.BP2PA) = morphoLens.deltas(cDai);
             oldVars.NVD = ICToken(cDai).borrowIndex();
             oldVars.BP2PER = marketsManager.borrowP2PExchangeRate(cDai);
             (, oldVars.BPY) = getApproxBPYs(cDai);
 
             move1000BlocksForward(cDai);
 
-            (, newVars.BP2PD, , newVars.BP2PA) = positionsManager.deltas(cDai);
+            (, newVars.BP2PD, , newVars.BP2PA) = morphoLens.deltas(cDai);
             newVars.NVD = ICToken(cDai).borrowIndex();
             newVars.BP2PER = marketsManager.borrowP2PExchangeRate(cDai);
             (, newVars.BPY) = getApproxBPYs(cDai);
@@ -562,7 +562,7 @@ contract TestWithdraw is TestSetup {
             borrowers[i].repay(cDai, borrowedAmount);
         }
 
-        (, uint256 borrowP2PDeltaAfter, , ) = positionsManager.deltas(cDai);
+        (, uint256 borrowP2PDeltaAfter, , ) = morphoLens.deltas(cDai);
         assertApproxEq(borrowP2PDeltaAfter, 0, 1, "borrow Delta 2");
 
         (uint256 inP2PSupplier2, uint256 onPoolSupplier2) = positionsManager.supplyBalanceInOf(

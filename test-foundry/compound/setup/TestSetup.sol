@@ -12,6 +12,7 @@ import "@openzeppelin/contracts/utils/Strings.sol";
 import "@contracts/compound/PositionsManagerForCompound.sol";
 import "@contracts/compound/MarketsManagerForCompound.sol";
 import "@contracts/compound/RewardsManagerForCompound.sol";
+import "@contracts/compound/MorphoLensForCompound.sol";
 import "@contracts/compound/InterestRatesV1.sol";
 import "@contracts/compound/InitDiamond.sol";
 
@@ -63,6 +64,8 @@ contract TestSetup is Config, Utils, stdCheats {
     MarketsManagerForCompound internal marketsManagerImplV1;
     MarketsManagerForCompound internal marketsManagerFacet;
     IRewardsManagerForCompound internal rewardsManager;
+    MorphoLensForCompound internal morphoLensFacet;
+    MorphoLensForCompound internal morphoLens;
     IInterestRates internal interestRates;
 
     IncentivesVault public incentivesVault;
@@ -108,10 +111,10 @@ contract TestSetup is Config, Utils, stdCheats {
         ownershipFacet = new OwnershipFacet();
 
         diamond = new Diamond(address(this), address(diamondCutFacet));
-        console.log("Diamond deployed");
         diamondCutFacet = DiamondCutFacet(address(diamond));
         marketsManagerFacet = new MarketsManagerForCompound();
         positionsManagerFacet = new PositionsManagerForCompound();
+        morphoLensFacet = new MorphoLensForCompound();
         InitDiamond initDiamond = new InitDiamond();
 
         bytes4[] memory marketsManagerFunctionSelectors = new bytes4[](18);
@@ -159,7 +162,7 @@ contract TestSetup is Config, Utils, stdCheats {
             functionSelectors: marketsManagerFunctionSelectors
         });
 
-        bytes4[] memory positionsManagerFunctionSelectors = new bytes4[](31);
+        bytes4[] memory positionsManagerFunctionSelectors = new bytes4[](18);
         {
             uint256 index;
             positionsManagerFunctionSelectors[index++] = bytes4(
@@ -187,6 +190,12 @@ contract TestSetup is Config, Utils, stdCheats {
             positionsManagerFunctionSelectors[index++] = positionsManagerFacet
             .claimRewards
             .selector;
+            positionsManagerFunctionSelectors[index++] = positionsManagerFacet
+            .supplyBalanceInOf
+            .selector;
+            positionsManagerFunctionSelectors[index++] = positionsManagerFacet
+            .borrowBalanceInOf
+            .selector;
             positionsManagerFunctionSelectors[index++] = positionsManagerFacet.setNDS.selector;
             positionsManagerFunctionSelectors[index++] = positionsManagerFacet.setMaxGas.selector;
             positionsManagerFunctionSelectors[index++] = positionsManagerFacet
@@ -204,39 +213,6 @@ contract TestSetup is Config, Utils, stdCheats {
             positionsManagerFunctionSelectors[index++] = positionsManagerFacet
             .setPauseStatus
             .selector;
-            positionsManagerFunctionSelectors[index++] = positionsManagerFacet
-            .rewardsManager
-            .selector;
-            positionsManagerFunctionSelectors[index++] = positionsManagerFacet
-            .treasuryVault
-            .selector;
-            positionsManagerFunctionSelectors[index++] = positionsManagerFacet
-            .isCompRewardsActive
-            .selector;
-            positionsManagerFunctionSelectors[index++] = positionsManagerFacet.paused.selector;
-            positionsManagerFunctionSelectors[index++] = positionsManagerFacet.NDS.selector;
-            positionsManagerFunctionSelectors[index++] = positionsManagerFacet.maxGas.selector;
-            positionsManagerFunctionSelectors[index++] = positionsManagerFacet
-            .supplyBalanceInOf
-            .selector;
-            positionsManagerFunctionSelectors[index++] = positionsManagerFacet
-            .borrowBalanceInOf
-            .selector;
-            positionsManagerFunctionSelectors[index++] = positionsManagerFacet
-            .getUserBalanceStates
-            .selector;
-            positionsManagerFunctionSelectors[index++] = positionsManagerFacet
-            .getUserMaxCapacitiesForAsset
-            .selector;
-            positionsManagerFunctionSelectors[index++] = positionsManagerFacet
-            .getUserLiquidityDataForAsset
-            .selector;
-            positionsManagerFunctionSelectors[index++] = positionsManagerFacet.deltas.selector;
-            positionsManagerFunctionSelectors[index++] = positionsManagerFacet.getHead.selector;
-            positionsManagerFunctionSelectors[index++] = positionsManagerFacet.getNext.selector;
-            positionsManagerFunctionSelectors[index++] = positionsManagerFacet
-            .enteredMarkets
-            .selector;
         }
 
         IDiamondCut.FacetCut memory positionsCut = IDiamondCut.FacetCut({
@@ -245,8 +221,37 @@ contract TestSetup is Config, Utils, stdCheats {
             functionSelectors: positionsManagerFunctionSelectors
         });
 
+        bytes4[] memory morphoLensFunctionSelectors = new bytes4[](13);
+        {
+            uint256 index;
+            morphoLensFunctionSelectors[index++] = morphoLensFacet.deltas.selector;
+            morphoLensFunctionSelectors[index++] = morphoLensFacet.rewardsManager.selector;
+            morphoLensFunctionSelectors[index++] = morphoLensFacet.treasuryVault.selector;
+            morphoLensFunctionSelectors[index++] = morphoLensFacet.isCompRewardsActive.selector;
+            morphoLensFunctionSelectors[index++] = morphoLensFacet.paused.selector;
+            morphoLensFunctionSelectors[index++] = morphoLensFacet.NDS.selector;
+            morphoLensFunctionSelectors[index++] = morphoLensFacet.maxGas.selector;
+            morphoLensFunctionSelectors[index++] = morphoLensFacet.getHead.selector;
+            morphoLensFunctionSelectors[index++] = morphoLensFacet.getNext.selector;
+            morphoLensFunctionSelectors[index++] = morphoLensFacet.enteredMarkets.selector;
+            morphoLensFunctionSelectors[index++] = morphoLensFacet.getUserBalanceStates.selector;
+            morphoLensFunctionSelectors[index++] = morphoLensFacet
+            .getUserLiquidityDataForAsset
+            .selector;
+            morphoLensFunctionSelectors[index++] = morphoLensFacet
+            .getUserMaxCapacitiesForAsset
+            .selector;
+        }
+
+        IDiamondCut.FacetCut memory lensCut = IDiamondCut.FacetCut({
+            facetAddress: address(morphoLensFacet),
+            action: IDiamondCut.FacetCutAction.Add,
+            functionSelectors: morphoLensFunctionSelectors
+        });
+
         cuts.push(marketsCut);
         cuts.push(positionsCut);
+        cuts.push(lensCut);
 
         IDiamondCut(address(diamond)).diamondCut(
             cuts,
@@ -264,8 +269,9 @@ contract TestSetup is Config, Utils, stdCheats {
             )
         );
 
-        marketsManager = MarketsManagerForCompound(address(diamond));
         positionsManager = PositionsManagerForCompound(payable(address(diamond)));
+        marketsManager = MarketsManagerForCompound(address(diamond));
+        morphoLens = MorphoLensForCompound(address(diamond));
 
         treasuryVault = new User(address(diamond));
         fakePositionsManagerImpl = new PositionsManagerForCompound();

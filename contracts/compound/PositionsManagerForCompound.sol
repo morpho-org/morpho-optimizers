@@ -352,46 +352,6 @@ contract PositionsManagerForCompound is
 
     /// GETTERS ///
 
-    function rewardsManager() external view returns (IRewardsManagerForCompound rewardsManager_) {
-        rewardsManager_ = ps().rewardsManager;
-    }
-
-    function treasuryVault() external view returns (address treasuryVault_) {
-        treasuryVault_ = ps().treasuryVault;
-    }
-
-    function incentivesVault() external view returns (address incentivesVault_) {
-        incentivesVault_ = address(ps().incentivesVault);
-    }
-
-    function isCompRewardsActive() external view returns (bool isCompRewardsActive_) {
-        isCompRewardsActive_ = ps().isCompRewardsActive;
-    }
-
-    function paused(address _poolTokenAddress) external view returns (bool isPaused_) {
-        isPaused_ = ps().paused[_poolTokenAddress];
-    }
-
-    function NDS() external view returns (uint8 NDS_) {
-        NDS_ = ps().NDS;
-    }
-
-    function maxGas()
-        external
-        view
-        returns (
-            uint64 maxGasSupply_,
-            uint64 maxGasBorrow_,
-            uint64 maxGasWithdraw_,
-            uint64 maxGasRepay_
-        )
-    {
-        maxGasSupply_ = ps().maxGas.supply;
-        maxGasBorrow_ = ps().maxGas.borrow;
-        maxGasWithdraw_ = ps().maxGas.withdraw;
-        maxGasRepay_ = ps().maxGas.repay;
-    }
-
     function supplyBalanceInOf(address _poolTokenAddress, address _user)
         external
         view
@@ -408,82 +368,5 @@ contract PositionsManagerForCompound is
     {
         inP2P_ = ps().borrowBalanceInOf[_poolTokenAddress][_user].inP2P;
         onPool_ = ps().borrowBalanceInOf[_poolTokenAddress][_user].onPool;
-    }
-
-    function getUserBalanceStates(address _user)
-        external
-        view
-        returns (
-            uint256 collateralValue,
-            uint256 debtValue,
-            uint256 maxDebtValue
-        )
-    {
-        (collateralValue, debtValue, maxDebtValue) = LibPositionsManagerGetters
-        .getUserBalanceStates(_user);
-    }
-
-    function getUserMaxCapacitiesForAsset(address _user, address _poolTokenAddress)
-        external
-        view
-        returns (uint256 withdrawable_, uint256 borrowable_)
-    {
-        (withdrawable_, borrowable_) = LibPositionsManagerGetters.getUserMaxCapacitiesForAsset(
-            _user,
-            _poolTokenAddress
-        );
-    }
-
-    function getUserLiquidityDataForAsset(
-        address _user,
-        address _poolTokenAddress,
-        ICompoundOracle _oracle
-    ) external view returns (Types.AssetLiquidityData memory) {
-        return
-            LibPositionsManagerGetters.getUserLiquidityDataForAsset(
-                _user,
-                _poolTokenAddress,
-                _oracle
-            );
-    }
-
-    function deltas(address _poolTokenAddress)
-        external
-        view
-        returns (
-            uint256 supplyP2PDelta_,
-            uint256 borrowP2PDelta_,
-            uint256 supplyP2PAmount_,
-            uint256 borrowP2PAmount_
-        )
-    {
-        supplyP2PDelta_ = ps().deltas[_poolTokenAddress].supplyP2PDelta;
-        borrowP2PDelta_ = ps().deltas[_poolTokenAddress].borrowP2PDelta;
-        supplyP2PAmount_ = ps().deltas[_poolTokenAddress].supplyP2PAmount;
-        borrowP2PAmount_ = ps().deltas[_poolTokenAddress].borrowP2PAmount;
-    }
-
-    function getHead(address _poolTokenAddress, Types.PositionType _positionType)
-        external
-        view
-        returns (address head_)
-    {
-        head_ = LibPositionsManagerGetters.getHead(_poolTokenAddress, _positionType);
-    }
-
-    function getNext(
-        address _poolTokenAddress,
-        Types.PositionType _positionType,
-        address _user
-    ) external view returns (address next_) {
-        next_ = LibPositionsManagerGetters.getNext(_poolTokenAddress, _positionType, _user);
-    }
-
-    function enteredMarkets(address _user, uint256 _index)
-        external
-        view
-        returns (address poolTokenAddress_)
-    {
-        poolTokenAddress_ = ps().enteredMarkets[_user][_index];
     }
 }

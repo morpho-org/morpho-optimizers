@@ -27,35 +27,29 @@ contract TestPositionsManagerGetters is TestSetup {
         borrower1.approve(dai, amount);
         borrower1.supply(cDai, amount);
 
-        assertEq(address(0), positionsManager.getHead(cDai, Types.PositionType.SUPPLIERS_IN_P2P));
+        assertEq(address(0), morphoLens.getHead(cDai, Types.PositionType.SUPPLIERS_IN_P2P));
         assertEq(
             address(borrower1),
-            positionsManager.getHead(cDai, Types.PositionType.SUPPLIERS_ON_POOL)
+            morphoLens.getHead(cDai, Types.PositionType.SUPPLIERS_ON_POOL)
         );
-        assertEq(address(0), positionsManager.getHead(cDai, Types.PositionType.BORROWERS_IN_P2P));
-        assertEq(address(0), positionsManager.getHead(cDai, Types.PositionType.BORROWERS_ON_POOL));
+        assertEq(address(0), morphoLens.getHead(cDai, Types.PositionType.BORROWERS_IN_P2P));
+        assertEq(address(0), morphoLens.getHead(cDai, Types.PositionType.BORROWERS_ON_POOL));
 
         borrower1.borrow(cDai, toBorrow);
 
+        assertEq(address(borrower1), morphoLens.getHead(cDai, Types.PositionType.SUPPLIERS_IN_P2P));
         assertEq(
             address(borrower1),
-            positionsManager.getHead(cDai, Types.PositionType.SUPPLIERS_IN_P2P)
+            morphoLens.getHead(cDai, Types.PositionType.SUPPLIERS_ON_POOL)
         );
-        assertEq(
-            address(borrower1),
-            positionsManager.getHead(cDai, Types.PositionType.SUPPLIERS_ON_POOL)
-        );
-        assertEq(
-            address(borrower1),
-            positionsManager.getHead(cDai, Types.PositionType.BORROWERS_IN_P2P)
-        );
-        assertEq(address(0), positionsManager.getHead(cDai, Types.PositionType.BORROWERS_ON_POOL));
+        assertEq(address(borrower1), morphoLens.getHead(cDai, Types.PositionType.BORROWERS_IN_P2P));
+        assertEq(address(0), morphoLens.getHead(cDai, Types.PositionType.BORROWERS_ON_POOL));
 
         borrower1.borrow(cUsdc, to6Decimals(toBorrow));
 
         assertEq(
             address(borrower1),
-            positionsManager.getHead(cUsdc, Types.PositionType.BORROWERS_ON_POOL)
+            morphoLens.getHead(cUsdc, Types.PositionType.BORROWERS_ON_POOL)
         );
     }
 
@@ -76,12 +70,12 @@ contract TestPositionsManagerGetters is TestSetup {
         address nextBorrowOnPool = address(borrowers[0]);
 
         for (uint256 i; i < borrowers.length - 1; i++) {
-            nextSupplyOnPool = positionsManager.getNext(
+            nextSupplyOnPool = morphoLens.getNext(
                 cDai,
                 Types.PositionType.SUPPLIERS_ON_POOL,
                 nextSupplyOnPool
             );
-            nextBorrowOnPool = positionsManager.getNext(
+            nextBorrowOnPool = morphoLens.getNext(
                 cUsdc,
                 Types.PositionType.BORROWERS_ON_POOL,
                 nextBorrowOnPool
@@ -104,12 +98,12 @@ contract TestPositionsManagerGetters is TestSetup {
         address nextBorrowInP2P = address(borrowers[0]);
 
         for (uint256 i; i < borrowers.length - 1; i++) {
-            nextSupplyInP2P = positionsManager.getNext(
+            nextSupplyInP2P = morphoLens.getNext(
                 cUsdc,
                 Types.PositionType.SUPPLIERS_IN_P2P,
                 nextSupplyInP2P
             );
-            nextBorrowInP2P = positionsManager.getNext(
+            nextBorrowInP2P = morphoLens.getNext(
                 cDai,
                 Types.PositionType.BORROWERS_IN_P2P,
                 nextBorrowInP2P
@@ -121,7 +115,7 @@ contract TestPositionsManagerGetters is TestSetup {
     }
 
     function testUserLiquidityDataForAssetWithNothing() public {
-        Types.AssetLiquidityData memory assetData = positionsManager.getUserLiquidityDataForAsset(
+        Types.AssetLiquidityData memory assetData = morphoLens.getUserLiquidityDataForAsset(
             address(borrower1),
             cDai,
             oracle
@@ -143,7 +137,7 @@ contract TestPositionsManagerGetters is TestSetup {
         borrower1.approve(dai, amount);
         borrower1.supply(cDai, amount);
 
-        Types.AssetLiquidityData memory assetData = positionsManager.getUserLiquidityDataForAsset(
+        Types.AssetLiquidityData memory assetData = morphoLens.getUserLiquidityDataForAsset(
             address(borrower1),
             cDai,
             oracle
@@ -181,7 +175,7 @@ contract TestPositionsManagerGetters is TestSetup {
 
         indexes.exchangeRate2 = ICToken(cDai).exchangeRateCurrent();
 
-        Types.AssetLiquidityData memory assetData = positionsManager.getUserLiquidityDataForAsset(
+        Types.AssetLiquidityData memory assetData = morphoLens.getUserLiquidityDataForAsset(
             address(borrower1),
             cDai,
             oracle
@@ -222,11 +216,17 @@ contract TestPositionsManagerGetters is TestSetup {
         borrower1.supply(cDai, amount);
         borrower1.borrow(cUsdc, toBorrow);
 
-        Types.AssetLiquidityData memory assetDatacDai = positionsManager
-        .getUserLiquidityDataForAsset(address(borrower1), cDai, oracle);
+        Types.AssetLiquidityData memory assetDatacDai = morphoLens.getUserLiquidityDataForAsset(
+            address(borrower1),
+            cDai,
+            oracle
+        );
 
-        Types.AssetLiquidityData memory assetDatacUsdc = positionsManager
-        .getUserLiquidityDataForAsset(address(borrower1), cUsdc, oracle);
+        Types.AssetLiquidityData memory assetDatacUsdc = morphoLens.getUserLiquidityDataForAsset(
+            address(borrower1),
+            cUsdc,
+            oracle
+        );
 
         // Avoid stack too deep error.
         Types.AssetLiquidityData memory expectedDatcUsdc;
@@ -276,7 +276,7 @@ contract TestPositionsManagerGetters is TestSetup {
     }
 
     function testGetterUserWithNothing() public {
-        (uint256 withdrawable, uint256 borrowable) = positionsManager.getUserMaxCapacitiesForAsset(
+        (uint256 withdrawable, uint256 borrowable) = morphoLens.getUserMaxCapacitiesForAsset(
             address(borrower1),
             cDai
         );
@@ -291,11 +291,17 @@ contract TestPositionsManagerGetters is TestSetup {
         borrower1.approve(usdc, amount);
         borrower1.supply(cUsdc, amount);
 
-        Types.AssetLiquidityData memory assetDatacUsdc = positionsManager
-        .getUserLiquidityDataForAsset(address(borrower1), cUsdc, oracle);
+        Types.AssetLiquidityData memory assetDatacUsdc = morphoLens.getUserLiquidityDataForAsset(
+            address(borrower1),
+            cUsdc,
+            oracle
+        );
 
-        Types.AssetLiquidityData memory assetDatacDai = positionsManager
-        .getUserLiquidityDataForAsset(address(borrower1), cDai, oracle);
+        Types.AssetLiquidityData memory assetDatacDai = morphoLens.getUserLiquidityDataForAsset(
+            address(borrower1),
+            cDai,
+            oracle
+        );
 
         uint256 expectedBorrowableUsdc = assetDatacUsdc.maxDebtValue.div(
             assetDatacUsdc.underlyingPrice
@@ -304,7 +310,7 @@ contract TestPositionsManagerGetters is TestSetup {
             assetDatacDai.underlyingPrice
         );
 
-        (uint256 withdrawable, uint256 borrowable) = positionsManager.getUserMaxCapacitiesForAsset(
+        (uint256 withdrawable, uint256 borrowable) = morphoLens.getUserMaxCapacitiesForAsset(
             address(borrower1),
             cUsdc
         );
@@ -317,7 +323,7 @@ contract TestPositionsManagerGetters is TestSetup {
         );
         assertEq(borrowable, expectedBorrowableUsdc, "borrowable USDC");
 
-        (withdrawable, borrowable) = positionsManager.getUserMaxCapacitiesForAsset(
+        (withdrawable, borrowable) = morphoLens.getUserMaxCapacitiesForAsset(
             address(borrower1),
             cDai
         );
@@ -334,26 +340,35 @@ contract TestPositionsManagerGetters is TestSetup {
         borrower1.approve(dai, amount);
         borrower1.supply(cDai, amount);
 
-        Types.AssetLiquidityData memory assetDatacUsdc = positionsManager
-        .getUserLiquidityDataForAsset(address(borrower1), cUsdc, oracle);
+        Types.AssetLiquidityData memory assetDatacUsdc = morphoLens.getUserLiquidityDataForAsset(
+            address(borrower1),
+            cUsdc,
+            oracle
+        );
 
-        Types.AssetLiquidityData memory assetDatacDai = positionsManager
-        .getUserLiquidityDataForAsset(address(borrower1), cDai, oracle);
+        Types.AssetLiquidityData memory assetDatacDai = morphoLens.getUserLiquidityDataForAsset(
+            address(borrower1),
+            cDai,
+            oracle
+        );
 
-        Types.AssetLiquidityData memory assetDatacUsdt = positionsManager
-        .getUserLiquidityDataForAsset(address(borrower1), cUsdt, oracle);
+        Types.AssetLiquidityData memory assetDatacUsdt = morphoLens.getUserLiquidityDataForAsset(
+            address(borrower1),
+            cUsdt,
+            oracle
+        );
 
-        (uint256 withdrawableDai, ) = positionsManager.getUserMaxCapacitiesForAsset(
+        (uint256 withdrawableDai, ) = morphoLens.getUserMaxCapacitiesForAsset(
             address(borrower1),
             cDai
         );
 
-        (uint256 withdrawableUsdc, ) = positionsManager.getUserMaxCapacitiesForAsset(
+        (uint256 withdrawableUsdc, ) = morphoLens.getUserMaxCapacitiesForAsset(
             address(borrower1),
             cUsdc
         );
 
-        (, uint256 borrowableUsdt) = positionsManager.getUserMaxCapacitiesForAsset(
+        (, uint256 borrowableUsdt) = morphoLens.getUserMaxCapacitiesForAsset(
             address(borrower1),
             cUsdt
         );
@@ -377,7 +392,7 @@ contract TestPositionsManagerGetters is TestSetup {
         uint256 toBorrow = to6Decimals(100 ether);
         borrower1.borrow(cUsdt, toBorrow);
 
-        (, uint256 newBorrowableUsdt) = positionsManager.getUserMaxCapacitiesForAsset(
+        (, uint256 newBorrowableUsdt) = morphoLens.getUserMaxCapacitiesForAsset(
             address(borrower1),
             cUsdt
         );
@@ -398,7 +413,7 @@ contract TestPositionsManagerGetters is TestSetup {
         UserBalanceStates memory states;
         UserBalanceStates memory expectedStates;
 
-        (states.collateralValue, states.debtValue, states.maxDebtValue) = positionsManager
+        (states.collateralValue, states.debtValue, states.maxDebtValue) = morphoLens
         .getUserBalanceStates(address(borrower1));
 
         uint256 underlyingPriceUsdc = oracle.getUnderlyingPrice(cUsdc);
@@ -464,7 +479,7 @@ contract TestPositionsManagerGetters is TestSetup {
             ICToken(cBat).borrowIndex()
         ).mul(oracle.getUnderlyingPrice(cUsdt));
 
-        (states.collateralValue, states.debtValue, states.maxDebtValue) = positionsManager
+        (states.collateralValue, states.debtValue, states.maxDebtValue) = morphoLens
         .getUserBalanceStates(address(borrower1));
 
         assertEq(states.collateralValue, expectedStates.collateralValue, "Collateral Value");
@@ -481,7 +496,7 @@ contract TestPositionsManagerGetters is TestSetup {
         borrower1.approve(usdt, usdtAmount);
         borrower1.supply(cUsdt, usdtAmount);
 
-        (uint256 withdrawableUsdt, uint256 borrowableUsdt) = positionsManager
+        (uint256 withdrawableUsdt, uint256 borrowableUsdt) = morphoLens
         .getUserMaxCapacitiesForAsset(address(borrower1), cUsdt);
 
         uint256 depositedUsdtAmount = getBalanceOnCompound(
@@ -492,8 +507,10 @@ contract TestPositionsManagerGetters is TestSetup {
         assertEq(withdrawableUsdt, depositedUsdtAmount, "withdrawable USDT");
         assertEq(borrowableUsdt, 0, "borrowable USDT");
 
-        (uint256 withdrawableDai, uint256 borrowableDai) = positionsManager
-        .getUserMaxCapacitiesForAsset(address(borrower1), cDai);
+        (uint256 withdrawableDai, uint256 borrowableDai) = morphoLens.getUserMaxCapacitiesForAsset(
+            address(borrower1),
+            cDai
+        );
 
         assertEq(withdrawableDai, 0, "withdrawable DAI");
         assertEq(borrowableDai, 0, "borrowable DAI");
@@ -519,7 +536,7 @@ contract TestPositionsManagerGetters is TestSetup {
         UserBalanceStates memory states;
         UserBalanceStates memory expectedStates;
 
-        (states.collateralValue, states.debtValue, states.maxDebtValue) = positionsManager
+        (states.collateralValue, states.debtValue, states.maxDebtValue) = morphoLens
         .getUserBalanceStates(address(borrower1));
 
         // We must take into account that not everything is on pool as borrower1 is matched to itself.
@@ -569,13 +586,13 @@ contract TestPositionsManagerGetters is TestSetup {
         borrower1.approve(usdc, to6Decimals(10 ether));
         borrower1.supply(cUsdc, to6Decimals(10 ether));
 
-        assertEq(positionsManager.enteredMarkets(address(borrower1), 0), cDai);
-        assertEq(positionsManager.enteredMarkets(address(borrower1), 1), cUsdc);
+        assertEq(morphoLens.enteredMarkets(address(borrower1), 0), cDai);
+        assertEq(morphoLens.enteredMarkets(address(borrower1), 1), cUsdc);
 
         // Borrower1 withdraw, USDC should be the first in enteredMarkets.
         borrower1.withdraw(cDai, type(uint256).max);
 
-        assertEq(positionsManager.enteredMarkets(address(borrower1), 0), cUsdc);
+        assertEq(morphoLens.enteredMarkets(address(borrower1), 0), cUsdc);
     }
 
     function testFailUserLeftMarkets() public {
@@ -583,12 +600,12 @@ contract TestPositionsManagerGetters is TestSetup {
         borrower1.supply(cDai, 10 ether);
 
         // Check that borrower1 entered Dai market.
-        assertEq(positionsManager.enteredMarkets(address(borrower1), 0), cDai);
+        assertEq(morphoLens.enteredMarkets(address(borrower1), 0), cDai);
 
         // Borrower1 withdraw everything from the Dai market.
         borrower1.withdraw(cDai, 10 ether);
 
         // Test should fail because there is no element in the array.
-        positionsManager.enteredMarkets(address(borrower1), 0);
+        morphoLens.enteredMarkets(address(borrower1), 0);
     }
 }

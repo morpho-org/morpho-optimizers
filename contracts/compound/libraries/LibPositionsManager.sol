@@ -37,17 +37,6 @@ library LibPositionsManager {
         uint256 toRepay;
     }
 
-    // Struct to avoid stack too deep.
-    struct LiquidateVars {
-        uint256 debtValue;
-        uint256 maxDebtValue;
-        uint256 borrowBalance;
-        uint256 supplyBalance;
-        uint256 collateralPrice;
-        uint256 borrowedPrice;
-        uint256 amountToSeize;
-    }
-
     /// STORAGE ///
 
     uint8 public constant CTOKEN_DECIMALS = 8;
