@@ -3,7 +3,6 @@ pragma solidity 0.8.13;
 
 import "../libraries/Types.sol";
 import "./compound/ICompound.sol";
-import "./IInterestRates.sol";
 
 // Collection of all of Morpho's diamond functions in one interface
 interface IMorphoCompound {

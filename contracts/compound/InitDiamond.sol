@@ -3,7 +3,6 @@ pragma solidity 0.8.13;
 
 import "./interfaces/IMarketsManagerForCompound.sol";
 import "./interfaces/compound/ICompound.sol";
-import "./interfaces/IInterestRates.sol";
 
 import {LibStorage, MarketsStorage, PositionsStorage} from "./libraries/LibStorage.sol";
 import "./libraries/Types.sol";

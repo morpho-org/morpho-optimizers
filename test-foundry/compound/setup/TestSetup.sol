@@ -3,6 +3,7 @@ pragma solidity 0.8.13;
 
 import "@contracts/compound/interfaces/IRewardsManagerForCompound.sol";
 import "@contracts/compound/interfaces/compound/ICompound.sol";
+import "@contracts/compound/interfaces/IMorphoCompound.sol";
 import "@contracts/common/interfaces/ISwapManager.sol";
 
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
@@ -14,9 +15,7 @@ import "@contracts/compound/PositionsManagerForCompoundSettersAndGetters.sol";
 import "@contracts/compound/MarketsManagerForCompound.sol";
 import "@contracts/compound/RewardsManagerForCompound.sol";
 import "@contracts/compound/MorphoLensForCompound.sol";
-import "@contracts/compound/InterestRatesV1.sol";
 import "@contracts/compound/InitDiamond.sol";
-import "@contracts/compound/interfaces/IMorphoCompound.sol";
 
 import "@contracts/compound/libraries/FixedPointMathLib.sol";
 import "@contracts/compound/libraries/Types.sol";

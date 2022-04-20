@@ -7,7 +7,6 @@ import "../interfaces/IRewardsManagerForCompound.sol";
 import "../interfaces/IMatchingEngineForCompound.sol";
 import "../interfaces/compound/ICompound.sol";
 import "../interfaces/IIncentivesVault.sol";
-import "../interfaces/IInterestRates.sol";
 
 import "../../common/diamond/libraries/LibDiamond.sol";
 import "../../common/libraries/DoubleLinkedList.sol";
