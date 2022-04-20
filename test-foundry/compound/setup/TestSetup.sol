@@ -122,7 +122,7 @@ contract TestSetup is Config, Utils, stdCheats {
         InitDiamond initDiamond = new InitDiamond();
 
         {
-            bytes4[] memory marketsManagerFunctionSelectors = new bytes4[](18);
+            bytes4[] memory marketsManagerFunctionSelectors = new bytes4[](17);
             {
                 uint256 index;
                 marketsManagerFunctionSelectors[index++] = marketsManagerFacet
@@ -170,7 +170,6 @@ contract TestSetup is Config, Utils, stdCheats {
                 .lastUpdateBlockNumber
                 .selector;
                 marketsManagerFunctionSelectors[index++] = marketsManagerFacet.noP2P.selector;
-                marketsManagerFunctionSelectors[index++] = marketsManagerFacet.comptroller.selector;
             }
 
             IDiamondCut.FacetCut memory marketsCut = IDiamondCut.FacetCut({
@@ -255,7 +254,7 @@ contract TestSetup is Config, Utils, stdCheats {
                 functionSelectors: positionsManagerSettersAndGettersFunctionSelectors
             });
 
-            bytes4[] memory morphoLensFunctionSelectors = new bytes4[](13);
+            bytes4[] memory morphoLensFunctionSelectors = new bytes4[](14);
             {
                 uint256 index;
                 morphoLensFunctionSelectors[index++] = morphoLensFacet.deltas.selector;
@@ -277,6 +276,7 @@ contract TestSetup is Config, Utils, stdCheats {
                 morphoLensFunctionSelectors[index++] = morphoLensFacet
                 .getUserMaxCapacitiesForAsset
                 .selector;
+                morphoLensFunctionSelectors[index++] = morphoLensFacet.comptroller.selector;
             }
 
             IDiamondCut.FacetCut memory lensCut = IDiamondCut.FacetCut({

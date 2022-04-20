@@ -54,7 +54,7 @@ library LibMarketsManager {
         MarketsStorage storage m = ms();
         address[] memory marketToEnter = new address[](1);
         marketToEnter[0] = _poolTokenAddress;
-        uint256[] memory results = m.comptroller.enterMarkets(marketToEnter);
+        uint256[] memory results = ps().comptroller.enterMarkets(marketToEnter);
         if (results[0] != 0) revert MarketCreationFailedOnCompound();
 
         if (m.isCreated[_poolTokenAddress]) revert MarketAlreadyCreated();

@@ -200,8 +200,10 @@ contract PositionsManagerForCompound is
 
         LibPositionsManager.repay(_poolTokenBorrowedAddress, _borrower, _amount, 0);
 
+        PositionsStorage storage p = ps();
+
         // Calculate the amount of token to seize from collateral
-        ICompoundOracle compoundOracle = ICompoundOracle(ms().comptroller.oracle());
+        ICompoundOracle compoundOracle = ICompoundOracle(p.comptroller.oracle());
         vars.collateralPrice = compoundOracle.getUnderlyingPrice(_poolTokenCollateralAddress);
         vars.borrowedPrice = compoundOracle.getUnderlyingPrice(_poolTokenBorrowedAddress);
         if (vars.collateralPrice == 0 || vars.collateralPrice == 0) revert CompoundOracleFailed();
@@ -211,7 +213,7 @@ contract PositionsManagerForCompound is
         // seizeTokens = seizeAmount / exchangeRate
         // = actualRepayAmount * (liquidationIncentive * priceBorrowed) / (priceCollateral * exchangeRate)
         vars.amountToSeize = _amount
-        .mul(ms().comptroller.liquidationIncentiveMantissa())
+        .mul(p.comptroller.liquidationIncentiveMantissa())
         .mul(vars.borrowedPrice)
         .div(vars.collateralPrice);
 

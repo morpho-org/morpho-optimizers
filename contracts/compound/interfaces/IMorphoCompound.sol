@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import "../libraries/Types.sol";
+import "./IRewardsManagerForCompound.sol";
 import "./compound/ICompound.sol";
+
+import "../libraries/Types.sol";
 
 // Collection of all of Morpho's diamond functions in one interface
 interface IMorphoCompound {
@@ -66,6 +68,10 @@ interface IMorphoCompound {
         returns (Types.LastPoolIndexes memory lastPoolIndexes_);
 
     function noP2P(address _market) external view returns (bool noP2P_);
+
+    /// LENS ///
+
+    function rewadsManager() external view returns (IRewardsManagerForCompound rewardsManager_);
 
     function comptroller() external view returns (IComptroller comptroller_);
 

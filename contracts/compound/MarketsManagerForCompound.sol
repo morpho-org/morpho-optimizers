@@ -220,8 +220,4 @@ contract MarketsManagerForCompound is WithStorageAndModifiers {
     function noP2P(address _market) external view returns (bool noP2P_) {
         noP2P_ = ms().noP2P[_market];
     }
-
-    function comptroller() external view returns (IComptroller comptroller_) {
-        comptroller_ = ms().comptroller;
-    }
 }

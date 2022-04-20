@@ -43,7 +43,7 @@ library LibPositionsManagerGetters {
         )
     {
         PositionsStorage storage p = ps();
-        ICompoundOracle oracle = ICompoundOracle(ms().comptroller.oracle());
+        ICompoundOracle oracle = ICompoundOracle(p.comptroller.oracle());
         uint256 numberOfEnteredMarkets = p.enteredMarkets[_user].length;
         uint256 i;
 
@@ -77,7 +77,7 @@ library LibPositionsManagerGetters {
         ICompoundOracle _oracle
     ) public view returns (Types.AssetLiquidityData memory assetData) {
         assetData.underlyingPrice = _oracle.getUnderlyingPrice(_poolTokenAddress);
-        (, assetData.collateralFactor, ) = ms().comptroller.markets(_poolTokenAddress);
+        (, assetData.collateralFactor, ) = ps().comptroller.markets(_poolTokenAddress);
 
         assetData.collateralValue = getUserSupplyBalanceInOf(_poolTokenAddress, _user).mul(
             assetData.underlyingPrice
@@ -102,7 +102,7 @@ library LibPositionsManagerGetters {
         uint256 _borrowedAmount
     ) internal returns (uint256 debtValue, uint256 maxDebtValue) {
         PositionsStorage storage p = ps();
-        ICompoundOracle oracle = ICompoundOracle(ms().comptroller.oracle());
+        ICompoundOracle oracle = ICompoundOracle(p.comptroller.oracle());
         uint256 numberOfEnteredMarkets = p.enteredMarkets[_user].length;
         uint256 i;
 

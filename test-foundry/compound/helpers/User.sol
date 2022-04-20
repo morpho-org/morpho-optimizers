@@ -24,7 +24,7 @@ contract User {
         marketsManager = MarketsManagerForCompound(_diamond);
         rewardsManager = MorphoLensForCompound(_diamond).rewardsManager();
         morphoCompound = IMorphoCompound(_diamond);
-        comptroller = marketsManager.comptroller();
+        comptroller = morphoCompound.comptroller();
     }
 
     receive() external payable {}

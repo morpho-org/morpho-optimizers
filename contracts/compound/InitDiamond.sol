@@ -17,10 +17,8 @@ contract InitDiamond {
     }
 
     function init(Args memory _args) external {
-        MarketsStorage storage ms = LibStorage.marketsStorage();
-        ms.comptroller = _args.comptroller;
-
         PositionsStorage storage ps = LibStorage.positionsStorage();
+        ps.comptroller = _args.comptroller;
         ps.maxGas = _args.maxGas;
         ps.NDS = _args.NDS;
         ps.cEth = _args.cEth;

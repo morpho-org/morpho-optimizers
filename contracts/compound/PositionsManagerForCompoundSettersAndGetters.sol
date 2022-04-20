@@ -112,11 +112,12 @@ contract PositionsManagerForCompoundSettersAndGetters is
 
         if (amountOfRewards == 0) revert AmountIsZero();
         else {
-            ms().comptroller.claimComp(address(this), _cTokenAddresses);
-            ERC20 comp = ERC20(ms().comptroller.getCompAddress());
+            PositionsStorage storage p = ps();
+            p.comptroller.claimComp(address(this), _cTokenAddresses);
+            ERC20 comp = ERC20(p.comptroller.getCompAddress());
             if (_claimMorphoToken) {
-                comp.safeApprove(address(ps().incentivesVault), amountOfRewards);
-                ps().incentivesVault.convertCompToMorphoTokens(msg.sender, amountOfRewards);
+                comp.safeApprove(address(p.incentivesVault), amountOfRewards);
+                p.incentivesVault.convertCompToMorphoTokens(msg.sender, amountOfRewards);
                 emit RewardsClaimedAndConverted(msg.sender, amountOfRewards);
             } else {
                 comp.safeTransfer(msg.sender, amountOfRewards);

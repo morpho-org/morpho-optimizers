@@ -76,14 +76,15 @@ contract MorphoLensForCompound {
         view
         returns (uint256 withdrawable, uint256 borrowable)
     {
-        Types.LiquidityData memory data;
+        PositionsStorage storage p = ps();
         Types.AssetLiquidityData memory assetData;
-        ICompoundOracle oracle = ICompoundOracle(ms().comptroller.oracle());
-        uint256 numberOfEnteredMarkets = ps().enteredMarkets[_user].length;
+        Types.LiquidityData memory data;
+        ICompoundOracle oracle = ICompoundOracle(p.comptroller.oracle());
+        uint256 numberOfEnteredMarkets = p.enteredMarkets[_user].length;
         uint256 i;
 
         while (i < numberOfEnteredMarkets) {
-            address poolTokenEntered = ps().enteredMarkets[_user][i];
+            address poolTokenEntered = p.enteredMarkets[_user][i];
 
             if (_poolTokenAddress != poolTokenEntered) {
                 assetData = LibPositionsManagerGetters.getUserLiquidityDataForAsset(
@@ -130,6 +131,10 @@ contract MorphoLensForCompound {
         }
 
         borrowable = differenceInUnderlying;
+    }
+
+    function comptroller() external view returns (IComptroller comptroller_) {
+        comptroller_ = ps().comptroller;
     }
 
     function rewardsManager() external view returns (IRewardsManagerForCompound rewardsManager_) {
