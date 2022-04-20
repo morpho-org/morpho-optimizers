@@ -122,7 +122,7 @@ contract TestSetup is Config, Utils, stdCheats {
         InitDiamond initDiamond = new InitDiamond();
 
         {
-            bytes4[] memory marketsManagerFunctionSelectors = new bytes4[](16);
+            bytes4[] memory marketsManagerFunctionSelectors = new bytes4[](18);
             {
                 uint256 index;
                 marketsManagerFunctionSelectors[index++] = marketsManagerFacet
@@ -143,6 +143,12 @@ contract TestSetup is Config, Utils, stdCheats {
                 .selector;
                 marketsManagerFunctionSelectors[index++] = marketsManagerFacet
                 .getUpdatedP2PExchangeRates
+                .selector;
+                marketsManagerFunctionSelectors[index++] = marketsManagerFacet
+                .getUpdatedSupplyP2PExchangeRate
+                .selector;
+                marketsManagerFunctionSelectors[index++] = marketsManagerFacet
+                .getUpdatedBorrowP2PExchangeRate
                 .selector;
                 marketsManagerFunctionSelectors[index++] = marketsManagerFacet
                 .updateP2PExchangeRates

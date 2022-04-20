@@ -47,7 +47,7 @@ contract TestEth is TestSetup {
         supplier1.supply(cEth, toSupply);
         uint256 balanceAfter = supplier1.balanceOf(wEth);
 
-        (uint256 supplyP2PExchangeRate, ) = marketsManager.getUpdatedP2PExchangeRates(cEth);
+        uint256 supplyP2PExchangeRate = marketsManager.getUpdatedSupplyP2PExchangeRate(cEth);
 
         uint256 expectedInP2P = toSupply.div(supplyP2PExchangeRate);
 

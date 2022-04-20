@@ -144,12 +144,10 @@ library LibPositionsManagerGetters {
         view
         returns (uint256)
     {
-        (uint256 supplyP2PExchangeRate, ) = LibMarketsManager.getUpdatedP2PExchangeRates(
-            _poolTokenAddress
-        );
-
         return
-            ps().supplyBalanceInOf[_poolTokenAddress][_user].inP2P.mul(supplyP2PExchangeRate) +
+            ps().supplyBalanceInOf[_poolTokenAddress][_user].inP2P.mul(
+                LibMarketsManager.getUpdatedSupplyP2PExchangeRate(_poolTokenAddress)
+            ) +
             ps().supplyBalanceInOf[_poolTokenAddress][_user].onPool.mul(
                 ICToken(_poolTokenAddress).exchangeRateStored()
             );
@@ -164,12 +162,10 @@ library LibPositionsManagerGetters {
         view
         returns (uint256)
     {
-        (, uint256 borrowP2PExchangeRate) = LibMarketsManager.getUpdatedP2PExchangeRates(
-            _poolTokenAddress
-        );
-
         return
-            ps().borrowBalanceInOf[_poolTokenAddress][_user].inP2P.mul(borrowP2PExchangeRate) +
+            ps().borrowBalanceInOf[_poolTokenAddress][_user].inP2P.mul(
+                LibMarketsManager.getUpdatedBorrowP2PExchangeRate(_poolTokenAddress)
+            ) +
             ps().borrowBalanceInOf[_poolTokenAddress][_user].onPool.mul(
                 ICToken(_poolTokenAddress).borrowIndex()
             );

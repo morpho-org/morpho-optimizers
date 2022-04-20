@@ -148,6 +148,28 @@ contract MarketsManagerForCompound is WithStorageAndModifiers {
         return LibMarketsManager.getUpdatedP2PExchangeRates(_poolTokenAddress);
     }
 
+    /// @notice Returns the updated supply P2P exchange rate.
+    /// @param _poolTokenAddress The address of the market to update.
+    /// @return newSupplyP2PExchangeRate The supply P2P exchange rate after udpate.
+    function getUpdatedSupplyP2PExchangeRate(address _poolTokenAddress)
+        external
+        view
+        returns (uint256)
+    {
+        return LibMarketsManager.getUpdatedSupplyP2PExchangeRate(_poolTokenAddress);
+    }
+
+    /// @notice Returns the updated borrow P2P exchange rate.
+    /// @param _poolTokenAddress The address of the market to update.
+    /// @return newSupplyP2PExchangeRate The borrow P2P exchange rate after udpate.
+    function getUpdatedBorrowP2PExchangeRate(address _poolTokenAddress)
+        external
+        view
+        returns (uint256)
+    {
+        return LibMarketsManager.getUpdatedBorrowP2PExchangeRate(_poolTokenAddress);
+    }
+
     /// @notice Whether or not this market is created.
     function isCreated(address _market) external view returns (bool isCreated_) {
         isCreated_ = ms().isCreated[_market];

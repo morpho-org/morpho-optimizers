@@ -14,8 +14,8 @@ library Types {
     /// STRUCTS ///
 
     struct Params {
-        uint256 supplyP2pExchangeRate;
-        uint256 borrowP2pExchangeRate;
+        uint256 supplyP2PExchangeRate;
+        uint256 borrowP2PExchangeRate;
         uint256 poolSupplyExchangeRate;
         uint256 poolBorrowExchangeRate;
         uint256 lastPoolSupplyExchangeRate;

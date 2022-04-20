@@ -115,6 +115,66 @@ library LibMarketsManager {
         }
     }
 
+    /// @dev Returns the updated supply P2P exchange rate.
+    /// @param _poolTokenAddress The address of the market to update.
+    /// @return newSupplyP2PExchangeRate The supply P2P exchange rate after udpate.
+    function getUpdatedSupplyP2PExchangeRate(address _poolTokenAddress)
+        internal
+        view
+        returns (uint256 newSupplyP2PExchangeRate)
+    {
+        MarketsStorage storage m = ms();
+        if (block.timestamp == m.lastUpdateBlockNumber[_poolTokenAddress])
+            newSupplyP2PExchangeRate = m.supplyP2PExchangeRate[_poolTokenAddress];
+        else {
+            ICToken poolToken = ICToken(_poolTokenAddress);
+            Types.LastPoolIndexes storage poolIndexes = m.lastPoolIndexes[_poolTokenAddress];
+
+            Types.Params memory params = Types.Params(
+                m.supplyP2PExchangeRate[_poolTokenAddress],
+                m.borrowP2PExchangeRate[_poolTokenAddress],
+                poolToken.exchangeRateStored(),
+                poolToken.borrowIndex(),
+                poolIndexes.lastSupplyPoolIndex,
+                poolIndexes.lastBorrowPoolIndex,
+                m.reserveFactor[_poolTokenAddress],
+                ps().deltas[_poolTokenAddress]
+            );
+
+            newSupplyP2PExchangeRate = LibInterestRates.computeSupplyP2PExchangeRate(params);
+        }
+    }
+
+    /// @dev Returns the updated borrow P2P exchange rate.
+    /// @param _poolTokenAddress The address of the market to update.
+    /// @return newBorrowP2PExchangeRate The borrow P2P exchange rate after udpate.
+    function getUpdatedBorrowP2PExchangeRate(address _poolTokenAddress)
+        internal
+        view
+        returns (uint256 newBorrowP2PExchangeRate)
+    {
+        MarketsStorage storage m = ms();
+        if (block.timestamp == m.lastUpdateBlockNumber[_poolTokenAddress])
+            newBorrowP2PExchangeRate = m.borrowP2PExchangeRate[_poolTokenAddress];
+        else {
+            ICToken poolToken = ICToken(_poolTokenAddress);
+            Types.LastPoolIndexes storage poolIndexes = m.lastPoolIndexes[_poolTokenAddress];
+
+            Types.Params memory params = Types.Params(
+                m.supplyP2PExchangeRate[_poolTokenAddress],
+                m.borrowP2PExchangeRate[_poolTokenAddress],
+                poolToken.exchangeRateStored(),
+                poolToken.borrowIndex(),
+                poolIndexes.lastSupplyPoolIndex,
+                poolIndexes.lastBorrowPoolIndex,
+                m.reserveFactor[_poolTokenAddress],
+                ps().deltas[_poolTokenAddress]
+            );
+
+            newBorrowP2PExchangeRate = LibInterestRates.computeBorrowP2PExchangeRate(params);
+        }
+    }
+
     /// @dev Updates the P2P exchange rates, taking into account the Second Percentage Yield values.
     /// @param _poolTokenAddress The address of the market to update.
     function updateP2PExchangeRates(address _poolTokenAddress) internal {
