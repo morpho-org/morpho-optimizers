@@ -40,12 +40,7 @@ contract PositionsManagerForCompound is
     /// @dev `msg.sender` must have approved Morpho's contract to spend the underlying `_amount`.
     /// @param _poolTokenAddress The address of the market the user wants to interact with.
     /// @param _amount The amount of token (in underlying) to supply.
-    /// @param _referralCode The referral code of an integrator that may receive rewards. 0 if no referral code.
-    function supply(
-        address _poolTokenAddress,
-        uint256 _amount,
-        uint16 _referralCode
-    ) external nonReentrant {
+    function supply(address _poolTokenAddress, uint256 _amount) external nonReentrant {
         if (_amount == 0) revert AmountIsZero();
         LibMarketsManager.updateP2PExchangeRates(_poolTokenAddress);
         LibPositionsManager.supply(_poolTokenAddress, _amount, ps().maxGas.supply);
@@ -55,8 +50,7 @@ contract PositionsManagerForCompound is
             _poolTokenAddress,
             _amount,
             ps().supplyBalanceInOf[_poolTokenAddress][msg.sender].onPool,
-            ps().supplyBalanceInOf[_poolTokenAddress][msg.sender].inP2P,
-            _referralCode
+            ps().supplyBalanceInOf[_poolTokenAddress][msg.sender].inP2P
         );
     }
 
@@ -64,12 +58,10 @@ contract PositionsManagerForCompound is
     /// @dev `msg.sender` must have approved Morpho's contract to spend the underlying `_amount`.
     /// @param _poolTokenAddress The address of the market the user wants to interact with.
     /// @param _amount The amount of token (in underlying) to supply.
-    /// @param _referralCode The referral code of an integrator that may receive rewards. 0 if no referral code.
     /// @param _maxGasToConsume The maximum amount of gas to consume within a matching engine loop.
     function supply(
         address _poolTokenAddress,
         uint256 _amount,
-        uint16 _referralCode,
         uint256 _maxGasToConsume
     ) external nonReentrant {
         if (_amount == 0) revert AmountIsZero();
@@ -81,20 +73,14 @@ contract PositionsManagerForCompound is
             _poolTokenAddress,
             _amount,
             ps().supplyBalanceInOf[_poolTokenAddress][msg.sender].onPool,
-            ps().supplyBalanceInOf[_poolTokenAddress][msg.sender].inP2P,
-            _referralCode
+            ps().supplyBalanceInOf[_poolTokenAddress][msg.sender].inP2P
         );
     }
 
     /// @notice Borrows underlying tokens in a specific market.
     /// @param _poolTokenAddress The address of the market the user wants to interact with.
     /// @param _amount The amount of token (in underlying).
-    /// @param _referralCode The referral code of an integrator that may receive rewards. 0 if no referral code.
-    function borrow(
-        address _poolTokenAddress,
-        uint256 _amount,
-        uint16 _referralCode
-    ) external nonReentrant {
+    function borrow(address _poolTokenAddress, uint256 _amount) external nonReentrant {
         if (_amount == 0) revert AmountIsZero();
         LibMarketsManager.updateP2PExchangeRates(_poolTokenAddress);
         LibPositionsManager.borrow(_poolTokenAddress, _amount, ps().maxGas.borrow);
@@ -104,20 +90,17 @@ contract PositionsManagerForCompound is
             _poolTokenAddress,
             _amount,
             ps().borrowBalanceInOf[_poolTokenAddress][msg.sender].onPool,
-            ps().borrowBalanceInOf[_poolTokenAddress][msg.sender].inP2P,
-            _referralCode
+            ps().borrowBalanceInOf[_poolTokenAddress][msg.sender].inP2P
         );
     }
 
     /// @notice Borrows underlying tokens in a specific market.
     /// @param _poolTokenAddress The address of the market the user wants to interact with.
     /// @param _amount The amount of token (in underlying).
-    /// @param _referralCode The referral code of an integrator that may receive rewards. 0 if no referral code.
     /// @param _maxGasToConsume The maximum amount of gas to consume within a matching engine loop.
     function borrow(
         address _poolTokenAddress,
         uint256 _amount,
-        uint16 _referralCode,
         uint256 _maxGasToConsume
     ) external nonReentrant {
         if (_amount == 0) revert AmountIsZero();
@@ -129,8 +112,7 @@ contract PositionsManagerForCompound is
             _poolTokenAddress,
             _amount,
             ps().borrowBalanceInOf[_poolTokenAddress][msg.sender].onPool,
-            ps().borrowBalanceInOf[_poolTokenAddress][msg.sender].inP2P,
-            _referralCode
+            ps().borrowBalanceInOf[_poolTokenAddress][msg.sender].inP2P
         );
     }
 

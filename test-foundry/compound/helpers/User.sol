@@ -68,7 +68,7 @@ contract User {
     }
 
     function supply(address _poolTokenAddress, uint256 _amount) external {
-        positionsManager.supply(_poolTokenAddress, _amount, 0);
+        positionsManager.supply(_poolTokenAddress, _amount);
     }
 
     function supply(
@@ -76,7 +76,7 @@ contract User {
         uint256 _amount,
         uint256 _maxGasToConsume
     ) external {
-        positionsManager.supply(_poolTokenAddress, _amount, 0, _maxGasToConsume);
+        positionsManager.supply(_poolTokenAddress, _amount, _maxGasToConsume);
     }
 
     function withdraw(address _poolTokenAddress, uint256 _amount) external {
@@ -84,7 +84,7 @@ contract User {
     }
 
     function borrow(address _poolTokenAddress, uint256 _amount) external {
-        positionsManager.borrow(_poolTokenAddress, _amount, 0);
+        positionsManager.borrow(_poolTokenAddress, _amount);
     }
 
     function borrow(
@@ -92,7 +92,7 @@ contract User {
         uint256 _amount,
         uint256 _maxGasToConsume
     ) external {
-        positionsManager.borrow(_poolTokenAddress, _amount, 0, _maxGasToConsume);
+        positionsManager.borrow(_poolTokenAddress, _amount, _maxGasToConsume);
     }
 
     function repay(address _poolTokenAddress, uint256 _amount) external {

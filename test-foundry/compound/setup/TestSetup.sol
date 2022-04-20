@@ -186,16 +186,16 @@ contract TestSetup is Config, Utils, stdCheats {
             {
                 uint256 index;
                 positionsManagerFunctionSelectors[index++] = bytes4(
-                    keccak256("supply(address,uint256,uint16)")
+                    keccak256("supply(address,uint256)")
                 );
                 positionsManagerFunctionSelectors[index++] = bytes4(
-                    keccak256("supply(address,uint256,uint16,uint256)")
+                    keccak256("supply(address,uint256,uint256)")
                 );
                 positionsManagerFunctionSelectors[index++] = bytes4(
-                    keccak256("borrow(address,uint256,uint16)")
+                    keccak256("borrow(address,uint256)")
                 );
                 positionsManagerFunctionSelectors[index++] = bytes4(
-                    keccak256("borrow(address,uint256,uint16,uint256)")
+                    keccak256("borrow(address,uint256,uint256)")
                 );
                 positionsManagerFunctionSelectors[index++] = bytes4(
                     keccak256("withdraw(address,uint256)")

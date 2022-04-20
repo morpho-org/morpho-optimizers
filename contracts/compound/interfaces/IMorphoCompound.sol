@@ -76,29 +76,19 @@ interface IMorphoCompound {
 
     /// POSITIONS MANAGER ///
 
-    function supply(
-        address _poolTokenAddress,
-        uint256 _amount,
-        uint16 _referralCode
-    ) external;
+    function supply(address _poolTokenAddress, uint256 _amount) external;
 
     function supply(
         address _poolTokenAddress,
         uint256 _amount,
-        uint16 _referralCode,
         uint256 _maxGasToConsume
     ) external;
 
-    function borrow(
-        address _poolTokenAddress,
-        uint256 _amount,
-        uint16 _referralCode
-    ) external;
+    function borrow(address _poolTokenAddress, uint256 _amount) external;
 
     function borrow(
         address _poolTokenAddress,
         uint256 _amount,
-        uint16 _referralCode,
         uint256 _maxGasToConsume
     ) external;
 

@@ -8,8 +8,6 @@ import "./libraries/LibStorage.sol";
 
 import "./PositionsManagerForCompoundEventsErrors.sol";
 
-/// @title PositionsManagerForCompound.
-/// @notice Smart contract interacting with Compound to enable P2P supply/borrow positions that can fallback on Compound's pool using pool tokens.
 contract PositionsManagerForCompoundSettersAndGetters is
     PositionsManagerForCompoundEventsErrors,
     WithStorageAndModifiers
