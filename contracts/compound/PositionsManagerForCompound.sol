@@ -42,15 +42,17 @@ contract PositionsManagerForCompound is
     /// @param _amount The amount of token (in underlying) to supply.
     function supply(address _poolTokenAddress, uint256 _amount) external nonReentrant {
         if (_amount == 0) revert AmountIsZero();
+        PositionsStorage storage p = ps();
+
         LibMarketsManager.updateP2PExchangeRates(_poolTokenAddress);
-        LibPositionsManager.supply(_poolTokenAddress, _amount, ps().maxGas.supply);
+        LibPositionsManager.supply(_poolTokenAddress, _amount, p.maxGas.supply);
 
         emit Supplied(
             msg.sender,
             _poolTokenAddress,
             _amount,
-            ps().supplyBalanceInOf[_poolTokenAddress][msg.sender].onPool,
-            ps().supplyBalanceInOf[_poolTokenAddress][msg.sender].inP2P
+            p.supplyBalanceInOf[_poolTokenAddress][msg.sender].onPool,
+            p.supplyBalanceInOf[_poolTokenAddress][msg.sender].inP2P
         );
     }
 
@@ -65,6 +67,8 @@ contract PositionsManagerForCompound is
         uint256 _maxGasToConsume
     ) external nonReentrant {
         if (_amount == 0) revert AmountIsZero();
+        PositionsStorage storage p = ps();
+
         LibMarketsManager.updateP2PExchangeRates(_poolTokenAddress);
         LibPositionsManager.supply(_poolTokenAddress, _amount, _maxGasToConsume);
 
@@ -72,8 +76,8 @@ contract PositionsManagerForCompound is
             msg.sender,
             _poolTokenAddress,
             _amount,
-            ps().supplyBalanceInOf[_poolTokenAddress][msg.sender].onPool,
-            ps().supplyBalanceInOf[_poolTokenAddress][msg.sender].inP2P
+            p.supplyBalanceInOf[_poolTokenAddress][msg.sender].onPool,
+            p.supplyBalanceInOf[_poolTokenAddress][msg.sender].inP2P
         );
     }
 
@@ -82,15 +86,17 @@ contract PositionsManagerForCompound is
     /// @param _amount The amount of token (in underlying).
     function borrow(address _poolTokenAddress, uint256 _amount) external nonReentrant {
         if (_amount == 0) revert AmountIsZero();
+        PositionsStorage storage p = ps();
+
         LibMarketsManager.updateP2PExchangeRates(_poolTokenAddress);
-        LibPositionsManager.borrow(_poolTokenAddress, _amount, ps().maxGas.borrow);
+        LibPositionsManager.borrow(_poolTokenAddress, _amount, p.maxGas.borrow);
 
         emit Borrowed(
             msg.sender,
             _poolTokenAddress,
             _amount,
-            ps().borrowBalanceInOf[_poolTokenAddress][msg.sender].onPool,
-            ps().borrowBalanceInOf[_poolTokenAddress][msg.sender].inP2P
+            p.borrowBalanceInOf[_poolTokenAddress][msg.sender].onPool,
+            p.borrowBalanceInOf[_poolTokenAddress][msg.sender].inP2P
         );
     }
 
@@ -104,6 +110,8 @@ contract PositionsManagerForCompound is
         uint256 _maxGasToConsume
     ) external nonReentrant {
         if (_amount == 0) revert AmountIsZero();
+        PositionsStorage storage p = ps();
+
         LibMarketsManager.updateP2PExchangeRates(_poolTokenAddress);
         LibPositionsManager.borrow(_poolTokenAddress, _amount, _maxGasToConsume);
 
@@ -111,8 +119,8 @@ contract PositionsManagerForCompound is
             msg.sender,
             _poolTokenAddress,
             _amount,
-            ps().borrowBalanceInOf[_poolTokenAddress][msg.sender].onPool,
-            ps().borrowBalanceInOf[_poolTokenAddress][msg.sender].inP2P
+            p.borrowBalanceInOf[_poolTokenAddress][msg.sender].onPool,
+            p.borrowBalanceInOf[_poolTokenAddress][msg.sender].inP2P
         );
     }
 
@@ -121,28 +129,28 @@ contract PositionsManagerForCompound is
     /// @param _amount The amount of tokens (in underlying) to withdraw from supply.
     function withdraw(address _poolTokenAddress, uint256 _amount) external nonReentrant {
         if (_amount == 0) revert AmountIsZero();
-        LibMarketsManager.updateP2PExchangeRates(_poolTokenAddress);
+        PositionsStorage storage p = ps();
 
+        LibMarketsManager.updateP2PExchangeRates(_poolTokenAddress);
         uint256 toWithdraw = Math.min(
             LibPositionsManagerGetters.getUserSupplyBalanceInOf(_poolTokenAddress, msg.sender),
             _amount
         );
-
         LibPositionsManager.checkUserLiquidity(msg.sender, _poolTokenAddress, toWithdraw, 0);
         LibPositionsManager.withdraw(
             _poolTokenAddress,
             toWithdraw,
             msg.sender,
             msg.sender,
-            ps().maxGas.withdraw
+            p.maxGas.withdraw
         );
 
         emit Withdrawn(
             msg.sender,
             _poolTokenAddress,
             _amount,
-            ps().supplyBalanceInOf[_poolTokenAddress][msg.sender].onPool,
-            ps().supplyBalanceInOf[_poolTokenAddress][msg.sender].inP2P
+            p.supplyBalanceInOf[_poolTokenAddress][msg.sender].onPool,
+            p.supplyBalanceInOf[_poolTokenAddress][msg.sender].inP2P
         );
     }
 
@@ -152,21 +160,21 @@ contract PositionsManagerForCompound is
     /// @param _amount The amount of token (in underlying) to repay from borrow.
     function repay(address _poolTokenAddress, uint256 _amount) external nonReentrant {
         if (_amount == 0) revert AmountIsZero();
-        LibMarketsManager.updateP2PExchangeRates(_poolTokenAddress);
+        PositionsStorage storage p = ps();
 
+        LibMarketsManager.updateP2PExchangeRates(_poolTokenAddress);
         uint256 toRepay = Math.min(
             LibPositionsManagerGetters.getUserBorrowBalanceInOf(_poolTokenAddress, msg.sender),
             _amount
         );
-
-        LibPositionsManager.repay(_poolTokenAddress, msg.sender, toRepay, ps().maxGas.repay);
+        LibPositionsManager.repay(_poolTokenAddress, msg.sender, toRepay, p.maxGas.repay);
 
         emit Repaid(
             msg.sender,
             _poolTokenAddress,
             _amount,
-            ps().borrowBalanceInOf[_poolTokenAddress][msg.sender].onPool,
-            ps().borrowBalanceInOf[_poolTokenAddress][msg.sender].inP2P
+            p.borrowBalanceInOf[_poolTokenAddress][msg.sender].onPool,
+            p.borrowBalanceInOf[_poolTokenAddress][msg.sender].inP2P
         );
     }
 
