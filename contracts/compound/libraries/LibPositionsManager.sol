@@ -37,6 +37,16 @@ library LibPositionsManager {
         uint256 toRepay;
     }
 
+    // Struct to avoid stack too deep.
+    struct BorrowVars {
+        uint256 remainingToBorrow;
+        uint256 poolSupplyIndex;
+        uint256 balanceBefore;
+        uint256 withdrawable;
+        uint256 balanceAfter;
+        uint256 toWithdraw;
+    }
+
     /// STORAGE ///
 
     uint8 public constant CTOKEN_DECIMALS = 8;
@@ -118,11 +128,12 @@ library LibPositionsManager {
         uint256 _maxGasToConsume
     ) internal isMarketCreatedAndNotPaused(_poolTokenAddress) {
         _enterMarketIfNeeded(_poolTokenAddress, msg.sender);
+        PositionsStorage storage p = ps();
 
         ERC20 underlyingToken = LibPositionsManagerGetters.getUnderlying(_poolTokenAddress);
         underlyingToken.safeTransferFrom(msg.sender, address(this), _amount);
 
-        Types.Delta storage delta = ps().deltas[_poolTokenAddress];
+        Types.Delta storage delta = p.deltas[_poolTokenAddress];
         uint256 borrowPoolIndex = ICToken(_poolTokenAddress).borrowIndex();
         uint256 remainingToSupply = _amount;
         uint256 toRepay;
@@ -148,7 +159,7 @@ library LibPositionsManager {
             // Match pool suppliers if any.
             if (
                 remainingToSupply > 0 &&
-                ps().borrowersOnPool[_poolTokenAddress].getHead() != address(0)
+                p.borrowersOnPool[_poolTokenAddress].getHead() != address(0)
             ) {
                 uint256 matched = LibMatchingEngine.matchBorrowers(
                     ICToken(_poolTokenAddress),
@@ -170,7 +181,7 @@ library LibPositionsManager {
             uint256 toAddInP2P = toRepay.div(ms().supplyP2PExchangeRate[_poolTokenAddress]);
 
             delta.supplyP2PAmount += toAddInP2P;
-            ps().supplyBalanceInOf[_poolTokenAddress][msg.sender].inP2P += toAddInP2P;
+            p.supplyBalanceInOf[_poolTokenAddress][msg.sender].inP2P += toAddInP2P;
             LibMatchingEngine.updateSuppliers(_poolTokenAddress, msg.sender);
 
             // Repay only what is necessary. The remaining tokens stays on the contracts and are claimable by the DAO.
@@ -186,7 +197,7 @@ library LibPositionsManager {
         /// Supply on pool ///
 
         if (remainingToSupply > 0) {
-            ps().supplyBalanceInOf[_poolTokenAddress][msg.sender].onPool += remainingToSupply.div(
+            p.supplyBalanceInOf[_poolTokenAddress][msg.sender].onPool += remainingToSupply.div(
                 ICToken(_poolTokenAddress).exchangeRateCurrent()
             ); // In scaled balance.
             LibMatchingEngine.updateSuppliers(_poolTokenAddress, msg.sender);
@@ -205,14 +216,14 @@ library LibPositionsManager {
     ) internal isMarketCreatedAndNotPaused(_poolTokenAddress) {
         _enterMarketIfNeeded(_poolTokenAddress, msg.sender);
         checkUserLiquidity(msg.sender, _poolTokenAddress, 0, _amount);
-
+        PositionsStorage storage p = ps();
+        Types.Delta storage delta = p.deltas[_poolTokenAddress];
+        BorrowVars memory vars;
         ERC20 underlyingToken = LibPositionsManagerGetters.getUnderlying(_poolTokenAddress);
-        uint256 balanceBefore = underlyingToken.balanceOf(address(this));
-        uint256 remainingToBorrow = _amount;
-        uint256 toWithdraw;
-        Types.Delta storage delta = ps().deltas[_poolTokenAddress];
-        uint256 poolSupplyIndex = ICToken(_poolTokenAddress).exchangeRateCurrent();
-        uint256 withdrawable = ICToken(_poolTokenAddress).balanceOfUnderlying(address(this)); // The balance on pool.
+        vars.balanceBefore = underlyingToken.balanceOf(address(this));
+        vars.remainingToBorrow = _amount;
+        vars.poolSupplyIndex = ICToken(_poolTokenAddress).exchangeRateCurrent();
+        vars.withdrawable = ICToken(_poolTokenAddress).balanceOfUnderlying(address(this)); // The balance on pool.
 
         /// Borrow in P2P ///
 
@@ -221,64 +232,64 @@ library LibPositionsManager {
             uint256 matchedDelta;
             if (delta.supplyP2PDelta > 0) {
                 matchedDelta = CompoundMath.min(
-                    delta.supplyP2PDelta.mul(poolSupplyIndex),
-                    remainingToBorrow,
-                    withdrawable
+                    delta.supplyP2PDelta.mul(vars.poolSupplyIndex),
+                    vars.remainingToBorrow,
+                    vars.withdrawable
                 );
                 if (matchedDelta > 0) {
-                    toWithdraw += matchedDelta;
-                    remainingToBorrow -= matchedDelta;
-                    delta.supplyP2PDelta -= matchedDelta.div(poolSupplyIndex);
+                    vars.toWithdraw += matchedDelta;
+                    vars.remainingToBorrow -= matchedDelta;
+                    delta.supplyP2PDelta -= matchedDelta.div(vars.poolSupplyIndex);
                     emit SupplyP2PDeltaUpdated(_poolTokenAddress, delta.supplyP2PDelta);
                 }
             }
 
             // Match pool suppliers if any.
             if (
-                remainingToBorrow > 0 &&
-                ps().suppliersOnPool[_poolTokenAddress].getHead() != address(0)
+                vars.remainingToBorrow > 0 &&
+                p.suppliersOnPool[_poolTokenAddress].getHead() != address(0)
             ) {
                 uint256 matched = LibMatchingEngine.matchSuppliers(
                     ICToken(_poolTokenAddress),
-                    CompoundMath.min(remainingToBorrow, withdrawable - toWithdraw),
+                    CompoundMath.min(vars.remainingToBorrow, vars.withdrawable - vars.toWithdraw),
                     _maxGasToConsume
                 ); // In underlying.
 
                 if (matched > 0) {
-                    toWithdraw += matched;
-                    remainingToBorrow -= matched;
-                    ps().deltas[_poolTokenAddress].supplyP2PAmount += matched.div(
+                    vars.toWithdraw += matched;
+                    vars.remainingToBorrow -= matched;
+                    p.deltas[_poolTokenAddress].supplyP2PAmount += matched.div(
                         ms().supplyP2PExchangeRate[_poolTokenAddress]
                     );
                 }
             }
         }
 
-        if (toWithdraw > 0) {
-            uint256 toAddInP2P = toWithdraw.div(ms().borrowP2PExchangeRate[_poolTokenAddress]); // In p2pUnit.
+        if (vars.toWithdraw > 0) {
+            uint256 toAddInP2P = vars.toWithdraw.div(ms().borrowP2PExchangeRate[_poolTokenAddress]); // In p2pUnit.
 
-            ps().deltas[_poolTokenAddress].borrowP2PAmount += toAddInP2P;
-            ps().borrowBalanceInOf[_poolTokenAddress][msg.sender].inP2P += toAddInP2P;
+            p.deltas[_poolTokenAddress].borrowP2PAmount += toAddInP2P;
+            p.borrowBalanceInOf[_poolTokenAddress][msg.sender].inP2P += toAddInP2P;
             LibMatchingEngine.updateBorrowers(_poolTokenAddress, msg.sender);
 
-            _withdrawFromPool(_poolTokenAddress, toWithdraw); // Reverts on error.
+            _withdrawFromPool(_poolTokenAddress, vars.toWithdraw); // Reverts on error.
             emit P2PAmountsUpdated(_poolTokenAddress, delta.supplyP2PAmount, delta.borrowP2PAmount);
         }
 
         /// Borrow on pool ///
 
-        if (_isAboveCompoundThreshold(_poolTokenAddress, remainingToBorrow)) {
-            ps().borrowBalanceInOf[_poolTokenAddress][msg.sender].onPool += remainingToBorrow.div(
+        if (_isAboveCompoundThreshold(_poolTokenAddress, vars.remainingToBorrow)) {
+            p.borrowBalanceInOf[_poolTokenAddress][msg.sender].onPool += vars.remainingToBorrow.div(
                 ICToken(_poolTokenAddress).borrowIndex()
             ); // In cdUnit.
             LibMatchingEngine.updateBorrowers(_poolTokenAddress, msg.sender);
-            _borrowFromPool(_poolTokenAddress, remainingToBorrow);
+            _borrowFromPool(_poolTokenAddress, vars.remainingToBorrow);
         }
 
         // Due to rounding errors the balance may be lower than expected.
-        uint256 balanceAfter = underlyingToken.balanceOf(address(this));
+        vars.balanceAfter = underlyingToken.balanceOf(address(this));
 
-        underlyingToken.safeTransfer(msg.sender, balanceAfter - balanceBefore);
+        underlyingToken.safeTransfer(msg.sender, vars.balanceAfter - vars.balanceBefore);
     }
 
     /// @dev Implements withdraw logic.
@@ -296,6 +307,7 @@ library LibPositionsManager {
     ) internal isMarketCreatedAndNotPaused(_poolTokenAddress) {
         ICToken poolToken = ICToken(_poolTokenAddress);
         ERC20 underlyingToken = LibPositionsManagerGetters.getUnderlying(_poolTokenAddress);
+        PositionsStorage storage p = ps();
         WithdrawVars memory vars;
         vars.remainingToWithdraw = _amount;
         vars.withdrawable = poolToken.balanceOfUnderlying(address(this));
@@ -303,8 +315,8 @@ library LibPositionsManager {
 
         /// Soft withdraw ///
 
-        if (ps().supplyBalanceInOf[_poolTokenAddress][_supplier].onPool > 0) {
-            uint256 onPoolSupply = ps().supplyBalanceInOf[_poolTokenAddress][_supplier].onPool;
+        if (p.supplyBalanceInOf[_poolTokenAddress][_supplier].onPool > 0) {
+            uint256 onPoolSupply = p.supplyBalanceInOf[_poolTokenAddress][_supplier].onPool;
             vars.toWithdraw = CompoundMath.min(
                 onPoolSupply.mul(vars.supplyPoolIndex),
                 vars.remainingToWithdraw,
@@ -313,9 +325,9 @@ library LibPositionsManager {
             vars.remainingToWithdraw -= vars.toWithdraw;
 
             // Handle case where only 1 wei stays on the position.
-            uint256 diff = ps().supplyBalanceInOf[_poolTokenAddress][_supplier].onPool -
+            uint256 diff = p.supplyBalanceInOf[_poolTokenAddress][_supplier].onPool -
                 CompoundMath.min(onPoolSupply, vars.toWithdraw.div(vars.supplyPoolIndex));
-            ps().supplyBalanceInOf[_poolTokenAddress][_supplier].onPool = diff == 1 ? 0 : diff;
+            p.supplyBalanceInOf[_poolTokenAddress][_supplier].onPool = diff == 1 ? 0 : diff;
             LibMatchingEngine.updateSuppliers(_poolTokenAddress, _supplier);
 
             if (vars.remainingToWithdraw == 0) {
@@ -326,14 +338,14 @@ library LibPositionsManager {
             }
         }
 
-        Types.Delta storage delta = ps().deltas[_poolTokenAddress];
+        Types.Delta storage delta = p.deltas[_poolTokenAddress];
         uint256 supplyP2PExchangeRate = ms().supplyP2PExchangeRate[_poolTokenAddress];
 
         /// Transfer withdraw ///
 
         if (vars.remainingToWithdraw > 0 && !ms().noP2P[_poolTokenAddress]) {
-            ps().supplyBalanceInOf[_poolTokenAddress][_supplier].inP2P -= CompoundMath.min(
-                ps().supplyBalanceInOf[_poolTokenAddress][_supplier].inP2P,
+            p.supplyBalanceInOf[_poolTokenAddress][_supplier].inP2P -= CompoundMath.min(
+                p.supplyBalanceInOf[_poolTokenAddress][_supplier].inP2P,
                 vars.remainingToWithdraw.div(supplyP2PExchangeRate)
             ); // In p2pUnit
             LibMatchingEngine.updateSuppliers(_poolTokenAddress, _supplier);
@@ -359,7 +371,7 @@ library LibPositionsManager {
             // Match pool suppliers if any.
             if (
                 vars.remainingToWithdraw > 0 &&
-                ps().suppliersOnPool[_poolTokenAddress].getHead() != address(0)
+                p.suppliersOnPool[_poolTokenAddress].getHead() != address(0)
             ) {
                 // Match suppliers.
                 uint256 matched = LibMatchingEngine.matchSuppliers(
@@ -420,14 +432,15 @@ library LibPositionsManager {
         ICToken poolToken = ICToken(_poolTokenAddress);
         ERC20 underlyingToken = LibPositionsManagerGetters.getUnderlying(_poolTokenAddress);
         underlyingToken.safeTransferFrom(msg.sender, address(this), _amount);
+        PositionsStorage storage p = ps();
         RepayVars memory vars;
         vars.remainingToRepay = _amount;
         vars.borrowPoolIndex = poolToken.borrowIndex();
 
         /// Soft repay ///
 
-        if (ps().borrowBalanceInOf[_poolTokenAddress][_user].onPool > 0) {
-            uint256 borrowedOnPool = ps().borrowBalanceInOf[_poolTokenAddress][_user].onPool;
+        if (p.borrowBalanceInOf[_poolTokenAddress][_user].onPool > 0) {
+            uint256 borrowedOnPool = p.borrowBalanceInOf[_poolTokenAddress][_user].onPool;
             vars.toRepay = CompoundMath.min(
                 borrowedOnPool.mul(vars.borrowPoolIndex),
                 vars.remainingToRepay
@@ -435,9 +448,9 @@ library LibPositionsManager {
             vars.remainingToRepay -= vars.toRepay;
 
             // Handle case where only 1 wei stays on the position.
-            uint256 diffPool = ps().borrowBalanceInOf[_poolTokenAddress][_user].onPool -
+            uint256 diffPool = p.borrowBalanceInOf[_poolTokenAddress][_user].onPool -
                 CompoundMath.min(borrowedOnPool, vars.toRepay.div(vars.borrowPoolIndex));
-            ps().borrowBalanceInOf[_poolTokenAddress][_user].onPool = diffPool == 1 ? 0 : diffPool; // In cdUnit.
+            p.borrowBalanceInOf[_poolTokenAddress][_user].onPool = diffPool == 1 ? 0 : diffPool; // In cdUnit.
             LibMatchingEngine.updateBorrowers(_poolTokenAddress, _user);
 
             if (vars.remainingToRepay == 0) {
@@ -454,14 +467,14 @@ library LibPositionsManager {
             }
         }
 
-        Types.Delta storage delta = ps().deltas[_poolTokenAddress];
+        Types.Delta storage delta = p.deltas[_poolTokenAddress];
         vars.supplyP2PExchangeRate = ms().supplyP2PExchangeRate[_poolTokenAddress];
         vars.borrowP2PExchangeRate = ms().borrowP2PExchangeRate[_poolTokenAddress];
         // Handle case where only 1 wei stays on the position.
-        uint256 inP2P = ps().borrowBalanceInOf[_poolTokenAddress][_user].inP2P;
+        uint256 inP2P = p.borrowBalanceInOf[_poolTokenAddress][_user].inP2P;
         uint256 diffP2P = inP2P -
             CompoundMath.min(inP2P, vars.remainingToRepay.div(vars.borrowP2PExchangeRate));
-        ps().borrowBalanceInOf[_poolTokenAddress][_user].inP2P = diffP2P == 1 ? 0 : diffP2P; // In p2pUnit.
+        p.borrowBalanceInOf[_poolTokenAddress][_user].inP2P = diffP2P == 1 ? 0 : diffP2P; // In p2pUnit.
         LibMatchingEngine.updateBorrowers(_poolTokenAddress, _user);
 
         /// Fee repay ///
@@ -496,7 +509,7 @@ library LibPositionsManager {
 
             if (
                 vars.remainingToRepay > 0 &&
-                ps().borrowersOnPool[_poolTokenAddress].getHead() != address(0)
+                p.borrowersOnPool[_poolTokenAddress].getHead() != address(0)
             ) {
                 // Match borrowers.
                 uint256 matched = LibMatchingEngine.matchBorrowers(
@@ -572,9 +585,10 @@ library LibPositionsManager {
     /// @param _user The address of the user to update.
     /// @param _poolTokenAddress The address of the market to check.
     function _enterMarketIfNeeded(address _poolTokenAddress, address _user) internal {
-        if (!ps().userMembership[_poolTokenAddress][_user]) {
-            ps().userMembership[_poolTokenAddress][_user] = true;
-            ps().enteredMarkets[_user].push(_poolTokenAddress);
+        PositionsStorage storage p = ps();
+        if (!p.userMembership[_poolTokenAddress][_user]) {
+            p.userMembership[_poolTokenAddress][_user] = true;
+            p.enteredMarkets[_user].push(_poolTokenAddress);
         }
     }
 
@@ -582,24 +596,25 @@ library LibPositionsManager {
     /// @param _user The address of the user to update.
     /// @param _poolTokenAddress The address of the market to check.
     function _leaveMarkerIfNeeded(address _poolTokenAddress, address _user) internal {
+        PositionsStorage storage p = ps();
         if (
-            ps().supplyBalanceInOf[_poolTokenAddress][_user].inP2P == 0 &&
-            ps().supplyBalanceInOf[_poolTokenAddress][_user].onPool == 0 &&
-            ps().borrowBalanceInOf[_poolTokenAddress][_user].inP2P == 0 &&
-            ps().borrowBalanceInOf[_poolTokenAddress][_user].onPool == 0
+            p.supplyBalanceInOf[_poolTokenAddress][_user].inP2P == 0 &&
+            p.supplyBalanceInOf[_poolTokenAddress][_user].onPool == 0 &&
+            p.borrowBalanceInOf[_poolTokenAddress][_user].inP2P == 0 &&
+            p.borrowBalanceInOf[_poolTokenAddress][_user].onPool == 0
         ) {
             uint256 index;
-            while (ps().enteredMarkets[_user][index] != _poolTokenAddress) {
+            while (p.enteredMarkets[_user][index] != _poolTokenAddress) {
                 unchecked {
                     ++index;
                 }
             }
-            ps().userMembership[_poolTokenAddress][_user] = false;
+            p.userMembership[_poolTokenAddress][_user] = false;
 
-            uint256 length = ps().enteredMarkets[_user].length;
+            uint256 length = p.enteredMarkets[_user].length;
             if (index != length - 1)
-                ps().enteredMarkets[_user][index] = ps().enteredMarkets[_user][length - 1];
-            ps().enteredMarkets[_user].pop();
+                p.enteredMarkets[_user][index] = p.enteredMarkets[_user][length - 1];
+            p.enteredMarkets[_user].pop();
         }
     }
 
@@ -612,8 +627,9 @@ library LibPositionsManager {
         ERC20 _underlyingToken,
         uint256 _amount
     ) internal {
-        if (_poolTokenAddress == ps().cEth) {
-            IWETH(ps().wEth).withdraw(_amount); // Turn wETH into ETH.
+        PositionsStorage storage p = ps();
+        if (_poolTokenAddress == p.cEth) {
+            IWETH(p.wEth).withdraw(_amount); // Turn wETH into ETH.
             ICEther(_poolTokenAddress).mint{value: _amount}();
         } else {
             _underlyingToken.safeApprove(_poolTokenAddress, _amount);
@@ -627,7 +643,8 @@ library LibPositionsManager {
     function _withdrawFromPool(address _poolTokenAddress, uint256 _amount) internal {
         if (ICToken(_poolTokenAddress).redeemUnderlying(_amount) != 0)
             revert RedeemOnCompoundFailed();
-        if (_poolTokenAddress == ps().cEth) IWETH(ps().wEth).deposit{value: _amount}(); // Turn the ETH recceived in wETH.
+        PositionsStorage storage p = ps();
+        if (_poolTokenAddress == p.cEth) IWETH(p.wEth).deposit{value: _amount}(); // Turn the ETH recceived in wETH.
     }
 
     /// @dev Borrows underlying tokens from Compound.
@@ -635,7 +652,8 @@ library LibPositionsManager {
     /// @param _amount The amount of token (in underlying).
     function _borrowFromPool(address _poolTokenAddress, uint256 _amount) internal {
         if ((ICToken(_poolTokenAddress).borrow(_amount) != 0)) revert BorrowOnCompoundFailed();
-        if (_poolTokenAddress == ps().cEth) IWETH(ps().wEth).deposit{value: _amount}(); // Turn the ETH recceived in wETH.
+        PositionsStorage storage p = ps();
+        if (_poolTokenAddress == p.cEth) IWETH(p.wEth).deposit{value: _amount}(); // Turn the ETH recceived in wETH.
     }
 
     /// @dev Repays underlying tokens to Compound.
@@ -647,8 +665,9 @@ library LibPositionsManager {
         ERC20 _underlyingToken,
         uint256 _amount
     ) internal {
-        if (_poolTokenAddress == ps().cEth) {
-            IWETH(ps().wEth).withdraw(_amount); // Turn wETH into ETH.
+        PositionsStorage storage p = ps();
+        if (_poolTokenAddress == p.cEth) {
+            IWETH(p.wEth).withdraw(_amount); // Turn wETH into ETH.
             ICEther(_poolTokenAddress).repayBorrow{value: _amount}();
         } else {
             _underlyingToken.safeApprove(_poolTokenAddress, _amount);

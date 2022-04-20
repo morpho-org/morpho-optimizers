@@ -42,12 +42,13 @@ library LibPositionsManagerGetters {
             uint256 maxDebtValue
         )
     {
+        PositionsStorage storage p = ps();
         ICompoundOracle oracle = ICompoundOracle(ms().comptroller.oracle());
-        uint256 numberOfEnteredMarkets = ps().enteredMarkets[_user].length;
+        uint256 numberOfEnteredMarkets = p.enteredMarkets[_user].length;
         uint256 i;
 
         while (i < numberOfEnteredMarkets) {
-            address poolTokenEntered = ps().enteredMarkets[_user][i];
+            address poolTokenEntered = p.enteredMarkets[_user][i];
             Types.AssetLiquidityData memory assetData = getUserLiquidityDataForAsset(
                 _user,
                 poolTokenEntered,
@@ -100,12 +101,13 @@ library LibPositionsManagerGetters {
         uint256 _withdrawnAmount,
         uint256 _borrowedAmount
     ) internal returns (uint256 debtValue, uint256 maxDebtValue) {
+        PositionsStorage storage p = ps();
         ICompoundOracle oracle = ICompoundOracle(ms().comptroller.oracle());
-        uint256 numberOfEnteredMarkets = ps().enteredMarkets[_user].length;
+        uint256 numberOfEnteredMarkets = p.enteredMarkets[_user].length;
         uint256 i;
 
         while (i < numberOfEnteredMarkets) {
-            address poolTokenEntered = ps().enteredMarkets[_user][i];
+            address poolTokenEntered = p.enteredMarkets[_user][i];
 
             // Calling accrueInterest so that computation in getUserLiquidityDataForAsset() are the most accurate ones.
             ICToken(poolTokenEntered).accrueInterest();
@@ -144,11 +146,12 @@ library LibPositionsManagerGetters {
         view
         returns (uint256)
     {
+        PositionsStorage storage p = ps();
         return
-            ps().supplyBalanceInOf[_poolTokenAddress][_user].inP2P.mul(
+            p.supplyBalanceInOf[_poolTokenAddress][_user].inP2P.mul(
                 LibMarketsManager.getUpdatedSupplyP2PExchangeRate(_poolTokenAddress)
             ) +
-            ps().supplyBalanceInOf[_poolTokenAddress][_user].onPool.mul(
+            p.supplyBalanceInOf[_poolTokenAddress][_user].onPool.mul(
                 ICToken(_poolTokenAddress).exchangeRateStored()
             );
     }
@@ -162,11 +165,12 @@ library LibPositionsManagerGetters {
         view
         returns (uint256)
     {
+        PositionsStorage storage p = ps();
         return
-            ps().borrowBalanceInOf[_poolTokenAddress][_user].inP2P.mul(
+            p.borrowBalanceInOf[_poolTokenAddress][_user].inP2P.mul(
                 LibMarketsManager.getUpdatedBorrowP2PExchangeRate(_poolTokenAddress)
             ) +
-            ps().borrowBalanceInOf[_poolTokenAddress][_user].onPool.mul(
+            p.borrowBalanceInOf[_poolTokenAddress][_user].onPool.mul(
                 ICToken(_poolTokenAddress).borrowIndex()
             );
     }
@@ -175,9 +179,10 @@ library LibPositionsManagerGetters {
     /// @param _poolTokenAddress The address of the pool token.
     /// @return The underlying ERC20 token.
     function getUnderlying(address _poolTokenAddress) internal view returns (ERC20) {
-        if (_poolTokenAddress == ps().cEth)
+        PositionsStorage storage p = ps();
+        if (_poolTokenAddress == p.cEth)
             // cETH has no underlying() function.
-            return ERC20(ps().wEth);
+            return ERC20(p.wEth);
         else return ERC20(ICToken(_poolTokenAddress).underlying());
     }
 }
