@@ -38,16 +38,6 @@ contract PositionsManagerForCompoundGovernor is WithStorageAndModifiers {
     /// @param _isCompRewardsActive The new COMP reward status.
     event CompRewardsActive(bool _isCompRewardsActive);
 
-    /// @notice Emitted when a user claims rewards.
-    /// @param _user The address of the claimer.
-    /// @param _amountClaimed The amount of reward token claimed.
-    event RewardsClaimed(address indexed _user, uint256 _amountClaimed);
-
-    /// @notice Emitted when a user claims rewards and converts them to Morpho tokens.
-    /// @param _user The address of the claimer.
-    /// @param _amountSent The amount of reward token sent to the vault.
-    event RewardsClaimedAndConverted(address indexed _user, uint256 _amountSent);
-
     /// ERRORS ///
 
     /// @notice Thrown when the market is not created yet.
@@ -121,29 +111,5 @@ contract PositionsManagerForCompoundGovernor is WithStorageAndModifiers {
 
         underlyingToken.safeTransfer(ps().treasuryVault, amountToClaim);
         emit ReserveFeeClaimed(_poolTokenAddress, amountToClaim);
-    }
-
-    /// @notice Claims rewards for the given assets and the unclaimed rewards.
-    /// @param _claimMorphoToken Whether or not to claim Morpho tokens instead of token reward.
-    function claimRewards(address[] calldata _cTokenAddresses, bool _claimMorphoToken)
-        external
-        nonReentrant
-    {
-        uint256 amountOfRewards = ps().rewardsManager.claimRewards(_cTokenAddresses, msg.sender);
-
-        if (amountOfRewards == 0) revert AmountIsZero();
-        else {
-            PositionsStorage storage p = ps();
-            p.comptroller.claimComp(address(this), _cTokenAddresses);
-            ERC20 comp = ERC20(p.comptroller.getCompAddress());
-            if (_claimMorphoToken) {
-                comp.safeApprove(address(p.incentivesVault), amountOfRewards);
-                p.incentivesVault.convertCompToMorphoTokens(msg.sender, amountOfRewards);
-                emit RewardsClaimedAndConverted(msg.sender, amountOfRewards);
-            } else {
-                comp.safeTransfer(msg.sender, amountOfRewards);
-                emit RewardsClaimed(msg.sender, amountOfRewards);
-            }
-        }
     }
 }

@@ -250,4 +250,28 @@ contract PositionsManagerForCompound is
             _poolTokenCollateralAddress
         );
     }
+
+    /// @notice Claims rewards for the given assets and the unclaimed rewards.
+    /// @param _claimMorphoToken Whether or not to claim Morpho tokens instead of token reward.
+    function claimRewards(address[] calldata _cTokenAddresses, bool _claimMorphoToken)
+        external
+        nonReentrant
+    {
+        uint256 amountOfRewards = ps().rewardsManager.claimRewards(_cTokenAddresses, msg.sender);
+
+        if (amountOfRewards == 0) revert AmountIsZero();
+        else {
+            PositionsStorage storage p = ps();
+            p.comptroller.claimComp(address(this), _cTokenAddresses);
+            ERC20 comp = ERC20(p.comptroller.getCompAddress());
+            if (_claimMorphoToken) {
+                comp.safeApprove(address(p.incentivesVault), amountOfRewards);
+                p.incentivesVault.convertCompToMorphoTokens(msg.sender, amountOfRewards);
+                emit RewardsClaimedAndConverted(msg.sender, amountOfRewards);
+            } else {
+                comp.safeTransfer(msg.sender, amountOfRewards);
+                emit RewardsClaimed(msg.sender, amountOfRewards);
+            }
+        }
+    }
 }

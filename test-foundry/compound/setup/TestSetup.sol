@@ -181,7 +181,7 @@ contract TestSetup is Config, Utils, stdCheats {
                 functionSelectors: marketsManagerFunctionSelectors
             });
 
-            bytes4[] memory positionsManagerFunctionSelectors = new bytes4[](7);
+            bytes4[] memory positionsManagerFunctionSelectors = new bytes4[](8);
             {
                 uint256 index;
                 positionsManagerFunctionSelectors[index++] = bytes4(
@@ -205,6 +205,9 @@ contract TestSetup is Config, Utils, stdCheats {
                 positionsManagerFunctionSelectors[index++] = positionsManagerFacet
                 .liquidate
                 .selector;
+                positionsManagerFunctionSelectors[index++] = positionsManagerFacet
+                .claimRewards
+                .selector;
             }
 
             IDiamondCut.FacetCut memory positionsCut = IDiamondCut.FacetCut({
@@ -213,14 +216,11 @@ contract TestSetup is Config, Utils, stdCheats {
                 functionSelectors: positionsManagerFunctionSelectors
             });
 
-            bytes4[] memory positionsManagerGovernorFunctionSelectors = new bytes4[](8);
+            bytes4[] memory positionsManagerGovernorFunctionSelectors = new bytes4[](7);
             {
                 uint256 index;
                 positionsManagerGovernorFunctionSelectors[index++] = positionsManagerGovernorFacet
                 .claimToTreasury
-                .selector;
-                positionsManagerGovernorFunctionSelectors[index++] = positionsManagerGovernorFacet
-                .claimRewards
                 .selector;
                 positionsManagerGovernorFunctionSelectors[index++] = positionsManagerGovernorFacet
                 .setNDS

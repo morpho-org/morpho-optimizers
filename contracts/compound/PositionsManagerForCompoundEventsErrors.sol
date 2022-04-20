@@ -80,6 +80,16 @@ contract PositionsManagerForCompoundEventsErrors {
         address indexed _poolTokenCollateralAddress
     );
 
+    /// @notice Emitted when a user claims rewards.
+    /// @param _user The address of the claimer.
+    /// @param _amountClaimed The amount of reward token claimed.
+    event RewardsClaimed(address indexed _user, uint256 _amountClaimed);
+
+    /// @notice Emitted when a user claims rewards and converts them to Morpho tokens.
+    /// @param _user The address of the claimer.
+    /// @param _amountSent The amount of reward token sent to the vault.
+    event RewardsClaimedAndConverted(address indexed _user, uint256 _amountSent);
+
     /// ERRORS ///
 
     /// @notice Thrown when the amount repaid during the liquidation is above what is allowed to be repaid.
