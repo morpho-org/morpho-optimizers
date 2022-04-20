@@ -20,20 +20,9 @@ library LibPositionsManager {
     /// STRUCTS ///
 
     // Struct to avoid stack too deep.
-    struct WithdrawVars {
-        uint256 remainingToWithdraw;
-        uint256 supplyPoolIndex;
-        uint256 withdrawable;
-        uint256 toWithdraw;
-    }
-
-    // Struct to avoid stack too deep.
-    struct RepayVars {
-        uint256 supplyP2PExchangeRate;
-        uint256 borrowP2PExchangeRate;
-        uint256 remainingToRepay;
+    struct SupplyVars {
+        uint256 remainingToSupply;
         uint256 borrowPoolIndex;
-        uint256 feeToRepay;
         uint256 toRepay;
     }
 
@@ -45,6 +34,28 @@ library LibPositionsManager {
         uint256 withdrawable;
         uint256 balanceAfter;
         uint256 toWithdraw;
+    }
+
+    // Struct to avoid stack too deep.
+    struct WithdrawVars {
+        uint256 supplyP2PExchangeRate;
+        uint256 remainingToWithdraw;
+        uint256 supplyPoolIndex;
+        uint256 withdrawable;
+        uint256 toWithdraw;
+        uint256 diff;
+    }
+
+    // Struct to avoid stack too deep.
+    struct RepayVars {
+        uint256 supplyP2PExchangeRate;
+        uint256 borrowP2PExchangeRate;
+        uint256 remainingToRepay;
+        uint256 borrowPoolIndex;
+        uint256 feeToRepay;
+        uint256 toRepay;
+        uint256 diffP2P;
+        uint256 inP2P;
     }
 
     /// STORAGE ///
@@ -101,8 +112,9 @@ library LibPositionsManager {
     /// @notice Prevents a user to trigger a function when market is not created or paused.
     /// @param _poolTokenAddress The address of the market to check.
     modifier isMarketCreatedAndNotPaused(address _poolTokenAddress) {
-        if (!ms().isCreated[_poolTokenAddress]) revert MarketNotCreated();
-        if (ps().paused[_poolTokenAddress]) revert MarketPaused();
+        MarketsStorage storage m = ms();
+        if (!m.isCreated[_poolTokenAddress]) revert MarketNotCreated();
+        if (m.paused[_poolTokenAddress]) revert MarketPaused();
         _;
     }
 
@@ -128,80 +140,82 @@ library LibPositionsManager {
         uint256 _maxGasToConsume
     ) internal isMarketCreatedAndNotPaused(_poolTokenAddress) {
         _enterMarketIfNeeded(_poolTokenAddress, msg.sender);
+        MarketsStorage storage m = ms();
         PositionsStorage storage p = ps();
 
         ERC20 underlyingToken = LibPositionsManagerGetters.getUnderlying(_poolTokenAddress);
         underlyingToken.safeTransferFrom(msg.sender, address(this), _amount);
 
         Types.Delta storage delta = p.deltas[_poolTokenAddress];
-        uint256 borrowPoolIndex = ICToken(_poolTokenAddress).borrowIndex();
-        uint256 remainingToSupply = _amount;
-        uint256 toRepay;
+        SupplyVars memory vars;
+        vars.borrowPoolIndex = ICToken(_poolTokenAddress).borrowIndex();
+        vars.remainingToSupply = _amount;
+        vars.toRepay;
 
         /// Supply in P2P ///
 
-        if (!ms().noP2P[_poolTokenAddress]) {
+        if (!m.noP2P[_poolTokenAddress]) {
             // Match borrow P2P delta first if any.
             uint256 matchedDelta;
             if (delta.borrowP2PDelta > 0) {
                 matchedDelta = CompoundMath.min(
-                    delta.borrowP2PDelta.mul(borrowPoolIndex),
-                    remainingToSupply
+                    delta.borrowP2PDelta.mul(vars.borrowPoolIndex),
+                    vars.remainingToSupply
                 );
                 if (matchedDelta > 0) {
-                    toRepay += matchedDelta;
-                    remainingToSupply -= matchedDelta;
-                    delta.borrowP2PDelta -= matchedDelta.div(borrowPoolIndex);
+                    vars.toRepay += matchedDelta;
+                    vars.remainingToSupply -= matchedDelta;
+                    delta.borrowP2PDelta -= matchedDelta.div(vars.borrowPoolIndex);
                     emit BorrowP2PDeltaUpdated(_poolTokenAddress, delta.borrowP2PDelta);
                 }
             }
 
             // Match pool suppliers if any.
             if (
-                remainingToSupply > 0 &&
+                vars.remainingToSupply > 0 &&
                 p.borrowersOnPool[_poolTokenAddress].getHead() != address(0)
             ) {
                 uint256 matched = LibMatchingEngine.matchBorrowers(
                     ICToken(_poolTokenAddress),
-                    remainingToSupply,
+                    vars.remainingToSupply,
                     _maxGasToConsume
                 ); // In underlying.
 
                 if (matched > 0) {
-                    toRepay += matched;
-                    remainingToSupply -= matched;
+                    vars.toRepay += matched;
+                    vars.remainingToSupply -= matched;
                     delta.borrowP2PAmount += matched.div(
-                        ms().borrowP2PExchangeRate[_poolTokenAddress]
+                        m.borrowP2PExchangeRate[_poolTokenAddress]
                     );
                 }
             }
         }
 
-        if (toRepay > 0) {
-            uint256 toAddInP2P = toRepay.div(ms().supplyP2PExchangeRate[_poolTokenAddress]);
+        if (vars.toRepay > 0) {
+            uint256 toAddInP2P = vars.toRepay.div(m.supplyP2PExchangeRate[_poolTokenAddress]);
 
             delta.supplyP2PAmount += toAddInP2P;
             p.supplyBalanceInOf[_poolTokenAddress][msg.sender].inP2P += toAddInP2P;
             LibMatchingEngine.updateSuppliers(_poolTokenAddress, msg.sender);
 
             // Repay only what is necessary. The remaining tokens stays on the contracts and are claimable by the DAO.
-            toRepay = Math.min(
-                toRepay,
+            vars.toRepay = Math.min(
+                vars.toRepay,
                 ICToken(_poolTokenAddress).borrowBalanceCurrent(address(this)) // The debt of the contract.
             );
 
-            _repayToPool(_poolTokenAddress, underlyingToken, toRepay); // Reverts on error.
+            _repayToPool(_poolTokenAddress, underlyingToken, vars.toRepay); // Reverts on error.
             emit P2PAmountsUpdated(_poolTokenAddress, delta.supplyP2PAmount, delta.borrowP2PAmount);
         }
 
         /// Supply on pool ///
 
-        if (remainingToSupply > 0) {
-            p.supplyBalanceInOf[_poolTokenAddress][msg.sender].onPool += remainingToSupply.div(
+        if (vars.remainingToSupply > 0) {
+            p.supplyBalanceInOf[_poolTokenAddress][msg.sender].onPool += vars.remainingToSupply.div(
                 ICToken(_poolTokenAddress).exchangeRateCurrent()
             ); // In scaled balance.
             LibMatchingEngine.updateSuppliers(_poolTokenAddress, msg.sender);
-            _supplyToPool(_poolTokenAddress, underlyingToken, remainingToSupply); // Reverts on error.
+            _supplyToPool(_poolTokenAddress, underlyingToken, vars.remainingToSupply); // Reverts on error.
         }
     }
 
@@ -305,13 +319,13 @@ library LibPositionsManager {
         address _receiver,
         uint256 _maxGasToConsume
     ) internal isMarketCreatedAndNotPaused(_poolTokenAddress) {
-        ICToken poolToken = ICToken(_poolTokenAddress);
         ERC20 underlyingToken = LibPositionsManagerGetters.getUnderlying(_poolTokenAddress);
         PositionsStorage storage p = ps();
+        MarketsStorage storage m = ms();
         WithdrawVars memory vars;
         vars.remainingToWithdraw = _amount;
-        vars.withdrawable = poolToken.balanceOfUnderlying(address(this));
-        vars.supplyPoolIndex = poolToken.exchangeRateCurrent();
+        vars.withdrawable = ICToken(_poolTokenAddress).balanceOfUnderlying(address(this));
+        vars.supplyPoolIndex = ICToken(_poolTokenAddress).exchangeRateCurrent();
 
         /// Soft withdraw ///
 
@@ -325,9 +339,12 @@ library LibPositionsManager {
             vars.remainingToWithdraw -= vars.toWithdraw;
 
             // Handle case where only 1 wei stays on the position.
-            uint256 diff = p.supplyBalanceInOf[_poolTokenAddress][_supplier].onPool -
+            vars.diff =
+                p.supplyBalanceInOf[_poolTokenAddress][_supplier].onPool -
                 CompoundMath.min(onPoolSupply, vars.toWithdraw.div(vars.supplyPoolIndex));
-            p.supplyBalanceInOf[_poolTokenAddress][_supplier].onPool = diff == 1 ? 0 : diff;
+            p.supplyBalanceInOf[_poolTokenAddress][_supplier].onPool = vars.diff == 1
+                ? 0
+                : vars.diff;
             LibMatchingEngine.updateSuppliers(_poolTokenAddress, _supplier);
 
             if (vars.remainingToWithdraw == 0) {
@@ -339,14 +356,14 @@ library LibPositionsManager {
         }
 
         Types.Delta storage delta = p.deltas[_poolTokenAddress];
-        uint256 supplyP2PExchangeRate = ms().supplyP2PExchangeRate[_poolTokenAddress];
+        vars.supplyP2PExchangeRate = m.supplyP2PExchangeRate[_poolTokenAddress];
 
         /// Transfer withdraw ///
 
-        if (vars.remainingToWithdraw > 0 && !ms().noP2P[_poolTokenAddress]) {
+        if (vars.remainingToWithdraw > 0 && !m.noP2P[_poolTokenAddress]) {
             p.supplyBalanceInOf[_poolTokenAddress][_supplier].inP2P -= CompoundMath.min(
                 p.supplyBalanceInOf[_poolTokenAddress][_supplier].inP2P,
-                vars.remainingToWithdraw.div(supplyP2PExchangeRate)
+                vars.remainingToWithdraw.div(vars.supplyP2PExchangeRate)
             ); // In p2pUnit
             LibMatchingEngine.updateSuppliers(_poolTokenAddress, _supplier);
 
@@ -363,7 +380,7 @@ library LibPositionsManager {
                     vars.toWithdraw += matchedDelta;
                     vars.remainingToWithdraw -= matchedDelta;
                     delta.supplyP2PDelta -= matchedDelta.div(vars.supplyPoolIndex);
-                    delta.supplyP2PAmount -= matchedDelta.div(supplyP2PExchangeRate);
+                    delta.supplyP2PAmount -= matchedDelta.div(vars.supplyP2PExchangeRate);
                     emit SupplyP2PDeltaUpdated(_poolTokenAddress, delta.supplyP2PDelta);
                 }
             }
@@ -375,7 +392,7 @@ library LibPositionsManager {
             ) {
                 // Match suppliers.
                 uint256 matched = LibMatchingEngine.matchSuppliers(
-                    poolToken,
+                    ICToken(_poolTokenAddress),
                     CompoundMath.min(vars.remainingToWithdraw, vars.withdrawable - vars.toWithdraw),
                     _maxGasToConsume / 2
                 );
@@ -401,13 +418,13 @@ library LibPositionsManager {
             // If unmatched does not cover remainingToWithdraw, the difference is added to the borrow P2P delta.
             if (unmatched < vars.remainingToWithdraw) {
                 delta.borrowP2PDelta += (vars.remainingToWithdraw - unmatched).div(
-                    poolToken.borrowIndex()
+                    ICToken(_poolTokenAddress).borrowIndex()
                 );
                 emit BorrowP2PDeltaUpdated(_poolTokenAddress, delta.borrowP2PAmount);
             }
 
-            delta.supplyP2PAmount -= vars.remainingToWithdraw.div(supplyP2PExchangeRate);
-            delta.borrowP2PAmount -= unmatched.div(ms().borrowP2PExchangeRate[_poolTokenAddress]);
+            delta.supplyP2PAmount -= vars.remainingToWithdraw.div(vars.supplyP2PExchangeRate);
+            delta.borrowP2PAmount -= unmatched.div(m.borrowP2PExchangeRate[_poolTokenAddress]);
             emit P2PAmountsUpdated(_poolTokenAddress, delta.supplyP2PAmount, delta.borrowP2PAmount);
 
             _borrowFromPool(_poolTokenAddress, vars.remainingToWithdraw); // Reverts on error.
@@ -468,13 +485,15 @@ library LibPositionsManager {
         }
 
         Types.Delta storage delta = p.deltas[_poolTokenAddress];
-        vars.supplyP2PExchangeRate = ms().supplyP2PExchangeRate[_poolTokenAddress];
-        vars.borrowP2PExchangeRate = ms().borrowP2PExchangeRate[_poolTokenAddress];
+        MarketsStorage storage m = ms();
+        vars.supplyP2PExchangeRate = m.supplyP2PExchangeRate[_poolTokenAddress];
+        vars.borrowP2PExchangeRate = m.borrowP2PExchangeRate[_poolTokenAddress];
         // Handle case where only 1 wei stays on the position.
-        uint256 inP2P = p.borrowBalanceInOf[_poolTokenAddress][_user].inP2P;
-        uint256 diffP2P = inP2P -
-            CompoundMath.min(inP2P, vars.remainingToRepay.div(vars.borrowP2PExchangeRate));
-        p.borrowBalanceInOf[_poolTokenAddress][_user].inP2P = diffP2P == 1 ? 0 : diffP2P; // In p2pUnit.
+        vars.inP2P = p.borrowBalanceInOf[_poolTokenAddress][_user].inP2P;
+        vars.diffP2P =
+            vars.inP2P -
+            CompoundMath.min(vars.inP2P, vars.remainingToRepay.div(vars.borrowP2PExchangeRate));
+        p.borrowBalanceInOf[_poolTokenAddress][_user].inP2P = vars.diffP2P == 1 ? 0 : vars.diffP2P; // In p2pUnit.
         LibMatchingEngine.updateBorrowers(_poolTokenAddress, _user);
 
         /// Fee repay ///
@@ -490,7 +509,7 @@ library LibPositionsManager {
 
         /// Transfer repay ///
 
-        if (vars.remainingToRepay > 0 && !ms().noP2P[_poolTokenAddress]) {
+        if (vars.remainingToRepay > 0 && !m.noP2P[_poolTokenAddress]) {
             // Match Delta if any.
             if (delta.borrowP2PDelta > 0) {
                 uint256 matchedDelta = CompoundMath.min(

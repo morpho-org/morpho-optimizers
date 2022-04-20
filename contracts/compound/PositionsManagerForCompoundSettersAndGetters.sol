@@ -51,14 +51,6 @@ contract PositionsManagerForCompoundSettersAndGetters is
         emit RewardsManagerSet(_rewardsManagerAddress);
     }
 
-    /// @notice Sets the pause status on a specific market in case of emergency.
-    /// @param _poolTokenAddress The address of the market to pause/unpause.
-    function setPauseStatus(address _poolTokenAddress) external onlyOwner {
-        bool newPauseStatus = !ps().paused[_poolTokenAddress];
-        ps().paused[_poolTokenAddress] = newPauseStatus;
-        emit PauseStatusSet(_poolTokenAddress, newPauseStatus);
-    }
-
     /// @notice Toggles the activation of COMP rewards.
     function toggleCompRewardsActivation() external onlyOwner {
         bool newCompRewardsActive = !ps().isCompRewardsActive;
@@ -89,8 +81,9 @@ contract PositionsManagerForCompoundSettersAndGetters is
     /// @dev Transfers the protocol reserve fee to the DAO.
     /// @param _poolTokenAddress The address of the market on which we want to claim the reserve fee.
     function claimToTreasury(address _poolTokenAddress) external onlyOwner {
-        if (!ms().isCreated[_poolTokenAddress]) revert MarketNotCreated();
-        if (ps().paused[_poolTokenAddress]) revert MarketPaused();
+        MarketsStorage storage m = LibStorage.marketsStorage();
+        if (!m.isCreated[_poolTokenAddress]) revert MarketNotCreated();
+        if (m.paused[_poolTokenAddress]) revert MarketPaused();
         if (ps().treasuryVault == address(0)) revert ZeroAddress();
 
         ERC20 underlyingToken = LibPositionsManagerGetters.getUnderlying(_poolTokenAddress);

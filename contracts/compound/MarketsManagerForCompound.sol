@@ -26,6 +26,11 @@ contract MarketsManagerForCompound is WithStorageAndModifiers {
     /// @param _newValue The new value of the `reserveFactor`.
     event ReserveFactorSet(address indexed _poolTokenAddress, uint256 _newValue);
 
+    /// @notice Emitted when a market is paused or unpaused.
+    /// @param _poolTokenAddress The address of the pool token concerned..
+    /// @param _newStatus The new pause status of the market.
+    event PauseStatusSet(address indexed _poolTokenAddress, bool _newStatus);
+
     /// ERRORS ///
 
     /// @notice Thrown when the market is not created yet.
@@ -81,6 +86,15 @@ contract MarketsManagerForCompound is WithStorageAndModifiers {
     {
         ms().noP2P[_poolTokenAddress] = _noP2P;
         emit NoP2PSet(_poolTokenAddress, _noP2P);
+    }
+
+    /// @notice Sets the pause status on a specific market in case of emergency.
+    /// @param _poolTokenAddress The address of the market to pause/unpause.
+    function setPauseStatus(address _poolTokenAddress) external onlyOwner {
+        MarketsStorage storage m = ms();
+        bool newPauseStatus = !m.paused[_poolTokenAddress];
+        m.paused[_poolTokenAddress] = newPauseStatus;
+        emit PauseStatusSet(_poolTokenAddress, newPauseStatus);
     }
 
     /// GETTERS ///

@@ -154,7 +154,7 @@ contract MorphoLensForCompound {
     }
 
     function paused(address _poolTokenAddress) external view returns (bool isPaused_) {
-        isPaused_ = ps().paused[_poolTokenAddress];
+        isPaused_ = ms().paused[_poolTokenAddress];
     }
 
     function NDS() external view returns (uint8 NDS_) {

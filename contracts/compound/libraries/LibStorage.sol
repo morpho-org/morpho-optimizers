@@ -27,6 +27,7 @@ struct MarketsStorage {
     mapping(address => uint256) lastUpdateBlockNumber; // The last time the P2P exchange rates were updated.
     mapping(address => Types.LastPoolIndexes) lastPoolIndexes; // Last pool index stored.
     mapping(address => bool) noP2P; // Whether to put users on pool or not for the given market.
+    mapping(address => bool) paused; // Whether a market is paused or not.
 }
 
 struct PositionsStorage {
@@ -42,7 +43,6 @@ struct PositionsStorage {
     mapping(address => mapping(address => bool)) userMembership; // Whether the user is in the market or not.
     mapping(address => address[]) enteredMarkets; // The markets entered by a user.
     mapping(address => Types.Delta) deltas; // Delta parameters for each market.
-    mapping(address => bool) paused; // Whether a market is paused or not.
     IRewardsManagerForCompound rewardsManager;
     IIncentivesVault incentivesVault;
     IComptroller comptroller;

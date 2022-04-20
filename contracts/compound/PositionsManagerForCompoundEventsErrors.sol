@@ -100,11 +100,6 @@ contract PositionsManagerForCompoundEventsErrors {
     /// @param _newRewardsManagerAddress The new address of the `rewardsManager`.
     event RewardsManagerSet(address indexed _newRewardsManagerAddress);
 
-    /// @notice Emitted when a market is paused or unpaused.
-    /// @param _poolTokenAddress The address of the pool token concerned..
-    /// @param _newStatus The new pause status of the market.
-    event PauseStatusSet(address indexed _poolTokenAddress, bool _newStatus);
-
     /// @notice Emitted when a reserve fee is claimed.
     /// @param _poolTokenAddress The address of the pool token concerned.
     /// @param _amountClaimed The amount of reward token claimed.

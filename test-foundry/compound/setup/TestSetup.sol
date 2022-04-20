@@ -122,7 +122,7 @@ contract TestSetup is Config, Utils, stdCheats {
         InitDiamond initDiamond = new InitDiamond();
 
         {
-            bytes4[] memory marketsManagerFunctionSelectors = new bytes4[](17);
+            bytes4[] memory marketsManagerFunctionSelectors = new bytes4[](18);
             {
                 uint256 index;
                 marketsManagerFunctionSelectors[index++] = marketsManagerFacet
@@ -132,6 +132,9 @@ contract TestSetup is Config, Utils, stdCheats {
                 .createMarket
                 .selector;
                 marketsManagerFunctionSelectors[index++] = marketsManagerFacet.setNoP2P.selector;
+                marketsManagerFunctionSelectors[index++] = marketsManagerFacet
+                .setPauseStatus
+                .selector;
                 marketsManagerFunctionSelectors[index++] = marketsManagerFacet
                 .getAllMarkets
                 .selector;
@@ -210,7 +213,7 @@ contract TestSetup is Config, Utils, stdCheats {
                 functionSelectors: positionsManagerFunctionSelectors
             });
 
-            bytes4[] memory positionsManagerSettersAndGettersFunctionSelectors = new bytes4[](11);
+            bytes4[] memory positionsManagerSettersAndGettersFunctionSelectors = new bytes4[](10);
             {
                 uint256 index;
                 positionsManagerSettersAndGettersFunctionSelectors[
@@ -243,9 +246,6 @@ contract TestSetup is Config, Utils, stdCheats {
                 positionsManagerSettersAndGettersFunctionSelectors[
                     index++
                 ] = positionsManagerSettersAndGettersFacet.toggleCompRewardsActivation.selector;
-                positionsManagerSettersAndGettersFunctionSelectors[
-                    index++
-                ] = positionsManagerSettersAndGettersFacet.setPauseStatus.selector;
             }
 
             IDiamondCut.FacetCut memory positionsSettersAndGettersCut = IDiamondCut.FacetCut({
