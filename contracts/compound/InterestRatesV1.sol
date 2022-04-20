@@ -27,8 +27,8 @@ contract InterestRatesV1 is IInterestRates {
 
     /// @notice Computes and return new P2P exchange rates.
     /// @param _params Parameters:
-    ///             supplyP2pExchangeRate The current supply P2P exchange rate.
-    ///             borrowP2pExchangeRate The current borrow P2P exchange rate.
+    ///             supplyP2PExchangeRate The current supply P2P exchange rate.
+    ///             borrowP2PExchangeRate The current borrow P2P exchange rate.
     ///             poolSupplyExchangeRate The current pool supply exchange rate.
     ///             poolBorrowExchangeRate The current pool borrow exchange rate.
     ///             lastPoolSupplyExchangeRate The pool supply exchange rate at last update.
@@ -57,7 +57,7 @@ contract InterestRatesV1 is IInterestRates {
         );
 
         if (_params.delta.supplyP2PAmount == 0 || _params.delta.supplyP2PDelta == 0) {
-            newSupplyP2PExchangeRate = _params.supplyP2pExchangeRate.mul(
+            newSupplyP2PExchangeRate = _params.supplyP2PExchangeRate.mul(
                 vars.supplyP2PGrowthFactor
             );
         } else {
@@ -66,19 +66,19 @@ contract InterestRatesV1 is IInterestRates {
                 .delta
                 .supplyP2PDelta
                 .mul(_params.poolSupplyExchangeRate)
-                .div(_params.supplyP2pExchangeRate)
+                .div(_params.supplyP2PExchangeRate)
                 .div(_params.delta.supplyP2PAmount),
                 CompoundMath.wad() // To avoid shareOfTheDelta > 1 with rounding errors.
             );
 
-            newSupplyP2PExchangeRate = _params.supplyP2pExchangeRate.mul(
+            newSupplyP2PExchangeRate = _params.supplyP2PExchangeRate.mul(
                 (CompoundMath.wad() - vars.shareOfTheDelta).mul(vars.supplyP2PGrowthFactor) +
                     vars.shareOfTheDelta.mul(vars.supplyPoolGrowthFactor)
             );
         }
 
         if (_params.delta.borrowP2PAmount == 0 || _params.delta.borrowP2PDelta == 0) {
-            newBorrowP2PExchangeRate = _params.borrowP2pExchangeRate.mul(
+            newBorrowP2PExchangeRate = _params.borrowP2PExchangeRate.mul(
                 vars.borrowP2PGrowthFactor
             );
         } else {
@@ -87,12 +87,12 @@ contract InterestRatesV1 is IInterestRates {
                 .delta
                 .borrowP2PDelta
                 .mul(_params.poolBorrowExchangeRate)
-                .div(_params.borrowP2pExchangeRate)
+                .div(_params.borrowP2PExchangeRate)
                 .div(_params.delta.borrowP2PAmount),
                 CompoundMath.wad() // To avoid shareOfTheDelta > 1 with rounding errors.
             );
 
-            newBorrowP2PExchangeRate = _params.borrowP2pExchangeRate.mul(
+            newBorrowP2PExchangeRate = _params.borrowP2PExchangeRate.mul(
                 (CompoundMath.wad() - vars.shareOfTheDelta).mul(vars.borrowP2PGrowthFactor) +
                     vars.shareOfTheDelta.mul(vars.borrowPoolGrowthFactor)
             );
