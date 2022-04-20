@@ -5,6 +5,7 @@ import "../interfaces/compound/ICompound.sol";
 
 import {LibStorage, MarketsStorage, PositionsStorage} from "./LibStorage.sol";
 import "../../common/libraries/DoubleLinkedList.sol";
+import "./LibRewardsManager.sol";
 import "./CompoundMath.sol";
 
 library LibMatchingEngine {
@@ -308,8 +309,8 @@ library LibMatchingEngine {
             if (inP2P > 0) p.borrowersInP2P[_poolTokenAddress].insertSorted(_user, inP2P, p.NDS);
         }
 
-        if (p.isCompRewardsActive && address(p.rewardsManager) != address(0))
-            p.rewardsManager.accrueUserBorrowUnclaimedRewards(
+        if (p.isCompRewardsActive)
+            LibRewardsManager.accrueUserBorrowUnclaimedRewards(
                 _user,
                 _poolTokenAddress,
                 formerValueOnPool
@@ -338,8 +339,8 @@ library LibMatchingEngine {
             if (inP2P > 0) p.suppliersInP2P[_poolTokenAddress].insertSorted(_user, inP2P, p.NDS);
         }
 
-        if (p.isCompRewardsActive && address(p.rewardsManager) != address(0))
-            p.rewardsManager.accrueUserSupplyUnclaimedRewards(
+        if (p.isCompRewardsActive)
+            LibRewardsManager.accrueUserSupplyUnclaimedRewards(
                 _user,
                 _poolTokenAddress,
                 formerValueOnPool

@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import "@contracts/compound/interfaces/IRewardsManagerForCompound.sol";
 import "@contracts/compound/interfaces/IMorphoCompound.sol";
 
 import "@contracts/compound/libraries/Types.sol";
 
 import "@contracts/compound/PositionsManagerForCompound.sol";
 import "@contracts/compound/MarketsManagerForCompound.sol";
+import "@contracts/compound/RewardsManagerForCompound.sol";
 import "@contracts/compound/MorphoLensForCompound.sol";
 
 contract User {
@@ -15,14 +15,14 @@ contract User {
 
     PositionsManagerForCompound internal positionsManager;
     MarketsManagerForCompound internal marketsManager;
-    IRewardsManagerForCompound internal rewardsManager;
+    RewardsManagerForCompound internal rewardsManager;
     IMorphoCompound internal morphoCompound;
     IComptroller internal comptroller;
 
     constructor(address _diamond) {
         positionsManager = PositionsManagerForCompound(payable(_diamond));
         marketsManager = MarketsManagerForCompound(_diamond);
-        rewardsManager = MorphoLensForCompound(_diamond).rewardsManager();
+        rewardsManager = RewardsManagerForCompound(_diamond);
         morphoCompound = IMorphoCompound(_diamond);
         comptroller = morphoCompound.comptroller();
     }

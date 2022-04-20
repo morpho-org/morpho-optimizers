@@ -1,10 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.13;
 
-import "../interfaces/IPositionsManagerForCompound.sol";
-import "../interfaces/IMarketsManagerForCompound.sol";
-import "../interfaces/IRewardsManagerForCompound.sol";
-import "../interfaces/IMatchingEngineForCompound.sol";
 import "../interfaces/compound/ICompound.sol";
 import "../interfaces/IIncentivesVault.sol";
 
@@ -43,12 +39,19 @@ struct PositionsStorage {
     mapping(address => mapping(address => bool)) userMembership; // Whether the user is in the market or not.
     mapping(address => address[]) enteredMarkets; // The markets entered by a user.
     mapping(address => Types.Delta) deltas; // Delta parameters for each market.
-    IRewardsManagerForCompound rewardsManager;
     IIncentivesVault incentivesVault;
     IComptroller comptroller;
     address treasuryVault;
     address cEth;
     address wEth;
+}
+
+struct RewardsStorage {
+    mapping(address => uint256) userUnclaimedCompRewards; // The unclaimed rewards of the user.
+    mapping(address => mapping(address => uint256)) compSupplierIndex; // The supply index of the user for a specific cToken.
+    mapping(address => mapping(address => uint256)) compBorrowerIndex; // The borrow index of the user for a specific cToken.
+    mapping(address => IComptroller.CompMarketState) localCompSupplyState; // The lcoal supply state for a specific cToken.
+    mapping(address => IComptroller.CompMarketState) localCompBorrowState; // The lcoal borrow state for a specific cToken.
 }
 
 library LibStorage {
@@ -59,6 +62,8 @@ library LibStorage {
     bytes32 public constant MARKETS_STORAGE_POSITION = keccak256("morpho.storage.markets");
 
     bytes32 public constant POSITIONS_STORAGE_POSITION = keccak256("morpho.storage.positions");
+
+    bytes32 public constant REWARDS_STORAGE_POSITION = keccak256("morpho.storage.rewards");
 
     /// STORAGE POINTER GETTERS ///
 
@@ -78,6 +83,13 @@ library LibStorage {
 
     function positionsStorage() internal pure returns (PositionsStorage storage ps) {
         bytes32 position = POSITIONS_STORAGE_POSITION;
+        assembly {
+            ps.slot := position
+        }
+    }
+
+    function rewardsStorage() internal pure returns (RewardsStorage storage ps) {
+        bytes32 position = REWARDS_STORAGE_POSITION;
         assembly {
             ps.slot := position
         }
@@ -138,5 +150,9 @@ contract WithStorageAndModifiers {
 
     function ps() internal pure returns (PositionsStorage storage) {
         return LibStorage.positionsStorage();
+    }
+
+    function rs() internal pure returns (RewardsStorage storage) {
+        return LibStorage.rewardsStorage();
     }
 }

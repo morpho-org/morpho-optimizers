@@ -8,7 +8,7 @@ contract TestRewards is TestSetup {
         address[] memory cTokens = new address[](1);
         cTokens[0] = cDai;
 
-        hevm.expectRevert(PositionsManagerForCompound.AmountIsZero.selector);
+        hevm.expectRevert(RewardsManagerForCompound.AmountIsZero.selector);
         morphoCompound.claimRewards(cTokens, false);
     }
 
@@ -17,7 +17,7 @@ contract TestRewards is TestSetup {
         cTokens[0] = cDai;
         cTokens[1] = dai;
 
-        hevm.expectRevert(RewardsManagerForCompound.InvalidCToken.selector);
+        hevm.expectRevert(LibRewardsManager.InvalidCToken.selector);
         rewardsManager.accrueUserUnclaimedRewards(cTokens, address(supplier1));
     }
 

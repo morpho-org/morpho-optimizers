@@ -20,8 +20,6 @@ interface IPositionsManagerForCompound {
 
     function setTreasuryVault(address) external;
 
-    function setRewardsManager(address _rewardsManagerAddress) external;
-
     function borrowBalanceInOf(address, address) external view returns (Balance memory);
 
     function supplyBalanceInOf(address, address) external view returns (Balance memory);

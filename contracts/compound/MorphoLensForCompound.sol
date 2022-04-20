@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import "./interfaces/IRewardsManagerForCompound.sol";
 import "./interfaces/compound/ICompound.sol";
 
 import {LibStorage, MarketsStorage, PositionsStorage} from "./libraries/LibStorage.sol";
@@ -126,10 +125,6 @@ contract MorphoLensForCompound is WithStorageAndModifiers {
 
     function comptroller() external view returns (IComptroller comptroller_) {
         comptroller_ = ps().comptroller;
-    }
-
-    function rewardsManager() external view returns (IRewardsManagerForCompound rewardsManager_) {
-        rewardsManager_ = ps().rewardsManager;
     }
 
     function treasuryVault() external view returns (address treasuryVault_) {

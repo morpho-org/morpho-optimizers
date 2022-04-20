@@ -66,7 +66,8 @@ contract TestSetup is Config, Utils, stdCheats {
     MarketsManagerForCompound internal marketsManager;
     MarketsManagerForCompound internal marketsManagerImplV1;
     MarketsManagerForCompound internal marketsManagerFacet;
-    IRewardsManagerForCompound internal rewardsManager;
+    RewardsManagerForCompound internal rewardsManager;
+    RewardsManagerForCompound internal rewardsManagerFacet;
     MorphoLensForCompound internal morphoLensFacet;
     MorphoLensForCompound internal morphoLens;
 
@@ -119,6 +120,7 @@ contract TestSetup is Config, Utils, stdCheats {
         positionsManagerFacet = new PositionsManagerForCompound();
         positionsManagerGovernorFacet = new PositionsManagerForCompoundGovernor();
         morphoLensFacet = new MorphoLensForCompound();
+        rewardsManagerFacet = new RewardsManagerForCompound();
         InitDiamond initDiamond = new InitDiamond();
 
         {
@@ -181,7 +183,7 @@ contract TestSetup is Config, Utils, stdCheats {
                 functionSelectors: marketsManagerFunctionSelectors
             });
 
-            bytes4[] memory positionsManagerFunctionSelectors = new bytes4[](8);
+            bytes4[] memory positionsManagerFunctionSelectors = new bytes4[](7);
             {
                 uint256 index;
                 positionsManagerFunctionSelectors[index++] = bytes4(
@@ -205,9 +207,6 @@ contract TestSetup is Config, Utils, stdCheats {
                 positionsManagerFunctionSelectors[index++] = positionsManagerFacet
                 .liquidate
                 .selector;
-                positionsManagerFunctionSelectors[index++] = positionsManagerFacet
-                .claimRewards
-                .selector;
             }
 
             IDiamondCut.FacetCut memory positionsCut = IDiamondCut.FacetCut({
@@ -216,7 +215,7 @@ contract TestSetup is Config, Utils, stdCheats {
                 functionSelectors: positionsManagerFunctionSelectors
             });
 
-            bytes4[] memory positionsManagerGovernorFunctionSelectors = new bytes4[](7);
+            bytes4[] memory positionsManagerGovernorFunctionSelectors = new bytes4[](6);
             {
                 uint256 index;
                 positionsManagerGovernorFunctionSelectors[index++] = positionsManagerGovernorFacet
@@ -235,9 +234,6 @@ contract TestSetup is Config, Utils, stdCheats {
                 .setIncentivesVault
                 .selector;
                 positionsManagerGovernorFunctionSelectors[index++] = positionsManagerGovernorFacet
-                .setRewardsManager
-                .selector;
-                positionsManagerGovernorFunctionSelectors[index++] = positionsManagerGovernorFacet
                 .toggleCompRewardsActivation
                 .selector;
             }
@@ -248,11 +244,10 @@ contract TestSetup is Config, Utils, stdCheats {
                 functionSelectors: positionsManagerGovernorFunctionSelectors
             });
 
-            bytes4[] memory morphoLensFunctionSelectors = new bytes4[](16);
+            bytes4[] memory morphoLensFunctionSelectors = new bytes4[](15);
             {
                 uint256 index;
                 morphoLensFunctionSelectors[index++] = morphoLensFacet.deltas.selector;
-                morphoLensFunctionSelectors[index++] = morphoLensFacet.rewardsManager.selector;
                 morphoLensFunctionSelectors[index++] = morphoLensFacet.treasuryVault.selector;
                 morphoLensFunctionSelectors[index++] = morphoLensFacet.isCompRewardsActive.selector;
                 morphoLensFunctionSelectors[index++] = morphoLensFacet.paused.selector;
@@ -281,10 +276,55 @@ contract TestSetup is Config, Utils, stdCheats {
                 functionSelectors: morphoLensFunctionSelectors
             });
 
+            bytes4[] memory rewardsManagerFunctionSelectors = new bytes4[](11);
+            {
+                uint256 index;
+                rewardsManagerFunctionSelectors[index++] = rewardsManagerFacet
+                .claimRewards
+                .selector;
+                rewardsManagerFunctionSelectors[index++] = rewardsManagerFacet
+                .accrueUserUnclaimedRewards
+                .selector;
+                rewardsManagerFunctionSelectors[index++] = rewardsManagerFacet
+                .getUserUnclaimedRewards
+                .selector;
+                rewardsManagerFunctionSelectors[index++] = rewardsManagerFacet
+                .getLocalCompSupplyState
+                .selector;
+                rewardsManagerFunctionSelectors[index++] = rewardsManagerFacet
+                .getLocalCompBorrowState
+                .selector;
+                rewardsManagerFunctionSelectors[index++] = rewardsManagerFacet
+                .getAccruedSupplierComp
+                .selector;
+                rewardsManagerFunctionSelectors[index++] = rewardsManagerFacet
+                .getAccruedBorrowerComp
+                .selector;
+                rewardsManagerFunctionSelectors[index++] = rewardsManagerFacet
+                .getUpdatedSupplyIndex
+                .selector;
+                rewardsManagerFunctionSelectors[index++] = rewardsManagerFacet
+                .getUpdatedBorrowIndex
+                .selector;
+                rewardsManagerFunctionSelectors[index++] = rewardsManagerFacet
+                .compSupplierIndex
+                .selector;
+                rewardsManagerFunctionSelectors[index++] = rewardsManagerFacet
+                .compBorrowerIndex
+                .selector;
+            }
+
+            IDiamondCut.FacetCut memory rewardsManagerCut = IDiamondCut.FacetCut({
+                facetAddress: address(rewardsManagerFacet),
+                action: IDiamondCut.FacetCutAction.Add,
+                functionSelectors: rewardsManagerFunctionSelectors
+            });
+
+            cuts.push(lensCut);
             cuts.push(marketsCut);
             cuts.push(positionsCut);
+            cuts.push(rewardsManagerCut);
             cuts.push(positionsGovernorCut);
-            cuts.push(lensCut);
         }
         IDiamondCut(address(diamond)).diamondCut(
             cuts,
@@ -304,6 +344,7 @@ contract TestSetup is Config, Utils, stdCheats {
         positionsManager = PositionsManagerForCompound(payable(address(diamond)));
         positionsManagerForCompoundGovernor = PositionsManagerForCompoundGovernor(address(diamond));
         marketsManager = MarketsManagerForCompound(address(diamond));
+        rewardsManager = RewardsManagerForCompound(address(diamond));
         morphoLens = MorphoLensForCompound(address(diamond));
         morphoCompound = IMorphoCompound(address(diamond));
 
@@ -334,9 +375,6 @@ contract TestSetup is Config, Utils, stdCheats {
         );
         morphoToken.transfer(address(incentivesVault), 1_000_000 ether);
 
-        rewardsManager = new RewardsManagerForCompound(address(positionsManager));
-
-        morphoCompound.setRewardsManager(address(rewardsManager));
         morphoCompound.setIncentivesVault(address(incentivesVault));
         morphoCompound.toggleCompRewardsActivation();
     }
@@ -396,8 +434,8 @@ contract TestSetup is Config, Utils, stdCheats {
         hevm.label(address(positionsManagerFacet), "positionsManagerFacet");
         hevm.label(address(marketsManagerImplV1), "MarketsManagerImplV1");
         hevm.label(address(marketsManager), "MarketsManager");
-        hevm.label(address(marketsManagerFacet), "marketsManagerFacet");
-        hevm.label(address(rewardsManager), "RewardsManager");
+        hevm.label(address(marketsManagerFacet), "MarketsManagerFacet");
+        hevm.label(address(rewardsManagerFacet), "RewardsManagerFacet");
         hevm.label(address(morphoToken), "MorphoToken");
         hevm.label(address(comptroller), "Comptroller");
         hevm.label(address(oracle), "CompoundOracle");

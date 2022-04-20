@@ -25,10 +25,6 @@ contract PositionsManagerForCompoundGovernor is WithStorageAndModifiers {
     /// @param _newIncentivesVaultAddress The new address of the `incentivesVault`.
     event IncentivesVaultSet(address indexed _newIncentivesVaultAddress);
 
-    /// @notice Emitted the address of the `rewardsManager` is set.
-    /// @param _newRewardsManagerAddress The new address of the `rewardsManager`.
-    event RewardsManagerSet(address indexed _newRewardsManagerAddress);
-
     /// @notice Emitted when a reserve fee is claimed.
     /// @param _poolTokenAddress The address of the pool token concerned.
     /// @param _amountClaimed The amount of reward token claimed.
@@ -80,13 +76,6 @@ contract PositionsManagerForCompoundGovernor is WithStorageAndModifiers {
     function setIncentivesVault(address _newIncentivesVault) external onlyGovernance {
         ps().incentivesVault = IIncentivesVault(_newIncentivesVault);
         emit IncentivesVaultSet(_newIncentivesVault);
-    }
-
-    /// @notice Sets the `rewardsManager`.
-    /// @param _rewardsManagerAddress The address of the `rewardsManager`.
-    function setRewardsManager(address _rewardsManagerAddress) external onlyGovernance {
-        ps().rewardsManager = IRewardsManagerForCompound(_rewardsManagerAddress);
-        emit RewardsManagerSet(_rewardsManagerAddress);
     }
 
     /// @notice Toggles the activation of COMP rewards.

@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import "./IRewardsManagerForCompound.sol";
 import "./compound/ICompound.sol";
 
 import "../libraries/Types.sol";
@@ -71,8 +70,6 @@ interface IMorphoCompound {
 
     /// LENS ///
 
-    function rewadsManager() external view returns (IRewardsManagerForCompound rewardsManager_);
-
     function comptroller() external view returns (IComptroller comptroller_);
 
     /// POSITIONS MANAGER ///
@@ -113,8 +110,6 @@ interface IMorphoCompound {
     function setTreasuryVault(address _newTreasuryVaultAddress) external;
 
     function setIncentivesVault(address _newIncentivesVault) external;
-
-    function setRewardsManager(address _rewardsManagerAddress) external;
 
     function setPauseStatus(address _poolTokenAddress) external;
 

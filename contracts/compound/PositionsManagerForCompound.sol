@@ -6,8 +6,6 @@ import "./libraries/LibMarketsManager.sol";
 import "./libraries/CompoundMath.sol";
 import "./libraries/LibStorage.sol";
 
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-
 /// @title PositionsManagerForCompound.
 /// @notice Smart contract interacting with Compound to enable P2P supply/borrow positions that can fallback on Compound's pool using pool tokens.
 contract PositionsManagerForCompound is WithStorageAndModifiers {
@@ -102,16 +100,6 @@ contract PositionsManagerForCompound is WithStorageAndModifiers {
         address indexed _poolTokenCollateralAddress
     );
 
-    /// @notice Emitted when a user claims rewards.
-    /// @param _user The address of the claimer.
-    /// @param _amountClaimed The amount of reward token claimed.
-    event RewardsClaimed(address indexed _user, uint256 _amountClaimed);
-
-    /// @notice Emitted when a user claims rewards and converts them to Morpho tokens.
-    /// @param _user The address of the claimer.
-    /// @param _amountSent The amount of reward token sent to the vault.
-    event RewardsClaimedAndConverted(address indexed _user, uint256 _amountSent);
-
     /// ERRORS ///
 
     /// @notice Thrown when the amount repaid during the liquidation is above what is allowed to be repaid.
@@ -125,9 +113,6 @@ contract PositionsManagerForCompound is WithStorageAndModifiers {
 
     /// @notice Thrown when the Compound's oracle failed.
     error CompoundOracleFailed();
-
-    /// @notice Thrown when the market is not created yet.
-    error MarketNotCreated();
 
     /// @notice Thrown when the amount is equal to 0.
     error AmountIsZero();
@@ -349,29 +334,5 @@ contract PositionsManagerForCompound is WithStorageAndModifiers {
             vars.amountToSeize,
             _poolTokenCollateralAddress
         );
-    }
-
-    /// @notice Claims rewards for the given assets and the unclaimed rewards.
-    /// @param _claimMorphoToken Whether or not to claim Morpho tokens instead of token reward.
-    function claimRewards(address[] calldata _cTokenAddresses, bool _claimMorphoToken)
-        external
-        nonReentrant
-    {
-        uint256 amountOfRewards = ps().rewardsManager.claimRewards(_cTokenAddresses, msg.sender);
-
-        if (amountOfRewards == 0) revert AmountIsZero();
-        else {
-            PositionsStorage storage p = ps();
-            p.comptroller.claimComp(address(this), _cTokenAddresses);
-            ERC20 comp = ERC20(p.comptroller.getCompAddress());
-            if (_claimMorphoToken) {
-                comp.safeApprove(address(p.incentivesVault), amountOfRewards);
-                p.incentivesVault.convertCompToMorphoTokens(msg.sender, amountOfRewards);
-                emit RewardsClaimedAndConverted(msg.sender, amountOfRewards);
-            } else {
-                comp.safeTransfer(msg.sender, amountOfRewards);
-                emit RewardsClaimed(msg.sender, amountOfRewards);
-            }
-        }
     }
 }
