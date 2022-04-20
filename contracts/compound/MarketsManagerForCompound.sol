@@ -36,15 +36,6 @@ contract MarketsManagerForCompound is WithStorageAndModifiers {
     /// @notice Thrown when the market is not created yet.
     error MarketNotCreated();
 
-    /// MODIFIERS ///
-
-    /// @notice Prevents to update a market not created yet.
-    /// @param _poolTokenAddress The address of the market to check.
-    modifier isMarketCreated(address _poolTokenAddress) {
-        if (!ms().isCreated[_poolTokenAddress]) revert MarketNotCreated();
-        _;
-    }
-
     /// EXTERNAL ///
 
     /// @notice Creates a new market to borrow/supply in.
@@ -79,11 +70,8 @@ contract MarketsManagerForCompound is WithStorageAndModifiers {
     /// @notice Sets whether to match people P2P or not.
     /// @param _poolTokenAddress The address of the market.
     /// @param _noP2P Whether to match people P2P or not.
-    function setNoP2P(address _poolTokenAddress, bool _noP2P)
-        external
-        onlyOwner
-        isMarketCreated(_poolTokenAddress)
-    {
+    function setNoP2P(address _poolTokenAddress, bool _noP2P) external onlyOwner {
+        if (!ms().isCreated[_poolTokenAddress]) revert MarketNotCreated();
         ms().noP2P[_poolTokenAddress] = _noP2P;
         emit NoP2PSet(_poolTokenAddress, _noP2P);
     }

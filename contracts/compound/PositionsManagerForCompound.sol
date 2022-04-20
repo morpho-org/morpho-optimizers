@@ -23,17 +23,18 @@ contract PositionsManagerForCompound is
 
     // Struct to avoid stack too deep.
     struct LiquidateVars {
-        uint256 debtValue;
-        uint256 maxDebtValue;
-        uint256 borrowBalance;
-        uint256 supplyBalance;
         uint256 collateralPrice;
+        uint256 supplyBalance;
+        uint256 borrowBalance;
         uint256 borrowedPrice;
         uint256 amountToSeize;
+        uint256 maxDebtValue;
+        uint256 debtValue;
     }
 
     /// EXTERNAL ///
 
+    /// @notice Allows to receive ETH.
     receive() external payable {}
 
     /// @notice Supplies underlying tokens in a specific market.

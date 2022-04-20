@@ -31,7 +31,7 @@ library LibInterestRates {
 
     /// EXTERNAL ///
 
-    /// @notice Computes and return new P2P exchange rates.
+    /// @dev Computes and return new P2P exchange rates.
     /// @param _params Parameters:
     ///             supplyP2PExchangeRate The current supply P2P exchange rate.
     ///             borrowP2PExchangeRate The current borrow P2P exchange rate.
@@ -80,7 +80,7 @@ library LibInterestRates {
         newBorrowP2PExchangeRate = computeNewP2PRate(borrowParams, borrowGrowthFactors);
     }
 
-    /// @notice Computes and return the new supply P2P exchange rate.
+    /// @dev Computes and return the new supply P2P exchange rate.
     /// @param _params Parameters:
     ///             supplyP2PExchangeRate The current supply P2P exchange rate.
     ///             borrowP2PExchangeRate The current borrow P2P exchange rate.
@@ -116,7 +116,7 @@ library LibInterestRates {
         return computeNewP2PRate(supplyParams, supplyGrowthFactors);
     }
 
-    /// @notice Computes and return the new borrow P2P exchange rate.
+    /// @dev Computes and return the new borrow P2P exchange rate.
     /// @param _params Parameters:
     ///             supplyP2PExchangeRate The current supply P2P exchange rate.
     ///             borrowP2PExchangeRate The current borrow P2P exchange rate.
@@ -152,7 +152,7 @@ library LibInterestRates {
         return computeNewP2PRate(borrowParams, borrowGrowthFactors);
     }
 
-    /// @notice Computes and returns supply P2P growthfactor and borrow P2P growthfactor.
+    /// @dev Computes and returns supply P2P growthfactor and borrow P2P growthfactor.
     /// @param _poolSupplyExchangeRate The current pool supply exchange rate.
     /// @param _poolBorrowExchangeRate The current pool borrow exchange rate.
     /// @param _lastPoolSupplyExchangeRate The pool supply exchange rate at last update.

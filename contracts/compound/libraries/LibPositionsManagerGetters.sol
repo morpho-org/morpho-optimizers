@@ -27,7 +27,7 @@ library LibPositionsManagerGetters {
 
     /// GETTERS ///
 
-    /// @notice Returns the collateral value, debt value and max debt value of a given user.
+    /// @dev Returns the collateral value, debt value and max debt value of a given user.
     /// @dev Note: must be called after calling `accrueInterest()` on the cToken to have the most up to date values.
     /// @param _user The user to determine liquidity for.
     /// @return collateralValue The collateral value of the user.
@@ -64,7 +64,7 @@ library LibPositionsManagerGetters {
         }
     }
 
-    /// @notice Returns the data related to `_poolTokenAddress` for the `_user`.
+    /// @dev Returns the data related to `_poolTokenAddress` for the `_user`.
     /// @dev Note: must be called after calling `accrueInterest()` on the cToken to have the most up to date values.
     /// @param _user The user to determine data for.
     /// @param _poolTokenAddress The address of the market.

@@ -6,7 +6,7 @@ import "./compound/ICompound.sol";
 
 import "../libraries/Types.sol";
 
-// Collection of all of Morpho's diamond functions in one interface
+/// @notice Collection of all of Morpho's diamond functions in one interface.
 interface IMorphoCompound {
     /// MARKETS MANAGER ///
 
