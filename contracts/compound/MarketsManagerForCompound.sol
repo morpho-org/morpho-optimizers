@@ -16,10 +16,6 @@ contract MarketsManagerForCompound is WithStorageAndModifiers {
 
     /// EVENTS ///
 
-    /// @notice Emitted when the `interestRates` is set.
-    /// @param _interestRates The address of the `interestRates`.
-    event InterestRatesSet(address _interestRates);
-
     /// @notice Emitted when a `noP2P` variable is set.
     /// @param _poolTokenAddress The address of the market to set.
     /// @param _noP2P The new value of `_noP2P` adopted.
@@ -59,13 +55,6 @@ contract MarketsManagerForCompound is WithStorageAndModifiers {
     }
 
     /// SETTERS ///
-
-    /// @notice Sets the `intersRates`.
-    /// @param _interestRates The new `interestRates` contract.
-    function setInterestRates(IInterestRates _interestRates) external onlyOwner {
-        ms().interestRates = _interestRates;
-        emit InterestRatesSet(address(_interestRates));
-    }
 
     /// @notice Sets the `reserveFactor`.
     /// @param _poolTokenAddress The market on which to set the `_newReserveFactor`.
@@ -208,10 +197,6 @@ contract MarketsManagerForCompound is WithStorageAndModifiers {
     /// @notice Whether to put users on pool or not for the given market.
     function noP2P(address _market) external view returns (bool noP2P_) {
         noP2P_ = ms().noP2P[_market];
-    }
-
-    function interestRates() external view returns (IInterestRates interestRates_) {
-        interestRates_ = ms().interestRates;
     }
 
     function comptroller() external view returns (IComptroller comptroller_) {

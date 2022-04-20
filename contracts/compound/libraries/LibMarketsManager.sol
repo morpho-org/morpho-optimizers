@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "../interfaces/compound/ICompound.sol";
 
 import {LibStorage, MarketsStorage, PositionsStorage} from "./LibStorage.sol";
+import "./LibInterestRates.sol";
 import "./CompoundMath.sol";
 import "./Types.sol";
 
@@ -109,8 +110,7 @@ library LibMarketsManager {
                 ps().deltas[_poolTokenAddress]
             );
 
-            (newSupplyP2PExchangeRate, newBorrowP2PExchangeRate) = m
-            .interestRates
+            (newSupplyP2PExchangeRate, newBorrowP2PExchangeRate) = LibInterestRates
             .computeP2PExchangeRates(params);
         }
     }
@@ -138,8 +138,7 @@ library LibMarketsManager {
                 ps().deltas[_poolTokenAddress]
             );
 
-            (uint256 newSupplyP2PExchangeRate, uint256 newBorrowP2PExchangeRate) = m
-            .interestRates
+            (uint256 newSupplyP2PExchangeRate, uint256 newBorrowP2PExchangeRate) = LibInterestRates
             .computeP2PExchangeRates(params);
 
             m.supplyP2PExchangeRate[_poolTokenAddress] = newSupplyP2PExchangeRate;

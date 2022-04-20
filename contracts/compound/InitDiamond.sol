@@ -10,7 +10,6 @@ import "./libraries/Types.sol";
 
 contract InitDiamond {
     struct Args {
-        IInterestRates interestRates;
         IComptroller comptroller;
         uint8 NDS;
         address cEth;
@@ -21,7 +20,6 @@ contract InitDiamond {
     function init(Args memory _args) external {
         MarketsStorage storage ms = LibStorage.marketsStorage();
         ms.comptroller = _args.comptroller;
-        ms.interestRates = _args.interestRates;
 
         PositionsStorage storage ps = LibStorage.positionsStorage();
         ps.maxGas = _args.maxGas;

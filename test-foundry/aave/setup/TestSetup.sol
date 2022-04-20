@@ -277,7 +277,6 @@ contract TestSetup is Config, Utils, stdCheats {
         hevm.label(address(protocolDataProvider), "ProtocolDataProvider");
         hevm.label(address(oracle), "AaveOracle");
         hevm.label(address(treasuryVault), "TreasuryVault");
-        hevm.label(address(interestRates), "InterestRates");
     }
 
     function createSigners(uint8 _nbOfSigners) internal {

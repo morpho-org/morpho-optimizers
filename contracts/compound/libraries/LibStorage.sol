@@ -28,8 +28,6 @@ struct MarketsStorage {
     mapping(address => uint256) lastUpdateBlockNumber; // The last time the P2P exchange rates were updated.
     mapping(address => Types.LastPoolIndexes) lastPoolIndexes; // Last pool index stored.
     mapping(address => bool) noP2P; // Whether to put users on pool or not for the given market.
-    IPositionsManagerForCompound positionsManager;
-    IInterestRates interestRates;
     IComptroller comptroller;
 }
 

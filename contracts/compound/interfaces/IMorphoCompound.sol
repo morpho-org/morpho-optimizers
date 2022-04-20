@@ -13,8 +13,6 @@ interface IMorphoCompound {
 
     function updateP2PExchangeRates(address _poolTokenAddress) external;
 
-    function setInterestRates(IInterestRates _interestRates) external;
-
     function setReserveFactor(address _poolTokenAddress, uint256 _newReserveFactor) external;
 
     function setNoP2P(address _poolTokenAddress, bool _noP2P) external;
@@ -69,8 +67,6 @@ interface IMorphoCompound {
         returns (Types.LastPoolIndexes memory lastPoolIndexes_);
 
     function noP2P(address _market) external view returns (bool noP2P_);
-
-    function interestRates() external view returns (IInterestRates interestRates_);
 
     function comptroller() external view returns (IComptroller comptroller_);
 

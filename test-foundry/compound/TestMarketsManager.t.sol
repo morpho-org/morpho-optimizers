@@ -106,15 +106,4 @@ contract TestMarketsManager is TestSetup {
         marketsManager.setNoP2P(cDai, true);
         assertTrue(marketsManager.noP2P(cDai));
     }
-
-    function testOnlyOwnerShouldBeAbleToUpdateInterestRates() public {
-        IInterestRates interestRatesV2 = new InterestRatesV1();
-
-        hevm.prank(address(0));
-        hevm.expectRevert("LibDiamond: Must be contract owner");
-        marketsManager.setInterestRates(interestRatesV2);
-
-        marketsManager.setInterestRates(interestRatesV2);
-        assertEq(address(marketsManager.interestRates()), address(interestRatesV2));
-    }
 }

@@ -70,7 +70,6 @@ contract TestSetup is Config, Utils, stdCheats {
     IRewardsManagerForCompound internal rewardsManager;
     MorphoLensForCompound internal morphoLensFacet;
     MorphoLensForCompound internal morphoLens;
-    IInterestRates internal interestRates;
 
     IMorphoCompound internal morphoCompound;
 
@@ -109,7 +108,6 @@ contract TestSetup is Config, Utils, stdCheats {
         });
 
         comptroller = IComptroller(comptrollerAddress);
-        interestRates = new InterestRatesV1();
 
         /// Diamond ///
         diamondCutFacet = new DiamondCutFacet();
@@ -125,15 +123,9 @@ contract TestSetup is Config, Utils, stdCheats {
         InitDiamond initDiamond = new InitDiamond();
 
         {
-            bytes4[] memory marketsManagerFunctionSelectors = new bytes4[](18);
+            bytes4[] memory marketsManagerFunctionSelectors = new bytes4[](16);
             {
                 uint256 index;
-                marketsManagerFunctionSelectors[index++] = marketsManagerFacet
-                .setInterestRates
-                .selector;
-                marketsManagerFunctionSelectors[index++] = marketsManagerFacet
-                .interestRates
-                .selector;
                 marketsManagerFunctionSelectors[index++] = marketsManagerFacet
                 .setReserveFactor
                 .selector;
@@ -300,7 +292,6 @@ contract TestSetup is Config, Utils, stdCheats {
                 initDiamond.init.selector,
                 InitDiamond.Args({
                     comptroller: IComptroller(address(comptroller)),
-                    interestRates: IInterestRates(address(interestRates)),
                     maxGas: maxGas,
                     NDS: 20,
                     cEth: cEth,

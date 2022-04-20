@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
+import "@contracts/compound/libraries/LibInterestRates.sol";
 import "./setup/TestSetup.sol";
 
 contract TestInterestRates is TestSetup {
@@ -16,7 +17,7 @@ contract TestInterestRates is TestSetup {
             Types.Delta(0, 0, 0, 0) // delta;
         );
 
-        (uint256 newSupplyP2PExchangeRate, uint256 newBorrowP2PExchangeRate) = interestRates
+        (uint256 newSupplyP2PExchangeRate, uint256 newBorrowP2PExchangeRate) = LibInterestRates
         .computeP2PExchangeRates(params);
 
         assertEq(newSupplyP2PExchangeRate, (7 * WAD) / 3);
@@ -35,7 +36,7 @@ contract TestInterestRates is TestSetup {
             Types.Delta(0, 0, 0, 0) // delta;
         );
 
-        (uint256 newSupplyP2PExchangeRate, uint256 newBorrowP2PExchangeRate) = interestRates
+        (uint256 newSupplyP2PExchangeRate, uint256 newBorrowP2PExchangeRate) = LibInterestRates
         .computeP2PExchangeRates(params);
 
         assertEq(newSupplyP2PExchangeRate, ((2 * 2 + 1 * 3) * WAD) / 3 / 2 + (2 * WAD) / 2);
@@ -54,7 +55,7 @@ contract TestInterestRates is TestSetup {
             Types.Delta(1 * WAD, 1 * WAD, 4 * WAD, 6 * WAD) // delta;
         );
 
-        (uint256 newSupplyP2PExchangeRate, uint256 newBorrowP2PExchangeRate) = interestRates
+        (uint256 newSupplyP2PExchangeRate, uint256 newBorrowP2PExchangeRate) = LibInterestRates
         .computeP2PExchangeRates(params);
 
         assertEq(newSupplyP2PExchangeRate, ((7 * WAD) / 3 + 2 * WAD) / 2);
@@ -73,7 +74,7 @@ contract TestInterestRates is TestSetup {
             Types.Delta(1 * WAD, 1 * WAD, 4 * WAD, 6 * WAD) // delta;
         );
 
-        (uint256 newSupplyP2PExchangeRate, uint256 newBorrowP2PExchangeRate) = interestRates
+        (uint256 newSupplyP2PExchangeRate, uint256 newBorrowP2PExchangeRate) = LibInterestRates
         .computeP2PExchangeRates(params);
 
         assertEq(newSupplyP2PExchangeRate, (((7 * WAD) / 3 + 2 * WAD) / 2 + 2 * WAD) / 2);

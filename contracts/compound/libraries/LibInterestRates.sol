@@ -1,12 +1,11 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import "./interfaces/IInterestRates.sol";
+import {LibStorage, MarketsStorage, PositionsStorage} from "./LibStorage.sol";
+import "./CompoundMath.sol";
+import "./Types.sol";
 
-import "./libraries/CompoundMath.sol";
-import "./libraries/Types.sol";
-
-contract InterestRatesV1 is IInterestRates {
+library LibInterestRates {
     using CompoundMath for uint256;
 
     /// STRUCT ///
@@ -21,6 +20,7 @@ contract InterestRatesV1 is IInterestRates {
 
     /// STORAGE ///
 
+    uint256 public constant WAD = 1e18;
     uint256 public constant MAX_BASIS_POINTS = 10_000; // 100% (in basis point).
 
     /// EXTERNAL ///
@@ -68,11 +68,11 @@ contract InterestRatesV1 is IInterestRates {
                 .mul(_params.poolSupplyExchangeRate)
                 .div(_params.supplyP2pExchangeRate)
                 .div(_params.delta.supplyP2PAmount),
-                CompoundMath.wad() // To avoid shareOfTheDelta > 1 with rounding errors.
+                WAD // To avoid shareOfTheDelta > 1 with rounding errors.
             );
 
             newSupplyP2PExchangeRate = _params.supplyP2pExchangeRate.mul(
-                (CompoundMath.wad() - vars.shareOfTheDelta).mul(vars.supplyP2PGrowthFactor) +
+                (WAD - vars.shareOfTheDelta).mul(vars.supplyP2PGrowthFactor) +
                     vars.shareOfTheDelta.mul(vars.supplyPoolGrowthFactor)
             );
         }
@@ -89,11 +89,11 @@ contract InterestRatesV1 is IInterestRates {
                 .mul(_params.poolBorrowExchangeRate)
                 .div(_params.borrowP2pExchangeRate)
                 .div(_params.delta.borrowP2PAmount),
-                CompoundMath.wad() // To avoid shareOfTheDelta > 1 with rounding errors.
+                WAD // To avoid shareOfTheDelta > 1 with rounding errors.
             );
 
             newBorrowP2PExchangeRate = _params.borrowP2pExchangeRate.mul(
-                (CompoundMath.wad() - vars.shareOfTheDelta).mul(vars.borrowP2PGrowthFactor) +
+                (WAD - vars.shareOfTheDelta).mul(vars.borrowP2PGrowthFactor) +
                     vars.shareOfTheDelta.mul(vars.borrowPoolGrowthFactor)
             );
         }
