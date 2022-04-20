@@ -97,9 +97,7 @@ contract WithStorageAndModifiers {
     /// COMMON CONSTANTS ///
 
     uint8 public constant CTOKEN_DECIMALS = 8;
-
     uint16 public constant MAX_BASIS_POINTS = 10_000; // 100% (in basis point).
-
     uint16 public constant LIQUIDATION_CLOSE_FACTOR_PERCENT = 5_000; // 50% in basis points
 
     /// REENTRY GUARD VARS ///

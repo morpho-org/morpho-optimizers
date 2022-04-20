@@ -80,45 +80,6 @@ contract PositionsManagerForCompoundEventsErrors {
         address indexed _poolTokenCollateralAddress
     );
 
-    /// @notice Emitted when a new value for `NDS` is set.
-    /// @param _newValue The new value of `NDS`.
-    event NDSSet(uint8 _newValue);
-
-    /// @notice Emitted when a new `maxGas` is set.
-    /// @param _maxGas The new `maxGas`.
-    event MaxGasSet(Types.MaxGas _maxGas);
-
-    /// @notice Emitted the address of the `treasuryVault` is set.
-    /// @param _newTreasuryVaultAddress The new address of the `treasuryVault`.
-    event TreasuryVaultSet(address indexed _newTreasuryVaultAddress);
-
-    /// @notice Emitted the address of the `incentivesVault` is set.
-    /// @param _newIncentivesVaultAddress The new address of the `incentivesVault`.
-    event IncentivesVaultSet(address indexed _newIncentivesVaultAddress);
-
-    /// @notice Emitted the address of the `rewardsManager` is set.
-    /// @param _newRewardsManagerAddress The new address of the `rewardsManager`.
-    event RewardsManagerSet(address indexed _newRewardsManagerAddress);
-
-    /// @notice Emitted when a reserve fee is claimed.
-    /// @param _poolTokenAddress The address of the pool token concerned.
-    /// @param _amountClaimed The amount of reward token claimed.
-    event ReserveFeeClaimed(address indexed _poolTokenAddress, uint256 _amountClaimed);
-
-    /// @notice Emitted when a COMP reward status is changed.
-    /// @param _isCompRewardsActive The new COMP reward status.
-    event CompRewardsActive(bool _isCompRewardsActive);
-
-    /// @notice Emitted when a user claims rewards.
-    /// @param _user The address of the claimer.
-    /// @param _amountClaimed The amount of reward token claimed.
-    event RewardsClaimed(address indexed _user, uint256 _amountClaimed);
-
-    /// @notice Emitted when a user claims rewards and converts them to Morpho tokens.
-    /// @param _user The address of the claimer.
-    /// @param _amountSent The amount of reward token sent to the vault.
-    event RewardsClaimedAndConverted(address indexed _user, uint256 _amountSent);
-
     /// ERRORS ///
 
     /// @notice Thrown when the amount repaid during the liquidation is above what is allowed to be repaid.
@@ -138,10 +99,4 @@ contract PositionsManagerForCompoundEventsErrors {
 
     /// @notice Thrown when the amount is equal to 0.
     error AmountIsZero();
-
-    /// @notice Thrown when the market is paused.
-    error MarketPaused();
-
-    /// @notice Thrown when the address is the zero address.
-    error ZeroAddress();
 }

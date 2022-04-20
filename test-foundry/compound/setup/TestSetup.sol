@@ -11,7 +11,7 @@ import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 
 import "@contracts/compound/PositionsManagerForCompound.sol";
-import "@contracts/compound/PositionsManagerForCompoundSettersAndGetters.sol";
+import "@contracts/compound/PositionsManagerForCompoundGovernor.sol";
 import "@contracts/compound/MarketsManagerForCompound.sol";
 import "@contracts/compound/RewardsManagerForCompound.sol";
 import "@contracts/compound/MorphoLensForCompound.sol";
@@ -61,8 +61,8 @@ contract TestSetup is Config, Utils, stdCheats {
     PositionsManagerForCompound internal positionsManager;
     PositionsManagerForCompound internal positionsManagerFacet;
     PositionsManagerForCompound internal fakePositionsManagerImpl;
-    PositionsManagerForCompoundSettersAndGetters internal positionsManagerSettersAndGettersFacet;
-    PositionsManagerForCompoundSettersAndGetters internal positionsManagerSettersAndGetters;
+    PositionsManagerForCompoundGovernor internal positionsManagerGovernorFacet;
+    PositionsManagerForCompoundGovernor internal positionsManagerForCompoundGovernor;
     MarketsManagerForCompound internal marketsManager;
     MarketsManagerForCompound internal marketsManagerImplV1;
     MarketsManagerForCompound internal marketsManagerFacet;
@@ -117,7 +117,7 @@ contract TestSetup is Config, Utils, stdCheats {
         diamondCutFacet = DiamondCutFacet(address(diamond));
         marketsManagerFacet = new MarketsManagerForCompound();
         positionsManagerFacet = new PositionsManagerForCompound();
-        positionsManagerSettersAndGettersFacet = new PositionsManagerForCompoundSettersAndGetters();
+        positionsManagerGovernorFacet = new PositionsManagerForCompoundGovernor();
         morphoLensFacet = new MorphoLensForCompound();
         InitDiamond initDiamond = new InitDiamond();
 
@@ -213,48 +213,42 @@ contract TestSetup is Config, Utils, stdCheats {
                 functionSelectors: positionsManagerFunctionSelectors
             });
 
-            bytes4[] memory positionsManagerSettersAndGettersFunctionSelectors = new bytes4[](10);
+            bytes4[] memory positionsManagerGovernorFunctionSelectors = new bytes4[](8);
             {
                 uint256 index;
-                positionsManagerSettersAndGettersFunctionSelectors[
-                    index++
-                ] = positionsManagerSettersAndGettersFacet.claimToTreasury.selector;
-                positionsManagerSettersAndGettersFunctionSelectors[
-                    index++
-                ] = positionsManagerSettersAndGettersFacet.claimRewards.selector;
-                positionsManagerSettersAndGettersFunctionSelectors[
-                    index++
-                ] = positionsManagerSettersAndGettersFacet.supplyBalanceInOf.selector;
-                positionsManagerSettersAndGettersFunctionSelectors[
-                    index++
-                ] = positionsManagerSettersAndGettersFacet.borrowBalanceInOf.selector;
-                positionsManagerSettersAndGettersFunctionSelectors[
-                    index++
-                ] = positionsManagerSettersAndGettersFacet.setNDS.selector;
-                positionsManagerSettersAndGettersFunctionSelectors[
-                    index++
-                ] = positionsManagerSettersAndGettersFacet.setMaxGas.selector;
-                positionsManagerSettersAndGettersFunctionSelectors[
-                    index++
-                ] = positionsManagerSettersAndGettersFacet.setTreasuryVault.selector;
-                positionsManagerSettersAndGettersFunctionSelectors[
-                    index++
-                ] = positionsManagerSettersAndGettersFacet.setIncentivesVault.selector;
-                positionsManagerSettersAndGettersFunctionSelectors[
-                    index++
-                ] = positionsManagerSettersAndGettersFacet.setRewardsManager.selector;
-                positionsManagerSettersAndGettersFunctionSelectors[
-                    index++
-                ] = positionsManagerSettersAndGettersFacet.toggleCompRewardsActivation.selector;
+                positionsManagerGovernorFunctionSelectors[index++] = positionsManagerGovernorFacet
+                .claimToTreasury
+                .selector;
+                positionsManagerGovernorFunctionSelectors[index++] = positionsManagerGovernorFacet
+                .claimRewards
+                .selector;
+                positionsManagerGovernorFunctionSelectors[index++] = positionsManagerGovernorFacet
+                .setNDS
+                .selector;
+                positionsManagerGovernorFunctionSelectors[index++] = positionsManagerGovernorFacet
+                .setMaxGas
+                .selector;
+                positionsManagerGovernorFunctionSelectors[index++] = positionsManagerGovernorFacet
+                .setTreasuryVault
+                .selector;
+                positionsManagerGovernorFunctionSelectors[index++] = positionsManagerGovernorFacet
+                .setIncentivesVault
+                .selector;
+                positionsManagerGovernorFunctionSelectors[index++] = positionsManagerGovernorFacet
+                .setRewardsManager
+                .selector;
+                positionsManagerGovernorFunctionSelectors[index++] = positionsManagerGovernorFacet
+                .toggleCompRewardsActivation
+                .selector;
             }
 
-            IDiamondCut.FacetCut memory positionsSettersAndGettersCut = IDiamondCut.FacetCut({
-                facetAddress: address(positionsManagerSettersAndGettersFacet),
+            IDiamondCut.FacetCut memory positionsGovernorCut = IDiamondCut.FacetCut({
+                facetAddress: address(positionsManagerGovernorFacet),
                 action: IDiamondCut.FacetCutAction.Add,
-                functionSelectors: positionsManagerSettersAndGettersFunctionSelectors
+                functionSelectors: positionsManagerGovernorFunctionSelectors
             });
 
-            bytes4[] memory morphoLensFunctionSelectors = new bytes4[](14);
+            bytes4[] memory morphoLensFunctionSelectors = new bytes4[](16);
             {
                 uint256 index;
                 morphoLensFunctionSelectors[index++] = morphoLensFacet.deltas.selector;
@@ -267,6 +261,8 @@ contract TestSetup is Config, Utils, stdCheats {
                 morphoLensFunctionSelectors[index++] = morphoLensFacet.getHead.selector;
                 morphoLensFunctionSelectors[index++] = morphoLensFacet.getNext.selector;
                 morphoLensFunctionSelectors[index++] = morphoLensFacet.enteredMarkets.selector;
+                morphoLensFunctionSelectors[index++] = morphoLensFacet.supplyBalanceInOf.selector;
+                morphoLensFunctionSelectors[index++] = morphoLensFacet.borrowBalanceInOf.selector;
                 morphoLensFunctionSelectors[index++] = morphoLensFacet
                 .getUserBalanceStates
                 .selector;
@@ -287,7 +283,7 @@ contract TestSetup is Config, Utils, stdCheats {
 
             cuts.push(marketsCut);
             cuts.push(positionsCut);
-            cuts.push(positionsSettersAndGettersCut);
+            cuts.push(positionsGovernorCut);
             cuts.push(lensCut);
         }
         IDiamondCut(address(diamond)).diamondCut(
@@ -306,9 +302,7 @@ contract TestSetup is Config, Utils, stdCheats {
         );
 
         positionsManager = PositionsManagerForCompound(payable(address(diamond)));
-        positionsManagerSettersAndGetters = PositionsManagerForCompoundSettersAndGetters(
-            address(diamond)
-        );
+        positionsManagerForCompoundGovernor = PositionsManagerForCompoundGovernor(address(diamond));
         marketsManager = MarketsManagerForCompound(address(diamond));
         morphoLens = MorphoLensForCompound(address(diamond));
         morphoCompound = IMorphoCompound(address(diamond));

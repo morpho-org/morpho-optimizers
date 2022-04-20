@@ -177,6 +177,24 @@ contract MorphoLensForCompound {
         maxGasRepay_ = ps().maxGas.repay;
     }
 
+    function supplyBalanceInOf(address _poolTokenAddress, address _user)
+        external
+        view
+        returns (uint256 inP2P_, uint256 onPool_)
+    {
+        inP2P_ = ps().supplyBalanceInOf[_poolTokenAddress][_user].inP2P;
+        onPool_ = ps().supplyBalanceInOf[_poolTokenAddress][_user].onPool;
+    }
+
+    function borrowBalanceInOf(address _poolTokenAddress, address _user)
+        external
+        view
+        returns (uint256 inP2P_, uint256 onPool_)
+    {
+        inP2P_ = ps().borrowBalanceInOf[_poolTokenAddress][_user].inP2P;
+        onPool_ = ps().borrowBalanceInOf[_poolTokenAddress][_user].onPool;
+    }
+
     function getUserBalanceStates(address _user)
         external
         view
