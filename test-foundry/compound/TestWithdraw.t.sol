@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import "@contracts/compound/interfaces/IPositionsManagerForCompound.sol";
+import "@contracts/compound/interfaces/IPositionsManager.sol";
 
 import {Attacker} from "./helpers/Attacker.sol";
 import "./setup/TestSetup.sol";

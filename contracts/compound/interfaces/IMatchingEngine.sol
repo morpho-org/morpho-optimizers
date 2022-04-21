@@ -4,7 +4,7 @@ pragma solidity 0.8.13;
 import {ICToken, IComptroller} from "../interfaces/compound/ICompound.sol";
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 
-interface IMatchingEngineForCompound {
+interface IMatchingEngine {
     function matchSuppliers(
         ICToken,
         uint256,

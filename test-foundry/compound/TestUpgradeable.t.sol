@@ -7,7 +7,7 @@ contract TestUpgradeable is TestSetup {
     function testUpgradeMarketsManager() public {
         marketsManager.setReserveFactor(cDai, 1);
 
-        MarketsManagerForCompound marketsManagerImplV2 = new MarketsManagerForCompound();
+        MarketsManager marketsManagerImplV2 = new MarketsManager();
         proxyAdmin.upgrade(marketsManagerProxy, address(marketsManagerImplV2));
 
         // Should not change
@@ -21,7 +21,7 @@ contract TestUpgradeable is TestSetup {
         uint256 supplyPoolIndex = ICToken(cDai).exchangeRateCurrent();
         uint256 expectedOnPool = underlyingToPoolSupplyBalance(amount, supplyPoolIndex);
 
-        PositionsManagerForCompound positionsManagerImplV2 = new PositionsManagerForCompound();
+        PositionsManager positionsManagerImplV2 = new PositionsManager();
         proxyAdmin.upgrade(positionsManagerProxy, address(positionsManagerImplV2));
 
         // Should not change
@@ -30,7 +30,7 @@ contract TestUpgradeable is TestSetup {
     }
 
     function testOnlyProxyOwnerCanUpgradeMarketsManager() public {
-        MarketsManagerForCompound marketsManagerImplV2 = new MarketsManagerForCompound();
+        MarketsManager marketsManagerImplV2 = new MarketsManager();
 
         hevm.prank(address(supplier1));
         hevm.expectRevert("Ownable: caller is not the owner");
@@ -40,7 +40,7 @@ contract TestUpgradeable is TestSetup {
     }
 
     function testOnlyProxyOwnerCanUpgradeAndCallMarketsManager() public {
-        MarketsManagerForCompound marketsManagerImplV2 = new MarketsManagerForCompound();
+        MarketsManager marketsManagerImplV2 = new MarketsManager();
 
         hevm.prank(address(supplier1));
         hevm.expectRevert("Ownable: caller is not the owner");
@@ -52,7 +52,7 @@ contract TestUpgradeable is TestSetup {
     }
 
     function testOnlyProxyOwnerCanUpgradePositionsManager() public {
-        PositionsManagerForCompound positionsManagerImplV2 = new PositionsManagerForCompound();
+        PositionsManager positionsManagerImplV2 = new PositionsManager();
 
         hevm.prank(address(supplier1));
         hevm.expectRevert("Ownable: caller is not the owner");
@@ -62,7 +62,7 @@ contract TestUpgradeable is TestSetup {
     }
 
     function testOnlyProxyOwnerCanUpgradeAndCallPositionsManager() public {
-        PositionsManagerForCompound positionsManagerImplV2 = new PositionsManagerForCompound();
+        PositionsManager positionsManagerImplV2 = new PositionsManager();
 
         hevm.prank(address(supplier1));
         hevm.expectRevert("Ownable: caller is not the owner");
