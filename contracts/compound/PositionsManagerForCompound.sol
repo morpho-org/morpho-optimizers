@@ -56,7 +56,7 @@ contract PositionsManagerForCompound is PositionsManagerForCompoundGettersSetter
         address _poolTokenAddress,
         uint256 _amount,
         uint16 _referralCode
-    ) external nonReentrant {
+    ) external nonReentrant isMarketCreatedAndNotPaused(_poolTokenAddress) {
         if (_amount == 0) revert AmountIsZero();
         marketsManager.updateP2PExchangeRates(_poolTokenAddress);
         logic._supplyDC(_poolTokenAddress, _amount, maxGas.supply);
@@ -82,7 +82,7 @@ contract PositionsManagerForCompound is PositionsManagerForCompoundGettersSetter
         uint256 _amount,
         uint16 _referralCode,
         uint256 _maxGasToConsume
-    ) external nonReentrant {
+    ) external nonReentrant isMarketCreatedAndNotPaused(_poolTokenAddress) {
         if (_amount == 0) revert AmountIsZero();
         marketsManager.updateP2PExchangeRates(_poolTokenAddress);
         logic._supplyDC(_poolTokenAddress, _amount, _maxGasToConsume);
@@ -105,7 +105,7 @@ contract PositionsManagerForCompound is PositionsManagerForCompoundGettersSetter
         address _poolTokenAddress,
         uint256 _amount,
         uint16 _referralCode
-    ) external nonReentrant {
+    ) external nonReentrant isMarketCreatedAndNotPaused(_poolTokenAddress) {
         if (_amount == 0) revert AmountIsZero();
         marketsManager.updateP2PExchangeRates(_poolTokenAddress);
         logic._borrowDC(_poolTokenAddress, _amount, maxGas.borrow);
@@ -130,7 +130,7 @@ contract PositionsManagerForCompound is PositionsManagerForCompoundGettersSetter
         uint256 _amount,
         uint16 _referralCode,
         uint256 _maxGasToConsume
-    ) external nonReentrant {
+    ) external nonReentrant isMarketCreatedAndNotPaused(_poolTokenAddress) {
         if (_amount == 0) revert AmountIsZero();
         marketsManager.updateP2PExchangeRates(_poolTokenAddress);
         logic._borrowDC(_poolTokenAddress, _amount, _maxGasToConsume);
@@ -148,7 +148,11 @@ contract PositionsManagerForCompound is PositionsManagerForCompoundGettersSetter
     /// @notice Withdraws underlying tokens in a specific market.
     /// @param _poolTokenAddress The address of the market the user wants to interact with.
     /// @param _amount The amount of tokens (in underlying) to withdraw from supply.
-    function withdraw(address _poolTokenAddress, uint256 _amount) external nonReentrant {
+    function withdraw(address _poolTokenAddress, uint256 _amount)
+        external
+        nonReentrant
+        isMarketCreatedAndNotPaused(_poolTokenAddress)
+    {
         if (_amount == 0) revert AmountIsZero();
         marketsManager.updateP2PExchangeRates(_poolTokenAddress);
 
@@ -173,7 +177,11 @@ contract PositionsManagerForCompound is PositionsManagerForCompoundGettersSetter
     /// @dev `msg.sender` must have approved Morpho's contract to spend the underlying `_amount`.
     /// @param _poolTokenAddress The address of the market the user wants to interact with.
     /// @param _amount The amount of token (in underlying) to repay from borrow.
-    function repay(address _poolTokenAddress, uint256 _amount) external nonReentrant {
+    function repay(address _poolTokenAddress, uint256 _amount)
+        external
+        nonReentrant
+        isMarketCreatedAndNotPaused(_poolTokenAddress)
+    {
         if (_amount == 0) revert AmountIsZero();
         marketsManager.updateP2PExchangeRates(_poolTokenAddress);
 
@@ -203,7 +211,12 @@ contract PositionsManagerForCompound is PositionsManagerForCompoundGettersSetter
         address _poolTokenCollateralAddress,
         address _borrower,
         uint256 _amount
-    ) external nonReentrant {
+    )
+        external
+        nonReentrant
+        isMarketCreatedAndNotPaused(_poolTokenBorrowedAddress)
+        isMarketCreatedAndNotPaused(_poolTokenCollateralAddress)
+    {
         if (_amount == 0) revert AmountIsZero();
         marketsManager.updateP2PExchangeRates(_poolTokenBorrowedAddress);
         marketsManager.updateP2PExchangeRates(_poolTokenCollateralAddress);
