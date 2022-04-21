@@ -341,13 +341,23 @@ abstract contract PositionsManagerForCompoundGettersSetters is
             );
     }
 
-    /// @dev Returns the underlying ERC20 token related to the pool token.
-    /// @param _poolTokenAddress The address of the pool token.
-    /// @return The underlying ERC20 token.
-    function _getUnderlying(address _poolTokenAddress) internal view returns (ERC20) {
-        if (_poolTokenAddress == cEth)
-            // cETH has no underlying() function.
-            return ERC20(wEth);
-        else return ERC20(ICToken(_poolTokenAddress).underlying());
+    /// @dev Checks whether the user can borrow/withdraw or not.
+    /// @param _user The user to determine liquidity for.
+    /// @param _poolTokenAddress The market to hypothetically withdraw/borrow in.
+    /// @param _withdrawnAmount The number of tokens to hypothetically withdraw (in underlying).
+    /// @param _borrowedAmount The amount of tokens to hypothetically borrow (in underlying).
+    function _checkUserLiquidity(
+        address _user,
+        address _poolTokenAddress,
+        uint256 _withdrawnAmount,
+        uint256 _borrowedAmount
+    ) internal {
+        (uint256 debtValue, uint256 maxDebtValue) = _getUserHypotheticalBalanceStates(
+            _user,
+            _poolTokenAddress,
+            _withdrawnAmount,
+            _borrowedAmount
+        );
+        if (debtValue > maxDebtValue) revert DebtValueAboveMax();
     }
 }
