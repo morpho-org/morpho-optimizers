@@ -2,7 +2,6 @@
 pragma solidity 0.8.13;
 
 import "./setup/TestSetup.sol";
-import "@contracts/compound/PositionsManagerForCompoundEventsErrors.sol";
 
 contract TestBorrow is TestSetup {
     using FixedPointMathLib for uint256;

@@ -45,12 +45,12 @@ contract TestPausableMarket is TestSetup {
         uint256 toLiquidate = toBorrow / 2;
         User liquidator = borrower3;
         liquidator.approve(usdc, toLiquidate);
-        hevm.expectRevert(PositionsManagerForCompoundEventsErrors.DebtValueNotAboveMax.selector);
+        hevm.expectRevert(PositionsManagerForCompound.DebtValueNotAboveMax.selector);
         liquidator.liquidate(cUsdc, cDai, address(supplier1), toLiquidate);
 
         supplier1.withdraw(cDai, 1 ether);
 
-        hevm.expectRevert(PositionsManagerForCompoundEventsErrors.AmountIsZero.selector);
+        hevm.expectRevert(PositionsManagerForCompound.AmountIsZero.selector);
         morphoCompound.claimToTreasury(cDai);
     }
 

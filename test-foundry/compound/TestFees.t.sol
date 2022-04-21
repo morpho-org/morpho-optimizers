@@ -108,7 +108,7 @@ contract TestFees is TestSetup {
         hevm.roll(block.number + 100);
 
         supplier1.repay(cDai, type(uint256).max);
-        hevm.expectRevert(PositionsManagerForCompoundEventsErrors.AmountIsZero.selector);
+        hevm.expectRevert(PositionsManagerForCompound.AmountIsZero.selector);
         morphoCompound.claimToTreasury(cDai);
         uint256 balanceAfter = IERC20(dai).balanceOf(morphoLens.treasuryVault());
 
