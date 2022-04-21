@@ -35,7 +35,7 @@ contract TestPausableMarket is TestSetup {
         supplier1.repay(cUsdc, toBorrow);
 
         (, toBorrow) = positionsManager.getUserMaxCapacitiesForAsset(address(supplier1), cUsdc);
-        hevm.expectRevert(PositionsManagerForCompoundEventsErrors.BorrowOnCompoundFailed.selector);
+        hevm.expectRevert(LogicForCompound.BorrowOnCompoundFailed.selector);
         supplier1.borrow(cUsdc, toBorrow);
 
         // Change Oracle.
