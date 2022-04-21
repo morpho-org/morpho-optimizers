@@ -103,4 +103,14 @@ abstract contract PositionsManagerForCompoundStorage is
     address public treasuryVault;
     address public cEth;
     address public wEth;
+
+    /// @dev Returns the underlying ERC20 token related to the pool token.
+    /// @param _poolTokenAddress The address of the pool token.
+    /// @return The underlying ERC20 token.
+    function _getUnderlying(address _poolTokenAddress) internal view returns (ERC20) {
+        if (_poolTokenAddress == cEth)
+            // cETH has no underlying() function.
+            return ERC20(wEth);
+        else return ERC20(ICToken(_poolTokenAddress).underlying());
+    }
 }
