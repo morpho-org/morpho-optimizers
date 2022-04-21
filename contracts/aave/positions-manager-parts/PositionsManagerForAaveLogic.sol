@@ -2,14 +2,14 @@
 pragma solidity 0.8.13;
 
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
-import "../libraries/MatchingEngineFns.sol";
+import "../libraries/MatchingEngineDCs.sol";
 
 import "./PositionsManagerForAaveGettersSetters.sol";
 
 /// @title PositionsManagerForAaveLogic.
 /// @notice Main Logic of Morpho Protocol, implementation of the 5 main functionalities: supply, borrow, withdraw, repay, liquidate.
 contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
-    using MatchingEngineFns for IMatchingEngineForAave;
+    using MatchingEngineDCs for IMatchingEngineForAave;
     using DoubleLinkedList for DoubleLinkedList.List;
     using SafeTransferLib for ERC20;
     using Math for uint256;

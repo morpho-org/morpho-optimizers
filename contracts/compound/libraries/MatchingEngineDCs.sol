@@ -2,15 +2,15 @@
 pragma solidity 0.8.13;
 
 import {ICToken} from "../interfaces/compound/ICompound.sol";
-import "../interfaces/IMatchingEngineForCompound.sol";
+import "../interfaces/IMatchingEngine.sol";
 
 import "@openzeppelin/contracts/utils/Address.sol";
 
-library MatchingEngineFns {
+library MatchingEngineDCs {
     using Address for address;
 
     function matchSuppliersDC(
-        IMatchingEngineForCompound _matchingEngine,
+        IMatchingEngine _matchingEngine,
         ICToken _poolToken,
         uint256 _amount,
         uint256 _maxGasToConsume
@@ -27,7 +27,7 @@ library MatchingEngineFns {
     }
 
     function unmatchSuppliersDC(
-        IMatchingEngineForCompound _matchingEngine,
+        IMatchingEngine _matchingEngine,
         address _poolTokenAddress,
         uint256 _amount,
         uint256 _maxGasToConsume
@@ -44,7 +44,7 @@ library MatchingEngineFns {
     }
 
     function matchBorrowersDC(
-        IMatchingEngineForCompound _matchingEngine,
+        IMatchingEngine _matchingEngine,
         ICToken _poolToken,
         uint256 _amount,
         uint256 _maxGasToConsume
@@ -61,7 +61,7 @@ library MatchingEngineFns {
     }
 
     function unmatchBorrowersDC(
-        IMatchingEngineForCompound _matchingEngine,
+        IMatchingEngine _matchingEngine,
         address _poolTokenAddress,
         uint256 _amount,
         uint256 _maxGasToConsume
@@ -78,7 +78,7 @@ library MatchingEngineFns {
     }
 
     function updateBorrowersDC(
-        IMatchingEngineForCompound _matchingEngine,
+        IMatchingEngine _matchingEngine,
         address _poolTokenAddress,
         address _user
     ) internal {
@@ -92,7 +92,7 @@ library MatchingEngineFns {
     }
 
     function updateSuppliersDC(
-        IMatchingEngineForCompound _matchingEngine,
+        IMatchingEngine _matchingEngine,
         address _poolTokenAddress,
         address _user
     ) internal {

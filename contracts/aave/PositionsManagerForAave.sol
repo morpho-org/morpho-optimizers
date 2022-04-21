@@ -7,7 +7,7 @@ import "./positions-manager-parts/PositionsManagerForAaveLogic.sol";
 /// @notice Smart contract interacting with Aave to enable P2P supply/borrow positions that can fallback on Aave's pool using pool tokens.
 contract PositionsManagerForAave is PositionsManagerForAaveLogic {
     using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
-    using MatchingEngineFns for IMatchingEngineForAave;
+    using MatchingEngineDCs for IMatchingEngineForAave;
     using DoubleLinkedList for DoubleLinkedList.List;
     using SafeTransferLib for ERC20;
     using Math for uint256;

@@ -3,7 +3,7 @@ pragma solidity 0.8.13;
 
 import "./compound/ICompound.sol";
 
-interface IRewardsManagerForCompound {
+interface IRewardsManager {
     function claimRewards(address[] calldata, address) external returns (uint256);
 
     function accrueUserUnclaimedRewards(address[] calldata _cTokenAddresses, address)

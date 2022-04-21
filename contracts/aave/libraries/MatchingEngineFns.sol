@@ -6,7 +6,7 @@ import "../interfaces/IMatchingEngineForAave.sol";
 
 import "@openzeppelin/contracts/utils/Address.sol";
 
-library MatchingEngineFns {
+library MatchingEngineDCs {
     using Address for address;
 
     function matchSuppliersDC(

@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import "./interfaces/IPositionsManagerForCompound.sol";
-import "./interfaces/IRewardsManagerForCompound.sol";
+import "./interfaces/IPositionsManager.sol";
+import "./interfaces/IRewardsManager.sol";
 import "./interfaces/compound/ICompound.sol";
 
 import "./libraries/CompoundMath.sol";
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-/// @title RewardsManagerForCompound.
+/// @title RewardsManager.
 /// @notice This contract is used to manage the COMP rewards from the Compound protocol.
-contract RewardsManagerForCompound is IRewardsManagerForCompound, Ownable {
+contract RewardsManager is IRewardsManager, Ownable {
     using CompoundMath for uint256;
 
     /// STORAGE ///
@@ -24,7 +24,7 @@ contract RewardsManagerForCompound is IRewardsManagerForCompound, Ownable {
     mapping(address => IComptroller.CompMarketState) public localCompSupplyState; // The lcoal supply state for a specific cToken.
     mapping(address => IComptroller.CompMarketState) public localCompBorrowState; // The lcoal borrow state for a specific cToken.
 
-    IPositionsManagerForCompound public immutable positionsManager;
+    IPositionsManager public immutable positionsManager;
     IComptroller public immutable comptroller;
 
     /// ERRORS ///
@@ -48,7 +48,7 @@ contract RewardsManagerForCompound is IRewardsManagerForCompound, Ownable {
     /// @notice Constructs the RewardsManager contract.
     /// @param _positionsManager The `positionsManager`.
     constructor(address _positionsManager) {
-        positionsManager = IPositionsManagerForCompound(_positionsManager);
+        positionsManager = IPositionsManager(_positionsManager);
         comptroller = IComptroller(positionsManager.comptroller());
     }
 
