@@ -77,22 +77,4 @@ library LogicDCs {
             )
         );
     }
-
-    function _checkUserLiquidityDC(
-        ILogicForCompound _logic,
-        address _user,
-        address _poolTokenAddress,
-        uint256 _withdrawnAmount,
-        uint256 _borrowedAmount
-    ) internal {
-        address(_logic).functionDelegateCall(
-            abi.encodeWithSelector(
-                _logic.checkUserLiquidity.selector,
-                _user,
-                _poolTokenAddress,
-                _withdrawnAmount,
-                _borrowedAmount
-            )
-        );
-    }
 }
