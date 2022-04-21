@@ -1,15 +1,51 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import "./positions-manager-parts/PositionsManagerForCompoundLogic.sol";
+import "./positions-manager-parts/PositionsManagerForCompoundGettersSetters.sol";
+import "./libraries/LogicDCs.sol";
 
 /// @title PositionsManagerForCompound.
 /// @notice Smart contract interacting with Compound to enable P2P supply/borrow positions that can fallback on Compound's pool using pool tokens.
-contract PositionsManagerForCompound is PositionsManagerForCompoundLogic {
-    using MatchingEngineFns for IMatchingEngineForCompound;
+contract PositionsManagerForCompound is PositionsManagerForCompoundGettersSetters {
+    using LogicDCs for ILogicForCompound;
     using DoubleLinkedList for DoubleLinkedList.List;
     using SafeTransferLib for ERC20;
     using CompoundMath for uint256;
+
+    /// UPGRADE ///
+
+    /// @notice Initializes the PositionsManagerForCompound contract.
+    /// @param _marketsManager The `marketsManager`.
+    /// @param _matchingEngine The `matchingEngine`.
+    /// @param _comptroller The `comptroller`.
+    /// @param _maxGas The `maxGas`.
+    /// @param _NDS The `NDS`.
+    /// @param _cEth The cETH address.
+    /// @param _weth The wETH address.
+    function initialize(
+        IMarketsManagerForCompound _marketsManager,
+        IMatchingEngineForCompound _matchingEngine,
+        ILogicForCompound _logic,
+        IComptroller _comptroller,
+        MaxGas memory _maxGas,
+        uint8 _NDS,
+        address _cEth,
+        address _weth
+    ) external initializer {
+        __ReentrancyGuard_init();
+        __Ownable_init();
+
+        marketsManager = _marketsManager;
+        matchingEngine = _matchingEngine;
+        logic = _logic;
+        comptroller = _comptroller;
+
+        maxGas = _maxGas;
+        NDS = _NDS;
+
+        cEth = _cEth;
+        wEth = _weth;
+    }
 
     /// @notice Supplies underlying tokens in a specific market.
     /// @dev `msg.sender` must have approved Morpho's contract to spend the underlying `_amount`.
@@ -23,7 +59,7 @@ contract PositionsManagerForCompound is PositionsManagerForCompoundLogic {
     ) external nonReentrant {
         if (_amount == 0) revert AmountIsZero();
         marketsManager.updateP2PExchangeRates(_poolTokenAddress);
-        _supply(_poolTokenAddress, _amount, maxGas.supply);
+        logic._supplyDC(_poolTokenAddress, _amount, maxGas.supply);
 
         emit Supplied(
             msg.sender,
@@ -49,7 +85,7 @@ contract PositionsManagerForCompound is PositionsManagerForCompoundLogic {
     ) external nonReentrant {
         if (_amount == 0) revert AmountIsZero();
         marketsManager.updateP2PExchangeRates(_poolTokenAddress);
-        _supply(_poolTokenAddress, _amount, _maxGasToConsume);
+        logic._supplyDC(_poolTokenAddress, _amount, _maxGasToConsume);
 
         emit Supplied(
             msg.sender,
@@ -72,7 +108,7 @@ contract PositionsManagerForCompound is PositionsManagerForCompoundLogic {
     ) external nonReentrant {
         if (_amount == 0) revert AmountIsZero();
         marketsManager.updateP2PExchangeRates(_poolTokenAddress);
-        _borrow(_poolTokenAddress, _amount, maxGas.borrow);
+        logic._borrowDC(_poolTokenAddress, _amount, maxGas.borrow);
 
         emit Borrowed(
             msg.sender,
@@ -97,7 +133,7 @@ contract PositionsManagerForCompound is PositionsManagerForCompoundLogic {
     ) external nonReentrant {
         if (_amount == 0) revert AmountIsZero();
         marketsManager.updateP2PExchangeRates(_poolTokenAddress);
-        _borrow(_poolTokenAddress, _amount, _maxGasToConsume);
+        logic._borrowDC(_poolTokenAddress, _amount, _maxGasToConsume);
 
         emit Borrowed(
             msg.sender,
@@ -121,8 +157,8 @@ contract PositionsManagerForCompound is PositionsManagerForCompoundLogic {
             _amount
         );
 
-        _checkUserLiquidity(msg.sender, _poolTokenAddress, toWithdraw, 0);
-        _withdraw(_poolTokenAddress, toWithdraw, msg.sender, msg.sender, maxGas.withdraw);
+        logic._checkUserLiquidityDC(msg.sender, _poolTokenAddress, toWithdraw, 0);
+        logic._withdrawDC(_poolTokenAddress, toWithdraw, msg.sender, msg.sender, maxGas.withdraw);
 
         emit Withdrawn(
             msg.sender,
@@ -146,7 +182,7 @@ contract PositionsManagerForCompound is PositionsManagerForCompoundLogic {
             _amount
         );
 
-        _repay(_poolTokenAddress, msg.sender, toRepay, maxGas.repay);
+        logic._repayDC(_poolTokenAddress, msg.sender, toRepay, maxGas.repay);
 
         emit Repaid(
             msg.sender,
@@ -186,7 +222,7 @@ contract PositionsManagerForCompound is PositionsManagerForCompoundLogic {
         if (_amount > (vars.borrowBalance * LIQUIDATION_CLOSE_FACTOR_PERCENT) / MAX_BASIS_POINTS)
             revert AmountAboveWhatAllowedToRepay(); // Same mechanism as Compound. Liquidator cannot repay more than part of the debt (cf close factor on Compound).
 
-        _repay(_poolTokenBorrowedAddress, _borrower, _amount, 0);
+        logic._repayDC(_poolTokenBorrowedAddress, _borrower, _amount, 0);
 
         // Calculate the amount of token to seize from collateral
         ICompoundOracle compoundOracle = ICompoundOracle(comptroller.oracle());
@@ -207,7 +243,13 @@ contract PositionsManagerForCompound is PositionsManagerForCompoundLogic {
 
         if (vars.amountToSeize > vars.supplyBalance) revert ToSeizeAboveCollateral();
 
-        _withdraw(_poolTokenCollateralAddress, vars.amountToSeize, _borrower, msg.sender, 0);
+        logic._withdrawDC(
+            _poolTokenCollateralAddress,
+            vars.amountToSeize,
+            _borrower,
+            msg.sender,
+            0
+        );
 
         emit Liquidated(
             msg.sender,
@@ -259,4 +301,7 @@ contract PositionsManagerForCompound is PositionsManagerForCompoundLogic {
             }
         }
     }
+
+    // Allows to receive ETH.
+    receive() external payable {}
 }
