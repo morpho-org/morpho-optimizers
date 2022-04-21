@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import "../libraries/MatchingEngineFns.sol";
-
-import "./PositionsManagerForCompoundGettersSetters.sol";
+import "./libraries/MatchingEngineFns.sol";
+import "./interfaces/ILogicForCompound.sol";
+import "./positions-manager-parts/PositionsManagerForCompoundGettersSetters.sol";
 
 /// @title PositionsManagerForCompoundLogic.
 /// @notice Main Logic of Morpho Protocol, implementation of the 5 main functionalities: supply, borrow, withdraw, repay, liquidate.
-contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersSetters {
+contract LogicForCompound is ILogicForCompound, PositionsManagerForCompoundGettersSetters {
     using MatchingEngineFns for IMatchingEngineForCompound;
     using DoubleLinkedList for DoubleLinkedList.List;
     using SafeTransferLib for ERC20;
@@ -31,50 +31,17 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
         uint256 toRepay;
     }
 
-    /// UPGRADE ///
-
-    /// @notice Initializes the PositionsManagerForCompound contract.
-    /// @param _marketsManager The `marketsManager`.
-    /// @param _matchingEngine The `matchingEngine`.
-    /// @param _comptroller The `comptroller`.
-    /// @param _maxGas The `maxGas`.
-    /// @param _NDS The `NDS`.
-    /// @param _cEth The cETH address.
-    /// @param _weth The wETH address.
-    function initialize(
-        IMarketsManagerForCompound _marketsManager,
-        IMatchingEngineForCompound _matchingEngine,
-        IComptroller _comptroller,
-        MaxGas memory _maxGas,
-        uint8 _NDS,
-        address _cEth,
-        address _weth
-    ) external initializer {
-        __ReentrancyGuard_init();
-        __Ownable_init();
-
-        marketsManager = _marketsManager;
-        matchingEngine = _matchingEngine;
-        comptroller = _comptroller;
-
-        maxGas = _maxGas;
-        NDS = _NDS;
-
-        cEth = _cEth;
-        wEth = _weth;
-    }
-
     /// LOGIC ///
 
     /// @dev Implements supply logic.
     /// @param _poolTokenAddress The address of the pool token the user wants to interact with.
     /// @param _amount The amount of token (in underlying).
     /// @param _maxGasToConsume The maximum amount of gas to consume within a matching engine loop.
-    function _supply(
+    function supply(
         address _poolTokenAddress,
         uint256 _amount,
         uint256 _maxGasToConsume
-    ) internal isMarketCreatedAndNotPaused(_poolTokenAddress) {
+    ) external isMarketCreatedAndNotPaused(_poolTokenAddress) {
         _enterMarketIfNeeded(_poolTokenAddress, msg.sender);
 
         ERC20 underlyingToken = _getUnderlying(_poolTokenAddress);
@@ -157,13 +124,13 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
     /// @param _poolTokenAddress The address of the market the user wants to interact with.
     /// @param _amount The amount of token (in underlying).
     /// @param _maxGasToConsume The maximum amount of gas to consume within a matching engine loop.
-    function _borrow(
+    function borrow(
         address _poolTokenAddress,
         uint256 _amount,
         uint256 _maxGasToConsume
-    ) internal isMarketCreatedAndNotPaused(_poolTokenAddress) {
+    ) external isMarketCreatedAndNotPaused(_poolTokenAddress) {
         _enterMarketIfNeeded(_poolTokenAddress, msg.sender);
-        _checkUserLiquidity(msg.sender, _poolTokenAddress, 0, _amount);
+        checkUserLiquidity(msg.sender, _poolTokenAddress, 0, _amount);
 
         ERC20 underlyingToken = _getUnderlying(_poolTokenAddress);
         uint256 balanceBefore = underlyingToken.balanceOf(address(this));
@@ -247,13 +214,13 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
     /// @param _supplier The address of the supplier.
     /// @param _receiver The address of the user who will receive the tokens.
     /// @param _maxGasToConsume The maximum amount of gas to consume within a matching engine loop.
-    function _withdraw(
+    function withdraw(
         address _poolTokenAddress,
         uint256 _amount,
         address _supplier,
         address _receiver,
         uint256 _maxGasToConsume
-    ) internal isMarketCreatedAndNotPaused(_poolTokenAddress) {
+    ) external isMarketCreatedAndNotPaused(_poolTokenAddress) {
         ICToken poolToken = ICToken(_poolTokenAddress);
         ERC20 underlyingToken = _getUnderlying(_poolTokenAddress);
         WithdrawVars memory vars;
@@ -373,12 +340,12 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
     /// @param _user The address of the user.
     /// @param _amount The amount of token (in underlying).
     /// @param _maxGasToConsume The maximum amount of gas to consume within a matching engine loop.
-    function _repay(
+    function repay(
         address _poolTokenAddress,
         address _user,
         uint256 _amount,
         uint256 _maxGasToConsume
-    ) internal isMarketCreatedAndNotPaused(_poolTokenAddress) {
+    ) external isMarketCreatedAndNotPaused(_poolTokenAddress) {
         ICToken poolToken = ICToken(_poolTokenAddress);
         ERC20 underlyingToken = _getUnderlying(_poolTokenAddress);
         underlyingToken.safeTransferFrom(msg.sender, address(this), _amount);
@@ -509,6 +476,26 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
         _leaveMarkerIfNeeded(_poolTokenAddress, _user);
     }
 
+    /// @dev Checks whether the user can borrow/withdraw or not.
+    /// @param _user The user to determine liquidity for.
+    /// @param _poolTokenAddress The market to hypothetically withdraw/borrow in.
+    /// @param _withdrawnAmount The number of tokens to hypothetically withdraw (in underlying).
+    /// @param _borrowedAmount The amount of tokens to hypothetically borrow (in underlying).
+    function checkUserLiquidity(
+        address _user,
+        address _poolTokenAddress,
+        uint256 _withdrawnAmount,
+        uint256 _borrowedAmount
+    ) public {
+        (uint256 debtValue, uint256 maxDebtValue) = _getUserHypotheticalBalanceStates(
+            _user,
+            _poolTokenAddress,
+            _withdrawnAmount,
+            _borrowedAmount
+        );
+        if (debtValue > maxDebtValue) revert DebtValueAboveMax();
+    }
+
     /// @dev Enters the user into the market if not already there.
     /// @param _user The address of the user to update.
     /// @param _poolTokenAddress The address of the market to check.
@@ -542,26 +529,6 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
                 enteredMarkets[_user][index] = enteredMarkets[_user][length - 1];
             enteredMarkets[_user].pop();
         }
-    }
-
-    /// @dev Checks whether the user can borrow/withdraw or not.
-    /// @param _user The user to determine liquidity for.
-    /// @param _poolTokenAddress The market to hypothetically withdraw/borrow in.
-    /// @param _withdrawnAmount The number of tokens to hypothetically withdraw (in underlying).
-    /// @param _borrowedAmount The amount of tokens to hypothetically borrow (in underlying).
-    function _checkUserLiquidity(
-        address _user,
-        address _poolTokenAddress,
-        uint256 _withdrawnAmount,
-        uint256 _borrowedAmount
-    ) internal {
-        (uint256 debtValue, uint256 maxDebtValue) = _getUserHypotheticalBalanceStates(
-            _user,
-            _poolTokenAddress,
-            _withdrawnAmount,
-            _borrowedAmount
-        );
-        if (debtValue > maxDebtValue) revert DebtValueAboveMax();
     }
 
     /// @dev Supplies underlying tokens to Compound.
@@ -635,7 +602,4 @@ contract PositionsManagerForCompoundLogic is PositionsManagerForCompoundGettersS
             }
         } else return true;
     }
-
-    // Allows to receive ETH.
-    receive() external payable {}
 }
