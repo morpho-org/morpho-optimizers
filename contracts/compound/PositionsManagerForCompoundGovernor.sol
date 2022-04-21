@@ -56,41 +56,41 @@ contract PositionsManagerForCompoundGovernor is WithStorageAndModifiers {
 
     /// @notice Sets `NDS`.
     /// @param _newNDS The new `NDS` value.
-    function setNDS(uint8 _newNDS) external onlyOwner {
+    function setNDS(uint8 _newNDS) external onlyGovernance {
         ps().NDS = _newNDS;
         emit NDSSet(_newNDS);
     }
 
     /// @notice Sets `maxGas`.
     /// @param _maxGas The new `maxGas`.
-    function setMaxGas(Types.MaxGas memory _maxGas) external onlyOwner {
+    function setMaxGas(Types.MaxGas memory _maxGas) external onlyGovernance {
         ps().maxGas = _maxGas;
         emit MaxGasSet(_maxGas);
     }
 
     /// @notice Sets the `treasuryVault`.
     /// @param _newTreasuryVaultAddress The address of the new `treasuryVault`.
-    function setTreasuryVault(address _newTreasuryVaultAddress) external onlyOwner {
+    function setTreasuryVault(address _newTreasuryVaultAddress) external onlyGovernance {
         ps().treasuryVault = _newTreasuryVaultAddress;
         emit TreasuryVaultSet(_newTreasuryVaultAddress);
     }
 
     /// @notice Sets the `incentivesVault`.
     /// @param _newIncentivesVault The address of the new `incentivesVault`.
-    function setIncentivesVault(address _newIncentivesVault) external onlyOwner {
+    function setIncentivesVault(address _newIncentivesVault) external onlyGovernance {
         ps().incentivesVault = IIncentivesVault(_newIncentivesVault);
         emit IncentivesVaultSet(_newIncentivesVault);
     }
 
     /// @notice Sets the `rewardsManager`.
     /// @param _rewardsManagerAddress The address of the `rewardsManager`.
-    function setRewardsManager(address _rewardsManagerAddress) external onlyOwner {
+    function setRewardsManager(address _rewardsManagerAddress) external onlyGovernance {
         ps().rewardsManager = IRewardsManagerForCompound(_rewardsManagerAddress);
         emit RewardsManagerSet(_rewardsManagerAddress);
     }
 
     /// @notice Toggles the activation of COMP rewards.
-    function toggleCompRewardsActivation() external onlyOwner {
+    function toggleCompRewardsActivation() external onlyGovernance {
         bool newCompRewardsActive = !ps().isCompRewardsActive;
         ps().isCompRewardsActive = newCompRewardsActive;
         emit CompRewardsActive(newCompRewardsActive);
@@ -98,7 +98,7 @@ contract PositionsManagerForCompoundGovernor is WithStorageAndModifiers {
 
     /// @notice Transfers the protocol reserve fee to the DAO.
     /// @param _poolTokenAddress The address of the market on which we want to claim the reserve fee.
-    function claimToTreasury(address _poolTokenAddress) external onlyOwner {
+    function claimToTreasury(address _poolTokenAddress) external onlyGovernance {
         MarketsStorage storage m = LibStorage.marketsStorage();
         if (!m.isCreated[_poolTokenAddress]) revert MarketNotCreated();
         if (m.paused[_poolTokenAddress]) revert MarketPaused();

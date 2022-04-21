@@ -107,7 +107,7 @@ contract WithStorageAndModifiers {
 
     /// MODIFIERS ///
 
-    modifier onlyOwner() {
+    modifier onlyGovernance() {
         LibDiamond.enforceIsContractOwner();
         _;
     }

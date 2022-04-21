@@ -40,7 +40,7 @@ contract MarketsManagerForCompound is WithStorageAndModifiers {
 
     /// @notice Creates a new market to borrow/supply in.
     /// @param _poolTokenAddress The pool token address of the given market.
-    function createMarket(address _poolTokenAddress) external onlyOwner {
+    function createMarket(address _poolTokenAddress) external onlyGovernance {
         LibMarketsManager.createMarket(_poolTokenAddress);
     }
 
@@ -57,7 +57,7 @@ contract MarketsManagerForCompound is WithStorageAndModifiers {
     /// @param _newReserveFactor The proportion of the interest earned by users sent to the DAO, in basis point.
     function setReserveFactor(address _poolTokenAddress, uint256 _newReserveFactor)
         external
-        onlyOwner
+        onlyGovernance
     {
         LibMarketsManager.updateP2PExchangeRates(_poolTokenAddress);
         ms().reserveFactor[_poolTokenAddress] = CompoundMath.min(
@@ -70,7 +70,7 @@ contract MarketsManagerForCompound is WithStorageAndModifiers {
     /// @notice Sets whether to match people P2P or not.
     /// @param _poolTokenAddress The address of the market.
     /// @param _noP2P Whether to match people P2P or not.
-    function setNoP2P(address _poolTokenAddress, bool _noP2P) external onlyOwner {
+    function setNoP2P(address _poolTokenAddress, bool _noP2P) external onlyGovernance {
         if (!ms().isCreated[_poolTokenAddress]) revert MarketNotCreated();
         ms().noP2P[_poolTokenAddress] = _noP2P;
         emit NoP2PSet(_poolTokenAddress, _noP2P);
@@ -78,7 +78,7 @@ contract MarketsManagerForCompound is WithStorageAndModifiers {
 
     /// @notice Sets the pause status on a specific market in case of emergency.
     /// @param _poolTokenAddress The address of the market to pause/unpause.
-    function setPauseStatus(address _poolTokenAddress) external onlyOwner {
+    function setPauseStatus(address _poolTokenAddress) external onlyGovernance {
         MarketsStorage storage m = ms();
         bool newPauseStatus = !m.paused[_poolTokenAddress];
         m.paused[_poolTokenAddress] = newPauseStatus;
