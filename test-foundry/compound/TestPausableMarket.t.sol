@@ -35,7 +35,7 @@ contract TestPausableMarket is TestSetup {
         supplier1.repay(cUsdc, toBorrow);
 
         (, toBorrow) = positionsManager.getUserMaxCapacitiesForAsset(address(supplier1), cUsdc);
-        hevm.expectRevert(LogicForCompound.BorrowOnCompoundFailed.selector);
+        hevm.expectRevert(Logic.BorrowOnCompoundFailed.selector);
         supplier1.borrow(cUsdc, toBorrow);
 
         // Change Oracle.
@@ -45,12 +45,12 @@ contract TestPausableMarket is TestSetup {
         uint256 toLiquidate = toBorrow / 2;
         User liquidator = borrower3;
         liquidator.approve(usdc, toLiquidate);
-        hevm.expectRevert(PositionsManagerForCompoundEventsErrors.DebtValueNotAboveMax.selector);
+        hevm.expectRevert(PositionsManagerEventsErrors.DebtValueNotAboveMax.selector);
         liquidator.liquidate(cUsdc, cDai, address(supplier1), toLiquidate);
 
         supplier1.withdraw(cDai, 1 ether);
 
-        hevm.expectRevert(PositionsManagerForCompoundEventsErrors.AmountIsZero.selector);
+        hevm.expectRevert(PositionsManagerEventsErrors.AmountIsZero.selector);
         positionsManager.claimToTreasury(cDai);
     }
 

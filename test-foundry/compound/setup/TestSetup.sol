@@ -3,7 +3,7 @@ pragma solidity 0.8.13;
 
 import "hardhat/console.sol";
 
-import "@contracts/compound/interfaces/IRewardsManagerForCompound.sol";
+import "@contracts/compound/interfaces/IRewardsManager.sol";
 import "@contracts/compound/interfaces/compound/ICompound.sol";
 import "@contracts/common/interfaces/ISwapManager.sol";
 
@@ -11,12 +11,12 @@ import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.so
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 
-import "@contracts/compound/PositionsManagerForCompound.sol";
-import "@contracts/compound/MarketsManagerForCompound.sol";
-import "@contracts/compound/MatchingEngineForCompound.sol";
-import "@contracts/compound/RewardsManagerForCompound.sol";
+import "@contracts/compound/PositionsManager.sol";
+import "@contracts/compound/MarketsManager.sol";
+import "@contracts/compound/MatchingEngine.sol";
+import "@contracts/compound/RewardsManager.sol";
 import "@contracts/compound/InterestRatesV1.sol";
-import "@contracts/compound/LogicForCompound.sol";
+import "@contracts/compound/Logic.sol";
 import "@contracts/compound/libraries/FixedPointMathLib.sol";
 
 import "../../common/helpers/MorphoToken.sol";
@@ -44,15 +44,15 @@ contract TestSetup is Config, Utils, stdCheats {
     ProxyAdmin public proxyAdmin;
     TransparentUpgradeableProxy public positionsManagerProxy;
     TransparentUpgradeableProxy public marketsManagerProxy;
-    MatchingEngineForCompound internal matchingEngine;
-    PositionsManagerForCompound internal positionsManagerImplV1;
-    PositionsManagerForCompound internal positionsManager;
-    PositionsManagerForCompound internal fakePositionsManagerImpl;
-    MarketsManagerForCompound internal marketsManager;
-    MarketsManagerForCompound internal marketsManagerImplV1;
-    IRewardsManagerForCompound internal rewardsManager;
+    MatchingEngine internal matchingEngine;
+    PositionsManager internal positionsManagerImplV1;
+    PositionsManager internal positionsManager;
+    PositionsManager internal fakePositionsManagerImpl;
+    MarketsManager internal marketsManager;
+    MarketsManager internal marketsManagerImplV1;
+    IRewardsManager internal rewardsManager;
     IInterestRates internal interestRates;
-    ILogicForCompound internal logic;
+    ILogic internal logic;
 
     IncentivesVault public incentivesVault;
     DumbOracle internal dumbOracle;
@@ -79,18 +79,22 @@ contract TestSetup is Config, Utils, stdCheats {
     }
 
     function initContracts() internal {
-        PositionsManagerForCompound.MaxGas memory maxGas = PositionsManagerForCompoundStorage
-        .MaxGas({supply: 3e6, borrow: 3e6, withdraw: 3e6, repay: 3e6});
+        PositionsManager.MaxGas memory maxGas = PositionsManagerStorage.MaxGas({
+            supply: 3e6,
+            borrow: 3e6,
+            withdraw: 3e6,
+            repay: 3e6
+        });
 
         comptroller = IComptroller(comptrollerAddress);
-        matchingEngine = new MatchingEngineForCompound();
+        matchingEngine = new MatchingEngine();
         interestRates = new InterestRatesV1();
-        logic = new LogicForCompound();
+        logic = new Logic();
 
         /// Deploy proxies ///
 
         proxyAdmin = new ProxyAdmin();
-        marketsManagerImplV1 = new MarketsManagerForCompound();
+        marketsManagerImplV1 = new MarketsManager();
         marketsManagerProxy = new TransparentUpgradeableProxy(
             address(marketsManagerImplV1),
             address(this),
@@ -98,9 +102,9 @@ contract TestSetup is Config, Utils, stdCheats {
         );
 
         marketsManagerProxy.changeAdmin(address(proxyAdmin));
-        marketsManager = MarketsManagerForCompound(address(marketsManagerProxy));
+        marketsManager = MarketsManager(address(marketsManagerProxy));
         marketsManager.initialize(comptroller, interestRates);
-        positionsManagerImplV1 = new PositionsManagerForCompound();
+        positionsManagerImplV1 = new PositionsManager();
         positionsManagerProxy = new TransparentUpgradeableProxy(
             address(positionsManagerImplV1),
             address(this),
@@ -108,7 +112,7 @@ contract TestSetup is Config, Utils, stdCheats {
         );
 
         positionsManagerProxy.changeAdmin(address(proxyAdmin));
-        positionsManager = PositionsManagerForCompound(payable(address(positionsManagerProxy)));
+        positionsManager = PositionsManager(payable(address(positionsManagerProxy)));
         positionsManager.initialize(
             marketsManager,
             matchingEngine,
@@ -121,7 +125,7 @@ contract TestSetup is Config, Utils, stdCheats {
         );
 
         treasuryVault = new User(positionsManager);
-        fakePositionsManagerImpl = new PositionsManagerForCompound();
+        fakePositionsManagerImpl = new PositionsManager();
         oracle = ICompoundOracle(comptroller.oracle());
         marketsManager.setPositionsManager(address(positionsManager));
         positionsManager.setTreasuryVault(address(treasuryVault));
@@ -148,7 +152,7 @@ contract TestSetup is Config, Utils, stdCheats {
         );
         morphoToken.transfer(address(incentivesVault), 1_000_000 ether);
 
-        rewardsManager = new RewardsManagerForCompound(address(positionsManager));
+        rewardsManager = new RewardsManager(address(positionsManager));
 
         positionsManager.setRewardsManager(address(rewardsManager));
         positionsManager.setIncentivesVault(address(incentivesVault));
@@ -247,9 +251,7 @@ contract TestSetup is Config, Utils, stdCheats {
         uint64 _withdraw,
         uint64 _repay
     ) public {
-
-            PositionsManagerForCompoundStorage.MaxGas memory newMaxGas
-         = PositionsManagerForCompoundStorage.MaxGas({
+        PositionsManagerStorage.MaxGas memory newMaxGas = PositionsManagerStorage.MaxGas({
             supply: _supply,
             borrow: _borrow,
             withdraw: _withdraw,

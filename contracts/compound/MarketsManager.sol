@@ -2,8 +2,8 @@
 pragma solidity 0.8.13;
 
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import "./interfaces/IPositionsManagerForCompound.sol";
-import "./interfaces/IMarketsManagerForCompound.sol";
+import "./interfaces/IPositionsManager.sol";
+import "./interfaces/IMarketsManager.sol";
 import "./interfaces/compound/ICompound.sol";
 import "./interfaces/IInterestRates.sol";
 
@@ -12,9 +12,9 @@ import "./libraries/Types.sol";
 
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
-/// @title MarketsManagerForCompound.
-/// @notice Smart contract managing the markets used by a MorphoPositionsManagerForCompound contract, an other contract interacting with Compound or a fork of Compound.
-contract MarketsManagerForCompound is IMarketsManagerForCompound, OwnableUpgradeable {
+/// @title MarketsManager.
+/// @notice Smart contract managing the markets used by a MorphoPositionsManager contract, an other contract interacting with Compound or a fork of Compound.
+contract MarketsManager is IMarketsManager, OwnableUpgradeable {
     using CompoundMath for uint256;
 
     /// STRUCTS ///
@@ -37,7 +37,7 @@ contract MarketsManagerForCompound is IMarketsManagerForCompound, OwnableUpgrade
     mapping(address => LastPoolIndexes) public lastPoolIndexes; // Last pool index stored.
     mapping(address => bool) public override noP2P; // Whether to put users on pool or not for the given market.
 
-    IPositionsManagerForCompound public positionsManager;
+    IPositionsManager public positionsManager;
     IInterestRates public interestRates;
     IComptroller public comptroller;
 
@@ -122,7 +122,7 @@ contract MarketsManagerForCompound is IMarketsManagerForCompound, OwnableUpgrade
 
     /// UPGRADE ///
 
-    /// @notice Initializes the MarketsManagerForCompound contract.
+    /// @notice Initializes the MarketsManager contract.
     /// @param _comptroller The comptroller.
     /// @param _interestRates The `interestRates`.
     function initialize(IComptroller _comptroller, IInterestRates _interestRates)
@@ -141,7 +141,7 @@ contract MarketsManagerForCompound is IMarketsManagerForCompound, OwnableUpgrade
     /// @param _positionsManager The address of the `positionsManager`.
     function setPositionsManager(address _positionsManager) external onlyOwner {
         if (address(positionsManager) != address(0)) revert PositionsManagerAlreadySet();
-        positionsManager = IPositionsManagerForCompound(_positionsManager);
+        positionsManager = IPositionsManager(_positionsManager);
         emit PositionsManagerSet(_positionsManager);
     }
 
