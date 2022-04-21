@@ -78,6 +78,7 @@ contract Logic is ILogic, PositionsManagerStorage {
         uint256 _amount,
         uint256 _maxGasToConsume
     ) external {
+        _enterMarketIfNeeded(_poolTokenAddress, msg.sender);
         ERC20 underlyingToken = _getUnderlying(_poolTokenAddress);
         underlyingToken.safeTransferFrom(msg.sender, address(this), _amount);
 
@@ -163,6 +164,7 @@ contract Logic is ILogic, PositionsManagerStorage {
         uint256 _amount,
         uint256 _maxGasToConsume
     ) external {
+        _enterMarketIfNeeded(_poolTokenAddress, msg.sender);
         ERC20 underlyingToken = _getUnderlying(_poolTokenAddress);
         uint256 balanceBefore = underlyingToken.balanceOf(address(this));
         uint256 remainingToBorrow = _amount;
@@ -279,6 +281,7 @@ contract Logic is ILogic, PositionsManagerStorage {
             if (vars.remainingToWithdraw == 0) {
                 if (vars.toWithdraw > 0) _withdrawFromPool(_poolTokenAddress, vars.toWithdraw); // Reverts on error.
                 underlyingToken.safeTransfer(_receiver, _amount);
+                _leaveMarketIfNeeded(_poolTokenAddress, _supplier);
                 return;
             }
         }
@@ -361,6 +364,7 @@ contract Logic is ILogic, PositionsManagerStorage {
         }
 
         underlyingToken.safeTransfer(_receiver, _amount);
+        _leaveMarketIfNeeded(_poolTokenAddress, _supplier);
     }
 
     /// @dev Implements repay logic.
@@ -407,6 +411,7 @@ contract Logic is ILogic, PositionsManagerStorage {
 
                 if (vars.toRepay > 0) {
                     _repayToPool(_poolTokenAddress, underlyingToken, vars.toRepay); // Reverts on error.
+                    _leaveMarketIfNeeded(_poolTokenAddress, _user);
                     return;
                 }
             }
@@ -501,6 +506,7 @@ contract Logic is ILogic, PositionsManagerStorage {
 
             _supplyToPool(_poolTokenAddress, underlyingToken, vars.remainingToRepay); // Reverts on error.
         }
+        _leaveMarketIfNeeded(_poolTokenAddress, _user);
     }
 
     /// @dev Supplies underlying tokens to Compound.
@@ -573,5 +579,40 @@ contract Logic is ILogic, PositionsManagerStorage {
                 return (_amount > 2 * 10**(tokenDecimals - CTOKEN_DECIMALS));
             }
         } else return true;
+    }
+
+    /// @dev Enters the user into the market if not already there.
+    /// @param _user The address of the user to update.
+    /// @param _poolTokenAddress The address of the market to check.
+    function _enterMarketIfNeeded(address _poolTokenAddress, address _user) internal {
+        if (!userMembership[_poolTokenAddress][_user]) {
+            userMembership[_poolTokenAddress][_user] = true;
+            enteredMarkets[_user].push(_poolTokenAddress);
+        }
+    }
+
+    /// @dev Removes the user from the market if he has no funds or borrow on it.
+    /// @param _user The address of the user to update.
+    /// @param _poolTokenAddress The address of the market to check.
+    function _leaveMarketIfNeeded(address _poolTokenAddress, address _user) internal {
+        if (
+            supplyBalanceInOf[_poolTokenAddress][_user].inP2P == 0 &&
+            supplyBalanceInOf[_poolTokenAddress][_user].onPool == 0 &&
+            borrowBalanceInOf[_poolTokenAddress][_user].inP2P == 0 &&
+            borrowBalanceInOf[_poolTokenAddress][_user].onPool == 0
+        ) {
+            uint256 index;
+            while (enteredMarkets[_user][index] != _poolTokenAddress) {
+                unchecked {
+                    ++index;
+                }
+            }
+            userMembership[_poolTokenAddress][_user] = false;
+
+            uint256 length = enteredMarkets[_user].length;
+            if (index != length - 1)
+                enteredMarkets[_user][index] = enteredMarkets[_user][length - 1];
+            enteredMarkets[_user].pop();
+        }
     }
 }
