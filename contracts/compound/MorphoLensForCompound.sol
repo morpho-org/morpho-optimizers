@@ -8,21 +8,12 @@ import {LibStorage, MarketsStorage, PositionsStorage} from "./libraries/LibStora
 import "./libraries/LibPositionsManagerGetters.sol";
 import "../common/libraries/DoubleLinkedList.sol";
 import "./libraries/CompoundMath.sol";
+import "./libraries/LibStorage.sol";
 import "./libraries/Types.sol";
 
-contract MorphoLensForCompound {
+contract MorphoLensForCompound is WithStorageAndModifiers {
     using DoubleLinkedList for DoubleLinkedList.List;
     using CompoundMath for uint256;
-
-    /// STORAGE GETTERS ///
-
-    function ms() internal pure returns (MarketsStorage storage) {
-        return LibStorage.marketsStorage();
-    }
-
-    function ps() internal pure returns (PositionsStorage storage) {
-        return LibStorage.positionsStorage();
-    }
 
     /// GETTERS ///
 
