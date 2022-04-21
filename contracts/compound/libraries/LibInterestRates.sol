@@ -44,7 +44,7 @@ library LibInterestRates {
     /// @return newSupplyP2PExchangeRate The updated supplyP2PExchangeRate.
     /// @return newBorrowP2PExchangeRate The updated borrowP2PExchangeRate.
     function computeP2PExchangeRates(Types.Params memory _params)
-        internal
+        public
         pure
         returns (uint256 newSupplyP2PExchangeRate, uint256 newBorrowP2PExchangeRate)
     {
@@ -92,7 +92,7 @@ library LibInterestRates {
     ///             delta The deltas and P2P amounts.
     /// @return The updated supplyP2PExchangeRate.
     function computeSupplyP2PExchangeRate(Types.Params memory _params)
-        internal
+        public
         pure
         returns (uint256)
     {
@@ -128,7 +128,7 @@ library LibInterestRates {
     ///             delta The deltas and P2P amounts.
     /// @return The updated borrowP2PExchangeRate
     function computeBorrowP2PExchangeRate(Types.Params memory _params)
-        internal
+        public
         pure
         returns (uint256)
     {
@@ -167,7 +167,7 @@ library LibInterestRates {
         uint256 _lastPoolBorrowExchangeRate,
         uint256 _reserveFactor
     )
-        internal
+        public
         pure
         returns (
             GrowthFactors memory supplyGrowthFactors_,
@@ -202,7 +202,7 @@ library LibInterestRates {
     }
 
     function computeNewP2PRate(RateParams memory _params, GrowthFactors memory _growthFactors)
-        internal
+        public
         pure
         returns (uint256 newP2PExchangeRate)
     {

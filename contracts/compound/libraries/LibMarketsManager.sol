@@ -50,7 +50,7 @@ library LibMarketsManager {
 
     /// @dev Creates a new market to borrow/supply in.
     /// @param _poolTokenAddress The pool token address of the given market.
-    function createMarket(address _poolTokenAddress) internal {
+    function createMarket(address _poolTokenAddress) public {
         MarketsStorage storage m = ms();
         address[] memory marketToEnter = new address[](1);
         marketToEnter[0] = _poolTokenAddress;
@@ -87,7 +87,7 @@ library LibMarketsManager {
     /// @return newSupplyP2PExchangeRate The supply P2P exchange rate after udpate.
     /// @return newBorrowP2PExchangeRate The supply P2P exchange rate after udpate.
     function getUpdatedP2PExchangeRates(address _poolTokenAddress)
-        internal
+        public
         view
         returns (uint256 newSupplyP2PExchangeRate, uint256 newBorrowP2PExchangeRate)
     {
@@ -119,7 +119,7 @@ library LibMarketsManager {
     /// @param _poolTokenAddress The address of the market to update.
     /// @return newSupplyP2PExchangeRate The supply P2P exchange rate after udpate.
     function getUpdatedSupplyP2PExchangeRate(address _poolTokenAddress)
-        internal
+        public
         view
         returns (uint256 newSupplyP2PExchangeRate)
     {
@@ -149,7 +149,7 @@ library LibMarketsManager {
     /// @param _poolTokenAddress The address of the market to update.
     /// @return newBorrowP2PExchangeRate The borrow P2P exchange rate after udpate.
     function getUpdatedBorrowP2PExchangeRate(address _poolTokenAddress)
-        internal
+        public
         view
         returns (uint256 newBorrowP2PExchangeRate)
     {
@@ -177,7 +177,7 @@ library LibMarketsManager {
 
     /// @dev Updates the P2P exchange rates, taking into account the Second Percentage Yield values.
     /// @param _poolTokenAddress The address of the market to update.
-    function updateP2PExchangeRates(address _poolTokenAddress) internal {
+    function updateP2PExchangeRates(address _poolTokenAddress) public {
         MarketsStorage storage m = ms();
         if (block.timestamp > m.lastUpdateBlockNumber[_poolTokenAddress]) {
             ICToken poolToken = ICToken(_poolTokenAddress);

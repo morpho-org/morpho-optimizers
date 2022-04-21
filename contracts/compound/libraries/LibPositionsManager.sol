@@ -138,7 +138,7 @@ library LibPositionsManager {
         address _poolTokenAddress,
         uint256 _amount,
         uint256 _maxGasToConsume
-    ) internal isMarketCreatedAndNotPaused(_poolTokenAddress) {
+    ) public isMarketCreatedAndNotPaused(_poolTokenAddress) {
         _enterMarketIfNeeded(_poolTokenAddress, msg.sender);
         MarketsStorage storage m = ms();
         PositionsStorage storage p = ps();
@@ -227,7 +227,7 @@ library LibPositionsManager {
         address _poolTokenAddress,
         uint256 _amount,
         uint256 _maxGasToConsume
-    ) internal isMarketCreatedAndNotPaused(_poolTokenAddress) {
+    ) public isMarketCreatedAndNotPaused(_poolTokenAddress) {
         _enterMarketIfNeeded(_poolTokenAddress, msg.sender);
         checkUserLiquidity(msg.sender, _poolTokenAddress, 0, _amount);
         PositionsStorage storage p = ps();
@@ -318,7 +318,7 @@ library LibPositionsManager {
         address _supplier,
         address _receiver,
         uint256 _maxGasToConsume
-    ) internal isMarketCreatedAndNotPaused(_poolTokenAddress) {
+    ) public isMarketCreatedAndNotPaused(_poolTokenAddress) {
         ERC20 underlyingToken = LibPositionsManagerGetters.getUnderlying(_poolTokenAddress);
         PositionsStorage storage p = ps();
         MarketsStorage storage m = ms();
@@ -445,7 +445,7 @@ library LibPositionsManager {
         address _user,
         uint256 _amount,
         uint256 _maxGasToConsume
-    ) internal isMarketCreatedAndNotPaused(_poolTokenAddress) {
+    ) public isMarketCreatedAndNotPaused(_poolTokenAddress) {
         ICToken poolToken = ICToken(_poolTokenAddress);
         ERC20 underlyingToken = LibPositionsManagerGetters.getUnderlying(_poolTokenAddress);
         underlyingToken.safeTransferFrom(msg.sender, address(this), _amount);
@@ -589,7 +589,7 @@ library LibPositionsManager {
         address _poolTokenAddress,
         uint256 _withdrawnAmount,
         uint256 _borrowedAmount
-    ) internal {
+    ) public {
         (uint256 debtValue, uint256 maxDebtValue) = LibPositionsManagerGetters
         .getUserHypotheticalBalanceStates(
             _user,
@@ -603,7 +603,7 @@ library LibPositionsManager {
     /// @dev Enters the user into the market if not already there.
     /// @param _user The address of the user to update.
     /// @param _poolTokenAddress The address of the market to check.
-    function _enterMarketIfNeeded(address _poolTokenAddress, address _user) internal {
+    function _enterMarketIfNeeded(address _poolTokenAddress, address _user) public {
         PositionsStorage storage p = ps();
         if (!p.userMembership[_poolTokenAddress][_user]) {
             p.userMembership[_poolTokenAddress][_user] = true;
@@ -614,7 +614,7 @@ library LibPositionsManager {
     /// @dev Removes the user from the market if he has no funds or borrow on it.
     /// @param _user The address of the user to update.
     /// @param _poolTokenAddress The address of the market to check.
-    function _leaveMarkerIfNeeded(address _poolTokenAddress, address _user) internal {
+    function _leaveMarkerIfNeeded(address _poolTokenAddress, address _user) public {
         PositionsStorage storage p = ps();
         if (
             p.supplyBalanceInOf[_poolTokenAddress][_user].inP2P == 0 &&
@@ -645,7 +645,7 @@ library LibPositionsManager {
         address _poolTokenAddress,
         ERC20 _underlyingToken,
         uint256 _amount
-    ) internal {
+    ) public {
         PositionsStorage storage p = ps();
         if (_poolTokenAddress == p.cEth) {
             IWETH(p.wEth).withdraw(_amount); // Turn wETH into ETH.
@@ -659,7 +659,7 @@ library LibPositionsManager {
     /// @dev Withdraws underlying tokens from Compound.
     /// @param _poolTokenAddress The address of the pool token.
     /// @param _amount The amount of token (in underlying).
-    function _withdrawFromPool(address _poolTokenAddress, uint256 _amount) internal {
+    function _withdrawFromPool(address _poolTokenAddress, uint256 _amount) public {
         if (ICToken(_poolTokenAddress).redeemUnderlying(_amount) != 0)
             revert RedeemOnCompoundFailed();
         PositionsStorage storage p = ps();
@@ -669,7 +669,7 @@ library LibPositionsManager {
     /// @dev Borrows underlying tokens from Compound.
     /// @param _poolTokenAddress The address of the pool token.
     /// @param _amount The amount of token (in underlying).
-    function _borrowFromPool(address _poolTokenAddress, uint256 _amount) internal {
+    function _borrowFromPool(address _poolTokenAddress, uint256 _amount) public {
         if ((ICToken(_poolTokenAddress).borrow(_amount) != 0)) revert BorrowOnCompoundFailed();
         PositionsStorage storage p = ps();
         if (_poolTokenAddress == p.cEth) IWETH(p.wEth).deposit{value: _amount}(); // Turn the ETH recceived in wETH.
@@ -683,7 +683,7 @@ library LibPositionsManager {
         address _poolTokenAddress,
         ERC20 _underlyingToken,
         uint256 _amount
-    ) internal {
+    ) public {
         PositionsStorage storage p = ps();
         if (_poolTokenAddress == p.cEth) {
             IWETH(p.wEth).withdraw(_amount); // Turn wETH into ETH.
@@ -700,7 +700,7 @@ library LibPositionsManager {
     /// @param _poolTokenAddress poolToken address of the considered market.
     /// @return Whether to continue or not.
     function _isAboveCompoundThreshold(address _poolTokenAddress, uint256 _amount)
-        internal
+        public
         view
         returns (bool)
     {

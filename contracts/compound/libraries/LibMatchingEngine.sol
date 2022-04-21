@@ -77,7 +77,7 @@ library LibMatchingEngine {
         ICToken _poolToken,
         uint256 _amount,
         uint256 _maxGasToConsume
-    ) internal returns (uint256 matched) {
+    ) public returns (uint256 matched) {
         PositionsStorage storage p = ps();
         MatchVars memory vars;
         address poolTokenAddress = address(_poolToken);
@@ -128,7 +128,7 @@ library LibMatchingEngine {
         address _poolTokenAddress,
         uint256 _amount,
         uint256 _maxGasToConsume
-    ) internal returns (uint256) {
+    ) public returns (uint256) {
         PositionsStorage storage p = ps();
         UnmatchVars memory vars;
         address user = p.suppliersInP2P[_poolTokenAddress].getHead();
@@ -185,7 +185,7 @@ library LibMatchingEngine {
         ICToken _poolToken,
         uint256 _amount,
         uint256 _maxGasToConsume
-    ) internal returns (uint256 matched) {
+    ) public returns (uint256 matched) {
         PositionsStorage storage p = ps();
         MatchVars memory vars;
         address poolTokenAddress = address(_poolToken);
@@ -238,7 +238,7 @@ library LibMatchingEngine {
         address _poolTokenAddress,
         uint256 _amount,
         uint256 _maxGasToConsume
-    ) internal returns (uint256) {
+    ) public returns (uint256) {
         PositionsStorage storage p = ps();
         UnmatchVars memory vars;
         address user = p.borrowersInP2P[_poolTokenAddress].getHead();
@@ -289,7 +289,7 @@ library LibMatchingEngine {
     /// @dev Updates borrowers matching engine with the new balances of a given user.
     /// @param _poolTokenAddress The address of the market on which to update the borrowers data structure.
     /// @param _user The address of the user.
-    function updateBorrowers(address _poolTokenAddress, address _user) internal {
+    function updateBorrowers(address _poolTokenAddress, address _user) public {
         PositionsStorage storage p = ps();
         uint256 onPool = p.borrowBalanceInOf[_poolTokenAddress][_user].onPool;
         uint256 inP2P = p.borrowBalanceInOf[_poolTokenAddress][_user].inP2P;
@@ -319,7 +319,7 @@ library LibMatchingEngine {
     /// @dev Updates suppliers matching engine with the new balances of a given user.
     /// @param _poolTokenAddress The address of the market on which to update the suppliers data structure.
     /// @param _user The address of the user.
-    function updateSuppliers(address _poolTokenAddress, address _user) internal {
+    function updateSuppliers(address _poolTokenAddress, address _user) public {
         PositionsStorage storage p = ps();
         uint256 onPool = p.supplyBalanceInOf[_poolTokenAddress][_user].onPool;
         uint256 inP2P = p.supplyBalanceInOf[_poolTokenAddress][_user].inP2P;

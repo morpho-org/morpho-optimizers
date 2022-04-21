@@ -34,7 +34,7 @@ library LibPositionsManagerGetters {
     /// @return debtValue The current debt value of the user.
     /// @return maxDebtValue The maximum possible debt value of the user.
     function getUserBalanceStates(address _user)
-        internal
+        public
         view
         returns (
             uint256 collateralValue,
@@ -100,7 +100,7 @@ library LibPositionsManagerGetters {
         address _poolTokenAddress,
         uint256 _withdrawnAmount,
         uint256 _borrowedAmount
-    ) internal returns (uint256 debtValue, uint256 maxDebtValue) {
+    ) public returns (uint256 debtValue, uint256 maxDebtValue) {
         PositionsStorage storage p = ps();
         ICompoundOracle oracle = ICompoundOracle(p.comptroller.oracle());
         uint256 numberOfEnteredMarkets = p.enteredMarkets[_user].length;
@@ -142,7 +142,7 @@ library LibPositionsManagerGetters {
     /// @param _poolTokenAddress The market where to get the supply amount.
     /// @return The supply balance of the user (in underlying).
     function getUserSupplyBalanceInOf(address _poolTokenAddress, address _user)
-        internal
+        public
         view
         returns (uint256)
     {
@@ -161,7 +161,7 @@ library LibPositionsManagerGetters {
     /// @param _poolTokenAddress The market where to get the borrow amount.
     /// @return The borrow balance of the user (in underlying).
     function getUserBorrowBalanceInOf(address _poolTokenAddress, address _user)
-        internal
+        public
         view
         returns (uint256)
     {
@@ -178,7 +178,7 @@ library LibPositionsManagerGetters {
     /// @dev Returns the underlying ERC20 token related to the pool token.
     /// @param _poolTokenAddress The address of the pool token.
     /// @return The underlying ERC20 token.
-    function getUnderlying(address _poolTokenAddress) internal view returns (ERC20) {
+    function getUnderlying(address _poolTokenAddress) public view returns (ERC20) {
         PositionsStorage storage p = ps();
         if (_poolTokenAddress == p.cEth)
             // cETH has no underlying() function.
