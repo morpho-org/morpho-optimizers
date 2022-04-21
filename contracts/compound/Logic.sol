@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import "./libraries/MatchingEngineFns.sol";
-import "./interfaces/ILogicForCompound.sol";
-import "./positions-manager-parts/PositionsManagerForCompoundGettersSetters.sol";
+import "./libraries/MatchingEngineDCs.sol";
+import "./interfaces/ILogic.sol";
+import "./positions-manager-parts/PositionsManagerGettersSetters.sol";
 
-/// @title PositionsManagerForCompoundLogic.
+/// @title PositionsManagerLogic.
 /// @notice Main Logic of Morpho Protocol, implementation of the 5 main functionalities: supply, borrow, withdraw, repay, liquidate.
-contract LogicForCompound is ILogicForCompound, PositionsManagerForCompoundStorage {
-    using MatchingEngineFns for IMatchingEngineForCompound;
+contract Logic is ILogic, PositionsManagerStorage {
+    using MatchingEngineDCs for IMatchingEngine;
     using DoubleLinkedList for DoubleLinkedList.List;
     using SafeTransferLib for ERC20;
     using CompoundMath for uint256;
