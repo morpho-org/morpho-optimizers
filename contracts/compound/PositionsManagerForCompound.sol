@@ -149,7 +149,7 @@ contract PositionsManagerForCompound is
         emit Withdrawn(
             msg.sender,
             _poolTokenAddress,
-            _amount,
+            toWithdraw,
             p.supplyBalanceInOf[_poolTokenAddress][msg.sender].onPool,
             p.supplyBalanceInOf[_poolTokenAddress][msg.sender].inP2P
         );
@@ -173,7 +173,7 @@ contract PositionsManagerForCompound is
         emit Repaid(
             msg.sender,
             _poolTokenAddress,
-            _amount,
+            toRepay,
             p.borrowBalanceInOf[_poolTokenAddress][msg.sender].onPool,
             p.borrowBalanceInOf[_poolTokenAddress][msg.sender].inP2P
         );
@@ -215,7 +215,7 @@ contract PositionsManagerForCompound is
         ICompoundOracle compoundOracle = ICompoundOracle(p.comptroller.oracle());
         vars.collateralPrice = compoundOracle.getUnderlyingPrice(_poolTokenCollateralAddress);
         vars.borrowedPrice = compoundOracle.getUnderlyingPrice(_poolTokenBorrowedAddress);
-        if (vars.collateralPrice == 0 || vars.collateralPrice == 0) revert CompoundOracleFailed();
+        if (vars.collateralPrice == 0 || vars.borrowedPrice == 0) revert CompoundOracleFailed();
 
         // Get the exchange rate and calculate the number of collateral tokens to seize:
         // seizeAmount = actualRepayAmount * liquidationIncentive * priceBorrowed / priceCollateral
