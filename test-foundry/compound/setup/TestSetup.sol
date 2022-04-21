@@ -16,6 +16,7 @@ import "@contracts/compound/MarketsManagerForCompound.sol";
 import "@contracts/compound/MatchingEngineForCompound.sol";
 import "@contracts/compound/RewardsManagerForCompound.sol";
 import "@contracts/compound/InterestRatesV1.sol";
+import "@contracts/compound/LogicForCompound.sol";
 import "@contracts/compound/libraries/FixedPointMathLib.sol";
 
 import "../../common/helpers/MorphoToken.sol";
@@ -51,6 +52,7 @@ contract TestSetup is Config, Utils, stdCheats {
     MarketsManagerForCompound internal marketsManagerImplV1;
     IRewardsManagerForCompound internal rewardsManager;
     IInterestRates internal interestRates;
+    ILogicForCompound internal logic;
 
     IncentivesVault public incentivesVault;
     DumbOracle internal dumbOracle;
@@ -83,6 +85,7 @@ contract TestSetup is Config, Utils, stdCheats {
         comptroller = IComptroller(comptrollerAddress);
         matchingEngine = new MatchingEngineForCompound();
         interestRates = new InterestRatesV1();
+        logic = new LogicForCompound();
 
         /// Deploy proxies ///
 
@@ -109,6 +112,7 @@ contract TestSetup is Config, Utils, stdCheats {
         positionsManager.initialize(
             marketsManager,
             matchingEngine,
+            logic,
             comptroller,
             maxGas,
             20,
