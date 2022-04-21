@@ -2,13 +2,11 @@
 pragma solidity 0.8.13;
 
 import "@openzeppelin/contracts/utils/math/Math.sol";
-import "./PositionsManagerForCompoundEventsErrors.sol";
+import "./PositionsManagerEventsErrors.sol";
 
-/// @title PositionsManagerForCompoundGettersSetters.
-/// @notice Getters and setters for PositionsManagerForCompound, including externals, internals, user-accessible and admin-only functions.
-abstract contract PositionsManagerForCompoundGettersSetters is
-    PositionsManagerForCompoundEventsErrors
-{
+/// @title PositionsManagerGettersSetters.
+/// @notice Getters and setters for PositionsManager, including externals, internals, user-accessible and admin-only functions.
+abstract contract PositionsManagerGettersSetters is PositionsManagerEventsErrors {
     using DoubleLinkedList for DoubleLinkedList.List;
     using CompoundMath for uint256;
 
@@ -61,7 +59,7 @@ abstract contract PositionsManagerForCompoundGettersSetters is
     /// @notice Sets the `rewardsManager`.
     /// @param _rewardsManagerAddress The address of the `rewardsManager`.
     function setRewardsManager(address _rewardsManagerAddress) external onlyOwner {
-        rewardsManager = IRewardsManagerForCompound(_rewardsManagerAddress);
+        rewardsManager = IRewardsManager(_rewardsManagerAddress);
         emit RewardsManagerSet(_rewardsManagerAddress);
     }
 

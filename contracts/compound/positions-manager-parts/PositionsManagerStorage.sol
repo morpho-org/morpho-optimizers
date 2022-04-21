@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import "../interfaces/IMarketsManagerForCompound.sol";
-import "../interfaces/IMatchingEngineForCompound.sol";
-import "../interfaces/IRewardsManagerForCompound.sol";
-import "../interfaces/ILogicForCompound.sol";
+import "../interfaces/IMarketsManager.sol";
+import "../interfaces/IMatchingEngine.sol";
+import "../interfaces/IRewardsManager.sol";
+import "../interfaces/ILogic.sol";
 import "../interfaces/compound/ICompound.sol";
 import "../interfaces/IIncentivesVault.sol";
 import "../interfaces/IWETH.sol";
@@ -17,10 +17,7 @@ import "../libraries/Types.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
-abstract contract PositionsManagerForCompoundStorage is
-    OwnableUpgradeable,
-    ReentrancyGuardUpgradeable
-{
+abstract contract PositionsManagerStorage is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     /// ENUMS ///
 
     enum PositionType {
@@ -95,10 +92,10 @@ abstract contract PositionsManagerForCompoundStorage is
     mapping(address => bool) public paused; // Whether a market is paused or not.
 
     IComptroller public comptroller;
-    IMarketsManagerForCompound public marketsManager;
-    IMatchingEngineForCompound public matchingEngine;
-    IRewardsManagerForCompound public rewardsManager;
-    ILogicForCompound public logic;
+    IMarketsManager public marketsManager;
+    IMatchingEngine public matchingEngine;
+    IRewardsManager public rewardsManager;
+    ILogic public logic;
     IIncentivesVault public incentivesVault;
     address public treasuryVault;
     address public cEth;

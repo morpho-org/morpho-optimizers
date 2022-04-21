@@ -6,14 +6,11 @@ import "./libraries/FixedPointMathLib.sol";
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 
-import "./positions-manager-parts/PositionsManagerForCompoundStorage.sol";
+import "./positions-manager-parts/PositionsManagerStorage.sol";
 
 /// @title MatchingEngineManager.
 /// @notice Smart contract managing the matching engine.
-contract MatchingEngineForCompound is
-    IMatchingEngineForCompound,
-    PositionsManagerForCompoundStorage
-{
+contract MatchingEngine is IMatchingEngine, PositionsManagerStorage {
     using DoubleLinkedList for DoubleLinkedList.List;
     using FixedPointMathLib for uint256;
     using CompoundMath for uint256;
