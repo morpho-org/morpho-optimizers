@@ -59,7 +59,7 @@ contract PositionsManager is PositionsManagerGettersSetters {
     ) external nonReentrant isMarketCreatedAndNotPaused(_poolTokenAddress) {
         if (_amount == 0) revert AmountIsZero();
         marketsManager.updateP2PExchangeRates(_poolTokenAddress);
-        _enterMarketIfNeeded(_poolTokenAddress, msg.sender);
+
         logic._supplyDC(_poolTokenAddress, _amount, maxGas.supply);
 
         emit Supplied(
@@ -86,7 +86,7 @@ contract PositionsManager is PositionsManagerGettersSetters {
     ) external nonReentrant isMarketCreatedAndNotPaused(_poolTokenAddress) {
         if (_amount == 0) revert AmountIsZero();
         marketsManager.updateP2PExchangeRates(_poolTokenAddress);
-        _enterMarketIfNeeded(_poolTokenAddress, msg.sender);
+
         logic._supplyDC(_poolTokenAddress, _amount, _maxGasToConsume);
 
         emit Supplied(
@@ -110,7 +110,6 @@ contract PositionsManager is PositionsManagerGettersSetters {
     ) external nonReentrant isMarketCreatedAndNotPaused(_poolTokenAddress) {
         if (_amount == 0) revert AmountIsZero();
         marketsManager.updateP2PExchangeRates(_poolTokenAddress);
-        _enterMarketIfNeeded(_poolTokenAddress, msg.sender);
 
         _checkUserLiquidity(msg.sender, _poolTokenAddress, 0, _amount);
         logic._borrowDC(_poolTokenAddress, _amount, maxGas.borrow);
@@ -138,7 +137,6 @@ contract PositionsManager is PositionsManagerGettersSetters {
     ) external nonReentrant isMarketCreatedAndNotPaused(_poolTokenAddress) {
         if (_amount == 0) revert AmountIsZero();
         marketsManager.updateP2PExchangeRates(_poolTokenAddress);
-        _enterMarketIfNeeded(_poolTokenAddress, msg.sender);
 
         _checkUserLiquidity(msg.sender, _poolTokenAddress, 0, _amount);
         logic._borrowDC(_poolTokenAddress, _amount, _maxGasToConsume);
@@ -172,8 +170,6 @@ contract PositionsManager is PositionsManagerGettersSetters {
         _checkUserLiquidity(msg.sender, _poolTokenAddress, toWithdraw, 0);
         logic._withdrawDC(_poolTokenAddress, toWithdraw, msg.sender, msg.sender, maxGas.withdraw);
 
-        _leaveMarketIfNeeded(_poolTokenAddress, msg.sender);
-
         emit Withdrawn(
             msg.sender,
             _poolTokenAddress,
@@ -201,8 +197,6 @@ contract PositionsManager is PositionsManagerGettersSetters {
         );
 
         logic._repayDC(_poolTokenAddress, msg.sender, toRepay, maxGas.repay);
-
-        _leaveMarketIfNeeded(_poolTokenAddress, msg.sender);
 
         emit Repaid(
             msg.sender,
@@ -248,7 +242,6 @@ contract PositionsManager is PositionsManagerGettersSetters {
             revert AmountAboveWhatAllowedToRepay(); // Same mechanism as Compound. Liquidator cannot repay more than part of the debt (cf close factor on Compound).
 
         logic._repayDC(_poolTokenBorrowedAddress, _borrower, _amount, 0);
-        _leaveMarketIfNeeded(_poolTokenBorrowedAddress, _borrower);
 
         // Calculate the amount of token to seize from collateral
         ICompoundOracle compoundOracle = ICompoundOracle(comptroller.oracle());
@@ -276,7 +269,6 @@ contract PositionsManager is PositionsManagerGettersSetters {
             msg.sender,
             0
         );
-        _leaveMarketIfNeeded(_poolTokenCollateralAddress, _borrower);
 
         emit Liquidated(
             msg.sender,
@@ -326,41 +318,6 @@ contract PositionsManager is PositionsManagerGettersSetters {
                 comp.safeTransfer(msg.sender, amountOfRewards);
                 emit RewardsClaimed(msg.sender, amountOfRewards);
             }
-        }
-    }
-
-    /// @dev Enters the user into the market if not already there.
-    /// @param _user The address of the user to update.
-    /// @param _poolTokenAddress The address of the market to check.
-    function _enterMarketIfNeeded(address _poolTokenAddress, address _user) internal {
-        if (!userMembership[_poolTokenAddress][_user]) {
-            userMembership[_poolTokenAddress][_user] = true;
-            enteredMarkets[_user].push(_poolTokenAddress);
-        }
-    }
-
-    /// @dev Removes the user from the market if he has no funds or borrow on it.
-    /// @param _user The address of the user to update.
-    /// @param _poolTokenAddress The address of the market to check.
-    function _leaveMarketIfNeeded(address _poolTokenAddress, address _user) internal {
-        if (
-            supplyBalanceInOf[_poolTokenAddress][_user].inP2P == 0 &&
-            supplyBalanceInOf[_poolTokenAddress][_user].onPool == 0 &&
-            borrowBalanceInOf[_poolTokenAddress][_user].inP2P == 0 &&
-            borrowBalanceInOf[_poolTokenAddress][_user].onPool == 0
-        ) {
-            uint256 index;
-            while (enteredMarkets[_user][index] != _poolTokenAddress) {
-                unchecked {
-                    ++index;
-                }
-            }
-            userMembership[_poolTokenAddress][_user] = false;
-
-            uint256 length = enteredMarkets[_user].length;
-            if (index != length - 1)
-                enteredMarkets[_user][index] = enteredMarkets[_user][length - 1];
-            enteredMarkets[_user].pop();
         }
     }
 
