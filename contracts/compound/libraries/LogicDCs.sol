@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import "../interfaces/ILogicForCompound.sol";
+import "../interfaces/ILogic.sol";
 
 import "@openzeppelin/contracts/utils/Address.sol";
 
@@ -9,7 +9,7 @@ library LogicDCs {
     using Address for address;
 
     function _supplyDC(
-        ILogicForCompound _logic,
+        ILogic _logic,
         address _poolTokenAddress,
         uint256 _amount,
         uint256 _maxGasToConsume
@@ -25,7 +25,7 @@ library LogicDCs {
     }
 
     function _borrowDC(
-        ILogicForCompound _logic,
+        ILogic _logic,
         address _poolTokenAddress,
         uint256 _amount,
         uint256 _maxGasToConsume
@@ -41,7 +41,7 @@ library LogicDCs {
     }
 
     function _withdrawDC(
-        ILogicForCompound _logic,
+        ILogic _logic,
         address _poolTokenAddress,
         uint256 _amount,
         address _supplier,
@@ -61,7 +61,7 @@ library LogicDCs {
     }
 
     function _repayDC(
-        ILogicForCompound _logic,
+        ILogic _logic,
         address _poolTokenAddress,
         address _user,
         uint256 _amount,

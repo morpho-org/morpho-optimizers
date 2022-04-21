@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import "./PositionsManagerForCompoundStorage.sol";
+import "./PositionsManagerStorage.sol";
 
-/// @title PositionsManagerForCompoundEventsErrors.
-/// @notice Events and Errors for PositionsManagerForCompound.
-abstract contract PositionsManagerForCompoundEventsErrors is PositionsManagerForCompoundStorage {
+/// @title PositionsManagerEventsErrors.
+/// @notice Events and Errors for PositionsManager.
+abstract contract PositionsManagerEventsErrors is PositionsManagerStorage {
     /// EVENTS ///
 
     /// @notice Emitted when a supply happens.

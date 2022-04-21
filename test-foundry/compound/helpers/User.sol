@@ -1,22 +1,22 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import "@contracts/compound/interfaces/IRewardsManagerForCompound.sol";
+import "@contracts/compound/interfaces/IRewardsManager.sol";
 
-import "@contracts/compound/PositionsManagerForCompound.sol";
-import "@contracts/compound/MarketsManagerForCompound.sol";
+import "@contracts/compound/PositionsManager.sol";
+import "@contracts/compound/MarketsManager.sol";
 
 contract User {
     using SafeTransferLib for ERC20;
 
-    PositionsManagerForCompound internal positionsManager;
-    MarketsManagerForCompound internal marketsManager;
-    IRewardsManagerForCompound internal rewardsManager;
+    PositionsManager internal positionsManager;
+    MarketsManager internal marketsManager;
+    IRewardsManager internal rewardsManager;
     IComptroller internal comptroller;
 
-    constructor(PositionsManagerForCompound _positionsManager) {
+    constructor(PositionsManager _positionsManager) {
         positionsManager = _positionsManager;
-        marketsManager = MarketsManagerForCompound(address(_positionsManager.marketsManager()));
+        marketsManager = MarketsManager(address(_positionsManager.marketsManager()));
         rewardsManager = _positionsManager.rewardsManager();
         comptroller = positionsManager.comptroller();
     }
@@ -111,7 +111,7 @@ contract User {
         positionsManager.setNDS(_newNDS);
     }
 
-    function setMaxGas(PositionsManagerForCompound.MaxGas memory _maxGas) external {
+    function setMaxGas(PositionsManager.MaxGas memory _maxGas) external {
         positionsManager.setMaxGas(_maxGas);
     }
 

@@ -1,20 +1,20 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import "./positions-manager-parts/PositionsManagerForCompoundGettersSetters.sol";
+import "./positions-manager-parts/PositionsManagerGettersSetters.sol";
 import "./libraries/LogicDCs.sol";
 
-/// @title PositionsManagerForCompound.
+/// @title PositionsManager.
 /// @notice Smart contract interacting with Compound to enable P2P supply/borrow positions that can fallback on Compound's pool using pool tokens.
-contract PositionsManagerForCompound is PositionsManagerForCompoundGettersSetters {
-    using LogicDCs for ILogicForCompound;
+contract PositionsManager is PositionsManagerGettersSetters {
+    using LogicDCs for ILogic;
     using DoubleLinkedList for DoubleLinkedList.List;
     using SafeTransferLib for ERC20;
     using CompoundMath for uint256;
 
     /// UPGRADE ///
 
-    /// @notice Initializes the PositionsManagerForCompound contract.
+    /// @notice Initializes the PositionsManager contract.
     /// @param _marketsManager The `marketsManager`.
     /// @param _matchingEngine The `matchingEngine`.
     /// @param _comptroller The `comptroller`.
@@ -23,9 +23,9 @@ contract PositionsManagerForCompound is PositionsManagerForCompoundGettersSetter
     /// @param _cEth The cETH address.
     /// @param _weth The wETH address.
     function initialize(
-        IMarketsManagerForCompound _marketsManager,
-        IMatchingEngineForCompound _matchingEngine,
-        ILogicForCompound _logic,
+        IMarketsManager _marketsManager,
+        IMatchingEngine _matchingEngine,
+        ILogic _logic,
         IComptroller _comptroller,
         MaxGas memory _maxGas,
         uint8 _NDS,
