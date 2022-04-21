@@ -41,7 +41,7 @@ contract LogicForCompound is ILogicForCompound, PositionsManagerForCompoundGette
         address _poolTokenAddress,
         uint256 _amount,
         uint256 _maxGasToConsume
-    ) external isMarketCreatedAndNotPaused(_poolTokenAddress) {
+    ) external {
         _enterMarketIfNeeded(_poolTokenAddress, msg.sender);
 
         ERC20 underlyingToken = _getUnderlying(_poolTokenAddress);
@@ -128,7 +128,7 @@ contract LogicForCompound is ILogicForCompound, PositionsManagerForCompoundGette
         address _poolTokenAddress,
         uint256 _amount,
         uint256 _maxGasToConsume
-    ) external isMarketCreatedAndNotPaused(_poolTokenAddress) {
+    ) external {
         _enterMarketIfNeeded(_poolTokenAddress, msg.sender);
         checkUserLiquidity(msg.sender, _poolTokenAddress, 0, _amount);
 
@@ -220,7 +220,7 @@ contract LogicForCompound is ILogicForCompound, PositionsManagerForCompoundGette
         address _supplier,
         address _receiver,
         uint256 _maxGasToConsume
-    ) external isMarketCreatedAndNotPaused(_poolTokenAddress) {
+    ) external {
         ICToken poolToken = ICToken(_poolTokenAddress);
         ERC20 underlyingToken = _getUnderlying(_poolTokenAddress);
         WithdrawVars memory vars;
@@ -345,7 +345,7 @@ contract LogicForCompound is ILogicForCompound, PositionsManagerForCompoundGette
         address _user,
         uint256 _amount,
         uint256 _maxGasToConsume
-    ) external isMarketCreatedAndNotPaused(_poolTokenAddress) {
+    ) external {
         ICToken poolToken = ICToken(_poolTokenAddress);
         ERC20 underlyingToken = _getUnderlying(_poolTokenAddress);
         underlyingToken.safeTransferFrom(msg.sender, address(this), _amount);
