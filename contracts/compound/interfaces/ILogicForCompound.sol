@@ -28,11 +28,4 @@ interface ILogicForCompound {
         uint256 _amount,
         uint256 _maxGasToConsume
     ) external;
-
-    function checkUserLiquidity(
-        address _user,
-        address _poolTokenAddress,
-        uint256 _withdrawnAmount,
-        uint256 _borrowedAmount
-    ) external;
 }

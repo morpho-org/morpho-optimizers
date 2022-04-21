@@ -7,11 +7,47 @@ import "./positions-manager-parts/PositionsManagerForCompoundGettersSetters.sol"
 
 /// @title PositionsManagerForCompoundLogic.
 /// @notice Main Logic of Morpho Protocol, implementation of the 5 main functionalities: supply, borrow, withdraw, repay, liquidate.
-contract LogicForCompound is ILogicForCompound, PositionsManagerForCompoundGettersSetters {
+contract LogicForCompound is ILogicForCompound, PositionsManagerForCompoundStorage {
     using MatchingEngineFns for IMatchingEngineForCompound;
     using DoubleLinkedList for DoubleLinkedList.List;
     using SafeTransferLib for ERC20;
     using CompoundMath for uint256;
+
+    /// EVENTS ///
+
+    /// @notice Emitted when the borrow P2P delta is updated.
+    /// @param _poolTokenAddress The address of the market.
+    /// @param _borrowP2PDelta The borrow P2P delta after update.
+    event BorrowP2PDeltaUpdated(address indexed _poolTokenAddress, uint256 _borrowP2PDelta);
+
+    /// @notice Emitted when the supply P2P delta is updated.
+    /// @param _poolTokenAddress The address of the market.
+    /// @param _supplyP2PDelta The supply P2P delta after update.
+    event SupplyP2PDeltaUpdated(address indexed _poolTokenAddress, uint256 _supplyP2PDelta);
+
+    /// @notice Emitted when the supply and borrow P2P amounts are updated.
+    /// @param _poolTokenAddress The address of the market.
+    /// @param _supplyP2PAmount The supply P2P amount after update.
+    /// @param _borrowP2PAmount The borrow P2P amount after update.
+    event P2PAmountsUpdated(
+        address indexed _poolTokenAddress,
+        uint256 _supplyP2PAmount,
+        uint256 _borrowP2PAmount
+    );
+
+    /// ERRORS ///
+
+    /// @notice Thrown when the mint on Compound failed.
+    error MintOnCompoundFailed();
+
+    /// @notice Thrown when the borrow on Compound failed.
+    error BorrowOnCompoundFailed();
+
+    /// @notice Thrown when the redeem on Compound failed .
+    error RedeemOnCompoundFailed();
+
+    /// @notice Thrown when the repay on Compound failed.
+    error RepayOnCompoundFailed();
 
     /// STRUCTS ///
 
@@ -42,8 +78,6 @@ contract LogicForCompound is ILogicForCompound, PositionsManagerForCompoundGette
         uint256 _amount,
         uint256 _maxGasToConsume
     ) external {
-        _enterMarketIfNeeded(_poolTokenAddress, msg.sender);
-
         ERC20 underlyingToken = _getUnderlying(_poolTokenAddress);
         underlyingToken.safeTransferFrom(msg.sender, address(this), _amount);
 
@@ -129,9 +163,6 @@ contract LogicForCompound is ILogicForCompound, PositionsManagerForCompoundGette
         uint256 _amount,
         uint256 _maxGasToConsume
     ) external {
-        _enterMarketIfNeeded(_poolTokenAddress, msg.sender);
-        checkUserLiquidity(msg.sender, _poolTokenAddress, 0, _amount);
-
         ERC20 underlyingToken = _getUnderlying(_poolTokenAddress);
         uint256 balanceBefore = underlyingToken.balanceOf(address(this));
         uint256 remainingToBorrow = _amount;
@@ -248,7 +279,6 @@ contract LogicForCompound is ILogicForCompound, PositionsManagerForCompoundGette
             if (vars.remainingToWithdraw == 0) {
                 if (vars.toWithdraw > 0) _withdrawFromPool(_poolTokenAddress, vars.toWithdraw); // Reverts on error.
                 underlyingToken.safeTransfer(_receiver, _amount);
-                _leaveMarkerIfNeeded(_poolTokenAddress, _supplier);
                 return;
             }
         }
@@ -331,7 +361,6 @@ contract LogicForCompound is ILogicForCompound, PositionsManagerForCompoundGette
         }
 
         underlyingToken.safeTransfer(_receiver, _amount);
-        _leaveMarkerIfNeeded(_poolTokenAddress, _supplier);
     }
 
     /// @dev Implements repay logic.
@@ -376,10 +405,10 @@ contract LogicForCompound is ILogicForCompound, PositionsManagerForCompoundGette
                     ICToken(_poolTokenAddress).borrowBalanceCurrent(address(this)) // The debt of the contract.
                 );
 
-                if (vars.toRepay > 0)
+                if (vars.toRepay > 0) {
                     _repayToPool(_poolTokenAddress, underlyingToken, vars.toRepay); // Reverts on error.
-                _leaveMarkerIfNeeded(_poolTokenAddress, _user);
-                return;
+                    return;
+                }
             }
         }
 
@@ -471,63 +500,6 @@ contract LogicForCompound is ILogicForCompound, PositionsManagerForCompoundGette
             emit P2PAmountsUpdated(_poolTokenAddress, delta.supplyP2PAmount, delta.borrowP2PAmount);
 
             _supplyToPool(_poolTokenAddress, underlyingToken, vars.remainingToRepay); // Reverts on error.
-        }
-
-        _leaveMarkerIfNeeded(_poolTokenAddress, _user);
-    }
-
-    /// @dev Checks whether the user can borrow/withdraw or not.
-    /// @param _user The user to determine liquidity for.
-    /// @param _poolTokenAddress The market to hypothetically withdraw/borrow in.
-    /// @param _withdrawnAmount The number of tokens to hypothetically withdraw (in underlying).
-    /// @param _borrowedAmount The amount of tokens to hypothetically borrow (in underlying).
-    function checkUserLiquidity(
-        address _user,
-        address _poolTokenAddress,
-        uint256 _withdrawnAmount,
-        uint256 _borrowedAmount
-    ) public {
-        (uint256 debtValue, uint256 maxDebtValue) = _getUserHypotheticalBalanceStates(
-            _user,
-            _poolTokenAddress,
-            _withdrawnAmount,
-            _borrowedAmount
-        );
-        if (debtValue > maxDebtValue) revert DebtValueAboveMax();
-    }
-
-    /// @dev Enters the user into the market if not already there.
-    /// @param _user The address of the user to update.
-    /// @param _poolTokenAddress The address of the market to check.
-    function _enterMarketIfNeeded(address _poolTokenAddress, address _user) internal {
-        if (!userMembership[_poolTokenAddress][_user]) {
-            userMembership[_poolTokenAddress][_user] = true;
-            enteredMarkets[_user].push(_poolTokenAddress);
-        }
-    }
-
-    /// @dev Removes the user from the market if he has no funds or borrow on it.
-    /// @param _user The address of the user to update.
-    /// @param _poolTokenAddress The address of the market to check.
-    function _leaveMarkerIfNeeded(address _poolTokenAddress, address _user) internal {
-        if (
-            supplyBalanceInOf[_poolTokenAddress][_user].inP2P == 0 &&
-            supplyBalanceInOf[_poolTokenAddress][_user].onPool == 0 &&
-            borrowBalanceInOf[_poolTokenAddress][_user].inP2P == 0 &&
-            borrowBalanceInOf[_poolTokenAddress][_user].onPool == 0
-        ) {
-            uint256 index;
-            while (enteredMarkets[_user][index] != _poolTokenAddress) {
-                unchecked {
-                    ++index;
-                }
-            }
-            userMembership[_poolTokenAddress][_user] = false;
-
-            uint256 length = enteredMarkets[_user].length;
-            if (index != length - 1)
-                enteredMarkets[_user][index] = enteredMarkets[_user][length - 1];
-            enteredMarkets[_user].pop();
         }
     }
 
