@@ -4,6 +4,7 @@ pragma solidity 0.8.13;
 import "../interfaces/IMarketsManagerForCompound.sol";
 import "../interfaces/IMatchingEngineForCompound.sol";
 import "../interfaces/IRewardsManagerForCompound.sol";
+import "../interfaces/ILogicForCompound.sol";
 import "../interfaces/compound/ICompound.sol";
 import "../interfaces/IIncentivesVault.sol";
 import "../interfaces/IWETH.sol";
@@ -97,6 +98,7 @@ abstract contract PositionsManagerForCompoundStorage is
     IMarketsManagerForCompound public marketsManager;
     IMatchingEngineForCompound public matchingEngine;
     IRewardsManagerForCompound public rewardsManager;
+    ILogicForCompound public logic;
     IIncentivesVault public incentivesVault;
     address public treasuryVault;
     address public cEth;
