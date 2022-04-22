@@ -57,7 +57,7 @@ contract PositionsManager is PositionsManagerSetters {
         if (_amount == 0) revert AmountIsZero();
         marketsManager.updateP2PExchangeRates(_poolTokenAddress);
 
-        logic._supplyDC(_poolTokenAddress, _amount, maxGas.supply);
+        logic.supplyDC(_poolTokenAddress, _amount, maxGas.supply);
 
         emit Supplied(
             msg.sender,
@@ -84,7 +84,7 @@ contract PositionsManager is PositionsManagerSetters {
         if (_amount == 0) revert AmountIsZero();
         marketsManager.updateP2PExchangeRates(_poolTokenAddress);
 
-        logic._supplyDC(_poolTokenAddress, _amount, _maxGasToConsume);
+        logic.supplyDC(_poolTokenAddress, _amount, _maxGasToConsume);
 
         emit Supplied(
             msg.sender,
@@ -108,7 +108,7 @@ contract PositionsManager is PositionsManagerSetters {
         if (_amount == 0) revert AmountIsZero();
         marketsManager.updateP2PExchangeRates(_poolTokenAddress);
 
-        logic._borrowDC(_poolTokenAddress, _amount, maxGas.borrow);
+        logic.borrowDC(_poolTokenAddress, _amount, maxGas.borrow);
 
         emit Borrowed(
             msg.sender,
@@ -134,7 +134,7 @@ contract PositionsManager is PositionsManagerSetters {
         if (_amount == 0) revert AmountIsZero();
         marketsManager.updateP2PExchangeRates(_poolTokenAddress);
 
-        logic._borrowDC(_poolTokenAddress, _amount, _maxGasToConsume);
+        logic.borrowDC(_poolTokenAddress, _amount, _maxGasToConsume);
 
         emit Borrowed(
             msg.sender,
@@ -163,7 +163,7 @@ contract PositionsManager is PositionsManagerSetters {
         );
 
         _checkUserLiquidity(msg.sender, _poolTokenAddress, toWithdraw, 0);
-        logic._withdrawDC(_poolTokenAddress, toWithdraw, msg.sender, msg.sender, maxGas.withdraw);
+        logic.withdrawDC(_poolTokenAddress, toWithdraw, msg.sender, msg.sender, maxGas.withdraw);
 
         emit Withdrawn(
             msg.sender,
@@ -191,7 +191,7 @@ contract PositionsManager is PositionsManagerSetters {
             _amount
         );
 
-        logic._repayDC(_poolTokenAddress, msg.sender, toRepay, maxGas.repay);
+        logic.repayDC(_poolTokenAddress, msg.sender, toRepay, maxGas.repay);
 
         emit Repaid(
             msg.sender,
@@ -222,7 +222,7 @@ contract PositionsManager is PositionsManagerSetters {
         marketsManager.updateP2PExchangeRates(_poolTokenBorrowedAddress);
         marketsManager.updateP2PExchangeRates(_poolTokenCollateralAddress);
 
-        uint256 amountSeized = logic._liquidateDC(
+        uint256 amountSeized = logic.liquidateDC(
             _poolTokenBorrowedAddress,
             _poolTokenCollateralAddress,
             _borrower,
