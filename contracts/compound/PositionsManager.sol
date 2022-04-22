@@ -16,7 +16,6 @@ contract PositionsManager is PositionsManagerSetters {
 
     /// @notice Initializes the PositionsManager contract.
     /// @param _marketsManager The `marketsManager`.
-    /// @param _matchingEngine The `matchingEngine`.
     /// @param _comptroller The `comptroller`.
     /// @param _maxGas The `maxGas`.
     /// @param _NDS The `NDS`.
@@ -24,7 +23,6 @@ contract PositionsManager is PositionsManagerSetters {
     /// @param _weth The wETH address.
     function initialize(
         IMarketsManager _marketsManager,
-        IMatchingEngine _matchingEngine,
         ILogic _logic,
         IComptroller _comptroller,
         MaxGas memory _maxGas,
@@ -36,7 +34,6 @@ contract PositionsManager is PositionsManagerSetters {
         __Ownable_init();
 
         marketsManager = _marketsManager;
-        matchingEngine = _matchingEngine;
         logic = _logic;
         comptroller = _comptroller;
 
