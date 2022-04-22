@@ -2,9 +2,9 @@
 pragma solidity 0.8.13;
 
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import "./interfaces/compound/ICompound.sol";
 import "./interfaces/IPositionsManager.sol";
 import "./interfaces/IMarketsManager.sol";
-import "./interfaces/compound/ICompound.sol";
 import "./interfaces/IInterestRates.sol";
 
 import "./libraries/CompoundMath.sol";
@@ -290,6 +290,64 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
 
             (newSupplyP2PExchangeRate, newBorrowP2PExchangeRate) = interestRates
             .computeP2PExchangeRates(params);
+        }
+    }
+
+    /// @notice Returns the updated supply P2P exchange rate.
+    /// @param _poolTokenAddress The address of the market to update.
+    /// @return newSupplyP2PExchangeRate The supply P2P exchange rate after udpate.
+    function getUpdatedSupplyP2PExchangeRate(address _poolTokenAddress)
+        external
+        view
+        returns (uint256)
+    {
+        if (block.timestamp == lastUpdateBlockNumber[_poolTokenAddress])
+            return supplyP2PExchangeRate[_poolTokenAddress];
+        else {
+            ICToken poolToken = ICToken(_poolTokenAddress);
+            LastPoolIndexes storage poolIndexes = lastPoolIndexes[_poolTokenAddress];
+
+            Types.Params memory params = Types.Params(
+                supplyP2PExchangeRate[_poolTokenAddress],
+                borrowP2PExchangeRate[_poolTokenAddress],
+                poolToken.exchangeRateStored(),
+                poolToken.borrowIndex(),
+                poolIndexes.lastSupplyPoolIndex,
+                poolIndexes.lastBorrowPoolIndex,
+                reserveFactor[_poolTokenAddress],
+                positionsManager.deltas(_poolTokenAddress)
+            );
+
+            return interestRates.computeSupplyP2PExchangeRate(params);
+        }
+    }
+
+    /// @notice Returns the updated borrow P2P exchange rate.
+    /// @param _poolTokenAddress The address of the market to update.
+    /// @return newSupplyP2PExchangeRate The borrow P2P exchange rate after udpate.
+    function getUpdatedBorrowP2PExchangeRate(address _poolTokenAddress)
+        external
+        view
+        returns (uint256)
+    {
+        if (block.timestamp == lastUpdateBlockNumber[_poolTokenAddress])
+            return borrowP2PExchangeRate[_poolTokenAddress];
+        else {
+            ICToken poolToken = ICToken(_poolTokenAddress);
+            LastPoolIndexes storage poolIndexes = lastPoolIndexes[_poolTokenAddress];
+
+            Types.Params memory params = Types.Params(
+                supplyP2PExchangeRate[_poolTokenAddress],
+                borrowP2PExchangeRate[_poolTokenAddress],
+                poolToken.exchangeRateStored(),
+                poolToken.borrowIndex(),
+                poolIndexes.lastSupplyPoolIndex,
+                poolIndexes.lastBorrowPoolIndex,
+                reserveFactor[_poolTokenAddress],
+                positionsManager.deltas(_poolTokenAddress)
+            );
+
+            return interestRates.computeBorrowP2PExchangeRate(params);
         }
     }
 
