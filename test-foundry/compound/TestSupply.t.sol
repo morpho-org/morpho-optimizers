@@ -202,7 +202,7 @@ contract TestSupply is TestSetup {
     }
 
     function testFailSupplyZero() public {
-        positionsManager.supply(cDai, 0, 1, type(uint256).max);
+        positionsManager.supply(cDai, 0, type(uint256).max);
     }
 
     function testSupplyRepayOnBehalf() public {
