@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import "./libraries/MatchingEngineDCs.sol";
+// import "./libraries/MatchingEngineDCs.sol";
 import "./interfaces/ILogic.sol";
-import "./positions-manager-parts/PositionsManagerGettersSetters.sol";
+import "./MatchingEngine.sol";
 
 /// @title PositionsManagerLogic.
 /// @notice Main Logic of Morpho Protocol, implementation of the 5 main functionalities: supply, borrow, withdraw, repay, liquidate.
-contract Logic is ILogic, PositionsManagerGettersSetters {
-    using MatchingEngineDCs for IMatchingEngine;
+contract Logic is ILogic, MatchingEngine {
+    // using MatchingEngine for IMatchingEngine;
     using DoubleLinkedList for DoubleLinkedList.List;
     using SafeTransferLib for ERC20;
     using CompoundMath for uint256;
@@ -92,7 +92,7 @@ contract Logic is ILogic, PositionsManagerGettersSetters {
         address _poolTokenAddress,
         uint256 _amount,
         uint256 _maxGasToConsume
-    ) external {
+    ) public {
         _enterMarketIfNeeded(_poolTokenAddress, msg.sender);
         ERC20 underlyingToken = _getUnderlying(_poolTokenAddress);
         underlyingToken.safeTransferFrom(msg.sender, address(this), _amount);
@@ -124,7 +124,7 @@ contract Logic is ILogic, PositionsManagerGettersSetters {
             if (
                 remainingToSupply > 0 && borrowersOnPool[_poolTokenAddress].getHead() != address(0)
             ) {
-                uint256 matched = matchingEngine.matchBorrowersDC(
+                uint256 matched = matchBorrowers(
                     ICToken(_poolTokenAddress),
                     remainingToSupply,
                     _maxGasToConsume
@@ -147,7 +147,7 @@ contract Logic is ILogic, PositionsManagerGettersSetters {
 
             delta.supplyP2PAmount += toAddInP2P;
             supplyBalanceInOf[_poolTokenAddress][msg.sender].inP2P += toAddInP2P;
-            matchingEngine.updateSuppliersDC(_poolTokenAddress, msg.sender);
+            updateSuppliers(_poolTokenAddress, msg.sender);
 
             // Repay only what is necessary. The remaining tokens stays on the contracts and are claimable by the DAO.
             toRepay = Math.min(
@@ -165,7 +165,7 @@ contract Logic is ILogic, PositionsManagerGettersSetters {
             supplyBalanceInOf[_poolTokenAddress][msg.sender].onPool += remainingToSupply.div(
                 ICToken(_poolTokenAddress).exchangeRateCurrent()
             ); // In scaled balance.
-            matchingEngine.updateSuppliersDC(_poolTokenAddress, msg.sender);
+            updateSuppliers(_poolTokenAddress, msg.sender);
             _supplyToPool(_poolTokenAddress, underlyingToken, remainingToSupply); // Reverts on error.
         }
     }
@@ -178,7 +178,7 @@ contract Logic is ILogic, PositionsManagerGettersSetters {
         address _poolTokenAddress,
         uint256 _amount,
         uint256 _maxGasToConsume
-    ) external {
+    ) public {
         _enterMarketIfNeeded(_poolTokenAddress, msg.sender);
         _checkUserLiquidity(msg.sender, _poolTokenAddress, 0, _amount);
         ERC20 underlyingToken = _getUnderlying(_poolTokenAddress);
@@ -212,7 +212,7 @@ contract Logic is ILogic, PositionsManagerGettersSetters {
             if (
                 remainingToBorrow > 0 && suppliersOnPool[_poolTokenAddress].getHead() != address(0)
             ) {
-                uint256 matched = matchingEngine.matchSuppliersDC(
+                uint256 matched = matchSuppliers(
                     ICToken(_poolTokenAddress),
                     CompoundMath.min(remainingToBorrow, withdrawable - toWithdraw),
                     _maxGasToConsume
@@ -235,7 +235,7 @@ contract Logic is ILogic, PositionsManagerGettersSetters {
 
             deltas[_poolTokenAddress].borrowP2PAmount += toAddInP2P;
             borrowBalanceInOf[_poolTokenAddress][msg.sender].inP2P += toAddInP2P;
-            matchingEngine.updateBorrowersDC(_poolTokenAddress, msg.sender);
+            updateBorrowers(_poolTokenAddress, msg.sender);
 
             _withdrawFromPool(_poolTokenAddress, toWithdraw); // Reverts on error.
             emit P2PAmountsUpdated(_poolTokenAddress, delta.supplyP2PAmount, delta.borrowP2PAmount);
@@ -247,7 +247,7 @@ contract Logic is ILogic, PositionsManagerGettersSetters {
             borrowBalanceInOf[_poolTokenAddress][msg.sender].onPool += remainingToBorrow.div(
                 ICToken(_poolTokenAddress).borrowIndex()
             ); // In cdUnit.
-            matchingEngine.updateBorrowersDC(_poolTokenAddress, msg.sender);
+            updateBorrowers(_poolTokenAddress, msg.sender);
             _borrowFromPool(_poolTokenAddress, remainingToBorrow);
         }
 
@@ -293,7 +293,7 @@ contract Logic is ILogic, PositionsManagerGettersSetters {
             uint256 diff = supplyBalanceInOf[_poolTokenAddress][_supplier].onPool -
                 CompoundMath.min(onPoolSupply, vars.toWithdraw.div(vars.supplyPoolIndex));
             supplyBalanceInOf[_poolTokenAddress][_supplier].onPool = diff == 1 ? 0 : diff;
-            matchingEngine.updateSuppliersDC(_poolTokenAddress, _supplier);
+            updateSuppliers(_poolTokenAddress, _supplier);
 
             if (vars.remainingToWithdraw == 0) {
                 if (vars.toWithdraw > 0) _withdrawFromPool(_poolTokenAddress, vars.toWithdraw); // Reverts on error.
@@ -313,7 +313,7 @@ contract Logic is ILogic, PositionsManagerGettersSetters {
                 supplyBalanceInOf[_poolTokenAddress][_supplier].inP2P,
                 vars.remainingToWithdraw.div(supplyP2PExchangeRate)
             ); // In p2pUnit
-            matchingEngine.updateSuppliersDC(_poolTokenAddress, _supplier);
+            updateSuppliers(_poolTokenAddress, _supplier);
 
             // Match Delta if any.
             if (delta.supplyP2PDelta > 0) {
@@ -339,7 +339,7 @@ contract Logic is ILogic, PositionsManagerGettersSetters {
                 suppliersOnPool[_poolTokenAddress].getHead() != address(0)
             ) {
                 // Match suppliers.
-                uint256 matched = matchingEngine.matchSuppliersDC(
+                uint256 matched = matchSuppliers(
                     poolToken,
                     CompoundMath.min(vars.remainingToWithdraw, vars.withdrawable - vars.toWithdraw),
                     _maxGasToConsume / 2
@@ -357,7 +357,7 @@ contract Logic is ILogic, PositionsManagerGettersSetters {
         /// Hard withdraw ///
 
         if (vars.remainingToWithdraw > 0) {
-            uint256 unmatched = matchingEngine.unmatchBorrowersDC(
+            uint256 unmatched = unmatchBorrowers(
                 _poolTokenAddress,
                 vars.remainingToWithdraw,
                 _maxGasToConsume / 2
@@ -417,7 +417,7 @@ contract Logic is ILogic, PositionsManagerGettersSetters {
             uint256 diffPool = borrowBalanceInOf[_poolTokenAddress][_user].onPool -
                 CompoundMath.min(borrowedOnPool, vars.toRepay.div(vars.borrowPoolIndex));
             borrowBalanceInOf[_poolTokenAddress][_user].onPool = diffPool == 1 ? 0 : diffPool; // In cdUnit.
-            matchingEngine.updateBorrowersDC(_poolTokenAddress, _user);
+            updateBorrowers(_poolTokenAddress, _user);
 
             if (vars.remainingToRepay == 0) {
                 // Repay only what is necessary. The remaining tokens stays on the contracts and are claimable by the DAO.
@@ -442,7 +442,7 @@ contract Logic is ILogic, PositionsManagerGettersSetters {
         uint256 diffP2P = inP2P -
             CompoundMath.min(inP2P, vars.remainingToRepay.div(vars.borrowP2PExchangeRate));
         borrowBalanceInOf[_poolTokenAddress][_user].inP2P = diffP2P == 1 ? 0 : diffP2P; // In p2pUnit.
-        matchingEngine.updateBorrowersDC(_poolTokenAddress, _user);
+        updateBorrowers(_poolTokenAddress, _user);
 
         /// Fee repay ///
 
@@ -479,7 +479,7 @@ contract Logic is ILogic, PositionsManagerGettersSetters {
                 borrowersOnPool[_poolTokenAddress].getHead() != address(0)
             ) {
                 // Match borrowers.
-                uint256 matched = matchingEngine.matchBorrowersDC(
+                uint256 matched = matchBorrowers(
                     poolToken,
                     vars.remainingToRepay,
                     _maxGasToConsume / 2
@@ -503,7 +503,7 @@ contract Logic is ILogic, PositionsManagerGettersSetters {
         /// Hard repay ///
 
         if (vars.remainingToRepay > 0) {
-            uint256 unmatched = matchingEngine.unmatchSuppliersDC(
+            uint256 unmatched = unmatchSuppliers(
                 _poolTokenAddress,
                 vars.remainingToRepay,
                 _maxGasToConsume / 2
@@ -536,7 +536,7 @@ contract Logic is ILogic, PositionsManagerGettersSetters {
         address _poolTokenCollateralAddress,
         address _borrower,
         uint256 _amount
-    ) external returns (uint256) {
+    ) public returns (uint256) {
         LiquidateVars memory vars;
 
         (vars.debtValue, vars.maxDebtValue) = _getUserHypotheticalBalanceStates(
