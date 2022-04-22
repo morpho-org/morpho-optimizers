@@ -10,16 +10,16 @@ contract TestPausableMarket is TestSetup {
         hevm.expectRevert("Ownable: caller is not the owner");
         supplier1.setPauseStatus(dai);
 
-        positionsManager.setPauseStatus(dai);
-        assertTrue(positionsManager.paused(dai), "paused is false");
+        marketsManager.setPauseStatus(dai);
+        assertTrue(marketsManager.paused(dai), "paused is false");
     }
 
     function testPauseUnpause() public {
-        positionsManager.setPauseStatus(dai);
-        assertTrue(positionsManager.paused(dai), "paused is false");
+        marketsManager.setPauseStatus(dai);
+        assertTrue(marketsManager.paused(dai), "paused is false");
 
-        positionsManager.setPauseStatus(dai);
-        assertFalse(positionsManager.paused(dai), "paused is true");
+        marketsManager.setPauseStatus(dai);
+        assertFalse(marketsManager.paused(dai), "paused is true");
     }
 
     function testShouldTriggerFunctionsWhenNotPaused() public {
@@ -35,7 +35,7 @@ contract TestPausableMarket is TestSetup {
         supplier1.repay(cUsdc, toBorrow);
 
         (, toBorrow) = positionsManager.getUserMaxCapacitiesForAsset(address(supplier1), cUsdc);
-        hevm.expectRevert(Logic.BorrowOnCompoundFailed.selector);
+        hevm.expectRevert(LibPositionsManager.BorrowOnCompoundFailed.selector);
         supplier1.borrow(cUsdc, toBorrow);
 
         // Change Oracle.
@@ -45,12 +45,12 @@ contract TestPausableMarket is TestSetup {
         uint256 toLiquidate = toBorrow / 2;
         User liquidator = borrower3;
         liquidator.approve(usdc, toLiquidate);
-        hevm.expectRevert(PositionsManagerEventsErrors.DebtValueNotAboveMax.selector);
+        hevm.expectRevert(PositionsManager.DebtValueNotAboveMax.selector);
         liquidator.liquidate(cUsdc, cDai, address(supplier1), toLiquidate);
 
         supplier1.withdraw(cDai, 1 ether);
 
-        hevm.expectRevert(PositionsManagerEventsErrors.AmountIsZero.selector);
+        hevm.expectRevert(PositionsManagerGovernor.AmountIsZero.selector);
         positionsManager.claimToTreasury(cDai);
     }
 
@@ -66,8 +66,8 @@ contract TestPausableMarket is TestSetup {
         );
         supplier1.borrow(cUsdc, toBorrow);
 
-        positionsManager.setPauseStatus(cDai);
-        positionsManager.setPauseStatus(cUsdc);
+        marketsManager.setPauseStatus(cDai);
+        marketsManager.setPauseStatus(cUsdc);
 
         hevm.expectRevert(abi.encodeWithSignature("MarketPaused()"));
         supplier1.supply(cDai, amount);

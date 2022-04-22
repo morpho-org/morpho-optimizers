@@ -72,12 +72,7 @@ contract TestMarketsManager is TestSetup {
     }
 
     function testShouldSetmaxGasWithRightValues() public {
-        PositionsManagerStorage.MaxGas memory newMaxGas = PositionsManagerStorage.MaxGas({
-            supply: 1,
-            borrow: 1,
-            withdraw: 1,
-            repay: 1
-        });
+        Types.MaxGas memory newMaxGas = Types.MaxGas({supply: 1, borrow: 1, withdraw: 1, repay: 1});
 
         positionsManager.setMaxGas(newMaxGas);
         (uint64 supply, uint64 borrow, uint64 withdraw, uint64 repay) = positionsManager.maxGas();

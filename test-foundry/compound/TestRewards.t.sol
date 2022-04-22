@@ -8,7 +8,7 @@ contract TestRewards is TestSetup {
         address[] memory cTokens = new address[](1);
         cTokens[0] = cDai;
 
-        hevm.expectRevert(PositionsManagerEventsErrors.AmountIsZero.selector);
+        hevm.expectRevert(PositionsManagerGovernor.AmountIsZero.selector);
         positionsManager.claimRewards(cTokens, false);
     }
 

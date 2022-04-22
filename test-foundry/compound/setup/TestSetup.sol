@@ -3,8 +3,8 @@ pragma solidity 0.8.13;
 
 import "hardhat/console.sol";
 
-import "@contracts/compound/interfaces/IRewardsManager.sol";
 import "@contracts/compound/interfaces/compound/ICompound.sol";
+import "@contracts/compound/interfaces/IRewardsManager.sol";
 import "@contracts/common/interfaces/ISwapManager.sol";
 
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
@@ -13,11 +13,11 @@ import "@openzeppelin/contracts/utils/Strings.sol";
 
 import "@contracts/compound/PositionsManager.sol";
 import "@contracts/compound/MarketsManager.sol";
-import "@contracts/compound/MatchingEngine.sol";
 import "@contracts/compound/RewardsManager.sol";
 import "@contracts/compound/InterestRatesV1.sol";
-import "@contracts/compound/Logic.sol";
+
 import "@contracts/compound/libraries/FixedPointMathLib.sol";
+import "@contracts/compound/libraries/Types.sol";
 
 import "../../common/helpers/MorphoToken.sol";
 import "../../common/helpers/Chains.sol";
@@ -44,7 +44,6 @@ contract TestSetup is Config, Utils, stdCheats {
     ProxyAdmin public proxyAdmin;
     TransparentUpgradeableProxy public positionsManagerProxy;
     TransparentUpgradeableProxy public marketsManagerProxy;
-    MatchingEngine internal matchingEngine;
     PositionsManager internal positionsManagerImplV1;
     PositionsManager internal positionsManager;
     PositionsManager internal fakePositionsManagerImpl;
@@ -52,7 +51,6 @@ contract TestSetup is Config, Utils, stdCheats {
     MarketsManager internal marketsManagerImplV1;
     IRewardsManager internal rewardsManager;
     IInterestRates internal interestRates;
-    ILogic internal logic;
 
     IncentivesVault public incentivesVault;
     DumbOracle internal dumbOracle;
@@ -79,7 +77,7 @@ contract TestSetup is Config, Utils, stdCheats {
     }
 
     function initContracts() internal {
-        PositionsManager.MaxGas memory maxGas = PositionsManagerStorage.MaxGas({
+        Types.MaxGas memory maxGas = Types.MaxGas({
             supply: 3e6,
             borrow: 3e6,
             withdraw: 3e6,
@@ -87,9 +85,7 @@ contract TestSetup is Config, Utils, stdCheats {
         });
 
         comptroller = IComptroller(comptrollerAddress);
-        matchingEngine = new MatchingEngine();
         interestRates = new InterestRatesV1();
-        logic = new Logic();
 
         /// Deploy proxies ///
 
@@ -113,16 +109,7 @@ contract TestSetup is Config, Utils, stdCheats {
 
         positionsManagerProxy.changeAdmin(address(proxyAdmin));
         positionsManager = PositionsManager(payable(address(positionsManagerProxy)));
-        positionsManager.initialize(
-            marketsManager,
-            matchingEngine,
-            logic,
-            comptroller,
-            maxGas,
-            20,
-            cEth,
-            wEth
-        );
+        positionsManager.initialize(marketsManager, comptroller, maxGas, 20, cEth, wEth);
 
         treasuryVault = new User(positionsManager);
         fakePositionsManagerImpl = new PositionsManager();
@@ -213,7 +200,6 @@ contract TestSetup is Config, Utils, stdCheats {
         hevm.label(address(marketsManagerImplV1), "MarketsManagerImplV1");
         hevm.label(address(marketsManager), "MarketsManager");
         hevm.label(address(rewardsManager), "RewardsManager");
-        hevm.label(address(matchingEngine), "MatchingEngine");
         hevm.label(address(morphoToken), "MorphoToken");
         hevm.label(address(comptroller), "Comptroller");
         hevm.label(address(oracle), "CompoundOracle");
@@ -251,7 +237,7 @@ contract TestSetup is Config, Utils, stdCheats {
         uint64 _withdraw,
         uint64 _repay
     ) public {
-        PositionsManagerStorage.MaxGas memory newMaxGas = PositionsManagerStorage.MaxGas({
+        Types.MaxGas memory newMaxGas = Types.MaxGas({
             supply: _supply,
             borrow: _borrow,
             withdraw: _withdraw,

@@ -3,6 +3,8 @@ pragma solidity 0.8.13;
 
 import "@contracts/compound/interfaces/IRewardsManager.sol";
 
+import "@contracts/compound/libraries/Types.sol";
+
 import "@contracts/compound/PositionsManager.sol";
 import "@contracts/compound/MarketsManager.sol";
 
@@ -62,7 +64,7 @@ contract User {
     }
 
     function supply(address _poolTokenAddress, uint256 _amount) external {
-        positionsManager.supply(_poolTokenAddress, _amount, 0);
+        positionsManager.supply(_poolTokenAddress, _amount);
     }
 
     function supply(
@@ -70,7 +72,7 @@ contract User {
         uint256 _amount,
         uint256 _maxGasToConsume
     ) external {
-        positionsManager.supply(_poolTokenAddress, _amount, 0, _maxGasToConsume);
+        positionsManager.supply(_poolTokenAddress, _amount, _maxGasToConsume);
     }
 
     function withdraw(address _poolTokenAddress, uint256 _amount) external {
@@ -78,7 +80,7 @@ contract User {
     }
 
     function borrow(address _poolTokenAddress, uint256 _amount) external {
-        positionsManager.borrow(_poolTokenAddress, _amount, 0);
+        positionsManager.borrow(_poolTokenAddress, _amount);
     }
 
     function borrow(
@@ -86,7 +88,7 @@ contract User {
         uint256 _amount,
         uint256 _maxGasToConsume
     ) external {
-        positionsManager.borrow(_poolTokenAddress, _amount, 0, _maxGasToConsume);
+        positionsManager.borrow(_poolTokenAddress, _amount, _maxGasToConsume);
     }
 
     function repay(address _poolTokenAddress, uint256 _amount) external {
@@ -111,7 +113,7 @@ contract User {
         positionsManager.setNDS(_newNDS);
     }
 
-    function setMaxGas(PositionsManager.MaxGas memory _maxGas) external {
+    function setMaxGas(Types.MaxGas memory _maxGas) external {
         positionsManager.setMaxGas(_maxGas);
     }
 
@@ -128,6 +130,6 @@ contract User {
     }
 
     function setPauseStatus(address _poolTokenAddress) external {
-        positionsManager.setPauseStatus(_poolTokenAddress);
+        marketsManager.setPauseStatus(_poolTokenAddress);
     }
 }

@@ -36,6 +36,7 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
     mapping(address => uint256) public override lastUpdateBlockNumber; // The last time the P2P exchange rates were updated.
     mapping(address => LastPoolIndexes) public lastPoolIndexes; // Last pool index stored.
     mapping(address => bool) public override noP2P; // Whether to put users on pool or not for the given market.
+    mapping(address => bool) public override paused; // Whether to put users on pool or not for the given market.
 
     IPositionsManager public positionsManager;
     IInterestRates public interestRates;
@@ -84,6 +85,11 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
     /// @param _poolTokenAddress The address of the market set.
     /// @param _newValue The new value of the `reserveFactor`.
     event ReserveFactorSet(address indexed _poolTokenAddress, uint256 _newValue);
+
+    /// @notice Emitted when a market is paused or unpaused.
+    /// @param _poolTokenAddress The address of the pool token concerned..
+    /// @param _newStatus The new pause status of the market.
+    event PauseStatusSet(address indexed _poolTokenAddress, bool _newStatus);
 
     /// ERRORS ///
 
@@ -162,6 +168,14 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
         updateP2PExchangeRates(_poolTokenAddress);
         reserveFactor[_poolTokenAddress] = CompoundMath.min(MAX_BASIS_POINTS, _newReserveFactor);
         emit ReserveFactorSet(_poolTokenAddress, reserveFactor[_poolTokenAddress]);
+    }
+
+    /// @notice Sets the pause status on a specific market in case of emergency.
+    /// @param _poolTokenAddress The address of the market to pause/unpause.
+    function setPauseStatus(address _poolTokenAddress) external onlyOwner {
+        bool newPauseStatus = !paused[_poolTokenAddress];
+        paused[_poolTokenAddress] = newPauseStatus;
+        emit PauseStatusSet(_poolTokenAddress, newPauseStatus);
     }
 
     /// @notice Creates a new market to borrow/supply in.

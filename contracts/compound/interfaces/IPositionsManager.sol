@@ -30,5 +30,7 @@ interface IPositionsManager {
 
     function cEth() external view returns (address);
 
+    function wEth() external view returns (address);
+
     function comptroller() external view returns (address);
 }

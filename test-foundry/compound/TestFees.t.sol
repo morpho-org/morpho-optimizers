@@ -109,7 +109,7 @@ contract TestFees is TestSetup {
         hevm.roll(block.number + 100);
 
         supplier1.repay(cDai, type(uint256).max);
-        hevm.expectRevert(PositionsManagerEventsErrors.AmountIsZero.selector);
+        hevm.expectRevert(PositionsManagerGovernor.AmountIsZero.selector);
         positionsManager.claimToTreasury(cDai);
         uint256 balanceAfter = IERC20(dai).balanceOf(positionsManager.treasuryVault());
 

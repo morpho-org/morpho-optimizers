@@ -1,181 +1,249 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import "./positions-manager-parts/PositionsManagerGettersSetters.sol";
-import "./libraries/LogicDCs.sol";
+import "./libraries/LibPositionsManager.sol";
+import "./libraries/CompoundMath.sol";
 
-/// @title PositionsManager.
+import "./positions-manager-parts/PositionsManagerGovernor.sol";
+
+/// @title PositionsManagerForCompound.
 /// @notice Smart contract interacting with Compound to enable P2P supply/borrow positions that can fallback on Compound's pool using pool tokens.
-contract PositionsManager is PositionsManagerGettersSetters {
-    using LogicDCs for ILogic;
+contract PositionsManager is PositionsManagerGovernor {
     using DoubleLinkedList for DoubleLinkedList.List;
     using SafeTransferLib for ERC20;
     using CompoundMath for uint256;
 
-    /// UPGRADE ///
+    /// STRUCTS ///
 
-    /// @notice Initializes the PositionsManager contract.
-    /// @param _marketsManager The `marketsManager`.
-    /// @param _matchingEngine The `matchingEngine`.
-    /// @param _comptroller The `comptroller`.
-    /// @param _maxGas The `maxGas`.
-    /// @param _NDS The `NDS`.
-    /// @param _cEth The cETH address.
-    /// @param _weth The wETH address.
-    function initialize(
-        IMarketsManager _marketsManager,
-        IMatchingEngine _matchingEngine,
-        ILogic _logic,
-        IComptroller _comptroller,
-        MaxGas memory _maxGas,
-        uint8 _NDS,
-        address _cEth,
-        address _weth
-    ) external initializer {
-        __ReentrancyGuard_init();
-        __Ownable_init();
+    // Struct to avoid stack too deep.
+    struct LiquidateVars {
+        uint256 collateralPrice;
+        uint256 supplyBalance;
+        uint256 borrowBalance;
+        uint256 borrowedPrice;
+        uint256 amountToSeize;
+        uint256 maxDebtValue;
+        uint256 debtValue;
+    }
 
-        marketsManager = _marketsManager;
-        matchingEngine = _matchingEngine;
-        logic = _logic;
-        comptroller = _comptroller;
+    /// EVENTS ///
 
-        maxGas = _maxGas;
-        NDS = _NDS;
+    /// @notice Emitted when a supply happens.
+    /// @param _user The address of the supplier.
+    /// @param _poolTokenAddress The address of the market where assets are supplied into.
+    /// @param _amount The amount of assets supplied (in underlying).
+    /// @param _balanceOnPool The supply balance on pool after update (in underlying).
+    /// @param _balanceInP2P The supply balance in P2P after update (in underlying).
+    event Supplied(
+        address indexed _user,
+        address indexed _poolTokenAddress,
+        uint256 _amount,
+        uint256 _balanceOnPool,
+        uint256 _balanceInP2P
+    );
 
-        cEth = _cEth;
-        wEth = _weth;
+    /// @notice Emitted when a withdrawal happens.
+    /// @param _user The address of the withdrawer.
+    /// @param _poolTokenAddress The address of the market from where assets are withdrawn.
+    /// @param _amount The amount of assets withdrawn (in underlying).
+    /// @param _balanceOnPool The supply balance on pool after update.
+    /// @param _balanceInP2P The supply balance in P2P after update.
+    event Withdrawn(
+        address indexed _user,
+        address indexed _poolTokenAddress,
+        uint256 _amount,
+        uint256 _balanceOnPool,
+        uint256 _balanceInP2P
+    );
+
+    /// @notice Emitted when a borrow happens.
+    /// @param _user The address of the borrower.
+    /// @param _poolTokenAddress The address of the market where assets are borrowed.
+    /// @param _amount The amount of assets borrowed (in underlying).
+    /// @param _balanceOnPool The borrow balance on pool after update.
+    /// @param _balanceInP2P The borrow balance in P2P after update.
+    event Borrowed(
+        address indexed _user,
+        address indexed _poolTokenAddress,
+        uint256 _amount,
+        uint256 _balanceOnPool,
+        uint256 _balanceInP2P
+    );
+
+    /// @notice Emitted when a repayment happens.
+    /// @param _user The address of the repayer.
+    /// @param _poolTokenAddress The address of the market where assets are repaid.
+    /// @param _amount The amount of assets repaid (in underlying).
+    /// @param _balanceOnPool The borrow balance on pool after update.
+    /// @param _balanceInP2P The borrow balance in P2P after update.
+    event Repaid(
+        address indexed _user,
+        address indexed _poolTokenAddress,
+        uint256 _amount,
+        uint256 _balanceOnPool,
+        uint256 _balanceInP2P
+    );
+
+    /// @notice Emitted when a liquidation happens.
+    /// @param _liquidator The address of the liquidator.
+    /// @param _liquidatee The address of the liquidatee.
+    /// @param _amountRepaid The amount of borrowed asset repaid (in underlying).
+    /// @param _poolTokenBorrowedAddress The address of the borrowed asset.
+    /// @param _amountSeized The amount of collateral asset seized (in underlying).
+    /// @param _poolTokenCollateralAddress The address of the collateral asset seized.
+    event Liquidated(
+        address _liquidator,
+        address indexed _liquidatee,
+        uint256 _amountRepaid,
+        address indexed _poolTokenBorrowedAddress,
+        uint256 _amountSeized,
+        address indexed _poolTokenCollateralAddress
+    );
+
+    /// @notice Emitted when a user claims rewards.
+    /// @param _user The address of the claimer.
+    /// @param _amountClaimed The amount of reward token claimed.
+    event RewardsClaimed(address indexed _user, uint256 _amountClaimed);
+
+    /// @notice Emitted when a user claims rewards and converts them to Morpho tokens.
+    /// @param _user The address of the claimer.
+    /// @param _amountSent The amount of reward token sent to the vault.
+    event RewardsClaimedAndConverted(address indexed _user, uint256 _amountSent);
+
+    /// ERRORS ///
+
+    /// @notice Thrown when the amount repaid during the liquidation is above what is allowed to be repaid.
+    error AmountAboveWhatAllowedToRepay();
+
+    /// @notice Thrown when the amount of collateral to seize is above the collateral amount.
+    error ToSeizeAboveCollateral();
+
+    /// @notice Thrown when the debt value is not above the maximum debt value.
+    error DebtValueNotAboveMax();
+
+    /// @notice Thrown when the Compound's oracle failed.
+    error CompoundOracleFailed();
+
+    /// EXTERNAL ///
+
+    /// @notice Allows to receive ETH.
+    receive() external payable {}
+
+    /// @notice Supplies underlying tokens in a specific market.
+    /// @dev `msg.sender` must have approved Morpho's contract to spend the underlying `_amount`.
+    /// @param _poolTokenAddress The address of the market the user wants to interact with.
+    /// @param _amount The amount of token (in underlying) to supply.
+    function supply(address _poolTokenAddress, uint256 _amount) external nonReentrant {
+        if (_amount == 0) revert AmountIsZero();
+        PositionsStorage storage p = ps();
+
+        p.marketsManager.updateP2PExchangeRates(_poolTokenAddress);
+        LibPositionsManager.supply(_poolTokenAddress, _amount, p.maxGas.supply);
+
+        emit Supplied(
+            msg.sender,
+            _poolTokenAddress,
+            _amount,
+            p.supplyBalanceInOf[_poolTokenAddress][msg.sender].onPool,
+            p.supplyBalanceInOf[_poolTokenAddress][msg.sender].inP2P
+        );
     }
 
     /// @notice Supplies underlying tokens in a specific market.
     /// @dev `msg.sender` must have approved Morpho's contract to spend the underlying `_amount`.
     /// @param _poolTokenAddress The address of the market the user wants to interact with.
     /// @param _amount The amount of token (in underlying) to supply.
-    /// @param _referralCode The referral code of an integrator that may receive rewards. 0 if no referral code.
-    function supply(
-        address _poolTokenAddress,
-        uint256 _amount,
-        uint16 _referralCode
-    ) external nonReentrant isMarketCreatedAndNotPaused(_poolTokenAddress) {
-        if (_amount == 0) revert AmountIsZero();
-        marketsManager.updateP2PExchangeRates(_poolTokenAddress);
-
-        logic._supplyDC(_poolTokenAddress, _amount, maxGas.supply);
-
-        emit Supplied(
-            msg.sender,
-            _poolTokenAddress,
-            _amount,
-            supplyBalanceInOf[_poolTokenAddress][msg.sender].onPool,
-            supplyBalanceInOf[_poolTokenAddress][msg.sender].inP2P,
-            _referralCode
-        );
-    }
-
-    /// @notice Supplies underlying tokens in a specific market.
-    /// @dev `msg.sender` must have approved Morpho's contract to spend the underlying `_amount`.
-    /// @param _poolTokenAddress The address of the market the user wants to interact with.
-    /// @param _amount The amount of token (in underlying) to supply.
-    /// @param _referralCode The referral code of an integrator that may receive rewards. 0 if no referral code.
     /// @param _maxGasToConsume The maximum amount of gas to consume within a matching engine loop.
     function supply(
         address _poolTokenAddress,
         uint256 _amount,
-        uint16 _referralCode,
         uint256 _maxGasToConsume
-    ) external nonReentrant isMarketCreatedAndNotPaused(_poolTokenAddress) {
+    ) external nonReentrant {
         if (_amount == 0) revert AmountIsZero();
-        marketsManager.updateP2PExchangeRates(_poolTokenAddress);
+        PositionsStorage storage p = ps();
 
-        logic._supplyDC(_poolTokenAddress, _amount, _maxGasToConsume);
+        p.marketsManager.updateP2PExchangeRates(_poolTokenAddress);
+        LibPositionsManager.supply(_poolTokenAddress, _amount, _maxGasToConsume);
 
         emit Supplied(
             msg.sender,
             _poolTokenAddress,
             _amount,
-            supplyBalanceInOf[_poolTokenAddress][msg.sender].onPool,
-            supplyBalanceInOf[_poolTokenAddress][msg.sender].inP2P,
-            _referralCode
+            p.supplyBalanceInOf[_poolTokenAddress][msg.sender].onPool,
+            p.supplyBalanceInOf[_poolTokenAddress][msg.sender].inP2P
         );
     }
 
     /// @notice Borrows underlying tokens in a specific market.
     /// @param _poolTokenAddress The address of the market the user wants to interact with.
     /// @param _amount The amount of token (in underlying).
-    /// @param _referralCode The referral code of an integrator that may receive rewards. 0 if no referral code.
-    function borrow(
-        address _poolTokenAddress,
-        uint256 _amount,
-        uint16 _referralCode
-    ) external nonReentrant isMarketCreatedAndNotPaused(_poolTokenAddress) {
+    function borrow(address _poolTokenAddress, uint256 _amount) external nonReentrant {
         if (_amount == 0) revert AmountIsZero();
-        marketsManager.updateP2PExchangeRates(_poolTokenAddress);
+        PositionsStorage storage p = ps();
 
-        _checkUserLiquidity(msg.sender, _poolTokenAddress, 0, _amount);
-        logic._borrowDC(_poolTokenAddress, _amount, maxGas.borrow);
+        p.marketsManager.updateP2PExchangeRates(_poolTokenAddress);
+        LibPositionsManager.borrow(_poolTokenAddress, _amount, p.maxGas.borrow);
 
         emit Borrowed(
             msg.sender,
             _poolTokenAddress,
             _amount,
-            borrowBalanceInOf[_poolTokenAddress][msg.sender].onPool,
-            borrowBalanceInOf[_poolTokenAddress][msg.sender].inP2P,
-            _referralCode
+            p.borrowBalanceInOf[_poolTokenAddress][msg.sender].onPool,
+            p.borrowBalanceInOf[_poolTokenAddress][msg.sender].inP2P
         );
     }
 
     /// @notice Borrows underlying tokens in a specific market.
     /// @param _poolTokenAddress The address of the market the user wants to interact with.
     /// @param _amount The amount of token (in underlying).
-    /// @param _referralCode The referral code of an integrator that may receive rewards. 0 if no referral code.
     /// @param _maxGasToConsume The maximum amount of gas to consume within a matching engine loop.
     function borrow(
         address _poolTokenAddress,
         uint256 _amount,
-        uint16 _referralCode,
         uint256 _maxGasToConsume
-    ) external nonReentrant isMarketCreatedAndNotPaused(_poolTokenAddress) {
+    ) external nonReentrant {
         if (_amount == 0) revert AmountIsZero();
-        marketsManager.updateP2PExchangeRates(_poolTokenAddress);
+        PositionsStorage storage p = ps();
 
-        _checkUserLiquidity(msg.sender, _poolTokenAddress, 0, _amount);
-        logic._borrowDC(_poolTokenAddress, _amount, _maxGasToConsume);
+        p.marketsManager.updateP2PExchangeRates(_poolTokenAddress);
+        LibPositionsManager.borrow(_poolTokenAddress, _amount, _maxGasToConsume);
 
         emit Borrowed(
             msg.sender,
             _poolTokenAddress,
             _amount,
-            borrowBalanceInOf[_poolTokenAddress][msg.sender].onPool,
-            borrowBalanceInOf[_poolTokenAddress][msg.sender].inP2P,
-            _referralCode
+            p.borrowBalanceInOf[_poolTokenAddress][msg.sender].onPool,
+            p.borrowBalanceInOf[_poolTokenAddress][msg.sender].inP2P
         );
     }
 
     /// @notice Withdraws underlying tokens in a specific market.
     /// @param _poolTokenAddress The address of the market the user wants to interact with.
     /// @param _amount The amount of tokens (in underlying) to withdraw from supply.
-    function withdraw(address _poolTokenAddress, uint256 _amount)
-        external
-        nonReentrant
-        isMarketCreatedAndNotPaused(_poolTokenAddress)
-    {
+    function withdraw(address _poolTokenAddress, uint256 _amount) external nonReentrant {
         if (_amount == 0) revert AmountIsZero();
-        marketsManager.updateP2PExchangeRates(_poolTokenAddress);
+        PositionsStorage storage p = ps();
 
+        p.marketsManager.updateP2PExchangeRates(_poolTokenAddress);
         uint256 toWithdraw = Math.min(
-            _getUserSupplyBalanceInOf(_poolTokenAddress, msg.sender),
+            LibPositionsManagerGetters.getUserSupplyBalanceInOf(_poolTokenAddress, msg.sender),
             _amount
         );
-
-        _checkUserLiquidity(msg.sender, _poolTokenAddress, toWithdraw, 0);
-        logic._withdrawDC(_poolTokenAddress, toWithdraw, msg.sender, msg.sender, maxGas.withdraw);
+        LibPositionsManager.checkUserLiquidity(msg.sender, _poolTokenAddress, toWithdraw, 0);
+        LibPositionsManager.withdraw(
+            _poolTokenAddress,
+            toWithdraw,
+            msg.sender,
+            msg.sender,
+            p.maxGas.withdraw
+        );
 
         emit Withdrawn(
             msg.sender,
             _poolTokenAddress,
-            _amount,
-            supplyBalanceInOf[_poolTokenAddress][msg.sender].onPool,
-            supplyBalanceInOf[_poolTokenAddress][msg.sender].inP2P
+            toWithdraw,
+            p.supplyBalanceInOf[_poolTokenAddress][msg.sender].onPool,
+            p.supplyBalanceInOf[_poolTokenAddress][msg.sender].inP2P
         );
     }
 
@@ -183,27 +251,23 @@ contract PositionsManager is PositionsManagerGettersSetters {
     /// @dev `msg.sender` must have approved Morpho's contract to spend the underlying `_amount`.
     /// @param _poolTokenAddress The address of the market the user wants to interact with.
     /// @param _amount The amount of token (in underlying) to repay from borrow.
-    function repay(address _poolTokenAddress, uint256 _amount)
-        external
-        nonReentrant
-        isMarketCreatedAndNotPaused(_poolTokenAddress)
-    {
+    function repay(address _poolTokenAddress, uint256 _amount) external nonReentrant {
         if (_amount == 0) revert AmountIsZero();
-        marketsManager.updateP2PExchangeRates(_poolTokenAddress);
+        PositionsStorage storage p = ps();
 
+        p.marketsManager.updateP2PExchangeRates(_poolTokenAddress);
         uint256 toRepay = Math.min(
-            _getUserBorrowBalanceInOf(_poolTokenAddress, msg.sender),
+            LibPositionsManagerGetters.getUserBorrowBalanceInOf(_poolTokenAddress, msg.sender),
             _amount
         );
-
-        logic._repayDC(_poolTokenAddress, msg.sender, toRepay, maxGas.repay);
+        LibPositionsManager.repay(_poolTokenAddress, msg.sender, toRepay, p.maxGas.repay);
 
         emit Repaid(
             msg.sender,
             _poolTokenAddress,
-            _amount,
-            borrowBalanceInOf[_poolTokenAddress][msg.sender].onPool,
-            borrowBalanceInOf[_poolTokenAddress][msg.sender].inP2P
+            toRepay,
+            p.borrowBalanceInOf[_poolTokenAddress][msg.sender].onPool,
+            p.borrowBalanceInOf[_poolTokenAddress][msg.sender].inP2P
         );
     }
 
@@ -217,52 +281,50 @@ contract PositionsManager is PositionsManagerGettersSetters {
         address _poolTokenCollateralAddress,
         address _borrower,
         uint256 _amount
-    )
-        external
-        nonReentrant
-        isMarketCreatedAndNotPaused(_poolTokenBorrowedAddress)
-        isMarketCreatedAndNotPaused(_poolTokenCollateralAddress)
-    {
+    ) external nonReentrant {
         if (_amount == 0) revert AmountIsZero();
-        marketsManager.updateP2PExchangeRates(_poolTokenBorrowedAddress);
-        marketsManager.updateP2PExchangeRates(_poolTokenCollateralAddress);
+        PositionsStorage storage p = ps();
+        p.marketsManager.updateP2PExchangeRates(_poolTokenBorrowedAddress);
+        p.marketsManager.updateP2PExchangeRates(_poolTokenCollateralAddress);
         LiquidateVars memory vars;
 
-        (vars.debtValue, vars.maxDebtValue) = _getUserHypotheticalBalanceStates(
-            _borrower,
-            address(0),
-            0,
-            0
-        );
+        (vars.debtValue, vars.maxDebtValue) = LibPositionsManagerGetters
+        .getUserHypotheticalBalanceStates(_borrower, address(0), 0, 0);
         if (vars.debtValue <= vars.maxDebtValue) revert DebtValueNotAboveMax();
 
-        vars.borrowBalance = _getUserBorrowBalanceInOf(_poolTokenBorrowedAddress, _borrower);
+        vars.borrowBalance = LibPositionsManagerGetters.getUserBorrowBalanceInOf(
+            _poolTokenBorrowedAddress,
+            _borrower
+        );
 
         if (_amount > (vars.borrowBalance * LIQUIDATION_CLOSE_FACTOR_PERCENT) / MAX_BASIS_POINTS)
             revert AmountAboveWhatAllowedToRepay(); // Same mechanism as Compound. Liquidator cannot repay more than part of the debt (cf close factor on Compound).
 
-        logic._repayDC(_poolTokenBorrowedAddress, _borrower, _amount, 0);
+        LibPositionsManager.repay(_poolTokenBorrowedAddress, _borrower, _amount, 0);
 
         // Calculate the amount of token to seize from collateral
-        ICompoundOracle compoundOracle = ICompoundOracle(comptroller.oracle());
+        ICompoundOracle compoundOracle = ICompoundOracle(p.comptroller.oracle());
         vars.collateralPrice = compoundOracle.getUnderlyingPrice(_poolTokenCollateralAddress);
         vars.borrowedPrice = compoundOracle.getUnderlyingPrice(_poolTokenBorrowedAddress);
-        if (vars.collateralPrice == 0 || vars.collateralPrice == 0) revert CompoundOracleFailed();
+        if (vars.collateralPrice == 0 || vars.borrowedPrice == 0) revert CompoundOracleFailed();
 
         // Get the exchange rate and calculate the number of collateral tokens to seize:
         // seizeAmount = actualRepayAmount * liquidationIncentive * priceBorrowed / priceCollateral
         // seizeTokens = seizeAmount / exchangeRate
         // = actualRepayAmount * (liquidationIncentive * priceBorrowed) / (priceCollateral * exchangeRate)
         vars.amountToSeize = _amount
-        .mul(comptroller.liquidationIncentiveMantissa())
+        .mul(p.comptroller.liquidationIncentiveMantissa())
         .mul(vars.borrowedPrice)
         .div(vars.collateralPrice);
 
-        vars.supplyBalance = _getUserSupplyBalanceInOf(_poolTokenCollateralAddress, _borrower);
+        vars.supplyBalance = LibPositionsManagerGetters.getUserSupplyBalanceInOf(
+            _poolTokenCollateralAddress,
+            _borrower
+        );
 
         if (vars.amountToSeize > vars.supplyBalance) revert ToSeizeAboveCollateral();
 
-        logic._withdrawDC(
+        LibPositionsManager.withdraw(
             _poolTokenCollateralAddress,
             vars.amountToSeize,
             _borrower,
@@ -280,39 +342,22 @@ contract PositionsManager is PositionsManagerGettersSetters {
         );
     }
 
-    /// @dev Transfers the protocol reserve fee to the DAO.
-    /// @param _poolTokenAddress The address of the market on which we want to claim the reserve fee.
-    function claimToTreasury(address _poolTokenAddress)
-        external
-        onlyOwner
-        isMarketCreatedAndNotPaused(_poolTokenAddress)
-    {
-        if (treasuryVault == address(0)) revert ZeroAddress();
-
-        ERC20 underlyingToken = _getUnderlying(_poolTokenAddress);
-        uint256 amountToClaim = underlyingToken.balanceOf(address(this));
-
-        if (amountToClaim == 0) revert AmountIsZero();
-
-        underlyingToken.safeTransfer(treasuryVault, amountToClaim);
-        emit ReserveFeeClaimed(_poolTokenAddress, amountToClaim);
-    }
-
     /// @notice Claims rewards for the given assets and the unclaimed rewards.
     /// @param _claimMorphoToken Whether or not to claim Morpho tokens instead of token reward.
     function claimRewards(address[] calldata _cTokenAddresses, bool _claimMorphoToken)
         external
         nonReentrant
     {
-        uint256 amountOfRewards = rewardsManager.claimRewards(_cTokenAddresses, msg.sender);
+        uint256 amountOfRewards = ps().rewardsManager.claimRewards(_cTokenAddresses, msg.sender);
 
         if (amountOfRewards == 0) revert AmountIsZero();
         else {
-            comptroller.claimComp(address(this), _cTokenAddresses);
-            ERC20 comp = ERC20(comptroller.getCompAddress());
+            PositionsStorage storage p = ps();
+            p.comptroller.claimComp(address(this), _cTokenAddresses);
+            ERC20 comp = ERC20(p.comptroller.getCompAddress());
             if (_claimMorphoToken) {
-                comp.safeApprove(address(incentivesVault), amountOfRewards);
-                incentivesVault.convertCompToMorphoTokens(msg.sender, amountOfRewards);
+                comp.safeApprove(address(p.incentivesVault), amountOfRewards);
+                p.incentivesVault.convertCompToMorphoTokens(msg.sender, amountOfRewards);
                 emit RewardsClaimedAndConverted(msg.sender, amountOfRewards);
             } else {
                 comp.safeTransfer(msg.sender, amountOfRewards);
@@ -320,7 +365,4 @@ contract PositionsManager is PositionsManagerGettersSetters {
             }
         }
     }
-
-    // Allows to receive ETH.
-    receive() external payable {}
 }
