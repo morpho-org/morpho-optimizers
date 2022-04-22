@@ -93,7 +93,6 @@ abstract contract PositionsManagerStorage is OwnableUpgradeable, ReentrancyGuard
 
     IComptroller public comptroller;
     IMarketsManager public marketsManager;
-    IMatchingEngine public matchingEngine;
     IRewardsManager public rewardsManager;
     ILogic public logic;
     IIncentivesVault public incentivesVault;
