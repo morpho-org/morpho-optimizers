@@ -19,7 +19,7 @@ contract TestBorrow is TestSetup {
             cDai
         );
 
-        hevm.expectRevert(Logic.DebtValueAboveMax.selector);
+        hevm.expectRevert(PositionsManagerGetters.DebtValueAboveMax.selector);
         borrower1.borrow(cDai, borrowable + 1e12);
     }
 
