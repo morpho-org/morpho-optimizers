@@ -77,4 +77,23 @@ library LogicDCs {
             )
         );
     }
+
+    function _liquidateDC(
+        ILogic _logic,
+        address _poolTokenBorrowedAddress,
+        address _poolTokenCollateralAddress,
+        address _borrower,
+        uint256 _amount
+    ) internal returns (uint256) {
+        bytes memory data = address(_logic).functionDelegateCall(
+            abi.encodeWithSelector(
+                _logic.liquidate.selector,
+                _poolTokenBorrowedAddress,
+                _poolTokenCollateralAddress,
+                _borrower,
+                _amount
+            )
+        );
+        return abi.decode(data, (uint256));
+    }
 }
