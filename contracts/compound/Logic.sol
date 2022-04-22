@@ -553,7 +553,7 @@ contract Logic is ILogic, MatchingEngine {
         ICompoundOracle compoundOracle = ICompoundOracle(comptroller.oracle());
         vars.collateralPrice = compoundOracle.getUnderlyingPrice(_poolTokenCollateralAddress);
         vars.borrowedPrice = compoundOracle.getUnderlyingPrice(_poolTokenBorrowedAddress);
-        if (vars.collateralPrice == 0 || vars.collateralPrice == 0) revert CompoundOracleFailed();
+        if (vars.collateralPrice == 0 || vars.borrowedPrice == 0) revert CompoundOracleFailed();
 
         // Get the exchange rate and calculate the number of collateral tokens to seize:
         // seizeAmount = actualRepayAmount * liquidationIncentive * priceBorrowed / priceCollateral
