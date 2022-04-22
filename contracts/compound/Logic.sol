@@ -8,7 +8,6 @@ import "./MatchingEngine.sol";
 /// @title PositionsManagerLogic.
 /// @notice Main Logic of Morpho Protocol, implementation of the 5 main functionalities: supply, borrow, withdraw, repay, liquidate.
 contract Logic is ILogic, MatchingEngine {
-    // using MatchingEngine for IMatchingEngine;
     using DoubleLinkedList for DoubleLinkedList.List;
     using SafeTransferLib for ERC20;
     using CompoundMath for uint256;
