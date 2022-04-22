@@ -28,4 +28,11 @@ interface ILogic {
         uint256 _amount,
         uint256 _maxGasToConsume
     ) external;
+
+    function liquidate(
+        address _poolTokenBorrowedAddress,
+        address _poolTokenCollateralAddress,
+        address _borrower,
+        uint256 _amount
+    ) external returns (uint256);
 }

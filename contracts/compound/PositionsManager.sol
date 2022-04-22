@@ -111,7 +111,6 @@ contract PositionsManager is PositionsManagerGettersSetters {
         if (_amount == 0) revert AmountIsZero();
         marketsManager.updateP2PExchangeRates(_poolTokenAddress);
 
-        _checkUserLiquidity(msg.sender, _poolTokenAddress, 0, _amount);
         logic._borrowDC(_poolTokenAddress, _amount, maxGas.borrow);
 
         emit Borrowed(
@@ -138,7 +137,6 @@ contract PositionsManager is PositionsManagerGettersSetters {
         if (_amount == 0) revert AmountIsZero();
         marketsManager.updateP2PExchangeRates(_poolTokenAddress);
 
-        _checkUserLiquidity(msg.sender, _poolTokenAddress, 0, _amount);
         logic._borrowDC(_poolTokenAddress, _amount, _maxGasToConsume);
 
         emit Borrowed(
@@ -167,7 +165,6 @@ contract PositionsManager is PositionsManagerGettersSetters {
             _amount
         );
 
-        _checkUserLiquidity(msg.sender, _poolTokenAddress, toWithdraw, 0);
         logic._withdrawDC(_poolTokenAddress, toWithdraw, msg.sender, msg.sender, maxGas.withdraw);
 
         emit Withdrawn(
@@ -226,48 +223,12 @@ contract PositionsManager is PositionsManagerGettersSetters {
         if (_amount == 0) revert AmountIsZero();
         marketsManager.updateP2PExchangeRates(_poolTokenBorrowedAddress);
         marketsManager.updateP2PExchangeRates(_poolTokenCollateralAddress);
-        LiquidateVars memory vars;
 
-        (vars.debtValue, vars.maxDebtValue) = _getUserHypotheticalBalanceStates(
-            _borrower,
-            address(0),
-            0,
-            0
-        );
-        if (vars.debtValue <= vars.maxDebtValue) revert DebtValueNotAboveMax();
-
-        vars.borrowBalance = _getUserBorrowBalanceInOf(_poolTokenBorrowedAddress, _borrower);
-
-        if (_amount > (vars.borrowBalance * LIQUIDATION_CLOSE_FACTOR_PERCENT) / MAX_BASIS_POINTS)
-            revert AmountAboveWhatAllowedToRepay(); // Same mechanism as Compound. Liquidator cannot repay more than part of the debt (cf close factor on Compound).
-
-        logic._repayDC(_poolTokenBorrowedAddress, _borrower, _amount, 0);
-
-        // Calculate the amount of token to seize from collateral
-        ICompoundOracle compoundOracle = ICompoundOracle(comptroller.oracle());
-        vars.collateralPrice = compoundOracle.getUnderlyingPrice(_poolTokenCollateralAddress);
-        vars.borrowedPrice = compoundOracle.getUnderlyingPrice(_poolTokenBorrowedAddress);
-        if (vars.collateralPrice == 0 || vars.collateralPrice == 0) revert CompoundOracleFailed();
-
-        // Get the exchange rate and calculate the number of collateral tokens to seize:
-        // seizeAmount = actualRepayAmount * liquidationIncentive * priceBorrowed / priceCollateral
-        // seizeTokens = seizeAmount / exchangeRate
-        // = actualRepayAmount * (liquidationIncentive * priceBorrowed) / (priceCollateral * exchangeRate)
-        vars.amountToSeize = _amount
-        .mul(comptroller.liquidationIncentiveMantissa())
-        .mul(vars.borrowedPrice)
-        .div(vars.collateralPrice);
-
-        vars.supplyBalance = _getUserSupplyBalanceInOf(_poolTokenCollateralAddress, _borrower);
-
-        if (vars.amountToSeize > vars.supplyBalance) revert ToSeizeAboveCollateral();
-
-        logic._withdrawDC(
+        uint256 amountSeized = logic._liquidateDC(
+            _poolTokenBorrowedAddress,
             _poolTokenCollateralAddress,
-            vars.amountToSeize,
             _borrower,
-            msg.sender,
-            0
+            _amount
         );
 
         emit Liquidated(
@@ -275,7 +236,7 @@ contract PositionsManager is PositionsManagerGettersSetters {
             _borrower,
             _amount,
             _poolTokenBorrowedAddress,
-            vars.amountToSeize,
+            amountSeized,
             _poolTokenCollateralAddress
         );
     }
