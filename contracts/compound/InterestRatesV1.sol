@@ -26,15 +26,7 @@ contract InterestRatesV1 is IInterestRates {
     /// EXTERNAL ///
 
     /// @notice Computes and return new P2P exchange rates.
-    /// @param _params Parameters:
-    ///             supplyP2PExchangeRate The current supply P2P exchange rate.
-    ///             borrowP2PExchangeRate The current borrow P2P exchange rate.
-    ///             poolSupplyExchangeRate The current pool supply exchange rate.
-    ///             poolBorrowExchangeRate The current pool borrow exchange rate.
-    ///             lastPoolSupplyExchangeRate The pool supply exchange rate at last update.
-    ///             lastPoolBorrowExchangeRate The pool borrow exchange rate at last update.
-    ///             reserveFactor The reserve factor percentage (10 000 = 100%).
-    ///             delta The deltas and P2P amounts.
+    /// @param _params Computations parameters.
     /// @return newSupplyP2PExchangeRate The updated supplyP2PExchangeRate.
     /// @return newBorrowP2PExchangeRate The updated borrowP2PExchangeRate.
     function computeP2PExchangeRates(Types.Params memory _params)
