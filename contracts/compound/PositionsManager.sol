@@ -162,6 +162,7 @@ contract PositionsManager is PositionsManagerSetters {
             _amount
         );
 
+        _checkUserLiquidity(msg.sender, _poolTokenAddress, toWithdraw, 0);
         logic._withdrawDC(_poolTokenAddress, toWithdraw, msg.sender, msg.sender, maxGas.withdraw);
 
         emit Withdrawn(
