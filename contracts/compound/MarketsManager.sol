@@ -302,6 +302,64 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
         }
     }
 
+    /// @notice Returns the updated supply P2P exchange rate.
+    /// @param _poolTokenAddress The address of the market to update.
+    /// @return newSupplyP2PExchangeRate The supply P2P exchange rate after udpate.
+    function getUpdatedSupplyP2PExchangeRate(address _poolTokenAddress)
+        external
+        view
+        returns (uint256)
+    {
+        if (block.timestamp == lastUpdateBlockNumber[_poolTokenAddress])
+            return supplyP2PExchangeRate[_poolTokenAddress];
+        else {
+            ICToken poolToken = ICToken(_poolTokenAddress);
+            LastPoolIndexes storage poolIndexes = lastPoolIndexes[_poolTokenAddress];
+
+            Types.Params memory params = Types.Params(
+                supplyP2PExchangeRate[_poolTokenAddress],
+                borrowP2PExchangeRate[_poolTokenAddress],
+                poolToken.exchangeRateStored(),
+                poolToken.borrowIndex(),
+                poolIndexes.lastSupplyPoolIndex,
+                poolIndexes.lastBorrowPoolIndex,
+                reserveFactor[_poolTokenAddress],
+                positionsManager.deltas(_poolTokenAddress)
+            );
+
+            return interestRates.computeSupplyP2PExchangeRate(params);
+        }
+    }
+
+    /// @notice Returns the updated borrow P2P exchange rate.
+    /// @param _poolTokenAddress The address of the market to update.
+    /// @return newSupplyP2PExchangeRate The borrow P2P exchange rate after udpate.
+    function getUpdatedBorrowP2PExchangeRate(address _poolTokenAddress)
+        external
+        view
+        returns (uint256)
+    {
+        if (block.timestamp == lastUpdateBlockNumber[_poolTokenAddress])
+            return borrowP2PExchangeRate[_poolTokenAddress];
+        else {
+            ICToken poolToken = ICToken(_poolTokenAddress);
+            LastPoolIndexes storage poolIndexes = lastPoolIndexes[_poolTokenAddress];
+
+            Types.Params memory params = Types.Params(
+                supplyP2PExchangeRate[_poolTokenAddress],
+                borrowP2PExchangeRate[_poolTokenAddress],
+                poolToken.exchangeRateStored(),
+                poolToken.borrowIndex(),
+                poolIndexes.lastSupplyPoolIndex,
+                poolIndexes.lastBorrowPoolIndex,
+                reserveFactor[_poolTokenAddress],
+                positionsManager.deltas(_poolTokenAddress)
+            );
+
+            return interestRates.computeBorrowP2PExchangeRate(params);
+        }
+    }
+
     /// PUBLIC ///
 
     /// @notice Updates the P2P exchange rates, taking into account the Second Percentage Yield values.
