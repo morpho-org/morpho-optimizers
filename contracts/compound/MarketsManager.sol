@@ -2,9 +2,9 @@
 pragma solidity 0.8.13;
 
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import "./interfaces/compound/ICompound.sol";
 import "./interfaces/IPositionsManager.sol";
 import "./interfaces/IMarketsManager.sol";
-import "./interfaces/compound/ICompound.sol";
 import "./interfaces/IInterestRates.sol";
 
 import "./libraries/CompoundMath.sol";
