@@ -6,11 +6,11 @@ import "./libraries/FixedPointMathLib.sol";
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 
-import "./positions-manager-parts/PositionsManagerStorage.sol";
+import "./positions-manager-parts/PositionsManagerGettersSetters.sol";
 
 /// @title MatchingEngineManager.
 /// @notice Smart contract managing the matching engine.
-contract MatchingEngine is IMatchingEngine, PositionsManagerStorage {
+contract MatchingEngine is IMatchingEngine, PositionsManagerGettersSetters {
     using DoubleLinkedList for DoubleLinkedList.List;
     using FixedPointMathLib for uint256;
     using CompoundMath for uint256;
@@ -71,7 +71,7 @@ contract MatchingEngine is IMatchingEngine, PositionsManagerStorage {
         ICToken _poolToken,
         uint256 _amount,
         uint256 _maxGasToConsume
-    ) external override returns (uint256 matched) {
+    ) public override returns (uint256 matched) {
         MatchVars memory vars;
         address poolTokenAddress = address(_poolToken);
         address user = suppliersOnPool[poolTokenAddress].getHead();
@@ -121,7 +121,7 @@ contract MatchingEngine is IMatchingEngine, PositionsManagerStorage {
         address _poolTokenAddress,
         uint256 _amount,
         uint256 _maxGasToConsume
-    ) external override returns (uint256) {
+    ) public override returns (uint256) {
         UnmatchVars memory vars;
         address user = suppliersInP2P[_poolTokenAddress].getHead();
         vars.poolIndex = ICToken(_poolTokenAddress).exchangeRateCurrent();
@@ -177,7 +177,7 @@ contract MatchingEngine is IMatchingEngine, PositionsManagerStorage {
         ICToken _poolToken,
         uint256 _amount,
         uint256 _maxGasToConsume
-    ) external override returns (uint256 matched) {
+    ) public override returns (uint256 matched) {
         MatchVars memory vars;
         address poolTokenAddress = address(_poolToken);
         address user = borrowersOnPool[poolTokenAddress].getHead();
@@ -229,7 +229,7 @@ contract MatchingEngine is IMatchingEngine, PositionsManagerStorage {
         address _poolTokenAddress,
         uint256 _amount,
         uint256 _maxGasToConsume
-    ) external override returns (uint256) {
+    ) public override returns (uint256) {
         UnmatchVars memory vars;
         address user = borrowersInP2P[_poolTokenAddress].getHead();
         uint256 remainingToUnmatch = _amount;
