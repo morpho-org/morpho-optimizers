@@ -8,7 +8,7 @@ import "@openzeppelin/contracts/utils/Address.sol";
 library LogicDCs {
     using Address for address;
 
-    function _supplyDC(
+    function supplyDC(
         ILogic _logic,
         address _poolTokenAddress,
         uint256 _amount,
@@ -24,7 +24,7 @@ library LogicDCs {
         );
     }
 
-    function _borrowDC(
+    function borrowDC(
         ILogic _logic,
         address _poolTokenAddress,
         uint256 _amount,
@@ -40,7 +40,7 @@ library LogicDCs {
         );
     }
 
-    function _withdrawDC(
+    function withdrawDC(
         ILogic _logic,
         address _poolTokenAddress,
         uint256 _amount,
@@ -60,7 +60,7 @@ library LogicDCs {
         );
     }
 
-    function _repayDC(
+    function repayDC(
         ILogic _logic,
         address _poolTokenAddress,
         address _user,
@@ -78,7 +78,7 @@ library LogicDCs {
         );
     }
 
-    function _liquidateDC(
+    function liquidateDC(
         ILogic _logic,
         address _poolTokenBorrowedAddress,
         address _poolTokenCollateralAddress,
