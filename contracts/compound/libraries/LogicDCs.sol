@@ -13,7 +13,7 @@ library LogicDCs {
     /// @param _poolTokenAddress The address of the pool token the user wants to interact with.
     /// @param _amount The amount of token (in underlying).
     /// @param _maxGasToConsume The maximum amount of gas to consume within a matching engine loop.
-    function _supplyDC(
+    function supplyDC(
         ILogic _logic,
         address _poolTokenAddress,
         uint256 _amount,
@@ -34,7 +34,7 @@ library LogicDCs {
     /// @param _poolTokenAddress The address of the market the user wants to interact with.
     /// @param _amount The amount of token (in underlying).
     /// @param _maxGasToConsume The maximum amount of gas to consume within a matching engine loop.
-    function _borrowDC(
+    function borrowDC(
         ILogic _logic,
         address _poolTokenAddress,
         uint256 _amount,
@@ -57,7 +57,7 @@ library LogicDCs {
     /// @param _supplier The address of the supplier.
     /// @param _receiver The address of the user who will receive the tokens.
     /// @param _maxGasToConsume The maximum amount of gas to consume within a matching engine loop.
-    function _withdrawDC(
+    function withdrawDC(
         ILogic _logic,
         address _poolTokenAddress,
         uint256 _amount,
@@ -83,7 +83,7 @@ library LogicDCs {
     /// @param _user The address of the user.
     /// @param _amount The amount of token (in underlying).
     /// @param _maxGasToConsume The maximum amount of gas to consume within a matching engine loop.
-    function _repayDC(
+    function repayDC(
         ILogic _logic,
         address _poolTokenAddress,
         address _user,
@@ -107,7 +107,7 @@ library LogicDCs {
     /// @param _poolTokenCollateralAddress The address of the collateral pool token the liquidator wants to seize.
     /// @param _borrower The address of the borrower to liquidate.
     /// @param _amount The amount of token (in underlying) to repay.
-    function _liquidateDC(
+    function liquidateDC(
         ILogic _logic,
         address _poolTokenBorrowedAddress,
         address _poolTokenCollateralAddress,
