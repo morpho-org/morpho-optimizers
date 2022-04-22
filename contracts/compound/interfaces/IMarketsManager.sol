@@ -10,6 +10,16 @@ interface IMarketsManager {
 
     function borrowP2PExchangeRate(address _poolTokenAddress) external view returns (uint256);
 
+    function getUpdatedSupplyP2PExchangeRate(address _poolTokenAddress)
+        external
+        view
+        returns (uint256);
+
+    function getUpdatedBorrowP2PExchangeRate(address _poolTokenAddress)
+        external
+        view
+        returns (uint256);
+
     function lastUpdateBlockNumber(address _poolTokenAddress) external view returns (uint256);
 
     function updateP2PExchangeRates(address _marketAddress) external;
