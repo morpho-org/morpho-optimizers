@@ -2,6 +2,7 @@
 pragma solidity 0.8.13;
 
 import "@contracts/compound/interfaces/IMorphoCompound.sol";
+import "@contracts/common/diamond/interfaces/IDiamondCut.sol";
 
 import "@contracts/compound/libraries/Types.sol";
 
@@ -135,5 +136,14 @@ contract User {
 
     function setPauseStatus(address _poolTokenAddress) external {
         morphoCompound.setPauseStatus(_poolTokenAddress);
+    }
+
+    function diamondCut(
+        address _diamond,
+        IDiamondCut.FacetCut[] calldata _diamondCut,
+        address _init,
+        bytes calldata _calldata
+    ) external {
+        IDiamondCut(address(_diamond)).diamondCut(_diamondCut, _init, _calldata);
     }
 }

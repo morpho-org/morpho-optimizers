@@ -17,6 +17,8 @@ import "@contracts/compound/RewardsManagerForCompound.sol";
 import "@contracts/compound/MorphoLensForCompound.sol";
 import "@contracts/compound/InitDiamond.sol";
 
+import "@contracts/compound/libraries/LibStorage.sol";
+
 import "@contracts/compound/libraries/FixedPointMathLib.sol";
 import "@contracts/compound/libraries/Types.sol";
 
@@ -31,6 +33,7 @@ import "../../common/helpers/Chains.sol";
 import "../helpers/SimplePriceOracle.sol";
 import "../helpers/IncentivesVault.sol";
 import "../helpers/DumbOracle.sol";
+import "../helpers/DummyFacet.sol";
 import {User} from "../helpers/User.sol";
 import {Utils} from "./Utils.sol";
 import "forge-std/console.sol";
@@ -90,6 +93,7 @@ contract TestSetup is Config, Utils, stdCheats {
     User public treasuryVault;
 
     IDiamondCut.FacetCut[] private cuts;
+    IDiamondCut.FacetCut[] internal testCuts;
 
     address[] public pools;
 
@@ -124,6 +128,34 @@ contract TestSetup is Config, Utils, stdCheats {
         InitDiamond initDiamond = new InitDiamond();
 
         {
+            bytes4[] memory diamondLoupeFunctionSelectors = new bytes4[](4);
+            {
+                uint256 index;
+                diamondLoupeFunctionSelectors[index++] = diamondLoupeFacet.facets.selector;
+                diamondLoupeFunctionSelectors[index++] = diamondLoupeFacet
+                .facetFunctionSelectors
+                .selector;
+                diamondLoupeFunctionSelectors[index++] = diamondLoupeFacet.facetAddresses.selector;
+                diamondLoupeFunctionSelectors[index++] = diamondLoupeFacet.facetAddress.selector;
+            }
+            IDiamondCut.FacetCut memory loupeCut = IDiamondCut.FacetCut({
+                facetAddress: address(diamondLoupeFacet),
+                action: IDiamondCut.FacetCutAction.Add,
+                functionSelectors: diamondLoupeFunctionSelectors
+            });
+
+            bytes4[] memory ownershipFunctionSelectors = new bytes4[](2);
+            {
+                uint256 index;
+                ownershipFunctionSelectors[index++] = ownershipFacet.owner.selector;
+                ownershipFunctionSelectors[index++] = ownershipFacet.transferOwnership.selector;
+            }
+            IDiamondCut.FacetCut memory ownershipCut = IDiamondCut.FacetCut({
+                facetAddress: address(ownershipFacet),
+                action: IDiamondCut.FacetCutAction.Add,
+                functionSelectors: ownershipFunctionSelectors
+            });
+
             bytes4[] memory marketsManagerFunctionSelectors = new bytes4[](18);
             {
                 uint256 index;
@@ -320,6 +352,8 @@ contract TestSetup is Config, Utils, stdCheats {
                 functionSelectors: rewardsManagerFunctionSelectors
             });
 
+            cuts.push(loupeCut);
+            cuts.push(ownershipCut);
             cuts.push(lensCut);
             cuts.push(marketsCut);
             cuts.push(positionsCut);
