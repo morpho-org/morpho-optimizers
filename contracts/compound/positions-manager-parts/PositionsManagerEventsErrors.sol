@@ -14,14 +14,12 @@ abstract contract PositionsManagerEventsErrors is PositionsManagerGetters {
     /// @param _amount The amount of assets supplied (in underlying).
     /// @param _balanceOnPool The supply balance on pool after update (in underlying).
     /// @param _balanceInP2P The supply balance in P2P after update (in underlying).
-    /// @param _referralCode The referral code of an integrator that may receive rewards. 0 if no referral code.
     event Supplied(
         address indexed _user,
         address indexed _poolTokenAddress,
         uint256 _amount,
         uint256 _balanceOnPool,
-        uint256 _balanceInP2P,
-        uint16 indexed _referralCode
+        uint256 _balanceInP2P
     );
 
     /// @notice Emitted when a withdrawal happens.
@@ -43,15 +41,13 @@ abstract contract PositionsManagerEventsErrors is PositionsManagerGetters {
     /// @param _poolTokenAddress The address of the market where assets are borrowed.
     /// @param _amount The amount of assets borrowed (in underlying).
     /// @param _balanceOnPool The borrow balance on pool after update.
-    /// @param _balanceInP2P The borrow balance in P2P after update.
-    /// @param _referralCode The referral code of an integrator that may receive rewards. 0 if no referral code.
+    /// @param _balanceInP2P The borrow balance in P2P after update
     event Borrowed(
         address indexed _user,
         address indexed _poolTokenAddress,
         uint256 _amount,
         uint256 _balanceOnPool,
-        uint256 _balanceInP2P,
-        uint16 indexed _referralCode
+        uint256 _balanceInP2P
     );
 
     /// @notice Emitted when a repayment happens.
