@@ -6,6 +6,8 @@ import "./setup/TestSetup.sol";
 contract TestBorrow is TestSetup {
     using CompoundMath for uint256;
 
+    uint256 private MAX_BORROWABLE_DAI = uint256(7052532865252195763) / 2; // approx, taken from market conditions
+
     function testBorrow1() public {
         uint256 usdcAmount = to6Decimals(10_000 ether);
 
@@ -16,6 +18,26 @@ contract TestBorrow is TestSetup {
 
         hevm.expectRevert(PositionsManager.UnauthorisedBorrow.selector);
         borrower1.borrow(cDai, borrowable + 1e12);
+    }
+
+    // sould borrow an authorized amount of dai after having provided some usdc
+    function testBorrowFuzzed(uint256 amountSupplied, uint256 amountBorrowed) public {
+        console.log(ERC20(usdc).balanceOf(address(borrower1)));
+
+        hevm.assume(
+            amountSupplied != 0 && amountSupplied < INITIAL_BALANCE * 1e6 && amountBorrowed != 0
+        );
+
+        borrower1.approve(usdc, amountSupplied);
+        borrower1.supply(cUsdc, amountSupplied);
+
+        (, uint256 borrowable) = positionsManager.getUserMaxCapacitiesForAsset(
+            address(borrower1),
+            cDai
+        );
+        hevm.assume(amountBorrowed <= borrowable && amountBorrowed <= MAX_BORROWABLE_DAI);
+
+        borrower1.borrow(cDai, amountBorrowed);
     }
 
     function testBorrow2() public {
