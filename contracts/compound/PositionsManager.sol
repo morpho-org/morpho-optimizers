@@ -168,7 +168,7 @@ contract PositionsManager is PositionsManagerSetters {
         emit Withdrawn(
             msg.sender,
             _poolTokenAddress,
-            _amount,
+            toWithdraw,
             supplyBalanceInOf[_poolTokenAddress][msg.sender].onPool,
             supplyBalanceInOf[_poolTokenAddress][msg.sender].inP2P
         );
@@ -196,7 +196,7 @@ contract PositionsManager is PositionsManagerSetters {
         emit Repaid(
             msg.sender,
             _poolTokenAddress,
-            _amount,
+            toRepay,
             borrowBalanceInOf[_poolTokenAddress][msg.sender].onPool,
             borrowBalanceInOf[_poolTokenAddress][msg.sender].inP2P
         );
