@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import "./positions-manager-parts/PositionsManagerGettersSetters.sol";
+import "./positions-manager-parts/PositionsManagerSetters.sol";
 import "./libraries/LogicDCs.sol";
 
 /// @title PositionsManager.
 /// @notice Smart contract interacting with Compound to enable P2P supply/borrow positions that can fallback on Compound's pool using pool tokens.
-contract PositionsManager is PositionsManagerGettersSetters {
+contract PositionsManager is PositionsManagerSetters {
     using LogicDCs for ILogic;
     using DoubleLinkedList for DoubleLinkedList.List;
     using SafeTransferLib for ERC20;
