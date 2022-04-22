@@ -10,6 +10,11 @@ abstract contract PositionsManagerGetters is PositionsManagerStorage {
     using DoubleLinkedList for DoubleLinkedList.List;
     using CompoundMath for uint256;
 
+    /// ERRORS ///
+
+    /// @notice Thrown when the debt value is above the maximum debt value.
+    error DebtValueAboveMax();
+
     /// GETTERS ///
 
     /// @notice Gets the head of the data structure on a specific market (for UI).
@@ -256,5 +261,25 @@ abstract contract PositionsManagerGetters is PositionsManagerStorage {
             borrowBalanceInOf[_poolTokenAddress][_user].onPool.mul(
                 ICToken(_poolTokenAddress).borrowIndex()
             );
+    }
+
+    /// @dev Checks whether the user can borrow/withdraw or not.
+    /// @param _user The user to determine liquidity for.
+    /// @param _poolTokenAddress The market to hypothetically withdraw/borrow in.
+    /// @param _withdrawnAmount The number of tokens to hypothetically withdraw (in underlying).
+    /// @param _borrowedAmount The amount of tokens to hypothetically borrow (in underlying).
+    function _checkUserLiquidity(
+        address _user,
+        address _poolTokenAddress,
+        uint256 _withdrawnAmount,
+        uint256 _borrowedAmount
+    ) internal {
+        (uint256 debtValue, uint256 maxDebtValue) = _getUserHypotheticalBalanceStates(
+            _user,
+            _poolTokenAddress,
+            _withdrawnAmount,
+            _borrowedAmount
+        );
+        if (debtValue > maxDebtValue) revert DebtValueAboveMax();
     }
 }
