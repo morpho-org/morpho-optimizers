@@ -151,19 +151,4 @@ abstract contract PositionsManagerEventsErrors is PositionsManagerStorage {
 
     /// @notice Thrown when only the markets manager can call the function.
     error OnlyMarketsManager();
-
-    /// @notice Thrown when the debt value is above the maximum debt value.
-    error DebtValueAboveMax();
-
-    /// @notice Thrown when the debt value is not above the maximum debt value.
-    error DebtValueNotAboveMax();
-
-    /// @notice Thrown when the amount of collateral to seize is above the collateral amount.
-    error ToSeizeAboveCollateral();
-
-    /// @notice Thrown when the amount repaid during the liquidation is above what is allowed to be repaid.
-    error AmountAboveWhatAllowedToRepay();
-
-    /// @notice Thrown when the Compound's oracle failed.
-    error CompoundOracleFailed();
 }
