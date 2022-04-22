@@ -7,7 +7,7 @@ import "./positions-manager-parts/PositionsManagerGettersSetters.sol";
 
 /// @title PositionsManagerLogic.
 /// @notice Main Logic of Morpho Protocol, implementation of the 5 main functionalities: supply, borrow, withdraw, repay, liquidate.
-contract Logic is ILogic, PositionsManagerStorage {
+contract Logic is ILogic, PositionsManagerGettersSetters {
     using MatchingEngineDCs for IMatchingEngine;
     using DoubleLinkedList for DoubleLinkedList.List;
     using SafeTransferLib for ERC20;
@@ -48,6 +48,21 @@ contract Logic is ILogic, PositionsManagerStorage {
 
     /// @notice Thrown when the repay on Compound failed.
     error RepayOnCompoundFailed();
+
+    /// @notice Thrown when the debt value is above the maximum debt value.
+    error DebtValueAboveMax();
+
+    /// @notice Thrown when the debt value is not above the maximum debt value.
+    error DebtValueNotAboveMax();
+
+    /// @notice Thrown when the amount of collateral to seize is above the collateral amount.
+    error ToSeizeAboveCollateral();
+
+    /// @notice Thrown when the amount repaid during the liquidation is above what is allowed to be repaid.
+    error AmountAboveWhatAllowedToRepay();
+
+    /// @notice Thrown when the Compound's oracle failed.
+    error CompoundOracleFailed();
 
     /// STRUCTS ///
 
@@ -165,6 +180,7 @@ contract Logic is ILogic, PositionsManagerStorage {
         uint256 _maxGasToConsume
     ) external {
         _enterMarketIfNeeded(_poolTokenAddress, msg.sender);
+        _checkUserLiquidity(msg.sender, _poolTokenAddress, 0, _amount);
         ERC20 underlyingToken = _getUnderlying(_poolTokenAddress);
         uint256 balanceBefore = underlyingToken.balanceOf(address(this));
         uint256 remainingToBorrow = _amount;
@@ -253,7 +269,8 @@ contract Logic is ILogic, PositionsManagerStorage {
         address _supplier,
         address _receiver,
         uint256 _maxGasToConsume
-    ) external {
+    ) public {
+        _checkUserLiquidity(msg.sender, _poolTokenAddress, _amount, 0);
         ICToken poolToken = ICToken(_poolTokenAddress);
         ERC20 underlyingToken = _getUnderlying(_poolTokenAddress);
         WithdrawVars memory vars;
@@ -378,7 +395,7 @@ contract Logic is ILogic, PositionsManagerStorage {
         address _user,
         uint256 _amount,
         uint256 _maxGasToConsume
-    ) external {
+    ) public {
         ICToken poolToken = ICToken(_poolTokenAddress);
         ERC20 underlyingToken = _getUnderlying(_poolTokenAddress);
         underlyingToken.safeTransferFrom(msg.sender, address(this), _amount);
@@ -507,6 +524,80 @@ contract Logic is ILogic, PositionsManagerStorage {
             _supplyToPool(_poolTokenAddress, underlyingToken, vars.remainingToRepay); // Reverts on error.
         }
         _leaveMarketIfNeeded(_poolTokenAddress, _user);
+    }
+
+    /// @notice Liquidates a position.
+    /// @param _poolTokenBorrowedAddress The address of the pool token the liquidator wants to repay.
+    /// @param _poolTokenCollateralAddress The address of the collateral pool token the liquidator wants to seize.
+    /// @param _borrower The address of the borrower to liquidate.
+    /// @param _amount The amount of token (in underlying) to repay.
+    function liquidate(
+        address _poolTokenBorrowedAddress,
+        address _poolTokenCollateralAddress,
+        address _borrower,
+        uint256 _amount
+    ) external returns (uint256) {
+        LiquidateVars memory vars;
+
+        (vars.debtValue, vars.maxDebtValue) = _getUserHypotheticalBalanceStates(
+            _borrower,
+            address(0),
+            0,
+            0
+        );
+        if (vars.debtValue <= vars.maxDebtValue) revert DebtValueNotAboveMax();
+
+        vars.borrowBalance = _getUserBorrowBalanceInOf(_poolTokenBorrowedAddress, _borrower);
+
+        if (_amount > (vars.borrowBalance * LIQUIDATION_CLOSE_FACTOR_PERCENT) / MAX_BASIS_POINTS)
+            revert AmountAboveWhatAllowedToRepay(); // Same mechanism as Compound. Liquidator cannot repay more than part of the debt (cf close factor on Compound).
+
+        repay(_poolTokenBorrowedAddress, _borrower, _amount, 0);
+
+        // Calculate the amount of token to seize from collateral
+        ICompoundOracle compoundOracle = ICompoundOracle(comptroller.oracle());
+        vars.collateralPrice = compoundOracle.getUnderlyingPrice(_poolTokenCollateralAddress);
+        vars.borrowedPrice = compoundOracle.getUnderlyingPrice(_poolTokenBorrowedAddress);
+        if (vars.collateralPrice == 0 || vars.collateralPrice == 0) revert CompoundOracleFailed();
+
+        // Get the exchange rate and calculate the number of collateral tokens to seize:
+        // seizeAmount = actualRepayAmount * liquidationIncentive * priceBorrowed / priceCollateral
+        // seizeTokens = seizeAmount / exchangeRate
+        // = actualRepayAmount * (liquidationIncentive * priceBorrowed) / (priceCollateral * exchangeRate)
+        vars.amountToSeize = _amount
+        .mul(comptroller.liquidationIncentiveMantissa())
+        .mul(vars.borrowedPrice)
+        .div(vars.collateralPrice);
+
+        vars.supplyBalance = _getUserSupplyBalanceInOf(_poolTokenCollateralAddress, _borrower);
+
+        if (vars.amountToSeize > vars.supplyBalance) revert ToSeizeAboveCollateral();
+
+        withdraw(_poolTokenCollateralAddress, vars.amountToSeize, _borrower, msg.sender, 0);
+
+        return vars.amountToSeize;
+    }
+
+    /// INTERNAL ///
+
+    /// @dev Checks whether the user can borrow/withdraw or not.
+    /// @param _user The user to determine liquidity for.
+    /// @param _poolTokenAddress The market to hypothetically withdraw/borrow in.
+    /// @param _withdrawnAmount The number of tokens to hypothetically withdraw (in underlying).
+    /// @param _borrowedAmount The amount of tokens to hypothetically borrow (in underlying).
+    function _checkUserLiquidity(
+        address _user,
+        address _poolTokenAddress,
+        uint256 _withdrawnAmount,
+        uint256 _borrowedAmount
+    ) internal {
+        (uint256 debtValue, uint256 maxDebtValue) = _getUserHypotheticalBalanceStates(
+            _user,
+            _poolTokenAddress,
+            _withdrawnAmount,
+            _borrowedAmount
+        );
+        if (debtValue > maxDebtValue) revert DebtValueAboveMax();
     }
 
     /// @dev Supplies underlying tokens to Compound.
