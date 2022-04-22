@@ -20,6 +20,23 @@ contract TestBorrow is TestSetup {
         borrower1.borrow(cDai, borrowable + 1e12);
     }
 
+    function testFailBorrow1Fuzzed(uint256 supplied, uint256 borrowed) public {
+        hevm.assume(supplied != 0 && supplied < INITIAL_BALANCE * 1e6 && borrowed != 0);
+        uint256 usdcAmount = supplied;
+
+        borrower1.approve(usdc, usdcAmount);
+        borrower1.supply(cUsdc, usdcAmount);
+
+        (, uint256 borrowable) = positionsManager.getUserMaxCapacitiesForAsset(
+            address(borrower1),
+            cDai
+        );
+
+        hevm.assume(borrowed > borrowable);
+
+        borrower1.borrow(cDai, borrowed);
+    }
+
     // sould borrow an authorized amount of dai after having provided some usdc
     function testBorrowFuzzed(uint256 amountSupplied, uint256 amountBorrowed) public {
         console.log(ERC20(usdc).balanceOf(address(borrower1)));
