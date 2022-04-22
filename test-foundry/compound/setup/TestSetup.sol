@@ -44,7 +44,6 @@ contract TestSetup is Config, Utils, stdCheats {
     ProxyAdmin public proxyAdmin;
     TransparentUpgradeableProxy public positionsManagerProxy;
     TransparentUpgradeableProxy public marketsManagerProxy;
-    MatchingEngine internal matchingEngine;
     PositionsManager internal positionsManagerImplV1;
     PositionsManager internal positionsManager;
     PositionsManager internal fakePositionsManagerImpl;
@@ -87,7 +86,6 @@ contract TestSetup is Config, Utils, stdCheats {
         });
 
         comptroller = IComptroller(comptrollerAddress);
-        matchingEngine = new MatchingEngine();
         interestRates = new InterestRatesV1();
         logic = new Logic();
 
@@ -113,16 +111,7 @@ contract TestSetup is Config, Utils, stdCheats {
 
         positionsManagerProxy.changeAdmin(address(proxyAdmin));
         positionsManager = PositionsManager(payable(address(positionsManagerProxy)));
-        positionsManager.initialize(
-            marketsManager,
-            matchingEngine,
-            logic,
-            comptroller,
-            maxGas,
-            20,
-            cEth,
-            wEth
-        );
+        positionsManager.initialize(marketsManager, logic, comptroller, maxGas, 20, cEth, wEth);
 
         treasuryVault = new User(positionsManager);
         fakePositionsManagerImpl = new PositionsManager();
@@ -213,7 +202,6 @@ contract TestSetup is Config, Utils, stdCheats {
         hevm.label(address(marketsManagerImplV1), "MarketsManagerImplV1");
         hevm.label(address(marketsManager), "MarketsManager");
         hevm.label(address(rewardsManager), "RewardsManager");
-        hevm.label(address(matchingEngine), "MatchingEngine");
         hevm.label(address(morphoToken), "MorphoToken");
         hevm.label(address(comptroller), "Comptroller");
         hevm.label(address(oracle), "CompoundOracle");
