@@ -80,6 +80,12 @@ contract Logic is ILogic, MatchingEngine {
         uint256 toRepay;
     }
 
+    /// CONSTRUCTOR ///
+
+    /// @notice Constructs the MatchingEngineForAave contract.
+    /// @dev The contract is automatically marked as initialized when deployed.
+    constructor() initializer {}
+
     /// LOGIC ///
 
     /// @dev Implements supply logic.
