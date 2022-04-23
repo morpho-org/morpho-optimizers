@@ -1,16 +1,14 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
+import "../interfaces/compound/ICompound.sol";
+import "../interfaces/IIncentivesVault.sol";
 import "../interfaces/IMarketsManager.sol";
 import "../interfaces/IRewardsManager.sol";
 import "../interfaces/ILogic.sol";
-import "../interfaces/compound/ICompound.sol";
-import "../interfaces/IIncentivesVault.sol";
 import "../interfaces/IWETH.sol";
 
-import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 import "../../common/libraries/DoubleLinkedList.sol";
-import "../libraries/CompoundMath.sol";
 import "../libraries/Types.sol";
 
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
