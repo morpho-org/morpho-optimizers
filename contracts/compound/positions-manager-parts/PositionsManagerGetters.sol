@@ -7,8 +7,8 @@ import "../libraries/CompoundMath.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "./PositionsManagerStorage.sol";
 
-/// @title PositionsManagerGettersSetters.
-/// @notice Getters and setters for PositionsManager, including externals, internals, user-accessible and admin-only functions.
+/// @title PositionsManagerGetters.
+/// @notice Getters for PositionsManager, including externals, internals, user-accessible.
 abstract contract PositionsManagerGetters is PositionsManagerStorage {
     using DoubleLinkedList for DoubleLinkedList.List;
     using CompoundMath for uint256;
