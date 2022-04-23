@@ -280,6 +280,157 @@ contract PositionsManager is PositionsManagerSetters {
         }
     }
 
+    /// GETTERS
+
+    /// @notice Gets the head of the data structure on a specific market (for UI).
+    /// @param _poolTokenAddress The address of the market from which to get the head.
+    /// @param _positionType The type of user from which to get the head.
+    /// @return head The head in the data structure.
+    function getHead(address _poolTokenAddress, PositionType _positionType)
+        external
+        view
+        returns (address head)
+    {
+        if (_positionType == PositionType.SUPPLIERS_IN_P2P)
+            head = suppliersInP2P[_poolTokenAddress].getHead();
+        else if (_positionType == PositionType.SUPPLIERS_ON_POOL)
+            head = suppliersOnPool[_poolTokenAddress].getHead();
+        else if (_positionType == PositionType.BORROWERS_IN_P2P)
+            head = borrowersInP2P[_poolTokenAddress].getHead();
+        else if (_positionType == PositionType.BORROWERS_ON_POOL)
+            head = borrowersOnPool[_poolTokenAddress].getHead();
+    }
+
+    /// @notice Gets the next user after `_user` in the data structure on a specific market (for UI).
+    /// @param _poolTokenAddress The address of the market from which to get the user.
+    /// @param _positionType The type of user from which to get the next user.
+    /// @param _user The address of the user from which to get the next user.
+    /// @return next The next user in the data structure.
+    function getNext(
+        address _poolTokenAddress,
+        PositionType _positionType,
+        address _user
+    ) external view returns (address next) {
+        if (_positionType == PositionType.SUPPLIERS_IN_P2P)
+            next = suppliersInP2P[_poolTokenAddress].getNext(_user);
+        else if (_positionType == PositionType.SUPPLIERS_ON_POOL)
+            next = suppliersOnPool[_poolTokenAddress].getNext(_user);
+        else if (_positionType == PositionType.BORROWERS_IN_P2P)
+            next = borrowersInP2P[_poolTokenAddress].getNext(_user);
+        else if (_positionType == PositionType.BORROWERS_ON_POOL)
+            next = borrowersOnPool[_poolTokenAddress].getNext(_user);
+    }
+
+    /// @notice Returns the collateral value, debt value and max debt value of a given user.
+    /// @dev Note: must be called after calling `accrueInterest()` on the cToken to have the most up to date values.
+    /// @param _user The user to determine liquidity for.
+    /// @return collateralValue The collateral value of the user.
+    /// @return debtValue The current debt value of the user.
+    /// @return maxDebtValue The maximum possible debt value of the user.
+    function getUserBalanceStates(address _user)
+        external
+        view
+        returns (
+            uint256 collateralValue,
+            uint256 debtValue,
+            uint256 maxDebtValue
+        )
+    {
+        ICompoundOracle oracle = ICompoundOracle(comptroller.oracle());
+        uint256 numberOfEnteredMarkets = enteredMarkets[_user].length;
+        uint256 i;
+
+        while (i < numberOfEnteredMarkets) {
+            address poolTokenEntered = enteredMarkets[_user][i];
+            AssetLiquidityData memory assetData = _getUserLiquidityDataForAsset(
+                _user,
+                poolTokenEntered,
+                oracle
+            );
+
+            unchecked {
+                collateralValue += assetData.collateralValue;
+                maxDebtValue += assetData.maxDebtValue;
+                debtValue += assetData.debtValue;
+                ++i;
+            }
+        }
+    }
+
+    /// @notice Returns the maximum amount available to withdraw and borrow for `_user` related to `_poolTokenAddress` (in underlyings).
+    /// @dev Note: must be called after calling `accrueInterest()` on the cToken to have the most up to date values.
+    /// @param _user The user to determine the capacities for.
+    /// @param _poolTokenAddress The address of the market.
+    /// @return withdrawable The maximum withdrawable amount of underlying token allowed (in underlying).
+    /// @return borrowable The maximum borrowable amount of underlying token allowed (in underlying).
+    function getUserMaxCapacitiesForAsset(address _user, address _poolTokenAddress)
+        external
+        view
+        returns (uint256 withdrawable, uint256 borrowable)
+    {
+        LiquidityData memory data;
+        AssetLiquidityData memory assetData;
+        ICompoundOracle oracle = ICompoundOracle(comptroller.oracle());
+        uint256 numberOfEnteredMarkets = enteredMarkets[_user].length;
+        uint256 i;
+
+        while (i < numberOfEnteredMarkets) {
+            address poolTokenEntered = enteredMarkets[_user][i];
+
+            if (_poolTokenAddress != poolTokenEntered) {
+                assetData = _getUserLiquidityDataForAsset(_user, poolTokenEntered, oracle);
+
+                unchecked {
+                    data.maxDebtValue += assetData.maxDebtValue;
+                    data.debtValue += assetData.debtValue;
+                }
+            }
+
+            unchecked {
+                ++i;
+            }
+        }
+
+        assetData = _getUserLiquidityDataForAsset(_user, _poolTokenAddress, oracle);
+
+        unchecked {
+            data.maxDebtValue += assetData.maxDebtValue;
+            data.debtValue += assetData.debtValue;
+        }
+
+        // Not possible to withdraw nor borrow.
+        if (data.maxDebtValue < data.debtValue) return (0, 0);
+
+        uint256 differenceInUnderlying = (data.maxDebtValue - data.debtValue).div(
+            assetData.underlyingPrice
+        );
+
+        withdrawable = assetData.collateralValue.div(assetData.underlyingPrice);
+        if (assetData.collateralFactor != 0) {
+            withdrawable = Math.min(
+                withdrawable,
+                differenceInUnderlying.div(assetData.collateralFactor)
+            );
+        }
+
+        borrowable = differenceInUnderlying;
+    }
+
+    /// @notice Returns the data related to `_poolTokenAddress` for the `_user`.
+    /// @dev Note: must be called after calling `accrueInterest()` on the cToken to have the most up to date values.
+    /// @param _user The user to determine data for.
+    /// @param _poolTokenAddress The address of the market.
+    /// @param _poolTokenAddress The address of the market.
+    /// @param _oracle The oracle used.
+    /// @return assetData The data related to this asset.
+    function getUserLiquidityDataForAsset(
+        address _user,
+        address _poolTokenAddress,
+        ICompoundOracle _oracle
+    ) external view returns (AssetLiquidityData memory assetData) {
+        return _getUserLiquidityDataForAsset(_user, _poolTokenAddress, _oracle);
+    }
+
     // Allows to receive ETH.
     receive() external payable {}
 }

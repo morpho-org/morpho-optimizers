@@ -71,7 +71,7 @@ contract MatchingEngine is PositionsManagerGetters {
         ICToken _poolToken,
         uint256 _amount,
         uint256 _maxGasToConsume
-    ) internal override returns (uint256 matched) {
+    ) internal returns (uint256 matched) {
         MatchVars memory vars;
         address poolTokenAddress = address(_poolToken);
         address user = suppliersOnPool[poolTokenAddress].getHead();
@@ -121,7 +121,7 @@ contract MatchingEngine is PositionsManagerGetters {
         address _poolTokenAddress,
         uint256 _amount,
         uint256 _maxGasToConsume
-    ) internal override returns (uint256) {
+    ) internal returns (uint256) {
         UnmatchVars memory vars;
         address user = suppliersInP2P[_poolTokenAddress].getHead();
         vars.poolIndex = ICToken(_poolTokenAddress).exchangeRateCurrent();
@@ -177,7 +177,7 @@ contract MatchingEngine is PositionsManagerGetters {
         ICToken _poolToken,
         uint256 _amount,
         uint256 _maxGasToConsume
-    ) internal override returns (uint256 matched) {
+    ) internal returns (uint256 matched) {
         MatchVars memory vars;
         address poolTokenAddress = address(_poolToken);
         address user = borrowersOnPool[poolTokenAddress].getHead();
@@ -229,7 +229,7 @@ contract MatchingEngine is PositionsManagerGetters {
         address _poolTokenAddress,
         uint256 _amount,
         uint256 _maxGasToConsume
-    ) internal override returns (uint256) {
+    ) internal returns (uint256) {
         UnmatchVars memory vars;
         address user = borrowersInP2P[_poolTokenAddress].getHead();
         uint256 remainingToUnmatch = _amount;
@@ -279,7 +279,7 @@ contract MatchingEngine is PositionsManagerGetters {
     /// @notice Updates borrowers matching engine with the new balances of a given user.
     /// @param _poolTokenAddress The address of the market on which to update the borrowers data structure.
     /// @param _user The address of the user.
-    function updateBorrowers(address _poolTokenAddress, address _user) internal override {
+    function updateBorrowers(address _poolTokenAddress, address _user) internal {
         uint256 onPool = borrowBalanceInOf[_poolTokenAddress][_user].onPool;
         uint256 inP2P = borrowBalanceInOf[_poolTokenAddress][_user].inP2P;
         uint256 formerValueOnPool = borrowersOnPool[_poolTokenAddress].getValueOf(_user);
@@ -308,7 +308,7 @@ contract MatchingEngine is PositionsManagerGetters {
     /// @notice Updates suppliers matching engine with the new balances of a given user.
     /// @param _poolTokenAddress The address of the market on which to update the suppliers data structure.
     /// @param _user The address of the user.
-    function updateSuppliers(address _poolTokenAddress, address _user) internal override {
+    function updateSuppliers(address _poolTokenAddress, address _user) internal {
         uint256 onPool = supplyBalanceInOf[_poolTokenAddress][_user].onPool;
         uint256 inP2P = supplyBalanceInOf[_poolTokenAddress][_user].inP2P;
         uint256 formerValueOnPool = suppliersOnPool[_poolTokenAddress].getValueOf(_user);
