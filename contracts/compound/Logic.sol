@@ -165,7 +165,7 @@ contract Logic is ILogic, MatchingEngine {
 
         /// Supply on pool ///
 
-        if (remainingToSupply > 0) {
+        if (_isAboveCompoundThreshold(_poolTokenAddress, remainingToSupply)) {
             supplyBalanceInOf[_poolTokenAddress][msg.sender].onPool += remainingToSupply.div(
                 ICToken(_poolTokenAddress).exchangeRateCurrent()
             ); // In scaled balance.
@@ -186,7 +186,6 @@ contract Logic is ILogic, MatchingEngine {
         _enterMarketIfNeeded(_poolTokenAddress, msg.sender);
         _checkUserLiquidity(msg.sender, _poolTokenAddress, 0, _amount);
         ERC20 underlyingToken = _getUnderlying(_poolTokenAddress);
-        uint256 balanceBefore = underlyingToken.balanceOf(address(this));
         uint256 remainingToBorrow = _amount;
         uint256 toWithdraw;
         Types.Delta storage delta = deltas[_poolTokenAddress];
@@ -232,7 +231,7 @@ contract Logic is ILogic, MatchingEngine {
             }
         }
 
-        if (toWithdraw > 0) {
+        if (_isAboveCompoundThreshold(_poolTokenAddress, toWithdraw)) {
             uint256 toAddInP2P = toWithdraw.div(
                 marketsManager.borrowP2PExchangeRate(_poolTokenAddress)
             ); // In p2pUnit.
@@ -247,7 +246,7 @@ contract Logic is ILogic, MatchingEngine {
 
         /// Borrow on pool ///
 
-        if (_isAboveCompoundThreshold(_poolTokenAddress, remainingToBorrow)) {
+        if (remainingToBorrow > 0) {
             borrowBalanceInOf[_poolTokenAddress][msg.sender].onPool += remainingToBorrow.div(
                 ICToken(_poolTokenAddress).borrowIndex()
             ); // In cdUnit.
@@ -255,10 +254,7 @@ contract Logic is ILogic, MatchingEngine {
             _borrowFromPool(_poolTokenAddress, remainingToBorrow);
         }
 
-        // Due to rounding errors the balance may be lower than expected.
-        uint256 balanceAfter = underlyingToken.balanceOf(address(this));
-
-        underlyingToken.safeTransfer(msg.sender, balanceAfter - balanceBefore);
+        underlyingToken.safeTransfer(msg.sender, _amount);
     }
 
     /// @dev Implements withdraw logic.
@@ -299,7 +295,8 @@ contract Logic is ILogic, MatchingEngine {
             updateSuppliers(_poolTokenAddress, _supplier);
 
             if (vars.remainingToWithdraw == 0) {
-                if (vars.toWithdraw > 0) _withdrawFromPool(_poolTokenAddress, vars.toWithdraw); // Reverts on error.
+                if (_isAboveCompoundThreshold(_poolTokenAddress, vars.toWithdraw))
+                    _withdrawFromPool(_poolTokenAddress, vars.toWithdraw); // Reverts on error.
                 underlyingToken.safeTransfer(_receiver, _amount);
                 _leaveMarketIfNeeded(_poolTokenAddress, _supplier);
                 return;
@@ -355,7 +352,8 @@ contract Logic is ILogic, MatchingEngine {
             }
         }
 
-        if (vars.toWithdraw > 0) _withdrawFromPool(_poolTokenAddress, vars.toWithdraw); // Reverts on error.
+        if (_isAboveCompoundThreshold(_poolTokenAddress, vars.toWithdraw))
+            _withdrawFromPool(_poolTokenAddress, vars.toWithdraw); // Reverts on error.
 
         /// Hard withdraw ///
 
@@ -505,7 +503,7 @@ contract Logic is ILogic, MatchingEngine {
 
         /// Hard repay ///
 
-        if (vars.remainingToRepay > 0) {
+        if (_isAboveCompoundThreshold(_poolTokenAddress, vars.remainingToRepay)) {
             uint256 unmatched = unmatchSuppliers(
                 _poolTokenAddress,
                 vars.remainingToRepay,
@@ -526,6 +524,7 @@ contract Logic is ILogic, MatchingEngine {
 
             _supplyToPool(_poolTokenAddress, underlyingToken, vars.remainingToRepay); // Reverts on error.
         }
+
         _leaveMarketIfNeeded(_poolTokenAddress, _user);
     }
 
