@@ -51,7 +51,9 @@ contract TestBorrow is TestSetup {
         borrower1.supply(cUsdc, to6Decimals(amount * 2));
 
         uint256 cDaiExchangeRate = ICToken(cDai).exchangeRateCurrent();
-        borrower1.borrow(cDai, amount);
+        (, uint256 supplyOnPool) = positionsManager.supplyBalanceInOf(cDai, address(supplier1));
+        uint256 toBorrow = supplyOnPool.mul(cDaiExchangeRate);
+        borrower1.borrow(cDai, toBorrow);
 
         (uint256 supplyInP2P, ) = positionsManager.supplyBalanceInOf(cDai, address(supplier1));
 
@@ -112,19 +114,23 @@ contract TestBorrow is TestSetup {
 
         uint256 amountPerSupplier = amount / NMAX;
         uint256[] memory rates = new uint256[](NMAX);
+        uint256 toBorrow;
 
         for (uint256 i = 0; i < NMAX; i++) {
             // Rates change every time.
             rates[i] = ICToken(cDai).exchangeRateCurrent();
             suppliers[i].approve(dai, amountPerSupplier);
             suppliers[i].supply(cDai, amountPerSupplier);
+
+            (, uint256 supplyOnPool) = positionsManager.supplyBalanceInOf(cDai, address(supplier1));
+            toBorrow += supplyOnPool.mul(rates[i]);
         }
 
         borrower1.approve(usdc, to6Decimals(collateral));
         borrower1.supply(cUsdc, to6Decimals(collateral));
 
         uint256 cDaiExchangeRate = ICToken(cDai).exchangeRateCurrent();
-        borrower1.borrow(cDai, amount);
+        borrower1.borrow(cDai, toBorrow);
         uint256 supplyP2PExchangeRate = marketsManager.supplyP2PExchangeRate(cDai);
         uint256 inP2P;
         uint256 onPool;
