@@ -87,14 +87,17 @@ contract TestEth is TestSetup {
     function testBorrowEthInP2P() public {
         uint256 collateral = to6Decimals(100_000 ether);
         uint256 toSupply = 1 ether;
-        uint256 toBorrow = 1 ether;
+        // uint256 toBorrow = 1 ether;
 
         supplier1.approve(wEth, address(positionsManager), toSupply);
         supplier1.supply(cEth, toSupply);
 
         borrower1.approve(usdc, address(positionsManager), collateral);
         borrower1.supply(cUsdc, collateral);
+        uint256 cEthExchangeRate = ICToken(cEth).exchangeRateCurrent();
         uint256 balanceBefore = borrower1.balanceOf(wEth);
+        (, uint256 supplyOnPool) = positionsManager.supplyBalanceInOf(cEth, address(supplier1));
+        uint256 toBorrow = supplyOnPool.mul(cEthExchangeRate);
         borrower1.borrow(cEth, toBorrow);
         uint256 balanceAfter = borrower1.balanceOf(wEth);
 
