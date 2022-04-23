@@ -106,7 +106,7 @@ contract TestMarketsManager is TestSetup {
         borrower1.setNDS(newNDS);
     }
 
-    function test_only_owner_should_flip_market_strategy() public {
+    function testOnlyOwnerShouldFlipMarketStrategy() public {
         hevm.expectRevert("Ownable: caller is not the owner");
         supplier1.setNoP2P(cDai, true);
 
