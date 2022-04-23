@@ -278,7 +278,7 @@ contract MatchingEngine is PositionsManagerGetters {
         uint256 formerValueInP2P = borrowersInP2P[_poolTokenAddress].getValueOf(_user);
 
         // Check pool.
-        if (onPool <= 1) {
+        if (onPool <= dustThreshold) {
             borrowBalanceInOf[_poolTokenAddress][_user].onPool = 0;
             onPool = 0;
         }
@@ -288,7 +288,7 @@ contract MatchingEngine is PositionsManagerGetters {
         }
 
         // Check P2P.
-        if (inP2P <= 1) {
+        if (inP2P <= dustThreshold) {
             borrowBalanceInOf[_poolTokenAddress][_user].inP2P = 0;
             inP2P = 0;
         }
@@ -315,7 +315,7 @@ contract MatchingEngine is PositionsManagerGetters {
         uint256 formerValueInP2P = suppliersInP2P[_poolTokenAddress].getValueOf(_user);
 
         // Check pool.
-        if (onPool <= 1) {
+        if (onPool <= dustThreshold) {
             supplyBalanceInOf[_poolTokenAddress][_user].onPool = 0;
             onPool = 0;
         }
@@ -325,7 +325,7 @@ contract MatchingEngine is PositionsManagerGetters {
         }
 
         // Check P2P.
-        if (inP2P <= 1) {
+        if (inP2P <= dustThreshold) {
             supplyBalanceInOf[_poolTokenAddress][_user].inP2P = 0;
             inP2P = 0;
         }
