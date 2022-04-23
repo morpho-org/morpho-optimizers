@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-// import "./libraries/MatchingEngineDCs.sol";
 import "./interfaces/ILogic.sol";
+
 import "./MatchingEngine.sol";
 
 /// @title PositionsManagerLogic.
@@ -36,8 +36,11 @@ contract Logic is ILogic, MatchingEngine {
 
     /// ERRORS ///
 
-    /// @notice Thrown when the mint on Compound failed.
-    error MintOnCompoundFailed();
+    /// @notice Thrown when the amount repaid during the liquidation is above what is allowed to be repaid.
+    error AmountAboveWhatAllowedToRepay();
+
+    /// @notice Thrown when the amount of collateral to seize is above the collateral amount.
+    error ToSeizeAboveCollateral();
 
     /// @notice Thrown when the borrow on Compound failed.
     error BorrowOnCompoundFailed();
@@ -48,20 +51,18 @@ contract Logic is ILogic, MatchingEngine {
     /// @notice Thrown when the repay on Compound failed.
     error RepayOnCompoundFailed();
 
+    /// @notice Thrown when the mint on Compound failed.
+    error MintOnCompoundFailed();
+
     /// @notice Thrown when the debt value is not above the maximum debt value.
     error DebtValueNotAboveMax();
-
-    /// @notice Thrown when the amount of collateral to seize is above the collateral amount.
-    error ToSeizeAboveCollateral();
-
-    /// @notice Thrown when the amount repaid during the liquidation is above what is allowed to be repaid.
-    error AmountAboveWhatAllowedToRepay();
 
     /// @notice Thrown when the Compound's oracle failed.
     error CompoundOracleFailed();
 
     /// STRUCTS ///
 
+    // Struct to avoid stack too deep.
     struct WithdrawVars {
         uint256 remainingToWithdraw;
         uint256 supplyPoolIndex;
@@ -69,6 +70,7 @@ contract Logic is ILogic, MatchingEngine {
         uint256 toWithdraw;
     }
 
+    // Struct to avoid stack too deep.
     struct RepayVars {
         uint256 supplyP2PExchangeRate;
         uint256 borrowP2PExchangeRate;
@@ -629,9 +631,9 @@ contract Logic is ILogic, MatchingEngine {
         }
     }
 
-    /// @dev Returns whether it is unsafe supply/witdhraw due to coumpound's revert on low levels of precision or not.
+    /// @dev Returns whether it is safe to supply/witdhraw on Compound or not due to Coumpound's revert on low amounts.
     /// @param _amount The amount of token considered for depositing/redeeming.
-    /// @param _poolTokenAddress poolToken address of the considered market.
+    /// @param _poolTokenAddress The poolToken address of the considered market.
     /// @return Whether to continue or not.
     function _isAboveCompoundThreshold(address _poolTokenAddress, uint256 _amount)
         internal
