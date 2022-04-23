@@ -6,6 +6,8 @@ import "./interfaces/IInterestRates.sol";
 import "./libraries/CompoundMath.sol";
 import "./libraries/Types.sol";
 
+/// @title Interest Rates computation V1.
+/// @notice Smart contract computing the exchange rates on Morpho.
 contract InterestRatesV1 is IInterestRates {
     using CompoundMath for uint256;
 

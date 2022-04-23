@@ -2,9 +2,9 @@
 pragma solidity 0.8.13;
 
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import "./interfaces/compound/ICompound.sol";
 import "./interfaces/IPositionsManager.sol";
 import "./interfaces/IMarketsManager.sol";
-import "./interfaces/compound/ICompound.sol";
 import "./interfaces/IInterestRates.sol";
 
 import "./libraries/CompoundMath.sol";
@@ -87,23 +87,23 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
 
     /// ERRORS ///
 
-    /// @notice Thrown when the market is not created yet.
-    error MarketNotCreated();
+    /// @notice Thrown when the creation of a market failed on Compound.
+    error MarketCreationFailedOnCompound();
 
     /// @notice Thrown when the market is not listed on Compound.
     error MarketIsNotListedOnCompound();
 
-    /// @notice Thrown when the market is already created.
-    error MarketAlreadyCreated();
-
     /// @notice Thrown when the positionsManager is already set.
     error PositionsManagerAlreadySet();
+
+    /// @notice Thrown when the market is already created.
+    error MarketAlreadyCreated();
 
     /// @notice Thrown when only the positions manager can call the function.
     error OnlyPositionsManager();
 
-    /// @notice Thrown when the creation of a market failed on Compound.
-    error MarketCreationFailedOnCompound();
+    /// @notice Thrown when the market is not created yet.
+    error MarketNotCreated();
 
     /// MODIFIERS ///
 

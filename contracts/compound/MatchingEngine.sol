@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import "./libraries/FixedPointMathLib.sol";
+import "./interfaces/IMatchingEngine.sol";
 
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
@@ -12,7 +12,6 @@ import "./positions-manager-parts/PositionsManagerGetters.sol";
 /// @notice Smart contract managing the matching engine.
 contract MatchingEngine is IMatchingEngine, PositionsManagerGetters {
     using DoubleLinkedList for DoubleLinkedList.List;
-    using FixedPointMathLib for uint256;
     using CompoundMath for uint256;
 
     /// STRUCTS ///
@@ -59,7 +58,7 @@ contract MatchingEngine is IMatchingEngine, PositionsManagerGetters {
         uint256 _balanceInP2P
     );
 
-    /// EXTERNAL ///
+    /// PUBLIC ///
 
     /// @notice Matches suppliers' liquidity waiting on Compound up to the given `_amount` and move it to P2P.
     /// @dev Note: p2pExchangeRates must have been updated before calling this function.
