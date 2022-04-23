@@ -409,8 +409,8 @@ contract TestWithdraw is TestSetup {
     }
 
     function testDeltaWithdraw() public {
-        // 3.2e6 allows only 10 unmatch borrowers.
-        setMaxGasHelper(3e6, 3e6, 3.2e6, 3e6);
+        // 2e6 allows only 10 unmatch borrowers.
+        setMaxGasHelper(3e6, 3e6, 2e6, 3e6);
 
         uint256 borrowedAmount = 1 ether;
         uint256 collateral = 2 * borrowedAmount;
