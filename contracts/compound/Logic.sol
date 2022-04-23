@@ -292,10 +292,10 @@ contract Logic is ILogic, MatchingEngine {
             );
             vars.remainingToWithdraw -= vars.toWithdraw;
 
-            // Handle case where only 1 wei stays on the position.
-            uint256 diff = supplyBalanceInOf[_poolTokenAddress][_supplier].onPool -
-                CompoundMath.min(onPoolSupply, vars.toWithdraw.div(vars.supplyPoolIndex));
-            supplyBalanceInOf[_poolTokenAddress][_supplier].onPool = diff == 1 ? 0 : diff;
+            supplyBalanceInOf[_poolTokenAddress][_supplier].onPool -= CompoundMath.min(
+                onPoolSupply,
+                vars.toWithdraw.div(vars.supplyPoolIndex)
+            );
             updateSuppliers(_poolTokenAddress, _supplier);
 
             if (vars.remainingToWithdraw == 0) {
@@ -416,10 +416,10 @@ contract Logic is ILogic, MatchingEngine {
             );
             vars.remainingToRepay -= vars.toRepay;
 
-            // Handle case where only 1 wei stays on the position.
-            uint256 diffPool = borrowBalanceInOf[_poolTokenAddress][_user].onPool -
-                CompoundMath.min(borrowedOnPool, vars.toRepay.div(vars.borrowPoolIndex));
-            borrowBalanceInOf[_poolTokenAddress][_user].onPool = diffPool == 1 ? 0 : diffPool; // In cdUnit.
+            borrowBalanceInOf[_poolTokenAddress][_user].onPool -= CompoundMath.min(
+                borrowedOnPool,
+                vars.toRepay.div(vars.borrowPoolIndex)
+            ); // In cdUnit.
             updateBorrowers(_poolTokenAddress, _user);
 
             if (vars.remainingToRepay == 0) {
@@ -440,11 +440,10 @@ contract Logic is ILogic, MatchingEngine {
         Types.Delta storage delta = deltas[_poolTokenAddress];
         vars.supplyP2PExchangeRate = marketsManager.supplyP2PExchangeRate(_poolTokenAddress);
         vars.borrowP2PExchangeRate = marketsManager.borrowP2PExchangeRate(_poolTokenAddress);
-        // Handle case where only 1 wei stays on the position.
-        uint256 inP2P = borrowBalanceInOf[_poolTokenAddress][_user].inP2P;
-        uint256 diffP2P = inP2P -
-            CompoundMath.min(inP2P, vars.remainingToRepay.div(vars.borrowP2PExchangeRate));
-        borrowBalanceInOf[_poolTokenAddress][_user].inP2P = diffP2P == 1 ? 0 : diffP2P; // In p2pUnit.
+        borrowBalanceInOf[_poolTokenAddress][_user].inP2P -= CompoundMath.min(
+            borrowBalanceInOf[_poolTokenAddress][_user].inP2P,
+            vars.remainingToRepay.div(vars.borrowP2PExchangeRate)
+        ); // In p2pUnit.
         updateBorrowers(_poolTokenAddress, _user);
 
         /// Fee repay ///
