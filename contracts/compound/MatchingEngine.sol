@@ -91,10 +91,9 @@ contract MatchingEngine is PositionsManagerGetters {
                     matched += vars.toMatch;
                 }
 
-                // Handle rounding error of 1 wei.
-                uint256 diff = supplyBalanceInOf[poolTokenAddress][user].onPool -
-                    vars.toMatch.div(vars.poolIndex);
-                supplyBalanceInOf[poolTokenAddress][user].onPool = diff == 1 ? 0 : diff;
+                supplyBalanceInOf[poolTokenAddress][user].onPool -= vars.toMatch.div(
+                    vars.poolIndex
+                );
                 supplyBalanceInOf[poolTokenAddress][user].inP2P += vars.toMatch.div(vars.p2pRate); // In p2pUnit
                 updateSuppliers(poolTokenAddress, user);
                 emit SupplierPositionUpdated(
@@ -145,10 +144,9 @@ contract MatchingEngine is PositionsManagerGetters {
                 supplyBalanceInOf[_poolTokenAddress][user].onPool += vars.toUnmatch.div(
                     vars.poolIndex
                 );
-                // Handle rounding error of 1 wei.
-                uint256 diff = supplyBalanceInOf[_poolTokenAddress][user].inP2P -
-                    vars.toUnmatch.div(vars.p2pRate);
-                supplyBalanceInOf[_poolTokenAddress][user].inP2P = diff == 1 ? 0 : diff; // In p2pUnit
+                supplyBalanceInOf[_poolTokenAddress][user].inP2P -= vars.toUnmatch.div(
+                    vars.p2pRate
+                ); // In p2pUnit
                 updateSuppliers(_poolTokenAddress, user);
                 emit SupplierPositionUpdated(
                     user,
@@ -198,10 +196,9 @@ contract MatchingEngine is PositionsManagerGetters {
                     matched += vars.toMatch;
                 }
 
-                // Handle rounding error of 1 wei.
-                uint256 diff = borrowBalanceInOf[poolTokenAddress][user].onPool -
-                    vars.toMatch.div(vars.poolIndex);
-                borrowBalanceInOf[poolTokenAddress][user].onPool = diff == 1 ? 0 : diff;
+                borrowBalanceInOf[poolTokenAddress][user].onPool -= vars.toMatch.div(
+                    vars.poolIndex
+                );
                 borrowBalanceInOf[poolTokenAddress][user].inP2P += vars.toMatch.div(vars.p2pRate);
                 updateBorrowers(poolTokenAddress, user);
                 emit BorrowerPositionUpdated(
@@ -281,12 +278,20 @@ contract MatchingEngine is PositionsManagerGetters {
         uint256 formerValueInP2P = borrowersInP2P[_poolTokenAddress].getValueOf(_user);
 
         // Check pool.
+        if (onPool <= 1) {
+            borrowBalanceInOf[_poolTokenAddress][_user].onPool = 0;
+            onPool = 0;
+        }
         if (formerValueOnPool != onPool) {
             if (formerValueOnPool > 0) borrowersOnPool[_poolTokenAddress].remove(_user);
             if (onPool > 0) borrowersOnPool[_poolTokenAddress].insertSorted(_user, onPool, NDS);
         }
 
         // Check P2P.
+        if (inP2P <= 1) {
+            borrowBalanceInOf[_poolTokenAddress][_user].inP2P = 0;
+            inP2P = 0;
+        }
         if (formerValueInP2P != inP2P) {
             if (formerValueInP2P > 0) borrowersInP2P[_poolTokenAddress].remove(_user);
             if (inP2P > 0) borrowersInP2P[_poolTokenAddress].insertSorted(_user, inP2P, NDS);
@@ -310,12 +315,20 @@ contract MatchingEngine is PositionsManagerGetters {
         uint256 formerValueInP2P = suppliersInP2P[_poolTokenAddress].getValueOf(_user);
 
         // Check pool.
+        if (onPool <= 1) {
+            supplyBalanceInOf[_poolTokenAddress][_user].onPool = 0;
+            onPool = 0;
+        }
         if (formerValueOnPool != onPool) {
             if (formerValueOnPool > 0) suppliersOnPool[_poolTokenAddress].remove(_user);
             if (onPool > 0) suppliersOnPool[_poolTokenAddress].insertSorted(_user, onPool, NDS);
         }
 
         // Check P2P.
+        if (inP2P <= 1) {
+            supplyBalanceInOf[_poolTokenAddress][_user].inP2P = 0;
+            inP2P = 0;
+        }
         if (formerValueInP2P != inP2P) {
             if (formerValueInP2P > 0) suppliersInP2P[_poolTokenAddress].remove(_user);
             if (inP2P > 0) suppliersInP2P[_poolTokenAddress].insertSorted(_user, inP2P, NDS);
