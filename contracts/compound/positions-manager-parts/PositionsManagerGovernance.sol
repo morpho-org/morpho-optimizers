@@ -72,6 +72,13 @@ abstract contract PositionsManagerGovernance is PositionsManagerEventsErrors {
         emit PauseStatusSet(_poolTokenAddress, newPauseStatus);
     }
 
+    /// @dev Sets `dustThreshold`.
+    /// @param _dustThreshold The new `dustThreshold`.
+    function setDustThreshold(uint256 _dustThreshold) external onlyOwner {
+        dustThreshold = _dustThreshold;
+        emit DustThresholdSet(_dustThreshold);
+    }
+
     /// @notice Toggles the activation of COMP rewards.
     function toggleCompRewardsActivation() external onlyOwner {
         bool newCompRewardsActive = !isCompRewardsActive;
