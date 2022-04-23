@@ -4,10 +4,11 @@ pragma solidity 0.8.13;
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "./PositionsManagerEventsErrors.sol";
 
-/// @title PositionsManagerGettersSetters.
-/// @notice Getters and setters for PositionsManager, including externals, internals, user-accessible and admin-only functions.
+/// @title PositionsManagerSetters.
+/// @notice Setters for PositionsManager, including admin-only functions.
 abstract contract PositionsManagerSetters is PositionsManagerEventsErrors {
     using DoubleLinkedList for DoubleLinkedList.List;
+    using SafeTransferLib for ERC20;
     using CompoundMath for uint256;
 
     /// MODIFIERS ///
@@ -78,6 +79,8 @@ abstract contract PositionsManagerSetters is PositionsManagerEventsErrors {
         emit PauseStatusSet(_poolTokenAddress, newPauseStatus);
     }
 
+    /// ADMIN ///
+
     /// @notice Creates markets.
     /// @param _poolTokenAddress The address of the market the user wants to supply.
     /// @return The results of entered.
@@ -89,5 +92,23 @@ abstract contract PositionsManagerSetters is PositionsManagerEventsErrors {
         address[] memory marketToEnter = new address[](1);
         marketToEnter[0] = _poolTokenAddress;
         return comptroller.enterMarkets(marketToEnter);
+    }
+
+    /// @dev Transfers the protocol reserve fee to the DAO.
+    /// @param _poolTokenAddress The address of the market on which we want to claim the reserve fee.
+    function claimToTreasury(address _poolTokenAddress)
+        external
+        onlyOwner
+        isMarketCreatedAndNotPaused(_poolTokenAddress)
+    {
+        if (treasuryVault == address(0)) revert ZeroAddress();
+
+        ERC20 underlyingToken = _getUnderlying(_poolTokenAddress);
+        uint256 amountToClaim = underlyingToken.balanceOf(address(this));
+
+        if (amountToClaim == 0) revert AmountIsZero();
+
+        underlyingToken.safeTransfer(treasuryVault, amountToClaim);
+        emit ReserveFeeClaimed(_poolTokenAddress, amountToClaim);
     }
 }
