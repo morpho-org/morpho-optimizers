@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import "hardhat/console.sol";
-
 import "./interfaces/IMatchingEngine.sol";
 
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
@@ -282,7 +280,7 @@ contract MatchingEngine is IMatchingEngine, PositionsManagerGetters {
         uint256 formerValueInP2P = borrowersInP2P[_poolTokenAddress].getValueOf(_user);
 
         // Check pool.
-        if (onPool <= 1) {
+        if (onPool <= dustThreshold) {
             borrowBalanceInOf[_poolTokenAddress][_user].onPool = 0;
             onPool = 0;
         }
@@ -292,7 +290,7 @@ contract MatchingEngine is IMatchingEngine, PositionsManagerGetters {
         }
 
         // Check P2P.
-        if (inP2P <= 1) {
+        if (inP2P <= dustThreshold) {
             borrowBalanceInOf[_poolTokenAddress][_user].inP2P = 0;
             inP2P = 0;
         }
@@ -319,7 +317,7 @@ contract MatchingEngine is IMatchingEngine, PositionsManagerGetters {
         uint256 formerValueInP2P = suppliersInP2P[_poolTokenAddress].getValueOf(_user);
 
         // Check pool.
-        if (onPool <= 1) {
+        if (onPool <= dustThreshold) {
             supplyBalanceInOf[_poolTokenAddress][_user].onPool = 0;
             onPool = 0;
         }
@@ -329,7 +327,7 @@ contract MatchingEngine is IMatchingEngine, PositionsManagerGetters {
         }
 
         // Check P2P.
-        if (inP2P <= 1) {
+        if (inP2P <= dustThreshold) {
             supplyBalanceInOf[_poolTokenAddress][_user].inP2P = 0;
             inP2P = 0;
         }

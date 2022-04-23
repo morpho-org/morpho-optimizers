@@ -109,6 +109,10 @@ abstract contract PositionsManagerEventsErrors is PositionsManagerGetters {
     /// @param _newStatus The new pause status of the market.
     event PauseStatusSet(address indexed _poolTokenAddress, bool _newStatus);
 
+    /// @dev Emitted when a new `dustThreshold` is set.
+    /// @param _dustThreshold The new `dustThreshold`.
+    event DustThresholdSet(uint256 _dustThreshold);
+
     /// @notice Emitted when a reserve fee is claimed.
     /// @param _poolTokenAddress The address of the pool token concerned.
     /// @param _amountClaimed The amount of reward token claimed.

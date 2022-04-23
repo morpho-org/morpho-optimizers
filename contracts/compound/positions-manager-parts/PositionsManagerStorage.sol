@@ -77,6 +77,7 @@ abstract contract PositionsManagerStorage is OwnableUpgradeable, ReentrancyGuard
     uint8 public constant CTOKEN_DECIMALS = 8; // The number of decimals for cToken.
     uint16 public constant MAX_BASIS_POINTS = 10_000; // 100% in basis points.
     uint16 public constant LIQUIDATION_CLOSE_FACTOR_PERCENT = 5_000; // 50% in basis points.
+    uint256 public dustThreshold; // The minimum amount to keep in the data stucture.
     mapping(address => DoubleLinkedList.List) internal suppliersInP2P; // For a given market, the suppliers in peer-to-peer.
     mapping(address => DoubleLinkedList.List) internal suppliersOnPool; // For a given market, the suppliers on Compound.
     mapping(address => DoubleLinkedList.List) internal borrowersInP2P; // For a given market, the borrowers in peer-to-peer.
