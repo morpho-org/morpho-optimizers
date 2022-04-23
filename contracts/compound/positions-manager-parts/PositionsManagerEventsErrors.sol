@@ -130,21 +130,21 @@ abstract contract PositionsManagerEventsErrors is PositionsManagerGetters {
 
     /// ERRORS ///
 
+    /// @notice Thrown when the market is not listed on Compound.
+    error MarketIsNotListedOnCompound();
+
+    /// @notice Thrown when only the markets manager can call the function.
+    error OnlyMarketsManager();
+
+    /// @notice Thrown when the market is not created yet.
+    error MarketNotCreated();
+
     /// @notice Thrown when the amount is equal to 0.
     error AmountIsZero();
 
     /// @notice Thrown when the address is the zero address.
     error ZeroAddress();
 
-    /// @notice Thrown when the market is not created yet.
-    error MarketNotCreated();
-
     /// @notice Thrown when the market is paused.
     error MarketPaused();
-
-    /// @notice Thrown when the market is not listed on Compound.
-    error MarketIsNotListedOnCompound();
-
-    /// @notice Thrown when only the markets manager can call the function.
-    error OnlyMarketsManager();
 }
