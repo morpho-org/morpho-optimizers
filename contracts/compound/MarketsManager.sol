@@ -251,13 +251,22 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
     /// @notice Returns market's configuration.
     /// @return isCreated_ Whether the market is created or not.
     /// @return noP2P_ Whether user are put in P2P or not.
+    /// @return paused_ Whether the market is paused or not.
+    /// @return reserveFactor_ The reserve actor applied to this market.
     function getMarketConfiguration(address _poolTokenAddress)
         external
         view
-        returns (bool isCreated_, bool noP2P_)
+        returns (
+            bool isCreated_,
+            bool noP2P_,
+            bool paused_,
+            uint256 reserveFactor_
+        )
     {
         isCreated_ = isCreated[_poolTokenAddress];
         noP2P_ = noP2P[_poolTokenAddress];
+        paused_ = positionsManager.paused(_poolTokenAddress);
+        reserveFactor_ = reserveFactor[_poolTokenAddress];
     }
 
     /// @notice Returns the updated P2P exchange rates.
