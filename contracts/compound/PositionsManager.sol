@@ -1,16 +1,17 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import "./positions-manager-parts/PositionsManagerSetters.sol";
 import "./libraries/LogicDCs.sol";
+
+import "./positions-manager-parts/PositionsManagerSetters.sol";
 
 /// @title PositionsManager.
 /// @notice Smart contract interacting with Compound to enable P2P supply/borrow positions that can fallback on Compound's pool using pool tokens.
 contract PositionsManager is PositionsManagerSetters {
-    using LogicDCs for ILogic;
     using DoubleLinkedList for DoubleLinkedList.List;
     using SafeTransferLib for ERC20;
     using CompoundMath for uint256;
+    using LogicDCs for ILogic;
 
     /// UPGRADE ///
 
@@ -227,24 +228,6 @@ contract PositionsManager is PositionsManagerSetters {
             amountSeized,
             _poolTokenCollateralAddress
         );
-    }
-
-    /// @dev Transfers the protocol reserve fee to the DAO.
-    /// @param _poolTokenAddress The address of the market on which we want to claim the reserve fee.
-    function claimToTreasury(address _poolTokenAddress)
-        external
-        onlyOwner
-        isMarketCreatedAndNotPaused(_poolTokenAddress)
-    {
-        if (treasuryVault == address(0)) revert ZeroAddress();
-
-        ERC20 underlyingToken = _getUnderlying(_poolTokenAddress);
-        uint256 amountToClaim = underlyingToken.balanceOf(address(this));
-
-        if (amountToClaim == 0) revert AmountIsZero();
-
-        underlyingToken.safeTransfer(treasuryVault, amountToClaim);
-        emit ReserveFeeClaimed(_poolTokenAddress, amountToClaim);
     }
 
     /// @notice Claims rewards for the given assets and the unclaimed rewards.
