@@ -40,10 +40,13 @@ contract TestMarketsManagerGetters is TestSetup {
     }
 
     function testGetMarketConfiguration() public {
-        (bool isCreated, bool noP2P) = marketsManager.getMarketConfiguration(cDai);
+        (bool isCreated, bool noP2P, bool paused, uint256 reserveFactor) = marketsManager
+        .getMarketConfiguration(cDai);
 
         assertTrue(isCreated == marketsManager.isCreated(cDai));
         assertTrue(noP2P == marketsManager.noP2P(cDai));
+        assertTrue(paused == positionsManager.paused(cDai));
+        assertTrue(reserveFactor == marketsManager.reserveFactor(cDai));
     }
 
     function testGetUpdatedP2PExchangeRates() public {
