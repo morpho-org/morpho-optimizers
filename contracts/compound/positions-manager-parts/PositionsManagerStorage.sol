@@ -2,7 +2,6 @@
 pragma solidity 0.8.13;
 
 import "../interfaces/IMarketsManager.sol";
-import "../interfaces/IMatchingEngine.sol";
 import "../interfaces/IRewardsManager.sol";
 import "../interfaces/ILogic.sol";
 import "../interfaces/compound/ICompound.sol";
