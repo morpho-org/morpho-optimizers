@@ -87,7 +87,6 @@ contract TestEth is TestSetup {
     function testBorrowEthInP2P() public {
         uint256 collateral = to6Decimals(100_000 ether);
         uint256 toSupply = 1 ether;
-        // uint256 toBorrow = 1 ether;
 
         supplier1.approve(wEth, address(positionsManager), toSupply);
         supplier1.supply(cEth, toSupply);

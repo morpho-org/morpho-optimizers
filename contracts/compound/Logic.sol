@@ -648,7 +648,7 @@ contract Logic is ILogic, MatchingEngine {
         if (_tokenDecimals > CTOKEN_DECIMALS) {
             // Multiply by 2 to have a safety buffer.
             unchecked {
-                return (_amount > 2 * 10**(_tokenDecimals - CTOKEN_DECIMALS));
+                return (_amount > 10**(_tokenDecimals - CTOKEN_DECIMALS));
             }
         } else return true;
     }
