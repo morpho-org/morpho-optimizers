@@ -3,11 +3,11 @@ pragma solidity 0.8.13;
 
 import "./libraries/LogicDCs.sol";
 
-import "./positions-manager-parts/PositionsManagerSetters.sol";
+import "./positions-manager-parts/PositionsManagerGovernance.sol";
 
 /// @title PositionsManager.
 /// @notice Smart contract interacting with Compound to enable P2P supply/borrow positions that can fallback on Compound's pool using pool tokens.
-contract PositionsManager is PositionsManagerSetters {
+contract PositionsManager is PositionsManagerGovernance {
     using DoubleLinkedList for DoubleLinkedList.List;
     using SafeTransferLib for ERC20;
     using CompoundMath for uint256;
