@@ -271,8 +271,6 @@ contract MatchingEngine is PositionsManagerGetters {
         return _amount - remainingToUnmatch;
     }
 
-    /// internal ///
-
     /// @notice Updates borrowers matching engine with the new balances of a given user.
     /// @param _poolTokenAddress The address of the market on which to update the borrowers data structure.
     /// @param _user The address of the user.

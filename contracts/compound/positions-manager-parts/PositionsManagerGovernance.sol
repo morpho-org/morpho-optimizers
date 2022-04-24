@@ -4,9 +4,9 @@ pragma solidity 0.8.13;
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "./PositionsManagerEventsErrors.sol";
 
-/// @title PositionsManagerSetters.
-/// @notice Setters for PositionsManager, including admin-only functions.
-abstract contract PositionsManagerSetters is PositionsManagerEventsErrors {
+/// @title PositionsManagerGovernance.
+/// @notice Governance functions for the PositionsManager.
+abstract contract PositionsManagerGovernance is PositionsManagerEventsErrors {
     using DoubleLinkedList for DoubleLinkedList.List;
     using SafeTransferLib for ERC20;
     using CompoundMath for uint256;
@@ -27,7 +27,7 @@ abstract contract PositionsManagerSetters is PositionsManagerEventsErrors {
         _;
     }
 
-    /// SETTERS ///
+    /// GOVERNANCE ///
 
     /// @notice Sets `NDS`.
     /// @param _newNDS The new `NDS` value.
@@ -64,13 +64,6 @@ abstract contract PositionsManagerSetters is PositionsManagerEventsErrors {
         emit RewardsManagerSet(_rewardsManagerAddress);
     }
 
-    /// @notice Toggles the activation of COMP rewards.
-    function toggleCompRewardsActivation() external onlyOwner {
-        bool newCompRewardsActive = !isCompRewardsActive;
-        isCompRewardsActive = newCompRewardsActive;
-        emit CompRewardsActive(newCompRewardsActive);
-    }
-
     /// @notice Sets the pause status on a specific market in case of emergency.
     /// @param _poolTokenAddress The address of the market to pause/unpause.
     function setPauseStatus(address _poolTokenAddress) external onlyOwner {
@@ -79,7 +72,12 @@ abstract contract PositionsManagerSetters is PositionsManagerEventsErrors {
         emit PauseStatusSet(_poolTokenAddress, newPauseStatus);
     }
 
-    /// ADMIN ///
+    /// @notice Toggles the activation of COMP rewards.
+    function toggleCompRewardsActivation() external onlyOwner {
+        bool newCompRewardsActive = !isCompRewardsActive;
+        isCompRewardsActive = newCompRewardsActive;
+        emit CompRewardsActive(newCompRewardsActive);
+    }
 
     /// @notice Creates markets.
     /// @param _poolTokenAddress The address of the market the user wants to supply.
@@ -94,7 +92,7 @@ abstract contract PositionsManagerSetters is PositionsManagerEventsErrors {
         return comptroller.enterMarkets(marketToEnter);
     }
 
-    /// @dev Transfers the protocol reserve fee to the DAO.
+    /// @notice Transfers the protocol reserve fee to the DAO.
     /// @param _poolTokenAddress The address of the market on which we want to claim the reserve fee.
     function claimToTreasury(address _poolTokenAddress)
         external
