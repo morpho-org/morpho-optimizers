@@ -12,8 +12,8 @@ contract TestInterestRates is TestSetup {
     uint256 public lastPoolBorrowExchangeRate = 1 * WAD;
     uint256 public reserveFactor0PerCent = 0;
     uint256 public reserveFactor50PerCent = 5_000;
-    uint16 public supplyWeigth = 2;
-    uint16 public borrowWeigth = 1;
+    uint256 public supplyWeigth = 2;
+    uint256 public borrowWeigth = 1;
 
     function computeP2PExchangeRates(Types.Params memory params)
         public
@@ -34,14 +34,14 @@ contract TestInterestRates is TestSetup {
         supplyP2PExchangeRate_ = params.supplyP2PExchangeRate * 
             (
                 (WAD - shareOfTheSupplyDelta) * 
-                    (p2pIncrease - params.reserveFactor * (p2pIncrease - supplyPoolIncrease) / MAX_BASIS_POINTS) / WAD + 
+                    ((MAX_BASIS_POINTS - params.reserveFactor) * p2pIncrease + params.reserveFactor * supplyPoolIncrease) / MAX_BASIS_POINTS / WAD + 
                 shareOfTheSupplyDelta * 
                     supplyPoolIncrease / WAD
             ) / WAD; // prettier-ignore
         borrowP2PExchangeRate_ = params.borrowP2PExchangeRate * 
             (
                 (WAD - shareOfTheBorrowDelta) * 
-                    (p2pIncrease + params.reserveFactor * (borrowPoolIncrease - p2pIncrease) / MAX_BASIS_POINTS) / WAD + 
+                    ((MAX_BASIS_POINTS - params.reserveFactor) * p2pIncrease + params.reserveFactor * borrowPoolIncrease) / MAX_BASIS_POINTS / WAD + 
                 shareOfTheBorrowDelta * 
                     borrowPoolIncrease / WAD
             ) / WAD; // prettier-ignore
