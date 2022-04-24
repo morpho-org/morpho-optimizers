@@ -165,7 +165,7 @@ contract Logic is ILogic, MatchingEngine {
 
         /// Supply on pool ///
 
-        if (_isAboveCompoundThreshold(_poolTokenAddress, remainingToSupply)) {
+        if (_isAboveCompoundThreshold(remainingToSupply, underlyingToken.decimals())) {
             supplyBalanceInOf[_poolTokenAddress][msg.sender].onPool += remainingToSupply.div(
                 ICToken(_poolTokenAddress).exchangeRateCurrent()
             ); // In scaled balance.
@@ -231,7 +231,7 @@ contract Logic is ILogic, MatchingEngine {
             }
         }
 
-        if (_isAboveCompoundThreshold(_poolTokenAddress, toWithdraw)) {
+        if (_isAboveCompoundThreshold(toWithdraw, underlyingToken.decimals())) {
             uint256 toAddInP2P = toWithdraw.div(
                 marketsManager.borrowP2PExchangeRate(_poolTokenAddress)
             ); // In p2pUnit.
@@ -295,7 +295,7 @@ contract Logic is ILogic, MatchingEngine {
             updateSuppliers(_poolTokenAddress, _supplier);
 
             if (vars.remainingToWithdraw == 0) {
-                if (_isAboveCompoundThreshold(_poolTokenAddress, vars.toWithdraw))
+                if (_isAboveCompoundThreshold(vars.toWithdraw, underlyingToken.decimals()))
                     _withdrawFromPool(_poolTokenAddress, vars.toWithdraw); // Reverts on error.
                 underlyingToken.safeTransfer(_receiver, _amount);
                 _leaveMarketIfNeeded(_poolTokenAddress, _supplier);
@@ -352,7 +352,7 @@ contract Logic is ILogic, MatchingEngine {
             }
         }
 
-        if (_isAboveCompoundThreshold(_poolTokenAddress, vars.toWithdraw))
+        if (_isAboveCompoundThreshold(vars.toWithdraw, underlyingToken.decimals()))
             _withdrawFromPool(_poolTokenAddress, vars.toWithdraw); // Reverts on error.
 
         /// Hard withdraw ///
@@ -503,7 +503,7 @@ contract Logic is ILogic, MatchingEngine {
 
         /// Hard repay ///
 
-        if (_isAboveCompoundThreshold(_poolTokenAddress, vars.remainingToRepay)) {
+        if (_isAboveCompoundThreshold(vars.remainingToRepay, underlyingToken.decimals())) {
             uint256 unmatched = unmatchSuppliers(
                 _poolTokenAddress,
                 vars.remainingToRepay,
@@ -638,18 +638,17 @@ contract Logic is ILogic, MatchingEngine {
 
     /// @dev Returns whether it is safe to supply/witdhraw on Compound or not due to Coumpound's revert on low amounts.
     /// @param _amount The amount of token considered for depositing/redeeming.
-    /// @param _poolTokenAddress The poolToken address of the considered market.
+    /// @param _tokenDecimals The number of decimals for the token considered.
     /// @return Whether to continue or not.
-    function _isAboveCompoundThreshold(address _poolTokenAddress, uint256 _amount)
+    function _isAboveCompoundThreshold(uint256 _amount, uint256 _tokenDecimals)
         internal
-        view
+        pure
         returns (bool)
     {
-        uint8 tokenDecimals = _getUnderlying(_poolTokenAddress).decimals();
-        if (tokenDecimals > CTOKEN_DECIMALS) {
+        if (_tokenDecimals > CTOKEN_DECIMALS) {
             // Multiply by 2 to have a safety buffer.
             unchecked {
-                return (_amount > 2 * 10**(tokenDecimals - CTOKEN_DECIMALS));
+                return (_amount > 2 * 10**(_tokenDecimals - CTOKEN_DECIMALS));
             }
         } else return true;
     }
