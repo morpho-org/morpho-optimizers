@@ -10,7 +10,7 @@ import "./positions-manager-parts/PositionsManagerGetters.sol";
 
 /// @title MatchingEngineManager.
 /// @notice Smart contract managing the matching engine.
-contract MatchingEngine is IMatchingEngine, PositionsManagerGetters {
+contract MatchingEngine is PositionsManagerGetters {
     using DoubleLinkedList for DoubleLinkedList.List;
     using FixedPointMathLib for uint256;
     using CompoundMath for uint256;
@@ -59,7 +59,7 @@ contract MatchingEngine is IMatchingEngine, PositionsManagerGetters {
         uint256 _balanceInP2P
     );
 
-    /// EXTERNAL ///
+    /// INTERNAL ///
 
     /// @notice Matches suppliers' liquidity waiting on Compound up to the given `_amount` and move it to P2P.
     /// @dev Note: p2pExchangeRates must have been updated before calling this function.
@@ -71,7 +71,7 @@ contract MatchingEngine is IMatchingEngine, PositionsManagerGetters {
         ICToken _poolToken,
         uint256 _amount,
         uint256 _maxGasToConsume
-    ) public override returns (uint256 matched) {
+    ) internal override returns (uint256 matched) {
         MatchVars memory vars;
         address poolTokenAddress = address(_poolToken);
         address user = suppliersOnPool[poolTokenAddress].getHead();
@@ -121,7 +121,7 @@ contract MatchingEngine is IMatchingEngine, PositionsManagerGetters {
         address _poolTokenAddress,
         uint256 _amount,
         uint256 _maxGasToConsume
-    ) public override returns (uint256) {
+    ) internal override returns (uint256) {
         UnmatchVars memory vars;
         address user = suppliersInP2P[_poolTokenAddress].getHead();
         vars.poolIndex = ICToken(_poolTokenAddress).exchangeRateCurrent();
@@ -177,7 +177,7 @@ contract MatchingEngine is IMatchingEngine, PositionsManagerGetters {
         ICToken _poolToken,
         uint256 _amount,
         uint256 _maxGasToConsume
-    ) public override returns (uint256 matched) {
+    ) internal override returns (uint256 matched) {
         MatchVars memory vars;
         address poolTokenAddress = address(_poolToken);
         address user = borrowersOnPool[poolTokenAddress].getHead();
@@ -229,7 +229,7 @@ contract MatchingEngine is IMatchingEngine, PositionsManagerGetters {
         address _poolTokenAddress,
         uint256 _amount,
         uint256 _maxGasToConsume
-    ) public override returns (uint256) {
+    ) internal override returns (uint256) {
         UnmatchVars memory vars;
         address user = borrowersInP2P[_poolTokenAddress].getHead();
         uint256 remainingToUnmatch = _amount;
@@ -274,12 +274,12 @@ contract MatchingEngine is IMatchingEngine, PositionsManagerGetters {
         return _amount - remainingToUnmatch;
     }
 
-    /// PUBLIC ///
+    /// internal ///
 
     /// @notice Updates borrowers matching engine with the new balances of a given user.
     /// @param _poolTokenAddress The address of the market on which to update the borrowers data structure.
     /// @param _user The address of the user.
-    function updateBorrowers(address _poolTokenAddress, address _user) public override {
+    function updateBorrowers(address _poolTokenAddress, address _user) internal override {
         uint256 onPool = borrowBalanceInOf[_poolTokenAddress][_user].onPool;
         uint256 inP2P = borrowBalanceInOf[_poolTokenAddress][_user].inP2P;
         uint256 formerValueOnPool = borrowersOnPool[_poolTokenAddress].getValueOf(_user);
@@ -308,7 +308,7 @@ contract MatchingEngine is IMatchingEngine, PositionsManagerGetters {
     /// @notice Updates suppliers matching engine with the new balances of a given user.
     /// @param _poolTokenAddress The address of the market on which to update the suppliers data structure.
     /// @param _user The address of the user.
-    function updateSuppliers(address _poolTokenAddress, address _user) public override {
+    function updateSuppliers(address _poolTokenAddress, address _user) internal override {
         uint256 onPool = supplyBalanceInOf[_poolTokenAddress][_user].onPool;
         uint256 inP2P = supplyBalanceInOf[_poolTokenAddress][_user].inP2P;
         uint256 formerValueOnPool = suppliersOnPool[_poolTokenAddress].getValueOf(_user);
