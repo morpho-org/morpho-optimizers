@@ -20,11 +20,6 @@ contract InterestRatesV1 is IInterestRates {
         uint256 p2pDelta; // Sum of all stored P2P in supply or borrow (in P2P unit).
     }
 
-    struct GrowthFactors {
-        uint256 p2pGrowthFactor; // P2P growth factor (between now and the last update).
-        uint256 poolGrowthFactor; // Pool growth factor (between now and the last update).
-    }
-
     /// STORAGE ///
 
     uint256 public constant WAD = 1e18;
@@ -32,7 +27,7 @@ contract InterestRatesV1 is IInterestRates {
 
     /// EXTERNAL ///
 
-    /// @dev Computes and return new P2P exchange rates.
+    /// @notice Computes and return new P2P exchange rates.
     /// @param _params Computation parameters.
     /// @return newSupplyP2PExchangeRate The updated supplyP2PExchangeRate.
     /// @return newBorrowP2PExchangeRate The updated borrowP2PExchangeRate.
@@ -42,8 +37,10 @@ contract InterestRatesV1 is IInterestRates {
         returns (uint256 newSupplyP2PExchangeRate, uint256 newBorrowP2PExchangeRate)
     {
         (
-            GrowthFactors memory supplyGrowthFactors,
-            GrowthFactors memory borrowGrowthFactors
+            uint256 supplyP2PGrowthFactor,
+            uint256 supplyPoolGrowthaFactor,
+            uint256 borrowP2PGrowthFactor,
+            uint256 borrowPoolGrowthFactor
         ) = _computeGrowthFactors(
             _params.poolSupplyExchangeRate,
             _params.poolBorrowExchangeRate,
@@ -69,11 +66,19 @@ contract InterestRatesV1 is IInterestRates {
             p2pDelta: _params.delta.borrowP2PDelta
         });
 
-        newSupplyP2PExchangeRate = _computeNewP2PRate(supplyParams, supplyGrowthFactors);
-        newBorrowP2PExchangeRate = _computeNewP2PRate(borrowParams, borrowGrowthFactors);
+        newSupplyP2PExchangeRate = _computeNewP2PRate(
+            supplyParams,
+            supplyP2PGrowthFactor,
+            supplyPoolGrowthaFactor
+        );
+        newBorrowP2PExchangeRate = _computeNewP2PRate(
+            borrowParams,
+            borrowP2PGrowthFactor,
+            borrowPoolGrowthFactor
+        );
     }
 
-    /// @dev Computes and return the new supply P2P exchange rate.
+    /// @notice Computes and return the new supply P2P exchange rate.
     /// @param _params Computation parameters.
     /// @return The updated supplyP2PExchangeRate.
     function computeSupplyP2PExchangeRate(Types.Params memory _params)
@@ -90,7 +95,12 @@ contract InterestRatesV1 is IInterestRates {
             p2pDelta: _params.delta.supplyP2PDelta
         });
 
-        (GrowthFactors memory supplyGrowthFactors, ) = _computeGrowthFactors(
+        (
+            uint256 supplyP2PGrowthFactor,
+            uint256 supplyPoolGrowthaFactor,
+            ,
+
+        ) = _computeGrowthFactors(
             _params.poolSupplyExchangeRate,
             _params.poolBorrowExchangeRate,
             _params.lastPoolSupplyExchangeRate,
@@ -98,10 +108,10 @@ contract InterestRatesV1 is IInterestRates {
             _params.reserveFactor
         );
 
-        return _computeNewP2PRate(supplyParams, supplyGrowthFactors);
+        return _computeNewP2PRate(supplyParams, supplyP2PGrowthFactor, supplyPoolGrowthaFactor);
     }
 
-    /// @dev Computes and return the new borrow P2P exchange rate.
+    /// @notice Computes and return the new borrow P2P exchange rate.
     /// @param _params Computation parameters.
     /// @return The updated borrowP2PExchangeRate.
     function computeBorrowP2PExchangeRate(Types.Params memory _params)
@@ -118,7 +128,7 @@ contract InterestRatesV1 is IInterestRates {
             p2pDelta: _params.delta.borrowP2PDelta
         });
 
-        (, GrowthFactors memory borrowGrowthFactors) = _computeGrowthFactors(
+        (, , uint256 borrowP2PGrowthFactor, uint256 borrowPoolGrowthFactor) = _computeGrowthFactors(
             _params.poolSupplyExchangeRate,
             _params.poolBorrowExchangeRate,
             _params.lastPoolSupplyExchangeRate,
@@ -126,7 +136,7 @@ contract InterestRatesV1 is IInterestRates {
             _params.reserveFactor
         );
 
-        return _computeNewP2PRate(borrowParams, borrowGrowthFactors);
+        return _computeNewP2PRate(borrowParams, borrowP2PGrowthFactor, borrowPoolGrowthFactor);
     }
 
     /// INTERNAL ///
@@ -137,8 +147,10 @@ contract InterestRatesV1 is IInterestRates {
     /// @param _lastPoolSupplyExchangeRate The pool supply exchange rate at last update.
     /// @param _lastPoolBorrowExchangeRate The pool borrow exchange rate at last update.
     /// @param _reserveFactor The reserve factor percentage (10 000 = 100%).
-    /// @return supplyGrowthFactors_ The supply growth factors paramaters.
-    /// @return borrowGrowthFactors_ The borrow growth factors paramaters.
+    /// @return supplyP2PGrowthFactor_ The supply P2P growth factor.
+    /// @return supplyPoolGrowthFactor_ The supply pool growth factor.
+    /// @return borrowP2PGrowthFactor_ The borrow P2P growth factor.
+    /// @return borrowPoolGrowthFactor_ The borrow pool growth factor.
     function _computeGrowthFactors(
         uint256 _poolSupplyExchangeRate,
         uint256 _poolBorrowExchangeRate,
@@ -149,48 +161,43 @@ contract InterestRatesV1 is IInterestRates {
         internal
         pure
         returns (
-            GrowthFactors memory supplyGrowthFactors_,
-            GrowthFactors memory borrowGrowthFactors_
+            uint256 supplyP2PGrowthFactor_,
+            uint256 supplyPoolGrowthFactor_,
+            uint256 borrowP2PGrowthFactor_,
+            uint256 borrowPoolGrowthFactor_
         )
     {
-        supplyGrowthFactors_.poolGrowthFactor = _poolSupplyExchangeRate.div(
-            _lastPoolSupplyExchangeRate
-        );
-        borrowGrowthFactors_.poolGrowthFactor = _poolBorrowExchangeRate.div(
-            _lastPoolBorrowExchangeRate
-        );
-        supplyGrowthFactors_.p2pGrowthFactor =
+        supplyPoolGrowthFactor_ = _poolSupplyExchangeRate.div(_lastPoolSupplyExchangeRate);
+        borrowPoolGrowthFactor_ = _poolBorrowExchangeRate.div(_lastPoolBorrowExchangeRate);
+        supplyP2PGrowthFactor_ =
             ((MAX_BASIS_POINTS - _reserveFactor) *
-                (2 *
-                    supplyGrowthFactors_.poolGrowthFactor +
-                    borrowGrowthFactors_.poolGrowthFactor)) /
+                (2 * supplyPoolGrowthFactor_ + borrowPoolGrowthFactor_)) /
             3 /
             MAX_BASIS_POINTS +
-            (_reserveFactor * supplyGrowthFactors_.poolGrowthFactor) /
+            (_reserveFactor * supplyPoolGrowthFactor_) /
             MAX_BASIS_POINTS;
 
-        borrowGrowthFactors_.p2pGrowthFactor =
+        borrowP2PGrowthFactor_ =
             ((MAX_BASIS_POINTS - _reserveFactor) *
-                (2 *
-                    supplyGrowthFactors_.poolGrowthFactor +
-                    borrowGrowthFactors_.poolGrowthFactor)) /
+                (2 * supplyPoolGrowthFactor_ + borrowPoolGrowthFactor_)) /
             3 /
             MAX_BASIS_POINTS +
-            (_reserveFactor * borrowGrowthFactors_.poolGrowthFactor) /
+            (_reserveFactor * borrowPoolGrowthFactor_) /
             MAX_BASIS_POINTS;
     }
 
     /// @dev Computes and returns the new P2P exchange rate.
     /// @param _params Computation parameters.
-    /// @param _growthFactors The growth factors.
+    /// @param _p2pGrowthFactor The P2P growth factor.
+    /// @param _poolGrowthFactor The pool growth factor.
     /// @return newP2PExchangeRate The updated P2P exchange rate.
-    function _computeNewP2PRate(RateParams memory _params, GrowthFactors memory _growthFactors)
-        internal
-        pure
-        returns (uint256 newP2PExchangeRate)
-    {
+    function _computeNewP2PRate(
+        RateParams memory _params,
+        uint256 _p2pGrowthFactor,
+        uint256 _poolGrowthFactor
+    ) internal pure returns (uint256 newP2PExchangeRate) {
         if (_params.p2pAmount == 0 || _params.p2pDelta == 0) {
-            newP2PExchangeRate = _params.p2pExchangeRate.mul(_growthFactors.p2pGrowthFactor);
+            newP2PExchangeRate = _params.p2pExchangeRate.mul(_p2pGrowthFactor);
         } else {
             uint256 shareOfTheDelta = CompoundMath.min(
                 _params.p2pDelta.mul(_params.poolExchangeRate).div(_params.p2pExchangeRate).div(
@@ -200,8 +207,8 @@ contract InterestRatesV1 is IInterestRates {
             );
 
             newP2PExchangeRate = _params.p2pExchangeRate.mul(
-                (WAD - shareOfTheDelta).mul(_growthFactors.p2pGrowthFactor) +
-                    shareOfTheDelta.mul(_growthFactors.poolGrowthFactor)
+                (WAD - shareOfTheDelta).mul(_p2pGrowthFactor) +
+                    shareOfTheDelta.mul(_poolGrowthFactor)
             );
         }
     }
