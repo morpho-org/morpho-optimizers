@@ -15,7 +15,7 @@ module.exports = {
     hardhat: {
       forking: {
         url: `https://${process.env.NETWORK}.g.alchemy.com/v2/${process.env.ALCHEMY_KEY}`,
-        blockNumber: 24032305
+        blockNumber: 24032305,
       },
       allowUnlimitedContractSize: true,
       blockGasLimit: 30000000,
@@ -56,7 +56,7 @@ module.exports = {
     },
   },
   solidity: {
-    version: '0.8.7',
+    version: '0.8.13',
     settings: {
       optimizer: {
         enabled: true,
