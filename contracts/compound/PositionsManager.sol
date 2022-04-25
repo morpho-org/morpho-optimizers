@@ -17,7 +17,6 @@ contract PositionsManager is PositionsManagerGovernance {
 
     /// @notice Initializes the PositionsManager contract.
     /// @param _marketsManager The `marketsManager`.
-    /// @param _comptroller The `comptroller`.
     /// @param _dustThreshold The `dustThreshold`.
     /// @param _maxGas The `maxGas`.
     /// @param _NDS The `NDS`.
@@ -26,7 +25,6 @@ contract PositionsManager is PositionsManagerGovernance {
     function initialize(
         IMarketsManager _marketsManager,
         ILogic _logic,
-        IComptroller _comptroller,
         uint256 _dustThreshold,
         MaxGas memory _maxGas,
         uint8 _NDS,
@@ -38,7 +36,6 @@ contract PositionsManager is PositionsManagerGovernance {
 
         marketsManager = _marketsManager;
         logic = _logic;
-        comptroller = _comptroller;
 
         dustThreshold = _dustThreshold;
         maxGas = _maxGas;

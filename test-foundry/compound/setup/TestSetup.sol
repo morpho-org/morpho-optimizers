@@ -101,7 +101,7 @@ contract TestSetup is Config, Utils, stdCheats {
 
         marketsManagerProxy.changeAdmin(address(proxyAdmin));
         marketsManager = MarketsManager(address(marketsManagerProxy));
-        marketsManager.initialize(comptroller, interestRates);
+        marketsManager.initialize(interestRates);
         positionsManagerImplV1 = new PositionsManager();
         positionsManagerProxy = new TransparentUpgradeableProxy(
             address(positionsManagerImplV1),
@@ -111,7 +111,7 @@ contract TestSetup is Config, Utils, stdCheats {
 
         positionsManagerProxy.changeAdmin(address(proxyAdmin));
         positionsManager = PositionsManager(payable(address(positionsManagerProxy)));
-        positionsManager.initialize(marketsManager, logic, comptroller, 1, maxGas, 20, cEth, wEth);
+        positionsManager.initialize(marketsManager, logic, 1, maxGas, 20, cEth, wEth);
 
         treasuryVault = new User(positionsManager);
         fakePositionsManagerImpl = new PositionsManager();

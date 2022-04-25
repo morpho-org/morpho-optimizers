@@ -28,6 +28,9 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
 
     uint256 public constant WAD = 1e18;
     uint16 public constant MAX_BASIS_POINTS = 10_000; // 100% (in basis point).
+    IComptroller public constant comptroller =
+        IComptroller(0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B);
+
     address[] public marketsCreated; // Keeps track of the created markets.
     mapping(address => bool) public override isCreated; // Whether or not this market is created.
     mapping(address => uint256) public reserveFactor; // Proportion of the interest earned by users sent to the DAO for each market, in basis point (100% = 10000). The default value is 0.
@@ -39,7 +42,6 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
 
     IPositionsManager public positionsManager;
     IInterestRates public interestRates;
-    IComptroller public comptroller;
 
     /// EVENTS ///
 
@@ -123,15 +125,10 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
     /// UPGRADE ///
 
     /// @notice Initializes the MarketsManager contract.
-    /// @param _comptroller The comptroller.
     /// @param _interestRates The `interestRates`.
-    function initialize(IComptroller _comptroller, IInterestRates _interestRates)
-        external
-        initializer
-    {
+    function initialize(IInterestRates _interestRates) external initializer {
         __Ownable_init();
 
-        comptroller = _comptroller;
         interestRates = _interestRates;
     }
 

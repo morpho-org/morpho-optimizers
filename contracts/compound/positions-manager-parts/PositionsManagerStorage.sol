@@ -71,12 +71,15 @@ abstract contract PositionsManagerStorage is OwnableUpgradeable, ReentrancyGuard
 
     /// STORAGE ///
 
-    MaxGas public maxGas; // Max gas to consume within loops in matching engine functions.
-    bool public isCompRewardsActive; // True if the Compound reward is active.
-    uint8 public NDS; // Max number of iterations in the data structure sorting process.
     uint8 public constant CTOKEN_DECIMALS = 8; // The number of decimals for cToken.
     uint16 public constant MAX_BASIS_POINTS = 10_000; // 100% in basis points.
     uint16 public constant LIQUIDATION_CLOSE_FACTOR_PERCENT = 5_000; // 50% in basis points.
+    IComptroller public constant comptroller =
+        IComptroller(0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B);
+
+    MaxGas public maxGas; // Max gas to consume within loops in matching engine functions.
+    bool public isCompRewardsActive; // True if the Compound reward is active.
+    uint8 public NDS; // Max number of iterations in the data structure sorting process.
     uint256 public dustThreshold; // The minimum amount to keep in the data stucture.
     mapping(address => DoubleLinkedList.List) internal suppliersInP2P; // For a given market, the suppliers in peer-to-peer.
     mapping(address => DoubleLinkedList.List) internal suppliersOnPool; // For a given market, the suppliers on Compound.
@@ -89,11 +92,10 @@ abstract contract PositionsManagerStorage is OwnableUpgradeable, ReentrancyGuard
     mapping(address => Types.Delta) public deltas; // Delta parameters for each market.
     mapping(address => bool) public paused; // Whether a market is paused or not.
 
-    IComptroller public comptroller;
     IMarketsManager public marketsManager;
     IRewardsManager public rewardsManager;
-    ILogic public logic;
     IIncentivesVault public incentivesVault;
+    ILogic public logic;
     address public treasuryVault;
     address public cEth;
     address public wEth;
