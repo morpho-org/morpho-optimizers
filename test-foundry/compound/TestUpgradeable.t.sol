@@ -4,6 +4,8 @@ pragma solidity 0.8.13;
 import "./setup/TestSetup.sol";
 
 contract TestUpgradeable is TestSetup {
+    using CompoundMath for uint256;
+
     function testUpgradeMarketsManager() public {
         marketsManager.setReserveFactor(cDai, 1);
 
@@ -19,7 +21,7 @@ contract TestUpgradeable is TestSetup {
         supplier1.approve(dai, amount);
         supplier1.supply(cDai, amount);
         uint256 supplyPoolIndex = ICToken(cDai).exchangeRateCurrent();
-        uint256 expectedOnPool = underlyingToPoolSupplyBalance(amount, supplyPoolIndex);
+        uint256 expectedOnPool = amount.div(supplyPoolIndex);
 
         PositionsManager positionsManagerImplV2 = new PositionsManager();
         proxyAdmin.upgrade(positionsManagerProxy, address(positionsManagerImplV2));

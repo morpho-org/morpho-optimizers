@@ -76,7 +76,7 @@ contract TestLiquidate is TestSetup {
         .div(collateralPrice);
 
         uint256 expectedOnPool = collateralOnPool -
-            underlyingToPoolSupplyBalance(amountToSeize, ICToken(cUsdc).exchangeRateCurrent());
+            amountToSeize.div(ICToken(cUsdc).exchangeRateCurrent());
 
         assertEq(onPoolBorrower, expectedOnPool, "borrower supply on pool");
         assertEq(inP2PBorrower, 0, "borrower supply in P2P");

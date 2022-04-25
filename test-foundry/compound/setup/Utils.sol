@@ -20,54 +20,6 @@ contract Utils is DSTest {
         return value / 1e10;
     }
 
-    function underlyingToPoolSupplyBalance(uint256 _poolSupplyBalance, uint256 _exchangeRateCurrent)
-        internal
-        pure
-        returns (uint256)
-    {
-        return _poolSupplyBalance.div(_exchangeRateCurrent);
-    }
-
-    function poolSupplyBalanceToUnderlying(uint256 _poolSupplyBalance, uint256 _exchangeRateCurrent)
-        internal
-        pure
-        returns (uint256)
-    {
-        return _poolSupplyBalance.mul(_exchangeRateCurrent);
-    }
-
-    function underlyingToDebtUnit(uint256 _underlyingAmount, uint256 _borrowIndex)
-        internal
-        pure
-        returns (uint256)
-    {
-        return _underlyingAmount.div(_borrowIndex);
-    }
-
-    function debtUnitToUnderlying(uint256 _debtUnitAmount, uint256 _borrowIndex)
-        internal
-        pure
-        returns (uint256)
-    {
-        return _debtUnitAmount.mul(_borrowIndex);
-    }
-
-    function underlyingToP2PUnit(uint256 _underlyingAmount, uint256 _p2pExchangeRate)
-        internal
-        pure
-        returns (uint256)
-    {
-        return _underlyingAmount.div(_p2pExchangeRate);
-    }
-
-    function p2pUnitToUnderlying(uint256 _p2pUnitAmount, uint256 _p2pExchangeRate)
-        internal
-        pure
-        returns (uint256)
-    {
-        return _p2pUnitAmount.mul(_p2pExchangeRate);
-    }
-
     function getAbsDiff(uint256 a, uint256 b) internal pure returns (uint256) {
         if (a > b) {
             return a - b;
