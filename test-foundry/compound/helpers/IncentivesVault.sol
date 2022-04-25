@@ -3,7 +3,7 @@ pragma solidity 0.8.13;
 
 import "./interfaces/IOracle.sol";
 
-import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
+import "@solmate/src/utils/SafeTransferLib.sol";
 
 contract IncentivesVault {
     using SafeTransferLib for ERC20;

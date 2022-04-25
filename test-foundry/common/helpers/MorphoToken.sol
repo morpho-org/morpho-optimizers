@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.13;
 
-import "@rari-capital/solmate/src/tokens/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@solmate/src/tokens/ERC20.sol";
 
 contract MorphoToken is ERC20, Ownable {
     constructor(address _receiver) ERC20("MorphoToken", "MORPHO", 18) {
