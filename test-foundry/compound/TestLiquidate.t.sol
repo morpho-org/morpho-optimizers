@@ -4,7 +4,6 @@ pragma solidity 0.8.13;
 import "./setup/TestSetup.sol";
 
 contract TestLiquidate is TestSetup {
-    using FixedPointMathLib for uint256;
     using CompoundMath for uint256;
 
     // 5.1 - A user liquidates a borrower that has enough collateral to cover for his debt, the transaction reverts.
@@ -130,14 +129,15 @@ contract TestLiquidate is TestSetup {
             address(borrower1)
         );
 
-        uint256 expectedBorrowBalanceInP2P = onPoolUsdc.mulWadUp(ICToken(cUsdc).borrowIndex()) +
-            inP2PUsdc.mulWadUp(marketsManager.borrowP2PExchangeRate(cUsdc)) -
+        uint256 expectedBorrowBalanceInP2P = onPoolUsdc.mul(ICToken(cUsdc).borrowIndex()) +
+            inP2PUsdc.mul(marketsManager.borrowP2PExchangeRate(cUsdc)) -
             (borrowerDebt / 2);
 
         assertEq(onPoolBorrower, 0, "borrower borrow on pool");
-        assertEq(
+        assertApproxEq(
             inP2PBorrower.mul(marketsManager.borrowP2PExchangeRate(cUsdc)),
             expectedBorrowBalanceInP2P,
+            2,
             "borrower borrow in P2P"
         );
 
@@ -207,12 +207,13 @@ contract TestLiquidate is TestSetup {
             address(borrower1)
         );
 
-        uint256 expectedBorrowBalanceOnPool = onPoolUsdc.mulWadUp(ICToken(cUsdc).borrowIndex()) -
+        uint256 expectedBorrowBalanceOnPool = onPoolUsdc.mul(ICToken(cUsdc).borrowIndex()) -
             toRepay;
 
-        assertEq(
+        assertApproxEq(
             onPoolBorrower.mul(ICToken(cUsdc).borrowIndex()),
             expectedBorrowBalanceOnPool,
+            1,
             "borrower borrow on pool"
         );
         assertEq(inP2PBorrower, inP2PUsdc, "borrower borrow in P2P");
