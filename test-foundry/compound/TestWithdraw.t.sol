@@ -168,7 +168,7 @@ contract TestWithdraw is TestSetup {
         assertEq(inP2PSupplier, inP2PBorrower);
 
         // NMAX-1 suppliers have up to suppliedAmount waiting on pool
-        uint8 NMAX = 20;
+        uint256 NMAX = 20;
         createSigners(NMAX);
 
         // minus 1 because supplier1 must not be counted twice !
@@ -320,7 +320,7 @@ contract TestWithdraw is TestSetup {
         assertEq(inP2PSupplier, inP2PBorrower, "supplier in P2P 1");
 
         // NMAX-1 suppliers have up to suppliedAmount/2 waiting on pool
-        uint8 NMAX = 20;
+        uint256 NMAX = 20;
         createSigners(NMAX);
 
         // minus 1 because supplier1 must not be counted twice !
