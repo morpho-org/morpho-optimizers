@@ -30,6 +30,8 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
     uint16 public constant MAX_BASIS_POINTS = 10_000; // 100% (in basis point).
     IComptroller public constant comptroller =
         IComptroller(0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B);
+    IPositionsManager public constant positionsManager =
+        IPositionsManager(0xdB812b41C5E87Fa1263585A751E269315ECf204B);
 
     address[] public marketsCreated; // Keeps track of the created markets.
     mapping(address => bool) public override isCreated; // Whether or not this market is created.
@@ -40,7 +42,6 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
     mapping(address => LastPoolIndexes) public lastPoolIndexes; // Last pool index stored.
     mapping(address => bool) public override noP2P; // Whether to put users on pool or not for the given market.
 
-    IPositionsManager public positionsManager;
     IInterestRates public interestRates;
 
     /// EVENTS ///
@@ -133,14 +134,6 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
     }
 
     /// EXTERNAL ///
-
-    /// @notice Sets the `positionsManager` to interact with Compound.
-    /// @param _positionsManager The address of the `positionsManager`.
-    function setPositionsManager(address _positionsManager) external onlyOwner {
-        if (address(positionsManager) != address(0)) revert PositionsManagerAlreadySet();
-        positionsManager = IPositionsManager(_positionsManager);
-        emit PositionsManagerSet(_positionsManager);
-    }
 
     /// @notice Sets the `intersRates`.
     /// @param _interestRates The new `interestRates` contract.

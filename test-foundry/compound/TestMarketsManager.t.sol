@@ -51,11 +51,6 @@ contract TestMarketsManager is TestSetup {
         assertEq(marketsManager.reserveFactor(cDai), 1111);
     }
 
-    function testPositionsManagerShouldBeSetOnlyOnce() public {
-        hevm.expectRevert(MarketsManager.PositionsManagerAlreadySet.selector);
-        marketsManager.setPositionsManager(address(fakePositionsManagerImpl));
-    }
-
     function testShouldCreateMarketWithTheRightValues() public {
         ICToken cToken = ICToken(cAave);
         marketsManager.createMarket(cAave);

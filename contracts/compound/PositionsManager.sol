@@ -16,14 +16,12 @@ contract PositionsManager is PositionsManagerGovernance {
     /// UPGRADE ///
 
     /// @notice Initializes the PositionsManager contract.
-    /// @param _marketsManager The `marketsManager`.
     /// @param _dustThreshold The `dustThreshold`.
     /// @param _maxGas The `maxGas`.
     /// @param _NDS The `NDS`.
     /// @param _cEth The cETH address.
     /// @param _weth The wETH address.
     function initialize(
-        IMarketsManager _marketsManager,
         ILogic _logic,
         uint256 _dustThreshold,
         MaxGas memory _maxGas,
@@ -34,7 +32,6 @@ contract PositionsManager is PositionsManagerGovernance {
         __ReentrancyGuard_init();
         __Ownable_init();
 
-        marketsManager = _marketsManager;
         logic = _logic;
 
         dustThreshold = _dustThreshold;

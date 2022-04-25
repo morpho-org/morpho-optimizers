@@ -10,6 +10,7 @@ import "@contracts/common/interfaces/ISwapManager.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
+import "@openzeppelin/contracts/utils/Create2.sol";
 
 import "@contracts/compound/PositionsManager.sol";
 import "@contracts/compound/MarketsManager.sol";
@@ -92,31 +93,53 @@ contract TestSetup is Config, Utils, stdCheats {
         /// Deploy proxies ///
 
         proxyAdmin = new ProxyAdmin();
+
+        // Pre-compute the address of the proxy
         marketsManagerImplV1 = new MarketsManager();
-        marketsManagerProxy = new TransparentUpgradeableProxy(
-            address(marketsManagerImplV1),
-            address(this),
-            ""
+        bytes memory bytecode = type(TransparentUpgradeableProxy).creationCode;
+        bytes memory marketsManagerCreationBytecode = abi.encodePacked(
+            bytecode,
+            abi.encode(address(marketsManagerImplV1), address(this), "")
         );
+        address marketsManagerProxyAddressCompute = Create2.computeAddress(
+            keccak256(bytes("Morpho Compound Markets Manager")),
+            keccak256(marketsManagerCreationBytecode)
+        );
+        address marketsManagerProxyAddress = Create2.deploy(
+            0,
+            keccak256(bytes("Morpho Compound Markets Manager")),
+            marketsManagerCreationBytecode
+        );
+        marketsManagerProxy = TransparentUpgradeableProxy(payable(marketsManagerProxyAddress));
 
         marketsManagerProxy.changeAdmin(address(proxyAdmin));
         marketsManager = MarketsManager(address(marketsManagerProxy));
         marketsManager.initialize(interestRates);
+
+        // Pre-compute the address of the proxy
         positionsManagerImplV1 = new PositionsManager();
-        positionsManagerProxy = new TransparentUpgradeableProxy(
-            address(positionsManagerImplV1),
-            address(this),
-            ""
+        bytes memory positionsManagerCreationBytecode = abi.encodePacked(
+            bytecode,
+            abi.encode(address(positionsManagerImplV1), address(this), "")
         );
+        address positionsManagerProxyAddressCompute = Create2.computeAddress(
+            keccak256(bytes("Morpho Compound Positions Manager")),
+            keccak256(positionsManagerCreationBytecode)
+        );
+        address positionsManagerProxyAddress = Create2.deploy(
+            0,
+            keccak256(bytes("Morpho Compound Positions Manager")),
+            positionsManagerCreationBytecode
+        );
+        positionsManagerProxy = TransparentUpgradeableProxy(payable(positionsManagerProxyAddress));
 
         positionsManagerProxy.changeAdmin(address(proxyAdmin));
         positionsManager = PositionsManager(payable(address(positionsManagerProxy)));
-        positionsManager.initialize(marketsManager, logic, 1, maxGas, 20, cEth, wEth);
+        positionsManager.initialize(logic, 1, maxGas, 20, cEth, wEth);
 
         treasuryVault = new User(positionsManager);
         fakePositionsManagerImpl = new PositionsManager();
         oracle = ICompoundOracle(comptroller.oracle());
-        marketsManager.setPositionsManager(address(positionsManager));
         positionsManager.setTreasuryVault(address(treasuryVault));
 
         /// Create markets ///
