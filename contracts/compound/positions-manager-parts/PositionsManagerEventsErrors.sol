@@ -105,9 +105,14 @@ abstract contract PositionsManagerEventsErrors is PositionsManagerGetters {
     event CompoundIncentivesControllerSet(address _aaveIncentivesController);
 
     /// @notice Emitted when a market is paused or unpaused.
-    /// @param _poolTokenAddress The address of the pool token concerned..
+    /// @param _poolTokenAddress The address of the pool token concerned.
     /// @param _newStatus The new pause status of the market.
     event PauseStatusSet(address indexed _poolTokenAddress, bool _newStatus);
+
+    /// @notice Emitted when a market is paused or unpaused.
+    /// @param _poolTokenAddress The address of the pool token concerned.
+    /// @param _newStatus The new partial pause status of the market.
+    event PartialPauseStatusSet(address indexed _poolTokenAddress, bool _newStatus);
 
     /// @dev Emitted when a new `dustThreshold` is set.
     /// @param _dustThreshold The new `dustThreshold`.
