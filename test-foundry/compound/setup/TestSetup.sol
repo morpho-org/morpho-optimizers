@@ -17,7 +17,6 @@ import "@contracts/compound/MatchingEngine.sol";
 import "@contracts/compound/RewardsManager.sol";
 import "@contracts/compound/InterestRatesV1.sol";
 import "@contracts/compound/Logic.sol";
-import "@contracts/compound/libraries/FixedPointMathLib.sol";
 
 import "../../common/helpers/MorphoToken.sol";
 import "../../common/helpers/Chains.sol";

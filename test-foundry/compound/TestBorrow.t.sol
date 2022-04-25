@@ -5,7 +5,6 @@ import "./setup/TestSetup.sol";
 import "@contracts/compound/positions-manager-parts/PositionsManagerEventsErrors.sol";
 
 contract TestBorrow is TestSetup {
-    using FixedPointMathLib for uint256;
     using CompoundMath for uint256;
 
     function testBorrow1() public {
