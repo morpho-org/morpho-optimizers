@@ -77,7 +77,7 @@ contract TestPositionsManagerGetters is TestSetup {
 
         uint256 NDS = 10;
         positionsManager.setNDS(NDS);
-        createSigners(uint8(NDS));
+        createSigners(NDS);
         for (uint256 i; i < borrowers.length; i++) {
             borrowers[i].approve(dai, amount - i * 1e18);
             borrowers[i].supply(cDai, amount - i * 1e18);

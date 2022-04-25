@@ -108,7 +108,7 @@ contract TestBorrow is TestSetup {
         uint256 amount = 10_000 ether;
         uint256 collateral = 2 * amount;
 
-        uint8 NMAX = 5;
+        uint256 NMAX = 5;
         createSigners(NMAX);
 
         uint256 amountPerSupplier = amount / NMAX;
@@ -161,7 +161,7 @@ contract TestBorrow is TestSetup {
         uint256 amount = 10000 ether;
         uint256 collateral = 2 * amount;
 
-        uint8 NMAX = 5;
+        uint256 NMAX = 5;
         createSigners(NMAX);
 
         uint256 amountPerSupplier = amount / (2 * NMAX);
