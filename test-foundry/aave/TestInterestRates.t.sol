@@ -12,8 +12,8 @@ contract TestInterestRates is TestSetup {
     uint256 public lastPoolBorrowExchangeRate = 1 * RAY;
     uint256 public reserveFactor0PerCent = 0;
     uint256 public reserveFactor50PerCent = 5_000;
-    uint16 public supplyWeigth = 2;
-    uint16 public borrowWeigth = 1;
+    uint256 public supplyWeight = 2;
+    uint256 public borrowWeight = 1;
 
     function computeP2PExchangeRates(Types.Params memory params)
         public
@@ -34,14 +34,14 @@ contract TestInterestRates is TestSetup {
         supplyP2PExchangeRate_ = params.supplyP2PExchangeRate * 
             (
                 (RAY - shareOfTheSupplyDelta) * 
-                    (p2pIncrease - params.reserveFactor * (p2pIncrease - supplyPoolIncrease) / MAX_BASIS_POINTS) / RAY + 
+                    ((MAX_BASIS_POINTS - params.reserveFactor) * p2pIncrease + params.reserveFactor * supplyPoolIncrease) / MAX_BASIS_POINTS / WAD + 
                 shareOfTheSupplyDelta * 
                     supplyPoolIncrease / RAY
             ) / RAY; // prettier-ignore
         borrowP2PExchangeRate_ = params.borrowP2PExchangeRate * 
             (
                 (RAY - shareOfTheBorrowDelta) * 
-                    (p2pIncrease + params.reserveFactor * (borrowPoolIncrease - p2pIncrease) / MAX_BASIS_POINTS) / RAY + 
+                    ((MAX_BASIS_POINTS - params.reserveFactor) * p2pIncrease + params.reserveFactor * borrowPoolIncrease) / MAX_BASIS_POINTS / WAD + 
                 shareOfTheBorrowDelta * 
                     borrowPoolIncrease / RAY
             ) / RAY; // prettier-ignore
@@ -138,7 +138,7 @@ contract TestInterestRates is TestSetup {
         uint256 _poolBorrowExchangeRate = RAY + _4;
         uint256 _lastPoolSupplyExchangeRate = RAY + _5;
         uint256 _lastPoolBorrowExchangeRate = RAY + _6;
-        uint256 _reserveFactor = _7 % 10_000;
+        uint256 _reserveFactor = _7 % MAX_BASIS_POINTS;
         uint256 _supplyP2PDelta = WAD + _8;
         uint256 _borrowP2PDelta = WAD + _9;
         uint256 _supplyP2PAmount = WAD + _10;
