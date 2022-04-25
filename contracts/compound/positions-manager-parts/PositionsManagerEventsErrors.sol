@@ -82,7 +82,7 @@ abstract contract PositionsManagerEventsErrors is PositionsManagerGetters {
 
     /// @notice Emitted when a new value for `NDS` is set.
     /// @param _newValue The new value of `NDS`.
-    event NDSSet(uint8 _newValue);
+    event NDSSet(uint256 _newValue);
 
     /// @notice Emitted when a new `maxGas` is set.
     /// @param _maxGas The new `maxGas`.
