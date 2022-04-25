@@ -21,11 +21,11 @@ import "@contracts/compound/libraries/FixedPointMathLib.sol";
 
 import "../../common/helpers/MorphoToken.sol";
 import "../../common/helpers/Chains.sol";
-import "../helpers/SimplePriceOracle.sol";
-import "../helpers/IncentivesVault.sol";
-import "../helpers/DumbOracle.sol";
-import {User} from "../helpers/User.sol";
-import {Utils} from "./Utils.sol";
+import "../../compound/helpers/SimplePriceOracle.sol";
+import "../../compound/helpers/IncentivesVault.sol";
+import "../../compound/helpers/DumbOracle.sol";
+import {User} from "../../compound/helpers/User.sol";
+import {Utils} from "../../compound/setup/Utils.sol";
 import "forge-std/stdlib.sol";
 import "@config/Config.sol";
 
@@ -35,7 +35,7 @@ interface IAdminComptroller {
     function admin() external view returns (address);
 }
 
-contract TestSetup is Config, Utils, stdCheats {
+contract TestSetupFuzzing is Config, Utils, stdCheats {
     Vm public hevm = Vm(HEVM_ADDRESS);
 
     uint256 public constant MAX_BASIS_POINTS = 10_000;
@@ -123,10 +123,21 @@ contract TestSetup is Config, Utils, stdCheats {
 
         createMarket(cDai);
         createMarket(cUsdc);
-        createMarket(cWbtc);
         createMarket(cUsdt);
         createMarket(cBat);
         createMarket(cEth);
+        createMarket(cAave);
+        createMarket(cTusd);
+        createMarket(cUni);
+        createMarket(cComp);
+        createMarket(cZrx);
+        createMarket(cLink);
+        createMarket(cMkr);
+        createMarket(cFei);
+        createMarket(cYfi);
+        createMarket(cUsdp);
+        createMarket(cSushi);
+        // createMarket(cWbtc); // Mint is paused on compound
 
         hevm.roll(block.number + 1);
 
@@ -195,9 +206,23 @@ contract TestSetup is Config, Utils, stdCheats {
     }
 
     function fillUserBalances(User _user) internal {
-        tip(dai, address(_user), INITIAL_BALANCE * WAD);
-        tip(wEth, address(_user), INITIAL_BALANCE * WAD);
-        tip(usdc, address(_user), INITIAL_BALANCE * 1e6);
+        tip(aave, address(_user), INITIAL_BALANCE * 10**ERC20(aave).decimals());
+        tip(dai, address(_user), INITIAL_BALANCE * 10**ERC20(dai).decimals());
+        tip(usdc, address(_user), INITIAL_BALANCE * 10**ERC20(usdc).decimals());
+        tip(usdt, address(_user), INITIAL_BALANCE * 10**ERC20(usdt).decimals());
+        tip(wbtc, address(_user), INITIAL_BALANCE * 10**ERC20(wbtc).decimals());
+        tip(wEth, address(_user), INITIAL_BALANCE * 10**ERC20(wEth).decimals());
+        tip(comp, address(_user), INITIAL_BALANCE * 10**ERC20(comp).decimals());
+        tip(bat, address(_user), INITIAL_BALANCE * 10**ERC20(bat).decimals());
+        tip(tusd, address(_user), INITIAL_BALANCE * 10**ERC20(tusd).decimals());
+        tip(uni, address(_user), INITIAL_BALANCE * 10**ERC20(uni).decimals());
+        tip(zrx, address(_user), INITIAL_BALANCE * 10**ERC20(zrx).decimals());
+        tip(link, address(_user), INITIAL_BALANCE * 10**ERC20(link).decimals());
+        tip(mkr, address(_user), INITIAL_BALANCE * 10**ERC20(mkr).decimals());
+        tip(fei, address(_user), INITIAL_BALANCE * 10**ERC20(fei).decimals());
+        tip(yfi, address(_user), INITIAL_BALANCE * 10**ERC20(yfi).decimals());
+        tip(usdp, address(_user), INITIAL_BALANCE * 10**ERC20(usdp).decimals());
+        tip(sushi, address(_user), INITIAL_BALANCE * 10**ERC20(sushi).decimals());
     }
 
     function setContractsLabels() internal {
@@ -281,5 +306,17 @@ contract TestSetup is Config, Utils, stdCheats {
 
         p2pSupplyRate_ = rate - (reserveFactor * (rate - poolSupplyBPY)) / 10_000;
         p2pBorrowRate_ = rate + (reserveFactor * (poolBorrowBPY - rate)) / 10_000;
+    }
+
+    function getUnderlying(address _poolTokenAddress) internal view returns (address) {
+        if (_poolTokenAddress == cEth)
+            // cETH has no underlying() function.
+            return wEth;
+        else return ICToken(_poolTokenAddress).underlying();
+    }
+
+    function getAsset(uint8 _asset) internal returns (address asset, address underlying) {
+        asset = pools[_asset % pools.length];
+        underlying = getUnderlying(asset);
     }
 }
