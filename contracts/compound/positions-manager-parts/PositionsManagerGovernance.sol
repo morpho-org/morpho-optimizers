@@ -17,7 +17,18 @@ abstract contract PositionsManagerGovernance is PositionsManagerEventsErrors {
     /// @param _poolTokenAddress The address of the market to check.
     modifier isMarketCreatedAndNotPaused(address _poolTokenAddress) {
         if (!marketsManager.isCreated(_poolTokenAddress)) revert MarketNotCreated();
-        if (paused[_poolTokenAddress]) revert MarketPaused();
+        if (pauseStatus[_poolTokenAddress].isPaused) revert MarketPaused();
+        _;
+    }
+
+    /// @notice Prevents a user to trigger a function when market is not created or paused or partial paused.
+    /// @param _poolTokenAddress The address of the market to check.
+    modifier isMarketCreatedAndNotPausedOrPartialPaused(address _poolTokenAddress) {
+        if (!marketsManager.isCreated(_poolTokenAddress)) revert MarketNotCreated();
+        if (
+            pauseStatus[_poolTokenAddress].isPaused ||
+            pauseStatus[_poolTokenAddress].isPartialPaused
+        ) revert MarketPaused();
         _;
     }
 
@@ -67,9 +78,19 @@ abstract contract PositionsManagerGovernance is PositionsManagerEventsErrors {
     /// @notice Sets the pause status on a specific market in case of emergency.
     /// @param _poolTokenAddress The address of the market to pause/unpause.
     function setPauseStatus(address _poolTokenAddress) external onlyOwner {
-        bool newPauseStatus = !paused[_poolTokenAddress];
-        paused[_poolTokenAddress] = newPauseStatus;
+        PauseStatus storage pauseStatus = pauseStatus[_poolTokenAddress];
+        bool newPauseStatus = !pauseStatus.isPaused;
+        pauseStatus.isPaused = newPauseStatus;
         emit PauseStatusSet(_poolTokenAddress, newPauseStatus);
+    }
+
+    /// @notice Sets the pause status on a specific market in case of emergency.
+    /// @param _poolTokenAddress The address of the market to pause/unpause.
+    function setPartialPauseStatus(address _poolTokenAddress) external onlyOwner {
+        PauseStatus storage pauseStatus = pauseStatus[_poolTokenAddress];
+        bool newPauseStatus = !pauseStatus.isPartialPaused;
+        pauseStatus.isPartialPaused = newPauseStatus;
+        emit PartialPauseStatusSet(_poolTokenAddress, newPauseStatus);
     }
 
     /// @dev Sets `dustThreshold`.
