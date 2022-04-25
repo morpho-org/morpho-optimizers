@@ -279,8 +279,7 @@ contract TestWithdraw is TestSetup {
             address(supplier1)
         );
 
-        uint256 expectedSupplyBalanceInP2P = underlyingToP2PUnit(
-            (25 * suppliedAmount) / 100,
+        uint256 expectedSupplyBalanceInP2P = ((25 * suppliedAmount) / 100).div(
             supplyP2PExchangeRate
         );
 
@@ -547,7 +546,7 @@ contract TestWithdraw is TestSetup {
                 (uint256 inP2PBorrower, uint256 onPoolBorrower) = positionsManager
                 .borrowBalanceInOf(cDai, address(borrowers[i]));
                 assertApproxEq(
-                    p2pUnitToUnderlying(inP2PBorrower, newVars.BP2PER),
+                    inP2PBorrower.mul(newVars.BP2PER),
                     expectedBorrowBalanceInUnderlying,
                     (expectedBorrowBalanceInUnderlying * 2) / 100,
                     "not expected underlying balance"

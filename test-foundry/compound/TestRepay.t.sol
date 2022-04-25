@@ -406,7 +406,7 @@ contract TestRepay is TestSetup {
 
         {
             uint256 borrowP2PExchangeRate = marketsManager.borrowP2PExchangeRate(cDai);
-            expectedBorrowBalanceInP2P = underlyingToP2PUnit(borrowedAmount, borrowP2PExchangeRate);
+            expectedBorrowBalanceInP2P = borrowedAmount.div(borrowP2PExchangeRate);
 
             // Check balances after match of supplier1
             (uint256 inP2PBorrower, uint256 onPoolBorrower) = positionsManager.borrowBalanceInOf(
