@@ -40,12 +40,20 @@ contract TestMarketsManagerGetters is TestSetup {
     }
 
     function testGetMarketConfiguration() public {
-        (bool isCreated, bool noP2P, bool paused, uint256 reserveFactor) = marketsManager
-        .getMarketConfiguration(cDai);
+        (
+            bool isCreated,
+            bool noP2P,
+            bool isPaused,
+            bool isPartialPaused,
+            uint256 reserveFactor
+        ) = marketsManager.getMarketConfiguration(cDai);
 
         assertTrue(isCreated == marketsManager.isCreated(cDai));
         assertTrue(noP2P == marketsManager.noP2P(cDai));
-        assertTrue(paused == positionsManager.paused(cDai));
+
+        (bool isPaused_, bool isPartialPaused_) = positionsManager.pauseStatus(cDai);
+        assertTrue(isPaused == isPaused_);
+        assertTrue(isPartialPaused == isPartialPaused_);
         assertTrue(reserveFactor == marketsManager.reserveFactor(cDai));
     }
 

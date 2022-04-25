@@ -130,4 +130,8 @@ contract User {
     function setPauseStatus(address _poolTokenAddress) external {
         positionsManager.setPauseStatus(_poolTokenAddress);
     }
+
+    function setPartialPauseStatus(address _poolTokenAddress) external {
+        positionsManager.setPartialPauseStatus(_poolTokenAddress);
+    }
 }
