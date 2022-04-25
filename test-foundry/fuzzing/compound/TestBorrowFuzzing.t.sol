@@ -30,7 +30,7 @@ contract TestBorrowFuzzing is TestSetupFuzzing {
 
         hevm.assume(borrowed > borrowable + 1); // +1 to cover for rounding error
 
-        hevm.expectRevert(abi.encodeWithSignature("DebtValueAboveMax()"));
+        hevm.expectRevert(PositionsManager.UnauthorisedBorrow.selector);
         borrower1.borrow(borrowedAsset, borrowed);
     }
 
@@ -55,6 +55,7 @@ contract TestBorrowFuzzing is TestSetupFuzzing {
             address(borrower1),
             borrowedAsset
         );
+<<<<<<< HEAD
         uint256 borrowedAmount = (borrowable * _random1) / 255;
         assumeBorrowAmountIsCorrect(borrowedAsset, borrowedAmount);
         borrower1.borrow(borrowedAsset, borrowedAmount);
@@ -166,5 +167,28 @@ contract TestBorrowFuzzing is TestSetupFuzzing {
         borrowedAmount = (borrowable * _random2) / 255;
         assumeBorrowAmountIsCorrect(secondAsset, borrowedAmount);
         borrower1.borrow(secondAsset, borrowedAmount);
+=======
+
+        uint256 balanceSuppliedAfter = ERC20(suppliedUnderlying).balanceOf(address(borrower1));
+        uint256 balanceBorrowedAfter = ERC20(borrowedUnderlying).balanceOf(address(borrower1));
+
+        hevm.assume(amountBorrowed <= borrowable);
+        borrower1.borrow(borrowedAsset, amountBorrowed);
+
+        // if (_suppliedAsset != _borrowedAsset) {
+        //     assertApproxEq(
+        //         balanceBorrowedAfter - balanceBorrowedBefore,
+        //         amountBorrowed,
+        //         5,
+        //         "Borrowed amount"
+        //     );
+        //     assertApproxEq(
+        //         balanceBorrowedBefore - balanceSuppliedAfter,
+        //         amountSupplied,
+        //         5,
+        //         "Supplied amount"
+        //     );
+        // }
+>>>>>>> 8a3b852d (🔧 (fuzzing) add config and continue on borrow)
     }
 }

@@ -95,6 +95,7 @@ contract TestRewards is TestSetup {
         supplier1.borrow(cUsdc, to6Decimals(50 ether));
 
         uint256 index = comptroller.compBorrowState(cUsdc).index;
+        uint256 balanceBefore = supplier1.balanceOf(comp);
 
         (, uint256 onPool) = morpho.borrowBalanceInOf(cUsdc, address(supplier1));
         uint256 userIndex = rewardsManager.compBorrowerIndex(cUsdc, address(supplier1));
