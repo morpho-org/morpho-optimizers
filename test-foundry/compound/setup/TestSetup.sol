@@ -147,7 +147,12 @@ contract TestSetup is Config, Utils, stdCheats {
         if (_cToken == cEth) hevm.label(wEth, "WETH");
         else {
             address underlying = ICToken(_cToken).underlying();
-            hevm.label(underlying, ERC20(underlying).symbol());
+            if (underlying == 0x9f8F72aA9304c8B593d555F12eF6589cC3A579A2) {
+                hevm.label(underlying, "mkr");
+                // This is because mkr symbol is a byte32
+            } else {
+                hevm.label(underlying, ERC20(underlying).symbol());
+            }
         }
     }
 
