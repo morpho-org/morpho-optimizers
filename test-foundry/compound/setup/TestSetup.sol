@@ -1,10 +1,8 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import "hardhat/console.sol";
-
-import "@contracts/compound/interfaces/IRewardsManager.sol";
 import "@contracts/compound/interfaces/compound/ICompound.sol";
+import "@contracts/compound/interfaces/IRewardsManager.sol";
 import "@contracts/common/interfaces/ISwapManager.sol";
 
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
@@ -26,6 +24,7 @@ import "../helpers/DumbOracle.sol";
 import {User} from "../helpers/User.sol";
 import {Utils} from "./Utils.sol";
 import "forge-std/stdlib.sol";
+import "forge-std/console.sol";
 import "@config/Config.sol";
 
 interface IAdminComptroller {
