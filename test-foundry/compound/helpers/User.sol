@@ -107,7 +107,7 @@ contract User {
         );
     }
 
-    function setNDS(uint8 _newNDS) external {
+    function setNDS(uint256 _newNDS) external {
         positionsManager.setNDS(_newNDS);
     }
 

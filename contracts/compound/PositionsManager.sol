@@ -29,7 +29,7 @@ contract PositionsManager is PositionsManagerGovernance {
         IComptroller _comptroller,
         uint256 _dustThreshold,
         MaxGas memory _maxGas,
-        uint8 _NDS,
+        uint256 _NDS,
         address _cEth,
         address _weth
     ) external initializer {

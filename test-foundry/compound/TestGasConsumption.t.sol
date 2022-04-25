@@ -5,17 +5,17 @@ import "./setup/TestSetup.sol";
 
 contract TestGasConsumption is TestSetup {
     // Hyperparameters to get the gas estimate for
-    uint8 public NDS = 50;
+    uint256 public NDS = 50;
     uint8 public numberOfMatches = 25;
 
     // Give you the cost of a loop (MatchBorrowers)
     function testGasConsumptionOfMatchBorrowers() external {
         positionsManager.setNDS(NDS);
-        createSigners(NDS + numberOfMatches + 1);
+        createSigners(uint8(NDS) + numberOfMatches + 1);
 
         // 1: Create NDS matches on DAI market to fill the FIFO
-        uint256 matchedAmount = (uint256(NDS) * 1000 ether);
-        for (uint8 i = 0; i < NDS; i++) {
+        uint256 matchedAmount = (NDS * 1000 ether);
+        for (uint256 i; i < NDS; i++) {
             suppliers[i].approve(dai, matchedAmount);
             suppliers[i].supply(cDai, matchedAmount);
 
