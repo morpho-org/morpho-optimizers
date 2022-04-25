@@ -31,7 +31,7 @@ abstract contract PositionsManagerGovernance is PositionsManagerEventsErrors {
 
     /// @notice Sets `NDS`.
     /// @param _newNDS The new `NDS` value.
-    function setNDS(uint8 _newNDS) external onlyOwner {
+    function setNDS(uint256 _newNDS) external onlyOwner {
         NDS = _newNDS;
         emit NDSSet(_newNDS);
     }
