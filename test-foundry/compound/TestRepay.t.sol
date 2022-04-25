@@ -149,7 +149,7 @@ contract TestRepay is TestSetup {
         assertEq(inP2PSupplier, inP2PBorrower1, "supplier1 in P2P");
 
         // NMAX borrowers have debt waiting on pool.
-        uint8 NMAX = 20;
+        uint256 NMAX = 20;
         createSigners(NMAX);
 
         uint256 inP2P;
@@ -309,7 +309,7 @@ contract TestRepay is TestSetup {
         assertEq(inP2PSupplier, inP2PBorrower1);
 
         // NMAX borrowers have borrowerAmount/2 (cumulated) of debt waiting on pool.
-        uint8 NMAX = 20;
+        uint256 NMAX = 20;
         createSigners(NMAX);
 
         // minus because borrower1 must not be counted twice !

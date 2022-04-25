@@ -208,7 +208,7 @@ contract TestSetup is Config, Utils, stdCheats {
         hevm.label(address(treasuryVault), "TreasuryVault");
     }
 
-    function createSigners(uint8 _nbOfSigners) internal {
+    function createSigners(uint256 _nbOfSigners) internal {
         while (borrowers.length < _nbOfSigners) {
             borrowers.push(new User(positionsManager));
             fillUserBalances(borrowers[borrowers.length - 1]);
