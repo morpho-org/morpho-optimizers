@@ -51,7 +51,7 @@ contract TestMarketsManagerGetters is TestSetup {
         assertTrue(isCreated == marketsManager.isCreated(cDai));
         assertTrue(noP2P == marketsManager.noP2P(cDai));
 
-        (bool isPaused_, bool isPartialPaused_) = positionsManager.pauseStatus(cDai);
+        (bool isPaused_, bool isPartialPaused_) = positionsManager.pauseStatuses(cDai);
         assertTrue(isPaused == isPaused_);
         assertTrue(isPartialPaused == isPartialPaused_);
         assertTrue(reserveFactor == marketsManager.reserveFactor(cDai));

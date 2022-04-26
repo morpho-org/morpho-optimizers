@@ -8,39 +8,39 @@ contract TestPausableMarket is TestSetup {
 
     function testOnlyOwnerShouldTriggerPauseFunction() public {
         hevm.expectRevert("Ownable: caller is not the owner");
-        supplier1.setPauseStatus(dai);
+        supplier1.togglePauseStatus(dai);
 
-        positionsManager.setPauseStatus(dai);
-        (bool isPaused, ) = positionsManager.pauseStatus(dai);
+        positionsManager.togglePauseStatus(dai);
+        (bool isPaused, ) = positionsManager.pauseStatuses(dai);
         assertTrue(isPaused, "paused is false");
     }
 
     function testOnlyOwnerShouldTriggerPartialPauseFunction() public {
         hevm.expectRevert("Ownable: caller is not the owner");
-        supplier1.setPartialPauseStatus(dai);
+        supplier1.togglePartialPauseStatus(dai);
 
-        positionsManager.setPartialPauseStatus(dai);
-        (, bool isPartialPaused) = positionsManager.pauseStatus(dai);
+        positionsManager.togglePartialPauseStatus(dai);
+        (, bool isPartialPaused) = positionsManager.pauseStatuses(dai);
         assertTrue(isPartialPaused, "partial paused is false");
     }
 
     function testPauseUnpause() public {
-        positionsManager.setPauseStatus(dai);
-        (bool isPaused, ) = positionsManager.pauseStatus(dai);
+        positionsManager.togglePauseStatus(dai);
+        (bool isPaused, ) = positionsManager.pauseStatuses(dai);
         assertTrue(isPaused, "paused is false");
 
-        positionsManager.setPauseStatus(dai);
-        (isPaused, ) = positionsManager.pauseStatus(dai);
+        positionsManager.togglePauseStatus(dai);
+        (isPaused, ) = positionsManager.pauseStatuses(dai);
         assertFalse(isPaused, "paused is true");
     }
 
     function testPartialPausePartialUnpause() public {
-        positionsManager.setPartialPauseStatus(dai);
-        (, bool isPartialPaused) = positionsManager.pauseStatus(dai);
+        positionsManager.togglePartialPauseStatus(dai);
+        (, bool isPartialPaused) = positionsManager.pauseStatuses(dai);
         assertTrue(isPartialPaused, "partial paused is false");
 
-        positionsManager.setPartialPauseStatus(dai);
-        (, isPartialPaused) = positionsManager.pauseStatus(dai);
+        positionsManager.togglePartialPauseStatus(dai);
+        (, isPartialPaused) = positionsManager.pauseStatuses(dai);
         assertFalse(isPartialPaused, "partial paused is true");
     }
 
@@ -88,8 +88,8 @@ contract TestPausableMarket is TestSetup {
         );
         supplier1.borrow(cUsdc, toBorrow);
 
-        positionsManager.setPauseStatus(cDai);
-        positionsManager.setPauseStatus(cUsdc);
+        positionsManager.togglePauseStatus(cDai);
+        positionsManager.togglePauseStatus(cUsdc);
 
         hevm.expectRevert(abi.encodeWithSignature("MarketPaused()"));
         supplier1.supply(cDai, amount);
@@ -131,8 +131,8 @@ contract TestPausableMarket is TestSetup {
         );
         supplier1.borrow(cUsdc, toBorrow);
 
-        positionsManager.setPartialPauseStatus(cDai);
-        positionsManager.setPartialPauseStatus(cUsdc);
+        positionsManager.togglePartialPauseStatus(cDai);
+        positionsManager.togglePartialPauseStatus(cUsdc);
 
         hevm.expectRevert(abi.encodeWithSignature("MarketPaused()"));
         supplier1.supply(cDai, amount);
