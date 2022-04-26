@@ -165,7 +165,7 @@ contract Logic is ILogic, MatchingEngine {
 
         /// Supply on pool ///
 
-        if (_isAboveCompoundThreshold(remainingToSupply, underlyingToken.decimals())) {
+        if (remainingToSupply != 0) {
             supplyBalanceInOf[_poolTokenAddress][msg.sender].onPool += remainingToSupply.div(
                 ICToken(_poolTokenAddress).exchangeRateCurrent()
             ); // In scaled balance.
@@ -502,7 +502,7 @@ contract Logic is ILogic, MatchingEngine {
 
         /// Hard repay ///
 
-        if (_isAboveCompoundThreshold(vars.remainingToRepay, underlyingToken.decimals())) {
+        if (vars.remainingToRepay != 0) {
             uint256 unmatched = unmatchSuppliers(
                 _poolTokenAddress,
                 vars.remainingToRepay,
@@ -635,21 +635,17 @@ contract Logic is ILogic, MatchingEngine {
         }
     }
 
-    /// @dev Returns whether it is safe to supply/witdhraw on Compound or not due to Coumpound's revert on low amounts.
-    /// @param _amount The amount of token considered for depositing/redeeming.
-    /// @param _tokenDecimals The number of decimals for the token considered.
+    /// @dev Returns whether it is possible to withdraw this amount on compound.
+    /// @param _amount The amount of token considered for redeeming.
+    /// @param _rate Rate used to convert to cToken.
     /// @return Whether to continue or not.
-    function _isAboveCompoundThreshold(uint256 _amount, uint256 _tokenDecimals)
+    function _isAboveCompoundThreshold(uint256 _amount, uint256 _rate)
         internal
         pure
         returns (bool)
     {
-        if (_tokenDecimals > CTOKEN_DECIMALS) {
-            // Multiply by 2 to have a safety buffer.
-            unchecked {
-                return (_amount > 10**(_tokenDecimals - CTOKEN_DECIMALS));
-            }
-        } else return true;
+        if (_amount.div(_rate) > 0) return true;
+        return false;
     }
 
     /// @dev Enters the user into the market if not already there.
