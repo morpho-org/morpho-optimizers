@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import "./libraries/LogicDCs.sol";
+import "./libraries/DelegateCall.sol";
 
 import "./positions-manager-parts/PositionsManagerGovernance.sol";
 
@@ -11,7 +11,7 @@ contract PositionsManager is PositionsManagerGovernance {
     using DoubleLinkedList for DoubleLinkedList.List;
     using SafeTransferLib for ERC20;
     using CompoundMath for uint256;
-    using LogicDCs for ILogic;
+    using DelegateCall for address;
 
     /// UPGRADE ///
 
@@ -60,7 +60,9 @@ contract PositionsManager is PositionsManagerGovernance {
         if (_amount == 0) revert AmountIsZero();
         marketsManager.updateP2PExchangeRates(_poolTokenAddress);
 
-        logic.supplyDC(_poolTokenAddress, _amount, maxGas.supply);
+        address(logic).functionDelegateCall(
+            abi.encodeWithSelector(logic.supply.selector, _poolTokenAddress, _amount, maxGas.supply)
+        );
 
         emit Supplied(
             msg.sender,
@@ -84,7 +86,14 @@ contract PositionsManager is PositionsManagerGovernance {
         if (_amount == 0) revert AmountIsZero();
         marketsManager.updateP2PExchangeRates(_poolTokenAddress);
 
-        logic.supplyDC(_poolTokenAddress, _amount, _maxGasToConsume);
+        address(logic).functionDelegateCall(
+            abi.encodeWithSelector(
+                logic.supply.selector,
+                _poolTokenAddress,
+                _amount,
+                _maxGasToConsume
+            )
+        );
 
         emit Supplied(
             msg.sender,
@@ -106,7 +115,9 @@ contract PositionsManager is PositionsManagerGovernance {
         if (_amount == 0) revert AmountIsZero();
         marketsManager.updateP2PExchangeRates(_poolTokenAddress);
 
-        logic.borrowDC(_poolTokenAddress, _amount, maxGas.borrow);
+        address(logic).functionDelegateCall(
+            abi.encodeWithSelector(logic.borrow.selector, _poolTokenAddress, _amount, maxGas.borrow)
+        );
 
         emit Borrowed(
             msg.sender,
@@ -129,7 +140,14 @@ contract PositionsManager is PositionsManagerGovernance {
         if (_amount == 0) revert AmountIsZero();
         marketsManager.updateP2PExchangeRates(_poolTokenAddress);
 
-        logic.borrowDC(_poolTokenAddress, _amount, _maxGasToConsume);
+        address(logic).functionDelegateCall(
+            abi.encodeWithSelector(
+                logic.borrow.selector,
+                _poolTokenAddress,
+                _amount,
+                _maxGasToConsume
+            )
+        );
 
         emit Borrowed(
             msg.sender,
@@ -157,7 +175,16 @@ contract PositionsManager is PositionsManagerGovernance {
         );
 
         _checkUserLiquidity(msg.sender, _poolTokenAddress, toWithdraw, 0);
-        logic.withdrawDC(_poolTokenAddress, toWithdraw, msg.sender, msg.sender, maxGas.withdraw);
+        address(logic).functionDelegateCall(
+            abi.encodeWithSelector(
+                logic.withdraw.selector,
+                _poolTokenAddress,
+                toWithdraw,
+                msg.sender,
+                msg.sender,
+                maxGas.withdraw
+            )
+        );
 
         emit Withdrawn(
             msg.sender,
@@ -185,7 +212,15 @@ contract PositionsManager is PositionsManagerGovernance {
             _amount
         );
 
-        logic.repayDC(_poolTokenAddress, msg.sender, toRepay, maxGas.repay);
+        address(logic).functionDelegateCall(
+            abi.encodeWithSelector(
+                logic.repay.selector,
+                _poolTokenAddress,
+                msg.sender,
+                toRepay,
+                maxGas.repay
+            )
+        );
 
         emit Repaid(
             msg.sender,
@@ -216,11 +251,17 @@ contract PositionsManager is PositionsManagerGovernance {
         marketsManager.updateP2PExchangeRates(_poolTokenBorrowedAddress);
         marketsManager.updateP2PExchangeRates(_poolTokenCollateralAddress);
 
-        uint256 amountSeized = logic.liquidateDC(
-            _poolTokenBorrowedAddress,
-            _poolTokenCollateralAddress,
-            _borrower,
-            _amount
+        uint256 amountSeized = abi.decode(
+            address(logic).functionDelegateCall(
+                abi.encodeWithSelector(
+                    logic.liquidate.selector,
+                    _poolTokenBorrowedAddress,
+                    _poolTokenCollateralAddress,
+                    _borrower,
+                    _amount
+                )
+            ),
+            (uint256)
         );
 
         emit Liquidated(
