@@ -100,8 +100,8 @@ contract TestRepay is TestSetup {
         uint256 p2pBorrowIndex = marketsManager.p2pBorrowIndex(cDai);
         uint256 expectedBorrowBalanceInP2P = ((25 * borrowedAmount) / 100).div(p2pBorrowIndex);
 
-        assertEq(inP2PBorrower1, inP2PAvailableBorrower);
-        assertEq(inP2PBorrower1, expectedBorrowBalanceInP2P);
+        assertApproxEq(inP2PBorrower1, inP2PAvailableBorrower, 1);
+        assertApproxEq(inP2PBorrower1, expectedBorrowBalanceInP2P, 1);
         assertEq(onPoolBorrower1, 0);
         assertEq(onPoolAvailableBorrower, 0);
 
@@ -110,7 +110,7 @@ contract TestRepay is TestSetup {
             cDai,
             address(supplier1)
         );
-        assertEq(2 * inP2PBorrower1, inP2PSupplier);
+        assertApproxEq(2 * inP2PBorrower1, inP2PSupplier, 1);
         assertEq(onPoolSupplier, 0);
     }
 
@@ -206,7 +206,7 @@ contract TestRepay is TestSetup {
                 marketsManager.p2pBorrowIndex(cDai)
             );
 
-            assertEq(inP2P, expectedInP2P, "borrower in P2P");
+            assertApproxEq(inP2P, expectedInP2P, 1, "borrower in P2P");
             assertApproxEq(onPool, 0, 1e9, "borrower on pool");
         }
     }
@@ -256,7 +256,7 @@ contract TestRepay is TestSetup {
 
         uint256 expectedBorrowBalanceInP2P = ((25 * borrowedAmount) / 100).div(p2pBorrowIndex);
 
-        assertEq(inP2PBorrower1, expectedBorrowBalanceInP2P);
+        assertApproxEq(inP2PBorrower1, expectedBorrowBalanceInP2P, 1);
         assertEq(onPoolBorrower1, 0);
 
         // Check balances for supplier.
@@ -268,7 +268,7 @@ contract TestRepay is TestSetup {
         uint256 expectedSupplyBalanceInP2P = (suppliedAmount / 2).div(p2pBorrowIndex);
         uint256 expectedSupplyBalanceOnPool = (suppliedAmount / 2).div(supplyPoolIndex);
 
-        assertEq(inP2PSupplier, expectedSupplyBalanceInP2P);
+        assertApproxEq(inP2PSupplier, expectedSupplyBalanceInP2P, 1);
         assertEq(onPoolSupplier, expectedSupplyBalanceOnPool);
     }
 
