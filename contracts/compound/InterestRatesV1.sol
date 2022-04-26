@@ -31,12 +31,12 @@ contract InterestRatesV1 is IInterestRates {
 
     /// @notice Computes and return new P2P indexes.
     /// @param _params Computation parameters.
-    /// @return newSupplyP2PIndex The updated supplyP2PIndex.
-    /// @return newBorrowP2PIndex The updated borrowP2PIndex.
+    /// @return newP2PSupplyIndex The updated p2pSupplyIndex.
+    /// @return newP2PBorrowIndex The updated p2pBorrowIndex.
     function computeP2PIndexes(Types.Params memory _params)
         external
         pure
-        returns (uint256 newSupplyP2PIndex, uint256 newBorrowP2PIndex)
+        returns (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex)
     {
         (
             uint256 supplyP2PGrowthFactor,
@@ -52,7 +52,7 @@ contract InterestRatesV1 is IInterestRates {
         );
 
         RateParams memory supplyParams = RateParams({
-            p2pIndex: _params.supplyP2PIndex,
+            p2pIndex: _params.p2pSupplyIndex,
             poolIndex: _params.poolSupplyIndex,
             lastPoolIndex: _params.lastPoolSupplyIndex,
             reserveFactor: _params.reserveFactor,
@@ -60,7 +60,7 @@ contract InterestRatesV1 is IInterestRates {
             p2pDelta: _params.delta.supplyP2PDelta
         });
         RateParams memory borrowParams = RateParams({
-            p2pIndex: _params.borrowP2PIndex,
+            p2pIndex: _params.p2pBorrowIndex,
             poolIndex: _params.poolBorrowIndex,
             lastPoolIndex: _params.lastPoolBorrowIndex,
             reserveFactor: _params.reserveFactor,
@@ -68,24 +68,24 @@ contract InterestRatesV1 is IInterestRates {
             p2pDelta: _params.delta.borrowP2PDelta
         });
 
-        newSupplyP2PIndex = _computeNewP2PRate(
+        newP2PSupplyIndex = _computeNewP2PRate(
             supplyParams,
             supplyP2PGrowthFactor,
             supplyPoolGrowthaFactor
         );
-        newBorrowP2PIndex = _computeNewP2PRate(
+        newP2PBorrowIndex = _computeNewP2PRate(
             borrowParams,
             borrowP2PGrowthFactor,
             borrowPoolGrowthFactor
         );
     }
 
-    /// @notice Computes and return the new supply P2P index.
+    /// @notice Computes and return the new peer-to-peer supply index.
     /// @param _params Computation parameters.
-    /// @return The updated supplyP2PIndex.
-    function computeSupplyP2PIndex(Types.Params memory _params) external pure returns (uint256) {
+    /// @return The updated p2pSupplyIndex.
+    function computeP2PSupplyIndex(Types.Params memory _params) external pure returns (uint256) {
         RateParams memory supplyParams = RateParams({
-            p2pIndex: _params.supplyP2PIndex,
+            p2pIndex: _params.p2pSupplyIndex,
             poolIndex: _params.poolSupplyIndex,
             lastPoolIndex: _params.lastPoolSupplyIndex,
             reserveFactor: _params.reserveFactor,
@@ -109,12 +109,12 @@ contract InterestRatesV1 is IInterestRates {
         return _computeNewP2PRate(supplyParams, supplyP2PGrowthFactor, supplyPoolGrowthaFactor);
     }
 
-    /// @notice Computes and return the new borrow P2P index.
+    /// @notice Computes and return the new peer-to-peer borrow index.
     /// @param _params Computation parameters.
-    /// @return The updated borrowP2PIndex.
-    function computeBorrowP2PIndex(Types.Params memory _params) external pure returns (uint256) {
+    /// @return The updated p2pBorrowIndex.
+    function computeP2PBorrowIndex(Types.Params memory _params) external pure returns (uint256) {
         RateParams memory borrowParams = RateParams({
-            p2pIndex: _params.borrowP2PIndex,
+            p2pIndex: _params.p2pBorrowIndex,
             poolIndex: _params.poolBorrowIndex,
             lastPoolIndex: _params.lastPoolBorrowIndex,
             reserveFactor: _params.reserveFactor,
