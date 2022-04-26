@@ -52,7 +52,7 @@ contract PositionsManager is PositionsManagerGovernance {
         isMarketCreatedAndNotPaused(_poolTokenAddress)
     {
         if (_amount == 0) revert AmountIsZero();
-        marketsManager.updateP2PExchangeRates(_poolTokenAddress);
+        MARKETS_MANAGER.updateP2PExchangeRates(_poolTokenAddress);
 
         logic.supplyDC(_poolTokenAddress, _amount, maxGas.supply);
 
@@ -76,7 +76,7 @@ contract PositionsManager is PositionsManagerGovernance {
         uint256 _maxGasToConsume
     ) external nonReentrant isMarketCreatedAndNotPaused(_poolTokenAddress) {
         if (_amount == 0) revert AmountIsZero();
-        marketsManager.updateP2PExchangeRates(_poolTokenAddress);
+        MARKETS_MANAGER.updateP2PExchangeRates(_poolTokenAddress);
 
         logic.supplyDC(_poolTokenAddress, _amount, _maxGasToConsume);
 
@@ -98,7 +98,7 @@ contract PositionsManager is PositionsManagerGovernance {
         isMarketCreatedAndNotPaused(_poolTokenAddress)
     {
         if (_amount == 0) revert AmountIsZero();
-        marketsManager.updateP2PExchangeRates(_poolTokenAddress);
+        MARKETS_MANAGER.updateP2PExchangeRates(_poolTokenAddress);
 
         logic.borrowDC(_poolTokenAddress, _amount, maxGas.borrow);
 
@@ -121,7 +121,7 @@ contract PositionsManager is PositionsManagerGovernance {
         uint256 _maxGasToConsume
     ) external nonReentrant isMarketCreatedAndNotPaused(_poolTokenAddress) {
         if (_amount == 0) revert AmountIsZero();
-        marketsManager.updateP2PExchangeRates(_poolTokenAddress);
+        MARKETS_MANAGER.updateP2PExchangeRates(_poolTokenAddress);
 
         logic.borrowDC(_poolTokenAddress, _amount, _maxGasToConsume);
 
@@ -143,7 +143,7 @@ contract PositionsManager is PositionsManagerGovernance {
         isMarketCreatedAndNotPaused(_poolTokenAddress)
     {
         if (_amount == 0) revert AmountIsZero();
-        marketsManager.updateP2PExchangeRates(_poolTokenAddress);
+        MARKETS_MANAGER.updateP2PExchangeRates(_poolTokenAddress);
 
         uint256 toWithdraw = Math.min(
             _getUserSupplyBalanceInOf(_poolTokenAddress, msg.sender),
@@ -172,7 +172,7 @@ contract PositionsManager is PositionsManagerGovernance {
         isMarketCreatedAndNotPaused(_poolTokenAddress)
     {
         if (_amount == 0) revert AmountIsZero();
-        marketsManager.updateP2PExchangeRates(_poolTokenAddress);
+        MARKETS_MANAGER.updateP2PExchangeRates(_poolTokenAddress);
 
         uint256 toRepay = Math.min(
             _getUserBorrowBalanceInOf(_poolTokenAddress, msg.sender),
@@ -207,8 +207,8 @@ contract PositionsManager is PositionsManagerGovernance {
         isMarketCreatedAndNotPaused(_poolTokenCollateralAddress)
     {
         if (_amount == 0) revert AmountIsZero();
-        marketsManager.updateP2PExchangeRates(_poolTokenBorrowedAddress);
-        marketsManager.updateP2PExchangeRates(_poolTokenCollateralAddress);
+        MARKETS_MANAGER.updateP2PExchangeRates(_poolTokenBorrowedAddress);
+        MARKETS_MANAGER.updateP2PExchangeRates(_poolTokenCollateralAddress);
 
         uint256 amountSeized = logic.liquidateDC(
             _poolTokenBorrowedAddress,
@@ -237,8 +237,8 @@ contract PositionsManager is PositionsManagerGovernance {
 
         if (amountOfRewards == 0) revert AmountIsZero();
         else {
-            comptroller.claimComp(address(this), _cTokenAddresses);
-            ERC20 comp = ERC20(comptroller.getCompAddress());
+            COMPTROLLER.claimComp(address(this), _cTokenAddresses);
+            ERC20 comp = ERC20(COMPTROLLER.getCompAddress());
             if (_claimMorphoToken) {
                 comp.safeApprove(address(incentivesVault), amountOfRewards);
                 incentivesVault.convertCompToMorphoTokens(msg.sender, amountOfRewards);

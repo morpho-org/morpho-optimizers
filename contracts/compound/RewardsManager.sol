@@ -17,15 +17,16 @@ contract RewardsManager is IRewardsManager, Ownable {
     /// STORAGE ///
 
     uint224 public constant COMP_INITIAL_INDEX = 1e36;
+    IComptroller public constant COMPTROLLER =
+        IComptroller(0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B);
+    IPositionsManager public constant POSITIONS_MANAGER =
+        IPositionsManager(0xdB812b41C5E87Fa1263585A751E269315ECf204B);
 
     mapping(address => uint256) public userUnclaimedCompRewards; // The unclaimed rewards of the user.
     mapping(address => mapping(address => uint256)) public compSupplierIndex; // The supply index of the user for a specific cToken.
     mapping(address => mapping(address => uint256)) public compBorrowerIndex; // The borrow index of the user for a specific cToken.
     mapping(address => IComptroller.CompMarketState) public localCompSupplyState; // The lcoal supply state for a specific cToken.
     mapping(address => IComptroller.CompMarketState) public localCompBorrowState; // The lcoal borrow state for a specific cToken.
-
-    IPositionsManager public immutable positionsManager;
-    IComptroller public immutable comptroller;
 
     /// ERRORS ///
 
@@ -39,24 +40,15 @@ contract RewardsManager is IRewardsManager, Ownable {
 
     /// @notice Prevents a user to call function allowed for the positions manager only.
     modifier onlyPositionsManager() {
-        if (msg.sender != address(positionsManager)) revert OnlyPositionsManager();
+        if (msg.sender != address(POSITIONS_MANAGER)) revert OnlyPositionsManager();
         _;
-    }
-
-    /// CONSTRUCTOR ///
-
-    /// @notice Constructs the RewardsManager contract.
-    /// @param _positionsManager The `positionsManager`.
-    constructor(address _positionsManager) {
-        positionsManager = IPositionsManager(_positionsManager);
-        comptroller = IComptroller(positionsManager.comptroller());
     }
 
     /// EXTERNAL ///
 
     /// @notice Accrues unclaimed COMP rewards for the given cToken addresses and returns the total COMP unclaimed rewards.
-    /// @dev This function is called by the `positionsManager` to accrue COMP rewards and reset them to 0.
-    /// @dev The transfer of tokens is done in the `positionsManager`.
+    /// @dev This function is called by the `POSITIONS_MANAGER` to accrue COMP rewards and reset them to 0.
+    /// @dev The transfer of tokens is done in the `POSITIONS_MANAGER`.
     /// @param _cTokenAddresses The cToken addresses for which to claim rewards.
     /// @param _user The address of the user.
     function claimRewards(address[] calldata _cTokenAddresses, address _user)
@@ -107,18 +99,18 @@ contract RewardsManager is IRewardsManager, Ownable {
         for (uint256 i; i < _cTokenAddresses.length; i++) {
             address cTokenAddress = _cTokenAddresses[i];
 
-            (bool isListed, , ) = comptroller.markets(cTokenAddress);
+            (bool isListed, , ) = COMPTROLLER.markets(cTokenAddress);
             if (!isListed) revert InvalidCToken();
 
             unclaimedRewards += getAccruedSupplierComp(
                 _user,
                 cTokenAddress,
-                positionsManager.supplyBalanceInOf(cTokenAddress, _user).onPool
+                POSITIONS_MANAGER.supplyBalanceInOf(cTokenAddress, _user).onPool
             );
             unclaimedRewards += getAccruedBorrowerComp(
                 _user,
                 cTokenAddress,
-                positionsManager.borrowBalanceInOf(cTokenAddress, _user).onPool
+                POSITIONS_MANAGER.borrowBalanceInOf(cTokenAddress, _user).onPool
             );
         }
     }
@@ -162,21 +154,21 @@ contract RewardsManager is IRewardsManager, Ownable {
         for (uint256 i; i < _cTokenAddresses.length; i++) {
             address cTokenAddress = _cTokenAddresses[i];
 
-            (bool isListed, , ) = comptroller.markets(cTokenAddress);
+            (bool isListed, , ) = COMPTROLLER.markets(cTokenAddress);
             if (!isListed) revert InvalidCToken();
 
             _updateSupplyIndex(cTokenAddress);
             unclaimedRewards += _accrueSupplierComp(
                 _user,
                 cTokenAddress,
-                positionsManager.supplyBalanceInOf(cTokenAddress, _user).onPool
+                POSITIONS_MANAGER.supplyBalanceInOf(cTokenAddress, _user).onPool
             );
 
             _updateBorrowIndex(cTokenAddress);
             unclaimedRewards += _accrueBorrowerComp(
                 _user,
                 cTokenAddress,
-                positionsManager.borrowBalanceInOf(cTokenAddress, _user).onPool
+                POSITIONS_MANAGER.borrowBalanceInOf(cTokenAddress, _user).onPool
             );
         }
 
@@ -226,7 +218,7 @@ contract RewardsManager is IRewardsManager, Ownable {
 
         if (localSupplyState.block == blockNumber) return localSupplyState.index;
         else {
-            IComptroller.CompMarketState memory supplyState = comptroller.compSupplyState(
+            IComptroller.CompMarketState memory supplyState = COMPTROLLER.compSupplyState(
                 _cTokenAddress
             );
 
@@ -235,7 +227,7 @@ contract RewardsManager is IRewardsManager, Ownable {
                 uint256 deltaBlocks = localSupplyState.block == 0
                     ? blockNumber - supplyState.block
                     : blockNumber - localSupplyState.block;
-                uint256 supplySpeed = comptroller.compSupplySpeeds(_cTokenAddress);
+                uint256 supplySpeed = COMPTROLLER.compSupplySpeeds(_cTokenAddress);
 
                 if (supplySpeed > 0) {
                     uint256 supplyTokens = ICToken(_cTokenAddress).totalSupply();
@@ -259,7 +251,7 @@ contract RewardsManager is IRewardsManager, Ownable {
 
         if (localBorrowState.block == blockNumber) return localBorrowState.index;
         else {
-            IComptroller.CompMarketState memory borrowState = comptroller.compBorrowState(
+            IComptroller.CompMarketState memory borrowState = COMPTROLLER.compBorrowState(
                 _cTokenAddress
             );
 
@@ -268,7 +260,7 @@ contract RewardsManager is IRewardsManager, Ownable {
                 uint256 deltaBlocks = localBorrowState.block == 0
                     ? blockNumber - borrowState.block
                     : blockNumber - localBorrowState.block;
-                uint256 borrowSpeed = comptroller.compBorrowSpeeds(_cTokenAddress);
+                uint256 borrowSpeed = COMPTROLLER.compBorrowSpeeds(_cTokenAddress);
 
                 if (borrowSpeed > 0) {
                     uint256 borrowAmount = ICToken(_cTokenAddress).totalBorrows().div(
@@ -333,7 +325,7 @@ contract RewardsManager is IRewardsManager, Ownable {
 
         if (localSupplyState.block == blockNumber) return;
         else {
-            IComptroller.CompMarketState memory supplyState = comptroller.compSupplyState(
+            IComptroller.CompMarketState memory supplyState = COMPTROLLER.compSupplyState(
                 _cTokenAddress
             );
 
@@ -344,7 +336,7 @@ contract RewardsManager is IRewardsManager, Ownable {
                 uint256 deltaBlocks = localSupplyState.block == 0
                     ? blockNumber - supplyState.block
                     : blockNumber - localSupplyState.block;
-                uint256 supplySpeed = comptroller.compSupplySpeeds(_cTokenAddress);
+                uint256 supplySpeed = COMPTROLLER.compSupplySpeeds(_cTokenAddress);
 
                 if (supplySpeed > 0) {
                     uint256 supplyTokens = ICToken(_cTokenAddress).totalSupply();
@@ -373,7 +365,7 @@ contract RewardsManager is IRewardsManager, Ownable {
 
         if (localBorrowState.block == blockNumber) return;
         else {
-            IComptroller.CompMarketState memory borrowState = comptroller.compBorrowState(
+            IComptroller.CompMarketState memory borrowState = COMPTROLLER.compBorrowState(
                 _cTokenAddress
             );
 
@@ -384,7 +376,7 @@ contract RewardsManager is IRewardsManager, Ownable {
                 uint256 deltaBlocks = localBorrowState.block == 0
                     ? blockNumber - borrowState.block
                     : blockNumber - localBorrowState.block;
-                uint256 borrowSpeed = comptroller.compBorrowSpeeds(_cTokenAddress);
+                uint256 borrowSpeed = COMPTROLLER.compBorrowSpeeds(_cTokenAddress);
 
                 if (borrowSpeed > 0) {
                     uint256 borrowAmount = ICToken(_cTokenAddress).totalBorrows().div(

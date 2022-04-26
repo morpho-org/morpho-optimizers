@@ -74,7 +74,7 @@ abstract contract PositionsManagerGetters is PositionsManagerStorage {
             uint256 maxDebtValue
         )
     {
-        ICompoundOracle oracle = ICompoundOracle(comptroller.oracle());
+        ICompoundOracle oracle = ICompoundOracle(COMPTROLLER.oracle());
         uint256 numberOfEnteredMarkets = enteredMarkets[_user].length;
         uint256 i;
 
@@ -108,7 +108,7 @@ abstract contract PositionsManagerGetters is PositionsManagerStorage {
     {
         LiquidityData memory data;
         AssetLiquidityData memory assetData;
-        ICompoundOracle oracle = ICompoundOracle(comptroller.oracle());
+        ICompoundOracle oracle = ICompoundOracle(COMPTROLLER.oracle());
         uint256 numberOfEnteredMarkets = enteredMarkets[_user].length;
         uint256 i;
 
@@ -167,7 +167,7 @@ abstract contract PositionsManagerGetters is PositionsManagerStorage {
         ICompoundOracle _oracle
     ) public view returns (AssetLiquidityData memory assetData) {
         assetData.underlyingPrice = _oracle.getUnderlyingPrice(_poolTokenAddress);
-        (, assetData.collateralFactor, ) = comptroller.markets(_poolTokenAddress);
+        (, assetData.collateralFactor, ) = COMPTROLLER.markets(_poolTokenAddress);
 
         assetData.collateralValue = _getUserSupplyBalanceInOf(_poolTokenAddress, _user).mul(
             assetData.underlyingPrice
@@ -191,7 +191,7 @@ abstract contract PositionsManagerGetters is PositionsManagerStorage {
         uint256 _withdrawnAmount,
         uint256 _borrowedAmount
     ) internal returns (uint256 debtValue, uint256 maxDebtValue) {
-        ICompoundOracle oracle = ICompoundOracle(comptroller.oracle());
+        ICompoundOracle oracle = ICompoundOracle(COMPTROLLER.oracle());
         uint256 numberOfEnteredMarkets = enteredMarkets[_user].length;
         uint256 i;
 
@@ -237,7 +237,7 @@ abstract contract PositionsManagerGetters is PositionsManagerStorage {
     {
         return
             supplyBalanceInOf[_poolTokenAddress][_user].inP2P.mul(
-                marketsManager.getUpdatedSupplyP2PExchangeRate(_poolTokenAddress)
+                MARKETS_MANAGER.getUpdatedSupplyP2PExchangeRate(_poolTokenAddress)
             ) +
             supplyBalanceInOf[_poolTokenAddress][_user].onPool.mul(
                 ICToken(_poolTokenAddress).exchangeRateStored()
@@ -255,7 +255,7 @@ abstract contract PositionsManagerGetters is PositionsManagerStorage {
     {
         return
             borrowBalanceInOf[_poolTokenAddress][_user].inP2P.mul(
-                marketsManager.getUpdatedBorrowP2PExchangeRate(_poolTokenAddress)
+                MARKETS_MANAGER.getUpdatedBorrowP2PExchangeRate(_poolTokenAddress)
             ) +
             borrowBalanceInOf[_poolTokenAddress][_user].onPool.mul(
                 ICToken(_poolTokenAddress).borrowIndex()

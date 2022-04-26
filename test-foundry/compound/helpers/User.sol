@@ -16,9 +16,9 @@ contract User {
 
     constructor(PositionsManager _positionsManager) {
         positionsManager = _positionsManager;
-        marketsManager = MarketsManager(address(_positionsManager.marketsManager()));
+        marketsManager = MarketsManager(address(_positionsManager.MARKETS_MANAGER()));
         rewardsManager = _positionsManager.rewardsManager();
-        comptroller = positionsManager.comptroller();
+        comptroller = positionsManager.COMPTROLLER();
     }
 
     receive() external payable {}

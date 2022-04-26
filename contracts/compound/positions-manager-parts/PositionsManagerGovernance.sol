@@ -16,14 +16,14 @@ abstract contract PositionsManagerGovernance is PositionsManagerEventsErrors {
     /// @notice Prevents a user to trigger a function when market is not created or paused.
     /// @param _poolTokenAddress The address of the market to check.
     modifier isMarketCreatedAndNotPaused(address _poolTokenAddress) {
-        if (!marketsManager.isCreated(_poolTokenAddress)) revert MarketNotCreated();
+        if (!MARKETS_MANAGER.isCreated(_poolTokenAddress)) revert MarketNotCreated();
         if (paused[_poolTokenAddress]) revert MarketPaused();
         _;
     }
 
     /// @notice Prevents a user to call function only allowed for the markets manager.
     modifier onlyMarketsManager() {
-        if (msg.sender != address(marketsManager)) revert OnlyMarketsManager();
+        if (msg.sender != address(MARKETS_MANAGER)) revert OnlyMarketsManager();
         _;
     }
 
@@ -96,7 +96,7 @@ abstract contract PositionsManagerGovernance is PositionsManagerEventsErrors {
     {
         address[] memory marketToEnter = new address[](1);
         marketToEnter[0] = _poolTokenAddress;
-        return comptroller.enterMarkets(marketToEnter);
+        return COMPTROLLER.enterMarkets(marketToEnter);
     }
 
     /// @notice Transfers the protocol reserve fee to the DAO.

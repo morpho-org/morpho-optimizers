@@ -28,9 +28,9 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
 
     uint256 public constant WAD = 1e18;
     uint16 public constant MAX_BASIS_POINTS = 10_000; // 100% (in basis point).
-    IComptroller public constant comptroller =
+    IComptroller public constant COMPTROLLER =
         IComptroller(0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B);
-    IPositionsManager public constant positionsManager =
+    IPositionsManager public constant POSITIONS_MANAGER =
         IPositionsManager(0xdB812b41C5E87Fa1263585A751E269315ECf204B);
 
     address[] public marketsCreated; // Keeps track of the created markets.
@@ -50,8 +50,8 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
     /// @param _poolTokenAddress The address of the market that has been created.
     event MarketCreated(address _poolTokenAddress);
 
-    /// @notice Emitted when the `positionsManager` is set.
-    /// @param _positionsManager The address of the `positionsManager`.
+    /// @notice Emitted when the `POSITIONS_MANAGER` is set.
+    /// @param _positionsManager The address of the `POSITIONS_MANAGER`.
     event PositionsManagerSet(address _positionsManager);
 
     /// @notice Emitted when the `interestRates` is set.
@@ -96,7 +96,7 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
     /// @notice Thrown when the market is not listed on Compound.
     error MarketIsNotListedOnCompound();
 
-    /// @notice Thrown when the positionsManager is already set.
+    /// @notice Thrown when the POSITIONS_MANAGER is already set.
     error PositionsManagerAlreadySet();
 
     /// @notice Thrown when the market is already created.
@@ -117,9 +117,9 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
         _;
     }
 
-    /// @notice Prevents a user to call function only allowed for `positionsManager`.
+    /// @notice Prevents a user to call function only allowed for `POSITIONS_MANAGER`.
     modifier onlyPositionsManager() {
-        if (msg.sender != address(positionsManager)) revert OnlyPositionsManager();
+        if (msg.sender != address(POSITIONS_MANAGER)) revert OnlyPositionsManager();
         _;
     }
 
@@ -159,7 +159,7 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
     function createMarket(address _poolTokenAddress) external onlyOwner {
         address[] memory marketToEnter = new address[](1);
         marketToEnter[0] = _poolTokenAddress;
-        uint256[] memory results = positionsManager.createMarket(_poolTokenAddress);
+        uint256[] memory results = POSITIONS_MANAGER.createMarket(_poolTokenAddress);
         if (results[0] != 0) revert MarketCreationFailedOnCompound();
 
         if (isCreated[_poolTokenAddress]) revert MarketAlreadyCreated();
@@ -170,7 +170,7 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
 
         // Same initial exchange rate as Compound.
         uint256 initialExchangeRate;
-        if (_poolTokenAddress == positionsManager.cEth()) initialExchangeRate = 2e26;
+        if (_poolTokenAddress == POSITIONS_MANAGER.cEth()) initialExchangeRate = 2e26;
         else
             initialExchangeRate =
                 2 *
@@ -227,7 +227,7 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
         )
     {
         {
-            Types.Delta memory delta = positionsManager.deltas(_poolTokenAddress);
+            Types.Delta memory delta = POSITIONS_MANAGER.deltas(_poolTokenAddress);
             supplyP2PDelta_ = delta.supplyP2PDelta;
             borrowP2PDelta_ = delta.borrowP2PDelta;
             supplyP2PAmount_ = delta.supplyP2PAmount;
@@ -255,7 +255,7 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
     {
         isCreated_ = isCreated[_poolTokenAddress];
         noP2P_ = noP2P[_poolTokenAddress];
-        paused_ = positionsManager.paused(_poolTokenAddress);
+        paused_ = POSITIONS_MANAGER.paused(_poolTokenAddress);
         reserveFactor_ = reserveFactor[_poolTokenAddress];
     }
 
@@ -284,7 +284,7 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
                 poolIndexes.lastSupplyPoolIndex,
                 poolIndexes.lastBorrowPoolIndex,
                 reserveFactor[_poolTokenAddress],
-                positionsManager.deltas(_poolTokenAddress)
+                POSITIONS_MANAGER.deltas(_poolTokenAddress)
             );
 
             (newSupplyP2PExchangeRate, newBorrowP2PExchangeRate) = interestRates
@@ -314,7 +314,7 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
                 poolIndexes.lastSupplyPoolIndex,
                 poolIndexes.lastBorrowPoolIndex,
                 reserveFactor[_poolTokenAddress],
-                positionsManager.deltas(_poolTokenAddress)
+                POSITIONS_MANAGER.deltas(_poolTokenAddress)
             );
 
             return interestRates.computeSupplyP2PExchangeRate(params);
@@ -343,7 +343,7 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
                 poolIndexes.lastSupplyPoolIndex,
                 poolIndexes.lastBorrowPoolIndex,
                 reserveFactor[_poolTokenAddress],
-                positionsManager.deltas(_poolTokenAddress)
+                POSITIONS_MANAGER.deltas(_poolTokenAddress)
             );
 
             return interestRates.computeBorrowP2PExchangeRate(params);
@@ -371,7 +371,7 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
                 poolIndexes.lastSupplyPoolIndex,
                 poolIndexes.lastBorrowPoolIndex,
                 reserveFactor[_poolTokenAddress],
-                positionsManager.deltas(_poolTokenAddress)
+                POSITIONS_MANAGER.deltas(_poolTokenAddress)
             );
 
             (uint256 newSupplyP2PExchangeRate, uint256 newBorrowP2PExchangeRate) = interestRates

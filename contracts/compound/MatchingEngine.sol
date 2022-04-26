@@ -73,7 +73,7 @@ contract MatchingEngine is PositionsManagerGetters {
         address poolTokenAddress = address(_poolToken);
         address user = suppliersOnPool[poolTokenAddress].getHead();
         vars.poolIndex = _poolToken.exchangeRateCurrent();
-        vars.p2pRate = marketsManager.supplyP2PExchangeRate(poolTokenAddress);
+        vars.p2pRate = MARKETS_MANAGER.supplyP2PExchangeRate(poolTokenAddress);
 
         if (_maxGasToConsume != 0) {
             vars.gasLeftAtTheBeginning = gasleft();
@@ -121,7 +121,7 @@ contract MatchingEngine is PositionsManagerGetters {
         UnmatchVars memory vars;
         address user = suppliersInP2P[_poolTokenAddress].getHead();
         vars.poolIndex = ICToken(_poolTokenAddress).exchangeRateCurrent();
-        vars.p2pRate = marketsManager.supplyP2PExchangeRate(_poolTokenAddress);
+        vars.p2pRate = MARKETS_MANAGER.supplyP2PExchangeRate(_poolTokenAddress);
         uint256 remainingToUnmatch = _amount; // In underlying
 
         if (_maxGasToConsume != 0) {
@@ -177,7 +177,7 @@ contract MatchingEngine is PositionsManagerGetters {
         address poolTokenAddress = address(_poolToken);
         address user = borrowersOnPool[poolTokenAddress].getHead();
         vars.poolIndex = _poolToken.borrowIndex();
-        vars.p2pRate = marketsManager.borrowP2PExchangeRate(poolTokenAddress);
+        vars.p2pRate = MARKETS_MANAGER.borrowP2PExchangeRate(poolTokenAddress);
 
         if (_maxGasToConsume != 0) {
             vars.gasLeftAtTheBeginning = gasleft();
@@ -228,7 +228,7 @@ contract MatchingEngine is PositionsManagerGetters {
         address user = borrowersInP2P[_poolTokenAddress].getHead();
         uint256 remainingToUnmatch = _amount;
         vars.poolIndex = ICToken(_poolTokenAddress).borrowIndex();
-        vars.p2pRate = marketsManager.borrowP2PExchangeRate(_poolTokenAddress);
+        vars.p2pRate = MARKETS_MANAGER.borrowP2PExchangeRate(_poolTokenAddress);
 
         if (_maxGasToConsume != 0) {
             vars.gasLeftAtTheBeginning = gasleft();

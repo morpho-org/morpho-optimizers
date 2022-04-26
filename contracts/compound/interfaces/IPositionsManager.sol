@@ -32,5 +32,5 @@ interface IPositionsManager {
 
     function cEth() external view returns (address);
 
-    function comptroller() external view returns (address);
+    function COMPTROLLER() external view returns (address);
 }

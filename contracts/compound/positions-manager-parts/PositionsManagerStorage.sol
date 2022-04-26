@@ -74,9 +74,9 @@ abstract contract PositionsManagerStorage is OwnableUpgradeable, ReentrancyGuard
     uint8 public constant CTOKEN_DECIMALS = 8; // The number of decimals for cToken.
     uint16 public constant MAX_BASIS_POINTS = 10_000; // 100% in basis points.
     uint16 public constant LIQUIDATION_CLOSE_FACTOR_PERCENT = 5_000; // 50% in basis points.
-    IComptroller public constant comptroller =
+    IComptroller public constant COMPTROLLER =
         IComptroller(0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B);
-    IMarketsManager public constant marketsManager =
+    IMarketsManager public constant MARKETS_MANAGER =
         IMarketsManager(0x56c555382a22FaA0efCEba8E1a5D20E5CaD6259B);
 
     MaxGas public maxGas; // Max gas to consume within loops in matching engine functions.

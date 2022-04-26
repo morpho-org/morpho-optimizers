@@ -13,7 +13,6 @@
     "no-empty-blocks": "off",
     "func-name-mixedcase": "off",
     "max-states-count": "off",
-    "const-name-snakecase": "off",
     "func-visibility": [
       "warn",
       {
