@@ -24,6 +24,9 @@ library DoubleLinkedList {
     /// @notice Thrown when the account to remove does not exist.
     error AccountDoesNotExist();
 
+    /// @notice Thrown when the address is zero at insertion.
+    error AddressIsZero();
+
     /// @notice Thrown when the value is zero at insertion.
     error ValueIsZero();
 
@@ -94,6 +97,7 @@ library DoubleLinkedList {
         uint256 _maxIterations
     ) internal {
         if (_value == 0) revert ValueIsZero();
+        if (_id == address(0)) revert AddressIsZero();
         if (_list.accounts[_id].value != 0) revert AccountAlreadyInserted();
 
         uint256 numberOfIterations;
