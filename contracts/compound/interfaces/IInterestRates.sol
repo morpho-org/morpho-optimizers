@@ -6,7 +6,7 @@ import "../libraries/Types.sol";
 interface IInterestRates {
     function computeP2PIndexes(Types.Params memory _params)
         external
-        pure
+        view
         returns (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex);
 
     function computeP2PSupplyIndex(Types.Params memory _params) external view returns (uint256);

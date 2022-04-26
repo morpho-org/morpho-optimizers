@@ -36,6 +36,9 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
     mapping(address => uint256) public override lastUpdateBlockNumber; // The last time the P2P indexes were updated.
     mapping(address => LastPoolIndexes) public lastPoolIndexes; // Last pool index stored.
     mapping(address => bool) public override noP2P; // Whether to put users on pool or not for the given market.
+    mapping(address => uint256) public p2pCursor; // Determine the weights of the weighted arithmetic average in the indexes computations.
+
+    /// EVENTS ///
 
     IPositionsManager public positionsManager;
     IInterestRates public interestRates;
@@ -74,6 +77,11 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
     /// @param _poolTokenAddress The address of the market set.
     /// @param _newValue The new value of the `reserveFactor`.
     event ReserveFactorSet(address indexed _poolTokenAddress, uint256 _newValue);
+
+    /// @notice Emitted when the `p2pCursor` is set.
+    /// @param _poolTokenAddress The address of the market set.
+    /// @param _newValue The new value of the `p2pCursor`.
+    event P2PCursorSet(address indexed _poolTokenAddress, uint256 _newValue);
 
     /// ERRORS ///
 
@@ -280,6 +288,7 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
                 poolIndexes.lastSupplyPoolIndex,
                 poolIndexes.lastBorrowPoolIndex,
                 reserveFactor[_poolTokenAddress],
+                p2pCursor[_poolTokenAddress],
                 positionsManager.deltas(_poolTokenAddress)
             );
 
@@ -305,6 +314,7 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
                 poolIndexes.lastSupplyPoolIndex,
                 poolIndexes.lastBorrowPoolIndex,
                 reserveFactor[_poolTokenAddress],
+                p2pCursor[_poolTokenAddress],
                 positionsManager.deltas(_poolTokenAddress)
             );
 
@@ -330,11 +340,19 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
                 poolIndexes.lastSupplyPoolIndex,
                 poolIndexes.lastBorrowPoolIndex,
                 reserveFactor[_poolTokenAddress],
+                p2pCursor[_poolTokenAddress],
                 positionsManager.deltas(_poolTokenAddress)
             );
 
             return interestRates.computeP2PBorrowIndex(params);
         }
+    }
+
+    /// @notice Set a new peer-to-peer cursor.
+    /// @param _p2pCursor The new peer-to-peer cursor.
+    function setP2PCursor(address _poolTokenAddress, uint256 _p2pCursor) external onlyOwner {
+        p2pCursor[_poolTokenAddress] = _p2pCursor;
+        emit P2PCursorSet(_poolTokenAddress, _p2pCursor);
     }
 
     /// PUBLIC ///
@@ -358,6 +376,7 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
                 poolIndexes.lastSupplyPoolIndex,
                 poolIndexes.lastBorrowPoolIndex,
                 reserveFactor[_poolTokenAddress],
+                p2pCursor[_poolTokenAddress],
                 positionsManager.deltas(_poolTokenAddress)
             );
 

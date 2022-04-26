@@ -12,7 +12,7 @@ contract TestInterestRates is TestSetup {
     uint256 public lastPoolBorrowIndex = 1 * WAD;
     uint256 public reserveFactor0PerCent = 0;
     uint256 public reserveFactor50PerCent = 5_000;
-    uint256 public constant P2P_CURSOR = 3_333;
+    uint256 public p2pCursor = 3_333;
 
     // prettier-ignore
     function computeP2PIndexes(Types.Params memory params)
@@ -22,7 +22,7 @@ contract TestInterestRates is TestSetup {
     {
         uint256 supplyPoolIncrease = ((params.poolSupplyIndex * WAD) / params.lastPoolSupplyIndex);
         uint256 borrowPoolIncrease = ((params.poolBorrowIndex * WAD) / params.lastPoolBorrowIndex);
-        uint256 p2pIncrease = ((MAX_BASIS_POINTS - P2P_CURSOR) * supplyPoolIncrease + P2P_CURSOR * borrowPoolIncrease) / MAX_BASIS_POINTS;
+        uint256 p2pIncrease = ((MAX_BASIS_POINTS - params.p2pCursor) * supplyPoolIncrease + params.p2pCursor * borrowPoolIncrease) / MAX_BASIS_POINTS;
         uint256 shareOfTheSupplyDelta = params.delta.supplyP2PAmount > 0
             ? (((params.delta.supplyP2PDelta * params.poolSupplyIndex) / WAD) * WAD) /
                 ((params.delta.supplyP2PAmount * params.p2pSupplyIndex) / WAD)
@@ -52,6 +52,7 @@ contract TestInterestRates is TestSetup {
             lastPoolSupplyIndex,
             lastPoolBorrowIndex,
             reserveFactor0PerCent,
+            p2pCursor,
             Types.Delta(0, 0, 0, 0)
         );
 
@@ -70,6 +71,7 @@ contract TestInterestRates is TestSetup {
             lastPoolSupplyIndex,
             lastPoolBorrowIndex,
             reserveFactor50PerCent,
+            p2pCursor,
             Types.Delta(0, 0, 0, 0)
         );
 
@@ -88,6 +90,7 @@ contract TestInterestRates is TestSetup {
             lastPoolSupplyIndex,
             lastPoolBorrowIndex,
             reserveFactor0PerCent,
+            p2pCursor,
             Types.Delta(1 * WAD, 1 * WAD, 4 * WAD, 6 * WAD)
         );
 
@@ -106,6 +109,7 @@ contract TestInterestRates is TestSetup {
             lastPoolSupplyIndex,
             lastPoolBorrowIndex,
             reserveFactor50PerCent,
+            p2pCursor,
             Types.Delta(1 * WAD, 1 * WAD, 4 * WAD, 6 * WAD)
         );
 
@@ -123,10 +127,11 @@ contract TestInterestRates is TestSetup {
         uint64 _5,
         uint64 _6,
         uint16 _7,
-        uint64 _8,
+        uint16 _8,
         uint64 _9,
         uint64 _10,
-        uint64 _11
+        uint64 _11,
+        uint64 _12
     ) public {
         uint256 _p2pSupplyIndex = WAD + _1;
         uint256 _p2pBorrowIndex = WAD + _2;
@@ -135,10 +140,11 @@ contract TestInterestRates is TestSetup {
         uint256 _lastPoolSupplyIndex = WAD + _5;
         uint256 _lastPoolBorrowIndex = WAD + _6;
         uint256 _reserveFactor = _7 % 10_000;
-        uint256 _supplyP2PDelta = WAD + _8;
-        uint256 _borrowP2PDelta = WAD + _9;
-        uint256 _supplyP2PAmount = WAD + _10;
-        uint256 _borrowP2PAmount = WAD + _11;
+        uint256 _p2pCursor = _8 % 10_000;
+        uint256 _supplyP2PDelta = WAD + _9;
+        uint256 _borrowP2PDelta = WAD + _10;
+        uint256 _supplyP2PAmount = WAD + _11;
+        uint256 _borrowP2PAmount = WAD + _12;
 
         hevm.assume(_lastPoolSupplyIndex <= _poolSupplyIndex); // prettier-ignore
         hevm.assume(_lastPoolBorrowIndex <= _poolBorrowIndex); // prettier-ignore
@@ -154,6 +160,7 @@ contract TestInterestRates is TestSetup {
             _lastPoolSupplyIndex,
             _lastPoolBorrowIndex,
             _reserveFactor,
+            _p2pCursor,
             Types.Delta(_supplyP2PDelta, _borrowP2PDelta, _supplyP2PAmount, _borrowP2PAmount)
         );
 
