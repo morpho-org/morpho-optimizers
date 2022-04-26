@@ -26,7 +26,6 @@ contract InterestRatesV1 is IInterestRates {
 
     uint256 public constant WAD = 1e18;
     uint256 public constant MAX_BASIS_POINTS = 10_000; // 100% (in basis point).
-    uint256 public constant P2P_CURSOR = 3_333; // 33.33% (in basis point).
 
     /// EXTERNAL ///
 
@@ -49,7 +48,8 @@ contract InterestRatesV1 is IInterestRates {
             _params.poolBorrowIndex,
             _params.lastPoolSupplyIndex,
             _params.lastPoolBorrowIndex,
-            _params.reserveFactor
+            _params.reserveFactor,
+            _params.p2pCursor
         );
 
         RateParams memory supplyParams = RateParams({
@@ -104,7 +104,8 @@ contract InterestRatesV1 is IInterestRates {
             _params.poolBorrowIndex,
             _params.lastPoolSupplyIndex,
             _params.lastPoolBorrowIndex,
-            _params.reserveFactor
+            _params.reserveFactor,
+            _params.p2pCursor
         );
 
         return _computeNewP2PRate(supplyParams, supplyP2PGrowthFactor, supplyPoolGrowthaFactor);
@@ -128,7 +129,8 @@ contract InterestRatesV1 is IInterestRates {
             _params.poolBorrowIndex,
             _params.lastPoolSupplyIndex,
             _params.lastPoolBorrowIndex,
-            _params.reserveFactor
+            _params.reserveFactor,
+            _params.p2pCursor
         );
 
         return _computeNewP2PRate(borrowParams, borrowP2PGrowthFactor, borrowPoolGrowthFactor);
@@ -151,7 +153,8 @@ contract InterestRatesV1 is IInterestRates {
         uint256 _poolBorrowIndex,
         uint256 _lastPoolSupplyIndex,
         uint256 _lastPoolBorrowIndex,
-        uint256 _reserveFactor
+        uint256 _reserveFactor,
+        uint256 _p2pCursor
     )
         internal
         pure
@@ -164,9 +167,9 @@ contract InterestRatesV1 is IInterestRates {
     {
         supplyPoolGrowthFactor_ = _poolSupplyIndex.div(_lastPoolSupplyIndex);
         borrowPoolGrowthFactor_ = _poolBorrowIndex.div(_lastPoolBorrowIndex);
-        uint256 p2pGrowthFactor = ((MAX_BASIS_POINTS - P2P_CURSOR) *
+        uint256 p2pGrowthFactor = ((MAX_BASIS_POINTS - _p2pCursor) *
             supplyPoolGrowthFactor_ +
-            P2P_CURSOR *
+            _p2pCursor *
             borrowPoolGrowthFactor_) / MAX_BASIS_POINTS;
         supplyP2PGrowthFactor_ =
             p2pGrowthFactor -

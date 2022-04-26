@@ -148,6 +148,7 @@ contract TestSetup is Config, Utils, stdCheats {
 
     function createMarket(address _cToken) internal {
         marketsManager.createMarket(_cToken);
+        marketsManager.setP2PCursor(_cToken, 3_333);
 
         // All tokens must also be added to the pools array, for the correct behavior of TestLiquidate::createAndSetCustomPriceOracle.
         pools.push(_cToken);
@@ -271,7 +272,8 @@ contract TestSetup is Config, Utils, stdCheats {
         uint256 reserveFactor = marketsManager.reserveFactor(_poolTokenAddress);
 
         // rate = 2/3 * poolSupplyRate + 1/3 * poolBorrowRate.
-        uint256 rate = (2 * poolSupplyBPY + poolBorrowBPY) / 3;
+        uint256 p2pCursor = marketsManager.p2pCursor(_poolTokenAddress);
+        uint256 rate = ((10_000 - p2pCursor) * poolSupplyBPY + p2pCursor * poolBorrowBPY) / 10_000;
 
         p2pSupplyRate_ = rate - (reserveFactor * (rate - poolSupplyBPY)) / 10_000;
         p2pBorrowRate_ = rate + (reserveFactor * (poolBorrowBPY - rate)) / 10_000;
