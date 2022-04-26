@@ -59,7 +59,7 @@ contract MatchingEngine is PositionsManagerGetters {
     /// INTERNAL ///
 
     /// @notice Matches suppliers' liquidity waiting on Compound up to the given `_amount` and move it to P2P.
-    /// @dev Note: p2pExchangeRates must have been updated before calling this function.
+    /// @dev Note: p2pIndexes must have been updated before calling this function.
     /// @param _poolToken The pool token of the market from which to match suppliers.
     /// @param _amount The token amount to search for (in underlying).
     /// @param _maxGasToConsume The maximum amount of gas to consume within a matching engine loop.
@@ -73,7 +73,7 @@ contract MatchingEngine is PositionsManagerGetters {
         address poolTokenAddress = address(_poolToken);
         address user = suppliersOnPool[poolTokenAddress].getHead();
         vars.poolIndex = _poolToken.exchangeRateCurrent();
-        vars.p2pRate = marketsManager.supplyP2PExchangeRate(poolTokenAddress);
+        vars.p2pRate = marketsManager.supplyP2PIndex(poolTokenAddress);
 
         if (_maxGasToConsume != 0) {
             vars.gasLeftAtTheBeginning = gasleft();
@@ -109,7 +109,7 @@ contract MatchingEngine is PositionsManagerGetters {
     }
 
     /// @notice Unmatches suppliers' liquidity in P2P up to the given `_amount` and move it to Compound.
-    /// @dev Note: p2pExchangeRates must have been updated before calling this function.
+    /// @dev Note: p2pIndexes must have been updated before calling this function.
     /// @param _poolTokenAddress The address of the market from which to unmatch suppliers.
     /// @param _amount The amount to search for (in underlying).
     /// @param _maxGasToConsume The maximum amount of gas to consume within a matching engine loop.
@@ -121,7 +121,7 @@ contract MatchingEngine is PositionsManagerGetters {
         UnmatchVars memory vars;
         address user = suppliersInP2P[_poolTokenAddress].getHead();
         vars.poolIndex = ICToken(_poolTokenAddress).exchangeRateCurrent();
-        vars.p2pRate = marketsManager.supplyP2PExchangeRate(_poolTokenAddress);
+        vars.p2pRate = marketsManager.supplyP2PIndex(_poolTokenAddress);
         uint256 remainingToUnmatch = _amount; // In underlying
 
         if (_maxGasToConsume != 0) {
@@ -163,7 +163,7 @@ contract MatchingEngine is PositionsManagerGetters {
     }
 
     /// @notice Matches borrowers' liquidity waiting on Compound up to the given `_amount` and move it to P2P.
-    /// @dev Note: p2pExchangeRates must have been updated before calling this function.
+    /// @dev Note: p2pIndexes must have been updated before calling this function.
     /// @param _poolToken The pool token of the market from which to match borrowers.
     /// @param _amount The amount to search for (in underlying).
     /// @param _maxGasToConsume The maximum amount of gas to consume within a matching engine loop.
@@ -177,7 +177,7 @@ contract MatchingEngine is PositionsManagerGetters {
         address poolTokenAddress = address(_poolToken);
         address user = borrowersOnPool[poolTokenAddress].getHead();
         vars.poolIndex = _poolToken.borrowIndex();
-        vars.p2pRate = marketsManager.borrowP2PExchangeRate(poolTokenAddress);
+        vars.p2pRate = marketsManager.borrowP2PIndex(poolTokenAddress);
 
         if (_maxGasToConsume != 0) {
             vars.gasLeftAtTheBeginning = gasleft();
@@ -214,7 +214,7 @@ contract MatchingEngine is PositionsManagerGetters {
     }
 
     /// @notice Unmatches borrowers' liquidity in P2P for the given `_amount` and move it to Compound.
-    /// @dev Note: p2pExchangeRates must have been updated before calling this function.
+    /// @dev Note: p2pIndexes must have been updated before calling this function.
     /// @param _poolTokenAddress The address of the market from which to unmatch borrowers.
     /// @param _amount The amount to unmatch (in underlying).
     /// @param _maxGasToConsume The maximum amount of gas to consume within a matching engine loop.
@@ -228,7 +228,7 @@ contract MatchingEngine is PositionsManagerGetters {
         address user = borrowersInP2P[_poolTokenAddress].getHead();
         uint256 remainingToUnmatch = _amount;
         vars.poolIndex = ICToken(_poolTokenAddress).borrowIndex();
-        vars.p2pRate = marketsManager.borrowP2PExchangeRate(_poolTokenAddress);
+        vars.p2pRate = marketsManager.borrowP2PIndex(_poolTokenAddress);
 
         if (_maxGasToConsume != 0) {
             vars.gasLeftAtTheBeginning = gasleft();

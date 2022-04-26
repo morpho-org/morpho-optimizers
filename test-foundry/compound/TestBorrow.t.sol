@@ -49,17 +49,15 @@ contract TestBorrow is TestSetup {
         borrower1.approve(usdc, to6Decimals(amount * 2));
         borrower1.supply(cUsdc, to6Decimals(amount * 2));
 
-        uint256 cDaiExchangeRate = ICToken(cDai).exchangeRateCurrent();
+        uint256 cDaiIndex = ICToken(cDai).exchangeRateCurrent();
         (, uint256 supplyOnPool) = positionsManager.supplyBalanceInOf(cDai, address(supplier1));
-        uint256 toBorrow = supplyOnPool.mul(cDaiExchangeRate);
+        uint256 toBorrow = supplyOnPool.mul(cDaiIndex);
         borrower1.borrow(cDai, toBorrow);
 
         (uint256 supplyInP2P, ) = positionsManager.supplyBalanceInOf(cDai, address(supplier1));
 
-        uint256 borrowP2PExchangeRate = marketsManager.borrowP2PExchangeRate(cDai);
-        uint256 expectedBorrowInP2P = getBalanceOnCompound(amount, cDaiExchangeRate).div(
-            borrowP2PExchangeRate
-        );
+        uint256 borrowP2PIndex = marketsManager.borrowP2PIndex(cDai);
+        uint256 expectedBorrowInP2P = getBalanceOnCompound(amount, cDaiIndex).div(borrowP2PIndex);
         uint256 expectedSupplyInP2P = expectedBorrowInP2P;
 
         assertEq(supplyInP2P, expectedSupplyInP2P, "Supplier1 in P2P");
@@ -83,7 +81,7 @@ contract TestBorrow is TestSetup {
         borrower1.supply(cUsdc, to6Decimals(4 * amount));
         uint256 borrowAmount = amount * 2;
 
-        uint256 cDaiExchangeRate = ICToken(cDai).exchangeRateCurrent();
+        uint256 cDaiIndex = ICToken(cDai).exchangeRateCurrent();
         borrower1.borrow(cDai, borrowAmount);
 
         (uint256 inP2P, uint256 onPool) = positionsManager.borrowBalanceInOf(
@@ -91,12 +89,12 @@ contract TestBorrow is TestSetup {
             address(borrower1)
         );
 
-        uint256 expectedBorrowInP2P = getBalanceOnCompound(amount, cDaiExchangeRate).div(
-            marketsManager.borrowP2PExchangeRate(cDai)
+        uint256 expectedBorrowInP2P = getBalanceOnCompound(amount, cDaiIndex).div(
+            marketsManager.borrowP2PIndex(cDai)
         );
-        uint256 expectedBorrowOnPool = (borrowAmount -
-            getBalanceOnCompound(amount, cDaiExchangeRate))
-        .div(ICToken(cDai).borrowIndex());
+        uint256 expectedBorrowOnPool = (borrowAmount - getBalanceOnCompound(amount, cDaiIndex)).div(
+            ICToken(cDai).borrowIndex()
+        );
 
         assertEq(inP2P, expectedBorrowInP2P, "Borrower1 in P2P");
         assertEq(onPool, expectedBorrowOnPool, "Borrower1 on pool");
@@ -128,9 +126,9 @@ contract TestBorrow is TestSetup {
         borrower1.approve(usdc, to6Decimals(collateral));
         borrower1.supply(cUsdc, to6Decimals(collateral));
 
-        uint256 cDaiExchangeRate = ICToken(cDai).exchangeRateCurrent();
+        uint256 cDaiIndex = ICToken(cDai).exchangeRateCurrent();
         borrower1.borrow(cDai, toBorrow);
-        uint256 supplyP2PExchangeRate = marketsManager.supplyP2PExchangeRate(cDai);
+        uint256 supplyP2PIndex = marketsManager.supplyP2PIndex(cDai);
         uint256 inP2P;
         uint256 onPool;
 
@@ -139,7 +137,7 @@ contract TestBorrow is TestSetup {
 
             assertEq(
                 inP2P,
-                getBalanceOnCompound(amountPerSupplier, rates[i]).div(supplyP2PExchangeRate),
+                getBalanceOnCompound(amountPerSupplier, rates[i]).div(supplyP2PIndex),
                 "in P2P"
             );
             assertEq(onPool, 0, "on pool");
@@ -147,8 +145,8 @@ contract TestBorrow is TestSetup {
 
         (inP2P, onPool) = positionsManager.borrowBalanceInOf(cDai, address(borrower1));
 
-        uint256 expectedBorrowInP2P = getBalanceOnCompound(amount, cDaiExchangeRate).div(
-            marketsManager.borrowP2PExchangeRate(cDai)
+        uint256 expectedBorrowInP2P = getBalanceOnCompound(amount, cDaiIndex).div(
+            marketsManager.borrowP2PIndex(cDai)
         );
 
         assertApproxEq(inP2P, expectedBorrowInP2P, 1, "Borrower1 in P2P");
@@ -177,7 +175,7 @@ contract TestBorrow is TestSetup {
         borrower1.approve(usdc, to6Decimals(collateral));
         borrower1.supply(cUsdc, to6Decimals(collateral));
 
-        uint256 cDaiExchangeRate = ICToken(cDai).exchangeRateCurrent();
+        uint256 cDaiIndex = ICToken(cDai).exchangeRateCurrent();
         borrower1.borrow(cDai, amount);
 
         uint256 inP2P;
@@ -191,19 +189,19 @@ contract TestBorrow is TestSetup {
             assertEq(
                 inP2P,
                 getBalanceOnCompound(amountPerSupplier, rates[i]).div(
-                    marketsManager.supplyP2PExchangeRate(cDai)
+                    marketsManager.supplyP2PIndex(cDai)
                 ),
                 "in P2P"
             );
             assertEq(onPool, 0, "on pool");
 
-            matchedAmount += getBalanceOnCompound(amountPerSupplier, cDaiExchangeRate);
+            matchedAmount += getBalanceOnCompound(amountPerSupplier, cDaiIndex);
         }
 
         (inP2P, onPool) = positionsManager.borrowBalanceInOf(cDai, address(borrower1));
 
-        uint256 expectedBorrowInP2P = getBalanceOnCompound(amount / 2, cDaiExchangeRate).div(
-            marketsManager.borrowP2PExchangeRate(cDai)
+        uint256 expectedBorrowInP2P = getBalanceOnCompound(amount / 2, cDaiIndex).div(
+            marketsManager.borrowP2PIndex(cDai)
         );
         uint256 expectedBorrowOnPool = (amount - matchedAmount).div(borrowIndex);
 

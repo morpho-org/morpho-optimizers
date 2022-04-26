@@ -58,7 +58,7 @@ contract PositionsManager is PositionsManagerGovernance {
         isMarketCreatedAndNotPaused(_poolTokenAddress)
     {
         if (_amount == 0) revert AmountIsZero();
-        marketsManager.updateP2PExchangeRates(_poolTokenAddress);
+        marketsManager.updateP2PIndexes(_poolTokenAddress);
 
         address(logic).functionDelegateCall(
             abi.encodeWithSelector(logic.supply.selector, _poolTokenAddress, _amount, maxGas.supply)
@@ -84,7 +84,7 @@ contract PositionsManager is PositionsManagerGovernance {
         uint256 _maxGasToConsume
     ) external nonReentrant isMarketCreatedAndNotPaused(_poolTokenAddress) {
         if (_amount == 0) revert AmountIsZero();
-        marketsManager.updateP2PExchangeRates(_poolTokenAddress);
+        marketsManager.updateP2PIndexes(_poolTokenAddress);
 
         address(logic).functionDelegateCall(
             abi.encodeWithSelector(
@@ -113,7 +113,7 @@ contract PositionsManager is PositionsManagerGovernance {
         isMarketCreatedAndNotPaused(_poolTokenAddress)
     {
         if (_amount == 0) revert AmountIsZero();
-        marketsManager.updateP2PExchangeRates(_poolTokenAddress);
+        marketsManager.updateP2PIndexes(_poolTokenAddress);
 
         address(logic).functionDelegateCall(
             abi.encodeWithSelector(logic.borrow.selector, _poolTokenAddress, _amount, maxGas.borrow)
@@ -138,7 +138,7 @@ contract PositionsManager is PositionsManagerGovernance {
         uint256 _maxGasToConsume
     ) external nonReentrant isMarketCreatedAndNotPaused(_poolTokenAddress) {
         if (_amount == 0) revert AmountIsZero();
-        marketsManager.updateP2PExchangeRates(_poolTokenAddress);
+        marketsManager.updateP2PIndexes(_poolTokenAddress);
 
         address(logic).functionDelegateCall(
             abi.encodeWithSelector(
@@ -167,7 +167,7 @@ contract PositionsManager is PositionsManagerGovernance {
         isMarketCreatedAndNotPaused(_poolTokenAddress)
     {
         if (_amount == 0) revert AmountIsZero();
-        marketsManager.updateP2PExchangeRates(_poolTokenAddress);
+        marketsManager.updateP2PIndexes(_poolTokenAddress);
 
         uint256 toWithdraw = Math.min(
             _getUserSupplyBalanceInOf(_poolTokenAddress, msg.sender),
@@ -205,7 +205,7 @@ contract PositionsManager is PositionsManagerGovernance {
         isMarketCreatedAndNotPaused(_poolTokenAddress)
     {
         if (_amount == 0) revert AmountIsZero();
-        marketsManager.updateP2PExchangeRates(_poolTokenAddress);
+        marketsManager.updateP2PIndexes(_poolTokenAddress);
 
         uint256 toRepay = Math.min(
             _getUserBorrowBalanceInOf(_poolTokenAddress, msg.sender),
@@ -248,8 +248,8 @@ contract PositionsManager is PositionsManagerGovernance {
         isMarketCreatedAndNotPaused(_poolTokenCollateralAddress)
     {
         if (_amount == 0) revert AmountIsZero();
-        marketsManager.updateP2PExchangeRates(_poolTokenBorrowedAddress);
-        marketsManager.updateP2PExchangeRates(_poolTokenCollateralAddress);
+        marketsManager.updateP2PIndexes(_poolTokenBorrowedAddress);
+        marketsManager.updateP2PIndexes(_poolTokenCollateralAddress);
 
         uint256 amountSeized = abi.decode(
             address(logic).functionDelegateCall(

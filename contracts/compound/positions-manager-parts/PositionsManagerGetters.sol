@@ -226,7 +226,7 @@ abstract contract PositionsManagerGetters is PositionsManagerStorage {
     }
 
     /// @dev Returns the supply balance of `_user` in the `_poolTokenAddress` market.
-    /// @dev Note: compute the result with the exchange rate stored and not the most up to date.
+    /// @dev Note: compute the result with the index stored and not the most up to date.
     /// @param _user The address of the user.
     /// @param _poolTokenAddress The market where to get the supply amount.
     /// @return The supply balance of the user (in underlying).
@@ -237,7 +237,7 @@ abstract contract PositionsManagerGetters is PositionsManagerStorage {
     {
         return
             supplyBalanceInOf[_poolTokenAddress][_user].inP2P.mul(
-                marketsManager.getUpdatedSupplyP2PExchangeRate(_poolTokenAddress)
+                marketsManager.getUpdatedSupplyP2PIndex(_poolTokenAddress)
             ) +
             supplyBalanceInOf[_poolTokenAddress][_user].onPool.mul(
                 ICToken(_poolTokenAddress).exchangeRateStored()
@@ -255,7 +255,7 @@ abstract contract PositionsManagerGetters is PositionsManagerStorage {
     {
         return
             borrowBalanceInOf[_poolTokenAddress][_user].inP2P.mul(
-                marketsManager.getUpdatedBorrowP2PExchangeRate(_poolTokenAddress)
+                marketsManager.getUpdatedBorrowP2PIndex(_poolTokenAddress)
             ) +
             borrowBalanceInOf[_poolTokenAddress][_user].onPool.mul(
                 ICToken(_poolTokenAddress).borrowIndex()

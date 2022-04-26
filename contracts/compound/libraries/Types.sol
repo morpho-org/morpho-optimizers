@@ -3,12 +3,12 @@ pragma solidity 0.8.13;
 
 library Types {
     struct Params {
-        uint256 supplyP2PExchangeRate; // The current supply P2P exchange rate.
-        uint256 borrowP2PExchangeRate; // The current borrow P2P exchange rate
-        uint256 poolSupplyExchangeRate; // The current pool supply exchange rate
-        uint256 poolBorrowExchangeRate; // The pool supply exchange rate at last update.
-        uint256 lastPoolSupplyExchangeRate; // The pool borrow exchange rate at last update.
-        uint256 lastPoolBorrowExchangeRate; // The pool borrow exchange rate at last update.
+        uint256 supplyP2PIndex; // The current supply P2P index.
+        uint256 borrowP2PIndex; // The current borrow P2P index
+        uint256 poolSupplyIndex; // The current pool supply index
+        uint256 poolBorrowIndex; // The pool supply index at last update.
+        uint256 lastPoolSupplyIndex; // The pool borrow index at last update.
+        uint256 lastPoolBorrowIndex; // The pool borrow index at last update.
         uint256 reserveFactor; // The reserve factor percentage (10 000 = 100%).
         Delta delta; // The deltas and P2P amounts.
     }

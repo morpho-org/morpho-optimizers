@@ -170,8 +170,8 @@ contract TestPositionsManagerGetters is TestSetup {
     }
 
     struct Indexes {
-        uint256 exchangeRate1;
-        uint256 exchangeRate2;
+        uint256 index1;
+        uint256 index2;
     }
 
     function testUserLiquidityDataForAssetWithSupplyAndBorrow() public {
@@ -180,12 +180,12 @@ contract TestPositionsManagerGetters is TestSetup {
         uint256 toBorrow = amount / 2;
 
         borrower1.approve(dai, amount);
-        indexes.exchangeRate1 = ICToken(cDai).exchangeRateCurrent();
+        indexes.index1 = ICToken(cDai).exchangeRateCurrent();
         borrower1.supply(cDai, amount);
-        uint256 borrowP2PExchangeRate = marketsManager.borrowP2PExchangeRate(cDai);
+        uint256 borrowP2PIndex = marketsManager.borrowP2PIndex(cDai);
         borrower1.borrow(cDai, toBorrow);
 
-        indexes.exchangeRate2 = ICToken(cDai).exchangeRateCurrent();
+        indexes.index2 = ICToken(cDai).exchangeRateCurrent();
 
         PositionsManager.AssetLiquidityData memory assetData = positionsManager
         .getUserLiquidityDataForAsset(address(borrower1), cDai, oracle);
@@ -196,20 +196,18 @@ contract TestPositionsManagerGetters is TestSetup {
         uint256 total;
 
         {
-            uint256 onPool = amount.div(indexes.exchangeRate1);
-            uint256 matchedInP2P = toBorrow.div(marketsManager.supplyP2PExchangeRate(cDai));
-            uint256 onPoolAfter = onPool - toBorrow.div(indexes.exchangeRate2);
+            uint256 onPool = amount.div(indexes.index1);
+            uint256 matchedInP2P = toBorrow.div(marketsManager.supplyP2PIndex(cDai));
+            uint256 onPoolAfter = onPool - toBorrow.div(indexes.index2);
             total =
-                onPoolAfter.mul(indexes.exchangeRate2) +
-                matchedInP2P.mul(marketsManager.supplyP2PExchangeRate(cDai));
+                onPoolAfter.mul(indexes.index2) +
+                matchedInP2P.mul(marketsManager.supplyP2PIndex(cDai));
         }
 
         uint256 collateralValue = total.mul(underlyingPrice);
         uint256 maxDebtValue = collateralValue.mul(collateralFactor);
         // Divide and multiply to take into account rouding errors.
-        uint256 debtValue = toBorrow.div(borrowP2PExchangeRate).mul(borrowP2PExchangeRate).mul(
-            underlyingPrice
-        );
+        uint256 debtValue = toBorrow.div(borrowP2PIndex).mul(borrowP2PIndex).mul(underlyingPrice);
 
         assertEq(assetData.underlyingPrice, underlyingPrice, "underlyingPrice");
         assertEq(assetData.collateralValue, collateralValue, "collateralValue");
@@ -509,13 +507,13 @@ contract TestPositionsManagerGetters is TestSetup {
 
         tip(usdt, address(borrower1), to6Decimals(amount));
         borrower1.approve(usdt, to6Decimals(amount));
-        indexes.exchangeRate1 = ICToken(cUsdt).exchangeRateCurrent();
+        indexes.index1 = ICToken(cUsdt).exchangeRateCurrent();
         borrower1.supply(cUsdt, to6Decimals(amount));
         borrower1.approve(dai, amount);
         borrower1.supply(cDai, amount);
 
         borrower1.borrow(cUsdc, toBorrow);
-        indexes.exchangeRate2 = ICToken(cUsdt).exchangeRateCurrent();
+        indexes.index2 = ICToken(cUsdt).exchangeRateCurrent();
         borrower1.borrow(cUsdt, toBorrow);
 
         // Avoid stack too deep error.
@@ -529,12 +527,12 @@ contract TestPositionsManagerGetters is TestSetup {
         uint256 total;
 
         {
-            uint256 onPool = to6Decimals(amount).div(indexes.exchangeRate1);
-            uint256 matchedInP2P = toBorrow.div(marketsManager.supplyP2PExchangeRate(cUsdt));
-            uint256 onPoolAfter = onPool - toBorrow.div(indexes.exchangeRate2);
+            uint256 onPool = to6Decimals(amount).div(indexes.index1);
+            uint256 matchedInP2P = toBorrow.div(marketsManager.supplyP2PIndex(cUsdt));
+            uint256 onPoolAfter = onPool - toBorrow.div(indexes.index2);
             total =
-                onPoolAfter.mul(indexes.exchangeRate2) +
-                matchedInP2P.mul(marketsManager.supplyP2PExchangeRate(cUsdt));
+                onPoolAfter.mul(indexes.index2) +
+                matchedInP2P.mul(marketsManager.supplyP2PIndex(cUsdt));
         }
 
         // USDT data
