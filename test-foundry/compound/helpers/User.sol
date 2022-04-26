@@ -127,11 +127,11 @@ contract User {
         positionsManager.setTreasuryVault(_newTreasuryVault);
     }
 
-    function setPauseStatus(address _poolTokenAddress) external {
-        positionsManager.setPauseStatus(_poolTokenAddress);
+    function togglePauseStatus(address _poolTokenAddress) external {
+        positionsManager.togglePauseStatus(_poolTokenAddress);
     }
 
-    function setPartialPauseStatus(address _poolTokenAddress) external {
-        positionsManager.setPartialPauseStatus(_poolTokenAddress);
+    function togglePartialPauseStatus(address _poolTokenAddress) external {
+        positionsManager.togglePartialPauseStatus(_poolTokenAddress);
     }
 }

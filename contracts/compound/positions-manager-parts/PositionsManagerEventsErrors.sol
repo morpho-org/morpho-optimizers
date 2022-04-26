@@ -107,12 +107,12 @@ abstract contract PositionsManagerEventsErrors is PositionsManagerGetters {
     /// @notice Emitted when a market is paused or unpaused.
     /// @param _poolTokenAddress The address of the pool token concerned.
     /// @param _newStatus The new pause status of the market.
-    event PauseStatusSet(address indexed _poolTokenAddress, bool _newStatus);
+    event PauseStatusChanged(address indexed _poolTokenAddress, bool _newStatus);
 
-    /// @notice Emitted when a market is paused or unpaused.
+    /// @notice Emitted when a market is partially paused or unpaused.
     /// @param _poolTokenAddress The address of the pool token concerned.
     /// @param _newStatus The new partial pause status of the market.
-    event PartialPauseStatusSet(address indexed _poolTokenAddress, bool _newStatus);
+    event PartialPauseStatusChanged(address indexed _poolTokenAddress, bool _newStatus);
 
     /// @dev Emitted when a new `dustThreshold` is set.
     /// @param _dustThreshold The new `dustThreshold`.

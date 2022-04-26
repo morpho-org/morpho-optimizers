@@ -17,7 +17,7 @@ abstract contract PositionsManagerGovernance is PositionsManagerEventsErrors {
     /// @param _poolTokenAddress The address of the market to check.
     modifier isMarketCreatedAndNotPaused(address _poolTokenAddress) {
         if (!marketsManager.isCreated(_poolTokenAddress)) revert MarketNotCreated();
-        if (pauseStatus[_poolTokenAddress].isPaused) revert MarketPaused();
+        if (pauseStatuses[_poolTokenAddress].isPaused) revert MarketPaused();
         _;
     }
 
@@ -26,8 +26,8 @@ abstract contract PositionsManagerGovernance is PositionsManagerEventsErrors {
     modifier isMarketCreatedAndNotPausedOrPartialPaused(address _poolTokenAddress) {
         if (!marketsManager.isCreated(_poolTokenAddress)) revert MarketNotCreated();
         if (
-            pauseStatus[_poolTokenAddress].isPaused ||
-            pauseStatus[_poolTokenAddress].isPartialPaused
+            pauseStatuses[_poolTokenAddress].isPaused ||
+            pauseStatuses[_poolTokenAddress].isPartialPaused
         ) revert MarketPaused();
         _;
     }
@@ -75,24 +75,6 @@ abstract contract PositionsManagerGovernance is PositionsManagerEventsErrors {
         emit RewardsManagerSet(_rewardsManagerAddress);
     }
 
-    /// @notice Sets the pause status on a specific market in case of emergency.
-    /// @param _poolTokenAddress The address of the market to pause/unpause.
-    function setPauseStatus(address _poolTokenAddress) external onlyOwner {
-        PauseStatus storage pauseStatus = pauseStatus[_poolTokenAddress];
-        bool newPauseStatus = !pauseStatus.isPaused;
-        pauseStatus.isPaused = newPauseStatus;
-        emit PauseStatusSet(_poolTokenAddress, newPauseStatus);
-    }
-
-    /// @notice Sets the pause status on a specific market in case of emergency.
-    /// @param _poolTokenAddress The address of the market to pause/unpause.
-    function setPartialPauseStatus(address _poolTokenAddress) external onlyOwner {
-        PauseStatus storage pauseStatus = pauseStatus[_poolTokenAddress];
-        bool newPauseStatus = !pauseStatus.isPartialPaused;
-        pauseStatus.isPartialPaused = newPauseStatus;
-        emit PartialPauseStatusSet(_poolTokenAddress, newPauseStatus);
-    }
-
     /// @dev Sets `dustThreshold`.
     /// @param _dustThreshold The new `dustThreshold`.
     function setDustThreshold(uint256 _dustThreshold) external onlyOwner {
@@ -105,6 +87,24 @@ abstract contract PositionsManagerGovernance is PositionsManagerEventsErrors {
         bool newCompRewardsActive = !isCompRewardsActive;
         isCompRewardsActive = newCompRewardsActive;
         emit CompRewardsActive(newCompRewardsActive);
+    }
+
+    /// @notice Toggles the pause status on a specific market in case of emergency.
+    /// @param _poolTokenAddress The address of the market to pause/unpause.
+    function togglePauseStatus(address _poolTokenAddress) external onlyOwner {
+        PauseStatuses storage pauseStatuses = pauseStatuses[_poolTokenAddress];
+        bool newPauseStatus = !pauseStatuses.isPaused;
+        pauseStatuses.isPaused = newPauseStatus;
+        emit PauseStatusChanged(_poolTokenAddress, newPauseStatus);
+    }
+
+    /// @notice Toggles the pause status on a specific market in case of emergency.
+    /// @param _poolTokenAddress The address of the market to partially pause/unpause.
+    function togglePartialPauseStatus(address _poolTokenAddress) external onlyOwner {
+        PauseStatuses storage pauseStatuses = pauseStatuses[_poolTokenAddress];
+        bool newPauseStatus = !pauseStatuses.isPartialPaused;
+        pauseStatuses.isPartialPaused = newPauseStatus;
+        emit PartialPauseStatusChanged(_poolTokenAddress, newPauseStatus);
     }
 
     /// @notice Creates markets.
