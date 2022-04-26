@@ -76,7 +76,7 @@ contract TestPausableMarket is TestSetup {
         positionsManager.claimToTreasury(cDai);
     }
 
-    function testShouldNotTriggerAnyFunctionWhenPaused() public {
+    function testShouldDisableMarketWhenPaused() public {
         uint256 amount = 10_000 ether;
 
         supplier1.approve(dai, 2 * amount);
@@ -107,7 +107,7 @@ contract TestPausableMarket is TestSetup {
         SimplePriceOracle customOracle = createAndSetCustomPriceOracle();
         customOracle.setUnderlyingPrice(cDai, (oracle.getUnderlyingPrice(cDai) * 95) / 100);
 
-        uint256 toLiquidate = toBorrow / 3; // Minus 2 only due to roundings.
+        uint256 toLiquidate = toBorrow / 3;
         User liquidator = borrower3;
         liquidator.approve(usdc, toLiquidate);
 
@@ -116,10 +116,38 @@ contract TestPausableMarket is TestSetup {
 
         hevm.expectRevert(abi.encodeWithSignature("MarketPaused()"));
         positionsManager.claimToTreasury(cDai);
+
+        // Functions on other markets should still be enabled.
+        amount = 10 ether;
+        to6Decimals(amount / 2);
+
+        supplier1.approve(wEth, amount);
+        supplier1.supply(cEth, amount);
+
+        supplier1.borrow(cUsdt, toBorrow);
+
+        supplier1.approve(usdt, toBorrow);
+        supplier1.repay(cUsdt, toBorrow);
+
+        (, toBorrow) = positionsManager.getUserMaxCapacitiesForAsset(address(supplier1), cUsdt);
+        hevm.expectRevert(Logic.BorrowOnCompoundFailed.selector);
+        supplier1.borrow(cUsdt, toBorrow);
+
+        // Change Oracle.
+        customOracle.setUnderlyingPrice(cEth, (oracle.getUnderlyingPrice(cEth) * 95) / 100);
+
+        toLiquidate = toBorrow / 3;
+        liquidator.approve(usdt, toLiquidate);
+        hevm.expectRevert(Logic.DebtValueNotAboveMax.selector);
+        liquidator.liquidate(cUsdt, cEth, address(supplier1), toLiquidate);
+
+        supplier1.withdraw(cEth, 1 ether);
+
+        hevm.expectRevert(PositionsManagerEventsErrors.AmountIsZero.selector);
+        positionsManager.claimToTreasury(cEth);
     }
 
-    function testShouldOnlyTriggerSpecificFunctionsWhenPartialPaused() public {
-        // Specific functions are repay, withdraw and liquidate.
+    function testShouldOnlyEnableRepayWithdrawLiquidateWhenPartialPaused() public {
         uint256 amount = 10_000 ether;
 
         supplier1.approve(dai, 2 * amount);
@@ -156,5 +184,34 @@ contract TestPausableMarket is TestSetup {
         // Does not revert because the market is paused.
         hevm.expectRevert(abi.encodeWithSignature("AmountIsZero()"));
         positionsManager.claimToTreasury(cDai);
+
+        // Functions on other markets should still be enabled.
+        amount = 10 ether;
+        toBorrow = to6Decimals(amount / 2);
+
+        supplier1.approve(wEth, amount);
+        supplier1.supply(cEth, amount);
+
+        supplier1.borrow(cUsdt, toBorrow);
+
+        supplier1.approve(usdt, toBorrow);
+        supplier1.repay(cUsdt, toBorrow);
+
+        (, toBorrow) = positionsManager.getUserMaxCapacitiesForAsset(address(supplier1), cUsdt);
+        hevm.expectRevert(Logic.BorrowOnCompoundFailed.selector);
+        supplier1.borrow(cUsdt, toBorrow);
+
+        // Change Oracle.
+        customOracle.setUnderlyingPrice(cEth, (oracle.getUnderlyingPrice(cEth) * 98) / 100);
+
+        toLiquidate = toBorrow / 3;
+        liquidator.approve(usdt, toLiquidate);
+        hevm.expectRevert(Logic.DebtValueNotAboveMax.selector);
+        liquidator.liquidate(cUsdt, cEth, address(supplier1), toLiquidate);
+
+        supplier1.withdraw(cEth, 1 ether);
+
+        hevm.expectRevert(PositionsManagerEventsErrors.AmountIsZero.selector);
+        positionsManager.claimToTreasury(cEth);
     }
 }
