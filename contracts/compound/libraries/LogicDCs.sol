@@ -3,11 +3,7 @@ pragma solidity 0.8.13;
 
 import "../interfaces/ILogic.sol";
 
-import "@openzeppelin/contracts/utils/Address.sol";
-
 library LogicDCs {
-    using Address for address;
-
     /// @notice Delegate calls the supply function of the logic contract.
     /// @param _logic The logic contract.
     /// @param _poolTokenAddress The address of the pool token the user wants to interact with.
@@ -19,7 +15,7 @@ library LogicDCs {
         uint256 _amount,
         uint256 _maxGasToConsume
     ) internal {
-        address(_logic).functionDelegateCall(
+        (bool success, bytes memory data) = address(_logic).delegatecall(
             abi.encodeWithSelector(
                 _logic.supply.selector,
                 _poolTokenAddress,
@@ -27,6 +23,7 @@ library LogicDCs {
                 _maxGasToConsume
             )
         );
+        _verifyCallResult(success, data, "Address: low-level delegate call failed");
     }
 
     /// @notice Delegate calls the borrow function of the logic contract.
@@ -40,7 +37,7 @@ library LogicDCs {
         uint256 _amount,
         uint256 _maxGasToConsume
     ) internal {
-        address(_logic).functionDelegateCall(
+        (bool success, bytes memory data) = address(_logic).delegatecall(
             abi.encodeWithSelector(
                 _logic.borrow.selector,
                 _poolTokenAddress,
@@ -48,6 +45,7 @@ library LogicDCs {
                 _maxGasToConsume
             )
         );
+        _verifyCallResult(success, data, "Address: low-level delegate call failed");
     }
 
     /// @notice Delegate calls the withdraw function of the logic contract.
@@ -65,7 +63,7 @@ library LogicDCs {
         address _receiver,
         uint256 _maxGasToConsume
     ) internal {
-        address(_logic).functionDelegateCall(
+        (bool success, bytes memory data) = address(_logic).delegatecall(
             abi.encodeWithSelector(
                 _logic.withdraw.selector,
                 _poolTokenAddress,
@@ -75,6 +73,7 @@ library LogicDCs {
                 _maxGasToConsume
             )
         );
+        _verifyCallResult(success, data, "Address: low-level delegate call failed");
     }
 
     /// @notice Delegate calls the repay function of the logic contract.
@@ -90,7 +89,7 @@ library LogicDCs {
         uint256 _amount,
         uint256 _maxGasToConsume
     ) internal {
-        address(_logic).functionDelegateCall(
+        (bool success, bytes memory data) = address(_logic).delegatecall(
             abi.encodeWithSelector(
                 _logic.repay.selector,
                 _poolTokenAddress,
@@ -99,6 +98,7 @@ library LogicDCs {
                 _maxGasToConsume
             )
         );
+        _verifyCallResult(success, data, "Address: low-level delegate call failed");
     }
 
     /// @notice Delegate calls the liquidate function of the logic contract.
@@ -114,7 +114,7 @@ library LogicDCs {
         address _borrower,
         uint256 _amount
     ) internal returns (uint256) {
-        bytes memory data = address(_logic).functionDelegateCall(
+        (bool success, bytes memory data) = address(_logic).delegatecall(
             abi.encodeWithSelector(
                 _logic.liquidate.selector,
                 _poolTokenBorrowedAddress,
@@ -123,6 +123,26 @@ library LogicDCs {
                 _amount
             )
         );
+        _verifyCallResult(success, data, "Address: low-level delegate call failed");
+
         return abi.decode(data, (uint256));
+    }
+
+    function _verifyCallResult(
+        bool success,
+        bytes memory returndata,
+        string memory errorMessage
+    ) private pure {
+        if (!success) {
+            // Look for revert reason and bubble it up if present
+            if (returndata.length > 0) {
+                // The easiest way to bubble the revert reason is using memory via assembly
+
+                assembly {
+                    let returndata_size := mload(returndata)
+                    revert(add(32, returndata), returndata_size)
+                }
+            } else revert(errorMessage);
+        }
     }
 }
