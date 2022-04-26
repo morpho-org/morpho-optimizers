@@ -23,11 +23,11 @@ abstract contract PositionsManagerGovernance is PositionsManagerEventsErrors {
 
     /// @notice Prevents a user to trigger a function when market is not created or paused or partial paused.
     /// @param _poolTokenAddress The address of the market to check.
-    modifier isMarketCreatedAndNotPausedOrPartialPaused(address _poolTokenAddress) {
+    modifier isMarketCreatedAndNotPausedOrPartiallyPaused(address _poolTokenAddress) {
         if (!marketsManager.isCreated(_poolTokenAddress)) revert MarketNotCreated();
         if (
             pauseStatuses[_poolTokenAddress].isPaused ||
-            pauseStatuses[_poolTokenAddress].isPartialPaused
+            pauseStatuses[_poolTokenAddress].isPartiallyPaused
         ) revert MarketPaused();
         _;
     }
@@ -102,8 +102,8 @@ abstract contract PositionsManagerGovernance is PositionsManagerEventsErrors {
     /// @param _poolTokenAddress The address of the market to partially pause/unpause.
     function togglePartialPauseStatus(address _poolTokenAddress) external onlyOwner {
         PauseStatuses storage pauseStatuses = pauseStatuses[_poolTokenAddress];
-        bool newPauseStatus = !pauseStatuses.isPartialPaused;
-        pauseStatuses.isPartialPaused = newPauseStatus;
+        bool newPauseStatus = !pauseStatuses.isPartiallyPaused;
+        pauseStatuses.isPartiallyPaused = newPauseStatus;
         emit PartialPauseStatusChanged(_poolTokenAddress, newPauseStatus);
     }
 
