@@ -20,8 +20,8 @@ contract TestPausableMarket is TestSetup {
         supplier1.togglePartialPauseStatus(dai);
 
         positionsManager.togglePartialPauseStatus(dai);
-        (, bool isPartialPaused) = positionsManager.pauseStatuses(dai);
-        assertTrue(isPartialPaused, "partial paused is false");
+        (, bool isPartiallyPaused) = positionsManager.pauseStatuses(dai);
+        assertTrue(isPartiallyPaused, "partial paused is false");
     }
 
     function testPauseUnpause() public {
@@ -36,15 +36,15 @@ contract TestPausableMarket is TestSetup {
 
     function testPartialPausePartialUnpause() public {
         positionsManager.togglePartialPauseStatus(dai);
-        (, bool isPartialPaused) = positionsManager.pauseStatuses(dai);
-        assertTrue(isPartialPaused, "partial paused is false");
+        (, bool isPartiallyPaused) = positionsManager.pauseStatuses(dai);
+        assertTrue(isPartiallyPaused, "partial paused is false");
 
         positionsManager.togglePartialPauseStatus(dai);
-        (, isPartialPaused) = positionsManager.pauseStatuses(dai);
-        assertFalse(isPartialPaused, "partial paused is true");
+        (, isPartiallyPaused) = positionsManager.pauseStatuses(dai);
+        assertFalse(isPartiallyPaused, "partial paused is true");
     }
 
-    function testShouldTriggerAllFunctionsWhenNotPausedAndNotPartialPaused() public {
+    function testShouldTriggerAllFunctionsWhenNotPausedAndNotPartiallyPaused() public {
         uint256 amount = 10_000 ether;
         uint256 toBorrow = to6Decimals(amount / 2);
 
@@ -147,7 +147,7 @@ contract TestPausableMarket is TestSetup {
         positionsManager.claimToTreasury(cEth);
     }
 
-    function testShouldOnlyEnableRepayWithdrawLiquidateWhenPartialPaused() public {
+    function testShouldOnlyEnableRepayWithdrawLiquidateWhenPartiallyPaused() public {
         uint256 amount = 10_000 ether;
 
         supplier1.approve(dai, 2 * amount);

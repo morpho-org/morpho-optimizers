@@ -55,7 +55,7 @@ contract PositionsManager is PositionsManagerGovernance {
     function supply(address _poolTokenAddress, uint256 _amount)
         external
         nonReentrant
-        isMarketCreatedAndNotPausedOrPartialPaused(_poolTokenAddress)
+        isMarketCreatedAndNotPausedOrPartiallyPaused(_poolTokenAddress)
     {
         if (_amount == 0) revert AmountIsZero();
         marketsManager.updateP2PExchangeRates(_poolTokenAddress);
@@ -80,7 +80,7 @@ contract PositionsManager is PositionsManagerGovernance {
         address _poolTokenAddress,
         uint256 _amount,
         uint256 _maxGasToConsume
-    ) external nonReentrant isMarketCreatedAndNotPausedOrPartialPaused(_poolTokenAddress) {
+    ) external nonReentrant isMarketCreatedAndNotPausedOrPartiallyPaused(_poolTokenAddress) {
         if (_amount == 0) revert AmountIsZero();
         marketsManager.updateP2PExchangeRates(_poolTokenAddress);
 
@@ -101,7 +101,7 @@ contract PositionsManager is PositionsManagerGovernance {
     function borrow(address _poolTokenAddress, uint256 _amount)
         external
         nonReentrant
-        isMarketCreatedAndNotPausedOrPartialPaused(_poolTokenAddress)
+        isMarketCreatedAndNotPausedOrPartiallyPaused(_poolTokenAddress)
     {
         if (_amount == 0) revert AmountIsZero();
         marketsManager.updateP2PExchangeRates(_poolTokenAddress);
@@ -125,7 +125,7 @@ contract PositionsManager is PositionsManagerGovernance {
         address _poolTokenAddress,
         uint256 _amount,
         uint256 _maxGasToConsume
-    ) external nonReentrant isMarketCreatedAndNotPausedOrPartialPaused(_poolTokenAddress) {
+    ) external nonReentrant isMarketCreatedAndNotPausedOrPartiallyPaused(_poolTokenAddress) {
         if (_amount == 0) revert AmountIsZero();
         marketsManager.updateP2PExchangeRates(_poolTokenAddress);
 
