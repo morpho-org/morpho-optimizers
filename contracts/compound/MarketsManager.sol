@@ -251,8 +251,8 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
     /// @notice Returns market's configuration.
     /// @return isCreated_ Whether the market is created or not.
     /// @return noP2P_ Whether user are put in P2P or not.
-    /// @return isPaused_ Whether the market is paused or not.
-    /// @return isPartialPaused_ Whether the market is partially paused or not.
+    /// @return isPaused_ Whether the market is paused or not (all entry points on Morpho are frozen; supply, borrow, withdraw, repay and liquidate).
+    /// @return isPartialPaused_ Whether the market is partially paused or not (only supply and borrow are frozen).
     /// @return reserveFactor_ The reserve actor applied to this market.
     function getMarketConfiguration(address _poolTokenAddress)
         external
@@ -267,7 +267,7 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
     {
         isCreated_ = isCreated[_poolTokenAddress];
         noP2P_ = noP2P[_poolTokenAddress];
-        (isPaused_, isPartialPaused_) = positionsManager.pauseStatus(_poolTokenAddress);
+        (isPaused_, isPartialPaused_) = positionsManager.pauseStatuses(_poolTokenAddress);
         reserveFactor_ = reserveFactor[_poolTokenAddress];
     }
 
