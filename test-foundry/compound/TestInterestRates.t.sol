@@ -12,39 +12,35 @@ contract TestInterestRates is TestSetup {
     uint256 public lastPoolBorrowIndex = 1 * WAD;
     uint256 public reserveFactor0PerCent = 0;
     uint256 public reserveFactor50PerCent = 5_000;
-    uint256 public supplyWeigth = 2;
-    uint256 public borrowWeigth = 1;
+    uint256 public constant P2P_CURSOR = 3_333;
 
+    // prettier-ignore
     function computeP2PIndexes(Types.Params memory params)
         public
         view
         returns (uint256 p2pSupplyIndex_, uint256 p2pBorrowIndex_)
     {
-        uint256 supplyPoolIncrease = (params.poolSupplyIndex * WAD / params.lastPoolSupplyIndex); // prettier-ignore
-        uint256 borrowPoolIncrease  = (params.poolBorrowIndex * WAD / params.lastPoolBorrowIndex); // prettier-ignore
-        uint256 p2pIncrease = ((supplyWeigth * supplyPoolIncrease + borrowWeigth * borrowPoolIncrease) / (supplyWeigth + borrowWeigth)); // prettier-ignore
-        uint256 shareOfTheSupplyDelta = params.delta.supplyP2PAmount > 0 
-            ? (params.delta.supplyP2PDelta * params.poolSupplyIndex / WAD) * WAD 
-                / (params.delta.supplyP2PAmount * params.p2pSupplyIndex / WAD) 
-            : 0; // prettier-ignore
-        uint256 shareOfTheBorrowDelta = params.delta.borrowP2PAmount > 0 
-            ? (params.delta.borrowP2PDelta * params.poolBorrowIndex / WAD) * WAD 
-                / (params.delta.borrowP2PAmount * params.p2pBorrowIndex / WAD) 
-            : 0; // prettier-ignore
-        p2pSupplyIndex_ = params.p2pSupplyIndex * 
-            (
-                (WAD - shareOfTheSupplyDelta) * 
-                    ((MAX_BASIS_POINTS - params.reserveFactor) * p2pIncrease + params.reserveFactor * supplyPoolIncrease) / MAX_BASIS_POINTS / WAD + 
-                shareOfTheSupplyDelta * 
-                    supplyPoolIncrease / WAD
-            ) / WAD; // prettier-ignore
-        p2pBorrowIndex_ = params.p2pBorrowIndex * 
-            (
-                (WAD - shareOfTheBorrowDelta) * 
-                    ((MAX_BASIS_POINTS - params.reserveFactor) * p2pIncrease + params.reserveFactor * borrowPoolIncrease) / MAX_BASIS_POINTS / WAD + 
-                shareOfTheBorrowDelta * 
-                    borrowPoolIncrease / WAD
-            ) / WAD; // prettier-ignore
+        uint256 supplyPoolIncrease = ((params.poolSupplyIndex * WAD) / params.lastPoolSupplyIndex);
+        uint256 borrowPoolIncrease = ((params.poolBorrowIndex * WAD) / params.lastPoolBorrowIndex);
+        uint256 p2pIncrease = ((MAX_BASIS_POINTS - P2P_CURSOR) * supplyPoolIncrease + P2P_CURSOR * borrowPoolIncrease) / MAX_BASIS_POINTS;
+        uint256 shareOfTheSupplyDelta = params.delta.supplyP2PAmount > 0
+            ? (((params.delta.supplyP2PDelta * params.poolSupplyIndex) / WAD) * WAD) /
+                ((params.delta.supplyP2PAmount * params.p2pSupplyIndex) / WAD)
+            : 0;
+        uint256 shareOfTheBorrowDelta = params.delta.borrowP2PAmount > 0
+            ? (((params.delta.borrowP2PDelta * params.poolBorrowIndex) / WAD) * WAD) /
+                ((params.delta.borrowP2PAmount * params.p2pBorrowIndex) / WAD)
+            : 0;
+        p2pSupplyIndex_ =
+            params.p2pSupplyIndex *
+                ((WAD - shareOfTheSupplyDelta) * (p2pIncrease - (params.reserveFactor * (p2pIncrease - supplyPoolIncrease) / MAX_BASIS_POINTS)) / WAD +
+                (shareOfTheSupplyDelta * supplyPoolIncrease) / WAD) /
+            WAD;
+        p2pBorrowIndex_ =
+            params.p2pBorrowIndex *
+                ((WAD - shareOfTheBorrowDelta) * (p2pIncrease + (params.reserveFactor * (borrowPoolIncrease - p2pIncrease) / MAX_BASIS_POINTS)) / WAD +
+                (shareOfTheBorrowDelta * borrowPoolIncrease) / WAD) /
+            WAD;
     }
 
     function testIndexComputation() public {

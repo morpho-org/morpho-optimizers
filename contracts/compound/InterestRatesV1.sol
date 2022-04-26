@@ -26,6 +26,7 @@ contract InterestRatesV1 is IInterestRates {
 
     uint256 public constant WAD = 1e18;
     uint256 public constant MAX_BASIS_POINTS = 10_000; // 100% (in basis point).
+    uint256 public constant P2P_CURSOR = 3_333; // 33.33% (in basis point).
 
     /// EXTERNAL ///
 
@@ -163,20 +164,17 @@ contract InterestRatesV1 is IInterestRates {
     {
         supplyPoolGrowthFactor_ = _poolSupplyIndex.div(_lastPoolSupplyIndex);
         borrowPoolGrowthFactor_ = _poolBorrowIndex.div(_lastPoolBorrowIndex);
+        uint256 p2pGrowthFactor = ((MAX_BASIS_POINTS - P2P_CURSOR) *
+            supplyPoolGrowthFactor_ +
+            P2P_CURSOR *
+            borrowPoolGrowthFactor_) / MAX_BASIS_POINTS;
         supplyP2PGrowthFactor_ =
-            ((MAX_BASIS_POINTS - _reserveFactor) *
-                (2 * supplyPoolGrowthFactor_ + borrowPoolGrowthFactor_)) /
-            3 /
-            MAX_BASIS_POINTS +
-            (_reserveFactor * supplyPoolGrowthFactor_) /
+            p2pGrowthFactor -
+            (_reserveFactor * (p2pGrowthFactor - supplyPoolGrowthFactor_)) /
             MAX_BASIS_POINTS;
-
         borrowP2PGrowthFactor_ =
-            ((MAX_BASIS_POINTS - _reserveFactor) *
-                (2 * supplyPoolGrowthFactor_ + borrowPoolGrowthFactor_)) /
-            3 /
-            MAX_BASIS_POINTS +
-            (_reserveFactor * borrowPoolGrowthFactor_) /
+            p2pGrowthFactor +
+            (_reserveFactor * (borrowPoolGrowthFactor_ - p2pGrowthFactor)) /
             MAX_BASIS_POINTS;
     }
 
