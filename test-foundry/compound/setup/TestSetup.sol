@@ -250,7 +250,7 @@ contract TestSetup is Config, Utils, stdCheats {
         for (uint256 k; k < 100; k++) {
             hevm.roll(block.number + 10);
             hevm.warp(block.timestamp + 1);
-            marketsManager.updateP2PExchangeRates(_marketAddress);
+            marketsManager.updateP2PIndexes(_marketAddress);
         }
     }
 

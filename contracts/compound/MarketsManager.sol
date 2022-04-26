@@ -20,8 +20,8 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
     /// STRUCTS ///
 
     struct LastPoolIndexes {
-        uint256 lastSupplyPoolIndex; // Last supply pool index (current exchange rate) stored.
-        uint256 lastBorrowPoolIndex; // Last borrow pool index (borrow index) stored.
+        uint256 lastSupplyPoolIndex; // Last supply pool index.
+        uint256 lastBorrowPoolIndex; // Last borrow pool index.
     }
 
     /// STORAGE ///
@@ -31,9 +31,9 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
     address[] public marketsCreated; // Keeps track of the created markets.
     mapping(address => bool) public override isCreated; // Whether or not this market is created.
     mapping(address => uint256) public reserveFactor; // Proportion of the interest earned by users sent to the DAO for each market, in basis point (100% = 10000). The default value is 0.
-    mapping(address => uint256) public override supplyP2PExchangeRate; // Current exchange rate from supply p2pUnit to underlying (in wad).
-    mapping(address => uint256) public override borrowP2PExchangeRate; // Current exchange rate from borrow p2pUnit to underlying (in wad).
-    mapping(address => uint256) public override lastUpdateBlockNumber; // The last time the P2P exchange rates were updated.
+    mapping(address => uint256) public override supplyP2PIndex; // Current index from supply p2pUnit to underlying (in wad).
+    mapping(address => uint256) public override borrowP2PIndex; // Current index from borrow p2pUnit to underlying (in wad).
+    mapping(address => uint256) public override lastUpdateBlockNumber; // The last time the P2P indexes were updated.
     mapping(address => LastPoolIndexes) public lastPoolIndexes; // Last pool index stored.
     mapping(address => bool) public override noP2P; // Whether to put users on pool or not for the given market.
 
@@ -70,14 +70,14 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
         uint256 _newBorrowP2PBPY
     );
 
-    /// @notice Emitted when the p2p exchange rates of a market are updated.
+    /// @notice Emitted when the p2p indexes of a market are updated.
     /// @param _poolTokenAddress The address of the market updated.
-    /// @param _newSupplyP2PExchangeRate The new value of the supply exchange rate from p2pUnit to underlying.
-    /// @param _newBorrowP2PExchangeRate The new value of the borrow exchange rate from p2pUnit to underlying.
-    event P2PExchangeRatesUpdated(
+    /// @param _newSupplyP2PIndex The new value of the supply index from p2pUnit to underlying.
+    /// @param _newBorrowP2PIndex The new value of the borrow index from p2pUnit to underlying.
+    event P2PIndexesUpdated(
         address indexed _poolTokenAddress,
-        uint256 _newSupplyP2PExchangeRate,
-        uint256 _newBorrowP2PExchangeRate
+        uint256 _newSupplyP2PIndex,
+        uint256 _newBorrowP2PIndex
     );
 
     /// @notice Emitted when the `reserveFactor` is set.
@@ -159,7 +159,7 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
         external
         onlyOwner
     {
-        updateP2PExchangeRates(_poolTokenAddress);
+        updateP2PIndexes(_poolTokenAddress);
         reserveFactor[_poolTokenAddress] = CompoundMath.min(MAX_BASIS_POINTS, _newReserveFactor);
         emit ReserveFactorSet(_poolTokenAddress, reserveFactor[_poolTokenAddress]);
     }
@@ -178,15 +178,12 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
         ICToken poolToken = ICToken(_poolTokenAddress);
         lastUpdateBlockNumber[_poolTokenAddress] = block.number;
 
-        // Same initial exchange rate as Compound.
-        uint256 initialExchangeRate;
-        if (_poolTokenAddress == positionsManager.cEth()) initialExchangeRate = 2e26;
-        else
-            initialExchangeRate =
-                2 *
-                10**(16 + IERC20Metadata(poolToken.underlying()).decimals() - 8);
-        supplyP2PExchangeRate[_poolTokenAddress] = initialExchangeRate;
-        borrowP2PExchangeRate[_poolTokenAddress] = initialExchangeRate;
+        // Same initial index as Compound.
+        uint256 initialIndex;
+        if (_poolTokenAddress == positionsManager.cEth()) initialIndex = 2e26;
+        else initialIndex = 2 * 10**(16 + IERC20Metadata(poolToken.underlying()).decimals() - 8);
+        supplyP2PIndex[_poolTokenAddress] = initialIndex;
+        borrowP2PIndex[_poolTokenAddress] = initialIndex;
 
         LastPoolIndexes storage poolIndexes = lastPoolIndexes[_poolTokenAddress];
 
@@ -216,9 +213,9 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
     }
 
     /// @notice Returns market's data.
-    /// @return supplyP2PExchangeRate_ The supply P2P exchange rate of the market.
-    /// @return borrowP2PExchangeRate_ The borrow P2P exchange rate of the market.
-    /// @return lastUpdateBlockNumber_ The last block number when P2P exchange rates where updated.
+    /// @return supplyP2PIndex_ The supply P2P index of the market.
+    /// @return borrowP2PIndex_ The borrow P2P index of the market.
+    /// @return lastUpdateBlockNumber_ The last block number when P2P indexes where updated.
     /// @return supplyP2PDelta_ The supply P2P delta (in scaled balance).
     /// @return borrowP2PDelta_ The borrow P2P delta (in cdUnit).
     /// @return supplyP2PAmount_ The supply P2P amount (in P2P unit).
@@ -227,8 +224,8 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
         external
         view
         returns (
-            uint256 supplyP2PExchangeRate_,
-            uint256 borrowP2PExchangeRate_,
+            uint256 supplyP2PIndex_,
+            uint256 borrowP2PIndex_,
             uint256 lastUpdateBlockNumber_,
             uint256 supplyP2PDelta_,
             uint256 borrowP2PDelta_,
@@ -243,8 +240,8 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
             supplyP2PAmount_ = delta.supplyP2PAmount;
             borrowP2PAmount_ = delta.borrowP2PAmount;
         }
-        supplyP2PExchangeRate_ = supplyP2PExchangeRate[_poolTokenAddress];
-        borrowP2PExchangeRate_ = borrowP2PExchangeRate[_poolTokenAddress];
+        supplyP2PIndex_ = supplyP2PIndex[_poolTokenAddress];
+        borrowP2PIndex_ = borrowP2PIndex[_poolTokenAddress];
         lastUpdateBlockNumber_ = lastUpdateBlockNumber[_poolTokenAddress];
     }
 
@@ -271,26 +268,26 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
         reserveFactor_ = reserveFactor[_poolTokenAddress];
     }
 
-    /// @notice Returns the updated P2P exchange rates.
+    /// @notice Returns the updated P2P indexes.
     /// @param _poolTokenAddress The address of the market to update.
-    /// @return newSupplyP2PExchangeRate The supply P2P exchange rate after udpate.
-    /// @return newBorrowP2PExchangeRate The supply P2P exchange rate after udpate.
-    function getUpdatedP2PExchangeRates(address _poolTokenAddress)
+    /// @return newSupplyP2PIndex The supply P2P index after udpate.
+    /// @return newBorrowP2PIndex The supply P2P index after udpate.
+    function getUpdatedP2PIndexes(address _poolTokenAddress)
         external
         view
         override
-        returns (uint256 newSupplyP2PExchangeRate, uint256 newBorrowP2PExchangeRate)
+        returns (uint256 newSupplyP2PIndex, uint256 newBorrowP2PIndex)
     {
         if (block.timestamp == lastUpdateBlockNumber[_poolTokenAddress]) {
-            newSupplyP2PExchangeRate = supplyP2PExchangeRate[_poolTokenAddress];
-            newBorrowP2PExchangeRate = borrowP2PExchangeRate[_poolTokenAddress];
+            newSupplyP2PIndex = supplyP2PIndex[_poolTokenAddress];
+            newBorrowP2PIndex = borrowP2PIndex[_poolTokenAddress];
         } else {
             ICToken poolToken = ICToken(_poolTokenAddress);
             LastPoolIndexes storage poolIndexes = lastPoolIndexes[_poolTokenAddress];
 
             Types.Params memory params = Types.Params(
-                supplyP2PExchangeRate[_poolTokenAddress],
-                borrowP2PExchangeRate[_poolTokenAddress],
+                supplyP2PIndex[_poolTokenAddress],
+                borrowP2PIndex[_poolTokenAddress],
                 poolToken.exchangeRateStored(),
                 poolToken.borrowIndex(),
                 poolIndexes.lastSupplyPoolIndex,
@@ -299,28 +296,23 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
                 positionsManager.deltas(_poolTokenAddress)
             );
 
-            (newSupplyP2PExchangeRate, newBorrowP2PExchangeRate) = interestRates
-            .computeP2PExchangeRates(params);
+            (newSupplyP2PIndex, newBorrowP2PIndex) = interestRates.computeP2PIndexes(params);
         }
     }
 
-    /// @notice Returns the updated supply P2P exchange rate.
+    /// @notice Returns the updated supply P2P index.
     /// @param _poolTokenAddress The address of the market to update.
-    /// @return newSupplyP2PExchangeRate The supply P2P exchange rate after udpate.
-    function getUpdatedSupplyP2PExchangeRate(address _poolTokenAddress)
-        external
-        view
-        returns (uint256)
-    {
+    /// @return newSupplyP2PIndex The supply P2P index after udpate.
+    function getUpdatedSupplyP2PIndex(address _poolTokenAddress) external view returns (uint256) {
         if (block.timestamp == lastUpdateBlockNumber[_poolTokenAddress])
-            return supplyP2PExchangeRate[_poolTokenAddress];
+            return supplyP2PIndex[_poolTokenAddress];
         else {
             ICToken poolToken = ICToken(_poolTokenAddress);
             LastPoolIndexes storage poolIndexes = lastPoolIndexes[_poolTokenAddress];
 
             Types.Params memory params = Types.Params(
-                supplyP2PExchangeRate[_poolTokenAddress],
-                borrowP2PExchangeRate[_poolTokenAddress],
+                supplyP2PIndex[_poolTokenAddress],
+                borrowP2PIndex[_poolTokenAddress],
                 poolToken.exchangeRateStored(),
                 poolToken.borrowIndex(),
                 poolIndexes.lastSupplyPoolIndex,
@@ -329,27 +321,23 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
                 positionsManager.deltas(_poolTokenAddress)
             );
 
-            return interestRates.computeSupplyP2PExchangeRate(params);
+            return interestRates.computeSupplyP2PIndex(params);
         }
     }
 
-    /// @notice Returns the updated borrow P2P exchange rate.
+    /// @notice Returns the updated borrow P2P index.
     /// @param _poolTokenAddress The address of the market to update.
-    /// @return newSupplyP2PExchangeRate The borrow P2P exchange rate after udpate.
-    function getUpdatedBorrowP2PExchangeRate(address _poolTokenAddress)
-        external
-        view
-        returns (uint256)
-    {
+    /// @return newSupplyP2PIndex The borrow P2P index after udpate.
+    function getUpdatedBorrowP2PIndex(address _poolTokenAddress) external view returns (uint256) {
         if (block.timestamp == lastUpdateBlockNumber[_poolTokenAddress])
-            return borrowP2PExchangeRate[_poolTokenAddress];
+            return borrowP2PIndex[_poolTokenAddress];
         else {
             ICToken poolToken = ICToken(_poolTokenAddress);
             LastPoolIndexes storage poolIndexes = lastPoolIndexes[_poolTokenAddress];
 
             Types.Params memory params = Types.Params(
-                supplyP2PExchangeRate[_poolTokenAddress],
-                borrowP2PExchangeRate[_poolTokenAddress],
+                supplyP2PIndex[_poolTokenAddress],
+                borrowP2PIndex[_poolTokenAddress],
                 poolToken.exchangeRateStored(),
                 poolToken.borrowIndex(),
                 poolIndexes.lastSupplyPoolIndex,
@@ -358,47 +346,43 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
                 positionsManager.deltas(_poolTokenAddress)
             );
 
-            return interestRates.computeBorrowP2PExchangeRate(params);
+            return interestRates.computeBorrowP2PIndex(params);
         }
     }
 
     /// PUBLIC ///
 
-    /// @notice Updates the P2P exchange rates, taking into account the Second Percentage Yield values.
+    /// @notice Updates the P2P indexes, taking into account the Second Percentage Yield values.
     /// @param _poolTokenAddress The address of the market to update.
-    function updateP2PExchangeRates(address _poolTokenAddress) public {
+    function updateP2PIndexes(address _poolTokenAddress) public {
         if (block.timestamp > lastUpdateBlockNumber[_poolTokenAddress]) {
             ICToken poolToken = ICToken(_poolTokenAddress);
             lastUpdateBlockNumber[_poolTokenAddress] = block.timestamp;
             LastPoolIndexes storage poolIndexes = lastPoolIndexes[_poolTokenAddress];
 
-            uint256 poolSupplyExchangeRate = poolToken.exchangeRateCurrent();
-            uint256 poolBorrowExchangeRate = poolToken.borrowIndex();
+            uint256 poolSupplyIndex = poolToken.exchangeRateCurrent();
+            uint256 poolBorrowIndex = poolToken.borrowIndex();
 
             Types.Params memory params = Types.Params(
-                supplyP2PExchangeRate[_poolTokenAddress],
-                borrowP2PExchangeRate[_poolTokenAddress],
-                poolSupplyExchangeRate,
-                poolBorrowExchangeRate,
+                supplyP2PIndex[_poolTokenAddress],
+                borrowP2PIndex[_poolTokenAddress],
+                poolSupplyIndex,
+                poolBorrowIndex,
                 poolIndexes.lastSupplyPoolIndex,
                 poolIndexes.lastBorrowPoolIndex,
                 reserveFactor[_poolTokenAddress],
                 positionsManager.deltas(_poolTokenAddress)
             );
 
-            (uint256 newSupplyP2PExchangeRate, uint256 newBorrowP2PExchangeRate) = interestRates
-            .computeP2PExchangeRates(params);
+            (uint256 newSupplyP2PIndex, uint256 newBorrowP2PIndex) = interestRates
+            .computeP2PIndexes(params);
 
-            supplyP2PExchangeRate[_poolTokenAddress] = newSupplyP2PExchangeRate;
-            borrowP2PExchangeRate[_poolTokenAddress] = newBorrowP2PExchangeRate;
-            poolIndexes.lastSupplyPoolIndex = poolSupplyExchangeRate;
-            poolIndexes.lastBorrowPoolIndex = poolBorrowExchangeRate;
+            supplyP2PIndex[_poolTokenAddress] = newSupplyP2PIndex;
+            borrowP2PIndex[_poolTokenAddress] = newBorrowP2PIndex;
+            poolIndexes.lastSupplyPoolIndex = poolSupplyIndex;
+            poolIndexes.lastBorrowPoolIndex = poolBorrowIndex;
 
-            emit P2PExchangeRatesUpdated(
-                _poolTokenAddress,
-                newSupplyP2PExchangeRate,
-                newBorrowP2PExchangeRate
-            );
+            emit P2PIndexesUpdated(_poolTokenAddress, newSupplyP2PIndex, newBorrowP2PIndex);
         }
     }
 }
