@@ -40,6 +40,11 @@ contract TestDoubleLinkedList is DSTest {
         list.insertSorted(accounts[0], 0, NDS);
     }
 
+    function testShouldNotInsertZeroAddress() public {
+        hevm.expectRevert(abi.encodeWithSignature("AddressIsZero()"));
+        list.insertSorted(address(0), 10, NDS);
+    }
+
     function testShouldNotRemoveAccountThatDoesNotExist() public {
         hevm.expectRevert(abi.encodeWithSignature("AccountDoesNotExist()"));
         list.remove(accounts[0]);
