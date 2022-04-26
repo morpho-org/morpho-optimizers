@@ -6,25 +6,19 @@ interface IMarketsManager {
 
     function noP2P(address _poolTokenAddress) external view returns (bool);
 
-    function supplyP2PExchangeRate(address _poolTokenAddress) external view returns (uint256);
+    function supplyP2PIndex(address _poolTokenAddress) external view returns (uint256);
 
-    function borrowP2PExchangeRate(address _poolTokenAddress) external view returns (uint256);
+    function borrowP2PIndex(address _poolTokenAddress) external view returns (uint256);
 
-    function getUpdatedSupplyP2PExchangeRate(address _poolTokenAddress)
-        external
-        view
-        returns (uint256);
+    function getUpdatedSupplyP2PIndex(address _poolTokenAddress) external view returns (uint256);
 
-    function getUpdatedBorrowP2PExchangeRate(address _poolTokenAddress)
-        external
-        view
-        returns (uint256);
+    function getUpdatedBorrowP2PIndex(address _poolTokenAddress) external view returns (uint256);
 
     function lastUpdateBlockNumber(address _poolTokenAddress) external view returns (uint256);
 
-    function updateP2PExchangeRates(address _marketAddress) external;
+    function updateP2PIndexes(address _marketAddress) external;
 
-    function getUpdatedP2PExchangeRates(address _poolTokenAddress)
+    function getUpdatedP2PIndexes(address _poolTokenAddress)
         external
         view
         returns (uint256, uint256);

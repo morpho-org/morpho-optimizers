@@ -47,9 +47,9 @@ contract TestEth is TestSetup {
         supplier1.supply(cEth, toSupply);
         uint256 balanceAfter = supplier1.balanceOf(wEth);
 
-        (uint256 supplyP2PExchangeRate, ) = marketsManager.getUpdatedP2PExchangeRates(cEth);
+        (uint256 supplyP2PIndex, ) = marketsManager.getUpdatedP2PIndexes(cEth);
 
-        uint256 expectedInP2P = toSupply.div(supplyP2PExchangeRate);
+        uint256 expectedInP2P = toSupply.div(supplyP2PIndex);
 
         (uint256 inP2P, uint256 onPool) = positionsManager.supplyBalanceInOf(
             cEth,
@@ -93,14 +93,14 @@ contract TestEth is TestSetup {
 
         borrower1.approve(usdc, address(positionsManager), collateral);
         borrower1.supply(cUsdc, collateral);
-        uint256 cEthExchangeRate = ICToken(cEth).exchangeRateCurrent();
+        uint256 cEthIndex = ICToken(cEth).exchangeRateCurrent();
         uint256 balanceBefore = borrower1.balanceOf(wEth);
         (, uint256 supplyOnPool) = positionsManager.supplyBalanceInOf(cEth, address(supplier1));
-        uint256 toBorrow = supplyOnPool.mul(cEthExchangeRate);
+        uint256 toBorrow = supplyOnPool.mul(cEthIndex);
         borrower1.borrow(cEth, toBorrow);
         uint256 balanceAfter = borrower1.balanceOf(wEth);
 
-        uint256 expectedInP2P = toSupply.div(marketsManager.borrowP2PExchangeRate(cEth));
+        uint256 expectedInP2P = toSupply.div(marketsManager.borrowP2PIndex(cEth));
 
         (uint256 inP2P, uint256 onPool) = positionsManager.borrowBalanceInOf(
             cEth,
