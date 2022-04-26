@@ -119,6 +119,7 @@ contract TestInterestRates is TestSetup {
         assertApproxEq(newP2PBorrowIndex, expectednewP2PBorrowIndex, 1);
     }
 
+    // prettier-ignore
     function testFuzzInterestRates(
         uint64 _1,
         uint64 _2,
@@ -146,27 +147,17 @@ contract TestInterestRates is TestSetup {
         uint256 _supplyP2PAmount = WAD + _11;
         uint256 _borrowP2PAmount = WAD + _12;
 
-        hevm.assume(_lastPoolSupplyIndex <= _poolSupplyIndex); // prettier-ignore
-        hevm.assume(_lastPoolBorrowIndex <= _poolBorrowIndex); // prettier-ignore
-        hevm.assume(_poolBorrowIndex * WAD / _lastPoolBorrowIndex > _poolSupplyIndex * WAD / _lastPoolSupplyIndex); // prettier-ignore
-        hevm.assume(_supplyP2PAmount * _p2pSupplyIndex / WAD > _supplyP2PDelta * _poolSupplyIndex / WAD); // prettier-ignore
-        hevm.assume(_borrowP2PAmount * _p2pBorrowIndex / WAD > _borrowP2PDelta * _poolBorrowIndex / WAD); // prettier-ignore
+        hevm.assume(_lastPoolSupplyIndex <= _poolSupplyIndex);
+        hevm.assume(_lastPoolBorrowIndex <= _poolBorrowIndex);
+        hevm.assume(_poolBorrowIndex * WAD / _lastPoolBorrowIndex > _poolSupplyIndex * WAD / _lastPoolSupplyIndex);
+        hevm.assume(_supplyP2PAmount * _p2pSupplyIndex / WAD > _supplyP2PDelta * _poolSupplyIndex / WAD);
+        hevm.assume(_borrowP2PAmount * _p2pBorrowIndex / WAD > _borrowP2PDelta * _poolBorrowIndex / WAD);
 
-        Types.Params memory params = Types.Params(
-            _p2pSupplyIndex,
-            _p2pBorrowIndex,
-            _poolSupplyIndex,
-            _poolBorrowIndex,
-            _lastPoolSupplyIndex,
-            _lastPoolBorrowIndex,
-            _reserveFactor,
-            _p2pCursor,
-            Types.Delta(_supplyP2PDelta, _borrowP2PDelta, _supplyP2PAmount, _borrowP2PAmount)
-        );
+        Types.Params memory params = Types.Params(_p2pSupplyIndex, _p2pBorrowIndex, _poolSupplyIndex, _poolBorrowIndex, _lastPoolSupplyIndex, _lastPoolBorrowIndex, _reserveFactor, _p2pCursor, Types.Delta(_supplyP2PDelta, _borrowP2PDelta, _supplyP2PAmount, _borrowP2PAmount));
 
-        (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex) = interestRates.computeP2PIndexes(params); // prettier-ignore
-        (uint256 expectednewP2PSupplyIndex, uint256 expectednewP2PBorrowIndex) = computeP2PIndexes(params); // prettier-ignore
-        assertApproxEq(newP2PSupplyIndex, expectednewP2PSupplyIndex, 300); // prettier-ignore
-        assertApproxEq(newP2PBorrowIndex, expectednewP2PBorrowIndex, 300); // prettier-ignore
+        (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex) = interestRates.computeP2PIndexes(params);
+        (uint256 expectednewP2PSupplyIndex, uint256 expectednewP2PBorrowIndex) = computeP2PIndexes(params);
+        assertApproxEq(newP2PSupplyIndex, expectednewP2PSupplyIndex, 400);
+        assertApproxEq(newP2PBorrowIndex, expectednewP2PBorrowIndex, 400);
     }
 }
