@@ -46,8 +46,8 @@ contract TestSupply is TestSetup {
         uint256 daiBalanceAfter = supplier1.balanceOf(dai);
         assertEq(daiBalanceAfter, expectedDaiBalanceAfter);
 
-        (uint256 supplyP2PIndex, ) = marketsManager.getUpdatedP2PIndexes(cDai);
-        uint256 expectedSupplyBalanceInP2P = amount.div(supplyP2PIndex);
+        (uint256 p2pSupplyIndex, ) = marketsManager.getUpdatedP2PIndexes(cDai);
+        uint256 expectedSupplyBalanceInP2P = amount.div(p2pSupplyIndex);
 
         (uint256 inP2PSupplier, uint256 onPoolSupplier) = positionsManager.supplyBalanceInOf(
             cDai,
@@ -76,8 +76,8 @@ contract TestSupply is TestSetup {
         supplier1.approve(dai, 2 * amount);
         supplier1.supply(cDai, 2 * amount);
 
-        (uint256 supplyP2PIndex, ) = marketsManager.getUpdatedP2PIndexes(cDai);
-        uint256 expectedSupplyBalanceInP2P = amount.div(supplyP2PIndex);
+        (uint256 p2pSupplyIndex, ) = marketsManager.getUpdatedP2PIndexes(cDai);
+        uint256 expectedSupplyBalanceInP2P = amount.div(p2pSupplyIndex);
 
         uint256 supplyPoolIndex = ICToken(cDai).exchangeRateCurrent();
         uint256 expectedSupplyBalanceOnPool = amount.div(supplyPoolIndex);
@@ -121,19 +121,19 @@ contract TestSupply is TestSetup {
         uint256 inP2P;
         uint256 onPool;
         uint256 expectedInP2P;
-        uint256 supplyP2PIndex = marketsManager.supplyP2PIndex(cDai);
+        uint256 p2pSupplyIndex = marketsManager.p2pSupplyIndex(cDai);
 
         for (uint256 i = 0; i < NMAX; i++) {
             (inP2P, onPool) = positionsManager.borrowBalanceInOf(cDai, address(borrowers[i]));
 
-            expectedInP2P = amountPerBorrower.div(marketsManager.borrowP2PIndex(cDai));
+            expectedInP2P = amountPerBorrower.div(marketsManager.p2pBorrowIndex(cDai));
 
             assertEq(inP2P, expectedInP2P, "amount per borrower");
             assertEq(onPool, 0, "on pool per borrower");
         }
 
         (inP2P, onPool) = positionsManager.supplyBalanceInOf(cDai, address(supplier1));
-        expectedInP2P = amount.div(supplyP2PIndex);
+        expectedInP2P = amount.div(p2pSupplyIndex);
 
         assertEq(inP2P, expectedInP2P, "in P2P");
         assertEq(onPool, 0, "on pool");
@@ -163,13 +163,13 @@ contract TestSupply is TestSetup {
         uint256 inP2P;
         uint256 onPool;
         uint256 expectedInP2P;
-        uint256 supplyP2PIndex = marketsManager.supplyP2PIndex(cDai);
+        uint256 p2pSupplyIndex = marketsManager.p2pSupplyIndex(cDai);
         uint256 supplyPoolIndex = ICToken(cDai).exchangeRateCurrent();
 
         for (uint256 i = 0; i < NMAX; i++) {
             (inP2P, onPool) = positionsManager.borrowBalanceInOf(cDai, address(borrowers[i]));
 
-            expectedInP2P = amountPerBorrower.div(marketsManager.borrowP2PIndex(cDai));
+            expectedInP2P = amountPerBorrower.div(marketsManager.p2pBorrowIndex(cDai));
 
             assertEq(inP2P, expectedInP2P, "borrower in P2P");
             assertEq(onPool, 0, "borrower on pool");
@@ -177,7 +177,7 @@ contract TestSupply is TestSetup {
 
         (inP2P, onPool) = positionsManager.supplyBalanceInOf(cDai, address(supplier1));
 
-        expectedInP2P = (amount / 2).div(supplyP2PIndex);
+        expectedInP2P = (amount / 2).div(p2pSupplyIndex);
         uint256 expectedOnPool = (amount / 2).div(supplyPoolIndex);
 
         assertEq(inP2P, expectedInP2P, "in P2P");

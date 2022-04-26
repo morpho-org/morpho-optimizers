@@ -7,9 +7,9 @@ interface IInterestRates {
     function computeP2PIndexes(Types.Params memory _params)
         external
         pure
-        returns (uint256 newSupplyP2PIndex, uint256 newBorrowP2PIndex);
+        returns (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex);
 
-    function computeSupplyP2PIndex(Types.Params memory _params) external view returns (uint256);
+    function computeP2PSupplyIndex(Types.Params memory _params) external view returns (uint256);
 
-    function computeBorrowP2PIndex(Types.Params memory _params) external view returns (uint256);
+    function computeP2PBorrowIndex(Types.Params memory _params) external view returns (uint256);
 }

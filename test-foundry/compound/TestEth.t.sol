@@ -47,9 +47,9 @@ contract TestEth is TestSetup {
         supplier1.supply(cEth, toSupply);
         uint256 balanceAfter = supplier1.balanceOf(wEth);
 
-        (uint256 supplyP2PIndex, ) = marketsManager.getUpdatedP2PIndexes(cEth);
+        (uint256 p2pSupplyIndex, ) = marketsManager.getUpdatedP2PIndexes(cEth);
 
-        uint256 expectedInP2P = toSupply.div(supplyP2PIndex);
+        uint256 expectedInP2P = toSupply.div(p2pSupplyIndex);
 
         (uint256 inP2P, uint256 onPool) = positionsManager.supplyBalanceInOf(
             cEth,
@@ -100,7 +100,7 @@ contract TestEth is TestSetup {
         borrower1.borrow(cEth, toBorrow);
         uint256 balanceAfter = borrower1.balanceOf(wEth);
 
-        uint256 expectedInP2P = toSupply.div(marketsManager.borrowP2PIndex(cEth));
+        uint256 expectedInP2P = toSupply.div(marketsManager.p2pBorrowIndex(cEth));
 
         (uint256 inP2P, uint256 onPool) = positionsManager.borrowBalanceInOf(
             cEth,

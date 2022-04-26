@@ -8,11 +8,11 @@ contract TestMarketsManager is TestSetup {
 
     function testShoudDeployContractWithTheRightValues() public {
         assertEq(
-            marketsManager.supplyP2PIndex(cDai),
+            marketsManager.p2pSupplyIndex(cDai),
             2 * 10**(16 + IERC20Metadata(ICToken(cDai).underlying()).decimals() - 8)
         );
         assertEq(
-            marketsManager.borrowP2PIndex(cDai),
+            marketsManager.p2pBorrowIndex(cDai),
             2 * 10**(16 + IERC20Metadata(ICToken(cDai).underlying()).decimals() - 8)
         );
     }
@@ -62,11 +62,11 @@ contract TestMarketsManager is TestSetup {
 
         assertTrue(marketsManager.isCreated(cAave));
         assertEq(
-            marketsManager.supplyP2PIndex(cAave),
+            marketsManager.p2pSupplyIndex(cAave),
             2 * 10**(16 + IERC20Metadata(cToken.underlying()).decimals() - 8)
         );
         assertEq(
-            marketsManager.borrowP2PIndex(cAave),
+            marketsManager.p2pBorrowIndex(cAave),
             2 * 10**(16 + IERC20Metadata(cToken.underlying()).decimals() - 8)
         );
     }

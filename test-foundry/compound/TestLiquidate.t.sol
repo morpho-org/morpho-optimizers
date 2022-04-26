@@ -130,12 +130,12 @@ contract TestLiquidate is TestSetup {
         );
 
         uint256 expectedBorrowBalanceInP2P = onPoolUsdc.mul(ICToken(cUsdc).borrowIndex()) +
-            inP2PUsdc.mul(marketsManager.borrowP2PIndex(cUsdc)) -
+            inP2PUsdc.mul(marketsManager.p2pBorrowIndex(cUsdc)) -
             (borrowerDebt / 2);
 
         assertEq(onPoolBorrower, 0, "borrower borrow on pool");
         assertApproxEq(
-            inP2PBorrower.mul(marketsManager.borrowP2PIndex(cUsdc)),
+            inP2PBorrower.mul(marketsManager.p2pBorrowIndex(cUsdc)),
             expectedBorrowBalanceInP2P,
             2,
             "borrower borrow in P2P"
