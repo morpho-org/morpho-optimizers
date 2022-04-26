@@ -21,26 +21,15 @@ library DelegateCall {
         returns (bytes memory)
     {
         (bool success, bytes memory returndata) = _target.delegatecall(_data);
-        return verifyCallResult(success, returndata);
-    }
-
-    /// @dev Verifies the success of the call or returns an error.
-    /// @param _success Whether the call is succesful or not.
-    /// @param _returndata The return data from the call.
-    function verifyCallResult(bool _success, bytes memory _returndata)
-        internal
-        pure
-        returns (bytes memory)
-    {
-        if (_success) return _returndata;
+        if (success) return returndata;
         else {
             // Look for revert reason and bubble it up if present.
-            if (_returndata.length > 0) {
+            if (returndata.length > 0) {
                 // The easiest way to bubble the revert reason is using memory via assembly.
 
                 assembly {
-                    let returndata_size := mload(_returndata)
-                    revert(add(32, _returndata), returndata_size)
+                    let returndata_size := mload(returndata)
+                    revert(add(32, returndata), returndata_size)
                 }
             } else revert LowLevelDelegateCallFailed();
         }
