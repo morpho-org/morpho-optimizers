@@ -71,7 +71,7 @@ abstract contract PositionsManagerStorage is OwnableUpgradeable, ReentrancyGuard
 
     struct PauseStatuses {
         bool isPaused; // Whether the market is paused or not (all entry points on Morpho are frozen; supply, borrow, withdraw, repay and liquidate).
-        bool isPartialPaused; // Whether the market is partially paused or not (only supply and borrow are frozen).
+        bool isPartiallyPaused; // Whether the market is partially paused or not (only supply and borrow are frozen).
     }
 
     /// STORAGE ///
