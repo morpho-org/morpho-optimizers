@@ -28,6 +28,10 @@ gas:
 	@echo Create report
 	@forge test -vvv -c test-foundry --gas-report --match-test testGasConsumptionOfMatchBorrowers > gas_report.ansi
 
+common:
+	@echo Run all common tests
+	@forge test -vvv -c test-foundry/common
+
 contract-% c-%: node_modules
 	@echo Run tests for contract $* on ${NETWORK}
 	@forge test -vvv -c test-foundry/compound --match-contract $*
