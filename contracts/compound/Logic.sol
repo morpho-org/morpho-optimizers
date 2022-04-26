@@ -72,8 +72,8 @@ contract Logic is ILogic, MatchingEngine {
 
     // Struct to avoid stack too deep.
     struct RepayVars {
-        uint256 supplyP2PIndex;
-        uint256 borrowP2PIndex;
+        uint256 p2pSupplyIndex;
+        uint256 p2pBorrowIndex;
         uint256 remainingToRepay;
         uint256 borrowPoolIndex;
         uint256 feeToRepay;
@@ -138,14 +138,14 @@ contract Logic is ILogic, MatchingEngine {
                     toRepay += matched;
                     remainingToSupply -= matched;
                     delta.borrowP2PAmount += matched.div(
-                        marketsManager.borrowP2PIndex(_poolTokenAddress)
+                        marketsManager.p2pBorrowIndex(_poolTokenAddress)
                     );
                 }
             }
         }
 
         if (toRepay > 0) {
-            uint256 toAddInP2P = toRepay.div(marketsManager.supplyP2PIndex(_poolTokenAddress));
+            uint256 toAddInP2P = toRepay.div(marketsManager.p2pSupplyIndex(_poolTokenAddress));
 
             delta.supplyP2PAmount += toAddInP2P;
             supplyBalanceInOf[_poolTokenAddress][msg.sender].inP2P += toAddInP2P;
@@ -223,14 +223,14 @@ contract Logic is ILogic, MatchingEngine {
                     toWithdraw += matched;
                     remainingToBorrow -= matched;
                     deltas[_poolTokenAddress].supplyP2PAmount += matched.div(
-                        marketsManager.supplyP2PIndex(_poolTokenAddress)
+                        marketsManager.p2pSupplyIndex(_poolTokenAddress)
                     );
                 }
             }
         }
 
         if (_isAboveCompoundThreshold(toWithdraw, underlyingToken.decimals())) {
-            uint256 toAddInP2P = toWithdraw.div(marketsManager.borrowP2PIndex(_poolTokenAddress)); // In p2pUnit.
+            uint256 toAddInP2P = toWithdraw.div(marketsManager.p2pBorrowIndex(_poolTokenAddress)); // In p2pUnit.
 
             deltas[_poolTokenAddress].borrowP2PAmount += toAddInP2P;
             borrowBalanceInOf[_poolTokenAddress][msg.sender].inP2P += toAddInP2P;
@@ -300,14 +300,14 @@ contract Logic is ILogic, MatchingEngine {
         }
 
         Types.Delta storage delta = deltas[_poolTokenAddress];
-        uint256 supplyP2PIndex = marketsManager.supplyP2PIndex(_poolTokenAddress);
+        uint256 p2pSupplyIndex = marketsManager.p2pSupplyIndex(_poolTokenAddress);
 
         /// Transfer withdraw ///
 
         if (vars.remainingToWithdraw > 0 && !marketsManager.noP2P(_poolTokenAddress)) {
             supplyBalanceInOf[_poolTokenAddress][_supplier].inP2P -= CompoundMath.min(
                 supplyBalanceInOf[_poolTokenAddress][_supplier].inP2P,
-                vars.remainingToWithdraw.div(supplyP2PIndex)
+                vars.remainingToWithdraw.div(p2pSupplyIndex)
             ); // In p2pUnit
             updateSuppliers(_poolTokenAddress, _supplier);
 
@@ -324,7 +324,7 @@ contract Logic is ILogic, MatchingEngine {
                     vars.toWithdraw += matchedDelta;
                     vars.remainingToWithdraw -= matchedDelta;
                     delta.supplyP2PDelta -= matchedDelta.div(vars.supplyPoolIndex);
-                    delta.supplyP2PAmount -= matchedDelta.div(supplyP2PIndex);
+                    delta.supplyP2PAmount -= matchedDelta.div(p2pSupplyIndex);
                     emit SupplyP2PDeltaUpdated(_poolTokenAddress, delta.supplyP2PDelta);
                 }
             }
@@ -368,9 +368,9 @@ contract Logic is ILogic, MatchingEngine {
                 emit BorrowP2PDeltaUpdated(_poolTokenAddress, delta.borrowP2PAmount);
             }
 
-            delta.supplyP2PAmount -= vars.remainingToWithdraw.div(supplyP2PIndex);
+            delta.supplyP2PAmount -= vars.remainingToWithdraw.div(p2pSupplyIndex);
             delta.borrowP2PAmount -= unmatched.div(
-                marketsManager.borrowP2PIndex(_poolTokenAddress)
+                marketsManager.p2pBorrowIndex(_poolTokenAddress)
             );
             emit P2PAmountsUpdated(_poolTokenAddress, delta.supplyP2PAmount, delta.borrowP2PAmount);
 
@@ -432,11 +432,11 @@ contract Logic is ILogic, MatchingEngine {
         }
 
         Types.Delta storage delta = deltas[_poolTokenAddress];
-        vars.supplyP2PIndex = marketsManager.supplyP2PIndex(_poolTokenAddress);
-        vars.borrowP2PIndex = marketsManager.borrowP2PIndex(_poolTokenAddress);
+        vars.p2pSupplyIndex = marketsManager.p2pSupplyIndex(_poolTokenAddress);
+        vars.p2pBorrowIndex = marketsManager.p2pBorrowIndex(_poolTokenAddress);
         borrowBalanceInOf[_poolTokenAddress][_user].inP2P -= CompoundMath.min(
             borrowBalanceInOf[_poolTokenAddress][_user].inP2P,
-            vars.remainingToRepay.div(vars.borrowP2PIndex)
+            vars.remainingToRepay.div(vars.p2pBorrowIndex)
         ); // In p2pUnit.
         updateBorrowers(_poolTokenAddress, _user);
 
@@ -444,9 +444,9 @@ contract Logic is ILogic, MatchingEngine {
 
         // Fee = (supplyP2P - supplyP2PDelta) - (borrowP2P - borrowP2PDelta)
         vars.feeToRepay = CompoundMath.safeSub(
-            (delta.borrowP2PAmount.mul(vars.borrowP2PIndex) -
+            (delta.borrowP2PAmount.mul(vars.p2pBorrowIndex) -
                 delta.borrowP2PDelta.mul(vars.borrowPoolIndex)),
-            (delta.supplyP2PAmount.mul(vars.supplyP2PIndex) -
+            (delta.supplyP2PAmount.mul(vars.p2pSupplyIndex) -
                 delta.supplyP2PDelta.mul(poolToken.exchangeRateStored()))
         );
         vars.remainingToRepay -= vars.feeToRepay;
@@ -465,7 +465,7 @@ contract Logic is ILogic, MatchingEngine {
                     vars.toRepay += matchedDelta;
                     vars.remainingToRepay -= matchedDelta;
                     delta.borrowP2PDelta -= matchedDelta.div(vars.borrowPoolIndex);
-                    delta.borrowP2PAmount -= matchedDelta.div(vars.borrowP2PIndex);
+                    delta.borrowP2PAmount -= matchedDelta.div(vars.p2pBorrowIndex);
                     emit BorrowP2PDeltaUpdated(_poolTokenAddress, delta.borrowP2PDelta);
                 }
             }
@@ -513,8 +513,8 @@ contract Logic is ILogic, MatchingEngine {
                 emit SupplyP2PDeltaUpdated(_poolTokenAddress, delta.borrowP2PDelta);
             }
 
-            delta.supplyP2PAmount -= unmatched.div(vars.supplyP2PIndex);
-            delta.borrowP2PAmount -= vars.remainingToRepay.div(vars.borrowP2PIndex);
+            delta.supplyP2PAmount -= unmatched.div(vars.p2pSupplyIndex);
+            delta.borrowP2PAmount -= vars.remainingToRepay.div(vars.p2pBorrowIndex);
             emit P2PAmountsUpdated(_poolTokenAddress, delta.supplyP2PAmount, delta.borrowP2PAmount);
 
             _supplyToPool(_poolTokenAddress, underlyingToken, vars.remainingToRepay); // Reverts on error.

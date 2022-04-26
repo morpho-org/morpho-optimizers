@@ -68,8 +68,8 @@ contract TestFees is TestSetup {
         supplier1.supply(cDai, 100 ether);
         supplier1.borrow(cDai, 50 ether);
 
-        uint256 oldSupplyExRate = marketsManager.supplyP2PIndex(cDai);
-        uint256 oldBorrowExRate = marketsManager.borrowP2PIndex(cDai);
+        uint256 oldSupplyExRate = marketsManager.p2pSupplyIndex(cDai);
+        uint256 oldBorrowExRate = marketsManager.p2pBorrowIndex(cDai);
 
         (uint256 supplyP2PBPY, uint256 borrowP2PBPY) = getApproxBPYs(cDai);
 

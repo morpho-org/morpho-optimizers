@@ -237,7 +237,7 @@ abstract contract PositionsManagerGetters is PositionsManagerStorage {
     {
         return
             supplyBalanceInOf[_poolTokenAddress][_user].inP2P.mul(
-                marketsManager.getUpdatedSupplyP2PIndex(_poolTokenAddress)
+                marketsManager.getUpdatedp2pSupplyIndex(_poolTokenAddress)
             ) +
             supplyBalanceInOf[_poolTokenAddress][_user].onPool.mul(
                 ICToken(_poolTokenAddress).exchangeRateStored()
@@ -255,7 +255,7 @@ abstract contract PositionsManagerGetters is PositionsManagerStorage {
     {
         return
             borrowBalanceInOf[_poolTokenAddress][_user].inP2P.mul(
-                marketsManager.getUpdatedBorrowP2PIndex(_poolTokenAddress)
+                marketsManager.getUpdatedp2pBorrowIndex(_poolTokenAddress)
             ) +
             borrowBalanceInOf[_poolTokenAddress][_user].onPool.mul(
                 ICToken(_poolTokenAddress).borrowIndex()
