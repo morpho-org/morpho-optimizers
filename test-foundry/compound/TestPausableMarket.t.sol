@@ -44,8 +44,8 @@ contract TestPausableMarket is TestSetup {
         assertFalse(isPartiallyPaused, "partial paused is true");
     }
 
-    function testShouldTriggerAllFunctionsWhenNotPausedAndNotPartiallyPaused() public {
-        uint256 amount = 10_000 ether;
+    function testShouldTriggerFunctionsWhenNotPaused() public {
+        uint256 amount = 100 ether;
         uint256 toBorrow = to6Decimals(amount / 2);
 
         supplier1.approve(dai, amount);
@@ -54,20 +54,18 @@ contract TestPausableMarket is TestSetup {
         supplier1.borrow(cUsdc, toBorrow);
 
         supplier1.approve(usdc, toBorrow);
-        supplier1.repay(cUsdc, toBorrow);
+        supplier1.repay(cUsdc, type(uint256).max);
 
         (, toBorrow) = positionsManager.getUserMaxCapacitiesForAsset(address(supplier1), cUsdc);
-        hevm.expectRevert(Logic.BorrowOnCompoundFailed.selector);
-        supplier1.borrow(cUsdc, toBorrow);
+        supplier1.borrow(cUsdc, toBorrow - 10); // Here the max capacities is overistamed.
 
         // Change Oracle.
         SimplePriceOracle customOracle = createAndSetCustomPriceOracle();
-        customOracle.setUnderlyingPrice(cDai, (oracle.getUnderlyingPrice(cDai) * 95) / 100);
+        customOracle.setUnderlyingPrice(cDai, (oracle.getUnderlyingPrice(cDai) * 97) / 100);
 
-        uint256 toLiquidate = toBorrow / 2;
+        uint256 toLiquidate = toBorrow / 3;
         User liquidator = borrower3;
         liquidator.approve(usdc, toLiquidate);
-        hevm.expectRevert(Logic.DebtValueNotAboveMax.selector);
         liquidator.liquidate(cUsdc, cDai, address(supplier1), toLiquidate);
 
         supplier1.withdraw(cDai, 1 ether);
