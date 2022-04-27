@@ -16,7 +16,7 @@ contract TestMarketsManagerGetters is TestSetup {
         (
             uint256 p2pSupplyIndex,
             uint256 p2pBorrowIndex,
-            uint256 lastUpdateBlockNumber,
+            uint32 lastUpdateBlockNumber,
             uint256 supplyP2PDelta_,
             uint256 borrowP2PDelta_,
             uint256 supplyP2PAmount_,
@@ -25,7 +25,8 @@ contract TestMarketsManagerGetters is TestSetup {
 
         assertEq(p2pSupplyIndex, marketsManager.p2pSupplyIndex(cDai));
         assertEq(p2pBorrowIndex, marketsManager.p2pBorrowIndex(cDai));
-        assertEq(lastUpdateBlockNumber, marketsManager.lastUpdateBlockNumber(cDai));
+        (uint32 expectedLastUpdateBlockNumber, , ) = marketsManager.lastPoolIndexes(cDai);
+        assertEq(lastUpdateBlockNumber, expectedLastUpdateBlockNumber);
         (
             uint256 supplyP2PDelta,
             uint256 borrowP2PDelta,
