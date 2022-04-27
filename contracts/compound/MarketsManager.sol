@@ -20,8 +20,8 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
     /// STRUCTS ///
 
     struct LastPoolIndexes {
-        uint256 lastSupplyPoolIndex; // Last pool supply index.
-        uint256 lastBorrowPoolIndex; // Last pool borrow index.
+        uint128 lastSupplyPoolIndex; // Last pool supply index.
+        uint128 lastBorrowPoolIndex; // Last pool borrow index.
     }
 
     /// STORAGE ///
@@ -195,8 +195,8 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
 
         LastPoolIndexes storage poolIndexes = lastPoolIndexes[_poolTokenAddress];
 
-        poolIndexes.lastSupplyPoolIndex = poolToken.exchangeRateCurrent();
-        poolIndexes.lastBorrowPoolIndex = poolToken.borrowIndex();
+        poolIndexes.lastSupplyPoolIndex = uint128(poolToken.exchangeRateCurrent());
+        poolIndexes.lastBorrowPoolIndex = uint128(poolToken.borrowIndex());
 
         marketsCreated.push(_poolTokenAddress);
         emit MarketCreated(_poolTokenAddress);
@@ -401,8 +401,8 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
 
             p2pSupplyIndex[_poolTokenAddress] = newP2PSupplyIndex;
             p2pBorrowIndex[_poolTokenAddress] = newP2PBorrowIndex;
-            poolIndexes.lastSupplyPoolIndex = poolSupplyIndex;
-            poolIndexes.lastBorrowPoolIndex = poolBorrowIndex;
+            poolIndexes.lastSupplyPoolIndex = uint128(poolSupplyIndex);
+            poolIndexes.lastBorrowPoolIndex = uint128(poolBorrowIndex);
 
             emit P2PIndexesUpdated(_poolTokenAddress, newP2PSupplyIndex, newP2PBorrowIndex);
         }
