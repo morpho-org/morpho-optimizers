@@ -20,8 +20,9 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
     /// STRUCTS ///
 
     struct LastPoolIndexes {
-        uint128 lastSupplyPoolIndex; // Last pool supply index.
-        uint128 lastBorrowPoolIndex; // Last pool borrow index.
+        uint32 lastUpdateBlockNumber; // The last time the P2P indexes were updated.
+        uint112 lastSupplyPoolIndex; // Last pool supply index.
+        uint112 lastBorrowPoolIndex; // Last pool borrow index.
     }
 
     /// STORAGE ///
@@ -33,7 +34,6 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
     mapping(address => uint256) public reserveFactor; // Proportion of the interest earned by users sent to the DAO for each market, in basis point (100% = 10000). The default value is 0.
     mapping(address => uint256) public override p2pSupplyIndex; // Current index from supply p2pUnit to underlying (in wad).
     mapping(address => uint256) public override p2pBorrowIndex; // Current index from borrow p2pUnit to underlying (in wad).
-    mapping(address => uint256) public override lastUpdateBlockNumber; // The last time the P2P indexes were updated.
     mapping(address => LastPoolIndexes) public lastPoolIndexes; // Last pool index stored.
     mapping(address => bool) public override noP2P; // Whether to put users on pool or not for the given market.
     mapping(address => uint256) public p2pIndexCursor; // Position of the peer-to-peer rate in the pool's spread. Determines the weights of the weighted arithmetic average in the indexes computations ((1 - p2pIndexCursor) * r^S + p2pIndexCursor * r^B) (in basis point).
@@ -171,7 +171,6 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
         isCreated[_poolTokenAddress] = true;
 
         ICToken poolToken = ICToken(_poolTokenAddress);
-        lastUpdateBlockNumber[_poolTokenAddress] = block.number;
 
         // Same initial index as Compound.
         uint256 initialIndex;
@@ -182,8 +181,9 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
 
         LastPoolIndexes storage poolIndexes = lastPoolIndexes[_poolTokenAddress];
 
-        poolIndexes.lastSupplyPoolIndex = uint128(poolToken.exchangeRateCurrent());
-        poolIndexes.lastBorrowPoolIndex = uint128(poolToken.borrowIndex());
+        poolIndexes.lastUpdateBlockNumber = uint32(block.number);
+        poolIndexes.lastSupplyPoolIndex = uint112(poolToken.exchangeRateCurrent());
+        poolIndexes.lastBorrowPoolIndex = uint112(poolToken.borrowIndex());
 
         marketsCreated.push(_poolTokenAddress);
         emit MarketCreated(_poolTokenAddress);
@@ -221,7 +221,7 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
         returns (
             uint256 p2pSupplyIndex_,
             uint256 p2pBorrowIndex_,
-            uint256 lastUpdateBlockNumber_,
+            uint32 lastUpdateBlockNumber_,
             uint256 supplyP2PDelta_,
             uint256 borrowP2PDelta_,
             uint256 supplyP2PAmount_,
@@ -237,7 +237,7 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
         }
         p2pSupplyIndex_ = p2pSupplyIndex[_poolTokenAddress];
         p2pBorrowIndex_ = p2pBorrowIndex[_poolTokenAddress];
-        lastUpdateBlockNumber_ = lastUpdateBlockNumber[_poolTokenAddress];
+        lastUpdateBlockNumber_ = lastPoolIndexes[_poolTokenAddress].lastUpdateBlockNumber;
     }
 
     /// @notice Returns market's configuration.
@@ -273,7 +273,7 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
         override
         returns (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex)
     {
-        if (block.timestamp == lastUpdateBlockNumber[_poolTokenAddress]) {
+        if (block.timestamp == lastPoolIndexes[_poolTokenAddress].lastUpdateBlockNumber) {
             newP2PSupplyIndex = p2pSupplyIndex[_poolTokenAddress];
             newP2PBorrowIndex = p2pBorrowIndex[_poolTokenAddress];
         } else {
@@ -300,7 +300,7 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
     /// @param _poolTokenAddress The address of the market to update.
     /// @return newP2PSupplyIndex The peer-to-peer supply index after update.
     function getUpdatedp2pSupplyIndex(address _poolTokenAddress) external view returns (uint256) {
-        if (block.timestamp == lastUpdateBlockNumber[_poolTokenAddress])
+        if (block.timestamp == lastPoolIndexes[_poolTokenAddress].lastUpdateBlockNumber)
             return p2pSupplyIndex[_poolTokenAddress];
         else {
             ICToken poolToken = ICToken(_poolTokenAddress);
@@ -326,7 +326,7 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
     /// @param _poolTokenAddress The address of the market to update.
     /// @return newP2PSupplyIndex The peer-to-peer borrow index after update.
     function getUpdatedp2pBorrowIndex(address _poolTokenAddress) external view returns (uint256) {
-        if (block.timestamp == lastUpdateBlockNumber[_poolTokenAddress])
+        if (block.timestamp == lastPoolIndexes[_poolTokenAddress].lastUpdateBlockNumber)
             return p2pBorrowIndex[_poolTokenAddress];
         else {
             ICToken poolToken = ICToken(_poolTokenAddress);
@@ -363,9 +363,8 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
     /// @notice Updates the P2P indexes, taking into account the Second Percentage Yield values.
     /// @param _poolTokenAddress The address of the market to update.
     function updateP2PIndexes(address _poolTokenAddress) public {
-        if (block.timestamp > lastUpdateBlockNumber[_poolTokenAddress]) {
+        if (block.timestamp > lastPoolIndexes[_poolTokenAddress].lastUpdateBlockNumber) {
             ICToken poolToken = ICToken(_poolTokenAddress);
-            lastUpdateBlockNumber[_poolTokenAddress] = block.timestamp;
             LastPoolIndexes storage poolIndexes = lastPoolIndexes[_poolTokenAddress];
 
             uint256 poolSupplyIndex = poolToken.exchangeRateCurrent();
@@ -388,8 +387,10 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
 
             p2pSupplyIndex[_poolTokenAddress] = newP2PSupplyIndex;
             p2pBorrowIndex[_poolTokenAddress] = newP2PBorrowIndex;
-            poolIndexes.lastSupplyPoolIndex = uint128(poolSupplyIndex);
-            poolIndexes.lastBorrowPoolIndex = uint128(poolBorrowIndex);
+
+            poolIndexes.lastUpdateBlockNumber = uint32(block.timestamp);
+            poolIndexes.lastSupplyPoolIndex = uint112(poolSupplyIndex);
+            poolIndexes.lastBorrowPoolIndex = uint112(poolBorrowIndex);
 
             emit P2PIndexesUpdated(_poolTokenAddress, newP2PSupplyIndex, newP2PBorrowIndex);
         }
