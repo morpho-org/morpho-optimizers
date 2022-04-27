@@ -6,8 +6,6 @@ interface IMarketsManager {
 
     function noP2P(address _poolTokenAddress) external view returns (bool);
 
-    function p2pIndexCursor(address _poolTokenAddress) external view returns (uint256);
-
     function p2pSupplyIndex(address _poolTokenAddress) external view returns (uint256);
 
     function p2pBorrowIndex(address _poolTokenAddress) external view returns (uint256);
