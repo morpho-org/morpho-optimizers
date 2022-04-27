@@ -20,9 +20,9 @@ contract TestInterestRates is TestSetup {
         view
         returns (uint256 p2pSupplyIndex_, uint256 p2pBorrowIndex_)
     {
-        uint256 supplyPoolIncrease = ((params.poolSupplyIndex * WAD) / params.lastPoolSupplyIndex);
-        uint256 borrowPoolIncrease = ((params.poolBorrowIndex * WAD) / params.lastPoolBorrowIndex);
-        uint256 p2pIncrease = ((MAX_BASIS_POINTS - params.p2pCursor) * supplyPoolIncrease + params.p2pCursor * borrowPoolIncrease) / MAX_BASIS_POINTS;
+        uint256 poolSupplyGrowthFactor = ((params.poolSupplyIndex * WAD) / params.lastPoolSupplyIndex);
+        uint256 poolBorrowGrowthFactor = ((params.poolBorrowIndex * WAD) / params.lastPoolBorrowIndex);
+        uint256 p2pIncrease = ((MAX_BASIS_POINTS - params.p2pCursor) * poolSupplyGrowthFactor + params.p2pCursor * poolBorrowGrowthFactor) / MAX_BASIS_POINTS;
         uint256 shareOfTheSupplyDelta = params.delta.supplyP2PAmount > 0
             ? (((params.delta.supplyP2PDelta * params.poolSupplyIndex) / WAD) * WAD) /
                 ((params.delta.supplyP2PAmount * params.p2pSupplyIndex) / WAD)
@@ -33,13 +33,13 @@ contract TestInterestRates is TestSetup {
             : 0;
         p2pSupplyIndex_ =
             params.p2pSupplyIndex *
-                ((WAD - shareOfTheSupplyDelta) * (p2pIncrease - (params.reserveFactor * (p2pIncrease - supplyPoolIncrease) / MAX_BASIS_POINTS)) / WAD +
-                (shareOfTheSupplyDelta * supplyPoolIncrease) / WAD) /
+                ((WAD - shareOfTheSupplyDelta) * (p2pIncrease - (params.reserveFactor * (p2pIncrease - poolSupplyGrowthFactor) / MAX_BASIS_POINTS)) / WAD +
+                (shareOfTheSupplyDelta * poolSupplyGrowthFactor) / WAD) /
             WAD;
         p2pBorrowIndex_ =
             params.p2pBorrowIndex *
-                ((WAD - shareOfTheBorrowDelta) * (p2pIncrease + (params.reserveFactor * (borrowPoolIncrease - p2pIncrease) / MAX_BASIS_POINTS)) / WAD +
-                (shareOfTheBorrowDelta * borrowPoolIncrease) / WAD) /
+                ((WAD - shareOfTheBorrowDelta) * (p2pIncrease + (params.reserveFactor * (poolBorrowGrowthFactor - p2pIncrease) / MAX_BASIS_POINTS)) / WAD +
+                (shareOfTheBorrowDelta * poolBorrowGrowthFactor) / WAD) /
             WAD;
     }
 
