@@ -13,7 +13,8 @@ contract TestUpgradeable is TestSetup {
         proxyAdmin.upgrade(marketsManagerProxy, address(marketsManagerImplV2));
 
         // Should not change
-        assertEq(marketsManager.reserveFactor(cDai), 1);
+        (uint16 reserveFactor, ) = marketsManager.marketParameters(cDai);
+        assertEq(reserveFactor, 1);
     }
 
     function testUpgradePositionsManager() public {

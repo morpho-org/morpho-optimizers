@@ -25,18 +25,22 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
         uint112 lastBorrowPoolIndex; // Last pool borrow index.
     }
 
+    struct MarketParameters {
+        uint16 reserveFactor; // Proportion of the interest earned by users sent to the DAO for each market, in basis point (100% = 10000). The default value is 0.
+        uint16 p2pIndexCursor; // Position of the peer-to-peer rate in the pool's spread. Determine the weights of the weighted arithmetic average in the indexes computations ((1 - p2pIndexCursor) * r^S + p2pIndexCursor * r^B) (in basis point).
+    }
+
     /// STORAGE ///
 
     uint256 public constant WAD = 1e18;
     uint16 public constant MAX_BASIS_POINTS = 10_000; // 100% (in basis point).
     address[] public marketsCreated; // Keeps track of the created markets.
     mapping(address => bool) public override isCreated; // Whether or not this market is created.
-    mapping(address => uint256) public reserveFactor; // Proportion of the interest earned by users sent to the DAO for each market, in basis point (100% = 10000). The default value is 0.
+    mapping(address => MarketParameters) public marketParameters; // Market parameters.
     mapping(address => uint256) public override p2pSupplyIndex; // Current index from supply p2pUnit to underlying (in wad).
     mapping(address => uint256) public override p2pBorrowIndex; // Current index from borrow p2pUnit to underlying (in wad).
     mapping(address => LastPoolIndexes) public lastPoolIndexes; // Last pool index stored.
     mapping(address => bool) public override noP2P; // Whether to put users on pool or not for the given market.
-    mapping(address => uint256) public p2pIndexCursor; // Position of the peer-to-peer rate in the pool's spread. Determines the weights of the weighted arithmetic average in the indexes computations ((1 - p2pIndexCursor) * r^S + p2pIndexCursor * r^B) (in basis point).
 
     /// EVENTS ///
 
@@ -168,8 +172,10 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
         onlyOwner
     {
         updateP2PIndexes(_poolTokenAddress);
-        reserveFactor[_poolTokenAddress] = CompoundMath.min(MAX_BASIS_POINTS, _newReserveFactor);
-        emit ReserveFactorSet(_poolTokenAddress, reserveFactor[_poolTokenAddress]);
+        marketParameters[_poolTokenAddress].reserveFactor = uint16(
+            CompoundMath.min(MAX_BASIS_POINTS, _newReserveFactor)
+        );
+        emit ReserveFactorSet(_poolTokenAddress, marketParameters[_poolTokenAddress].reserveFactor);
     }
 
     /// @notice Creates a new market to borrow/supply in.
@@ -273,7 +279,7 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
         isCreated_ = isCreated[_poolTokenAddress];
         noP2P_ = noP2P[_poolTokenAddress];
         (isPaused_, isPartiallyPaused_) = positionsManager.pauseStatuses(_poolTokenAddress);
-        reserveFactor_ = reserveFactor[_poolTokenAddress];
+        reserveFactor_ = marketParameters[_poolTokenAddress].reserveFactor;
     }
 
     /// @notice Returns the updated P2P indexes.
@@ -292,6 +298,7 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
         } else {
             ICToken poolToken = ICToken(_poolTokenAddress);
             LastPoolIndexes storage poolIndexes = lastPoolIndexes[_poolTokenAddress];
+            MarketParameters storage marketParams = marketParameters[_poolTokenAddress];
 
             Types.Params memory params = Types.Params(
                 p2pSupplyIndex[_poolTokenAddress],
@@ -300,8 +307,8 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
                 poolToken.borrowIndex(),
                 poolIndexes.lastSupplyPoolIndex,
                 poolIndexes.lastBorrowPoolIndex,
-                reserveFactor[_poolTokenAddress],
-                p2pIndexCursor[_poolTokenAddress],
+                marketParams.reserveFactor,
+                marketParams.p2pIndexCursor,
                 positionsManager.deltas(_poolTokenAddress)
             );
 
@@ -318,6 +325,7 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
         else {
             ICToken poolToken = ICToken(_poolTokenAddress);
             LastPoolIndexes storage poolIndexes = lastPoolIndexes[_poolTokenAddress];
+            MarketParameters storage marketParams = marketParameters[_poolTokenAddress];
 
             Types.Params memory params = Types.Params(
                 p2pSupplyIndex[_poolTokenAddress],
@@ -326,8 +334,8 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
                 poolToken.borrowIndex(),
                 poolIndexes.lastSupplyPoolIndex,
                 poolIndexes.lastBorrowPoolIndex,
-                reserveFactor[_poolTokenAddress],
-                p2pIndexCursor[_poolTokenAddress],
+                marketParams.reserveFactor,
+                marketParams.p2pIndexCursor,
                 positionsManager.deltas(_poolTokenAddress)
             );
 
@@ -344,6 +352,7 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
         else {
             ICToken poolToken = ICToken(_poolTokenAddress);
             LastPoolIndexes storage poolIndexes = lastPoolIndexes[_poolTokenAddress];
+            MarketParameters storage marketParams = marketParameters[_poolTokenAddress];
 
             Types.Params memory params = Types.Params(
                 p2pSupplyIndex[_poolTokenAddress],
@@ -352,8 +361,8 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
                 poolToken.borrowIndex(),
                 poolIndexes.lastSupplyPoolIndex,
                 poolIndexes.lastBorrowPoolIndex,
-                reserveFactor[_poolTokenAddress],
-                p2pIndexCursor[_poolTokenAddress],
+                marketParams.reserveFactor,
+                marketParams.p2pIndexCursor,
                 positionsManager.deltas(_poolTokenAddress)
             );
 
@@ -363,11 +372,11 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
 
     /// @notice Sets a new peer-to-peer cursor.
     /// @param _p2pIndexCursor The new peer-to-peer cursor.
-    function setP2PIndexCursor(address _poolTokenAddress, uint256 _p2pIndexCursor)
+    function setP2PIndexCursor(address _poolTokenAddress, uint16 _p2pIndexCursor)
         external
         onlyOwner
     {
-        p2pIndexCursor[_poolTokenAddress] = CompoundMath.min(_p2pIndexCursor, MAX_BASIS_POINTS);
+        marketParameters[_poolTokenAddress].p2pIndexCursor = _p2pIndexCursor;
         emit P2PIndexCursorSet(_poolTokenAddress, _p2pIndexCursor);
     }
 
@@ -379,6 +388,7 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
         if (block.timestamp > lastPoolIndexes[_poolTokenAddress].lastUpdateBlockNumber) {
             ICToken poolToken = ICToken(_poolTokenAddress);
             LastPoolIndexes storage poolIndexes = lastPoolIndexes[_poolTokenAddress];
+            MarketParameters storage marketParams = marketParameters[_poolTokenAddress];
 
             uint256 poolSupplyIndex = poolToken.exchangeRateCurrent();
             uint256 poolBorrowIndex = poolToken.borrowIndex();
@@ -390,8 +400,8 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
                 poolBorrowIndex,
                 poolIndexes.lastSupplyPoolIndex,
                 poolIndexes.lastBorrowPoolIndex,
-                reserveFactor[_poolTokenAddress],
-                p2pIndexCursor[_poolTokenAddress],
+                marketParams.reserveFactor,
+                marketParams.p2pIndexCursor,
                 positionsManager.deltas(_poolTokenAddress)
             );
 

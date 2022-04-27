@@ -268,10 +268,11 @@ contract TestSetup is Config, Utils, stdCheats {
 
         uint256 poolSupplyBPY = cToken.supplyRatePerBlock();
         uint256 poolBorrowBPY = cToken.borrowRatePerBlock();
-        uint256 reserveFactor = marketsManager.reserveFactor(_poolTokenAddress);
+        (uint256 reserveFactor, uint256 p2pIndexCursor) = marketsManager.marketParameters(
+            _poolTokenAddress
+        );
 
         // rate = 2/3 * poolSupplyRate + 1/3 * poolBorrowRate.
-        uint256 p2pIndexCursor = marketsManager.p2pIndexCursor(_poolTokenAddress);
         uint256 rate = ((10_000 - p2pIndexCursor) *
             poolSupplyBPY +
             p2pIndexCursor *

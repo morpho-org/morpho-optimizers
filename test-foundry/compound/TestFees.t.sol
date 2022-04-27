@@ -13,7 +13,8 @@ contract TestFees is TestSetup {
 
     function testShouldNotBePossibleToSetFeesHigherThan100Percent() public {
         marketsManager.setReserveFactor(cUsdc, 10_001);
-        assertEq(marketsManager.reserveFactor(cUsdc), 10_000);
+        (uint16 reserveFactor, ) = marketsManager.marketParameters(cUsdc);
+        assertEq(reserveFactor, 10_000);
     }
 
     function testOnlyOwnerCanSetTreasuryVault() public {

@@ -55,7 +55,8 @@ contract TestMarketsManagerGetters is TestSetup {
         (bool isPaused_, bool isPartiallyPaused_) = positionsManager.pauseStatuses(cDai);
         assertTrue(isPaused == isPaused_);
         assertTrue(isPartiallyPaused == isPartiallyPaused_);
-        assertTrue(reserveFactor == marketsManager.reserveFactor(cDai));
+        (uint16 expectedReserveFactor, ) = marketsManager.marketParameters(cDai);
+        assertTrue(reserveFactor == expectedReserveFactor);
     }
 
     function testGetUpdatedP2PIndexes() public {

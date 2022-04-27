@@ -48,7 +48,8 @@ contract TestMarketsManager is TestSetup {
 
     function testReserveFactorShouldBeUpdatedWithRightValue() public {
         marketsManager.setReserveFactor(cDai, 1111);
-        assertEq(marketsManager.reserveFactor(cDai), 1111);
+        (uint16 reserveFactor, ) = marketsManager.marketParameters(cDai);
+        assertEq(reserveFactor, 1111);
     }
 
     function testPositionsManagerShouldBeSetOnlyOnce() public {
