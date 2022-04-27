@@ -128,10 +128,10 @@ contract User {
     }
 
     function togglePauseStatus(address _poolTokenAddress) external {
-        positionsManager.togglePauseStatus(_poolTokenAddress);
+        marketsManager.togglePauseStatus(_poolTokenAddress);
     }
 
     function togglePartialPauseStatus(address _poolTokenAddress) external {
-        positionsManager.togglePartialPauseStatus(_poolTokenAddress);
+        marketsManager.togglePartialPauseStatus(_poolTokenAddress);
     }
 }

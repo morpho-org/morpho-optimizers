@@ -104,16 +104,6 @@ abstract contract PositionsManagerEventsErrors is PositionsManagerGetters {
     /// @param _aaveIncentivesController The new address of the `aaveIncentivesController`.
     event CompoundIncentivesControllerSet(address _aaveIncentivesController);
 
-    /// @notice Emitted when a market is paused or unpaused.
-    /// @param _poolTokenAddress The address of the pool token concerned.
-    /// @param _newStatus The new pause status of the market.
-    event PauseStatusChanged(address indexed _poolTokenAddress, bool _newStatus);
-
-    /// @notice Emitted when a market is partially paused or unpaused.
-    /// @param _poolTokenAddress The address of the pool token concerned.
-    /// @param _newStatus The new partial pause status of the market.
-    event PartialPauseStatusChanged(address indexed _poolTokenAddress, bool _newStatus);
-
     /// @dev Emitted when a new `dustThreshold` is set.
     /// @param _dustThreshold The new `dustThreshold`.
     event DustThresholdSet(uint256 _dustThreshold);
@@ -145,15 +135,9 @@ abstract contract PositionsManagerEventsErrors is PositionsManagerGetters {
     /// @notice Thrown when only the markets manager can call the function.
     error OnlyMarketsManager();
 
-    /// @notice Thrown when the market is not created yet.
-    error MarketNotCreated();
-
     /// @notice Thrown when the amount is equal to 0.
     error AmountIsZero();
 
     /// @notice Thrown when the address is the zero address.
     error ZeroAddress();
-
-    /// @notice Thrown when the market is paused.
-    error MarketPaused();
 }

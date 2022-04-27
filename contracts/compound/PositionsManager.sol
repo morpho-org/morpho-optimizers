@@ -52,11 +52,8 @@ contract PositionsManager is PositionsManagerGovernance {
     /// @dev `msg.sender` must have approved Morpho's contract to spend the underlying `_amount`.
     /// @param _poolTokenAddress The address of the market the user wants to interact with.
     /// @param _amount The amount of token (in underlying) to supply.
-    function supply(address _poolTokenAddress, uint256 _amount)
-        external
-        nonReentrant
-        isMarketCreatedAndNotPausedOrPartiallyPaused(_poolTokenAddress)
-    {
+    function supply(address _poolTokenAddress, uint256 _amount) external nonReentrant {
+        marketsManager.isMarketCreatedAndNotPausedOrPartiallyPaused(_poolTokenAddress);
         if (_amount == 0) revert AmountIsZero();
         marketsManager.updateP2PIndexes(_poolTokenAddress);
 
@@ -82,7 +79,8 @@ contract PositionsManager is PositionsManagerGovernance {
         address _poolTokenAddress,
         uint256 _amount,
         uint256 _maxGasToConsume
-    ) external nonReentrant isMarketCreatedAndNotPausedOrPartiallyPaused(_poolTokenAddress) {
+    ) external nonReentrant {
+        marketsManager.isMarketCreatedAndNotPausedOrPartiallyPaused(_poolTokenAddress);
         if (_amount == 0) revert AmountIsZero();
         marketsManager.updateP2PIndexes(_poolTokenAddress);
 
@@ -107,11 +105,8 @@ contract PositionsManager is PositionsManagerGovernance {
     /// @notice Borrows underlying tokens in a specific market.
     /// @param _poolTokenAddress The address of the market the user wants to interact with.
     /// @param _amount The amount of token (in underlying).
-    function borrow(address _poolTokenAddress, uint256 _amount)
-        external
-        nonReentrant
-        isMarketCreatedAndNotPausedOrPartiallyPaused(_poolTokenAddress)
-    {
+    function borrow(address _poolTokenAddress, uint256 _amount) external nonReentrant {
+        marketsManager.isMarketCreatedAndNotPausedOrPartiallyPaused(_poolTokenAddress);
         if (_amount == 0) revert AmountIsZero();
         marketsManager.updateP2PIndexes(_poolTokenAddress);
 
@@ -136,7 +131,8 @@ contract PositionsManager is PositionsManagerGovernance {
         address _poolTokenAddress,
         uint256 _amount,
         uint256 _maxGasToConsume
-    ) external nonReentrant isMarketCreatedAndNotPausedOrPartiallyPaused(_poolTokenAddress) {
+    ) external nonReentrant {
+        marketsManager.isMarketCreatedAndNotPausedOrPartiallyPaused(_poolTokenAddress);
         if (_amount == 0) revert AmountIsZero();
         marketsManager.updateP2PIndexes(_poolTokenAddress);
 
@@ -161,11 +157,8 @@ contract PositionsManager is PositionsManagerGovernance {
     /// @notice Withdraws underlying tokens in a specific market.
     /// @param _poolTokenAddress The address of the market the user wants to interact with.
     /// @param _amount The amount of tokens (in underlying) to withdraw from supply.
-    function withdraw(address _poolTokenAddress, uint256 _amount)
-        external
-        nonReentrant
-        isMarketCreatedAndNotPaused(_poolTokenAddress)
-    {
+    function withdraw(address _poolTokenAddress, uint256 _amount) external nonReentrant {
+        marketsManager.isMarketCreatedAndNotPaused(_poolTokenAddress);
         if (_amount == 0) revert AmountIsZero();
         marketsManager.updateP2PIndexes(_poolTokenAddress);
 
@@ -199,11 +192,8 @@ contract PositionsManager is PositionsManagerGovernance {
     /// @dev `msg.sender` must have approved Morpho's contract to spend the underlying `_amount`.
     /// @param _poolTokenAddress The address of the market the user wants to interact with.
     /// @param _amount The amount of token (in underlying) to repay from borrow.
-    function repay(address _poolTokenAddress, uint256 _amount)
-        external
-        nonReentrant
-        isMarketCreatedAndNotPaused(_poolTokenAddress)
-    {
+    function repay(address _poolTokenAddress, uint256 _amount) external nonReentrant {
+        marketsManager.isMarketCreatedAndNotPaused(_poolTokenAddress);
         if (_amount == 0) revert AmountIsZero();
         marketsManager.updateP2PIndexes(_poolTokenAddress);
 
@@ -241,12 +231,9 @@ contract PositionsManager is PositionsManagerGovernance {
         address _poolTokenCollateralAddress,
         address _borrower,
         uint256 _amount
-    )
-        external
-        nonReentrant
-        isMarketCreatedAndNotPaused(_poolTokenBorrowedAddress)
-        isMarketCreatedAndNotPaused(_poolTokenCollateralAddress)
-    {
+    ) external nonReentrant {
+        marketsManager.isMarketCreatedAndNotPaused(_poolTokenBorrowedAddress);
+        marketsManager.isMarketCreatedAndNotPaused(_poolTokenCollateralAddress);
         if (_amount == 0) revert AmountIsZero();
         marketsManager.updateP2PIndexes(_poolTokenBorrowedAddress);
         marketsManager.updateP2PIndexes(_poolTokenCollateralAddress);

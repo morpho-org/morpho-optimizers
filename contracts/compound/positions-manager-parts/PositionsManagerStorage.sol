@@ -69,11 +69,6 @@ abstract contract PositionsManagerStorage is OwnableUpgradeable, ReentrancyGuard
         uint256 amountToSeize;
     }
 
-    struct PauseStatuses {
-        bool isPaused; // Whether the market is paused or not (all entry points on Morpho are frozen; supply, borrow, withdraw, repay and liquidate).
-        bool isPartiallyPaused; // Whether the market is partially paused or not (only supply and borrow are frozen).
-    }
-
     /// STORAGE ///
 
     uint8 public constant CTOKEN_DECIMALS = 8; // The number of decimals for cToken.
@@ -92,7 +87,6 @@ abstract contract PositionsManagerStorage is OwnableUpgradeable, ReentrancyGuard
     mapping(address => mapping(address => BorrowBalance)) public borrowBalanceInOf; // For a given market, the borrow balance of a user.
     mapping(address => mapping(address => bool)) public userMembership; // Whether the user is in the market or not.
     mapping(address => address[]) public enteredMarkets; // The markets entered by a user.
-    mapping(address => PauseStatuses) public pauseStatuses; // Whether a market is paused or partially paused or not.
     mapping(address => Types.Delta) public deltas; // Delta parameters for each market.
 
     IComptroller public comptroller;
