@@ -165,7 +165,7 @@ contract Logic is ILogic, MatchingEngine {
 
         /// Supply on pool ///
 
-        if (remainingToSupply != 0) {
+        if (remainingToSupply > 0) {
             supplyBalanceInOf[_poolTokenAddress][msg.sender].onPool += remainingToSupply.div(
                 ICToken(_poolTokenAddress).exchangeRateCurrent()
             ); // In scaled balance.
@@ -231,7 +231,7 @@ contract Logic is ILogic, MatchingEngine {
             }
         }
 
-        if (_isAboveCompoundThreshold(toWithdraw, underlyingToken.decimals())) {
+        if (_isAboveCompoundThreshold(toWithdraw, poolSupplyIndex)) {
             uint256 toAddInP2P = toWithdraw.div(
                 marketsManager.borrowP2PExchangeRate(_poolTokenAddress)
             ); // In p2pUnit.
@@ -286,20 +286,22 @@ contract Logic is ILogic, MatchingEngine {
                 vars.remainingToWithdraw,
                 vars.withdrawable
             );
-            vars.remainingToWithdraw -= vars.toWithdraw;
 
-            supplyBalanceInOf[_poolTokenAddress][_supplier].onPool -= CompoundMath.min(
-                onPoolSupply,
-                vars.toWithdraw.div(vars.supplyPoolIndex)
-            );
-            updateSuppliers(_poolTokenAddress, _supplier);
+            if (_isAboveCompoundThreshold(vars.toWithdraw, vars.supplyPoolIndex)) {
+                vars.remainingToWithdraw -= vars.toWithdraw;
 
-            if (vars.remainingToWithdraw == 0) {
-                if (_isAboveCompoundThreshold(vars.toWithdraw, underlyingToken.decimals()))
+                supplyBalanceInOf[_poolTokenAddress][_supplier].onPool -= CompoundMath.min(
+                    onPoolSupply,
+                    vars.toWithdraw.div(vars.supplyPoolIndex)
+                );
+                updateSuppliers(_poolTokenAddress, _supplier);
+
+                if (vars.remainingToWithdraw == 0) {
                     _withdrawFromPool(_poolTokenAddress, vars.toWithdraw); // Reverts on error.
-                underlyingToken.safeTransfer(_receiver, _amount);
-                _leaveMarketIfNeeded(_poolTokenAddress, _supplier);
-                return;
+                    underlyingToken.safeTransfer(_receiver, _amount);
+                    _leaveMarketIfNeeded(_poolTokenAddress, _supplier);
+                    return;
+                }
             }
         }
 
@@ -308,7 +310,12 @@ contract Logic is ILogic, MatchingEngine {
 
         /// Transfer withdraw ///
 
-        if (vars.remainingToWithdraw > 0 && !marketsManager.noP2P(_poolTokenAddress)) {
+        if (
+            vars.remainingToWithdraw > 0 &&
+            !marketsManager.noP2P(_poolTokenAddress) &&
+            supplyBalanceInOf[_poolTokenAddress][_supplier].inP2P > 0
+            // Need to check that user is in P2P, because sometimes soft withdraw can be skipped because of threshold.
+        ) {
             supplyBalanceInOf[_poolTokenAddress][_supplier].inP2P -= CompoundMath.min(
                 supplyBalanceInOf[_poolTokenAddress][_supplier].inP2P,
                 vars.remainingToWithdraw.div(supplyP2PExchangeRate)
@@ -352,7 +359,9 @@ contract Logic is ILogic, MatchingEngine {
             }
         }
 
-        if (_isAboveCompoundThreshold(vars.toWithdraw, underlyingToken.decimals()))
+        // note: we suppose that in case of a transfer withdraw, the amount matched from waiting suppliers onPool won't only
+        // be dust otherwise the withdraw at the end will revert because there won't be enough tokens available on PositionsManager.
+        if (_isAboveCompoundThreshold(vars.toWithdraw, vars.supplyPoolIndex))
             _withdrawFromPool(_poolTokenAddress, vars.toWithdraw); // Reverts on error.
 
         /// Hard withdraw ///
@@ -502,7 +511,7 @@ contract Logic is ILogic, MatchingEngine {
 
         /// Hard repay ///
 
-        if (vars.remainingToRepay != 0) {
+        if (vars.remainingToRepay > 0) {
             uint256 unmatched = unmatchSuppliers(
                 _poolTokenAddress,
                 vars.remainingToRepay,
@@ -637,15 +646,14 @@ contract Logic is ILogic, MatchingEngine {
 
     /// @dev Returns whether it is possible to withdraw this amount on compound.
     /// @param _amount The amount of token considered for redeeming.
-    /// @param _rate Rate used to convert to cToken.
+    /// @param _index Index used to convert to cToken.
     /// @return Whether to continue or not.
-    function _isAboveCompoundThreshold(uint256 _amount, uint256 _rate)
+    function _isAboveCompoundThreshold(uint256 _amount, uint256 _index)
         internal
-        pure
+        view
         returns (bool)
     {
-        if (_amount.div(_rate) > 0) return true;
-        return false;
+        return (_amount.div(_index) > 0);
     }
 
     /// @dev Enters the user into the market if not already there.

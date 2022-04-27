@@ -9,6 +9,21 @@ import "./setup/TestSetup.sol";
 contract TestWithdraw is TestSetup {
     using CompoundMath for uint256;
 
+    function testWithdrawnOnPoolThreshold() public {
+        uint256 amountWithdrawn = 1e6;
+
+        supplier1.approve(dai, 1 ether);
+        supplier1.supply(cDai, 1 ether);
+
+        uint256 onCompBeforeWithdraw = ICToken(cDai).balanceOf(address(positionsManager));
+
+        supplier1.withdraw(cDai, amountWithdrawn);
+
+        uint256 onCompAfterWithdraw = ICToken(cDai).balanceOf(address(positionsManager));
+
+        assertEq(onCompAfterWithdraw, onCompBeforeWithdraw);
+    }
+
     function testWithdraw1() public {
         uint256 amount = 10000 ether;
         uint256 collateral = 2 * amount;

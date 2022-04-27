@@ -6,6 +6,16 @@ import "./setup/TestSetup.sol";
 contract TestSupply is TestSetup {
     using CompoundMath for uint256;
 
+    function testSupplyOnPoolThreshold() public {
+        uint256 amountSupplied = 1e9;
+
+        supplier1.approve(dai, amountSupplied);
+        supplier1.supply(cDai, amountSupplied);
+        (, uint256 onPool) = positionsManager.supplyBalanceInOf(cDai, address(supplier1));
+        assertEq(ICToken(cDai).balanceOf(address(positionsManager)), 4, "balance of cToken");
+        assertEq(ICToken(cDai).balanceOf(address(positionsManager)), onPool, "balance of cToken");
+    }
+
     function testSupply1() public {
         uint256 amount = 10000 ether;
 

@@ -7,6 +7,20 @@ import "@contracts/compound/positions-manager-parts/PositionsManagerEventsErrors
 contract TestBorrow is TestSetup {
     using CompoundMath for uint256;
 
+    function testBorrowOnPoolThreshold() public {
+        uint256 amountBorrowed = 1e9;
+
+        borrower1.approve(usdc, to6Decimals(1 ether));
+        borrower1.supply(cUsdc, to6Decimals(1 ether));
+
+        borrower1.borrow(cDai, amountBorrowed);
+        assertEq(
+            ICToken(cDai).borrowBalanceCurrent(address(positionsManager)),
+            1e9,
+            "borrow balance"
+        );
+    }
+
     function testBorrow1() public {
         uint256 usdcAmount = to6Decimals(10_000 ether);
 

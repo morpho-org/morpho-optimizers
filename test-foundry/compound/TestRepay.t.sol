@@ -6,6 +6,24 @@ import "./setup/TestSetup.sol";
 contract TestRepay is TestSetup {
     using CompoundMath for uint256;
 
+    function testRepayOnPoolThreshold() public {
+        uint256 amountRepaid = 1e9;
+
+        borrower1.approve(usdc, to6Decimals(2 ether));
+        borrower1.supply(cUsdc, to6Decimals(2 ether));
+
+        borrower1.borrow(cDai, 1 ether);
+
+        uint256 onCompBeforeRepay = ICToken(cDai).borrowBalanceCurrent(address(positionsManager));
+
+        borrower1.approve(dai, amountRepaid);
+        borrower1.repay(cDai, amountRepaid);
+
+        uint256 onCompAfterRepay = ICToken(cDai).borrowBalanceCurrent(address(positionsManager));
+
+        assertLt(onCompAfterRepay, onCompBeforeRepay);
+    }
+
     function testRepay1() public {
         uint256 amount = 10_000 ether;
         uint256 collateral = 2 * amount;
