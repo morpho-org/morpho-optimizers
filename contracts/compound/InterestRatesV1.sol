@@ -49,7 +49,7 @@ contract InterestRatesV1 is IInterestRates {
             _params.lastPoolSupplyIndex,
             _params.lastPoolBorrowIndex,
             _params.reserveFactor,
-            _params.p2pCursor
+            _params.p2pIndexCursor
         );
 
         RateParams memory supplyParams = RateParams({
@@ -105,7 +105,7 @@ contract InterestRatesV1 is IInterestRates {
             _params.lastPoolSupplyIndex,
             _params.lastPoolBorrowIndex,
             _params.reserveFactor,
-            _params.p2pCursor
+            _params.p2pIndexCursor
         );
 
         return _computeNewP2PRate(supplyParams, supplyP2PGrowthFactor, supplyPoolGrowthaFactor);
@@ -130,7 +130,7 @@ contract InterestRatesV1 is IInterestRates {
             _params.lastPoolSupplyIndex,
             _params.lastPoolBorrowIndex,
             _params.reserveFactor,
-            _params.p2pCursor
+            _params.p2pIndexCursor
         );
 
         return _computeNewP2PRate(borrowParams, borrowP2PGrowthFactor, poolBorrowGrowthFactor);
@@ -154,7 +154,7 @@ contract InterestRatesV1 is IInterestRates {
         uint256 _lastPoolSupplyIndex,
         uint256 _lastPoolBorrowIndex,
         uint256 _reserveFactor,
-        uint256 _p2pCursor
+        uint256 _p2pIndexCursor
     )
         internal
         pure
@@ -167,9 +167,9 @@ contract InterestRatesV1 is IInterestRates {
     {
         poolSupplyGrowthFactor_ = _poolSupplyIndex.div(_lastPoolSupplyIndex);
         poolBorrowGrowthFactor_ = _poolBorrowIndex.div(_lastPoolBorrowIndex);
-        uint256 p2pGrowthFactor = ((MAX_BASIS_POINTS - _p2pCursor) *
+        uint256 p2pGrowthFactor = ((MAX_BASIS_POINTS - _p2pIndexCursor) *
             poolSupplyGrowthFactor_ +
-            _p2pCursor *
+            _p2pIndexCursor *
             poolBorrowGrowthFactor_) / MAX_BASIS_POINTS;
         supplyP2PGrowthFactor_ =
             p2pGrowthFactor -
