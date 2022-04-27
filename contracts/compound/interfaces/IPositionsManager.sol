@@ -28,8 +28,6 @@ interface IPositionsManager {
 
     function deltas(address) external view returns (Types.Delta memory);
 
-    function pauseStatuses(address) external view returns (bool, bool);
-
     function cEth() external view returns (address);
 
     function comptroller() external view returns (address);

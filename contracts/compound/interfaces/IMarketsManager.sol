@@ -6,6 +6,8 @@ interface IMarketsManager {
 
     function noP2P(address _poolTokenAddress) external view returns (bool);
 
+    function pauseStatuses(address) external view returns (bool, bool);
+
     function p2pSupplyIndex(address _poolTokenAddress) external view returns (uint256);
 
     function p2pBorrowIndex(address _poolTokenAddress) external view returns (uint256);
@@ -20,4 +22,8 @@ interface IMarketsManager {
         external
         view
         returns (uint256, uint256);
+
+    function isMarketCreatedAndNotPaused(address _poolTokenAddress) external view;
+
+    function isMarketCreatedAndNotPausedOrPartiallyPaused(address _poolTokenAddress) external view;
 }
