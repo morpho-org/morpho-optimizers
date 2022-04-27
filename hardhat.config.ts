@@ -12,14 +12,7 @@ import 'hardhat-deploy';
 module.exports = {
   defaultNetwork: 'hardhat',
   networks: {
-    hardhat: {
-      forking: {
-        url: `https://${process.env.NETWORK}.g.alchemy.com/v2/${process.env.ALCHEMY_KEY}`,
-        blockNumber: 24032305,
-      },
-      allowUnlimitedContractSize: true,
-      blockGasLimit: 30000000,
-    },
+    hardhat: {},
     kovan: {
       accounts: [process.env.DEPLOYER_PRIVATE_KEY],
       // privateKey: "0x574028dad40752ed4448624f35ecb32821b0b0791652a34c10aa78053a08a730",
@@ -73,5 +66,8 @@ module.exports = {
   mocha: {
     // needed for the long test of Nmax
     timeout: 300000,
+  },
+  paths: {
+    tests: './test',
   },
 };
