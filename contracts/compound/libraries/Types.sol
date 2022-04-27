@@ -10,7 +10,7 @@ library Types {
         uint256 lastPoolSupplyIndex; // The pool borrow index at last update.
         uint256 lastPoolBorrowIndex; // The pool borrow index at last update.
         uint256 reserveFactor; // The reserve factor percentage (10 000 = 100%).
-        uint256 p2pCursor; // The reserve factor percentage (10 000 = 100%).
+        uint256 p2pIndexCursor; // The reserve factor percentage (10 000 = 100%).
         Delta delta; // The deltas and P2P amounts.
     }
 
