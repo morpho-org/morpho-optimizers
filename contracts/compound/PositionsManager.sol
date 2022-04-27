@@ -167,6 +167,7 @@ contract PositionsManager is PositionsManagerGovernance {
         isMarketCreatedAndNotPaused(_poolTokenAddress)
     {
         if (_amount == 0) revert AmountIsZero();
+        if (!userMembership[_poolTokenAddress][msg.sender]) revert UserNotMemberOfMarket();
         marketsManager.updateP2PIndexes(_poolTokenAddress);
 
         uint256 toWithdraw = Math.min(
@@ -205,6 +206,7 @@ contract PositionsManager is PositionsManagerGovernance {
         isMarketCreatedAndNotPaused(_poolTokenAddress)
     {
         if (_amount == 0) revert AmountIsZero();
+        if (!userMembership[_poolTokenAddress][msg.sender]) revert UserNotMemberOfMarket();
         marketsManager.updateP2PIndexes(_poolTokenAddress);
 
         uint256 toRepay = Math.min(
@@ -248,6 +250,10 @@ contract PositionsManager is PositionsManagerGovernance {
         isMarketCreatedAndNotPaused(_poolTokenCollateralAddress)
     {
         if (_amount == 0) revert AmountIsZero();
+        if (
+            !userMembership[_poolTokenBorrowedAddress][_borrower] ||
+            !userMembership[_poolTokenCollateralAddress][_borrower]
+        ) revert UserNotMemberOfMarket();
         marketsManager.updateP2PIndexes(_poolTokenBorrowedAddress);
         marketsManager.updateP2PIndexes(_poolTokenCollateralAddress);
 
