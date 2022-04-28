@@ -2,16 +2,16 @@
 pragma solidity 0.8.13;
 
 import "./interfaces/compound/ICompound.sol";
-import "./interfaces/IPositionsManager.sol";
-import "./interfaces/IMarketsManager.sol";
-import "./positions-manager-parts/PositionsManagerStorage.sol";
+import "./interfaces/IMorpho.sol";
+import "./interfaces/IInterestRates.sol";
+import "./morpho-parts/MorphoStorage.sol";
 
 import "./libraries/CompoundMath.sol";
 import "./libraries/Types.sol";
 
-/// @title MarketsManager.
-/// @notice Smart contract managing the markets used by a MorphoPositionsManager contract, an other contract interacting with Compound or a fork of Compound.
-contract MarketsManager is IMarketsManager, PositionsManagerStorage {
+/// @title InterestRates.
+/// @notice Smart contract managing the markets used by a MorphoMorpho contract, an other contract interacting with Compound or a fork of Compound.
+contract InterestRates is IInterestRates, MorphoStorage {
     using CompoundMath for uint256;
 
     /// STRUCTS ///

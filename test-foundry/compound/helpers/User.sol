@@ -3,22 +3,22 @@ pragma solidity 0.8.13;
 
 import "@contracts/compound/interfaces/IRewardsManager.sol";
 
-import "@contracts/compound/PositionsManager.sol";
-import "@contracts/compound/MarketsManager.sol";
+import "@contracts/compound/Morpho.sol";
+import "@contracts/compound/InterestRates.sol";
 
 contract User {
     using SafeTransferLib for ERC20;
 
-    PositionsManager internal positionsManager;
-    MarketsManager internal marketsManager;
+    Morpho internal morpho;
+    InterestRates internal interestRates;
     IRewardsManager internal rewardsManager;
     IComptroller internal comptroller;
 
-    constructor(PositionsManager _positionsManager) {
-        positionsManager = _positionsManager;
-        marketsManager = MarketsManager(address(_positionsManager.marketsManager()));
-        rewardsManager = _positionsManager.rewardsManager();
-        comptroller = positionsManager.comptroller();
+    constructor(Morpho _morpho) {
+        morpho = _morpho;
+        interestRates = InterestRates(address(_morpho.interestRates()));
+        rewardsManager = _morpho.rewardsManager();
+        comptroller = morpho.comptroller();
     }
 
     receive() external payable {}
@@ -42,7 +42,7 @@ contract User {
     }
 
     function approve(address _token, uint256 _amount) external {
-        ERC20(_token).safeApprove(address(positionsManager), _amount);
+        ERC20(_token).safeApprove(address(morpho), _amount);
     }
 
     function approve(
@@ -54,15 +54,15 @@ contract User {
     }
 
     function createMarket(address _underlyingTokenAddress) external {
-        positionsManager.createMarket(_underlyingTokenAddress);
+        morpho.createMarket(_underlyingTokenAddress);
     }
 
     function setReserveFactor(address _poolTokenAddress, uint16 _reserveFactor) external {
-        positionsManager.setReserveFactor(_poolTokenAddress, _reserveFactor);
+        morpho.setReserveFactor(_poolTokenAddress, _reserveFactor);
     }
 
     function supply(address _poolTokenAddress, uint256 _amount) external {
-        positionsManager.supply(_poolTokenAddress, _amount);
+        morpho.supply(_poolTokenAddress, _amount);
     }
 
     function supply(
@@ -70,15 +70,15 @@ contract User {
         uint256 _amount,
         uint256 _maxGasToConsume
     ) external {
-        positionsManager.supply(_poolTokenAddress, _amount, _maxGasToConsume);
+        morpho.supply(_poolTokenAddress, _amount, _maxGasToConsume);
     }
 
     function withdraw(address _poolTokenAddress, uint256 _amount) external {
-        positionsManager.withdraw(_poolTokenAddress, _amount);
+        morpho.withdraw(_poolTokenAddress, _amount);
     }
 
     function borrow(address _poolTokenAddress, uint256 _amount) external {
-        positionsManager.borrow(_poolTokenAddress, _amount);
+        morpho.borrow(_poolTokenAddress, _amount);
     }
 
     function borrow(
@@ -86,11 +86,11 @@ contract User {
         uint256 _amount,
         uint256 _maxGasToConsume
     ) external {
-        positionsManager.borrow(_poolTokenAddress, _amount, _maxGasToConsume);
+        morpho.borrow(_poolTokenAddress, _amount, _maxGasToConsume);
     }
 
     function repay(address _poolTokenAddress, uint256 _amount) external {
-        positionsManager.repay(_poolTokenAddress, _amount);
+        morpho.repay(_poolTokenAddress, _amount);
     }
 
     function liquidate(
@@ -99,7 +99,7 @@ contract User {
         address _borrower,
         uint256 _amount
     ) external {
-        positionsManager.liquidate(
+        morpho.liquidate(
             _poolTokenBorrowedAddress,
             _poolTokenCollateralAddress,
             _borrower,
@@ -108,32 +108,30 @@ contract User {
     }
 
     function setMaxSortedUsers(uint256 _newMaxSortedUsers) external {
-        positionsManager.setMaxSortedUsers(_newMaxSortedUsers);
+        morpho.setMaxSortedUsers(_newMaxSortedUsers);
     }
 
-    function setMaxGasForMatching(PositionsManager.MaxGasForMatching memory _maxGasForMatching)
-        external
-    {
-        positionsManager.setMaxGasForMatching(_maxGasForMatching);
+    function setMaxGasForMatching(Morpho.MaxGasForMatching memory _maxGasForMatching) external {
+        morpho.setMaxGasForMatching(_maxGasForMatching);
     }
 
     function claimRewards(address[] calldata _assets, bool _toSwap) external {
-        positionsManager.claimRewards(_assets, _toSwap);
+        morpho.claimRewards(_assets, _toSwap);
     }
 
     function setNoP2P(address _marketAddress, bool _noP2P) external {
-        positionsManager.setNoP2P(_marketAddress, _noP2P);
+        morpho.setNoP2P(_marketAddress, _noP2P);
     }
 
     function setTreasuryVault(address _newTreasuryVault) external {
-        positionsManager.setTreasuryVault(_newTreasuryVault);
+        morpho.setTreasuryVault(_newTreasuryVault);
     }
 
     function togglePauseStatus(address _poolTokenAddress) external {
-        positionsManager.togglePauseStatus(_poolTokenAddress);
+        morpho.togglePauseStatus(_poolTokenAddress);
     }
 
     function togglePartialPauseStatus(address _poolTokenAddress) external {
-        positionsManager.togglePartialPauseStatus(_poolTokenAddress);
+        morpho.togglePartialPauseStatus(_poolTokenAddress);
     }
 }

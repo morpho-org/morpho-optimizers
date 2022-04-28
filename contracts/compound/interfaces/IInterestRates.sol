@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-interface IMarketsManager {
+interface IInterestRates {
     function getUpdatedp2pSupplyIndex(address _poolTokenAddress) external view returns (uint256);
 
     function getUpdatedp2pBorrowIndex(address _poolTokenAddress) external view returns (uint256);

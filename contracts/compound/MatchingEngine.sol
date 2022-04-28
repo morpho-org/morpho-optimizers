@@ -4,11 +4,11 @@ pragma solidity 0.8.13;
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 
-import "./positions-manager-parts/PositionsManagerGetters.sol";
+import "./morpho-parts/MorphoGetters.sol";
 
 /// @title MatchingEngineManager.
 /// @notice Smart contract managing the matching engine.
-contract MatchingEngine is PositionsManagerGetters {
+contract MatchingEngine is MorphoGetters {
     using DoubleLinkedList for DoubleLinkedList.List;
     using CompoundMath for uint256;
 

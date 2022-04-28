@@ -3,23 +3,23 @@ pragma solidity 0.8.13;
 
 import "./setup/TestSetup.sol";
 
-contract TestMarketsManager is TestSetup {
+contract TestInterestRates is TestSetup {
     using CompoundMath for uint256;
 
     function testShoudDeployContractWithTheRightValues() public {
         assertEq(
-            positionsManager.p2pSupplyIndex(cDai),
+            morpho.p2pSupplyIndex(cDai),
             2 * 10**(16 + IERC20Metadata(ICToken(cDai).underlying()).decimals() - 8)
         );
         assertEq(
-            positionsManager.p2pBorrowIndex(cDai),
+            morpho.p2pBorrowIndex(cDai),
             2 * 10**(16 + IERC20Metadata(ICToken(cDai).underlying()).decimals() - 8)
         );
     }
 
     function testShouldRevertWhenCreatingMarketWithAnImproperMarket() public {
         hevm.expectRevert(abi.encodeWithSignature("MarketCreationFailedOnCompound()"));
-        positionsManager.createMarket(address(supplier1));
+        morpho.createMarket(address(supplier1));
     }
 
     function testOnlyOwnerCanCreateMarkets() public {
@@ -31,7 +31,7 @@ contract TestMarketsManager is TestSetup {
             borrower1.createMarket(pools[i]);
         }
 
-        positionsManager.createMarket(cAave);
+        morpho.createMarket(cAave);
     }
 
     function testOnlyOwnerCanSetReserveFactor() public {
@@ -43,39 +43,42 @@ contract TestMarketsManager is TestSetup {
             borrower1.setReserveFactor(cDai, 1111);
         }
 
-        positionsManager.setReserveFactor(cDai, 1111);
+        morpho.setReserveFactor(cDai, 1111);
     }
 
     function testReserveFactorShouldBeUpdatedWithRightValue() public {
-        positionsManager.setReserveFactor(cDai, 1111);
-        (uint16 reserveFactor, ) = positionsManager.marketParameters(cDai);
+        morpho.setReserveFactor(cDai, 1111);
+        (uint16 reserveFactor, ) = morpho.marketParameters(cDai);
         assertEq(reserveFactor, 1111);
     }
 
     function testShouldCreateMarketWithTheRightValues() public {
         ICToken cToken = ICToken(cAave);
-        positionsManager.createMarket(cAave);
+        morpho.createMarket(cAave);
 
-        (bool isCreated, , ) = positionsManager.marketStatuses(cAave);
+        (bool isCreated, , ) = morpho.marketStatuses(cAave);
 
         assertTrue(isCreated);
         assertEq(
-            positionsManager.p2pSupplyIndex(cAave),
+            morpho.p2pSupplyIndex(cAave),
             2 * 10**(16 + IERC20Metadata(cToken.underlying()).decimals() - 8)
         );
         assertEq(
-            positionsManager.p2pBorrowIndex(cAave),
+            morpho.p2pBorrowIndex(cAave),
             2 * 10**(16 + IERC20Metadata(cToken.underlying()).decimals() - 8)
         );
     }
 
     function testShouldSetmaxGasWithRightValues() public {
-        PositionsManagerStorage.MaxGasForMatching memory newMaxGas = PositionsManagerStorage
-        .MaxGasForMatching({supply: 1, borrow: 1, withdraw: 1, repay: 1});
+        MorphoStorage.MaxGasForMatching memory newMaxGas = MorphoStorage.MaxGasForMatching({
+            supply: 1,
+            borrow: 1,
+            withdraw: 1,
+            repay: 1
+        });
 
-        positionsManager.setMaxGasForMatching(newMaxGas);
-        (uint64 supply, uint64 borrow, uint64 withdraw, uint64 repay) = positionsManager
-        .maxGasForMatching();
+        morpho.setMaxGasForMatching(newMaxGas);
+        (uint64 supply, uint64 borrow, uint64 withdraw, uint64 repay) = morpho.maxGasForMatching();
         assertEq(supply, newMaxGas.supply);
         assertEq(borrow, newMaxGas.borrow);
         assertEq(withdraw, newMaxGas.withdraw);
@@ -91,8 +94,8 @@ contract TestMarketsManager is TestSetup {
     function testOnlyOwnerCanSetMaxSortedUsers() public {
         uint256 newMaxSortedUsers = 30;
 
-        positionsManager.setMaxSortedUsers(newMaxSortedUsers);
-        assertEq(positionsManager.maxSortedUsers(), newMaxSortedUsers);
+        morpho.setMaxSortedUsers(newMaxSortedUsers);
+        assertEq(morpho.maxSortedUsers(), newMaxSortedUsers);
 
         hevm.expectRevert("Ownable: caller is not the owner");
         supplier1.setMaxSortedUsers(newMaxSortedUsers);
@@ -108,7 +111,7 @@ contract TestMarketsManager is TestSetup {
         hevm.expectRevert("Ownable: caller is not the owner");
         supplier2.setNoP2P(cDai, true);
 
-        positionsManager.setNoP2P(cDai, true);
-        assertTrue(positionsManager.noP2P(cDai));
+        morpho.setNoP2P(cDai, true);
+        assertTrue(morpho.noP2P(cDai));
     }
 }

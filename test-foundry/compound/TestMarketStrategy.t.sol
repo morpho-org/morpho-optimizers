@@ -9,7 +9,7 @@ contract TestMarketStrategy is TestSetup {
         uint256 toBorrow = 500 ether;
 
         // Flip strategy
-        positionsManager.setNoP2P(cDai, true);
+        morpho.setNoP2P(cDai, true);
 
         borrower1.approve(usdc, to6Decimals(amount));
         borrower1.supply(cUsdc, to6Decimals(amount));
@@ -20,11 +20,11 @@ contract TestMarketStrategy is TestSetup {
         supplier1.supply(cDai, toBorrow);
 
         // supplier1 and borrower1 should not be in P2P
-        (uint256 borrowInP2P, uint256 borrowOnPool) = positionsManager.borrowBalanceInOf(
+        (uint256 borrowInP2P, uint256 borrowOnPool) = morpho.borrowBalanceInOf(
             cDai,
             address(borrower1)
         );
-        (uint256 supplyInP2P, uint256 supplyOnPool) = positionsManager.supplyBalanceInOf(
+        (uint256 supplyInP2P, uint256 supplyOnPool) = morpho.supplyBalanceInOf(
             cDai,
             address(supplier1)
         );
@@ -40,7 +40,7 @@ contract TestMarketStrategy is TestSetup {
         uint256 toBorrow = 500 ether;
 
         // Flip strategy
-        positionsManager.setNoP2P(cDai, true);
+        morpho.setNoP2P(cDai, true);
 
         supplier1.approve(dai, toBorrow);
         supplier1.supply(cDai, toBorrow);
@@ -51,11 +51,11 @@ contract TestMarketStrategy is TestSetup {
         borrower1.borrow(cDai, toBorrow);
 
         // supplier1 and borrower1 should not be in P2P
-        (uint256 borrowInP2P, uint256 borrowOnPool) = positionsManager.borrowBalanceInOf(
+        (uint256 borrowInP2P, uint256 borrowOnPool) = morpho.borrowBalanceInOf(
             cDai,
             address(borrower1)
         );
-        (uint256 supplyInP2P, uint256 supplyOnPool) = positionsManager.supplyBalanceInOf(
+        (uint256 supplyInP2P, uint256 supplyOnPool) = morpho.supplyBalanceInOf(
             cDai,
             address(supplier1)
         );
@@ -71,7 +71,7 @@ contract TestMarketStrategy is TestSetup {
         uint256 toBorrow = 100 ether;
 
         // Flip strategy
-        positionsManager.setNoP2P(cDai, true);
+        morpho.setNoP2P(cDai, true);
 
         for (uint256 i = 0; i < 3; i++) {
             borrowers[i].approve(usdc, to6Decimals(amount));
@@ -86,15 +86,12 @@ contract TestMarketStrategy is TestSetup {
         uint256 borrowOnPool;
 
         for (uint256 i = 0; i < 3; i++) {
-            (borrowInP2P, borrowOnPool) = positionsManager.borrowBalanceInOf(
-                cDai,
-                address(borrowers[i])
-            );
+            (borrowInP2P, borrowOnPool) = morpho.borrowBalanceInOf(cDai, address(borrowers[i]));
             assertEq(borrowInP2P, 0);
             assertGt(borrowOnPool, 0);
         }
 
-        (uint256 supplyInP2P, uint256 supplyOnPool) = positionsManager.supplyBalanceInOf(
+        (uint256 supplyInP2P, uint256 supplyOnPool) = morpho.supplyBalanceInOf(
             cDai,
             address(supplier1)
         );
@@ -109,7 +106,7 @@ contract TestMarketStrategy is TestSetup {
         uint256 toSupply = 100 ether;
 
         // Flip strategy
-        positionsManager.setNoP2P(cDai, true);
+        morpho.setNoP2P(cDai, true);
 
         for (uint256 i = 0; i < 3; i++) {
             suppliers[i].approve(dai, toSupply);
@@ -125,15 +122,12 @@ contract TestMarketStrategy is TestSetup {
         uint256 supplyOnPool;
 
         for (uint256 i = 0; i < 3; i++) {
-            (supplyInP2P, supplyOnPool) = positionsManager.supplyBalanceInOf(
-                cDai,
-                address(suppliers[i])
-            );
+            (supplyInP2P, supplyOnPool) = morpho.supplyBalanceInOf(cDai, address(suppliers[i]));
             assertEq(supplyInP2P, 0);
             assertGt(supplyOnPool, 0);
         }
 
-        (uint256 borrowInP2P, uint256 borrowOnPool) = positionsManager.borrowBalanceInOf(
+        (uint256 borrowInP2P, uint256 borrowOnPool) = morpho.borrowBalanceInOf(
             cDai,
             address(borrower1)
         );

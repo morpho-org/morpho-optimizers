@@ -2,7 +2,7 @@
 pragma solidity 0.8.13;
 
 import "../interfaces/compound/ICompound.sol";
-import "../interfaces/IPositionsManager.sol";
+import "../interfaces/IMorpho.sol";
 import "../interfaces/IRewardsManager.sol";
 
 import "../libraries/CompoundMath.sol";
@@ -24,13 +24,13 @@ contract RewardsManager is IRewardsManager, Ownable {
     mapping(address => IComptroller.CompMarketState) public localCompSupplyState; // The local supply state for a specific cToken.
     mapping(address => IComptroller.CompMarketState) public localCompBorrowState; // The local borrow state for a specific cToken.
 
-    IPositionsManager public immutable positionsManager;
+    IMorpho public immutable morpho;
     IComptroller public immutable comptroller;
 
     /// ERRORS ///
 
     /// @notice Thrown when only the positions manager can call the function.
-    error OnlyPositionsManager();
+    error OnlyMorpho();
 
     /// @notice Thrown when an invalid cToken address is passed to accrue rewards.
     error InvalidCToken();
@@ -38,30 +38,30 @@ contract RewardsManager is IRewardsManager, Ownable {
     /// MODIFIERS ///
 
     /// @notice Prevents a user to call function allowed for the positions manager only.
-    modifier onlyPositionsManager() {
-        if (msg.sender != address(positionsManager)) revert OnlyPositionsManager();
+    modifier onlyMorpho() {
+        if (msg.sender != address(morpho)) revert OnlyMorpho();
         _;
     }
 
     /// CONSTRUCTOR ///
 
     /// @notice Constructs the RewardsManager contract.
-    /// @param _positionsManager The `positionsManager`.
-    constructor(address _positionsManager) {
-        positionsManager = IPositionsManager(_positionsManager);
-        comptroller = IComptroller(positionsManager.comptroller());
+    /// @param _morpho The `morpho`.
+    constructor(address _morpho) {
+        morpho = IMorpho(_morpho);
+        comptroller = IComptroller(morpho.comptroller());
     }
 
     /// EXTERNAL ///
 
     /// @notice Accrues unclaimed COMP rewards for the given cToken addresses and returns the total COMP unclaimed rewards.
-    /// @dev This function is called by the `positionsManager` to accrue COMP rewards and reset them to 0.
-    /// @dev The transfer of tokens is done in the `positionsManager`.
+    /// @dev This function is called by the `morpho` to accrue COMP rewards and reset them to 0.
+    /// @dev The transfer of tokens is done in the `morpho`.
     /// @param _cTokenAddresses The cToken addresses for which to claim rewards.
     /// @param _user The address of the user.
     function claimRewards(address[] calldata _cTokenAddresses, address _user)
         external
-        onlyPositionsManager
+        onlyMorpho
         returns (uint256 totalUnclaimedRewards)
     {
         totalUnclaimedRewards = accrueUserUnclaimedRewards(_cTokenAddresses, _user);
@@ -76,7 +76,7 @@ contract RewardsManager is IRewardsManager, Ownable {
         address _user,
         address _cTokenAddress,
         uint256 _userBalance
-    ) external onlyPositionsManager {
+    ) external onlyMorpho {
         _updateSupplyIndex(_cTokenAddress);
         userUnclaimedCompRewards[_user] += _accrueSupplierComp(_user, _cTokenAddress, _userBalance);
     }
@@ -89,7 +89,7 @@ contract RewardsManager is IRewardsManager, Ownable {
         address _user,
         address _cTokenAddress,
         uint256 _userBalance
-    ) external onlyPositionsManager {
+    ) external onlyMorpho {
         _updateBorrowIndex(_cTokenAddress);
         userUnclaimedCompRewards[_user] += _accrueBorrowerComp(_user, _cTokenAddress, _userBalance);
     }
@@ -113,12 +113,12 @@ contract RewardsManager is IRewardsManager, Ownable {
             unclaimedRewards += getAccruedSupplierComp(
                 _user,
                 cTokenAddress,
-                positionsManager.supplyBalanceInOf(cTokenAddress, _user).onPool
+                morpho.supplyBalanceInOf(cTokenAddress, _user).onPool
             );
             unclaimedRewards += getAccruedBorrowerComp(
                 _user,
                 cTokenAddress,
-                positionsManager.borrowBalanceInOf(cTokenAddress, _user).onPool
+                morpho.borrowBalanceInOf(cTokenAddress, _user).onPool
             );
         }
     }
@@ -169,14 +169,14 @@ contract RewardsManager is IRewardsManager, Ownable {
             unclaimedRewards += _accrueSupplierComp(
                 _user,
                 cTokenAddress,
-                positionsManager.supplyBalanceInOf(cTokenAddress, _user).onPool
+                morpho.supplyBalanceInOf(cTokenAddress, _user).onPool
             );
 
             _updateBorrowIndex(cTokenAddress);
             unclaimedRewards += _accrueBorrowerComp(
                 _user,
                 cTokenAddress,
-                positionsManager.borrowBalanceInOf(cTokenAddress, _user).onPool
+                morpho.borrowBalanceInOf(cTokenAddress, _user).onPool
             );
         }
 

@@ -15,16 +15,9 @@ contract TestSupply is TestSetup {
         uint256 supplyPoolIndex = ICToken(cDai).exchangeRateCurrent();
         uint256 expectedOnPool = amount.div(supplyPoolIndex);
 
-        assertEq(
-            IERC20(cDai).balanceOf(address(positionsManager)),
-            expectedOnPool,
-            "balance of cToken"
-        );
+        assertEq(IERC20(cDai).balanceOf(address(morpho)), expectedOnPool, "balance of cToken");
 
-        (uint256 inP2P, uint256 onPool) = positionsManager.supplyBalanceInOf(
-            cDai,
-            address(supplier1)
-        );
+        (uint256 inP2P, uint256 onPool) = morpho.supplyBalanceInOf(cDai, address(supplier1));
 
         assertEq(onPool, expectedOnPool, "on pool");
         assertEq(inP2P, 0, "in P2P");
@@ -40,21 +33,21 @@ contract TestSupply is TestSetup {
         uint256 daiBalanceBefore = supplier1.balanceOf(dai);
         uint256 expectedDaiBalanceAfter = daiBalanceBefore - amount;
 
-        supplier1.approve(dai, address(positionsManager), amount);
+        supplier1.approve(dai, address(morpho), amount);
         supplier1.supply(cDai, amount);
 
         uint256 daiBalanceAfter = supplier1.balanceOf(dai);
         assertEq(daiBalanceAfter, expectedDaiBalanceAfter);
 
-        (uint256 p2pSupplyIndex, ) = positionsManager.getUpdatedP2PIndexes(cDai);
+        (uint256 p2pSupplyIndex, ) = morpho.getUpdatedP2PIndexes(cDai);
         uint256 expectedSupplyBalanceInP2P = amount.div(p2pSupplyIndex);
 
-        (uint256 inP2PSupplier, uint256 onPoolSupplier) = positionsManager.supplyBalanceInOf(
+        (uint256 inP2PSupplier, uint256 onPoolSupplier) = morpho.supplyBalanceInOf(
             cDai,
             address(supplier1)
         );
 
-        (uint256 inP2PBorrower, uint256 onPoolBorrower) = positionsManager.borrowBalanceInOf(
+        (uint256 inP2PBorrower, uint256 onPoolBorrower) = morpho.borrowBalanceInOf(
             cDai,
             address(borrower1)
         );
@@ -76,20 +69,20 @@ contract TestSupply is TestSetup {
         supplier1.approve(dai, 2 * amount);
         supplier1.supply(cDai, 2 * amount);
 
-        (uint256 p2pSupplyIndex, ) = positionsManager.getUpdatedP2PIndexes(cDai);
+        (uint256 p2pSupplyIndex, ) = morpho.getUpdatedP2PIndexes(cDai);
         uint256 expectedSupplyBalanceInP2P = amount.div(p2pSupplyIndex);
 
         uint256 supplyPoolIndex = ICToken(cDai).exchangeRateCurrent();
         uint256 expectedSupplyBalanceOnPool = amount.div(supplyPoolIndex);
 
-        (uint256 inP2PSupplier, uint256 onPoolSupplier) = positionsManager.supplyBalanceInOf(
+        (uint256 inP2PSupplier, uint256 onPoolSupplier) = morpho.supplyBalanceInOf(
             cDai,
             address(supplier1)
         );
         assertEq(onPoolSupplier, expectedSupplyBalanceOnPool, "on pool supplier");
         assertEq(inP2PSupplier, expectedSupplyBalanceInP2P, "in P2P supplier");
 
-        (uint256 inP2PBorrower, uint256 onPoolBorrower) = positionsManager.borrowBalanceInOf(
+        (uint256 inP2PBorrower, uint256 onPoolBorrower) = morpho.borrowBalanceInOf(
             cDai,
             address(borrower1)
         );
@@ -126,18 +119,18 @@ contract TestSupply is TestSetup {
         uint256 inP2P;
         uint256 onPool;
         uint256 expectedInP2P;
-        uint256 p2pSupplyIndex = positionsManager.p2pSupplyIndex(cDai);
+        uint256 p2pSupplyIndex = morpho.p2pSupplyIndex(cDai);
 
         for (uint256 i = 0; i < NMAX; i++) {
-            (inP2P, onPool) = positionsManager.borrowBalanceInOf(cDai, address(borrowers[i]));
+            (inP2P, onPool) = morpho.borrowBalanceInOf(cDai, address(borrowers[i]));
 
-            expectedInP2P = amountPerBorrower.div(positionsManager.p2pBorrowIndex(cDai));
+            expectedInP2P = amountPerBorrower.div(morpho.p2pBorrowIndex(cDai));
 
             assertEq(inP2P, expectedInP2P, "amount per borrower");
             assertEq(onPool, 0, "on pool per borrower");
         }
 
-        (inP2P, onPool) = positionsManager.supplyBalanceInOf(cDai, address(supplier1));
+        (inP2P, onPool) = morpho.supplyBalanceInOf(cDai, address(supplier1));
         expectedInP2P = amount.div(p2pSupplyIndex);
 
         assertEq(inP2P, expectedInP2P, "in P2P");
@@ -173,19 +166,19 @@ contract TestSupply is TestSetup {
         uint256 inP2P;
         uint256 onPool;
         uint256 expectedInP2P;
-        uint256 p2pSupplyIndex = positionsManager.p2pSupplyIndex(cDai);
+        uint256 p2pSupplyIndex = morpho.p2pSupplyIndex(cDai);
         uint256 supplyPoolIndex = ICToken(cDai).exchangeRateCurrent();
 
         for (uint256 i = 0; i < NMAX; i++) {
-            (inP2P, onPool) = positionsManager.borrowBalanceInOf(cDai, address(borrowers[i]));
+            (inP2P, onPool) = morpho.borrowBalanceInOf(cDai, address(borrowers[i]));
 
-            expectedInP2P = amountPerBorrower.div(positionsManager.p2pBorrowIndex(cDai));
+            expectedInP2P = amountPerBorrower.div(morpho.p2pBorrowIndex(cDai));
 
             assertEq(inP2P, expectedInP2P, "borrower in P2P");
             assertEq(onPool, 0, "borrower on pool");
         }
 
-        (inP2P, onPool) = positionsManager.supplyBalanceInOf(cDai, address(supplier1));
+        (inP2P, onPool) = morpho.supplyBalanceInOf(cDai, address(supplier1));
 
         expectedInP2P = (amount / 2).div(p2pSupplyIndex);
         uint256 expectedOnPool = (amount / 2).div(supplyPoolIndex);
@@ -205,12 +198,12 @@ contract TestSupply is TestSetup {
         uint256 supplyPoolIndex = ICToken(cDai).exchangeRateCurrent();
         uint256 expectedOnPool = (2 * amount).div(supplyPoolIndex);
 
-        (, uint256 onPool) = positionsManager.supplyBalanceInOf(cDai, address(supplier1));
+        (, uint256 onPool) = morpho.supplyBalanceInOf(cDai, address(supplier1));
         assertEq(onPool, expectedOnPool);
     }
 
     function testFailSupplyZero() public {
-        positionsManager.supply(cDai, 0, type(uint256).max);
+        morpho.supply(cDai, 0, type(uint256).max);
     }
 
     function testSupplyRepayOnBehalf() public {
@@ -219,10 +212,10 @@ contract TestSupply is TestSetup {
         borrower1.supply(cUsdc, to6Decimals(2 * amount));
         borrower1.borrow(cDai, amount);
 
-        // Someone repays on behalf of the positionsManager.
+        // Someone repays on behalf of the morpho.
         supplier2.approve(dai, cDai, amount);
         hevm.prank(address(supplier2));
-        ICToken(cDai).repayBorrowBehalf(address(positionsManager), amount);
+        ICToken(cDai).repayBorrowBehalf(address(morpho), amount);
         hevm.stopPrank();
 
         // Supplier supplies in P2P. Not supposed to revert.

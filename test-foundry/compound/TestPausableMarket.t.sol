@@ -10,8 +10,8 @@ contract TestPausableMarket is TestSetup {
         hevm.expectRevert("Ownable: caller is not the owner");
         supplier1.togglePauseStatus(dai);
 
-        positionsManager.togglePauseStatus(dai);
-        (, bool isPaused, ) = positionsManager.marketStatuses(dai);
+        morpho.togglePauseStatus(dai);
+        (, bool isPaused, ) = morpho.marketStatuses(dai);
         assertTrue(isPaused, "paused is false");
     }
 
@@ -19,28 +19,28 @@ contract TestPausableMarket is TestSetup {
         hevm.expectRevert("Ownable: caller is not the owner");
         supplier1.togglePartialPauseStatus(dai);
 
-        positionsManager.togglePartialPauseStatus(dai);
-        (, , bool isPartiallyPaused) = positionsManager.marketStatuses(dai);
+        morpho.togglePartialPauseStatus(dai);
+        (, , bool isPartiallyPaused) = morpho.marketStatuses(dai);
         assertTrue(isPartiallyPaused, "partial paused is false");
     }
 
     function testPauseUnpause() public {
-        positionsManager.togglePauseStatus(dai);
-        (, bool isPaused, ) = positionsManager.marketStatuses(dai);
+        morpho.togglePauseStatus(dai);
+        (, bool isPaused, ) = morpho.marketStatuses(dai);
         assertTrue(isPaused, "paused is false");
 
-        positionsManager.togglePauseStatus(dai);
-        (, isPaused, ) = positionsManager.marketStatuses(dai);
+        morpho.togglePauseStatus(dai);
+        (, isPaused, ) = morpho.marketStatuses(dai);
         assertFalse(isPaused, "paused is true");
     }
 
     function testPartialPausePartialUnpause() public {
-        positionsManager.togglePartialPauseStatus(dai);
-        (, , bool isPartiallyPaused) = positionsManager.marketStatuses(dai);
+        morpho.togglePartialPauseStatus(dai);
+        (, , bool isPartiallyPaused) = morpho.marketStatuses(dai);
         assertTrue(isPartiallyPaused, "partial paused is false");
 
-        positionsManager.togglePartialPauseStatus(dai);
-        (, , isPartiallyPaused) = positionsManager.marketStatuses(dai);
+        morpho.togglePartialPauseStatus(dai);
+        (, , isPartiallyPaused) = morpho.marketStatuses(dai);
         assertFalse(isPartiallyPaused, "partial paused is true");
     }
 
@@ -56,7 +56,7 @@ contract TestPausableMarket is TestSetup {
         supplier1.approve(usdc, toBorrow);
         supplier1.repay(cUsdc, type(uint256).max);
 
-        (, toBorrow) = positionsManager.getUserMaxCapacitiesForAsset(address(supplier1), cUsdc);
+        (, toBorrow) = morpho.getUserMaxCapacitiesForAsset(address(supplier1), cUsdc);
         supplier1.borrow(cUsdc, toBorrow - 10); // Here the max capacities is overestimated.
 
         // Change Oracle.
@@ -70,8 +70,8 @@ contract TestPausableMarket is TestSetup {
 
         supplier1.withdraw(cDai, 1 ether);
 
-        hevm.expectRevert(PositionsManagerEventsErrors.AmountIsZero.selector);
-        positionsManager.claimToTreasury(cDai, 1 ether);
+        hevm.expectRevert(MorphoEventsErrors.AmountIsZero.selector);
+        morpho.claimToTreasury(cDai, 1 ether);
     }
 
     function testShouldDisableMarketWhenPaused() public {
@@ -80,14 +80,11 @@ contract TestPausableMarket is TestSetup {
         supplier1.approve(dai, 2 * amount);
         supplier1.supply(cDai, amount);
 
-        (, uint256 toBorrow) = positionsManager.getUserMaxCapacitiesForAsset(
-            address(supplier1),
-            cUsdc
-        );
+        (, uint256 toBorrow) = morpho.getUserMaxCapacitiesForAsset(address(supplier1), cUsdc);
         supplier1.borrow(cUsdc, toBorrow);
 
-        positionsManager.togglePauseStatus(cDai);
-        positionsManager.togglePauseStatus(cUsdc);
+        morpho.togglePauseStatus(cDai);
+        morpho.togglePauseStatus(cUsdc);
 
         hevm.expectRevert(abi.encodeWithSignature("MarketPaused()"));
         supplier1.supply(cDai, amount);
@@ -113,7 +110,7 @@ contract TestPausableMarket is TestSetup {
         liquidator.liquidate(cUsdc, cDai, address(supplier1), toLiquidate);
 
         hevm.expectRevert(abi.encodeWithSignature("MarketPaused()"));
-        positionsManager.claimToTreasury(cDai, 1 ether);
+        morpho.claimToTreasury(cDai, 1 ether);
 
         // Functions on other markets should still be enabled.
         amount = 10 ether;
@@ -131,13 +128,13 @@ contract TestPausableMarket is TestSetup {
 
         toLiquidate = 1_000;
         liquidator.approve(usdt, toLiquidate);
-        hevm.expectRevert(Logic.DebtValueNotAboveMax.selector);
+        hevm.expectRevert(PositionsManager.DebtValueNotAboveMax.selector);
         liquidator.liquidate(cUsdt, cEth, address(supplier1), toLiquidate);
 
         supplier1.withdraw(cEth, 1 ether);
 
-        hevm.expectRevert(PositionsManagerEventsErrors.AmountIsZero.selector);
-        positionsManager.claimToTreasury(cEth, 1 ether);
+        hevm.expectRevert(MorphoEventsErrors.AmountIsZero.selector);
+        morpho.claimToTreasury(cEth, 1 ether);
     }
 
     function testShouldOnlyEnableRepayWithdrawLiquidateWhenPartiallyPaused() public {
@@ -146,14 +143,11 @@ contract TestPausableMarket is TestSetup {
         supplier1.approve(dai, 2 * amount);
         supplier1.supply(cDai, amount);
 
-        (, uint256 toBorrow) = positionsManager.getUserMaxCapacitiesForAsset(
-            address(supplier1),
-            cUsdc
-        );
+        (, uint256 toBorrow) = morpho.getUserMaxCapacitiesForAsset(address(supplier1), cUsdc);
         supplier1.borrow(cUsdc, toBorrow);
 
-        positionsManager.togglePartialPauseStatus(cDai);
-        positionsManager.togglePartialPauseStatus(cUsdc);
+        morpho.togglePartialPauseStatus(cDai);
+        morpho.togglePartialPauseStatus(cUsdc);
 
         hevm.expectRevert(abi.encodeWithSignature("MarketPaused()"));
         supplier1.supply(cDai, amount);
@@ -176,7 +170,7 @@ contract TestPausableMarket is TestSetup {
 
         // Does not revert because the market is paused.
         hevm.expectRevert(abi.encodeWithSignature("AmountIsZero()"));
-        positionsManager.claimToTreasury(cDai, 1 ether);
+        morpho.claimToTreasury(cDai, 1 ether);
 
         // Functions on other markets should still be enabled.
         amount = 10 ether;
@@ -194,12 +188,12 @@ contract TestPausableMarket is TestSetup {
 
         toLiquidate = 10_000;
         liquidator.approve(usdt, toLiquidate);
-        hevm.expectRevert(Logic.DebtValueNotAboveMax.selector);
+        hevm.expectRevert(PositionsManager.DebtValueNotAboveMax.selector);
         liquidator.liquidate(cUsdt, cEth, address(supplier1), toLiquidate);
 
         supplier1.withdraw(cEth, 1 ether);
 
-        hevm.expectRevert(PositionsManagerEventsErrors.AmountIsZero.selector);
-        positionsManager.claimToTreasury(cEth, 1 ether);
+        hevm.expectRevert(MorphoEventsErrors.AmountIsZero.selector);
+        morpho.claimToTreasury(cEth, 1 ether);
     }
 }
