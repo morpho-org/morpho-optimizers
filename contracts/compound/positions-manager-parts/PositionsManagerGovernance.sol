@@ -83,6 +83,15 @@ abstract contract PositionsManagerGovernance is PositionsManagerEventsErrors {
         return comptroller.enterMarkets(marketToEnter);
     }
 
+    /// @notice Sets whether to match people P2P or not.
+    /// @param _poolTokenAddress The address of the market.
+    /// @param _noP2P Whether to match people P2P or not.
+    function setNoP2P(address _poolTokenAddress, bool _noP2P) external onlyOwner {
+        marketsManager.isMarketCreated(_poolTokenAddress);
+        noP2P[_poolTokenAddress] = _noP2P;
+        emit NoP2PSet(_poolTokenAddress, _noP2P);
+    }
+
     /// @notice Transfers the protocol reserve fee to the DAO.
     /// @dev No more than 90% of the accumulated fees are claimable at once.
     /// @param _poolTokenAddress The address of the market on which we want to claim the reserve fee.

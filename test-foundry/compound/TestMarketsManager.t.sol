@@ -113,8 +113,8 @@ contract TestMarketsManager is TestSetup {
         hevm.expectRevert("Ownable: caller is not the owner");
         supplier2.setNoP2P(cDai, true);
 
-        marketsManager.setNoP2P(cDai, true);
-        assertTrue(marketsManager.noP2P(cDai));
+        positionsManager.setNoP2P(cDai, true);
+        assertTrue(positionsManager.noP2P(cDai));
     }
 
     function testOnlyOwnerShouldBeAbleToUpdateInterestRates() public {
