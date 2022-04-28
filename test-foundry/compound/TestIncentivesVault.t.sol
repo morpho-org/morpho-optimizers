@@ -100,7 +100,7 @@ contract TestIncentivesVault is DSTest, stdCheats {
 
     function testFailWhenContractNotActive() public {
         hevm.prank(positionsManager);
-        incentivesVault.convertCompToMorphoTokens(address(1), 0);
+        incentivesVault.switchCompToMorphoTokens(address(1), 0);
     }
 
     function testOnlyPositionsManagerShouldTriggerCompConvertFunction() public {
@@ -108,10 +108,10 @@ contract TestIncentivesVault is DSTest, stdCheats {
         incentivesVault.setMorphoDao(address(1));
 
         hevm.expectRevert(abi.encodeWithSignature("OnlyPositionsManager()"));
-        incentivesVault.convertCompToMorphoTokens(address(2), 0);
+        incentivesVault.switchCompToMorphoTokens(address(2), 0);
 
         hevm.prank(positionsManager);
-        incentivesVault.convertCompToMorphoTokens(address(2), 0);
+        incentivesVault.switchCompToMorphoTokens(address(2), 0);
     }
 
     function testShouldGiveTheRightAmountOfRewards() public {
@@ -127,7 +127,7 @@ contract TestIncentivesVault is DSTest, stdCheats {
         // O% bonus.
         uint256 balanceBefore = ERC20(morphoToken).balanceOf(address(2));
         hevm.prank(positionsManager);
-        incentivesVault.convertCompToMorphoTokens(address(2), amount);
+        incentivesVault.switchCompToMorphoTokens(address(2), amount);
         uint256 balanceAfter = ERC20(morphoToken).balanceOf(address(2));
         assertEq(balanceAfter - balanceBefore, 100);
 
@@ -135,7 +135,7 @@ contract TestIncentivesVault is DSTest, stdCheats {
         incentivesVault.setBonus(1_000);
         balanceBefore = ERC20(morphoToken).balanceOf(address(2));
         hevm.prank(positionsManager);
-        incentivesVault.convertCompToMorphoTokens(address(2), amount);
+        incentivesVault.switchCompToMorphoTokens(address(2), amount);
         balanceAfter = ERC20(morphoToken).balanceOf(address(2));
         assertEq(balanceAfter - balanceBefore, 110);
     }
