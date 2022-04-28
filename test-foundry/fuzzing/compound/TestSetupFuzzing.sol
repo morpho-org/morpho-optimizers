@@ -124,19 +124,19 @@ contract TestSetupFuzzing is Config, Utils, stdCheats {
         createMarket(cDai);
         createMarket(cUsdc);
         createMarket(cUsdt);
-        createMarket(cBat);
+        // createMarket(cBat);
         createMarket(cEth);
         createMarket(cAave);
         createMarket(cTusd);
         createMarket(cUni);
-        createMarket(cComp);
+        // createMarket(cComp);
         createMarket(cZrx);
         createMarket(cLink);
         createMarket(cMkr);
-        createMarket(cFei);
+        // createMarket(cFei);
         createMarket(cYfi);
-        createMarket(cUsdp);
-        createMarket(cSushi);
+        // createMarket(cUsdp);
+        // createMarket(cSushi);
         // createMarket(cWbtc); // Mint is paused on compound
 
         hevm.roll(block.number + 1);
