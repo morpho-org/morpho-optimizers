@@ -11,7 +11,7 @@ contract TestPausableMarket is TestSetup {
         supplier1.togglePauseStatus(dai);
 
         marketsManager.togglePauseStatus(dai);
-        (bool isPaused, ) = marketsManager.pauseStatuses(dai);
+        (, bool isPaused, ) = marketsManager.marketStatuses(dai);
         assertTrue(isPaused, "paused is false");
     }
 
@@ -20,27 +20,27 @@ contract TestPausableMarket is TestSetup {
         supplier1.togglePartialPauseStatus(dai);
 
         marketsManager.togglePartialPauseStatus(dai);
-        (, bool isPartiallyPaused) = marketsManager.pauseStatuses(dai);
+        (, , bool isPartiallyPaused) = marketsManager.marketStatuses(dai);
         assertTrue(isPartiallyPaused, "partial paused is false");
     }
 
     function testPauseUnpause() public {
         marketsManager.togglePauseStatus(dai);
-        (bool isPaused, ) = marketsManager.pauseStatuses(dai);
+        (, bool isPaused, ) = marketsManager.marketStatuses(dai);
         assertTrue(isPaused, "paused is false");
 
         marketsManager.togglePauseStatus(dai);
-        (isPaused, ) = marketsManager.pauseStatuses(dai);
+        (, isPaused, ) = marketsManager.marketStatuses(dai);
         assertFalse(isPaused, "paused is true");
     }
 
     function testPartialPausePartialUnpause() public {
         marketsManager.togglePartialPauseStatus(dai);
-        (, bool isPartiallyPaused) = marketsManager.pauseStatuses(dai);
+        (, , bool isPartiallyPaused) = marketsManager.marketStatuses(dai);
         assertTrue(isPartiallyPaused, "partial paused is false");
 
         marketsManager.togglePartialPauseStatus(dai);
-        (, isPartiallyPaused) = marketsManager.pauseStatuses(dai);
+        (, , isPartiallyPaused) = marketsManager.marketStatuses(dai);
         assertFalse(isPartiallyPaused, "partial paused is true");
     }
 

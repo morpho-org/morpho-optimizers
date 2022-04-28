@@ -61,7 +61,9 @@ contract TestMarketsManager is TestSetup {
         ICToken cToken = ICToken(cAave);
         marketsManager.createMarket(cAave);
 
-        assertTrue(marketsManager.isCreated(cAave));
+        (bool isCreated, , ) = marketsManager.marketStatuses(cAave);
+
+        assertTrue(isCreated);
         assertEq(
             marketsManager.p2pSupplyIndex(cAave),
             2 * 10**(16 + IERC20Metadata(cToken.underlying()).decimals() - 8)
