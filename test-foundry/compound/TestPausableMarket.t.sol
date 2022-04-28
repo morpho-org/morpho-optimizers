@@ -125,16 +125,11 @@ contract TestPausableMarket is TestSetup {
         supplier1.borrow(cUsdt, toBorrow);
 
         supplier1.approve(usdt, toBorrow);
-        supplier1.repay(cUsdt, toBorrow);
+        supplier1.repay(cUsdt, toBorrow / 2);
 
-        (, toBorrow) = positionsManager.getUserMaxCapacitiesForAsset(address(supplier1), cUsdt);
-        hevm.expectRevert(Logic.BorrowOnCompoundFailed.selector);
-        supplier1.borrow(cUsdt, toBorrow);
+        customOracle.setUnderlyingPrice(cEth, (oracle.getUnderlyingPrice(cEth) * 97) / 100);
 
-        // Change Oracle.
-        customOracle.setUnderlyingPrice(cEth, (oracle.getUnderlyingPrice(cEth) * 95) / 100);
-
-        toLiquidate = toBorrow / 3;
+        toLiquidate = 1_000;
         liquidator.approve(usdt, toLiquidate);
         hevm.expectRevert(Logic.DebtValueNotAboveMax.selector);
         liquidator.liquidate(cUsdt, cEth, address(supplier1), toLiquidate);
@@ -193,16 +188,11 @@ contract TestPausableMarket is TestSetup {
         supplier1.borrow(cUsdt, toBorrow);
 
         supplier1.approve(usdt, toBorrow);
-        supplier1.repay(cUsdt, toBorrow);
+        supplier1.repay(cUsdt, toBorrow / 2);
 
-        (, toBorrow) = positionsManager.getUserMaxCapacitiesForAsset(address(supplier1), cUsdt);
-        hevm.expectRevert(Logic.BorrowOnCompoundFailed.selector);
-        supplier1.borrow(cUsdt, toBorrow);
+        customOracle.setUnderlyingPrice(cEth, (oracle.getUnderlyingPrice(cEth) * 97) / 100);
 
-        // Change Oracle.
-        customOracle.setUnderlyingPrice(cEth, (oracle.getUnderlyingPrice(cEth) * 98) / 100);
-
-        toLiquidate = toBorrow / 3;
+        toLiquidate = 10_000;
         liquidator.approve(usdt, toLiquidate);
         hevm.expectRevert(Logic.DebtValueNotAboveMax.selector);
         liquidator.liquidate(cUsdt, cEth, address(supplier1), toLiquidate);
