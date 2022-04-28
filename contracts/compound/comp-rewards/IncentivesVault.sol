@@ -107,7 +107,7 @@ contract IncentivesVault is Ownable {
     /// @notice Converts COMP tokens to MORPHO tokens and sends them to the receiver.
     /// @param _receiver The address of the receiver.
     /// @param _amount The amount to transfer to the receiver.
-    function convertCompToMorphoTokens(address _receiver, uint256 _amount) external {
+    function switchCompToMorphoTokens(address _receiver, uint256 _amount) external {
         if (msg.sender != positionsManager) revert OnlyPositionsManager();
         if (!isActive) revert VaultNotActive();
 
