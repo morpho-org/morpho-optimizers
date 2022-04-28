@@ -171,6 +171,34 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
         emit ReserveFactorSet(_poolTokenAddress, marketParameters[_poolTokenAddress].reserveFactor);
     }
 
+    /// @notice Set a new peer-to-peer cursor.
+    /// @param _p2pIndexCursor The new peer-to-peer cursor.
+    function setP2PIndexCursor(address _poolTokenAddress, uint16 _p2pIndexCursor)
+        external
+        onlyOwner
+    {
+        marketParameters[_poolTokenAddress].p2pIndexCursor = _p2pIndexCursor;
+        emit P2PIndexCursorSet(_poolTokenAddress, _p2pIndexCursor);
+    }
+
+    /// @notice Toggles the pause status on a specific market in case of emergency.
+    /// @param _poolTokenAddress The address of the market to pause/unpause.
+    function togglePauseStatus(address _poolTokenAddress) external onlyOwner {
+        MarketStatuses storage marketStatuses_ = marketStatuses[_poolTokenAddress];
+        bool newPauseStatus = !marketStatuses_.isPaused;
+        marketStatuses_.isPaused = newPauseStatus;
+        emit PauseStatusChanged(_poolTokenAddress, newPauseStatus);
+    }
+
+    /// @notice Toggles the pause status on a specific market in case of emergency.
+    /// @param _poolTokenAddress The address of the market to partially pause/unpause.
+    function togglePartialPauseStatus(address _poolTokenAddress) external onlyOwner {
+        MarketStatuses storage marketStatuses_ = marketStatuses[_poolTokenAddress];
+        bool newPauseStatus = !marketStatuses_.isPartiallyPaused;
+        marketStatuses_.isPartiallyPaused = newPauseStatus;
+        emit PartialPauseStatusChanged(_poolTokenAddress, newPauseStatus);
+    }
+
     /// @notice Creates a new market to borrow/supply in.
     /// @param _poolTokenAddress The pool token address of the given market.
     function createMarket(address _poolTokenAddress) external onlyOwner {
@@ -353,16 +381,6 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
         }
     }
 
-    /// @notice Sets a new peer-to-peer cursor.
-    /// @param _p2pIndexCursor The new peer-to-peer cursor.
-    function setP2PIndexCursor(address _poolTokenAddress, uint16 _p2pIndexCursor)
-        external
-        onlyOwner
-    {
-        marketParameters[_poolTokenAddress].p2pIndexCursor = _p2pIndexCursor;
-        emit P2PIndexCursorSet(_poolTokenAddress, _p2pIndexCursor);
-    }
-
     /// @notice Prevents to update a market not created yet.
     /// @param _poolTokenAddress The address of the market to check.
     function isMarketCreated(address _poolTokenAddress) external view {
@@ -383,24 +401,6 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
         MarketStatuses memory marketStatuses_ = marketStatuses[_poolTokenAddress];
         if (!marketStatuses_.isCreated) revert MarketNotCreated();
         if (marketStatuses_.isPaused || marketStatuses_.isPartiallyPaused) revert MarketPaused();
-    }
-
-    /// @notice Toggles the pause status on a specific market in case of emergency.
-    /// @param _poolTokenAddress The address of the market to pause/unpause.
-    function togglePauseStatus(address _poolTokenAddress) external onlyOwner {
-        MarketStatuses storage marketStatuses_ = marketStatuses[_poolTokenAddress];
-        bool newPauseStatus = !marketStatuses_.isPaused;
-        marketStatuses_.isPaused = newPauseStatus;
-        emit PauseStatusChanged(_poolTokenAddress, newPauseStatus);
-    }
-
-    /// @notice Toggles the pause status on a specific market in case of emergency.
-    /// @param _poolTokenAddress The address of the market to partially pause/unpause.
-    function togglePartialPauseStatus(address _poolTokenAddress) external onlyOwner {
-        MarketStatuses storage marketStatuses_ = marketStatuses[_poolTokenAddress];
-        bool newPauseStatus = !marketStatuses_.isPartiallyPaused;
-        marketStatuses_.isPartiallyPaused = newPauseStatus;
-        emit PartialPauseStatusChanged(_poolTokenAddress, newPauseStatus);
     }
 
     /// PUBLIC ///
