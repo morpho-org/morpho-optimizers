@@ -294,7 +294,7 @@ contract PositionsManager is PositionsManagerGovernance {
             ERC20 comp = ERC20(comptroller.getCompAddress());
             if (_claimMorphoToken) {
                 comp.safeApprove(address(incentivesVault), amountOfRewards);
-                incentivesVault.convertCompToMorphoTokens(msg.sender, amountOfRewards);
+                incentivesVault.switchCompToMorphoTokens(msg.sender, amountOfRewards);
                 emit RewardsClaimedAndConverted(msg.sender, amountOfRewards);
             } else {
                 comp.safeTransfer(msg.sender, amountOfRewards);
