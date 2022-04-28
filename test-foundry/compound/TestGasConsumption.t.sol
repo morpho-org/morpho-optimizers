@@ -10,7 +10,7 @@ contract TestGasConsumption is TestSetup {
 
     // Give you the cost of a loop (MatchBorrowers)
     function testGasConsumptionOfMatchBorrowers() external {
-        positionsManager.setMaxSortedUsers(maxSortedUsers);
+        morpho.setMaxSortedUsers(maxSortedUsers);
         createSigners(maxSortedUsers + numberOfMatches + 1);
 
         // 1: Create maxSortedUsers matches on DAI market to fill the FIFO

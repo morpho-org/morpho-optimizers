@@ -3,9 +3,9 @@ pragma solidity 0.8.13;
 
 import "../interfaces/compound/ICompound.sol";
 import "../interfaces/IIncentivesVault.sol";
-import "../interfaces/IMarketsManager.sol";
+import "../interfaces/IInterestRates.sol";
 import "../interfaces/IRewardsManager.sol";
-import "../interfaces/ILogic.sol";
+import "../interfaces/IPositionsManager.sol";
 import "../interfaces/IWETH.sol";
 
 import "../../common/libraries/DoubleLinkedList.sol";
@@ -14,7 +14,7 @@ import "../libraries/Types.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
-abstract contract PositionsManagerStorage is OwnableUpgradeable, ReentrancyGuardUpgradeable {
+abstract contract MorphoStorage is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     /// ENUMS ///
 
     enum PositionType {
@@ -118,10 +118,10 @@ abstract contract PositionsManagerStorage is OwnableUpgradeable, ReentrancyGuard
     mapping(address => MarketStatuses) public marketStatuses; // Whether a market is paused or partially paused or not.
 
     IComptroller public comptroller;
-    IMarketsManager public marketsManager;
+    IInterestRates public interestRates;
     IRewardsManager public rewardsManager;
+    IPositionsManager public positionsManager;
     IIncentivesVault public incentivesVault;
-    ILogic public logic;
     address public treasuryVault;
     address public cEth;
     address public wEth;
