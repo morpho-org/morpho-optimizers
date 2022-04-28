@@ -193,8 +193,8 @@ contract InterestRatesV1 is IInterestRates {
             newP2PIndex = _params.p2pIndex.mul(_p2pGrowthFactor);
         } else {
             uint256 shareOfTheDelta = CompoundMath.min(
-                _params.p2pDelta.mul(_params.poolIndex).div(_params.p2pIndex).div(
-                    _params.p2pAmount
+                _params.p2pDelta.mul(_params.poolIndex).div(
+                    _params.p2pAmount.mul(_params.p2pIndex)
                 ),
                 WAD // To avoid shareOfTheDelta > 1 with rounding errors.
             );
