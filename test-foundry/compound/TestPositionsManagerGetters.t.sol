@@ -182,7 +182,7 @@ contract TestPositionsManagerGetters is TestSetup {
         borrower1.approve(dai, amount);
         indexes.index1 = ICToken(cDai).exchangeRateCurrent();
         borrower1.supply(cDai, amount);
-        uint256 p2pBorrowIndex = marketsManager.p2pBorrowIndex(cDai);
+        uint256 p2pBorrowIndex = positionsManager.p2pBorrowIndex(cDai);
         borrower1.borrow(cDai, toBorrow);
 
         indexes.index2 = ICToken(cDai).exchangeRateCurrent();
@@ -197,11 +197,11 @@ contract TestPositionsManagerGetters is TestSetup {
 
         {
             uint256 onPool = amount.div(indexes.index1);
-            uint256 matchedInP2P = toBorrow.div(marketsManager.p2pSupplyIndex(cDai));
+            uint256 matchedInP2P = toBorrow.div(positionsManager.p2pSupplyIndex(cDai));
             uint256 onPoolAfter = onPool - toBorrow.div(indexes.index2);
             total =
                 onPoolAfter.mul(indexes.index2) +
-                matchedInP2P.mul(marketsManager.p2pSupplyIndex(cDai));
+                matchedInP2P.mul(positionsManager.p2pSupplyIndex(cDai));
         }
 
         uint256 collateralValue = total.mul(underlyingPrice);
@@ -528,11 +528,11 @@ contract TestPositionsManagerGetters is TestSetup {
 
         {
             uint256 onPool = to6Decimals(amount).div(indexes.index1);
-            uint256 matchedInP2P = toBorrow.div(marketsManager.p2pSupplyIndex(cUsdt));
+            uint256 matchedInP2P = toBorrow.div(positionsManager.p2pSupplyIndex(cUsdt));
             uint256 onPoolAfter = onPool - toBorrow.div(indexes.index2);
             total =
                 onPoolAfter.mul(indexes.index2) +
-                matchedInP2P.mul(marketsManager.p2pSupplyIndex(cUsdt));
+                matchedInP2P.mul(positionsManager.p2pSupplyIndex(cUsdt));
         }
 
         // USDT data

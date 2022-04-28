@@ -137,15 +137,13 @@ contract Logic is ILogic, MatchingEngine {
                 if (matched > 0) {
                     toRepay += matched;
                     remainingToSupply -= matched;
-                    delta.borrowP2PAmount += matched.div(
-                        marketsManager.p2pBorrowIndex(_poolTokenAddress)
-                    );
+                    delta.borrowP2PAmount += matched.div(p2pBorrowIndex[_poolTokenAddress]);
                 }
             }
         }
 
         if (toRepay > 0) {
-            uint256 toAddInP2P = toRepay.div(marketsManager.p2pSupplyIndex(_poolTokenAddress));
+            uint256 toAddInP2P = toRepay.div(p2pSupplyIndex[_poolTokenAddress]);
 
             delta.supplyP2PAmount += toAddInP2P;
             supplyBalanceInOf[_poolTokenAddress][msg.sender].inP2P += toAddInP2P;
@@ -223,14 +221,14 @@ contract Logic is ILogic, MatchingEngine {
                     toWithdraw += matched;
                     remainingToBorrow -= matched;
                     deltas[_poolTokenAddress].supplyP2PAmount += matched.div(
-                        marketsManager.p2pSupplyIndex(_poolTokenAddress)
+                        p2pSupplyIndex[_poolTokenAddress]
                     );
                 }
             }
         }
 
         if (_isAboveCompoundThreshold(toWithdraw, underlyingToken.decimals())) {
-            uint256 toAddInP2P = toWithdraw.div(marketsManager.p2pBorrowIndex(_poolTokenAddress)); // In p2pUnit.
+            uint256 toAddInP2P = toWithdraw.div(p2pBorrowIndex[_poolTokenAddress]); // In p2pUnit.
 
             deltas[_poolTokenAddress].borrowP2PAmount += toAddInP2P;
             borrowBalanceInOf[_poolTokenAddress][msg.sender].inP2P += toAddInP2P;
@@ -300,7 +298,7 @@ contract Logic is ILogic, MatchingEngine {
         }
 
         Types.Delta storage delta = deltas[_poolTokenAddress];
-        uint256 p2pSupplyIndex = marketsManager.p2pSupplyIndex(_poolTokenAddress);
+        uint256 p2pSupplyIndex = p2pSupplyIndex[_poolTokenAddress];
 
         /// Transfer withdraw ///
 
@@ -369,9 +367,7 @@ contract Logic is ILogic, MatchingEngine {
             }
 
             delta.supplyP2PAmount -= vars.remainingToWithdraw.div(p2pSupplyIndex);
-            delta.borrowP2PAmount -= unmatched.div(
-                marketsManager.p2pBorrowIndex(_poolTokenAddress)
-            );
+            delta.borrowP2PAmount -= unmatched.div(p2pBorrowIndex[_poolTokenAddress]);
             emit P2PAmountsUpdated(_poolTokenAddress, delta.supplyP2PAmount, delta.borrowP2PAmount);
 
             _borrowFromPool(_poolTokenAddress, vars.remainingToWithdraw); // Reverts on error.
@@ -432,8 +428,8 @@ contract Logic is ILogic, MatchingEngine {
         }
 
         Types.Delta storage delta = deltas[_poolTokenAddress];
-        vars.p2pSupplyIndex = marketsManager.p2pSupplyIndex(_poolTokenAddress);
-        vars.p2pBorrowIndex = marketsManager.p2pBorrowIndex(_poolTokenAddress);
+        vars.p2pSupplyIndex = p2pSupplyIndex[_poolTokenAddress];
+        vars.p2pBorrowIndex = p2pBorrowIndex[_poolTokenAddress];
         borrowBalanceInOf[_poolTokenAddress][_user].inP2P -= CompoundMath.min(
             borrowBalanceInOf[_poolTokenAddress][_user].inP2P,
             vars.remainingToRepay.div(vars.p2pBorrowIndex)

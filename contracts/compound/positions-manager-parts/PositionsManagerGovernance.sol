@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
+import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "./PositionsManagerEventsErrors.sol";
+import "../libraries/DelegateCall.sol";
 
 /// @title PositionsManagerGovernance.
 /// @notice Governance functions for the PositionsManager.
@@ -10,6 +12,7 @@ abstract contract PositionsManagerGovernance is PositionsManagerEventsErrors {
     using DoubleLinkedList for DoubleLinkedList.List;
     using SafeTransferLib for ERC20;
     using CompoundMath for uint256;
+    using DelegateCall for address;
 
     /// MODIFIERS ///
 
@@ -70,34 +73,69 @@ abstract contract PositionsManagerGovernance is PositionsManagerEventsErrors {
         emit CompRewardsActive(newCompRewardsActive);
     }
 
-    /// @notice Creates markets.
-    /// @param _poolTokenAddress The address of the market the user wants to supply.
-    /// @return The results of entered.
-    function createMarket(address _poolTokenAddress)
-        external
-        onlyMarketsManager
-        returns (uint256[] memory)
-    {
-        address[] memory marketToEnter = new address[](1);
-        marketToEnter[0] = _poolTokenAddress;
-        return comptroller.enterMarkets(marketToEnter);
-    }
-
     /// @notice Sets whether to match people P2P or not.
     /// @param _poolTokenAddress The address of the market.
     /// @param _noP2P Whether to match people P2P or not.
-    function setNoP2P(address _poolTokenAddress, bool _noP2P) external onlyOwner {
-        marketsManager.isMarketCreated(_poolTokenAddress);
+    function setNoP2P(address _poolTokenAddress, bool _noP2P)
+        external
+        onlyOwner
+        isMarketCreated(_poolTokenAddress)
+    {
         noP2P[_poolTokenAddress] = _noP2P;
         emit NoP2PSet(_poolTokenAddress, _noP2P);
+    }
+
+    /// @notice Sets the `reserveFactor`.
+    /// @param _poolTokenAddress The market on which to set the `_newReserveFactor`.
+    /// @param _newReserveFactor The proportion of the interest earned by users sent to the DAO, in basis point.
+    function setReserveFactor(address _poolTokenAddress, uint256 _newReserveFactor)
+        external
+        onlyOwner
+    {
+        updateP2PIndexes(_poolTokenAddress);
+        marketParameters[_poolTokenAddress].reserveFactor = uint16(
+            CompoundMath.min(MAX_BASIS_POINTS, _newReserveFactor)
+        );
+        emit ReserveFactorSet(_poolTokenAddress, marketParameters[_poolTokenAddress].reserveFactor);
+    }
+
+    /// @notice Set a new peer-to-peer cursor.
+    /// @param _p2pIndexCursor The new peer-to-peer cursor.
+    function setP2PIndexCursor(address _poolTokenAddress, uint16 _p2pIndexCursor)
+        external
+        onlyOwner
+    {
+        marketParameters[_poolTokenAddress].p2pIndexCursor = _p2pIndexCursor;
+        emit P2PIndexCursorSet(_poolTokenAddress, _p2pIndexCursor);
+    }
+
+    /// @notice Toggles the pause status on a specific market in case of emergency.
+    /// @param _poolTokenAddress The address of the market to pause/unpause.
+    function togglePauseStatus(address _poolTokenAddress) external onlyOwner {
+        MarketStatuses storage marketStatuses_ = marketStatuses[_poolTokenAddress];
+        bool newPauseStatus = !marketStatuses_.isPaused;
+        marketStatuses_.isPaused = newPauseStatus;
+        emit PauseStatusChanged(_poolTokenAddress, newPauseStatus);
+    }
+
+    /// @notice Toggles the pause status on a specific market in case of emergency.
+    /// @param _poolTokenAddress The address of the market to partially pause/unpause.
+    function togglePartialPauseStatus(address _poolTokenAddress) external onlyOwner {
+        MarketStatuses storage marketStatuses_ = marketStatuses[_poolTokenAddress];
+        bool newPauseStatus = !marketStatuses_.isPartiallyPaused;
+        marketStatuses_.isPartiallyPaused = newPauseStatus;
+        emit PartialPauseStatusChanged(_poolTokenAddress, newPauseStatus);
     }
 
     /// @notice Transfers the protocol reserve fee to the DAO.
     /// @dev No more than 90% of the accumulated fees are claimable at once.
     /// @param _poolTokenAddress The address of the market on which we want to claim the reserve fee.
     /// @param _amount The amount of underlying to claim.
-    function claimToTreasury(address _poolTokenAddress, uint256 _amount) external onlyOwner {
-        marketsManager.isMarketCreatedAndNotPaused(_poolTokenAddress);
+    function claimToTreasury(address _poolTokenAddress, uint256 _amount)
+        external
+        onlyOwner
+        isMarketCreatedAndNotPaused(_poolTokenAddress)
+    {
         if (treasuryVault == address(0)) revert ZeroAddress();
 
         ERC20 underlyingToken = _getUnderlying(_poolTokenAddress);
@@ -109,5 +147,35 @@ abstract contract PositionsManagerGovernance is PositionsManagerEventsErrors {
 
         underlyingToken.safeTransfer(treasuryVault, amountToClaim);
         emit ReserveFeeClaimed(_poolTokenAddress, amountToClaim);
+    }
+
+    /// @notice Creates a new market to borrow/supply in.
+    /// @param _poolTokenAddress The pool token address of the given market.
+    function createMarket(address _poolTokenAddress) external onlyOwner {
+        address[] memory marketToEnter = new address[](1);
+        marketToEnter[0] = _poolTokenAddress;
+        uint256[] memory results = comptroller.enterMarkets(marketToEnter);
+        if (results[0] != 0) revert MarketCreationFailedOnCompound();
+
+        if (marketStatuses[_poolTokenAddress].isCreated) revert MarketAlreadyCreated();
+        marketStatuses[_poolTokenAddress].isCreated = true;
+
+        ICToken poolToken = ICToken(_poolTokenAddress);
+
+        // Same initial index as Compound.
+        uint256 initialIndex;
+        if (_poolTokenAddress == cEth) initialIndex = 2e26;
+        else initialIndex = 2 * 10**(16 + IERC20Metadata(poolToken.underlying()).decimals() - 8);
+        p2pSupplyIndex[_poolTokenAddress] = initialIndex;
+        p2pBorrowIndex[_poolTokenAddress] = initialIndex;
+
+        LastPoolIndexes storage poolIndexes = lastPoolIndexes[_poolTokenAddress];
+
+        poolIndexes.lastUpdateBlockNumber = uint32(block.number);
+        poolIndexes.lastSupplyPoolIndex = uint112(poolToken.exchangeRateCurrent());
+        poolIndexes.lastBorrowPoolIndex = uint112(poolToken.borrowIndex());
+
+        marketsCreated.push(_poolTokenAddress);
+        emit MarketCreated(_poolTokenAddress);
     }
 }

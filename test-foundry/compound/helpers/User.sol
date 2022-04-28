@@ -54,11 +54,11 @@ contract User {
     }
 
     function createMarket(address _underlyingTokenAddress) external {
-        marketsManager.createMarket(_underlyingTokenAddress);
+        positionsManager.createMarket(_underlyingTokenAddress);
     }
 
     function setReserveFactor(address _poolTokenAddress, uint16 _reserveFactor) external {
-        marketsManager.setReserveFactor(_poolTokenAddress, _reserveFactor);
+        positionsManager.setReserveFactor(_poolTokenAddress, _reserveFactor);
     }
 
     function supply(address _poolTokenAddress, uint256 _amount) external {
@@ -130,10 +130,10 @@ contract User {
     }
 
     function togglePauseStatus(address _poolTokenAddress) external {
-        marketsManager.togglePauseStatus(_poolTokenAddress);
+        positionsManager.togglePauseStatus(_poolTokenAddress);
     }
 
     function togglePartialPauseStatus(address _poolTokenAddress) external {
-        marketsManager.togglePartialPauseStatus(_poolTokenAddress);
+        positionsManager.togglePartialPauseStatus(_poolTokenAddress);
     }
 }

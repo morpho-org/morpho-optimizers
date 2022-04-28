@@ -3,6 +3,7 @@ pragma solidity 0.8.13;
 
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 import "../libraries/CompoundMath.sol";
+import "../libraries/DelegateCall.sol";
 
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "./PositionsManagerStorage.sol";
@@ -12,11 +13,45 @@ import "./PositionsManagerStorage.sol";
 abstract contract PositionsManagerGetters is PositionsManagerStorage {
     using DoubleLinkedList for DoubleLinkedList.List;
     using CompoundMath for uint256;
+    using DelegateCall for address;
 
     /// ERRORS ///
 
     /// @notice Thrown when the debt value is above the maximum debt value.
     error DebtValueAboveMax();
+
+    /// @notice Thrown when the market is not created yet.
+    error MarketNotCreated();
+
+    /// @notice Thrown when the market is paused.
+    error MarketPaused();
+
+    /// MODIFIERS ///
+
+    /// @notice Prevents to update a market not created yet.
+    /// @param _poolTokenAddress The address of the market to check.
+    modifier isMarketCreated(address _poolTokenAddress) {
+        if (!marketStatuses[_poolTokenAddress].isCreated) revert MarketNotCreated();
+        _;
+    }
+
+    /// @notice Prevents a user to trigger a function when market is not created or paused.
+    /// @param _poolTokenAddress The address of the market to check.
+    modifier isMarketCreatedAndNotPaused(address _poolTokenAddress) {
+        MarketStatuses memory marketStatuses_ = marketStatuses[_poolTokenAddress];
+        if (!marketStatuses_.isCreated) revert MarketNotCreated();
+        if (marketStatuses_.isPaused) revert MarketPaused();
+        _;
+    }
+
+    /// @notice Prevents a user to trigger a function when market is not created or paused or partial paused.
+    /// @param _poolTokenAddress The address of the market to check.
+    modifier isMarketCreatedAndNotPausedOrPartiallyPaused(address _poolTokenAddress) {
+        MarketStatuses memory marketStatuses_ = marketStatuses[_poolTokenAddress];
+        if (!marketStatuses_.isCreated) revert MarketNotCreated();
+        if (marketStatuses_.isPaused || marketStatuses_.isPartiallyPaused) revert MarketPaused();
+        _;
+    }
 
     /// GETTERS ///
 
@@ -67,7 +102,6 @@ abstract contract PositionsManagerGetters is PositionsManagerStorage {
     /// @return maxDebtValue The maximum possible debt value of the user.
     function getUserBalanceStates(address _user)
         external
-        view
         returns (
             uint256 collateralValue,
             uint256 debtValue,
@@ -103,7 +137,6 @@ abstract contract PositionsManagerGetters is PositionsManagerStorage {
     /// @return borrowable The maximum borrowable amount of underlying token allowed (in underlying).
     function getUserMaxCapacitiesForAsset(address _user, address _poolTokenAddress)
         external
-        view
         returns (uint256 withdrawable, uint256 borrowable)
     {
         LiquidityData memory data;
@@ -165,7 +198,7 @@ abstract contract PositionsManagerGetters is PositionsManagerStorage {
         address _user,
         address _poolTokenAddress,
         ICompoundOracle _oracle
-    ) public view returns (AssetLiquidityData memory assetData) {
+    ) public returns (AssetLiquidityData memory assetData) {
         assetData.underlyingPrice = _oracle.getUnderlyingPrice(_poolTokenAddress);
         (, assetData.collateralFactor, ) = comptroller.markets(_poolTokenAddress);
 
@@ -225,6 +258,51 @@ abstract contract PositionsManagerGetters is PositionsManagerStorage {
         }
     }
 
+    function updateP2PIndexes(address _poolTokenAddress) public {
+        address(marketsManager).functionDelegateCall(
+            abi.encodeWithSelector(marketsManager.updateP2PIndexes.selector, _poolTokenAddress)
+        );
+    }
+
+    function getUpdatedp2pSupplyIndex(address _poolTokenAddress) public returns (uint256) {
+        return
+            abi.decode(
+                address(marketsManager).functionDelegateCall(
+                    abi.encodeWithSelector(
+                        marketsManager.getUpdatedp2pSupplyIndex.selector,
+                        _poolTokenAddress
+                    )
+                ),
+                (uint256)
+            );
+    }
+
+    function getUpdatedp2pBorrowIndex(address _poolTokenAddress) public returns (uint256) {
+        return
+            abi.decode(
+                address(marketsManager).functionDelegateCall(
+                    abi.encodeWithSelector(
+                        marketsManager.getUpdatedp2pBorrowIndex.selector,
+                        _poolTokenAddress
+                    )
+                ),
+                (uint256)
+            );
+    }
+
+    function getUpdatedP2PIndexes(address _poolTokenAddress) public returns (uint256, uint256) {
+        return
+            abi.decode(
+                address(marketsManager).functionDelegateCall(
+                    abi.encodeWithSelector(
+                        marketsManager.getUpdatedP2PIndexes.selector,
+                        _poolTokenAddress
+                    )
+                ),
+                (uint256, uint256)
+            );
+    }
+
     /// @dev Returns the supply balance of `_user` in the `_poolTokenAddress` market.
     /// @dev Note: compute the result with the index stored and not the most up to date.
     /// @param _user The address of the user.
@@ -232,12 +310,11 @@ abstract contract PositionsManagerGetters is PositionsManagerStorage {
     /// @return The supply balance of the user (in underlying).
     function _getUserSupplyBalanceInOf(address _poolTokenAddress, address _user)
         internal
-        view
         returns (uint256)
     {
         return
             supplyBalanceInOf[_poolTokenAddress][_user].inP2P.mul(
-                marketsManager.getUpdatedp2pSupplyIndex(_poolTokenAddress)
+                getUpdatedp2pSupplyIndex(_poolTokenAddress)
             ) +
             supplyBalanceInOf[_poolTokenAddress][_user].onPool.mul(
                 ICToken(_poolTokenAddress).exchangeRateStored()
@@ -250,12 +327,11 @@ abstract contract PositionsManagerGetters is PositionsManagerStorage {
     /// @return The borrow balance of the user (in underlying).
     function _getUserBorrowBalanceInOf(address _poolTokenAddress, address _user)
         internal
-        view
         returns (uint256)
     {
         return
             borrowBalanceInOf[_poolTokenAddress][_user].inP2P.mul(
-                marketsManager.getUpdatedp2pBorrowIndex(_poolTokenAddress)
+                getUpdatedp2pBorrowIndex(_poolTokenAddress)
             ) +
             borrowBalanceInOf[_poolTokenAddress][_user].onPool.mul(
                 ICToken(_poolTokenAddress).borrowIndex()
@@ -290,5 +366,69 @@ abstract contract PositionsManagerGetters is PositionsManagerStorage {
             // cETH has no underlying() function.
             return ERC20(wEth);
         else return ERC20(ICToken(_poolTokenAddress).underlying());
+    }
+
+    /// @notice Returns all created markets.
+    /// @return marketsCreated_ The list of market adresses.
+    function getAllMarkets() external view returns (address[] memory marketsCreated_) {
+        marketsCreated_ = marketsCreated;
+    }
+
+    /// @notice Returns market's data.
+    /// @return p2pSupplyIndex_ The peer-to-peer supply index of the market.
+    /// @return p2pBorrowIndex_ The peer-to-peer borrow index of the market.
+    /// @return lastUpdateBlockNumber_ The last block number when P2P indexes where updated.
+    /// @return supplyP2PDelta_ The supply P2P delta (in scaled balance).
+    /// @return borrowP2PDelta_ The borrow P2P delta (in cdUnit).
+    /// @return supplyP2PAmount_ The supply P2P amount (in P2P unit).
+    /// @return borrowP2PAmount_ The borrow P2P amount (in P2P unit).
+    function getMarketData(address _poolTokenAddress)
+        external
+        view
+        returns (
+            uint256 p2pSupplyIndex_,
+            uint256 p2pBorrowIndex_,
+            uint32 lastUpdateBlockNumber_,
+            uint256 supplyP2PDelta_,
+            uint256 borrowP2PDelta_,
+            uint256 supplyP2PAmount_,
+            uint256 borrowP2PAmount_
+        )
+    {
+        {
+            Types.Delta memory delta = deltas[_poolTokenAddress];
+            supplyP2PDelta_ = delta.supplyP2PDelta;
+            borrowP2PDelta_ = delta.borrowP2PDelta;
+            supplyP2PAmount_ = delta.supplyP2PAmount;
+            borrowP2PAmount_ = delta.borrowP2PAmount;
+        }
+        p2pSupplyIndex_ = p2pSupplyIndex[_poolTokenAddress];
+        p2pBorrowIndex_ = p2pBorrowIndex[_poolTokenAddress];
+        lastUpdateBlockNumber_ = lastPoolIndexes[_poolTokenAddress].lastUpdateBlockNumber;
+    }
+
+    /// @notice Returns market's configuration.
+    /// @return isCreated_ Whether the market is created or not.
+    /// @return noP2P_ Whether user are put in P2P or not.
+    /// @return isPaused_ Whether the market is paused or not (all entry points on Morpho are frozen; supply, borrow, withdraw, repay and liquidate).
+    /// @return isPartiallyPaused_ Whether the market is partially paused or not (only supply and borrow are frozen).
+    /// @return reserveFactor_ The reserve actor applied to this market.
+    function getMarketConfiguration(address _poolTokenAddress)
+        external
+        view
+        returns (
+            bool isCreated_,
+            bool noP2P_,
+            bool isPaused_,
+            bool isPartiallyPaused_,
+            uint256 reserveFactor_
+        )
+    {
+        MarketStatuses storage marketStatuses_ = marketStatuses[_poolTokenAddress];
+        isCreated_ = marketStatuses_.isCreated;
+        noP2P_ = noP2P[_poolTokenAddress];
+        isPaused_ = marketStatuses_.isPaused;
+        isPartiallyPaused_ = marketStatuses_.isPartiallyPaused;
+        reserveFactor_ = marketParameters[_poolTokenAddress].reserveFactor;
     }
 }

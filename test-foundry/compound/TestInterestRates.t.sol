@@ -56,7 +56,7 @@ contract TestInterestRates is TestSetup {
             Types.Delta(0, 0, 0, 0)
         );
 
-        (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex) = interestRates.computeP2PIndexes(params); // prettier-ignore
+        (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex) = marketsManager.computeP2PIndexes(params); // prettier-ignore
         (uint256 expectednewP2PSupplyIndex, uint256 expectednewP2PBorrowIndex) = computeP2PIndexes(params); // prettier-ignore
         assertApproxEq(newP2PSupplyIndex, expectednewP2PSupplyIndex, 1);
         assertApproxEq(newP2PBorrowIndex, expectednewP2PBorrowIndex, 1);
@@ -75,7 +75,7 @@ contract TestInterestRates is TestSetup {
             Types.Delta(0, 0, 0, 0)
         );
 
-        (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex) = interestRates.computeP2PIndexes(params); // prettier-ignore
+        (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex) = marketsManager.computeP2PIndexes(params); // prettier-ignore
         (uint256 expectednewP2PSupplyIndex, uint256 expectednewP2PBorrowIndex) = computeP2PIndexes(params); // prettier-ignore
         assertApproxEq(newP2PSupplyIndex, expectednewP2PSupplyIndex, 1);
         assertApproxEq(newP2PBorrowIndex, expectednewP2PBorrowIndex, 1);
@@ -94,7 +94,7 @@ contract TestInterestRates is TestSetup {
             Types.Delta(1 * WAD, 1 * WAD, 4 * WAD, 6 * WAD)
         );
 
-        (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex) = interestRates.computeP2PIndexes(params); // prettier-ignore
+        (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex) = marketsManager.computeP2PIndexes(params); // prettier-ignore
         (uint256 expectednewP2PSupplyIndex, uint256 expectednewP2PBorrowIndex) = computeP2PIndexes(params); // prettier-ignore
         assertApproxEq(newP2PSupplyIndex, expectednewP2PSupplyIndex, 1);
         assertApproxEq(newP2PBorrowIndex, expectednewP2PBorrowIndex, 1);
@@ -113,7 +113,7 @@ contract TestInterestRates is TestSetup {
             Types.Delta(1 * WAD, 1 * WAD, 4 * WAD, 6 * WAD)
         );
 
-        (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex) = interestRates.computeP2PIndexes(params); // prettier-ignore
+        (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex) = marketsManager.computeP2PIndexes(params); // prettier-ignore
         (uint256 expectednewP2PSupplyIndex, uint256 expectednewP2PBorrowIndex) = computeP2PIndexes(params); // prettier-ignore
         assertApproxEq(newP2PSupplyIndex, expectednewP2PSupplyIndex, 1);
         assertApproxEq(newP2PBorrowIndex, expectednewP2PBorrowIndex, 1);
@@ -155,7 +155,7 @@ contract TestInterestRates is TestSetup {
 
         Types.Params memory params = Types.Params(_p2pSupplyIndex, _p2pBorrowIndex, _poolSupplyIndex, _poolBorrowIndex, _lastPoolSupplyIndex, _lastPoolBorrowIndex, _reserveFactor, _p2pIndexCursor, Types.Delta(_supplyP2PDelta, _borrowP2PDelta, _supplyP2PAmount, _borrowP2PAmount));
 
-        (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex) = interestRates.computeP2PIndexes(params);
+        (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex) = marketsManager.computeP2PIndexes(params);
         (uint256 expectednewP2PSupplyIndex, uint256 expectednewP2PBorrowIndex) = computeP2PIndexes(params);
         assertApproxEq(newP2PSupplyIndex, expectednewP2PSupplyIndex, 400);
         assertApproxEq(newP2PBorrowIndex, expectednewP2PBorrowIndex, 400);
