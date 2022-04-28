@@ -8,15 +8,16 @@ contract TestBorrow is TestSetup {
     using CompoundMath for uint256;
 
     function testBorrowOnPoolThreshold() public {
-        uint256 amountBorrowed = 1e9;
+        uint256 amountBorrowed = 1e6;
 
         borrower1.approve(usdc, to6Decimals(1 ether));
         borrower1.supply(cUsdc, to6Decimals(1 ether));
 
+        // We check that borrowing 0 in cToken units doesn't lead to a revert.
         borrower1.borrow(cDai, amountBorrowed);
         assertEq(
             ICToken(cDai).borrowBalanceCurrent(address(positionsManager)),
-            1e9,
+            0,
             "borrow balance"
         );
     }

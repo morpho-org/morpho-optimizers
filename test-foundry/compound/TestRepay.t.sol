@@ -7,7 +7,7 @@ contract TestRepay is TestSetup {
     using CompoundMath for uint256;
 
     function testRepayOnPoolThreshold() public {
-        uint256 amountRepaid = 1e9;
+        uint256 amountRepaid = 1e6;
 
         borrower1.approve(usdc, to6Decimals(2 ether));
         borrower1.supply(cUsdc, to6Decimals(2 ether));
@@ -15,13 +15,20 @@ contract TestRepay is TestSetup {
         borrower1.borrow(cDai, 1 ether);
 
         uint256 onCompBeforeRepay = ICToken(cDai).borrowBalanceCurrent(address(positionsManager));
+        (, uint256 onPoolBeforeRepay) = positionsManager.borrowBalanceInOf(
+            cDai,
+            address(borrower1)
+        );
 
+        // We check that repaying a dust quantity leads to a diminishing debt in both cToken & in PositionsManager.
         borrower1.approve(dai, amountRepaid);
         borrower1.repay(cDai, amountRepaid);
 
         uint256 onCompAfterRepay = ICToken(cDai).borrowBalanceCurrent(address(positionsManager));
+        (, uint256 onPoolAfterRepay) = positionsManager.borrowBalanceInOf(cDai, address(borrower1));
 
-        assertLt(onCompAfterRepay, onCompBeforeRepay);
+        assertLt(onCompAfterRepay, onCompBeforeRepay, "on Comp");
+        assertLt(onPoolAfterRepay, onPoolBeforeRepay, "on Positions Manager");
     }
 
     function testRepay1() public {

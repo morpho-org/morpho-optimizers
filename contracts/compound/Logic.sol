@@ -60,6 +60,9 @@ contract Logic is ILogic, MatchingEngine {
     /// @notice Thrown when the Compound's oracle failed.
     error CompoundOracleFailed();
 
+    /// @notice Thrown when the amount desired for a withdrawal is too small.
+    error WithdrawTooSmall();
+
     /// STRUCTS ///
 
     // Struct to avoid stack too deep.
@@ -277,6 +280,8 @@ contract Logic is ILogic, MatchingEngine {
         vars.withdrawable = poolToken.balanceOfUnderlying(address(this));
         vars.supplyPoolIndex = poolToken.exchangeRateCurrent();
 
+        if (!_isAboveCompoundThreshold(_amount, vars.supplyPoolIndex)) revert WithdrawTooSmall();
+
         /// Soft withdraw ///
 
         if (supplyBalanceInOf[_poolTokenAddress][_supplier].onPool > 0) {
@@ -302,6 +307,8 @@ contract Logic is ILogic, MatchingEngine {
                     _leaveMarketIfNeeded(_poolTokenAddress, _supplier);
                     return;
                 }
+            } else {
+                vars.toWithdraw = 0;
             }
         }
 
@@ -310,12 +317,7 @@ contract Logic is ILogic, MatchingEngine {
 
         /// Transfer withdraw ///
 
-        if (
-            vars.remainingToWithdraw > 0 &&
-            !marketsManager.noP2P(_poolTokenAddress) &&
-            supplyBalanceInOf[_poolTokenAddress][_supplier].inP2P > 0
-            // Need to check that user is in P2P, because sometimes soft withdraw can be skipped because of threshold.
-        ) {
+        if (vars.remainingToWithdraw > 0 && !marketsManager.noP2P(_poolTokenAddress)) {
             supplyBalanceInOf[_poolTokenAddress][_supplier].inP2P -= CompoundMath.min(
                 supplyBalanceInOf[_poolTokenAddress][_supplier].inP2P,
                 vars.remainingToWithdraw.div(supplyP2PExchangeRate)
@@ -341,9 +343,15 @@ contract Logic is ILogic, MatchingEngine {
             }
 
             // Match pool suppliers if any.
+            address head = suppliersOnPool[_poolTokenAddress].getHead();
             if (
                 vars.remainingToWithdraw > 0 &&
-                suppliersOnPool[_poolTokenAddress].getHead() != address(0)
+                head != address(0) &&
+                _isAboveCompoundThreshold(
+                    supplyBalanceInOf[_poolTokenAddress][head].onPool,
+                    vars.supplyPoolIndex
+                )
+                // Check that the largest pool supplier has more tokens than simple dust so that the transfer withdraw is effective.
             ) {
                 // Match suppliers.
                 uint256 matched = matchSuppliers(
@@ -359,8 +367,6 @@ contract Logic is ILogic, MatchingEngine {
             }
         }
 
-        // note: we suppose that in case of a transfer withdraw, the amount matched from waiting suppliers onPool won't only
-        // be dust otherwise the withdraw at the end will revert because there won't be enough tokens available on PositionsManager.
         if (_isAboveCompoundThreshold(vars.toWithdraw, vars.supplyPoolIndex))
             _withdrawFromPool(_poolTokenAddress, vars.toWithdraw); // Reverts on error.
 

@@ -15,13 +15,8 @@ contract TestWithdraw is TestSetup {
         supplier1.approve(dai, 1 ether);
         supplier1.supply(cDai, 1 ether);
 
-        uint256 onCompBeforeWithdraw = ICToken(cDai).balanceOf(address(positionsManager));
-
+        hevm.expectRevert(abi.encodeWithSignature("WithdrawTooSmall()"));
         supplier1.withdraw(cDai, amountWithdrawn);
-
-        uint256 onCompAfterWithdraw = ICToken(cDai).balanceOf(address(positionsManager));
-
-        assertEq(onCompAfterWithdraw, onCompBeforeWithdraw);
     }
 
     function testWithdraw1() public {
