@@ -36,7 +36,7 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
     mapping(address => uint256) public override lastUpdateBlockNumber; // The last time the P2P indexes were updated.
     mapping(address => LastPoolIndexes) public lastPoolIndexes; // Last pool index stored.
     mapping(address => bool) public override noP2P; // Whether to put users on pool or not for the given market.
-    mapping(address => uint256) public p2pIndexCursor; // Position of the peer-to-peer rate in the pool's spread. Determine the weights of the weighted arithmetic average in the indexes computations ((1 - p2pIndexCursor) * r^S + p2pIndexCursor * r^B) (in basis point).
+    mapping(address => uint256) public p2pIndexCursor; // Position of the peer-to-peer rate in the pool's spread. Determines the weights of the weighted arithmetic average in the indexes computations ((1 - p2pIndexCursor) * r^S + p2pIndexCursor * r^B) (in basis point).
 
     /// EVENTS ///
 
@@ -91,7 +91,7 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
     /// @notice Emitted when the `p2pIndexCursor` is set.
     /// @param _poolTokenAddress The address of the market set.
     /// @param _newValue The new value of the `p2pIndexCursor`.
-    event p2pIndexCursorSet(address indexed _poolTokenAddress, uint256 _newValue);
+    event P2PIndexCursorSet(address indexed _poolTokenAddress, uint256 _newValue);
 
     /// ERRORS ///
 
@@ -361,14 +361,14 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
         }
     }
 
-    /// @notice Set a new peer-to-peer cursor.
+    /// @notice Sets a new peer-to-peer cursor.
     /// @param _p2pIndexCursor The new peer-to-peer cursor.
-    function setp2pIndexCursor(address _poolTokenAddress, uint256 _p2pIndexCursor)
+    function setP2PIndexCursor(address _poolTokenAddress, uint256 _p2pIndexCursor)
         external
         onlyOwner
     {
-        p2pIndexCursor[_poolTokenAddress] = _p2pIndexCursor;
-        emit p2pIndexCursorSet(_poolTokenAddress, _p2pIndexCursor);
+        p2pIndexCursor[_poolTokenAddress] = CompoundMath.min(_p2pIndexCursor, MAX_BASIS_POINTS);
+        emit P2PIndexCursorSet(_poolTokenAddress, _p2pIndexCursor);
     }
 
     /// PUBLIC ///
