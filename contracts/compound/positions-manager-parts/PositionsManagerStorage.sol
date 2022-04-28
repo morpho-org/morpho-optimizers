@@ -88,6 +88,7 @@ abstract contract PositionsManagerStorage is OwnableUpgradeable, ReentrancyGuard
     mapping(address => mapping(address => bool)) public userMembership; // Whether the user is in the market or not.
     mapping(address => address[]) public enteredMarkets; // The markets entered by a user.
     mapping(address => Types.Delta) public deltas; // Delta parameters for each market.
+    mapping(address => bool) public noP2P; // Whether to put users on pool or not for the given market.
 
     IComptroller public comptroller;
     IMarketsManager public marketsManager;

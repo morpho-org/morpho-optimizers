@@ -45,7 +45,6 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
     mapping(address => uint256) public override p2pSupplyIndex; // Current index from supply p2pUnit to underlying (in wad).
     mapping(address => uint256) public override p2pBorrowIndex; // Current index from borrow p2pUnit to underlying (in wad).
     mapping(address => LastPoolIndexes) public lastPoolIndexes; // Last pool index stored.
-    mapping(address => bool) public override noP2P; // Whether to put users on pool or not for the given market.
     mapping(address => MarketStatuses) public override marketStatuses; // Whether a market is paused or partially paused or not.
 
     /// EVENTS ///
@@ -67,11 +66,6 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
     /// @notice Emitted when the `interestRates` is set.
     /// @param _interestRates The address of the `interestRates`.
     event InterestRatesSet(address _interestRates);
-
-    /// @notice Emitted when a `noP2P` variable is set.
-    /// @param _poolTokenAddress The address of the market to set.
-    /// @param _noP2P The new value of `_noP2P` adopted.
-    event NoP2PSet(address indexed _poolTokenAddress, bool _noP2P);
 
     /// @notice Emitted when the P2P BPYs of a market are updated.
     /// @param _poolTokenAddress The address of the market updated.
@@ -137,13 +131,6 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
     error MarketPaused();
 
     /// MODIFIERS ///
-
-    /// @notice Prevents to update a market not created yet.
-    /// @param _poolTokenAddress The address of the market to check.
-    modifier isMarketCreated(address _poolTokenAddress) {
-        if (!marketStatuses[_poolTokenAddress].isCreated) revert MarketNotCreated();
-        _;
-    }
 
     /// @notice Prevents a user to call function only allowed for `positionsManager`.
     modifier onlyPositionsManager() {
@@ -227,18 +214,6 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
         emit MarketCreated(_poolTokenAddress);
     }
 
-    /// @notice Sets whether to match people P2P or not.
-    /// @param _poolTokenAddress The address of the market.
-    /// @param _noP2P Whether to match people P2P or not.
-    function setNoP2P(address _poolTokenAddress, bool _noP2P)
-        external
-        onlyOwner
-        isMarketCreated(_poolTokenAddress)
-    {
-        noP2P[_poolTokenAddress] = _noP2P;
-        emit NoP2PSet(_poolTokenAddress, _noP2P);
-    }
-
     /// @notice Returns all created markets.
     /// @return marketsCreated_ The list of market adresses.
     function getAllMarkets() external view returns (address[] memory marketsCreated_) {
@@ -297,7 +272,7 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
     {
         MarketStatuses memory marketStatuses_ = marketStatuses[_poolTokenAddress];
         isCreated_ = marketStatuses_.isCreated;
-        noP2P_ = noP2P[_poolTokenAddress];
+        noP2P_ = positionsManager.noP2P(_poolTokenAddress);
         isPaused_ = marketStatuses_.isPaused;
         isPartiallyPaused_ = marketStatuses_.isPartiallyPaused;
         reserveFactor_ = marketParameters[_poolTokenAddress].reserveFactor;
@@ -436,6 +411,12 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
     }
 
     /// PUBLIC ///
+
+    /// @notice Prevents to update a market not created yet.
+    /// @param _poolTokenAddress The address of the market to check.
+    function isMarketCreated(address _poolTokenAddress) public view {
+        if (!marketStatuses[_poolTokenAddress].isCreated) revert MarketNotCreated();
+    }
 
     /// @notice Updates the P2P indexes, taking into account the Second Percentage Yield values.
     /// @param _poolTokenAddress The address of the market to update.

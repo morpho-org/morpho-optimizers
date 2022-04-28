@@ -108,6 +108,11 @@ abstract contract PositionsManagerEventsErrors is PositionsManagerGetters {
     /// @param _dustThreshold The new `dustThreshold`.
     event DustThresholdSet(uint256 _dustThreshold);
 
+    /// @notice Emitted when a `noP2P` variable is set.
+    /// @param _poolTokenAddress The address of the market to set.
+    /// @param _noP2P The new value of `_noP2P` adopted.
+    event NoP2PSet(address indexed _poolTokenAddress, bool _noP2P);
+
     /// @notice Emitted when a reserve fee is claimed.
     /// @param _poolTokenAddress The address of the pool token concerned.
     /// @param _amountClaimed The amount of reward token claimed.

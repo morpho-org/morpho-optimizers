@@ -54,7 +54,7 @@ contract TestMarketsManagerGetters is TestSetup {
         );
 
         assertTrue(isCreated == isCreated_);
-        assertTrue(noP2P == marketsManager.noP2P(cDai));
+        assertTrue(noP2P == positionsManager.noP2P(cDai));
 
         assertTrue(isPaused == isPaused_);
         assertTrue(isPartiallyPaused == isPartiallyPaused_);
