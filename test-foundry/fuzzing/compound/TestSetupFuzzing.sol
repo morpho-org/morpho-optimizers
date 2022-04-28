@@ -119,6 +119,9 @@ contract TestSetupFuzzing is Config, Utils, stdCheats {
         marketsManager.setPositionsManager(address(positionsManager));
         positionsManager.setTreasuryVault(address(treasuryVault));
 
+        // make sure the wEth contract has enough ETH to unwrap any amount
+        hevm.deal(wEth, type(uint128).max);
+
         /// Create markets ///
 
         createMarket(cDai);
@@ -278,12 +281,12 @@ contract TestSetupFuzzing is Config, Utils, stdCheats {
         positionsManager.setMaxGas(newMaxGas);
     }
 
+    /// @notice simulate the passing of 1_000 -> ETH MAINNET <- blocks
+    /// @param _marketAddress market that will have his exchange rates updated
     function move1000BlocksForward(address _marketAddress) public {
-        for (uint256 k; k < 100; k++) {
-            hevm.roll(block.number + 10);
-            hevm.warp(block.timestamp + 1);
-            marketsManager.updateP2PExchangeRates(_marketAddress);
-        }
+        hevm.roll(block.number + 1_000);
+        hevm.warp(block.timestamp + 13 * 1_000); // mainnet block time is around 13 sec
+        marketsManager.updateP2PExchangeRates(_marketAddress);
     }
 
     /// @notice Computes and returns P2P rates for a specific market (without taking into account deltas !).
