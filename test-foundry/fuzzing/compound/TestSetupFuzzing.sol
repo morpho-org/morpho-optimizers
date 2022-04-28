@@ -319,4 +319,43 @@ contract TestSetupFuzzing is Config, Utils, stdCheats {
         asset = pools[_asset % pools.length];
         underlying = getUnderlying(asset);
     }
+
+    function performSupply(
+        User _signer,
+        uint256 _amount,
+        uint8 _asset
+    ) public {
+        (address asset, address underlying) = getAsset(_asset);
+        _signer.approve(underlying, _amount);
+        _signer.supply(asset, _amount);
+    }
+
+    function performWithdraw(
+        User _signer,
+        uint256 _amount,
+        uint8 _asset
+    ) public {
+        (address asset, ) = getAsset(_asset);
+        _signer.withdraw(asset, _amount);
+    }
+
+    function performBorrow(
+        User _signer,
+        uint256 _amount,
+        uint8 _asset
+    ) public {
+        (address asset, address underlying) = getAsset(_asset);
+        _signer.approve(underlying, _amount);
+        _signer.withdraw(asset, _amount);
+    }
+
+    function performRepay(
+        User _signer,
+        uint256 _amount,
+        uint8 _asset
+    ) public {
+        (address asset, address underlying) = getAsset(_asset);
+        _signer.approve(underlying, _amount);
+        _signer.repay(asset, _amount);
+    }
 }
