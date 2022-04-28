@@ -100,10 +100,6 @@ abstract contract PositionsManagerEventsErrors is PositionsManagerGetters {
     /// @param _newRewardsManagerAddress The new address of the `rewardsManager`.
     event RewardsManagerSet(address indexed _newRewardsManagerAddress);
 
-    /// @notice Emitted the address of the `aaveIncentivesController` is set.
-    /// @param _aaveIncentivesController The new address of the `aaveIncentivesController`.
-    event CompoundIncentivesControllerSet(address _aaveIncentivesController);
-
     /// @notice Emitted when a market is paused or unpaused.
     /// @param _poolTokenAddress The address of the pool token concerned.
     /// @param _newStatus The new pause status of the market.
@@ -138,9 +134,6 @@ abstract contract PositionsManagerEventsErrors is PositionsManagerGetters {
     event RewardsClaimedAndConverted(address indexed _user, uint256 _amountSent);
 
     /// ERRORS ///
-
-    /// @notice Thrown when the market is not listed on Compound.
-    error MarketIsNotListedOnCompound();
 
     /// @notice Thrown when user is not a member of the market.
     error UserNotMemberOfMarket();
