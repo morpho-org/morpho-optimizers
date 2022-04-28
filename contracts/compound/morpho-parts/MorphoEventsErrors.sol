@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import "./PositionsManagerGetters.sol";
+import "./MorphoGetters.sol";
 
-/// @title PositionsManagerEventsErrors.
-/// @notice Events and Errors for PositionsManager.
-abstract contract PositionsManagerEventsErrors is PositionsManagerGetters {
+/// @title MorphoEventsErrors.
+/// @notice Events and Errors for Morpho.
+abstract contract MorphoEventsErrors is MorphoGetters {
     /// EVENTS ///
 
     /// @notice Emitted when a supply happens.
@@ -164,7 +164,7 @@ abstract contract PositionsManagerEventsErrors is PositionsManagerGetters {
     error UserNotMemberOfMarket();
 
     /// @notice Thrown when only the markets manager can call the function.
-    error OnlyMarketsManager();
+    error OnlyInterestRates();
 
     /// @notice Thrown when the amount is equal to 0.
     error AmountIsZero();

@@ -3,12 +3,12 @@ pragma solidity 0.8.13;
 
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
-import "./PositionsManagerEventsErrors.sol";
+import "./MorphoEventsErrors.sol";
 import "../libraries/DelegateCall.sol";
 
-/// @title PositionsManagerGovernance.
-/// @notice Governance functions for the PositionsManager.
-abstract contract PositionsManagerGovernance is PositionsManagerEventsErrors {
+/// @title MorphoGovernance.
+/// @notice Governance functions for the Morpho.
+abstract contract MorphoGovernance is MorphoEventsErrors {
     using DoubleLinkedList for DoubleLinkedList.List;
     using SafeTransferLib for ERC20;
     using CompoundMath for uint256;
@@ -17,8 +17,8 @@ abstract contract PositionsManagerGovernance is PositionsManagerEventsErrors {
     /// MODIFIERS ///
 
     /// @notice Prevents a user to call function only allowed for the markets manager.
-    modifier onlyMarketsManager() {
-        if (msg.sender != address(marketsManager)) revert OnlyMarketsManager();
+    modifier onlyInterestRates() {
+        if (msg.sender != address(interestRates)) revert OnlyInterestRates();
         _;
     }
 

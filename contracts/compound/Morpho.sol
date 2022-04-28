@@ -2,11 +2,11 @@
 pragma solidity 0.8.13;
 
 import "./libraries/DelegateCall.sol";
-import "./positions-manager-parts/PositionsManagerGovernance.sol";
+import "./morpho-parts/MorphoGovernance.sol";
 
-/// @title PositionsManager.
+/// @title Morpho.
 /// @notice Smart contract interacting with Compound to enable P2P supply/borrow positions that can fallback on Compound's pool using pool tokens.
-contract PositionsManager is PositionsManagerGovernance {
+contract Morpho is MorphoGovernance {
     using DoubleLinkedList for DoubleLinkedList.List;
     using SafeTransferLib for ERC20;
     using CompoundMath for uint256;
@@ -14,17 +14,17 @@ contract PositionsManager is PositionsManagerGovernance {
 
     /// UPGRADE ///
 
-    /// @notice Initializes the PositionsManager contract.
-    /// @param _marketsManager The `marketsManager`.
+    /// @notice Initializes the Morpho contract.
+    /// @param _interestRates The `interestRates`.
     /// @param _comptroller The `comptroller`.
     /// @param _dustThreshold The `dustThreshold`.
     /// @param _maxGasForMatching The `maxGasForMatching`.
-    /// @param _maxSortedUsers The `maxSortedUsers`.
+    /// @param _maxSortedUsers The `_maxSortedUsers`.
     /// @param _cEth The cETH address.
     /// @param _weth The wETH address.
     function initialize(
-        IMarketsManager _marketsManager,
-        ILogic _logic,
+        IInterestRates _interestRates,
+        IPositionsManager _positionsManager,
         IComptroller _comptroller,
         uint256 _dustThreshold,
         MaxGasForMatching memory _maxGasForMatching,
@@ -35,8 +35,8 @@ contract PositionsManager is PositionsManagerGovernance {
         __ReentrancyGuard_init();
         __Ownable_init();
 
-        marketsManager = _marketsManager;
-        logic = _logic;
+        interestRates = _interestRates;
+        positionsManager = _positionsManager;
         comptroller = _comptroller;
 
         dustThreshold = _dustThreshold;
@@ -59,9 +59,9 @@ contract PositionsManager is PositionsManagerGovernance {
         if (_amount == 0) revert AmountIsZero();
         updateP2PIndexes(_poolTokenAddress);
 
-        address(logic).functionDelegateCall(
+        address(positionsManager).functionDelegateCall(
             abi.encodeWithSelector(
-                logic.supply.selector,
+                positionsManager.supply.selector,
                 _poolTokenAddress,
                 _amount,
                 maxGasForMatching.supply
@@ -90,9 +90,9 @@ contract PositionsManager is PositionsManagerGovernance {
         if (_amount == 0) revert AmountIsZero();
         updateP2PIndexes(_poolTokenAddress);
 
-        address(logic).functionDelegateCall(
+        address(positionsManager).functionDelegateCall(
             abi.encodeWithSelector(
-                logic.supply.selector,
+                positionsManager.supply.selector,
                 _poolTokenAddress,
                 _amount,
                 _maxGasToConsume
@@ -119,9 +119,9 @@ contract PositionsManager is PositionsManagerGovernance {
         if (_amount == 0) revert AmountIsZero();
         updateP2PIndexes(_poolTokenAddress);
 
-        address(logic).functionDelegateCall(
+        address(positionsManager).functionDelegateCall(
             abi.encodeWithSelector(
-                logic.borrow.selector,
+                positionsManager.borrow.selector,
                 _poolTokenAddress,
                 _amount,
                 maxGasForMatching.borrow
@@ -149,9 +149,9 @@ contract PositionsManager is PositionsManagerGovernance {
         if (_amount == 0) revert AmountIsZero();
         updateP2PIndexes(_poolTokenAddress);
 
-        address(logic).functionDelegateCall(
+        address(positionsManager).functionDelegateCall(
             abi.encodeWithSelector(
-                logic.borrow.selector,
+                positionsManager.borrow.selector,
                 _poolTokenAddress,
                 _amount,
                 _maxGasToConsume
@@ -185,9 +185,9 @@ contract PositionsManager is PositionsManagerGovernance {
         );
 
         _checkUserLiquidity(msg.sender, _poolTokenAddress, toWithdraw, 0);
-        address(logic).functionDelegateCall(
+        address(positionsManager).functionDelegateCall(
             abi.encodeWithSelector(
-                logic.withdraw.selector,
+                positionsManager.withdraw.selector,
                 _poolTokenAddress,
                 toWithdraw,
                 msg.sender,
@@ -223,9 +223,9 @@ contract PositionsManager is PositionsManagerGovernance {
             _amount
         );
 
-        address(logic).functionDelegateCall(
+        address(positionsManager).functionDelegateCall(
             abi.encodeWithSelector(
-                logic.repay.selector,
+                positionsManager.repay.selector,
                 _poolTokenAddress,
                 msg.sender,
                 toRepay,
@@ -267,9 +267,9 @@ contract PositionsManager is PositionsManagerGovernance {
         updateP2PIndexes(_poolTokenCollateralAddress);
 
         uint256 amountSeized = abi.decode(
-            address(logic).functionDelegateCall(
+            address(positionsManager).functionDelegateCall(
                 abi.encodeWithSelector(
-                    logic.liquidate.selector,
+                    positionsManager.liquidate.selector,
                     _poolTokenBorrowedAddress,
                     _poolTokenCollateralAddress,
                     _borrower,
@@ -290,8 +290,8 @@ contract PositionsManager is PositionsManagerGovernance {
     }
 
     /// @notice Claims rewards for the given assets and the unclaimed rewards.
-    /// @param _tradeForMorphoTokens Whether or not to trade COMP token rewards for MORPHO tokens.
-    function claimRewards(address[] calldata _cTokenAddresses, bool _tradeForMorphoTokens)
+    /// @param _claimMorphoToken Whether or not to claim Morpho tokens instead of token reward.
+    function claimRewards(address[] calldata _cTokenAddresses, bool _claimMorphoToken)
         external
         nonReentrant
     {
@@ -301,7 +301,7 @@ contract PositionsManager is PositionsManagerGovernance {
         else {
             comptroller.claimComp(address(this), _cTokenAddresses);
             ERC20 comp = ERC20(comptroller.getCompAddress());
-            if (_tradeForMorphoTokens) {
+            if (_claimMorphoToken) {
                 comp.safeApprove(address(incentivesVault), amountOfRewards);
                 incentivesVault.tradeCompForMorphoTokens(msg.sender, amountOfRewards);
                 emit RewardsClaimedAndConverted(msg.sender, amountOfRewards);

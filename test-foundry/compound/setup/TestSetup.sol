@@ -12,10 +12,9 @@ import "@openzeppelin/contracts/utils/Strings.sol";
 import "@contracts/compound/comp-rewards/IncentivesVault.sol";
 import "@contracts/compound/comp-rewards/RewardsManager.sol";
 import "@contracts/compound/PositionsManager.sol";
-import "@contracts/compound/MarketsManager.sol";
+import "@contracts/compound/InterestRates.sol";
 import "@contracts/compound/MatchingEngine.sol";
-import "@contracts/compound/comp-rewards/RewardsManager.sol";
-import "@contracts/compound/Logic.sol";
+import "@contracts/compound/Morpho.sol";
 
 import "../../common/helpers/MorphoToken.sol";
 import "../../common/helpers/Chains.sol";
@@ -40,13 +39,13 @@ contract TestSetup is Config, Utils, stdCheats {
     uint256 public constant INITIAL_BALANCE = 1_000_000;
 
     ProxyAdmin public proxyAdmin;
-    TransparentUpgradeableProxy public positionsManagerProxy;
-    PositionsManager internal positionsManagerImplV1;
-    PositionsManager internal positionsManager;
-    PositionsManager internal fakePositionsManagerImpl;
-    MarketsManager internal marketsManager;
+    TransparentUpgradeableProxy public morphoProxy;
+    Morpho internal morphoImplV1;
+    Morpho internal morpho;
+    Morpho internal fakeMorphoImpl;
+    InterestRates internal interestRates;
     IRewardsManager internal rewardsManager;
-    ILogic internal logic;
+    IPositionsManager internal positionsManager;
 
     IncentivesVault public incentivesVault;
     DumbOracle internal dumbOracle;
@@ -73,30 +72,30 @@ contract TestSetup is Config, Utils, stdCheats {
     }
 
     function initContracts() internal {
-        PositionsManager.MaxGasForMatching memory maxGasForMatching = PositionsManagerStorage
-        .MaxGasForMatching({supply: 3e6, borrow: 3e6, withdraw: 3e6, repay: 3e6});
+        MorphoStorage.MaxGasForMatching memory maxGasForMatching = MorphoStorage.MaxGasForMatching({
+            supply: 3e6,
+            borrow: 3e6,
+            withdraw: 3e6,
+            repay: 3e6
+        });
 
         comptroller = IComptroller(comptrollerAddress);
-        marketsManager = new MarketsManager();
-        logic = new Logic();
+        interestRates = new InterestRates();
+        positionsManager = new PositionsManager();
 
         /// Deploy proxies ///
 
         proxyAdmin = new ProxyAdmin();
-        marketsManager = new MarketsManager();
+        interestRates = new InterestRates();
 
-        positionsManagerImplV1 = new PositionsManager();
-        positionsManagerProxy = new TransparentUpgradeableProxy(
-            address(positionsManagerImplV1),
-            address(this),
-            ""
-        );
+        morphoImplV1 = new Morpho();
+        morphoProxy = new TransparentUpgradeableProxy(address(morphoImplV1), address(this), "");
 
-        positionsManagerProxy.changeAdmin(address(proxyAdmin));
-        positionsManager = PositionsManager(payable(address(positionsManagerProxy)));
-        positionsManager.initialize(
-            marketsManager,
-            logic,
+        morphoProxy.changeAdmin(address(proxyAdmin));
+        morpho = Morpho(payable(address(morphoProxy)));
+        morpho.initialize(
+            interestRates,
+            positionsManager,
             comptroller,
             1,
             maxGasForMatching,
@@ -105,10 +104,10 @@ contract TestSetup is Config, Utils, stdCheats {
             wEth
         );
 
-        treasuryVault = new User(positionsManager);
-        fakePositionsManagerImpl = new PositionsManager();
+        treasuryVault = new User(morpho);
+        fakeMorphoImpl = new Morpho();
         oracle = ICompoundOracle(comptroller.oracle());
-        positionsManager.setTreasuryVault(address(treasuryVault));
+        morpho.setTreasuryVault(address(treasuryVault));
 
         /// Create markets ///
 
@@ -126,23 +125,23 @@ contract TestSetup is Config, Utils, stdCheats {
         morphoToken = new MorphoToken(address(this));
         dumbOracle = new DumbOracle();
         incentivesVault = new IncentivesVault(
-            address(positionsManager),
+            address(morpho),
             address(morphoToken),
             address(1),
             address(dumbOracle)
         );
         morphoToken.transfer(address(incentivesVault), 1_000_000 ether);
 
-        rewardsManager = new RewardsManager(address(positionsManager));
+        rewardsManager = new RewardsManager(address(morpho));
 
-        positionsManager.setRewardsManager(address(rewardsManager));
-        positionsManager.setIncentivesVault(address(incentivesVault));
-        positionsManager.toggleCompRewardsActivation();
+        morpho.setRewardsManager(address(rewardsManager));
+        morpho.setIncentivesVault(address(incentivesVault));
+        morpho.toggleCompRewardsActivation();
     }
 
     function createMarket(address _cToken) internal {
-        positionsManager.createMarket(_cToken);
-        positionsManager.setP2PIndexCursor(_cToken, 3_333);
+        morpho.createMarket(_cToken);
+        morpho.setP2PIndexCursor(_cToken, 3_333);
 
         // All tokens must also be added to the pools array, for the correct behavior of TestLiquidate::createAndSetCustomPriceOracle.
         pools.push(_cToken);
@@ -157,7 +156,7 @@ contract TestSetup is Config, Utils, stdCheats {
 
     function initUsers() internal {
         for (uint256 i = 0; i < 3; i++) {
-            suppliers.push(new User(positionsManager));
+            suppliers.push(new User(morpho));
             hevm.label(
                 address(suppliers[i]),
                 string(abi.encodePacked("Supplier", Strings.toString(i + 1)))
@@ -169,7 +168,7 @@ contract TestSetup is Config, Utils, stdCheats {
         supplier3 = suppliers[2];
 
         for (uint256 i = 0; i < 3; i++) {
-            borrowers.push(new User(positionsManager));
+            borrowers.push(new User(morpho));
             hevm.label(
                 address(borrowers[i]),
                 string(abi.encodePacked("Borrower", Strings.toString(i + 1)))
@@ -191,9 +190,9 @@ contract TestSetup is Config, Utils, stdCheats {
 
     function setContractsLabels() internal {
         hevm.label(address(proxyAdmin), "ProxyAdmin");
-        hevm.label(address(positionsManagerImplV1), "PositionsManagerImplV1");
-        hevm.label(address(positionsManager), "PositionsManager");
-        hevm.label(address(marketsManager), "MarketsManager");
+        hevm.label(address(morphoImplV1), "MorphoImplV1");
+        hevm.label(address(morpho), "Morpho");
+        hevm.label(address(interestRates), "InterestRates");
         hevm.label(address(rewardsManager), "RewardsManager");
         hevm.label(address(morphoToken), "MorphoToken");
         hevm.label(address(comptroller), "Comptroller");
@@ -205,9 +204,9 @@ contract TestSetup is Config, Utils, stdCheats {
 
     function createSigners(uint256 _nbOfSigners) internal {
         while (borrowers.length < _nbOfSigners) {
-            borrowers.push(new User(positionsManager));
+            borrowers.push(new User(morpho));
             fillUserBalances(borrowers[borrowers.length - 1]);
-            suppliers.push(new User(positionsManager));
+            suppliers.push(new User(morpho));
             fillUserBalances(suppliers[suppliers.length - 1]);
         }
     }
@@ -232,16 +231,20 @@ contract TestSetup is Config, Utils, stdCheats {
         uint64 _withdraw,
         uint64 _repay
     ) public {
-        PositionsManagerStorage.MaxGasForMatching memory newMaxGas = PositionsManagerStorage
-        .MaxGasForMatching({supply: _supply, borrow: _borrow, withdraw: _withdraw, repay: _repay});
-        positionsManager.setMaxGasForMatching(newMaxGas);
+        MorphoStorage.MaxGasForMatching memory newMaxGas = MorphoStorage.MaxGasForMatching({
+            supply: _supply,
+            borrow: _borrow,
+            withdraw: _withdraw,
+            repay: _repay
+        });
+        morpho.setMaxGasForMatching(newMaxGas);
     }
 
     function move1000BlocksForward(address _marketAddress) public {
         for (uint256 k; k < 100; k++) {
             hevm.roll(block.number + 10);
             hevm.warp(block.timestamp + 1);
-            positionsManager.updateP2PIndexes(_marketAddress);
+            morpho.updateP2PIndexes(_marketAddress);
         }
     }
 
@@ -258,7 +261,7 @@ contract TestSetup is Config, Utils, stdCheats {
 
         uint256 poolSupplyBPY = cToken.supplyRatePerBlock();
         uint256 poolBorrowBPY = cToken.borrowRatePerBlock();
-        (uint256 reserveFactor, uint256 p2pIndexCursor) = positionsManager.marketParameters(
+        (uint256 reserveFactor, uint256 p2pIndexCursor) = morpho.marketParameters(
             _poolTokenAddress
         );
 

@@ -6,11 +6,11 @@ import "../libraries/CompoundMath.sol";
 import "../libraries/DelegateCall.sol";
 
 import "@openzeppelin/contracts/utils/math/Math.sol";
-import "./PositionsManagerStorage.sol";
+import "./MorphoStorage.sol";
 
-/// @title PositionsManagerGetters.
-/// @notice Getters for PositionsManager, including externals, internals, user-accessible.
-abstract contract PositionsManagerGetters is PositionsManagerStorage {
+/// @title MorphoGetters.
+/// @notice Getters for Morpho, including externals, internals, user-accessible.
+abstract contract MorphoGetters is MorphoStorage {
     using DoubleLinkedList for DoubleLinkedList.List;
     using CompoundMath for uint256;
     using DelegateCall for address;
@@ -259,17 +259,17 @@ abstract contract PositionsManagerGetters is PositionsManagerStorage {
     }
 
     function updateP2PIndexes(address _poolTokenAddress) public {
-        address(marketsManager).functionDelegateCall(
-            abi.encodeWithSelector(marketsManager.updateP2PIndexes.selector, _poolTokenAddress)
+        address(interestRates).functionDelegateCall(
+            abi.encodeWithSelector(interestRates.updateP2PIndexes.selector, _poolTokenAddress)
         );
     }
 
     function getUpdatedp2pSupplyIndex(address _poolTokenAddress) public returns (uint256) {
         return
             abi.decode(
-                address(marketsManager).functionDelegateCall(
+                address(interestRates).functionDelegateCall(
                     abi.encodeWithSelector(
-                        marketsManager.getUpdatedp2pSupplyIndex.selector,
+                        interestRates.getUpdatedp2pSupplyIndex.selector,
                         _poolTokenAddress
                     )
                 ),
@@ -280,9 +280,9 @@ abstract contract PositionsManagerGetters is PositionsManagerStorage {
     function getUpdatedp2pBorrowIndex(address _poolTokenAddress) public returns (uint256) {
         return
             abi.decode(
-                address(marketsManager).functionDelegateCall(
+                address(interestRates).functionDelegateCall(
                     abi.encodeWithSelector(
-                        marketsManager.getUpdatedp2pBorrowIndex.selector,
+                        interestRates.getUpdatedp2pBorrowIndex.selector,
                         _poolTokenAddress
                     )
                 ),
@@ -293,9 +293,9 @@ abstract contract PositionsManagerGetters is PositionsManagerStorage {
     function getUpdatedP2PIndexes(address _poolTokenAddress) public returns (uint256, uint256) {
         return
             abi.decode(
-                address(marketsManager).functionDelegateCall(
+                address(interestRates).functionDelegateCall(
                     abi.encodeWithSelector(
-                        marketsManager.getUpdatedP2PIndexes.selector,
+                        interestRates.getUpdatedP2PIndexes.selector,
                         _poolTokenAddress
                     )
                 ),

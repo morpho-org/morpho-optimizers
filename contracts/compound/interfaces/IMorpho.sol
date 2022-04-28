@@ -3,7 +3,7 @@ pragma solidity 0.8.13;
 
 import "../libraries/Types.sol";
 
-interface IPositionsManager {
+interface IMorpho {
     struct Balance {
         uint256 inP2P;
         uint256 onPool;
