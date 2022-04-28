@@ -2,11 +2,16 @@
 pragma solidity 0.8.13;
 
 interface IMarketsManager {
-    function isCreated(address _poolTokenAddress) external returns (bool);
-
     function noP2P(address _poolTokenAddress) external view returns (bool);
 
-    function pauseStatuses(address) external view returns (bool, bool);
+    function marketStatuses(address)
+        external
+        view
+        returns (
+            bool,
+            bool,
+            bool
+        );
 
     function p2pSupplyIndex(address _poolTokenAddress) external view returns (uint256);
 
