@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 /// @title Morpho Rewards Distributor.
-/// @notice This contract allows Morpho users to claim their rewards. This contract is largely innspired by Euler Distributor's contract: https://github.com/euler-xyz/euler-contracts/blob/master/contracts/mining/EulDistributor.sol.
+/// @notice This contract allows Morpho users to claim their rewards. This contract is largely inspired by Euler Distributor's contract: https://github.com/euler-xyz/euler-contracts/blob/master/contracts/mining/EulDistributor.sol.
 contract RewardsDistributor is Ownable {
     using SafeTransferLib for ERC20;
 
@@ -16,6 +16,14 @@ contract RewardsDistributor is Ownable {
     bytes32 public currRoot; // The merkle tree's root of the current rewards distribution.
     bytes32 public prevRoot; // The merkle tree's root of the previous rewards distribution.
     mapping(address => mapping(address => uint256)) public claimed; // The rewards already claimed. account -> token -> amount
+
+    /// ERRORS ///
+
+    /// @notice Thrown when the proof is invalid or expired.
+    error ProofInvalidOrExpired();
+
+    /// @notice Thrown when the claimor has already claimed the rewards.
+    error AlreadyClaimed();
 
     /// EXTERNAL ///
 
@@ -40,11 +48,11 @@ contract RewardsDistributor is Ownable {
         bytes32 candidateRoot = MerkleProof.processProof(
             _proof,
             keccak256(abi.encodePacked(_account, _token, _claimable))
-        ); // 72 bytes leaf.
-        require(candidateRoot == currRoot || candidateRoot == prevRoot, "proof invalid/expired");
+        );
+        if (candidateRoot != currRoot && candidateRoot != prevRoot) revert ProofInvalidOrExpired();
 
         uint256 alreadyClaimed = claimed[_account][_token];
-        require(_claimable > alreadyClaimed, "already claimed");
+        if (_claimable <= alreadyClaimed) revert AlreadyClaimed();
 
         uint256 amount;
         unchecked {
