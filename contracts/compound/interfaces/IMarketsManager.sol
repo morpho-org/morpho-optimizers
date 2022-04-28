@@ -2,8 +2,6 @@
 pragma solidity 0.8.13;
 
 interface IMarketsManager {
-    function noP2P(address _poolTokenAddress) external view returns (bool);
-
     function marketStatuses(address)
         external
         view
@@ -31,4 +29,6 @@ interface IMarketsManager {
     function isMarketCreatedAndNotPaused(address _poolTokenAddress) external view;
 
     function isMarketCreatedAndNotPausedOrPartiallyPaused(address _poolTokenAddress) external view;
+
+    function isMarketCreated(address _poolTokenAddress) external view;
 }

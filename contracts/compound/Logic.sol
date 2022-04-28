@@ -108,7 +108,7 @@ contract Logic is ILogic, MatchingEngine {
 
         /// Supply in P2P ///
 
-        if (!marketsManager.noP2P(_poolTokenAddress)) {
+        if (!noP2P[_poolTokenAddress]) {
             // Match borrow P2P delta first if any.
             uint256 matchedDelta;
             if (delta.borrowP2PDelta > 0) {
@@ -192,7 +192,7 @@ contract Logic is ILogic, MatchingEngine {
 
         /// Borrow in P2P ///
 
-        if (!marketsManager.noP2P(_poolTokenAddress)) {
+        if (!noP2P[_poolTokenAddress]) {
             // Match supply P2P delta first if any.
             uint256 matchedDelta;
             if (delta.supplyP2PDelta > 0) {
@@ -304,7 +304,7 @@ contract Logic is ILogic, MatchingEngine {
 
         /// Transfer withdraw ///
 
-        if (vars.remainingToWithdraw > 0 && !marketsManager.noP2P(_poolTokenAddress)) {
+        if (vars.remainingToWithdraw > 0 && !noP2P[_poolTokenAddress]) {
             supplyBalanceInOf[_poolTokenAddress][_supplier].inP2P -= CompoundMath.min(
                 supplyBalanceInOf[_poolTokenAddress][_supplier].inP2P,
                 vars.remainingToWithdraw.div(p2pSupplyIndex)
@@ -453,7 +453,7 @@ contract Logic is ILogic, MatchingEngine {
 
         /// Transfer repay ///
 
-        if (vars.remainingToRepay > 0 && !marketsManager.noP2P(_poolTokenAddress)) {
+        if (vars.remainingToRepay > 0 && !noP2P[_poolTokenAddress]) {
             // Match Delta if any.
             if (delta.borrowP2PDelta > 0) {
                 uint256 matchedDelta = CompoundMath.min(

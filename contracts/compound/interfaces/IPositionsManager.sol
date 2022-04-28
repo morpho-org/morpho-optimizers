@@ -26,6 +26,8 @@ interface IPositionsManager {
 
     function supplyBalanceInOf(address, address) external view returns (Balance memory);
 
+    function noP2P(address _poolTokenAddress) external view returns (bool);
+
     function deltas(address) external view returns (Types.Delta memory);
 
     function cEth() external view returns (address);
