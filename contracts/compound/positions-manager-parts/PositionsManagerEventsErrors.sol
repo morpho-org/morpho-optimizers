@@ -80,6 +80,12 @@ abstract contract PositionsManagerEventsErrors is PositionsManagerGetters {
         address indexed _poolTokenCollateralAddress
     );
 
+    /// EVENTS ///
+
+    /// @notice Emitted when a new market is created.
+    /// @param _poolTokenAddress The address of the market that has been created.
+    event MarketCreated(address _poolTokenAddress);
+
     /// @notice Emitted when a new value for `maxSortedUsers` is set.
     /// @param _newValue The new value of `maxSortedUsers`.
     event MaxSortedUsersSet(uint256 _newValue);
@@ -132,6 +138,26 @@ abstract contract PositionsManagerEventsErrors is PositionsManagerGetters {
     /// @param _amountSent The amount of reward token sent to the vault.
     event RewardsClaimedAndConverted(address indexed _user, uint256 _amountSent);
 
+    /// @notice Emitted when the `reserveFactor` is set.
+    /// @param _poolTokenAddress The address of the market set.
+    /// @param _newValue The new value of the `reserveFactor`.
+    event ReserveFactorSet(address indexed _poolTokenAddress, uint256 _newValue);
+
+    /// @notice Emitted when the `p2pIndexCursor` is set.
+    /// @param _poolTokenAddress The address of the market set.
+    /// @param _newValue The new value of the `p2pIndexCursor`.
+    event P2PIndexCursorSet(address indexed _poolTokenAddress, uint256 _newValue);
+
+    /// @notice Emitted when a market is paused or unpaused.
+    /// @param _poolTokenAddress The address of the pool token concerned.
+    /// @param _newStatus The new pause status of the market.
+    event PauseStatusChanged(address indexed _poolTokenAddress, bool _newStatus);
+
+    /// @notice Emitted when a market is partially paused or unpaused.
+    /// @param _poolTokenAddress The address of the pool token concerned.
+    /// @param _newStatus The new partial pause status of the market.
+    event PartialPauseStatusChanged(address indexed _poolTokenAddress, bool _newStatus);
+
     /// ERRORS ///
 
     /// @notice Thrown when user is not a member of the market.
@@ -142,6 +168,12 @@ abstract contract PositionsManagerEventsErrors is PositionsManagerGetters {
 
     /// @notice Thrown when the amount is equal to 0.
     error AmountIsZero();
+
+    /// @notice Thrown when the creation of a market failed on Compound.
+    error MarketCreationFailedOnCompound();
+
+    /// @notice Thrown when the market is already created.
+    error MarketAlreadyCreated();
 
     /// @notice Thrown when the address is the zero address.
     error ZeroAddress();

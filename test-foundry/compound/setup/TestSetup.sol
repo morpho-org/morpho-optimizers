@@ -14,7 +14,7 @@ import "@contracts/compound/comp-rewards/RewardsManager.sol";
 import "@contracts/compound/PositionsManager.sol";
 import "@contracts/compound/MarketsManager.sol";
 import "@contracts/compound/MatchingEngine.sol";
-import "@contracts/compound/InterestRatesV1.sol";
+import "@contracts/compound/comp-rewards/RewardsManager.sol";
 import "@contracts/compound/Logic.sol";
 
 import "../../common/helpers/MorphoToken.sol";
@@ -24,7 +24,7 @@ import "../helpers/DumbOracle.sol";
 import {User} from "../helpers/User.sol";
 import {Utils} from "./Utils.sol";
 import "forge-std/stdlib.sol";
-import "forge-std/console.sol";
+// import "forge-std/console.sol";
 import "@config/Config.sol";
 
 interface IAdminComptroller {
@@ -41,14 +41,11 @@ contract TestSetup is Config, Utils, stdCheats {
 
     ProxyAdmin public proxyAdmin;
     TransparentUpgradeableProxy public positionsManagerProxy;
-    TransparentUpgradeableProxy public marketsManagerProxy;
     PositionsManager internal positionsManagerImplV1;
     PositionsManager internal positionsManager;
     PositionsManager internal fakePositionsManagerImpl;
     MarketsManager internal marketsManager;
-    MarketsManager internal marketsManagerImplV1;
     IRewardsManager internal rewardsManager;
-    IInterestRates internal interestRates;
     ILogic internal logic;
 
     IncentivesVault public incentivesVault;
@@ -80,22 +77,14 @@ contract TestSetup is Config, Utils, stdCheats {
         .MaxGasForMatching({supply: 3e6, borrow: 3e6, withdraw: 3e6, repay: 3e6});
 
         comptroller = IComptroller(comptrollerAddress);
-        interestRates = new InterestRatesV1();
+        marketsManager = new MarketsManager();
         logic = new Logic();
 
         /// Deploy proxies ///
 
         proxyAdmin = new ProxyAdmin();
-        marketsManagerImplV1 = new MarketsManager();
-        marketsManagerProxy = new TransparentUpgradeableProxy(
-            address(marketsManagerImplV1),
-            address(this),
-            ""
-        );
+        marketsManager = new MarketsManager();
 
-        marketsManagerProxy.changeAdmin(address(proxyAdmin));
-        marketsManager = MarketsManager(address(marketsManagerProxy));
-        marketsManager.initialize(comptroller, interestRates);
         positionsManagerImplV1 = new PositionsManager();
         positionsManagerProxy = new TransparentUpgradeableProxy(
             address(positionsManagerImplV1),
@@ -119,7 +108,6 @@ contract TestSetup is Config, Utils, stdCheats {
         treasuryVault = new User(positionsManager);
         fakePositionsManagerImpl = new PositionsManager();
         oracle = ICompoundOracle(comptroller.oracle());
-        marketsManager.setPositionsManager(address(positionsManager));
         positionsManager.setTreasuryVault(address(treasuryVault));
 
         /// Create markets ///
@@ -153,8 +141,8 @@ contract TestSetup is Config, Utils, stdCheats {
     }
 
     function createMarket(address _cToken) internal {
-        marketsManager.createMarket(_cToken);
-        marketsManager.setP2PIndexCursor(_cToken, 3_333);
+        positionsManager.createMarket(_cToken);
+        positionsManager.setP2PIndexCursor(_cToken, 3_333);
 
         // All tokens must also be added to the pools array, for the correct behavior of TestLiquidate::createAndSetCustomPriceOracle.
         pools.push(_cToken);
@@ -205,7 +193,6 @@ contract TestSetup is Config, Utils, stdCheats {
         hevm.label(address(proxyAdmin), "ProxyAdmin");
         hevm.label(address(positionsManagerImplV1), "PositionsManagerImplV1");
         hevm.label(address(positionsManager), "PositionsManager");
-        hevm.label(address(marketsManagerImplV1), "MarketsManagerImplV1");
         hevm.label(address(marketsManager), "MarketsManager");
         hevm.label(address(rewardsManager), "RewardsManager");
         hevm.label(address(morphoToken), "MorphoToken");
@@ -254,7 +241,7 @@ contract TestSetup is Config, Utils, stdCheats {
         for (uint256 k; k < 100; k++) {
             hevm.roll(block.number + 10);
             hevm.warp(block.timestamp + 1);
-            marketsManager.updateP2PIndexes(_marketAddress);
+            positionsManager.updateP2PIndexes(_marketAddress);
         }
     }
 
@@ -271,7 +258,7 @@ contract TestSetup is Config, Utils, stdCheats {
 
         uint256 poolSupplyBPY = cToken.supplyRatePerBlock();
         uint256 poolBorrowBPY = cToken.borrowRatePerBlock();
-        (uint256 reserveFactor, uint256 p2pIndexCursor) = marketsManager.marketParameters(
+        (uint256 reserveFactor, uint256 p2pIndexCursor) = positionsManager.marketParameters(
             _poolTokenAddress
         );
 
