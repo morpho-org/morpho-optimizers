@@ -39,9 +39,9 @@ contract InterestRatesV1 is IInterestRates {
         returns (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex)
     {
         (
-            uint256 supplyP2PGrowthFactor,
+            uint256 p2pSupplyGrowthFactor,
             uint256 supplyPoolGrowthaFactor,
-            uint256 borrowP2PGrowthFactor,
+            uint256 p2pBorrowGrowthFactor,
             uint256 poolBorrowGrowthFactor
         ) = _computeGrowthFactors(
             _params.poolSupplyIndex,
@@ -71,12 +71,12 @@ contract InterestRatesV1 is IInterestRates {
 
         newP2PSupplyIndex = _computeNewP2PRate(
             supplyParams,
-            supplyP2PGrowthFactor,
+            p2pSupplyGrowthFactor,
             supplyPoolGrowthaFactor
         );
         newP2PBorrowIndex = _computeNewP2PRate(
             borrowParams,
-            borrowP2PGrowthFactor,
+            p2pBorrowGrowthFactor,
             poolBorrowGrowthFactor
         );
     }
@@ -95,7 +95,7 @@ contract InterestRatesV1 is IInterestRates {
         });
 
         (
-            uint256 supplyP2PGrowthFactor,
+            uint256 p2pSupplyGrowthFactor,
             uint256 supplyPoolGrowthaFactor,
             ,
 
@@ -108,7 +108,7 @@ contract InterestRatesV1 is IInterestRates {
             _params.p2pIndexCursor
         );
 
-        return _computeNewP2PRate(supplyParams, supplyP2PGrowthFactor, supplyPoolGrowthaFactor);
+        return _computeNewP2PRate(supplyParams, p2pSupplyGrowthFactor, supplyPoolGrowthaFactor);
     }
 
     /// @notice Computes and return the new peer-to-peer borrow index.
@@ -124,7 +124,7 @@ contract InterestRatesV1 is IInterestRates {
             p2pDelta: _params.delta.borrowP2PDelta
         });
 
-        (, , uint256 borrowP2PGrowthFactor, uint256 poolBorrowGrowthFactor) = _computeGrowthFactors(
+        (, , uint256 p2pBorrowGrowthFactor, uint256 poolBorrowGrowthFactor) = _computeGrowthFactors(
             _params.poolSupplyIndex,
             _params.poolBorrowIndex,
             _params.lastPoolSupplyIndex,
@@ -133,7 +133,7 @@ contract InterestRatesV1 is IInterestRates {
             _params.p2pIndexCursor
         );
 
-        return _computeNewP2PRate(borrowParams, borrowP2PGrowthFactor, poolBorrowGrowthFactor);
+        return _computeNewP2PRate(borrowParams, p2pBorrowGrowthFactor, poolBorrowGrowthFactor);
     }
 
     /// INTERNAL ///
@@ -144,9 +144,9 @@ contract InterestRatesV1 is IInterestRates {
     /// @param _lastPoolSupplyIndex The pool supply index at last update.
     /// @param _lastPoolBorrowIndex The pool borrow index at last update.
     /// @param _reserveFactor The reserve factor percentage (10 000 = 100%).
-    /// @return supplyP2PGrowthFactor_ The supply P2P growth factor.
+    /// @return p2pSupplyGrowthFactor_ The supply P2P growth factor.
     /// @return poolSupplyGrowthFactor_ The supply pool growth factor.
-    /// @return borrowP2PGrowthFactor_ The borrow P2P growth factor.
+    /// @return p2pBorrowGrowthFactor_ The borrow P2P growth factor.
     /// @return poolBorrowGrowthFactor_ The borrow pool growth factor.
     function _computeGrowthFactors(
         uint256 _poolSupplyIndex,
@@ -159,9 +159,9 @@ contract InterestRatesV1 is IInterestRates {
         internal
         pure
         returns (
-            uint256 supplyP2PGrowthFactor_,
+            uint256 p2pSupplyGrowthFactor_,
             uint256 poolSupplyGrowthFactor_,
-            uint256 borrowP2PGrowthFactor_,
+            uint256 p2pBorrowGrowthFactor_,
             uint256 poolBorrowGrowthFactor_
         )
     {
@@ -171,11 +171,11 @@ contract InterestRatesV1 is IInterestRates {
             poolSupplyGrowthFactor_ +
             _p2pIndexCursor *
             poolBorrowGrowthFactor_) / MAX_BASIS_POINTS;
-        supplyP2PGrowthFactor_ =
+        p2pSupplyGrowthFactor_ =
             p2pGrowthFactor -
             (_reserveFactor * (p2pGrowthFactor - poolSupplyGrowthFactor_)) /
             MAX_BASIS_POINTS;
-        borrowP2PGrowthFactor_ =
+        p2pBorrowGrowthFactor_ =
             p2pGrowthFactor +
             (_reserveFactor * (poolBorrowGrowthFactor_ - p2pGrowthFactor)) /
             MAX_BASIS_POINTS;
