@@ -30,7 +30,8 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
         uint16 p2pIndexCursor; // Position of the peer-to-peer rate in the pool's spread. Determine the weights of the weighted arithmetic average in the indexes computations ((1 - p2pIndexCursor) * r^S + p2pIndexCursor * r^B) (in basis point).
     }
 
-    struct PauseStatuses {
+    struct MarketStatuses {
+        bool isCreated; // Whether or not this market is created.
         bool isPaused; // Whether the market is paused or not (all entry points on Morpho are frozen; supply, borrow, withdraw, repay and liquidate).
         bool isPartiallyPaused; // Whether the market is partially paused or not (only supply and borrow are frozen).
     }
@@ -40,13 +41,12 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
     uint256 public constant WAD = 1e18;
     uint16 public constant MAX_BASIS_POINTS = 10_000; // 100% (in basis point).
     address[] public marketsCreated; // Keeps track of the created markets.
-    mapping(address => bool) public override isCreated; // Whether or not this market is created.
     mapping(address => MarketParameters) public marketParameters; // Market parameters.
     mapping(address => uint256) public override p2pSupplyIndex; // Current index from supply p2pUnit to underlying (in wad).
     mapping(address => uint256) public override p2pBorrowIndex; // Current index from borrow p2pUnit to underlying (in wad).
     mapping(address => LastPoolIndexes) public lastPoolIndexes; // Last pool index stored.
     mapping(address => bool) public override noP2P; // Whether to put users on pool or not for the given market.
-    mapping(address => PauseStatuses) public pauseStatuses; // Whether a market is paused or partially paused or not.
+    mapping(address => MarketStatuses) public override marketStatuses; // Whether a market is paused or partially paused or not.
 
     /// EVENTS ///
 
@@ -128,7 +128,7 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
     /// @notice Prevents to update a market not created yet.
     /// @param _poolTokenAddress The address of the market to check.
     modifier isMarketCreated(address _poolTokenAddress) {
-        if (!isCreated[_poolTokenAddress]) revert MarketNotCreated();
+        if (!marketStatuses[_poolTokenAddress].isCreated) revert MarketNotCreated();
         _;
     }
 
@@ -192,8 +192,8 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
         uint256[] memory results = positionsManager.createMarket(_poolTokenAddress);
         if (results[0] != 0) revert MarketCreationFailedOnCompound();
 
-        if (isCreated[_poolTokenAddress]) revert MarketAlreadyCreated();
-        isCreated[_poolTokenAddress] = true;
+        if (marketStatuses[_poolTokenAddress].isCreated) revert MarketAlreadyCreated();
+        marketStatuses[_poolTokenAddress].isCreated = true;
 
         ICToken poolToken = ICToken(_poolTokenAddress);
 
@@ -282,11 +282,11 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
             uint256 reserveFactor_
         )
     {
-        isCreated_ = isCreated[_poolTokenAddress];
+        MarketStatuses memory marketStatuses_ = marketStatuses[_poolTokenAddress];
+        isCreated_ = marketStatuses_.isCreated;
         noP2P_ = noP2P[_poolTokenAddress];
-        PauseStatuses storage pauseStatusesOfTheMarket = pauseStatuses[_poolTokenAddress];
-        isPaused_ = pauseStatusesOfTheMarket.isPaused;
-        isPartiallyPaused_ = pauseStatusesOfTheMarket.isPartiallyPaused;
+        isPaused_ = marketStatuses_.isPaused;
+        isPartiallyPaused_ = marketStatuses_.isPartiallyPaused;
         reserveFactor_ = marketParameters[_poolTokenAddress].reserveFactor;
     }
 
@@ -391,35 +391,34 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
     /// @notice Prevents a user to trigger a function when market is not created or paused.
     /// @param _poolTokenAddress The address of the market to check.
     function isMarketCreatedAndNotPaused(address _poolTokenAddress) external view {
-        if (!isCreated[_poolTokenAddress]) revert MarketNotCreated();
-        if (pauseStatuses[_poolTokenAddress].isPaused) revert MarketPaused();
+        MarketStatuses memory marketStatuses_ = marketStatuses[_poolTokenAddress];
+        if (!marketStatuses_.isCreated) revert MarketNotCreated();
+        if (marketStatuses_.isPaused) revert MarketPaused();
     }
 
     /// @notice Prevents a user to trigger a function when market is not created or paused or partial paused.
     /// @param _poolTokenAddress The address of the market to check.
     function isMarketCreatedAndNotPausedOrPartiallyPaused(address _poolTokenAddress) external view {
-        if (!isCreated[_poolTokenAddress]) revert MarketNotCreated();
-        if (
-            pauseStatuses[_poolTokenAddress].isPaused ||
-            pauseStatuses[_poolTokenAddress].isPartiallyPaused
-        ) revert MarketPaused();
+        MarketStatuses memory marketStatuses_ = marketStatuses[_poolTokenAddress];
+        if (!marketStatuses_.isCreated) revert MarketNotCreated();
+        if (marketStatuses_.isPaused || marketStatuses_.isPartiallyPaused) revert MarketPaused();
     }
 
     /// @notice Toggles the pause status on a specific market in case of emergency.
     /// @param _poolTokenAddress The address of the market to pause/unpause.
     function togglePauseStatus(address _poolTokenAddress) external onlyOwner {
-        PauseStatuses storage pauseStatusesOfThisMarket = pauseStatuses[_poolTokenAddress];
-        bool newPauseStatus = !pauseStatusesOfThisMarket.isPaused;
-        pauseStatusesOfThisMarket.isPaused = newPauseStatus;
+        MarketStatuses storage marketStatuses_ = marketStatuses[_poolTokenAddress];
+        bool newPauseStatus = !marketStatuses_.isPaused;
+        marketStatuses_.isPaused = newPauseStatus;
         emit PauseStatusChanged(_poolTokenAddress, newPauseStatus);
     }
 
     /// @notice Toggles the pause status on a specific market in case of emergency.
     /// @param _poolTokenAddress The address of the market to partially pause/unpause.
     function togglePartialPauseStatus(address _poolTokenAddress) external onlyOwner {
-        PauseStatuses storage pauseStatusesOfThisMarket = pauseStatuses[_poolTokenAddress];
-        bool newPauseStatus = !pauseStatusesOfThisMarket.isPartiallyPaused;
-        pauseStatusesOfThisMarket.isPartiallyPaused = newPauseStatus;
+        MarketStatuses storage marketStatuses_ = marketStatuses[_poolTokenAddress];
+        bool newPauseStatus = !marketStatuses_.isPartiallyPaused;
+        marketStatuses_.isPartiallyPaused = newPauseStatus;
         emit PartialPauseStatusChanged(_poolTokenAddress, newPauseStatus);
     }
 
