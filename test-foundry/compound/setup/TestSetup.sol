@@ -148,7 +148,7 @@ contract TestSetup is Config, Utils, stdCheats {
 
     function createMarket(address _cToken) internal {
         marketsManager.createMarket(_cToken);
-        marketsManager.setp2pIndexCursor(_cToken, 3_333);
+        marketsManager.setP2PIndexCursor(_cToken, 3_333);
 
         // All tokens must also be added to the pools array, for the correct behavior of TestLiquidate::createAndSetCustomPriceOracle.
         pools.push(_cToken);
