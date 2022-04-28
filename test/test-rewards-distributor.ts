@@ -8,7 +8,7 @@ import { expect } from 'chai';
 describe('RewardsDistributor Contract', () => {
   let snapshotId: number;
   let rewardsDistributor: Contract;
-  let owner: Signer;
+  let governance: Signer;
   let account0: Signer;
   let account1: Signer;
   let account2: Signer;
@@ -29,7 +29,7 @@ describe('RewardsDistributor Contract', () => {
 
   const initialize = async () => {
     const signers = await ethers.getSigners();
-    [owner, account0, account1, account2] = signers;
+    [governance, account0, account1, account2] = signers;
 
     // Deploy RewardsDistributor
     const RewardsDistributor = await ethers.getContractFactory('RewardsDistributor');
@@ -53,14 +53,12 @@ describe('RewardsDistributor Contract', () => {
       ethers.utils.solidityKeccak256(['address', 'address', 'uint256'], [receiver.account, receiver.token, receiver.claimable])
     );
     merkletree = new MerkleTree(leaves, ethers.utils.keccak256, { sortPairs: true });
-    proofs = distribution.map((receiver) => {
-      return {
-        address: receiver.account,
-        proof: merkletree.getHexProof(
-          ethers.utils.solidityKeccak256(['address', 'address', 'uint256'], [receiver.account, receiver.token, receiver.claimable])
-        ),
-      };
-    });
+    proofs = distribution.map((receiver) => ({
+      address: receiver.account,
+      proof: merkletree.getHexProof(
+        ethers.utils.solidityKeccak256(['address', 'address', 'uint256'], [receiver.account, receiver.token, receiver.claimable])
+      ),
+    }));
     root = merkletree.getHexRoot();
   };
 
@@ -75,11 +73,11 @@ describe('RewardsDistributor Contract', () => {
   });
 
   describe('Test RewardsDistributor', () => {
-    it('Only owner should be able to update root', async () => {
+    it('Only governance should be able to update root', async () => {
       const newRoot = ethers.utils.formatBytes32String('root');
       expect(rewardsDistributor.connect(account0).updateRoot(newRoot)).to.be.reverted;
 
-      await rewardsDistributor.connect(owner).updateRoot(newRoot);
+      await rewardsDistributor.connect(governance).updateRoot(newRoot);
       expect(await rewardsDistributor.currRoot()).equal(newRoot);
     });
 
@@ -92,7 +90,7 @@ describe('RewardsDistributor Contract', () => {
     });
 
     it('Should distribute various tokens on current distribution', async () => {
-      await rewardsDistributor.connect(owner).updateRoot(root);
+      await rewardsDistributor.connect(governance).updateRoot(root);
 
       await rewardsDistributor
         .connect(account0)
@@ -114,7 +112,7 @@ describe('RewardsDistributor Contract', () => {
     });
 
     it('Should not distribute for invalid tokens', async () => {
-      await rewardsDistributor.connect(owner).updateRoot(root);
+      await rewardsDistributor.connect(governance).updateRoot(root);
 
       expect(
         rewardsDistributor
@@ -126,7 +124,7 @@ describe('RewardsDistributor Contract', () => {
     });
 
     it('Should not be possible to replay proof', async () => {
-      await rewardsDistributor.connect(owner).updateRoot(root);
+      await rewardsDistributor.connect(governance).updateRoot(root);
 
       await rewardsDistributor
         .connect(account0)
@@ -140,8 +138,8 @@ describe('RewardsDistributor Contract', () => {
     });
 
     it('Should be possible to claim for previous distribution', async () => {
-      await rewardsDistributor.connect(owner).updateRoot(root);
-      await rewardsDistributor.connect(owner).updateRoot(ethers.utils.formatBytes32String('new root'));
+      await rewardsDistributor.connect(governance).updateRoot(root);
+      await rewardsDistributor.connect(governance).updateRoot(ethers.utils.formatBytes32String('new root'));
 
       await rewardsDistributor
         .connect(account0)
@@ -150,7 +148,7 @@ describe('RewardsDistributor Contract', () => {
     });
 
     it('Should be possible to claim for previous and current distribution', async () => {
-      await rewardsDistributor.connect(owner).updateRoot(root);
+      await rewardsDistributor.connect(governance).updateRoot(root);
 
       const newDistribution = [{ account: await account0.getAddress(), token: tokens[0].address, claimable: amount0.add(amount1) }];
       const newLeaves = newDistribution.map((receiver) =>
@@ -167,7 +165,7 @@ describe('RewardsDistributor Contract', () => {
       });
       const newRoot = newMerkletree.getHexRoot();
 
-      await rewardsDistributor.connect(owner).updateRoot(newRoot);
+      await rewardsDistributor.connect(governance).updateRoot(newRoot);
 
       await rewardsDistributor
         .connect(account0)
