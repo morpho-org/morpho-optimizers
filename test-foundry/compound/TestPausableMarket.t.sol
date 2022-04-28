@@ -57,7 +57,7 @@ contract TestPausableMarket is TestSetup {
         supplier1.repay(cUsdc, type(uint256).max);
 
         (, toBorrow) = positionsManager.getUserMaxCapacitiesForAsset(address(supplier1), cUsdc);
-        supplier1.borrow(cUsdc, toBorrow - 10); // Here the max capacities is overistamed.
+        supplier1.borrow(cUsdc, toBorrow - 10); // Here the max capacities is overestimated.
 
         // Change Oracle.
         SimplePriceOracle customOracle = createAndSetCustomPriceOracle();
