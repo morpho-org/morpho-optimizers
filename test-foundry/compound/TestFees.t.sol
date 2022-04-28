@@ -12,8 +12,8 @@ contract TestFees is TestSetup {
     }
 
     function testShouldNotBePossibleToSetFeesHigherThan100Percent() public {
-        marketsManager.setReserveFactor(cUsdc, 10_001);
-        (uint16 reserveFactor, ) = marketsManager.marketParameters(cUsdc);
+        positionsManager.setReserveFactor(cUsdc, 10_001);
+        (uint16 reserveFactor, ) = positionsManager.marketParameters(cUsdc);
         assertEq(reserveFactor, 10_000);
     }
 
@@ -23,7 +23,7 @@ contract TestFees is TestSetup {
     }
 
     function testOwnerShouldBeAbleToClaimFees() public {
-        marketsManager.setReserveFactor(cDai, 1000); // 10%
+        positionsManager.setReserveFactor(cDai, 1000); // 10%
 
         // Increase blocks so that rates update.
         hevm.roll(block.number + 1);
@@ -46,7 +46,7 @@ contract TestFees is TestSetup {
         // Set treasury vault to 0x.
         positionsManager.setTreasuryVault(address(0));
 
-        marketsManager.setReserveFactor(cDai, 1_000); // 10%
+        positionsManager.setReserveFactor(cDai, 1_000); // 10%
 
         supplier1.approve(dai, type(uint256).max);
         supplier1.supply(cDai, 100 * WAD);
@@ -62,15 +62,15 @@ contract TestFees is TestSetup {
 
     function testShouldCollectTheRightAmountOfFees() public {
         uint256 reserveFactor = 1_000;
-        marketsManager.setReserveFactor(cDai, reserveFactor); // 10%
+        positionsManager.setReserveFactor(cDai, reserveFactor); // 10%
 
         uint256 balanceBefore = IERC20(dai).balanceOf(positionsManager.treasuryVault());
         supplier1.approve(dai, type(uint256).max);
         supplier1.supply(cDai, 100 ether);
         supplier1.borrow(cDai, 50 ether);
 
-        uint256 oldSupplyExRate = marketsManager.p2pSupplyIndex(cDai);
-        uint256 oldBorrowExRate = marketsManager.p2pBorrowIndex(cDai);
+        uint256 oldSupplyExRate = positionsManager.p2pSupplyIndex(cDai);
+        uint256 oldBorrowExRate = positionsManager.p2pBorrowIndex(cDai);
 
         (uint256 supplyP2PBPY, uint256 borrowP2PBPY) = getApproxBPYs(cDai);
 
@@ -101,7 +101,7 @@ contract TestFees is TestSetup {
     }
 
     function testShouldNotClaimFeesIfFactorIsZero() public {
-        marketsManager.setReserveFactor(cDai, 0);
+        positionsManager.setReserveFactor(cDai, 0);
 
         // Increase blocks so that rates update.
         hevm.roll(block.number + 1);

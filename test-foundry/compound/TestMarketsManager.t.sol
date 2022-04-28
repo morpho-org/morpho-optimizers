@@ -8,18 +8,18 @@ contract TestMarketsManager is TestSetup {
 
     function testShoudDeployContractWithTheRightValues() public {
         assertEq(
-            marketsManager.p2pSupplyIndex(cDai),
+            positionsManager.p2pSupplyIndex(cDai),
             2 * 10**(16 + IERC20Metadata(ICToken(cDai).underlying()).decimals() - 8)
         );
         assertEq(
-            marketsManager.p2pBorrowIndex(cDai),
+            positionsManager.p2pBorrowIndex(cDai),
             2 * 10**(16 + IERC20Metadata(ICToken(cDai).underlying()).decimals() - 8)
         );
     }
 
     function testShouldRevertWhenCreatingMarketWithAnImproperMarket() public {
-        hevm.expectRevert(MarketsManager.MarketCreationFailedOnCompound.selector);
-        marketsManager.createMarket(address(supplier1));
+        hevm.expectRevert(abi.encodeWithSignature("MarketCreationFailedOnCompound()"));
+        positionsManager.createMarket(address(supplier1));
     }
 
     function testOnlyOwnerCanCreateMarkets() public {
@@ -31,7 +31,7 @@ contract TestMarketsManager is TestSetup {
             borrower1.createMarket(pools[i]);
         }
 
-        marketsManager.createMarket(cAave);
+        positionsManager.createMarket(cAave);
     }
 
     function testOnlyOwnerCanSetReserveFactor() public {
@@ -43,33 +43,28 @@ contract TestMarketsManager is TestSetup {
             borrower1.setReserveFactor(cDai, 1111);
         }
 
-        marketsManager.setReserveFactor(cDai, 1111);
+        positionsManager.setReserveFactor(cDai, 1111);
     }
 
     function testReserveFactorShouldBeUpdatedWithRightValue() public {
-        marketsManager.setReserveFactor(cDai, 1111);
-        (uint16 reserveFactor, ) = marketsManager.marketParameters(cDai);
+        positionsManager.setReserveFactor(cDai, 1111);
+        (uint16 reserveFactor, ) = positionsManager.marketParameters(cDai);
         assertEq(reserveFactor, 1111);
-    }
-
-    function testPositionsManagerShouldBeSetOnlyOnce() public {
-        hevm.expectRevert(MarketsManager.PositionsManagerAlreadySet.selector);
-        marketsManager.setPositionsManager(address(fakePositionsManagerImpl));
     }
 
     function testShouldCreateMarketWithTheRightValues() public {
         ICToken cToken = ICToken(cAave);
-        marketsManager.createMarket(cAave);
+        positionsManager.createMarket(cAave);
 
-        (bool isCreated, , ) = marketsManager.marketStatuses(cAave);
+        (bool isCreated, , ) = positionsManager.marketStatuses(cAave);
 
         assertTrue(isCreated);
         assertEq(
-            marketsManager.p2pSupplyIndex(cAave),
+            positionsManager.p2pSupplyIndex(cAave),
             2 * 10**(16 + IERC20Metadata(cToken.underlying()).decimals() - 8)
         );
         assertEq(
-            marketsManager.p2pBorrowIndex(cAave),
+            positionsManager.p2pBorrowIndex(cAave),
             2 * 10**(16 + IERC20Metadata(cToken.underlying()).decimals() - 8)
         );
     }
@@ -115,16 +110,5 @@ contract TestMarketsManager is TestSetup {
 
         positionsManager.setNoP2P(cDai, true);
         assertTrue(positionsManager.noP2P(cDai));
-    }
-
-    function testOnlyOwnerShouldBeAbleToUpdateInterestRates() public {
-        IInterestRates interestRatesV2 = new InterestRatesV1();
-
-        hevm.prank(address(0));
-        hevm.expectRevert("Ownable: caller is not the owner");
-        marketsManager.setInterestRates(interestRatesV2);
-
-        marketsManager.setInterestRates(interestRatesV2);
-        assertEq(address(marketsManager.interestRates()), address(interestRatesV2));
     }
 }

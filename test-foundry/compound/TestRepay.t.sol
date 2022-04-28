@@ -97,7 +97,7 @@ contract TestRepay is TestSetup {
 
         (uint256 inP2PAvailableBorrower, uint256 onPoolAvailableBorrower) = positionsManager
         .borrowBalanceInOf(cDai, address(borrower2));
-        uint256 p2pBorrowIndex = marketsManager.p2pBorrowIndex(cDai);
+        uint256 p2pBorrowIndex = positionsManager.p2pBorrowIndex(cDai);
         uint256 expectedBorrowBalanceInP2P = ((25 * borrowedAmount) / 100).div(p2pBorrowIndex);
 
         assertApproxEq(inP2PBorrower1, inP2PAvailableBorrower, 1);
@@ -196,7 +196,7 @@ contract TestRepay is TestSetup {
         );
 
         uint256 expectedSupplyBalanceInP2P = suppliedAmount.div(
-            marketsManager.p2pBorrowIndex(cDai)
+            positionsManager.p2pBorrowIndex(cDai)
         );
 
         assertEq(inP2PSupplier, expectedSupplyBalanceInP2P, "supplier in P2P");
@@ -208,7 +208,7 @@ contract TestRepay is TestSetup {
 
             (inP2P, onPool) = positionsManager.borrowBalanceInOf(cDai, address(borrowers[i]));
             uint256 expectedInP2P = expectedOnPool.mul(ICToken(cDai).borrowIndex()).div(
-                marketsManager.p2pBorrowIndex(cDai)
+                positionsManager.p2pBorrowIndex(cDai)
             );
 
             assertApproxEq(inP2P, expectedInP2P, 1, "borrower in P2P");
@@ -257,7 +257,7 @@ contract TestRepay is TestSetup {
         );
 
         uint256 supplyPoolIndex = ICToken(cDai).exchangeRateCurrent();
-        uint256 p2pBorrowIndex = marketsManager.p2pBorrowIndex(cDai);
+        uint256 p2pBorrowIndex = positionsManager.p2pBorrowIndex(cDai);
 
         uint256 expectedBorrowBalanceInP2P = ((25 * borrowedAmount) / 100).div(p2pBorrowIndex);
 
@@ -352,7 +352,7 @@ contract TestRepay is TestSetup {
             ICToken(cDai).exchangeRateCurrent()
         );
         uint256 expectedSupplyBalanceInP2P = (suppliedAmount / 2).div(
-            marketsManager.p2pBorrowIndex(cDai)
+            positionsManager.p2pBorrowIndex(cDai)
         );
 
         assertApproxEq(inP2PSupplier, expectedSupplyBalanceInP2P, 1, "supplier in P2P");
@@ -367,7 +367,7 @@ contract TestRepay is TestSetup {
 
             (inP2P, onPool) = positionsManager.borrowBalanceInOf(cDai, address(borrowers[i]));
 
-            uint256 expectedInP2P = amountPerBorrower.div(marketsManager.p2pBorrowIndex(cDai));
+            uint256 expectedInP2P = amountPerBorrower.div(positionsManager.p2pBorrowIndex(cDai));
 
             assertEq(inP2P, expectedInP2P, "borrower in P2P");
             assertEq(onPool, 0, "borrower on pool");
@@ -405,11 +405,11 @@ contract TestRepay is TestSetup {
         for (uint256 i = 0; i < 20; i++) {
             suppliers[i].approve(dai, suppliedAmount);
             suppliers[i].supply(cDai, suppliedAmount);
-            matched += suppliedAmount.div(marketsManager.p2pSupplyIndex(cDai));
+            matched += suppliedAmount.div(positionsManager.p2pSupplyIndex(cDai));
         }
 
         {
-            uint256 p2pBorrowIndex = marketsManager.p2pBorrowIndex(cDai);
+            uint256 p2pBorrowIndex = positionsManager.p2pBorrowIndex(cDai);
             expectedBorrowBalanceInP2P = borrowedAmount.div(p2pBorrowIndex);
 
             // Check balances after match of supplier1
@@ -420,7 +420,7 @@ contract TestRepay is TestSetup {
             assertApproxEq(onPoolBorrower, 0, 10, "borrower on pool");
             assertApproxEq(inP2PBorrower, expectedBorrowBalanceInP2P, 10, "borrower in P2P");
 
-            uint256 p2pSupplyIndex = marketsManager.p2pSupplyIndex(cDai);
+            uint256 p2pSupplyIndex = positionsManager.p2pSupplyIndex(cDai);
             uint256 expectedSupplyBalanceInP2P = suppliedAmount.div(p2pSupplyIndex);
 
             for (uint256 i = 0; i < 20; i++) {
@@ -447,12 +447,12 @@ contract TestRepay is TestSetup {
             // There should be a delta.
             // The amount unmatched during the repay.
             uint256 unmatched = 10 *
-                expectedSupplyBalanceInP2P.mul(marketsManager.p2pSupplyIndex(cDai));
+                expectedSupplyBalanceInP2P.mul(positionsManager.p2pSupplyIndex(cDai));
             // The difference between the previous matched amount and the amout unmatched creates a delta.
             uint256 expectedSupplyP2PDeltaInUnderlying = (matched.mul(
-                marketsManager.p2pSupplyIndex(cDai)
+                positionsManager.p2pSupplyIndex(cDai)
             ) - unmatched);
-            uint256 expectedSupplyP2PDelta = (matched.mul(marketsManager.p2pSupplyIndex(cDai)) -
+            uint256 expectedSupplyP2PDelta = (matched.mul(positionsManager.p2pSupplyIndex(cDai)) -
                 unmatched)
             .div(ICToken(cDai).exchangeRateCurrent());
 
@@ -484,16 +484,16 @@ contract TestRepay is TestSetup {
 
             (oldVars.SP2PD, , oldVars.SP2PA, ) = positionsManager.deltas(cDai);
             oldVars.SPI = ICToken(cDai).exchangeRateCurrent();
-            oldVars.SP2PER = marketsManager.p2pSupplyIndex(cDai);
+            oldVars.SP2PER = positionsManager.p2pSupplyIndex(cDai);
             (oldVars.BPY, ) = getApproxBPYs(cDai);
 
             move1000BlocksForward(cDai);
 
-            marketsManager.updateP2PIndexes(cDai);
+            positionsManager.updateP2PIndexes(cDai);
 
             (newVars.SP2PD, , newVars.SP2PA, ) = positionsManager.deltas(cDai);
             newVars.SPI = ICToken(cDai).exchangeRateCurrent();
-            newVars.SP2PER = marketsManager.p2pSupplyIndex(cDai);
+            newVars.SP2PER = positionsManager.p2pSupplyIndex(cDai);
             newVars.LR = ICToken(cDai).supplyRatePerBlock();
             newVars.VBR = ICToken(cDai).borrowRatePerBlock();
 

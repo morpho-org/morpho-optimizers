@@ -69,8 +69,26 @@ abstract contract PositionsManagerStorage is OwnableUpgradeable, ReentrancyGuard
         uint256 amountToSeize;
     }
 
+    struct LastPoolIndexes {
+        uint32 lastUpdateBlockNumber; // The last time the P2P indexes were updated.
+        uint112 lastSupplyPoolIndex; // Last pool supply index.
+        uint112 lastBorrowPoolIndex; // Last pool borrow index.
+    }
+
+    struct MarketParameters {
+        uint16 reserveFactor; // Proportion of the interest earned by users sent to the DAO for each market, in basis point (100% = 10000). The default value is 0.
+        uint16 p2pIndexCursor; // Position of the peer-to-peer rate in the pool's spread. Determine the weights of the weighted arithmetic average in the indexes computations ((1 - p2pIndexCursor) * r^S + p2pIndexCursor * r^B) (in basis point).
+    }
+
+    struct MarketStatuses {
+        bool isCreated; // Whether or not this market is created.
+        bool isPaused; // Whether the market is paused or not (all entry points on Morpho are frozen; supply, borrow, withdraw, repay and liquidate).
+        bool isPartiallyPaused; // Whether the market is partially paused or not (only supply and borrow are frozen).
+    }
+
     /// STORAGE ///
 
+    uint256 public constant WAD = 1e18;
     uint8 public constant CTOKEN_DECIMALS = 8; // The number of decimals for cToken.
     uint16 public constant MAX_BASIS_POINTS = 10_000; // 100% in basis points.
     uint16 public constant LIQUIDATION_CLOSE_FACTOR_PERCENT = 5_000; // 50% in basis points.
@@ -88,7 +106,16 @@ abstract contract PositionsManagerStorage is OwnableUpgradeable, ReentrancyGuard
     mapping(address => mapping(address => bool)) public userMembership; // Whether the user is in the market or not.
     mapping(address => address[]) public enteredMarkets; // The markets entered by a user.
     mapping(address => Types.Delta) public deltas; // Delta parameters for each market.
+
+    // Markets.
+
+    address[] public marketsCreated; // Keeps track of the created markets.
+    mapping(address => MarketParameters) public marketParameters; // Market parameters.
     mapping(address => bool) public noP2P; // Whether to put users on pool or not for the given market.
+    mapping(address => uint256) public p2pSupplyIndex; // Current index from supply p2pUnit to underlying (in wad).
+    mapping(address => uint256) public p2pBorrowIndex; // Current index from borrow p2pUnit to underlying (in wad).
+    mapping(address => LastPoolIndexes) public lastPoolIndexes; // Last pool index stored.
+    mapping(address => MarketStatuses) public marketStatuses; // Whether a market is paused or partially paused or not.
 
     IComptroller public comptroller;
     IMarketsManager public marketsManager;

@@ -6,17 +6,6 @@ import "./setup/TestSetup.sol";
 contract TestUpgradeable is TestSetup {
     using CompoundMath for uint256;
 
-    function testUpgradeMarketsManager() public {
-        marketsManager.setReserveFactor(cDai, 1);
-
-        MarketsManager marketsManagerImplV2 = new MarketsManager();
-        proxyAdmin.upgrade(marketsManagerProxy, address(marketsManagerImplV2));
-
-        // Should not change
-        (uint16 reserveFactor, ) = marketsManager.marketParameters(cDai);
-        assertEq(reserveFactor, 1);
-    }
-
     function testUpgradePositionsManager() public {
         uint256 amount = 10000 ether;
         supplier1.approve(dai, amount);
@@ -30,28 +19,6 @@ contract TestUpgradeable is TestSetup {
         // Should not change
         (, uint256 onPool) = positionsManager.supplyBalanceInOf(cDai, address(supplier1));
         assertEq(onPool, expectedOnPool);
-    }
-
-    function testOnlyProxyOwnerCanUpgradeMarketsManager() public {
-        MarketsManager marketsManagerImplV2 = new MarketsManager();
-
-        hevm.prank(address(supplier1));
-        hevm.expectRevert("Ownable: caller is not the owner");
-        proxyAdmin.upgrade(marketsManagerProxy, address(marketsManagerImplV2));
-
-        proxyAdmin.upgrade(marketsManagerProxy, address(marketsManagerImplV2));
-    }
-
-    function testOnlyProxyOwnerCanUpgradeAndCallMarketsManager() public {
-        MarketsManager marketsManagerImplV2 = new MarketsManager();
-
-        hevm.prank(address(supplier1));
-        hevm.expectRevert("Ownable: caller is not the owner");
-        proxyAdmin.upgradeAndCall(marketsManagerProxy, address(marketsManagerImplV2), "");
-
-        // Revert for wrong data not wrong caller
-        hevm.expectRevert("Address: low-level delegate call failed");
-        proxyAdmin.upgradeAndCall(marketsManagerProxy, address(marketsManagerImplV2), "");
     }
 
     function testOnlyProxyOwnerCanUpgradePositionsManager() public {
