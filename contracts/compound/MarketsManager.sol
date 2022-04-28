@@ -363,6 +363,12 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
         emit P2PIndexCursorSet(_poolTokenAddress, _p2pIndexCursor);
     }
 
+    /// @notice Prevents to update a market not created yet.
+    /// @param _poolTokenAddress The address of the market to check.
+    function isMarketCreated(address _poolTokenAddress) external view {
+        if (!marketStatuses[_poolTokenAddress].isCreated) revert MarketNotCreated();
+    }
+
     /// @notice Prevents a user to trigger a function when market is not created or paused.
     /// @param _poolTokenAddress The address of the market to check.
     function isMarketCreatedAndNotPaused(address _poolTokenAddress) external view {
@@ -398,12 +404,6 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
     }
 
     /// PUBLIC ///
-
-    /// @notice Prevents to update a market not created yet.
-    /// @param _poolTokenAddress The address of the market to check.
-    function isMarketCreated(address _poolTokenAddress) public view {
-        if (!marketStatuses[_poolTokenAddress].isCreated) revert MarketNotCreated();
-    }
 
     /// @notice Updates the P2P indexes, taking into account the Second Percentage Yield values.
     /// @param _poolTokenAddress The address of the market to update.
