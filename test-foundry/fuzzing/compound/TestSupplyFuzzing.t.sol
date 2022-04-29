@@ -3,11 +3,9 @@ pragma solidity 0.8.13;
 
 import "./TestSetupFuzzing.sol";
 
-
 contract TestSupplyFuzzing is TestSetupFuzzing {
     using CompoundMath for uint256;
 
-    
     function testSupply1(uint64 _amount, uint8 _asset) public {
         (address asset, address underlying) = getAsset(_asset);
 
