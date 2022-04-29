@@ -135,6 +135,7 @@ contract TestSetup is Config, Utils, stdCheats {
         incentivesVault = new IncentivesVault(
             address(positionsManager),
             address(morphoToken),
+            address(1),
             address(dumbOracle)
         );
         morphoToken.transfer(address(incentivesVault), 1_000_000 ether);
