@@ -16,6 +16,7 @@ contract TestIncentivesVault is DSTest, stdCheats {
 
     Vm public hevm = Vm(HEVM_ADDRESS);
     address public constant COMP = 0xc00e94Cb662C3520282E6f5717214004A7f26888;
+    address public morphoDao = address(1);
     address public positionsManager = address(3);
     IncentivesVault public incentivesVault;
     MorphoToken public morphoToken;
@@ -27,6 +28,7 @@ contract TestIncentivesVault is DSTest, stdCheats {
         incentivesVault = new IncentivesVault(
             positionsManager,
             address(morphoToken),
+            morphoDao,
             address(dumbOracle)
         );
         ERC20(morphoToken).transfer(
@@ -53,8 +55,6 @@ contract TestIncentivesVault is DSTest, stdCheats {
     }
 
     function testOnlyOwnerShouldSetMorphoDao() public {
-        address morphoDao = address(1);
-
         hevm.prank(address(0));
         hevm.expectRevert("Ownable: caller is not the owner");
         incentivesVault.setMorphoDao(morphoDao);
@@ -87,9 +87,6 @@ contract TestIncentivesVault is DSTest, stdCheats {
     }
 
     function testOnlyOwnerShouldTransferMorphoTokensToDao() public {
-        address morphoDao = address(1);
-        incentivesVault.setMorphoDao(morphoDao);
-
         hevm.prank(address(0));
         hevm.expectRevert("Ownable: caller is not the owner");
         incentivesVault.transferMorphoTokensToDao(1);

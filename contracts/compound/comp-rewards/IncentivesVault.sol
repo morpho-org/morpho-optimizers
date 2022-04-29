@@ -58,14 +58,17 @@ contract IncentivesVault is Ownable {
     /// @notice Constructs the IncentivesVault contract.
     /// @param _positionsManager The address of the Positions Manager.
     /// @param _morphoToken The address of the MORPHO token.
+    /// @param _morphoDao The address of the Morpho DAO.
     /// @param _oracle The adress of the oracle.
     constructor(
         address _positionsManager,
         address _morphoToken,
+        address _morphoDao,
         address _oracle
     ) {
         positionsManager = _positionsManager;
         morphoToken = _morphoToken;
+        morphoDao = _morphoDao;
         oracle = _oracle;
     }
 
