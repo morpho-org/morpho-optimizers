@@ -2,5 +2,5 @@
 pragma solidity 0.8.13;
 
 interface IIncentivesVault {
-    function switchCompToMorphoTokens(address _to, uint256 _amount) external;
+    function tradeCompForMorphoTokens(address _to, uint256 _amount) external;
 }
