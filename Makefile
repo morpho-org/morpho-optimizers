@@ -18,7 +18,7 @@ export DAPP_REMAPPINGS=@config/=config/$(NETWORK)
 .PHONY: test
 ci: node_modules
 	@echo Run all tests on ${NETWORK}
-	@forge test -vv -c test-foundry/fuzzing/compound --no-match-contract TestGasConsumption --no-match-test testFuzz > trace.ansi
+	@forge test -vv -c test-foundry/fuzzing/compound --no-match-contract TestGasConsumption --no-match-test testFuzz
 
 test-compound: node_modules
 	@echo Run all tests on ${NETWORK}
