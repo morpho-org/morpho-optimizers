@@ -10,10 +10,10 @@ import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 
 import "@contracts/compound/comp-rewards/IncentivesVault.sol";
+import "@contracts/compound/comp-rewards/RewardsManager.sol";
 import "@contracts/compound/PositionsManager.sol";
 import "@contracts/compound/MarketsManager.sol";
 import "@contracts/compound/MatchingEngine.sol";
-import "@contracts/compound/RewardsManager.sol";
 import "@contracts/compound/InterestRatesV1.sol";
 import "@contracts/compound/Logic.sol";
 
