@@ -340,7 +340,7 @@ contract TestRewards is TestSetup {
     }
 
     function testShouldClaimRewardsAndConvertToMorpkoToken() public {
-        incentivesVault.toggleActivation();
+        incentivesVault.togglePauseStatus();
         incentivesVault.setMorphoDao(address(1));
 
         uint256 toSupply = 100 ether;

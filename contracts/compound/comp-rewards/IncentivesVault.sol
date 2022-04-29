@@ -20,7 +20,7 @@ contract IncentivesVault is Ownable {
     address public morphoDao; // The address of the Morpho DAO treasury.
     address public oracle; // Thre oracle used to get the price of the pair MORPHO/COMP 🦋.
     uint256 public bonus; // The bonus of MORPHO tokens to give to the user as a percentage to add on top of the consulted amount on the oracle (in basis point).
-    bool public isActive; // Whether the swith of COMP rewards to MORPHO rewards is active or not.
+    bool public isPaused; // Whether the swith of COMP rewards to MORPHO rewards is paused or not.
 
     /// EVENTS ///
 
@@ -33,8 +33,8 @@ contract IncentivesVault is Ownable {
     /// @notice Emitted when the reward bonus is set.
     event BonusSet(uint256 _newBonus);
 
-    /// @notice Emitted when the activation status is changed.
-    event ActivationStatusChanged(bool _newStatus);
+    /// @notice Emitted when the pause status is changed.
+    event PauseStatusChanged(bool _newStatus);
 
     /// @notice Emitted when MORPHO tokens are transferred to the DAO.
     event MorphoTokensTransferred(uint256 _amount);
@@ -50,8 +50,8 @@ contract IncentivesVault is Ownable {
     /// @notice Thrown when only the posiyions manager can trigger the function.
     error OnlyPositionsManager();
 
-    /// @notice Thrown when the vault is not active.
-    error VaultNotActive();
+    /// @notice Thrown when the vault is paused.
+    error VaultIsPaused();
 
     /// CONSTRUCTOR ///
 
@@ -90,11 +90,11 @@ contract IncentivesVault is Ownable {
         emit BonusSet(_newBonus);
     }
 
-    /// @notice Toggles the activation status.
-    function toggleActivation() external onlyOwner {
-        bool newStatus = !isActive;
-        isActive = newStatus;
-        emit ActivationStatusChanged(newStatus);
+    /// @notice Toggles the pause status.
+    function togglePauseStatus() external onlyOwner {
+        bool newStatus = !isPaused;
+        isPaused = newStatus;
+        emit PauseStatusChanged(newStatus);
     }
 
     /// @notice Transfers the MORPHO tokens to the DAO.
@@ -104,12 +104,12 @@ contract IncentivesVault is Ownable {
         emit MorphoTokensTransferred(_amount);
     }
 
-    /// @notice Converts COMP tokens to MORPHO tokens and sends them to the receiver.
+    /// @notice Swithes COMP tokens to MORPHO tokens and sends them to the receiver.
     /// @param _receiver The address of the receiver.
     /// @param _amount The amount to transfer to the receiver.
     function switchCompToMorphoTokens(address _receiver, uint256 _amount) external {
         if (msg.sender != positionsManager) revert OnlyPositionsManager();
-        if (!isActive) revert VaultNotActive();
+        if (!isPaused) revert VaultIsPaused();
 
         // Transfer COMP to the DAO.
         ERC20(COMP).safeTransferFrom(msg.sender, morphoDao, _amount);
