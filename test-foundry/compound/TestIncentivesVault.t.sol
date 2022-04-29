@@ -74,16 +74,16 @@ contract TestIncentivesVault is DSTest, stdCheats {
         assertEq(incentivesVault.oracle(), oracle);
     }
 
-    function testOnlyOwnerShouldToggleActivation() public {
+    function testOnlyOwnerShouldTogglePauseStatus() public {
         hevm.prank(address(0));
         hevm.expectRevert("Ownable: caller is not the owner");
-        incentivesVault.toggleActivation();
+        incentivesVault.togglePauseStatus();
 
-        incentivesVault.toggleActivation();
-        assertTrue(incentivesVault.isActive());
+        incentivesVault.togglePauseStatus();
+        assertTrue(incentivesVault.isPaused());
 
-        incentivesVault.toggleActivation();
-        assertFalse(incentivesVault.isActive());
+        incentivesVault.togglePauseStatus();
+        assertFalse(incentivesVault.isPaused());
     }
 
     function testOnlyOwnerShouldTransferMorphoTokensToDao() public {
@@ -104,7 +104,7 @@ contract TestIncentivesVault is DSTest, stdCheats {
     }
 
     function testOnlyPositionsManagerShouldTriggerCompConvertFunction() public {
-        incentivesVault.toggleActivation();
+        incentivesVault.togglePauseStatus();
         incentivesVault.setMorphoDao(address(1));
 
         hevm.expectRevert(abi.encodeWithSignature("OnlyPositionsManager()"));
@@ -115,7 +115,7 @@ contract TestIncentivesVault is DSTest, stdCheats {
     }
 
     function testShouldGiveTheRightAmountOfRewards() public {
-        incentivesVault.toggleActivation();
+        incentivesVault.togglePauseStatus();
         incentivesVault.setMorphoDao(address(1));
         uint256 toApprove = 1_000 ether;
         tip(COMP, address(positionsManager), toApprove);
