@@ -1,6 +1,7 @@
 import * as dotenv from 'dotenv';
 dotenv.config({ path: './.env.local' });
 import 'module-alias/register';
+import '@openzeppelin/hardhat-upgrades';
 import '@nomiclabs/hardhat-etherscan';
 import '@tenderly/hardhat-tenderly';
 import '@nomiclabs/hardhat-waffle';
@@ -31,6 +32,12 @@ module.exports = {
     ropsten: {
       accounts: [process.env.DEPLOYER_PRIVATE_KEY],
       url: `https://ropsten.infura.io/v3/${process.env.INFURA_PROJECT_ID}`,
+      gas: 2100000,
+      gasPrice: 8000000000,
+    },
+    goerli: {
+      accounts: [process.env.DEPLOYER_PRIVATE_KEY],
+      url: `https://goerli.infura.io/v3/${process.env.INFURA_PROJECT_ID}`,
       gas: 2100000,
       gasPrice: 8000000000,
     },

@@ -1,0 +1,210 @@
+{
+  "manifestVersion": "3.2",
+  "proxies": [],
+  "impls": {
+    "ef7a3167c42e1d71f76e24e6b3f60db9969c5a55271a682ffad688423f68f173": {
+      "address": "0xeD8fb0321908dDD486Bd5289677C9d70AB4dE3d5",
+      "txHash": "0x37b98013d4239bf61e828d266cf6d6cea8327566c3f0318e3348c2d6613bc878",
+      "layout": {
+        "storage": [
+          {
+            "label": "_initialized",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_bool",
+            "contract": "Initializable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:39"
+          },
+          {
+            "label": "_initializing",
+            "offset": 1,
+            "slot": "0",
+            "type": "t_bool",
+            "contract": "Initializable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:44"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ContextUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol:36"
+          },
+          {
+            "label": "_owner",
+            "offset": 0,
+            "slot": "51",
+            "type": "t_address",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:22"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "52",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:87"
+          },
+          {
+            "label": "marketsCreated",
+            "offset": 0,
+            "slot": "101",
+            "type": "t_array(t_address)dyn_storage",
+            "contract": "MarketsManager",
+            "src": "contracts/compound/MarketsManager.sol:31"
+          },
+          {
+            "label": "isCreated",
+            "offset": 0,
+            "slot": "102",
+            "type": "t_mapping(t_address,t_bool)",
+            "contract": "MarketsManager",
+            "src": "contracts/compound/MarketsManager.sol:32"
+          },
+          {
+            "label": "reserveFactor",
+            "offset": 0,
+            "slot": "103",
+            "type": "t_mapping(t_address,t_uint256)",
+            "contract": "MarketsManager",
+            "src": "contracts/compound/MarketsManager.sol:33"
+          },
+          {
+            "label": "p2pSupplyIndex",
+            "offset": 0,
+            "slot": "104",
+            "type": "t_mapping(t_address,t_uint256)",
+            "contract": "MarketsManager",
+            "src": "contracts/compound/MarketsManager.sol:34"
+          },
+          {
+            "label": "p2pBorrowIndex",
+            "offset": 0,
+            "slot": "105",
+            "type": "t_mapping(t_address,t_uint256)",
+            "contract": "MarketsManager",
+            "src": "contracts/compound/MarketsManager.sol:35"
+          },
+          {
+            "label": "lastUpdateBlockNumber",
+            "offset": 0,
+            "slot": "106",
+            "type": "t_mapping(t_address,t_uint256)",
+            "contract": "MarketsManager",
+            "src": "contracts/compound/MarketsManager.sol:36"
+          },
+          {
+            "label": "lastPoolIndexes",
+            "offset": 0,
+            "slot": "107",
+            "type": "t_mapping(t_address,t_struct(LastPoolIndexes)19196_storage)",
+            "contract": "MarketsManager",
+            "src": "contracts/compound/MarketsManager.sol:37"
+          },
+          {
+            "label": "noP2P",
+            "offset": 0,
+            "slot": "108",
+            "type": "t_mapping(t_address,t_bool)",
+            "contract": "MarketsManager",
+            "src": "contracts/compound/MarketsManager.sol:38"
+          },
+          {
+            "label": "positionsManager",
+            "offset": 0,
+            "slot": "109",
+            "type": "t_contract(IPositionsManager)23319",
+            "contract": "MarketsManager",
+            "src": "contracts/compound/MarketsManager.sol:40"
+          },
+          {
+            "label": "interestRates",
+            "offset": 0,
+            "slot": "110",
+            "type": "t_contract(IInterestRates)23105",
+            "contract": "MarketsManager",
+            "src": "contracts/compound/MarketsManager.sol:41"
+          },
+          {
+            "label": "comptroller",
+            "offset": 0,
+            "slot": "111",
+            "type": "t_contract(IComptroller)23886",
+            "contract": "MarketsManager",
+            "src": "contracts/compound/MarketsManager.sol:42"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_address)dyn_storage": {
+            "label": "address[]",
+            "numberOfBytes": "32"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]",
+            "numberOfBytes": "1568"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]",
+            "numberOfBytes": "1600"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_contract(IComptroller)23886": {
+            "label": "contract IComptroller",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IInterestRates)23105": {
+            "label": "contract IInterestRates",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IPositionsManager)23319": {
+            "label": "contract IPositionsManager",
+            "numberOfBytes": "20"
+          },
+          "t_mapping(t_address,t_bool)": {
+            "label": "mapping(address => bool)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_struct(LastPoolIndexes)19196_storage)": {
+            "label": "mapping(address => struct MarketsManager.LastPoolIndexes)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_uint256)": {
+            "label": "mapping(address => uint256)",
+            "numberOfBytes": "32"
+          },
+          "t_struct(LastPoolIndexes)19196_storage": {
+            "label": "struct MarketsManager.LastPoolIndexes",
+            "members": [
+              {
+                "label": "lastSupplyPoolIndex",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "lastBorrowPoolIndex",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "1"
+              }
+            ],
+            "numberOfBytes": "64"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          }
+        }
+      }
+    }
+  }
+}

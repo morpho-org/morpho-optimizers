@@ -1,31 +1,31 @@
 {
   "tokens": {
     "cDai": {
-      "address": "0xbc689667c13fb2a04f09272753760e38a95b998c",
+      "address": "0x822397d9a55d0fefd20f5c4bcab33c5f65bd28eb",
       "abi": "@config/abis/mainnet/CErc20.json"
     },
     "cUsdc": {
-      "address": "0x2973e69b20563bcc66dc63bde153072c33ef37fe",
+      "address": "0xcec4a43ebb02f9b80916f1c718338169d6d5c1f0",
       "abi": "@config/abis/mainnet/CErc20.json"
     },
     "cBat": {
-      "address": "0xaf50a5a6af87418dac1f28f9797ceb3bfb62750a",
+      "address": "0xccaf265e7492c0d9b7c2f0018bf6382ba7f0148d",
       "abi": "@config/abis/mainnet/CErc20.json"
     },
     "cZrx": {
-      "address": "0x6b8b0d7875b4182fb126877023fb93b934dd302a",
+      "address": "0xa253295ec2157b8b69c44b2cb35360016daa25b1",
       "abi": "@config/abis/mainnet/CErc20.json"
     },
     "cEth": {
-      "address": "0x859e9d8a4edadfedb5a2ff311243af80f85a91b8"
+      "address": "0x20572e4c090f15667cf7378e16fad2ea0e2f3eff"
     },
     "wEth": {
-      "address": "0xf70949bc9b52deffcda63b0d15608d601e3a7c49"
+      "address": "0xffc94fb06b924e6dba5f0325bbed941807a018cd"
     }
   },
   "compound": {
     "comptroller": {
-      "address": "0xcfa7b0e37f5ac60f3ae25226f5e39ec59ad26152",
+      "address": "0xe16c7165c8fea64069802ae4c4c9c320783f2b6e",
       "abi": "@config/abis/mainnet/Comptroller.json"
     }
   }

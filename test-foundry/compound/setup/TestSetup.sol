@@ -103,7 +103,6 @@ contract TestSetup is Config, Utils, stdCheats {
         );
 
         treasuryVault = new User(morpho);
-
         oracle = ICompoundOracle(comptroller.oracle());
         morpho.setTreasuryVault(address(treasuryVault));
 
