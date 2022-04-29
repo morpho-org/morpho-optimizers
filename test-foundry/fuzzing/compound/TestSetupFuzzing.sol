@@ -119,24 +119,27 @@ contract TestSetupFuzzing is Config, Utils, stdCheats {
         marketsManager.setPositionsManager(address(positionsManager));
         positionsManager.setTreasuryVault(address(treasuryVault));
 
+        // make sure the wEth contract has enough ETH to unwrap any amount
+        hevm.deal(wEth, type(uint128).max);
+
         /// Create markets ///
 
         createMarket(cDai);
         createMarket(cUsdc);
         createMarket(cUsdt);
-        createMarket(cBat);
+        // createMarket(cBat);
         createMarket(cEth);
         createMarket(cAave);
         createMarket(cTusd);
         createMarket(cUni);
-        createMarket(cComp);
+        // createMarket(cComp);
         createMarket(cZrx);
         createMarket(cLink);
         createMarket(cMkr);
-        createMarket(cFei);
+        // createMarket(cFei);
         createMarket(cYfi);
-        createMarket(cUsdp);
-        createMarket(cSushi);
+        // createMarket(cUsdp);
+        // createMarket(cSushi);
         // createMarket(cWbtc); // Mint is paused on compound
 
         hevm.roll(block.number + 1);
@@ -278,12 +281,12 @@ contract TestSetupFuzzing is Config, Utils, stdCheats {
         positionsManager.setMaxGas(newMaxGas);
     }
 
+    /// @notice simulate the passing of 1_000 -> ETH MAINNET <- blocks
+    /// @param _marketAddress market that will have his exchange rates updated
     function move1000BlocksForward(address _marketAddress) public {
-        for (uint256 k; k < 100; k++) {
-            hevm.roll(block.number + 10);
-            hevm.warp(block.timestamp + 1);
-            marketsManager.updateP2PExchangeRates(_marketAddress);
-        }
+        hevm.roll(block.number + 1_000);
+        hevm.warp(block.timestamp + 13 * 1_000); // mainnet block time is around 13 sec
+        marketsManager.updateP2PExchangeRates(_marketAddress);
     }
 
     /// @notice Computes and returns P2P rates for a specific market (without taking into account deltas !).
@@ -318,5 +321,44 @@ contract TestSetupFuzzing is Config, Utils, stdCheats {
     function getAsset(uint8 _asset) internal returns (address asset, address underlying) {
         asset = pools[_asset % pools.length];
         underlying = getUnderlying(asset);
+    }
+
+    function performSupply(
+        User _signer,
+        uint256 _amount,
+        uint8 _asset
+    ) public {
+        (address asset, address underlying) = getAsset(_asset);
+        _signer.approve(underlying, _amount);
+        _signer.supply(asset, _amount);
+    }
+
+    function performWithdraw(
+        User _signer,
+        uint256 _amount,
+        uint8 _asset
+    ) public {
+        (address asset, ) = getAsset(_asset);
+        _signer.withdraw(asset, _amount);
+    }
+
+    function performBorrow(
+        User _signer,
+        uint256 _amount,
+        uint8 _asset
+    ) public {
+        (address asset, address underlying) = getAsset(_asset);
+        _signer.approve(underlying, _amount);
+        _signer.withdraw(asset, _amount);
+    }
+
+    function performRepay(
+        User _signer,
+        uint256 _amount,
+        uint8 _asset
+    ) public {
+        (address asset, address underlying) = getAsset(_asset);
+        _signer.approve(underlying, _amount);
+        _signer.repay(asset, _amount);
     }
 }
