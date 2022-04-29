@@ -339,15 +339,17 @@ contract TestRewards is TestSetup {
         supplier3.borrow(cUsdc, toBorrow);
     }
 
-    function testShouldClaimRewardsAndConvertToMorpkoToken() public {
+    function testShouldClaimRewardsAndTradeForMorpkoTokens() public {
         incentivesVault.togglePauseStatus();
-        incentivesVault.setMorphoDao(address(1));
+        // 10% bonus.
+        incentivesVault.setBonus(1_000);
 
         uint256 toSupply = 100 ether;
         supplier1.approve(dai, toSupply);
         supplier1.supply(cDai, toSupply);
 
-        uint256 morphoBalanceBefore = supplier1.balanceOf(address(morphoToken));
+        (, uint256 onPool) = positionsManager.supplyBalanceInOf(cDai, address(supplier1));
+        uint256 userIndex = rewardsManager.compSupplierIndex(cDai, address(supplier1));
         uint256 rewardBalanceBefore = supplier1.balanceOf(comp);
 
         address[] memory cTokens = new address[](1);
@@ -356,9 +358,13 @@ contract TestRewards is TestSetup {
         hevm.roll(block.number + 1_000);
         supplier1.claimRewards(cTokens, true);
 
-        uint256 morphoBalanceAfter = supplier1.balanceOf(address(morphoToken));
+        uint256 index = comptroller.compSupplyState(cDai).index;
+        uint256 expectedClaimed = (onPool * (index - userIndex)) / 1e36;
+        uint256 expectedMorphoTokens = (expectedClaimed * 11_000) / 10_000; // 10% bonus with a dumb oracle 1:1 exchange from COMP to MORPHO.
+
+        uint256 morphoBalance = supplier1.balanceOf(address(morphoToken));
         uint256 rewardBalanceAfter = supplier1.balanceOf(comp);
-        assertGt(morphoBalanceAfter, morphoBalanceBefore);
+        assertEq(morphoBalance, expectedMorphoTokens);
         assertEq(rewardBalanceBefore, rewardBalanceAfter);
     }
 }
