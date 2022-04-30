@@ -71,7 +71,7 @@ contract TestPausableMarket is TestSetup {
         supplier1.withdraw(cDai, 1 ether);
 
         hevm.expectRevert(PositionsManagerEventsErrors.AmountIsZero.selector);
-        positionsManager.claimToTreasury(cDai);
+        positionsManager.claimToTreasury(cDai, 1 ether);
     }
 
     function testShouldDisableMarketWhenPaused() public {
@@ -113,7 +113,7 @@ contract TestPausableMarket is TestSetup {
         liquidator.liquidate(cUsdc, cDai, address(supplier1), toLiquidate);
 
         hevm.expectRevert(abi.encodeWithSignature("MarketPaused()"));
-        positionsManager.claimToTreasury(cDai);
+        positionsManager.claimToTreasury(cDai, 1 ether);
 
         // Functions on other markets should still be enabled.
         amount = 10 ether;
@@ -137,7 +137,7 @@ contract TestPausableMarket is TestSetup {
         supplier1.withdraw(cEth, 1 ether);
 
         hevm.expectRevert(PositionsManagerEventsErrors.AmountIsZero.selector);
-        positionsManager.claimToTreasury(cEth);
+        positionsManager.claimToTreasury(cEth, 1 ether);
     }
 
     function testShouldOnlyEnableRepayWithdrawLiquidateWhenPartiallyPaused() public {
@@ -176,7 +176,7 @@ contract TestPausableMarket is TestSetup {
 
         // Does not revert because the market is paused.
         hevm.expectRevert(abi.encodeWithSignature("AmountIsZero()"));
-        positionsManager.claimToTreasury(cDai);
+        positionsManager.claimToTreasury(cDai, 1 ether);
 
         // Functions on other markets should still be enabled.
         amount = 10 ether;
@@ -200,6 +200,6 @@ contract TestPausableMarket is TestSetup {
         supplier1.withdraw(cEth, 1 ether);
 
         hevm.expectRevert(PositionsManagerEventsErrors.AmountIsZero.selector);
-        positionsManager.claimToTreasury(cEth);
+        positionsManager.claimToTreasury(cEth, 1 ether);
     }
 }
