@@ -82,8 +82,8 @@ abstract contract PositionsManagerStorage is OwnableUpgradeable, ReentrancyGuard
 
     MaxGas public maxGas; // Max gas to consume within loops in matching engine functions.
     bool public isCompRewardsActive; // True if the Compound reward is active.
-    uint256 public NDS; // Max number of iterations in the data structure sorting process.
-    uint256 public dustThreshold; // The minimum amount to keep in the data structure.
+    uint256 public maxSortedUsers; // The max number of users to sort in the data structure.
+    uint256 public dustThreshold; // The minimum amount to keep in the data stucture.
     mapping(address => DoubleLinkedList.List) internal suppliersInP2P; // For a given market, the suppliers in peer-to-peer.
     mapping(address => DoubleLinkedList.List) internal suppliersOnPool; // For a given market, the suppliers on Compound.
     mapping(address => DoubleLinkedList.List) internal borrowersInP2P; // For a given market, the borrowers in peer-to-peer.

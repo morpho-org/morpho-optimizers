@@ -107,8 +107,8 @@ contract User {
         );
     }
 
-    function setNDS(uint256 _newNDS) external {
-        positionsManager.setNDS(_newNDS);
+    function setMaxSortedUsers(uint256 _newMaxSortedUsers) external {
+        positionsManager.setMaxSortedUsers(_newMaxSortedUsers);
     }
 
     function setMaxGas(PositionsManager.MaxGas memory _maxGas) external {

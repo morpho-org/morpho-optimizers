@@ -80,9 +80,9 @@ abstract contract PositionsManagerEventsErrors is PositionsManagerGetters {
         address indexed _poolTokenCollateralAddress
     );
 
-    /// @notice Emitted when a new value for `NDS` is set.
-    /// @param _newValue The new value of `NDS`.
-    event NDSSet(uint256 _newValue);
+    /// @notice Emitted when a new value for `maxSortedUsers` is set.
+    /// @param _newValue The new value of `maxSortedUsers`.
+    event MaxSortedUsersSet(uint256 _newValue);
 
     /// @notice Emitted when a new `maxGas` is set.
     /// @param _maxGas The new `maxGas`.

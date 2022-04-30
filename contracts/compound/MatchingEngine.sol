@@ -284,7 +284,8 @@ contract MatchingEngine is PositionsManagerGetters {
         }
         if (formerValueOnPool != onPool) {
             if (formerValueOnPool > 0) borrowersOnPool[_poolTokenAddress].remove(_user);
-            if (onPool > 0) borrowersOnPool[_poolTokenAddress].insertSorted(_user, onPool, NDS);
+            if (onPool > 0)
+                borrowersOnPool[_poolTokenAddress].insertSorted(_user, onPool, maxSortedUsers);
         }
 
         // Check P2P.
@@ -294,7 +295,8 @@ contract MatchingEngine is PositionsManagerGetters {
         }
         if (formerValueInP2P != inP2P) {
             if (formerValueInP2P > 0) borrowersInP2P[_poolTokenAddress].remove(_user);
-            if (inP2P > 0) borrowersInP2P[_poolTokenAddress].insertSorted(_user, inP2P, NDS);
+            if (inP2P > 0)
+                borrowersInP2P[_poolTokenAddress].insertSorted(_user, inP2P, maxSortedUsers);
         }
 
         if (isCompRewardsActive && address(rewardsManager) != address(0))
@@ -321,7 +323,8 @@ contract MatchingEngine is PositionsManagerGetters {
         }
         if (formerValueOnPool != onPool) {
             if (formerValueOnPool > 0) suppliersOnPool[_poolTokenAddress].remove(_user);
-            if (onPool > 0) suppliersOnPool[_poolTokenAddress].insertSorted(_user, onPool, NDS);
+            if (onPool > 0)
+                suppliersOnPool[_poolTokenAddress].insertSorted(_user, onPool, maxSortedUsers);
         }
 
         // Check P2P.
@@ -331,7 +334,8 @@ contract MatchingEngine is PositionsManagerGetters {
         }
         if (formerValueInP2P != inP2P) {
             if (formerValueInP2P > 0) suppliersInP2P[_poolTokenAddress].remove(_user);
-            if (inP2P > 0) suppliersInP2P[_poolTokenAddress].insertSorted(_user, inP2P, NDS);
+            if (inP2P > 0)
+                suppliersInP2P[_poolTokenAddress].insertSorted(_user, inP2P, maxSortedUsers);
         }
 
         if (isCompRewardsActive && address(rewardsManager) != address(0))

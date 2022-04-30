@@ -75,9 +75,9 @@ contract TestPositionsManagerGetters is TestSetup {
         uint256 amount = 10_000 ether;
         uint256 toBorrow = amount / 10;
 
-        uint256 NDS = 10;
-        positionsManager.setNDS(NDS);
-        createSigners(NDS);
+        uint256 maxSortedUsers = 10;
+        positionsManager.setMaxSortedUsers(maxSortedUsers);
+        createSigners(maxSortedUsers);
         for (uint256 i; i < borrowers.length; i++) {
             borrowers[i].approve(dai, amount - i * 1e18);
             borrowers[i].supply(cDai, amount - i * 1e18);
