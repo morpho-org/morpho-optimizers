@@ -121,8 +121,10 @@ abstract contract PositionsManagerGovernance is PositionsManagerEventsErrors {
     }
 
     /// @notice Transfers the protocol reserve fee to the DAO.
+    /// @dev No more than 90% of the accumulated fees are claimable at once.
     /// @param _poolTokenAddress The address of the market on which we want to claim the reserve fee.
-    function claimToTreasury(address _poolTokenAddress)
+    /// @param _amount The amount of underlying to claim.
+    function claimToTreasury(address _poolTokenAddress, uint256 _amount)
         external
         onlyOwner
         isMarketCreatedAndNotPaused(_poolTokenAddress)
@@ -130,9 +132,11 @@ abstract contract PositionsManagerGovernance is PositionsManagerEventsErrors {
         if (treasuryVault == address(0)) revert ZeroAddress();
 
         ERC20 underlyingToken = _getUnderlying(_poolTokenAddress);
-        uint256 amountToClaim = underlyingToken.balanceOf(address(this));
+        uint256 underlyingBalance = underlyingToken.balanceOf(address(this));
 
-        if (amountToClaim == 0) revert AmountIsZero();
+        if (underlyingBalance == 0) revert AmountIsZero();
+
+        uint256 amountToClaim = Math.min(_amount, (underlyingBalance * 9_000) / MAX_BASIS_POINTS);
 
         underlyingToken.safeTransfer(treasuryVault, amountToClaim);
         emit ReserveFeeClaimed(_poolTokenAddress, amountToClaim);
