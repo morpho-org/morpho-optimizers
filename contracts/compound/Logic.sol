@@ -307,9 +307,7 @@ contract Logic is ILogic, MatchingEngine {
                     _leaveMarketIfNeeded(_poolTokenAddress, _supplier);
                     return;
                 }
-            } else {
-                vars.toWithdraw = 0;
-            }
+            } else vars.toWithdraw = 0;
         }
 
         Types.Delta storage delta = deltas[_poolTokenAddress];
@@ -343,15 +341,9 @@ contract Logic is ILogic, MatchingEngine {
             }
 
             // Match pool suppliers if any.
-            address head = suppliersOnPool[_poolTokenAddress].getHead();
             if (
                 vars.remainingToWithdraw > 0 &&
-                head != address(0) &&
-                _isAboveCompoundThreshold(
-                    supplyBalanceInOf[_poolTokenAddress][head].onPool,
-                    vars.supplyPoolIndex
-                )
-                // Check that the largest pool supplier has more tokens than simple dust so that the transfer withdraw is effective.
+                suppliersOnPool[_poolTokenAddress].getHead() != address(0)
             ) {
                 // Match suppliers.
                 uint256 matched = matchSuppliers(
@@ -656,7 +648,7 @@ contract Logic is ILogic, MatchingEngine {
     /// @return Whether to continue or not.
     function _isAboveCompoundThreshold(uint256 _amount, uint256 _index)
         internal
-        view
+        pure
         returns (bool)
     {
         return (_amount.div(_index) > 0);
