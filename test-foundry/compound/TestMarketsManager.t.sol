@@ -72,25 +72,22 @@ contract TestMarketsManager is TestSetup {
     }
 
     function testShouldSetmaxGasWithRightValues() public {
-        PositionsManagerStorage.MaxGas memory newMaxGas = PositionsManagerStorage.MaxGas({
-            supply: 1,
-            borrow: 1,
-            withdraw: 1,
-            repay: 1
-        });
+        PositionsManagerStorage.MaxGasForMatching memory newMaxGas = PositionsManagerStorage
+        .MaxGasForMatching({supply: 1, borrow: 1, withdraw: 1, repay: 1});
 
-        positionsManager.setMaxGas(newMaxGas);
-        (uint64 supply, uint64 borrow, uint64 withdraw, uint64 repay) = positionsManager.maxGas();
+        positionsManager.setMaxGasForMatching(newMaxGas);
+        (uint64 supply, uint64 borrow, uint64 withdraw, uint64 repay) = positionsManager
+        .maxGasForMatching();
         assertEq(supply, newMaxGas.supply);
         assertEq(borrow, newMaxGas.borrow);
         assertEq(withdraw, newMaxGas.withdraw);
         assertEq(repay, newMaxGas.repay);
 
         hevm.expectRevert("Ownable: caller is not the owner");
-        supplier1.setMaxGas(newMaxGas);
+        supplier1.setMaxGasForMatching(newMaxGas);
 
         hevm.expectRevert("Ownable: caller is not the owner");
-        borrower1.setMaxGas(newMaxGas);
+        borrower1.setMaxGasForMatching(newMaxGas);
     }
 
     function testOnlyOwnerCanSetMaxSortedUsers() public {

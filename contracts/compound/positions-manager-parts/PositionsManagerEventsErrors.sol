@@ -84,9 +84,9 @@ abstract contract PositionsManagerEventsErrors is PositionsManagerGetters {
     /// @param _newValue The new value of `maxSortedUsers`.
     event MaxSortedUsersSet(uint256 _newValue);
 
-    /// @notice Emitted when a new `maxGas` is set.
-    /// @param _maxGas The new `maxGas`.
-    event MaxGasSet(MaxGas _maxGas);
+    /// @notice Emitted when a new `maxGasForMatching` is set.
+    /// @param _maxGasForMatching The new `maxGasForMatching`.
+    event MaxGasForMatchingSet(MaxGasForMatching _maxGasForMatching);
 
     /// @notice Emitted the address of the `treasuryVault` is set.
     /// @param _newTreasuryVaultAddress The new address of the `treasuryVault`.

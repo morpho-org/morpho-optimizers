@@ -36,8 +36,8 @@ abstract contract PositionsManagerStorage is OwnableUpgradeable, ReentrancyGuard
         uint256 onPool; // In cdUnit, a unit that grows in value, to keep track of the debt increase when users are in Compound. Multiply by current borrowIndex to get the underlying amount.
     }
 
-    // Max gas to consume for supply, borrow, withdraw and repay functions.
-    struct MaxGas {
+    // Max gas to consume during the matching process for supply, borrow, withdraw and repay functions.
+    struct MaxGasForMatching {
         uint64 supply;
         uint64 borrow;
         uint64 withdraw;
@@ -80,7 +80,7 @@ abstract contract PositionsManagerStorage is OwnableUpgradeable, ReentrancyGuard
     uint16 public constant MAX_BASIS_POINTS = 10_000; // 100% in basis points.
     uint16 public constant LIQUIDATION_CLOSE_FACTOR_PERCENT = 5_000; // 50% in basis points.
 
-    MaxGas public maxGas; // Max gas to consume within loops in matching engine functions.
+    MaxGasForMatching public maxGasForMatching; // Max gas to consume within loops in matching engine functions.
     bool public isCompRewardsActive; // True if the Compound reward is active.
     uint256 public maxSortedUsers; // The max number of users to sort in the data structure.
     uint256 public dustThreshold; // The minimum amount to keep in the data stucture.

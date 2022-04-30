@@ -137,7 +137,12 @@ contract TestWithdraw is TestSetup {
     }
 
     function testWithdraw3_2() public {
-        setMaxGasHelper(type(uint64).max, type(uint64).max, type(uint64).max, type(uint64).max);
+        setMaxGasForMatchingHelper(
+            type(uint64).max,
+            type(uint64).max,
+            type(uint64).max,
+            type(uint64).max
+        );
 
         uint256 borrowedAmount = 100_000 ether;
         uint256 suppliedAmount = 2 * borrowedAmount;
@@ -284,7 +289,12 @@ contract TestWithdraw is TestSetup {
     }
 
     function testWithdraw3_4() public {
-        setMaxGasHelper(type(uint64).max, type(uint64).max, type(uint64).max, type(uint64).max);
+        setMaxGasForMatchingHelper(
+            type(uint64).max,
+            type(uint64).max,
+            type(uint64).max,
+            type(uint64).max
+        );
 
         uint256 borrowedAmount = 100_000 ether;
         uint256 suppliedAmount = 2 * borrowedAmount;
@@ -405,7 +415,7 @@ contract TestWithdraw is TestSetup {
 
     function testDeltaWithdraw() public {
         // 2e6 allows only 10 unmatch borrowers.
-        setMaxGasHelper(3e6, 3e6, 2e6, 3e6);
+        setMaxGasForMatchingHelper(3e6, 3e6, 2e6, 3e6);
 
         uint256 borrowedAmount = 1 ether;
         uint256 collateral = 2 * borrowedAmount;
@@ -570,7 +580,7 @@ contract TestWithdraw is TestSetup {
 
     function testDeltaWithdrawAll() public {
         // 1.3e6 allows only 10 unmatch borrowers.
-        setMaxGasHelper(3e6, 3e6, 3.2e6, 3e6);
+        setMaxGasForMatchingHelper(3e6, 3e6, 3.2e6, 3e6);
 
         uint256 borrowedAmount = 1 ether;
         uint256 collateral = 2 * borrowedAmount;

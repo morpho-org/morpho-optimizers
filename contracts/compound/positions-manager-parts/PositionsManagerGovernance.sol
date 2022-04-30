@@ -47,11 +47,11 @@ abstract contract PositionsManagerGovernance is PositionsManagerEventsErrors {
         emit MaxSortedUsersSet(_newMaxSortedUsers);
     }
 
-    /// @notice Sets `maxGas`.
-    /// @param _maxGas The new `maxGas`.
-    function setMaxGas(MaxGas memory _maxGas) external onlyOwner {
-        maxGas = _maxGas;
-        emit MaxGasSet(_maxGas);
+    /// @notice Sets `maxGasForMatching`.
+    /// @param _maxGasForMatching The new `maxGasForMatching`.
+    function setMaxGasForMatching(MaxGasForMatching memory _maxGasForMatching) external onlyOwner {
+        maxGasForMatching = _maxGasForMatching;
+        emit MaxGasForMatchingSet(_maxGasForMatching);
     }
 
     /// @notice Sets the `treasuryVault`.
