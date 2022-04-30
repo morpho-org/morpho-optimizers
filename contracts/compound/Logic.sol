@@ -82,7 +82,7 @@ contract Logic is ILogic, MatchingEngine {
 
     /// CONSTRUCTOR ///
 
-    /// @notice Constructs the MatchingEngineForAave contract.
+    /// @notice Constructs the MatchingEngine contract.
     /// @dev The contract is automatically marked as initialized when deployed.
     constructor() initializer {}
 
@@ -601,7 +601,7 @@ contract Logic is ILogic, MatchingEngine {
     function _withdrawFromPool(address _poolTokenAddress, uint256 _amount) internal {
         if (ICToken(_poolTokenAddress).redeemUnderlying(_amount) != 0)
             revert RedeemOnCompoundFailed();
-        if (_poolTokenAddress == cEth) IWETH(address(wEth)).deposit{value: _amount}(); // Turn the ETH recceived in wETH.
+        if (_poolTokenAddress == cEth) IWETH(address(wEth)).deposit{value: _amount}(); // Turn the ETH received in wETH.
     }
 
     /// @dev Borrows underlying tokens from Compound.
@@ -609,7 +609,7 @@ contract Logic is ILogic, MatchingEngine {
     /// @param _amount The amount of token (in underlying).
     function _borrowFromPool(address _poolTokenAddress, uint256 _amount) internal {
         if ((ICToken(_poolTokenAddress).borrow(_amount) != 0)) revert BorrowOnCompoundFailed();
-        if (_poolTokenAddress == cEth) IWETH(address(wEth)).deposit{value: _amount}(); // Turn the ETH recceived in wETH.
+        if (_poolTokenAddress == cEth) IWETH(address(wEth)).deposit{value: _amount}(); // Turn the ETH received in wETH.
     }
 
     /// @dev Repays underlying tokens to Compound.
@@ -631,7 +631,7 @@ contract Logic is ILogic, MatchingEngine {
         }
     }
 
-    /// @dev Returns whether it is safe to supply/witdhraw on Compound or not due to Coumpound's revert on low amounts.
+    /// @dev Returns whether it is safe to supply/withdraw on Compound or not due to Compound's revert on low amounts.
     /// @param _amount The amount of token considered for depositing/redeeming.
     /// @param _tokenDecimals The number of decimals for the token considered.
     /// @return Whether to continue or not.

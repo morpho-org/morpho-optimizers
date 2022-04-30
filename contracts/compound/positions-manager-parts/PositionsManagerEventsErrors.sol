@@ -66,14 +66,14 @@ abstract contract PositionsManagerEventsErrors is PositionsManagerGetters {
 
     /// @notice Emitted when a liquidation happens.
     /// @param _liquidator The address of the liquidator.
-    /// @param _liquidatee The address of the liquidatee.
+    /// @param _liquidated The address of the liquidated.
     /// @param _amountRepaid The amount of borrowed asset repaid (in underlying).
     /// @param _poolTokenBorrowedAddress The address of the borrowed asset.
     /// @param _amountSeized The amount of collateral asset seized (in underlying).
     /// @param _poolTokenCollateralAddress The address of the collateral asset seized.
     event Liquidated(
         address _liquidator,
-        address indexed _liquidatee,
+        address indexed _liquidated,
         uint256 _amountRepaid,
         address indexed _poolTokenBorrowedAddress,
         uint256 _amountSeized,

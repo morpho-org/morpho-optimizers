@@ -40,7 +40,7 @@ contract InterestRatesV1 is IInterestRates {
     {
         (
             uint256 p2pSupplyGrowthFactor,
-            uint256 poolSupplyGrowthaFactor,
+            uint256 poolSupplyGrowthFactor,
             uint256 p2pBorrowGrowthFactor,
             uint256 poolBorrowGrowthFactor
         ) = _computeGrowthFactors(
@@ -72,7 +72,7 @@ contract InterestRatesV1 is IInterestRates {
         newP2PSupplyIndex = _computeNewP2PRate(
             supplyParams,
             p2pSupplyGrowthFactor,
-            poolSupplyGrowthaFactor
+            poolSupplyGrowthFactor
         );
         newP2PBorrowIndex = _computeNewP2PRate(
             borrowParams,
@@ -94,12 +94,7 @@ contract InterestRatesV1 is IInterestRates {
             p2pDelta: _params.delta.supplyP2PDelta
         });
 
-        (
-            uint256 p2pSupplyGrowthFactor,
-            uint256 poolSupplyGrowthaFactor,
-            ,
-
-        ) = _computeGrowthFactors(
+        (uint256 p2pSupplyGrowthFactor, uint256 poolSupplyGrowthFactor, , ) = _computeGrowthFactors(
             _params.poolSupplyIndex,
             _params.poolBorrowIndex,
             _params.lastPoolSupplyIndex,
@@ -108,7 +103,7 @@ contract InterestRatesV1 is IInterestRates {
             _params.p2pIndexCursor
         );
 
-        return _computeNewP2PRate(supplyParams, p2pSupplyGrowthFactor, poolSupplyGrowthaFactor);
+        return _computeNewP2PRate(supplyParams, p2pSupplyGrowthFactor, poolSupplyGrowthFactor);
     }
 
     /// @notice Computes and return the new peer-to-peer borrow index.
@@ -138,7 +133,7 @@ contract InterestRatesV1 is IInterestRates {
 
     /// INTERNAL ///
 
-    /// @dev Computes and returns supply P2P growthfactor and borrow P2P growthfactor.
+    /// @dev Computes and returns supply P2P growth factor and borrow P2P growth factor.
     /// @param _poolSupplyIndex The current pool supply index.
     /// @param _poolBorrowIndex The current pool borrow index.
     /// @param _lastPoolSupplyIndex The pool supply index at last update.
