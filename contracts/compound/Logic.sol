@@ -96,7 +96,7 @@ contract Logic is ILogic, MatchingEngine {
         address _poolTokenAddress,
         uint256 _amount,
         uint256 _maxGasToConsume
-    ) public {
+    ) external {
         _enterMarketIfNeeded(_poolTokenAddress, msg.sender);
         ERC20 underlyingToken = _getUnderlying(_poolTokenAddress);
         underlyingToken.safeTransferFrom(msg.sender, address(this), _amount);
@@ -180,7 +180,7 @@ contract Logic is ILogic, MatchingEngine {
         address _poolTokenAddress,
         uint256 _amount,
         uint256 _maxGasToConsume
-    ) public {
+    ) external {
         _enterMarketIfNeeded(_poolTokenAddress, msg.sender);
         _checkUserLiquidity(msg.sender, _poolTokenAddress, 0, _amount);
         ERC20 underlyingToken = _getUnderlying(_poolTokenAddress);
@@ -533,7 +533,7 @@ contract Logic is ILogic, MatchingEngine {
         address _poolTokenCollateralAddress,
         address _borrower,
         uint256 _amount
-    ) public returns (uint256) {
+    ) external returns (uint256) {
         LiquidateVars memory vars;
 
         (vars.debtValue, vars.maxDebtValue) = _getUserHypotheticalBalanceStates(
