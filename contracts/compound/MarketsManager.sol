@@ -202,7 +202,7 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
     }
 
     /// @notice Returns all created markets.
-    /// @return marketsCreated_ The list of market adresses.
+    /// @return marketsCreated_ The list of market addresses.
     function getAllMarkets() external view returns (address[] memory marketsCreated_) {
         marketsCreated_ = marketsCreated;
     }
@@ -265,8 +265,8 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
 
     /// @notice Returns the updated P2P indexes.
     /// @param _poolTokenAddress The address of the market to update.
-    /// @return newP2PSupplyIndex The peer-to-peer supply index after udpate.
-    /// @return newP2PBorrowIndex The peer-to-peer supply index after udpate.
+    /// @return newP2PSupplyIndex The peer-to-peer supply index after update.
+    /// @return newP2PBorrowIndex The peer-to-peer supply index after update.
     function getUpdatedP2PIndexes(address _poolTokenAddress)
         external
         view
@@ -298,7 +298,7 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
 
     /// @notice Returns the updated peer-to-peer supply index.
     /// @param _poolTokenAddress The address of the market to update.
-    /// @return newP2PSupplyIndex The peer-to-peer supply index after udpate.
+    /// @return newP2PSupplyIndex The peer-to-peer supply index after update.
     function getUpdatedp2pSupplyIndex(address _poolTokenAddress) external view returns (uint256) {
         if (block.timestamp == lastUpdateBlockNumber[_poolTokenAddress])
             return p2pSupplyIndex[_poolTokenAddress];
@@ -324,7 +324,7 @@ contract MarketsManager is IMarketsManager, OwnableUpgradeable {
 
     /// @notice Returns the updated peer-to-peer borrow index.
     /// @param _poolTokenAddress The address of the market to update.
-    /// @return newP2PSupplyIndex The peer-to-peer borrow index after udpate.
+    /// @return newP2PSupplyIndex The peer-to-peer borrow index after update.
     function getUpdatedp2pBorrowIndex(address _poolTokenAddress) external view returns (uint256) {
         if (block.timestamp == lastUpdateBlockNumber[_poolTokenAddress])
             return p2pBorrowIndex[_poolTokenAddress];
