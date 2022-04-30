@@ -21,8 +21,8 @@ contract RewardsManager is IRewardsManager, Ownable {
     mapping(address => uint256) public userUnclaimedCompRewards; // The unclaimed rewards of the user.
     mapping(address => mapping(address => uint256)) public compSupplierIndex; // The supply index of the user for a specific cToken.
     mapping(address => mapping(address => uint256)) public compBorrowerIndex; // The borrow index of the user for a specific cToken.
-    mapping(address => IComptroller.CompMarketState) public localCompSupplyState; // The lcoal supply state for a specific cToken.
-    mapping(address => IComptroller.CompMarketState) public localCompBorrowState; // The lcoal borrow state for a specific cToken.
+    mapping(address => IComptroller.CompMarketState) public localCompSupplyState; // The local supply state for a specific cToken.
+    mapping(address => IComptroller.CompMarketState) public localCompBorrowState; // The local borrow state for a specific cToken.
 
     IPositionsManager public immutable positionsManager;
     IComptroller public immutable comptroller;
@@ -217,7 +217,7 @@ contract RewardsManager is IRewardsManager, Ownable {
         return (_balance * (borrowIndex - borrowerIndex)) / 1e36;
     }
 
-    /// @notice Returns the udpated COMP supply index.
+    /// @notice Returns the updated COMP supply index.
     /// @param _cTokenAddress The cToken address.
     /// @return The updated COMP supply index.
     function getUpdatedSupplyIndex(address _cTokenAddress) public view returns (uint256) {
@@ -250,7 +250,7 @@ contract RewardsManager is IRewardsManager, Ownable {
         }
     }
 
-    /// @notice Returns the udpated COMP borrow index.
+    /// @notice Returns the updated COMP borrow index.
     /// @param _cTokenAddress The cToken address.
     /// @return The updated COMP borrow index.
     function getUpdatedBorrowIndex(address _cTokenAddress) public view returns (uint256) {

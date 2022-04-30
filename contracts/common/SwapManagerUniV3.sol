@@ -38,7 +38,7 @@ contract SwapManagerUniV3 is ISwapManager, Ownable {
     address public immutable MORPHO; // The Morpho token address.
     address public immutable WETH9; // Intermediate token address.
 
-    // Hard coded addresses as they are the same accross chains.
+    // Hard coded addresses as they are the same across chains.
     address public constant FACTORY = 0x1F98431c8aD98523631AE4a59f267346ea31F984; // The address of the Uniswap V3 factory.
     ISwapRouter public constant SWAP_ROUTER =
         ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564); // The Uniswap V3 router.
