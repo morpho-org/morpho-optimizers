@@ -93,17 +93,17 @@ contract TestMarketsManager is TestSetup {
         borrower1.setMaxGas(newMaxGas);
     }
 
-    function testOnlyOwnerCanSetNDS() public {
-        uint8 newNDS = 30;
+    function testOnlyOwnerCanSetMaxSortedUsers() public {
+        uint256 newMaxSortedUsers = 30;
 
-        positionsManager.setNDS(newNDS);
-        assertEq(positionsManager.NDS(), newNDS);
-
-        hevm.expectRevert("Ownable: caller is not the owner");
-        supplier1.setNDS(newNDS);
+        positionsManager.setMaxSortedUsers(newMaxSortedUsers);
+        assertEq(positionsManager.maxSortedUsers(), newMaxSortedUsers);
 
         hevm.expectRevert("Ownable: caller is not the owner");
-        borrower1.setNDS(newNDS);
+        supplier1.setMaxSortedUsers(newMaxSortedUsers);
+
+        hevm.expectRevert("Ownable: caller is not the owner");
+        borrower1.setMaxSortedUsers(newMaxSortedUsers);
     }
 
     function testOnlyOwnerShouldFlipMarketStrategy() public {

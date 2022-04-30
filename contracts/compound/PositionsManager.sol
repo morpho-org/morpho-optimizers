@@ -20,7 +20,7 @@ contract PositionsManager is PositionsManagerGovernance {
     /// @param _comptroller The `comptroller`.
     /// @param _dustThreshold The `dustThreshold`.
     /// @param _maxGas The `maxGas`.
-    /// @param _NDS The `NDS`.
+    /// @param _maxSortedUsers The `maxSortedUsers`.
     /// @param _cEth The cETH address.
     /// @param _weth The wETH address.
     function initialize(
@@ -29,7 +29,7 @@ contract PositionsManager is PositionsManagerGovernance {
         IComptroller _comptroller,
         uint256 _dustThreshold,
         MaxGas memory _maxGas,
-        uint256 _NDS,
+        uint256 _maxSortedUsers,
         address _cEth,
         address _weth
     ) external initializer {
@@ -42,7 +42,7 @@ contract PositionsManager is PositionsManagerGovernance {
 
         dustThreshold = _dustThreshold;
         maxGas = _maxGas;
-        NDS = _NDS;
+        maxSortedUsers = _maxSortedUsers;
 
         cEth = _cEth;
         wEth = _weth;

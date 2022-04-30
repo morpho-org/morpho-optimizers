@@ -40,11 +40,11 @@ abstract contract PositionsManagerGovernance is PositionsManagerEventsErrors {
 
     /// GOVERNANCE ///
 
-    /// @notice Sets `NDS`.
-    /// @param _newNDS The new `NDS` value.
-    function setNDS(uint256 _newNDS) external onlyOwner {
-        NDS = _newNDS;
-        emit NDSSet(_newNDS);
+    /// @notice Sets `maxSortedUsers`.
+    /// @param _newMaxSortedUsers The new `maxSortedUsers` value.
+    function setMaxSortedUsers(uint256 _newMaxSortedUsers) external onlyOwner {
+        maxSortedUsers = _newMaxSortedUsers;
+        emit MaxSortedUsersSet(_newMaxSortedUsers);
     }
 
     /// @notice Sets `maxGas`.
