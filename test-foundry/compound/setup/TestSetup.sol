@@ -76,12 +76,8 @@ contract TestSetup is Config, Utils, stdCheats {
     }
 
     function initContracts() internal {
-        PositionsManager.MaxGas memory maxGas = PositionsManagerStorage.MaxGas({
-            supply: 3e6,
-            borrow: 3e6,
-            withdraw: 3e6,
-            repay: 3e6
-        });
+        PositionsManager.MaxGasForMatching memory maxGasForMatching = PositionsManagerStorage
+        .MaxGasForMatching({supply: 3e6, borrow: 3e6, withdraw: 3e6, repay: 3e6});
 
         comptroller = IComptroller(comptrollerAddress);
         interestRates = new InterestRatesV1();
@@ -109,7 +105,16 @@ contract TestSetup is Config, Utils, stdCheats {
 
         positionsManagerProxy.changeAdmin(address(proxyAdmin));
         positionsManager = PositionsManager(payable(address(positionsManagerProxy)));
-        positionsManager.initialize(marketsManager, logic, comptroller, 1, maxGas, 20, cEth, wEth);
+        positionsManager.initialize(
+            marketsManager,
+            logic,
+            comptroller,
+            1,
+            maxGasForMatching,
+            20,
+            cEth,
+            wEth
+        );
 
         treasuryVault = new User(positionsManager);
         fakePositionsManagerImpl = new PositionsManager();
@@ -234,19 +239,15 @@ contract TestSetup is Config, Utils, stdCheats {
         return customOracle;
     }
 
-    function setMaxGasHelper(
+    function setMaxGasForMatchingHelper(
         uint64 _supply,
         uint64 _borrow,
         uint64 _withdraw,
         uint64 _repay
     ) public {
-        PositionsManagerStorage.MaxGas memory newMaxGas = PositionsManagerStorage.MaxGas({
-            supply: _supply,
-            borrow: _borrow,
-            withdraw: _withdraw,
-            repay: _repay
-        });
-        positionsManager.setMaxGas(newMaxGas);
+        PositionsManagerStorage.MaxGasForMatching memory newMaxGas = PositionsManagerStorage
+        .MaxGasForMatching({supply: _supply, borrow: _borrow, withdraw: _withdraw, repay: _repay});
+        positionsManager.setMaxGasForMatching(newMaxGas);
     }
 
     function move1000BlocksForward(address _marketAddress) public {

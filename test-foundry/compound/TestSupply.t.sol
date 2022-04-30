@@ -98,7 +98,12 @@ contract TestSupply is TestSetup {
     }
 
     function testSupply4() public {
-        setMaxGasHelper(type(uint64).max, type(uint64).max, type(uint64).max, type(uint64).max);
+        setMaxGasForMatchingHelper(
+            type(uint64).max,
+            type(uint64).max,
+            type(uint64).max,
+            type(uint64).max
+        );
 
         uint256 amount = 10000 ether;
         uint256 collateral = 2 * amount;
@@ -140,7 +145,12 @@ contract TestSupply is TestSetup {
     }
 
     function testSupply5() public {
-        setMaxGasHelper(type(uint64).max, type(uint64).max, type(uint64).max, type(uint64).max);
+        setMaxGasForMatchingHelper(
+            type(uint64).max,
+            type(uint64).max,
+            type(uint64).max,
+            type(uint64).max
+        );
 
         uint256 amount = 10000 ether;
         uint256 collateral = 2 * amount;

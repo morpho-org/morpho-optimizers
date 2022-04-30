@@ -111,8 +111,10 @@ contract User {
         positionsManager.setMaxSortedUsers(_newMaxSortedUsers);
     }
 
-    function setMaxGas(PositionsManager.MaxGas memory _maxGas) external {
-        positionsManager.setMaxGas(_maxGas);
+    function setMaxGasForMatching(PositionsManager.MaxGasForMatching memory _maxGasForMatching)
+        external
+    {
+        positionsManager.setMaxGasForMatching(_maxGasForMatching);
     }
 
     function claimRewards(address[] calldata _assets, bool _toSwap) external {
