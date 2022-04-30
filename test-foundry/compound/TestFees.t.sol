@@ -8,7 +8,7 @@ contract TestFees is TestSetup {
 
     function testShouldRevertWhenClaimingZeroAmount() public {
         hevm.expectRevert(abi.encodeWithSignature("AmountIsZero()"));
-        positionsManager.claimToTreasury(cDai);
+        positionsManager.claimToTreasury(cDai, 1 ether);
     }
 
     function testShouldNotBePossibleToSetFeesHigherThan100Percent() public {
@@ -35,7 +35,7 @@ contract TestFees is TestSetup {
         move1000BlocksForward(cDai);
 
         supplier1.repay(cDai, type(uint256).max);
-        positionsManager.claimToTreasury(cDai);
+        positionsManager.claimToTreasury(cDai, 1 ether);
         uint256 balanceAfter = IERC20(dai).balanceOf(positionsManager.treasuryVault());
 
         assertLt(balanceBefore, balanceAfter);
@@ -56,7 +56,7 @@ contract TestFees is TestSetup {
         supplier1.repay(cDai, type(uint256).max);
 
         hevm.expectRevert(abi.encodeWithSignature("ZeroAddress()"));
-        positionsManager.claimToTreasury(cDai);
+        positionsManager.claimToTreasury(cDai, 1 ether);
     }
 
     function testShouldCollectTheRightAmountOfFees() public {
@@ -87,11 +87,16 @@ contract TestFees is TestSetup {
         move1000BlocksForward(cDai);
 
         supplier1.repay(cDai, type(uint256).max);
-        positionsManager.claimToTreasury(cDai);
+        positionsManager.claimToTreasury(cDai, type(uint256).max);
         uint256 balanceAfter = IERC20(dai).balanceOf(positionsManager.treasuryVault());
         uint256 gainedByDAO = balanceAfter - balanceBefore;
 
-        assertApproxEq(gainedByDAO, expectedFees, (expectedFees * 1) / 100000, "Fees collected");
+        assertApproxEq(
+            gainedByDAO,
+            (expectedFees * 9_000) / MAX_BASIS_POINTS,
+            (expectedFees * 1) / 100000,
+            "Fees collected"
+        );
     }
 
     function testShouldNotClaimFeesIfFactorIsZero() public {
@@ -109,7 +114,7 @@ contract TestFees is TestSetup {
 
         supplier1.repay(cDai, type(uint256).max);
         hevm.expectRevert(PositionsManagerEventsErrors.AmountIsZero.selector);
-        positionsManager.claimToTreasury(cDai);
+        positionsManager.claimToTreasury(cDai, 1 ether);
         uint256 balanceAfter = IERC20(dai).balanceOf(positionsManager.treasuryVault());
 
         assertEq(balanceBefore, balanceAfter);
