@@ -19,7 +19,7 @@ contract PositionsManager is PositionsManagerGovernance {
     /// @param _marketsManager The `marketsManager`.
     /// @param _comptroller The `comptroller`.
     /// @param _dustThreshold The `dustThreshold`.
-    /// @param _maxGas The `maxGas`.
+    /// @param _maxGasForMatching The `maxGasForMatching`.
     /// @param _maxSortedUsers The `maxSortedUsers`.
     /// @param _cEth The cETH address.
     /// @param _weth The wETH address.
@@ -28,7 +28,7 @@ contract PositionsManager is PositionsManagerGovernance {
         ILogic _logic,
         IComptroller _comptroller,
         uint256 _dustThreshold,
-        MaxGas memory _maxGas,
+        MaxGasForMatching memory _maxGasForMatching,
         uint256 _maxSortedUsers,
         address _cEth,
         address _weth
@@ -41,7 +41,7 @@ contract PositionsManager is PositionsManagerGovernance {
         comptroller = _comptroller;
 
         dustThreshold = _dustThreshold;
-        maxGas = _maxGas;
+        maxGasForMatching = _maxGasForMatching;
         maxSortedUsers = _maxSortedUsers;
 
         cEth = _cEth;
@@ -61,7 +61,12 @@ contract PositionsManager is PositionsManagerGovernance {
         marketsManager.updateP2PIndexes(_poolTokenAddress);
 
         address(logic).functionDelegateCall(
-            abi.encodeWithSelector(logic.supply.selector, _poolTokenAddress, _amount, maxGas.supply)
+            abi.encodeWithSelector(
+                logic.supply.selector,
+                _poolTokenAddress,
+                _amount,
+                maxGasForMatching.supply
+            )
         );
 
         emit Supplied(
@@ -116,7 +121,12 @@ contract PositionsManager is PositionsManagerGovernance {
         marketsManager.updateP2PIndexes(_poolTokenAddress);
 
         address(logic).functionDelegateCall(
-            abi.encodeWithSelector(logic.borrow.selector, _poolTokenAddress, _amount, maxGas.borrow)
+            abi.encodeWithSelector(
+                logic.borrow.selector,
+                _poolTokenAddress,
+                _amount,
+                maxGasForMatching.borrow
+            )
         );
 
         emit Borrowed(
@@ -183,7 +193,7 @@ contract PositionsManager is PositionsManagerGovernance {
                 toWithdraw,
                 msg.sender,
                 msg.sender,
-                maxGas.withdraw
+                maxGasForMatching.withdraw
             )
         );
 
@@ -220,7 +230,7 @@ contract PositionsManager is PositionsManagerGovernance {
                 _poolTokenAddress,
                 msg.sender,
                 toRepay,
-                maxGas.repay
+                maxGasForMatching.repay
             )
         );
 
