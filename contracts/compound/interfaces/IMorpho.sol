@@ -80,7 +80,7 @@ interface IMorpho {
     function dustThreshold() external view returns (uint256);
     function supplyBalanceInOf(address, address) external view returns (SupplyBalance memory);
     function borrowBalanceInOf(address, address) external view returns (BorrowBalance memory);
-    function enteredMarkets(address) external view returns (address[] memory);
+    function enteredMarkets(address, uint) external view returns (address);
     function deltas(address) external view returns (Delta memory);
     function marketsCreated() external view returns (address[] memory);
     function marketParameters(address) external view returns (MarketParameters memory);
@@ -100,6 +100,7 @@ interface IMorpho {
 
     /// GETTERS ///
 
+    function enteredMarketsLength(address _user) external view returns (uint256);
     function getHead(address _poolTokenAddress, PositionType _positionType) external view returns (address head);
     function getNext(address _poolTokenAddress, PositionType _positionType, address _user) external view returns (address next);
     function getUserBalanceStates(address _user) external returns (uint256 collateralValue, uint256 debtValue, uint256 maxDebtValue);

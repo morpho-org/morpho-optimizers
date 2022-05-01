@@ -55,6 +55,13 @@ abstract contract MorphoGetters is MorphoStorage {
 
     /// EXTERNAL ///
 
+    /// @notice Gets the number of markets entered by a given user.
+    /// @param _user The address of the user.
+    /// @return The number of markets entered by this user.
+    function enteredMarketsLength(address _user) external view returns (uint256) {
+        return enteredMarkets[_user].length;
+    }
+
     /// @notice Gets the head of the data structure on a specific market (for UI).
     /// @param _poolTokenAddress The address of the market from which to get the head.
     /// @param _positionType The type of user from which to get the head.
