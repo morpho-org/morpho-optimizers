@@ -14,14 +14,6 @@ abstract contract MorphoGovernance is MorphoEventsErrors {
     using CompoundMath for uint256;
     using DelegateCall for address;
 
-    /// MODIFIERS ///
-
-    /// @notice Prevents a user to call function only allowed for the markets manager.
-    modifier onlyInterestRates() {
-        if (msg.sender != address(interestRates)) revert OnlyInterestRates();
-        _;
-    }
-
     /// GOVERNANCE ///
 
     /// @notice Sets `maxSortedUsers`.

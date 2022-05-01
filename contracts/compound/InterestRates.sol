@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
+import "./morpho-parts/MorphoStorage.sol";
+
 import "./interfaces/compound/ICompound.sol";
 import "./interfaces/IMorpho.sol";
 import "./interfaces/IInterestRates.sol";
-import "./morpho-parts/MorphoStorage.sol";
 
 import "./libraries/CompoundMath.sol";
 import "./libraries/Types.sol";
@@ -76,7 +77,7 @@ contract InterestRates is IInterestRates, MorphoStorage {
     /// @notice Returns the updated peer-to-peer supply index.
     /// @param _poolTokenAddress The address of the market to update.
     /// @return newP2PSupplyIndex The peer-to-peer supply index after update.
-    function getUpdatedp2pSupplyIndex(address _poolTokenAddress) external view returns (uint256) {
+    function getUpdatedP2PSupplyIndex(address _poolTokenAddress) external view returns (uint256) {
         if (block.timestamp == lastPoolIndexes[_poolTokenAddress].lastUpdateBlockNumber)
             return p2pSupplyIndex[_poolTokenAddress];
         else {
@@ -103,7 +104,7 @@ contract InterestRates is IInterestRates, MorphoStorage {
     /// @notice Returns the updated peer-to-peer borrow index.
     /// @param _poolTokenAddress The address of the market to update.
     /// @return newP2PSupplyIndex The peer-to-peer borrow index after update.
-    function getUpdatedp2pBorrowIndex(address _poolTokenAddress) external view returns (uint256) {
+    function getUpdatedP2PBorrowIndex(address _poolTokenAddress) external view returns (uint256) {
         if (block.timestamp == lastPoolIndexes[_poolTokenAddress].lastUpdateBlockNumber)
             return p2pBorrowIndex[_poolTokenAddress];
         else {
