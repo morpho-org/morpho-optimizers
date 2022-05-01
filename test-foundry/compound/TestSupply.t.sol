@@ -15,7 +15,7 @@ contract TestSupply is TestSetup {
         uint256 supplyPoolIndex = ICToken(cDai).exchangeRateCurrent();
         uint256 expectedOnPool = amount.div(supplyPoolIndex);
 
-        assertEq(IERC20(cDai).balanceOf(address(morpho)), expectedOnPool, "balance of cToken");
+        assertEq(ERC20(cDai).balanceOf(address(morpho)), expectedOnPool, "balance of cToken");
 
         (uint256 inP2P, uint256 onPool) = morpho.supplyBalanceInOf(cDai, address(supplier1));
 

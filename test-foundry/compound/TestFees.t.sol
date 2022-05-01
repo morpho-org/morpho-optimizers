@@ -28,7 +28,7 @@ contract TestFees is TestSetup {
         // Increase blocks so that rates update.
         hevm.roll(block.number + 1);
 
-        uint256 balanceBefore = IERC20(dai).balanceOf(morpho.treasuryVault());
+        uint256 balanceBefore = ERC20(dai).balanceOf(morpho.treasuryVault());
         supplier1.approve(dai, type(uint256).max);
         supplier1.supply(cDai, 100 ether);
         supplier1.borrow(cDai, 50 ether);
@@ -37,7 +37,7 @@ contract TestFees is TestSetup {
 
         supplier1.repay(cDai, type(uint256).max);
         morpho.claimToTreasury(cDai, 1 ether);
-        uint256 balanceAfter = IERC20(dai).balanceOf(morpho.treasuryVault());
+        uint256 balanceAfter = ERC20(dai).balanceOf(morpho.treasuryVault());
 
         assertLt(balanceBefore, balanceAfter);
     }
@@ -64,7 +64,7 @@ contract TestFees is TestSetup {
         uint256 reserveFactor = 1_000;
         morpho.setReserveFactor(cDai, reserveFactor); // 10%
 
-        uint256 balanceBefore = IERC20(dai).balanceOf(morpho.treasuryVault());
+        uint256 balanceBefore = ERC20(dai).balanceOf(morpho.treasuryVault());
         supplier1.approve(dai, type(uint256).max);
         supplier1.supply(cDai, 100 ether);
         supplier1.borrow(cDai, 50 ether);
@@ -89,7 +89,7 @@ contract TestFees is TestSetup {
 
         supplier1.repay(cDai, type(uint256).max);
         morpho.claimToTreasury(cDai, type(uint256).max);
-        uint256 balanceAfter = IERC20(dai).balanceOf(morpho.treasuryVault());
+        uint256 balanceAfter = ERC20(dai).balanceOf(morpho.treasuryVault());
         uint256 gainedByDAO = balanceAfter - balanceBefore;
 
         assertApproxEq(
@@ -106,7 +106,7 @@ contract TestFees is TestSetup {
         // Increase blocks so that rates update.
         hevm.roll(block.number + 1);
 
-        uint256 balanceBefore = IERC20(dai).balanceOf(morpho.treasuryVault());
+        uint256 balanceBefore = ERC20(dai).balanceOf(morpho.treasuryVault());
         supplier1.approve(dai, type(uint256).max);
         supplier1.supply(cDai, 100 * WAD);
         supplier1.borrow(cDai, 50 * WAD);
@@ -116,7 +116,7 @@ contract TestFees is TestSetup {
         supplier1.repay(cDai, type(uint256).max);
         hevm.expectRevert(MorphoEventsErrors.AmountIsZero.selector);
         morpho.claimToTreasury(cDai, 1 ether);
-        uint256 balanceAfter = IERC20(dai).balanceOf(morpho.treasuryVault());
+        uint256 balanceAfter = ERC20(dai).balanceOf(morpho.treasuryVault());
 
         assertEq(balanceBefore, balanceAfter);
     }
