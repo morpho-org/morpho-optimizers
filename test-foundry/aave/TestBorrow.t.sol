@@ -3,7 +3,23 @@ pragma solidity 0.8.13;
 
 import "./setup/TestSetup.sol";
 
+contract Called {
+    function doSomething() public {
+        console.log("gasleft", gasleft());
+    }
+}
+
 contract TestBorrow is TestSetup {
+    function testDelegateCallGas() public {
+        Called called = new Called();
+
+        console.log("gasleft before delegate call", gasleft());
+        address(called).delegatecall(abi.encodeWithSelector(called.doSomething.selector));
+
+        console.log("gasleft before normal call", gasleft());
+        called.doSomething();
+    }
+
     function testBorrow1() public {
         uint256 usdcAmount = to6Decimals(10_000 ether);
 
