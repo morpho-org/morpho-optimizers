@@ -250,9 +250,9 @@ contract TestRewards is TestSetup {
         interactWithMorpho();
 
         uint256[4] memory balanceBefore;
-        balanceBefore[1] = IERC20(comp).balanceOf(address(supplier1));
-        balanceBefore[2] = IERC20(comp).balanceOf(address(supplier2));
-        balanceBefore[3] = IERC20(comp).balanceOf(address(supplier3));
+        balanceBefore[1] = ERC20(comp).balanceOf(address(supplier1));
+        balanceBefore[2] = ERC20(comp).balanceOf(address(supplier2));
+        balanceBefore[3] = ERC20(comp).balanceOf(address(supplier3));
 
         hevm.roll(block.number + 1_000);
 
@@ -264,18 +264,18 @@ contract TestRewards is TestSetup {
         supplier3.claimRewards(tokensInArray, false);
 
         uint256[4] memory balanceAfter;
-        balanceAfter[1] = IERC20(comp).balanceOf(address(supplier1));
-        balanceAfter[2] = IERC20(comp).balanceOf(address(supplier2));
-        balanceAfter[3] = IERC20(comp).balanceOf(address(supplier3));
+        balanceAfter[1] = ERC20(comp).balanceOf(address(supplier1));
+        balanceAfter[2] = ERC20(comp).balanceOf(address(supplier2));
+        balanceAfter[3] = ERC20(comp).balanceOf(address(supplier3));
 
         supplier1.compoundClaimRewards(tokensInArray);
         supplier2.compoundClaimRewards(tokensInArray);
         supplier3.compoundClaimRewards(tokensInArray);
 
         uint256[4] memory balanceAfterCompound;
-        balanceAfterCompound[1] = IERC20(comp).balanceOf(address(supplier1));
-        balanceAfterCompound[2] = IERC20(comp).balanceOf(address(supplier2));
-        balanceAfterCompound[3] = IERC20(comp).balanceOf(address(supplier3));
+        balanceAfterCompound[1] = ERC20(comp).balanceOf(address(supplier1));
+        balanceAfterCompound[2] = ERC20(comp).balanceOf(address(supplier2));
+        balanceAfterCompound[3] = ERC20(comp).balanceOf(address(supplier3));
 
         uint256[4] memory claimedFromCompound;
         claimedFromCompound[1] = balanceAfterCompound[1] - balanceAfter[1];

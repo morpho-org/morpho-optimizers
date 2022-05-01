@@ -1,10 +1,7 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import "@openzeppelin/contracts/utils/math/Math.sol";
 import "./MorphoEventsErrors.sol";
-import "../libraries/DelegateCall.sol";
 
 /// @title MorphoGovernance.
 /// @notice Governance functions for the Morpho.
@@ -157,7 +154,7 @@ abstract contract MorphoGovernance is MorphoEventsErrors {
         // Same initial index as Compound.
         uint256 initialIndex;
         if (_poolTokenAddress == cEth) initialIndex = 2e26;
-        else initialIndex = 2 * 10**(16 + IERC20Metadata(poolToken.underlying()).decimals() - 8);
+        else initialIndex = 2 * 10**(16 + ERC20(poolToken.underlying()).decimals() - 8);
         p2pSupplyIndex[_poolTokenAddress] = initialIndex;
         p2pBorrowIndex[_poolTokenAddress] = initialIndex;
 

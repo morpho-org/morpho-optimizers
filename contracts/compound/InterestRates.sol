@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import "./morpho-parts/MorphoStorage.sol";
-
 import "./interfaces/compound/ICompound.sol";
-import "./interfaces/IMorpho.sol";
 import "./interfaces/IInterestRates.sol";
+import "./interfaces/IMorpho.sol";
 
 import "./libraries/CompoundMath.sol";
 import "./libraries/Types.sol";
+
+import "./morpho-parts/MorphoStorage.sol";
 
 /// @title InterestRates.
 /// @notice Smart contract managing the markets used by a MorphoMorpho contract, an other contract interacting with Compound or a fork of Compound.

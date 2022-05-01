@@ -93,6 +93,8 @@ abstract contract MorphoStorage is OwnableUpgradeable, ReentrancyGuardUpgradeabl
     uint16 public constant MAX_BASIS_POINTS = 10_000; // 100% in basis points.
     uint16 public constant LIQUIDATION_CLOSE_FACTOR_PERCENT = 5_000; // 50% in basis points.
 
+    /// POSITIONS STORAGE ///
+
     MaxGasForMatching public maxGasForMatching; // Max gas to consume within loops in matching engine functions.
     bool public isCompRewardsActive; // True if the Compound reward is active.
     uint256 public maxSortedUsers; // The max number of users to sort in the data structure.
@@ -107,7 +109,7 @@ abstract contract MorphoStorage is OwnableUpgradeable, ReentrancyGuardUpgradeabl
     mapping(address => address[]) public enteredMarkets; // The markets entered by a user.
     mapping(address => Types.Delta) public deltas; // Delta parameters for each market.
 
-    // Markets.
+    /// MARKETS STORAGE ///
 
     address[] public marketsCreated; // Keeps track of the created markets.
     mapping(address => MarketParameters) public marketParameters; // Market parameters.

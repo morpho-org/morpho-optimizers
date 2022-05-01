@@ -9,11 +9,11 @@ contract TestInterestRates is TestSetup {
     function testShoudDeployContractWithTheRightValues() public {
         assertEq(
             morpho.p2pSupplyIndex(cDai),
-            2 * 10**(16 + IERC20Metadata(ICToken(cDai).underlying()).decimals() - 8)
+            2 * 10**(16 + ERC20(ICToken(cDai).underlying()).decimals() - 8)
         );
         assertEq(
             morpho.p2pBorrowIndex(cDai),
-            2 * 10**(16 + IERC20Metadata(ICToken(cDai).underlying()).decimals() - 8)
+            2 * 10**(16 + ERC20(ICToken(cDai).underlying()).decimals() - 8)
         );
     }
 
@@ -61,11 +61,11 @@ contract TestInterestRates is TestSetup {
         assertTrue(isCreated);
         assertEq(
             morpho.p2pSupplyIndex(cAave),
-            2 * 10**(16 + IERC20Metadata(cToken.underlying()).decimals() - 8)
+            2 * 10**(16 + ERC20(cToken.underlying()).decimals() - 8)
         );
         assertEq(
             morpho.p2pBorrowIndex(cAave),
-            2 * 10**(16 + IERC20Metadata(cToken.underlying()).decimals() - 8)
+            2 * 10**(16 + ERC20(cToken.underlying()).decimals() - 8)
         );
     }
 
