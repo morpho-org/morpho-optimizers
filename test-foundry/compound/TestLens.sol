@@ -525,13 +525,4 @@ contract TestLens is TestSetup {
         (uint16 expectedReserveFactor, ) = morpho.marketParameters(cDai);
         assertTrue(reserveFactor == expectedReserveFactor);
     }
-
-    function testGetUpdatedP2PIndexes() public {
-        hevm.warp(block.timestamp + (365 days));
-        morpho.updateP2PIndexes(cDai);
-
-        (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex) = lens.getUpdatedP2PIndexes(cDai);
-        assertEq(newP2PBorrowIndex, morpho.p2pBorrowIndex(cDai));
-        assertEq(newP2PSupplyIndex, morpho.p2pSupplyIndex(cDai));
-    }
 }
