@@ -60,6 +60,9 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     /// @notice Thrown when the Compound's oracle failed.
     error CompoundOracleFailed();
 
+    /// @notice Thrown when the amount desired for a withdrawal is too small.
+    error WithdrawTooSmall();
+
     /// STRUCTS ///
 
     // Struct to avoid stack too deep.
@@ -161,7 +164,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
         /// Supply on pool ///
 
-        if (_isAboveCompoundThreshold(remainingToSupply, underlyingToken.decimals())) {
+        if (remainingToSupply > 0) {
             supplyBalanceInOf[_poolTokenAddress][msg.sender].onPool += remainingToSupply.div(
                 ICToken(_poolTokenAddress).exchangeRateCurrent()
             ); // In scaled balance.
@@ -227,7 +230,8 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             }
         }
 
-        if (_isAboveCompoundThreshold(toWithdraw, underlyingToken.decimals())) {
+        // If this value is equal to 0 the withdraw will revert on Compound.
+        if (toWithdraw.div(poolSupplyIndex) > 0) {
             uint256 toAddInP2P = toWithdraw.div(p2pBorrowIndex[_poolTokenAddress]); // In p2pUnit.
 
             deltas[_poolTokenAddress].borrowP2PAmount += toAddInP2P;
@@ -271,10 +275,12 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         vars.withdrawable = poolToken.balanceOfUnderlying(address(this));
         vars.supplyPoolIndex = poolToken.exchangeRateCurrent();
 
+        if (_amount.div(vars.supplyPoolIndex) == 0) revert WithdrawTooSmall();
+
         /// Soft withdraw ///
 
-        if (supplyBalanceInOf[_poolTokenAddress][_supplier].onPool > 0) {
-            uint256 onPoolSupply = supplyBalanceInOf[_poolTokenAddress][_supplier].onPool;
+        uint256 onPoolSupply = supplyBalanceInOf[_poolTokenAddress][_supplier].onPool;
+        if (onPoolSupply > 0) {
             vars.toWithdraw = CompoundMath.min(
                 onPoolSupply.mul(vars.supplyPoolIndex),
                 vars.remainingToWithdraw,
@@ -289,7 +295,8 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             updateSuppliers(_poolTokenAddress, _supplier);
 
             if (vars.remainingToWithdraw == 0) {
-                if (_isAboveCompoundThreshold(vars.toWithdraw, underlyingToken.decimals()))
+                // If this value is equal to 0 the withdraw will revert on Compound.
+                if (vars.toWithdraw.div(vars.supplyPoolIndex) > 0)
                     _withdrawFromPool(_poolTokenAddress, vars.toWithdraw); // Reverts on error.
                 underlyingToken.safeTransfer(_receiver, _amount);
                 _leaveMarketIfNeeded(_poolTokenAddress, _supplier);
@@ -346,7 +353,8 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             }
         }
 
-        if (_isAboveCompoundThreshold(vars.toWithdraw, underlyingToken.decimals()))
+        // If this value is equal to 0 the withdraw will revert on Compound.
+        if (vars.toWithdraw.div(vars.supplyPoolIndex) > 0)
             _withdrawFromPool(_poolTokenAddress, vars.toWithdraw); // Reverts on error.
 
         /// Hard withdraw ///
@@ -494,7 +502,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
         /// Hard repay ///
 
-        if (_isAboveCompoundThreshold(vars.remainingToRepay, underlyingToken.decimals())) {
+        if (vars.remainingToRepay > 0) {
             uint256 unmatched = unmatchSuppliers(
                 _poolTokenAddress,
                 vars.remainingToRepay,
@@ -625,23 +633,6 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             if (ICToken(_poolTokenAddress).repayBorrow(_amount) != 0)
                 revert RepayOnCompoundFailed();
         }
-    }
-
-    /// @dev Returns whether it is safe to supply/withdraw on Compound or not due to Compound's revert on low amounts.
-    /// @param _amount The amount of token considered for depositing/redeeming.
-    /// @param _tokenDecimals The number of decimals for the token considered.
-    /// @return Whether to continue or not.
-    function _isAboveCompoundThreshold(uint256 _amount, uint256 _tokenDecimals)
-        internal
-        pure
-        returns (bool)
-    {
-        if (_tokenDecimals > CTOKEN_DECIMALS) {
-            // Multiply by 2 to have a safety buffer.
-            unchecked {
-                return (_amount > 10**(_tokenDecimals - CTOKEN_DECIMALS));
-            }
-        } else return true;
     }
 
     /// @dev Enters the user into the market if not already there.
