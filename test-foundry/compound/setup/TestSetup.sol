@@ -15,6 +15,7 @@ import "@contracts/compound/PositionsManager.sol";
 import "@contracts/compound/MatchingEngine.sol";
 import "@contracts/compound/InterestRates.sol";
 import "@contracts/compound/Morpho.sol";
+import "@contracts/compound/Lens.sol";
 
 import "../../common/helpers/MorphoToken.sol";
 import "../../common/helpers/Chains.sol";
@@ -46,6 +47,7 @@ contract TestSetup is Config, Utils, stdCheats {
     InterestRates internal interestRates;
     IRewardsManager internal rewardsManager;
     IPositionsManager internal positionsManager;
+    Lens internal lens;
 
     IncentivesVault public incentivesVault;
     DumbOracle internal dumbOracle;
@@ -108,6 +110,8 @@ contract TestSetup is Config, Utils, stdCheats {
         fakeMorphoImpl = new Morpho();
         oracle = ICompoundOracle(comptroller.oracle());
         morpho.setTreasuryVault(address(treasuryVault));
+
+        lens = new Lens(address(morpho));
 
         /// Create markets ///
 
@@ -200,6 +204,7 @@ contract TestSetup is Config, Utils, stdCheats {
         hevm.label(address(dumbOracle), "DumbOracle");
         hevm.label(address(incentivesVault), "IncentivesVault");
         hevm.label(address(treasuryVault), "TreasuryVault");
+        hevm.label(address(lens), "Lens");
     }
 
     function createSigners(uint256 _nbOfSigners) internal {
