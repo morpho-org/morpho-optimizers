@@ -103,16 +103,12 @@ interface IMorpho {
     function enteredMarketsLength(address _user) external view returns (uint256);
     function getHead(address _poolTokenAddress, PositionType _positionType) external view returns (address head);
     function getNext(address _poolTokenAddress, PositionType _positionType, address _user) external view returns (address next);
-    function getUserBalanceStates(address _user) external returns (uint256 collateralValue, uint256 debtValue, uint256 maxDebtValue);
-    function getUserMaxCapacitiesForAsset(address _user, address _poolTokenAddress) external returns (uint256 withdrawable, uint256 borrowable);
     function getUserLiquidityDataForAsset(address _user, address _poolTokenAddress, ICompoundOracle _oracle) external returns (AssetLiquidityData memory assetData);
     function updateP2PIndexes(address _poolTokenAddress) external;
     function getUpdatedP2PSupplyIndex(address _poolTokenAddress) external returns (uint256);
     function getUpdatedP2PBorrowIndex(address _poolTokenAddress) external returns (uint256);
     function getUpdatedP2PIndexes(address _poolTokenAddress) external returns (uint256, uint256);
     function getAllMarkets() external view returns (address[] memory marketsCreated_);
-    function getMarketData(address _poolTokenAddress) external view returns (uint256 p2pSupplyIndex_, uint256 p2pBorrowIndex_, uint32 lastUpdateBlockNumber_, uint256 supplyP2PDelta_, uint256 borrowP2PDelta_, uint256 supplyP2PAmount_, uint256 borrowP2PAmount_);
-    function getMarketConfiguration(address _poolTokenAddress) external view returns (bool isCreated_, bool noP2P_, bool isPaused_, bool isPartiallyPaused_, uint256 reserveFactor_);
 
     /// GOVERNANCE ///
 

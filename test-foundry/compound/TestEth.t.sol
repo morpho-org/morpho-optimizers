@@ -40,7 +40,7 @@ contract TestEth is TestSetup {
         supplier1.supply(cEth, toSupply);
         uint256 balanceAfter = supplier1.balanceOf(wEth);
 
-        (uint256 p2pSupplyIndex, ) = morpho.getUpdatedP2PIndexes(cEth);
+        uint256 p2pSupplyIndex = morpho.getUpdatedP2PSupplyIndex(cEth);
 
         uint256 expectedInP2P = toSupply.div(p2pSupplyIndex);
 
@@ -191,7 +191,7 @@ contract TestEth is TestSetup {
         borrower1.approve(usdc, address(morpho), collateral);
         borrower1.supply(cUsdc, collateral);
 
-        (, uint256 amount) = morpho.getUserMaxCapacitiesForAsset(address(borrower1), cEth);
+        (, uint256 amount) = lens.getUserMaxCapacitiesForAsset(address(borrower1), cEth);
         borrower1.borrow(cEth, amount);
 
         (, uint256 collateralOnPool) = morpho.supplyBalanceInOf(cUsdc, address(borrower1));
@@ -248,7 +248,7 @@ contract TestEth is TestSetup {
         borrower1.approve(wEth, address(morpho), collateral);
         borrower1.supply(cEth, collateral);
 
-        (, uint256 amount) = morpho.getUserMaxCapacitiesForAsset(address(borrower1), cDai);
+        (, uint256 amount) = lens.getUserMaxCapacitiesForAsset(address(borrower1), cDai);
         borrower1.borrow(cDai, amount);
 
         (, uint256 collateralOnPool) = morpho.supplyBalanceInOf(cEth, address(borrower1));

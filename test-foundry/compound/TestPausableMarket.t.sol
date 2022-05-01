@@ -56,7 +56,7 @@ contract TestPausableMarket is TestSetup {
         supplier1.approve(usdc, toBorrow);
         supplier1.repay(cUsdc, type(uint256).max);
 
-        (, toBorrow) = morpho.getUserMaxCapacitiesForAsset(address(supplier1), cUsdc);
+        (, toBorrow) = lens.getUserMaxCapacitiesForAsset(address(supplier1), cUsdc);
         supplier1.borrow(cUsdc, toBorrow - 10); // Here the max capacities is overestimated.
 
         // Change Oracle.
@@ -80,7 +80,7 @@ contract TestPausableMarket is TestSetup {
         supplier1.approve(dai, 2 * amount);
         supplier1.supply(cDai, amount);
 
-        (, uint256 toBorrow) = morpho.getUserMaxCapacitiesForAsset(address(supplier1), cUsdc);
+        (, uint256 toBorrow) = lens.getUserMaxCapacitiesForAsset(address(supplier1), cUsdc);
         supplier1.borrow(cUsdc, toBorrow);
 
         morpho.togglePauseStatus(cDai);
@@ -143,7 +143,7 @@ contract TestPausableMarket is TestSetup {
         supplier1.approve(dai, 2 * amount);
         supplier1.supply(cDai, amount);
 
-        (, uint256 toBorrow) = morpho.getUserMaxCapacitiesForAsset(address(supplier1), cUsdc);
+        (, uint256 toBorrow) = lens.getUserMaxCapacitiesForAsset(address(supplier1), cUsdc);
         supplier1.borrow(cUsdc, toBorrow);
 
         morpho.togglePartialPauseStatus(cDai);

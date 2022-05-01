@@ -31,7 +31,7 @@ contract TestLiquidate is TestSetup {
         borrower1.approve(usdc, address(morpho), to6Decimals(collateral));
         borrower1.supply(cUsdc, to6Decimals(collateral));
 
-        (, uint256 amount) = morpho.getUserMaxCapacitiesForAsset(address(borrower1), cDai);
+        (, uint256 amount) = lens.getUserMaxCapacitiesForAsset(address(borrower1), cDai);
         borrower1.borrow(cDai, amount);
 
         (, uint256 collateralOnPool) = morpho.supplyBalanceInOf(cUsdc, address(borrower1));
@@ -82,8 +82,8 @@ contract TestLiquidate is TestSetup {
         borrower1.approve(dai, collateral);
         borrower1.supply(cDai, collateral);
 
-        (, uint256 borrowerDebt) = morpho.getUserMaxCapacitiesForAsset(address(borrower1), cUsdc);
-        (, uint256 supplierDebt) = morpho.getUserMaxCapacitiesForAsset(address(supplier1), cDai);
+        (, uint256 borrowerDebt) = lens.getUserMaxCapacitiesForAsset(address(borrower1), cUsdc);
+        (, uint256 supplierDebt) = lens.getUserMaxCapacitiesForAsset(address(supplier1), cDai);
 
         supplier1.borrow(cDai, supplierDebt);
         borrower1.borrow(cUsdc, borrowerDebt);
@@ -148,8 +148,8 @@ contract TestLiquidate is TestSetup {
         borrower1.approve(dai, collateral);
         borrower1.supply(cDai, collateral);
 
-        (, uint256 borrowerDebt) = morpho.getUserMaxCapacitiesForAsset(address(borrower1), cUsdc);
-        (, uint256 supplierDebt) = morpho.getUserMaxCapacitiesForAsset(address(supplier1), cDai);
+        (, uint256 borrowerDebt) = lens.getUserMaxCapacitiesForAsset(address(borrower1), cUsdc);
+        (, uint256 supplierDebt) = lens.getUserMaxCapacitiesForAsset(address(supplier1), cDai);
 
         supplier1.borrow(cDai, supplierDebt);
         borrower1.borrow(cUsdc, borrowerDebt);
