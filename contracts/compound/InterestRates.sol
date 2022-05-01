@@ -128,11 +128,9 @@ contract InterestRates is IInterestRates, MorphoStorage {
         }
     }
 
-    /// PUBLIC ///
-
     /// @notice Updates the P2P indexes.
     /// @param _poolTokenAddress The address of the market to update.
-    function updateP2PIndexes(address _poolTokenAddress) public {
+    function updateP2PIndexes(address _poolTokenAddress) external {
         if (block.timestamp > lastPoolIndexes[_poolTokenAddress].lastUpdateBlockNumber) {
             ICToken poolToken = ICToken(_poolTokenAddress);
             LastPoolIndexes storage poolIndexes = lastPoolIndexes[_poolTokenAddress];
@@ -165,6 +163,8 @@ contract InterestRates is IInterestRates, MorphoStorage {
             emit P2PIndexesUpdated(_poolTokenAddress, newP2PSupplyIndex, newP2PBorrowIndex);
         }
     }
+
+    /// PUBLIC ///
 
     /// @notice Computes and returns new P2P indexes.
     /// @param _params Computation parameters.
@@ -217,6 +217,8 @@ contract InterestRates is IInterestRates, MorphoStorage {
             poolBorrowGrowthFactor
         );
     }
+
+    /// INTERNAL ///
 
     /// @notice Computes and return the new peer-to-peer supply index.
     /// @param _params Computation parameters.
@@ -272,8 +274,6 @@ contract InterestRates is IInterestRates, MorphoStorage {
 
         return _computeNewP2PRate(borrowParams, borrowP2PGrowthFactor, poolBorrowGrowthFactor);
     }
-
-    /// INTERNAL ///
 
     /// @dev Computes and returns supply P2P growthfactor and borrow P2P growthfactor.
     /// @param _poolSupplyIndex The current pool supply index.

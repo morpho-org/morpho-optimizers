@@ -2,10 +2,10 @@
 pragma solidity 0.8.13;
 
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
+import "@openzeppelin/contracts/utils/math/Math.sol";
 import "../libraries/CompoundMath.sol";
 import "../libraries/DelegateCall.sol";
 
-import "@openzeppelin/contracts/utils/math/Math.sol";
 import "./MorphoStorage.sol";
 
 /// @title MorphoGetters.
@@ -53,7 +53,7 @@ abstract contract MorphoGetters is MorphoStorage {
         _;
     }
 
-    /// GETTERS ///
+    /// EXTERNAL ///
 
     /// @notice Gets the head of the data structure on a specific market (for UI).
     /// @param _poolTokenAddress The address of the market from which to get the head.
@@ -92,6 +92,70 @@ abstract contract MorphoGetters is MorphoStorage {
             next = borrowersInP2P[_poolTokenAddress].getNext(_user);
         else if (_positionType == PositionType.BORROWERS_ON_POOL)
             next = borrowersOnPool[_poolTokenAddress].getNext(_user);
+    }
+
+    /// @notice Returns all created markets.
+    /// @return marketsCreated_ The list of market adresses.
+    function getAllMarkets() external view returns (address[] memory marketsCreated_) {
+        marketsCreated_ = marketsCreated;
+    }
+
+    /// @notice Returns market's data.
+    /// @return p2pSupplyIndex_ The peer-to-peer supply index of the market.
+    /// @return p2pBorrowIndex_ The peer-to-peer borrow index of the market.
+    /// @return lastUpdateBlockNumber_ The last block number when P2P indexes where updated.
+    /// @return supplyP2PDelta_ The supply P2P delta (in scaled balance).
+    /// @return borrowP2PDelta_ The borrow P2P delta (in cdUnit).
+    /// @return supplyP2PAmount_ The supply P2P amount (in P2P unit).
+    /// @return borrowP2PAmount_ The borrow P2P amount (in P2P unit).
+    function getMarketData(address _poolTokenAddress)
+        external
+        view
+        returns (
+            uint256 p2pSupplyIndex_,
+            uint256 p2pBorrowIndex_,
+            uint32 lastUpdateBlockNumber_,
+            uint256 supplyP2PDelta_,
+            uint256 borrowP2PDelta_,
+            uint256 supplyP2PAmount_,
+            uint256 borrowP2PAmount_
+        )
+    {
+        {
+            Types.Delta memory delta = deltas[_poolTokenAddress];
+            supplyP2PDelta_ = delta.supplyP2PDelta;
+            borrowP2PDelta_ = delta.borrowP2PDelta;
+            supplyP2PAmount_ = delta.supplyP2PAmount;
+            borrowP2PAmount_ = delta.borrowP2PAmount;
+        }
+        p2pSupplyIndex_ = p2pSupplyIndex[_poolTokenAddress];
+        p2pBorrowIndex_ = p2pBorrowIndex[_poolTokenAddress];
+        lastUpdateBlockNumber_ = lastPoolIndexes[_poolTokenAddress].lastUpdateBlockNumber;
+    }
+
+    /// @notice Returns market's configuration.
+    /// @return isCreated_ Whether the market is created or not.
+    /// @return noP2P_ Whether user are put in P2P or not.
+    /// @return isPaused_ Whether the market is paused or not (all entry points on Morpho are frozen; supply, borrow, withdraw, repay and liquidate).
+    /// @return isPartiallyPaused_ Whether the market is partially paused or not (only supply and borrow are frozen).
+    /// @return reserveFactor_ The reserve actor applied to this market.
+    function getMarketConfiguration(address _poolTokenAddress)
+        external
+        view
+        returns (
+            bool isCreated_,
+            bool noP2P_,
+            bool isPaused_,
+            bool isPartiallyPaused_,
+            uint256 reserveFactor_
+        )
+    {
+        MarketStatuses storage marketStatuses_ = marketStatuses[_poolTokenAddress];
+        isCreated_ = marketStatuses_.isCreated;
+        noP2P_ = noP2P[_poolTokenAddress];
+        isPaused_ = marketStatuses_.isPaused;
+        isPartiallyPaused_ = marketStatuses_.isPartiallyPaused;
+        reserveFactor_ = marketParameters[_poolTokenAddress].reserveFactor;
     }
 
     /// @notice Returns the collateral value, debt value and max debt value of a given user.
@@ -187,6 +251,21 @@ abstract contract MorphoGetters is MorphoStorage {
         borrowable = differenceInUnderlying;
     }
 
+    function getUpdatedP2PIndexes(address _poolTokenAddress) external returns (uint256, uint256) {
+        return
+            abi.decode(
+                address(interestRates).functionDelegateCall(
+                    abi.encodeWithSelector(
+                        interestRates.getUpdatedP2PIndexes.selector,
+                        _poolTokenAddress
+                    )
+                ),
+                (uint256, uint256)
+            );
+    }
+
+    /// PUBLIC ///
+
     /// @notice Returns the data related to `_poolTokenAddress` for the `_user`.
     /// @dev Note: must be called after calling `accrueInterest()` on the cToken to have the most up to date values.
     /// @param _user The user to determine data for.
@@ -210,6 +289,40 @@ abstract contract MorphoGetters is MorphoStorage {
         );
         assetData.maxDebtValue = assetData.collateralValue.mul(assetData.collateralFactor);
     }
+
+    function getUpdatedP2PSupplyIndex(address _poolTokenAddress) public returns (uint256) {
+        return
+            abi.decode(
+                address(interestRates).functionDelegateCall(
+                    abi.encodeWithSelector(
+                        interestRates.getUpdatedP2PSupplyIndex.selector,
+                        _poolTokenAddress
+                    )
+                ),
+                (uint256)
+            );
+    }
+
+    function getUpdatedP2PBorrowIndex(address _poolTokenAddress) public returns (uint256) {
+        return
+            abi.decode(
+                address(interestRates).functionDelegateCall(
+                    abi.encodeWithSelector(
+                        interestRates.getUpdatedP2PBorrowIndex.selector,
+                        _poolTokenAddress
+                    )
+                ),
+                (uint256)
+            );
+    }
+
+    function updateP2PIndexes(address _poolTokenAddress) public {
+        address(interestRates).functionDelegateCall(
+            abi.encodeWithSelector(interestRates.updateP2PIndexes.selector, _poolTokenAddress)
+        );
+    }
+
+    /// INTERNAL ///
 
     /// @dev Returns the debt value, max debt value of a given user.
     /// @param _user The user to determine liquidity for.
@@ -256,51 +369,6 @@ abstract contract MorphoGetters is MorphoStorage {
                 }
             }
         }
-    }
-
-    function updateP2PIndexes(address _poolTokenAddress) public {
-        address(interestRates).functionDelegateCall(
-            abi.encodeWithSelector(interestRates.updateP2PIndexes.selector, _poolTokenAddress)
-        );
-    }
-
-    function getUpdatedP2PSupplyIndex(address _poolTokenAddress) public returns (uint256) {
-        return
-            abi.decode(
-                address(interestRates).functionDelegateCall(
-                    abi.encodeWithSelector(
-                        interestRates.getUpdatedP2PSupplyIndex.selector,
-                        _poolTokenAddress
-                    )
-                ),
-                (uint256)
-            );
-    }
-
-    function getUpdatedP2PBorrowIndex(address _poolTokenAddress) public returns (uint256) {
-        return
-            abi.decode(
-                address(interestRates).functionDelegateCall(
-                    abi.encodeWithSelector(
-                        interestRates.getUpdatedP2PBorrowIndex.selector,
-                        _poolTokenAddress
-                    )
-                ),
-                (uint256)
-            );
-    }
-
-    function getUpdatedP2PIndexes(address _poolTokenAddress) public returns (uint256, uint256) {
-        return
-            abi.decode(
-                address(interestRates).functionDelegateCall(
-                    abi.encodeWithSelector(
-                        interestRates.getUpdatedP2PIndexes.selector,
-                        _poolTokenAddress
-                    )
-                ),
-                (uint256, uint256)
-            );
     }
 
     /// @dev Returns the supply balance of `_user` in the `_poolTokenAddress` market.
@@ -366,69 +434,5 @@ abstract contract MorphoGetters is MorphoStorage {
             // cETH has no underlying() function.
             return ERC20(wEth);
         else return ERC20(ICToken(_poolTokenAddress).underlying());
-    }
-
-    /// @notice Returns all created markets.
-    /// @return marketsCreated_ The list of market adresses.
-    function getAllMarkets() external view returns (address[] memory marketsCreated_) {
-        marketsCreated_ = marketsCreated;
-    }
-
-    /// @notice Returns market's data.
-    /// @return p2pSupplyIndex_ The peer-to-peer supply index of the market.
-    /// @return p2pBorrowIndex_ The peer-to-peer borrow index of the market.
-    /// @return lastUpdateBlockNumber_ The last block number when P2P indexes where updated.
-    /// @return supplyP2PDelta_ The supply P2P delta (in scaled balance).
-    /// @return borrowP2PDelta_ The borrow P2P delta (in cdUnit).
-    /// @return supplyP2PAmount_ The supply P2P amount (in P2P unit).
-    /// @return borrowP2PAmount_ The borrow P2P amount (in P2P unit).
-    function getMarketData(address _poolTokenAddress)
-        external
-        view
-        returns (
-            uint256 p2pSupplyIndex_,
-            uint256 p2pBorrowIndex_,
-            uint32 lastUpdateBlockNumber_,
-            uint256 supplyP2PDelta_,
-            uint256 borrowP2PDelta_,
-            uint256 supplyP2PAmount_,
-            uint256 borrowP2PAmount_
-        )
-    {
-        {
-            Types.Delta memory delta = deltas[_poolTokenAddress];
-            supplyP2PDelta_ = delta.supplyP2PDelta;
-            borrowP2PDelta_ = delta.borrowP2PDelta;
-            supplyP2PAmount_ = delta.supplyP2PAmount;
-            borrowP2PAmount_ = delta.borrowP2PAmount;
-        }
-        p2pSupplyIndex_ = p2pSupplyIndex[_poolTokenAddress];
-        p2pBorrowIndex_ = p2pBorrowIndex[_poolTokenAddress];
-        lastUpdateBlockNumber_ = lastPoolIndexes[_poolTokenAddress].lastUpdateBlockNumber;
-    }
-
-    /// @notice Returns market's configuration.
-    /// @return isCreated_ Whether the market is created or not.
-    /// @return noP2P_ Whether user are put in P2P or not.
-    /// @return isPaused_ Whether the market is paused or not (all entry points on Morpho are frozen; supply, borrow, withdraw, repay and liquidate).
-    /// @return isPartiallyPaused_ Whether the market is partially paused or not (only supply and borrow are frozen).
-    /// @return reserveFactor_ The reserve actor applied to this market.
-    function getMarketConfiguration(address _poolTokenAddress)
-        external
-        view
-        returns (
-            bool isCreated_,
-            bool noP2P_,
-            bool isPaused_,
-            bool isPartiallyPaused_,
-            uint256 reserveFactor_
-        )
-    {
-        MarketStatuses storage marketStatuses_ = marketStatuses[_poolTokenAddress];
-        isCreated_ = marketStatuses_.isCreated;
-        noP2P_ = noP2P[_poolTokenAddress];
-        isPaused_ = marketStatuses_.isPaused;
-        isPartiallyPaused_ = marketStatuses_.isPartiallyPaused;
-        reserveFactor_ = marketParameters[_poolTokenAddress].reserveFactor;
     }
 }
