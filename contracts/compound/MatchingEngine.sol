@@ -265,45 +265,6 @@ contract MatchingEngine is MorphoGetters {
         return _amount - remainingToUnmatch;
     }
 
-    /// @notice Updates borrowers matching engine with the new balances of a given user.
-    /// @param _poolTokenAddress The address of the market on which to update the borrowers data structure.
-    /// @param _user The address of the user.
-    function updateBorrowers(address _poolTokenAddress, address _user) internal {
-        uint256 onPool = borrowBalanceInOf[_poolTokenAddress][_user].onPool;
-        uint256 inP2P = borrowBalanceInOf[_poolTokenAddress][_user].inP2P;
-        uint256 formerValueOnPool = borrowersOnPool[_poolTokenAddress].getValueOf(_user);
-        uint256 formerValueInP2P = borrowersInP2P[_poolTokenAddress].getValueOf(_user);
-
-        // Check pool.
-        if (onPool <= dustThreshold) {
-            borrowBalanceInOf[_poolTokenAddress][_user].onPool = 0;
-            onPool = 0;
-        }
-        if (formerValueOnPool != onPool) {
-            if (formerValueOnPool > 0) borrowersOnPool[_poolTokenAddress].remove(_user);
-            if (onPool > 0)
-                borrowersOnPool[_poolTokenAddress].insertSorted(_user, onPool, maxSortedUsers);
-        }
-
-        // Check P2P.
-        if (inP2P <= dustThreshold) {
-            borrowBalanceInOf[_poolTokenAddress][_user].inP2P = 0;
-            inP2P = 0;
-        }
-        if (formerValueInP2P != inP2P) {
-            if (formerValueInP2P > 0) borrowersInP2P[_poolTokenAddress].remove(_user);
-            if (inP2P > 0)
-                borrowersInP2P[_poolTokenAddress].insertSorted(_user, inP2P, maxSortedUsers);
-        }
-
-        if (isCompRewardsActive && address(rewardsManager) != address(0))
-            rewardsManager.accrueUserBorrowUnclaimedRewards(
-                _user,
-                _poolTokenAddress,
-                formerValueOnPool
-            );
-    }
-
     /// @notice Updates suppliers matching engine with the new balances of a given user.
     /// @param _poolTokenAddress The address of the market on which to update the suppliers data structure.
     /// @param _user The address of the user.
@@ -337,6 +298,45 @@ contract MatchingEngine is MorphoGetters {
 
         if (isCompRewardsActive && address(rewardsManager) != address(0))
             rewardsManager.accrueUserSupplyUnclaimedRewards(
+                _user,
+                _poolTokenAddress,
+                formerValueOnPool
+            );
+    }
+
+    /// @notice Updates borrowers matching engine with the new balances of a given user.
+    /// @param _poolTokenAddress The address of the market on which to update the borrowers data structure.
+    /// @param _user The address of the user.
+    function updateBorrowers(address _poolTokenAddress, address _user) internal {
+        uint256 onPool = borrowBalanceInOf[_poolTokenAddress][_user].onPool;
+        uint256 inP2P = borrowBalanceInOf[_poolTokenAddress][_user].inP2P;
+        uint256 formerValueOnPool = borrowersOnPool[_poolTokenAddress].getValueOf(_user);
+        uint256 formerValueInP2P = borrowersInP2P[_poolTokenAddress].getValueOf(_user);
+
+        // Check pool.
+        if (onPool <= dustThreshold) {
+            borrowBalanceInOf[_poolTokenAddress][_user].onPool = 0;
+            onPool = 0;
+        }
+        if (formerValueOnPool != onPool) {
+            if (formerValueOnPool > 0) borrowersOnPool[_poolTokenAddress].remove(_user);
+            if (onPool > 0)
+                borrowersOnPool[_poolTokenAddress].insertSorted(_user, onPool, maxSortedUsers);
+        }
+
+        // Check P2P.
+        if (inP2P <= dustThreshold) {
+            borrowBalanceInOf[_poolTokenAddress][_user].inP2P = 0;
+            inP2P = 0;
+        }
+        if (formerValueInP2P != inP2P) {
+            if (formerValueInP2P > 0) borrowersInP2P[_poolTokenAddress].remove(_user);
+            if (inP2P > 0)
+                borrowersInP2P[_poolTokenAddress].insertSorted(_user, inP2P, maxSortedUsers);
+        }
+
+        if (isCompRewardsActive && address(rewardsManager) != address(0))
+            rewardsManager.accrueUserBorrowUnclaimedRewards(
                 _user,
                 _poolTokenAddress,
                 formerValueOnPool
