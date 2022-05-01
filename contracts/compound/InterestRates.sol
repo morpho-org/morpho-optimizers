@@ -11,7 +11,7 @@ import "./libraries/Types.sol";
 import "./morpho-parts/MorphoStorage.sol";
 
 /// @title InterestRates.
-/// @notice Smart contract managing the markets used by a MorphoMorpho contract, an other contract interacting with Compound or a fork of Compound.
+/// @notice Smart contract handling the computation of indexes used for P2P interactions.
 contract InterestRates is IInterestRates, MorphoStorage {
     using CompoundMath for uint256;
 
@@ -130,7 +130,7 @@ contract InterestRates is IInterestRates, MorphoStorage {
 
     /// PUBLIC ///
 
-    /// @notice Updates the P2P indexes, taking into account the Second Percentage Yield values.
+    /// @notice Updates the P2P indexes.
     /// @param _poolTokenAddress The address of the market to update.
     function updateP2PIndexes(address _poolTokenAddress) public {
         if (block.timestamp > lastPoolIndexes[_poolTokenAddress].lastUpdateBlockNumber) {
@@ -166,7 +166,7 @@ contract InterestRates is IInterestRates, MorphoStorage {
         }
     }
 
-    /// @notice Computes and return new P2P indexes.
+    /// @notice Computes and returns new P2P indexes.
     /// @param _params Computation parameters.
     /// @return newP2PSupplyIndex The updated p2pSupplyIndex.
     /// @return newP2PBorrowIndex The updated p2pBorrowIndex.
