@@ -72,6 +72,8 @@ contract IncentivesVault is Ownable {
         oracle = _oracle;
     }
 
+    /// EXTERNAL ///
+
     /// @notice Sets the oracle.
     /// @param _newOracle The address of the new oracle.
     function setOracle(address _newOracle) external onlyOwner {

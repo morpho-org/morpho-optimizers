@@ -2,11 +2,12 @@
 pragma solidity 0.8.13;
 
 import "./interfaces/IPositionsManager.sol";
+import "./interfaces/IWETH.sol";
 
 import "./MatchingEngine.sol";
 
-/// @title PositionsManagerLogic.
-/// @notice Main Logic of Morpho Protocol, implementation of the 5 main functionalities: supply, borrow, withdraw, repay, liquidate.
+/// @title PositionsManager.
+/// @notice Main Logic of Morpho Protocol, implementation of the 5 main functionalities: supply, borrow, withdraw, repay and liquidate.
 contract PositionsManager is IPositionsManager, MatchingEngine {
     using DoubleLinkedList for DoubleLinkedList.List;
     using SafeTransferLib for ERC20;
