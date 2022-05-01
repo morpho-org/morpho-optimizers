@@ -86,19 +86,20 @@ abstract contract MorphoStorage is OwnableUpgradeable, ReentrancyGuardUpgradeabl
         bool isPartiallyPaused; // Whether the market is partially paused or not (only supply and borrow are frozen).
     }
 
-    /// STORAGE ///
+    /// GLOBAL STORAGE ///
 
-    uint256 public constant WAD = 1e18;
     uint8 public constant CTOKEN_DECIMALS = 8; // The number of decimals for cToken.
     uint16 public constant MAX_BASIS_POINTS = 10_000; // 100% in basis points.
     uint16 public constant LIQUIDATION_CLOSE_FACTOR_PERCENT = 5_000; // 50% in basis points.
+    uint256 public constant WAD = 1e18;
 
-    /// POSITIONS STORAGE ///
-
-    MaxGasForMatching public maxGasForMatching; // Max gas to consume within loops in matching engine functions.
     bool public isCompRewardsActive; // True if the Compound reward is active.
     uint256 public maxSortedUsers; // The max number of users to sort in the data structure.
     uint256 public dustThreshold; // The minimum amount to keep in the data stucture.
+    MaxGasForMatching public maxGasForMatching; // Max gas to consume within loops in matching engine functions.
+
+    /// POSITIONS STORAGE ///
+
     mapping(address => DoubleLinkedList.List) internal suppliersInP2P; // For a given market, the suppliers in peer-to-peer.
     mapping(address => DoubleLinkedList.List) internal suppliersOnPool; // For a given market, the suppliers on Compound.
     mapping(address => DoubleLinkedList.List) internal borrowersInP2P; // For a given market, the borrowers in peer-to-peer.
@@ -107,23 +108,25 @@ abstract contract MorphoStorage is OwnableUpgradeable, ReentrancyGuardUpgradeabl
     mapping(address => mapping(address => BorrowBalance)) public borrowBalanceInOf; // For a given market, the borrow balance of a user.
     mapping(address => mapping(address => bool)) public userMembership; // Whether the user is in the market or not.
     mapping(address => address[]) public enteredMarkets; // The markets entered by a user.
-    mapping(address => Types.Delta) public deltas; // Delta parameters for each market.
 
     /// MARKETS STORAGE ///
 
     address[] public marketsCreated; // Keeps track of the created markets.
-    mapping(address => MarketParameters) public marketParameters; // Market parameters.
     mapping(address => bool) public noP2P; // Whether to put users on pool or not for the given market.
     mapping(address => uint256) public p2pSupplyIndex; // Current index from supply p2pUnit to underlying (in wad).
     mapping(address => uint256) public p2pBorrowIndex; // Current index from borrow p2pUnit to underlying (in wad).
     mapping(address => LastPoolIndexes) public lastPoolIndexes; // Last pool index stored.
+    mapping(address => MarketParameters) public marketParameters; // Market parameters.
     mapping(address => MarketStatuses) public marketStatuses; // Whether a market is paused or partially paused or not.
+    mapping(address => Types.Delta) public deltas; // Delta parameters for each market.
 
-    IComptroller public comptroller;
-    IInterestRates public interestRates;
-    IRewardsManager public rewardsManager;
+    /// CONTRACTS AND ADDRESSES ///
+
     IPositionsManager public positionsManager;
     IIncentivesVault public incentivesVault;
+    IRewardsManager public rewardsManager;
+    IInterestRates public interestRates;
+    IComptroller public comptroller;
     address public treasuryVault;
     address public cEth;
     address public wEth;
