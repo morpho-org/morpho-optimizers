@@ -567,4 +567,26 @@ contract TestRepay is TestSetup {
         borrower1.approve(dai, amount);
         borrower1.repay(cDai, amount);
     }
+
+    function testRepayOnPoolThreshold() public {
+        uint256 amountRepaid = 1e6;
+
+        borrower1.approve(usdc, to6Decimals(2 ether));
+        borrower1.supply(cUsdc, to6Decimals(2 ether));
+
+        borrower1.borrow(cDai, 1 ether);
+
+        uint256 onCompBeforeRepay = ICToken(cDai).borrowBalanceCurrent(address(morpho));
+        (, uint256 onPoolBeforeRepay) = morpho.borrowBalanceInOf(cDai, address(borrower1));
+
+        // We check that repaying a dust quantity leads to a diminishing debt in both cToken & on Morpho.
+        borrower1.approve(dai, amountRepaid);
+        borrower1.repay(cDai, amountRepaid);
+
+        uint256 onCompAfterRepay = ICToken(cDai).borrowBalanceCurrent(address(morpho));
+        (, uint256 onPoolAfterRepay) = morpho.borrowBalanceInOf(cDai, address(borrower1));
+
+        assertLt(onCompAfterRepay, onCompBeforeRepay, "on Comp");
+        assertLt(onPoolAfterRepay, onPoolBeforeRepay, "on Morpho");
+    }
 }

@@ -222,4 +222,16 @@ contract TestSupply is TestSetup {
         supplier1.approve(dai, amount);
         supplier1.supply(cDai, amount);
     }
+
+    function testSupplyOnPoolThreshold() public {
+        uint256 amountSupplied = 1e6;
+
+        supplier1.approve(dai, amountSupplied);
+        supplier1.supply(cDai, amountSupplied);
+
+        // We check that supplying 0 in cToken units doesn't lead to a revert.
+        (, uint256 onPool) = morpho.supplyBalanceInOf(cDai, address(supplier1));
+        assertEq(ICToken(cDai).balanceOf(address(positionsManager)), 0, "balance of cToken");
+        assertEq(onPool, 0, "Balance in Positions Manager");
+    }
 }
