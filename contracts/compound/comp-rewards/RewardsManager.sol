@@ -2,8 +2,8 @@
 pragma solidity 0.8.13;
 
 import "../interfaces/compound/ICompound.sol";
-import "../interfaces/IMorpho.sol";
 import "../interfaces/IRewardsManager.sol";
+import "../interfaces/IMorpho.sol";
 
 import "../libraries/CompoundMath.sol";
 

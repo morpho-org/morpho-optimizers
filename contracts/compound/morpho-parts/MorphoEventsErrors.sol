@@ -82,17 +82,13 @@ abstract contract MorphoEventsErrors is MorphoGetters {
 
     /// EVENTS ///
 
-    /// @notice Emitted when a new market is created.
-    /// @param _poolTokenAddress The address of the market that has been created.
-    event MarketCreated(address _poolTokenAddress);
+    /// @notice Emitted when a new `maxGasForMatching` is set.
+    /// @param _maxGasForMatching The new `maxGasForMatching`.
+    event MaxGasForMatchingSet(MaxGasForMatching _maxGasForMatching);
 
     /// @notice Emitted when a new value for `maxSortedUsers` is set.
     /// @param _newValue The new value of `maxSortedUsers`.
     event MaxSortedUsersSet(uint256 _newValue);
-
-    /// @notice Emitted when a new `maxGasForMatching` is set.
-    /// @param _maxGasForMatching The new `maxGasForMatching`.
-    event MaxGasForMatchingSet(MaxGasForMatching _maxGasForMatching);
 
     /// @notice Emitted the address of the `treasuryVault` is set.
     /// @param _newTreasuryVaultAddress The new address of the `treasuryVault`.
@@ -106,10 +102,6 @@ abstract contract MorphoEventsErrors is MorphoGetters {
     /// @param _newRewardsManagerAddress The new address of the `rewardsManager`.
     event RewardsManagerSet(address indexed _newRewardsManagerAddress);
 
-    /// @notice Emitted the address of the `aaveIncentivesController` is set.
-    /// @param _aaveIncentivesController The new address of the `aaveIncentivesController`.
-    event CompoundIncentivesControllerSet(address _aaveIncentivesController);
-
     /// @dev Emitted when a new `dustThreshold` is set.
     /// @param _dustThreshold The new `dustThreshold`.
     event DustThresholdSet(uint256 _dustThreshold);
@@ -118,6 +110,16 @@ abstract contract MorphoEventsErrors is MorphoGetters {
     /// @param _poolTokenAddress The address of the market to set.
     /// @param _noP2P The new value of `_noP2P` adopted.
     event NoP2PSet(address indexed _poolTokenAddress, bool _noP2P);
+
+    /// @notice Emitted when the `reserveFactor` is set.
+    /// @param _poolTokenAddress The address of the market set.
+    /// @param _newValue The new value of the `reserveFactor`.
+    event ReserveFactorSet(address indexed _poolTokenAddress, uint256 _newValue);
+
+    /// @notice Emitted when the `p2pIndexCursor` is set.
+    /// @param _poolTokenAddress The address of the market set.
+    /// @param _newValue The new value of the `p2pIndexCursor`.
+    event P2PIndexCursorSet(address indexed _poolTokenAddress, uint256 _newValue);
 
     /// @notice Emitted when a reserve fee is claimed.
     /// @param _poolTokenAddress The address of the pool token concerned.
@@ -138,16 +140,6 @@ abstract contract MorphoEventsErrors is MorphoGetters {
     /// @param _amountSent The amount of reward token sent to the vault.
     event RewardsClaimedAndConverted(address indexed _user, uint256 _amountSent);
 
-    /// @notice Emitted when the `reserveFactor` is set.
-    /// @param _poolTokenAddress The address of the market set.
-    /// @param _newValue The new value of the `reserveFactor`.
-    event ReserveFactorSet(address indexed _poolTokenAddress, uint256 _newValue);
-
-    /// @notice Emitted when the `p2pIndexCursor` is set.
-    /// @param _poolTokenAddress The address of the market set.
-    /// @param _newValue The new value of the `p2pIndexCursor`.
-    event P2PIndexCursorSet(address indexed _poolTokenAddress, uint256 _newValue);
-
     /// @notice Emitted when a market is paused or unpaused.
     /// @param _poolTokenAddress The address of the pool token concerned.
     /// @param _newStatus The new pause status of the market.
@@ -158,22 +150,26 @@ abstract contract MorphoEventsErrors is MorphoGetters {
     /// @param _newStatus The new partial pause status of the market.
     event PartialPauseStatusChanged(address indexed _poolTokenAddress, bool _newStatus);
 
+    /// @notice Emitted when a new market is created.
+    /// @param _poolTokenAddress The address of the market that has been created.
+    event MarketCreated(address _poolTokenAddress);
+
     /// ERRORS ///
+
+    /// @notice Thrown when the creation of a market failed on Compound.
+    error MarketCreationFailedOnCompound();
 
     /// @notice Thrown when user is not a member of the market.
     error UserNotMemberOfMarket();
+
+    /// @notice Thrown when the market is already created.
+    error MarketAlreadyCreated();
 
     /// @notice Thrown when only the markets manager can call the function.
     error OnlyInterestRates();
 
     /// @notice Thrown when the amount is equal to 0.
     error AmountIsZero();
-
-    /// @notice Thrown when the creation of a market failed on Compound.
-    error MarketCreationFailedOnCompound();
-
-    /// @notice Thrown when the market is already created.
-    error MarketAlreadyCreated();
 
     /// @notice Thrown when the address is the zero address.
     error ZeroAddress();

@@ -55,13 +55,6 @@ abstract contract MorphoGovernance is MorphoEventsErrors {
         emit DustThresholdSet(_dustThreshold);
     }
 
-    /// @notice Toggles the activation of COMP rewards.
-    function toggleCompRewardsActivation() external onlyOwner {
-        bool newCompRewardsActive = !isCompRewardsActive;
-        isCompRewardsActive = newCompRewardsActive;
-        emit CompRewardsActive(newCompRewardsActive);
-    }
-
     /// @notice Sets whether to match people P2P or not.
     /// @param _poolTokenAddress The address of the market.
     /// @param _noP2P Whether to match people P2P or not.
@@ -116,9 +109,16 @@ abstract contract MorphoGovernance is MorphoEventsErrors {
         emit PartialPauseStatusChanged(_poolTokenAddress, newPauseStatus);
     }
 
+    /// @notice Toggles the activation of COMP rewards.
+    function toggleCompRewardsActivation() external onlyOwner {
+        bool newCompRewardsActive = !isCompRewardsActive;
+        isCompRewardsActive = newCompRewardsActive;
+        emit CompRewardsActive(newCompRewardsActive);
+    }
+
     /// @notice Transfers the protocol reserve fee to the DAO.
     /// @dev No more than 90% of the accumulated fees are claimable at once.
-    /// @param _poolTokenAddress The address of the market on which we want to claim the reserve fee.
+    /// @param _poolTokenAddress The address of the market on which to claim the reserve fee.
     /// @param _amount The amount of underlying to claim.
     function claimToTreasury(address _poolTokenAddress, uint256 _amount)
         external

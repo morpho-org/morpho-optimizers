@@ -3,7 +3,7 @@ pragma solidity 0.8.13;
 
 import "./morpho-parts/MorphoGetters.sol";
 
-/// @title MatchingEngineManager.
+/// @title MatchingEngine.
 /// @notice Smart contract managing the matching engine.
 contract MatchingEngine is MorphoGetters {
     using DoubleLinkedList for DoubleLinkedList.List;
