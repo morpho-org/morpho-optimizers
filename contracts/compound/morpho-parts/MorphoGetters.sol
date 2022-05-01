@@ -264,12 +264,12 @@ abstract contract MorphoGetters is MorphoStorage {
         );
     }
 
-    function getUpdatedp2pSupplyIndex(address _poolTokenAddress) public returns (uint256) {
+    function getUpdatedP2PSupplyIndex(address _poolTokenAddress) public returns (uint256) {
         return
             abi.decode(
                 address(interestRates).functionDelegateCall(
                     abi.encodeWithSelector(
-                        interestRates.getUpdatedp2pSupplyIndex.selector,
+                        interestRates.getUpdatedP2PSupplyIndex.selector,
                         _poolTokenAddress
                     )
                 ),
@@ -277,12 +277,12 @@ abstract contract MorphoGetters is MorphoStorage {
             );
     }
 
-    function getUpdatedp2pBorrowIndex(address _poolTokenAddress) public returns (uint256) {
+    function getUpdatedP2PBorrowIndex(address _poolTokenAddress) public returns (uint256) {
         return
             abi.decode(
                 address(interestRates).functionDelegateCall(
                     abi.encodeWithSelector(
-                        interestRates.getUpdatedp2pBorrowIndex.selector,
+                        interestRates.getUpdatedP2PBorrowIndex.selector,
                         _poolTokenAddress
                     )
                 ),
@@ -314,7 +314,7 @@ abstract contract MorphoGetters is MorphoStorage {
     {
         return
             supplyBalanceInOf[_poolTokenAddress][_user].inP2P.mul(
-                getUpdatedp2pSupplyIndex(_poolTokenAddress)
+                getUpdatedP2PSupplyIndex(_poolTokenAddress)
             ) +
             supplyBalanceInOf[_poolTokenAddress][_user].onPool.mul(
                 ICToken(_poolTokenAddress).exchangeRateStored()
@@ -331,7 +331,7 @@ abstract contract MorphoGetters is MorphoStorage {
     {
         return
             borrowBalanceInOf[_poolTokenAddress][_user].inP2P.mul(
-                getUpdatedp2pBorrowIndex(_poolTokenAddress)
+                getUpdatedP2PBorrowIndex(_poolTokenAddress)
             ) +
             borrowBalanceInOf[_poolTokenAddress][_user].onPool.mul(
                 ICToken(_poolTokenAddress).borrowIndex()

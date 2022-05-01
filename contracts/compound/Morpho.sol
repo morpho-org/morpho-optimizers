@@ -47,6 +47,8 @@ contract Morpho is MorphoGovernance {
         wEth = _weth;
     }
 
+    /// EXTERNAL ///
+
     /// @notice Supplies underlying tokens in a specific market.
     /// @dev `msg.sender` must have approved Morpho's contract to spend the underlying `_amount`.
     /// @param _poolTokenAddress The address of the market the user wants to interact with.
