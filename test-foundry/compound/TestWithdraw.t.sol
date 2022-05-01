@@ -616,4 +616,14 @@ contract TestWithdraw is TestSetup {
     function testFailWithdrawZero() public {
         morpho.withdraw(cDai, 0);
     }
+
+    function testWithdrawnOnPoolThreshold() public {
+        uint256 amountWithdrawn = 1e6;
+
+        supplier1.approve(dai, 1 ether);
+        supplier1.supply(cDai, 1 ether);
+
+        hevm.expectRevert(abi.encodeWithSignature("WithdrawTooSmall()"));
+        supplier1.withdraw(cDai, amountWithdrawn);
+    }
 }

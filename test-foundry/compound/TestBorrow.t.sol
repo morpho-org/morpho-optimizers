@@ -221,4 +221,22 @@ contract TestBorrow is TestSetup {
         uint256 expectedOnPool = (2 * amount).div(ICToken(cDai).borrowIndex());
         assertEq(onPool, expectedOnPool);
     }
+
+    function testBorrowOnPoolThreshold() public {
+        uint256 amountBorrowed = 1;
+
+        borrower1.approve(usdc, to6Decimals(1 ether));
+        borrower1.supply(cUsdc, to6Decimals(1 ether));
+
+        // We check that borrowing any amount accrue the debt.
+        borrower1.borrow(cDai, amountBorrowed);
+        (, uint256 onPool) = morpho.borrowBalanceInOf(cDai, address(borrower1));
+
+        assertEq(onPool, ICToken(cDai).balanceOf(address(morpho)));
+        assertEq(
+            ICToken(cDai).borrowBalanceCurrent(address(morpho)),
+            amountBorrowed,
+            "borrow balance"
+        );
+    }
 }
