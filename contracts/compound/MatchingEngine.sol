@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
-import "@openzeppelin/contracts/utils/math/Math.sol";
-
 import "./morpho-parts/MorphoGetters.sol";
 
 /// @title MatchingEngineManager.
