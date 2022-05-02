@@ -114,4 +114,26 @@ contract TestGovernance is TestSetup {
         morpho.setNoP2P(cDai, true);
         assertTrue(morpho.noP2P(cDai));
     }
+
+    function testonlyOwnerShouldSetPositionsManager() public {
+        IPositionsManager positionsManagerV2 = new PositionsManager();
+
+        hevm.prank(address(0));
+        hevm.expectRevert("Ownable: caller is not the owner");
+        morpho.setPositionsManager(positionsManagerV2);
+
+        morpho.setPositionsManager(positionsManagerV2);
+        assertEq(address(morpho.positionsManager()), address(positionsManagerV2));
+    }
+
+    function testOnlyOwnerShouldSetInterestRates() public {
+        IInterestRates interestRatesV2 = new InterestRates();
+
+        hevm.prank(address(0));
+        hevm.expectRevert("Ownable: caller is not the owner");
+        morpho.setInterestRates(interestRatesV2);
+
+        morpho.setInterestRates(interestRatesV2);
+        assertEq(address(morpho.interestRates()), address(interestRatesV2));
+    }
 }
