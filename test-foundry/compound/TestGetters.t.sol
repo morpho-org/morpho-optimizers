@@ -121,7 +121,7 @@ contract TestGetters is TestSetup {
     }
 
     function testUserLiquidityDataForAssetWithNothing() public {
-        Morpho.AssetLiquidityData memory assetData = morpho.getUserLiquidityDataForAsset(
+        AssetLiquidityData memory assetData = lens.getUserLiquidityDataForAsset(
             address(borrower1),
             cDai,
             oracle
@@ -143,7 +143,7 @@ contract TestGetters is TestSetup {
         borrower1.approve(dai, amount);
         borrower1.supply(cDai, amount);
 
-        Morpho.AssetLiquidityData memory assetData = morpho.getUserLiquidityDataForAsset(
+        AssetLiquidityData memory assetData = lens.getUserLiquidityDataForAsset(
             address(borrower1),
             cDai,
             oracle
@@ -181,7 +181,7 @@ contract TestGetters is TestSetup {
 
         indexes.index2 = ICToken(cDai).exchangeRateCurrent();
 
-        Morpho.AssetLiquidityData memory assetData = morpho.getUserLiquidityDataForAsset(
+        AssetLiquidityData memory assetData = lens.getUserLiquidityDataForAsset(
             address(borrower1),
             cDai,
             oracle
@@ -218,20 +218,20 @@ contract TestGetters is TestSetup {
         borrower1.supply(cDai, amount);
         borrower1.borrow(cUsdc, toBorrow);
 
-        Morpho.AssetLiquidityData memory assetDatacDai = morpho.getUserLiquidityDataForAsset(
+        AssetLiquidityData memory assetDatacDai = lens.getUserLiquidityDataForAsset(
             address(borrower1),
             cDai,
             oracle
         );
 
-        Morpho.AssetLiquidityData memory assetDatacUsdc = morpho.getUserLiquidityDataForAsset(
+        AssetLiquidityData memory assetDatacUsdc = lens.getUserLiquidityDataForAsset(
             address(borrower1),
             cUsdc,
             oracle
         );
 
         // Avoid stack too deep error.
-        Morpho.AssetLiquidityData memory expectedDatcUsdc;
+        AssetLiquidityData memory expectedDatcUsdc;
         (, uint256 collateralFactor, ) = comptroller.markets(cUsdc);
         expectedDatcUsdc.underlyingPrice = oracle.getUnderlyingPrice(cUsdc);
 

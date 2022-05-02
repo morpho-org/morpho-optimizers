@@ -40,7 +40,7 @@ contract TestEth is TestSetup {
         supplier1.supply(cEth, toSupply);
         uint256 balanceAfter = supplier1.balanceOf(wEth);
 
-        uint256 p2pSupplyIndex = morpho.getUpdatedP2PSupplyIndex(cEth);
+        uint256 p2pSupplyIndex = lens.getUpdatedP2PSupplyIndex(cEth);
 
         uint256 expectedInP2P = toSupply.div(p2pSupplyIndex);
 
