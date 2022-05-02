@@ -134,8 +134,8 @@ contract TestSetup is Config, Utils, stdCheats {
 
         rewardsManager = new RewardsManager(address(morpho));
 
-        morpho.setRewardsManager(address(rewardsManager));
-        morpho.setIncentivesVault(address(incentivesVault));
+        morpho.setRewardsManager(rewardsManager);
+        morpho.setIncentivesVault(incentivesVault);
         morpho.toggleCompRewardsActivation();
     }
 
