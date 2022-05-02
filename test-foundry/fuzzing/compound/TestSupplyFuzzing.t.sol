@@ -27,18 +27,15 @@ contract TestSupplyFuzzing is TestSetupFuzzing {
         uint256 expectedOnPool = amount.div(supplyPoolIndex);
 
         assertApproxEq(
-            IERC20(asset).balanceOf(address(positionsManager)),
+            ERC20(asset).balanceOf(address(morpho)),
             expectedOnPool,
             5,
             "balance of cToken"
         );
 
-        (uint256 inP2P, uint256 onPool) = positionsManager.supplyBalanceInOf(
-            asset,
-            address(supplier1)
-        );
+        (uint256 inP2P, uint256 onPool) = morpho.supplyBalanceInOf(asset, address(supplier1));
 
-        assertApproxEq(onPool, ICToken(asset).balanceOf(address(positionsManager)), 5, "on pool");
+        assertApproxEq(onPool, ICToken(asset).balanceOf(address(morpho)), 5, "on pool");
         assertApproxEq(onPool, expectedOnPool, 5, "on pool");
         assertEq(inP2P, 0, "in P2P");
     }
@@ -66,7 +63,7 @@ contract TestSupplyFuzzing is TestSetupFuzzing {
         borrower1.approve(vars.suppliedUnderlying, suppliedAmount);
         borrower1.supply(vars.suppliedAsset, suppliedAmount);
 
-        (, uint256 borrowable) = positionsManager.getUserMaxCapacitiesForAsset(
+        (, uint256 borrowable) = morpho.getUserMaxCapacitiesForAsset(
             address(borrower1),
             vars.borrowedAsset
         );
