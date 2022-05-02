@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import "@contracts/compound/interfaces/IPositionsManager.sol";
 import "./TestSetupFuzzing.sol";
 import {Attacker} from "../../compound/helpers/Attacker.sol";
 
@@ -27,10 +26,7 @@ contract TestWithdraw is TestSetupFuzzing {
         supplier1.approve(usdc, to6Decimals(2 * amount));
         supplier1.supply(cUsdc, to6Decimals(2 * amount));
 
-        (uint256 inP2P, uint256 onPool) = positionsManager.supplyBalanceInOf(
-            cUsdc,
-            address(supplier1)
-        );
+        (uint256 inP2P, uint256 onPool) = morpho.supplyBalanceInOf(cUsdc, address(supplier1));
 
         uint256 expectedOnPool = to6Decimals(2 * amount).div(ICToken(cUsdc).exchangeRateCurrent());
 
@@ -39,7 +35,7 @@ contract TestWithdraw is TestSetupFuzzing {
 
         supplier1.withdraw(cUsdc, to6Decimals(amount));
 
-        (inP2P, onPool) = positionsManager.supplyBalanceInOf(cUsdc, address(supplier1));
+        (inP2P, onPool) = morpho.supplyBalanceInOf(cUsdc, address(supplier1));
 
         assertEq(inP2P, 0, "2: P2P not zero");
         assertApproxEq(onPool, expectedOnPool / 2, onPool / 1e8, "2: OnPool not equal");
@@ -52,10 +48,7 @@ contract TestWithdraw is TestSetupFuzzing {
         supplier1.supply(cUsdc, to6Decimals(amount));
 
         uint256 balanceBefore = supplier1.balanceOf(usdc);
-        (uint256 inP2P, uint256 onPool) = positionsManager.supplyBalanceInOf(
-            cUsdc,
-            address(supplier1)
-        );
+        (uint256 inP2P, uint256 onPool) = morpho.supplyBalanceInOf(cUsdc, address(supplier1));
 
         uint256 expectedOnPool = to6Decimals(amount).div(ICToken(cUsdc).exchangeRateCurrent());
 
@@ -65,7 +58,7 @@ contract TestWithdraw is TestSetupFuzzing {
         supplier1.withdraw(cUsdc, type(uint256).max);
 
         uint256 balanceAfter = supplier1.balanceOf(usdc);
-        (inP2P, onPool) = positionsManager.supplyBalanceInOf(cUsdc, address(supplier1));
+        (inP2P, onPool) = morpho.supplyBalanceInOf(cUsdc, address(supplier1));
 
         assertEq(inP2P, 0, "in P2P");
         assertApproxEq(onPool, 0, 1e5, "on Pool");
@@ -87,12 +80,12 @@ contract TestWithdraw is TestSetupFuzzing {
         borrower1.borrow(cDai, borrowedAmount);
 
         // Check balances after match of borrower1 & supplier1
-        (uint256 inP2PBorrower1, uint256 onPoolBorrower1) = positionsManager.borrowBalanceInOf(
+        (uint256 inP2PBorrower1, uint256 onPoolBorrower1) = morpho.borrowBalanceInOf(
             cDai,
             address(borrower1)
         );
 
-        (uint256 inP2PSupplier, uint256 onPoolSupplier) = positionsManager.supplyBalanceInOf(
+        (uint256 inP2PSupplier, uint256 onPoolSupplier) = morpho.supplyBalanceInOf(
             cDai,
             address(supplier1)
         );
@@ -111,36 +104,25 @@ contract TestWithdraw is TestSetupFuzzing {
         supplier1.withdraw(cDai, suppliedAmount);
 
         // Check balances for supplier1
-        (inP2PSupplier, onPoolSupplier) = positionsManager.supplyBalanceInOf(
-            cDai,
-            address(supplier1)
-        );
+        (inP2PSupplier, onPoolSupplier) = morpho.supplyBalanceInOf(cDai, address(supplier1));
         assertEq(onPoolSupplier, 0, "4");
         assertApproxEq(inP2PSupplier, 0, 1, "5");
 
         // Check balances for supplier2
-        (inP2PSupplier, onPoolSupplier) = positionsManager.supplyBalanceInOf(
-            cDai,
-            address(supplier2)
-        );
-        uint256 supplyP2PExchangeRate = marketsManager.supplyP2PExchangeRate(cDai);
-        uint256 expectedInP2P = (suppliedAmount / 2).div(supplyP2PExchangeRate);
+        (inP2PSupplier, onPoolSupplier) = morpho.supplyBalanceInOf(cDai, address(supplier2));
+        uint256 p2pSupplyIndex = morpho.p2pSupplyIndex(cDai);
+        uint256 expectedInP2P = (suppliedAmount / 2).div(p2pSupplyIndex);
         assertApproxEq(onPoolSupplier, expectedOnPool, 1, "6");
         assertApproxEq(inP2PSupplier, expectedInP2P, 1, "7");
 
         // Check balances for borrower1
-        (inP2PBorrower1, onPoolBorrower1) = positionsManager.borrowBalanceInOf(
-            cDai,
-            address(borrower1)
-        );
+        (inP2PBorrower1, onPoolBorrower1) = morpho.borrowBalanceInOf(cDai, address(borrower1));
         assertEq(onPoolBorrower1, 0, "8");
         assertApproxEq(inP2PSupplier, inP2PBorrower1, 1, "9");
     }
 
     function testWithdraw3_2(uint256 amount) public {
         hevm.assume(amount > 1e18 / 100 && amount < 1e18 * 50_000_000); // $0.01 to $50_000_000
-
-        setMaxGasHelper(type(uint64).max, type(uint64).max, type(uint64).max, type(uint64).max);
 
         uint256 borrowedAmount = amount;
         uint256 suppliedAmount = 2 * borrowedAmount;
@@ -155,11 +137,11 @@ contract TestWithdraw is TestSetupFuzzing {
         supplier1.supply(cDai, suppliedAmount);
 
         // Check balances after match of borrower1 & supplier1.
-        (uint256 inP2PBorrower, uint256 onPoolBorrower) = positionsManager.borrowBalanceInOf(
+        (uint256 inP2PBorrower, uint256 onPoolBorrower) = morpho.borrowBalanceInOf(
             cDai,
             address(borrower1)
         );
-        (uint256 inP2PSupplier, uint256 onPoolSupplier) = positionsManager.supplyBalanceInOf(
+        (uint256 inP2PSupplier, uint256 onPoolSupplier) = morpho.supplyBalanceInOf(
             cDai,
             address(supplier1)
         );
@@ -188,22 +170,14 @@ contract TestWithdraw is TestSetupFuzzing {
         supplier1.withdraw(cDai, type(uint256).max);
 
         // Check balances for supplier1.
-        (inP2PSupplier, onPoolSupplier) = positionsManager.supplyBalanceInOf(
-            cDai,
-            address(supplier1)
-        );
+        (inP2PSupplier, onPoolSupplier) = morpho.supplyBalanceInOf(cDai, address(supplier1));
         assertEq(onPoolSupplier, 0, "4");
         assertApproxEq(inP2PSupplier, 0, 1, "5");
 
         // Check balances for the borrower.
-        (inP2PBorrower, onPoolBorrower) = positionsManager.borrowBalanceInOf(
-            cDai,
-            address(borrower1)
-        );
+        (inP2PBorrower, onPoolBorrower) = morpho.borrowBalanceInOf(cDai, address(borrower1));
 
-        uint256 expectedBorrowBalanceInP2P = borrowedAmount.div(
-            marketsManager.supplyP2PExchangeRate(cDai)
-        );
+        uint256 expectedBorrowBalanceInP2P = borrowedAmount.div(morpho.p2pSupplyIndex(cDai));
 
         assertApproxEq(
             inP2PBorrower,
@@ -217,13 +191,8 @@ contract TestWithdraw is TestSetupFuzzing {
         for (uint256 i = 0; i < suppliers.length; i++) {
             if (suppliers[i] == supplier1) continue;
 
-            (uint256 inP2P, uint256 onPool) = positionsManager.supplyBalanceInOf(
-                cDai,
-                address(suppliers[i])
-            );
-            uint256 expectedInP2P = amountPerSupplier.div(
-                marketsManager.supplyP2PExchangeRate(cDai)
-            );
+            (uint256 inP2P, uint256 onPool) = morpho.supplyBalanceInOf(cDai, address(suppliers[i]));
+            uint256 expectedInP2P = amountPerSupplier.div(morpho.p2pSupplyIndex(cDai));
 
             assertEq(inP2P, expectedInP2P, "in P2P");
             assertEq(onPool, 0, "on pool");
@@ -246,12 +215,12 @@ contract TestWithdraw is TestSetupFuzzing {
         supplier1.supply(cDai, suppliedAmount);
 
         // Check balances after match of borrower1 & supplier1.
-        (uint256 inP2PBorrower, uint256 onPoolBorrower) = positionsManager.borrowBalanceInOf(
+        (uint256 inP2PBorrower, uint256 onPoolBorrower) = morpho.borrowBalanceInOf(
             cDai,
             address(borrower1)
         );
 
-        (uint256 inP2PSupplier, uint256 onPoolSupplier) = positionsManager.supplyBalanceInOf(
+        (uint256 inP2PSupplier, uint256 onPoolSupplier) = morpho.supplyBalanceInOf(
             cDai,
             address(supplier1)
         );
@@ -267,13 +236,10 @@ contract TestWithdraw is TestSetupFuzzing {
         supplier1.withdraw(cDai, toWithdraw);
 
         // Check balances for the borrower
-        (inP2PBorrower, onPoolBorrower) = positionsManager.borrowBalanceInOf(
-            cDai,
-            address(borrower1)
-        );
+        (inP2PBorrower, onPoolBorrower) = morpho.borrowBalanceInOf(cDai, address(borrower1));
 
-        uint256 supplyP2PExchangeRate = marketsManager.supplyP2PExchangeRate(cDai);
-        uint256 expectedBorrowBalanceInP2P = (borrowedAmount / 2).div(supplyP2PExchangeRate);
+        uint256 p2pSupplyIndex = morpho.p2pSupplyIndex(cDai);
+        uint256 expectedBorrowBalanceInP2P = (borrowedAmount / 2).div(p2pSupplyIndex);
 
         // The amount withdrawn from supplier1 minus what is on pool will be removed from the borrower P2P's position.
         uint256 expectedBorrowBalanceOnPool = (toWithdraw -
@@ -289,15 +255,9 @@ contract TestWithdraw is TestSetupFuzzing {
         assertApproxEq(onPoolBorrower, expectedBorrowBalanceOnPool, 1e3, "borrower on Pool");
 
         // Check balances for supplier
-        (inP2PSupplier, onPoolSupplier) = positionsManager.supplyBalanceInOf(
-            cDai,
-            address(supplier1)
-        );
+        (inP2PSupplier, onPoolSupplier) = morpho.supplyBalanceInOf(cDai, address(supplier1));
 
-        uint256 expectedSupplyBalanceInP2P = underlyingToP2PUnit(
-            (25 * suppliedAmount) / 100,
-            supplyP2PExchangeRate
-        );
+        uint256 expectedSupplyBalanceInP2P = ((25 * suppliedAmount) / 100).div(p2pSupplyIndex);
 
         assertApproxEq(
             inP2PSupplier,
@@ -310,8 +270,6 @@ contract TestWithdraw is TestSetupFuzzing {
 
     function testWithdraw3_4(uint256 amount) public {
         hevm.assume(amount > 1e18 / 100 && amount < 1e18 * 50_000_000); // $0.01 to $50_000_000
-
-        setMaxGasHelper(type(uint64).max, type(uint64).max, type(uint64).max, type(uint64).max);
 
         uint256 borrowedAmount = amount;
         uint256 suppliedAmount = 2 * borrowedAmount;
@@ -326,12 +284,12 @@ contract TestWithdraw is TestSetupFuzzing {
         supplier1.supply(cDai, suppliedAmount);
 
         // Check balances after match of borrower1 & supplier1.
-        (uint256 inP2PBorrower, uint256 onPoolBorrower) = positionsManager.borrowBalanceInOf(
+        (uint256 inP2PBorrower, uint256 onPoolBorrower) = morpho.borrowBalanceInOf(
             cDai,
             address(borrower1)
         );
 
-        (uint256 inP2PSupplier, uint256 onPoolSupplier) = positionsManager.supplyBalanceInOf(
+        (uint256 inP2PSupplier, uint256 onPoolSupplier) = morpho.supplyBalanceInOf(
             cDai,
             address(supplier1)
         );
@@ -372,20 +330,14 @@ contract TestWithdraw is TestSetupFuzzing {
 
         {
             // Check balances for supplier1.
-            (inP2PSupplier, onPoolSupplier) = positionsManager.supplyBalanceInOf(
-                cDai,
-                address(supplier1)
-            );
+            (inP2PSupplier, onPoolSupplier) = morpho.supplyBalanceInOf(cDai, address(supplier1));
             assertEq(onPoolSupplier, 0, "supplier on Pool 2");
             assertApproxEq(inP2PSupplier, 0, 1, "supplier in P2P 2");
 
-            (inP2PBorrower, onPoolBorrower) = positionsManager.borrowBalanceInOf(
-                cDai,
-                address(borrower1)
-            );
+            (inP2PBorrower, onPoolBorrower) = morpho.borrowBalanceInOf(cDai, address(borrower1));
 
             uint256 expectedBorrowBalanceInP2P = halfBorrowedAmount.div(
-                marketsManager.supplyP2PExchangeRate(cDai)
+                morpho.p2pSupplyIndex(cDai)
             );
             uint256 expectedBorrowBalanceOnPool = halfBorrowedAmount.div(
                 ICToken(cDai).borrowIndex()
@@ -409,18 +361,16 @@ contract TestWithdraw is TestSetupFuzzing {
         for (uint256 i = 0; i < suppliers.length; i++) {
             if (suppliers[i] == supplier1) continue;
 
-            (inP2P, onPool) = positionsManager.supplyBalanceInOf(cDai, address(suppliers[i]));
+            (inP2P, onPool) = morpho.supplyBalanceInOf(cDai, address(suppliers[i]));
 
             assertEq(
                 inP2P,
-                getBalanceOnCompound(amountPerSupplier, rates[i]).div(
-                    marketsManager.supplyP2PExchangeRate(cDai)
-                ),
+                getBalanceOnCompound(amountPerSupplier, rates[i]).div(morpho.p2pSupplyIndex(cDai)),
                 "supplier in P2P"
             );
             assertEq(onPool, 0, "supplier on pool");
 
-            (inP2P, onPool) = positionsManager.borrowBalanceInOf(cDai, address(borrowers[i]));
+            (inP2P, onPool) = morpho.borrowBalanceInOf(cDai, address(borrowers[i]));
             assertEq(inP2P, 0, "borrower in P2P");
         }
     }
@@ -457,10 +407,10 @@ contract TestWithdraw is TestSetupFuzzing {
         uint256 collateral = 2 * toSupply;
         uint256 toBorrow = toSupply;
 
-        // Attacker sends cToken to positionsManager contract.
+        // Attacker sends cToken to morpho contract.
         attacker.approve(dai, cDai, toSupply);
         attacker.deposit(cDai, toSupply);
-        attacker.transfer(dai, address(positionsManager), toSupply);
+        attacker.transfer(dai, address(morpho), toSupply);
 
         // supplier1 deposits collateral.
         supplier1.approve(dai, toSupply);
