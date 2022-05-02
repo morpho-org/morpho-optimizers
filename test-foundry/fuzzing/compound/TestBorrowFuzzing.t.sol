@@ -2,10 +2,8 @@
 pragma solidity 0.8.13;
 
 import "./TestSetupFuzzing.sol";
-import "@contracts/compound/positions-manager-parts/PositionsManagerEventsErrors.sol";
 
 contract TestBorrow is TestSetupFuzzing {
-    using FixedPointMathLib for uint256;
     using CompoundMath for uint256;
 
     function testBorrowShouldFailFuzzed(
@@ -29,15 +27,12 @@ contract TestBorrow is TestSetupFuzzing {
         borrower1.approve(suppliedUnderlying, _supplied);
         borrower1.supply(suppliedAsset, _supplied);
 
-        (, uint256 borrowable) = positionsManager.getUserMaxCapacitiesForAsset(
+        (, uint256 borrowable) = morpho.getUserMaxCapacitiesForAsset(
             address(borrower1),
             borrowedAsset
         );
 
         hevm.assume(_borrowed > borrowable + 1); // +1 to cover for rounding error
-
-        console.log("borrowable", borrowable);
-        console.log("_borrowed", _borrowed);
 
         hevm.expectRevert(abi.encodeWithSignature("DebtValueAboveMax()"));
         borrower1.borrow(borrowedAsset, _borrowed);
@@ -66,30 +61,12 @@ contract TestBorrow is TestSetupFuzzing {
         borrower1.approve(suppliedUnderlying, amountSupplied);
         borrower1.supply(suppliedAsset, amountSupplied);
 
-        (, uint256 borrowable) = positionsManager.getUserMaxCapacitiesForAsset(
+        (, uint256 borrowable) = morpho.getUserMaxCapacitiesForAsset(
             address(borrower1),
             borrowedAsset
         );
 
-        // uint256 balanceSuppliedAfter = ERC20(suppliedUnderlying).balanceOf(address(borrower1));
-        // uint256 balanceBorrowedAfter = ERC20(borrowedUnderlying).balanceOf(address(borrower1));
-
         hevm.assume(amountBorrowed <= borrowable);
         borrower1.borrow(borrowedAsset, amountBorrowed);
-
-        // if (_suppliedAsset != _borrowedAsset) {
-        //     assertApproxEq(
-        //         balanceBorrowedAfter - balanceBorrowedBefore,
-        //         amountBorrowed,
-        //         5,
-        //         "Borrowed amount"
-        //     );
-        //     assertApproxEq(
-        //         balanceBorrowedBefore - balanceSuppliedAfter,
-        //         amountSupplied,
-        //         5,
-        //         "Supplied amount"
-        //     );
-        // }
     }
 }
