@@ -16,6 +16,7 @@ contract Morpho is MorphoGovernance {
     /// UPGRADE ///
 
     /// @notice Initializes the Morpho contract.
+    /// @param _positionsManager The `positionsManager`.
     /// @param _interestRates The `interestRates`.
     /// @param _comptroller The `comptroller`.
     /// @param _dustThreshold The `dustThreshold`.
@@ -24,8 +25,8 @@ contract Morpho is MorphoGovernance {
     /// @param _cEth The cETH address.
     /// @param _weth The wETH address.
     function initialize(
-        IInterestRates _interestRates,
         IPositionsManager _positionsManager,
+        IInterestRates _interestRates,
         IComptroller _comptroller,
         uint256 _dustThreshold,
         MaxGasForMatching memory _maxGasForMatching,
