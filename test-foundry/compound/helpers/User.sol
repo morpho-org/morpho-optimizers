@@ -111,7 +111,7 @@ contract User {
         morpho.setMaxSortedUsers(_newMaxSortedUsers);
     }
 
-    function setMaxGasForMatching(Morpho.MaxGasForMatching memory _maxGasForMatching) external {
+    function setMaxGasForMatching(Types.MaxGasForMatching memory _maxGasForMatching) external {
         morpho.setMaxGasForMatching(_maxGasForMatching);
     }
 

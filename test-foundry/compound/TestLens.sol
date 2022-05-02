@@ -17,7 +17,7 @@ contract TestLens is TestSetup {
     }
 
     function testUserLiquidityDataForAssetWithNothing() public {
-        AssetLiquidityData memory assetData = lens.getUserLiquidityDataForAsset(
+        Types.AssetLiquidityData memory assetData = lens.getUserLiquidityDataForAsset(
             address(borrower1),
             cDai,
             oracle
@@ -39,7 +39,7 @@ contract TestLens is TestSetup {
         borrower1.approve(dai, amount);
         borrower1.supply(cDai, amount);
 
-        AssetLiquidityData memory assetData = lens.getUserLiquidityDataForAsset(
+        Types.AssetLiquidityData memory assetData = lens.getUserLiquidityDataForAsset(
             address(borrower1),
             cDai,
             oracle
@@ -77,7 +77,7 @@ contract TestLens is TestSetup {
 
         indexes.index2 = ICToken(cDai).exchangeRateCurrent();
 
-        AssetLiquidityData memory assetData = lens.getUserLiquidityDataForAsset(
+        Types.AssetLiquidityData memory assetData = lens.getUserLiquidityDataForAsset(
             address(borrower1),
             cDai,
             oracle
@@ -114,20 +114,20 @@ contract TestLens is TestSetup {
         borrower1.supply(cDai, amount);
         borrower1.borrow(cUsdc, toBorrow);
 
-        AssetLiquidityData memory assetDatacDai = lens.getUserLiquidityDataForAsset(
+        Types.AssetLiquidityData memory assetDatacDai = lens.getUserLiquidityDataForAsset(
             address(borrower1),
             cDai,
             oracle
         );
 
-        AssetLiquidityData memory assetDatacUsdc = lens.getUserLiquidityDataForAsset(
+        Types.AssetLiquidityData memory assetDatacUsdc = lens.getUserLiquidityDataForAsset(
             address(borrower1),
             cUsdc,
             oracle
         );
 
         // Avoid stack too deep error.
-        AssetLiquidityData memory expectedDatcUsdc;
+        Types.AssetLiquidityData memory expectedDatcUsdc;
         (, uint256 collateralFactor, ) = comptroller.markets(cUsdc);
         expectedDatcUsdc.underlyingPrice = oracle.getUnderlyingPrice(cUsdc);
 
@@ -144,7 +144,7 @@ contract TestLens is TestSetup {
         assertEq(assetDatacUsdc.debtValue, expectedDatcUsdc.debtValue, "debtValueUsdc");
 
         // Avoid stack too deep error.
-        AssetLiquidityData memory expectedDatacDai;
+        Types.AssetLiquidityData memory expectedDatacDai;
 
         (, expectedDatacDai.collateralFactor, ) = comptroller.markets(cDai);
 
@@ -189,13 +189,13 @@ contract TestLens is TestSetup {
         borrower1.approve(usdc, amount);
         borrower1.supply(cUsdc, amount);
 
-        AssetLiquidityData memory assetDatacUsdc = lens.getUserLiquidityDataForAsset(
+        Types.AssetLiquidityData memory assetDatacUsdc = lens.getUserLiquidityDataForAsset(
             address(borrower1),
             cUsdc,
             oracle
         );
 
-        AssetLiquidityData memory assetDatacDai = lens.getUserLiquidityDataForAsset(
+        Types.AssetLiquidityData memory assetDatacDai = lens.getUserLiquidityDataForAsset(
             address(borrower1),
             cDai,
             oracle
@@ -235,19 +235,19 @@ contract TestLens is TestSetup {
         borrower1.approve(dai, amount);
         borrower1.supply(cDai, amount);
 
-        AssetLiquidityData memory assetDatacUsdc = lens.getUserLiquidityDataForAsset(
+        Types.AssetLiquidityData memory assetDatacUsdc = lens.getUserLiquidityDataForAsset(
             address(borrower1),
             cUsdc,
             oracle
         );
 
-        AssetLiquidityData memory assetDatacDai = lens.getUserLiquidityDataForAsset(
+        Types.AssetLiquidityData memory assetDatacDai = lens.getUserLiquidityDataForAsset(
             address(borrower1),
             cDai,
             oracle
         );
 
-        AssetLiquidityData memory assetDatacUsdt = lens.getUserLiquidityDataForAsset(
+        Types.AssetLiquidityData memory assetDatacUsdt = lens.getUserLiquidityDataForAsset(
             address(borrower1),
             cUsdt,
             oracle

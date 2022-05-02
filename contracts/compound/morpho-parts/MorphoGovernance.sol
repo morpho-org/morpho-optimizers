@@ -22,7 +22,10 @@ abstract contract MorphoGovernance is MorphoEventsErrors {
 
     /// @notice Sets `maxGasForMatching`.
     /// @param _maxGasForMatching The new `maxGasForMatching`.
-    function setMaxGasForMatching(MaxGasForMatching memory _maxGasForMatching) external onlyOwner {
+    function setMaxGasForMatching(Types.MaxGasForMatching memory _maxGasForMatching)
+        external
+        onlyOwner
+    {
         maxGasForMatching = _maxGasForMatching;
         emit MaxGasForMatchingSet(_maxGasForMatching);
     }
@@ -108,7 +111,7 @@ abstract contract MorphoGovernance is MorphoEventsErrors {
     /// @notice Toggles the pause status on a specific market in case of emergency.
     /// @param _poolTokenAddress The address of the market to pause/unpause.
     function togglePauseStatus(address _poolTokenAddress) external onlyOwner {
-        MarketStatuses storage marketStatuses_ = marketStatuses[_poolTokenAddress];
+        Types.MarketStatuses storage marketStatuses_ = marketStatuses[_poolTokenAddress];
         bool newPauseStatus = !marketStatuses_.isPaused;
         marketStatuses_.isPaused = newPauseStatus;
         emit PauseStatusChanged(_poolTokenAddress, newPauseStatus);
@@ -117,7 +120,7 @@ abstract contract MorphoGovernance is MorphoEventsErrors {
     /// @notice Toggles the pause status on a specific market in case of emergency.
     /// @param _poolTokenAddress The address of the market to partially pause/unpause.
     function togglePartialPauseStatus(address _poolTokenAddress) external onlyOwner {
-        MarketStatuses storage marketStatuses_ = marketStatuses[_poolTokenAddress];
+        Types.MarketStatuses storage marketStatuses_ = marketStatuses[_poolTokenAddress];
         bool newPauseStatus = !marketStatuses_.isPartiallyPaused;
         marketStatuses_.isPartiallyPaused = newPauseStatus;
         emit PartialPauseStatusChanged(_poolTokenAddress, newPauseStatus);
@@ -172,7 +175,7 @@ abstract contract MorphoGovernance is MorphoEventsErrors {
         p2pSupplyIndex[_poolTokenAddress] = initialIndex;
         p2pBorrowIndex[_poolTokenAddress] = initialIndex;
 
-        LastPoolIndexes storage poolIndexes = lastPoolIndexes[_poolTokenAddress];
+        Types.LastPoolIndexes storage poolIndexes = lastPoolIndexes[_poolTokenAddress];
 
         poolIndexes.lastUpdateBlockNumber = uint32(block.number);
         poolIndexes.lastSupplyPoolIndex = uint112(poolToken.exchangeRateCurrent());
