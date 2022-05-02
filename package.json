@@ -11,13 +11,13 @@
     "deploy:aave:polygon": "NETWORK=polygon-mainnet npx hardhat run scripts/deploy-aave.ts --network polygon",
     "deploy:aave:mumbai": "NETWORK=polygon-mumbai npx hardhat run scripts/deploy-aave.ts --network mumbai",
     "test": "npx hardhat test",
-    "lint": "yarn run lint:sol && yarn run lint:ts",
+    "lint": "yarn lint:sol && yarn lint:ts",
     "lint:ts": "eslint . --ext .ts",
     "lint:sol": "solhint 'contracts/**/*.sol'",
     "fix": "yarn fix:sol && yarn fix:ts",
     "fix:ts": "prettier --config .prettierrc.json './**/*.ts' --write",
     "fix:sol": "prettier --write './contracts/**/*.sol' && prettier --write './test-foundry/**/*.sol'",
-    "size": "yarn run hardhat size-contracts",
+    "size": "npx hardhat compile && npx hardhat size-contracts",
     "postinstall": "husky install"
   },
   "repository": {
