@@ -268,15 +268,18 @@ contract Lens {
             newP2PSupplyIndex = morpho.p2pSupplyIndex(_poolTokenAddress);
             newP2PBorrowIndex = morpho.p2pBorrowIndex(_poolTokenAddress);
         } else {
-            ICToken poolToken = ICToken(_poolTokenAddress);
             LastPoolIndexes memory poolIndexes = morpho.lastPoolIndexes(_poolTokenAddress);
             MarketParameters memory marketParams = morpho.marketParameters(_poolTokenAddress);
+
+            (uint256 poolSupplyIndex, uint256 poolBorrowIndex) = computeCompoundsIndexes(
+                _poolTokenAddress
+            );
 
             Params memory params = Params(
                 morpho.p2pSupplyIndex(_poolTokenAddress),
                 morpho.p2pBorrowIndex(_poolTokenAddress),
-                poolToken.exchangeRateStored(),
-                poolToken.borrowIndex(),
+                poolSupplyIndex,
+                poolBorrowIndex,
                 poolIndexes.lastSupplyPoolIndex,
                 poolIndexes.lastBorrowPoolIndex,
                 marketParams.reserveFactor,
@@ -295,15 +298,18 @@ contract Lens {
         if (block.timestamp == morpho.lastPoolIndexes(_poolTokenAddress).lastUpdateBlockNumber)
             return morpho.p2pSupplyIndex(_poolTokenAddress);
         else {
-            ICToken poolToken = ICToken(_poolTokenAddress);
             LastPoolIndexes memory poolIndexes = morpho.lastPoolIndexes(_poolTokenAddress);
             MarketParameters memory marketParams = morpho.marketParameters(_poolTokenAddress);
+
+            (uint256 poolSupplyIndex, uint256 poolBorrowIndex) = computeCompoundsIndexes(
+                _poolTokenAddress
+            );
 
             Params memory params = Params(
                 morpho.p2pSupplyIndex(_poolTokenAddress),
                 morpho.p2pBorrowIndex(_poolTokenAddress),
-                poolToken.exchangeRateStored(),
-                poolToken.borrowIndex(),
+                poolSupplyIndex,
+                poolBorrowIndex,
                 poolIndexes.lastSupplyPoolIndex,
                 poolIndexes.lastBorrowPoolIndex,
                 marketParams.reserveFactor,
@@ -322,15 +328,18 @@ contract Lens {
         if (block.timestamp == morpho.lastPoolIndexes(_poolTokenAddress).lastUpdateBlockNumber)
             return morpho.p2pBorrowIndex(_poolTokenAddress);
         else {
-            ICToken poolToken = ICToken(_poolTokenAddress);
             LastPoolIndexes memory poolIndexes = morpho.lastPoolIndexes(_poolTokenAddress);
             MarketParameters memory marketParams = morpho.marketParameters(_poolTokenAddress);
+
+            (uint256 poolSupplyIndex, uint256 poolBorrowIndex) = computeCompoundsIndexes(
+                _poolTokenAddress
+            );
 
             Params memory params = Params(
                 morpho.p2pSupplyIndex(_poolTokenAddress),
                 morpho.p2pBorrowIndex(_poolTokenAddress),
-                poolToken.exchangeRateStored(),
-                poolToken.borrowIndex(),
+                poolSupplyIndex,
+                poolBorrowIndex,
                 poolIndexes.lastSupplyPoolIndex,
                 poolIndexes.lastBorrowPoolIndex,
                 marketParams.reserveFactor,
@@ -519,6 +528,50 @@ contract Lens {
                     shareOfTheDelta.mul(_poolGrowthFactor)
             );
         }
+    }
+
+    function computeCompoundsIndexes(address _poolTokenAddress)
+        internal
+        view
+        returns (uint256, uint256)
+    {
+        ICToken cToken = ICToken(_poolTokenAddress);
+        uint256 accrualBlockNumberPrior = cToken.accrualBlockNumber();
+
+        if (block.number == accrualBlockNumberPrior)
+            return (cToken.exchangeRateStored(), cToken.borrowIndex());
+
+        // Read the previous values out of storage
+        uint256 cashPrior = cToken.getCash();
+        uint256 totalSupply = cToken.totalSupply();
+        uint256 borrowsPrior = cToken.totalBorrows();
+        uint256 reservesPrior = cToken.totalReserves();
+        uint256 borrowIndexPrior = cToken.borrowIndex();
+
+        // Calculate the current borrow interest rate
+        uint256 borrowRateMantissa = cToken.interestRateModel().getBorrowRate(
+            cashPrior,
+            borrowsPrior,
+            reservesPrior
+        );
+        require(borrowRateMantissa <= 0.0005e16, "borrow rate is absurdly high");
+
+        uint256 blockDelta = block.number - accrualBlockNumberPrior;
+
+        // Calculate the interest accumulated into borrows and reserves and the new index.
+        uint256 simpleInterestFactor = borrowRateMantissa * blockDelta;
+        uint256 interestAccumulated = simpleInterestFactor.mul(borrowsPrior);
+        uint256 totalBorrowsNew = interestAccumulated + borrowsPrior;
+        uint256 totalReservesNew = cToken.reserveFactorMantissa().mul(interestAccumulated) +
+            reservesPrior;
+        uint256 borrowIndexNew = simpleInterestFactor.mul(borrowIndexPrior) + borrowIndexPrior;
+
+        return (
+            totalSupply > 0
+                ? (cashPrior + totalBorrowsNew - totalReservesNew).div(totalSupply)
+                : cToken.initialExchangeRateMantissa(),
+            borrowIndexNew
+        );
     }
 
     /// @dev Returns the supply balance of `_user` in the `_poolTokenAddress` market.
