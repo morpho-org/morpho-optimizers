@@ -1,18 +1,16 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import "./interfaces/IMorpho.sol";
 import "./interfaces/compound/ICompound.sol";
+import "./interfaces/IMorpho.sol";
 
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
+import "@openzeppelin/contracts/utils/math/Math.sol";
 import "../common/libraries/DoubleLinkedList.sol";
 import "./libraries/CompoundMath.sol";
-import "./Morpho.sol";
-
-import "@openzeppelin/contracts/utils/math/Math.sol";
 
 /// @title Lens.
-/// @notice User accessible getters for
+/// @notice User accessible getters.
 contract Lens {
     using DoubleLinkedList for DoubleLinkedList.List;
     using CompoundMath for uint256;
@@ -356,7 +354,7 @@ contract Lens {
     /// @param _poolTokenAddress The market to hypothetically withdraw/borrow in.
     /// @param _withdrawnAmount The number of tokens to hypothetically withdraw (in underlying).
     /// @param _borrowedAmount The amount of tokens to hypothetically borrow (in underlying).
-    function _checkUserLiquidity(
+    function checkUserLiquidity(
         address _user,
         address _poolTokenAddress,
         uint256 _withdrawnAmount,
