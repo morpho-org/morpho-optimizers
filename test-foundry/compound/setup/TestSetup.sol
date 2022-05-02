@@ -12,8 +12,8 @@ import "@openzeppelin/contracts/utils/Strings.sol";
 import "@contracts/compound/comp-rewards/IncentivesVault.sol";
 import "@contracts/compound/comp-rewards/RewardsManager.sol";
 import "@contracts/compound/PositionsManager.sol";
-import "@contracts/compound/InterestRates.sol";
 import "@contracts/compound/MatchingEngine.sol";
+import "@contracts/compound/InterestRates.sol";
 import "@contracts/compound/Morpho.sol";
 
 import "../../common/helpers/MorphoToken.sol";

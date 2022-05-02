@@ -3,7 +3,7 @@ pragma solidity 0.8.13;
 
 import "./setup/TestSetup.sol";
 
-contract TestInterestRates is TestSetup {
+contract TestGovernance is TestSetup {
     using CompoundMath for uint256;
 
     function testShoudDeployContractWithTheRightValues() public {
@@ -69,7 +69,7 @@ contract TestInterestRates is TestSetup {
         );
     }
 
-    function testShouldSetmaxGasWithRightValues() public {
+    function testShouldSetMaxGasWithRightValues() public {
         MorphoStorage.MaxGasForMatching memory newMaxGas = MorphoStorage.MaxGasForMatching({
             supply: 1,
             borrow: 1,
