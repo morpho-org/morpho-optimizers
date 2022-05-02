@@ -36,9 +36,9 @@ abstract contract MorphoGovernance is MorphoEventsErrors {
 
     /// @notice Sets the `rewardsManager`.
     /// @param _rewardsManagerAddress The address of the `rewardsManager`.
-    function setRewardsManager(address _rewardsManagerAddress) external onlyOwner {
-        rewardsManager = IRewardsManager(_rewardsManagerAddress);
-        emit RewardsManagerSet(_rewardsManagerAddress);
+    function setRewardsManager(IRewardsManager _rewardsManagerAddress) external onlyOwner {
+        rewardsManager = _rewardsManagerAddress;
+        emit RewardsManagerSet(address(_rewardsManagerAddress));
     }
 
     /// @notice Sets the `intersRates`.
@@ -57,9 +57,9 @@ abstract contract MorphoGovernance is MorphoEventsErrors {
 
     /// @notice Sets the `incentivesVault`.
     /// @param _newIncentivesVault The address of the new `incentivesVault`.
-    function setIncentivesVault(address _newIncentivesVault) external onlyOwner {
-        incentivesVault = IIncentivesVault(_newIncentivesVault);
-        emit IncentivesVaultSet(_newIncentivesVault);
+    function setIncentivesVault(IIncentivesVault _newIncentivesVault) external onlyOwner {
+        incentivesVault = _newIncentivesVault;
+        emit IncentivesVaultSet(address(_newIncentivesVault));
     }
 
     /// @dev Sets `dustThreshold`.
