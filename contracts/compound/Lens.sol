@@ -40,6 +40,8 @@ contract Lens {
         uint256 p2pDelta; // Sum of all stored P2P in supply or borrow (in P2P unit).
     }
 
+    /// STORAGE ///
+
     uint256 public constant MAX_BASIS_POINTS = 10_000;
     uint256 public constant WAD = 1e18;
     IMorpho public immutable morpho;
@@ -55,7 +57,7 @@ contract Lens {
     /// @notice Thrown when the debt value is above the maximum debt value.
     error DebtValueAboveMax();
 
-    /// EXTERNAL ///
+    /// GETTERS ///
 
     /// @notice Checks if a market is created.
     /// @param _poolTokenAddress The address of the market to check.
@@ -103,11 +105,11 @@ contract Lens {
         )
     {
         ICompoundOracle oracle = ICompoundOracle(morpho.comptroller().oracle());
-        uint256 numberOfEnteredMarkets = morpho.enteredMarketsLength(_user);
+        address[] memory enteredMarkets = morpho.getEnteredMarkets(_user);
         uint256 i;
 
-        while (i < numberOfEnteredMarkets) {
-            address poolTokenEntered = morpho.enteredMarkets(_user, i);
+        while (i < enteredMarkets.length) {
+            address poolTokenEntered = enteredMarkets[i];
             AssetLiquidityData memory assetData = getUserLiquidityDataForAsset(
                 _user,
                 poolTokenEntered,
@@ -137,11 +139,11 @@ contract Lens {
         LiquidityData memory data;
         AssetLiquidityData memory assetData;
         ICompoundOracle oracle = ICompoundOracle(morpho.comptroller().oracle());
-        uint256 numberOfEnteredMarkets = morpho.enteredMarketsLength(_user);
+        address[] memory enteredMarkets = morpho.getEnteredMarkets(_user);
         uint256 i;
 
-        while (i < numberOfEnteredMarkets) {
-            address poolTokenEntered = morpho.enteredMarkets(_user, i);
+        while (i < enteredMarkets.length) {
+            address poolTokenEntered = enteredMarkets[i];
 
             if (_poolTokenAddress != poolTokenEntered) {
                 assetData = getUserLiquidityDataForAsset(_user, poolTokenEntered, oracle);
@@ -215,21 +217,19 @@ contract Lens {
     /// @param _borrowedAmount The amount of tokens to hypothetically borrow (in underlying).
     /// @return debtValue The current debt value of the user.
     /// @return maxDebtValue The maximum debt value possible of the user.
-    function _getUserHypotheticalBalanceStates(
+    function getUserHypotheticalBalanceStates(
         address _user,
         address _poolTokenAddress,
         uint256 _withdrawnAmount,
         uint256 _borrowedAmount
-    ) internal returns (uint256 debtValue, uint256 maxDebtValue) {
+    ) public view returns (uint256 debtValue, uint256 maxDebtValue) {
         ICompoundOracle oracle = ICompoundOracle(morpho.comptroller().oracle());
-        uint256 numberOfEnteredMarkets = morpho.enteredMarketsLength(_user);
+        address[] memory enteredMarkets = morpho.getEnteredMarkets(_user);
         uint256 i;
 
-        while (i < numberOfEnteredMarkets) {
-            address poolTokenEntered = morpho.enteredMarkets(_user, i);
+        while (i < enteredMarkets.length) {
+            address poolTokenEntered = enteredMarkets[i];
 
-            // Calling accrueInterest so that computation in getUserLiquidityDataForAsset() are the most accurate ones.
-            ICToken(poolTokenEntered).accrueInterest();
             AssetLiquidityData memory assetData = getUserLiquidityDataForAsset(
                 _user,
                 poolTokenEntered,
@@ -271,7 +271,7 @@ contract Lens {
             LastPoolIndexes memory poolIndexes = morpho.lastPoolIndexes(_poolTokenAddress);
             MarketParameters memory marketParams = morpho.marketParameters(_poolTokenAddress);
 
-            (uint256 poolSupplyIndex, uint256 poolBorrowIndex) = computeCompoundsIndexes(
+            (uint256 poolSupplyIndex, uint256 poolBorrowIndex) = _computeCompoundsIndexes(
                 _poolTokenAddress
             );
 
@@ -301,7 +301,7 @@ contract Lens {
             LastPoolIndexes memory poolIndexes = morpho.lastPoolIndexes(_poolTokenAddress);
             MarketParameters memory marketParams = morpho.marketParameters(_poolTokenAddress);
 
-            (uint256 poolSupplyIndex, uint256 poolBorrowIndex) = computeCompoundsIndexes(
+            (uint256 poolSupplyIndex, uint256 poolBorrowIndex) = _computeCompoundsIndexes(
                 _poolTokenAddress
             );
 
@@ -331,7 +331,7 @@ contract Lens {
             LastPoolIndexes memory poolIndexes = morpho.lastPoolIndexes(_poolTokenAddress);
             MarketParameters memory marketParams = morpho.marketParameters(_poolTokenAddress);
 
-            (uint256 poolSupplyIndex, uint256 poolBorrowIndex) = computeCompoundsIndexes(
+            (uint256 poolSupplyIndex, uint256 poolBorrowIndex) = _computeCompoundsIndexes(
                 _poolTokenAddress
             );
 
@@ -349,6 +349,84 @@ contract Lens {
 
             return _computeP2PBorrowIndex(params);
         }
+    }
+
+    /// @dev Checks whether the user can borrow/withdraw or not.
+    /// @param _user The user to determine liquidity for.
+    /// @param _poolTokenAddress The market to hypothetically withdraw/borrow in.
+    /// @param _withdrawnAmount The number of tokens to hypothetically withdraw (in underlying).
+    /// @param _borrowedAmount The amount of tokens to hypothetically borrow (in underlying).
+    function _checkUserLiquidity(
+        address _user,
+        address _poolTokenAddress,
+        uint256 _withdrawnAmount,
+        uint256 _borrowedAmount
+    ) external view {
+        (uint256 debtValue, uint256 maxDebtValue) = getUserHypotheticalBalanceStates(
+            _user,
+            _poolTokenAddress,
+            _withdrawnAmount,
+            _borrowedAmount
+        );
+        if (debtValue > maxDebtValue) revert DebtValueAboveMax();
+    }
+
+    /// @notice Returns market's data.
+    /// @return p2pSupplyIndex_ The peer-to-peer supply index of the market.
+    /// @return p2pBorrowIndex_ The peer-to-peer borrow index of the market.
+    /// @return lastUpdateBlockNumber_ The last block number when P2P indexes where updated.
+    /// @return supplyP2PDelta_ The supply P2P delta (in scaled balance).
+    /// @return borrowP2PDelta_ The borrow P2P delta (in cdUnit).
+    /// @return supplyP2PAmount_ The supply P2P amount (in P2P unit).
+    /// @return borrowP2PAmount_ The borrow P2P amount (in P2P unit).
+    function getMarketData(address _poolTokenAddress)
+        external
+        view
+        returns (
+            uint256 p2pSupplyIndex_,
+            uint256 p2pBorrowIndex_,
+            uint32 lastUpdateBlockNumber_,
+            uint256 supplyP2PDelta_,
+            uint256 borrowP2PDelta_,
+            uint256 supplyP2PAmount_,
+            uint256 borrowP2PAmount_
+        )
+    {
+        {
+            Delta memory delta = morpho.deltas(_poolTokenAddress);
+            supplyP2PDelta_ = delta.supplyP2PDelta;
+            borrowP2PDelta_ = delta.borrowP2PDelta;
+            supplyP2PAmount_ = delta.supplyP2PAmount;
+            borrowP2PAmount_ = delta.borrowP2PAmount;
+        }
+        p2pSupplyIndex_ = morpho.p2pSupplyIndex(_poolTokenAddress);
+        p2pBorrowIndex_ = morpho.p2pBorrowIndex(_poolTokenAddress);
+        lastUpdateBlockNumber_ = morpho.lastPoolIndexes(_poolTokenAddress).lastUpdateBlockNumber;
+    }
+
+    /// @notice Returns market's configuration.
+    /// @return isCreated_ Whether the market is created or not.
+    /// @return noP2P_ Whether user are put in P2P or not.
+    /// @return isPaused_ Whether the market is paused or not (all entry points on Morpho are frozen; supply, borrow, withdraw, repay and liquidate).
+    /// @return isPartiallyPaused_ Whether the market is partially paused or not (only supply and borrow are frozen).
+    /// @return reserveFactor_ The reserve actor applied to this market.
+    function getMarketConfiguration(address _poolTokenAddress)
+        external
+        view
+        returns (
+            bool isCreated_,
+            bool noP2P_,
+            bool isPaused_,
+            bool isPartiallyPaused_,
+            uint256 reserveFactor_
+        )
+    {
+        MarketStatuses memory marketStatuses_ = morpho.marketStatuses(_poolTokenAddress);
+        isCreated_ = marketStatuses_.isCreated;
+        noP2P_ = morpho.noP2P(_poolTokenAddress);
+        isPaused_ = marketStatuses_.isPaused;
+        isPartiallyPaused_ = marketStatuses_.isPartiallyPaused;
+        reserveFactor_ = morpho.marketParameters(_poolTokenAddress).reserveFactor;
     }
 
     /// INTERNAL ///
@@ -530,10 +608,14 @@ contract Lens {
         }
     }
 
-    function computeCompoundsIndexes(address _poolTokenAddress)
+    /// @dev Computes and returns Compound's updated indexes.
+    /// @param _poolTokenAddress The address of the market to compute.
+    /// @return newSupplyIndex The updated supply index.
+    /// @return newBorrowIndex The updated borrow index.
+    function _computeCompoundsIndexes(address _poolTokenAddress)
         internal
         view
-        returns (uint256, uint256)
+        returns (uint256 newSupplyIndex, uint256 newBorrowIndex)
     {
         ICToken cToken = ICToken(_poolTokenAddress);
         uint256 accrualBlockNumberPrior = cToken.accrualBlockNumber();
@@ -564,14 +646,11 @@ contract Lens {
         uint256 totalBorrowsNew = interestAccumulated + borrowsPrior;
         uint256 totalReservesNew = cToken.reserveFactorMantissa().mul(interestAccumulated) +
             reservesPrior;
-        uint256 borrowIndexNew = simpleInterestFactor.mul(borrowIndexPrior) + borrowIndexPrior;
 
-        return (
-            totalSupply > 0
-                ? (cashPrior + totalBorrowsNew - totalReservesNew).div(totalSupply)
-                : cToken.initialExchangeRateMantissa(),
-            borrowIndexNew
-        );
+        newSupplyIndex = totalSupply > 0
+            ? (cashPrior + totalBorrowsNew - totalReservesNew).div(totalSupply)
+            : cToken.initialExchangeRateMantissa();
+        newBorrowIndex = simpleInterestFactor.mul(borrowIndexPrior) + borrowIndexPrior;
     }
 
     /// @dev Returns the supply balance of `_user` in the `_poolTokenAddress` market.
@@ -609,99 +688,5 @@ contract Lens {
             morpho.borrowBalanceInOf(_poolTokenAddress, _user).onPool.mul(
                 ICToken(_poolTokenAddress).borrowIndex()
             );
-    }
-
-    /// @dev Checks whether the user can borrow/withdraw or not.
-    /// @param _user The user to determine liquidity for.
-    /// @param _poolTokenAddress The market to hypothetically withdraw/borrow in.
-    /// @param _withdrawnAmount The number of tokens to hypothetically withdraw (in underlying).
-    /// @param _borrowedAmount The amount of tokens to hypothetically borrow (in underlying).
-    function _checkUserLiquidity(
-        address _user,
-        address _poolTokenAddress,
-        uint256 _withdrawnAmount,
-        uint256 _borrowedAmount
-    ) internal {
-        (uint256 debtValue, uint256 maxDebtValue) = _getUserHypotheticalBalanceStates(
-            _user,
-            _poolTokenAddress,
-            _withdrawnAmount,
-            _borrowedAmount
-        );
-        if (debtValue > maxDebtValue) revert DebtValueAboveMax();
-    }
-
-    /// @dev Returns the underlying ERC20 token related to the pool token.
-    /// @param _poolTokenAddress The address of the pool token.
-    /// @return The underlying ERC20 token.
-    function _getUnderlying(address _poolTokenAddress) internal view returns (ERC20) {
-        if (_poolTokenAddress == morpho.cEth())
-            // cETH has no underlying() function.
-            return ERC20(morpho.wEth());
-        else return ERC20(ICToken(_poolTokenAddress).underlying());
-    }
-
-    /// @notice Returns all created markets.
-    /// @return marketsCreated_ The list of market adresses.
-    function getAllMarkets() external view returns (address[] memory marketsCreated_) {
-        marketsCreated_ = morpho.marketsCreated();
-    }
-
-    /// @notice Returns market's data.
-    /// @return p2pSupplyIndex_ The peer-to-peer supply index of the market.
-    /// @return p2pBorrowIndex_ The peer-to-peer borrow index of the market.
-    /// @return lastUpdateBlockNumber_ The last block number when P2P indexes where updated.
-    /// @return supplyP2PDelta_ The supply P2P delta (in scaled balance).
-    /// @return borrowP2PDelta_ The borrow P2P delta (in cdUnit).
-    /// @return supplyP2PAmount_ The supply P2P amount (in P2P unit).
-    /// @return borrowP2PAmount_ The borrow P2P amount (in P2P unit).
-    function getMarketData(address _poolTokenAddress)
-        external
-        view
-        returns (
-            uint256 p2pSupplyIndex_,
-            uint256 p2pBorrowIndex_,
-            uint32 lastUpdateBlockNumber_,
-            uint256 supplyP2PDelta_,
-            uint256 borrowP2PDelta_,
-            uint256 supplyP2PAmount_,
-            uint256 borrowP2PAmount_
-        )
-    {
-        {
-            Delta memory delta = morpho.deltas(_poolTokenAddress);
-            supplyP2PDelta_ = delta.supplyP2PDelta;
-            borrowP2PDelta_ = delta.borrowP2PDelta;
-            supplyP2PAmount_ = delta.supplyP2PAmount;
-            borrowP2PAmount_ = delta.borrowP2PAmount;
-        }
-        p2pSupplyIndex_ = morpho.p2pSupplyIndex(_poolTokenAddress);
-        p2pBorrowIndex_ = morpho.p2pBorrowIndex(_poolTokenAddress);
-        lastUpdateBlockNumber_ = morpho.lastPoolIndexes(_poolTokenAddress).lastUpdateBlockNumber;
-    }
-
-    /// @notice Returns market's configuration.
-    /// @return isCreated_ Whether the market is created or not.
-    /// @return noP2P_ Whether user are put in P2P or not.
-    /// @return isPaused_ Whether the market is paused or not (all entry points on Morpho are frozen; supply, borrow, withdraw, repay and liquidate).
-    /// @return isPartiallyPaused_ Whether the market is partially paused or not (only supply and borrow are frozen).
-    /// @return reserveFactor_ The reserve actor applied to this market.
-    function getMarketConfiguration(address _poolTokenAddress)
-        external
-        view
-        returns (
-            bool isCreated_,
-            bool noP2P_,
-            bool isPaused_,
-            bool isPartiallyPaused_,
-            uint256 reserveFactor_
-        )
-    {
-        MarketStatuses memory marketStatuses_ = morpho.marketStatuses(_poolTokenAddress);
-        isCreated_ = marketStatuses_.isCreated;
-        noP2P_ = morpho.noP2P(_poolTokenAddress);
-        isPaused_ = marketStatuses_.isPaused;
-        isPartiallyPaused_ = marketStatuses_.isPartiallyPaused;
-        reserveFactor_ = morpho.marketParameters(_poolTokenAddress).reserveFactor;
     }
 }

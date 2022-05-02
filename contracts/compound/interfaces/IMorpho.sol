@@ -100,15 +100,11 @@ interface IMorpho {
 
     /// GETTERS ///
 
-    function enteredMarketsLength(address _user) external view returns (uint256);
+    function updateP2PIndexes(address _poolTokenAddress) external;
+    function getEnteredMarkets(address _user) external view returns (address[] memory enteredMarkets_);
+    function getAllMarkets() external view returns (address[] memory marketsCreated_);
     function getHead(address _poolTokenAddress, PositionType _positionType) external view returns (address head);
     function getNext(address _poolTokenAddress, PositionType _positionType, address _user) external view returns (address next);
-    function getUserLiquidityDataForAsset(address _user, address _poolTokenAddress, ICompoundOracle _oracle) external returns (AssetLiquidityData memory assetData);
-    function updateP2PIndexes(address _poolTokenAddress) external;
-    function getUpdatedP2PSupplyIndex(address _poolTokenAddress) external returns (uint256);
-    function getUpdatedP2PBorrowIndex(address _poolTokenAddress) external returns (uint256);
-    function getUpdatedP2PIndexes(address _poolTokenAddress) external returns (uint256, uint256);
-    function getAllMarkets() external view returns (address[] memory marketsCreated_);
 
     /// GOVERNANCE ///
 

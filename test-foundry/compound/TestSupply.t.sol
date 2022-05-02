@@ -69,7 +69,7 @@ contract TestSupply is TestSetup {
         supplier1.approve(dai, 2 * amount);
         supplier1.supply(cDai, 2 * amount);
 
-        uint256 p2pSupplyIndex = morpho.getUpdatedP2PSupplyIndex(cDai);
+        uint256 p2pSupplyIndex = lens.getUpdatedP2PSupplyIndex(cDai);
         uint256 expectedSupplyBalanceInP2P = amount.div(p2pSupplyIndex);
 
         uint256 supplyPoolIndex = ICToken(cDai).exchangeRateCurrent();
