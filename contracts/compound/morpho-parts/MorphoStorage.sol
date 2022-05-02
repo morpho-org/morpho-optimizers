@@ -8,7 +8,6 @@ import "../interfaces/IRewardsManager.sol";
 import "../interfaces/IInterestRates.sol";
 
 import "../../common/libraries/DoubleLinkedList.sol";
-import "../libraries/Types.sol";
 
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
@@ -41,6 +40,13 @@ abstract contract MorphoStorage is OwnableUpgradeable, ReentrancyGuardUpgradeabl
         uint64 borrow;
         uint64 withdraw;
         uint64 repay;
+    }
+
+    struct Delta {
+        uint256 supplyP2PDelta; // Difference between the stored P2P supply amount and the real P2P supply amount (in scaled balance).
+        uint256 borrowP2PDelta; // Difference between the stored P2P borrow amount and the real P2P borrow amount (in adUnit).
+        uint256 supplyP2PAmount; // Sum of all stored P2P supply (in P2P unit).
+        uint256 borrowP2PAmount; // Sum of all stored P2P borrow (in P2P unit).
     }
 
     struct AssetLiquidityData {
@@ -117,7 +123,7 @@ abstract contract MorphoStorage is OwnableUpgradeable, ReentrancyGuardUpgradeabl
     mapping(address => LastPoolIndexes) public lastPoolIndexes; // Last pool index stored.
     mapping(address => MarketParameters) public marketParameters; // Market parameters.
     mapping(address => MarketStatuses) public marketStatuses; // Whether a market is paused or partially paused or not.
-    mapping(address => Types.Delta) public deltas; // Delta parameters for each market.
+    mapping(address => Delta) public deltas; // Delta parameters for each market.
 
     /// CONTRACTS AND ADDRESSES ///
 

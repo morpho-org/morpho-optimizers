@@ -6,7 +6,6 @@ import "./interfaces/IInterestRates.sol";
 import "./interfaces/IMorpho.sol";
 
 import "./libraries/CompoundMath.sol";
-import "./libraries/Types.sol";
 
 import "./morpho-parts/MorphoStorage.sol";
 
@@ -16,6 +15,18 @@ contract InterestRates is IInterestRates, MorphoStorage {
     using CompoundMath for uint256;
 
     /// STRUCTS ///
+
+    struct Params {
+        uint256 p2pSupplyIndex; // The current peer-to-peer supply index.
+        uint256 p2pBorrowIndex; // The current peer-to-peer borrow index
+        uint256 poolSupplyIndex; // The current pool supply index
+        uint256 poolBorrowIndex; // The pool supply index at last update.
+        uint256 lastPoolSupplyIndex; // The pool borrow index at last update.
+        uint256 lastPoolBorrowIndex; // The pool borrow index at last update.
+        uint256 reserveFactor; // The reserve factor percentage (10 000 = 100%).
+        uint256 p2pIndexCursor; // The reserve factor percentage (10 000 = 100%).
+        Delta delta; // The deltas and P2P amounts.
+    }
 
     struct RateParams {
         uint256 p2pIndex; // The P2P index.
@@ -58,7 +69,7 @@ contract InterestRates is IInterestRates, MorphoStorage {
             LastPoolIndexes storage poolIndexes = lastPoolIndexes[_poolTokenAddress];
             MarketParameters storage marketParams = marketParameters[_poolTokenAddress];
 
-            Types.Params memory params = Types.Params(
+            Params memory params = Params(
                 p2pSupplyIndex[_poolTokenAddress],
                 p2pBorrowIndex[_poolTokenAddress],
                 poolToken.exchangeRateStored(),
@@ -85,7 +96,7 @@ contract InterestRates is IInterestRates, MorphoStorage {
             LastPoolIndexes storage poolIndexes = lastPoolIndexes[_poolTokenAddress];
             MarketParameters storage marketParams = marketParameters[_poolTokenAddress];
 
-            Types.Params memory params = Types.Params(
+            Params memory params = Params(
                 p2pSupplyIndex[_poolTokenAddress],
                 p2pBorrowIndex[_poolTokenAddress],
                 poolToken.exchangeRateStored(),
@@ -112,7 +123,7 @@ contract InterestRates is IInterestRates, MorphoStorage {
             LastPoolIndexes storage poolIndexes = lastPoolIndexes[_poolTokenAddress];
             MarketParameters storage marketParams = marketParameters[_poolTokenAddress];
 
-            Types.Params memory params = Types.Params(
+            Params memory params = Params(
                 p2pSupplyIndex[_poolTokenAddress],
                 p2pBorrowIndex[_poolTokenAddress],
                 poolToken.exchangeRateStored(),
@@ -139,7 +150,7 @@ contract InterestRates is IInterestRates, MorphoStorage {
             uint256 poolSupplyIndex = poolToken.exchangeRateCurrent();
             uint256 poolBorrowIndex = poolToken.borrowIndex();
 
-            Types.Params memory params = Types.Params(
+            Params memory params = Params(
                 p2pSupplyIndex[_poolTokenAddress],
                 p2pBorrowIndex[_poolTokenAddress],
                 poolSupplyIndex,
@@ -170,7 +181,7 @@ contract InterestRates is IInterestRates, MorphoStorage {
     /// @param _params Computation parameters.
     /// @return newP2PSupplyIndex The updated p2pSupplyIndex.
     /// @return newP2PBorrowIndex The updated p2pBorrowIndex.
-    function computeP2PIndexes(Types.Params memory _params)
+    function computeP2PIndexes(Params memory _params)
         public
         pure
         returns (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex)
@@ -223,7 +234,7 @@ contract InterestRates is IInterestRates, MorphoStorage {
     /// @notice Computes and return the new peer-to-peer supply index.
     /// @param _params Computation parameters.
     /// @return The updated p2pSupplyIndex.
-    function _computeP2PSupplyIndex(Types.Params memory _params) internal pure returns (uint256) {
+    function _computeP2PSupplyIndex(Params memory _params) internal pure returns (uint256) {
         RateParams memory supplyParams = RateParams({
             p2pIndex: _params.p2pSupplyIndex,
             poolIndex: _params.poolSupplyIndex,
@@ -253,7 +264,7 @@ contract InterestRates is IInterestRates, MorphoStorage {
     /// @notice Computes and return the new peer-to-peer borrow index.
     /// @param _params Computation parameters.
     /// @return The updated p2pBorrowIndex.
-    function _computeP2PBorrowIndex(Types.Params memory _params) internal pure returns (uint256) {
+    function _computeP2PBorrowIndex(Params memory _params) internal pure returns (uint256) {
         RateParams memory borrowParams = RateParams({
             p2pIndex: _params.p2pBorrowIndex,
             poolIndex: _params.poolBorrowIndex,
