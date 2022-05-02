@@ -7,88 +7,28 @@ import "./IRewardsManager.sol";
 import "./IPositionsManager.sol";
 import "./IIncentivesVault.sol";
 
-enum PositionType {
-    SUPPLIERS_IN_P2P,
-    SUPPLIERS_ON_POOL,
-    BORROWERS_IN_P2P,
-    BORROWERS_ON_POOL
-}
-
-struct SupplyBalance {
-    uint256 inP2P;
-    uint256 onPool;
-}
-
-struct BorrowBalance {
-    uint256 inP2P;
-    uint256 onPool;
-}
-
-struct MaxGasForMatching {
-    uint64 supply;
-    uint64 borrow;
-    uint64 withdraw;
-    uint64 repay;
-}
-
-struct AssetLiquidityData {
-    uint256 collateralValue;
-    uint256 maxDebtValue;
-    uint256 debtValue;
-    uint256 underlyingPrice;
-    uint256 collateralFactor;
-}
-
-struct LiquidityData {
-    uint256 collateralValue;
-    uint256 maxDebtValue;
-    uint256 debtValue;
-}
-
-struct LastPoolIndexes {
-    uint32 lastUpdateBlockNumber;
-    uint112 lastSupplyPoolIndex;
-    uint112 lastBorrowPoolIndex;
-}
-
-struct MarketParameters {
-    uint16 reserveFactor;
-    uint16 p2pIndexCursor;
-}
-
-struct MarketStatuses {
-    bool isCreated;
-    bool isPaused;
-    bool isPartiallyPaused;
-}
-
-struct Delta {
-    uint256 supplyP2PDelta;
-    uint256 borrowP2PDelta;
-    uint256 supplyP2PAmount;
-    uint256 borrowP2PAmount;
-}
+import "../libraries/Types.sol";
 
 // prettier-ignore
 interface IMorpho {
     
     /// STORAGE ///
 
-    function maxGasForMatching() external view returns (MaxGasForMatching memory);
+    function maxGasForMatching() external view returns (Types.MaxGasForMatching memory);
     function isCompRewardsActive() external view returns (bool);
     function maxSortedUsers() external view returns (uint256);
     function dustThreshold() external view returns (uint256);
-    function supplyBalanceInOf(address, address) external view returns (SupplyBalance memory);
-    function borrowBalanceInOf(address, address) external view returns (BorrowBalance memory);
+    function supplyBalanceInOf(address, address) external view returns (Types.SupplyBalance memory);
+    function borrowBalanceInOf(address, address) external view returns (Types.BorrowBalance memory);
     function enteredMarkets(address, uint) external view returns (address);
-    function deltas(address) external view returns (Delta memory);
+    function deltas(address) external view returns (Types.Delta memory);
     function marketsCreated() external view returns (address[] memory);
-    function marketParameters(address) external view returns (MarketParameters memory);
+    function marketParameters(address) external view returns (Types.MarketParameters memory);
     function noP2P(address) external view returns (bool);
     function p2pSupplyIndex(address) external view returns (uint256);
     function p2pBorrowIndex(address) external view returns (uint256);
-    function lastPoolIndexes(address) external view returns (LastPoolIndexes memory);
-    function marketStatuses(address) external view returns (MarketStatuses memory);
+    function lastPoolIndexes(address) external view returns (Types.LastPoolIndexes memory);
+    function marketStatuses(address) external view returns (Types.MarketStatuses memory);
     function comptroller() external view returns (IComptroller);
     function interestRates() external view returns (IInterestRates);
     function rewardsManager() external view returns (IRewardsManager);
@@ -103,13 +43,13 @@ interface IMorpho {
     function updateP2PIndexes(address _poolTokenAddress) external;
     function getEnteredMarkets(address _user) external view returns (address[] memory enteredMarkets_);
     function getAllMarkets() external view returns (address[] memory marketsCreated_);
-    function getHead(address _poolTokenAddress, PositionType _positionType) external view returns (address head);
-    function getNext(address _poolTokenAddress, PositionType _positionType, address _user) external view returns (address next);
+    function getHead(address _poolTokenAddress, Types.PositionType _positionType) external view returns (address head);
+    function getNext(address _poolTokenAddress, Types.PositionType _positionType, address _user) external view returns (address next);
 
     /// GOVERNANCE ///
 
     function setMaxSortedUsers(uint256 _newMaxSortedUsers) external;
-    function setMaxGasForMatching(MaxGasForMatching memory _maxGasForMatching) external;
+    function setMaxGasForMatching(Types.MaxGasForMatching memory _maxGasForMatching) external;
     function setTreasuryVault(address _newTreasuryVaultAddress) external;
     function setIncentivesVault(address _newIncentivesVault) external;
     function setRewardsManager(address _rewardsManagerAddress) external;

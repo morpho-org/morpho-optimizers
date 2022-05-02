@@ -38,7 +38,7 @@ abstract contract MorphoGetters is MorphoStorage {
     /// @notice Prevents a user to trigger a function when market is not created or paused.
     /// @param _poolTokenAddress The address of the market to check.
     modifier isMarketCreatedAndNotPaused(address _poolTokenAddress) {
-        MarketStatuses memory marketStatuses_ = marketStatuses[_poolTokenAddress];
+        Types.MarketStatuses memory marketStatuses_ = marketStatuses[_poolTokenAddress];
         if (!marketStatuses_.isCreated) revert MarketNotCreated();
         if (marketStatuses_.isPaused) revert MarketPaused();
         _;
@@ -47,7 +47,7 @@ abstract contract MorphoGetters is MorphoStorage {
     /// @notice Prevents a user to trigger a function when market is not created or paused or partial paused.
     /// @param _poolTokenAddress The address of the market to check.
     modifier isMarketCreatedAndNotPausedOrPartiallyPaused(address _poolTokenAddress) {
-        MarketStatuses memory marketStatuses_ = marketStatuses[_poolTokenAddress];
+        Types.MarketStatuses memory marketStatuses_ = marketStatuses[_poolTokenAddress];
         if (!marketStatuses_.isCreated) revert MarketNotCreated();
         if (marketStatuses_.isPaused || marketStatuses_.isPartiallyPaused) revert MarketPaused();
         _;
@@ -76,18 +76,18 @@ abstract contract MorphoGetters is MorphoStorage {
     /// @param _poolTokenAddress The address of the market from which to get the head.
     /// @param _positionType The type of user from which to get the head.
     /// @return head The head in the data structure.
-    function getHead(address _poolTokenAddress, PositionType _positionType)
+    function getHead(address _poolTokenAddress, Types.PositionType _positionType)
         external
         view
         returns (address head)
     {
-        if (_positionType == PositionType.SUPPLIERS_IN_P2P)
+        if (_positionType == Types.PositionType.SUPPLIERS_IN_P2P)
             head = suppliersInP2P[_poolTokenAddress].getHead();
-        else if (_positionType == PositionType.SUPPLIERS_ON_POOL)
+        else if (_positionType == Types.PositionType.SUPPLIERS_ON_POOL)
             head = suppliersOnPool[_poolTokenAddress].getHead();
-        else if (_positionType == PositionType.BORROWERS_IN_P2P)
+        else if (_positionType == Types.PositionType.BORROWERS_IN_P2P)
             head = borrowersInP2P[_poolTokenAddress].getHead();
-        else if (_positionType == PositionType.BORROWERS_ON_POOL)
+        else if (_positionType == Types.PositionType.BORROWERS_ON_POOL)
             head = borrowersOnPool[_poolTokenAddress].getHead();
     }
 
@@ -98,16 +98,16 @@ abstract contract MorphoGetters is MorphoStorage {
     /// @return next The next user in the data structure.
     function getNext(
         address _poolTokenAddress,
-        PositionType _positionType,
+        Types.PositionType _positionType,
         address _user
     ) external view returns (address next) {
-        if (_positionType == PositionType.SUPPLIERS_IN_P2P)
+        if (_positionType == Types.PositionType.SUPPLIERS_IN_P2P)
             next = suppliersInP2P[_poolTokenAddress].getNext(_user);
-        else if (_positionType == PositionType.SUPPLIERS_ON_POOL)
+        else if (_positionType == Types.PositionType.SUPPLIERS_ON_POOL)
             next = suppliersOnPool[_poolTokenAddress].getNext(_user);
-        else if (_positionType == PositionType.BORROWERS_IN_P2P)
+        else if (_positionType == Types.PositionType.BORROWERS_IN_P2P)
             next = borrowersInP2P[_poolTokenAddress].getNext(_user);
-        else if (_positionType == PositionType.BORROWERS_ON_POOL)
+        else if (_positionType == Types.PositionType.BORROWERS_ON_POOL)
             next = borrowersOnPool[_poolTokenAddress].getNext(_user);
     }
 
@@ -132,7 +132,7 @@ abstract contract MorphoGetters is MorphoStorage {
         address _user,
         address _poolTokenAddress,
         ICompoundOracle _oracle
-    ) internal returns (AssetLiquidityData memory assetData) {
+    ) internal returns (Types.AssetLiquidityData memory assetData) {
         assetData.underlyingPrice = _oracle.getUnderlyingPrice(_poolTokenAddress);
         (, assetData.collateralFactor, ) = comptroller.markets(_poolTokenAddress);
 
@@ -207,7 +207,7 @@ abstract contract MorphoGetters is MorphoStorage {
 
             // Calling accrueInterest so that computation in getUserLiquidityDataForAsset() are the most accurate ones.
             ICToken(poolTokenEntered).accrueInterest();
-            AssetLiquidityData memory assetData = _getUserLiquidityDataForAsset(
+            Types.AssetLiquidityData memory assetData = _getUserLiquidityDataForAsset(
                 _user,
                 poolTokenEntered,
                 oracle
