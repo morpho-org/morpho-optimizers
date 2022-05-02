@@ -470,14 +470,6 @@ contract TestLens is TestSetup {
         assertEq(states.maxDebtValue, expectedStates.maxDebtValue, "Max Debt Value");
     }
 
-    function testGetAllMarkets() public {
-        address[] memory allMarkets = morpho.getAllMarkets();
-
-        for (uint256 i; i < pools.length; i++) {
-            assertEq(allMarkets[i], pools[i]);
-        }
-    }
-
     function testGetMarketData() public {
         (
             uint256 p2pSupplyIndex,

@@ -53,13 +53,31 @@ abstract contract MorphoGetters is MorphoStorage {
         _;
     }
 
+    /// PUBLIC ///
+
+    function updateP2PIndexes(address _poolTokenAddress) public {
+        address(interestRates).functionDelegateCall(
+            abi.encodeWithSelector(interestRates.updateP2PIndexes.selector, _poolTokenAddress)
+        );
+    }
+
     /// EXTERNAL ///
 
-    /// @notice Gets the number of markets entered by a given user.
+    /// @notice Returns all markets entered by a given user.
     /// @param _user The address of the user.
-    /// @return The number of markets entered by this user.
-    function enteredMarketsLength(address _user) external view returns (uint256) {
-        return enteredMarkets[_user].length;
+    /// @return enteredMarkets_ The number of markets entered by this user.
+    function getEnteredMarkets(address _user)
+        external
+        view
+        returns (address[] memory enteredMarkets_)
+    {
+        return enteredMarkets[_user];
+    }
+
+    /// @notice Returns all created markets.
+    /// @return marketsCreated_ The list of market adresses.
+    function getAllMarkets() external view returns (address[] memory marketsCreated_) {
+        return marketsCreated;
     }
 
     /// @notice Gets the head of the data structure on a specific market (for UI).
@@ -101,6 +119,8 @@ abstract contract MorphoGetters is MorphoStorage {
             next = borrowersOnPool[_poolTokenAddress].getNext(_user);
     }
 
+    /// INTERNAL ///
+
     /// @notice Returns the data related to `_poolTokenAddress` for the `_user`.
     /// @dev Note: must be called after calling `accrueInterest()` on the cToken to have the most up to date values.
     /// @param _user The user to determine data for.
@@ -108,11 +128,11 @@ abstract contract MorphoGetters is MorphoStorage {
     /// @param _poolTokenAddress The address of the market.
     /// @param _oracle The oracle used.
     /// @return assetData The data related to this asset.
-    function getUserLiquidityDataForAsset(
+    function _getUserLiquidityDataForAsset(
         address _user,
         address _poolTokenAddress,
         ICompoundOracle _oracle
-    ) public returns (AssetLiquidityData memory assetData) {
+    ) internal returns (AssetLiquidityData memory assetData) {
         assetData.underlyingPrice = _oracle.getUnderlyingPrice(_poolTokenAddress);
         (, assetData.collateralFactor, ) = comptroller.markets(_poolTokenAddress);
 
@@ -125,7 +145,14 @@ abstract contract MorphoGetters is MorphoStorage {
         assetData.maxDebtValue = assetData.collateralValue.mul(assetData.collateralFactor);
     }
 
-    function getUpdatedP2PSupplyIndex(address _poolTokenAddress) public returns (uint256) {
+    /// @notice Returns the updated peer-to-peer supply index.
+    /// @dev Note: must be called after calling `accrueInterest()` on the cToken to have the correct values.
+    /// @param _poolTokenAddress The address of the market.
+    /// @return updatedP2PSupplyIndex_ The updated peer-to-peer supply index.
+    function _getUpdatedP2PSupplyIndex(address _poolTokenAddress)
+        internal
+        returns (uint256 updatedP2PSupplyIndex_)
+    {
         return
             abi.decode(
                 address(interestRates).functionDelegateCall(
@@ -138,7 +165,14 @@ abstract contract MorphoGetters is MorphoStorage {
             );
     }
 
-    function getUpdatedP2PBorrowIndex(address _poolTokenAddress) public returns (uint256) {
+    /// @notice Returns the updated peer-to-peer borrow index.
+    /// @dev Note: must be called after calling `accrueInterest()` on the cToken to have the correct values.
+    /// @param _poolTokenAddress The address of the market.
+    /// @return updatedP2PBorrowIndex_ The updated peer-to-peer borrow index.
+    function _getUpdatedP2PBorrowIndex(address _poolTokenAddress)
+        internal
+        returns (uint256 updatedP2PBorrowIndex_)
+    {
         return
             abi.decode(
                 address(interestRates).functionDelegateCall(
@@ -150,14 +184,6 @@ abstract contract MorphoGetters is MorphoStorage {
                 (uint256)
             );
     }
-
-    function updateP2PIndexes(address _poolTokenAddress) public {
-        address(interestRates).functionDelegateCall(
-            abi.encodeWithSelector(interestRates.updateP2PIndexes.selector, _poolTokenAddress)
-        );
-    }
-
-    /// INTERNAL ///
 
     /// @dev Returns the debt value, max debt value of a given user.
     /// @param _user The user to determine liquidity for.
@@ -181,7 +207,7 @@ abstract contract MorphoGetters is MorphoStorage {
 
             // Calling accrueInterest so that computation in getUserLiquidityDataForAsset() are the most accurate ones.
             ICToken(poolTokenEntered).accrueInterest();
-            AssetLiquidityData memory assetData = getUserLiquidityDataForAsset(
+            AssetLiquidityData memory assetData = _getUserLiquidityDataForAsset(
                 _user,
                 poolTokenEntered,
                 oracle
@@ -217,7 +243,7 @@ abstract contract MorphoGetters is MorphoStorage {
     {
         return
             supplyBalanceInOf[_poolTokenAddress][_user].inP2P.mul(
-                getUpdatedP2PSupplyIndex(_poolTokenAddress)
+                _getUpdatedP2PSupplyIndex(_poolTokenAddress)
             ) +
             supplyBalanceInOf[_poolTokenAddress][_user].onPool.mul(
                 ICToken(_poolTokenAddress).exchangeRateStored()
@@ -234,7 +260,7 @@ abstract contract MorphoGetters is MorphoStorage {
     {
         return
             borrowBalanceInOf[_poolTokenAddress][_user].inP2P.mul(
-                getUpdatedP2PBorrowIndex(_poolTokenAddress)
+                _getUpdatedP2PBorrowIndex(_poolTokenAddress)
             ) +
             borrowBalanceInOf[_poolTokenAddress][_user].onPool.mul(
                 ICToken(_poolTokenAddress).borrowIndex()
@@ -269,11 +295,5 @@ abstract contract MorphoGetters is MorphoStorage {
             // cETH has no underlying() function.
             return ERC20(wEth);
         else return ERC20(ICToken(_poolTokenAddress).underlying());
-    }
-
-    /// @notice Returns all created markets.
-    /// @return marketsCreated_ The list of market adresses.
-    function getAllMarkets() external view returns (address[] memory marketsCreated_) {
-        marketsCreated_ = marketsCreated;
     }
 }
