@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
+import "../interfaces/IIncentivesVault.sol";
 import "../interfaces/IOracle.sol";
 
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract IncentivesVault is Ownable {
+contract IncentivesVault is IIncentivesVault, Ownable {
     using SafeTransferLib for ERC20;
 
     /// STORAGE ///
