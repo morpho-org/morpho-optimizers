@@ -75,36 +75,91 @@ contract TestBorrow is TestSetupFuzzing {
 
     function testBorrow3(
         uint128 _amountSupplied,
-        uint8 _suppliedAsset,
-        uint8 _borrowedAsset,
+        uint128 _amountCollateral,
+        uint8 _matchedAsset,
+        uint8 _collateralAsset,
         uint8 _randomModulo
     ) public {
-        (address suppliedAsset, address suppliedUnderlying) = getAsset(_suppliedAsset);
-        (address borrowedAsset, ) = getAsset(_borrowedAsset);
+        (address matchedAsset, address matchedUnderlying) = getAsset(_matchedAsset);
+        (address collateralAsset, address collateralUnderlying) = getAsset(_collateralAsset);
 
         uint256 amountSupplied = _amountSupplied;
+        uint256 amountCollateral = _amountCollateral;
 
         hevm.assume(
             amountSupplied != 0 &&
                 amountSupplied <
-                ERC20(suppliedUnderlying).balanceOf(address(borrower1)) /
-                    10**(ERC20(suppliedUnderlying).decimals()) &&
-                _randomModulo != 0
+                ERC20(matchedUnderlying).balanceOf(address(borrower1)) /
+                    10**(ERC20(matchedUnderlying).decimals()) &&
+                _randomModulo != 0 &&
+                amountCollateral != 0 &&
+                amountCollateral <
+                ERC20(collateralUnderlying).balanceOf(address(borrower1)) /
+                    10**(ERC20(collateralUnderlying).decimals())
         );
 
-        supplier1.approve(suppliedUnderlying, amountSupplied);
-        supplier1.supply(suppliedAsset, amountSupplied);
+        supplier1.approve(matchedUnderlying, amountSupplied);
+        supplier1.supply(matchedAsset, amountSupplied);
 
-        borrower1.approve(suppliedUnderlying, amountSupplied);
-        borrower1.supply(suppliedAsset, amountSupplied);
+        borrower1.approve(collateralUnderlying, amountCollateral);
+        borrower1.supply(collateralAsset, amountCollateral);
 
         (, uint256 borrowable) = morpho.getUserMaxCapacitiesForAsset(
             address(borrower1),
-            borrowedAsset
+            matchedAsset
         );
 
         uint256 borrowedAmount = (borrowable * _randomModulo) / 255;
         hevm.assume(borrowedAmount != 0);
-        borrower1.borrow(borrowedAsset, borrowedAmount);
+        borrower1.borrow(matchedAsset, borrowedAmount);
+    }
+
+    // There is no difference between Borrow3 & 4 because amount proportion aren't pre-determined.
+
+    function testBorrow5(
+        uint128 _amountSupplied,
+        uint128 _amountCollateral,
+        uint8 _matchedAsset,
+        uint8 _collateralAsset,
+        uint8 _randomModulo
+    ) public {
+        (address matchedAsset, address matchedUnderlying) = getAsset(_matchedAsset);
+        (address collateralAsset, address collateralUnderlying) = getAsset(_collateralAsset);
+
+        uint256 amountSupplied = _amountSupplied;
+        uint256 amountCollateral = _amountCollateral;
+
+        hevm.assume(
+            amountSupplied != 0 &&
+                amountSupplied <
+                ERC20(matchedUnderlying).balanceOf(address(borrower1)) /
+                    10**(ERC20(matchedUnderlying).decimals()) &&
+                amountCollateral != 0 &&
+                amountCollateral <
+                ERC20(collateralUnderlying).balanceOf(address(borrower1)) /
+                    10**(ERC20(collateralUnderlying).decimals())
+        );
+
+        borrower1.approve(collateralUnderlying, amountCollateral);
+        borrower1.supply(collateralAsset, amountCollateral);
+
+        (, uint256 borrowable) = morpho.getUserMaxCapacitiesForAsset(
+            address(borrower1),
+            matchedAsset
+        );
+        uint256 borrowedAmount = (borrowable * _randomModulo) / 255;
+        hevm.assume(borrowedAmount != 0);
+
+        uint256 NMAX = ((20 * uint256(_randomModulo)) / 255) + 1;
+        createSigners(NMAX);
+
+        uint256 amountPerSupplier = (amountSupplied / NMAX) + 1;
+
+        for (uint256 i = 0; i < NMAX; i++) {
+            suppliers[i].approve(matchedUnderlying, amountPerSupplier);
+            suppliers[i].supply(matchedAsset, amountPerSupplier);
+        }
+
+        borrower1.borrow(matchedAsset, borrowedAmount);
     }
 }
