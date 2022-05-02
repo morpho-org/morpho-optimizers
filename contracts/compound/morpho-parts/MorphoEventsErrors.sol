@@ -98,9 +98,17 @@ abstract contract MorphoEventsErrors is MorphoGetters {
     /// @param _newIncentivesVaultAddress The new address of the `incentivesVault`.
     event IncentivesVaultSet(address indexed _newIncentivesVaultAddress);
 
+    /// @notice Emitted when the `positionsManager` is set.
+    /// @param _positionsManager The address of the `positionsManager`.
+    event PositionsManagerSet(address indexed _positionsManager);
+
     /// @notice Emitted the address of the `rewardsManager` is set.
     /// @param _newRewardsManagerAddress The new address of the `rewardsManager`.
     event RewardsManagerSet(address indexed _newRewardsManagerAddress);
+
+    /// @notice Emitted when the `interestRates` is set.
+    /// @param _interestRates The address of the `interestRates`.
+    event InterestRatesSet(address indexed _interestRates);
 
     /// @dev Emitted when a new `dustThreshold` is set.
     /// @param _dustThreshold The new `dustThreshold`.
