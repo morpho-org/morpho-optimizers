@@ -27,6 +27,27 @@ abstract contract MorphoGovernance is MorphoEventsErrors {
         emit MaxGasForMatchingSet(_maxGasForMatching);
     }
 
+    /// @notice Sets the `positionsManager`.
+    /// @param _positionsManager The address of the `positionsManager`.
+    function setPositionsManager(IPositionsManager _positionsManager) external onlyOwner {
+        positionsManager = _positionsManager;
+        emit PositionsManagerSet(address(_positionsManager));
+    }
+
+    /// @notice Sets the `rewardsManager`.
+    /// @param _rewardsManagerAddress The address of the `rewardsManager`.
+    function setRewardsManager(address _rewardsManagerAddress) external onlyOwner {
+        rewardsManager = IRewardsManager(_rewardsManagerAddress);
+        emit RewardsManagerSet(_rewardsManagerAddress);
+    }
+
+    /// @notice Sets the `intersRates`.
+    /// @param _interestRates The new `interestRates` contract.
+    function setInterestRates(IInterestRates _interestRates) external onlyOwner {
+        interestRates = _interestRates;
+        emit InterestRatesSet(address(_interestRates));
+    }
+
     /// @notice Sets the `treasuryVault`.
     /// @param _newTreasuryVaultAddress The address of the new `treasuryVault`.
     function setTreasuryVault(address _newTreasuryVaultAddress) external onlyOwner {
@@ -39,13 +60,6 @@ abstract contract MorphoGovernance is MorphoEventsErrors {
     function setIncentivesVault(address _newIncentivesVault) external onlyOwner {
         incentivesVault = IIncentivesVault(_newIncentivesVault);
         emit IncentivesVaultSet(_newIncentivesVault);
-    }
-
-    /// @notice Sets the `rewardsManager`.
-    /// @param _rewardsManagerAddress The address of the `rewardsManager`.
-    function setRewardsManager(address _rewardsManagerAddress) external onlyOwner {
-        rewardsManager = IRewardsManager(_rewardsManagerAddress);
-        emit RewardsManagerSet(_rewardsManagerAddress);
     }
 
     /// @dev Sets `dustThreshold`.
