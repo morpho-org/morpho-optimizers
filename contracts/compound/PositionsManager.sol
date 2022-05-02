@@ -105,7 +105,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         ERC20 underlyingToken = _getUnderlying(_poolTokenAddress);
         underlyingToken.safeTransferFrom(msg.sender, address(this), _amount);
 
-        Delta storage delta = deltas[_poolTokenAddress];
+        Types.Delta storage delta = deltas[_poolTokenAddress];
         uint256 borrowPoolIndex = ICToken(_poolTokenAddress).borrowIndex();
         uint256 remainingToSupply = _amount;
         uint256 toRepay;
@@ -188,7 +188,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         ERC20 underlyingToken = _getUnderlying(_poolTokenAddress);
         uint256 remainingToBorrow = _amount;
         uint256 toWithdraw;
-        Delta storage delta = deltas[_poolTokenAddress];
+        Types.Delta storage delta = deltas[_poolTokenAddress];
         uint256 poolSupplyIndex = ICToken(_poolTokenAddress).exchangeRateCurrent();
         uint256 withdrawable = ICToken(_poolTokenAddress).balanceOfUnderlying(address(this)); // The balance on pool.
 
@@ -305,7 +305,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             }
         }
 
-        Delta storage delta = deltas[_poolTokenAddress];
+        Types.Delta storage delta = deltas[_poolTokenAddress];
         uint256 p2pSupplyIndex = p2pSupplyIndex[_poolTokenAddress];
 
         /// Transfer withdraw ///
@@ -436,7 +436,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             }
         }
 
-        Delta storage delta = deltas[_poolTokenAddress];
+        Types.Delta storage delta = deltas[_poolTokenAddress];
         vars.p2pSupplyIndex = p2pSupplyIndex[_poolTokenAddress];
         vars.p2pBorrowIndex = p2pBorrowIndex[_poolTokenAddress];
         borrowBalanceInOf[_poolTokenAddress][_user].inP2P -= CompoundMath.min(
@@ -539,7 +539,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         address _borrower,
         uint256 _amount
     ) external returns (uint256) {
-        LiquidateVars memory vars;
+        Types.LiquidateVars memory vars;
 
         (vars.debtValue, vars.maxDebtValue) = _getUserHypotheticalBalanceStates(
             _borrower,

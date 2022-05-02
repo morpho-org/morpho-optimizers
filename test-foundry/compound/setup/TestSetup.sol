@@ -74,7 +74,7 @@ contract TestSetup is Config, Utils, stdCheats {
     }
 
     function initContracts() internal {
-        MorphoStorage.MaxGasForMatching memory maxGasForMatching = MorphoStorage.MaxGasForMatching({
+        Types.MaxGasForMatching memory maxGasForMatching = Types.MaxGasForMatching({
             supply: 3e6,
             borrow: 3e6,
             withdraw: 3e6,
@@ -236,7 +236,7 @@ contract TestSetup is Config, Utils, stdCheats {
         uint64 _withdraw,
         uint64 _repay
     ) public {
-        MorphoStorage.MaxGasForMatching memory newMaxGas = MorphoStorage.MaxGasForMatching({
+        Types.MaxGasForMatching memory newMaxGas = Types.MaxGasForMatching({
             supply: _supply,
             borrow: _borrow,
             withdraw: _withdraw,

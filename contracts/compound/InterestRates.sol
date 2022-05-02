@@ -25,7 +25,7 @@ contract InterestRates is IInterestRates, MorphoStorage {
         uint256 lastPoolBorrowIndex; // The pool borrow index at last update.
         uint256 reserveFactor; // The reserve factor percentage (10 000 = 100%).
         uint256 p2pIndexCursor; // The reserve factor percentage (10 000 = 100%).
-        Delta delta; // The deltas and P2P amounts.
+        Types.Delta delta; // The deltas and P2P amounts.
     }
 
     struct RateParams {
@@ -66,8 +66,8 @@ contract InterestRates is IInterestRates, MorphoStorage {
             newP2PBorrowIndex = p2pBorrowIndex[_poolTokenAddress];
         } else {
             ICToken poolToken = ICToken(_poolTokenAddress);
-            LastPoolIndexes storage poolIndexes = lastPoolIndexes[_poolTokenAddress];
-            MarketParameters storage marketParams = marketParameters[_poolTokenAddress];
+            Types.LastPoolIndexes storage poolIndexes = lastPoolIndexes[_poolTokenAddress];
+            Types.MarketParameters storage marketParams = marketParameters[_poolTokenAddress];
 
             Params memory params = Params(
                 p2pSupplyIndex[_poolTokenAddress],
@@ -93,8 +93,8 @@ contract InterestRates is IInterestRates, MorphoStorage {
             return p2pSupplyIndex[_poolTokenAddress];
         else {
             ICToken poolToken = ICToken(_poolTokenAddress);
-            LastPoolIndexes storage poolIndexes = lastPoolIndexes[_poolTokenAddress];
-            MarketParameters storage marketParams = marketParameters[_poolTokenAddress];
+            Types.LastPoolIndexes storage poolIndexes = lastPoolIndexes[_poolTokenAddress];
+            Types.MarketParameters storage marketParams = marketParameters[_poolTokenAddress];
 
             Params memory params = Params(
                 p2pSupplyIndex[_poolTokenAddress],
@@ -120,8 +120,8 @@ contract InterestRates is IInterestRates, MorphoStorage {
             return p2pBorrowIndex[_poolTokenAddress];
         else {
             ICToken poolToken = ICToken(_poolTokenAddress);
-            LastPoolIndexes storage poolIndexes = lastPoolIndexes[_poolTokenAddress];
-            MarketParameters storage marketParams = marketParameters[_poolTokenAddress];
+            Types.LastPoolIndexes storage poolIndexes = lastPoolIndexes[_poolTokenAddress];
+            Types.MarketParameters storage marketParams = marketParameters[_poolTokenAddress];
 
             Params memory params = Params(
                 p2pSupplyIndex[_poolTokenAddress],
@@ -144,8 +144,8 @@ contract InterestRates is IInterestRates, MorphoStorage {
     function updateP2PIndexes(address _poolTokenAddress) external {
         if (block.timestamp > lastPoolIndexes[_poolTokenAddress].lastUpdateBlockNumber) {
             ICToken poolToken = ICToken(_poolTokenAddress);
-            LastPoolIndexes storage poolIndexes = lastPoolIndexes[_poolTokenAddress];
-            MarketParameters storage marketParams = marketParameters[_poolTokenAddress];
+            Types.LastPoolIndexes storage poolIndexes = lastPoolIndexes[_poolTokenAddress];
+            Types.MarketParameters storage marketParams = marketParameters[_poolTokenAddress];
 
             uint256 poolSupplyIndex = poolToken.exchangeRateCurrent();
             uint256 poolBorrowIndex = poolToken.borrowIndex();

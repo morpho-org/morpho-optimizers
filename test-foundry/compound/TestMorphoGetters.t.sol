@@ -27,36 +27,21 @@ contract TestMorphoGetters is TestSetup {
         borrower1.approve(dai, amount);
         borrower1.supply(cDai, amount);
 
-        assertEq(address(0), morpho.getHead(cDai, MorphoStorage.PositionType.SUPPLIERS_IN_P2P));
-        assertEq(
-            address(borrower1),
-            morpho.getHead(cDai, MorphoStorage.PositionType.SUPPLIERS_ON_POOL)
-        );
-        assertEq(address(0), morpho.getHead(cDai, MorphoStorage.PositionType.BORROWERS_IN_P2P));
-        assertEq(address(0), morpho.getHead(cDai, MorphoStorage.PositionType.BORROWERS_ON_POOL));
+        assertEq(address(0), morpho.getHead(cDai, Types.PositionType.SUPPLIERS_IN_P2P));
+        assertEq(address(borrower1), morpho.getHead(cDai, Types.PositionType.SUPPLIERS_ON_POOL));
+        assertEq(address(0), morpho.getHead(cDai, Types.PositionType.BORROWERS_IN_P2P));
+        assertEq(address(0), morpho.getHead(cDai, Types.PositionType.BORROWERS_ON_POOL));
 
         borrower1.borrow(cDai, toBorrow);
 
-        assertEq(
-            address(borrower1),
-            morpho.getHead(cDai, MorphoStorage.PositionType.SUPPLIERS_IN_P2P)
-        );
-        assertEq(
-            address(borrower1),
-            morpho.getHead(cDai, MorphoStorage.PositionType.SUPPLIERS_ON_POOL)
-        );
-        assertEq(
-            address(borrower1),
-            morpho.getHead(cDai, MorphoStorage.PositionType.BORROWERS_IN_P2P)
-        );
-        assertEq(address(0), morpho.getHead(cDai, MorphoStorage.PositionType.BORROWERS_ON_POOL));
+        assertEq(address(borrower1), morpho.getHead(cDai, Types.PositionType.SUPPLIERS_IN_P2P));
+        assertEq(address(borrower1), morpho.getHead(cDai, Types.PositionType.SUPPLIERS_ON_POOL));
+        assertEq(address(borrower1), morpho.getHead(cDai, Types.PositionType.BORROWERS_IN_P2P));
+        assertEq(address(0), morpho.getHead(cDai, Types.PositionType.BORROWERS_ON_POOL));
 
         borrower1.borrow(cUsdc, to6Decimals(toBorrow));
 
-        assertEq(
-            address(borrower1),
-            morpho.getHead(cUsdc, MorphoStorage.PositionType.BORROWERS_ON_POOL)
-        );
+        assertEq(address(borrower1), morpho.getHead(cUsdc, Types.PositionType.BORROWERS_ON_POOL));
     }
 
     function testGetNext() public {
@@ -78,12 +63,12 @@ contract TestMorphoGetters is TestSetup {
         for (uint256 i; i < borrowers.length - 1; i++) {
             nextSupplyOnPool = morpho.getNext(
                 cDai,
-                MorphoStorage.PositionType.SUPPLIERS_ON_POOL,
+                Types.PositionType.SUPPLIERS_ON_POOL,
                 nextSupplyOnPool
             );
             nextBorrowOnPool = morpho.getNext(
                 cUsdc,
-                MorphoStorage.PositionType.BORROWERS_ON_POOL,
+                Types.PositionType.BORROWERS_ON_POOL,
                 nextBorrowOnPool
             );
 
@@ -106,12 +91,12 @@ contract TestMorphoGetters is TestSetup {
         for (uint256 i; i < borrowers.length - 1; i++) {
             nextSupplyInP2P = morpho.getNext(
                 cUsdc,
-                MorphoStorage.PositionType.SUPPLIERS_IN_P2P,
+                Types.PositionType.SUPPLIERS_IN_P2P,
                 nextSupplyInP2P
             );
             nextBorrowInP2P = morpho.getNext(
                 cDai,
-                MorphoStorage.PositionType.BORROWERS_IN_P2P,
+                Types.PositionType.BORROWERS_IN_P2P,
                 nextBorrowInP2P
             );
 

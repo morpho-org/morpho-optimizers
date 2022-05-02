@@ -84,7 +84,7 @@ abstract contract MorphoEventsErrors is MorphoGetters {
 
     /// @notice Emitted when a new `maxGasForMatching` is set.
     /// @param _maxGasForMatching The new `maxGasForMatching`.
-    event MaxGasForMatchingSet(MaxGasForMatching _maxGasForMatching);
+    event MaxGasForMatchingSet(Types.MaxGasForMatching _maxGasForMatching);
 
     /// @notice Emitted when a new value for `maxSortedUsers` is set.
     /// @param _newValue The new value of `maxSortedUsers`.
