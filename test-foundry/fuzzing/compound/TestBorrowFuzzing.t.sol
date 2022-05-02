@@ -162,4 +162,41 @@ contract TestBorrow is TestSetupFuzzing {
 
         borrower1.borrow(matchedAsset, borrowedAmount);
     }
+
+    function testBorrowMultipleAssets(
+        uint128 _amountCollateral,
+        uint8 _firstAsset,
+        uint8 _secondAsset,
+        uint8 _collateralAsset,
+        uint8 _firstRandom,
+        uint8 _secondRandom
+    ) public {
+        (address collateralAsset, address collateralUnderlying) = getAsset(_collateralAsset);
+        (address firstAsset, ) = getAsset(_firstAsset);
+        (address secondAsset, ) = getAsset(_secondAsset);
+
+        uint256 amountCollateral = _amountCollateral;
+
+        hevm.assume(
+            _amountCollateral != 0 &&
+                _amountCollateral <
+                ERC20(collateralUnderlying).balanceOf(address(borrower1)) /
+                    10**(ERC20(collateralUnderlying).decimals())
+        );
+        borrower1.approve(collateralUnderlying, amountCollateral);
+        borrower1.supply(collateralAsset, amountCollateral);
+
+        (, uint256 borrowable) = morpho.getUserMaxCapacitiesForAsset(
+            address(borrower1),
+            firstAsset
+        );
+        uint256 borrowedAmount = (borrowable * _firstRandom) / 255;
+        hevm.assume(borrowedAmount != 0);
+        borrower1.borrow(firstAsset, borrowedAmount);
+
+        (, borrowable) = morpho.getUserMaxCapacitiesForAsset(address(borrower1), secondAsset);
+        borrowedAmount = (borrowable * _secondRandom) / 255;
+        hevm.assume(borrowedAmount != 0);
+        borrower1.borrow(secondAsset, borrowedAmount);
+    }
 }
