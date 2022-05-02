@@ -53,7 +53,7 @@ contract TestInterestRates is TestSetup {
             lastPoolBorrowIndex,
             reserveFactor0PerCent,
             p2pIndexCursor,
-            MorphoStorage.Delta(0, 0, 0, 0)
+            Types.Delta(0, 0, 0, 0)
         );
 
         (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex) = interestRates.computeP2PIndexes(params); // prettier-ignore
@@ -72,7 +72,7 @@ contract TestInterestRates is TestSetup {
             lastPoolBorrowIndex,
             reserveFactor50PerCent,
             p2pIndexCursor,
-            MorphoStorage.Delta(0, 0, 0, 0)
+            Types.Delta(0, 0, 0, 0)
         );
 
         (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex) = interestRates.computeP2PIndexes(params); // prettier-ignore
@@ -91,7 +91,7 @@ contract TestInterestRates is TestSetup {
             lastPoolBorrowIndex,
             reserveFactor0PerCent,
             p2pIndexCursor,
-            MorphoStorage.Delta(1 * WAD, 1 * WAD, 4 * WAD, 6 * WAD)
+            Types.Delta(1 * WAD, 1 * WAD, 4 * WAD, 6 * WAD)
         );
 
         (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex) = interestRates.computeP2PIndexes(params); // prettier-ignore
@@ -110,7 +110,7 @@ contract TestInterestRates is TestSetup {
             lastPoolBorrowIndex,
             reserveFactor50PerCent,
             p2pIndexCursor,
-            MorphoStorage.Delta(1 * WAD, 1 * WAD, 4 * WAD, 6 * WAD)
+            Types.Delta(1 * WAD, 1 * WAD, 4 * WAD, 6 * WAD)
         );
 
         (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex) = interestRates.computeP2PIndexes(params); // prettier-ignore
@@ -153,7 +153,7 @@ contract TestInterestRates is TestSetup {
         hevm.assume(_supplyP2PAmount * _p2pSupplyIndex / WAD > _supplyP2PDelta * _poolSupplyIndex / WAD);
         hevm.assume(_borrowP2PAmount * _p2pBorrowIndex / WAD > _borrowP2PDelta * _poolBorrowIndex / WAD);
 
-        InterestRates.Params memory params = InterestRates.Params(_p2pSupplyIndex, _p2pBorrowIndex, _poolSupplyIndex, _poolBorrowIndex, _lastPoolSupplyIndex, _lastPoolBorrowIndex, _reserveFactor, _p2pIndexCursor, MorphoStorage.Delta(_supplyP2PDelta, _borrowP2PDelta, _supplyP2PAmount, _borrowP2PAmount));
+        InterestRates.Params memory params = InterestRates.Params(_p2pSupplyIndex, _p2pBorrowIndex, _poolSupplyIndex, _poolBorrowIndex, _lastPoolSupplyIndex, _lastPoolBorrowIndex, _reserveFactor, _p2pIndexCursor, Types.Delta(_supplyP2PDelta, _borrowP2PDelta, _supplyP2PAmount, _borrowP2PAmount));
 
         (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex) = interestRates.computeP2PIndexes(params);
         (uint256 expectednewP2PSupplyIndex, uint256 expectednewP2PBorrowIndex) = computeP2PIndexes(params);

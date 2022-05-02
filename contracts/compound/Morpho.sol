@@ -29,7 +29,7 @@ contract Morpho is MorphoGovernance {
         IInterestRates _interestRates,
         IComptroller _comptroller,
         uint256 _dustThreshold,
-        MaxGasForMatching memory _maxGasForMatching,
+        Types.MaxGasForMatching memory _maxGasForMatching,
         uint256 _maxSortedUsers,
         address _cEth,
         address _weth

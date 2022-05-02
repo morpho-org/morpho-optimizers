@@ -26,7 +26,7 @@ contract Lens {
         uint256 lastPoolBorrowIndex; // The pool borrow index at last update.
         uint256 reserveFactor; // The reserve factor percentage (10 000 = 100%).
         uint256 p2pIndexCursor; // The reserve factor percentage (10 000 = 100%).
-        Delta delta; // The deltas and P2P amounts.
+        Types.Delta delta; // The deltas and P2P amounts.
     }
 
     struct RateParams {
@@ -68,7 +68,7 @@ contract Lens {
     /// @param _poolTokenAddress The address of the market to check.
     /// @return true if the market is created and not paused, otherwise false.
     function isMarketCreatedAndNotPaused(address _poolTokenAddress) external view returns (bool) {
-        MarketStatuses memory marketStatuses = morpho.marketStatuses(_poolTokenAddress);
+        Types.MarketStatuses memory marketStatuses = morpho.marketStatuses(_poolTokenAddress);
         return marketStatuses.isCreated && !marketStatuses.isPaused;
     }
 
@@ -80,7 +80,7 @@ contract Lens {
         view
         returns (bool)
     {
-        MarketStatuses memory marketStatuses = morpho.marketStatuses(_poolTokenAddress);
+        Types.MarketStatuses memory marketStatuses = morpho.marketStatuses(_poolTokenAddress);
         return
             marketStatuses.isCreated &&
             !marketStatuses.isPaused &&
@@ -108,7 +108,7 @@ contract Lens {
 
         while (i < enteredMarkets.length) {
             address poolTokenEntered = enteredMarkets[i];
-            AssetLiquidityData memory assetData = getUserLiquidityDataForAsset(
+            Types.AssetLiquidityData memory assetData = getUserLiquidityDataForAsset(
                 _user,
                 poolTokenEntered,
                 oracle
@@ -134,8 +134,8 @@ contract Lens {
         view
         returns (uint256 withdrawable, uint256 borrowable)
     {
-        LiquidityData memory data;
-        AssetLiquidityData memory assetData;
+        Types.LiquidityData memory data;
+        Types.AssetLiquidityData memory assetData;
         ICompoundOracle oracle = ICompoundOracle(morpho.comptroller().oracle());
         address[] memory enteredMarkets = morpho.getEnteredMarkets(_user);
         uint256 i;
@@ -193,7 +193,7 @@ contract Lens {
         address _user,
         address _poolTokenAddress,
         ICompoundOracle _oracle
-    ) public view returns (AssetLiquidityData memory assetData) {
+    ) public view returns (Types.AssetLiquidityData memory assetData) {
         assetData.underlyingPrice = _oracle.getUnderlyingPrice(_poolTokenAddress);
         (, assetData.collateralFactor, ) = morpho.comptroller().markets(_poolTokenAddress);
 
@@ -228,7 +228,7 @@ contract Lens {
         while (i < enteredMarkets.length) {
             address poolTokenEntered = enteredMarkets[i];
 
-            AssetLiquidityData memory assetData = getUserLiquidityDataForAsset(
+            Types.AssetLiquidityData memory assetData = getUserLiquidityDataForAsset(
                 _user,
                 poolTokenEntered,
                 oracle
@@ -266,8 +266,8 @@ contract Lens {
             newP2PSupplyIndex = morpho.p2pSupplyIndex(_poolTokenAddress);
             newP2PBorrowIndex = morpho.p2pBorrowIndex(_poolTokenAddress);
         } else {
-            LastPoolIndexes memory poolIndexes = morpho.lastPoolIndexes(_poolTokenAddress);
-            MarketParameters memory marketParams = morpho.marketParameters(_poolTokenAddress);
+            Types.LastPoolIndexes memory poolIndexes = morpho.lastPoolIndexes(_poolTokenAddress);
+            Types.MarketParameters memory marketParams = morpho.marketParameters(_poolTokenAddress);
 
             (uint256 poolSupplyIndex, uint256 poolBorrowIndex) = _computeCompoundsIndexes(
                 _poolTokenAddress
@@ -296,8 +296,8 @@ contract Lens {
         if (block.timestamp == morpho.lastPoolIndexes(_poolTokenAddress).lastUpdateBlockNumber)
             return morpho.p2pSupplyIndex(_poolTokenAddress);
         else {
-            LastPoolIndexes memory poolIndexes = morpho.lastPoolIndexes(_poolTokenAddress);
-            MarketParameters memory marketParams = morpho.marketParameters(_poolTokenAddress);
+            Types.LastPoolIndexes memory poolIndexes = morpho.lastPoolIndexes(_poolTokenAddress);
+            Types.MarketParameters memory marketParams = morpho.marketParameters(_poolTokenAddress);
 
             (uint256 poolSupplyIndex, uint256 poolBorrowIndex) = _computeCompoundsIndexes(
                 _poolTokenAddress
@@ -326,8 +326,8 @@ contract Lens {
         if (block.timestamp == morpho.lastPoolIndexes(_poolTokenAddress).lastUpdateBlockNumber)
             return morpho.p2pBorrowIndex(_poolTokenAddress);
         else {
-            LastPoolIndexes memory poolIndexes = morpho.lastPoolIndexes(_poolTokenAddress);
-            MarketParameters memory marketParams = morpho.marketParameters(_poolTokenAddress);
+            Types.LastPoolIndexes memory poolIndexes = morpho.lastPoolIndexes(_poolTokenAddress);
+            Types.MarketParameters memory marketParams = morpho.marketParameters(_poolTokenAddress);
 
             (uint256 poolSupplyIndex, uint256 poolBorrowIndex) = _computeCompoundsIndexes(
                 _poolTokenAddress
@@ -391,7 +391,7 @@ contract Lens {
         )
     {
         {
-            Delta memory delta = morpho.deltas(_poolTokenAddress);
+            Types.Delta memory delta = morpho.deltas(_poolTokenAddress);
             supplyP2PDelta_ = delta.supplyP2PDelta;
             borrowP2PDelta_ = delta.borrowP2PDelta;
             supplyP2PAmount_ = delta.supplyP2PAmount;
@@ -419,7 +419,7 @@ contract Lens {
             uint256 reserveFactor_
         )
     {
-        MarketStatuses memory marketStatuses_ = morpho.marketStatuses(_poolTokenAddress);
+        Types.MarketStatuses memory marketStatuses_ = morpho.marketStatuses(_poolTokenAddress);
         isCreated_ = marketStatuses_.isCreated;
         noP2P_ = morpho.noP2P(_poolTokenAddress);
         isPaused_ = marketStatuses_.isPaused;

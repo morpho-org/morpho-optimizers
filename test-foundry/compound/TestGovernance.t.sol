@@ -70,7 +70,7 @@ contract TestGovernance is TestSetup {
     }
 
     function testShouldSetMaxGasWithRightValues() public {
-        MorphoStorage.MaxGasForMatching memory newMaxGas = MorphoStorage.MaxGasForMatching({
+        Types.MaxGasForMatching memory newMaxGas = Types.MaxGasForMatching({
             supply: 1,
             borrow: 1,
             withdraw: 1,
