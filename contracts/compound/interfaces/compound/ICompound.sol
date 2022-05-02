@@ -309,6 +309,16 @@ interface ICToken {
 
     function totalBorrows() external view returns (uint256);
 
+    function accrualBlockNumber() external view returns (uint256);
+
+    function totalReserves() external view returns (uint256);
+
+    function interestRateModel() external view returns (IInterestRateModel);
+
+    function reserveFactorMantissa() external view returns (uint256);
+
+    function initialExchangeRateMantissa() external view returns (uint256);
+
     /*** Admin Functions ***/
 
     function _setPendingAdmin(address payable newPendingAdmin) external returns (uint256);
