@@ -16,17 +16,17 @@ endif
 export DAPP_REMAPPINGS=@config/=config/$(NETWORK)
 
 .PHONY: test
-test: node_modules
+test-compound: node_modules
 	@echo Run all tests on ${NETWORK}
 	@forge test -vv -c test-foundry/compound --no-match-contract TestGasConsumption --no-match-test testFuzz
 
-fuzz: node_modules
+fuzz-compound: node_modules
 	@echo Run all fuzzing tests on ${NETWORK}
 	@forge test -vv -c test-foundry/compound --match-test testFuzz
 
-gas:
+gas-report-compound:
 	@echo Create report
-	@forge test -vvv -c test-foundry --gas-report --match-test testGasConsumptionOfMatchBorrowers > gas_report.ansi
+	@forge test -vvv -c test-foundry/compound --gas-report --match-contract TestGasConsumption > gas_report.ansi
 
 common:
 	@echo Run all common tests
