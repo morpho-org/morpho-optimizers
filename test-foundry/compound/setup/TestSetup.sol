@@ -94,8 +94,8 @@ contract TestSetup is Config, Utils, stdCheats {
         morphoProxy.changeAdmin(address(proxyAdmin));
         morpho = Morpho(payable(address(morphoProxy)));
         morpho.initialize(
-            interestRates,
             positionsManager,
+            interestRates,
             comptroller,
             1,
             maxGasForMatching,
