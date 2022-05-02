@@ -244,11 +244,9 @@ contract TestSetup is Config, Utils, stdCheats {
     }
 
     function move1000BlocksForward(address _marketAddress) public {
-        for (uint256 k; k < 100; k++) {
-            hevm.roll(block.number + 10);
-            hevm.warp(block.timestamp + 1);
-            morpho.updateP2PIndexes(_marketAddress);
-        }
+        hevm.roll(block.number + 1_000);
+        hevm.warp(block.timestamp + 13 * 1_000); // mainnet block time is around 13 sec
+        morpho.updateP2PIndexes(_marketAddress);
     }
 
     /// @notice Computes and returns peer-to-peer rates for a specific market (without taking into account deltas !).
