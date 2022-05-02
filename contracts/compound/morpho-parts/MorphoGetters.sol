@@ -53,14 +53,6 @@ abstract contract MorphoGetters is MorphoStorage {
         _;
     }
 
-    /// PUBLIC ///
-
-    function updateP2PIndexes(address _poolTokenAddress) public {
-        address(interestRates).functionDelegateCall(
-            abi.encodeWithSelector(interestRates.updateP2PIndexes.selector, _poolTokenAddress)
-        );
-    }
-
     /// EXTERNAL ///
 
     /// @notice Returns all markets entered by a given user.
@@ -117,6 +109,14 @@ abstract contract MorphoGetters is MorphoStorage {
             next = borrowersInP2P[_poolTokenAddress].getNext(_user);
         else if (_positionType == PositionType.BORROWERS_ON_POOL)
             next = borrowersOnPool[_poolTokenAddress].getNext(_user);
+    }
+
+    /// PUBLIC ///
+
+    function updateP2PIndexes(address _poolTokenAddress) public {
+        address(interestRates).functionDelegateCall(
+            abi.encodeWithSelector(interestRates.updateP2PIndexes.selector, _poolTokenAddress)
+        );
     }
 
     /// INTERNAL ///
