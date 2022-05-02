@@ -22,6 +22,7 @@ import "../../compound/helpers/SimplePriceOracle.sol";
 import "../../compound/helpers/DumbOracle.sol";
 import {User} from "../../compound/helpers/User.sol";
 import {Utils} from "../../compound/setup/Utils.sol";
+import "forge-std/console.sol";
 import "forge-std/stdlib.sol";
 import "@config/Config.sol";
 
@@ -93,8 +94,8 @@ contract TestSetupFuzzing is Config, Utils, stdCheats {
         morphoProxy.changeAdmin(address(proxyAdmin));
         morpho = Morpho(payable(address(morphoProxy)));
         morpho.initialize(
-            interestRates,
             positionsManager,
+            interestRates,
             comptroller,
             1,
             maxGasForMatching,
@@ -147,9 +148,28 @@ contract TestSetupFuzzing is Config, Utils, stdCheats {
 
         rewardsManager = new RewardsManager(address(morpho));
 
-        morpho.setRewardsManager(address(rewardsManager));
-        morpho.setIncentivesVault(address(incentivesVault));
+        morpho.setRewardsManager(rewardsManager);
+        morpho.setIncentivesVault(incentivesVault);
         morpho.toggleCompRewardsActivation();
+
+        // Tip the Morpho contract to ensure that there are no dust errors on withdraw
+        tip(aave, address(morpho), 10**ERC20(aave).decimals());
+        tip(dai, address(morpho), 10**ERC20(dai).decimals());
+        tip(usdc, address(morpho), 10**ERC20(usdc).decimals());
+        tip(usdt, address(morpho), 10**ERC20(usdt).decimals());
+        tip(wbtc, address(morpho), 10**ERC20(wbtc).decimals());
+        tip(wEth, address(morpho), 10**ERC20(wEth).decimals());
+        tip(comp, address(morpho), 10**ERC20(comp).decimals());
+        tip(bat, address(morpho), 10**ERC20(bat).decimals());
+        tip(tusd, address(morpho), 10**ERC20(tusd).decimals());
+        tip(uni, address(morpho), 10**ERC20(uni).decimals());
+        tip(zrx, address(morpho), 10**ERC20(zrx).decimals());
+        tip(link, address(morpho), 10**ERC20(link).decimals());
+        tip(mkr, address(morpho), 10**ERC20(mkr).decimals());
+        tip(fei, address(morpho), 10**ERC20(fei).decimals());
+        tip(yfi, address(morpho), 10**ERC20(yfi).decimals());
+        tip(usdp, address(morpho), 10**ERC20(usdp).decimals());
+        tip(sushi, address(morpho), 10**ERC20(sushi).decimals());
     }
 
     function createMarket(address _cToken) internal {
