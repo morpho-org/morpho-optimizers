@@ -28,20 +28,20 @@ abstract contract MorphoGovernance is MorphoEventsErrors {
     }
 
     /// @notice Sets the `positionsManager`.
-    /// @param _positionsManager The address of the `positionsManager`.
+    /// @param _positionsManager The new `positionsManager`.
     function setPositionsManager(IPositionsManager _positionsManager) external onlyOwner {
         positionsManager = _positionsManager;
         emit PositionsManagerSet(address(_positionsManager));
     }
 
     /// @notice Sets the `rewardsManager`.
-    /// @param _rewardsManagerAddress The address of the `rewardsManager`.
-    function setRewardsManager(IRewardsManager _rewardsManagerAddress) external onlyOwner {
-        rewardsManager = _rewardsManagerAddress;
-        emit RewardsManagerSet(address(_rewardsManagerAddress));
+    /// @param _rewardsManager The new `rewardsManager`.
+    function setRewardsManager(IRewardsManager _rewardsManager) external onlyOwner {
+        rewardsManager = _rewardsManager;
+        emit RewardsManagerSet(address(_rewardsManager));
     }
 
-    /// @notice Sets the `intersRates`.
+    /// @notice Sets the `interestRates`.
     /// @param _interestRates The new `interestRates` contract.
     function setInterestRates(IInterestRates _interestRates) external onlyOwner {
         interestRates = _interestRates;
@@ -49,17 +49,17 @@ abstract contract MorphoGovernance is MorphoEventsErrors {
     }
 
     /// @notice Sets the `treasuryVault`.
-    /// @param _newTreasuryVaultAddress The address of the new `treasuryVault`.
-    function setTreasuryVault(address _newTreasuryVaultAddress) external onlyOwner {
-        treasuryVault = _newTreasuryVaultAddress;
-        emit TreasuryVaultSet(_newTreasuryVaultAddress);
+    /// @param _treasuryVault The address of the new `treasuryVault`.
+    function setTreasuryVault(address _treasuryVault) external onlyOwner {
+        treasuryVault = _treasuryVault;
+        emit TreasuryVaultSet(_treasuryVault);
     }
 
     /// @notice Sets the `incentivesVault`.
-    /// @param _newIncentivesVault The address of the new `incentivesVault`.
-    function setIncentivesVault(IIncentivesVault _newIncentivesVault) external onlyOwner {
-        incentivesVault = _newIncentivesVault;
-        emit IncentivesVaultSet(address(_newIncentivesVault));
+    /// @param _incentivesVault The new `incentivesVault`.
+    function setIncentivesVault(IIncentivesVault _incentivesVault) external onlyOwner {
+        incentivesVault = _incentivesVault;
+        emit IncentivesVaultSet(address(_incentivesVault));
     }
 
     /// @dev Sets `dustThreshold`.
