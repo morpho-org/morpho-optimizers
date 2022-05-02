@@ -126,6 +126,17 @@ contract TestGovernance is TestSetup {
         assertEq(address(morpho.positionsManager()), address(positionsManagerV2));
     }
 
+    function testOnlyOwnerShouldSetRewardsManager() public {
+        IRewardsManager rewardsManagerV2 = new RewardsManager(address(morpho));
+
+        hevm.prank(address(0));
+        hevm.expectRevert("Ownable: caller is not the owner");
+        morpho.setRewardsManager(rewardsManagerV2);
+
+        morpho.setRewardsManager(rewardsManagerV2);
+        assertEq(address(morpho.rewardsManager()), address(rewardsManagerV2));
+    }
+
     function testOnlyOwnerShouldSetInterestRates() public {
         IInterestRates interestRatesV2 = new InterestRates();
 
@@ -135,5 +146,32 @@ contract TestGovernance is TestSetup {
 
         morpho.setInterestRates(interestRatesV2);
         assertEq(address(morpho.interestRates()), address(interestRatesV2));
+    }
+
+    function testOnlyOwnerShouldSetIncentivesVault() public {
+        IIncentivesVault incentivesVaultV2 = new IncentivesVault(
+            address(morpho),
+            address(morphoToken),
+            address(1),
+            address(dumbOracle)
+        );
+
+        hevm.prank(address(0));
+        hevm.expectRevert("Ownable: caller is not the owner");
+        morpho.setIncentivesVault(incentivesVaultV2);
+
+        morpho.setIncentivesVault(incentivesVaultV2);
+        assertEq(address(morpho.incentivesVault()), address(incentivesVaultV2));
+    }
+
+    function testOnlyOwnerShouldSetTreasuryvault() public {
+        address treasuryVaultV2 = address(2);
+
+        hevm.prank(address(0));
+        hevm.expectRevert("Ownable: caller is not the owner");
+        morpho.setTreasuryVault(treasuryVaultV2);
+
+        morpho.setTreasuryVault(treasuryVaultV2);
+        assertEq(address(morpho.treasuryVault()), treasuryVaultV2);
     }
 }
