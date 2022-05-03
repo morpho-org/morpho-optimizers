@@ -299,8 +299,8 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
                 // If this value is equal to 0 the withdraw will revert on Compound.
                 if (vars.toWithdraw.div(vars.supplyPoolIndex) > 0)
                     _withdrawFromPool(_poolTokenAddress, vars.toWithdraw); // Reverts on error.
-                underlyingToken.safeTransfer(_receiver, _amount);
                 _leaveMarketIfNeeded(_poolTokenAddress, _supplier);
+                underlyingToken.safeTransfer(_receiver, _amount);
                 return;
             }
         }
@@ -382,8 +382,8 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             _borrowFromPool(_poolTokenAddress, vars.remainingToWithdraw); // Reverts on error.
         }
 
-        underlyingToken.safeTransfer(_receiver, _amount);
         _leaveMarketIfNeeded(_poolTokenAddress, _supplier);
+        underlyingToken.safeTransfer(_receiver, _amount);
     }
 
     /// @dev Implements repay logic.
