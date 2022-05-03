@@ -44,11 +44,7 @@ contract Utils is DSTest {
     ///      When needed, it goes back to underlying by multiplying by the said rate.
     ///      However, for the same rate, the following computation will slighty under estimate the amount
     ///      deposited. This function is usefull to determine compound's users balances.
-    function getBalanceOnCompound(uint256 _amountInUnderlying, uint256 _rate)
-        internal
-        pure
-        returns (uint256)
-    {
+    function getBalanceOnCompound(uint256 _amountInUnderlying, uint256 _rate) internal pure returns (uint256) {
         uint256 cTokenAmount = (_amountInUnderlying * 1e18) / _rate;
         return ((cTokenAmount * _rate) / 1e18);
     }
@@ -59,24 +55,13 @@ contract Utils is DSTest {
     /// @param _rate The BPY to use in the computation.
     /// @param _elapsedBlocks The number of blocks passed since te last computation.
     /// @return The result in wad.
-    function _computeCompoundedInterest(uint256 _rate, uint256 _elapsedBlocks)
-        internal
-        pure
-        returns (uint256)
-    {
+    function _computeCompoundedInterest(uint256 _rate, uint256 _elapsedBlocks) internal pure returns (uint256) {
         if (_elapsedBlocks == 0) return WAD;
         if (_elapsedBlocks == 1) return WAD + _rate;
 
         uint256 ratePowerTwo = _rate.mul(_rate);
         uint256 ratePowerThree = ratePowerTwo.mul(_rate);
 
-        return
-            WAD +
-            _rate *
-            _elapsedBlocks +
-            (_elapsedBlocks * (_elapsedBlocks - 1) * ratePowerTwo) /
-            2 +
-            (_elapsedBlocks * (_elapsedBlocks - 1) * (_elapsedBlocks - 2) * ratePowerThree) /
-            6;
+        return WAD + _rate * _elapsedBlocks + (_elapsedBlocks * (_elapsedBlocks - 1) * ratePowerTwo) / 2 + (_elapsedBlocks * (_elapsedBlocks - 1) * (_elapsedBlocks - 2) * ratePowerThree) / 6;
     }
 }

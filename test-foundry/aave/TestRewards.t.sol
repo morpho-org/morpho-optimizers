@@ -29,14 +29,10 @@ contract TestRewards is TestSetup {
         uint256 index;
 
         if (block.chainid == Chains.AVALANCHE_MAINNET || block.chainid == Chains.ETH_MAINNET) {
-            (index, , ) = IAaveIncentivesController(aaveIncentivesControllerAddress).getAssetData(
-                aDai
-            );
+            (index, , ) = IAaveIncentivesController(aaveIncentivesControllerAddress).getAssetData(aDai);
         } else {
             // Polygon network
-            IAaveIncentivesController.AssetData memory assetData = IAaveIncentivesController(
-                aaveIncentivesControllerAddress
-            ).assets(aDai);
+            IAaveIncentivesController.AssetData memory assetData = IAaveIncentivesController(aaveIncentivesControllerAddress).assets(aDai);
             index = assetData.index;
         }
 
@@ -44,10 +40,7 @@ contract TestRewards is TestSetup {
         uint256 userIndex = rewardsManager.getUserIndex(aDai, address(supplier1));
         address[] memory aDaiInArray = new address[](1);
         aDaiInArray[0] = aDai;
-        uint256 unclaimedRewards = rewardsManager.accrueUserUnclaimedRewards(
-            aDaiInArray,
-            address(supplier1)
-        );
+        uint256 unclaimedRewards = rewardsManager.accrueUserUnclaimedRewards(aDaiInArray, address(supplier1));
 
         assertEq(index, userIndex, "user index wrong");
         assertEq(unclaimedRewards, 0, "unclaimed rewards should be 0");
@@ -59,14 +52,10 @@ contract TestRewards is TestSetup {
         supplier1.claimRewards(aDaiInArray, false);
 
         if (block.chainid == Chains.AVALANCHE_MAINNET || block.chainid == Chains.ETH_MAINNET) {
-            (index, , ) = IAaveIncentivesController(aaveIncentivesControllerAddress).getAssetData(
-                aDai
-            );
+            (index, , ) = IAaveIncentivesController(aaveIncentivesControllerAddress).getAssetData(aDai);
         } else {
             // Polygon network
-            IAaveIncentivesController.AssetData memory assetData = IAaveIncentivesController(
-                aaveIncentivesControllerAddress
-            ).assets(aDai);
+            IAaveIncentivesController.AssetData memory assetData = IAaveIncentivesController(aaveIncentivesControllerAddress).assets(aDai);
             index = assetData.index;
         }
 
@@ -84,14 +73,10 @@ contract TestRewards is TestSetup {
         uint256 index;
 
         if (block.chainid == Chains.AVALANCHE_MAINNET || block.chainid == Chains.ETH_MAINNET) {
-            (index, , ) = IAaveIncentivesController(aaveIncentivesControllerAddress).getAssetData(
-                aDai
-            );
+            (index, , ) = IAaveIncentivesController(aaveIncentivesControllerAddress).getAssetData(aDai);
         } else {
             // Polygon network
-            IAaveIncentivesController.AssetData memory assetData = IAaveIncentivesController(
-                aaveIncentivesControllerAddress
-            ).assets(aDai);
+            IAaveIncentivesController.AssetData memory assetData = IAaveIncentivesController(aaveIncentivesControllerAddress).assets(aDai);
             index = assetData.index;
         }
 
@@ -99,10 +84,7 @@ contract TestRewards is TestSetup {
         uint256 userIndex = rewardsManager.getUserIndex(aDai, address(supplier1));
         address[] memory aDaiInArray = new address[](1);
         aDaiInArray[0] = aDai;
-        uint256 unclaimedRewards = rewardsManager.getUserUnclaimedRewards(
-            aDaiInArray,
-            address(supplier1)
-        );
+        uint256 unclaimedRewards = rewardsManager.getUserUnclaimedRewards(aDaiInArray, address(supplier1));
 
         assertEq(index, userIndex, "user index wrong");
         assertEq(unclaimedRewards, 0, "unclaimed rewards should be 0");
@@ -115,14 +97,10 @@ contract TestRewards is TestSetup {
 
         supplier1.claimRewards(aDaiInArray, false);
         if (block.chainid == Chains.AVALANCHE_MAINNET || block.chainid == Chains.ETH_MAINNET) {
-            (index, , ) = IAaveIncentivesController(aaveIncentivesControllerAddress).getAssetData(
-                aDai
-            );
+            (index, , ) = IAaveIncentivesController(aaveIncentivesControllerAddress).getAssetData(aDai);
         } else {
             // Polygon network
-            IAaveIncentivesController.AssetData memory assetData = IAaveIncentivesController(
-                aaveIncentivesControllerAddress
-            ).assets(aDai);
+            IAaveIncentivesController.AssetData memory assetData = IAaveIncentivesController(aaveIncentivesControllerAddress).assets(aDai);
             index = assetData.index;
         }
 
@@ -139,14 +117,10 @@ contract TestRewards is TestSetup {
         uint256 index;
 
         if (block.chainid == Chains.AVALANCHE_MAINNET || block.chainid == Chains.ETH_MAINNET) {
-            (index, , ) = IAaveIncentivesController(aaveIncentivesControllerAddress).getAssetData(
-                variableDebtUsdc
-            );
+            (index, , ) = IAaveIncentivesController(aaveIncentivesControllerAddress).getAssetData(variableDebtUsdc);
         } else {
             // Polygon network
-            IAaveIncentivesController.AssetData memory assetData = IAaveIncentivesController(
-                aaveIncentivesControllerAddress
-            ).assets(variableDebtUsdc);
+            IAaveIncentivesController.AssetData memory assetData = IAaveIncentivesController(aaveIncentivesControllerAddress).assets(variableDebtUsdc);
             index = assetData.index;
         }
 
@@ -154,10 +128,7 @@ contract TestRewards is TestSetup {
         uint256 userIndex = rewardsManager.getUserIndex(variableDebtUsdc, address(supplier1));
         address[] memory variableDebtUsdcArray = new address[](1);
         variableDebtUsdcArray[0] = variableDebtUsdc;
-        uint256 unclaimedRewards = rewardsManager.accrueUserUnclaimedRewards(
-            variableDebtUsdcArray,
-            address(supplier1)
-        );
+        uint256 unclaimedRewards = rewardsManager.accrueUserUnclaimedRewards(variableDebtUsdcArray, address(supplier1));
 
         assertEq(index, userIndex, "user index wrong");
         assertEq(unclaimedRewards, 0, "unclaimed rewards should be 0");
@@ -166,14 +137,10 @@ contract TestRewards is TestSetup {
         supplier1.claimRewards(variableDebtUsdcArray, false);
 
         if (block.chainid == Chains.AVALANCHE_MAINNET || block.chainid == Chains.ETH_MAINNET) {
-            (index, , ) = IAaveIncentivesController(aaveIncentivesControllerAddress).getAssetData(
-                variableDebtUsdc
-            );
+            (index, , ) = IAaveIncentivesController(aaveIncentivesControllerAddress).getAssetData(variableDebtUsdc);
         } else {
             // Polygon network
-            IAaveIncentivesController.AssetData memory assetData = IAaveIncentivesController(
-                aaveIncentivesControllerAddress
-            ).assets(variableDebtUsdc);
+            IAaveIncentivesController.AssetData memory assetData = IAaveIncentivesController(aaveIncentivesControllerAddress).assets(variableDebtUsdc);
             index = assetData.index;
         }
 
@@ -192,14 +159,10 @@ contract TestRewards is TestSetup {
         uint256 index;
 
         if (block.chainid == Chains.AVALANCHE_MAINNET || block.chainid == Chains.ETH_MAINNET) {
-            (index, , ) = IAaveIncentivesController(aaveIncentivesControllerAddress).getAssetData(
-                variableDebtUsdc
-            );
+            (index, , ) = IAaveIncentivesController(aaveIncentivesControllerAddress).getAssetData(variableDebtUsdc);
         } else {
             // Polygon network
-            IAaveIncentivesController.AssetData memory assetData = IAaveIncentivesController(
-                aaveIncentivesControllerAddress
-            ).assets(variableDebtUsdc);
+            IAaveIncentivesController.AssetData memory assetData = IAaveIncentivesController(aaveIncentivesControllerAddress).assets(variableDebtUsdc);
             index = assetData.index;
         }
 
@@ -207,30 +170,20 @@ contract TestRewards is TestSetup {
         uint256 userIndex = rewardsManager.getUserIndex(variableDebtUsdc, address(supplier1));
         address[] memory variableDebtUsdcArray = new address[](1);
         variableDebtUsdcArray[0] = variableDebtUsdc;
-        uint256 unclaimedRewards = rewardsManager.getUserUnclaimedRewards(
-            variableDebtUsdcArray,
-            address(supplier1)
-        );
+        uint256 unclaimedRewards = rewardsManager.getUserUnclaimedRewards(variableDebtUsdcArray, address(supplier1));
 
         assertEq(index, userIndex, "user index wrong");
         assertEq(unclaimedRewards, 0, "unclaimed rewards should be 0");
 
         hevm.warp(block.timestamp + 365 days);
-        unclaimedRewards = rewardsManager.getUserUnclaimedRewards(
-            variableDebtUsdcArray,
-            address(supplier1)
-        );
+        unclaimedRewards = rewardsManager.getUserUnclaimedRewards(variableDebtUsdcArray, address(supplier1));
 
         supplier1.claimRewards(variableDebtUsdcArray, false);
         if (block.chainid == Chains.AVALANCHE_MAINNET || block.chainid == Chains.ETH_MAINNET) {
-            (index, , ) = IAaveIncentivesController(aaveIncentivesControllerAddress).getAssetData(
-                variableDebtUsdc
-            );
+            (index, , ) = IAaveIncentivesController(aaveIncentivesControllerAddress).getAssetData(variableDebtUsdc);
         } else {
             // Polygon network
-            IAaveIncentivesController.AssetData memory assetData = IAaveIncentivesController(
-                aaveIncentivesControllerAddress
-            ).assets(variableDebtUsdc);
+            IAaveIncentivesController.AssetData memory assetData = IAaveIncentivesController(aaveIncentivesControllerAddress).assets(variableDebtUsdc);
             index = assetData.index;
         }
 
@@ -295,24 +248,12 @@ contract TestRewards is TestSetup {
         tokensInArray[0] = aDai;
         tokensInArray[1] = variableDebtUsdc;
 
-        uint256 unclaimedRewardsForDaiView = rewardsManager.getUserUnclaimedRewards(
-            aDaiInArray,
-            address(supplier1)
-        );
-        uint256 unclaimedRewardsForDai = rewardsManager.accrueUserUnclaimedRewards(
-            aDaiInArray,
-            address(supplier1)
-        );
+        uint256 unclaimedRewardsForDaiView = rewardsManager.getUserUnclaimedRewards(aDaiInArray, address(supplier1));
+        uint256 unclaimedRewardsForDai = rewardsManager.accrueUserUnclaimedRewards(aDaiInArray, address(supplier1));
         assertEq(unclaimedRewardsForDaiView, unclaimedRewardsForDai);
 
-        uint256 allUnclaimedRewardsView = rewardsManager.getUserUnclaimedRewards(
-            tokensInArray,
-            address(supplier1)
-        );
-        uint256 allUnclaimedRewards = rewardsManager.accrueUserUnclaimedRewards(
-            tokensInArray,
-            address(supplier1)
-        );
+        uint256 allUnclaimedRewardsView = rewardsManager.getUserUnclaimedRewards(tokensInArray, address(supplier1));
+        uint256 allUnclaimedRewards = rewardsManager.accrueUserUnclaimedRewards(tokensInArray, address(supplier1));
         assertEq(allUnclaimedRewardsView, allUnclaimedRewards);
         assertGt(allUnclaimedRewards, unclaimedRewardsForDai);
 
@@ -321,20 +262,12 @@ contract TestRewards is TestSetup {
 
         assertGt(rewardBalanceAfter, rewardBalanceBefore);
 
-        allUnclaimedRewardsView = rewardsManager.getUserUnclaimedRewards(
-            tokensInArray,
-            address(supplier1)
-        );
-        allUnclaimedRewards = rewardsManager.accrueUserUnclaimedRewards(
-            tokensInArray,
-            address(supplier1)
-        );
+        allUnclaimedRewardsView = rewardsManager.getUserUnclaimedRewards(tokensInArray, address(supplier1));
+        allUnclaimedRewards = rewardsManager.accrueUserUnclaimedRewards(tokensInArray, address(supplier1));
         assertEq(allUnclaimedRewardsView, allUnclaimedRewards);
         assertEq(allUnclaimedRewards, 0);
 
-        uint256 protocolUnclaimedRewards = IAaveIncentivesController(
-            aaveIncentivesControllerAddress
-        ).getRewardsBalance(tokensInArray, address(positionsManager));
+        uint256 protocolUnclaimedRewards = IAaveIncentivesController(aaveIncentivesControllerAddress).getRewardsBalance(tokensInArray, address(positionsManager));
 
         assertEq(protocolUnclaimedRewards, 0);
     }
@@ -388,26 +321,15 @@ contract TestRewards is TestSetup {
         assertGt(balanceAfter[2], balanceBefore[2]);
         assertGt(balanceAfter[3], balanceBefore[3]);
 
-        uint256 unclaimedRewards1 = rewardsManager.accrueUserUnclaimedRewards(
-            tokensInArray,
-            address(supplier1)
-        );
-        uint256 unclaimedRewards2 = rewardsManager.accrueUserUnclaimedRewards(
-            tokensInArray,
-            address(supplier2)
-        );
-        uint256 unclaimedRewards3 = rewardsManager.accrueUserUnclaimedRewards(
-            tokensInArray,
-            address(supplier3)
-        );
+        uint256 unclaimedRewards1 = rewardsManager.accrueUserUnclaimedRewards(tokensInArray, address(supplier1));
+        uint256 unclaimedRewards2 = rewardsManager.accrueUserUnclaimedRewards(tokensInArray, address(supplier2));
+        uint256 unclaimedRewards3 = rewardsManager.accrueUserUnclaimedRewards(tokensInArray, address(supplier3));
 
         assertEq(unclaimedRewards1, 0);
         assertEq(unclaimedRewards2, 0);
         assertEq(unclaimedRewards3, 0);
 
-        uint256 protocolUnclaimedRewards = IAaveIncentivesController(
-            aaveIncentivesControllerAddress
-        ).getRewardsBalance(tokensInArray, address(positionsManager));
+        uint256 protocolUnclaimedRewards = IAaveIncentivesController(aaveIncentivesControllerAddress).getRewardsBalance(tokensInArray, address(positionsManager));
 
         assertApproxEq(protocolUnclaimedRewards, 0, 2);
     }
@@ -469,8 +391,7 @@ contract TestRewards is TestSetup {
         aDaiInArray[0] = aDai;
 
         hevm.warp(block.timestamp + 365 days);
-        if (block.chainid == Chains.AVALANCHE_MAINNET)
-            hevm.expectRevert("JoeRouter: INSUFFICIENT_OUTPUT_AMOUNT");
+        if (block.chainid == Chains.AVALANCHE_MAINNET) hevm.expectRevert("JoeRouter: INSUFFICIENT_OUTPUT_AMOUNT");
         else hevm.expectRevert("Too little received");
 
         supplier1.claimRewards(aDaiInArray, true);

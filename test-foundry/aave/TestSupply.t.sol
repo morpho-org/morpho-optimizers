@@ -16,10 +16,7 @@ contract TestSupply is TestSetup {
 
         testEquality(IERC20(aDai).balanceOf(address(positionsManager)), amount);
 
-        (uint256 inP2P, uint256 onPool) = positionsManager.supplyBalanceInOf(
-            aDai,
-            address(supplier1)
-        );
+        (uint256 inP2P, uint256 onPool) = positionsManager.supplyBalanceInOf(aDai, address(supplier1));
 
         testEquality(onPool, expectedOnPool);
         testEquality(inP2P, 0);
@@ -44,15 +41,9 @@ contract TestSupply is TestSetup {
         (uint256 supplyP2PExchangeRate, ) = marketsManager.getUpdatedP2PExchangeRates(aDai);
         uint256 expectedSupplyBalanceInP2P = underlyingToP2PUnit(amount, supplyP2PExchangeRate);
 
-        (uint256 inP2PSupplier, uint256 onPoolSupplier) = positionsManager.supplyBalanceInOf(
-            aDai,
-            address(supplier1)
-        );
+        (uint256 inP2PSupplier, uint256 onPoolSupplier) = positionsManager.supplyBalanceInOf(aDai, address(supplier1));
 
-        (uint256 inP2PBorrower, uint256 onPoolBorrower) = positionsManager.borrowBalanceInOf(
-            aDai,
-            address(borrower1)
-        );
+        (uint256 inP2PBorrower, uint256 onPoolBorrower) = positionsManager.borrowBalanceInOf(aDai, address(borrower1));
 
         testEquality(onPoolSupplier, 0);
         testEquality(inP2PSupplier, expectedSupplyBalanceInP2P);
@@ -77,17 +68,11 @@ contract TestSupply is TestSetup {
         uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(dai);
         uint256 expectedSupplyBalanceOnPool = underlyingToScaledBalance(amount, normalizedIncome);
 
-        (uint256 inP2PSupplier, uint256 onPoolSupplier) = positionsManager.supplyBalanceInOf(
-            aDai,
-            address(supplier1)
-        );
+        (uint256 inP2PSupplier, uint256 onPoolSupplier) = positionsManager.supplyBalanceInOf(aDai, address(supplier1));
         testEquality(onPoolSupplier, expectedSupplyBalanceOnPool);
         testEquality(inP2PSupplier, expectedSupplyBalanceInP2P);
 
-        (uint256 inP2PBorrower, uint256 onPoolBorrower) = positionsManager.borrowBalanceInOf(
-            aDai,
-            address(borrower1)
-        );
+        (uint256 inP2PBorrower, uint256 onPoolBorrower) = positionsManager.borrowBalanceInOf(aDai, address(borrower1));
         testEquality(onPoolBorrower, 0);
         testEquality(inP2PBorrower, inP2PSupplier);
     }

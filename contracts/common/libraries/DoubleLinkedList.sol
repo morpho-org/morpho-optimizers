@@ -103,11 +103,7 @@ library DoubleLinkedList {
         uint256 numberOfIterations;
         address next = _list.head; // If not added at the end of the list `_id` will be inserted before `next`.
 
-        while (
-            numberOfIterations < _maxIterations &&
-            next != _list.tail &&
-            _list.accounts[next].value >= _value
-        ) {
+        while (numberOfIterations < _maxIterations && next != _list.tail && _list.accounts[next].value >= _value) {
             next = _list.accounts[next].next;
             unchecked {
                 ++numberOfIterations;

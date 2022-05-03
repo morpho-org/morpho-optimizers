@@ -2,7 +2,5 @@
 pragma solidity 0.8.13;
 
 interface ISwapManager {
-    function swapToMorphoToken(uint256 _amountIn, address _receiver)
-        external
-        returns (uint256 amountOut);
+    function swapToMorphoToken(uint256 _amountIn, address _receiver) external returns (uint256 amountOut);
 }

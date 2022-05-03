@@ -31,10 +31,7 @@ contract TestRewards is TestSetup {
         uint256 userIndex = rewardsManager.compSupplierIndex(cDai, address(supplier1));
         address[] memory cTokens = new address[](1);
         cTokens[0] = cDai;
-        uint256 unclaimedRewards = rewardsManager.getUserUnclaimedRewards(
-            cTokens,
-            address(supplier1)
-        );
+        uint256 unclaimedRewards = rewardsManager.getUserUnclaimedRewards(cTokens, address(supplier1));
 
         uint256 index = comptroller.compSupplyState(cDai).index;
 
@@ -67,10 +64,7 @@ contract TestRewards is TestSetup {
         uint256 userIndex = rewardsManager.compSupplierIndex(cDai, address(supplier1));
         address[] memory cTokens = new address[](1);
         cTokens[0] = cDai;
-        uint256 unclaimedRewards = rewardsManager.getUserUnclaimedRewards(
-            cTokens,
-            address(supplier1)
-        );
+        uint256 unclaimedRewards = rewardsManager.getUserUnclaimedRewards(cTokens, address(supplier1));
 
         assertEq(index, userIndex, "user index wrong");
         assertEq(unclaimedRewards, 0, "unclaimed rewards should be 0");
@@ -100,10 +94,7 @@ contract TestRewards is TestSetup {
         uint256 userIndex = rewardsManager.compBorrowerIndex(cUsdc, address(supplier1));
         address[] memory cTokens = new address[](1);
         cTokens[0] = cUsdc;
-        uint256 unclaimedRewards = rewardsManager.accrueUserUnclaimedRewards(
-            cTokens,
-            address(supplier1)
-        );
+        uint256 unclaimedRewards = rewardsManager.accrueUserUnclaimedRewards(cTokens, address(supplier1));
 
         assertEq(userIndex, index, "user index wrong");
         assertEq(unclaimedRewards, 0, "unclaimed rewards should be 0");
@@ -131,10 +122,7 @@ contract TestRewards is TestSetup {
         uint256 userIndex = rewardsManager.compBorrowerIndex(cUsdc, address(supplier1));
         address[] memory cTokens = new address[](1);
         cTokens[0] = cUsdc;
-        uint256 unclaimedRewards = rewardsManager.getUserUnclaimedRewards(
-            cTokens,
-            address(supplier1)
-        );
+        uint256 unclaimedRewards = rewardsManager.getUserUnclaimedRewards(cTokens, address(supplier1));
 
         assertEq(index, userIndex, "user index wrong");
         assertEq(unclaimedRewards, 0, "unclaimed rewards should be 0");
@@ -206,24 +194,12 @@ contract TestRewards is TestSetup {
         tokensInArray[0] = cDai;
         tokensInArray[1] = cUsdc;
 
-        uint256 unclaimedRewardsForDaiView = rewardsManager.getUserUnclaimedRewards(
-            cTokens,
-            address(supplier1)
-        );
-        uint256 unclaimedRewardsForDai = rewardsManager.accrueUserUnclaimedRewards(
-            cTokens,
-            address(supplier1)
-        );
+        uint256 unclaimedRewardsForDaiView = rewardsManager.getUserUnclaimedRewards(cTokens, address(supplier1));
+        uint256 unclaimedRewardsForDai = rewardsManager.accrueUserUnclaimedRewards(cTokens, address(supplier1));
         assertEq(unclaimedRewardsForDaiView, unclaimedRewardsForDai);
 
-        uint256 allUnclaimedRewardsView = rewardsManager.getUserUnclaimedRewards(
-            tokensInArray,
-            address(supplier1)
-        );
-        uint256 allUnclaimedRewards = rewardsManager.accrueUserUnclaimedRewards(
-            tokensInArray,
-            address(supplier1)
-        );
+        uint256 allUnclaimedRewardsView = rewardsManager.getUserUnclaimedRewards(tokensInArray, address(supplier1));
+        uint256 allUnclaimedRewards = rewardsManager.accrueUserUnclaimedRewards(tokensInArray, address(supplier1));
         assertEq(allUnclaimedRewards, allUnclaimedRewardsView, "all unclaimed rewards 1");
         assertGt(allUnclaimedRewards, unclaimedRewardsForDai);
 
@@ -232,14 +208,8 @@ contract TestRewards is TestSetup {
 
         assertGt(rewardBalanceAfter, 0);
 
-        allUnclaimedRewardsView = rewardsManager.getUserUnclaimedRewards(
-            tokensInArray,
-            address(supplier1)
-        );
-        allUnclaimedRewards = rewardsManager.accrueUserUnclaimedRewards(
-            tokensInArray,
-            address(supplier1)
-        );
+        allUnclaimedRewardsView = rewardsManager.getUserUnclaimedRewards(tokensInArray, address(supplier1));
+        allUnclaimedRewards = rewardsManager.accrueUserUnclaimedRewards(tokensInArray, address(supplier1));
         assertEq(allUnclaimedRewardsView, allUnclaimedRewards, "all unclaimed rewards 2");
         assertEq(allUnclaimedRewards, 0);
     }
@@ -294,18 +264,9 @@ contract TestRewards is TestSetup {
         assertGt(balanceAfter[2], balanceBefore[2]);
         assertGt(balanceAfter[3], balanceBefore[3]);
 
-        uint256 unclaimedRewards1 = rewardsManager.accrueUserUnclaimedRewards(
-            tokensInArray,
-            address(supplier1)
-        );
-        uint256 unclaimedRewards2 = rewardsManager.accrueUserUnclaimedRewards(
-            tokensInArray,
-            address(supplier2)
-        );
-        uint256 unclaimedRewards3 = rewardsManager.accrueUserUnclaimedRewards(
-            tokensInArray,
-            address(supplier3)
-        );
+        uint256 unclaimedRewards1 = rewardsManager.accrueUserUnclaimedRewards(tokensInArray, address(supplier1));
+        uint256 unclaimedRewards2 = rewardsManager.accrueUserUnclaimedRewards(tokensInArray, address(supplier2));
+        uint256 unclaimedRewards3 = rewardsManager.accrueUserUnclaimedRewards(tokensInArray, address(supplier3));
 
         assertEq(unclaimedRewards1, 0);
         assertEq(unclaimedRewards2, 0);

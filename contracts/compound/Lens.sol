@@ -75,16 +75,9 @@ contract Lens {
     /// @notice Checks if a market is created and not paused or partially paused.
     /// @param _poolTokenAddress The address of the market to check.
     /// @return true if the market is created, not paused and not partially paused, otherwise false.
-    function isMarketCreatedAndNotPausedOrPartiallyPaused(address _poolTokenAddress)
-        external
-        view
-        returns (bool)
-    {
+    function isMarketCreatedAndNotPausedOrPartiallyPaused(address _poolTokenAddress) external view returns (bool) {
         Types.MarketStatuses memory marketStatuses = morpho.marketStatuses(_poolTokenAddress);
-        return
-            marketStatuses.isCreated &&
-            !marketStatuses.isPaused &&
-            !marketStatuses.isPartiallyPaused;
+        return marketStatuses.isCreated && !marketStatuses.isPaused && !marketStatuses.isPartiallyPaused;
     }
 
     /// @notice Returns the collateral value, debt value and max debt value of a given user.
@@ -108,11 +101,7 @@ contract Lens {
 
         while (i < enteredMarkets.length) {
             address poolTokenEntered = enteredMarkets[i];
-            Types.AssetLiquidityData memory assetData = getUserLiquidityDataForAsset(
-                _user,
-                poolTokenEntered,
-                oracle
-            );
+            Types.AssetLiquidityData memory assetData = getUserLiquidityDataForAsset(_user, poolTokenEntered, oracle);
 
             unchecked {
                 collateralValue += assetData.collateralValue;
@@ -129,11 +118,7 @@ contract Lens {
     /// @param _poolTokenAddress The address of the market.
     /// @return withdrawable The maximum withdrawable amount of underlying token allowed (in underlying).
     /// @return borrowable The maximum borrowable amount of underlying token allowed (in underlying).
-    function getUserMaxCapacitiesForAsset(address _user, address _poolTokenAddress)
-        external
-        view
-        returns (uint256 withdrawable, uint256 borrowable)
-    {
+    function getUserMaxCapacitiesForAsset(address _user, address _poolTokenAddress) external view returns (uint256 withdrawable, uint256 borrowable) {
         Types.LiquidityData memory data;
         Types.AssetLiquidityData memory assetData;
         ICompoundOracle oracle = ICompoundOracle(morpho.comptroller().oracle());
@@ -167,16 +152,11 @@ contract Lens {
         // Not possible to withdraw nor borrow.
         if (data.maxDebtValue < data.debtValue) return (0, 0);
 
-        uint256 differenceInUnderlying = (data.maxDebtValue - data.debtValue).div(
-            assetData.underlyingPrice
-        );
+        uint256 differenceInUnderlying = (data.maxDebtValue - data.debtValue).div(assetData.underlyingPrice);
 
         withdrawable = assetData.collateralValue.div(assetData.underlyingPrice);
         if (assetData.collateralFactor != 0) {
-            withdrawable = Math.min(
-                withdrawable,
-                differenceInUnderlying.div(assetData.collateralFactor)
-            );
+            withdrawable = Math.min(withdrawable, differenceInUnderlying.div(assetData.collateralFactor));
         }
 
         borrowable = differenceInUnderlying;
@@ -197,13 +177,9 @@ contract Lens {
         assetData.underlyingPrice = _oracle.getUnderlyingPrice(_poolTokenAddress);
         (, assetData.collateralFactor, ) = morpho.comptroller().markets(_poolTokenAddress);
 
-        assetData.collateralValue = _getUserSupplyBalanceInOf(_poolTokenAddress, _user).mul(
-            assetData.underlyingPrice
-        );
+        assetData.collateralValue = _getUserSupplyBalanceInOf(_poolTokenAddress, _user).mul(assetData.underlyingPrice);
 
-        assetData.debtValue = _getUserBorrowBalanceInOf(_poolTokenAddress, _user).mul(
-            assetData.underlyingPrice
-        );
+        assetData.debtValue = _getUserBorrowBalanceInOf(_poolTokenAddress, _user).mul(assetData.underlyingPrice);
 
         assetData.maxDebtValue = assetData.collateralValue.mul(assetData.collateralFactor);
     }
@@ -228,11 +204,7 @@ contract Lens {
         while (i < enteredMarkets.length) {
             address poolTokenEntered = enteredMarkets[i];
 
-            Types.AssetLiquidityData memory assetData = getUserLiquidityDataForAsset(
-                _user,
-                poolTokenEntered,
-                oracle
-            );
+            Types.AssetLiquidityData memory assetData = getUserLiquidityDataForAsset(_user, poolTokenEntered, oracle);
 
             unchecked {
                 maxDebtValue += assetData.maxDebtValue;
@@ -242,9 +214,7 @@ contract Lens {
 
             if (_poolTokenAddress == poolTokenEntered) {
                 debtValue += _borrowedAmount.mul(assetData.underlyingPrice);
-                uint256 maxDebtValueSub = _withdrawnAmount.mul(assetData.underlyingPrice).mul(
-                    assetData.collateralFactor
-                );
+                uint256 maxDebtValueSub = _withdrawnAmount.mul(assetData.underlyingPrice).mul(assetData.collateralFactor);
 
                 unchecked {
                     maxDebtValue -= maxDebtValue < maxDebtValueSub ? maxDebtValue : maxDebtValueSub;
@@ -257,11 +227,7 @@ contract Lens {
     /// @param _poolTokenAddress The address of the market to update.
     /// @return newP2PSupplyIndex The peer-to-peer supply index after update.
     /// @return newP2PBorrowIndex The peer-to-peer supply index after update.
-    function getUpdatedP2PIndexes(address _poolTokenAddress)
-        external
-        view
-        returns (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex)
-    {
+    function getUpdatedP2PIndexes(address _poolTokenAddress) external view returns (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex) {
         if (block.timestamp == morpho.lastPoolIndexes(_poolTokenAddress).lastUpdateBlockNumber) {
             newP2PSupplyIndex = morpho.p2pSupplyIndex(_poolTokenAddress);
             newP2PBorrowIndex = morpho.p2pBorrowIndex(_poolTokenAddress);
@@ -269,21 +235,9 @@ contract Lens {
             Types.LastPoolIndexes memory poolIndexes = morpho.lastPoolIndexes(_poolTokenAddress);
             Types.MarketParameters memory marketParams = morpho.marketParameters(_poolTokenAddress);
 
-            (uint256 poolSupplyIndex, uint256 poolBorrowIndex) = _computeCompoundsIndexes(
-                _poolTokenAddress
-            );
+            (uint256 poolSupplyIndex, uint256 poolBorrowIndex) = _computeCompoundsIndexes(_poolTokenAddress);
 
-            Params memory params = Params(
-                morpho.p2pSupplyIndex(_poolTokenAddress),
-                morpho.p2pBorrowIndex(_poolTokenAddress),
-                poolSupplyIndex,
-                poolBorrowIndex,
-                poolIndexes.lastSupplyPoolIndex,
-                poolIndexes.lastBorrowPoolIndex,
-                marketParams.reserveFactor,
-                marketParams.p2pIndexCursor,
-                morpho.deltas(_poolTokenAddress)
-            );
+            Params memory params = Params(morpho.p2pSupplyIndex(_poolTokenAddress), morpho.p2pBorrowIndex(_poolTokenAddress), poolSupplyIndex, poolBorrowIndex, poolIndexes.lastSupplyPoolIndex, poolIndexes.lastBorrowPoolIndex, marketParams.reserveFactor, marketParams.p2pIndexCursor, morpho.deltas(_poolTokenAddress));
 
             (newP2PSupplyIndex, newP2PBorrowIndex) = _computeP2PIndexes(params);
         }
@@ -293,27 +247,14 @@ contract Lens {
     /// @param _poolTokenAddress The address of the market to update.
     /// @return newP2PSupplyIndex The peer-to-peer supply index after update.
     function getUpdatedP2PSupplyIndex(address _poolTokenAddress) public view returns (uint256) {
-        if (block.timestamp == morpho.lastPoolIndexes(_poolTokenAddress).lastUpdateBlockNumber)
-            return morpho.p2pSupplyIndex(_poolTokenAddress);
+        if (block.timestamp == morpho.lastPoolIndexes(_poolTokenAddress).lastUpdateBlockNumber) return morpho.p2pSupplyIndex(_poolTokenAddress);
         else {
             Types.LastPoolIndexes memory poolIndexes = morpho.lastPoolIndexes(_poolTokenAddress);
             Types.MarketParameters memory marketParams = morpho.marketParameters(_poolTokenAddress);
 
-            (uint256 poolSupplyIndex, uint256 poolBorrowIndex) = _computeCompoundsIndexes(
-                _poolTokenAddress
-            );
+            (uint256 poolSupplyIndex, uint256 poolBorrowIndex) = _computeCompoundsIndexes(_poolTokenAddress);
 
-            Params memory params = Params(
-                morpho.p2pSupplyIndex(_poolTokenAddress),
-                morpho.p2pBorrowIndex(_poolTokenAddress),
-                poolSupplyIndex,
-                poolBorrowIndex,
-                poolIndexes.lastSupplyPoolIndex,
-                poolIndexes.lastBorrowPoolIndex,
-                marketParams.reserveFactor,
-                marketParams.p2pIndexCursor,
-                morpho.deltas(_poolTokenAddress)
-            );
+            Params memory params = Params(morpho.p2pSupplyIndex(_poolTokenAddress), morpho.p2pBorrowIndex(_poolTokenAddress), poolSupplyIndex, poolBorrowIndex, poolIndexes.lastSupplyPoolIndex, poolIndexes.lastBorrowPoolIndex, marketParams.reserveFactor, marketParams.p2pIndexCursor, morpho.deltas(_poolTokenAddress));
 
             return _computeP2PSupplyIndex(params);
         }
@@ -323,27 +264,14 @@ contract Lens {
     /// @param _poolTokenAddress The address of the market to update.
     /// @return newP2PSupplyIndex The peer-to-peer borrow index after update.
     function getUpdatedP2PBorrowIndex(address _poolTokenAddress) public view returns (uint256) {
-        if (block.timestamp == morpho.lastPoolIndexes(_poolTokenAddress).lastUpdateBlockNumber)
-            return morpho.p2pBorrowIndex(_poolTokenAddress);
+        if (block.timestamp == morpho.lastPoolIndexes(_poolTokenAddress).lastUpdateBlockNumber) return morpho.p2pBorrowIndex(_poolTokenAddress);
         else {
             Types.LastPoolIndexes memory poolIndexes = morpho.lastPoolIndexes(_poolTokenAddress);
             Types.MarketParameters memory marketParams = morpho.marketParameters(_poolTokenAddress);
 
-            (uint256 poolSupplyIndex, uint256 poolBorrowIndex) = _computeCompoundsIndexes(
-                _poolTokenAddress
-            );
+            (uint256 poolSupplyIndex, uint256 poolBorrowIndex) = _computeCompoundsIndexes(_poolTokenAddress);
 
-            Params memory params = Params(
-                morpho.p2pSupplyIndex(_poolTokenAddress),
-                morpho.p2pBorrowIndex(_poolTokenAddress),
-                poolSupplyIndex,
-                poolBorrowIndex,
-                poolIndexes.lastSupplyPoolIndex,
-                poolIndexes.lastBorrowPoolIndex,
-                marketParams.reserveFactor,
-                marketParams.p2pIndexCursor,
-                morpho.deltas(_poolTokenAddress)
-            );
+            Params memory params = Params(morpho.p2pSupplyIndex(_poolTokenAddress), morpho.p2pBorrowIndex(_poolTokenAddress), poolSupplyIndex, poolBorrowIndex, poolIndexes.lastSupplyPoolIndex, poolIndexes.lastBorrowPoolIndex, marketParams.reserveFactor, marketParams.p2pIndexCursor, morpho.deltas(_poolTokenAddress));
 
             return _computeP2PBorrowIndex(params);
         }
@@ -360,12 +288,7 @@ contract Lens {
         uint256 _withdrawnAmount,
         uint256 _borrowedAmount
     ) external view {
-        (uint256 debtValue, uint256 maxDebtValue) = getUserHypotheticalBalanceStates(
-            _user,
-            _poolTokenAddress,
-            _withdrawnAmount,
-            _borrowedAmount
-        );
+        (uint256 debtValue, uint256 maxDebtValue) = getUserHypotheticalBalanceStates(_user, _poolTokenAddress, _withdrawnAmount, _borrowedAmount);
         if (debtValue > maxDebtValue) revert DebtValueAboveMax();
     }
 
@@ -433,80 +356,23 @@ contract Lens {
     /// @param _params Computation parameters.
     /// @return newP2PSupplyIndex The updated p2pSupplyIndex.
     /// @return newP2PBorrowIndex The updated p2pBorrowIndex.
-    function _computeP2PIndexes(Params memory _params)
-        internal
-        pure
-        returns (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex)
-    {
-        (
-            uint256 supplyP2PGrowthFactor,
-            uint256 supplyPoolGrowthaFactor,
-            uint256 borrowP2PGrowthFactor,
-            uint256 poolBorrowGrowthFactor
-        ) = _computeGrowthFactors(
-            _params.poolSupplyIndex,
-            _params.poolBorrowIndex,
-            _params.lastPoolSupplyIndex,
-            _params.lastPoolBorrowIndex,
-            _params.reserveFactor,
-            _params.p2pIndexCursor
-        );
+    function _computeP2PIndexes(Params memory _params) internal pure returns (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex) {
+        (uint256 supplyP2PGrowthFactor, uint256 supplyPoolGrowthaFactor, uint256 borrowP2PGrowthFactor, uint256 poolBorrowGrowthFactor) = _computeGrowthFactors(_params.poolSupplyIndex, _params.poolBorrowIndex, _params.lastPoolSupplyIndex, _params.lastPoolBorrowIndex, _params.reserveFactor, _params.p2pIndexCursor);
 
-        RateParams memory supplyParams = RateParams({
-            p2pIndex: _params.p2pSupplyIndex,
-            poolIndex: _params.poolSupplyIndex,
-            lastPoolIndex: _params.lastPoolSupplyIndex,
-            reserveFactor: _params.reserveFactor,
-            p2pAmount: _params.delta.supplyP2PAmount,
-            p2pDelta: _params.delta.supplyP2PDelta
-        });
-        RateParams memory borrowParams = RateParams({
-            p2pIndex: _params.p2pBorrowIndex,
-            poolIndex: _params.poolBorrowIndex,
-            lastPoolIndex: _params.lastPoolBorrowIndex,
-            reserveFactor: _params.reserveFactor,
-            p2pAmount: _params.delta.borrowP2PAmount,
-            p2pDelta: _params.delta.borrowP2PDelta
-        });
+        RateParams memory supplyParams = RateParams({p2pIndex: _params.p2pSupplyIndex, poolIndex: _params.poolSupplyIndex, lastPoolIndex: _params.lastPoolSupplyIndex, reserveFactor: _params.reserveFactor, p2pAmount: _params.delta.supplyP2PAmount, p2pDelta: _params.delta.supplyP2PDelta});
+        RateParams memory borrowParams = RateParams({p2pIndex: _params.p2pBorrowIndex, poolIndex: _params.poolBorrowIndex, lastPoolIndex: _params.lastPoolBorrowIndex, reserveFactor: _params.reserveFactor, p2pAmount: _params.delta.borrowP2PAmount, p2pDelta: _params.delta.borrowP2PDelta});
 
-        newP2PSupplyIndex = _computeNewP2PRate(
-            supplyParams,
-            supplyP2PGrowthFactor,
-            supplyPoolGrowthaFactor
-        );
-        newP2PBorrowIndex = _computeNewP2PRate(
-            borrowParams,
-            borrowP2PGrowthFactor,
-            poolBorrowGrowthFactor
-        );
+        newP2PSupplyIndex = _computeNewP2PRate(supplyParams, supplyP2PGrowthFactor, supplyPoolGrowthaFactor);
+        newP2PBorrowIndex = _computeNewP2PRate(borrowParams, borrowP2PGrowthFactor, poolBorrowGrowthFactor);
     }
 
     /// @notice Computes and return the new peer-to-peer supply index.
     /// @param _params Computation parameters.
     /// @return The updated p2pSupplyIndex.
     function _computeP2PSupplyIndex(Params memory _params) internal pure returns (uint256) {
-        RateParams memory supplyParams = RateParams({
-            p2pIndex: _params.p2pSupplyIndex,
-            poolIndex: _params.poolSupplyIndex,
-            lastPoolIndex: _params.lastPoolSupplyIndex,
-            reserveFactor: _params.reserveFactor,
-            p2pAmount: _params.delta.supplyP2PAmount,
-            p2pDelta: _params.delta.supplyP2PDelta
-        });
+        RateParams memory supplyParams = RateParams({p2pIndex: _params.p2pSupplyIndex, poolIndex: _params.poolSupplyIndex, lastPoolIndex: _params.lastPoolSupplyIndex, reserveFactor: _params.reserveFactor, p2pAmount: _params.delta.supplyP2PAmount, p2pDelta: _params.delta.supplyP2PDelta});
 
-        (
-            uint256 supplyP2PGrowthFactor,
-            uint256 supplyPoolGrowthaFactor,
-            ,
-
-        ) = _computeGrowthFactors(
-            _params.poolSupplyIndex,
-            _params.poolBorrowIndex,
-            _params.lastPoolSupplyIndex,
-            _params.lastPoolBorrowIndex,
-            _params.reserveFactor,
-            _params.p2pIndexCursor
-        );
+        (uint256 supplyP2PGrowthFactor, uint256 supplyPoolGrowthaFactor, , ) = _computeGrowthFactors(_params.poolSupplyIndex, _params.poolBorrowIndex, _params.lastPoolSupplyIndex, _params.lastPoolBorrowIndex, _params.reserveFactor, _params.p2pIndexCursor);
 
         return _computeNewP2PRate(supplyParams, supplyP2PGrowthFactor, supplyPoolGrowthaFactor);
     }
@@ -515,23 +381,9 @@ contract Lens {
     /// @param _params Computation parameters.
     /// @return The updated p2pBorrowIndex.
     function _computeP2PBorrowIndex(Params memory _params) internal pure returns (uint256) {
-        RateParams memory borrowParams = RateParams({
-            p2pIndex: _params.p2pBorrowIndex,
-            poolIndex: _params.poolBorrowIndex,
-            lastPoolIndex: _params.lastPoolBorrowIndex,
-            reserveFactor: _params.reserveFactor,
-            p2pAmount: _params.delta.borrowP2PAmount,
-            p2pDelta: _params.delta.borrowP2PDelta
-        });
+        RateParams memory borrowParams = RateParams({p2pIndex: _params.p2pBorrowIndex, poolIndex: _params.poolBorrowIndex, lastPoolIndex: _params.lastPoolBorrowIndex, reserveFactor: _params.reserveFactor, p2pAmount: _params.delta.borrowP2PAmount, p2pDelta: _params.delta.borrowP2PDelta});
 
-        (, , uint256 borrowP2PGrowthFactor, uint256 poolBorrowGrowthFactor) = _computeGrowthFactors(
-            _params.poolSupplyIndex,
-            _params.poolBorrowIndex,
-            _params.lastPoolSupplyIndex,
-            _params.lastPoolBorrowIndex,
-            _params.reserveFactor,
-            _params.p2pIndexCursor
-        );
+        (, , uint256 borrowP2PGrowthFactor, uint256 poolBorrowGrowthFactor) = _computeGrowthFactors(_params.poolSupplyIndex, _params.poolBorrowIndex, _params.lastPoolSupplyIndex, _params.lastPoolBorrowIndex, _params.reserveFactor, _params.p2pIndexCursor);
 
         return _computeNewP2PRate(borrowParams, borrowP2PGrowthFactor, poolBorrowGrowthFactor);
     }
@@ -565,18 +417,9 @@ contract Lens {
     {
         poolSupplyGrowthFactor_ = _poolSupplyIndex.div(_lastPoolSupplyIndex);
         poolBorrowGrowthFactor_ = _poolBorrowIndex.div(_lastPoolBorrowIndex);
-        uint256 p2pGrowthFactor = ((MAX_BASIS_POINTS - _p2pIndexCursor) *
-            poolSupplyGrowthFactor_ +
-            _p2pIndexCursor *
-            poolBorrowGrowthFactor_) / MAX_BASIS_POINTS;
-        supplyP2PGrowthFactor_ =
-            p2pGrowthFactor -
-            (_reserveFactor * (p2pGrowthFactor - poolSupplyGrowthFactor_)) /
-            MAX_BASIS_POINTS;
-        borrowP2PGrowthFactor_ =
-            p2pGrowthFactor +
-            (_reserveFactor * (poolBorrowGrowthFactor_ - p2pGrowthFactor)) /
-            MAX_BASIS_POINTS;
+        uint256 p2pGrowthFactor = ((MAX_BASIS_POINTS - _p2pIndexCursor) * poolSupplyGrowthFactor_ + _p2pIndexCursor * poolBorrowGrowthFactor_) / MAX_BASIS_POINTS;
+        supplyP2PGrowthFactor_ = p2pGrowthFactor - (_reserveFactor * (p2pGrowthFactor - poolSupplyGrowthFactor_)) / MAX_BASIS_POINTS;
+        borrowP2PGrowthFactor_ = p2pGrowthFactor + (_reserveFactor * (poolBorrowGrowthFactor_ - p2pGrowthFactor)) / MAX_BASIS_POINTS;
     }
 
     /// @dev Computes and returns the new P2P index.
@@ -593,16 +436,11 @@ contract Lens {
             newP2PIndex = _params.p2pIndex.mul(_p2pGrowthFactor);
         } else {
             uint256 shareOfTheDelta = CompoundMath.min(
-                _params.p2pDelta.mul(_params.poolIndex).div(_params.p2pIndex).div(
-                    _params.p2pAmount
-                ),
+                _params.p2pDelta.mul(_params.poolIndex).div(_params.p2pIndex).div(_params.p2pAmount),
                 WAD // To avoid shareOfTheDelta > 1 with rounding errors.
             );
 
-            newP2PIndex = _params.p2pIndex.mul(
-                (WAD - shareOfTheDelta).mul(_p2pGrowthFactor) +
-                    shareOfTheDelta.mul(_poolGrowthFactor)
-            );
+            newP2PIndex = _params.p2pIndex.mul((WAD - shareOfTheDelta).mul(_p2pGrowthFactor) + shareOfTheDelta.mul(_poolGrowthFactor));
         }
     }
 
@@ -610,16 +448,11 @@ contract Lens {
     /// @param _poolTokenAddress The address of the market to compute.
     /// @return newSupplyIndex The updated supply index.
     /// @return newBorrowIndex The updated borrow index.
-    function _computeCompoundsIndexes(address _poolTokenAddress)
-        internal
-        view
-        returns (uint256 newSupplyIndex, uint256 newBorrowIndex)
-    {
+    function _computeCompoundsIndexes(address _poolTokenAddress) internal view returns (uint256 newSupplyIndex, uint256 newBorrowIndex) {
         ICToken cToken = ICToken(_poolTokenAddress);
         uint256 accrualBlockNumberPrior = cToken.accrualBlockNumber();
 
-        if (block.number == accrualBlockNumberPrior)
-            return (cToken.exchangeRateStored(), cToken.borrowIndex());
+        if (block.number == accrualBlockNumberPrior) return (cToken.exchangeRateStored(), cToken.borrowIndex());
 
         // Read the previous values out of storage
         uint256 cashPrior = cToken.getCash();
@@ -629,11 +462,7 @@ contract Lens {
         uint256 borrowIndexPrior = cToken.borrowIndex();
 
         // Calculate the current borrow interest rate
-        uint256 borrowRateMantissa = cToken.interestRateModel().getBorrowRate(
-            cashPrior,
-            borrowsPrior,
-            reservesPrior
-        );
+        uint256 borrowRateMantissa = cToken.interestRateModel().getBorrowRate(cashPrior, borrowsPrior, reservesPrior);
         require(borrowRateMantissa <= 0.0005e16, "borrow rate is absurdly high");
 
         uint256 blockDelta = block.number - accrualBlockNumberPrior;
@@ -642,12 +471,9 @@ contract Lens {
         uint256 simpleInterestFactor = borrowRateMantissa * blockDelta;
         uint256 interestAccumulated = simpleInterestFactor.mul(borrowsPrior);
         uint256 totalBorrowsNew = interestAccumulated + borrowsPrior;
-        uint256 totalReservesNew = cToken.reserveFactorMantissa().mul(interestAccumulated) +
-            reservesPrior;
+        uint256 totalReservesNew = cToken.reserveFactorMantissa().mul(interestAccumulated) + reservesPrior;
 
-        newSupplyIndex = totalSupply > 0
-            ? (cashPrior + totalBorrowsNew - totalReservesNew).div(totalSupply)
-            : cToken.initialExchangeRateMantissa();
+        newSupplyIndex = totalSupply > 0 ? (cashPrior + totalBorrowsNew - totalReservesNew).div(totalSupply) : cToken.initialExchangeRateMantissa();
         newBorrowIndex = simpleInterestFactor.mul(borrowIndexPrior) + borrowIndexPrior;
     }
 
@@ -656,35 +482,15 @@ contract Lens {
     /// @param _user The address of the user.
     /// @param _poolTokenAddress The market where to get the supply amount.
     /// @return The supply balance of the user (in underlying).
-    function _getUserSupplyBalanceInOf(address _poolTokenAddress, address _user)
-        internal
-        view
-        returns (uint256)
-    {
-        return
-            morpho.supplyBalanceInOf(_poolTokenAddress, _user).inP2P.mul(
-                getUpdatedP2PSupplyIndex(_poolTokenAddress)
-            ) +
-            morpho.supplyBalanceInOf(_poolTokenAddress, _user).onPool.mul(
-                ICToken(_poolTokenAddress).exchangeRateStored()
-            );
+    function _getUserSupplyBalanceInOf(address _poolTokenAddress, address _user) internal view returns (uint256) {
+        return morpho.supplyBalanceInOf(_poolTokenAddress, _user).inP2P.mul(getUpdatedP2PSupplyIndex(_poolTokenAddress)) + morpho.supplyBalanceInOf(_poolTokenAddress, _user).onPool.mul(ICToken(_poolTokenAddress).exchangeRateStored());
     }
 
     /// @dev Returns the borrow balance of `_user` in the `_poolTokenAddress` market.
     /// @param _user The address of the user.
     /// @param _poolTokenAddress The market where to get the borrow amount.
     /// @return The borrow balance of the user (in underlying).
-    function _getUserBorrowBalanceInOf(address _poolTokenAddress, address _user)
-        internal
-        view
-        returns (uint256)
-    {
-        return
-            morpho.borrowBalanceInOf(_poolTokenAddress, _user).inP2P.mul(
-                getUpdatedP2PBorrowIndex(_poolTokenAddress)
-            ) +
-            morpho.borrowBalanceInOf(_poolTokenAddress, _user).onPool.mul(
-                ICToken(_poolTokenAddress).borrowIndex()
-            );
+    function _getUserBorrowBalanceInOf(address _poolTokenAddress, address _user) internal view returns (uint256) {
+        return morpho.borrowBalanceInOf(_poolTokenAddress, _user).inP2P.mul(getUpdatedP2PBorrowIndex(_poolTokenAddress)) + morpho.borrowBalanceInOf(_poolTokenAddress, _user).onPool.mul(ICToken(_poolTokenAddress).borrowIndex());
     }
 }

@@ -20,14 +20,8 @@ contract TestMarketStrategy is TestSetup {
         supplier1.supply(cDai, toBorrow);
 
         // supplier1 and borrower1 should not be in P2P
-        (uint256 borrowInP2P, uint256 borrowOnPool) = morpho.borrowBalanceInOf(
-            cDai,
-            address(borrower1)
-        );
-        (uint256 supplyInP2P, uint256 supplyOnPool) = morpho.supplyBalanceInOf(
-            cDai,
-            address(supplier1)
-        );
+        (uint256 borrowInP2P, uint256 borrowOnPool) = morpho.borrowBalanceInOf(cDai, address(borrower1));
+        (uint256 supplyInP2P, uint256 supplyOnPool) = morpho.supplyBalanceInOf(cDai, address(supplier1));
 
         assertEq(borrowInP2P, 0);
         assertEq(supplyInP2P, 0);
@@ -51,14 +45,8 @@ contract TestMarketStrategy is TestSetup {
         borrower1.borrow(cDai, toBorrow);
 
         // supplier1 and borrower1 should not be in P2P
-        (uint256 borrowInP2P, uint256 borrowOnPool) = morpho.borrowBalanceInOf(
-            cDai,
-            address(borrower1)
-        );
-        (uint256 supplyInP2P, uint256 supplyOnPool) = morpho.supplyBalanceInOf(
-            cDai,
-            address(supplier1)
-        );
+        (uint256 borrowInP2P, uint256 borrowOnPool) = morpho.borrowBalanceInOf(cDai, address(borrower1));
+        (uint256 supplyInP2P, uint256 supplyOnPool) = morpho.supplyBalanceInOf(cDai, address(supplier1));
 
         assertEq(borrowInP2P, 0);
         assertEq(supplyInP2P, 0);
@@ -91,10 +79,7 @@ contract TestMarketStrategy is TestSetup {
             assertGt(borrowOnPool, 0);
         }
 
-        (uint256 supplyInP2P, uint256 supplyOnPool) = morpho.supplyBalanceInOf(
-            cDai,
-            address(supplier1)
-        );
+        (uint256 supplyInP2P, uint256 supplyOnPool) = morpho.supplyBalanceInOf(cDai, address(supplier1));
 
         assertEq(supplyInP2P, 0);
         assertGt(supplyOnPool, 0);
@@ -127,10 +112,7 @@ contract TestMarketStrategy is TestSetup {
             assertGt(supplyOnPool, 0);
         }
 
-        (uint256 borrowInP2P, uint256 borrowOnPool) = morpho.borrowBalanceInOf(
-            cDai,
-            address(borrower1)
-        );
+        (uint256 borrowInP2P, uint256 borrowOnPool) = morpho.borrowBalanceInOf(cDai, address(borrower1));
 
         assertEq(borrowInP2P, 0);
         assertGt(borrowOnPool, 0);

@@ -99,12 +99,7 @@ contract User {
         address _borrower,
         uint256 _amount
     ) external {
-        morpho.liquidate(
-            _poolTokenBorrowedAddress,
-            _poolTokenCollateralAddress,
-            _borrower,
-            _amount
-        );
+        morpho.liquidate(_poolTokenBorrowedAddress, _poolTokenCollateralAddress, _borrower, _amount);
     }
 
     function setMaxSortedUsers(uint256 _newMaxSortedUsers) external {

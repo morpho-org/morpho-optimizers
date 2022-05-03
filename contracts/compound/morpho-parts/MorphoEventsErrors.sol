@@ -14,13 +14,7 @@ abstract contract MorphoEventsErrors is MorphoGetters {
     /// @param _amount The amount of assets supplied (in underlying).
     /// @param _balanceOnPool The supply balance on pool after update (in underlying).
     /// @param _balanceInP2P The supply balance in P2P after update (in underlying).
-    event Supplied(
-        address indexed _user,
-        address indexed _poolTokenAddress,
-        uint256 _amount,
-        uint256 _balanceOnPool,
-        uint256 _balanceInP2P
-    );
+    event Supplied(address indexed _user, address indexed _poolTokenAddress, uint256 _amount, uint256 _balanceOnPool, uint256 _balanceInP2P);
 
     /// @notice Emitted when a withdrawal happens.
     /// @param _user The address of the withdrawer.
@@ -28,13 +22,7 @@ abstract contract MorphoEventsErrors is MorphoGetters {
     /// @param _amount The amount of assets withdrawn (in underlying).
     /// @param _balanceOnPool The supply balance on pool after update.
     /// @param _balanceInP2P The supply balance in P2P after update.
-    event Withdrawn(
-        address indexed _user,
-        address indexed _poolTokenAddress,
-        uint256 _amount,
-        uint256 _balanceOnPool,
-        uint256 _balanceInP2P
-    );
+    event Withdrawn(address indexed _user, address indexed _poolTokenAddress, uint256 _amount, uint256 _balanceOnPool, uint256 _balanceInP2P);
 
     /// @notice Emitted when a borrow happens.
     /// @param _user The address of the borrower.
@@ -42,13 +30,7 @@ abstract contract MorphoEventsErrors is MorphoGetters {
     /// @param _amount The amount of assets borrowed (in underlying).
     /// @param _balanceOnPool The borrow balance on pool after update.
     /// @param _balanceInP2P The borrow balance in P2P after update
-    event Borrowed(
-        address indexed _user,
-        address indexed _poolTokenAddress,
-        uint256 _amount,
-        uint256 _balanceOnPool,
-        uint256 _balanceInP2P
-    );
+    event Borrowed(address indexed _user, address indexed _poolTokenAddress, uint256 _amount, uint256 _balanceOnPool, uint256 _balanceInP2P);
 
     /// @notice Emitted when a repayment happens.
     /// @param _user The address of the repayer.
@@ -56,13 +38,7 @@ abstract contract MorphoEventsErrors is MorphoGetters {
     /// @param _amount The amount of assets repaid (in underlying).
     /// @param _balanceOnPool The borrow balance on pool after update.
     /// @param _balanceInP2P The borrow balance in P2P after update.
-    event Repaid(
-        address indexed _user,
-        address indexed _poolTokenAddress,
-        uint256 _amount,
-        uint256 _balanceOnPool,
-        uint256 _balanceInP2P
-    );
+    event Repaid(address indexed _user, address indexed _poolTokenAddress, uint256 _amount, uint256 _balanceOnPool, uint256 _balanceInP2P);
 
     /// @notice Emitted when a liquidation happens.
     /// @param _liquidator The address of the liquidator.
@@ -71,14 +47,7 @@ abstract contract MorphoEventsErrors is MorphoGetters {
     /// @param _poolTokenBorrowedAddress The address of the borrowed asset.
     /// @param _amountSeized The amount of collateral asset seized (in underlying).
     /// @param _poolTokenCollateralAddress The address of the collateral asset seized.
-    event Liquidated(
-        address _liquidator,
-        address indexed _liquidated,
-        uint256 _amountRepaid,
-        address indexed _poolTokenBorrowedAddress,
-        uint256 _amountSeized,
-        address indexed _poolTokenCollateralAddress
-    );
+    event Liquidated(address _liquidator, address indexed _liquidated, uint256 _amountRepaid, address indexed _poolTokenBorrowedAddress, uint256 _amountSeized, address indexed _poolTokenCollateralAddress);
 
     /// EVENTS ///
 

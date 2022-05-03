@@ -61,16 +61,8 @@ contract TestGetters is TestSetup {
         address nextBorrowOnPool = address(borrowers[0]);
 
         for (uint256 i; i < borrowers.length - 1; i++) {
-            nextSupplyOnPool = morpho.getNext(
-                cDai,
-                Types.PositionType.SUPPLIERS_ON_POOL,
-                nextSupplyOnPool
-            );
-            nextBorrowOnPool = morpho.getNext(
-                cUsdc,
-                Types.PositionType.BORROWERS_ON_POOL,
-                nextBorrowOnPool
-            );
+            nextSupplyOnPool = morpho.getNext(cDai, Types.PositionType.SUPPLIERS_ON_POOL, nextSupplyOnPool);
+            nextBorrowOnPool = morpho.getNext(cUsdc, Types.PositionType.BORROWERS_ON_POOL, nextBorrowOnPool);
 
             assertEq(nextSupplyOnPool, address(borrowers[i + 1]));
             assertEq(nextBorrowOnPool, address(borrowers[i + 1]));
@@ -89,16 +81,8 @@ contract TestGetters is TestSetup {
         address nextBorrowInP2P = address(borrowers[0]);
 
         for (uint256 i; i < borrowers.length - 1; i++) {
-            nextSupplyInP2P = morpho.getNext(
-                cUsdc,
-                Types.PositionType.SUPPLIERS_IN_P2P,
-                nextSupplyInP2P
-            );
-            nextBorrowInP2P = morpho.getNext(
-                cDai,
-                Types.PositionType.BORROWERS_IN_P2P,
-                nextBorrowInP2P
-            );
+            nextSupplyInP2P = morpho.getNext(cUsdc, Types.PositionType.SUPPLIERS_IN_P2P, nextSupplyInP2P);
+            nextBorrowInP2P = morpho.getNext(cDai, Types.PositionType.BORROWERS_IN_P2P, nextBorrowInP2P);
 
             assertEq(address(suppliers[i + 1]), nextSupplyInP2P);
             assertEq(address(borrowers[i + 1]), nextBorrowInP2P);
@@ -106,11 +90,7 @@ contract TestGetters is TestSetup {
     }
 
     function testUserLiquidityDataForAssetWithNothing() public {
-        Types.AssetLiquidityData memory assetData = lens.getUserLiquidityDataForAsset(
-            address(borrower1),
-            cDai,
-            oracle
-        );
+        Types.AssetLiquidityData memory assetData = lens.getUserLiquidityDataForAsset(address(borrower1), cDai, oracle);
 
         (, uint256 collateralFactor, ) = comptroller.markets(cDai);
         uint256 underlyingPrice = oracle.getUnderlyingPrice(cDai);
@@ -128,17 +108,12 @@ contract TestGetters is TestSetup {
         borrower1.approve(dai, amount);
         borrower1.supply(cDai, amount);
 
-        Types.AssetLiquidityData memory assetData = lens.getUserLiquidityDataForAsset(
-            address(borrower1),
-            cDai,
-            oracle
-        );
+        Types.AssetLiquidityData memory assetData = lens.getUserLiquidityDataForAsset(address(borrower1), cDai, oracle);
 
         (, uint256 collateralFactor, ) = comptroller.markets(cDai);
         uint256 underlyingPrice = oracle.getUnderlyingPrice(cDai);
 
-        uint256 collateralValue = getBalanceOnCompound(amount, ICToken(cDai).exchangeRateStored())
-        .mul(underlyingPrice);
+        uint256 collateralValue = getBalanceOnCompound(amount, ICToken(cDai).exchangeRateStored()).mul(underlyingPrice);
         uint256 maxDebtValue = collateralValue.mul(collateralFactor);
 
         assertEq(assetData.collateralFactor, collateralFactor, "collateralFactor");
@@ -166,11 +141,7 @@ contract TestGetters is TestSetup {
 
         indexes.index2 = ICToken(cDai).exchangeRateCurrent();
 
-        Types.AssetLiquidityData memory assetData = lens.getUserLiquidityDataForAsset(
-            address(borrower1),
-            cDai,
-            oracle
-        );
+        Types.AssetLiquidityData memory assetData = lens.getUserLiquidityDataForAsset(address(borrower1), cDai, oracle);
 
         (, uint256 collateralFactor, ) = comptroller.markets(cDai);
         uint256 underlyingPrice = oracle.getUnderlyingPrice(cDai);
@@ -203,31 +174,18 @@ contract TestGetters is TestSetup {
         borrower1.supply(cDai, amount);
         borrower1.borrow(cUsdc, toBorrow);
 
-        Types.AssetLiquidityData memory assetDatacDai = lens.getUserLiquidityDataForAsset(
-            address(borrower1),
-            cDai,
-            oracle
-        );
+        Types.AssetLiquidityData memory assetDatacDai = lens.getUserLiquidityDataForAsset(address(borrower1), cDai, oracle);
 
-        Types.AssetLiquidityData memory assetDatacUsdc = lens.getUserLiquidityDataForAsset(
-            address(borrower1),
-            cUsdc,
-            oracle
-        );
+        Types.AssetLiquidityData memory assetDatacUsdc = lens.getUserLiquidityDataForAsset(address(borrower1), cUsdc, oracle);
 
         // Avoid stack too deep error.
         Types.AssetLiquidityData memory expectedDatcUsdc;
         (, uint256 collateralFactor, ) = comptroller.markets(cUsdc);
         expectedDatcUsdc.underlyingPrice = oracle.getUnderlyingPrice(cUsdc);
 
-        expectedDatcUsdc.debtValue = getBalanceOnCompound(toBorrow, ICToken(cUsdc).borrowIndex())
-        .mul(expectedDatcUsdc.underlyingPrice);
+        expectedDatcUsdc.debtValue = getBalanceOnCompound(toBorrow, ICToken(cUsdc).borrowIndex()).mul(expectedDatcUsdc.underlyingPrice);
 
-        assertEq(
-            assetDatacUsdc.underlyingPrice,
-            expectedDatcUsdc.underlyingPrice,
-            "underlyingPriceUsdc"
-        );
+        assertEq(assetDatacUsdc.underlyingPrice, expectedDatcUsdc.underlyingPrice, "underlyingPriceUsdc");
         assertEq(assetDatacUsdc.collateralValue, 0, "collateralValue");
         assertEq(assetDatacUsdc.maxDebtValue, 0, "maxDebtValue");
         assertEq(assetDatacUsdc.debtValue, expectedDatcUsdc.debtValue, "debtValueUsdc");
@@ -238,26 +196,13 @@ contract TestGetters is TestSetup {
         (, expectedDatacDai.collateralFactor, ) = comptroller.markets(cDai);
 
         expectedDatacDai.underlyingPrice = oracle.getUnderlyingPrice(cDai);
-        expectedDatacDai.collateralValue = getBalanceOnCompound(
-            amount,
-            ICToken(cDai).exchangeRateStored()
-        ).mul(expectedDatacDai.underlyingPrice);
-        expectedDatacDai.maxDebtValue = expectedDatacDai.collateralValue.mul(
-            expectedDatacDai.collateralFactor
-        );
+        expectedDatacDai.collateralValue = getBalanceOnCompound(amount, ICToken(cDai).exchangeRateStored()).mul(expectedDatacDai.underlyingPrice);
+        expectedDatacDai.maxDebtValue = expectedDatacDai.collateralValue.mul(expectedDatacDai.collateralFactor);
 
         assertEq(assetDatacDai.collateralFactor, collateralFactor, "collateralFactor");
-        assertEq(
-            assetDatacDai.underlyingPrice,
-            expectedDatacDai.underlyingPrice,
-            "underlyingPriceDai"
-        );
+        assertEq(assetDatacDai.underlyingPrice, expectedDatacDai.underlyingPrice, "underlyingPriceDai");
 
-        assertEq(
-            assetDatacDai.collateralValue,
-            expectedDatacDai.collateralValue,
-            "collateralValueDai"
-        );
+        assertEq(assetDatacDai.collateralValue, expectedDatacDai.collateralValue, "collateralValueDai");
         assertEq(assetDatacDai.maxDebtValue, expectedDatacDai.maxDebtValue, "maxDebtValueDai");
         assertEq(assetDatacDai.debtValue, 0, "debtValueDai");
     }

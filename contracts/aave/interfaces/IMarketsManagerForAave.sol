@@ -14,8 +14,5 @@ interface IMarketsManagerForAave {
 
     function updateP2PExchangeRates(address _marketAddress) external;
 
-    function getUpdatedP2PExchangeRates(address _marketAddress)
-        external
-        view
-        returns (uint256, uint256);
+    function getUpdatedP2PExchangeRates(address _marketAddress) external view returns (uint256, uint256);
 }

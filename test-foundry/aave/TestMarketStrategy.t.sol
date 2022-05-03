@@ -20,14 +20,8 @@ contract TestMarketStrategy is TestSetup {
         supplier1.supply(aDai, toBorrow);
 
         // supplier1 and borrower1 should not be in P2P
-        (uint256 borrowInP2P, uint256 borrowOnPool) = positionsManager.borrowBalanceInOf(
-            aDai,
-            address(borrower1)
-        );
-        (uint256 supplyInP2P, uint256 supplyOnPool) = positionsManager.supplyBalanceInOf(
-            aDai,
-            address(supplier1)
-        );
+        (uint256 borrowInP2P, uint256 borrowOnPool) = positionsManager.borrowBalanceInOf(aDai, address(borrower1));
+        (uint256 supplyInP2P, uint256 supplyOnPool) = positionsManager.supplyBalanceInOf(aDai, address(supplier1));
 
         assertEq(borrowInP2P, 0);
         assertEq(supplyInP2P, 0);
@@ -51,14 +45,8 @@ contract TestMarketStrategy is TestSetup {
         borrower1.borrow(aDai, toBorrow);
 
         // supplier1 and borrower1 should not be in P2P
-        (uint256 borrowInP2P, uint256 borrowOnPool) = positionsManager.borrowBalanceInOf(
-            aDai,
-            address(borrower1)
-        );
-        (uint256 supplyInP2P, uint256 supplyOnPool) = positionsManager.supplyBalanceInOf(
-            aDai,
-            address(supplier1)
-        );
+        (uint256 borrowInP2P, uint256 borrowOnPool) = positionsManager.borrowBalanceInOf(aDai, address(borrower1));
+        (uint256 supplyInP2P, uint256 supplyOnPool) = positionsManager.supplyBalanceInOf(aDai, address(supplier1));
 
         assertEq(borrowInP2P, 0);
         assertEq(supplyInP2P, 0);
@@ -86,18 +74,12 @@ contract TestMarketStrategy is TestSetup {
         uint256 borrowOnPool;
 
         for (uint256 i = 0; i < 3; i++) {
-            (borrowInP2P, borrowOnPool) = positionsManager.borrowBalanceInOf(
-                aDai,
-                address(borrowers[i])
-            );
+            (borrowInP2P, borrowOnPool) = positionsManager.borrowBalanceInOf(aDai, address(borrowers[i]));
             assertEq(borrowInP2P, 0);
             assertGt(borrowOnPool, 0);
         }
 
-        (uint256 supplyInP2P, uint256 supplyOnPool) = positionsManager.supplyBalanceInOf(
-            aDai,
-            address(supplier1)
-        );
+        (uint256 supplyInP2P, uint256 supplyOnPool) = positionsManager.supplyBalanceInOf(aDai, address(supplier1));
 
         assertEq(supplyInP2P, 0);
         assertGt(supplyOnPool, 0);
@@ -125,18 +107,12 @@ contract TestMarketStrategy is TestSetup {
         uint256 supplyOnPool;
 
         for (uint256 i = 0; i < 3; i++) {
-            (supplyInP2P, supplyOnPool) = positionsManager.supplyBalanceInOf(
-                aDai,
-                address(suppliers[i])
-            );
+            (supplyInP2P, supplyOnPool) = positionsManager.supplyBalanceInOf(aDai, address(suppliers[i]));
             assertEq(supplyInP2P, 0);
             assertGt(supplyOnPool, 0);
         }
 
-        (uint256 borrowInP2P, uint256 borrowOnPool) = positionsManager.borrowBalanceInOf(
-            aDai,
-            address(borrower1)
-        );
+        (uint256 borrowInP2P, uint256 borrowOnPool) = positionsManager.borrowBalanceInOf(aDai, address(borrower1));
 
         assertEq(borrowInP2P, 0);
         assertGt(borrowOnPool, 0);

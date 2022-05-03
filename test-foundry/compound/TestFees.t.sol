@@ -74,16 +74,10 @@ contract TestFees is TestSetup {
 
         (uint256 supplyP2PBPY, uint256 borrowP2PBPY) = getApproxBPYs(cDai);
 
-        uint256 newSupplyExRate = oldSupplyExRate.mul(
-            _computeCompoundedInterest(supplyP2PBPY, 1000)
-        );
-        uint256 newBorrowExRate = oldBorrowExRate.mul(
-            _computeCompoundedInterest(borrowP2PBPY, 1000)
-        );
+        uint256 newSupplyExRate = oldSupplyExRate.mul(_computeCompoundedInterest(supplyP2PBPY, 1000));
+        uint256 newBorrowExRate = oldBorrowExRate.mul(_computeCompoundedInterest(borrowP2PBPY, 1000));
 
-        uint256 expectedFees = (50 * WAD).mul(
-            newBorrowExRate.div(oldBorrowExRate) - newSupplyExRate.div(oldSupplyExRate)
-        );
+        uint256 expectedFees = (50 * WAD).mul(newBorrowExRate.div(oldBorrowExRate) - newSupplyExRate.div(oldSupplyExRate));
 
         move1000BlocksForward(cDai);
 
@@ -92,12 +86,7 @@ contract TestFees is TestSetup {
         uint256 balanceAfter = ERC20(dai).balanceOf(morpho.treasuryVault());
         uint256 gainedByDAO = balanceAfter - balanceBefore;
 
-        assertApproxEq(
-            gainedByDAO,
-            (expectedFees * 9_000) / MAX_BASIS_POINTS,
-            (expectedFees * 1) / 100000,
-            "Fees collected"
-        );
+        assertApproxEq(gainedByDAO, (expectedFees * 9_000) / MAX_BASIS_POINTS, (expectedFees * 1) / 100000, "Fees collected");
     }
 
     function testShouldNotClaimFeesIfFactorIsZero() public {

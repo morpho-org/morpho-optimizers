@@ -75,11 +75,7 @@ abstract contract RewardsManagerForAave is IRewardsManagerForAave, Ownable {
 
     /// @notice Sets the `aaveIncentivesController`.
     /// @param _aaveIncentivesController The address of the `aaveIncentivesController`.
-    function setAaveIncentivesController(address _aaveIncentivesController)
-        external
-        override
-        onlyOwner
-    {
+    function setAaveIncentivesController(address _aaveIncentivesController) external override onlyOwner {
         aaveIncentivesController = IAaveIncentivesController(_aaveIncentivesController);
         emit AaveIncentivesControllerSet(_aaveIncentivesController);
     }
@@ -127,12 +123,7 @@ abstract contract RewardsManagerForAave is IRewardsManagerForAave, Ownable {
     /// @param _asset The address of the reference asset of the distribution (aToken or variable debt token).
     /// @param _user The address of the user.
     /// @return userIndex_ The index of the user.
-    function getUserIndex(address _asset, address _user)
-        external
-        view
-        override
-        returns (uint256 userIndex_)
-    {
+    function getUserIndex(address _asset, address _user) external view override returns (uint256 userIndex_) {
         LocalAssetData storage localData = localAssetData[_asset];
         userIndex_ = localData.userIndex[_user];
     }
@@ -141,28 +132,15 @@ abstract contract RewardsManagerForAave is IRewardsManagerForAave, Ownable {
     /// @param _assets The assets for which to accrue rewards (aToken or variable debt token).
     /// @param _user The address of the user.
     /// @return unclaimedRewards The user unclaimed rewards.
-    function getUserUnclaimedRewards(address[] calldata _assets, address _user)
-        external
-        view
-        override
-        returns (uint256 unclaimedRewards)
-    {
+    function getUserUnclaimedRewards(address[] calldata _assets, address _user) external view override returns (uint256 unclaimedRewards) {
         unclaimedRewards = userUnclaimedRewards[_user];
 
         for (uint256 i = 0; i < _assets.length; i++) {
             address asset = _assets[i];
-            DataTypes.ReserveData memory reserve = lendingPool.getReserveData(
-                IGetterUnderlyingAsset(asset).UNDERLYING_ASSET_ADDRESS()
-            );
+            DataTypes.ReserveData memory reserve = lendingPool.getReserveData(IGetterUnderlyingAsset(asset).UNDERLYING_ASSET_ADDRESS());
             uint256 userBalance;
-            if (asset == reserve.aTokenAddress)
-                userBalance = positionsManager
-                .supplyBalanceInOf(reserve.aTokenAddress, _user)
-                .onPool;
-            else if (asset == reserve.variableDebtTokenAddress)
-                userBalance = positionsManager
-                .borrowBalanceInOf(reserve.aTokenAddress, _user)
-                .onPool;
+            if (asset == reserve.aTokenAddress) userBalance = positionsManager.supplyBalanceInOf(reserve.aTokenAddress, _user).onPool;
+            else if (asset == reserve.variableDebtTokenAddress) userBalance = positionsManager.borrowBalanceInOf(reserve.aTokenAddress, _user).onPool;
             else revert InvalidAsset();
 
             uint256 totalBalance = IScaledBalanceToken(asset).scaledTotalSupply();
@@ -177,27 +155,15 @@ abstract contract RewardsManagerForAave is IRewardsManagerForAave, Ownable {
     /// @param _assets The assets for which to accrue rewards (aToken or variable debt token).
     /// @param _user The address of the user.
     /// @return unclaimedRewards The user unclaimed rewards.
-    function accrueUserUnclaimedRewards(address[] calldata _assets, address _user)
-        public
-        override
-        returns (uint256 unclaimedRewards)
-    {
+    function accrueUserUnclaimedRewards(address[] calldata _assets, address _user) public override returns (uint256 unclaimedRewards) {
         unclaimedRewards = userUnclaimedRewards[_user];
 
         for (uint256 i = 0; i < _assets.length; i++) {
             address asset = _assets[i];
-            DataTypes.ReserveData memory reserve = lendingPool.getReserveData(
-                IGetterUnderlyingAsset(asset).UNDERLYING_ASSET_ADDRESS()
-            );
+            DataTypes.ReserveData memory reserve = lendingPool.getReserveData(IGetterUnderlyingAsset(asset).UNDERLYING_ASSET_ADDRESS());
             uint256 userBalance;
-            if (asset == reserve.aTokenAddress)
-                userBalance = positionsManager
-                .supplyBalanceInOf(reserve.aTokenAddress, _user)
-                .onPool;
-            else if (asset == reserve.variableDebtTokenAddress)
-                userBalance = positionsManager
-                .borrowBalanceInOf(reserve.aTokenAddress, _user)
-                .onPool;
+            if (asset == reserve.aTokenAddress) userBalance = positionsManager.supplyBalanceInOf(reserve.aTokenAddress, _user).onPool;
+            else if (asset == reserve.variableDebtTokenAddress) userBalance = positionsManager.borrowBalanceInOf(reserve.aTokenAddress, _user).onPool;
             else revert InvalidAsset();
 
             uint256 totalBalance = IScaledBalanceToken(asset).scaledTotalSupply();
@@ -227,8 +193,7 @@ abstract contract RewardsManagerForAave is IRewardsManagerForAave, Ownable {
         uint256 newIndex = _getUpdatedIndex(_asset, _totalBalance);
 
         if (formerUserIndex != newIndex) {
-            if (_userBalance != 0)
-                accruedRewards = _getRewards(_userBalance, newIndex, formerUserIndex);
+            if (_userBalance != 0) accruedRewards = _getRewards(_userBalance, newIndex, formerUserIndex);
 
             localData.userIndex[_user] = newIndex;
         }
@@ -252,8 +217,7 @@ abstract contract RewardsManagerForAave is IRewardsManagerForAave, Ownable {
         uint256 newIndex = _getNewIndex(_asset, _totalBalance);
 
         if (formerUserIndex != newIndex) {
-            if (_userBalance != 0)
-                accruedRewards = _getRewards(_userBalance, newIndex, formerUserIndex);
+            if (_userBalance != 0) accruedRewards = _getRewards(_userBalance, newIndex, formerUserIndex);
         }
     }
 
@@ -272,12 +236,7 @@ abstract contract RewardsManagerForAave is IRewardsManagerForAave, Ownable {
         uint256 distributionEnd = aaveIncentivesController.DISTRIBUTION_END();
         uint256 currentTimestamp = block.timestamp;
 
-        if (
-            _lastUpdateTimestamp == currentTimestamp ||
-            _emissionPerSecond == 0 ||
-            _totalBalance == 0 ||
-            _lastUpdateTimestamp >= distributionEnd
-        ) return _currentIndex;
+        if (_lastUpdateTimestamp == currentTimestamp || _emissionPerSecond == 0 || _totalBalance == 0 || _lastUpdateTimestamp >= distributionEnd) return _currentIndex;
 
         if (currentTimestamp > distributionEnd) currentTimestamp = distributionEnd;
         uint256 timeDelta = currentTimestamp - _lastUpdateTimestamp;
@@ -301,19 +260,12 @@ abstract contract RewardsManagerForAave is IRewardsManagerForAave, Ownable {
     /// @param _asset The address of the reference asset of the distribution (aToken or variable debt token).
     /// @param _totalBalance The total balance of tokens in the distribution.
     /// @return newIndex The new distribution index.
-    function _getUpdatedIndex(address _asset, uint256 _totalBalance)
-        internal
-        virtual
-        returns (uint256 newIndex);
+    function _getUpdatedIndex(address _asset, uint256 _totalBalance) internal virtual returns (uint256 newIndex);
 
     /// @dev Returns the next reward index.
     /// @dev This function is the equivalent of _getUpdatedIndex, but as a view.
     /// @param _asset The address of the reference asset of the distribution (aToken or variable debt token).
     /// @param _totalBalance The total balance of tokens in the distribution.
     /// @return newIndex The new distribution index.
-    function _getNewIndex(address _asset, uint256 _totalBalance)
-        internal
-        view
-        virtual
-        returns (uint256 newIndex);
+    function _getNewIndex(address _asset, uint256 _totalBalance) internal view virtual returns (uint256 newIndex);
 }

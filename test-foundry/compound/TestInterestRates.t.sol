@@ -44,17 +44,7 @@ contract TestInterestRates is TestSetup {
     }
 
     function testIndexComputation() public {
-        InterestRates.Params memory params = InterestRates.Params(
-            p2pSupplyIndex,
-            p2pBorrowIndex,
-            poolSupplyIndex,
-            poolBorrowIndex,
-            lastPoolSupplyIndex,
-            lastPoolBorrowIndex,
-            reserveFactor0PerCent,
-            p2pIndexCursor,
-            Types.Delta(0, 0, 0, 0)
-        );
+        InterestRates.Params memory params = InterestRates.Params(p2pSupplyIndex, p2pBorrowIndex, poolSupplyIndex, poolBorrowIndex, lastPoolSupplyIndex, lastPoolBorrowIndex, reserveFactor0PerCent, p2pIndexCursor, Types.Delta(0, 0, 0, 0));
 
         (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex) = interestRates.computeP2PIndexes(params); // prettier-ignore
         (uint256 expectednewP2PSupplyIndex, uint256 expectednewP2PBorrowIndex) = computeP2PIndexes(params); // prettier-ignore
@@ -63,17 +53,7 @@ contract TestInterestRates is TestSetup {
     }
 
     function testIndexComputationWithReserveFactor() public {
-        InterestRates.Params memory params = InterestRates.Params(
-            p2pSupplyIndex,
-            p2pBorrowIndex,
-            poolSupplyIndex,
-            poolBorrowIndex,
-            lastPoolSupplyIndex,
-            lastPoolBorrowIndex,
-            reserveFactor50PerCent,
-            p2pIndexCursor,
-            Types.Delta(0, 0, 0, 0)
-        );
+        InterestRates.Params memory params = InterestRates.Params(p2pSupplyIndex, p2pBorrowIndex, poolSupplyIndex, poolBorrowIndex, lastPoolSupplyIndex, lastPoolBorrowIndex, reserveFactor50PerCent, p2pIndexCursor, Types.Delta(0, 0, 0, 0));
 
         (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex) = interestRates.computeP2PIndexes(params); // prettier-ignore
         (uint256 expectednewP2PSupplyIndex, uint256 expectednewP2PBorrowIndex) = computeP2PIndexes(params); // prettier-ignore
@@ -82,17 +62,7 @@ contract TestInterestRates is TestSetup {
     }
 
     function testIndexComputationWithDelta() public {
-        InterestRates.Params memory params = InterestRates.Params(
-            p2pSupplyIndex,
-            p2pBorrowIndex,
-            poolSupplyIndex,
-            poolBorrowIndex,
-            lastPoolSupplyIndex,
-            lastPoolBorrowIndex,
-            reserveFactor0PerCent,
-            p2pIndexCursor,
-            Types.Delta(1 * WAD, 1 * WAD, 4 * WAD, 6 * WAD)
-        );
+        InterestRates.Params memory params = InterestRates.Params(p2pSupplyIndex, p2pBorrowIndex, poolSupplyIndex, poolBorrowIndex, lastPoolSupplyIndex, lastPoolBorrowIndex, reserveFactor0PerCent, p2pIndexCursor, Types.Delta(1 * WAD, 1 * WAD, 4 * WAD, 6 * WAD));
 
         (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex) = interestRates.computeP2PIndexes(params); // prettier-ignore
         (uint256 expectednewP2PSupplyIndex, uint256 expectednewP2PBorrowIndex) = computeP2PIndexes(params); // prettier-ignore
@@ -101,17 +71,7 @@ contract TestInterestRates is TestSetup {
     }
 
     function testIndexComputationWithDeltaAndReserveFactor() public {
-        InterestRates.Params memory params = InterestRates.Params(
-            p2pSupplyIndex,
-            p2pBorrowIndex,
-            poolSupplyIndex,
-            poolBorrowIndex,
-            lastPoolSupplyIndex,
-            lastPoolBorrowIndex,
-            reserveFactor50PerCent,
-            p2pIndexCursor,
-            Types.Delta(1 * WAD, 1 * WAD, 4 * WAD, 6 * WAD)
-        );
+        InterestRates.Params memory params = InterestRates.Params(p2pSupplyIndex, p2pBorrowIndex, poolSupplyIndex, poolBorrowIndex, lastPoolSupplyIndex, lastPoolBorrowIndex, reserveFactor50PerCent, p2pIndexCursor, Types.Delta(1 * WAD, 1 * WAD, 4 * WAD, 6 * WAD));
 
         (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex) = interestRates.computeP2PIndexes(params); // prettier-ignore
         (uint256 expectednewP2PSupplyIndex, uint256 expectednewP2PBorrowIndex) = computeP2PIndexes(params); // prettier-ignore

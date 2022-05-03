@@ -34,24 +34,14 @@ contract MatchingEngine is MorphoGetters {
     /// @param _poolTokenAddress The address of the market.
     /// @param _balanceOnPool The supply balance on pool after update.
     /// @param _balanceInP2P The supply balance in P2P after update.
-    event SupplierPositionUpdated(
-        address indexed _user,
-        address indexed _poolTokenAddress,
-        uint256 _balanceOnPool,
-        uint256 _balanceInP2P
-    );
+    event SupplierPositionUpdated(address indexed _user, address indexed _poolTokenAddress, uint256 _balanceOnPool, uint256 _balanceInP2P);
 
     /// @notice Emitted when the position of a borrower is updated.
     /// @param _user The address of the borrower.
     /// @param _poolTokenAddress The address of the market.
     /// @param _balanceOnPool The borrow balance on pool after update.
     /// @param _balanceInP2P The borrow balance in P2P after update.
-    event BorrowerPositionUpdated(
-        address indexed _user,
-        address indexed _poolTokenAddress,
-        uint256 _balanceOnPool,
-        uint256 _balanceInP2P
-    );
+    event BorrowerPositionUpdated(address indexed _user, address indexed _poolTokenAddress, uint256 _balanceOnPool, uint256 _balanceInP2P);
 
     /// INTERNAL ///
 
@@ -74,31 +64,18 @@ contract MatchingEngine is MorphoGetters {
 
         if (_maxGasToConsume != 0) {
             vars.gasLeftAtTheBeginning = gasleft();
-            while (
-                matched < _amount &&
-                user != address(0) &&
-                vars.gasLeftAtTheBeginning - gasleft() < _maxGasToConsume
-            ) {
+            while (matched < _amount && user != address(0) && vars.gasLeftAtTheBeginning - gasleft() < _maxGasToConsume) {
                 uint256 onPool = supplyBalanceInOf[poolTokenAddress][user].onPool;
                 vars.inUnderlying = onPool.mul(vars.poolIndex);
                 unchecked {
-                    vars.toMatch = vars.inUnderlying < _amount - matched
-                        ? vars.inUnderlying
-                        : _amount - matched;
+                    vars.toMatch = vars.inUnderlying < _amount - matched ? vars.inUnderlying : _amount - matched;
                     matched += vars.toMatch;
                 }
 
-                supplyBalanceInOf[poolTokenAddress][user].onPool -= vars.toMatch.div(
-                    vars.poolIndex
-                );
+                supplyBalanceInOf[poolTokenAddress][user].onPool -= vars.toMatch.div(vars.poolIndex);
                 supplyBalanceInOf[poolTokenAddress][user].inP2P += vars.toMatch.div(vars.p2pRate); // In p2pUnit
                 updateSuppliers(poolTokenAddress, user);
-                emit SupplierPositionUpdated(
-                    user,
-                    poolTokenAddress,
-                    supplyBalanceInOf[poolTokenAddress][user].onPool,
-                    supplyBalanceInOf[poolTokenAddress][user].inP2P
-                );
+                emit SupplierPositionUpdated(user, poolTokenAddress, supplyBalanceInOf[poolTokenAddress][user].onPool, supplyBalanceInOf[poolTokenAddress][user].inP2P);
 
                 user = suppliersOnPool[poolTokenAddress].getHead();
             }
@@ -123,34 +100,17 @@ contract MatchingEngine is MorphoGetters {
 
         if (_maxGasToConsume != 0) {
             vars.gasLeftAtTheBeginning = gasleft();
-            while (
-                remainingToUnmatch > 0 &&
-                user != address(0) &&
-                vars.gasLeftAtTheBeginning - gasleft() < _maxGasToConsume
-            ) {
-                vars.inUnderlying = supplyBalanceInOf[_poolTokenAddress][user].inP2P.mul(
-                    vars.p2pRate
-                );
+            while (remainingToUnmatch > 0 && user != address(0) && vars.gasLeftAtTheBeginning - gasleft() < _maxGasToConsume) {
+                vars.inUnderlying = supplyBalanceInOf[_poolTokenAddress][user].inP2P.mul(vars.p2pRate);
                 unchecked {
-                    vars.toUnmatch = vars.inUnderlying < remainingToUnmatch
-                        ? vars.inUnderlying
-                        : remainingToUnmatch; // In underlying
+                    vars.toUnmatch = vars.inUnderlying < remainingToUnmatch ? vars.inUnderlying : remainingToUnmatch; // In underlying
                     remainingToUnmatch -= vars.toUnmatch;
                 }
 
-                supplyBalanceInOf[_poolTokenAddress][user].onPool += vars.toUnmatch.div(
-                    vars.poolIndex
-                );
-                supplyBalanceInOf[_poolTokenAddress][user].inP2P -= vars.toUnmatch.div(
-                    vars.p2pRate
-                ); // In p2pUnit
+                supplyBalanceInOf[_poolTokenAddress][user].onPool += vars.toUnmatch.div(vars.poolIndex);
+                supplyBalanceInOf[_poolTokenAddress][user].inP2P -= vars.toUnmatch.div(vars.p2pRate); // In p2pUnit
                 updateSuppliers(_poolTokenAddress, user);
-                emit SupplierPositionUpdated(
-                    user,
-                    _poolTokenAddress,
-                    supplyBalanceInOf[_poolTokenAddress][user].onPool,
-                    supplyBalanceInOf[_poolTokenAddress][user].inP2P
-                );
+                emit SupplierPositionUpdated(user, _poolTokenAddress, supplyBalanceInOf[_poolTokenAddress][user].onPool, supplyBalanceInOf[_poolTokenAddress][user].inP2P);
 
                 user = suppliersInP2P[_poolTokenAddress].getHead();
             }
@@ -178,32 +138,17 @@ contract MatchingEngine is MorphoGetters {
 
         if (_maxGasToConsume != 0) {
             vars.gasLeftAtTheBeginning = gasleft();
-            while (
-                matched < _amount &&
-                user != address(0) &&
-                vars.gasLeftAtTheBeginning - gasleft() < _maxGasToConsume
-            ) {
-                vars.inUnderlying = borrowBalanceInOf[poolTokenAddress][user].onPool.mul(
-                    vars.poolIndex
-                );
+            while (matched < _amount && user != address(0) && vars.gasLeftAtTheBeginning - gasleft() < _maxGasToConsume) {
+                vars.inUnderlying = borrowBalanceInOf[poolTokenAddress][user].onPool.mul(vars.poolIndex);
                 unchecked {
-                    vars.toMatch = vars.inUnderlying < _amount - matched
-                        ? vars.inUnderlying
-                        : _amount - matched;
+                    vars.toMatch = vars.inUnderlying < _amount - matched ? vars.inUnderlying : _amount - matched;
                     matched += vars.toMatch;
                 }
 
-                borrowBalanceInOf[poolTokenAddress][user].onPool -= vars.toMatch.div(
-                    vars.poolIndex
-                );
+                borrowBalanceInOf[poolTokenAddress][user].onPool -= vars.toMatch.div(vars.poolIndex);
                 borrowBalanceInOf[poolTokenAddress][user].inP2P += vars.toMatch.div(vars.p2pRate);
                 updateBorrowers(poolTokenAddress, user);
-                emit BorrowerPositionUpdated(
-                    user,
-                    poolTokenAddress,
-                    borrowBalanceInOf[poolTokenAddress][user].onPool,
-                    borrowBalanceInOf[poolTokenAddress][user].inP2P
-                );
+                emit BorrowerPositionUpdated(user, poolTokenAddress, borrowBalanceInOf[poolTokenAddress][user].onPool, borrowBalanceInOf[poolTokenAddress][user].inP2P);
 
                 user = borrowersOnPool[poolTokenAddress].getHead();
             }
@@ -229,34 +174,17 @@ contract MatchingEngine is MorphoGetters {
 
         if (_maxGasToConsume != 0) {
             vars.gasLeftAtTheBeginning = gasleft();
-            while (
-                remainingToUnmatch > 0 &&
-                user != address(0) &&
-                vars.gasLeftAtTheBeginning - gasleft() < _maxGasToConsume
-            ) {
-                vars.inUnderlying = borrowBalanceInOf[_poolTokenAddress][user].inP2P.mul(
-                    vars.p2pRate
-                );
+            while (remainingToUnmatch > 0 && user != address(0) && vars.gasLeftAtTheBeginning - gasleft() < _maxGasToConsume) {
+                vars.inUnderlying = borrowBalanceInOf[_poolTokenAddress][user].inP2P.mul(vars.p2pRate);
                 unchecked {
-                    vars.toUnmatch = vars.inUnderlying < remainingToUnmatch
-                        ? vars.inUnderlying
-                        : remainingToUnmatch; // In underlying
+                    vars.toUnmatch = vars.inUnderlying < remainingToUnmatch ? vars.inUnderlying : remainingToUnmatch; // In underlying
                     remainingToUnmatch -= vars.toUnmatch;
                 }
 
-                borrowBalanceInOf[_poolTokenAddress][user].onPool += vars.toUnmatch.div(
-                    vars.poolIndex
-                );
-                borrowBalanceInOf[_poolTokenAddress][user].inP2P -= vars.toUnmatch.div(
-                    vars.p2pRate
-                );
+                borrowBalanceInOf[_poolTokenAddress][user].onPool += vars.toUnmatch.div(vars.poolIndex);
+                borrowBalanceInOf[_poolTokenAddress][user].inP2P -= vars.toUnmatch.div(vars.p2pRate);
                 updateBorrowers(_poolTokenAddress, user);
-                emit BorrowerPositionUpdated(
-                    user,
-                    _poolTokenAddress,
-                    borrowBalanceInOf[_poolTokenAddress][user].onPool,
-                    borrowBalanceInOf[_poolTokenAddress][user].inP2P
-                );
+                emit BorrowerPositionUpdated(user, _poolTokenAddress, borrowBalanceInOf[_poolTokenAddress][user].onPool, borrowBalanceInOf[_poolTokenAddress][user].inP2P);
 
                 user = borrowersInP2P[_poolTokenAddress].getHead();
             }
@@ -281,8 +209,7 @@ contract MatchingEngine is MorphoGetters {
         }
         if (formerValueOnPool != onPool) {
             if (formerValueOnPool > 0) suppliersOnPool[_poolTokenAddress].remove(_user);
-            if (onPool > 0)
-                suppliersOnPool[_poolTokenAddress].insertSorted(_user, onPool, maxSortedUsers);
+            if (onPool > 0) suppliersOnPool[_poolTokenAddress].insertSorted(_user, onPool, maxSortedUsers);
         }
 
         // Check P2P.
@@ -292,16 +219,10 @@ contract MatchingEngine is MorphoGetters {
         }
         if (formerValueInP2P != inP2P) {
             if (formerValueInP2P > 0) suppliersInP2P[_poolTokenAddress].remove(_user);
-            if (inP2P > 0)
-                suppliersInP2P[_poolTokenAddress].insertSorted(_user, inP2P, maxSortedUsers);
+            if (inP2P > 0) suppliersInP2P[_poolTokenAddress].insertSorted(_user, inP2P, maxSortedUsers);
         }
 
-        if (isCompRewardsActive && address(rewardsManager) != address(0))
-            rewardsManager.accrueUserSupplyUnclaimedRewards(
-                _user,
-                _poolTokenAddress,
-                formerValueOnPool
-            );
+        if (isCompRewardsActive && address(rewardsManager) != address(0)) rewardsManager.accrueUserSupplyUnclaimedRewards(_user, _poolTokenAddress, formerValueOnPool);
     }
 
     /// @notice Updates borrowers matching engine with the new balances of a given user.
@@ -320,8 +241,7 @@ contract MatchingEngine is MorphoGetters {
         }
         if (formerValueOnPool != onPool) {
             if (formerValueOnPool > 0) borrowersOnPool[_poolTokenAddress].remove(_user);
-            if (onPool > 0)
-                borrowersOnPool[_poolTokenAddress].insertSorted(_user, onPool, maxSortedUsers);
+            if (onPool > 0) borrowersOnPool[_poolTokenAddress].insertSorted(_user, onPool, maxSortedUsers);
         }
 
         // Check P2P.
@@ -331,15 +251,9 @@ contract MatchingEngine is MorphoGetters {
         }
         if (formerValueInP2P != inP2P) {
             if (formerValueInP2P > 0) borrowersInP2P[_poolTokenAddress].remove(_user);
-            if (inP2P > 0)
-                borrowersInP2P[_poolTokenAddress].insertSorted(_user, inP2P, maxSortedUsers);
+            if (inP2P > 0) borrowersInP2P[_poolTokenAddress].insertSorted(_user, inP2P, maxSortedUsers);
         }
 
-        if (isCompRewardsActive && address(rewardsManager) != address(0))
-            rewardsManager.accrueUserBorrowUnclaimedRewards(
-                _user,
-                _poolTokenAddress,
-                formerValueOnPool
-            );
+        if (isCompRewardsActive && address(rewardsManager) != address(0)) rewardsManager.accrueUserBorrowUnclaimedRewards(_user, _poolTokenAddress, formerValueOnPool);
     }
 }

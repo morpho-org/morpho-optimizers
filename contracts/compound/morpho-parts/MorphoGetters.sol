@@ -58,11 +58,7 @@ abstract contract MorphoGetters is MorphoStorage {
     /// @notice Returns all markets entered by a given user.
     /// @param _user The address of the user.
     /// @return enteredMarkets_ The number of markets entered by this user.
-    function getEnteredMarkets(address _user)
-        external
-        view
-        returns (address[] memory enteredMarkets_)
-    {
+    function getEnteredMarkets(address _user) external view returns (address[] memory enteredMarkets_) {
         return enteredMarkets[_user];
     }
 
@@ -76,19 +72,11 @@ abstract contract MorphoGetters is MorphoStorage {
     /// @param _poolTokenAddress The address of the market from which to get the head.
     /// @param _positionType The type of user from which to get the head.
     /// @return head The head in the data structure.
-    function getHead(address _poolTokenAddress, Types.PositionType _positionType)
-        external
-        view
-        returns (address head)
-    {
-        if (_positionType == Types.PositionType.SUPPLIERS_IN_P2P)
-            head = suppliersInP2P[_poolTokenAddress].getHead();
-        else if (_positionType == Types.PositionType.SUPPLIERS_ON_POOL)
-            head = suppliersOnPool[_poolTokenAddress].getHead();
-        else if (_positionType == Types.PositionType.BORROWERS_IN_P2P)
-            head = borrowersInP2P[_poolTokenAddress].getHead();
-        else if (_positionType == Types.PositionType.BORROWERS_ON_POOL)
-            head = borrowersOnPool[_poolTokenAddress].getHead();
+    function getHead(address _poolTokenAddress, Types.PositionType _positionType) external view returns (address head) {
+        if (_positionType == Types.PositionType.SUPPLIERS_IN_P2P) head = suppliersInP2P[_poolTokenAddress].getHead();
+        else if (_positionType == Types.PositionType.SUPPLIERS_ON_POOL) head = suppliersOnPool[_poolTokenAddress].getHead();
+        else if (_positionType == Types.PositionType.BORROWERS_IN_P2P) head = borrowersInP2P[_poolTokenAddress].getHead();
+        else if (_positionType == Types.PositionType.BORROWERS_ON_POOL) head = borrowersOnPool[_poolTokenAddress].getHead();
     }
 
     /// @notice Gets the next user after `_user` in the data structure on a specific market (for UI).
@@ -101,22 +89,16 @@ abstract contract MorphoGetters is MorphoStorage {
         Types.PositionType _positionType,
         address _user
     ) external view returns (address next) {
-        if (_positionType == Types.PositionType.SUPPLIERS_IN_P2P)
-            next = suppliersInP2P[_poolTokenAddress].getNext(_user);
-        else if (_positionType == Types.PositionType.SUPPLIERS_ON_POOL)
-            next = suppliersOnPool[_poolTokenAddress].getNext(_user);
-        else if (_positionType == Types.PositionType.BORROWERS_IN_P2P)
-            next = borrowersInP2P[_poolTokenAddress].getNext(_user);
-        else if (_positionType == Types.PositionType.BORROWERS_ON_POOL)
-            next = borrowersOnPool[_poolTokenAddress].getNext(_user);
+        if (_positionType == Types.PositionType.SUPPLIERS_IN_P2P) next = suppliersInP2P[_poolTokenAddress].getNext(_user);
+        else if (_positionType == Types.PositionType.SUPPLIERS_ON_POOL) next = suppliersOnPool[_poolTokenAddress].getNext(_user);
+        else if (_positionType == Types.PositionType.BORROWERS_IN_P2P) next = borrowersInP2P[_poolTokenAddress].getNext(_user);
+        else if (_positionType == Types.PositionType.BORROWERS_ON_POOL) next = borrowersOnPool[_poolTokenAddress].getNext(_user);
     }
 
     /// PUBLIC ///
 
     function updateP2PIndexes(address _poolTokenAddress) public {
-        address(interestRates).functionDelegateCall(
-            abi.encodeWithSelector(interestRates.updateP2PIndexes.selector, _poolTokenAddress)
-        );
+        address(interestRates).functionDelegateCall(abi.encodeWithSelector(interestRates.updateP2PIndexes.selector, _poolTokenAddress));
     }
 
     /// INTERNAL ///
@@ -136,12 +118,8 @@ abstract contract MorphoGetters is MorphoStorage {
         assetData.underlyingPrice = _oracle.getUnderlyingPrice(_poolTokenAddress);
         (, assetData.collateralFactor, ) = comptroller.markets(_poolTokenAddress);
 
-        assetData.collateralValue = _getUserSupplyBalanceInOf(_poolTokenAddress, _user).mul(
-            assetData.underlyingPrice
-        );
-        assetData.debtValue = _getUserBorrowBalanceInOf(_poolTokenAddress, _user).mul(
-            assetData.underlyingPrice
-        );
+        assetData.collateralValue = _getUserSupplyBalanceInOf(_poolTokenAddress, _user).mul(assetData.underlyingPrice);
+        assetData.debtValue = _getUserBorrowBalanceInOf(_poolTokenAddress, _user).mul(assetData.underlyingPrice);
         assetData.maxDebtValue = assetData.collateralValue.mul(assetData.collateralFactor);
     }
 
@@ -149,40 +127,16 @@ abstract contract MorphoGetters is MorphoStorage {
     /// @dev Note: must be called after calling `accrueInterest()` on the cToken to have the correct values.
     /// @param _poolTokenAddress The address of the market.
     /// @return updatedP2PSupplyIndex_ The updated peer-to-peer supply index.
-    function _getUpdatedP2PSupplyIndex(address _poolTokenAddress)
-        internal
-        returns (uint256 updatedP2PSupplyIndex_)
-    {
-        return
-            abi.decode(
-                address(interestRates).functionDelegateCall(
-                    abi.encodeWithSelector(
-                        interestRates.getUpdatedP2PSupplyIndex.selector,
-                        _poolTokenAddress
-                    )
-                ),
-                (uint256)
-            );
+    function _getUpdatedP2PSupplyIndex(address _poolTokenAddress) internal returns (uint256 updatedP2PSupplyIndex_) {
+        return abi.decode(address(interestRates).functionDelegateCall(abi.encodeWithSelector(interestRates.getUpdatedP2PSupplyIndex.selector, _poolTokenAddress)), (uint256));
     }
 
     /// @notice Returns the updated peer-to-peer borrow index.
     /// @dev Note: must be called after calling `accrueInterest()` on the cToken to have the correct values.
     /// @param _poolTokenAddress The address of the market.
     /// @return updatedP2PBorrowIndex_ The updated peer-to-peer borrow index.
-    function _getUpdatedP2PBorrowIndex(address _poolTokenAddress)
-        internal
-        returns (uint256 updatedP2PBorrowIndex_)
-    {
-        return
-            abi.decode(
-                address(interestRates).functionDelegateCall(
-                    abi.encodeWithSelector(
-                        interestRates.getUpdatedP2PBorrowIndex.selector,
-                        _poolTokenAddress
-                    )
-                ),
-                (uint256)
-            );
+    function _getUpdatedP2PBorrowIndex(address _poolTokenAddress) internal returns (uint256 updatedP2PBorrowIndex_) {
+        return abi.decode(address(interestRates).functionDelegateCall(abi.encodeWithSelector(interestRates.getUpdatedP2PBorrowIndex.selector, _poolTokenAddress)), (uint256));
     }
 
     /// @dev Returns the debt value, max debt value of a given user.
@@ -207,11 +161,7 @@ abstract contract MorphoGetters is MorphoStorage {
 
             // Calling accrueInterest so that computation in getUserLiquidityDataForAsset() are the most accurate ones.
             ICToken(poolTokenEntered).accrueInterest();
-            Types.AssetLiquidityData memory assetData = _getUserLiquidityDataForAsset(
-                _user,
-                poolTokenEntered,
-                oracle
-            );
+            Types.AssetLiquidityData memory assetData = _getUserLiquidityDataForAsset(_user, poolTokenEntered, oracle);
 
             unchecked {
                 maxDebtValue += assetData.maxDebtValue;
@@ -221,9 +171,7 @@ abstract contract MorphoGetters is MorphoStorage {
 
             if (_poolTokenAddress == poolTokenEntered) {
                 debtValue += _borrowedAmount.mul(assetData.underlyingPrice);
-                uint256 maxDebtValueSub = _withdrawnAmount.mul(assetData.underlyingPrice).mul(
-                    assetData.collateralFactor
-                );
+                uint256 maxDebtValueSub = _withdrawnAmount.mul(assetData.underlyingPrice).mul(assetData.collateralFactor);
 
                 unchecked {
                     maxDebtValue -= maxDebtValue < maxDebtValueSub ? maxDebtValue : maxDebtValueSub;
@@ -237,34 +185,16 @@ abstract contract MorphoGetters is MorphoStorage {
     /// @param _user The address of the user.
     /// @param _poolTokenAddress The market where to get the supply amount.
     /// @return The supply balance of the user (in underlying).
-    function _getUserSupplyBalanceInOf(address _poolTokenAddress, address _user)
-        internal
-        returns (uint256)
-    {
-        return
-            supplyBalanceInOf[_poolTokenAddress][_user].inP2P.mul(
-                _getUpdatedP2PSupplyIndex(_poolTokenAddress)
-            ) +
-            supplyBalanceInOf[_poolTokenAddress][_user].onPool.mul(
-                ICToken(_poolTokenAddress).exchangeRateStored()
-            );
+    function _getUserSupplyBalanceInOf(address _poolTokenAddress, address _user) internal returns (uint256) {
+        return supplyBalanceInOf[_poolTokenAddress][_user].inP2P.mul(_getUpdatedP2PSupplyIndex(_poolTokenAddress)) + supplyBalanceInOf[_poolTokenAddress][_user].onPool.mul(ICToken(_poolTokenAddress).exchangeRateStored());
     }
 
     /// @dev Returns the borrow balance of `_user` in the `_poolTokenAddress` market.
     /// @param _user The address of the user.
     /// @param _poolTokenAddress The market where to get the borrow amount.
     /// @return The borrow balance of the user (in underlying).
-    function _getUserBorrowBalanceInOf(address _poolTokenAddress, address _user)
-        internal
-        returns (uint256)
-    {
-        return
-            borrowBalanceInOf[_poolTokenAddress][_user].inP2P.mul(
-                _getUpdatedP2PBorrowIndex(_poolTokenAddress)
-            ) +
-            borrowBalanceInOf[_poolTokenAddress][_user].onPool.mul(
-                ICToken(_poolTokenAddress).borrowIndex()
-            );
+    function _getUserBorrowBalanceInOf(address _poolTokenAddress, address _user) internal returns (uint256) {
+        return borrowBalanceInOf[_poolTokenAddress][_user].inP2P.mul(_getUpdatedP2PBorrowIndex(_poolTokenAddress)) + borrowBalanceInOf[_poolTokenAddress][_user].onPool.mul(ICToken(_poolTokenAddress).borrowIndex());
     }
 
     /// @dev Checks whether the user can borrow/withdraw or not.
@@ -278,12 +208,7 @@ abstract contract MorphoGetters is MorphoStorage {
         uint256 _withdrawnAmount,
         uint256 _borrowedAmount
     ) internal {
-        (uint256 debtValue, uint256 maxDebtValue) = _getUserHypotheticalBalanceStates(
-            _user,
-            _poolTokenAddress,
-            _withdrawnAmount,
-            _borrowedAmount
-        );
+        (uint256 debtValue, uint256 maxDebtValue) = _getUserHypotheticalBalanceStates(_user, _poolTokenAddress, _withdrawnAmount, _borrowedAmount);
         if (debtValue > maxDebtValue) revert DebtValueAboveMax();
     }
 

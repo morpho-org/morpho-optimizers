@@ -74,17 +74,13 @@ contract TestFees is TestSetup {
         supplier1.supply(aDai, 100 * WAD);
         supplier1.borrow(aDai, 50 * WAD);
 
-        (uint256 oldSupplyExRate, uint256 oldBorrowExRate) = marketsManager
-        .getUpdatedP2PExchangeRates(aDai);
+        (uint256 oldSupplyExRate, uint256 oldBorrowExRate) = marketsManager.getUpdatedP2PExchangeRates(aDai);
 
         hevm.warp(block.timestamp + (365 days));
 
-        (uint256 newSupplyExRate, uint256 newBorrowExRate) = marketsManager
-        .getUpdatedP2PExchangeRates(aDai);
+        (uint256 newSupplyExRate, uint256 newBorrowExRate) = marketsManager.getUpdatedP2PExchangeRates(aDai);
 
-        uint256 expectedFees = (50 * WAD).rayMul(
-            newBorrowExRate.rayDiv(oldBorrowExRate) - newSupplyExRate.rayDiv(oldSupplyExRate)
-        );
+        uint256 expectedFees = (50 * WAD).rayMul(newBorrowExRate.rayDiv(oldBorrowExRate) - newSupplyExRate.rayDiv(oldSupplyExRate));
 
         supplier1.repay(aDai, type(uint256).max);
         positionsManager.claimToTreasury(aDai);

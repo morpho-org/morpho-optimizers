@@ -9,8 +9,7 @@ import "@uniswap/v3-periphery/contracts/libraries/TransferHelper.sol";
 contract UniswapV2PoolCreator {
     using SafeERC20 for IERC20;
 
-    IUniswapV2Router02 public swapRouter =
-        IUniswapV2Router02(0x60aE616a2155Ee3d9A68541Ba4544862310933d4); // JoeRouter.
+    IUniswapV2Router02 public swapRouter = IUniswapV2Router02(0x60aE616a2155Ee3d9A68541Ba4544862310933d4); // JoeRouter.
     address public constant WETH9 = 0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7; // Intermediate token address.
 
     // Destabilize the pool to make sire the swap manager is working fine.
@@ -28,16 +27,7 @@ contract UniswapV2PoolCreator {
         TransferHelper.safeApprove(_token0, address(swapRouter), amount0ToMint);
         TransferHelper.safeApprove(WETH9, address(swapRouter), amount1ToMint);
 
-        (amount0, amount1, liquidity) = swapRouter.addLiquidity(
-            _token0,
-            WETH9,
-            amount0ToMint,
-            amount1ToMint,
-            0,
-            0,
-            address(this),
-            block.timestamp
-        );
+        (amount0, amount1, liquidity) = swapRouter.addLiquidity(_token0, WETH9, amount0ToMint, amount1ToMint, 0, 0, address(this), block.timestamp);
 
         // Remove allowance and refund in both assets.
         if (amount0 < amount0ToMint) {

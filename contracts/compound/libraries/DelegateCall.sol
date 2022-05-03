@@ -16,10 +16,7 @@ library DelegateCall {
     /// @param _target The address of the target contract.
     /// @param _data The date to pass to the function called on the target contract.
     /// @return The return data from the function called on the target contract.
-    function functionDelegateCall(address _target, bytes memory _data)
-        internal
-        returns (bytes memory)
-    {
+    function functionDelegateCall(address _target, bytes memory _data) internal returns (bytes memory) {
         (bool success, bytes memory returndata) = _target.delegatecall(_data);
         if (success) return returndata;
         else {

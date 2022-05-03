@@ -22,10 +22,7 @@ abstract contract MorphoGovernance is MorphoEventsErrors {
 
     /// @notice Sets `maxGasForMatching`.
     /// @param _maxGasForMatching The new `maxGasForMatching`.
-    function setMaxGasForMatching(Types.MaxGasForMatching memory _maxGasForMatching)
-        external
-        onlyOwner
-    {
+    function setMaxGasForMatching(Types.MaxGasForMatching memory _maxGasForMatching) external onlyOwner {
         maxGasForMatching = _maxGasForMatching;
         emit MaxGasForMatchingSet(_maxGasForMatching);
     }
@@ -75,11 +72,7 @@ abstract contract MorphoGovernance is MorphoEventsErrors {
     /// @notice Sets whether to match people P2P or not.
     /// @param _poolTokenAddress The address of the market.
     /// @param _noP2P Whether to match people P2P or not.
-    function setNoP2P(address _poolTokenAddress, bool _noP2P)
-        external
-        onlyOwner
-        isMarketCreated(_poolTokenAddress)
-    {
+    function setNoP2P(address _poolTokenAddress, bool _noP2P) external onlyOwner isMarketCreated(_poolTokenAddress) {
         noP2P[_poolTokenAddress] = _noP2P;
         emit NoP2PSet(_poolTokenAddress, _noP2P);
     }
@@ -87,23 +80,15 @@ abstract contract MorphoGovernance is MorphoEventsErrors {
     /// @notice Sets the `reserveFactor`.
     /// @param _poolTokenAddress The market on which to set the `_newReserveFactor`.
     /// @param _newReserveFactor The proportion of the interest earned by users sent to the DAO, in basis point.
-    function setReserveFactor(address _poolTokenAddress, uint256 _newReserveFactor)
-        external
-        onlyOwner
-    {
+    function setReserveFactor(address _poolTokenAddress, uint256 _newReserveFactor) external onlyOwner {
         updateP2PIndexes(_poolTokenAddress);
-        marketParameters[_poolTokenAddress].reserveFactor = uint16(
-            CompoundMath.min(MAX_BASIS_POINTS, _newReserveFactor)
-        );
+        marketParameters[_poolTokenAddress].reserveFactor = uint16(CompoundMath.min(MAX_BASIS_POINTS, _newReserveFactor));
         emit ReserveFactorSet(_poolTokenAddress, marketParameters[_poolTokenAddress].reserveFactor);
     }
 
     /// @notice Set a new peer-to-peer cursor.
     /// @param _p2pIndexCursor The new peer-to-peer cursor.
-    function setP2PIndexCursor(address _poolTokenAddress, uint16 _p2pIndexCursor)
-        external
-        onlyOwner
-    {
+    function setP2PIndexCursor(address _poolTokenAddress, uint16 _p2pIndexCursor) external onlyOwner {
         marketParameters[_poolTokenAddress].p2pIndexCursor = _p2pIndexCursor;
         emit P2PIndexCursorSet(_poolTokenAddress, _p2pIndexCursor);
     }
@@ -137,11 +122,7 @@ abstract contract MorphoGovernance is MorphoEventsErrors {
     /// @dev No more than 90% of the accumulated fees are claimable at once.
     /// @param _poolTokenAddress The address of the market on which to claim the reserve fee.
     /// @param _amount The amount of underlying to claim.
-    function claimToTreasury(address _poolTokenAddress, uint256 _amount)
-        external
-        onlyOwner
-        isMarketCreatedAndNotPaused(_poolTokenAddress)
-    {
+    function claimToTreasury(address _poolTokenAddress, uint256 _amount) external onlyOwner isMarketCreatedAndNotPaused(_poolTokenAddress) {
         if (treasuryVault == address(0)) revert ZeroAddress();
 
         ERC20 underlyingToken = _getUnderlying(_poolTokenAddress);

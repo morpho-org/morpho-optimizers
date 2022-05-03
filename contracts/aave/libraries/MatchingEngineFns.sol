@@ -16,15 +16,7 @@ library MatchingEngineFns {
         uint256 _amount,
         uint256 _maxGasToConsume
     ) internal returns (uint256) {
-        bytes memory data = address(_matchingEngine).functionDelegateCall(
-            abi.encodeWithSelector(
-                _matchingEngine.matchSuppliers.selector,
-                _poolToken,
-                _underlyingToken,
-                _amount,
-                _maxGasToConsume
-            )
-        );
+        bytes memory data = address(_matchingEngine).functionDelegateCall(abi.encodeWithSelector(_matchingEngine.matchSuppliers.selector, _poolToken, _underlyingToken, _amount, _maxGasToConsume));
         return abi.decode(data, (uint256));
     }
 
@@ -34,14 +26,7 @@ library MatchingEngineFns {
         uint256 _amount,
         uint256 _maxGasToConsume
     ) internal returns (uint256) {
-        bytes memory data = address(_matchingEngine).functionDelegateCall(
-            abi.encodeWithSelector(
-                _matchingEngine.unmatchSuppliers.selector,
-                _poolTokenAddress,
-                _amount,
-                _maxGasToConsume
-            )
-        );
+        bytes memory data = address(_matchingEngine).functionDelegateCall(abi.encodeWithSelector(_matchingEngine.unmatchSuppliers.selector, _poolTokenAddress, _amount, _maxGasToConsume));
         return abi.decode(data, (uint256));
     }
 
@@ -52,15 +37,7 @@ library MatchingEngineFns {
         uint256 _amount,
         uint256 _maxGasToConsume
     ) internal returns (uint256) {
-        bytes memory data = address(_matchingEngine).functionDelegateCall(
-            abi.encodeWithSelector(
-                _matchingEngine.matchBorrowers.selector,
-                _poolToken,
-                _underlyingToken,
-                _amount,
-                _maxGasToConsume
-            )
-        );
+        bytes memory data = address(_matchingEngine).functionDelegateCall(abi.encodeWithSelector(_matchingEngine.matchBorrowers.selector, _poolToken, _underlyingToken, _amount, _maxGasToConsume));
         return abi.decode(data, (uint256));
     }
 
@@ -70,14 +47,7 @@ library MatchingEngineFns {
         uint256 _amount,
         uint256 _maxGasToConsume
     ) internal returns (uint256) {
-        bytes memory data = address(_matchingEngine).functionDelegateCall(
-            abi.encodeWithSelector(
-                _matchingEngine.unmatchBorrowers.selector,
-                _poolTokenAddress,
-                _amount,
-                _maxGasToConsume
-            )
-        );
+        bytes memory data = address(_matchingEngine).functionDelegateCall(abi.encodeWithSelector(_matchingEngine.unmatchBorrowers.selector, _poolTokenAddress, _amount, _maxGasToConsume));
         return abi.decode(data, (uint256));
     }
 
@@ -86,13 +56,7 @@ library MatchingEngineFns {
         address _poolTokenAddress,
         address _user
     ) internal {
-        address(_matchingEngine).functionDelegateCall(
-            abi.encodeWithSelector(
-                _matchingEngine.updateBorrowers.selector,
-                _poolTokenAddress,
-                _user
-            )
-        );
+        address(_matchingEngine).functionDelegateCall(abi.encodeWithSelector(_matchingEngine.updateBorrowers.selector, _poolTokenAddress, _user));
     }
 
     function updateSuppliersDC(
@@ -100,12 +64,6 @@ library MatchingEngineFns {
         address _poolTokenAddress,
         address _user
     ) internal {
-        address(_matchingEngine).functionDelegateCall(
-            abi.encodeWithSelector(
-                _matchingEngine.updateSuppliers.selector,
-                _poolTokenAddress,
-                _user
-            )
-        );
+        address(_matchingEngine).functionDelegateCall(abi.encodeWithSelector(_matchingEngine.updateSuppliers.selector, _poolTokenAddress, _user));
     }
 }

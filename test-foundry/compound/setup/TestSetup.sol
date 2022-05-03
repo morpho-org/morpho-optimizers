@@ -74,12 +74,7 @@ contract TestSetup is Config, Utils, stdCheats {
     }
 
     function initContracts() internal {
-        Types.MaxGasForMatching memory maxGasForMatching = Types.MaxGasForMatching({
-            supply: 3e6,
-            borrow: 3e6,
-            withdraw: 3e6,
-            repay: 3e6
-        });
+        Types.MaxGasForMatching memory maxGasForMatching = Types.MaxGasForMatching({supply: 3e6, borrow: 3e6, withdraw: 3e6, repay: 3e6});
 
         comptroller = IComptroller(comptrollerAddress);
         interestRates = new InterestRates();
@@ -95,16 +90,7 @@ contract TestSetup is Config, Utils, stdCheats {
 
         morphoProxy.changeAdmin(address(proxyAdmin));
         morpho = Morpho(payable(address(morphoProxy)));
-        morpho.initialize(
-            positionsManager,
-            interestRates,
-            comptroller,
-            1,
-            maxGasForMatching,
-            20,
-            cEth,
-            wEth
-        );
+        morpho.initialize(positionsManager, interestRates, comptroller, 1, maxGasForMatching, 20, cEth, wEth);
 
         treasuryVault = new User(morpho);
         fakeMorphoImpl = new Morpho();
@@ -128,12 +114,7 @@ contract TestSetup is Config, Utils, stdCheats {
 
         morphoToken = new MorphoToken(address(this));
         dumbOracle = new DumbOracle();
-        incentivesVault = new IncentivesVault(
-            address(morpho),
-            address(morphoToken),
-            address(1),
-            address(dumbOracle)
-        );
+        incentivesVault = new IncentivesVault(address(morpho), address(morphoToken), address(1), address(dumbOracle));
         morphoToken.transfer(address(incentivesVault), 1_000_000 ether);
 
         rewardsManager = new RewardsManager(address(morpho));
@@ -161,10 +142,7 @@ contract TestSetup is Config, Utils, stdCheats {
     function initUsers() internal {
         for (uint256 i = 0; i < 3; i++) {
             suppliers.push(new User(morpho));
-            hevm.label(
-                address(suppliers[i]),
-                string(abi.encodePacked("Supplier", Strings.toString(i + 1)))
-            );
+            hevm.label(address(suppliers[i]), string(abi.encodePacked("Supplier", Strings.toString(i + 1))));
             fillUserBalances(suppliers[i]);
         }
         supplier1 = suppliers[0];
@@ -173,10 +151,7 @@ contract TestSetup is Config, Utils, stdCheats {
 
         for (uint256 i = 0; i < 3; i++) {
             borrowers.push(new User(morpho));
-            hevm.label(
-                address(borrowers[i]),
-                string(abi.encodePacked("Borrower", Strings.toString(i + 1)))
-            );
+            hevm.label(address(borrowers[i]), string(abi.encodePacked("Borrower", Strings.toString(i + 1))));
             fillUserBalances(borrowers[i]);
         }
 
@@ -236,12 +211,7 @@ contract TestSetup is Config, Utils, stdCheats {
         uint64 _withdraw,
         uint64 _repay
     ) public {
-        Types.MaxGasForMatching memory newMaxGas = Types.MaxGasForMatching({
-            supply: _supply,
-            borrow: _borrow,
-            withdraw: _withdraw,
-            repay: _repay
-        });
+        Types.MaxGasForMatching memory newMaxGas = Types.MaxGasForMatching({supply: _supply, borrow: _borrow, withdraw: _withdraw, repay: _repay});
         morpho.setMaxGasForMatching(newMaxGas);
     }
 
@@ -257,24 +227,15 @@ contract TestSetup is Config, Utils, stdCheats {
     /// @param _poolTokenAddress The market address.
     /// @return p2pSupplyRate_ The market's supply rate in P2P (in ray).
     /// @return p2pBorrowRate_ The market's borrow rate in P2P (in ray).
-    function getApproxBPYs(address _poolTokenAddress)
-        public
-        view
-        returns (uint256 p2pSupplyRate_, uint256 p2pBorrowRate_)
-    {
+    function getApproxBPYs(address _poolTokenAddress) public view returns (uint256 p2pSupplyRate_, uint256 p2pBorrowRate_) {
         ICToken cToken = ICToken(_poolTokenAddress);
 
         uint256 poolSupplyBPY = cToken.supplyRatePerBlock();
         uint256 poolBorrowBPY = cToken.borrowRatePerBlock();
-        (uint256 reserveFactor, uint256 p2pIndexCursor) = morpho.marketParameters(
-            _poolTokenAddress
-        );
+        (uint256 reserveFactor, uint256 p2pIndexCursor) = morpho.marketParameters(_poolTokenAddress);
 
         // rate = 2/3 * poolSupplyRate + 1/3 * poolBorrowRate.
-        uint256 rate = ((10_000 - p2pIndexCursor) *
-            poolSupplyBPY +
-            p2pIndexCursor *
-            poolBorrowBPY) / 10_000;
+        uint256 rate = ((10_000 - p2pIndexCursor) * poolSupplyBPY + p2pIndexCursor * poolBorrowBPY) / 10_000;
 
         p2pSupplyRate_ = rate - (reserveFactor * (rate - poolSupplyBPY)) / 10_000;
         p2pBorrowRate_ = rate + (reserveFactor * (poolBorrowBPY - rate)) / 10_000;

@@ -331,9 +331,7 @@ interface ICToken {
 
     function _reduceReserves(uint256 reduceAmount) external returns (uint256);
 
-    function _setInterestRateModel(IInterestRateModel newInterestRateModel)
-        external
-        returns (uint256);
+    function _setInterestRateModel(IInterestRateModel newInterestRateModel) external returns (uint256);
 }
 
 interface ICEther is ICToken {
@@ -345,7 +343,5 @@ interface ICEther is ICToken {
 interface ICompoundOracle {
     function getUnderlyingPrice(address) external view returns (uint256);
 
-    function accrueUserUnclaimedRewards(address[] calldata, address)
-        external
-        returns (uint256 unclaimedRewards);
+    function accrueUserUnclaimedRewards(address[] calldata, address) external returns (uint256 unclaimedRewards);
 }

@@ -24,51 +24,27 @@ contract Utils is DSTest {
         return value / 1e10;
     }
 
-    function underlyingToScaledBalance(uint256 _scaledBalance, uint256 _normalizedIncome)
-        internal
-        pure
-        returns (uint256)
-    {
+    function underlyingToScaledBalance(uint256 _scaledBalance, uint256 _normalizedIncome) internal pure returns (uint256) {
         return (_scaledBalance * RAY) / _normalizedIncome;
     }
 
-    function scaledBalanceToUnderlying(uint256 _scaledBalance, uint256 _normalizedIncome)
-        internal
-        pure
-        returns (uint256)
-    {
+    function scaledBalanceToUnderlying(uint256 _scaledBalance, uint256 _normalizedIncome) internal pure returns (uint256) {
         return (_scaledBalance * _normalizedIncome) / RAY;
     }
 
-    function underlyingToAdUnit(uint256 _underlyingAmount, uint256 _normalizedVariableDebt)
-        internal
-        pure
-        returns (uint256)
-    {
+    function underlyingToAdUnit(uint256 _underlyingAmount, uint256 _normalizedVariableDebt) internal pure returns (uint256) {
         return (_underlyingAmount * RAY) / _normalizedVariableDebt;
     }
 
-    function aDUnitToUnderlying(uint256 _aDUnitAmount, uint256 _normalizedVariableDebt)
-        internal
-        pure
-        returns (uint256)
-    {
+    function aDUnitToUnderlying(uint256 _aDUnitAmount, uint256 _normalizedVariableDebt) internal pure returns (uint256) {
         return (_aDUnitAmount * _normalizedVariableDebt) / RAY;
     }
 
-    function underlyingToP2PUnit(uint256 _underlyingAmount, uint256 _p2pExchangeRate)
-        internal
-        pure
-        returns (uint256)
-    {
+    function underlyingToP2PUnit(uint256 _underlyingAmount, uint256 _p2pExchangeRate) internal pure returns (uint256) {
         return (_underlyingAmount * RAY) / _p2pExchangeRate;
     }
 
-    function p2pUnitToUnderlying(uint256 _p2pUnitAmount, uint256 _p2pExchangeRate)
-        internal
-        pure
-        returns (uint256)
-    {
+    function p2pUnitToUnderlying(uint256 _p2pUnitAmount, uint256 _p2pExchangeRate) internal pure returns (uint256) {
         return (_p2pUnitAmount * _p2pExchangeRate) / RAY;
     }
 
@@ -98,11 +74,7 @@ contract Utils is DSTest {
     /// @param _rate The APR to use in the computation.
     /// @param _elapsedTime The amount of time during to get the interest for.
     /// @return results in ray
-    function computeCompoundedInterest(uint256 _rate, uint256 _elapsedTime)
-        public
-        pure
-        returns (uint256)
-    {
+    function computeCompoundedInterest(uint256 _rate, uint256 _elapsedTime) public pure returns (uint256) {
         uint256 rate = _rate / SECONDS_PER_YEAR;
 
         if (_elapsedTime == 0) return Math.ray();
@@ -112,13 +84,6 @@ contract Utils is DSTest {
         uint256 ratePowerTwo = rate.rayMul(rate);
         uint256 ratePowerThree = ratePowerTwo.rayMul(rate);
 
-        return
-            Math.ray() +
-            rate *
-            _elapsedTime +
-            (_elapsedTime * (_elapsedTime - 1) * ratePowerTwo) /
-            2 +
-            (_elapsedTime * (_elapsedTime - 1) * (_elapsedTime - 2) * ratePowerThree) /
-            6;
+        return Math.ray() + rate * _elapsedTime + (_elapsedTime * (_elapsedTime - 1) * ratePowerTwo) / 2 + (_elapsedTime * (_elapsedTime - 1) * (_elapsedTime - 2) * ratePowerThree) / 6;
     }
 }

@@ -29,8 +29,7 @@ contract IncentivesVault {
     function convertCompToMorphoTokens(address _to, uint256 _amount) external {
         require(msg.sender == morpho, "!morpho");
         ERC20(COMP).safeTransferFrom(msg.sender, address(this), _amount);
-        uint256 amountOut = (IOracle(oracle).consult(_amount) * (MAX_BASIS_POINTS + BONUS)) /
-            MAX_BASIS_POINTS;
+        uint256 amountOut = (IOracle(oracle).consult(_amount) * (MAX_BASIS_POINTS + BONUS)) / MAX_BASIS_POINTS;
         ERC20(morphoToken).transfer(_to, amountOut);
     }
 }

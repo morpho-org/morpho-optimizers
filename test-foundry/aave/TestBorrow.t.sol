@@ -10,10 +10,7 @@ contract TestBorrow is TestSetup {
         borrower1.approve(usdc, usdcAmount);
         borrower1.supply(aUsdc, usdcAmount);
 
-        (, uint256 borrowable) = positionsManager.getUserMaxCapacitiesForAsset(
-            address(borrower1),
-            aDai
-        );
+        (, uint256 borrowable) = positionsManager.getUserMaxCapacitiesForAsset(address(borrower1), aDai);
 
         hevm.expectRevert(abi.encodeWithSignature("DebtValueAboveMax()"));
         borrower1.borrow(aDai, borrowable + 1e12);
@@ -26,10 +23,7 @@ contract TestBorrow is TestSetup {
         borrower1.supply(aUsdc, to6Decimals(2 * amount));
         borrower1.borrow(aDai, amount);
 
-        (uint256 inP2P, uint256 onPool) = positionsManager.borrowBalanceInOf(
-            aDai,
-            address(borrower1)
-        );
+        (uint256 inP2P, uint256 onPool) = positionsManager.borrowBalanceInOf(aDai, address(borrower1));
 
         uint256 normalizedVariableDebt = lendingPool.getReserveNormalizedVariableDebt(dai);
         uint256 expectedOnPool = underlyingToAdUnit(amount, normalizedVariableDebt);
@@ -55,10 +49,7 @@ contract TestBorrow is TestSetup {
 
         testEquality(expectedInP2P, amount);
 
-        (uint256 inP2P, uint256 onPool) = positionsManager.borrowBalanceInOf(
-            aDai,
-            address(borrower1)
-        );
+        (uint256 inP2P, uint256 onPool) = positionsManager.borrowBalanceInOf(aDai, address(borrower1));
 
         testEquality(onPool, 0);
         testEquality(inP2P, supplyInP2P);
@@ -77,10 +68,7 @@ contract TestBorrow is TestSetup {
 
         (uint256 supplyInP2P, ) = positionsManager.supplyBalanceInOf(aDai, address(supplier1));
 
-        (uint256 inP2P, uint256 onPool) = positionsManager.borrowBalanceInOf(
-            aDai,
-            address(borrower1)
-        );
+        (uint256 inP2P, uint256 onPool) = positionsManager.borrowBalanceInOf(aDai, address(borrower1));
 
         testEquality(inP2P, supplyInP2P);
 

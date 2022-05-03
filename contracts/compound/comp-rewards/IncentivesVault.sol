@@ -121,8 +121,7 @@ contract IncentivesVault is IIncentivesVault, Ownable {
         ERC20(COMP).safeTransferFrom(msg.sender, morphoDao, _amount);
 
         // Add a bonus on MORPHO rewards.
-        uint256 amountOut = (IOracle(oracle).consult(_amount) * (MAX_BASIS_POINTS + bonus)) /
-            MAX_BASIS_POINTS;
+        uint256 amountOut = (IOracle(oracle).consult(_amount) * (MAX_BASIS_POINTS + bonus)) / MAX_BASIS_POINTS;
         ERC20(morphoToken).transfer(_receiver, amountOut);
 
         emit CompTokensSwitched(_receiver, _amount, amountOut);

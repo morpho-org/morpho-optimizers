@@ -13,28 +13,12 @@ contract TestMarketsManagerGetters is TestSetup {
     }
 
     function testGetMarketData() public {
-        (
-            uint256 supplyP2PExchangeRate,
-            uint256 borrowP2PExchangeRate,
-            uint256 exchangeRatesLastUpdateTimestamp,
-            uint256 supplyP2PDelta_,
-            uint256 borrowP2PDelta_,
-            uint256 supplyP2PAmount_,
-            uint256 borrowP2PAmount_
-        ) = marketsManager.getMarketData(aDai);
+        (uint256 supplyP2PExchangeRate, uint256 borrowP2PExchangeRate, uint256 exchangeRatesLastUpdateTimestamp, uint256 supplyP2PDelta_, uint256 borrowP2PDelta_, uint256 supplyP2PAmount_, uint256 borrowP2PAmount_) = marketsManager.getMarketData(aDai);
 
         assertEq(supplyP2PExchangeRate, marketsManager.supplyP2PExchangeRate(aDai));
         assertEq(borrowP2PExchangeRate, marketsManager.borrowP2PExchangeRate(aDai));
-        assertEq(
-            exchangeRatesLastUpdateTimestamp,
-            marketsManager.exchangeRatesLastUpdateTimestamp(aDai)
-        );
-        (
-            uint256 supplyP2PDelta,
-            uint256 borrowP2PDelta,
-            uint256 supplyP2PAmount,
-            uint256 borrowP2PAmount
-        ) = positionsManager.deltas(aDai);
+        assertEq(exchangeRatesLastUpdateTimestamp, marketsManager.exchangeRatesLastUpdateTimestamp(aDai));
+        (uint256 supplyP2PDelta, uint256 borrowP2PDelta, uint256 supplyP2PAmount, uint256 borrowP2PAmount) = positionsManager.deltas(aDai);
 
         assertEq(supplyP2PDelta_, supplyP2PDelta);
         assertEq(borrowP2PDelta_, borrowP2PDelta);

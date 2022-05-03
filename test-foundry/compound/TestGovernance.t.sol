@@ -7,14 +7,8 @@ contract TestGovernance is TestSetup {
     using CompoundMath for uint256;
 
     function testShoudDeployContractWithTheRightValues() public {
-        assertEq(
-            morpho.p2pSupplyIndex(cDai),
-            2 * 10**(16 + ERC20(ICToken(cDai).underlying()).decimals() - 8)
-        );
-        assertEq(
-            morpho.p2pBorrowIndex(cDai),
-            2 * 10**(16 + ERC20(ICToken(cDai).underlying()).decimals() - 8)
-        );
+        assertEq(morpho.p2pSupplyIndex(cDai), 2 * 10**(16 + ERC20(ICToken(cDai).underlying()).decimals() - 8));
+        assertEq(morpho.p2pBorrowIndex(cDai), 2 * 10**(16 + ERC20(ICToken(cDai).underlying()).decimals() - 8));
     }
 
     function testShouldRevertWhenCreatingMarketWithAnImproperMarket() public {
@@ -59,23 +53,12 @@ contract TestGovernance is TestSetup {
         (bool isCreated, , ) = morpho.marketStatuses(cAave);
 
         assertTrue(isCreated);
-        assertEq(
-            morpho.p2pSupplyIndex(cAave),
-            2 * 10**(16 + ERC20(cToken.underlying()).decimals() - 8)
-        );
-        assertEq(
-            morpho.p2pBorrowIndex(cAave),
-            2 * 10**(16 + ERC20(cToken.underlying()).decimals() - 8)
-        );
+        assertEq(morpho.p2pSupplyIndex(cAave), 2 * 10**(16 + ERC20(cToken.underlying()).decimals() - 8));
+        assertEq(morpho.p2pBorrowIndex(cAave), 2 * 10**(16 + ERC20(cToken.underlying()).decimals() - 8));
     }
 
     function testShouldSetMaxGasWithRightValues() public {
-        Types.MaxGasForMatching memory newMaxGas = Types.MaxGasForMatching({
-            supply: 1,
-            borrow: 1,
-            withdraw: 1,
-            repay: 1
-        });
+        Types.MaxGasForMatching memory newMaxGas = Types.MaxGasForMatching({supply: 1, borrow: 1, withdraw: 1, repay: 1});
 
         morpho.setMaxGasForMatching(newMaxGas);
         (uint64 supply, uint64 borrow, uint64 withdraw, uint64 repay) = morpho.maxGasForMatching();
@@ -149,12 +132,7 @@ contract TestGovernance is TestSetup {
     }
 
     function testOnlyOwnerShouldSetIncentivesVault() public {
-        IIncentivesVault incentivesVaultV2 = new IncentivesVault(
-            address(morpho),
-            address(morphoToken),
-            address(1),
-            address(dumbOracle)
-        );
+        IIncentivesVault incentivesVaultV2 = new IncentivesVault(address(morpho), address(morphoToken), address(1), address(dumbOracle));
 
         hevm.prank(address(0));
         hevm.expectRevert("Ownable: caller is not the owner");

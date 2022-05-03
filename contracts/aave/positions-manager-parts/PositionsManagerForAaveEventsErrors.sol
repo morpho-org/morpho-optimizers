@@ -15,14 +15,7 @@ abstract contract PositionsManagerForAaveEventsErrors is PositionsManagerForAave
     /// @param _balanceOnPool The supply balance on pool after update (in underlying).
     /// @param _balanceInP2P The supply balance in P2P after update (in underlying).
     /// @param _referralCode The referral code of an integrator that may receive rewards. 0 if no referral code.
-    event Supplied(
-        address indexed _user,
-        address indexed _poolTokenAddress,
-        uint256 _amount,
-        uint256 _balanceOnPool,
-        uint256 _balanceInP2P,
-        uint16 indexed _referralCode
-    );
+    event Supplied(address indexed _user, address indexed _poolTokenAddress, uint256 _amount, uint256 _balanceOnPool, uint256 _balanceInP2P, uint16 indexed _referralCode);
 
     /// @notice Emitted when a withdrawal happens.
     /// @param _user The address of the withdrawer.
@@ -30,13 +23,7 @@ abstract contract PositionsManagerForAaveEventsErrors is PositionsManagerForAave
     /// @param _amount The amount of assets withdrawn (in underlying).
     /// @param _balanceOnPool The supply balance on pool after update.
     /// @param _balanceInP2P The supply balance in P2P after update.
-    event Withdrawn(
-        address indexed _user,
-        address indexed _poolTokenAddress,
-        uint256 _amount,
-        uint256 _balanceOnPool,
-        uint256 _balanceInP2P
-    );
+    event Withdrawn(address indexed _user, address indexed _poolTokenAddress, uint256 _amount, uint256 _balanceOnPool, uint256 _balanceInP2P);
 
     /// @notice Emitted when a borrow happens.
     /// @param _user The address of the borrower.
@@ -45,14 +32,7 @@ abstract contract PositionsManagerForAaveEventsErrors is PositionsManagerForAave
     /// @param _balanceOnPool The borrow balance on pool after update.
     /// @param _balanceInP2P The borrow balance in P2P after update.
     /// @param _referralCode The referral code of an integrator that may receive rewards. 0 if no referral code.
-    event Borrowed(
-        address indexed _user,
-        address indexed _poolTokenAddress,
-        uint256 _amount,
-        uint256 _balanceOnPool,
-        uint256 _balanceInP2P,
-        uint16 indexed _referralCode
-    );
+    event Borrowed(address indexed _user, address indexed _poolTokenAddress, uint256 _amount, uint256 _balanceOnPool, uint256 _balanceInP2P, uint16 indexed _referralCode);
 
     /// @notice Emitted when a repayment happens.
     /// @param _user The address of the repayer.
@@ -60,13 +40,7 @@ abstract contract PositionsManagerForAaveEventsErrors is PositionsManagerForAave
     /// @param _amount The amount of assets repaid (in underlying).
     /// @param _balanceOnPool The borrow balance on pool after update.
     /// @param _balanceInP2P The borrow balance in P2P after update.
-    event Repaid(
-        address indexed _user,
-        address indexed _poolTokenAddress,
-        uint256 _amount,
-        uint256 _balanceOnPool,
-        uint256 _balanceInP2P
-    );
+    event Repaid(address indexed _user, address indexed _poolTokenAddress, uint256 _amount, uint256 _balanceOnPool, uint256 _balanceInP2P);
 
     /// @notice Emitted when a liquidation happens.
     /// @param _liquidator The address of the liquidator.
@@ -75,14 +49,7 @@ abstract contract PositionsManagerForAaveEventsErrors is PositionsManagerForAave
     /// @param _poolTokenBorrowedAddress The address of the borrowed asset.
     /// @param _amountSeized The amount of collateral asset seized (in underlying).
     /// @param _poolTokenCollateralAddress The address of the collateral asset seized.
-    event Liquidated(
-        address _liquidator,
-        address indexed _liquidatee,
-        uint256 _amountRepaid,
-        address indexed _poolTokenBorrowedAddress,
-        uint256 _amountSeized,
-        address indexed _poolTokenCollateralAddress
-    );
+    event Liquidated(address _liquidator, address indexed _liquidatee, uint256 _amountRepaid, address indexed _poolTokenBorrowedAddress, uint256 _amountSeized, address indexed _poolTokenCollateralAddress);
 
     /// @notice Emitted when the borrow P2P delta is updated.
     /// @param _poolTokenAddress The address of the market.
@@ -98,11 +65,7 @@ abstract contract PositionsManagerForAaveEventsErrors is PositionsManagerForAave
     /// @param _poolTokenAddress The address of the market.
     /// @param _supplyP2PAmount The supply P2P amount after update.
     /// @param _borrowP2PAmount The borrow P2P amount after update.
-    event P2PAmountsUpdated(
-        address indexed _poolTokenAddress,
-        uint256 _supplyP2PAmount,
-        uint256 _borrowP2PAmount
-    );
+    event P2PAmountsUpdated(address indexed _poolTokenAddress, uint256 _supplyP2PAmount, uint256 _borrowP2PAmount);
 
     /// @dev Emitted when a new value for `NDS` is set.
     /// @param _newValue The new value of `NDS`.

@@ -15,11 +15,7 @@ contract TestInterestRates is TestSetup {
     uint256 public supplyWeight = 2;
     uint256 public borrowWeight = 1;
 
-    function computeP2PExchangeRates(Types.Params memory params)
-        public
-        view
-        returns (uint256 supplyP2PExchangeRate_, uint256 borrowP2PExchangeRate_)
-    {
+    function computeP2PExchangeRates(Types.Params memory params) public view returns (uint256 supplyP2PExchangeRate_, uint256 borrowP2PExchangeRate_) {
         uint256 supplyPoolIncrease = (params.poolSupplyExchangeRate * RAY / params.lastPoolSupplyExchangeRate); // prettier-ignore
         uint256 borrowPoolIncrease  = (params.poolBorrowExchangeRate * RAY / params.lastPoolBorrowExchangeRate); // prettier-ignore
         uint256 p2pIncrease = ((supplyWeight * supplyPoolIncrease + borrowWeight * borrowPoolIncrease) / (supplyWeight + borrowWeight)); // prettier-ignore
@@ -48,16 +44,7 @@ contract TestInterestRates is TestSetup {
     }
 
     function testExchangeRateComputation() public {
-        Types.Params memory params = Types.Params(
-            supplyP2PExchangeRate,
-            borrowP2PExchangeRate,
-            poolSupplyExchangeRate,
-            poolBorrowExchangeRate,
-            lastPoolSupplyExchangeRate,
-            lastPoolBorrowExchangeRate,
-            reserveFactor0PerCent,
-            Types.Delta(0, 0, 0, 0)
-        );
+        Types.Params memory params = Types.Params(supplyP2PExchangeRate, borrowP2PExchangeRate, poolSupplyExchangeRate, poolBorrowExchangeRate, lastPoolSupplyExchangeRate, lastPoolBorrowExchangeRate, reserveFactor0PerCent, Types.Delta(0, 0, 0, 0));
 
         (uint256 newSupplyP2PExchangeRate, uint256 newBorrowP2PExchangeRate) = interestRates.computeP2PExchangeRates(params); // prettier-ignore
         (uint256 expectedNewSupplyP2PExchangeRate, uint256 expectedNewBorrowP2PExchangeRate) = computeP2PExchangeRates(params); // prettier-ignore
@@ -66,16 +53,7 @@ contract TestInterestRates is TestSetup {
     }
 
     function testExchangeRateComputationWithReserveFactor() public {
-        Types.Params memory params = Types.Params(
-            supplyP2PExchangeRate,
-            borrowP2PExchangeRate,
-            poolSupplyExchangeRate,
-            poolBorrowExchangeRate,
-            lastPoolSupplyExchangeRate,
-            lastPoolBorrowExchangeRate,
-            reserveFactor50PerCent,
-            Types.Delta(0, 0, 0, 0)
-        );
+        Types.Params memory params = Types.Params(supplyP2PExchangeRate, borrowP2PExchangeRate, poolSupplyExchangeRate, poolBorrowExchangeRate, lastPoolSupplyExchangeRate, lastPoolBorrowExchangeRate, reserveFactor50PerCent, Types.Delta(0, 0, 0, 0));
 
         (uint256 newSupplyP2PExchangeRate, uint256 newBorrowP2PExchangeRate) = interestRates.computeP2PExchangeRates(params); // prettier-ignore
         (uint256 expectedNewSupplyP2PExchangeRate, uint256 expectedNewBorrowP2PExchangeRate) = computeP2PExchangeRates(params); // prettier-ignore
@@ -84,16 +62,7 @@ contract TestInterestRates is TestSetup {
     }
 
     function testExchangeRateComputationWithDelta() public {
-        Types.Params memory params = Types.Params(
-            supplyP2PExchangeRate,
-            borrowP2PExchangeRate,
-            poolSupplyExchangeRate,
-            poolBorrowExchangeRate,
-            lastPoolSupplyExchangeRate,
-            lastPoolBorrowExchangeRate,
-            reserveFactor0PerCent,
-            Types.Delta(1 * WAD, 1 * WAD, 4 * WAD, 6 * WAD)
-        );
+        Types.Params memory params = Types.Params(supplyP2PExchangeRate, borrowP2PExchangeRate, poolSupplyExchangeRate, poolBorrowExchangeRate, lastPoolSupplyExchangeRate, lastPoolBorrowExchangeRate, reserveFactor0PerCent, Types.Delta(1 * WAD, 1 * WAD, 4 * WAD, 6 * WAD));
 
         (uint256 newSupplyP2PExchangeRate, uint256 newBorrowP2PExchangeRate) = interestRates.computeP2PExchangeRates(params); // prettier-ignore
         (uint256 expectedNewSupplyP2PExchangeRate, uint256 expectedNewBorrowP2PExchangeRate) = computeP2PExchangeRates(params); // prettier-ignore
@@ -102,16 +71,7 @@ contract TestInterestRates is TestSetup {
     }
 
     function testExchangeRateComputationWithDeltaAndReserveFactor() public {
-        Types.Params memory params = Types.Params(
-            supplyP2PExchangeRate,
-            borrowP2PExchangeRate,
-            poolSupplyExchangeRate,
-            poolBorrowExchangeRate,
-            lastPoolSupplyExchangeRate,
-            lastPoolBorrowExchangeRate,
-            reserveFactor50PerCent,
-            Types.Delta(1 * WAD, 1 * WAD, 4 * WAD, 6 * WAD)
-        );
+        Types.Params memory params = Types.Params(supplyP2PExchangeRate, borrowP2PExchangeRate, poolSupplyExchangeRate, poolBorrowExchangeRate, lastPoolSupplyExchangeRate, lastPoolBorrowExchangeRate, reserveFactor50PerCent, Types.Delta(1 * WAD, 1 * WAD, 4 * WAD, 6 * WAD));
 
         (uint256 newSupplyP2PExchangeRate, uint256 newBorrowP2PExchangeRate) = interestRates.computeP2PExchangeRates(params); // prettier-ignore
         (uint256 expectedNewSupplyP2PExchangeRate, uint256 expectedNewBorrowP2PExchangeRate) = computeP2PExchangeRates(params); // prettier-ignore
@@ -150,16 +110,7 @@ contract TestInterestRates is TestSetup {
         hevm.assume(_supplyP2PAmount * _supplyP2PExchangeRate / RAY > _supplyP2PDelta * _poolSupplyExchangeRate / RAY); // prettier-ignore
         hevm.assume(_borrowP2PAmount * _borrowP2PExchangeRate / RAY > _borrowP2PDelta * _poolBorrowExchangeRate / RAY); // prettier-ignore
 
-        Types.Params memory params = Types.Params(
-            _supplyP2PExchangeRate,
-            _borrowP2PExchangeRate,
-            _poolSupplyExchangeRate,
-            _poolBorrowExchangeRate,
-            _lastPoolSupplyExchangeRate,
-            _lastPoolBorrowExchangeRate,
-            _reserveFactor,
-            Types.Delta(_supplyP2PDelta, _borrowP2PDelta, _supplyP2PAmount, _borrowP2PAmount)
-        );
+        Types.Params memory params = Types.Params(_supplyP2PExchangeRate, _borrowP2PExchangeRate, _poolSupplyExchangeRate, _poolBorrowExchangeRate, _lastPoolSupplyExchangeRate, _lastPoolBorrowExchangeRate, _reserveFactor, Types.Delta(_supplyP2PDelta, _borrowP2PDelta, _supplyP2PAmount, _borrowP2PAmount));
 
         (uint256 newSupplyP2PExchangeRate, uint256 newBorrowP2PExchangeRate) = interestRates.computeP2PExchangeRates(params); // prettier-ignore
         (uint256 expectedNewSupplyP2PExchangeRate, uint256 expectedNewBorrowP2PExchangeRate) = computeP2PExchangeRates(params); // prettier-ignore

@@ -25,10 +25,8 @@ contract UniswapV3PoolCreator is IERC721Receiver {
     /// @dev The maximum tick that may be passed to #getSqrtRatioAtTick computed from log base 1.0001 of 2**128
     int24 internal constant MAX_TICK = -MIN_TICK;
 
-    IUniswapV3Factory public uniswapFactory =
-        IUniswapV3Factory(0x1F98431c8aD98523631AE4a59f267346ea31F984);
-    INonfungiblePositionManager public nonfungiblePositionManager =
-        INonfungiblePositionManager(0xC36442b4a4522E871399CD717aBDD847Ab11FE88);
+    IUniswapV3Factory public uniswapFactory = IUniswapV3Factory(0x1F98431c8aD98523631AE4a59f267346ea31F984);
+    INonfungiblePositionManager public nonfungiblePositionManager = INonfungiblePositionManager(0xC36442b4a4522E871399CD717aBDD847Ab11FE88);
     address public WETH9; // Intermediate token address.
     uint24 public constant POOL_FEE = 3000;
 
@@ -49,12 +47,7 @@ contract UniswapV3PoolCreator is IERC721Receiver {
             // createAndInitializePoolIfNecessary requires that token 0 address < token 1 address
             (token0, token1) = (token1, token0);
         }
-        nonfungiblePositionManager.createAndInitializePoolIfNecessary(
-            token0,
-            token1,
-            POOL_FEE,
-            sqrt_
-        );
+        nonfungiblePositionManager.createAndInitializePoolIfNecessary(token0, token1, POOL_FEE, sqrt_);
 
         mintNewPosition(_token0);
     }
@@ -77,20 +70,7 @@ contract UniswapV3PoolCreator is IERC721Receiver {
         TransferHelper.safeApprove(_token0, address(nonfungiblePositionManager), amountToMint);
         TransferHelper.safeApprove(WETH9, address(nonfungiblePositionManager), amountToMint);
 
-        INonfungiblePositionManager.MintParams memory params = INonfungiblePositionManager
-        .MintParams({
-            token0: _token0 < WETH9 ? _token0 : WETH9,
-            token1: _token0 < WETH9 ? WETH9 : _token0,
-            fee: POOL_FEE,
-            tickLower: getAdjustedTicks(MIN_TICK),
-            tickUpper: getAdjustedTicks(MAX_TICK),
-            amount0Desired: amountToMint,
-            amount1Desired: amountToMint,
-            amount0Min: 0,
-            amount1Min: 0,
-            recipient: address(this),
-            deadline: block.timestamp
-        });
+        INonfungiblePositionManager.MintParams memory params = INonfungiblePositionManager.MintParams({token0: _token0 < WETH9 ? _token0 : WETH9, token1: _token0 < WETH9 ? WETH9 : _token0, fee: POOL_FEE, tickLower: getAdjustedTicks(MIN_TICK), tickUpper: getAdjustedTicks(MAX_TICK), amount0Desired: amountToMint, amount1Desired: amountToMint, amount0Min: 0, amount1Min: 0, recipient: address(this), deadline: block.timestamp});
 
         // Note that the pool defined and fee tier 0.3% must already be created and initialized in order to mint
         (tokenId, liquidity, amount0, amount1) = nonfungiblePositionManager.mint(params);
@@ -124,28 +104,10 @@ contract UniswapV3PoolCreator is IERC721Receiver {
     }
 
     function _createDeposit(address owner, uint256 tokenId) internal {
-        (
-            ,
-            ,
-            address token0,
-            address token1,
-            ,
-            ,
-            ,
-            uint128 liquidity,
-            ,
-            ,
-            ,
-
-        ) = nonfungiblePositionManager.positions(tokenId);
+        (, , address token0, address token1, , , , uint128 liquidity, , , , ) = nonfungiblePositionManager.positions(tokenId);
 
         // set the owner and data for position
         // operator is msg.sender
-        deposits[tokenId] = Deposit({
-            owner: owner,
-            liquidity: liquidity,
-            token0: token0,
-            token1: token1
-        });
+        deposits[tokenId] = Deposit({owner: owner, liquidity: liquidity, token0: token0, token1: token1});
     }
 }

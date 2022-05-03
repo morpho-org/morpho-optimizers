@@ -56,10 +56,7 @@ contract TestPausableMarket is TestSetup {
         supplier1.approve(dai, 2 * amount);
         supplier1.supply(aDai, amount);
 
-        (, uint256 toBorrow) = positionsManager.getUserMaxCapacitiesForAsset(
-            address(supplier1),
-            aUsdc
-        );
+        (, uint256 toBorrow) = positionsManager.getUserMaxCapacitiesForAsset(address(supplier1), aUsdc);
         supplier1.borrow(aUsdc, toBorrow);
 
         positionsManager.setPauseStatus(aDai);

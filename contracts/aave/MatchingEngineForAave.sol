@@ -42,24 +42,14 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
     /// @param _poolTokenAddress The address of the market.
     /// @param _balanceOnPool The supply balance on pool after update.
     /// @param _balanceInP2P The supply balance in P2P after update.
-    event SupplierPositionUpdated(
-        address indexed _user,
-        address indexed _poolTokenAddress,
-        uint256 _balanceOnPool,
-        uint256 _balanceInP2P
-    );
+    event SupplierPositionUpdated(address indexed _user, address indexed _poolTokenAddress, uint256 _balanceOnPool, uint256 _balanceInP2P);
 
     /// @notice Emitted when the position of a borrower is updated.
     /// @param _user The address of the borrower.
     /// @param _poolTokenAddress The address of the market.
     /// @param _balanceOnPool The borrow balance on pool after update.
     /// @param _balanceInP2P The borrow balance in P2P after update.
-    event BorrowerPositionUpdated(
-        address indexed _user,
-        address indexed _poolTokenAddress,
-        uint256 _balanceOnPool,
-        uint256 _balanceInP2P
-    );
+    event BorrowerPositionUpdated(address indexed _user, address indexed _poolTokenAddress, uint256 _balanceOnPool, uint256 _balanceInP2P);
 
     /// CONSTRUCTOR ///
 
@@ -90,34 +80,17 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
 
         if (_maxGasToConsume != 0) {
             vars.gasLeftAtTheBeginning = gasleft();
-            while (
-                matched < _amount &&
-                user != address(0) &&
-                vars.gasLeftAtTheBeginning - gasleft() < _maxGasToConsume
-            ) {
-                vars.inUnderlying = supplyBalanceInOf[poolTokenAddress][user].onPool.mulWadByRay(
-                    vars.normalizer
-                );
+            while (matched < _amount && user != address(0) && vars.gasLeftAtTheBeginning - gasleft() < _maxGasToConsume) {
+                vars.inUnderlying = supplyBalanceInOf[poolTokenAddress][user].onPool.mulWadByRay(vars.normalizer);
                 unchecked {
-                    vars.toMatch = vars.inUnderlying < _amount - matched
-                        ? vars.inUnderlying
-                        : _amount - matched;
+                    vars.toMatch = vars.inUnderlying < _amount - matched ? vars.inUnderlying : _amount - matched;
                     matched += vars.toMatch;
                 }
 
-                supplyBalanceInOf[poolTokenAddress][user].onPool -= vars.toMatch.divWadByRay(
-                    vars.normalizer
-                );
-                supplyBalanceInOf[poolTokenAddress][user].inP2P += vars.toMatch.divWadByRay(
-                    vars.p2pRate
-                ); // In p2pUnit
+                supplyBalanceInOf[poolTokenAddress][user].onPool -= vars.toMatch.divWadByRay(vars.normalizer);
+                supplyBalanceInOf[poolTokenAddress][user].inP2P += vars.toMatch.divWadByRay(vars.p2pRate); // In p2pUnit
                 updateSuppliers(poolTokenAddress, user);
-                emit SupplierPositionUpdated(
-                    user,
-                    poolTokenAddress,
-                    supplyBalanceInOf[poolTokenAddress][user].onPool,
-                    supplyBalanceInOf[poolTokenAddress][user].inP2P
-                );
+                emit SupplierPositionUpdated(user, poolTokenAddress, supplyBalanceInOf[poolTokenAddress][user].onPool, supplyBalanceInOf[poolTokenAddress][user].inP2P);
 
                 user = suppliersOnPool[poolTokenAddress].getHead();
             }
@@ -144,34 +117,17 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
 
         if (_maxGasToConsume != 0) {
             vars.gasLeftAtTheBeginning = gasleft();
-            while (
-                vars.remainingToUnmatch > 0 &&
-                user != address(0) &&
-                vars.gasLeftAtTheBeginning - gasleft() < _maxGasToConsume
-            ) {
-                vars.inUnderlying = supplyBalanceInOf[_poolTokenAddress][user].inP2P.mulWadByRay(
-                    vars.p2pRate
-                );
+            while (vars.remainingToUnmatch > 0 && user != address(0) && vars.gasLeftAtTheBeginning - gasleft() < _maxGasToConsume) {
+                vars.inUnderlying = supplyBalanceInOf[_poolTokenAddress][user].inP2P.mulWadByRay(vars.p2pRate);
                 unchecked {
-                    vars.toUnmatch = vars.inUnderlying < vars.remainingToUnmatch
-                        ? vars.inUnderlying
-                        : vars.remainingToUnmatch; // In underlying
+                    vars.toUnmatch = vars.inUnderlying < vars.remainingToUnmatch ? vars.inUnderlying : vars.remainingToUnmatch; // In underlying
                     vars.remainingToUnmatch -= vars.toUnmatch;
                 }
 
-                supplyBalanceInOf[_poolTokenAddress][user].onPool += vars.toUnmatch.divWadByRay(
-                    vars.normalizer
-                );
-                supplyBalanceInOf[_poolTokenAddress][user].inP2P -= vars.toUnmatch.divWadByRay(
-                    vars.p2pRate
-                ); // In p2pUnit
+                supplyBalanceInOf[_poolTokenAddress][user].onPool += vars.toUnmatch.divWadByRay(vars.normalizer);
+                supplyBalanceInOf[_poolTokenAddress][user].inP2P -= vars.toUnmatch.divWadByRay(vars.p2pRate); // In p2pUnit
                 updateSuppliers(_poolTokenAddress, user);
-                emit SupplierPositionUpdated(
-                    user,
-                    _poolTokenAddress,
-                    supplyBalanceInOf[_poolTokenAddress][user].onPool,
-                    supplyBalanceInOf[_poolTokenAddress][user].inP2P
-                );
+                emit SupplierPositionUpdated(user, _poolTokenAddress, supplyBalanceInOf[_poolTokenAddress][user].onPool, supplyBalanceInOf[_poolTokenAddress][user].inP2P);
 
                 user = suppliersInP2P[_poolTokenAddress].getHead();
             }
@@ -201,34 +157,17 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
 
         if (_maxGasToConsume != 0) {
             vars.gasLeftAtTheBeginning = gasleft();
-            while (
-                matched < _amount &&
-                user != address(0) &&
-                vars.gasLeftAtTheBeginning - gasleft() < _maxGasToConsume
-            ) {
-                vars.inUnderlying = borrowBalanceInOf[poolTokenAddress][user].onPool.mulWadByRay(
-                    vars.normalizer
-                );
+            while (matched < _amount && user != address(0) && vars.gasLeftAtTheBeginning - gasleft() < _maxGasToConsume) {
+                vars.inUnderlying = borrowBalanceInOf[poolTokenAddress][user].onPool.mulWadByRay(vars.normalizer);
                 unchecked {
-                    vars.toMatch = vars.inUnderlying < _amount - matched
-                        ? vars.inUnderlying
-                        : _amount - matched;
+                    vars.toMatch = vars.inUnderlying < _amount - matched ? vars.inUnderlying : _amount - matched;
                     matched += vars.toMatch;
                 }
 
-                borrowBalanceInOf[poolTokenAddress][user].onPool -= vars.toMatch.divWadByRay(
-                    vars.normalizer
-                );
-                borrowBalanceInOf[poolTokenAddress][user].inP2P += vars.toMatch.divWadByRay(
-                    vars.p2pRate
-                );
+                borrowBalanceInOf[poolTokenAddress][user].onPool -= vars.toMatch.divWadByRay(vars.normalizer);
+                borrowBalanceInOf[poolTokenAddress][user].inP2P += vars.toMatch.divWadByRay(vars.p2pRate);
                 updateBorrowers(poolTokenAddress, user);
-                emit BorrowerPositionUpdated(
-                    user,
-                    poolTokenAddress,
-                    borrowBalanceInOf[poolTokenAddress][user].onPool,
-                    borrowBalanceInOf[poolTokenAddress][user].inP2P
-                );
+                emit BorrowerPositionUpdated(user, poolTokenAddress, borrowBalanceInOf[poolTokenAddress][user].onPool, borrowBalanceInOf[poolTokenAddress][user].inP2P);
 
                 user = borrowersOnPool[poolTokenAddress].getHead();
             }
@@ -255,34 +194,17 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
 
         if (_maxGasToConsume != 0) {
             vars.gasLeftAtTheBeginning = gasleft();
-            while (
-                vars.remainingToUnmatch > 0 &&
-                user != address(0) &&
-                vars.gasLeftAtTheBeginning - gasleft() < _maxGasToConsume
-            ) {
-                vars.inUnderlying = borrowBalanceInOf[_poolTokenAddress][user].inP2P.mulWadByRay(
-                    vars.p2pRate
-                );
+            while (vars.remainingToUnmatch > 0 && user != address(0) && vars.gasLeftAtTheBeginning - gasleft() < _maxGasToConsume) {
+                vars.inUnderlying = borrowBalanceInOf[_poolTokenAddress][user].inP2P.mulWadByRay(vars.p2pRate);
                 unchecked {
-                    vars.toUnmatch = vars.inUnderlying < vars.remainingToUnmatch
-                        ? vars.inUnderlying
-                        : vars.remainingToUnmatch; // In underlying
+                    vars.toUnmatch = vars.inUnderlying < vars.remainingToUnmatch ? vars.inUnderlying : vars.remainingToUnmatch; // In underlying
                     vars.remainingToUnmatch -= vars.toUnmatch;
                 }
 
-                borrowBalanceInOf[_poolTokenAddress][user].onPool += vars.toUnmatch.divWadByRay(
-                    vars.normalizer
-                );
-                borrowBalanceInOf[_poolTokenAddress][user].inP2P -= vars.toUnmatch.divWadByRay(
-                    vars.p2pRate
-                );
+                borrowBalanceInOf[_poolTokenAddress][user].onPool += vars.toUnmatch.divWadByRay(vars.normalizer);
+                borrowBalanceInOf[_poolTokenAddress][user].inP2P -= vars.toUnmatch.divWadByRay(vars.p2pRate);
                 updateBorrowers(_poolTokenAddress, user);
-                emit BorrowerPositionUpdated(
-                    user,
-                    _poolTokenAddress,
-                    borrowBalanceInOf[_poolTokenAddress][user].onPool,
-                    borrowBalanceInOf[_poolTokenAddress][user].inP2P
-                );
+                emit BorrowerPositionUpdated(user, _poolTokenAddress, borrowBalanceInOf[_poolTokenAddress][user].onPool, borrowBalanceInOf[_poolTokenAddress][user].inP2P);
 
                 user = borrowersInP2P[_poolTokenAddress].getHead();
             }
@@ -307,17 +229,9 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         if (wasOnPoolAndValueChanged) borrowersOnPool[_poolTokenAddress].remove(_user);
         if (onPool > 0 && (wasOnPoolAndValueChanged || formerValueOnPool == 0)) {
             if (address(rewardsManager) != address(0)) {
-                address variableDebtTokenAddress = lendingPool
-                .getReserveData(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS())
-                .variableDebtTokenAddress;
-                uint256 totalBorrowed = IScaledBalanceToken(variableDebtTokenAddress)
-                .scaledTotalSupply();
-                rewardsManager.updateUserAssetAndAccruedRewards(
-                    _user,
-                    variableDebtTokenAddress,
-                    formerValueOnPool,
-                    totalBorrowed
-                );
+                address variableDebtTokenAddress = lendingPool.getReserveData(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS()).variableDebtTokenAddress;
+                uint256 totalBorrowed = IScaledBalanceToken(variableDebtTokenAddress).scaledTotalSupply();
+                rewardsManager.updateUserAssetAndAccruedRewards(_user, variableDebtTokenAddress, formerValueOnPool, totalBorrowed);
             }
             borrowersOnPool[_poolTokenAddress].insertSorted(_user, onPool, NDS);
         }
@@ -325,8 +239,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         // Check P2P
         bool wasInP2PAndValueChanged = formerValueInP2P != 0 && formerValueInP2P != inP2P;
         if (wasInP2PAndValueChanged) borrowersInP2P[_poolTokenAddress].remove(_user);
-        if (inP2P > 0 && (wasInP2PAndValueChanged || formerValueInP2P == 0))
-            borrowersInP2P[_poolTokenAddress].insertSorted(_user, inP2P, NDS);
+        if (inP2P > 0 && (wasInP2PAndValueChanged || formerValueInP2P == 0)) borrowersInP2P[_poolTokenAddress].insertSorted(_user, inP2P, NDS);
     }
 
     /// @notice Updates suppliers matching engine with the new balances of a given user.
@@ -344,12 +257,7 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         if (onPool > 0 && (wasOnPoolAndValueChanged || formerValueOnPool == 0)) {
             if (address(rewardsManager) != address(0)) {
                 uint256 totalSupplied = IScaledBalanceToken(_poolTokenAddress).scaledTotalSupply();
-                rewardsManager.updateUserAssetAndAccruedRewards(
-                    _user,
-                    _poolTokenAddress,
-                    formerValueOnPool,
-                    totalSupplied
-                );
+                rewardsManager.updateUserAssetAndAccruedRewards(_user, _poolTokenAddress, formerValueOnPool, totalSupplied);
             }
             suppliersOnPool[_poolTokenAddress].insertSorted(_user, onPool, NDS);
         }
@@ -357,7 +265,6 @@ contract MatchingEngineForAave is IMatchingEngineForAave, PositionsManagerForAav
         // Check P2P
         bool wasInP2PAndValueChanged = formerValueInP2P != 0 && formerValueInP2P != inP2P;
         if (wasInP2PAndValueChanged) suppliersInP2P[_poolTokenAddress].remove(_user);
-        if (inP2P > 0 && (wasInP2PAndValueChanged || formerValueInP2P == 0))
-            suppliersInP2P[_poolTokenAddress].insertSorted(_user, inP2P, NDS);
+        if (inP2P > 0 && (wasInP2PAndValueChanged || formerValueInP2P == 0)) suppliersInP2P[_poolTokenAddress].insertSorted(_user, inP2P, NDS);
     }
 }

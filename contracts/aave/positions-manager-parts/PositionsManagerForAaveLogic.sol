@@ -72,9 +72,7 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
         underlyingToken.safeTransferFrom(msg.sender, address(this), _amount);
 
         Types.Delta storage delta = deltas[_poolTokenAddress];
-        uint256 borrowPoolIndex = lendingPool.getReserveNormalizedVariableDebt(
-            address(underlyingToken)
-        );
+        uint256 borrowPoolIndex = lendingPool.getReserveNormalizedVariableDebt(address(underlyingToken));
         uint256 remainingToSupply = _amount;
         uint256 toRepay;
 
@@ -83,10 +81,7 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
         if (!marketsManager.noP2P(_poolTokenAddress)) {
             // Match borrow P2P delta first if any.
             if (delta.borrowP2PDelta > 0) {
-                uint256 matchedDelta = Math.min(
-                    delta.borrowP2PDelta.mulWadByRay(borrowPoolIndex),
-                    remainingToSupply
-                );
+                uint256 matchedDelta = Math.min(delta.borrowP2PDelta.mulWadByRay(borrowPoolIndex), remainingToSupply);
                 if (matchedDelta > 0) {
                     toRepay += matchedDelta;
                     remainingToSupply -= matchedDelta;
@@ -96,30 +91,19 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
             }
 
             // Match pool suppliers if any.
-            if (
-                remainingToSupply > 0 && borrowersOnPool[_poolTokenAddress].getHead() != address(0)
-            ) {
-                uint256 matched = matchingEngine.matchBorrowersDC(
-                    IAToken(_poolTokenAddress),
-                    underlyingToken,
-                    remainingToSupply,
-                    _maxGasToConsume
-                ); // In underlying.
+            if (remainingToSupply > 0 && borrowersOnPool[_poolTokenAddress].getHead() != address(0)) {
+                uint256 matched = matchingEngine.matchBorrowersDC(IAToken(_poolTokenAddress), underlyingToken, remainingToSupply, _maxGasToConsume); // In underlying.
 
                 if (matched > 0) {
                     toRepay += matched;
                     remainingToSupply -= matched;
-                    delta.borrowP2PAmount += matched.divWadByRay(
-                        marketsManager.borrowP2PExchangeRate(_poolTokenAddress)
-                    );
+                    delta.borrowP2PAmount += matched.divWadByRay(marketsManager.borrowP2PExchangeRate(_poolTokenAddress));
                 }
             }
         }
 
         if (toRepay > 0) {
-            uint256 toAddInP2P = toRepay.divWadByRay(
-                marketsManager.supplyP2PExchangeRate(_poolTokenAddress)
-            );
+            uint256 toAddInP2P = toRepay.divWadByRay(marketsManager.supplyP2PExchangeRate(_poolTokenAddress));
 
             delta.supplyP2PAmount += toAddInP2P;
             supplyBalanceInOf[_poolTokenAddress][msg.sender].inP2P += toAddInP2P;
@@ -127,10 +111,7 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
 
             toRepay = Math.min(
                 toRepay,
-                IVariableDebtToken(
-                    lendingPool.getReserveData(address(underlyingToken)).variableDebtTokenAddress
-                ).scaledBalanceOf(address(this))
-                .mulWadByRay(borrowPoolIndex) // Current Morpho's debt on Aave.
+                IVariableDebtToken(lendingPool.getReserveData(address(underlyingToken)).variableDebtTokenAddress).scaledBalanceOf(address(this)).mulWadByRay(borrowPoolIndex) // Current Morpho's debt on Aave.
             );
 
             if (toRepay > 0) _repayERC20ToPool(underlyingToken, toRepay); // Reverts on error.
@@ -140,8 +121,7 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
         /// Supply on pool ///
 
         if (remainingToSupply > 0) {
-            supplyBalanceInOf[_poolTokenAddress][msg.sender].onPool += remainingToSupply
-            .divWadByRay(lendingPool.getReserveNormalizedIncome(address(underlyingToken))); // In scaled balance.
+            supplyBalanceInOf[_poolTokenAddress][msg.sender].onPool += remainingToSupply.divWadByRay(lendingPool.getReserveNormalizedIncome(address(underlyingToken))); // In scaled balance.
             matchingEngine.updateSuppliersDC(_poolTokenAddress, msg.sender);
             _supplyToPool(underlyingToken, remainingToSupply); // Reverts on error.
         }
@@ -171,11 +151,7 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
             // Match supply P2P delta first if any.
             uint256 matchedDelta;
             if (delta.supplyP2PDelta > 0) {
-                matchedDelta = Math.min(
-                    delta.supplyP2PDelta.mulWadByRay(poolSupplyIndex),
-                    remainingToBorrow,
-                    withdrawable
-                );
+                matchedDelta = Math.min(delta.supplyP2PDelta.mulWadByRay(poolSupplyIndex), remainingToBorrow, withdrawable);
                 if (matchedDelta > 0) {
                     toWithdraw += matchedDelta;
                     remainingToBorrow -= matchedDelta;
@@ -185,30 +161,19 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
             }
 
             // Match pool suppliers if any.
-            if (
-                remainingToBorrow > 0 && suppliersOnPool[_poolTokenAddress].getHead() != address(0)
-            ) {
-                uint256 matched = matchingEngine.matchSuppliersDC(
-                    IAToken(_poolTokenAddress),
-                    underlyingToken,
-                    Math.min(remainingToBorrow, withdrawable - toWithdraw),
-                    _maxGasToConsume
-                ); // In underlying.
+            if (remainingToBorrow > 0 && suppliersOnPool[_poolTokenAddress].getHead() != address(0)) {
+                uint256 matched = matchingEngine.matchSuppliersDC(IAToken(_poolTokenAddress), underlyingToken, Math.min(remainingToBorrow, withdrawable - toWithdraw), _maxGasToConsume); // In underlying.
 
                 if (matched > 0) {
                     toWithdraw += matched;
                     remainingToBorrow -= matched;
-                    deltas[_poolTokenAddress].supplyP2PAmount += matched.divWadByRay(
-                        marketsManager.supplyP2PExchangeRate(_poolTokenAddress)
-                    );
+                    deltas[_poolTokenAddress].supplyP2PAmount += matched.divWadByRay(marketsManager.supplyP2PExchangeRate(_poolTokenAddress));
                 }
             }
         }
 
         if (toWithdraw > 0) {
-            uint256 toAddInP2P = toWithdraw.divWadByRay(
-                marketsManager.borrowP2PExchangeRate(_poolTokenAddress)
-            ); // In p2pUnit.
+            uint256 toAddInP2P = toWithdraw.divWadByRay(marketsManager.borrowP2PExchangeRate(_poolTokenAddress)); // In p2pUnit.
 
             deltas[_poolTokenAddress].borrowP2PAmount += toAddInP2P;
             borrowBalanceInOf[_poolTokenAddress][msg.sender].inP2P += toAddInP2P;
@@ -221,8 +186,7 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
         /// Borrow on pool ///
 
         if (remainingToBorrow > 0) {
-            borrowBalanceInOf[_poolTokenAddress][msg.sender].onPool += remainingToBorrow
-            .divWadByRay(lendingPool.getReserveNormalizedVariableDebt(address(underlyingToken))); // In adUnit.
+            borrowBalanceInOf[_poolTokenAddress][msg.sender].onPool += remainingToBorrow.divWadByRay(lendingPool.getReserveNormalizedVariableDebt(address(underlyingToken))); // In adUnit.
             matchingEngine.updateBorrowersDC(_poolTokenAddress, msg.sender);
             _borrowFromPool(underlyingToken, remainingToBorrow);
         }
@@ -254,17 +218,10 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
 
         if (supplyBalanceInOf[_poolTokenAddress][_supplier].onPool > 0) {
             uint256 onPoolSupply = supplyBalanceInOf[_poolTokenAddress][_supplier].onPool;
-            vars.toWithdraw = Math.min(
-                onPoolSupply.mulWadByRay(vars.supplyPoolIndex),
-                vars.remainingToWithdraw,
-                vars.withdrawable
-            );
+            vars.toWithdraw = Math.min(onPoolSupply.mulWadByRay(vars.supplyPoolIndex), vars.remainingToWithdraw, vars.withdrawable);
             vars.remainingToWithdraw -= vars.toWithdraw;
 
-            supplyBalanceInOf[_poolTokenAddress][_supplier].onPool -= Math.min(
-                onPoolSupply,
-                vars.toWithdraw.divWadByRay(vars.supplyPoolIndex)
-            ); // In poolToken.
+            supplyBalanceInOf[_poolTokenAddress][_supplier].onPool -= Math.min(onPoolSupply, vars.toWithdraw.divWadByRay(vars.supplyPoolIndex)); // In poolToken.
             matchingEngine.updateSuppliersDC(_poolTokenAddress, _supplier);
 
             if (vars.remainingToWithdraw == 0) {
@@ -281,20 +238,13 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
         /// Transfer withdraw ///
 
         if (vars.remainingToWithdraw > 0 && !marketsManager.noP2P(_poolTokenAddress)) {
-            supplyBalanceInOf[_poolTokenAddress][_supplier].inP2P -= Math.min(
-                supplyBalanceInOf[_poolTokenAddress][_supplier].inP2P,
-                vars.remainingToWithdraw.divWadByRay(supplyP2PExchangeRate)
-            ); // In p2pUnit
+            supplyBalanceInOf[_poolTokenAddress][_supplier].inP2P -= Math.min(supplyBalanceInOf[_poolTokenAddress][_supplier].inP2P, vars.remainingToWithdraw.divWadByRay(supplyP2PExchangeRate)); // In p2pUnit
             matchingEngine.updateSuppliersDC(_poolTokenAddress, _supplier);
 
             // Match Delta if any.
             if (delta.supplyP2PDelta > 0) {
                 uint256 matchedDelta;
-                matchedDelta = Math.min(
-                    delta.supplyP2PDelta.mulWadByRay(vars.supplyPoolIndex),
-                    vars.remainingToWithdraw,
-                    vars.withdrawable - vars.toWithdraw
-                );
+                matchedDelta = Math.min(delta.supplyP2PDelta.mulWadByRay(vars.supplyPoolIndex), vars.remainingToWithdraw, vars.withdrawable - vars.toWithdraw);
 
                 if (matchedDelta > 0) {
                     vars.toWithdraw += matchedDelta;
@@ -306,17 +256,9 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
             }
 
             // Match pool suppliers if any.
-            if (
-                vars.remainingToWithdraw > 0 &&
-                suppliersOnPool[_poolTokenAddress].getHead() != address(0)
-            ) {
+            if (vars.remainingToWithdraw > 0 && suppliersOnPool[_poolTokenAddress].getHead() != address(0)) {
                 // Match suppliers.
-                uint256 matched = matchingEngine.matchSuppliersDC(
-                    poolToken,
-                    underlyingToken,
-                    Math.min(vars.remainingToWithdraw, vars.withdrawable - vars.toWithdraw),
-                    _maxGasToConsume / 2
-                );
+                uint256 matched = matchingEngine.matchSuppliersDC(poolToken, underlyingToken, Math.min(vars.remainingToWithdraw, vars.withdrawable - vars.toWithdraw), _maxGasToConsume / 2);
 
                 if (matched > 0) {
                     vars.remainingToWithdraw -= matched;
@@ -330,24 +272,16 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
         /// Hard withdraw ///
 
         if (vars.remainingToWithdraw > 0) {
-            uint256 unmatched = matchingEngine.unmatchBorrowersDC(
-                _poolTokenAddress,
-                vars.remainingToWithdraw,
-                _maxGasToConsume / 2
-            );
+            uint256 unmatched = matchingEngine.unmatchBorrowersDC(_poolTokenAddress, vars.remainingToWithdraw, _maxGasToConsume / 2);
 
             // If unmatched does not cover remainingToWithdraw, the difference is added to the borrow P2P delta.
             if (unmatched < vars.remainingToWithdraw) {
-                delta.borrowP2PDelta += (vars.remainingToWithdraw - unmatched).divWadByRay(
-                    lendingPool.getReserveNormalizedVariableDebt(address(underlyingToken))
-                );
+                delta.borrowP2PDelta += (vars.remainingToWithdraw - unmatched).divWadByRay(lendingPool.getReserveNormalizedVariableDebt(address(underlyingToken)));
                 emit BorrowP2PDeltaUpdated(_poolTokenAddress, delta.borrowP2PAmount);
             }
 
             delta.supplyP2PAmount -= vars.remainingToWithdraw.divWadByRay(supplyP2PExchangeRate);
-            delta.borrowP2PAmount -= unmatched.divWadByRay(
-                marketsManager.borrowP2PExchangeRate(_poolTokenAddress)
-            );
+            delta.borrowP2PAmount -= unmatched.divWadByRay(marketsManager.borrowP2PExchangeRate(_poolTokenAddress));
             emit P2PAmountsUpdated(_poolTokenAddress, delta.supplyP2PAmount, delta.borrowP2PAmount);
 
             _borrowFromPool(underlyingToken, vars.remainingToWithdraw); // Reverts on error.
@@ -374,35 +308,22 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
         underlyingToken.safeTransferFrom(msg.sender, address(this), _amount);
         RepayVars memory vars;
         vars.remainingToRepay = _amount;
-        vars.borrowPoolIndex = lendingPool.getReserveNormalizedVariableDebt(
-            address(underlyingToken)
-        );
+        vars.borrowPoolIndex = lendingPool.getReserveNormalizedVariableDebt(address(underlyingToken));
 
         /// Soft repay ///
 
         if (borrowBalanceInOf[_poolTokenAddress][_user].onPool > 0) {
             uint256 borrowedOnPool = borrowBalanceInOf[_poolTokenAddress][_user].onPool;
-            vars.toRepay = Math.min(
-                borrowedOnPool.mulWadByRay(vars.borrowPoolIndex),
-                vars.remainingToRepay
-            );
+            vars.toRepay = Math.min(borrowedOnPool.mulWadByRay(vars.borrowPoolIndex), vars.remainingToRepay);
             vars.remainingToRepay -= vars.toRepay;
 
-            borrowBalanceInOf[_poolTokenAddress][_user].onPool -= Math.min(
-                borrowedOnPool,
-                vars.toRepay.divWadByRay(vars.borrowPoolIndex)
-            ); // In adUnit
+            borrowBalanceInOf[_poolTokenAddress][_user].onPool -= Math.min(borrowedOnPool, vars.toRepay.divWadByRay(vars.borrowPoolIndex)); // In adUnit
             matchingEngine.updateBorrowersDC(_poolTokenAddress, _user);
 
             if (vars.remainingToRepay == 0) {
                 vars.toRepay = Math.min(
                     vars.toRepay,
-                    IVariableDebtToken(
-                        lendingPool
-                        .getReserveData(address(underlyingToken))
-                        .variableDebtTokenAddress
-                    ).scaledBalanceOf(address(this))
-                    .mulWadByRay(vars.borrowPoolIndex) // The debt of the contract.
+                    IVariableDebtToken(lendingPool.getReserveData(address(underlyingToken)).variableDebtTokenAddress).scaledBalanceOf(address(this)).mulWadByRay(vars.borrowPoolIndex) // The debt of the contract.
                 );
                 if (vars.toRepay > 0) _repayERC20ToPool(underlyingToken, vars.toRepay); // Reverts on error.
                 _leaveMarkerIfNeeded(_poolTokenAddress, _user);
@@ -414,21 +335,12 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
         uint256 borrowP2PExchangeRate = marketsManager.borrowP2PExchangeRate(_poolTokenAddress);
         uint256 supplyP2PExchangeRate = marketsManager.supplyP2PExchangeRate(_poolTokenAddress);
         vars.supplyPoolIndex = lendingPool.getReserveNormalizedIncome(address(underlyingToken));
-        borrowBalanceInOf[_poolTokenAddress][_user].inP2P -= Math.min(
-            borrowBalanceInOf[_poolTokenAddress][_user].inP2P,
-            vars.remainingToRepay.divWadByRay(borrowP2PExchangeRate)
-        ); // In p2pUnit
+        borrowBalanceInOf[_poolTokenAddress][_user].inP2P -= Math.min(borrowBalanceInOf[_poolTokenAddress][_user].inP2P, vars.remainingToRepay.divWadByRay(borrowP2PExchangeRate)); // In p2pUnit
         matchingEngine.updateBorrowersDC(_poolTokenAddress, _user);
 
         /// Fee repay ///
 
-        uint256 feeToRepay = Math.min(
-            (delta.borrowP2PAmount.mulWadByRay(borrowP2PExchangeRate) -
-                delta.borrowP2PDelta.mulWadByRay(vars.borrowPoolIndex)) -
-                (delta.supplyP2PAmount.mulWadByRay(supplyP2PExchangeRate) -
-                    delta.supplyP2PDelta.mulWadByRay(vars.supplyPoolIndex)),
-            vars.remainingToRepay
-        );
+        uint256 feeToRepay = Math.min((delta.borrowP2PAmount.mulWadByRay(borrowP2PExchangeRate) - delta.borrowP2PDelta.mulWadByRay(vars.borrowPoolIndex)) - (delta.supplyP2PAmount.mulWadByRay(supplyP2PExchangeRate) - delta.supplyP2PDelta.mulWadByRay(vars.supplyPoolIndex)), vars.remainingToRepay);
         vars.remainingToRepay -= feeToRepay;
 
         /// Transfer repay ///
@@ -436,10 +348,7 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
         if (vars.remainingToRepay > 0 && !marketsManager.noP2P(_poolTokenAddress)) {
             // Match Delta if any.
             if (delta.borrowP2PDelta > 0) {
-                uint256 matchedDelta = Math.min(
-                    delta.borrowP2PDelta.mulWadByRay(vars.borrowPoolIndex),
-                    vars.remainingToRepay
-                );
+                uint256 matchedDelta = Math.min(delta.borrowP2PDelta.mulWadByRay(vars.borrowPoolIndex), vars.remainingToRepay);
 
                 if (matchedDelta > 0) {
                     vars.toRepay += matchedDelta;
@@ -450,17 +359,9 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
                 }
             }
 
-            if (
-                vars.remainingToRepay > 0 &&
-                borrowersOnPool[_poolTokenAddress].getHead() != address(0)
-            ) {
+            if (vars.remainingToRepay > 0 && borrowersOnPool[_poolTokenAddress].getHead() != address(0)) {
                 // Match borrowers.
-                uint256 matched = matchingEngine.matchBorrowersDC(
-                    poolToken,
-                    underlyingToken,
-                    vars.remainingToRepay,
-                    _maxGasToConsume / 2
-                );
+                uint256 matched = matchingEngine.matchBorrowersDC(poolToken, underlyingToken, vars.remainingToRepay, _maxGasToConsume / 2);
 
                 if (matched > 0) {
                     vars.remainingToRepay -= matched;
@@ -473,10 +374,7 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
         // The remaining tokens stay on the contract, and will be claimed as reserve by the governance.
         vars.toRepay = Math.min(
             vars.toRepay,
-            IVariableDebtToken(
-                lendingPool.getReserveData(address(underlyingToken)).variableDebtTokenAddress
-            ).scaledBalanceOf(address(this))
-            .mulWadByRay(vars.borrowPoolIndex) // The debt of the contract.
+            IVariableDebtToken(lendingPool.getReserveData(address(underlyingToken)).variableDebtTokenAddress).scaledBalanceOf(address(this)).mulWadByRay(vars.borrowPoolIndex) // The debt of the contract.
         );
 
         if (vars.toRepay > 0) _repayERC20ToPool(underlyingToken, vars.toRepay); // Reverts on error.
@@ -484,17 +382,11 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
         /// Hard repay ///
 
         if (vars.remainingToRepay > 0) {
-            uint256 unmatched = matchingEngine.unmatchSuppliersDC(
-                _poolTokenAddress,
-                vars.remainingToRepay,
-                _maxGasToConsume / 2
-            ); // Reverts on error.
+            uint256 unmatched = matchingEngine.unmatchSuppliersDC(_poolTokenAddress, vars.remainingToRepay, _maxGasToConsume / 2); // Reverts on error.
 
             // If unmatched does not cover remainingToRepay, the difference is added to the supply P2P delta.
             if (unmatched < vars.remainingToRepay) {
-                delta.supplyP2PDelta += (vars.remainingToRepay - unmatched).divWadByRay(
-                    vars.supplyPoolIndex
-                );
+                delta.supplyP2PDelta += (vars.remainingToRepay - unmatched).divWadByRay(vars.supplyPoolIndex);
                 emit SupplyP2PDeltaUpdated(_poolTokenAddress, delta.borrowP2PDelta);
             }
 
@@ -521,12 +413,7 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
     /// @param _user The address of the user to update.
     /// @param _poolTokenAddress The address of the market to check.
     function _leaveMarkerIfNeeded(address _poolTokenAddress, address _user) internal {
-        if (
-            supplyBalanceInOf[_poolTokenAddress][_user].inP2P == 0 &&
-            supplyBalanceInOf[_poolTokenAddress][_user].onPool == 0 &&
-            borrowBalanceInOf[_poolTokenAddress][_user].inP2P == 0 &&
-            borrowBalanceInOf[_poolTokenAddress][_user].onPool == 0
-        ) {
+        if (supplyBalanceInOf[_poolTokenAddress][_user].inP2P == 0 && supplyBalanceInOf[_poolTokenAddress][_user].onPool == 0 && borrowBalanceInOf[_poolTokenAddress][_user].inP2P == 0 && borrowBalanceInOf[_poolTokenAddress][_user].onPool == 0) {
             uint256 index;
             while (enteredMarkets[_user][index] != _poolTokenAddress) {
                 unchecked {
@@ -536,8 +423,7 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
             userMembership[_poolTokenAddress][_user] = false;
 
             uint256 length = enteredMarkets[_user].length;
-            if (index != length - 1)
-                enteredMarkets[_user][index] = enteredMarkets[_user][length - 1];
+            if (index != length - 1) enteredMarkets[_user][index] = enteredMarkets[_user][length - 1];
             enteredMarkets[_user].pop();
         }
     }
@@ -553,12 +439,7 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
         uint256 _withdrawnAmount,
         uint256 _borrowedAmount
     ) internal view {
-        (uint256 debtValue, uint256 maxDebtValue, ) = _getUserHypotheticalBalanceStates(
-            _user,
-            _poolTokenAddress,
-            _withdrawnAmount,
-            _borrowedAmount
-        );
+        (uint256 debtValue, uint256 maxDebtValue, ) = _getUserHypotheticalBalanceStates(_user, _poolTokenAddress, _withdrawnAmount, _borrowedAmount);
         if (debtValue > maxDebtValue) revert DebtValueAboveMax();
     }
 
@@ -581,13 +462,7 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
     /// @param _underlyingToken The underlying token of the market to borrow from.
     /// @param _amount The amount of token (in underlying).
     function _borrowFromPool(ERC20 _underlyingToken, uint256 _amount) internal {
-        lendingPool.borrow(
-            address(_underlyingToken),
-            _amount,
-            VARIABLE_INTEREST_MODE,
-            NO_REFERRAL_CODE,
-            address(this)
-        );
+        lendingPool.borrow(address(_underlyingToken), _amount, VARIABLE_INTEREST_MODE, NO_REFERRAL_CODE, address(this));
     }
 
     /// @dev Repays underlying tokens to Aave.
@@ -595,11 +470,6 @@ contract PositionsManagerForAaveLogic is PositionsManagerForAaveGettersSetters {
     /// @param _amount The amount of token (in underlying).
     function _repayERC20ToPool(ERC20 _underlyingToken, uint256 _amount) internal {
         _underlyingToken.safeApprove(address(lendingPool), _amount);
-        lendingPool.repay(
-            address(_underlyingToken),
-            _amount,
-            VARIABLE_INTEREST_MODE,
-            address(this)
-        );
+        lendingPool.repay(address(_underlyingToken), _amount, VARIABLE_INTEREST_MODE, address(this));
     }
 }

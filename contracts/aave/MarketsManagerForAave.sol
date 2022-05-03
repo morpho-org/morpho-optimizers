@@ -72,11 +72,7 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
     /// @param _marketAddress The address of the market updated.
     /// @param _newSupplyP2PExchangeRate The new value of the supply exchange rate from p2pUnit to underlying.
     /// @param _newBorrowP2PExchangeRate The new value of the borrow exchange rate from p2pUnit to underlying.
-    event P2PExchangeRatesUpdated(
-        address indexed _marketAddress,
-        uint256 _newSupplyP2PExchangeRate,
-        uint256 _newBorrowP2PExchangeRate
-    );
+    event P2PExchangeRatesUpdated(address indexed _marketAddress, uint256 _newSupplyP2PExchangeRate, uint256 _newBorrowP2PExchangeRate);
 
     /// @notice Emitted when the `reserveFactor` is set.
     /// @param _marketAddress The address of the market set.
@@ -120,10 +116,7 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
     /// @notice Initializes the MarketsManagerForAave contract.
     /// @param _lendingPool The `lendingPool`.
     /// @param _interestRates The `interestRates`.
-    function initialize(ILendingPool _lendingPool, IInterestRates _interestRates)
-        external
-        initializer
-    {
+    function initialize(ILendingPool _lendingPool, IInterestRates _interestRates) external initializer {
         __Ownable_init();
 
         lendingPool = _lendingPool;
@@ -150,10 +143,7 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
     /// @notice Sets the `reserveFactor`.
     /// @param _marketAddress The market on which to set the `_newReserveFactor`.
     /// @param _newReserveFactor The proportion of the interest earned by users sent to the DAO, (in basis point).
-    function setReserveFactor(address _marketAddress, uint256 _newReserveFactor)
-        external
-        onlyOwner
-    {
+    function setReserveFactor(address _marketAddress, uint256 _newReserveFactor) external onlyOwner {
         reserveFactor[_marketAddress] = Math.min(MAX_BASIS_POINTS, _newReserveFactor);
         updateP2PExchangeRates(_marketAddress);
         emit ReserveFactorSet(_marketAddress, reserveFactor[_marketAddress]);
@@ -162,15 +152,11 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
     /// @notice Creates a new market to borrow/supply in.
     /// @param _underlyingTokenAddress The underlying address of the given market.
     function createMarket(address _underlyingTokenAddress) external onlyOwner {
-        DataTypes.ReserveConfigurationMap memory configuration = lendingPool.getConfiguration(
-            _underlyingTokenAddress
-        );
+        DataTypes.ReserveConfigurationMap memory configuration = lendingPool.getConfiguration(_underlyingTokenAddress);
         (bool isActive, , , ) = configuration.getFlagsMemory();
         if (!isActive) revert MarketIsNotListedOnAave();
 
-        address poolTokenAddress = lendingPool
-        .getReserveData(_underlyingTokenAddress)
-        .aTokenAddress;
+        address poolTokenAddress = lendingPool.getReserveData(_underlyingTokenAddress).aTokenAddress;
 
         if (isCreated[poolTokenAddress]) revert MarketAlreadyCreated();
         isCreated[poolTokenAddress] = true;
@@ -180,12 +166,8 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
         borrowP2PExchangeRate[poolTokenAddress] = Math.ray();
 
         LastPoolIndexes storage poolIndexes = lastPoolIndexes[poolTokenAddress];
-        poolIndexes.lastSupplyPoolIndex = lendingPool.getReserveNormalizedIncome(
-            _underlyingTokenAddress
-        );
-        poolIndexes.lastBorrowPoolIndex = lendingPool.getReserveNormalizedVariableDebt(
-            _underlyingTokenAddress
-        );
+        poolIndexes.lastSupplyPoolIndex = lendingPool.getReserveNormalizedIncome(_underlyingTokenAddress);
+        poolIndexes.lastBorrowPoolIndex = lendingPool.getReserveNormalizedVariableDebt(_underlyingTokenAddress);
 
         marketsCreated.push(poolTokenAddress);
         emit MarketCreated(poolTokenAddress);
@@ -194,11 +176,7 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
     /// @notice Sets whether to match people P2P or not.
     /// @param _marketAddress The address of the market.
     /// @param _noP2P Whether to match people P2P or not.
-    function setNoP2P(address _marketAddress, bool _noP2P)
-        external
-        onlyOwner
-        isMarketCreated(_marketAddress)
-    {
+    function setNoP2P(address _marketAddress, bool _noP2P) external onlyOwner isMarketCreated(_marketAddress) {
         noP2P[_marketAddress] = _noP2P;
         emit NoP2PSet(_marketAddress, _noP2P);
     }
@@ -246,11 +224,7 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
     /// @notice Returns market's configuration.
     /// @return isCreated_ Whether the market is created or not.
     /// @return noP2P_ Whether user are put in P2P or not.
-    function getMarketConfiguration(address _marketAddress)
-        external
-        view
-        returns (bool isCreated_, bool noP2P_)
-    {
+    function getMarketConfiguration(address _marketAddress) external view returns (bool isCreated_, bool noP2P_) {
         isCreated_ = isCreated[_marketAddress];
         noP2P_ = noP2P[_marketAddress];
     }
@@ -261,12 +235,7 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
     /// @param _marketAddress The address of the market to update.
     /// @return newSupplyP2PExchangeRate The supply P2P exchange rate after udpate.
     /// @return newBorrowP2PExchangeRate The supply P2P exchange rate after udpate.
-    function getUpdatedP2PExchangeRates(address _marketAddress)
-        external
-        view
-        override
-        returns (uint256 newSupplyP2PExchangeRate, uint256 newBorrowP2PExchangeRate)
-    {
+    function getUpdatedP2PExchangeRates(address _marketAddress) external view override returns (uint256 newSupplyP2PExchangeRate, uint256 newBorrowP2PExchangeRate) {
         if (block.timestamp == exchangeRatesLastUpdateTimestamp[_marketAddress]) {
             newSupplyP2PExchangeRate = supplyP2PExchangeRate[_marketAddress];
             newBorrowP2PExchangeRate = borrowP2PExchangeRate[_marketAddress];
@@ -274,26 +243,12 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
             address underlyingTokenAddress = IAToken(_marketAddress).UNDERLYING_ASSET_ADDRESS();
             LastPoolIndexes storage poolIndexes = lastPoolIndexes[_marketAddress];
 
-            uint256 poolSupplyExchangeRate = lendingPool.getReserveNormalizedIncome(
-                underlyingTokenAddress
-            );
-            uint256 poolBorrowExchangeRate = lendingPool.getReserveNormalizedVariableDebt(
-                underlyingTokenAddress
-            );
+            uint256 poolSupplyExchangeRate = lendingPool.getReserveNormalizedIncome(underlyingTokenAddress);
+            uint256 poolBorrowExchangeRate = lendingPool.getReserveNormalizedVariableDebt(underlyingTokenAddress);
 
-            Types.Params memory params = Types.Params(
-                supplyP2PExchangeRate[_marketAddress],
-                borrowP2PExchangeRate[_marketAddress],
-                poolSupplyExchangeRate,
-                poolBorrowExchangeRate,
-                poolIndexes.lastSupplyPoolIndex,
-                poolIndexes.lastBorrowPoolIndex,
-                reserveFactor[_marketAddress],
-                positionsManager.deltas(_marketAddress)
-            );
+            Types.Params memory params = Types.Params(supplyP2PExchangeRate[_marketAddress], borrowP2PExchangeRate[_marketAddress], poolSupplyExchangeRate, poolBorrowExchangeRate, poolIndexes.lastSupplyPoolIndex, poolIndexes.lastBorrowPoolIndex, reserveFactor[_marketAddress], positionsManager.deltas(_marketAddress));
 
-            (newSupplyP2PExchangeRate, newBorrowP2PExchangeRate) = interestRates
-            .computeP2PExchangeRates(params);
+            (newSupplyP2PExchangeRate, newBorrowP2PExchangeRate) = interestRates.computeP2PExchangeRates(params);
         }
     }
 
@@ -307,37 +262,19 @@ contract MarketsManagerForAave is IMarketsManagerForAave, OwnableUpgradeable {
             exchangeRatesLastUpdateTimestamp[_marketAddress] = block.timestamp;
             LastPoolIndexes storage poolIndexes = lastPoolIndexes[_marketAddress];
 
-            uint256 poolSupplyExchangeRate = lendingPool.getReserveNormalizedIncome(
-                underlyingTokenAddress
-            );
-            uint256 poolBorrowExchangeRate = lendingPool.getReserveNormalizedVariableDebt(
-                underlyingTokenAddress
-            );
+            uint256 poolSupplyExchangeRate = lendingPool.getReserveNormalizedIncome(underlyingTokenAddress);
+            uint256 poolBorrowExchangeRate = lendingPool.getReserveNormalizedVariableDebt(underlyingTokenAddress);
 
-            Types.Params memory params = Types.Params(
-                supplyP2PExchangeRate[_marketAddress],
-                borrowP2PExchangeRate[_marketAddress],
-                poolSupplyExchangeRate,
-                poolBorrowExchangeRate,
-                poolIndexes.lastSupplyPoolIndex,
-                poolIndexes.lastBorrowPoolIndex,
-                reserveFactor[_marketAddress],
-                positionsManager.deltas(_marketAddress)
-            );
+            Types.Params memory params = Types.Params(supplyP2PExchangeRate[_marketAddress], borrowP2PExchangeRate[_marketAddress], poolSupplyExchangeRate, poolBorrowExchangeRate, poolIndexes.lastSupplyPoolIndex, poolIndexes.lastBorrowPoolIndex, reserveFactor[_marketAddress], positionsManager.deltas(_marketAddress));
 
-            (uint256 newSupplyP2PExchangeRate, uint256 newBorrowP2PExchangeRate) = interestRates
-            .computeP2PExchangeRates(params);
+            (uint256 newSupplyP2PExchangeRate, uint256 newBorrowP2PExchangeRate) = interestRates.computeP2PExchangeRates(params);
 
             supplyP2PExchangeRate[_marketAddress] = newSupplyP2PExchangeRate;
             borrowP2PExchangeRate[_marketAddress] = newBorrowP2PExchangeRate;
             poolIndexes.lastSupplyPoolIndex = poolSupplyExchangeRate;
             poolIndexes.lastBorrowPoolIndex = poolBorrowExchangeRate;
 
-            emit P2PExchangeRatesUpdated(
-                _marketAddress,
-                newSupplyP2PExchangeRate,
-                newBorrowP2PExchangeRate
-            );
+            emit P2PExchangeRatesUpdated(_marketAddress, newSupplyP2PExchangeRate, newBorrowP2PExchangeRate);
         }
     }
 }

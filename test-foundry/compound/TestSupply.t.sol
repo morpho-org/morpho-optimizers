@@ -42,15 +42,9 @@ contract TestSupply is TestSetup {
         uint256 p2pSupplyIndex = lens.getUpdatedP2PSupplyIndex(cDai);
         uint256 expectedSupplyBalanceInP2P = amount.div(p2pSupplyIndex);
 
-        (uint256 inP2PSupplier, uint256 onPoolSupplier) = morpho.supplyBalanceInOf(
-            cDai,
-            address(supplier1)
-        );
+        (uint256 inP2PSupplier, uint256 onPoolSupplier) = morpho.supplyBalanceInOf(cDai, address(supplier1));
 
-        (uint256 inP2PBorrower, uint256 onPoolBorrower) = morpho.borrowBalanceInOf(
-            cDai,
-            address(borrower1)
-        );
+        (uint256 inP2PBorrower, uint256 onPoolBorrower) = morpho.borrowBalanceInOf(cDai, address(borrower1));
 
         assertEq(onPoolSupplier, 0);
         assertEq(inP2PSupplier, expectedSupplyBalanceInP2P);
@@ -75,28 +69,17 @@ contract TestSupply is TestSetup {
         uint256 supplyPoolIndex = ICToken(cDai).exchangeRateCurrent();
         uint256 expectedSupplyBalanceOnPool = amount.div(supplyPoolIndex);
 
-        (uint256 inP2PSupplier, uint256 onPoolSupplier) = morpho.supplyBalanceInOf(
-            cDai,
-            address(supplier1)
-        );
+        (uint256 inP2PSupplier, uint256 onPoolSupplier) = morpho.supplyBalanceInOf(cDai, address(supplier1));
         assertEq(onPoolSupplier, expectedSupplyBalanceOnPool, "on pool supplier");
         assertEq(inP2PSupplier, expectedSupplyBalanceInP2P, "in P2P supplier");
 
-        (uint256 inP2PBorrower, uint256 onPoolBorrower) = morpho.borrowBalanceInOf(
-            cDai,
-            address(borrower1)
-        );
+        (uint256 inP2PBorrower, uint256 onPoolBorrower) = morpho.borrowBalanceInOf(cDai, address(borrower1));
         assertEq(onPoolBorrower, 0, "on pool borrower");
         assertEq(inP2PBorrower, inP2PSupplier, "in P2P borrower");
     }
 
     function testSupply4() public {
-        setMaxGasForMatchingHelper(
-            type(uint64).max,
-            type(uint64).max,
-            type(uint64).max,
-            type(uint64).max
-        );
+        setMaxGasForMatchingHelper(type(uint64).max, type(uint64).max, type(uint64).max, type(uint64).max);
 
         uint256 amount = 10000 ether;
         uint256 collateral = 2 * amount;
@@ -138,12 +121,7 @@ contract TestSupply is TestSetup {
     }
 
     function testSupply5() public {
-        setMaxGasForMatchingHelper(
-            type(uint64).max,
-            type(uint64).max,
-            type(uint64).max,
-            type(uint64).max
-        );
+        setMaxGasForMatchingHelper(type(uint64).max, type(uint64).max, type(uint64).max, type(uint64).max);
 
         uint256 amount = 10000 ether;
         uint256 collateral = 2 * amount;

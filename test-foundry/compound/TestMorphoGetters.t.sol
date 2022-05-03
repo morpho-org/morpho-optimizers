@@ -61,16 +61,8 @@ contract TestMorphoGetters is TestSetup {
         address nextBorrowOnPool = address(borrowers[0]);
 
         for (uint256 i; i < borrowers.length - 1; i++) {
-            nextSupplyOnPool = morpho.getNext(
-                cDai,
-                Types.PositionType.SUPPLIERS_ON_POOL,
-                nextSupplyOnPool
-            );
-            nextBorrowOnPool = morpho.getNext(
-                cUsdc,
-                Types.PositionType.BORROWERS_ON_POOL,
-                nextBorrowOnPool
-            );
+            nextSupplyOnPool = morpho.getNext(cDai, Types.PositionType.SUPPLIERS_ON_POOL, nextSupplyOnPool);
+            nextBorrowOnPool = morpho.getNext(cUsdc, Types.PositionType.BORROWERS_ON_POOL, nextBorrowOnPool);
 
             assertEq(nextSupplyOnPool, address(borrowers[i + 1]));
             assertEq(nextBorrowOnPool, address(borrowers[i + 1]));
@@ -89,16 +81,8 @@ contract TestMorphoGetters is TestSetup {
         address nextBorrowInP2P = address(borrowers[0]);
 
         for (uint256 i; i < borrowers.length - 1; i++) {
-            nextSupplyInP2P = morpho.getNext(
-                cUsdc,
-                Types.PositionType.SUPPLIERS_IN_P2P,
-                nextSupplyInP2P
-            );
-            nextBorrowInP2P = morpho.getNext(
-                cDai,
-                Types.PositionType.BORROWERS_IN_P2P,
-                nextBorrowInP2P
-            );
+            nextSupplyInP2P = morpho.getNext(cUsdc, Types.PositionType.SUPPLIERS_IN_P2P, nextSupplyInP2P);
+            nextBorrowInP2P = morpho.getNext(cDai, Types.PositionType.BORROWERS_IN_P2P, nextBorrowInP2P);
 
             assertEq(address(suppliers[i + 1]), nextSupplyInP2P);
             assertEq(address(borrowers[i + 1]), nextBorrowInP2P);

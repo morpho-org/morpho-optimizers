@@ -14,13 +14,7 @@ interface ILendingPool {
      * @param amount The amount deposited
      * @param referral The referral code used
      **/
-    event Deposit(
-        address indexed reserve,
-        address user,
-        address indexed onBehalfOf,
-        uint256 amount,
-        uint16 indexed referral
-    );
+    event Deposit(address indexed reserve, address user, address indexed onBehalfOf, uint256 amount, uint16 indexed referral);
 
     /**
      * @dev Emitted on withdraw()
@@ -29,12 +23,7 @@ interface ILendingPool {
      * @param to Address that will receive the underlying
      * @param amount The amount to be withdrawn
      **/
-    event Withdraw(
-        address indexed reserve,
-        address indexed user,
-        address indexed to,
-        uint256 amount
-    );
+    event Withdraw(address indexed reserve, address indexed user, address indexed to, uint256 amount);
 
     /**
      * @dev Emitted on borrow() and flashLoan() when debt needs to be opened
@@ -47,15 +36,7 @@ interface ILendingPool {
      * @param borrowRate The numeric rate at which the user has borrowed
      * @param referral The referral code used
      **/
-    event Borrow(
-        address indexed reserve,
-        address user,
-        address indexed onBehalfOf,
-        uint256 amount,
-        uint256 borrowRateMode,
-        uint256 borrowRate,
-        uint16 indexed referral
-    );
+    event Borrow(address indexed reserve, address user, address indexed onBehalfOf, uint256 amount, uint256 borrowRateMode, uint256 borrowRate, uint16 indexed referral);
 
     /**
      * @dev Emitted on repay()
@@ -64,12 +45,7 @@ interface ILendingPool {
      * @param repayer The address of the user initiating the repay(), providing the funds
      * @param amount The amount repaid
      **/
-    event Repay(
-        address indexed reserve,
-        address indexed user,
-        address indexed repayer,
-        uint256 amount
-    );
+    event Repay(address indexed reserve, address indexed user, address indexed repayer, uint256 amount);
 
     /**
      * @dev Emitted on swapBorrowRateMode()
@@ -109,14 +85,7 @@ interface ILendingPool {
      * @param premium The fee flash borrowed
      * @param referralCode The referral code used
      **/
-    event FlashLoan(
-        address indexed target,
-        address indexed initiator,
-        address indexed asset,
-        uint256 amount,
-        uint256 premium,
-        uint16 referralCode
-    );
+    event FlashLoan(address indexed target, address indexed initiator, address indexed asset, uint256 amount, uint256 premium, uint16 referralCode);
 
     /**
      * @dev Emitted when the pause is triggered.
@@ -141,15 +110,7 @@ interface ILendingPool {
      * @param receiveAToken `true` if the liquidators wants to receive the collateral aTokens, `false` if he wants
      * to receive the underlying collateral asset directly
      **/
-    event LiquidationCall(
-        address indexed collateralAsset,
-        address indexed debtAsset,
-        address indexed user,
-        uint256 debtToCover,
-        uint256 liquidatedCollateralAmount,
-        address liquidator,
-        bool receiveAToken
-    );
+    event LiquidationCall(address indexed collateralAsset, address indexed debtAsset, address indexed user, uint256 debtToCover, uint256 liquidatedCollateralAmount, address liquidator, bool receiveAToken);
 
     /**
      * @dev Emitted when the state of a reserve is updated. NOTE: This event is actually declared
@@ -163,14 +124,7 @@ interface ILendingPool {
      * @param liquidityIndex The new liquidity index
      * @param variableBorrowIndex The new variable borrow index
      **/
-    event ReserveDataUpdated(
-        address indexed reserve,
-        uint256 liquidityRate,
-        uint256 stableBorrowRate,
-        uint256 variableBorrowRate,
-        uint256 liquidityIndex,
-        uint256 variableBorrowIndex
-    );
+    event ReserveDataUpdated(address indexed reserve, uint256 liquidityRate, uint256 stableBorrowRate, uint256 variableBorrowRate, uint256 liquidityIndex, uint256 variableBorrowIndex);
 
     /**
      * @dev Deposits an `amount` of underlying asset into the reserve, receiving in return overlying aTokens.
@@ -350,8 +304,7 @@ interface ILendingPool {
         address interestRateStrategyAddress
     ) external;
 
-    function setReserveInterestRateStrategyAddress(address reserve, address rateStrategyAddress)
-        external;
+    function setReserveInterestRateStrategyAddress(address reserve, address rateStrategyAddress) external;
 
     function setConfiguration(address reserve, uint256 configuration) external;
 
@@ -360,20 +313,14 @@ interface ILendingPool {
      * @param asset The address of the underlying asset of the reserve
      * @return The configuration of the reserve
      **/
-    function getConfiguration(address asset)
-        external
-        view
-        returns (DataTypes.ReserveConfigurationMap memory);
+    function getConfiguration(address asset) external view returns (DataTypes.ReserveConfigurationMap memory);
 
     /**
      * @dev Returns the configuration of the user across all the reserves
      * @param user The user address
      * @return The configuration of the user
      **/
-    function getUserConfiguration(address user)
-        external
-        view
-        returns (DataTypes.UserConfigurationMap memory);
+    function getUserConfiguration(address user) external view returns (DataTypes.UserConfigurationMap memory);
 
     /**
      * @dev Returns the normalized income normalized income of the reserve

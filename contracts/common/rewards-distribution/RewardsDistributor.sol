@@ -57,10 +57,7 @@ contract RewardsDistributor is Ownable {
         uint256 _claimable,
         bytes32[] calldata _proof
     ) external {
-        bytes32 candidateRoot = MerkleProof.processProof(
-            _proof,
-            keccak256(abi.encodePacked(_account, _token, _claimable))
-        );
+        bytes32 candidateRoot = MerkleProof.processProof(_proof, keccak256(abi.encodePacked(_account, _token, _claimable)));
         if (candidateRoot != currRoot && candidateRoot != prevRoot) revert ProofInvalidOrExpired();
 
         uint256 alreadyClaimed = claimed[_account][_token];

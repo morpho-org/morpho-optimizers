@@ -76,19 +76,11 @@ abstract contract PositionsManagerForAaveGettersSetters is PositionsManagerForAa
     /// @param _poolTokenAddress The address of the market from which to get the head.
     /// @param _positionType The type of user from which to get the head.
     /// @return head The head in the data structure.
-    function getHead(address _poolTokenAddress, PositionType _positionType)
-        external
-        view
-        returns (address head)
-    {
-        if (_positionType == PositionType.SUPPLIERS_IN_P2P)
-            head = suppliersInP2P[_poolTokenAddress].getHead();
-        else if (_positionType == PositionType.SUPPLIERS_ON_POOL)
-            head = suppliersOnPool[_poolTokenAddress].getHead();
-        else if (_positionType == PositionType.BORROWERS_IN_P2P)
-            head = borrowersInP2P[_poolTokenAddress].getHead();
-        else if (_positionType == PositionType.BORROWERS_ON_POOL)
-            head = borrowersOnPool[_poolTokenAddress].getHead();
+    function getHead(address _poolTokenAddress, PositionType _positionType) external view returns (address head) {
+        if (_positionType == PositionType.SUPPLIERS_IN_P2P) head = suppliersInP2P[_poolTokenAddress].getHead();
+        else if (_positionType == PositionType.SUPPLIERS_ON_POOL) head = suppliersOnPool[_poolTokenAddress].getHead();
+        else if (_positionType == PositionType.BORROWERS_IN_P2P) head = borrowersInP2P[_poolTokenAddress].getHead();
+        else if (_positionType == PositionType.BORROWERS_ON_POOL) head = borrowersOnPool[_poolTokenAddress].getHead();
     }
 
     /// @notice Gets the next user after `_user` in the data structure on a specific market (for UI).
@@ -101,14 +93,10 @@ abstract contract PositionsManagerForAaveGettersSetters is PositionsManagerForAa
         PositionType _positionType,
         address _user
     ) external view returns (address next) {
-        if (_positionType == PositionType.SUPPLIERS_IN_P2P)
-            next = suppliersInP2P[_poolTokenAddress].getNext(_user);
-        else if (_positionType == PositionType.SUPPLIERS_ON_POOL)
-            next = suppliersOnPool[_poolTokenAddress].getNext(_user);
-        else if (_positionType == PositionType.BORROWERS_IN_P2P)
-            next = borrowersInP2P[_poolTokenAddress].getNext(_user);
-        else if (_positionType == PositionType.BORROWERS_ON_POOL)
-            next = borrowersOnPool[_poolTokenAddress].getNext(_user);
+        if (_positionType == PositionType.SUPPLIERS_IN_P2P) next = suppliersInP2P[_poolTokenAddress].getNext(_user);
+        else if (_positionType == PositionType.SUPPLIERS_ON_POOL) next = suppliersOnPool[_poolTokenAddress].getNext(_user);
+        else if (_positionType == PositionType.BORROWERS_IN_P2P) next = borrowersInP2P[_poolTokenAddress].getNext(_user);
+        else if (_positionType == PositionType.BORROWERS_ON_POOL) next = borrowersOnPool[_poolTokenAddress].getNext(_user);
     }
 
     /// @notice Returns the collateral value, debt value, max debt and liquidation value of a given user (in ETH).
@@ -133,11 +121,7 @@ abstract contract PositionsManagerForAaveGettersSetters is PositionsManagerForAa
 
         while (i < numberOfEnteredMarkets) {
             address poolTokenEntered = enteredMarkets[_user][i];
-            AssetLiquidityData memory assetData = getUserLiquidityDataForAsset(
-                _user,
-                poolTokenEntered,
-                oracle
-            );
+            AssetLiquidityData memory assetData = getUserLiquidityDataForAsset(_user, poolTokenEntered, oracle);
 
             unchecked {
                 collateralValue += assetData.collateralValue;
@@ -154,11 +138,7 @@ abstract contract PositionsManagerForAaveGettersSetters is PositionsManagerForAa
     /// @param _poolTokenAddress The address of the market.
     /// @return withdrawable The maximum withdrawable amount of underlying token allowed (in underlying).
     /// @return borrowable The maximum borrowable amount of underlying token allowed (in underlying).
-    function getUserMaxCapacitiesForAsset(address _user, address _poolTokenAddress)
-        external
-        view
-        returns (uint256 withdrawable, uint256 borrowable)
-    {
+    function getUserMaxCapacitiesForAsset(address _user, address _poolTokenAddress) external view returns (uint256 withdrawable, uint256 borrowable) {
         LiquidityData memory data;
         AssetLiquidityData memory assetData;
         IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
@@ -192,17 +172,11 @@ abstract contract PositionsManagerForAaveGettersSetters is PositionsManagerForAa
         // Not possible to withdraw nor borrow
         if (data.maxDebtValue < data.debtValue) return (0, 0);
 
-        uint256 differenceInUnderlying = ((data.maxDebtValue - data.debtValue) *
-            assetData.tokenUnit) / assetData.underlyingPrice;
+        uint256 differenceInUnderlying = ((data.maxDebtValue - data.debtValue) * assetData.tokenUnit) / assetData.underlyingPrice;
 
-        withdrawable =
-            (assetData.collateralValue * assetData.tokenUnit) /
-            assetData.underlyingPrice;
+        withdrawable = (assetData.collateralValue * assetData.tokenUnit) / assetData.underlyingPrice;
         if (assetData.ltv != 0) {
-            withdrawable = Math.min(
-                withdrawable,
-                (differenceInUnderlying * MAX_BASIS_POINTS) / assetData.ltv
-            );
+            withdrawable = Math.min(withdrawable, (differenceInUnderlying * MAX_BASIS_POINTS) / assetData.ltv);
         }
 
         borrowable = differenceInUnderlying;
@@ -219,23 +193,13 @@ abstract contract PositionsManagerForAaveGettersSetters is PositionsManagerForAa
     ) public view returns (AssetLiquidityData memory assetData) {
         // Compute the current debt amount (in underlying)
         address underlyingAddress = IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS();
-        assetData.debtValue = _getUserBorrowBalanceInOf(
-            _poolTokenAddress,
-            _user,
-            underlyingAddress
-        );
+        assetData.debtValue = _getUserBorrowBalanceInOf(_poolTokenAddress, _user, underlyingAddress);
 
         // Compute the current collateral amount (in underlying)
-        assetData.collateralValue = _getUserSupplyBalanceInOf(
-            _poolTokenAddress,
-            _user,
-            underlyingAddress
-        );
+        assetData.collateralValue = _getUserSupplyBalanceInOf(_poolTokenAddress, _user, underlyingAddress);
 
         assetData.underlyingPrice = oracle.getAssetPrice(underlyingAddress); // In ETH
-        (uint256 ltv, uint256 liquidationThreshold, , uint256 reserveDecimals, ) = lendingPool
-        .getConfiguration(underlyingAddress)
-        .getParamsMemory();
+        (uint256 ltv, uint256 liquidationThreshold, , uint256 reserveDecimals, ) = lendingPool.getConfiguration(underlyingAddress).getParamsMemory();
         assetData.ltv = ltv;
         assetData.liquidationThreshold = liquidationThreshold;
 
@@ -287,11 +251,7 @@ abstract contract PositionsManagerForAaveGettersSetters is PositionsManagerForAa
 
         while (i < numberOfEnteredMarkets) {
             address poolTokenEntered = enteredMarkets[_user][i];
-            AssetLiquidityData memory assetData = getUserLiquidityDataForAsset(
-                _user,
-                poolTokenEntered,
-                oracle
-            );
+            AssetLiquidityData memory assetData = getUserLiquidityDataForAsset(_user, poolTokenEntered, oracle);
 
             unchecked {
                 liquidationValue += assetData.liquidationValue;
@@ -303,18 +263,12 @@ abstract contract PositionsManagerForAaveGettersSetters is PositionsManagerForAa
             if (_poolTokenAddress == poolTokenEntered) {
                 debtValue += (_borrowedAmount * assetData.underlyingPrice) / assetData.tokenUnit;
 
-                uint256 maxDebtValueSub = (_withdrawnAmount *
-                    assetData.underlyingPrice *
-                    assetData.ltv) / (assetData.tokenUnit * MAX_BASIS_POINTS);
-                uint256 liquidationValueSub = (_withdrawnAmount *
-                    assetData.underlyingPrice *
-                    assetData.liquidationThreshold) / (assetData.tokenUnit * MAX_BASIS_POINTS);
+                uint256 maxDebtValueSub = (_withdrawnAmount * assetData.underlyingPrice * assetData.ltv) / (assetData.tokenUnit * MAX_BASIS_POINTS);
+                uint256 liquidationValueSub = (_withdrawnAmount * assetData.underlyingPrice * assetData.liquidationThreshold) / (assetData.tokenUnit * MAX_BASIS_POINTS);
 
                 unchecked {
                     maxDebtValue -= maxDebtValue < maxDebtValueSub ? maxDebtValue : maxDebtValueSub;
-                    liquidationValue -= liquidationValue < liquidationValueSub
-                        ? liquidationValue
-                        : liquidationValueSub;
+                    liquidationValue -= liquidationValue < liquidationValueSub ? liquidationValue : liquidationValueSub;
                 }
             }
         }
@@ -330,14 +284,8 @@ abstract contract PositionsManagerForAaveGettersSetters is PositionsManagerForAa
         address _user,
         address _underlyingTokenAddress
     ) internal view returns (uint256) {
-        (uint256 supplyP2PExchangeRate, ) = marketsManager.getUpdatedP2PExchangeRates(
-            _poolTokenAddress
-        );
-        return
-            supplyBalanceInOf[_poolTokenAddress][_user].inP2P.mulWadByRay(supplyP2PExchangeRate) +
-            supplyBalanceInOf[_poolTokenAddress][_user].onPool.mulWadByRay(
-                lendingPool.getReserveNormalizedIncome(_underlyingTokenAddress)
-            );
+        (uint256 supplyP2PExchangeRate, ) = marketsManager.getUpdatedP2PExchangeRates(_poolTokenAddress);
+        return supplyBalanceInOf[_poolTokenAddress][_user].inP2P.mulWadByRay(supplyP2PExchangeRate) + supplyBalanceInOf[_poolTokenAddress][_user].onPool.mulWadByRay(lendingPool.getReserveNormalizedIncome(_underlyingTokenAddress));
     }
 
     /// @dev Returns the borrow balance of `_user` in the `_poolTokenAddress` market.
@@ -350,13 +298,7 @@ abstract contract PositionsManagerForAaveGettersSetters is PositionsManagerForAa
         address _user,
         address _underlyingTokenAddress
     ) internal view returns (uint256) {
-        (, uint256 borrowP2PExchangeRate) = marketsManager.getUpdatedP2PExchangeRates(
-            _poolTokenAddress
-        );
-        return
-            borrowBalanceInOf[_poolTokenAddress][_user].inP2P.mulWadByRay(borrowP2PExchangeRate) +
-            borrowBalanceInOf[_poolTokenAddress][_user].onPool.mulWadByRay(
-                lendingPool.getReserveNormalizedVariableDebt(_underlyingTokenAddress)
-            );
+        (, uint256 borrowP2PExchangeRate) = marketsManager.getUpdatedP2PExchangeRates(_poolTokenAddress);
+        return borrowBalanceInOf[_poolTokenAddress][_user].inP2P.mulWadByRay(borrowP2PExchangeRate) + borrowBalanceInOf[_poolTokenAddress][_user].onPool.mulWadByRay(lendingPool.getReserveNormalizedVariableDebt(_underlyingTokenAddress));
     }
 }

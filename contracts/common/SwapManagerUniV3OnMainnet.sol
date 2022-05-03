@@ -34,8 +34,7 @@ contract SwapManagerUniV3OnMainnet is ISwapManager, Ownable {
     address public constant AAVE = 0x7Fc66500c84A76Ad7e9c93437bFc5Ac33E2DDaE9; // The address of AAVE token.
     address public constant WETH9 = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2; // The address of WETH9 token.
 
-    ISwapRouter public constant SWAP_ROUTER =
-        ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564); // The Uniswap V3 router.
+    ISwapRouter public constant SWAP_ROUTER = ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564); // The Uniswap V3 router.
 
     IUniswapV3Pool public immutable pool0;
     IUniswapV3Pool public immutable pool1;
@@ -79,18 +78,9 @@ contract SwapManagerUniV3OnMainnet is ISwapManager, Ownable {
         aaveTwapInterval = _aaveTwapInterval;
         morphoTwapInterval = _morphoTwapInterval;
 
-        pool0 = IUniswapV3Pool(
-            PoolAddress.computeAddress(FACTORY, PoolAddress.getPoolKey(stkAAVE, AAVE, POOL_FEE))
-        );
-        pool1 = IUniswapV3Pool(
-            PoolAddress.computeAddress(FACTORY, PoolAddress.getPoolKey(AAVE, WETH9, POOL_FEE))
-        );
-        pool2 = IUniswapV3Pool(
-            PoolAddress.computeAddress(
-                FACTORY,
-                PoolAddress.getPoolKey(WETH9, _morphoToken, _morphoPoolFee)
-            )
-        );
+        pool0 = IUniswapV3Pool(PoolAddress.computeAddress(FACTORY, PoolAddress.getPoolKey(stkAAVE, AAVE, POOL_FEE)));
+        pool1 = IUniswapV3Pool(PoolAddress.computeAddress(FACTORY, PoolAddress.getPoolKey(AAVE, WETH9, POOL_FEE)));
+        pool2 = IUniswapV3Pool(PoolAddress.computeAddress(FACTORY, PoolAddress.getPoolKey(WETH9, _morphoToken, _morphoPoolFee)));
     }
 
     /// EXTERNAL ///
@@ -98,10 +88,7 @@ contract SwapManagerUniV3OnMainnet is ISwapManager, Ownable {
     /// @notice Sets TWAP intervals.
     /// @param _aaveTwapInterval The new `aaveTwapInterval`.
     /// @param _morphoTwapInterval The new `morphoTwapInterval`.
-    function setTwapIntervals(uint32 _aaveTwapInterval, uint32 _morphoTwapInterval)
-        external
-        onlyOwner
-    {
+    function setTwapIntervals(uint32 _aaveTwapInterval, uint32 _morphoTwapInterval) external onlyOwner {
         if (_aaveTwapInterval < 5 minutes || _morphoTwapInterval < 5 minutes) revert TwapTooShort();
 
         aaveTwapInterval = _aaveTwapInterval;
@@ -114,23 +101,13 @@ contract SwapManagerUniV3OnMainnet is ISwapManager, Ownable {
     /// @param _amountIn The amount of reward token to swap.
     /// @param _receiver The address of the receiver of the Morpho tokens.
     /// @return amountOut The amount of Morpho tokens sent.
-    function swapToMorphoToken(uint256 _amountIn, address _receiver)
-        external
-        override
-        returns (uint256 amountOut)
-    {
+    function swapToMorphoToken(uint256 _amountIn, address _receiver) external override returns (uint256 amountOut) {
         uint256 expectedAmountOutMinimum;
         bytes memory path;
 
         (expectedAmountOutMinimum, path) = _getMultiplePathParams(_amountIn);
 
-        ISwapRouter.ExactInputParams memory params = ISwapRouter.ExactInputParams({
-            path: path,
-            recipient: _receiver,
-            deadline: block.timestamp,
-            amountIn: _amountIn,
-            amountOutMinimum: expectedAmountOutMinimum
-        });
+        ISwapRouter.ExactInputParams memory params = ISwapRouter.ExactInputParams({path: path, recipient: _receiver, deadline: block.timestamp, amountIn: _amountIn, amountOutMinimum: expectedAmountOutMinimum});
 
         // Execute the swap.
         IERC20(stkAAVE).safeApprove(address(SWAP_ROUTER), _amountIn);
@@ -145,11 +122,7 @@ contract SwapManagerUniV3OnMainnet is ISwapManager, Ownable {
     /// @param _amountIn The amount of reward token to swap.
     /// @return expectedAmountOutMinimum The minimum amount of Morpho tokens to receive.
     /// @return path The path for the swap.
-    function _getMultiplePathParams(uint256 _amountIn)
-        internal
-        view
-        returns (uint256 expectedAmountOutMinimum, bytes memory path)
-    {
+    function _getMultiplePathParams(uint256 _amountIn) internal view returns (uint256 expectedAmountOutMinimum, bytes memory path) {
         uint32[] memory aaveSecondsAgo = new uint32[](2);
         aaveSecondsAgo[0] = aaveTwapInterval;
         aaveSecondsAgo[1] = 0;
@@ -170,14 +143,8 @@ contract SwapManagerUniV3OnMainnet is ISwapManager, Ownable {
             // For the pair token0/token1 -> 1.0001 * readingTick = price = token1 / token0
             // So token1 = price * token0.
 
-            uint160 sqrtPriceX961 = TickMath.getSqrtRatioAtTick(
-                int24((tickCumulatives1[1] - tickCumulatives1[0]) / int24(uint24(aaveTwapInterval)))
-            );
-            uint160 sqrtPriceX962 = TickMath.getSqrtRatioAtTick(
-                int24(
-                    (tickCumulatives2[1] - tickCumulatives2[0]) / int24(uint24(morphoTwapInterval))
-                )
-            );
+            uint160 sqrtPriceX961 = TickMath.getSqrtRatioAtTick(int24((tickCumulatives1[1] - tickCumulatives1[0]) / int24(uint24(aaveTwapInterval))));
+            uint160 sqrtPriceX962 = TickMath.getSqrtRatioAtTick(int24((tickCumulatives2[1] - tickCumulatives2[0]) / int24(uint24(morphoTwapInterval))));
             priceX961 = _getPriceX96FromSqrtPriceX96(sqrtPriceX961);
             priceX962 = _getPriceX96FromSqrtPriceX96(sqrtPriceX962);
         }
@@ -187,33 +154,20 @@ contract SwapManagerUniV3OnMainnet is ISwapManager, Ownable {
 
         // Computation depends on the position of token in pool.
         if (pool2.token0() == WETH9) {
-            expectedAmountOutMinimum = _amountIn.mulDiv(priceX961, FixedPoint96.Q96).mulDiv(
-                priceX962,
-                FixedPoint96.Q96
-            );
+            expectedAmountOutMinimum = _amountIn.mulDiv(priceX961, FixedPoint96.Q96).mulDiv(priceX962, FixedPoint96.Q96);
         } else {
-            expectedAmountOutMinimum = _amountIn.mulDiv(priceX961, FixedPoint96.Q96).mulDiv(
-                FixedPoint96.Q96,
-                priceX962
-            );
+            expectedAmountOutMinimum = _amountIn.mulDiv(priceX961, FixedPoint96.Q96).mulDiv(FixedPoint96.Q96, priceX962);
         }
 
         // Max slippage of 3% for the trade.
-        expectedAmountOutMinimum = expectedAmountOutMinimum.mulDiv(
-            MAX_BASIS_POINTS - THREE_PERCENT,
-            MAX_BASIS_POINTS
-        );
+        expectedAmountOutMinimum = expectedAmountOutMinimum.mulDiv(MAX_BASIS_POINTS - THREE_PERCENT, MAX_BASIS_POINTS);
         path = abi.encodePacked(stkAAVE, POOL_FEE, AAVE, POOL_FEE, WETH9, MORPHO_POOL_FEE, MORPHO);
     }
 
     /// @dev Returns the price in fixed point 96 from the square of the price in fixed point 96.
     /// @param _sqrtPriceX96 The square of the price in fixed point 96.
     /// @return priceX96 The price in fixed point 96.
-    function _getPriceX96FromSqrtPriceX96(uint160 _sqrtPriceX96)
-        public
-        pure
-        returns (uint256 priceX96)
-    {
+    function _getPriceX96FromSqrtPriceX96(uint160 _sqrtPriceX96) public pure returns (uint256 priceX96) {
         return FullMath.mulDiv(_sqrtPriceX96, _sqrtPriceX96, FixedPoint96.Q96);
     }
 }

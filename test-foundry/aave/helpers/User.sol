@@ -101,12 +101,7 @@ contract User {
         address _borrower,
         uint256 _amount
     ) external {
-        positionsManager.liquidate(
-            _poolTokenBorrowedAddress,
-            _poolTokenCollateralAddress,
-            _borrower,
-            _amount
-        );
+        positionsManager.liquidate(_poolTokenBorrowedAddress, _poolTokenCollateralAddress, _borrower, _amount);
     }
 
     function setNDS(uint8 _newNDS) external {
@@ -133,9 +128,7 @@ contract User {
         positionsManager.setPauseStatus(_poolTokenAddress);
     }
 
-    function setAaveIncentivesControllerOnRewardsManager(address _aaveIncentivesController)
-        external
-    {
+    function setAaveIncentivesControllerOnRewardsManager(address _aaveIncentivesController) external {
         rewardsManager.setAaveIncentivesController(_aaveIncentivesController);
     }
 }

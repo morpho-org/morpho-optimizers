@@ -210,10 +210,7 @@ contract TestEth is TestSetup {
         uint256 balanceAfter = liquidator.balanceOf(wEth);
 
         // Check borrower1 borrow balance.
-        (uint256 inP2PBorrower, uint256 onPoolBorrower) = morpho.borrowBalanceInOf(
-            cEth,
-            address(borrower1)
-        );
+        (uint256 inP2PBorrower, uint256 onPoolBorrower) = morpho.borrowBalanceInOf(cEth, address(borrower1));
         uint256 expectedBorrowBalanceOnPool = (amount - toRepay).div(ICToken(cEth).borrowIndex());
         testEquality(onPoolBorrower, expectedBorrowBalanceOnPool, "borrower borrow on pool");
         assertEq(inP2PBorrower, 0, "borrower borrow in P2P");
@@ -224,13 +221,9 @@ contract TestEth is TestSetup {
         uint256 collateralPrice = customOracle.getUnderlyingPrice(cUsdc);
         uint256 borrowedPrice = customOracle.getUnderlyingPrice(cEth);
 
-        uint256 amountToSeize = toRepay
-        .mul(comptroller.liquidationIncentiveMantissa())
-        .mul(borrowedPrice)
-        .div(collateralPrice);
+        uint256 amountToSeize = toRepay.mul(comptroller.liquidationIncentiveMantissa()).mul(borrowedPrice).div(collateralPrice);
 
-        uint256 expectedOnPool = collateralOnPool -
-            amountToSeize.div(ICToken(cUsdc).exchangeRateCurrent());
+        uint256 expectedOnPool = collateralOnPool - amountToSeize.div(ICToken(cUsdc).exchangeRateCurrent());
 
         testEquality(onPoolBorrower, expectedOnPool, "borrower supply on pool");
         assertEq(balanceAfter, balanceBefore - toRepay, "amount seized");
@@ -266,10 +259,7 @@ contract TestEth is TestSetup {
         uint256 balanceAfter = liquidator.balanceOf(wEth);
 
         // Check borrower1 borrow balance.
-        (uint256 inP2PBorrower, uint256 onPoolBorrower) = morpho.borrowBalanceInOf(
-            cDai,
-            address(borrower1)
-        );
+        (uint256 inP2PBorrower, uint256 onPoolBorrower) = morpho.borrowBalanceInOf(cDai, address(borrower1));
         uint256 expectedBorrowBalanceOnPool = (amount - toRepay).div(ICToken(cDai).borrowIndex());
         testEquality(onPoolBorrower, expectedBorrowBalanceOnPool, "borrower borrow on pool");
         assertEq(inP2PBorrower, 0, "borrower borrow in P2P");
@@ -280,13 +270,9 @@ contract TestEth is TestSetup {
         uint256 collateralPrice = customOracle.getUnderlyingPrice(cEth);
         uint256 borrowedPrice = customOracle.getUnderlyingPrice(cDai);
 
-        uint256 amountToSeize = toRepay
-        .mul(comptroller.liquidationIncentiveMantissa())
-        .mul(borrowedPrice)
-        .div(collateralPrice);
+        uint256 amountToSeize = toRepay.mul(comptroller.liquidationIncentiveMantissa()).mul(borrowedPrice).div(collateralPrice);
 
-        uint256 expectedOnPool = collateralOnPool -
-            amountToSeize.div(ICToken(cEth).exchangeRateCurrent());
+        uint256 expectedOnPool = collateralOnPool - amountToSeize.div(ICToken(cEth).exchangeRateCurrent());
 
         testEquality(onPoolBorrower, expectedOnPool, "borrower supply on pool");
         assertEq(balanceAfter, balanceBefore + amountToSeize, "amount seized");

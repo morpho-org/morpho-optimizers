@@ -38,67 +38,30 @@ contract InterestRatesV1 is IInterestRates {
     ///             delta The deltas and P2P amounts.
     /// @return newSupplyP2PExchangeRate The updated supplyP2PExchangeRate.
     /// @return newBorrowP2PExchangeRate The updated borrowP2PExchangeRate.
-    function computeP2PExchangeRates(Types.Params memory _params)
-        public
-        pure
-        returns (uint256 newSupplyP2PExchangeRate, uint256 newBorrowP2PExchangeRate)
-    {
+    function computeP2PExchangeRates(Types.Params memory _params) public pure returns (uint256 newSupplyP2PExchangeRate, uint256 newBorrowP2PExchangeRate) {
         Vars memory vars;
-        (
-            vars.supplyP2PGrowthFactor,
-            vars.borrowP2PGrowthFactor,
-            vars.supplyPoolGrowthFactor,
-            vars.borrowPoolGrowthFactor
-        ) = _computeGrowthFactors(
-            _params.poolSupplyExchangeRate,
-            _params.poolBorrowExchangeRate,
-            _params.lastPoolSupplyExchangeRate,
-            _params.lastPoolBorrowExchangeRate,
-            _params.reserveFactor
-        );
+        (vars.supplyP2PGrowthFactor, vars.borrowP2PGrowthFactor, vars.supplyPoolGrowthFactor, vars.borrowPoolGrowthFactor) = _computeGrowthFactors(_params.poolSupplyExchangeRate, _params.poolBorrowExchangeRate, _params.lastPoolSupplyExchangeRate, _params.lastPoolBorrowExchangeRate, _params.reserveFactor);
 
         if (_params.delta.supplyP2PAmount == 0 || _params.delta.supplyP2PDelta == 0) {
-            newSupplyP2PExchangeRate = _params.supplyP2PExchangeRate.rayMul(
-                vars.supplyP2PGrowthFactor
-            );
+            newSupplyP2PExchangeRate = _params.supplyP2PExchangeRate.rayMul(vars.supplyP2PGrowthFactor);
         } else {
             vars.shareOfTheDelta = Math.min(
-                _params
-                .delta
-                .supplyP2PDelta
-                .wadToRay()
-                .rayMul(_params.poolSupplyExchangeRate)
-                .rayDiv(_params.supplyP2PExchangeRate)
-                .rayDiv(_params.delta.supplyP2PAmount.wadToRay()),
+                _params.delta.supplyP2PDelta.wadToRay().rayMul(_params.poolSupplyExchangeRate).rayDiv(_params.supplyP2PExchangeRate).rayDiv(_params.delta.supplyP2PAmount.wadToRay()),
                 Math.ray() // To avoid shareOfTheDelta > 1 with rounding errors.
             );
 
-            newSupplyP2PExchangeRate = _params.supplyP2PExchangeRate.rayMul(
-                (Math.ray() - vars.shareOfTheDelta).rayMul(vars.supplyP2PGrowthFactor) +
-                    vars.shareOfTheDelta.rayMul(vars.supplyPoolGrowthFactor)
-            );
+            newSupplyP2PExchangeRate = _params.supplyP2PExchangeRate.rayMul((Math.ray() - vars.shareOfTheDelta).rayMul(vars.supplyP2PGrowthFactor) + vars.shareOfTheDelta.rayMul(vars.supplyPoolGrowthFactor));
         }
 
         if (_params.delta.borrowP2PAmount == 0 || _params.delta.borrowP2PDelta == 0) {
-            newBorrowP2PExchangeRate = _params.borrowP2PExchangeRate.rayMul(
-                vars.borrowP2PGrowthFactor
-            );
+            newBorrowP2PExchangeRate = _params.borrowP2PExchangeRate.rayMul(vars.borrowP2PGrowthFactor);
         } else {
             vars.shareOfTheDelta = Math.min(
-                _params
-                .delta
-                .borrowP2PDelta
-                .wadToRay()
-                .rayMul(_params.poolBorrowExchangeRate)
-                .rayDiv(_params.borrowP2PExchangeRate)
-                .rayDiv(_params.delta.borrowP2PAmount.wadToRay()),
+                _params.delta.borrowP2PDelta.wadToRay().rayMul(_params.poolBorrowExchangeRate).rayDiv(_params.borrowP2PExchangeRate).rayDiv(_params.delta.borrowP2PAmount.wadToRay()),
                 Math.ray() // To avoid shareOfTheDelta > 1 with rounding errors.
             );
 
-            newBorrowP2PExchangeRate = _params.borrowP2PExchangeRate.rayMul(
-                (Math.ray() - vars.shareOfTheDelta).rayMul(vars.borrowP2PGrowthFactor) +
-                    vars.shareOfTheDelta.rayMul(vars.borrowPoolGrowthFactor)
-            );
+            newBorrowP2PExchangeRate = _params.borrowP2PExchangeRate.rayMul((Math.ray() - vars.shareOfTheDelta).rayMul(vars.borrowP2PGrowthFactor) + vars.shareOfTheDelta.rayMul(vars.borrowPoolGrowthFactor));
         }
     }
 
@@ -130,20 +93,8 @@ contract InterestRatesV1 is IInterestRates {
     {
         supplyPoolGrowthFactor = _poolSupplyExchangeRate.rayDiv(_lastPoolSupplyExchangeRate);
         borrowPoolGrowthFactor = _poolBorrowExchangeRate.rayDiv(_lastPoolBorrowExchangeRate);
-        supplyP2PGrowthFactor =
-            ((MAX_BASIS_POINTS - _reserveFactor) *
-                (2 * supplyPoolGrowthFactor + borrowPoolGrowthFactor)) /
-            3 /
-            MAX_BASIS_POINTS +
-            (_reserveFactor * supplyPoolGrowthFactor) /
-            MAX_BASIS_POINTS;
+        supplyP2PGrowthFactor = ((MAX_BASIS_POINTS - _reserveFactor) * (2 * supplyPoolGrowthFactor + borrowPoolGrowthFactor)) / 3 / MAX_BASIS_POINTS + (_reserveFactor * supplyPoolGrowthFactor) / MAX_BASIS_POINTS;
 
-        borrowP2PGrowthFactor =
-            ((MAX_BASIS_POINTS - _reserveFactor) *
-                (2 * supplyPoolGrowthFactor + borrowPoolGrowthFactor)) /
-            3 /
-            MAX_BASIS_POINTS +
-            (_reserveFactor * borrowPoolGrowthFactor) /
-            MAX_BASIS_POINTS;
+        borrowP2PGrowthFactor = ((MAX_BASIS_POINTS - _reserveFactor) * (2 * supplyPoolGrowthFactor + borrowPoolGrowthFactor)) / 3 / MAX_BASIS_POINTS + (_reserveFactor * borrowPoolGrowthFactor) / MAX_BASIS_POINTS;
     }
 }
