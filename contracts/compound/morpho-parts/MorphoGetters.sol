@@ -125,7 +125,6 @@ abstract contract MorphoGetters is MorphoStorage {
     /// @dev Note: must be called after calling `accrueInterest()` on the cToken to have the most up to date values.
     /// @param _user The user to determine data for.
     /// @param _poolTokenAddress The address of the market.
-    /// @param _poolTokenAddress The address of the market.
     /// @param _oracle The oracle used.
     /// @return assetData The data related to this asset.
     function _getUserLiquidityDataForAsset(
