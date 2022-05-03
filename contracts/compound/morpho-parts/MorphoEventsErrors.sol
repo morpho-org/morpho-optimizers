@@ -143,10 +143,10 @@ abstract contract MorphoEventsErrors is MorphoGetters {
     /// @param _amountClaimed The amount of reward token claimed.
     event RewardsClaimed(address indexed _user, uint256 _amountClaimed);
 
-    /// @notice Emitted when a user claims rewards and converts them to Morpho tokens.
+    /// @notice Emitted when a user claims rewards and trades them to Morpho tokens.
     /// @param _user The address of the claimer.
     /// @param _amountSent The amount of reward token sent to the vault.
-    event RewardsClaimedAndConverted(address indexed _user, uint256 _amountSent);
+    event RewardsClaimedAndTraded(address indexed _user, uint256 _amountSent);
 
     /// @notice Emitted when a market is paused or unpaused.
     /// @param _poolTokenAddress The address of the pool token concerned.

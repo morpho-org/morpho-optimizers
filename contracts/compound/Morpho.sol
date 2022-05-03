@@ -308,7 +308,7 @@ contract Morpho is MorphoGovernance {
             if (_claimMorphoToken) {
                 comp.safeApprove(address(incentivesVault), amountOfRewards);
                 incentivesVault.tradeCompForMorphoTokens(msg.sender, amountOfRewards);
-                emit RewardsClaimedAndConverted(msg.sender, amountOfRewards);
+                emit RewardsClaimedAndTraded(msg.sender, amountOfRewards);
             } else {
                 comp.safeTransfer(msg.sender, amountOfRewards);
                 emit RewardsClaimed(msg.sender, amountOfRewards);
