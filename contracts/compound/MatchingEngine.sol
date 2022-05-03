@@ -91,7 +91,7 @@ contract MatchingEngine is MorphoGetters {
                 supplyBalanceInOf[poolTokenAddress][user].onPool -= vars.toMatch.div(
                     vars.poolIndex
                 );
-                supplyBalanceInOf[poolTokenAddress][user].inP2P += vars.toMatch.div(vars.p2pRate); // In p2pUnit
+                supplyBalanceInOf[poolTokenAddress][user].inP2P += vars.toMatch.div(vars.p2pRate); // In peer-to-peer unit
                 updateSuppliers(poolTokenAddress, user);
                 emit SupplierPositionUpdated(
                     user,
@@ -143,7 +143,7 @@ contract MatchingEngine is MorphoGetters {
                 );
                 supplyBalanceInOf[_poolTokenAddress][user].inP2P -= vars.toUnmatch.div(
                     vars.p2pRate
-                ); // In p2pUnit
+                ); // In peer-to-peer unit
                 updateSuppliers(_poolTokenAddress, user);
                 emit SupplierPositionUpdated(
                     user,
