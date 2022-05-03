@@ -340,7 +340,6 @@ contract TestRewards is TestSetup {
     }
 
     function testShouldClaimRewardsAndTradeForMorpkoTokens() public {
-        incentivesVault.togglePauseStatus();
         // 10% bonus.
         incentivesVault.setBonus(1_000);
 

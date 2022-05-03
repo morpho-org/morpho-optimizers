@@ -96,12 +96,13 @@ contract TestIncentivesVault is DSTest, stdCheats {
     }
 
     function testFailWhenContractNotActive() public {
+        incentivesVault.togglePauseStatus();
+
         hevm.prank(positionsManager);
         incentivesVault.tradeCompForMorphoTokens(address(1), 0);
     }
 
     function testOnlyPositionsManagerShouldTriggerCompConvertFunction() public {
-        incentivesVault.togglePauseStatus();
         incentivesVault.setMorphoDao(address(1));
 
         hevm.expectRevert(abi.encodeWithSignature("OnlyPositionsManager()"));
@@ -112,7 +113,6 @@ contract TestIncentivesVault is DSTest, stdCheats {
     }
 
     function testShouldGiveTheRightAmountOfRewards() public {
-        incentivesVault.togglePauseStatus();
         incentivesVault.setMorphoDao(address(1));
         uint256 toApprove = 1_000 ether;
         tip(COMP, address(positionsManager), toApprove);
