@@ -115,22 +115,22 @@ abstract contract MorphoEventsErrors is MorphoGetters {
     event DustThresholdSet(uint256 _dustThreshold);
 
     /// @notice Emitted when the value of `noP2P` is set.
-    /// @param _poolTokenAddress The address of the pool token concerned..
+    /// @param _poolTokenAddress The address of the concerned market.
     /// @param _noP2P The new value of `_noP2P` adopted.
     event NoP2PSet(address indexed _poolTokenAddress, bool _noP2P);
 
     /// @notice Emitted when the `reserveFactor` is set.
-    /// @param _poolTokenAddress The address of the pool token concerned..
+    /// @param _poolTokenAddress The address of the concerned market.
     /// @param _newValue The new value of the `reserveFactor`.
     event ReserveFactorSet(address indexed _poolTokenAddress, uint256 _newValue);
 
     /// @notice Emitted when the `p2pIndexCursor` is set.
-    /// @param _poolTokenAddress The address of the pool token concerned..
+    /// @param _poolTokenAddress The address of the concerned market.
     /// @param _newValue The new value of the `p2pIndexCursor`.
     event P2PIndexCursorSet(address indexed _poolTokenAddress, uint256 _newValue);
 
     /// @notice Emitted when a reserve fee is claimed.
-    /// @param _poolTokenAddress The address of the pool token concerned..
+    /// @param _poolTokenAddress The address of the concerned market.
     /// @param _amountClaimed The amount of reward token claimed.
     event ReserveFeeClaimed(address indexed _poolTokenAddress, uint256 _amountClaimed);
 
@@ -143,18 +143,18 @@ abstract contract MorphoEventsErrors is MorphoGetters {
     /// @param _amountClaimed The amount of reward token claimed.
     event RewardsClaimed(address indexed _user, uint256 _amountClaimed);
 
-    /// @notice Emitted when a user claims rewards and trades them to Morpho tokens.
+    /// @notice Emitted when a user claims rewards and trades them for MORPHO tokens.
     /// @param _user The address of the claimer.
     /// @param _amountSent The amount of reward token sent to the vault.
     event RewardsClaimedAndTraded(address indexed _user, uint256 _amountSent);
 
     /// @notice Emitted when a market is paused or unpaused.
-    /// @param _poolTokenAddress The address of the pool token concerned.
+    /// @param _poolTokenAddress The address of the concerned market.
     /// @param _newStatus The new pause status of the market.
     event PauseStatusChanged(address indexed _poolTokenAddress, bool _newStatus);
 
     /// @notice Emitted when a market is partially paused or unpaused.
-    /// @param _poolTokenAddress The address of the pool token concerned.
+    /// @param _poolTokenAddress The address of the concerned market.
     /// @param _newStatus The new partial pause status of the market.
     event PartialPauseStatusChanged(address indexed _poolTokenAddress, bool _newStatus);
 
