@@ -11,6 +11,7 @@ import "./morpho-parts/MorphoStorage.sol";
 
 /// @title InterestRates.
 /// @notice Smart contract handling the computation of indexes used for P2P interactions.
+/// @dev This contract inherits from MorphoStorage so that Morpho can delegate calls to this contract.
 contract InterestRates is IInterestRates, MorphoStorage {
     using CompoundMath for uint256;
 
@@ -25,21 +26,21 @@ contract InterestRates is IInterestRates, MorphoStorage {
         uint256 lastPoolBorrowIndex; // The pool borrow index at last update.
         uint256 reserveFactor; // The reserve factor percentage (10 000 = 100%).
         uint256 p2pIndexCursor; // The reserve factor percentage (10 000 = 100%).
-        Types.Delta delta; // The deltas and P2P amounts.
+        Types.Delta delta; // The deltas and peer-to-peer amounts.
     }
 
     struct RateParams {
-        uint256 p2pIndex; // The P2P index.
+        uint256 p2pIndex; // The peer-to-peer index.
         uint256 poolIndex; // The pool index.
         uint256 lastPoolIndex; // The pool index at last update.
         uint256 reserveFactor; // The reserve factor percentage (10 000 = 100%).
-        uint256 p2pAmount; // Sum of all stored P2P balance in supply or borrow (in peer-to-peer unit).
-        uint256 p2pDelta; // Sum of all stored P2P in supply or borrow (in peer-to-peer unit).
+        uint256 p2pAmount; // Sum of all stored peer-to-peer balance in supply or borrow (in peer-to-peer unit).
+        uint256 p2pDelta; // Peer-to-peer delta in supply or borrow (in peer-to-peer unit).
     }
 
     /// EVENTS ///
 
-    /// @notice Emitted when the p2p indexes of a market are updated.
+    /// @notice Emitted when the peer-to-peer indexes of a market are updated.
     /// @param _poolTokenAddress The address of the market updated.
     /// @param _newP2PSupplyIndex The new value of the supply index from peer-to-peer unit to underlying.
     /// @param _newP2PBorrowIndex The new value of the borrow index from peer-to-peer unit to underlying.
@@ -51,7 +52,8 @@ contract InterestRates is IInterestRates, MorphoStorage {
 
     /// EXTERNAL ///
 
-    /// @notice Returns the updated P2P indexes.
+    /// @notice Returns the updated peer-to-peer indexes.
+    /// @dev Note: Compute the results with the index stored and not the most up to date one.
     /// @param _poolTokenAddress The address of the market to update.
     /// @return newP2PSupplyIndex The peer-to-peer supply index after update.
     /// @return newP2PBorrowIndex The peer-to-peer supply index after update.
@@ -86,6 +88,7 @@ contract InterestRates is IInterestRates, MorphoStorage {
     }
 
     /// @notice Returns the updated peer-to-peer supply index.
+    /// @dev Note: Compute the result with the index stored and not the most up to date one.
     /// @param _poolTokenAddress The address of the market to update.
     /// @return newP2PSupplyIndex The peer-to-peer supply index after update.
     function getUpdatedP2PSupplyIndex(address _poolTokenAddress) external view returns (uint256) {
@@ -113,6 +116,7 @@ contract InterestRates is IInterestRates, MorphoStorage {
     }
 
     /// @notice Returns the updated peer-to-peer borrow index.
+    /// @dev Note: Compute the result with the index stored and not the most up to date one.
     /// @param _poolTokenAddress The address of the market to update.
     /// @return newP2PSupplyIndex The peer-to-peer borrow index after update.
     function getUpdatedP2PBorrowIndex(address _poolTokenAddress) external view returns (uint256) {
@@ -139,7 +143,7 @@ contract InterestRates is IInterestRates, MorphoStorage {
         }
     }
 
-    /// @notice Updates the P2P indexes.
+    /// @notice Updates the peer-to-peer indexes.
     /// @param _poolTokenAddress The address of the market to update.
     function updateP2PIndexes(address _poolTokenAddress) external {
         if (block.timestamp > lastPoolIndexes[_poolTokenAddress].lastUpdateBlockNumber) {
@@ -177,7 +181,7 @@ contract InterestRates is IInterestRates, MorphoStorage {
 
     /// PUBLIC ///
 
-    /// @notice Computes and returns new P2P indexes.
+    /// @notice Computes and returns new peer-to-peer indexes.
     /// @param _params Computation parameters.
     /// @return newP2PSupplyIndex The updated p2pSupplyIndex.
     /// @return newP2PBorrowIndex The updated p2pBorrowIndex.

@@ -253,7 +253,7 @@ contract Lens {
         }
     }
 
-    /// @notice Returns the updated P2P indexes.
+    /// @notice Returns the updated peer-to-peer indexes.
     /// @param _poolTokenAddress The address of the market to update.
     /// @return newP2PSupplyIndex The peer-to-peer supply index after update.
     /// @return newP2PBorrowIndex The peer-to-peer supply index after update.
@@ -372,7 +372,7 @@ contract Lens {
     /// @notice Returns market's data.
     /// @return p2pSupplyIndex_ The peer-to-peer supply index of the market.
     /// @return p2pBorrowIndex_ The peer-to-peer borrow index of the market.
-    /// @return lastUpdateBlockNumber_ The last block number when P2P indexes where updated.
+    /// @return lastUpdateBlockNumber_ The last block number when peer-to-peer indexes where updated.
     /// @return supplyP2PDelta_ The supply P2P delta (in scaled balance).
     /// @return borrowP2PDelta_ The borrow P2P delta (in cdUnit).
     /// @return supplyP2PAmount_ The supply P2P amount (in peer-to-peer unit).
@@ -429,7 +429,7 @@ contract Lens {
 
     /// INTERNAL ///
 
-    /// @notice Computes and return new P2P indexes.
+    /// @notice Computes and return new peer-to-peer indexes.
     /// @param _params Computation parameters.
     /// @return newP2PSupplyIndex The updated p2pSupplyIndex.
     /// @return newP2PBorrowIndex The updated p2pBorrowIndex.
