@@ -150,7 +150,7 @@ contract TestSetupFuzzing is Config, Utils, stdCheats {
         createMarket(cYfi);
         createMarket(cUsdp);
         createMarket(cSushi);
-        createMarket(cWbtc); // Mint is paused on compound
+        // createMarket(cWbtc); // Mint is paused on compound
 
         hevm.roll(block.number + 1);
 
