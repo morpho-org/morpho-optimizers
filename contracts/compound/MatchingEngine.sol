@@ -67,9 +67,9 @@ contract MatchingEngine is MorphoGetters {
         uint256 _maxGasToConsume
     ) internal returns (uint256 matched) {
         MatchVars memory vars;
-        address user = suppliersOnPool[_poolTokenAddress].getHead();
         vars.poolIndex = ICToken(_poolTokenAddress).exchangeRateStored(); // Exchange rate is already updated.
         vars.p2pIndex = p2pSupplyIndex[_poolTokenAddress];
+        address user = suppliersOnPool[_poolTokenAddress].getHead();
 
         if (_maxGasToConsume != 0) {
             vars.gasLeftAtTheBeginning = gasleft();
@@ -117,9 +117,9 @@ contract MatchingEngine is MorphoGetters {
         uint256 _maxGasToConsume
     ) internal returns (uint256) {
         UnmatchVars memory vars;
-        address user = suppliersInP2P[_poolTokenAddress].getHead();
         vars.poolIndex = ICToken(_poolTokenAddress).exchangeRateStored(); // Exchange rate is already updated.
         vars.p2pIndex = p2pSupplyIndex[_poolTokenAddress];
+        address user = suppliersInP2P[_poolTokenAddress].getHead();
         uint256 remainingToUnmatch = _amount;
 
         if (_maxGasToConsume != 0) {
@@ -172,9 +172,9 @@ contract MatchingEngine is MorphoGetters {
         uint256 _maxGasToConsume
     ) internal returns (uint256 matched) {
         MatchVars memory vars;
-        address user = borrowersOnPool[_poolTokenAddress].getHead();
         vars.poolIndex = ICToken(_poolTokenAddress).borrowIndex();
         vars.p2pIndex = p2pBorrowIndex[_poolTokenAddress];
+        address user = borrowersOnPool[_poolTokenAddress].getHead();
 
         if (_maxGasToConsume != 0) {
             vars.gasLeftAtTheBeginning = gasleft();
@@ -222,10 +222,10 @@ contract MatchingEngine is MorphoGetters {
         uint256 _maxGasToConsume
     ) internal returns (uint256) {
         UnmatchVars memory vars;
-        address user = borrowersInP2P[_poolTokenAddress].getHead();
-        uint256 remainingToUnmatch = _amount;
         vars.poolIndex = ICToken(_poolTokenAddress).borrowIndex();
         vars.p2pIndex = p2pBorrowIndex[_poolTokenAddress];
+        address user = borrowersInP2P[_poolTokenAddress].getHead();
+        uint256 remainingToUnmatch = _amount;
 
         if (_maxGasToConsume != 0) {
             vars.gasLeftAtTheBeginning = gasleft();
