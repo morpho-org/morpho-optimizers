@@ -57,20 +57,19 @@ contract MatchingEngine is MorphoGetters {
 
     /// @notice Matches suppliers' liquidity waiting on Compound up to the given `_amount` and move it to P2P.
     /// @dev Note: p2pIndexes must have been updated before calling this function.
-    /// @param _poolToken The pool token of the market from which to match suppliers.
+    /// @param _poolTokenAddress The address of the market from which to match suppliers.
     /// @param _amount The token amount to search for (in underlying).
     /// @param _maxGasToConsume The maximum amount of gas to consume within a matching engine loop.
     /// @return matched The amount of liquidity matched (in underlying).
     function matchSuppliers(
-        ICToken _poolToken,
+        address _poolTokenAddress,
         uint256 _amount,
         uint256 _maxGasToConsume
     ) internal returns (uint256 matched) {
         MatchVars memory vars;
-        address poolTokenAddress = address(_poolToken);
-        address user = suppliersOnPool[poolTokenAddress].getHead();
-        vars.poolIndex = _poolToken.exchangeRateCurrent();
-        vars.p2pRate = p2pSupplyIndex[poolTokenAddress];
+        address user = suppliersOnPool[_poolTokenAddress].getHead();
+        vars.poolIndex = ICToken(_poolTokenAddress).exchangeRateCurrent();
+        vars.p2pRate = p2pSupplyIndex[_poolTokenAddress];
 
         if (_maxGasToConsume != 0) {
             vars.gasLeftAtTheBeginning = gasleft();
@@ -79,7 +78,7 @@ contract MatchingEngine is MorphoGetters {
                 user != address(0) &&
                 vars.gasLeftAtTheBeginning - gasleft() < _maxGasToConsume
             ) {
-                vars.inUnderlying = supplyBalanceInOf[poolTokenAddress][user].onPool.mul(
+                vars.inUnderlying = supplyBalanceInOf[_poolTokenAddress][user].onPool.mul(
                     vars.poolIndex
                 );
                 unchecked {
@@ -89,19 +88,19 @@ contract MatchingEngine is MorphoGetters {
                     matched += vars.toMatch;
                 }
 
-                supplyBalanceInOf[poolTokenAddress][user].onPool -= vars.toMatch.div(
+                supplyBalanceInOf[_poolTokenAddress][user].onPool -= vars.toMatch.div(
                     vars.poolIndex
                 );
-                supplyBalanceInOf[poolTokenAddress][user].inP2P += vars.toMatch.div(vars.p2pRate); // In peer-to-peer unit
-                updateSuppliers(poolTokenAddress, user);
+                supplyBalanceInOf[_poolTokenAddress][user].inP2P += vars.toMatch.div(vars.p2pRate); // In peer-to-peer unit
+                updateSuppliers(_poolTokenAddress, user);
                 emit SupplierPositionUpdated(
                     user,
-                    poolTokenAddress,
-                    supplyBalanceInOf[poolTokenAddress][user].onPool,
-                    supplyBalanceInOf[poolTokenAddress][user].inP2P
+                    _poolTokenAddress,
+                    supplyBalanceInOf[_poolTokenAddress][user].onPool,
+                    supplyBalanceInOf[_poolTokenAddress][user].inP2P
                 );
 
-                user = suppliersOnPool[poolTokenAddress].getHead();
+                user = suppliersOnPool[_poolTokenAddress].getHead();
             }
         }
     }
@@ -162,20 +161,19 @@ contract MatchingEngine is MorphoGetters {
 
     /// @notice Matches borrowers' liquidity waiting on Compound up to the given `_amount` and move it to P2P.
     /// @dev Note: p2pIndexes must have been updated before calling this function.
-    /// @param _poolToken The pool token of the market from which to match borrowers.
+    /// @param _poolTokenAddress The address of the market from which to match borrowers.
     /// @param _amount The amount to search for (in underlying).
     /// @param _maxGasToConsume The maximum amount of gas to consume within a matching engine loop.
     /// @return matched The amount of liquidity matched (in underlying).
     function matchBorrowers(
-        ICToken _poolToken,
+        address _poolTokenAddress,
         uint256 _amount,
         uint256 _maxGasToConsume
     ) internal returns (uint256 matched) {
         MatchVars memory vars;
-        address poolTokenAddress = address(_poolToken);
-        address user = borrowersOnPool[poolTokenAddress].getHead();
-        vars.poolIndex = _poolToken.borrowIndex();
-        vars.p2pRate = p2pBorrowIndex[poolTokenAddress];
+        address user = borrowersOnPool[_poolTokenAddress].getHead();
+        vars.poolIndex = ICToken(_poolTokenAddress).borrowIndex();
+        vars.p2pRate = p2pBorrowIndex[_poolTokenAddress];
 
         if (_maxGasToConsume != 0) {
             vars.gasLeftAtTheBeginning = gasleft();
@@ -184,7 +182,7 @@ contract MatchingEngine is MorphoGetters {
                 user != address(0) &&
                 vars.gasLeftAtTheBeginning - gasleft() < _maxGasToConsume
             ) {
-                vars.inUnderlying = borrowBalanceInOf[poolTokenAddress][user].onPool.mul(
+                vars.inUnderlying = borrowBalanceInOf[_poolTokenAddress][user].onPool.mul(
                     vars.poolIndex
                 );
                 unchecked {
@@ -194,19 +192,19 @@ contract MatchingEngine is MorphoGetters {
                     matched += vars.toMatch;
                 }
 
-                borrowBalanceInOf[poolTokenAddress][user].onPool -= vars.toMatch.div(
+                borrowBalanceInOf[_poolTokenAddress][user].onPool -= vars.toMatch.div(
                     vars.poolIndex
                 );
-                borrowBalanceInOf[poolTokenAddress][user].inP2P += vars.toMatch.div(vars.p2pRate);
-                updateBorrowers(poolTokenAddress, user);
+                borrowBalanceInOf[_poolTokenAddress][user].inP2P += vars.toMatch.div(vars.p2pRate);
+                updateBorrowers(_poolTokenAddress, user);
                 emit BorrowerPositionUpdated(
                     user,
-                    poolTokenAddress,
-                    borrowBalanceInOf[poolTokenAddress][user].onPool,
-                    borrowBalanceInOf[poolTokenAddress][user].inP2P
+                    _poolTokenAddress,
+                    borrowBalanceInOf[_poolTokenAddress][user].onPool,
+                    borrowBalanceInOf[_poolTokenAddress][user].inP2P
                 );
 
-                user = borrowersOnPool[poolTokenAddress].getHead();
+                user = borrowersOnPool[_poolTokenAddress].getHead();
             }
         }
     }
