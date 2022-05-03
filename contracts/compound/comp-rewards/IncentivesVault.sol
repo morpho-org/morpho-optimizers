@@ -19,9 +19,9 @@ contract IncentivesVault is IIncentivesVault, Ownable {
     address public immutable morphoToken; // The address of the MORPHO token.
     address public immutable morpho; // The address of the Morpho.
     address public morphoDao; // The address of the Morpho DAO treasury.
-    address public oracle; // Thre oracle used to get the price of the pair MORPHO/COMP 🦋.
+    address public oracle; // The oracle used to get the price of the pair MORPHO/COMP 🦋.
     uint256 public bonus; // The bonus of MORPHO tokens to give to the user as a percentage to add on top of the consulted amount on the oracle (in basis point).
-    bool public isPaused; // Whether the swith of COMP rewards to MORPHO rewards is paused or not.
+    bool public isPaused; // Whether the trade of COMP rewards for MORPHO rewards is paused or not.
 
     /// EVENTS ///
 
@@ -60,7 +60,7 @@ contract IncentivesVault is IIncentivesVault, Ownable {
     /// @param _morpho The address of Morpho.
     /// @param _morphoToken The address of the MORPHO token.
     /// @param _morphoDao The address of the Morpho DAO.
-    /// @param _oracle The adress of the oracle.
+    /// @param _oracle The address of the oracle.
     constructor(
         address _morpho,
         address _morphoToken,
