@@ -90,6 +90,7 @@ abstract contract MorphoGovernance is MorphoEventsErrors {
     function setReserveFactor(address _poolTokenAddress, uint256 _newReserveFactor)
         external
         onlyOwner
+        isMarketCreated(_poolTokenAddress)
     {
         updateP2PIndexes(_poolTokenAddress);
         marketParameters[_poolTokenAddress].reserveFactor = uint16(
@@ -103,6 +104,7 @@ abstract contract MorphoGovernance is MorphoEventsErrors {
     function setP2PIndexCursor(address _poolTokenAddress, uint16 _p2pIndexCursor)
         external
         onlyOwner
+        isMarketCreated(_poolTokenAddress)
     {
         marketParameters[_poolTokenAddress].p2pIndexCursor = _p2pIndexCursor;
         emit P2PIndexCursorSet(_poolTokenAddress, _p2pIndexCursor);
@@ -110,7 +112,11 @@ abstract contract MorphoGovernance is MorphoEventsErrors {
 
     /// @notice Toggles the pause status on a specific market in case of emergency.
     /// @param _poolTokenAddress The address of the market to pause/unpause.
-    function togglePauseStatus(address _poolTokenAddress) external onlyOwner {
+    function togglePauseStatus(address _poolTokenAddress)
+        external
+        onlyOwner
+        isMarketCreated(_poolTokenAddress)
+    {
         Types.MarketStatuses storage marketStatuses_ = marketStatuses[_poolTokenAddress];
         bool newPauseStatus = !marketStatuses_.isPaused;
         marketStatuses_.isPaused = newPauseStatus;
@@ -119,7 +125,11 @@ abstract contract MorphoGovernance is MorphoEventsErrors {
 
     /// @notice Toggles the partial pause status on a specific market in case of emergency.
     /// @param _poolTokenAddress The address of the market to partially pause/unpause.
-    function togglePartialPauseStatus(address _poolTokenAddress) external onlyOwner {
+    function togglePartialPauseStatus(address _poolTokenAddress)
+        external
+        onlyOwner
+        isMarketCreated(_poolTokenAddress)
+    {
         Types.MarketStatuses storage marketStatuses_ = marketStatuses[_poolTokenAddress];
         bool newPauseStatus = !marketStatuses_.isPartiallyPaused;
         marketStatuses_.isPartiallyPaused = newPauseStatus;
