@@ -40,11 +40,11 @@ contract IncentivesVault is IIncentivesVault, Ownable {
     /// @notice Emitted when MORPHO tokens are transferred to the DAO.
     event MorphoTokensTransferred(uint256 _amount);
 
-    /// @notice Emitted when COMP tokens are switched to MORPHO tokens.
+    /// @notice Emitted when COMP tokens are traded for MORPHO tokens.
     /// @param _receiver The address of the receiver.
     /// @param _compAmount The amount of COMP switched.
     /// @param _morphoAmount The amount of MORPHO sent.
-    event CompTokensSwitched(address indexed _receiver, uint256 _compAmount, uint256 _morphoAmount);
+    event CompTokensTraded(address indexed _receiver, uint256 _compAmount, uint256 _morphoAmount);
 
     /// ERRROS ///
 
@@ -125,6 +125,6 @@ contract IncentivesVault is IIncentivesVault, Ownable {
             MAX_BASIS_POINTS;
         ERC20(morphoToken).transfer(_receiver, amountOut);
 
-        emit CompTokensSwitched(_receiver, _amount, amountOut);
+        emit CompTokensTraded(_receiver, _amount, amountOut);
     }
 }
