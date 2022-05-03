@@ -120,7 +120,7 @@ contract TestSupplyFuzzing is TestSetupFuzzing {
     }
 
     // fail (26154794060679730960, 0, 120) -> event Failure error e info 9 with cYFI active
-    // what is fuzzed is the amount supplied & borrowed
+    // what is fuzzed is the amount supplied
     function testSupply4Fuzzed(
         uint128 _suppliedAmount,
         uint8 _collateralAsset,
@@ -130,6 +130,63 @@ contract TestSupplyFuzzing is TestSetupFuzzing {
         (vars.suppliedCToken, vars.suppliedUnderlying) = getAsset(_supplyAsset);
         (vars.collateralCToken, vars.collateralUnderlying) = getAsset(_collateralAsset);
         uint256 amountPerBorrower = _suppliedAmount / NMAX;
+
+        checkAmountIsNotTooLow(vars.suppliedUnderlying, _suppliedAmount);
+        checkAmountIsNotTooLow(vars.collateralUnderlying, uint128(amountPerBorrower));
+        hevm.assume(
+            _suppliedAmount <=
+                Math.min(
+                    comptroller.borrowCaps(vars.suppliedCToken),
+                    ICToken(vars.suppliedCToken).getCash()
+                ) &&
+                _suppliedAmount <= ERC20(vars.suppliedUnderlying).balanceOf(address(supplier1))
+        );
+
+        setMaxGasForMatchingHelper(
+            type(uint64).max,
+            type(uint64).max,
+            type(uint64).max,
+            type(uint64).max
+        );
+
+        uint256 collateralAmount = ERC20(vars.collateralUnderlying).balanceOf(address(borrower1));
+
+        {
+            borrower1.approve(vars.collateralUnderlying, collateralAmount);
+            borrower1.supply(vars.collateralCToken, collateralAmount);
+            (, uint256 borrowable) = morpho.getUserMaxCapacitiesForAsset(
+                address(borrower1),
+                vars.suppliedCToken
+            );
+            hevm.assume(borrowable >= amountPerBorrower);
+            borrower1.borrow(vars.suppliedCToken, amountPerBorrower);
+        }
+
+        createSigners(NMAX);
+
+        for (uint256 i = 0; i < NMAX - 1; i++) {
+            borrowers[i + 1].approve(vars.collateralUnderlying, collateralAmount);
+            borrowers[i + 1].supply(vars.collateralCToken, collateralAmount);
+            borrowers[i + 1].borrow(vars.suppliedCToken, amountPerBorrower);
+        }
+
+        {
+            uint256 actuallySupplied = (_suppliedAmount / NMAX) * NMAX;
+            supplier1.approve(vars.suppliedUnderlying, actuallySupplied);
+            supplier1.supply(vars.suppliedCToken, actuallySupplied);
+        }
+    }
+
+    // what is fuzzed is the amount supplied
+    function testSupply5Fuzzed(
+        uint128 _suppliedAmount,
+        uint8 _collateralAsset,
+        uint8 _supplyAsset
+    ) public {
+        AssetVars memory vars;
+        (vars.suppliedCToken, vars.suppliedUnderlying) = getAsset(_supplyAsset);
+        (vars.collateralCToken, vars.collateralUnderlying) = getAsset(_collateralAsset);
+        uint256 amountPerBorrower = _suppliedAmount / (2 * NMAX);
 
         checkAmountIsNotTooLow(vars.suppliedUnderlying, _suppliedAmount);
         checkAmountIsNotTooLow(vars.collateralUnderlying, uint128(amountPerBorrower));
