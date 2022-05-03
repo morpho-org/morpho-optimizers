@@ -233,7 +233,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
         // If this value is equal to 0 the withdraw will revert on Compound.
         if (toWithdraw.div(poolSupplyIndex) > 0) {
-            uint256 toAddInP2P = toWithdraw.div(p2pBorrowIndex[_poolTokenAddress]); // In p2pUnit.
+            uint256 toAddInP2P = toWithdraw.div(p2pBorrowIndex[_poolTokenAddress]); // In peer-to-peer unit.
 
             deltas[_poolTokenAddress].borrowP2PAmount += toAddInP2P;
             borrowBalanceInOf[_poolTokenAddress][msg.sender].inP2P += toAddInP2P;
@@ -314,7 +314,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             supplyBalanceInOf[_poolTokenAddress][_supplier].inP2P -= CompoundMath.min(
                 supplyBalanceInOf[_poolTokenAddress][_supplier].inP2P,
                 vars.remainingToWithdraw.div(p2pSupplyIndex)
-            ); // In p2pUnit
+            ); // In peer-to-peer unit
             updateSuppliers(_poolTokenAddress, _supplier);
 
             // Match Delta if any.
@@ -442,7 +442,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         borrowBalanceInOf[_poolTokenAddress][_user].inP2P -= CompoundMath.min(
             borrowBalanceInOf[_poolTokenAddress][_user].inP2P,
             vars.remainingToRepay.div(vars.p2pBorrowIndex)
-        ); // In p2pUnit.
+        ); // In peer-to-peer unit.
         updateBorrowers(_poolTokenAddress, _user);
 
         /// Fee repay ///

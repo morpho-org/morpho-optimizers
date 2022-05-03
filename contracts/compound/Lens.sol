@@ -34,8 +34,8 @@ contract Lens {
         uint256 poolIndex; // The pool index.
         uint256 lastPoolIndex; // The pool index at last update.
         uint256 reserveFactor; // The reserve factor percentage (10 000 = 100%).
-        uint256 p2pAmount; // Sum of all stored P2P balance in supply or borrow (in P2P unit).
-        uint256 p2pDelta; // Sum of all stored P2P in supply or borrow (in P2P unit).
+        uint256 p2pAmount; // Sum of all stored P2P balance in supply or borrow (in peer-to-peer unit).
+        uint256 p2pDelta; // Sum of all stored P2P in supply or borrow (in peer-to-peer unit).
     }
 
     /// STORAGE ///
@@ -375,8 +375,8 @@ contract Lens {
     /// @return lastUpdateBlockNumber_ The last block number when P2P indexes where updated.
     /// @return supplyP2PDelta_ The supply P2P delta (in scaled balance).
     /// @return borrowP2PDelta_ The borrow P2P delta (in cdUnit).
-    /// @return supplyP2PAmount_ The supply P2P amount (in P2P unit).
-    /// @return borrowP2PAmount_ The borrow P2P amount (in P2P unit).
+    /// @return supplyP2PAmount_ The supply P2P amount (in peer-to-peer unit).
+    /// @return borrowP2PAmount_ The borrow P2P amount (in peer-to-peer unit).
     function getMarketData(address _poolTokenAddress)
         external
         view

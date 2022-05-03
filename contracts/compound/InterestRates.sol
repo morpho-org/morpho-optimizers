@@ -33,16 +33,16 @@ contract InterestRates is IInterestRates, MorphoStorage {
         uint256 poolIndex; // The pool index.
         uint256 lastPoolIndex; // The pool index at last update.
         uint256 reserveFactor; // The reserve factor percentage (10 000 = 100%).
-        uint256 p2pAmount; // Sum of all stored P2P balance in supply or borrow (in P2P unit).
-        uint256 p2pDelta; // Sum of all stored P2P in supply or borrow (in P2P unit).
+        uint256 p2pAmount; // Sum of all stored P2P balance in supply or borrow (in peer-to-peer unit).
+        uint256 p2pDelta; // Sum of all stored P2P in supply or borrow (in peer-to-peer unit).
     }
 
     /// EVENTS ///
 
     /// @notice Emitted when the p2p indexes of a market are updated.
     /// @param _poolTokenAddress The address of the market updated.
-    /// @param _newP2PSupplyIndex The new value of the supply index from p2pUnit to underlying.
-    /// @param _newP2PBorrowIndex The new value of the borrow index from p2pUnit to underlying.
+    /// @param _newP2PSupplyIndex The new value of the supply index from peer-to-peer unit to underlying.
+    /// @param _newP2PBorrowIndex The new value of the borrow index from peer-to-peer unit to underlying.
     event P2PIndexesUpdated(
         address indexed _poolTokenAddress,
         uint256 _newP2PSupplyIndex,
