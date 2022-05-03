@@ -150,7 +150,7 @@ contract TestSetupFuzzing is Config, Utils, stdCheats {
         createMarket(cYfi);
         createMarket(cUsdp);
         createMarket(cSushi);
-        createMarket(cWbtc); // Mint is paused on compound
+        // createMarket(cWbtc); // Mint is paused on compound
 
         hevm.roll(block.number + 1);
 
@@ -241,16 +241,8 @@ contract TestSetupFuzzing is Config, Utils, stdCheats {
 
     function fillUserBalances(User _user) internal {
         for (uint256 i; i < tokens.length; i++) {
-            fillUserBalanceWithToken(_user, tokens[i]);
+            tip(tokens[i], address(_user), ERC20(tokens[i]).totalSupply() / 2);
         }
-    }
-
-    function fillUserBalanceWithToken(User _user, address _token) private {
-        uint256 amountToTip = Math.min(
-            INITIAL_BALANCE * 10**ERC20(aave).decimals(),
-            ERC20(_token).totalSupply() / 25
-        );
-        tip(_token, address(_user), amountToTip);
     }
 
     function setContractsLabels() internal {
@@ -276,12 +268,43 @@ contract TestSetupFuzzing is Config, Utils, stdCheats {
         }
     }
 
+    function assumeSupplyAmountIsInRange(
+        User _user,
+        address underlying,
+        uint256 amount
+    ) internal {
+        hevm.assume(amount > 0);
+        hevm.assume(ERC20(underlying).balanceOf(address(_user)) >= amount);
+    }
+
+    function assumeBorrowAmountIsInRange(
+        User _user,
+        address _CToken,
+        uint128 amount
+    ) internal {
+        address underlying;
+        underlying = _CToken == cEth ? wEth : ICToken(_CToken).underlying();
+        assumeAmountIsNotTooLow(underlying, amount);
+        assumeBorrowAmountIsNotTooHigh(_CToken, amount);
+        (, uint256 borrowable) = morpho.getUserMaxCapacitiesForAsset(address(_user), _CToken);
+        hevm.assume(amount <= borrowable);
+    }
+
     /// @notice checks morpho will not revert because of Compound rounding the amount to 0
-    function checkAmountIsNotTooLow(address underlying, uint128 amount) internal {
+    function assumeAmountIsNotTooLow(address underlying, uint128 amount) internal {
         uint8 suppliedUnderlyingDecimals = ERC20(underlying).decimals();
-        uint256 minValueToSupply = NMAX *
-            (suppliedUnderlyingDecimals > 8 ? 10**(suppliedUnderlyingDecimals - 8) : 1);
+        uint256 minValueToSupply = (
+            suppliedUnderlyingDecimals > 8 ? 10**(suppliedUnderlyingDecimals - 8) : 1
+        );
         hevm.assume(amount >= minValueToSupply);
+    }
+
+    /// @notice a borrow amount can be too high on compound due to governance or unsufficient supply
+    /// @param market address of the CToken
+    function assumeBorrowAmountIsNotTooHigh(address market, uint256 amount) internal {
+        hevm.assume(amount <= ICToken(market).getCash());
+        uint256 borrowCap = comptroller.borrowCaps(market);
+        if (borrowCap != 0) hevm.assume(amount <= borrowCap);
     }
 
     function createAndSetCustomPriceOracle() public returns (SimplePriceOracle) {
