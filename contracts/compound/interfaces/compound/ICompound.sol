@@ -1,50 +1,6 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-interface ICEth {
-    function accrueInterest() external returns (uint256);
-
-    function borrowRate() external returns (uint256);
-
-    function borrowIndex() external returns (uint256);
-
-    function borrowBalanceStored(address) external returns (uint256);
-
-    function mint() external payable;
-
-    function exchangeRateCurrent() external returns (uint256);
-
-    function exchangeRateStored() external view returns (uint256);
-
-    function supplyRatePerBlock() external returns (uint256);
-
-    function redeem(uint256) external returns (uint256);
-
-    function redeemUnderlying(uint256) external returns (uint256);
-
-    function approve(address spender, uint256 amount) external returns (bool);
-
-    function transferFrom(
-        address,
-        address,
-        uint256
-    ) external returns (bool);
-
-    function transfer(address dst, uint256 amount) external returns (bool);
-
-    function balanceOf(address) external returns (uint256);
-
-    function balanceOfUnderlying(address account) external returns (uint256);
-
-    function borrow(uint256) external returns (uint256);
-
-    function repayBorrow() external payable;
-
-    function borrowBalanceCurrent(address) external returns (uint256);
-
-    function borrowRatePerBlock() external view returns (uint256);
-}
-
 interface IComptroller {
     struct CompMarketState {
         /// @notice The market's last updated compBorrowIndex or compSupplyIndex
@@ -236,6 +192,7 @@ interface IInterestRateModel {
     ) external view returns (uint256);
 }
 
+/// CErc20Interface source: https://github.com/compound-finance/compound-protocol/blob/master/contracts/CTokenInterfaces.sol
 interface ICToken {
     function isCToken() external returns (bool);
 
@@ -336,6 +293,7 @@ interface ICToken {
         returns (uint256);
 }
 
+// CEther source: https://github.com/compound-finance/compound-protocol/blob/master/contracts/CEther.sol
 interface ICEther is ICToken {
     function mint() external payable;
 
