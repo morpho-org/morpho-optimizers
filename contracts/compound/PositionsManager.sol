@@ -106,6 +106,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         underlyingToken.safeTransferFrom(msg.sender, address(this), _amount);
 
         Types.Delta storage delta = deltas[_poolTokenAddress];
+        SupplyBalance storage userSupplyBalance = supplyBalanceInOf[_poolTokenAddress][msg.sender];
         uint256 borrowPoolIndex = poolToken.borrowIndex();
         uint256 remainingToSupply = _amount;
         uint256 toRepay;
@@ -146,7 +147,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             uint256 toAddInP2P = toRepay.div(p2pSupplyIndex[_poolTokenAddress]);
 
             delta.supplyP2PAmount += toAddInP2P;
-            supplyBalanceInOf[_poolTokenAddress][msg.sender].inP2P += toAddInP2P;
+            userSupplyBalance.inP2P += toAddInP2P;
             updateSuppliers(_poolTokenAddress, msg.sender);
 
             // Repay only what is necessary. The remaining tokens stays on the contracts and are claimable by the DAO.
@@ -162,9 +163,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         /// Supply on pool ///
 
         if (remainingToSupply > 0) {
-            supplyBalanceInOf[_poolTokenAddress][msg.sender].onPool += remainingToSupply.div(
-                poolToken.exchangeRateCurrent()
-            ); // In scaled balance.
+            userSupplyBalance.onPool += remainingToSupply.div(poolToken.exchangeRateCurrent()); // In scaled balance.
             updateSuppliers(_poolTokenAddress, msg.sender);
             _supplyToPool(_poolTokenAddress, underlyingToken, remainingToSupply); // Reverts on error.
         }
@@ -186,6 +185,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         uint256 remainingToBorrow = _amount;
         uint256 toWithdraw;
         Types.Delta storage delta = deltas[_poolTokenAddress];
+        BorrowBalance storage userBorrowBalance = borrowBalanceInOf[_poolTokenAddress][msg.sender];
         uint256 poolSupplyIndex = poolToken.exchangeRateCurrent();
         uint256 withdrawable = poolToken.balanceOfUnderlying(address(this)); // The balance on pool.
 
@@ -233,7 +233,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             uint256 toAddInP2P = toWithdraw.div(p2pBorrowIndex[_poolTokenAddress]); // In p2pUnit.
 
             deltas[_poolTokenAddress].borrowP2PAmount += toAddInP2P;
-            borrowBalanceInOf[_poolTokenAddress][msg.sender].inP2P += toAddInP2P;
+            userBorrowBalance.inP2P += toAddInP2P;
             updateBorrowers(_poolTokenAddress, msg.sender);
 
             _withdrawFromPool(_poolTokenAddress, toWithdraw); // Reverts on error.
@@ -243,9 +243,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         /// Borrow on pool ///
 
         if (remainingToBorrow > 0) {
-            borrowBalanceInOf[_poolTokenAddress][msg.sender].onPool += remainingToBorrow.div(
-                poolToken.borrowIndex()
-            ); // In cdUnit.
+            userBorrowBalance.onPool += remainingToBorrow.div(poolToken.borrowIndex()); // In cdUnit.
             updateBorrowers(_poolTokenAddress, msg.sender);
             _borrowFromPool(_poolTokenAddress, remainingToBorrow);
         }
@@ -277,17 +275,18 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
         /// Soft withdraw ///
 
-        uint256 onPoolSupply = supplyBalanceInOf[_poolTokenAddress][_supplier].onPool;
-        if (onPoolSupply > 0) {
+        SupplyBalance storage supplyBalance = supplyBalanceInOf[_poolTokenAddress][_supplier];
+        uint256 suppliedOnPool = supplyBalance.onPool;
+        if (suppliedOnPool > 0) {
             vars.toWithdraw = CompoundMath.min(
-                onPoolSupply.mul(vars.supplyPoolIndex),
+                suppliedOnPool.mul(vars.supplyPoolIndex),
                 vars.remainingToWithdraw,
                 vars.withdrawable
             );
             vars.remainingToWithdraw -= vars.toWithdraw;
 
-            supplyBalanceInOf[_poolTokenAddress][_supplier].onPool -= CompoundMath.min(
-                onPoolSupply,
+            supplyBalance.onPool -= CompoundMath.min(
+                suppliedOnPool,
                 vars.toWithdraw.div(vars.supplyPoolIndex)
             );
             updateSuppliers(_poolTokenAddress, _supplier);
@@ -308,8 +307,8 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         /// Transfer withdraw ///
 
         if (vars.remainingToWithdraw > 0 && !noP2P[_poolTokenAddress]) {
-            supplyBalanceInOf[_poolTokenAddress][_supplier].inP2P -= CompoundMath.min(
-                supplyBalanceInOf[_poolTokenAddress][_supplier].inP2P,
+            supplyBalance.inP2P -= CompoundMath.min(
+                supplyBalance.inP2P,
                 vars.remainingToWithdraw.div(p2pSupplyIndex)
             ); // In p2pUnit
             updateSuppliers(_poolTokenAddress, _supplier);
@@ -404,15 +403,16 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
         /// Soft repay ///
 
-        if (borrowBalanceInOf[_poolTokenAddress][_user].onPool > 0) {
-            uint256 borrowedOnPool = borrowBalanceInOf[_poolTokenAddress][_user].onPool;
+        BorrowBalance storage borrowBalance = borrowBalanceInOf[_poolTokenAddress][_user];
+        uint256 borrowedOnPool = borrowBalance.onPool;
+        if (borrowedOnPool > 0) {
             vars.toRepay = CompoundMath.min(
                 borrowedOnPool.mul(vars.borrowPoolIndex),
                 vars.remainingToRepay
             );
             vars.remainingToRepay -= vars.toRepay;
 
-            borrowBalanceInOf[_poolTokenAddress][_user].onPool -= CompoundMath.min(
+            borrowBalance.onPool -= CompoundMath.min(
                 borrowedOnPool,
                 vars.toRepay.div(vars.borrowPoolIndex)
             ); // In cdUnit.
@@ -436,8 +436,8 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         Types.Delta storage delta = deltas[_poolTokenAddress];
         vars.p2pSupplyIndex = p2pSupplyIndex[_poolTokenAddress];
         vars.p2pBorrowIndex = p2pBorrowIndex[_poolTokenAddress];
-        borrowBalanceInOf[_poolTokenAddress][_user].inP2P -= CompoundMath.min(
-            borrowBalanceInOf[_poolTokenAddress][_user].inP2P,
+        borrowBalance.inP2P -= CompoundMath.min(
+            borrowBalance.inP2P,
             vars.remainingToRepay.div(vars.p2pBorrowIndex)
         ); // In p2pUnit.
         updateBorrowers(_poolTokenAddress, _user);
@@ -564,9 +564,9 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         // seizeTokens = seizeAmount / index
         // = actualRepayAmount * (liquidationIncentive * priceBorrowed) / (priceCollateral * index)
         vars.amountToSeize = _amount
-            .mul(comptroller.liquidationIncentiveMantissa())
-            .mul(vars.borrowedPrice)
-            .div(vars.collateralPrice);
+        .mul(comptroller.liquidationIncentiveMantissa())
+        .mul(vars.borrowedPrice)
+        .div(vars.collateralPrice);
 
         vars.supplyBalance = _getUserSupplyBalanceInOf(_poolTokenCollateralAddress, _borrower);
 
