@@ -13,7 +13,7 @@ contract MatchingEngine is MorphoGetters {
 
     // Struct to avoid stack too deep.
     struct UnmatchVars {
-        uint256 p2pRate;
+        uint256 p2pIndex;
         uint256 toUnmatch;
         uint256 poolIndex;
         uint256 inUnderlying;
@@ -22,7 +22,7 @@ contract MatchingEngine is MorphoGetters {
 
     // Struct to avoid stack too deep.
     struct MatchVars {
-        uint256 p2pRate;
+        uint256 p2pIndex;
         uint256 toMatch;
         uint256 poolIndex;
         uint256 inUnderlying;
@@ -55,7 +55,7 @@ contract MatchingEngine is MorphoGetters {
 
     /// INTERNAL ///
 
-    /// @notice Matches suppliers' liquidity waiting on Compound up to the given `_amount` and move it to P2P.
+    /// @notice Matches suppliers' liquidity waiting on Compound up to the given `_amount` and moves it to P2P.
     /// @dev Note: p2pIndexes must have been updated before calling this function.
     /// @param _poolTokenAddress The address of the market from which to match suppliers.
     /// @param _amount The token amount to search for (in underlying).
@@ -69,7 +69,7 @@ contract MatchingEngine is MorphoGetters {
         MatchVars memory vars;
         address user = suppliersOnPool[_poolTokenAddress].getHead();
         vars.poolIndex = ICToken(_poolTokenAddress).exchangeRateStored(); // Exchange rate is already updated.
-        vars.p2pRate = p2pSupplyIndex[_poolTokenAddress];
+        vars.p2pIndex = p2pSupplyIndex[_poolTokenAddress];
 
         if (_maxGasToConsume != 0) {
             vars.gasLeftAtTheBeginning = gasleft();
@@ -90,8 +90,8 @@ contract MatchingEngine is MorphoGetters {
 
                 supplyBalanceInOf[_poolTokenAddress][user].onPool -= vars.toMatch.div(
                     vars.poolIndex
-                );
-                supplyBalanceInOf[_poolTokenAddress][user].inP2P += vars.toMatch.div(vars.p2pRate); // In peer-to-peer unit
+                ); // In cToken.
+                supplyBalanceInOf[_poolTokenAddress][user].inP2P += vars.toMatch.div(vars.p2pIndex); // In peer-to-peer unit.
                 _updateSuppliers(_poolTokenAddress, user);
                 emit SupplierPositionUpdated(
                     user,
@@ -105,11 +105,12 @@ contract MatchingEngine is MorphoGetters {
         }
     }
 
-    /// @notice Unmatches suppliers' liquidity in P2P up to the given `_amount` and move it to Compound.
+    /// @notice Unmatches suppliers' liquidity in P2P up to the given `_amount` and moves it to Compound.
     /// @dev Note: p2pIndexes must have been updated before calling this function.
     /// @param _poolTokenAddress The address of the market from which to unmatch suppliers.
     /// @param _amount The amount to search for (in underlying).
     /// @param _maxGasToConsume The maximum amount of gas to consume within a matching engine loop.
+    /// @return The amount unmatched (in underlying).
     function _unmatchSuppliers(
         address _poolTokenAddress,
         uint256 _amount,
@@ -118,8 +119,8 @@ contract MatchingEngine is MorphoGetters {
         UnmatchVars memory vars;
         address user = suppliersInP2P[_poolTokenAddress].getHead();
         vars.poolIndex = ICToken(_poolTokenAddress).exchangeRateStored(); // Exchange rate is already updated.
-        vars.p2pRate = p2pSupplyIndex[_poolTokenAddress];
-        uint256 remainingToUnmatch = _amount; // In underlying
+        vars.p2pIndex = p2pSupplyIndex[_poolTokenAddress];
+        uint256 remainingToUnmatch = _amount;
 
         if (_maxGasToConsume != 0) {
             vars.gasLeftAtTheBeginning = gasleft();
@@ -129,21 +130,21 @@ contract MatchingEngine is MorphoGetters {
                 vars.gasLeftAtTheBeginning - gasleft() < _maxGasToConsume
             ) {
                 vars.inUnderlying = supplyBalanceInOf[_poolTokenAddress][user].inP2P.mul(
-                    vars.p2pRate
+                    vars.p2pIndex
                 );
                 unchecked {
                     vars.toUnmatch = vars.inUnderlying < remainingToUnmatch
                         ? vars.inUnderlying
-                        : remainingToUnmatch; // In underlying
+                        : remainingToUnmatch;
                     remainingToUnmatch -= vars.toUnmatch;
                 }
 
                 supplyBalanceInOf[_poolTokenAddress][user].onPool += vars.toUnmatch.div(
                     vars.poolIndex
-                );
+                ); // In cToken.
                 supplyBalanceInOf[_poolTokenAddress][user].inP2P -= vars.toUnmatch.div(
-                    vars.p2pRate
-                ); // In peer-to-peer unit
+                    vars.p2pIndex
+                ); // In peer-to-peer unit.
                 _updateSuppliers(_poolTokenAddress, user);
                 emit SupplierPositionUpdated(
                     user,
@@ -159,7 +160,7 @@ contract MatchingEngine is MorphoGetters {
         return _amount - remainingToUnmatch;
     }
 
-    /// @notice Matches borrowers' liquidity waiting on Compound up to the given `_amount` and move it to P2P.
+    /// @notice Matches borrowers' liquidity waiting on Compound up to the given `_amount` and moves it to P2P.
     /// @dev Note: p2pIndexes must have been updated before calling this function.
     /// @param _poolTokenAddress The address of the market from which to match borrowers.
     /// @param _amount The amount to search for (in underlying).
@@ -173,7 +174,7 @@ contract MatchingEngine is MorphoGetters {
         MatchVars memory vars;
         address user = borrowersOnPool[_poolTokenAddress].getHead();
         vars.poolIndex = ICToken(_poolTokenAddress).borrowIndex();
-        vars.p2pRate = p2pBorrowIndex[_poolTokenAddress];
+        vars.p2pIndex = p2pBorrowIndex[_poolTokenAddress];
 
         if (_maxGasToConsume != 0) {
             vars.gasLeftAtTheBeginning = gasleft();
@@ -194,8 +195,8 @@ contract MatchingEngine is MorphoGetters {
 
                 borrowBalanceInOf[_poolTokenAddress][user].onPool -= vars.toMatch.div(
                     vars.poolIndex
-                );
-                borrowBalanceInOf[_poolTokenAddress][user].inP2P += vars.toMatch.div(vars.p2pRate);
+                ); // In cdUnit.
+                borrowBalanceInOf[_poolTokenAddress][user].inP2P += vars.toMatch.div(vars.p2pIndex); // In peer-to-peer unit.
                 _updateBorrowers(_poolTokenAddress, user);
                 emit BorrowerPositionUpdated(
                     user,
@@ -209,7 +210,7 @@ contract MatchingEngine is MorphoGetters {
         }
     }
 
-    /// @notice Unmatches borrowers' liquidity in P2P for the given `_amount` and move it to Compound.
+    /// @notice Unmatches borrowers' liquidity in P2P for the given `_amount` and moves it to Compound.
     /// @dev Note: p2pIndexes must have been updated before calling this function.
     /// @param _poolTokenAddress The address of the market from which to unmatch borrowers.
     /// @param _amount The amount to unmatch (in underlying).
@@ -224,7 +225,7 @@ contract MatchingEngine is MorphoGetters {
         address user = borrowersInP2P[_poolTokenAddress].getHead();
         uint256 remainingToUnmatch = _amount;
         vars.poolIndex = ICToken(_poolTokenAddress).borrowIndex();
-        vars.p2pRate = p2pBorrowIndex[_poolTokenAddress];
+        vars.p2pIndex = p2pBorrowIndex[_poolTokenAddress];
 
         if (_maxGasToConsume != 0) {
             vars.gasLeftAtTheBeginning = gasleft();
@@ -234,7 +235,7 @@ contract MatchingEngine is MorphoGetters {
                 vars.gasLeftAtTheBeginning - gasleft() < _maxGasToConsume
             ) {
                 vars.inUnderlying = borrowBalanceInOf[_poolTokenAddress][user].inP2P.mul(
-                    vars.p2pRate
+                    vars.p2pIndex
                 );
                 unchecked {
                     vars.toUnmatch = vars.inUnderlying < remainingToUnmatch
@@ -245,10 +246,10 @@ contract MatchingEngine is MorphoGetters {
 
                 borrowBalanceInOf[_poolTokenAddress][user].onPool += vars.toUnmatch.div(
                     vars.poolIndex
-                );
+                ); // In cdUnit.
                 borrowBalanceInOf[_poolTokenAddress][user].inP2P -= vars.toUnmatch.div(
-                    vars.p2pRate
-                );
+                    vars.p2pIndex
+                ); // In peer-to-peer unit.
                 _updateBorrowers(_poolTokenAddress, user);
                 emit BorrowerPositionUpdated(
                     user,
@@ -264,7 +265,7 @@ contract MatchingEngine is MorphoGetters {
         return _amount - remainingToUnmatch;
     }
 
-    /// @notice Updates suppliers matching engine with the new balances of a given user.
+    /// @notice Updates suppliers data structures with the new balances of a given user.
     /// @param _poolTokenAddress The address of the market on which to update the suppliers data structure.
     /// @param _user The address of the user.
     function _updateSuppliers(address _poolTokenAddress, address _user) internal {
@@ -303,7 +304,7 @@ contract MatchingEngine is MorphoGetters {
             );
     }
 
-    /// @notice Updates borrowers matching engine with the new balances of a given user.
+    /// @notice Updates borrowers data structures with the new balances of a given user.
     /// @param _poolTokenAddress The address of the market on which to update the borrowers data structure.
     /// @param _user The address of the user.
     function _updateBorrowers(address _poolTokenAddress, address _user) internal {
