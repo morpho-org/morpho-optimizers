@@ -241,7 +241,7 @@ contract Morpho is MorphoGovernance {
             _amount
         );
 
-        _checkUserLiquidity(msg.sender, _poolTokenAddress, toWithdraw, 0);
+        if (_isLiquidable(msg.sender, _poolTokenAddress, toWithdraw, 0)) revert DebtValueAboveMax();
         address(positionsManager).functionDelegateCall(
             abi.encodeWithSelector(
                 positionsManager.withdraw.selector,
