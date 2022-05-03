@@ -92,7 +92,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
     /// LOGIC ///
 
-    /// @dev Implements supply logic.
+    /// @dev Implements supply logic. Expects p2p indexes to be updated.
     /// @param _poolTokenAddress The address of the pool token the user wants to interact with.
     /// @param _amount The amount of token (in underlying).
     /// @param _maxGasToConsume The maximum amount of gas to consume within a matching engine loop.
@@ -174,7 +174,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         }
     }
 
-    /// @dev Implements borrow logic.
+    /// @dev Implements borrow logic. Expects p2p indexes to be updated.
     /// @param _poolTokenAddress The address of the market the user wants to interact with.
     /// @param _amount The amount of token (in underlying).
     /// @param _maxGasToConsume The maximum amount of gas to consume within a matching engine loop.
@@ -256,7 +256,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         underlyingToken.safeTransfer(msg.sender, _amount);
     }
 
-    /// @dev Implements withdraw logic.
+    /// @dev Implements withdraw logic. Expects p2p indexes to be updated.
     /// @param _poolTokenAddress The address of the market the user wants to interact with.
     /// @param _amount The amount of token (in underlying).
     /// @param _supplier The address of the supplier.
@@ -386,7 +386,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         _leaveMarketIfNeeded(_poolTokenAddress, _supplier);
     }
 
-    /// @dev Implements repay logic.
+    /// @dev Implements repay logic. Expects p2p indexes to be updated.
     /// @dev Note: `msg.sender` must have approved this contract to spend the underlying `_amount`.
     /// @param _poolTokenAddress The address of the market the user wants to interact with.
     /// @param _user The address of the user.
