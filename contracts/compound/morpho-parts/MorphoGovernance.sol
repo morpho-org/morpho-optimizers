@@ -168,13 +168,13 @@ abstract contract MorphoGovernance is MorphoEventsErrors {
     /// @notice Creates a new market to borrow/supply in.
     /// @param _poolTokenAddress The pool token address of the given market.
     function createMarket(address _poolTokenAddress) external onlyOwner {
+        if (marketStatuses[_poolTokenAddress].isCreated) revert MarketAlreadyCreated();
+        marketStatuses[_poolTokenAddress].isCreated = true;
+
         address[] memory marketToEnter = new address[](1);
         marketToEnter[0] = _poolTokenAddress;
         uint256[] memory results = comptroller.enterMarkets(marketToEnter);
         if (results[0] != 0) revert MarketCreationFailedOnCompound();
-
-        if (marketStatuses[_poolTokenAddress].isCreated) revert MarketAlreadyCreated();
-        marketStatuses[_poolTokenAddress].isCreated = true;
 
         ICToken poolToken = ICToken(_poolTokenAddress);
 
