@@ -289,11 +289,18 @@ abstract contract MorphoGetters is MorphoStorage {
 
     /// @dev Returns the underlying ERC20 token related to the pool token.
     /// @param _poolTokenAddress The address of the pool token.
-    /// @return The underlying ERC20 token.
-    function _getUnderlying(address _poolTokenAddress) internal view returns (ERC20) {
+    /// @return poolToken Compound's cToken.
+    /// @return underlyingToken Compound's cToken's underlying ERC20 token.
+    function _getPoolAndUnderlying(address _poolTokenAddress)
+        internal
+        view
+        returns (ICToken poolToken, ERC20 underlyingToken)
+    {
+        poolToken = ICToken(_poolTokenAddress);
+
         if (_poolTokenAddress == cEth)
             // cETH has no underlying() function.
-            return ERC20(wEth);
-        else return ERC20(ICToken(_poolTokenAddress).underlying());
+            underlyingToken = ERC20(wEth);
+        else underlyingToken = ERC20(poolToken.underlying());
     }
 }

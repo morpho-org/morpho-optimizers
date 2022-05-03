@@ -102,11 +102,11 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         uint256 _maxGasToConsume
     ) external {
         _enterMarketIfNeeded(_poolTokenAddress, msg.sender);
-        ERC20 underlyingToken = _getUnderlying(_poolTokenAddress);
+        (ICToken poolToken, ERC20 underlyingToken) = _getPoolAndUnderlying(_poolTokenAddress);
         underlyingToken.safeTransferFrom(msg.sender, address(this), _amount);
 
         Types.Delta storage delta = deltas[_poolTokenAddress];
-        uint256 borrowPoolIndex = ICToken(_poolTokenAddress).borrowIndex();
+        uint256 borrowPoolIndex = poolToken.borrowIndex();
         uint256 remainingToSupply = _amount;
         uint256 toRepay;
 
@@ -132,11 +132,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             if (
                 remainingToSupply > 0 && borrowersOnPool[_poolTokenAddress].getHead() != address(0)
             ) {
-                uint256 matched = matchBorrowers(
-                    ICToken(_poolTokenAddress),
-                    remainingToSupply,
-                    _maxGasToConsume
-                ); // In underlying.
+                uint256 matched = matchBorrowers(poolToken, remainingToSupply, _maxGasToConsume); // In underlying.
 
                 if (matched > 0) {
                     toRepay += matched;
@@ -156,7 +152,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             // Repay only what is necessary. The remaining tokens stays on the contracts and are claimable by the DAO.
             toRepay = Math.min(
                 toRepay,
-                ICToken(_poolTokenAddress).borrowBalanceCurrent(address(this)) // The debt of the contract.
+                poolToken.borrowBalanceCurrent(address(this)) // The debt of the contract.
             );
 
             _repayToPool(_poolTokenAddress, underlyingToken, toRepay); // Reverts on error.
@@ -167,7 +163,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
         if (remainingToSupply > 0) {
             supplyBalanceInOf[_poolTokenAddress][msg.sender].onPool += remainingToSupply.div(
-                ICToken(_poolTokenAddress).exchangeRateCurrent()
+                poolToken.exchangeRateCurrent()
             ); // In scaled balance.
             updateSuppliers(_poolTokenAddress, msg.sender);
             _supplyToPool(_poolTokenAddress, underlyingToken, remainingToSupply); // Reverts on error.
@@ -185,12 +181,13 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     ) external {
         _enterMarketIfNeeded(_poolTokenAddress, msg.sender);
         _checkUserLiquidity(msg.sender, _poolTokenAddress, 0, _amount);
-        ERC20 underlyingToken = _getUnderlying(_poolTokenAddress);
+        (ICToken poolToken, ERC20 underlyingToken) = _getPoolAndUnderlying(_poolTokenAddress);
+
         uint256 remainingToBorrow = _amount;
         uint256 toWithdraw;
         Types.Delta storage delta = deltas[_poolTokenAddress];
-        uint256 poolSupplyIndex = ICToken(_poolTokenAddress).exchangeRateCurrent();
-        uint256 withdrawable = ICToken(_poolTokenAddress).balanceOfUnderlying(address(this)); // The balance on pool.
+        uint256 poolSupplyIndex = poolToken.exchangeRateCurrent();
+        uint256 withdrawable = poolToken.balanceOfUnderlying(address(this)); // The balance on pool.
 
         /// Borrow in P2P ///
 
@@ -216,7 +213,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
                 remainingToBorrow > 0 && suppliersOnPool[_poolTokenAddress].getHead() != address(0)
             ) {
                 uint256 matched = matchSuppliers(
-                    ICToken(_poolTokenAddress),
+                    poolToken,
                     CompoundMath.min(remainingToBorrow, withdrawable - toWithdraw),
                     _maxGasToConsume
                 ); // In underlying.
@@ -247,7 +244,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
         if (remainingToBorrow > 0) {
             borrowBalanceInOf[_poolTokenAddress][msg.sender].onPool += remainingToBorrow.div(
-                ICToken(_poolTokenAddress).borrowIndex()
+                poolToken.borrowIndex()
             ); // In cdUnit.
             updateBorrowers(_poolTokenAddress, msg.sender);
             _borrowFromPool(_poolTokenAddress, remainingToBorrow);
@@ -269,8 +266,8 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         address _receiver,
         uint256 _maxGasToConsume
     ) public {
-        ICToken poolToken = ICToken(_poolTokenAddress);
-        ERC20 underlyingToken = _getUnderlying(_poolTokenAddress);
+        (ICToken poolToken, ERC20 underlyingToken) = _getPoolAndUnderlying(_poolTokenAddress);
+
         WithdrawVars memory vars;
         vars.remainingToWithdraw = _amount;
         vars.withdrawable = poolToken.balanceOfUnderlying(address(this));
@@ -398,9 +395,9 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         uint256 _amount,
         uint256 _maxGasToConsume
     ) public {
-        ICToken poolToken = ICToken(_poolTokenAddress);
-        ERC20 underlyingToken = _getUnderlying(_poolTokenAddress);
+        (ICToken poolToken, ERC20 underlyingToken) = _getPoolAndUnderlying(_poolTokenAddress);
         underlyingToken.safeTransferFrom(msg.sender, address(this), _amount);
+
         RepayVars memory vars;
         vars.remainingToRepay = _amount;
         vars.borrowPoolIndex = poolToken.borrowIndex();
@@ -425,7 +422,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
                 // Repay only what is necessary. The remaining tokens stays on the contracts and are claimable by the DAO.
                 vars.toRepay = Math.min(
                     vars.toRepay,
-                    ICToken(_poolTokenAddress).borrowBalanceCurrent(address(this)) // The debt of the contract.
+                    poolToken.borrowBalanceCurrent(address(this)) // The debt of the contract.
                 );
 
                 if (vars.toRepay > 0) {
@@ -496,7 +493,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         // Repay only what is necessary. The remaining tokens stays on the contracts and are claimable by the DAO.
         vars.toRepay = Math.min(
             vars.toRepay,
-            ICToken(_poolTokenAddress).borrowBalanceCurrent(address(this)) // The debt of the contract.
+            poolToken.borrowBalanceCurrent(address(this)) // The debt of the contract.
         );
 
         if (vars.toRepay > 0) _repayToPool(_poolTokenAddress, underlyingToken, vars.toRepay); // Reverts on error.
@@ -567,9 +564,9 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         // seizeTokens = seizeAmount / index
         // = actualRepayAmount * (liquidationIncentive * priceBorrowed) / (priceCollateral * index)
         vars.amountToSeize = _amount
-        .mul(comptroller.liquidationIncentiveMantissa())
-        .mul(vars.borrowedPrice)
-        .div(vars.collateralPrice);
+            .mul(comptroller.liquidationIncentiveMantissa())
+            .mul(vars.borrowedPrice)
+            .div(vars.collateralPrice);
 
         vars.supplyBalance = _getUserSupplyBalanceInOf(_poolTokenCollateralAddress, _borrower);
 
@@ -613,7 +610,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     /// @param _poolTokenAddress The address of the pool token.
     /// @param _amount The amount of token (in underlying).
     function _borrowFromPool(address _poolTokenAddress, uint256 _amount) internal {
-        if ((ICToken(_poolTokenAddress).borrow(_amount) != 0)) revert BorrowOnCompoundFailed();
+        if (ICToken(_poolTokenAddress).borrow(_amount) != 0) revert BorrowOnCompoundFailed();
         if (_poolTokenAddress == cEth) IWETH(address(wEth)).deposit{value: _amount}(); // Turn the ETH received in wETH.
     }
 
