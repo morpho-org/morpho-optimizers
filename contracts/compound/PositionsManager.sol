@@ -184,7 +184,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         uint256 _maxGasToConsume
     ) external {
         _enterMarketIfNeeded(_poolTokenAddress, msg.sender);
-        _checkUserLiquidity(msg.sender, _poolTokenAddress, 0, _amount);
+        if (_isLiquidable(msg.sender, _poolTokenAddress, 0, _amount)) revert DebtValueAboveMax();
         ERC20 underlyingToken = _getUnderlying(_poolTokenAddress);
         uint256 remainingToBorrow = _amount;
         uint256 toWithdraw;
@@ -539,13 +539,8 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     ) external returns (uint256) {
         Types.LiquidateVars memory vars;
 
-        (vars.debtValue, vars.maxDebtValue) = _getUserHypotheticalBalanceStates(
-            _borrower,
-            address(0),
-            0,
-            0
-        );
-        if (vars.debtValue <= vars.maxDebtValue) revert DebtValueNotAboveMax();
+        bool isLiquidable = _isLiquidable(_borrower, address(0), 0, 0);
+        if (!isLiquidable) revert DebtValueNotAboveMax();
 
         vars.borrowBalance = _getUserBorrowBalanceInOf(_poolTokenBorrowedAddress, _borrower);
 
