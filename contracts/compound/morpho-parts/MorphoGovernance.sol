@@ -4,7 +4,7 @@ pragma solidity 0.8.13;
 import "./MorphoEventsErrors.sol";
 
 /// @title MorphoGovernance.
-/// @notice Governance functions for the Morpho.
+/// @notice Governance functions for Morpho.
 abstract contract MorphoGovernance is MorphoEventsErrors {
     using DoubleLinkedList for DoubleLinkedList.List;
     using SafeTransferLib for ERC20;
@@ -98,7 +98,7 @@ abstract contract MorphoGovernance is MorphoEventsErrors {
         emit ReserveFactorSet(_poolTokenAddress, marketParameters[_poolTokenAddress].reserveFactor);
     }
 
-    /// @notice Set a new peer-to-peer cursor.
+    /// @notice Sets a new peer-to-peer cursor.
     /// @param _p2pIndexCursor The new peer-to-peer cursor.
     function setP2PIndexCursor(address _poolTokenAddress, uint16 _p2pIndexCursor)
         external
@@ -117,7 +117,7 @@ abstract contract MorphoGovernance is MorphoEventsErrors {
         emit PauseStatusChanged(_poolTokenAddress, newPauseStatus);
     }
 
-    /// @notice Toggles the pause status on a specific market in case of emergency.
+    /// @notice Toggles the partial pause status on a specific market in case of emergency.
     /// @param _poolTokenAddress The address of the market to partially pause/unpause.
     function togglePartialPauseStatus(address _poolTokenAddress) external onlyOwner {
         Types.MarketStatuses storage marketStatuses_ = marketStatuses[_poolTokenAddress];
