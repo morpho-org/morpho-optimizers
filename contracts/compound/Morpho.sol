@@ -257,8 +257,8 @@ contract Morpho is MorphoGovernance {
         );
     }
 
-    /// @notice Claims rewards for the given assets and the unclaimed rewards.
-    /// @param _claimMorphoToken Whether or not to claim Morpho tokens instead of token reward.
+    /// @notice Claims rewards for the given assets.
+    /// @param _claimMorphoToken Whether or not to claim Morpho tokens instead of COMP token rewards.
     function claimRewards(address[] calldata _cTokenAddresses, bool _claimMorphoToken)
         external
         nonReentrant
@@ -280,6 +280,6 @@ contract Morpho is MorphoGovernance {
         }
     }
 
-    // Allows to receive ETH.
+    /// @notice Allows to receive ETH.
     receive() external payable {}
 }
