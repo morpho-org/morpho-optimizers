@@ -14,13 +14,13 @@ library Types {
     /// STRUCTS ///
 
     struct SupplyBalance {
-        uint256 inP2P; // In supplier's peer-to-peer unit, a unit that grows in value, to keep track of the interests earned when users are in P2P.
-        uint256 onPool; // In cToken.
+        uint256 inP2P; // In supplier's peer-to-peer unit, a unit that grows in value, to keep track of the interests earned when users are in P2P. Multiply by the peer-to-peer supply index to get the underlying amount.
+        uint256 onPool; // In cToken. Multiply by the pool supply index to get the underlying amount.
     }
 
     struct BorrowBalance {
-        uint256 inP2P; // In borrower's peer-to-peer unit, a unit that grows in value, to keep track of the interests paid when users are in P2P.
-        uint256 onPool; // In cdUnit, a unit that grows in value, to keep track of the debt increase when users are in Compound. Multiply by current borrowIndex to get the underlying amount.
+        uint256 inP2P; // In borrower's peer-to-peer unit, a unit that grows in value, to keep track of the interests paid when users are in P2P. Multiply by the peer-to-peer borrow index to get the underlying amount.
+        uint256 onPool; // In cdUnit, a unit that grows in value, to keep track of the debt increase when users are in Compound. Multiply by the pool borrow index to get the underlying amount.
     }
 
     // Max gas to consume during the matching process for supply, borrow, withdraw and repay functions.
@@ -32,8 +32,8 @@ library Types {
     }
 
     struct Delta {
-        uint256 supplyP2PDelta; // Difference between the stored P2P supply amount and the real P2P supply amount (in scaled balance).
-        uint256 borrowP2PDelta; // Difference between the stored P2P borrow amount and the real P2P borrow amount (in adUnit).
+        uint256 supplyP2PDelta; // Difference between the stored P2P supply amount and the real P2P supply amount (in cToken).
+        uint256 borrowP2PDelta; // Difference between the stored P2P borrow amount and the real P2P borrow amount (in cdUnit).
         uint256 supplyP2PAmount; // Sum of all stored P2P supply (in peer-to-peer unit).
         uint256 borrowP2PAmount; // Sum of all stored P2P borrow (in peer-to-peer unit).
     }
@@ -43,7 +43,7 @@ library Types {
         uint256 maxDebtValue; // The maximum possible debt value of the asset.
         uint256 debtValue; // The debt value of the asset.
         uint256 underlyingPrice; // The price of the token.
-        uint256 collateralFactor; // The liquidation threshold applied on this token (in basis point).
+        uint256 collateralFactor; // The liquidation threshold applied on this token.
     }
 
     struct LiquidityData {
@@ -64,7 +64,7 @@ library Types {
     }
 
     struct LastPoolIndexes {
-        uint32 lastUpdateBlockNumber; // The last time the P2P indexes were updated.
+        uint32 lastUpdateBlockNumber; // The last time the peer-to-peer indexes were updated.
         uint112 lastSupplyPoolIndex; // Last pool supply index.
         uint112 lastBorrowPoolIndex; // Last pool borrow index.
     }
