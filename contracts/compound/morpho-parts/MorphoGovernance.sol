@@ -144,7 +144,7 @@ abstract contract MorphoGovernance is MorphoEventsErrors {
     {
         if (treasuryVault == address(0)) revert ZeroAddress();
 
-        (, ERC20 underlyingToken) = _getPoolAndUnderlying(_poolTokenAddress);
+        (, ERC20 underlyingToken) = _getPoolTokenAndUnderlying(_poolTokenAddress);
         uint256 underlyingBalance = underlyingToken.balanceOf(address(this));
 
         if (underlyingBalance == 0) revert AmountIsZero();

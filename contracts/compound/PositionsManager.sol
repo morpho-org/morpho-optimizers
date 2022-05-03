@@ -102,7 +102,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         uint256 _maxGasToConsume
     ) external {
         _enterMarketIfNeeded(_poolTokenAddress, msg.sender);
-        (ICToken poolToken, ERC20 underlyingToken) = _getPoolAndUnderlying(_poolTokenAddress);
+        (ICToken poolToken, ERC20 underlyingToken) = _getPoolTokenAndUnderlying(_poolTokenAddress);
         underlyingToken.safeTransferFrom(msg.sender, address(this), _amount);
 
         Types.Delta storage delta = deltas[_poolTokenAddress];
@@ -180,7 +180,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     ) external {
         _enterMarketIfNeeded(_poolTokenAddress, msg.sender);
         _checkUserLiquidity(msg.sender, _poolTokenAddress, 0, _amount);
-        (ICToken poolToken, ERC20 underlyingToken) = _getPoolAndUnderlying(_poolTokenAddress);
+        (ICToken poolToken, ERC20 underlyingToken) = _getPoolTokenAndUnderlying(_poolTokenAddress);
 
         uint256 remainingToBorrow = _amount;
         uint256 toWithdraw;
@@ -264,7 +264,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         address _receiver,
         uint256 _maxGasToConsume
     ) public {
-        (ICToken poolToken, ERC20 underlyingToken) = _getPoolAndUnderlying(_poolTokenAddress);
+        (ICToken poolToken, ERC20 underlyingToken) = _getPoolTokenAndUnderlying(_poolTokenAddress);
 
         WithdrawVars memory vars;
         vars.remainingToWithdraw = _amount;
@@ -394,7 +394,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         uint256 _amount,
         uint256 _maxGasToConsume
     ) public {
-        (ICToken poolToken, ERC20 underlyingToken) = _getPoolAndUnderlying(_poolTokenAddress);
+        (ICToken poolToken, ERC20 underlyingToken) = _getPoolTokenAndUnderlying(_poolTokenAddress);
         underlyingToken.safeTransferFrom(msg.sender, address(this), _amount);
 
         RepayVars memory vars;
