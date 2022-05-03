@@ -7,8 +7,9 @@ import {Attacker} from "../../compound/helpers/Attacker.sol";
 contract TestWithdraw is TestSetupFuzzing {
     using CompoundMath for uint256;
 
+    /// @dev Amounts can round to zero with amounts < 1e14
     function testWithdraw1(uint256 amount) public {
-        hevm.assume(amount > 1e18 / 100 && amount < 1e18 * 50_000_000); // $0.01 to $50_000_000
+        hevm.assume(amount > 1e14 && amount < 1e18 * 50_000_000);
         uint256 collateral = 2 * amount;
 
         borrower1.approve(usdc, to6Decimals(collateral));
@@ -21,7 +22,7 @@ contract TestWithdraw is TestSetupFuzzing {
     }
 
     function testWithdraw2(uint256 amount) public {
-        hevm.assume(amount > 1e18 / 100 && amount < 1e18 * 50_000_000); // $0.01 to $50_000_000
+        hevm.assume(amount > 1e14 && amount < 1e18 * 50_000_000);
 
         supplier1.approve(usdc, to6Decimals(2 * amount));
         supplier1.supply(cUsdc, to6Decimals(2 * amount));
@@ -30,43 +31,20 @@ contract TestWithdraw is TestSetupFuzzing {
 
         uint256 expectedOnPool = to6Decimals(2 * amount).div(ICToken(cUsdc).exchangeRateCurrent());
 
-        assertEq(inP2P, 0, "1: P2P not zero");
-        assertEq(onPool, expectedOnPool, "1: OnPool not equal");
-
         supplier1.withdraw(cUsdc, to6Decimals(amount));
-
-        (inP2P, onPool) = morpho.supplyBalanceInOf(cUsdc, address(supplier1));
-
-        assertEq(inP2P, 0, "2: P2P not zero");
-        assertApproxEq(onPool, expectedOnPool / 2, onPool / 1e8, "2: OnPool not equal");
     }
 
     function testWithdrawAll(uint256 amount) public {
-        hevm.assume(amount > 1e18 / 100 && amount < 1e18 * 50_000_000); // $0.01 to $50_000_000
+        hevm.assume(amount > 1e14 && amount < 1e18 * 50_000_000);
 
         supplier1.approve(usdc, to6Decimals(amount));
         supplier1.supply(cUsdc, to6Decimals(amount));
 
-        uint256 balanceBefore = supplier1.balanceOf(usdc);
-        (uint256 inP2P, uint256 onPool) = morpho.supplyBalanceInOf(cUsdc, address(supplier1));
-
-        uint256 expectedOnPool = to6Decimals(amount).div(ICToken(cUsdc).exchangeRateCurrent());
-
-        assertEq(inP2P, 0);
-        assertEq(onPool, expectedOnPool);
-
         supplier1.withdraw(cUsdc, type(uint256).max);
-
-        uint256 balanceAfter = supplier1.balanceOf(usdc);
-        (inP2P, onPool) = morpho.supplyBalanceInOf(cUsdc, address(supplier1));
-
-        assertEq(inP2P, 0, "in P2P");
-        assertApproxEq(onPool, 0, 1e5, "on Pool");
-        assertApproxEq(balanceAfter - balanceBefore, to6Decimals(amount), 1, "balance");
     }
 
     function testWithdraw3_1(uint256 amount) public {
-        hevm.assume(amount > 1e18 / 100 && amount < 1e18 * 50_000_000); // $0.01 to $50_000_000
+        hevm.assume(amount > 1e14 && amount < 1e18 * 50_000_000);
 
         uint256 borrowedAmount = amount;
         uint256 suppliedAmount = 2 * borrowedAmount;
@@ -79,50 +57,17 @@ contract TestWithdraw is TestSetupFuzzing {
         borrower1.supply(cUsdc, to6Decimals(collateral));
         borrower1.borrow(cDai, borrowedAmount);
 
-        // Check balances after match of borrower1 & supplier1
-        (uint256 inP2PBorrower1, uint256 onPoolBorrower1) = morpho.borrowBalanceInOf(
-            cDai,
-            address(borrower1)
-        );
-
-        (uint256 inP2PSupplier, uint256 onPoolSupplier) = morpho.supplyBalanceInOf(
-            cDai,
-            address(supplier1)
-        );
-
-        uint256 expectedOnPool = (suppliedAmount / 2).div(ICToken(cDai).exchangeRateCurrent());
-
-        assertApproxEq(onPoolSupplier, expectedOnPool, 1, "1");
-        assertEq(onPoolBorrower1, 0, "2");
-        assertEq(inP2PSupplier, inP2PBorrower1, "3");
-
         // An available supplier onPool
         supplier2.approve(dai, suppliedAmount);
         supplier2.supply(cDai, suppliedAmount);
 
         // supplier withdraws suppliedAmount
         supplier1.withdraw(cDai, suppliedAmount);
-
-        // Check balances for supplier1
-        (inP2PSupplier, onPoolSupplier) = morpho.supplyBalanceInOf(cDai, address(supplier1));
-        assertEq(onPoolSupplier, 0, "4");
-        assertApproxEq(inP2PSupplier, 0, 1, "5");
-
-        // Check balances for supplier2
-        (inP2PSupplier, onPoolSupplier) = morpho.supplyBalanceInOf(cDai, address(supplier2));
-        uint256 p2pSupplyIndex = morpho.p2pSupplyIndex(cDai);
-        uint256 expectedInP2P = (suppliedAmount / 2).div(p2pSupplyIndex);
-        assertApproxEq(onPoolSupplier, expectedOnPool, 1, "6");
-        assertApproxEq(inP2PSupplier, expectedInP2P, 1, "7");
-
-        // Check balances for borrower1
-        (inP2PBorrower1, onPoolBorrower1) = morpho.borrowBalanceInOf(cDai, address(borrower1));
-        assertEq(onPoolBorrower1, 0, "8");
-        assertApproxEq(inP2PSupplier, inP2PBorrower1, 1, "9");
     }
 
-    function testWithdraw3_2(uint256 amount) public {
-        hevm.assume(amount > 1e18 / 100 && amount < 1e18 * 50_000_000); // $0.01 to $50_000_000
+    function testWithdraw3_2(uint256 amount, uint8 nmax) public {
+        hevm.assume(amount > 1e14 && amount < 1e18 * 50_000_000);
+        hevm.assume(nmax > 1 && nmax < 50);
 
         uint256 borrowedAmount = amount;
         uint256 suppliedAmount = 2 * borrowedAmount;
@@ -148,18 +93,13 @@ contract TestWithdraw is TestSetupFuzzing {
 
         uint256 expectedOnPool = (suppliedAmount / 2).div(ICToken(cDai).exchangeRateCurrent());
 
-        assertEq(onPoolSupplier, expectedOnPool, "1");
-        assertEq(onPoolBorrower, 0, "2");
-        assertEq(inP2PSupplier, inP2PBorrower, "3");
-
         // NMAX-1 suppliers have up to suppliedAmount waiting on pool
-        uint8 NMAX = 20;
-        createSigners(NMAX);
+        createSigners(nmax);
 
         // minus 1 because supplier1 must not be counted twice !
-        uint256 amountPerSupplier = (suppliedAmount - borrowedAmount) / (NMAX - 1);
+        uint256 amountPerSupplier = (suppliedAmount - borrowedAmount) / (nmax - 1);
 
-        for (uint256 i = 0; i < NMAX; i++) {
+        for (uint256 i = 0; i < nmax; i++) {
             if (suppliers[i] == supplier1) continue;
 
             suppliers[i].approve(dai, amountPerSupplier);
@@ -168,39 +108,10 @@ contract TestWithdraw is TestSetupFuzzing {
 
         // supplier1 withdraws suppliedAmount.
         supplier1.withdraw(cDai, type(uint256).max);
-
-        // Check balances for supplier1.
-        (inP2PSupplier, onPoolSupplier) = morpho.supplyBalanceInOf(cDai, address(supplier1));
-        assertEq(onPoolSupplier, 0, "4");
-        assertApproxEq(inP2PSupplier, 0, 1, "5");
-
-        // Check balances for the borrower.
-        (inP2PBorrower, onPoolBorrower) = morpho.borrowBalanceInOf(cDai, address(borrower1));
-
-        uint256 expectedBorrowBalanceInP2P = borrowedAmount.div(morpho.p2pSupplyIndex(cDai));
-
-        assertApproxEq(
-            inP2PBorrower,
-            expectedBorrowBalanceInP2P,
-            inP2PBorrower / 1e10,
-            "borrower in P2P"
-        );
-        assertApproxEq(onPoolBorrower, 0, 1e10, "borrower on Pool");
-
-        // Now test for each individual supplier that replaced the original.
-        for (uint256 i = 0; i < suppliers.length; i++) {
-            if (suppliers[i] == supplier1) continue;
-
-            (uint256 inP2P, uint256 onPool) = morpho.supplyBalanceInOf(cDai, address(suppliers[i]));
-            uint256 expectedInP2P = amountPerSupplier.div(morpho.p2pSupplyIndex(cDai));
-
-            assertEq(inP2P, expectedInP2P, "in P2P");
-            assertEq(onPool, 0, "on pool");
-        }
     }
 
     function testWithdraw3_3(uint256 amount) public {
-        hevm.assume(amount > 1e18 / 100 && amount < 1e18 * 50_000_000); // $0.01 to $50_000_000
+        hevm.assume(amount > 1e14 && amount < 1e18 * 50_000_000);
 
         uint256 borrowedAmount = amount;
         uint256 suppliedAmount = 2 * borrowedAmount;
@@ -214,62 +125,14 @@ contract TestWithdraw is TestSetupFuzzing {
         supplier1.approve(dai, suppliedAmount);
         supplier1.supply(cDai, suppliedAmount);
 
-        // Check balances after match of borrower1 & supplier1.
-        (uint256 inP2PBorrower, uint256 onPoolBorrower) = morpho.borrowBalanceInOf(
-            cDai,
-            address(borrower1)
-        );
-
-        (uint256 inP2PSupplier, uint256 onPoolSupplier) = morpho.supplyBalanceInOf(
-            cDai,
-            address(supplier1)
-        );
-
-        uint256 expectedOnPool = (suppliedAmount / 2).div(ICToken(cDai).exchangeRateCurrent());
-
-        assertEq(onPoolSupplier, expectedOnPool, "1");
-        assertEq(onPoolBorrower, 0, "2");
-        assertEq(inP2PSupplier, inP2PBorrower, "3");
-
         // Supplier1 withdraws 75% of supplied amount
         uint256 toWithdraw = (75 * suppliedAmount) / 100;
         supplier1.withdraw(cDai, toWithdraw);
-
-        // Check balances for the borrower
-        (inP2PBorrower, onPoolBorrower) = morpho.borrowBalanceInOf(cDai, address(borrower1));
-
-        uint256 p2pSupplyIndex = morpho.p2pSupplyIndex(cDai);
-        uint256 expectedBorrowBalanceInP2P = (borrowedAmount / 2).div(p2pSupplyIndex);
-
-        // The amount withdrawn from supplier1 minus what is on pool will be removed from the borrower P2P's position.
-        uint256 expectedBorrowBalanceOnPool = (toWithdraw -
-            onPoolSupplier.mul(ICToken(cDai).exchangeRateCurrent()))
-        .div(ICToken(cDai).borrowIndex());
-
-        assertApproxEq(
-            inP2PBorrower,
-            expectedBorrowBalanceInP2P,
-            inP2PBorrower / 1e10,
-            "borrower in P2P"
-        );
-        assertApproxEq(onPoolBorrower, expectedBorrowBalanceOnPool, 1e3, "borrower on Pool");
-
-        // Check balances for supplier
-        (inP2PSupplier, onPoolSupplier) = morpho.supplyBalanceInOf(cDai, address(supplier1));
-
-        uint256 expectedSupplyBalanceInP2P = ((25 * suppliedAmount) / 100).div(p2pSupplyIndex);
-
-        assertApproxEq(
-            inP2PSupplier,
-            expectedSupplyBalanceInP2P,
-            inP2PSupplier / 1e10,
-            "supplier in P2P"
-        );
-        assertEq(onPoolSupplier, 0, "supplier on Pool");
     }
 
-    function testWithdraw3_4(uint256 amount) public {
-        hevm.assume(amount > 1e18 / 100 && amount < 1e18 * 50_000_000); // $0.01 to $50_000_000
+    function testWithdraw3_4(uint256 amount, uint8 nmax) public {
+        hevm.assume(amount > 1e14 && amount < 1e18 * 50_000_000);
+        hevm.assume(nmax > 10 && nmax < 50);
 
         uint256 borrowedAmount = amount;
         uint256 suppliedAmount = 2 * borrowedAmount;
@@ -283,33 +146,16 @@ contract TestWithdraw is TestSetupFuzzing {
         supplier1.approve(dai, suppliedAmount);
         supplier1.supply(cDai, suppliedAmount);
 
-        // Check balances after match of borrower1 & supplier1.
-        (uint256 inP2PBorrower, uint256 onPoolBorrower) = morpho.borrowBalanceInOf(
-            cDai,
-            address(borrower1)
-        );
-
-        (uint256 inP2PSupplier, uint256 onPoolSupplier) = morpho.supplyBalanceInOf(
-            cDai,
-            address(supplier1)
-        );
-
-        uint256 expectedOnPool = (suppliedAmount / 2).div(ICToken(cDai).exchangeRateCurrent());
-
-        assertEq(onPoolSupplier, expectedOnPool, "supplier on Pool 1");
-        assertEq(onPoolBorrower, 0, "borrower on Pool 1");
-        assertEq(inP2PSupplier, inP2PBorrower, "supplier in P2P 1");
-
         // NMAX-1 suppliers have up to suppliedAmount/2 waiting on pool
-        uint8 NMAX = 20;
-        createSigners(NMAX);
+        uint8 NMAX = nmax;
+        createSigners(nmax);
 
         // minus 1 because supplier1 must not be counted twice !
-        uint256 amountPerSupplier = (suppliedAmount - borrowedAmount) / (2 * (NMAX - 1));
+        uint256 amountPerSupplier = (suppliedAmount - borrowedAmount) / (2 * (nmax - 1));
         uint256[] memory rates = new uint256[](NMAX);
 
         uint256 matchedAmount;
-        for (uint256 i = 0; i < NMAX; i++) {
+        for (uint256 i = 0; i < nmax; i++) {
             if (suppliers[i] == supplier1) continue;
 
             rates[i] = ICToken(cDai).exchangeRateCurrent();
@@ -325,58 +171,71 @@ contract TestWithdraw is TestSetupFuzzing {
 
         // supplier withdraws suppliedAmount.
         supplier1.withdraw(cDai, suppliedAmount);
+    }
 
-        uint256 halfBorrowedAmount = borrowedAmount / 2;
+    struct Vars {
+        uint256 LR;
+        uint256 BPY;
+        uint256 VBR;
+        uint256 NVD;
+        uint256 BP2PD;
+        uint256 BP2PA;
+        uint256 BP2PER;
+    }
 
-        {
-            // Check balances for supplier1.
-            (inP2PSupplier, onPoolSupplier) = morpho.supplyBalanceInOf(cDai, address(supplier1));
-            assertEq(onPoolSupplier, 0, "supplier on Pool 2");
-            assertApproxEq(inP2PSupplier, 0, 1, "supplier in P2P 2");
+    function testDeltaWithdraw(
+        uint96 _amount,
+        uint8 maxGas,
+        uint8 numSigners
+    ) public {
+        hevm.assume(_amount > 1e14 && _amount < 1e18 * 50_000_000);
+        hevm.assume(maxGas < 100);
+        hevm.assume(numSigners > 1 && numSigners < 50);
 
-            (inP2PBorrower, onPoolBorrower) = morpho.borrowBalanceInOf(cDai, address(borrower1));
+        uint256 amount = _amount;
 
-            uint256 expectedBorrowBalanceInP2P = halfBorrowedAmount.div(
-                morpho.p2pSupplyIndex(cDai)
-            );
-            uint256 expectedBorrowBalanceOnPool = halfBorrowedAmount.div(
-                ICToken(cDai).borrowIndex()
-            );
+        // 2e6 allows only 10 unmatch borrowers.
+        setMaxGasForMatchingHelper(3e6, 3e6, uint64(1e6 + maxGas * 1e5), 3e6);
 
-            assertApproxEq(
-                inP2PBorrower,
-                expectedBorrowBalanceInP2P,
-                inP2PBorrower / 1e10,
-                "borrower in P2P 2"
-            );
-            assertApproxEq(onPoolBorrower, expectedBorrowBalanceOnPool, 1e10, "borrower on Pool 2");
+        uint256 borrowedAmount = 1 ether;
+        uint256 collateral = 2 * borrowedAmount;
+        uint256 suppliedAmount = numSigners * borrowedAmount + 7;
+        uint256 expectedSupplyBalanceInP2P;
+
+        // supplier1 and 20 borrowers are matched for suppliedAmount.
+        supplier1.approve(dai, suppliedAmount);
+        supplier1.supply(cDai, suppliedAmount);
+
+        createSigners(numSigners);
+        uint256 matched;
+
+        // 2 * NMAX borrowers borrow borrowedAmount.
+        for (uint256 i; i < numSigners; i++) {
+            borrowers[i].approve(usdc, to6Decimals(collateral));
+            borrowers[i].supply(cUsdc, to6Decimals(collateral));
+            borrowers[i].borrow(cDai, borrowedAmount, type(uint64).max);
+            matched += borrowedAmount.div(morpho.p2pBorrowIndex(cDai));
         }
 
-        // Check balances for the borrower.
+        {
+            // Supplier withdraws max.
+            // Should create a delta on borrowers side.
+            supplier1.withdraw(cDai, type(uint256).max);
 
-        uint256 inP2P;
-        uint256 onPool;
+            // supplier should be able to deposit to help remove delta
+            supplier2.approve(dai, suppliedAmount);
+            supplier2.supply(cDai, suppliedAmount);
+        }
 
-        // Now test for each individual supplier that replaced the original.
-        for (uint256 i = 0; i < suppliers.length; i++) {
-            if (suppliers[i] == supplier1) continue;
-
-            (inP2P, onPool) = morpho.supplyBalanceInOf(cDai, address(suppliers[i]));
-
-            assertEq(
-                inP2P,
-                getBalanceOnCompound(amountPerSupplier, rates[i]).div(morpho.p2pSupplyIndex(cDai)),
-                "supplier in P2P"
-            );
-            assertEq(onPool, 0, "supplier on pool");
-
-            (inP2P, onPool) = morpho.borrowBalanceInOf(cDai, address(borrowers[i]));
-            assertEq(inP2P, 0, "borrower in P2P");
+        // Borrow delta reduction with borrowers repaying
+        for (uint256 i = numSigners / 2; i < numSigners; i++) {
+            borrowers[i].approve(dai, borrowedAmount);
+            borrowers[i].repay(cDai, borrowedAmount);
         }
     }
 
     function testShouldNotWithdrawWhenUnderCollaterized(uint256 amount) public {
-        hevm.assume(amount > 1e18 / 100 && amount < 1e18 * 50_000_000); // $0.01 to $50_000_000
+        hevm.assume(amount > 1e14 && amount < 1e18 * 50_000_000); // $0.01 to $50_000_000
 
         uint256 toSupply = amount;
         uint256 toBorrow = toSupply / 2;
@@ -398,7 +257,7 @@ contract TestWithdraw is TestSetupFuzzing {
     // Test attack.
     // Should be possible to withdraw amount while an attacker sends cToken to trick Morpho contract.
     function testWithdrawWhileAttackerSendsCToken(uint256 amount) public {
-        hevm.assume(amount > 1e18 / 100 && amount < 1e18 * 50_000_000); // $0.01 to $50_000_000
+        hevm.assume(amount > 1e14 && amount < 1e18 * 50_000_000); // $0.01 to $50_000_000
 
         Attacker attacker = new Attacker();
         tip(dai, address(attacker), type(uint256).max / 2);
