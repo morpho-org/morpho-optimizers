@@ -133,7 +133,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
                 remainingToSupply > 0 && borrowersOnPool[_poolTokenAddress].getHead() != address(0)
             ) {
                 uint256 matched = matchBorrowers(
-                    ICToken(_poolTokenAddress),
+                    _poolTokenAddress,
                     remainingToSupply,
                     _maxGasToConsume
                 ); // In underlying.
@@ -216,7 +216,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
                 remainingToBorrow > 0 && suppliersOnPool[_poolTokenAddress].getHead() != address(0)
             ) {
                 uint256 matched = matchSuppliers(
-                    ICToken(_poolTokenAddress),
+                    _poolTokenAddress,
                     CompoundMath.min(remainingToBorrow, withdrawable - toWithdraw),
                     _maxGasToConsume
                 ); // In underlying.
@@ -342,7 +342,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             ) {
                 // Match suppliers.
                 uint256 matched = matchSuppliers(
-                    poolToken,
+                    _poolTokenAddress,
                     CompoundMath.min(vars.remainingToWithdraw, vars.withdrawable - vars.toWithdraw),
                     _maxGasToConsume / 2
                 );
@@ -481,7 +481,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             ) {
                 // Match borrowers.
                 uint256 matched = matchBorrowers(
-                    poolToken,
+                    _poolTokenAddress,
                     vars.remainingToRepay,
                     _maxGasToConsume / 2
                 );
