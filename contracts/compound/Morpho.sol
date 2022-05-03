@@ -13,42 +13,6 @@ contract Morpho is MorphoGovernance {
     using CompoundMath for uint256;
     using DelegateCall for address;
 
-    /// UPGRADE ///
-
-    /// @notice Initializes the Morpho contract.
-    /// @param _positionsManager The `positionsManager`.
-    /// @param _interestRates The `interestRates`.
-    /// @param _comptroller The `comptroller`.
-    /// @param _dustThreshold The `dustThreshold`.
-    /// @param _maxGasForMatching The `maxGasForMatching`.
-    /// @param _maxSortedUsers The `_maxSortedUsers`.
-    /// @param _cEth The cETH address.
-    /// @param _weth The wETH address.
-    function initialize(
-        IPositionsManager _positionsManager,
-        IInterestRates _interestRates,
-        IComptroller _comptroller,
-        uint256 _dustThreshold,
-        Types.MaxGasForMatching memory _maxGasForMatching,
-        uint256 _maxSortedUsers,
-        address _cEth,
-        address _weth
-    ) external initializer {
-        __ReentrancyGuard_init();
-        __Ownable_init();
-
-        interestRates = _interestRates;
-        positionsManager = _positionsManager;
-        comptroller = _comptroller;
-
-        dustThreshold = _dustThreshold;
-        maxGasForMatching = _maxGasForMatching;
-        maxSortedUsers = _maxSortedUsers;
-
-        cEth = _cEth;
-        wEth = _weth;
-    }
-
     /// EXTERNAL ///
 
     /// @notice Supplies underlying tokens in a specific market.
