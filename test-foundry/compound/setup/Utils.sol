@@ -9,7 +9,6 @@ contract Utils is DSTest {
     using CompoundMath for uint256;
 
     uint256 internal constant WAD = 1e18;
-    uint256 internal constant LIQUIDATION_CLOSE_FACTOR_PERCENT = 5000;
     uint256 internal constant PERCENT_BASE = 10000;
 
     function to6Decimals(uint256 value) internal pure returns (uint256) {
