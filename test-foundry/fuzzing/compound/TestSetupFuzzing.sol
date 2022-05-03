@@ -25,6 +25,7 @@ import {Utils} from "../../compound/setup/Utils.sol";
 import "forge-std/console.sol";
 import "forge-std/stdlib.sol";
 import "@config/Config.sol";
+import "hardhat/console.sol";
 
 interface IAdminComptroller {
     function _setPriceOracle(SimplePriceOracle newOracle) external returns (uint256);
@@ -37,6 +38,7 @@ contract TestSetupFuzzing is Config, Utils, stdCheats {
 
     uint256 public constant MAX_BASIS_POINTS = 10_000;
     uint256 public constant INITIAL_BALANCE = 15_000_000_000;
+    uint256 internal constant NMAX = 20;
 
     ProxyAdmin public proxyAdmin;
     TransparentUpgradeableProxy public morphoProxy;
@@ -99,7 +101,7 @@ contract TestSetupFuzzing is Config, Utils, stdCheats {
             comptroller,
             1,
             maxGasForMatching,
-            20,
+            NMAX,
             cEth,
             wEth
         );
@@ -127,7 +129,7 @@ contract TestSetupFuzzing is Config, Utils, stdCheats {
         createMarket(cLink);
         createMarket(cMkr);
         // createMarket(cFei);
-        createMarket(cYfi);
+        // createMarket(cYfi);
         // createMarket(cUsdp);
         // createMarket(cSushi);
         // createMarket(cWbtc); // Mint is paused on compound

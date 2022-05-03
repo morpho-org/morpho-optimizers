@@ -61,6 +61,8 @@ interface IComptroller {
 
     function oracle() external view returns (address);
 
+    function borrowCaps(address) external view returns (uint256);
+
     function markets(address)
         external
         view
