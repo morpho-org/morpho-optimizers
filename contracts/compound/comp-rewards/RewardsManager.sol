@@ -37,7 +37,7 @@ contract RewardsManager is IRewardsManager, Ownable {
 
     /// MODIFIERS ///
 
-    /// @notice Prevents a user to call function allowed for the Morpho only.
+    /// @notice Thrown when an other address than Morpho triggers the function.
     modifier onlyMorpho() {
         if (msg.sender != address(morpho)) revert OnlyMorpho();
         _;
