@@ -8,39 +8,39 @@ contract TestPausableMarket is TestSetup {
 
     function testOnlyOwnerShouldTriggerPauseFunction() public {
         hevm.expectRevert("Ownable: caller is not the owner");
-        supplier1.togglePauseStatus(dai);
+        supplier1.togglePauseStatus(cDai);
 
-        morpho.togglePauseStatus(dai);
-        (, bool isPaused, ) = morpho.marketStatuses(dai);
+        morpho.togglePauseStatus(cDai);
+        (, bool isPaused, ) = morpho.marketStatuses(cDai);
         assertTrue(isPaused, "paused is false");
     }
 
     function testOnlyOwnerShouldTriggerPartialPauseFunction() public {
         hevm.expectRevert("Ownable: caller is not the owner");
-        supplier1.togglePartialPauseStatus(dai);
+        supplier1.togglePartialPauseStatus(cDai);
 
-        morpho.togglePartialPauseStatus(dai);
-        (, , bool isPartiallyPaused) = morpho.marketStatuses(dai);
+        morpho.togglePartialPauseStatus(cDai);
+        (, , bool isPartiallyPaused) = morpho.marketStatuses(cDai);
         assertTrue(isPartiallyPaused, "partial paused is false");
     }
 
     function testPauseUnpause() public {
-        morpho.togglePauseStatus(dai);
-        (, bool isPaused, ) = morpho.marketStatuses(dai);
+        morpho.togglePauseStatus(cDai);
+        (, bool isPaused, ) = morpho.marketStatuses(cDai);
         assertTrue(isPaused, "paused is false");
 
-        morpho.togglePauseStatus(dai);
-        (, isPaused, ) = morpho.marketStatuses(dai);
+        morpho.togglePauseStatus(cDai);
+        (, isPaused, ) = morpho.marketStatuses(cDai);
         assertFalse(isPaused, "paused is true");
     }
 
     function testPartialPausePartialUnpause() public {
-        morpho.togglePartialPauseStatus(dai);
-        (, , bool isPartiallyPaused) = morpho.marketStatuses(dai);
+        morpho.togglePartialPauseStatus(cDai);
+        (, , bool isPartiallyPaused) = morpho.marketStatuses(cDai);
         assertTrue(isPartiallyPaused, "partial paused is false");
 
-        morpho.togglePartialPauseStatus(dai);
-        (, , isPartiallyPaused) = morpho.marketStatuses(dai);
+        morpho.togglePartialPauseStatus(cDai);
+        (, , isPartiallyPaused) = morpho.marketStatuses(cDai);
         assertFalse(isPartiallyPaused, "partial paused is true");
     }
 
