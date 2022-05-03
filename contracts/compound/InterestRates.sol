@@ -221,12 +221,12 @@ contract InterestRates is IInterestRates, MorphoStorage {
             p2pDelta: _params.delta.borrowP2PDelta
         });
 
-        newP2PSupplyIndex = _computeNewP2PRate(
+        newP2PSupplyIndex = _computeNewP2PIndex(
             supplyParams,
             supplyP2PGrowthFactor,
             supplyPoolGrowthaFactor
         );
-        newP2PBorrowIndex = _computeNewP2PRate(
+        newP2PBorrowIndex = _computeNewP2PIndex(
             borrowParams,
             borrowP2PGrowthFactor,
             poolBorrowGrowthFactor
@@ -262,7 +262,7 @@ contract InterestRates is IInterestRates, MorphoStorage {
             _params.p2pIndexCursor
         );
 
-        return _computeNewP2PRate(supplyParams, supplyP2PGrowthFactor, supplyPoolGrowthaFactor);
+        return _computeNewP2PIndex(supplyParams, supplyP2PGrowthFactor, supplyPoolGrowthaFactor);
     }
 
     /// @notice Computes and return the new peer-to-peer borrow index.
@@ -287,7 +287,7 @@ contract InterestRates is IInterestRates, MorphoStorage {
             _params.p2pIndexCursor
         );
 
-        return _computeNewP2PRate(borrowParams, borrowP2PGrowthFactor, poolBorrowGrowthFactor);
+        return _computeNewP2PIndex(borrowParams, borrowP2PGrowthFactor, poolBorrowGrowthFactor);
     }
 
     /// @dev Computes and returns supply P2P growthfactor and borrow P2P growthfactor.
@@ -338,7 +338,7 @@ contract InterestRates is IInterestRates, MorphoStorage {
     /// @param _p2pGrowthFactor The P2P growth factor.
     /// @param _poolGrowthFactor The pool growth factor.
     /// @return newP2PIndex The updated P2P index.
-    function _computeNewP2PRate(
+    function _computeNewP2PIndex(
         RateParams memory _params,
         uint256 _p2pGrowthFactor,
         uint256 _poolGrowthFactor
