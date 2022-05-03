@@ -196,9 +196,8 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
         if (!noP2P[_poolTokenAddress]) {
             // Match supply P2P delta first if any.
-            uint256 matchedDelta;
             if (delta.supplyP2PDelta > 0) {
-                matchedDelta = CompoundMath.min(
+                uint256 matchedDelta = CompoundMath.min(
                     delta.supplyP2PDelta.mul(poolSupplyIndex),
                     remainingToBorrow,
                     withdrawable
@@ -319,8 +318,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
             // Match Delta if any.
             if (delta.supplyP2PDelta > 0) {
-                uint256 matchedDelta;
-                matchedDelta = CompoundMath.min(
+                uint256 matchedDelta = CompoundMath.min(
                     delta.supplyP2PDelta.mul(vars.supplyPoolIndex),
                     vars.remainingToWithdraw,
                     vars.withdrawable - vars.toWithdraw
