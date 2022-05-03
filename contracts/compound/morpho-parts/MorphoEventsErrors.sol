@@ -12,8 +12,8 @@ abstract contract MorphoEventsErrors is MorphoGetters {
     /// @param _user The address of the supplier.
     /// @param _poolTokenAddress The address of the market where assets are supplied into.
     /// @param _amount The amount of assets supplied (in underlying).
-    /// @param _balanceOnPool The supply balance on pool after update (in underlying).
-    /// @param _balanceInP2P The supply balance in P2P after update (in underlying).
+    /// @param _balanceOnPool The supply balance on pool after update.
+    /// @param _balanceInP2P The supply balance in P2P after update.
     event Supplied(
         address indexed _user,
         address indexed _poolTokenAddress,
@@ -99,38 +99,38 @@ abstract contract MorphoEventsErrors is MorphoGetters {
     event IncentivesVaultSet(address indexed _newIncentivesVaultAddress);
 
     /// @notice Emitted when the `positionsManager` is set.
-    /// @param _positionsManager The address of the `positionsManager`.
+    /// @param _positionsManager The new address of the `positionsManager`.
     event PositionsManagerSet(address indexed _positionsManager);
 
-    /// @notice Emitted the address of the `rewardsManager` is set.
+    /// @notice Emitted when the `rewardsManager` is set.
     /// @param _newRewardsManagerAddress The new address of the `rewardsManager`.
     event RewardsManagerSet(address indexed _newRewardsManagerAddress);
 
     /// @notice Emitted when the `interestRates` is set.
-    /// @param _interestRates The address of the `interestRates`.
+    /// @param _interestRates The new address of the `interestRates`.
     event InterestRatesSet(address indexed _interestRates);
 
     /// @dev Emitted when a new `dustThreshold` is set.
     /// @param _dustThreshold The new `dustThreshold`.
     event DustThresholdSet(uint256 _dustThreshold);
 
-    /// @notice Emitted when a `noP2P` variable is set.
-    /// @param _poolTokenAddress The address of the market to set.
+    /// @notice Emitted when the value of `noP2P` is set.
+    /// @param _poolTokenAddress The address of the pool token concerned..
     /// @param _noP2P The new value of `_noP2P` adopted.
     event NoP2PSet(address indexed _poolTokenAddress, bool _noP2P);
 
     /// @notice Emitted when the `reserveFactor` is set.
-    /// @param _poolTokenAddress The address of the market set.
+    /// @param _poolTokenAddress The address of the pool token concerned..
     /// @param _newValue The new value of the `reserveFactor`.
     event ReserveFactorSet(address indexed _poolTokenAddress, uint256 _newValue);
 
     /// @notice Emitted when the `p2pIndexCursor` is set.
-    /// @param _poolTokenAddress The address of the market set.
+    /// @param _poolTokenAddress The address of the pool token concerned..
     /// @param _newValue The new value of the `p2pIndexCursor`.
     event P2PIndexCursorSet(address indexed _poolTokenAddress, uint256 _newValue);
 
     /// @notice Emitted when a reserve fee is claimed.
-    /// @param _poolTokenAddress The address of the pool token concerned.
+    /// @param _poolTokenAddress The address of the pool token concerned..
     /// @param _amountClaimed The amount of reward token claimed.
     event ReserveFeeClaimed(address indexed _poolTokenAddress, uint256 _amountClaimed);
 
