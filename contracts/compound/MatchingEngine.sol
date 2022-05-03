@@ -61,7 +61,7 @@ contract MatchingEngine is MorphoGetters {
     /// @param _amount The token amount to search for (in underlying).
     /// @param _maxGasToConsume The maximum amount of gas to consume within a matching engine loop.
     /// @return matched The amount of liquidity matched (in underlying).
-    function matchSuppliers(
+    function _matchSuppliers(
         address _poolTokenAddress,
         uint256 _amount,
         uint256 _maxGasToConsume
@@ -92,7 +92,7 @@ contract MatchingEngine is MorphoGetters {
                     vars.poolIndex
                 );
                 supplyBalanceInOf[_poolTokenAddress][user].inP2P += vars.toMatch.div(vars.p2pRate); // In peer-to-peer unit
-                updateSuppliers(_poolTokenAddress, user);
+                _updateSuppliers(_poolTokenAddress, user);
                 emit SupplierPositionUpdated(
                     user,
                     _poolTokenAddress,
@@ -110,7 +110,7 @@ contract MatchingEngine is MorphoGetters {
     /// @param _poolTokenAddress The address of the market from which to unmatch suppliers.
     /// @param _amount The amount to search for (in underlying).
     /// @param _maxGasToConsume The maximum amount of gas to consume within a matching engine loop.
-    function unmatchSuppliers(
+    function _unmatchSuppliers(
         address _poolTokenAddress,
         uint256 _amount,
         uint256 _maxGasToConsume
@@ -144,7 +144,7 @@ contract MatchingEngine is MorphoGetters {
                 supplyBalanceInOf[_poolTokenAddress][user].inP2P -= vars.toUnmatch.div(
                     vars.p2pRate
                 ); // In peer-to-peer unit
-                updateSuppliers(_poolTokenAddress, user);
+                _updateSuppliers(_poolTokenAddress, user);
                 emit SupplierPositionUpdated(
                     user,
                     _poolTokenAddress,
@@ -165,7 +165,7 @@ contract MatchingEngine is MorphoGetters {
     /// @param _amount The amount to search for (in underlying).
     /// @param _maxGasToConsume The maximum amount of gas to consume within a matching engine loop.
     /// @return matched The amount of liquidity matched (in underlying).
-    function matchBorrowers(
+    function _matchBorrowers(
         address _poolTokenAddress,
         uint256 _amount,
         uint256 _maxGasToConsume
@@ -196,7 +196,7 @@ contract MatchingEngine is MorphoGetters {
                     vars.poolIndex
                 );
                 borrowBalanceInOf[_poolTokenAddress][user].inP2P += vars.toMatch.div(vars.p2pRate);
-                updateBorrowers(_poolTokenAddress, user);
+                _updateBorrowers(_poolTokenAddress, user);
                 emit BorrowerPositionUpdated(
                     user,
                     _poolTokenAddress,
@@ -215,7 +215,7 @@ contract MatchingEngine is MorphoGetters {
     /// @param _amount The amount to unmatch (in underlying).
     /// @param _maxGasToConsume The maximum amount of gas to consume within a matching engine loop.
     /// @return The amount unmatched (in underlying).
-    function unmatchBorrowers(
+    function _unmatchBorrowers(
         address _poolTokenAddress,
         uint256 _amount,
         uint256 _maxGasToConsume
@@ -249,7 +249,7 @@ contract MatchingEngine is MorphoGetters {
                 borrowBalanceInOf[_poolTokenAddress][user].inP2P -= vars.toUnmatch.div(
                     vars.p2pRate
                 );
-                updateBorrowers(_poolTokenAddress, user);
+                _updateBorrowers(_poolTokenAddress, user);
                 emit BorrowerPositionUpdated(
                     user,
                     _poolTokenAddress,
@@ -267,7 +267,7 @@ contract MatchingEngine is MorphoGetters {
     /// @notice Updates suppliers matching engine with the new balances of a given user.
     /// @param _poolTokenAddress The address of the market on which to update the suppliers data structure.
     /// @param _user The address of the user.
-    function updateSuppliers(address _poolTokenAddress, address _user) internal {
+    function _updateSuppliers(address _poolTokenAddress, address _user) internal {
         uint256 onPool = supplyBalanceInOf[_poolTokenAddress][_user].onPool;
         uint256 inP2P = supplyBalanceInOf[_poolTokenAddress][_user].inP2P;
         uint256 formerValueOnPool = suppliersOnPool[_poolTokenAddress].getValueOf(_user);
@@ -306,7 +306,7 @@ contract MatchingEngine is MorphoGetters {
     /// @notice Updates borrowers matching engine with the new balances of a given user.
     /// @param _poolTokenAddress The address of the market on which to update the borrowers data structure.
     /// @param _user The address of the user.
-    function updateBorrowers(address _poolTokenAddress, address _user) internal {
+    function _updateBorrowers(address _poolTokenAddress, address _user) internal {
         uint256 onPool = borrowBalanceInOf[_poolTokenAddress][_user].onPool;
         uint256 inP2P = borrowBalanceInOf[_poolTokenAddress][_user].inP2P;
         uint256 formerValueOnPool = borrowersOnPool[_poolTokenAddress].getValueOf(_user);
