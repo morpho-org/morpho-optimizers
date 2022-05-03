@@ -105,7 +105,7 @@ contract TestIncentivesVault is DSTest, stdCheats {
     function testOnlyPositionsManagerShouldTriggerCompConvertFunction() public {
         incentivesVault.setMorphoDao(address(1));
 
-        hevm.expectRevert(abi.encodeWithSignature("OnlyPositionsManager()"));
+        hevm.expectRevert(abi.encodeWithSignature("OnlyMorpho()"));
         incentivesVault.tradeCompForMorphoTokens(address(2), 0);
 
         hevm.prank(positionsManager);

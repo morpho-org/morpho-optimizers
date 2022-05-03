@@ -16,8 +16,8 @@ contract IncentivesVault is IIncentivesVault, Ownable {
     uint256 public constant MAX_BASIS_POINTS = 10_000;
     address public constant COMP = 0xc00e94Cb662C3520282E6f5717214004A7f26888;
 
-    address public immutable positionsManager; // The address of the Positions Manager.
     address public immutable morphoToken; // The address of the MORPHO token.
+    address public immutable morpho; // The address of the Morpho.
     address public morphoDao; // The address of the Morpho DAO treasury.
     address public oracle; // Thre oracle used to get the price of the pair MORPHO/COMP 🦋.
     uint256 public bonus; // The bonus of MORPHO tokens to give to the user as a percentage to add on top of the consulted amount on the oracle (in basis point).
@@ -48,8 +48,8 @@ contract IncentivesVault is IIncentivesVault, Ownable {
 
     /// ERRROS ///
 
-    /// @notice Thrown when only the posiyions manager can trigger the function.
-    error OnlyPositionsManager();
+    /// @notice Thrown when only Morpho can trigger the function.
+    error OnlyMorpho();
 
     /// @notice Thrown when the vault is paused.
     error VaultIsPaused();
@@ -57,17 +57,17 @@ contract IncentivesVault is IIncentivesVault, Ownable {
     /// CONSTRUCTOR ///
 
     /// @notice Constructs the IncentivesVault contract.
-    /// @param _positionsManager The address of the Positions Manager.
+    /// @param _morpho The address of Morpho.
     /// @param _morphoToken The address of the MORPHO token.
     /// @param _morphoDao The address of the Morpho DAO.
     /// @param _oracle The adress of the oracle.
     constructor(
-        address _positionsManager,
+        address _morpho,
         address _morphoToken,
         address _morphoDao,
         address _oracle
     ) {
-        positionsManager = _positionsManager;
+        morpho = _morpho;
         morphoToken = _morphoToken;
         morphoDao = _morphoDao;
         oracle = _oracle;
@@ -114,7 +114,7 @@ contract IncentivesVault is IIncentivesVault, Ownable {
     /// @param _receiver The address of the receiver.
     /// @param _amount The amount to transfer to the receiver.
     function tradeCompForMorphoTokens(address _receiver, uint256 _amount) external {
-        if (msg.sender != positionsManager) revert OnlyPositionsManager();
+        if (msg.sender != morpho) revert OnlyMorpho();
         if (isPaused) revert VaultIsPaused();
 
         // Transfer COMP to the DAO.
