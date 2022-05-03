@@ -32,20 +32,20 @@ abstract contract MorphoStorage is OwnableUpgradeable, ReentrancyGuardUpgradeabl
     mapping(address => DoubleLinkedList.List) internal suppliersOnPool; // For a given market, the suppliers on Compound.
     mapping(address => DoubleLinkedList.List) internal borrowersInP2P; // For a given market, the borrowers in peer-to-peer.
     mapping(address => DoubleLinkedList.List) internal borrowersOnPool; // For a given market, the borrowers on Compound.
-    mapping(address => mapping(address => Types.SupplyBalance)) public supplyBalanceInOf; // For a given market, the supply balance of a user.
-    mapping(address => mapping(address => Types.BorrowBalance)) public borrowBalanceInOf; // For a given market, the borrow balance of a user.
-    mapping(address => mapping(address => bool)) public userMembership; // Whether the user is in the market or not.
-    mapping(address => address[]) public enteredMarkets; // The markets entered by a user.
+    mapping(address => mapping(address => Types.SupplyBalance)) public supplyBalanceInOf; // For a given market, the supply balance of a user. cToken -> user -> balances.
+    mapping(address => mapping(address => Types.BorrowBalance)) public borrowBalanceInOf; // For a given market, the borrow balance of a user. cToken -> user -> balances.
+    mapping(address => mapping(address => bool)) public userMembership; // Whether the user is in the market or not. cToken -> user -> bool.
+    mapping(address => address[]) public enteredMarkets; // The markets entered by a user. user -> cTokens.
 
     /// MARKETS STORAGE ///
 
     address[] public marketsCreated; // Keeps track of the created markets.
-    mapping(address => bool) public noP2P; // Whether to put users on pool or not for the given market.
+    mapping(address => bool) public noP2P; // Whether the peer-to-peer market is open or not.
     mapping(address => uint256) public p2pSupplyIndex; // Current index from supply p2pUnit to underlying (in wad).
     mapping(address => uint256) public p2pBorrowIndex; // Current index from borrow p2pUnit to underlying (in wad).
     mapping(address => Types.LastPoolIndexes) public lastPoolIndexes; // Last pool index stored.
     mapping(address => Types.MarketParameters) public marketParameters; // Market parameters.
-    mapping(address => Types.MarketStatuses) public marketStatuses; // Whether a market is paused or partially paused or not.
+    mapping(address => Types.MarketStatuses) public marketStatuses; // Market statuses.
     mapping(address => Types.Delta) public deltas; // Delta parameters for each market.
 
     /// CONTRACTS AND ADDRESSES ///
