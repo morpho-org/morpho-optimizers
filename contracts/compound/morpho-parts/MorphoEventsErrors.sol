@@ -173,9 +173,6 @@ abstract contract MorphoEventsErrors is MorphoGetters {
     /// @notice Thrown when the market is already created.
     error MarketAlreadyCreated();
 
-    /// @notice Thrown when only the markets manager can call the function.
-    error OnlyInterestRates();
-
     /// @notice Thrown when the amount is equal to 0.
     error AmountIsZero();
 
