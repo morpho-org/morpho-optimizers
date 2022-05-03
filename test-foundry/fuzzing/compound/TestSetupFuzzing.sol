@@ -331,7 +331,7 @@ contract TestSetupFuzzing is Config, Utils, stdCheats {
         else return ICToken(_poolTokenAddress).underlying();
     }
 
-    function getAsset(uint8 _asset) internal returns (address asset, address underlying) {
+    function getAsset(uint8 _asset) internal view returns (address asset, address underlying) {
         asset = pools[_asset % pools.length];
         underlying = getUnderlying(asset);
     }
