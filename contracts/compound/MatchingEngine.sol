@@ -79,8 +79,9 @@ contract MatchingEngine is MorphoGetters {
                 user != address(0) &&
                 vars.gasLeftAtTheBeginning - gasleft() < _maxGasToConsume
             ) {
-                uint256 onPool = supplyBalanceInOf[poolTokenAddress][user].onPool;
-                vars.inUnderlying = onPool.mul(vars.poolIndex);
+                vars.inUnderlying = supplyBalanceInOf[poolTokenAddress][user].onPool.mul(
+                    vars.poolIndex
+                );
                 unchecked {
                     vars.toMatch = vars.inUnderlying < _amount - matched
                         ? vars.inUnderlying
