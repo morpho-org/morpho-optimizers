@@ -39,7 +39,7 @@ contract RewardsDistributor is Ownable {
     /// EXTERNAL ///
 
     /// @notice Updates the current merkle tree's root.
-    /// @param _newRoot The new merkle's tree root.
+    /// @param _newRoot The new merkle tree's root.
     function updateRoot(bytes32 _newRoot) external onlyOwner {
         prevRoot = currRoot;
         currRoot = _newRoot;

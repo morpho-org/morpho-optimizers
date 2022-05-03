@@ -19,8 +19,8 @@ contract RewardsManager is IRewardsManager, Ownable {
     uint224 public constant COMP_INITIAL_INDEX = 1e36;
 
     mapping(address => uint256) public userUnclaimedCompRewards; // The unclaimed rewards of the user.
-    mapping(address => mapping(address => uint256)) public compSupplierIndex; // The supply index of the user for a specific cToken.
-    mapping(address => mapping(address => uint256)) public compBorrowerIndex; // The borrow index of the user for a specific cToken.
+    mapping(address => mapping(address => uint256)) public compSupplierIndex; // The supply index of the user for a specific cToken. cToken -> user -> index.
+    mapping(address => mapping(address => uint256)) public compBorrowerIndex; // The borrow index of the user for a specific cToken. cToken -> user -> index.
     mapping(address => IComptroller.CompMarketState) public localCompSupplyState; // The local supply state for a specific cToken.
     mapping(address => IComptroller.CompMarketState) public localCompBorrowState; // The local borrow state for a specific cToken.
 
@@ -29,7 +29,7 @@ contract RewardsManager is IRewardsManager, Ownable {
 
     /// ERRORS ///
 
-    /// @notice Thrown when only the positions manager can call the function.
+    /// @notice Thrown when only Morpho can call the function.
     error OnlyMorpho();
 
     /// @notice Thrown when an invalid cToken address is passed to accrue rewards.
@@ -37,7 +37,7 @@ contract RewardsManager is IRewardsManager, Ownable {
 
     /// MODIFIERS ///
 
-    /// @notice Prevents a user to call function allowed for the positions manager only.
+    /// @notice Prevents a user to call function allowed for the Morpho only.
     modifier onlyMorpho() {
         if (msg.sender != address(morpho)) revert OnlyMorpho();
         _;
