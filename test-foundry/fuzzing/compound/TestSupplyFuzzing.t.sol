@@ -97,7 +97,7 @@ contract TestSupplyFuzzing is TestSetupFuzzing {
             ERC20(vars.suppliedUnderlying).balanceOf(address(supplier1)) >= _suppliedAmount
         );
         checkAmountIsNotTooLow(vars.suppliedUnderlying, _borrowedAmount);
-        checkAmountIsNotTooLow(vars.suppliedUnderlying, _suppliedAmount);
+        hevm.assume(_suppliedAmount > 0);
 
         uint256 collateralAmountToSupply = ERC20(vars.collateralUnderlying).balanceOf(
             address(borrower1)
@@ -112,14 +112,14 @@ contract TestSupplyFuzzing is TestSetupFuzzing {
         hevm.assume(
             borrowable > _suppliedAmount &&
                 _borrowedAmount <= borrowable &&
-                _borrowedAmount <= ICToken(vars.suppliedCToken).getCash()
+                _borrowedAmount <= ICToken(vars.suppliedCToken).getCash() &&
+                _borrowedAmount <= comptroller.borrowCaps(vars.suppliedCToken)
         );
         borrower1.borrow(vars.suppliedCToken, _borrowedAmount);
         supplier1.approve(vars.suppliedUnderlying, _suppliedAmount);
         supplier1.supply(vars.suppliedCToken, _suppliedAmount);
     }
 
-    // fail (26154794060679730960, 0, 120) -> event Failure error e info 9 with cYFI active
     // what is fuzzed is the amount supplied
     function testSupply4Fuzzed(
         uint128 _suppliedAmount,
@@ -131,7 +131,7 @@ contract TestSupplyFuzzing is TestSetupFuzzing {
         (vars.collateralCToken, vars.collateralUnderlying) = getAsset(_collateralAsset);
         uint256 amountPerBorrower = _suppliedAmount / NMAX;
 
-        checkAmountIsNotTooLow(vars.suppliedUnderlying, _suppliedAmount);
+        hevm.assume(_suppliedAmount > 0);
         checkAmountIsNotTooLow(vars.collateralUnderlying, uint128(amountPerBorrower));
         hevm.assume(
             _suppliedAmount <=
@@ -188,7 +188,7 @@ contract TestSupplyFuzzing is TestSetupFuzzing {
         (vars.collateralCToken, vars.collateralUnderlying) = getAsset(_collateralAsset);
         uint256 amountPerBorrower = _suppliedAmount / (2 * NMAX);
 
-        checkAmountIsNotTooLow(vars.suppliedUnderlying, _suppliedAmount);
+        hevm.assume(_suppliedAmount > 0);
         checkAmountIsNotTooLow(vars.collateralUnderlying, uint128(amountPerBorrower));
         hevm.assume(
             _suppliedAmount <=
