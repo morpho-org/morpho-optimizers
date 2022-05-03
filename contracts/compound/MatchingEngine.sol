@@ -68,7 +68,7 @@ contract MatchingEngine is MorphoGetters {
     ) internal returns (uint256 matched) {
         MatchVars memory vars;
         address user = suppliersOnPool[_poolTokenAddress].getHead();
-        vars.poolIndex = ICToken(_poolTokenAddress).exchangeRateCurrent();
+        vars.poolIndex = ICToken(_poolTokenAddress).exchangeRateStored(); // Exchange rate is already updated.
         vars.p2pRate = p2pSupplyIndex[_poolTokenAddress];
 
         if (_maxGasToConsume != 0) {
@@ -117,7 +117,7 @@ contract MatchingEngine is MorphoGetters {
     ) internal returns (uint256) {
         UnmatchVars memory vars;
         address user = suppliersInP2P[_poolTokenAddress].getHead();
-        vars.poolIndex = ICToken(_poolTokenAddress).exchangeRateCurrent();
+        vars.poolIndex = ICToken(_poolTokenAddress).exchangeRateStored(); // Exchange rate is already updated.
         vars.p2pRate = p2pSupplyIndex[_poolTokenAddress];
         uint256 remainingToUnmatch = _amount; // In underlying
 
