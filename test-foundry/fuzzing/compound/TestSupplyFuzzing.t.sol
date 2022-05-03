@@ -42,7 +42,6 @@ contract TestSupplyFuzzing is TestSetupFuzzing {
         assertEq(inP2P, 0, "in P2P");
     }
 
-    // REVERT
     function testSupply2Fuzzed(
         uint128 _suppliedAmount,
         uint8 _randomModulo,
@@ -59,7 +58,7 @@ contract TestSupplyFuzzing is TestSetupFuzzing {
         hevm.assume(
             suppliedAmount > 0 &&
                 suppliedAmount <=
-                2 * ERC20(vars.suppliedUnderlying).balanceOf(address(borrower1)) &&
+                ERC20(vars.suppliedUnderlying).balanceOf(address(borrower1)) / 2 &&
                 _randomModulo > 0
         );
 
@@ -70,6 +69,7 @@ contract TestSupplyFuzzing is TestSetupFuzzing {
             address(borrower1),
             vars.borrowedCToken
         );
+        borrowable = Math.min(borrowable, ICToken(vars.borrowedCToken).getCash());
         uint256 borrowedAmount = (borrowable * _randomModulo) / 255;
 
         hevm.assume(
@@ -82,7 +82,6 @@ contract TestSupplyFuzzing is TestSetupFuzzing {
         borrower1.supply(vars.suppliedCToken, suppliedAmount);
     }
 
-    // REVERT
     // what is fuzzed is the proportion in P2P on the supply of the second user
     function testSupply3Fuzzed(
         uint128 _borrowedAmount,
@@ -93,19 +92,29 @@ contract TestSupplyFuzzing is TestSetupFuzzing {
         AssetVars memory vars;
         (vars.suppliedCToken, vars.suppliedUnderlying) = getAsset(_supplyAsset);
         (vars.collateralCToken, vars.collateralUnderlying) = getAsset(_collateralAsset);
-        hevm.assume(_borrowedAmount > 0 && _suppliedAmount > 0);
-        uint256 collateralAmountToSupply = INITIAL_BALANCE *
-            (10**ERC20(vars.collateralUnderlying).decimals());
-        borrower1.approve(vars.suppliedUnderlying, collateralAmountToSupply);
-        console.log(ERC20(dai).allowance(address(borrower1), address(morpho)));
 
-        borrower1.supply(vars.collateralCToken, _suppliedAmount);
+        hevm.assume(
+            ERC20(vars.suppliedUnderlying).balanceOf(address(supplier1)) >= _suppliedAmount
+        );
+        checkAmountIsNotTooLow(vars.suppliedUnderlying, _borrowedAmount);
+        checkAmountIsNotTooLow(vars.suppliedUnderlying, _suppliedAmount);
+
+        uint256 collateralAmountToSupply = ERC20(vars.collateralUnderlying).balanceOf(
+            address(borrower1)
+        );
+
+        borrower1.approve(vars.collateralUnderlying, collateralAmountToSupply);
+        borrower1.supply(vars.collateralCToken, collateralAmountToSupply);
         (, uint256 borrowable) = morpho.getUserMaxCapacitiesForAsset(
             address(borrower1),
             vars.suppliedCToken
         );
-        hevm.assume(borrowable > _suppliedAmount);
-
+        hevm.assume(
+            borrowable > _suppliedAmount &&
+                _borrowedAmount <= borrowable &&
+                _borrowedAmount <= ICToken(vars.suppliedCToken).getCash()
+        );
+        borrower1.borrow(vars.suppliedCToken, _borrowedAmount);
         supplier1.approve(vars.suppliedUnderlying, _suppliedAmount);
         supplier1.supply(vars.suppliedCToken, _suppliedAmount);
     }
@@ -120,16 +129,18 @@ contract TestSupplyFuzzing is TestSetupFuzzing {
         AssetVars memory vars;
         (vars.suppliedCToken, vars.suppliedUnderlying) = getAsset(_supplyAsset);
         (vars.collateralCToken, vars.collateralUnderlying) = getAsset(_collateralAsset);
+        uint256 amountPerBorrower = _suppliedAmount / NMAX;
 
-        {
-            uint8 suppliedUnderlyingDecimals = ERC20(vars.suppliedUnderlying).decimals();
-            uint256 minValueToSupply = NMAX *
-                (suppliedUnderlyingDecimals > 8 ? 10**(suppliedUnderlyingDecimals - 8) : 1);
-            hevm.assume(
-                _suppliedAmount >= minValueToSupply &&
-                    minValueToSupply < comptroller.borrowCaps(vars.suppliedCToken)
-            );
-        }
+        checkAmountIsNotTooLow(vars.suppliedUnderlying, _suppliedAmount);
+        checkAmountIsNotTooLow(vars.collateralUnderlying, uint128(amountPerBorrower));
+        hevm.assume(
+            _suppliedAmount <=
+                Math.min(
+                    comptroller.borrowCaps(vars.suppliedCToken),
+                    ICToken(vars.suppliedCToken).getCash()
+                ) &&
+                _suppliedAmount <= ERC20(vars.suppliedUnderlying).balanceOf(address(supplier1))
+        );
 
         setMaxGasForMatchingHelper(
             type(uint64).max,
@@ -138,52 +149,6 @@ contract TestSupplyFuzzing is TestSetupFuzzing {
             type(uint64).max
         );
 
-        uint256 amountPerBorrower = _suppliedAmount / NMAX;
-        uint256 collateralAmount = ERC20(vars.collateralUnderlying).balanceOf(address(borrower1));
-
-        {
-            borrower1.approve(vars.collateralUnderlying, collateralAmount);
-            borrower1.supply(vars.collateralCToken, collateralAmount);
-            (, uint256 borrowable) = morpho.getUserMaxCapacitiesForAsset(
-                address(borrower1),
-                vars.suppliedCToken
-            );
-            hevm.assume(borrowable >= amountPerBorrower);
-            borrower1.borrow(vars.suppliedCToken, amountPerBorrower);
-        }
-
-        createSigners(NMAX);
-
-        for (uint256 i = 0; i < NMAX - 1; i++) {
-            borrowers[i + 1].approve(vars.collateralUnderlying, collateralAmount);
-            borrowers[i + 1].supply(vars.collateralCToken, collateralAmount);
-            borrowers[i + 1].borrow(vars.suppliedCToken, amountPerBorrower);
-        }
-
-        {
-            uint256 actuallySupplied = (_suppliedAmount / NMAX) * NMAX;
-            supplier1.approve(vars.suppliedUnderlying, actuallySupplied);
-            supplier1.supply(vars.suppliedCToken, actuallySupplied);
-        }
-    }
-
-    function testTemp() public {
-        uint128 _suppliedAmount = 21;
-        uint8 _collateralAsset = 3;
-        uint8 _supplyAsset = 3;
-
-        AssetVars memory vars;
-        (vars.suppliedCToken, vars.suppliedUnderlying) = getAsset(_supplyAsset);
-        (vars.collateralCToken, vars.collateralUnderlying) = getAsset(_collateralAsset);
-
-        setMaxGasForMatchingHelper(
-            type(uint64).max,
-            type(uint64).max,
-            type(uint64).max,
-            type(uint64).max
-        );
-
-        uint256 amountPerBorrower = _suppliedAmount / NMAX;
         uint256 collateralAmount = ERC20(vars.collateralUnderlying).balanceOf(address(borrower1));
 
         {

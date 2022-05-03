@@ -25,7 +25,6 @@ import {Utils} from "../../compound/setup/Utils.sol";
 import "forge-std/console.sol";
 import "forge-std/stdlib.sol";
 import "@config/Config.sol";
-import "hardhat/console.sol";
 
 interface IAdminComptroller {
     function _setPriceOracle(SimplePriceOracle newOracle) external returns (uint256);
@@ -39,6 +38,25 @@ contract TestSetupFuzzing is Config, Utils, stdCheats {
     uint256 public constant MAX_BASIS_POINTS = 10_000;
     uint256 public constant INITIAL_BALANCE = 15_000_000_000;
     uint256 internal constant NMAX = 20;
+    address[] internal tokens = [
+        dai,
+        usdc,
+        usdt,
+        wbtc,
+        wEth,
+        comp,
+        bat,
+        tusd,
+        uni,
+        zrx,
+        link,
+        mkr,
+        fei,
+        yfi,
+        usdp,
+        sushi,
+        aave
+    ];
 
     ProxyAdmin public proxyAdmin;
     TransparentUpgradeableProxy public morphoProxy;
@@ -222,23 +240,17 @@ contract TestSetupFuzzing is Config, Utils, stdCheats {
     }
 
     function fillUserBalances(User _user) internal {
-        tip(aave, address(_user), INITIAL_BALANCE * 10**ERC20(aave).decimals());
-        tip(dai, address(_user), INITIAL_BALANCE * 10**ERC20(dai).decimals());
-        tip(usdc, address(_user), INITIAL_BALANCE * 10**ERC20(usdc).decimals());
-        tip(usdt, address(_user), INITIAL_BALANCE * 10**ERC20(usdt).decimals());
-        tip(wbtc, address(_user), INITIAL_BALANCE * 10**ERC20(wbtc).decimals());
-        tip(wEth, address(_user), INITIAL_BALANCE * 10**ERC20(wEth).decimals());
-        tip(comp, address(_user), INITIAL_BALANCE * 10**ERC20(comp).decimals());
-        tip(bat, address(_user), INITIAL_BALANCE * 10**ERC20(bat).decimals());
-        tip(tusd, address(_user), INITIAL_BALANCE * 10**ERC20(tusd).decimals());
-        tip(uni, address(_user), INITIAL_BALANCE * 10**ERC20(uni).decimals());
-        tip(zrx, address(_user), INITIAL_BALANCE * 10**ERC20(zrx).decimals());
-        tip(link, address(_user), INITIAL_BALANCE * 10**ERC20(link).decimals());
-        tip(mkr, address(_user), INITIAL_BALANCE * 10**ERC20(mkr).decimals());
-        tip(fei, address(_user), INITIAL_BALANCE * 10**ERC20(fei).decimals());
-        tip(yfi, address(_user), INITIAL_BALANCE * 10**ERC20(yfi).decimals());
-        tip(usdp, address(_user), INITIAL_BALANCE * 10**ERC20(usdp).decimals());
-        tip(sushi, address(_user), INITIAL_BALANCE * 10**ERC20(sushi).decimals());
+        for (uint256 i; i < tokens.length; i++) {
+            fillUserBalanceWithToken(_user, tokens[i]);
+        }
+    }
+
+    function fillUserBalanceWithToken(User _user, address _token) private {
+        uint256 amountToTip = Math.min(
+            INITIAL_BALANCE * 10**ERC20(aave).decimals(),
+            ERC20(_token).totalSupply() / 25
+        );
+        tip(_token, address(_user), amountToTip);
     }
 
     function setContractsLabels() internal {
@@ -262,6 +274,14 @@ contract TestSetupFuzzing is Config, Utils, stdCheats {
             suppliers.push(new User(morpho));
             fillUserBalances(suppliers[suppliers.length - 1]);
         }
+    }
+
+    /// @notice checks morpho will not revert because of Compound rounding the amount to 0
+    function checkAmountIsNotTooLow(address underlying, uint128 amount) internal {
+        uint8 suppliedUnderlyingDecimals = ERC20(underlying).decimals();
+        uint256 minValueToSupply = NMAX *
+            (suppliedUnderlyingDecimals > 8 ? 10**(suppliedUnderlyingDecimals - 8) : 1);
+        hevm.assume(amount >= minValueToSupply);
     }
 
     function createAndSetCustomPriceOracle() public returns (SimplePriceOracle) {
