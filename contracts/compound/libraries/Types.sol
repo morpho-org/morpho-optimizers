@@ -14,12 +14,12 @@ library Types {
     /// STRUCTS ///
 
     struct SupplyBalance {
-        uint256 inP2P; // In supplier's p2pUnit, a unit that grows in value, to keep track of the interests earned when users are in P2P.
+        uint256 inP2P; // In supplier's peer-to-peer unit, a unit that grows in value, to keep track of the interests earned when users are in P2P.
         uint256 onPool; // In cToken.
     }
 
     struct BorrowBalance {
-        uint256 inP2P; // In borrower's p2pUnit, a unit that grows in value, to keep track of the interests paid when users are in P2P.
+        uint256 inP2P; // In borrower's peer-to-peer unit, a unit that grows in value, to keep track of the interests paid when users are in P2P.
         uint256 onPool; // In cdUnit, a unit that grows in value, to keep track of the debt increase when users are in Compound. Multiply by current borrowIndex to get the underlying amount.
     }
 
@@ -34,8 +34,8 @@ library Types {
     struct Delta {
         uint256 supplyP2PDelta; // Difference between the stored P2P supply amount and the real P2P supply amount (in scaled balance).
         uint256 borrowP2PDelta; // Difference between the stored P2P borrow amount and the real P2P borrow amount (in adUnit).
-        uint256 supplyP2PAmount; // Sum of all stored P2P supply (in P2P unit).
-        uint256 borrowP2PAmount; // Sum of all stored P2P borrow (in P2P unit).
+        uint256 supplyP2PAmount; // Sum of all stored P2P supply (in peer-to-peer unit).
+        uint256 borrowP2PAmount; // Sum of all stored P2P borrow (in peer-to-peer unit).
     }
 
     struct AssetLiquidityData {
