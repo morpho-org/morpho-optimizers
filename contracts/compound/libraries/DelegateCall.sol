@@ -14,7 +14,7 @@ library DelegateCall {
     /// @dev Performs a low-level delegate call to the `_target` contract.
     /// @dev Note: Unlike the OZ's library this function does not check if the `_target` is a contract. It is the responsibility of the caller to ensure that the `_target` is a contract.
     /// @param _target The address of the target contract.
-    /// @param _data The date to pass to the function called on the target contract.
+    /// @param _data The data to pass to the function called on the target contract.
     /// @return The return data from the function called on the target contract.
     function functionDelegateCall(address _target, bytes memory _data)
         internal

@@ -57,7 +57,7 @@ abstract contract MorphoGetters is MorphoStorage {
 
     /// @notice Returns all markets entered by a given user.
     /// @param _user The address of the user.
-    /// @return enteredMarkets_ The number of markets entered by this user.
+    /// @return enteredMarkets_ The list of markets entered by this user.
     function getEnteredMarkets(address _user)
         external
         view
@@ -67,7 +67,7 @@ abstract contract MorphoGetters is MorphoStorage {
     }
 
     /// @notice Returns all created markets.
-    /// @return marketsCreated_ The list of market adresses.
+    /// @return marketsCreated_ The list of market addresses.
     function getAllMarkets() external view returns (address[] memory marketsCreated_) {
         return marketsCreated;
     }
