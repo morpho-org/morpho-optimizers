@@ -3,7 +3,7 @@ pragma solidity 0.8.13;
 
 import "./TestSetupFuzzing.sol";
 
-contract TestBorrow is TestSetupFuzzing {
+contract TestBorrowFuzzing is TestSetupFuzzing {
     using CompoundMath for uint256;
 
     function testBorrow1(
