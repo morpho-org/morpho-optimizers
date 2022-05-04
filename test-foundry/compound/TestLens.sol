@@ -475,10 +475,10 @@ contract TestLens is TestSetup {
             uint256 p2pSupplyIndex,
             uint256 p2pBorrowIndex,
             uint32 lastUpdateBlockNumber,
-            uint256 supplyP2PDelta_,
-            uint256 borrowP2PDelta_,
-            uint256 supplyP2PAmount_,
-            uint256 borrowP2PAmount_
+            uint256 p2pSupplyDelta_,
+            uint256 p2pBorrowDelta_,
+            uint256 p2pSupplyAmount_,
+            uint256 p2pBorrowAmount_
         ) = lens.getMarketData(cDai);
 
         assertEq(p2pSupplyIndex, morpho.p2pSupplyIndex(cDai));
@@ -486,16 +486,16 @@ contract TestLens is TestSetup {
         (uint32 expectedLastUpdateBlockNumber, , ) = morpho.lastPoolIndexes(cDai);
         assertEq(lastUpdateBlockNumber, expectedLastUpdateBlockNumber);
         (
-            uint256 supplyP2PDelta,
-            uint256 borrowP2PDelta,
-            uint256 supplyP2PAmount,
-            uint256 borrowP2PAmount
+            uint256 p2pSupplyDelta,
+            uint256 p2pBorrowDelta,
+            uint256 p2pSupplyAmount,
+            uint256 p2pBorrowAmount
         ) = morpho.deltas(cDai);
 
-        assertEq(supplyP2PDelta_, supplyP2PDelta);
-        assertEq(borrowP2PDelta_, borrowP2PDelta);
-        assertEq(supplyP2PAmount_, supplyP2PAmount);
-        assertEq(borrowP2PAmount_, borrowP2PAmount);
+        assertEq(p2pSupplyDelta_, p2pSupplyDelta);
+        assertEq(p2pBorrowDelta_, p2pBorrowDelta);
+        assertEq(p2pSupplyAmount_, p2pSupplyAmount);
+        assertEq(p2pBorrowAmount_, p2pBorrowAmount);
     }
 
     function testGetMarketConfiguration() public {
