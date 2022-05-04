@@ -21,9 +21,9 @@ contract IncentivesVault is IIncentivesVault, Ownable {
     IComptroller public immutable comptroller; // Compound's comptroller.
     ERC20 public immutable morphoToken; // The MORPHO token.
 
+    IOracle public oracle; // The oracle used to get the price of MORPHO tokens against COMP tokens.
     address public morphoDao; // The address of the Morpho DAO treasury.
-    address public oracle; // The oracle used to get the price of MORPHO tokens against COMP tokens.
-    uint256 public bonus; // The bonus percentage of MORPHO tokens to give to the use (in basis point).
+    uint256 public bonus; // The bonus percentage of MORPHO tokens to give to the user.
     bool public isPaused; // Whether the trade of COMP rewards for MORPHO rewards is paused or not.
 
     /// EVENTS ///
@@ -65,14 +65,14 @@ contract IncentivesVault is IIncentivesVault, Ownable {
     /// @param _morphoDao The address of the Morpho DAO.
     /// @param _oracle The address of the oracle.
     constructor(
-        address _morpho,
-        address _morphoToken,
+        IMorpho _morpho,
+        ERC20 _morphoToken,
         address _morphoDao,
-        address _oracle
+        IOracle _oracle
     ) {
-        morpho = IMorpho(_morpho);
-        comptroller = IComptroller(morpho.comptroller());
-        morphoToken = ERC20(_morphoToken);
+        morpho = _morpho;
+        comptroller = _morpho.comptroller();
+        morphoToken = _morphoToken;
         morphoDao = _morphoDao;
         oracle = _oracle;
     }
@@ -81,9 +81,9 @@ contract IncentivesVault is IIncentivesVault, Ownable {
 
     /// @notice Sets the oracle.
     /// @param _newOracle The address of the new oracle.
-    function setOracle(address _newOracle) external onlyOwner {
+    function setOracle(IOracle _newOracle) external onlyOwner {
         oracle = _newOracle;
-        emit OracleSet(_newOracle);
+        emit OracleSet(address(_newOracle));
     }
 
     /// @notice Sets the morho DAO.
@@ -125,7 +125,7 @@ contract IncentivesVault is IIncentivesVault, Ownable {
         ERC20(comptroller.getCompAddress()).safeTransferFrom(msg.sender, morphoDao, _amount);
 
         // Add a bonus on MORPHO rewards.
-        uint256 amountOut = (IOracle(oracle).consult(_amount) * (MAX_BASIS_POINTS + bonus)) /
+        uint256 amountOut = (oracle.consult(_amount) * (MAX_BASIS_POINTS + bonus)) /
             MAX_BASIS_POINTS;
         morphoToken.transfer(_receiver, amountOut);
 

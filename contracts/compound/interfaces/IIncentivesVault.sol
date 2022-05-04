@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
+import "./IOracle.sol";
+
 interface IIncentivesVault {
-    function setOracle(address _newOracle) external;
+    function setOracle(IOracle _newOracle) external;
 
     function setMorphoDao(address _newMorphoDao) external;
 
