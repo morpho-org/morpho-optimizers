@@ -56,7 +56,7 @@ contract MatchingEngine is MorphoGetters {
     /// INTERNAL ///
 
     /// @notice Matches suppliers' liquidity waiting on Compound up to the given `_amount` and moves it to P2P.
-    /// @dev Note: p2pIndexes must have been updated before calling this function.
+    /// @dev Note: This function expects Compound's exchange rate and peer-to-peer indexes to have been updated.
     /// @param _poolTokenAddress The address of the market from which to match suppliers.
     /// @param _amount The token amount to search for (in underlying).
     /// @param _maxGasToConsume The maximum amount of gas to consume within a matching engine loop.
@@ -108,7 +108,7 @@ contract MatchingEngine is MorphoGetters {
     }
 
     /// @notice Unmatches suppliers' liquidity in P2P up to the given `_amount` and moves it to Compound.
-    /// @dev Note: p2pIndexes must have been updated before calling this function.
+    /// @dev Note: This function expects Compound's exchange rate and peer-to-peer indexes to have been updated.
     /// @param _poolTokenAddress The address of the market from which to unmatch suppliers.
     /// @param _amount The amount to search for (in underlying).
     /// @param _maxGasToConsume The maximum amount of gas to consume within a matching engine loop.
@@ -162,8 +162,8 @@ contract MatchingEngine is MorphoGetters {
         return _amount - remainingToUnmatch;
     }
 
-    /// @notice Matches borrowers' liquidity waiting on Compound up to the given `_amount` and moves it to P2P.
-    /// @dev Note: p2pIndexes must have been updated before calling this function.
+    /// @notice Matches borrowers' liquidity waiting on Compound up to the given `_amount` and moves it to P2P
+    /// @dev Note: This function expects peer-to-peer indexes to have been updated..
     /// @param _poolTokenAddress The address of the market from which to match borrowers.
     /// @param _amount The amount to search for (in underlying).
     /// @param _maxGasToConsume The maximum amount of gas to consume within a matching engine loop.
@@ -215,7 +215,7 @@ contract MatchingEngine is MorphoGetters {
     }
 
     /// @notice Unmatches borrowers' liquidity in P2P for the given `_amount` and moves it to Compound.
-    /// @dev Note: p2pIndexes must have been updated before calling this function.
+    /// @dev Note: This function expects and peer-to-peer indexes to have been updated.
     /// @param _poolTokenAddress The address of the market from which to unmatch borrowers.
     /// @param _amount The amount to unmatch (in underlying).
     /// @param _maxGasToConsume The maximum amount of gas to consume within a matching engine loop.
