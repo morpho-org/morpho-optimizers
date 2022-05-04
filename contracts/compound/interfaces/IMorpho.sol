@@ -28,7 +28,7 @@ interface IMorpho {
     function p2pSupplyIndex(address) external view returns (uint256);
     function p2pBorrowIndex(address) external view returns (uint256);
     function lastPoolIndexes(address) external view returns (Types.LastPoolIndexes memory);
-    function marketStatuses(address) external view returns (Types.MarketStatuses memory);
+    function marketStatus(address) external view returns (Types.MarketStatus memory);
     function comptroller() external view returns (IComptroller);
     function interestRates() external view returns (IInterestRates);
     function rewardsManager() external view returns (IRewardsManager);
