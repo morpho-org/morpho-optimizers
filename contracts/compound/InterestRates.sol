@@ -285,15 +285,15 @@ contract InterestRates is IInterestRates, MorphoStorage {
         return _computeNewP2PIndex(borrowParams, p2pBorrowGrowthFactor, poolBorrowGrowthFactor);
     }
 
-    /// @dev Computes and returns supply peer-to-peer growth factor and borrow peer-to-peer growth factor.
+    /// @dev Computes and returns peer-to-peer supply growth factor and peer-to-peer borrow growth factor.
     /// @param _poolSupplyIndex The current pool supply index.
     /// @param _poolBorrowIndex The current pool borrow index.
     /// @param _lastPoolSupplyIndex The pool supply index at last update.
     /// @param _lastPoolBorrowIndex The pool borrow index at last update.
     /// @param _reserveFactor The reserve factor percentage (10 000 = 100%).
-    /// @return p2pSupplyGrowthFactor_ The supply peer-to-peer growth factor.
+    /// @return p2pSupplyGrowthFactor_ The peer-to-peer supply growth factor.
     /// @return poolSupplyGrowthFactor_ The supply pool growth factor.
-    /// @return p2pBorrowGrowthFactor_ The borrow peer-to-peer growth factor.
+    /// @return p2pBorrowGrowthFactor_ The peer-to-peer borrow growth factor.
     /// @return poolBorrowGrowthFactor_ The borrow pool growth factor.
     function _computeGrowthFactors(
         uint256 _poolSupplyIndex,
