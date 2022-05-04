@@ -17,11 +17,9 @@ contract TestSupplyFuzzing is TestSetupFuzzing {
 
     function testSupply1Fuzzed(uint128 _amount, uint8 _asset) public {
         (address asset, address underlying) = getAsset(_asset);
-
         uint256 amount = _amount;
 
-        hevm.assume(amount > 0 && amount <= ERC20(underlying).balanceOf(address(supplier1)));
-
+        assumeSupplyAmountIsCorrect(asset, amount);
         supplier1.approve(underlying, amount);
         supplier1.supply(asset, amount);
 
@@ -55,12 +53,8 @@ contract TestSupplyFuzzing is TestSetupFuzzing {
 
         uint256 suppliedAmount = _suppliedAmount;
 
-        hevm.assume(
-            suppliedAmount > 0 &&
-                suppliedAmount <=
-                ERC20(vars.suppliedUnderlying).balanceOf(address(borrower1)) / 2 &&
-                _randomModulo > 0
-        );
+        assumeSupplyAmountIsCorrect(vars.suppliedCToken, suppliedAmount);
+        hevm.assume(_randomModulo > 0);
 
         borrower1.approve(vars.suppliedUnderlying, suppliedAmount);
         borrower1.supply(vars.suppliedCToken, suppliedAmount);
@@ -72,10 +66,7 @@ contract TestSupplyFuzzing is TestSetupFuzzing {
         borrowable = Math.min(borrowable, ICToken(vars.borrowedCToken).getCash());
         uint256 borrowedAmount = (borrowable * _randomModulo) / 255;
 
-        hevm.assume(
-            borrowedAmount > 0 &&
-                borrowedAmount <= ERC20(vars.borrowedUnderlying).balanceOf(address(borrower1))
-        );
+        assumeBorrowAmountIsCorrect(vars.borrowedCToken, borrowedAmount);
         borrower1.borrow(vars.borrowedCToken, borrowedAmount);
 
         borrower1.approve(vars.suppliedUnderlying, suppliedAmount);
@@ -93,11 +84,8 @@ contract TestSupplyFuzzing is TestSetupFuzzing {
         (vars.suppliedCToken, vars.suppliedUnderlying) = getAsset(_supplyAsset);
         (vars.collateralCToken, vars.collateralUnderlying) = getAsset(_collateralAsset);
 
-        hevm.assume(
-            ERC20(vars.suppliedUnderlying).balanceOf(address(supplier1)) >= _suppliedAmount
-        );
-        checkAmountIsNotTooLow(vars.suppliedUnderlying, _borrowedAmount);
-        hevm.assume(_suppliedAmount > 0);
+        assumeSupplyAmountIsCorrect(vars.suppliedCToken, _suppliedAmount);
+        assumeBorrowAmountIsCorrect(vars.suppliedCToken, _borrowedAmount);
 
         uint256 collateralAmountToSupply = ERC20(vars.collateralUnderlying).balanceOf(
             address(borrower1)
@@ -131,16 +119,8 @@ contract TestSupplyFuzzing is TestSetupFuzzing {
         (vars.collateralCToken, vars.collateralUnderlying) = getAsset(_collateralAsset);
         uint256 amountPerBorrower = _suppliedAmount / NMAX;
 
-        hevm.assume(_suppliedAmount > 0);
-        checkAmountIsNotTooLow(vars.collateralUnderlying, uint128(amountPerBorrower));
-        hevm.assume(
-            _suppliedAmount <=
-                Math.min(
-                    comptroller.borrowCaps(vars.suppliedCToken),
-                    ICToken(vars.suppliedCToken).getCash()
-                ) &&
-                _suppliedAmount <= ERC20(vars.suppliedUnderlying).balanceOf(address(supplier1))
-        );
+        assumeSupplyAmountIsCorrect(vars.suppliedCToken, _suppliedAmount);
+        assumeBorrowAmountIsCorrect(vars.suppliedCToken, amountPerBorrower);
 
         setMaxGasForMatchingHelper(
             type(uint64).max,
@@ -188,16 +168,8 @@ contract TestSupplyFuzzing is TestSetupFuzzing {
         (vars.collateralCToken, vars.collateralUnderlying) = getAsset(_collateralAsset);
         uint256 amountPerBorrower = _suppliedAmount / (2 * NMAX);
 
-        hevm.assume(_suppliedAmount > 0);
-        checkAmountIsNotTooLow(vars.collateralUnderlying, uint128(amountPerBorrower));
-        hevm.assume(
-            _suppliedAmount <=
-                Math.min(
-                    comptroller.borrowCaps(vars.suppliedCToken),
-                    ICToken(vars.suppliedCToken).getCash()
-                ) &&
-                _suppliedAmount <= ERC20(vars.suppliedUnderlying).balanceOf(address(supplier1))
-        );
+        assumeSupplyAmountIsCorrect(vars.suppliedCToken, _suppliedAmount);
+        assumeBorrowAmountIsCorrect(vars.suppliedCToken, amountPerBorrower);
 
         setMaxGasForMatchingHelper(
             type(uint64).max,
