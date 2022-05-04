@@ -2,7 +2,6 @@
 pragma solidity 0.8.13;
 
 import "./setup/TestSetup.sol";
-import "@contracts/compound/MorphoEventsErrors.sol";
 
 contract TestBorrow is TestSetup {
     using CompoundMath for uint256;

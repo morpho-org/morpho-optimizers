@@ -114,7 +114,7 @@ contract TestFees is TestSetup {
         hevm.roll(block.number + 100);
 
         supplier1.repay(cDai, type(uint256).max);
-        hevm.expectRevert(MorphoEventsErrors.AmountIsZero.selector);
+        hevm.expectRevert(MorphoGovernance.AmountIsZero.selector);
         morpho.claimToTreasury(cDai, 1 ether);
         uint256 balanceAfter = ERC20(dai).balanceOf(morpho.treasuryVault());
 

@@ -70,7 +70,7 @@ contract TestPausableMarket is TestSetup {
 
         supplier1.withdraw(cDai, 1 ether);
 
-        hevm.expectRevert(MorphoEventsErrors.AmountIsZero.selector);
+        hevm.expectRevert(MorphoGovernance.AmountIsZero.selector);
         morpho.claimToTreasury(cDai, 1 ether);
     }
 
@@ -133,7 +133,7 @@ contract TestPausableMarket is TestSetup {
 
         supplier1.withdraw(cEth, 1 ether);
 
-        hevm.expectRevert(MorphoEventsErrors.AmountIsZero.selector);
+        hevm.expectRevert(MorphoGovernance.AmountIsZero.selector);
         morpho.claimToTreasury(cEth, 1 ether);
     }
 
@@ -193,7 +193,7 @@ contract TestPausableMarket is TestSetup {
 
         supplier1.withdraw(cEth, 1 ether);
 
-        hevm.expectRevert(MorphoEventsErrors.AmountIsZero.selector);
+        hevm.expectRevert(MorphoGovernance.AmountIsZero.selector);
         morpho.claimToTreasury(cEth, 1 ether);
     }
 }
