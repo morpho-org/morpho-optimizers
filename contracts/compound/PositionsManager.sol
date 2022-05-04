@@ -18,12 +18,12 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     /// @notice Emitted when the borrow peer-to-peer delta is updated.
     /// @param _poolTokenAddress The address of the market.
     /// @param _p2pBorrowDelta The borrow peer-to-peer delta after update.
-    event p2pBorrowDeltaUpdated(address indexed _poolTokenAddress, uint256 _p2pBorrowDelta);
+    event P2PBorrowDeltaUpdated(address indexed _poolTokenAddress, uint256 _p2pBorrowDelta);
 
     /// @notice Emitted when the supply peer-to-peer delta is updated.
     /// @param _poolTokenAddress The address of the market.
     /// @param _p2pSupplyDelta The supply peer-to-peer delta after update.
-    event p2pSupplyDeltaUpdated(address indexed _poolTokenAddress, uint256 _p2pSupplyDelta);
+    event P2PSupplyDeltaUpdated(address indexed _poolTokenAddress, uint256 _p2pSupplyDelta);
 
     /// @notice Emitted when the supply and borrow peer-to-peer amounts are updated.
     /// @param _poolTokenAddress The address of the market.
@@ -124,7 +124,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
                     toRepay += matchedDelta;
                     remainingToSupply -= matchedDelta;
                     delta.p2pBorrowDelta -= matchedDelta.div(poolBorrowIndex);
-                    emit p2pBorrowDeltaUpdated(_poolTokenAddress, delta.p2pBorrowDelta);
+                    emit P2PBorrowDeltaUpdated(_poolTokenAddress, delta.p2pBorrowDelta);
                 }
             }
 
@@ -206,7 +206,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
                     toWithdraw += matchedDelta;
                     remainingToBorrow -= matchedDelta;
                     delta.p2pSupplyDelta -= matchedDelta.div(poolSupplyIndex);
-                    emit p2pSupplyDeltaUpdated(_poolTokenAddress, delta.p2pSupplyDelta);
+                    emit P2PSupplyDeltaUpdated(_poolTokenAddress, delta.p2pSupplyDelta);
                 }
             }
 
@@ -329,7 +329,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
                     vars.remainingToWithdraw -= matchedDelta;
                     delta.p2pSupplyDelta -= matchedDelta.div(vars.supplyPoolIndex);
                     delta.p2pSupplyAmount -= matchedDelta.div(p2pSupplyIndex);
-                    emit p2pSupplyDeltaUpdated(_poolTokenAddress, delta.p2pSupplyDelta);
+                    emit P2PSupplyDeltaUpdated(_poolTokenAddress, delta.p2pSupplyDelta);
                 }
             }
 
@@ -370,7 +370,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
                 delta.p2pBorrowDelta += (vars.remainingToWithdraw - unmatched).div(
                     poolToken.borrowIndex()
                 );
-                emit p2pBorrowDeltaUpdated(_poolTokenAddress, delta.p2pBorrowAmount);
+                emit P2PBorrowDeltaUpdated(_poolTokenAddress, delta.p2pBorrowAmount);
             }
 
             delta.p2pSupplyAmount -= vars.remainingToWithdraw.div(p2pSupplyIndex);
@@ -468,7 +468,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
                     vars.remainingToRepay -= matchedDelta;
                     delta.p2pBorrowDelta -= matchedDelta.div(vars.poolBorrowIndex);
                     delta.p2pBorrowAmount -= matchedDelta.div(vars.p2pBorrowIndex);
-                    emit p2pBorrowDeltaUpdated(_poolTokenAddress, delta.p2pBorrowDelta);
+                    emit P2PBorrowDeltaUpdated(_poolTokenAddress, delta.p2pBorrowDelta);
                 }
             }
 
@@ -512,7 +512,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
                 delta.p2pSupplyDelta += (vars.remainingToRepay - unmatched).div(
                     poolToken.exchangeRateStored() // Exchange rate has already been updated.
                 );
-                emit p2pSupplyDeltaUpdated(_poolTokenAddress, delta.p2pBorrowDelta);
+                emit P2PSupplyDeltaUpdated(_poolTokenAddress, delta.p2pBorrowDelta);
             }
 
             delta.p2pSupplyAmount -= unmatched.div(vars.p2pSupplyIndex);

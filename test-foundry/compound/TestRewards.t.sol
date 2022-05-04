@@ -8,7 +8,7 @@ contract TestRewards is TestSetup {
         address[] memory cTokens = new address[](1);
         cTokens[0] = cDai;
 
-        hevm.expectRevert(MorphoEventsErrors.AmountIsZero.selector);
+        hevm.expectRevert(MorphoGovernance.AmountIsZero.selector);
         morpho.claimRewards(cTokens, false);
     }
 
