@@ -289,7 +289,7 @@ contract MatchingEngine is MorphoGetters {
                 suppliersOnPool[_poolTokenAddress].insertSorted(_user, onPool, maxSortedUsers);
         }
 
-        // Check peer-to-peer.
+        // Round peer-to-peer balance to 0 if below threshold.
         if (inP2P <= dustThreshold) {
             supplyBalanceInOf[_poolTokenAddress][_user].inP2P = 0;
             inP2P = 0;
@@ -328,7 +328,7 @@ contract MatchingEngine is MorphoGetters {
                 borrowersOnPool[_poolTokenAddress].insertSorted(_user, onPool, maxSortedUsers);
         }
 
-        // Check peer-to-peer.
+        // Round peer-to-peer balance to 0 if below threshold.
         if (inP2P <= dustThreshold) {
             borrowBalanceInOf[_poolTokenAddress][_user].inP2P = 0;
             inP2P = 0;
