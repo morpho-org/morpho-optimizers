@@ -258,7 +258,7 @@ contract Morpho is MorphoGovernance {
     }
 
     /// @notice Claims rewards for the given assets.
-    /// @param _claimMorphoToken Whether or not to claim Morpho tokens instead of COMP token rewards.
+    /// @param _claimMorphoToken Whether or not to trade COMP tokens for MORPHO tokens.
     function claimRewards(address[] calldata _cTokenAddresses, bool _claimMorphoToken)
         external
         nonReentrant

@@ -370,10 +370,10 @@ contract Lens {
     /// @return p2pSupplyIndex_ The peer-to-peer supply index of the market.
     /// @return p2pBorrowIndex_ The peer-to-peer borrow index of the market.
     /// @return lastUpdateBlockNumber_ The last block number when peer-to-peer indexes where updated.
-    /// @return p2pSupplyDelta_ The supply peer-to-peer delta (in scaled balance).
-    /// @return p2pBorrowDelta_ The borrow peer-to-peer delta (in cdUnit).
-    /// @return p2pSupplyAmount_ The supply peer-to-peer amount (in peer-to-peer unit).
-    /// @return p2pBorrowAmount_ The borrow peer-to-peer amount (in peer-to-peer unit).
+    /// @return p2pSupplyDelta_ The peer-to-peer supply delta (in scaled balance).
+    /// @return p2pBorrowDelta_ The peer-to-peer borrow delta (in cdUnit).
+    /// @return p2pSupplyAmount_ The peer-to-peer supply amount (in peer-to-peer unit).
+    /// @return p2pBorrowAmount_ The peer-to-peer borrow amount (in peer-to-peer unit).
     function getMarketData(address _poolTokenAddress)
         external
         view
@@ -528,15 +528,15 @@ contract Lens {
         return _computeNewP2PRate(borrowParams, p2pBorrowGrowthFactor, poolBorrowGrowthFactor);
     }
 
-    /// @dev Computes and returns supply peer-to-peer growthfactor and borrow peer-to-peer growthfactor.
+    /// @dev Computes and returns peer-to-peer supply growth factor and peer-to-peer borrow growth factor.
     /// @param _poolSupplyIndex The current pool supply index.
     /// @param _poolBorrowIndex The current pool borrow index.
     /// @param _lastPoolSupplyIndex The pool supply index at last update.
     /// @param _lastPoolBorrowIndex The pool borrow index at last update.
     /// @param _reserveFactor The reserve factor percentage (10 000 = 100%).
-    /// @return p2pSupplyGrowthFactor_ The supply peer-to-peer growth factor.
+    /// @return p2pSupplyGrowthFactor_ The peer-to-peer supply growth factor.
     /// @return poolSupplyGrowthFactor_ The supply pool growth factor.
-    /// @return p2pBorrowGrowthFactor_ The borrow peer-to-peer growth factor.
+    /// @return p2pBorrowGrowthFactor_ The peer-to-peer borrow growth factor.
     /// @return poolBorrowGrowthFactor_ The borrow pool growth factor.
     function _computeGrowthFactors(
         uint256 _poolSupplyIndex,
