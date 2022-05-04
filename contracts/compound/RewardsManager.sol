@@ -16,8 +16,6 @@ contract RewardsManager is IRewardsManager, Ownable {
 
     /// STORAGE ///
 
-    uint224 public constant COMP_INITIAL_INDEX = 1e36;
-
     mapping(address => uint256) public userUnclaimedCompRewards; // The unclaimed rewards of the user.
     mapping(address => mapping(address => uint256)) public compSupplierIndex; // The supply index of the user for a specific cToken. cToken -> user -> index.
     mapping(address => mapping(address => uint256)) public compBorrowerIndex; // The borrow index of the user for a specific cToken. cToken -> user -> index.
