@@ -14,12 +14,12 @@ library Types {
     /// STRUCTS ///
 
     struct SupplyBalance {
-        uint256 inP2P; // In supplier's peer-to-peer unit, a unit that grows in value, to keep track of the interests earned when users are in P2P. Multiply by the peer-to-peer supply index to get the underlying amount.
+        uint256 inP2P; // In supplier's peer-to-peer unit, a unit that grows in value, to keep track of the interests earned when users are in peer-to-peer. Multiply by the peer-to-peer supply index to get the underlying amount.
         uint256 onPool; // In cToken. Multiply by the pool supply index to get the underlying amount.
     }
 
     struct BorrowBalance {
-        uint256 inP2P; // In borrower's peer-to-peer unit, a unit that grows in value, to keep track of the interests paid when users are in P2P. Multiply by the peer-to-peer borrow index to get the underlying amount.
+        uint256 inP2P; // In borrower's peer-to-peer unit, a unit that grows in value, to keep track of the interests paid when users are in peer-to-peer. Multiply by the peer-to-peer borrow index to get the underlying amount.
         uint256 onPool; // In cdUnit, a unit that grows in value, to keep track of the debt increase when users are in Compound. Multiply by the pool borrow index to get the underlying amount.
     }
 
@@ -32,10 +32,10 @@ library Types {
     }
 
     struct Delta {
-        uint256 p2pSupplyDelta; // Difference between the stored P2P supply amount and the real P2P supply amount (in cToken).
-        uint256 p2pBorrowDelta; // Difference between the stored P2P borrow amount and the real P2P borrow amount (in cdUnit).
-        uint256 p2pSupplyAmount; // Sum of all stored P2P supply (in peer-to-peer unit).
-        uint256 p2pBorrowAmount; // Sum of all stored P2P borrow (in peer-to-peer unit).
+        uint256 p2pSupplyDelta; // Difference between the stored peer-to-peer supply amount and the real peer-to-peer supply amount (in cToken).
+        uint256 p2pBorrowDelta; // Difference between the stored peer-to-peer borrow amount and the real peer-to-peer borrow amount (in cdUnit).
+        uint256 p2pSupplyAmount; // Sum of all stored peer-to-peer supply (in peer-to-peer unit).
+        uint256 p2pBorrowAmount; // Sum of all stored peer-to-peer borrow (in peer-to-peer unit).
     }
 
     struct AssetLiquidityData {

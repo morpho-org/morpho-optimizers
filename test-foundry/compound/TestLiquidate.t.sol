@@ -53,7 +53,7 @@ contract TestLiquidate is TestSetup {
         );
         uint256 expectedBorrowBalanceOnPool = toRepay.div(ICToken(cDai).borrowIndex());
         assertApproxEq(onPoolBorrower, expectedBorrowBalanceOnPool, 5, "borrower borrow on pool");
-        assertEq(inP2PBorrower, 0, "borrower borrow in P2P");
+        assertEq(inP2PBorrower, 0, "borrower borrow in peer-to-peer");
 
         // Check borrower1 supply balance.
         (inP2PBorrower, onPoolBorrower) = morpho.supplyBalanceInOf(cUsdc, address(borrower1));
@@ -70,7 +70,7 @@ contract TestLiquidate is TestSetup {
             amountToSeize.div(ICToken(cUsdc).exchangeRateCurrent());
 
         assertEq(onPoolBorrower, expectedOnPool, "borrower supply on pool");
-        assertEq(inP2PBorrower, 0, "borrower supply in P2P");
+        assertEq(inP2PBorrower, 0, "borrower supply in peer-to-peer");
     }
 
     function testShouldLiquidateWhileInP2PAndPool() public {
@@ -120,7 +120,7 @@ contract TestLiquidate is TestSetup {
             inP2PBorrower.mul(morpho.p2pBorrowIndex(cUsdc)),
             expectedBorrowBalanceInP2P,
             2,
-            "borrower borrow in P2P"
+            "borrower borrow in peer-to-peer"
         );
 
         // Check borrower1 supply balance.
@@ -136,7 +136,7 @@ contract TestLiquidate is TestSetup {
             onPoolDai - amountToSeize.div(ICToken(cDai).exchangeRateCurrent()),
             "borrower supply on pool"
         );
-        assertEq(inP2PBorrower, inP2PDai, "borrower supply in P2P");
+        assertEq(inP2PBorrower, inP2PDai, "borrower supply in peer-to-peer");
     }
 
     function testShouldPartiallyLiquidateWhileInP2PAndPool() public {
@@ -186,7 +186,7 @@ contract TestLiquidate is TestSetup {
             1,
             "borrower borrow on pool"
         );
-        assertEq(inP2PBorrower, inP2PUsdc, "borrower borrow in P2P");
+        assertEq(inP2PBorrower, inP2PUsdc, "borrower borrow in peer-to-peer");
 
         // Check borrower1 supply balance.
         (inP2PBorrower, onPoolBorrower) = morpho.supplyBalanceInOf(cDai, address(borrower1));
@@ -201,7 +201,7 @@ contract TestLiquidate is TestSetup {
             onPoolDai - amountToSeize.div(ICToken(cDai).exchangeRateCurrent()),
             "borrower supply on pool"
         );
-        assertEq(inP2PBorrower, inP2PDai, "borrower supply in P2P");
+        assertEq(inP2PBorrower, inP2PDai, "borrower supply in peer-to-peer");
     }
 
     function testFailLiquidateZero() public {

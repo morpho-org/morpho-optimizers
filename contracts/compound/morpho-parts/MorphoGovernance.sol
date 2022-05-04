@@ -108,9 +108,9 @@ abstract contract MorphoGovernance is MorphoEventsErrors {
         emit DustThresholdSet(_dustThreshold);
     }
 
-    /// @notice Sets whether to match people P2P or not.
+    /// @notice Sets whether to match people peer-to-peer or not.
     /// @param _poolTokenAddress The address of the market.
-    /// @param _noP2P Whether to match people P2P or not.
+    /// @param _noP2P Whether to match people peer-to-peer or not.
     function setNoP2P(address _poolTokenAddress, bool _noP2P)
         external
         onlyOwner
