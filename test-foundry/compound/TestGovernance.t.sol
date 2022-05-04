@@ -150,10 +150,10 @@ contract TestGovernance is TestSetup {
 
     function testOnlyOwnerShouldSetIncentivesVault() public {
         IIncentivesVault incentivesVaultV2 = new IncentivesVault(
-            address(morpho),
-            address(morphoToken),
+            morpho,
+            morphoToken,
             address(1),
-            address(dumbOracle)
+            dumbOracle
         );
 
         hevm.prank(address(0));
