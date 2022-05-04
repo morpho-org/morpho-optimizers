@@ -17,10 +17,10 @@ contract IncentivesVault is IIncentivesVault, Ownable {
     address public constant COMP = 0xc00e94Cb662C3520282E6f5717214004A7f26888;
 
     address public immutable morphoToken; // The address of the MORPHO token.
-    address public immutable morpho; // The address of the Morpho.
+    address public immutable morpho; // The address of the main Morpho contract.
     address public morphoDao; // The address of the Morpho DAO treasury.
     address public oracle; // The oracle used to get the price of MORPHO tokens against COMP tokens.
-    uint256 public bonus; // The bonus percentage of MORPHO tokens to give to the user.
+    uint256 public bonus; // The bonus percentage of MORPHO tokens to give to the use (in basis point).
     bool public isPaused; // Whether the trade of COMP rewards for MORPHO rewards is paused or not.
 
     /// EVENTS ///
