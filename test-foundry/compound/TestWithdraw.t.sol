@@ -434,27 +434,27 @@ contract TestWithdraw is TestSetup {
             // The amount unmatched during the withdraw.
             uint256 unmatched = 10 * expectedBorrowBalanceInP2P.mul(morpho.p2pBorrowIndex(cDai));
             // The difference between the previous matched amount and the amout unmatched creates a delta.
-            uint256 expectedBorrowP2PDeltaInUnderlying = (matched.mul(morpho.p2pBorrowIndex(cDai)) -
+            uint256 expectedp2pBorrowDeltaInUnderlying = (matched.mul(morpho.p2pBorrowIndex(cDai)) -
                 unmatched);
-            uint256 expectedBorrowP2PDelta = (matched.mul(morpho.p2pBorrowIndex(cDai)) - unmatched)
+            uint256 expectedp2pBorrowDelta = (matched.mul(morpho.p2pBorrowIndex(cDai)) - unmatched)
             .div(ICToken(cDai).borrowIndex());
 
-            (, uint256 borrowP2PDelta, , ) = morpho.deltas(cDai);
-            assertEq(borrowP2PDelta, expectedBorrowP2PDelta, "borrow Delta not expected 1");
+            (, uint256 p2pBorrowDelta, , ) = morpho.deltas(cDai);
+            assertEq(p2pBorrowDelta, expectedp2pBorrowDelta, "borrow Delta not expected 1");
 
             // Borrow delta matching by new supplier.
-            supplier2.approve(dai, expectedBorrowP2PDeltaInUnderlying / 2);
-            supplier2.supply(cDai, expectedBorrowP2PDeltaInUnderlying / 2);
+            supplier2.approve(dai, expectedp2pBorrowDeltaInUnderlying / 2);
+            supplier2.supply(cDai, expectedp2pBorrowDeltaInUnderlying / 2);
 
             (inP2PSupplier, onPoolSupplier) = morpho.supplyBalanceInOf(cDai, address(supplier2));
-            expectedSupplyBalanceInP2P = (expectedBorrowP2PDeltaInUnderlying / 2).div(
+            expectedSupplyBalanceInP2P = (expectedp2pBorrowDeltaInUnderlying / 2).div(
                 p2pSupplyIndex
             );
 
-            (, borrowP2PDelta, , ) = morpho.deltas(cDai);
+            (, p2pBorrowDelta, , ) = morpho.deltas(cDai);
             assertApproxEq(
-                borrowP2PDelta,
-                expectedBorrowP2PDelta / 2,
+                p2pBorrowDelta,
+                expectedp2pBorrowDelta / 2,
                 1,
                 "borrow Delta not expected 2"
             );
@@ -521,8 +521,8 @@ contract TestWithdraw is TestSetup {
             borrowers[i].repay(cDai, borrowedAmount);
         }
 
-        (, uint256 borrowP2PDeltaAfter, , ) = morpho.deltas(cDai);
-        assertApproxEq(borrowP2PDeltaAfter, 0, 1, "borrow Delta 2");
+        (, uint256 p2pBorrowDeltaAfter, , ) = morpho.deltas(cDai);
+        assertApproxEq(p2pBorrowDeltaAfter, 0, 1, "borrow Delta 2");
 
         (uint256 inP2PSupplier2, uint256 onPoolSupplier2) = morpho.supplyBalanceInOf(
             cDai,
