@@ -18,7 +18,7 @@ contract IncentivesVault is IIncentivesVault, Ownable {
     uint256 public constant MAX_BASIS_POINTS = 10_000;
 
     IMorpho public immutable morpho; // The address of the main Morpho contract.
-    IComptroller public immutable comptroller; // Compound's comptroller.
+    IComptroller public immutable comptroller; // Compound's comptroller proxy.
     ERC20 public immutable morphoToken; // The MORPHO token.
 
     IOracle public oracle; // The oracle used to get the price of MORPHO tokens against COMP tokens.
