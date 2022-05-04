@@ -4,6 +4,7 @@ pragma solidity 0.8.13;
 import "./interfaces/compound/ICompound.sol";
 import "./interfaces/IIncentivesVault.sol";
 import "./interfaces/IOracle.sol";
+import "./interfaces/IMorpho.sol";
 
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 
@@ -16,10 +17,10 @@ contract IncentivesVault is IIncentivesVault, Ownable {
 
     uint256 public constant MAX_BASIS_POINTS = 10_000;
 
+    IMorpho public immutable morpho; // The address of the main Morpho contract.
     IComptroller public immutable comptroller; // Compound's comptroller.
     ERC20 public immutable morphoToken; // The MORPHO token.
 
-    address public immutable morpho; // The address of the main Morpho contract.
     address public morphoDao; // The address of the Morpho DAO treasury.
     address public oracle; // The oracle used to get the price of MORPHO tokens against COMP tokens.
     uint256 public bonus; // The bonus percentage of MORPHO tokens to give to the use (in basis point).
@@ -64,15 +65,14 @@ contract IncentivesVault is IIncentivesVault, Ownable {
     /// @param _morphoDao The address of the Morpho DAO.
     /// @param _oracle The address of the oracle.
     constructor(
-        address _comptroller,
-        address _morphoToken,
         address _morpho,
+        address _morphoToken,
         address _morphoDao,
         address _oracle
     ) {
-        comptroller = IComptroller(_comptroller);
+        morpho = IMorpho(_morpho);
+        comptroller = IComptroller(morpho.comptroller());
         morphoToken = ERC20(_morphoToken);
-        morpho = _morpho;
         morphoDao = _morphoDao;
         oracle = _oracle;
     }
@@ -118,7 +118,7 @@ contract IncentivesVault is IIncentivesVault, Ownable {
     /// @param _receiver The address of the receiver.
     /// @param _amount The amount to transfer to the receiver.
     function tradeCompForMorphoTokens(address _receiver, uint256 _amount) external {
-        if (msg.sender != morpho) revert OnlyMorpho();
+        if (msg.sender != address(morpho)) revert OnlyMorpho();
         if (isPaused) revert VaultIsPaused();
 
         // Transfer COMP to the DAO.
