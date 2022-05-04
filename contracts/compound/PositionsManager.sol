@@ -79,7 +79,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         uint256 p2pSupplyIndex;
         uint256 p2pBorrowIndex;
         uint256 remainingToRepay;
-        uint256 borrowPoolIndex;
+        uint256 poolBorrowIndex;
         uint256 feeToRepay;
         uint256 toRepay;
     }
@@ -106,7 +106,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         underlyingToken.safeTransferFrom(msg.sender, address(this), _amount);
 
         Types.Delta storage delta = deltas[_poolTokenAddress];
-        uint256 borrowPoolIndex = ICToken(_poolTokenAddress).borrowIndex();
+        uint256 poolBorrowIndex = ICToken(_poolTokenAddress).borrowIndex();
         uint256 remainingToSupply = _amount;
         uint256 toRepay;
 
@@ -117,13 +117,13 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             uint256 matchedDelta;
             if (delta.borrowP2PDelta > 0) {
                 matchedDelta = CompoundMath.min(
-                    delta.borrowP2PDelta.mul(borrowPoolIndex),
+                    delta.borrowP2PDelta.mul(poolBorrowIndex),
                     remainingToSupply
                 );
                 if (matchedDelta > 0) {
                     toRepay += matchedDelta;
                     remainingToSupply -= matchedDelta;
-                    delta.borrowP2PDelta -= matchedDelta.div(borrowPoolIndex);
+                    delta.borrowP2PDelta -= matchedDelta.div(poolBorrowIndex);
                     emit BorrowP2PDeltaUpdated(_poolTokenAddress, delta.borrowP2PDelta);
                 }
             }
@@ -400,21 +400,21 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         underlyingToken.safeTransferFrom(msg.sender, address(this), _amount);
         RepayVars memory vars;
         vars.remainingToRepay = _amount;
-        vars.borrowPoolIndex = poolToken.borrowIndex();
+        vars.poolBorrowIndex = poolToken.borrowIndex();
 
         /// Soft repay ///
 
         if (borrowBalanceInOf[_poolTokenAddress][_user].onPool > 0) {
             uint256 borrowedOnPool = borrowBalanceInOf[_poolTokenAddress][_user].onPool;
             vars.toRepay = CompoundMath.min(
-                borrowedOnPool.mul(vars.borrowPoolIndex),
+                borrowedOnPool.mul(vars.poolBorrowIndex),
                 vars.remainingToRepay
             );
             vars.remainingToRepay -= vars.toRepay;
 
             borrowBalanceInOf[_poolTokenAddress][_user].onPool -= CompoundMath.min(
                 borrowedOnPool,
-                vars.toRepay.div(vars.borrowPoolIndex)
+                vars.toRepay.div(vars.poolBorrowIndex)
             ); // In cdUnit.
             _updateBorrowers(_poolTokenAddress, _user);
 
@@ -447,7 +447,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         // Fee = (borrowP2P - borrowP2PDelta) - (supplyP2P - supplyP2PDelta)
         vars.feeToRepay = CompoundMath.safeSub(
             (delta.borrowP2PAmount.mul(vars.p2pBorrowIndex) -
-                delta.borrowP2PDelta.mul(vars.borrowPoolIndex)),
+                delta.borrowP2PDelta.mul(vars.poolBorrowIndex)),
             (delta.supplyP2PAmount.mul(vars.p2pSupplyIndex) -
                 delta.supplyP2PDelta.mul(poolToken.exchangeRateStored()))
         );
@@ -459,14 +459,14 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             // Match Delta if any.
             if (delta.borrowP2PDelta > 0) {
                 uint256 matchedDelta = CompoundMath.min(
-                    delta.borrowP2PDelta.mul(vars.borrowPoolIndex),
+                    delta.borrowP2PDelta.mul(vars.poolBorrowIndex),
                     vars.remainingToRepay
                 );
 
                 if (matchedDelta > 0) {
                     vars.toRepay += matchedDelta;
                     vars.remainingToRepay -= matchedDelta;
-                    delta.borrowP2PDelta -= matchedDelta.div(vars.borrowPoolIndex);
+                    delta.borrowP2PDelta -= matchedDelta.div(vars.poolBorrowIndex);
                     delta.borrowP2PAmount -= matchedDelta.div(vars.p2pBorrowIndex);
                     emit BorrowP2PDeltaUpdated(_poolTokenAddress, delta.borrowP2PDelta);
                 }
