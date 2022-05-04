@@ -18,14 +18,7 @@ contract TestBorrowFuzzing is TestSetupFuzzing {
         uint256 supplied = _supplied;
         uint256 borrowed = _borrowed;
 
-        hevm.assume(
-            supplied != 0 &&
-                supplied <
-                ERC20(suppliedUnderlying).balanceOf(address(supplier1)) /
-                    10**(ERC20(suppliedUnderlying).decimals()) &&
-                borrowed != 0 &&
-                borrowed < 1e35
-        );
+        assumeSupplyAmountIsCorrect(suppliedAsset, supplied);
 
         borrower1.approve(suppliedUnderlying, supplied);
         borrower1.supply(suppliedAsset, supplied);
@@ -43,23 +36,17 @@ contract TestBorrowFuzzing is TestSetupFuzzing {
 
     function testBorrow2(
         uint128 _amountSupplied,
-        uint128 _amountBorrowed,
         uint8 _suppliedAsset,
-        uint8 _borrowedAsset
+        uint8 _borrowedAsset,
+        uint8 _randomModulo
     ) public {
         (address suppliedAsset, address suppliedUnderlying) = getAsset(_suppliedAsset);
         (address borrowedAsset, ) = getAsset(_borrowedAsset);
 
         uint256 amountSupplied = _amountSupplied;
-        uint256 amountBorrowed = _amountBorrowed;
 
-        hevm.assume(
-            amountSupplied != 0 &&
-                amountSupplied <
-                ERC20(suppliedUnderlying).balanceOf(address(borrower1)) /
-                    10**(ERC20(suppliedUnderlying).decimals()) &&
-                amountBorrowed != 0
-        );
+        hevm.assume(_randomModulo != 0);
+        assumeSupplyAmountIsCorrect(suppliedAsset, amountSupplied);
 
         borrower1.approve(suppliedUnderlying, amountSupplied);
         borrower1.supply(suppliedAsset, amountSupplied);
@@ -68,9 +55,10 @@ contract TestBorrowFuzzing is TestSetupFuzzing {
             address(borrower1),
             borrowedAsset
         );
+        uint256 borrowedAmount = (borrowable * _randomModulo) / 255;
 
-        hevm.assume(amountBorrowed <= borrowable);
-        borrower1.borrow(borrowedAsset, amountBorrowed);
+        assumeBorrowAmountIsCorrect(borrowedAsset, borrowedAmount);
+        borrower1.borrow(borrowedAsset, borrowedAmount);
     }
 
     function testBorrow3(
@@ -86,17 +74,9 @@ contract TestBorrowFuzzing is TestSetupFuzzing {
         uint256 amountSupplied = _amountSupplied;
         uint256 amountCollateral = _amountCollateral;
 
-        hevm.assume(
-            amountSupplied != 0 &&
-                amountSupplied <
-                ERC20(matchedUnderlying).balanceOf(address(borrower1)) /
-                    10**(ERC20(matchedUnderlying).decimals()) &&
-                _randomModulo != 0 &&
-                amountCollateral != 0 &&
-                amountCollateral <
-                ERC20(collateralUnderlying).balanceOf(address(borrower1)) /
-                    10**(ERC20(collateralUnderlying).decimals())
-        );
+        hevm.assume(_randomModulo != 0);
+        assumeSupplyAmountIsCorrect(collateralAsset, _amountCollateral);
+        assumeSupplyAmountIsCorrect(matchedAsset, amountSupplied);
 
         supplier1.approve(matchedUnderlying, amountSupplied);
         supplier1.supply(matchedAsset, amountSupplied);
@@ -110,7 +90,7 @@ contract TestBorrowFuzzing is TestSetupFuzzing {
         );
 
         uint256 borrowedAmount = (borrowable * _randomModulo) / 255;
-        hevm.assume(borrowedAmount != 0);
+        assumeBorrowAmountIsCorrect(matchedAsset, borrowedAmount);
         borrower1.borrow(matchedAsset, borrowedAmount);
     }
 
@@ -129,16 +109,8 @@ contract TestBorrowFuzzing is TestSetupFuzzing {
         uint256 amountSupplied = _amountSupplied;
         uint256 amountCollateral = _amountCollateral;
 
-        hevm.assume(
-            amountSupplied != 0 &&
-                amountSupplied <
-                ERC20(matchedUnderlying).balanceOf(address(borrower1)) /
-                    10**(ERC20(matchedUnderlying).decimals()) &&
-                amountCollateral != 0 &&
-                amountCollateral <
-                ERC20(collateralUnderlying).balanceOf(address(borrower1)) /
-                    10**(ERC20(collateralUnderlying).decimals())
-        );
+        hevm.assume(_randomModulo != 0);
+        assumeSupplyAmountIsCorrect(collateralAsset, amountCollateral);
 
         borrower1.approve(collateralUnderlying, amountCollateral);
         borrower1.supply(collateralAsset, amountCollateral);
@@ -148,12 +120,13 @@ contract TestBorrowFuzzing is TestSetupFuzzing {
             matchedAsset
         );
         uint256 borrowedAmount = (borrowable * _randomModulo) / 255;
-        hevm.assume(borrowedAmount != 0);
+        assumeBorrowAmountIsCorrect(matchedAsset, borrowedAmount);
 
         uint256 NMAX = ((20 * uint256(_randomModulo)) / 255) + 1;
         createSigners(NMAX);
 
         uint256 amountPerSupplier = (amountSupplied / NMAX) + 1;
+        assumeSupplyAmountIsCorrect(matchedAsset, amountPerSupplier);
 
         for (uint256 i = 0; i < NMAX; i++) {
             suppliers[i].approve(matchedUnderlying, amountPerSupplier);
@@ -177,12 +150,10 @@ contract TestBorrowFuzzing is TestSetupFuzzing {
 
         uint256 amountCollateral = _amountCollateral;
 
-        hevm.assume(
-            _amountCollateral != 0 &&
-                _amountCollateral <
-                ERC20(collateralUnderlying).balanceOf(address(borrower1)) /
-                    10**(ERC20(collateralUnderlying).decimals())
-        );
+        hevm.assume(_firstRandom != 0);
+        hevm.assume(_secondRandom != 0);
+        assumeSupplyAmountIsCorrect(collateralAsset, amountCollateral);
+
         borrower1.approve(collateralUnderlying, amountCollateral);
         borrower1.supply(collateralAsset, amountCollateral);
 
@@ -191,12 +162,12 @@ contract TestBorrowFuzzing is TestSetupFuzzing {
             firstAsset
         );
         uint256 borrowedAmount = (borrowable * _firstRandom) / 255;
-        hevm.assume(borrowedAmount != 0);
+        assumeBorrowAmountIsCorrect(firstAsset, borrowedAmount);
         borrower1.borrow(firstAsset, borrowedAmount);
 
         (, borrowable) = morpho.getUserMaxCapacitiesForAsset(address(borrower1), secondAsset);
         borrowedAmount = (borrowable * _secondRandom) / 255;
-        hevm.assume(borrowedAmount != 0);
+        assumeBorrowAmountIsCorrect(secondAsset, borrowedAmount);
         borrower1.borrow(secondAsset, borrowedAmount);
     }
 }

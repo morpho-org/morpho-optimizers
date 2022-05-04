@@ -284,25 +284,23 @@ contract TestSetupFuzzing is Config, Utils, stdCheats {
     ) internal {
         address underlying;
         underlying = _CToken == cEth ? wEth : ICToken(_CToken).underlying();
-        assumeAmountIsNotTooLow(underlying, amount);
-        assumeBorrowAmountIsNotTooHigh(_CToken, amount);
+        assumeBorrowAmountIsCorrect(_CToken, amount);
         (, uint256 borrowable) = morpho.getUserMaxCapacitiesForAsset(address(_user), _CToken);
         hevm.assume(amount <= borrowable);
     }
 
     /// @notice checks morpho will not revert because of Compound rounding the amount to 0
-    function assumeAmountIsNotTooLow(address underlying, uint128 amount) internal {
-        uint8 suppliedUnderlyingDecimals = ERC20(underlying).decimals();
-        uint256 minValueToSupply = (
-            suppliedUnderlyingDecimals > 8 ? 10**(suppliedUnderlyingDecimals - 8) : 1
-        );
-        hevm.assume(amount >= minValueToSupply);
+    function assumeSupplyAmountIsCorrect(address underlying, uint256 amount) internal {
+        hevm.assume(amount > 0);
+        // All the signers have the same balance at the beginning of a test.
+        hevm.assume(amount <= ERC20(underlying).balanceOf(address(supplier1)));
     }
 
     /// @notice a borrow amount can be too high on compound due to governance or unsufficient supply
     /// @param market address of the CToken
-    function assumeBorrowAmountIsNotTooHigh(address market, uint256 amount) internal {
+    function assumeBorrowAmountIsCorrect(address market, uint256 amount) internal {
         hevm.assume(amount <= ICToken(market).getCash());
+        hevm.assume(amount > 0);
         uint256 borrowCap = comptroller.borrowCaps(market);
         if (borrowCap != 0) hevm.assume(amount <= borrowCap);
     }
