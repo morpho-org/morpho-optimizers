@@ -45,7 +45,7 @@ abstract contract MorphoStorage is OwnableUpgradeable, ReentrancyGuardUpgradeabl
     mapping(address => uint256) public p2pBorrowIndex; // Current index from borrow peer-to-peer unit to underlying (in wad).
     mapping(address => Types.LastPoolIndexes) public lastPoolIndexes; // Last pool index stored.
     mapping(address => Types.MarketParameters) public marketParameters; // Market parameters.
-    mapping(address => Types.MarketStatuses) public marketStatuses; // Market statuses.
+    mapping(address => Types.MarketStatus) public marketStatus; // Market status.
     mapping(address => Types.Delta) public deltas; // Delta parameters for each market.
 
     /// CONTRACTS AND ADDRESSES ///

@@ -117,9 +117,9 @@ abstract contract MorphoGovernance is MorphoEventsErrors {
         onlyOwner
         isMarketCreated(_poolTokenAddress)
     {
-        Types.MarketStatuses storage marketStatuses_ = marketStatuses[_poolTokenAddress];
-        bool newPauseStatus = !marketStatuses_.isPaused;
-        marketStatuses_.isPaused = newPauseStatus;
+        Types.MarketStatus storage marketStatus_ = marketStatus[_poolTokenAddress];
+        bool newPauseStatus = !marketStatus_.isPaused;
+        marketStatus_.isPaused = newPauseStatus;
         emit PauseStatusChanged(_poolTokenAddress, newPauseStatus);
     }
 
@@ -130,9 +130,9 @@ abstract contract MorphoGovernance is MorphoEventsErrors {
         onlyOwner
         isMarketCreated(_poolTokenAddress)
     {
-        Types.MarketStatuses storage marketStatuses_ = marketStatuses[_poolTokenAddress];
-        bool newPauseStatus = !marketStatuses_.isPartiallyPaused;
-        marketStatuses_.isPartiallyPaused = newPauseStatus;
+        Types.MarketStatus storage marketStatus_ = marketStatus[_poolTokenAddress];
+        bool newPauseStatus = !marketStatus_.isPartiallyPaused;
+        marketStatus_.isPartiallyPaused = newPauseStatus;
         emit PartialPauseStatusChanged(_poolTokenAddress, newPauseStatus);
     }
 
@@ -168,8 +168,8 @@ abstract contract MorphoGovernance is MorphoEventsErrors {
     /// @notice Creates a new market to borrow/supply in.
     /// @param _poolTokenAddress The pool token address of the given market.
     function createMarket(address _poolTokenAddress) external onlyOwner {
-        if (marketStatuses[_poolTokenAddress].isCreated) revert MarketAlreadyCreated();
-        marketStatuses[_poolTokenAddress].isCreated = true;
+        if (marketStatus[_poolTokenAddress].isCreated) revert MarketAlreadyCreated();
+        marketStatus[_poolTokenAddress].isCreated = true;
 
         address[] memory marketToEnter = new address[](1);
         marketToEnter[0] = _poolTokenAddress;

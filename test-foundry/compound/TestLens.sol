@@ -507,7 +507,7 @@ contract TestLens is TestSetup {
             uint256 reserveFactor
         ) = lens.getMarketConfiguration(cDai);
 
-        (bool isCreated_, bool isPaused_, bool isPartiallyPaused_) = morpho.marketStatuses(cDai);
+        (bool isCreated_, bool isPaused_, bool isPartiallyPaused_) = morpho.marketStatus(cDai);
 
         assertTrue(isCreated == isCreated_);
         assertTrue(noP2P == morpho.noP2P(cDai));

@@ -31,25 +31,25 @@ abstract contract MorphoGetters is MorphoStorage {
     /// @notice Prevents to update a market not created yet.
     /// @param _poolTokenAddress The address of the market to check.
     modifier isMarketCreated(address _poolTokenAddress) {
-        if (!marketStatuses[_poolTokenAddress].isCreated) revert MarketNotCreated();
+        if (!marketStatus[_poolTokenAddress].isCreated) revert MarketNotCreated();
         _;
     }
 
     /// @notice Prevents a user to trigger a function when market is not created or paused.
     /// @param _poolTokenAddress The address of the market to check.
     modifier isMarketCreatedAndNotPaused(address _poolTokenAddress) {
-        Types.MarketStatuses memory marketStatuses_ = marketStatuses[_poolTokenAddress];
-        if (!marketStatuses_.isCreated) revert MarketNotCreated();
-        if (marketStatuses_.isPaused) revert MarketPaused();
+        Types.MarketStatus memory marketStatus_ = marketStatus[_poolTokenAddress];
+        if (!marketStatus_.isCreated) revert MarketNotCreated();
+        if (marketStatus_.isPaused) revert MarketPaused();
         _;
     }
 
     /// @notice Prevents a user to trigger a function when market is not created or paused or partial paused.
     /// @param _poolTokenAddress The address of the market to check.
     modifier isMarketCreatedAndNotPausedOrPartiallyPaused(address _poolTokenAddress) {
-        Types.MarketStatuses memory marketStatuses_ = marketStatuses[_poolTokenAddress];
-        if (!marketStatuses_.isCreated) revert MarketNotCreated();
-        if (marketStatuses_.isPaused || marketStatuses_.isPartiallyPaused) revert MarketPaused();
+        Types.MarketStatus memory marketStatus_ = marketStatus[_poolTokenAddress];
+        if (!marketStatus_.isCreated) revert MarketNotCreated();
+        if (marketStatus_.isPaused || marketStatus_.isPartiallyPaused) revert MarketPaused();
         _;
     }
 

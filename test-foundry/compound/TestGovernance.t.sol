@@ -56,7 +56,7 @@ contract TestGovernance is TestSetup {
         ICToken cToken = ICToken(cAave);
         morpho.createMarket(cAave);
 
-        (bool isCreated, , ) = morpho.marketStatuses(cAave);
+        (bool isCreated, , ) = morpho.marketStatus(cAave);
 
         assertTrue(isCreated);
         assertEq(

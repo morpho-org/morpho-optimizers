@@ -74,7 +74,7 @@ library Types {
         uint16 p2pIndexCursor; // Position of the peer-to-peer rate in the pool's spread. Determine the weights of the weighted arithmetic average in the indexes computations ((1 - p2pIndexCursor) * r^S + p2pIndexCursor * r^B) (in basis point).
     }
 
-    struct MarketStatuses {
+    struct MarketStatus {
         bool isCreated; // Whether or not this market is created.
         bool isPaused; // Whether the market is paused or not (all entry points on Morpho are frozen; supply, borrow, withdraw, repay and liquidate).
         bool isPartiallyPaused; // Whether the market is partially paused or not (only supply and borrow are frozen).
