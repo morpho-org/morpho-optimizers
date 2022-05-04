@@ -25,12 +25,7 @@ contract TestIncentivesVault is DSTest, stdCheats {
     function setUp() public {
         morphoToken = new MorphoToken(address(this));
         dumbOracle = new DumbOracle();
-        incentivesVault = new IncentivesVault(
-            morpho,
-            address(morphoToken),
-            morphoDao,
-            address(dumbOracle)
-        );
+        incentivesVault = new IncentivesVault(morpho, morphoToken, morphoDao, dumbOracle);
         ERC20(morphoToken).transfer(
             address(incentivesVault),
             ERC20(morphoToken).balanceOf(address(this))
