@@ -258,8 +258,8 @@ contract Morpho is MorphoGovernance {
     }
 
     /// @notice Claims rewards for the given assets.
-    /// @param _claimMorphoToken Whether or not to trade COMP tokens for MORPHO tokens.
-    function claimRewards(address[] calldata _cTokenAddresses, bool _claimMorphoToken)
+    /// @param _tradeForMorphoToken Whether or not to trade COMP tokens for MORPHO tokens.
+    function claimRewards(address[] calldata _cTokenAddresses, bool _tradeForMorphoToken)
         external
         nonReentrant
     {
@@ -269,7 +269,7 @@ contract Morpho is MorphoGovernance {
         else {
             comptroller.claimComp(address(this), _cTokenAddresses);
             ERC20 comp = ERC20(comptroller.getCompAddress());
-            if (_claimMorphoToken) {
+            if (_tradeForMorphoToken) {
                 comp.safeApprove(address(incentivesVault), amountOfRewards);
                 incentivesVault.tradeCompForMorphoTokens(msg.sender, amountOfRewards);
                 emit RewardsClaimedAndTraded(msg.sender, amountOfRewards);
