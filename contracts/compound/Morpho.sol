@@ -3,7 +3,7 @@ pragma solidity 0.8.13;
 
 import "./libraries/DelegateCall.sol";
 
-import "./morpho-parts/MorphoGovernance.sol";
+import "./MorphoGovernance.sol";
 
 /// @title Morpho.
 /// @notice Smart contract interacting with Compound to enable peer-to-peer supply/borrow positions that can fallback on Compound's pool using pool tokens.

@@ -9,8 +9,8 @@ import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.so
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 
-import "@contracts/compound/comp-rewards/IncentivesVault.sol";
-import "@contracts/compound/comp-rewards/RewardsManager.sol";
+import "@contracts/compound/IncentivesVault.sol";
+import "@contracts/compound/RewardsManager.sol";
 import "@contracts/compound/PositionsManager.sol";
 import "@contracts/compound/MatchingEngine.sol";
 import "@contracts/compound/InterestRates.sol";
