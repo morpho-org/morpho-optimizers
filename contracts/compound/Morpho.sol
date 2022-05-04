@@ -6,7 +6,7 @@ import "./libraries/DelegateCall.sol";
 import "./morpho-parts/MorphoGovernance.sol";
 
 /// @title Morpho.
-/// @notice Smart contract interacting with Compound to enable P2P supply/borrow positions that can fallback on Compound's pool using pool tokens.
+/// @notice Smart contract interacting with Compound to enable peer-to-peer supply/borrow positions that can fallback on Compound's pool using pool tokens.
 contract Morpho is MorphoGovernance {
     using DoubleLinkedList for DoubleLinkedList.List;
     using SafeTransferLib for ERC20;

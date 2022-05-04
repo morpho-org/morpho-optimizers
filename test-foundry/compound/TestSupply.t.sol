@@ -20,7 +20,7 @@ contract TestSupply is TestSetup {
         (uint256 inP2P, uint256 onPool) = morpho.supplyBalanceInOf(cDai, address(supplier1));
 
         assertEq(onPool, expectedOnPool, "on pool");
-        assertEq(inP2P, 0, "in P2P");
+        assertEq(inP2P, 0, "in peer-to-peer");
     }
 
     function testSupply2() public {
@@ -80,14 +80,14 @@ contract TestSupply is TestSetup {
             address(supplier1)
         );
         assertEq(onPoolSupplier, expectedSupplyBalanceOnPool, "on pool supplier");
-        assertEq(inP2PSupplier, expectedSupplyBalanceInP2P, "in P2P supplier");
+        assertEq(inP2PSupplier, expectedSupplyBalanceInP2P, "in peer-to-peer supplier");
 
         (uint256 inP2PBorrower, uint256 onPoolBorrower) = morpho.borrowBalanceInOf(
             cDai,
             address(borrower1)
         );
         assertEq(onPoolBorrower, 0, "on pool borrower");
-        assertEq(inP2PBorrower, inP2PSupplier, "in P2P borrower");
+        assertEq(inP2PBorrower, inP2PSupplier, "in peer-to-peer borrower");
     }
 
     function testSupply4() public {
@@ -133,7 +133,7 @@ contract TestSupply is TestSetup {
         (inP2P, onPool) = morpho.supplyBalanceInOf(cDai, address(supplier1));
         expectedInP2P = amount.div(p2pSupplyIndex);
 
-        assertEq(inP2P, expectedInP2P, "in P2P");
+        assertEq(inP2P, expectedInP2P, "in peer-to-peer");
         assertEq(onPool, 0, "on pool");
     }
 
@@ -174,7 +174,7 @@ contract TestSupply is TestSetup {
 
             expectedInP2P = amountPerBorrower.div(morpho.p2pBorrowIndex(cDai));
 
-            assertEq(inP2P, expectedInP2P, "borrower in P2P");
+            assertEq(inP2P, expectedInP2P, "borrower in peer-to-peer");
             assertEq(onPool, 0, "borrower on pool");
         }
 
@@ -183,7 +183,7 @@ contract TestSupply is TestSetup {
         expectedInP2P = (amount / 2).div(p2pSupplyIndex);
         uint256 expectedOnPool = (amount / 2).div(supplyPoolIndex);
 
-        assertEq(inP2P, expectedInP2P, "in P2P");
+        assertEq(inP2P, expectedInP2P, "in peer-to-peer");
         assertEq(onPool, expectedOnPool, "in pool");
     }
 
@@ -218,7 +218,7 @@ contract TestSupply is TestSetup {
         ICToken(cDai).repayBorrowBehalf(address(morpho), amount);
         hevm.stopPrank();
 
-        // Supplier supplies in P2P. Not supposed to revert.
+        // Supplier supplies in peer-to-peer. Not supposed to revert.
         supplier1.approve(dai, amount);
         supplier1.supply(cDai, amount);
     }

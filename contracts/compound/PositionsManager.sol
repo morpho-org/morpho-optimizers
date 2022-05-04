@@ -15,20 +15,20 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
     /// EVENTS ///
 
-    /// @notice Emitted when the borrow P2P delta is updated.
+    /// @notice Emitted when the borrow peer-to-peer delta is updated.
     /// @param _poolTokenAddress The address of the market.
-    /// @param _p2pBorrowDelta The borrow P2P delta after update.
+    /// @param _p2pBorrowDelta The borrow peer-to-peer delta after update.
     event p2pBorrowDeltaUpdated(address indexed _poolTokenAddress, uint256 _p2pBorrowDelta);
 
-    /// @notice Emitted when the supply P2P delta is updated.
+    /// @notice Emitted when the supply peer-to-peer delta is updated.
     /// @param _poolTokenAddress The address of the market.
-    /// @param _p2pSupplyDelta The supply P2P delta after update.
+    /// @param _p2pSupplyDelta The supply peer-to-peer delta after update.
     event p2pSupplyDeltaUpdated(address indexed _poolTokenAddress, uint256 _p2pSupplyDelta);
 
-    /// @notice Emitted when the supply and borrow P2P amounts are updated.
+    /// @notice Emitted when the supply and borrow peer-to-peer amounts are updated.
     /// @param _poolTokenAddress The address of the market.
-    /// @param _p2pSupplyAmount The supply P2P amount after update.
-    /// @param _p2pBorrowAmount The borrow P2P amount after update.
+    /// @param _p2pSupplyAmount The supply peer-to-peer amount after update.
+    /// @param _p2pBorrowAmount The borrow peer-to-peer amount after update.
     event P2PAmountsUpdated(
         address indexed _poolTokenAddress,
         uint256 _p2pSupplyAmount,
@@ -110,10 +110,10 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         uint256 remainingToSupply = _amount;
         uint256 toRepay;
 
-        /// Supply in P2P ///
+        /// Supply in peer-to-peer ///
 
         if (!noP2P[_poolTokenAddress]) {
-            // Match borrow P2P delta first if any.
+            // Match borrow peer-to-peer delta first if any.
             uint256 matchedDelta;
             if (delta.p2pBorrowDelta > 0) {
                 matchedDelta = CompoundMath.min(
@@ -192,10 +192,10 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         uint256 poolSupplyIndex = ICToken(_poolTokenAddress).exchangeRateStored(); // Exchange rate has already been updated.
         uint256 withdrawable = ICToken(_poolTokenAddress).balanceOfUnderlying(address(this)); // The balance on pool.
 
-        /// Borrow in P2P ///
+        /// Borrow in peer-to-peer ///
 
         if (!noP2P[_poolTokenAddress]) {
-            // Match supply P2P delta first if any.
+            // Match supply peer-to-peer delta first if any.
             if (delta.p2pSupplyDelta > 0) {
                 uint256 matchedDelta = CompoundMath.min(
                     delta.p2pSupplyDelta.mul(poolSupplyIndex),
@@ -365,7 +365,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
                 _maxGasToConsume / 2 // Divided by 2 as both matching and unmatching processes may happen in this function.
             );
 
-            // If unmatched does not cover remainingToWithdraw, the difference is added to the borrow P2P delta.
+            // If unmatched does not cover remainingToWithdraw, the difference is added to the borrow peer-to-peer delta.
             if (unmatched < vars.remainingToWithdraw) {
                 delta.p2pBorrowDelta += (vars.remainingToWithdraw - unmatched).div(
                     poolToken.borrowIndex()
@@ -507,7 +507,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
                 _maxGasToConsume / 2 // Divided by 2 as both matching and unmatching processes may happen in this function.
             ); // Reverts on error.
 
-            // If unmatched does not cover remainingToRepay, the difference is added to the supply P2P delta.
+            // If unmatched does not cover remainingToRepay, the difference is added to the supply peer-to-peer delta.
             if (unmatched < vars.remainingToRepay) {
                 delta.p2pSupplyDelta += (vars.remainingToRepay - unmatched).div(
                     poolToken.exchangeRateStored() // Exchange rate has already been updated.
