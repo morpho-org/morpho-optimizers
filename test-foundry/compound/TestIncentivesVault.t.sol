@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import "@contracts/compound/comp-rewards/IncentivesVault.sol";
+import "@contracts/compound/IncentivesVault.sol";
 
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 

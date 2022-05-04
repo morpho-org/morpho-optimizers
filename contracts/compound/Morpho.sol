@@ -3,7 +3,7 @@ pragma solidity 0.8.13;
 
 import "./libraries/DelegateCall.sol";
 
-import "./morpho-parts/MorphoGovernance.sol";
+import "./MorphoGovernance.sol";
 
 /// @title Morpho.
 /// @notice Main Morpho contract handling user interactions and pool interactions.
