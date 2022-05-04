@@ -436,9 +436,9 @@ contract Lens {
         returns (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex)
     {
         (
-            uint256 supplyP2PGrowthFactor,
-            uint256 supplyPoolGrowthaFactor,
-            uint256 borrowP2PGrowthFactor,
+            uint256 p2pSupplyGrowthFactor,
+            uint256 poolSupplyGrowthFactor,
+            uint256 p2pBorrowGrowthFactor,
             uint256 poolBorrowGrowthFactor
         ) = _computeGrowthFactors(
             _params.poolSupplyIndex,
@@ -468,12 +468,12 @@ contract Lens {
 
         newP2PSupplyIndex = _computeNewP2PRate(
             supplyParams,
-            supplyP2PGrowthFactor,
-            supplyPoolGrowthaFactor
+            p2pSupplyGrowthFactor,
+            poolSupplyGrowthFactor
         );
         newP2PBorrowIndex = _computeNewP2PRate(
             borrowParams,
-            borrowP2PGrowthFactor,
+            p2pBorrowGrowthFactor,
             poolBorrowGrowthFactor
         );
     }
@@ -491,12 +491,7 @@ contract Lens {
             p2pDelta: _params.delta.p2pSupplyDelta
         });
 
-        (
-            uint256 supplyP2PGrowthFactor,
-            uint256 supplyPoolGrowthaFactor,
-            ,
-
-        ) = _computeGrowthFactors(
+        (uint256 p2pSupplyGrowthFactor, uint256 poolSupplyGrowthFactor, , ) = _computeGrowthFactors(
             _params.poolSupplyIndex,
             _params.poolBorrowIndex,
             _params.lastPoolSupplyIndex,
@@ -505,7 +500,7 @@ contract Lens {
             _params.p2pIndexCursor
         );
 
-        return _computeNewP2PRate(supplyParams, supplyP2PGrowthFactor, supplyPoolGrowthaFactor);
+        return _computeNewP2PRate(supplyParams, p2pSupplyGrowthFactor, poolSupplyGrowthFactor);
     }
 
     /// @notice Computes and return the new peer-to-peer borrow index.
@@ -521,7 +516,7 @@ contract Lens {
             p2pDelta: _params.delta.p2pBorrowDelta
         });
 
-        (, , uint256 borrowP2PGrowthFactor, uint256 poolBorrowGrowthFactor) = _computeGrowthFactors(
+        (, , uint256 p2pBorrowGrowthFactor, uint256 poolBorrowGrowthFactor) = _computeGrowthFactors(
             _params.poolSupplyIndex,
             _params.poolBorrowIndex,
             _params.lastPoolSupplyIndex,
@@ -530,7 +525,7 @@ contract Lens {
             _params.p2pIndexCursor
         );
 
-        return _computeNewP2PRate(borrowParams, borrowP2PGrowthFactor, poolBorrowGrowthFactor);
+        return _computeNewP2PRate(borrowParams, p2pBorrowGrowthFactor, poolBorrowGrowthFactor);
     }
 
     /// @dev Computes and returns supply peer-to-peer growthfactor and borrow peer-to-peer growthfactor.
@@ -539,9 +534,9 @@ contract Lens {
     /// @param _lastPoolSupplyIndex The pool supply index at last update.
     /// @param _lastPoolBorrowIndex The pool borrow index at last update.
     /// @param _reserveFactor The reserve factor percentage (10 000 = 100%).
-    /// @return supplyP2PGrowthFactor_ The supply peer-to-peer growth factor.
+    /// @return p2pSupplyGrowthFactor_ The supply peer-to-peer growth factor.
     /// @return poolSupplyGrowthFactor_ The supply pool growth factor.
-    /// @return borrowP2PGrowthFactor_ The borrow peer-to-peer growth factor.
+    /// @return p2pBorrowGrowthFactor_ The borrow peer-to-peer growth factor.
     /// @return poolBorrowGrowthFactor_ The borrow pool growth factor.
     function _computeGrowthFactors(
         uint256 _poolSupplyIndex,
@@ -554,9 +549,9 @@ contract Lens {
         internal
         pure
         returns (
-            uint256 supplyP2PGrowthFactor_,
+            uint256 p2pSupplyGrowthFactor_,
             uint256 poolSupplyGrowthFactor_,
-            uint256 borrowP2PGrowthFactor_,
+            uint256 p2pBorrowGrowthFactor_,
             uint256 poolBorrowGrowthFactor_
         )
     {
@@ -566,11 +561,11 @@ contract Lens {
             poolSupplyGrowthFactor_ +
             _p2pIndexCursor *
             poolBorrowGrowthFactor_) / MAX_BASIS_POINTS;
-        supplyP2PGrowthFactor_ =
+        p2pSupplyGrowthFactor_ =
             p2pGrowthFactor -
             (_reserveFactor * (p2pGrowthFactor - poolSupplyGrowthFactor_)) /
             MAX_BASIS_POINTS;
-        borrowP2PGrowthFactor_ =
+        p2pBorrowGrowthFactor_ =
             p2pGrowthFactor +
             (_reserveFactor * (poolBorrowGrowthFactor_ - p2pGrowthFactor)) /
             MAX_BASIS_POINTS;
