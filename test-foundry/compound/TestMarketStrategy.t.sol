@@ -19,7 +19,7 @@ contract TestMarketStrategy is TestSetup {
         supplier1.approve(dai, toBorrow);
         supplier1.supply(cDai, toBorrow);
 
-        // supplier1 and borrower1 should not be in P2P
+        // supplier1 and borrower1 should not be in peer-to-peer
         (uint256 borrowInP2P, uint256 borrowOnPool) = morpho.borrowBalanceInOf(
             cDai,
             address(borrower1)
@@ -50,7 +50,7 @@ contract TestMarketStrategy is TestSetup {
 
         borrower1.borrow(cDai, toBorrow);
 
-        // supplier1 and borrower1 should not be in P2P
+        // supplier1 and borrower1 should not be in peer-to-peer
         (uint256 borrowInP2P, uint256 borrowOnPool) = morpho.borrowBalanceInOf(
             cDai,
             address(borrower1)

@@ -26,16 +26,16 @@ contract Lens {
         uint256 lastPoolBorrowIndex; // The pool borrow index at last update.
         uint256 reserveFactor; // The reserve factor percentage (10 000 = 100%).
         uint256 p2pIndexCursor; // The reserve factor percentage (10 000 = 100%).
-        Types.Delta delta; // The deltas and P2P amounts.
+        Types.Delta delta; // The deltas and peer-to-peer amounts.
     }
 
     struct RateParams {
-        uint256 p2pIndex; // The P2P index.
+        uint256 p2pIndex; // The peer-to-peer index.
         uint256 poolIndex; // The pool index.
         uint256 lastPoolIndex; // The pool index at last update.
         uint256 reserveFactor; // The reserve factor percentage (10 000 = 100%).
-        uint256 p2pAmount; // Sum of all stored P2P balance in supply or borrow (in peer-to-peer unit).
-        uint256 p2pDelta; // Sum of all stored P2P in supply or borrow (in peer-to-peer unit).
+        uint256 p2pAmount; // Sum of all stored peer-to-peer balance in supply or borrow (in peer-to-peer unit).
+        uint256 p2pDelta; // Sum of all stored peer-to-peer in supply or borrow (in peer-to-peer unit).
     }
 
     /// STORAGE ///
@@ -370,10 +370,10 @@ contract Lens {
     /// @return p2pSupplyIndex_ The peer-to-peer supply index of the market.
     /// @return p2pBorrowIndex_ The peer-to-peer borrow index of the market.
     /// @return lastUpdateBlockNumber_ The last block number when peer-to-peer indexes where updated.
-    /// @return p2pSupplyDelta_ The supply P2P delta (in scaled balance).
-    /// @return p2pBorrowDelta_ The borrow P2P delta (in cdUnit).
-    /// @return p2pSupplyAmount_ The supply P2P amount (in peer-to-peer unit).
-    /// @return p2pBorrowAmount_ The borrow P2P amount (in peer-to-peer unit).
+    /// @return p2pSupplyDelta_ The supply peer-to-peer delta (in scaled balance).
+    /// @return p2pBorrowDelta_ The borrow peer-to-peer delta (in cdUnit).
+    /// @return p2pSupplyAmount_ The supply peer-to-peer amount (in peer-to-peer unit).
+    /// @return p2pBorrowAmount_ The borrow peer-to-peer amount (in peer-to-peer unit).
     function getMarketData(address _poolTokenAddress)
         external
         view
@@ -401,7 +401,7 @@ contract Lens {
 
     /// @notice Returns market's configuration.
     /// @return isCreated_ Whether the market is created or not.
-    /// @return noP2P_ Whether user are put in P2P or not.
+    /// @return noP2P_ Whether user are put in peer-to-peer or not.
     /// @return isPaused_ Whether the market is paused or not (all entry points on Morpho are frozen; supply, borrow, withdraw, repay and liquidate).
     /// @return isPartiallyPaused_ Whether the market is partially paused or not (only supply and borrow are frozen).
     /// @return reserveFactor_ The reserve actor applied to this market.
@@ -533,15 +533,15 @@ contract Lens {
         return _computeNewP2PRate(borrowParams, borrowP2PGrowthFactor, poolBorrowGrowthFactor);
     }
 
-    /// @dev Computes and returns supply P2P growthfactor and borrow P2P growthfactor.
+    /// @dev Computes and returns supply peer-to-peer growthfactor and borrow peer-to-peer growthfactor.
     /// @param _poolSupplyIndex The current pool supply index.
     /// @param _poolBorrowIndex The current pool borrow index.
     /// @param _lastPoolSupplyIndex The pool supply index at last update.
     /// @param _lastPoolBorrowIndex The pool borrow index at last update.
     /// @param _reserveFactor The reserve factor percentage (10 000 = 100%).
-    /// @return supplyP2PGrowthFactor_ The supply P2P growth factor.
+    /// @return supplyP2PGrowthFactor_ The supply peer-to-peer growth factor.
     /// @return poolSupplyGrowthFactor_ The supply pool growth factor.
-    /// @return borrowP2PGrowthFactor_ The borrow P2P growth factor.
+    /// @return borrowP2PGrowthFactor_ The borrow peer-to-peer growth factor.
     /// @return poolBorrowGrowthFactor_ The borrow pool growth factor.
     function _computeGrowthFactors(
         uint256 _poolSupplyIndex,
@@ -576,11 +576,11 @@ contract Lens {
             MAX_BASIS_POINTS;
     }
 
-    /// @dev Computes and returns the new P2P index.
+    /// @dev Computes and returns the new peer-to-peer index.
     /// @param _params Computation parameters.
-    /// @param _p2pGrowthFactor The P2P growth factor.
+    /// @param _p2pGrowthFactor The peer-to-peer growth factor.
     /// @param _poolGrowthFactor The pool growth factor.
-    /// @return newP2PIndex The updated P2P index.
+    /// @return newP2PIndex The updated peer-to-peer index.
     function _computeNewP2PRate(
         RateParams memory _params,
         uint256 _p2pGrowthFactor,

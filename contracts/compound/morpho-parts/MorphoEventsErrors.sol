@@ -13,7 +13,7 @@ abstract contract MorphoEventsErrors is MorphoGetters {
     /// @param _poolTokenAddress The address of the market where assets are supplied into.
     /// @param _amount The amount of assets supplied (in underlying).
     /// @param _balanceOnPool The supply balance on pool after update.
-    /// @param _balanceInP2P The supply balance in P2P after update.
+    /// @param _balanceInP2P The supply balance in peer-to-peer after update.
     event Supplied(
         address indexed _user,
         address indexed _poolTokenAddress,
@@ -27,7 +27,7 @@ abstract contract MorphoEventsErrors is MorphoGetters {
     /// @param _poolTokenAddress The address of the market from where assets are withdrawn.
     /// @param _amount The amount of assets withdrawn (in underlying).
     /// @param _balanceOnPool The supply balance on pool after update.
-    /// @param _balanceInP2P The supply balance in P2P after update.
+    /// @param _balanceInP2P The supply balance in peer-to-peer after update.
     event Withdrawn(
         address indexed _user,
         address indexed _poolTokenAddress,
@@ -41,7 +41,7 @@ abstract contract MorphoEventsErrors is MorphoGetters {
     /// @param _poolTokenAddress The address of the market where assets are borrowed.
     /// @param _amount The amount of assets borrowed (in underlying).
     /// @param _balanceOnPool The borrow balance on pool after update.
-    /// @param _balanceInP2P The borrow balance in P2P after update
+    /// @param _balanceInP2P The borrow balance in peer-to-peer after update
     event Borrowed(
         address indexed _user,
         address indexed _poolTokenAddress,
@@ -55,7 +55,7 @@ abstract contract MorphoEventsErrors is MorphoGetters {
     /// @param _poolTokenAddress The address of the market where assets are repaid.
     /// @param _amount The amount of assets repaid (in underlying).
     /// @param _balanceOnPool The borrow balance on pool after update.
-    /// @param _balanceInP2P The borrow balance in P2P after update.
+    /// @param _balanceInP2P The borrow balance in peer-to-peer after update.
     event Repaid(
         address indexed _user,
         address indexed _poolTokenAddress,
