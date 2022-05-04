@@ -86,7 +86,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
     /// CONSTRUCTOR ///
 
-    /// @notice Constructs the MatchingEngine contract.
+    /// @notice Constructs the PositionsManager contract.
     /// @dev The contract is automatically marked as initialized when deployed.
     constructor() initializer {}
 
@@ -128,7 +128,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
                 }
             }
 
-            // Match pool suppliers if any.
+            // Match pool borrowers if any.
             if (
                 remainingToSupply > 0 && borrowersOnPool[_poolTokenAddress].getHead() != address(0)
             ) {
@@ -342,7 +342,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
                 uint256 matched = _matchSuppliers(
                     _poolTokenAddress,
                     CompoundMath.min(vars.remainingToWithdraw, vars.withdrawable - vars.toWithdraw),
-                    _maxGasToConsume / 2
+                    _maxGasToConsume / 2 // Divided by 2 as both matching and unmatching processes may happen in this function.
                 );
 
                 if (matched > 0) {
@@ -362,7 +362,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             uint256 unmatched = _unmatchBorrowers(
                 _poolTokenAddress,
                 vars.remainingToWithdraw,
-                _maxGasToConsume / 2
+                _maxGasToConsume / 2 // Divided by 2 as both matching and unmatching processes may happen in this function.
             );
 
             // If unmatched does not cover remainingToWithdraw, the difference is added to the borrow P2P delta.
@@ -385,7 +385,6 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     }
 
     /// @dev Implements repay logic.
-    /// @dev Note: `msg.sender` must have approved this contract to spend the underlying `_amount`.
     /// @param _poolTokenAddress The address of the market the user wants to interact with.
     /// @param _user The address of the user.
     /// @param _amount The amount of token (in underlying).
@@ -445,7 +444,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
         /// Fee repay ///
 
-        // Fee = (supplyP2P - supplyP2PDelta) - (borrowP2P - borrowP2PDelta)
+        // Fee = (borrowP2P - borrowP2PDelta) - (supplyP2P - supplyP2PDelta)
         vars.feeToRepay = CompoundMath.safeSub(
             (delta.borrowP2PAmount.mul(vars.p2pBorrowIndex) -
                 delta.borrowP2PDelta.mul(vars.borrowPoolIndex)),
@@ -481,7 +480,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
                 uint256 matched = _matchBorrowers(
                     _poolTokenAddress,
                     vars.remainingToRepay,
-                    _maxGasToConsume / 2
+                    _maxGasToConsume / 2 // Divided by 2 as both matching and unmatching processes may happen in this function.
                 );
 
                 if (matched > 0) {
@@ -505,7 +504,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             uint256 unmatched = _unmatchSuppliers(
                 _poolTokenAddress,
                 vars.remainingToRepay,
-                _maxGasToConsume / 2
+                _maxGasToConsume / 2 // Divided by 2 as both matching and unmatching processes may happen in this function.
             ); // Reverts on error.
 
             // If unmatched does not cover remainingToRepay, the difference is added to the supply P2P delta.
@@ -531,6 +530,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     /// @param _poolTokenCollateralAddress The address of the collateral pool token the liquidator wants to seize.
     /// @param _borrower The address of the borrower to liquidate.
     /// @param _amount The amount of token (in underlying) to repay.
+    /// @return The amount of tokens seized from collateral.
     function liquidate(
         address _poolTokenBorrowedAddress,
         address _poolTokenCollateralAddress,
@@ -554,16 +554,16 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
         repay(_poolTokenBorrowedAddress, _borrower, _amount, 0);
 
-        // Calculate the amount of token to seize from collateral
+        // Comute the amount of token to seize from collateral.
         ICompoundOracle compoundOracle = ICompoundOracle(comptroller.oracle());
         vars.collateralPrice = compoundOracle.getUnderlyingPrice(_poolTokenCollateralAddress);
         vars.borrowedPrice = compoundOracle.getUnderlyingPrice(_poolTokenBorrowedAddress);
         if (vars.collateralPrice == 0 || vars.borrowedPrice == 0) revert CompoundOracleFailed();
 
-        // Get the index and calculate the number of collateral tokens to seize:
+        // Get the index and compute the number of collateral tokens to seize:
         // seizeAmount = actualRepayAmount * liquidationIncentive * priceBorrowed / priceCollateral
         // seizeTokens = seizeAmount / index
-        // = actualRepayAmount * (liquidationIncentive * priceBorrowed) / (priceCollateral * index)
+        // = actualRepayAmount * (liquidationIncentive * borrowedPrice) / (collateralPrice * index)
         vars.amountToSeize = _amount
         .mul(comptroller.liquidationIncentiveMantissa())
         .mul(vars.borrowedPrice)
@@ -644,7 +644,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         }
     }
 
-    /// @dev Removes the user from the market if he has no funds or borrow on it.
+    /// @dev Removes the user from the market if balances are null.
     /// @param _user The address of the user to update.
     /// @param _poolTokenAddress The address of the market to check.
     function _leaveMarketIfNeeded(address _poolTokenAddress, address _user) internal {
