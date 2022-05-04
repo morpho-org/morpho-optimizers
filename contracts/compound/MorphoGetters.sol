@@ -124,10 +124,10 @@ abstract contract MorphoGetters is MorphoStorage {
 
     /// INTERNAL ///
 
-    /// @dev Checks whether the user can borrow/withdraw or not.
-    /// @param _user The user to determine liquidity for.
+    /// @dev Checks whether the user has enough collateral to maintain such a borrow position.
+    /// @param _user The user to check.
     /// @param _poolTokenAddress The market to hypothetically withdraw/borrow in.
-    /// @param _withdrawnAmount The number of tokens to hypothetically withdraw (in underlying).
+    /// @param _withdrawnAmount The amount of tokens to hypothetically withdraw (in underlying).
     /// @param _borrowedAmount The amount of tokens to hypothetically borrow (in underlying).
     function _isLiquidable(
         address _user,
