@@ -640,7 +640,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         }
     }
 
-    /// @dev Removes the user from the market if balances are null.
+    /// @dev Removes the user from the market if its balances are null.
     /// @param _user The address of the user to update.
     /// @param _poolTokenAddress The address of the market to check.
     function _leaveMarketIfNeeded(address _poolTokenAddress, address _user) internal {
