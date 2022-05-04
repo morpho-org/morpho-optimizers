@@ -26,9 +26,8 @@ contract TestIncentivesVault is DSTest, stdCheats {
         morphoToken = new MorphoToken(address(this));
         dumbOracle = new DumbOracle();
         incentivesVault = new IncentivesVault(
-            address(comptroller),
-            address(morphoToken),
             morpho,
+            address(morphoToken),
             morphoDao,
             address(dumbOracle)
         );
