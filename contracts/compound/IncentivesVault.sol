@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
+import "./interfaces/compound/ICompound.sol";
 import "./interfaces/IIncentivesVault.sol";
 import "./interfaces/IOracle.sol";
 
@@ -14,9 +15,10 @@ contract IncentivesVault is IIncentivesVault, Ownable {
     /// STORAGE ///
 
     uint256 public constant MAX_BASIS_POINTS = 10_000;
-    address public constant COMP = 0xc00e94Cb662C3520282E6f5717214004A7f26888;
 
-    address public immutable morphoToken; // The address of the MORPHO token.
+    IComptroller public immutable comptroller; // Compound's comptroller.
+    ERC20 public immutable morphoToken; // The MORPHO token.
+
     address public immutable morpho; // The address of the main Morpho contract.
     address public morphoDao; // The address of the Morpho DAO treasury.
     address public oracle; // The oracle used to get the price of MORPHO tokens against COMP tokens.
@@ -62,13 +64,15 @@ contract IncentivesVault is IIncentivesVault, Ownable {
     /// @param _morphoDao The address of the Morpho DAO.
     /// @param _oracle The address of the oracle.
     constructor(
-        address _morpho,
+        address _comptroller,
         address _morphoToken,
+        address _morpho,
         address _morphoDao,
         address _oracle
     ) {
+        comptroller = IComptroller(_comptroller);
+        morphoToken = ERC20(_morphoToken);
         morpho = _morpho;
-        morphoToken = _morphoToken;
         morphoDao = _morphoDao;
         oracle = _oracle;
     }
@@ -106,7 +110,7 @@ contract IncentivesVault is IIncentivesVault, Ownable {
     /// @notice Transfers the MORPHO tokens to the DAO.
     /// @param _amount The amount of MORPHO tokens to transfer to the DAO.
     function transferMorphoTokensToDao(uint256 _amount) external onlyOwner {
-        ERC20(morphoToken).transfer(morphoDao, _amount);
+        morphoToken.transfer(morphoDao, _amount);
         emit MorphoTokensTransferred(_amount);
     }
 
@@ -118,12 +122,12 @@ contract IncentivesVault is IIncentivesVault, Ownable {
         if (isPaused) revert VaultIsPaused();
 
         // Transfer COMP to the DAO.
-        ERC20(COMP).safeTransferFrom(msg.sender, morphoDao, _amount);
+        ERC20(comptroller.getCompAddress()).safeTransferFrom(msg.sender, morphoDao, _amount);
 
         // Add a bonus on MORPHO rewards.
         uint256 amountOut = (IOracle(oracle).consult(_amount) * (MAX_BASIS_POINTS + bonus)) /
             MAX_BASIS_POINTS;
-        ERC20(morphoToken).transfer(_receiver, amountOut);
+        morphoToken.transfer(_receiver, amountOut);
 
         emit CompTokensTraded(_receiver, _amount, amountOut);
     }
