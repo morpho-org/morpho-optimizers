@@ -63,6 +63,7 @@ library Types {
         uint256 amountToSeize;
     }
 
+    // Variables are packed together to save gas (will not exceed their limit during Morpho's lifetime).
     struct LastPoolIndexes {
         uint32 lastUpdateBlockNumber; // The last time the peer-to-peer indexes were updated.
         uint112 lastSupplyPoolIndex; // Last pool supply index.
