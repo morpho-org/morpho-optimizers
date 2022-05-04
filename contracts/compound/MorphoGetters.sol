@@ -145,7 +145,7 @@ abstract contract MorphoGetters is MorphoStorage {
         while (i < numberOfEnteredMarkets) {
             address poolTokenEntered = enteredMarkets[_user][i];
 
-            // Calling accrueInterest so that computation in getUserLiquidityDataForAsset() are the most accurate ones.
+            // Calling accrueInterest so that Compound's indexes used in _getUserLiquidityDataForAsset() are updated.
             ICToken(poolTokenEntered).accrueInterest();
             Types.AssetLiquidityData memory assetData = _getUserLiquidityDataForAsset(
                 _user,
