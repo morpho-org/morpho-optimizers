@@ -52,41 +52,6 @@ contract InterestRates is IInterestRates, MorphoStorage {
 
     /// EXTERNAL ///
 
-    /// @notice Returns the updated peer-to-peer indexes.
-    /// @dev Note: Compute the results with the index stored and not the most up to date one.
-    /// @param _poolTokenAddress The address of the market to update.
-    /// @return newP2PSupplyIndex The peer-to-peer supply index after update.
-    /// @return newP2PBorrowIndex The peer-to-peer supply index after update.
-    function getUpdatedP2PIndexes(address _poolTokenAddress)
-        external
-        view
-        override
-        returns (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex)
-    {
-        if (block.timestamp == lastPoolIndexes[_poolTokenAddress].lastUpdateBlockNumber) {
-            newP2PSupplyIndex = p2pSupplyIndex[_poolTokenAddress];
-            newP2PBorrowIndex = p2pBorrowIndex[_poolTokenAddress];
-        } else {
-            ICToken poolToken = ICToken(_poolTokenAddress);
-            Types.LastPoolIndexes storage poolIndexes = lastPoolIndexes[_poolTokenAddress];
-            Types.MarketParameters storage marketParams = marketParameters[_poolTokenAddress];
-
-            Params memory params = Params(
-                p2pSupplyIndex[_poolTokenAddress],
-                p2pBorrowIndex[_poolTokenAddress],
-                poolToken.exchangeRateStored(),
-                poolToken.borrowIndex(),
-                poolIndexes.lastSupplyPoolIndex,
-                poolIndexes.lastBorrowPoolIndex,
-                marketParams.reserveFactor,
-                marketParams.p2pIndexCursor,
-                deltas[_poolTokenAddress]
-            );
-
-            (newP2PSupplyIndex, newP2PBorrowIndex) = computeP2PIndexes(params);
-        }
-    }
-
     /// @notice Returns the updated peer-to-peer supply index.
     /// @dev Note: Compute the result with the index stored and not the most up to date one.
     /// @param _poolTokenAddress The address of the market to update.
