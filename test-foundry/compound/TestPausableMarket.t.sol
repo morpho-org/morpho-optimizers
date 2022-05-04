@@ -128,7 +128,7 @@ contract TestPausableMarket is TestSetup {
 
         toLiquidate = 1_000;
         liquidator.approve(usdt, toLiquidate);
-        hevm.expectRevert(PositionsManager.DebtValueNotAboveMax.selector);
+        hevm.expectRevert(PositionsManager.UnauthorisedLiquidate.selector);
         liquidator.liquidate(cUsdt, cEth, address(supplier1), toLiquidate);
 
         supplier1.withdraw(cEth, 1 ether);
@@ -188,7 +188,7 @@ contract TestPausableMarket is TestSetup {
 
         toLiquidate = 10_000;
         liquidator.approve(usdt, toLiquidate);
-        hevm.expectRevert(PositionsManager.DebtValueNotAboveMax.selector);
+        hevm.expectRevert(PositionsManager.UnauthorisedLiquidate.selector);
         liquidator.liquidate(cUsdt, cEth, address(supplier1), toLiquidate);
 
         supplier1.withdraw(cEth, 1 ether);
