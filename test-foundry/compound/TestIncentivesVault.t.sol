@@ -17,7 +17,7 @@ contract TestIncentivesVault is DSTest, stdCheats {
     Vm public hevm = Vm(HEVM_ADDRESS);
     address public constant COMP = 0xc00e94Cb662C3520282E6f5717214004A7f26888;
     address public morphoDao = address(1);
-    address public positionsManager = address(3);
+    address public morpho = address(3);
     IncentivesVault public incentivesVault;
     MorphoToken public morphoToken;
     DumbOracle public dumbOracle;
@@ -26,8 +26,9 @@ contract TestIncentivesVault is DSTest, stdCheats {
         morphoToken = new MorphoToken(address(this));
         dumbOracle = new DumbOracle();
         incentivesVault = new IncentivesVault(
-            positionsManager,
+            address(comptroller),
             address(morphoToken),
+            morpho,
             morphoDao,
             address(dumbOracle)
         );
