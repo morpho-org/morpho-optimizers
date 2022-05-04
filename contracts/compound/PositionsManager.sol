@@ -167,7 +167,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
         if (remainingToSupply > 0) {
             supplyBalanceInOf[_poolTokenAddress][msg.sender].onPool += remainingToSupply.div(
-                ICToken(_poolTokenAddress).exchangeRateCurrent()
+                ICToken(_poolTokenAddress).exchangeRateStored() // Exchange rate has already been updated.
             ); // In scaled balance.
             _updateSuppliers(_poolTokenAddress, msg.sender);
             _supplyToPool(_poolTokenAddress, underlyingToken, remainingToSupply); // Reverts on error.
@@ -189,7 +189,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         uint256 remainingToBorrow = _amount;
         uint256 toWithdraw;
         Types.Delta storage delta = deltas[_poolTokenAddress];
-        uint256 poolSupplyIndex = ICToken(_poolTokenAddress).exchangeRateCurrent();
+        uint256 poolSupplyIndex = ICToken(_poolTokenAddress).exchangeRateStored(); // Exchange rate has already been updated.
         uint256 withdrawable = ICToken(_poolTokenAddress).balanceOfUnderlying(address(this)); // The balance on pool.
 
         /// Borrow in P2P ///
@@ -273,7 +273,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         WithdrawVars memory vars;
         vars.remainingToWithdraw = _amount;
         vars.withdrawable = poolToken.balanceOfUnderlying(address(this));
-        vars.supplyPoolIndex = poolToken.exchangeRateCurrent();
+        vars.supplyPoolIndex = poolToken.exchangeRateStored(); // Exchange rate has already been updated.
 
         if (_amount.div(vars.supplyPoolIndex) == 0) revert WithdrawTooSmall();
 
@@ -511,7 +511,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             // If unmatched does not cover remainingToRepay, the difference is added to the supply P2P delta.
             if (unmatched < vars.remainingToRepay) {
                 delta.supplyP2PDelta += (vars.remainingToRepay - unmatched).div(
-                    poolToken.exchangeRateStored() // We must re-call the pool because the index may have changed after repay.
+                    poolToken.exchangeRateStored() // Exchange rate has already been updated.
                 );
                 emit SupplyP2PDeltaUpdated(_poolTokenAddress, delta.borrowP2PDelta);
             }
