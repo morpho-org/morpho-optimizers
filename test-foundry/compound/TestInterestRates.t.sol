@@ -23,13 +23,13 @@ contract TestInterestRates is TestSetup {
         uint256 poolSupplyGrowthFactor = ((params.poolSupplyIndex * WAD) / params.lastPoolSupplyIndex);
         uint256 poolBorrowGrowthFactor = ((params.poolBorrowIndex * WAD) / params.lastPoolBorrowIndex);
         uint256 p2pIncrease = ((MAX_BASIS_POINTS - params.p2pIndexCursor) * poolSupplyGrowthFactor + params.p2pIndexCursor * poolBorrowGrowthFactor) / MAX_BASIS_POINTS;
-        uint256 shareOfTheSupplyDelta = params.delta.supplyP2PAmount > 0
-            ? (((params.delta.supplyP2PDelta * params.poolSupplyIndex) / WAD) * WAD) /
-                ((params.delta.supplyP2PAmount * params.p2pSupplyIndex) / WAD)
+        uint256 shareOfTheSupplyDelta = params.delta.p2pSupplyAmount > 0
+            ? (((params.delta.p2pSupplyDelta * params.poolSupplyIndex) / WAD) * WAD) /
+                ((params.delta.p2pSupplyAmount * params.p2pSupplyIndex) / WAD)
             : 0;
-        uint256 shareOfTheBorrowDelta = params.delta.borrowP2PAmount > 0
-            ? (((params.delta.borrowP2PDelta * params.poolBorrowIndex) / WAD) * WAD) /
-                ((params.delta.borrowP2PAmount * params.p2pBorrowIndex) / WAD)
+        uint256 shareOfTheBorrowDelta = params.delta.p2pBorrowAmount > 0
+            ? (((params.delta.p2pBorrowDelta * params.poolBorrowIndex) / WAD) * WAD) /
+                ((params.delta.p2pBorrowAmount * params.p2pBorrowIndex) / WAD)
             : 0;
         p2pSupplyIndex_ =
             params.p2pSupplyIndex *
@@ -142,18 +142,18 @@ contract TestInterestRates is TestSetup {
         uint256 _lastPoolBorrowIndex = WAD + _6;
         uint256 _reserveFactor = _7 % 10_000;
         uint256 _p2pIndexCursor = _8 % 10_000;
-        uint256 _supplyP2PDelta = WAD + _9;
-        uint256 _borrowP2PDelta = WAD + _10;
-        uint256 _supplyP2PAmount = WAD + _11;
-        uint256 _borrowP2PAmount = WAD + _12;
+        uint256 _p2pSupplyDelta = WAD + _9;
+        uint256 _p2pBorrowDelta = WAD + _10;
+        uint256 _p2pSupplyAmount = WAD + _11;
+        uint256 _p2pBorrowAmount = WAD + _12;
 
         hevm.assume(_lastPoolSupplyIndex <= _poolSupplyIndex);
         hevm.assume(_lastPoolBorrowIndex <= _poolBorrowIndex);
         hevm.assume(_poolBorrowIndex * WAD / _lastPoolBorrowIndex > _poolSupplyIndex * WAD / _lastPoolSupplyIndex);
-        hevm.assume(_supplyP2PAmount * _p2pSupplyIndex / WAD > _supplyP2PDelta * _poolSupplyIndex / WAD);
-        hevm.assume(_borrowP2PAmount * _p2pBorrowIndex / WAD > _borrowP2PDelta * _poolBorrowIndex / WAD);
+        hevm.assume(_p2pSupplyAmount * _p2pSupplyIndex / WAD > _p2pSupplyDelta * _poolSupplyIndex / WAD);
+        hevm.assume(_p2pBorrowAmount * _p2pBorrowIndex / WAD > _p2pBorrowDelta * _poolBorrowIndex / WAD);
 
-        InterestRates.Params memory params = InterestRates.Params(_p2pSupplyIndex, _p2pBorrowIndex, _poolSupplyIndex, _poolBorrowIndex, _lastPoolSupplyIndex, _lastPoolBorrowIndex, _reserveFactor, _p2pIndexCursor, Types.Delta(_supplyP2PDelta, _borrowP2PDelta, _supplyP2PAmount, _borrowP2PAmount));
+        InterestRates.Params memory params = InterestRates.Params(_p2pSupplyIndex, _p2pBorrowIndex, _poolSupplyIndex, _poolBorrowIndex, _lastPoolSupplyIndex, _lastPoolBorrowIndex, _reserveFactor, _p2pIndexCursor, Types.Delta(_p2pSupplyDelta, _p2pBorrowDelta, _p2pSupplyAmount, _p2pBorrowAmount));
 
         (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex) = interestRates.computeP2PIndexes(params);
         (uint256 expectednewP2PSupplyIndex, uint256 expectednewP2PBorrowIndex) = computeP2PIndexes(params);

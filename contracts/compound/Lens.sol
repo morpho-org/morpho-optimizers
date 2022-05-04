@@ -370,10 +370,10 @@ contract Lens {
     /// @return p2pSupplyIndex_ The peer-to-peer supply index of the market.
     /// @return p2pBorrowIndex_ The peer-to-peer borrow index of the market.
     /// @return lastUpdateBlockNumber_ The last block number when peer-to-peer indexes where updated.
-    /// @return supplyP2PDelta_ The supply P2P delta (in scaled balance).
-    /// @return borrowP2PDelta_ The borrow P2P delta (in cdUnit).
-    /// @return supplyP2PAmount_ The supply P2P amount (in peer-to-peer unit).
-    /// @return borrowP2PAmount_ The borrow P2P amount (in peer-to-peer unit).
+    /// @return p2pSupplyDelta_ The supply P2P delta (in scaled balance).
+    /// @return p2pBorrowDelta_ The borrow P2P delta (in cdUnit).
+    /// @return p2pSupplyAmount_ The supply P2P amount (in peer-to-peer unit).
+    /// @return p2pBorrowAmount_ The borrow P2P amount (in peer-to-peer unit).
     function getMarketData(address _poolTokenAddress)
         external
         view
@@ -381,18 +381,18 @@ contract Lens {
             uint256 p2pSupplyIndex_,
             uint256 p2pBorrowIndex_,
             uint32 lastUpdateBlockNumber_,
-            uint256 supplyP2PDelta_,
-            uint256 borrowP2PDelta_,
-            uint256 supplyP2PAmount_,
-            uint256 borrowP2PAmount_
+            uint256 p2pSupplyDelta_,
+            uint256 p2pBorrowDelta_,
+            uint256 p2pSupplyAmount_,
+            uint256 p2pBorrowAmount_
         )
     {
         {
             Types.Delta memory delta = morpho.deltas(_poolTokenAddress);
-            supplyP2PDelta_ = delta.supplyP2PDelta;
-            borrowP2PDelta_ = delta.borrowP2PDelta;
-            supplyP2PAmount_ = delta.supplyP2PAmount;
-            borrowP2PAmount_ = delta.borrowP2PAmount;
+            p2pSupplyDelta_ = delta.p2pSupplyDelta;
+            p2pBorrowDelta_ = delta.p2pBorrowDelta;
+            p2pSupplyAmount_ = delta.p2pSupplyAmount;
+            p2pBorrowAmount_ = delta.p2pBorrowAmount;
         }
         p2pSupplyIndex_ = morpho.p2pSupplyIndex(_poolTokenAddress);
         p2pBorrowIndex_ = morpho.p2pBorrowIndex(_poolTokenAddress);
@@ -454,16 +454,16 @@ contract Lens {
             poolIndex: _params.poolSupplyIndex,
             lastPoolIndex: _params.lastPoolSupplyIndex,
             reserveFactor: _params.reserveFactor,
-            p2pAmount: _params.delta.supplyP2PAmount,
-            p2pDelta: _params.delta.supplyP2PDelta
+            p2pAmount: _params.delta.p2pSupplyAmount,
+            p2pDelta: _params.delta.p2pSupplyDelta
         });
         RateParams memory borrowParams = RateParams({
             p2pIndex: _params.p2pBorrowIndex,
             poolIndex: _params.poolBorrowIndex,
             lastPoolIndex: _params.lastPoolBorrowIndex,
             reserveFactor: _params.reserveFactor,
-            p2pAmount: _params.delta.borrowP2PAmount,
-            p2pDelta: _params.delta.borrowP2PDelta
+            p2pAmount: _params.delta.p2pBorrowAmount,
+            p2pDelta: _params.delta.p2pBorrowDelta
         });
 
         newP2PSupplyIndex = _computeNewP2PRate(
@@ -487,8 +487,8 @@ contract Lens {
             poolIndex: _params.poolSupplyIndex,
             lastPoolIndex: _params.lastPoolSupplyIndex,
             reserveFactor: _params.reserveFactor,
-            p2pAmount: _params.delta.supplyP2PAmount,
-            p2pDelta: _params.delta.supplyP2PDelta
+            p2pAmount: _params.delta.p2pSupplyAmount,
+            p2pDelta: _params.delta.p2pSupplyDelta
         });
 
         (
@@ -517,8 +517,8 @@ contract Lens {
             poolIndex: _params.poolBorrowIndex,
             lastPoolIndex: _params.lastPoolBorrowIndex,
             reserveFactor: _params.reserveFactor,
-            p2pAmount: _params.delta.borrowP2PAmount,
-            p2pDelta: _params.delta.borrowP2PDelta
+            p2pAmount: _params.delta.p2pBorrowAmount,
+            p2pDelta: _params.delta.p2pBorrowDelta
         });
 
         (, , uint256 borrowP2PGrowthFactor, uint256 poolBorrowGrowthFactor) = _computeGrowthFactors(

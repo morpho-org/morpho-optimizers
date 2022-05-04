@@ -209,16 +209,16 @@ contract InterestRates is IInterestRates, MorphoStorage {
             poolIndex: _params.poolSupplyIndex,
             lastPoolIndex: _params.lastPoolSupplyIndex,
             reserveFactor: _params.reserveFactor,
-            p2pAmount: _params.delta.supplyP2PAmount,
-            p2pDelta: _params.delta.supplyP2PDelta
+            p2pAmount: _params.delta.p2pSupplyAmount,
+            p2pDelta: _params.delta.p2pSupplyDelta
         });
         RateParams memory borrowParams = RateParams({
             p2pIndex: _params.p2pBorrowIndex,
             poolIndex: _params.poolBorrowIndex,
             lastPoolIndex: _params.lastPoolBorrowIndex,
             reserveFactor: _params.reserveFactor,
-            p2pAmount: _params.delta.borrowP2PAmount,
-            p2pDelta: _params.delta.borrowP2PDelta
+            p2pAmount: _params.delta.p2pBorrowAmount,
+            p2pDelta: _params.delta.p2pBorrowDelta
         });
 
         newP2PSupplyIndex = _computeNewP2PIndex(
@@ -244,8 +244,8 @@ contract InterestRates is IInterestRates, MorphoStorage {
             poolIndex: _params.poolSupplyIndex,
             lastPoolIndex: _params.lastPoolSupplyIndex,
             reserveFactor: _params.reserveFactor,
-            p2pAmount: _params.delta.supplyP2PAmount,
-            p2pDelta: _params.delta.supplyP2PDelta
+            p2pAmount: _params.delta.p2pSupplyAmount,
+            p2pDelta: _params.delta.p2pSupplyDelta
         });
 
         (
@@ -274,8 +274,8 @@ contract InterestRates is IInterestRates, MorphoStorage {
             poolIndex: _params.poolBorrowIndex,
             lastPoolIndex: _params.lastPoolBorrowIndex,
             reserveFactor: _params.reserveFactor,
-            p2pAmount: _params.delta.borrowP2PAmount,
-            p2pDelta: _params.delta.borrowP2PDelta
+            p2pAmount: _params.delta.p2pBorrowAmount,
+            p2pDelta: _params.delta.p2pBorrowDelta
         });
 
         (, , uint256 borrowP2PGrowthFactor, uint256 poolBorrowGrowthFactor) = _computeGrowthFactors(
