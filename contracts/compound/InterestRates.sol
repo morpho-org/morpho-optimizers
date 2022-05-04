@@ -7,7 +7,7 @@ import "./interfaces/IMorpho.sol";
 
 import "./libraries/CompoundMath.sol";
 
-import "./morpho-parts/MorphoStorage.sol";
+import "./MorphoStorage.sol";
 
 /// @title InterestRates.
 /// @notice Smart contract handling the computation of indexes used for peer-to-peer interactions.
