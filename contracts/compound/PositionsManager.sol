@@ -549,7 +549,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
         vars.borrowBalance = _getUserBorrowBalanceInOf(_poolTokenBorrowedAddress, _borrower);
 
-        if (_amount > (vars.borrowBalance * comptroller.closeFactorMantissa()) / MAX_BASIS_POINTS)
+        if (_amount > vars.borrowBalance.mul(comptroller.closeFactorMantissa()))
             revert AmountAboveWhatAllowedToRepay(); // Same mechanism as Compound. Liquidator cannot repay more than part of the debt (cf close factor on Compound).
 
         repay(_poolTokenBorrowedAddress, _borrower, _amount, 0);
