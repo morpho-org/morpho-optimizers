@@ -216,7 +216,7 @@ contract TestEth is TestSetup {
         );
         uint256 expectedBorrowBalanceOnPool = (amount - toRepay).div(ICToken(cEth).borrowIndex());
         testEquality(onPoolBorrower, expectedBorrowBalanceOnPool, "borrower borrow on pool");
-        assertEq(inP2PBorrower, 0, "borrower borrow in P2P");
+        assertEq(inP2PBorrower, 0, "borrower borrow in peer-to-peer");
 
         // Check borrower1 supply balance.
         (inP2PBorrower, onPoolBorrower) = morpho.supplyBalanceInOf(cUsdc, address(borrower1));
@@ -234,7 +234,7 @@ contract TestEth is TestSetup {
 
         testEquality(onPoolBorrower, expectedOnPool, "borrower supply on pool");
         assertEq(balanceAfter, balanceBefore - toRepay, "amount seized");
-        assertEq(inP2PBorrower, 0, "borrower supply in P2P");
+        assertEq(inP2PBorrower, 0, "borrower supply in peer-to-peer");
     }
 
     function testShouldLiquidateUserWithEthAsCollateral() public {
@@ -272,7 +272,7 @@ contract TestEth is TestSetup {
         );
         uint256 expectedBorrowBalanceOnPool = (amount - toRepay).div(ICToken(cDai).borrowIndex());
         testEquality(onPoolBorrower, expectedBorrowBalanceOnPool, "borrower borrow on pool");
-        assertEq(inP2PBorrower, 0, "borrower borrow in P2P");
+        assertEq(inP2PBorrower, 0, "borrower borrow in peer-to-peer");
 
         // Check borrower1 supply balance.
         (inP2PBorrower, onPoolBorrower) = morpho.supplyBalanceInOf(cEth, address(borrower1));
@@ -290,6 +290,6 @@ contract TestEth is TestSetup {
 
         testEquality(onPoolBorrower, expectedOnPool, "borrower supply on pool");
         assertEq(balanceAfter, balanceBefore + amountToSeize, "amount seized");
-        assertEq(inP2PBorrower, 0, "borrower supply in P2P");
+        assertEq(inP2PBorrower, 0, "borrower supply in peer-to-peer");
     }
 }

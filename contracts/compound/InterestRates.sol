@@ -10,7 +10,7 @@ import "./libraries/CompoundMath.sol";
 import "./morpho-parts/MorphoStorage.sol";
 
 /// @title InterestRates.
-/// @notice Smart contract handling the computation of indexes used for P2P interactions.
+/// @notice Smart contract handling the computation of indexes used for peer-to-peer interactions.
 /// @dev This contract inherits from MorphoStorage so that Morpho can delegate calls to this contract.
 contract InterestRates is IInterestRates, MorphoStorage {
     using CompoundMath for uint256;
@@ -290,15 +290,15 @@ contract InterestRates is IInterestRates, MorphoStorage {
         return _computeNewP2PIndex(borrowParams, borrowP2PGrowthFactor, poolBorrowGrowthFactor);
     }
 
-    /// @dev Computes and returns supply P2P growthfactor and borrow P2P growthfactor.
+    /// @dev Computes and returns supply peer-to-peer growthfactor and borrow peer-to-peer growthfactor.
     /// @param _poolSupplyIndex The current pool supply index.
     /// @param _poolBorrowIndex The current pool borrow index.
     /// @param _lastPoolSupplyIndex The pool supply index at last update.
     /// @param _lastPoolBorrowIndex The pool borrow index at last update.
     /// @param _reserveFactor The reserve factor percentage (10 000 = 100%).
-    /// @return supplyP2PGrowthFactor_ The supply P2P growth factor.
+    /// @return supplyP2PGrowthFactor_ The supply peer-to-peer growth factor.
     /// @return poolSupplyGrowthFactor_ The supply pool growth factor.
-    /// @return borrowP2PGrowthFactor_ The borrow P2P growth factor.
+    /// @return borrowP2PGrowthFactor_ The borrow peer-to-peer growth factor.
     /// @return poolBorrowGrowthFactor_ The borrow pool growth factor.
     function _computeGrowthFactors(
         uint256 _poolSupplyIndex,
@@ -333,11 +333,11 @@ contract InterestRates is IInterestRates, MorphoStorage {
             MAX_BASIS_POINTS;
     }
 
-    /// @dev Computes and returns the new P2P index.
+    /// @dev Computes and returns the new peer-to-peer index.
     /// @param _params Computation parameters.
-    /// @param _p2pGrowthFactor The P2P growth factor.
+    /// @param _p2pGrowthFactor The peer-to-peer growth factor.
     /// @param _poolGrowthFactor The pool growth factor.
-    /// @return newP2PIndex The updated P2P index.
+    /// @return newP2PIndex The updated peer-to-peer index.
     function _computeNewP2PIndex(
         RateParams memory _params,
         uint256 _p2pGrowthFactor,

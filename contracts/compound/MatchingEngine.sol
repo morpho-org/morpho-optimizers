@@ -33,7 +33,7 @@ contract MatchingEngine is MorphoGetters {
     /// @param _user The address of the supplier.
     /// @param _poolTokenAddress The address of the market.
     /// @param _balanceOnPool The supply balance on pool after update.
-    /// @param _balanceInP2P The supply balance in P2P after update.
+    /// @param _balanceInP2P The supply balance in peer-to-peer after update.
     event SupplierPositionUpdated(
         address indexed _user,
         address indexed _poolTokenAddress,
@@ -45,7 +45,7 @@ contract MatchingEngine is MorphoGetters {
     /// @param _user The address of the borrower.
     /// @param _poolTokenAddress The address of the market.
     /// @param _balanceOnPool The borrow balance on pool after update.
-    /// @param _balanceInP2P The borrow balance in P2P after update.
+    /// @param _balanceInP2P The borrow balance in peer-to-peer after update.
     event BorrowerPositionUpdated(
         address indexed _user,
         address indexed _poolTokenAddress,
@@ -55,7 +55,7 @@ contract MatchingEngine is MorphoGetters {
 
     /// INTERNAL ///
 
-    /// @notice Matches suppliers' liquidity waiting on Compound up to the given `_amount` and moves it to P2P.
+    /// @notice Matches suppliers' liquidity waiting on Compound up to the given `_amount` and moves it to peer-to-peer.
     /// @dev Note: This function expects Compound's exchange rate and peer-to-peer indexes to have been updated.
     /// @param _poolTokenAddress The address of the market from which to match suppliers.
     /// @param _amount The token amount to search for (in underlying).
@@ -107,7 +107,7 @@ contract MatchingEngine is MorphoGetters {
         }
     }
 
-    /// @notice Unmatches suppliers' liquidity in P2P up to the given `_amount` and moves it to Compound.
+    /// @notice Unmatches suppliers' liquidity in peer-to-peer up to the given `_amount` and moves it to Compound.
     /// @dev Note: This function expects Compound's exchange rate and peer-to-peer indexes to have been updated.
     /// @param _poolTokenAddress The address of the market from which to unmatch suppliers.
     /// @param _amount The amount to search for (in underlying).
@@ -162,7 +162,7 @@ contract MatchingEngine is MorphoGetters {
         return _amount - remainingToUnmatch;
     }
 
-    /// @notice Matches borrowers' liquidity waiting on Compound up to the given `_amount` and moves it to P2P
+    /// @notice Matches borrowers' liquidity waiting on Compound up to the given `_amount` and moves it to peer-to-peer.
     /// @dev Note: This function expects peer-to-peer indexes to have been updated..
     /// @param _poolTokenAddress The address of the market from which to match borrowers.
     /// @param _amount The amount to search for (in underlying).
@@ -214,7 +214,7 @@ contract MatchingEngine is MorphoGetters {
         }
     }
 
-    /// @notice Unmatches borrowers' liquidity in P2P for the given `_amount` and moves it to Compound.
+    /// @notice Unmatches borrowers' liquidity in peer-to-peer for the given `_amount` and moves it to Compound.
     /// @dev Note: This function expects and peer-to-peer indexes to have been updated.
     /// @param _poolTokenAddress The address of the market from which to unmatch borrowers.
     /// @param _amount The amount to unmatch (in underlying).
@@ -289,7 +289,7 @@ contract MatchingEngine is MorphoGetters {
                 suppliersOnPool[_poolTokenAddress].insertSorted(_user, onPool, maxSortedUsers);
         }
 
-        // Check P2P.
+        // Check peer-to-peer.
         if (inP2P <= dustThreshold) {
             supplyBalanceInOf[_poolTokenAddress][_user].inP2P = 0;
             inP2P = 0;
@@ -328,7 +328,7 @@ contract MatchingEngine is MorphoGetters {
                 borrowersOnPool[_poolTokenAddress].insertSorted(_user, onPool, maxSortedUsers);
         }
 
-        // Check P2P.
+        // Check peer-to-peer.
         if (inP2P <= dustThreshold) {
             borrowBalanceInOf[_poolTokenAddress][_user].inP2P = 0;
             inP2P = 0;
