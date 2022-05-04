@@ -20,7 +20,7 @@ contract TestLiquidate is TestSetup {
         User liquidator = borrower3;
         liquidator.approve(dai, address(morpho), toRepay);
 
-        hevm.expectRevert(abi.encodeWithSignature("DebtValueNotAboveMax()"));
+        hevm.expectRevert(abi.encodeWithSignature("UnauthorisedLiquidate()"));
         liquidator.liquidate(cDai, cUsdc, address(borrower1), toRepay);
     }
 

@@ -18,7 +18,7 @@ contract TestWithdraw is TestSetup {
 
         borrower1.borrow(cDai, amount);
 
-        hevm.expectRevert(abi.encodeWithSignature("DebtValueAboveMax()"));
+        hevm.expectRevert(abi.encodeWithSignature("UnauthorisedWithdraw()"));
         borrower1.withdraw(cUsdc, to6Decimals(collateral));
     }
 
@@ -585,7 +585,7 @@ contract TestWithdraw is TestSetup {
 
         // supplier1 tries to withdraw more than allowed.
         supplier1.borrow(cUsdc, to6Decimals(toBorrow));
-        hevm.expectRevert(abi.encodeWithSignature("DebtValueAboveMax()"));
+        hevm.expectRevert(abi.encodeWithSignature("UnauthorisedWithdraw()"));
         supplier1.withdraw(cDai, toSupply);
     }
 

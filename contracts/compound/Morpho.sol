@@ -102,6 +102,9 @@ contract Morpho is MorphoGovernance {
     /// @notice Thrown when user is not a member of the market.
     error UserNotMemberOfMarket();
 
+    /// @notice Thrown when the user does not have enough remaining collateral to withdraw.
+    error UnauthorisedWithdraw();
+
     /// EXTERNAL ///
 
     /// @notice Supplies underlying tokens in a specific market.
@@ -241,7 +244,8 @@ contract Morpho is MorphoGovernance {
             _amount
         );
 
-        if (_isLiquidable(msg.sender, _poolTokenAddress, toWithdraw, 0)) revert DebtValueAboveMax();
+        if (_isLiquidable(msg.sender, _poolTokenAddress, toWithdraw, 0))
+            revert UnauthorisedWithdraw();
         address(positionsManager).functionDelegateCall(
             abi.encodeWithSelector(
                 positionsManager.withdraw.selector,

@@ -17,9 +17,6 @@ abstract contract MorphoGetters is MorphoStorage {
 
     /// ERRORS ///
 
-    /// @notice Thrown when the debt value is above the maximum debt value.
-    error DebtValueAboveMax();
-
     /// @notice Thrown when the market is not created yet.
     error MarketNotCreated();
 

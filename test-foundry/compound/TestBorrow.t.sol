@@ -14,7 +14,7 @@ contract TestBorrow is TestSetup {
 
         (, uint256 borrowable) = lens.getUserMaxCapacitiesForAsset(address(borrower1), cDai);
 
-        hevm.expectRevert(MorphoGetters.DebtValueAboveMax.selector);
+        hevm.expectRevert(PositionsManager.UnauthorisedBorrow.selector);
         borrower1.borrow(cDai, borrowable + 1e12);
     }
 
