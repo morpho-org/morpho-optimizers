@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: BSD-2-Clause
+// SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
 /// @title CompoundMath.
