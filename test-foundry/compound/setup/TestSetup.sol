@@ -129,8 +129,9 @@ contract TestSetup is Config, Utils, stdCheats {
         morphoToken = new MorphoToken(address(this));
         dumbOracle = new DumbOracle();
         incentivesVault = new IncentivesVault(
-            address(morpho),
+            address(comptroller),
             address(morphoToken),
+            address(morpho),
             address(1),
             address(dumbOracle)
         );
