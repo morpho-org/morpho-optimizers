@@ -81,12 +81,8 @@ contract MatchingEngine is MorphoUtils {
                 vars.inUnderlying = supplyBalanceInOf[_poolTokenAddress][firstPoolSupplier]
                 .onPool
                 .mul(vars.poolIndex);
-                unchecked {
-                    vars.toMatch = vars.inUnderlying < _amount - matched
-                        ? vars.inUnderlying
-                        : _amount - matched;
-                    matched += vars.toMatch;
-                }
+                vars.toMatch = CompoundMath.min(vars.inUnderlying, _amount - matched);
+                matched += vars.toMatch;
 
                 supplyBalanceInOf[_poolTokenAddress][firstPoolSupplier].onPool -= vars.toMatch.div(
                     vars.poolIndex
@@ -134,12 +130,8 @@ contract MatchingEngine is MorphoUtils {
                 vars.inUnderlying = supplyBalanceInOf[_poolTokenAddress][firstP2PSupplier]
                 .inP2P
                 .mul(vars.p2pIndex);
-                unchecked {
-                    vars.toUnmatch = vars.inUnderlying < remainingToUnmatch
-                        ? vars.inUnderlying
-                        : remainingToUnmatch;
-                    remainingToUnmatch -= vars.toUnmatch;
-                }
+                vars.toUnmatch = CompoundMath.min(vars.inUnderlying, remainingToUnmatch);
+                remainingToUnmatch -= vars.toUnmatch;
 
                 supplyBalanceInOf[_poolTokenAddress][firstP2PSupplier].onPool += vars.toUnmatch.div(
                     vars.poolIndex
@@ -188,12 +180,8 @@ contract MatchingEngine is MorphoUtils {
                 vars.inUnderlying = borrowBalanceInOf[_poolTokenAddress][firstPoolBorrower]
                 .onPool
                 .mul(vars.poolIndex);
-                unchecked {
-                    vars.toMatch = vars.inUnderlying < _amount - matched
-                        ? vars.inUnderlying
-                        : _amount - matched;
-                    matched += vars.toMatch;
-                }
+                vars.toMatch = CompoundMath.min(vars.inUnderlying, _amount - matched);
+                matched += vars.toMatch;
 
                 borrowBalanceInOf[_poolTokenAddress][firstPoolBorrower].onPool -= vars.toMatch.div(
                     vars.poolIndex
@@ -241,12 +229,8 @@ contract MatchingEngine is MorphoUtils {
                 vars.inUnderlying = borrowBalanceInOf[_poolTokenAddress][firstP2PBorrower]
                 .inP2P
                 .mul(vars.p2pIndex);
-                unchecked {
-                    vars.toUnmatch = vars.inUnderlying < remainingToUnmatch
-                        ? vars.inUnderlying
-                        : remainingToUnmatch; // In underlying
-                    remainingToUnmatch -= vars.toUnmatch;
-                }
+                vars.toUnmatch = CompoundMath.min(vars.inUnderlying, remainingToUnmatch);
+                remainingToUnmatch -= vars.toUnmatch;
 
                 borrowBalanceInOf[_poolTokenAddress][firstP2PBorrower].onPool += vars.toUnmatch.div(
                     vars.poolIndex
