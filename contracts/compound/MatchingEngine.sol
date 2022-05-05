@@ -61,6 +61,7 @@ contract MatchingEngine is MorphoUtils {
     /// @param _amount The token amount to search for (in underlying).
     /// @param _maxGasForMatching The maximum amount of gas to consume within a matching engine loop.
     /// @return matched The amount of liquidity matched (in underlying).
+    /// @return gasConsumedInMatching The amount of gas consumed within the matching loop.
     function _matchSuppliers(
         address _poolTokenAddress,
         uint256 _amount,
@@ -162,6 +163,7 @@ contract MatchingEngine is MorphoUtils {
     /// @param _amount The amount to search for (in underlying).
     /// @param _maxGasForMatching The maximum amount of gas to consume within a matching engine loop.
     /// @return matched The amount of liquidity matched (in underlying).
+    /// @return gasConsumedInMatching The amount of gas consumed within the matching loop.
     function _matchBorrowers(
         address _poolTokenAddress,
         uint256 _amount,
