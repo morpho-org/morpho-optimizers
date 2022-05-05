@@ -82,12 +82,23 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
     // Struct to avoid stack too deep.
     struct RepayVars {
-        uint256 p2pSupplyIndex;
-        uint256 p2pBorrowIndex;
         uint256 remainingToRepay;
         uint256 poolBorrowIndex;
+        uint256 p2pSupplyIndex;
+        uint256 p2pBorrowIndex;
         uint256 feeToRepay;
         uint256 toRepay;
+    }
+
+    // Struct to avoid stack too deep.
+    struct LiquidateVars {
+        uint256 collateralPrice;
+        uint256 borrowBalance;
+        uint256 supplyBalance;
+        uint256 borrowedPrice;
+        uint256 amountToSeize;
+        uint256 maxDebtValue;
+        uint256 debtValue;
     }
 
     /// CONSTRUCTOR ///
@@ -542,7 +553,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         address _borrower,
         uint256 _amount
     ) external returns (uint256) {
-        Types.LiquidateVars memory vars;
+        LiquidateVars memory vars;
 
         if (!_isLiquidable(_borrower, address(0), 0, 0)) revert UnauthorisedLiquidate();
 
