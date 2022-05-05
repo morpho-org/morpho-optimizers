@@ -141,11 +141,11 @@ contract Morpho is MorphoGovernance {
     /// @dev `msg.sender` must have approved Morpho's contract to spend the underlying `_amount`.
     /// @param _poolTokenAddress The address of the market the user wants to interact with.
     /// @param _amount The amount of token (in underlying) to supply.
-    /// @param _maxGasToConsume The maximum amount of gas to consume within a matching engine loop.
+    /// @param _maxGasForMatching The maximum amount of gas to consume within a matching engine loop.
     function supply(
         address _poolTokenAddress,
         uint256 _amount,
-        uint256 _maxGasToConsume
+        uint256 _maxGasForMatching
     ) external nonReentrant isMarketCreatedAndNotPausedNorPartiallyPaused(_poolTokenAddress) {
         if (_amount == 0) revert AmountIsZero();
         updateP2PIndexes(_poolTokenAddress);
@@ -155,7 +155,7 @@ contract Morpho is MorphoGovernance {
                 positionsManager.supply.selector,
                 _poolTokenAddress,
                 _amount,
-                _maxGasToConsume
+                _maxGasForMatching
             )
         );
 
@@ -200,11 +200,11 @@ contract Morpho is MorphoGovernance {
     /// @notice Borrows underlying tokens in a specific market.
     /// @param _poolTokenAddress The address of the market the user wants to interact with.
     /// @param _amount The amount of token (in underlying).
-    /// @param _maxGasToConsume The maximum amount of gas to consume within a matching engine loop.
+    /// @param _maxGasForMatching The maximum amount of gas to consume within a matching engine loop.
     function borrow(
         address _poolTokenAddress,
         uint256 _amount,
-        uint256 _maxGasToConsume
+        uint256 _maxGasForMatching
     ) external nonReentrant isMarketCreatedAndNotPausedNorPartiallyPaused(_poolTokenAddress) {
         if (_amount == 0) revert AmountIsZero();
         updateP2PIndexes(_poolTokenAddress);
@@ -214,7 +214,7 @@ contract Morpho is MorphoGovernance {
                 positionsManager.borrow.selector,
                 _poolTokenAddress,
                 _amount,
-                _maxGasToConsume
+                _maxGasForMatching
             )
         );
 
