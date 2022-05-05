@@ -34,7 +34,7 @@ jobs:
           version: nightly
 
       - name: Run tests
-        run: make test
+        run: make ci
         env:
           NETWORK: eth-mainnet
           ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
