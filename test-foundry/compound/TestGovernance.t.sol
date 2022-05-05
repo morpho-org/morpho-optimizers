@@ -78,7 +78,8 @@ contract TestGovernance is TestSetup {
         });
 
         morpho.setMaxGasForMatching(newMaxGas);
-        (uint64 supply, uint64 borrow, uint64 withdraw, uint64 repay) = morpho.maxGasForMatching();
+        (uint64 supply, uint64 borrow, uint64 withdraw, uint64 repay) = morpho
+        .defaultMaxGasForMatching();
         assertEq(supply, newMaxGas.supply);
         assertEq(borrow, newMaxGas.borrow);
         assertEq(withdraw, newMaxGas.withdraw);

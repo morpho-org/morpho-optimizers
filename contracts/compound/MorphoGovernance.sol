@@ -13,9 +13,9 @@ abstract contract MorphoGovernance is MorphoUtils {
 
     /// EVENTS ///
 
-    /// @notice Emitted when a new `maxGasForMatching` is set.
-    /// @param _maxGasForMatching The new `maxGasForMatching`.
-    event MaxGasForMatchingSet(Types.MaxGasForMatching _maxGasForMatching);
+    /// @notice Emitted when a new `defaultMaxGasForMatching` is set.
+    /// @param _defaultMaxGasForMatching The new `defaultMaxGasForMatching`.
+    event MaxGasForMatchingSet(Types.MaxGasForMatching _defaultMaxGasForMatching);
 
     /// @notice Emitted when a new value for `maxSortedUsers` is set.
     /// @param _newValue The new value of `maxSortedUsers`.
@@ -106,7 +106,7 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @param _positionsManager The `positionsManager`.
     /// @param _interestRatesManager The `interestRatesManager`.
     /// @param _comptroller The `comptroller`.
-    /// @param _maxGasForMatching The `maxGasForMatching`.
+    /// @param _defaultMaxGasForMatching The `defaultMaxGasForMatching`.
     /// @param _dustThreshold The `dustThreshold`.
     /// @param _maxSortedUsers The `_maxSortedUsers`.
     /// @param _cEth The cETH address.
@@ -115,7 +115,7 @@ abstract contract MorphoGovernance is MorphoUtils {
         IPositionsManager _positionsManager,
         IInterestRatesManager _interestRatesManager,
         IComptroller _comptroller,
-        Types.MaxGasForMatching memory _maxGasForMatching,
+        Types.MaxGasForMatching memory _defaultMaxGasForMatching,
         uint256 _dustThreshold,
         uint256 _maxSortedUsers,
         address _cEth,
@@ -128,7 +128,7 @@ abstract contract MorphoGovernance is MorphoUtils {
         positionsManager = _positionsManager;
         comptroller = _comptroller;
 
-        maxGasForMatching = _maxGasForMatching;
+        defaultMaxGasForMatching = _defaultMaxGasForMatching;
         dustThreshold = _dustThreshold;
         maxSortedUsers = _maxSortedUsers;
 
@@ -145,14 +145,14 @@ abstract contract MorphoGovernance is MorphoUtils {
         emit MaxSortedUsersSet(_newMaxSortedUsers);
     }
 
-    /// @notice Sets `maxGasForMatching`.
-    /// @param _maxGasForMatching The new `maxGasForMatching`.
-    function setMaxGasForMatching(Types.MaxGasForMatching memory _maxGasForMatching)
+    /// @notice Sets `defaultMaxGasForMatching`.
+    /// @param _defaultMaxGasForMatching The new `defaultMaxGasForMatching`.
+    function setMaxGasForMatching(Types.MaxGasForMatching memory _defaultMaxGasForMatching)
         external
         onlyOwner
     {
-        maxGasForMatching = _maxGasForMatching;
-        emit MaxGasForMatchingSet(_maxGasForMatching);
+        defaultMaxGasForMatching = _defaultMaxGasForMatching;
+        emit MaxGasForMatchingSet(_defaultMaxGasForMatching);
     }
 
     /// @notice Sets the `positionsManager`.

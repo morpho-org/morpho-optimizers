@@ -132,7 +132,7 @@ contract Morpho is MorphoGovernance {
                 positionsManager.supplyLogic.selector,
                 _poolTokenAddress,
                 _amount,
-                maxGasForMatching.supply
+                defaultMaxGasForMatching.supply
             )
         );
 
@@ -192,7 +192,7 @@ contract Morpho is MorphoGovernance {
                 positionsManager.borrowLogic.selector,
                 _poolTokenAddress,
                 _amount,
-                maxGasForMatching.borrow
+                defaultMaxGasForMatching.borrow
             )
         );
 
@@ -261,7 +261,7 @@ contract Morpho is MorphoGovernance {
                 toWithdraw,
                 msg.sender,
                 msg.sender,
-                maxGasForMatching.withdraw
+                defaultMaxGasForMatching.withdraw
             )
         );
 
@@ -298,7 +298,7 @@ contract Morpho is MorphoGovernance {
                 _poolTokenAddress,
                 msg.sender,
                 toRepay,
-                maxGasForMatching.repay
+                defaultMaxGasForMatching.repay
             )
         );
 
