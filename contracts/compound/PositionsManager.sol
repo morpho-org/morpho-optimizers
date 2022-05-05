@@ -102,7 +102,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     /// @param _poolTokenAddress The address of the pool token the user wants to interact with.
     /// @param _amount The amount of token (in underlying).
     /// @param _maxGasForMatching The maximum amount of gas to consume within a matching engine loop.
-    function supply(
+    function supplyLogic(
         address _poolTokenAddress,
         uint256 _amount,
         uint256 _maxGasForMatching
@@ -184,7 +184,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     /// @param _poolTokenAddress The address of the market the user wants to interact with.
     /// @param _amount The amount of token (in underlying).
     /// @param _maxGasForMatching The maximum amount of gas to consume within a matching engine loop.
-    function borrow(
+    function borrowLogic(
         address _poolTokenAddress,
         uint256 _amount,
         uint256 _maxGasForMatching
@@ -266,7 +266,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     /// @param _supplier The address of the supplier.
     /// @param _receiver The address of the user who will receive the tokens.
     /// @param _maxGasForMatching The maximum amount of gas to consume within a matching engine loop.
-    function withdraw(
+    function withdrawLogic(
         address _poolTokenAddress,
         uint256 _amount,
         address _supplier,
@@ -394,7 +394,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     /// @param _user The address of the user.
     /// @param _amount The amount of token (in underlying).
     /// @param _maxGasForMatching The maximum amount of gas to consume within a matching engine loop.
-    function repay(
+    function repayLogic(
         address _poolTokenAddress,
         address _user,
         uint256 _amount,
@@ -536,7 +536,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     /// @param _borrower The address of the borrower to liquidate.
     /// @param _amount The amount of token (in underlying) to repay.
     /// @return The amount of tokens seized from collateral.
-    function liquidate(
+    function liquidateLogic(
         address _poolTokenBorrowedAddress,
         address _poolTokenCollateralAddress,
         address _borrower,
@@ -551,7 +551,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         if (_amount > vars.borrowBalance.mul(comptroller.closeFactorMantissa()))
             revert AmountAboveWhatAllowedToRepay(); // Same mechanism as Compound. Liquidator cannot repay more than part of the debt (cf close factor on Compound).
 
-        repay(_poolTokenBorrowedAddress, _borrower, _amount, 0);
+        repayLogic(_poolTokenBorrowedAddress, _borrower, _amount, 0);
 
         ICompoundOracle compoundOracle = ICompoundOracle(comptroller.oracle());
         vars.collateralPrice = compoundOracle.getUnderlyingPrice(_poolTokenCollateralAddress);
@@ -568,7 +568,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
         if (vars.amountToSeize > vars.supplyBalance) revert ToSeizeAboveCollateral();
 
-        withdraw(_poolTokenCollateralAddress, vars.amountToSeize, _borrower, msg.sender, 0);
+        withdrawLogic(_poolTokenCollateralAddress, vars.amountToSeize, _borrower, msg.sender, 0);
 
         return vars.amountToSeize;
     }
