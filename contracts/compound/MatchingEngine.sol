@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import "./MorphoGetters.sol";
+import "./MorphoUtils.sol";
 
 /// @title MatchingEngine.
 /// @notice Smart contract managing the matching engine.
-contract MatchingEngine is MorphoGetters {
+contract MatchingEngine is MorphoUtils {
     using DoubleLinkedList for DoubleLinkedList.List;
     using CompoundMath for uint256;
 
