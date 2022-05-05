@@ -128,7 +128,13 @@ contract TestSetup is Config, Utils, stdCheats {
 
         morphoToken = new MorphoToken(address(this));
         dumbOracle = new DumbOracle();
-        incentivesVault = new IncentivesVault(morpho, morphoToken, address(1), dumbOracle);
+        incentivesVault = new IncentivesVault(
+            IComptroller(comptrollerAddress),
+            IMorpho(address(morpho)),
+            morphoToken,
+            address(1),
+            dumbOracle
+        );
         morphoToken.transfer(address(incentivesVault), 1_000_000 ether);
 
         rewardsManager = new RewardsManager(address(morpho));
