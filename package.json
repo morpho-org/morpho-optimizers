@@ -68,8 +68,7 @@
     "@rari-capital/solmate": "6.2.0",
     "@uniswap/v2-periphery": "1.1.0-beta.0",
     "@uniswap/v3-core": "Uniswap/v3-core#36bc9101b91e2b8b5690f59e0911a85deb2d2480",
-    "@uniswap/v3-periphery": "^1.4.0",
-    "prb-math": "2.2.0"
+    "@uniswap/v3-periphery": "^1.4.0"
   },
   "husky": {
     "hooks": {
