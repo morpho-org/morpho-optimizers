@@ -145,7 +145,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             if (
                 remainingToSupply > 0 && borrowersOnPool[_poolTokenAddress].getHead() != address(0)
             ) {
-                uint256 matched = _matchBorrowers(
+                (uint256 matched, ) = _matchBorrowers(
                     _poolTokenAddress,
                     remainingToSupply,
                     _maxGasForMatching
@@ -226,7 +226,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             if (
                 remainingToBorrow > 0 && suppliersOnPool[_poolTokenAddress].getHead() != address(0)
             ) {
-                uint256 matched = _matchSuppliers(
+                (uint256 matched, ) = _matchSuppliers(
                     _poolTokenAddress,
                     CompoundMath.min(remainingToBorrow, withdrawable - toWithdraw),
                     _maxGasForMatching
@@ -284,6 +284,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         ERC20 underlyingToken = _getUnderlying(_poolTokenAddress);
         WithdrawVars memory vars;
         vars.remainingToWithdraw = _amount;
+        uint256 maxGasForMatching = _maxGasForMatching;
         vars.withdrawable = poolToken.balanceOfUnderlying(address(this));
         vars.supplyPoolIndex = poolToken.exchangeRateStored(); // Exchange rate has already been updated.
 
@@ -349,11 +350,13 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
                 suppliersOnPool[_poolTokenAddress].getHead() != address(0)
             ) {
                 // Match suppliers.
-                uint256 matched = _matchSuppliers(
+                (uint256 matched, uint256 gasConsumedInMatching) = _matchSuppliers(
                     _poolTokenAddress,
                     CompoundMath.min(vars.remainingToWithdraw, vars.withdrawable - vars.toWithdraw),
-                    _maxGasForMatching / 2 // Divided by 2 as both matching and unmatching processes may happen in this function.
+                    maxGasForMatching
                 );
+                if (maxGasForMatching <= gasConsumedInMatching) maxGasForMatching = 0;
+                else maxGasForMatching -= gasConsumedInMatching;
 
                 if (matched > 0) {
                     vars.remainingToWithdraw -= matched;
@@ -372,7 +375,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             uint256 unmatched = _unmatchBorrowers(
                 _poolTokenAddress,
                 vars.remainingToWithdraw,
-                _maxGasForMatching / 2 // Divided by 2 as both matching and unmatching processes may happen in this function.
+                _maxGasForMatching
             );
 
             // If unmatched does not cover remainingToWithdraw, the difference is added to the borrow peer-to-peer delta.
@@ -409,6 +412,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         ERC20 underlyingToken = _getUnderlying(_poolTokenAddress);
         underlyingToken.safeTransferFrom(msg.sender, address(this), _amount);
         RepayVars memory vars;
+        uint256 maxGasForMatching = _maxGasForMatching;
         vars.remainingToRepay = _amount;
         vars.poolBorrowIndex = poolToken.borrowIndex();
 
@@ -486,11 +490,13 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
                 borrowersOnPool[_poolTokenAddress].getHead() != address(0)
             ) {
                 // Match borrowers.
-                uint256 matched = _matchBorrowers(
+                (uint256 matched, uint256 gasConsumedInMatching) = _matchBorrowers(
                     _poolTokenAddress,
                     vars.remainingToRepay,
-                    _maxGasForMatching / 2 // Divided by 2 as both matching and unmatching processes may happen in this function.
+                    maxGasForMatching
                 );
+                if (maxGasForMatching <= gasConsumedInMatching) maxGasForMatching = 0;
+                else maxGasForMatching -= gasConsumedInMatching;
 
                 if (matched > 0) {
                     vars.remainingToRepay -= matched;
@@ -513,8 +519,8 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             uint256 unmatched = _unmatchSuppliers(
                 _poolTokenAddress,
                 vars.remainingToRepay,
-                _maxGasForMatching / 2 // Divided by 2 as both matching and unmatching processes may happen in this function.
-            ); // Reverts on error.
+                maxGasForMatching
+            );
 
             // If unmatched does not cover remainingToRepay, the difference is added to the supply peer-to-peer delta.
             if (unmatched < vars.remainingToRepay) {

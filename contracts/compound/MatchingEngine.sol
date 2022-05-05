@@ -65,8 +65,8 @@ contract MatchingEngine is MorphoUtils {
         address _poolTokenAddress,
         uint256 _amount,
         uint256 _maxGasForMatching
-    ) internal returns (uint256 matched) {
-        if (_maxGasForMatching == 0) return 0;
+    ) internal returns (uint256 matched, uint256 gasConsumedInMatching) {
+        if (_maxGasForMatching == 0) return (0, 0);
 
         MatchVars memory vars;
         vars.poolIndex = ICToken(_poolTokenAddress).exchangeRateStored(); // Exchange rate has already been updated.
@@ -101,6 +101,8 @@ contract MatchingEngine is MorphoUtils {
 
             firstPoolSupplier = suppliersOnPool[_poolTokenAddress].getHead();
         }
+
+        gasConsumedInMatching = vars.gasLeftAtTheBeginning - gasleft();
     }
 
     /// @notice Unmatches suppliers' liquidity in peer-to-peer up to the given `_amount` and moves it to Compound.
@@ -164,8 +166,8 @@ contract MatchingEngine is MorphoUtils {
         address _poolTokenAddress,
         uint256 _amount,
         uint256 _maxGasForMatching
-    ) internal returns (uint256 matched) {
-        if (_maxGasForMatching == 0) return 0;
+    ) internal returns (uint256 matched, uint256 gasConsumedInMatching) {
+        if (_maxGasForMatching == 0) return (0, 0);
 
         MatchVars memory vars;
         vars.poolIndex = ICToken(_poolTokenAddress).borrowIndex();
@@ -200,6 +202,8 @@ contract MatchingEngine is MorphoUtils {
 
             firstPoolBorrower = borrowersOnPool[_poolTokenAddress].getHead();
         }
+
+        gasConsumedInMatching = vars.gasLeftAtTheBeginning - gasleft();
     }
 
     /// @notice Unmatches borrowers' liquidity in peer-to-peer for the given `_amount` and moves it to Compound.
