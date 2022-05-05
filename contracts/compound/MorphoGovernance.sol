@@ -281,7 +281,10 @@ abstract contract MorphoGovernance is MorphoUtils {
 
         if (underlyingBalance == 0) revert AmountIsZero();
 
-        uint256 amountToClaim = Math.min(_amount, (underlyingBalance * 9_000) / MAX_BASIS_POINTS);
+        uint256 amountToClaim = Math.min(
+            _amount,
+            (underlyingBalance * MAX_CLAIMABLE_RESERVE) / MAX_BASIS_POINTS
+        );
 
         underlyingToken.safeTransfer(treasuryVault, amountToClaim);
         emit ReserveFeeClaimed(_poolTokenAddress, amountToClaim);
