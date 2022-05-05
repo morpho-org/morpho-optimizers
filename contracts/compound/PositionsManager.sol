@@ -168,7 +168,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
             delta.p2pSupplyAmount += toAddInP2P;
             supplyBalanceInOf[_poolTokenAddress][msg.sender].inP2P += toAddInP2P;
-            _updateSuppliers(_poolTokenAddress, msg.sender);
+            _updateSupplierInDS(_poolTokenAddress, msg.sender);
 
             // Repay only what is necessary. The remaining tokens stays on the contracts and are claimable by the DAO.
             toRepay = Math.min(
@@ -186,7 +186,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             supplyBalanceInOf[_poolTokenAddress][msg.sender].onPool += remainingToSupply.div(
                 ICToken(_poolTokenAddress).exchangeRateStored() // Exchange rate has already been updated.
             ); // In scaled balance.
-            _updateSuppliers(_poolTokenAddress, msg.sender);
+            _updateSupplierInDS(_poolTokenAddress, msg.sender);
             _supplyToPool(_poolTokenAddress, underlyingToken, remainingToSupply); // Reverts on error.
         }
     }
@@ -252,7 +252,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
             deltas[_poolTokenAddress].p2pBorrowAmount += toAddInP2P;
             borrowBalanceInOf[_poolTokenAddress][msg.sender].inP2P += toAddInP2P;
-            _updateBorrowers(_poolTokenAddress, msg.sender);
+            _updateBorrowerInDS(_poolTokenAddress, msg.sender);
 
             _withdrawFromPool(_poolTokenAddress, toWithdraw); // Reverts on error.
             emit P2PAmountsUpdated(_poolTokenAddress, delta.p2pSupplyAmount, delta.p2pBorrowAmount);
@@ -264,7 +264,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             borrowBalanceInOf[_poolTokenAddress][msg.sender].onPool += remainingToBorrow.div(
                 ICToken(_poolTokenAddress).borrowIndex()
             ); // In cdUnit.
-            _updateBorrowers(_poolTokenAddress, msg.sender);
+            _updateBorrowerInDS(_poolTokenAddress, msg.sender);
             _borrowFromPool(_poolTokenAddress, remainingToBorrow);
         }
 
@@ -308,7 +308,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
                 onPoolSupply,
                 vars.toWithdraw.div(vars.supplyPoolIndex)
             );
-            _updateSuppliers(_poolTokenAddress, _supplier);
+            _updateSupplierInDS(_poolTokenAddress, _supplier);
 
             if (vars.remainingToWithdraw == 0) {
                 _leaveMarketIfNeeded(_poolTokenAddress, _supplier);
@@ -330,7 +330,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
                 supplyBalanceInOf[_poolTokenAddress][_supplier].inP2P,
                 vars.remainingToWithdraw.div(p2pSupplyIndex)
             ); // In peer-to-peer unit
-            _updateSuppliers(_poolTokenAddress, _supplier);
+            _updateSupplierInDS(_poolTokenAddress, _supplier);
 
             // Match Delta if any.
             if (delta.p2pSupplyDelta > 0) {
@@ -432,7 +432,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
                 borrowedOnPool,
                 vars.toRepay.div(vars.poolBorrowIndex)
             ); // In cdUnit.
-            _updateBorrowers(_poolTokenAddress, _user);
+            _updateBorrowerInDS(_poolTokenAddress, _user);
 
             if (vars.remainingToRepay == 0) {
                 // Repay only what is necessary. The remaining tokens stays on the contracts and are claimable by the DAO.
@@ -456,7 +456,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             borrowBalanceInOf[_poolTokenAddress][_user].inP2P,
             vars.remainingToRepay.div(vars.p2pBorrowIndex)
         ); // In peer-to-peer unit.
-        _updateBorrowers(_poolTokenAddress, _user);
+        _updateBorrowerInDS(_poolTokenAddress, _user);
 
         /// Fee repay ///
 
