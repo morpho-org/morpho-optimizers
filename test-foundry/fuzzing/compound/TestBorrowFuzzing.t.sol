@@ -23,7 +23,7 @@ contract TestBorrowFuzzing is TestSetupFuzzing {
         borrower1.approve(suppliedUnderlying, supplied);
         borrower1.supply(suppliedAsset, supplied);
 
-        (, uint256 borrowable) = morpho.getUserMaxCapacitiesForAsset(
+        (, uint256 borrowable) = lens.getUserMaxCapacitiesForAsset(
             address(borrower1),
             borrowedAsset
         );
@@ -51,7 +51,7 @@ contract TestBorrowFuzzing is TestSetupFuzzing {
         borrower1.approve(suppliedUnderlying, amountSupplied);
         borrower1.supply(suppliedAsset, amountSupplied);
 
-        (, uint256 borrowable) = morpho.getUserMaxCapacitiesForAsset(
+        (, uint256 borrowable) = lens.getUserMaxCapacitiesForAsset(
             address(borrower1),
             borrowedAsset
         );
@@ -84,7 +84,7 @@ contract TestBorrowFuzzing is TestSetupFuzzing {
         borrower1.approve(collateralUnderlying, amountCollateral);
         borrower1.supply(collateralAsset, amountCollateral);
 
-        (, uint256 borrowable) = morpho.getUserMaxCapacitiesForAsset(
+        (, uint256 borrowable) = lens.getUserMaxCapacitiesForAsset(
             address(borrower1),
             matchedAsset
         );
@@ -115,7 +115,7 @@ contract TestBorrowFuzzing is TestSetupFuzzing {
         borrower1.approve(collateralUnderlying, amountCollateral);
         borrower1.supply(collateralAsset, amountCollateral);
 
-        (, uint256 borrowable) = morpho.getUserMaxCapacitiesForAsset(
+        (, uint256 borrowable) = lens.getUserMaxCapacitiesForAsset(
             address(borrower1),
             matchedAsset
         );
@@ -157,15 +157,12 @@ contract TestBorrowFuzzing is TestSetupFuzzing {
         borrower1.approve(collateralUnderlying, amountCollateral);
         borrower1.supply(collateralAsset, amountCollateral);
 
-        (, uint256 borrowable) = morpho.getUserMaxCapacitiesForAsset(
-            address(borrower1),
-            firstAsset
-        );
+        (, uint256 borrowable) = lens.getUserMaxCapacitiesForAsset(address(borrower1), firstAsset);
         uint256 borrowedAmount = (borrowable * _firstRandom) / 255;
         assumeBorrowAmountIsCorrect(firstAsset, borrowedAmount);
         borrower1.borrow(firstAsset, borrowedAmount);
 
-        (, borrowable) = morpho.getUserMaxCapacitiesForAsset(address(borrower1), secondAsset);
+        (, borrowable) = lens.getUserMaxCapacitiesForAsset(address(borrower1), secondAsset);
         borrowedAmount = (borrowable * _secondRandom) / 255;
         assumeBorrowAmountIsCorrect(secondAsset, borrowedAmount);
         borrower1.borrow(secondAsset, borrowedAmount);
