@@ -67,7 +67,7 @@ abstract contract MorphoGovernance is MorphoUtils {
 
     /// @notice Emitted when a COMP reward status is changed.
     /// @param _isCompRewardsActive The new COMP reward status.
-    event CompRewardsActive(bool _isCompRewardsActive);
+    event CompRewardsStatusChanged(bool _isCompRewardsActive);
 
     /// @notice Emitted when a market is paused or unpaused.
     /// @param _poolTokenAddress The address of the concerned market.
@@ -262,7 +262,7 @@ abstract contract MorphoGovernance is MorphoUtils {
     function toggleCompRewardsActivation() external onlyOwner {
         bool newCompRewardsActive = !isCompRewardsActive;
         isCompRewardsActive = newCompRewardsActive;
-        emit CompRewardsActive(newCompRewardsActive);
+        emit CompRewardsStatusChanged(newCompRewardsActive);
     }
 
     /// @notice Transfers the protocol reserve fee to the DAO.
