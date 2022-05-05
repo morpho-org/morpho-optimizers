@@ -1,17 +1,19 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
+import "@contracts/compound/interfaces/compound/ICompound.sol";
+import "@contracts/compound/interfaces/IOracle.sol";
 import "@contracts/compound/IncentivesVault.sol";
 
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 
 import "../common/helpers/MorphoToken.sol";
 import "./helpers/DumbOracle.sol";
-import "forge-std/console.sol";
 import "forge-std/stdlib.sol";
+import "@config/Config.sol";
 import "ds-test/test.sol";
 
-contract TestIncentivesVault is DSTest, stdCheats {
+contract TestIncentivesVault is Config, DSTest, stdCheats {
     using SafeTransferLib for ERC20;
 
     Vm public hevm = Vm(HEVM_ADDRESS);
@@ -25,7 +27,14 @@ contract TestIncentivesVault is DSTest, stdCheats {
     function setUp() public {
         morphoToken = new MorphoToken(address(this));
         dumbOracle = new DumbOracle();
-        incentivesVault = new IncentivesVault(morpho, morphoToken, morphoDao, dumbOracle);
+
+        incentivesVault = new IncentivesVault(
+            IComptroller(comptrollerAddress),
+            IMorpho(address(morpho)),
+            morphoToken,
+            morphoDao,
+            dumbOracle
+        );
         ERC20(morphoToken).transfer(
             address(incentivesVault),
             ERC20(morphoToken).balanceOf(address(this))
@@ -35,7 +44,7 @@ contract TestIncentivesVault is DSTest, stdCheats {
         hevm.label(address(dumbOracle), "DumbOracle");
         hevm.label(address(incentivesVault), "IncentivesVault");
         hevm.label(COMP, "COMP");
-        hevm.label(positionsManager, "PositionsManager");
+        hevm.label(morpho, "morpho");
     }
 
     function testOnlyOwnerShouldSetBonus() public {
@@ -59,14 +68,14 @@ contract TestIncentivesVault is DSTest, stdCheats {
     }
 
     function testOnlyOwnerShouldSetOracle() public {
-        address oracle = address(1);
+        IOracle oracle = IOracle(address(1));
 
         hevm.prank(address(0));
         hevm.expectRevert("Ownable: caller is not the owner");
         incentivesVault.setOracle(oracle);
 
         incentivesVault.setOracle(oracle);
-        assertEq(incentivesVault.oracle(), oracle);
+        assertEq(address(incentivesVault.oracle()), address(oracle));
     }
 
     function testOnlyOwnerShouldTogglePauseStatus() public {
@@ -93,32 +102,37 @@ contract TestIncentivesVault is DSTest, stdCheats {
     function testFailWhenContractNotActive() public {
         incentivesVault.togglePauseStatus();
 
-        hevm.prank(positionsManager);
+        hevm.prank(morpho);
         incentivesVault.tradeCompForMorphoTokens(address(1), 0);
     }
 
-    function testOnlyPositionsManagerShouldTriggerCompConvertFunction() public {
+    function testOnlymorphoShouldTriggerCompConvertFunction() public {
         incentivesVault.setMorphoDao(address(1));
+        uint256 amount = 100;
+        tip(COMP, address(morpho), amount);
+
+        hevm.prank(morpho);
+        ERC20(COMP).safeApprove(address(incentivesVault), amount);
 
         hevm.expectRevert(abi.encodeWithSignature("OnlyMorpho()"));
-        incentivesVault.tradeCompForMorphoTokens(address(2), 0);
+        incentivesVault.tradeCompForMorphoTokens(address(2), amount);
 
-        hevm.prank(positionsManager);
-        incentivesVault.tradeCompForMorphoTokens(address(2), 0);
+        hevm.prank(morpho);
+        incentivesVault.tradeCompForMorphoTokens(address(2), amount);
     }
 
     function testShouldGiveTheRightAmountOfRewards() public {
         incentivesVault.setMorphoDao(address(1));
         uint256 toApprove = 1_000 ether;
-        tip(COMP, address(positionsManager), toApprove);
+        tip(COMP, address(morpho), toApprove);
 
-        hevm.prank(positionsManager);
+        hevm.prank(morpho);
         ERC20(COMP).safeApprove(address(incentivesVault), toApprove);
         uint256 amount = 100;
 
         // O% bonus.
         uint256 balanceBefore = ERC20(morphoToken).balanceOf(address(2));
-        hevm.prank(positionsManager);
+        hevm.prank(morpho);
         incentivesVault.tradeCompForMorphoTokens(address(2), amount);
         uint256 balanceAfter = ERC20(morphoToken).balanceOf(address(2));
         assertEq(balanceAfter - balanceBefore, 100);
@@ -126,7 +140,7 @@ contract TestIncentivesVault is DSTest, stdCheats {
         // 10% bonus.
         incentivesVault.setBonus(1_000);
         balanceBefore = ERC20(morphoToken).balanceOf(address(2));
-        hevm.prank(positionsManager);
+        hevm.prank(morpho);
         incentivesVault.tradeCompForMorphoTokens(address(2), amount);
         balanceAfter = ERC20(morphoToken).balanceOf(address(2));
         assertEq(balanceAfter - balanceBefore, 110);

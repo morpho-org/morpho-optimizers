@@ -60,18 +60,20 @@ contract IncentivesVault is IIncentivesVault, Ownable {
     /// CONSTRUCTOR ///
 
     /// @notice Constructs the IncentivesVault contract.
-    /// @param _morpho The address of Morpho.
-    /// @param _morphoToken The address of the MORPHO token.
+    /// @param _comptroller The Compound comptroller.
+    /// @param _morpho The main Morpho contract.
+    /// @param _morphoToken The MORPHO token.
     /// @param _morphoDao The address of the Morpho DAO.
-    /// @param _oracle The address of the oracle.
+    /// @param _oracle The oracle.
     constructor(
+        IComptroller _comptroller,
         IMorpho _morpho,
         ERC20 _morphoToken,
         address _morphoDao,
         IOracle _oracle
     ) {
         morpho = _morpho;
-        comptroller = _morpho.comptroller();
+        comptroller = _comptroller;
         morphoToken = _morphoToken;
         morphoDao = _morphoDao;
         oracle = _oracle;
@@ -120,7 +122,6 @@ contract IncentivesVault is IIncentivesVault, Ownable {
     function tradeCompForMorphoTokens(address _receiver, uint256 _amount) external {
         if (msg.sender != address(morpho)) revert OnlyMorpho();
         if (isPaused) revert VaultIsPaused();
-
         // Transfer COMP to the DAO.
         ERC20(comptroller.getCompAddress()).safeTransferFrom(msg.sender, morphoDao, _amount);
 

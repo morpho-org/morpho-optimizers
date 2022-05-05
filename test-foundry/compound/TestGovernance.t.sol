@@ -150,7 +150,8 @@ contract TestGovernance is TestSetup {
 
     function testOnlyOwnerShouldSetIncentivesVault() public {
         IIncentivesVault incentivesVaultV2 = new IncentivesVault(
-            morpho,
+            IComptroller(comptrollerAddress),
+            IMorpho(address(morpho)),
             morphoToken,
             address(1),
             dumbOracle
