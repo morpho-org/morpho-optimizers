@@ -111,12 +111,10 @@ contract Lens {
                 oracle
             );
 
-            unchecked {
-                collateralValue += assetData.collateralValue;
-                maxDebtValue += assetData.maxDebtValue;
-                debtValue += assetData.debtValue;
-                ++i;
-            }
+            collateralValue += assetData.collateralValue;
+            maxDebtValue += assetData.maxDebtValue;
+            debtValue += assetData.debtValue;
+            ++i;
         }
     }
 
@@ -143,23 +141,17 @@ contract Lens {
             if (_poolTokenAddress != poolTokenEntered) {
                 assetData = getUserLiquidityDataForAsset(_user, poolTokenEntered, oracle);
 
-                unchecked {
-                    data.maxDebtValue += assetData.maxDebtValue;
-                    data.debtValue += assetData.debtValue;
-                }
+                data.maxDebtValue += assetData.maxDebtValue;
+                data.debtValue += assetData.debtValue;
             }
 
-            unchecked {
-                ++i;
-            }
+            ++i;
         }
 
         assetData = getUserLiquidityDataForAsset(_user, _poolTokenAddress, oracle);
 
-        unchecked {
-            data.maxDebtValue += assetData.maxDebtValue;
-            data.debtValue += assetData.debtValue;
-        }
+        data.maxDebtValue += assetData.maxDebtValue;
+        data.debtValue += assetData.debtValue;
 
         // Not possible to withdraw nor borrow.
         if (data.maxDebtValue < data.debtValue) return (0, 0);
@@ -231,11 +223,9 @@ contract Lens {
                 oracle
             );
 
-            unchecked {
-                maxDebtValue += assetData.maxDebtValue;
-                debtValue += assetData.debtValue;
-                ++i;
-            }
+            maxDebtValue += assetData.maxDebtValue;
+            debtValue += assetData.debtValue;
+            ++i;
 
             if (_poolTokenAddress == poolTokenEntered) {
                 debtValue += _borrowedAmount.mul(assetData.underlyingPrice);
@@ -243,9 +233,7 @@ contract Lens {
                     assetData.collateralFactor
                 );
 
-                unchecked {
-                    maxDebtValue -= maxDebtValue < maxDebtValueSub ? maxDebtValue : maxDebtValueSub;
-                }
+                maxDebtValue -= CompoundMath.min(maxDebtValue, maxDebtValueSub);
             }
         }
     }

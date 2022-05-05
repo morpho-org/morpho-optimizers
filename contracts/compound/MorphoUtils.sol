@@ -150,11 +150,9 @@ abstract contract MorphoUtils is MorphoStorage {
                 oracle
             );
 
-            unchecked {
-                maxDebtValue += assetData.maxDebtValue;
-                debtValue += assetData.debtValue;
-                ++i;
-            }
+            maxDebtValue += assetData.maxDebtValue;
+            debtValue += assetData.debtValue;
+            ++i;
 
             if (_poolTokenAddress == poolTokenEntered) {
                 debtValue += _borrowedAmount.mul(assetData.underlyingPrice);
@@ -162,9 +160,7 @@ abstract contract MorphoUtils is MorphoStorage {
                     assetData.collateralFactor
                 );
 
-                unchecked {
-                    maxDebtValue -= maxDebtValue < maxDebtValueSub ? maxDebtValue : maxDebtValueSub;
-                }
+                maxDebtValue -= CompoundMath.min(maxDebtValue, maxDebtValueSub);
             }
         }
         return debtValue > maxDebtValue;
