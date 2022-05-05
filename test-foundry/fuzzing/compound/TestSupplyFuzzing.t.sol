@@ -59,7 +59,7 @@ contract TestSupplyFuzzing is TestSetupFuzzing {
         borrower1.approve(vars.suppliedUnderlying, suppliedAmount);
         borrower1.supply(vars.suppliedCToken, suppliedAmount);
 
-        (, uint256 borrowable) = morpho.getUserMaxCapacitiesForAsset(
+        (, uint256 borrowable) = lens.getUserMaxCapacitiesForAsset(
             address(borrower1),
             vars.borrowedCToken
         );
@@ -93,7 +93,7 @@ contract TestSupplyFuzzing is TestSetupFuzzing {
 
         borrower1.approve(vars.collateralUnderlying, collateralAmountToSupply);
         borrower1.supply(vars.collateralCToken, collateralAmountToSupply);
-        (, uint256 borrowable) = morpho.getUserMaxCapacitiesForAsset(
+        (, uint256 borrowable) = lens.getUserMaxCapacitiesForAsset(
             address(borrower1),
             vars.suppliedCToken
         );
@@ -134,7 +134,7 @@ contract TestSupplyFuzzing is TestSetupFuzzing {
         {
             borrower1.approve(vars.collateralUnderlying, collateralAmount);
             borrower1.supply(vars.collateralCToken, collateralAmount);
-            (, uint256 borrowable) = morpho.getUserMaxCapacitiesForAsset(
+            (, uint256 borrowable) = lens.getUserMaxCapacitiesForAsset(
                 address(borrower1),
                 vars.suppliedCToken
             );
@@ -183,7 +183,7 @@ contract TestSupplyFuzzing is TestSetupFuzzing {
         {
             borrower1.approve(vars.collateralUnderlying, collateralAmount);
             borrower1.supply(vars.collateralCToken, collateralAmount);
-            (, uint256 borrowable) = morpho.getUserMaxCapacitiesForAsset(
+            (, uint256 borrowable) = lens.getUserMaxCapacitiesForAsset(
                 address(borrower1),
                 vars.suppliedCToken
             );

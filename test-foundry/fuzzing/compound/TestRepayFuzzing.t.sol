@@ -31,7 +31,7 @@ contract TestRepayFuzzing is TestSetupFuzzing {
         borrower1.approve(suppliedUnderlying, supplied);
         borrower1.supply(suppliedAsset, supplied);
 
-        (, uint256 borrowable) = morpho.getUserMaxCapacitiesForAsset(
+        (, uint256 borrowable) = lens.getUserMaxCapacitiesForAsset(
             address(borrower1),
             borrowedAsset
         );
@@ -73,7 +73,7 @@ contract TestRepayFuzzing is TestSetupFuzzing {
         borrower1.approve(suppliedUnderlying, supplied);
         borrower1.supply(suppliedAsset, supplied);
 
-        (, uint256 borrowable) = morpho.getUserMaxCapacitiesForAsset(
+        (, uint256 borrowable) = lens.getUserMaxCapacitiesForAsset(
             address(borrower1),
             borrowedAsset
         );
@@ -128,7 +128,7 @@ contract TestRepayFuzzing is TestSetupFuzzing {
         borrower1.approve(suppliedUnderlying, suppliedAmount);
         borrower1.supply(suppliedAsset, suppliedAmount);
 
-        (, uint256 borrowable) = morpho.getUserMaxCapacitiesForAsset(
+        (, uint256 borrowable) = lens.getUserMaxCapacitiesForAsset(
             address(borrower1),
             borrowedAsset
         );

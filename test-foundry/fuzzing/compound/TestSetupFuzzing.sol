@@ -9,12 +9,13 @@ import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.so
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 
-import "@contracts/compound/comp-rewards/IncentivesVault.sol";
-import "@contracts/compound/comp-rewards/RewardsManager.sol";
+import "@contracts/compound/IncentivesVault.sol";
+import "@contracts/compound/RewardsManager.sol";
 import "@contracts/compound/PositionsManager.sol";
 import "@contracts/compound/MatchingEngine.sol";
 import "@contracts/compound/InterestRates.sol";
 import "@contracts/compound/Morpho.sol";
+import "@contracts/compound/Lens.sol";
 
 import "../../common/helpers/MorphoToken.sol";
 import "../../common/helpers/Chains.sol";
@@ -22,8 +23,8 @@ import "../../compound/helpers/SimplePriceOracle.sol";
 import "../../compound/helpers/DumbOracle.sol";
 import {User} from "../../compound/helpers/User.sol";
 import {Utils} from "../../compound/setup/Utils.sol";
-import "forge-std/console.sol";
 import "forge-std/stdlib.sol";
+import "forge-std/console.sol";
 import "@config/Config.sol";
 
 interface IAdminComptroller {
@@ -37,7 +38,7 @@ contract TestSetupFuzzing is Config, Utils, stdCheats {
 
     uint256 public constant MAX_BASIS_POINTS = 10_000;
     uint256 public constant INITIAL_BALANCE = 15_000_000_000;
-    uint256 internal constant NMAX = 20;
+    uint256 public NMAX = 20;
     address[] internal tokens = [
         dai,
         usdc,
@@ -66,6 +67,7 @@ contract TestSetupFuzzing is Config, Utils, stdCheats {
     InterestRates internal interestRates;
     IRewardsManager internal rewardsManager;
     IPositionsManager internal positionsManager;
+    Lens internal lens;
 
     IncentivesVault public incentivesVault;
     DumbOracle internal dumbOracle;
@@ -92,7 +94,7 @@ contract TestSetupFuzzing is Config, Utils, stdCheats {
     }
 
     function initContracts() internal {
-        MorphoStorage.MaxGasForMatching memory maxGasForMatching = MorphoStorage.MaxGasForMatching({
+        Types.MaxGasForMatching memory maxGasForMatching = Types.MaxGasForMatching({
             supply: 3e6,
             borrow: 3e6,
             withdraw: 3e6,
@@ -119,7 +121,7 @@ contract TestSetupFuzzing is Config, Utils, stdCheats {
             comptroller,
             1,
             maxGasForMatching,
-            NMAX,
+            20,
             cEth,
             wEth
         );
@@ -131,6 +133,8 @@ contract TestSetupFuzzing is Config, Utils, stdCheats {
 
         // make sure the wEth contract has enough ETH to unwrap any amount
         hevm.deal(wEth, type(uint128).max);
+
+        lens = new Lens(address(morpho));
 
         /// Create markets ///
 
@@ -159,10 +163,11 @@ contract TestSetupFuzzing is Config, Utils, stdCheats {
         morphoToken = new MorphoToken(address(this));
         dumbOracle = new DumbOracle();
         incentivesVault = new IncentivesVault(
-            address(morpho),
-            address(morphoToken),
+            IComptroller(comptrollerAddress),
+            IMorpho(address(morpho)),
+            morphoToken,
             address(1),
-            address(dumbOracle)
+            dumbOracle
         );
         morphoToken.transfer(address(incentivesVault), 1_000_000 ether);
 
@@ -257,6 +262,7 @@ contract TestSetupFuzzing is Config, Utils, stdCheats {
         hevm.label(address(dumbOracle), "DumbOracle");
         hevm.label(address(incentivesVault), "IncentivesVault");
         hevm.label(address(treasuryVault), "TreasuryVault");
+        hevm.label(address(lens), "Lens");
     }
 
     function createSigners(uint256 _nbOfSigners) internal {
@@ -285,7 +291,7 @@ contract TestSetupFuzzing is Config, Utils, stdCheats {
         address underlying;
         underlying = _CToken == cEth ? wEth : ICToken(_CToken).underlying();
         assumeBorrowAmountIsCorrect(_CToken, amount);
-        (, uint256 borrowable) = morpho.getUserMaxCapacitiesForAsset(address(_user), _CToken);
+        (, uint256 borrowable) = lens.getUserMaxCapacitiesForAsset(address(_user), _CToken);
         hevm.assume(amount <= borrowable);
     }
 
@@ -325,7 +331,7 @@ contract TestSetupFuzzing is Config, Utils, stdCheats {
         uint64 _withdraw,
         uint64 _repay
     ) public {
-        MorphoStorage.MaxGasForMatching memory newMaxGas = MorphoStorage.MaxGasForMatching({
+        Types.MaxGasForMatching memory newMaxGas = Types.MaxGasForMatching({
             supply: _supply,
             borrow: _borrow,
             withdraw: _withdraw,
@@ -340,10 +346,10 @@ contract TestSetupFuzzing is Config, Utils, stdCheats {
         morpho.updateP2PIndexes(_marketAddress);
     }
 
-    /// @notice Computes and returns P2P rates for a specific market (without taking into account deltas !).
+    /// @notice Computes and returns peer-to-peer rates for a specific market (without taking into account deltas !).
     /// @param _poolTokenAddress The market address.
-    /// @return p2pSupplyRate_ The market's supply rate in P2P (in ray).
-    /// @return p2pBorrowRate_ The market's borrow rate in P2P (in ray).
+    /// @return p2pSupplyRate_ The market's supply rate in peer-to-peer (in ray).
+    /// @return p2pBorrowRate_ The market's borrow rate in peer-to-peer (in ray).
     function getApproxBPYs(address _poolTokenAddress)
         public
         view
