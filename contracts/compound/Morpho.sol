@@ -29,20 +29,6 @@ contract Morpho is MorphoGovernance {
         uint256 _balanceInP2P
     );
 
-    /// @notice Emitted when a withdrawal happens.
-    /// @param _user The address of the withdrawer.
-    /// @param _poolTokenAddress The address of the market from where assets are withdrawn.
-    /// @param _amount The amount of assets withdrawn (in underlying).
-    /// @param _balanceOnPool The supply balance on pool after update.
-    /// @param _balanceInP2P The supply balance in peer-to-peer after update.
-    event Withdrawn(
-        address indexed _user,
-        address indexed _poolTokenAddress,
-        uint256 _amount,
-        uint256 _balanceOnPool,
-        uint256 _balanceInP2P
-    );
-
     /// @notice Emitted when a borrow happens.
     /// @param _user The address of the borrower.
     /// @param _poolTokenAddress The address of the market where assets are borrowed.
@@ -50,6 +36,20 @@ contract Morpho is MorphoGovernance {
     /// @param _balanceOnPool The borrow balance on pool after update.
     /// @param _balanceInP2P The borrow balance in peer-to-peer after update
     event Borrowed(
+        address indexed _user,
+        address indexed _poolTokenAddress,
+        uint256 _amount,
+        uint256 _balanceOnPool,
+        uint256 _balanceInP2P
+    );
+
+    /// @notice Emitted when a withdrawal happens.
+    /// @param _user The address of the withdrawer.
+    /// @param _poolTokenAddress The address of the market from where assets are withdrawn.
+    /// @param _amount The amount of assets withdrawn (in underlying).
+    /// @param _balanceOnPool The supply balance on pool after update.
+    /// @param _balanceInP2P The supply balance in peer-to-peer after update.
+    event Withdrawn(
         address indexed _user,
         address indexed _poolTokenAddress,
         uint256 _amount,
