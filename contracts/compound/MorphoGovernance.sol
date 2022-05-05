@@ -45,11 +45,6 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @param _dustThreshold The new `dustThreshold`.
     event DustThresholdSet(uint256 _dustThreshold);
 
-    /// @notice Emitted when the value of `noP2P` is set.
-    /// @param _poolTokenAddress The address of the concerned market.
-    /// @param _noP2P The new value of `_noP2P` adopted.
-    event NoP2PSet(address indexed _poolTokenAddress, bool _noP2P);
-
     /// @notice Emitted when the `reserveFactor` is set.
     /// @param _poolTokenAddress The address of the concerned market.
     /// @param _newValue The new value of the `reserveFactor`.
@@ -68,6 +63,11 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @notice Emitted when a COMP reward status is changed.
     /// @param _isCompRewardsActive The new COMP reward status.
     event CompRewardsStatusChanged(bool _isCompRewardsActive);
+
+    /// @notice Emitted when the value of `p2pDisabled` is changed.
+    /// @param _poolTokenAddress The address of the concerned market.
+    /// @param _p2pDisabled The new value of `_p2pDisabled` adopted.
+    event P2PStatusChanged(address indexed _poolTokenAddress, bool _p2pDisabled);
 
     /// @notice Emitted when a market is paused or unpaused.
     /// @param _poolTokenAddress The address of the concerned market.
@@ -197,18 +197,6 @@ abstract contract MorphoGovernance is MorphoUtils {
         emit DustThresholdSet(_dustThreshold);
     }
 
-    /// @notice Sets whether to match people peer-to-peer or not.
-    /// @param _poolTokenAddress The address of the market.
-    /// @param _noP2P Whether to match people peer-to-peer or not.
-    function setNoP2P(address _poolTokenAddress, bool _noP2P)
-        external
-        onlyOwner
-        isMarketCreated(_poolTokenAddress)
-    {
-        noP2P[_poolTokenAddress] = _noP2P;
-        emit NoP2PSet(_poolTokenAddress, _noP2P);
-    }
-
     /// @notice Sets the `reserveFactor`.
     /// @param _poolTokenAddress The market on which to set the `_newReserveFactor`.
     /// @param _newReserveFactor The proportion of the interest earned by users sent to the DAO, in basis point.
@@ -261,6 +249,18 @@ abstract contract MorphoGovernance is MorphoUtils {
         bool newPauseStatus = !marketStatus_.isPartiallyPaused;
         marketStatus_.isPartiallyPaused = newPauseStatus;
         emit PartialPauseStatusChanged(_poolTokenAddress, newPauseStatus);
+    }
+
+    /// @notice Toggles the peer-to-peer disable status.
+    /// @param _poolTokenAddress The address of the market to able/disable P2P.
+    function toggleP2P(address _poolTokenAddress)
+        external
+        onlyOwner
+        isMarketCreated(_poolTokenAddress)
+    {
+        bool newP2PStatus = !p2pDisabled[_poolTokenAddress];
+        p2pDisabled[_poolTokenAddress] = newP2PStatus;
+        emit P2PStatusChanged(_poolTokenAddress, newP2PStatus);
     }
 
     /// @notice Toggles the activation of COMP rewards.

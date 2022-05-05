@@ -401,7 +401,7 @@ contract Lens {
 
     /// @notice Returns market's configuration.
     /// @return isCreated_ Whether the market is created or not.
-    /// @return noP2P_ Whether user are put in peer-to-peer or not.
+    /// @return p2pDisabled_ Whether user are put in peer-to-peer or not.
     /// @return isPaused_ Whether the market is paused or not (all entry points on Morpho are frozen; supply, borrow, withdraw, repay and liquidate).
     /// @return isPartiallyPaused_ Whether the market is partially paused or not (only supply and borrow are frozen).
     /// @return reserveFactor_ The reserve actor applied to this market.
@@ -410,7 +410,7 @@ contract Lens {
         view
         returns (
             bool isCreated_,
-            bool noP2P_,
+            bool p2pDisabled_,
             bool isPaused_,
             bool isPartiallyPaused_,
             uint256 reserveFactor_
@@ -418,7 +418,7 @@ contract Lens {
     {
         Types.MarketStatus memory marketStatus_ = morpho.marketStatus(_poolTokenAddress);
         isCreated_ = marketStatus_.isCreated;
-        noP2P_ = morpho.noP2P(_poolTokenAddress);
+        p2pDisabled_ = morpho.p2pDisabled(_poolTokenAddress);
         isPaused_ = marketStatus_.isPaused;
         isPartiallyPaused_ = marketStatus_.isPartiallyPaused;
         reserveFactor_ = morpho.marketParameters(_poolTokenAddress).reserveFactor;

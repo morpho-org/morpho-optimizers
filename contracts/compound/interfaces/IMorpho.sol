@@ -11,7 +11,7 @@ import "../libraries/Types.sol";
 
 // prettier-ignore
 interface IMorpho {
-    
+
     /// STORAGE ///
 
     function maxGasForMatching() external view returns (Types.MaxGasForMatching memory);
@@ -24,7 +24,7 @@ interface IMorpho {
     function deltas(address) external view returns (Types.Delta memory);
     function marketsCreated() external view returns (address[] memory);
     function marketParameters(address) external view returns (Types.MarketParameters memory);
-    function noP2P(address) external view returns (bool);
+    function p2pDisabled(address) external view returns (bool);
     function p2pSupplyIndex(address) external view returns (uint256);
     function p2pBorrowIndex(address) external view returns (uint256);
     function lastPoolIndexes(address) external view returns (Types.LastPoolIndexes memory);
@@ -55,7 +55,7 @@ interface IMorpho {
     function setRewardsManager(address _rewardsManagerAddress) external;
     function setDustThreshold(uint256 _dustThreshold) external;
     function toggleCompRewardsActivation() external;
-    function setNoP2P(address _poolTokenAddress, bool _noP2P) external;
+    function toggleP2P(address _poolTokenAddress, bool _p2pDisabled) external;
     function setReserveFactor(address _poolTokenAddress, uint256 _newReserveFactor) external;
     function setP2PIndexCursor(address _poolTokenAddress, uint16 _p2pIndexCursor) external;
     function togglePauseStatus(address _poolTokenAddress) external;
