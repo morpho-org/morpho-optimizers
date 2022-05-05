@@ -5,13 +5,13 @@ interface IPositionsManager {
     function supply(
         address _poolTokenAddress,
         uint256 _amount,
-        uint256 _maxGasToConsume
+        uint256 _maxGasForMatching
     ) external;
 
     function borrow(
         address _poolTokenAddress,
         uint256 _amount,
-        uint256 _maxGasToConsume
+        uint256 _maxGasForMatching
     ) external;
 
     function withdraw(
@@ -19,14 +19,14 @@ interface IPositionsManager {
         uint256 _amount,
         address _supplier,
         address _receiver,
-        uint256 _maxGasToConsume
+        uint256 _maxGasForMatching
     ) external;
 
     function repay(
         address _poolTokenAddress,
         address _user,
         uint256 _amount,
-        uint256 _maxGasToConsume
+        uint256 _maxGasForMatching
     ) external;
 
     function liquidate(

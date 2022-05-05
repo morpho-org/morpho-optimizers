@@ -68,9 +68,9 @@ contract User {
     function supply(
         address _poolTokenAddress,
         uint256 _amount,
-        uint256 _maxGasToConsume
+        uint256 _maxGasForMatching
     ) external {
-        morpho.supply(_poolTokenAddress, _amount, _maxGasToConsume);
+        morpho.supply(_poolTokenAddress, _amount, _maxGasForMatching);
     }
 
     function withdraw(address _poolTokenAddress, uint256 _amount) external {
@@ -84,9 +84,9 @@ contract User {
     function borrow(
         address _poolTokenAddress,
         uint256 _amount,
-        uint256 _maxGasToConsume
+        uint256 _maxGasForMatching
     ) external {
-        morpho.borrow(_poolTokenAddress, _amount, _maxGasToConsume);
+        morpho.borrow(_poolTokenAddress, _amount, _maxGasForMatching);
     }
 
     function repay(address _poolTokenAddress, uint256 _amount) external {

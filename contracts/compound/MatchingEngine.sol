@@ -59,24 +59,24 @@ contract MatchingEngine is MorphoUtils {
     /// @dev Note: This function expects Compound's exchange rate and peer-to-peer indexes to have been updated.
     /// @param _poolTokenAddress The address of the market from which to match suppliers.
     /// @param _amount The token amount to search for (in underlying).
-    /// @param _maxGasToConsume The maximum amount of gas to consume within a matching engine loop.
+    /// @param _maxGasForMatching The maximum amount of gas to consume within a matching engine loop.
     /// @return matched The amount of liquidity matched (in underlying).
     function _matchSuppliers(
         address _poolTokenAddress,
         uint256 _amount,
-        uint256 _maxGasToConsume
+        uint256 _maxGasForMatching
     ) internal returns (uint256 matched) {
         MatchVars memory vars;
         vars.poolIndex = ICToken(_poolTokenAddress).exchangeRateStored(); // Exchange rate has already been updated.
         vars.p2pIndex = p2pSupplyIndex[_poolTokenAddress];
         address firstPoolSupplier = suppliersOnPool[_poolTokenAddress].getHead();
 
-        if (_maxGasToConsume != 0) {
+        if (_maxGasForMatching != 0) {
             vars.gasLeftAtTheBeginning = gasleft();
             while (
                 matched < _amount &&
                 firstPoolSupplier != address(0) &&
-                vars.gasLeftAtTheBeginning - gasleft() < _maxGasToConsume
+                vars.gasLeftAtTheBeginning - gasleft() < _maxGasForMatching
             ) {
                 vars.inUnderlying = supplyBalanceInOf[_poolTokenAddress][firstPoolSupplier]
                 .onPool
@@ -111,12 +111,12 @@ contract MatchingEngine is MorphoUtils {
     /// @dev Note: This function expects Compound's exchange rate and peer-to-peer indexes to have been updated.
     /// @param _poolTokenAddress The address of the market from which to unmatch suppliers.
     /// @param _amount The amount to search for (in underlying).
-    /// @param _maxGasToConsume The maximum amount of gas to consume within a matching engine loop.
+    /// @param _maxGasForMatching The maximum amount of gas to consume within a matching engine loop.
     /// @return The amount unmatched (in underlying).
     function _unmatchSuppliers(
         address _poolTokenAddress,
         uint256 _amount,
-        uint256 _maxGasToConsume
+        uint256 _maxGasForMatching
     ) internal returns (uint256) {
         UnmatchVars memory vars;
         vars.poolIndex = ICToken(_poolTokenAddress).exchangeRateStored(); // Exchange rate has already been updated.
@@ -124,12 +124,12 @@ contract MatchingEngine is MorphoUtils {
         address firstP2PSupplier = suppliersInP2P[_poolTokenAddress].getHead();
         uint256 remainingToUnmatch = _amount;
 
-        if (_maxGasToConsume != 0) {
+        if (_maxGasForMatching != 0) {
             vars.gasLeftAtTheBeginning = gasleft();
             while (
                 remainingToUnmatch > 0 &&
                 firstP2PSupplier != address(0) &&
-                vars.gasLeftAtTheBeginning - gasleft() < _maxGasToConsume
+                vars.gasLeftAtTheBeginning - gasleft() < _maxGasForMatching
             ) {
                 vars.inUnderlying = supplyBalanceInOf[_poolTokenAddress][firstP2PSupplier]
                 .inP2P
@@ -166,24 +166,24 @@ contract MatchingEngine is MorphoUtils {
     /// @dev Note: This function expects peer-to-peer indexes to have been updated..
     /// @param _poolTokenAddress The address of the market from which to match borrowers.
     /// @param _amount The amount to search for (in underlying).
-    /// @param _maxGasToConsume The maximum amount of gas to consume within a matching engine loop.
+    /// @param _maxGasForMatching The maximum amount of gas to consume within a matching engine loop.
     /// @return matched The amount of liquidity matched (in underlying).
     function _matchBorrowers(
         address _poolTokenAddress,
         uint256 _amount,
-        uint256 _maxGasToConsume
+        uint256 _maxGasForMatching
     ) internal returns (uint256 matched) {
         MatchVars memory vars;
         vars.poolIndex = ICToken(_poolTokenAddress).borrowIndex();
         vars.p2pIndex = p2pBorrowIndex[_poolTokenAddress];
         address firstPoolBorrower = borrowersOnPool[_poolTokenAddress].getHead();
 
-        if (_maxGasToConsume != 0) {
+        if (_maxGasForMatching != 0) {
             vars.gasLeftAtTheBeginning = gasleft();
             while (
                 matched < _amount &&
                 firstPoolBorrower != address(0) &&
-                vars.gasLeftAtTheBeginning - gasleft() < _maxGasToConsume
+                vars.gasLeftAtTheBeginning - gasleft() < _maxGasForMatching
             ) {
                 vars.inUnderlying = borrowBalanceInOf[_poolTokenAddress][firstPoolBorrower]
                 .onPool
@@ -218,12 +218,12 @@ contract MatchingEngine is MorphoUtils {
     /// @dev Note: This function expects and peer-to-peer indexes to have been updated.
     /// @param _poolTokenAddress The address of the market from which to unmatch borrowers.
     /// @param _amount The amount to unmatch (in underlying).
-    /// @param _maxGasToConsume The maximum amount of gas to consume within a matching engine loop.
+    /// @param _maxGasForMatching The maximum amount of gas to consume within a matching engine loop.
     /// @return The amount unmatched (in underlying).
     function _unmatchBorrowers(
         address _poolTokenAddress,
         uint256 _amount,
-        uint256 _maxGasToConsume
+        uint256 _maxGasForMatching
     ) internal returns (uint256) {
         UnmatchVars memory vars;
         vars.poolIndex = ICToken(_poolTokenAddress).borrowIndex();
@@ -231,12 +231,12 @@ contract MatchingEngine is MorphoUtils {
         address firstP2PBorrower = borrowersInP2P[_poolTokenAddress].getHead();
         uint256 remainingToUnmatch = _amount;
 
-        if (_maxGasToConsume != 0) {
+        if (_maxGasForMatching != 0) {
             vars.gasLeftAtTheBeginning = gasleft();
             while (
                 remainingToUnmatch > 0 &&
                 firstP2PBorrower != address(0) &&
-                vars.gasLeftAtTheBeginning - gasleft() < _maxGasToConsume
+                vars.gasLeftAtTheBeginning - gasleft() < _maxGasForMatching
             ) {
                 vars.inUnderlying = borrowBalanceInOf[_poolTokenAddress][firstP2PBorrower]
                 .inP2P

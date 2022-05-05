@@ -101,11 +101,11 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     /// @dev Implements supply logic.
     /// @param _poolTokenAddress The address of the pool token the user wants to interact with.
     /// @param _amount The amount of token (in underlying).
-    /// @param _maxGasToConsume The maximum amount of gas to consume within a matching engine loop.
+    /// @param _maxGasForMatching The maximum amount of gas to consume within a matching engine loop.
     function supply(
         address _poolTokenAddress,
         uint256 _amount,
-        uint256 _maxGasToConsume
+        uint256 _maxGasForMatching
     ) external {
         _enterMarketIfNeeded(_poolTokenAddress, msg.sender);
         ERC20 underlyingToken = _getUnderlying(_poolTokenAddress);
@@ -141,7 +141,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
                 uint256 matched = _matchBorrowers(
                     _poolTokenAddress,
                     remainingToSupply,
-                    _maxGasToConsume
+                    _maxGasForMatching
                 ); // In underlying.
 
                 if (matched > 0) {
@@ -183,11 +183,11 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     /// @dev Implements borrow logic.
     /// @param _poolTokenAddress The address of the market the user wants to interact with.
     /// @param _amount The amount of token (in underlying).
-    /// @param _maxGasToConsume The maximum amount of gas to consume within a matching engine loop.
+    /// @param _maxGasForMatching The maximum amount of gas to consume within a matching engine loop.
     function borrow(
         address _poolTokenAddress,
         uint256 _amount,
-        uint256 _maxGasToConsume
+        uint256 _maxGasForMatching
     ) external {
         _enterMarketIfNeeded(_poolTokenAddress, msg.sender);
         if (_isLiquidable(msg.sender, _poolTokenAddress, 0, _amount)) revert UnauthorisedBorrow();
@@ -222,7 +222,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
                 uint256 matched = _matchSuppliers(
                     _poolTokenAddress,
                     CompoundMath.min(remainingToBorrow, withdrawable - toWithdraw),
-                    _maxGasToConsume
+                    _maxGasForMatching
                 ); // In underlying.
 
                 if (matched > 0) {
@@ -265,13 +265,13 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     /// @param _amount The amount of token (in underlying).
     /// @param _supplier The address of the supplier.
     /// @param _receiver The address of the user who will receive the tokens.
-    /// @param _maxGasToConsume The maximum amount of gas to consume within a matching engine loop.
+    /// @param _maxGasForMatching The maximum amount of gas to consume within a matching engine loop.
     function withdraw(
         address _poolTokenAddress,
         uint256 _amount,
         address _supplier,
         address _receiver,
-        uint256 _maxGasToConsume
+        uint256 _maxGasForMatching
     ) public {
         ICToken poolToken = ICToken(_poolTokenAddress);
         ERC20 underlyingToken = _getUnderlying(_poolTokenAddress);
@@ -347,7 +347,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
                 uint256 matched = _matchSuppliers(
                     _poolTokenAddress,
                     CompoundMath.min(vars.remainingToWithdraw, vars.withdrawable - vars.toWithdraw),
-                    _maxGasToConsume / 2 // Divided by 2 as both matching and unmatching processes may happen in this function.
+                    _maxGasForMatching / 2 // Divided by 2 as both matching and unmatching processes may happen in this function.
                 );
 
                 if (matched > 0) {
@@ -367,7 +367,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             uint256 unmatched = _unmatchBorrowers(
                 _poolTokenAddress,
                 vars.remainingToWithdraw,
-                _maxGasToConsume / 2 // Divided by 2 as both matching and unmatching processes may happen in this function.
+                _maxGasForMatching / 2 // Divided by 2 as both matching and unmatching processes may happen in this function.
             );
 
             // If unmatched does not cover remainingToWithdraw, the difference is added to the borrow peer-to-peer delta.
@@ -393,12 +393,12 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     /// @param _poolTokenAddress The address of the market the user wants to interact with.
     /// @param _user The address of the user.
     /// @param _amount The amount of token (in underlying).
-    /// @param _maxGasToConsume The maximum amount of gas to consume within a matching engine loop.
+    /// @param _maxGasForMatching The maximum amount of gas to consume within a matching engine loop.
     function repay(
         address _poolTokenAddress,
         address _user,
         uint256 _amount,
-        uint256 _maxGasToConsume
+        uint256 _maxGasForMatching
     ) public {
         ICToken poolToken = ICToken(_poolTokenAddress);
         ERC20 underlyingToken = _getUnderlying(_poolTokenAddress);
@@ -485,7 +485,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
                 uint256 matched = _matchBorrowers(
                     _poolTokenAddress,
                     vars.remainingToRepay,
-                    _maxGasToConsume / 2 // Divided by 2 as both matching and unmatching processes may happen in this function.
+                    _maxGasForMatching / 2 // Divided by 2 as both matching and unmatching processes may happen in this function.
                 );
 
                 if (matched > 0) {
@@ -509,7 +509,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             uint256 unmatched = _unmatchSuppliers(
                 _poolTokenAddress,
                 vars.remainingToRepay,
-                _maxGasToConsume / 2 // Divided by 2 as both matching and unmatching processes may happen in this function.
+                _maxGasForMatching / 2 // Divided by 2 as both matching and unmatching processes may happen in this function.
             ); // Reverts on error.
 
             // If unmatched does not cover remainingToRepay, the difference is added to the supply peer-to-peer delta.
