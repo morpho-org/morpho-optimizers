@@ -8,9 +8,9 @@ import "./libraries/DelegateCall.sol";
 
 import "./MorphoStorage.sol";
 
-/// @title MorphoGetters.
-/// @notice Getters for Morpho, including externals, internals, user-accessible.
-abstract contract MorphoGetters is MorphoStorage {
+/// @title MorphoUtils.
+/// @notice Modifiers, getters and other util functions for Morpho.
+abstract contract MorphoUtils is MorphoStorage {
     using DoubleLinkedList for DoubleLinkedList.List;
     using CompoundMath for uint256;
     using DelegateCall for address;
