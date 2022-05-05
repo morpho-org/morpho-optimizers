@@ -75,7 +75,7 @@ contract Lens {
     /// @notice Checks if a market is created and not paused or partially paused.
     /// @param _poolTokenAddress The address of the market to check.
     /// @return true if the market is created, not paused and not partially paused, otherwise false.
-    function isMarketCreatedAndNotPausedOrPartiallyPaused(address _poolTokenAddress)
+    function isMarketCreatedAndNotPausedNorPartiallyPaused(address _poolTokenAddress)
         external
         view
         returns (bool)

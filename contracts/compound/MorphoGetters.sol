@@ -43,7 +43,7 @@ abstract contract MorphoGetters is MorphoStorage {
 
     /// @notice Prevents a user to trigger a function when market is not created or paused or partial paused.
     /// @param _poolTokenAddress The address of the market to check.
-    modifier isMarketCreatedAndNotPausedOrPartiallyPaused(address _poolTokenAddress) {
+    modifier isMarketCreatedAndNotPausedNorPartiallyPaused(address _poolTokenAddress) {
         Types.MarketStatus memory marketStatus_ = marketStatus[_poolTokenAddress];
         if (!marketStatus_.isCreated) revert MarketNotCreated();
         if (marketStatus_.isPaused || marketStatus_.isPartiallyPaused) revert MarketPaused();
