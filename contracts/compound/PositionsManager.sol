@@ -137,12 +137,11 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
                     delta.p2pBorrowDelta.mul(poolBorrowIndex),
                     remainingToSupply
                 );
-                if (matchedDelta > 0) {
-                    toRepay += matchedDelta;
-                    remainingToSupply -= matchedDelta;
-                    delta.p2pBorrowDelta -= matchedDelta.div(poolBorrowIndex);
-                    emit P2PBorrowDeltaUpdated(_poolTokenAddress, delta.p2pBorrowDelta);
-                }
+
+                toRepay += matchedDelta;
+                remainingToSupply -= matchedDelta;
+                delta.p2pBorrowDelta -= matchedDelta.div(poolBorrowIndex);
+                emit P2PBorrowDeltaUpdated(_poolTokenAddress, delta.p2pBorrowDelta);
             }
 
             // Match pool borrowers if any.
@@ -340,13 +339,11 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
                     vars.withdrawable - vars.toWithdraw
                 );
 
-                if (matchedDelta > 0) {
-                    vars.toWithdraw += matchedDelta;
-                    vars.remainingToWithdraw -= matchedDelta;
-                    delta.p2pSupplyDelta -= matchedDelta.div(vars.supplyPoolIndex);
-                    delta.p2pSupplyAmount -= matchedDelta.div(p2pSupplyIndex);
-                    emit P2PSupplyDeltaUpdated(_poolTokenAddress, delta.p2pSupplyDelta);
-                }
+                vars.toWithdraw += matchedDelta;
+                vars.remainingToWithdraw -= matchedDelta;
+                delta.p2pSupplyDelta -= matchedDelta.div(vars.supplyPoolIndex);
+                delta.p2pSupplyAmount -= matchedDelta.div(p2pSupplyIndex);
+                emit P2PSupplyDeltaUpdated(_poolTokenAddress, delta.p2pSupplyDelta);
             }
 
             // Match pool suppliers if any.
@@ -479,13 +476,11 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
                     vars.remainingToRepay
                 );
 
-                if (matchedDelta > 0) {
-                    vars.toRepay += matchedDelta;
-                    vars.remainingToRepay -= matchedDelta;
-                    delta.p2pBorrowDelta -= matchedDelta.div(vars.poolBorrowIndex);
-                    delta.p2pBorrowAmount -= matchedDelta.div(vars.p2pBorrowIndex);
-                    emit P2PBorrowDeltaUpdated(_poolTokenAddress, delta.p2pBorrowDelta);
-                }
+                vars.toRepay += matchedDelta;
+                vars.remainingToRepay -= matchedDelta;
+                delta.p2pBorrowDelta -= matchedDelta.div(vars.poolBorrowIndex);
+                delta.p2pBorrowAmount -= matchedDelta.div(vars.p2pBorrowIndex);
+                emit P2PBorrowDeltaUpdated(_poolTokenAddress, delta.p2pBorrowDelta);
             }
 
             if (
