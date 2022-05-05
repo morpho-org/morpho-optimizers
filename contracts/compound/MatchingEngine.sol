@@ -90,7 +90,7 @@ contract MatchingEngine is MorphoUtils {
                 supplyBalanceInOf[_poolTokenAddress][firstPoolSupplier].inP2P += vars.toMatch.div(
                     vars.p2pIndex
                 ); // In peer-to-peer unit.
-                _updateSuppliers(_poolTokenAddress, firstPoolSupplier);
+                _updateSupplierInDS(_poolTokenAddress, firstPoolSupplier);
                 emit SupplierPositionUpdated(
                     firstPoolSupplier,
                     _poolTokenAddress,
@@ -139,7 +139,7 @@ contract MatchingEngine is MorphoUtils {
                 supplyBalanceInOf[_poolTokenAddress][firstP2PSupplier].inP2P -= vars.toUnmatch.div(
                     vars.p2pIndex
                 ); // In peer-to-peer unit.
-                _updateSuppliers(_poolTokenAddress, firstP2PSupplier);
+                _updateSupplierInDS(_poolTokenAddress, firstP2PSupplier);
                 emit SupplierPositionUpdated(
                     firstP2PSupplier,
                     _poolTokenAddress,
@@ -189,7 +189,7 @@ contract MatchingEngine is MorphoUtils {
                 borrowBalanceInOf[_poolTokenAddress][firstPoolBorrower].inP2P += vars.toMatch.div(
                     vars.p2pIndex
                 ); // In peer-to-peer unit.
-                _updateBorrowers(_poolTokenAddress, firstPoolBorrower);
+                _updateBorrowerInDS(_poolTokenAddress, firstPoolBorrower);
                 emit BorrowerPositionUpdated(
                     firstPoolBorrower,
                     _poolTokenAddress,
@@ -238,7 +238,7 @@ contract MatchingEngine is MorphoUtils {
                 borrowBalanceInOf[_poolTokenAddress][firstP2PBorrower].inP2P -= vars.toUnmatch.div(
                     vars.p2pIndex
                 ); // In peer-to-peer unit.
-                _updateBorrowers(_poolTokenAddress, firstP2PBorrower);
+                _updateBorrowerInDS(_poolTokenAddress, firstP2PBorrower);
                 emit BorrowerPositionUpdated(
                     firstP2PBorrower,
                     _poolTokenAddress,
@@ -253,16 +253,16 @@ contract MatchingEngine is MorphoUtils {
         return _amount - remainingToUnmatch;
     }
 
-    /// @notice Updates suppliers data structures with the new balances of a given user.
+    /// @notice Updates `_user` in the supplier data structures.
     /// @param _poolTokenAddress The address of the market on which to update the suppliers data structure.
     /// @param _user The address of the user.
-    function _updateSuppliers(address _poolTokenAddress, address _user) internal {
+    function _updateSupplierInDS(address _poolTokenAddress, address _user) internal {
         uint256 onPool = supplyBalanceInOf[_poolTokenAddress][_user].onPool;
         uint256 inP2P = supplyBalanceInOf[_poolTokenAddress][_user].inP2P;
         uint256 formerValueOnPool = suppliersOnPool[_poolTokenAddress].getValueOf(_user);
         uint256 formerValueInP2P = suppliersInP2P[_poolTokenAddress].getValueOf(_user);
 
-        // Check pool.
+        // Round pool balance to 0 if below threshold.
         if (onPool <= dustThreshold) {
             supplyBalanceInOf[_poolTokenAddress][_user].onPool = 0;
             onPool = 0;
@@ -292,16 +292,16 @@ contract MatchingEngine is MorphoUtils {
             );
     }
 
-    /// @notice Updates borrowers data structures with the new balances of a given user.
+    /// @notice Updates `_user` in the borrower data structures.
     /// @param _poolTokenAddress The address of the market on which to update the borrowers data structure.
     /// @param _user The address of the user.
-    function _updateBorrowers(address _poolTokenAddress, address _user) internal {
+    function _updateBorrowerInDS(address _poolTokenAddress, address _user) internal {
         uint256 onPool = borrowBalanceInOf[_poolTokenAddress][_user].onPool;
         uint256 inP2P = borrowBalanceInOf[_poolTokenAddress][_user].inP2P;
         uint256 formerValueOnPool = borrowersOnPool[_poolTokenAddress].getValueOf(_user);
         uint256 formerValueInP2P = borrowersInP2P[_poolTokenAddress].getValueOf(_user);
 
-        // Check pool.
+        // Round pool balance to 0 if below threshold.
         if (onPool <= dustThreshold) {
             borrowBalanceInOf[_poolTokenAddress][_user].onPool = 0;
             onPool = 0;
