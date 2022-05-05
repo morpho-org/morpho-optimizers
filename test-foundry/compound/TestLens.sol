@@ -501,7 +501,7 @@ contract TestLens is TestSetup {
     function testGetMarketConfiguration() public {
         (
             bool isCreated,
-            bool noP2P,
+            bool p2pDisabled,
             bool isPaused,
             bool isPartiallyPaused,
             uint256 reserveFactor
@@ -510,7 +510,7 @@ contract TestLens is TestSetup {
         (bool isCreated_, bool isPaused_, bool isPartiallyPaused_) = morpho.marketStatus(cDai);
 
         assertTrue(isCreated == isCreated_);
-        assertTrue(noP2P == morpho.noP2P(cDai));
+        assertTrue(p2pDisabled == morpho.p2pDisabled(cDai));
 
         assertTrue(isPaused == isPaused_);
         assertTrue(isPartiallyPaused == isPartiallyPaused_);
