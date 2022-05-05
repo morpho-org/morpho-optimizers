@@ -121,7 +121,7 @@ contract Morpho is MorphoGovernance {
 
         address(positionsManager).functionDelegateCall(
             abi.encodeWithSelector(
-                positionsManager.supply.selector,
+                positionsManager.supplyLogic.selector,
                 _poolTokenAddress,
                 _amount,
                 maxGasForMatching.supply
@@ -152,7 +152,7 @@ contract Morpho is MorphoGovernance {
 
         address(positionsManager).functionDelegateCall(
             abi.encodeWithSelector(
-                positionsManager.supply.selector,
+                positionsManager.supplyLogic.selector,
                 _poolTokenAddress,
                 _amount,
                 _maxGasForMatching
@@ -181,7 +181,7 @@ contract Morpho is MorphoGovernance {
 
         address(positionsManager).functionDelegateCall(
             abi.encodeWithSelector(
-                positionsManager.borrow.selector,
+                positionsManager.borrowLogic.selector,
                 _poolTokenAddress,
                 _amount,
                 maxGasForMatching.borrow
@@ -211,7 +211,7 @@ contract Morpho is MorphoGovernance {
 
         address(positionsManager).functionDelegateCall(
             abi.encodeWithSelector(
-                positionsManager.borrow.selector,
+                positionsManager.borrowLogic.selector,
                 _poolTokenAddress,
                 _amount,
                 _maxGasForMatching
@@ -248,7 +248,7 @@ contract Morpho is MorphoGovernance {
             revert UnauthorisedWithdraw();
         address(positionsManager).functionDelegateCall(
             abi.encodeWithSelector(
-                positionsManager.withdraw.selector,
+                positionsManager.withdrawLogic.selector,
                 _poolTokenAddress,
                 toWithdraw,
                 msg.sender,
@@ -286,7 +286,7 @@ contract Morpho is MorphoGovernance {
 
         address(positionsManager).functionDelegateCall(
             abi.encodeWithSelector(
-                positionsManager.repay.selector,
+                positionsManager.repayLogic.selector,
                 _poolTokenAddress,
                 msg.sender,
                 toRepay,
@@ -330,7 +330,7 @@ contract Morpho is MorphoGovernance {
         uint256 amountSeized = abi.decode(
             address(positionsManager).functionDelegateCall(
                 abi.encodeWithSelector(
-                    positionsManager.liquidate.selector,
+                    positionsManager.liquidateLogic.selector,
                     _poolTokenBorrowedAddress,
                     _poolTokenCollateralAddress,
                     _borrower,

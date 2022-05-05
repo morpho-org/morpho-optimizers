@@ -2,19 +2,19 @@
 pragma solidity 0.8.13;
 
 interface IPositionsManager {
-    function supply(
+    function supplyLogic(
         address _poolTokenAddress,
         uint256 _amount,
         uint256 _maxGasForMatching
     ) external;
 
-    function borrow(
+    function borrowLogic(
         address _poolTokenAddress,
         uint256 _amount,
         uint256 _maxGasForMatching
     ) external;
 
-    function withdraw(
+    function withdrawLogic(
         address _poolTokenAddress,
         uint256 _amount,
         address _supplier,
@@ -22,14 +22,14 @@ interface IPositionsManager {
         uint256 _maxGasForMatching
     ) external;
 
-    function repay(
+    function repayLogic(
         address _poolTokenAddress,
         address _user,
         uint256 _amount,
         uint256 _maxGasForMatching
     ) external;
 
-    function liquidate(
+    function liquidateLogic(
         address _poolTokenBorrowedAddress,
         address _poolTokenCollateralAddress,
         address _borrower,
