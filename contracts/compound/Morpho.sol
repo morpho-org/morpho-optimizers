@@ -114,7 +114,7 @@ contract Morpho is MorphoGovernance {
     function supply(address _poolTokenAddress, uint256 _amount)
         external
         nonReentrant
-        isMarketCreatedAndNotPausedOrPartiallyPaused(_poolTokenAddress)
+        isMarketCreatedAndNotPausedNorPartiallyPaused(_poolTokenAddress)
     {
         if (_amount == 0) revert AmountIsZero();
         updateP2PIndexes(_poolTokenAddress);
@@ -146,7 +146,7 @@ contract Morpho is MorphoGovernance {
         address _poolTokenAddress,
         uint256 _amount,
         uint256 _maxGasToConsume
-    ) external nonReentrant isMarketCreatedAndNotPausedOrPartiallyPaused(_poolTokenAddress) {
+    ) external nonReentrant isMarketCreatedAndNotPausedNorPartiallyPaused(_poolTokenAddress) {
         if (_amount == 0) revert AmountIsZero();
         updateP2PIndexes(_poolTokenAddress);
 
@@ -174,7 +174,7 @@ contract Morpho is MorphoGovernance {
     function borrow(address _poolTokenAddress, uint256 _amount)
         external
         nonReentrant
-        isMarketCreatedAndNotPausedOrPartiallyPaused(_poolTokenAddress)
+        isMarketCreatedAndNotPausedNorPartiallyPaused(_poolTokenAddress)
     {
         if (_amount == 0) revert AmountIsZero();
         updateP2PIndexes(_poolTokenAddress);
@@ -205,7 +205,7 @@ contract Morpho is MorphoGovernance {
         address _poolTokenAddress,
         uint256 _amount,
         uint256 _maxGasToConsume
-    ) external nonReentrant isMarketCreatedAndNotPausedOrPartiallyPaused(_poolTokenAddress) {
+    ) external nonReentrant isMarketCreatedAndNotPausedNorPartiallyPaused(_poolTokenAddress) {
         if (_amount == 0) revert AmountIsZero();
         updateP2PIndexes(_poolTokenAddress);
 
