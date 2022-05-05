@@ -72,6 +72,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     // Struct to avoid stack too deep.
     struct WithdrawVars {
         uint256 remainingToWithdraw;
+        uint256 maxGasForMatching;
         uint256 supplyPoolIndex;
         uint256 withdrawable;
         uint256 toWithdraw;
@@ -79,6 +80,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
     // Struct to avoid stack too deep.
     struct RepayVars {
+        uint256 maxGasForMatching;
         uint256 remainingToRepay;
         uint256 poolBorrowIndex;
         uint256 p2pSupplyIndex;
@@ -284,7 +286,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         ERC20 underlyingToken = _getUnderlying(_poolTokenAddress);
         WithdrawVars memory vars;
         vars.remainingToWithdraw = _amount;
-        uint256 maxGasForMatching = _maxGasForMatching;
+        vars.maxGasForMatching = _maxGasForMatching;
         vars.withdrawable = poolToken.balanceOfUnderlying(address(this));
         vars.supplyPoolIndex = poolToken.exchangeRateStored(); // Exchange rate has already been updated.
 
@@ -353,10 +355,10 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
                 (uint256 matched, uint256 gasConsumedInMatching) = _matchSuppliers(
                     _poolTokenAddress,
                     CompoundMath.min(vars.remainingToWithdraw, vars.withdrawable - vars.toWithdraw),
-                    maxGasForMatching
+                    vars.maxGasForMatching
                 );
-                if (maxGasForMatching <= gasConsumedInMatching) maxGasForMatching = 0;
-                else maxGasForMatching -= gasConsumedInMatching;
+                if (vars.maxGasForMatching <= gasConsumedInMatching) vars.maxGasForMatching = 0;
+                else vars.maxGasForMatching -= gasConsumedInMatching;
 
                 if (matched > 0) {
                     vars.remainingToWithdraw -= matched;
@@ -412,8 +414,8 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         ERC20 underlyingToken = _getUnderlying(_poolTokenAddress);
         underlyingToken.safeTransferFrom(msg.sender, address(this), _amount);
         RepayVars memory vars;
-        uint256 maxGasForMatching = _maxGasForMatching;
         vars.remainingToRepay = _amount;
+        vars.maxGasForMatching = _maxGasForMatching;
         vars.poolBorrowIndex = poolToken.borrowIndex();
 
         /// Soft repay ///
@@ -493,10 +495,10 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
                 (uint256 matched, uint256 gasConsumedInMatching) = _matchBorrowers(
                     _poolTokenAddress,
                     vars.remainingToRepay,
-                    maxGasForMatching
+                    vars.maxGasForMatching
                 );
-                if (maxGasForMatching <= gasConsumedInMatching) maxGasForMatching = 0;
-                else maxGasForMatching -= gasConsumedInMatching;
+                if (vars.maxGasForMatching <= gasConsumedInMatching) vars.maxGasForMatching = 0;
+                else vars.maxGasForMatching -= gasConsumedInMatching;
 
                 if (matched > 0) {
                     vars.remainingToRepay -= matched;
@@ -519,7 +521,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             uint256 unmatched = _unmatchSuppliers(
                 _poolTokenAddress,
                 vars.remainingToRepay,
-                maxGasForMatching
+                vars.maxGasForMatching
             );
 
             // If unmatched does not cover remainingToRepay, the difference is added to the supply peer-to-peer delta.
