@@ -24,7 +24,7 @@ abstract contract MorphoStorage is OwnableUpgradeable, ReentrancyGuardUpgradeabl
     bool public isCompRewardsActive; // True if the Compound reward is active.
     uint256 public maxSortedUsers; // The max number of users to sort in the data structure.
     uint256 public dustThreshold; // The minimum amount to keep in the data stucture.
-    Types.MaxGasForMatching public maxGasForMatching; // Max gas to consume within loops in matching engine functions.
+    Types.MaxGasForMatching public defaultMaxGasForMatching; // The default max gas to consume within loops in matching engine functions.
 
     /// POSITIONS STORAGE ///
 

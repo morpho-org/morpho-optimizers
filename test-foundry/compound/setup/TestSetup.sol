@@ -74,7 +74,7 @@ contract TestSetup is Config, Utils, stdCheats {
     }
 
     function initContracts() internal {
-        Types.MaxGasForMatching memory maxGasForMatching = Types.MaxGasForMatching({
+        Types.MaxGasForMatching memory defaultMaxGasForMatching = Types.MaxGasForMatching({
             supply: 3e6,
             borrow: 3e6,
             withdraw: 3e6,
@@ -99,7 +99,7 @@ contract TestSetup is Config, Utils, stdCheats {
             positionsManager,
             interestRatesManager,
             comptroller,
-            maxGasForMatching,
+            defaultMaxGasForMatching,
             1,
             20,
             cEth,
