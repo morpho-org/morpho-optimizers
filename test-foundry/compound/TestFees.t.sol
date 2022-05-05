@@ -65,7 +65,7 @@ contract TestFees is TestSetup {
     }
 
     function testShouldCollectTheRightAmountOfFees() public {
-        uint256 reserveFactor = 1_000;
+        uint16 reserveFactor = 1_000;
         morpho.setReserveFactor(cDai, reserveFactor); // 10%
 
         uint256 balanceBefore = ERC20(dai).balanceOf(morpho.treasuryVault());
