@@ -208,12 +208,11 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
                     remainingToBorrow,
                     withdrawable
                 );
-                if (matchedDelta > 0) {
-                    toWithdraw += matchedDelta;
-                    remainingToBorrow -= matchedDelta;
-                    delta.p2pSupplyDelta -= matchedDelta.div(poolSupplyIndex);
-                    emit P2PSupplyDeltaUpdated(_poolTokenAddress, delta.p2pSupplyDelta);
-                }
+
+                toWithdraw += matchedDelta;
+                remainingToBorrow -= matchedDelta;
+                delta.p2pSupplyDelta -= matchedDelta.div(poolSupplyIndex);
+                emit P2PSupplyDeltaUpdated(_poolTokenAddress, delta.p2pSupplyDelta);
             }
 
             // Match pool suppliers if any.
