@@ -88,6 +88,9 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @notice Thrown when the creation of a market failed on Compound.
     error MarketCreationFailedOnCompound();
 
+    /// @notice Thrown when the input is above the max basis points value (100%).
+    error ExceedsMaxBasisPoints();
+
     /// @notice Thrown when the market is already created.
     error MarketAlreadyCreated();
 
@@ -214,10 +217,10 @@ abstract contract MorphoGovernance is MorphoUtils {
         onlyOwner
         isMarketCreated(_poolTokenAddress)
     {
+        if (_newReserveFactor > MAX_BASIS_POINTS) revert ExceedsMaxBasisPoints();
         updateP2PIndexes(_poolTokenAddress);
-        marketParameters[_poolTokenAddress].reserveFactor = uint16(
-            CompoundMath.min(MAX_BASIS_POINTS, _newReserveFactor)
-        );
+
+        marketParameters[_poolTokenAddress].reserveFactor = uint16(_newReserveFactor);
         emit ReserveFactorSet(_poolTokenAddress, marketParameters[_poolTokenAddress].reserveFactor);
     }
 
@@ -228,6 +231,8 @@ abstract contract MorphoGovernance is MorphoUtils {
         onlyOwner
         isMarketCreated(_poolTokenAddress)
     {
+        if (_p2pIndexCursor > MAX_BASIS_POINTS) revert ExceedsMaxBasisPoints();
+
         marketParameters[_poolTokenAddress].p2pIndexCursor = _p2pIndexCursor;
         emit P2PIndexCursorSet(_poolTokenAddress, _p2pIndexCursor);
     }

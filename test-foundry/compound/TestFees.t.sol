@@ -12,9 +12,13 @@ contract TestFees is TestSetup {
     }
 
     function testShouldNotBePossibleToSetFeesHigherThan100Percent() public {
+        hevm.expectRevert(abi.encodeWithSignature("ExceedsMaxBasisPoints()"));
         morpho.setReserveFactor(cUsdc, 10_001);
-        (uint16 reserveFactor, ) = morpho.marketParameters(cUsdc);
-        assertEq(reserveFactor, 10_000);
+    }
+
+    function testShouldNotBePossibleToSetP2PIndexCursorHigherThan100Percent() public {
+        hevm.expectRevert(abi.encodeWithSignature("ExceedsMaxBasisPoints()"));
+        morpho.setP2PIndexCursor(cUsdc, 10_001);
     }
 
     function testOnlyOwnerCanSetTreasuryVault() public {
