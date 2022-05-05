@@ -53,12 +53,12 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @notice Emitted when the `reserveFactor` is set.
     /// @param _poolTokenAddress The address of the concerned market.
     /// @param _newValue The new value of the `reserveFactor`.
-    event ReserveFactorSet(address indexed _poolTokenAddress, uint256 _newValue);
+    event ReserveFactorSet(address indexed _poolTokenAddress, uint16 _newValue);
 
     /// @notice Emitted when the `p2pIndexCursor` is set.
     /// @param _poolTokenAddress The address of the concerned market.
     /// @param _newValue The new value of the `p2pIndexCursor`.
-    event P2PIndexCursorSet(address indexed _poolTokenAddress, uint256 _newValue);
+    event P2PIndexCursorSet(address indexed _poolTokenAddress, uint16 _newValue);
 
     /// @notice Emitted when a reserve fee is claimed.
     /// @param _poolTokenAddress The address of the concerned market.
@@ -212,7 +212,7 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @notice Sets the `reserveFactor`.
     /// @param _poolTokenAddress The market on which to set the `_newReserveFactor`.
     /// @param _newReserveFactor The proportion of the interest earned by users sent to the DAO, in basis point.
-    function setReserveFactor(address _poolTokenAddress, uint256 _newReserveFactor)
+    function setReserveFactor(address _poolTokenAddress, uint16 _newReserveFactor)
         external
         onlyOwner
         isMarketCreated(_poolTokenAddress)
@@ -220,7 +220,7 @@ abstract contract MorphoGovernance is MorphoUtils {
         if (_newReserveFactor > MAX_BASIS_POINTS) revert ExceedsMaxBasisPoints();
         updateP2PIndexes(_poolTokenAddress);
 
-        marketParameters[_poolTokenAddress].reserveFactor = uint16(_newReserveFactor);
+        marketParameters[_poolTokenAddress].reserveFactor = _newReserveFactor;
         emit ReserveFactorSet(_poolTokenAddress, marketParameters[_poolTokenAddress].reserveFactor);
     }
 
