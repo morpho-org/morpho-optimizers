@@ -18,7 +18,7 @@ contract TestBorrowFuzzing is TestSetupFuzzing {
         uint256 supplied = _supplied;
         uint256 borrowed = _borrowed;
 
-        assumeSupplyAmountIsCorrect(suppliedAsset, supplied);
+        assumeSupplyAmountIsCorrect(suppliedUnderlying, supplied);
 
         borrower1.approve(suppliedUnderlying, supplied);
         borrower1.supply(suppliedAsset, supplied);
@@ -46,7 +46,7 @@ contract TestBorrowFuzzing is TestSetupFuzzing {
         uint256 amountSupplied = _amountSupplied;
 
         hevm.assume(_randomModulo != 0);
-        assumeSupplyAmountIsCorrect(suppliedAsset, amountSupplied);
+        assumeSupplyAmountIsCorrect(suppliedUnderlying, amountSupplied);
 
         borrower1.approve(suppliedUnderlying, amountSupplied);
         borrower1.supply(suppliedAsset, amountSupplied);
@@ -75,8 +75,8 @@ contract TestBorrowFuzzing is TestSetupFuzzing {
         uint256 amountCollateral = _amountCollateral;
 
         hevm.assume(_randomModulo != 0);
-        assumeSupplyAmountIsCorrect(collateralAsset, _amountCollateral);
-        assumeSupplyAmountIsCorrect(matchedAsset, amountSupplied);
+        assumeSupplyAmountIsCorrect(collateralUnderlying, _amountCollateral);
+        assumeSupplyAmountIsCorrect(matchedUnderlying, amountSupplied);
 
         supplier1.approve(matchedUnderlying, amountSupplied);
         supplier1.supply(matchedAsset, amountSupplied);
@@ -110,7 +110,7 @@ contract TestBorrowFuzzing is TestSetupFuzzing {
         uint256 amountCollateral = _amountCollateral;
 
         hevm.assume(_randomModulo != 0);
-        assumeSupplyAmountIsCorrect(collateralAsset, amountCollateral);
+        assumeSupplyAmountIsCorrect(collateralUnderlying, amountCollateral);
 
         borrower1.approve(collateralUnderlying, amountCollateral);
         borrower1.supply(collateralAsset, amountCollateral);
@@ -126,7 +126,7 @@ contract TestBorrowFuzzing is TestSetupFuzzing {
         createSigners(NMAX);
 
         uint256 amountPerSupplier = (amountSupplied / NMAX) + 1;
-        assumeSupplyAmountIsCorrect(matchedAsset, amountPerSupplier);
+        assumeSupplyAmountIsCorrect(matchedUnderlying, amountPerSupplier);
 
         for (uint256 i = 0; i < NMAX; i++) {
             suppliers[i].approve(matchedUnderlying, amountPerSupplier);
@@ -152,7 +152,7 @@ contract TestBorrowFuzzing is TestSetupFuzzing {
 
         hevm.assume(_firstRandom != 0);
         hevm.assume(_secondRandom != 0);
-        assumeSupplyAmountIsCorrect(collateralAsset, amountCollateral);
+        assumeSupplyAmountIsCorrect(collateralUnderlying, amountCollateral);
 
         borrower1.approve(collateralUnderlying, amountCollateral);
         borrower1.supply(collateralAsset, amountCollateral);
