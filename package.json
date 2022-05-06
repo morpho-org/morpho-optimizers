@@ -8,6 +8,9 @@
   ],
   "scripts": {
     "deploy:compound:ropsten": "NETWORK=ropsten npx hardhat run scripts/deploy-compound.ts --network ropsten",
+    "upgrade:compound:ropsten": "NETWORK=ropsten npx hardhat run scripts/upgrade-compound.ts --network ropsten",
+    "deploy:compound:goerli": "NETWORK=goerli npx hardhat run scripts/deploy-compound.ts --network goerli",
+    "upgrade:compound:goerli": "NETWORK=goerli npx hardhat run scripts/upgrade-compound.ts --network goerli",
     "deploy:aave:polygon": "NETWORK=polygon-mainnet npx hardhat run scripts/deploy-aave.ts --network polygon",
     "deploy:aave:mumbai": "NETWORK=polygon-mumbai npx hardhat run scripts/deploy-aave.ts --network mumbai",
     "test:hardhat": "npx hardhat test",
