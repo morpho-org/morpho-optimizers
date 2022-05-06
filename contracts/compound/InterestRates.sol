@@ -22,7 +22,7 @@ contract InterestRates is IInterestRates, MorphoStorage {
         uint256 p2pBorrowIndex; // The current peer-to-peer borrow index
         uint256 poolSupplyIndex; // The current pool supply index
         uint256 poolBorrowIndex; // The pool supply index at last update.
-        uint256 lastPoolSupplyIndex; // The pool borrow index at last update.
+        uint256 lastPoolSupplyIndex; // The pool supply index at last update.
         uint256 lastPoolBorrowIndex; // The pool borrow index at last update.
         uint256 reserveFactor; // The reserve factor percentage (10 000 = 100%).
         uint256 p2pIndexCursor; // The reserve factor percentage (10 000 = 100%).
