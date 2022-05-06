@@ -29,8 +29,8 @@ async function main() {
     marketsManagerForCompound.address,
     config.compound.comptroller.address
   );
-  await positionsManagerForCompound.deployed();
-  console.log('🎉 PositionsManagerForCompound deployed to address:', positionsManagerForCompound.address);
+  await morpho.deployed();
+  const morphoImplementationAddress = await upgrades.erc1967.getImplementationAddress(morpho.address);
 
   console.log('\n🦋 Verifying PositionsManagerForCompound on Tenderly...');
   await hre.tenderly.verify({
