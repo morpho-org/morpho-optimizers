@@ -57,7 +57,7 @@ contract InterestRates is IInterestRates, MorphoStorage {
     /// @param _poolTokenAddress The address of the market to update.
     /// @return newP2PSupplyIndex The peer-to-peer supply index after update.
     function getUpdatedP2PSupplyIndex(address _poolTokenAddress) external view returns (uint256) {
-        if (block.timestamp == lastPoolIndexes[_poolTokenAddress].lastUpdateBlockNumber)
+        if (block.number == lastPoolIndexes[_poolTokenAddress].lastUpdateBlockNumber)
             return p2pSupplyIndex[_poolTokenAddress];
         else {
             ICToken poolToken = ICToken(_poolTokenAddress);
@@ -85,7 +85,7 @@ contract InterestRates is IInterestRates, MorphoStorage {
     /// @param _poolTokenAddress The address of the market to update.
     /// @return newP2PSupplyIndex The peer-to-peer borrow index after update.
     function getUpdatedP2PBorrowIndex(address _poolTokenAddress) external view returns (uint256) {
-        if (block.timestamp == lastPoolIndexes[_poolTokenAddress].lastUpdateBlockNumber)
+        if (block.number == lastPoolIndexes[_poolTokenAddress].lastUpdateBlockNumber)
             return p2pBorrowIndex[_poolTokenAddress];
         else {
             ICToken poolToken = ICToken(_poolTokenAddress);
@@ -111,7 +111,7 @@ contract InterestRates is IInterestRates, MorphoStorage {
     /// @notice Updates the peer-to-peer indexes.
     /// @param _poolTokenAddress The address of the market to update.
     function updateP2PIndexes(address _poolTokenAddress) external {
-        if (block.timestamp > lastPoolIndexes[_poolTokenAddress].lastUpdateBlockNumber) {
+        if (block.number > lastPoolIndexes[_poolTokenAddress].lastUpdateBlockNumber) {
             ICToken poolToken = ICToken(_poolTokenAddress);
             Types.LastPoolIndexes storage poolIndexes = lastPoolIndexes[_poolTokenAddress];
             Types.MarketParameters storage marketParams = marketParameters[_poolTokenAddress];
@@ -136,7 +136,7 @@ contract InterestRates is IInterestRates, MorphoStorage {
             p2pSupplyIndex[_poolTokenAddress] = newP2PSupplyIndex;
             p2pBorrowIndex[_poolTokenAddress] = newP2PBorrowIndex;
 
-            poolIndexes.lastUpdateBlockNumber = uint32(block.timestamp);
+            poolIndexes.lastUpdateBlockNumber = uint32(block.number);
             poolIndexes.lastSupplyPoolIndex = uint112(poolSupplyIndex);
             poolIndexes.lastBorrowPoolIndex = uint112(poolBorrowIndex);
 
