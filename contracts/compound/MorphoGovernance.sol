@@ -110,7 +110,7 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @param _maxGasForMatching The `maxGasForMatching`.
     /// @param _maxSortedUsers The `_maxSortedUsers`.
     /// @param _cEth The cETH address.
-    /// @param _weth The wETH address.
+    /// @param _wEth The wETH address.
     function initialize(
         IPositionsManager _positionsManager,
         IInterestRates _interestRates,
@@ -119,7 +119,7 @@ abstract contract MorphoGovernance is MorphoUtils {
         Types.MaxGasForMatching memory _maxGasForMatching,
         uint256 _maxSortedUsers,
         address _cEth,
-        address _weth
+        address _wEth
     ) external initializer {
         __ReentrancyGuard_init();
         __Ownable_init();
@@ -133,7 +133,7 @@ abstract contract MorphoGovernance is MorphoUtils {
         maxSortedUsers = _maxSortedUsers;
 
         cEth = _cEth;
-        wEth = _weth;
+        wEth = _wEth;
     }
 
     /// GOVERNANCE ///
