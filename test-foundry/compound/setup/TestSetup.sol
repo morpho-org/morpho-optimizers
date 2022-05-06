@@ -24,7 +24,7 @@ import "../helpers/DumbOracle.sol";
 import {User} from "../helpers/User.sol";
 import {Utils} from "./Utils.sol";
 import "forge-std/stdlib.sol";
-import "forge-std/console.sol";
+// import "forge-std/console.sol";
 import "@config/Config.sol";
 
 interface IAdminComptroller {
@@ -37,7 +37,7 @@ contract TestSetup is Config, Utils, stdCheats {
     Vm public hevm = Vm(HEVM_ADDRESS);
 
     uint256 public constant MAX_BASIS_POINTS = 10_000;
-    uint256 public constant INITIAL_BALANCE = 15_000_000_000;
+    uint256 public constant INITIAL_BALANCE = 1_000_000;
 
     ProxyAdmin public proxyAdmin;
     TransparentUpgradeableProxy public morphoProxy;
@@ -155,12 +155,7 @@ contract TestSetup is Config, Utils, stdCheats {
         if (_cToken == cEth) hevm.label(wEth, "WETH");
         else {
             address underlying = ICToken(_cToken).underlying();
-            if (underlying == 0x9f8F72aA9304c8B593d555F12eF6589cC3A579A2) {
-                hevm.label(underlying, "mkr");
-                // This is because mkr symbol is a byte32
-            } else {
-                hevm.label(underlying, ERC20(underlying).symbol());
-            }
+            hevm.label(underlying, ERC20(underlying).symbol());
         }
     }
 
@@ -252,9 +247,11 @@ contract TestSetup is Config, Utils, stdCheats {
     }
 
     function move1000BlocksForward(address _marketAddress) public {
-        hevm.roll(block.number + 1_000);
-        hevm.warp(block.timestamp + 13 * 1_000); // mainnet block time is around 13 sec
-        morpho.updateP2PIndexes(_marketAddress);
+        for (uint256 k; k < 100; k++) {
+            hevm.roll(block.number + 10);
+            hevm.warp(block.timestamp + 1);
+            morpho.updateP2PIndexes(_marketAddress);
+        }
     }
 
     /// @notice Computes and returns peer-to-peer rates for a specific market (without taking into account deltas !).
