@@ -58,9 +58,6 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     /// @notice Thrown when the debt value is not above the maximum debt value.
     error DebtValueNotAboveMax();
 
-    /// @notice Thrown when the Compound's oracle failed.
-    error CompoundOracleFailed();
-
     /// @notice Thrown when the user does not have enough collateral for the borrow.
     error UnauthorisedBorrow();
 
