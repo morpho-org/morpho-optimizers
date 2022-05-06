@@ -435,11 +435,11 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
                     ICToken(_poolTokenAddress).borrowBalanceCurrent(address(this)) // The debt of the contract.
                 );
 
-                if (vars.toRepay > 0) {
+                if (vars.toRepay > 0)
                     _repayToPool(_poolTokenAddress, underlyingToken, vars.toRepay); // Reverts on error.
-                    _leaveMarketIfNeeded(_poolTokenAddress, _user);
-                    return;
-                }
+
+                _leaveMarketIfNeeded(_poolTokenAddress, _user);
+                return;
             }
         }
 
