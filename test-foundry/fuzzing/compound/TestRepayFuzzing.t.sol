@@ -158,4 +158,55 @@ contract TestRepayFuzzing is TestSetupFuzzing {
         borrower1.approve(borrowedUnderlying, repaidAmount);
         borrower1.repay(borrowedAsset, repaidAmount);
     }
+
+    function testRepay4Fuzzed(
+        uint128 _borrowAmount,
+        // uint256 _proportionMatched,
+        uint8 _borrowedAsset,
+        uint8 _collateralAsset
+    ) public {
+        (address collateralCToken, address collateralUnderlying) = getAsset(_collateralAsset);
+        (address borrowedCToken, address borrowedUnderlying) = getAsset(_borrowedAsset);
+        setMaxGasForMatchingHelper(
+            type(uint64).max,
+            type(uint64).max,
+            type(uint64).max,
+            type(uint64).max
+        );
+        uint256 collatToSupply = ERC20(collateralUnderlying).balanceOf(address(borrower1));
+        borrower1.approve(collateralUnderlying, collatToSupply);
+        borrower1.supply(collateralCToken, collatToSupply);
+        assumeBorrowAmountIsCorrect(borrowedCToken, _borrowAmount);
+        assumeBorrowable(borrower1, borrowedCToken, _borrowAmount);
+        borrower1.borrow(borrowedCToken, _borrowAmount);
+        uint256 matchersAmountToSupply = _borrowAmount / (2 * NMAX);
+        assumeSupplyAmountIsCorrect(borrowedUnderlying, matchersAmountToSupply);
+        createSigners(2 * NMAX);
+        for (uint256 i; i < 2 * NMAX; i++) {
+            suppliers[i].approve(borrowedUnderlying, matchersAmountToSupply);
+            suppliers[i].supply(borrowedCToken, matchersAmountToSupply);
+        }
+        for (uint256 j = 1; j <= NMAX; j++) {
+            borrowers[j].approve(collateralUnderlying, collatToSupply);
+            borrowers[j].supply(collateralCToken, collatToSupply);
+            borrowers[j].borrow(borrowedCToken, matchersAmountToSupply);
+        }
+        borrower1.approve(borrowedUnderlying, type(uint256).max);
+        borrower1.repay(borrowedCToken, type(uint256).max);
+    }
+
+    function testTemp() public {
+        console.log(wEth);
+    }
+
+    function testDeltaRepayFuzzed() public {}
+
+    function assumeBorrowable(
+        User _user,
+        address market,
+        uint256 amount
+    ) internal {
+        (, uint256 borrowable) = lens.getUserMaxCapacitiesForAsset(address(_user), market);
+        hevm.assume(amount <= borrowable);
+    }
 }
