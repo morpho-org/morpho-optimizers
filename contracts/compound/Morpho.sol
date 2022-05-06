@@ -83,8 +83,12 @@ contract Morpho is MorphoGovernance {
         address indexed _liquidated,
         uint256 _amountRepaid,
         address indexed _poolTokenBorrowedAddress,
+        uint256 _borrowBalanceOnPool,
+        uint256 _borrowBalanceInP2P,
         uint256 _amountSeized,
-        address indexed _poolTokenCollateralAddress
+        address indexed _poolTokenCollateralAddress,
+        uint256 _collateralBalanceOnPool,
+        uint256 _collateralBalanceInP2P
     );
 
     /// @notice Emitted when a user claims rewards.
@@ -340,13 +344,24 @@ contract Morpho is MorphoGovernance {
             (uint256)
         );
 
+        Types.BorrowBalance memory borrowBalance = borrowBalanceInOf[_poolTokenBorrowedAddress][
+            _borrower
+        ];
+        Types.SupplyBalance memory collateralBalance = supplyBalanceInOf[
+            _poolTokenCollateralAddress
+        ][_borrower];
+
         emit Liquidated(
             msg.sender,
             _borrower,
             _amount,
             _poolTokenBorrowedAddress,
+            borrowBalance.onPool,
+            borrowBalance.inP2P,
             amountSeized,
-            _poolTokenCollateralAddress
+            _poolTokenCollateralAddress,
+            collateralBalance.onPool,
+            collateralBalance.inP2P
         );
     }
 
