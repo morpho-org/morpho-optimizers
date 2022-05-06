@@ -148,8 +148,6 @@ abstract contract MorphoUtils is MorphoStorage {
         while (i < numberOfEnteredMarkets) {
             address poolTokenEntered = enteredMarkets[_user][i];
 
-            // Calling accrueInterest so that Compound's indexes used in _getUserLiquidityDataForAsset() are updated.
-            ICToken(poolTokenEntered).accrueInterest();
             Types.AssetLiquidityData memory assetData = _getUserLiquidityDataForAsset(
                 _user,
                 poolTokenEntered,
@@ -186,88 +184,46 @@ abstract contract MorphoUtils is MorphoStorage {
         assetData.underlyingPrice = _oracle.getUnderlyingPrice(_poolTokenAddress);
         if (assetData.underlyingPrice == 0) revert CompoundOracleFailed();
         (, assetData.collateralFactor, ) = comptroller.markets(_poolTokenAddress);
+        (uint256 p2pSupplyIndex, uint256 p2pBorrowIndex) = _getUpdatedP2PIndexes(_poolTokenAddress);
 
-        assetData.collateralValue = _getUserSupplyBalanceInOf(_poolTokenAddress, _user).mul(
-            assetData.underlyingPrice
-        );
-        assetData.debtValue = _getUserBorrowBalanceInOf(_poolTokenAddress, _user).mul(
-            assetData.underlyingPrice
-        );
+        assetData.collateralValue = (supplyBalanceInOf[_poolTokenAddress][_user].inP2P.mul(
+            p2pSupplyIndex
+        ) +
+            supplyBalanceInOf[_poolTokenAddress][_user].onPool.mul(
+                ICToken(_poolTokenAddress).exchangeRateStored()
+            ))
+        .mul(assetData.underlyingPrice);
+        assetData.debtValue = (borrowBalanceInOf[_poolTokenAddress][_user].inP2P.mul(
+            p2pBorrowIndex
+        ) +
+            borrowBalanceInOf[_poolTokenAddress][_user].onPool.mul(
+                ICToken(_poolTokenAddress).borrowIndex()
+            ))
+        .mul(assetData.underlyingPrice);
         assetData.maxDebtValue = assetData.collateralValue.mul(assetData.collateralFactor);
     }
 
-    /// @notice Returns the updated peer-to-peer supply index.
+    /// @notice Returns the updated peer-to-peer indexes.
     /// @dev Note: must be called after calling `accrueInterest()` on the cToken to have the correct values.
     /// @param _poolTokenAddress The address of the market.
     /// @return updatedP2PSupplyIndex_ The updated peer-to-peer supply index.
-    function _getUpdatedP2PSupplyIndex(address _poolTokenAddress)
-        internal
-        returns (uint256 updatedP2PSupplyIndex_)
-    {
-        return
-            abi.decode(
-                address(interestRatesManager).functionDelegateCall(
-                    abi.encodeWithSelector(
-                        interestRatesManager.getUpdatedP2PSupplyIndex.selector,
-                        _poolTokenAddress
-                    )
-                ),
-                (uint256)
-            );
-    }
-
-    /// @notice Returns the updated peer-to-peer borrow index.
-    /// @dev Note: must be called after calling `accrueInterest()` on the cToken to have the correct values.
-    /// @param _poolTokenAddress The address of the market.
     /// @return updatedP2PBorrowIndex_ The updated peer-to-peer borrow index.
-    function _getUpdatedP2PBorrowIndex(address _poolTokenAddress)
+    function _getUpdatedP2PIndexes(address _poolTokenAddress)
         internal
-        returns (uint256 updatedP2PBorrowIndex_)
+        returns (uint256 updatedP2PSupplyIndex_, uint256 updatedP2PBorrowIndex_)
     {
+        // Calling accrueInterest so that Compound's indexes used in _getUserLiquidityDataForAsset() are updated.
+        ICToken(_poolTokenAddress).accrueInterest();
+
         return
             abi.decode(
                 address(interestRatesManager).functionDelegateCall(
                     abi.encodeWithSelector(
-                        interestRatesManager.getUpdatedP2PBorrowIndex.selector,
+                        interestRates.getUpdatedP2PIndexes.selector,
                         _poolTokenAddress
                     )
                 ),
-                (uint256)
-            );
-    }
-
-    /// @dev Returns the supply balance of `_user` in the `_poolTokenAddress` market.
-    /// @dev Note: Compute the result with the index stored and not the most up to date one.
-    /// @param _user The address of the user.
-    /// @param _poolTokenAddress The market where to get the supply amount.
-    /// @return The supply balance of the user (in underlying).
-    function _getUserSupplyBalanceInOf(address _poolTokenAddress, address _user)
-        internal
-        returns (uint256)
-    {
-        return
-            supplyBalanceInOf[_poolTokenAddress][_user].inP2P.mul(
-                _getUpdatedP2PSupplyIndex(_poolTokenAddress)
-            ) +
-            supplyBalanceInOf[_poolTokenAddress][_user].onPool.mul(
-                ICToken(_poolTokenAddress).exchangeRateStored()
-            );
-    }
-
-    /// @dev Returns the borrow balance of `_user` in the `_poolTokenAddress` market.
-    /// @param _user The address of the user.
-    /// @param _poolTokenAddress The market where to get the borrow amount.
-    /// @return The borrow balance of the user (in underlying).
-    function _getUserBorrowBalanceInOf(address _poolTokenAddress, address _user)
-        internal
-        returns (uint256)
-    {
-        return
-            borrowBalanceInOf[_poolTokenAddress][_user].inP2P.mul(
-                _getUpdatedP2PBorrowIndex(_poolTokenAddress)
-            ) +
-            borrowBalanceInOf[_poolTokenAddress][_user].onPool.mul(
-                ICToken(_poolTokenAddress).borrowIndex()
+                (uint256, uint256)
             );
     }
 

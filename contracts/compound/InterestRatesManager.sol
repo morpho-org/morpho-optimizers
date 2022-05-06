@@ -56,62 +56,6 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
 
     /// EXTERNAL ///
 
-    /// @notice Returns the updated peer-to-peer supply index.
-    /// @dev Note: Compute the result with the index stored and not the most up to date one.
-    /// @param _poolTokenAddress The address of the market to update.
-    /// @return newP2PSupplyIndex The peer-to-peer supply index after update.
-    function getUpdatedP2PSupplyIndex(address _poolTokenAddress) external view returns (uint256) {
-        if (block.number == lastPoolIndexes[_poolTokenAddress].lastUpdateBlockNumber)
-            return p2pSupplyIndex[_poolTokenAddress];
-        else {
-            ICToken poolToken = ICToken(_poolTokenAddress);
-            Types.LastPoolIndexes storage poolIndexes = lastPoolIndexes[_poolTokenAddress];
-            Types.MarketParameters storage marketParams = marketParameters[_poolTokenAddress];
-
-            Params memory params = Params(
-                p2pSupplyIndex[_poolTokenAddress],
-                p2pBorrowIndex[_poolTokenAddress],
-                poolToken.exchangeRateStored(),
-                poolToken.borrowIndex(),
-                poolIndexes.lastSupplyPoolIndex,
-                poolIndexes.lastBorrowPoolIndex,
-                marketParams.reserveFactor,
-                marketParams.p2pIndexCursor,
-                deltas[_poolTokenAddress]
-            );
-
-            return _computeP2PSupplyIndex(params);
-        }
-    }
-
-    /// @notice Returns the updated peer-to-peer borrow index.
-    /// @dev Note: Compute the result with the index stored and not the most up to date one.
-    /// @param _poolTokenAddress The address of the market to update.
-    /// @return newP2PSupplyIndex The peer-to-peer borrow index after update.
-    function getUpdatedP2PBorrowIndex(address _poolTokenAddress) external view returns (uint256) {
-        if (block.number == lastPoolIndexes[_poolTokenAddress].lastUpdateBlockNumber)
-            return p2pBorrowIndex[_poolTokenAddress];
-        else {
-            ICToken poolToken = ICToken(_poolTokenAddress);
-            Types.LastPoolIndexes storage poolIndexes = lastPoolIndexes[_poolTokenAddress];
-            Types.MarketParameters storage marketParams = marketParameters[_poolTokenAddress];
-
-            Params memory params = Params(
-                p2pSupplyIndex[_poolTokenAddress],
-                p2pBorrowIndex[_poolTokenAddress],
-                poolToken.exchangeRateStored(),
-                poolToken.borrowIndex(),
-                poolIndexes.lastSupplyPoolIndex,
-                poolIndexes.lastBorrowPoolIndex,
-                marketParams.reserveFactor,
-                marketParams.p2pIndexCursor,
-                deltas[_poolTokenAddress]
-            );
-
-            return _computeP2PBorrowIndex(params);
-        }
-    }
-
     /// @notice Updates the peer-to-peer indexes.
     /// @param _poolTokenAddress The address of the market to update.
     function updateP2PIndexes(address _poolTokenAddress) external {
@@ -151,6 +95,37 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
                 poolSupplyIndex,
                 poolBorrowIndex
             );
+        }
+    }
+
+    /// @notice Returns the updated peer-to-peer indexes.
+    /// @param _poolTokenAddress The address of the market.
+    /// @return _updatedP2PSupplyIndex The address.
+    /// @return _updatedP2PBorrowIndex The address.
+    function getUpdatedP2PIndexes(address _poolTokenAddress) external returns (uint256, uint256) {
+        if (block.timestamp > lastPoolIndexes[_poolTokenAddress].lastUpdateBlockNumber) {
+            ICToken poolToken = ICToken(_poolTokenAddress);
+            Types.LastPoolIndexes storage poolIndexes = lastPoolIndexes[_poolTokenAddress];
+            Types.MarketParameters storage marketParams = marketParameters[_poolTokenAddress];
+
+            uint256 poolSupplyIndex = poolToken.exchangeRateCurrent();
+            uint256 poolBorrowIndex = poolToken.borrowIndex();
+
+            Params memory params = Params(
+                p2pSupplyIndex[_poolTokenAddress],
+                p2pBorrowIndex[_poolTokenAddress],
+                poolSupplyIndex,
+                poolBorrowIndex,
+                poolIndexes.lastSupplyPoolIndex,
+                poolIndexes.lastBorrowPoolIndex,
+                marketParams.reserveFactor,
+                marketParams.p2pIndexCursor,
+                deltas[_poolTokenAddress]
+            );
+
+            return computeP2PIndexes(params);
+        } else {
+            return (p2pSupplyIndex[_poolTokenAddress], p2pBorrowIndex[_poolTokenAddress]);
         }
     }
 
@@ -209,56 +184,6 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
     }
 
     /// INTERNAL ///
-
-    /// @notice Computes and return the new peer-to-peer supply index.
-    /// @param _params Computation parameters.
-    /// @return The updated p2pSupplyIndex.
-    function _computeP2PSupplyIndex(Params memory _params) internal pure returns (uint256) {
-        RateParams memory supplyParams = RateParams({
-            p2pIndex: _params.lastP2PSupplyIndex,
-            poolIndex: _params.poolSupplyIndex,
-            lastPoolIndex: _params.lastPoolSupplyIndex,
-            reserveFactor: _params.reserveFactor,
-            p2pAmount: _params.delta.p2pSupplyAmount,
-            p2pDelta: _params.delta.p2pSupplyDelta
-        });
-
-        (uint256 p2pSupplyGrowthFactor, uint256 poolSupplyGrowthFactor, , ) = _computeGrowthFactors(
-            _params.poolSupplyIndex,
-            _params.poolBorrowIndex,
-            _params.lastPoolSupplyIndex,
-            _params.lastPoolBorrowIndex,
-            _params.reserveFactor,
-            _params.p2pIndexCursor
-        );
-
-        return _computeNewP2PIndex(supplyParams, p2pSupplyGrowthFactor, poolSupplyGrowthFactor);
-    }
-
-    /// @notice Computes and return the new peer-to-peer borrow index.
-    /// @param _params Computation parameters.
-    /// @return The updated p2pBorrowIndex.
-    function _computeP2PBorrowIndex(Params memory _params) internal pure returns (uint256) {
-        RateParams memory borrowParams = RateParams({
-            p2pIndex: _params.lastP2PBorrowIndex,
-            poolIndex: _params.poolBorrowIndex,
-            lastPoolIndex: _params.lastPoolBorrowIndex,
-            reserveFactor: _params.reserveFactor,
-            p2pAmount: _params.delta.p2pBorrowAmount,
-            p2pDelta: _params.delta.p2pBorrowDelta
-        });
-
-        (, , uint256 p2pBorrowGrowthFactor, uint256 poolBorrowGrowthFactor) = _computeGrowthFactors(
-            _params.poolSupplyIndex,
-            _params.poolBorrowIndex,
-            _params.lastPoolSupplyIndex,
-            _params.lastPoolBorrowIndex,
-            _params.reserveFactor,
-            _params.p2pIndexCursor
-        );
-
-        return _computeNewP2PIndex(borrowParams, p2pBorrowGrowthFactor, poolBorrowGrowthFactor);
-    }
 
     /// @dev Computes and returns peer-to-peer supply growth factor and peer-to-peer borrow growth factor.
     /// @param _poolSupplyIndex The current pool supply index.
