@@ -299,20 +299,28 @@ contract TestSetupFuzzing is Config, Utils, stdCheats {
         hevm.assume(amount <= borrowable);
     }
 
-    /// @notice checks morpho will not revert because of Compound rounding the amount to 0
+    /// @notice checks morpho will not revert because of Compound rounding the amount to 0.
+    /// @param underlying address of the underlying to supply.
+    /// @param amount to check.
     function assumeSupplyAmountIsCorrect(address underlying, uint256 amount) internal {
         hevm.assume(amount > 0);
         // All the signers have the same balance at the beginning of a test.
         hevm.assume(amount <= ERC20(underlying).balanceOf(address(supplier1)));
     }
 
-    /// @notice a borrow amount can be too high on compound due to governance or unsufficient supply
-    /// @param market address of the CToken
+    /// @notice a borrow amount can be too high on compound due to governance or unsufficient supply.
+    /// @param market address of the CToken.
+    /// @param amount to check.
     function assumeBorrowAmountIsCorrect(address market, uint256 amount) internal {
         hevm.assume(amount <= ICToken(market).getCash());
         hevm.assume(amount > 0);
         uint256 borrowCap = comptroller.borrowCaps(market);
         if (borrowCap != 0) hevm.assume(amount <= borrowCap);
+    }
+
+    /// @param amount considered for the liquidation.
+    function assumeLiquidateAmountIsCorrect(uint256 amount) internal {
+        hevm.assume(amount > 0);
     }
 
     function createAndSetCustomPriceOracle() public returns (SimplePriceOracle) {

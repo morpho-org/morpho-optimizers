@@ -19,7 +19,7 @@ contract TestSupplyFuzzing is TestSetupFuzzing {
         (address asset, address underlying) = getAsset(_asset);
         uint256 amount = _amount;
 
-        assumeSupplyAmountIsCorrect(asset, amount);
+        assumeSupplyAmountIsCorrect(underlying, amount);
         supplier1.approve(underlying, amount);
         supplier1.supply(asset, amount);
 
@@ -53,7 +53,7 @@ contract TestSupplyFuzzing is TestSetupFuzzing {
 
         uint256 suppliedAmount = _suppliedAmount;
 
-        assumeSupplyAmountIsCorrect(vars.suppliedCToken, suppliedAmount);
+        assumeSupplyAmountIsCorrect(vars.suppliedUnderlying, suppliedAmount);
         hevm.assume(_randomModulo > 0);
 
         borrower1.approve(vars.suppliedUnderlying, suppliedAmount);
@@ -84,8 +84,8 @@ contract TestSupplyFuzzing is TestSetupFuzzing {
         (vars.suppliedCToken, vars.suppliedUnderlying) = getAsset(_supplyAsset);
         (vars.collateralCToken, vars.collateralUnderlying) = getAsset(_collateralAsset);
 
-        assumeSupplyAmountIsCorrect(vars.suppliedCToken, _suppliedAmount);
-        assumeBorrowAmountIsCorrect(vars.suppliedCToken, _borrowedAmount);
+        assumeSupplyAmountIsCorrect(vars.suppliedUnderlying, _suppliedAmount);
+        assumeBorrowAmountIsCorrect(vars.suppliedUnderlying, _borrowedAmount);
 
         uint256 collateralAmountToSupply = ERC20(vars.collateralUnderlying).balanceOf(
             address(borrower1)
@@ -119,8 +119,8 @@ contract TestSupplyFuzzing is TestSetupFuzzing {
         (vars.collateralCToken, vars.collateralUnderlying) = getAsset(_collateralAsset);
         uint256 amountPerBorrower = _suppliedAmount / NMAX;
 
-        assumeSupplyAmountIsCorrect(vars.suppliedCToken, _suppliedAmount);
-        assumeBorrowAmountIsCorrect(vars.suppliedCToken, amountPerBorrower);
+        assumeSupplyAmountIsCorrect(vars.suppliedUnderlying, _suppliedAmount);
+        assumeBorrowAmountIsCorrect(vars.suppliedUnderlying, amountPerBorrower);
 
         setMaxGasForMatchingHelper(
             type(uint64).max,
