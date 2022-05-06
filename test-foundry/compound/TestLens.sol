@@ -183,7 +183,7 @@ contract TestLens is TestSetup {
         assertEq(borrowable, 0);
     }
 
-    function testMaxCapicitiesWithNothingWithSupply() public {
+    function testMaxCapacitiesWithNothingWithSupply() public {
         uint256 amount = to6Decimals(10000 ether);
 
         borrower1.approve(usdc, amount);
@@ -227,7 +227,7 @@ contract TestLens is TestSetup {
         assertEq(borrowable, expectedBorrowableDai, "borrowable DAI");
     }
 
-    function testMaxCapicitiesWithNothingWithSupplyWithMultipleAssetsAndBorrow() public {
+    function testMaxCapacitiesWithNothingWithSupplyWithMultipleAssetsAndBorrow() public {
         uint256 amount = 10_000 ether;
 
         borrower1.approve(usdc, to6Decimals(amount));
