@@ -247,7 +247,7 @@ contract Lens {
         view
         returns (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex)
     {
-        if (block.timestamp == morpho.lastPoolIndexes(_poolTokenAddress).lastUpdateBlockNumber) {
+        if (block.number == morpho.lastPoolIndexes(_poolTokenAddress).lastUpdateBlockNumber) {
             newP2PSupplyIndex = morpho.p2pSupplyIndex(_poolTokenAddress);
             newP2PBorrowIndex = morpho.p2pBorrowIndex(_poolTokenAddress);
         } else {
@@ -278,7 +278,7 @@ contract Lens {
     /// @param _poolTokenAddress The address of the market to update.
     /// @return newP2PSupplyIndex The peer-to-peer supply index after update.
     function getUpdatedP2PSupplyIndex(address _poolTokenAddress) public view returns (uint256) {
-        if (block.timestamp == morpho.lastPoolIndexes(_poolTokenAddress).lastUpdateBlockNumber)
+        if (block.number == morpho.lastPoolIndexes(_poolTokenAddress).lastUpdateBlockNumber)
             return morpho.p2pSupplyIndex(_poolTokenAddress);
         else {
             Types.LastPoolIndexes memory poolIndexes = morpho.lastPoolIndexes(_poolTokenAddress);
@@ -308,7 +308,7 @@ contract Lens {
     /// @param _poolTokenAddress The address of the market to update.
     /// @return newP2PSupplyIndex The peer-to-peer borrow index after update.
     function getUpdatedP2PBorrowIndex(address _poolTokenAddress) public view returns (uint256) {
-        if (block.timestamp == morpho.lastPoolIndexes(_poolTokenAddress).lastUpdateBlockNumber)
+        if (block.number == morpho.lastPoolIndexes(_poolTokenAddress).lastUpdateBlockNumber)
             return morpho.p2pBorrowIndex(_poolTokenAddress);
         else {
             Types.LastPoolIndexes memory poolIndexes = morpho.lastPoolIndexes(_poolTokenAddress);
