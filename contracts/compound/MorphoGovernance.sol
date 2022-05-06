@@ -106,8 +106,8 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @param _positionsManager The `positionsManager`.
     /// @param _interestRates The `interestRates`.
     /// @param _comptroller The `comptroller`.
-    /// @param _dustThreshold The `dustThreshold`.
     /// @param _maxGasForMatching The `maxGasForMatching`.
+    /// @param _dustThreshold The `dustThreshold`.
     /// @param _maxSortedUsers The `_maxSortedUsers`.
     /// @param _cEth The cETH address.
     /// @param _wEth The wETH address.
@@ -115,8 +115,8 @@ abstract contract MorphoGovernance is MorphoUtils {
         IPositionsManager _positionsManager,
         IInterestRates _interestRates,
         IComptroller _comptroller,
-        uint256 _dustThreshold,
         Types.MaxGasForMatching memory _maxGasForMatching,
+        uint256 _dustThreshold,
         uint256 _maxSortedUsers,
         address _cEth,
         address _wEth
@@ -128,8 +128,8 @@ abstract contract MorphoGovernance is MorphoUtils {
         positionsManager = _positionsManager;
         comptroller = _comptroller;
 
-        dustThreshold = _dustThreshold;
         maxGasForMatching = _maxGasForMatching;
+        dustThreshold = _dustThreshold;
         maxSortedUsers = _maxSortedUsers;
 
         cEth = _cEth;
