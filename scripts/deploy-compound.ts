@@ -57,7 +57,7 @@ async function main() {
       maxGas,
       100,
       config.tokens.cEth.address,
-      config.tokens.cEth.address,
+      config.tokens.wEth.address,
     ],
     { unsafeAllow: ['delegatecall'] }
   );
