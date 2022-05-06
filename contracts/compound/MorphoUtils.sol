@@ -17,6 +17,9 @@ abstract contract MorphoUtils is MorphoStorage {
 
     /// ERRORS ///
 
+    /// @notice Thrown when the Compound's oracle failed.
+    error CompoundOracleFailed();
+
     /// @notice Thrown when the market is not created yet.
     error MarketNotCreated();
 
@@ -178,6 +181,7 @@ abstract contract MorphoUtils is MorphoStorage {
         ICompoundOracle _oracle
     ) internal returns (Types.AssetLiquidityData memory assetData) {
         assetData.underlyingPrice = _oracle.getUnderlyingPrice(_poolTokenAddress);
+        if (assetData.underlyingPrice == 0) revert CompoundOracleFailed();
         (, assetData.collateralFactor, ) = comptroller.markets(_poolTokenAddress);
 
         assetData.collateralValue = _getUserSupplyBalanceInOf(_poolTokenAddress, _user).mul(
