@@ -17,7 +17,7 @@ contract TestWithdraw is TestSetupFuzzing {
 
         borrower1.borrow(cDai, amount);
 
-        hevm.expectRevert(abi.encodeWithSignature("DebtValueAboveMax()"));
+        hevm.expectRevert(abi.encodeWithSignature("UnauthorisedWithdraw()"));
         borrower1.withdraw(cUsdc, to6Decimals(collateral));
     }
 
@@ -250,7 +250,7 @@ contract TestWithdraw is TestSetupFuzzing {
 
         // supplier1 tries to withdraw more than allowed.
         supplier1.borrow(cUsdc, to6Decimals(toBorrow));
-        hevm.expectRevert(abi.encodeWithSignature("DebtValueAboveMax()"));
+        hevm.expectRevert(abi.encodeWithSignature("UnauthorisedWithdraw()"));
         supplier1.withdraw(cDai, toSupply);
     }
 
@@ -282,5 +282,55 @@ contract TestWithdraw is TestSetupFuzzing {
         // supplier1 tries to withdraw.
         borrower1.borrow(cDai, toBorrow);
         supplier1.withdraw(cDai, toSupply);
+    }
+
+    function testWithdrawMultipleAssets(
+        uint8 _proportionBorrowed,
+        uint8 _suppliedAsset1,
+        uint8 _suppliedAsset2,
+        uint128 _amount1,
+        uint128 _amount2
+    ) public {
+        (address asset1, address underlying1) = getAsset(_suppliedAsset1);
+        (address asset2, address underlying2) = getAsset(_suppliedAsset2);
+
+        hevm.assume(
+            _amount1 >= 1e14 && _amount1 < ERC20(underlying1).balanceOf(address(asset1)) // Less than the available liquidity of CTokens, but more than would be rounded to zero
+        );
+        hevm.assume(_amount2 >= 1e14 && _amount2 < ERC20(underlying2).balanceOf(address(asset2)));
+        hevm.assume(_proportionBorrowed > 0);
+
+        supplier1.approve(underlying1, _amount1);
+        supplier1.supply(asset1, _amount1);
+        supplier1.approve(underlying2, _amount2);
+        supplier1.supply(asset2, _amount2);
+
+        borrower1.approve(dai, type(uint256).max);
+        borrower1.supply(cDai, 10_000_000 * 1e18);
+
+        (, uint256 borrowable1) = lens.getUserMaxCapacitiesForAsset(address(borrower1), asset1);
+        (, uint256 borrowable2) = lens.getUserMaxCapacitiesForAsset(address(borrower1), asset2);
+
+        // Amounts available in the cTokens
+        uint256 compBalance1 = asset1 == cEth
+            ? asset1.balance
+            : ERC20(underlying1).balanceOf(asset1);
+        uint256 compBalance2 = asset2 == cEth
+            ? asset2.balance
+            : ERC20(underlying2).balanceOf(asset2);
+
+        borrowable1 = borrowable1 > compBalance1 ? compBalance1 : borrowable1;
+        borrowable2 = borrowable2 > compBalance2 ? compBalance2 : borrowable2;
+
+        uint256 toBorrow1 = (_amount1 * _proportionBorrowed) / type(uint8).max;
+        toBorrow1 = toBorrow1 > borrowable1 / 2 ? borrowable1 / 2 : toBorrow1;
+        uint256 toBorrow2 = (_amount2 * _proportionBorrowed) / type(uint8).max;
+        toBorrow2 = toBorrow2 > borrowable2 / 2 ? borrowable2 / 2 : toBorrow2;
+
+        borrower1.borrow(asset1, toBorrow1);
+        borrower1.borrow(asset2, toBorrow2);
+
+        supplier1.withdraw(asset1, _amount1);
+        supplier1.withdraw(asset2, _amount2);
     }
 }
