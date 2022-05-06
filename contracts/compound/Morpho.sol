@@ -74,19 +74,23 @@ contract Morpho is MorphoGovernance {
     /// @notice Emitted when a liquidation happens.
     /// @param _liquidator The address of the liquidator.
     /// @param _liquidated The address of the liquidated.
-    /// @param _amountRepaid The amount of borrowed asset repaid (in underlying).
     /// @param _poolTokenBorrowedAddress The address of the borrowed asset.
-    /// @param _amountSeized The amount of collateral asset seized (in underlying).
+    /// @param _amountRepaid The amount of borrowed asset repaid (in underlying).
+    /// @param _borrowBalanceOnPool The borrow balance on pool after update.
+    /// @param _borrowBalanceInP2P The borrow balance in peer-to-peer after update.
     /// @param _poolTokenCollateralAddress The address of the collateral asset seized.
+    /// @param _amountSeized The amount of collateral asset seized (in underlying).
+    /// @param _collateralBalanceOnPool The collateral balance on pool after update.
+    /// @param _collateralBalanceInP2P The collateral balance in peer-to-peer after update.
     event Liquidated(
         address _liquidator,
         address indexed _liquidated,
-        uint256 _amountRepaid,
         address indexed _poolTokenBorrowedAddress,
+        uint256 _amountRepaid,
         uint256 _borrowBalanceOnPool,
         uint256 _borrowBalanceInP2P,
-        uint256 _amountSeized,
         address indexed _poolTokenCollateralAddress,
+        uint256 _amountSeized,
         uint256 _collateralBalanceOnPool,
         uint256 _collateralBalanceInP2P
     );
@@ -354,12 +358,12 @@ contract Morpho is MorphoGovernance {
         emit Liquidated(
             msg.sender,
             _borrower,
-            _amount,
             _poolTokenBorrowedAddress,
+            _amount,
             borrowBalance.onPool,
             borrowBalance.inP2P,
-            amountSeized,
             _poolTokenCollateralAddress,
+            amountSeized,
             collateralBalance.onPool,
             collateralBalance.inP2P
         );
