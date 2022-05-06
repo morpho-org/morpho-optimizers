@@ -42,12 +42,16 @@ contract InterestRates is IInterestRates, MorphoStorage {
 
     /// @notice Emitted when the peer-to-peer indexes of a market are updated.
     /// @param _poolTokenAddress The address of the market updated.
-    /// @param _newP2PSupplyIndex The new value of the supply index from peer-to-peer unit to underlying.
-    /// @param _newP2PBorrowIndex The new value of the borrow index from peer-to-peer unit to underlying.
+    /// @param _p2pSupplyIndex The updated supply index from peer-to-peer unit to underlying.
+    /// @param _p2pBorrowIndex The updated borrow index from peer-to-peer unit to underlying.
+    /// @param _poolSupplyIndex The updated pool supply index.
+    /// @param _poolBorrowIndex The updated pool borrow index.
     event P2PIndexesUpdated(
         address indexed _poolTokenAddress,
-        uint256 _newP2PSupplyIndex,
-        uint256 _newP2PBorrowIndex
+        uint256 _p2pSupplyIndex,
+        uint256 _p2pBorrowIndex,
+        uint256 _poolSupplyIndex,
+        uint256 _poolBorrowIndex
     );
 
     /// EXTERNAL ///
@@ -140,7 +144,13 @@ contract InterestRates is IInterestRates, MorphoStorage {
             poolIndexes.lastSupplyPoolIndex = uint112(poolSupplyIndex);
             poolIndexes.lastBorrowPoolIndex = uint112(poolBorrowIndex);
 
-            emit P2PIndexesUpdated(_poolTokenAddress, newP2PSupplyIndex, newP2PBorrowIndex);
+            emit P2PIndexesUpdated(
+                _poolTokenAddress,
+                newP2PSupplyIndex,
+                newP2PBorrowIndex,
+                poolSupplyIndex,
+                poolBorrowIndex
+            );
         }
     }
 
