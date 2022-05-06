@@ -9,7 +9,7 @@ async function main() {
 
   console.log('\n🦋 Deploying Morpho contracts for Compound');
   console.log('👩 Deployer account:', deployer.address);
-  console.log('🤑 Account balance:', (await deployer.getBalance()).toNumber() / 1e18);
+  console.log('🤑 Account balance:', (await deployer.getBalance()).toString());
 
   /// INTEREST RATES DEPLOYMENT ///
 
@@ -62,7 +62,7 @@ async function main() {
     { unsafeAllow: ['delegatecall'] }
   );
   await morpho.deployed();
-  const morphoImplementationAddress = await hre.upgrades.erc1967.getImplementationAddress(morpho.address);
+  const morphoImplementationAddress = await upgrades.erc1967.getImplementationAddress(morpho.address);
 
   console.log('🎉 Morpho Proxy deployed to address:', morpho.address);
   console.log('🎉 Morpho Implementation deployed to address:', morphoImplementationAddress);
