@@ -246,7 +246,11 @@ contract TestSetupFuzzing is Config, Utils, stdCheats {
 
     function fillUserBalances(User _user) internal {
         for (uint256 i; i < tokens.length; i++) {
-            tip(tokens[i], address(_user), ERC20(tokens[i]).totalSupply() / 2);
+            if (tokens[i] == wEth) {
+                tip(tokens[i], address(_user), uint256(5856057446759574251267521) / 2); // wEth totalSupply() returns a weird value on pinned block
+            } else {
+                tip(tokens[i], address(_user), ERC20(tokens[i]).totalSupply() / 2);
+            }
         }
     }
 
