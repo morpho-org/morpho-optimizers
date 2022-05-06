@@ -849,6 +849,622 @@
           }
         }
       }
+    },
+    "5e87a2fbb15af545ee4315fc312adc526060cb06e706e3f3703412746d2e91ee": {
+      "address": "0x310164Eac55BC9ed5D5FAa0489E5f1Db0174c416",
+      "txHash": "0xb730095a4d9b1b23aaf4317f0d06d5f70f4fde8d8b122b67968ab03afed97137",
+      "layout": {
+        "storage": [
+          {
+            "label": "_initialized",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_bool",
+            "contract": "Initializable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:39"
+          },
+          {
+            "label": "_initializing",
+            "offset": 1,
+            "slot": "0",
+            "type": "t_bool",
+            "contract": "Initializable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:44"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ContextUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol:36"
+          },
+          {
+            "label": "_owner",
+            "offset": 0,
+            "slot": "51",
+            "type": "t_address",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:22"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "52",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:87"
+          },
+          {
+            "label": "_status",
+            "offset": 0,
+            "slot": "101",
+            "type": "t_uint256",
+            "contract": "ReentrancyGuardUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol:38"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "102",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "ReentrancyGuardUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol:74"
+          },
+          {
+            "label": "isCompRewardsActive",
+            "offset": 0,
+            "slot": "151",
+            "type": "t_bool",
+            "contract": "MorphoStorage",
+            "src": "contracts/compound/morpho-parts/MorphoStorage.sol:95"
+          },
+          {
+            "label": "maxSortedUsers",
+            "offset": 0,
+            "slot": "152",
+            "type": "t_uint256",
+            "contract": "MorphoStorage",
+            "src": "contracts/compound/morpho-parts/MorphoStorage.sol:96"
+          },
+          {
+            "label": "dustThreshold",
+            "offset": 0,
+            "slot": "153",
+            "type": "t_uint256",
+            "contract": "MorphoStorage",
+            "src": "contracts/compound/morpho-parts/MorphoStorage.sol:97"
+          },
+          {
+            "label": "maxGasForMatching",
+            "offset": 0,
+            "slot": "154",
+            "type": "t_struct(MaxGasForMatching)26803_storage",
+            "contract": "MorphoStorage",
+            "src": "contracts/compound/morpho-parts/MorphoStorage.sol:98"
+          },
+          {
+            "label": "suppliersInP2P",
+            "offset": 0,
+            "slot": "155",
+            "type": "t_mapping(t_address,t_struct(List)16836_storage)",
+            "contract": "MorphoStorage",
+            "src": "contracts/compound/morpho-parts/MorphoStorage.sol:102"
+          },
+          {
+            "label": "suppliersOnPool",
+            "offset": 0,
+            "slot": "156",
+            "type": "t_mapping(t_address,t_struct(List)16836_storage)",
+            "contract": "MorphoStorage",
+            "src": "contracts/compound/morpho-parts/MorphoStorage.sol:103"
+          },
+          {
+            "label": "borrowersInP2P",
+            "offset": 0,
+            "slot": "157",
+            "type": "t_mapping(t_address,t_struct(List)16836_storage)",
+            "contract": "MorphoStorage",
+            "src": "contracts/compound/morpho-parts/MorphoStorage.sol:104"
+          },
+          {
+            "label": "borrowersOnPool",
+            "offset": 0,
+            "slot": "158",
+            "type": "t_mapping(t_address,t_struct(List)16836_storage)",
+            "contract": "MorphoStorage",
+            "src": "contracts/compound/morpho-parts/MorphoStorage.sol:105"
+          },
+          {
+            "label": "supplyBalanceInOf",
+            "offset": 0,
+            "slot": "159",
+            "type": "t_mapping(t_address,t_mapping(t_address,t_struct(SupplyBalance)26789_storage))",
+            "contract": "MorphoStorage",
+            "src": "contracts/compound/morpho-parts/MorphoStorage.sol:106"
+          },
+          {
+            "label": "borrowBalanceInOf",
+            "offset": 0,
+            "slot": "160",
+            "type": "t_mapping(t_address,t_mapping(t_address,t_struct(BorrowBalance)26794_storage))",
+            "contract": "MorphoStorage",
+            "src": "contracts/compound/morpho-parts/MorphoStorage.sol:107"
+          },
+          {
+            "label": "userMembership",
+            "offset": 0,
+            "slot": "161",
+            "type": "t_mapping(t_address,t_mapping(t_address,t_bool))",
+            "contract": "MorphoStorage",
+            "src": "contracts/compound/morpho-parts/MorphoStorage.sol:108"
+          },
+          {
+            "label": "enteredMarkets",
+            "offset": 0,
+            "slot": "162",
+            "type": "t_mapping(t_address,t_array(t_address)dyn_storage)",
+            "contract": "MorphoStorage",
+            "src": "contracts/compound/morpho-parts/MorphoStorage.sol:109"
+          },
+          {
+            "label": "marketsCreated",
+            "offset": 0,
+            "slot": "163",
+            "type": "t_array(t_address)dyn_storage",
+            "contract": "MorphoStorage",
+            "src": "contracts/compound/morpho-parts/MorphoStorage.sol:113"
+          },
+          {
+            "label": "noP2P",
+            "offset": 0,
+            "slot": "164",
+            "type": "t_mapping(t_address,t_bool)",
+            "contract": "MorphoStorage",
+            "src": "contracts/compound/morpho-parts/MorphoStorage.sol:114"
+          },
+          {
+            "label": "p2pSupplyIndex",
+            "offset": 0,
+            "slot": "165",
+            "type": "t_mapping(t_address,t_uint256)",
+            "contract": "MorphoStorage",
+            "src": "contracts/compound/morpho-parts/MorphoStorage.sol:115"
+          },
+          {
+            "label": "p2pBorrowIndex",
+            "offset": 0,
+            "slot": "166",
+            "type": "t_mapping(t_address,t_uint256)",
+            "contract": "MorphoStorage",
+            "src": "contracts/compound/morpho-parts/MorphoStorage.sol:116"
+          },
+          {
+            "label": "lastPoolIndexes",
+            "offset": 0,
+            "slot": "167",
+            "type": "t_mapping(t_address,t_struct(LastPoolIndexes)26843_storage)",
+            "contract": "MorphoStorage",
+            "src": "contracts/compound/morpho-parts/MorphoStorage.sol:117"
+          },
+          {
+            "label": "marketParameters",
+            "offset": 0,
+            "slot": "168",
+            "type": "t_mapping(t_address,t_struct(MarketParameters)26848_storage)",
+            "contract": "MorphoStorage",
+            "src": "contracts/compound/morpho-parts/MorphoStorage.sol:118"
+          },
+          {
+            "label": "marketStatuses",
+            "offset": 0,
+            "slot": "169",
+            "type": "t_mapping(t_address,t_struct(MarketStatuses)26855_storage)",
+            "contract": "MorphoStorage",
+            "src": "contracts/compound/morpho-parts/MorphoStorage.sol:119"
+          },
+          {
+            "label": "deltas",
+            "offset": 0,
+            "slot": "170",
+            "type": "t_mapping(t_address,t_struct(Delta)24959_storage)",
+            "contract": "MorphoStorage",
+            "src": "contracts/compound/morpho-parts/MorphoStorage.sol:120"
+          },
+          {
+            "label": "positionsManager",
+            "offset": 0,
+            "slot": "171",
+            "type": "t_contract(IPositionsManager)23839",
+            "contract": "MorphoStorage",
+            "src": "contracts/compound/morpho-parts/MorphoStorage.sol:124"
+          },
+          {
+            "label": "incentivesVault",
+            "offset": 0,
+            "slot": "172",
+            "type": "t_contract(IIncentivesVault)23599",
+            "contract": "MorphoStorage",
+            "src": "contracts/compound/morpho-parts/MorphoStorage.sol:125"
+          },
+          {
+            "label": "rewardsManager",
+            "offset": 0,
+            "slot": "173",
+            "type": "t_contract(IRewardsManager)23946",
+            "contract": "MorphoStorage",
+            "src": "contracts/compound/morpho-parts/MorphoStorage.sol:126"
+          },
+          {
+            "label": "interestRates",
+            "offset": 0,
+            "slot": "174",
+            "type": "t_contract(IInterestRates)23630",
+            "contract": "MorphoStorage",
+            "src": "contracts/compound/morpho-parts/MorphoStorage.sol:127"
+          },
+          {
+            "label": "comptroller",
+            "offset": 0,
+            "slot": "175",
+            "type": "t_contract(IComptroller)24406",
+            "contract": "MorphoStorage",
+            "src": "contracts/compound/morpho-parts/MorphoStorage.sol:128"
+          },
+          {
+            "label": "treasuryVault",
+            "offset": 0,
+            "slot": "176",
+            "type": "t_address",
+            "contract": "MorphoStorage",
+            "src": "contracts/compound/morpho-parts/MorphoStorage.sol:129"
+          },
+          {
+            "label": "cEth",
+            "offset": 0,
+            "slot": "177",
+            "type": "t_address",
+            "contract": "MorphoStorage",
+            "src": "contracts/compound/morpho-parts/MorphoStorage.sol:130"
+          },
+          {
+            "label": "wEth",
+            "offset": 0,
+            "slot": "178",
+            "type": "t_address",
+            "contract": "MorphoStorage",
+            "src": "contracts/compound/morpho-parts/MorphoStorage.sol:131"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_address)dyn_storage": {
+            "label": "address[]",
+            "numberOfBytes": "32"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]",
+            "numberOfBytes": "1568"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]",
+            "numberOfBytes": "1600"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_contract(IComptroller)24406": {
+            "label": "contract IComptroller",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IIncentivesVault)23599": {
+            "label": "contract IIncentivesVault",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IInterestRates)23630": {
+            "label": "contract IInterestRates",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IPositionsManager)23839": {
+            "label": "contract IPositionsManager",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IRewardsManager)23946": {
+            "label": "contract IRewardsManager",
+            "numberOfBytes": "20"
+          },
+          "t_mapping(t_address,t_array(t_address)dyn_storage)": {
+            "label": "mapping(address => address[])",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_bool)": {
+            "label": "mapping(address => bool)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_mapping(t_address,t_bool))": {
+            "label": "mapping(address => mapping(address => bool))",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_mapping(t_address,t_struct(BorrowBalance)26794_storage))": {
+            "label": "mapping(address => mapping(address => struct MorphoStorage.BorrowBalance))",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_mapping(t_address,t_struct(SupplyBalance)26789_storage))": {
+            "label": "mapping(address => mapping(address => struct MorphoStorage.SupplyBalance))",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_struct(Account)16826_storage)": {
+            "label": "mapping(address => struct DoubleLinkedList.Account)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_struct(BorrowBalance)26794_storage)": {
+            "label": "mapping(address => struct MorphoStorage.BorrowBalance)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_struct(Delta)24959_storage)": {
+            "label": "mapping(address => struct Types.Delta)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_struct(LastPoolIndexes)26843_storage)": {
+            "label": "mapping(address => struct MorphoStorage.LastPoolIndexes)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_struct(List)16836_storage)": {
+            "label": "mapping(address => struct DoubleLinkedList.List)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_struct(MarketParameters)26848_storage)": {
+            "label": "mapping(address => struct MorphoStorage.MarketParameters)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_struct(MarketStatuses)26855_storage)": {
+            "label": "mapping(address => struct MorphoStorage.MarketStatuses)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_struct(SupplyBalance)26789_storage)": {
+            "label": "mapping(address => struct MorphoStorage.SupplyBalance)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_uint256)": {
+            "label": "mapping(address => uint256)",
+            "numberOfBytes": "32"
+          },
+          "t_struct(Account)16826_storage": {
+            "label": "struct DoubleLinkedList.Account",
+            "members": [
+              {
+                "label": "prev",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "next",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "value",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "2"
+              }
+            ],
+            "numberOfBytes": "96"
+          },
+          "t_struct(BorrowBalance)26794_storage": {
+            "label": "struct MorphoStorage.BorrowBalance",
+            "members": [
+              {
+                "label": "inP2P",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "onPool",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "1"
+              }
+            ],
+            "numberOfBytes": "64"
+          },
+          "t_struct(Delta)24959_storage": {
+            "label": "struct Types.Delta",
+            "members": [
+              {
+                "label": "supplyP2PDelta",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "borrowP2PDelta",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "supplyP2PAmount",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "2"
+              },
+              {
+                "label": "borrowP2PAmount",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "3"
+              }
+            ],
+            "numberOfBytes": "128"
+          },
+          "t_struct(LastPoolIndexes)26843_storage": {
+            "label": "struct MorphoStorage.LastPoolIndexes",
+            "members": [
+              {
+                "label": "lastUpdateBlockNumber",
+                "type": "t_uint32",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "lastSupplyPoolIndex",
+                "type": "t_uint112",
+                "offset": 4,
+                "slot": "0"
+              },
+              {
+                "label": "lastBorrowPoolIndex",
+                "type": "t_uint112",
+                "offset": 18,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(List)16836_storage": {
+            "label": "struct DoubleLinkedList.List",
+            "members": [
+              {
+                "label": "accounts",
+                "type": "t_mapping(t_address,t_struct(Account)16826_storage)",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "head",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "tail",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "2"
+              }
+            ],
+            "numberOfBytes": "96"
+          },
+          "t_struct(MarketParameters)26848_storage": {
+            "label": "struct MorphoStorage.MarketParameters",
+            "members": [
+              {
+                "label": "reserveFactor",
+                "type": "t_uint16",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "p2pIndexCursor",
+                "type": "t_uint16",
+                "offset": 2,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(MarketStatuses)26855_storage": {
+            "label": "struct MorphoStorage.MarketStatuses",
+            "members": [
+              {
+                "label": "isCreated",
+                "type": "t_bool",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "isPaused",
+                "type": "t_bool",
+                "offset": 1,
+                "slot": "0"
+              },
+              {
+                "label": "isPartiallyPaused",
+                "type": "t_bool",
+                "offset": 2,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(MaxGasForMatching)26803_storage": {
+            "label": "struct MorphoStorage.MaxGasForMatching",
+            "members": [
+              {
+                "label": "supply",
+                "type": "t_uint64",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "borrow",
+                "type": "t_uint64",
+                "offset": 8,
+                "slot": "0"
+              },
+              {
+                "label": "withdraw",
+                "type": "t_uint64",
+                "offset": 16,
+                "slot": "0"
+              },
+              {
+                "label": "repay",
+                "type": "t_uint64",
+                "offset": 24,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(SupplyBalance)26789_storage": {
+            "label": "struct MorphoStorage.SupplyBalance",
+            "members": [
+              {
+                "label": "inP2P",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "onPool",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "1"
+              }
+            ],
+            "numberOfBytes": "64"
+          },
+          "t_uint112": {
+            "label": "uint112",
+            "numberOfBytes": "14"
+          },
+          "t_uint16": {
+            "label": "uint16",
+            "numberOfBytes": "2"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint32": {
+            "label": "uint32",
+            "numberOfBytes": "4"
+          },
+          "t_uint64": {
+            "label": "uint64",
+            "numberOfBytes": "8"
+          }
+        }
+      }
     }
   }
 }
