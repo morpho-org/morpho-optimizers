@@ -138,14 +138,14 @@ contract TestGovernance is TestSetup {
     }
 
     function testOnlyOwnerShouldSetInterestRates() public {
-        IInterestRates interestRatesV2 = new InterestRates();
+        IInterestRatesManager interestRatesV2 = new InterestRatesManager();
 
         hevm.prank(address(0));
         hevm.expectRevert("Ownable: caller is not the owner");
         morpho.setInterestRates(interestRatesV2);
 
         morpho.setInterestRates(interestRatesV2);
-        assertEq(address(morpho.interestRates()), address(interestRatesV2));
+        assertEq(address(morpho.interestRatesManager()), address(interestRatesV2));
     }
 
     function testOnlyOwnerShouldSetIncentivesVault() public {

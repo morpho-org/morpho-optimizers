@@ -5,7 +5,7 @@ import "./interfaces/compound/ICompound.sol";
 import "./interfaces/IPositionsManager.sol";
 import "./interfaces/IIncentivesVault.sol";
 import "./interfaces/IRewardsManager.sol";
-import "./interfaces/IInterestRates.sol";
+import "./interfaces/IInterestRatesManager.sol";
 
 import "../common/libraries/DoubleLinkedList.sol";
 import "./libraries/Types.sol";
@@ -53,7 +53,7 @@ abstract contract MorphoStorage is OwnableUpgradeable, ReentrancyGuardUpgradeabl
     IPositionsManager public positionsManager;
     IIncentivesVault public incentivesVault;
     IRewardsManager public rewardsManager;
-    IInterestRates public interestRates;
+    IInterestRatesManager public interestRatesManager;
     IComptroller public comptroller;
     address public treasuryVault;
     address public cEth;
