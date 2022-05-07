@@ -630,4 +630,32 @@ contract TestWithdraw is TestSetup {
         hevm.expectRevert(abi.encodeWithSignature("WithdrawTooSmall()"));
         supplier1.withdraw(cDai, amountWithdrawn);
     }
+
+    function testFailInfiniteWithdraw() public {
+        uint256 balanceAtTheBeginning = ERC20(dai).balanceOf(address(supplier1));
+
+        uint256 amount = 1 ether;
+        supplier1.approve(dai, amount);
+        supplier1.supply(cDai, amount);
+        supplier2.approve(dai, 9 * amount);
+        supplier2.supply(cDai, 9 * amount);
+        borrower1.approve(wEth, 10 * amount);
+        borrower1.supply(cEth, 10 * amount);
+        borrower1.borrow(cDai, 10 * amount);
+
+        morpho.toggleP2P(cDai);
+
+        supplier1.withdraw(cDai, amount);
+        supplier1.withdraw(cDai, amount);
+        supplier1.withdraw(cDai, amount);
+        supplier1.withdraw(cDai, amount);
+        supplier1.withdraw(cDai, amount);
+        supplier1.withdraw(cDai, amount);
+        supplier1.withdraw(cDai, amount);
+        supplier1.withdraw(cDai, amount);
+        supplier1.withdraw(cDai, amount);
+        supplier1.withdraw(cDai, amount);
+
+        assertTrue(ERC20(dai).balanceOf(address(supplier1)) > balanceAtTheBeginning);
+    }
 }
