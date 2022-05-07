@@ -250,7 +250,6 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
             deltas[_poolTokenAddress].p2pBorrowAmount += toAddInP2P;
             borrowBalanceInOf[_poolTokenAddress][msg.sender].inP2P += toAddInP2P;
-            _updateBorrowerInDS(_poolTokenAddress, msg.sender);
 
             _withdrawFromPool(_poolTokenAddress, toWithdraw); // Reverts on error.
             emit P2PAmountsUpdated(_poolTokenAddress, delta.p2pSupplyAmount, delta.p2pBorrowAmount);
@@ -262,10 +261,10 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             borrowBalanceInOf[_poolTokenAddress][msg.sender].onPool += remainingToBorrow.div(
                 ICToken(_poolTokenAddress).borrowIndex()
             ); // In cdUnit.
-            _updateBorrowerInDS(_poolTokenAddress, msg.sender);
             _borrowFromPool(_poolTokenAddress, remainingToBorrow);
         }
 
+        _updateBorrowerInDS(_poolTokenAddress, msg.sender);
         underlyingToken.safeTransfer(msg.sender, _amount);
     }
 
