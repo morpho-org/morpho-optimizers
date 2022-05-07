@@ -2,17 +2,17 @@
 pragma solidity 0.8.13;
 
 import "./interfaces/compound/ICompound.sol";
-import "./interfaces/IInterestRates.sol";
+import "./interfaces/IInterestRatesManager.sol";
 import "./interfaces/IMorpho.sol";
 
 import "./libraries/CompoundMath.sol";
 
 import "./MorphoStorage.sol";
 
-/// @title InterestRates.
+/// @title InterestRatesManager.
 /// @notice Smart contract handling the computation of indexes used for peer-to-peer interactions.
 /// @dev This contract inherits from MorphoStorage so that Morpho can delegate calls to this contract.
-contract InterestRates is IInterestRates, MorphoStorage {
+contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
     using CompoundMath for uint256;
 
     /// STRUCTS ///

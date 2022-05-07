@@ -4,19 +4,19 @@ pragma solidity 0.8.13;
 import "@contracts/compound/interfaces/IRewardsManager.sol";
 
 import "@contracts/compound/Morpho.sol";
-import "@contracts/compound/InterestRates.sol";
+import "@contracts/compound/InterestRatesManager.sol";
 
 contract User {
     using SafeTransferLib for ERC20;
 
     Morpho internal morpho;
-    InterestRates internal interestRates;
+    InterestRatesManager internal interestRatesManager;
     IRewardsManager internal rewardsManager;
     IComptroller internal comptroller;
 
     constructor(Morpho _morpho) {
         morpho = _morpho;
-        interestRates = InterestRates(address(_morpho.interestRates()));
+        interestRatesManager = InterestRatesManager(address(_morpho.interestRatesManager()));
         rewardsManager = _morpho.rewardsManager();
         comptroller = morpho.comptroller();
     }
