@@ -12,8 +12,8 @@ contract TestSupply is TestSetup {
         supplier1.approve(dai, amount);
         supplier1.supply(cDai, amount);
 
-        uint256 supplyPoolIndex = ICToken(cDai).exchangeRateCurrent();
-        uint256 expectedOnPool = amount.div(supplyPoolIndex);
+        uint256 poolSupplyIndex = ICToken(cDai).exchangeRateCurrent();
+        uint256 expectedOnPool = amount.div(poolSupplyIndex);
 
         assertEq(ERC20(cDai).balanceOf(address(morpho)), expectedOnPool, "balance of cToken");
 
@@ -72,8 +72,8 @@ contract TestSupply is TestSetup {
         uint256 p2pSupplyIndex = lens.getUpdatedP2PSupplyIndex(cDai);
         uint256 expectedSupplyBalanceInP2P = amount.div(p2pSupplyIndex);
 
-        uint256 supplyPoolIndex = ICToken(cDai).exchangeRateCurrent();
-        uint256 expectedSupplyBalanceOnPool = amount.div(supplyPoolIndex);
+        uint256 poolSupplyIndex = ICToken(cDai).exchangeRateCurrent();
+        uint256 expectedSupplyBalanceOnPool = amount.div(poolSupplyIndex);
 
         (uint256 inP2PSupplier, uint256 onPoolSupplier) = morpho.supplyBalanceInOf(
             cDai,
@@ -167,7 +167,7 @@ contract TestSupply is TestSetup {
         uint256 onPool;
         uint256 expectedInP2P;
         uint256 p2pSupplyIndex = morpho.p2pSupplyIndex(cDai);
-        uint256 supplyPoolIndex = ICToken(cDai).exchangeRateCurrent();
+        uint256 poolSupplyIndex = ICToken(cDai).exchangeRateCurrent();
 
         for (uint256 i = 0; i < NMAX; i++) {
             (inP2P, onPool) = morpho.borrowBalanceInOf(cDai, address(borrowers[i]));
@@ -181,7 +181,7 @@ contract TestSupply is TestSetup {
         (inP2P, onPool) = morpho.supplyBalanceInOf(cDai, address(supplier1));
 
         expectedInP2P = (amount / 2).div(p2pSupplyIndex);
-        uint256 expectedOnPool = (amount / 2).div(supplyPoolIndex);
+        uint256 expectedOnPool = (amount / 2).div(poolSupplyIndex);
 
         assertEq(inP2P, expectedInP2P, "in peer-to-peer");
         assertEq(onPool, expectedOnPool, "in pool");
@@ -195,8 +195,8 @@ contract TestSupply is TestSetup {
         supplier1.supply(cDai, amount);
         supplier1.supply(cDai, amount);
 
-        uint256 supplyPoolIndex = ICToken(cDai).exchangeRateCurrent();
-        uint256 expectedOnPool = (2 * amount).div(supplyPoolIndex);
+        uint256 poolSupplyIndex = ICToken(cDai).exchangeRateCurrent();
+        uint256 expectedOnPool = (2 * amount).div(poolSupplyIndex);
 
         (, uint256 onPool) = morpho.supplyBalanceInOf(cDai, address(supplier1));
         assertEq(onPool, expectedOnPool);

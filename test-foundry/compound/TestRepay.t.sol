@@ -233,7 +233,7 @@ contract TestRepay is TestSetup {
         // Check balances for borrower.
         (inP2PBorrower1, onPoolBorrower1) = morpho.borrowBalanceInOf(cDai, address(borrower1));
 
-        uint256 supplyPoolIndex = ICToken(cDai).exchangeRateCurrent();
+        uint256 poolSupplyIndex = ICToken(cDai).exchangeRateCurrent();
         uint256 p2pBorrowIndex = morpho.p2pBorrowIndex(cDai);
 
         uint256 expectedBorrowBalanceInP2P = ((25 * borrowedAmount) / 100).div(p2pBorrowIndex);
@@ -245,7 +245,7 @@ contract TestRepay is TestSetup {
         (inP2PSupplier, onPoolSupplier) = morpho.supplyBalanceInOf(cDai, address(supplier1));
 
         uint256 expectedSupplyBalanceInP2P = (suppliedAmount / 2).div(p2pBorrowIndex);
-        uint256 expectedSupplyBalanceOnPool = (suppliedAmount / 2).div(supplyPoolIndex);
+        uint256 expectedSupplyBalanceOnPool = (suppliedAmount / 2).div(poolSupplyIndex);
 
         assertApproxEq(inP2PSupplier, expectedSupplyBalanceInP2P, 1);
         assertEq(onPoolSupplier, expectedSupplyBalanceOnPool);
