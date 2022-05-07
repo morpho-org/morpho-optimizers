@@ -37,9 +37,9 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @param _newRewardsManagerAddress The new address of the `rewardsManager`.
     event RewardsManagerSet(address indexed _newRewardsManagerAddress);
 
-    /// @notice Emitted when the `interestRates` is set.
-    /// @param _interestRates The new address of the `interestRates`.
-    event InterestRatesSet(address indexed _interestRates);
+    /// @notice Emitted when the `interestRatesManager` is set.
+    /// @param _interestRatesManager The new address of the `interestRatesManager`.
+    event InterestRatesSet(address indexed _interestRatesManager);
 
     /// @dev Emitted when a new `dustThreshold` is set.
     /// @param _dustThreshold The new `dustThreshold`.
@@ -104,7 +104,7 @@ abstract contract MorphoGovernance is MorphoUtils {
 
     /// @notice Initializes the Morpho contract.
     /// @param _positionsManager The `positionsManager`.
-    /// @param _interestRates The `interestRates`.
+    /// @param _interestRatesManager The `interestRatesManager`.
     /// @param _comptroller The `comptroller`.
     /// @param _maxGasForMatching The `maxGasForMatching`.
     /// @param _dustThreshold The `dustThreshold`.
@@ -113,7 +113,7 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @param _wEth The wETH address.
     function initialize(
         IPositionsManager _positionsManager,
-        IInterestRates _interestRates,
+        IInterestRatesManager _interestRatesManager,
         IComptroller _comptroller,
         Types.MaxGasForMatching memory _maxGasForMatching,
         uint256 _dustThreshold,
@@ -124,7 +124,7 @@ abstract contract MorphoGovernance is MorphoUtils {
         __ReentrancyGuard_init();
         __Ownable_init();
 
-        interestRates = _interestRates;
+        interestRatesManager = _interestRatesManager;
         positionsManager = _positionsManager;
         comptroller = _comptroller;
 
@@ -169,11 +169,11 @@ abstract contract MorphoGovernance is MorphoUtils {
         emit RewardsManagerSet(address(_rewardsManager));
     }
 
-    /// @notice Sets the `interestRates`.
-    /// @param _interestRates The new `interestRates` contract.
-    function setInterestRates(IInterestRates _interestRates) external onlyOwner {
-        interestRates = _interestRates;
-        emit InterestRatesSet(address(_interestRates));
+    /// @notice Sets the `interestRatesManager`.
+    /// @param _interestRatesManager The new `interestRatesManager` contract.
+    function setInterestRates(IInterestRatesManager _interestRatesManager) external onlyOwner {
+        interestRatesManager = _interestRatesManager;
+        emit InterestRatesSet(address(_interestRatesManager));
     }
 
     /// @notice Sets the `treasuryVault`.

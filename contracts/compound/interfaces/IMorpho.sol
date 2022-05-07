@@ -2,7 +2,7 @@
 pragma solidity 0.8.13;
 
 import "./compound/ICompound.sol";
-import "./IInterestRates.sol";
+import "./IInterestRatesManager.sol";
 import "./IRewardsManager.sol";
 import "./IPositionsManager.sol";
 import "./IIncentivesVault.sol";
@@ -30,7 +30,7 @@ interface IMorpho {
     function lastPoolIndexes(address) external view returns (Types.LastPoolIndexes memory);
     function marketStatus(address) external view returns (Types.MarketStatus memory);
     function comptroller() external view returns (IComptroller);
-    function interestRates() external view returns (IInterestRates);
+    function interestRatesManager() external view returns (IInterestRatesManager);
     function rewardsManager() external view returns (IRewardsManager);
     function positionsManager() external view returns (IPositionsManager);
     function incentiveVault() external view returns (IIncentivesVault);

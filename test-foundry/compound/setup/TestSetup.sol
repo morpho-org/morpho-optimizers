@@ -13,7 +13,7 @@ import "@contracts/compound/IncentivesVault.sol";
 import "@contracts/compound/RewardsManager.sol";
 import "@contracts/compound/PositionsManager.sol";
 import "@contracts/compound/MatchingEngine.sol";
-import "@contracts/compound/InterestRates.sol";
+import "@contracts/compound/InterestRatesManager.sol";
 import "@contracts/compound/Morpho.sol";
 import "@contracts/compound/Lens.sol";
 
@@ -44,7 +44,7 @@ contract TestSetup is Config, Utils, stdCheats {
     Morpho internal morphoImplV1;
     Morpho internal morpho;
     Morpho internal fakeMorphoImpl;
-    InterestRates internal interestRates;
+    InterestRatesManager internal interestRatesManager;
     IRewardsManager internal rewardsManager;
     IPositionsManager internal positionsManager;
     Lens internal lens;
@@ -82,13 +82,13 @@ contract TestSetup is Config, Utils, stdCheats {
         });
 
         comptroller = IComptroller(comptrollerAddress);
-        interestRates = new InterestRates();
+        interestRatesManager = new InterestRatesManager();
         positionsManager = new PositionsManager();
 
         /// Deploy proxies ///
 
         proxyAdmin = new ProxyAdmin();
-        interestRates = new InterestRates();
+        interestRatesManager = new InterestRatesManager();
 
         morphoImplV1 = new Morpho();
         morphoProxy = new TransparentUpgradeableProxy(address(morphoImplV1), address(this), "");
@@ -97,7 +97,7 @@ contract TestSetup is Config, Utils, stdCheats {
         morpho = Morpho(payable(address(morphoProxy)));
         morpho.initialize(
             positionsManager,
-            interestRates,
+            interestRatesManager,
             comptroller,
             maxGasForMatching,
             1,
@@ -197,7 +197,7 @@ contract TestSetup is Config, Utils, stdCheats {
         hevm.label(address(proxyAdmin), "ProxyAdmin");
         hevm.label(address(morphoImplV1), "MorphoImplV1");
         hevm.label(address(morpho), "Morpho");
-        hevm.label(address(interestRates), "InterestRates");
+        hevm.label(address(interestRatesManager), "InterestRatesManager");
         hevm.label(address(rewardsManager), "RewardsManager");
         hevm.label(address(morphoToken), "MorphoToken");
         hevm.label(address(comptroller), "Comptroller");
