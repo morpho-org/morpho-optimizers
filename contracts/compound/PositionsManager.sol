@@ -244,15 +244,16 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             }
         }
 
-        // If this value is equal to 0 the withdraw will revert on Compound.
-        if (toWithdraw.div(poolSupplyIndex) > 0) {
+        if (toWithdraw > 0) {
             uint256 toAddInP2P = toWithdraw.div(p2pBorrowIndex[_poolTokenAddress]); // In peer-to-peer unit.
 
             deltas[_poolTokenAddress].p2pBorrowAmount += toAddInP2P;
             borrowBalanceInOf[_poolTokenAddress][msg.sender].inP2P += toAddInP2P;
-
-            _withdrawFromPool(_poolTokenAddress, toWithdraw); // Reverts on error.
             emit P2PAmountsUpdated(_poolTokenAddress, delta.p2pSupplyAmount, delta.p2pBorrowAmount);
+
+            // If this value is equal to 0 the withdraw will revert on Compound.
+            if (toWithdraw.div(poolSupplyIndex) > 0)
+                _withdrawFromPool(_poolTokenAddress, toWithdraw); // Reverts on error.
         }
 
         /// Borrow on pool ///
