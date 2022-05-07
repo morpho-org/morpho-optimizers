@@ -343,6 +343,11 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
                 delta.p2pSupplyDelta -= matchedDelta.div(vars.supplyPoolIndex);
                 delta.p2pSupplyAmount -= matchedDelta.div(p2pSupplyIndex);
                 emit P2PSupplyDeltaUpdated(_poolTokenAddress, delta.p2pSupplyDelta);
+                emit P2PAmountsUpdated(
+                    _poolTokenAddress,
+                    delta.p2pSupplyAmount,
+                    delta.p2pBorrowAmount
+                );
             }
 
             // Match pool suppliers if any.
@@ -484,6 +489,11 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
                 delta.p2pBorrowDelta -= matchedDelta.div(vars.poolBorrowIndex);
                 delta.p2pBorrowAmount -= matchedDelta.div(vars.p2pBorrowIndex);
                 emit P2PBorrowDeltaUpdated(_poolTokenAddress, delta.p2pBorrowDelta);
+                emit P2PAmountsUpdated(
+                    _poolTokenAddress,
+                    delta.p2pSupplyAmount,
+                    delta.p2pBorrowAmount
+                );
             }
 
             if (
