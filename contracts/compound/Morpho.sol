@@ -102,7 +102,7 @@ contract Morpho is MorphoGovernance {
 
     /// @notice Emitted when a user claims rewards and trades them for MORPHO tokens.
     /// @param _user The address of the claimer.
-    /// @param _amountSent The amount of reward token sent to the vault.@
+    /// @param _amountSent The amount of reward token sent to the vault.
     event RewardsClaimedAndTraded(address indexed _user, uint256 _amountSent);
 
     /// ERRORS ///
@@ -370,6 +370,7 @@ contract Morpho is MorphoGovernance {
     }
 
     /// @notice Claims rewards for the given assets.
+    /// @param _cTokenAddresses The cToken addresses to claim rewards from.
     /// @param _tradeForMorphoToken Whether or not to trade COMP tokens for MORPHO tokens.
     function claimRewards(address[] calldata _cTokenAddresses, bool _tradeForMorphoToken)
         external
