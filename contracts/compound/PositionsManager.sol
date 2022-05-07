@@ -321,13 +321,13 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
         /// Transfer withdraw ///
 
-        if (vars.remainingToWithdraw > 0 && !p2pDisabled[_poolTokenAddress]) {
-            supplyBalanceInOf[_poolTokenAddress][_supplier].inP2P -= CompoundMath.min(
-                supplyBalanceInOf[_poolTokenAddress][_supplier].inP2P,
-                vars.remainingToWithdraw.div(p2pSupplyIndex)
-            ); // In peer-to-peer unit
-            _updateSupplierInDS(_poolTokenAddress, _supplier);
+        supplyBalanceInOf[_poolTokenAddress][_supplier].inP2P -= CompoundMath.min(
+            supplyBalanceInOf[_poolTokenAddress][_supplier].inP2P,
+            vars.remainingToWithdraw.div(p2pSupplyIndex)
+        ); // In peer-to-peer unit
+        _updateSupplierInDS(_poolTokenAddress, _supplier);
 
+        if (vars.remainingToWithdraw > 0 && !p2pDisabled[_poolTokenAddress]) {
             // Match Delta if any.
             if (delta.p2pSupplyDelta > 0) {
                 uint256 matchedDelta = CompoundMath.min(
