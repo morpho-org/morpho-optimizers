@@ -73,7 +73,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     struct WithdrawVars {
         uint256 remainingToWithdraw;
         uint256 maxGasForMatching;
-        uint256 supplyPoolIndex;
+        uint256 poolSupplyIndex;
         uint256 withdrawable;
         uint256 toWithdraw;
     }
@@ -287,16 +287,16 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         vars.remainingToWithdraw = _amount;
         vars.maxGasForMatching = _maxGasForMatching;
         vars.withdrawable = poolToken.balanceOfUnderlying(address(this));
-        vars.supplyPoolIndex = poolToken.exchangeRateStored(); // Exchange rate has already been updated.
+        vars.poolSupplyIndex = poolToken.exchangeRateStored(); // Exchange rate has already been updated.
 
-        if (_amount.div(vars.supplyPoolIndex) == 0) revert WithdrawTooSmall();
+        if (_amount.div(vars.poolSupplyIndex) == 0) revert WithdrawTooSmall();
 
         /// Soft withdraw ///
 
         uint256 onPoolSupply = supplyBalanceInOf[_poolTokenAddress][_supplier].onPool;
         if (onPoolSupply > 0) {
             vars.toWithdraw = CompoundMath.min(
-                onPoolSupply.mul(vars.supplyPoolIndex),
+                onPoolSupply.mul(vars.poolSupplyIndex),
                 vars.remainingToWithdraw,
                 vars.withdrawable
             );
@@ -304,14 +304,14 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
             supplyBalanceInOf[_poolTokenAddress][_supplier].onPool -= CompoundMath.min(
                 onPoolSupply,
-                vars.toWithdraw.div(vars.supplyPoolIndex)
+                vars.toWithdraw.div(vars.poolSupplyIndex)
             );
             _updateSupplierInDS(_poolTokenAddress, _supplier);
 
             if (vars.remainingToWithdraw == 0) {
                 _leaveMarketIfNeeded(_poolTokenAddress, _supplier);
                 // If this value is equal to 0 the withdraw will revert on Compound.
-                if (vars.toWithdraw.div(vars.supplyPoolIndex) > 0)
+                if (vars.toWithdraw.div(vars.poolSupplyIndex) > 0)
                     _withdrawFromPool(_poolTokenAddress, vars.toWithdraw); // Reverts on error.
                 underlyingToken.safeTransfer(_receiver, _amount);
                 return;
@@ -333,14 +333,14 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             // Match Delta if any.
             if (delta.p2pSupplyDelta > 0) {
                 uint256 matchedDelta = CompoundMath.min(
-                    delta.p2pSupplyDelta.mul(vars.supplyPoolIndex),
+                    delta.p2pSupplyDelta.mul(vars.poolSupplyIndex),
                     vars.remainingToWithdraw,
                     vars.withdrawable - vars.toWithdraw
                 );
 
                 vars.toWithdraw += matchedDelta;
                 vars.remainingToWithdraw -= matchedDelta;
-                delta.p2pSupplyDelta -= matchedDelta.div(vars.supplyPoolIndex);
+                delta.p2pSupplyDelta -= matchedDelta.div(vars.poolSupplyIndex);
                 delta.p2pSupplyAmount -= matchedDelta.div(p2pSupplyIndex);
                 emit P2PSupplyDeltaUpdated(_poolTokenAddress, delta.p2pSupplyDelta);
                 emit P2PAmountsUpdated(
@@ -372,7 +372,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         }
 
         // If this value is equal to 0 the withdraw will revert on Compound.
-        if (vars.toWithdraw.div(vars.supplyPoolIndex) > 0)
+        if (vars.toWithdraw.div(vars.poolSupplyIndex) > 0)
             _withdrawFromPool(_poolTokenAddress, vars.toWithdraw); // Reverts on error.
 
         /// Hard withdraw ///

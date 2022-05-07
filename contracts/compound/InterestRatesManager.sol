@@ -18,10 +18,10 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
     /// STRUCTS ///
 
     struct Params {
-        uint256 p2pSupplyIndex; // The current peer-to-peer supply index.
-        uint256 p2pBorrowIndex; // The current peer-to-peer borrow index
-        uint256 poolSupplyIndex; // The current pool supply index
-        uint256 poolBorrowIndex; // The pool supply index at last update.
+        uint256 lastP2PSupplyIndex; // The peer-to-peer supply index at last update.
+        uint256 lastP2PBorrowIndex; // The peer-to-peer borrow index at last update.
+        uint256 poolSupplyIndex; // The pool supply index.
+        uint256 poolBorrowIndex; // The pool borrow index.
         uint256 lastPoolSupplyIndex; // The pool supply index at last update.
         uint256 lastPoolBorrowIndex; // The pool borrow index at last update.
         uint256 reserveFactor; // The reserve factor percentage (10 000 = 100%).
@@ -180,7 +180,7 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
         );
 
         RateParams memory supplyParams = RateParams({
-            p2pIndex: _params.p2pSupplyIndex,
+            p2pIndex: _params.lastP2PSupplyIndex,
             poolIndex: _params.poolSupplyIndex,
             lastPoolIndex: _params.lastPoolSupplyIndex,
             reserveFactor: _params.reserveFactor,
@@ -188,7 +188,7 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
             p2pDelta: _params.delta.p2pSupplyDelta
         });
         RateParams memory borrowParams = RateParams({
-            p2pIndex: _params.p2pBorrowIndex,
+            p2pIndex: _params.lastP2PBorrowIndex,
             poolIndex: _params.poolBorrowIndex,
             lastPoolIndex: _params.lastPoolBorrowIndex,
             reserveFactor: _params.reserveFactor,
@@ -215,7 +215,7 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
     /// @return The updated p2pSupplyIndex.
     function _computeP2PSupplyIndex(Params memory _params) internal pure returns (uint256) {
         RateParams memory supplyParams = RateParams({
-            p2pIndex: _params.p2pSupplyIndex,
+            p2pIndex: _params.lastP2PSupplyIndex,
             poolIndex: _params.poolSupplyIndex,
             lastPoolIndex: _params.lastPoolSupplyIndex,
             reserveFactor: _params.reserveFactor,
@@ -240,7 +240,7 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
     /// @return The updated p2pBorrowIndex.
     function _computeP2PBorrowIndex(Params memory _params) internal pure returns (uint256) {
         RateParams memory borrowParams = RateParams({
-            p2pIndex: _params.p2pBorrowIndex,
+            p2pIndex: _params.lastP2PBorrowIndex,
             poolIndex: _params.poolBorrowIndex,
             lastPoolIndex: _params.lastPoolBorrowIndex,
             reserveFactor: _params.reserveFactor,

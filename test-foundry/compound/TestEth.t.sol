@@ -14,8 +14,8 @@ contract TestEth is TestSetup {
         supplier1.supply(cEth, toSupply);
         uint256 balanceAfter = supplier1.balanceOf(wEth);
 
-        uint256 supplyPoolIndex = ICToken(cEth).exchangeRateCurrent();
-        uint256 expectedOnPool = toSupply.div(supplyPoolIndex);
+        uint256 poolSupplyIndex = ICToken(cEth).exchangeRateCurrent();
+        uint256 expectedOnPool = toSupply.div(poolSupplyIndex);
 
         assertEq(ERC20(cEth).balanceOf(address(morpho)), expectedOnPool, "balance of cToken");
 

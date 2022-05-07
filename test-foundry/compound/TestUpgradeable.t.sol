@@ -10,8 +10,8 @@ contract TestUpgradeable is TestSetup {
         uint256 amount = 10000 ether;
         supplier1.approve(dai, amount);
         supplier1.supply(cDai, amount);
-        uint256 supplyPoolIndex = ICToken(cDai).exchangeRateCurrent();
-        uint256 expectedOnPool = amount.div(supplyPoolIndex);
+        uint256 poolSupplyIndex = ICToken(cDai).exchangeRateCurrent();
+        uint256 expectedOnPool = amount.div(poolSupplyIndex);
 
         Morpho morphoImplV2 = new Morpho();
         proxyAdmin.upgrade(morphoProxy, address(morphoImplV2));
