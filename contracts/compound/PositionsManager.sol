@@ -396,10 +396,13 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         bool _isLiquidation
     ) public {
         if (_amount == 0) revert AmountIsZero();
-        if (!userMembership[_poolTokenAddress][_supplier]) revert UserNotMemberOfMarket();
+
         if (!_isLiquidation) {
+            if (!userMembership[_poolTokenAddress][_supplier]) revert UserNotMemberOfMarket();
+
             updateP2PIndexes(_poolTokenAddress);
             _amount = Math.min(_getUserSupplyBalanceInOf(_poolTokenAddress, _supplier), _amount);
+
             if (_isLiquidable(_supplier, _poolTokenAddress, _amount, 0))
                 revert UnauthorisedWithdraw();
         }
@@ -549,8 +552,10 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         bool _isLiquidation
     ) public {
         if (_amount == 0) revert AmountIsZero();
-        if (!userMembership[_poolTokenAddress][_user]) revert UserNotMemberOfMarket();
+
         if (!_isLiquidation) {
+            if (!userMembership[_poolTokenAddress][_user]) revert UserNotMemberOfMarket();
+
             updateP2PIndexes(_poolTokenAddress);
             _amount = Math.min(_getUserBorrowBalanceInOf(_poolTokenAddress, _user), _amount);
         }
@@ -712,6 +717,11 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         address _borrower,
         uint256 _amount
     ) external {
+        if (
+            !userMembership[_poolTokenBorrowedAddress][_borrower] ||
+            !userMembership[_poolTokenCollateralAddress][_borrower]
+        ) revert UserNotMemberOfMarket();
+
         updateP2PIndexes(_poolTokenBorrowedAddress);
         updateP2PIndexes(_poolTokenCollateralAddress);
 
