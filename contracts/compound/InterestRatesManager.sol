@@ -123,33 +123,43 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
             _params.p2pIndexCursor
         );
 
-        RateParams memory supplyParams = RateParams({
-            p2pIndex: _params.lastP2PSupplyIndex,
-            poolIndex: _params.poolSupplyIndex,
-            lastPoolIndex: _params.lastPoolSupplyIndex,
-            reserveFactor: _params.reserveFactor,
-            p2pAmount: _params.delta.p2pSupplyAmount,
-            p2pDelta: _params.delta.p2pSupplyDelta
-        });
-        RateParams memory borrowParams = RateParams({
-            p2pIndex: _params.lastP2PBorrowIndex,
-            poolIndex: _params.poolBorrowIndex,
-            lastPoolIndex: _params.lastPoolBorrowIndex,
-            reserveFactor: _params.reserveFactor,
-            p2pAmount: _params.delta.p2pBorrowAmount,
-            p2pDelta: _params.delta.p2pBorrowDelta
-        });
+        if (_params.delta.p2pSupplyAmount == 0 || _params.delta.p2pSupplyDelta == 0) {
+            newP2PSupplyIndex = _params.lastP2PSupplyIndex.mul(p2pSupplyGrowthFactor);
+        } else {
+            uint256 shareOfTheDelta = CompoundMath.min(
+                _params
+                .delta
+                .p2pSupplyDelta
+                .mul(_params.poolSupplyIndex)
+                .div(_params.lastP2PSupplyIndex)
+                .div(_params.delta.p2pSupplyAmount),
+                WAD // To avoid shareOfTheDelta > 1 with rounding errors.
+            );
 
-        newP2PSupplyIndex = _computeNewP2PIndex(
-            supplyParams,
-            p2pSupplyGrowthFactor,
-            poolSupplyGrowthFactor
-        );
-        newP2PBorrowIndex = _computeNewP2PIndex(
-            borrowParams,
-            p2pBorrowGrowthFactor,
-            poolBorrowGrowthFactor
-        );
+            newP2PSupplyIndex = _params.lastP2PSupplyIndex.mul(
+                (WAD - shareOfTheDelta).mul(p2pSupplyGrowthFactor) +
+                    shareOfTheDelta.mul(poolSupplyGrowthFactor)
+            );
+        }
+
+        if (_params.delta.p2pBorrowAmount == 0 || _params.delta.p2pBorrowDelta == 0) {
+            newP2PBorrowIndex = _params.lastP2PBorrowIndex.mul(p2pBorrowGrowthFactor);
+        } else {
+            uint256 shareOfTheDelta = CompoundMath.min(
+                _params
+                .delta
+                .p2pBorrowDelta
+                .mul(_params.poolBorrowIndex)
+                .div(_params.lastP2PBorrowIndex)
+                .div(_params.delta.p2pBorrowAmount),
+                WAD // To avoid shareOfTheDelta > 1 with rounding errors.
+            );
+
+            newP2PBorrowIndex = _params.lastP2PBorrowIndex.mul(
+                (WAD - shareOfTheDelta).mul(p2pBorrowGrowthFactor) +
+                    shareOfTheDelta.mul(poolBorrowGrowthFactor)
+            );
+        }
     }
 
     /// @dev Computes and returns peer-to-peer supply growth factor and peer-to-peer borrow growth factor.
@@ -193,32 +203,5 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
             p2pGrowthFactor +
             (_reserveFactor * (poolBorrowGrowthFactor_ - p2pGrowthFactor)) /
             MAX_BASIS_POINTS;
-    }
-
-    /// @dev Computes and returns the new peer-to-peer index.
-    /// @param _params Computation parameters.
-    /// @param _p2pGrowthFactor The peer-to-peer growth factor.
-    /// @param _poolGrowthFactor The pool growth factor.
-    /// @return newP2PIndex The updated peer-to-peer index.
-    function _computeNewP2PIndex(
-        RateParams memory _params,
-        uint256 _p2pGrowthFactor,
-        uint256 _poolGrowthFactor
-    ) internal pure returns (uint256 newP2PIndex) {
-        if (_params.p2pAmount == 0 || _params.p2pDelta == 0) {
-            newP2PIndex = _params.p2pIndex.mul(_p2pGrowthFactor);
-        } else {
-            uint256 shareOfTheDelta = CompoundMath.min(
-                _params.p2pDelta.mul(_params.poolIndex).div(_params.p2pIndex).div(
-                    _params.p2pAmount
-                ),
-                WAD // To avoid shareOfTheDelta > 1 with rounding errors.
-            );
-
-            newP2PIndex = _params.p2pIndex.mul(
-                (WAD - shareOfTheDelta).mul(_p2pGrowthFactor) +
-                    shareOfTheDelta.mul(_poolGrowthFactor)
-            );
-        }
     }
 }
