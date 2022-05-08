@@ -74,6 +74,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         uint256 remainingToWithdraw;
         uint256 maxGasForMatching;
         uint256 poolSupplyIndex;
+        uint256 p2pSupplyIndex;
         uint256 withdrawable;
         uint256 toWithdraw;
     }
@@ -320,11 +321,11 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         }
 
         Types.Delta storage delta = deltas[_poolTokenAddress];
-        uint256 p2pSupplyIndex = p2pSupplyIndex[_poolTokenAddress];
+        vars.p2pSupplyIndex = p2pSupplyIndex[_poolTokenAddress];
 
         supplyBalanceInOf[_poolTokenAddress][_supplier].inP2P -= CompoundMath.min(
             supplyBalanceInOf[_poolTokenAddress][_supplier].inP2P,
-            vars.remainingToWithdraw.div(p2pSupplyIndex)
+            vars.remainingToWithdraw.div(vars.p2pSupplyIndex)
         ); // In peer-to-peer unit
         _updateSupplierInDS(_poolTokenAddress, _supplier);
 
@@ -342,7 +343,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
                 vars.toWithdraw += matchedDelta;
                 vars.remainingToWithdraw -= matchedDelta;
                 delta.p2pSupplyDelta -= matchedDelta.div(vars.poolSupplyIndex);
-                delta.p2pSupplyAmount -= matchedDelta.div(p2pSupplyIndex);
+                delta.p2pSupplyAmount -= matchedDelta.div(vars.p2pSupplyIndex);
                 emit P2PSupplyDeltaUpdated(_poolTokenAddress, delta.p2pSupplyDelta);
                 emit P2PAmountsUpdated(
                     _poolTokenAddress,
@@ -393,7 +394,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
                 emit P2PBorrowDeltaUpdated(_poolTokenAddress, delta.p2pBorrowAmount);
             }
 
-            delta.p2pSupplyAmount -= vars.remainingToWithdraw.div(p2pSupplyIndex);
+            delta.p2pSupplyAmount -= vars.remainingToWithdraw.div(vars.p2pSupplyIndex);
             delta.p2pBorrowAmount -= unmatched.div(p2pBorrowIndex[_poolTokenAddress]);
             emit P2PAmountsUpdated(_poolTokenAddress, delta.p2pSupplyAmount, delta.p2pBorrowAmount);
 
