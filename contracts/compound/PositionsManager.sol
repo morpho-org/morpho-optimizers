@@ -15,6 +15,34 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
     /// EVENTS ///
 
+    /// @notice Emitted when a supply happens.
+    /// @param _user The address of the supplier.
+    /// @param _poolTokenAddress The address of the market where assets are supplied into.
+    /// @param _amount The amount of assets supplied (in underlying).
+    /// @param _balanceOnPool The supply balance on pool after update.
+    /// @param _balanceInP2P The supply balance in peer-to-peer after update.
+    event Supplied(
+        address indexed _user,
+        address indexed _poolTokenAddress,
+        uint256 _amount,
+        uint256 _balanceOnPool,
+        uint256 _balanceInP2P
+    );
+
+    /// @notice Emitted when a borrow happens.
+    /// @param _user The address of the borrower.
+    /// @param _poolTokenAddress The address of the market where assets are borrowed.
+    /// @param _amount The amount of assets borrowed (in underlying).
+    /// @param _balanceOnPool The borrow balance on pool after update.
+    /// @param _balanceInP2P The borrow balance in peer-to-peer after update
+    event Borrowed(
+        address indexed _user,
+        address indexed _poolTokenAddress,
+        uint256 _amount,
+        uint256 _balanceOnPool,
+        uint256 _balanceInP2P
+    );
+
     /// @notice Emitted when the borrow peer-to-peer delta is updated.
     /// @param _poolTokenAddress The address of the market.
     /// @param _p2pBorrowDelta The borrow peer-to-peer delta after update.
@@ -58,14 +86,17 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     /// @notice Thrown when the debt value is not above the maximum debt value.
     error DebtValueNotAboveMax();
 
-    /// @notice Thrown when the user does not have enough collateral for the borrow.
-    error UnauthorisedBorrow();
-
     /// @notice Thrown when the positions of the user is not liquidable.
     error UnauthorisedLiquidate();
 
+    /// @notice Thrown when the user does not have enough collateral for the borrow.
+    error UnauthorisedBorrow();
+
     /// @notice Thrown when the amount desired for a withdrawal is too small.
     error WithdrawTooSmall();
+
+    /// @notice Thrown when the amount is equal to 0.
+    error AmountIsZero();
 
     /// STRUCTS ///
 
@@ -118,6 +149,9 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         uint256 _amount,
         uint256 _maxGasForMatching
     ) external {
+        if (_amount == 0) revert AmountIsZero();
+        updateP2PIndexes(_poolTokenAddress);
+
         _enterMarketIfNeeded(_poolTokenAddress, msg.sender);
         ERC20 underlyingToken = _getUnderlying(_poolTokenAddress);
         underlyingToken.safeTransferFrom(msg.sender, address(this), _amount);
@@ -188,6 +222,14 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         }
 
         _updateSupplierInDS(_poolTokenAddress, msg.sender);
+
+        emit Supplied(
+            msg.sender,
+            _poolTokenAddress,
+            _amount,
+            supplyBalanceInOf[_poolTokenAddress][msg.sender].onPool,
+            supplyBalanceInOf[_poolTokenAddress][msg.sender].inP2P
+        );
     }
 
     /// @dev Implements borrow logic.
@@ -199,6 +241,9 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         uint256 _amount,
         uint256 _maxGasForMatching
     ) external {
+        if (_amount == 0) revert AmountIsZero();
+        updateP2PIndexes(_poolTokenAddress);
+
         _enterMarketIfNeeded(_poolTokenAddress, msg.sender);
         if (_isLiquidable(msg.sender, _poolTokenAddress, 0, _amount)) revert UnauthorisedBorrow();
         ERC20 underlyingToken = _getUnderlying(_poolTokenAddress);
@@ -268,6 +313,14 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
         _updateBorrowerInDS(_poolTokenAddress, msg.sender);
         underlyingToken.safeTransfer(msg.sender, _amount);
+
+        emit Borrowed(
+            msg.sender,
+            _poolTokenAddress,
+            _amount,
+            borrowBalanceInOf[_poolTokenAddress][msg.sender].onPool,
+            borrowBalanceInOf[_poolTokenAddress][msg.sender].inP2P
+        );
     }
 
     /// @dev Implements withdraw logic.
