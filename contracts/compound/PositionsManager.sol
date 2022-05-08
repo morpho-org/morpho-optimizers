@@ -666,6 +666,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     /// @param _poolTokenAddress The address of the market to check.
     function _leaveMarketIfNeeded(address _poolTokenAddress, address _user) internal {
         if (
+            userMembership[_poolTokenAddress][_user] &&
             supplyBalanceInOf[_poolTokenAddress][_user].inP2P == 0 &&
             supplyBalanceInOf[_poolTokenAddress][_user].onPool == 0 &&
             borrowBalanceInOf[_poolTokenAddress][_user].inP2P == 0 &&
