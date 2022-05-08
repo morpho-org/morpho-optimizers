@@ -20,8 +20,8 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
     struct Params {
         uint256 lastP2PSupplyIndex; // The peer-to-peer supply index at last update.
         uint256 lastP2PBorrowIndex; // The peer-to-peer borrow index at last update.
-        uint256 poolSupplyIndex; // The pool supply index.
-        uint256 poolBorrowIndex; // The pool borrow index.
+        uint256 poolSupplyIndex; // The current pool supply index.
+        uint256 poolBorrowIndex; // The current pool borrow index.
         uint256 lastPoolSupplyIndex; // The pool supply index at last update.
         uint256 lastPoolBorrowIndex; // The pool borrow index at last update.
         uint256 reserveFactor; // The reserve factor percentage (10 000 = 100%).
