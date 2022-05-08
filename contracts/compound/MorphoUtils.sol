@@ -203,30 +203,6 @@ abstract contract MorphoUtils is MorphoStorage {
         assetData.maxDebtValue = assetData.collateralValue.mul(assetData.collateralFactor);
     }
 
-    /// @notice Returns the updated peer-to-peer indexes.
-    /// @dev Note: must be called after calling `accrueInterest()` on the cToken to have the correct values.
-    /// @param _poolTokenAddress The address of the market.
-    /// @return updatedP2PSupplyIndex_ The updated peer-to-peer supply index.
-    /// @return updatedP2PBorrowIndex_ The updated peer-to-peer borrow index.
-    function _getUpdatedP2PIndexes(address _poolTokenAddress)
-        internal
-        returns (uint256 updatedP2PSupplyIndex_, uint256 updatedP2PBorrowIndex_)
-    {
-        // Calling accrueInterest so that Compound's indexes used in _getUserLiquidityDataForAsset() are updated.
-        ICToken(_poolTokenAddress).accrueInterest();
-
-        return
-            abi.decode(
-                address(interestRatesManager).functionDelegateCall(
-                    abi.encodeWithSelector(
-                        interestRates.getUpdatedP2PIndexes.selector,
-                        _poolTokenAddress
-                    )
-                ),
-                (uint256, uint256)
-            );
-    }
-
     /// @dev Returns the underlying ERC20 token related to the pool token.
     /// @param _poolTokenAddress The address of the pool token.
     /// @return The underlying ERC20 token.

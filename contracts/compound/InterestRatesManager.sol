@@ -98,37 +98,6 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
         }
     }
 
-    /// @notice Returns the updated peer-to-peer indexes.
-    /// @param _poolTokenAddress The address of the market.
-    /// @return _updatedP2PSupplyIndex The address.
-    /// @return _updatedP2PBorrowIndex The address.
-    function getUpdatedP2PIndexes(address _poolTokenAddress) external returns (uint256, uint256) {
-        if (block.timestamp > lastPoolIndexes[_poolTokenAddress].lastUpdateBlockNumber) {
-            ICToken poolToken = ICToken(_poolTokenAddress);
-            Types.LastPoolIndexes storage poolIndexes = lastPoolIndexes[_poolTokenAddress];
-            Types.MarketParameters storage marketParams = marketParameters[_poolTokenAddress];
-
-            uint256 poolSupplyIndex = poolToken.exchangeRateCurrent();
-            uint256 poolBorrowIndex = poolToken.borrowIndex();
-
-            Params memory params = Params(
-                p2pSupplyIndex[_poolTokenAddress],
-                p2pBorrowIndex[_poolTokenAddress],
-                poolSupplyIndex,
-                poolBorrowIndex,
-                poolIndexes.lastSupplyPoolIndex,
-                poolIndexes.lastBorrowPoolIndex,
-                marketParams.reserveFactor,
-                marketParams.p2pIndexCursor,
-                deltas[_poolTokenAddress]
-            );
-
-            return computeP2PIndexes(params);
-        } else {
-            return (p2pSupplyIndex[_poolTokenAddress], p2pBorrowIndex[_poolTokenAddress]);
-        }
-    }
-
     /// PUBLIC ///
 
     /// @notice Computes and returns new peer-to-peer indexes.
