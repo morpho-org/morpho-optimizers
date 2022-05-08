@@ -397,12 +397,12 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     ) public {
         if (_amount == 0) revert AmountIsZero();
         if (!userMembership[_poolTokenAddress][_supplier]) revert UserNotMemberOfMarket();
-        if (!_isLiquidation) updateP2PIndexes(_poolTokenAddress);
-
-        _amount = Math.min(_getUserSupplyBalanceInOf(_poolTokenAddress, _supplier), _amount);
-
-        if (!_isLiquidation && _isLiquidable(_supplier, _poolTokenAddress, _amount, 0))
-            revert UnauthorisedWithdraw();
+        if (!_isLiquidation) {
+            updateP2PIndexes(_poolTokenAddress);
+            _amount = Math.min(_getUserSupplyBalanceInOf(_poolTokenAddress, _supplier), _amount);
+            if (_isLiquidable(_supplier, _poolTokenAddress, _amount, 0))
+                revert UnauthorisedWithdraw();
+        }
 
         WithdrawVars memory vars;
         vars.poolToken = ICToken(_poolTokenAddress);
@@ -550,9 +550,10 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     ) public {
         if (_amount == 0) revert AmountIsZero();
         if (!userMembership[_poolTokenAddress][_user]) revert UserNotMemberOfMarket();
-        if (!_isLiquidation) updateP2PIndexes(_poolTokenAddress);
-
-        _amount = Math.min(_getUserBorrowBalanceInOf(_poolTokenAddress, _user), _amount);
+        if (!_isLiquidation) {
+            updateP2PIndexes(_poolTokenAddress);
+            _amount = Math.min(_getUserBorrowBalanceInOf(_poolTokenAddress, _user), _amount);
+        }
 
         ICToken poolToken = ICToken(_poolTokenAddress);
         ERC20 underlyingToken = _getUnderlying(_poolTokenAddress);
