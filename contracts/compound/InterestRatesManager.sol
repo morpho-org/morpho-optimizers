@@ -127,12 +127,9 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
             newP2PSupplyIndex = _params.lastP2PSupplyIndex.mul(p2pSupplyGrowthFactor);
         } else {
             uint256 shareOfTheDelta = CompoundMath.min(
-                _params
-                .delta
-                .p2pSupplyDelta
-                .mul(_params.poolSupplyIndex)
-                .div(_params.lastP2PSupplyIndex)
-                .div(_params.delta.p2pSupplyAmount),
+                (_params.delta.p2pSupplyDelta.mul(_params.lastPoolSupplyIndex)).div(
+                    (_params.delta.p2pSupplyAmount).mul(_params.lastP2PSupplyIndex)
+                ),
                 WAD // To avoid shareOfTheDelta > 1 with rounding errors.
             );
 
@@ -146,12 +143,9 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
             newP2PBorrowIndex = _params.lastP2PBorrowIndex.mul(p2pBorrowGrowthFactor);
         } else {
             uint256 shareOfTheDelta = CompoundMath.min(
-                _params
-                .delta
-                .p2pBorrowDelta
-                .mul(_params.poolBorrowIndex)
-                .div(_params.lastP2PBorrowIndex)
-                .div(_params.delta.p2pBorrowAmount),
+                (_params.delta.p2pBorrowDelta.mul(_params.poolBorrowIndex)).div(
+                    (_params.delta.p2pBorrowAmount).mul(_params.lastP2PBorrowIndex)
+                ),
                 WAD // To avoid shareOfTheDelta > 1 with rounding errors.
             );
 
