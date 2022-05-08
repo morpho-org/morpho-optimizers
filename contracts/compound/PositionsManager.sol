@@ -145,7 +145,9 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
             // Match pool borrowers if any.
             if (
-                remainingToSupply > 0 && borrowersOnPool[_poolTokenAddress].getHead() != address(0)
+                remainingToSupply > 0 &&
+                _maxGasForMatching > 0 &&
+                borrowersOnPool[_poolTokenAddress].getHead() != address(0)
             ) {
                 (uint256 matched, ) = _matchBorrowers(
                     _poolTokenAddress,
@@ -226,7 +228,9 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
             // Match pool suppliers if any.
             if (
-                remainingToBorrow > 0 && suppliersOnPool[_poolTokenAddress].getHead() != address(0)
+                remainingToBorrow > 0 &&
+                _maxGasForMatching > 0 &&
+                suppliersOnPool[_poolTokenAddress].getHead() != address(0)
             ) {
                 (uint256 matched, ) = _matchSuppliers(
                     _poolTokenAddress,
@@ -349,6 +353,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             // Match pool suppliers if any.
             if (
                 vars.remainingToWithdraw > 0 &&
+                vars.maxGasForMatching > 0 &&
                 suppliersOnPool[_poolTokenAddress].getHead() != address(0)
             ) {
                 // Match suppliers.
@@ -374,11 +379,9 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         /// Hard withdraw ///
 
         if (vars.remainingToWithdraw > 0) {
-            uint256 unmatched = _unmatchBorrowers(
-                _poolTokenAddress,
-                vars.remainingToWithdraw,
-                _maxGasForMatching
-            );
+            uint256 unmatched = _maxGasForMatching > 0
+                ? _unmatchBorrowers(_poolTokenAddress, vars.remainingToWithdraw, _maxGasForMatching)
+                : 0;
 
             // If unmatched does not cover remainingToWithdraw, the difference is added to the borrow peer-to-peer delta.
             if (unmatched < vars.remainingToWithdraw) {
@@ -488,6 +491,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
             if (
                 vars.remainingToRepay > 0 &&
+                vars.maxGasForMatching > 0 &&
                 borrowersOnPool[_poolTokenAddress].getHead() != address(0)
             ) {
                 // Match borrowers.
@@ -517,11 +521,13 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         /// Hard repay ///
 
         if (vars.remainingToRepay > 0) {
-            uint256 unmatched = _unmatchSuppliers(
-                _poolTokenAddress,
-                vars.remainingToRepay,
-                vars.maxGasForMatching
-            );
+            uint256 unmatched = vars.maxGasForMatching > 0
+                ? _unmatchSuppliers(
+                    _poolTokenAddress,
+                    vars.remainingToRepay,
+                    vars.maxGasForMatching
+                )
+                : 0;
 
             // If unmatched does not cover remainingToRepay, the difference is added to the supply peer-to-peer delta.
             if (unmatched < vars.remainingToRepay) {

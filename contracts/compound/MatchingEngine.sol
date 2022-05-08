@@ -67,8 +67,6 @@ contract MatchingEngine is MorphoUtils {
         uint256 _amount,
         uint256 _maxGasForMatching
     ) internal returns (uint256 matched, uint256 gasConsumedInMatching) {
-        if (_maxGasForMatching == 0) return (0, 0);
-
         MatchVars memory vars;
         vars.poolIndex = ICToken(_poolTokenAddress).exchangeRateStored(); // Exchange rate has already been updated.
         vars.p2pIndex = p2pSupplyIndex[_poolTokenAddress];
@@ -117,8 +115,6 @@ contract MatchingEngine is MorphoUtils {
         uint256 _amount,
         uint256 _maxGasForMatching
     ) internal returns (uint256) {
-        if (_maxGasForMatching == 0) return 0;
-
         UnmatchVars memory vars;
         vars.poolIndex = ICToken(_poolTokenAddress).exchangeRateStored(); // Exchange rate has already been updated.
         vars.p2pIndex = p2pSupplyIndex[_poolTokenAddress];
@@ -169,8 +165,6 @@ contract MatchingEngine is MorphoUtils {
         uint256 _amount,
         uint256 _maxGasForMatching
     ) internal returns (uint256 matched, uint256 gasConsumedInMatching) {
-        if (_maxGasForMatching == 0) return (0, 0);
-
         MatchVars memory vars;
         vars.poolIndex = ICToken(_poolTokenAddress).borrowIndex();
         vars.p2pIndex = p2pBorrowIndex[_poolTokenAddress];
@@ -219,8 +213,6 @@ contract MatchingEngine is MorphoUtils {
         uint256 _amount,
         uint256 _maxGasForMatching
     ) internal returns (uint256) {
-        if (_maxGasForMatching == 0) return 0;
-
         UnmatchVars memory vars;
         vars.poolIndex = ICToken(_poolTokenAddress).borrowIndex();
         vars.p2pIndex = p2pBorrowIndex[_poolTokenAddress];
