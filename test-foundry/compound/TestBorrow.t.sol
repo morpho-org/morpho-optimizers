@@ -90,7 +90,7 @@ contract TestBorrow is TestSetup {
     }
 
     function testBorrow5() public {
-        setMaxGasForMatchingHelper(
+        setDefaultMaxGasForMatchingHelper(
             type(uint64).max,
             type(uint64).max,
             type(uint64).max,
@@ -148,7 +148,7 @@ contract TestBorrow is TestSetup {
     }
 
     function testBorrow6() public {
-        setMaxGasForMatchingHelper(
+        setDefaultMaxGasForMatchingHelper(
             type(uint64).max,
             type(uint64).max,
             type(uint64).max,

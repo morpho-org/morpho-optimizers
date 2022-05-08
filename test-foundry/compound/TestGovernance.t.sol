@@ -77,7 +77,7 @@ contract TestGovernance is TestSetup {
             repay: 1
         });
 
-        morpho.setMaxGasForMatching(newMaxGas);
+        morpho.setDefaultMaxGasForMatching(newMaxGas);
         (uint64 supply, uint64 borrow, uint64 withdraw, uint64 repay) = morpho
         .defaultMaxGasForMatching();
         assertEq(supply, newMaxGas.supply);
@@ -86,10 +86,10 @@ contract TestGovernance is TestSetup {
         assertEq(repay, newMaxGas.repay);
 
         hevm.expectRevert("Ownable: caller is not the owner");
-        supplier1.setMaxGasForMatching(newMaxGas);
+        supplier1.setDefaultMaxGasForMatching(newMaxGas);
 
         hevm.expectRevert("Ownable: caller is not the owner");
-        borrower1.setMaxGasForMatching(newMaxGas);
+        borrower1.setDefaultMaxGasForMatching(newMaxGas);
     }
 
     function testOnlyOwnerCanSetMaxSortedUsers() public {

@@ -49,7 +49,7 @@ interface IMorpho {
     /// GOVERNANCE ///
 
     function setMaxSortedUsers(uint256 _newMaxSortedUsers) external;
-    function setMaxGasForMatching(Types.MaxGasForMatching memory _maxGasForMatching) external;
+    function setDefaultMaxGasForMatching(Types.MaxGasForMatching memory _maxGasForMatching) external;
     function setTreasuryVault(address _newTreasuryVaultAddress) external;
     function setIncentivesVault(address _newIncentivesVault) external;
     function setRewardsManager(address _rewardsManagerAddress) external;
