@@ -319,13 +319,13 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         Types.Delta storage delta = deltas[_poolTokenAddress];
         uint256 p2pSupplyIndex = p2pSupplyIndex[_poolTokenAddress];
 
-        /// Transfer withdraw ///
-
         supplyBalanceInOf[_poolTokenAddress][_supplier].inP2P -= CompoundMath.min(
             supplyBalanceInOf[_poolTokenAddress][_supplier].inP2P,
             vars.remainingToWithdraw.div(p2pSupplyIndex)
         ); // In peer-to-peer unit
         _updateSupplierInDS(_poolTokenAddress, _supplier);
+
+        /// Transfer withdraw ///
 
         if (vars.remainingToWithdraw > 0 && !p2pDisabled[_poolTokenAddress]) {
             // Match Delta if any.
@@ -446,6 +446,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         Types.Delta storage delta = deltas[_poolTokenAddress];
         vars.p2pSupplyIndex = p2pSupplyIndex[_poolTokenAddress];
         vars.p2pBorrowIndex = p2pBorrowIndex[_poolTokenAddress];
+
         borrowBalanceInOf[_poolTokenAddress][_user].inP2P -= CompoundMath.min(
             borrowBalanceInOf[_poolTokenAddress][_user].inP2P,
             vars.remainingToRepay.div(vars.p2pBorrowIndex)
