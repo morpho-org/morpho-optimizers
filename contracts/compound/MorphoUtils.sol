@@ -184,17 +184,17 @@ abstract contract MorphoUtils is MorphoStorage {
         assetData.underlyingPrice = _oracle.getUnderlyingPrice(_poolTokenAddress);
         if (assetData.underlyingPrice == 0) revert CompoundOracleFailed();
         (, assetData.collateralFactor, ) = comptroller.markets(_poolTokenAddress);
-        (uint256 p2pSupplyIndex, uint256 p2pBorrowIndex) = _getUpdatedP2PIndexes(_poolTokenAddress);
+        updateP2PIndexes(_poolTokenAddress);
 
         assetData.collateralValue = (supplyBalanceInOf[_poolTokenAddress][_user].inP2P.mul(
-            p2pSupplyIndex
+            p2pSupplyIndex[_poolTokenAddress]
         ) +
             supplyBalanceInOf[_poolTokenAddress][_user].onPool.mul(
                 ICToken(_poolTokenAddress).exchangeRateStored()
             ))
         .mul(assetData.underlyingPrice);
         assetData.debtValue = (borrowBalanceInOf[_poolTokenAddress][_user].inP2P.mul(
-            p2pBorrowIndex
+            p2pBorrowIndex[_poolTokenAddress]
         ) +
             borrowBalanceInOf[_poolTokenAddress][_user].onPool.mul(
                 ICToken(_poolTokenAddress).borrowIndex()
