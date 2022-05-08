@@ -22,7 +22,7 @@ contract TestMarketMember is TestSetup {
         supplier1.supply(cEth, 1 ether);
         supplier1.borrow(cUsdc, to6Decimals(1 ether));
 
-        hevm.expectRevert(abi.encodeWithSignature("UserNotMemberOfMarket()"));
+        hevm.expectRevert(abi.encodeWithSignature("UnauthorisedLiquidate()"));
         supplier2.liquidate(cUsdc, cDai, address(supplier1), 1 ether);
     }
 
@@ -31,7 +31,7 @@ contract TestMarketMember is TestSetup {
         supplier1.supply(cEth, 1 ether);
         supplier1.borrow(cUsdc, to6Decimals(1 ether));
 
-        hevm.expectRevert(abi.encodeWithSignature("UserNotMemberOfMarket()"));
+        hevm.expectRevert(abi.encodeWithSignature("UnauthorisedLiquidate()"));
         supplier2.liquidate(cDai, cEth, address(supplier1), 1 ether);
     }
 }

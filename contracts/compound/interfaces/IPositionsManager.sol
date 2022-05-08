@@ -19,14 +19,16 @@ interface IPositionsManager {
         uint256 _amount,
         address _supplier,
         address _receiver,
-        uint256 _maxGasForMatching
+        uint256 _maxGasForMatching,
+        bool _isLiquidation
     ) external;
 
     function repayLogic(
         address _poolTokenAddress,
         address _user,
         uint256 _amount,
-        uint256 _maxGasForMatching
+        uint256 _maxGasForMatching,
+        bool _isLiquidation
     ) external;
 
     function liquidateLogic(
@@ -34,5 +36,5 @@ interface IPositionsManager {
         address _poolTokenCollateralAddress,
         address _borrower,
         uint256 _amount
-    ) external returns (uint256);
+    ) external;
 }

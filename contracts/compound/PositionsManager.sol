@@ -43,6 +43,58 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         uint256 _balanceInP2P
     );
 
+    /// @notice Emitted when a withdrawal happens.
+    /// @param _user The address of the withdrawer.
+    /// @param _poolTokenAddress The address of the market from where assets are withdrawn.
+    /// @param _amount The amount of assets withdrawn (in underlying).
+    /// @param _balanceOnPool The supply balance on pool after update.
+    /// @param _balanceInP2P The supply balance in peer-to-peer after update.
+    event Withdrawn(
+        address indexed _user,
+        address indexed _poolTokenAddress,
+        uint256 _amount,
+        uint256 _balanceOnPool,
+        uint256 _balanceInP2P
+    );
+
+    /// @notice Emitted when a repayment happens.
+    /// @param _user The address of the repayer.
+    /// @param _poolTokenAddress The address of the market where assets are repaid.
+    /// @param _amount The amount of assets repaid (in underlying).
+    /// @param _balanceOnPool The borrow balance on pool after update.
+    /// @param _balanceInP2P The borrow balance in peer-to-peer after update.
+    event Repaid(
+        address indexed _user,
+        address indexed _poolTokenAddress,
+        uint256 _amount,
+        uint256 _balanceOnPool,
+        uint256 _balanceInP2P
+    );
+
+    /// @notice Emitted when a liquidation happens.
+    /// @param _liquidator The address of the liquidator.
+    /// @param _liquidated The address of the liquidated.
+    /// @param _poolTokenBorrowedAddress The address of the borrowed asset.
+    /// @param _amountRepaid The amount of borrowed asset repaid (in underlying).
+    /// @param _borrowBalanceOnPool The borrow balance on pool after update.
+    /// @param _borrowBalanceInP2P The borrow balance in peer-to-peer after update.
+    /// @param _poolTokenCollateralAddress The address of the collateral asset seized.
+    /// @param _amountSeized The amount of collateral asset seized (in underlying).
+    /// @param _collateralBalanceOnPool The collateral balance on pool after update.
+    /// @param _collateralBalanceInP2P The collateral balance in peer-to-peer after update.
+    event Liquidated(
+        address _liquidator,
+        address indexed _liquidated,
+        address indexed _poolTokenBorrowedAddress,
+        uint256 _amountRepaid,
+        uint256 _borrowBalanceOnPool,
+        uint256 _borrowBalanceInP2P,
+        address indexed _poolTokenCollateralAddress,
+        uint256 _amountSeized,
+        uint256 _collateralBalanceOnPool,
+        uint256 _collateralBalanceInP2P
+    );
+
     /// @notice Emitted when the borrow peer-to-peer delta is updated.
     /// @param _poolTokenAddress The address of the market.
     /// @param _p2pBorrowDelta The borrow peer-to-peer delta after update.
@@ -83,8 +135,11 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     /// @notice Thrown when the mint on Compound failed.
     error MintOnCompoundFailed();
 
-    /// @notice Thrown when the debt value is not above the maximum debt value.
-    error DebtValueNotAboveMax();
+    /// @notice Thrown when user is not a member of the market.
+    error UserNotMemberOfMarket();
+
+    /// @notice Thrown when the user does not have enough remaining collateral to withdraw.
+    error UnauthorisedWithdraw();
 
     /// @notice Thrown when the positions of the user is not liquidable.
     error UnauthorisedLiquidate();
@@ -108,6 +163,8 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         uint256 p2pSupplyIndex;
         uint256 withdrawable;
         uint256 toWithdraw;
+        ERC20 underlyingToken;
+        ICToken poolToken;
     }
 
     // Struct to avoid stack too deep.
@@ -329,20 +386,31 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     /// @param _supplier The address of the supplier.
     /// @param _receiver The address of the user who will receive the tokens.
     /// @param _maxGasForMatching The maximum amount of gas to consume within a matching engine loop.
+    /// @param _isLiquidation Whether this function is called during a liquidation or not.
     function withdrawLogic(
         address _poolTokenAddress,
         uint256 _amount,
         address _supplier,
         address _receiver,
-        uint256 _maxGasForMatching
+        uint256 _maxGasForMatching,
+        bool _isLiquidation
     ) public {
-        ICToken poolToken = ICToken(_poolTokenAddress);
-        ERC20 underlyingToken = _getUnderlying(_poolTokenAddress);
+        if (_amount == 0) revert AmountIsZero();
+        if (!userMembership[_poolTokenAddress][_supplier]) revert UserNotMemberOfMarket();
+        if (!_isLiquidation) updateP2PIndexes(_poolTokenAddress);
+
+        _amount = Math.min(_getUserSupplyBalanceInOf(_poolTokenAddress, _supplier), _amount);
+
+        if (!_isLiquidation && _isLiquidable(_supplier, _poolTokenAddress, _amount, 0))
+            revert UnauthorisedWithdraw();
+
         WithdrawVars memory vars;
+        vars.poolToken = ICToken(_poolTokenAddress);
+        vars.underlyingToken = _getUnderlying(_poolTokenAddress);
         vars.remainingToWithdraw = _amount;
         vars.maxGasForMatching = _maxGasForMatching;
-        vars.withdrawable = poolToken.balanceOfUnderlying(address(this));
-        vars.poolSupplyIndex = poolToken.exchangeRateStored(); // Exchange rate has already been updated.
+        vars.withdrawable = vars.poolToken.balanceOfUnderlying(address(this));
+        vars.poolSupplyIndex = vars.poolToken.exchangeRateStored(); // Exchange rate has already been updated.
 
         if (_amount.div(vars.poolSupplyIndex) == 0) revert WithdrawTooSmall();
 
@@ -368,7 +436,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
                 // If this value is equal to 0 the withdraw will revert on Compound.
                 if (vars.toWithdraw.div(vars.poolSupplyIndex) > 0)
                     _withdrawFromPool(_poolTokenAddress, vars.toWithdraw); // Reverts on error.
-                underlyingToken.safeTransfer(_receiver, _amount);
+                vars.underlyingToken.safeTransfer(_receiver, _amount);
                 return;
             }
         }
@@ -442,7 +510,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             // If unmatched does not cover remainingToWithdraw, the difference is added to the borrow peer-to-peer delta.
             if (unmatched < vars.remainingToWithdraw) {
                 delta.p2pBorrowDelta += (vars.remainingToWithdraw - unmatched).div(
-                    poolToken.borrowIndex()
+                    vars.poolToken.borrowIndex()
                 );
                 emit P2PBorrowDeltaUpdated(_poolTokenAddress, delta.p2pBorrowAmount);
             }
@@ -455,7 +523,16 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         }
 
         _leaveMarketIfNeeded(_poolTokenAddress, _supplier);
-        underlyingToken.safeTransfer(_receiver, _amount);
+        vars.underlyingToken.safeTransfer(_receiver, _amount);
+
+        if (!_isLiquidation)
+            emit Withdrawn(
+                msg.sender,
+                _poolTokenAddress,
+                _amount,
+                supplyBalanceInOf[_poolTokenAddress][msg.sender].onPool,
+                supplyBalanceInOf[_poolTokenAddress][msg.sender].inP2P
+            );
     }
 
     /// @dev Implements repay logic.
@@ -463,12 +540,20 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     /// @param _user The address of the user.
     /// @param _amount The amount of token (in underlying).
     /// @param _maxGasForMatching The maximum amount of gas to consume within a matching engine loop.
+    /// @param _isLiquidation Whether this function is called during a liquidation or not.
     function repayLogic(
         address _poolTokenAddress,
         address _user,
         uint256 _amount,
-        uint256 _maxGasForMatching
+        uint256 _maxGasForMatching,
+        bool _isLiquidation
     ) public {
+        if (_amount == 0) revert AmountIsZero();
+        if (!userMembership[_poolTokenAddress][_user]) revert UserNotMemberOfMarket();
+        if (!_isLiquidation) updateP2PIndexes(_poolTokenAddress);
+
+        _amount = Math.min(_getUserBorrowBalanceInOf(_poolTokenAddress, _user), _amount);
+
         ICToken poolToken = ICToken(_poolTokenAddress);
         ERC20 underlyingToken = _getUnderlying(_poolTokenAddress);
         underlyingToken.safeTransferFrom(msg.sender, address(this), _amount);
@@ -604,6 +689,15 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         }
 
         _leaveMarketIfNeeded(_poolTokenAddress, _user);
+
+        if (!_isLiquidation)
+            emit Repaid(
+                msg.sender,
+                _poolTokenAddress,
+                _amount,
+                borrowBalanceInOf[_poolTokenAddress][msg.sender].onPool,
+                borrowBalanceInOf[_poolTokenAddress][msg.sender].inP2P
+            );
     }
 
     /// @notice Liquidates a position.
@@ -611,23 +705,24 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     /// @param _poolTokenCollateralAddress The address of the collateral pool token the liquidator wants to seize.
     /// @param _borrower The address of the borrower to liquidate.
     /// @param _amount The amount of token (in underlying) to repay.
-    /// @return The amount of tokens seized from collateral.
     function liquidateLogic(
         address _poolTokenBorrowedAddress,
         address _poolTokenCollateralAddress,
         address _borrower,
         uint256 _amount
-    ) external returns (uint256) {
-        LiquidateVars memory vars;
+    ) external {
+        updateP2PIndexes(_poolTokenBorrowedAddress);
+        updateP2PIndexes(_poolTokenCollateralAddress);
 
         if (!_isLiquidable(_borrower, address(0), 0, 0)) revert UnauthorisedLiquidate();
 
+        LiquidateVars memory vars;
         vars.borrowBalance = _getUserBorrowBalanceInOf(_poolTokenBorrowedAddress, _borrower);
 
         if (_amount > vars.borrowBalance.mul(comptroller.closeFactorMantissa()))
             revert AmountAboveWhatAllowedToRepay(); // Same mechanism as Compound. Liquidator cannot repay more than part of the debt (cf close factor on Compound).
 
-        repayLogic(_poolTokenBorrowedAddress, _borrower, _amount, 0);
+        repayLogic(_poolTokenBorrowedAddress, _borrower, _amount, 0, true);
 
         ICompoundOracle compoundOracle = ICompoundOracle(comptroller.oracle());
         vars.collateralPrice = compoundOracle.getUnderlyingPrice(_poolTokenCollateralAddress);
@@ -644,9 +739,34 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
         if (vars.amountToSeize > vars.supplyBalance) revert ToSeizeAboveCollateral();
 
-        withdrawLogic(_poolTokenCollateralAddress, vars.amountToSeize, _borrower, msg.sender, 0);
+        withdrawLogic(
+            _poolTokenCollateralAddress,
+            vars.amountToSeize,
+            _borrower,
+            msg.sender,
+            0,
+            true
+        );
 
-        return vars.amountToSeize;
+        Types.BorrowBalance memory borrowBalance = borrowBalanceInOf[_poolTokenBorrowedAddress][
+            _borrower
+        ];
+        Types.SupplyBalance memory collateralBalance = supplyBalanceInOf[
+            _poolTokenCollateralAddress
+        ][_borrower];
+
+        emit Liquidated(
+            msg.sender,
+            _borrower,
+            _poolTokenBorrowedAddress,
+            _amount,
+            borrowBalance.onPool,
+            borrowBalance.inP2P,
+            _poolTokenCollateralAddress,
+            vars.amountToSeize,
+            collateralBalance.onPool,
+            collateralBalance.inP2P
+        );
     }
 
     /// INTERNAL ///
