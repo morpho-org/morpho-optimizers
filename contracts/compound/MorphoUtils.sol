@@ -186,21 +186,50 @@ abstract contract MorphoUtils is MorphoStorage {
         (, assetData.collateralFactor, ) = comptroller.markets(_poolTokenAddress);
         updateP2PIndexes(_poolTokenAddress);
 
-        assetData.collateralValue = (supplyBalanceInOf[_poolTokenAddress][_user].inP2P.mul(
-            p2pSupplyIndex[_poolTokenAddress]
-        ) +
+        assetData.collateralValue = _getUserSupplyBalanceInOf(_poolTokenAddress, _user).mul(
+            assetData.underlyingPrice
+        );
+        assetData.debtValue = _getUserBorrowBalanceInOf(_poolTokenAddress, _user).mul(
+            assetData.underlyingPrice
+        );
+        assetData.maxDebtValue = assetData.collateralValue.mul(assetData.collateralFactor);
+    }
+
+    /// @dev Returns the supply balance of `_user` in the `_poolTokenAddress` market.
+    /// @dev Note: Compute the result with the index stored and not the most up to date one.
+    /// @param _user The address of the user.
+    /// @param _poolTokenAddress The market where to get the supply amount.
+    /// @return The supply balance of the user (in underlying).
+    function _getUserSupplyBalanceInOf(address _poolTokenAddress, address _user)
+        internal
+        view
+        returns (uint256)
+    {
+        return
+            supplyBalanceInOf[_poolTokenAddress][_user].inP2P.mul(
+                p2pSupplyIndex[_poolTokenAddress]
+            ) +
             supplyBalanceInOf[_poolTokenAddress][_user].onPool.mul(
                 ICToken(_poolTokenAddress).exchangeRateStored()
-            ))
-        .mul(assetData.underlyingPrice);
-        assetData.debtValue = (borrowBalanceInOf[_poolTokenAddress][_user].inP2P.mul(
-            p2pBorrowIndex[_poolTokenAddress]
-        ) +
+            );
+    }
+
+    /// @dev Returns the borrow balance of `_user` in the `_poolTokenAddress` market.
+    /// @param _user The address of the user.
+    /// @param _poolTokenAddress The market where to get the borrow amount.
+    /// @return The borrow balance of the user (in underlying).
+    function _getUserBorrowBalanceInOf(address _poolTokenAddress, address _user)
+        internal
+        view
+        returns (uint256)
+    {
+        return
+            borrowBalanceInOf[_poolTokenAddress][_user].inP2P.mul(
+                p2pBorrowIndex[_poolTokenAddress]
+            ) +
             borrowBalanceInOf[_poolTokenAddress][_user].onPool.mul(
                 ICToken(_poolTokenAddress).borrowIndex()
-            ))
-        .mul(assetData.underlyingPrice);
-        assetData.maxDebtValue = assetData.collateralValue.mul(assetData.collateralFactor);
+            );
     }
 
     /// @dev Returns the underlying ERC20 token related to the pool token.

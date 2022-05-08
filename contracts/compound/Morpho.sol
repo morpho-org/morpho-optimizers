@@ -248,12 +248,7 @@ contract Morpho is MorphoGovernance {
         updateP2PIndexes(_poolTokenAddress);
 
         uint256 toWithdraw = Math.min(
-            supplyBalanceInOf[_poolTokenAddress][msg.sender].inP2P.mul(
-                p2pSupplyIndex[_poolTokenAddress]
-            ) +
-                supplyBalanceInOf[_poolTokenAddress][msg.sender].onPool.mul(
-                    ICToken(_poolTokenAddress).exchangeRateStored()
-                ),
+            _getUserSupplyBalanceInOf(_poolTokenAddress, msg.sender),
             _amount
         );
 
@@ -293,12 +288,7 @@ contract Morpho is MorphoGovernance {
         updateP2PIndexes(_poolTokenAddress);
 
         uint256 toRepay = Math.min(
-            borrowBalanceInOf[_poolTokenAddress][msg.sender].inP2P.mul(
-                p2pBorrowIndex[_poolTokenAddress]
-            ) +
-                borrowBalanceInOf[_poolTokenAddress][msg.sender].onPool.mul(
-                    ICToken(_poolTokenAddress).borrowIndex()
-                ),
+            _getUserBorrowBalanceInOf(_poolTokenAddress, msg.sender),
             _amount
         );
 
