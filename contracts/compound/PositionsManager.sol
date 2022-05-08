@@ -569,13 +569,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
         if (!_isLiquidable(_borrower, address(0), 0, 0)) revert UnauthorisedLiquidate();
 
-        vars.borrowBalance =
-            borrowBalanceInOf[_poolTokenBorrowedAddress][_borrower].inP2P.mul(
-                p2pBorrowIndex[_poolTokenBorrowedAddress]
-            ) +
-            borrowBalanceInOf[_poolTokenBorrowedAddress][_borrower].onPool.mul(
-                ICToken(_poolTokenBorrowedAddress).borrowIndex()
-            );
+        vars.borrowBalance = _getUserBorrowBalanceInOf(_poolTokenBorrowedAddress, _borrower);
 
         if (_amount > vars.borrowBalance.mul(comptroller.closeFactorMantissa()))
             revert AmountAboveWhatAllowedToRepay(); // Same mechanism as Compound. Liquidator cannot repay more than part of the debt (cf close factor on Compound).
@@ -593,13 +587,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         .mul(vars.borrowedPrice)
         .div(vars.collateralPrice);
 
-        vars.supplyBalance =
-            supplyBalanceInOf[_poolTokenCollateralAddress][_borrower].inP2P.mul(
-                p2pSupplyIndex[_poolTokenCollateralAddress]
-            ) +
-            supplyBalanceInOf[_poolTokenCollateralAddress][_borrower].onPool.mul(
-                ICToken(_poolTokenCollateralAddress).exchangeRateStored()
-            );
+        vars.supplyBalance = _getUserSupplyBalanceInOf(_poolTokenCollateralAddress, _borrower);
 
         if (vars.amountToSeize > vars.supplyBalance) revert ToSeizeAboveCollateral();
 
