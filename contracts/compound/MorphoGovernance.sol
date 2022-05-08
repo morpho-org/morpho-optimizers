@@ -15,7 +15,7 @@ abstract contract MorphoGovernance is MorphoUtils {
 
     /// @notice Emitted when a new `defaultMaxGasForMatching` is set.
     /// @param _defaultMaxGasForMatching The new `defaultMaxGasForMatching`.
-    event MaxGasForMatchingSet(Types.MaxGasForMatching _defaultMaxGasForMatching);
+    event DefaultMaxGasForMatchingSet(Types.MaxGasForMatching _defaultMaxGasForMatching);
 
     /// @notice Emitted when a new value for `maxSortedUsers` is set.
     /// @param _newValue The new value of `maxSortedUsers`.
@@ -147,12 +147,12 @@ abstract contract MorphoGovernance is MorphoUtils {
 
     /// @notice Sets `defaultMaxGasForMatching`.
     /// @param _defaultMaxGasForMatching The new `defaultMaxGasForMatching`.
-    function setMaxGasForMatching(Types.MaxGasForMatching memory _defaultMaxGasForMatching)
+    function setDefaultMaxGasForMatching(Types.MaxGasForMatching memory _defaultMaxGasForMatching)
         external
         onlyOwner
     {
         defaultMaxGasForMatching = _defaultMaxGasForMatching;
-        emit MaxGasForMatchingSet(_defaultMaxGasForMatching);
+        emit DefaultMaxGasForMatchingSet(_defaultMaxGasForMatching);
     }
 
     /// @notice Sets the `positionsManager`.
