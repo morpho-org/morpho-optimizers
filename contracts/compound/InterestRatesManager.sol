@@ -79,7 +79,7 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
                 deltas[_poolTokenAddress]
             );
 
-            (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex) = computeP2PIndexes(params);
+            (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex) = _computeP2PIndexes(params);
 
             p2pSupplyIndex[_poolTokenAddress] = newP2PSupplyIndex;
             p2pBorrowIndex[_poolTokenAddress] = newP2PBorrowIndex;
@@ -98,14 +98,14 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
         }
     }
 
-    /// PUBLIC ///
+    /// INTERNAL ///
 
     /// @notice Computes and returns new peer-to-peer indexes.
     /// @param _params Computation parameters.
     /// @return newP2PSupplyIndex The updated p2pSupplyIndex.
     /// @return newP2PBorrowIndex The updated p2pBorrowIndex.
-    function computeP2PIndexes(Params memory _params)
-        public
+    function _computeP2PIndexes(Params memory _params)
+        internal
         pure
         returns (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex)
     {
@@ -151,8 +151,6 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
             poolBorrowGrowthFactor
         );
     }
-
-    /// INTERNAL ///
 
     /// @dev Computes and returns peer-to-peer supply growth factor and peer-to-peer borrow growth factor.
     /// @param _poolSupplyIndex The current pool supply index.
