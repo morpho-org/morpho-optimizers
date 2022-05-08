@@ -29,15 +29,6 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
         Types.Delta delta; // The deltas and peer-to-peer amounts.
     }
 
-    struct RateParams {
-        uint256 p2pIndex; // The peer-to-peer index.
-        uint256 poolIndex; // The pool index.
-        uint256 lastPoolIndex; // The pool index at last update.
-        uint256 reserveFactor; // The reserve factor percentage (10 000 = 100%).
-        uint256 p2pAmount; // Sum of all stored peer-to-peer balance in supply or borrow (in peer-to-peer unit).
-        uint256 p2pDelta; // Peer-to-peer delta in supply or borrow (in peer-to-peer unit).
-    }
-
     /// EVENTS ///
 
     /// @notice Emitted when the peer-to-peer indexes of a market are updated.
@@ -109,19 +100,25 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
         pure
         returns (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex)
     {
-        (
-            uint256 p2pSupplyGrowthFactor,
-            uint256 poolSupplyGrowthFactor,
-            uint256 p2pBorrowGrowthFactor,
-            uint256 poolBorrowGrowthFactor
-        ) = _computeGrowthFactors(
-            _params.poolSupplyIndex,
-            _params.poolBorrowIndex,
-            _params.lastPoolSupplyIndex,
-            _params.lastPoolBorrowIndex,
-            _params.reserveFactor,
-            _params.p2pIndexCursor
-        );
+        // Compute pool growth factors
+
+        uint256 poolSupplyGrowthFactor = _params.poolSupplyIndex.div(_params.lastPoolSupplyIndex);
+        uint256 poolBorrowGrowthFactor = _params.poolBorrowIndex.div(_params.lastPoolBorrowIndex);
+
+        // Compute peer-to-peer growth factors
+
+        uint256 p2pGrowthFactor = ((MAX_BASIS_POINTS - _params.p2pIndexCursor) *
+            poolSupplyGrowthFactor +
+            _params.p2pIndexCursor *
+            poolBorrowGrowthFactor) / MAX_BASIS_POINTS;
+        uint256 p2pSupplyGrowthFactor = p2pGrowthFactor -
+            (_params.reserveFactor * (p2pGrowthFactor - poolSupplyGrowthFactor)) /
+            MAX_BASIS_POINTS;
+        uint256 p2pBorrowGrowthFactor = p2pGrowthFactor +
+            (_params.reserveFactor * (poolBorrowGrowthFactor - p2pGrowthFactor)) /
+            MAX_BASIS_POINTS;
+
+        // Compute new peer-to-peer supply index
 
         if (_params.delta.p2pSupplyAmount == 0 || _params.delta.p2pSupplyDelta == 0) {
             newP2PSupplyIndex = _params.lastP2PSupplyIndex.mul(p2pSupplyGrowthFactor);
@@ -139,6 +136,8 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
             );
         }
 
+        // Compute new peer-to-peer borrow index
+
         if (_params.delta.p2pBorrowAmount == 0 || _params.delta.p2pBorrowDelta == 0) {
             newP2PBorrowIndex = _params.lastP2PBorrowIndex.mul(p2pBorrowGrowthFactor);
         } else {
@@ -154,48 +153,5 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
                     shareOfTheDelta.mul(poolBorrowGrowthFactor)
             );
         }
-    }
-
-    /// @dev Computes and returns peer-to-peer supply growth factor and peer-to-peer borrow growth factor.
-    /// @param _poolSupplyIndex The current pool supply index.
-    /// @param _poolBorrowIndex The current pool borrow index.
-    /// @param _lastPoolSupplyIndex The pool supply index at last update.
-    /// @param _lastPoolBorrowIndex The pool borrow index at last update.
-    /// @param _reserveFactor The reserve factor percentage (10 000 = 100%).
-    /// @return p2pSupplyGrowthFactor_ The peer-to-peer supply growth factor.
-    /// @return poolSupplyGrowthFactor_ The supply pool growth factor.
-    /// @return p2pBorrowGrowthFactor_ The peer-to-peer borrow growth factor.
-    /// @return poolBorrowGrowthFactor_ The borrow pool growth factor.
-    function _computeGrowthFactors(
-        uint256 _poolSupplyIndex,
-        uint256 _poolBorrowIndex,
-        uint256 _lastPoolSupplyIndex,
-        uint256 _lastPoolBorrowIndex,
-        uint256 _reserveFactor,
-        uint256 _p2pIndexCursor
-    )
-        internal
-        pure
-        returns (
-            uint256 p2pSupplyGrowthFactor_,
-            uint256 poolSupplyGrowthFactor_,
-            uint256 p2pBorrowGrowthFactor_,
-            uint256 poolBorrowGrowthFactor_
-        )
-    {
-        poolSupplyGrowthFactor_ = _poolSupplyIndex.div(_lastPoolSupplyIndex);
-        poolBorrowGrowthFactor_ = _poolBorrowIndex.div(_lastPoolBorrowIndex);
-        uint256 p2pGrowthFactor = ((MAX_BASIS_POINTS - _p2pIndexCursor) *
-            poolSupplyGrowthFactor_ +
-            _p2pIndexCursor *
-            poolBorrowGrowthFactor_) / MAX_BASIS_POINTS;
-        p2pSupplyGrowthFactor_ =
-            p2pGrowthFactor -
-            (_reserveFactor * (p2pGrowthFactor - poolSupplyGrowthFactor_)) /
-            MAX_BASIS_POINTS;
-        p2pBorrowGrowthFactor_ =
-            p2pGrowthFactor +
-            (_reserveFactor * (poolBorrowGrowthFactor_ - p2pGrowthFactor)) /
-            MAX_BASIS_POINTS;
     }
 }
