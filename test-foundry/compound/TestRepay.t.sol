@@ -103,7 +103,7 @@ contract TestRepay is TestSetup {
     }
 
     function testRepay2_2() public {
-        setMaxGasForMatchingHelper(
+        setDefaultMaxGasForMatchingHelper(
             type(uint64).max,
             type(uint64).max,
             type(uint64).max,
@@ -252,7 +252,7 @@ contract TestRepay is TestSetup {
     }
 
     function testRepay2_4() public {
-        setMaxGasForMatchingHelper(
+        setDefaultMaxGasForMatchingHelper(
             type(uint64).max,
             type(uint64).max,
             type(uint64).max,
@@ -352,7 +352,7 @@ contract TestRepay is TestSetup {
 
     function testDeltaRepay() public {
         // Allows only 10 unmatch suppliers.
-        setMaxGasForMatchingHelper(3e6, 3e6, 3e6, 1e6);
+        setDefaultMaxGasForMatchingHelper(3e6, 3e6, 3e6, 1e6);
 
         uint256 suppliedAmount = 1 ether;
         uint256 borrowedAmount = 20 * suppliedAmount;
@@ -521,7 +521,7 @@ contract TestRepay is TestSetup {
 
     function testDeltaRepayAll() public {
         // Allows only 10 unmatch suppliers.
-        setMaxGasForMatchingHelper(3e6, 3e6, 3e6, 2.4e6);
+        setDefaultMaxGasForMatchingHelper(3e6, 3e6, 3e6, 2.4e6);
 
         uint256 suppliedAmount = 1 ether;
         uint256 borrowedAmount = 20 * suppliedAmount;

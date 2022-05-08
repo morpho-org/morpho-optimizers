@@ -231,7 +231,7 @@ contract TestSetup is Config, Utils, stdCheats {
         return customOracle;
     }
 
-    function setMaxGasForMatchingHelper(
+    function setDefaultMaxGasForMatchingHelper(
         uint64 _supply,
         uint64 _borrow,
         uint64 _withdraw,
@@ -243,7 +243,7 @@ contract TestSetup is Config, Utils, stdCheats {
             withdraw: _withdraw,
             repay: _repay
         });
-        morpho.setMaxGasForMatching(newMaxGas);
+        morpho.setDefaultMaxGasForMatching(newMaxGas);
     }
 
     function move1000BlocksForward(address _marketAddress) public {

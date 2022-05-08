@@ -91,7 +91,7 @@ contract TestSupply is TestSetup {
     }
 
     function testSupply4() public {
-        setMaxGasForMatchingHelper(
+        setDefaultMaxGasForMatchingHelper(
             type(uint64).max,
             type(uint64).max,
             type(uint64).max,
@@ -138,7 +138,7 @@ contract TestSupply is TestSetup {
     }
 
     function testSupply5() public {
-        setMaxGasForMatchingHelper(
+        setDefaultMaxGasForMatchingHelper(
             type(uint64).max,
             type(uint64).max,
             type(uint64).max,
