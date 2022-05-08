@@ -15,34 +15,6 @@ contract Morpho is MorphoGovernance {
 
     /// EVENTS ///
 
-    /// @notice Emitted when a supply happens.
-    /// @param _user The address of the supplier.
-    /// @param _poolTokenAddress The address of the market where assets are supplied into.
-    /// @param _amount The amount of assets supplied (in underlying).
-    /// @param _balanceOnPool The supply balance on pool after update.
-    /// @param _balanceInP2P The supply balance in peer-to-peer after update.
-    event Supplied(
-        address indexed _user,
-        address indexed _poolTokenAddress,
-        uint256 _amount,
-        uint256 _balanceOnPool,
-        uint256 _balanceInP2P
-    );
-
-    /// @notice Emitted when a borrow happens.
-    /// @param _user The address of the borrower.
-    /// @param _poolTokenAddress The address of the market where assets are borrowed.
-    /// @param _amount The amount of assets borrowed (in underlying).
-    /// @param _balanceOnPool The borrow balance on pool after update.
-    /// @param _balanceInP2P The borrow balance in peer-to-peer after update
-    event Borrowed(
-        address indexed _user,
-        address indexed _poolTokenAddress,
-        uint256 _amount,
-        uint256 _balanceOnPool,
-        uint256 _balanceInP2P
-    );
-
     /// @notice Emitted when a withdrawal happens.
     /// @param _user The address of the withdrawer.
     /// @param _poolTokenAddress The address of the market from where assets are withdrawn.
@@ -330,9 +302,6 @@ contract Morpho is MorphoGovernance {
         uint256 _amount,
         uint256 _maxGasForMatching
     ) internal nonReentrant isMarketCreatedAndNotPausedNorPartiallyPaused(_poolTokenAddress) {
-        if (_amount == 0) revert AmountIsZero();
-        updateP2PIndexes(_poolTokenAddress);
-
         address(positionsManager).functionDelegateCall(
             abi.encodeWithSelector(
                 positionsManager.supplyLogic.selector,
@@ -340,14 +309,6 @@ contract Morpho is MorphoGovernance {
                 _amount,
                 _maxGasForMatching
             )
-        );
-
-        emit Supplied(
-            msg.sender,
-            _poolTokenAddress,
-            _amount,
-            supplyBalanceInOf[_poolTokenAddress][msg.sender].onPool,
-            supplyBalanceInOf[_poolTokenAddress][msg.sender].inP2P
         );
     }
 
@@ -360,9 +321,6 @@ contract Morpho is MorphoGovernance {
         uint256 _amount,
         uint256 _maxGasForMatching
     ) internal nonReentrant isMarketCreatedAndNotPausedNorPartiallyPaused(_poolTokenAddress) {
-        if (_amount == 0) revert AmountIsZero();
-        updateP2PIndexes(_poolTokenAddress);
-
         address(positionsManager).functionDelegateCall(
             abi.encodeWithSelector(
                 positionsManager.borrowLogic.selector,
@@ -370,14 +328,6 @@ contract Morpho is MorphoGovernance {
                 _amount,
                 _maxGasForMatching
             )
-        );
-
-        emit Borrowed(
-            msg.sender,
-            _poolTokenAddress,
-            _amount,
-            borrowBalanceInOf[_poolTokenAddress][msg.sender].onPool,
-            borrowBalanceInOf[_poolTokenAddress][msg.sender].inP2P
         );
     }
 }
