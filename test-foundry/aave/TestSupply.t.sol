@@ -14,12 +14,9 @@ contract TestSupply is TestSetup {
         uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(dai);
         uint256 expectedOnPool = underlyingToScaledBalance(amount, normalizedIncome);
 
-        testEquality(IERC20(aDai).balanceOf(address(positionsManager)), amount);
+        testEquality(IERC20(aDai).balanceOf(address(morpho)), amount);
 
-        (uint256 inP2P, uint256 onPool) = positionsManager.supplyBalanceInOf(
-            aDai,
-            address(supplier1)
-        );
+        (uint256 inP2P, uint256 onPool) = morpho.supplyBalanceInOf(aDai, address(supplier1));
 
         testEquality(onPool, expectedOnPool);
         testEquality(inP2P, 0);
@@ -35,21 +32,21 @@ contract TestSupply is TestSetup {
         uint256 daiBalanceBefore = supplier1.balanceOf(dai);
         uint256 expectedDaiBalanceAfter = daiBalanceBefore - amount;
 
-        supplier1.approve(dai, address(positionsManager), amount);
+        supplier1.approve(dai, address(morpho), amount);
         supplier1.supply(aDai, amount);
 
         uint256 daiBalanceAfter = supplier1.balanceOf(dai);
         testEquality(daiBalanceAfter, expectedDaiBalanceAfter);
 
-        (uint256 supplyP2PExchangeRate, ) = marketsManager.getUpdatedP2PExchangeRates(aDai);
-        uint256 expectedSupplyBalanceInP2P = underlyingToP2PUnit(amount, supplyP2PExchangeRate);
+        uint256 p2pSupplyIndex = lens.getUpdatedP2PSupplyIndex(aDai);
+        uint256 expectedSupplyBalanceInP2P = underlyingToP2PUnit(amount, p2pSupplyIndex);
 
-        (uint256 inP2PSupplier, uint256 onPoolSupplier) = positionsManager.supplyBalanceInOf(
+        (uint256 inP2PSupplier, uint256 onPoolSupplier) = morpho.supplyBalanceInOf(
             aDai,
             address(supplier1)
         );
 
-        (uint256 inP2PBorrower, uint256 onPoolBorrower) = positionsManager.borrowBalanceInOf(
+        (uint256 inP2PBorrower, uint256 onPoolBorrower) = morpho.borrowBalanceInOf(
             aDai,
             address(borrower1)
         );
@@ -71,20 +68,20 @@ contract TestSupply is TestSetup {
         supplier1.approve(dai, 2 * amount);
         supplier1.supply(aDai, 2 * amount);
 
-        (uint256 supplyP2PExchangeRate, ) = marketsManager.getUpdatedP2PExchangeRates(aDai);
-        uint256 expectedSupplyBalanceInP2P = underlyingToP2PUnit(amount, supplyP2PExchangeRate);
+        uint256 p2pSupplyIndex = lens.getUpdatedP2PSupplyIndex(aDai);
+        uint256 expectedSupplyBalanceInP2P = underlyingToP2PUnit(amount, p2pSupplyIndex);
 
         uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(dai);
         uint256 expectedSupplyBalanceOnPool = underlyingToScaledBalance(amount, normalizedIncome);
 
-        (uint256 inP2PSupplier, uint256 onPoolSupplier) = positionsManager.supplyBalanceInOf(
+        (uint256 inP2PSupplier, uint256 onPoolSupplier) = morpho.supplyBalanceInOf(
             aDai,
             address(supplier1)
         );
         testEquality(onPoolSupplier, expectedSupplyBalanceOnPool);
         testEquality(inP2PSupplier, expectedSupplyBalanceInP2P);
 
-        (uint256 inP2PBorrower, uint256 onPoolBorrower) = positionsManager.borrowBalanceInOf(
+        (uint256 inP2PBorrower, uint256 onPoolBorrower) = morpho.borrowBalanceInOf(
             aDai,
             address(borrower1)
         );
@@ -93,12 +90,17 @@ contract TestSupply is TestSetup {
     }
 
     function testSupply4() public {
-        setMaxGasHelper(type(uint64).max, type(uint64).max, type(uint64).max, type(uint64).max);
+        setDefaultMaxGasForMatchingHelper(
+            type(uint64).max,
+            type(uint64).max,
+            type(uint64).max,
+            type(uint64).max
+        );
 
         uint256 amount = 10_000 ether;
         uint256 collateral = 2 * amount;
 
-        uint8 NMAX = 20;
+        uint256 NMAX = 20;
         createSigners(NMAX);
 
         uint256 amountPerBorrower = amount / NMAX;
@@ -116,31 +118,36 @@ contract TestSupply is TestSetup {
         uint256 inP2P;
         uint256 onPool;
         uint256 expectedInP2P;
-        uint256 supplyP2PExchangeRate = marketsManager.supplyP2PExchangeRate(aDai);
+        uint256 p2pSupplyIndex = morpho.p2pSupplyIndex(aDai);
 
         for (uint256 i = 0; i < NMAX; i++) {
-            (inP2P, onPool) = positionsManager.borrowBalanceInOf(aDai, address(borrowers[i]));
+            (inP2P, onPool) = morpho.borrowBalanceInOf(aDai, address(borrowers[i]));
 
-            expectedInP2P = p2pUnitToUnderlying(inP2P, supplyP2PExchangeRate);
+            expectedInP2P = p2pUnitToUnderlying(inP2P, p2pSupplyIndex);
 
             testEquality(expectedInP2P, amountPerBorrower);
             testEquality(onPool, 0);
         }
 
-        (inP2P, onPool) = positionsManager.supplyBalanceInOf(aDai, address(supplier1));
-        expectedInP2P = p2pUnitToUnderlying(amount, supplyP2PExchangeRate);
+        (inP2P, onPool) = morpho.supplyBalanceInOf(aDai, address(supplier1));
+        expectedInP2P = p2pUnitToUnderlying(amount, p2pSupplyIndex);
 
         testEquality(inP2P, expectedInP2P);
         testEquality(onPool, 0);
     }
 
     function testSupply5() public {
-        setMaxGasHelper(type(uint64).max, type(uint64).max, type(uint64).max, type(uint64).max);
+        setDefaultMaxGasForMatchingHelper(
+            type(uint64).max,
+            type(uint64).max,
+            type(uint64).max,
+            type(uint64).max
+        );
 
         uint256 amount = 10_000 ether;
         uint256 collateral = 2 * amount;
 
-        uint8 NMAX = 20;
+        uint256 NMAX = 20;
         createSigners(NMAX);
 
         uint256 amountPerBorrower = amount / (2 * NMAX);
@@ -158,21 +165,21 @@ contract TestSupply is TestSetup {
         uint256 inP2P;
         uint256 onPool;
         uint256 expectedInP2P;
-        uint256 supplyP2PExchangeRate = marketsManager.supplyP2PExchangeRate(aDai);
+        uint256 p2pSupplyIndex = morpho.p2pSupplyIndex(aDai);
         uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(dai);
 
         for (uint256 i = 0; i < NMAX; i++) {
-            (inP2P, onPool) = positionsManager.borrowBalanceInOf(aDai, address(borrowers[i]));
+            (inP2P, onPool) = morpho.borrowBalanceInOf(aDai, address(borrowers[i]));
 
-            expectedInP2P = p2pUnitToUnderlying(inP2P, supplyP2PExchangeRate);
+            expectedInP2P = p2pUnitToUnderlying(inP2P, p2pSupplyIndex);
 
             testEquality(expectedInP2P, amountPerBorrower);
             testEquality(onPool, 0);
         }
 
-        (inP2P, onPool) = positionsManager.supplyBalanceInOf(aDai, address(supplier1));
+        (inP2P, onPool) = morpho.supplyBalanceInOf(aDai, address(supplier1));
 
-        expectedInP2P = p2pUnitToUnderlying(amount / 2, supplyP2PExchangeRate);
+        expectedInP2P = p2pUnitToUnderlying(amount / 2, p2pSupplyIndex);
         uint256 expectedOnPool = underlyingToAdUnit(amount / 2, normalizedIncome);
 
         testEquality(inP2P, expectedInP2P);
@@ -190,12 +197,12 @@ contract TestSupply is TestSetup {
         uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(dai);
         uint256 expectedOnPool = underlyingToScaledBalance(2 * amount, normalizedIncome);
 
-        (, uint256 onPool) = positionsManager.supplyBalanceInOf(aDai, address(supplier1));
+        (, uint256 onPool) = morpho.supplyBalanceInOf(aDai, address(supplier1));
         testEquality(onPool, expectedOnPool);
     }
 
     function testFailSupplyZero() public {
-        positionsManager.supply(aDai, 0, 1, type(uint256).max);
+        morpho.supply(aDai, 0, type(uint256).max);
     }
 
     function testSupplyRepayOnBehalf() public {
@@ -208,10 +215,10 @@ contract TestSupply is TestSetup {
         // Someone repays on behalf of Morpho.
         supplier2.approve(dai, address(lendingPool), amount);
         hevm.prank(address(supplier2));
-        lendingPool.repay(dai, amount, 2, address(positionsManager));
+        lendingPool.repay(dai, amount, 2, address(morpho));
         hevm.stopPrank();
 
-        // Supplier 1 supply in P2P. Not supposed to revert.
+        // Supplier 1 supply in peer-to-peer. Not supposed to revert.
         supplier1.approve(dai, amount);
         supplier1.supply(aDai, amount);
     }
