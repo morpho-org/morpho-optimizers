@@ -2,26 +2,23 @@
 pragma solidity 0.8.13;
 
 import "@contracts/aave/interfaces/aave/ILendingPool.sol";
-import "@contracts/aave/interfaces/IRewardsManagerForAave.sol";
+import "@contracts/aave/interfaces/IRewardsManager.sol";
 
-import "@contracts/aave/PositionsManagerForAave.sol";
-import "@contracts/aave/MarketsManagerForAave.sol";
+import "@contracts/aave/Morpho.sol";
 
 contract User {
     using SafeTransferLib for ERC20;
 
-    PositionsManagerForAave internal positionsManager;
-    MarketsManagerForAave internal marketsManager;
-    IRewardsManagerForAave internal rewardsManager;
+    Morpho internal morpho;
+    IRewardsManager internal rewardsManager;
     ILendingPool public lendingPool;
     IAaveIncentivesController public aaveIncentivesController;
 
-    constructor(PositionsManagerForAave _positionsManager) {
-        positionsManager = _positionsManager;
-        marketsManager = MarketsManagerForAave(address(_positionsManager.marketsManager()));
-        rewardsManager = _positionsManager.rewardsManager();
-        lendingPool = positionsManager.lendingPool();
-        aaveIncentivesController = positionsManager.aaveIncentivesController();
+    constructor(Morpho _morpho) {
+        morpho = _morpho;
+        rewardsManager = _morpho.rewardsManager();
+        lendingPool = _morpho.lendingPool();
+        aaveIncentivesController = _morpho.aaveIncentivesController();
     }
 
     receive() external payable {}
@@ -31,7 +28,7 @@ contract User {
     }
 
     function approve(address _token, uint256 _amount) external {
-        ERC20(_token).safeApprove(address(positionsManager), _amount);
+        ERC20(_token).safeApprove(address(morpho), _amount);
     }
 
     function approve(
@@ -43,43 +40,43 @@ contract User {
     }
 
     function createMarket(address _underlyingTokenAddress) external {
-        marketsManager.createMarket(_underlyingTokenAddress);
+        morpho.createMarket(_underlyingTokenAddress);
     }
 
     function setReserveFactor(address _poolTokenAddress, uint16 _reserveFactor) external {
-        marketsManager.setReserveFactor(_poolTokenAddress, _reserveFactor);
+        morpho.setReserveFactor(_poolTokenAddress, _reserveFactor);
     }
 
     function supply(address _poolTokenAddress, uint256 _amount) external {
-        positionsManager.supply(_poolTokenAddress, _amount, 0);
+        morpho.supply(_poolTokenAddress, _amount);
     }
 
     function supply(
         address _poolTokenAddress,
         uint256 _amount,
-        uint256 _maxGasToConsume
+        uint256 _maxGasForMatching
     ) external {
-        positionsManager.supply(_poolTokenAddress, _amount, 0, _maxGasToConsume);
+        morpho.supply(_poolTokenAddress, _amount, _maxGasForMatching);
     }
 
     function withdraw(address _poolTokenAddress, uint256 _amount) external {
-        positionsManager.withdraw(_poolTokenAddress, _amount);
+        morpho.withdraw(_poolTokenAddress, _amount);
     }
 
     function borrow(address _poolTokenAddress, uint256 _amount) external {
-        positionsManager.borrow(_poolTokenAddress, _amount, 0);
+        morpho.borrow(_poolTokenAddress, _amount);
     }
 
     function borrow(
         address _poolTokenAddress,
         uint256 _amount,
-        uint256 _maxGasToConsume
+        uint256 _maxGasForMatching
     ) external {
-        positionsManager.borrow(_poolTokenAddress, _amount, 0, _maxGasToConsume);
+        morpho.borrow(_poolTokenAddress, _amount, _maxGasForMatching);
     }
 
     function repay(address _poolTokenAddress, uint256 _amount) external {
-        positionsManager.repay(_poolTokenAddress, _amount);
+        morpho.repay(_poolTokenAddress, _amount);
     }
 
     function aaveSupply(address _underlyingTokenAddress, uint256 _amount) external {
@@ -101,7 +98,7 @@ contract User {
         address _borrower,
         uint256 _amount
     ) external {
-        positionsManager.liquidate(
+        morpho.liquidate(
             _poolTokenBorrowedAddress,
             _poolTokenCollateralAddress,
             _borrower,
@@ -109,28 +106,34 @@ contract User {
         );
     }
 
-    function setNDS(uint8 _newNDS) external {
-        positionsManager.setNDS(_newNDS);
+    function setMaxSortedUsers(uint256 _newMaxSortedUsers) external {
+        morpho.setMaxSortedUsers(_newMaxSortedUsers);
     }
 
-    function setMaxGas(PositionsManagerForAave.MaxGas memory _maxGas) external {
-        positionsManager.setMaxGas(_maxGas);
+    function setDefaultMaxGasForMatching(Types.MaxGasForMatching memory _maxGasForMatching)
+        external
+    {
+        morpho.setDefaultMaxGasForMatching(_maxGasForMatching);
     }
 
     function claimRewards(address[] calldata _assets, bool _toSwap) external {
-        positionsManager.claimRewards(_assets, _toSwap);
+        morpho.claimRewards(_assets, _toSwap);
     }
 
-    function setNoP2P(address _marketAddress, bool _noP2P) external {
-        marketsManager.setNoP2P(_marketAddress, _noP2P);
+    function toggleP2P(address _marketAddress) external {
+        morpho.toggleP2P(_marketAddress);
     }
 
     function setTreasuryVault(address _newTreasuryVault) external {
-        positionsManager.setTreasuryVault(_newTreasuryVault);
+        morpho.setTreasuryVault(_newTreasuryVault);
     }
 
-    function setPauseStatus(address _poolTokenAddress) external {
-        positionsManager.setPauseStatus(_poolTokenAddress);
+    function togglePauseStatus(address _poolTokenAddress) external {
+        morpho.togglePauseStatus(_poolTokenAddress);
+    }
+
+    function togglePartialPauseStatus(address _poolTokenAddress) external {
+        morpho.togglePartialPauseStatus(_poolTokenAddress);
     }
 
     function setAaveIncentivesControllerOnRewardsManager(address _aaveIncentivesController)
