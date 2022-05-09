@@ -11,20 +11,20 @@ async function main() {
   console.log('👩 Deployer account:', deployer.address);
   console.log('🤑 Account balance:', (await deployer.getBalance()).toString());
 
-  /// INTEREST RATES DEPLOYMENT ///
+  /// INTEREST RATES MANAGER DEPLOYMENT ///
 
-  console.log('\n🦋 Deploying InterestRates...');
-  const InterestRates = await ethers.getContractFactory('InterestRates');
-  const interestRates = await InterestRates.deploy();
-  await interestRates.deployed();
-  console.log('🎉 InterestRates deployed to address:', interestRates.address);
+  console.log('\n🦋 Deploying InterestRatesManager...');
+  const InterestRatesManager = await ethers.getContractFactory('InterestRatesManager');
+  const interestRatesManager = await InterestRatesManager.deploy();
+  await interestRatesManager.deployed();
+  console.log('🎉 InterestRatesManager deployed to address:', interestRatesManager.address);
 
-  console.log('\n🦋 Verifying InterestRates on Tenderly...');
+  console.log('\n🦋 Verifying InterestRatesManager on Tenderly...');
   await hre.tenderly.verify({
-    name: 'InterestRates',
-    address: interestRates.address,
+    name: 'InterestRatesManager',
+    address: interestRatesManager.address,
   });
-  console.log('🎉 InterestRates verified!');
+  console.log('🎉 InterestRatesManager verified!');
 
   /// POSITIONS MANAGER DEPLOYMENT ///
 
@@ -51,10 +51,10 @@ async function main() {
     Morpho,
     [
       positionsManager.address,
-      interestRates.address,
+      interestRatesManager.address,
       config.compound.comptroller.address,
-      1,
       maxGas,
+      1,
       100,
       config.tokens.cEth.address,
       config.tokens.wEth.address,
