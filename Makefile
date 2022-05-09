@@ -34,7 +34,7 @@ test-compound-html: node_modules
 
 fuzz-compound: node_modules
 	@echo Run all fuzzing tests on ${NETWORK}
-	@forge test -vv -c test-foundry/fuzzing/compound
+	@forge test -vv -c test-foundry/fuzzing/compound | aha --black > trace.html
 
 gas-report-compound:
 	@echo Create report

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import "./TestSetupFuzzing.sol";
+import "./setup/TestSetupFuzzing.sol";
 import {Attacker} from "../../compound/helpers/Attacker.sol";
 
 contract TestWithdraw is TestSetupFuzzing {
@@ -195,7 +195,7 @@ contract TestWithdraw is TestSetupFuzzing {
         uint256 amount = _amount;
 
         // 2e6 allows only 10 unmatch borrowers.
-        setMaxGasForMatchingHelper(3e6, 3e6, uint64(1e6 + maxGas * 1e5), 3e6);
+        setDefaultMaxGasForMatchingHelper(3e6, 3e6, uint64(1e6 + maxGas * 1e5), 3e6);
 
         uint256 borrowedAmount = 1 ether;
         uint256 collateral = 2 * borrowedAmount;
