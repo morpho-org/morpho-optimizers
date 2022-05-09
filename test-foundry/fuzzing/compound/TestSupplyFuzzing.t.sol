@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import "./TestSetupFuzzing.sol";
+import "./setup/TestSetupFuzzing.sol";
 
 contract TestSupplyFuzzing is TestSetupFuzzing {
     using CompoundMath for uint256;
@@ -122,7 +122,7 @@ contract TestSupplyFuzzing is TestSetupFuzzing {
         assumeSupplyAmountIsCorrect(vars.suppliedUnderlying, _suppliedAmount);
         assumeBorrowAmountIsCorrect(vars.suppliedUnderlying, amountPerBorrower);
 
-        setMaxGasForMatchingHelper(
+        setDefaultMaxGasForMatchingHelper(
             type(uint64).max,
             type(uint64).max,
             type(uint64).max,
@@ -171,7 +171,7 @@ contract TestSupplyFuzzing is TestSetupFuzzing {
         assumeSupplyAmountIsCorrect(vars.suppliedCToken, _suppliedAmount);
         assumeBorrowAmountIsCorrect(vars.suppliedCToken, amountPerBorrower);
 
-        setMaxGasForMatchingHelper(
+        setDefaultMaxGasForMatchingHelper(
             type(uint64).max,
             type(uint64).max,
             type(uint64).max,

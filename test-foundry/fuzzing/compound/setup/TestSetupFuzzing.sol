@@ -13,16 +13,16 @@ import "@contracts/compound/IncentivesVault.sol";
 import "@contracts/compound/RewardsManager.sol";
 import "@contracts/compound/PositionsManager.sol";
 import "@contracts/compound/MatchingEngine.sol";
-import "@contracts/compound/InterestRates.sol";
+import "@contracts/compound/InterestRatesManager.sol";
 import "@contracts/compound/Morpho.sol";
 import "@contracts/compound/Lens.sol";
 
-import "../../common/helpers/MorphoToken.sol";
-import "../../common/helpers/Chains.sol";
-import "../../compound/helpers/SimplePriceOracle.sol";
-import "../../compound/helpers/DumbOracle.sol";
-import {User} from "../../compound/helpers/User.sol";
-import {Utils} from "../../compound/setup/Utils.sol";
+import "../../../common/helpers/MorphoToken.sol";
+import "../../../common/helpers/Chains.sol";
+import "../../../compound/helpers/SimplePriceOracle.sol";
+import "../../../compound/helpers/DumbOracle.sol";
+import {User} from "../../../compound/helpers/User.sol";
+import {Utils} from "../../../compound/setup/Utils.sol";
 import "forge-std/stdlib.sol";
 import "forge-std/console.sol";
 import "@config/Config.sol";
@@ -64,7 +64,7 @@ contract TestSetupFuzzing is Config, Utils, stdCheats {
     Morpho internal morphoImplV1;
     Morpho internal morpho;
     Morpho internal fakeMorphoImpl;
-    InterestRates internal interestRates;
+    InterestRatesManager internal interestRatesManager;
     IRewardsManager internal rewardsManager;
     IPositionsManager internal positionsManager;
     Lens internal lens;
@@ -94,7 +94,7 @@ contract TestSetupFuzzing is Config, Utils, stdCheats {
     }
 
     function initContracts() internal {
-        Types.MaxGasForMatching memory maxGasForMatching = Types.MaxGasForMatching({
+        Types.MaxGasForMatching memory defaultMaxGasForMatching = Types.MaxGasForMatching({
             supply: 3e6,
             borrow: 3e6,
             withdraw: 3e6,
@@ -102,13 +102,13 @@ contract TestSetupFuzzing is Config, Utils, stdCheats {
         });
 
         comptroller = IComptroller(comptrollerAddress);
-        interestRates = new InterestRates();
+        interestRatesManager = new InterestRatesManager();
         positionsManager = new PositionsManager();
 
         /// Deploy proxies ///
 
         proxyAdmin = new ProxyAdmin();
-        interestRates = new InterestRates();
+        interestRatesManager = new InterestRatesManager();
 
         morphoImplV1 = new Morpho();
         morphoProxy = new TransparentUpgradeableProxy(address(morphoImplV1), address(this), "");
@@ -117,10 +117,10 @@ contract TestSetupFuzzing is Config, Utils, stdCheats {
         morpho = Morpho(payable(address(morphoProxy)));
         morpho.initialize(
             positionsManager,
-            interestRates,
+            interestRatesManager,
             comptroller,
+            defaultMaxGasForMatching,
             1,
-            maxGasForMatching,
             20,
             cEth,
             wEth
@@ -258,7 +258,7 @@ contract TestSetupFuzzing is Config, Utils, stdCheats {
         hevm.label(address(proxyAdmin), "ProxyAdmin");
         hevm.label(address(morphoImplV1), "MorphoImplV1");
         hevm.label(address(morpho), "Morpho");
-        hevm.label(address(interestRates), "InterestRates");
+        hevm.label(address(interestRatesManager), "InterestRatesManager");
         hevm.label(address(rewardsManager), "RewardsManager");
         hevm.label(address(morphoToken), "MorphoToken");
         hevm.label(address(comptroller), "Comptroller");
@@ -278,51 +278,6 @@ contract TestSetupFuzzing is Config, Utils, stdCheats {
         }
     }
 
-    function assumeSupplyAmountIsInRange(
-        User _user,
-        address underlying,
-        uint256 amount
-    ) internal {
-        hevm.assume(amount > 0);
-        hevm.assume(ERC20(underlying).balanceOf(address(_user)) >= amount);
-    }
-
-    function assumeBorrowAmountIsInRange(
-        User _user,
-        address _CToken,
-        uint128 amount
-    ) internal {
-        address underlying;
-        underlying = _CToken == cEth ? wEth : ICToken(_CToken).underlying();
-        assumeBorrowAmountIsCorrect(_CToken, amount);
-        (, uint256 borrowable) = lens.getUserMaxCapacitiesForAsset(address(_user), _CToken);
-        hevm.assume(amount <= borrowable);
-    }
-
-    /// @notice checks morpho will not revert because of Compound rounding the amount to 0.
-    /// @param underlying address of the underlying to supply.
-    /// @param amount to check.
-    function assumeSupplyAmountIsCorrect(address underlying, uint256 amount) internal {
-        hevm.assume(amount > 0);
-        // All the signers have the same balance at the beginning of a test.
-        hevm.assume(amount <= ERC20(underlying).balanceOf(address(supplier1)));
-    }
-
-    /// @notice a borrow amount can be too high on compound due to governance or unsufficient supply.
-    /// @param market address of the CToken.
-    /// @param amount to check.
-    function assumeBorrowAmountIsCorrect(address market, uint256 amount) internal {
-        hevm.assume(amount <= ICToken(market).getCash());
-        hevm.assume(amount > 0);
-        uint256 borrowCap = comptroller.borrowCaps(market);
-        if (borrowCap != 0) hevm.assume(amount <= borrowCap);
-    }
-
-    /// @param amount considered for the liquidation.
-    function assumeLiquidateAmountIsCorrect(uint256 amount) internal {
-        hevm.assume(amount > 0);
-    }
-
     function createAndSetCustomPriceOracle() public returns (SimplePriceOracle) {
         SimplePriceOracle customOracle = new SimplePriceOracle();
 
@@ -337,7 +292,7 @@ contract TestSetupFuzzing is Config, Utils, stdCheats {
         return customOracle;
     }
 
-    function setMaxGasForMatchingHelper(
+    function setDefaultMaxGasForMatchingHelper(
         uint64 _supply,
         uint64 _borrow,
         uint64 _withdraw,
@@ -349,7 +304,7 @@ contract TestSetupFuzzing is Config, Utils, stdCheats {
             withdraw: _withdraw,
             repay: _repay
         });
-        morpho.setMaxGasForMatching(newMaxGas);
+        morpho.setDefaultMaxGasForMatching(newMaxGas);
     }
 
     function move1000BlocksForward(address _marketAddress) public {
@@ -395,5 +350,29 @@ contract TestSetupFuzzing is Config, Utils, stdCheats {
     function getAsset(uint8 _asset) internal view returns (address asset, address underlying) {
         asset = pools[_asset % pools.length];
         underlying = getUnderlying(asset);
+    }
+
+    /// @notice checks morpho will not revert because of Compound rounding the amount to 0.
+    /// @param underlying address of the underlying to supply.
+    /// @param amount to check.
+    function assumeSupplyAmountIsCorrect(address underlying, uint256 amount) internal {
+        hevm.assume(amount > 0);
+        // All the signers have the same balance at the beginning of a test.
+        hevm.assume(amount <= ERC20(underlying).balanceOf(address(supplier1)));
+    }
+
+    /// @notice a borrow amount can be too high on compound due to governance or unsufficient supply.
+    /// @param market address of the CToken.
+    /// @param amount to check.
+    function assumeBorrowAmountIsCorrect(address market, uint256 amount) internal {
+        hevm.assume(amount <= ICToken(market).getCash());
+        hevm.assume(amount > 0);
+        uint256 borrowCap = comptroller.borrowCaps(market);
+        if (borrowCap != 0) hevm.assume(amount <= borrowCap);
+    }
+
+    /// @param amount considered for the liquidation.
+    function assumeLiquidateAmountIsCorrect(uint256 amount) internal {
+        hevm.assume(amount > 0);
     }
 }

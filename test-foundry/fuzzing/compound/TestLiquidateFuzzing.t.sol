@@ -1,10 +1,19 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import "./TestSetupFuzzing.sol";
+import "./setup/TestSetupFuzzing.sol";
 
 contract TestLiquidateFuzzing is TestSetupFuzzing {
     using CompoundMath for uint256;
+
+    struct addressVars {
+        address collateralAsset;
+        address collateralUnderlying;
+        address suppliedAsset;
+        address suppliedUnderlying;
+        address borrowedAsset;
+        address borrowedUnderlying;
+    }
 
     // Should not be able to liquidate a user with enough collateral.
     function testLiquidate1Fuzzed(
@@ -21,7 +30,6 @@ contract TestLiquidateFuzzing is TestSetupFuzzing {
 
         // Because this is a Liquidation Test, we need to make sure that the supplied amount is enough
         // To obtain a non zero borrow & liquidation amount.
-        console.log(10**ERC20(suppliedUnderlying).decimals());
         hevm.assume(amountSupplied > 10**ERC20(suppliedUnderlying).decimals());
         hevm.assume(_firstModulo != 0);
         hevm.assume(_secondModulo != 0);
@@ -112,14 +120,17 @@ contract TestLiquidateFuzzing is TestSetupFuzzing {
     function testLiquidate3Fuzzed(
         uint128 _amountSuppliedForMatch,
         uint128 _amountCollateral,
+        uint128 _amountSupplied,
         uint8 _collateralAsset,
         uint8 _suppliedAsset,
         uint8 _borrowedAsset,
         uint8 _randomModulo
     ) public {
-        (address suppliedAsset, address suppliedUnderlying) = getAsset(_suppliedAsset);
-        (address borrowedAsset, address borrowedUnderlying) = getAsset(_borrowedAsset);
-        (address collateralAsset, address collateralUnderlying) = getAsset(_collateralAsset);
+        addressVars memory vars;
+
+        (vars.suppliedAsset, vars.suppliedUnderlying) = getAsset(_suppliedAsset);
+        (vars.borrowedAsset, vars.borrowedUnderlying) = getAsset(_borrowedAsset);
+        (vars.collateralAsset, vars.collateralUnderlying) = getAsset(_collateralAsset);
 
         uint256 amountSupplied = _amountSupplied;
         uint256 amountSuppliedForMatch = _amountSuppliedForMatch;
@@ -127,47 +138,47 @@ contract TestLiquidateFuzzing is TestSetupFuzzing {
 
         // Because this is a Liquidation Test, we need to make sure that the supplied amount is enough
         // To obtain a non zero borrow & liquidation amount.
-        hevm.assume(amountSupplied > 10**ERC20(suppliedUnderlying).decimals());
+        hevm.assume(amountSupplied > 10**ERC20(vars.suppliedUnderlying).decimals());
         hevm.assume(_randomModulo != 0);
-        assumeSupplyAmountIsCorrect(suppliedUnderlying, amountSupplied);
+        assumeSupplyAmountIsCorrect(vars.suppliedUnderlying, amountSupplied);
 
         // Borrower1 get his supply & borrow.
-        borrower1.approve(suppliedUnderlying, amountSupplied);
-        borrower1.supply(suppliedAsset, amountSupplied);
+        borrower1.approve(vars.suppliedUnderlying, amountSupplied);
+        borrower1.supply(vars.suppliedAsset, amountSupplied);
         (, uint256 borrowedAmount) = lens.getUserMaxCapacitiesForAsset(
             address(borrower1),
-            borrowedAsset
+            vars.borrowedAsset
         );
-        assumeBorrowAmountIsCorrect(borrowedAsset, borrowedAmount);
-        borrower1.borrow(borrowedAsset, borrowedAmount);
+        assumeBorrowAmountIsCorrect(vars.borrowedAsset, borrowedAmount);
+        borrower1.borrow(vars.borrowedAsset, borrowedAmount);
 
         // Set up Supplier2 to match the borrow asset of Borrower1.
-        assumeSupplyAmountIsCorrect(borrowedUnderlying, amountSuppliedForMatch);
-        supplier2.approve(borrowedUnderlying, amountSuppliedForMatch);
-        supplier2.supply(borrowedAsset, amountSuppliedForMatch);
+        assumeSupplyAmountIsCorrect(vars.borrowedUnderlying, amountSuppliedForMatch);
+        supplier2.approve(vars.borrowedUnderlying, amountSuppliedForMatch);
+        supplier2.supply(vars.borrowedAsset, amountSuppliedForMatch);
 
         // Set up Borrower2 to match the supplied asset of Borrower1.
-        assumeSupplyAmountIsCorrect(collateralUnderlying, amountCollateral);
-        borrower2.approve(collateralUnderlying, amountCollateral);
-        borrower2.supply(collateralAsset, amountCollateral);
+        assumeSupplyAmountIsCorrect(vars.collateralUnderlying, amountCollateral);
+        borrower2.approve(vars.collateralUnderlying, amountCollateral);
+        borrower2.supply(vars.collateralAsset, amountCollateral);
         (, uint256 borrowable) = lens.getUserMaxCapacitiesForAsset(
             address(borrower2),
-            suppliedAsset
+            vars.suppliedAsset
         );
-        uint256 borrowedAmount = (borrowable * _randomModulo) / 255;
-        assumeBorrowAmountIsCorrect(suppliedAsset, borrowedAmount);
-        borrower1.borrow(suppliedAsset, borrowedAmount);
+        borrowedAmount = (borrowable * _randomModulo) / 255;
+        assumeBorrowAmountIsCorrect(vars.suppliedAsset, borrowedAmount);
+        borrower1.borrow(vars.suppliedAsset, borrowedAmount);
 
         // Change Oracle.
         SimplePriceOracle customOracle = createAndSetCustomPriceOracle();
         customOracle.setDirectPrice(
-            suppliedUnderlying,
-            (oracle.getUnderlyingPrice(suppliedAsset) * 94) / 100
+            vars.suppliedUnderlying,
+            (oracle.getUnderlyingPrice(vars.suppliedAsset) * 94) / 100
         );
 
         // Before Liquidation
         (, uint256 onPoolBorrowerBefore) = morpho.borrowBalanceInOf(
-            borrowedAsset,
+            vars.borrowedAsset,
             address(borrower1)
         );
 
@@ -176,13 +187,13 @@ contract TestLiquidateFuzzing is TestSetupFuzzing {
         assumeLiquidateAmountIsCorrect(toRepay);
 
         User liquidator = borrower3;
-        liquidator.approve(borrowedUnderlying, address(morpho), toRepay);
+        liquidator.approve(vars.borrowedUnderlying, address(morpho), toRepay);
 
-        liquidator.liquidate(borrowedAsset, suppliedAsset, address(borrower1), toRepay);
+        liquidator.liquidate(vars.borrowedAsset, vars.suppliedAsset, address(borrower1), toRepay);
 
         // After Liquidation
         (, uint256 onPoolBorrowerAfter) = morpho.borrowBalanceInOf(
-            borrowedAsset,
+            vars.borrowedAsset,
             address(borrower1)
         );
 

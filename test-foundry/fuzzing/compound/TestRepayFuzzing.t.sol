@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import "./TestSetupFuzzing.sol";
+import "./setup/TestSetupFuzzing.sol";
 
 contract TestRepayFuzzing is TestSetupFuzzing {
     using CompoundMath for uint256;
@@ -167,7 +167,7 @@ contract TestRepayFuzzing is TestSetupFuzzing {
     ) public {
         (address collateralCToken, address collateralUnderlying) = getAsset(_collateralAsset);
         (address borrowedCToken, address borrowedUnderlying) = getAsset(_borrowedAsset);
-        setMaxGasForMatchingHelper(
+        setDefaultMaxGasForMatchingHelper(
             type(uint64).max,
             type(uint64).max,
             type(uint64).max,

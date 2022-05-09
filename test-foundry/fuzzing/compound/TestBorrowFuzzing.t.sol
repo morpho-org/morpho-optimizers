@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import "./TestSetupFuzzing.sol";
+import "./setup/TestSetupFuzzing.sol";
 
 contract TestBorrowFuzzing is TestSetupFuzzing {
     using CompoundMath for uint256;
