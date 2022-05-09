@@ -10,12 +10,9 @@ contract TestBorrow is TestSetup {
         borrower1.approve(usdc, usdcAmount);
         borrower1.supply(aUsdc, usdcAmount);
 
-        (, uint256 borrowable) = positionsManager.getUserMaxCapacitiesForAsset(
-            address(borrower1),
-            aDai
-        );
+        (, uint256 borrowable) = lens.getUserMaxCapacitiesForAsset(address(borrower1), aDai);
 
-        hevm.expectRevert(abi.encodeWithSignature("DebtValueAboveMax()"));
+        hevm.expectRevert(abi.encodeWithSignature("UnauthorisedBorrow()"));
         borrower1.borrow(aDai, borrowable + 1e12);
     }
 
@@ -26,10 +23,7 @@ contract TestBorrow is TestSetup {
         borrower1.supply(aUsdc, to6Decimals(2 * amount));
         borrower1.borrow(aDai, amount);
 
-        (uint256 inP2P, uint256 onPool) = positionsManager.borrowBalanceInOf(
-            aDai,
-            address(borrower1)
-        );
+        (uint256 inP2P, uint256 onPool) = morpho.borrowBalanceInOf(aDai, address(borrower1));
 
         uint256 normalizedVariableDebt = lendingPool.getReserveNormalizedVariableDebt(dai);
         uint256 expectedOnPool = underlyingToAdUnit(amount, normalizedVariableDebt);
@@ -48,17 +42,14 @@ contract TestBorrow is TestSetup {
         borrower1.supply(aUsdc, to6Decimals(amount * 2));
         borrower1.borrow(aDai, amount);
 
-        (uint256 supplyInP2P, ) = positionsManager.supplyBalanceInOf(aDai, address(supplier1));
+        (uint256 supplyInP2P, ) = morpho.supplyBalanceInOf(aDai, address(supplier1));
 
-        uint256 borrowP2PExchangeRate = marketsManager.borrowP2PExchangeRate(aDai);
-        uint256 expectedInP2P = p2pUnitToUnderlying(supplyInP2P, borrowP2PExchangeRate);
+        uint256 p2pBorrowIndex = morpho.p2pBorrowIndex(aDai);
+        uint256 expectedInP2P = p2pUnitToUnderlying(supplyInP2P, p2pBorrowIndex);
 
         testEquality(expectedInP2P, amount);
 
-        (uint256 inP2P, uint256 onPool) = positionsManager.borrowBalanceInOf(
-            aDai,
-            address(borrower1)
-        );
+        (uint256 inP2P, uint256 onPool) = morpho.borrowBalanceInOf(aDai, address(borrower1));
 
         testEquality(onPool, 0);
         testEquality(inP2P, supplyInP2P);
@@ -75,12 +66,9 @@ contract TestBorrow is TestSetup {
         uint256 borrowAmount = amount * 2;
         borrower1.borrow(aDai, borrowAmount);
 
-        (uint256 supplyInP2P, ) = positionsManager.supplyBalanceInOf(aDai, address(supplier1));
+        (uint256 supplyInP2P, ) = morpho.supplyBalanceInOf(aDai, address(supplier1));
 
-        (uint256 inP2P, uint256 onPool) = positionsManager.borrowBalanceInOf(
-            aDai,
-            address(borrower1)
-        );
+        (uint256 inP2P, uint256 onPool) = morpho.borrowBalanceInOf(aDai, address(borrower1));
 
         testEquality(inP2P, supplyInP2P);
 
@@ -91,12 +79,17 @@ contract TestBorrow is TestSetup {
     }
 
     function testBorrow5() public {
-        setMaxGasHelper(type(uint64).max, type(uint64).max, type(uint64).max, type(uint64).max);
+        setDefaultMaxGasForMatchingHelper(
+            type(uint64).max,
+            type(uint64).max,
+            type(uint64).max,
+            type(uint64).max
+        );
 
         uint256 amount = 10_000 ether;
         uint256 collateral = 2 * amount;
 
-        uint8 NMAX = 20;
+        uint256 NMAX = 20;
         createSigners(NMAX);
 
         uint256 amountPerSupplier = amount / NMAX;
@@ -112,31 +105,36 @@ contract TestBorrow is TestSetup {
 
         uint256 inP2P;
         uint256 onPool;
-        uint256 supplyP2PExchangeRate = marketsManager.supplyP2PExchangeRate(aDai);
+        uint256 p2pSupplyIndex = morpho.p2pSupplyIndex(aDai);
         uint256 expectedInP2P;
 
         for (uint256 i = 0; i < NMAX; i++) {
-            (inP2P, onPool) = positionsManager.supplyBalanceInOf(aDai, address(suppliers[i]));
+            (inP2P, onPool) = morpho.supplyBalanceInOf(aDai, address(suppliers[i]));
 
-            expectedInP2P = p2pUnitToUnderlying(inP2P, supplyP2PExchangeRate);
+            expectedInP2P = p2pUnitToUnderlying(inP2P, p2pSupplyIndex);
 
             testEquality(expectedInP2P, amountPerSupplier);
             testEquality(onPool, 0);
         }
 
-        (inP2P, onPool) = positionsManager.borrowBalanceInOf(aDai, address(borrower1));
+        (inP2P, onPool) = morpho.borrowBalanceInOf(aDai, address(borrower1));
 
         testEquality(inP2P, amount);
         testEquality(onPool, 0);
     }
 
     function testBorrow6() public {
-        setMaxGasHelper(type(uint64).max, type(uint64).max, type(uint64).max, type(uint64).max);
+        setDefaultMaxGasForMatchingHelper(
+            type(uint64).max,
+            type(uint64).max,
+            type(uint64).max,
+            type(uint64).max
+        );
 
         uint256 amount = 10_000 ether;
         uint256 collateral = 2 * amount;
 
-        uint8 NMAX = 20;
+        uint256 NMAX = 20;
         createSigners(NMAX);
 
         uint256 amountPerSupplier = amount / (2 * NMAX);
@@ -152,22 +150,22 @@ contract TestBorrow is TestSetup {
 
         uint256 inP2P;
         uint256 onPool;
-        uint256 supplyP2PExchangeRate = marketsManager.supplyP2PExchangeRate(aDai);
+        uint256 p2pSupplyIndex = morpho.p2pSupplyIndex(aDai);
         uint256 normalizedVariableDebt = lendingPool.getReserveNormalizedVariableDebt(dai);
         uint256 expectedInP2P;
 
         for (uint256 i = 0; i < NMAX; i++) {
-            (inP2P, onPool) = positionsManager.supplyBalanceInOf(aDai, address(suppliers[i]));
+            (inP2P, onPool) = morpho.supplyBalanceInOf(aDai, address(suppliers[i]));
 
-            expectedInP2P = p2pUnitToUnderlying(inP2P, supplyP2PExchangeRate);
+            expectedInP2P = p2pUnitToUnderlying(inP2P, p2pSupplyIndex);
 
             testEquality(expectedInP2P, amountPerSupplier);
             testEquality(onPool, 0);
         }
 
-        (inP2P, onPool) = positionsManager.borrowBalanceInOf(aDai, address(borrower1));
+        (inP2P, onPool) = morpho.borrowBalanceInOf(aDai, address(borrower1));
 
-        expectedInP2P = p2pUnitToUnderlying(amount / 2, supplyP2PExchangeRate);
+        expectedInP2P = p2pUnitToUnderlying(amount / 2, p2pSupplyIndex);
         uint256 expectedOnPool = underlyingToAdUnit(amount / 2, normalizedVariableDebt);
 
         testEquality(inP2P, expectedInP2P);
@@ -177,13 +175,13 @@ contract TestBorrow is TestSetup {
     function testBorrowMultipleAssets() public {
         uint256 amount = 10_000 ether;
 
-        borrower1.approve(usdc, address(positionsManager), to6Decimals(4 * amount));
+        borrower1.approve(usdc, address(morpho), to6Decimals(4 * amount));
         borrower1.supply(aUsdc, to6Decimals(4 * amount));
 
         borrower1.borrow(aDai, amount);
         borrower1.borrow(aDai, amount);
 
-        (, uint256 onPool) = positionsManager.borrowBalanceInOf(aDai, address(borrower1));
+        (, uint256 onPool) = morpho.borrowBalanceInOf(aDai, address(borrower1));
 
         uint256 normalizedVariableDebt = lendingPool.getReserveNormalizedVariableDebt(dai);
         uint256 expectedOnPool = underlyingToAdUnit(2 * amount, normalizedVariableDebt);
@@ -191,6 +189,6 @@ contract TestBorrow is TestSetup {
     }
 
     function testFailBorrowZero() public {
-        positionsManager.borrow(aDai, 0, 1, type(uint256).max);
+        morpho.borrow(aDai, 0, type(uint256).max);
     }
 }
