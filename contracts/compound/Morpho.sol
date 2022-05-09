@@ -118,8 +118,7 @@ contract Morpho is MorphoGovernance {
                 _amount,
                 msg.sender,
                 msg.sender,
-                defaultMaxGasForMatching.withdraw,
-                false
+                defaultMaxGasForMatching.withdraw
             )
         );
     }
@@ -139,8 +138,7 @@ contract Morpho is MorphoGovernance {
                 _poolTokenAddress,
                 msg.sender,
                 _amount,
-                defaultMaxGasForMatching.repay,
-                false
+                defaultMaxGasForMatching.repay
             )
         );
     }
