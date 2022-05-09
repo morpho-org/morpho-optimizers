@@ -372,32 +372,132 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         );
     }
 
-    /// @dev Implements withdraw logic.
+    /// @dev Implements withdraw logic with security checks.
     /// @param _poolTokenAddress The address of the market the user wants to interact with.
     /// @param _amount The amount of token (in underlying).
     /// @param _supplier The address of the supplier.
     /// @param _receiver The address of the user who will receive the tokens.
     /// @param _maxGasForMatching The maximum amount of gas to consume within a matching engine loop.
-    /// @param _isLiquidation Whether this function is called during a liquidation or not.
     function withdrawLogic(
         address _poolTokenAddress,
         uint256 _amount,
         address _supplier,
         address _receiver,
-        uint256 _maxGasForMatching,
-        bool _isLiquidation
-    ) public {
+        uint256 _maxGasForMatching
+    ) external {
         if (_amount == 0) revert AmountIsZero();
+        if (!userMembership[_poolTokenAddress][_supplier]) revert UserNotMemberOfMarket();
 
-        if (!_isLiquidation) {
-            if (!userMembership[_poolTokenAddress][_supplier]) revert UserNotMemberOfMarket();
+        updateP2PIndexes(_poolTokenAddress);
+        uint256 toWithdraw = Math.min(
+            _getUserSupplyBalanceInOf(_poolTokenAddress, _supplier),
+            _amount
+        );
 
-            updateP2PIndexes(_poolTokenAddress);
-            _amount = Math.min(_getUserSupplyBalanceInOf(_poolTokenAddress, _supplier), _amount);
+        if (_isLiquidable(_supplier, _poolTokenAddress, toWithdraw, 0))
+            revert UnauthorisedWithdraw();
 
-            if (_isLiquidable(_supplier, _poolTokenAddress, _amount, 0))
-                revert UnauthorisedWithdraw();
-        }
+        _safeWithdrawLogic(_poolTokenAddress, toWithdraw, _supplier, _receiver, _maxGasForMatching);
+    }
+
+    /// @dev Implements repay logic with security checks.
+    /// @param _poolTokenAddress The address of the market the user wants to interact with.
+    /// @param _user The address of the user.
+    /// @param _amount The amount of token (in underlying).
+    /// @param _maxGasForMatching The maximum amount of gas to consume within a matching engine loop.
+    function repayLogic(
+        address _poolTokenAddress,
+        address _user,
+        uint256 _amount,
+        uint256 _maxGasForMatching
+    ) external {
+        if (_amount == 0) revert AmountIsZero();
+        if (!userMembership[_poolTokenAddress][_user]) revert UserNotMemberOfMarket();
+
+        updateP2PIndexes(_poolTokenAddress);
+        uint256 toRepay = Math.min(_getUserBorrowBalanceInOf(_poolTokenAddress, _user), _amount);
+
+        _safeRepayLogic(_poolTokenAddress, _user, toRepay, _maxGasForMatching);
+    }
+
+    /// @notice Liquidates a position.
+    /// @param _poolTokenBorrowedAddress The address of the pool token the liquidator wants to repay.
+    /// @param _poolTokenCollateralAddress The address of the collateral pool token the liquidator wants to seize.
+    /// @param _borrower The address of the borrower to liquidate.
+    /// @param _amount The amount of token (in underlying) to repay.
+    function liquidateLogic(
+        address _poolTokenBorrowedAddress,
+        address _poolTokenCollateralAddress,
+        address _borrower,
+        uint256 _amount
+    ) external {
+        if (
+            !userMembership[_poolTokenBorrowedAddress][_borrower] ||
+            !userMembership[_poolTokenCollateralAddress][_borrower]
+        ) revert UserNotMemberOfMarket();
+
+        updateP2PIndexes(_poolTokenBorrowedAddress);
+        updateP2PIndexes(_poolTokenCollateralAddress);
+
+        if (!_isLiquidable(_borrower, address(0), 0, 0)) revert UnauthorisedLiquidate();
+
+        LiquidateVars memory vars;
+        vars.borrowBalance = _getUserBorrowBalanceInOf(_poolTokenBorrowedAddress, _borrower);
+
+        if (_amount > vars.borrowBalance.mul(comptroller.closeFactorMantissa()))
+            revert AmountAboveWhatAllowedToRepay(); // Same mechanism as Compound. Liquidator cannot repay more than part of the debt (cf close factor on Compound).
+
+        _safeRepayLogic(_poolTokenBorrowedAddress, _borrower, _amount, 0);
+
+        ICompoundOracle compoundOracle = ICompoundOracle(comptroller.oracle());
+        vars.collateralPrice = compoundOracle.getUnderlyingPrice(_poolTokenCollateralAddress);
+        vars.borrowedPrice = compoundOracle.getUnderlyingPrice(_poolTokenBorrowedAddress);
+        if (vars.collateralPrice == 0 || vars.borrowedPrice == 0) revert CompoundOracleFailed();
+
+        // Compute the amount of collateral tokens to seize (Same mechanism as Compound).
+        vars.amountToSeize = _amount
+        .mul(comptroller.liquidationIncentiveMantissa())
+        .mul(vars.borrowedPrice)
+        .div(vars.collateralPrice);
+
+        vars.supplyBalance = _getUserSupplyBalanceInOf(_poolTokenCollateralAddress, _borrower);
+
+        if (vars.amountToSeize > vars.supplyBalance) revert ToSeizeAboveCollateral();
+
+        _safeWithdrawLogic(
+            _poolTokenCollateralAddress,
+            vars.amountToSeize,
+            _borrower,
+            msg.sender,
+            0
+        );
+
+        emit Liquidated(
+            msg.sender,
+            _borrower,
+            _poolTokenBorrowedAddress,
+            _amount,
+            _poolTokenCollateralAddress,
+            vars.amountToSeize
+        );
+    }
+
+    /// INTERNAL ///
+
+    /// @dev Implements withdraw logic without security checks.
+    /// @param _poolTokenAddress The address of the market the user wants to interact with.
+    /// @param _amount The amount of token (in underlying).
+    /// @param _supplier The address of the supplier.
+    /// @param _receiver The address of the user who will receive the tokens.
+    /// @param _maxGasForMatching The maximum amount of gas to consume within a matching engine loop.
+    function _safeWithdrawLogic(
+        address _poolTokenAddress,
+        uint256 _amount,
+        address _supplier,
+        address _receiver,
+        uint256 _maxGasForMatching
+    ) internal {
+        if (_amount == 0) revert AmountIsZero();
 
         WithdrawVars memory vars;
         vars.poolToken = ICToken(_poolTokenAddress);
@@ -529,28 +629,17 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         );
     }
 
-    /// @dev Implements repay logic.
+    /// @dev Implements repay logic without security checks.
     /// @param _poolTokenAddress The address of the market the user wants to interact with.
     /// @param _user The address of the user.
     /// @param _amount The amount of token (in underlying).
     /// @param _maxGasForMatching The maximum amount of gas to consume within a matching engine loop.
-    /// @param _isLiquidation Whether this function is called during a liquidation or not.
-    function repayLogic(
+    function _safeRepayLogic(
         address _poolTokenAddress,
         address _user,
         uint256 _amount,
-        uint256 _maxGasForMatching,
-        bool _isLiquidation
-    ) public {
-        if (_amount == 0) revert AmountIsZero();
-
-        if (!_isLiquidation) {
-            if (!userMembership[_poolTokenAddress][_user]) revert UserNotMemberOfMarket();
-
-            updateP2PIndexes(_poolTokenAddress);
-            _amount = Math.min(_getUserBorrowBalanceInOf(_poolTokenAddress, _user), _amount);
-        }
-
+        uint256 _maxGasForMatching
+    ) internal {
         ICToken poolToken = ICToken(_poolTokenAddress);
         ERC20 underlyingToken = _getUnderlying(_poolTokenAddress);
         underlyingToken.safeTransferFrom(msg.sender, address(this), _amount);
@@ -695,71 +784,6 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             borrowBalanceInOf[_poolTokenAddress][msg.sender].inP2P
         );
     }
-
-    /// @notice Liquidates a position.
-    /// @param _poolTokenBorrowedAddress The address of the pool token the liquidator wants to repay.
-    /// @param _poolTokenCollateralAddress The address of the collateral pool token the liquidator wants to seize.
-    /// @param _borrower The address of the borrower to liquidate.
-    /// @param _amount The amount of token (in underlying) to repay.
-    function liquidateLogic(
-        address _poolTokenBorrowedAddress,
-        address _poolTokenCollateralAddress,
-        address _borrower,
-        uint256 _amount
-    ) external {
-        if (
-            !userMembership[_poolTokenBorrowedAddress][_borrower] ||
-            !userMembership[_poolTokenCollateralAddress][_borrower]
-        ) revert UserNotMemberOfMarket();
-
-        updateP2PIndexes(_poolTokenBorrowedAddress);
-        updateP2PIndexes(_poolTokenCollateralAddress);
-
-        if (!_isLiquidable(_borrower, address(0), 0, 0)) revert UnauthorisedLiquidate();
-
-        LiquidateVars memory vars;
-        vars.borrowBalance = _getUserBorrowBalanceInOf(_poolTokenBorrowedAddress, _borrower);
-
-        if (_amount > vars.borrowBalance.mul(comptroller.closeFactorMantissa()))
-            revert AmountAboveWhatAllowedToRepay(); // Same mechanism as Compound. Liquidator cannot repay more than part of the debt (cf close factor on Compound).
-
-        repayLogic(_poolTokenBorrowedAddress, _borrower, _amount, 0, true);
-
-        ICompoundOracle compoundOracle = ICompoundOracle(comptroller.oracle());
-        vars.collateralPrice = compoundOracle.getUnderlyingPrice(_poolTokenCollateralAddress);
-        vars.borrowedPrice = compoundOracle.getUnderlyingPrice(_poolTokenBorrowedAddress);
-        if (vars.collateralPrice == 0 || vars.borrowedPrice == 0) revert CompoundOracleFailed();
-
-        // Compute the amount of collateral tokens to seize (Same mechanism as Compound).
-        vars.amountToSeize = _amount
-        .mul(comptroller.liquidationIncentiveMantissa())
-        .mul(vars.borrowedPrice)
-        .div(vars.collateralPrice);
-
-        vars.supplyBalance = _getUserSupplyBalanceInOf(_poolTokenCollateralAddress, _borrower);
-
-        if (vars.amountToSeize > vars.supplyBalance) revert ToSeizeAboveCollateral();
-
-        withdrawLogic(
-            _poolTokenCollateralAddress,
-            vars.amountToSeize,
-            _borrower,
-            msg.sender,
-            0,
-            true
-        );
-
-        emit Liquidated(
-            msg.sender,
-            _borrower,
-            _poolTokenBorrowedAddress,
-            _amount,
-            _poolTokenCollateralAddress,
-            vars.amountToSeize
-        );
-    }
-
-    /// INTERNAL ///
 
     /// @dev Supplies underlying tokens to Compound.
     /// @param _poolTokenAddress The address of the pool token.
