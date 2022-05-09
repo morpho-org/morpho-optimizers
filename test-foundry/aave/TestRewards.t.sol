@@ -9,7 +9,7 @@ contract TestRewards is TestSetup {
         aDaiInArray[0] = aDai;
 
         hevm.expectRevert(abi.encodeWithSignature("AmountIsZero()"));
-        positionsManager.claimRewards(aDaiInArray, false);
+        morpho.claimRewards(aDaiInArray, false);
     }
 
     function testShouldRevertWhenAccruingRewardsForInvalidAsset() public {
@@ -40,7 +40,7 @@ contract TestRewards is TestSetup {
             index = assetData.index;
         }
 
-        (, uint256 onPool) = positionsManager.supplyBalanceInOf(aDai, address(supplier1));
+        (, uint256 onPool) = morpho.supplyBalanceInOf(aDai, address(supplier1));
         uint256 userIndex = rewardsManager.getUserIndex(aDai, address(supplier1));
         address[] memory aDaiInArray = new address[](1);
         aDaiInArray[0] = aDai;
@@ -95,7 +95,7 @@ contract TestRewards is TestSetup {
             index = assetData.index;
         }
 
-        (, uint256 onPool) = positionsManager.supplyBalanceInOf(aDai, address(supplier1));
+        (, uint256 onPool) = morpho.supplyBalanceInOf(aDai, address(supplier1));
         uint256 userIndex = rewardsManager.getUserIndex(aDai, address(supplier1));
         address[] memory aDaiInArray = new address[](1);
         aDaiInArray[0] = aDai;
@@ -150,7 +150,7 @@ contract TestRewards is TestSetup {
             index = assetData.index;
         }
 
-        (, uint256 onPool) = positionsManager.borrowBalanceInOf(aUsdc, address(supplier1));
+        (, uint256 onPool) = morpho.borrowBalanceInOf(aUsdc, address(supplier1));
         uint256 userIndex = rewardsManager.getUserIndex(variableDebtUsdc, address(supplier1));
         address[] memory variableDebtUsdcArray = new address[](1);
         variableDebtUsdcArray[0] = variableDebtUsdc;
@@ -203,7 +203,7 @@ contract TestRewards is TestSetup {
             index = assetData.index;
         }
 
-        (, uint256 onPool) = positionsManager.borrowBalanceInOf(aUsdc, address(supplier1));
+        (, uint256 onPool) = morpho.borrowBalanceInOf(aUsdc, address(supplier1));
         uint256 userIndex = rewardsManager.getUserIndex(variableDebtUsdc, address(supplier1));
         address[] memory variableDebtUsdcArray = new address[](1);
         variableDebtUsdcArray[0] = variableDebtUsdc;
@@ -334,7 +334,7 @@ contract TestRewards is TestSetup {
 
         uint256 protocolUnclaimedRewards = IAaveIncentivesController(
             aaveIncentivesControllerAddress
-        ).getRewardsBalance(tokensInArray, address(positionsManager));
+        ).getRewardsBalance(tokensInArray, address(morpho));
 
         assertEq(protocolUnclaimedRewards, 0);
     }
@@ -407,7 +407,7 @@ contract TestRewards is TestSetup {
 
         uint256 protocolUnclaimedRewards = IAaveIncentivesController(
             aaveIncentivesControllerAddress
-        ).getRewardsBalance(tokensInArray, address(positionsManager));
+        ).getRewardsBalance(tokensInArray, address(morpho));
 
         assertApproxEq(protocolUnclaimedRewards, 0, 2);
     }
