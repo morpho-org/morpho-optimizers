@@ -76,23 +76,15 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     /// @param _liquidated The address of the liquidated.
     /// @param _poolTokenBorrowedAddress The address of the borrowed asset.
     /// @param _amountRepaid The amount of borrowed asset repaid (in underlying).
-    /// @param _borrowBalanceOnPool The borrow balance on pool after update.
-    /// @param _borrowBalanceInP2P The borrow balance in peer-to-peer after update.
     /// @param _poolTokenCollateralAddress The address of the collateral asset seized.
     /// @param _amountSeized The amount of collateral asset seized (in underlying).
-    /// @param _collateralBalanceOnPool The collateral balance on pool after update.
-    /// @param _collateralBalanceInP2P The collateral balance in peer-to-peer after update.
     event Liquidated(
         address _liquidator,
         address indexed _liquidated,
         address indexed _poolTokenBorrowedAddress,
         uint256 _amountRepaid,
-        uint256 _borrowBalanceOnPool,
-        uint256 _borrowBalanceInP2P,
         address indexed _poolTokenCollateralAddress,
-        uint256 _amountSeized,
-        uint256 _collateralBalanceOnPool,
-        uint256 _collateralBalanceInP2P
+        uint256 _amountSeized
     );
 
     /// @notice Emitted when the borrow peer-to-peer delta is updated.
@@ -528,14 +520,13 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         _leaveMarketIfNeeded(_poolTokenAddress, _supplier);
         vars.underlyingToken.safeTransfer(_receiver, _amount);
 
-        if (!_isLiquidation)
-            emit Withdrawn(
-                msg.sender,
-                _poolTokenAddress,
-                _amount,
-                supplyBalanceInOf[_poolTokenAddress][msg.sender].onPool,
-                supplyBalanceInOf[_poolTokenAddress][msg.sender].inP2P
-            );
+        emit Withdrawn(
+            msg.sender,
+            _poolTokenAddress,
+            _amount,
+            supplyBalanceInOf[_poolTokenAddress][msg.sender].onPool,
+            supplyBalanceInOf[_poolTokenAddress][msg.sender].inP2P
+        );
     }
 
     /// @dev Implements repay logic.
@@ -696,14 +687,13 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
         _leaveMarketIfNeeded(_poolTokenAddress, _user);
 
-        if (!_isLiquidation)
-            emit Repaid(
-                msg.sender,
-                _poolTokenAddress,
-                _amount,
-                borrowBalanceInOf[_poolTokenAddress][msg.sender].onPool,
-                borrowBalanceInOf[_poolTokenAddress][msg.sender].inP2P
-            );
+        emit Repaid(
+            msg.sender,
+            _poolTokenAddress,
+            _amount,
+            borrowBalanceInOf[_poolTokenAddress][msg.sender].onPool,
+            borrowBalanceInOf[_poolTokenAddress][msg.sender].inP2P
+        );
     }
 
     /// @notice Liquidates a position.
@@ -759,24 +749,13 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             true
         );
 
-        Types.BorrowBalance memory borrowBalance = borrowBalanceInOf[_poolTokenBorrowedAddress][
-            _borrower
-        ];
-        Types.SupplyBalance memory collateralBalance = supplyBalanceInOf[
-            _poolTokenCollateralAddress
-        ][_borrower];
-
         emit Liquidated(
             msg.sender,
             _borrower,
             _poolTokenBorrowedAddress,
             _amount,
-            borrowBalance.onPool,
-            borrowBalance.inP2P,
             _poolTokenCollateralAddress,
-            vars.amountToSeize,
-            collateralBalance.onPool,
-            collateralBalance.inP2P
+            vars.amountToSeize
         );
     }
 
