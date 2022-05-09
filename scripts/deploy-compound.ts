@@ -7,6 +7,10 @@ import hre, { ethers, upgrades } from 'hardhat';
 async function main() {
   const [deployer] = await ethers.getSigners();
 
+  if (process.env.NETWORK == 'mainnet') {
+    await hre.network.provider.send('hardhat_setBalance', [deployer.address, '0x100000000000000000000000000']);
+  }
+
   console.log('\n🦋 Deploying Morpho contracts for Compound');
   console.log('👩 Deployer account:', deployer.address);
   console.log('🤑 Account balance:', (await deployer.getBalance()).toString());

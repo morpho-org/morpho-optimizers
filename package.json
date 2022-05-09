@@ -7,6 +7,7 @@
     "contracts"
   ],
   "scripts": {
+    "deploy:compound:fork-mainnet": "NETWORK=eth-mainnet npx hardhat run scripts/deploy-compound.ts --network forkMainnet",
     "deploy:compound:ropsten": "NETWORK=ropsten npx hardhat run scripts/deploy-compound.ts --network ropsten",
     "upgrade:compound:ropsten": "NETWORK=ropsten npx hardhat run scripts/upgrade-compound.ts --network ropsten",
     "deploy:compound:goerli": "NETWORK=goerli npx hardhat run scripts/deploy-compound.ts --network goerli",
