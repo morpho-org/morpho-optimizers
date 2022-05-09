@@ -3,7 +3,7 @@ pragma solidity 0.8.13;
 
 import "./setup/TestSetup.sol";
 
-contract TestPositionsManagerGetters is TestSetup {
+contract TestLens is TestSetup {
     struct UserBalanceStates {
         uint256 collateralValue;
         uint256 debtValue;
@@ -11,155 +11,12 @@ contract TestPositionsManagerGetters is TestSetup {
         uint256 liquidationValue;
     }
 
-    enum PositionType {
-        SUPPLIERS_IN_P2P,
-        SUPPLIERS_ON_POOL,
-        BORROWERS_IN_P2P,
-        BORROWERS_ON_POOL
-    }
-
-    function testGetHead() public {
-        uint256 amount = 10_000 ether;
-        uint256 toBorrow = amount / 10;
-
-        borrower1.approve(dai, amount);
-        borrower1.supply(aDai, amount);
-
-        assertEq(
-            address(0),
-            positionsManager.getHead(
-                aDai,
-                PositionsManagerForAaveStorage.PositionType.SUPPLIERS_IN_P2P
-            )
-        );
-        assertEq(
-            address(borrower1),
-            positionsManager.getHead(
-                aDai,
-                PositionsManagerForAaveStorage.PositionType.SUPPLIERS_ON_POOL
-            )
-        );
-        assertEq(
-            address(0),
-            positionsManager.getHead(
-                aDai,
-                PositionsManagerForAaveStorage.PositionType.BORROWERS_IN_P2P
-            )
-        );
-        assertEq(
-            address(0),
-            positionsManager.getHead(
-                aDai,
-                PositionsManagerForAaveStorage.PositionType.BORROWERS_ON_POOL
-            )
-        );
-
-        borrower1.borrow(aDai, toBorrow);
-
-        assertEq(
-            address(borrower1),
-            positionsManager.getHead(
-                aDai,
-                PositionsManagerForAaveStorage.PositionType.SUPPLIERS_IN_P2P
-            )
-        );
-        assertEq(
-            address(borrower1),
-            positionsManager.getHead(
-                aDai,
-                PositionsManagerForAaveStorage.PositionType.SUPPLIERS_ON_POOL
-            )
-        );
-        assertEq(
-            address(borrower1),
-            positionsManager.getHead(
-                aDai,
-                PositionsManagerForAaveStorage.PositionType.BORROWERS_IN_P2P
-            )
-        );
-        assertEq(
-            address(0),
-            positionsManager.getHead(
-                aDai,
-                PositionsManagerForAaveStorage.PositionType.BORROWERS_ON_POOL
-            )
-        );
-
-        borrower1.borrow(aUsdc, to6Decimals(toBorrow));
-
-        assertEq(
-            address(borrower1),
-            positionsManager.getHead(
-                aUsdc,
-                PositionsManagerForAaveStorage.PositionType.BORROWERS_ON_POOL
-            )
-        );
-    }
-
-    function testGetNext() public {
-        uint256 amount = 10_000 ether;
-        uint256 toBorrow = to6Decimals(amount / 10);
-
-        uint8 NDS = 10;
-        positionsManager.setNDS(NDS);
-        createSigners(NDS);
-        for (uint256 i; i < borrowers.length; i++) {
-            borrowers[i].approve(dai, amount - i);
-            borrowers[i].supply(aDai, amount - i);
-            borrowers[i].borrow(aUsdc, toBorrow - i);
-        }
-
-        address nextSupplyOnPool = address(borrowers[0]);
-        address nextBorrowOnPool = address(borrowers[0]);
-
-        for (uint256 i; i < borrowers.length - 1; i++) {
-            nextSupplyOnPool = positionsManager.getNext(
-                aDai,
-                PositionsManagerForAaveStorage.PositionType.SUPPLIERS_ON_POOL,
-                nextSupplyOnPool
-            );
-            nextBorrowOnPool = positionsManager.getNext(
-                aUsdc,
-                PositionsManagerForAaveStorage.PositionType.BORROWERS_ON_POOL,
-                nextBorrowOnPool
-            );
-
-            assertEq(nextSupplyOnPool, address(borrowers[i + 1]));
-            assertEq(nextBorrowOnPool, address(borrowers[i + 1]));
-        }
-
-        for (uint256 i; i < borrowers.length; i++) {
-            borrowers[i].borrow(aDai, (amount / 100) - i);
-        }
-
-        for (uint256 i; i < suppliers.length; i++) {
-            suppliers[i].approve(usdc, toBorrow - i);
-            suppliers[i].supply(aUsdc, toBorrow - i);
-        }
-
-        address nextSupplyInP2P = address(suppliers[0]);
-        address nextBorrowInP2P = address(borrowers[0]);
-
-        for (uint256 i; i < borrowers.length - 1; i++) {
-            nextSupplyInP2P = positionsManager.getNext(
-                aUsdc,
-                PositionsManagerForAaveStorage.PositionType.SUPPLIERS_IN_P2P,
-                nextSupplyInP2P
-            );
-            nextBorrowInP2P = positionsManager.getNext(
-                aDai,
-                PositionsManagerForAaveStorage.PositionType.BORROWERS_IN_P2P,
-                nextBorrowInP2P
-            );
-
-            assertEq(address(suppliers[i + 1]), nextSupplyInP2P);
-            assertEq(address(borrowers[i + 1]), nextBorrowInP2P);
-        }
-    }
-
     function testUserLiquidityDataForAssetWithNothing() public {
-        PositionsManagerForAave.AssetLiquidityData memory assetData = positionsManager
-        .getUserLiquidityDataForAsset(address(borrower1), aDai, oracle);
+        Types.AssetLiquidityData memory assetData = lens.getUserLiquidityDataForAsset(
+            address(borrower1),
+            aDai,
+            oracle
+        );
 
         (
             uint256 reserveDecimals,
@@ -191,8 +48,11 @@ contract TestPositionsManagerGetters is TestSetup {
         borrower1.approve(dai, amount);
         borrower1.supply(aDai, amount);
 
-        PositionsManagerForAave.AssetLiquidityData memory assetData = positionsManager
-        .getUserLiquidityDataForAsset(address(borrower1), aDai, oracle);
+        Types.AssetLiquidityData memory assetData = lens.getUserLiquidityDataForAsset(
+            address(borrower1),
+            aDai,
+            oracle
+        );
 
         (
             uint256 reserveDecimals,
@@ -230,8 +90,11 @@ contract TestPositionsManagerGetters is TestSetup {
         borrower1.supply(aDai, amount);
         borrower1.borrow(aDai, toBorrow);
 
-        PositionsManagerForAave.AssetLiquidityData memory assetData = positionsManager
-        .getUserLiquidityDataForAsset(address(borrower1), aDai, oracle);
+        Types.AssetLiquidityData memory assetData = lens.getUserLiquidityDataForAsset(
+            address(borrower1),
+            aDai,
+            oracle
+        );
 
         (
             uint256 reserveDecimals,
@@ -269,14 +132,20 @@ contract TestPositionsManagerGetters is TestSetup {
         borrower1.supply(aDai, amount);
         borrower1.borrow(aUsdc, toBorrow);
 
-        PositionsManagerForAave.AssetLiquidityData memory assetDataDai = positionsManager
-        .getUserLiquidityDataForAsset(address(borrower1), aDai, oracle);
+        Types.AssetLiquidityData memory assetDataDai = lens.getUserLiquidityDataForAsset(
+            address(borrower1),
+            aDai,
+            oracle
+        );
 
-        PositionsManagerForAave.AssetLiquidityData memory assetDataUsdc = positionsManager
-        .getUserLiquidityDataForAsset(address(borrower1), aUsdc, oracle);
+        Types.AssetLiquidityData memory assetDataUsdc = lens.getUserLiquidityDataForAsset(
+            address(borrower1),
+            aUsdc,
+            oracle
+        );
 
         // Avoid stack too deep error
-        PositionsManagerForAave.AssetLiquidityData memory expectedDataUsdc;
+        Types.AssetLiquidityData memory expectedDataUsdc;
         uint256 reserveDecimalsUsdc;
 
         (
@@ -314,7 +183,7 @@ contract TestPositionsManagerGetters is TestSetup {
         assertEq(assetDataUsdc.debtValue, expectedDataUsdc.debtValue, "debtValueUsdc");
 
         // Avoid stack too deep error
-        PositionsManagerForAave.AssetLiquidityData memory expectedDataDai;
+        Types.AssetLiquidityData memory expectedDataDai;
         uint256 reserveDecimalsDai;
 
         (
@@ -360,7 +229,7 @@ contract TestPositionsManagerGetters is TestSetup {
     }
 
     function testMaxCapicitiesWithNothing() public {
-        (uint256 withdrawable, uint256 borrowable) = positionsManager.getUserMaxCapacitiesForAsset(
+        (uint256 withdrawable, uint256 borrowable) = lens.getUserMaxCapacitiesForAsset(
             address(borrower1),
             aDai
         );
@@ -375,18 +244,24 @@ contract TestPositionsManagerGetters is TestSetup {
         borrower1.approve(usdc, to6Decimals(amount));
         borrower1.supply(aUsdc, to6Decimals(amount));
 
-        PositionsManagerForAave.AssetLiquidityData memory assetDataUsdc = positionsManager
-        .getUserLiquidityDataForAsset(address(borrower1), aUsdc, oracle);
+        Types.AssetLiquidityData memory assetDataUsdc = lens.getUserLiquidityDataForAsset(
+            address(borrower1),
+            aUsdc,
+            oracle
+        );
 
-        PositionsManagerForAave.AssetLiquidityData memory assetDataDai = positionsManager
-        .getUserLiquidityDataForAsset(address(borrower1), aDai, oracle);
+        Types.AssetLiquidityData memory assetDataDai = lens.getUserLiquidityDataForAsset(
+            address(borrower1),
+            aDai,
+            oracle
+        );
 
         uint256 expectedBorrowableUsdc = (assetDataUsdc.maxDebtValue * assetDataUsdc.tokenUnit) /
             assetDataUsdc.underlyingPrice;
         uint256 expectedBorrowableDai = (assetDataUsdc.maxDebtValue * assetDataDai.tokenUnit) /
             assetDataDai.underlyingPrice;
 
-        (uint256 withdrawable, uint256 borrowable) = positionsManager.getUserMaxCapacitiesForAsset(
+        (uint256 withdrawable, uint256 borrowable) = lens.getUserMaxCapacitiesForAsset(
             address(borrower1),
             aUsdc
         );
@@ -394,10 +269,7 @@ contract TestPositionsManagerGetters is TestSetup {
         assertEq(withdrawable, to6Decimals(amount), "withdrawable USDC");
         assertEq(borrowable, expectedBorrowableUsdc, "borrowable USDC");
 
-        (withdrawable, borrowable) = positionsManager.getUserMaxCapacitiesForAsset(
-            address(borrower1),
-            aDai
-        );
+        (withdrawable, borrowable) = lens.getUserMaxCapacitiesForAsset(address(borrower1), aDai);
 
         assertEq(withdrawable, 0, "withdrawable DAI");
         assertEq(borrowable, expectedBorrowableDai, "borrowable DAI");
@@ -411,29 +283,29 @@ contract TestPositionsManagerGetters is TestSetup {
         borrower1.approve(dai, amount);
         borrower1.supply(aDai, amount);
 
-        PositionsManagerForAave.AssetLiquidityData memory assetDataUsdc = positionsManager
-        .getUserLiquidityDataForAsset(address(borrower1), aUsdc, oracle);
-
-        PositionsManagerForAave.AssetLiquidityData memory assetDataDai = positionsManager
-        .getUserLiquidityDataForAsset(address(borrower1), aDai, oracle);
-
-        PositionsManagerForAave.AssetLiquidityData memory assetDataUsdt = positionsManager
-        .getUserLiquidityDataForAsset(address(borrower1), aUsdt, oracle);
-
-        (uint256 withdrawableDai, ) = positionsManager.getUserMaxCapacitiesForAsset(
+        Types.AssetLiquidityData memory assetDataUsdc = lens.getUserLiquidityDataForAsset(
             address(borrower1),
-            aDai
+            aUsdc,
+            oracle
         );
 
-        (uint256 withdrawableUsdc, ) = positionsManager.getUserMaxCapacitiesForAsset(
+        Types.AssetLiquidityData memory assetDataDai = lens.getUserLiquidityDataForAsset(
             address(borrower1),
-            aUsdc
+            aDai,
+            oracle
         );
 
-        (, uint256 borrowableUsdt) = positionsManager.getUserMaxCapacitiesForAsset(
+        Types.AssetLiquidityData memory assetDataUsdt = lens.getUserLiquidityDataForAsset(
             address(borrower1),
-            aUsdt
+            aUsdt,
+            oracle
         );
+
+        (uint256 withdrawableDai, ) = lens.getUserMaxCapacitiesForAsset(address(borrower1), aDai);
+
+        (uint256 withdrawableUsdc, ) = lens.getUserMaxCapacitiesForAsset(address(borrower1), aUsdc);
+
+        (, uint256 borrowableUsdt) = lens.getUserMaxCapacitiesForAsset(address(borrower1), aUsdt);
 
         uint256 expectedBorrowable = ((assetDataUsdc.maxDebtValue + assetDataDai.maxDebtValue) *
             assetDataUsdt.tokenUnit) / assetDataUsdt.underlyingPrice;
@@ -445,7 +317,7 @@ contract TestPositionsManagerGetters is TestSetup {
         uint256 toBorrow = to6Decimals(100 ether);
         borrower1.borrow(aUsdt, toBorrow);
 
-        (, uint256 newBorrowableUsdt) = positionsManager.getUserMaxCapacitiesForAsset(
+        (, uint256 newBorrowableUsdt) = lens.getUserMaxCapacitiesForAsset(
             address(borrower1),
             aUsdt
         );
@@ -466,12 +338,8 @@ contract TestPositionsManagerGetters is TestSetup {
         UserBalanceStates memory states;
         UserBalanceStates memory expectedStates;
 
-        (
-            states.collateralValue,
-            states.debtValue,
-            states.maxDebtValue,
-            states.liquidationValue
-        ) = positionsManager.getUserBalanceStates(address(borrower1));
+        (states.debtValue, states.maxDebtValue, states.liquidationValue) = lens
+        .getUserBalanceStates(address(borrower1));
 
         // USDC data
         (uint256 reserveDecimalsUsdc, , , , , , , , , ) = protocolDataProvider
@@ -502,7 +370,6 @@ contract TestPositionsManagerGetters is TestSetup {
             (expectedStates.collateralValue * liquidationThresholdDai) /
             MAX_BASIS_POINTS;
 
-        assertEq(states.collateralValue, expectedStates.collateralValue);
         assertEq(states.liquidationValue, expectedStates.liquidationValue);
         assertEq(states.maxDebtValue, expectedStates.maxDebtValue);
         assertEq(states.debtValue, expectedStates.debtValue);
@@ -529,12 +396,8 @@ contract TestPositionsManagerGetters is TestSetup {
         UserBalanceStates memory states;
         UserBalanceStates memory expectedStates;
 
-        (
-            states.collateralValue,
-            states.debtValue,
-            states.maxDebtValue,
-            states.liquidationValue
-        ) = positionsManager.getUserBalanceStates(address(borrower1));
+        (states.debtValue, states.maxDebtValue, states.liquidationValue) = lens
+        .getUserBalanceStates(address(borrower1));
 
         // USDC data
         (reserveDecimals, ltv, liquidationThreshold, , , , , , , ) = protocolDataProvider
@@ -573,7 +436,6 @@ contract TestPositionsManagerGetters is TestSetup {
             (to6Decimals(toBorrow) * oracle.getAssetPrice(usdt)) /
             10**reserveDecimals;
 
-        assertEq(states.collateralValue, expectedStates.collateralValue);
         assertEq(states.debtValue, expectedStates.debtValue);
         assertEq(states.maxDebtValue, expectedStates.maxDebtValue);
         assertEq(states.liquidationValue, expectedStates.liquidationValue);
@@ -588,14 +450,18 @@ contract TestPositionsManagerGetters is TestSetup {
         borrower1.approve(usdt, usdtAmount);
         borrower1.supply(aUsdt, usdtAmount);
 
-        (uint256 withdrawableUsdt, uint256 borrowableUsdt) = positionsManager
-        .getUserMaxCapacitiesForAsset(address(borrower1), aUsdt);
+        (uint256 withdrawableUsdt, uint256 borrowableUsdt) = lens.getUserMaxCapacitiesForAsset(
+            address(borrower1),
+            aUsdt
+        );
 
         assertEq(withdrawableUsdt, usdtAmount, "withdrawable USDT");
         assertEq(borrowableUsdt, 0, "borrowable USDT");
 
-        (uint256 withdrawableDai, uint256 borrowableDai) = positionsManager
-        .getUserMaxCapacitiesForAsset(address(borrower1), aDai);
+        (uint256 withdrawableDai, uint256 borrowableDai) = lens.getUserMaxCapacitiesForAsset(
+            address(borrower1),
+            aDai
+        );
 
         assertEq(withdrawableDai, 0, "withdrawable DAI");
         assertEq(borrowableDai, 0, "borrowable DAI");
@@ -622,12 +488,8 @@ contract TestPositionsManagerGetters is TestSetup {
         UserBalanceStates memory states;
         UserBalanceStates memory expectedStates;
 
-        (
-            states.collateralValue,
-            states.debtValue,
-            states.maxDebtValue,
-            states.liquidationValue
-        ) = positionsManager.getUserBalanceStates(address(borrower1));
+        (states.debtValue, states.maxDebtValue, states.liquidationValue) = lens
+        .getUserBalanceStates(address(borrower1));
 
         // USDT data
         (reserveDecimals, ltv, liquidationThreshold, , , , , , , ) = protocolDataProvider
@@ -666,7 +528,6 @@ contract TestPositionsManagerGetters is TestSetup {
             (to6Decimals(toBorrow) * oracle.getAssetPrice(usdt)) /
             10**reserveDecimals;
 
-        assertEq(states.collateralValue, expectedStates.collateralValue, "collateralValue");
         assertEq(states.debtValue, expectedStates.debtValue, "debtValue");
         assertEq(states.maxDebtValue, expectedStates.maxDebtValue, "maxDebtValue");
         assertEq(states.liquidationValue, expectedStates.liquidationValue, "liquidationValue");
@@ -679,26 +540,85 @@ contract TestPositionsManagerGetters is TestSetup {
         borrower1.approve(usdc, to6Decimals(10 ether));
         borrower1.supply(aUsdc, to6Decimals(10 ether));
 
-        assertEq(positionsManager.enteredMarkets(address(borrower1), 0), aDai);
-        assertEq(positionsManager.enteredMarkets(address(borrower1), 1), aUsdc);
+        assertEq(morpho.enteredMarkets(address(borrower1), 0), aDai);
+        assertEq(morpho.enteredMarkets(address(borrower1), 1), aUsdc);
 
         // Borrower1 withdraw, USDC should be the first in enteredMarkets.
         borrower1.withdraw(aDai, 10 ether);
 
-        assertEq(positionsManager.enteredMarkets(address(borrower1), 0), aUsdc);
+        assertEq(morpho.enteredMarkets(address(borrower1), 0), aUsdc);
     }
 
-    function testFailUserLeftMarkets() public {
-        borrower1.approve(dai, 10 ether);
-        borrower1.supply(aDai, 10 ether);
+    function testGetMarketData() public {
+        (
+            uint256 p2pSupplyIndex,
+            uint256 p2pBorrowIndex,
+            uint32 lastUpdateBlockNumber,
+            uint256 p2pSupplyDelta_,
+            uint256 p2pBorrowDelta_,
+            uint256 p2pSupplyAmount_,
+            uint256 p2pBorrowAmount_
+        ) = lens.getMarketData(aDai);
 
-        // Check that borrower1 entered Dai market.
-        assertEq(positionsManager.enteredMarkets(address(borrower1), 0), aDai);
+        assertEq(p2pSupplyIndex, morpho.p2pSupplyIndex(aDai));
+        assertEq(p2pBorrowIndex, morpho.p2pBorrowIndex(aDai));
+        (uint32 expectedLastUpdateBlockNumber, , ) = morpho.lastPoolIndexes(aDai);
+        assertEq(lastUpdateBlockNumber, expectedLastUpdateBlockNumber);
+        (
+            uint256 p2pSupplyDelta,
+            uint256 p2pBorrowDelta,
+            uint256 p2pSupplyAmount,
+            uint256 p2pBorrowAmount
+        ) = morpho.deltas(aDai);
 
-        // Borrower1 withdraw everything from the Dai market.
-        borrower1.withdraw(aDai, 10 ether);
+        assertEq(p2pSupplyDelta_, p2pSupplyDelta);
+        assertEq(p2pBorrowDelta_, p2pBorrowDelta);
+        assertEq(p2pSupplyAmount_, p2pSupplyAmount);
+        assertEq(p2pBorrowAmount_, p2pBorrowAmount);
+    }
 
-        // Test should fail because there is no element in the array.
-        positionsManager.enteredMarkets(address(borrower1), 0);
+    function testGetMarketConfiguration() public {
+        (
+            bool isCreated,
+            bool p2pDisabled,
+            bool isPaused,
+            bool isPartiallyPaused,
+            uint256 reserveFactor
+        ) = lens.getMarketConfiguration(aDai);
+
+        (bool isCreated_, bool isPaused_, bool isPartiallyPaused_) = morpho.marketStatus(aDai);
+
+        assertTrue(isCreated == isCreated_);
+        assertTrue(p2pDisabled == morpho.p2pDisabled(aDai));
+
+        assertTrue(isPaused == isPaused_);
+        assertTrue(isPartiallyPaused == isPartiallyPaused_);
+        (uint16 expectedReserveFactor, ) = morpho.marketParameters(aDai);
+        assertTrue(reserveFactor == expectedReserveFactor);
+    }
+
+    function testGetUpdatedP2PIndexes() public {
+        hevm.warp(block.timestamp + 365 days);
+        (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex) = lens.getUpdatedP2PIndexes(aDai);
+
+        morpho.updateP2PIndexes(aDai);
+        assertEq(newP2PBorrowIndex, morpho.p2pBorrowIndex(aDai));
+        assertEq(newP2PSupplyIndex, morpho.p2pSupplyIndex(aDai));
+    }
+
+    function testGetUpdatedP2PSupplyIndex() public {
+        hevm.warp(block.timestamp + 365 days);
+        uint256 newP2PSupplyIndex = lens.getUpdatedP2PSupplyIndex(aDai);
+
+        morpho.updateP2PIndexes(aDai);
+        assertEq(newP2PSupplyIndex, morpho.p2pSupplyIndex(aDai));
+    }
+
+    function testGetUpdatedP2PBorrowIndex() public {
+        hevm.warp(block.timestamp + 365 days);
+        uint256 newP2PBorrowIndex = lens.getUpdatedP2PBorrowIndex(aDai);
+
+        morpho.updateP2PIndexes(aDai);
+        assertEq(newP2PBorrowIndex, morpho.p2pBorrowIndex(aDai));
     }
 }

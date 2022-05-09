@@ -5,17 +5,17 @@ import "./setup/TestSetup.sol";
 
 contract TestGasConsumption is TestSetup {
     // Hyperparameters to get the gas estimate for
-    uint8 public NDS = 50;
-    uint8 public numberOfMatches = 25;
+    uint256 public maxSortedUsers = 50;
+    uint256 public numberOfMatches = 25;
 
     // Give you the cost of a loop (MatchBorrowers)
     function testGasConsumptionOfMatchBorrowers() external {
-        positionsManager.setNDS(NDS);
-        createSigners(NDS + numberOfMatches + 1);
+        morpho.setMaxSortedUsers(maxSortedUsers);
+        createSigners(maxSortedUsers + numberOfMatches + 1);
 
-        // 1: Create NDS matches on DAI market to fill the FIFO
-        uint256 matchedAmount = (uint256(NDS) * 1_000 ether);
-        for (uint8 i = 0; i < NDS; i++) {
+        // 1: Create maxSortedUsers matches on DAI market to fill the FIFO
+        uint256 matchedAmount = (maxSortedUsers * 1_000 ether);
+        for (uint8 i; i < maxSortedUsers; i++) {
             suppliers[i].approve(dai, matchedAmount);
             suppliers[i].supply(aDai, matchedAmount);
 
@@ -28,14 +28,14 @@ contract TestGasConsumption is TestSetup {
         uint256 collateral = 2 * amount;
 
         // 2: There are numberOfMatches borrowers waiting on Pool.
-        for (uint256 i = NDS; i < numberOfMatches + NDS; i++) {
+        for (uint256 i = maxSortedUsers; i < numberOfMatches + maxSortedUsers; i++) {
             borrowers[i].approve(usdc, to6Decimals(collateral));
             borrowers[i].supply(aUsdc, to6Decimals(collateral));
             borrowers[i].borrow(aDai, amount / numberOfMatches);
         }
 
-        // Must supply more than borrowed by borrowers[NDS] to trigger the supply on pool mechanism
-        suppliers[numberOfMatches + NDS].approve(dai, 2 * amount);
-        suppliers[numberOfMatches + NDS].supply(aDai, 2 * amount, type(uint256).max);
+        // Must supply more than borrowed by borrowers[maxSortedUsers] to trigger the supply on pool mechanism
+        suppliers[numberOfMatches + maxSortedUsers].approve(dai, 2 * amount);
+        suppliers[numberOfMatches + maxSortedUsers].supply(aDai, 2 * amount, type(uint256).max);
     }
 }
