@@ -99,6 +99,11 @@ contract TestLiquidateFuzzing is TestSetupFuzzing {
             address(borrower1)
         );
 
+        (, uint256 suppliedBorrowerBefore) = morpho.supplyBalanceInOf(
+            suppliedAsset,
+            address(borrower1)
+        );
+
         // Liquidate
         uint256 toRepay = ((borrowedAmount / 2) * _randomModulo) / 255;
         assumeLiquidateAmountIsCorrect(toRepay);
@@ -113,8 +118,13 @@ contract TestLiquidateFuzzing is TestSetupFuzzing {
             borrowedAsset,
             address(borrower1)
         );
+        (, uint256 suppliedBorrowerAfter) = morpho.supplyBalanceInOf(
+            suppliedAsset,
+            address(borrower1)
+        );
 
         assertLt(onPoolBorrowerBefore, onPoolBorrowerAfter);
+        assertLt(suppliedBorrowerBefore, suppliedBorrowerAfter);
     }
 
     function testLiquidate3Fuzzed(
@@ -182,6 +192,11 @@ contract TestLiquidateFuzzing is TestSetupFuzzing {
             address(borrower1)
         );
 
+        (, uint256 suppliedBorrowerBefore) = morpho.supplyBalanceInOf(
+            vars.suppliedAsset,
+            address(borrower1)
+        );
+
         // Liquidate
         uint256 toRepay = ((borrowedAmount / 2) * _randomModulo) / 255;
         assumeLiquidateAmountIsCorrect(toRepay);
@@ -197,6 +212,12 @@ contract TestLiquidateFuzzing is TestSetupFuzzing {
             address(borrower1)
         );
 
+        (, uint256 suppliedBorrowerAfter) = morpho.supplyBalanceInOf(
+            vars.suppliedAsset,
+            address(borrower1)
+        );
+
         assertLt(onPoolBorrowerBefore, onPoolBorrowerAfter);
+        assertLt(suppliedBorrowerBefore, suppliedBorrowerAfter);
     }
 }

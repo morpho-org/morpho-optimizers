@@ -20,7 +20,7 @@ contract TestRepayFuzzing is TestSetupFuzzing {
         uint256 supplied = _supplied;
 
         hevm.assume(
-            supplied != 0 &&
+            supplied > 0 &&
                 supplied <
                 ERC20(suppliedUnderlying).balanceOf(address(supplier1)) /
                     10**(ERC20(suppliedUnderlying).decimals()) &&
@@ -133,7 +133,7 @@ contract TestRepayFuzzing is TestSetupFuzzing {
             borrowedAsset
         );
 
-        // Borrower1 borrow borrowedAmount.
+        // Borrower1 borrows borrowedAmount.
         uint256 borrowedAmount = (borrowable * _firstRandom) / 255;
         hevm.assume(borrowedAmount > 25);
         borrower1.borrow(borrowedAsset, borrowedAmount);
@@ -143,10 +143,10 @@ contract TestRepayFuzzing is TestSetupFuzzing {
         supplier1.supply(borrowedAsset, borrowedAmount);
 
         // There is a random number of waiting borrower on pool.
-        uint256 nbOfWaitingBorrower = ((20 * uint256(_secondRandom)) / 255) + 1;
-        createSigners(nbOfWaitingBorrower);
-        uint256 amountPerBorrower = borrowedAmount / nbOfWaitingBorrower;
-        for (uint256 i = 2; i < nbOfWaitingBorrower; i++) {
+        uint256 nbOfWaitingBorrowers = ((20 * uint256(_secondRandom)) / 255) + 1;
+        createSigners(nbOfWaitingBorrowers);
+        uint256 amountPerBorrower = borrowedAmount / nbOfWaitingBorrowers;
+        for (uint256 i = 2; i < nbOfWaitingBorrowers; i++) {
             borrowers[i].approve(suppliedUnderlying, suppliedAmount);
             borrowers[i].supply(suppliedAsset, suppliedAmount);
             borrowers[i].borrow(borrowedAsset, amountPerBorrower);
@@ -173,9 +173,9 @@ contract TestRepayFuzzing is TestSetupFuzzing {
             type(uint64).max,
             type(uint64).max
         );
-        uint256 collatToSupply = ERC20(collateralUnderlying).balanceOf(address(borrower1));
-        borrower1.approve(collateralUnderlying, collatToSupply);
-        borrower1.supply(collateralCToken, collatToSupply);
+        uint256 collateralToSupply = ERC20(collateralUnderlying).balanceOf(address(borrower1));
+        borrower1.approve(collateralUnderlying, collateralToSupply);
+        borrower1.supply(collateralCToken, collateralToSupply);
         assumeBorrowAmountIsCorrect(borrowedCToken, _borrowAmount);
         assumeBorrowable(borrower1, borrowedCToken, _borrowAmount);
         borrower1.borrow(borrowedCToken, _borrowAmount);
@@ -186,9 +186,9 @@ contract TestRepayFuzzing is TestSetupFuzzing {
             suppliers[i].approve(borrowedUnderlying, matchersAmountToSupply);
             suppliers[i].supply(borrowedCToken, matchersAmountToSupply);
         }
-        for (uint256 j = 1; j <= NMAX; j++) {
-            borrowers[j].approve(collateralUnderlying, collatToSupply);
-            borrowers[j].supply(collateralCToken, collatToSupply);
+        for (uint256 i = 1; i <= NMAX; i++) {
+            borrowers[j].approve(collateralUnderlying, collateralToSupply);
+            borrowers[j].supply(collateralCToken, collateralToSupply);
             borrowers[j].borrow(borrowedCToken, matchersAmountToSupply);
         }
         borrower1.approve(borrowedUnderlying, type(uint256).max);

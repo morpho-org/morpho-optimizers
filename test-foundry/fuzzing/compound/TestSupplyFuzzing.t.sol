@@ -46,6 +46,7 @@ contract TestSupplyFuzzing is TestSetupFuzzing {
         uint8 _suppliedCToken,
         uint8 _borrowedCToken
     ) public {
+        hevm.assume(_randomModulo > 0);
         AssetVars memory vars;
 
         (vars.suppliedCToken, vars.suppliedUnderlying) = getAsset(_suppliedCToken);
@@ -54,7 +55,6 @@ contract TestSupplyFuzzing is TestSetupFuzzing {
         uint256 suppliedAmount = _suppliedAmount;
 
         assumeSupplyAmountIsCorrect(vars.suppliedUnderlying, suppliedAmount);
-        hevm.assume(_randomModulo > 0);
 
         borrower1.approve(vars.suppliedUnderlying, suppliedAmount);
         borrower1.supply(vars.suppliedCToken, suppliedAmount);
