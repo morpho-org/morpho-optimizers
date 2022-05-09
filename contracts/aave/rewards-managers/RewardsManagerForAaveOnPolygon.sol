@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import "../RewardsManagerForAave.sol";
+import "../RewardsManager.sol";
 
-contract RewardsManagerForAaveOnPolygon is RewardsManagerForAave {
+contract RewardsManagerForAaveOnPolygon is RewardsManager {
     constructor(
         ILendingPool _lendingPool,
-        IPositionsManagerForAave _positionsManager,
+        IMorpho _morpho,
         address _swapManager
-    ) RewardsManagerForAave(_lendingPool, _positionsManager, _swapManager) {}
+    ) RewardsManager(_lendingPool, _morpho, _swapManager) {}
 
-    /// @inheritdoc RewardsManagerForAave
+    /// @inheritdoc RewardsManager
     function _getUpdatedIndex(address _asset, uint256 _totalBalance)
         internal
         override
@@ -39,7 +39,7 @@ contract RewardsManagerForAaveOnPolygon is RewardsManagerForAave {
         }
     }
 
-    /// @inheritdoc RewardsManagerForAave
+    /// @inheritdoc RewardsManager
     function _getNewIndex(address _asset, uint256 _totalBalance)
         internal
         view

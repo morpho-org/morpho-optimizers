@@ -4,13 +4,13 @@ pragma solidity 0.8.13;
 import "./interfaces/aave/IAaveIncentivesController.sol";
 import "./interfaces/aave/IScaledBalanceToken.sol";
 import "./interfaces/aave/ILendingPool.sol";
-import "./interfaces/IPositionsManagerForAave.sol";
 import "./interfaces/IGetterUnderlyingAsset.sol";
-import "./interfaces/IRewardsManagerForAave.sol";
+import "./interfaces/IRewardsManager.sol";
+import "./interfaces/IMorpho.sol";
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-abstract contract RewardsManagerForAave is IRewardsManagerForAave, Ownable {
+abstract contract RewardsManager is IRewardsManager, Ownable {
     /// STRUCTS ///
 
     struct LocalAssetData {
@@ -25,8 +25,8 @@ abstract contract RewardsManagerForAave is IRewardsManagerForAave, Ownable {
     mapping(address => LocalAssetData) public localAssetData; // The local data related to a given market.
 
     IAaveIncentivesController public override aaveIncentivesController;
-    IPositionsManagerForAave public immutable positionsManager;
     ILendingPool public immutable lendingPool;
+    IMorpho public immutable morpho;
     address public override swapManager;
 
     /// EVENTS ///
@@ -51,7 +51,7 @@ abstract contract RewardsManagerForAave is IRewardsManagerForAave, Ownable {
 
     /// @notice Prevents a user to call function allowed for the positions manager only.
     modifier onlyPositionsManager() {
-        if (msg.sender != address(positionsManager)) revert OnlyPositionsManager();
+        if (msg.sender != address(morpho)) revert OnlyPositionsManager();
         _;
     }
 
@@ -59,15 +59,15 @@ abstract contract RewardsManagerForAave is IRewardsManagerForAave, Ownable {
 
     /// @notice Constructs the RewardsManager contract.
     /// @param _lendingPool The `lendingPool`.
-    /// @param _positionsManager The `positionsManager`.
+    /// @param _morpho The `morpho`.
     /// @param _swapManager The address of the `swapManager`.
     constructor(
         ILendingPool _lendingPool,
-        IPositionsManagerForAave _positionsManager,
+        IMorpho _morpho,
         address _swapManager
     ) {
         lendingPool = _lendingPool;
-        positionsManager = _positionsManager;
+        morpho = _morpho;
         swapManager = _swapManager;
     }
 
@@ -156,13 +156,9 @@ abstract contract RewardsManagerForAave is IRewardsManagerForAave, Ownable {
             );
             uint256 userBalance;
             if (asset == reserve.aTokenAddress)
-                userBalance = positionsManager
-                .supplyBalanceInOf(reserve.aTokenAddress, _user)
-                .onPool;
+                userBalance = morpho.supplyBalanceInOf(reserve.aTokenAddress, _user).onPool;
             else if (asset == reserve.variableDebtTokenAddress)
-                userBalance = positionsManager
-                .borrowBalanceInOf(reserve.aTokenAddress, _user)
-                .onPool;
+                userBalance = morpho.borrowBalanceInOf(reserve.aTokenAddress, _user).onPool;
             else revert InvalidAsset();
 
             uint256 totalBalance = IScaledBalanceToken(asset).scaledTotalSupply();
@@ -191,13 +187,9 @@ abstract contract RewardsManagerForAave is IRewardsManagerForAave, Ownable {
             );
             uint256 userBalance;
             if (asset == reserve.aTokenAddress)
-                userBalance = positionsManager
-                .supplyBalanceInOf(reserve.aTokenAddress, _user)
-                .onPool;
+                userBalance = morpho.supplyBalanceInOf(reserve.aTokenAddress, _user).onPool;
             else if (asset == reserve.variableDebtTokenAddress)
-                userBalance = positionsManager
-                .borrowBalanceInOf(reserve.aTokenAddress, _user)
-                .onPool;
+                userBalance = morpho.borrowBalanceInOf(reserve.aTokenAddress, _user).onPool;
             else revert InvalidAsset();
 
             uint256 totalBalance = IScaledBalanceToken(asset).scaledTotalSupply();
