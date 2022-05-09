@@ -22,6 +22,11 @@ module.exports = {
       // privateKey: "0x574028dad40752ed4448624f35ecb32821b0b0791652a34c10aa78053a08a730",
       url: `https://kovan.infura.io/v3/${process.env.INFURA_PROJECT_ID}`,
     },
+    forkMainnet: {
+      // chainId: process.env.TENDERLY_SECRET_KEY,
+      accounts: [process.env.DEPLOYER_PRIVATE_KEY],
+      url: `https://rpc.tenderly.co/fork/${process.env.TENDERLY_SECRET_KEY}`,
+    },
     rinkeby: {
       accounts: [process.env.DEPLOYER_PRIVATE_KEY],
       url: `https://rinkeby.infura.io/v3/${process.env.INFURA_PROJECT_ID}`,
