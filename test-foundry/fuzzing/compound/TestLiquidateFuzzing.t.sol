@@ -63,7 +63,6 @@ contract TestLiquidateFuzzing is TestSetupFuzzing {
 
         // Because this is a Liquidation Test, we need to make sure that the supplied amount is enough
         // To obtain a non zero borrow & liquidation amount.
-        console.log(10**ERC20(suppliedUnderlying).decimals());
         hevm.assume(amountSupplied > 10**ERC20(suppliedUnderlying).decimals());
         hevm.assume(_randomModulo != 0);
         assumeSupplyAmountIsCorrect(suppliedUnderlying, amountSupplied);
@@ -78,6 +77,86 @@ contract TestLiquidateFuzzing is TestSetupFuzzing {
 
         assumeBorrowAmountIsCorrect(borrowedAsset, borrowedAmount);
         borrower1.borrow(borrowedAsset, borrowedAmount);
+
+        // Change Oracle.
+        SimplePriceOracle customOracle = createAndSetCustomPriceOracle();
+        customOracle.setDirectPrice(
+            suppliedUnderlying,
+            (oracle.getUnderlyingPrice(suppliedAsset) * 94) / 100
+        );
+
+        // Before Liquidation
+        (, uint256 onPoolBorrowerBefore) = morpho.borrowBalanceInOf(
+            borrowedAsset,
+            address(borrower1)
+        );
+
+        // Liquidate
+        uint256 toRepay = ((borrowedAmount / 2) * _randomModulo) / 255;
+        assumeLiquidateAmountIsCorrect(toRepay);
+
+        User liquidator = borrower3;
+        liquidator.approve(borrowedUnderlying, address(morpho), toRepay);
+
+        liquidator.liquidate(borrowedAsset, suppliedAsset, address(borrower1), toRepay);
+
+        // After Liquidation
+        (, uint256 onPoolBorrowerAfter) = morpho.borrowBalanceInOf(
+            borrowedAsset,
+            address(borrower1)
+        );
+
+        assertLt(onPoolBorrowerBefore, onPoolBorrowerAfter);
+    }
+
+    function testLiquidate3Fuzzed(
+        uint128 _amountSuppliedForMatch,
+        uint128 _amountCollateral,
+        uint8 _collateralAsset,
+        uint8 _suppliedAsset,
+        uint8 _borrowedAsset,
+        uint8 _randomModulo
+    ) public {
+        (address suppliedAsset, address suppliedUnderlying) = getAsset(_suppliedAsset);
+        (address borrowedAsset, address borrowedUnderlying) = getAsset(_borrowedAsset);
+        (address collateralAsset, address collateralUnderlying) = getAsset(_collateralAsset);
+
+        uint256 amountSupplied = _amountSupplied;
+        uint256 amountSuppliedForMatch = _amountSuppliedForMatch;
+        uint256 amountCollateral = _amountCollateral;
+
+        // Because this is a Liquidation Test, we need to make sure that the supplied amount is enough
+        // To obtain a non zero borrow & liquidation amount.
+        hevm.assume(amountSupplied > 10**ERC20(suppliedUnderlying).decimals());
+        hevm.assume(_randomModulo != 0);
+        assumeSupplyAmountIsCorrect(suppliedUnderlying, amountSupplied);
+
+        // Borrower1 get his supply & borrow.
+        borrower1.approve(suppliedUnderlying, amountSupplied);
+        borrower1.supply(suppliedAsset, amountSupplied);
+        (, uint256 borrowedAmount) = lens.getUserMaxCapacitiesForAsset(
+            address(borrower1),
+            borrowedAsset
+        );
+        assumeBorrowAmountIsCorrect(borrowedAsset, borrowedAmount);
+        borrower1.borrow(borrowedAsset, borrowedAmount);
+
+        // Set up Supplier2 to match the borrow asset of Borrower1.
+        assumeSupplyAmountIsCorrect(borrowedUnderlying, amountSuppliedForMatch);
+        supplier2.approve(borrowedUnderlying, amountSuppliedForMatch);
+        supplier2.supply(borrowedAsset, amountSuppliedForMatch);
+
+        // Set up Borrower2 to match the supplied asset of Borrower1.
+        assumeSupplyAmountIsCorrect(collateralUnderlying, amountCollateral);
+        borrower2.approve(collateralUnderlying, amountCollateral);
+        borrower2.supply(collateralAsset, amountCollateral);
+        (, uint256 borrowable) = lens.getUserMaxCapacitiesForAsset(
+            address(borrower2),
+            suppliedAsset
+        );
+        uint256 borrowedAmount = (borrowable * _randomModulo) / 255;
+        assumeBorrowAmountIsCorrect(suppliedAsset, borrowedAmount);
+        borrower1.borrow(suppliedAsset, borrowedAmount);
 
         // Change Oracle.
         SimplePriceOracle customOracle = createAndSetCustomPriceOracle();
