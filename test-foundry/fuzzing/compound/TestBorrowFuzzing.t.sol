@@ -40,12 +40,12 @@ contract TestBorrowFuzzing is TestSetupFuzzing {
         uint8 _borrowedAsset,
         uint8 _randomModulo
     ) public {
+        hevm.assume(_randomModulo != 0);
         (address suppliedAsset, address suppliedUnderlying) = getAsset(_suppliedAsset);
         (address borrowedAsset, ) = getAsset(_borrowedAsset);
 
         uint256 amountSupplied = _amountSupplied;
 
-        hevm.assume(_randomModulo != 0);
         assumeSupplyAmountIsCorrect(suppliedUnderlying, amountSupplied);
 
         borrower1.approve(suppliedUnderlying, amountSupplied);
@@ -56,7 +56,6 @@ contract TestBorrowFuzzing is TestSetupFuzzing {
             borrowedAsset
         );
         uint256 borrowedAmount = (borrowable * _randomModulo) / 255;
-
         assumeBorrowAmountIsCorrect(borrowedAsset, borrowedAmount);
         borrower1.borrow(borrowedAsset, borrowedAmount);
     }
@@ -68,13 +67,13 @@ contract TestBorrowFuzzing is TestSetupFuzzing {
         uint8 _collateralAsset,
         uint8 _randomModulo
     ) public {
+        hevm.assume(_randomModulo != 0);
         (address matchedAsset, address matchedUnderlying) = getAsset(_matchedAsset);
         (address collateralAsset, address collateralUnderlying) = getAsset(_collateralAsset);
 
         uint256 amountSupplied = _amountSupplied;
         uint256 amountCollateral = _amountCollateral;
 
-        hevm.assume(_randomModulo != 0);
         assumeSupplyAmountIsCorrect(collateralUnderlying, _amountCollateral);
         assumeSupplyAmountIsCorrect(matchedUnderlying, amountSupplied);
 
@@ -103,13 +102,13 @@ contract TestBorrowFuzzing is TestSetupFuzzing {
         uint8 _collateralAsset,
         uint8 _randomModulo
     ) public {
+        hevm.assume(_randomModulo != 0);
         (address matchedAsset, address matchedUnderlying) = getAsset(_matchedAsset);
         (address collateralAsset, address collateralUnderlying) = getAsset(_collateralAsset);
 
         uint256 amountSupplied = _amountSupplied;
         uint256 amountCollateral = _amountCollateral;
 
-        hevm.assume(_randomModulo != 0);
         assumeSupplyAmountIsCorrect(collateralUnderlying, amountCollateral);
 
         borrower1.approve(collateralUnderlying, amountCollateral);
@@ -144,14 +143,15 @@ contract TestBorrowFuzzing is TestSetupFuzzing {
         uint8 _firstRandom,
         uint8 _secondRandom
     ) public {
+        hevm.assume(_firstRandom != 0);
+        hevm.assume(_secondRandom != 0);
+
         (address collateralAsset, address collateralUnderlying) = getAsset(_collateralAsset);
         (address firstAsset, ) = getAsset(_firstAsset);
         (address secondAsset, ) = getAsset(_secondAsset);
 
         uint256 amountCollateral = _amountCollateral;
 
-        hevm.assume(_firstRandom != 0);
-        hevm.assume(_secondRandom != 0);
         assumeSupplyAmountIsCorrect(collateralUnderlying, amountCollateral);
 
         borrower1.approve(collateralUnderlying, amountCollateral);
