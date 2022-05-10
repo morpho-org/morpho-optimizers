@@ -79,7 +79,7 @@ contract TestSupplyFuzzing is TestSetupFuzzing {
         (vars.collateralCToken, vars.collateralUnderlying) = getAsset(_collateralAsset);
 
         assumeSupplyAmountIsCorrect(vars.suppliedUnderlying, _suppliedAmount);
-        assumeBorrowAmountIsCorrect(vars.suppliedUnderlying, _borrowedAmount);
+        assumeBorrowAmountIsCorrect(vars.suppliedCToken, _borrowedAmount);
 
         uint256 collateralAmountToSupply = ERC20(vars.collateralUnderlying).balanceOf(
             address(borrower1)
@@ -116,7 +116,7 @@ contract TestSupplyFuzzing is TestSetupFuzzing {
         uint256 amountPerBorrower = _suppliedAmount / NMAX;
 
         assumeSupplyAmountIsCorrect(vars.suppliedUnderlying, _suppliedAmount);
-        assumeBorrowAmountIsCorrect(vars.suppliedUnderlying, amountPerBorrower);
+        assumeBorrowAmountIsCorrect(vars.suppliedCToken, amountPerBorrower);
 
         setDefaultMaxGasForMatchingHelper(
             type(uint64).max,
