@@ -11,22 +11,20 @@ contract TestRepayFuzzing is TestSetupFuzzing {
         uint128 _supplied,
         uint8 _suppliedAsset,
         uint8 _borrowedAsset,
-        uint8 _firstRandom,
-        uint8 _secondRandom
+        uint8 _random1,
+        uint8 _random2
     ) public {
+        hevm.assume(_random1 > 0);
+        hevm.assume(_random2 > 0);
+
         (address suppliedAsset, address suppliedUnderlying) = getAsset(_suppliedAsset);
         (address borrowedAsset, address borrowedUnderlying) = getAsset(_borrowedAsset);
 
         uint256 supplied = _supplied;
+        // To limit number of run where computed amounts are 0.
+        hevm.assume(supplied > 10**ERC20(suppliedUnderlying).decimals());
 
-        hevm.assume(
-            supplied > 0 &&
-                supplied <
-                ERC20(suppliedUnderlying).balanceOf(address(supplier1)) /
-                    10**(ERC20(suppliedUnderlying).decimals()) &&
-                _firstRandom != 0 &&
-                _secondRandom != 0
-        );
+        assumeSupplyAmountIsCorrect(suppliedUnderlying, supplied);
 
         borrower1.approve(suppliedUnderlying, supplied);
         borrower1.supply(suppliedAsset, supplied);
@@ -36,12 +34,12 @@ contract TestRepayFuzzing is TestSetupFuzzing {
             borrowedAsset
         );
 
-        uint256 borrowedAmount = (borrowable * _firstRandom) / 255;
-        hevm.assume(borrowedAmount != 0);
+        uint256 borrowedAmount = (borrowable * _random1) / 255;
+        assumeBorrowAmountIsCorrect(borrowedAsset, borrowedAmount);
         borrower1.borrow(borrowedAsset, borrowedAmount);
 
-        uint256 repaidAmount = (borrowedAmount * _secondRandom) / 255;
-        hevm.assume(repaidAmount != 0);
+        uint256 repaidAmount = (borrowedAmount * _random2) / 255;
+        assumeRepayAmountIsCorrect(repaidAmount);
         borrower1.approve(borrowedUnderlying, repaidAmount);
         borrower1.repay(borrowedAsset, repaidAmount);
     }
@@ -51,24 +49,22 @@ contract TestRepayFuzzing is TestSetupFuzzing {
         uint128 _supplied,
         uint8 _suppliedAsset,
         uint8 _borrowedAsset,
-        uint8 _firstRandom,
-        uint8 _secondRandom,
-        uint8 _thirdRandom
+        uint8 _random1,
+        uint8 _random2,
+        uint8 _random3
     ) public {
+        hevm.assume(_random1 > 0);
+        hevm.assume(_random2 > 0);
+        hevm.assume(_random3 > 0);
+
         (address suppliedAsset, address suppliedUnderlying) = getAsset(_suppliedAsset);
         (address borrowedAsset, address borrowedUnderlying) = getAsset(_borrowedAsset);
 
         uint256 supplied = _supplied;
+        // To limit number of run where computed amounts are 0.
+        hevm.assume(supplied > 10**ERC20(suppliedUnderlying).decimals());
 
-        hevm.assume(
-            supplied != 0 &&
-                supplied <
-                ERC20(suppliedUnderlying).balanceOf(address(supplier1)) /
-                    10**(ERC20(suppliedUnderlying).decimals()) &&
-                _firstRandom != 0 &&
-                _secondRandom != 0 &&
-                _thirdRandom != 0
-        );
+        assumeSupplyAmountIsCorrect(suppliedUnderlying, supplied);
 
         borrower1.approve(suppliedUnderlying, supplied);
         borrower1.supply(suppliedAsset, supplied);
@@ -79,12 +75,12 @@ contract TestRepayFuzzing is TestSetupFuzzing {
         );
 
         // Borrower1 borrow borrowedAmount.
-        uint256 borrowedAmount = (borrowable * _firstRandom) / 255;
-        hevm.assume(borrowedAmount != 0);
+        uint256 borrowedAmount = (borrowable * _random1) / 255;
+        assumeBorrowAmountIsCorrect(borrowedAsset, borrowedAmount);
         borrower1.borrow(borrowedAsset, borrowedAmount);
 
         // He is matched up to matched amount with supplier1.
-        uint256 matchedAmount = (borrowedAmount * _secondRandom) / 255;
+        uint256 matchedAmount = (borrowedAmount * _random2) / 255;
         hevm.assume(matchedAmount != 0);
         supplier1.approve(borrowedUnderlying, matchedAmount);
         supplier1.supply(borrowedAsset, matchedAmount);
@@ -95,8 +91,8 @@ contract TestRepayFuzzing is TestSetupFuzzing {
         borrower2.borrow(borrowedAsset, borrowedAmount);
 
         // Borrower1 repays a random amount.
-        uint256 repaidAmount = (borrowedAmount * _thirdRandom) / 255;
-        hevm.assume(repaidAmount != 0);
+        uint256 repaidAmount = (borrowedAmount * _random3) / 255;
+        assumeRepayAmountIsCorrect(repaidAmount);
         borrower1.approve(borrowedUnderlying, repaidAmount);
         borrower1.repay(borrowedAsset, repaidAmount);
     }
@@ -106,24 +102,22 @@ contract TestRepayFuzzing is TestSetupFuzzing {
         uint128 _suppliedAmount,
         uint8 _suppliedAsset,
         uint8 _borrowedAsset,
-        uint8 _firstRandom,
-        uint8 _secondRandom,
-        uint8 _thirdRandom
+        uint8 _random1,
+        uint8 _random2,
+        uint8 _random3
     ) public {
+        hevm.assume(_random1 > 0);
+        hevm.assume(_random2 > 0);
+        hevm.assume(_random3 > 0);
+
         (address suppliedAsset, address suppliedUnderlying) = getAsset(_suppliedAsset);
         (address borrowedAsset, address borrowedUnderlying) = getAsset(_borrowedAsset);
 
-        uint256 suppliedAmount = _suppliedAmount;
+        uint256 supplied = _supplied;
+        // To limit number of run where computed amounts are 0.
+        hevm.assume(supplied > 10**ERC20(suppliedUnderlying).decimals());
 
-        hevm.assume(
-            suppliedAmount != 0 &&
-                suppliedAmount <
-                ERC20(suppliedUnderlying).balanceOf(address(supplier1)) /
-                    10**(ERC20(suppliedUnderlying).decimals()) &&
-                _firstRandom != 0 &&
-                _secondRandom != 0 &&
-                _thirdRandom != 0
-        );
+        assumeSupplyAmountIsCorrect(suppliedUnderlying, supplied);
 
         borrower1.approve(suppliedUnderlying, suppliedAmount);
         borrower1.supply(suppliedAsset, suppliedAmount);
@@ -134,8 +128,8 @@ contract TestRepayFuzzing is TestSetupFuzzing {
         );
 
         // Borrower1 borrows borrowedAmount.
-        uint256 borrowedAmount = (borrowable * _firstRandom) / 255;
-        hevm.assume(borrowedAmount > 25);
+        uint256 borrowedAmount = (borrowable * _random1) / 255;
+        assumeBorrowAmountIsCorrect(borrowedAsset, borrowedAmount);
         borrower1.borrow(borrowedAsset, borrowedAmount);
 
         // He is matched with supplier1.
@@ -143,9 +137,10 @@ contract TestRepayFuzzing is TestSetupFuzzing {
         supplier1.supply(borrowedAsset, borrowedAmount);
 
         // There is a random number of waiting borrower on pool.
-        uint256 nbOfWaitingBorrowers = ((20 * uint256(_secondRandom)) / 255) + 1;
+        uint256 nbOfWaitingBorrowers = ((20 * uint256(_random2)) / 255) + 1;
         createSigners(nbOfWaitingBorrowers);
         uint256 amountPerBorrower = borrowedAmount / nbOfWaitingBorrowers;
+        assumeBorrowAmountIsCorrect(borrowedAsset, amountPerBorrower);
         for (uint256 i = 2; i < nbOfWaitingBorrowers; i++) {
             borrowers[i].approve(suppliedUnderlying, suppliedAmount);
             borrowers[i].supply(suppliedAsset, suppliedAmount);
@@ -153,60 +148,56 @@ contract TestRepayFuzzing is TestSetupFuzzing {
         }
 
         // Borrower1 repays a random amount.
-        uint256 repaidAmount = (borrowedAmount * _thirdRandom) / 255;
-        hevm.assume(repaidAmount != 0);
+        uint256 repaidAmount = (borrowedAmount * _random3) / 255;
+        assumeRepayAmountIsCorrect(repaidAmount);
         borrower1.approve(borrowedUnderlying, repaidAmount);
         borrower1.repay(borrowedAsset, repaidAmount);
     }
 
     function testRepay4Fuzzed(
         uint128 _borrowAmount,
-        // uint256 _proportionMatched,
         uint8 _borrowedAsset,
-        uint8 _collateralAsset
+        uint8 _collateralAsset,
+        uint8 _random1,
+        uint8 _random2
     ) public {
-        (address collateralCToken, address collateralUnderlying) = getAsset(_collateralAsset);
-        (address borrowedCToken, address borrowedUnderlying) = getAsset(_borrowedAsset);
-        setDefaultMaxGasForMatchingHelper(
-            type(uint64).max,
-            type(uint64).max,
-            type(uint64).max,
-            type(uint64).max
-        );
+        hevm.assume(_random1 > 0);
+        hevm.assume(_random2 > 0);
+
+        (address collateralAsset, address collateralUnderlying) = getAsset(_collateralAsset);
+        (address borrowedAsset, address borrowedUnderlying) = getAsset(_borrowedAsset);
+
         uint256 collateralToSupply = ERC20(collateralUnderlying).balanceOf(address(borrower1));
+
         borrower1.approve(collateralUnderlying, collateralToSupply);
-        borrower1.supply(collateralCToken, collateralToSupply);
-        assumeBorrowAmountIsCorrect(borrowedCToken, _borrowAmount);
-        assumeBorrowable(borrower1, borrowedCToken, _borrowAmount);
-        borrower1.borrow(borrowedCToken, _borrowAmount);
-        uint256 matchersAmountToSupply = _borrowAmount / (2 * NMAX);
-        assumeSupplyAmountIsCorrect(borrowedUnderlying, matchersAmountToSupply);
+        borrower1.supply(collateralAsset, collateralToSupply);
+
+        uint256 borrowAmount = _borrowAmount;
+        assumeBorrowAmountIsCorrect(borrowedAsset, borrowAmount);
+        borrower1.borrow(borrowedAsset, borrowAmount);
+
+        uint256 NMAX = ((20 * uint256(_random1)) / 255) + 1;
+        uint256 amountPerUser = borrowAmount / (2 * _NMAX);
+
+        assumeSupplyAmountIsCorrect(borrowedUnderlying, amountPerUser);
+
         createSigners(2 * NMAX);
+
         for (uint256 i; i < 2 * NMAX; i++) {
-            suppliers[i].approve(borrowedUnderlying, matchersAmountToSupply);
-            suppliers[i].supply(borrowedCToken, matchersAmountToSupply);
+            suppliers[i].approve(borrowedUnderlying, amountPerUser);
+            suppliers[i].supply(borrowedAsset, amountPerUser);
         }
+
         for (uint256 i = 1; i <= NMAX; i++) {
-            borrowers[j].approve(collateralUnderlying, collateralToSupply);
-            borrowers[j].supply(collateralCToken, collateralToSupply);
-            borrowers[j].borrow(borrowedCToken, matchersAmountToSupply);
+            borrowers[i].approve(collateralUnderlying, collateralToSupply);
+            borrowers[i].supply(collateralAsset, collateralToSupply);
+            borrowers[i].borrow(borrowedAsset, amountPerUser);
         }
+
+        // Borrower1 repays a random amount.
+        uint256 repaidAmount = (borrowAmount * _random2) / 255;
+        assumeRepayAmountIsCorrect(repaidAmount);
         borrower1.approve(borrowedUnderlying, type(uint256).max);
-        borrower1.repay(borrowedCToken, type(uint256).max);
-    }
-
-    function testTemp() public {
-        console.log(wEth);
-    }
-
-    function testDeltaRepayFuzzed() public {}
-
-    function assumeBorrowable(
-        User _user,
-        address market,
-        uint256 amount
-    ) internal {
-        (, uint256 borrowable) = lens.getUserMaxCapacitiesForAsset(address(_user), market);
-        hevm.assume(amount <= borrowable);
+        borrower1.repay(borrowedAsset, type(uint256).max);
     }
 }

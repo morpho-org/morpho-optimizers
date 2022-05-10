@@ -140,11 +140,11 @@ contract TestBorrowFuzzing is TestSetupFuzzing {
         uint8 _firstAsset,
         uint8 _secondAsset,
         uint8 _collateralAsset,
-        uint8 _firstRandom,
-        uint8 _secondRandom
+        uint8 _random1,
+        uint8 _random2
     ) public {
-        hevm.assume(_firstRandom != 0);
-        hevm.assume(_secondRandom != 0);
+        hevm.assume(_random1 != 0);
+        hevm.assume(_random2 != 0);
 
         (address collateralAsset, address collateralUnderlying) = getAsset(_collateralAsset);
         (address firstAsset, ) = getAsset(_firstAsset);
@@ -158,12 +158,12 @@ contract TestBorrowFuzzing is TestSetupFuzzing {
         borrower1.supply(collateralAsset, amountCollateral);
 
         (, uint256 borrowable) = lens.getUserMaxCapacitiesForAsset(address(borrower1), firstAsset);
-        uint256 borrowedAmount = (borrowable * _firstRandom) / 255;
+        uint256 borrowedAmount = (borrowable * _random1) / 255;
         assumeBorrowAmountIsCorrect(firstAsset, borrowedAmount);
         borrower1.borrow(firstAsset, borrowedAmount);
 
         (, borrowable) = lens.getUserMaxCapacitiesForAsset(address(borrower1), secondAsset);
-        borrowedAmount = (borrowable * _secondRandom) / 255;
+        borrowedAmount = (borrowable * _random2) / 255;
         assumeBorrowAmountIsCorrect(secondAsset, borrowedAmount);
         borrower1.borrow(secondAsset, borrowedAmount);
     }

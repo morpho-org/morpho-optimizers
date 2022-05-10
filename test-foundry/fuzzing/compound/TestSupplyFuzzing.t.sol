@@ -112,7 +112,8 @@ contract TestSupplyFuzzing is TestSetupFuzzing {
     function testSupply4Fuzzed(
         uint128 _suppliedAmount,
         uint8 _collateralAsset,
-        uint8 _supplyAsset
+        uint8 _supplyAsset,
+        uint8 _random1
     ) public {
         AssetVars memory vars;
         (vars.suppliedCToken, vars.suppliedUnderlying) = getAsset(_supplyAsset);
@@ -142,6 +143,7 @@ contract TestSupplyFuzzing is TestSetupFuzzing {
             borrower1.borrow(vars.suppliedCToken, amountPerBorrower);
         }
 
+        uint256 NMAX = ((20 * uint256(_random1)) / 255) + 1;
         createSigners(NMAX);
 
         for (uint256 i = 0; i < NMAX - 1; i++) {
@@ -151,7 +153,7 @@ contract TestSupplyFuzzing is TestSetupFuzzing {
         }
 
         {
-            uint256 actuallySupplied = (_suppliedAmount / NMAX) * NMAX;
+            uint256 actuallySupplied = amountPerBorrower * NMAX;
             supplier1.approve(vars.suppliedUnderlying, actuallySupplied);
             supplier1.supply(vars.suppliedCToken, actuallySupplied);
         }
@@ -161,7 +163,8 @@ contract TestSupplyFuzzing is TestSetupFuzzing {
     function testSupply5Fuzzed(
         uint128 _suppliedAmount,
         uint8 _collateralAsset,
-        uint8 _supplyAsset
+        uint8 _supplyAsset,
+        uint8 _random1
     ) public {
         AssetVars memory vars;
         (vars.suppliedCToken, vars.suppliedUnderlying) = getAsset(_supplyAsset);
@@ -191,6 +194,7 @@ contract TestSupplyFuzzing is TestSetupFuzzing {
             borrower1.borrow(vars.suppliedCToken, amountPerBorrower);
         }
 
+        uint256 NMAX = ((20 * uint256(_random1)) / 255) + 1;
         createSigners(NMAX);
 
         for (uint256 i = 0; i < NMAX - 1; i++) {
