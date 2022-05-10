@@ -380,4 +380,9 @@ contract TestSetupFuzzing is Config, Utils, stdCheats {
     function assumeRepayAmountIsCorrect(uint256 amount) internal {
         hevm.assume(amount > 0);
     }
+
+    /// @param amount considered for the repay.
+    function assumeWithdrawAmountIsCorrect(uint256 amount) internal {
+        hevm.assume(amount > 0);
+    }
 }

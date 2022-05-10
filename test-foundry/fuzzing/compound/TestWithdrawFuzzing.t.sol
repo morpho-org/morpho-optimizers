@@ -7,170 +7,167 @@ import {Attacker} from "../../compound/helpers/Attacker.sol";
 contract TestWithdraw is TestSetupFuzzing {
     using CompoundMath for uint256;
 
-    /// @dev Amounts can round to zero with amounts < 1e14
-    function testWithdraw1(uint256 amount) public {
-        hevm.assume(amount > 1e14 && amount < 1e18 * 50_000_000);
-        uint256 collateral = 2 * amount;
+    function testWithdraw1(
+        uint128 _suppliedAmount,
+        uint8 _borrowedAsset,
+        uint8 _suppliedAsset
+    ) public {
+        (address suppliedAsset, address suppliedUnderlying) = getAsset(_suppliedAsset);
+        (address borrowedAsset, ) = getAsset(_borrowedAsset);
 
-        borrower1.approve(usdc, to6Decimals(collateral));
-        borrower1.supply(cUsdc, to6Decimals(collateral));
+        uint256 suppliedAmount = _suppliedAmount;
+        assumeSupplyAmountIsCorrect(suppliedUnderlying, suppliedAmount);
 
-        borrower1.borrow(cDai, amount);
+        borrower1.approve(suppliedUnderlying, suppliedAmount);
+        borrower1.supply(suppliedAsset, suppliedAmount);
+
+        (, uint256 borrowable) = lens.getUserMaxCapacitiesForAsset(
+            address(borrower1),
+            borrowedAsset
+        );
+        borrower1.borrow(borrowedAsset, borrowable);
 
         hevm.expectRevert(abi.encodeWithSignature("UnauthorisedWithdraw()"));
-        borrower1.withdraw(cUsdc, to6Decimals(collateral));
+        borrower1.withdraw(suppliedAsset, suppliedAmount);
     }
 
-    function testWithdraw2(uint256 amount) public {
-        hevm.assume(amount > 1e14 && amount < 1e18 * 50_000_000);
+    function testWithdraw2(
+        uint128 _suppliedAmount,
+        uint8 _suppliedAsset,
+        uint8 _random1
+    ) public {
+        hevm.assume(_random1 != 0);
+        (address suppliedAsset, address suppliedUnderlying) = getAsset(_suppliedAsset);
 
-        supplier1.approve(usdc, to6Decimals(2 * amount));
-        supplier1.supply(cUsdc, to6Decimals(2 * amount));
+        uint256 suppliedAmount = _suppliedAmount;
+        assumeSupplyAmountIsCorrect(suppliedUnderlying, suppliedAmount);
 
-        (uint256 inP2P, uint256 onPool) = morpho.supplyBalanceInOf(cUsdc, address(supplier1));
+        borrower1.approve(suppliedUnderlying, suppliedAmount);
+        borrower1.supply(suppliedAsset, suppliedAmount);
 
-        uint256 expectedOnPool = to6Decimals(2 * amount).div(ICToken(cUsdc).exchangeRateCurrent());
-
-        supplier1.withdraw(cUsdc, to6Decimals(amount));
+        uint256 withdrawnAmount = (suppliedAmount * _random1) / 255;
+        supplier1.withdraw(suppliedAsset, withdrawnAmount);
     }
 
-    function testWithdrawAll(uint256 amount) public {
-        hevm.assume(amount > 1e14 && amount < 1e18 * 50_000_000);
+    function testWithdrawAll(uint128 _suppliedAmount, uint8 _suppliedAsset) public {
+        (address suppliedAsset, address suppliedUnderlying) = getAsset(_suppliedAsset);
 
-        supplier1.approve(usdc, to6Decimals(amount));
-        supplier1.supply(cUsdc, to6Decimals(amount));
+        uint256 suppliedAmount = _suppliedAmount;
+        assumeSupplyAmountIsCorrect(suppliedUnderlying, suppliedAmount);
 
-        supplier1.withdraw(cUsdc, type(uint256).max);
+        borrower1.approve(suppliedUnderlying, suppliedAmount);
+        borrower1.supply(suppliedAsset, suppliedAmount);
+        supplier1.withdraw(suppliedAsset, type(uint256).max);
     }
 
-    function testWithdraw3_1(uint256 amount) public {
-        hevm.assume(amount > 1e14 && amount < 1e18 * 50_000_000);
+    function testWithdraw3_1(
+        uint128 _amountSupplied,
+        uint8 _collateralAsset,
+        uint8 _random1
+    ) public {
+        hevm.assume(_random1 != 0);
 
-        uint256 borrowedAmount = amount;
-        uint256 suppliedAmount = 2 * borrowedAmount;
-        uint256 collateral = 2 * borrowedAmount;
+        (address suppliedAsset, address suppliedUnderlying) = getAsset(_suppliedAsset);
+        (address collateralAsset, address collateralUnderlying) = getAsset(_collateralAsset);
 
-        supplier1.approve(dai, suppliedAmount);
-        supplier1.supply(cDai, suppliedAmount);
+        uint256 amountSupplied = _amountSupplied;
 
-        borrower1.approve(usdc, to6Decimals(collateral));
-        borrower1.supply(cUsdc, to6Decimals(collateral));
-        borrower1.borrow(cDai, borrowedAmount);
+        // Borrower1 & supplier1 are matched for amountSupplied.
+        uint256 collateralToSupply = ERC20(collateralUnderlying).balanceOf(address(borrower1));
+        borrower1.approve(collateralUnderlying, collateralToSupply);
+        borrower1.supply(collateralAsset, collateralToSupply);
+        borrower1.borrow(suppliedAsset, amountSupplied);
+        supplier1.approve(suppliedUnderlying, amountSupplied);
+        supplier1.supply(suppliedAsset, amountSupplied);
 
-        // An available supplier onPool
-        supplier2.approve(dai, suppliedAmount);
-        supplier2.supply(cDai, suppliedAmount);
-
-        // supplier withdraws suppliedAmount
-        supplier1.withdraw(cDai, suppliedAmount);
+        // Supplier1 withdraws a random amount.
+        uint256 withdrawnAmount = (amountSupplied * _random1) / 255;
+        assumeWtihdrawnAmountIsCorrect(withdrawnAmount);
+        supplier1.withdraw(suppliedAsset, withdrawnAmount);
     }
 
-    function testWithdraw3_2(uint256 amount, uint8 nmax) public {
-        hevm.assume(amount > 1e14 && amount < 1e18 * 50_000_000);
-        hevm.assume(nmax > 1 && nmax < 50);
+    function testWithdraw3_2(
+        uint128 _amountSupplied,
+        uint8 _collateralAsset,
+        uint8 _random1,
+        uint8 _random2
+    ) public {
+        hevm.assume(_random1 != 0);
+        hevm.assume(_random2 != 0);
 
-        uint256 borrowedAmount = amount;
-        uint256 suppliedAmount = 2 * borrowedAmount;
-        uint256 collateral = 2 * borrowedAmount;
+        (address suppliedAsset, address suppliedUnderlying) = getAsset(_suppliedAsset);
+        (address collateralAsset, address collateralUnderlying) = getAsset(_collateralAsset);
+
+        uint256 amountSupplied = _amountSupplied;
+
+        assumeSupplyAmountIsCorrect(suppliedUnderlying, amountSupplied);
 
         // Borrower1 & supplier1 are matched for suppliedAmount.
-        borrower1.approve(usdc, to6Decimals(collateral));
-        borrower1.supply(cUsdc, to6Decimals(collateral));
-        borrower1.borrow(cDai, borrowedAmount);
+        supplier1.approve(suppliedUnderlying, amountSupplied);
+        supplier1.supply(suppliedAsset, amountSupplied);
 
-        supplier1.approve(dai, suppliedAmount);
-        supplier1.supply(cDai, suppliedAmount);
+        uint256 collateralToSupply = ERC20(collateralUnderlying).balanceOf(address(borrower1));
+        borrower1.approve(collateralUnderlying, collateralToSupply);
+        borrower1.supply(collateralAsset, collateralToSupply);
+        borrower1.borrow(suppliedAsset, amountSupplied);
 
-        // Check balances after match of borrower1 & supplier1.
-        (uint256 inP2PBorrower, uint256 onPoolBorrower) = morpho.borrowBalanceInOf(
-            cDai,
-            address(borrower1)
-        );
-        (uint256 inP2PSupplier, uint256 onPoolSupplier) = morpho.supplyBalanceInOf(
-            cDai,
-            address(supplier1)
-        );
+        // NMAX suppliers have up to suppliedAmount waiting on pool
+        uint256 NMAX = ((20 * uint256(_random1)) / 255) + 1;
+        createSigners(NMAX);
 
-        uint256 expectedOnPool = (suppliedAmount / 2).div(ICToken(cDai).exchangeRateCurrent());
+        uint256 amountPerSupplier = suppliedAmount / NMAX;
+        assumeSupplyAmountIsCorrect(suppliedUnderlying, amountPerSupplier);
 
-        // NMAX-1 suppliers have up to suppliedAmount waiting on pool
-        createSigners(nmax);
-
-        // minus 1 because supplier1 must not be counted twice !
-        uint256 amountPerSupplier = (suppliedAmount - borrowedAmount) / (nmax - 1);
-
-        for (uint256 i = 0; i < nmax; i++) {
-            if (suppliers[i] == supplier1) continue;
-
-            suppliers[i].approve(dai, amountPerSupplier);
-            suppliers[i].supply(cDai, amountPerSupplier);
+        for (uint256 i = 1; i < NMAX + 1; i++) {
+            suppliers[i].approve(suppliedUnderlying, amountPerSupplier);
+            suppliers[i].supply(suppliedAsset, amountPerSupplier);
         }
 
-        // supplier1 withdraws suppliedAmount.
-        supplier1.withdraw(cDai, type(uint256).max);
+        withdrawnAmount = (amountSupplied * _random2) / 255;
+        assumeWtihdrawnAmountIsCorrect(withdrawnAmount);
+        supplier1.withdraw(suppliedAsset, type(uint256).max);
     }
 
-    function testWithdraw3_3(uint256 amount) public {
-        hevm.assume(amount > 1e14 && amount < 1e18 * 50_000_000);
+    function testWithdraw3_4(
+        uint128 _amountSupplied,
+        uint8 _collateralAsset,
+        uint8 _random1,
+        uint8 _random2
+    ) public {
+        hevm.assume(_random1 != 0);
+        hevm.assume(_random2 != 0);
 
-        uint256 borrowedAmount = amount;
-        uint256 suppliedAmount = 2 * borrowedAmount;
-        uint256 collateral = 2 * borrowedAmount;
+        (address suppliedAsset, address suppliedUnderlying) = getAsset(_suppliedAsset);
+        (address collateralAsset, address collateralUnderlying) = getAsset(_collateralAsset);
 
-        // Borrower1 & supplier1 are matched for borrowedAmount.
-        borrower1.approve(usdc, to6Decimals(collateral));
-        borrower1.supply(cUsdc, to6Decimals(collateral));
-        borrower1.borrow(cDai, borrowedAmount);
+        uint256 amountSupplied = _amountSupplied;
 
-        supplier1.approve(dai, suppliedAmount);
-        supplier1.supply(cDai, suppliedAmount);
-
-        // Supplier1 withdraws 75% of supplied amount
-        uint256 toWithdraw = (75 * suppliedAmount) / 100;
-        supplier1.withdraw(cDai, toWithdraw);
-    }
-
-    function testWithdraw3_4(uint256 amount, uint8 nmax) public {
-        hevm.assume(amount > 1e14 && amount < 1e18 * 50_000_000);
-        hevm.assume(nmax > 10 && nmax < 50);
-
-        uint256 borrowedAmount = amount;
-        uint256 suppliedAmount = 2 * borrowedAmount;
-        uint256 collateral = 2 * borrowedAmount;
+        assumeSupplyAmountIsCorrect(suppliedUnderlying, amountSupplied);
 
         // Borrower1 & supplier1 are matched for suppliedAmount.
-        borrower1.approve(usdc, to6Decimals(collateral));
-        borrower1.supply(cUsdc, to6Decimals(collateral));
-        borrower1.borrow(cDai, borrowedAmount);
+        supplier1.approve(suppliedUnderlying, amountSupplied);
+        supplier1.supply(suppliedAsset, amountSupplied);
 
-        supplier1.approve(dai, suppliedAmount);
-        supplier1.supply(cDai, suppliedAmount);
+        uint256 collateralToSupply = ERC20(collateralUnderlying).balanceOf(address(borrower1));
+        borrower1.approve(collateralUnderlying, collateralToSupply);
+        borrower1.supply(collateralAsset, collateralToSupply);
+        borrower1.borrow(suppliedAsset, amountSupplied);
 
-        // NMAX-1 suppliers have up to suppliedAmount/2 waiting on pool
-        uint8 NMAX = nmax;
-        createSigners(nmax);
+        // NMAX suppliers have up to suppliedAmount waiting on pool
+        uint256 NMAX = ((20 * uint256(_random1)) / 255) + 1;
+        createSigners(NMAX);
 
-        // minus 1 because supplier1 must not be counted twice !
-        uint256 amountPerSupplier = (suppliedAmount - borrowedAmount) / (2 * (nmax - 1));
-        uint256[] memory rates = new uint256[](NMAX);
+        uint256 amountPerSupplier = suppliedAmount / (2 * NMAX);
+        assumeSupplyAmountIsCorrect(suppliedUnderlying, amountPerSupplier);
 
-        uint256 matchedAmount;
-        for (uint256 i = 0; i < nmax; i++) {
-            if (suppliers[i] == supplier1) continue;
-
-            rates[i] = ICToken(cDai).exchangeRateCurrent();
-
-            matchedAmount += getBalanceOnCompound(
-                amountPerSupplier,
-                ICToken(cDai).exchangeRateCurrent()
-            );
-
-            suppliers[i].approve(dai, amountPerSupplier);
-            suppliers[i].supply(cDai, amountPerSupplier);
+        for (uint256 i = 1; i < NMAX + 1; i++) {
+            suppliers[i].approve(suppliedUnderlying, amountPerSupplier);
+            suppliers[i].supply(suppliedAsset, amountPerSupplier);
         }
 
-        // supplier withdraws suppliedAmount.
-        supplier1.withdraw(cDai, suppliedAmount);
+        withdrawnAmount = (amountSupplied * _random2) / 255;
+        assumeWtihdrawnAmountIsCorrect(withdrawnAmount);
+        supplier1.withdraw(suppliedAsset, type(uint256).max);
     }
 
     struct Vars {
@@ -232,56 +229,6 @@ contract TestWithdraw is TestSetupFuzzing {
             borrowers[i].approve(dai, borrowedAmount);
             borrowers[i].repay(cDai, borrowedAmount);
         }
-    }
-
-    function testShouldNotWithdrawWhenUnderCollaterized(uint256 amount) public {
-        hevm.assume(amount > 1e14 && amount < 1e18 * 50_000_000); // $0.01 to $50_000_000
-
-        uint256 toSupply = amount;
-        uint256 toBorrow = toSupply / 2;
-
-        // supplier1 deposits collateral.
-        supplier1.approve(dai, toSupply);
-        supplier1.supply(cDai, toSupply);
-
-        // supplier2 deposits collateral.
-        supplier2.approve(dai, toSupply);
-        supplier2.supply(cDai, toSupply);
-
-        // supplier1 tries to withdraw more than allowed.
-        supplier1.borrow(cUsdc, to6Decimals(toBorrow));
-        hevm.expectRevert(abi.encodeWithSignature("UnauthorisedWithdraw()"));
-        supplier1.withdraw(cDai, toSupply);
-    }
-
-    // Test attack.
-    // Should be possible to withdraw amount while an attacker sends cToken to trick Morpho contract.
-    function testWithdrawWhileAttackerSendsCToken(uint256 amount) public {
-        hevm.assume(amount > 1e14 && amount < 1e18 * 50_000_000); // $0.01 to $50_000_000
-
-        Attacker attacker = new Attacker();
-        tip(dai, address(attacker), type(uint256).max / 2);
-
-        uint256 toSupply = amount;
-        uint256 collateral = 2 * toSupply;
-        uint256 toBorrow = toSupply;
-
-        // Attacker sends cToken to morpho contract.
-        attacker.approve(dai, cDai, toSupply);
-        attacker.deposit(cDai, toSupply);
-        attacker.transfer(dai, address(morpho), toSupply);
-
-        // supplier1 deposits collateral.
-        supplier1.approve(dai, toSupply);
-        supplier1.supply(cDai, toSupply);
-
-        // borrower1 deposits collateral.
-        borrower1.approve(usdc, to6Decimals(collateral));
-        borrower1.supply(cUsdc, to6Decimals(collateral));
-
-        // supplier1 tries to withdraw.
-        borrower1.borrow(cDai, toBorrow);
-        supplier1.withdraw(cDai, toSupply);
     }
 
     function testWithdrawMultipleAssets(
