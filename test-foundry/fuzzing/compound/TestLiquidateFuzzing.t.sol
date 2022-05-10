@@ -62,7 +62,7 @@ contract TestLiquidateFuzzing is TestSetupFuzzing {
         uint128 _amountSupplied,
         uint8 _suppliedAsset,
         uint8 _borrowedAsset,
-        uint8 _randomModulo
+        uint8 _random1
     ) public {
         (address suppliedAsset, address suppliedUnderlying) = getAsset(_suppliedAsset);
         (address borrowedAsset, address borrowedUnderlying) = getAsset(_borrowedAsset);
@@ -72,7 +72,7 @@ contract TestLiquidateFuzzing is TestSetupFuzzing {
         // Because this is a Liquidation Test, we need to make sure that the supplied amount is enough
         // To obtain a non zero borrow & liquidation amount.
         hevm.assume(amountSupplied > 10**ERC20(suppliedUnderlying).decimals());
-        hevm.assume(_randomModulo != 0);
+        hevm.assume(_random1 != 0);
         assumeSupplyAmountIsCorrect(suppliedUnderlying, amountSupplied);
 
         borrower1.approve(suppliedUnderlying, amountSupplied);
@@ -105,7 +105,7 @@ contract TestLiquidateFuzzing is TestSetupFuzzing {
         );
 
         // Liquidate
-        uint256 toRepay = ((borrowedAmount / 2) * _randomModulo) / 255;
+        uint256 toRepay = ((borrowedAmount / 2) * _random1) / 255;
         assumeLiquidateAmountIsCorrect(toRepay);
 
         User liquidator = borrower3;
@@ -134,8 +134,11 @@ contract TestLiquidateFuzzing is TestSetupFuzzing {
         uint8 _collateralAsset,
         uint8 _suppliedAsset,
         uint8 _borrowedAsset,
-        uint8 _randomModulo
+        uint8 _random1,
+        uint8 _random2
     ) public {
+        hevm.assume(_random1 != 0);
+        hevm.assume(_random2 != 0);
         addressVars memory vars;
 
         (vars.suppliedAsset, vars.suppliedUnderlying) = getAsset(_suppliedAsset);
@@ -149,7 +152,7 @@ contract TestLiquidateFuzzing is TestSetupFuzzing {
         // Because this is a Liquidation Test, we need to make sure that the supplied amount is enough
         // To obtain a non zero borrow & liquidation amount.
         hevm.assume(amountSupplied > 10**ERC20(vars.suppliedUnderlying).decimals());
-        hevm.assume(_randomModulo != 0);
+        hevm.assume(_random1 != 0);
         assumeSupplyAmountIsCorrect(vars.suppliedUnderlying, amountSupplied);
 
         // Borrower1 get his supply & borrow.
@@ -175,7 +178,7 @@ contract TestLiquidateFuzzing is TestSetupFuzzing {
             address(borrower2),
             vars.suppliedAsset
         );
-        borrowedAmount = (borrowable * _randomModulo) / 255;
+        borrowedAmount = (borrowable * _random1) / 255;
         assumeBorrowAmountIsCorrect(vars.suppliedAsset, borrowedAmount);
         borrower1.borrow(vars.suppliedAsset, borrowedAmount);
 
@@ -198,7 +201,7 @@ contract TestLiquidateFuzzing is TestSetupFuzzing {
         );
 
         // Liquidate
-        uint256 toRepay = ((borrowedAmount / 2) * _randomModulo) / 255;
+        uint256 toRepay = ((borrowedAmount / 2) * _random2) / 255;
         assumeLiquidateAmountIsCorrect(toRepay);
 
         User liquidator = borrower3;

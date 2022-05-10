@@ -38,9 +38,9 @@ contract TestBorrowFuzzing is TestSetupFuzzing {
         uint128 _amountSupplied,
         uint8 _suppliedAsset,
         uint8 _borrowedAsset,
-        uint8 _randomModulo
+        uint8 _random1
     ) public {
-        hevm.assume(_randomModulo != 0);
+        hevm.assume(_random1 != 0);
         (address suppliedAsset, address suppliedUnderlying) = getAsset(_suppliedAsset);
         (address borrowedAsset, ) = getAsset(_borrowedAsset);
 
@@ -55,7 +55,7 @@ contract TestBorrowFuzzing is TestSetupFuzzing {
             address(borrower1),
             borrowedAsset
         );
-        uint256 borrowedAmount = (borrowable * _randomModulo) / 255;
+        uint256 borrowedAmount = (borrowable * _random1) / 255;
         assumeBorrowAmountIsCorrect(borrowedAsset, borrowedAmount);
         borrower1.borrow(borrowedAsset, borrowedAmount);
     }
@@ -65,9 +65,9 @@ contract TestBorrowFuzzing is TestSetupFuzzing {
         uint128 _amountCollateral,
         uint8 _matchedAsset,
         uint8 _collateralAsset,
-        uint8 _randomModulo
+        uint8 _random1
     ) public {
-        hevm.assume(_randomModulo != 0);
+        hevm.assume(_random1 != 0);
         (address matchedAsset, address matchedUnderlying) = getAsset(_matchedAsset);
         (address collateralAsset, address collateralUnderlying) = getAsset(_collateralAsset);
 
@@ -88,7 +88,7 @@ contract TestBorrowFuzzing is TestSetupFuzzing {
             matchedAsset
         );
 
-        uint256 borrowedAmount = (borrowable * _randomModulo) / 255;
+        uint256 borrowedAmount = (borrowable * _random1) / 255;
         assumeBorrowAmountIsCorrect(matchedAsset, borrowedAmount);
         borrower1.borrow(matchedAsset, borrowedAmount);
     }
@@ -100,9 +100,9 @@ contract TestBorrowFuzzing is TestSetupFuzzing {
         uint128 _amountCollateral,
         uint8 _matchedAsset,
         uint8 _collateralAsset,
-        uint8 _randomModulo
+        uint8 _random1
     ) public {
-        hevm.assume(_randomModulo != 0);
+        hevm.assume(_random1 != 0);
         (address matchedAsset, address matchedUnderlying) = getAsset(_matchedAsset);
         (address collateralAsset, address collateralUnderlying) = getAsset(_collateralAsset);
 
@@ -118,10 +118,10 @@ contract TestBorrowFuzzing is TestSetupFuzzing {
             address(borrower1),
             matchedAsset
         );
-        uint256 borrowedAmount = (borrowable * _randomModulo) / 255;
+        uint256 borrowedAmount = (borrowable * _random1) / 255;
         assumeBorrowAmountIsCorrect(matchedAsset, borrowedAmount);
 
-        uint256 NMAX = ((20 * uint256(_randomModulo)) / 255) + 1;
+        uint256 NMAX = ((20 * uint256(_random1)) / 255) + 1;
         createSigners(NMAX);
 
         uint256 amountPerSupplier = (amountSupplied / NMAX) + 1;
