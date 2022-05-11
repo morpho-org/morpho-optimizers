@@ -1,0 +1,84 @@
+diff -ruN .gitignore .gitignore
+--- .gitignore	1969-12-31 16:00:00.000000000 -0800
++++ .gitignore	2022-05-11 00:52:31.000000000 -0700
+@@ -0,0 +1,2 @@
++*
++!.gitignore
+diff -ruN compound/PositionsManagerForCompound.sol compound/PositionsManagerForCompound.sol
+--- compound/PositionsManagerForCompound.sol	2022-05-02 12:48:33.000000000 -0700
++++ compound/PositionsManagerForCompound.sol	2022-05-11 00:53:40.000000000 -0700
+@@ -9,6 +9,7 @@
+ 
+ import "@openzeppeltoken/ERC20/extensions/IERC20Metadata.sol";
+ import "@openzeppeltoken/ERC20/utils/SafeERC20.sol";
++import "@openzeppeltoken/ERC20/ERC20.sol";
+ import "@openzeppelsecurity/ReentrancyGuard.sol";
+ import "@openzeppelutils/math/Math.sol";
+ 
+@@ -17,9 +18,11 @@
+ contract PositionsManagerForCompound is ReentrancyGuard {
+     using DoubleLinkedList for DoubleLinkedList.List;
+     using CompoundMath for uint256;
+-    using SafeERC20 for IERC20;
++    using ERC20 for IERC20; // SafeERC20 for IERC20; Harness: Changing safeTransfer(From) to just transfer(From) for dispatching
+     using Math for uint256;
+ 
++    ICompoundOracle public compoundOracle; // HARNESS: added for linking
++
+     /// Structs ///
+ 
+     struct SupplyBalance {
+@@ -275,7 +278,7 @@
+         marketsManagerForCompound.updateRates(_poolTokenAddress);
+         ICErc20 poolToken = ICErc20(_poolTokenAddress);
+         IERC20 underlyingToken = IERC20(poolToken.underlying());
+-        underlyingToken.safeTransferFrom(msg.sender, address(this), _amount);
++        underlyingToken.transferFrom(msg.sender, address(this), _amount); // HARNESS
+         emit Supplied(msg.sender, _poolTokenAddress, _amount);
+         uint256 poolTokenExchangeRate = poolToken.exchangeRateCurrent();
+         /* DEFAULT CASE: There aren't any borrowers waiting on Comp, Morpho supplies all the tokens to Comp */
+@@ -387,7 +390,7 @@
+             _updateBorrowerList(_poolTokenAddress, msg.sender);
+         }
+ 
+-        underlyingToken.safeTransfer(msg.sender, _amount);
++        underlyingToken.transfer(msg.sender, _amount); // HARNESS
+     }
+ 
+     /// @dev Withdraws ERC20 tokens from supply.
+@@ -438,7 +441,7 @@
+         _repay(_poolTokenBorrowedAddress, _borrower, _amount);
+ 
+         // Calculate the amount of token to seize from collateral
+-        ICompoundOracle compoundOracle = ICompoundOracle(comptroller.oracle());
++        compoundOracle = ICompoundOracle(comptroller.oracle());
+         vars.priceCollateralMantissa = compoundOracle.getUnderlyingPrice(
+             _poolTokenCollateralAddress
+         );
+@@ -597,7 +600,7 @@
+                     revert CouldNotUnmatchFullAmount();
+             }
+         }
+-        underlyingToken.safeTransfer(_receiver, _amount);
++        underlyingToken.transfer(_receiver, _amount); // Harness
+     }
+ 
+     /// @dev Implements repay logic.
+@@ -614,7 +617,7 @@
+         marketsManagerForCompound.updateRates(_poolTokenAddress);
+         ICErc20 poolToken = ICErc20(_poolTokenAddress);
+         IERC20 underlyingToken = IERC20(poolToken.underlying());
+-        underlyingToken.safeTransferFrom(msg.sender, address(this), _amount);
++        underlyingToken.transferFrom(msg.sender, address(this), _amount); // HARNESS
+ 
+         uint256 remainingToRepay = _amount;
+ 
+@@ -998,7 +1001,7 @@
+     ) internal returns (uint256, uint256) {
+         // Avoid stack too deep error
+         BalanceStateVars memory vars;
+-        ICompoundOracle compoundOracle = ICompoundOracle(comptroller.oracle());
++        compoundOracle = ICompoundOracle(comptroller.oracle());
+ 
+         for (uint256 i; i < enteredMarkets[_account].length; i++) {
+             vars.poolTokenEntered = enteredMarkets[_account][i];
