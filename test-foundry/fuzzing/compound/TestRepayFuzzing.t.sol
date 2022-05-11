@@ -113,11 +113,11 @@ contract TestRepayFuzzing is TestSetupFuzzing {
         (address suppliedAsset, address suppliedUnderlying) = getAsset(_suppliedAsset);
         (address borrowedAsset, address borrowedUnderlying) = getAsset(_borrowedAsset);
 
-        uint256 supplied = _supplied;
+        uint256 suppliedAmount = _suppliedAmount;
         // To limit number of run where computed amounts are 0.
-        hevm.assume(supplied > 10**ERC20(suppliedUnderlying).decimals());
+        hevm.assume(suppliedAmount > 10**ERC20(suppliedUnderlying).decimals());
 
-        assumeSupplyAmountIsCorrect(suppliedUnderlying, supplied);
+        assumeSupplyAmountIsCorrect(suppliedUnderlying, suppliedAmount);
 
         borrower1.approve(suppliedUnderlying, suppliedAmount);
         borrower1.supply(suppliedAsset, suppliedAmount);
@@ -177,7 +177,7 @@ contract TestRepayFuzzing is TestSetupFuzzing {
         borrower1.borrow(borrowedAsset, borrowAmount);
 
         uint256 NMAX = ((20 * uint256(_random1)) / 255) + 1;
-        uint256 amountPerUser = borrowAmount / (2 * _NMAX);
+        uint256 amountPerUser = borrowAmount / (2 * NMAX);
 
         assumeSupplyAmountIsCorrect(borrowedUnderlying, amountPerUser);
 
