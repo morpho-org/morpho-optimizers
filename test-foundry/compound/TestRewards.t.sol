@@ -38,7 +38,7 @@ contract TestRewards is TestSetup {
 
         uint256 index = comptroller.compSupplyState(cDai).index;
 
-        assertEq(userIndex, index, "user index wrong");
+        testEquality(userIndex, index, "user index wrong");
         assertEq(unclaimedRewards, 0, "unclaimed rewards should be 0");
 
         supplier2.approve(dai, toSupply);
@@ -53,7 +53,7 @@ contract TestRewards is TestSetup {
         uint256 balanceAfter = supplier1.balanceOf(comp);
         uint256 expectedNewBalance = expectedClaimed + balanceBefore;
 
-        assertEq(balanceAfter, expectedNewBalance, "balance after wrong");
+        testEquality(balanceAfter, expectedNewBalance, "balance after wrong");
     }
 
     function testShouldGetRightAmountOfSupplyRewards() public {
@@ -72,7 +72,7 @@ contract TestRewards is TestSetup {
             address(supplier1)
         );
 
-        assertEq(index, userIndex, "user index wrong");
+        testEquality(index, userIndex, "user index wrong");
         assertEq(unclaimedRewards, 0, "unclaimed rewards should be 0");
 
         supplier2.approve(dai, toSupply);
@@ -85,7 +85,7 @@ contract TestRewards is TestSetup {
         index = comptroller.compSupplyState(cDai).index;
 
         uint256 expectedClaimed = (onPool * (index - userIndex)) / 1e36;
-        assertEq(unclaimedRewards, expectedClaimed);
+        testEquality(unclaimedRewards, expectedClaimed);
     }
 
     function testShouldClaimRightAmountOfBorrowRewards() public {
@@ -105,7 +105,7 @@ contract TestRewards is TestSetup {
             address(supplier1)
         );
 
-        assertEq(userIndex, index, "user index wrong");
+        testEquality(userIndex, index, "user index wrong");
         assertEq(unclaimedRewards, 0, "unclaimed rewards should be 0");
 
         hevm.roll(block.number + 1_000);
@@ -116,7 +116,7 @@ contract TestRewards is TestSetup {
         uint256 expectedClaimed = (onPool * (index - userIndex)) / 1e36;
         uint256 balanceAfter = supplier1.balanceOf(comp);
 
-        assertEq(balanceAfter, expectedClaimed, "balance after wrong");
+        testEquality(balanceAfter, expectedClaimed, "balance after wrong");
     }
 
     function testShouldGetRightAmountOfBorrowRewards() public {
@@ -136,7 +136,7 @@ contract TestRewards is TestSetup {
             address(supplier1)
         );
 
-        assertEq(index, userIndex, "user index wrong");
+        testEquality(index, userIndex, "user index wrong");
         assertEq(unclaimedRewards, 0, "unclaimed rewards should be 0");
 
         hevm.roll(block.number + 1_000);
@@ -147,7 +147,7 @@ contract TestRewards is TestSetup {
         index = comptroller.compBorrowState(cUsdc).index;
 
         uint256 expectedClaimed = (onPool * (index - userIndex)) / 1e36;
-        assertEq(unclaimedRewards, expectedClaimed);
+        testEquality(unclaimedRewards, expectedClaimed);
     }
 
     function testShouldClaimOnSeveralMarkets() public {
@@ -214,7 +214,7 @@ contract TestRewards is TestSetup {
             cTokens,
             address(supplier1)
         );
-        assertEq(unclaimedRewardsForDaiView, unclaimedRewardsForDai);
+        testEquality(unclaimedRewardsForDaiView, unclaimedRewardsForDai);
 
         uint256 allUnclaimedRewardsView = rewardsManager.getUserUnclaimedRewards(
             tokensInArray,
@@ -224,7 +224,7 @@ contract TestRewards is TestSetup {
             tokensInArray,
             address(supplier1)
         );
-        assertEq(allUnclaimedRewards, allUnclaimedRewardsView, "all unclaimed rewards 1");
+        testEquality(allUnclaimedRewards, allUnclaimedRewardsView, "all unclaimed rewards 1");
         assertGt(allUnclaimedRewards, unclaimedRewardsForDai);
 
         supplier1.claimRewards(tokensInArray, false);
@@ -240,7 +240,7 @@ contract TestRewards is TestSetup {
             tokensInArray,
             address(supplier1)
         );
-        assertEq(allUnclaimedRewardsView, allUnclaimedRewards, "all unclaimed rewards 2");
+        testEquality(allUnclaimedRewardsView, allUnclaimedRewards, "all unclaimed rewards 2");
         assertEq(allUnclaimedRewards, 0);
     }
 
@@ -286,9 +286,9 @@ contract TestRewards is TestSetup {
         claimedFromMorpho[1] = balanceAfter[1];
         claimedFromMorpho[2] = balanceAfter[2];
         claimedFromMorpho[3] = balanceAfter[3];
-        assertEq(claimedFromCompound[1], claimedFromMorpho[1], "claimed rewards 1");
-        assertEq(claimedFromCompound[2], claimedFromMorpho[2], "claimed rewards 2");
-        assertEq(claimedFromCompound[3], claimedFromMorpho[3], "claimed rewards 3");
+        testEquality(claimedFromCompound[1], claimedFromMorpho[1], "claimed rewards 1");
+        testEquality(claimedFromCompound[2], claimedFromMorpho[2], "claimed rewards 2");
+        testEquality(claimedFromCompound[3], claimedFromMorpho[3], "claimed rewards 3");
 
         assertGt(balanceAfter[1], balanceBefore[1]);
         assertGt(balanceAfter[2], balanceBefore[2]);
@@ -363,8 +363,8 @@ contract TestRewards is TestSetup {
 
         uint256 morphoBalance = supplier1.balanceOf(address(morphoToken));
         uint256 rewardBalanceAfter = supplier1.balanceOf(comp);
-        assertEq(morphoBalance, expectedMorphoTokens);
-        assertEq(rewardBalanceBefore, rewardBalanceAfter);
+        testEquality(morphoBalance, expectedMorphoTokens);
+        testEquality(rewardBalanceBefore, rewardBalanceAfter);
     }
 
     function testShouldClaimTheSameAmountOfRewards() public {
