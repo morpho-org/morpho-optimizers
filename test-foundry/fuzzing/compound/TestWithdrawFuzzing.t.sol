@@ -63,6 +63,7 @@ contract TestWithdraw is TestSetupFuzzing {
     function testWithdraw3_1(
         uint128 _amountSupplied,
         uint8 _collateralAsset,
+        uint8 _suppliedAsset,
         uint8 _random1
     ) public {
         hevm.assume(_random1 != 0);
@@ -82,13 +83,14 @@ contract TestWithdraw is TestSetupFuzzing {
 
         // Supplier1 withdraws a random amount.
         uint256 withdrawnAmount = (amountSupplied * _random1) / 255;
-        assumeWtihdrawnAmountIsCorrect(withdrawnAmount);
+        assumeWithdrawAmountIsCorrect(withdrawnAmount);
         supplier1.withdraw(suppliedAsset, withdrawnAmount);
     }
 
     function testWithdraw3_2(
         uint128 _amountSupplied,
         uint8 _collateralAsset,
+        uint8 _suppliedAsset,
         uint8 _random1,
         uint8 _random2
     ) public {
@@ -115,7 +117,7 @@ contract TestWithdraw is TestSetupFuzzing {
         uint256 NMAX = ((20 * uint256(_random1)) / 255) + 1;
         createSigners(NMAX);
 
-        uint256 amountPerSupplier = suppliedAmount / NMAX;
+        uint256 amountPerSupplier = amountSupplied / NMAX;
         assumeSupplyAmountIsCorrect(suppliedUnderlying, amountPerSupplier);
 
         for (uint256 i = 1; i < NMAX + 1; i++) {
@@ -123,14 +125,15 @@ contract TestWithdraw is TestSetupFuzzing {
             suppliers[i].supply(suppliedAsset, amountPerSupplier);
         }
 
-        withdrawnAmount = (amountSupplied * _random2) / 255;
-        assumeWtihdrawnAmountIsCorrect(withdrawnAmount);
+        uint256 withdrawnAmount = (amountSupplied * _random2) / 255;
+        assumeWithdrawAmountIsCorrect(withdrawnAmount);
         supplier1.withdraw(suppliedAsset, type(uint256).max);
     }
 
     function testWithdraw3_4(
         uint128 _amountSupplied,
         uint8 _collateralAsset,
+        uint8 _suppliedAsset,
         uint8 _random1,
         uint8 _random2
     ) public {
@@ -157,7 +160,7 @@ contract TestWithdraw is TestSetupFuzzing {
         uint256 NMAX = ((20 * uint256(_random1)) / 255) + 1;
         createSigners(NMAX);
 
-        uint256 amountPerSupplier = suppliedAmount / (2 * NMAX);
+        uint256 amountPerSupplier = amountSupplied / (2 * NMAX);
         assumeSupplyAmountIsCorrect(suppliedUnderlying, amountPerSupplier);
 
         for (uint256 i = 1; i < NMAX + 1; i++) {
@@ -165,69 +168,60 @@ contract TestWithdraw is TestSetupFuzzing {
             suppliers[i].supply(suppliedAsset, amountPerSupplier);
         }
 
-        withdrawnAmount = (amountSupplied * _random2) / 255;
-        assumeWtihdrawnAmountIsCorrect(withdrawnAmount);
+        uint256 withdrawnAmount = (amountSupplied * _random2) / 255;
+        assumeWithdrawAmountIsCorrect(withdrawnAmount);
         supplier1.withdraw(suppliedAsset, type(uint256).max);
     }
 
-    struct Vars {
-        uint256 LR;
-        uint256 BPY;
-        uint256 VBR;
-        uint256 NVD;
-        uint256 BP2PD;
-        uint256 BP2PA;
-        uint256 BP2PER;
-    }
-
     function testDeltaWithdraw(
-        uint96 _amount,
-        uint8 maxGas,
-        uint8 numSigners
+        uint128 _amountSupplied,
+        uint8 _collateralAsset,
+        uint8 _suppliedAsset,
+        uint8 _random1,
+        uint8 _random2
     ) public {
-        hevm.assume(_amount > 1e14 && _amount < 1e18 * 50_000_000);
-        hevm.assume(maxGas < 100);
-        hevm.assume(numSigners > 1 && numSigners < 50);
+        hevm.assume(_random1 != 0);
+        hevm.assume(_random2 != 0);
 
-        uint256 amount = _amount;
+        (address suppliedAsset, address suppliedUnderlying) = getAsset(_suppliedAsset);
+        (address collateralAsset, address collateralUnderlying) = getAsset(_collateralAsset);
+
+        uint256 amountSupplied = _amountSupplied;
 
         // 2e6 allows only 10 unmatch borrowers.
-        setDefaultMaxGasForMatchingHelper(3e6, 3e6, uint64(1e6 + maxGas * 1e5), 3e6);
+        setDefaultMaxGasForMatchingHelper(3e6, 3e6, 2e6, 2e6);
 
-        uint256 borrowedAmount = 1 ether;
-        uint256 collateral = 2 * borrowedAmount;
-        uint256 suppliedAmount = numSigners * borrowedAmount + 7;
-        uint256 expectedSupplyBalanceInP2P;
+        // supplier1 and 20 borrowers are matched for amountSupplied.
+        assumeSupplyAmountIsCorrect(suppliedUnderlying, suppliedUnderlying);
+        supplier1.approve(suppliedUnderlying, suppliedUnderlying);
+        supplier1.supply(suppliedAsset, amountSupplied);
 
-        // supplier1 and 20 borrowers are matched for suppliedAmount.
-        supplier1.approve(dai, suppliedAmount);
-        supplier1.supply(cDai, suppliedAmount);
+        uint256 NMAX = ((20 * uint256(_random1)) / 255) + 1;
+        createSigners(NMAX);
 
-        createSigners(numSigners);
-        uint256 matched;
-
-        // 2 * NMAX borrowers borrow borrowedAmount.
-        for (uint256 i; i < numSigners; i++) {
-            borrowers[i].approve(usdc, to6Decimals(collateral));
-            borrowers[i].supply(cUsdc, to6Decimals(collateral));
-            borrowers[i].borrow(cDai, borrowedAmount, type(uint64).max);
-            matched += borrowedAmount.div(morpho.p2pBorrowIndex(cDai));
+        uint256 collateralToSupply = ERC20(collateralUnderlying).balanceOf(address(borrower1));
+        uint256 amountPerBorrower = amountSupplied / NMAX;
+        assumeBorrowAmountIsCorrect(suppliedAsset, amountPerBorrower);
+        for (uint256 i; i < NMAX; i++) {
+            borrowers[i].approve(collateralUnderlying, collateralToSupply);
+            borrowers[i].supply(collateralAsset, collateralToSupply);
+            borrowers[i].borrow(suppliedAsset, amountPerBorrower);
         }
 
         {
             // Supplier withdraws max.
             // Should create a delta on borrowers side.
-            supplier1.withdraw(cDai, type(uint256).max);
+            supplier1.withdraw(suppliedAsset, type(uint256).max);
 
             // supplier should be able to deposit to help remove delta
-            supplier2.approve(dai, suppliedAmount);
-            supplier2.supply(cDai, suppliedAmount);
+            supplier2.approve(suppliedUnderlying, amountSupplied);
+            supplier2.supply(suppliedAsset, amountSupplied);
         }
 
         // Borrow delta reduction with borrowers repaying
-        for (uint256 i = numSigners / 2; i < numSigners; i++) {
-            borrowers[i].approve(dai, borrowedAmount);
-            borrowers[i].repay(cDai, borrowedAmount);
+        for (uint256 i = NMAX / 2; i < NMAX; i++) {
+            borrowers[i].approve(suppliedUnderlying, amountPerBorrower);
+            borrowers[i].repay(suppliedAsset, amountPerBorrower);
         }
     }
 
