@@ -4,13 +4,22 @@ pragma solidity 0.8.13;
 import {ICompoundOracle} from "../munged/compound/interfaces/compound/ICompound.sol";
 
 contract SymbolicOracle is ICompoundOracle {
-    mapping(address => uint256) _underlyingPrice;
+    mapping(address => uint256) public underlyingPrice;
+    mapping(address => mapping(address => uint256)) public unclaimedRewards;
 
-    function getUnderlyingPrice(address token) external view override returns (uint256) {
-        return _underlyingPrice[token];
+    function getUnderlyingPrice(address _token) external view override returns (uint256) {
+        return underlyingPrice[_token];
     }
 
-    function setUnderlyingPrice(address token, uint256 price) public {
-        _underlyingPrice[token] = price;
+    function setUnderlyingPrice(address _token, uint256 _price) public {
+        underlyingPrice[_token] = _price;
+    }
+
+    function accrueUserUnclaimedRewards(address[] calldata _assets, address _user)
+        external
+        view
+        returns (uint256 unclaimedRewards_)
+    {
+        unclaimedRewards_ = unclaimedRewards[_assets[0]][_user];
     }
 }
