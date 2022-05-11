@@ -44,6 +44,9 @@ single-% s-%: node_modules
 	@echo Run single test $* on ${NETWORK}
 	@forge test -vvv -c test-foundry/compound --match-test $* > trace.ansi
 
+build:
+	@forge build --hardhat --out artifacts
+
 .PHONY: config
 config:
 	forge config
