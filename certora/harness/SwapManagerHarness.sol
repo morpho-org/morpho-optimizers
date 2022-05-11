@@ -1,4 +1,5 @@
-pragma solidity ^0.8.0;
+// SPDX-License-Identifier: GNU AGPLv3
+pragma solidity 0.8.13;
 
 // This is the contract that is actually verified; it may contain some helper
 // methods for the spec to access internal state, or may override some of the
@@ -9,8 +10,5 @@ import "../munged/common/SwapManager.sol";
 contract SwapManagerHarness is SwapManager {
     constructor(address _morphoToken, address _rewardToken)
         SwapManager(_morphoToken, _rewardToken)
-    {
-    }
-
+    {}
 }
-

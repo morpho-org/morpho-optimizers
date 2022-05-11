@@ -1,31 +1,32 @@
-// SPDX-License-Identifier: agpl-3.0
-pragma solidity ^0.6.8;
+// SPDX-License-Identifier: GNU AGPLv3
+pragma solidity 0.8.13;
 
 /**
  * Dummy Weth token.
  */
 contract DummyWeth {
-    uint256 t;
-    
-    mapping(address => uint256) b;
-    mapping(address => mapping(address => uint256)) a;
+    uint256 public t;
+
+    mapping(address => uint256) public b;
+    mapping(address => mapping(address => uint256)) public a;
 
     string public name;
     string public symbol;
-    uint public decimals;
+    uint256 public decimals;
 
-    function myAddress() public returns (address) {
+    function myAddress() public view returns (address) {
         return address(this);
     }
 
-    function add(uint a, uint b) internal pure returns (uint256) {
-        uint c = a + b;
-        require (c >= a);
+    function add(uint256 _a, uint256 _b) internal pure returns (uint256) {
+        uint256 c = _a + _b;
+        require(c >= _a);
         return c;
     }
-    function sub(uint a, uint b) internal pure returns (uint256) {
-        require (a >= b);
-        return a - b;
+
+    function sub(uint256 _a, uint256 _b) internal pure returns (uint256) {
+        require(_a >= _b);
+        return _a - _b;
     }
 
     function totalSupply() external view returns (uint256) {
@@ -61,7 +62,7 @@ contract DummyWeth {
         a[sender][msg.sender] = sub(a[sender][msg.sender], amount);
         return true;
     }
-    
+
     // WETH
     function deposit() external payable {
         // assume succeeds
