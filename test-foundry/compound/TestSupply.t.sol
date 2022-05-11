@@ -15,11 +15,11 @@ contract TestSupply is TestSetup {
         uint256 poolSupplyIndex = ICToken(cDai).exchangeRateCurrent();
         uint256 expectedOnPool = amount.div(poolSupplyIndex);
 
-        assertEq(ERC20(cDai).balanceOf(address(morpho)), expectedOnPool, "balance of cToken");
+        testEquality(ERC20(cDai).balanceOf(address(morpho)), expectedOnPool, "balance of cToken");
 
         (uint256 inP2P, uint256 onPool) = morpho.supplyBalanceInOf(cDai, address(supplier1));
 
-        assertEq(onPool, expectedOnPool, "on pool");
+        testEquality(onPool, expectedOnPool, "on pool");
         assertEq(inP2P, 0, "in peer-to-peer");
     }
 
@@ -37,7 +37,7 @@ contract TestSupply is TestSetup {
         supplier1.supply(cDai, amount);
 
         uint256 daiBalanceAfter = supplier1.balanceOf(dai);
-        assertEq(daiBalanceAfter, expectedDaiBalanceAfter);
+        testEquality(daiBalanceAfter, expectedDaiBalanceAfter);
 
         uint256 p2pSupplyIndex = lens.getUpdatedP2PSupplyIndex(cDai);
         uint256 expectedSupplyBalanceInP2P = amount.div(p2pSupplyIndex);
@@ -53,10 +53,10 @@ contract TestSupply is TestSetup {
         );
 
         assertEq(onPoolSupplier, 0);
-        assertEq(inP2PSupplier, expectedSupplyBalanceInP2P);
+        testEquality(inP2PSupplier, expectedSupplyBalanceInP2P);
 
         assertEq(onPoolBorrower, 0);
-        assertEq(inP2PBorrower, inP2PSupplier);
+        testEquality(inP2PBorrower, inP2PSupplier);
     }
 
     function testSupply3() public {
@@ -79,15 +79,15 @@ contract TestSupply is TestSetup {
             cDai,
             address(supplier1)
         );
-        assertEq(onPoolSupplier, expectedSupplyBalanceOnPool, "on pool supplier");
-        assertEq(inP2PSupplier, expectedSupplyBalanceInP2P, "in peer-to-peer supplier");
+        testEquality(onPoolSupplier, expectedSupplyBalanceOnPool, "on pool supplier");
+        testEquality(inP2PSupplier, expectedSupplyBalanceInP2P, "in peer-to-peer supplier");
 
         (uint256 inP2PBorrower, uint256 onPoolBorrower) = morpho.borrowBalanceInOf(
             cDai,
             address(borrower1)
         );
         assertEq(onPoolBorrower, 0, "on pool borrower");
-        assertEq(inP2PBorrower, inP2PSupplier, "in peer-to-peer borrower");
+        testEquality(inP2PBorrower, inP2PSupplier, "in peer-to-peer borrower");
     }
 
     function testSupply4() public {
@@ -126,14 +126,14 @@ contract TestSupply is TestSetup {
 
             expectedInP2P = amountPerBorrower.div(morpho.p2pBorrowIndex(cDai));
 
-            assertEq(inP2P, expectedInP2P, "amount per borrower");
+            testEquality(inP2P, expectedInP2P, "amount per borrower");
             assertEq(onPool, 0, "on pool per borrower");
         }
 
         (inP2P, onPool) = morpho.supplyBalanceInOf(cDai, address(supplier1));
         expectedInP2P = amount.div(p2pSupplyIndex);
 
-        assertEq(inP2P, expectedInP2P, "in peer-to-peer");
+        testEquality(inP2P, expectedInP2P, "in peer-to-peer");
         assertEq(onPool, 0, "on pool");
     }
 
@@ -174,7 +174,7 @@ contract TestSupply is TestSetup {
 
             expectedInP2P = amountPerBorrower.div(morpho.p2pBorrowIndex(cDai));
 
-            assertEq(inP2P, expectedInP2P, "borrower in peer-to-peer");
+            testEquality(inP2P, expectedInP2P, "borrower in peer-to-peer");
             assertEq(onPool, 0, "borrower on pool");
         }
 
@@ -183,8 +183,8 @@ contract TestSupply is TestSetup {
         expectedInP2P = (amount / 2).div(p2pSupplyIndex);
         uint256 expectedOnPool = (amount / 2).div(poolSupplyIndex);
 
-        assertEq(inP2P, expectedInP2P, "in peer-to-peer");
-        assertEq(onPool, expectedOnPool, "in pool");
+        testEquality(inP2P, expectedInP2P, "in peer-to-peer");
+        testEquality(onPool, expectedOnPool, "in pool");
     }
 
     function testSupplyMultipleTimes() public {
@@ -199,7 +199,7 @@ contract TestSupply is TestSetup {
         uint256 expectedOnPool = (2 * amount).div(poolSupplyIndex);
 
         (, uint256 onPool) = morpho.supplyBalanceInOf(cDai, address(supplier1));
-        assertEq(onPool, expectedOnPool);
+        testEquality(onPool, expectedOnPool);
     }
 
     function testFailSupplyZero() public {

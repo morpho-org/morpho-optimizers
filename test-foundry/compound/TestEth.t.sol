@@ -17,13 +17,13 @@ contract TestEth is TestSetup {
         uint256 poolSupplyIndex = ICToken(cEth).exchangeRateCurrent();
         uint256 expectedOnPool = toSupply.div(poolSupplyIndex);
 
-        assertEq(ERC20(cEth).balanceOf(address(morpho)), expectedOnPool, "balance of cToken");
+        testEquality(ERC20(cEth).balanceOf(address(morpho)), expectedOnPool, "balance of cToken");
 
         (uint256 inP2P, uint256 onPool) = morpho.supplyBalanceInOf(cEth, address(supplier1));
 
         assertEq(inP2P, 0);
-        assertEq(onPool, expectedOnPool);
-        assertEq(balanceAfter, balanceBefore - toSupply);
+        testEquality(onPool, expectedOnPool);
+        testEquality(balanceAfter, balanceBefore - toSupply);
     }
 
     function testSupplyEthInP2P() public {
@@ -47,8 +47,8 @@ contract TestEth is TestSetup {
         (uint256 inP2P, uint256 onPool) = morpho.supplyBalanceInOf(cEth, address(supplier1));
 
         assertEq(onPool, 0);
-        assertEq(inP2P, expectedInP2P);
-        assertEq(balanceAfter, balanceBefore - toSupply);
+        testEquality(inP2P, expectedInP2P);
+        testEquality(balanceAfter, balanceBefore - toSupply);
     }
 
     function testBorrowEthOnPool() public {
@@ -66,9 +66,9 @@ contract TestEth is TestSetup {
 
         uint256 expectedOnPool = toSupply.div(ICToken(cEth).borrowIndex());
 
-        assertEq(onPool, expectedOnPool);
+        testEquality(onPool, expectedOnPool);
         assertEq(inP2P, 0);
-        assertEq(balanceAfter, balanceBefore + toBorrow);
+        testEquality(balanceAfter, balanceBefore + toBorrow);
     }
 
     function testBorrowEthInP2P() public {
@@ -92,7 +92,7 @@ contract TestEth is TestSetup {
         (uint256 inP2P, uint256 onPool) = morpho.borrowBalanceInOf(cEth, address(borrower1));
 
         assertEq(onPool, 0);
-        assertEq(inP2P, expectedInP2P);
+        testEquality(inP2P, expectedInP2P);
         assertApproxEq(balanceAfter, balanceBefore + toBorrow, 1e9);
     }
 
@@ -233,7 +233,7 @@ contract TestEth is TestSetup {
             amountToSeize.div(ICToken(cUsdc).exchangeRateCurrent());
 
         testEquality(onPoolBorrower, expectedOnPool, "borrower supply on pool");
-        assertEq(balanceAfter, balanceBefore - toRepay, "amount seized");
+        testEquality(balanceAfter, balanceBefore - toRepay, "amount seized");
         assertEq(inP2PBorrower, 0, "borrower supply in peer-to-peer");
     }
 
@@ -289,7 +289,7 @@ contract TestEth is TestSetup {
             amountToSeize.div(ICToken(cEth).exchangeRateCurrent());
 
         testEquality(onPoolBorrower, expectedOnPool, "borrower supply on pool");
-        assertEq(balanceAfter, balanceBefore + amountToSeize, "amount seized");
+        testEquality(balanceAfter, balanceBefore + amountToSeize, "amount seized");
         assertEq(inP2PBorrower, 0, "borrower supply in peer-to-peer");
     }
 }

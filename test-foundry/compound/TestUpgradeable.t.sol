@@ -18,7 +18,7 @@ contract TestUpgradeable is TestSetup {
 
         // Should not change
         (, uint256 onPool) = morpho.supplyBalanceInOf(cDai, address(supplier1));
-        assertEq(onPool, expectedOnPool);
+        testEquality(onPool, expectedOnPool);
     }
 
     function testOnlyProxyOwnerCanUpgradeMorpho() public {

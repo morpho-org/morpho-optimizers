@@ -40,7 +40,7 @@ contract TestRepay is TestSetup {
 
         assertEq(inP2P, 0);
         assertEq(onPool, 0);
-        assertEq(balanceBefore - balanceAfter, amount);
+        testEquality(balanceBefore - balanceAfter, amount);
     }
 
     function testRepay2_1() public {
@@ -70,8 +70,8 @@ contract TestRepay is TestSetup {
         uint256 expectedOnPool = suppliedAmount.div(ICToken(cDai).borrowIndex());
 
         assertEq(onPoolSupplier, 0, "supplier on pool");
-        assertEq(onPoolBorrower1, expectedOnPool, "borrower on pool");
-        assertEq(inP2PSupplier, inP2PBorrower1, "in peer-to-peer");
+        testEquality(onPoolBorrower1, expectedOnPool, "borrower on pool");
+        testEquality(inP2PSupplier, inP2PBorrower1, "in peer-to-peer");
 
         // An available borrower onPool.
         uint256 availableBorrowerAmount = borrowedAmount / 4;
@@ -98,7 +98,7 @@ contract TestRepay is TestSetup {
 
         // Check balances for supplier.
         (inP2PSupplier, onPoolSupplier) = morpho.supplyBalanceInOf(cDai, address(supplier1));
-        assertApproxEq(2 * inP2PBorrower1, inP2PSupplier, 1);
+        testEquality(2 * inP2PBorrower1, inP2PSupplier);
         assertEq(onPoolSupplier, 0);
     }
 
@@ -136,8 +136,8 @@ contract TestRepay is TestSetup {
         uint256 expectedOnPool = suppliedAmount.div(ICToken(cDai).borrowIndex());
 
         assertEq(onPoolSupplier, 0);
-        assertEq(onPoolBorrower1, expectedOnPool, "borrower1 on pool");
-        assertEq(inP2PSupplier, inP2PBorrower1, "supplier1 in peer-to-peer");
+        testEquality(onPoolBorrower1, expectedOnPool, "borrower1 on pool");
+        testEquality(inP2PSupplier, inP2PBorrower1, "supplier1 in peer-to-peer");
 
         // NMAX borrowers have debt waiting on pool.
         uint256 NMAX = 20;
@@ -179,7 +179,7 @@ contract TestRepay is TestSetup {
 
         uint256 expectedSupplyBalanceInP2P = suppliedAmount.div(morpho.p2pBorrowIndex(cDai));
 
-        assertEq(inP2PSupplier, expectedSupplyBalanceInP2P, "supplier in peer-to-peer");
+        testEquality(inP2PSupplier, expectedSupplyBalanceInP2P, "supplier in peer-to-peer");
         assertEq(onPoolSupplier, 0, "supplier on pool");
 
         // Now test for each individual borrower that replaced the original.
@@ -223,8 +223,8 @@ contract TestRepay is TestSetup {
         uint256 expectedOnPool = (suppliedAmount).div(ICToken(cDai).borrowIndex());
 
         assertEq(onPoolSupplier, 0);
-        assertEq(onPoolBorrower1, expectedOnPool);
-        assertEq(inP2PSupplier, inP2PBorrower1);
+        testEquality(onPoolBorrower1, expectedOnPool);
+        testEquality(inP2PSupplier, inP2PBorrower1);
 
         // Borrower1 repays 75% of borrowed amount.
         borrower1.approve(dai, (75 * borrowedAmount) / 100);
@@ -247,8 +247,8 @@ contract TestRepay is TestSetup {
         uint256 expectedSupplyBalanceInP2P = (suppliedAmount / 2).div(p2pBorrowIndex);
         uint256 expectedSupplyBalanceOnPool = (suppliedAmount / 2).div(poolSupplyIndex);
 
-        assertApproxEq(inP2PSupplier, expectedSupplyBalanceInP2P, 1);
-        assertEq(onPoolSupplier, expectedSupplyBalanceOnPool);
+        testEquality(inP2PSupplier, expectedSupplyBalanceInP2P);
+        testEquality(onPoolSupplier, expectedSupplyBalanceOnPool);
     }
 
     function testRepay2_4() public {
@@ -285,8 +285,8 @@ contract TestRepay is TestSetup {
         uint256 expectedOnPool = suppliedAmount.div(ICToken(cDai).borrowIndex());
 
         assertEq(onPoolSupplier, 0);
-        assertEq(onPoolBorrower1, expectedOnPool);
-        assertEq(inP2PSupplier, inP2PBorrower1);
+        testEquality(onPoolBorrower1, expectedOnPool);
+        testEquality(inP2PSupplier, inP2PBorrower1);
 
         // NMAX borrowers have borrowerAmount/2 (cumulated) of debt waiting on pool.
         uint256 NMAX = 20;
@@ -321,8 +321,8 @@ contract TestRepay is TestSetup {
         );
         uint256 expectedSupplyBalanceInP2P = (suppliedAmount / 2).div(morpho.p2pBorrowIndex(cDai));
 
-        assertApproxEq(inP2PSupplier, expectedSupplyBalanceInP2P, 1, "supplier in peer-to-peer");
-        assertApproxEq(onPoolSupplier, expectedSupplyBalanceOnPool, 1, "supplier on pool");
+        testEquality(inP2PSupplier, expectedSupplyBalanceInP2P, "supplier in peer-to-peer");
+        testEquality(onPoolSupplier, expectedSupplyBalanceOnPool, "supplier on pool");
 
         uint256 inP2P;
         uint256 onPool;
@@ -335,7 +335,7 @@ contract TestRepay is TestSetup {
 
             uint256 expectedInP2P = amountPerBorrower.div(morpho.p2pBorrowIndex(cDai));
 
-            assertEq(inP2P, expectedInP2P, "borrower in peer-to-peer");
+            testEquality(inP2P, expectedInP2P, "borrower in peer-to-peer");
             assertEq(onPool, 0, "borrower on pool");
         }
     }
@@ -383,13 +383,8 @@ contract TestRepay is TestSetup {
                 cDai,
                 address(borrower1)
             );
-            assertApproxEq(onPoolBorrower, 0, 10, "borrower on pool");
-            assertApproxEq(
-                inP2PBorrower,
-                expectedBorrowBalanceInP2P,
-                10,
-                "borrower in peer-to-peer"
-            );
+            testEquality(onPoolBorrower, 0, "borrower on pool");
+            testEquality(inP2PBorrower, expectedBorrowBalanceInP2P, "borrower in peer-to-peer");
 
             uint256 p2pSupplyIndex = morpho.p2pSupplyIndex(cDai);
             uint256 expectedSupplyBalanceInP2P = suppliedAmount.div(p2pSupplyIndex);
@@ -400,7 +395,11 @@ contract TestRepay is TestSetup {
                     address(suppliers[i])
                 );
                 assertEq(onPoolSupplier, 0, "supplier on pool 1");
-                assertEq(inP2PSupplier, expectedSupplyBalanceInP2P, "supplier in peer-to-peer 1");
+                testEquality(
+                    inP2PSupplier,
+                    expectedSupplyBalanceInP2P,
+                    "supplier in peer-to-peer 1"
+                );
             }
 
             // Borrower repays max.
@@ -442,9 +441,9 @@ contract TestRepay is TestSetup {
             );
 
             (p2pSupplyDelta, , , ) = morpho.deltas(cDai);
-            assertEq(p2pSupplyDelta, expectedp2pSupplyDelta / 2, "supply delta unexpected");
+            testEquality(p2pSupplyDelta, expectedp2pSupplyDelta / 2, "supply delta unexpected");
             assertEq(onPoolBorrower, 0, "on pool not unexpected");
-            assertEq(inP2PBorrower, expectedBorrowBalanceInP2P, "in peer-to-peer unexpected");
+            testEquality(inP2PBorrower, expectedBorrowBalanceInP2P, "in peer-to-peer unexpected");
         }
 
         {
@@ -508,14 +507,14 @@ contract TestRepay is TestSetup {
         }
 
         (uint256 p2pSupplyDeltaAfter, , , ) = morpho.deltas(cDai);
-        assertApproxEq(p2pSupplyDeltaAfter, 0, 1, "supply delta after");
+        testEquality(p2pSupplyDeltaAfter, 0, "supply delta after");
 
         (uint256 inP2PBorrower2, uint256 onPoolBorrower2) = morpho.borrowBalanceInOf(
             cDai,
             address(borrower2)
         );
 
-        assertEq(inP2PBorrower2, expectedBorrowBalanceInP2P, "borrower2 in peer-to-peer");
+        testEquality(inP2PBorrower2, expectedBorrowBalanceInP2P, "borrower2 in peer-to-peer");
         assertEq(onPoolBorrower2, 0, "borrower2 on pool");
     }
 
