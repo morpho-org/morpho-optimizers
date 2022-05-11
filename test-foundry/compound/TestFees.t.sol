@@ -122,6 +122,6 @@ contract TestFees is TestSetup {
         morpho.claimToTreasury(cDai, 1 ether);
         uint256 balanceAfter = ERC20(dai).balanceOf(morpho.treasuryVault());
 
-        assertEq(balanceBefore, balanceAfter);
+        testEquality(balanceBefore, balanceAfter);
     }
 }

@@ -52,7 +52,7 @@ contract TestLiquidate is TestSetup {
             address(borrower1)
         );
         uint256 expectedBorrowBalanceOnPool = toRepay.div(ICToken(cDai).borrowIndex());
-        assertApproxEq(onPoolBorrower, expectedBorrowBalanceOnPool, 5, "borrower borrow on pool");
+        testEquality(onPoolBorrower, expectedBorrowBalanceOnPool, "borrower borrow on pool");
         assertEq(inP2PBorrower, 0, "borrower borrow in peer-to-peer");
 
         // Check borrower1 supply balance.
@@ -69,7 +69,7 @@ contract TestLiquidate is TestSetup {
         uint256 expectedOnPool = collateralOnPool -
             amountToSeize.div(ICToken(cUsdc).exchangeRateCurrent());
 
-        assertEq(onPoolBorrower, expectedOnPool, "borrower supply on pool");
+        testEquality(onPoolBorrower, expectedOnPool, "borrower supply on pool");
         assertEq(inP2PBorrower, 0, "borrower supply in peer-to-peer");
     }
 
@@ -116,10 +116,9 @@ contract TestLiquidate is TestSetup {
             (borrowerDebt / 2);
 
         assertEq(onPoolBorrower, 0, "borrower borrow on pool");
-        assertApproxEq(
+        testEquality(
             inP2PBorrower.mul(morpho.p2pBorrowIndex(cUsdc)),
             expectedBorrowBalanceInP2P,
-            2,
             "borrower borrow in peer-to-peer"
         );
 
@@ -131,12 +130,12 @@ contract TestLiquidate is TestSetup {
         .mul(customOracle.getUnderlyingPrice(cUsdc))
         .div(customOracle.getUnderlyingPrice(cDai));
 
-        assertEq(
+        testEquality(
             onPoolBorrower,
             onPoolDai - amountToSeize.div(ICToken(cDai).exchangeRateCurrent()),
             "borrower supply on pool"
         );
-        assertEq(inP2PBorrower, inP2PDai, "borrower supply in peer-to-peer");
+        testEquality(inP2PBorrower, inP2PDai, "borrower supply in peer-to-peer");
     }
 
     function testShouldPartiallyLiquidateWhileInP2PAndPool() public {
@@ -180,13 +179,12 @@ contract TestLiquidate is TestSetup {
         uint256 expectedBorrowBalanceOnPool = onPoolUsdc.mul(ICToken(cUsdc).borrowIndex()) -
             toRepay;
 
-        assertApproxEq(
+        testEquality(
             onPoolBorrower.mul(ICToken(cUsdc).borrowIndex()),
             expectedBorrowBalanceOnPool,
-            1,
             "borrower borrow on pool"
         );
-        assertEq(inP2PBorrower, inP2PUsdc, "borrower borrow in peer-to-peer");
+        testEquality(inP2PBorrower, inP2PUsdc, "borrower borrow in peer-to-peer");
 
         // Check borrower1 supply balance.
         (inP2PBorrower, onPoolBorrower) = morpho.supplyBalanceInOf(cDai, address(borrower1));
@@ -196,12 +194,12 @@ contract TestLiquidate is TestSetup {
         .mul(customOracle.getUnderlyingPrice(cUsdc))
         .div(customOracle.getUnderlyingPrice(cDai));
 
-        assertEq(
+        testEquality(
             onPoolBorrower,
             onPoolDai - amountToSeize.div(ICToken(cDai).exchangeRateCurrent()),
             "borrower supply on pool"
         );
-        assertEq(inP2PBorrower, inP2PDai, "borrower supply in peer-to-peer");
+        testEquality(inP2PBorrower, inP2PDai, "borrower supply in peer-to-peer");
     }
 
     function testFailLiquidateZero() public {
