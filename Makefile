@@ -18,7 +18,11 @@ export DAPP_REMAPPINGS=@config/=config/$(NETWORK)
 .PHONY: test
 ci: node_modules
 	@echo Run all tests on ${NETWORK}
-	@forge test -vv -c test-foundry/compound --no-match-contract TestGasConsumption --no-match-test testFuzz
+	@forge test -vv -c test-foundry/aave --no-match-contract TestGasConsumption --no-match-test testFuzz
+
+test-aave: node_modules
+	@echo Run all tests on ${NETWORK}
+	@forge test -vv -c test-foundry/aave --no-match-contract TestGasConsumption --no-match-test testFuzz
 
 test-compound: node_modules
 	@echo Run all tests on ${NETWORK}
@@ -54,7 +58,7 @@ html-c-%: node_modules
 
 single-% s-%: node_modules
 	@echo Run single test $* on ${NETWORK}
-	@forge test -vvv -c test-foundry/compound --match-test $* > trace.ansi
+	@forge test -vvv -c test-foundry/aave --match-test $* > trace.ansi
 
 html-s-%: node_modules
 	@echo Run single test $* on ${NETWORK}
