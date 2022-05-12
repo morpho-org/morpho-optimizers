@@ -192,8 +192,8 @@ contract TestWithdraw is TestSetupFuzzing {
         setDefaultMaxGasForMatchingHelper(3e6, 3e6, 2e6, 2e6);
 
         // supplier1 and 20 borrowers are matched for amountSupplied.
-        assumeSupplyAmountIsCorrect(suppliedUnderlying, suppliedUnderlying);
-        supplier1.approve(suppliedUnderlying, suppliedUnderlying);
+        assumeSupplyAmountIsCorrect(suppliedUnderlying, amountSupplied);
+        supplier1.approve(suppliedUnderlying, amountSupplied);
         supplier1.supply(suppliedAsset, amountSupplied);
 
         uint256 NMAX = ((20 * uint256(_random1)) / 255) + 1;
