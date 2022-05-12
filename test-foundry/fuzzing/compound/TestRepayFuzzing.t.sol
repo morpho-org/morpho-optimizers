@@ -187,10 +187,10 @@ contract TestRepayFuzzing is TestSetupFuzzing {
             suppliers[i].approve(borrowedUnderlying, amountPerUser);
             suppliers[i].supply(borrowedAsset, amountPerUser);
         }
-        for (uint256 j = 1; j <= NMAX; j++) {
-            borrowers[j].approve(collateralUnderlying, collateralToSupply);
-            borrowers[j].supply(collateralAsset, collateralToSupply);
-            borrowers[j].borrow(borrowedAsset, amountPerUser);
+        for (uint256 i = 1; i <= NMAX; i++) {
+            borrowers[i].approve(collateralUnderlying, collateralToSupply);
+            borrowers[i].supply(collateralAsset, collateralToSupply);
+            borrowers[i].borrow(borrowedAsset, amountPerUser);
         }
 
         // Borrower1 repays a random amount.
