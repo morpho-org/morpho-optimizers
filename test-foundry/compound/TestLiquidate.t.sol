@@ -42,7 +42,8 @@ contract TestLiquidate is TestSetup {
         customOracle.setDirectPrice(usdc, (oracle.getUnderlyingPrice(cUsdc) * 94) / 100);
 
         // Liquidate.
-        uint256 toRepay = amount / 2;
+        uint256 toRepay = (amount / 2) - 1;
+        // -1 because of rounding, we don't want to repay more than what we are allowed to.
         User liquidator = borrower3;
         liquidator.approve(dai, address(morpho), toRepay);
         liquidator.liquidate(cDai, cUsdc, address(borrower1), toRepay);

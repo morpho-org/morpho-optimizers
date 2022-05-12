@@ -348,7 +348,7 @@ contract TestWithdraw is TestSetup {
                 ICToken(cDai).borrowIndex()
             );
 
-            assertEq(inP2PBorrower, expectedBorrowBalanceInP2P, "borrower in peer-to-peer 2");
+            testEquality(inP2PBorrower, expectedBorrowBalanceInP2P, "borrower in peer-to-peer 2");
             assertApproxEq(onPoolBorrower, expectedBorrowBalanceOnPool, 1e10, "borrower on Pool 2");
         }
 
