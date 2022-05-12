@@ -245,7 +245,7 @@ contract TestWithdraw is TestSetup {
         .div(ICToken(cDai).borrowIndex());
 
         testEquality(inP2PBorrower, expectedBorrowBalanceInP2P, "borrower in peer-to-peer");
-        assertApproxEq(onPoolBorrower, expectedBorrowBalanceOnPool, 1e3, "borrower on Pool");
+        assertApproxEq(onPoolBorrower, expectedBorrowBalanceOnPool, 1e5, "borrower on Pool");
 
         // Check balances for supplier
         (inP2PSupplier, onPoolSupplier) = morpho.supplyBalanceInOf(cDai, address(supplier1));
@@ -336,7 +336,7 @@ contract TestWithdraw is TestSetup {
                 ICToken(cDai).borrowIndex()
             );
 
-            assertEq(inP2PBorrower, expectedBorrowBalanceInP2P, "borrower in peer-to-peer 2");
+            testEquality(inP2PBorrower, expectedBorrowBalanceInP2P, "borrower in peer-to-peer 2");
             assertApproxEq(onPoolBorrower, expectedBorrowBalanceOnPool, 1e10, "borrower on Pool 2");
         }
 
@@ -406,7 +406,7 @@ contract TestWithdraw is TestSetup {
                 cDai,
                 address(supplier1)
             );
-            assertEq(onPoolSupplier, 0);
+            testEquality(onPoolSupplier, 0);
             testEquality(inP2PSupplier, expectedSupplyBalanceInP2P);
 
             uint256 p2pBorrowIndex = morpho.p2pBorrowIndex(cDai);
