@@ -66,9 +66,12 @@ async function main() {
     { unsafeAllow: ['delegatecall'] }
   );
   await morpho.deployed();
+
+  const morphoProxyAdmin = await upgrades.erc1967.getAdminAddress(morpho.address);
   const morphoImplementationAddress = await upgrades.erc1967.getImplementationAddress(morpho.address);
 
   console.log('🎉 Morpho Proxy deployed to address:', morpho.address);
+  console.log('🎉 Morpho Proxy Admin deployed to address:', morphoProxyAdmin);
   console.log('🎉 Morpho Implementation deployed to address:', morphoImplementationAddress);
 
   console.log('\n🦋 Verifying Morpho Proxy on Tenderly...');
@@ -77,6 +80,13 @@ async function main() {
     address: morpho.address,
   });
   console.log('🎉 Morpho Proxy verified!');
+
+  console.log('\n🦋 Verifying Morpho Proxy Admin on Tenderly...');
+  await hre.tenderly.verify({
+    name: 'Morpho Proxy Admin',
+    address: morphoProxyAdmin,
+  });
+  console.log('🎉 Morpho Proxy Admin verified!');
 
   console.log('\n🦋 Verifying Morpho Implementation on Tenderly...');
   await hre.tenderly.verify({

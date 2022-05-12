@@ -1,0 +1,24 @@
+{
+  "tokens": {
+    "cDai": {
+      "address": "0x6d7f0754ffeb405d23c51ce938289d4835be3b14",
+      "abi": "@config/abis/mainnet/CErc20.json"
+    },
+    "cUsdc": {
+      "address": "0x5b281a6dda0b271e91ae35de655ad301c976edb1",
+      "abi": "@config/abis/mainnet/CErc20.json"
+    },
+    "cEth": {
+      "address": "0xd6801a1dffcd0a410336ef88def4320d6df1883e"
+    },
+    "wEth": {
+      "address": "0x49ee5f57422769e4bb6c3ecb9cd7ed693c35c11d"
+    }
+  },
+  "compound": {
+    "comptroller": {
+      "address": "0x2eaa9d77ae4d8f9cdd9faacd44016e746485bddb",
+      "abi": "@config/abis/mainnet/Comptroller.json"
+    }
+  }
+}
