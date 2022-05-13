@@ -207,36 +207,36 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
         /// Supply in peer-to-peer ///
 
-        if (!p2pDisabled[_poolTokenAddress]) {
-            // Match borrow peer-to-peer delta first if any.
-            if (delta.p2pBorrowDelta > 0) {
-                uint256 matchedDelta = Math.min(
-                    delta.p2pBorrowDelta.mulWadByRay(poolBorrowIndex),
-                    remainingToSupply
-                );
+        // Match borrow peer-to-peer delta first if any.
+        if (delta.p2pBorrowDelta > 0) {
+            uint256 matchedDelta = Math.min(
+                delta.p2pBorrowDelta.mulWadByRay(poolBorrowIndex),
+                remainingToSupply
+            );
 
-                toRepay += matchedDelta;
-                remainingToSupply -= matchedDelta;
-                delta.p2pBorrowDelta -= matchedDelta.divWadByRay(poolBorrowIndex);
-                emit P2PBorrowDeltaUpdated(_poolTokenAddress, delta.p2pBorrowDelta);
-            }
+            toRepay += matchedDelta;
+            remainingToSupply -= matchedDelta;
+            delta.p2pBorrowDelta -= matchedDelta.divWadByRay(poolBorrowIndex);
+            emit P2PBorrowDeltaUpdated(_poolTokenAddress, delta.p2pBorrowDelta);
+        }
 
+        if (
+            remainingToSupply > 0 &&
+            !p2pDisabled[_poolTokenAddress] &&
+            borrowersOnPool[_poolTokenAddress].getHead() != address(0)
+        ) {
             // Match pool suppliers if any.
-            if (
-                remainingToSupply > 0 && borrowersOnPool[_poolTokenAddress].getHead() != address(0)
-            ) {
-                (uint256 matched, ) = _matchBorrowers(
-                    _poolTokenAddress,
-                    underlyingToken,
-                    remainingToSupply,
-                    _maxGasForMatching
-                ); // In underlying.
+            (uint256 matched, ) = _matchBorrowers(
+                _poolTokenAddress,
+                underlyingToken,
+                remainingToSupply,
+                _maxGasForMatching
+            ); // In underlying.
 
-                if (matched > 0) {
-                    toRepay += matched;
-                    remainingToSupply -= matched;
-                    delta.p2pBorrowAmount += matched.divWadByRay(p2pBorrowIndex[_poolTokenAddress]);
-                }
+            if (matched > 0) {
+                toRepay += matched;
+                remainingToSupply -= matched;
+                delta.p2pBorrowAmount += matched.divWadByRay(p2pBorrowIndex[_poolTokenAddress]);
             }
         }
 
@@ -303,39 +303,39 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
         /// Borrow in peer-to-peer ///
 
-        if (!p2pDisabled[_poolTokenAddress]) {
-            // Match supply peer-to-peer delta first if any.
-            if (delta.p2pSupplyDelta > 0) {
-                uint256 matchedDelta = Math.min(
-                    delta.p2pSupplyDelta.mulWadByRay(poolSupplyIndex),
-                    remainingToBorrow,
-                    withdrawable
-                );
+        // Match supply peer-to-peer delta first if any.
+        if (delta.p2pSupplyDelta > 0) {
+            uint256 matchedDelta = Math.min(
+                delta.p2pSupplyDelta.mulWadByRay(poolSupplyIndex),
+                remainingToBorrow,
+                withdrawable
+            );
 
-                toWithdraw += matchedDelta;
-                remainingToBorrow -= matchedDelta;
-                delta.p2pSupplyDelta -= matchedDelta.divWadByRay(poolSupplyIndex);
-                emit P2PSupplyDeltaUpdated(_poolTokenAddress, delta.p2pSupplyDelta);
-            }
+            toWithdraw += matchedDelta;
+            remainingToBorrow -= matchedDelta;
+            delta.p2pSupplyDelta -= matchedDelta.divWadByRay(poolSupplyIndex);
+            emit P2PSupplyDeltaUpdated(_poolTokenAddress, delta.p2pSupplyDelta);
+        }
 
+        if (
+            remainingToBorrow > 0 &&
+            !p2pDisabled[_poolTokenAddress] &&
+            suppliersOnPool[_poolTokenAddress].getHead() != address(0)
+        ) {
             // Match pool suppliers if any.
-            if (
-                remainingToBorrow > 0 && suppliersOnPool[_poolTokenAddress].getHead() != address(0)
-            ) {
-                (uint256 matched, ) = _matchSuppliers(
-                    _poolTokenAddress,
-                    underlyingToken,
-                    Math.min(remainingToBorrow, withdrawable - toWithdraw),
-                    _maxGasForMatching
-                ); // In underlying.
+            (uint256 matched, ) = _matchSuppliers(
+                _poolTokenAddress,
+                underlyingToken,
+                Math.min(remainingToBorrow, withdrawable - toWithdraw),
+                _maxGasForMatching
+            ); // In underlying.
 
-                if (matched > 0) {
-                    toWithdraw += matched;
-                    remainingToBorrow -= matched;
-                    deltas[_poolTokenAddress].p2pSupplyAmount += matched.divWadByRay(
-                        p2pSupplyIndex[_poolTokenAddress]
-                    );
-                }
+            if (matched > 0) {
+                toWithdraw += matched;
+                remainingToBorrow -= matched;
+                deltas[_poolTokenAddress].p2pSupplyAmount += matched.divWadByRay(
+                    p2pSupplyIndex[_poolTokenAddress]
+                );
             }
         }
 
@@ -554,46 +554,40 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
         /// Transfer withdraw ///
 
-        if (vars.remainingToWithdraw > 0 && !p2pDisabled[_poolTokenAddress]) {
-            // Match Delta if any.
-            if (delta.p2pSupplyDelta > 0) {
-                uint256 matchedDelta = Math.min(
-                    delta.p2pSupplyDelta.mulWadByRay(vars.poolSupplyIndex),
-                    vars.remainingToWithdraw,
-                    vars.withdrawable - vars.toWithdraw
-                );
+        // Match peer-to-peer supply delta first if any.
+        if (vars.remainingToWithdraw > 0 && delta.p2pSupplyDelta > 0) {
+            uint256 matchedDelta = Math.min(
+                delta.p2pSupplyDelta.mulWadByRay(vars.poolSupplyIndex),
+                vars.remainingToWithdraw,
+                vars.withdrawable - vars.toWithdraw
+            );
 
-                vars.toWithdraw += matchedDelta;
-                vars.remainingToWithdraw -= matchedDelta;
-                delta.p2pSupplyDelta -= matchedDelta.divWadByRay(vars.poolSupplyIndex);
-                delta.p2pSupplyAmount -= matchedDelta.divWadByRay(vars.p2pSupplyIndex);
-                emit P2PSupplyDeltaUpdated(_poolTokenAddress, delta.p2pSupplyDelta);
-                emit P2PAmountsUpdated(
-                    _poolTokenAddress,
-                    delta.p2pSupplyAmount,
-                    delta.p2pBorrowAmount
-                );
-            }
+            vars.toWithdraw += matchedDelta;
+            vars.remainingToWithdraw -= matchedDelta;
+            delta.p2pSupplyDelta -= matchedDelta.divWadByRay(vars.poolSupplyIndex);
+            delta.p2pSupplyAmount -= matchedDelta.divWadByRay(vars.p2pSupplyIndex);
+            emit P2PSupplyDeltaUpdated(_poolTokenAddress, delta.p2pSupplyDelta);
+            emit P2PAmountsUpdated(_poolTokenAddress, delta.p2pSupplyAmount, delta.p2pBorrowAmount);
+        }
 
+        if (
+            vars.remainingToWithdraw > 0 &&
+            !p2pDisabled[_poolTokenAddress] &&
+            suppliersOnPool[_poolTokenAddress].getHead() != address(0)
+        ) {
             // Match pool suppliers if any.
-            if (
-                vars.remainingToWithdraw > 0 &&
-                suppliersOnPool[_poolTokenAddress].getHead() != address(0)
-            ) {
-                // Match suppliers.
-                (uint256 matched, uint256 gasConsumedInMatching) = _matchSuppliers(
-                    _poolTokenAddress,
-                    underlyingToken,
-                    Math.min(vars.remainingToWithdraw, vars.withdrawable - vars.toWithdraw),
-                    vars.maxGasForMatching
-                );
-                if (vars.maxGasForMatching <= gasConsumedInMatching) vars.maxGasForMatching = 0;
-                else vars.maxGasForMatching -= gasConsumedInMatching;
+            (uint256 matched, uint256 gasConsumedInMatching) = _matchSuppliers(
+                _poolTokenAddress,
+                underlyingToken,
+                Math.min(vars.remainingToWithdraw, vars.withdrawable - vars.toWithdraw),
+                vars.maxGasForMatching
+            );
+            if (vars.maxGasForMatching <= gasConsumedInMatching) vars.maxGasForMatching = 0;
+            else vars.maxGasForMatching -= gasConsumedInMatching;
 
-                if (matched > 0) {
-                    vars.remainingToWithdraw -= matched;
-                    vars.toWithdraw += matched;
-                }
+            if (matched > 0) {
+                vars.remainingToWithdraw -= matched;
+                vars.toWithdraw += matched;
             }
         }
 
@@ -669,7 +663,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             borrowBalanceInOf[_poolTokenAddress][_user].onPool -= Math.min(
                 borrowedOnPool,
                 vars.toRepay.divWadByRay(vars.poolBorrowIndex)
-            ); // In adUnit
+            ); // In adUnit.
             _updateBorrowerInDS(_poolTokenAddress, _user);
 
             if (vars.remainingToRepay == 0) {
@@ -712,44 +706,39 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
         /// Transfer repay ///
 
-        if (vars.remainingToRepay > 0 && !p2pDisabled[_poolTokenAddress]) {
-            // Match Delta if any.
-            if (delta.p2pBorrowDelta > 0) {
-                uint256 matchedDelta = Math.min(
-                    delta.p2pBorrowDelta.mulWadByRay(vars.poolBorrowIndex),
-                    vars.remainingToRepay
-                );
+        // Match peer-to-peer borrow delta first if any.
+        if (vars.remainingToRepay > 0 && delta.p2pBorrowDelta > 0) {
+            uint256 matchedDelta = Math.min(
+                delta.p2pBorrowDelta.mulWadByRay(vars.poolBorrowIndex),
+                vars.remainingToRepay
+            );
 
-                vars.toRepay += matchedDelta;
-                vars.remainingToRepay -= matchedDelta;
-                delta.p2pBorrowDelta -= matchedDelta.divWadByRay(vars.poolBorrowIndex);
-                delta.p2pBorrowAmount -= matchedDelta.divWadByRay(vars.p2pSupplyIndex);
-                emit P2PBorrowDeltaUpdated(_poolTokenAddress, delta.p2pBorrowDelta);
-                emit P2PAmountsUpdated(
-                    _poolTokenAddress,
-                    delta.p2pSupplyAmount,
-                    delta.p2pBorrowAmount
-                );
-            }
+            vars.toRepay += matchedDelta;
+            vars.remainingToRepay -= matchedDelta;
+            delta.p2pBorrowDelta -= matchedDelta.divWadByRay(vars.poolBorrowIndex);
+            delta.p2pBorrowAmount -= matchedDelta.divWadByRay(vars.p2pSupplyIndex);
+            emit P2PBorrowDeltaUpdated(_poolTokenAddress, delta.p2pBorrowDelta);
+            emit P2PAmountsUpdated(_poolTokenAddress, delta.p2pSupplyAmount, delta.p2pBorrowAmount);
+        }
 
-            if (
-                vars.remainingToRepay > 0 &&
-                borrowersOnPool[_poolTokenAddress].getHead() != address(0)
-            ) {
-                // Match borrowers.
-                (uint256 matched, uint256 gasConsumedInMatching) = _matchBorrowers(
-                    _poolTokenAddress,
-                    underlyingToken,
-                    vars.remainingToRepay,
-                    vars.maxGasForMatching
-                );
-                if (vars.maxGasForMatching <= gasConsumedInMatching) vars.maxGasForMatching = 0;
-                else vars.maxGasForMatching -= gasConsumedInMatching;
+        if (
+            vars.remainingToRepay > 0 &&
+            !p2pDisabled[_poolTokenAddress] &&
+            borrowersOnPool[_poolTokenAddress].getHead() != address(0)
+        ) {
+            // Match pool borrowers if any.
+            (uint256 matched, uint256 gasConsumedInMatching) = _matchBorrowers(
+                _poolTokenAddress,
+                underlyingToken,
+                vars.remainingToRepay,
+                vars.maxGasForMatching
+            );
+            if (vars.maxGasForMatching <= gasConsumedInMatching) vars.maxGasForMatching = 0;
+            else vars.maxGasForMatching -= gasConsumedInMatching;
 
-                if (matched > 0) {
-                    vars.remainingToRepay -= matched;
-                    vars.toRepay += matched;
-                }
+            if (matched > 0) {
+                vars.remainingToRepay -= matched;
+                vars.toRepay += matched;
             }
         }
 
