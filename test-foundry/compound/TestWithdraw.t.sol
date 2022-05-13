@@ -653,4 +653,53 @@ contract TestWithdraw is TestSetup {
 
         assertTrue(ERC20(dai).balanceOf(address(supplier1)) > balanceAtTheBeginning);
     }
+
+    function testMorphoIsLiquidable() public {
+        uint256 collateral = to6Decimals(5 ether);
+        uint256 matched = to6Decimals(1 ether);
+
+        borrower1.approve(usdc, collateral);
+        borrower1.supply(cUsdc, collateral);
+        borrower1.borrow(cUsdt, matched);
+
+        supplier1.approve(usdt, matched);
+        supplier1.supply(cUsdt, matched);
+
+        morpho.toggleP2P(cUsdt);
+        setDefaultMaxGasForMatchingHelper(0, 0, 0, 0);
+
+        supplier1.withdraw(cUsdt, matched);
+
+        borrower1.approve(usdt, type(uint256).max);
+        borrower1.repay(cUsdt, type(uint256).max);
+
+        (uint256 debtP2P, uint256 debtPool) = morpho.borrowBalanceInOf(cUsdt, address(borrower1));
+        console.log("Morpho's debt", ICToken(cUsdt).borrowBalanceCurrent(address(morpho)));
+        console.log("debtP2P", debtP2P);
+        console.log("debtPool", debtPool);
+
+        borrower1.withdraw(cUsdc, collateral);
+    }
+
+    function testBorrowerHasDustDebtLeft() public {
+        uint256 collateral = to6Decimals(5 ether);
+        uint256 matched = to6Decimals(1 ether);
+
+        borrower1.approve(usdc, collateral);
+        borrower1.supply(cUsdc, collateral);
+        borrower1.borrow(cUsdt, matched);
+
+        borrower1.approve(usdt, type(uint256).max);
+        borrower1.repay(cUsdt, type(uint256).max);
+
+        (uint256 debtP2P, uint256 debtPool) = morpho.borrowBalanceInOf(cUsdt, address(borrower1));
+        assertEq(debtP2P, 0, "Borrower1 debt inP2P");
+        assertEq(debtPool, 0, "Borrower1 debt onPool");
+
+        assertEq(
+            ICToken(cUsdt).borrowBalanceCurrent(address(morpho)),
+            0,
+            "Morpho's Debt on Compound"
+        );
+    }
 }
