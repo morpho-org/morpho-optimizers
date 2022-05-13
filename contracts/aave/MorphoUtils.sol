@@ -221,6 +221,7 @@ contract MorphoUtils is MorphoStorage {
         assetData.debtValue = assetData.debtValue * assetData.underlyingPrice;
         assetData.maxDebtValue = assetData.collateralValue * ltv;
         assetData.liquidationValue = assetData.collateralValue * liquidationThreshold;
+
         unchecked {
             assetData.maxDebtValue /= MAX_BASIS_POINTS;
             assetData.liquidationValue /= MAX_BASIS_POINTS;
@@ -228,37 +229,65 @@ contract MorphoUtils is MorphoStorage {
         }
     }
 
-    /// @dev Checks whether the user can borrow/withdraw or not.
+    /// @dev Checks whether the user can borrow or not.
     /// @param _user The user to determine liquidity for.
     /// @param _poolTokenAddress The market to hypothetically withdraw/borrow in.
     /// @param _withdrawnAmount The number of tokens to hypothetically withdraw (in underlying).
     /// @param _borrowedAmount The amount of tokens to hypothetically borrow (in underlying).
-    /// @return Whether the user has enough liquidity or not.
-    function _checkUserLiquidity(
+    /// @return Whether the borrow is allowed or not.
+    function _borrowAllowed(
         address _user,
         address _poolTokenAddress,
         uint256 _withdrawnAmount,
         uint256 _borrowedAmount
     ) internal returns (bool) {
-        (uint256 debtValue, uint256 maxDebtValue, ) = _getUserHypotheticalBalanceStates(
+        (
+            uint256 debtValue,
+            uint256 maxDebtValue,
+            uint256 liquidationValue
+        ) = _getUserHypotheticalBalanceStates(
             _user,
             _poolTokenAddress,
             _withdrawnAmount,
             _borrowedAmount
         );
-        return debtValue > maxDebtValue;
+
+        return debtValue <= liquidationValue && debtValue <= maxDebtValue;
+    }
+
+    /// @dev Checks whether the user can withdraw or not.
+    /// @param _user The user to determine liquidity for.
+    /// @param _poolTokenAddress The market to hypothetically withdraw/borrow in.
+    /// @param _withdrawnAmount The number of tokens to hypothetically withdraw (in underlying).
+    /// @param _borrowedAmount The amount of tokens to hypothetically borrow (in underlying).
+    /// @return Whether the withdraw is allowed or not.
+    function _withdrawAllowed(
+        address _user,
+        address _poolTokenAddress,
+        uint256 _withdrawnAmount,
+        uint256 _borrowedAmount
+    ) internal returns (bool) {
+        (uint256 debtValue, , uint256 liquidationValue) = _getUserHypotheticalBalanceStates(
+            _user,
+            _poolTokenAddress,
+            _withdrawnAmount,
+            _borrowedAmount
+        );
+
+        return debtValue <= liquidationValue;
     }
 
     /// @dev Checks if the user is liquidable.
     /// @param _user The user to check.
     /// @return Whether the user is liquidable or not.
-    function _isLiquidable(address _user) internal returns (bool) {
+    function _liquidationAllowed(address _user) internal returns (bool) {
         (uint256 debtValue, , uint256 liquidationValue) = _getUserHypotheticalBalanceStates(
             _user,
             address(0),
             0,
             0
         );
+
         return debtValue > liquidationValue;
     }
 
