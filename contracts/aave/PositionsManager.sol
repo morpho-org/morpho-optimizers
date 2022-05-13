@@ -109,9 +109,6 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
     /// ERRORS ///
 
-    /// @notice Thrown when the amount repaid during the liquidation is above what is allowed to be repaid.
-    error AmountAboveWhatAllowedToRepay();
-
     /// @notice Thrown when the amount of collateral to seize is above the collateral amount.
     error ToSeizeAboveCollateral();
 
@@ -159,12 +156,8 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
     // Struct to avoid stack too deep.
     struct LiquidateVars {
-        address tokenBorrowedAddress; // The address of the borrowed asset.
-        address tokenCollateralAddress; // The address of the collateral asset.
-        uint256 maxDebtValue; // The maximum debt value possible (in ETH).
         uint256 borrowedPrice; // The price of the asset borrowed (in ETH).
         uint256 collateralPrice; // The price of the collateral asset (in ETH).
-        uint256 borrowBalance; // Total borrow balance of the user for a given asset (in underlying).
         uint256 supplyBalance; // The total of collateral of the user (in underlying).
         uint256 amountToSeize; // The amount of collateral the liquidator can seize (in underlying).
         uint256 liquidationBonus; // The liquidation bonus on Aave.
@@ -172,6 +165,8 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         uint256 collateralTokenUnit; // The collateral token unit considering its decimals.
         uint256 borrowedReserveDecimals; // The number of decimals of the borrowed asset in the reserve.
         uint256 borrowedTokenUnit; // The unit of borrowed token considering its decimals.
+        uint256 amountToLiquidate; // The amount of tokens to liquidate (in underlying).
+        uint256 maxLiquidatableDebt; // The maximum amount of debt tokens liquidatable (in underlying).
     }
 
     /// CONSTRUCTOR ///
@@ -437,30 +432,29 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
         if (!_liquidationAllowed(_borrower)) revert UnauthorisedLiquidate();
 
-        IAToken poolTokenBorrowed = IAToken(_poolTokenBorrowedAddress);
-
         LiquidateVars memory vars;
-        vars.tokenBorrowedAddress = poolTokenBorrowed.UNDERLYING_ASSET_ADDRESS();
+        address tokenBorrowedAddress = IAToken(_poolTokenBorrowedAddress)
+        .UNDERLYING_ASSET_ADDRESS();
 
-        vars.borrowBalance = _getUserBorrowBalanceInOf(_poolTokenBorrowedAddress, _borrower);
+        vars.maxLiquidatableDebt =
+            (_getUserBorrowBalanceInOf(_poolTokenBorrowedAddress, _borrower) *
+                LIQUIDATION_CLOSE_FACTOR_PERCENT) /
+            MAX_BASIS_POINTS;
 
-        if (_amount > (vars.borrowBalance * LIQUIDATION_CLOSE_FACTOR_PERCENT) / MAX_BASIS_POINTS)
-            revert AmountAboveWhatAllowedToRepay(); // Same mechanism as Aave. Liquidator cannot repay more than part of the debt (cf close factor on Aave).
+        vars.amountToLiquidate = Math.min(_amount, vars.maxLiquidatableDebt);
 
-        _safeRepayLogic(_poolTokenBorrowedAddress, _borrower, _amount, 0);
-
-        IAToken poolTokenCollateral = IAToken(_poolTokenCollateralAddress);
-        vars.tokenCollateralAddress = poolTokenCollateral.UNDERLYING_ASSET_ADDRESS();
+        address tokenCollateralAddress = IAToken(_poolTokenCollateralAddress)
+        .UNDERLYING_ASSET_ADDRESS();
 
         IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
-        vars.borrowedPrice = oracle.getAssetPrice(vars.tokenBorrowedAddress); // In ETH.
-        vars.collateralPrice = oracle.getAssetPrice(vars.tokenCollateralAddress); // In ETH
+        vars.borrowedPrice = oracle.getAssetPrice(tokenBorrowedAddress); // In ETH.
+        vars.collateralPrice = oracle.getAssetPrice(tokenCollateralAddress); // In ETH.
 
         (, , vars.liquidationBonus, vars.collateralReserveDecimals, ) = lendingPool
-        .getConfiguration(vars.tokenCollateralAddress)
+        .getConfiguration(tokenCollateralAddress)
         .getParamsMemory();
         (, , , vars.borrowedReserveDecimals, ) = lendingPool
-        .getConfiguration(vars.tokenBorrowedAddress)
+        .getConfiguration(tokenBorrowedAddress)
         .getParamsMemory();
 
         unchecked {
@@ -469,13 +463,17 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         }
 
         vars.amountToSeize =
-            (_amount * vars.borrowedPrice * vars.collateralTokenUnit * vars.liquidationBonus) /
+            (vars.amountToLiquidate *
+                vars.borrowedPrice *
+                vars.collateralTokenUnit *
+                vars.liquidationBonus) /
             (vars.borrowedTokenUnit * vars.collateralPrice * MAX_BASIS_POINTS); // Same mechanism as Aave.
 
         vars.supplyBalance = _getUserSupplyBalanceInOf(_poolTokenCollateralAddress, _borrower);
 
         if (vars.amountToSeize > vars.supplyBalance) revert ToSeizeAboveCollateral();
 
+        _safeRepayLogic(_poolTokenBorrowedAddress, _borrower, vars.amountToLiquidate, 0);
         _safeWithdrawLogic(
             _poolTokenCollateralAddress,
             vars.amountToSeize,
@@ -488,7 +486,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             msg.sender,
             _borrower,
             _poolTokenBorrowedAddress,
-            _amount,
+            vars.amountToLiquidate,
             _poolTokenCollateralAddress,
             vars.amountToSeize
         );
