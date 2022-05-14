@@ -7,14 +7,14 @@ library BasicHeap {
         uint256 value;
     }
 
-    function load(Account[] storage heap, uint256 index) public view returns (Account storage) {
+    function load(Account[] storage heap, uint256 index) public view returns (Account memory) {
         return heap[index - 1];
     }
 
     function store(
         Account[] storage heap,
         uint256 index,
-        Account storage e
+        Account memory e
     ) public {
         heap[index - 1] = e;
     }
@@ -24,7 +24,7 @@ library BasicHeap {
         uint256 index1,
         uint256 index2
     ) internal {
-        Account storage heap_index1 = load(heap, index1);
+        Account memory heap_index1 = load(heap, index1);
         store(heap, index1, load(heap, index2));
         store(heap, index2, heap_index1);
     }
