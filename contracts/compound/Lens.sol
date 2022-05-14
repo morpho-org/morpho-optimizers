@@ -120,6 +120,56 @@ contract Lens {
         }
     }
 
+    /// @notice Returns the borrow balance in underlying of a given user in a given market.
+    /// @param _user The user to determine balances of.
+    /// @param _poolTokenAddress The address of the market.
+    /// @return balanceOnPool The unlockable balance of the user (in underlying).
+    /// @return balanceInP2P The matched balance of the user (in underlying).
+    /// @return totalBalance The total balance of the user (in underlying).
+    function getUserBorrowBalance(address _user, address _poolTokenAddress)
+        external
+        view
+        returns (
+            uint256 balanceOnPool,
+            uint256 balanceInP2P,
+            uint256 totalBalance
+        )
+    {
+        (, uint256 newBorrowIndex) = _computeCompoundsIndexes(_poolTokenAddress);
+        balanceOnPool = morpho.borrowBalanceInOf(_poolTokenAddress, _user).onPool.mul(
+            newBorrowIndex
+        );
+        balanceInP2P = morpho.borrowBalanceInOf(_poolTokenAddress, _user).inP2P.mul(
+            getUpdatedP2PBorrowIndex(_poolTokenAddress)
+        );
+        totalBalance = balanceOnPool + balanceInP2P;
+    }
+
+    /// @notice Returns the balance in underlying of a given user in a given market.
+    /// @param _user The user to determine balances of.
+    /// @param _poolTokenAddress The address of the market.
+    /// @return balanceOnPool The unlockable balance of the user (in underlying).
+    /// @return balanceInP2P The matched balance of the user (in underlying).
+    /// @return totalBalance The total balance of the user (in underlying).
+    function getUserSupplyBalance(address _user, address _poolTokenAddress)
+        external
+        view
+        returns (
+            uint256 balanceOnPool,
+            uint256 balanceInP2P,
+            uint256 totalBalance
+        )
+    {
+        (uint256 newSupplyIndex, ) = _computeCompoundsIndexes(_poolTokenAddress);
+        balanceOnPool = morpho.supplyBalanceInOf(_poolTokenAddress, _user).onPool.mul(
+            newSupplyIndex
+        );
+        balanceInP2P = morpho.supplyBalanceInOf(_poolTokenAddress, _user).inP2P.mul(
+            getUpdatedP2PSupplyIndex(_poolTokenAddress)
+        );
+        totalBalance = balanceOnPool + balanceInP2P;
+    }
+
     /// @notice Returns the maximum amount available to withdraw and borrow for `_user` related to `_poolTokenAddress` (in underlyings).
     /// @dev Note: must be called after calling `accrueInterest()` on the cToken to have the most up to date values.
     /// @param _user The user to determine the capacities for.
