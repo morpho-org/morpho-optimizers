@@ -721,13 +721,13 @@ contract Lens {
         view
         returns (uint256)
     {
+        (uint256 newP2PSupplyIndex, , uint256 newPoolSupplyIndex, ) = getUpdatedIndexes(
+            _poolTokenAddress
+        );
+
         return
-            morpho.supplyBalanceInOf(_poolTokenAddress, _user).inP2P.mul(
-                getUpdatedP2PSupplyIndex(_poolTokenAddress)
-            ) +
-            morpho.supplyBalanceInOf(_poolTokenAddress, _user).onPool.mul(
-                ICToken(_poolTokenAddress).exchangeRateStored()
-            );
+            morpho.supplyBalanceInOf(_poolTokenAddress, _user).inP2P.mul(newP2PSupplyIndex) +
+            morpho.supplyBalanceInOf(_poolTokenAddress, _user).onPool.mul(newPoolSupplyIndex);
     }
 
     /// @dev Returns the borrow balance of `_user` in the `_poolTokenAddress` market.
@@ -739,12 +739,11 @@ contract Lens {
         view
         returns (uint256)
     {
+        (, uint256 newP2PBorrowIndex, , uint256 newPoolBorrowIndex) = getUpdatedIndexes(
+            _poolTokenAddress
+        );
         return
-            morpho.borrowBalanceInOf(_poolTokenAddress, _user).inP2P.mul(
-                getUpdatedP2PBorrowIndex(_poolTokenAddress)
-            ) +
-            morpho.borrowBalanceInOf(_poolTokenAddress, _user).onPool.mul(
-                ICToken(_poolTokenAddress).borrowIndex()
-            );
+            morpho.borrowBalanceInOf(_poolTokenAddress, _user).inP2P.mul(newP2PBorrowIndex) +
+            morpho.borrowBalanceInOf(_poolTokenAddress, _user).onPool.mul(newPoolBorrowIndex);
     }
 }
