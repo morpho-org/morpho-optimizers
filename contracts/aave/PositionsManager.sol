@@ -10,6 +10,7 @@ import "./MatchingEngine.sol";
 contract PositionsManager is IPositionsManager, MatchingEngine {
     using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
     using DoubleLinkedList for DoubleLinkedList.List;
+    using PercentageMath for uint256;
     using SafeTransferLib for ERC20;
     using Math for uint256;
 
@@ -438,10 +439,8 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         address tokenBorrowedAddress = IAToken(_poolTokenBorrowedAddress)
         .UNDERLYING_ASSET_ADDRESS();
 
-        vars.maxLiquidatableDebt =
-            (_getUserBorrowBalanceInOf(_poolTokenBorrowedAddress, _borrower) *
-                LIQUIDATION_CLOSE_FACTOR_PERCENT) /
-            MAX_BASIS_POINTS;
+        vars.maxLiquidatableDebt = _getUserBorrowBalanceInOf(_poolTokenBorrowedAddress, _borrower)
+        .percentMul(LIQUIDATION_CLOSE_FACTOR_PERCENT);
 
         vars.amountToLiquidate = Math.min(_amount, vars.maxLiquidatableDebt);
 
@@ -464,12 +463,10 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             vars.borrowedTokenUnit = 10**vars.borrowedReserveDecimals;
         }
 
-        vars.amountToSeize =
-            (vars.amountToLiquidate *
-                vars.borrowedPrice *
-                vars.collateralTokenUnit *
-                vars.liquidationBonus) /
-            (vars.borrowedTokenUnit * vars.collateralPrice * MAX_BASIS_POINTS); // Same mechanism as Aave.
+        vars.amountToSeize = ((vars.amountToLiquidate *
+            vars.borrowedPrice *
+            vars.collateralTokenUnit) / (vars.borrowedTokenUnit * vars.collateralPrice))
+        .percentMul(vars.liquidationBonus); // Same mechanism as Aave.
 
         vars.supplyBalance = _getUserSupplyBalanceInOf(_poolTokenCollateralAddress, _borrower);
 
@@ -536,7 +533,21 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
             if (vars.remainingToWithdraw == 0) {
                 _leaveMarketIfNeeded(_poolTokenAddress, _supplier);
-                if (vars.toWithdraw > 0) _withdrawFromPool(underlyingToken, vars.toWithdraw); // Reverts on error.
+                if (vars.toWithdraw > 0) {
+                    _withdrawFromPool(underlyingToken, vars.toWithdraw); // Reverts on error.
+                    (
+                        uint256 totalCollateralETH,
+                        uint256 totalDebtETH,
+                        ,
+                        uint256 currentLiquidationThreshold,
+                        ,
+                        uint256 healthFactor
+                    ) = lendingPool.getUserAccountData(address(this));
+                    console.log("totalCollateralETH 2", totalCollateralETH);
+                    console.log("totalDebtETH 2", totalDebtETH);
+                    console.log("currentLiquidationThreshold 2", currentLiquidationThreshold);
+                    console.log("healthFactor 2", healthFactor);
+                }
                 underlyingToken.safeTransfer(_receiver, _amount);
                 return;
             }
