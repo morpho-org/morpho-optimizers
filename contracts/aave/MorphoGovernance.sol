@@ -4,6 +4,7 @@ pragma solidity 0.8.13;
 import "./interfaces/aave/IPriceOracleGetter.sol";
 
 import "./libraries/aave/ReserveConfiguration.sol";
+import "./libraries/aave/PercentageMath.sol";
 import "./libraries/Math.sol";
 
 import "./MorphoUtils.sol";
@@ -13,6 +14,7 @@ import "./MorphoUtils.sol";
 abstract contract MorphoGovernance is MorphoUtils {
     using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
     using DoubleLinkedList for DoubleLinkedList.List;
+    using PercentageMath for uint256;
     using SafeTransferLib for ERC20;
     using Math for uint256;
 
@@ -186,7 +188,7 @@ abstract contract MorphoGovernance is MorphoUtils {
         onlyOwner
         isMarketCreated(_poolTokenAddress)
     {
-        if (_newReserveFactor > MAX_BASIS_POINTS) revert ExceedsMaxBasisPoints();
+        if (_newReserveFactor > PercentageMath.PERCENTAGE_FACTOR) revert ExceedsMaxBasisPoints();
         updateP2PIndexes(_poolTokenAddress);
 
         marketParameters[_poolTokenAddress].reserveFactor = _newReserveFactor;
@@ -200,7 +202,7 @@ abstract contract MorphoGovernance is MorphoUtils {
         onlyOwner
         isMarketCreated(_poolTokenAddress)
     {
-        if (_p2pIndexCursor > MAX_BASIS_POINTS) revert ExceedsMaxBasisPoints();
+        if (_p2pIndexCursor > PercentageMath.PERCENTAGE_FACTOR) revert ExceedsMaxBasisPoints();
         updateP2PIndexes(_poolTokenAddress);
 
         marketParameters[_poolTokenAddress].p2pIndexCursor = _p2pIndexCursor;
@@ -263,7 +265,7 @@ abstract contract MorphoGovernance is MorphoUtils {
 
         uint256 amountToClaim = Math.min(
             _amount,
-            (underlyingBalance * MAX_CLAIMABLE_RESERVE) / MAX_BASIS_POINTS
+            underlyingBalance.percentMul(MAX_CLAIMABLE_RESERVE)
         );
 
         underlyingToken.safeTransfer(treasuryVault, amountToClaim);
