@@ -654,12 +654,15 @@ contract TestLens is TestSetup {
 
     function testGetMarketConfiguration() public {
         (
+            address underlying,
             bool isCreated,
             bool p2pDisabled,
             bool isPaused,
             bool isPartiallyPaused,
-            uint256 reserveFactor
+            uint256 reserveFactor,
+            uint256 collateralFactor
         ) = lens.getMarketConfiguration(cDai);
+        assertTrue(underlying == ICToken(cDai).underlying());
 
         (bool isCreated_, bool isPaused_, bool isPartiallyPaused_) = morpho.marketStatus(cDai);
 
@@ -670,6 +673,8 @@ contract TestLens is TestSetup {
         assertTrue(isPartiallyPaused == isPartiallyPaused_);
         (uint16 expectedReserveFactor, ) = morpho.marketParameters(cDai);
         assertTrue(reserveFactor == expectedReserveFactor);
+        (, uint256 expectedCollateralFactor, ) = morpho.comptroller().markets(cDai);
+        assertTrue(collateralFactor == expectedCollateralFactor);
     }
 
     function testGetUpdatedIndexes() public {
