@@ -672,6 +672,24 @@ contract TestLens is TestSetup {
         assertTrue(reserveFactor == expectedReserveFactor);
     }
 
+    function testGetUpdatedIndexes() public {
+        hevm.roll(block.number + (365 days * 24 * 60 * 4));
+        (
+            uint256 newP2PSupplyIndex,
+            uint256 newP2PBorrowIndex,
+            uint256 newPoolSupplyIndex,
+            uint256 newPoolBorrowIndex
+        ) = lens.getUpdatedIndexes(cDai);
+
+        morpho.updateP2PIndexes(cDai);
+        assertEq(newP2PBorrowIndex, morpho.p2pBorrowIndex(cDai));
+        assertEq(newP2PSupplyIndex, morpho.p2pSupplyIndex(cDai));
+
+        ICToken(cDai).accrueInterest();
+        assertEq(newPoolSupplyIndex, ICToken(cDai).exchangeRateCurrent());
+        assertEq(newPoolBorrowIndex, ICToken(cDai).borrowIndex());
+    }
+
     function testGetUpdatedP2PIndexes() public {
         hevm.roll(block.number + (365 days * 24 * 60 * 4));
         (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex) = lens.getUpdatedP2PIndexes(cDai);
