@@ -23,6 +23,8 @@ abstract contract MorphoStorage is OwnableUpgradeable, ReentrancyGuardUpgradeabl
     uint16 public constant MAX_BASIS_POINTS = 10_000; // 100% in basis points.
     uint16 public constant MAX_CLAIMABLE_RESERVE = 9_000; // The max propotion of reserve fee claimable by the DAO at once (90% in basis points).
     uint16 public constant LIQUIDATION_CLOSE_FACTOR_PERCENT = 5_000; // 50% in basis points.
+    uint256 public constant HEALTH_FACTOR_LIQUIDATION_THRESHOLD = 1 ether;
+    uint256 public constant LTV_THRESHOLD = 1 ether;
 
     Types.MaxGasForMatching public defaultMaxGasForMatching; // The default max gas to consume within loops in matching engine functions.
     uint256 public maxSortedUsers; // The max number of users to sort in the data structure.

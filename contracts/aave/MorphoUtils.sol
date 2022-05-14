@@ -1,12 +1,15 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
+import "hardhat/console.sol";
+
 import "./interfaces/aave/IPriceOracleGetter.sol";
 import "./interfaces/aave/IAToken.sol";
 
 import {ReserveConfiguration} from "./libraries/aave/ReserveConfiguration.sol";
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 import "../common/libraries/DelegateCall.sol";
+import "./libraries/aave/PercentageMath.sol";
 import "./libraries/Math.sol";
 
 import "./MorphoStorage.sol";
@@ -16,6 +19,7 @@ import "./MorphoStorage.sol";
 contract MorphoUtils is MorphoStorage {
     using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
     using DoubleLinkedList for DoubleLinkedList.List;
+    using PercentageMath for uint256;
     using DelegateCall for address;
     using Math for uint256;
 
@@ -133,100 +137,92 @@ contract MorphoUtils is MorphoStorage {
     /// @param _poolTokenAddress The market to hypothetically withdraw/borrow in.
     /// @param _withdrawnAmount The number of tokens to hypothetically withdraw (in underlying).
     /// @param _borrowedAmount The amount of tokens to hypothetically borrow (in underlying).
-    /// @return debtValue The current debt value of the user (in ETH).
-    /// @return maxDebtValue The maximum debt value possible of the user (in ETH).
-    /// @return liquidationValue The value when liquidation is possible (in ETH).
+    /// @return liquidityData The liquidity data of the user.
     function _getUserHypotheticalBalanceStates(
         address _user,
         address _poolTokenAddress,
         uint256 _withdrawnAmount,
         uint256 _borrowedAmount
-    )
-        internal
-        returns (
-            uint256 debtValue,
-            uint256 maxDebtValue,
-            uint256 liquidationValue
-        )
-    {
+    ) internal returns (Types.LiquidityData memory liquidityData) {
         IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
         uint256 numberOfEnteredMarkets = enteredMarkets[_user].length;
         uint256 i;
 
+        Types.AssetLiquidityData memory assetData;
+
         while (i < numberOfEnteredMarkets) {
             address poolTokenEntered = enteredMarkets[_user][i];
-            Types.AssetLiquidityData memory assetData = _getUserLiquidityDataForAsset(
-                _user,
-                poolTokenEntered,
-                oracle
-            );
-
-            liquidationValue += assetData.liquidationValue;
-            maxDebtValue += assetData.maxDebtValue;
-            debtValue += assetData.debtValue;
             ++i;
 
+            updateP2PIndexes(poolTokenEntered);
+
+            address underlyingAddress = IAToken(poolTokenEntered).UNDERLYING_ASSET_ADDRESS();
+            assetData.underlyingPrice = oracle.getAssetPrice(
+                IAToken(poolTokenEntered).UNDERLYING_ASSET_ADDRESS()
+            ); // In ETH.
+            (
+                assetData.ltv,
+                assetData.liquidationThreshold,
+                ,
+                assetData.reserveDecimals,
+
+            ) = lendingPool.getConfiguration(underlyingAddress).getParamsMemory();
+
+            assetData.tokenUnit = 10**assetData.reserveDecimals;
+            assetData.debtValue =
+                (_getUserBorrowBalanceInOf(poolTokenEntered, _user) * assetData.underlyingPrice) /
+                assetData.tokenUnit;
+            assetData.collateralValue =
+                (_getUserSupplyBalanceInOf(poolTokenEntered, _user) * assetData.underlyingPrice) /
+                assetData.tokenUnit;
+
+            liquidityData.debtValue += assetData.debtValue;
+            liquidityData.collateralValue += assetData.collateralValue;
+            liquidityData.avgLtv += assetData.collateralValue * assetData.ltv;
+            liquidityData.avgLiquidationThreshold +=
+                assetData.collateralValue *
+                assetData.liquidationThreshold;
+
             if (_poolTokenAddress == poolTokenEntered) {
-                debtValue += (_borrowedAmount * assetData.underlyingPrice) / assetData.tokenUnit;
+                if (_borrowedAmount > 0)
+                    liquidityData.debtValue +=
+                        (_borrowedAmount * assetData.underlyingPrice) /
+                        assetData.tokenUnit;
 
-                uint256 maxDebtValueSub = (_withdrawnAmount *
-                    assetData.underlyingPrice *
-                    assetData.ltv) / (assetData.tokenUnit * MAX_BASIS_POINTS);
-                uint256 liquidationValueSub = (_withdrawnAmount *
-                    assetData.underlyingPrice *
-                    assetData.liquidationThreshold) / (assetData.tokenUnit * MAX_BASIS_POINTS);
-
-                maxDebtValue -= maxDebtValue < maxDebtValueSub ? maxDebtValue : maxDebtValueSub;
-                liquidationValue -= liquidationValue < liquidationValueSub
-                    ? liquidationValue
-                    : liquidationValueSub;
+                if (_withdrawnAmount > 0) {
+                    liquidityData.collateralValue -= Math.min(
+                        (_withdrawnAmount * assetData.underlyingPrice) / assetData.tokenUnit,
+                        liquidityData.collateralValue
+                    );
+                    liquidityData.avgLtv -= Math.min(
+                        (_withdrawnAmount * assetData.underlyingPrice * assetData.ltv) /
+                            assetData.tokenUnit,
+                        liquidityData.avgLtv
+                    );
+                    liquidityData.avgLiquidationThreshold -= Math.min(
+                        (_withdrawnAmount *
+                            assetData.underlyingPrice *
+                            assetData.liquidationThreshold) / assetData.tokenUnit,
+                        liquidityData.avgLiquidationThreshold
+                    );
+                }
             }
         }
-    }
 
-    /// @notice Returns the data related to `_poolTokenAddress` for the `_user`.
-    /// @param _user The user to determine data for.
-    /// @param _poolTokenAddress The address of the market.
-    /// @return assetData The data related to this asset.
-    function _getUserLiquidityDataForAsset(
-        address _user,
-        address _poolTokenAddress,
-        IPriceOracleGetter oracle
-    ) internal returns (Types.AssetLiquidityData memory assetData) {
-        updateP2PIndexes(_poolTokenAddress);
-
-        assetData.debtValue = _getUserBorrowBalanceInOf(_poolTokenAddress, _user);
-
-        assetData.collateralValue = _getUserSupplyBalanceInOf(_poolTokenAddress, _user);
-
-        address underlyingAddress = IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS();
-        assetData.underlyingPrice = oracle.getAssetPrice(underlyingAddress); // In ETH.
-
-        (uint256 ltv, uint256 liquidationThreshold, , uint256 reserveDecimals, ) = lendingPool
-        .getConfiguration(underlyingAddress)
-        .getParamsMemory();
-        assetData.ltv = ltv;
-        assetData.liquidationThreshold = liquidationThreshold;
-
-        unchecked {
-            assetData.tokenUnit = 10**reserveDecimals;
+        if (liquidityData.collateralValue > 0) {
+            liquidityData.avgLtv = liquidityData.avgLtv / liquidityData.collateralValue;
+            liquidityData.avgLiquidationThreshold =
+                liquidityData.avgLiquidationThreshold /
+                liquidityData.collateralValue;
+        } else {
+            liquidityData.avgLtv = 0;
+            liquidityData.avgLiquidationThreshold = 0;
         }
 
-        // Then, convert values to ETH
-        assetData.collateralValue = assetData.collateralValue * assetData.underlyingPrice;
-        unchecked {
-            assetData.collateralValue /= assetData.tokenUnit;
-        }
-
-        assetData.debtValue = assetData.debtValue * assetData.underlyingPrice;
-        assetData.maxDebtValue = assetData.collateralValue * ltv;
-        assetData.liquidationValue = assetData.collateralValue * liquidationThreshold;
-
-        unchecked {
-            assetData.maxDebtValue /= MAX_BASIS_POINTS;
-            assetData.liquidationValue /= MAX_BASIS_POINTS;
-            assetData.debtValue /= assetData.tokenUnit;
-        }
+        liquidityData.healthFactor = liquidityData.debtValue == 0
+            ? type(uint256).max
+            : (liquidityData.collateralValue.percentMul(liquidityData.avgLiquidationThreshold))
+            .wadDiv(liquidityData.debtValue);
     }
 
     /// @dev Checks whether the user can borrow or not.
@@ -241,18 +237,18 @@ contract MorphoUtils is MorphoStorage {
         uint256 _withdrawnAmount,
         uint256 _borrowedAmount
     ) internal returns (bool) {
-        (
-            uint256 debtValue,
-            uint256 maxDebtValue,
-            uint256 liquidationValue
-        ) = _getUserHypotheticalBalanceStates(
+        Types.LiquidityData memory liquidityData = _getUserHypotheticalBalanceStates(
             _user,
             _poolTokenAddress,
             _withdrawnAmount,
             _borrowedAmount
         );
 
-        return debtValue <= liquidationValue && debtValue <= maxDebtValue;
+        console.log("liquidityData", liquidityData.healthFactor);
+
+        return
+            liquidityData.debtValue <=
+            liquidityData.collateralValue.percentMul(liquidityData.avgLtv);
     }
 
     /// @dev Checks whether the user can withdraw or not.
@@ -267,28 +263,44 @@ contract MorphoUtils is MorphoStorage {
         uint256 _withdrawnAmount,
         uint256 _borrowedAmount
     ) internal returns (bool) {
-        (uint256 debtValue, , uint256 liquidationValue) = _getUserHypotheticalBalanceStates(
+        console.log("check");
+        Types.LiquidityData memory liquidityData = _getUserHypotheticalBalanceStates(
             _user,
             _poolTokenAddress,
             _withdrawnAmount,
             _borrowedAmount
         );
 
-        return debtValue <= liquidationValue;
+        console.log("liquidityData.debtValue", liquidityData.debtValue);
+        console.log("liquidityData.liquidationValue", liquidityData.liquidationValue);
+        (
+            uint256 totalCollateralETH,
+            uint256 totalDebtETH,
+            ,
+            uint256 currentLiquidationThreshold,
+            ,
+            uint256 healthFactor
+        ) = lendingPool.getUserAccountData(address(this));
+        console.log("totalCollateralETH", totalCollateralETH);
+        console.log("totalDebtETH", totalDebtETH);
+        console.log("currentLiquidationThreshold", currentLiquidationThreshold);
+        console.log("healthFactor", healthFactor);
+
+        return liquidityData.healthFactor > HEALTH_FACTOR_LIQUIDATION_THRESHOLD;
     }
 
     /// @dev Checks if the user is liquidable.
     /// @param _user The user to check.
     /// @return Whether the user is liquidable or not.
     function _liquidationAllowed(address _user) internal returns (bool) {
-        (uint256 debtValue, , uint256 liquidationValue) = _getUserHypotheticalBalanceStates(
+        Types.LiquidityData memory liquidityData = _getUserHypotheticalBalanceStates(
             _user,
             address(0),
             0,
             0
         );
 
-        return debtValue > liquidationValue;
+        return liquidityData.healthFactor < HEALTH_FACTOR_LIQUIDATION_THRESHOLD;
     }
 
     /// @dev Returns the supply balance of `_user` in the `_poolTokenAddress` market.
