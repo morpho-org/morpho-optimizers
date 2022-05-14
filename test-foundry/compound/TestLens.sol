@@ -15,6 +15,11 @@ contract TestLens is TestSetup {
         uint256 maxDebtValue;
         uint256 liquidationValue;
     }
+    struct UserBalance {
+        uint256 onPool;
+        uint256 inP2P;
+        uint256 totalBalance;
+    }
 
     function testUserLiquidityDataForAssetWithNothing() public {
         Types.AssetLiquidityData memory assetData = lens.getUserLiquidityDataForAsset(
@@ -225,6 +230,155 @@ contract TestLens is TestSetup {
 
         assertEq(withdrawable, 0, "withdrawable DAI");
         assertEq(borrowable, expectedBorrowableDai, "borrowable DAI");
+    }
+
+    function testUserBalanceWithoutMatching() public {
+        uint256 amount = 10_000 ether;
+        uint256 toBorrow = to6Decimals(amount / 2);
+
+        borrower1.approve(dai, amount);
+        borrower1.supply(cDai, amount);
+        borrower1.borrow(cUsdc, toBorrow);
+        UserBalance memory userSupplyBalance;
+        UserBalance memory expectedSupplyBalance;
+
+        (userSupplyBalance.onPool, userSupplyBalance.inP2P, userSupplyBalance.totalBalance) = lens
+        .getUserSupplyBalance(address(borrower1), cDai);
+
+        // no matched state
+        expectedSupplyBalance.onPool = amount;
+        expectedSupplyBalance.inP2P = 0;
+        expectedSupplyBalance.totalBalance = amount;
+
+        assertApproxEq(
+            userSupplyBalance.onPool,
+            expectedSupplyBalance.onPool,
+            1,
+            "On pool supply balance"
+        );
+        assertApproxEq(
+            userSupplyBalance.inP2P,
+            expectedSupplyBalance.inP2P,
+            1,
+            "P2P supply balance"
+        );
+        assertApproxEq(
+            userSupplyBalance.totalBalance,
+            expectedSupplyBalance.totalBalance,
+            1,
+            "Total supply balance"
+        );
+
+        UserBalance memory userBorrowBalance;
+        UserBalance memory expectedBorrowBalance;
+
+        (userBorrowBalance.onPool, userBorrowBalance.inP2P, userBorrowBalance.totalBalance) = lens
+        .getUserBorrowBalance(address(borrower1), cUsdc);
+        // no matched state
+        expectedBorrowBalance.onPool = toBorrow;
+        expectedBorrowBalance.inP2P = 0;
+        expectedBorrowBalance.totalBalance = toBorrow;
+
+        assertApproxEq(
+            userBorrowBalance.onPool,
+            expectedBorrowBalance.onPool,
+            1000,
+            "On pool borrow balance"
+        );
+        assertApproxEq(
+            userBorrowBalance.inP2P,
+            expectedBorrowBalance.inP2P,
+            1,
+            "P2P borrow balance"
+        );
+        assertApproxEq(
+            userBorrowBalance.totalBalance,
+            expectedBorrowBalance.totalBalance,
+            1,
+            "Total borrow balance"
+        );
+    }
+
+    function testUserBalanceWithMatching() public {
+        uint256 amount = 10_000 ether;
+        uint256 toBorrow = to6Decimals(amount / 2);
+
+        borrower1.approve(dai, amount);
+        borrower1.supply(cDai, amount);
+        borrower1.borrow(cUsdc, toBorrow);
+
+        uint256 toMatch = toBorrow / 2;
+        borrower2.approve(usdc, toMatch);
+        borrower2.supply(cUsdc, toMatch);
+
+        // borrower 1 supply balance (no matched)
+        UserBalance memory userSupplyBalance;
+        UserBalance memory expectedSupplyBalance;
+
+        (userSupplyBalance.onPool, userSupplyBalance.inP2P, userSupplyBalance.totalBalance) = lens
+        .getUserSupplyBalance(address(borrower1), cDai);
+
+        expectedSupplyBalance.onPool = amount;
+        expectedSupplyBalance.inP2P = 0;
+        expectedSupplyBalance.totalBalance = amount;
+
+        assertEq(userSupplyBalance.onPool, expectedSupplyBalance.onPool, "On pool supply balance");
+        assertEq(userSupplyBalance.inP2P, expectedSupplyBalance.inP2P, "P2P supply balance");
+        assertEq(
+            userSupplyBalance.totalBalance,
+            expectedSupplyBalance.totalBalance,
+            "Total supply balance"
+        );
+
+        // borrower 1 borrow balance (partially matched)
+        UserBalance memory userBorrowBalance;
+        UserBalance memory expectedBorrowBalance;
+
+        (userBorrowBalance.onPool, userBorrowBalance.inP2P, userBorrowBalance.totalBalance) = lens
+        .getUserBorrowBalance(address(borrower1), cUsdc);
+
+        expectedBorrowBalance.onPool = toBorrow - toMatch;
+        expectedBorrowBalance.inP2P = toMatch;
+        expectedBorrowBalance.totalBalance = toBorrow;
+
+        assertEq(userBorrowBalance.onPool, expectedBorrowBalance.onPool, "On pool borrow balance");
+        assertEq(userBorrowBalance.inP2P, expectedBorrowBalance.inP2P, "P2P borrow balance");
+        assertEq(
+            userBorrowBalance.totalBalance,
+            expectedBorrowBalance.totalBalance,
+            "Total borrow balance"
+        );
+
+        // borrower 2 supply balance (pure supplier fully matched)
+        UserBalance memory matchedSupplierSupplyBalance;
+        UserBalance memory expectedMatchedSupplierSupplyBalance;
+
+        (
+            matchedSupplierSupplyBalance.onPool,
+            matchedSupplierSupplyBalance.inP2P,
+            matchedSupplierSupplyBalance.totalBalance
+        ) = lens.getUserSupplyBalance(address(borrower2), cUsdc);
+
+        // matched state supplier
+        expectedMatchedSupplierSupplyBalance.onPool = 0;
+        expectedMatchedSupplierSupplyBalance.inP2P = toMatch;
+        expectedMatchedSupplierSupplyBalance.totalBalance = toMatch;
+
+        assertEq(
+            matchedSupplierSupplyBalance.onPool,
+            expectedMatchedSupplierSupplyBalance.onPool,
+            "On pool matched supplier balance"
+        );
+        assertEq(
+            matchedSupplierSupplyBalance.inP2P,
+            expectedMatchedSupplierSupplyBalance.inP2P,
+            "P2P matched supplier balance"
+        );
+        assertEq(
+            matchedSupplierSupplyBalance.totalBalance,
+            expectedMatchedSupplierSupplyBalance.totalBalance,
+            "Total matched supplier balance"
+        );
     }
 
     function testMaxCapacitiesWithNothingWithSupplyWithMultipleAssetsAndBorrow() public {
