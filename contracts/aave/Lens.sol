@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import "hardhat/console.sol";
-
 import "./interfaces/aave/IPriceOracleGetter.sol";
 import "./interfaces/aave/ILendingPool.sol";
 import "./interfaces/aave/IAToken.sol";
@@ -268,8 +266,6 @@ contract Lens {
             liquidityData.avgLtv = 0;
             liquidityData.avgLiquidationThreshold = 0;
         }
-
-        console.log("liquidityData.debtValue", liquidityData.debtValue);
 
         liquidityData.healthFactor = liquidityData.debtValue == 0
             ? type(uint256).max
