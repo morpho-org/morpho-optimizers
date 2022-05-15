@@ -533,21 +533,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
             if (vars.remainingToWithdraw == 0) {
                 _leaveMarketIfNeeded(_poolTokenAddress, _supplier);
-                if (vars.toWithdraw > 0) {
-                    _withdrawFromPool(underlyingToken, vars.toWithdraw); // Reverts on error.
-                    (
-                        uint256 totalCollateralETH,
-                        uint256 totalDebtETH,
-                        ,
-                        uint256 currentLiquidationThreshold,
-                        ,
-                        uint256 healthFactor
-                    ) = lendingPool.getUserAccountData(address(this));
-                    console.log("totalCollateralETH 2", totalCollateralETH);
-                    console.log("totalDebtETH 2", totalDebtETH);
-                    console.log("currentLiquidationThreshold 2", currentLiquidationThreshold);
-                    console.log("healthFactor 2", healthFactor);
-                }
+                if (vars.toWithdraw > 0) _withdrawFromPool(underlyingToken, vars.toWithdraw); // Reverts on error.
                 underlyingToken.safeTransfer(_receiver, _amount);
                 return;
             }
