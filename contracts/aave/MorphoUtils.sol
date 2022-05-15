@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import "hardhat/console.sol";
-
 import "./interfaces/aave/IPriceOracleGetter.sol";
 import "./interfaces/aave/IAToken.sol";
 
@@ -244,8 +242,6 @@ contract MorphoUtils is MorphoStorage {
             _borrowedAmount
         );
 
-        console.log("liquidityData", liquidityData.healthFactor);
-
         return
             liquidityData.debtValue <=
             liquidityData.collateralValue.percentMul(liquidityData.avgLtv);
@@ -263,28 +259,12 @@ contract MorphoUtils is MorphoStorage {
         uint256 _withdrawnAmount,
         uint256 _borrowedAmount
     ) internal returns (bool) {
-        console.log("check");
         Types.LiquidityData memory liquidityData = _getUserHypotheticalBalanceStates(
             _user,
             _poolTokenAddress,
             _withdrawnAmount,
             _borrowedAmount
         );
-
-        console.log("liquidityData.debtValue", liquidityData.debtValue);
-        console.log("liquidityData.liquidationValue", liquidityData.liquidationValue);
-        (
-            uint256 totalCollateralETH,
-            uint256 totalDebtETH,
-            ,
-            uint256 currentLiquidationThreshold,
-            ,
-            uint256 healthFactor
-        ) = lendingPool.getUserAccountData(address(this));
-        console.log("totalCollateralETH", totalCollateralETH);
-        console.log("totalDebtETH", totalDebtETH);
-        console.log("currentLiquidationThreshold", currentLiquidationThreshold);
-        console.log("healthFactor", healthFactor);
 
         return liquidityData.healthFactor > HEALTH_FACTOR_LIQUIDATION_THRESHOLD;
     }
