@@ -188,7 +188,7 @@ contract TestLens is TestSetup {
         assertEq(borrowable, 0);
     }
 
-    function testMaxCapacitiesWithNothingWithSupply() public {
+    function testMaxCapacitiesWithSupply() public {
         uint256 amount = to6Decimals(10000 ether);
 
         borrower1.approve(usdc, amount);
@@ -239,62 +239,52 @@ contract TestLens is TestSetup {
         borrower1.approve(dai, amount);
         borrower1.supply(cDai, amount);
         borrower1.borrow(cUsdc, toBorrow);
+
         UserBalance memory userSupplyBalance;
-        UserBalance memory expectedSupplyBalance;
 
         (userSupplyBalance.onPool, userSupplyBalance.inP2P, userSupplyBalance.totalBalance) = lens
         .getUserSupplyBalance(address(borrower1), cDai);
 
-        // no matched state
-        expectedSupplyBalance.onPool = amount;
-        expectedSupplyBalance.inP2P = 0;
-        expectedSupplyBalance.totalBalance = amount;
+        (uint256 supplyBalanceInP2P, uint256 supplyBalanceOnPool) = morpho.supplyBalanceInOf(
+            cDai,
+            address(borrower1)
+        );
 
-        assertApproxEq(
-            userSupplyBalance.onPool,
-            expectedSupplyBalance.onPool,
-            1,
-            "On pool supply balance"
+        uint256 expectedSupplyBalanceInP2P = supplyBalanceInP2P.mul(morpho.p2pSupplyIndex(cDai));
+        uint256 expectedSupplyBalanceOnPool = supplyBalanceOnPool.mul(
+            ICToken(cDai).exchangeRateCurrent()
         );
-        assertApproxEq(
-            userSupplyBalance.inP2P,
-            expectedSupplyBalance.inP2P,
-            1,
-            "P2P supply balance"
-        );
-        assertApproxEq(
+        uint256 expectedTotalSupplyBalance = expectedSupplyBalanceInP2P +
+            expectedSupplyBalanceOnPool;
+
+        assertEq(userSupplyBalance.onPool, expectedSupplyBalanceOnPool, "On pool supply balance");
+        assertEq(userSupplyBalance.inP2P, expectedSupplyBalanceInP2P, "P2P supply balance");
+        assertEq(
             userSupplyBalance.totalBalance,
-            expectedSupplyBalance.totalBalance,
-            1,
+            expectedTotalSupplyBalance,
             "Total supply balance"
         );
 
         UserBalance memory userBorrowBalance;
-        UserBalance memory expectedBorrowBalance;
 
         (userBorrowBalance.onPool, userBorrowBalance.inP2P, userBorrowBalance.totalBalance) = lens
         .getUserBorrowBalance(address(borrower1), cUsdc);
-        // no matched state
-        expectedBorrowBalance.onPool = toBorrow;
-        expectedBorrowBalance.inP2P = 0;
-        expectedBorrowBalance.totalBalance = toBorrow;
 
-        assertApproxEq(
-            userBorrowBalance.onPool,
-            expectedBorrowBalance.onPool,
-            1000,
-            "On pool borrow balance"
+        (uint256 borrowBalanceInP2P, uint256 borrowBalanceOnPool) = morpho.borrowBalanceInOf(
+            cUsdc,
+            address(borrower1)
         );
-        assertApproxEq(
-            userBorrowBalance.inP2P,
-            expectedBorrowBalance.inP2P,
-            1,
-            "P2P borrow balance"
-        );
-        assertApproxEq(
+
+        uint256 expectedBorrowBalanceInP2P = borrowBalanceInP2P.mul(morpho.p2pBorrowIndex(cUsdc));
+        uint256 expectedBorrowBalanceOnPool = borrowBalanceOnPool.mul(ICToken(cUsdc).borrowIndex());
+        uint256 expectedTotalBorrowBalance = expectedBorrowBalanceInP2P +
+            expectedBorrowBalanceOnPool;
+
+        assertEq(userBorrowBalance.onPool, expectedBorrowBalanceOnPool, "On pool borrow balance");
+        assertEq(userBorrowBalance.inP2P, expectedBorrowBalanceInP2P, "P2P borrow balance");
+        assertEq(
             userBorrowBalance.totalBalance,
-            expectedBorrowBalance.totalBalance,
-            1,
+            expectedTotalBorrowBalance,
             "Total borrow balance"
         );
     }
@@ -311,47 +301,54 @@ contract TestLens is TestSetup {
         borrower2.approve(usdc, toMatch);
         borrower2.supply(cUsdc, toMatch);
 
-        // borrower 1 supply balance (no matched)
+        // borrower 1 supply balance (not matched)
         UserBalance memory userSupplyBalance;
-        UserBalance memory expectedSupplyBalance;
 
         (userSupplyBalance.onPool, userSupplyBalance.inP2P, userSupplyBalance.totalBalance) = lens
         .getUserSupplyBalance(address(borrower1), cDai);
 
-        expectedSupplyBalance.onPool = amount;
-        expectedSupplyBalance.inP2P = 0;
-        expectedSupplyBalance.totalBalance = amount;
+        (uint256 supplyBalanceInP2P, uint256 supplyBalanceOnPool) = morpho.supplyBalanceInOf(
+            cDai,
+            address(borrower1)
+        );
 
-        assertEq(userSupplyBalance.onPool, expectedSupplyBalance.onPool, "On pool supply balance");
-        assertEq(userSupplyBalance.inP2P, expectedSupplyBalance.inP2P, "P2P supply balance");
+        uint256 expectedSupplyBalanceInP2P = supplyBalanceInP2P.mul(morpho.p2pSupplyIndex(cDai));
+        uint256 expectedSupplyBalanceOnPool = supplyBalanceOnPool.mul(
+            ICToken(cDai).exchangeRateCurrent()
+        );
+
+        assertEq(userSupplyBalance.onPool, expectedSupplyBalanceOnPool, "On pool supply balance");
+        assertEq(userSupplyBalance.inP2P, expectedSupplyBalanceInP2P, "P2P supply balance");
         assertEq(
             userSupplyBalance.totalBalance,
-            expectedSupplyBalance.totalBalance,
+            expectedSupplyBalanceOnPool + expectedSupplyBalanceInP2P,
             "Total supply balance"
         );
 
         // borrower 1 borrow balance (partially matched)
         UserBalance memory userBorrowBalance;
-        UserBalance memory expectedBorrowBalance;
 
         (userBorrowBalance.onPool, userBorrowBalance.inP2P, userBorrowBalance.totalBalance) = lens
         .getUserBorrowBalance(address(borrower1), cUsdc);
 
-        expectedBorrowBalance.onPool = toBorrow - toMatch;
-        expectedBorrowBalance.inP2P = toMatch;
-        expectedBorrowBalance.totalBalance = toBorrow;
+        (uint256 borrowBalanceInP2P, uint256 borrowBalanceOnPool) = morpho.borrowBalanceInOf(
+            cUsdc,
+            address(borrower1)
+        );
 
-        assertEq(userBorrowBalance.onPool, expectedBorrowBalance.onPool, "On pool borrow balance");
-        assertEq(userBorrowBalance.inP2P, expectedBorrowBalance.inP2P, "P2P borrow balance");
+        uint256 expectedBorrowBalanceInP2P = borrowBalanceInP2P.mul(morpho.p2pBorrowIndex(cUsdc));
+        uint256 expectedBorrowBalanceOnPool = borrowBalanceOnPool.mul(ICToken(cUsdc).borrowIndex());
+
+        assertEq(userBorrowBalance.onPool, expectedBorrowBalanceOnPool, "On pool borrow balance");
+        assertEq(userBorrowBalance.inP2P, expectedBorrowBalanceInP2P, "P2P borrow balance");
         assertEq(
             userBorrowBalance.totalBalance,
-            expectedBorrowBalance.totalBalance,
+            expectedBorrowBalanceOnPool + expectedBorrowBalanceInP2P,
             "Total borrow balance"
         );
 
         // borrower 2 supply balance (pure supplier fully matched)
         UserBalance memory matchedSupplierSupplyBalance;
-        UserBalance memory expectedMatchedSupplierSupplyBalance;
 
         (
             matchedSupplierSupplyBalance.onPool,
@@ -359,24 +356,27 @@ contract TestLens is TestSetup {
             matchedSupplierSupplyBalance.totalBalance
         ) = lens.getUserSupplyBalance(address(borrower2), cUsdc);
 
-        // matched state supplier
-        expectedMatchedSupplierSupplyBalance.onPool = 0;
-        expectedMatchedSupplierSupplyBalance.inP2P = toMatch;
-        expectedMatchedSupplierSupplyBalance.totalBalance = toMatch;
+        (supplyBalanceInP2P, supplyBalanceOnPool) = morpho.supplyBalanceInOf(
+            cUsdc,
+            address(borrower2)
+        );
+
+        expectedSupplyBalanceInP2P = supplyBalanceInP2P.mul(morpho.p2pSupplyIndex(cUsdc));
+        expectedSupplyBalanceOnPool = supplyBalanceOnPool.mul(ICToken(cUsdc).exchangeRateCurrent());
 
         assertEq(
             matchedSupplierSupplyBalance.onPool,
-            expectedMatchedSupplierSupplyBalance.onPool,
+            expectedSupplyBalanceOnPool,
             "On pool matched supplier balance"
         );
         assertEq(
             matchedSupplierSupplyBalance.inP2P,
-            expectedMatchedSupplierSupplyBalance.inP2P,
+            expectedSupplyBalanceInP2P,
             "P2P matched supplier balance"
         );
         assertEq(
             matchedSupplierSupplyBalance.totalBalance,
-            expectedMatchedSupplierSupplyBalance.totalBalance,
+            expectedSupplyBalanceOnPool + expectedSupplyBalanceInP2P,
             "Total matched supplier balance"
         );
     }
