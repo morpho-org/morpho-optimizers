@@ -7,26 +7,36 @@ library BasicHeap {
         uint256 value;
     }
 
-    function load(Account[] storage heap, uint256 index) public view returns (Account memory) {
-        return heap[index - 1];
+    struct Heap {
+        Account[] accounts;
+        mapping(address => uint256) indexes;
+    }
+
+    function load(Account[] storage accounts, uint256 index) public view returns (Account storage) {
+        return accounts[index - 1];
     }
 
     function store(
-        Account[] storage heap,
+        Account[] storage accounts,
         uint256 index,
         Account memory e
     ) public {
-        heap[index - 1] = e;
+        accounts[index - 1] = e;
     }
 
     function swap(
-        Account[] storage heap,
+        Heap storage heap,
         uint256 index1,
         uint256 index2
     ) internal {
-        Account memory heap_index1 = load(heap, index1);
-        store(heap, index1, load(heap, index2));
-        store(heap, index2, heap_index1);
+        Account[] storage accounts = heap.accounts;
+        mapping(address => uint256) storage indexes = heap.indexes;
+        Account storage account_old_index1 = load(accounts, index1); // TODO : is storage needed here ?
+        Account storage account_old_index2 = load(accounts, index2);
+        store(accounts, index1, account_old_index2);
+        store(accounts, index2, account_old_index1);
+        indexes[account_old_index2.id] = index1;
+        indexes[account_old_index1.id] = index2;
     }
 
     function left(uint256 index) public pure returns (uint256) {
@@ -41,18 +51,20 @@ library BasicHeap {
         return index / 2;
     }
 
-    function siftUp(Account[] storage heap, uint256 index) internal {
-        require(index > 0 && index <= heap.length, "index out of bounds (siftUp)");
+    function siftUp(Heap storage heap, uint256 index) internal {
+        Account[] storage accounts = heap.accounts;
+        require(index > 0 && index <= accounts.length, "index out of bounds (siftUp)");
         uint256 mother = parent(index);
-        while (mother > 0 && load(heap, index).value > load(heap, mother).value) {
+        while (mother > 0 && load(accounts, index).value > load(accounts, mother).value) {
             swap(heap, index, mother);
             mother = parent(mother);
         }
     }
 
-    function siftDown(Account[] storage heap, uint256 index) internal {
-        require(index > 0 && index <= heap.length, "index out of bounds (siftUp)");
-        uint256 length = heap.length;
+    function siftDown(Heap storage heap, uint256 index) internal {
+        Account[] storage accounts = heap.accounts;
+        require(index > 0 && index <= accounts.length, "index out of bounds (siftUp)");
+        uint256 length = accounts.length;
         uint256 leftIndex;
         uint256 rightIndex;
         uint256 maxIndex;
@@ -61,17 +73,66 @@ library BasicHeap {
             leftIndex = left(index);
             rightIndex = right(index);
             maxIndex = index;
-            maxValue = load(heap, index).value;
+            maxValue = load(accounts, index).value;
 
-            if (leftIndex <= length && load(heap, leftIndex).value > maxValue) {
+            if (leftIndex <= length && load(accounts, leftIndex).value > maxValue) {
                 maxIndex = leftIndex;
             }
-            if (rightIndex <= length && load(heap, rightIndex).value > maxValue) {
+            if (rightIndex <= length && load(accounts, rightIndex).value > maxValue) {
                 maxIndex = rightIndex;
             }
             if (maxIndex != index) {
                 swap(heap, index, maxIndex);
             } else break;
         }
+    }
+
+    function get(Heap storage heap, address id) public view returns (uint256) {
+        return heap.accounts[heap.indexes[id] - 1].value;
+    }
+
+    function insertOne(
+        // rename into "insert"
+        Heap storage heap,
+        address id,
+        uint256 value
+    ) public {
+        Account[] storage accounts = heap.accounts;
+        Account memory acc = Account(id, value);
+        accounts.push(acc);
+        heap.indexes[id] = accounts.length;
+        siftUp(heap, accounts.length);
+    }
+
+    function decrease(
+        Heap storage heap,
+        address id,
+        uint256 toSubstract
+    ) public {
+        Account[] storage accounts = heap.accounts;
+        uint256 index = heap.indexes[id];
+        Account storage account = load(accounts, index);
+        require(account.value > toSubstract, "should remove instead");
+        account.value -= toSubstract;
+        siftDown(heap, index);
+    }
+
+    function increase(
+        Heap storage heap,
+        address id,
+        uint256 toAdd
+    ) public {
+        Account[] storage accounts = heap.accounts;
+        uint256 index = heap.indexes[id];
+        Account storage account = load(accounts, index);
+        account.value += toAdd;
+        siftUp(heap, index);
+    }
+
+    function removeOne(Heap storage heap, address id) public {
+        // TODO : rename into "remove"
+        Account[] storage accounts = heap.accounts;
+        uint256 index = heap.indexes[id];
+        swap(heap, index, accounts.length);
     }
 }
