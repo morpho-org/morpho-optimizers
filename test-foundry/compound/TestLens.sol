@@ -15,6 +15,7 @@ contract TestLens is TestSetup {
         uint256 maxDebtValue;
         uint256 liquidationValue;
     }
+
     struct UserBalance {
         uint256 onPool;
         uint256 inP2P;
@@ -298,8 +299,8 @@ contract TestLens is TestSetup {
         borrower1.borrow(cUsdc, toBorrow);
 
         uint256 toMatch = toBorrow / 2;
-        borrower2.approve(usdc, toMatch);
-        borrower2.supply(cUsdc, toMatch);
+        supplier1.approve(usdc, toMatch);
+        supplier1.supply(cUsdc, toMatch);
 
         // borrower 1 supply balance (not matched)
         UserBalance memory userSupplyBalance;
@@ -354,11 +355,11 @@ contract TestLens is TestSetup {
             matchedSupplierSupplyBalance.onPool,
             matchedSupplierSupplyBalance.inP2P,
             matchedSupplierSupplyBalance.totalBalance
-        ) = lens.getUserSupplyBalance(address(borrower2), cUsdc);
+        ) = lens.getUserSupplyBalance(address(supplier1), cUsdc);
 
         (supplyBalanceInP2P, supplyBalanceOnPool) = morpho.supplyBalanceInOf(
             cUsdc,
-            address(borrower2)
+            address(supplier1)
         );
 
         expectedSupplyBalanceInP2P = supplyBalanceInP2P.mul(morpho.p2pSupplyIndex(cUsdc));
