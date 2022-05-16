@@ -45,7 +45,7 @@ single-% s-%: node_modules
 	@forge test -vvv -c test-foundry/compound --match-test $* > trace.ansi
 
 build:
-	@forge build --hardhat --out artifacts
+	@forge build --hardhat
 
 .PHONY: config
 config:

@@ -4,7 +4,7 @@ pragma solidity 0.8.13;
 import "@contracts/compound/interfaces/compound/ICompound.sol";
 
 /// Price Oracle for liquidation tests
-contract SimplePriceOracle {
+contract SimplePriceOracle is ICompoundOracle {
     address public constant wEth = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     address public constant cEth = 0x4Ddc2D193948926D02f9B1fE9e1daa0718270ED5;
 
@@ -23,4 +23,9 @@ contract SimplePriceOracle {
     function setDirectPrice(address _asset, uint256 _price) public {
         prices[_asset] = _price;
     }
+
+    function accrueUserUnclaimedRewards(address[] calldata, address)
+        external
+        returns (uint256 unclaimedRewards)
+    {}
 }
