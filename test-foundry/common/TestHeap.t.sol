@@ -22,16 +22,16 @@ contract TestHeap is DSTest {
         heap.push(BasicHeap.Account(address(this), 0));
         for (uint256 i = 1; i < NDS; i++) {
             // accounts[i] = address(uint160(accounts[i - 1]) + 1);
-            heap.push(BasicHeap.Account(address(uint160(heap[i-1].id) + 1), i));
+            heap.push(BasicHeap.Account(address(uint160(heap[i - 1].id) + 1), i));
         }
     }
 
     function testSwapAccounts() public {
-        uint i1 = 3;
-        uint i2 = 4;
+        uint256 i1 = 3;
+        uint256 i2 = 4;
         emit log_uint(BasicHeap.load(heap, i1).value);
         emit log_uint(BasicHeap.load(heap, i2).value);
-        
+
         BasicHeap.swap(heap, i1, i2);
         // BasicHeap.Account memory acc1 = heap[i1-1];
         // heap[i1-1] = heap[i2-1];

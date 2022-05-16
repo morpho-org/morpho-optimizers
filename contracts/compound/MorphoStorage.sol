@@ -7,7 +7,7 @@ import "./interfaces/IIncentivesVault.sol";
 import "./interfaces/IRewardsManager.sol";
 import "./interfaces/IInterestRatesManager.sol";
 
-import "../common/libraries/DoubleLinkedList.sol";
+import "../common/libraries/Heap.sol";
 import "./libraries/Types.sol";
 
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
@@ -28,10 +28,10 @@ abstract contract MorphoStorage is OwnableUpgradeable, ReentrancyGuardUpgradeabl
 
     /// POSITIONS STORAGE ///
 
-    mapping(address => DoubleLinkedList.List) internal suppliersInP2P; // For a given market, the suppliers in peer-to-peer.
-    mapping(address => DoubleLinkedList.List) internal suppliersOnPool; // For a given market, the suppliers on Compound.
-    mapping(address => DoubleLinkedList.List) internal borrowersInP2P; // For a given market, the borrowers in peer-to-peer.
-    mapping(address => DoubleLinkedList.List) internal borrowersOnPool; // For a given market, the borrowers on Compound.
+    mapping(address => BasicHeap.Heap) internal suppliersInP2P; // For a given market, the suppliers in peer-to-peer.
+    mapping(address => BasicHeap.Heap) internal suppliersOnPool; // For a given market, the suppliers on Compound.
+    mapping(address => BasicHeap.Heap) internal borrowersInP2P; // For a given market, the borrowers in peer-to-peer.
+    mapping(address => BasicHeap.Heap) internal borrowersOnPool; // For a given market, the borrowers on Compound.
     mapping(address => mapping(address => Types.SupplyBalance)) public supplyBalanceInOf; // For a given market, the supply balance of a user. cToken -> user -> balances.
     mapping(address => mapping(address => Types.BorrowBalance)) public borrowBalanceInOf; // For a given market, the borrow balance of a user. cToken -> user -> balances.
     mapping(address => mapping(address => bool)) public userMembership; // Whether the user is in the market or not. cToken -> user -> bool.

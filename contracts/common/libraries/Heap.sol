@@ -12,6 +12,30 @@ library BasicHeap {
         mapping(address => uint256) indexes;
     }
 
+    function length(Heap storage heap) public view returns (uint256) {
+        return heap.accounts.length;
+    }
+
+    function getValueOf(Heap storage heap, address _id) public view returns (uint256) {
+        return heap.accounts[heap.indexes[_id] - 1].value;
+    }
+
+    function getHead(Heap storage heap) internal view returns (address) {
+        return heap.accounts[1].id;
+    }
+
+    function getTail(Heap storage heap) internal view returns (address) {
+        return heap.accounts[heap.accounts.length - 1].id;
+    }
+
+    function getNext(Heap storage heap, address _id) internal view returns (address) {
+        return heap.accounts[heap.indexes[_id]].id;
+    }
+
+    function getPrev(Heap storage heap, address _id) internal view returns (address) {
+        return heap.accounts[heap.indexes[_id] - 2].id;
+    }
+
     function load(Account[] storage accounts, uint256 index) public view returns (Account storage) {
         return accounts[index - 1];
     }
@@ -86,20 +110,12 @@ library BasicHeap {
         }
     }
 
-    function length(Heap storage heap) public view returns (uint256) {
-        return heap.accounts.length;
-    }
-
-    function getValueOf(Heap storage heap, address id) public view returns (uint256) {
-        return heap.accounts[heap.indexes[id] - 1].value;
-    }
-
     function insertOne(
         // rename into "insert"
         Heap storage heap,
         address id,
         uint256 value
-    ) internal {
+    ) private {
         Account[] storage accounts = heap.accounts;
         Account memory acc = Account(id, value);
         accounts.push(acc);
@@ -108,37 +124,53 @@ library BasicHeap {
     }
 
     function decrease(
+        // only call with smaller value and when id is in the heap
         Heap storage heap,
         address id,
-        uint256 toSubstract
-    ) internal {
+        uint256 newValue
+    ) private {
         Account[] storage accounts = heap.accounts;
         uint256 index = heap.indexes[id];
         Account storage account = load(accounts, index);
-        require(account.value > toSubstract, "should remove instead");
-        account.value -= toSubstract;
+        account.value = newValue;
         siftDown(heap, index);
     }
 
     function increase(
+        // only call with greater value and when id is in the heap
         Heap storage heap,
         address id,
-        uint256 toAdd
-    ) internal {
+        uint256 newValue
+    ) private {
         Account[] storage accounts = heap.accounts;
         uint256 index = heap.indexes[id];
         Account storage account = load(accounts, index);
-        account.value += toAdd;
+        account.value = newValue;
         siftUp(heap, index);
     }
 
-    function removeOne(Heap storage heap, address id) internal {
+    function removeOne(Heap storage heap, address id) private {
         // TODO : rename into "remove"
+        // only call when id is in the heap
         Account[] storage accounts = heap.accounts;
         uint256 index = heap.indexes[id];
         delete heap.indexes[id];
         swap(heap, index, accounts.length);
         accounts.pop();
         siftDown(heap, index);
+    }
+
+    function updateHeap(
+        Heap storage heap,
+        address id,
+        uint256 formerValue,
+        uint256 newValue
+    ) internal {
+        if (formerValue != newValue) {
+            if (newValue == 0) removeOne(heap, id);
+            else if (formerValue == 0) insertOne(heap, id, newValue);
+            else if (formerValue < newValue) increase(heap, id, newValue);
+            else decrease(heap, id, newValue);
+        }
     }
 }

@@ -6,7 +6,7 @@ import "./MorphoUtils.sol";
 /// @title MatchingEngine.
 /// @notice Smart contract managing the matching engine.
 contract MatchingEngine is MorphoUtils {
-    using DoubleLinkedList for DoubleLinkedList.List;
+    using BasicHeap for BasicHeap.Heap;
     using CompoundMath for uint256;
 
     /// STRUCTS ///
@@ -273,22 +273,16 @@ contract MatchingEngine is MorphoUtils {
             supplyBalanceInOf[_poolTokenAddress][_user].onPool = 0;
             onPool = 0;
         }
-        if (formerValueOnPool != onPool) {
-            if (formerValueOnPool > 0) suppliersOnPool[_poolTokenAddress].remove(_user);
-            if (onPool > 0)
-                suppliersOnPool[_poolTokenAddress].insertSorted(_user, onPool, maxSortedUsers);
-        }
+
+        suppliersOnPool[_poolTokenAddress].updateHeap(_user, formerValueOnPool, onPool);
 
         // Round peer-to-peer balance to 0 if below threshold.
         if (inP2P <= dustThreshold) {
             supplyBalanceInOf[_poolTokenAddress][_user].inP2P = 0;
             inP2P = 0;
         }
-        if (formerValueInP2P != inP2P) {
-            if (formerValueInP2P > 0) suppliersInP2P[_poolTokenAddress].remove(_user);
-            if (inP2P > 0)
-                suppliersInP2P[_poolTokenAddress].insertSorted(_user, inP2P, maxSortedUsers);
-        }
+
+        suppliersInP2P[_poolTokenAddress].updateHeap(_user, formerValueInP2P, inP2P);
 
         if (isCompRewardsActive && address(rewardsManager) != address(0))
             rewardsManager.accrueUserSupplyUnclaimedRewards(
@@ -312,22 +306,16 @@ contract MatchingEngine is MorphoUtils {
             borrowBalanceInOf[_poolTokenAddress][_user].onPool = 0;
             onPool = 0;
         }
-        if (formerValueOnPool != onPool) {
-            if (formerValueOnPool > 0) borrowersOnPool[_poolTokenAddress].remove(_user);
-            if (onPool > 0)
-                borrowersOnPool[_poolTokenAddress].insertSorted(_user, onPool, maxSortedUsers);
-        }
+
+        borrowersOnPool[_poolTokenAddress].updateHeap(_user, formerValueOnPool, onPool);
 
         // Round peer-to-peer balance to 0 if below threshold.
         if (inP2P <= dustThreshold) {
             borrowBalanceInOf[_poolTokenAddress][_user].inP2P = 0;
             inP2P = 0;
         }
-        if (formerValueInP2P != inP2P) {
-            if (formerValueInP2P > 0) borrowersInP2P[_poolTokenAddress].remove(_user);
-            if (inP2P > 0)
-                borrowersInP2P[_poolTokenAddress].insertSorted(_user, inP2P, maxSortedUsers);
-        }
+
+        borrowersInP2P[_poolTokenAddress].updateHeap(_user, formerValueInP2P, inP2P);
 
         if (isCompRewardsActive && address(rewardsManager) != address(0))
             rewardsManager.accrueUserBorrowUnclaimedRewards(
