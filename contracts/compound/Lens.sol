@@ -130,7 +130,7 @@ contract Lens {
     /// @return isPaused_ Whether the market is paused or not (all entry points on Morpho are frozen; supply, borrow, withdraw, repay and liquidate).
     /// @return isPartiallyPaused_ Whether the market is partially paused or not (only supply and borrow are frozen).
     /// @return reserveFactor_ The reserve actor applied to this market.
-    /// @return collateralFactor_ The pool collateral factor also used by Morpho
+    /// @return collateralFactor_ The pool collateral factor also used by Morpho.
     function getMarketConfiguration(address _poolTokenAddress)
         external
         view
@@ -195,8 +195,8 @@ contract Lens {
     /// @notice Returns the borrow balance in underlying of a given user in a given market.
     /// @param _user The user to determine balances of.
     /// @param _poolTokenAddress The address of the market.
-    /// @return balanceOnPool The unlockable balance of the user (in underlying).
-    /// @return balanceInP2P The matched balance of the user (in underlying).
+    /// @return balanceOnPool The balance on pool of the user (in underlying).
+    /// @return balanceInP2P The balance in peer-to-peer of the user (in underlying).
     /// @return totalBalance The total balance of the user (in underlying).
     function getUserBorrowBalance(address _user, address _poolTokenAddress)
         external
@@ -220,8 +220,8 @@ contract Lens {
     /// @notice Returns the balance in underlying of a given user in a given market.
     /// @param _user The user to determine balances of.
     /// @param _poolTokenAddress The address of the market.
-    /// @return balanceOnPool The unlockable balance of the user (in underlying).
-    /// @return balanceInP2P The matched balance of the user (in underlying).
+    /// @return balanceOnPool The balance on pool of the user (in underlying).
+    /// @return balanceInP2P The balance in peer-to-peer of the user (in underlying).
     /// @return totalBalance The total balance of the user (in underlying).
     function getUserSupplyBalance(address _user, address _poolTokenAddress)
         external
@@ -383,9 +383,9 @@ contract Lens {
     /// INDEXES ///
 
     /// @notice Returns the updated peer-to-peer indexes.
-    /// @param _poolTokenAddress The address of the market to update.
-    /// @return newP2PSupplyIndex The peer-to-peer supply index after update.
-    /// @return newP2PBorrowIndex The peer-to-peer supply index after update.
+    /// @param _poolTokenAddress The address of the market.
+    /// @return newP2PSupplyIndex The updated peer-to-peer supply index.
+    /// @return newP2PBorrowIndex The updated peer-to-peer supply index.
     function getUpdatedP2PIndexes(address _poolTokenAddress)
         external
         view
@@ -396,8 +396,8 @@ contract Lens {
 
     /// @notice Returns the updated pool indexes.
     /// @param _poolTokenAddress The address of the market.
-    /// @return newPoolSupplyIndex_ The pool supply index after update.
-    /// @return newPoolBorrowIndex_ The pool supply index after update.
+    /// @return newPoolSupplyIndex_ The updated pool supply index.
+    /// @return newPoolBorrowIndex_ The updated pool supply index.
     function getUpdatedPoolIndexes(address _poolTokenAddress)
         external
         view
@@ -407,8 +407,8 @@ contract Lens {
     }
 
     /// @notice Returns the updated peer-to-peer supply index.
-    /// @param _poolTokenAddress The address of the market to update.
-    /// @return newP2PSupplyIndex The peer-to-peer supply index after update.
+    /// @param _poolTokenAddress The address of the market.
+    /// @return newP2PSupplyIndex The updated peer-to-peer supply index.
     function getUpdatedP2PSupplyIndex(address _poolTokenAddress) public view returns (uint256) {
         if (block.number == morpho.lastPoolIndexes(_poolTokenAddress).lastUpdateBlockNumber)
             return morpho.p2pSupplyIndex(_poolTokenAddress);
@@ -437,8 +437,8 @@ contract Lens {
     }
 
     /// @notice Returns the updated peer-to-peer borrow index.
-    /// @param _poolTokenAddress The address of the market to update.
-    /// @return newP2PBorrowIndex The peer-to-peer  index after update.
+    /// @param _poolTokenAddress The address of the market.
+    /// @return newP2PBorrowIndex The updated peer-to-peer borrow index.
     function getUpdatedP2PBorrowIndex(address _poolTokenAddress) public view returns (uint256) {
         if (block.number == morpho.lastPoolIndexes(_poolTokenAddress).lastUpdateBlockNumber)
             return morpho.p2pBorrowIndex(_poolTokenAddress);
@@ -467,11 +467,11 @@ contract Lens {
     }
 
     /// @notice Returns the updated peer-to-peer and pool indexes.
-    /// @param _poolTokenAddress The address of the market to update.
-    /// @return newP2PSupplyIndex The peer-to-peer supply index after update.
-    /// @return newP2PBorrowIndex The peer-to-peer borrow index after update.
-    /// @return newPoolSupplyIndex The pool supply index after update.
-    /// @return newPoolBorrowIndex The pool borrow index after update.
+    /// @param _poolTokenAddress The address of the market.
+    /// @return newP2PSupplyIndex The updated peer-to-peer supply index.
+    /// @return newP2PBorrowIndex The updated peer-to-peer borrow index.
+    /// @return newPoolSupplyIndex The updated pool supply index.
+    /// @return newPoolBorrowIndex The updated pool borrow index.
     function getUpdatedIndexes(address _poolTokenAddress)
         public
         view
@@ -573,7 +573,6 @@ contract Lens {
     }
 
     /// @notice Returns the data related to `_poolTokenAddress` for the `_user`.
-    /// @dev Note: must be called after calling `accrueInterest()` on the cToken to have the most up to date values.
     /// @param _user The user to determine data for.
     /// @param _poolTokenAddress The address of the market.
     /// @param _oracle The oracle used.
@@ -611,7 +610,7 @@ contract Lens {
     /// INDEXES ///
 
     /// @dev Computes and returns Compound's updated indexes.
-    /// @param _poolTokenAddress The address of the market to compute.
+    /// @param _poolTokenAddress The address of the market.
     /// @return newSupplyIndex The updated supply index.
     /// @return newBorrowIndex The updated borrow index.
     function _computePoolIndexes(address _poolTokenAddress)
@@ -657,8 +656,8 @@ contract Lens {
 
     /// @notice Computes and returns new peer-to-peer indexes.
     /// @param _params Computation parameters.
-    /// @return newP2PSupplyIndex The updated p2pSupplyIndex.
-    /// @return newP2PBorrowIndex The updated p2pBorrowIndex.
+    /// @return newP2PSupplyIndex The updated peer-to-peer supply index.
+    /// @return newP2PBorrowIndex The updated peer-to-peer borrow index.
     function _computeP2PIndexes(Params memory _params)
         internal
         pure
