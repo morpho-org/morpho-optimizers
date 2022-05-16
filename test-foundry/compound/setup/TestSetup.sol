@@ -27,12 +27,6 @@ import "forge-std/stdlib.sol";
 // import "forge-std/console.sol";
 import "@config/Config.sol";
 
-interface IAdminComptroller {
-    function _setPriceOracle(SimplePriceOracle newOracle) external returns (uint256);
-
-    function admin() external view returns (address);
-}
-
 contract TestSetup is Config, Utils, stdCheats {
     Vm public hevm = Vm(HEVM_ADDRESS);
 
@@ -219,9 +213,9 @@ contract TestSetup is Config, Utils, stdCheats {
     function createAndSetCustomPriceOracle() public returns (SimplePriceOracle) {
         SimplePriceOracle customOracle = new SimplePriceOracle();
 
-        IAdminComptroller adminComptroller = IAdminComptroller(address(comptroller));
+        IComptroller adminComptroller = IComptroller(address(comptroller));
         hevm.prank(adminComptroller.admin());
-        uint256 result = adminComptroller._setPriceOracle(customOracle);
+        uint256 result = adminComptroller._setPriceOracle(address(customOracle));
         require(result == 0); // No error
 
         for (uint256 i = 0; i < pools.length; i++) {
