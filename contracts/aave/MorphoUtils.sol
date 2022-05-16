@@ -135,7 +135,7 @@ contract MorphoUtils is MorphoStorage {
     /// @param _poolTokenAddress The market to hypothetically withdraw/borrow in.
     /// @param _withdrawnAmount The number of tokens to hypothetically withdraw (in underlying).
     /// @param _borrowedAmount The amount of tokens to hypothetically borrow (in underlying).
-    /// @return liquidityData The liquidity data of the user.
+    /// @return liquidityData The hypthetical liquidity data of the user.
     function _getUserHypotheticalBalanceStates(
         address _user,
         address _poolTokenAddress,
@@ -155,9 +155,7 @@ contract MorphoUtils is MorphoStorage {
             updateP2PIndexes(poolTokenEntered);
 
             address underlyingAddress = IAToken(poolTokenEntered).UNDERLYING_ASSET_ADDRESS();
-            assetData.underlyingPrice = oracle.getAssetPrice(
-                IAToken(poolTokenEntered).UNDERLYING_ASSET_ADDRESS()
-            ); // In ETH.
+            assetData.underlyingPrice = oracle.getAssetPrice(underlyingAddress); // In ETH.
             (
                 assetData.ltv,
                 assetData.liquidationThreshold,
