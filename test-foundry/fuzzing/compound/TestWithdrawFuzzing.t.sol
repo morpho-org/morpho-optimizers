@@ -4,7 +4,7 @@ pragma solidity 0.8.13;
 import "./setup/TestSetupFuzzing.sol";
 import {Attacker} from "../../compound/helpers/Attacker.sol";
 
-contract TestWithdraw is TestSetupFuzzing {
+contract TestWithdrawFuzzing is TestSetupFuzzing {
     using CompoundMath for uint256;
 
     function testWithdraw1(
@@ -17,6 +17,8 @@ contract TestWithdraw is TestSetupFuzzing {
 
         uint256 suppliedAmount = _suppliedAmount;
         assumeSupplyAmountIsCorrect(suppliedUnderlying, suppliedAmount);
+        hevm.assume(suppliedAmount > 10);
+        // You need this to make sure that even with compound's approximation, you'll have an amount to withdraw
 
         borrower1.approve(suppliedUnderlying, suppliedAmount);
         borrower1.supply(suppliedAsset, suppliedAmount);
@@ -28,6 +30,7 @@ contract TestWithdraw is TestSetupFuzzing {
         borrower1.borrow(borrowedAsset, borrowable);
 
         hevm.expectRevert(abi.encodeWithSignature("UnauthorisedWithdraw()"));
+        assumeWithdrawAmountIsCorrect(suppliedAmount);
         borrower1.withdraw(suppliedAsset, suppliedAmount);
     }
 
@@ -41,11 +44,14 @@ contract TestWithdraw is TestSetupFuzzing {
 
         uint256 suppliedAmount = _suppliedAmount;
         assumeSupplyAmountIsCorrect(suppliedUnderlying, suppliedAmount);
+        hevm.assume(suppliedAmount > 10);
+        // You need this to make sure that even with compound's approximation, you'll have an amount to withdraw
 
-        borrower1.approve(suppliedUnderlying, suppliedAmount);
-        borrower1.supply(suppliedAsset, suppliedAmount);
+        supplier1.approve(suppliedUnderlying, suppliedAmount);
+        supplier1.supply(suppliedAsset, suppliedAmount);
 
         uint256 withdrawnAmount = (suppliedAmount * _random1) / 255;
+        assumeWithdrawAmountIsCorrect(withdrawnAmount);
         supplier1.withdraw(suppliedAsset, withdrawnAmount);
     }
 
@@ -54,9 +60,11 @@ contract TestWithdraw is TestSetupFuzzing {
 
         uint256 suppliedAmount = _suppliedAmount;
         assumeSupplyAmountIsCorrect(suppliedUnderlying, suppliedAmount);
+        hevm.assume(suppliedAmount > 10);
+        // You need this to make sure that even with compound's approximation, you'll have an amount to withdraw
 
-        borrower1.approve(suppliedUnderlying, suppliedAmount);
-        borrower1.supply(suppliedAsset, suppliedAmount);
+        supplier1.approve(suppliedUnderlying, suppliedAmount);
+        supplier1.supply(suppliedAsset, suppliedAmount);
         supplier1.withdraw(suppliedAsset, type(uint256).max);
     }
 
@@ -73,11 +81,23 @@ contract TestWithdraw is TestSetupFuzzing {
 
         uint256 amountSupplied = _amountSupplied;
 
+        assumeSupplyAmountIsCorrect(suppliedUnderlying, amountSupplied);
+        hevm.assume(amountSupplied > 10);
+        // You need this to make sure that even with compound's approximation, you'll have an amount to withdraw
+
         // Borrower1 & supplier1 are matched for amountSupplied.
         uint256 collateralToSupply = ERC20(collateralUnderlying).balanceOf(address(borrower1));
+
         borrower1.approve(collateralUnderlying, collateralToSupply);
         borrower1.supply(collateralAsset, collateralToSupply);
+
+        (, uint256 borrowable) = lens.getUserMaxCapacitiesForAsset(
+            address(borrower1),
+            suppliedAsset
+        );
+        hevm.assume(borrowable > amountSupplied);
         borrower1.borrow(suppliedAsset, amountSupplied);
+
         supplier1.approve(suppliedUnderlying, amountSupplied);
         supplier1.supply(suppliedAsset, amountSupplied);
 
@@ -103,6 +123,8 @@ contract TestWithdraw is TestSetupFuzzing {
         uint256 amountSupplied = _amountSupplied;
 
         assumeSupplyAmountIsCorrect(suppliedUnderlying, amountSupplied);
+        hevm.assume(amountSupplied > 10);
+        // You need this to make sure that even with compound's approximation, you'll have an amount to withdraw
 
         // Borrower1 & supplier1 are matched for suppliedAmount.
         supplier1.approve(suppliedUnderlying, amountSupplied);
@@ -111,6 +133,12 @@ contract TestWithdraw is TestSetupFuzzing {
         uint256 collateralToSupply = ERC20(collateralUnderlying).balanceOf(address(borrower1));
         borrower1.approve(collateralUnderlying, collateralToSupply);
         borrower1.supply(collateralAsset, collateralToSupply);
+
+        (, uint256 borrowable) = lens.getUserMaxCapacitiesForAsset(
+            address(borrower1),
+            suppliedAsset
+        );
+        hevm.assume(borrowable > amountSupplied);
         borrower1.borrow(suppliedAsset, amountSupplied);
 
         // NMAX suppliers have up to suppliedAmount waiting on pool
@@ -146,6 +174,8 @@ contract TestWithdraw is TestSetupFuzzing {
         uint256 amountSupplied = _amountSupplied;
 
         assumeSupplyAmountIsCorrect(suppliedUnderlying, amountSupplied);
+        hevm.assume(amountSupplied > 10);
+        // You need this to make sure that even with compound's approximation, you'll have an amount to withdraw
 
         // Borrower1 & supplier1 are matched for suppliedAmount.
         supplier1.approve(suppliedUnderlying, amountSupplied);
@@ -154,6 +184,12 @@ contract TestWithdraw is TestSetupFuzzing {
         uint256 collateralToSupply = ERC20(collateralUnderlying).balanceOf(address(borrower1));
         borrower1.approve(collateralUnderlying, collateralToSupply);
         borrower1.supply(collateralAsset, collateralToSupply);
+
+        (, uint256 borrowable) = lens.getUserMaxCapacitiesForAsset(
+            address(borrower1),
+            suppliedAsset
+        );
+        hevm.assume(borrowable > amountSupplied);
         borrower1.borrow(suppliedAsset, amountSupplied);
 
         // NMAX suppliers have up to suppliedAmount waiting on pool
@@ -193,6 +229,10 @@ contract TestWithdraw is TestSetupFuzzing {
 
         // supplier1 and 20 borrowers are matched for amountSupplied.
         assumeSupplyAmountIsCorrect(suppliedUnderlying, amountSupplied);
+
+        hevm.assume(amountSupplied > 10);
+        // You need this to make sure that even with compound's approximation, you'll have an amount to withdraw
+
         supplier1.approve(suppliedUnderlying, amountSupplied);
         supplier1.supply(suppliedAsset, amountSupplied);
 
