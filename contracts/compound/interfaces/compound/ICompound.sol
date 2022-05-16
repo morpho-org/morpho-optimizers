@@ -57,6 +57,8 @@ interface IComptroller {
 
     function closeFactorMantissa() external returns (uint256);
 
+    function admin() external view returns (address);
+
     function oracle() external view returns (address);
 
     function markets(address)
@@ -219,6 +221,8 @@ interface IComptroller {
     function compBorrowState(address) external view returns (CompMarketState memory);
 
     function getCompAddress() external view returns (address);
+
+    function _setPriceOracle(address newOracle) external returns (uint256);
 }
 
 interface IInterestRateModel {
