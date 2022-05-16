@@ -64,7 +64,6 @@ library BasicHeap {
     function siftDown(Heap storage heap, uint256 index) internal {
         Account[] storage accounts = heap.accounts;
         require(index > 0 && index <= accounts.length, "index out of bounds (siftUp)");
-        uint256 length = accounts.length;
         uint256 leftIndex;
         uint256 rightIndex;
         uint256 maxIndex;
@@ -75,10 +74,10 @@ library BasicHeap {
             maxIndex = index;
             maxValue = load(accounts, index).value;
 
-            if (leftIndex <= length && load(accounts, leftIndex).value > maxValue) {
+            if (leftIndex <= accounts.length && load(accounts, leftIndex).value > maxValue) {
                 maxIndex = leftIndex;
             }
-            if (rightIndex <= length && load(accounts, rightIndex).value > maxValue) {
+            if (rightIndex <= accounts.length && load(accounts, rightIndex).value > maxValue) {
                 maxIndex = rightIndex;
             }
             if (maxIndex != index) {
@@ -87,7 +86,11 @@ library BasicHeap {
         }
     }
 
-    function get(Heap storage heap, address id) public view returns (uint256) {
+    function length(Heap storage heap) public view returns (uint256) {
+        return heap.accounts.length;
+    }
+
+    function getValueOf(Heap storage heap, address id) public view returns (uint256) {
         return heap.accounts[heap.indexes[id] - 1].value;
     }
 
@@ -96,7 +99,7 @@ library BasicHeap {
         Heap storage heap,
         address id,
         uint256 value
-    ) public {
+    ) internal {
         Account[] storage accounts = heap.accounts;
         Account memory acc = Account(id, value);
         accounts.push(acc);
@@ -108,7 +111,7 @@ library BasicHeap {
         Heap storage heap,
         address id,
         uint256 toSubstract
-    ) public {
+    ) internal {
         Account[] storage accounts = heap.accounts;
         uint256 index = heap.indexes[id];
         Account storage account = load(accounts, index);
@@ -121,7 +124,7 @@ library BasicHeap {
         Heap storage heap,
         address id,
         uint256 toAdd
-    ) public {
+    ) internal {
         Account[] storage accounts = heap.accounts;
         uint256 index = heap.indexes[id];
         Account storage account = load(accounts, index);
@@ -129,10 +132,13 @@ library BasicHeap {
         siftUp(heap, index);
     }
 
-    function removeOne(Heap storage heap, address id) public {
+    function removeOne(Heap storage heap, address id) internal {
         // TODO : rename into "remove"
         Account[] storage accounts = heap.accounts;
         uint256 index = heap.indexes[id];
+        delete heap.indexes[id];
         swap(heap, index, accounts.length);
+        accounts.pop();
+        siftDown(heap, index);
     }
 }
