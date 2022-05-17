@@ -10,7 +10,6 @@ contract TestMorphoGetters is TestSetup {
         uint256 collateralValue;
         uint256 debtValue;
         uint256 maxDebtValue;
-        uint256 liquidationValue;
     }
 
     enum PositionType {
