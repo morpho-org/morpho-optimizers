@@ -125,8 +125,10 @@ contract Lens {
 
                 data.collateralValue += assetData.collateralValue;
                 data.debtValue += assetData.debtValue;
-                data.avgLtv += assetData.ltv;
-                data.avgLiquidationThreshold += assetData.liquidationThreshold;
+                data.avgLtv += assetData.collateralValue * assetData.ltv;
+                data.avgLiquidationThreshold +=
+                    assetData.collateralValue *
+                    assetData.liquidationThreshold;
             }
         }
 
@@ -134,8 +136,8 @@ contract Lens {
 
         data.collateralValue += assetData.collateralValue;
         data.debtValue += assetData.debtValue;
-        data.avgLtv += assetData.ltv;
-        data.avgLiquidationThreshold += assetData.liquidationThreshold;
+        data.avgLtv += assetData.collateralValue * assetData.ltv;
+        data.avgLiquidationThreshold += assetData.collateralValue * assetData.liquidationThreshold;
 
         if (data.collateralValue > 0) {
             data.avgLtv = data.avgLtv / data.collateralValue;
@@ -160,9 +162,11 @@ contract Lens {
                 assetData.underlyingPrice;
         else
             withdrawable =
-                (data.collateralValue *
-                    (data.avgLiquidationThreshold - HEALTH_FACTOR_LIQUIDATION_THRESHOLD)) /
-                (assetData.liquidationThreshold - HEALTH_FACTOR_LIQUIDATION_THRESHOLD);
+                ((data.collateralValue -
+                    HEALTH_FACTOR_LIQUIDATION_THRESHOLD.wadMul(data.debtValue).percentDiv(
+                        data.avgLiquidationThreshold
+                    )) * assetData.tokenUnit) /
+                assetData.underlyingPrice;
 
         borrowable =
             ((data.collateralValue.percentMul(data.avgLtv) - data.debtValue) *
