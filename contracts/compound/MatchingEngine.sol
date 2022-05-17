@@ -274,7 +274,7 @@ contract MatchingEngine is MorphoUtils {
             onPool = 0;
         }
 
-        suppliersOnPool[_poolTokenAddress].updateHeap(_user, formerValueOnPool, onPool);
+        suppliersOnPool[_poolTokenAddress].update(_user, formerValueOnPool, onPool);
 
         // Round peer-to-peer balance to 0 if below threshold.
         if (inP2P <= dustThreshold) {
@@ -282,7 +282,7 @@ contract MatchingEngine is MorphoUtils {
             inP2P = 0;
         }
 
-        suppliersInP2P[_poolTokenAddress].updateHeap(_user, formerValueInP2P, inP2P);
+        suppliersInP2P[_poolTokenAddress].update(_user, formerValueInP2P, inP2P);
 
         if (isCompRewardsActive && address(rewardsManager) != address(0))
             rewardsManager.accrueUserSupplyUnclaimedRewards(
@@ -307,7 +307,7 @@ contract MatchingEngine is MorphoUtils {
             onPool = 0;
         }
 
-        borrowersOnPool[_poolTokenAddress].updateHeap(_user, formerValueOnPool, onPool);
+        borrowersOnPool[_poolTokenAddress].update(_user, formerValueOnPool, onPool);
 
         // Round peer-to-peer balance to 0 if below threshold.
         if (inP2P <= dustThreshold) {
@@ -315,7 +315,7 @@ contract MatchingEngine is MorphoUtils {
             inP2P = 0;
         }
 
-        borrowersInP2P[_poolTokenAddress].updateHeap(_user, formerValueInP2P, inP2P);
+        borrowersInP2P[_poolTokenAddress].update(_user, formerValueInP2P, inP2P);
 
         if (isCompRewardsActive && address(rewardsManager) != address(0))
             rewardsManager.accrueUserBorrowUnclaimedRewards(
