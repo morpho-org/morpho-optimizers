@@ -720,4 +720,30 @@ contract TestLens is TestSetup {
         morpho.updateP2PIndexes(cDai);
         assertEq(newP2PBorrowIndex, morpho.p2pBorrowIndex(cDai));
     }
+
+    function testGetAllMarkets() public {
+        address[] memory lensMarkets = lens.getAllMarkets();
+        address[] memory morphoMarkets = morpho.getAllMarkets();
+
+        for (uint256 i; i < lensMarkets.length; i++) {
+            assertEq(morphoMarkets[i], lensMarkets[i]);
+        }
+    }
+
+    function testGetEnteretMarkets() public {
+        uint256 amount = 1e12;
+        supplier1.approve(dai, amount);
+        supplier1.approve(usdc, amount);
+        supplier1.approve(usdt, amount);
+        supplier1.supply(cDai, amount);
+        supplier1.supply(cUsdc, amount);
+        supplier1.supply(cUsdt, amount);
+
+        address[] memory lensEnteredMarkets = lens.getEnteredMarkets(address(supplier1));
+        address[] memory morphoEnteredMarkets = morpho.getEnteredMarkets(address(supplier1));
+
+        for (uint256 i; i < lensEnteredMarkets.length; i++) {
+            assertEq(morphoEnteredMarkets[i], lensEnteredMarkets[i]);
+        }
+    }
 }
