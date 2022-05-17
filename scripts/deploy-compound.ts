@@ -1,4 +1,6 @@
 /* eslint-disable no-console */
+import {formatEther} from 'ethers/lib/utils';
+
 const config = require(`@config/${process.env.NETWORK}-config.json`);
 import hre, { ethers, upgrades } from 'hardhat';
 
@@ -13,7 +15,7 @@ async function main() {
 
   console.log('\n🦋 Deploying Morpho contracts for Compound');
   console.log('👩 Deployer account:', deployer.address);
-  console.log('🤑 Account balance:', (await deployer.getBalance()).toString());
+  console.log('🤑 Account balance:', formatEther(await deployer.getBalance()));
 
   /// INTEREST RATES MANAGER DEPLOYMENT ///
 
@@ -95,6 +97,21 @@ async function main() {
   });
   console.log('🎉 Morpho Implementation verified!');
 
+  /// POSITIONS MANAGER DEPLOYMENT ///
+
+  console.log('\n🦋 Deploying Lens...');
+  const Lens = await ethers.getContractFactory('Lens');
+  const lens = await Lens.deploy(morpho.address);
+  await lens.deployed();
+  console.log('🎉 Lens deployed to address:', lens.address);
+
+  console.log('\n🦋 Verifying Lens on Tenderly...');
+  await hre.tenderly.verify({
+    name: 'Lens',
+    address: lens.address,
+  });
+  console.log('🎉 Lens verified!');
+
   /// MARKETS CREATION ///
 
   console.log('\n🦋 Creating markets...');
@@ -102,8 +119,6 @@ async function main() {
   await morpho.connect(deployer).createMarket(config.tokens.cDai.address);
   await morpho.connect(deployer).createMarket(config.tokens.cUsdc.address);
   console.log('🎉 Finished!\n');
-
-  // TODO: Deploy incentives vault, rewards manager if possible.
 }
 
 main()
