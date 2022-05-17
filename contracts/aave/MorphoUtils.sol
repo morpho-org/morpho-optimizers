@@ -135,7 +135,7 @@ contract MorphoUtils is MorphoStorage {
     /// @param _poolTokenAddress The market to hypothetically withdraw/borrow in.
     /// @param _withdrawnAmount The number of tokens to hypothetically withdraw (in underlying).
     /// @param _borrowedAmount The amount of tokens to hypothetically borrow (in underlying).
-    /// @return liquidityData The hypthetical liquidity data of the user.
+    /// @return liquidityData The hypothetical liquidity data of the user.
     function _getUserHypotheticalBalanceStates(
         address _user,
         address _poolTokenAddress,
