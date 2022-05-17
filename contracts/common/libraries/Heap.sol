@@ -17,14 +17,20 @@ library BasicHeap {
     }
 
     function getValueOf(Heap storage heap, address _id) public view returns (uint256) {
+        require(
+            1 <= heap.indexes[_id] && heap.indexes[_id] <= heap.accounts.length,
+            "GETVALUEOF index out of bounds"
+        );
         return heap.accounts[heap.indexes[_id] - 1].value;
     }
 
     function getHead(Heap storage heap) internal view returns (address) {
-        return heap.accounts[1].id;
+        require(heap.accounts.length > 0, "empty HEAP");
+        return heap.accounts[0].id;
     }
 
     function getTail(Heap storage heap) internal view returns (address) {
+        require(heap.accounts.length > 0, "empty HEAP");
         return heap.accounts[heap.accounts.length - 1].id;
     }
 
@@ -32,11 +38,8 @@ library BasicHeap {
         return heap.accounts[heap.indexes[_id]].id;
     }
 
-    function getPrev(Heap storage heap, address _id) internal view returns (address) {
-        return heap.accounts[heap.indexes[_id] - 2].id;
-    }
-
     function load(Account[] storage accounts, uint256 index) public view returns (Account storage) {
+        require(1 <= index && index <= accounts.length, "LOAD index out of bounds");
         return accounts[index - 1];
     }
 
@@ -45,6 +48,7 @@ library BasicHeap {
         uint256 index,
         Account memory e
     ) public {
+        require(1 <= index && index <= accounts.length, "STORE index out of bounds");
         accounts[index - 1] = e;
     }
 
@@ -53,6 +57,8 @@ library BasicHeap {
         uint256 index1,
         uint256 index2
     ) internal {
+        require(1 <= index1 && index1 <= heap.accounts.length, "SWAP index1 out of bounds");
+        require(1 <= index2 && index2 <= heap.accounts.length, "SWAP index2 out of bounds");
         Account[] storage accounts = heap.accounts;
         mapping(address => uint256) storage indexes = heap.indexes;
         Account storage account_old_index1 = load(accounts, index1); // TODO : is storage needed here ?
