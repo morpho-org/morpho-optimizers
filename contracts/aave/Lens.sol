@@ -219,7 +219,9 @@ contract Lens {
 
         while (i < enteredMarkets.length) {
             address poolTokenEntered = enteredMarkets[i];
-            ++i;
+            unchecked {
+                ++i;
+            }
 
             Types.AssetLiquidityData memory assetData = getUserLiquidityDataForAsset(
                 _user,
