@@ -301,10 +301,10 @@ contract MorphoUtils is MorphoStorage {
         returns (uint256)
     {
         return
-            supplyBalanceInOf[_poolTokenAddress][_user].inP2P.mulWadByRay(
+            supplyBalanceInOf[_poolTokenAddress][_user].inP2P.rayMul(
                 p2pSupplyIndex[_poolTokenAddress]
             ) +
-            supplyBalanceInOf[_poolTokenAddress][_user].onPool.mulWadByRay(
+            supplyBalanceInOf[_poolTokenAddress][_user].onPool.rayMul(
                 lendingPool.getReserveNormalizedIncome(
                     IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS()
                 )
@@ -321,10 +321,10 @@ contract MorphoUtils is MorphoStorage {
         returns (uint256)
     {
         return
-            borrowBalanceInOf[_poolTokenAddress][_user].inP2P.mulWadByRay(
+            borrowBalanceInOf[_poolTokenAddress][_user].inP2P.rayMul(
                 p2pBorrowIndex[_poolTokenAddress]
             ) +
-            borrowBalanceInOf[_poolTokenAddress][_user].onPool.mulWadByRay(
+            borrowBalanceInOf[_poolTokenAddress][_user].onPool.rayMul(
                 lendingPool.getReserveNormalizedVariableDebt(
                     IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS()
                 )
