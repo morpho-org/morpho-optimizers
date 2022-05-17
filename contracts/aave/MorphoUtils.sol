@@ -150,7 +150,9 @@ contract MorphoUtils is MorphoStorage {
 
         while (i < numberOfEnteredMarkets) {
             address poolTokenEntered = enteredMarkets[_user][i];
-            ++i;
+            unchecked {
+                ++i;
+            }
 
             updateP2PIndexes(poolTokenEntered);
 
