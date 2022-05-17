@@ -53,24 +53,6 @@ library BasicHeap {
 
     /// PRIVATE ///
 
-    function load(Account[] storage accounts, uint256 index)
-        private
-        view
-        returns (Account storage)
-    {
-        require(1 <= index && index <= accounts.length, "LOAD index out of bounds");
-        return accounts[index - 1];
-    }
-
-    function store(
-        Account[] storage accounts,
-        uint256 index,
-        Account memory e
-    ) private {
-        require(1 <= index && index <= accounts.length, "STORE index out of bounds");
-        accounts[index - 1] = e;
-    }
-
     function swap(
         Heap storage heap,
         uint256 index1,
@@ -80,32 +62,20 @@ library BasicHeap {
         require(1 <= index2 && index2 <= heap.accounts.length, "SWAP index2 out of bounds");
         Account[] storage accounts = heap.accounts;
         mapping(address => uint256) storage indexes = heap.indexes;
-        Account memory account_old_index1 = load(accounts, index1);
-        Account memory account_old_index2 = load(accounts, index2);
-        store(accounts, index1, account_old_index2);
-        store(accounts, index2, account_old_index1);
+        Account memory account_old_index1 = accounts[index1 - 1];
+        Account memory account_old_index2 = accounts[index2 - 1];
+        accounts[index1 - 1] = account_old_index2;
+        accounts[index2 - 1] = account_old_index1;
         indexes[account_old_index2.id] = index1;
         indexes[account_old_index1.id] = index2;
     }
 
-    function left(uint256 index) private pure returns (uint256) {
-        return 2 * index;
-    }
-
-    function right(uint256 index) private pure returns (uint256) {
-        return 2 * index + 1;
-    }
-
-    function parent(uint256 index) private pure returns (uint256) {
-        return index / 2;
-    }
-
     function siftUp(Heap storage heap, uint256 index) private {
         Account[] storage accounts = heap.accounts;
-        uint256 mother = parent(index);
-        while (mother > 0 && load(accounts, index).value > load(accounts, mother).value) {
+        uint256 mother = index / 2;
+        while (mother > 0 && accounts[index - 1].value > accounts[mother - 1].value) {
             swap(heap, index, mother);
-            mother = parent(mother);
+            mother = mother / 2;
         }
     }
 
@@ -116,15 +86,15 @@ library BasicHeap {
         uint256 maxIndex;
         uint256 maxValue;
         while (true) {
-            leftIndex = left(index);
-            rightIndex = right(index);
+            leftIndex = 2 * index;
+            rightIndex = 2 * index + 1;
             maxIndex = index;
-            maxValue = load(accounts, index).value;
+            maxValue = accounts[index - 1].value;
 
-            if (leftIndex <= accounts.length && load(accounts, leftIndex).value > maxValue) {
+            if (leftIndex <= accounts.length && accounts[leftIndex - 1].value > maxValue) {
                 maxIndex = leftIndex;
             }
-            if (rightIndex <= accounts.length && load(accounts, rightIndex).value > maxValue) {
+            if (rightIndex <= accounts.length && accounts[rightIndex - 1].value > maxValue) {
                 maxIndex = rightIndex;
             }
             if (maxIndex != index) {
@@ -154,8 +124,7 @@ library BasicHeap {
     ) private {
         Account[] storage accounts = heap.accounts;
         uint256 index = heap.indexes[id];
-        Account memory account = load(accounts, index);
-        account.value = newValue;
+        accounts[index - 1].value = newValue;
         siftDown(heap, index);
     }
 
@@ -167,8 +136,7 @@ library BasicHeap {
     ) private {
         Account[] storage accounts = heap.accounts;
         uint256 index = heap.indexes[id];
-        Account storage account = load(accounts, index);
-        account.value = newValue;
+        accounts[index - 1].value = newValue;
         siftUp(heap, index);
     }
 
