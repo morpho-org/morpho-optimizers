@@ -23,9 +23,4 @@ contract SimplePriceOracle is ICompoundOracle {
     function setDirectPrice(address _asset, uint256 _price) public {
         prices[_asset] = _price;
     }
-
-    function accrueUserUnclaimedRewards(address[] calldata, address)
-        external
-        returns (uint256 unclaimedRewards)
-    {}
 }
