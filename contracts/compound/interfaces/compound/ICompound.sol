@@ -348,8 +348,4 @@ interface ICEther is ICToken {
 
 interface ICompoundOracle {
     function getUnderlyingPrice(address) external view returns (uint256);
-
-    function accrueUserUnclaimedRewards(address[] calldata, address)
-        external
-        returns (uint256 unclaimedRewards);
 }
