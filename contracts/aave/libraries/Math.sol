@@ -60,14 +60,6 @@ library Math {
         return a * WAD_RAY_RATIO;
     }
 
-    function divWadByRay(uint256 a, uint256 b) internal pure returns (uint256) {
-        return rayToWad(rayDiv(wadToRay(a), b));
-    }
-
-    function mulWadByRay(uint256 a, uint256 b) internal pure returns (uint256) {
-        return rayToWad(rayMul(wadToRay(a), b));
-    }
-
     /// GENERAL ///
 
     function min(

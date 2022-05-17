@@ -670,10 +670,10 @@ contract Lens {
         returns (uint256)
     {
         return
-            morpho.supplyBalanceInOf(_poolTokenAddress, _user).inP2P.mulWadByRay(
+            morpho.supplyBalanceInOf(_poolTokenAddress, _user).inP2P.rayMul(
                 getUpdatedP2PSupplyIndex(_poolTokenAddress)
             ) +
-            morpho.supplyBalanceInOf(_poolTokenAddress, _user).onPool.mulWadByRay(
+            morpho.supplyBalanceInOf(_poolTokenAddress, _user).onPool.rayMul(
                 lendingPool.getReserveNormalizedIncome(
                     IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS()
                 )
@@ -690,10 +690,10 @@ contract Lens {
         returns (uint256)
     {
         return
-            morpho.borrowBalanceInOf(_poolTokenAddress, _user).inP2P.mulWadByRay(
+            morpho.borrowBalanceInOf(_poolTokenAddress, _user).inP2P.rayMul(
                 getUpdatedP2PBorrowIndex(_poolTokenAddress)
             ) +
-            morpho.borrowBalanceInOf(_poolTokenAddress, _user).onPool.mulWadByRay(
+            morpho.borrowBalanceInOf(_poolTokenAddress, _user).onPool.rayMul(
                 lendingPool.getReserveNormalizedVariableDebt(
                     IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS()
                 )
