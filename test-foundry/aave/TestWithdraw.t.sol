@@ -505,8 +505,8 @@ contract TestWithdraw is TestSetup {
             );
 
             uint256 expectedBorrowBalanceInUnderlying = borrowedAmount
-            .divWadByRay(oldVars.BP2PER)
-            .mulWadByRay(expectedBP2PER);
+            .rayDiv(oldVars.BP2PER)
+            .rayMul(expectedBP2PER);
 
             for (uint256 i = 10; i < 20; i++) {
                 (uint256 inP2PBorrower, uint256 onPoolBorrower) = morpho.borrowBalanceInOf(
