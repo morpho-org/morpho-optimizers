@@ -205,13 +205,13 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         // Match borrow peer-to-peer delta first if any.
         if (delta.p2pBorrowDelta > 0) {
             uint256 matchedDelta = Math.min(
-                delta.p2pBorrowDelta.mulWadByRay(poolBorrowIndex),
+                delta.p2pBorrowDelta.rayMul(poolBorrowIndex),
                 remainingToSupply
             );
 
             toRepay += matchedDelta;
             remainingToSupply -= matchedDelta;
-            delta.p2pBorrowDelta -= matchedDelta.divWadByRay(poolBorrowIndex);
+            delta.p2pBorrowDelta -= matchedDelta.rayDiv(poolBorrowIndex);
             emit P2PBorrowDeltaUpdated(_poolTokenAddress, delta.p2pBorrowDelta);
         }
 
@@ -231,12 +231,12 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             if (matched > 0) {
                 toRepay += matched;
                 remainingToSupply -= matched;
-                delta.p2pBorrowAmount += matched.divWadByRay(p2pBorrowIndex[_poolTokenAddress]);
+                delta.p2pBorrowAmount += matched.rayDiv(p2pBorrowIndex[_poolTokenAddress]);
             }
         }
 
         if (toRepay > 0) {
-            uint256 toAddInP2P = toRepay.divWadByRay(p2pSupplyIndex[_poolTokenAddress]);
+            uint256 toAddInP2P = toRepay.rayDiv(p2pSupplyIndex[_poolTokenAddress]);
 
             delta.p2pSupplyAmount += toAddInP2P;
             supplyBalanceInOf[_poolTokenAddress][msg.sender].inP2P += toAddInP2P;
@@ -247,7 +247,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
                 IVariableDebtToken(
                     lendingPool.getReserveData(address(underlyingToken)).variableDebtTokenAddress
                 ).scaledBalanceOf(address(this))
-                .mulWadByRay(poolBorrowIndex) // The debt of the contract.
+                .rayMul(poolBorrowIndex) // The debt of the contract.
             );
 
             if (toRepay > 0) _repayToPool(underlyingToken, toRepay); // Reverts on error.
@@ -257,8 +257,9 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         /// Supply on pool ///
 
         if (remainingToSupply > 0) {
-            supplyBalanceInOf[_poolTokenAddress][msg.sender].onPool += remainingToSupply
-            .divWadByRay(lendingPool.getReserveNormalizedIncome(address(underlyingToken))); // In scaled balance.
+            supplyBalanceInOf[_poolTokenAddress][msg.sender].onPool += remainingToSupply.rayDiv(
+                lendingPool.getReserveNormalizedIncome(address(underlyingToken))
+            ); // In scaled balance.
             _supplyToPool(underlyingToken, remainingToSupply); // Reverts on error.
         }
 
@@ -300,14 +301,14 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         // Match supply peer-to-peer delta first if any.
         if (delta.p2pSupplyDelta > 0) {
             uint256 matchedDelta = Math.min(
-                delta.p2pSupplyDelta.mulWadByRay(poolSupplyIndex),
+                delta.p2pSupplyDelta.rayMul(poolSupplyIndex),
                 remainingToBorrow,
                 withdrawable
             );
 
             toWithdraw += matchedDelta;
             remainingToBorrow -= matchedDelta;
-            delta.p2pSupplyDelta -= matchedDelta.divWadByRay(poolSupplyIndex);
+            delta.p2pSupplyDelta -= matchedDelta.rayDiv(poolSupplyIndex);
             emit P2PSupplyDeltaUpdated(_poolTokenAddress, delta.p2pSupplyDelta);
         }
 
@@ -327,14 +328,14 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             if (matched > 0) {
                 toWithdraw += matched;
                 remainingToBorrow -= matched;
-                deltas[_poolTokenAddress].p2pSupplyAmount += matched.divWadByRay(
+                deltas[_poolTokenAddress].p2pSupplyAmount += matched.rayDiv(
                     p2pSupplyIndex[_poolTokenAddress]
                 );
             }
         }
 
         if (toWithdraw > 0) {
-            uint256 toAddInP2P = toWithdraw.divWadByRay(p2pBorrowIndex[_poolTokenAddress]); // In peer-to-peer unit.
+            uint256 toAddInP2P = toWithdraw.rayDiv(p2pBorrowIndex[_poolTokenAddress]); // In peer-to-peer unit.
 
             deltas[_poolTokenAddress].p2pBorrowAmount += toAddInP2P;
             borrowBalanceInOf[_poolTokenAddress][msg.sender].inP2P += toAddInP2P;
@@ -346,8 +347,9 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         /// Borrow on pool ///
 
         if (remainingToBorrow > 0) {
-            borrowBalanceInOf[_poolTokenAddress][msg.sender].onPool += remainingToBorrow
-            .divWadByRay(lendingPool.getReserveNormalizedVariableDebt(address(underlyingToken))); // In adUnit.
+            borrowBalanceInOf[_poolTokenAddress][msg.sender].onPool += remainingToBorrow.rayDiv(
+                lendingPool.getReserveNormalizedVariableDebt(address(underlyingToken))
+            ); // In adUnit.
             _borrowFromPool(underlyingToken, remainingToBorrow);
         }
 
@@ -520,7 +522,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         vars.onPoolSupply = supplyBalanceInOf[_poolTokenAddress][_supplier].onPool;
         if (vars.onPoolSupply > 0) {
             vars.toWithdraw = Math.min(
-                vars.onPoolSupply.mulWadByRay(vars.poolSupplyIndex),
+                vars.onPoolSupply.rayMul(vars.poolSupplyIndex),
                 vars.remainingToWithdraw,
                 vars.withdrawable
             );
@@ -528,7 +530,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
             supplyBalanceInOf[_poolTokenAddress][_supplier].onPool -= Math.min(
                 vars.onPoolSupply,
-                vars.toWithdraw.divWadByRay(vars.poolSupplyIndex)
+                vars.toWithdraw.rayDiv(vars.poolSupplyIndex)
             );
             _updateSupplierInDS(_poolTokenAddress, _supplier);
 
@@ -545,7 +547,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
         supplyBalanceInOf[_poolTokenAddress][_supplier].inP2P -= Math.min(
             supplyBalanceInOf[_poolTokenAddress][_supplier].inP2P,
-            vars.remainingToWithdraw.divWadByRay(vars.p2pSupplyIndex)
+            vars.remainingToWithdraw.rayDiv(vars.p2pSupplyIndex)
         ); // In p2pUnit
         _updateSupplierInDS(_poolTokenAddress, _supplier);
 
@@ -554,15 +556,15 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         // Match peer-to-peer supply delta first if any.
         if (vars.remainingToWithdraw > 0 && delta.p2pSupplyDelta > 0) {
             uint256 matchedDelta = Math.min(
-                delta.p2pSupplyDelta.mulWadByRay(vars.poolSupplyIndex),
+                delta.p2pSupplyDelta.rayMul(vars.poolSupplyIndex),
                 vars.remainingToWithdraw,
                 vars.withdrawable - vars.toWithdraw
             );
 
             vars.toWithdraw += matchedDelta;
             vars.remainingToWithdraw -= matchedDelta;
-            delta.p2pSupplyDelta -= matchedDelta.divWadByRay(vars.poolSupplyIndex);
-            delta.p2pSupplyAmount -= matchedDelta.divWadByRay(vars.p2pSupplyIndex);
+            delta.p2pSupplyDelta -= matchedDelta.rayDiv(vars.poolSupplyIndex);
+            delta.p2pSupplyAmount -= matchedDelta.rayDiv(vars.p2pSupplyIndex);
             emit P2PSupplyDeltaUpdated(_poolTokenAddress, delta.p2pSupplyDelta);
             emit P2PAmountsUpdated(_poolTokenAddress, delta.p2pSupplyAmount, delta.p2pBorrowAmount);
         }
@@ -601,14 +603,14 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
             // If unmatched does not cover remainingToWithdraw, the difference is added to the borrow peer-to-peer delta.
             if (unmatched < vars.remainingToWithdraw) {
-                delta.p2pBorrowDelta += (vars.remainingToWithdraw - unmatched).divWadByRay(
+                delta.p2pBorrowDelta += (vars.remainingToWithdraw - unmatched).rayDiv(
                     lendingPool.getReserveNormalizedVariableDebt(address(underlyingToken))
                 );
                 emit P2PBorrowDeltaUpdated(_poolTokenAddress, delta.p2pBorrowAmount);
             }
 
-            delta.p2pSupplyAmount -= vars.remainingToWithdraw.divWadByRay(vars.p2pSupplyIndex);
-            delta.p2pBorrowAmount -= unmatched.divWadByRay(p2pBorrowIndex[_poolTokenAddress]);
+            delta.p2pSupplyAmount -= vars.remainingToWithdraw.rayDiv(vars.p2pSupplyIndex);
+            delta.p2pBorrowAmount -= unmatched.rayDiv(p2pBorrowIndex[_poolTokenAddress]);
             emit P2PAmountsUpdated(_poolTokenAddress, delta.p2pSupplyAmount, delta.p2pBorrowAmount);
 
             _borrowFromPool(underlyingToken, vars.remainingToWithdraw); // Reverts on error.
@@ -652,14 +654,14 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         if (borrowBalanceInOf[_poolTokenAddress][_user].onPool > 0) {
             uint256 borrowedOnPool = borrowBalanceInOf[_poolTokenAddress][_user].onPool;
             vars.toRepay = Math.min(
-                borrowedOnPool.mulWadByRay(vars.poolBorrowIndex),
+                borrowedOnPool.rayMul(vars.poolBorrowIndex),
                 vars.remainingToRepay
             );
             vars.remainingToRepay -= vars.toRepay;
 
             borrowBalanceInOf[_poolTokenAddress][_user].onPool -= Math.min(
                 borrowedOnPool,
-                vars.toRepay.divWadByRay(vars.poolBorrowIndex)
+                vars.toRepay.rayDiv(vars.poolBorrowIndex)
             ); // In adUnit.
             _updateBorrowerInDS(_poolTokenAddress, _user);
 
@@ -672,7 +674,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
                         .getReserveData(address(underlyingToken))
                         .variableDebtTokenAddress
                     ).scaledBalanceOf(address(this))
-                    .mulWadByRay(vars.poolBorrowIndex) // The debt of the contract.
+                    .rayMul(vars.poolBorrowIndex) // The debt of the contract.
                 );
                 if (vars.toRepay > 0) _repayToPool(underlyingToken, vars.toRepay); // Reverts on error.
                 _leaveMarketIfNeeded(_poolTokenAddress, _user);
@@ -686,17 +688,17 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         vars.poolSupplyIndex = lendingPool.getReserveNormalizedIncome(address(underlyingToken));
         borrowBalanceInOf[_poolTokenAddress][_user].inP2P -= Math.min(
             borrowBalanceInOf[_poolTokenAddress][_user].inP2P,
-            vars.remainingToRepay.divWadByRay(vars.p2pSupplyIndex)
+            vars.remainingToRepay.rayDiv(vars.p2pSupplyIndex)
         ); // In p2pUnit
         _updateBorrowerInDS(_poolTokenAddress, _user);
 
         /// Fee repay ///
 
         uint256 feeToRepay = Math.min(
-            (delta.p2pBorrowAmount.mulWadByRay(vars.p2pSupplyIndex) -
-                delta.p2pBorrowDelta.mulWadByRay(vars.poolBorrowIndex)) -
-                (delta.p2pSupplyAmount.mulWadByRay(vars.p2pBorrowIndex) -
-                    delta.p2pSupplyDelta.mulWadByRay(vars.poolSupplyIndex)),
+            (delta.p2pBorrowAmount.rayMul(vars.p2pSupplyIndex) -
+                delta.p2pBorrowDelta.rayMul(vars.poolBorrowIndex)) -
+                (delta.p2pSupplyAmount.rayMul(vars.p2pBorrowIndex) -
+                    delta.p2pSupplyDelta.rayMul(vars.poolSupplyIndex)),
             vars.remainingToRepay
         );
         vars.remainingToRepay -= feeToRepay;
@@ -706,14 +708,14 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         // Match peer-to-peer borrow delta first if any.
         if (vars.remainingToRepay > 0 && delta.p2pBorrowDelta > 0) {
             uint256 matchedDelta = Math.min(
-                delta.p2pBorrowDelta.mulWadByRay(vars.poolBorrowIndex),
+                delta.p2pBorrowDelta.rayMul(vars.poolBorrowIndex),
                 vars.remainingToRepay
             );
 
             vars.toRepay += matchedDelta;
             vars.remainingToRepay -= matchedDelta;
-            delta.p2pBorrowDelta -= matchedDelta.divWadByRay(vars.poolBorrowIndex);
-            delta.p2pBorrowAmount -= matchedDelta.divWadByRay(vars.p2pSupplyIndex);
+            delta.p2pBorrowDelta -= matchedDelta.rayDiv(vars.poolBorrowIndex);
+            delta.p2pBorrowAmount -= matchedDelta.rayDiv(vars.p2pSupplyIndex);
             emit P2PBorrowDeltaUpdated(_poolTokenAddress, delta.p2pBorrowDelta);
             emit P2PAmountsUpdated(_poolTokenAddress, delta.p2pSupplyAmount, delta.p2pBorrowAmount);
         }
@@ -745,7 +747,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             IVariableDebtToken(
                 lendingPool.getReserveData(address(underlyingToken)).variableDebtTokenAddress
             ).scaledBalanceOf(address(this))
-            .mulWadByRay(vars.poolBorrowIndex) // The debt of the contract.
+            .rayMul(vars.poolBorrowIndex) // The debt of the contract.
         );
 
         if (vars.toRepay > 0) _repayToPool(underlyingToken, vars.toRepay); // Reverts on error.
@@ -761,14 +763,14 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
             // If unmatched does not cover remainingToRepay, the difference is added to the supply peer-to-peer delta.
             if (unmatched < vars.remainingToRepay) {
-                delta.p2pSupplyDelta += (vars.remainingToRepay - unmatched).divWadByRay(
+                delta.p2pSupplyDelta += (vars.remainingToRepay - unmatched).rayDiv(
                     vars.poolSupplyIndex
                 );
                 emit P2PSupplyDeltaUpdated(_poolTokenAddress, delta.p2pBorrowDelta);
             }
 
-            delta.p2pSupplyAmount -= unmatched.divWadByRay(vars.p2pBorrowIndex);
-            delta.p2pBorrowAmount -= vars.remainingToRepay.divWadByRay(vars.p2pSupplyIndex);
+            delta.p2pSupplyAmount -= unmatched.rayDiv(vars.p2pBorrowIndex);
+            delta.p2pBorrowAmount -= vars.remainingToRepay.rayDiv(vars.p2pSupplyIndex);
             emit P2PAmountsUpdated(_poolTokenAddress, delta.p2pSupplyAmount, delta.p2pBorrowAmount);
 
             _supplyToPool(underlyingToken, vars.remainingToRepay); // Reverts on error.

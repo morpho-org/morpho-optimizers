@@ -499,8 +499,8 @@ contract TestRepay is TestSetup {
             );
 
             uint256 expectedSupplyBalanceInUnderlying = suppliedAmount
-            .divWadByRay(oldVars.SP2PER)
-            .mulWadByRay(expectedSP2PER);
+            .rayDiv(oldVars.SP2PER)
+            .rayMul(expectedSP2PER);
 
             for (uint256 i = 10; i < 20; i++) {
                 (uint256 inP2PSupplier, uint256 onPoolSupplier) = morpho.supplyBalanceInOf(
