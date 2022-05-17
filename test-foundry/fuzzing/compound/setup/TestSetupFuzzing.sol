@@ -34,6 +34,8 @@ interface IAdminComptroller {
 }
 
 contract TestSetupFuzzing is Config, Utils, stdCheats {
+    using CompoundMath for uint256;
+
     Vm public hevm = Vm(HEVM_ADDRESS);
 
     uint256 public constant MAX_BASIS_POINTS = 10_000;
@@ -382,7 +384,7 @@ contract TestSetupFuzzing is Config, Utils, stdCheats {
     }
 
     /// @param amount considered for the repay.
-    function assumeWithdrawAmountIsCorrect(uint256 amount) internal {
-        hevm.assume(amount > 0);
+    function assumeWithdrawAmountIsCorrect(address market, uint256 amount) internal {
+        hevm.assume(amount.div(ICToken(market).exchangeRateCurrent()) > 0);
     }
 }

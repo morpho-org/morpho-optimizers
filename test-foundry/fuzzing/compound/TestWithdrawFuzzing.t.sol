@@ -7,7 +7,7 @@ import {Attacker} from "../../compound/helpers/Attacker.sol";
 contract TestWithdrawFuzzing is TestSetupFuzzing {
     using CompoundMath for uint256;
 
-    function testWithdraw1(
+    function testWithdraw1Fuzzed(
         uint128 _suppliedAmount,
         uint8 _borrowedAsset,
         uint8 _suppliedAsset
@@ -17,7 +17,7 @@ contract TestWithdrawFuzzing is TestSetupFuzzing {
 
         uint256 suppliedAmount = _suppliedAmount;
         assumeSupplyAmountIsCorrect(suppliedUnderlying, suppliedAmount);
-        hevm.assume(suppliedAmount > 10);
+        hevm.assume(suppliedAmount > 10**ERC20(suppliedUnderlying).decimals());
         // You need this to make sure that even with compound's approximation, you'll have an amount to withdraw
 
         borrower1.approve(suppliedUnderlying, suppliedAmount);
@@ -27,14 +27,15 @@ contract TestWithdrawFuzzing is TestSetupFuzzing {
             address(borrower1),
             borrowedAsset
         );
+        assumeBorrowAmountIsCorrect(borrowedAsset, borrowable);
         borrower1.borrow(borrowedAsset, borrowable);
 
+        assumeWithdrawAmountIsCorrect(suppliedAsset, suppliedAmount);
         hevm.expectRevert(abi.encodeWithSignature("UnauthorisedWithdraw()"));
-        assumeWithdrawAmountIsCorrect(suppliedAmount);
         borrower1.withdraw(suppliedAsset, suppliedAmount);
     }
 
-    function testWithdraw2(
+    function testWithdraw2Fuzzed(
         uint128 _suppliedAmount,
         uint8 _suppliedAsset,
         uint8 _random1
@@ -44,23 +45,23 @@ contract TestWithdrawFuzzing is TestSetupFuzzing {
 
         uint256 suppliedAmount = _suppliedAmount;
         assumeSupplyAmountIsCorrect(suppliedUnderlying, suppliedAmount);
-        hevm.assume(suppliedAmount > 10);
+        hevm.assume(suppliedAmount > 10**ERC20(suppliedUnderlying).decimals());
         // You need this to make sure that even with compound's approximation, you'll have an amount to withdraw
 
         supplier1.approve(suppliedUnderlying, suppliedAmount);
         supplier1.supply(suppliedAsset, suppliedAmount);
 
         uint256 withdrawnAmount = (suppliedAmount * _random1) / 255;
-        assumeWithdrawAmountIsCorrect(withdrawnAmount);
+        assumeWithdrawAmountIsCorrect(suppliedAsset, withdrawnAmount);
         supplier1.withdraw(suppliedAsset, withdrawnAmount);
     }
 
-    function testWithdrawAll(uint128 _suppliedAmount, uint8 _suppliedAsset) public {
+    function testWithdrawAllFuzzed(uint128 _suppliedAmount, uint8 _suppliedAsset) public {
         (address suppliedAsset, address suppliedUnderlying) = getAsset(_suppliedAsset);
 
         uint256 suppliedAmount = _suppliedAmount;
         assumeSupplyAmountIsCorrect(suppliedUnderlying, suppliedAmount);
-        hevm.assume(suppliedAmount > 10);
+        hevm.assume(suppliedAmount > 10**ERC20(suppliedUnderlying).decimals());
         // You need this to make sure that even with compound's approximation, you'll have an amount to withdraw
 
         supplier1.approve(suppliedUnderlying, suppliedAmount);
@@ -68,7 +69,7 @@ contract TestWithdrawFuzzing is TestSetupFuzzing {
         supplier1.withdraw(suppliedAsset, type(uint256).max);
     }
 
-    function testWithdraw3_1(
+    function testWithdraw3_1Fuzzed(
         uint128 _amountSupplied,
         uint8 _collateralAsset,
         uint8 _suppliedAsset,
@@ -82,7 +83,7 @@ contract TestWithdrawFuzzing is TestSetupFuzzing {
         uint256 amountSupplied = _amountSupplied;
 
         assumeSupplyAmountIsCorrect(suppliedUnderlying, amountSupplied);
-        hevm.assume(amountSupplied > 10);
+        hevm.assume(amountSupplied > 10**ERC20(suppliedUnderlying).decimals());
         // You need this to make sure that even with compound's approximation, you'll have an amount to withdraw
 
         // Borrower1 & supplier1 are matched for amountSupplied.
@@ -96,6 +97,7 @@ contract TestWithdrawFuzzing is TestSetupFuzzing {
             suppliedAsset
         );
         hevm.assume(borrowable > amountSupplied);
+        assumeBorrowAmountIsCorrect(suppliedAsset, amountSupplied);
         borrower1.borrow(suppliedAsset, amountSupplied);
 
         supplier1.approve(suppliedUnderlying, amountSupplied);
@@ -103,11 +105,11 @@ contract TestWithdrawFuzzing is TestSetupFuzzing {
 
         // Supplier1 withdraws a random amount.
         uint256 withdrawnAmount = (amountSupplied * _random1) / 255;
-        assumeWithdrawAmountIsCorrect(withdrawnAmount);
+        assumeWithdrawAmountIsCorrect(suppliedAsset, withdrawnAmount);
         supplier1.withdraw(suppliedAsset, withdrawnAmount);
     }
 
-    function testWithdraw3_2(
+    function testWithdraw3_2Fuzzed(
         uint128 _amountSupplied,
         uint8 _collateralAsset,
         uint8 _suppliedAsset,
@@ -123,8 +125,10 @@ contract TestWithdrawFuzzing is TestSetupFuzzing {
         uint256 amountSupplied = _amountSupplied;
 
         assumeSupplyAmountIsCorrect(suppliedUnderlying, amountSupplied);
-        hevm.assume(amountSupplied > 10);
-        // You need this to make sure that even with compound's approximation, you'll have an amount to withdraw
+        hevm.assume(amountSupplied > 10**ERC20(suppliedUnderlying).decimals());
+        // You need this to make sure that even with compound's a3_2pproximation, you'll have an amount to withdraw
+        hevm.assume(amountSupplied < ICToken(suppliedAsset).getCash());
+        // In order to make sure that the Delta from the withdraw won't take more than what's available on the market
 
         // Borrower1 & supplier1 are matched for suppliedAmount.
         supplier1.approve(suppliedUnderlying, amountSupplied);
@@ -139,6 +143,7 @@ contract TestWithdrawFuzzing is TestSetupFuzzing {
             suppliedAsset
         );
         hevm.assume(borrowable > amountSupplied);
+        assumeBorrowAmountIsCorrect(suppliedAsset, amountSupplied);
         borrower1.borrow(suppliedAsset, amountSupplied);
 
         // NMAX suppliers have up to suppliedAmount waiting on pool
@@ -148,17 +153,17 @@ contract TestWithdrawFuzzing is TestSetupFuzzing {
         uint256 amountPerSupplier = amountSupplied / NMAX;
         assumeSupplyAmountIsCorrect(suppliedUnderlying, amountPerSupplier);
 
-        for (uint256 i = 1; i < NMAX + 1; i++) {
+        for (uint256 i = 1; i < NMAX; i++) {
             suppliers[i].approve(suppliedUnderlying, amountPerSupplier);
             suppliers[i].supply(suppliedAsset, amountPerSupplier);
         }
 
         uint256 withdrawnAmount = (amountSupplied * _random2) / 255;
-        assumeWithdrawAmountIsCorrect(withdrawnAmount);
+        assumeWithdrawAmountIsCorrect(suppliedAsset, withdrawnAmount);
         supplier1.withdraw(suppliedAsset, type(uint256).max);
     }
 
-    function testWithdraw3_4(
+    function testWithdraw3_4Fuzzed(
         uint128 _amountSupplied,
         uint8 _collateralAsset,
         uint8 _suppliedAsset,
@@ -174,8 +179,10 @@ contract TestWithdrawFuzzing is TestSetupFuzzing {
         uint256 amountSupplied = _amountSupplied;
 
         assumeSupplyAmountIsCorrect(suppliedUnderlying, amountSupplied);
-        hevm.assume(amountSupplied > 10);
+        hevm.assume(amountSupplied > 10**ERC20(suppliedUnderlying).decimals());
         // You need this to make sure that even with compound's approximation, you'll have an amount to withdraw
+        hevm.assume(amountSupplied < ICToken(suppliedAsset).getCash());
+        // In order to make sure that the Delta from the withdraw won't take more than what's available on the market
 
         // Borrower1 & supplier1 are matched for suppliedAmount.
         supplier1.approve(suppliedUnderlying, amountSupplied);
@@ -190,6 +197,7 @@ contract TestWithdrawFuzzing is TestSetupFuzzing {
             suppliedAsset
         );
         hevm.assume(borrowable > amountSupplied);
+        assumeBorrowAmountIsCorrect(suppliedAsset, amountSupplied);
         borrower1.borrow(suppliedAsset, amountSupplied);
 
         // NMAX suppliers have up to suppliedAmount waiting on pool
@@ -199,17 +207,17 @@ contract TestWithdrawFuzzing is TestSetupFuzzing {
         uint256 amountPerSupplier = amountSupplied / (2 * NMAX);
         assumeSupplyAmountIsCorrect(suppliedUnderlying, amountPerSupplier);
 
-        for (uint256 i = 1; i < NMAX + 1; i++) {
+        for (uint256 i = 1; i < NMAX; i++) {
             suppliers[i].approve(suppliedUnderlying, amountPerSupplier);
             suppliers[i].supply(suppliedAsset, amountPerSupplier);
         }
 
         uint256 withdrawnAmount = (amountSupplied * _random2) / 255;
-        assumeWithdrawAmountIsCorrect(withdrawnAmount);
+        assumeWithdrawAmountIsCorrect(suppliedAsset, withdrawnAmount);
         supplier1.withdraw(suppliedAsset, type(uint256).max);
     }
 
-    function testDeltaWithdraw(
+    function testDeltaWithdrawFuzzed(
         uint128 _amountSupplied,
         uint8 _collateralAsset,
         uint8 _suppliedAsset,
@@ -229,8 +237,10 @@ contract TestWithdrawFuzzing is TestSetupFuzzing {
 
         // supplier1 and 20 borrowers are matched for amountSupplied.
         assumeSupplyAmountIsCorrect(suppliedUnderlying, amountSupplied);
+        hevm.assume(amountSupplied < ICToken(suppliedAsset).getCash());
+        // In order to make sure that the Delta from the withdraw won't take more than what's available on the market
 
-        hevm.assume(amountSupplied > 10);
+        hevm.assume(amountSupplied > 10**ERC20(suppliedUnderlying).decimals());
         // You need this to make sure that even with compound's approximation, you'll have an amount to withdraw
 
         supplier1.approve(suppliedUnderlying, amountSupplied);
@@ -240,9 +250,21 @@ contract TestWithdrawFuzzing is TestSetupFuzzing {
         createSigners(NMAX);
 
         uint256 collateralToSupply = ERC20(collateralUnderlying).balanceOf(address(borrower1));
+        borrower1.approve(collateralUnderlying, collateralToSupply);
+        borrower1.supply(collateralAsset, collateralToSupply);
+
+        // Use borrower1 first to check that those borrow are fine.
+        (, uint256 borrowable) = lens.getUserMaxCapacitiesForAsset(
+            address(borrower1),
+            suppliedAsset
+        );
         uint256 amountPerBorrower = amountSupplied / NMAX;
-        assumeBorrowAmountIsCorrect(suppliedAsset, amountPerBorrower);
-        for (uint256 i; i < NMAX; i++) {
+        hevm.assume(borrowable >= amountPerBorrower);
+
+        assumeBorrowAmountIsCorrect(suppliedAsset, NMAX * amountPerBorrower);
+        borrower1.borrow(suppliedAsset, amountPerBorrower);
+
+        for (uint256 i = 1; i < NMAX; i++) {
             borrowers[i].approve(collateralUnderlying, collateralToSupply);
             borrowers[i].supply(collateralAsset, collateralToSupply);
             borrowers[i].borrow(suppliedAsset, amountPerBorrower);
@@ -265,7 +287,7 @@ contract TestWithdrawFuzzing is TestSetupFuzzing {
         }
     }
 
-    function testWithdrawMultipleAssets(
+    function testWithdrawMultipleAssetsFuzzed(
         uint8 _proportionBorrowed,
         uint8 _suppliedAsset1,
         uint8 _suppliedAsset2,
