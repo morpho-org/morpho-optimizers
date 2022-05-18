@@ -8,7 +8,6 @@ import "./MorphoGovernance.sol";
 /// @title Morpho.
 /// @notice Main Morpho contract handling user interactions and pool interactions.
 contract Morpho is MorphoGovernance {
-    using DoubleLinkedList for DoubleLinkedList.List;
     using SafeTransferLib for ERC20;
     using CompoundMath for uint256;
     using DelegateCall for address;
