@@ -24,6 +24,14 @@ test-compound: node_modules
 	@echo Run all tests on ${NETWORK}
 	@forge test -vv -c test-foundry/compound --no-match-contract TestGasConsumption --no-match-test testFuzz
 
+test-compound-ansi: node_modules
+	@echo Run all tests on ${NETWORK}
+	@forge test -vv -c test-foundry/compound --no-match-contract TestGasConsumption --no-match-test testFuzz > trace.ansi
+
+test-compound-html: node_modules
+	@echo Run all tests on ${NETWORK}
+	@forge test -vv -c test-foundry/compound --no-match-contract TestGasConsumption --no-match-test testFuzz | aha --black > trace.html
+
 fuzz-compound: node_modules
 	@echo Run all fuzzing tests on ${NETWORK}
 	@forge test -vv -c test-foundry/compound --match-test testFuzz
@@ -38,14 +46,19 @@ common:
 
 contract-% c-%: node_modules
 	@echo Run tests for contract $* on ${NETWORK}
-	@forge test -vvv -c test-foundry/compound --match-contract $*
+	@forge test -vvv -c test-foundry/compound --match-contract $* > trace.ansi
+
+html-c-%: node_modules
+	@echo Run tests for contract $* on ${NETWORK}
+	@forge test -vvv -c test-foundry/compound --match-contract $* | aha --black > trace.html
 
 single-% s-%: node_modules
 	@echo Run single test $* on ${NETWORK}
 	@forge test -vvv -c test-foundry/compound --match-test $* > trace.ansi
 
-build:
-	@forge build --hardhat
+html-s-%: node_modules
+	@echo Run single test $* on ${NETWORK}
+	@forge test -vvv -c test-foundry/compound --match-test $* | aha --black > trace.html
 
 .PHONY: config
 config:
