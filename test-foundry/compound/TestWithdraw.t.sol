@@ -468,14 +468,14 @@ contract TestWithdraw is TestSetup {
             (, oldVars.BP2PD, , oldVars.BP2PA) = morpho.deltas(cDai);
             oldVars.NVD = ICToken(cDai).borrowIndex();
             oldVars.BP2PER = morpho.p2pBorrowIndex(cDai);
-            (, oldVars.BPY) = getApproxBPYs(cDai);
+            (, oldVars.BPY) = getApproxP2PRates(cDai);
 
             move1000BlocksForward(cDai);
 
             (, newVars.BP2PD, , newVars.BP2PA) = morpho.deltas(cDai);
             newVars.NVD = ICToken(cDai).borrowIndex();
             newVars.BP2PER = morpho.p2pBorrowIndex(cDai);
-            (, newVars.BPY) = getApproxBPYs(cDai);
+            (, newVars.BPY) = getApproxP2PRates(cDai);
             newVars.LR = ICToken(cDai).supplyRatePerBlock();
             newVars.VBR = ICToken(cDai).borrowRatePerBlock();
 
