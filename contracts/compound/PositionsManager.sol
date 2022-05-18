@@ -614,11 +614,11 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         vars.underlyingToken.safeTransfer(_receiver, _amount);
 
         emit Withdrawn(
-            msg.sender,
+            _supplier,
             _poolTokenAddress,
             _amount,
-            supplyBalanceInOf[_poolTokenAddress][msg.sender].onPool,
-            supplyBalanceInOf[_poolTokenAddress][msg.sender].inP2P
+            supplyBalanceInOf[_poolTokenAddress][_supplier].onPool,
+            supplyBalanceInOf[_poolTokenAddress][_supplier].inP2P
         );
     }
 
