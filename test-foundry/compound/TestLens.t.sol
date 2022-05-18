@@ -409,9 +409,7 @@ contract TestLens is TestSetup {
         );
 
         (uint256 withdrawableDai, ) = lens.getUserMaxCapacitiesForAsset(address(borrower1), cDai);
-
         (uint256 withdrawableUsdc, ) = lens.getUserMaxCapacitiesForAsset(address(borrower1), cUsdc);
-
         (, uint256 borrowableUsdt) = lens.getUserMaxCapacitiesForAsset(address(borrower1), cUsdt);
 
         uint256 expectedBorrowableUsdt = (assetDatacDai.maxDebtValue + assetDatacUsdc.maxDebtValue)
@@ -679,7 +677,7 @@ contract TestLens is TestSetup {
     }
 
     function testGetUpdatedIndexes() public {
-        hevm.roll(block.number + (365 days * 24 * 60 * 4));
+        hevm.roll(block.number + (24 * 60 * 4));
         (
             uint256 newP2PSupplyIndex,
             uint256 newP2PBorrowIndex,
@@ -697,7 +695,7 @@ contract TestLens is TestSetup {
     }
 
     function testGetUpdatedP2PIndexes() public {
-        hevm.roll(block.number + (365 days * 24 * 60 * 4));
+        hevm.roll(block.number + (24 * 60 * 4));
         (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex) = lens.getUpdatedP2PIndexes(cDai);
 
         morpho.updateP2PIndexes(cDai);
@@ -706,7 +704,7 @@ contract TestLens is TestSetup {
     }
 
     function testGetUpdatedP2PSupplyIndex() public {
-        hevm.roll(block.number + (365 days * 24 * 60 * 4));
+        hevm.roll(block.number + (24 * 60 * 4));
         uint256 newP2PSupplyIndex = lens.getUpdatedP2PSupplyIndex(cDai);
 
         morpho.updateP2PIndexes(cDai);
@@ -714,7 +712,7 @@ contract TestLens is TestSetup {
     }
 
     function testGetUpdatedP2PBorrowIndex() public {
-        hevm.roll(block.number + (365 days * 24 * 60 * 4));
+        hevm.roll(block.number + (24 * 60 * 4));
         uint256 newP2PBorrowIndex = lens.getUpdatedP2PBorrowIndex(cDai);
 
         morpho.updateP2PIndexes(cDai);
