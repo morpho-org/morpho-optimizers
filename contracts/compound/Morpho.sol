@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import "./libraries/DelegateCall.sol";
+import "../common/libraries/DelegateCall.sol";
 
 import "./MorphoGovernance.sol";
 
