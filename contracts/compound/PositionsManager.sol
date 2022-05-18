@@ -751,11 +751,11 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         _leaveMarketIfNeeded(_poolTokenAddress, _user);
 
         emit Repaid(
-            msg.sender,
+            _user,
             _poolTokenAddress,
             _amount,
-            borrowBalanceInOf[_poolTokenAddress][msg.sender].onPool,
-            borrowBalanceInOf[_poolTokenAddress][msg.sender].inP2P
+            borrowBalanceInOf[_poolTokenAddress][_user].onPool,
+            borrowBalanceInOf[_poolTokenAddress][_user].inP2P
         );
     }
 
