@@ -41,12 +41,26 @@ git submodule update
 
 Refer to the `env.example` for the required environment variable.
 
+In order to have the traces of the run exported as an HTML page, install the aha module.
+
+For OSX users:
+
+```
+brew install aha
+```
+
+For debian users:
+
+```
+apt install aha
+```
+
 To run tests on different platforms, navigate a Unix terminal to the root folder of the project and run the command of your choice:
 
 To run every test:
 
 ```
-make test
+make test-compound
 ```
 
 or to run only the desired section:
