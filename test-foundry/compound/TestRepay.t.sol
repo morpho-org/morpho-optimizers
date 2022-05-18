@@ -485,7 +485,7 @@ contract TestRepay is TestSetup {
                 expectedSP2PER
             );
 
-            for (uint256 i = 10; i < 20; i++) {
+            for (uint256 i = 1; i <= 10; i++) {
                 (uint256 inP2PSupplier, uint256 onPoolSupplier) = morpho.supplyBalanceInOf(
                     cDai,
                     address(suppliers[i])
@@ -502,7 +502,7 @@ contract TestRepay is TestSetup {
         }
 
         // Supply delta reduction with suppliers withdrawing
-        for (uint256 i = 10; i < 20; i++) {
+        for (uint256 i = 1; i <= 10; i++) {
             suppliers[i].withdraw(cDai, suppliedAmount);
         }
 
