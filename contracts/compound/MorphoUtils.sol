@@ -116,7 +116,7 @@ abstract contract MorphoUtils is MorphoStorage {
     /// @notice Updates the peer-to-peer indexes.
     /// @dev Note: This function updates the exchange rate on Compound. As a consequence only a call to exchangeRatesStored() is necessary to get the most up to date exchange rate.
     /// @param _poolTokenAddress The address of the market to update.
-    function updateP2PIndexes(address _poolTokenAddress) public {
+    function updateP2PIndexes(address _poolTokenAddress) public isMarketCreated(_poolTokenAddress) {
         address(interestRatesManager).functionDelegateCall(
             abi.encodeWithSelector(
                 interestRatesManager.updateP2PIndexes.selector,
