@@ -40,7 +40,7 @@ contract Lens {
 
     /// STORAGE ///
 
-    uint256 public constant MAX_BASIS_POINTS = 10_000;
+    uint256 public constant MAX_BASIS_POINTS = 10_000; // 100% (in basis points).
     uint256 public constant WAD = 1e18;
     IMorpho public immutable morpho;
 
@@ -169,6 +169,43 @@ contract Lens {
         isPartiallyPaused_ = marketStatus.isPartiallyPaused;
         reserveFactor_ = morpho.marketParameters(_poolTokenAddress).reserveFactor;
         (, collateralFactor_, ) = morpho.comptroller().markets(_poolTokenAddress);
+    }
+
+    /// @notice Computes and returns peer-to-peer and pool rates for a specific market (without taking into account deltas!).
+    /// @param _poolTokenAddress The market address.
+    /// @return p2pSupplyRate_ The market's peer-to-peer supply rate per block (in wad).
+    /// @return p2pBorrowRate_ The market's peer-to-peer borrow rate per block (in wad).
+    /// @return poolSupplyRate_ The market's pool supply rate per block (in wad).
+    /// @return poolBorrowRate_ The market's pool borrow rate per block (in wad).
+    function getRates(address _poolTokenAddress)
+        public
+        view
+        returns (
+            uint256 p2pSupplyRate_,
+            uint256 p2pBorrowRate_,
+            uint256 poolSupplyRate_,
+            uint256 poolBorrowRate_
+        )
+    {
+        ICToken cToken = ICToken(_poolTokenAddress);
+
+        poolSupplyRate_ = cToken.supplyRatePerBlock();
+        poolBorrowRate_ = cToken.borrowRatePerBlock();
+        Types.MarketParameters memory marketParams = morpho.marketParameters(_poolTokenAddress);
+
+        uint256 rate = ((MAX_BASIS_POINTS - marketParams.p2pIndexCursor) *
+            poolSupplyRate_ +
+            marketParams.p2pIndexCursor *
+            poolBorrowRate_) / MAX_BASIS_POINTS;
+
+        p2pSupplyRate_ =
+            rate -
+            (marketParams.reserveFactor * (rate - poolSupplyRate_)) /
+            MAX_BASIS_POINTS;
+        p2pBorrowRate_ =
+            rate +
+            (marketParams.reserveFactor * (poolBorrowRate_ - rate)) /
+            MAX_BASIS_POINTS;
     }
 
     /// BALANCES ///

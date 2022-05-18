@@ -250,8 +250,8 @@ contract TestSetup is Config, Utils, stdCheats {
 
     /// @notice Computes and returns peer-to-peer rates for a specific market (without taking into account deltas !).
     /// @param _poolTokenAddress The market address.
-    /// @return p2pSupplyRate_ The market's supply rate in peer-to-peer (in ray).
-    /// @return p2pBorrowRate_ The market's borrow rate in peer-to-peer (in ray).
+    /// @return p2pSupplyRate_ The market's supply rate in peer-to-peer (in wad).
+    /// @return p2pBorrowRate_ The market's borrow rate in peer-to-peer (in wad).
     function getApproxBPYs(address _poolTokenAddress)
         public
         view
