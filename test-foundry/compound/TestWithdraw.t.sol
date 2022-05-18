@@ -499,7 +499,7 @@ contract TestWithdraw is TestSetup {
                 expectedBP2PER
             );
 
-            for (uint256 i = 10; i < 20; i++) {
+            for (uint256 i = 1; i <= 10; i++) {
                 (uint256 inP2PBorrower, uint256 onPoolBorrower) = morpho.borrowBalanceInOf(
                     cDai,
                     address(borrowers[i])
@@ -515,7 +515,7 @@ contract TestWithdraw is TestSetup {
         }
 
         // Borrow delta reduction with borrowers repaying
-        for (uint256 i = 10; i < 20; i++) {
+        for (uint256 i = 1; i <= 10; i++) {
             borrowers[i].approve(dai, borrowedAmount);
             borrowers[i].repay(cDai, borrowedAmount);
         }
