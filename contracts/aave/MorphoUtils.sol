@@ -188,21 +188,15 @@ contract MorphoUtils is MorphoStorage {
                         assetData.tokenUnit;
 
                 if (_withdrawnAmount > 0) {
-                    liquidityData.collateralValue -= Math.min(
-                        (_withdrawnAmount * assetData.underlyingPrice) / assetData.tokenUnit,
-                        liquidityData.collateralValue
-                    );
-                    liquidityData.avgLtv -= Math.min(
-                        (_withdrawnAmount * assetData.underlyingPrice * assetData.ltv) /
-                            assetData.tokenUnit,
-                        liquidityData.avgLtv
-                    );
-                    liquidityData.avgLiquidationThreshold -= Math.min(
-                        (_withdrawnAmount *
-                            assetData.underlyingPrice *
-                            assetData.liquidationThreshold) / assetData.tokenUnit,
-                        liquidityData.avgLiquidationThreshold
-                    );
+                    liquidityData.collateralValue -=
+                        (_withdrawnAmount * assetData.underlyingPrice) /
+                        assetData.tokenUnit;
+                    liquidityData.avgLtv -=
+                        ((_withdrawnAmount * assetData.underlyingPrice) / assetData.tokenUnit) *
+                        assetData.ltv;
+                    liquidityData.avgLiquidationThreshold -=
+                        ((_withdrawnAmount * assetData.underlyingPrice) / assetData.tokenUnit) *
+                        assetData.liquidationThreshold;
                 }
             }
         }
