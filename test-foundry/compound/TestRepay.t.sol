@@ -512,7 +512,7 @@ contract TestRepay is TestSetup {
             (oldVars.SP2PD, , oldVars.SP2PA, ) = morpho.deltas(cDai);
             oldVars.SPI = ICToken(cDai).exchangeRateCurrent();
             oldVars.SP2PER = morpho.p2pSupplyIndex(cDai);
-            (oldVars.BPY, ) = getApproxBPYs(cDai);
+            (oldVars.BPY, ) = getApproxP2PRates(cDai);
 
             move1000BlocksForward(cDai);
 

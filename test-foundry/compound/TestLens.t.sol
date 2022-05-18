@@ -754,7 +754,7 @@ contract TestLens is TestSetup {
             uint256 poolBorrowRate
         ) = lens.getRates(cDai);
 
-        (uint256 expectedP2PSupplyRate, uint256 excpectedP2PBorrowRate) = getApproxBPYs(cDai);
+        (uint256 expectedP2PSupplyRate, uint256 excpectedP2PBorrowRate) = getApproxP2PRates(cDai);
         uint256 expectedPoolSupplyRate = ICToken(cDai).supplyRatePerBlock();
         uint256 expectedPoolBorrowRate = ICToken(cDai).borrowRatePerBlock();
 
