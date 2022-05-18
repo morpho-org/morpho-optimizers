@@ -375,49 +375,52 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     /// @dev Implements withdraw logic with security checks.
     /// @param _poolTokenAddress The address of the market the user wants to interact with.
     /// @param _amount The amount of token (in underlying).
-    /// @param _supplier The address of the supplier.
-    /// @param _receiver The address of the user who will receive the tokens.
     /// @param _maxGasForMatching The maximum amount of gas to consume within a matching engine loop.
     function withdrawLogic(
         address _poolTokenAddress,
         uint256 _amount,
-        address _supplier,
-        address _receiver,
         uint256 _maxGasForMatching
     ) external {
         if (_amount == 0) revert AmountIsZero();
-        if (!userMembership[_poolTokenAddress][_supplier]) revert UserNotMemberOfMarket();
+        if (!userMembership[_poolTokenAddress][msg.sender]) revert UserNotMemberOfMarket();
 
         updateP2PIndexes(_poolTokenAddress);
         uint256 toWithdraw = Math.min(
-            _getUserSupplyBalanceInOf(_poolTokenAddress, _supplier),
+            _getUserSupplyBalanceInOf(_poolTokenAddress, msg.sender),
             _amount
         );
 
-        if (_isLiquidable(_supplier, _poolTokenAddress, toWithdraw, 0))
+        if (_isLiquidable(msg.sender, _poolTokenAddress, toWithdraw, 0))
             revert UnauthorisedWithdraw();
 
-        _safeWithdrawLogic(_poolTokenAddress, toWithdraw, _supplier, _receiver, _maxGasForMatching);
+        _safeWithdrawLogic(
+            _poolTokenAddress,
+            toWithdraw,
+            msg.sender,
+            msg.sender,
+            _maxGasForMatching
+        );
     }
 
     /// @dev Implements repay logic with security checks.
     /// @param _poolTokenAddress The address of the market the user wants to interact with.
-    /// @param _user The address of the user.
     /// @param _amount The amount of token (in underlying).
     /// @param _maxGasForMatching The maximum amount of gas to consume within a matching engine loop.
     function repayLogic(
         address _poolTokenAddress,
-        address _user,
         uint256 _amount,
         uint256 _maxGasForMatching
     ) external {
         if (_amount == 0) revert AmountIsZero();
-        if (!userMembership[_poolTokenAddress][_user]) revert UserNotMemberOfMarket();
+        if (!userMembership[_poolTokenAddress][msg.sender]) revert UserNotMemberOfMarket();
 
         updateP2PIndexes(_poolTokenAddress);
-        uint256 toRepay = Math.min(_getUserBorrowBalanceInOf(_poolTokenAddress, _user), _amount);
+        uint256 toRepay = Math.min(
+            _getUserBorrowBalanceInOf(_poolTokenAddress, msg.sender),
+            _amount
+        );
 
-        _safeRepayLogic(_poolTokenAddress, _user, toRepay, _maxGasForMatching);
+        _safeRepayLogic(_poolTokenAddress, msg.sender, toRepay, _maxGasForMatching);
     }
 
     /// @notice Liquidates a position.

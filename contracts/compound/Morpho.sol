@@ -116,8 +116,6 @@ contract Morpho is MorphoGovernance {
                 positionsManager.withdrawLogic.selector,
                 _poolTokenAddress,
                 _amount,
-                msg.sender,
-                msg.sender,
                 defaultMaxGasForMatching.withdraw
             )
         );
@@ -136,7 +134,6 @@ contract Morpho is MorphoGovernance {
             abi.encodeWithSelector(
                 positionsManager.repayLogic.selector,
                 _poolTokenAddress,
-                msg.sender,
                 _amount,
                 defaultMaxGasForMatching.repay
             )
