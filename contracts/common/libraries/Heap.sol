@@ -110,30 +110,26 @@ library BasicHeap {
     /// @param _heap The heap to modify.
     /// @param _index The index of the account to move.
     function shiftDown(Heap storage _heap, uint256 _index) private {
+        uint256 accountsLength = _heap.accounts.length;
         uint256 leftIndex;
         uint256 rightIndex;
         uint256 maxIndex;
         uint256 maxValue;
+
         while (true) {
             leftIndex = 2 * _index;
             rightIndex = 2 * _index + 1;
             maxIndex = _index;
             maxValue = _heap.accounts[_index - 1].value;
 
-            if (
-                leftIndex <= _heap.accounts.length && _heap.accounts[leftIndex - 1].value > maxValue
-            ) {
+            if (leftIndex <= accountsLength && _heap.accounts[leftIndex - 1].value > maxValue)
                 maxIndex = leftIndex;
-            }
-            if (
-                rightIndex <= _heap.accounts.length &&
-                _heap.accounts[rightIndex - 1].value > maxValue
-            ) {
+
+            if (rightIndex <= accountsLength && _heap.accounts[rightIndex - 1].value > maxValue)
                 maxIndex = rightIndex;
-            }
-            if (maxIndex != _index) {
-                swap(_heap, _index, maxIndex);
-            } else break;
+
+            if (maxIndex != _index) swap(_heap, _index, maxIndex);
+            else break;
         }
     }
 
@@ -151,8 +147,9 @@ library BasicHeap {
         // _heap cannot contain the 0 address
         if (_id == address(0)) revert AddressIsZero();
         _heap.accounts.push(Account(_id, _value));
-        _heap.indexes[_id] = _heap.accounts.length;
-        shiftUp(_heap, _heap.accounts.length);
+        uint256 accountsLength = _heap.accounts.length;
+        _heap.indexes[_id] = accountsLength;
+        shiftUp(_heap, accountsLength);
     }
 
     /// @notice Increase the amount of an account in the `_heap`.
@@ -190,14 +187,14 @@ library BasicHeap {
     /// @param _heap The heap to modify.
     /// @param _id The address of the account to remove.
     function remove(Heap storage _heap, address _id) private {
-        Account[] storage accounts = _heap.accounts;
         uint256 index = _heap.indexes[_id];
-        if (index == accounts.length) {
-            accounts.pop();
+        uint256 accountsLength = _heap.accounts.length;
+        if (index == accountsLength) {
+            _heap.accounts.pop();
             delete _heap.indexes[_id];
         } else {
-            swap(_heap, index, accounts.length);
-            accounts.pop();
+            swap(_heap, index, accountsLength);
+            _heap.accounts.pop();
             delete _heap.indexes[_id];
             shiftDown(_heap, index);
         }
