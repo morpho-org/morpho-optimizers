@@ -251,7 +251,7 @@ contract TestSetup is Config, Utils, stdCheats {
     /// @param _poolTokenAddress The market address.
     /// @return p2pSupplyRate_ The market's supply rate in peer-to-peer (in wad).
     /// @return p2pBorrowRate_ The market's borrow rate in peer-to-peer (in wad).
-    function getApproxBPYs(address _poolTokenAddress)
+    function getApproxP2PRates(address _poolTokenAddress)
         public
         view
         returns (uint256 p2pSupplyRate_, uint256 p2pBorrowRate_)

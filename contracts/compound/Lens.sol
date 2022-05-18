@@ -193,18 +193,18 @@ contract Lens {
         poolBorrowRate_ = cToken.borrowRatePerBlock();
         Types.MarketParameters memory marketParams = morpho.marketParameters(_poolTokenAddress);
 
-        uint256 rate = ((MAX_BASIS_POINTS - marketParams.p2pIndexCursor) *
+        uint256 p2pRate = ((MAX_BASIS_POINTS - marketParams.p2pIndexCursor) *
             poolSupplyRate_ +
             marketParams.p2pIndexCursor *
             poolBorrowRate_) / MAX_BASIS_POINTS;
 
         p2pSupplyRate_ =
-            rate -
-            (marketParams.reserveFactor * (rate - poolSupplyRate_)) /
+            p2pRate -
+            (marketParams.reserveFactor * (p2pRate - poolSupplyRate_)) /
             MAX_BASIS_POINTS;
         p2pBorrowRate_ =
-            rate +
-            (marketParams.reserveFactor * (poolBorrowRate_ - rate)) /
+            p2pRate +
+            (marketParams.reserveFactor * (poolBorrowRate_ - p2pRate)) /
             MAX_BASIS_POINTS;
     }
 
