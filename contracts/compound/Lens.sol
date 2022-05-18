@@ -228,12 +228,13 @@ contract Lens {
             ++i;
 
             if (_poolTokenAddress == poolTokenEntered) {
-                debtValue += _borrowedAmount.mul(assetData.underlyingPrice);
-                uint256 maxDebtValueSub = _withdrawnAmount.mul(assetData.underlyingPrice).mul(
-                    assetData.collateralFactor
-                );
+                if (_borrowedAmount > 0)
+                    debtValue += _borrowedAmount.mul(assetData.underlyingPrice);
 
-                maxDebtValue -= CompoundMath.min(maxDebtValue, maxDebtValueSub);
+                if (_withdrawnAmount > 0)
+                    maxDebtValue -= _withdrawnAmount.mul(assetData.underlyingPrice).mul(
+                        assetData.collateralFactor
+                    );
             }
         }
     }
