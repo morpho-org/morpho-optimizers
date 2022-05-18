@@ -658,4 +658,65 @@ contract TestWithdraw is TestSetup {
 
         assertTrue(ERC20(dai).balanceOf(address(supplier1)) > balanceAtTheBeginning);
     }
+
+    function _testBreakP2PDisable(uint64 maxGas, uint256 nBorrowers) public {
+        uint256 borrowAmount = 1 ether;
+        uint256 collateralAmount = 2 * borrowAmount;
+        uint256 supplyAmount = nBorrowers * borrowAmount;
+
+        supplier1.approve(usdc, type(uint256).max);
+        supplier1.supply(cUsdc, to6Decimals(supplyAmount));
+
+        for (uint256 i = borrowers.length; i < nBorrowers; i++) {
+            borrowers.push(new User(morpho));
+            hevm.label(
+                address(borrowers[i]),
+                string(abi.encodePacked("Borrower", Strings.toString(i + 1)))
+            );
+            fillUserBalances(borrowers[i]);
+        }
+
+        for (uint256 i = 0; i < nBorrowers; i++) {
+            borrowers[i].approve(dai, type(uint256).max);
+            borrowers[i].approve(usdc, type(uint256).max);
+            borrowers[i].supply(cDai, collateralAmount);
+            borrowers[i].borrow(cUsdc, to6Decimals(borrowAmount));
+        }
+
+        morpho.toggleP2P(cUsdc);
+        setDefaultMaxGasForMatchingHelper(maxGas, maxGas, maxGas, maxGas);
+
+        supplier1.withdraw(cUsdc, to6Decimals(supplyAmount));
+
+        for (uint256 i = 0; i < nBorrowers; i++) {
+            borrowers[i].repay(cUsdc, to6Decimals(borrowAmount));
+            borrowers[i].withdraw(cDai, collateralAmount - (1e4 gwei));
+        }
+    }
+
+    // Everything is fine because no delta is created.
+    function testBreakP2PDisable1() public {
+        // with default max gas
+        uint64 maxGas = 3e6;
+        uint256 nBorrowers = 3;
+        _testBreakP2PDisable(maxGas, nBorrowers);
+    }
+
+    // Before fix: a delta is created and a whale withdraws right after its liquidity creating a delta that nobody can repay.
+    // After fix: this test should pass.
+    function testBreakP2PDisable2() public {
+        // with reduced max gas
+        uint64 maxGas = 2e5;
+        uint256 nBorrowers = 3;
+        _testBreakP2PDisable(maxGas, nBorrowers);
+    }
+
+    // Before fix: same as previous but with maxGas as 0.
+    // After fix: this test should pass.
+    function testBreakP2PDisable3() public {
+        // with zero max gas
+        uint64 maxGas = 0;
+        uint256 nBorrowers = 3;
+        _testBreakP2PDisable(maxGas, nBorrowers);
+    }
 }
