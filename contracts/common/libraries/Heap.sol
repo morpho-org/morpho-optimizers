@@ -114,6 +114,7 @@ library BasicHeap {
         uint256 rightIndex;
         uint256 maxIndex;
         uint256 maxValue;
+
         while (true) {
             leftIndex = 2 * _index;
             rightIndex = 2 * _index + 1;
@@ -122,18 +123,15 @@ library BasicHeap {
 
             if (
                 leftIndex <= _heap.accounts.length && _heap.accounts[leftIndex - 1].value > maxValue
-            ) {
-                maxIndex = leftIndex;
-            }
+            ) maxIndex = leftIndex;
+
             if (
                 rightIndex <= _heap.accounts.length &&
                 _heap.accounts[rightIndex - 1].value > maxValue
-            ) {
-                maxIndex = rightIndex;
-            }
-            if (maxIndex != _index) {
-                swap(_heap, _index, maxIndex);
-            } else break;
+            ) maxIndex = rightIndex;
+
+            if (maxIndex != _index) swap(_heap, _index, maxIndex);
+            else break;
         }
     }
 
