@@ -746,4 +746,23 @@ contract TestLens is TestSetup {
             assertEq(morphoEnteredMarkets[i], lensEnteredMarkets[i]);
         }
     }
+
+    function testGetRates() public {
+        hevm.roll(block.number + 1_000);
+        (
+            uint256 p2pSupplyRate,
+            uint256 p2pBorrowRate,
+            uint256 poolSupplyRate,
+            uint256 poolBorrowRate
+        ) = lens.getRates(cDai);
+
+        (uint256 expectedP2PSupplyRate, uint256 excpectedP2PBorrowRate) = getApproxBPYs(cDai);
+        uint256 expectedPoolSupplyRate = ICToken(cDai).supplyRatePerBlock();
+        uint256 expectedPoolBorrowRate = ICToken(cDai).borrowRatePerBlock();
+
+        assertEq(p2pSupplyRate, expectedP2PSupplyRate);
+        assertEq(p2pBorrowRate, excpectedP2PBorrowRate);
+        assertEq(poolSupplyRate, expectedPoolSupplyRate);
+        assertEq(poolBorrowRate, expectedPoolBorrowRate);
+    }
 }
