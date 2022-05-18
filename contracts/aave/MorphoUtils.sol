@@ -202,10 +202,12 @@ contract MorphoUtils is MorphoStorage {
         }
 
         if (liquidityData.collateralValue > 0) {
-            liquidityData.avgLtv = liquidityData.avgLtv / liquidityData.collateralValue;
-            liquidityData.avgLiquidationThreshold =
-                liquidityData.avgLiquidationThreshold /
-                liquidityData.collateralValue;
+            unchecked {
+                liquidityData.avgLtv = liquidityData.avgLtv / liquidityData.collateralValue;
+                liquidityData.avgLiquidationThreshold =
+                    liquidityData.avgLiquidationThreshold /
+                    liquidityData.collateralValue;
+            }
         } else {
             liquidityData.avgLtv = 0;
             liquidityData.avgLiquidationThreshold = 0;
