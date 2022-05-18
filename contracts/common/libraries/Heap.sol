@@ -103,19 +103,21 @@ library BasicHeap {
         }
     }
 
+    // only call when id is not in the heap and with value != 0
     function insert(
         Heap storage heap,
         address id,
         uint256 value
     ) private {
+        // heap cannot contain the 0 address
         if (id == address(0)) revert AddressIsZero();
         heap.accounts.push(Account(id, value));
         heap.indexes[id] = heap.accounts.length;
         siftUp(heap, heap.accounts.length);
     }
 
+    // only when id is in the heap with a value greater than newValue
     function decrease(
-        // only call with smaller value and when id is in the heap
         Heap storage heap,
         address id,
         uint256 newValue
@@ -125,8 +127,8 @@ library BasicHeap {
         siftDown(heap, index);
     }
 
+    // only when id is in the heap with a value smaller than newValue
     function increase(
-        // only call with greater value and when id is in the heap
         Heap storage heap,
         address id,
         uint256 newValue
@@ -136,8 +138,8 @@ library BasicHeap {
         siftUp(heap, index);
     }
 
+    // only call when id is in the heap
     function remove(Heap storage heap, address id) private {
-        // only call when id is in the heap
         Account[] storage accounts = heap.accounts;
         uint256 index = heap.indexes[id];
         if (index == accounts.length) {
@@ -153,6 +155,7 @@ library BasicHeap {
 
     /// INTERNAL ///
 
+    // only call with id in the heap,with value formerValue
     function update(
         Heap storage heap,
         address id,
