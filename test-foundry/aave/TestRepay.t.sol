@@ -4,7 +4,7 @@ pragma solidity 0.8.13;
 import "./setup/TestSetup.sol";
 
 contract TestRepay is TestSetup {
-    using Math for uint256;
+    using WadRayMath for uint256;
 
     function testRepay1() public {
         uint256 amount = 10_000 ether;
@@ -487,8 +487,9 @@ contract TestRepay is TestSetup {
             .rayDiv(newVars.SP2PA.wadToRay());
 
             uint256 expectedSP2PER = oldVars.SP2PER.rayMul(
-                computeCompoundedInterest(oldVars.APR, 365 days).rayMul(RAY - shareOfTheDelta) +
-                    shareOfTheDelta.rayMul(newVars.NI).rayDiv(oldVars.NI)
+                computeCompoundedInterest(oldVars.APR, 365 days).rayMul(
+                    WadRayMath.ray() - shareOfTheDelta
+                ) + shareOfTheDelta.rayMul(newVars.NI).rayDiv(oldVars.NI)
             );
 
             assertApproxEq(
