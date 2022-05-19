@@ -34,6 +34,22 @@ contract TestGovernance is TestSetup {
         morpho.createMarket(cAave);
     }
 
+    function testShouldCreateMarketWithRightParams() public {
+        Types.MarketParameters memory rightParams = Types.MarketParameters(1_000, 3_333);
+        Types.MarketParameters memory wrongParams1 = Types.MarketParameters(10_001, 0);
+        Types.MarketParameters memory wrongParams2 = Types.MarketParameters(0, 10_001);
+
+        hevm.expectRevert(abi.encodeWithSignature("ExceedsMaxBasisPoints()"));
+        morpho.createMarket(cAave, wrongParams1);
+        hevm.expectRevert(abi.encodeWithSignature("ExceedsMaxBasisPoints()"));
+        morpho.createMarket(cAave, wrongParams2);
+
+        morpho.createMarket(cAave, rightParams);
+        (uint16 reserveFactor, uint256 p2pIndexCursor) = morpho.marketParameters(cAave);
+        assertEq(reserveFactor, 1_000);
+        assertEq(p2pIndexCursor, 3_333);
+    }
+
     function testOnlyOwnerCanSetReserveFactor() public {
         for (uint256 i = 0; i < pools.length; i++) {
             hevm.expectRevert("Ownable: caller is not the owner");
