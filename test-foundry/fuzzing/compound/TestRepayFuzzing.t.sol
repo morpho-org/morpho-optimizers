@@ -14,14 +14,14 @@ contract TestRepayFuzzing is TestSetupFuzzing {
         uint8 _random1,
         uint8 _random2
     ) public {
-        hevm.assume(_random1 > 0);
-        hevm.assume(_random2 > 0);
+        hevm.assume(_random1 > 10);
+        hevm.assume(_random2 > 10);
 
         (address suppliedAsset, address suppliedUnderlying) = getAsset(_suppliedAsset);
         (address borrowedAsset, address borrowedUnderlying) = getAsset(_borrowedAsset);
 
         uint256 supplied = _supplied;
-        // To limit number of run where computed amounts are 0.
+        // To limit number of run where computed borrow & repay amounts are 0.
         hevm.assume(supplied > 10**ERC20(suppliedUnderlying).decimals());
 
         assumeSupplyAmountIsCorrect(suppliedUnderlying, supplied);
@@ -53,15 +53,15 @@ contract TestRepayFuzzing is TestSetupFuzzing {
         uint8 _random2,
         uint8 _random3
     ) public {
-        hevm.assume(_random1 > 0);
-        hevm.assume(_random2 > 0);
-        hevm.assume(_random3 > 0);
+        hevm.assume(_random1 > 10);
+        hevm.assume(_random2 > 10);
+        hevm.assume(_random3 > 10);
 
         (address suppliedAsset, address suppliedUnderlying) = getAsset(_suppliedAsset);
         (address borrowedAsset, address borrowedUnderlying) = getAsset(_borrowedAsset);
 
         uint256 supplied = _supplied;
-        // To limit number of run where computed amounts are 0.
+        // To limit number of run where computed borrow & repay amounts are 0.
         hevm.assume(supplied > 10**ERC20(suppliedUnderlying).decimals());
 
         assumeSupplyAmountIsCorrect(suppliedUnderlying, supplied);
@@ -106,9 +106,9 @@ contract TestRepayFuzzing is TestSetupFuzzing {
         uint8 _random2,
         uint8 _random3
     ) public {
-        hevm.assume(_random1 > 0);
-        hevm.assume(_random2 > 0);
-        hevm.assume(_random3 > 0);
+        hevm.assume(_random1 > 10);
+        hevm.assume(_random2 > 10);
+        hevm.assume(_random3 > 10);
 
         (address suppliedAsset, address suppliedUnderlying) = getAsset(_suppliedAsset);
         (address borrowedAsset, address borrowedUnderlying) = getAsset(_borrowedAsset);
@@ -161,8 +161,9 @@ contract TestRepayFuzzing is TestSetupFuzzing {
         uint8 _random1,
         uint8 _random2
     ) public {
-        hevm.assume(_random1 > 0);
-        hevm.assume(_random2 > 0);
+        hevm.assume(_random1 > 10);
+        hevm.assume(_random2 > 10);
+        uint256 borrowAmount = _borrowAmount;
 
         (address collateralAsset, address collateralUnderlying) = getAsset(_collateralAsset);
         (address borrowedAsset, address borrowedUnderlying) = getAsset(_borrowedAsset);
@@ -172,7 +173,11 @@ contract TestRepayFuzzing is TestSetupFuzzing {
         borrower1.approve(collateralUnderlying, collateralToSupply);
         borrower1.supply(collateralAsset, collateralToSupply);
 
-        uint256 borrowAmount = _borrowAmount;
+        (, uint256 borrowable) = lens.getUserMaxCapacitiesForAsset(
+            address(borrower1),
+            borrowedAsset
+        );
+        hevm.assume(borrowAmount < borrowable);
         assumeBorrowAmountIsCorrect(borrowedAsset, borrowAmount);
         borrower1.borrow(borrowedAsset, borrowAmount);
 

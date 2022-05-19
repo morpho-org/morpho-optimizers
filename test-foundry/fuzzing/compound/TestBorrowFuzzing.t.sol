@@ -55,7 +55,10 @@ contract TestBorrowFuzzing is TestSetupFuzzing {
             address(borrower1),
             borrowedAsset
         );
+
         uint256 borrowedAmount = (borrowable * _random1) / 255;
+        hevm.assume(borrowedAmount + 5 < borrowable); // +5 to cover for rounding error
+
         assumeBorrowAmountIsCorrect(borrowedAsset, borrowedAmount);
         borrower1.borrow(borrowedAsset, borrowedAmount);
     }
@@ -89,6 +92,8 @@ contract TestBorrowFuzzing is TestSetupFuzzing {
         );
 
         uint256 borrowedAmount = (borrowable * _random1) / 255;
+        hevm.assume(borrowedAmount + 5 < borrowable); // +5 to cover for rounding error
+
         assumeBorrowAmountIsCorrect(matchedAsset, borrowedAmount);
         borrower1.borrow(matchedAsset, borrowedAmount);
     }
@@ -119,6 +124,7 @@ contract TestBorrowFuzzing is TestSetupFuzzing {
             matchedAsset
         );
         uint256 borrowedAmount = (borrowable * _random1) / 255;
+        hevm.assume(borrowedAmount + 5 < borrowable); // +5 to cover for rounding error
         assumeBorrowAmountIsCorrect(matchedAsset, borrowedAmount);
 
         uint256 NMAX = ((20 * uint256(_random1)) / 255) + 1;
@@ -159,11 +165,14 @@ contract TestBorrowFuzzing is TestSetupFuzzing {
 
         (, uint256 borrowable) = lens.getUserMaxCapacitiesForAsset(address(borrower1), firstAsset);
         uint256 borrowedAmount = (borrowable * _random1) / 255;
+        hevm.assume(borrowedAmount + 5 < borrowable); // +5 to cover for rounding error
+
         assumeBorrowAmountIsCorrect(firstAsset, borrowedAmount);
         borrower1.borrow(firstAsset, borrowedAmount);
 
         (, borrowable) = lens.getUserMaxCapacitiesForAsset(address(borrower1), secondAsset);
         borrowedAmount = (borrowable * _random2) / 255;
+        hevm.assume(borrowedAmount + 5 < borrowable); // +5 to cover for rounding error
         assumeBorrowAmountIsCorrect(secondAsset, borrowedAmount);
         borrower1.borrow(secondAsset, borrowedAmount);
     }

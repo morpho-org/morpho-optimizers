@@ -342,6 +342,8 @@ contract TestSetupFuzzing is Config, Utils, stdCheats {
         p2pBorrowRate_ = rate + (reserveFactor * (poolBorrowBPY - rate)) / 10_000;
     }
 
+    /// @notice Returns the underlying for a given market.
+    /// @param _poolTokenAddress The address of the market.
     function getUnderlying(address _poolTokenAddress) internal view returns (address) {
         if (_poolTokenAddress == cEth)
             // cETH has no underlying() function.
@@ -354,18 +356,18 @@ contract TestSetupFuzzing is Config, Utils, stdCheats {
         underlying = getUnderlying(asset);
     }
 
-    /// @notice checks morpho will not revert because of Compound rounding the amount to 0.
-    /// @param underlying address of the underlying to supply.
-    /// @param amount to check.
+    /// @notice Checks morpho will not revert because of Compound rounding the amount to 0.
+    /// @param underlying Address of the underlying to supply.
+    /// @param amount To check.
     function assumeSupplyAmountIsCorrect(address underlying, uint256 amount) internal {
         hevm.assume(amount > 0);
         // All the signers have the same balance at the beginning of a test.
         hevm.assume(amount <= ERC20(underlying).balanceOf(address(supplier1)));
     }
 
-    /// @notice a borrow amount can be too high on compound due to governance or unsufficient supply.
-    /// @param market address of the CToken.
-    /// @param amount to check.
+    /// @notice A borrow amount can be too high on compound due to governance or unsufficient supply.
+    /// @param market Address of the CToken.
+    /// @param amount To check.
     function assumeBorrowAmountIsCorrect(address market, uint256 amount) internal {
         hevm.assume(amount <= ICToken(market).getCash());
         hevm.assume(amount > 0);
@@ -373,17 +375,21 @@ contract TestSetupFuzzing is Config, Utils, stdCheats {
         if (borrowCap != 0) hevm.assume(amount <= borrowCap);
     }
 
-    /// @param amount considered for the liquidation.
+    /// @notice Ensures the amount used for the liquidation is correct.
+    /// @param amount Considered for the liquidation.
     function assumeLiquidateAmountIsCorrect(uint256 amount) internal {
         hevm.assume(amount > 0);
     }
 
-    /// @param amount considered for the repay.
+    /// @notice Ensures the amount used for the repay is correct.
+    /// @param amount Considered for the repay.
     function assumeRepayAmountIsCorrect(uint256 amount) internal {
         hevm.assume(amount > 0);
     }
 
-    /// @param amount considered for the repay.
+    /// @notice Make sure the amount used for the withdraw is correct.
+    /// @param market Address of the CToken.
+    /// @param amount Considered for the repay.
     function assumeWithdrawAmountIsCorrect(address market, uint256 amount) internal {
         hevm.assume(amount.div(ICToken(market).exchangeRateCurrent()) > 0);
     }
