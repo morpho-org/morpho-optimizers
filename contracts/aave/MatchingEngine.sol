@@ -13,6 +13,7 @@ import "./MorphoUtils.sol";
 /// @notice Smart contract managing the matching engine.
 contract MatchingEngine is MorphoUtils {
     using DoubleLinkedList for DoubleLinkedList.List;
+    using WadRayMath for uint256;
     using Address for address;
     using Math for uint256;
 
