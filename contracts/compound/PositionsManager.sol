@@ -665,15 +665,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             _updateBorrowerInDS(_poolTokenAddress, _user);
 
             if (vars.remainingToRepay == 0) {
-                // Repay only what is necessary. The remaining tokens stays on the contracts and are claimable by the DAO.
-                vars.toRepay = Math.min(
-                    vars.toRepay,
-                    ICToken(_poolTokenAddress).borrowBalanceCurrent(address(this)) // The debt of the contract.
-                );
-
-                if (vars.toRepay > 0)
-                    _repayToPool(_poolTokenAddress, underlyingToken, vars.toRepay); // Reverts on error.
-
+                _repayToPool(_poolTokenAddress, underlyingToken, vars.toRepay); // Reverts on error.
                 _leaveMarketIfNeeded(_poolTokenAddress, _user);
                 return;
             }
@@ -742,13 +734,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             }
         }
 
-        // Repay only what is necessary. The remaining tokens stays on the contracts and are claimable by the DAO.
-        vars.toRepay = Math.min(
-            vars.toRepay,
-            ICToken(_poolTokenAddress).borrowBalanceCurrent(address(this)) // The debt of the contract.
-        );
-
-        if (vars.toRepay > 0) _repayToPool(_poolTokenAddress, underlyingToken, vars.toRepay); // Reverts on error.
+        _repayToPool(_poolTokenAddress, underlyingToken, vars.toRepay); // Reverts on error.
 
         /// Hard repay ///
 
@@ -829,13 +815,21 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         ERC20 _underlyingToken,
         uint256 _amount
     ) internal {
-        if (_poolTokenAddress == cEth) {
-            IWETH(wEth).withdraw(_amount); // Turn wETH into ETH.
-            ICEther(_poolTokenAddress).repayBorrow{value: _amount}();
-        } else {
-            _underlyingToken.safeApprove(_poolTokenAddress, _amount);
-            if (ICToken(_poolTokenAddress).repayBorrow(_amount) != 0)
-                revert RepayOnCompoundFailed();
+        // Repay only what is necessary. The remaining tokens stays on the contracts and are claimable by the DAO.
+        _amount = Math.min(
+            _amount,
+            ICToken(_poolTokenAddress).borrowBalanceCurrent(address(this)) // The debt of the contract.
+        );
+
+        if (_amount > 0) {
+            if (_poolTokenAddress == cEth) {
+                IWETH(wEth).withdraw(_amount); // Turn wETH into ETH.
+                ICEther(_poolTokenAddress).repayBorrow{value: _amount}();
+            } else {
+                _underlyingToken.safeApprove(_poolTokenAddress, _amount);
+                if (ICToken(_poolTokenAddress).repayBorrow(_amount) != 0)
+                    revert RepayOnCompoundFailed();
+            }
         }
     }
 
