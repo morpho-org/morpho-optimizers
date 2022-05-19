@@ -76,4 +76,55 @@ contract TestRounding is TestSetup {
         [31m[FAIL. Reason: redeemTokens zero][0m testRoundingError3() (gas: 742070)
         */
     }
+
+    // Check rounding on supply
+    function testRoundingError4() public {
+        supplier1.approve(dai, 1 ether);
+        supplier1.supply(cDai, 1 ether);
+
+        uint256 balanceByComp = ICToken(cDai).balanceOfUnderlying(address(morpho));
+        (, , uint256 balanceByLens) = lens.getUserSupplyBalance(address(supplier1), cDai);
+
+        assertEq(balanceByComp, balanceByLens);
+    }
+
+    // Check rounding on borrow
+    function testRoundingError5() public {
+        supplier1.approve(wEth, 1 ether);
+        supplier1.supply(cEth, 1 ether);
+        supplier1.borrow(cDai, 1 ether);
+
+        uint256 balanceByComp = ICToken(cDai).borrowBalanceCurrent(address(morpho));
+        (, , uint256 balanceByLens) = lens.getUserBorrowBalance(address(supplier1), cDai);
+
+        assertEq(balanceByComp, balanceByLens);
+    }
+
+    // Check rounding on repay
+    function testRoundingError6() public {
+        supplier1.approve(wEth, 1 ether);
+        supplier1.supply(cEth, 1 ether);
+        supplier1.borrow(cDai, 1 ether);
+
+        supplier1.approve(dai, 1 ether / 2);
+        supplier1.repay(cDai, 1 ether / 2);
+
+        uint256 balanceByComp = ICToken(cDai).borrowBalanceCurrent(address(morpho));
+        (, , uint256 balanceByLens) = lens.getUserBorrowBalance(address(supplier1), cDai);
+
+        assertEq(balanceByComp, balanceByLens);
+    }
+
+    // Check rounding on withdraw
+    function testRoundingError7() public {
+        supplier1.approve(dai, 1 ether);
+        supplier1.supply(cDai, 1 ether);
+
+        supplier1.withdraw(cDai, 1 ether / 2);
+
+        uint256 balanceByComp = ICToken(cDai).balanceOfUnderlying(address(morpho));
+        (, , uint256 balanceByLens) = lens.getUserSupplyBalance(address(supplier1), cDai);
+
+        assertEq(balanceByComp, balanceByLens);
+    }
 }
