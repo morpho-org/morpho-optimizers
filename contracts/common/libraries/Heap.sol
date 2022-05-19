@@ -19,154 +19,153 @@ library BasicHeap {
 
     /// VIEW ///
 
-    function length(Heap storage heap) internal view returns (uint256) {
-        return heap.accounts.length;
+    function length(Heap storage _heap) internal view returns (uint256) {
+        return _heap.accounts.length;
     }
 
-    function getValueOf(Heap storage heap, address _id) internal view returns (uint256) {
-        uint256 index = heap.indexes[_id];
+    function getValueOf(Heap storage _heap, address _id) internal view returns (uint256) {
+        uint256 index = _heap.indexes[_id];
         if (index == 0) return 0;
-        else return heap.accounts[index - 1].value;
+        else return _heap.accounts[index - 1].value;
     }
 
-    function getHead(Heap storage heap) internal view returns (address) {
-        if (heap.accounts.length > 0) return heap.accounts[0].id;
+    function getHead(Heap storage _heap) internal view returns (address) {
+        if (_heap.accounts.length > 0) return _heap.accounts[0].id;
         else return address(0);
     }
 
-    function getTail(Heap storage heap) internal view returns (address) {
-        if (heap.accounts.length > 0) return heap.accounts[heap.accounts.length - 1].id;
+    function getTail(Heap storage _heap) internal view returns (address) {
+        if (_heap.accounts.length > 0) return _heap.accounts[_heap.accounts.length - 1].id;
         else return address(0);
     }
 
-    function getPrev(Heap storage heap, address _id) internal view returns (address) {
-        uint256 index = heap.indexes[_id];
-        if (index > 1) return heap.accounts[index - 2].id;
+    function getPrev(Heap storage _heap, address _id) internal view returns (address) {
+        uint256 index = _heap.indexes[_id];
+        if (index > 1) return _heap.accounts[index - 2].id;
         else return address(0);
     }
 
-    function getNext(Heap storage heap, address _id) internal view returns (address) {
-        uint256 index = heap.indexes[_id];
-        if (index < heap.accounts.length) return heap.accounts[index].id;
+    function getNext(Heap storage _heap, address _id) internal view returns (address) {
+        uint256 index = _heap.indexes[_id];
+        if (index < _heap.accounts.length) return _heap.accounts[index].id;
         else return address(0);
     }
 
     /// PRIVATE ///
 
     function swap(
-        Heap storage heap,
-        uint256 index1,
-        uint256 index2
+        Heap storage _heap,
+        uint256 _index1,
+        uint256 _index2
     ) private {
-        require(1 <= index1 && index1 <= heap.accounts.length, "SWAP index1 out of bounds");
-        require(1 <= index2 && index2 <= heap.accounts.length, "SWAP index2 out of bounds");
-        Account memory accountOldIndex1 = heap.accounts[index1 - 1];
-        Account memory accountOldIndex2 = heap.accounts[index2 - 1];
-        heap.accounts[index1 - 1] = accountOldIndex2;
-        heap.accounts[index2 - 1] = accountOldIndex1;
-        heap.indexes[accountOldIndex2.id] = index1;
-        heap.indexes[accountOldIndex1.id] = index2;
+        Account memory accountOldIndex1 = _heap.accounts[_index1 - 1];
+        Account memory accountOldIndex2 = _heap.accounts[_index2 - 1];
+        _heap.accounts[_index1 - 1] = accountOldIndex2;
+        _heap.accounts[_index2 - 1] = accountOldIndex1;
+        _heap.indexes[accountOldIndex2.id] = _index1;
+        _heap.indexes[accountOldIndex1.id] = _index2;
     }
 
-    function siftUp(Heap storage heap, uint256 index) private {
-        uint256 mother = index / 2;
-        while (mother > 0 && heap.accounts[index - 1].value > heap.accounts[mother - 1].value) {
-            swap(heap, index, mother);
+    function shiftUp(Heap storage _heap, uint256 _index) private {
+        uint256 mother = _index / 2;
+        while (mother > 0 && _heap.accounts[_index - 1].value > _heap.accounts[mother - 1].value) {
+            swap(_heap, _index, mother);
             mother = mother / 2;
         }
     }
 
-    function siftDown(Heap storage heap, uint256 index) private {
+    function shiftDown(Heap storage _heap, uint256 _index) private {
         uint256 leftIndex;
         uint256 rightIndex;
         uint256 maxIndex;
         uint256 maxValue;
         while (true) {
-            leftIndex = 2 * index;
-            rightIndex = 2 * index + 1;
-            maxIndex = index;
-            maxValue = heap.accounts[index - 1].value;
+            leftIndex = 2 * _index;
+            rightIndex = 2 * _index + 1;
+            maxIndex = _index;
+            maxValue = _heap.accounts[_index - 1].value;
 
             if (
-                leftIndex <= heap.accounts.length && heap.accounts[leftIndex - 1].value > maxValue
+                leftIndex <= _heap.accounts.length && _heap.accounts[leftIndex - 1].value > maxValue
             ) {
                 maxIndex = leftIndex;
             }
             if (
-                rightIndex <= heap.accounts.length && heap.accounts[rightIndex - 1].value > maxValue
+                rightIndex <= _heap.accounts.length &&
+                _heap.accounts[rightIndex - 1].value > maxValue
             ) {
                 maxIndex = rightIndex;
             }
-            if (maxIndex != index) {
-                swap(heap, index, maxIndex);
+            if (maxIndex != _index) {
+                swap(_heap, _index, maxIndex);
             } else break;
         }
     }
 
-    // only call when id is not in the heap and with value != 0
+    // only call when id is not in the _heap and with value != 0
     function insert(
-        Heap storage heap,
-        address id,
-        uint256 value
+        Heap storage _heap,
+        address _id,
+        uint256 _value
     ) private {
-        // heap cannot contain the 0 address
-        if (id == address(0)) revert AddressIsZero();
-        heap.accounts.push(Account(id, value));
-        heap.indexes[id] = heap.accounts.length;
-        siftUp(heap, heap.accounts.length);
+        // _heap cannot contain the 0 address
+        if (_id == address(0)) revert AddressIsZero();
+        _heap.accounts.push(Account(_id, _value));
+        _heap.indexes[_id] = _heap.accounts.length;
+        shiftUp(_heap, _heap.accounts.length);
     }
 
-    // only when id is in the heap with a value greater than newValue
+    // only when id is in the _heap with a value greater than newValue
     function decrease(
-        Heap storage heap,
-        address id,
-        uint256 newValue
+        Heap storage _heap,
+        address _id,
+        uint256 _newValue
     ) private {
-        uint256 index = heap.indexes[id];
-        heap.accounts[index - 1].value = newValue;
-        siftDown(heap, index);
+        uint256 index = _heap.indexes[_id];
+        _heap.accounts[index - 1].value = _newValue;
+        shiftDown(_heap, index);
     }
 
-    // only when id is in the heap with a value smaller than newValue
+    // only when id is in the _heap with a value smaller than newValue
     function increase(
-        Heap storage heap,
-        address id,
-        uint256 newValue
+        Heap storage _heap,
+        address _id,
+        uint256 _newValue
     ) private {
-        uint256 index = heap.indexes[id];
-        heap.accounts[index - 1].value = newValue;
-        siftUp(heap, index);
+        uint256 index = _heap.indexes[_id];
+        _heap.accounts[index - 1].value = _newValue;
+        shiftUp(_heap, index);
     }
 
-    // only call when id is in the heap
-    function remove(Heap storage heap, address id) private {
-        Account[] storage accounts = heap.accounts;
-        uint256 index = heap.indexes[id];
+    // only call when id is in the _heap
+    function remove(Heap storage _heap, address _id) private {
+        Account[] storage accounts = _heap.accounts;
+        uint256 index = _heap.indexes[_id];
         if (index == accounts.length) {
             accounts.pop();
-            delete heap.indexes[id];
+            delete _heap.indexes[_id];
         } else {
-            swap(heap, index, accounts.length);
+            swap(_heap, index, accounts.length);
             accounts.pop();
-            delete heap.indexes[id];
-            siftDown(heap, index);
+            delete _heap.indexes[_id];
+            shiftDown(_heap, index);
         }
     }
 
     /// INTERNAL ///
 
-    // only call with id in the heap,with value formerValue
+    // only call with id in the _heap,with value formerValue
     function update(
-        Heap storage heap,
-        address id,
-        uint256 formerValue,
-        uint256 newValue
+        Heap storage _heap,
+        address _id,
+        uint256 _formerValue,
+        uint256 _newValue
     ) internal {
-        if (formerValue != newValue) {
-            if (newValue == 0) remove(heap, id);
-            else if (formerValue == 0) insert(heap, id, newValue);
-            else if (formerValue < newValue) increase(heap, id, newValue);
-            else decrease(heap, id, newValue);
+        if (_formerValue != _newValue) {
+            if (_newValue == 0) remove(_heap, _id);
+            else if (_formerValue == 0) insert(_heap, _id, _newValue);
+            else if (_formerValue < _newValue) increase(_heap, _id, _newValue);
+            else decrease(_heap, _id, _newValue);
         }
     }
 }
