@@ -40,7 +40,7 @@ contract Lens {
 
     uint256 public constant SECONDS_PER_YEAR = 365 days;
     uint256 public constant MAX_BASIS_POINTS = 10_000;
-    uint256 public constant HEALTH_FACTOR_LIQUIDATION_THRESHOLD = 1e18; // Health factor threshold on Aave.
+    uint256 public constant HEALTH_FACTOR_LIQUIDATION_THRESHOLD = 1e18; // Health factor below which the positions can be liquidated.
     uint256 public constant RAY = 1e27;
     IMorpho public immutable morpho;
     ILendingPoolAddressesProvider public immutable addressesProvider;
