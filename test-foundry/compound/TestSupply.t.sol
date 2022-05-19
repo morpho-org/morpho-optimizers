@@ -40,7 +40,9 @@ contract TestSupply is TestSetup {
         assertEq(daiBalanceAfter, expectedDaiBalanceAfter);
 
         uint256 p2pSupplyIndex = lens.getUpdatedP2PSupplyIndex(cDai);
+        uint256 p2pBorrowIndex = lens.getUpdatedP2PBorrowIndex(cDai);
         uint256 expectedSupplyBalanceInP2P = amount.div(p2pSupplyIndex);
+        uint256 expectedBorrowBalanceInP2P = amount.div(p2pBorrowIndex);
 
         (uint256 inP2PSupplier, uint256 onPoolSupplier) = morpho.supplyBalanceInOf(
             cDai,
@@ -52,11 +54,11 @@ contract TestSupply is TestSetup {
             address(borrower1)
         );
 
-        assertEq(onPoolSupplier, 0);
-        assertEq(inP2PSupplier, expectedSupplyBalanceInP2P);
+        assertEq(onPoolSupplier, 0, "supplier on pool");
+        assertEq(inP2PSupplier, expectedSupplyBalanceInP2P, "supplier in P2P");
 
-        assertEq(onPoolBorrower, 0);
-        assertEq(inP2PBorrower, inP2PSupplier);
+        assertEq(onPoolBorrower, 0, "borrower on pool");
+        assertEq(inP2PBorrower, expectedBorrowBalanceInP2P, "borrower in P2P");
     }
 
     function testSupply3() public {
@@ -69,11 +71,8 @@ contract TestSupply is TestSetup {
         supplier1.approve(dai, 2 * amount);
         supplier1.supply(cDai, 2 * amount);
 
-        uint256 p2pSupplyIndex = lens.getUpdatedP2PSupplyIndex(cDai);
-        uint256 expectedSupplyBalanceInP2P = amount.div(p2pSupplyIndex);
-
-        uint256 poolSupplyIndex = ICToken(cDai).exchangeRateCurrent();
-        uint256 expectedSupplyBalanceOnPool = amount.div(poolSupplyIndex);
+        uint256 expectedSupplyBalanceInP2P = amount.div(morpho.p2pSupplyIndex(cDai));
+        uint256 expectedSupplyBalanceOnPool = amount.div(ICToken(cDai).exchangeRateCurrent());
 
         (uint256 inP2PSupplier, uint256 onPoolSupplier) = morpho.supplyBalanceInOf(
             cDai,
@@ -86,8 +85,10 @@ contract TestSupply is TestSetup {
             cDai,
             address(borrower1)
         );
+        uint256 expectedInP2P = amount.div(morpho.p2pBorrowIndex(cDai));
+
         assertEq(onPoolBorrower, 0, "on pool borrower");
-        assertEq(inP2PBorrower, inP2PSupplier, "in peer-to-peer borrower");
+        assertEq(inP2PBorrower, expectedInP2P, "in peer-to-peer borrower");
     }
 
     function testSupply4() public {
