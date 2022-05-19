@@ -298,7 +298,16 @@ abstract contract MorphoGovernance is MorphoUtils {
 
     /// @notice Creates a new market to borrow/supply in.
     /// @param _poolTokenAddress The pool token address of the given market.
-    function createMarket(address _poolTokenAddress) external onlyOwner {
+    /// @param _marketParams The market's parameters to set.
+    function createMarket(address _poolTokenAddress, Types.MarketParameters calldata _marketParams)
+        external
+        onlyOwner
+    {
+        if (
+            _marketParams.p2pIndexCursor > MAX_BASIS_POINTS ||
+            _marketParams.reserveFactor > MAX_BASIS_POINTS
+        ) revert ExceedsMaxBasisPoints();
+
         if (marketStatus[_poolTokenAddress].isCreated) revert MarketAlreadyCreated();
         marketStatus[_poolTokenAddress].isCreated = true;
 
@@ -321,6 +330,8 @@ abstract contract MorphoGovernance is MorphoUtils {
         poolIndexes.lastUpdateBlockNumber = uint32(block.number);
         poolIndexes.lastSupplyPoolIndex = uint112(poolToken.exchangeRateCurrent());
         poolIndexes.lastBorrowPoolIndex = uint112(poolToken.borrowIndex());
+
+        marketParameters[_poolTokenAddress] = _marketParams;
 
         marketsCreated.push(_poolTokenAddress);
         emit MarketCreated(_poolTokenAddress);
