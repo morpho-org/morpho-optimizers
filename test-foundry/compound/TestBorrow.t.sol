@@ -49,11 +49,14 @@ contract TestBorrow is TestSetup {
 
         (uint256 supplyInP2P, ) = morpho.supplyBalanceInOf(cDai, address(supplier1));
 
+        uint256 p2pSupplyIndex = morpho.p2pSupplyIndex(cDai);
         uint256 p2pBorrowIndex = morpho.p2pBorrowIndex(cDai);
+        uint256 expectedSupplyInP2P = getBalanceOnCompound(amount, cDaiSupplyIndex).div(
+            p2pSupplyIndex
+        );
         uint256 expectedBorrowInP2P = getBalanceOnCompound(amount, cDaiSupplyIndex).div(
             p2pBorrowIndex
         );
-        uint256 expectedSupplyInP2P = expectedBorrowInP2P;
 
         assertEq(supplyInP2P, expectedSupplyInP2P, "Supplier1 in peer-to-peer");
 
