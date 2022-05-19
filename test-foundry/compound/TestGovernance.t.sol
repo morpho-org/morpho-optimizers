@@ -18,20 +18,24 @@ contract TestGovernance is TestSetup {
     }
 
     function testShouldRevertWhenCreatingMarketWithAnImproperMarket() public {
+        Types.MarketParameters memory marketParams = Types.MarketParameters(3_333, 0);
+
         hevm.expectRevert(abi.encodeWithSignature("MarketCreationFailedOnCompound()"));
-        morpho.createMarket(address(supplier1));
+        morpho.createMarket(address(supplier1), marketParams);
     }
 
     function testOnlyOwnerCanCreateMarkets() public {
+        Types.MarketParameters memory marketParams = Types.MarketParameters(3_333, 0);
+
         for (uint256 i = 0; i < pools.length; i++) {
             hevm.expectRevert("Ownable: caller is not the owner");
-            supplier1.createMarket(pools[i]);
+            supplier1.createMarket(pools[i], marketParams);
 
             hevm.expectRevert("Ownable: caller is not the owner");
-            borrower1.createMarket(pools[i]);
+            borrower1.createMarket(pools[i], marketParams);
         }
 
-        morpho.createMarket(cAave);
+        morpho.createMarket(cAave, marketParams);
     }
 
     function testShouldCreateMarketWithRightParams() public {
@@ -70,7 +74,8 @@ contract TestGovernance is TestSetup {
 
     function testShouldCreateMarketWithTheRightValues() public {
         ICToken cToken = ICToken(cAave);
-        morpho.createMarket(cAave);
+        Types.MarketParameters memory marketParams = Types.MarketParameters(3_333, 0);
+        morpho.createMarket(cAave, marketParams);
 
         (bool isCreated, , ) = morpho.marketStatus(cAave);
 
