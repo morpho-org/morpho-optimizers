@@ -1,5 +1,5 @@
 /* eslint-disable no-console */
-import {formatEther} from 'ethers/lib/utils';
+import { formatEther } from 'ethers/lib/utils';
 
 const config = require(`@config/${process.env.NETWORK}-config.json`);
 import hre, { ethers, upgrades } from 'hardhat';
@@ -118,7 +118,82 @@ async function main() {
   await morpho.connect(deployer).createMarket(config.tokens.cEth.address);
   await morpho.connect(deployer).createMarket(config.tokens.cDai.address);
   await morpho.connect(deployer).createMarket(config.tokens.cUsdc.address);
-  console.log('🎉 Finished!\n');
+  console.log('🎉 Markets created!\n');
+
+  /// REWARDS MANAGER DEPLOYMENT ///
+
+  console.log('\n🦋 Deploying RewardsManager...');
+  const RewardsManager = await ethers.getContractFactory('RewardsManager');
+  const rewardsManager = await RewardsManager.deploy(morpho.address);
+  await rewardsManager.deployed();
+  console.log('🎉 RewardsManager deployed to address:', rewardsManager.address);
+
+  console.log('\n🦋 Verifying RewardsManager on Tenderly...');
+  await hre.tenderly.verify({
+    name: 'RewardsManager',
+    address: rewardsManager.address,
+  });
+  console.log('🎉 RewardsManager verified!');
+
+  await morpho.connect(deployer).setRewardsManager(rewardsManager.address);
+  console.log('🎉 RewardsManager set on Morpho!');
+
+  /// MORPHO TOKEN DEPLOYMENT ///
+
+  console.log('\n🦋 Deploying MorphoToken...');
+  const MorphoToken = await ethers.getContractFactory('MorphoToken');
+  const morphoToken = await MorphoToken.deploy(deployer.address);
+  await morphoToken.deployed();
+  console.log('🎉 MorphoToken deployed to address:', morphoToken.address);
+
+  console.log('\n🦋 Verifying MorphoToken on Tenderly...');
+  await hre.tenderly.verify({
+    name: 'MorphoToken',
+    address: morphoToken.address,
+  });
+  console.log('🎉 MorphoToken verified!');
+
+  /// ORACLE DEPLOYMENT ///
+
+  console.log('\n🦋 Deploying Oracle...');
+  const Oracle = await ethers.getContractFactory('DumbOracle');
+  const oracle = await Oracle.deploy();
+  await oracle.deployed();
+  console.log('🎉 Oracle deployed to address:', oracle.address);
+
+  console.log('\n🦋 Verifying Oracle on Tenderly...');
+  await hre.tenderly.verify({
+    name: 'Oracle',
+    address: oracle.address,
+  });
+  console.log('🎉 Oracle verified!');
+
+  /// INCENTIVES VAULT DEPLOYMENT ///
+
+  console.log('\n🦋 Deploying IncentivesVault...');
+  const IncentivesVault = await ethers.getContractFactory('IncentivesVault');
+  const incentivesVault = await IncentivesVault.deploy(
+    morpho.address,
+    config.compound.comptroller.address,
+    morphoToken.address,
+    deployer.address,
+    oracle.address
+  );
+  await incentivesVault.deployed();
+  console.log('🎉 IncentivesVault deployed to address:', incentivesVault.address);
+
+  console.log('\n🦋 Verifying IncentivesVault on Tenderly...');
+  await hre.tenderly.verify({
+    name: 'IncentivesVault',
+    address: incentivesVault.address,
+  });
+  console.log('🎉 IncentivesVault verified!');
+
+  await morpho.setIncentivesVault(incentivesVault.address);
+  console.log('🎉 IncentivesVault set on Morpho!');
+
+  await morpho.toggleCompRewardsActivation();
+  console.log('🎉 COMP rewards activated on Morpho!');
 }
 
 main()

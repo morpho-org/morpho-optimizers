@@ -9,7 +9,7 @@ contract MorphoToken is ERC20, Ownable {
         _mint(_receiver, 1_000_000_000 ether);
     }
 
-    function mint(address to, uint256 amount) public onlyOwner {
+    function mint(address to, uint256 amount) public {
         _mint(to, amount);
     }
 }
