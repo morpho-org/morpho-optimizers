@@ -12,7 +12,7 @@ import "./MorphoGovernance.sol";
 contract Morpho is MorphoGovernance {
     using SafeTransferLib for ERC20;
     using DelegateCall for address;
-    using Math for uint256;
+    using WadRayMath for uint256;
 
     /// EVENTS ///
 

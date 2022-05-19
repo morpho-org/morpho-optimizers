@@ -15,9 +15,9 @@ import "@contracts/aave/interfaces/IMorpho.sol";
 
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
+import "@contracts/aave/libraries/aave/WadRayMath.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "@contracts/aave/libraries/Types.sol";
-import "@contracts/aave/libraries/Math.sol";
 
 import {RewardsManagerForAaveOnMainnetAndAvalanche} from "@contracts/aave/rewards-managers/RewardsManagerForAaveOnMainnetAndAvalanche.sol";
 import {RewardsManagerForAaveOnPolygon} from "@contracts/aave/rewards-managers/RewardsManagerForAaveOnPolygon.sol";

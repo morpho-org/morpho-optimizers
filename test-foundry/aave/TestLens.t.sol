@@ -8,7 +8,7 @@ import "./setup/TestSetup.sol";
 contract TestLens is TestSetup {
     using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
     using PercentageMath for uint256;
-    using Math for uint256;
+    using WadRayMath for uint256;
 
     struct UserBalanceStates {
         uint256 collateralValue;

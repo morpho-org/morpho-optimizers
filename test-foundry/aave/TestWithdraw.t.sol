@@ -5,7 +5,7 @@ import {Attacker} from "./helpers/Attacker.sol";
 import "./setup/TestSetup.sol";
 
 contract TestWithdraw is TestSetup {
-    using Math for uint256;
+    using WadRayMath for uint256;
 
     function testWithdraw1() public {
         uint256 amount = 10_000 ether;
