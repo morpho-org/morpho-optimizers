@@ -4,6 +4,7 @@ pragma solidity 0.8.13;
 import "./interfaces/IInterestRatesManager.sol";
 import "./interfaces/aave/IAToken.sol";
 
+import "./libraries/aave/WadRayMath.sol";
 import "./libraries/Types.sol";
 import "./libraries/Math.sol";
 
@@ -13,6 +14,7 @@ import "./MorphoStorage.sol";
 /// @notice Smart contract handling the computation of indexes used for peer-to-peer interactions.
 /// @dev This contract inherits from MorphoStorage so that Morpho can delegate calls to this contract.
 contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
+    using WadRayMath for uint256;
     using Math for uint256;
 
     /// STRUCTS ///
@@ -131,11 +133,11 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
                 (_params.delta.p2pSupplyDelta.rayMul(_params.lastPoolSupplyIndex)).rayDiv(
                     (_params.delta.p2pSupplyAmount).rayMul(_params.lastP2PSupplyIndex)
                 ),
-                Math.ray() // To avoid shareOfTheDelta > 1 with rounding errors.
+                WadRayMath.ray() // To avoid shareOfTheDelta > 1 with rounding errors.
             );
 
             newP2PSupplyIndex = _params.lastP2PSupplyIndex.rayMul(
-                (Math.ray() - shareOfTheDelta).rayMul(p2pSupplyGrowthFactor) +
+                (WadRayMath.ray() - shareOfTheDelta).rayMul(p2pSupplyGrowthFactor) +
                     shareOfTheDelta.rayMul(poolSupplyGrowthFactor)
             );
         }
@@ -149,11 +151,11 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
                 (_params.delta.p2pBorrowDelta.rayMul(_params.poolBorrowIndex)).rayDiv(
                     (_params.delta.p2pBorrowAmount).rayMul(_params.lastP2PBorrowIndex)
                 ),
-                Math.ray() // To avoid shareOfTheDelta > 1 with rounding errors.
+                WadRayMath.ray() // To avoid shareOfTheDelta > 1 with rounding errors.
             );
 
             newP2PBorrowIndex = _params.lastP2PBorrowIndex.rayMul(
-                (Math.ray() - shareOfTheDelta).rayMul(p2pBorrowGrowthFactor) +
+                (WadRayMath.ray() - shareOfTheDelta).rayMul(p2pBorrowGrowthFactor) +
                     shareOfTheDelta.rayMul(poolBorrowGrowthFactor)
             );
         }

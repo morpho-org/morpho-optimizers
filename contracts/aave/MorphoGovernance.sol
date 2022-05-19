@@ -16,6 +16,7 @@ abstract contract MorphoGovernance is MorphoUtils {
     using DoubleLinkedList for DoubleLinkedList.List;
     using PercentageMath for uint256;
     using SafeTransferLib for ERC20;
+    using WadRayMath for uint256;
     using Math for uint256;
 
     /// EVENTS ///
@@ -288,8 +289,8 @@ abstract contract MorphoGovernance is MorphoUtils {
         if (marketStatus[poolTokenAddress].isCreated) revert MarketAlreadyCreated();
         marketStatus[poolTokenAddress].isCreated = true;
 
-        p2pSupplyIndex[poolTokenAddress] = Math.ray();
-        p2pBorrowIndex[poolTokenAddress] = Math.ray();
+        p2pSupplyIndex[poolTokenAddress] = WadRayMath.ray();
+        p2pBorrowIndex[poolTokenAddress] = WadRayMath.ray();
 
         Types.LastPoolIndexes storage poolIndexes = lastPoolIndexes[poolTokenAddress];
 

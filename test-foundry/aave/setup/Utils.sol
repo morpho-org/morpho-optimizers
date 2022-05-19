@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import "@contracts/aave/libraries/Math.sol";
+import "@contracts/aave/libraries/aave/WadRayMath.sol";
 
 import "ds-test/test.sol";
 
 contract Utils is DSTest {
-    using Math for uint256;
+    using WadRayMath for uint256;
 
     uint256 internal constant WAD = 1e18;
     uint256 internal constant RAY = 1e27;
@@ -105,15 +105,15 @@ contract Utils is DSTest {
     {
         uint256 rate = _rate / SECONDS_PER_YEAR;
 
-        if (_elapsedTime == 0) return Math.ray();
+        if (_elapsedTime == 0) return WadRayMath.ray();
 
-        if (_elapsedTime == 1) return Math.ray() + rate;
+        if (_elapsedTime == 1) return WadRayMath.ray() + rate;
 
         uint256 ratePowerTwo = rate.rayMul(rate);
         uint256 ratePowerThree = ratePowerTwo.rayMul(rate);
 
         return
-            Math.ray() +
+            WadRayMath.ray() +
             rate *
             _elapsedTime +
             (_elapsedTime * (_elapsedTime - 1) * ratePowerTwo) /
