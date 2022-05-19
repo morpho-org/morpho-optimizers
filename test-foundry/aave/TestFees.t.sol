@@ -4,7 +4,7 @@ pragma solidity 0.8.13;
 import "./setup/TestSetup.sol";
 
 contract TestFees is TestSetup {
-    using Math for uint256;
+    using WadRayMath for uint256;
 
     function testShouldRevertWhenClaimingZeroAmount() public {
         hevm.expectRevert(abi.encodeWithSignature("AmountIsZero()"));
