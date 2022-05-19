@@ -209,7 +209,7 @@ abstract contract MorphoGovernance is MorphoUtils {
         _updateP2PIndexes(_poolTokenAddress);
 
         marketParameters[_poolTokenAddress].reserveFactor = _newReserveFactor;
-        emit ReserveFactorSet(_poolTokenAddress, marketParameters[_poolTokenAddress].reserveFactor);
+        emit ReserveFactorSet(_poolTokenAddress, _newReserveFactor);
     }
 
     /// @notice Sets a new peer-to-peer cursor.
