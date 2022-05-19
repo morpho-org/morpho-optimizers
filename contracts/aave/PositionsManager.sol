@@ -12,7 +12,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     using DoubleLinkedList for DoubleLinkedList.List;
     using PercentageMath for uint256;
     using SafeTransferLib for ERC20;
-    using Math for uint256;
+    using WadRayMath for uint256;
 
     /// EVENTS ///
 

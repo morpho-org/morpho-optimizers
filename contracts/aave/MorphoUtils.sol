@@ -8,7 +8,7 @@ import {ReserveConfiguration} from "./libraries/aave/ReserveConfiguration.sol";
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 import "../common/libraries/DelegateCall.sol";
 import "./libraries/aave/PercentageMath.sol";
-import "./libraries/Math.sol";
+import "./libraries/aave/WadRayMath.sol";
 
 import "./MorphoStorage.sol";
 
@@ -19,7 +19,7 @@ contract MorphoUtils is MorphoStorage {
     using DoubleLinkedList for DoubleLinkedList.List;
     using PercentageMath for uint256;
     using DelegateCall for address;
-    using Math for uint256;
+    using WadRayMath for uint256;
 
     /// ERRORS ///
 
