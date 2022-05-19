@@ -10,6 +10,7 @@ import {ReserveConfiguration} from "./libraries/aave/ReserveConfiguration.sol";
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 import "../common/libraries/DoubleLinkedList.sol";
 import "./libraries/aave/PercentageMath.sol";
+import "./libraries/aave/WadRayMath.sol";
 import "./libraries/Math.sol";
 
 /// @title Lens.
@@ -18,6 +19,7 @@ contract Lens {
     using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
     using DoubleLinkedList for DoubleLinkedList.List;
     using PercentageMath for uint256;
+    using WadRayMath for uint256;
     using Math for uint256;
 
     /// STRUCTS ///
@@ -39,7 +41,7 @@ contract Lens {
     uint256 public constant SECONDS_PER_YEAR = 365 days;
     uint256 public constant MAX_BASIS_POINTS = 10_000;
     uint256 public constant HEALTH_FACTOR_LIQUIDATION_THRESHOLD = 1e18; // Health factor threshold on Aave.
-    uint256 public constant WAD = 1e18;
+    uint256 public constant RAY = 1e27;
     IMorpho public immutable morpho;
     ILendingPoolAddressesProvider public immutable addressesProvider;
     ILendingPool public immutable lendingPool;
@@ -470,11 +472,11 @@ contract Lens {
                 (_params.delta.p2pSupplyDelta.rayMul(_params.lastPoolSupplyIndex)).rayDiv(
                     (_params.delta.p2pSupplyAmount).rayMul(_params.lastP2PSupplyIndex)
                 ),
-                Math.ray() // To avoid shareOfTheDelta > 1 with rounding errors.
+                WadRayMath.ray() // To avoid shareOfTheDelta > 1 with rounding errors.
             );
 
             newP2PSupplyIndex = _params.lastP2PSupplyIndex.rayMul(
-                (Math.ray() - shareOfTheDelta).rayMul(p2pSupplyGrowthFactor) +
+                (WadRayMath.ray() - shareOfTheDelta).rayMul(p2pSupplyGrowthFactor) +
                     shareOfTheDelta.rayMul(poolSupplyGrowthFactor)
             );
         }
@@ -488,11 +490,11 @@ contract Lens {
                 (_params.delta.p2pBorrowDelta.rayMul(_params.poolBorrowIndex)).rayDiv(
                     (_params.delta.p2pBorrowAmount).rayMul(_params.lastP2PBorrowIndex)
                 ),
-                Math.ray() // To avoid shareOfTheDelta > 1 with rounding errors.
+                RAY // To avoid shareOfTheDelta > 1 with rounding errors.
             );
 
             newP2PBorrowIndex = _params.lastP2PBorrowIndex.rayMul(
-                (Math.ray() - shareOfTheDelta).rayMul(p2pBorrowGrowthFactor) +
+                (RAY - shareOfTheDelta).rayMul(p2pBorrowGrowthFactor) +
                     shareOfTheDelta.rayMul(poolBorrowGrowthFactor)
             );
         }
@@ -522,11 +524,11 @@ contract Lens {
                 (_params.delta.p2pSupplyDelta.rayMul(_params.lastPoolSupplyIndex)).rayDiv(
                     (_params.delta.p2pSupplyAmount).rayMul(_params.lastP2PSupplyIndex)
                 ),
-                Math.ray() // To avoid shareOfTheDelta > 1 with rounding errors.
+                WadRayMath.ray() // To avoid shareOfTheDelta > 1 with rounding errors.
             );
 
             newP2PSupplyIndex = _params.lastP2PSupplyIndex.rayMul(
-                (Math.ray() - shareOfTheDelta).rayMul(p2pSupplyGrowthFactor) +
+                (WadRayMath.ray() - shareOfTheDelta).rayMul(p2pSupplyGrowthFactor) +
                     shareOfTheDelta.rayMul(poolSupplyGrowthFactor)
             );
         }
@@ -556,11 +558,11 @@ contract Lens {
                 (_params.delta.p2pBorrowDelta.rayMul(_params.poolBorrowIndex)).rayDiv(
                     (_params.delta.p2pBorrowAmount).rayMul(_params.lastP2PBorrowIndex)
                 ),
-                Math.ray() // To avoid shareOfTheDelta > 1 with rounding errors.
+                WadRayMath.ray() // To avoid shareOfTheDelta > 1 with rounding errors.
             );
 
             newP2PBorrowIndex = _params.lastP2PBorrowIndex.rayMul(
-                (Math.ray() - shareOfTheDelta).rayMul(p2pBorrowGrowthFactor) +
+                (WadRayMath.ray() - shareOfTheDelta).rayMul(p2pBorrowGrowthFactor) +
                     shareOfTheDelta.rayMul(poolBorrowGrowthFactor)
             );
         }
@@ -687,7 +689,7 @@ contract Lens {
     {
         uint256 timeDifference = block.timestamp - lastUpdateTimestamp;
 
-        return ((rate * timeDifference) / SECONDS_PER_YEAR) + Math.ray();
+        return ((rate * timeDifference) / SECONDS_PER_YEAR) + WadRayMath.ray();
     }
 
     function calculateCompoundedInterest(uint256 rate, uint256 lastUpdateTimestamp)
@@ -711,15 +713,15 @@ contract Lens {
     {
         uint256 rate = _rate / SECONDS_PER_YEAR;
 
-        if (_elapsedTime == 0) return Math.ray();
+        if (_elapsedTime == 0) return WadRayMath.ray();
 
-        if (_elapsedTime == 1) return Math.ray() + rate;
+        if (_elapsedTime == 1) return WadRayMath.ray() + rate;
 
         uint256 ratePowerTwo = rate.rayMul(rate);
         uint256 ratePowerThree = ratePowerTwo.rayMul(rate);
 
         return
-            Math.ray() +
+            WadRayMath.ray() +
             rate *
             _elapsedTime +
             (_elapsedTime * (_elapsedTime - 1) * ratePowerTwo) /

@@ -4,7 +4,7 @@ pragma solidity 0.8.13;
 import "./setup/TestSetup.sol";
 
 contract TestMorphoGetters is TestSetup {
-    using Math for uint256;
+    using WadRayMath for uint256;
 
     struct UserBalanceStates {
         uint256 collateralValue;
