@@ -6,10 +6,7 @@ import "./MorphoUtils.sol";
 /// @title MorphoGovernance.
 /// @notice Governance functions for Morpho.
 abstract contract MorphoGovernance is MorphoUtils {
-    using DoubleLinkedList for DoubleLinkedList.List;
     using SafeTransferLib for ERC20;
-    using CompoundMath for uint256;
-    using DelegateCall for address;
 
     /// EVENTS ///
 

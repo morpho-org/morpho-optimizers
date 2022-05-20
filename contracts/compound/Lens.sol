@@ -6,13 +6,11 @@ import "./interfaces/IMorpho.sol";
 
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
-import "../common/libraries/DoubleLinkedList.sol";
 import "./libraries/CompoundMath.sol";
 
 /// @title Lens.
 /// @notice User accessible getters.
 contract Lens {
-    using DoubleLinkedList for DoubleLinkedList.List;
     using CompoundMath for uint256;
 
     /// STRUCTS ///

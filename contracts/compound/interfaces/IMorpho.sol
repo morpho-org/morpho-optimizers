@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import "./compound/ICompound.sol";
 import "./IInterestRatesManager.sol";
 import "./IRewardsManager.sol";
 import "./IPositionsManager.sol";
