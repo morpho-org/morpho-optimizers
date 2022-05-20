@@ -6,7 +6,10 @@ import "./MorphoUtils.sol";
 /// @title MorphoGovernance.
 /// @notice Governance functions for Morpho.
 abstract contract MorphoGovernance is MorphoUtils {
+    using DoubleLinkedList for DoubleLinkedList.List;
     using SafeTransferLib for ERC20;
+    using CompoundMath for uint256;
+    using DelegateCall for address;
 
     /// EVENTS ///
 
@@ -57,34 +60,28 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @param _amountClaimed The amount of reward token claimed.
     event ReserveFeeClaimed(address indexed _poolTokenAddress, uint256 _amountClaimed);
 
-    /// @notice Emitted when a COMP reward status is set.
+    /// @notice Emitted when a COMP reward status is changed.
     /// @param _isCompRewardsActive The new COMP reward status.
-    event CompRewardsStatusSet(bool _isCompRewardsActive);
+    event CompRewardsStatusChanged(bool _isCompRewardsActive);
 
-    /// @notice Emitted when the value of `p2pDisabled` is set.
+    /// @notice Emitted when the value of `p2pDisabled` is changed.
     /// @param _poolTokenAddress The address of the concerned market.
     /// @param _p2pDisabled The new value of `_p2pDisabled` adopted.
-    event P2PStatusSet(address indexed _poolTokenAddress, bool _p2pDisabled);
+    event P2PStatusChanged(address indexed _poolTokenAddress, bool _p2pDisabled);
 
     /// @notice Emitted when a market is paused or unpaused.
     /// @param _poolTokenAddress The address of the concerned market.
     /// @param _newStatus The new pause status of the market.
-    event PauseStatusSet(address indexed _poolTokenAddress, bool _newStatus);
+    event PauseStatusChanged(address indexed _poolTokenAddress, bool _newStatus);
 
     /// @notice Emitted when a market is partially paused or unpaused.
     /// @param _poolTokenAddress The address of the concerned market.
     /// @param _newStatus The new partial pause status of the market.
-    event PartialPauseStatusSet(address indexed _poolTokenAddress, bool _newStatus);
+    event PartialPauseStatusChanged(address indexed _poolTokenAddress, bool _newStatus);
 
     /// @notice Emitted when a new market is created.
     /// @param _poolTokenAddress The address of the market that has been created.
-    /// @param _reserveFactor The reserve factor set for this market.
-    /// @param _poolTokenAddress The P2P index cursor set for this market.
-    event MarketCreated(
-        address indexed _poolTokenAddress,
-        uint16 _reserveFactor,
-        uint16 _p2pIndexCursor
-    );
+    event MarketCreated(address _poolTokenAddress);
 
     /// ERRORS ///
 
@@ -123,7 +120,7 @@ abstract contract MorphoGovernance is MorphoUtils {
         uint256 _maxSortedUsers,
         address _cEth,
         address _wEth
-    ) external initializer {
+    ) public initializer {
         __ReentrancyGuard_init();
         __Ownable_init();
 
@@ -209,14 +206,13 @@ abstract contract MorphoGovernance is MorphoUtils {
         isMarketCreated(_poolTokenAddress)
     {
         if (_newReserveFactor > MAX_BASIS_POINTS) revert ExceedsMaxBasisPoints();
-        _updateP2PIndexes(_poolTokenAddress);
+        updateP2PIndexes(_poolTokenAddress);
 
         marketParameters[_poolTokenAddress].reserveFactor = _newReserveFactor;
-        emit ReserveFactorSet(_poolTokenAddress, _newReserveFactor);
+        emit ReserveFactorSet(_poolTokenAddress, marketParameters[_poolTokenAddress].reserveFactor);
     }
 
     /// @notice Sets a new peer-to-peer cursor.
-    /// @param _poolTokenAddress The address of the market to update.
     /// @param _p2pIndexCursor The new peer-to-peer cursor.
     function setP2PIndexCursor(address _poolTokenAddress, uint16 _p2pIndexCursor)
         external
@@ -224,53 +220,55 @@ abstract contract MorphoGovernance is MorphoUtils {
         isMarketCreated(_poolTokenAddress)
     {
         if (_p2pIndexCursor > MAX_BASIS_POINTS) revert ExceedsMaxBasisPoints();
-        _updateP2PIndexes(_poolTokenAddress);
+        updateP2PIndexes(_poolTokenAddress);
 
         marketParameters[_poolTokenAddress].p2pIndexCursor = _p2pIndexCursor;
         emit P2PIndexCursorSet(_poolTokenAddress, _p2pIndexCursor);
     }
 
-    /// @notice Sets the pause status on a specific market in case of emergency.
+    /// @notice Toggles the pause status on a specific market in case of emergency.
     /// @param _poolTokenAddress The address of the market to pause/unpause.
-    /// @param _newStatus The new status to set.
-    function setPauseStatus(address _poolTokenAddress, bool _newStatus)
+    function togglePauseStatus(address _poolTokenAddress)
         external
         onlyOwner
         isMarketCreated(_poolTokenAddress)
     {
-        marketStatus[_poolTokenAddress].isPaused = _newStatus;
-        emit PauseStatusSet(_poolTokenAddress, _newStatus);
+        Types.MarketStatus storage marketStatus_ = marketStatus[_poolTokenAddress];
+        bool newPauseStatus = !marketStatus_.isPaused;
+        marketStatus_.isPaused = newPauseStatus;
+        emit PauseStatusChanged(_poolTokenAddress, newPauseStatus);
     }
 
-    /// @notice Sets the partial pause status on a specific market in case of emergency.
+    /// @notice Toggles the partial pause status on a specific market in case of emergency.
     /// @param _poolTokenAddress The address of the market to partially pause/unpause.
-    /// @param _newStatus The new status to set.
-    function setPartialPauseStatus(address _poolTokenAddress, bool _newStatus)
+    function togglePartialPauseStatus(address _poolTokenAddress)
         external
         onlyOwner
         isMarketCreated(_poolTokenAddress)
     {
-        marketStatus[_poolTokenAddress].isPartiallyPaused = _newStatus;
-        emit PartialPauseStatusSet(_poolTokenAddress, _newStatus);
+        Types.MarketStatus storage marketStatus_ = marketStatus[_poolTokenAddress];
+        bool newPauseStatus = !marketStatus_.isPartiallyPaused;
+        marketStatus_.isPartiallyPaused = newPauseStatus;
+        emit PartialPauseStatusChanged(_poolTokenAddress, newPauseStatus);
     }
 
-    /// @notice Sets the peer-to-peer disable status.
+    /// @notice Toggles the peer-to-peer disable status.
     /// @param _poolTokenAddress The address of the market to able/disable P2P.
-    /// @param _newStatus The new status to set.
-    function setP2PDisable(address _poolTokenAddress, bool _newStatus)
+    function toggleP2P(address _poolTokenAddress)
         external
         onlyOwner
         isMarketCreated(_poolTokenAddress)
     {
-        p2pDisabled[_poolTokenAddress] = _newStatus;
-        emit P2PStatusSet(_poolTokenAddress, _newStatus);
+        bool newP2PStatus = !p2pDisabled[_poolTokenAddress];
+        p2pDisabled[_poolTokenAddress] = newP2PStatus;
+        emit P2PStatusChanged(_poolTokenAddress, newP2PStatus);
     }
 
-    /// @notice Sets the activation of COMP rewards.
-    /// @param _newStatus The new status to set.
-    function setCompRewardsActivation(bool _newStatus) external onlyOwner {
-        isCompRewardsActive = _newStatus;
-        emit CompRewardsStatusSet(_newStatus);
+    /// @notice Toggles the activation of COMP rewards.
+    function toggleCompRewardsActivation() external onlyOwner {
+        bool newCompRewardsActive = !isCompRewardsActive;
+        isCompRewardsActive = newCompRewardsActive;
+        emit CompRewardsStatusChanged(newCompRewardsActive);
     }
 
     /// @notice Transfers the protocol reserve fee to the DAO.
@@ -300,16 +298,7 @@ abstract contract MorphoGovernance is MorphoUtils {
 
     /// @notice Creates a new market to borrow/supply in.
     /// @param _poolTokenAddress The pool token address of the given market.
-    /// @param _marketParams The market's parameters to set.
-    function createMarket(address _poolTokenAddress, Types.MarketParameters calldata _marketParams)
-        external
-        onlyOwner
-    {
-        if (
-            _marketParams.p2pIndexCursor > MAX_BASIS_POINTS ||
-            _marketParams.reserveFactor > MAX_BASIS_POINTS
-        ) revert ExceedsMaxBasisPoints();
-
+    function createMarket(address _poolTokenAddress) external onlyOwner {
         if (marketStatus[_poolTokenAddress].isCreated) revert MarketAlreadyCreated();
         marketStatus[_poolTokenAddress].isCreated = true;
 
@@ -333,13 +322,7 @@ abstract contract MorphoGovernance is MorphoUtils {
         poolIndexes.lastSupplyPoolIndex = uint112(poolToken.exchangeRateCurrent());
         poolIndexes.lastBorrowPoolIndex = uint112(poolToken.borrowIndex());
 
-        marketParameters[_poolTokenAddress] = _marketParams;
-
         marketsCreated.push(_poolTokenAddress);
-        emit MarketCreated(
-            _poolTokenAddress,
-            _marketParams.reserveFactor,
-            _marketParams.p2pIndexCursor
-        );
+        emit MarketCreated(_poolTokenAddress);
     }
 }

@@ -1,12 +1,16 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
+import "./libraries/DelegateCall.sol";
+
 import "./MorphoGovernance.sol";
 
 /// @title Morpho.
 /// @notice Main Morpho contract handling user interactions and pool interactions.
 contract Morpho is MorphoGovernance {
+    using DoubleLinkedList for DoubleLinkedList.List;
     using SafeTransferLib for ERC20;
+    using CompoundMath for uint256;
     using DelegateCall for address;
 
     /// EVENTS ///

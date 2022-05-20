@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
+import "./compound/ICompound.sol";
 import "./IInterestRatesManager.sol";
 import "./IRewardsManager.sol";
 import "./IPositionsManager.sol";
@@ -53,12 +54,12 @@ interface IMorpho {
     function setIncentivesVault(address _newIncentivesVault) external;
     function setRewardsManager(address _rewardsManagerAddress) external;
     function setDustThreshold(uint256 _dustThreshold) external;
-    function setCompRewardsActivation() external;
-    function setP2PDisable(address _poolTokenAddress, bool _p2pDisabled) external;
+    function toggleCompRewardsActivation() external;
+    function toggleP2P(address _poolTokenAddress, bool _p2pDisabled) external;
     function setReserveFactor(address _poolTokenAddress, uint256 _newReserveFactor) external;
     function setP2PIndexCursor(address _poolTokenAddress, uint16 _p2pIndexCursor) external;
-    function setPauseStatus(address _poolTokenAddress) external;
-    function setPartialPauseStatus(address _poolTokenAddress) external;
+    function togglePauseStatus(address _poolTokenAddress) external;
+    function togglePartialPauseStatus(address _poolTokenAddress) external;
     function claimToTreasury(address _poolTokenAddress, uint256 _amount) external;
     function createMarket(address _poolTokenAddress) external;
 

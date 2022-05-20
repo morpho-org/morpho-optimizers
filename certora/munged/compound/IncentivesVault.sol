@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
+import "./interfaces/compound/ICompound.sol";
 import "./interfaces/IIncentivesVault.sol";
 import "./interfaces/IOracle.sol";
 import "./interfaces/IMorpho.sol";
@@ -37,7 +38,7 @@ contract IncentivesVault is IIncentivesVault, Ownable {
     event BonusSet(uint256 _newBonus);
 
     /// @notice Emitted when the pause status is changed.
-    event PauseStatusSet(bool _newStatus);
+    event PauseStatusChanged(bool _newStatus);
 
     /// @notice Emitted when MORPHO tokens are transferred to the DAO.
     event MorphoTokensTransferred(uint256 _amount);
@@ -101,11 +102,11 @@ contract IncentivesVault is IIncentivesVault, Ownable {
         emit BonusSet(_newBonus);
     }
 
-    /// @notice Sets the pause status.
-    /// @param _newStatus The new pause status.
-    function setPauseStatus(bool _newStatus) external onlyOwner {
-        isPaused = _newStatus;
-        emit PauseStatusSet(_newStatus);
+    /// @notice Toggles the pause status.
+    function togglePauseStatus() external onlyOwner {
+        bool newStatus = !isPaused;
+        isPaused = newStatus;
+        emit PauseStatusChanged(newStatus);
     }
 
     /// @notice Transfers the MORPHO tokens to the DAO.

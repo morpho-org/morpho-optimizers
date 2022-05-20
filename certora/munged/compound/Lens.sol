@@ -6,11 +6,13 @@ import "./interfaces/IMorpho.sol";
 
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
+import "../common/libraries/DoubleLinkedList.sol";
 import "./libraries/CompoundMath.sol";
 
 /// @title Lens.
 /// @notice User accessible getters.
 contract Lens {
+    using DoubleLinkedList for DoubleLinkedList.List;
     using CompoundMath for uint256;
 
     /// STRUCTS ///
@@ -226,13 +228,12 @@ contract Lens {
             ++i;
 
             if (_poolTokenAddress == poolTokenEntered) {
-                if (_borrowedAmount > 0)
-                    debtValue += _borrowedAmount.mul(assetData.underlyingPrice);
+                debtValue += _borrowedAmount.mul(assetData.underlyingPrice);
+                uint256 maxDebtValueSub = _withdrawnAmount.mul(assetData.underlyingPrice).mul(
+                    assetData.collateralFactor
+                );
 
-                if (_withdrawnAmount > 0)
-                    maxDebtValue -= _withdrawnAmount.mul(assetData.underlyingPrice).mul(
-                        assetData.collateralFactor
-                    );
+                maxDebtValue -= CompoundMath.min(maxDebtValue, maxDebtValueSub);
             }
         }
     }
