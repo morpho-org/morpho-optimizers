@@ -527,10 +527,20 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
             if (vars.remainingToWithdraw == 0) {
                 _leaveMarketIfNeeded(_poolTokenAddress, _supplier);
+
                 // If this value is equal to 0 the withdraw will revert on Compound.
                 if (vars.toWithdraw.div(vars.poolSupplyIndex) > 0)
                     _withdrawFromPool(_poolTokenAddress, vars.toWithdraw); // Reverts on error.
                 vars.underlyingToken.safeTransfer(_receiver, _amount);
+
+                emit Withdrawn(
+                    _supplier,
+                    _poolTokenAddress,
+                    _amount,
+                    supplyBalanceInOf[_poolTokenAddress][_supplier].onPool,
+                    supplyBalanceInOf[_poolTokenAddress][_supplier].inP2P
+                );
+
                 return;
             }
         }
@@ -660,6 +670,15 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             if (vars.remainingToRepay == 0) {
                 _repayToPool(_poolTokenAddress, underlyingToken, vars.toRepay); // Reverts on error.
                 _leaveMarketIfNeeded(_poolTokenAddress, _user);
+
+                emit Repaid(
+                    _user,
+                    _poolTokenAddress,
+                    _amount,
+                    borrowBalanceInOf[_poolTokenAddress][_user].onPool,
+                    borrowBalanceInOf[_poolTokenAddress][_user].inP2P
+                );
+
                 return;
             }
         }
