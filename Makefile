@@ -16,9 +16,18 @@ endif
 export DAPP_REMAPPINGS=@config/=config/$(NETWORK)
 
 .PHONY: test
-ci: node_modules
+ci-aave: node_modules
+	@echo Run all tests on ${NETWORK}
+	@forge test -vv -c test-foundry/aave-v2 --no-match-contract TestGasConsumption --no-match-test testFuzz
+
+.PHONY: test
+ci-compound: node_modules
 	@echo Run all tests on ${NETWORK}
 	@forge test -vv -c test-foundry/compound --no-match-contract TestGasConsumption --no-match-test testFuzz
+
+test-aave-v2: node_modules
+	@echo Run all tests on ${NETWORK}
+	@forge test -vv -c test-foundry/aave-v2 --no-match-contract TestGasConsumption --no-match-test testFuzz
 
 test-compound: node_modules
 	@echo Run all tests on ${NETWORK}
