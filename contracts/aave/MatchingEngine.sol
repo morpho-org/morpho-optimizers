@@ -18,7 +18,7 @@ contract MatchingEngine is MorphoUtils {
 
     /// STRUCTS ///
 
-    // Struct to avoid stack too deep
+    // Struct to avoid stack too deep.
     struct UnmatchVars {
         uint256 p2pIndex;
         uint256 toUnmatch;
@@ -28,7 +28,7 @@ contract MatchingEngine is MorphoUtils {
         uint256 gasLeftAtTheBeginning;
     }
 
-    // Struct to avoid stack too deep
+    // Struct to avoid stack too deep.
     struct MatchVars {
         uint256 p2pIndex;
         uint256 toMatch;
@@ -270,7 +270,7 @@ contract MatchingEngine is MorphoUtils {
         return _amount - vars.remainingToUnmatch;
     }
 
-    /// @notice Updates suppliers matching engine with the new balances of a given user.
+    /// @notice Updates `_user` positions in the supplier data structures.
     /// @param _poolTokenAddress The address of the market on which to update the suppliers data structure.
     /// @param _user The address of the user.
     function _updateSupplierInDS(address _poolTokenAddress, address _user) internal {
@@ -302,7 +302,7 @@ contract MatchingEngine is MorphoUtils {
         }
     }
 
-    /// @notice Updates `_user` in the borrower data structures.
+    /// @notice Updates `_user` positions in the borrower data structures.
     /// @param _poolTokenAddress The address of the market on which to update the borrowers data structure.
     /// @param _user The address of the user.
     function _updateBorrowerInDS(address _poolTokenAddress, address _user) internal {
