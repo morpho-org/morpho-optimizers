@@ -695,9 +695,9 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         /// Fee repay ///
 
         uint256 feeToRepay = Math.min(
-            (delta.p2pBorrowAmount.rayMul(vars.p2pSupplyIndex) -
+            (delta.p2pBorrowAmount.rayMul(vars.p2pBorrowIndex) -
                 delta.p2pBorrowDelta.rayMul(vars.poolBorrowIndex)) -
-                (delta.p2pSupplyAmount.rayMul(vars.p2pBorrowIndex) -
+                (delta.p2pSupplyAmount.rayMul(vars.p2pSupplyIndex) -
                     delta.p2pSupplyDelta.rayMul(vars.poolSupplyIndex)),
             vars.remainingToRepay
         );
