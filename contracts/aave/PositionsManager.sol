@@ -548,7 +548,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         supplyBalanceInOf[_poolTokenAddress][_supplier].inP2P -= Math.min(
             supplyBalanceInOf[_poolTokenAddress][_supplier].inP2P,
             vars.remainingToWithdraw.rayDiv(vars.p2pSupplyIndex)
-        ); // In p2pUnit
+        ); // In peer-to-peer supply unit.
         _updateSupplierInDS(_poolTokenAddress, _supplier);
 
         /// Transfer withdraw ///
@@ -689,7 +689,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         borrowBalanceInOf[_poolTokenAddress][_user].inP2P -= Math.min(
             borrowBalanceInOf[_poolTokenAddress][_user].inP2P,
             vars.remainingToRepay.rayDiv(vars.p2pSupplyIndex)
-        ); // In p2pUnit
+        ); // In peer-to-peer borrow unit.
         _updateBorrowerInDS(_poolTokenAddress, _user);
 
         /// Fee repay ///
