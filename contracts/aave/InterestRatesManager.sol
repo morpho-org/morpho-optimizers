@@ -1,10 +1,8 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import "./interfaces/IInterestRatesManager.sol";
 import "./interfaces/aave/IAToken.sol";
 
-import "./libraries/Types.sol";
 import "./libraries/Math.sol";
 
 import "./MorphoStorage.sol";

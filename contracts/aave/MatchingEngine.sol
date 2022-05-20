@@ -1,19 +1,12 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import {IAToken} from "./interfaces/aave/IAToken.sol";
-import "./interfaces/aave/IScaledBalanceToken.sol";
-
-import "@openzeppelin/contracts/utils/Address.sol";
-import "./libraries/Math.sol";
-
 import "./MorphoUtils.sol";
 
 /// @title MatchingEngine.
 /// @notice Smart contract managing the matching engine.
 contract MatchingEngine is MorphoUtils {
     using DoubleLinkedList for DoubleLinkedList.List;
-    using Address for address;
     using Math for uint256;
 
     /// STRUCTS ///

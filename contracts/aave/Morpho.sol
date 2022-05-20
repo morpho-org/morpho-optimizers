@@ -3,8 +3,6 @@ pragma solidity 0.8.13;
 
 import "../common/interfaces/ISwapManager.sol";
 
-import "../common/libraries/DelegateCall.sol";
-
 import "./MorphoGovernance.sol";
 
 /// @title Morpho.

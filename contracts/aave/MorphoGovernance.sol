@@ -1,20 +1,13 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import "./interfaces/aave/IPriceOracleGetter.sol";
-
-import "./libraries/aave/ReserveConfiguration.sol";
-import "./libraries/Math.sol";
-
 import "./MorphoUtils.sol";
 
 /// @title MorphoGovernance.
 /// @notice Governance functions for Morpho.
 abstract contract MorphoGovernance is MorphoUtils {
     using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
-    using DoubleLinkedList for DoubleLinkedList.List;
     using SafeTransferLib for ERC20;
-    using Math for uint256;
 
     /// EVENTS ///
 
