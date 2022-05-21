@@ -101,6 +101,7 @@ library BasicHeap {
         uint256 mother = _index / 2;
         while (mother > 0 && _heap.accounts[_index - 1].value > _heap.accounts[mother - 1].value) {
             swap(_heap, _index, mother);
+            _index = mother;
             mother = mother / 2;
         }
     }
@@ -128,8 +129,10 @@ library BasicHeap {
             if (rightIndex <= accountsLength && _heap.accounts[rightIndex - 1].value > maxValue)
                 maxIndex = rightIndex;
 
-            if (maxIndex != _index) swap(_heap, _index, maxIndex);
-            else break;
+            if (maxIndex != _index) {
+                swap(_heap, _index, maxIndex);
+                _index = maxIndex;
+            } else break;
         }
     }
 
