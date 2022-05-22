@@ -124,4 +124,43 @@ contract TestFees is TestSetup {
 
         assertEq(balanceBefore, balanceAfter);
     }
+
+    function testShouldPayFee() public {
+        uint16 reserveFactor = 1_000;
+        uint256 bigAmount = 100_000 ether;
+        uint256 smallAmount = 0.00001 ether;
+        morpho.setReserveFactor(cDai, reserveFactor); // 10%
+
+        supplier1.approve(dai, type(uint256).max);
+        supplier1.supply(cDai, smallAmount);
+        supplier1.borrow(cDai, smallAmount / 2);
+
+        supplier2.approve(dai, type(uint256).max);
+        supplier2.supply(cDai, bigAmount);
+        supplier2.borrow(cDai, bigAmount / 2);
+
+        move1000BlocksForward(cDai);
+
+        supplier1.repay(cDai, type(uint256).max);
+    }
+
+    function testShouldReduceTheFeeToRepay() public {
+        uint16 reserveFactor = 1_000;
+        uint256 bigAmount = 100_000 ether;
+        uint256 smallAmount = 0.00001 ether;
+        morpho.setReserveFactor(cDai, reserveFactor); // 10%
+
+        supplier1.approve(dai, type(uint256).max);
+        supplier1.supply(cDai, smallAmount);
+        supplier1.borrow(cDai, smallAmount / 2);
+
+        supplier2.approve(dai, type(uint256).max);
+        supplier2.supply(cDai, bigAmount);
+        supplier2.borrow(cDai, bigAmount / 2);
+
+        move1000BlocksForward(cDai);
+
+        supplier1.repay(cDai, type(uint256).max);
+        supplier2.repay(cDai, type(uint256).max);
+    }
 }
