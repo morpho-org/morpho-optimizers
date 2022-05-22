@@ -57,10 +57,6 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @param _amountClaimed The amount of reward token claimed.
     event ReserveFeeClaimed(address indexed _poolTokenAddress, uint256 _amountClaimed);
 
-    /// @notice Emitted when a COMP reward status is set.
-    /// @param _isCompRewardsActive The new COMP reward status.
-    event CompRewardsStatusSet(bool _isCompRewardsActive);
-
     /// @notice Emitted when the value of `p2pDisabled` is set.
     /// @param _poolTokenAddress The address of the concerned market.
     /// @param _p2pDisabled The new value of `_p2pDisabled` adopted.
@@ -264,13 +260,6 @@ abstract contract MorphoGovernance is MorphoUtils {
     {
         p2pDisabled[_poolTokenAddress] = _newStatus;
         emit P2PStatusSet(_poolTokenAddress, _newStatus);
-    }
-
-    /// @notice Sets the activation of COMP rewards.
-    /// @param _newStatus The new status to set.
-    function setCompRewardsActivation(bool _newStatus) external onlyOwner {
-        isCompRewardsActive = _newStatus;
-        emit CompRewardsStatusSet(_newStatus);
     }
 
     /// @notice Transfers the protocol reserve fee to the DAO.

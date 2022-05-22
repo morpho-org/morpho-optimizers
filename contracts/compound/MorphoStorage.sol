@@ -21,7 +21,6 @@ abstract contract MorphoStorage is OwnableUpgradeable, ReentrancyGuardUpgradeabl
     uint16 public constant MAX_CLAIMABLE_RESERVE = 9_000; // The max propotion of reserve fee claimable by the DAO at once (90% in basis points).
     uint256 public constant WAD = 1e18;
 
-    bool public isCompRewardsActive; // True if the Compound reward is active.
     uint256 public maxSortedUsers; // The max number of users to sort in the data structure.
     uint256 public dustThreshold; // The minimum amount to keep in the data stucture.
     Types.MaxGasForMatching public defaultMaxGasForMatching; // The default max gas to consume within loops in matching engine functions.

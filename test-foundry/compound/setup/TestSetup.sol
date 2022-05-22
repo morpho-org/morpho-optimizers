@@ -141,7 +141,6 @@ contract TestSetup is Config, Utils, stdCheats {
 
         morpho.setRewardsManager(rewardsManager);
         morpho.setIncentivesVault(incentivesVault);
-        morpho.setCompRewardsActivation(true);
     }
 
     function createMarket(address _cToken) internal {

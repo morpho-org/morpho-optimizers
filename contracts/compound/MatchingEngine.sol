@@ -290,7 +290,7 @@ contract MatchingEngine is MorphoUtils {
                 suppliersInP2P[_poolTokenAddress].insertSorted(_user, inP2P, maxSortedUsers);
         }
 
-        if (isCompRewardsActive && address(rewardsManager) != address(0))
+        if (address(rewardsManager) != address(0))
             rewardsManager.accrueUserSupplyUnclaimedRewards(
                 _user,
                 _poolTokenAddress,
@@ -329,7 +329,7 @@ contract MatchingEngine is MorphoUtils {
                 borrowersInP2P[_poolTokenAddress].insertSorted(_user, inP2P, maxSortedUsers);
         }
 
-        if (isCompRewardsActive && address(rewardsManager) != address(0))
+        if (address(rewardsManager) != address(0))
             rewardsManager.accrueUserBorrowUnclaimedRewards(
                 _user,
                 _poolTokenAddress,
