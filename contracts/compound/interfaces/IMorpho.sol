@@ -14,7 +14,6 @@ interface IMorpho {
     /// STORAGE ///
 
     function defaultMaxGasForMatching() external view returns (Types.MaxGasForMatching memory);
-    function isCompRewardsActive() external view returns (bool);
     function maxSortedUsers() external view returns (uint256);
     function dustThreshold() external view returns (uint256);
     function supplyBalanceInOf(address, address) external view returns (Types.SupplyBalance memory);
@@ -53,7 +52,6 @@ interface IMorpho {
     function setIncentivesVault(address _newIncentivesVault) external;
     function setRewardsManager(address _rewardsManagerAddress) external;
     function setDustThreshold(uint256 _dustThreshold) external;
-    function setCompRewardsActivation() external;
     function setP2PDisable(address _poolTokenAddress, bool _p2pDisabled) external;
     function setReserveFactor(address _poolTokenAddress, uint256 _newReserveFactor) external;
     function setP2PIndexCursor(address _poolTokenAddress, uint16 _p2pIndexCursor) external;
