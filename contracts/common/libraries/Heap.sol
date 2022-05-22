@@ -3,13 +3,14 @@ pragma solidity 0.8.13;
 
 library BasicHeap {
     struct Account {
-        address id;
-        uint256 value;
+        address id; // The address of the account owner.
+        uint256 value; // The value of the account.
     }
 
     struct Heap {
-        Account[] accounts;
-        mapping(address => uint256) indexes;
+        Account[] accounts; // All the accounts.
+        uint256 size; // The size of the heap portion of the structure.
+        mapping(address => uint256) indexes; // A mapping from an address to an index in accounts.
     }
 
     /// ERRORS ///
@@ -19,7 +20,7 @@ library BasicHeap {
 
     /// VIEW ///
 
-    /// @notice Returns the length of the `_heap`.
+    /// @notice Returns the number of users in the `_heap`.
     /// @param _heap The heap parameter.
     /// @return The length of the heap.
     function length(Heap storage _heap) internal view returns (uint256) {
@@ -125,13 +126,14 @@ library BasicHeap {
     /// @param _heap The heap to modify.
     /// @param _index The index of the account to move.
     function shiftDown(Heap storage _heap, uint256 _index) private {
-        uint256 size = _heap.accounts.length;
+        uint256 size = _heap.size;
         Account memory initAccount = _heap.accounts[_index - 1];
         uint256 childIndex = _index * 2;
         Account memory childAccount;
 
         while (childIndex <= size) {
             if (
+                // Compute the index of the child with biggest value.
                 childIndex + 1 <= size &&
                 _heap.accounts[childIndex].value > _heap.accounts[childIndex - 1].value
             ) childIndex++;
@@ -153,17 +155,24 @@ library BasicHeap {
     /// @param _heap The heap to modify.
     /// @param _id The address of the account to insert.
     /// @param _value The value of the account to insert.
+    /// @param _maxSortedUsers The maximum size of the heap.
     function insert(
         Heap storage _heap,
         address _id,
-        uint256 _value
+        uint256 _value,
+        uint256 _maxSortedUsers
     ) private {
-        // _heap cannot contain the 0 address
+        // `_heap` cannot contain the 0 address
         if (_id == address(0)) revert AddressIsZero();
+        uint256 size = _heap.size;
         _heap.accounts.push(Account(_id, _value));
         uint256 accountsLength = _heap.accounts.length;
         _heap.indexes[_id] = accountsLength;
-        shiftUp(_heap, accountsLength);
+        swap(_heap, size + 1, accountsLength);
+        shiftUp(_heap, size + 1);
+        // The lowest elements of the heap are the last size/2 (rounded up)
+        if (size + 1 == _maxSortedUsers) _heap.size = _maxSortedUsers / 2;
+        else _heap.size++;
     }
 
     /// @notice Decreases the amount of an account in the `_heap`.
@@ -178,7 +187,7 @@ library BasicHeap {
     ) private {
         uint256 index = _heap.indexes[_id];
         _heap.accounts[index - 1].value = _newValue;
-        shiftDown(_heap, index);
+        if (index <= _heap.size) shiftDown(_heap, index);
     }
 
     /// @notice Increases the amount of an account in the `_heap`.
@@ -193,24 +202,28 @@ library BasicHeap {
     ) private {
         uint256 index = _heap.indexes[_id];
         _heap.accounts[index - 1].value = _newValue;
-        shiftUp(_heap, index);
+        if (index <= _heap.size) shiftUp(_heap, index);
     }
 
     /// @notice Removes an account in the `_heap`.
-    /// @dev Only call when `_id` is in the `_heap`.
+    /// @dev Only call when `_id` is in the `_heap` with value `_removedValue`.
     /// @param _heap The heap to modify.
     /// @param _id The address of the account to remove.
-    function remove(Heap storage _heap, address _id) private {
+    /// @param _removedValue The value of the account to remove.
+    function remove(
+        Heap storage _heap,
+        address _id,
+        uint256 _removedValue
+    ) private {
         uint256 index = _heap.indexes[_id];
         uint256 accountsLength = _heap.accounts.length;
-        if (index == accountsLength) {
-            _heap.accounts.pop();
-            delete _heap.indexes[_id];
-        } else {
-            swap(_heap, index, accountsLength);
-            _heap.accounts.pop();
-            delete _heap.indexes[_id];
-            shiftDown(_heap, index);
+        swap(_heap, index, accountsLength);
+        if (_heap.size == accountsLength) _heap.size--;
+        _heap.accounts.pop();
+        delete _heap.indexes[_id];
+        if (index <= _heap.size) {
+            if (_removedValue < _heap.accounts[index - 1].value) shiftDown(_heap, index);
+            else shiftUp(_heap, index);
         }
     }
 
@@ -224,11 +237,12 @@ library BasicHeap {
         Heap storage _heap,
         address _id,
         uint256 _formerValue,
-        uint256 _newValue
+        uint256 _newValue,
+        uint256 _maxSortedUsers
     ) internal {
         if (_formerValue != _newValue) {
-            if (_newValue == 0) remove(_heap, _id);
-            else if (_formerValue == 0) insert(_heap, _id, _newValue);
+            if (_newValue == 0) remove(_heap, _id, _formerValue);
+            else if (_formerValue == 0) insert(_heap, _id, _newValue, _maxSortedUsers);
             else if (_formerValue < _newValue) increase(_heap, _id, _newValue);
             else decrease(_heap, _id, _newValue);
         }
