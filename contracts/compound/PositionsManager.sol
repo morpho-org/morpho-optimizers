@@ -685,14 +685,29 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
         /// Fee repay ///
 
-        // Fee = (borrowP2P - p2pBorrowDelta) - (supplyP2P - p2pSupplyDelta)
+        // Fee = (p2pBorrowAmount - p2pBorrowDelta) - (p2pSupplyAmount - p2pSupplyDelta)
         vars.feeToRepay = CompoundMath.safeSub(
             (delta.p2pBorrowAmount.mul(vars.p2pBorrowIndex) -
                 delta.p2pBorrowDelta.mul(vars.poolBorrowIndex)),
             (delta.p2pSupplyAmount.mul(vars.p2pSupplyIndex) -
                 delta.p2pSupplyDelta.mul(poolToken.exchangeRateStored()))
         );
-        vars.remainingToRepay -= vars.feeToRepay;
+
+        if (vars.feeToRepay >= vars.remainingToRepay) {
+            delta.p2pBorrowDelta -= CompoundMath.min(
+                vars.remainingToRepay.div(vars.poolBorrowIndex),
+                delta.p2pBorrowDelta
+            );
+            delta.p2pBorrowAmount -= vars.remainingToRepay.div(vars.p2pBorrowIndex);
+            vars.remainingToRepay = 0;
+        } else {
+            delta.p2pBorrowDelta -= CompoundMath.min(
+                vars.feeToRepay.div(vars.poolBorrowIndex),
+                delta.p2pBorrowDelta
+            );
+            delta.p2pBorrowAmount -= vars.feeToRepay.div(vars.p2pBorrowIndex);
+            vars.remainingToRepay -= vars.feeToRepay;
+        }
 
         /// Transfer repay ///
 
