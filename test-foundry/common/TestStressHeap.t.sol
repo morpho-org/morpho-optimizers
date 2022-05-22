@@ -2,98 +2,93 @@
 pragma solidity 0.8.13;
 
 import "ds-test/test.sol";
-import "forge-std/stdlib.sol";
 
 import "@contracts/common/libraries/Heap.sol";
 
-contract TestStressHeap is DSTest {
-    using BasicHeap for BasicHeap.Heap;
-
-    Vm public hevm = Vm(HEVM_ADDRESS);
-
-    uint256 public TESTED_SIZE = 600;
-    address public ADDR_ZERO = address(0);
-
+contract HeapStorage {
     BasicHeap.Heap internal heap;
-
-    uint256 public NDS = 50;
-    address[] public ids;
+    uint256 public TESTED_SIZE = 500000;
+    uint256 public incrementAmount = 5;
 
     function setUp() public {
-        heap.accounts.push(BasicHeap.Account(address(this), TESTED_SIZE));
-        heap.indexes[address(this)] = 1;
-        for (uint256 i = 1; i < TESTED_SIZE; i++) {
-            address id = address(uint160(heap.accounts[i - 1].id) + 1);
+        for (uint256 i = 0; i < TESTED_SIZE; i++) {
+            address id = address(uint160(i + 1));
             heap.accounts.push(BasicHeap.Account(id, TESTED_SIZE - i));
             heap.indexes[id] = heap.accounts.length;
         }
-
-        ids = new address[](NDS);
-        ids[0] = address(1);
-        for (uint256 i = 1; i < NDS; i++) {
-            ids[i] = address(uint160(ids[i - 1]) + 1);
-        }
     }
 
-    function testAddOneTop() public {
-        heap.update(ids[0], 0, TESTED_SIZE - 1);
+    function update(
+        address _id,
+        uint256 _formerValue,
+        uint256 _newValue
+    ) public {
+        BasicHeap.update(heap, _id, _formerValue, _newValue);
+    }
+}
+
+contract TestStressHeap is DSTest {
+    HeapStorage public hs = new HeapStorage();
+    uint256 public ts;
+    uint256 public im;
+
+    function setUp() public {
+        hs.setUp();
+        ts = hs.TESTED_SIZE();
+        im = hs.incrementAmount();
     }
 
-    function testAddOneMiddle() public {
-        heap.update(ids[0], 0, TESTED_SIZE / 2);
+    function testInsertOneTop() public {
+        hs.update(address(this), 0, ts + 1);
     }
 
-    function testAddOneBottom() public {
-        heap.update(ids[0], 0, 1);
+    function testInsertOneMiddle() public {
+        hs.update(address(this), 0, ts / 2);
     }
 
-    function testRemoveTop() public {
-        heap.update(heap.accounts[0].id, heap.accounts[0].value, 0);
+    function testInsertOneBottom() public {
+        hs.update(address(this), 0, 1);
     }
 
-    function testRemoveMiddle() public {
-        uint256 middle = TESTED_SIZE / 2;
-        heap.update(heap.accounts[middle].id, heap.accounts[middle].value, 0);
+    function testRemoveOneTop() public {
+        hs.update(address(uint160(1)), ts, 0);
     }
 
-    function testRemoveEnd() public {
-        uint256 end = TESTED_SIZE - 10;
-        heap.update(heap.accounts[end].id, heap.accounts[end].value, 0);
+    function testRemoveOneMiddle() public {
+        uint256 middle = ts / 2;
+        hs.update(address(uint160(middle + 1)), ts - middle, 0);
     }
 
-    function testIncreaseTop() public {
-        heap.update(heap.accounts[0].id, heap.accounts[0].value, heap.accounts[0].value + 5);
+    function testRemoveOneBottom() public {
+        uint256 end = ts - 2 * im;
+        hs.update(address(uint160(end + 1)), ts - end, 0);
     }
 
-    function testIncreaseMiddle() public {
-        uint256 middle = TESTED_SIZE / 2;
-        heap.update(
-            heap.accounts[middle].id,
-            heap.accounts[middle].value,
-            heap.accounts[middle].value + 5
-        );
+    function testIncreaseOneTop() public {
+        hs.update(address(uint160(1)), ts, ts + im);
     }
 
-    function testIncreaseEnd() public {
-        uint256 end = TESTED_SIZE - 10;
-        heap.update(heap.accounts[end].id, heap.accounts[end].value, heap.accounts[end].value + 5);
+    function testIncreaseOneMiddle() public {
+        uint256 middle = ts / 2;
+        hs.update(address(uint160(middle + 1)), ts - middle, ts - middle + im);
     }
 
-    function testDecreaseTop() public {
-        heap.update(heap.accounts[0].id, heap.accounts[0].value, heap.accounts[0].value - 5);
+    function testIncreaseOneBottom() public {
+        uint256 end = ts - 2 * im;
+        hs.update(address(uint160(end + 1)), ts - end, ts - end + im);
     }
 
-    function testDecreaseMiddle() public {
-        uint256 middle = TESTED_SIZE / 2;
-        heap.update(
-            heap.accounts[middle].id,
-            heap.accounts[middle].value,
-            heap.accounts[middle].value - 5
-        );
+    function testDecreaseOneTop() public {
+        hs.update(address(uint160(1)), ts, 1);
     }
 
-    function testDecreaseEnd() public {
-        uint256 end = TESTED_SIZE - 10;
-        heap.update(heap.accounts[end].id, heap.accounts[end].value, heap.accounts[end].value - 5);
+    function testDecreaseOneMiddle() public {
+        uint256 middle = ts / 2;
+        hs.update(address(uint160(middle + 1)), ts - middle, 1);
+    }
+
+    function testDecreaseOneBottom() public {
+        uint256 end = ts - 2 * im;
+        hs.update(address(uint160(end + 1)), ts - end, ts - end - im);
     }
 }
