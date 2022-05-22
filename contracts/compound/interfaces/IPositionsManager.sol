@@ -4,6 +4,7 @@ pragma solidity 0.8.13;
 interface IPositionsManager {
     function supplyLogic(
         address _poolTokenAddress,
+        address _onBehalfOf,
         uint256 _amount,
         uint256 _maxGasForMatching
     ) external;

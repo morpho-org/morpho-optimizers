@@ -23,6 +23,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     /// @param _balanceInP2P The supply balance in peer-to-peer after update.
     event Supplied(
         address indexed _user,
+        address indexed _onBehalfOf,
         address indexed _poolTokenAddress,
         uint256 _amount,
         uint256 _balanceOnPool,
@@ -191,93 +192,102 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
     /// @dev Implements supply logic.
     /// @param _poolTokenAddress The address of the pool token the user wants to interact with.
+    /// @param _onBehalfOf The address that will be credited for the supply. Same as msg.sender if the user wants to receive in their own wallet.
     /// @param _amount The amount of token (in underlying).
     /// @param _maxGasForMatching The maximum amount of gas to consume within a matching engine loop.
     function supplyLogic(
         address _poolTokenAddress,
+        address _onBehalfOf,
         uint256 _amount,
         uint256 _maxGasForMatching
     ) external {
-        if (_amount == 0) revert AmountIsZero();
-        updateP2PIndexes(_poolTokenAddress);
+        {
+            if (_amount == 0) revert AmountIsZero();
+            updateP2PIndexes(_poolTokenAddress);
 
-        _enterMarketIfNeeded(_poolTokenAddress, msg.sender);
-        ERC20 underlyingToken = _getUnderlying(_poolTokenAddress);
-        underlyingToken.safeTransferFrom(msg.sender, address(this), _amount);
+            _enterMarketIfNeeded(_poolTokenAddress, _onBehalfOf);
+            ERC20 underlyingToken = _getUnderlying(_poolTokenAddress);
+            underlyingToken.safeTransferFrom(msg.sender, address(this), _amount);
 
-        Types.Delta storage delta = deltas[_poolTokenAddress];
-        uint256 poolBorrowIndex = ICToken(_poolTokenAddress).borrowIndex();
-        uint256 remainingToSupply = _amount;
-        uint256 toRepay;
+            Types.Delta storage delta = deltas[_poolTokenAddress];
+            uint256 poolBorrowIndex = ICToken(_poolTokenAddress).borrowIndex();
+            uint256 remainingToSupply = _amount;
+            uint256 toRepay;
 
-        /// Supply in peer-to-peer ///
+            /// Supply in peer-to-peer ///
 
-        if (!p2pDisabled[_poolTokenAddress]) {
-            // Match borrow peer-to-peer delta first if any.
-            uint256 matchedDelta;
-            if (delta.p2pBorrowDelta > 0) {
-                matchedDelta = CompoundMath.min(
-                    delta.p2pBorrowDelta.mul(poolBorrowIndex),
-                    remainingToSupply
-                );
+            if (!p2pDisabled[_poolTokenAddress]) {
+                // Match borrow peer-to-peer delta first if any.
+                uint256 matchedDelta;
+                if (delta.p2pBorrowDelta > 0) {
+                    matchedDelta = CompoundMath.min(
+                        delta.p2pBorrowDelta.mul(poolBorrowIndex),
+                        remainingToSupply
+                    );
 
-                toRepay += matchedDelta;
-                remainingToSupply -= matchedDelta;
-                delta.p2pBorrowDelta -= matchedDelta.div(poolBorrowIndex);
-                emit P2PBorrowDeltaUpdated(_poolTokenAddress, delta.p2pBorrowDelta);
-            }
+                    toRepay += matchedDelta;
+                    remainingToSupply -= matchedDelta;
+                    delta.p2pBorrowDelta -= matchedDelta.div(poolBorrowIndex);
+                    emit P2PBorrowDeltaUpdated(_poolTokenAddress, delta.p2pBorrowDelta);
+                }
 
-            // Match pool borrowers if any.
-            if (
-                remainingToSupply > 0 && borrowersOnPool[_poolTokenAddress].getHead() != address(0)
-            ) {
-                (uint256 matched, ) = _matchBorrowers(
-                    _poolTokenAddress,
-                    remainingToSupply,
-                    _maxGasForMatching
-                ); // In underlying.
+                // Match pool borrowers if any.
+                if (
+                    remainingToSupply > 0 &&
+                    borrowersOnPool[_poolTokenAddress].getHead() != address(0)
+                ) {
+                    (uint256 matched, ) = _matchBorrowers(
+                        _poolTokenAddress,
+                        remainingToSupply,
+                        _maxGasForMatching
+                    ); // In underlying.
 
-                if (matched > 0) {
-                    toRepay += matched;
-                    remainingToSupply -= matched;
-                    delta.p2pBorrowAmount += matched.div(p2pBorrowIndex[_poolTokenAddress]);
+                    if (matched > 0) {
+                        toRepay += matched;
+                        remainingToSupply -= matched;
+                        delta.p2pBorrowAmount += matched.div(p2pBorrowIndex[_poolTokenAddress]);
+                    }
                 }
             }
+
+            if (toRepay > 0) {
+                uint256 toAddInP2P = toRepay.div(p2pSupplyIndex[_poolTokenAddress]);
+
+                delta.p2pSupplyAmount += toAddInP2P;
+                supplyBalanceInOf[_poolTokenAddress][_onBehalfOf].inP2P += toAddInP2P;
+
+                // Repay only what is necessary. The remaining tokens stays on the contracts and are claimable by the DAO.
+                toRepay = Math.min(
+                    toRepay,
+                    ICToken(_poolTokenAddress).borrowBalanceCurrent(address(this)) // The debt of the contract.
+                );
+
+                _repayToPool(_poolTokenAddress, underlyingToken, toRepay); // Reverts on error.
+                emit P2PAmountsUpdated(
+                    _poolTokenAddress,
+                    delta.p2pSupplyAmount,
+                    delta.p2pBorrowAmount
+                );
+            }
+
+            /// Supply on pool ///
+
+            if (remainingToSupply > 0) {
+                supplyBalanceInOf[_poolTokenAddress][_onBehalfOf].onPool += remainingToSupply.div(
+                    ICToken(_poolTokenAddress).exchangeRateStored() // Exchange rate has already been updated.
+                ); // In scaled balance.
+                _supplyToPool(_poolTokenAddress, underlyingToken, remainingToSupply); // Reverts on error.
+            }
+
+            _updateSupplierInDS(_poolTokenAddress, _onBehalfOf);
         }
-
-        if (toRepay > 0) {
-            uint256 toAddInP2P = toRepay.div(p2pSupplyIndex[_poolTokenAddress]);
-
-            delta.p2pSupplyAmount += toAddInP2P;
-            supplyBalanceInOf[_poolTokenAddress][msg.sender].inP2P += toAddInP2P;
-
-            // Repay only what is necessary. The remaining tokens stays on the contracts and are claimable by the DAO.
-            toRepay = Math.min(
-                toRepay,
-                ICToken(_poolTokenAddress).borrowBalanceCurrent(address(this)) // The debt of the contract.
-            );
-
-            _repayToPool(_poolTokenAddress, underlyingToken, toRepay); // Reverts on error.
-            emit P2PAmountsUpdated(_poolTokenAddress, delta.p2pSupplyAmount, delta.p2pBorrowAmount);
-        }
-
-        /// Supply on pool ///
-
-        if (remainingToSupply > 0) {
-            supplyBalanceInOf[_poolTokenAddress][msg.sender].onPool += remainingToSupply.div(
-                ICToken(_poolTokenAddress).exchangeRateStored() // Exchange rate has already been updated.
-            ); // In scaled balance.
-            _supplyToPool(_poolTokenAddress, underlyingToken, remainingToSupply); // Reverts on error.
-        }
-
-        _updateSupplierInDS(_poolTokenAddress, msg.sender);
-
         emit Supplied(
             msg.sender,
+            _onBehalfOf,
             _poolTokenAddress,
             _amount,
-            supplyBalanceInOf[_poolTokenAddress][msg.sender].onPool,
-            supplyBalanceInOf[_poolTokenAddress][msg.sender].inP2P
+            supplyBalanceInOf[_poolTokenAddress][_onBehalfOf].onPool,
+            supplyBalanceInOf[_poolTokenAddress][_onBehalfOf].inP2P
         );
     }
 
