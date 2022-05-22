@@ -674,17 +674,6 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         ); // In peer-to-peer unit.
         _updateBorrowerInDS(_poolTokenAddress, _user);
 
-        /// Fee repay ///
-
-        // Fee = (borrowP2P - p2pBorrowDelta) - (supplyP2P - p2pSupplyDelta)
-        vars.feeToRepay = CompoundMath.safeSub(
-            (delta.p2pBorrowAmount.mul(vars.p2pBorrowIndex) -
-                delta.p2pBorrowDelta.mul(vars.poolBorrowIndex)),
-            (delta.p2pSupplyAmount.mul(vars.p2pSupplyIndex) -
-                delta.p2pSupplyDelta.mul(poolToken.exchangeRateStored()))
-        );
-        vars.remainingToRepay -= vars.feeToRepay;
-
         /// Transfer repay ///
 
         // Match peer-to-peer borrow delta first if any.
@@ -700,6 +689,28 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             delta.p2pBorrowAmount -= matchedDelta.div(vars.p2pBorrowIndex);
             emit P2PBorrowDeltaUpdated(_poolTokenAddress, delta.p2pBorrowDelta);
             emit P2PAmountsUpdated(_poolTokenAddress, delta.p2pSupplyAmount, delta.p2pBorrowAmount);
+        }
+
+        // Repay the fee.
+        if (vars.remainingToRepay > 0) {
+            // Fee = (p2pBorrowAmount - p2pBorrowDelta) - (p2pSupplyAmount - p2pSupplyDelta).
+            vars.feeToRepay = CompoundMath.safeSub(
+                (delta.p2pBorrowAmount.mul(vars.p2pBorrowIndex) -
+                    delta.p2pBorrowDelta.mul(vars.poolBorrowIndex)),
+                (delta.p2pSupplyAmount.mul(vars.p2pSupplyIndex) -
+                    delta.p2pSupplyDelta.mul(poolToken.exchangeRateStored()))
+            );
+
+            if (vars.feeToRepay > 0) {
+                uint256 feeRepaid = CompoundMath.min(vars.feeToRepay, vars.remainingToRepay);
+                vars.remainingToRepay -= feeRepaid;
+                delta.p2pBorrowAmount -= feeRepaid.div(vars.p2pBorrowIndex);
+                emit P2PAmountsUpdated(
+                    _poolTokenAddress,
+                    delta.p2pSupplyAmount,
+                    delta.p2pBorrowAmount
+                );
+            }
         }
 
         // Match pool borrowers if any.
