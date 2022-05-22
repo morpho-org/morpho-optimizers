@@ -366,4 +366,52 @@ contract TestRewards is TestSetup {
         assertEq(morphoBalance, expectedMorphoTokens);
         assertEq(rewardBalanceBefore, rewardBalanceAfter);
     }
+
+    function testShouldClaimTheSameAmountOfRewards() public {
+        uint256 smallAmount = 1 ether;
+        uint256 bigAmount = 10_000 ether;
+
+        supplier1.approve(usdc, type(uint256).max);
+        supplier1.supply(cUsdc, to6Decimals(smallAmount));
+        supplier2.approve(usdc, type(uint256).max);
+        supplier2.supply(cUsdc, to6Decimals(smallAmount));
+
+        move1000BlocksForward(cUsdc);
+
+        address[] memory markets = new address[](1);
+        markets[0] = cUsdc;
+
+        rewardsManager.accrueUserUnclaimedRewards(markets, address(supplier1));
+
+        // supplier2 tries to game the system by supplying a huge amount of tokens and withdrawing right after accruing its rewards.
+        supplier2.supply(cUsdc, to6Decimals(bigAmount));
+        rewardsManager.accrueUserUnclaimedRewards(markets, address(supplier2));
+        supplier2.withdraw(cUsdc, to6Decimals(bigAmount));
+
+        assertEq(
+            rewardsManager.getUserUnclaimedRewards(markets, address(supplier1)),
+            rewardsManager.getUserUnclaimedRewards(markets, address(supplier2))
+        );
+    }
+
+    function testFailShouldNotClaimRewardsWhenRewardsManagerIsAddressZero() public {
+        uint256 amount = 1 ether;
+
+        supplier1.approve(usdc, type(uint256).max);
+        supplier1.supply(cUsdc, to6Decimals(amount));
+
+        // Set RewardsManager to address(0).
+        morpho.setRewardsManager(IRewardsManager(address(0)));
+
+        move1000BlocksForward(cUsdc);
+
+        address[] memory markets = new address[](1);
+        markets[0] = cUsdc;
+
+        // User accrues its rewards.
+        rewardsManager.accrueUserUnclaimedRewards(markets, address(supplier1));
+
+        // User tries to claim its rewards on Morpho.
+        supplier1.claimRewards(markets, false);
+    }
 }
