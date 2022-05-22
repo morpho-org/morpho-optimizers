@@ -152,7 +152,6 @@ library BasicHeap {
     /// @notice Inserts an account in the `_heap`.
     /// @dev Only call this function when `_id`.
     /// @dev Reverts with AddressIsZero if `_value` is 0.
-    /// @dev `_maxSortedUsers` should be a power of 2.
     /// @param _heap The heap to modify.
     /// @param _id The address of the account to insert.
     /// @param _value The value of the account to insert.
@@ -163,7 +162,7 @@ library BasicHeap {
         uint256 _value,
         uint256 _maxSortedUsers
     ) private {
-        // _heap cannot contain the 0 address
+        // `_heap` cannot contain the 0 address
         if (_id == address(0)) revert AddressIsZero();
         uint256 size = _heap.size;
         _heap.accounts.push(Account(_id, _value));
@@ -171,6 +170,7 @@ library BasicHeap {
         _heap.indexes[_id] = accountsLength;
         swap(_heap, size + 1, accountsLength);
         shiftUp(_heap, size + 1);
+        // The lowest elements of the heap are the last size/2 (rounded up)
         if (size + 1 == _maxSortedUsers) _heap.size = _maxSortedUsers / 2;
         else _heap.size++;
     }

@@ -103,7 +103,6 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// UPGRADE ///
 
     /// @notice Initializes the Morpho contract.
-    /// @dev The `_maxSortedUsers` parameter should be a power of 2.
     /// @param _positionsManager The `positionsManager`.
     /// @param _interestRatesManager The `interestRatesManager`.
     /// @param _comptroller The `comptroller`.
@@ -140,7 +139,6 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// GOVERNANCE ///
 
     /// @notice Sets `maxSortedUsers`.
-    /// @dev The `_maxSortedUsers` parameter should be a power of 2.
     /// @param _newMaxSortedUsers The new `maxSortedUsers` value.
     function setMaxSortedUsers(uint256 _newMaxSortedUsers) external onlyOwner {
         maxSortedUsers = _newMaxSortedUsers;
