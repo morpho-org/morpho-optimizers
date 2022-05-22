@@ -233,4 +233,26 @@ contract TestHeap is DSTest {
             assertEq(prevAccount, accounts[10 - i - 2]);
         }
     }
+
+    function testDecrease1() public {
+        heap.update(accounts[0], 0, 4);
+        heap.update(accounts[1], 0, 3);
+        heap.update(accounts[2], 0, 2);
+        heap.update(accounts[0], 4, 1);
+
+        assertEq(heap.accounts[0].value, 3);
+        assertEq(heap.accounts[1].value, 1);
+        assertEq(heap.accounts[2].value, 2);
+    }
+
+    function testDecrease2() public {
+        heap.update(accounts[0], 0, 4);
+        heap.update(accounts[1], 0, 2);
+        heap.update(accounts[2], 0, 3);
+        heap.update(accounts[0], 4, 1);
+
+        assertEq(heap.accounts[0].value, 3);
+        assertEq(heap.accounts[1].value, 2);
+        assertEq(heap.accounts[2].value, 1);
+    }
 }
