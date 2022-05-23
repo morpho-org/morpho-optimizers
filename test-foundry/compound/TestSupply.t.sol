@@ -234,4 +234,22 @@ contract TestSupply is TestSetup {
         assertEq(ICToken(cDai).balanceOf(address(positionsManager)), 0, "balance of cToken");
         assertEq(onPool, 0, "Balance in Positions Manager");
     }
+
+    function testSupplyOnBehalf() public {
+        uint256 amount = 10000 ether;
+
+        supplier1.approve(dai, amount);
+        hevm.prank(address(supplier1));
+        morpho.supplyOnBehalf(cDai, address(supplier2), amount);
+
+        uint256 poolSupplyIndex = ICToken(cDai).exchangeRateCurrent();
+        uint256 expectedOnPool = amount.div(poolSupplyIndex);
+
+        assertEq(ERC20(cDai).balanceOf(address(morpho)), expectedOnPool, "balance of cToken");
+
+        (uint256 inP2P, uint256 onPool) = morpho.supplyBalanceInOf(cDai, address(supplier2));
+
+        assertEq(onPool, expectedOnPool, "on pool");
+        assertEq(inP2P, 0, "in peer-to-peer");
+    }
 }

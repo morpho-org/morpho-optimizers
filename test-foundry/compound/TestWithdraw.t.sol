@@ -658,4 +658,29 @@ contract TestWithdraw is TestSetup {
 
         assertTrue(ERC20(dai).balanceOf(address(supplier1)) > balanceAtTheBeginning);
     }
+
+    function testWithdrawTo() public {
+        uint256 amount = 10000 ether;
+
+        supplier1.approve(usdc, to6Decimals(2 * amount));
+        supplier1.supply(cUsdc, to6Decimals(2 * amount));
+
+        (uint256 inP2P, uint256 onPool) = morpho.supplyBalanceInOf(cUsdc, address(supplier1));
+
+        uint256 expectedOnPool = to6Decimals(2 * amount).div(ICToken(cUsdc).exchangeRateCurrent());
+
+        assertEq(inP2P, 0);
+        assertEq(onPool, expectedOnPool);
+
+        address emptyAddress = address(bytes20(keccak256(abi.encodePacked("WITHDRAWOOOOOOOOR"))));
+
+        hevm.prank(address(supplier1));
+        morpho.withdrawTo(cUsdc, emptyAddress, to6Decimals(amount));
+
+        (inP2P, onPool) = morpho.supplyBalanceInOf(cUsdc, address(supplier1));
+
+        assertEq(inP2P, 0);
+        assertApproxEq(onPool, expectedOnPool / 2, 1);
+        assertEq(to6Decimals(amount), ERC20(usdc).balanceOf(emptyAddress));
+    }
 }

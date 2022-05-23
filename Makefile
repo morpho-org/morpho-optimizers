@@ -22,7 +22,7 @@ ci: node_modules
 
 test-compound: node_modules
 	@echo Run all tests on ${NETWORK}
-	@forge test -vv -c test-foundry/compound --no-match-contract TestGasConsumption --no-match-test testFuzz
+	@forge test -vvv -c test-foundry/compound --no-match-contract TestGasConsumption --no-match-test testFuzz
 
 fuzz-compound: node_modules
 	@echo Run all fuzzing tests on ${NETWORK}
