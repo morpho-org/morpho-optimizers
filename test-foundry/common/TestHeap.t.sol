@@ -11,22 +11,31 @@ contract TestHeap is DSTest {
 
     Vm public hevm = Vm(HEVM_ADDRESS);
 
-    uint256 public NDS = 50;
     address[] public accounts;
+    uint256 public NB_ACCOUNTS = 50;
+    uint256 public MAX_USER_SORTED = 50;
     address public ADDR_ZERO = address(0);
 
     BasicHeap.Heap internal heap;
 
+    function update(
+        address _id,
+        uint256 _formerValue,
+        uint256 _newValue
+    ) public {
+        heap.update(_id, _formerValue, _newValue, MAX_USER_SORTED);
+    }
+
     function setUp() public {
-        accounts = new address[](NDS);
+        accounts = new address[](NB_ACCOUNTS);
         accounts[0] = address(this);
-        for (uint256 i = 1; i < NDS; i++) {
+        for (uint256 i = 1; i < NB_ACCOUNTS; i++) {
             accounts[i] = address(uint160(accounts[i - 1]) + 1);
         }
     }
 
     function testInsertOneSingleAccount() public {
-        heap.update(accounts[0], 0, 1);
+        update(accounts[0], 0, 1);
 
         assertEq(heap.length(), 1);
         assertEq(heap.getValueOf(accounts[0]), 1);
@@ -37,31 +46,31 @@ contract TestHeap is DSTest {
     }
 
     function testShouldNotInsertAccountWithZeroValue() public {
-        heap.update(accounts[0], 0, 0);
+        update(accounts[0], 0, 0);
         assertEq(heap.length(), 0);
     }
 
     function testShouldNotInsertZeroAddress() public {
         hevm.expectRevert(abi.encodeWithSignature("AddressIsZero()"));
-        heap.update(address(0), 0, 10);
+        update(address(0), 0, 10);
     }
 
     function testShouldInsertSeveralTimesTheSameAccount() public {
-        heap.update(accounts[0], 0, 1);
-        heap.update(accounts[0], 1, 2);
+        update(accounts[0], 0, 1);
+        update(accounts[0], 1, 2);
         assertEq(heap.getValueOf(accounts[0]), 2);
     }
 
     function testShouldHaveTheRightOrder() public {
-        heap.update(accounts[0], 0, 20);
-        heap.update(accounts[1], 0, 40);
+        update(accounts[0], 0, 20);
+        update(accounts[1], 0, 40);
         assertEq(heap.getHead(), accounts[1]);
         assertEq(heap.getTail(), accounts[0]);
     }
 
     function testShouldRemoveOneSingleAccount() public {
-        heap.update(accounts[0], 0, 1);
-        heap.update(accounts[0], 1, 0);
+        update(accounts[0], 0, 1);
+        update(accounts[0], 1, 0);
 
         assertEq(heap.getHead(), ADDR_ZERO);
         assertEq(heap.getTail(), ADDR_ZERO);
@@ -71,8 +80,8 @@ contract TestHeap is DSTest {
     }
 
     function testShouldInsertTwoAccounts() public {
-        heap.update(accounts[0], 0, 2);
-        heap.update(accounts[1], 0, 1);
+        update(accounts[0], 0, 2);
+        update(accounts[1], 0, 1);
 
         assertEq(heap.getHead(), accounts[0]);
         assertEq(heap.getTail(), accounts[1]);
@@ -85,9 +94,9 @@ contract TestHeap is DSTest {
     }
 
     function testShouldInsertThreeAccounts() public {
-        heap.update(accounts[0], 0, 3);
-        heap.update(accounts[1], 0, 2);
-        heap.update(accounts[2], 0, 1);
+        update(accounts[0], 0, 3);
+        update(accounts[1], 0, 2);
+        update(accounts[2], 0, 1);
 
         assertEq(heap.getHead(), accounts[0]);
         assertEq(heap.getTail(), accounts[2]);
@@ -103,9 +112,9 @@ contract TestHeap is DSTest {
     }
 
     function testShouldRemoveOneAccountOverTwo() public {
-        heap.update(accounts[0], 0, 2);
-        heap.update(accounts[1], 0, 1);
-        heap.update(accounts[0], 2, 0);
+        update(accounts[0], 0, 2);
+        update(accounts[1], 0, 1);
+        update(accounts[0], 2, 0);
 
         assertEq(heap.getHead(), accounts[1]);
         assertEq(heap.getTail(), accounts[1]);
@@ -116,49 +125,49 @@ contract TestHeap is DSTest {
     }
 
     function testShouldRemoveBothAccounts() public {
-        heap.update(accounts[0], 0, 2);
-        heap.update(accounts[1], 0, 1);
-        heap.update(accounts[0], 2, 0);
-        heap.update(accounts[1], 1, 0);
+        update(accounts[0], 0, 2);
+        update(accounts[1], 0, 1);
+        update(accounts[0], 2, 0);
+        update(accounts[1], 1, 0);
 
         assertEq(heap.getHead(), ADDR_ZERO);
         assertEq(heap.getTail(), ADDR_ZERO);
     }
 
     function testShouldInsertThreeAccountsAndRemoveThem() public {
-        heap.update(accounts[0], 0, 3);
-        heap.update(accounts[1], 0, 2);
-        heap.update(accounts[2], 0, 1);
+        update(accounts[0], 0, 3);
+        update(accounts[1], 0, 2);
+        update(accounts[2], 0, 1);
 
         assertEq(heap.getHead(), accounts[0]);
         assertEq(heap.getTail(), accounts[2]);
 
         // Remove account 0.
-        heap.update(accounts[0], 3, 0);
-        assertEq(heap.getHead(), accounts[1]);
-        assertEq(heap.getTail(), accounts[2]);
-        assertEq(heap.getPrev(accounts[1]), ADDR_ZERO);
-        assertEq(heap.getNext(accounts[1]), accounts[2]);
+        update(accounts[0], 3, 0);
+        assertEq(heap.getHead(), accounts[2]);
+        assertEq(heap.getTail(), accounts[1]);
+        assertEq(heap.getPrev(accounts[1]), accounts[2]);
+        assertEq(heap.getNext(accounts[1]), ADDR_ZERO);
 
-        assertEq(heap.getPrev(accounts[2]), accounts[1]);
-        assertEq(heap.getNext(accounts[2]), ADDR_ZERO);
+        assertEq(heap.getPrev(accounts[2]), ADDR_ZERO);
+        assertEq(heap.getNext(accounts[2]), accounts[1]);
 
         // Remove account 1.
-        heap.update(accounts[1], 2, 0);
+        update(accounts[1], 2, 0);
         assertEq(heap.getHead(), accounts[2]);
         assertEq(heap.getTail(), accounts[2]);
         assertEq(heap.getPrev(accounts[2]), ADDR_ZERO);
         assertEq(heap.getNext(accounts[2]), ADDR_ZERO);
 
         // Remove account 2.
-        heap.update(accounts[2], 1, 0);
+        update(accounts[2], 1, 0);
         assertEq(heap.getHead(), ADDR_ZERO);
         assertEq(heap.getTail(), ADDR_ZERO);
     }
 
     function testShouldInsertAccountsAllSorted() public {
         for (uint256 i = 0; i < accounts.length; i++) {
-            heap.update(accounts[i], 0, NDS - i);
+            update(accounts[i], 0, NB_ACCOUNTS - i);
         }
 
         assertEq(heap.getHead(), accounts[0]);
@@ -179,11 +188,11 @@ contract TestHeap is DSTest {
 
     function testShouldRemoveAllSortedAccount() public {
         for (uint256 i = 0; i < accounts.length; i++) {
-            heap.update(accounts[i], 0, NDS - i);
+            update(accounts[i], 0, NB_ACCOUNTS - i);
         }
 
         for (uint256 i = 0; i < accounts.length; i++) {
-            heap.update(accounts[i], NDS - i, 0);
+            update(accounts[i], NB_ACCOUNTS - i, 0);
         }
 
         assertEq(heap.getHead(), ADDR_ZERO);
@@ -195,7 +204,7 @@ contract TestHeap is DSTest {
 
         // Add first 10 accounts with decreasing value.
         for (uint256 i = 0; i < 10; i++) {
-            heap.update(accounts[i], 0, value - i);
+            update(accounts[i], 0, value - i);
         }
 
         assertEq(heap.getHead(), accounts[0]);
@@ -214,8 +223,8 @@ contract TestHeap is DSTest {
         }
 
         // Add last 10 accounts at the same value.
-        for (uint256 i = NDS - 10; i < NDS; i++) {
-            heap.update(accounts[i], 0, 10);
+        for (uint256 i = NB_ACCOUNTS - 10; i < NB_ACCOUNTS; i++) {
+            update(accounts[i], 0, 10);
         }
 
         assertEq(heap.getHead(), accounts[0]);
@@ -235,10 +244,10 @@ contract TestHeap is DSTest {
     }
 
     function testDecrease1() public {
-        heap.update(accounts[0], 0, 4);
-        heap.update(accounts[1], 0, 3);
-        heap.update(accounts[2], 0, 2);
-        heap.update(accounts[0], 4, 1);
+        update(accounts[0], 0, 4);
+        update(accounts[1], 0, 3);
+        update(accounts[2], 0, 2);
+        update(accounts[0], 4, 1);
 
         assertEq(heap.accounts[0].value, 3);
         assertEq(heap.accounts[1].value, 1);
@@ -246,10 +255,10 @@ contract TestHeap is DSTest {
     }
 
     function testDecrease2() public {
-        heap.update(accounts[0], 0, 4);
-        heap.update(accounts[1], 0, 2);
-        heap.update(accounts[2], 0, 3);
-        heap.update(accounts[0], 4, 1);
+        update(accounts[0], 0, 4);
+        update(accounts[1], 0, 2);
+        update(accounts[2], 0, 3);
+        update(accounts[0], 4, 1);
 
         assertEq(heap.accounts[0].value, 3);
         assertEq(heap.accounts[1].value, 2);
