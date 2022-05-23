@@ -41,6 +41,7 @@ contract Morpho is MorphoGovernance {
                 positionsManager.supplyLogic.selector,
                 _poolTokenAddress,
                 msg.sender,
+                msg.sender,
                 _amount,
                 defaultMaxGasForMatching.supply
             )
@@ -61,8 +62,32 @@ contract Morpho is MorphoGovernance {
             abi.encodeWithSelector(
                 positionsManager.supplyLogic.selector,
                 _poolTokenAddress,
+                msg.sender,
+                msg.sender,
                 _amount,
                 _maxGasForMatching
+            )
+        );
+    }
+
+    /// @notice Supplies underlying tokens in a specific market with the supply credited to _onBehalfOf.
+    /// @dev `msg.sender` must have approved Morpho's contract to spend the underlying `_amount`.
+    /// @param _poolTokenAddress The address of the market the user wants to interact with.
+    /// @param _onBehalfOf The address which will be credited for the supply
+    /// @param _amount The amount of token (in underlying) to supply.
+    function supplyOnBehalf(
+        address _poolTokenAddress,
+        address _onBehalfOf,
+        uint256 _amount
+    ) external nonReentrant isMarketCreatedAndNotPausedNorPartiallyPaused(_poolTokenAddress) {
+        address(positionsManager).functionDelegateCall(
+            abi.encodeWithSelector(
+                positionsManager.supplyLogic.selector,
+                _poolTokenAddress,
+                msg.sender,
+                _onBehalfOf,
+                _amount,
+                defaultMaxGasForMatching.supply
             )
         );
     }
@@ -116,9 +141,30 @@ contract Morpho is MorphoGovernance {
             abi.encodeWithSelector(
                 positionsManager.withdrawLogic.selector,
                 _poolTokenAddress,
+                msg.sender, // supplier
+                msg.sender, // receiver
                 _amount,
-                msg.sender,
-                msg.sender,
+                defaultMaxGasForMatching.withdraw
+            )
+        );
+    }
+
+    /// @notice Sender withdraws underlying tokens in a specific market to a specified address.
+    /// @param _poolTokenAddress The address of the market the user wants to interact with.
+    /// @param _to The address receiving the underlying tokens.
+    /// @param _amount The amount of tokens (in underlying) to withdraw from supply.
+    function withdrawTo(
+        address _poolTokenAddress,
+        address _to,
+        uint256 _amount
+    ) external nonReentrant isMarketCreatedAndNotPaused(_poolTokenAddress) {
+        address(positionsManager).functionDelegateCall(
+            abi.encodeWithSelector(
+                positionsManager.withdrawLogic.selector,
+                _poolTokenAddress,
+                msg.sender, // supplier
+                _to, // receiver
+                _amount,
                 defaultMaxGasForMatching.withdraw
             )
         );
@@ -137,7 +183,29 @@ contract Morpho is MorphoGovernance {
             abi.encodeWithSelector(
                 positionsManager.repayLogic.selector,
                 _poolTokenAddress,
-                msg.sender,
+                msg.sender, // user
+                msg.sender, // onBehalfOf
+                _amount,
+                defaultMaxGasForMatching.repay
+            )
+        );
+    }
+
+    /// @notice Repays debt of _onBehalfOf.
+    /// @dev `msg.sender` must have approved Morpho's contract to spend the underlying `_amount`.
+    /// @param _poolTokenAddress The address of the market the user wants to interact with.
+    /// @param _amount The amount of token (in underlying) to repay from borrow.
+    function repayOnBehalf(
+        address _poolTokenAddress,
+        address _onBehalfOf,
+        uint256 _amount
+    ) external nonReentrant isMarketCreatedAndNotPaused(_poolTokenAddress) {
+        address(positionsManager).functionDelegateCall(
+            abi.encodeWithSelector(
+                positionsManager.repayLogic.selector,
+                _poolTokenAddress,
+                msg.sender, // user
+                _onBehalfOf, // onBehalfOf
                 _amount,
                 defaultMaxGasForMatching.repay
             )

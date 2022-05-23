@@ -16,13 +16,14 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     /// EVENTS ///
 
     /// @notice Emitted when a supply happens.
-    /// @param _user The address of the supplier.
+    /// @param _supplier The address of the supplier.
+    /// @param _onBehalfOf The address that is credited for the supply.
     /// @param _poolTokenAddress The address of the market where assets are supplied into.
     /// @param _amount The amount of assets supplied (in underlying).
     /// @param _balanceOnPool The supply balance on pool after update.
     /// @param _balanceInP2P The supply balance in peer-to-peer after update.
     event Supplied(
-        address indexed _user,
+        address indexed _supplier,
         address indexed _onBehalfOf,
         address indexed _poolTokenAddress,
         uint256 _amount,
@@ -52,6 +53,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     /// @param _balanceInP2P The supply balance in peer-to-peer after update.
     event Withdrawn(
         address indexed _user,
+        address indexed _to,
         address indexed _poolTokenAddress,
         uint256 _amount,
         uint256 _balanceOnPool,
@@ -59,13 +61,14 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     );
 
     /// @notice Emitted when a repayment happens.
-    /// @param _user The address of the repayer.
+    /// @param _payer The address of the repayer.
     /// @param _poolTokenAddress The address of the market where assets are repaid.
     /// @param _amount The amount of assets repaid (in underlying).
     /// @param _balanceOnPool The borrow balance on pool after update.
     /// @param _balanceInP2P The borrow balance in peer-to-peer after update.
     event Repaid(
-        address indexed _user,
+        address indexed _payer,
+        address indexed _onBehalfOf,
         address indexed _poolTokenAddress,
         uint256 _amount,
         uint256 _balanceOnPool,
@@ -192,22 +195,25 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
     /// @dev Implements supply logic.
     /// @param _poolTokenAddress The address of the pool token the user wants to interact with.
+    /// @param _supplier The address that will supply the funds
     /// @param _onBehalfOf The address that will be credited for the supply. Same as msg.sender if the user wants to receive in their own wallet.
     /// @param _amount The amount of token (in underlying).
     /// @param _maxGasForMatching The maximum amount of gas to consume within a matching engine loop.
     function supplyLogic(
         address _poolTokenAddress,
+        address _supplier,
         address _onBehalfOf,
         uint256 _amount,
         uint256 _maxGasForMatching
     ) external {
+        // Scope to avoid stack too deep
         {
             if (_amount == 0) revert AmountIsZero();
             updateP2PIndexes(_poolTokenAddress);
 
             _enterMarketIfNeeded(_poolTokenAddress, _onBehalfOf);
             ERC20 underlyingToken = _getUnderlying(_poolTokenAddress);
-            underlyingToken.safeTransferFrom(msg.sender, address(this), _amount);
+            underlyingToken.safeTransferFrom(_supplier, address(this), _amount);
 
             Types.Delta storage delta = deltas[_poolTokenAddress];
             uint256 poolBorrowIndex = ICToken(_poolTokenAddress).borrowIndex();
@@ -282,7 +288,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             _updateSupplierInDS(_poolTokenAddress, _onBehalfOf);
         }
         emit Supplied(
-            msg.sender,
+            _supplier,
             _onBehalfOf,
             _poolTokenAddress,
             _amount,
@@ -384,40 +390,14 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
     /// @dev Implements withdraw logic with security checks.
     /// @param _poolTokenAddress The address of the market the user wants to interact with.
+    /// @param _user The address of the supplier.
+    /// @param _to The address of the user who will receive the tokens.
     /// @param _amount The amount of token (in underlying).
-    /// @param _supplier The address of the supplier.
-    /// @param _receiver The address of the user who will receive the tokens.
     /// @param _maxGasForMatching The maximum amount of gas to consume within a matching engine loop.
     function withdrawLogic(
         address _poolTokenAddress,
-        uint256 _amount,
-        address _supplier,
-        address _receiver,
-        uint256 _maxGasForMatching
-    ) external {
-        if (_amount == 0) revert AmountIsZero();
-        if (!userMembership[_poolTokenAddress][_supplier]) revert UserNotMemberOfMarket();
-
-        updateP2PIndexes(_poolTokenAddress);
-        uint256 toWithdraw = Math.min(
-            _getUserSupplyBalanceInOf(_poolTokenAddress, _supplier),
-            _amount
-        );
-
-        if (_isLiquidable(_supplier, _poolTokenAddress, toWithdraw, 0))
-            revert UnauthorisedWithdraw();
-
-        _safeWithdrawLogic(_poolTokenAddress, toWithdraw, _supplier, _receiver, _maxGasForMatching);
-    }
-
-    /// @dev Implements repay logic with security checks.
-    /// @param _poolTokenAddress The address of the market the user wants to interact with.
-    /// @param _user The address of the user.
-    /// @param _amount The amount of token (in underlying).
-    /// @param _maxGasForMatching The maximum amount of gas to consume within a matching engine loop.
-    function repayLogic(
-        address _poolTokenAddress,
         address _user,
+        address _to,
         uint256 _amount,
         uint256 _maxGasForMatching
     ) external {
@@ -425,9 +405,36 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         if (!userMembership[_poolTokenAddress][_user]) revert UserNotMemberOfMarket();
 
         updateP2PIndexes(_poolTokenAddress);
-        uint256 toRepay = Math.min(_getUserBorrowBalanceInOf(_poolTokenAddress, _user), _amount);
+        uint256 toWithdraw = Math.min(_getUserSupplyBalanceInOf(_poolTokenAddress, _user), _amount);
 
-        _safeRepayLogic(_poolTokenAddress, _user, toRepay, _maxGasForMatching);
+        if (_isLiquidable(_user, _poolTokenAddress, toWithdraw, 0)) revert UnauthorisedWithdraw();
+
+        _safeWithdrawLogic(_poolTokenAddress, toWithdraw, _user, _to, _maxGasForMatching);
+    }
+
+    /// @dev Implements repay logic with security checks.
+    /// @param _poolTokenAddress The address of the market the user wants to interact with.
+    /// @param _payer The address of the payer.
+    /// @param _onBehalfOf The address that has their debt paid off.
+    /// @param _amount The amount of token (in underlying).
+    /// @param _maxGasForMatching The maximum amount of gas to consume within a matching engine loop.
+    function repayLogic(
+        address _poolTokenAddress,
+        address _payer,
+        address _onBehalfOf,
+        uint256 _amount,
+        uint256 _maxGasForMatching
+    ) external {
+        if (_amount == 0) revert AmountIsZero();
+        if (!userMembership[_poolTokenAddress][_onBehalfOf]) revert UserNotMemberOfMarket();
+
+        updateP2PIndexes(_poolTokenAddress);
+        uint256 toRepay = Math.min(
+            _getUserBorrowBalanceInOf(_poolTokenAddress, _onBehalfOf),
+            _amount
+        );
+
+        _safeRepayLogic(_poolTokenAddress, _payer, _onBehalfOf, toRepay, _maxGasForMatching);
     }
 
     /// @notice Liquidates a position.
@@ -457,7 +464,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         if (_amount > vars.borrowBalance.mul(comptroller.closeFactorMantissa()))
             revert AmountAboveWhatAllowedToRepay(); // Same mechanism as Compound. Liquidator cannot repay more than part of the debt (cf close factor on Compound).
 
-        _safeRepayLogic(_poolTokenBorrowedAddress, _borrower, _amount, 0);
+        _safeRepayLogic(_poolTokenBorrowedAddress, msg.sender, _borrower, _amount, 0);
 
         ICompoundOracle compoundOracle = ICompoundOracle(comptroller.oracle());
         vars.collateralPrice = compoundOracle.getUnderlyingPrice(_poolTokenCollateralAddress);
@@ -497,14 +504,14 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     /// @dev Implements withdraw logic without security checks.
     /// @param _poolTokenAddress The address of the market the user wants to interact with.
     /// @param _amount The amount of token (in underlying).
-    /// @param _supplier The address of the supplier.
-    /// @param _receiver The address of the user who will receive the tokens.
+    /// @param _user The address of the supplier.
+    /// @param _to The address of the user who will receive the tokens.
     /// @param _maxGasForMatching The maximum amount of gas to consume within a matching engine loop.
     function _safeWithdrawLogic(
         address _poolTokenAddress,
         uint256 _amount,
-        address _supplier,
-        address _receiver,
+        address _user,
+        address _to,
         uint256 _maxGasForMatching
     ) internal {
         if (_amount == 0) revert AmountIsZero();
@@ -521,7 +528,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
         /// Soft withdraw ///
 
-        uint256 onPoolSupply = supplyBalanceInOf[_poolTokenAddress][_supplier].onPool;
+        uint256 onPoolSupply = supplyBalanceInOf[_poolTokenAddress][_user].onPool;
         if (onPoolSupply > 0) {
             vars.toWithdraw = CompoundMath.min(
                 onPoolSupply.mul(vars.poolSupplyIndex),
@@ -530,18 +537,18 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             );
             vars.remainingToWithdraw -= vars.toWithdraw;
 
-            supplyBalanceInOf[_poolTokenAddress][_supplier].onPool -= CompoundMath.min(
+            supplyBalanceInOf[_poolTokenAddress][_user].onPool -= CompoundMath.min(
                 onPoolSupply,
                 vars.toWithdraw.div(vars.poolSupplyIndex)
             );
-            _updateSupplierInDS(_poolTokenAddress, _supplier);
+            _updateSupplierInDS(_poolTokenAddress, _user);
 
             if (vars.remainingToWithdraw == 0) {
-                _leaveMarketIfNeeded(_poolTokenAddress, _supplier);
+                _leaveMarketIfNeeded(_poolTokenAddress, _user);
                 // If this value is equal to 0 the withdraw will revert on Compound.
                 if (vars.toWithdraw.div(vars.poolSupplyIndex) > 0)
                     _withdrawFromPool(_poolTokenAddress, vars.toWithdraw); // Reverts on error.
-                vars.underlyingToken.safeTransfer(_receiver, _amount);
+                vars.underlyingToken.safeTransfer(_to, _amount);
                 return;
             }
         }
@@ -549,11 +556,11 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         Types.Delta storage delta = deltas[_poolTokenAddress];
         vars.p2pSupplyIndex = p2pSupplyIndex[_poolTokenAddress];
 
-        supplyBalanceInOf[_poolTokenAddress][_supplier].inP2P -= CompoundMath.min(
-            supplyBalanceInOf[_poolTokenAddress][_supplier].inP2P,
+        supplyBalanceInOf[_poolTokenAddress][_user].inP2P -= CompoundMath.min(
+            supplyBalanceInOf[_poolTokenAddress][_user].inP2P,
             vars.remainingToWithdraw.div(vars.p2pSupplyIndex)
         ); // In peer-to-peer unit
-        _updateSupplierInDS(_poolTokenAddress, _supplier);
+        _updateSupplierInDS(_poolTokenAddress, _user);
 
         /// Transfer withdraw ///
 
@@ -627,171 +634,181 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             _borrowFromPool(_poolTokenAddress, vars.remainingToWithdraw); // Reverts on error.
         }
 
-        _leaveMarketIfNeeded(_poolTokenAddress, _supplier);
-        vars.underlyingToken.safeTransfer(_receiver, _amount);
+        _leaveMarketIfNeeded(_poolTokenAddress, _user);
+        vars.underlyingToken.safeTransfer(_to, _amount);
 
         emit Withdrawn(
-            msg.sender,
+            _user,
+            _to,
             _poolTokenAddress,
             _amount,
-            supplyBalanceInOf[_poolTokenAddress][msg.sender].onPool,
-            supplyBalanceInOf[_poolTokenAddress][msg.sender].inP2P
+            supplyBalanceInOf[_poolTokenAddress][_user].onPool,
+            supplyBalanceInOf[_poolTokenAddress][_user].inP2P
         );
     }
 
     /// @dev Implements repay logic without security checks.
     /// @param _poolTokenAddress The address of the market the user wants to interact with.
-    /// @param _user The address of the user.
+    /// @param _payer The address of the payer. Normally should be msg.sender
+    /// @param _onBehalfOf The address for which to repay debt. Both this and payer should be msg.sender if sender wants to pay their own debts
     /// @param _amount The amount of token (in underlying).
     /// @param _maxGasForMatching The maximum amount of gas to consume within a matching engine loop.
     function _safeRepayLogic(
         address _poolTokenAddress,
-        address _user,
+        address _payer,
+        address _onBehalfOf,
         uint256 _amount,
         uint256 _maxGasForMatching
     ) internal {
-        ICToken poolToken = ICToken(_poolTokenAddress);
-        ERC20 underlyingToken = _getUnderlying(_poolTokenAddress);
-        underlyingToken.safeTransferFrom(msg.sender, address(this), _amount);
-        RepayVars memory vars;
-        vars.remainingToRepay = _amount;
-        vars.maxGasForMatching = _maxGasForMatching;
-        vars.poolBorrowIndex = poolToken.borrowIndex();
+        // Scope to avoid stack too deep
+        {
+            ICToken poolToken = ICToken(_poolTokenAddress);
+            ERC20 underlyingToken = _getUnderlying(_poolTokenAddress);
+            underlyingToken.safeTransferFrom(_payer, address(this), _amount);
+            RepayVars memory vars;
+            vars.remainingToRepay = _amount;
+            vars.maxGasForMatching = _maxGasForMatching;
+            vars.poolBorrowIndex = poolToken.borrowIndex();
 
-        /// Soft repay ///
+            /// Soft repay ///
 
-        if (borrowBalanceInOf[_poolTokenAddress][_user].onPool > 0) {
-            uint256 borrowedOnPool = borrowBalanceInOf[_poolTokenAddress][_user].onPool;
-            vars.toRepay = CompoundMath.min(
-                borrowedOnPool.mul(vars.poolBorrowIndex),
-                vars.remainingToRepay
-            );
-            vars.remainingToRepay -= vars.toRepay;
-
-            borrowBalanceInOf[_poolTokenAddress][_user].onPool -= CompoundMath.min(
-                borrowedOnPool,
-                vars.toRepay.div(vars.poolBorrowIndex)
-            ); // In cdUnit.
-            _updateBorrowerInDS(_poolTokenAddress, _user);
-
-            if (vars.remainingToRepay == 0) {
-                // Repay only what is necessary. The remaining tokens stays on the contracts and are claimable by the DAO.
-                vars.toRepay = Math.min(
-                    vars.toRepay,
-                    ICToken(_poolTokenAddress).borrowBalanceCurrent(address(this)) // The debt of the contract.
-                );
-
-                if (vars.toRepay > 0)
-                    _repayToPool(_poolTokenAddress, underlyingToken, vars.toRepay); // Reverts on error.
-
-                _leaveMarketIfNeeded(_poolTokenAddress, _user);
-                return;
-            }
-        }
-
-        Types.Delta storage delta = deltas[_poolTokenAddress];
-        vars.p2pSupplyIndex = p2pSupplyIndex[_poolTokenAddress];
-        vars.p2pBorrowIndex = p2pBorrowIndex[_poolTokenAddress];
-
-        borrowBalanceInOf[_poolTokenAddress][_user].inP2P -= CompoundMath.min(
-            borrowBalanceInOf[_poolTokenAddress][_user].inP2P,
-            vars.remainingToRepay.div(vars.p2pBorrowIndex)
-        ); // In peer-to-peer unit.
-        _updateBorrowerInDS(_poolTokenAddress, _user);
-
-        /// Fee repay ///
-
-        // Fee = (borrowP2P - p2pBorrowDelta) - (supplyP2P - p2pSupplyDelta)
-        vars.feeToRepay = CompoundMath.safeSub(
-            (delta.p2pBorrowAmount.mul(vars.p2pBorrowIndex) -
-                delta.p2pBorrowDelta.mul(vars.poolBorrowIndex)),
-            (delta.p2pSupplyAmount.mul(vars.p2pSupplyIndex) -
-                delta.p2pSupplyDelta.mul(poolToken.exchangeRateStored()))
-        );
-        vars.remainingToRepay -= vars.feeToRepay;
-
-        /// Transfer repay ///
-
-        if (vars.remainingToRepay > 0 && !p2pDisabled[_poolTokenAddress]) {
-            // Match Delta if any.
-            if (delta.p2pBorrowDelta > 0) {
-                uint256 matchedDelta = CompoundMath.min(
-                    delta.p2pBorrowDelta.mul(vars.poolBorrowIndex),
+            if (borrowBalanceInOf[_poolTokenAddress][_onBehalfOf].onPool > 0) {
+                uint256 borrowedOnPool = borrowBalanceInOf[_poolTokenAddress][_onBehalfOf].onPool;
+                vars.toRepay = CompoundMath.min(
+                    borrowedOnPool.mul(vars.poolBorrowIndex),
                     vars.remainingToRepay
                 );
+                vars.remainingToRepay -= vars.toRepay;
 
-                vars.toRepay += matchedDelta;
-                vars.remainingToRepay -= matchedDelta;
-                delta.p2pBorrowDelta -= matchedDelta.div(vars.poolBorrowIndex);
-                delta.p2pBorrowAmount -= matchedDelta.div(vars.p2pBorrowIndex);
-                emit P2PBorrowDeltaUpdated(_poolTokenAddress, delta.p2pBorrowDelta);
+                borrowBalanceInOf[_poolTokenAddress][_onBehalfOf].onPool -= CompoundMath.min(
+                    borrowedOnPool,
+                    vars.toRepay.div(vars.poolBorrowIndex)
+                ); // In cdUnit.
+                _updateBorrowerInDS(_poolTokenAddress, _onBehalfOf);
+
+                if (vars.remainingToRepay == 0) {
+                    // Repay only what is necessary. The remaining tokens stays on the contracts and are claimable by the DAO.
+                    vars.toRepay = Math.min(
+                        vars.toRepay,
+                        ICToken(_poolTokenAddress).borrowBalanceCurrent(address(this)) // The debt of the contract.
+                    );
+
+                    if (vars.toRepay > 0)
+                        _repayToPool(_poolTokenAddress, underlyingToken, vars.toRepay); // Reverts on error.
+
+                    _leaveMarketIfNeeded(_poolTokenAddress, _onBehalfOf);
+                    return;
+                }
+            }
+
+            Types.Delta storage delta = deltas[_poolTokenAddress];
+            vars.p2pSupplyIndex = p2pSupplyIndex[_poolTokenAddress];
+            vars.p2pBorrowIndex = p2pBorrowIndex[_poolTokenAddress];
+
+            borrowBalanceInOf[_poolTokenAddress][_onBehalfOf].inP2P -= CompoundMath.min(
+                borrowBalanceInOf[_poolTokenAddress][_onBehalfOf].inP2P,
+                vars.remainingToRepay.div(vars.p2pBorrowIndex)
+            ); // In peer-to-peer unit.
+            _updateBorrowerInDS(_poolTokenAddress, _onBehalfOf);
+
+            /// Fee repay ///
+
+            // Fee = (borrowP2P - p2pBorrowDelta) - (supplyP2P - p2pSupplyDelta)
+            vars.feeToRepay = CompoundMath.safeSub(
+                (delta.p2pBorrowAmount.mul(vars.p2pBorrowIndex) -
+                    delta.p2pBorrowDelta.mul(vars.poolBorrowIndex)),
+                (delta.p2pSupplyAmount.mul(vars.p2pSupplyIndex) -
+                    delta.p2pSupplyDelta.mul(poolToken.exchangeRateStored()))
+            );
+            vars.remainingToRepay -= vars.feeToRepay;
+
+            /// Transfer repay ///
+
+            if (vars.remainingToRepay > 0 && !p2pDisabled[_poolTokenAddress]) {
+                // Match Delta if any.
+                if (delta.p2pBorrowDelta > 0) {
+                    uint256 matchedDelta = CompoundMath.min(
+                        delta.p2pBorrowDelta.mul(vars.poolBorrowIndex),
+                        vars.remainingToRepay
+                    );
+
+                    vars.toRepay += matchedDelta;
+                    vars.remainingToRepay -= matchedDelta;
+                    delta.p2pBorrowDelta -= matchedDelta.div(vars.poolBorrowIndex);
+                    delta.p2pBorrowAmount -= matchedDelta.div(vars.p2pBorrowIndex);
+                    emit P2PBorrowDeltaUpdated(_poolTokenAddress, delta.p2pBorrowDelta);
+                    emit P2PAmountsUpdated(
+                        _poolTokenAddress,
+                        delta.p2pSupplyAmount,
+                        delta.p2pBorrowAmount
+                    );
+                }
+
+                if (
+                    vars.remainingToRepay > 0 &&
+                    borrowersOnPool[_poolTokenAddress].getHead() != address(0)
+                ) {
+                    // Match borrowers.
+                    (uint256 matched, uint256 gasConsumedInMatching) = _matchBorrowers(
+                        _poolTokenAddress,
+                        vars.remainingToRepay,
+                        vars.maxGasForMatching
+                    );
+                    if (vars.maxGasForMatching <= gasConsumedInMatching) vars.maxGasForMatching = 0;
+                    else vars.maxGasForMatching -= gasConsumedInMatching;
+
+                    if (matched > 0) {
+                        vars.remainingToRepay -= matched;
+                        vars.toRepay += matched;
+                    }
+                }
+            }
+
+            // Repay only what is necessary. The remaining tokens stays on the contracts and are claimable by the DAO.
+            vars.toRepay = Math.min(
+                vars.toRepay,
+                ICToken(_poolTokenAddress).borrowBalanceCurrent(address(this)) // The debt of the contract.
+            );
+
+            if (vars.toRepay > 0) _repayToPool(_poolTokenAddress, underlyingToken, vars.toRepay); // Reverts on error.
+
+            /// Hard repay ///
+
+            if (vars.remainingToRepay > 0) {
+                uint256 unmatched = _unmatchSuppliers(
+                    _poolTokenAddress,
+                    vars.remainingToRepay,
+                    vars.maxGasForMatching
+                );
+
+                // If unmatched does not cover remainingToRepay, the difference is added to the supply peer-to-peer delta.
+                if (unmatched < vars.remainingToRepay) {
+                    delta.p2pSupplyDelta += (vars.remainingToRepay - unmatched).div(
+                        poolToken.exchangeRateStored() // Exchange rate has already been updated.
+                    );
+                    emit P2PSupplyDeltaUpdated(_poolTokenAddress, delta.p2pBorrowDelta);
+                }
+
+                delta.p2pSupplyAmount -= unmatched.div(vars.p2pSupplyIndex);
+                delta.p2pBorrowAmount -= vars.remainingToRepay.div(vars.p2pBorrowIndex);
                 emit P2PAmountsUpdated(
                     _poolTokenAddress,
                     delta.p2pSupplyAmount,
                     delta.p2pBorrowAmount
                 );
+
+                _supplyToPool(_poolTokenAddress, underlyingToken, vars.remainingToRepay); // Reverts on error.
             }
 
-            if (
-                vars.remainingToRepay > 0 &&
-                borrowersOnPool[_poolTokenAddress].getHead() != address(0)
-            ) {
-                // Match borrowers.
-                (uint256 matched, uint256 gasConsumedInMatching) = _matchBorrowers(
-                    _poolTokenAddress,
-                    vars.remainingToRepay,
-                    vars.maxGasForMatching
-                );
-                if (vars.maxGasForMatching <= gasConsumedInMatching) vars.maxGasForMatching = 0;
-                else vars.maxGasForMatching -= gasConsumedInMatching;
-
-                if (matched > 0) {
-                    vars.remainingToRepay -= matched;
-                    vars.toRepay += matched;
-                }
-            }
+            _leaveMarketIfNeeded(_poolTokenAddress, _onBehalfOf);
         }
-
-        // Repay only what is necessary. The remaining tokens stays on the contracts and are claimable by the DAO.
-        vars.toRepay = Math.min(
-            vars.toRepay,
-            ICToken(_poolTokenAddress).borrowBalanceCurrent(address(this)) // The debt of the contract.
-        );
-
-        if (vars.toRepay > 0) _repayToPool(_poolTokenAddress, underlyingToken, vars.toRepay); // Reverts on error.
-
-        /// Hard repay ///
-
-        if (vars.remainingToRepay > 0) {
-            uint256 unmatched = _unmatchSuppliers(
-                _poolTokenAddress,
-                vars.remainingToRepay,
-                vars.maxGasForMatching
-            );
-
-            // If unmatched does not cover remainingToRepay, the difference is added to the supply peer-to-peer delta.
-            if (unmatched < vars.remainingToRepay) {
-                delta.p2pSupplyDelta += (vars.remainingToRepay - unmatched).div(
-                    poolToken.exchangeRateStored() // Exchange rate has already been updated.
-                );
-                emit P2PSupplyDeltaUpdated(_poolTokenAddress, delta.p2pBorrowDelta);
-            }
-
-            delta.p2pSupplyAmount -= unmatched.div(vars.p2pSupplyIndex);
-            delta.p2pBorrowAmount -= vars.remainingToRepay.div(vars.p2pBorrowIndex);
-            emit P2PAmountsUpdated(_poolTokenAddress, delta.p2pSupplyAmount, delta.p2pBorrowAmount);
-
-            _supplyToPool(_poolTokenAddress, underlyingToken, vars.remainingToRepay); // Reverts on error.
-        }
-
-        _leaveMarketIfNeeded(_poolTokenAddress, _user);
-
         emit Repaid(
-            msg.sender,
+            _payer,
+            _onBehalfOf,
             _poolTokenAddress,
             _amount,
-            borrowBalanceInOf[_poolTokenAddress][msg.sender].onPool,
-            borrowBalanceInOf[_poolTokenAddress][msg.sender].inP2P
+            borrowBalanceInOf[_poolTokenAddress][_onBehalfOf].onPool,
+            borrowBalanceInOf[_poolTokenAddress][_onBehalfOf].inP2P
         );
     }
 
