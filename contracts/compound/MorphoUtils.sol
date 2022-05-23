@@ -156,7 +156,9 @@ abstract contract MorphoUtils is MorphoStorage {
 
             maxDebtValue += assetData.maxDebtValue;
             debtValue += assetData.debtValue;
-            ++i;
+            unchecked {
+                ++i;
+            }
 
             if (_poolTokenAddress == poolTokenEntered) {
                 debtValue += _borrowedAmount.mul(assetData.underlyingPrice);
