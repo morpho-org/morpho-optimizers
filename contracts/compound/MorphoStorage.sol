@@ -58,4 +58,10 @@ abstract contract MorphoStorage is OwnableUpgradeable, ReentrancyGuardUpgradeabl
     address public treasuryVault;
     address public cEth;
     address public wEth;
+
+    /// CONSTRUCTOR ///
+
+    /// @notice Constructs the contract.
+    /// @dev The contract is automatically marked as initialized when deployed so that nobody can highjack the implementation contract.
+    constructor() initializer {}
 }
