@@ -198,12 +198,6 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         uint256 debtValue;
     }
 
-    /// CONSTRUCTOR ///
-
-    /// @notice Constructs the PositionsManager contract.
-    /// @dev The contract is automatically marked as initialized when deployed.
-    constructor() initializer {}
-
     /// LOGIC ///
 
     /// @dev Implements supply logic.
