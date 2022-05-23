@@ -100,6 +100,9 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @notice Thrown when the address is the zero address.
     error ZeroAddress();
 
+    /// @notice Thrown when trying to set the heap max size to 0.
+    error HeapCannotBeEmpty();
+
     /// UPGRADE ///
 
     /// @notice Initializes the Morpho contract.
@@ -141,6 +144,7 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @notice Sets `maxSortedUsers`.
     /// @param _newMaxSortedUsers The new `maxSortedUsers` value.
     function setMaxSortedUsers(uint256 _newMaxSortedUsers) external onlyOwner {
+        if (_newMaxSortedUsers == 0) revert HeapCannotBeEmpty();
         maxSortedUsers = _newMaxSortedUsers;
         emit MaxSortedUsersSet(_newMaxSortedUsers);
     }

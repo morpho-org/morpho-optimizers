@@ -18,6 +18,18 @@ library BasicHeap {
     /// @notice Thrown when the address is zero at insertion.
     error AddressIsZero();
 
+    /// PURE ///
+
+    /// @notice Computes a new suitable size from `_size` that is smaller than `_maxSortedUsers`.
+    /// @dev We use division by 2 because the biggest elements of the heap are in the first half (rounded down) of the heap.
+    /// @param _size The old size of the heap.
+    /// @param _maxSortedUsers The maximum size of the heap.
+    /// @return The new size computed.
+    function computeSize(uint256 _size, uint256 _maxSortedUsers) public pure returns (uint256) {
+        while (_size >= _maxSortedUsers) _size /= 2;
+        return _size;
+    }
+
     /// VIEW ///
 
     /// @notice Returns the number of users in the `_heap`.
@@ -170,9 +182,7 @@ library BasicHeap {
         _heap.indexes[_id] = accountsLength;
         swap(_heap, size + 1, accountsLength);
         shiftUp(_heap, size + 1);
-        // The lowest elements of the heap are the last size/2 (rounded up)
-        if (size + 1 == _maxSortedUsers) _heap.size = _maxSortedUsers / 2;
-        else _heap.size++;
+        _heap.size = computeSize(size, _maxSortedUsers);
     }
 
     /// @notice Decreases the amount of an account in the `_heap`.
@@ -208,8 +218,7 @@ library BasicHeap {
         else if (size < _heap.accounts.length) {
             swap(_heap, size + 1, index);
             shiftUp(_heap, size + 1);
-            if (size + 1 == _maxSortedUsers) _heap.size = _maxSortedUsers / 2;
-            else _heap.size++;
+            _heap.size = computeSize(size, _maxSortedUsers);
         }
     }
 
@@ -248,6 +257,9 @@ library BasicHeap {
         uint256 _newValue,
         uint256 _maxSortedUsers
     ) internal {
+        uint256 size = _heap.size;
+        uint256 newSize = computeSize(size, _maxSortedUsers);
+        if (size != newSize) _heap.size = newSize;
         if (_formerValue != _newValue) {
             if (_newValue == 0) remove(_heap, _id, _formerValue);
             else if (_formerValue == 0) insert(_heap, _id, _newValue, _maxSortedUsers);
