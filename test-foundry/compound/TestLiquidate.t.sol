@@ -6,7 +6,7 @@ import "./setup/TestSetup.sol";
 contract TestLiquidate is TestSetup {
     using CompoundMath for uint256;
 
-    // 5.1 - A user liquidates a borrower that has enough collateral to cover for his debt, the transaction reverts.
+    // A user liquidates a borrower that has enough collateral to cover for his debt, the transaction reverts.
     function testShouldNotBePossibleToLiquidateUserAboveWater() public {
         uint256 amount = 10_000 ether;
         uint256 collateral = 2 * amount;
@@ -24,7 +24,7 @@ contract TestLiquidate is TestSetup {
         liquidator.liquidate(cDai, cUsdc, address(borrower1), toRepay);
     }
 
-    // 5.2 - A user liquidates a borrower that has not enough collateral to cover for his debt.
+    // A user liquidates a borrower that has not enough collateral to cover for his debt.
     function testShouldLiquidateUser() public {
         uint256 collateral = 100_000 ether;
 

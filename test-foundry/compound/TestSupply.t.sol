@@ -6,6 +6,7 @@ import "./setup/TestSetup.sol";
 contract TestSupply is TestSetup {
     using CompoundMath for uint256;
 
+    // There are no available borrowers: all of the supplied amount is supplied to the pool and set `onPool`.
     function testSupply1() public {
         uint256 amount = 10000 ether;
 
@@ -23,6 +24,7 @@ contract TestSupply is TestSetup {
         assertEq(inP2P, 0, "in peer-to-peer");
     }
 
+    // There is 1 available borrower, he matches 100% of the supplier liquidity, everything is `inP2P`.
     function testSupply2() public {
         uint256 amount = 10_000 ether;
 
@@ -59,6 +61,7 @@ contract TestSupply is TestSetup {
         assertEq(inP2PBorrower, inP2PSupplier);
     }
 
+    // There is 1 available borrower, he doesn't match 100% of the supplier liquidity. Supplier's balance `inP2P` is equal to the borrower previous amount `onPool`, the rest is set `onPool`.
     function testSupply3() public {
         uint256 amount = 10_000 ether;
 
@@ -90,6 +93,7 @@ contract TestSupply is TestSetup {
         assertEq(inP2PBorrower, inP2PSupplier, "in peer-to-peer borrower");
     }
 
+    // There are NMAX (or less) borrowers that match the supplied amount, everything is `inP2P` after NMAX (or less) match.
     function testSupply4() public {
         setDefaultMaxGasForMatchingHelper(
             type(uint64).max,
@@ -137,6 +141,7 @@ contract TestSupply is TestSetup {
         assertEq(onPool, 0, "on pool");
     }
 
+    // The NMAX biggest borrowers don't match all of the supplied amount, after NMAX match, the rest is supplied and set `onPool`. ⚠️ most gas expensive supply scenario.
     function testSupply5() public {
         setDefaultMaxGasForMatchingHelper(
             type(uint64).max,

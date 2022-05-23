@@ -9,6 +9,7 @@ import "./setup/TestSetup.sol";
 contract TestWithdraw is TestSetup {
     using CompoundMath for uint256;
 
+    // The user withdrawal leads to an under-collateralized position, the withdrawal reverts.
     function testWithdraw1() public {
         uint256 amount = 10000 ether;
         uint256 collateral = 2 * amount;
@@ -22,6 +23,7 @@ contract TestWithdraw is TestSetup {
         borrower1.withdraw(cUsdc, to6Decimals(collateral));
     }
 
+    // The supplier withdraws less than his `onPool` balance. The liquidity is taken from his `onPool` balance.
     function testWithdraw2() public {
         uint256 amount = 10000 ether;
 
@@ -43,6 +45,7 @@ contract TestWithdraw is TestSetup {
         assertApproxEq(onPool, expectedOnPool / 2, 1);
     }
 
+    // The supplier withdraws all its `onPool` balance.
     function testWithdrawAll() public {
         uint256 amount = 10_000 ether;
 
@@ -67,6 +70,7 @@ contract TestWithdraw is TestSetup {
         assertApproxEq(balanceAfter - balanceBefore, to6Decimals(amount), 1, "balance");
     }
 
+    // There is a supplier `onPool` available to replace him `inP2P`. First, his liquidity `onPool` is taken, his matched is replaced by the available supplier up to his withdrawal amount.
     function testWithdraw3_1() public {
         uint256 borrowedAmount = 10000 ether;
         uint256 suppliedAmount = 2 * borrowedAmount;
@@ -121,6 +125,7 @@ contract TestWithdraw is TestSetup {
         assertApproxEq(inP2PSupplier, inP2PBorrower1, 1);
     }
 
+    // There are NMAX (or less) suppliers `onPool` available to replace him `inP2P`, they supply enough to cover for the withdrawn liquidity. First, his liquidity `onPool` is taken, his matched is replaced by NMAX (or less) suppliers up to his withdrawal amount.
     function testWithdraw3_2() public {
         setDefaultMaxGasForMatchingHelper(
             type(uint64).max,
@@ -199,6 +204,7 @@ contract TestWithdraw is TestSetup {
         }
     }
 
+    // There are no suppliers `onPool` to replace him `inP2P`. After withdrawing the amount `onPool`, his peer-to-peer credit lines will be broken and the corresponding borrower(s) will be unmatched and placed on pool.
     function testWithdraw3_3() public {
         uint256 borrowedAmount = 10_000 ether;
         uint256 suppliedAmount = 2 * borrowedAmount;
@@ -256,6 +262,7 @@ contract TestWithdraw is TestSetup {
         assertEq(onPoolSupplier, 0, "supplier on Pool");
     }
 
+    // The supplier is matched to 2 x NMAX borrowers. There are NMAX suppliers `onPool` available to replace him `inP2P`, they don't supply enough to cover the withdrawn liquidity. First, the `onPool` liquidity is withdrawn, then we proceed to NMAX `match supplier`. Finally, we proceed to NMAX `unmatch borrower` for an amount equal to the remaining to withdraw.
     function testWithdraw3_4() public {
         setDefaultMaxGasForMatchingHelper(
             type(uint64).max,
