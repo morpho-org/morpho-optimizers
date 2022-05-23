@@ -4,6 +4,8 @@ pragma solidity 0.8.13;
 import "./setup/TestSetup.sol";
 
 contract TestRounding is TestSetup {
+    using CompoundMath for uint256;
+
     // This test compares balances stored by Compound & amount passed in argument.
     // The back & forth to cUnits leads to loss of information (when the underlying has enough decimals).
     function testRoundingError1() public {
@@ -126,5 +128,55 @@ contract TestRounding is TestSetup {
         (, , uint256 balanceByLens) = lens.getUserSupplyBalance(address(supplier1), cDai);
 
         assertEq(balanceByComp, balanceByLens);
+    }
+
+    // Demonstrate borrow balance approximation issue
+    function testRoundingError8() public {
+        ICompoundOracle oracle = ICompoundOracle(morpho.comptroller().oracle());
+
+        uint256 amountCollateral = 42615668125821;
+        uint256 borrowUsdc = 89;
+        uint256 borrowEth = 45856658344;
+
+        supplier1.approve(uni, amountCollateral);
+        supplier1.supply(cUni, amountCollateral);
+        supplier1.borrow(cUsdc, borrowUsdc);
+
+        uint256 balanceByComp = ICToken(cUsdc).borrowBalanceCurrent(address(morpho));
+        (, , uint256 balanceByLens) = lens.getUserBorrowBalance(address(supplier1), cUsdc);
+        // Logs:
+        //   balanceByComp, 89
+        //   balanceByLens, 88
+
+        (uint256 withdrawable, uint256 borrowable) = lens.getUserMaxCapacitiesForAsset(
+            address(supplier1),
+            cEth
+        );
+        // Logs:
+        //   withdrawable, 0
+        //   borrowable, 75517313172
+
+        // compute borrowable value with the correct borrow balance
+        (, , uint256 newPoolSupplyIndex, ) = lens.getUpdatedIndexes(cUni);
+        (, uint256 collateralFactor, ) = morpho.comptroller().markets(cUni);
+        (, uint256 uniBalance) = morpho.supplyBalanceInOf(cUni, address(supplier1));
+        uint256 collateralValue = uniBalance.mul(newPoolSupplyIndex).mul(collateralFactor).mul(
+            oracle.getUnderlyingPrice(cUni)
+        );
+        // BalanceByComp user here instead of the borrow balance used in lens
+        uint256 debtValue = balanceByComp.mul(oracle.getUnderlyingPrice(cUsdc));
+
+        uint256 borrowableComputed = (collateralValue - debtValue).div(
+            oracle.getUnderlyingPrice(cEth)
+        );
+        // Logs:
+        //   borrowableComputed, 75134956945
+        //   borrowable, 75517313172
+        //   Exageration of borrowable by lens, 382356227
+
+        hevm.expectRevert(abi.encodeWithSignature("BorrowOnCompoundFailed()"));
+        supplier1.borrow(cEth, borrowable);
+        // borrowableComputed is the exact max borrowable value:
+        // Borrow passes for borrowableComputed and doesn't for borrowableComputed + 1.
     }
 }

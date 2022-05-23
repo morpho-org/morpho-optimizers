@@ -9,6 +9,7 @@ contract Config {
     address public wbtc = 0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599;
     address public wEth = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     address public comp = 0xc00e94Cb662C3520282E6f5717214004A7f26888;
+    address public uni = 0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984;
 
     // Aave
 
@@ -37,6 +38,7 @@ contract Config {
     address public cWbtc = 0xC11b1268C1A384e55C48c2391d8d480264A3A7F4;
     address public cEth = 0x4Ddc2D193948926D02f9B1fE9e1daa0718270ED5;
     address public cBat = 0x6C8c6b02E7b2BE14d4fA6022Dfd6d75921D90E4E;
+    address public cUni = 0x35A18000230DA775CAc24873d00Ff85BccdeD550;
 
     address public comptrollerAddress = 0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B;
 

@@ -24,7 +24,7 @@ import "../helpers/DumbOracle.sol";
 import {User} from "../helpers/User.sol";
 import {Utils} from "./Utils.sol";
 import "forge-std/stdlib.sol";
-// import "forge-std/console.sol";
+import "forge-std/console.sol";
 import "@config/Config.sol";
 
 contract TestSetup is Config, Utils, stdCheats {
@@ -115,6 +115,7 @@ contract TestSetup is Config, Utils, stdCheats {
         createMarket(cUsdt);
         createMarket(cBat);
         createMarket(cEth);
+        createMarket(cUni);
 
         hevm.roll(block.number + 1);
 
@@ -185,6 +186,7 @@ contract TestSetup is Config, Utils, stdCheats {
         tip(wEth, address(_user), INITIAL_BALANCE * WAD);
         tip(usdt, address(_user), INITIAL_BALANCE * WAD);
         tip(usdc, address(_user), INITIAL_BALANCE * 1e6);
+        tip(uni, address(_user), INITIAL_BALANCE * WAD);
     }
 
     function setContractsLabels() internal {
