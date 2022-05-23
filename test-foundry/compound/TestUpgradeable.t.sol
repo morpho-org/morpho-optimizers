@@ -41,4 +41,35 @@ contract TestUpgradeable is TestSetup {
         // Revert for wrong data not wrong caller
         proxyAdmin.upgradeAndCall(morphoProxy, payable(address(morphoImplV2)), "");
     }
+
+    function testImplementationsShouldBeInitialized() public {
+        Types.MaxGasForMatching memory defaultMaxGasForMatching = Types.MaxGasForMatching({
+            supply: 3e6,
+            borrow: 3e6,
+            withdraw: 3e6,
+            repay: 3e6
+        });
+
+        IPositionsManager positionsManager2 = new PositionsManager();
+        IInterestRatesManager interestRatesManager2 = new InterestRatesManager();
+        IComptroller comptroller2 = IComptroller(comptrollerAddress);
+
+        // Test for Morpho Implementation.
+        hevm.expectRevert("Initializable: contract is already initialized");
+        morphoImplV1.initialize(
+            positionsManager2,
+            interestRatesManager2,
+            comptroller2,
+            defaultMaxGasForMatching,
+            1,
+            20,
+            cEth,
+            wEth
+        );
+
+        // Test for PositionsManager Implementation.
+        // `_initialized` value is at slot 0.
+        uint256 _initialized = uint256(bytes32(hevm.load(address(positionsManager), bytes32(0))));
+        assertEq(_initialized, 1);
+    }
 }
