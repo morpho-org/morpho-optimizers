@@ -47,6 +47,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
     /// @notice Emitted when a withdrawal happens.
     /// @param _user The address of the withdrawer.
+    /// @param _to The address that will receive the withdrawn funds
     /// @param _poolTokenAddress The address of the market from where assets are withdrawn.
     /// @param _amount The amount of assets withdrawn (in underlying).
     /// @param _balanceOnPool The supply balance on pool after update.
@@ -62,6 +63,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
     /// @notice Emitted when a repayment happens.
     /// @param _payer The address of the repayer.
+    /// @param _onBehalfOf The address for which debt will be repaid
     /// @param _poolTokenAddress The address of the market where assets are repaid.
     /// @param _amount The amount of assets repaid (in underlying).
     /// @param _balanceOnPool The borrow balance on pool after update.

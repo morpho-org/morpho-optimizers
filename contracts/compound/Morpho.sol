@@ -194,6 +194,7 @@ contract Morpho is MorphoGovernance {
     /// @notice Repays debt of _onBehalfOf.
     /// @dev `msg.sender` must have approved Morpho's contract to spend the underlying `_amount`.
     /// @param _poolTokenAddress The address of the market the user wants to interact with.
+    /// @param _onBehalfOf The address to be credited for the repayment.
     /// @param _amount The amount of token (in underlying) to repay from borrow.
     function repayOnBehalf(
         address _poolTokenAddress,
@@ -204,7 +205,7 @@ contract Morpho is MorphoGovernance {
             abi.encodeWithSelector(
                 positionsManager.repayLogic.selector,
                 _poolTokenAddress,
-                msg.sender, // user
+                msg.sender, // payer
                 _onBehalfOf, // onBehalfOf
                 _amount,
                 defaultMaxGasForMatching.repay
