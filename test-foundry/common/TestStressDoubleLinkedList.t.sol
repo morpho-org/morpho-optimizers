@@ -7,8 +7,8 @@ import "@contracts/common/libraries/DoubleLinkedList.sol";
 
 contract ListStorage {
     DoubleLinkedList.List internal list;
-    uint256 public TESTED_SIZE = 20;
-    uint256 public MAX_SORTED_USERS = 10;
+    uint256 public TESTED_SIZE = 10000;
+    uint256 public MAX_SORTED_USERS = 100;
     uint256 public incrementAmount = 5;
 
     function setUp() public {

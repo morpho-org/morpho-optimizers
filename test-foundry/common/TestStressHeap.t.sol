@@ -7,8 +7,8 @@ import "@contracts/common/libraries/Heap.sol";
 
 contract HeapStorage {
     BasicHeap.Heap internal heap;
-    uint256 public TESTED_SIZE = 20;
-    uint256 public MAX_SORTED_USERS = 10;
+    uint256 public TESTED_SIZE = 10000;
+    uint256 public MAX_SORTED_USERS = 100;
     uint256 public INCREMENT_AMOUNT = 5;
 
     function setUp() public {

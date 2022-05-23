@@ -4,13 +4,13 @@ ifeq (${NETWORK}, avalanche-mainnet)
   export FOUNDRY_ETH_RPC_URL=https://api.avax.network/ext/bc/C/rpc
   export FOUNDRY_FORK_BLOCK_NUMBER=9833154
 else
-  export FOUNDRY_ETH_RPC_URL=https://${NETWORK}.g.alchemy.com/v2/${ALCHEMY_KEY}
+#   export FOUNDRY_ETH_RPC_URL=https://${NETWORK}.g.alchemy.com/v2/${ALCHEMY_KEY}
 
-  ifeq (${NETWORK}, eth-mainnet)
-    export FOUNDRY_FORK_BLOCK_NUMBER=14292587
-  else ifeq (${NETWORK}, polygon-mainnet)
-    export FOUNDRY_FORK_BLOCK_NUMBER=24032305
-  endif
+#   ifeq (${NETWORK}, eth-mainnet)
+#     export FOUNDRY_FORK_BLOCK_NUMBER=14292587
+#   else ifeq (${NETWORK}, polygon-mainnet)
+#     export FOUNDRY_FORK_BLOCK_NUMBER=24032305
+#   endif
 endif
 
 export DAPP_REMAPPINGS=@config/=config/$(NETWORK)
@@ -42,7 +42,15 @@ contract-% c-%: node_modules
 
 single-% s-%: node_modules
 	@echo Run single test $* on ${NETWORK}
-	@forge test -vvv -c test-foundry/compound --match-test $* > trace.ansi
+	@forge test -vvv -c test-foundry/compound --match-test $* | aha --black > trace.html
+
+heap: node_modules
+	@echo Run single test $* on ${NETWORK}
+	@forge test -vvv -c test-foundry/common --match-contract TestStressHeap --gas-report
+
+list: node_modules
+	@echo Run single test $* on ${NETWORK}
+	@forge test -vvv -c test-foundry/common --match-contract TestStressDoubleLinkedList --gas-report
 
 .PHONY: config
 config:
