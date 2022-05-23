@@ -9,7 +9,7 @@ library BasicHeap {
 
     struct Heap {
         Account[] accounts; // All the accounts.
-        uint256 size; // The size of the heap portion of the structure.
+        uint256 size; // The size of the heap portion of the structure, should be less than accounts length.
         mapping(address => uint256) indexes; // A mapping from an address to an index in accounts.
     }
 
@@ -198,11 +198,19 @@ library BasicHeap {
     function increase(
         Heap storage _heap,
         address _id,
-        uint256 _newValue
+        uint256 _newValue,
+        uint256 _maxSortedUsers
     ) private {
         uint256 index = _heap.indexes[_id];
         _heap.accounts[index - 1].value = _newValue;
-        if (index <= _heap.size) shiftUp(_heap, index);
+        uint256 size = _heap.size;
+        if (index <= size) shiftUp(_heap, index);
+        else if (size < _heap.accounts.length) {
+            swap(_heap, size + 1, index);
+            shiftUp(_heap, size + 1);
+            if (size + 1 == _maxSortedUsers) _heap.size = _maxSortedUsers / 2;
+            else _heap.size++;
+        }
     }
 
     /// @notice Removes an account in the `_heap`.
@@ -243,7 +251,7 @@ library BasicHeap {
         if (_formerValue != _newValue) {
             if (_newValue == 0) remove(_heap, _id, _formerValue);
             else if (_formerValue == 0) insert(_heap, _id, _newValue, _maxSortedUsers);
-            else if (_formerValue < _newValue) increase(_heap, _id, _newValue);
+            else if (_formerValue < _newValue) increase(_heap, _id, _newValue, _maxSortedUsers);
             else decrease(_heap, _id, _newValue);
         }
     }
