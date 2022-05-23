@@ -432,7 +432,7 @@ contract TestWithdraw is TestSetup {
 
             // There should be a delta.
             // The amount unmatched during the withdraw.
-            uint256 unmatched = 10 * expectedBorrowBalanceInP2P.mul(morpho.p2pBorrowIndex(cDai));
+            uint256 unmatched = 9 * expectedBorrowBalanceInP2P.mul(morpho.p2pBorrowIndex(cDai));
             // The difference between the previous matched amount and the amout unmatched creates a delta.
             uint256 expectedp2pBorrowDeltaInUnderlying = (matched.mul(morpho.p2pBorrowIndex(cDai)) -
                 unmatched);

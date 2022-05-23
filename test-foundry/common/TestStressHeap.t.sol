@@ -7,14 +7,16 @@ import "@contracts/common/libraries/Heap.sol";
 
 contract HeapStorage {
     BasicHeap.Heap internal heap;
-    uint256 public TESTED_SIZE = 500000;
-    uint256 public incrementAmount = 5;
+    uint256 public TESTED_SIZE = 20;
+    uint256 public MAX_SORTED_USERS = 10;
+    uint256 public INCREMENT_AMOUNT = 5;
 
     function setUp() public {
         for (uint256 i = 0; i < TESTED_SIZE; i++) {
             address id = address(uint160(i + 1));
             heap.accounts.push(BasicHeap.Account(id, TESTED_SIZE - i));
             heap.indexes[id] = heap.accounts.length;
+            heap.size = MAX_SORTED_USERS;
         }
     }
 
@@ -23,7 +25,7 @@ contract HeapStorage {
         uint256 _formerValue,
         uint256 _newValue
     ) public {
-        BasicHeap.update(heap, _id, _formerValue, _newValue);
+        BasicHeap.update(heap, _id, _formerValue, _newValue, MAX_SORTED_USERS);
     }
 }
 
@@ -35,7 +37,7 @@ contract TestStressHeap is DSTest {
     function setUp() public {
         hs.setUp();
         ts = hs.TESTED_SIZE();
-        im = hs.incrementAmount();
+        im = hs.INCREMENT_AMOUNT();
     }
 
     function testInsertOneTop() public {
