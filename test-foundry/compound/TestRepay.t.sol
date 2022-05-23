@@ -6,6 +6,7 @@ import "./setup/TestSetup.sol";
 contract TestRepay is TestSetup {
     using CompoundMath for uint256;
 
+    // The borrower repays no more than his `onPool` balance. The liquidity is repaid on his `onPool` balance.
     function testRepay1() public {
         uint256 amount = 10_000 ether;
         uint256 collateral = 2 * amount;
@@ -43,6 +44,7 @@ contract TestRepay is TestSetup {
         testEquality(balanceBefore - balanceAfter, amount);
     }
 
+    // There is a borrower `onPool` available to replace him `inP2P`. First, his debt `onPool` is repaid, his matched debt is replaced by the available borrower up to his repaid amount.
     function testRepay2_1() public {
         uint256 suppliedAmount = 10000 ether;
         uint256 borrowedAmount = 2 * suppliedAmount;
@@ -115,6 +117,7 @@ contract TestRepay is TestSetup {
         assertEq(onPoolSupplier, 0, "supplier on pool 2");
     }
 
+    // There are NMAX (or less) borrowers `onPool` available to replace him `inP2P`, they borrow enough to cover for the repaid liquidity. First, his debt `onPool` is repaid, his matched liquidity is replaced by NMAX (or less) borrowers up to his repaid amount.
     function testRepay2_2() public {
         setDefaultMaxGasForMatchingHelper(
             type(uint64).max,
@@ -220,6 +223,7 @@ contract TestRepay is TestSetup {
         }
     }
 
+    // There are no borrowers `onPool` to replace him `inP2P`. After repaying the amount `onPool`, his P2P credit line will be broken and the corresponding supplier(s) will be unmatched, and placed on pool.
     function testRepay2_3() public {
         uint256 suppliedAmount = 10_000 ether;
         uint256 borrowedAmount = 2 * suppliedAmount;
@@ -287,6 +291,7 @@ contract TestRepay is TestSetup {
         assertEq(onPoolSupplier, expectedSupplyBalanceOnPool, "supplier on pool 2");
     }
 
+    // The borrower is matched to 2 x NMAX suppliers. There are NMAX borrowers `onPool` available to replace him `inP2P`, they don't supply enough to cover for the repaid liquidity. First, the `onPool` liquidity is repaid, then we proceed to NMAX `match borrower`. Finally, we proceed to NMAX `unmatch supplier` for an amount equal to the remaining to withdraw.
     function testRepay2_4() public {
         setDefaultMaxGasForMatchingHelper(
             type(uint64).max,
