@@ -662,8 +662,8 @@ contract TestWithdraw is TestSetup {
     function testWithdrawTo() public {
         uint256 amount = 10000 ether;
 
-        supplier1.approve(usdc, to6Decimals(2 * amount));
-        supplier1.supply(cUsdc, to6Decimals(2 * amount));
+        supplier1.approve(usdc, to6Decimals(amount));
+        supplier1.supply(cUsdc, to6Decimals(amount));
 
         (uint256 inP2P, uint256 onPool) = morpho.supplyBalanceInOf(cUsdc, address(supplier1));
 
