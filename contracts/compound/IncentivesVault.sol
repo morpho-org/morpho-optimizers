@@ -102,11 +102,11 @@ contract IncentivesVault is IIncentivesVault, Ownable {
         emit BonusSet(_newBonus);
     }
 
-    /// @notice Toggles the pause status.
-    function setPauseStatus() external onlyOwner {
-        bool newStatus = !isPaused;
-        isPaused = newStatus;
-        emit PauseStatusSet(newStatus);
+    /// @notice Sets the pause status.
+    /// @param _newStatus The new pause status.
+    function setPauseStatus(bool _newStatus) external onlyOwner {
+        isPaused = _newStatus;
+        emit PauseStatusSet(_newStatus);
     }
 
     /// @notice Transfers the MORPHO tokens to the DAO.
