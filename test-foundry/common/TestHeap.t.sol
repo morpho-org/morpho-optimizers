@@ -13,7 +13,7 @@ contract TestHeap is DSTest {
 
     address[] public accounts;
     uint256 public NB_ACCOUNTS = 50;
-    uint256 public MAX_USER_SORTED = 50;
+    uint256 public MAX_SORTED_USERS = 50;
     address public ADDR_ZERO = address(0);
 
     BasicHeap.Heap internal heap;
@@ -23,7 +23,7 @@ contract TestHeap is DSTest {
         uint256 _formerValue,
         uint256 _newValue
     ) public {
-        heap.update(_id, _formerValue, _newValue, MAX_USER_SORTED);
+        heap.update(_id, _formerValue, _newValue, MAX_SORTED_USERS);
     }
 
     function setUp() public {
@@ -243,10 +243,87 @@ contract TestHeap is DSTest {
         }
     }
 
-    function testDecrease1() public {
+    function testComputeSizeSmall() public {
+        update(accounts[0], 0, 10);
+        update(accounts[1], 0, 20);
+        update(accounts[2], 0, 30);
+        update(accounts[3], 0, 40);
+        update(accounts[4], 0, 50);
+        update(accounts[5], 0, 60);
+
+        MAX_SORTED_USERS = 2;
+
+        update(accounts[5], 60, 25);
+        assertEq(heap.size, 1);
+    }
+
+    function testComputeSizeBig() public {
+        MAX_SORTED_USERS = 30;
+
+        for (uint256 i = 0; i < NB_ACCOUNTS; i++) {
+            update(accounts[i], 0, i + 1);
+        }
+
+        assertEq(heap.size, 20);
+    }
+
+    function testShiftUpLeft() public {
         update(accounts[0], 0, 4);
         update(accounts[1], 0, 3);
         update(accounts[2], 0, 2);
+
+        assertEq(heap.accounts[0].value, 4);
+        assertEq(heap.accounts[1].value, 3);
+        assertEq(heap.accounts[2].value, 2);
+
+        update(accounts[2], 2, 10);
+
+        assertEq(heap.accounts[0].value, 10);
+        assertEq(heap.accounts[1].value, 3);
+        assertEq(heap.accounts[2].value, 4);
+    }
+
+    function testShiftUpRight() public {
+        update(accounts[0], 0, 4);
+        update(accounts[1], 0, 3);
+        update(accounts[2], 0, 2);
+
+        update(accounts[1], 3, 10);
+
+        assertEq(heap.accounts[0].value, 10);
+        assertEq(heap.accounts[1].value, 4);
+        assertEq(heap.accounts[2].value, 2);
+    }
+
+    function testShiftUpBig() public {
+        update(accounts[0], 0, 20);
+        update(accounts[1], 0, 15);
+        update(accounts[2], 0, 18);
+        update(accounts[3], 0, 11);
+        update(accounts[4], 0, 12);
+        update(accounts[5], 0, 17);
+        update(accounts[6], 0, 16);
+
+        assertEq(heap.accounts[0].value, 20);
+        assertEq(heap.accounts[1].value, 15);
+        assertEq(heap.accounts[2].value, 18);
+        assertEq(heap.accounts[3].value, 11);
+        assertEq(heap.accounts[4].value, 12);
+        assertEq(heap.accounts[5].value, 17);
+        assertEq(heap.accounts[6].value, 16);
+
+        update(accounts[4], 12, 30);
+
+        assertEq(heap.accounts[4].value, 15);
+        assertEq(heap.accounts[1].value, 20);
+        assertEq(heap.accounts[0].value, 30);
+    }
+
+    function testShiftDownRight() public {
+        update(accounts[0], 0, 4);
+        update(accounts[1], 0, 3);
+        update(accounts[2], 0, 2);
+
         update(accounts[0], 4, 1);
 
         assertEq(heap.accounts[0].value, 3);
@@ -254,14 +331,31 @@ contract TestHeap is DSTest {
         assertEq(heap.accounts[2].value, 2);
     }
 
-    function testDecrease2() public {
+    function testShiftDownLeft() public {
         update(accounts[0], 0, 4);
         update(accounts[1], 0, 2);
         update(accounts[2], 0, 3);
+
         update(accounts[0], 4, 1);
 
         assertEq(heap.accounts[0].value, 3);
         assertEq(heap.accounts[1].value, 2);
         assertEq(heap.accounts[2].value, 1);
+    }
+
+    function testShiftDownBig() public {
+        update(accounts[0], 0, 20);
+        update(accounts[1], 0, 15);
+        update(accounts[2], 0, 18);
+        update(accounts[3], 0, 11);
+        update(accounts[4], 0, 12);
+        update(accounts[5], 0, 17);
+        update(accounts[6], 0, 16);
+
+        update(accounts[0], 20, 10);
+
+        assertEq(heap.accounts[0].value, 18);
+        assertEq(heap.accounts[2].value, 17);
+        assertEq(heap.accounts[5].value, 10);
     }
 }
