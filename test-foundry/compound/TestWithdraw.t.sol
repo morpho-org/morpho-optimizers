@@ -660,7 +660,7 @@ contract TestWithdraw is TestSetup {
     }
 
     function testWithdrawTo() public {
-        uint256 amount = 10000 ether;
+        uint256 amount = to6Decimals(10000 ether);
 
         supplier1.approve(usdc, to6Decimals(amount));
         supplier1.supply(cUsdc, to6Decimals(amount));
