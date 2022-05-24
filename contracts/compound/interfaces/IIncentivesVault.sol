@@ -10,7 +10,7 @@ interface IIncentivesVault {
 
     function setBonus(uint256 _newBonus) external;
 
-    function setPauseStatus() external;
+    function setPauseStatus(bool _newStatus) external;
 
     function transferMorphoTokensToDao(uint256 _amount) external;
 
