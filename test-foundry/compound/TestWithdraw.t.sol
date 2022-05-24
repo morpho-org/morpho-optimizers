@@ -645,7 +645,7 @@ contract TestWithdraw is TestSetup {
         borrower1.supply(cEth, 10 * amount);
         borrower1.borrow(cDai, 10 * amount);
 
-        morpho.setP2P(cDai, true);
+        morpho.setP2PDisable(cDai, true);
 
         supplier1.withdraw(cDai, amount);
         supplier1.withdraw(cDai, amount);
