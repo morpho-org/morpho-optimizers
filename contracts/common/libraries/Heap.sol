@@ -182,7 +182,7 @@ library BasicHeap {
         _heap.indexes[_id] = accountsLength;
         swap(_heap, size + 1, accountsLength);
         shiftUp(_heap, size + 1);
-        _heap.size = computeSize(size, _maxSortedUsers);
+        _heap.size = computeSize(size + 1, _maxSortedUsers);
     }
 
     /// @notice Decreases the amount of an account in the `_heap`.
@@ -218,7 +218,7 @@ library BasicHeap {
         else if (size < _heap.accounts.length) {
             swap(_heap, size + 1, index);
             shiftUp(_heap, size + 1);
-            _heap.size = computeSize(size, _maxSortedUsers);
+            _heap.size = computeSize(size + 1, _maxSortedUsers);
         }
     }
 
@@ -260,6 +260,7 @@ library BasicHeap {
         uint256 size = _heap.size;
         uint256 newSize = computeSize(size, _maxSortedUsers);
         if (size != newSize) _heap.size = newSize;
+
         if (_formerValue != _newValue) {
             if (_newValue == 0) remove(_heap, _id, _formerValue);
             else if (_formerValue == 0) insert(_heap, _id, _newValue, _maxSortedUsers);
