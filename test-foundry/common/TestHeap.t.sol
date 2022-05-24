@@ -3,6 +3,7 @@ pragma solidity 0.8.13;
 
 import "ds-test/test.sol";
 import "forge-std/stdlib.sol";
+import "forge-std/console.sol";
 
 import "@contracts/common/libraries/Heap.sol";
 
@@ -144,13 +145,13 @@ contract TestHeap is DSTest {
 
         // Remove account 0.
         update(accounts[0], 3, 0);
-        assertEq(heap.getHead(), accounts[2]);
-        assertEq(heap.getTail(), accounts[1]);
-        assertEq(heap.getPrev(accounts[1]), accounts[2]);
-        assertEq(heap.getNext(accounts[1]), ADDR_ZERO);
+        assertEq(heap.getHead(), accounts[1]);
+        assertEq(heap.getTail(), accounts[2]);
+        assertEq(heap.getPrev(accounts[1]), ADDR_ZERO);
+        assertEq(heap.getNext(accounts[1]), accounts[2]);
 
-        assertEq(heap.getPrev(accounts[2]), ADDR_ZERO);
-        assertEq(heap.getNext(accounts[2]), accounts[1]);
+        assertEq(heap.getPrev(accounts[2]), accounts[1]);
+        assertEq(heap.getNext(accounts[2]), ADDR_ZERO);
 
         // Remove account 1.
         update(accounts[1], 2, 0);
@@ -357,5 +358,127 @@ contract TestHeap is DSTest {
         assertEq(heap.accounts[0].value, 18);
         assertEq(heap.accounts[2].value, 17);
         assertEq(heap.accounts[5].value, 10);
+    }
+
+    function testSouldInsertSorted() public {
+        update(accounts[0], 0, 1);
+        update(accounts[1], 0, 2);
+        update(accounts[2], 0, 3);
+        update(accounts[3], 0, 4);
+        update(accounts[4], 0, 5);
+        update(accounts[5], 0, 6);
+        update(accounts[6], 0, 7);
+
+        assertEq(heap.accounts[0].value, 7);
+        assertEq(heap.accounts[1].value, 4);
+        assertEq(heap.accounts[2].value, 6);
+        assertEq(heap.accounts[3].value, 1);
+        assertEq(heap.accounts[4].value, 3);
+        assertEq(heap.accounts[5].value, 2);
+        assertEq(heap.accounts[6].value, 5);
+    }
+
+    function testInsertLast() public {
+        for (uint256 i; i < 10; i++) update(accounts[i], 0, NB_ACCOUNTS - i);
+
+        for (uint256 i = 10; i < 15; i++) update(accounts[i], 0, i - 9);
+
+        for (uint256 i = 10; i < 15; i++) assertLe(heap.accounts[i].value, 10);
+    }
+
+    function testInsertWrap() public {
+        MAX_SORTED_USERS = 20;
+        for (uint256 i = 0; i < 20; i++) update(accounts[i], 0, NB_ACCOUNTS - i);
+
+        update(accounts[20], 0, 1);
+
+        assertEq(heap.accounts[10].value, 1);
+    }
+
+    function testDecreaseIndexChanges() public {
+        MAX_SORTED_USERS = 4;
+        for (uint256 i = 0; i < 16; i++) update(accounts[i], 0, 20 - i);
+
+        uint256 index5Before = heap.indexes[accounts[5]];
+        uint256 index0Before = heap.indexes[accounts[0]];
+
+        update(accounts[5], 16, 1);
+
+        uint256 index5After = heap.indexes[accounts[5]];
+
+        assertEq(index5Before, index5After);
+
+        update(accounts[0], 20, 2);
+
+        uint256 index0After = heap.indexes[accounts[0]];
+
+        assertGt(index0After, index0Before);
+    }
+
+    function testIncreaseIndexChange() public {
+        for (uint256 i = 0; i < 20; i++) update(accounts[i], 0, 20 - i);
+
+        MAX_SORTED_USERS = 10;
+
+        update(accounts[17], 20 - 17, 5);
+
+        uint256 index17After = heap.indexes[accounts[17]];
+
+        assertEq(index17After, 6);
+    }
+
+    function testIncreaseIndexChangeShiftUp() public {
+        for (uint256 i = 0; i < 20; i++) update(accounts[i], 0, 20 - i);
+
+        MAX_SORTED_USERS = 10;
+
+        update(accounts[17], 20 - 17, 40);
+
+        uint256 index17After = heap.indexes[accounts[17]];
+
+        assertEq(index17After, 1);
+    }
+
+    function testRemoveLast() public {
+        update(accounts[0], 0, 4);
+        update(accounts[1], 0, 2);
+        update(accounts[2], 0, 3);
+
+        uint256 sizeBefore = heap.size;
+
+        update(accounts[2], 3, 0);
+
+        uint256 sizeAfter = heap.size;
+
+        assertLt(sizeAfter, sizeBefore);
+        assertEq(heap.accounts.length, 2);
+    }
+
+    function testRemoveShiftDown() public {
+        for (uint256 i = 0; i < 20; i++) update(accounts[i], 0, NB_ACCOUNTS - i);
+
+        update(accounts[5], NB_ACCOUNTS - 5, 0);
+
+        assertEq(heap.accounts[5].value, NB_ACCOUNTS - 2 * (5 + 1) + 1);
+    }
+
+    function testRemoveShiftUp() public {
+        update(accounts[0], 0, 40);
+        update(accounts[1], 0, 10);
+        update(accounts[2], 0, 30);
+        update(accounts[3], 0, 8);
+        update(accounts[4], 0, 7);
+        update(accounts[5], 0, 25);
+
+        assertEq(heap.accounts[0].value, 40);
+        assertEq(heap.accounts[1].value, 10);
+        assertEq(heap.accounts[2].value, 30);
+        assertEq(heap.accounts[3].value, 8);
+        assertEq(heap.accounts[4].value, 7);
+        assertEq(heap.accounts[5].value, 25);
+
+        update(accounts[3], 10, 0);
+
+        assertEq(heap.accounts[1].value, 25);
     }
 }
