@@ -219,6 +219,7 @@ abstract contract MorphoGovernance is MorphoUtils {
     }
 
     /// @notice Sets a new peer-to-peer cursor.
+    /// @param _poolTokenAddress The address of the market to update.
     /// @param _p2pIndexCursor The new peer-to-peer cursor.
     function setP2PIndexCursor(address _poolTokenAddress, uint16 _p2pIndexCursor)
         external
