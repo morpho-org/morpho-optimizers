@@ -124,19 +124,19 @@ contract User {
         morpho.claimRewards(_assets, _toSwap);
     }
 
-    function toggleP2P(address _marketAddress) external {
-        morpho.toggleP2P(_marketAddress);
+    function setP2P(address _marketAddress, bool _newStatus) external {
+        morpho.setP2P(_marketAddress, _newStatus);
     }
 
     function setTreasuryVault(address _newTreasuryVault) external {
         morpho.setTreasuryVault(_newTreasuryVault);
     }
 
-    function togglePauseStatus(address _poolTokenAddress) external {
-        morpho.togglePauseStatus(_poolTokenAddress);
+    function setPauseStatus(address _poolTokenAddress, bool _newStatus) external {
+        morpho.setPauseStatus(_poolTokenAddress, _newStatus);
     }
 
-    function togglePartialPauseStatus(address _poolTokenAddress) external {
-        morpho.togglePartialPauseStatus(_poolTokenAddress);
+    function setPartialPauseStatus(address _poolTokenAddress, bool _newStatus) external {
+        morpho.setPartialPauseStatus(_poolTokenAddress, _newStatus);
     }
 }
