@@ -128,12 +128,12 @@ contract TestGovernance is TestSetup {
 
     function testOnlyOwnerShouldFlipMarketStrategy() public {
         hevm.expectRevert("Ownable: caller is not the owner");
-        supplier1.setP2P(cDai, true);
+        supplier1.setP2PDisable(cDai, true);
 
         hevm.expectRevert("Ownable: caller is not the owner");
-        supplier2.setP2P(cDai, true);
+        supplier2.setP2PDisable(cDai, true);
 
-        morpho.setP2P(cDai, true);
+        morpho.setP2PDisable(cDai, true);
         assertTrue(morpho.p2pDisabled(cDai));
     }
 

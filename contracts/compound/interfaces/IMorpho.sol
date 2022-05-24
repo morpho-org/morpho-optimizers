@@ -55,7 +55,7 @@ interface IMorpho {
     function setRewardsManager(address _rewardsManagerAddress) external;
     function setDustThreshold(uint256 _dustThreshold) external;
     function setCompRewardsActivation() external;
-    function setP2P(address _poolTokenAddress, bool _p2pDisabled) external;
+    function setP2PDisable(address _poolTokenAddress, bool _p2pDisabled) external;
     function setReserveFactor(address _poolTokenAddress, uint256 _newReserveFactor) external;
     function setP2PIndexCursor(address _poolTokenAddress, uint16 _p2pIndexCursor) external;
     function setPauseStatus(address _poolTokenAddress) external;

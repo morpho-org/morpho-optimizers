@@ -124,8 +124,8 @@ contract User {
         morpho.claimRewards(_assets, _toSwap);
     }
 
-    function setP2P(address _marketAddress, bool _newStatus) external {
-        morpho.setP2P(_marketAddress, _newStatus);
+    function setP2PDisable(address _marketAddress, bool _newStatus) external {
+        morpho.setP2PDisable(_marketAddress, _newStatus);
     }
 
     function setTreasuryVault(address _newTreasuryVault) external {
