@@ -259,7 +259,7 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @notice Sets the peer-to-peer disable status.
     /// @param _poolTokenAddress The address of the market to able/disable P2P.
     /// @param _newStatus The new status to set.
-    function setP2P(address _poolTokenAddress, bool _newStatus)
+    function setP2PDisable(address _poolTokenAddress, bool _newStatus)
         external
         onlyOwner
         isMarketCreated(_poolTokenAddress)
