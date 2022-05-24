@@ -38,7 +38,7 @@ contract IncentivesVault is IIncentivesVault, Ownable {
     event BonusSet(uint256 _newBonus);
 
     /// @notice Emitted when the pause status is changed.
-    event PauseStatusChanged(bool _newStatus);
+    event PauseStatusSet(bool _newStatus);
 
     /// @notice Emitted when MORPHO tokens are transferred to the DAO.
     event MorphoTokensTransferred(uint256 _amount);
@@ -103,10 +103,10 @@ contract IncentivesVault is IIncentivesVault, Ownable {
     }
 
     /// @notice Toggles the pause status.
-    function togglePauseStatus() external onlyOwner {
+    function setPauseStatus() external onlyOwner {
         bool newStatus = !isPaused;
         isPaused = newStatus;
-        emit PauseStatusChanged(newStatus);
+        emit PauseStatusSet(newStatus);
     }
 
     /// @notice Transfers the MORPHO tokens to the DAO.
