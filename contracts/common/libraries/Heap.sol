@@ -239,7 +239,7 @@ library BasicHeap {
         _heap.accounts.pop();
         delete _heap.indexes[_id];
         if (index <= _heap.size) {
-            if (_removedValue < _heap.accounts[index - 1].value) shiftDown(_heap, index);
+            if (_removedValue > _heap.accounts[index - 1].value) shiftDown(_heap, index);
             else shiftUp(_heap, index);
         }
     }
