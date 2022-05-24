@@ -81,12 +81,12 @@ contract TestIncentivesVault is Config, DSTest, stdCheats {
     function testOnlyOwnerShouldTogglePauseStatus() public {
         hevm.prank(address(0));
         hevm.expectRevert("Ownable: caller is not the owner");
-        incentivesVault.togglePauseStatus();
+        incentivesVault.setPauseStatus();
 
-        incentivesVault.togglePauseStatus();
+        incentivesVault.setPauseStatus();
         assertTrue(incentivesVault.isPaused());
 
-        incentivesVault.togglePauseStatus();
+        incentivesVault.setPauseStatus();
         assertFalse(incentivesVault.isPaused());
     }
 
@@ -100,7 +100,7 @@ contract TestIncentivesVault is Config, DSTest, stdCheats {
     }
 
     function testFailWhenContractNotActive() public {
-        incentivesVault.togglePauseStatus();
+        incentivesVault.setPauseStatus();
 
         hevm.prank(morpho);
         incentivesVault.tradeCompForMorphoTokens(address(1), 0);
