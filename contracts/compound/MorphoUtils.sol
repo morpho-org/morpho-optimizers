@@ -149,6 +149,7 @@ abstract contract MorphoUtils is MorphoStorage {
         ICompoundOracle oracle = ICompoundOracle(comptroller.oracle());
         uint256 numberOfEnteredMarkets = enteredMarkets[_user].length;
 
+        Types.AssetLiquidityData memory assetData;
         uint256 maxDebtValue;
         uint256 debtValue;
         uint256 i;
@@ -156,17 +157,18 @@ abstract contract MorphoUtils is MorphoStorage {
         while (i < numberOfEnteredMarkets) {
             address poolTokenEntered = enteredMarkets[_user][i];
 
-            Types.AssetLiquidityData memory assetData = _getUserLiquidityDataForAsset(
-                _user,
-                poolTokenEntered,
-                oracle
-            );
+            if (_poolTokenAddress != poolTokenEntered) {
+                _updateP2PIndexes(poolTokenEntered);
 
-            maxDebtValue += assetData.maxDebtValue;
-            debtValue += assetData.debtValue;
-            ++i;
+                assetData = _getUserLiquidityDataForAsset(_user, poolTokenEntered, oracle);
+                maxDebtValue += assetData.maxDebtValue;
+                debtValue += assetData.debtValue;
+            } else {
+                // No need to call `_updateP2PIndexes()` as it has already been called before.
+                assetData = _getUserLiquidityDataForAsset(_user, poolTokenEntered, oracle);
+                maxDebtValue += assetData.maxDebtValue;
+                debtValue += assetData.debtValue;
 
-            if (_poolTokenAddress == poolTokenEntered) {
                 if (_borrowedAmount > 0)
                     debtValue += _borrowedAmount.mul(assetData.underlyingPrice);
 
@@ -175,12 +177,17 @@ abstract contract MorphoUtils is MorphoStorage {
                         assetData.collateralFactor
                     );
             }
+
+            unchecked {
+                ++i;
+            }
         }
+
         return debtValue > maxDebtValue;
     }
 
     /// @notice Returns the data related to `_poolTokenAddress` for the `_user`.
-    /// @dev Note: must be called after calling `accrueInterest()` on the cToken to have the most up to date values.
+    /// @dev Note: Must be called after calling `_updateP2PIndexes()` to have the most up-to-date indexes.
     /// @param _user The user to determine data for.
     /// @param _poolTokenAddress The address of the market.
     /// @param _oracle The oracle used.
@@ -189,11 +196,10 @@ abstract contract MorphoUtils is MorphoStorage {
         address _user,
         address _poolTokenAddress,
         ICompoundOracle _oracle
-    ) internal returns (Types.AssetLiquidityData memory assetData) {
+    ) internal view returns (Types.AssetLiquidityData memory assetData) {
         assetData.underlyingPrice = _oracle.getUnderlyingPrice(_poolTokenAddress);
         if (assetData.underlyingPrice == 0) revert CompoundOracleFailed();
         (, assetData.collateralFactor, ) = comptroller.markets(_poolTokenAddress);
-        _updateP2PIndexes(_poolTokenAddress);
 
         assetData.collateralValue = _getUserSupplyBalanceInOf(_poolTokenAddress, _user).mul(
             assetData.underlyingPrice
