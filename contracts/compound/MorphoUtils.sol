@@ -140,7 +140,7 @@ abstract contract MorphoUtils is MorphoStorage {
     /// @param _poolTokenAddress The market to hypothetically withdraw/borrow in.
     /// @param _withdrawnAmount The amount of tokens to hypothetically withdraw (in underlying).
     /// @param _borrowedAmount The amount of tokens to hypothetically borrow (in underlying).
-    function _isLiquidable(
+    function _isLiquidatable(
         address _user,
         address _poolTokenAddress,
         uint256 _withdrawnAmount,
