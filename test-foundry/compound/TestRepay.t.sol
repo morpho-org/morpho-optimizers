@@ -657,4 +657,22 @@ contract TestRepay is TestSetup {
         assertLt(onCompAfterRepay, onCompBeforeRepay, "on Comp");
         assertLt(onPoolAfterRepay, onPoolBeforeRepay, "on Morpho");
     }
+
+    function testRepayOnBehalf() public {
+        uint256 amount = 10_000 ether;
+        uint256 collateral = 2 * amount;
+
+        borrower1.approve(usdc, to6Decimals(collateral));
+        borrower1.supply(cUsdc, to6Decimals(collateral));
+        borrower1.borrow(cDai, amount);
+
+        borrower2.approve(dai, amount);
+        hevm.prank(address(borrower2));
+        morpho.repay(cDai, address(borrower1), amount);
+
+        (uint256 inP2P, uint256 onPool) = morpho.borrowBalanceInOf(cDai, address(borrower1));
+
+        assertEq(inP2P, 0);
+        assertEq(onPool, 0);
+    }
 }
