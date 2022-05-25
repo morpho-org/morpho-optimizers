@@ -607,7 +607,7 @@ contract TestRepay is TestSetup {
     }
 
     function testFailRepayZero() public {
-        morpho.repay(cDai, 0);
+        morpho.repay(cDai, msg.sender, 0);
     }
 
     function testRepayRepayOnBehalf() public {
