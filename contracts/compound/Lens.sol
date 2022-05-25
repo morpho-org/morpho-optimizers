@@ -9,6 +9,8 @@ import "@openzeppelin/contracts/utils/math/Math.sol";
 import "./libraries/CompoundMath.sol";
 
 /// @title Lens.
+/// @author Morpho Labs.
+/// @custom:contact security@morpho.xyz
 /// @notice User accessible getters.
 contract Lens {
     using CompoundMath for uint256;

@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
+/// @title Double Linked List.
+/// @author Morpho Labs.
+/// @custom:contact security@morpho.xyz
+/// @notice Modified double linked list with capped sorting insertion.
 library DoubleLinkedList {
     /// STRUCTS ///
 

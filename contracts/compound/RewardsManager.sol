@@ -9,6 +9,8 @@ import "./libraries/CompoundMath.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 /// @title RewardsManager.
+/// @author Morpho Labs.
+/// @custom:contact security@morpho.xyz
 /// @notice This contract is used to manage the COMP rewards from the Compound protocol.
 contract RewardsManager is IRewardsManager, Ownable {
     using CompoundMath for uint256;

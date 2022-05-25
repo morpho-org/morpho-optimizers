@@ -7,6 +7,8 @@ import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 /// @title Morpho Rewards Distributor.
+/// @author Morpho Labs.
+/// @custom:contact security@morpho.xyz
 /// @notice This contract allows Morpho users to claim their rewards. This contract is largely inspired by Euler Distributor's contract: https://github.com/euler-xyz/euler-contracts/blob/master/contracts/mining/EulDistributor.sol.
 contract RewardsDistributor is Ownable {
     using SafeTransferLib for ERC20;

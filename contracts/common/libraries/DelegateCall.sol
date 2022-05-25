@@ -2,6 +2,8 @@
 pragma solidity 0.8.13;
 
 /// @title Delegate Call Library.
+/// @author Morpho Labs.
+/// @custom:contact security@morpho.xyz
 /// @dev Library to perform delegate calls inspired by the OZ Address library: https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/utils/Address.sol.
 library DelegateCall {
     /// ERRORS ///
