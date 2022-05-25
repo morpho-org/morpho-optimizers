@@ -2,7 +2,9 @@
 pragma solidity 0.8.13;
 
 /// @title CompoundMath.
-/// @dev library emulating in solidity 8+ the behavior of Compound's mulScalarTruncate and divScalarByExpTruncate functions.
+/// @author Morpho Labs.
+/// @custom:contact security@morpho.xyz
+/// @dev Library emulating in solidity 8+ the behavior of Compound's mulScalarTruncate and divScalarByExpTruncate functions.
 library CompoundMath {
     /// ERRORS ///
 

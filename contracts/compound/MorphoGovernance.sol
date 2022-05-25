@@ -4,6 +4,8 @@ pragma solidity 0.8.13;
 import "./MorphoUtils.sol";
 
 /// @title MorphoGovernance.
+/// @author Morpho Labs.
+/// @custom:contact security@morpho.xyz
 /// @notice Governance functions for Morpho.
 abstract contract MorphoGovernance is MorphoUtils {
     using SafeTransferLib for ERC20;

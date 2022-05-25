@@ -4,6 +4,8 @@ pragma solidity 0.8.13;
 import "./MorphoUtils.sol";
 
 /// @title MatchingEngine.
+/// @author Morpho Labs.
+/// @custom:contact security@morpho.xyz
 /// @notice Smart contract managing the matching engine.
 contract MatchingEngine is MorphoUtils {
     using DoubleLinkedList for DoubleLinkedList.List;

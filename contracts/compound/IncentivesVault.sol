@@ -9,6 +9,10 @@ import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 
+/// @title IncentivesVault.
+/// @author Morpho Labs.
+/// @custom:contact security@morpho.xyz
+/// @notice Contract handling Morpho incentives.
 contract IncentivesVault is IIncentivesVault, Ownable {
     using SafeTransferLib for ERC20;
 

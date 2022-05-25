@@ -1,9 +1,30 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
+//  ///                                          ///
+//  //////.                                  ///////
+//  ////////((                           .((////////
+//  ////////((((((                    (((((/////////
+//  ////////(((((((((             .(((((((((////////
+//  ////////((((((((((#         ##(((((((((/////////
+//  ////////((((((((((###      ###((((((((((////////
+//   .//////((((((((((####    ###((((((((((///////
+//           ((((((((#####.  #####(((((((((
+//              .*((((####(  ####((((/*
+//          ////////**####   #####*////////,
+//        /////////////*##    ##*/////////////
+//       ////////////////      ///////////////
+//       //////////////         */////////////
+//       ///////////*              ///////////
+//       /////////                   .////////
+//       //////                         //////
+//       ////                              ///
+
 import "./MorphoGovernance.sol";
 
 /// @title Morpho.
+/// @author Morpho Labs.
+/// @custom:contact security@morpho.xyz
 /// @notice Main Morpho contract handling user interactions and pool interactions.
 contract Morpho is MorphoGovernance {
     using SafeTransferLib for ERC20;

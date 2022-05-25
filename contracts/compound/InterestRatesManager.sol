@@ -8,6 +8,8 @@ import "./libraries/CompoundMath.sol";
 import "./MorphoStorage.sol";
 
 /// @title InterestRatesManager.
+/// @author Morpho Labs.
+/// @custom:contact security@morpho.xyz
 /// @notice Smart contract handling the computation of indexes used for peer-to-peer interactions.
 /// @dev This contract inherits from MorphoStorage so that Morpho can delegate calls to this contract.
 contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
