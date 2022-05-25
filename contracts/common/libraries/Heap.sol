@@ -3,7 +3,7 @@ pragma solidity 0.8.13;
 
 library BasicHeap {
     struct Account {
-        address id; // The address of the account owner.
+        address id; // The address of the account.
         uint256 value; // The value of the account.
     }
 
@@ -18,19 +18,7 @@ library BasicHeap {
     /// @notice Thrown when the address is zero at insertion.
     error AddressIsZero();
 
-    /// PURE ///
-
-    /// @notice Computes a new suitable size from `_size` that is smaller than `_maxSortedUsers`.
-    /// @dev We use division by 2 because the biggest elements of the heap are in the first half (rounded down) of the heap.
-    /// @param _size The old size of the heap.
-    /// @param _maxSortedUsers The maximum size of the heap.
-    /// @return The new size computed.
-    function computeSize(uint256 _size, uint256 _maxSortedUsers) public pure returns (uint256) {
-        while (_size >= _maxSortedUsers) _size /= 2;
-        return _size;
-    }
-
-    /// VIEW ///
+    /// GETTERS ///
 
     /// @notice Returns the number of users in the `_heap`.
     /// @param _heap The heap parameter.
@@ -65,7 +53,8 @@ library BasicHeap {
         else return address(0);
     }
 
-    /// @notice Returns the previous address from the current `_id`.
+    /// @notice Returns the address coming before `_id` in accounts.
+    /// @dev The account associated to the returned address does not necessarily have a lower value than the one of the account associated to `_id`.
     /// @param _heap The heap to search in.
     /// @param _id The address of the account.
     /// @return The address of the previous account.
@@ -75,7 +64,8 @@ library BasicHeap {
         else return address(0);
     }
 
-    /// @notice Returns the next address from the current `_id`.
+    /// @notice Returns the address coming after `_id` in accounts.
+    /// @dev The account associated to the returned address does not necessarily have a greater value than the one of the account associated to `_id`.
     /// @param _heap The heap to search in.
     /// @param _id The address of the account.
     /// @return The address of the next account.
@@ -85,11 +75,49 @@ library BasicHeap {
         else return address(0);
     }
 
+    /// INTERNAL ///
+
+    /// @notice Updates an account in the `_heap`.
+    /// @dev Only call this function when `_id` is in the `_heap` with value `_formerValue` or when `_id` is not in the `_heap` with `_formerValue` equal to 0.
+    /// @param _heap The heap to modify.
+    /// @param _id The address of the account to update.
+    /// @param _formerValue The former value of the account to update.
+    /// @param _newValue The new value to use to update the account.
+    /// @param _maxSortedUsers The maximum size of the heap.
+    function update(
+        Heap storage _heap,
+        address _id,
+        uint256 _formerValue,
+        uint256 _newValue,
+        uint256 _maxSortedUsers
+    ) internal {
+        uint256 size = _heap.size;
+        uint256 newSize = computeSize(size, _maxSortedUsers);
+        if (size != newSize) _heap.size = newSize;
+
+        if (_formerValue != _newValue) {
+            if (_newValue == 0) remove(_heap, _id, _formerValue);
+            else if (_formerValue == 0) insert(_heap, _id, _newValue, _maxSortedUsers);
+            else if (_formerValue < _newValue) increase(_heap, _id, _newValue, _maxSortedUsers);
+            else decrease(_heap, _id, _newValue);
+        }
+    }
+
     /// PRIVATE ///
+
+    /// @notice Computes a new suitable size from `_size` that is smaller than `_maxSortedUsers`.
+    /// @dev We use division by 2 because the biggest elements of the heap are in the first half (rounded down) of the heap.
+    /// @param _size The old size of the heap.
+    /// @param _maxSortedUsers The maximum size of the heap.
+    /// @return The new size computed.
+    function computeSize(uint256 _size, uint256 _maxSortedUsers) private pure returns (uint256) {
+        while (_size >= _maxSortedUsers) _size /= 2;
+        return _size;
+    }
 
     /// @notice Sets `_index` in the `_heap` to be `_account`.
     /// @dev The heap may lose its invariant about the order of the values stored.
-    /// @dev Only call this function with an index in the bounds of the array.
+    /// @dev Only call this function with an index within array's bounds.
     /// @param _heap The heap to modify.
     /// @param _index The index of the account in the heap to be set.
     /// @param _account The account to set the `_index` to.
@@ -104,7 +132,7 @@ library BasicHeap {
 
     /// @notice Swaps two accounts in the `_heap`.
     /// @dev The heap may lose its invariant about the order of the values stored.
-    /// @dev Only call this function with indexes in the bounds of the array.
+    /// @dev Only call this function with indexes within array's bounds.
     /// @param _heap The heap to modify.
     /// @param _index1 The index of the first account in the heap.
     /// @param _index2 The index of the second account in the heap.
@@ -126,7 +154,7 @@ library BasicHeap {
     function shiftUp(Heap storage _heap, uint256 _index) private {
         Account memory initAccount = _heap.accounts[_index - 1];
         uint256 initValue = initAccount.value;
-        while (_index != 1 && initValue > _heap.accounts[_index / 2 - 1].value) {
+        while (_index > 1 && initValue > _heap.accounts[_index / 2 - 1].value) {
             set(_heap, _index, _heap.accounts[_index / 2 - 1]);
             _index /= 2;
         }
@@ -162,7 +190,7 @@ library BasicHeap {
     }
 
     /// @notice Inserts an account in the `_heap`.
-    /// @dev Only call this function when `_id`.
+    /// @dev Only call this function when `_id` is in the `_heap`.
     /// @dev Reverts with AddressIsZero if `_value` is 0.
     /// @param _heap The heap to modify.
     /// @param _id The address of the account to insert.
@@ -176,13 +204,17 @@ library BasicHeap {
     ) private {
         // `_heap` cannot contain the 0 address
         if (_id == address(0)) revert AddressIsZero();
-        uint256 size = _heap.size;
+
+        // Put the account at the end of accounts.
         _heap.accounts.push(Account(_id, _value));
         uint256 accountsLength = _heap.accounts.length;
         _heap.indexes[_id] = accountsLength;
-        swap(_heap, size + 1, accountsLength);
-        shiftUp(_heap, size + 1);
-        _heap.size = computeSize(size + 1, _maxSortedUsers);
+
+        // Move the account at the end of the heap and restore the invariant.
+        uint256 newSize = _heap.size + 1;
+        swap(_heap, newSize, accountsLength);
+        shiftUp(_heap, newSize);
+        _heap.size = computeSize(newSize, _maxSortedUsers);
     }
 
     /// @notice Decreases the amount of an account in the `_heap`.
@@ -197,6 +229,7 @@ library BasicHeap {
     ) private {
         uint256 index = _heap.indexes[_id];
         _heap.accounts[index - 1].value = _newValue;
+
         if (index <= _heap.size) shiftDown(_heap, index);
     }
 
@@ -205,6 +238,7 @@ library BasicHeap {
     /// @param _heap The heap to modify.
     /// @param _id The address of the account to increase the amount.
     /// @param _newValue The new value of the account.
+    /// @param _maxSortedUsers The maximum size of the heap.
     function increase(
         Heap storage _heap,
         address _id,
@@ -214,6 +248,7 @@ library BasicHeap {
         uint256 index = _heap.indexes[_id];
         _heap.accounts[index - 1].value = _newValue;
         uint256 size = _heap.size;
+
         if (index <= size) shiftUp(_heap, index);
         else if (size < _heap.accounts.length) {
             swap(_heap, size + 1, index);
@@ -223,7 +258,7 @@ library BasicHeap {
     }
 
     /// @notice Removes an account in the `_heap`.
-    /// @dev Only call when `_id` is in the `_heap` with value `_removedValue`.
+    /// @dev Only call when this function `_id` is in the `_heap` with value `_removedValue`.
     /// @param _heap The heap to modify.
     /// @param _id The address of the account to remove.
     /// @param _removedValue The value of the account to remove.
@@ -234,38 +269,17 @@ library BasicHeap {
     ) private {
         uint256 index = _heap.indexes[_id];
         uint256 accountsLength = _heap.accounts.length;
+
+        // Swap the last account and the account to remove, then pop it.
         swap(_heap, index, accountsLength);
         if (_heap.size == accountsLength) _heap.size--;
         _heap.accounts.pop();
         delete _heap.indexes[_id];
+
+        // If the swapped account is in the heap, restore the invariant: its value can be smaller of greater than the removed value.
         if (index <= _heap.size) {
             if (_removedValue > _heap.accounts[index - 1].value) shiftDown(_heap, index);
             else shiftUp(_heap, index);
-        }
-    }
-
-    /// INTERNAL ///
-
-    /// @notice Removes an account in the `_heap`.
-    /// @dev Only call with `_id` is in the `_heap` with value `_formerValue`.
-    /// @param _heap The heap to modify.
-    /// @param _id The address of the account to remove.
-    function update(
-        Heap storage _heap,
-        address _id,
-        uint256 _formerValue,
-        uint256 _newValue,
-        uint256 _maxSortedUsers
-    ) internal {
-        uint256 size = _heap.size;
-        uint256 newSize = computeSize(size, _maxSortedUsers);
-        if (size != newSize) _heap.size = newSize;
-
-        if (_formerValue != _newValue) {
-            if (_newValue == 0) remove(_heap, _id, _formerValue);
-            else if (_formerValue == 0) insert(_heap, _id, _newValue, _maxSortedUsers);
-            else if (_formerValue < _newValue) increase(_heap, _id, _newValue, _maxSortedUsers);
-            else decrease(_heap, _id, _newValue);
         }
     }
 }
