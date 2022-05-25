@@ -453,15 +453,13 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         vars.borrowedPrice = compoundOracle.getUnderlyingPrice(_poolTokenBorrowedAddress);
         if (vars.collateralPrice == 0 || vars.borrowedPrice == 0) revert CompoundOracleFailed();
 
-        // Compute the amount of collateral tokens to seize (Same mechanism as Compound).
-        vars.amountToSeize = _amount
-        .mul(comptroller.liquidationIncentiveMantissa())
-        .mul(vars.borrowedPrice)
-        .div(vars.collateralPrice);
-
-        vars.supplyBalance = _getUserSupplyBalanceInOf(_poolTokenCollateralAddress, _borrower);
-
-        if (vars.amountToSeize > vars.supplyBalance) revert ToSeizeAboveCollateral();
+        // Compute the amount of collateral tokens to seize. This is the minimum between the repaid value plus the liquidation incentive and the available supply.
+        vars.amountToSeize = Math.min(
+            _amount.mul(comptroller.liquidationIncentiveMantissa()).mul(vars.borrowedPrice).div(
+                vars.collateralPrice
+            ),
+            _getUserSupplyBalanceInOf(_poolTokenCollateralAddress, _borrower)
+        );
 
         _safeWithdrawLogic(
             _poolTokenCollateralAddress,
