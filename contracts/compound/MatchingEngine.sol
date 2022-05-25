@@ -277,6 +277,12 @@ contract MatchingEngine is MorphoUtils {
             if (formerValueOnPool > 0) suppliersOnPool[_poolTokenAddress].remove(_user);
             if (onPool > 0)
                 suppliersOnPool[_poolTokenAddress].insertSorted(_user, onPool, maxSortedUsers);
+            if (isCompRewardsActive && address(rewardsManager) != address(0))
+                rewardsManager.accrueUserSupplyUnclaimedRewards(
+                    _user,
+                    _poolTokenAddress,
+                    formerValueOnPool
+                );
         }
 
         // Round peer-to-peer balance to 0 if below threshold.
@@ -289,13 +295,6 @@ contract MatchingEngine is MorphoUtils {
             if (inP2P > 0)
                 suppliersInP2P[_poolTokenAddress].insertSorted(_user, inP2P, maxSortedUsers);
         }
-
-        if (isCompRewardsActive && address(rewardsManager) != address(0))
-            rewardsManager.accrueUserSupplyUnclaimedRewards(
-                _user,
-                _poolTokenAddress,
-                formerValueOnPool
-            );
     }
 
     /// @notice Updates `_user` in the borrower data structures.
@@ -316,6 +315,12 @@ contract MatchingEngine is MorphoUtils {
             if (formerValueOnPool > 0) borrowersOnPool[_poolTokenAddress].remove(_user);
             if (onPool > 0)
                 borrowersOnPool[_poolTokenAddress].insertSorted(_user, onPool, maxSortedUsers);
+            if (isCompRewardsActive && address(rewardsManager) != address(0))
+                rewardsManager.accrueUserBorrowUnclaimedRewards(
+                    _user,
+                    _poolTokenAddress,
+                    formerValueOnPool
+                );
         }
 
         // Round peer-to-peer balance to 0 if below threshold.
@@ -328,12 +333,5 @@ contract MatchingEngine is MorphoUtils {
             if (inP2P > 0)
                 borrowersInP2P[_poolTokenAddress].insertSorted(_user, inP2P, maxSortedUsers);
         }
-
-        if (isCompRewardsActive && address(rewardsManager) != address(0))
-            rewardsManager.accrueUserBorrowUnclaimedRewards(
-                _user,
-                _poolTokenAddress,
-                formerValueOnPool
-            );
     }
 }
