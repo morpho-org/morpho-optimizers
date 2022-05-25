@@ -111,7 +111,7 @@ contract IncentivesVault is IIncentivesVault, Ownable {
     /// @notice Transfers the MORPHO tokens to the DAO.
     /// @param _amount The amount of MORPHO tokens to transfer to the DAO.
     function transferMorphoTokensToDao(uint256 _amount) external onlyOwner {
-        morphoToken.transfer(morphoDao, _amount);
+        morphoToken.safeTransfer(morphoDao, _amount);
         emit MorphoTokensTransferred(_amount);
     }
 
