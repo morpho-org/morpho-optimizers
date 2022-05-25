@@ -546,7 +546,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
         /// Transfer withdraw ///
 
-        // Match peer-to-peer supply delta first if any.
+        // Reduce peer-to-peer supply delta first if any.
         if (vars.remainingToWithdraw > 0 && delta.p2pSupplyDelta > 0) {
             uint256 matchedDelta = CompoundMath.min(
                 delta.p2pSupplyDelta.mul(vars.poolSupplyIndex),
@@ -588,6 +588,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
         /// Hard withdraw ///
 
+        // Unmatch peer-to-peer borrowers.
         if (vars.remainingToWithdraw > 0) {
             uint256 unmatched = _unmatchBorrowers(
                 _poolTokenAddress,
@@ -676,7 +677,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
         /// Transfer repay ///
 
-        // Match peer-to-peer borrow delta first if any.
+        // Reduce peer-to-peer borrow delta first if any.
         if (vars.remainingToRepay > 0 && delta.p2pBorrowDelta > 0) {
             uint256 matchedDelta = CompoundMath.min(
                 delta.p2pBorrowDelta.mul(vars.poolBorrowIndex),
@@ -737,6 +738,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
         /// Hard repay ///
 
+        // Unmatch peer-to-peer suppliers.
         if (vars.remainingToRepay > 0) {
             uint256 unmatched = _unmatchSuppliers(
                 _poolTokenAddress,
