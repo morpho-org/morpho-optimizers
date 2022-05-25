@@ -204,7 +204,7 @@ contract TestSupply is TestSetup {
     }
 
     function testFailSupplyZero() public {
-        morpho.supply(cDai, 0, type(uint256).max);
+        morpho.supply(cDai, msg.sender, 0, type(uint256).max);
     }
 
     function testSupplyRepayOnBehalf() public {
