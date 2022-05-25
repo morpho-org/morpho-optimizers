@@ -4,6 +4,8 @@ pragma solidity 0.8.13;
 interface IPositionsManager {
     function supplyLogic(
         address _poolTokenAddress,
+        address _supplier,
+        address _onBehalf,
         uint256 _amount,
         uint256 _maxGasForMatching
     ) external;
@@ -24,7 +26,8 @@ interface IPositionsManager {
 
     function repayLogic(
         address _poolTokenAddress,
-        address _user,
+        address _repayer,
+        address _onBehalf,
         uint256 _amount,
         uint256 _maxGasForMatching
     ) external;
