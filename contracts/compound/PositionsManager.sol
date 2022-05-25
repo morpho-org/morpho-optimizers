@@ -133,7 +133,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     /// @notice Thrown when the user does not have enough remaining collateral to withdraw.
     error UnauthorisedWithdraw();
 
-    /// @notice Thrown when the positions of the user is not liquidable.
+    /// @notice Thrown when the positions of the user is not liquidatable.
     error UnauthorisedLiquidate();
 
     /// @notice Thrown when the user does not have enough collateral for the borrow.
@@ -293,7 +293,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         _updateP2PIndexes(_poolTokenAddress);
 
         _enterMarketIfNeeded(_poolTokenAddress, msg.sender);
-        if (_isLiquidable(msg.sender, _poolTokenAddress, 0, _amount)) revert UnauthorisedBorrow();
+        if (_isLiquidatable(msg.sender, _poolTokenAddress, 0, _amount)) revert UnauthorisedBorrow();
         ERC20 underlyingToken = _getUnderlying(_poolTokenAddress);
         uint256 remainingToBorrow = _amount;
         uint256 toWithdraw;
@@ -393,7 +393,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             _amount
         );
 
-        if (_isLiquidable(_supplier, _poolTokenAddress, toWithdraw, 0))
+        if (_isLiquidatable(_supplier, _poolTokenAddress, toWithdraw, 0))
             revert UnauthorisedWithdraw();
 
         _safeWithdrawLogic(_poolTokenAddress, toWithdraw, _supplier, _receiver, _maxGasForMatching);
@@ -438,7 +438,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         _updateP2PIndexes(_poolTokenBorrowedAddress);
         _updateP2PIndexes(_poolTokenCollateralAddress);
 
-        if (!_isLiquidable(_borrower, address(0), 0, 0)) revert UnauthorisedLiquidate();
+        if (!_isLiquidatable(_borrower, address(0), 0, 0)) revert UnauthorisedLiquidate();
 
         LiquidateVars memory vars;
         vars.borrowBalance = _getUserBorrowBalanceInOf(_poolTokenBorrowedAddress, _borrower);
