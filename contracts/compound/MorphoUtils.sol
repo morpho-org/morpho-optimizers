@@ -9,6 +9,8 @@ import "../common/libraries/DelegateCall.sol";
 import "./MorphoStorage.sol";
 
 /// @title MorphoUtils.
+/// @author Morpho Labs.
+/// @custom:contact security@morpho.xyz
 /// @notice Modifiers, getters and other util functions for Morpho.
 abstract contract MorphoUtils is MorphoStorage {
     using DoubleLinkedList for DoubleLinkedList.List;
