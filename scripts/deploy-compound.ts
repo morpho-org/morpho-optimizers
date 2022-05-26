@@ -65,7 +65,7 @@ async function main() {
       config.tokens.cEth.address,
       config.tokens.wEth.address,
     ],
-    { unsafeAllow: ['delegatecall'] }
+    { unsafeAllow: ['delegatecall', 'constructor'] }
   );
   await morpho.deployed();
 
@@ -115,9 +115,9 @@ async function main() {
   /// MARKETS CREATION ///
 
   console.log('\n🦋 Creating markets...');
-  await morpho.connect(deployer).createMarket(config.tokens.cEth.address);
-  await morpho.connect(deployer).createMarket(config.tokens.cDai.address);
-  await morpho.connect(deployer).createMarket(config.tokens.cUsdc.address);
+  await morpho.connect(deployer).createMarket(config.tokens.cEth.address, [0, 6666]);
+  await morpho.connect(deployer).createMarket(config.tokens.cDai.address, [0, 6666]);
+  await morpho.connect(deployer).createMarket(config.tokens.cUsdc.address, [0, 6666]);
   console.log('🎉 Markets created!\n');
 
   /// REWARDS MANAGER DEPLOYMENT ///
