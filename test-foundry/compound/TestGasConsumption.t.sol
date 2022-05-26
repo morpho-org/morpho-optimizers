@@ -4,7 +4,7 @@ pragma solidity 0.8.13;
 import "./setup/TestSetup.sol";
 
 contract TestGasConsumption is TestSetup {
-    // Hyperparameters to get the gas estimate for
+    // Hyper parameters to get the gas estimate for
     uint256 public maxSortedUsers = 50;
     uint256 public numberOfMatches = 25;
 

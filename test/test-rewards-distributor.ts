@@ -22,7 +22,7 @@ describe('RewardsDistributor Contract', () => {
   let proofs: any[];
   let leaves: any[];
   let root: string;
-  let merkletree: MerkleTree;
+  let merkleTree: MerkleTree;
   const amount0 = ethers.utils.parseUnits('1');
   const amount1 = ethers.utils.parseUnits('1');
   const amount2 = ethers.utils.parseUnits('2');
@@ -52,14 +52,14 @@ describe('RewardsDistributor Contract', () => {
     leaves = distribution.map((receiver) =>
       ethers.utils.solidityKeccak256(['address', 'address', 'uint256'], [receiver.account, receiver.token, receiver.claimable])
     );
-    merkletree = new MerkleTree(leaves, ethers.utils.keccak256, { sortPairs: true });
+    merkleTree = new MerkleTree(leaves, ethers.utils.keccak256, { sortPairs: true });
     proofs = distribution.map((receiver) => ({
       address: receiver.account,
-      proof: merkletree.getHexProof(
+      proof: merkleTree.getHexProof(
         ethers.utils.solidityKeccak256(['address', 'address', 'uint256'], [receiver.account, receiver.token, receiver.claimable])
       ),
     }));
-    root = merkletree.getHexRoot();
+    root = merkleTree.getHexRoot();
   };
 
   before(initialize);
@@ -154,16 +154,16 @@ describe('RewardsDistributor Contract', () => {
       const newLeaves = newDistribution.map((receiver) =>
         ethers.utils.solidityKeccak256(['address', 'address', 'uint256'], [receiver.account, receiver.token, receiver.claimable])
       );
-      const newMerkletree = new MerkleTree(newLeaves, ethers.utils.keccak256, { sortPairs: true });
+      const newMerkleTree = new MerkleTree(newLeaves, ethers.utils.keccak256, { sortPairs: true });
       const newProofs = newDistribution.map((receiver) => {
         return {
           address: receiver.account,
-          proof: newMerkletree.getHexProof(
+          proof: newMerkleTree.getHexProof(
             ethers.utils.solidityKeccak256(['address', 'address', 'uint256'], [receiver.account, receiver.token, receiver.claimable])
           ),
         };
       });
-      const newRoot = newMerkletree.getHexRoot();
+      const newRoot = newMerkleTree.getHexRoot();
 
       await rewardsDistributor.connect(governance).updateRoot(newRoot);
 

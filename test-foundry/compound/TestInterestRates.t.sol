@@ -61,9 +61,9 @@ contract TestInterestRates is InterestRatesManager, DSTest {
         );
 
         (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex) = _computeP2PIndexes(params); // prettier-ignore
-        (uint256 expectednewP2PSupplyIndex, uint256 expectednewP2PBorrowIndex) = computeP2PIndexes(params); // prettier-ignore
-        assertApproxEq(newP2PSupplyIndex, expectednewP2PSupplyIndex, 1);
-        assertApproxEq(newP2PBorrowIndex, expectednewP2PBorrowIndex, 1);
+        (uint256 expectedNewP2PSupplyIndex, uint256 expectedNewP2PBorrowIndex) = computeP2PIndexes(params); // prettier-ignore
+        assertApproxEq(newP2PSupplyIndex, expectedNewP2PSupplyIndex, 1);
+        assertApproxEq(newP2PBorrowIndex, expectedNewP2PBorrowIndex, 1);
     }
 
     function testIndexComputationWithReserveFactor() public {
@@ -80,9 +80,9 @@ contract TestInterestRates is InterestRatesManager, DSTest {
         );
 
         (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex) = _computeP2PIndexes(params); // prettier-ignore
-        (uint256 expectednewP2PSupplyIndex, uint256 expectednewP2PBorrowIndex) = computeP2PIndexes(params); // prettier-ignore
-        assertApproxEq(newP2PSupplyIndex, expectednewP2PSupplyIndex, 1);
-        assertApproxEq(newP2PBorrowIndex, expectednewP2PBorrowIndex, 1);
+        (uint256 expectedNewP2PSupplyIndex, uint256 expectedNewP2PBorrowIndex) = computeP2PIndexes(params); // prettier-ignore
+        assertApproxEq(newP2PSupplyIndex, expectedNewP2PSupplyIndex, 1);
+        assertApproxEq(newP2PBorrowIndex, expectedNewP2PBorrowIndex, 1);
     }
 
     function testIndexComputationWithDelta() public {
@@ -99,9 +99,9 @@ contract TestInterestRates is InterestRatesManager, DSTest {
         );
 
         (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex) = _computeP2PIndexes(params); // prettier-ignore
-        (uint256 expectednewP2PSupplyIndex, uint256 expectednewP2PBorrowIndex) = computeP2PIndexes(params); // prettier-ignore
-        assertApproxEq(newP2PSupplyIndex, expectednewP2PSupplyIndex, 1);
-        assertApproxEq(newP2PBorrowIndex, expectednewP2PBorrowIndex, 1);
+        (uint256 expectedNewP2PSupplyIndex, uint256 expectedNewP2PBorrowIndex) = computeP2PIndexes(params); // prettier-ignore
+        assertApproxEq(newP2PSupplyIndex, expectedNewP2PSupplyIndex, 1);
+        assertApproxEq(newP2PBorrowIndex, expectedNewP2PBorrowIndex, 1);
     }
 
     function testIndexComputationWithDeltaAndReserveFactor() public {
@@ -118,9 +118,9 @@ contract TestInterestRates is InterestRatesManager, DSTest {
         );
 
         (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex) = _computeP2PIndexes(params); // prettier-ignore
-        (uint256 expectednewP2PSupplyIndex, uint256 expectednewP2PBorrowIndex) = computeP2PIndexes(params); // prettier-ignore
-        assertApproxEq(newP2PSupplyIndex, expectednewP2PSupplyIndex, 1);
-        assertApproxEq(newP2PBorrowIndex, expectednewP2PBorrowIndex, 1);
+        (uint256 expectedNewP2PSupplyIndex, uint256 expectedNewP2PBorrowIndex) = computeP2PIndexes(params); // prettier-ignore
+        assertApproxEq(newP2PSupplyIndex, expectedNewP2PSupplyIndex, 1);
+        assertApproxEq(newP2PBorrowIndex, expectedNewP2PBorrowIndex, 1);
     }
 
     // prettier-ignore
@@ -160,8 +160,8 @@ contract TestInterestRates is InterestRatesManager, DSTest {
         InterestRatesManager.Params memory params = InterestRatesManager.Params(_p2pSupplyIndex, _p2pBorrowIndex, _poolSupplyIndex, _poolBorrowIndex, _lastPoolSupplyIndex, _lastPoolBorrowIndex, _reserveFactor, _p2pIndexCursor, Types.Delta(_p2pSupplyDelta, _p2pBorrowDelta, _p2pSupplyAmount, _p2pBorrowAmount));
 
         (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex) = _computeP2PIndexes(params);
-        (uint256 expectednewP2PSupplyIndex, uint256 expectednewP2PBorrowIndex) = computeP2PIndexes(params);
-        assertApproxEq(newP2PSupplyIndex, expectednewP2PSupplyIndex, 400);
-        assertApproxEq(newP2PBorrowIndex, expectednewP2PBorrowIndex, 400);
+        (uint256 expectedNewP2PSupplyIndex, uint256 expectedNewP2PBorrowIndex) = computeP2PIndexes(params);
+        assertApproxEq(newP2PSupplyIndex, expectedNewP2PSupplyIndex, 400);
+        assertApproxEq(newP2PBorrowIndex, expectedNewP2PBorrowIndex, 400);
     }
 }
