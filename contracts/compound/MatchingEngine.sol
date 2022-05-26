@@ -6,7 +6,7 @@ import "./MorphoUtils.sol";
 /// @title MatchingEngine.
 /// @notice Smart contract managing the matching engine.
 contract MatchingEngine is MorphoUtils {
-    using BasicHeap for BasicHeap.Heap;
+    using HeapOrdering for HeapOrdering.HeapArray;
     using CompoundMath for uint256;
 
     /// STRUCTS ///

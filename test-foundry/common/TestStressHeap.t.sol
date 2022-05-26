@@ -6,7 +6,7 @@ import "ds-test/test.sol";
 import "@contracts/common/libraries/Heap.sol";
 
 contract HeapStorage {
-    BasicHeap.Heap internal heap;
+    HeapOrdering.HeapArray internal heap;
     uint256 public TESTED_SIZE = 20;
     uint256 public MAX_SORTED_USERS = 10;
     uint256 public INCREMENT_AMOUNT = 5;
@@ -14,7 +14,7 @@ contract HeapStorage {
     function setUp() public {
         for (uint256 i = 0; i < TESTED_SIZE; i++) {
             address id = address(uint160(i + 1));
-            heap.accounts.push(BasicHeap.Account(id, TESTED_SIZE - i));
+            heap.accounts.push(HeapOrdering.Account(id, TESTED_SIZE - i));
             heap.indexes[id] = heap.accounts.length;
             heap.size = MAX_SORTED_USERS;
         }
@@ -25,7 +25,7 @@ contract HeapStorage {
         uint256 _formerValue,
         uint256 _newValue
     ) public {
-        BasicHeap.update(heap, _id, _formerValue, _newValue, MAX_SORTED_USERS);
+        HeapOrdering.update(heap, _id, _formerValue, _newValue, MAX_SORTED_USERS);
     }
 }
 

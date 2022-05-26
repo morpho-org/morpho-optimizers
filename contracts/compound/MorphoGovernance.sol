@@ -6,7 +6,7 @@ import "./MorphoUtils.sol";
 /// @title MorphoGovernance.
 /// @notice Governance functions for Morpho.
 abstract contract MorphoGovernance is MorphoUtils {
-    using BasicHeap for BasicHeap.Heap;
+    using HeapOrdering for HeapOrdering.HeapArray;
     using SafeTransferLib for ERC20;
     using CompoundMath for uint256;
     using DelegateCall for address;

@@ -8,7 +8,7 @@ import "forge-std/console.sol";
 import "@contracts/common/libraries/Heap.sol";
 
 contract TestHeap is DSTest {
-    using BasicHeap for BasicHeap.Heap;
+    using HeapOrdering for HeapOrdering.HeapArray;
 
     Vm public hevm = Vm(HEVM_ADDRESS);
 
@@ -17,7 +17,7 @@ contract TestHeap is DSTest {
     uint256 public MAX_SORTED_USERS = 50;
     address public ADDR_ZERO = address(0);
 
-    BasicHeap.Heap internal heap;
+    HeapOrdering.HeapArray internal heap;
 
     function update(
         address _id,
@@ -38,6 +38,7 @@ contract TestHeap is DSTest {
     function testInsertOneSingleAccount() public {
         update(accounts[0], 0, 1);
 
+        assertEq(heap.size, 1);
         assertEq(heap.length(), 1);
         assertEq(heap.getValueOf(accounts[0]), 1);
         assertEq(heap.getHead(), accounts[0]);
@@ -48,6 +49,7 @@ contract TestHeap is DSTest {
 
     function testShouldNotInsertAccountWithZeroValue() public {
         update(accounts[0], 0, 0);
+        assertEq(heap.size, 0);
         assertEq(heap.length(), 0);
     }
 
@@ -59,20 +61,32 @@ contract TestHeap is DSTest {
     function testShouldInsertSeveralTimesTheSameAccount() public {
         update(accounts[0], 0, 1);
         update(accounts[0], 1, 2);
+        assertEq(heap.size, 1);
+        assertEq(heap.length(), 1);
         assertEq(heap.getValueOf(accounts[0]), 2);
+        assertEq(heap.getHead(), accounts[0]);
+        assertEq(heap.getTail(), accounts[0]);
+        assertEq(heap.getPrev(accounts[0]), ADDR_ZERO);
+        assertEq(heap.getNext(accounts[0]), ADDR_ZERO);
     }
 
     function testShouldHaveTheRightOrder() public {
         update(accounts[0], 0, 20);
         update(accounts[1], 0, 40);
+        assertEq(heap.size, 2);
+        assertEq(heap.length(), 2);
         assertEq(heap.getHead(), accounts[1]);
         assertEq(heap.getTail(), accounts[0]);
+        assertEq(heap.getPrev(accounts[0]), accounts[1]);
+        assertEq(heap.getNext(accounts[1]), accounts[0]);
     }
 
     function testShouldRemoveOneSingleAccount() public {
         update(accounts[0], 0, 1);
         update(accounts[0], 1, 0);
 
+        assertEq(heap.size, 0);
+        assertEq(heap.length(), 0);
         assertEq(heap.getHead(), ADDR_ZERO);
         assertEq(heap.getTail(), ADDR_ZERO);
         assertEq(heap.getValueOf(accounts[0]), 0);
@@ -84,6 +98,8 @@ contract TestHeap is DSTest {
         update(accounts[0], 0, 2);
         update(accounts[1], 0, 1);
 
+        assertEq(heap.size, 2);
+        assertEq(heap.length(), 2);
         assertEq(heap.getHead(), accounts[0]);
         assertEq(heap.getTail(), accounts[1]);
         assertEq(heap.getValueOf(accounts[0]), 2);
@@ -117,6 +133,8 @@ contract TestHeap is DSTest {
         update(accounts[1], 0, 1);
         update(accounts[0], 2, 0);
 
+        assertEq(heap.size, 1);
+        assertEq(heap.length(), 1);
         assertEq(heap.getHead(), accounts[1]);
         assertEq(heap.getTail(), accounts[1]);
         assertEq(heap.getValueOf(accounts[0]), 0);
@@ -131,6 +149,8 @@ contract TestHeap is DSTest {
         update(accounts[0], 2, 0);
         update(accounts[1], 1, 0);
 
+        assertEq(heap.size, 0);
+        assertEq(heap.length(), 0);
         assertEq(heap.getHead(), ADDR_ZERO);
         assertEq(heap.getTail(), ADDR_ZERO);
     }
@@ -171,6 +191,8 @@ contract TestHeap is DSTest {
             update(accounts[i], 0, NB_ACCOUNTS - i);
         }
 
+        assertEq(heap.size, NB_ACCOUNTS / 2);
+        assertEq(heap.length(), NB_ACCOUNTS);
         assertEq(heap.getHead(), accounts[0]);
         assertEq(heap.getTail(), accounts[accounts.length - 1]);
 

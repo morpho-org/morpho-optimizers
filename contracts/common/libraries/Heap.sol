@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-library BasicHeap {
+library HeapOrdering {
     struct Account {
         address id; // The address of the account.
         uint256 value; // The value of the account.
     }
 
-    struct Heap {
+    struct HeapArray {
         Account[] accounts; // All the accounts.
-        uint256 size; // The size of the heap portion of the structure, should be less than accounts length.
+        uint256 size; // The size of the heap portion of the structure, should be less than accounts length, the rest is an unordered array.
         mapping(address => uint256) indexes; // A mapping from an address to an index in accounts.
     }
 
@@ -23,7 +23,7 @@ library BasicHeap {
     /// @notice Returns the number of users in the `_heap`.
     /// @param _heap The heap parameter.
     /// @return The length of the heap.
-    function length(Heap storage _heap) internal view returns (uint256) {
+    function length(HeapArray storage _heap) internal view returns (uint256) {
         return _heap.accounts.length;
     }
 
@@ -31,7 +31,7 @@ library BasicHeap {
     /// @param _heap The heap to search in.
     /// @param _id The address of the account.
     /// @return The value of the account.
-    function getValueOf(Heap storage _heap, address _id) internal view returns (uint256) {
+    function getValueOf(HeapArray storage _heap, address _id) internal view returns (uint256) {
         uint256 index = _heap.indexes[_id];
         if (index == 0) return 0;
         else return _heap.accounts[index - 1].value;
@@ -40,7 +40,7 @@ library BasicHeap {
     /// @notice Returns the address at the head of the `_heap`.
     /// @param _heap The heap to get the head.
     /// @return The address of the head.
-    function getHead(Heap storage _heap) internal view returns (address) {
+    function getHead(HeapArray storage _heap) internal view returns (address) {
         if (_heap.accounts.length > 0) return _heap.accounts[0].id;
         else return address(0);
     }
@@ -48,7 +48,7 @@ library BasicHeap {
     /// @notice Returns the address at the tail of the `_heap`.
     /// @param _heap The heap to get the tail.
     /// @return The address of the tail.
-    function getTail(Heap storage _heap) internal view returns (address) {
+    function getTail(HeapArray storage _heap) internal view returns (address) {
         if (_heap.accounts.length > 0) return _heap.accounts[_heap.accounts.length - 1].id;
         else return address(0);
     }
@@ -58,7 +58,7 @@ library BasicHeap {
     /// @param _heap The heap to search in.
     /// @param _id The address of the account.
     /// @return The address of the previous account.
-    function getPrev(Heap storage _heap, address _id) internal view returns (address) {
+    function getPrev(HeapArray storage _heap, address _id) internal view returns (address) {
         uint256 index = _heap.indexes[_id];
         if (index > 1) return _heap.accounts[index - 2].id;
         else return address(0);
@@ -69,7 +69,7 @@ library BasicHeap {
     /// @param _heap The heap to search in.
     /// @param _id The address of the account.
     /// @return The address of the next account.
-    function getNext(Heap storage _heap, address _id) internal view returns (address) {
+    function getNext(HeapArray storage _heap, address _id) internal view returns (address) {
         uint256 index = _heap.indexes[_id];
         if (index < _heap.accounts.length) return _heap.accounts[index].id;
         else return address(0);
@@ -85,7 +85,7 @@ library BasicHeap {
     /// @param _newValue The new value to use to update the account.
     /// @param _maxSortedUsers The maximum size of the heap.
     function update(
-        Heap storage _heap,
+        HeapArray storage _heap,
         address _id,
         uint256 _formerValue,
         uint256 _newValue,
@@ -122,7 +122,7 @@ library BasicHeap {
     /// @param _index The index of the account in the heap to be set.
     /// @param _account The account to set the `_index` to.
     function set(
-        Heap storage _heap,
+        HeapArray storage _heap,
         uint256 _index,
         Account memory _account
     ) private {
@@ -137,7 +137,7 @@ library BasicHeap {
     /// @param _index1 The index of the first account in the heap.
     /// @param _index2 The index of the second account in the heap.
     function swap(
-        Heap storage _heap,
+        HeapArray storage _heap,
         uint256 _index1,
         uint256 _index2
     ) private {
@@ -151,7 +151,7 @@ library BasicHeap {
     /// @dev This functions restores the invariant about the order of the values stored when the account at `_index` is the only one with value greater than what it should be.
     /// @param _heap The heap to modify.
     /// @param _index The index of the account to move.
-    function shiftUp(Heap storage _heap, uint256 _index) private {
+    function shiftUp(HeapArray storage _heap, uint256 _index) private {
         Account memory initAccount = _heap.accounts[_index - 1];
         uint256 initValue = initAccount.value;
         while (_index > 1 && initValue > _heap.accounts[_index / 2 - 1].value) {
@@ -165,7 +165,7 @@ library BasicHeap {
     /// @dev This functions restores the invariant about the order of the values stored when the account at `_index` is the only one with value smaller than what it should be.
     /// @param _heap The heap to modify.
     /// @param _index The index of the account to move.
-    function shiftDown(Heap storage _heap, uint256 _index) private {
+    function shiftDown(HeapArray storage _heap, uint256 _index) private {
         uint256 size = _heap.size;
         Account memory initAccount = _heap.accounts[_index - 1];
         uint256 childIndex = _index * 2;
@@ -197,7 +197,7 @@ library BasicHeap {
     /// @param _value The value of the account to insert.
     /// @param _maxSortedUsers The maximum size of the heap.
     function insert(
-        Heap storage _heap,
+        HeapArray storage _heap,
         address _id,
         uint256 _value,
         uint256 _maxSortedUsers
@@ -223,7 +223,7 @@ library BasicHeap {
     /// @param _id The address of the account to decrease the amount.
     /// @param _newValue The new value of the account.
     function decrease(
-        Heap storage _heap,
+        HeapArray storage _heap,
         address _id,
         uint256 _newValue
     ) private {
@@ -240,7 +240,7 @@ library BasicHeap {
     /// @param _newValue The new value of the account.
     /// @param _maxSortedUsers The maximum size of the heap.
     function increase(
-        Heap storage _heap,
+        HeapArray storage _heap,
         address _id,
         uint256 _newValue,
         uint256 _maxSortedUsers
@@ -263,7 +263,7 @@ library BasicHeap {
     /// @param _id The address of the account to remove.
     /// @param _removedValue The value of the account to remove.
     function remove(
-        Heap storage _heap,
+        HeapArray storage _heap,
         address _id,
         uint256 _removedValue
     ) private {

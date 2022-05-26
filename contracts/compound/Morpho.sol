@@ -8,7 +8,7 @@ import "./MorphoGovernance.sol";
 /// @title Morpho.
 /// @notice Main Morpho contract handling user interactions and pool interactions.
 contract Morpho is MorphoGovernance {
-    using BasicHeap for BasicHeap.Heap;
+    using HeapOrdering for HeapOrdering.HeapArray;
     using SafeTransferLib for ERC20;
     using CompoundMath for uint256;
     using DelegateCall for address;

@@ -11,7 +11,7 @@ import "./MorphoStorage.sol";
 /// @title MorphoUtils.
 /// @notice Modifiers, getters and other util functions for Morpho.
 abstract contract MorphoUtils is MorphoStorage {
-    using BasicHeap for BasicHeap.Heap;
+    using HeapOrdering for HeapOrdering.HeapArray;
     using CompoundMath for uint256;
     using DelegateCall for address;
 
