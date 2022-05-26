@@ -191,9 +191,6 @@ async function main() {
 
   await morpho.setIncentivesVault(incentivesVault.address);
   console.log('🎉 IncentivesVault set on Morpho!');
-
-  await morpho.toggleCompRewardsActivation();
-  console.log('🎉 COMP rewards activated on Morpho!');
 }
 
 main()
