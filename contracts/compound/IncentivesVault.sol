@@ -52,7 +52,7 @@ contract IncentivesVault is IIncentivesVault, Ownable {
     /// @param _morphoAmount The amount of MORPHO sent.
     event CompTokensTraded(address indexed _receiver, uint256 _compAmount, uint256 _morphoAmount);
 
-    /// ERRROS ///
+    /// ERRORS ///
 
     /// @notice Thrown when an other address than Morpho triggers the function.
     error OnlyMorpho();
@@ -91,7 +91,7 @@ contract IncentivesVault is IIncentivesVault, Ownable {
         emit OracleSet(address(_newOracle));
     }
 
-    /// @notice Sets the morho DAO.
+    /// @notice Sets the morpho DAO.
     /// @param _newMorphoDao The address of the Morpho DAO.
     function setMorphoDao(address _newMorphoDao) external onlyOwner {
         morphoDao = _newMorphoDao;

@@ -22,11 +22,11 @@ abstract contract MorphoStorage is OwnableUpgradeable, ReentrancyGuardUpgradeabl
 
     uint8 public constant CTOKEN_DECIMALS = 8; // The number of decimals for cToken.
     uint16 public constant MAX_BASIS_POINTS = 10_000; // 100% in basis points.
-    uint16 public constant MAX_CLAIMABLE_RESERVE = 9_000; // The max propotion of reserve fee claimable by the DAO at once (90% in basis points).
+    uint16 public constant MAX_CLAIMABLE_RESERVE = 9_000; // The max proportion of reserve fee claimable by the DAO at once (90% in basis points).
     uint256 public constant WAD = 1e18;
 
     uint256 public maxSortedUsers; // The max number of users to sort in the data structure.
-    uint256 public dustThreshold; // The minimum amount to keep in the data stucture.
+    uint256 public dustThreshold; // The minimum amount to keep in the data structure.
     Types.MaxGasForMatching public defaultMaxGasForMatching; // The default max gas to consume within loops in matching engine functions.
 
     /// POSITIONS STORAGE ///
