@@ -184,7 +184,7 @@ contract TestEth is TestSetup {
     function testShouldLiquidateUserWithEthBorrowed() public {
         uint256 collateral = to6Decimals(100_000 ether);
 
-        // supplier1 supplies excedent of USDC to put Morpho clearly above water.
+        // supplier1 supplies surplus of USDC to put Morpho clearly above water.
         supplier1.approve(usdc, address(morpho), collateral);
         supplier1.supply(cUsdc, collateral);
 
@@ -241,7 +241,7 @@ contract TestEth is TestSetup {
         uint256 collateral = 1 ether;
         uint256 toSupplyMore = to6Decimals(100_000 ether);
 
-        // supplier1 supplies excedent of USDC to put Morpho clearly above water.
+        // supplier1 supplies surplus of USDC to put Morpho clearly above water.
         supplier1.approve(usdc, address(morpho), toSupplyMore);
         supplier1.supply(cUsdc, toSupplyMore);
 

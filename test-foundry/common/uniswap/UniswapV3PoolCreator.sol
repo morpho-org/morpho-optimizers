@@ -27,7 +27,7 @@ contract UniswapV3PoolCreator is IERC721Receiver {
 
     IUniswapV3Factory public uniswapFactory =
         IUniswapV3Factory(0x1F98431c8aD98523631AE4a59f267346ea31F984);
-    INonfungiblePositionManager public nonfungiblePositionManager =
+    INonfungiblePositionManager public nonFungiblePositionManager =
         INonfungiblePositionManager(0xC36442b4a4522E871399CD717aBDD847Ab11FE88);
     address public WETH9; // Intermediate token address.
     uint24 public constant POOL_FEE = 3000;
@@ -37,7 +37,7 @@ contract UniswapV3PoolCreator is IERC721Receiver {
     uint256 public amountToMint = 1000e18;
 
     constructor() {
-        WETH9 = nonfungiblePositionManager.WETH9();
+        WETH9 = nonFungiblePositionManager.WETH9();
     }
 
     function createPoolAndMintPosition(address _token0) external {
@@ -49,7 +49,7 @@ contract UniswapV3PoolCreator is IERC721Receiver {
             // createAndInitializePoolIfNecessary requires that token 0 address < token 1 address
             (token0, token1) = (token1, token0);
         }
-        nonfungiblePositionManager.createAndInitializePoolIfNecessary(
+        nonFungiblePositionManager.createAndInitializePoolIfNecessary(
             token0,
             token1,
             POOL_FEE,
@@ -74,8 +74,8 @@ contract UniswapV3PoolCreator is IERC721Receiver {
         )
     {
         // Approve the position manager
-        TransferHelper.safeApprove(_token0, address(nonfungiblePositionManager), amountToMint);
-        TransferHelper.safeApprove(WETH9, address(nonfungiblePositionManager), amountToMint);
+        TransferHelper.safeApprove(_token0, address(nonFungiblePositionManager), amountToMint);
+        TransferHelper.safeApprove(WETH9, address(nonFungiblePositionManager), amountToMint);
 
         INonfungiblePositionManager.MintParams memory params = INonfungiblePositionManager
         .MintParams({
@@ -93,20 +93,20 @@ contract UniswapV3PoolCreator is IERC721Receiver {
         });
 
         // Note that the pool defined and fee tier 0.3% must already be created and initialized in order to mint
-        (tokenId, liquidity, amount0, amount1) = nonfungiblePositionManager.mint(params);
+        (tokenId, liquidity, amount0, amount1) = nonFungiblePositionManager.mint(params);
 
         // Create a deposit
         _createDeposit(msg.sender, tokenId);
 
         // Remove allowance and refund in both assets.
         if (amount0 < amountToMint) {
-            TransferHelper.safeApprove(_token0, address(nonfungiblePositionManager), 0);
+            TransferHelper.safeApprove(_token0, address(nonFungiblePositionManager), 0);
             uint256 refund0 = amountToMint - amount0;
             TransferHelper.safeTransfer(_token0, msg.sender, refund0);
         }
 
         if (amount1 < amountToMint) {
-            TransferHelper.safeApprove(WETH9, address(nonfungiblePositionManager), 0);
+            TransferHelper.safeApprove(WETH9, address(nonFungiblePositionManager), 0);
             uint256 refund1 = amountToMint - amount1;
             TransferHelper.safeTransfer(WETH9, msg.sender, refund1);
         }
@@ -137,7 +137,7 @@ contract UniswapV3PoolCreator is IERC721Receiver {
             ,
             ,
 
-        ) = nonfungiblePositionManager.positions(tokenId);
+        ) = nonFungiblePositionManager.positions(tokenId);
 
         // set the owner and data for position
         // operator is msg.sender

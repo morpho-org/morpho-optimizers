@@ -103,7 +103,7 @@ contract TestLens is TestSetup {
 
         uint256 collateralValue = total.mul(underlyingPrice);
         uint256 maxDebtValue = collateralValue.mul(collateralFactor);
-        // Divide and multiply to take into account rouding errors.
+        // Divide and multiply to take into account rounding errors.
         uint256 debtValue = toBorrow.div(p2pBorrowIndex).mul(p2pBorrowIndex).mul(underlyingPrice);
 
         assertEq(assetData.underlyingPrice, underlyingPrice, "underlyingPrice");
@@ -120,63 +120,63 @@ contract TestLens is TestSetup {
         borrower1.supply(cDai, amount);
         borrower1.borrow(cUsdc, toBorrow);
 
-        Types.AssetLiquidityData memory assetDatacDai = lens.getUserLiquidityDataForAsset(
+        Types.AssetLiquidityData memory assetDataCDai = lens.getUserLiquidityDataForAsset(
             address(borrower1),
             cDai,
             oracle
         );
 
-        Types.AssetLiquidityData memory assetDatacUsdc = lens.getUserLiquidityDataForAsset(
+        Types.AssetLiquidityData memory assetDataCUsdc = lens.getUserLiquidityDataForAsset(
             address(borrower1),
             cUsdc,
             oracle
         );
 
         // Avoid stack too deep error.
-        Types.AssetLiquidityData memory expectedDatcUsdc;
+        Types.AssetLiquidityData memory expectedDataCUsdc;
         (, uint256 collateralFactor, ) = comptroller.markets(cUsdc);
-        expectedDatcUsdc.underlyingPrice = oracle.getUnderlyingPrice(cUsdc);
+        expectedDataCUsdc.underlyingPrice = oracle.getUnderlyingPrice(cUsdc);
 
-        expectedDatcUsdc.debtValue = getBalanceOnCompound(toBorrow, ICToken(cUsdc).borrowIndex())
-        .mul(expectedDatcUsdc.underlyingPrice);
+        expectedDataCUsdc.debtValue = getBalanceOnCompound(toBorrow, ICToken(cUsdc).borrowIndex())
+        .mul(expectedDataCUsdc.underlyingPrice);
 
         assertEq(
-            assetDatacUsdc.underlyingPrice,
-            expectedDatcUsdc.underlyingPrice,
+            assetDataCUsdc.underlyingPrice,
+            expectedDataCUsdc.underlyingPrice,
             "underlyingPriceUsdc"
         );
-        assertEq(assetDatacUsdc.collateralValue, 0, "collateralValue");
-        assertEq(assetDatacUsdc.maxDebtValue, 0, "maxDebtValue");
-        assertEq(assetDatacUsdc.debtValue, expectedDatcUsdc.debtValue, "debtValueUsdc");
+        assertEq(assetDataCUsdc.collateralValue, 0, "collateralValue");
+        assertEq(assetDataCUsdc.maxDebtValue, 0, "maxDebtValue");
+        assertEq(assetDataCUsdc.debtValue, expectedDataCUsdc.debtValue, "debtValueUsdc");
 
         // Avoid stack too deep error.
-        Types.AssetLiquidityData memory expectedDatacDai;
+        Types.AssetLiquidityData memory expectedDataCDai;
 
-        (, expectedDatacDai.collateralFactor, ) = comptroller.markets(cDai);
+        (, expectedDataCDai.collateralFactor, ) = comptroller.markets(cDai);
 
-        expectedDatacDai.underlyingPrice = oracle.getUnderlyingPrice(cDai);
-        expectedDatacDai.collateralValue = getBalanceOnCompound(
+        expectedDataCDai.underlyingPrice = oracle.getUnderlyingPrice(cDai);
+        expectedDataCDai.collateralValue = getBalanceOnCompound(
             amount,
             ICToken(cDai).exchangeRateStored()
-        ).mul(expectedDatacDai.underlyingPrice);
-        expectedDatacDai.maxDebtValue = expectedDatacDai.collateralValue.mul(
-            expectedDatacDai.collateralFactor
+        ).mul(expectedDataCDai.underlyingPrice);
+        expectedDataCDai.maxDebtValue = expectedDataCDai.collateralValue.mul(
+            expectedDataCDai.collateralFactor
         );
 
-        assertEq(assetDatacDai.collateralFactor, collateralFactor, "collateralFactor");
+        assertEq(assetDataCDai.collateralFactor, collateralFactor, "collateralFactor");
         assertEq(
-            assetDatacDai.underlyingPrice,
-            expectedDatacDai.underlyingPrice,
+            assetDataCDai.underlyingPrice,
+            expectedDataCDai.underlyingPrice,
             "underlyingPriceDai"
         );
 
         assertEq(
-            assetDatacDai.collateralValue,
-            expectedDatacDai.collateralValue,
+            assetDataCDai.collateralValue,
+            expectedDataCDai.collateralValue,
             "collateralValueDai"
         );
-        assertEq(assetDatacDai.maxDebtValue, expectedDatacDai.maxDebtValue, "maxDebtValueDai");
-        assertEq(assetDatacDai.debtValue, 0, "debtValueDai");
+        assertEq(assetDataCDai.maxDebtValue, expectedDataCDai.maxDebtValue, "maxDebtValueDai");
+        assertEq(assetDataCDai.debtValue, 0, "debtValueDai");
     }
 
     function testGetterUserWithNothing() public {
@@ -195,23 +195,23 @@ contract TestLens is TestSetup {
         borrower1.approve(usdc, amount);
         borrower1.supply(cUsdc, amount);
 
-        Types.AssetLiquidityData memory assetDatacUsdc = lens.getUserLiquidityDataForAsset(
+        Types.AssetLiquidityData memory assetDataCUsdc = lens.getUserLiquidityDataForAsset(
             address(borrower1),
             cUsdc,
             oracle
         );
 
-        Types.AssetLiquidityData memory assetDatacDai = lens.getUserLiquidityDataForAsset(
+        Types.AssetLiquidityData memory assetDataCDai = lens.getUserLiquidityDataForAsset(
             address(borrower1),
             cDai,
             oracle
         );
 
-        uint256 expectedBorrowableUsdc = assetDatacUsdc.maxDebtValue.div(
-            assetDatacUsdc.underlyingPrice
+        uint256 expectedBorrowableUsdc = assetDataCUsdc.maxDebtValue.div(
+            assetDataCUsdc.underlyingPrice
         );
-        uint256 expectedBorrowableDai = assetDatacUsdc.maxDebtValue.div(
-            assetDatacDai.underlyingPrice
+        uint256 expectedBorrowableDai = assetDataCUsdc.maxDebtValue.div(
+            assetDataCDai.underlyingPrice
         );
 
         (uint256 withdrawable, uint256 borrowable) = lens.getUserMaxCapacitiesForAsset(
@@ -390,19 +390,19 @@ contract TestLens is TestSetup {
         borrower1.approve(dai, amount);
         borrower1.supply(cDai, amount);
 
-        Types.AssetLiquidityData memory assetDatacUsdc = lens.getUserLiquidityDataForAsset(
+        Types.AssetLiquidityData memory assetDataCUsdc = lens.getUserLiquidityDataForAsset(
             address(borrower1),
             cUsdc,
             oracle
         );
 
-        Types.AssetLiquidityData memory assetDatacDai = lens.getUserLiquidityDataForAsset(
+        Types.AssetLiquidityData memory assetDataCDai = lens.getUserLiquidityDataForAsset(
             address(borrower1),
             cDai,
             oracle
         );
 
-        Types.AssetLiquidityData memory assetDatacUsdt = lens.getUserLiquidityDataForAsset(
+        Types.AssetLiquidityData memory assetDataCUsdt = lens.getUserLiquidityDataForAsset(
             address(borrower1),
             cUsdt,
             oracle
@@ -412,8 +412,8 @@ contract TestLens is TestSetup {
         (uint256 withdrawableUsdc, ) = lens.getUserMaxCapacitiesForAsset(address(borrower1), cUsdc);
         (, uint256 borrowableUsdt) = lens.getUserMaxCapacitiesForAsset(address(borrower1), cUsdt);
 
-        uint256 expectedBorrowableUsdt = (assetDatacDai.maxDebtValue + assetDatacUsdc.maxDebtValue)
-        .div(assetDatacUsdt.underlyingPrice);
+        uint256 expectedBorrowableUsdt = (assetDataCDai.maxDebtValue + assetDataCUsdc.maxDebtValue)
+        .div(assetDataCUsdt.underlyingPrice);
 
         assertEq(
             withdrawableUsdc,
@@ -728,7 +728,7 @@ contract TestLens is TestSetup {
         }
     }
 
-    function testGetEnteretMarkets() public {
+    function testGetEnteredMarkets() public {
         uint256 amount = 1e12;
         supplier1.approve(dai, amount);
         supplier1.approve(usdc, amount);
@@ -754,12 +754,12 @@ contract TestLens is TestSetup {
             uint256 poolBorrowRate
         ) = lens.getRates(cDai);
 
-        (uint256 expectedP2PSupplyRate, uint256 excpectedP2PBorrowRate) = getApproxP2PRates(cDai);
+        (uint256 expectedP2PSupplyRate, uint256 expectedP2PBorrowRate) = getApproxP2PRates(cDai);
         uint256 expectedPoolSupplyRate = ICToken(cDai).supplyRatePerBlock();
         uint256 expectedPoolBorrowRate = ICToken(cDai).borrowRatePerBlock();
 
         assertEq(p2pSupplyRate, expectedP2PSupplyRate);
-        assertEq(p2pBorrowRate, excpectedP2PBorrowRate);
+        assertEq(p2pBorrowRate, expectedP2PBorrowRate);
         assertEq(poolSupplyRate, expectedPoolSupplyRate);
         assertEq(poolBorrowRate, expectedPoolBorrowRate);
     }

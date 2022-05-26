@@ -106,7 +106,7 @@ contract TestIncentivesVault is Config, DSTest, stdCheats {
         incentivesVault.tradeCompForMorphoTokens(address(1), 0);
     }
 
-    function testOnlymorphoShouldTriggerCompConvertFunction() public {
+    function testOnlyMorphoShouldTriggerCompConvertFunction() public {
         incentivesVault.setMorphoDao(address(1));
         uint256 amount = 100;
         tip(COMP, address(morpho), amount);

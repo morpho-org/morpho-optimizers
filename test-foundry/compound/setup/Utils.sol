@@ -39,10 +39,10 @@ contract Utils is DSTest {
         assertApproxEq(_firstValue, _secondValue, 20, err);
     }
 
-    /// @dev compounds track balances deposited by divising the amount by a rate to obtain cToken Units.
+    /// @dev compounds track balances deposited by dividing the amount by a rate to obtain cToken Units.
     ///      When needed, it goes back to underlying by multiplying by the said rate.
-    ///      However, for the same rate, the following computation will slighty under estimate the amount
-    ///      deposited. This function is usefull to determine compound's users balances.
+    ///      However, for the same rate, the following computation will slightly under estimate the amount
+    ///      deposited. This function is useful to determine compound's users balances.
     function getBalanceOnCompound(uint256 _amountInUnderlying, uint256 _rate)
         internal
         pure
