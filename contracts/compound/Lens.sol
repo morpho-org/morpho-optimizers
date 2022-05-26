@@ -112,7 +112,9 @@ contract Lens {
             collateralValue += assetData.collateralValue;
             maxDebtValue += assetData.maxDebtValue;
             debtValue += assetData.debtValue;
-            ++i;
+            unchecked {
+                ++i;
+            }
         }
     }
 
@@ -143,7 +145,9 @@ contract Lens {
                 data.debtValue += assetData.debtValue;
             }
 
-            ++i;
+            unchecked {
+                ++i;
+            }
         }
 
         assetData = getUserLiquidityDataForAsset(_user, _poolTokenAddress, oracle);
@@ -223,7 +227,9 @@ contract Lens {
 
             maxDebtValue += assetData.maxDebtValue;
             debtValue += assetData.debtValue;
-            ++i;
+            unchecked {
+                ++i;
+            }
 
             if (_poolTokenAddress == poolTokenEntered) {
                 if (_borrowedAmount > 0)
