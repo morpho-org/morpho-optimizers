@@ -17,7 +17,7 @@ library PoolAddress {
     /// @param tokenA The first token of a pool, unsorted
     /// @param tokenB The second token of a pool, unsorted
     /// @param fee The fee level of the pool
-    /// @return Poolkey The pool details with ordered token0 and token1 assignments
+    /// @return PoolKey The pool details with ordered token0 and token1 assignments
     function getPoolKey(
         address tokenA,
         address tokenB,
