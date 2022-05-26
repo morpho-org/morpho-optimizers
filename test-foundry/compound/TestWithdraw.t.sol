@@ -386,7 +386,7 @@ contract TestWithdraw is TestSetup {
     }
 
     function testDeltaWithdraw() public {
-        // 2e6 allows only 10 unmatch borrowers.
+        // Allows only 10 unmatch borrowers.
         setDefaultMaxGasForMatchingHelper(3e6, 3e6, 0.9e6, 3e6);
 
         uint256 borrowedAmount = 1 ether;
@@ -547,12 +547,12 @@ contract TestWithdraw is TestSetup {
     }
 
     function testDeltaWithdrawAll() public {
-        // 1.3e6 allows only 10 unmatch borrowers.
-        setDefaultMaxGasForMatchingHelper(3e6, 3e6, 3.2e6, 3e6);
+        // Allows only 10 unmatch borrowers.
+        setDefaultMaxGasForMatchingHelper(3e6, 3e6, 0.9e6, 3e6);
 
         uint256 borrowedAmount = 1 ether;
         uint256 collateral = 2 * borrowedAmount;
-        uint256 suppliedAmount = 20 * borrowedAmount + 7;
+        uint256 suppliedAmount = 20 * borrowedAmount;
 
         // supplier1 and 20 borrowers are matched for suppliedAmount.
         supplier1.approve(dai, suppliedAmount);
@@ -567,16 +567,99 @@ contract TestWithdraw is TestSetup {
             borrowers[i].borrow(cDai, borrowedAmount, type(uint64).max);
         }
 
+        for (uint256 i = 0; i < 20; i++) {
+            (uint256 inP2P, uint256 onPool) = morpho.borrowBalanceInOf(cDai, address(borrowers[i]));
+            assertEq(inP2P, borrowedAmount.div(morpho.p2pBorrowIndex(cDai)), "inP2P");
+            assertEq(onPool, 0, "onPool");
+        }
+
         // Supplier withdraws max.
         // Should create a delta on borrowers side.
         supplier1.withdraw(cDai, type(uint256).max);
 
+        for (uint256 i = 0; i < 10; i++) {
+            (uint256 inP2P, uint256 onPool) = morpho.borrowBalanceInOf(cDai, address(borrowers[i]));
+            assertEq(inP2P, 0, "inP2P");
+            assertApproxEq(
+                onPool,
+                borrowedAmount.div(ICToken(cDai).borrowIndex()),
+                10000000000,
+                "onPool"
+            );
+        }
+        for (uint256 i = 10; i < 20; i++) {
+            (uint256 inP2P, uint256 onPool) = morpho.borrowBalanceInOf(cDai, address(borrowers[i]));
+            assertEq(inP2P, borrowedAmount.div(morpho.p2pBorrowIndex(cDai)), "inP2P");
+            assertEq(onPool, 0, "onPool");
+        }
+
+        uint256 p2pSupplyDelta;
+        uint256 p2pBorrowDelta;
+        uint256 p2pSupplyAmount;
+        uint256 p2pBorrowAmount;
+
+        (p2pSupplyDelta, p2pBorrowDelta, p2pSupplyAmount, p2pBorrowAmount) = morpho.deltas(cDai);
+
+        assertEq(p2pSupplyDelta, 0, "p2pSupplyDelta");
+        assertApproxEq(
+            p2pBorrowDelta,
+            (10 * borrowedAmount).div(ICToken(cDai).borrowIndex()),
+            10000000000,
+            "p2pBorrowDelta"
+        );
+        assertApproxEq(p2pSupplyAmount, 0, 1, "p2pSupplyAmount");
+        assertApproxEq(
+            p2pBorrowAmount,
+            (10 * borrowedAmount).div(morpho.p2pBorrowIndex(cDai)),
+            10,
+            "p2pBorrowAmount"
+        );
+
         move1000BlocksForward(cDai);
+
+        for (uint256 i = 0; i < 10; i++) {
+            (uint256 inP2P, uint256 onPool) = morpho.borrowBalanceInOf(cDai, address(borrowers[i]));
+            assertEq(inP2P, 0, "inP2P");
+            assertApproxEq(
+                onPool,
+                borrowedAmount.div(ICToken(cDai).borrowIndex()),
+                100000000000000,
+                "onPool"
+            );
+        }
+        for (uint256 i = 10; i < 20; i++) {
+            (uint256 inP2P, uint256 onPool) = morpho.borrowBalanceInOf(cDai, address(borrowers[i]));
+            assertApproxEq(inP2P, borrowedAmount.div(morpho.p2pBorrowIndex(cDai)), 100000, "inP2P");
+            assertEq(onPool, 0, "onPool");
+        }
+
+        (p2pSupplyDelta, p2pBorrowDelta, p2pSupplyAmount, p2pBorrowAmount) = morpho.deltas(cDai);
+
+        assertEq(p2pSupplyDelta, 0, "p2pSupplyDelta");
+        assertApproxEq(
+            p2pBorrowDelta,
+            (10 * borrowedAmount).div(ICToken(cDai).borrowIndex()),
+            1000000000000000,
+            "p2pBorrowDelta"
+        );
+        assertApproxEq(p2pSupplyAmount, 0, 1, "p2pSupplyAmount");
+        assertApproxEq(
+            p2pBorrowAmount,
+            (10 * borrowedAmount).div(morpho.p2pBorrowIndex(cDai)),
+            1000000,
+            "p2pBorrowAmount"
+        );
 
         for (uint256 i = 0; i < 20; i++) {
             borrowers[i].approve(dai, type(uint256).max);
             borrowers[i].repay(cDai, type(uint256).max);
             borrowers[i].withdraw(cUsdc, type(uint256).max);
+        }
+
+        for (uint256 i = 0; i < 20; i++) {
+            (uint256 inP2P, uint256 onPool) = morpho.borrowBalanceInOf(cDai, address(borrowers[i]));
+            assertEq(inP2P, 0, "inP2P");
+            assertEq(onPool, 0, "onPool");
         }
     }
 
