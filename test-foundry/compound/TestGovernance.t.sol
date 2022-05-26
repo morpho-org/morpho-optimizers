@@ -6,7 +6,7 @@ import "./setup/TestSetup.sol";
 contract TestGovernance is TestSetup {
     using CompoundMath for uint256;
 
-    function testShoudDeployContractWithTheRightValues() public {
+    function testShouldDeployContractWithTheRightValues() public {
         assertEq(
             morpho.p2pSupplyIndex(cDai),
             2 * 10**(16 + ERC20(ICToken(cDai).underlying()).decimals() - 8)
@@ -137,7 +137,7 @@ contract TestGovernance is TestSetup {
         assertTrue(morpho.p2pDisabled(cDai));
     }
 
-    function testonlyOwnerShouldSetPositionsManager() public {
+    function testOnlyOwnerShouldSetPositionsManager() public {
         IPositionsManager positionsManagerV2 = new PositionsManager();
 
         hevm.prank(address(0));
@@ -187,7 +187,7 @@ contract TestGovernance is TestSetup {
         assertEq(address(morpho.incentivesVault()), address(incentivesVaultV2));
     }
 
-    function testOnlyOwnerShouldSetTreasuryvault() public {
+    function testOnlyOwnerShouldSetTreasuryVault() public {
         address treasuryVaultV2 = address(2);
 
         hevm.prank(address(0));
