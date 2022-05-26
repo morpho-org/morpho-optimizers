@@ -21,12 +21,12 @@ contract RewardsDistributor is Ownable {
 
     /// EVENTS ///
 
-    /// @notice Emitted when the root is udpated.
+    /// @notice Emitted when the root is updated.
     /// @param _newRoot The new merkle's tree root.
     event RootUpdated(bytes32 _newRoot);
 
     /// @notice Emitted when an account claims rewards.
-    /// @param _account The address of the claimor.
+    /// @param _account The address of the claimer.
     /// @param _amountClaimed The amount of rewards claimed.
     event RewardsClaimed(address _account, uint256 _amountClaimed);
 
@@ -35,7 +35,7 @@ contract RewardsDistributor is Ownable {
     /// @notice Thrown when the proof is invalid or expired.
     error ProofInvalidOrExpired();
 
-    /// @notice Thrown when the claimor has already claimed the rewards.
+    /// @notice Thrown when the claimer has already claimed the rewards.
     error AlreadyClaimed();
 
     /// EXTERNAL ///
@@ -49,7 +49,7 @@ contract RewardsDistributor is Ownable {
     }
 
     /// @notice Claims rewards.
-    /// @param _account The address of the claimor.
+    /// @param _account The address of the claimer.
     /// @param _token The address of token being claimed (ie MORPHO).
     /// @param _claimable The overall claimable amount of token rewards.
     /// @param _proof The merkle proof that validates this claim.
