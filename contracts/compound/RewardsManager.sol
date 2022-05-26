@@ -101,7 +101,7 @@ contract RewardsManager is IRewardsManager, Ownable {
     {
         unclaimedRewards = userUnclaimedCompRewards[_user];
 
-        for (uint256 i; i < _cTokenAddresses.length; i++) {
+        for (uint256 i; i < _cTokenAddresses.length; ) {
             address cTokenAddress = _cTokenAddresses[i];
 
             (bool isListed, , ) = comptroller.markets(cTokenAddress);
@@ -117,6 +117,10 @@ contract RewardsManager is IRewardsManager, Ownable {
                 cTokenAddress,
                 morpho.borrowBalanceInOf(cTokenAddress, _user).onPool
             );
+
+            unchecked {
+                ++i;
+            }
         }
     }
 
@@ -156,7 +160,7 @@ contract RewardsManager is IRewardsManager, Ownable {
     {
         unclaimedRewards = userUnclaimedCompRewards[_user];
 
-        for (uint256 i; i < _cTokenAddresses.length; i++) {
+        for (uint256 i; i < _cTokenAddresses.length; ) {
             address cTokenAddress = _cTokenAddresses[i];
 
             (bool isListed, , ) = comptroller.markets(cTokenAddress);
@@ -175,6 +179,10 @@ contract RewardsManager is IRewardsManager, Ownable {
                 cTokenAddress,
                 morpho.borrowBalanceInOf(cTokenAddress, _user).onPool
             );
+
+            unchecked {
+                ++i;
+            }
         }
 
         userUnclaimedCompRewards[_user] = unclaimedRewards;
