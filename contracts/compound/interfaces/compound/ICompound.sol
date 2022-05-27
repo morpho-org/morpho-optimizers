@@ -223,6 +223,14 @@ interface IComptroller {
     function getCompAddress() external view returns (address);
 
     function _setPriceOracle(address newOracle) external returns (uint256);
+
+    function _setMintPaused(ICToken cToken, bool state) external returns (bool);
+
+    function _setBorrowPaused(ICToken cToken, bool state) external returns (bool);
+
+    function _setCollateralFactor(ICToken cToken, uint256 newCollateralFactorMantissa)
+        external
+        returns (uint256);
 }
 
 interface IInterestRateModel {

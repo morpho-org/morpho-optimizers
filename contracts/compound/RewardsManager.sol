@@ -38,7 +38,7 @@ contract RewardsManager is IRewardsManager, Ownable {
 
     /// @notice Thrown when an other address than Morpho triggers the function.
     modifier onlyMorpho() {
-        if (msg.sender != address(morpho)) revert OnlyMorpho();
+        if (msg.sender != address(morpho)) revert("OnlyMorpho()");
         _;
     }
 
@@ -107,7 +107,7 @@ contract RewardsManager is IRewardsManager, Ownable {
             address cTokenAddress = _cTokenAddresses[i];
 
             (bool isListed, , ) = comptroller.markets(cTokenAddress);
-            if (!isListed) revert InvalidCToken();
+            if (!isListed) revert("InvalidCToken()");
 
             unclaimedRewards += getAccruedSupplierComp(
                 _user,
@@ -166,7 +166,7 @@ contract RewardsManager is IRewardsManager, Ownable {
             address cTokenAddress = _cTokenAddresses[i];
 
             (bool isListed, , ) = comptroller.markets(cTokenAddress);
-            if (!isListed) revert InvalidCToken();
+            if (!isListed) revert("InvalidCToken()");
 
             _updateSupplyIndex(cTokenAddress);
             unclaimedRewards += _accrueSupplierComp(

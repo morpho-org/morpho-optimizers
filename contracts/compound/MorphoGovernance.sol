@@ -206,7 +206,7 @@ abstract contract MorphoGovernance is MorphoUtils {
         onlyOwner
         isMarketCreated(_poolTokenAddress)
     {
-        if (_newReserveFactor > MAX_BASIS_POINTS) revert ExceedsMaxBasisPoints();
+        if (_newReserveFactor > MAX_BASIS_POINTS) revert("ExceedsMaxBasisPoints()");
         _updateP2PIndexes(_poolTokenAddress);
 
         marketParameters[_poolTokenAddress].reserveFactor = _newReserveFactor;
@@ -221,7 +221,7 @@ abstract contract MorphoGovernance is MorphoUtils {
         onlyOwner
         isMarketCreated(_poolTokenAddress)
     {
-        if (_p2pIndexCursor > MAX_BASIS_POINTS) revert ExceedsMaxBasisPoints();
+        if (_p2pIndexCursor > MAX_BASIS_POINTS) revert("ExceedsMaxBasisPoints()");
         _updateP2PIndexes(_poolTokenAddress);
 
         marketParameters[_poolTokenAddress].p2pIndexCursor = _p2pIndexCursor;
@@ -273,12 +273,12 @@ abstract contract MorphoGovernance is MorphoUtils {
         onlyOwner
         isMarketCreatedAndNotPaused(_poolTokenAddress)
     {
-        if (treasuryVault == address(0)) revert ZeroAddress();
+        if (treasuryVault == address(0)) revert("ZeroAddress()");
 
         ERC20 underlyingToken = _getUnderlying(_poolTokenAddress);
         uint256 underlyingBalance = underlyingToken.balanceOf(address(this));
 
-        if (underlyingBalance == 0) revert AmountIsZero();
+        if (underlyingBalance == 0) revert("AmountIsZero()");
 
         uint256 amountToClaim = Math.min(
             _amount,
@@ -299,15 +299,15 @@ abstract contract MorphoGovernance is MorphoUtils {
         if (
             _marketParams.p2pIndexCursor > MAX_BASIS_POINTS ||
             _marketParams.reserveFactor > MAX_BASIS_POINTS
-        ) revert ExceedsMaxBasisPoints();
+        ) revert("ExceedsMaxBasisPoints()");
 
-        if (marketStatus[_poolTokenAddress].isCreated) revert MarketAlreadyCreated();
+        if (marketStatus[_poolTokenAddress].isCreated) revert("MarketAlreadyCreated()");
         marketStatus[_poolTokenAddress].isCreated = true;
 
         address[] memory marketToEnter = new address[](1);
         marketToEnter[0] = _poolTokenAddress;
         uint256[] memory results = comptroller.enterMarkets(marketToEnter);
-        if (results[0] != 0) revert MarketCreationFailedOnCompound();
+        if (results[0] != 0) revert("MarketCreationFailedOnCompound()");
 
         ICToken poolToken = ICToken(_poolTokenAddress);
 
