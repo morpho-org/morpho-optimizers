@@ -177,7 +177,6 @@ contract TestSetupFuzzing is Config, Utils, stdCheats {
 
         morpho.setRewardsManager(rewardsManager);
         morpho.setIncentivesVault(incentivesVault);
-        morpho.toggleCompRewardsActivation();
 
         // Tip the Morpho contract to ensure that there are no dust errors on withdraw
         tip(aave, address(morpho), 10**ERC20(aave).decimals());
@@ -200,7 +199,12 @@ contract TestSetupFuzzing is Config, Utils, stdCheats {
     }
 
     function createMarket(address _cToken) internal {
-        morpho.createMarket(_cToken);
+        Types.MarketParameters memory defaultMarketParams = Types.MarketParameters({
+            reserveFactor: 0,
+            p2pIndexCursor: 5000
+        });
+
+        morpho.createMarket(_cToken, defaultMarketParams);
         morpho.setP2PIndexCursor(_cToken, 3_333);
 
         // All tokens must also be added to the pools array, for the correct behavior of TestLiquidate::createAndSetCustomPriceOracle.
