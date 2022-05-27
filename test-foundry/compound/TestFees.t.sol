@@ -76,7 +76,7 @@ contract TestFees is TestSetup {
         uint256 oldSupplyExRate = morpho.p2pSupplyIndex(cDai);
         uint256 oldBorrowExRate = morpho.p2pBorrowIndex(cDai);
 
-        (uint256 supplyP2PBPY, uint256 borrowP2PBPY) = getApproxP2PRates(cDai);
+        (uint256 supplyP2PBPY, uint256 borrowP2PBPY) = getApproxBPYs(cDai);
 
         uint256 newSupplyExRate = oldSupplyExRate.mul(
             _computeCompoundedInterest(supplyP2PBPY, 1000)

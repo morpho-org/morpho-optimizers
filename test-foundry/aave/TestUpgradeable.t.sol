@@ -4,72 +4,68 @@ pragma solidity 0.8.13;
 import "./setup/TestSetup.sol";
 
 contract TestUpgradeable is TestSetup {
-    function testUpgradeMarketsManager() public {
-        marketsManager.setReserveFactor(aDai, 1);
+    using CompoundMath for uint256;
 
-        MarketsManagerForAave marketsManagerImplV2 = new MarketsManagerForAave();
-        proxyAdmin.upgrade(marketsManagerProxy, address(marketsManagerImplV2));
-
-        // Should not change
-        assertEq(marketsManager.reserveFactor(aDai), 1);
-    }
-
-    function testUpgradePositionsManager() public {
-        uint256 amount = 10_000 ether;
+    function testUpgradeMorpho() public {
+        uint256 amount = 10000 ether;
         supplier1.approve(dai, amount);
-        supplier1.supply(aDai, amount);
-        uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(dai);
-        uint256 expectedOnPool = underlyingToScaledBalance(amount, normalizedIncome);
+        supplier1.supply(cDai, amount);
+        uint256 poolSupplyIndex = ICToken(cDai).exchangeRateCurrent();
+        uint256 expectedOnPool = amount.div(poolSupplyIndex);
 
-        PositionsManagerForAave positionsManagerImplV2 = new PositionsManagerForAave();
-        proxyAdmin.upgrade(positionsManagerProxy, address(positionsManagerImplV2));
+        Morpho morphoImplV2 = new Morpho();
+        proxyAdmin.upgrade(morphoProxy, address(morphoImplV2));
 
         // Should not change
-        (, uint256 onPool) = positionsManager.supplyBalanceInOf(aDai, address(supplier1));
-        testEquality(onPool, expectedOnPool);
+        (, uint256 onPool) = morpho.supplyBalanceInOf(cDai, address(supplier1));
+        assertEq(onPool, expectedOnPool);
     }
 
-    function testOnlyProxyOwnerCanUpgradeMarketsManager() public {
-        MarketsManagerForAave marketsManagerImplV2 = new MarketsManagerForAave();
+    function testOnlyProxyOwnerCanUpgradeMorpho() public {
+        Morpho morphoImplV2 = new Morpho();
 
         hevm.prank(address(supplier1));
         hevm.expectRevert("Ownable: caller is not the owner");
-        proxyAdmin.upgrade(marketsManagerProxy, address(marketsManagerImplV2));
+        proxyAdmin.upgrade(morphoProxy, address(morphoImplV2));
 
-        proxyAdmin.upgrade(marketsManagerProxy, address(marketsManagerImplV2));
+        proxyAdmin.upgrade(morphoProxy, address(morphoImplV2));
     }
 
-    function testOnlyProxyOwnerCanUpgradeAndCallMarketsManager() public {
-        MarketsManagerForAave marketsManagerImplV2 = new MarketsManagerForAave();
+    function testOnlyProxyOwnerCanUpgradeAndCallMorpho() public {
+        Morpho morphoImplV2 = new Morpho();
 
         hevm.prank(address(supplier1));
         hevm.expectRevert("Ownable: caller is not the owner");
-        proxyAdmin.upgradeAndCall(marketsManagerProxy, address(marketsManagerImplV2), "");
+        proxyAdmin.upgradeAndCall(morphoProxy, payable(address(morphoImplV2)), "");
 
         // Revert for wrong data not wrong caller
-        hevm.expectRevert("Address: low-level delegate call failed");
-        proxyAdmin.upgradeAndCall(marketsManagerProxy, address(marketsManagerImplV2), "");
+        proxyAdmin.upgradeAndCall(morphoProxy, payable(address(morphoImplV2)), "");
     }
 
-    function testOnlyProxyOwnerCanUpgradePositionsManager() public {
-        PositionsManagerForAave positionsManagerImplV2 = new PositionsManagerForAave();
+    function testImplementationsShouldBeInitialized() public {
+        Types.MaxGasForMatching memory defaultMaxGasForMatching = Types.MaxGasForMatching({
+            supply: 3e6,
+            borrow: 3e6,
+            withdraw: 3e6,
+            repay: 3e6
+        });
 
-        hevm.prank(address(supplier1));
-        hevm.expectRevert("Ownable: caller is not the owner");
-        proxyAdmin.upgrade(positionsManagerProxy, address(positionsManagerImplV2));
+        // Test for Morpho Implementation.
+        hevm.expectRevert("Initializable: contract is already initialized");
+        morphoImplV1.initialize(
+            positionsManager,
+            interestRatesManager,
+            comptroller,
+            defaultMaxGasForMatching,
+            1,
+            20,
+            cEth,
+            wEth
+        );
 
-        proxyAdmin.upgrade(positionsManagerProxy, address(positionsManagerImplV2));
-    }
-
-    function testOnlyProxyOwnerCanUpgradeAndCallPositionsManager() public {
-        PositionsManagerForAave positionsManagerImplV2 = new PositionsManagerForAave();
-
-        hevm.prank(address(supplier1));
-        hevm.expectRevert("Ownable: caller is not the owner");
-        proxyAdmin.upgradeAndCall(positionsManagerProxy, address(positionsManagerImplV2), "");
-
-        // Revert for wrong data not wrong caller
-        hevm.expectRevert("Address: low-level delegate call failed");
-        proxyAdmin.upgradeAndCall(positionsManagerProxy, address(positionsManagerImplV2), "");
+        // Test for PositionsManager Implementation.
+        // `_initialized` value is at slot 0.
+        uint256 _initialized = uint256(hevm.load(address(positionsManager), bytes32(0)));
+        assertEq(_initialized, 1);
     }
 }

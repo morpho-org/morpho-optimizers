@@ -16,12 +16,6 @@ contract TestLens is TestSetup {
         uint256 liquidationValue;
     }
 
-    struct UserBalance {
-        uint256 onPool;
-        uint256 inP2P;
-        uint256 totalBalance;
-    }
-
     function testUserLiquidityDataForAssetWithNothing() public {
         Types.AssetLiquidityData memory assetData = lens.getUserLiquidityDataForAsset(
             address(borrower1),
@@ -189,7 +183,7 @@ contract TestLens is TestSetup {
         assertEq(borrowable, 0);
     }
 
-    function testMaxCapacitiesWithSupply() public {
+    function testMaxCapacitiesWithNothingWithSupply() public {
         uint256 amount = to6Decimals(10000 ether);
 
         borrower1.approve(usdc, amount);
@@ -233,155 +227,6 @@ contract TestLens is TestSetup {
         assertEq(borrowable, expectedBorrowableDai, "borrowable DAI");
     }
 
-    function testUserBalanceWithoutMatching() public {
-        uint256 amount = 10_000 ether;
-        uint256 toBorrow = to6Decimals(amount / 2);
-
-        borrower1.approve(dai, amount);
-        borrower1.supply(cDai, amount);
-        borrower1.borrow(cUsdc, toBorrow);
-
-        UserBalance memory userSupplyBalance;
-
-        (userSupplyBalance.onPool, userSupplyBalance.inP2P, userSupplyBalance.totalBalance) = lens
-        .getUserSupplyBalance(address(borrower1), cDai);
-
-        (uint256 supplyBalanceInP2P, uint256 supplyBalanceOnPool) = morpho.supplyBalanceInOf(
-            cDai,
-            address(borrower1)
-        );
-
-        uint256 expectedSupplyBalanceInP2P = supplyBalanceInP2P.mul(morpho.p2pSupplyIndex(cDai));
-        uint256 expectedSupplyBalanceOnPool = supplyBalanceOnPool.mul(
-            ICToken(cDai).exchangeRateCurrent()
-        );
-        uint256 expectedTotalSupplyBalance = expectedSupplyBalanceInP2P +
-            expectedSupplyBalanceOnPool;
-
-        assertEq(userSupplyBalance.onPool, expectedSupplyBalanceOnPool, "On pool supply balance");
-        assertEq(userSupplyBalance.inP2P, expectedSupplyBalanceInP2P, "P2P supply balance");
-        assertEq(
-            userSupplyBalance.totalBalance,
-            expectedTotalSupplyBalance,
-            "Total supply balance"
-        );
-
-        UserBalance memory userBorrowBalance;
-
-        (userBorrowBalance.onPool, userBorrowBalance.inP2P, userBorrowBalance.totalBalance) = lens
-        .getUserBorrowBalance(address(borrower1), cUsdc);
-
-        (uint256 borrowBalanceInP2P, uint256 borrowBalanceOnPool) = morpho.borrowBalanceInOf(
-            cUsdc,
-            address(borrower1)
-        );
-
-        uint256 expectedBorrowBalanceInP2P = borrowBalanceInP2P.mul(morpho.p2pBorrowIndex(cUsdc));
-        uint256 expectedBorrowBalanceOnPool = borrowBalanceOnPool.mul(ICToken(cUsdc).borrowIndex());
-        uint256 expectedTotalBorrowBalance = expectedBorrowBalanceInP2P +
-            expectedBorrowBalanceOnPool;
-
-        assertEq(userBorrowBalance.onPool, expectedBorrowBalanceOnPool, "On pool borrow balance");
-        assertEq(userBorrowBalance.inP2P, expectedBorrowBalanceInP2P, "P2P borrow balance");
-        assertEq(
-            userBorrowBalance.totalBalance,
-            expectedTotalBorrowBalance,
-            "Total borrow balance"
-        );
-    }
-
-    function testUserBalanceWithMatching() public {
-        uint256 amount = 10_000 ether;
-        uint256 toBorrow = to6Decimals(amount / 2);
-
-        borrower1.approve(dai, amount);
-        borrower1.supply(cDai, amount);
-        borrower1.borrow(cUsdc, toBorrow);
-
-        uint256 toMatch = toBorrow / 2;
-        supplier1.approve(usdc, toMatch);
-        supplier1.supply(cUsdc, toMatch);
-
-        // borrower 1 supply balance (not matched)
-        UserBalance memory userSupplyBalance;
-
-        (userSupplyBalance.onPool, userSupplyBalance.inP2P, userSupplyBalance.totalBalance) = lens
-        .getUserSupplyBalance(address(borrower1), cDai);
-
-        (uint256 supplyBalanceInP2P, uint256 supplyBalanceOnPool) = morpho.supplyBalanceInOf(
-            cDai,
-            address(borrower1)
-        );
-
-        uint256 expectedSupplyBalanceInP2P = supplyBalanceInP2P.mul(morpho.p2pSupplyIndex(cDai));
-        uint256 expectedSupplyBalanceOnPool = supplyBalanceOnPool.mul(
-            ICToken(cDai).exchangeRateCurrent()
-        );
-
-        assertEq(userSupplyBalance.onPool, expectedSupplyBalanceOnPool, "On pool supply balance");
-        assertEq(userSupplyBalance.inP2P, expectedSupplyBalanceInP2P, "P2P supply balance");
-        assertEq(
-            userSupplyBalance.totalBalance,
-            expectedSupplyBalanceOnPool + expectedSupplyBalanceInP2P,
-            "Total supply balance"
-        );
-
-        // borrower 1 borrow balance (partially matched)
-        UserBalance memory userBorrowBalance;
-
-        (userBorrowBalance.onPool, userBorrowBalance.inP2P, userBorrowBalance.totalBalance) = lens
-        .getUserBorrowBalance(address(borrower1), cUsdc);
-
-        (uint256 borrowBalanceInP2P, uint256 borrowBalanceOnPool) = morpho.borrowBalanceInOf(
-            cUsdc,
-            address(borrower1)
-        );
-
-        uint256 expectedBorrowBalanceInP2P = borrowBalanceInP2P.mul(morpho.p2pBorrowIndex(cUsdc));
-        uint256 expectedBorrowBalanceOnPool = borrowBalanceOnPool.mul(ICToken(cUsdc).borrowIndex());
-
-        assertEq(userBorrowBalance.onPool, expectedBorrowBalanceOnPool, "On pool borrow balance");
-        assertEq(userBorrowBalance.inP2P, expectedBorrowBalanceInP2P, "P2P borrow balance");
-        assertEq(
-            userBorrowBalance.totalBalance,
-            expectedBorrowBalanceOnPool + expectedBorrowBalanceInP2P,
-            "Total borrow balance"
-        );
-
-        // borrower 2 supply balance (pure supplier fully matched)
-        UserBalance memory matchedSupplierSupplyBalance;
-
-        (
-            matchedSupplierSupplyBalance.onPool,
-            matchedSupplierSupplyBalance.inP2P,
-            matchedSupplierSupplyBalance.totalBalance
-        ) = lens.getUserSupplyBalance(address(supplier1), cUsdc);
-
-        (supplyBalanceInP2P, supplyBalanceOnPool) = morpho.supplyBalanceInOf(
-            cUsdc,
-            address(supplier1)
-        );
-
-        expectedSupplyBalanceInP2P = supplyBalanceInP2P.mul(morpho.p2pSupplyIndex(cUsdc));
-        expectedSupplyBalanceOnPool = supplyBalanceOnPool.mul(ICToken(cUsdc).exchangeRateCurrent());
-
-        assertEq(
-            matchedSupplierSupplyBalance.onPool,
-            expectedSupplyBalanceOnPool,
-            "On pool matched supplier balance"
-        );
-        assertEq(
-            matchedSupplierSupplyBalance.inP2P,
-            expectedSupplyBalanceInP2P,
-            "P2P matched supplier balance"
-        );
-        assertEq(
-            matchedSupplierSupplyBalance.totalBalance,
-            expectedSupplyBalanceOnPool + expectedSupplyBalanceInP2P,
-            "Total matched supplier balance"
-        );
-    }
-
     function testMaxCapacitiesWithNothingWithSupplyWithMultipleAssetsAndBorrow() public {
         uint256 amount = 10_000 ether;
 
@@ -409,7 +254,9 @@ contract TestLens is TestSetup {
         );
 
         (uint256 withdrawableDai, ) = lens.getUserMaxCapacitiesForAsset(address(borrower1), cDai);
+
         (uint256 withdrawableUsdc, ) = lens.getUserMaxCapacitiesForAsset(address(borrower1), cUsdc);
+
         (, uint256 borrowableUsdt) = lens.getUserMaxCapacitiesForAsset(address(borrower1), cUsdt);
 
         uint256 expectedBorrowableUsdt = (assetDataCDai.maxDebtValue + assetDataCUsdc.maxDebtValue)
@@ -653,15 +500,12 @@ contract TestLens is TestSetup {
 
     function testGetMarketConfiguration() public {
         (
-            address underlying,
             bool isCreated,
             bool p2pDisabled,
             bool isPaused,
             bool isPartiallyPaused,
-            uint256 reserveFactor,
-            uint256 collateralFactor
+            uint256 reserveFactor
         ) = lens.getMarketConfiguration(cDai);
-        assertTrue(underlying == ICToken(cDai).underlying());
 
         (bool isCreated_, bool isPaused_, bool isPartiallyPaused_) = morpho.marketStatus(cDai);
 
@@ -672,30 +516,10 @@ contract TestLens is TestSetup {
         assertTrue(isPartiallyPaused == isPartiallyPaused_);
         (uint16 expectedReserveFactor, ) = morpho.marketParameters(cDai);
         assertTrue(reserveFactor == expectedReserveFactor);
-        (, uint256 expectedCollateralFactor, ) = morpho.comptroller().markets(cDai);
-        assertTrue(collateralFactor == expectedCollateralFactor);
-    }
-
-    function testGetUpdatedIndexes() public {
-        hevm.roll(block.number + (24 * 60 * 4));
-        (
-            uint256 newP2PSupplyIndex,
-            uint256 newP2PBorrowIndex,
-            uint256 newPoolSupplyIndex,
-            uint256 newPoolBorrowIndex
-        ) = lens.getUpdatedIndexes(cDai);
-
-        morpho.updateP2PIndexes(cDai);
-        assertEq(newP2PBorrowIndex, morpho.p2pBorrowIndex(cDai));
-        assertEq(newP2PSupplyIndex, morpho.p2pSupplyIndex(cDai));
-
-        ICToken(cDai).accrueInterest();
-        assertEq(newPoolSupplyIndex, ICToken(cDai).exchangeRateCurrent());
-        assertEq(newPoolBorrowIndex, ICToken(cDai).borrowIndex());
     }
 
     function testGetUpdatedP2PIndexes() public {
-        hevm.roll(block.number + (24 * 60 * 4));
+        hevm.roll(block.number + (365 days * 24 * 60 * 4));
         (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex) = lens.getUpdatedP2PIndexes(cDai);
 
         morpho.updateP2PIndexes(cDai);
@@ -704,7 +528,7 @@ contract TestLens is TestSetup {
     }
 
     function testGetUpdatedP2PSupplyIndex() public {
-        hevm.roll(block.number + (24 * 60 * 4));
+        hevm.roll(block.number + (365 days * 24 * 60 * 4));
         uint256 newP2PSupplyIndex = lens.getUpdatedP2PSupplyIndex(cDai);
 
         morpho.updateP2PIndexes(cDai);
@@ -712,55 +536,10 @@ contract TestLens is TestSetup {
     }
 
     function testGetUpdatedP2PBorrowIndex() public {
-        hevm.roll(block.number + (24 * 60 * 4));
+        hevm.roll(block.number + (365 days * 24 * 60 * 4));
         uint256 newP2PBorrowIndex = lens.getUpdatedP2PBorrowIndex(cDai);
 
         morpho.updateP2PIndexes(cDai);
         assertEq(newP2PBorrowIndex, morpho.p2pBorrowIndex(cDai));
-    }
-
-    function testGetAllMarkets() public {
-        address[] memory lensMarkets = lens.getAllMarkets();
-        address[] memory morphoMarkets = morpho.getAllMarkets();
-
-        for (uint256 i; i < lensMarkets.length; i++) {
-            assertEq(morphoMarkets[i], lensMarkets[i]);
-        }
-    }
-
-    function testGetEnteredMarkets() public {
-        uint256 amount = 1e12;
-        supplier1.approve(dai, amount);
-        supplier1.approve(usdc, amount);
-        supplier1.approve(usdt, amount);
-        supplier1.supply(cDai, amount);
-        supplier1.supply(cUsdc, amount);
-        supplier1.supply(cUsdt, amount);
-
-        address[] memory lensEnteredMarkets = lens.getEnteredMarkets(address(supplier1));
-        address[] memory morphoEnteredMarkets = morpho.getEnteredMarkets(address(supplier1));
-
-        for (uint256 i; i < lensEnteredMarkets.length; i++) {
-            assertEq(morphoEnteredMarkets[i], lensEnteredMarkets[i]);
-        }
-    }
-
-    function testGetRates() public {
-        hevm.roll(block.number + 1_000);
-        (
-            uint256 p2pSupplyRate,
-            uint256 p2pBorrowRate,
-            uint256 poolSupplyRate,
-            uint256 poolBorrowRate
-        ) = lens.getRates(cDai);
-
-        (uint256 expectedP2PSupplyRate, uint256 expectedP2PBorrowRate) = getApproxP2PRates(cDai);
-        uint256 expectedPoolSupplyRate = ICToken(cDai).supplyRatePerBlock();
-        uint256 expectedPoolBorrowRate = ICToken(cDai).borrowRatePerBlock();
-
-        assertEq(p2pSupplyRate, expectedP2PSupplyRate);
-        assertEq(p2pBorrowRate, expectedP2PBorrowRate);
-        assertEq(poolSupplyRate, expectedPoolSupplyRate);
-        assertEq(poolBorrowRate, expectedPoolBorrowRate);
     }
 }

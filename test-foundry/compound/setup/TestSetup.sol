@@ -27,6 +27,12 @@ import "forge-std/stdlib.sol";
 // import "forge-std/console.sol";
 import "@config/Config.sol";
 
+interface IAdminComptroller {
+    function _setPriceOracle(SimplePriceOracle newOracle) external returns (uint256);
+
+    function admin() external view returns (address);
+}
+
 contract TestSetup is Config, Utils, stdCheats {
     Vm public hevm = Vm(HEVM_ADDRESS);
 
@@ -213,9 +219,9 @@ contract TestSetup is Config, Utils, stdCheats {
     function createAndSetCustomPriceOracle() public returns (SimplePriceOracle) {
         SimplePriceOracle customOracle = new SimplePriceOracle();
 
-        IComptroller adminComptroller = IComptroller(address(comptroller));
+        IAdminComptroller adminComptroller = IAdminComptroller(address(comptroller));
         hevm.prank(adminComptroller.admin());
-        uint256 result = adminComptroller._setPriceOracle(address(customOracle));
+        uint256 result = adminComptroller._setPriceOracle(customOracle);
         require(result == 0); // No error
 
         for (uint256 i = 0; i < pools.length; i++) {
@@ -249,9 +255,9 @@ contract TestSetup is Config, Utils, stdCheats {
 
     /// @notice Computes and returns peer-to-peer rates for a specific market (without taking into account deltas !).
     /// @param _poolTokenAddress The market address.
-    /// @return p2pSupplyRate_ The market's supply rate in peer-to-peer (in wad).
-    /// @return p2pBorrowRate_ The market's borrow rate in peer-to-peer (in wad).
-    function getApproxP2PRates(address _poolTokenAddress)
+    /// @return p2pSupplyRate_ The market's supply rate in peer-to-peer (in ray).
+    /// @return p2pBorrowRate_ The market's borrow rate in peer-to-peer (in ray).
+    function getApproxBPYs(address _poolTokenAddress)
         public
         view
         returns (uint256 p2pSupplyRate_, uint256 p2pBorrowRate_)

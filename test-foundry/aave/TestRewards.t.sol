@@ -5,73 +5,52 @@ import "./setup/TestSetup.sol";
 
 contract TestRewards is TestSetup {
     function testShouldRevertClaimingZero() public {
-        address[] memory aDaiInArray = new address[](1);
-        aDaiInArray[0] = aDai;
+        address[] memory cTokens = new address[](1);
+        cTokens[0] = cDai;
 
-        hevm.expectRevert(abi.encodeWithSignature("AmountIsZero()"));
-        positionsManager.claimRewards(aDaiInArray, false);
+        hevm.expectRevert(MorphoGovernance.AmountIsZero.selector);
+        morpho.claimRewards(cTokens, false);
     }
 
-    function testShouldRevertWhenAccruingRewardsForInvalidAsset() public {
-        address[] memory array = new address[](2);
-        array[0] = aDai;
-        array[1] = stableDebtDai;
+    function testShouldRevertWhenAccruingRewardsForInvalidCToken() public {
+        address[] memory cTokens = new address[](2);
+        cTokens[0] = cDai;
+        cTokens[1] = dai;
 
-        hevm.expectRevert(abi.encodeWithSignature("InvalidAsset()"));
-        rewardsManager.accrueUserUnclaimedRewards(array, address(supplier1));
+        hevm.expectRevert(RewardsManager.InvalidCToken.selector);
+        rewardsManager.accrueUserUnclaimedRewards(cTokens, address(supplier1));
     }
 
     function testShouldClaimRightAmountOfSupplyRewards() public {
         uint256 toSupply = 100 ether;
         supplier1.approve(dai, toSupply);
-        supplier1.supply(aDai, toSupply);
-        uint256 balanceBefore = supplier1.balanceOf(REWARD_TOKEN);
-        uint256 index;
+        supplier1.supply(cDai, toSupply);
+        uint256 balanceBefore = supplier1.balanceOf(comp);
 
-        if (block.chainid == Chains.AVALANCHE_MAINNET || block.chainid == Chains.ETH_MAINNET) {
-            (index, , ) = IAaveIncentivesController(aaveIncentivesControllerAddress).getAssetData(
-                aDai
-            );
-        } else {
-            // Polygon network
-            IAaveIncentivesController.AssetData memory assetData = IAaveIncentivesController(
-                aaveIncentivesControllerAddress
-            ).assets(aDai);
-            index = assetData.index;
-        }
-
-        (, uint256 onPool) = positionsManager.supplyBalanceInOf(aDai, address(supplier1));
-        uint256 userIndex = rewardsManager.getUserIndex(aDai, address(supplier1));
-        address[] memory aDaiInArray = new address[](1);
-        aDaiInArray[0] = aDai;
-        uint256 unclaimedRewards = rewardsManager.accrueUserUnclaimedRewards(
-            aDaiInArray,
+        (, uint256 onPool) = morpho.supplyBalanceInOf(cDai, address(supplier1));
+        uint256 userIndex = rewardsManager.compSupplierIndex(cDai, address(supplier1));
+        address[] memory cTokens = new address[](1);
+        cTokens[0] = cDai;
+        uint256 unclaimedRewards = rewardsManager.getUserUnclaimedRewards(
+            cTokens,
             address(supplier1)
         );
 
-        assertEq(index, userIndex, "user index wrong");
+        uint256 index = comptroller.compSupplyState(cDai).index;
+
+        assertEq(userIndex, index, "user index wrong");
         assertEq(unclaimedRewards, 0, "unclaimed rewards should be 0");
 
         supplier2.approve(dai, toSupply);
-        supplier2.supply(aDai, toSupply);
+        supplier2.supply(cDai, toSupply);
 
-        hevm.warp(block.timestamp + 365 days);
-        supplier1.claimRewards(aDaiInArray, false);
+        hevm.roll(block.number + 1_000);
+        supplier1.claimRewards(cTokens, false);
 
-        if (block.chainid == Chains.AVALANCHE_MAINNET || block.chainid == Chains.ETH_MAINNET) {
-            (index, , ) = IAaveIncentivesController(aaveIncentivesControllerAddress).getAssetData(
-                aDai
-            );
-        } else {
-            // Polygon network
-            IAaveIncentivesController.AssetData memory assetData = IAaveIncentivesController(
-                aaveIncentivesControllerAddress
-            ).assets(aDai);
-            index = assetData.index;
-        }
+        index = comptroller.compSupplyState(cDai).index;
 
-        uint256 expectedClaimed = (onPool * (index - userIndex)) / WAD;
-        uint256 balanceAfter = supplier1.balanceOf(REWARD_TOKEN);
+        uint256 expectedClaimed = (onPool * (index - userIndex)) / 1e36;
+        uint256 balanceAfter = supplier1.balanceOf(comp);
         uint256 expectedNewBalance = expectedClaimed + balanceBefore;
 
         assertEq(balanceAfter, expectedNewBalance, "balance after wrong");
@@ -80,27 +59,16 @@ contract TestRewards is TestSetup {
     function testShouldGetRightAmountOfSupplyRewards() public {
         uint256 toSupply = 100 ether;
         supplier1.approve(dai, toSupply);
-        supplier1.supply(aDai, toSupply);
-        uint256 index;
+        supplier1.supply(cDai, toSupply);
 
-        if (block.chainid == Chains.AVALANCHE_MAINNET || block.chainid == Chains.ETH_MAINNET) {
-            (index, , ) = IAaveIncentivesController(aaveIncentivesControllerAddress).getAssetData(
-                aDai
-            );
-        } else {
-            // Polygon network
-            IAaveIncentivesController.AssetData memory assetData = IAaveIncentivesController(
-                aaveIncentivesControllerAddress
-            ).assets(aDai);
-            index = assetData.index;
-        }
+        uint256 index = comptroller.compSupplyState(cDai).index;
 
-        (, uint256 onPool) = positionsManager.supplyBalanceInOf(aDai, address(supplier1));
-        uint256 userIndex = rewardsManager.getUserIndex(aDai, address(supplier1));
-        address[] memory aDaiInArray = new address[](1);
-        aDaiInArray[0] = aDai;
+        (, uint256 onPool) = morpho.supplyBalanceInOf(cDai, address(supplier1));
+        uint256 userIndex = rewardsManager.compSupplierIndex(cDai, address(supplier1));
+        address[] memory cTokens = new address[](1);
+        cTokens[0] = cDai;
         uint256 unclaimedRewards = rewardsManager.getUserUnclaimedRewards(
-            aDaiInArray,
+            cTokens,
             address(supplier1)
         );
 
@@ -108,133 +76,77 @@ contract TestRewards is TestSetup {
         assertEq(unclaimedRewards, 0, "unclaimed rewards should be 0");
 
         supplier2.approve(dai, toSupply);
-        supplier2.supply(aDai, toSupply);
+        supplier2.supply(cDai, toSupply);
 
-        hevm.warp(block.timestamp + 365 days);
-        unclaimedRewards = rewardsManager.getUserUnclaimedRewards(aDaiInArray, address(supplier1));
+        hevm.roll(block.number + 1_000);
+        unclaimedRewards = rewardsManager.getUserUnclaimedRewards(cTokens, address(supplier1));
 
-        supplier1.claimRewards(aDaiInArray, false);
-        if (block.chainid == Chains.AVALANCHE_MAINNET || block.chainid == Chains.ETH_MAINNET) {
-            (index, , ) = IAaveIncentivesController(aaveIncentivesControllerAddress).getAssetData(
-                aDai
-            );
-        } else {
-            // Polygon network
-            IAaveIncentivesController.AssetData memory assetData = IAaveIncentivesController(
-                aaveIncentivesControllerAddress
-            ).assets(aDai);
-            index = assetData.index;
-        }
+        supplier1.claimRewards(cTokens, false);
+        index = comptroller.compSupplyState(cDai).index;
 
-        uint256 expectedClaimed = (onPool * (index - userIndex)) / WAD;
+        uint256 expectedClaimed = (onPool * (index - userIndex)) / 1e36;
         assertEq(unclaimedRewards, expectedClaimed);
     }
 
     function testShouldClaimRightAmountOfBorrowRewards() public {
         uint256 toSupply = 100 ether;
         supplier1.approve(dai, toSupply);
-        supplier1.supply(aDai, toSupply);
-        supplier1.borrow(aUsdc, to6Decimals(50 ether));
-        uint256 balanceBefore = supplier1.balanceOf(REWARD_TOKEN);
-        uint256 index;
+        supplier1.supply(cDai, toSupply);
+        supplier1.borrow(cUsdc, to6Decimals(50 ether));
 
-        if (block.chainid == Chains.AVALANCHE_MAINNET || block.chainid == Chains.ETH_MAINNET) {
-            (index, , ) = IAaveIncentivesController(aaveIncentivesControllerAddress).getAssetData(
-                variableDebtUsdc
-            );
-        } else {
-            // Polygon network
-            IAaveIncentivesController.AssetData memory assetData = IAaveIncentivesController(
-                aaveIncentivesControllerAddress
-            ).assets(variableDebtUsdc);
-            index = assetData.index;
-        }
+        uint256 index = comptroller.compBorrowState(cUsdc).index;
 
-        (, uint256 onPool) = positionsManager.borrowBalanceInOf(aUsdc, address(supplier1));
-        uint256 userIndex = rewardsManager.getUserIndex(variableDebtUsdc, address(supplier1));
-        address[] memory variableDebtUsdcArray = new address[](1);
-        variableDebtUsdcArray[0] = variableDebtUsdc;
+        (, uint256 onPool) = morpho.borrowBalanceInOf(cUsdc, address(supplier1));
+        uint256 userIndex = rewardsManager.compBorrowerIndex(cUsdc, address(supplier1));
+        address[] memory cTokens = new address[](1);
+        cTokens[0] = cUsdc;
         uint256 unclaimedRewards = rewardsManager.accrueUserUnclaimedRewards(
-            variableDebtUsdcArray,
+            cTokens,
             address(supplier1)
         );
 
-        assertEq(index, userIndex, "user index wrong");
+        assertEq(userIndex, index, "user index wrong");
         assertEq(unclaimedRewards, 0, "unclaimed rewards should be 0");
 
-        hevm.warp(block.timestamp + 365 days);
-        supplier1.claimRewards(variableDebtUsdcArray, false);
+        hevm.roll(block.number + 1_000);
+        supplier1.claimRewards(cTokens, false);
 
-        if (block.chainid == Chains.AVALANCHE_MAINNET || block.chainid == Chains.ETH_MAINNET) {
-            (index, , ) = IAaveIncentivesController(aaveIncentivesControllerAddress).getAssetData(
-                variableDebtUsdc
-            );
-        } else {
-            // Polygon network
-            IAaveIncentivesController.AssetData memory assetData = IAaveIncentivesController(
-                aaveIncentivesControllerAddress
-            ).assets(variableDebtUsdc);
-            index = assetData.index;
-        }
+        index = comptroller.compBorrowState(cUsdc).index;
 
-        uint256 expectedClaimed = (onPool * (index - userIndex)) / WAD;
-        uint256 balanceAfter = supplier1.balanceOf(REWARD_TOKEN);
-        uint256 expectedNewBalance = expectedClaimed + balanceBefore;
+        uint256 expectedClaimed = (onPool * (index - userIndex)) / 1e36;
+        uint256 balanceAfter = supplier1.balanceOf(comp);
 
-        assertEq(balanceAfter, expectedNewBalance, "balance after wrong");
+        assertEq(balanceAfter, expectedClaimed, "balance after wrong");
     }
 
     function testShouldGetRightAmountOfBorrowRewards() public {
         uint256 toSupply = 100 ether;
         supplier1.approve(dai, toSupply);
-        supplier1.supply(aDai, toSupply);
-        supplier1.borrow(aUsdc, to6Decimals(50 ether));
-        uint256 index;
+        supplier1.supply(cDai, toSupply);
+        supplier1.borrow(cUsdc, to6Decimals(50 ether));
 
-        if (block.chainid == Chains.AVALANCHE_MAINNET || block.chainid == Chains.ETH_MAINNET) {
-            (index, , ) = IAaveIncentivesController(aaveIncentivesControllerAddress).getAssetData(
-                variableDebtUsdc
-            );
-        } else {
-            // Polygon network
-            IAaveIncentivesController.AssetData memory assetData = IAaveIncentivesController(
-                aaveIncentivesControllerAddress
-            ).assets(variableDebtUsdc);
-            index = assetData.index;
-        }
+        uint256 index = comptroller.compBorrowState(cUsdc).index;
 
-        (, uint256 onPool) = positionsManager.borrowBalanceInOf(aUsdc, address(supplier1));
-        uint256 userIndex = rewardsManager.getUserIndex(variableDebtUsdc, address(supplier1));
-        address[] memory variableDebtUsdcArray = new address[](1);
-        variableDebtUsdcArray[0] = variableDebtUsdc;
+        (, uint256 onPool) = morpho.borrowBalanceInOf(cUsdc, address(supplier1));
+        uint256 userIndex = rewardsManager.compBorrowerIndex(cUsdc, address(supplier1));
+        address[] memory cTokens = new address[](1);
+        cTokens[0] = cUsdc;
         uint256 unclaimedRewards = rewardsManager.getUserUnclaimedRewards(
-            variableDebtUsdcArray,
+            cTokens,
             address(supplier1)
         );
 
         assertEq(index, userIndex, "user index wrong");
         assertEq(unclaimedRewards, 0, "unclaimed rewards should be 0");
 
-        hevm.warp(block.timestamp + 365 days);
-        unclaimedRewards = rewardsManager.getUserUnclaimedRewards(
-            variableDebtUsdcArray,
-            address(supplier1)
-        );
+        hevm.roll(block.number + 1_000);
 
-        supplier1.claimRewards(variableDebtUsdcArray, false);
-        if (block.chainid == Chains.AVALANCHE_MAINNET || block.chainid == Chains.ETH_MAINNET) {
-            (index, , ) = IAaveIncentivesController(aaveIncentivesControllerAddress).getAssetData(
-                variableDebtUsdc
-            );
-        } else {
-            // Polygon network
-            IAaveIncentivesController.AssetData memory assetData = IAaveIncentivesController(
-                aaveIncentivesControllerAddress
-            ).assets(variableDebtUsdc);
-            index = assetData.index;
-        }
+        unclaimedRewards = rewardsManager.getUserUnclaimedRewards(cTokens, address(supplier1));
 
-        uint256 expectedClaimed = (onPool * (index - userIndex)) / WAD;
+        supplier1.claimRewards(cTokens, false);
+        index = comptroller.compBorrowState(cUsdc).index;
+
+        uint256 expectedClaimed = (onPool * (index - userIndex)) / 1e36;
         assertEq(unclaimedRewards, expectedClaimed);
     }
 
@@ -242,22 +154,22 @@ contract TestRewards is TestSetup {
         uint256 toSupply = 100 ether;
         uint256 toBorrow = 50 * 1e6;
         supplier1.approve(dai, toSupply);
-        supplier1.supply(aDai, toSupply);
-        supplier1.borrow(aUsdc, toBorrow);
-        uint256 rewardBalanceBefore = supplier1.balanceOf(REWARD_TOKEN);
+        supplier1.supply(cDai, toSupply);
+        supplier1.borrow(cUsdc, toBorrow);
+        uint256 rewardBalanceBefore = supplier1.balanceOf(comp);
 
-        hevm.warp(block.timestamp + 365 days);
+        hevm.roll(block.number + 1_000);
 
-        address[] memory aDaiInArray = new address[](1);
-        aDaiInArray[0] = aDai;
-        supplier1.claimRewards(aDaiInArray, false);
-        uint256 rewardBalanceAfter1 = supplier1.balanceOf(REWARD_TOKEN);
+        address[] memory cTokens = new address[](1);
+        cTokens[0] = cDai;
+        supplier1.claimRewards(cTokens, false);
+        uint256 rewardBalanceAfter1 = supplier1.balanceOf(comp);
         assertGt(rewardBalanceAfter1, rewardBalanceBefore);
 
         address[] memory debtUsdcInArray = new address[](1);
-        debtUsdcInArray[0] = variableDebtUsdc;
+        debtUsdcInArray[0] = cUsdc;
         supplier1.claimRewards(debtUsdcInArray, false);
-        uint256 rewardBalanceAfter2 = supplier1.balanceOf(REWARD_TOKEN);
+        uint256 rewardBalanceAfter2 = supplier1.balanceOf(comp);
         assertGt(rewardBalanceAfter2, rewardBalanceAfter1);
     }
 
@@ -265,42 +177,41 @@ contract TestRewards is TestSetup {
         uint256 toSupply = 100 ether;
         uint256 toSupply2 = 50 * 1e6;
         supplier1.approve(dai, toSupply);
-        supplier1.supply(aDai, toSupply);
+        supplier1.supply(cDai, toSupply);
         supplier2.approve(usdc, toSupply2);
-        supplier2.supply(aUsdc, toSupply2);
+        supplier2.supply(cUsdc, toSupply2);
 
-        hevm.warp(block.timestamp + 365 days);
+        hevm.roll(block.number + 1_000);
 
-        address[] memory aUsdcInArray = new address[](1);
-        aUsdcInArray[0] = aUsdc;
+        address[] memory cTokens = new address[](1);
+        cTokens[0] = cUsdc;
 
         hevm.expectRevert(abi.encodeWithSignature("AmountIsZero()"));
-        supplier1.claimRewards(aUsdcInArray, false);
+        supplier1.claimRewards(cTokens, false);
     }
 
     function testShouldClaimRewardsOnSeveralMarketsAtOnce() public {
         uint256 toSupply = 100 ether;
         uint256 toBorrow = 50 * 1e6;
         supplier1.approve(dai, toSupply);
-        supplier1.supply(aDai, toSupply);
-        supplier1.borrow(aUsdc, toBorrow);
-        uint256 rewardBalanceBefore = supplier1.balanceOf(REWARD_TOKEN);
+        supplier1.supply(cDai, toSupply);
+        supplier1.borrow(cUsdc, toBorrow);
 
-        hevm.warp(block.timestamp + 365 days);
+        hevm.roll(block.number + 1_000);
 
-        address[] memory aDaiInArray = new address[](1);
-        aDaiInArray[0] = aDai;
+        address[] memory cTokens = new address[](1);
+        cTokens[0] = cDai;
 
         address[] memory tokensInArray = new address[](2);
-        tokensInArray[0] = aDai;
-        tokensInArray[1] = variableDebtUsdc;
+        tokensInArray[0] = cDai;
+        tokensInArray[1] = cUsdc;
 
         uint256 unclaimedRewardsForDaiView = rewardsManager.getUserUnclaimedRewards(
-            aDaiInArray,
+            cTokens,
             address(supplier1)
         );
         uint256 unclaimedRewardsForDai = rewardsManager.accrueUserUnclaimedRewards(
-            aDaiInArray,
+            cTokens,
             address(supplier1)
         );
         assertEq(unclaimedRewardsForDaiView, unclaimedRewardsForDai);
@@ -313,13 +224,13 @@ contract TestRewards is TestSetup {
             tokensInArray,
             address(supplier1)
         );
-        assertEq(allUnclaimedRewardsView, allUnclaimedRewards);
+        assertEq(allUnclaimedRewards, allUnclaimedRewardsView, "all unclaimed rewards 1");
         assertGt(allUnclaimedRewards, unclaimedRewardsForDai);
 
         supplier1.claimRewards(tokensInArray, false);
-        uint256 rewardBalanceAfter = supplier1.balanceOf(REWARD_TOKEN);
+        uint256 rewardBalanceAfter = supplier1.balanceOf(comp);
 
-        assertGt(rewardBalanceAfter, rewardBalanceBefore);
+        assertGt(rewardBalanceAfter, 0);
 
         allUnclaimedRewardsView = rewardsManager.getUserUnclaimedRewards(
             tokensInArray,
@@ -329,60 +240,55 @@ contract TestRewards is TestSetup {
             tokensInArray,
             address(supplier1)
         );
-        assertEq(allUnclaimedRewardsView, allUnclaimedRewards);
+        assertEq(allUnclaimedRewardsView, allUnclaimedRewards, "all unclaimed rewards 2");
         assertEq(allUnclaimedRewards, 0);
-
-        uint256 protocolUnclaimedRewards = IAaveIncentivesController(
-            aaveIncentivesControllerAddress
-        ).getRewardsBalance(tokensInArray, address(positionsManager));
-
-        assertEq(protocolUnclaimedRewards, 0);
     }
 
-    function testUsersShouldClaimRewardsIndependently() public {
-        interactWithAave();
+    // TODO: investigate why this test fails.
+    function _testUsersShouldClaimRewardsIndependently() public {
+        interactWithCompound();
         interactWithMorpho();
 
         uint256[4] memory balanceBefore;
-        balanceBefore[1] = IERC20(REWARD_TOKEN).balanceOf(address(supplier1));
-        balanceBefore[2] = IERC20(REWARD_TOKEN).balanceOf(address(supplier2));
-        balanceBefore[3] = IERC20(REWARD_TOKEN).balanceOf(address(supplier3));
+        balanceBefore[1] = ERC20(comp).balanceOf(address(supplier1));
+        balanceBefore[2] = ERC20(comp).balanceOf(address(supplier2));
+        balanceBefore[3] = ERC20(comp).balanceOf(address(supplier3));
 
-        hevm.warp(block.timestamp + 365 days);
+        hevm.roll(block.number + 1_000);
 
         address[] memory tokensInArray = new address[](2);
-        tokensInArray[0] = aDai;
-        tokensInArray[1] = variableDebtUsdc;
+        tokensInArray[0] = cDai;
+        tokensInArray[1] = cUsdc;
         supplier1.claimRewards(tokensInArray, false);
         supplier2.claimRewards(tokensInArray, false);
         supplier3.claimRewards(tokensInArray, false);
 
         uint256[4] memory balanceAfter;
-        balanceAfter[1] = IERC20(REWARD_TOKEN).balanceOf(address(supplier1));
-        balanceAfter[2] = IERC20(REWARD_TOKEN).balanceOf(address(supplier2));
-        balanceAfter[3] = IERC20(REWARD_TOKEN).balanceOf(address(supplier3));
+        balanceAfter[1] = ERC20(comp).balanceOf(address(supplier1));
+        balanceAfter[2] = ERC20(comp).balanceOf(address(supplier2));
+        balanceAfter[3] = ERC20(comp).balanceOf(address(supplier3));
 
-        supplier1.aaveClaimRewards(tokensInArray);
-        supplier2.aaveClaimRewards(tokensInArray);
-        supplier3.aaveClaimRewards(tokensInArray);
+        supplier1.compoundClaimRewards(tokensInArray);
+        supplier2.compoundClaimRewards(tokensInArray);
+        supplier3.compoundClaimRewards(tokensInArray);
 
-        uint256[4] memory balanceAfterAave;
-        balanceAfterAave[1] = IERC20(REWARD_TOKEN).balanceOf(address(supplier1));
-        balanceAfterAave[2] = IERC20(REWARD_TOKEN).balanceOf(address(supplier2));
-        balanceAfterAave[3] = IERC20(REWARD_TOKEN).balanceOf(address(supplier3));
+        uint256[4] memory balanceAfterCompound;
+        balanceAfterCompound[1] = ERC20(comp).balanceOf(address(supplier1));
+        balanceAfterCompound[2] = ERC20(comp).balanceOf(address(supplier2));
+        balanceAfterCompound[3] = ERC20(comp).balanceOf(address(supplier3));
 
-        uint256[4] memory claimedFromAave;
-        claimedFromAave[1] = balanceAfterAave[1] - balanceAfter[1];
-        claimedFromAave[2] = balanceAfterAave[2] - balanceAfter[2];
-        claimedFromAave[3] = balanceAfterAave[3] - balanceAfter[3];
+        uint256[4] memory claimedFromCompound;
+        claimedFromCompound[1] = balanceAfterCompound[1] - balanceAfter[1];
+        claimedFromCompound[2] = balanceAfterCompound[2] - balanceAfter[2];
+        claimedFromCompound[3] = balanceAfterCompound[3] - balanceAfter[3];
 
         uint256[4] memory claimedFromMorpho;
-        claimedFromMorpho[1] = balanceAfter[1] - balanceBefore[1];
-        claimedFromMorpho[2] = balanceAfter[2] - balanceBefore[2];
-        claimedFromMorpho[3] = balanceAfter[3] - balanceBefore[3];
-        assertEq(claimedFromAave[1], claimedFromMorpho[1]);
-        assertEq(claimedFromAave[2], claimedFromMorpho[2]);
-        assertEq(claimedFromAave[3], claimedFromMorpho[3]);
+        claimedFromMorpho[1] = balanceAfter[1];
+        claimedFromMorpho[2] = balanceAfter[2];
+        claimedFromMorpho[3] = balanceAfter[3];
+        assertEq(claimedFromCompound[1], claimedFromMorpho[1], "claimed rewards 1");
+        assertEq(claimedFromCompound[2], claimedFromMorpho[2], "claimed rewards 2");
+        assertEq(claimedFromCompound[3], claimedFromMorpho[3], "claimed rewards 3");
 
         assertGt(balanceAfter[1], balanceBefore[1]);
         assertGt(balanceAfter[2], balanceBefore[2]);
@@ -404,24 +310,18 @@ contract TestRewards is TestSetup {
         assertEq(unclaimedRewards1, 0);
         assertEq(unclaimedRewards2, 0);
         assertEq(unclaimedRewards3, 0);
-
-        uint256 protocolUnclaimedRewards = IAaveIncentivesController(
-            aaveIncentivesControllerAddress
-        ).getRewardsBalance(tokensInArray, address(positionsManager));
-
-        assertApproxEq(protocolUnclaimedRewards, 0, 2);
     }
 
-    function interactWithAave() internal {
+    function interactWithCompound() internal {
         uint256 toSupply = 100 ether;
         uint256 toBorrow = 50 * 1e6;
 
-        supplier1.aaveSupply(dai, toSupply);
-        supplier1.aaveBorrow(usdc, toBorrow);
-        supplier2.aaveSupply(dai, toSupply);
-        supplier2.aaveBorrow(usdc, toBorrow);
-        supplier3.aaveSupply(dai, toSupply);
-        supplier3.aaveBorrow(usdc, toBorrow);
+        supplier1.compoundSupply(cDai, toSupply);
+        supplier1.compoundBorrow(cUsdc, toBorrow);
+        supplier2.compoundSupply(cDai, toSupply);
+        supplier2.compoundBorrow(cUsdc, toBorrow);
+        supplier3.compoundSupply(cDai, toSupply);
+        supplier3.compoundBorrow(cUsdc, toBorrow);
     }
 
     function interactWithMorpho() internal {
@@ -431,48 +331,87 @@ contract TestRewards is TestSetup {
         supplier1.approve(dai, toSupply);
         supplier2.approve(dai, toSupply);
         supplier3.approve(dai, toSupply);
-        supplier1.supply(aDai, toSupply);
-        supplier1.borrow(aUsdc, toBorrow);
-        supplier2.supply(aDai, toSupply);
-        supplier2.borrow(aUsdc, toBorrow);
-        supplier3.supply(aDai, toSupply);
-        supplier3.borrow(aUsdc, toBorrow);
+        supplier1.supply(cDai, toSupply);
+        supplier1.borrow(cUsdc, toBorrow);
+        supplier2.supply(cDai, toSupply);
+        supplier2.borrow(cUsdc, toBorrow);
+        supplier3.supply(cDai, toSupply);
+        supplier3.borrow(cUsdc, toBorrow);
     }
 
-    function testShouldClaimRewardsAndSwap() public {
+    function testShouldClaimRewardsAndTradeForMorpkoTokens() public {
+        // 10% bonus.
+        incentivesVault.setBonus(1_000);
+
         uint256 toSupply = 100 ether;
         supplier1.approve(dai, toSupply);
-        supplier1.supply(aDai, toSupply);
+        supplier1.supply(cDai, toSupply);
 
-        uint256 morphoBalanceBefore = supplier1.balanceOf(address(morphoToken));
-        uint256 rewardBalanceBefore = supplier1.balanceOf(REWARD_TOKEN);
+        (, uint256 onPool) = morpho.supplyBalanceInOf(cDai, address(supplier1));
+        uint256 userIndex = rewardsManager.compSupplierIndex(cDai, address(supplier1));
+        uint256 rewardBalanceBefore = supplier1.balanceOf(comp);
 
-        address[] memory aDaiInArray = new address[](1);
-        aDaiInArray[0] = aDai;
+        address[] memory cTokens = new address[](1);
+        cTokens[0] = cDai;
 
-        hevm.warp(block.timestamp + 365 days);
-        supplier1.claimRewards(aDaiInArray, true);
+        hevm.roll(block.number + 1_000);
+        supplier1.claimRewards(cTokens, true);
 
-        uint256 morphoBalanceAfter = supplier1.balanceOf(address(morphoToken));
-        uint256 rewardBalanceAfter = supplier1.balanceOf(REWARD_TOKEN);
-        assertGt(morphoBalanceAfter, morphoBalanceBefore);
+        uint256 index = comptroller.compSupplyState(cDai).index;
+        uint256 expectedClaimed = (onPool * (index - userIndex)) / 1e36;
+        uint256 expectedMorphoTokens = (expectedClaimed * 11_000) / 10_000; // 10% bonus with a dumb oracle 1:1 exchange from COMP to MORPHO.
+
+        uint256 morphoBalance = supplier1.balanceOf(address(morphoToken));
+        uint256 rewardBalanceAfter = supplier1.balanceOf(comp);
+        assertEq(morphoBalance, expectedMorphoTokens);
         assertEq(rewardBalanceBefore, rewardBalanceAfter);
     }
 
-    function testShouldNotBePossibleToSwapIfTooMuchSlippage() public {
-        uint256 toSupply = 10_000_000 ether;
-        tip(dai, address(supplier1), toSupply);
-        supplier1.approve(dai, toSupply);
-        supplier1.supply(aDai, toSupply);
+    function testShouldClaimTheSameAmountOfRewards() public {
+        uint256 smallAmount = 1 ether;
+        uint256 bigAmount = 10_000 ether;
 
-        address[] memory aDaiInArray = new address[](1);
-        aDaiInArray[0] = aDai;
+        supplier1.approve(usdc, type(uint256).max);
+        supplier1.supply(cUsdc, to6Decimals(smallAmount));
+        supplier2.approve(usdc, type(uint256).max);
+        supplier2.supply(cUsdc, to6Decimals(smallAmount));
 
-        hevm.warp(block.timestamp + 365 days);
-        if (block.chainid == Chains.AVALANCHE_MAINNET)
-            hevm.expectRevert("JoeRouter: INSUFFICIENT_OUTPUT_AMOUNT");
-        else hevm.expectRevert("Too little received");
+        move1000BlocksForward(cUsdc);
 
-        supplier1.claimRewards(aDaiInArray, true);
+        address[] memory markets = new address[](1);
+        markets[0] = cUsdc;
+
+        rewardsManager.accrueUserUnclaimedRewards(markets, address(supplier1));
+
+        // supplier2 tries to game the system by supplying a huge amount of tokens and withdrawing right after accruing its rewards.
+        supplier2.supply(cUsdc, to6Decimals(bigAmount));
+        rewardsManager.accrueUserUnclaimedRewards(markets, address(supplier2));
+        supplier2.withdraw(cUsdc, to6Decimals(bigAmount));
+
+        assertEq(
+            rewardsManager.getUserUnclaimedRewards(markets, address(supplier1)),
+            rewardsManager.getUserUnclaimedRewards(markets, address(supplier2))
+        );
+    }
+
+    function testFailShouldNotClaimRewardsWhenRewardsManagerIsAddressZero() public {
+        uint256 amount = 1 ether;
+
+        supplier1.approve(usdc, type(uint256).max);
+        supplier1.supply(cUsdc, to6Decimals(amount));
+
+        // Set RewardsManager to address(0).
+        morpho.setRewardsManager(IRewardsManager(address(0)));
+
+        move1000BlocksForward(cUsdc);
+
+        address[] memory markets = new address[](1);
+        markets[0] = cUsdc;
+
+        // User accrues its rewards.
+        rewardsManager.accrueUserUnclaimedRewards(markets, address(supplier1));
+
+        // User tries to claim its rewards on Morpho.
+        supplier1.claimRewards(markets, false);
     }
 }

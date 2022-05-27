@@ -1,124 +1,129 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import "./setup/TestSetup.sol";
+import "@contracts/compound/InterestRatesManager.sol";
+import "ds-test/test.sol";
+import "forge-std/stdlib.sol";
 
-contract TestInterestRates is TestSetup {
-    uint256 public supplyP2PExchangeRate = 1 * RAY;
-    uint256 public borrowP2PExchangeRate = 1 * RAY;
-    uint256 public poolSupplyExchangeRate = 2 * RAY;
-    uint256 public poolBorrowExchangeRate = 3 * RAY;
-    uint256 public lastPoolSupplyExchangeRate = 1 * RAY;
-    uint256 public lastPoolBorrowExchangeRate = 1 * RAY;
-    uint256 public reserveFactor0PerCent = 0;
-    uint256 public reserveFactor50PerCent = 5_000;
-    uint256 public supplyWeight = 2;
-    uint256 public borrowWeight = 1;
+contract TestInterestRates is InterestRatesManager, DSTest {
+    Vm public hevm = Vm(HEVM_ADDRESS);
 
-    function computeP2PExchangeRates(Types.Params memory params)
+    uint256 public p2pSupplyIndexTest = 1 * WAD;
+    uint256 public p2pBorrowIndexTest = 1 * WAD;
+    uint256 public poolSupplyIndexTest = 2 * WAD;
+    uint256 public poolBorrowIndexTest = 3 * WAD;
+    uint256 public lastPoolSupplyIndexTest = 1 * WAD;
+    uint256 public lastPoolBorrowIndexTest = 1 * WAD;
+    uint256 public reserveFactor0PerCentTest = 0;
+    uint256 public reserveFactor50PerCentTest = 5_000;
+    uint256 public p2pIndexCursorTest = 3_333;
+
+    // prettier-ignore
+    function computeP2PIndexes(InterestRatesManager.Params memory _params)
         public
-        view
-        returns (uint256 supplyP2PExchangeRate_, uint256 borrowP2PExchangeRate_)
+        pure
+        returns (uint256 p2pSupplyIndex_, uint256 p2pBorrowIndex_)
     {
-        uint256 supplyPoolIncrease = (params.poolSupplyExchangeRate * RAY / params.lastPoolSupplyExchangeRate); // prettier-ignore
-        uint256 borrowPoolIncrease  = (params.poolBorrowExchangeRate * RAY / params.lastPoolBorrowExchangeRate); // prettier-ignore
-        uint256 p2pIncrease = ((supplyWeight * supplyPoolIncrease + borrowWeight * borrowPoolIncrease) / (supplyWeight + borrowWeight)); // prettier-ignore
-        uint256 shareOfTheSupplyDelta = params.delta.supplyP2PAmount > 0 
-            ? (params.delta.supplyP2PDelta * params.poolSupplyExchangeRate / WAD) * RAY 
-                / (params.delta.supplyP2PAmount * params.supplyP2PExchangeRate / WAD) 
-            : 0; // prettier-ignore
-        uint256 shareOfTheBorrowDelta = params.delta.borrowP2PAmount > 0 
-            ? (params.delta.borrowP2PDelta * params.poolBorrowExchangeRate / WAD) * RAY 
-                / (params.delta.borrowP2PAmount * params.borrowP2PExchangeRate / WAD) 
-            : 0; // prettier-ignore
-        supplyP2PExchangeRate_ = params.supplyP2PExchangeRate * 
-            (
-                (RAY - shareOfTheSupplyDelta) * 
-                    ((MAX_BASIS_POINTS - params.reserveFactor) * p2pIncrease + params.reserveFactor * supplyPoolIncrease) / MAX_BASIS_POINTS / WAD + 
-                shareOfTheSupplyDelta * 
-                    supplyPoolIncrease / RAY
-            ) / RAY; // prettier-ignore
-        borrowP2PExchangeRate_ = params.borrowP2PExchangeRate * 
-            (
-                (RAY - shareOfTheBorrowDelta) * 
-                    ((MAX_BASIS_POINTS - params.reserveFactor) * p2pIncrease + params.reserveFactor * borrowPoolIncrease) / MAX_BASIS_POINTS / WAD + 
-                shareOfTheBorrowDelta * 
-                    borrowPoolIncrease / RAY
-            ) / RAY; // prettier-ignore
+        uint256 poolSupplyGrowthFactor = ((_params.poolSupplyIndex * WAD) / _params.lastPoolSupplyIndex);
+        uint256 poolBorrowGrowthFactor = ((_params.poolBorrowIndex * WAD) / _params.lastPoolBorrowIndex);
+        uint256 p2pIncrease = ((MAX_BASIS_POINTS - _params.p2pIndexCursor) * poolSupplyGrowthFactor + _params.p2pIndexCursor * poolBorrowGrowthFactor) / MAX_BASIS_POINTS;
+        uint256 shareOfTheSupplyDelta = _params.delta.p2pBorrowAmount > 0
+            ? (((_params.delta.p2pSupplyDelta * _params.lastPoolSupplyIndex) / WAD) * WAD) /
+                ((_params.delta.p2pSupplyAmount * _params.lastP2PSupplyIndex) / WAD)
+            : 0;
+        uint256 shareOfTheBorrowDelta = _params.delta.p2pSupplyAmount > 0
+            ? (((_params.delta.p2pBorrowDelta * _params.poolBorrowIndex) / WAD) * WAD) /
+                ((_params.delta.p2pBorrowAmount * _params.lastP2PBorrowIndex) / WAD)
+            : 0;
+        p2pSupplyIndex_ =
+            _params.lastP2PSupplyIndex *
+                ((WAD - shareOfTheSupplyDelta) * (p2pIncrease - (_params.reserveFactor * (p2pIncrease - poolSupplyGrowthFactor) / MAX_BASIS_POINTS)) / WAD +
+                (shareOfTheSupplyDelta * poolSupplyGrowthFactor) / WAD) /
+            WAD;
+        p2pBorrowIndex_ =
+            _params.lastP2PBorrowIndex *
+                ((WAD - shareOfTheBorrowDelta) * (p2pIncrease + (_params.reserveFactor * (poolBorrowGrowthFactor - p2pIncrease) / MAX_BASIS_POINTS)) / WAD +
+                (shareOfTheBorrowDelta * poolBorrowGrowthFactor) / WAD) /
+            WAD;
     }
 
-    function testExchangeRateComputation() public {
-        Types.Params memory params = Types.Params(
-            supplyP2PExchangeRate,
-            borrowP2PExchangeRate,
-            poolSupplyExchangeRate,
-            poolBorrowExchangeRate,
-            lastPoolSupplyExchangeRate,
-            lastPoolBorrowExchangeRate,
-            reserveFactor0PerCent,
+    function testIndexComputation() public {
+        InterestRatesManager.Params memory params = InterestRatesManager.Params(
+            p2pSupplyIndexTest,
+            p2pBorrowIndexTest,
+            poolSupplyIndexTest,
+            poolBorrowIndexTest,
+            lastPoolSupplyIndexTest,
+            lastPoolBorrowIndexTest,
+            reserveFactor0PerCentTest,
+            p2pIndexCursorTest,
             Types.Delta(0, 0, 0, 0)
         );
 
-        (uint256 newSupplyP2PExchangeRate, uint256 newBorrowP2PExchangeRate) = interestRates.computeP2PExchangeRates(params); // prettier-ignore
-        (uint256 expectedNewSupplyP2PExchangeRate, uint256 expectedNewBorrowP2PExchangeRate) = computeP2PExchangeRates(params); // prettier-ignore
-        assertApproxEq(newSupplyP2PExchangeRate, expectedNewSupplyP2PExchangeRate, 1);
-        assertApproxEq(newBorrowP2PExchangeRate, expectedNewBorrowP2PExchangeRate, 1);
+        (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex) = _computeP2PIndexes(params); // prettier-ignore
+        (uint256 expectednewP2PSupplyIndex, uint256 expectednewP2PBorrowIndex) = computeP2PIndexes(params); // prettier-ignore
+        assertApproxEq(newP2PSupplyIndex, expectednewP2PSupplyIndex, 1);
+        assertApproxEq(newP2PBorrowIndex, expectednewP2PBorrowIndex, 1);
     }
 
-    function testExchangeRateComputationWithReserveFactor() public {
-        Types.Params memory params = Types.Params(
-            supplyP2PExchangeRate,
-            borrowP2PExchangeRate,
-            poolSupplyExchangeRate,
-            poolBorrowExchangeRate,
-            lastPoolSupplyExchangeRate,
-            lastPoolBorrowExchangeRate,
-            reserveFactor50PerCent,
+    function testIndexComputationWithReserveFactor() public {
+        InterestRatesManager.Params memory params = InterestRatesManager.Params(
+            p2pSupplyIndexTest,
+            p2pBorrowIndexTest,
+            poolSupplyIndexTest,
+            poolBorrowIndexTest,
+            lastPoolSupplyIndexTest,
+            lastPoolBorrowIndexTest,
+            reserveFactor50PerCentTest,
+            p2pIndexCursorTest,
             Types.Delta(0, 0, 0, 0)
         );
 
-        (uint256 newSupplyP2PExchangeRate, uint256 newBorrowP2PExchangeRate) = interestRates.computeP2PExchangeRates(params); // prettier-ignore
-        (uint256 expectedNewSupplyP2PExchangeRate, uint256 expectedNewBorrowP2PExchangeRate) = computeP2PExchangeRates(params); // prettier-ignore
-        assertApproxEq(newSupplyP2PExchangeRate, expectedNewSupplyP2PExchangeRate, 1);
-        assertApproxEq(newBorrowP2PExchangeRate, expectedNewBorrowP2PExchangeRate, 1);
+        (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex) = _computeP2PIndexes(params); // prettier-ignore
+        (uint256 expectednewP2PSupplyIndex, uint256 expectednewP2PBorrowIndex) = computeP2PIndexes(params); // prettier-ignore
+        assertApproxEq(newP2PSupplyIndex, expectednewP2PSupplyIndex, 1);
+        assertApproxEq(newP2PBorrowIndex, expectednewP2PBorrowIndex, 1);
     }
 
-    function testExchangeRateComputationWithDelta() public {
-        Types.Params memory params = Types.Params(
-            supplyP2PExchangeRate,
-            borrowP2PExchangeRate,
-            poolSupplyExchangeRate,
-            poolBorrowExchangeRate,
-            lastPoolSupplyExchangeRate,
-            lastPoolBorrowExchangeRate,
-            reserveFactor0PerCent,
+    function testIndexComputationWithDelta() public {
+        InterestRatesManager.Params memory params = InterestRatesManager.Params(
+            p2pSupplyIndexTest,
+            p2pBorrowIndexTest,
+            poolSupplyIndexTest,
+            poolBorrowIndexTest,
+            lastPoolSupplyIndexTest,
+            lastPoolBorrowIndexTest,
+            reserveFactor0PerCentTest,
+            p2pIndexCursorTest,
             Types.Delta(1 * WAD, 1 * WAD, 4 * WAD, 6 * WAD)
         );
 
-        (uint256 newSupplyP2PExchangeRate, uint256 newBorrowP2PExchangeRate) = interestRates.computeP2PExchangeRates(params); // prettier-ignore
-        (uint256 expectedNewSupplyP2PExchangeRate, uint256 expectedNewBorrowP2PExchangeRate) = computeP2PExchangeRates(params); // prettier-ignore
-        assertApproxEq(newSupplyP2PExchangeRate, expectedNewSupplyP2PExchangeRate, 1);
-        assertApproxEq(newBorrowP2PExchangeRate, expectedNewBorrowP2PExchangeRate, 1);
+        (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex) = _computeP2PIndexes(params); // prettier-ignore
+        (uint256 expectednewP2PSupplyIndex, uint256 expectednewP2PBorrowIndex) = computeP2PIndexes(params); // prettier-ignore
+        assertApproxEq(newP2PSupplyIndex, expectednewP2PSupplyIndex, 1);
+        assertApproxEq(newP2PBorrowIndex, expectednewP2PBorrowIndex, 1);
     }
 
-    function testExchangeRateComputationWithDeltaAndReserveFactor() public {
-        Types.Params memory params = Types.Params(
-            supplyP2PExchangeRate,
-            borrowP2PExchangeRate,
-            poolSupplyExchangeRate,
-            poolBorrowExchangeRate,
-            lastPoolSupplyExchangeRate,
-            lastPoolBorrowExchangeRate,
-            reserveFactor50PerCent,
+    function testIndexComputationWithDeltaAndReserveFactor() public {
+        InterestRatesManager.Params memory params = InterestRatesManager.Params(
+            p2pSupplyIndexTest,
+            p2pBorrowIndexTest,
+            poolSupplyIndexTest,
+            poolBorrowIndexTest,
+            lastPoolSupplyIndexTest,
+            lastPoolBorrowIndexTest,
+            reserveFactor50PerCentTest,
+            p2pIndexCursorTest,
             Types.Delta(1 * WAD, 1 * WAD, 4 * WAD, 6 * WAD)
         );
 
-        (uint256 newSupplyP2PExchangeRate, uint256 newBorrowP2PExchangeRate) = interestRates.computeP2PExchangeRates(params); // prettier-ignore
-        (uint256 expectedNewSupplyP2PExchangeRate, uint256 expectedNewBorrowP2PExchangeRate) = computeP2PExchangeRates(params); // prettier-ignore
-        assertApproxEq(newSupplyP2PExchangeRate, expectedNewSupplyP2PExchangeRate, 1);
-        assertApproxEq(newBorrowP2PExchangeRate, expectedNewBorrowP2PExchangeRate, 1);
+        (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex) = _computeP2PIndexes(params); // prettier-ignore
+        (uint256 expectednewP2PSupplyIndex, uint256 expectednewP2PBorrowIndex) = computeP2PIndexes(params); // prettier-ignore
+        assertApproxEq(newP2PSupplyIndex, expectednewP2PSupplyIndex, 1);
+        assertApproxEq(newP2PBorrowIndex, expectednewP2PBorrowIndex, 1);
     }
 
+    // prettier-ignore
     function testFuzzInterestRates(
         uint64 _1,
         uint64 _2,
@@ -127,43 +132,36 @@ contract TestInterestRates is TestSetup {
         uint64 _5,
         uint64 _6,
         uint16 _7,
-        uint64 _8,
+        uint16 _8,
         uint64 _9,
         uint64 _10,
-        uint64 _11
+        uint64 _11,
+        uint64 _12
     ) public {
-        uint256 _supplyP2PExchangeRate = RAY + _1;
-        uint256 _borrowP2PExchangeRate = RAY + _2;
-        uint256 _poolSupplyExchangeRate = RAY + _3;
-        uint256 _poolBorrowExchangeRate = RAY + _4;
-        uint256 _lastPoolSupplyExchangeRate = RAY + _5;
-        uint256 _lastPoolBorrowExchangeRate = RAY + _6;
-        uint256 _reserveFactor = _7 % MAX_BASIS_POINTS;
-        uint256 _supplyP2PDelta = WAD + _8;
-        uint256 _borrowP2PDelta = WAD + _9;
-        uint256 _supplyP2PAmount = WAD + _10;
-        uint256 _borrowP2PAmount = WAD + _11;
+        uint256 _p2pSupplyIndex = WAD + _1;
+        uint256 _p2pBorrowIndex = WAD + _2;
+        uint256 _poolSupplyIndex = WAD + _3;
+        uint256 _poolBorrowIndex = WAD + _4;
+        uint256 _lastPoolSupplyIndex = WAD + _5;
+        uint256 _lastPoolBorrowIndex = WAD + _6;
+        uint256 _reserveFactor = _7 % 10_000;
+        uint256 _p2pIndexCursor = _8 % 10_000;
+        uint256 _p2pSupplyDelta = WAD + _9;
+        uint256 _p2pBorrowDelta = WAD + _10;
+        uint256 _p2pSupplyAmount = WAD + _11;
+        uint256 _p2pBorrowAmount = WAD + _12;
 
-        hevm.assume(_lastPoolSupplyExchangeRate <= _poolSupplyExchangeRate); // prettier-ignore
-        hevm.assume(_lastPoolBorrowExchangeRate <= _poolBorrowExchangeRate); // prettier-ignore
-        hevm.assume(_poolBorrowExchangeRate * RAY / _lastPoolBorrowExchangeRate > _poolSupplyExchangeRate * RAY / _lastPoolSupplyExchangeRate); // prettier-ignore
-        hevm.assume(_supplyP2PAmount * _supplyP2PExchangeRate / RAY > _supplyP2PDelta * _poolSupplyExchangeRate / RAY); // prettier-ignore
-        hevm.assume(_borrowP2PAmount * _borrowP2PExchangeRate / RAY > _borrowP2PDelta * _poolBorrowExchangeRate / RAY); // prettier-ignore
+        hevm.assume(_lastPoolSupplyIndex <= _poolSupplyIndex);
+        hevm.assume(_lastPoolBorrowIndex <= _poolBorrowIndex);
+        hevm.assume(_poolBorrowIndex * WAD / _lastPoolBorrowIndex > _poolSupplyIndex * WAD / _lastPoolSupplyIndex);
+        hevm.assume(_p2pSupplyAmount * _p2pSupplyIndex / WAD > _p2pSupplyDelta * _poolSupplyIndex / WAD);
+        hevm.assume(_p2pBorrowAmount * _p2pBorrowIndex / WAD > _p2pBorrowDelta * _poolBorrowIndex / WAD);
 
-        Types.Params memory params = Types.Params(
-            _supplyP2PExchangeRate,
-            _borrowP2PExchangeRate,
-            _poolSupplyExchangeRate,
-            _poolBorrowExchangeRate,
-            _lastPoolSupplyExchangeRate,
-            _lastPoolBorrowExchangeRate,
-            _reserveFactor,
-            Types.Delta(_supplyP2PDelta, _borrowP2PDelta, _supplyP2PAmount, _borrowP2PAmount)
-        );
+        InterestRatesManager.Params memory params = InterestRatesManager.Params(_p2pSupplyIndex, _p2pBorrowIndex, _poolSupplyIndex, _poolBorrowIndex, _lastPoolSupplyIndex, _lastPoolBorrowIndex, _reserveFactor, _p2pIndexCursor, Types.Delta(_p2pSupplyDelta, _p2pBorrowDelta, _p2pSupplyAmount, _p2pBorrowAmount));
 
-        (uint256 newSupplyP2PExchangeRate, uint256 newBorrowP2PExchangeRate) = interestRates.computeP2PExchangeRates(params); // prettier-ignore
-        (uint256 expectedNewSupplyP2PExchangeRate, uint256 expectedNewBorrowP2PExchangeRate) = computeP2PExchangeRates(params); // prettier-ignore
-        assertApproxEq(newSupplyP2PExchangeRate, expectedNewSupplyP2PExchangeRate, 5); // prettier-ignore
-        assertApproxEq(newBorrowP2PExchangeRate, expectedNewBorrowP2PExchangeRate, 5); // prettier-ignore
+        (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex) = _computeP2PIndexes(params);
+        (uint256 expectednewP2PSupplyIndex, uint256 expectednewP2PBorrowIndex) = computeP2PIndexes(params);
+        assertApproxEq(newP2PSupplyIndex, expectednewP2PSupplyIndex, 400);
+        assertApproxEq(newP2PBorrowIndex, expectednewP2PBorrowIndex, 400);
     }
 }
