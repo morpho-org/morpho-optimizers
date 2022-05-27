@@ -31,7 +31,7 @@ library DelegateCall {
                     let returndata_size := mload(returndata)
                     revert(add(32, returndata), returndata_size)
                 }
-            } else revert LowLevelDelegateCallFailed();
+            } else revert("LowLevelDelegateCallFailed()");
         }
     }
 }

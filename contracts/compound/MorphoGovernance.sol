@@ -144,7 +144,7 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @notice Sets `maxSortedUsers`.
     /// @param _newMaxSortedUsers The new `maxSortedUsers` value.
     function setMaxSortedUsers(uint256 _newMaxSortedUsers) external onlyOwner {
-        if (_newMaxSortedUsers == 0) revert HeapCannotBeEmpty();
+        if (_newMaxSortedUsers == 0) revert("HeapCannotBeEmpty()");
         maxSortedUsers = _newMaxSortedUsers;
         emit MaxSortedUsersSet(_newMaxSortedUsers);
     }
@@ -209,7 +209,7 @@ abstract contract MorphoGovernance is MorphoUtils {
         onlyOwner
         isMarketCreated(_poolTokenAddress)
     {
-        if (_newReserveFactor > MAX_BASIS_POINTS) revert ExceedsMaxBasisPoints();
+        if (_newReserveFactor > MAX_BASIS_POINTS) revert("ExceedsMaxBasisPoints()");
         updateP2PIndexes(_poolTokenAddress);
 
         marketParameters[_poolTokenAddress].reserveFactor = _newReserveFactor;
@@ -223,7 +223,7 @@ abstract contract MorphoGovernance is MorphoUtils {
         onlyOwner
         isMarketCreated(_poolTokenAddress)
     {
-        if (_p2pIndexCursor > MAX_BASIS_POINTS) revert ExceedsMaxBasisPoints();
+        if (_p2pIndexCursor > MAX_BASIS_POINTS) revert("ExceedsMaxBasisPoints()");
         updateP2PIndexes(_poolTokenAddress);
 
         marketParameters[_poolTokenAddress].p2pIndexCursor = _p2pIndexCursor;
@@ -284,12 +284,12 @@ abstract contract MorphoGovernance is MorphoUtils {
         onlyOwner
         isMarketCreatedAndNotPaused(_poolTokenAddress)
     {
-        if (treasuryVault == address(0)) revert ZeroAddress();
+        if (treasuryVault == address(0)) revert("ZeroAddress()");
 
         ERC20 underlyingToken = _getUnderlying(_poolTokenAddress);
         uint256 underlyingBalance = underlyingToken.balanceOf(address(this));
 
-        if (underlyingBalance == 0) revert AmountIsZero();
+        if (underlyingBalance == 0) revert("AmountIsZero()");
 
         uint256 amountToClaim = Math.min(
             _amount,
@@ -303,13 +303,13 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @notice Creates a new market to borrow/supply in.
     /// @param _poolTokenAddress The pool token address of the given market.
     function createMarket(address _poolTokenAddress) external onlyOwner {
-        if (marketStatus[_poolTokenAddress].isCreated) revert MarketAlreadyCreated();
+        if (marketStatus[_poolTokenAddress].isCreated) revert("MarketAlreadyCreated()");
         marketStatus[_poolTokenAddress].isCreated = true;
 
         address[] memory marketToEnter = new address[](1);
         marketToEnter[0] = _poolTokenAddress;
         uint256[] memory results = comptroller.enterMarkets(marketToEnter);
-        if (results[0] != 0) revert MarketCreationFailedOnCompound();
+        if (results[0] != 0) revert("MarketCreationFailedOnCompound()");
 
         ICToken poolToken = ICToken(_poolTokenAddress);
 

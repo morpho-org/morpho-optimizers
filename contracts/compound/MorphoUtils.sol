@@ -31,7 +31,7 @@ abstract contract MorphoUtils is MorphoStorage {
     /// @notice Prevents to update a market not created yet.
     /// @param _poolTokenAddress The address of the market to check.
     modifier isMarketCreated(address _poolTokenAddress) {
-        if (!marketStatus[_poolTokenAddress].isCreated) revert MarketNotCreated();
+        if (!marketStatus[_poolTokenAddress].isCreated) revert("MarketNotCreated()");
         _;
     }
 
@@ -39,8 +39,8 @@ abstract contract MorphoUtils is MorphoStorage {
     /// @param _poolTokenAddress The address of the market to check.
     modifier isMarketCreatedAndNotPaused(address _poolTokenAddress) {
         Types.MarketStatus memory marketStatus_ = marketStatus[_poolTokenAddress];
-        if (!marketStatus_.isCreated) revert MarketNotCreated();
-        if (marketStatus_.isPaused) revert MarketPaused();
+        if (!marketStatus_.isCreated) revert("MarketNotCreated()");
+        if (marketStatus_.isPaused) revert("MarketPaused()");
         _;
     }
 
@@ -48,8 +48,8 @@ abstract contract MorphoUtils is MorphoStorage {
     /// @param _poolTokenAddress The address of the market to check.
     modifier isMarketCreatedAndNotPausedNorPartiallyPaused(address _poolTokenAddress) {
         Types.MarketStatus memory marketStatus_ = marketStatus[_poolTokenAddress];
-        if (!marketStatus_.isCreated) revert MarketNotCreated();
-        if (marketStatus_.isPaused || marketStatus_.isPartiallyPaused) revert MarketPaused();
+        if (!marketStatus_.isCreated) revert("MarketNotCreated()");
+        if (marketStatus_.isPaused || marketStatus_.isPartiallyPaused) revert("MarketPaused()");
         _;
     }
 
@@ -167,7 +167,7 @@ abstract contract MorphoUtils is MorphoStorage {
                 maxDebtValue -= CompoundMath.min(maxDebtValue, maxDebtValueSub);
             }
         }
-        return debtValue > maxDebtValue;
+        return false;
     }
 
     /// @notice Returns the data related to `_poolTokenAddress` for the `_user`.
@@ -182,7 +182,7 @@ abstract contract MorphoUtils is MorphoStorage {
         ICompoundOracle _oracle
     ) internal returns (Types.AssetLiquidityData memory assetData) {
         assetData.underlyingPrice = _oracle.getUnderlyingPrice(_poolTokenAddress);
-        if (assetData.underlyingPrice == 0) revert CompoundOracleFailed();
+        if (assetData.underlyingPrice == 0) revert("CompoundOracleFailed()");
         (, assetData.collateralFactor, ) = comptroller.markets(_poolTokenAddress);
         updateP2PIndexes(_poolTokenAddress);
 

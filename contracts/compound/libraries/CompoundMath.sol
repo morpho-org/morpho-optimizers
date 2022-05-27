@@ -23,12 +23,12 @@ library CompoundMath {
     }
 
     function safe224(uint256 n) internal pure returns (uint224) {
-        if (n >= 2**224) revert NumberExceeds224Bits();
+        if (n >= 2**224) revert("NumberExceeds224Bits()");
         return uint224(n);
     }
 
     function safe32(uint256 n) internal pure returns (uint32) {
-        if (n >= 2**32) revert NumberExceeds32Bits();
+        if (n >= 2**32) revert("NumberExceeds32Bits()");
         return uint32(n);
     }
 

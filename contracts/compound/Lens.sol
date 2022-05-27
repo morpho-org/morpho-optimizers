@@ -349,7 +349,7 @@ contract Lens {
             _withdrawnAmount,
             _borrowedAmount
         );
-        if (debtValue > maxDebtValue) revert DebtValueAboveMax();
+        if (debtValue > maxDebtValue) revert("DebtValueAboveMax()");
     }
 
     /// @notice Returns market's data.

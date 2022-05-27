@@ -198,7 +198,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         uint256 _amount,
         uint256 _maxGasForMatching
     ) external {
-        if (_amount == 0) revert AmountIsZero();
+        if (_amount == 0) revert("AmountIsZero()");
         updateP2PIndexes(_poolTokenAddress);
 
         _enterMarketIfNeeded(_poolTokenAddress, msg.sender);
@@ -290,11 +290,12 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         uint256 _amount,
         uint256 _maxGasForMatching
     ) external {
-        if (_amount == 0) revert AmountIsZero();
+        if (_amount == 0) revert("AmountIsZero()");
         updateP2PIndexes(_poolTokenAddress);
 
         _enterMarketIfNeeded(_poolTokenAddress, msg.sender);
-        if (_isLiquidable(msg.sender, _poolTokenAddress, 0, _amount)) revert UnauthorisedBorrow();
+        if (_isLiquidable(msg.sender, _poolTokenAddress, 0, _amount))
+            revert("UnauthorisedBorrow()");
         ERC20 underlyingToken = _getUnderlying(_poolTokenAddress);
         uint256 remainingToBorrow = _amount;
         uint256 toWithdraw;
@@ -385,8 +386,8 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         address _receiver,
         uint256 _maxGasForMatching
     ) external {
-        if (_amount == 0) revert AmountIsZero();
-        if (!userMembership[_poolTokenAddress][_supplier]) revert UserNotMemberOfMarket();
+        if (_amount == 0) revert("AmountIsZero()");
+        if (!userMembership[_poolTokenAddress][_supplier]) revert("UserNotMemberOfMarket()");
 
         updateP2PIndexes(_poolTokenAddress);
         uint256 toWithdraw = Math.min(
@@ -395,7 +396,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         );
 
         if (_isLiquidable(_supplier, _poolTokenAddress, toWithdraw, 0))
-            revert UnauthorisedWithdraw();
+            revert("UnauthorisedWithdraw()");
 
         _safeWithdrawLogic(_poolTokenAddress, toWithdraw, _supplier, _receiver, _maxGasForMatching);
     }
@@ -411,8 +412,8 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         uint256 _amount,
         uint256 _maxGasForMatching
     ) external {
-        if (_amount == 0) revert AmountIsZero();
-        if (!userMembership[_poolTokenAddress][_user]) revert UserNotMemberOfMarket();
+        if (_amount == 0) revert("AmountIsZero()");
+        if (!userMembership[_poolTokenAddress][_user]) revert("UserNotMemberOfMarket()");
 
         updateP2PIndexes(_poolTokenAddress);
         uint256 toRepay = Math.min(_getUserBorrowBalanceInOf(_poolTokenAddress, _user), _amount);
@@ -434,25 +435,25 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         if (
             !userMembership[_poolTokenBorrowedAddress][_borrower] ||
             !userMembership[_poolTokenCollateralAddress][_borrower]
-        ) revert UserNotMemberOfMarket();
+        ) revert("UserNotMemberOfMarket()");
 
         updateP2PIndexes(_poolTokenBorrowedAddress);
         updateP2PIndexes(_poolTokenCollateralAddress);
 
-        if (!_isLiquidable(_borrower, address(0), 0, 0)) revert UnauthorisedLiquidate();
+        if (!_isLiquidable(_borrower, address(0), 0, 0)) revert("UnauthorisedLiquidate()");
 
         LiquidateVars memory vars;
         vars.borrowBalance = _getUserBorrowBalanceInOf(_poolTokenBorrowedAddress, _borrower);
 
         if (_amount > vars.borrowBalance.mul(comptroller.closeFactorMantissa()))
-            revert AmountAboveWhatAllowedToRepay(); // Same mechanism as Compound. Liquidator cannot repay more than part of the debt (cf close factor on Compound).
+            revert("AmountAboveWhatAllowedToRepay()"); // Same mechanism as Compound. Liquidator cannot repay more than part of the debt (cf close factor on Compound).
 
         _safeRepayLogic(_poolTokenBorrowedAddress, _borrower, _amount, 0);
 
         ICompoundOracle compoundOracle = ICompoundOracle(comptroller.oracle());
         vars.collateralPrice = compoundOracle.getUnderlyingPrice(_poolTokenCollateralAddress);
         vars.borrowedPrice = compoundOracle.getUnderlyingPrice(_poolTokenBorrowedAddress);
-        if (vars.collateralPrice == 0 || vars.borrowedPrice == 0) revert CompoundOracleFailed();
+        if (vars.collateralPrice == 0 || vars.borrowedPrice == 0) revert("CompoundOracleFailed()");
 
         // Compute the amount of collateral tokens to seize (Same mechanism as Compound).
         vars.amountToSeize = _amount
@@ -462,7 +463,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
         vars.supplyBalance = _getUserSupplyBalanceInOf(_poolTokenCollateralAddress, _borrower);
 
-        if (vars.amountToSeize > vars.supplyBalance) revert ToSeizeAboveCollateral();
+        if (vars.amountToSeize > vars.supplyBalance) revert("ToSeizeAboveCollateral()");
 
         _safeWithdrawLogic(
             _poolTokenCollateralAddress,
@@ -497,7 +498,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         address _receiver,
         uint256 _maxGasForMatching
     ) internal {
-        if (_amount == 0) revert AmountIsZero();
+        if (_amount == 0) revert("AmountIsZero()");
 
         WithdrawVars memory vars;
         vars.poolToken = ICToken(_poolTokenAddress);
@@ -507,7 +508,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         vars.withdrawable = vars.poolToken.balanceOfUnderlying(address(this));
         vars.poolSupplyIndex = vars.poolToken.exchangeRateStored(); // Exchange rate has already been updated.
 
-        if (_amount.div(vars.poolSupplyIndex) == 0) revert WithdrawTooSmall();
+        if (_amount.div(vars.poolSupplyIndex) == 0) revert("WithdrawTooSmall()");
 
         /// Soft withdraw ///
 
@@ -799,7 +800,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             ICEther(_poolTokenAddress).mint{value: _amount}();
         } else {
             _underlyingToken.safeApprove(_poolTokenAddress, _amount);
-            if (ICToken(_poolTokenAddress).mint(_amount) != 0) revert MintOnCompoundFailed();
+            if (ICToken(_poolTokenAddress).mint(_amount) != 0) revert("MintOnCompoundFailed()");
         }
     }
 
@@ -808,7 +809,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     /// @param _amount The amount of token (in underlying).
     function _withdrawFromPool(address _poolTokenAddress, uint256 _amount) internal {
         if (ICToken(_poolTokenAddress).redeemUnderlying(_amount) != 0)
-            revert RedeemOnCompoundFailed();
+            revert("RedeemOnCompoundFailed()");
         if (_poolTokenAddress == cEth) IWETH(address(wEth)).deposit{value: _amount}(); // Turn the ETH received in wETH.
     }
 
@@ -816,7 +817,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     /// @param _poolTokenAddress The address of the pool token.
     /// @param _amount The amount of token (in underlying).
     function _borrowFromPool(address _poolTokenAddress, uint256 _amount) internal {
-        if ((ICToken(_poolTokenAddress).borrow(_amount) != 0)) revert BorrowOnCompoundFailed();
+        if ((ICToken(_poolTokenAddress).borrow(_amount) != 0)) revert("BorrowOnCompoundFailed()");
         if (_poolTokenAddress == cEth) IWETH(address(wEth)).deposit{value: _amount}(); // Turn the ETH received in wETH.
     }
 
@@ -835,7 +836,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         } else {
             _underlyingToken.safeApprove(_poolTokenAddress, _amount);
             if (ICToken(_poolTokenAddress).repayBorrow(_amount) != 0)
-                revert RepayOnCompoundFailed();
+                revert("RepayOnCompoundFailed()");
         }
     }
 

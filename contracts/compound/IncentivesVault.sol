@@ -120,8 +120,8 @@ contract IncentivesVault is IIncentivesVault, Ownable {
     /// @param _receiver The address of the receiver.
     /// @param _amount The amount to transfer to the receiver.
     function tradeCompForMorphoTokens(address _receiver, uint256 _amount) external {
-        if (msg.sender != address(morpho)) revert OnlyMorpho();
-        if (isPaused) revert VaultIsPaused();
+        if (msg.sender != address(morpho)) revert("OnlyMorpho()");
+        if (isPaused) revert("VaultIsPaused()");
         // Transfer COMP to the DAO.
         ERC20(comptroller.getCompAddress()).safeTransferFrom(msg.sender, morphoDao, _amount);
 

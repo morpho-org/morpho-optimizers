@@ -179,7 +179,7 @@ contract Morpho is MorphoGovernance {
     {
         uint256 amountOfRewards = rewardsManager.claimRewards(_cTokenAddresses, msg.sender);
 
-        if (amountOfRewards == 0) revert AmountIsZero();
+        if (amountOfRewards == 0) revert("AmountIsZero()");
 
         ERC20 comp = ERC20(comptroller.getCompAddress());
         // If there is not enough COMP tokens on the contract, claim them. Else, continue.
