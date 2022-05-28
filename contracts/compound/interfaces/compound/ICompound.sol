@@ -53,9 +53,9 @@ interface IComptroller {
         uint32 block;
     }
 
-    function liquidationIncentiveMantissa() external returns (uint256);
+    function liquidationIncentiveMantissa() external view returns (uint256);
 
-    function closeFactorMantissa() external returns (uint256);
+    function closeFactorMantissa() external view returns (uint256);
 
     function admin() external view returns (address);
 

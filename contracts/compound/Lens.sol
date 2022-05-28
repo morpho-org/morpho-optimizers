@@ -591,6 +591,51 @@ contract Lens {
         return debtValue > maxDebtValue;
     }
 
+    /// @dev Computes the maximum repayable amount for a potential liquidation.
+    /// @notice This doesn't check if the _user is actually liquidatable. It can be verified with isLiquidable(_user).
+    /// @param _user The potential liquidatee.
+    /// @param _poolTokenBorrowedAddress The address of the market to repay.
+    /// @param _poolTokenCollateralAddress The address of the market to seize.
+    function computeLiquidationAmount(
+        address _user,
+        address _poolTokenBorrowedAddress,
+        address _poolTokenCollateralAddress
+    ) external view returns (uint256 toRepay) {
+        IComptroller comptroller = morpho.comptroller();
+        ICompoundOracle compoundOracle = ICompoundOracle(comptroller.oracle());
+
+        (, uint256 newP2PBorrowIndex, , uint256 newPoolBorrowIndex) = getUpdatedIndexes(
+            _poolTokenBorrowedAddress
+        );
+        (uint256 newP2PSupplyIndex, , uint256 newPoolSupplyIndex, ) = getUpdatedIndexes(
+            _poolTokenCollateralAddress
+        );
+
+        Types.BorrowBalance memory borrowBalance = morpho.borrowBalanceInOf(
+            _poolTokenBorrowedAddress,
+            _user
+        );
+        Types.SupplyBalance memory supplyBalance = morpho.supplyBalanceInOf(
+            _poolTokenCollateralAddress,
+            _user
+        );
+
+        uint256 borrowedPrice = compoundOracle.getUnderlyingPrice(_poolTokenBorrowedAddress);
+        uint256 collateralPrice = compoundOracle.getUnderlyingPrice(_poolTokenCollateralAddress);
+
+        uint256 maxROIRepay = (supplyBalance.inP2P.mul(newP2PSupplyIndex) +
+            supplyBalance.onPool.mul(newPoolSupplyIndex))
+        .mul(collateralPrice)
+        .div(borrowedPrice)
+        .div(comptroller.liquidationIncentiveMantissa());
+
+        uint256 maxRepayable = (borrowBalance.inP2P.mul(newP2PBorrowIndex) +
+            borrowBalance.onPool.mul(newPoolBorrowIndex))
+        .mul(comptroller.closeFactorMantissa());
+
+        toRepay = maxROIRepay > maxRepayable ? maxRepayable : maxROIRepay;
+    }
+
     ////////////////////////////////////
     ///           INTERNAL           ///
     ////////////////////////////////////
