@@ -763,4 +763,71 @@ contract TestLens is TestSetup {
         assertEq(poolSupplyRate, expectedPoolSupplyRate);
         assertEq(poolBorrowRate, expectedPoolBorrowRate);
     }
+
+    function testIsLiquidableFalse() public {
+        uint256 amount = 10_000 ether;
+
+        borrower1.approve(usdc, to6Decimals(2 * amount));
+        borrower1.supply(cUsdc, to6Decimals(2 * amount));
+        borrower1.borrow(cDai, amount);
+
+        assertFalse(lens.isLiquidable(address(borrower1)));
+    }
+
+    function testIsLiquidableTrue() public {
+        uint256 amount = 10_000 ether;
+
+        borrower1.approve(usdc, to6Decimals(2 * amount));
+        borrower1.supply(cUsdc, to6Decimals(2 * amount));
+        borrower1.borrow(cDai, amount);
+
+        createAndSetCustomPriceOracle().setDirectPrice(usdc, oracle.getUnderlyingPrice(cUsdc) / 2);
+
+        assertTrue(lens.isLiquidable(address(borrower1)));
+    }
+
+    function testComputeLiquidation() public {
+        uint256 amount = 10_000 ether;
+
+        borrower1.approve(usdc, to6Decimals(2 * amount));
+        borrower1.supply(cUsdc, to6Decimals(2 * amount));
+        borrower1.borrow(cDai, amount);
+
+        createAndSetCustomPriceOracle().setDirectPrice(usdc, 0);
+
+        assertEq(lens.computeLiquidationAmount(address(borrower1), cDai, cUsdc), 0);
+    }
+
+    function testComputeLiquidation2() public {
+        uint256 amount = 10_000 ether;
+
+        borrower1.approve(usdc, to6Decimals(2 * amount));
+        borrower1.supply(cUsdc, to6Decimals(2 * amount));
+        borrower1.borrow(cDai, amount);
+
+        assertApproxEq(
+            lens.computeLiquidationAmount(address(borrower1), cDai, cUsdc),
+            amount.mul(comptroller.closeFactorMantissa()),
+            1
+        );
+    }
+
+    function testComputeLiquidation3() public {
+        uint256 amount = 10_000 ether;
+
+        borrower1.approve(usdc, to6Decimals(2 * amount));
+        borrower1.supply(cUsdc, to6Decimals(2 * amount));
+        borrower1.borrow(cDai, amount);
+
+        createAndSetCustomPriceOracle().setDirectPrice(
+            usdc,
+            (oracle.getUnderlyingPrice(cDai) / 4) * 1e12 // Setting the value of the collateral at the same value as the debt.
+        );
+
+        assertApproxEq(
+            lens.computeLiquidationAmount(address(borrower1), cDai, cUsdc),
+            (amount / 2).div(comptroller.liquidationIncentiveMantissa()),
+            1000000000000
+        );
+    }
 }
