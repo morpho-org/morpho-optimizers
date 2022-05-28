@@ -830,4 +830,37 @@ contract TestLens is TestSetup {
             1000000000000
         );
     }
+
+    function testFuzzLiquidation(
+        uint32 _amount,
+        uint32 _collateralPrice,
+        uint32 _borrowPrice
+    ) public {
+        uint256 amount = uint256(_amount) + 1e13;
+        uint256 collateralPrice = uint256(_collateralPrice) + 1;
+        uint256 borrowPrice = uint256(_borrowPrice) + 1;
+
+        tip(usdc, address(supplier2), 1000 * amount);
+        supplier2.approve(usdc, type(uint256).max);
+        supplier2.supply(cUsdc, 1000 * amount);
+
+        supplier1.approve(usdc, type(uint256).max);
+        uint256 balanceBefore = ERC20(dai).balanceOf(address(supplier1));
+
+        borrower1.approve(dai, 2 * amount);
+        borrower1.supply(cDai, 2 * amount);
+        borrower1.borrow(cUsdc, to6Decimals(amount));
+
+        createAndSetCustomPriceOracle().setDirectPrice(dai, collateralPrice);
+        createAndSetCustomPriceOracle().setDirectPrice(usdc, borrowPrice);
+
+        if (lens.isLiquidable(address(borrower1))) {
+            uint256 toRepay = lens.computeLiquidationAmount(address(borrower1), cUsdc, cDai);
+            if (toRepay > 0) {
+                supplier1.liquidate(cUsdc, cDai, address(borrower1), toRepay);
+            }
+            assertTrue(ERC20(dai).balanceOf(address(supplier1)) > balanceBefore);
+            assertEq(lens.computeLiquidationAmount(address(borrower1), cUsdc, cDai), 0);
+        }
+    }
 }
