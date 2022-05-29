@@ -49,7 +49,7 @@ interface IMorpho {
     function setReserveFactor(address _poolTokenAddress, uint256 _newReserveFactor) external;
     function setP2PIndexCursor(address _poolTokenAddress, uint16 _p2pIndexCursor) external;
     function claimToTreasury(address _poolTokenAddress, uint256 _amount) external;
-    function createMarket(address _poolTokenAddress) external;
+    function createMarket(address _poolTokenAddress, Types.MarketParameters calldata _marketParams) external;
 
     /// USERS ///
 
