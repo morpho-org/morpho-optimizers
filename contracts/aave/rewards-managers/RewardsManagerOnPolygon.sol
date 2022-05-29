@@ -3,7 +3,7 @@ pragma solidity 0.8.13;
 
 import "../RewardsManager.sol";
 
-contract RewardsManagerForAaveOnPolygon is RewardsManager {
+contract RewardsManagerOnPolygon is RewardsManager {
     constructor(
         ILendingPool _lendingPool,
         IMorpho _morpho,
