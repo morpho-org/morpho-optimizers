@@ -831,18 +831,12 @@ contract TestLens is TestSetup {
         );
     }
 
-    function testFuzzLiquidation(
-        uint32 _amount,
-        uint32 _collateralPrice,
-        uint32 _borrowPrice
-    ) public {
+    function testFuzzLiquidation(uint64 _amount, uint64 _collateralPrice) public {
         uint256 amount = uint256(_amount) + 1e13;
         uint256 collateralPrice = uint256(_collateralPrice) + 1;
-        uint256 borrowPrice = uint256(_borrowPrice) + 1;
 
-        tip(usdc, address(supplier2), 1000 * amount);
-        supplier2.approve(usdc, type(uint256).max);
-        supplier2.supply(cUsdc, 1000 * amount);
+        supplier2.approve(usdc, 100e6);
+        supplier2.supply(cUsdc, 100e6);
 
         supplier1.approve(usdc, type(uint256).max);
         uint256 balanceBefore = ERC20(dai).balanceOf(address(supplier1));
@@ -852,15 +846,37 @@ contract TestLens is TestSetup {
         borrower1.borrow(cUsdc, to6Decimals(amount));
 
         createAndSetCustomPriceOracle().setDirectPrice(dai, collateralPrice);
-        createAndSetCustomPriceOracle().setDirectPrice(usdc, borrowPrice);
 
         if (lens.isLiquidatable(address(borrower1))) {
+            (uint256 collateralValue, uint256 debtValue, uint256 maxDebtValue) = lens
+            .getUserBalanceStates(address(borrower1));
+            assertLt(maxDebtValue, debtValue);
+
             uint256 toRepay = lens.computeLiquidationAmount(address(borrower1), cUsdc, cDai);
-            if (toRepay > 0) {
-                supplier1.liquidate(cUsdc, cDai, address(borrower1), toRepay);
+
+            if (toRepay == 0) {
+                // assertEq(collateralValue, 0, "collateral value supposed to be 0");
+            } else {
+                do {
+                    supplier1.liquidate(cUsdc, cDai, address(borrower1), toRepay);
+                    assertGt(
+                        ERC20(dai).balanceOf(address(supplier1)),
+                        balanceBefore,
+                        "balance did not increase"
+                    );
+                    balanceBefore = ERC20(dai).balanceOf(address(supplier1));
+                    toRepay = lens.computeLiquidationAmount(address(borrower1), cUsdc, cDai);
+                } while (lens.isLiquidatable(address(borrower1)) && toRepay > 0);
+
+                if (collateralValue.div(comptroller.liquidationIncentiveMantissa()) > debtValue) {
+                    // limit solvent
+                    assertFalse(lens.isLiquidatable(address(borrower1)));
+                } else {
+                    // limit no collateral
+                    (collateralValue, , ) = lens.getUserBalanceStates(address(borrower1));
+                    // assertEq(collateralValue, 0, "collateralValue != 0");
+                }
             }
-            assertTrue(ERC20(dai).balanceOf(address(supplier1)) > balanceBefore);
-            assertEq(lens.computeLiquidationAmount(address(borrower1), cUsdc, cDai), 0);
         }
     }
 }
