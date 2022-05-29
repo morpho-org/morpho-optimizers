@@ -152,7 +152,7 @@ contract TestBorrow is TestSetup {
         );
 
         testEquality(inP2P, expectedBorrowInP2P, "Borrower1 in peer-to-peer");
-        assertEq(onPool, 0, "Borrower1 on pool");
+        assertEq(onPool, 0);
     }
 
     // The NMAX biggest supplier don't match all of the borrowed amount, after NMAX match, the rest is borrowed and set `onPool`. ⚠️ most gas expensive borrow scenario.

@@ -579,7 +579,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
         /// Transfer withdraw ///
 
-        // Match peer-to-peer supply delta first if any.
+        // Reduce peer-to-peer supply delta first if any.
         if (vars.remainingToWithdraw > 0 && delta.p2pSupplyDelta > 0) {
             uint256 matchedDelta = Math.min(
                 delta.p2pSupplyDelta.rayMul(vars.poolSupplyIndex),
@@ -636,8 +636,15 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
                 emit P2PBorrowDeltaUpdated(_poolTokenAddress, delta.p2pBorrowAmount);
             }
 
-            delta.p2pSupplyAmount -= vars.remainingToWithdraw.rayDiv(vars.p2pSupplyIndex);
-            delta.p2pBorrowAmount -= unmatched.rayDiv(p2pBorrowIndex[_poolTokenAddress]);
+            // Math.min as the last decimal might flip.
+            delta.p2pSupplyAmount -= Math.min(
+                vars.remainingToWithdraw.rayDiv(vars.p2pSupplyIndex),
+                delta.p2pSupplyAmount
+            );
+            delta.p2pBorrowAmount -= Math.min(
+                unmatched.rayDiv(p2pBorrowIndex[_poolTokenAddress]),
+                delta.p2pBorrowAmount
+            );
             emit P2PAmountsUpdated(_poolTokenAddress, delta.p2pSupplyAmount, delta.p2pBorrowAmount);
 
             _borrowFromPool(underlyingToken, vars.remainingToWithdraw); // Reverts on error.
@@ -800,8 +807,15 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
                 emit P2PSupplyDeltaUpdated(_poolTokenAddress, delta.p2pBorrowDelta);
             }
 
-            delta.p2pSupplyAmount -= unmatched.rayDiv(vars.p2pSupplyIndex);
-            delta.p2pBorrowAmount -= vars.remainingToRepay.rayDiv(vars.p2pBorrowIndex);
+            // Math.min as the last decimal might flip.
+            delta.p2pSupplyAmount -= Math.min(
+                unmatched.rayDiv(vars.p2pSupplyIndex),
+                delta.p2pSupplyAmount
+            );
+            delta.p2pBorrowAmount -= Math.min(
+                vars.remainingToRepay.rayDiv(vars.p2pBorrowIndex),
+                delta.p2pBorrowAmount
+            );
             emit P2PAmountsUpdated(_poolTokenAddress, delta.p2pSupplyAmount, delta.p2pBorrowAmount);
 
             _supplyToPool(underlyingToken, vars.remainingToRepay); // Reverts on error.

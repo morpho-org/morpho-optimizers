@@ -191,6 +191,8 @@ contract TestSetup is Config, Utils, stdCheats {
         createMarket(aUsdt);
         createMarket(aAave);
 
+        hevm.warp(block.timestamp + 100);
+
         treasuryVault = new User(morpho);
 
         oracle = IPriceOracleGetter(lendingPoolAddressesProvider.getPriceOracle());
