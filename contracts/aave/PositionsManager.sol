@@ -236,16 +236,8 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             delta.p2pSupplyAmount += toAddInP2P;
             supplyBalanceInOf[_poolTokenAddress][msg.sender].inP2P += toAddInP2P;
             _updateSupplierInDS(_poolTokenAddress, msg.sender);
+            _repayToPool(underlyingToken, toRepay, poolBorrowIndex); // Reverts on error.
 
-            toRepay = Math.min(
-                toRepay,
-                IVariableDebtToken(
-                    lendingPool.getReserveData(address(underlyingToken)).variableDebtTokenAddress
-                ).scaledBalanceOf(address(this))
-                .rayMul(poolBorrowIndex) // The debt of the contract.
-            );
-
-            if (toRepay > 0) _repayToPool(underlyingToken, toRepay); // Reverts on error.
             emit P2PAmountsUpdated(_poolTokenAddress, delta.p2pSupplyAmount, delta.p2pBorrowAmount);
         }
 
@@ -657,17 +649,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             _updateBorrowerInDS(_poolTokenAddress, _user);
 
             if (vars.remainingToRepay == 0) {
-                // Repay only what is necessary. The remaining tokens stays on the contracts and are claimable by the DAO.
-                vars.toRepay = Math.min(
-                    vars.toRepay,
-                    IVariableDebtToken(
-                        lendingPool
-                        .getReserveData(address(underlyingToken))
-                        .variableDebtTokenAddress
-                    ).scaledBalanceOf(address(this))
-                    .rayMul(vars.poolBorrowIndex) // The debt of the contract.
-                );
-                if (vars.toRepay > 0) _repayToPool(underlyingToken, vars.toRepay); // Reverts on error.
+                _repayToPool(underlyingToken, vars.toRepay, vars.poolBorrowIndex); // Reverts on error.
                 _leaveMarketIfNeeded(_poolTokenAddress, _user);
                 return;
             }
@@ -732,16 +714,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             }
         }
 
-        // Repay only what is necessary. The remaining tokens stays on the contracts and are claimable by the DAO.
-        vars.toRepay = Math.min(
-            vars.toRepay,
-            IVariableDebtToken(
-                lendingPool.getReserveData(address(underlyingToken)).variableDebtTokenAddress
-            ).scaledBalanceOf(address(this))
-            .rayMul(vars.poolBorrowIndex) // The debt of the contract.
-        );
-
-        if (vars.toRepay > 0) _repayToPool(underlyingToken, vars.toRepay); // Reverts on error.
+        _repayToPool(underlyingToken, vars.toRepay, vars.poolBorrowIndex); // Reverts on error.
 
         /// Hard repay ///
 
@@ -809,14 +782,29 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     /// @dev Repays underlying tokens to Aave.
     /// @param _underlyingToken The underlying token of the market to repay to.
     /// @param _amount The amount of token (in underlying).
-    function _repayToPool(ERC20 _underlyingToken, uint256 _amount) internal {
-        _underlyingToken.safeApprove(address(lendingPool), _amount);
-        lendingPool.repay(
-            address(_underlyingToken),
+    function _repayToPool(
+        ERC20 _underlyingToken,
+        uint256 _amount,
+        uint256 _poolBorrowIndex
+    ) internal {
+        // Repay only what is necessary. The remaining tokens stays on the contracts and are claimable by the DAO.
+        _amount = Math.min(
             _amount,
-            VARIABLE_INTEREST_MODE,
-            address(this)
+            IVariableDebtToken(
+                lendingPool.getReserveData(address(_underlyingToken)).variableDebtTokenAddress
+            ).scaledBalanceOf(address(this))
+            .rayMul(_poolBorrowIndex) // The debt of the contract.
         );
+
+        if (_amount > 0) {
+            _underlyingToken.safeApprove(address(lendingPool), _amount);
+            lendingPool.repay(
+                address(_underlyingToken),
+                _amount,
+                VARIABLE_INTEREST_MODE,
+                address(this)
+            );
+        }
     }
 
     /// @dev Enters the user into the market if not already there.
