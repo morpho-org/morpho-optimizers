@@ -204,8 +204,8 @@ contract TestSetup is Config, Utils, stdCheats {
 
     function createMarket(address _aToken) internal {
         address underlying = IAToken(_aToken).UNDERLYING_ASSET_ADDRESS();
-        morpho.createMarket(underlying);
-        morpho.setP2PIndexCursor(_aToken, 3_333);
+        Types.MarketParameters memory marketParams = Types.MarketParameters(0, 3_333);
+        morpho.createMarket(underlying, marketParams);
 
         // All tokens must also be added to the pools array, for the correct behavior of TestLiquidate::createAndSetCustomPriceOracle.
         pools.push(_aToken);

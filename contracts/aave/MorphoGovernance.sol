@@ -81,7 +81,13 @@ abstract contract MorphoGovernance is MorphoUtils {
 
     /// @notice Emitted when a new market is created.
     /// @param _poolTokenAddress The address of the market that has been created.
-    event MarketCreated(address _poolTokenAddress);
+    /// @param _reserveFactor The reserve factor set for this market.
+    /// @param _poolTokenAddress The P2P index cursor set for this market.
+    event MarketCreated(
+        address indexed _poolTokenAddress,
+        uint16 _reserveFactor,
+        uint16 _p2pIndexCursor
+    );
 
     /// ERRORS ///
 
@@ -193,7 +199,7 @@ abstract contract MorphoGovernance is MorphoUtils {
         _updateP2PIndexes(_poolTokenAddress);
 
         marketParameters[_poolTokenAddress].reserveFactor = _newReserveFactor;
-        emit ReserveFactorSet(_poolTokenAddress, marketParameters[_poolTokenAddress].reserveFactor);
+        emit ReserveFactorSet(_poolTokenAddress, _newReserveFactor);
     }
 
     /// @notice Sets a new peer-to-peer cursor.
@@ -274,7 +280,16 @@ abstract contract MorphoGovernance is MorphoUtils {
 
     /// @notice Creates a new market to borrow/supply in.
     /// @param _underlyingTokenAddress The underlying address of the given market.
-    function createMarket(address _underlyingTokenAddress) external onlyOwner {
+    /// @param _marketParams The market's parameters to set.
+    function createMarket(
+        address _underlyingTokenAddress,
+        Types.MarketParameters calldata _marketParams
+    ) external onlyOwner {
+        if (
+            _marketParams.p2pIndexCursor > MAX_BASIS_POINTS ||
+            _marketParams.reserveFactor > MAX_BASIS_POINTS
+        ) revert ExceedsMaxBasisPoints();
+
         DataTypes.ReserveConfigurationMap memory configuration = lendingPool.getConfiguration(
             _underlyingTokenAddress
         );
@@ -302,6 +317,10 @@ abstract contract MorphoGovernance is MorphoUtils {
         );
 
         marketsCreated.push(poolTokenAddress);
-        emit MarketCreated(poolTokenAddress);
+        emit MarketCreated(
+            poolTokenAddress,
+            _marketParams.reserveFactor,
+            _marketParams.p2pIndexCursor
+        );
     }
 }
