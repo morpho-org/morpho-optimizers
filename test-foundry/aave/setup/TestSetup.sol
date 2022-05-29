@@ -19,8 +19,8 @@ import "@contracts/aave/libraries/aave/WadRayMath.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "@contracts/aave/libraries/Types.sol";
 
-import {RewardsManagerForAaveOnMainnetAndAvalanche} from "@contracts/aave/rewards-managers/RewardsManagerForAaveOnMainnetAndAvalanche.sol";
-import {RewardsManagerForAaveOnPolygon} from "@contracts/aave/rewards-managers/RewardsManagerForAaveOnPolygon.sol";
+import {RewardsManagerOnMainnetAndAvalanche} from "@contracts/aave/rewards-managers/RewardsManagerOnMainnetAndAvalanche.sol";
+import {RewardsManagerOnPolygon} from "@contracts/aave/rewards-managers/RewardsManagerOnPolygon.sol";
 import {SwapManagerUniV3OnMainnet} from "@contracts/common/SwapManagerUniV3OnMainnet.sol";
 import {SwapManagerUniV3} from "@contracts/common/SwapManagerUniV3.sol";
 import {SwapManagerUniV2} from "@contracts/common/SwapManagerUniV2.sol";
@@ -160,7 +160,7 @@ contract TestSetup is Config, Utils, stdCheats {
 
         if (block.chainid == Chains.ETH_MAINNET) {
             // Mainnet network
-            rewardsManager = new RewardsManagerForAaveOnMainnetAndAvalanche(
+            rewardsManager = new RewardsManagerOnMainnetAndAvalanche(
                 lendingPool,
                 IMorpho(address(morpho)),
                 address(swapManager)
@@ -168,14 +168,14 @@ contract TestSetup is Config, Utils, stdCheats {
             uniswapV3PoolCreator.createPoolAndMintPosition(address(morphoToken));
         } else if (block.chainid == Chains.AVALANCHE_MAINNET) {
             // Avalanche network
-            rewardsManager = new RewardsManagerForAaveOnMainnetAndAvalanche(
+            rewardsManager = new RewardsManagerOnMainnetAndAvalanche(
                 lendingPool,
                 IMorpho(address(morpho)),
                 address(swapManager)
             );
         } else if (block.chainid == Chains.POLYGON_MAINNET) {
             // Polygon network
-            rewardsManager = new RewardsManagerForAaveOnPolygon(
+            rewardsManager = new RewardsManagerOnPolygon(
                 lendingPool,
                 IMorpho(address(morpho)),
                 address(swapManager)
