@@ -40,4 +40,28 @@ contract TestUpgradeable is TestSetup {
         hevm.expectRevert("Address: low-level delegate call failed");
         proxyAdmin.upgradeAndCall(morphoProxy, address(morphoImplV2), "");
     }
+
+    function testImplementationsShouldBeInitialized() public {
+        Types.MaxGasForMatching memory defaultMaxGasForMatching = Types.MaxGasForMatching({
+            supply: 3e6,
+            borrow: 3e6,
+            withdraw: 3e6,
+            repay: 3e6
+        });
+
+        // Test for Morpho Implementation.
+        hevm.expectRevert("Initializable: contract is already initialized");
+        morphoImplV1.initialize(
+            positionsManager,
+            interestRatesManager,
+            ILendingPoolAddressesProvider(lendingPoolAddressesProviderAddress),
+            defaultMaxGasForMatching,
+            20
+        );
+
+        // Test for PositionsManager Implementation.
+        // `_initialized` value is at slot 0.
+        uint256 _initialized = uint256(hevm.load(address(positionsManager), bytes32(0)));
+        assertEq(_initialized, 1);
+    }
 }

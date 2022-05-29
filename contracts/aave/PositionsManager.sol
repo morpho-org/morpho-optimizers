@@ -170,12 +170,6 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         uint256 maxLiquidatableDebt; // The maximum amount of debt tokens liquidatable (in underlying).
     }
 
-    /// CONSTRUCTOR ///
-
-    /// @notice Constructs the PositionsManager contract.
-    /// @dev The contract is automatically marked as initialized when deployed.
-    constructor() initializer {}
-
     /// LOGIC ///
 
     /// @dev Implements supply logic.
