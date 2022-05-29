@@ -593,12 +593,12 @@ contract TestWithdraw is TestSetup {
             assertEq(onPool, 0, "onPool");
         }
 
-        uint256 p2pSupplyDelta;
-        uint256 p2pBorrowDelta;
-        uint256 p2pSupplyAmount;
-        uint256 p2pBorrowAmount;
-
-        (p2pSupplyDelta, p2pBorrowDelta, p2pSupplyAmount, p2pBorrowAmount) = morpho.deltas(cDai);
+        (
+            uint256 p2pSupplyDelta,
+            uint256 p2pBorrowDelta,
+            uint256 p2pSupplyAmount,
+            uint256 p2pBorrowAmount
+        ) = morpho.deltas(cDai);
 
         assertEq(p2pSupplyDelta, 0, "p2pSupplyDelta");
         assertApproxEq(
@@ -616,39 +616,6 @@ contract TestWithdraw is TestSetup {
         );
 
         move1000BlocksForward(cDai);
-
-        for (uint256 i = 0; i < 10; i++) {
-            (uint256 inP2P, uint256 onPool) = morpho.borrowBalanceInOf(cDai, address(borrowers[i]));
-            assertEq(inP2P, 0, "inP2P");
-            assertApproxEq(
-                onPool,
-                borrowedAmount.div(ICToken(cDai).borrowIndex()),
-                100000000000000,
-                "onPool"
-            );
-        }
-        for (uint256 i = 10; i < 20; i++) {
-            (uint256 inP2P, uint256 onPool) = morpho.borrowBalanceInOf(cDai, address(borrowers[i]));
-            assertApproxEq(inP2P, borrowedAmount.div(morpho.p2pBorrowIndex(cDai)), 100000, "inP2P");
-            assertEq(onPool, 0, "onPool");
-        }
-
-        (p2pSupplyDelta, p2pBorrowDelta, p2pSupplyAmount, p2pBorrowAmount) = morpho.deltas(cDai);
-
-        assertEq(p2pSupplyDelta, 0, "p2pSupplyDelta");
-        assertApproxEq(
-            p2pBorrowDelta,
-            (10 * borrowedAmount).div(ICToken(cDai).borrowIndex()),
-            1000000000000000,
-            "p2pBorrowDelta"
-        );
-        assertApproxEq(p2pSupplyAmount, 0, 1, "p2pSupplyAmount");
-        assertApproxEq(
-            p2pBorrowAmount,
-            (10 * borrowedAmount).div(morpho.p2pBorrowIndex(cDai)),
-            1000000,
-            "p2pBorrowAmount"
-        );
 
         for (uint256 i = 0; i < 20; i++) {
             borrowers[i].approve(dai, type(uint256).max);

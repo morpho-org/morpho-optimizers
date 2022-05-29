@@ -635,12 +635,12 @@ contract TestRepay is TestSetup {
             assertEq(onPool, 0, "onPool");
         }
 
-        uint256 p2pSupplyDelta;
-        uint256 p2pBorrowDelta;
-        uint256 p2pSupplyAmount;
-        uint256 p2pBorrowAmount;
-
-        (p2pSupplyDelta, p2pBorrowDelta, p2pSupplyAmount, p2pBorrowAmount) = morpho.deltas(cDai);
+        (
+            uint256 p2pSupplyDelta,
+            uint256 p2pBorrowDelta,
+            uint256 p2pSupplyAmount,
+            uint256 p2pBorrowAmount
+        ) = morpho.deltas(cDai);
 
         assertApproxEq(
             p2pSupplyDelta,
@@ -658,44 +658,6 @@ contract TestRepay is TestSetup {
         assertApproxEq(p2pBorrowAmount, 0, 1, "p2pBorrowAmount");
 
         move1000BlocksForward(cDai);
-
-        for (uint256 i = 0; i < 10; i++) {
-            (uint256 inP2P, uint256 onPool) = morpho.supplyBalanceInOf(cDai, address(suppliers[i]));
-            assertEq(inP2P, 0, "inP2P");
-            assertApproxEq(
-                onPool,
-                suppliedAmount.div(ICToken(cDai).exchangeRateCurrent()),
-                1_000_000,
-                "onPool"
-            );
-        }
-        for (uint256 i = 10; i < 20; i++) {
-            (uint256 inP2P, uint256 onPool) = morpho.supplyBalanceInOf(cDai, address(suppliers[i]));
-            assertApproxEq(
-                inP2P,
-                suppliedAmount.div(morpho.p2pSupplyIndex(cDai)),
-                100_000,
-                "inP2P"
-            );
-            assertEq(onPool, 0, "onPool");
-        }
-
-        (p2pSupplyDelta, p2pBorrowDelta, p2pSupplyAmount, p2pBorrowAmount) = morpho.deltas(cDai);
-
-        assertApproxEq(
-            p2pSupplyDelta,
-            (10 * suppliedAmount).div(ICToken(cDai).exchangeRateCurrent()),
-            1_000_000,
-            "p2pSupplyDelta"
-        );
-        assertEq(p2pBorrowDelta, 0, "p2pBorrowDelta");
-        assertApproxEq(
-            p2pSupplyAmount,
-            (10 * suppliedAmount).div(morpho.p2pSupplyIndex(cDai)),
-            1_000_000,
-            "p2pSupplyAmount"
-        );
-        assertApproxEq(p2pBorrowAmount, 0, 1, "p2pBorrowAmount");
 
         for (uint256 i; i < 20; i++) {
             suppliers[i].withdraw(cDai, type(uint256).max);
