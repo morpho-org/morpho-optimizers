@@ -569,7 +569,7 @@ contract TestRepay is TestSetup {
     }
 
     function testFailRepayZero() public {
-        morpho.repay(aDai, 0);
+        morpho.repay(aDai, msg.sender, 0);
     }
 
     function testRepayRepayOnBehalf() public {
@@ -622,5 +622,23 @@ contract TestRepay is TestSetup {
 
         // Make sure that USDT's Position Manager allowance is set to 0
         assertEq(ERC20(usdt).allowance(address(morpho), address(lendingPool)), 0);
+    }
+
+    function testRepayOnBehalf() public {
+        uint256 amount = 10_000 ether;
+        uint256 collateral = 2 * amount;
+
+        borrower1.approve(usdc, to6Decimals(collateral));
+        borrower1.supply(aUsdc, to6Decimals(collateral));
+        borrower1.borrow(aDai, amount);
+
+        borrower2.approve(dai, amount);
+        hevm.prank(address(borrower2));
+        morpho.repay(aDai, address(borrower1), amount);
+
+        (uint256 inP2P, uint256 onPool) = morpho.borrowBalanceInOf(aDai, address(borrower1));
+
+        assertEq(inP2P, 0);
+        assertEq(onPool, 0);
     }
 }
