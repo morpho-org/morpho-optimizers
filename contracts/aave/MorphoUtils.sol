@@ -114,12 +114,20 @@ contract MorphoUtils is MorphoStorage {
             next = borrowersOnPool[_poolTokenAddress].getNext(_user);
     }
 
-    /// PUBLIC ///
-
     /// @notice Updates the peer-to-peer indexes.
-    /// @dev Note: This function updates the exchange rate on Compound. As a consequence only a call to exchangeRatesStored() is necessary to get the most up to date exchange rate.
     /// @param _poolTokenAddress The address of the market to update.
-    function updateP2PIndexes(address _poolTokenAddress) public isMarketCreated(_poolTokenAddress) {
+    function updateP2PIndexes(address _poolTokenAddress)
+        external
+        isMarketCreated(_poolTokenAddress)
+    {
+        _updateP2PIndexes(_poolTokenAddress);
+    }
+
+    /// INTERNAL ///
+
+    /// @dev Updates the peer-to-peer indexes.
+    /// @param _poolTokenAddress The address of the market to update.
+    function _updateP2PIndexes(address _poolTokenAddress) internal {
         address(interestRatesManager).functionDelegateCall(
             abi.encodeWithSelector(
                 interestRatesManager.updateP2PIndexes.selector,
@@ -154,7 +162,7 @@ contract MorphoUtils is MorphoStorage {
                 ++i;
             }
 
-            updateP2PIndexes(poolTokenEntered);
+            _updateP2PIndexes(poolTokenEntered);
 
             address underlyingAddress = IAToken(poolTokenEntered).UNDERLYING_ASSET_ADDRESS();
             assetData.underlyingPrice = oracle.getAssetPrice(underlyingAddress); // In ETH.
