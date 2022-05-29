@@ -182,7 +182,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         uint256 _maxGasForMatching
     ) external {
         if (_amount == 0) revert AmountIsZero();
-        updateP2PIndexes(_poolTokenAddress);
+        _updateP2PIndexes(_poolTokenAddress);
 
         _enterMarketIfNeeded(_poolTokenAddress, msg.sender);
         ERC20 underlyingToken = ERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
@@ -279,7 +279,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         uint256 _maxGasForMatching
     ) external {
         if (_amount == 0) revert AmountIsZero();
-        updateP2PIndexes(_poolTokenAddress);
+        _updateP2PIndexes(_poolTokenAddress);
 
         _enterMarketIfNeeded(_poolTokenAddress, msg.sender);
         if (!_borrowAllowed(msg.sender, _poolTokenAddress, 0, _amount)) revert UnauthorisedBorrow();
@@ -376,7 +376,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         if (_amount == 0) revert AmountIsZero();
         if (!userMembership[_poolTokenAddress][_supplier]) revert UserNotMemberOfMarket();
 
-        updateP2PIndexes(_poolTokenAddress);
+        _updateP2PIndexes(_poolTokenAddress);
         uint256 toWithdraw = Math.min(
             _getUserSupplyBalanceInOf(_poolTokenAddress, _supplier),
             _amount
@@ -402,7 +402,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         if (_amount == 0) revert AmountIsZero();
         if (!userMembership[_poolTokenAddress][_user]) revert UserNotMemberOfMarket();
 
-        updateP2PIndexes(_poolTokenAddress);
+        _updateP2PIndexes(_poolTokenAddress);
         uint256 toRepay = Math.min(_getUserBorrowBalanceInOf(_poolTokenAddress, _user), _amount);
 
         _safeRepayLogic(_poolTokenAddress, _user, toRepay, _maxGasForMatching);
@@ -424,8 +424,8 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             !userMembership[_poolTokenCollateralAddress][_borrower]
         ) revert UserNotMemberOfMarket();
 
-        updateP2PIndexes(_poolTokenBorrowedAddress);
-        updateP2PIndexes(_poolTokenCollateralAddress);
+        _updateP2PIndexes(_poolTokenBorrowedAddress);
+        _updateP2PIndexes(_poolTokenCollateralAddress);
 
         if (!_liquidationAllowed(_borrower)) revert UnauthorisedLiquidate();
 
