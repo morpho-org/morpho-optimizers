@@ -64,20 +64,20 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @param _amountClaimed The amount of reward token claimed.
     event ReserveFeeClaimed(address indexed _poolTokenAddress, uint256 _amountClaimed);
 
-    /// @notice Emitted when the value of `p2pDisabled` is changed.
+    /// @notice Emitted when the value of `p2pDisabled` is set.
     /// @param _poolTokenAddress The address of the concerned market.
     /// @param _p2pDisabled The new value of `_p2pDisabled` adopted.
-    event P2PStatusChanged(address indexed _poolTokenAddress, bool _p2pDisabled);
+    event P2PStatusSet(address indexed _poolTokenAddress, bool _p2pDisabled);
 
     /// @notice Emitted when a market is paused or unpaused.
     /// @param _poolTokenAddress The address of the concerned market.
     /// @param _newStatus The new pause status of the market.
-    event PauseStatusChanged(address indexed _poolTokenAddress, bool _newStatus);
+    event PauseStatusSet(address indexed _poolTokenAddress, bool _newStatus);
 
     /// @notice Emitted when a market is partially paused or unpaused.
     /// @param _poolTokenAddress The address of the concerned market.
     /// @param _newStatus The new partial pause status of the market.
-    event PartialPauseStatusChanged(address indexed _poolTokenAddress, bool _newStatus);
+    event PartialPauseStatusSet(address indexed _poolTokenAddress, bool _newStatus);
 
     /// @notice Emitted when a new market is created.
     /// @param _poolTokenAddress The address of the market that has been created.
@@ -197,6 +197,7 @@ abstract contract MorphoGovernance is MorphoUtils {
     }
 
     /// @notice Sets a new peer-to-peer cursor.
+    /// @param _poolTokenAddress The address of the market to update.
     /// @param _p2pIndexCursor The new peer-to-peer cursor.
     function setP2PIndexCursor(address _poolTokenAddress, uint16 _p2pIndexCursor)
         external
@@ -210,42 +211,40 @@ abstract contract MorphoGovernance is MorphoUtils {
         emit P2PIndexCursorSet(_poolTokenAddress, _p2pIndexCursor);
     }
 
-    /// @notice Toggles the pause status on a specific market in case of emergency.
+    /// @notice Sets the pause status on a specific market in case of emergency.
     /// @param _poolTokenAddress The address of the market to pause/unpause.
-    function togglePauseStatus(address _poolTokenAddress)
+    /// @param _newStatus The new status to set.
+    function setPauseStatus(address _poolTokenAddress, bool _newStatus)
         external
         onlyOwner
         isMarketCreated(_poolTokenAddress)
     {
-        Types.MarketStatus storage marketStatus_ = marketStatus[_poolTokenAddress];
-        bool newPauseStatus = !marketStatus_.isPaused;
-        marketStatus_.isPaused = newPauseStatus;
-        emit PauseStatusChanged(_poolTokenAddress, newPauseStatus);
+        marketStatus[_poolTokenAddress].isPaused = _newStatus;
+        emit PauseStatusSet(_poolTokenAddress, _newStatus);
     }
 
-    /// @notice Toggles the partial pause status on a specific market in case of emergency.
+    /// @notice Sets the partial pause status on a specific market in case of emergency.
     /// @param _poolTokenAddress The address of the market to partially pause/unpause.
-    function togglePartialPauseStatus(address _poolTokenAddress)
+    /// @param _newStatus The new status to set.
+    function setPartialPauseStatus(address _poolTokenAddress, bool _newStatus)
         external
         onlyOwner
         isMarketCreated(_poolTokenAddress)
     {
-        Types.MarketStatus storage marketStatus_ = marketStatus[_poolTokenAddress];
-        bool newPauseStatus = !marketStatus_.isPartiallyPaused;
-        marketStatus_.isPartiallyPaused = newPauseStatus;
-        emit PartialPauseStatusChanged(_poolTokenAddress, newPauseStatus);
+        marketStatus[_poolTokenAddress].isPartiallyPaused = _newStatus;
+        emit PartialPauseStatusSet(_poolTokenAddress, _newStatus);
     }
 
-    /// @notice Toggles the peer-to-peer disable status.
+    /// @notice Sets the peer-to-peer disable status.
     /// @param _poolTokenAddress The address of the market to able/disable P2P.
-    function toggleP2P(address _poolTokenAddress)
+    /// @param _newStatus The new status to set.
+    function setP2PDisable(address _poolTokenAddress, bool _newStatus)
         external
         onlyOwner
         isMarketCreated(_poolTokenAddress)
     {
-        bool newP2PStatus = !p2pDisabled[_poolTokenAddress];
-        p2pDisabled[_poolTokenAddress] = newP2PStatus;
-        emit P2PStatusChanged(_poolTokenAddress, newP2PStatus);
+        p2pDisabled[_poolTokenAddress] = _newStatus;
+        emit P2PStatusSet(_poolTokenAddress, _newStatus);
     }
 
     /// @notice Transfers the protocol reserve fee to the DAO.

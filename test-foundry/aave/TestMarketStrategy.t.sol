@@ -8,8 +8,8 @@ contract TestMarketStrategy is TestSetup {
         uint256 amount = 10_000 ether;
         uint256 toBorrow = 500 ether;
 
-        // Toggle strategy
-        morpho.toggleP2P(aDai);
+        // Disable peer-to-peer
+        morpho.setP2PDisable(aDai, true);
 
         borrower1.approve(usdc, to6Decimals(amount));
         borrower1.supply(aUsdc, to6Decimals(amount));
@@ -39,8 +39,8 @@ contract TestMarketStrategy is TestSetup {
         uint256 amount = 10_000 ether;
         uint256 toBorrow = 500 ether;
 
-        // Toggle strategy
-        morpho.toggleP2P(aDai);
+        // Disable peer-to-peer
+        morpho.setP2PDisable(aDai, true);
 
         supplier1.approve(dai, toBorrow);
         supplier1.supply(aDai, toBorrow);
@@ -70,8 +70,8 @@ contract TestMarketStrategy is TestSetup {
         uint256 amount = 10_000 ether;
         uint256 toBorrow = 100 ether;
 
-        // Toggle strategy
-        morpho.toggleP2P(aDai);
+        // Disable peer-to-peer
+        morpho.setP2PDisable(aDai, true);
 
         for (uint256 i = 0; i < 3; i++) {
             borrowers[i].approve(usdc, to6Decimals(amount));
@@ -105,8 +105,8 @@ contract TestMarketStrategy is TestSetup {
         uint256 toBorrow = 400 ether;
         uint256 toSupply = 100 ether;
 
-        // Toggle strategy
-        morpho.toggleP2P(aDai);
+        // Disable peer-to-peer
+        morpho.setP2PDisable(aDai, true);
 
         for (uint256 i = 0; i < 3; i++) {
             suppliers[i].approve(dai, toSupply);
