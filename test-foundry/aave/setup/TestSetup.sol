@@ -317,7 +317,7 @@ contract TestSetup is Config, Utils, stdCheats {
     /// @param _poolTokenAddress The market address.
     /// @return p2pSupplyRate_ The market's supply rate in peer-to-peer (in ray).
     /// @return p2pBorrowRate_ The market's borrow rate in peer-to-peer (in ray).
-    function getApproxAPRs(address _poolTokenAddress)
+    function getApproxP2PRates(address _poolTokenAddress)
         public
         view
         returns (uint256 p2pSupplyRate_, uint256 p2pBorrowRate_)
@@ -330,7 +330,7 @@ contract TestSetup is Config, Utils, stdCheats {
         uint256 poolBorrowAPR = reserveData.currentVariableBorrowRate;
         (uint16 reserveFactor, uint256 p2pIndexCursor) = morpho.marketParameters(_poolTokenAddress);
 
-        // rate = 2/3 * poolSupplyRate + 1/3 * poolBorrowRate.
+        // rate = (1 - p2pIndexCursor) * poolSupplyRate + p2pIndexCursor * poolBorrowRate.
         uint256 rate = ((10_000 - p2pIndexCursor) *
             poolSupplyAPR +
             p2pIndexCursor *

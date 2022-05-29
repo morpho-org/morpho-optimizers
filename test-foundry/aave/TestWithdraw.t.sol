@@ -475,7 +475,7 @@ contract TestWithdraw is TestSetup {
             (, oldVars.BP2PD, , oldVars.BP2PA) = morpho.deltas(aDai);
             oldVars.NVD = lendingPool.getReserveNormalizedVariableDebt(dai);
             oldVars.BP2PER = morpho.p2pBorrowIndex(aDai);
-            (, oldVars.APR) = getApproxAPRs(aDai);
+            (, oldVars.APR) = getApproxP2PRates(aDai);
 
             move1YearForward(aDai);
 
