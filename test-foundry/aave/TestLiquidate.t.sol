@@ -138,7 +138,7 @@ contract TestLiquidate is TestSetup {
             p2pUnitToUnderlying(inP2PUsdc, morpho.p2pBorrowIndex(aUsdc)) -
             toRepay;
 
-        assertEq(onPoolBorrower, 0, "borrower borrow on pool");
+        assertApproxEq(onPoolBorrower, 0, 1, "borrower borrow on pool");
         assertApproxEq(
             p2pUnitToUnderlying(inP2PBorrower, morpho.p2pBorrowIndex(aUsdc)),
             expectedBorrowBalanceInP2P,
@@ -175,13 +175,14 @@ contract TestLiquidate is TestSetup {
             vars.collateralTokenUnit *
             vars.liquidationBonus) / (vars.borrowedTokenUnit * vars.collateralPrice * 10_000);
 
-        assertEq(
+        assertApproxEq(
             onPoolBorrower,
             onPoolDai -
                 underlyingToScaledBalance(
                     amountToSeize,
                     lendingPool.getReserveNormalizedIncome(dai)
                 ),
+            1,
             "borrower supply on pool"
         );
         assertEq(inP2PBorrower, inP2PDai, "borrower supply in peer-to-peer");
