@@ -17,13 +17,15 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     /// EVENTS ///
 
     /// @notice Emitted when a supply happens.
-    /// @param _user The address of the supplier.
+    /// @param _supplier The address of the account sending funds.
+    /// @param _onBehalf The address of the account whose positions will be updated.
     /// @param _poolTokenAddress The address of the market where assets are supplied into.
     /// @param _amount The amount of assets supplied (in underlying).
     /// @param _balanceOnPool The supply balance on pool after update.
     /// @param _balanceInP2P The supply balance in peer-to-peer after update.
     event Supplied(
-        address indexed _user,
+        address indexed _supplier,
+        address indexed _onBehalf,
         address indexed _poolTokenAddress,
         uint256 _amount,
         uint256 _balanceOnPool,
@@ -31,13 +33,13 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     );
 
     /// @notice Emitted when a borrow happens.
-    /// @param _user The address of the borrower.
+    /// @param _borrower The address of the borrower.
     /// @param _poolTokenAddress The address of the market where assets are borrowed.
     /// @param _amount The amount of assets borrowed (in underlying).
     /// @param _balanceOnPool The borrow balance on pool after update.
     /// @param _balanceInP2P The borrow balance in peer-to-peer after update
     event Borrowed(
-        address indexed _user,
+        address indexed _borrower,
         address indexed _poolTokenAddress,
         uint256 _amount,
         uint256 _balanceOnPool,
@@ -45,13 +47,15 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     );
 
     /// @notice Emitted when a withdrawal happens.
-    /// @param _user The address of the withdrawer.
+    /// @param _supplier The address of the supplier whose supply is withdrawn.
+    /// @param _receiver The address receiving the tokens.
     /// @param _poolTokenAddress The address of the market from where assets are withdrawn.
     /// @param _amount The amount of assets withdrawn (in underlying).
     /// @param _balanceOnPool The supply balance on pool after update.
     /// @param _balanceInP2P The supply balance in peer-to-peer after update.
     event Withdrawn(
-        address indexed _user,
+        address indexed _supplier,
+        address indexed _receiver,
         address indexed _poolTokenAddress,
         uint256 _amount,
         uint256 _balanceOnPool,
@@ -59,13 +63,15 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     );
 
     /// @notice Emitted when a repayment happens.
-    /// @param _user The address of the repayer.
+    /// @param _repayer The address of the account repaying the debt.
+    /// @param _onBehalf The address of the account whose debt is repaid.
     /// @param _poolTokenAddress The address of the market where assets are repaid.
     /// @param _amount The amount of assets repaid (in underlying).
     /// @param _balanceOnPool The borrow balance on pool after update.
     /// @param _balanceInP2P The borrow balance in peer-to-peer after update.
     event Repaid(
-        address indexed _user,
+        address indexed _repayer,
+        address indexed _onBehalf,
         address indexed _poolTokenAddress,
         uint256 _amount,
         uint256 _balanceOnPool,
@@ -128,11 +134,20 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     /// @notice Thrown when the amount desired for a withdrawal is too small.
     error WithdrawTooSmall();
 
+    /// @notice Thrown when the address is zero.
+    error AddressIsZero();
+
     /// @notice Thrown when the amount is equal to 0.
     error AmountIsZero();
 
     /// STRUCTS ///
 
+    // Struct to avoid stack too deep.
+    struct SupplyVars {
+        uint256 remainingToSupply;
+        uint256 poolBorrowIndex;
+        uint256 toRepay;
+    }
     // Struct to avoid stack too deep.
     struct WithdrawVars {
         uint256 remainingToWithdraw;
@@ -152,6 +167,8 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         uint256 poolBorrowIndex;
         uint256 p2pSupplyIndex;
         uint256 p2pBorrowIndex;
+        uint256 borrowedOnPool;
+        uint256 feeToRepay;
         uint256 toRepay;
     }
 
@@ -174,90 +191,96 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
     /// @dev Implements supply logic.
     /// @param _poolTokenAddress The address of the pool token the user wants to interact with.
+    /// @param _supplier The address of the account sending funds.
+    /// @param _onBehalf The address of the account whose positions will be updated.
     /// @param _amount The amount of token (in underlying).
     /// @param _maxGasForMatching The maximum amount of gas to consume within a matching engine loop.
     function supplyLogic(
         address _poolTokenAddress,
+        address _supplier,
+        address _onBehalf,
         uint256 _amount,
         uint256 _maxGasForMatching
     ) external {
+        if (_onBehalf == address(0)) revert AddressIsZero();
         if (_amount == 0) revert AmountIsZero();
         _updateP2PIndexes(_poolTokenAddress);
 
-        _enterMarketIfNeeded(_poolTokenAddress, msg.sender);
+        _enterMarketIfNeeded(_poolTokenAddress, _onBehalf);
         ERC20 underlyingToken = ERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
-        underlyingToken.safeTransferFrom(msg.sender, address(this), _amount);
+        underlyingToken.safeTransferFrom(_supplier, address(this), _amount);
 
         Types.Delta storage delta = deltas[_poolTokenAddress];
-        uint256 poolBorrowIndex = lendingPool.getReserveNormalizedVariableDebt(
+        SupplyVars memory vars;
+        vars.poolBorrowIndex = lendingPool.getReserveNormalizedVariableDebt(
             address(underlyingToken)
         );
-        uint256 remainingToSupply = _amount;
-        uint256 toRepay;
+        vars.remainingToSupply = _amount;
 
         /// Supply in peer-to-peer ///
 
         // Match borrow peer-to-peer delta first if any.
         if (delta.p2pBorrowDelta > 0) {
             uint256 matchedDelta = Math.min(
-                delta.p2pBorrowDelta.rayMul(poolBorrowIndex),
-                remainingToSupply
+                delta.p2pBorrowDelta.rayMul(vars.poolBorrowIndex),
+                vars.remainingToSupply
             );
 
-            toRepay += matchedDelta;
-            remainingToSupply -= matchedDelta;
-            delta.p2pBorrowDelta -= matchedDelta.rayDiv(poolBorrowIndex);
+            vars.toRepay += matchedDelta;
+            vars.remainingToSupply -= matchedDelta;
+            delta.p2pBorrowDelta -= matchedDelta.rayDiv(vars.poolBorrowIndex);
             emit P2PBorrowDeltaUpdated(_poolTokenAddress, delta.p2pBorrowDelta);
         }
 
+        // Match pool borrowers if any.
         if (
-            remainingToSupply > 0 &&
+            vars.remainingToSupply > 0 &&
             !p2pDisabled[_poolTokenAddress] &&
             borrowersOnPool[_poolTokenAddress].getHead() != address(0)
         ) {
-            // Match pool suppliers if any.
             (uint256 matched, ) = _matchBorrowers(
                 _poolTokenAddress,
                 underlyingToken,
-                remainingToSupply,
+                vars.remainingToSupply,
                 _maxGasForMatching
             ); // In underlying.
 
             if (matched > 0) {
-                toRepay += matched;
-                remainingToSupply -= matched;
+                vars.toRepay += matched;
+                vars.remainingToSupply -= matched;
                 delta.p2pBorrowAmount += matched.rayDiv(p2pBorrowIndex[_poolTokenAddress]);
             }
         }
 
-        if (toRepay > 0) {
-            uint256 toAddInP2P = toRepay.rayDiv(p2pSupplyIndex[_poolTokenAddress]);
+        if (vars.toRepay > 0) {
+            uint256 toAddInP2P = vars.toRepay.rayDiv(p2pSupplyIndex[_poolTokenAddress]);
 
             delta.p2pSupplyAmount += toAddInP2P;
-            supplyBalanceInOf[_poolTokenAddress][msg.sender].inP2P += toAddInP2P;
-            _updateSupplierInDS(_poolTokenAddress, msg.sender);
-            _repayToPool(underlyingToken, toRepay, poolBorrowIndex); // Reverts on error.
+            supplyBalanceInOf[_poolTokenAddress][_onBehalf].inP2P += toAddInP2P;
+            _updateSupplierInDS(_poolTokenAddress, _onBehalf);
+            _repayToPool(underlyingToken, vars.toRepay, vars.poolBorrowIndex); // Reverts on error.
 
             emit P2PAmountsUpdated(_poolTokenAddress, delta.p2pSupplyAmount, delta.p2pBorrowAmount);
         }
 
         /// Supply on pool ///
 
-        if (remainingToSupply > 0) {
-            supplyBalanceInOf[_poolTokenAddress][msg.sender].onPool += remainingToSupply.rayDiv(
+        if (vars.remainingToSupply > 0) {
+            supplyBalanceInOf[_poolTokenAddress][_onBehalf].onPool += vars.remainingToSupply.rayDiv(
                 lendingPool.getReserveNormalizedIncome(address(underlyingToken))
             ); // In scaled balance.
-            _supplyToPool(underlyingToken, remainingToSupply); // Reverts on error.
+            _supplyToPool(underlyingToken, vars.remainingToSupply); // Reverts on error.
         }
 
-        _updateSupplierInDS(_poolTokenAddress, msg.sender);
+        _updateSupplierInDS(_poolTokenAddress, _onBehalf);
 
         emit Supplied(
-            msg.sender,
+            _supplier,
+            _onBehalf,
             _poolTokenAddress,
             _amount,
-            supplyBalanceInOf[_poolTokenAddress][msg.sender].onPool,
-            supplyBalanceInOf[_poolTokenAddress][msg.sender].inP2P
+            supplyBalanceInOf[_poolTokenAddress][_onBehalf].onPool,
+            supplyBalanceInOf[_poolTokenAddress][_onBehalf].inP2P
         );
     }
 
@@ -299,12 +322,12 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             emit P2PSupplyDeltaUpdated(_poolTokenAddress, delta.p2pSupplyDelta);
         }
 
+        // Match pool suppliers if any.
         if (
             remainingToBorrow > 0 &&
             !p2pDisabled[_poolTokenAddress] &&
             suppliersOnPool[_poolTokenAddress].getHead() != address(0)
         ) {
-            // Match pool suppliers if any.
             (uint256 matched, ) = _matchSuppliers(
                 _poolTokenAddress,
                 underlyingToken,
@@ -382,22 +405,27 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
     /// @dev Implements repay logic with security checks.
     /// @param _poolTokenAddress The address of the market the user wants to interact with.
-    /// @param _user The address of the user.
+    /// @param _repayer The address of the account repaying the debt.
+    /// @param _onBehalf The address of the account whose debt is repaid.
     /// @param _amount The amount of token (in underlying).
     /// @param _maxGasForMatching The maximum amount of gas to consume within a matching engine loop.
     function repayLogic(
         address _poolTokenAddress,
-        address _user,
+        address _repayer,
+        address _onBehalf,
         uint256 _amount,
         uint256 _maxGasForMatching
     ) external {
         if (_amount == 0) revert AmountIsZero();
-        if (!userMembership[_poolTokenAddress][_user]) revert UserNotMemberOfMarket();
+        if (!userMembership[_poolTokenAddress][_onBehalf]) revert UserNotMemberOfMarket();
 
         _updateP2PIndexes(_poolTokenAddress);
-        uint256 toRepay = Math.min(_getUserBorrowBalanceInOf(_poolTokenAddress, _user), _amount);
+        uint256 toRepay = Math.min(
+            _getUserBorrowBalanceInOf(_poolTokenAddress, _onBehalf),
+            _amount
+        );
 
-        _safeRepayLogic(_poolTokenAddress, _user, toRepay, _maxGasForMatching);
+        _safeRepayLogic(_poolTokenAddress, _repayer, _onBehalf, toRepay, _maxGasForMatching);
     }
 
     /// @notice Liquidates a position.
@@ -458,7 +486,13 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
         if (vars.amountToSeize > vars.supplyBalance) revert ToSeizeAboveCollateral();
 
-        _safeRepayLogic(_poolTokenBorrowedAddress, _borrower, vars.amountToLiquidate, 0);
+        _safeRepayLogic(
+            _poolTokenBorrowedAddress,
+            msg.sender,
+            _borrower,
+            vars.amountToLiquidate,
+            0
+        );
         _safeWithdrawLogic(
             _poolTokenCollateralAddress,
             vars.amountToSeize,
@@ -492,12 +526,11 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         address _receiver,
         uint256 _maxGasForMatching
     ) internal {
-        IAToken poolToken = IAToken(_poolTokenAddress);
-        ERC20 underlyingToken = ERC20(poolToken.UNDERLYING_ASSET_ADDRESS());
+        ERC20 underlyingToken = ERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
         WithdrawVars memory vars;
         vars.remainingToWithdraw = _amount;
         vars.maxGasForMatching = _maxGasForMatching;
-        vars.withdrawable = poolToken.balanceOf(address(this));
+        vars.withdrawable = IAToken(_poolTokenAddress).balanceOf(address(this));
         vars.poolSupplyIndex = lendingPool.getReserveNormalizedIncome(address(underlyingToken));
 
         /// Soft withdraw ///
@@ -521,6 +554,16 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
                 _leaveMarketIfNeeded(_poolTokenAddress, _supplier);
                 if (vars.toWithdraw > 0) _withdrawFromPool(underlyingToken, vars.toWithdraw); // Reverts on error.
                 underlyingToken.safeTransfer(_receiver, _amount);
+
+                emit Withdrawn(
+                    _supplier,
+                    _receiver,
+                    _poolTokenAddress,
+                    _amount,
+                    supplyBalanceInOf[_poolTokenAddress][_supplier].onPool,
+                    supplyBalanceInOf[_poolTokenAddress][_supplier].inP2P
+                );
+
                 return;
             }
         }
@@ -604,28 +647,30 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         underlyingToken.safeTransfer(_receiver, _amount);
 
         emit Withdrawn(
-            msg.sender,
+            _supplier,
+            _receiver,
             _poolTokenAddress,
             _amount,
-            supplyBalanceInOf[_poolTokenAddress][msg.sender].onPool,
-            supplyBalanceInOf[_poolTokenAddress][msg.sender].inP2P
+            supplyBalanceInOf[_poolTokenAddress][_supplier].onPool,
+            supplyBalanceInOf[_poolTokenAddress][_supplier].inP2P
         );
     }
 
     /// @dev Implements repay logic without security checks.
     /// @param _poolTokenAddress The address of the market the user wants to interact with.
-    /// @param _user The address of the user.
+    /// @param _repayer The address of the account repaying the debt.
+    /// @param _onBehalf The address of the account whose debt is repaid.
     /// @param _amount The amount of token (in underlying).
     /// @param _maxGasForMatching The maximum amount of gas to consume within a matching engine loop.
     function _safeRepayLogic(
         address _poolTokenAddress,
-        address _user,
+        address _repayer,
+        address _onBehalf,
         uint256 _amount,
         uint256 _maxGasForMatching
     ) internal {
-        IAToken poolToken = IAToken(_poolTokenAddress);
-        ERC20 underlyingToken = ERC20(poolToken.UNDERLYING_ASSET_ADDRESS());
-        underlyingToken.safeTransferFrom(msg.sender, address(this), _amount);
+        ERC20 underlyingToken = ERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
+        underlyingToken.safeTransferFrom(_repayer, address(this), _amount);
         RepayVars memory vars;
         vars.remainingToRepay = _amount;
         vars.maxGasForMatching = _maxGasForMatching;
@@ -635,23 +680,33 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
         /// Soft repay ///
 
-        uint256 borrowedOnPool = borrowBalanceInOf[_poolTokenAddress][_user].onPool;
-        if (borrowedOnPool > 0) {
+        vars.borrowedOnPool = borrowBalanceInOf[_poolTokenAddress][_onBehalf].onPool;
+        if (vars.borrowedOnPool > 0) {
             vars.toRepay = Math.min(
-                borrowedOnPool.rayMul(vars.poolBorrowIndex),
+                vars.borrowedOnPool.rayMul(vars.poolBorrowIndex),
                 vars.remainingToRepay
             );
             vars.remainingToRepay -= vars.toRepay;
 
-            borrowBalanceInOf[_poolTokenAddress][_user].onPool -= Math.min(
-                borrowedOnPool,
+            borrowBalanceInOf[_poolTokenAddress][_onBehalf].onPool -= Math.min(
+                vars.borrowedOnPool,
                 vars.toRepay.rayDiv(vars.poolBorrowIndex)
             ); // In adUnit.
-            _updateBorrowerInDS(_poolTokenAddress, _user);
+            _updateBorrowerInDS(_poolTokenAddress, _onBehalf);
 
             if (vars.remainingToRepay == 0) {
                 _repayToPool(underlyingToken, vars.toRepay, vars.poolBorrowIndex); // Reverts on error.
-                _leaveMarketIfNeeded(_poolTokenAddress, _user);
+                _leaveMarketIfNeeded(_poolTokenAddress, _onBehalf);
+
+                emit Repaid(
+                    _repayer,
+                    _onBehalf,
+                    _poolTokenAddress,
+                    _amount,
+                    borrowBalanceInOf[_poolTokenAddress][_onBehalf].onPool,
+                    borrowBalanceInOf[_poolTokenAddress][_onBehalf].inP2P
+                );
+
                 return;
             }
         }
@@ -660,11 +715,11 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         vars.p2pSupplyIndex = p2pSupplyIndex[_poolTokenAddress];
         vars.p2pBorrowIndex = p2pBorrowIndex[_poolTokenAddress];
         vars.poolSupplyIndex = lendingPool.getReserveNormalizedIncome(address(underlyingToken));
-        borrowBalanceInOf[_poolTokenAddress][_user].inP2P -= Math.min(
-            borrowBalanceInOf[_poolTokenAddress][_user].inP2P,
+        borrowBalanceInOf[_poolTokenAddress][_onBehalf].inP2P -= Math.min(
+            borrowBalanceInOf[_poolTokenAddress][_onBehalf].inP2P,
             vars.remainingToRepay.rayDiv(vars.p2pSupplyIndex)
         ); // In peer-to-peer borrow unit.
-        _updateBorrowerInDS(_poolTokenAddress, _user);
+        _updateBorrowerInDS(_poolTokenAddress, _onBehalf);
 
         /// Transfer repay ///
 
@@ -686,13 +741,14 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         // Repay the fee.
         if (vars.remainingToRepay > 0) {
             // Fee = (p2pBorrowAmount - p2pBorrowDelta) - (p2pSupplyAmount - p2pSupplyDelta).
-            uint256 feeToRepay = (delta.p2pBorrowAmount.rayMul(vars.p2pBorrowIndex) -
-                delta.p2pBorrowDelta.rayMul(vars.poolBorrowIndex)) -
+            vars.feeToRepay =
+                (delta.p2pBorrowAmount.rayMul(vars.p2pBorrowIndex) -
+                    delta.p2pBorrowDelta.rayMul(vars.poolBorrowIndex)) -
                 (delta.p2pSupplyAmount.rayMul(vars.p2pSupplyIndex) -
                     delta.p2pSupplyDelta.rayMul(vars.poolSupplyIndex));
 
-            if (feeToRepay > 0) {
-                uint256 feeRepaid = Math.min(feeToRepay, vars.remainingToRepay);
+            if (vars.feeToRepay > 0) {
+                uint256 feeRepaid = Math.min(vars.feeToRepay, vars.remainingToRepay);
                 vars.remainingToRepay -= feeRepaid;
                 delta.p2pBorrowAmount -= feeRepaid.rayDiv(vars.p2pBorrowIndex);
                 emit P2PAmountsUpdated(
@@ -751,14 +807,15 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             _supplyToPool(underlyingToken, vars.remainingToRepay); // Reverts on error.
         }
 
-        _leaveMarketIfNeeded(_poolTokenAddress, _user);
+        _leaveMarketIfNeeded(_poolTokenAddress, _onBehalf);
 
         emit Repaid(
-            msg.sender,
+            _repayer,
+            _onBehalf,
             _poolTokenAddress,
             _amount,
-            borrowBalanceInOf[_poolTokenAddress][msg.sender].onPool,
-            borrowBalanceInOf[_poolTokenAddress][msg.sender].inP2P
+            borrowBalanceInOf[_poolTokenAddress][_onBehalf].onPool,
+            borrowBalanceInOf[_poolTokenAddress][_onBehalf].inP2P
         );
     }
 
