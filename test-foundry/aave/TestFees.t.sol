@@ -68,23 +68,20 @@ contract TestFees is TestSetup {
     }
 
     /// TODO: fix this test
-    function __testShouldCollectTheRightAmountOfFees() public {
+    function testShouldCollectTheRightAmountOfFees() public {
         uint16 reserveFactor = 1_000;
         uint256 toBorrow = 50 ether;
         morpho.setReserveFactor(aDai, reserveFactor); // 10%
 
-        // Increase time so that rates update.
-        hevm.warp(block.timestamp + 1);
-
         uint256 balanceBefore = IERC20(dai).balanceOf(morpho.treasuryVault());
         supplier1.approve(dai, type(uint256).max);
-        supplier1.supply(aDai, 100 * WAD);
+        supplier1.supply(aDai, 100 ether);
         supplier1.borrow(aDai, toBorrow);
 
         uint256 oldSupplyIndex = morpho.p2pSupplyIndex(aDai);
         uint256 oldBorrowIndex = morpho.p2pBorrowIndex(aDai);
 
-        (uint256 supplyP2SBPY, uint256 borrowP2PSPY) = getApproxAPRs(aDai);
+        (uint256 supplyP2SBPY, uint256 borrowP2PSPY) = getApproxP2PRates(aDai);
 
         uint256 newSupplyIndex = oldSupplyIndex.rayMul(
             computeCompoundedInterest(supplyP2SBPY, 365 days)
@@ -97,7 +94,7 @@ contract TestFees is TestSetup {
             newBorrowIndex.rayDiv(oldBorrowIndex) - newSupplyIndex.rayDiv(oldSupplyIndex)
         );
 
-        hevm.warp(block.timestamp + (365 days));
+        move1YearForward(aDai);
 
         supplier1.repay(aDai, type(uint256).max);
         morpho.claimToTreasury(aDai, type(uint256).max);
@@ -128,5 +125,50 @@ contract TestFees is TestSetup {
 
         hevm.expectRevert(abi.encodeWithSignature("AmountIsZero()"));
         morpho.claimToTreasury(aDai, 1 ether);
+    }
+
+    function testShouldPayFee() public {
+        uint16 reserveFactor = 1_000;
+        uint256 bigAmount = 100_000 ether;
+        uint256 smallAmount = 0.00001 ether;
+        morpho.setReserveFactor(aDai, reserveFactor); // 10%
+
+        // Increase time so that rates update.
+        hevm.warp(block.timestamp + 1);
+
+        supplier1.approve(dai, type(uint256).max);
+        supplier1.supply(aDai, smallAmount);
+        supplier1.borrow(aDai, smallAmount / 2);
+
+        supplier2.approve(dai, type(uint256).max);
+        supplier2.supply(aDai, bigAmount);
+        supplier2.borrow(aDai, bigAmount / 2);
+
+        hevm.warp(block.timestamp + (365 days));
+
+        supplier1.repay(aDai, type(uint256).max);
+    }
+
+    function testShouldReduceTheFeeToRepay() public {
+        uint16 reserveFactor = 1_000;
+        uint256 bigAmount = 100_000 ether;
+        uint256 smallAmount = 0.00001 ether;
+        morpho.setReserveFactor(aDai, reserveFactor); // 10%
+
+        // Increase time so that rates update.
+        hevm.warp(block.timestamp + 1);
+
+        supplier1.approve(dai, type(uint256).max);
+        supplier1.supply(aDai, smallAmount);
+        supplier1.borrow(aDai, smallAmount / 2);
+
+        supplier2.approve(dai, type(uint256).max);
+        supplier2.supply(aDai, bigAmount);
+        supplier2.borrow(aDai, bigAmount / 2);
+
+        hevm.warp(block.timestamp + (365 days));
+
+        supplier1.repay(aDai, type(uint256).max);
+        supplier2.repay(aDai, type(uint256).max);
     }
 }
