@@ -120,20 +120,16 @@ contract User {
         morpho.claimRewards(_assets, _toSwap);
     }
 
-    function toggleP2P(address _marketAddress) external {
-        morpho.toggleP2P(_marketAddress);
+    function setPauseStatus(address _marketAddress, bool _newStatus) external {
+        morpho.setPauseStatus(_marketAddress, _newStatus);
+    }
+
+    function setPartialPauseStatus(address _poolTokenAddress, bool _newStatus) external {
+        morpho.setPartialPauseStatus(_poolTokenAddress, _newStatus);
     }
 
     function setTreasuryVault(address _newTreasuryVault) external {
         morpho.setTreasuryVault(_newTreasuryVault);
-    }
-
-    function togglePauseStatus(address _poolTokenAddress) external {
-        morpho.togglePauseStatus(_poolTokenAddress);
-    }
-
-    function togglePartialPauseStatus(address _poolTokenAddress) external {
-        morpho.togglePartialPauseStatus(_poolTokenAddress);
     }
 
     function setAaveIncentivesControllerOnRewardsManager(address _aaveIncentivesController)
