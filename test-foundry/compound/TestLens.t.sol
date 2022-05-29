@@ -764,17 +764,17 @@ contract TestLens is TestSetup {
         assertEq(poolBorrowRate, expectedPoolBorrowRate);
     }
 
-    function testIsLiquidableFalse() public {
+    function testIsLiquidatableFalse() public {
         uint256 amount = 10_000 ether;
 
         borrower1.approve(usdc, to6Decimals(2 * amount));
         borrower1.supply(cUsdc, to6Decimals(2 * amount));
         borrower1.borrow(cDai, amount);
 
-        assertFalse(lens.isLiquidable(address(borrower1)));
+        assertFalse(lens.isLiquidatable(address(borrower1)));
     }
 
-    function testIsLiquidableTrue() public {
+    function testIsLiquidatableTrue() public {
         uint256 amount = 10_000 ether;
 
         borrower1.approve(usdc, to6Decimals(2 * amount));
@@ -783,7 +783,7 @@ contract TestLens is TestSetup {
 
         createAndSetCustomPriceOracle().setDirectPrice(usdc, oracle.getUnderlyingPrice(cUsdc) / 2);
 
-        assertTrue(lens.isLiquidable(address(borrower1)));
+        assertTrue(lens.isLiquidatable(address(borrower1)));
     }
 
     function testComputeLiquidation() public {
@@ -854,7 +854,7 @@ contract TestLens is TestSetup {
         createAndSetCustomPriceOracle().setDirectPrice(dai, collateralPrice);
         createAndSetCustomPriceOracle().setDirectPrice(usdc, borrowPrice);
 
-        if (lens.isLiquidable(address(borrower1))) {
+        if (lens.isLiquidatable(address(borrower1))) {
             uint256 toRepay = lens.computeLiquidationAmount(address(borrower1), cUsdc, cDai);
             if (toRepay > 0) {
                 supplier1.liquidate(cUsdc, cDai, address(borrower1), toRepay);
