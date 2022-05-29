@@ -469,7 +469,7 @@ contract TestRepay is TestSetup {
             (oldVars.SP2PD, , oldVars.SP2PA, ) = morpho.deltas(aDai);
             oldVars.NI = lendingPool.getReserveNormalizedIncome(dai);
             oldVars.SP2PER = morpho.p2pSupplyIndex(aDai);
-            (oldVars.APR, ) = getApproxAPRs(aDai);
+            (oldVars.APR, ) = getApproxP2PRates(aDai);
 
             move1YearForward(aDai);
 
