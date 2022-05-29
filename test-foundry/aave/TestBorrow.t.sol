@@ -4,6 +4,7 @@ pragma solidity 0.8.13;
 import "./setup/TestSetup.sol";
 
 contract TestBorrow is TestSetup {
+    // The borrower tries to borrow more than his collateral allows, the transaction reverts.
     function testBorrow1() public {
         uint256 usdcAmount = to6Decimals(10_000 ether);
 
@@ -16,6 +17,7 @@ contract TestBorrow is TestSetup {
         borrower1.borrow(aDai, borrowable + 1e12);
     }
 
+    // There are no available suppliers: all of the borrowed amount is `onPool`.
     function testBorrow2() public {
         uint256 amount = 10_000 ether;
 
@@ -32,6 +34,7 @@ contract TestBorrow is TestSetup {
         testEquality(inP2P, 0);
     }
 
+    // There is 1 available supplier, he matches 100% of the borrower liquidity, everything is `inP2P`.
     function testBorrow3() public {
         uint256 amount = 10_000 ether;
 
@@ -55,6 +58,7 @@ contract TestBorrow is TestSetup {
         testEquality(inP2P, supplyInP2P);
     }
 
+    // There is 1 available supplier, he doesn't match 100% of the borrower liquidity. Borrower `inP2P` is equal to the supplier previous amount `onPool`, the rest is set `onPool`.
     function testBorrow4() public {
         uint256 amount = 10_000 ether;
 
@@ -78,6 +82,7 @@ contract TestBorrow is TestSetup {
         testEquality(onPool, expectedOnPool);
     }
 
+    // There are NMAX (or less) supplier that match the borrowed amount, everything is `inP2P` after NMAX (or less) match.
     function testBorrow5() public {
         setDefaultMaxGasForMatchingHelper(
             type(uint64).max,
@@ -123,6 +128,7 @@ contract TestBorrow is TestSetup {
         testEquality(onPool, 0);
     }
 
+    // The NMAX biggest supplier don't match all of the borrowed amount, after NMAX match, the rest is borrowed and set `onPool`. ⚠️ most gas expensive borrow scenario.
     function testBorrow6() public {
         setDefaultMaxGasForMatchingHelper(
             type(uint64).max,
