@@ -202,7 +202,7 @@ contract TestSupply is TestSetup {
     }
 
     function testFailSupplyZero() public {
-        morpho.supply(aDai, 0, type(uint256).max);
+        morpho.supply(aDai, msg.sender, 0, type(uint256).max);
     }
 
     function testSupplyRepayOnBehalf() public {
@@ -221,5 +221,23 @@ contract TestSupply is TestSetup {
         // Supplier 1 supply in peer-to-peer. Not supposed to revert.
         supplier1.approve(dai, amount);
         supplier1.supply(aDai, amount);
+    }
+
+    function testSupplyOnBehalf() public {
+        uint256 amount = 10000 ether;
+
+        supplier1.approve(dai, amount);
+        hevm.prank(address(supplier1));
+        morpho.supply(aDai, address(supplier2), amount);
+
+        uint256 poolSupplyIndex = lendingPool.getReserveNormalizedIncome(dai);
+        uint256 expectedOnPool = underlyingToScaledBalance(amount, poolSupplyIndex);
+
+        assertEq(ERC20(aDai).balanceOf(address(morpho)), amount, "balance of aToken");
+
+        (uint256 inP2P, uint256 onPool) = morpho.supplyBalanceInOf(aDai, address(supplier2));
+
+        assertEq(onPool, expectedOnPool, "on pool");
+        assertEq(inP2P, 0, "in peer-to-peer");
     }
 }
