@@ -565,8 +565,8 @@ contract Lens {
 
     /// @dev Checks whether the user has enough collateral to maintain such a borrow position.
     /// @param _user The user to check.
-    /// @return isLiquidable_ whether or not the user is liquidable.
-    function isLiquidable(address _user) external view returns (bool) {
+    /// @return isLiquidatable_ whether or not the user is liquidatable.
+    function isLiquidatable(address _user) external view returns (bool) {
         ICompoundOracle oracle = ICompoundOracle(morpho.comptroller().oracle());
         address[] memory enteredMarkets = morpho.getEnteredMarkets(_user);
         uint256 numberOfEnteredMarkets = enteredMarkets.length;
@@ -592,7 +592,7 @@ contract Lens {
     }
 
     /// @dev Computes the maximum repayable amount for a potential liquidation.
-    /// @notice This doesn't check if the _user is actually liquidatable. It can be verified with isLiquidable(_user).
+    /// @notice This doesn't check if the _user is actually liquidatable. It can be verified with isLiquidatable(_user).
     /// @param _user The potential liquidatee.
     /// @param _poolTokenBorrowedAddress The address of the market to repay.
     /// @param _poolTokenCollateralAddress The address of the market to seize.
