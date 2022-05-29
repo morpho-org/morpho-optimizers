@@ -6,38 +6,38 @@ import "./setup/TestSetup.sol";
 contract TestPausableMarket is TestSetup {
     function testOnlyOwnerShouldTriggerPauseFunction() public {
         hevm.expectRevert("Ownable: caller is not the owner");
-        supplier1.togglePauseStatus(aDai);
+        supplier1.setPauseStatus(aDai, true);
 
-        morpho.togglePauseStatus(aDai);
+        morpho.setPauseStatus(aDai, true);
         (, bool isPaused, ) = morpho.marketStatus(aDai);
         assertTrue(isPaused, "paused is false");
     }
 
     function testOnlyOwnerShouldTriggerPartialPauseFunction() public {
         hevm.expectRevert("Ownable: caller is not the owner");
-        supplier1.togglePartialPauseStatus(aDai);
+        supplier1.setPartialPauseStatus(aDai, true);
 
-        morpho.togglePartialPauseStatus(aDai);
+        morpho.setPartialPauseStatus(aDai, true);
         (, , bool isPartiallyPaused) = morpho.marketStatus(aDai);
         assertTrue(isPartiallyPaused, "partial paused is false");
     }
 
     function testPauseUnpause() public {
-        morpho.togglePauseStatus(aDai);
+        morpho.setPauseStatus(aDai, true);
         (, bool isPaused, ) = morpho.marketStatus(aDai);
         assertTrue(isPaused, "paused is false");
 
-        morpho.togglePauseStatus(aDai);
+        morpho.setPauseStatus(aDai, false);
         (, isPaused, ) = morpho.marketStatus(aDai);
         assertFalse(isPaused, "paused is true");
     }
 
     function testPartialPausePartialUnpause() public {
-        morpho.togglePartialPauseStatus(aDai);
+        morpho.setPartialPauseStatus(aDai, true);
         (, , bool isPartiallyPaused) = morpho.marketStatus(aDai);
         assertTrue(isPartiallyPaused, "partial paused is false");
 
-        morpho.togglePartialPauseStatus(aDai);
+        morpho.setPartialPauseStatus(aDai, false);
         (, , isPartiallyPaused) = morpho.marketStatus(aDai);
         assertFalse(isPartiallyPaused, "partial paused is true");
     }
@@ -81,8 +81,8 @@ contract TestPausableMarket is TestSetup {
         (, uint256 toBorrow) = lens.getUserMaxCapacitiesForAsset(address(supplier1), aUsdc);
         supplier1.borrow(aUsdc, toBorrow);
 
-        morpho.togglePauseStatus(aDai);
-        morpho.togglePauseStatus(aUsdc);
+        morpho.setPauseStatus(aDai, true);
+        morpho.setPauseStatus(aUsdc, true);
 
         hevm.expectRevert(abi.encodeWithSignature("MarketPaused()"));
         supplier1.supply(aDai, amount);
@@ -142,8 +142,8 @@ contract TestPausableMarket is TestSetup {
         (, uint256 toBorrow) = lens.getUserMaxCapacitiesForAsset(address(supplier1), aUsdc);
         supplier1.borrow(aUsdc, toBorrow);
 
-        morpho.togglePartialPauseStatus(aDai);
-        morpho.togglePartialPauseStatus(aUsdc);
+        morpho.setPartialPauseStatus(aDai, true);
+        morpho.setPartialPauseStatus(aUsdc, true);
 
         hevm.expectRevert(abi.encodeWithSignature("MarketPaused()"));
         supplier1.supply(aDai, amount);
