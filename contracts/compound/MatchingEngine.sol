@@ -237,7 +237,7 @@ contract MatchingEngine is MorphoUtils {
             firstPoolBorrowerBalance.inP2P = newP2PBorrowBalance;
             _updateBorrowerInDS(_poolTokenAddress, firstPoolBorrower);
 
-            emit SupplierPositionUpdated(
+            emit BorrowerPositionUpdated(
                 firstPoolBorrower,
                 _poolTokenAddress,
                 newPoolBorrowBalance,
@@ -300,7 +300,7 @@ contract MatchingEngine is MorphoUtils {
             firstP2PBorrowerBalance.inP2P = newP2PBorrowBalance;
             _updateBorrowerInDS(_poolTokenAddress, firstP2PBorrower);
 
-            emit SupplierPositionUpdated(
+            emit BorrowerPositionUpdated(
                 firstP2PBorrower,
                 _poolTokenAddress,
                 newPoolBorrowBalance,
