@@ -270,14 +270,8 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
 
             delta.p2pSupplyAmount += toAddInP2P;
             supplyBalanceInOf[_poolTokenAddress][_onBehalf].inP2P += toAddInP2P;
-
-            // Repay only what is necessary. The remaining tokens stays on the contracts and are claimable by the DAO.
-            vars.toRepay = Math.min(
-                vars.toRepay,
-                ICToken(_poolTokenAddress).borrowBalanceCurrent(address(this)) // The debt of the contract.
-            );
-
             _repayToPool(_poolTokenAddress, underlyingToken, vars.toRepay); // Reverts on error.
+
             emit P2PAmountsUpdated(_poolTokenAddress, delta.p2pSupplyAmount, delta.p2pBorrowAmount);
         }
 
