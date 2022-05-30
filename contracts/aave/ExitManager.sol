@@ -1,18 +1,15 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import {IVariableDebtToken} from "./interfaces/aave/IVariableDebtToken.sol";
-import "./interfaces/IPositionsManager.sol";
+import "./interfaces/IExitManager.sol";
 
-import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
+import "./PoolInteraction.sol";
 
-import "./MatchingEngine.sol";
-
-/// @title PositionsManager.
+/// @title ExitManager.
 /// @author Morpho Labs.
 /// @custom:contact security@morpho.xyz
-/// @notice Main Logic of Morpho Protocol, implementation of the 5 main functionalities: supply, borrow, withdraw, repay and liquidate.
-contract PositionsManager is IPositionsManager, MatchingEngine {
+/// @notice Morpho's exit points: withdraw, repay and liquidate.
+contract ExitManager is IExitManager, PoolInteraction {
     using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
     using DoubleLinkedList for DoubleLinkedList.List;
     using PercentageMath for uint256;
@@ -20,36 +17,6 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     using WadRayMath for uint256;
 
     /// EVENTS ///
-
-    /// @notice Emitted when a supply happens.
-    /// @param _supplier The address of the account sending funds.
-    /// @param _onBehalf The address of the account whose positions will be updated.
-    /// @param _poolTokenAddress The address of the market where assets are supplied into.
-    /// @param _amount The amount of assets supplied (in underlying).
-    /// @param _balanceOnPool The supply balance on pool after update.
-    /// @param _balanceInP2P The supply balance in peer-to-peer after update.
-    event Supplied(
-        address indexed _supplier,
-        address indexed _onBehalf,
-        address indexed _poolTokenAddress,
-        uint256 _amount,
-        uint256 _balanceOnPool,
-        uint256 _balanceInP2P
-    );
-
-    /// @notice Emitted when a borrow happens.
-    /// @param _borrower The address of the borrower.
-    /// @param _poolTokenAddress The address of the market where assets are borrowed.
-    /// @param _amount The amount of assets borrowed (in underlying).
-    /// @param _balanceOnPool The borrow balance on pool after update.
-    /// @param _balanceInP2P The borrow balance in peer-to-peer after update
-    event Borrowed(
-        address indexed _borrower,
-        address indexed _poolTokenAddress,
-        uint256 _amount,
-        uint256 _balanceOnPool,
-        uint256 _balanceInP2P
-    );
 
     /// @notice Emitted when a withdrawal happens.
     /// @param _supplier The address of the supplier whose supply is withdrawn.
@@ -99,26 +66,6 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         uint256 _amountSeized
     );
 
-    /// @notice Emitted when the borrow peer-to-peer delta is updated.
-    /// @param _poolTokenAddress The address of the market.
-    /// @param _p2pBorrowDelta The borrow peer-to-peer delta after update.
-    event P2PBorrowDeltaUpdated(address indexed _poolTokenAddress, uint256 _p2pBorrowDelta);
-
-    /// @notice Emitted when the supply peer-to-peer delta is updated.
-    /// @param _poolTokenAddress The address of the market.
-    /// @param _p2pSupplyDelta The supply peer-to-peer delta after update.
-    event P2PSupplyDeltaUpdated(address indexed _poolTokenAddress, uint256 _p2pSupplyDelta);
-
-    /// @notice Emitted when the supply and borrow peer-to-peer amounts are updated.
-    /// @param _poolTokenAddress The address of the market.
-    /// @param _p2pSupplyAmount The supply peer-to-peer amount after update.
-    /// @param _p2pBorrowAmount The borrow peer-to-peer amount after update.
-    event P2PAmountsUpdated(
-        address indexed _poolTokenAddress,
-        uint256 _p2pSupplyAmount,
-        uint256 _p2pBorrowAmount
-    );
-
     /// ERRORS ///
 
     /// @notice Thrown when the amount of collateral to seize is above the collateral amount.
@@ -133,26 +80,8 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     /// @notice Thrown when the positions of the user is not liquidable.
     error UnauthorisedLiquidate();
 
-    /// @notice Thrown when the user does not have enough collateral for the borrow.
-    error UnauthorisedBorrow();
-
-    /// @notice Thrown when the amount desired for a withdrawal is too small.
-    error WithdrawTooSmall();
-
-    /// @notice Thrown when the address is zero.
-    error AddressIsZero();
-
-    /// @notice Thrown when the amount is equal to 0.
-    error AmountIsZero();
-
     /// STRUCTS ///
 
-    // Struct to avoid stack too deep.
-    struct SupplyVars {
-        uint256 remainingToSupply;
-        uint256 poolBorrowIndex;
-        uint256 toRepay;
-    }
     // Struct to avoid stack too deep.
     struct WithdrawVars {
         uint256 remainingToWithdraw;
@@ -193,192 +122,6 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     }
 
     /// LOGIC ///
-
-    /// @dev Implements supply logic.
-    /// @param _poolTokenAddress The address of the pool token the user wants to interact with.
-    /// @param _supplier The address of the account sending funds.
-    /// @param _onBehalf The address of the account whose positions will be updated.
-    /// @param _amount The amount of token (in underlying).
-    /// @param _maxGasForMatching The maximum amount of gas to consume within a matching engine loop.
-    function supplyLogic(
-        address _poolTokenAddress,
-        address _supplier,
-        address _onBehalf,
-        uint256 _amount,
-        uint256 _maxGasForMatching
-    ) external {
-        if (_onBehalf == address(0)) revert AddressIsZero();
-        if (_amount == 0) revert AmountIsZero();
-        _updateP2PIndexes(_poolTokenAddress);
-
-        _enterMarketIfNeeded(_poolTokenAddress, _onBehalf);
-        ERC20 underlyingToken = ERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
-        underlyingToken.safeTransferFrom(_supplier, address(this), _amount);
-
-        Types.Delta storage delta = deltas[_poolTokenAddress];
-        SupplyVars memory vars;
-        vars.poolBorrowIndex = lendingPool.getReserveNormalizedVariableDebt(
-            address(underlyingToken)
-        );
-        vars.remainingToSupply = _amount;
-
-        /// Supply in peer-to-peer ///
-
-        // Match borrow peer-to-peer delta first if any.
-        if (delta.p2pBorrowDelta > 0) {
-            uint256 matchedDelta = Math.min(
-                delta.p2pBorrowDelta.rayMul(vars.poolBorrowIndex),
-                vars.remainingToSupply
-            );
-
-            vars.toRepay += matchedDelta;
-            vars.remainingToSupply -= matchedDelta;
-            delta.p2pBorrowDelta -= matchedDelta.rayDiv(vars.poolBorrowIndex);
-            emit P2PBorrowDeltaUpdated(_poolTokenAddress, delta.p2pBorrowDelta);
-        }
-
-        // Match pool borrowers if any.
-        if (
-            vars.remainingToSupply > 0 &&
-            !p2pDisabled[_poolTokenAddress] &&
-            borrowersOnPool[_poolTokenAddress].getHead() != address(0)
-        ) {
-            (uint256 matched, ) = _matchBorrowers(
-                _poolTokenAddress,
-                address(underlyingToken),
-                vars.remainingToSupply,
-                _maxGasForMatching
-            ); // In underlying.
-
-            if (matched > 0) {
-                vars.toRepay += matched;
-                vars.remainingToSupply -= matched;
-                delta.p2pBorrowAmount += matched.rayDiv(p2pBorrowIndex[_poolTokenAddress]);
-            }
-        }
-
-        if (vars.toRepay > 0) {
-            uint256 toAddInP2P = vars.toRepay.rayDiv(p2pSupplyIndex[_poolTokenAddress]);
-
-            delta.p2pSupplyAmount += toAddInP2P;
-            supplyBalanceInOf[_poolTokenAddress][_onBehalf].inP2P += toAddInP2P;
-            _updateSupplierInDS(_poolTokenAddress, _onBehalf);
-            _repayToPool(underlyingToken, vars.toRepay, vars.poolBorrowIndex); // Reverts on error.
-
-            emit P2PAmountsUpdated(_poolTokenAddress, delta.p2pSupplyAmount, delta.p2pBorrowAmount);
-        }
-
-        /// Supply on pool ///
-
-        if (vars.remainingToSupply > 0) {
-            supplyBalanceInOf[_poolTokenAddress][_onBehalf].onPool += vars.remainingToSupply.rayDiv(
-                lendingPool.getReserveNormalizedIncome(address(underlyingToken))
-            ); // In scaled balance.
-            _supplyToPool(underlyingToken, vars.remainingToSupply); // Reverts on error.
-        }
-
-        _updateSupplierInDS(_poolTokenAddress, _onBehalf);
-
-        emit Supplied(
-            _supplier,
-            _onBehalf,
-            _poolTokenAddress,
-            _amount,
-            supplyBalanceInOf[_poolTokenAddress][_onBehalf].onPool,
-            supplyBalanceInOf[_poolTokenAddress][_onBehalf].inP2P
-        );
-    }
-
-    /// @dev Implements borrow logic.
-    /// @param _poolTokenAddress The address of the market the user wants to interact with.
-    /// @param _amount The amount of token (in underlying).
-    /// @param _maxGasForMatching The maximum amount of gas to consume within a matching engine loop.
-    function borrowLogic(
-        address _poolTokenAddress,
-        uint256 _amount,
-        uint256 _maxGasForMatching
-    ) external {
-        if (_amount == 0) revert AmountIsZero();
-        _updateP2PIndexes(_poolTokenAddress);
-
-        _enterMarketIfNeeded(_poolTokenAddress, msg.sender);
-        if (!_borrowAllowed(msg.sender, _poolTokenAddress, _amount)) revert UnauthorisedBorrow();
-
-        ERC20 underlyingToken = ERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
-        uint256 remainingToBorrow = _amount;
-        uint256 toWithdraw;
-        Types.Delta storage delta = deltas[_poolTokenAddress];
-        uint256 poolSupplyIndex = lendingPool.getReserveNormalizedIncome(address(underlyingToken));
-        uint256 withdrawable = IAToken(_poolTokenAddress).balanceOf(address(this)); // The balance on pool.
-
-        /// Borrow in peer-to-peer ///
-
-        // Match supply peer-to-peer delta first if any.
-        if (delta.p2pSupplyDelta > 0) {
-            uint256 matchedDelta = Math.min(
-                delta.p2pSupplyDelta.rayMul(poolSupplyIndex),
-                remainingToBorrow,
-                withdrawable
-            );
-
-            toWithdraw += matchedDelta;
-            remainingToBorrow -= matchedDelta;
-            delta.p2pSupplyDelta -= matchedDelta.rayDiv(poolSupplyIndex);
-            emit P2PSupplyDeltaUpdated(_poolTokenAddress, delta.p2pSupplyDelta);
-        }
-
-        // Match pool suppliers if any.
-        if (
-            remainingToBorrow > 0 &&
-            !p2pDisabled[_poolTokenAddress] &&
-            suppliersOnPool[_poolTokenAddress].getHead() != address(0)
-        ) {
-            (uint256 matched, ) = _matchSuppliers(
-                _poolTokenAddress,
-                address(underlyingToken),
-                Math.min(remainingToBorrow, withdrawable - toWithdraw),
-                _maxGasForMatching
-            ); // In underlying.
-
-            if (matched > 0) {
-                toWithdraw += matched;
-                remainingToBorrow -= matched;
-                deltas[_poolTokenAddress].p2pSupplyAmount += matched.rayDiv(
-                    p2pSupplyIndex[_poolTokenAddress]
-                );
-            }
-        }
-
-        if (toWithdraw > 0) {
-            uint256 toAddInP2P = toWithdraw.rayDiv(p2pBorrowIndex[_poolTokenAddress]); // In peer-to-peer unit.
-
-            deltas[_poolTokenAddress].p2pBorrowAmount += toAddInP2P;
-            borrowBalanceInOf[_poolTokenAddress][msg.sender].inP2P += toAddInP2P;
-            emit P2PAmountsUpdated(_poolTokenAddress, delta.p2pSupplyAmount, delta.p2pBorrowAmount);
-
-            if (toWithdraw > 0) _withdrawFromPool(underlyingToken, toWithdraw); // Reverts on error.
-        }
-
-        /// Borrow on pool ///
-
-        if (remainingToBorrow > 0) {
-            borrowBalanceInOf[_poolTokenAddress][msg.sender].onPool += remainingToBorrow.rayDiv(
-                lendingPool.getReserveNormalizedVariableDebt(address(underlyingToken))
-            ); // In adUnit.
-            _borrowFromPool(underlyingToken, remainingToBorrow);
-        }
-
-        _updateBorrowerInDS(_poolTokenAddress, msg.sender);
-        underlyingToken.safeTransfer(msg.sender, _amount);
-
-        emit Borrowed(
-            msg.sender,
-            _poolTokenAddress,
-            _amount,
-            borrowBalanceInOf[_poolTokenAddress][msg.sender].onPool,
-            borrowBalanceInOf[_poolTokenAddress][msg.sender].inP2P
-        );
-    }
 
     /// @dev Implements withdraw logic with security checks.
     /// @param _poolTokenAddress The address of the market the user wants to interact with.
@@ -836,72 +579,6 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             borrowBalanceInOf[_poolTokenAddress][_onBehalf].onPool,
             borrowBalanceInOf[_poolTokenAddress][_onBehalf].inP2P
         );
-    }
-
-    /// @dev Supplies underlying tokens to Aave.
-    /// @param _underlyingToken The underlying token of the market to supply to.
-    /// @param _amount The amount of token (in underlying).
-    function _supplyToPool(ERC20 _underlyingToken, uint256 _amount) internal {
-        _underlyingToken.safeApprove(address(lendingPool), _amount);
-        lendingPool.deposit(address(_underlyingToken), _amount, address(this), NO_REFERRAL_CODE);
-    }
-
-    /// @dev Withdraws underlying tokens from Aave.
-    /// @param _underlyingToken The underlying token of the market to withdraw from.
-    /// @param _amount The amount of token (in underlying).
-    function _withdrawFromPool(ERC20 _underlyingToken, uint256 _amount) internal {
-        lendingPool.withdraw(address(_underlyingToken), _amount, address(this));
-    }
-
-    /// @dev Borrows underlying tokens from Aave.
-    /// @param _underlyingToken The underlying token of the market to borrow from.
-    /// @param _amount The amount of token (in underlying).
-    function _borrowFromPool(ERC20 _underlyingToken, uint256 _amount) internal {
-        lendingPool.borrow(
-            address(_underlyingToken),
-            _amount,
-            VARIABLE_INTEREST_MODE,
-            NO_REFERRAL_CODE,
-            address(this)
-        );
-    }
-
-    /// @dev Repays underlying tokens to Aave.
-    /// @param _underlyingToken The underlying token of the market to repay to.
-    /// @param _amount The amount of token (in underlying).
-    function _repayToPool(
-        ERC20 _underlyingToken,
-        uint256 _amount,
-        uint256 _poolBorrowIndex
-    ) internal {
-        // Repay only what is necessary. The remaining tokens stays on the contracts and are claimable by the DAO.
-        _amount = Math.min(
-            _amount,
-            IVariableDebtToken(
-                lendingPool.getReserveData(address(_underlyingToken)).variableDebtTokenAddress
-            ).scaledBalanceOf(address(this))
-            .rayMul(_poolBorrowIndex) // The debt of the contract.
-        );
-
-        if (_amount > 0) {
-            _underlyingToken.safeApprove(address(lendingPool), _amount);
-            lendingPool.repay(
-                address(_underlyingToken),
-                _amount,
-                VARIABLE_INTEREST_MODE,
-                address(this)
-            );
-        }
-    }
-
-    /// @dev Enters the user into the market if not already there.
-    /// @param _user The address of the user to update.
-    /// @param _poolTokenAddress The address of the market to check.
-    function _enterMarketIfNeeded(address _poolTokenAddress, address _user) internal {
-        if (!userMembership[_poolTokenAddress][_user]) {
-            userMembership[_poolTokenAddress][_user] = true;
-            enteredMarkets[_user].push(_poolTokenAddress);
-        }
     }
 
     /// @dev Removes the user from the market if its balances are null.
