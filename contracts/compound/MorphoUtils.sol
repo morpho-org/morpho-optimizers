@@ -160,8 +160,12 @@ abstract contract MorphoUtils is MorphoStorage {
             address poolTokenEntered = enteredMarkets[_user][i];
 
             if (_poolTokenAddress != poolTokenEntered) {
-                _updateP2PIndexes(poolTokenEntered);
-
+                // Update the p2p index only if the user has some debt in this market.
+                // Otherwise, a lot of gas is saved by slightly underestimating the index.
+                if (
+                    borrowBalanceInOf[poolTokenEntered][_user].inP2P > 0 ||
+                    borrowBalanceInOf[poolTokenEntered][_user].onPool > 0
+                ) _updateP2PIndexes(poolTokenEntered);
                 assetData = _getUserLiquidityDataForAsset(_user, poolTokenEntered, oracle);
                 maxDebtValue += assetData.maxDebtValue;
                 debtValue += assetData.debtValue;
