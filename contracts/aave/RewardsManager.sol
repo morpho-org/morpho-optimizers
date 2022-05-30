@@ -40,17 +40,17 @@ abstract contract RewardsManager is IRewardsManager, Ownable {
 
     /// ERRORS ///
 
-    /// @notice Thrown when only the positions manager can call the function.
-    error OnlyPositionsManager();
+    /// @notice Thrown when only the main Morpho contract can call the function.
+    error OnlyMorpho();
 
     /// @notice Thrown when an invalid asset is passed to accrue rewards.
     error InvalidAsset();
 
     /// MODIFIERS ///
 
-    /// @notice Prevents a user to call function allowed for the positions manager only.
-    modifier onlyPositionsManager() {
-        if (msg.sender != address(morpho)) revert OnlyPositionsManager();
+    /// @notice Prevents a user to call function allowed for the main Morpho contract only.
+    modifier onlyMorpho() {
+        if (msg.sender != address(morpho)) revert OnlyMorpho();
         _;
     }
 
@@ -85,7 +85,7 @@ abstract contract RewardsManager is IRewardsManager, Ownable {
         address[] calldata _assets,
         uint256 _amount,
         address _user
-    ) external override onlyPositionsManager returns (uint256 amountToClaim) {
+    ) external override onlyMorpho returns (uint256 amountToClaim) {
         if (_amount == 0) return 0;
 
         uint256 unclaimedRewards = accrueUserUnclaimedRewards(_assets, _user);
@@ -105,7 +105,7 @@ abstract contract RewardsManager is IRewardsManager, Ownable {
         address _asset,
         uint256 _userBalance,
         uint256 _totalBalance
-    ) external override onlyPositionsManager {
+    ) external override onlyMorpho {
         userUnclaimedRewards[_user] += _updateUserAsset(_user, _asset, _userBalance, _totalBalance);
     }
 
