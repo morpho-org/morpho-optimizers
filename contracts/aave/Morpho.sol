@@ -1,10 +1,6 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import "../common/interfaces/ISwapManager.sol";
-
-import "../common/libraries/DelegateCall.sol";
-
 import "./MorphoGovernance.sol";
 
 /// @title Morpho.
@@ -21,11 +17,10 @@ contract Morpho is MorphoGovernance {
     /// @param _amountClaimed The amount of reward token claimed.
     event RewardsClaimed(address indexed _user, uint256 _amountClaimed);
 
-    /// @dev Emitted when a user claims rewards and swaps them to Morpho tokens.
+    /// @notice Emitted when a user claims rewards and trades them for MORPHO tokens.
     /// @param _user The address of the claimer.
-    /// @param _amountIn The amount of reward token swapped.
-    /// @param _amountOut The amount of tokens received.
-    event RewardsClaimedAndSwapped(address indexed _user, uint256 _amountIn, uint256 _amountOut);
+    /// @param _amountSent The amount of reward token sent to the vault.
+    event RewardsClaimedAndTraded(address indexed _user, uint256 _amountSent);
 
     /// EXTERNAL ///
 
@@ -197,24 +192,14 @@ contract Morpho is MorphoGovernance {
         if (amountOfRewards == 0) revert AmountIsZero();
 
         if (_tradeForMorphoToken) {
-            address swapManager = rewardsManager.swapManager();
-            uint256 amountClaimed = aaveIncentivesController.claimRewards(
-                _assets,
-                amountOfRewards,
-                swapManager
-            );
-            uint256 amountOut = ISwapManager(swapManager).swapToMorphoToken(
-                amountClaimed,
-                msg.sender
-            );
-            emit RewardsClaimedAndSwapped(msg.sender, amountClaimed, amountOut);
+            ERC20 rewardToken = ERC20(aaveIncentivesController.REWARD_TOKEN());
+            aaveIncentivesController.claimRewards(_assets, amountOfRewards, address(this));
+            rewardToken.safeApprove(address(incentivesVault), amountOfRewards);
+            incentivesVault.tradeRewardTokensForMorphoTokens(msg.sender, amountOfRewards);
+            emit RewardsClaimedAndTraded(msg.sender, amountOfRewards);
         } else {
-            uint256 amountClaimed = aaveIncentivesController.claimRewards(
-                _assets,
-                amountOfRewards,
-                msg.sender
-            );
-            emit RewardsClaimed(msg.sender, amountClaimed);
+            aaveIncentivesController.claimRewards(_assets, amountOfRewards, msg.sender);
+            emit RewardsClaimed(msg.sender, amountOfRewards);
         }
     }
 }

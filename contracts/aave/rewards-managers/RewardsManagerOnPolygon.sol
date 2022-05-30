@@ -4,11 +4,7 @@ pragma solidity 0.8.13;
 import "../RewardsManager.sol";
 
 contract RewardsManagerOnPolygon is RewardsManager {
-    constructor(
-        ILendingPool _lendingPool,
-        IMorpho _morpho,
-        address _swapManager
-    ) RewardsManager(_lendingPool, _morpho, _swapManager) {}
+    constructor(ILendingPool _lendingPool, IMorpho _morpho) RewardsManager(_lendingPool, _morpho) {}
 
     /// @inheritdoc RewardsManager
     function _getUpdatedIndex(address _asset, uint256 _totalBalance)
