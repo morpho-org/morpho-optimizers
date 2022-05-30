@@ -2,6 +2,8 @@
 pragma solidity 0.8.13;
 
 /// @title Math library.
+/// @author Morpho Labs.
+/// @custom:contact security@morpho.xyz
 /// @dev Implements min helpers.
 library Math {
     function min(

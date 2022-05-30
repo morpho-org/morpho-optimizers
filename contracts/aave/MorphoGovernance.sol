@@ -6,6 +6,8 @@ import "./libraries/Math.sol";
 import "./MorphoUtils.sol";
 
 /// @title MorphoGovernance.
+/// @author Morpho Labs.
+/// @custom:contact security@morpho.xyz
 /// @notice Governance functions for Morpho.
 abstract contract MorphoGovernance is MorphoUtils {
     using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
