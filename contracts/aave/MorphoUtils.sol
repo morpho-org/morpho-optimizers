@@ -150,7 +150,7 @@ contract MorphoUtils is MorphoStorage {
         address _poolTokenAddress,
         uint256 _withdrawnAmount,
         uint256 _borrowedAmount
-    ) internal returns (Types.LiquidityData memory liquidityData) {
+    ) internal view returns (Types.LiquidityData memory liquidityData) {
         IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
         uint256 numberOfEnteredMarkets = enteredMarkets[_user].length;
         uint256 i;
@@ -162,8 +162,6 @@ contract MorphoUtils is MorphoStorage {
             unchecked {
                 ++i;
             }
-
-            _updateP2PIndexes(poolTokenEntered);
 
             address underlyingAddress = IAToken(poolTokenEntered).UNDERLYING_ASSET_ADDRESS();
             assetData.underlyingPrice = oracle.getAssetPrice(underlyingAddress); // In ETH.
@@ -237,7 +235,7 @@ contract MorphoUtils is MorphoStorage {
         address _user,
         address _poolTokenAddress,
         uint256 _borrowedAmount
-    ) internal returns (bool) {
+    ) internal view returns (bool) {
         Types.LiquidityData memory liquidityData = _getUserHypotheticalBalanceStates(
             _user,
             _poolTokenAddress,
@@ -259,7 +257,7 @@ contract MorphoUtils is MorphoStorage {
         address _user,
         address _poolTokenAddress,
         uint256 _withdrawnAmount
-    ) internal returns (bool) {
+    ) internal view returns (bool) {
         Types.LiquidityData memory liquidityData = _getUserHypotheticalBalanceStates(
             _user,
             _poolTokenAddress,
@@ -273,7 +271,7 @@ contract MorphoUtils is MorphoStorage {
     /// @dev Checks if the user is liquidable.
     /// @param _user The user to check.
     /// @return Whether the user is liquidable or not.
-    function _liquidationAllowed(address _user) internal returns (bool) {
+    function _liquidationAllowed(address _user) internal view returns (bool) {
         Types.LiquidityData memory liquidityData = _getUserHypotheticalBalanceStates(
             _user,
             address(0),
