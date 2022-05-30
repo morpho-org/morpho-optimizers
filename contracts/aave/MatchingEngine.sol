@@ -324,13 +324,11 @@ contract MatchingEngine is MorphoUtils {
                 address variableDebtTokenAddress = lendingPool
                 .getReserveData(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS())
                 .variableDebtTokenAddress;
-                uint256 totalBorrowed = IScaledBalanceToken(variableDebtTokenAddress)
-                .scaledTotalSupply();
                 rewardsManager.updateUserAssetAndAccruedRewards(
                     _user,
                     variableDebtTokenAddress,
                     formerValueOnPool,
-                    totalBorrowed
+                    IScaledBalanceToken(variableDebtTokenAddress).scaledTotalSupply()
                 );
             }
         }
