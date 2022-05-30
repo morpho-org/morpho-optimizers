@@ -13,6 +13,8 @@ import "./libraries/aave/WadRayMath.sol";
 import "./MorphoStorage.sol";
 
 /// @title MorphoUtils.
+/// @author Morpho Labs.
+/// @custom:contact security@morpho.xyz
 /// @notice Modifiers, getters and other util functions for Morpho.
 contract MorphoUtils is MorphoStorage {
     using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
