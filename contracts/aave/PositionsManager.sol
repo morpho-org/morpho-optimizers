@@ -302,7 +302,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         _updateP2PIndexes(_poolTokenAddress);
 
         _enterMarketIfNeeded(_poolTokenAddress, msg.sender);
-        if (!_borrowAllowed(msg.sender, _poolTokenAddress, 0, _amount)) revert UnauthorisedBorrow();
+        if (!_borrowAllowed(msg.sender, _poolTokenAddress, _amount)) revert UnauthorisedBorrow();
 
         ERC20 underlyingToken = ERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
         uint256 remainingToBorrow = _amount;
@@ -402,7 +402,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
             _amount
         );
 
-        if (!_withdrawAllowed(_supplier, _poolTokenAddress, toWithdraw, 0))
+        if (!_withdrawAllowed(_supplier, _poolTokenAddress, toWithdraw))
             revert UnauthorisedWithdraw();
 
         _safeWithdrawLogic(_poolTokenAddress, toWithdraw, _supplier, _receiver, _maxGasForMatching);
