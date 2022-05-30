@@ -6,11 +6,7 @@ import "./aave/IAaveIncentivesController.sol";
 interface IRewardsManager {
     function aaveIncentivesController() external view returns (IAaveIncentivesController);
 
-    function swapManager() external view returns (address);
-
     function setAaveIncentivesController(address) external;
-
-    function setSwapManager(address) external;
 
     function getUserIndex(address, address) external returns (uint256);
 

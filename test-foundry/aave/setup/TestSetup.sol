@@ -9,7 +9,6 @@ import "@contracts/aave/interfaces/aave/IVariableDebtToken.sol";
 import "@contracts/aave/interfaces/IInterestRatesManager.sol";
 import "@contracts/aave/interfaces/aave/ILendingPool.sol";
 import "@contracts/aave/interfaces/IRewardsManager.sol";
-import "@contracts/common/interfaces/ISwapManager.sol";
 import "@contracts/aave/interfaces/aave/IAToken.sol";
 import "@contracts/aave/interfaces/IMorpho.sol";
 
@@ -21,24 +20,21 @@ import "@contracts/aave/libraries/Types.sol";
 
 import {RewardsManagerOnMainnetAndAvalanche} from "@contracts/aave/rewards-managers/RewardsManagerOnMainnetAndAvalanche.sol";
 import {RewardsManagerOnPolygon} from "@contracts/aave/rewards-managers/RewardsManagerOnPolygon.sol";
-import {SwapManagerUniV3OnMainnet} from "@contracts/common/SwapManagerUniV3OnMainnet.sol";
-import {SwapManagerUniV3} from "@contracts/common/SwapManagerUniV3.sol";
-import {SwapManagerUniV2} from "@contracts/common/SwapManagerUniV2.sol";
-import {UniswapV3PoolCreator} from "../../common/uniswap/UniswapV3PoolCreator.sol";
-import {UniswapV2PoolCreator} from "../../common/uniswap/UniswapV2PoolCreator.sol";
 import {InterestRatesManager} from "@contracts/aave/InterestRatesManager.sol";
 import {PositionsManager} from "@contracts/aave/PositionsManager.sol";
+import {IncentivesVault} from "@contracts/aave/IncentivesVault.sol";
 import {MatchingEngine} from "@contracts/aave/MatchingEngine.sol";
 import {Lens} from "@contracts/aave/Lens.sol";
 import "@contracts/aave/Morpho.sol";
 
-import "hardhat/console.sol";
 import "../../common/helpers/MorphoToken.sol";
 import "../helpers/SimplePriceOracle.sol";
+import {DumbOracle} from "../helpers/DumbOracle.sol";
 import "../../common/helpers/Chains.sol";
 import {User} from "../helpers/User.sol";
 import {Utils} from "./Utils.sol";
 import "forge-std/stdlib.sol";
+import "forge-std/console.sol";
 import "@config/Config.sol";
 
 contract TestSetup is Config, Utils, stdCheats {
@@ -55,13 +51,12 @@ contract TestSetup is Config, Utils, stdCheats {
     IRewardsManager public rewardsManager;
     IPositionsManager public positionsManager;
     Lens public lens;
-    ISwapManager public swapManager;
-    UniswapV3PoolCreator public uniswapV3PoolCreator;
-    UniswapV2PoolCreator public uniswapV2PoolCreator;
     MorphoToken public morphoToken;
     address public REWARD_TOKEN =
         IAaveIncentivesController(aaveIncentivesControllerAddress).REWARD_TOKEN();
 
+    IncentivesVault public incentivesVault;
+    DumbOracle internal dumbOracle;
     ILendingPoolAddressesProvider public lendingPoolAddressesProvider;
     IProtocolDataProvider public protocolDataProvider;
     IPriceOracleGetter public oracle;
@@ -99,46 +94,7 @@ contract TestSetup is Config, Utils, stdCheats {
         lendingPool = ILendingPool(lendingPoolAddressesProvider.getLendingPool());
         positionsManager = new PositionsManager();
 
-        if (block.chainid == Chains.ETH_MAINNET) {
-            // Mainnet network.
-            // Create a MORPHO / WETH pool.
-            uniswapV3PoolCreator = new UniswapV3PoolCreator();
-            tip(uniswapV3PoolCreator.WETH9(), address(uniswapV3PoolCreator), INITIAL_BALANCE * WAD);
-            morphoToken = new MorphoToken(address(uniswapV3PoolCreator));
-            swapManager = new SwapManagerUniV3OnMainnet(
-                address(morphoToken),
-                MORPHO_UNIV3_FEE,
-                1 hours,
-                1 hours
-            );
-        } else if (block.chainid == Chains.POLYGON_MAINNET) {
-            // Polygon network.
-            // Create a MORPHO / WMATIC pool.
-            uniswapV3PoolCreator = new UniswapV3PoolCreator();
-            tip(uniswapV3PoolCreator.WETH9(), address(uniswapV3PoolCreator), INITIAL_BALANCE * WAD);
-            morphoToken = new MorphoToken(address(uniswapV3PoolCreator));
-            swapManager = new SwapManagerUniV3(
-                address(morphoToken),
-                MORPHO_UNIV3_FEE,
-                REWARD_TOKEN,
-                REWARD_UNIV3_FEE,
-                1 hours,
-                1 hours
-            );
-        } else if (block.chainid == Chains.AVALANCHE_MAINNET) {
-            // Avalanche network.
-            // Create a MORPHO / WAVAX pool.
-            uniswapV2PoolCreator = new UniswapV2PoolCreator();
-            tip(REWARD_TOKEN, address(uniswapV2PoolCreator), INITIAL_BALANCE * WAD);
-            morphoToken = new MorphoToken(address(uniswapV2PoolCreator));
-            uniswapV2PoolCreator.createPoolAndAddLiquidity(address(morphoToken));
-            swapManager = new SwapManagerUniV2(
-                0x60aE616a2155Ee3d9A68541Ba4544862310933d4,
-                address(morphoToken),
-                REWARD_TOKEN,
-                1 hours
-            );
-        }
+        /// Deploy proxies ///
 
         proxyAdmin = new ProxyAdmin();
         interestRatesManager = new InterestRatesManager();
@@ -157,31 +113,28 @@ contract TestSetup is Config, Utils, stdCheats {
         );
 
         lens = new Lens(address(morpho), lendingPoolAddressesProvider);
+        treasuryVault = new User(morpho);
+        morpho.setTreasuryVault(address(treasuryVault));
 
         if (block.chainid == Chains.ETH_MAINNET) {
             // Mainnet network
             rewardsManager = new RewardsManagerOnMainnetAndAvalanche(
                 lendingPool,
-                IMorpho(address(morpho)),
-                address(swapManager)
+                IMorpho(address(morpho))
             );
-            uniswapV3PoolCreator.createPoolAndMintPosition(address(morphoToken));
         } else if (block.chainid == Chains.AVALANCHE_MAINNET) {
             // Avalanche network
             rewardsManager = new RewardsManagerOnMainnetAndAvalanche(
                 lendingPool,
-                IMorpho(address(morpho)),
-                address(swapManager)
+                IMorpho(address(morpho))
             );
         } else if (block.chainid == Chains.POLYGON_MAINNET) {
             // Polygon network
-            rewardsManager = new RewardsManagerOnPolygon(
-                lendingPool,
-                IMorpho(address(morpho)),
-                address(swapManager)
-            );
-            uniswapV3PoolCreator.createPoolAndMintPosition(address(morphoToken));
+            rewardsManager = new RewardsManagerOnPolygon(lendingPool, IMorpho(address(morpho)));
         }
+
+        rewardsManager.setAaveIncentivesController(aaveIncentivesControllerAddress);
+        morpho.setAaveIncentivesController(aaveIncentivesControllerAddress);
 
         /// Create markets ///
 
@@ -193,15 +146,24 @@ contract TestSetup is Config, Utils, stdCheats {
 
         hevm.warp(block.timestamp + 100);
 
-        treasuryVault = new User(morpho);
+        /// Create Morpho token, deploy Incentives Vault and activate rewards ///
+
+        morphoToken = new MorphoToken(address(this));
+        dumbOracle = new DumbOracle();
+        incentivesVault = new IncentivesVault(
+            IMorpho(address(morpho)),
+            morphoToken,
+            ERC20(IAaveIncentivesController(aaveIncentivesControllerAddress).REWARD_TOKEN()),
+            address(1),
+            dumbOracle
+        );
+        morphoToken.transfer(address(incentivesVault), 1_000_000 ether);
 
         oracle = IPriceOracleGetter(lendingPoolAddressesProvider.getPriceOracle());
         protocolDataProvider = IProtocolDataProvider(protocolDataProviderAddress);
 
-        morpho.setAaveIncentivesController(aaveIncentivesControllerAddress);
-        morpho.setTreasuryVault(address(treasuryVault));
         morpho.setRewardsManager(rewardsManager);
-        rewardsManager.setAaveIncentivesController(aaveIncentivesControllerAddress);
+        morpho.setIncentivesVault(incentivesVault);
     }
 
     function createMarket(address _aToken) internal {
@@ -254,8 +216,6 @@ contract TestSetup is Config, Utils, stdCheats {
     function setContractsLabels() internal {
         hevm.label(address(morpho), "Morpho");
         hevm.label(address(rewardsManager), "RewardsManager");
-        hevm.label(address(swapManager), "SwapManager");
-        hevm.label(address(uniswapV3PoolCreator), "UniswapV3PoolCreator");
         hevm.label(address(morphoToken), "MorphoToken");
         hevm.label(aaveIncentivesControllerAddress, "AaveIncentivesController");
         hevm.label(address(lendingPoolAddressesProvider), "LendingPoolAddressesProvider");
@@ -264,6 +224,7 @@ contract TestSetup is Config, Utils, stdCheats {
         hevm.label(address(oracle), "AaveOracle");
         hevm.label(address(treasuryVault), "TreasuryVault");
         hevm.label(address(interestRatesManager), "InterestRatesManager");
+        hevm.label(address(incentivesVault), "IncentivesVault");
     }
 
     function createSigners(uint256 _nbOfSigners) internal {
