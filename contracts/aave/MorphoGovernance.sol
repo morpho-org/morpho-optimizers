@@ -323,6 +323,7 @@ abstract contract MorphoGovernance is MorphoUtils {
         poolIndexes.lastBorrowPoolIndex = uint112(
             lendingPool.getReserveNormalizedVariableDebt(_underlyingTokenAddress)
         );
+        marketParameters[poolTokenAddress] = _marketParams;
 
         marketsCreated.push(poolTokenAddress);
         emit MarketCreated(
