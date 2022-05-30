@@ -5,7 +5,6 @@ import "./interfaces/aave/IPriceOracleGetter.sol";
 import "./interfaces/aave/IAToken.sol";
 
 import {ReserveConfiguration} from "./libraries/aave/ReserveConfiguration.sol";
-import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 import "../common/libraries/DelegateCall.sol";
 import "./libraries/aave/PercentageMath.sol";
 import "./libraries/aave/WadRayMath.sol";

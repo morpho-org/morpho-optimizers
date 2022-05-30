@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
+import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 import "./libraries/Math.sol";
 
 import "./MorphoUtils.sol";
@@ -11,7 +12,6 @@ import "./MorphoUtils.sol";
 /// @notice Governance functions for Morpho.
 abstract contract MorphoGovernance is MorphoUtils {
     using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
-    using DoubleLinkedList for DoubleLinkedList.List;
     using PercentageMath for uint256;
     using SafeTransferLib for ERC20;
     using WadRayMath for uint256;
