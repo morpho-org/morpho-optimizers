@@ -23,9 +23,10 @@ import "@contracts/aave/libraries/Types.sol";
 import {RewardsManagerOnMainnetAndAvalanche} from "@contracts/aave/rewards-managers/RewardsManagerOnMainnetAndAvalanche.sol";
 import {RewardsManagerOnPolygon} from "@contracts/aave/rewards-managers/RewardsManagerOnPolygon.sol";
 import {InterestRatesManager} from "@contracts/aave/InterestRatesManager.sol";
-import {PositionsManager} from "@contracts/aave/PositionsManager.sol";
 import {IncentivesVault} from "@contracts/aave/IncentivesVault.sol";
 import {MatchingEngine} from "@contracts/aave/MatchingEngine.sol";
+import {EntryManager} from "@contracts/aave/EntryManager.sol";
+import {ExitManager} from "@contracts/aave/ExitManager.sol";
 import {Lens} from "@contracts/aave/Lens.sol";
 import "@contracts/aave/Morpho.sol";
 
@@ -51,7 +52,8 @@ contract TestSetup is Config, Utils, stdCheats {
     Morpho public morpho;
     IInterestRatesManager public interestRatesManager;
     IRewardsManager public rewardsManager;
-    IPositionsManager public positionsManager;
+    IEntryManager public entryManager;
+    IExitManager public exitManager;
     Lens public lens;
     MorphoToken public morphoToken;
     address public REWARD_TOKEN =
@@ -94,7 +96,8 @@ contract TestSetup is Config, Utils, stdCheats {
             lendingPoolAddressesProviderAddress
         );
         lendingPool = ILendingPool(lendingPoolAddressesProvider.getLendingPool());
-        positionsManager = new PositionsManager();
+        entryManager = new EntryManager();
+        exitManager = new ExitManager();
 
         /// Deploy proxies ///
 
@@ -107,7 +110,8 @@ contract TestSetup is Config, Utils, stdCheats {
         morphoProxy.changeAdmin(address(proxyAdmin));
         morpho = Morpho(payable(address(morphoProxy)));
         morpho.initialize(
-            positionsManager,
+            entryManager,
+            exitManager,
             interestRatesManager,
             ILendingPoolAddressesProvider(lendingPoolAddressesProviderAddress),
             defaultMaxGasForMatching,

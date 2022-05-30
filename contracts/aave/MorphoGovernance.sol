@@ -35,9 +35,13 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @param _newIncentivesVaultAddress The new address of the `incentivesVault`.
     event IncentivesVaultSet(address indexed _newIncentivesVaultAddress);
 
-    /// @notice Emitted when the `positionsManager` is set.
-    /// @param _positionsManager The new address of the `positionsManager`.
-    event PositionsManagerSet(address indexed _positionsManager);
+    /// @notice Emitted when the `entryManager` is set.
+    /// @param _entryManager The new address of the `entryManager`.
+    event EntryManagerSet(address indexed _entryManager);
+
+    /// @notice Emitted when the `exitManager` is set.
+    /// @param _exitManager The new address of the `exitManager`.
+    event ExitManagerSet(address indexed _exitManager);
 
     /// @notice Emitted when the `rewardsManager` is set.
     /// @param _newRewardsManagerAddress The new address of the `rewardsManager`.
@@ -111,13 +115,15 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// UPGRADE ///
 
     /// @notice Initializes the Morpho contract.
-    /// @param _positionsManager The `positionsManager`.
+    /// @param _entryManager The `entryManager`.
+    /// @param _exitManager The `exitManager`.
     /// @param _interestRatesManager The `interestRatesManager`.
     /// @param _lendingPoolAddressesProvider The `addressesProvider`.
     /// @param _defaultMaxGasForMatching The `defaultMaxGasForMatching`.
     /// @param _maxSortedUsers The `_maxSortedUsers`.
     function initialize(
-        IPositionsManager _positionsManager,
+        IEntryManager _entryManager,
+        IExitManager _exitManager,
         IInterestRatesManager _interestRatesManager,
         ILendingPoolAddressesProvider _lendingPoolAddressesProvider,
         Types.MaxGasForMatching memory _defaultMaxGasForMatching,
@@ -127,7 +133,8 @@ abstract contract MorphoGovernance is MorphoUtils {
         __Ownable_init();
 
         interestRatesManager = _interestRatesManager;
-        positionsManager = _positionsManager;
+        entryManager = _entryManager;
+        exitManager = _exitManager;
         addressesProvider = _lendingPoolAddressesProvider;
         lendingPool = ILendingPool(addressesProvider.getLendingPool());
 
@@ -154,11 +161,18 @@ abstract contract MorphoGovernance is MorphoUtils {
         emit DefaultMaxGasForMatchingSet(_defaultMaxGasForMatching);
     }
 
-    /// @notice Sets the `positionsManager`.
-    /// @param _positionsManager The new `positionsManager`.
-    function setPositionsManager(IPositionsManager _positionsManager) external onlyOwner {
-        positionsManager = _positionsManager;
-        emit PositionsManagerSet(address(_positionsManager));
+    /// @notice Sets the `entryManager`.
+    /// @param _entryManager The new `entryManager`.
+    function setEntryManager(IEntryManager _entryManager) external onlyOwner {
+        entryManager = _entryManager;
+        emit EntryManagerSet(address(_entryManager));
+    }
+
+    /// @notice Sets the `exitManager`.
+    /// @param _exitManager The new `exitManager`.
+    function setExitManager(IExitManager _exitManager) external onlyOwner {
+        exitManager = _exitManager;
+        emit ExitManagerSet(address(_exitManager));
     }
 
     /// @notice Sets the `rewardsManager`.
