@@ -27,17 +27,12 @@ abstract contract RewardsManager is IRewardsManager, Ownable {
     IAaveIncentivesController public override aaveIncentivesController;
     ILendingPool public immutable lendingPool;
     IMorpho public immutable morpho;
-    address public override swapManager;
 
     /// EVENTS ///
 
     /// @notice Emitted the address of the `aaveIncentivesController` is set.
     /// @param _aaveIncentivesController The new address of the `aaveIncentivesController`.
     event AaveIncentivesControllerSet(address indexed _aaveIncentivesController);
-
-    /// @notice Emitted the address of the `swapManager` is set.
-    /// @param _swapManager The new address of the `swapManager`.
-    event SwapManagerSet(address indexed _swapManager);
 
     /// ERRORS ///
 
@@ -60,15 +55,9 @@ abstract contract RewardsManager is IRewardsManager, Ownable {
     /// @notice Constructs the RewardsManager contract.
     /// @param _lendingPool The `lendingPool`.
     /// @param _morpho The `morpho`.
-    /// @param _swapManager The address of the `swapManager`.
-    constructor(
-        ILendingPool _lendingPool,
-        IMorpho _morpho,
-        address _swapManager
-    ) {
+    constructor(ILendingPool _lendingPool, IMorpho _morpho) {
         lendingPool = _lendingPool;
         morpho = _morpho;
-        swapManager = _swapManager;
     }
 
     /// EXTERNAL ///
@@ -82,13 +71,6 @@ abstract contract RewardsManager is IRewardsManager, Ownable {
     {
         aaveIncentivesController = IAaveIncentivesController(_aaveIncentivesController);
         emit AaveIncentivesControllerSet(_aaveIncentivesController);
-    }
-
-    /// @notice Sets the `swapManager`.
-    /// @param _swapManager The address of the `swapManager`.
-    function setSwapManager(address _swapManager) external override onlyOwner {
-        swapManager = _swapManager;
-        emit SwapManagerSet(_swapManager);
     }
 
     /// @notice Accrues unclaimed rewards for the given assets and returns the total unclaimed rewards.
