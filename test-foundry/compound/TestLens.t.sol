@@ -793,7 +793,7 @@ contract TestLens is TestSetup {
         borrower1.supply(cUsdc, to6Decimals(2 * amount));
         borrower1.borrow(cDai, amount);
 
-        createAndSetCustomPriceOracle().setDirectPrice(usdc, 0);
+        createAndSetCustomPriceOracle().setDirectPrice(usdc, 1);
 
         assertEq(lens.computeLiquidationAmount(address(borrower1), cDai, cUsdc), 0);
     }
@@ -805,6 +805,26 @@ contract TestLens is TestSetup {
         borrower1.supply(cUsdc, to6Decimals(2 * amount));
         borrower1.borrow(cDai, amount);
 
+        assertEq(lens.computeLiquidationAmount(address(borrower1), cDai, cUsdc), 0);
+    }
+
+    function testComputeLiquidation3() public {
+        uint256 amount = 10_000 ether;
+
+        createAndSetCustomPriceOracle().setDirectPrice(
+            usdc,
+            (oracle.getUnderlyingPrice(cDai) * 2) * 1e12
+        );
+
+        borrower1.approve(usdc, to6Decimals(amount));
+        borrower1.supply(cUsdc, to6Decimals(amount));
+        borrower1.borrow(cDai, amount);
+
+        createAndSetCustomPriceOracle().setDirectPrice(
+            usdc,
+            ((oracle.getUnderlyingPrice(cDai) * 79) / 100) * 1e12
+        );
+
         assertApproxEq(
             lens.computeLiquidationAmount(address(borrower1), cDai, cUsdc),
             amount.mul(comptroller.closeFactorMantissa()),
@@ -812,7 +832,7 @@ contract TestLens is TestSetup {
         );
     }
 
-    function testComputeLiquidation3() public {
+    function testComputeLiquidation4() public {
         uint256 amount = 10_000 ether;
 
         borrower1.approve(usdc, to6Decimals(2 * amount));
@@ -823,6 +843,8 @@ contract TestLens is TestSetup {
             usdc,
             (oracle.getUnderlyingPrice(cDai) / 2) * 1e12 // Setting the value of the collateral at the same value as the debt.
         );
+
+        assertTrue(lens.isLiquidatable(address(borrower1)));
 
         assertApproxEq(
             lens.computeLiquidationAmount(address(borrower1), cDai, cUsdc),
