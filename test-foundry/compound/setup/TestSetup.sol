@@ -24,7 +24,6 @@ import "../helpers/DumbOracle.sol";
 import {User} from "../helpers/User.sol";
 import {Utils} from "./Utils.sol";
 import "forge-std/stdlib.sol";
-// import "forge-std/console.sol";
 import "@config/Config.sol";
 
 contract TestSetup is Config, Utils, stdCheats {

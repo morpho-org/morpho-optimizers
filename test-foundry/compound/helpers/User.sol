@@ -24,13 +24,26 @@ contract User {
     receive() external payable {}
 
     function compoundSupply(address _cTokenAddress, uint256 _amount) external {
+        address[] memory marketToEnter = new address[](1);
+        marketToEnter[0] = _cTokenAddress;
+        comptroller.enterMarkets(marketToEnter);
         address underlying = ICToken(_cTokenAddress).underlying();
         ERC20(underlying).safeApprove(_cTokenAddress, type(uint256).max);
-        ICToken(_cTokenAddress).mint(_amount);
+        require(ICToken(_cTokenAddress).mint(_amount) == 0, "Mint fail");
     }
 
     function compoundBorrow(address _cTokenAddress, uint256 _amount) external {
-        ICToken(_cTokenAddress).borrow(_amount);
+        require(ICToken(_cTokenAddress).borrow(_amount) == 0, "Borrow fail");
+    }
+
+    function compoundWithdraw(address _cTokenAddress, uint256 _amount) external {
+        ICToken(_cTokenAddress).redeemUnderlying(_amount);
+    }
+
+    function compoundRepay(address _cTokenAddress, uint256 _amount) external {
+        address underlying = ICToken(_cTokenAddress).underlying();
+        ERC20(underlying).safeApprove(_cTokenAddress, type(uint256).max);
+        ICToken(_cTokenAddress).repayBorrow(_amount);
     }
 
     function compoundClaimRewards(address[] memory assets) external {

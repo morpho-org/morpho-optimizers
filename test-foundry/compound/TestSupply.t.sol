@@ -258,4 +258,55 @@ contract TestSupply is TestSetup {
         assertEq(onPool, expectedOnPool, "on pool");
         assertEq(inP2P, 0, "in peer-to-peer");
     }
+
+    function testSupplyUpdateIndexesSameAsCompound() public {
+        uint256 amount = 1 ether;
+
+        supplier1.approve(dai, type(uint256).max);
+        supplier1.approve(usdc, type(uint256).max);
+
+        supplier1.supply(cDai, amount);
+        supplier1.supply(cUsdc, to6Decimals(amount));
+
+        uint256 daiP2PSupplyIndexBefore = morpho.p2pSupplyIndex(cDai);
+        uint256 daiP2PBorrowIndexBefore = morpho.p2pBorrowIndex(cDai);
+        uint256 usdcP2PSupplyIndexBefore = morpho.p2pSupplyIndex(cUsdc);
+        uint256 usdcP2PBorrowIndexBefore = morpho.p2pBorrowIndex(cUsdc);
+
+        hevm.roll(block.number + 1);
+
+        supplier1.supply(cDai, amount);
+
+        uint256 daiP2PSupplyIndexAfter = morpho.p2pSupplyIndex(cDai);
+        uint256 daiP2PBorrowIndexAfter = morpho.p2pBorrowIndex(cDai);
+        uint256 usdcP2PSupplyIndexAfter = morpho.p2pSupplyIndex(cUsdc);
+        uint256 usdcP2PBorrowIndexAfter = morpho.p2pBorrowIndex(cUsdc);
+
+        assertGt(daiP2PBorrowIndexAfter, daiP2PSupplyIndexBefore);
+        assertGt(daiP2PSupplyIndexAfter, daiP2PBorrowIndexBefore);
+        assertEq(usdcP2PSupplyIndexAfter, usdcP2PSupplyIndexBefore);
+        assertEq(usdcP2PBorrowIndexAfter, usdcP2PBorrowIndexBefore);
+
+        supplier1.compoundSupply(cDai, amount);
+        supplier1.compoundSupply(cUsdc, to6Decimals(amount));
+
+        uint256 daiPoolSupplyIndexBefore = ICToken(cDai).exchangeRateStored();
+        uint256 daiPoolBorrowIndexBefore = ICToken(cDai).borrowIndex();
+        uint256 usdcPoolSupplyIndexBefore = ICToken(cUsdc).exchangeRateStored();
+        uint256 usdcPoolBorrowIndexBefore = ICToken(cUsdc).borrowIndex();
+
+        hevm.roll(block.number + 1);
+
+        supplier1.compoundSupply(cDai, amount);
+
+        uint256 daiPoolSupplyIndexAfter = ICToken(cDai).exchangeRateStored();
+        uint256 daiPoolBorrowIndexAfter = ICToken(cDai).borrowIndex();
+        uint256 usdcPoolSupplyIndexAfter = ICToken(cUsdc).exchangeRateStored();
+        uint256 usdcPoolBorrowIndexAfter = ICToken(cUsdc).borrowIndex();
+
+        assertGt(daiPoolSupplyIndexAfter, daiPoolSupplyIndexBefore);
+        assertGt(daiPoolBorrowIndexAfter, daiPoolBorrowIndexBefore);
+        assertEq(usdcPoolSupplyIndexAfter, usdcPoolSupplyIndexBefore);
+        assertEq(usdcPoolBorrowIndexAfter, usdcPoolBorrowIndexBefore);
+    }
 }

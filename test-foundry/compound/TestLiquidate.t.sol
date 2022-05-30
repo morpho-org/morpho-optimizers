@@ -4,6 +4,7 @@ pragma solidity 0.8.13;
 import "./setup/TestSetup.sol";
 
 contract TestLiquidate is TestSetup {
+    using SafeTransferLib for ERC20;
     using CompoundMath for uint256;
 
     // A user liquidates a borrower that has enough collateral to cover for his debt, the transaction reverts.
@@ -204,5 +205,152 @@ contract TestLiquidate is TestSetup {
 
     function testFailLiquidateZero() public {
         morpho.liquidate(cDai, cDai, cDai, 0);
+    }
+
+    struct StackP2PVars {
+        uint256 daiP2PSupplyIndexBefore;
+        uint256 daiP2PBorrowIndexBefore;
+        uint256 usdcP2PSupplyIndexBefore;
+        uint256 usdcP2PBorrowIndexBefore;
+        uint256 batP2PSupplyIndexBefore;
+        uint256 batP2PBorrowIndexBefore;
+        uint256 usdtP2PSupplyIndexBefore;
+        uint256 usdtP2PBorrowIndexBefore;
+    }
+
+    struct StackPoolVars {
+        uint256 daiPoolSupplyIndexBefore;
+        uint256 daiPoolBorrowIndexBefore;
+        uint256 usdcPoolSupplyIndexBefore;
+        uint256 usdcPoolBorrowIndexBefore;
+        uint256 batPoolSupplyIndexBefore;
+        uint256 batPoolBorrowIndexBefore;
+        uint256 usdtPoolSupplyIndexBefore;
+        uint256 usdtPoolBorrowIndexBefore;
+    }
+
+    function testLiquidateUpdateIndexesSameAsCompound() public {
+        uint256 collateral = 1 ether;
+        uint256 borrow = collateral / 10;
+        uint256 formerPriceDai;
+        uint256 formerPriceUsdc;
+
+        {
+            supplier1.approve(dai, type(uint256).max);
+            supplier1.approve(usdc, type(uint256).max);
+            supplier1.approve(usdt, type(uint256).max);
+
+            supplier1.supply(cDai, collateral);
+            supplier1.supply(cUsdc, to6Decimals(collateral));
+
+            supplier1.borrow(cBat, borrow);
+            supplier1.borrow(cUsdt, to6Decimals(borrow));
+
+            supplier2.approve(wEth, type(uint256).max);
+            supplier2.supply(cEth, collateral);
+
+            StackP2PVars memory vars;
+
+            vars.daiP2PSupplyIndexBefore = morpho.p2pSupplyIndex(cDai);
+            vars.daiP2PBorrowIndexBefore = morpho.p2pBorrowIndex(cDai);
+            vars.usdcP2PSupplyIndexBefore = morpho.p2pSupplyIndex(cUsdc);
+            vars.usdcP2PBorrowIndexBefore = morpho.p2pBorrowIndex(cUsdc);
+            vars.batP2PSupplyIndexBefore = morpho.p2pSupplyIndex(cBat);
+            vars.batP2PBorrowIndexBefore = morpho.p2pBorrowIndex(cBat);
+            vars.usdtP2PSupplyIndexBefore = morpho.p2pSupplyIndex(cUsdt);
+            vars.usdtP2PBorrowIndexBefore = morpho.p2pBorrowIndex(cUsdt);
+
+            hevm.roll(block.number + 1);
+
+            // Change Oracle.
+            SimplePriceOracle customOracle = createAndSetCustomPriceOracle();
+            formerPriceDai = oracle.getUnderlyingPrice(cDai);
+            formerPriceUsdc = oracle.getUnderlyingPrice(cUsdc);
+            customOracle.setDirectPrice(dai, (formerPriceDai * 10) / 100);
+            customOracle.setDirectPrice(usdc, (formerPriceUsdc * 10) / 100);
+
+            // Liquidate.
+            uint256 toRepay = (to6Decimals(borrow) * 1) / 100;
+            User liquidator = borrower3;
+            liquidator.approve(usdt, toRepay);
+            liquidator.liquidate(cUsdt, cDai, address(supplier1), toRepay);
+
+            // Reset former price on oracle.
+            customOracle.setDirectPrice(dai, formerPriceDai);
+            customOracle.setDirectPrice(usdc, formerPriceUsdc);
+
+            uint256 daiP2PSupplyIndexAfter = morpho.p2pSupplyIndex(cDai);
+            uint256 daiP2PBorrowIndexAfter = morpho.p2pBorrowIndex(cDai);
+            uint256 usdcP2PSupplyIndexAfter = morpho.p2pSupplyIndex(cUsdc);
+            uint256 usdcP2PBorrowIndexAfter = morpho.p2pBorrowIndex(cUsdc);
+            uint256 batP2PSupplyIndexAfter = morpho.p2pSupplyIndex(cBat);
+            uint256 batP2PBorrowIndexAfter = morpho.p2pBorrowIndex(cBat);
+            uint256 usdtP2PSupplyIndexAfter = morpho.p2pSupplyIndex(cUsdt);
+            uint256 usdtP2PBorrowIndexAfter = morpho.p2pBorrowIndex(cUsdt);
+
+            assertGt(daiP2PBorrowIndexAfter, vars.daiP2PSupplyIndexBefore);
+            assertGt(daiP2PSupplyIndexAfter, vars.daiP2PBorrowIndexBefore);
+            assertEq(usdcP2PSupplyIndexAfter, vars.usdcP2PSupplyIndexBefore);
+            assertEq(usdcP2PBorrowIndexAfter, vars.usdcP2PBorrowIndexBefore);
+            assertEq(batP2PSupplyIndexAfter, vars.batP2PSupplyIndexBefore);
+            assertEq(batP2PBorrowIndexAfter, vars.batP2PBorrowIndexBefore);
+            assertGt(usdtP2PSupplyIndexAfter, vars.usdtP2PSupplyIndexBefore);
+            assertGt(usdtP2PBorrowIndexAfter, vars.usdtP2PBorrowIndexBefore);
+        }
+
+        {
+            supplier1.compoundSupply(cDai, collateral);
+            supplier1.compoundSupply(cUsdc, to6Decimals(collateral));
+
+            supplier1.compoundBorrow(cBat, borrow);
+            supplier1.compoundBorrow(cUsdt, to6Decimals(borrow));
+
+            StackPoolVars memory vars;
+
+            vars.daiPoolSupplyIndexBefore = ICToken(cDai).exchangeRateStored();
+            vars.daiPoolBorrowIndexBefore = ICToken(cDai).borrowIndex();
+            vars.usdcPoolSupplyIndexBefore = ICToken(cUsdc).exchangeRateStored();
+            vars.usdcPoolBorrowIndexBefore = ICToken(cUsdc).borrowIndex();
+            vars.batPoolSupplyIndexBefore = ICToken(cBat).exchangeRateStored();
+            vars.batPoolBorrowIndexBefore = ICToken(cBat).borrowIndex();
+            vars.usdtPoolSupplyIndexBefore = ICToken(cUsdt).exchangeRateStored();
+            vars.usdtPoolBorrowIndexBefore = ICToken(cUsdt).borrowIndex();
+
+            hevm.roll(block.number + 1);
+
+            // Change Oracle.
+            SimplePriceOracle customOracle = createAndSetCustomPriceOracle();
+            customOracle.setDirectPrice(dai, (formerPriceDai * 10) / 100);
+            customOracle.setDirectPrice(usdc, (formerPriceUsdc * 10) / 100);
+
+            // Liquidate.
+            uint256 toRepay = (to6Decimals(borrow) * 1) / 100;
+            hevm.prank(address(borrower3));
+            ERC20(usdt).safeApprove(cUsdt, type(uint256).max);
+            hevm.prank(address(borrower3));
+            ICToken(cUsdt).liquidateBorrow(address(supplier1), toRepay, cDai);
+
+            // Reset former price on oracle.
+            customOracle.setDirectPrice(dai, formerPriceDai);
+            customOracle.setDirectPrice(usdc, formerPriceUsdc);
+
+            uint256 daiPoolSupplyIndexAfter = ICToken(cDai).exchangeRateStored();
+            uint256 daiPoolBorrowIndexAfter = ICToken(cDai).borrowIndex();
+            uint256 usdcPoolSupplyIndexAfter = ICToken(cUsdc).exchangeRateStored();
+            uint256 usdcPoolBorrowIndexAfter = ICToken(cUsdc).borrowIndex();
+            uint256 batPoolSupplyIndexAfter = ICToken(cBat).exchangeRateStored();
+            uint256 batPoolBorrowIndexAfter = ICToken(cBat).borrowIndex();
+            uint256 usdtPoolSupplyIndexAfter = ICToken(cUsdt).exchangeRateStored();
+            uint256 usdtPoolBorrowIndexAfter = ICToken(cUsdt).borrowIndex();
+
+            assertGt(daiPoolSupplyIndexAfter, vars.daiPoolSupplyIndexBefore);
+            assertGt(daiPoolBorrowIndexAfter, vars.daiPoolBorrowIndexBefore);
+            assertEq(usdcPoolSupplyIndexAfter, vars.usdcPoolSupplyIndexBefore);
+            assertEq(usdcPoolBorrowIndexAfter, vars.usdcPoolBorrowIndexBefore);
+            assertEq(batPoolSupplyIndexAfter, vars.batPoolSupplyIndexBefore);
+            assertEq(batPoolBorrowIndexAfter, vars.batPoolBorrowIndexBefore);
+            assertGt(usdtPoolSupplyIndexAfter, vars.usdtPoolSupplyIndexBefore);
+            assertGt(usdtPoolBorrowIndexAfter, vars.usdtPoolBorrowIndexBefore);
+        }
     }
 }
