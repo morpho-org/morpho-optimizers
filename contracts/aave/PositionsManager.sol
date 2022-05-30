@@ -6,6 +6,8 @@ import "./interfaces/IPositionsManager.sol";
 import "./MatchingEngine.sol";
 
 /// @title PositionsManager.
+/// @author Morpho Labs.
+/// @custom:contact security@morpho.xyz
 /// @notice Main Logic of Morpho Protocol, implementation of the 5 main functionalities: supply, borrow, withdraw, repay and liquidate.
 contract PositionsManager is IPositionsManager, MatchingEngine {
     using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
