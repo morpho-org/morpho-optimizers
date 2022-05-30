@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import "./libraries/aave/ReserveConfiguration.sol";
 import "./libraries/Math.sol";
 
 import "./MorphoUtils.sol";
@@ -46,7 +45,7 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @param _interestRatesManager The new address of the `interestRatesManager`.
     event InterestRatesSet(address indexed _interestRatesManager);
 
-    /// @notice Emitted the address of the `aaveIncentivesController` is set.
+    /// @notice Emitted when the address of the `aaveIncentivesController` is set.
     /// @param _aaveIncentivesController The new address of the `aaveIncentivesController`.
     event AaveIncentivesControllerSet(address indexed _aaveIncentivesController);
 
