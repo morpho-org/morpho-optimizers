@@ -10,6 +10,10 @@ import "./interfaces/IMorpho.sol";
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 
+/// @title RewardsManager.
+/// @author Morpho Labs.
+/// @custom:contact security@morpho.xyz
+/// @notice This abstract contract is a based for rewards managers used to manage the rewards from the Aave protocol.
 abstract contract RewardsManager is IRewardsManager, Ownable {
     /// STRUCTS ///
 

@@ -8,6 +8,8 @@ import "./libraries/Math.sol";
 import "./MorphoUtils.sol";
 
 /// @title MatchingEngine.
+/// @author Morpho Labs.
+/// @custom:contact security@morpho.xyz
 /// @notice Smart contract managing the matching engine.
 contract MatchingEngine is MorphoUtils {
     using DoubleLinkedList for DoubleLinkedList.List;

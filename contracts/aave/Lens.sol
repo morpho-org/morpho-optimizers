@@ -14,6 +14,8 @@ import "./libraries/aave/WadRayMath.sol";
 import "./libraries/Math.sol";
 
 /// @title Lens.
+/// @author Morpho Labs.
+/// @custom:contact security@morpho.xyz
 /// @notice User accessible getters.
 contract Lens {
     using ReserveConfiguration for DataTypes.ReserveConfigurationMap;

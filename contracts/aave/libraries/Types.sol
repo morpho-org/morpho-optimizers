@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
+/// @title Types.
+/// @author Morpho Labs.
+/// @custom:contact security@morpho.xyz
+/// @dev Common types and structs used in Morpho contracts.
 library Types {
     /// ENUMS ///
 
