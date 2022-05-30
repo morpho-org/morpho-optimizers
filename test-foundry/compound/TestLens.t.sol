@@ -821,13 +821,13 @@ contract TestLens is TestSetup {
 
         createAndSetCustomPriceOracle().setDirectPrice(
             usdc,
-            (oracle.getUnderlyingPrice(cDai) / 4) * 1e12 // Setting the value of the collateral at the same value as the debt.
+            (oracle.getUnderlyingPrice(cDai) / 2) * 1e12 // Setting the value of the collateral at the same value as the debt.
         );
 
         assertApproxEq(
             lens.computeLiquidationAmount(address(borrower1), cDai, cUsdc),
-            (amount / 2).div(comptroller.liquidationIncentiveMantissa()),
-            1000000000000
+            amount / 2,
+            1
         );
     }
 
