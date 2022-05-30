@@ -36,9 +36,9 @@ contract Morpho is MorphoGovernance {
         address _onBehalf,
         uint256 _amount
     ) external nonReentrant isMarketCreatedAndNotPausedNorPartiallyPaused(_poolTokenAddress) {
-        address(positionsManager).functionDelegateCall(
+        address(entryManager).functionDelegateCall(
             abi.encodeWithSelector(
-                positionsManager.supplyLogic.selector,
+                entryManager.supplyLogic.selector,
                 _poolTokenAddress,
                 msg.sender,
                 _onBehalf,
@@ -60,9 +60,9 @@ contract Morpho is MorphoGovernance {
         uint256 _amount,
         uint256 _maxGasForMatching
     ) external nonReentrant isMarketCreatedAndNotPausedNorPartiallyPaused(_poolTokenAddress) {
-        address(positionsManager).functionDelegateCall(
+        address(entryManager).functionDelegateCall(
             abi.encodeWithSelector(
-                positionsManager.supplyLogic.selector,
+                entryManager.supplyLogic.selector,
                 _poolTokenAddress,
                 msg.sender,
                 _onBehalf,
@@ -80,9 +80,9 @@ contract Morpho is MorphoGovernance {
         nonReentrant
         isMarketCreatedAndNotPausedNorPartiallyPaused(_poolTokenAddress)
     {
-        address(positionsManager).functionDelegateCall(
+        address(entryManager).functionDelegateCall(
             abi.encodeWithSelector(
-                positionsManager.borrowLogic.selector,
+                entryManager.borrowLogic.selector,
                 _poolTokenAddress,
                 _amount,
                 defaultMaxGasForMatching.borrow
@@ -99,9 +99,9 @@ contract Morpho is MorphoGovernance {
         uint256 _amount,
         uint256 _maxGasForMatching
     ) external nonReentrant isMarketCreatedAndNotPausedNorPartiallyPaused(_poolTokenAddress) {
-        address(positionsManager).functionDelegateCall(
+        address(entryManager).functionDelegateCall(
             abi.encodeWithSelector(
-                positionsManager.borrowLogic.selector,
+                entryManager.borrowLogic.selector,
                 _poolTokenAddress,
                 _amount,
                 _maxGasForMatching
@@ -117,9 +117,9 @@ contract Morpho is MorphoGovernance {
         nonReentrant
         isMarketCreatedAndNotPaused(_poolTokenAddress)
     {
-        address(positionsManager).functionDelegateCall(
+        address(exitManager).functionDelegateCall(
             abi.encodeWithSelector(
-                positionsManager.withdrawLogic.selector,
+                exitManager.withdrawLogic.selector,
                 _poolTokenAddress,
                 _amount,
                 msg.sender,
@@ -139,9 +139,9 @@ contract Morpho is MorphoGovernance {
         address _onBehalf,
         uint256 _amount
     ) external nonReentrant isMarketCreatedAndNotPaused(_poolTokenAddress) {
-        address(positionsManager).functionDelegateCall(
+        address(exitManager).functionDelegateCall(
             abi.encodeWithSelector(
-                positionsManager.repayLogic.selector,
+                exitManager.repayLogic.selector,
                 _poolTokenAddress,
                 msg.sender,
                 _onBehalf,
@@ -167,9 +167,9 @@ contract Morpho is MorphoGovernance {
         isMarketCreatedAndNotPaused(_poolTokenBorrowedAddress)
         isMarketCreatedAndNotPaused(_poolTokenCollateralAddress)
     {
-        address(positionsManager).functionDelegateCall(
+        address(exitManager).functionDelegateCall(
             abi.encodeWithSelector(
-                positionsManager.liquidateLogic.selector,
+                exitManager.liquidateLogic.selector,
                 _poolTokenBorrowedAddress,
                 _poolTokenCollateralAddress,
                 _borrower,

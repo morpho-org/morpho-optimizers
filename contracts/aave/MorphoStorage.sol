@@ -6,8 +6,9 @@ import "./interfaces/aave/IAaveIncentivesController.sol";
 import "./interfaces/aave/ILendingPool.sol";
 import "./interfaces/IInterestRatesManager.sol";
 import "./interfaces/IIncentivesVault.sol";
-import "./interfaces/IPositionsManager.sol";
 import "./interfaces/IRewardsManager.sol";
+import "./interfaces/IEntryManager.sol";
+import "./interfaces/IExitManager.sol";
 
 import "../common/libraries/DoubleLinkedList.sol";
 import "./libraries/Types.sol";
@@ -61,9 +62,10 @@ abstract contract MorphoStorage is OwnableUpgradeable, ReentrancyGuardUpgradeabl
     ILendingPool public lendingPool;
 
     IInterestRatesManager public interestRatesManager;
-    IPositionsManager public positionsManager;
     IIncentivesVault public incentivesVault;
     IRewardsManager public rewardsManager;
+    IEntryManager public entryManager;
+    IExitManager public exitManager;
     address public treasuryVault;
 
     /// CONSTRUCTOR ///
