@@ -147,7 +147,7 @@ abstract contract MorphoUtils is MorphoStorage {
         address _poolTokenAddress,
         uint256 _withdrawnAmount,
         uint256 _borrowedAmount
-    ) internal returns (bool) {
+    ) internal view returns (bool) {
         ICompoundOracle oracle = ICompoundOracle(comptroller.oracle());
         uint256 numberOfEnteredMarkets = enteredMarkets[_user].length;
 
@@ -159,18 +159,11 @@ abstract contract MorphoUtils is MorphoStorage {
         while (i < numberOfEnteredMarkets) {
             address poolTokenEntered = enteredMarkets[_user][i];
 
-            if (_poolTokenAddress != poolTokenEntered) {
-                _updateP2PIndexes(poolTokenEntered);
+            assetData = _getUserLiquidityDataForAsset(_user, poolTokenEntered, oracle);
+            maxDebtValue += assetData.maxDebtValue;
+            debtValue += assetData.debtValue;
 
-                assetData = _getUserLiquidityDataForAsset(_user, poolTokenEntered, oracle);
-                maxDebtValue += assetData.maxDebtValue;
-                debtValue += assetData.debtValue;
-            } else {
-                // No need to call `_updateP2PIndexes()` as it has already been called before.
-                assetData = _getUserLiquidityDataForAsset(_user, poolTokenEntered, oracle);
-                maxDebtValue += assetData.maxDebtValue;
-                debtValue += assetData.debtValue;
-
+            if (_poolTokenAddress == poolTokenEntered) {
                 if (_borrowedAmount > 0)
                     debtValue += _borrowedAmount.mul(assetData.underlyingPrice);
 
