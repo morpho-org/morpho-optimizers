@@ -6,6 +6,7 @@ import "./interfaces/aave/ILendingPoolAddressesProvider.sol";
 import "./interfaces/aave/IAaveIncentivesController.sol";
 import "./interfaces/aave/ILendingPool.sol";
 import "./interfaces/IInterestRatesManager.sol";
+import "./interfaces/IIncentivesVault.sol";
 import "./interfaces/IPositionsManager.sol";
 import "./interfaces/IRewardsManager.sol";
 
@@ -16,7 +17,7 @@ import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
 abstract contract MorphoStorage is OwnableUpgradeable, ReentrancyGuardUpgradeable {
-    /// STORAGE ///
+    /// GLOBAL STORAGE ///
 
     uint8 public constant NO_REFERRAL_CODE = 0;
     uint8 public constant VARIABLE_INTEREST_MODE = 2;
@@ -27,6 +28,8 @@ abstract contract MorphoStorage is OwnableUpgradeable, ReentrancyGuardUpgradeabl
 
     Types.MaxGasForMatching public defaultMaxGasForMatching; // The default max gas to consume within loops in matching engine functions.
     uint256 public maxSortedUsers; // The max number of users to sort in the data structure.
+
+    /// POSITIONS STORAGE ///
 
     mapping(address => DoubleLinkedList.List) internal suppliersInP2P; // For a given market, the suppliers in peer-to-peer.
     mapping(address => DoubleLinkedList.List) internal suppliersOnPool; // For a given market, the suppliers on Aave.
@@ -47,7 +50,8 @@ abstract contract MorphoStorage is OwnableUpgradeable, ReentrancyGuardUpgradeabl
     mapping(address => Types.MarketParameters) public marketParameters; // Market parameters.
     mapping(address => Types.MarketStatus) public marketStatus; // Market status.
     mapping(address => Types.Delta) public deltas; // Delta parameters for each market.
-    mapping(address => bool) public paused; // Whether a market is paused or not.
+
+    /// CONTRACTS AND ADDRESSES ///
 
     ILendingPoolAddressesProvider public addressesProvider;
     IAaveIncentivesController public aaveIncentivesController;
@@ -55,6 +59,7 @@ abstract contract MorphoStorage is OwnableUpgradeable, ReentrancyGuardUpgradeabl
 
     IInterestRatesManager public interestRatesManager;
     IPositionsManager public positionsManager;
+    IIncentivesVault public incentivesVault;
     IRewardsManager public rewardsManager;
     address public treasuryVault;
 

@@ -1,10 +1,7 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import "./interfaces/aave/IPriceOracleGetter.sol";
-
 import "./libraries/aave/ReserveConfiguration.sol";
-import "./libraries/aave/PercentageMath.sol";
 import "./libraries/Math.sol";
 
 import "./MorphoUtils.sol";
@@ -32,6 +29,10 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @notice Emitted the address of the `treasuryVault` is set.
     /// @param _newTreasuryVaultAddress The new address of the `treasuryVault`.
     event TreasuryVaultSet(address indexed _newTreasuryVaultAddress);
+
+    /// @notice Emitted the address of the `incentivesVault` is set.
+    /// @param _newIncentivesVaultAddress The new address of the `incentivesVault`.
+    event IncentivesVaultSet(address indexed _newIncentivesVaultAddress);
 
     /// @notice Emitted when the `positionsManager` is set.
     /// @param _positionsManager The new address of the `positionsManager`.
@@ -185,6 +186,13 @@ abstract contract MorphoGovernance is MorphoUtils {
     function setAaveIncentivesController(address _aaveIncentivesController) external onlyOwner {
         aaveIncentivesController = IAaveIncentivesController(_aaveIncentivesController);
         emit AaveIncentivesControllerSet(_aaveIncentivesController);
+    }
+
+    /// @notice Sets the `incentivesVault`.
+    /// @param _incentivesVault The new `incentivesVault`.
+    function setIncentivesVault(IIncentivesVault _incentivesVault) external onlyOwner {
+        incentivesVault = _incentivesVault;
+        emit IncentivesVaultSet(address(_incentivesVault));
     }
 
     /// @notice Sets the `reserveFactor`.
