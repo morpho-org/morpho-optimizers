@@ -301,6 +301,12 @@ interface ICToken {
 
     function repayBorrowBehalf(address borrower, uint256 repayAmount) external returns (uint256);
 
+    function liquidateBorrow(
+        address borrower,
+        uint256 repayAmount,
+        address cTokenCollateral
+    ) external returns (uint256);
+
     function underlying() external view returns (address);
 
     function mint(uint256) external returns (uint256);
