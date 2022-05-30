@@ -439,12 +439,16 @@ contract TestRewards is TestSetup {
         supplier3.borrow(aUsdc, toBorrow);
     }
 
-    function testShouldClaimRewardsAndSwap() public {
+    function testShouldClaimRewardsAndTradeForMorpkoTokens() public {
+        // 10% bonus.
+        incentivesVault.setBonus(1_000);
+
         uint256 toSupply = 100 ether;
         supplier1.approve(dai, toSupply);
         supplier1.supply(aDai, toSupply);
 
-        uint256 morphoBalanceBefore = supplier1.balanceOf(address(morphoToken));
+        (, uint256 onPool) = morpho.supplyBalanceInOf(aDai, address(supplier1));
+        uint256 userIndex = rewardsManager.getUserIndex(aDai, address(supplier1));
         uint256 rewardBalanceBefore = supplier1.balanceOf(REWARD_TOKEN);
 
         address[] memory aDaiInArray = new address[](1);
@@ -453,26 +457,73 @@ contract TestRewards is TestSetup {
         hevm.warp(block.timestamp + 365 days);
         supplier1.claimRewards(aDaiInArray, true);
 
-        uint256 morphoBalanceAfter = supplier1.balanceOf(address(morphoToken));
+        uint256 index;
+        if (block.chainid == Chains.AVALANCHE_MAINNET || block.chainid == Chains.ETH_MAINNET) {
+            (index, , ) = IAaveIncentivesController(aaveIncentivesControllerAddress).getAssetData(
+                aDai
+            );
+        } else {
+            // Polygon network
+            IAaveIncentivesController.AssetData memory assetData = IAaveIncentivesController(
+                aaveIncentivesControllerAddress
+            ).assets(aDai);
+            index = assetData.index;
+        }
+
+        uint256 expectedClaimed = (onPool * (index - userIndex)) / WAD;
+        uint256 expectedMorphoTokens = (expectedClaimed * 11_000) / 10_000; // 10% bonus with a dumb oracle 1:1 exchange from COMP to MORPHO.
+
+        uint256 morphoBalance = supplier1.balanceOf(address(morphoToken));
         uint256 rewardBalanceAfter = supplier1.balanceOf(REWARD_TOKEN);
-        assertGt(morphoBalanceAfter, morphoBalanceBefore);
-        assertEq(rewardBalanceBefore, rewardBalanceAfter);
+        testEquality(morphoBalance, expectedMorphoTokens, "expected Morpho balance");
+        testEquality(rewardBalanceBefore, rewardBalanceAfter, "expected reward balance");
     }
 
-    function testShouldNotBePossibleToSwapIfTooMuchSlippage() public {
-        uint256 toSupply = 10_000_000 ether;
-        tip(dai, address(supplier1), toSupply);
-        supplier1.approve(dai, toSupply);
-        supplier1.supply(aDai, toSupply);
+    function testShouldClaimTheSameAmountOfRewards() public {
+        uint256 smallAmount = 1 ether;
+        uint256 bigAmount = 10_000 ether;
 
-        address[] memory aDaiInArray = new address[](1);
-        aDaiInArray[0] = aDai;
+        supplier1.approve(usdc, type(uint256).max);
+        supplier1.supply(aUsdc, to6Decimals(smallAmount));
+        supplier2.approve(usdc, type(uint256).max);
+        supplier2.supply(aUsdc, to6Decimals(smallAmount));
 
-        hevm.warp(block.timestamp + 365 days);
-        if (block.chainid == Chains.AVALANCHE_MAINNET)
-            hevm.expectRevert("JoeRouter: INSUFFICIENT_OUTPUT_AMOUNT");
-        else hevm.expectRevert("Too little received");
+        move1YearForward(aUsdc);
 
-        supplier1.claimRewards(aDaiInArray, true);
+        address[] memory markets = new address[](1);
+        markets[0] = aUsdc;
+
+        rewardsManager.accrueUserUnclaimedRewards(markets, address(supplier1));
+
+        // supplier2 tries to game the system by supplying a huge amount of tokens and withdrawing right after accruing its rewards.
+        supplier2.supply(aUsdc, to6Decimals(bigAmount));
+        rewardsManager.accrueUserUnclaimedRewards(markets, address(supplier2));
+        supplier2.withdraw(aUsdc, to6Decimals(bigAmount));
+
+        assertEq(
+            rewardsManager.getUserUnclaimedRewards(markets, address(supplier1)),
+            rewardsManager.getUserUnclaimedRewards(markets, address(supplier2))
+        );
+    }
+
+    function testFailShouldNotClaimRewardsWhenRewardsManagerIsAddressZero() public {
+        uint256 amount = 1 ether;
+
+        supplier1.approve(usdc, type(uint256).max);
+        supplier1.supply(cUsdc, to6Decimals(amount));
+
+        // Set RewardsManager to address(0).
+        morpho.setRewardsManager(IRewardsManager(address(0)));
+
+        move1YearForward(cUsdc);
+
+        address[] memory markets = new address[](1);
+        markets[0] = aUsdc;
+
+        // User accrues its rewards.
+        rewardsManager.accrueUserUnclaimedRewards(markets, address(supplier1));
+
+        // User tries to claim its rewards on Morpho.
+        supplier1.claimRewards(markets, false);
     }
 }
