@@ -566,7 +566,7 @@ contract Lens {
     /// @dev Checks whether the user has enough collateral to maintain such a borrow position.
     /// @param _user The user to check.
     /// @return isLiquidatable_ whether or not the user is liquidatable.
-    function isLiquidatable(address _user) external view returns (bool) {
+    function isLiquidatable(address _user) public view returns (bool) {
         ICompoundOracle oracle = ICompoundOracle(morpho.comptroller().oracle());
         address[] memory enteredMarkets = morpho.getEnteredMarkets(_user);
         uint256 numberOfEnteredMarkets = enteredMarkets.length;
@@ -601,6 +601,7 @@ contract Lens {
         address _poolTokenBorrowedAddress,
         address _poolTokenCollateralAddress
     ) external view returns (uint256 toRepay) {
+        if (!isLiquidatable(_user)) return 0;
         IComptroller comptroller = morpho.comptroller();
         ICompoundOracle compoundOracle = ICompoundOracle(comptroller.oracle());
 
