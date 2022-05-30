@@ -3,6 +3,10 @@ pragma solidity 0.8.13;
 
 import "../RewardsManager.sol";
 
+/// @title RewardsManagerOnMainnetAndAvalanche.
+/// @author Morpho Labs.
+/// @custom:contact security@morpho.xyz
+/// @notice This contract is used to manage the rewards from the Aave protocol on Mainnet or Avalanche.
 contract RewardsManagerOnMainnetAndAvalanche is RewardsManager {
     constructor(ILendingPool _lendingPool, IMorpho _morpho) RewardsManager(_lendingPool, _morpho) {}
 
