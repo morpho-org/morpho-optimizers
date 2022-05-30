@@ -609,7 +609,7 @@ contract TestRepay is TestSetup {
             lendingPool.getReserveData(usdt).variableDebtTokenAddress
         ).scaledBalanceOf(address(morpho));
 
-        // Repay on-behalf of positionsManager
+        // Repay on-behalf of Morpho
         tip(usdt, address(this), amount / 2);
         ERC20(usdt).approve(address(lendingPool), amount / 2);
         lendingPool.repay(usdt, amount / 2, 2, address(morpho));

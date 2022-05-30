@@ -7,7 +7,8 @@ contract TestGovernance is TestSetup {
     using WadRayMath for uint256;
 
     function testShouldDeployContractWithTheRightValues() public {
-        assertEq(address(morpho.positionsManager()), address(positionsManager));
+        assertEq(address(morpho.entryManager()), address(entryManager));
+        assertEq(address(morpho.exitManager()), address(exitManager));
         assertEq(address(morpho.interestRatesManager()), address(interestRatesManager));
         assertEq(address(morpho.addressesProvider()), address(lendingPoolAddressesProviderAddress));
         assertEq(
@@ -140,15 +141,15 @@ contract TestGovernance is TestSetup {
         assertTrue(morpho.p2pDisabled(aDai));
     }
 
-    function testOnlyOwnerShouldSetPositionsManager() public {
-        IPositionsManager positionsManagerV2 = new PositionsManager();
+    function testOnlyOwnerShouldSetEntryManager() public {
+        IEntryManager entryManagerV2 = new EntryManager();
 
         hevm.prank(address(0));
         hevm.expectRevert("Ownable: caller is not the owner");
-        morpho.setPositionsManager(positionsManagerV2);
+        morpho.setEntryManager(entryManagerV2);
 
-        morpho.setPositionsManager(positionsManagerV2);
-        assertEq(address(morpho.positionsManager()), address(positionsManagerV2));
+        morpho.setEntryManager(entryManagerV2);
+        assertEq(address(morpho.entryManager()), address(entryManagerV2));
     }
 
     function testOnlyOwnerShouldSetRewardsManager() public {
