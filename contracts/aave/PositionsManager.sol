@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
+import {IVariableDebtToken} from "./interfaces/aave/IVariableDebtToken.sol";
 import "./interfaces/IPositionsManager.sol";
+
+import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 
 import "./MatchingEngine.sol";
 
@@ -242,7 +245,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         ) {
             (uint256 matched, ) = _matchBorrowers(
                 _poolTokenAddress,
-                underlyingToken,
+                address(underlyingToken),
                 vars.remainingToSupply,
                 _maxGasForMatching
             ); // In underlying.
@@ -332,7 +335,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         ) {
             (uint256 matched, ) = _matchSuppliers(
                 _poolTokenAddress,
-                underlyingToken,
+                address(underlyingToken),
                 Math.min(remainingToBorrow, withdrawable - toWithdraw),
                 _maxGasForMatching
             ); // In underlying.
@@ -605,7 +608,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         ) {
             (uint256 matched, uint256 gasConsumedInMatching) = _matchSuppliers(
                 _poolTokenAddress,
-                underlyingToken,
+                address(underlyingToken),
                 Math.min(vars.remainingToWithdraw, vars.withdrawable - vars.toWithdraw),
                 vars.maxGasForMatching
             );
@@ -776,7 +779,7 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         ) {
             (uint256 matched, uint256 gasConsumedInMatching) = _matchBorrowers(
                 _poolTokenAddress,
-                underlyingToken,
+                address(underlyingToken),
                 vars.remainingToRepay,
                 vars.maxGasForMatching
             );

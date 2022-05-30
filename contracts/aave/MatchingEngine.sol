@@ -66,20 +66,21 @@ contract MatchingEngine is MorphoUtils {
     /// @notice Matches suppliers' liquidity waiting on Compound up to the given `_amount` and moves it to peer-to-peer.
     /// @dev Note: This function expects Compound's exchange rate and peer-to-peer indexes to have been updated.
     /// @param _poolTokenAddress The address of the market from which to match suppliers.
+    /// @param _underlyingTokenAddress The address of the underlying token.
     /// @param _amount The token amount to search for (in underlying).
     /// @param _maxGasForMatching The maximum amount of gas to consume within a matching engine loop.
     /// @return matched The amount of liquidity matched (in underlying).
     /// @return gasConsumedInMatching The amount of gas consumed within the matching loop.
     function _matchSuppliers(
         address _poolTokenAddress,
-        ERC20 _underlyingToken,
+        address _underlyingTokenAddress,
         uint256 _amount,
         uint256 _maxGasForMatching
     ) internal returns (uint256 matched, uint256 gasConsumedInMatching) {
         if (_maxGasForMatching == 0) return (0, 0);
 
         MatchVars memory vars;
-        vars.poolIndex = lendingPool.getReserveNormalizedIncome(address(_underlyingToken));
+        vars.poolIndex = lendingPool.getReserveNormalizedIncome(_underlyingTokenAddress);
         vars.p2pIndex = p2pSupplyIndex[_poolTokenAddress];
         address firstPoolSupplier = suppliersOnPool[_poolTokenAddress].getHead();
 
@@ -128,9 +129,10 @@ contract MatchingEngine is MorphoUtils {
     ) internal returns (uint256) {
         if (_maxGasForMatching == 0) return 0;
 
-        ERC20 underlyingToken = ERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
         UnmatchVars memory vars;
-        vars.poolIndex = lendingPool.getReserveNormalizedIncome(address(underlyingToken));
+        vars.poolIndex = lendingPool.getReserveNormalizedIncome(
+            IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS()
+        );
         vars.p2pIndex = p2pSupplyIndex[_poolTokenAddress];
         vars.remainingToUnmatch = _amount;
         address firstP2PSupplier = suppliersInP2P[_poolTokenAddress].getHead();
@@ -170,19 +172,20 @@ contract MatchingEngine is MorphoUtils {
     /// @notice Matches borrowers' liquidity waiting on Compound up to the given `_amount` and moves it to peer-to-peer.
     /// @dev Note: This function expects peer-to-peer indexes to have been updated..
     /// @param _poolTokenAddress The address of the market from which to match borrowers.
+    /// @param _underlyingTokenAddress The address of the underlying token.
     /// @param _amount The amount to search for (in underlying).
     /// @param _maxGasForMatching The maximum amount of gas to consume within a matching engine loop.
     /// @return matched The amount of liquidity matched (in underlying).
     /// @return gasConsumedInMatching The amount of gas consumed within the matching loop.
     function _matchBorrowers(
         address _poolTokenAddress,
-        ERC20 _underlyingToken,
+        address _underlyingTokenAddress,
         uint256 _amount,
         uint256 _maxGasForMatching
     ) internal returns (uint256 matched, uint256 gasConsumedInMatching) {
         if (_maxGasForMatching == 0) return (0, 0);
         MatchVars memory vars;
-        vars.poolIndex = lendingPool.getReserveNormalizedVariableDebt(address(_underlyingToken));
+        vars.poolIndex = lendingPool.getReserveNormalizedVariableDebt(_underlyingTokenAddress);
         vars.p2pIndex = p2pBorrowIndex[_poolTokenAddress];
         address firstPoolBorrower = borrowersOnPool[_poolTokenAddress].getHead();
 
@@ -232,10 +235,11 @@ contract MatchingEngine is MorphoUtils {
         if (_maxGasForMatching == 0) return 0;
 
         UnmatchVars memory vars;
-        ERC20 underlyingToken = ERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
         address firstP2PBorrower = borrowersInP2P[_poolTokenAddress].getHead();
         vars.remainingToUnmatch = _amount;
-        vars.poolIndex = lendingPool.getReserveNormalizedVariableDebt(address(underlyingToken));
+        vars.poolIndex = lendingPool.getReserveNormalizedVariableDebt(
+            IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS()
+        );
         vars.p2pIndex = p2pBorrowIndex[_poolTokenAddress];
 
         vars.gasLeftAtTheBeginning = gasleft();
