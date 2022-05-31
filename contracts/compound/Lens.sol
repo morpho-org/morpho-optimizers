@@ -254,7 +254,7 @@ contract Lens {
     /// @return balanceInP2P The balance in peer-to-peer of the user (in underlying).
     /// @return totalBalance The total balance of the user (in underlying).
     function getUserSupplyBalance(address _user, address _poolTokenAddress)
-        external
+        public
         view
         returns (
             uint256 balanceOnPool,
@@ -279,7 +279,7 @@ contract Lens {
     /// @return balanceInP2P The balance in peer-to-peer of the user (in underlying).
     /// @return totalBalance The total balance of the user (in underlying).
     function getUserBorrowBalance(address _user, address _poolTokenAddress)
-        external
+        public
         view
         returns (
             uint256 balanceOnPool,
@@ -607,34 +607,20 @@ contract Lens {
         IComptroller comptroller = morpho.comptroller();
         ICompoundOracle compoundOracle = ICompoundOracle(comptroller.oracle());
 
-        (, uint256 newP2PBorrowIndex, , uint256 newPoolBorrowIndex) = getUpdatedIndexes(
-            _poolTokenBorrowedAddress
-        );
-        (uint256 newP2PSupplyIndex, , uint256 newPoolSupplyIndex, ) = getUpdatedIndexes(
+        (, , uint256 totalCollateralBalance) = getUserSupplyBalance(
+            _user,
             _poolTokenCollateralAddress
         );
-
-        Types.BorrowBalance memory borrowBalance = morpho.borrowBalanceInOf(
-            _poolTokenBorrowedAddress,
-            _user
-        );
-        Types.SupplyBalance memory supplyBalance = morpho.supplyBalanceInOf(
-            _poolTokenCollateralAddress,
-            _user
-        );
+        (, , uint256 totalBorrowBalance) = getUserBorrowBalance(_user, _poolTokenBorrowedAddress);
 
         uint256 borrowedPrice = compoundOracle.getUnderlyingPrice(_poolTokenBorrowedAddress);
         uint256 collateralPrice = compoundOracle.getUnderlyingPrice(_poolTokenCollateralAddress);
 
-        uint256 maxROIRepay = (supplyBalance.inP2P.mul(newP2PSupplyIndex) +
-            supplyBalance.onPool.mul(newPoolSupplyIndex))
-        .mul(collateralPrice)
-        .div(borrowedPrice)
-        .div(comptroller.liquidationIncentiveMantissa());
+        uint256 maxROIRepay = totalCollateralBalance.mul(collateralPrice).div(borrowedPrice).div(
+            comptroller.liquidationIncentiveMantissa()
+        );
 
-        uint256 maxRepayable = (borrowBalance.inP2P.mul(newP2PBorrowIndex) +
-            borrowBalance.onPool.mul(newPoolBorrowIndex))
-        .mul(comptroller.closeFactorMantissa());
+        uint256 maxRepayable = totalBorrowBalance.mul(comptroller.closeFactorMantissa());
 
         toRepay = maxROIRepay > maxRepayable ? maxRepayable : maxROIRepay;
     }
