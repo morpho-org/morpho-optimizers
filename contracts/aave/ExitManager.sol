@@ -581,6 +581,40 @@ contract ExitManager is IExitManager, PoolInteraction {
         );
     }
 
+    /// @dev Checks whether the user can withdraw or not.
+    /// @param _user The user to determine liquidity for.
+    /// @param _poolTokenAddress The market to hypothetically withdraw/borrow in.
+    /// @param _withdrawnAmount The number of tokens to hypothetically withdraw (in underlying).
+    /// @return Whether the withdraw is allowed or not.
+    function _withdrawAllowed(
+        address _user,
+        address _poolTokenAddress,
+        uint256 _withdrawnAmount
+    ) internal view returns (bool) {
+        Types.LiquidityData memory liquidityData = _getUserHypotheticalBalanceStates(
+            _user,
+            _poolTokenAddress,
+            _withdrawnAmount,
+            0
+        );
+
+        return liquidityData.healthFactor > HEALTH_FACTOR_LIQUIDATION_THRESHOLD;
+    }
+
+    /// @dev Checks if the user is liquidable.
+    /// @param _user The user to check.
+    /// @return Whether the user is liquidable or not.
+    function _liquidationAllowed(address _user) internal view returns (bool) {
+        Types.LiquidityData memory liquidityData = _getUserHypotheticalBalanceStates(
+            _user,
+            address(0),
+            0,
+            0
+        );
+
+        return liquidityData.healthFactor < HEALTH_FACTOR_LIQUIDATION_THRESHOLD;
+    }
+
     /// @dev Removes the user from the market if its balances are null.
     /// @param _user The address of the user to update.
     /// @param _poolTokenAddress The address of the market to check.
