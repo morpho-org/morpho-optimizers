@@ -17,7 +17,7 @@ import "./MorphoStorage.sol";
 /// @notice Modifiers, getters and other util functions for Morpho.
 contract MorphoUtils is MorphoStorage {
     using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
-    using DoubleLinkedList for DoubleLinkedList.List;
+    using HeapOrdering for HeapOrdering.HeapArray;
     using PercentageMath for uint256;
     using DelegateCall for address;
     using WadRayMath for uint256;

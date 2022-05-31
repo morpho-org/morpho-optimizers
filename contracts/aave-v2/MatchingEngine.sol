@@ -10,7 +10,7 @@ import "./MorphoUtils.sol";
 /// @custom:contact security@morpho.xyz
 /// @notice Smart contract managing the matching engine.
 contract MatchingEngine is MorphoUtils {
-    using DoubleLinkedList for DoubleLinkedList.List;
+    using HeapOrdering for HeapOrdering.HeapArray;
     using WadRayMath for uint256;
 
     /// STRUCTS ///
@@ -291,26 +291,17 @@ contract MatchingEngine is MorphoUtils {
         uint256 formerValueOnPool = suppliersOnPool[_poolTokenAddress].getValueOf(_user);
         uint256 formerValueInP2P = suppliersInP2P[_poolTokenAddress].getValueOf(_user);
 
-        if (formerValueOnPool != onPool) {
-            if (formerValueOnPool > 0) suppliersOnPool[_poolTokenAddress].remove(_user);
-            if (onPool > 0)
-                suppliersOnPool[_poolTokenAddress].insertSorted(_user, onPool, maxSortedUsers);
+        suppliersOnPool[_poolTokenAddress].update(_user, formerValueOnPool, onPool, maxSortedUsers);
+        suppliersInP2P[_poolTokenAddress].update(_user, formerValueInP2P, inP2P, maxSortedUsers);
 
-            if (address(rewardsManager) != address(0)) {
-                uint256 totalSupplied = IScaledBalanceToken(_poolTokenAddress).scaledTotalSupply();
-                rewardsManager.updateUserAssetAndAccruedRewards(
-                    _user,
-                    _poolTokenAddress,
-                    formerValueOnPool,
-                    totalSupplied
-                );
-            }
-        }
-
-        if (formerValueInP2P != inP2P) {
-            if (formerValueInP2P > 0) suppliersInP2P[_poolTokenAddress].remove(_user);
-            if (inP2P > 0)
-                suppliersInP2P[_poolTokenAddress].insertSorted(_user, inP2P, maxSortedUsers);
+        if (formerValueOnPool != onPool && address(rewardsManager) != address(0)) {
+            uint256 totalSupplied = IScaledBalanceToken(_poolTokenAddress).scaledTotalSupply();
+            rewardsManager.updateUserAssetAndAccruedRewards(
+                _user,
+                _poolTokenAddress,
+                formerValueOnPool,
+                totalSupplied
+            );
         }
     }
 
@@ -323,28 +314,19 @@ contract MatchingEngine is MorphoUtils {
         uint256 formerValueOnPool = borrowersOnPool[_poolTokenAddress].getValueOf(_user);
         uint256 formerValueInP2P = borrowersInP2P[_poolTokenAddress].getValueOf(_user);
 
-        if (formerValueOnPool != onPool) {
-            if (formerValueOnPool > 0) borrowersOnPool[_poolTokenAddress].remove(_user);
-            if (onPool > 0)
-                borrowersOnPool[_poolTokenAddress].insertSorted(_user, onPool, maxSortedUsers);
+        borrowersOnPool[_poolTokenAddress].update(_user, formerValueOnPool, onPool, maxSortedUsers);
+        borrowersInP2P[_poolTokenAddress].update(_user, formerValueInP2P, inP2P, maxSortedUsers);
 
-            if (address(rewardsManager) != address(0)) {
-                address variableDebtTokenAddress = lendingPool
-                .getReserveData(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS())
-                .variableDebtTokenAddress;
-                rewardsManager.updateUserAssetAndAccruedRewards(
-                    _user,
-                    variableDebtTokenAddress,
-                    formerValueOnPool,
-                    IScaledBalanceToken(variableDebtTokenAddress).scaledTotalSupply()
-                );
-            }
-        }
-
-        if (formerValueInP2P != inP2P) {
-            if (formerValueInP2P > 0) borrowersInP2P[_poolTokenAddress].remove(_user);
-            if (inP2P > 0)
-                borrowersInP2P[_poolTokenAddress].insertSorted(_user, inP2P, maxSortedUsers);
+        if (formerValueOnPool != onPool && address(rewardsManager) != address(0)) {
+            address variableDebtTokenAddress = lendingPool
+            .getReserveData(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS())
+            .variableDebtTokenAddress;
+            rewardsManager.updateUserAssetAndAccruedRewards(
+                _user,
+                variableDebtTokenAddress,
+                formerValueOnPool,
+                IScaledBalanceToken(variableDebtTokenAddress).scaledTotalSupply()
+            );
         }
     }
 }

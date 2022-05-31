@@ -11,7 +11,7 @@ import "./PoolInteraction.sol";
 /// @notice Morpho's exit points: withdraw, repay and liquidate.
 contract ExitManager is IExitManager, PoolInteraction {
     using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
-    using DoubleLinkedList for DoubleLinkedList.List;
+    using HeapOrdering for HeapOrdering.HeapArray;
     using PercentageMath for uint256;
     using SafeTransferLib for ERC20;
     using WadRayMath for uint256;

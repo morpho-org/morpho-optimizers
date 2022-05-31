@@ -11,7 +11,7 @@ import "./PoolInteraction.sol";
 /// @notice Morpho's entry points: supply and borrow.
 contract EntryManager is IEntryManager, PoolInteraction {
     using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
-    using DoubleLinkedList for DoubleLinkedList.List;
+    using HeapOrdering for HeapOrdering.HeapArray;
     using PercentageMath for uint256;
     using SafeTransferLib for ERC20;
     using WadRayMath for uint256;
