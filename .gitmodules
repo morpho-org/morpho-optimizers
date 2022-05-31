@@ -7,3 +7,7 @@
 [submodule "lib/solmate"]
 	path = lib/solmate
 	url = https://github.com/Rari-Capital/solmate
+[submodule "lib/data-structures"]
+	path = lib/data-structures
+	url = https://github.com/morpho-labs/data-structures
+	branch = feat/heap-ordering
