@@ -95,6 +95,9 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @notice Thrown when the market is already created.
     error MarketAlreadyCreated();
 
+    /// @notice Thrown when trying to set the heap max size to 0.
+    error HeapCannotBeEmpty();
+
     /// @notice Thrown when the amount is equal to 0.
     error AmountIsZero();
 
@@ -142,6 +145,7 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @notice Sets `maxSortedUsers`.
     /// @param _newMaxSortedUsers The new `maxSortedUsers` value.
     function setMaxSortedUsers(uint256 _newMaxSortedUsers) external onlyOwner {
+        if (_newMaxSortedUsers == 0) revert HeapCannotBeEmpty();
         maxSortedUsers = _newMaxSortedUsers;
         emit MaxSortedUsersSet(_newMaxSortedUsers);
     }
