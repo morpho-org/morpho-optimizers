@@ -8,7 +8,7 @@ import "./interfaces/IMorpho.sol";
 
 import {ReserveConfiguration} from "./libraries/aave/ReserveConfiguration.sol";
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
-import "../common/libraries/DoubleLinkedList.sol";
+import "@morpho/data-structures/contracts/HeapOrdering.sol";
 import "./libraries/aave/PercentageMath.sol";
 import "./libraries/aave/WadRayMath.sol";
 import "./libraries/Math.sol";
@@ -19,7 +19,7 @@ import "./libraries/Math.sol";
 /// @notice User accessible getters.
 contract Lens {
     using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
-    using DoubleLinkedList for DoubleLinkedList.List;
+    using HeapOrdering for HeapOrdering.HeapArray;
     using PercentageMath for uint256;
     using WadRayMath for uint256;
     using Math for uint256;

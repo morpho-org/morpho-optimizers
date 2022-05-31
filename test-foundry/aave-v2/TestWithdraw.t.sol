@@ -389,7 +389,7 @@ contract TestWithdraw is TestSetup {
 
     function testDeltaWithdraw() public {
         // 1.3e6 allows only 10 unmatch borrowers
-        setDefaultMaxGasForMatchingHelper(3e6, 3e6, 1.3e6, 3e6);
+        setDefaultMaxGasForMatchingHelper(3e6, 3e6, 1.35e6, 3e6);
 
         uint256 borrowedAmount = 1 ether;
         uint256 collateral = 2 * borrowedAmount;
@@ -515,7 +515,7 @@ contract TestWithdraw is TestSetup {
             .rayDiv(oldVars.BP2PER)
             .rayMul(expectedBP2PER);
 
-            for (uint256 i = 10; i < 20; i++) {
+            for (uint256 i = 1; i <= 10; i++) {
                 (uint256 inP2PBorrower, uint256 onPoolBorrower) = morpho.borrowBalanceInOf(
                     aDai,
                     address(borrowers[i])
@@ -531,7 +531,7 @@ contract TestWithdraw is TestSetup {
         }
 
         // Borrow delta reduction with borrowers repaying
-        for (uint256 i = 10; i < 20; i++) {
+        for (uint256 i = 1; i <= 10; i++) {
             borrowers[i].approve(dai, borrowedAmount);
             borrowers[i].repay(aDai, borrowedAmount);
         }
