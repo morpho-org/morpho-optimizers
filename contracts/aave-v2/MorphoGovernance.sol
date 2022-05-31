@@ -105,6 +105,9 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @notice Thrown when the market is already created.
     error MarketAlreadyCreated();
 
+    /// @notice Thrown when trying to set the max sorted users to 0.
+    error MaxSortedUsersCannotBeZero();
+
     /// @notice Thrown when the amount is equal to 0.
     error AmountIsZero();
 
@@ -146,6 +149,7 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @notice Sets `maxSortedUsers`.
     /// @param _newMaxSortedUsers The new `maxSortedUsers` value.
     function setMaxSortedUsers(uint256 _newMaxSortedUsers) external onlyOwner {
+        if (_newMaxSortedUsers == 0) revert MaxSortedUsersCannotBeZero();
         maxSortedUsers = _newMaxSortedUsers;
         emit MaxSortedUsersSet(_newMaxSortedUsers);
     }
