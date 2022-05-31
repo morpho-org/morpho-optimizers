@@ -21,6 +21,7 @@ import "../../common/helpers/MorphoToken.sol";
 import "../../common/helpers/Chains.sol";
 import "../helpers/SimplePriceOracle.sol";
 import "../helpers/DumbOracle.sol";
+import {console2} from "../../common/helpers/console2.sol";
 import {User} from "../helpers/User.sol";
 import {Utils} from "./Utils.sol";
 import "forge-std/stdlib.sol";
