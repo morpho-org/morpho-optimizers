@@ -227,10 +227,10 @@ contract Lens {
     {
         ICompoundOracle oracle = ICompoundOracle(morpho.comptroller().oracle());
         address[] memory enteredMarkets = morpho.getEnteredMarkets(_user);
-        uint256 i;
 
-        while (i < enteredMarkets.length) {
+        for (uint256 i; i < enteredMarkets.length; ) {
             address poolTokenEntered = enteredMarkets[i];
+
             Types.AssetLiquidityData memory assetData = getUserLiquidityDataForAsset(
                 _user,
                 poolTokenEntered,
@@ -240,35 +240,11 @@ contract Lens {
             collateralValue += assetData.collateralValue;
             maxDebtValue += assetData.maxDebtValue;
             debtValue += assetData.debtValue;
+
             unchecked {
                 ++i;
             }
         }
-    }
-
-    /// @notice Returns the borrow balance in underlying of a given user in a given market.
-    /// @param _user The user to determine balances of.
-    /// @param _poolTokenAddress The address of the market.
-    /// @return balanceOnPool The balance on pool of the user (in underlying).
-    /// @return balanceInP2P The balance in peer-to-peer of the user (in underlying).
-    /// @return totalBalance The total balance of the user (in underlying).
-    function getUserBorrowBalance(address _user, address _poolTokenAddress)
-        external
-        view
-        returns (
-            uint256 balanceOnPool,
-            uint256 balanceInP2P,
-            uint256 totalBalance
-        )
-    {
-        (, uint256 newBorrowIndex) = _computePoolIndexes(_poolTokenAddress);
-        balanceOnPool = morpho.borrowBalanceInOf(_poolTokenAddress, _user).onPool.mul(
-            newBorrowIndex
-        );
-        balanceInP2P = morpho.borrowBalanceInOf(_poolTokenAddress, _user).inP2P.mul(
-            getUpdatedP2PBorrowIndex(_poolTokenAddress)
-        );
-        totalBalance = balanceOnPool + balanceInP2P;
     }
 
     /// @notice Returns the balance in underlying of a given user in a given market.
@@ -296,6 +272,31 @@ contract Lens {
         totalBalance = balanceOnPool + balanceInP2P;
     }
 
+    /// @notice Returns the borrow balance in underlying of a given user in a given market.
+    /// @param _user The user to determine balances of.
+    /// @param _poolTokenAddress The address of the market.
+    /// @return balanceOnPool The balance on pool of the user (in underlying).
+    /// @return balanceInP2P The balance in peer-to-peer of the user (in underlying).
+    /// @return totalBalance The total balance of the user (in underlying).
+    function getUserBorrowBalance(address _user, address _poolTokenAddress)
+        external
+        view
+        returns (
+            uint256 balanceOnPool,
+            uint256 balanceInP2P,
+            uint256 totalBalance
+        )
+    {
+        (, uint256 newBorrowIndex) = _computePoolIndexes(_poolTokenAddress);
+        balanceOnPool = morpho.borrowBalanceInOf(_poolTokenAddress, _user).onPool.mul(
+            newBorrowIndex
+        );
+        balanceInP2P = morpho.borrowBalanceInOf(_poolTokenAddress, _user).inP2P.mul(
+            getUpdatedP2PBorrowIndex(_poolTokenAddress)
+        );
+        totalBalance = balanceOnPool + balanceInP2P;
+    }
+
     /// @notice Returns the maximum amount available to withdraw and borrow for `_user` related to `_poolTokenAddress` (in underlyings).
     /// @dev Note: must be called after calling `accrueInterest()` on the cToken to have the most up to date values.
     /// @param _user The user to determine the capacities for.
@@ -311,9 +312,8 @@ contract Lens {
         Types.AssetLiquidityData memory assetData;
         ICompoundOracle oracle = ICompoundOracle(morpho.comptroller().oracle());
         address[] memory enteredMarkets = morpho.getEnteredMarkets(_user);
-        uint256 i;
 
-        while (i < enteredMarkets.length) {
+        for (uint256 i; i < enteredMarkets.length; ) {
             address poolTokenEntered = enteredMarkets[i];
 
             if (_poolTokenAddress != poolTokenEntered) {
@@ -569,13 +569,11 @@ contract Lens {
     function isLiquidatable(address _user) public view returns (bool) {
         ICompoundOracle oracle = ICompoundOracle(morpho.comptroller().oracle());
         address[] memory enteredMarkets = morpho.getEnteredMarkets(_user);
-        uint256 numberOfEnteredMarkets = enteredMarkets.length;
 
         uint256 maxDebtValue;
         uint256 debtValue;
-        uint256 i;
 
-        while (i < numberOfEnteredMarkets) {
+        for (uint256 i; i < enteredMarkets.length; ) {
             address poolTokenEntered = enteredMarkets[i];
 
             Types.AssetLiquidityData memory assetData = _computeUserLiquidityDataForAsset(
@@ -586,13 +584,16 @@ contract Lens {
 
             maxDebtValue += assetData.maxDebtValue;
             debtValue += assetData.debtValue;
-            ++i;
+
+            unchecked {
+                ++i;
+            }
         }
+
         return debtValue > maxDebtValue;
     }
 
     /// @dev Computes the maximum repayable amount for a potential liquidation.
-    /// @notice This doesn't check if the _user is actually liquidatable. It can be verified with isLiquidatable(_user).
     /// @param _user The potential liquidatee.
     /// @param _poolTokenBorrowedAddress The address of the market to repay.
     /// @param _poolTokenCollateralAddress The address of the market to seize.
@@ -602,6 +603,7 @@ contract Lens {
         address _poolTokenCollateralAddress
     ) external view returns (uint256 toRepay) {
         if (!isLiquidatable(_user)) return 0;
+
         IComptroller comptroller = morpho.comptroller();
         ICompoundOracle compoundOracle = ICompoundOracle(comptroller.oracle());
 
