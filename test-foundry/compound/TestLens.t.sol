@@ -853,7 +853,7 @@ contract TestLens is TestSetup {
         );
     }
 
-    function testFuzzLiquidation(uint64 _amount, uint64 _collateralPrice) public {
+    function testFuzzLiquidation(uint64 _amount, uint80 _collateralPrice) public {
         uint256 amount = uint256(_amount) + 1e13;
         uint256 collateralPrice = uint256(_collateralPrice) + 1;
 
@@ -869,35 +869,43 @@ contract TestLens is TestSetup {
 
         createAndSetCustomPriceOracle().setDirectPrice(dai, collateralPrice);
 
-        if (lens.isLiquidatable(address(borrower1))) {
-            (uint256 collateralValue, uint256 debtValue, uint256 maxDebtValue) = lens
-            .getUserBalanceStates(address(borrower1));
-            assertLt(maxDebtValue, debtValue);
+        (uint256 collateralValue, uint256 debtValue, uint256 maxDebtValue) = lens
+        .getUserBalanceStates(address(borrower1));
+        hevm.assume(maxDebtValue < debtValue);
 
-            uint256 toRepay = lens.computeLiquidationAmount(address(borrower1), cUsdc, cDai);
+        uint256 borrowedPrice = oracle.getUnderlyingPrice(cUsdc);
+        uint256 toRepay = lens.computeLiquidationAmount(address(borrower1), cUsdc, cDai);
 
-            if (toRepay == 0) {
-                // assertEq(collateralValue, 0, "collateral value supposed to be 0");
+        if (toRepay == 0) {
+            // liquidator cannot repay anything iff 1 wei of borrow is greater than the repayable collateral + the liquidation bonus
+            assertEq(
+                collateralValue.div(borrowedPrice).div(comptroller.liquidationIncentiveMantissa()),
+                1
+            );
+        } else {
+            do {
+                supplier1.liquidate(cUsdc, cDai, address(borrower1), toRepay);
+                assertGt(
+                    ERC20(dai).balanceOf(address(supplier1)),
+                    balanceBefore,
+                    "balance did not increase"
+                );
+                balanceBefore = ERC20(dai).balanceOf(address(supplier1));
+                toRepay = lens.computeLiquidationAmount(address(borrower1), cUsdc, cDai);
+            } while (lens.isLiquidatable(address(borrower1)) && toRepay > 0);
+
+            // either the liquidatee was above the liquidation incentive threshold and returned to a solvent position
+            if (collateralValue.div(comptroller.liquidationIncentiveMantissa()) > debtValue) {
+                assertFalse(lens.isLiquidatable(address(borrower1)));
             } else {
-                do {
-                    supplier1.liquidate(cUsdc, cDai, address(borrower1), toRepay);
-                    assertGt(
-                        ERC20(dai).balanceOf(address(supplier1)),
-                        balanceBefore,
-                        "balance did not increase"
-                    );
-                    balanceBefore = ERC20(dai).balanceOf(address(supplier1));
-                    toRepay = lens.computeLiquidationAmount(address(borrower1), cUsdc, cDai);
-                } while (lens.isLiquidatable(address(borrower1)) && toRepay > 0);
-
-                if (collateralValue.div(comptroller.liquidationIncentiveMantissa()) > debtValue) {
-                    // limit solvent
-                    assertFalse(lens.isLiquidatable(address(borrower1)));
-                } else {
-                    // limit no collateral
-                    (collateralValue, , ) = lens.getUserBalanceStates(address(borrower1));
-                    // assertEq(collateralValue, 0, "collateralValue != 0");
-                }
+                // or the liquidator has drained all the collateral
+                (collateralValue, , ) = lens.getUserBalanceStates(address(borrower1));
+                assertEq(
+                    collateralValue.div(borrowedPrice).div(
+                        comptroller.liquidationIncentiveMantissa()
+                    ),
+                    1
+                );
             }
         }
     }
