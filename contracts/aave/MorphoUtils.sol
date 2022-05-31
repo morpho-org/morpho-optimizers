@@ -226,62 +226,6 @@ contract MorphoUtils is MorphoStorage {
             .wadDiv(liquidityData.debtValue);
     }
 
-    /// @dev Checks whether the user can borrow or not.
-    /// @param _user The user to determine liquidity for.
-    /// @param _poolTokenAddress The market to hypothetically withdraw/borrow in.
-    /// @param _borrowedAmount The amount of tokens to hypothetically borrow (in underlying).
-    /// @return Whether the borrow is allowed or not.
-    function _borrowAllowed(
-        address _user,
-        address _poolTokenAddress,
-        uint256 _borrowedAmount
-    ) internal view returns (bool) {
-        Types.LiquidityData memory liquidityData = _getUserHypotheticalBalanceStates(
-            _user,
-            _poolTokenAddress,
-            0,
-            _borrowedAmount
-        );
-
-        return
-            liquidityData.debtValue <=
-            liquidityData.collateralValue.percentMul(liquidityData.avgLtv);
-    }
-
-    /// @dev Checks whether the user can withdraw or not.
-    /// @param _user The user to determine liquidity for.
-    /// @param _poolTokenAddress The market to hypothetically withdraw/borrow in.
-    /// @param _withdrawnAmount The number of tokens to hypothetically withdraw (in underlying).
-    /// @return Whether the withdraw is allowed or not.
-    function _withdrawAllowed(
-        address _user,
-        address _poolTokenAddress,
-        uint256 _withdrawnAmount
-    ) internal view returns (bool) {
-        Types.LiquidityData memory liquidityData = _getUserHypotheticalBalanceStates(
-            _user,
-            _poolTokenAddress,
-            _withdrawnAmount,
-            0
-        );
-
-        return liquidityData.healthFactor > HEALTH_FACTOR_LIQUIDATION_THRESHOLD;
-    }
-
-    /// @dev Checks if the user is liquidable.
-    /// @param _user The user to check.
-    /// @return Whether the user is liquidable or not.
-    function _liquidationAllowed(address _user) internal view returns (bool) {
-        Types.LiquidityData memory liquidityData = _getUserHypotheticalBalanceStates(
-            _user,
-            address(0),
-            0,
-            0
-        );
-
-        return liquidityData.healthFactor < HEALTH_FACTOR_LIQUIDATION_THRESHOLD;
-    }
-
     /// @dev Returns the supply balance of `_user` in the `_poolTokenAddress` market.
     /// @dev Note: Compute the result with the index stored and not the most up to date one.
     /// @param _user The address of the user.

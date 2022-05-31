@@ -11,6 +11,7 @@ import "./PoolInteraction.sol";
 /// @notice Morpho's entry points: supply and borrow.
 contract EntryManager is IEntryManager, PoolInteraction {
     using DoubleLinkedList for DoubleLinkedList.List;
+    using PercentageMath for uint256;
     using SafeTransferLib for ERC20;
     using WadRayMath for uint256;
 
@@ -249,6 +250,28 @@ contract EntryManager is IEntryManager, PoolInteraction {
             borrowBalanceInOf[_poolTokenAddress][msg.sender].onPool,
             borrowBalanceInOf[_poolTokenAddress][msg.sender].inP2P
         );
+    }
+
+    /// @dev Checks whether the user can borrow or not.
+    /// @param _user The user to determine liquidity for.
+    /// @param _poolTokenAddress The market to hypothetically withdraw/borrow in.
+    /// @param _borrowedAmount The amount of tokens to hypothetically borrow (in underlying).
+    /// @return Whether the borrow is allowed or not.
+    function _borrowAllowed(
+        address _user,
+        address _poolTokenAddress,
+        uint256 _borrowedAmount
+    ) internal view returns (bool) {
+        Types.LiquidityData memory liquidityData = _getUserHypotheticalBalanceStates(
+            _user,
+            _poolTokenAddress,
+            0,
+            _borrowedAmount
+        );
+
+        return
+            liquidityData.debtValue <=
+            liquidityData.collateralValue.percentMul(liquidityData.avgLtv);
     }
 
     /// @dev Enters the user into the market if not already there.
