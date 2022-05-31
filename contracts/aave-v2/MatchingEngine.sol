@@ -294,15 +294,13 @@ contract MatchingEngine is MorphoUtils {
         suppliersOnPool[_poolTokenAddress].update(_user, formerValueOnPool, onPool, maxSortedUsers);
         suppliersInP2P[_poolTokenAddress].update(_user, formerValueInP2P, inP2P, maxSortedUsers);
 
-        if (formerValueOnPool != onPool && address(rewardsManager) != address(0)) {
-            uint256 totalSupplied = IScaledBalanceToken(_poolTokenAddress).scaledTotalSupply();
+        if (formerValueOnPool != onPool && address(rewardsManager) != address(0))
             rewardsManager.updateUserAssetAndAccruedRewards(
                 _user,
                 _poolTokenAddress,
                 formerValueOnPool,
-                totalSupplied
+                IScaledBalanceToken(_poolTokenAddress).scaledTotalSupply()
             );
-        }
     }
 
     /// @notice Updates `_user` positions in the borrower data structures.
