@@ -381,7 +381,7 @@ contract TestRepay is TestSetup {
 
     function testDeltaRepay() public {
         // Allows only 10 unmatch suppliers
-        setDefaultMaxGasForMatchingHelper(3e6, 3e6, 3e6, 1.25e6);
+        setDefaultMaxGasForMatchingHelper(3e6, 3e6, 3e6, 1.4e6);
 
         uint256 suppliedAmount = 1 ether;
         uint256 borrowedAmount = 20 * suppliedAmount;
@@ -508,7 +508,7 @@ contract TestRepay is TestSetup {
             .rayDiv(oldVars.SP2PER)
             .rayMul(expectedSP2PER);
 
-            for (uint256 i = 10; i < 20; i++) {
+            for (uint256 i = 1; i <= 10; i++) {
                 (uint256 inP2PSupplier, uint256 onPoolSupplier) = morpho.supplyBalanceInOf(
                     aDai,
                     address(suppliers[i])
@@ -524,7 +524,7 @@ contract TestRepay is TestSetup {
         }
 
         // Supply delta reduction with suppliers withdrawing
-        for (uint256 i = 10; i < 20; i++) {
+        for (uint256 i = 1; i <= 10; i++) {
             suppliers[i].withdraw(aDai, suppliedAmount);
         }
 
