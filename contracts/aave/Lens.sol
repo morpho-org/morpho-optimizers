@@ -125,10 +125,10 @@ contract Lens {
 
                 data.collateralValue += assetData.collateralValue;
                 data.debtValue += assetData.debtValue;
-                data.avgLtv += assetData.collateralValue * assetData.ltv;
-                data.avgLiquidationThreshold +=
-                    assetData.collateralValue *
-                    assetData.liquidationThreshold;
+                data.maxLoanToValue += assetData.collateralValue.percentMul(assetData.ltv);
+                data.liquidationThresholdValue += assetData.collateralValue.percentMul(
+                    assetData.liquidationThreshold
+                );
             }
 
             unchecked {
@@ -140,22 +140,14 @@ contract Lens {
 
         data.collateralValue += assetData.collateralValue;
         data.debtValue += assetData.debtValue;
-        data.avgLtv += assetData.collateralValue * assetData.ltv;
-        data.avgLiquidationThreshold += assetData.collateralValue * assetData.liquidationThreshold;
-
-        if (data.collateralValue > 0) {
-            data.avgLtv = data.avgLtv / data.collateralValue;
-            data.avgLiquidationThreshold = data.avgLiquidationThreshold / data.collateralValue;
-        } else {
-            data.avgLtv = 0;
-            data.avgLiquidationThreshold = 0;
-        }
+        data.maxLoanToValue += assetData.collateralValue.percentMul(assetData.ltv);
+        data.liquidationThresholdValue += assetData.collateralValue.percentMul(
+            assetData.liquidationThreshold
+        );
 
         data.healthFactor = data.debtValue == 0
             ? type(uint256).max
-            : (data.collateralValue.percentMul(data.avgLiquidationThreshold)).wadDiv(
-                data.debtValue
-            );
+            : data.liquidationThresholdValue.wadDiv(data.debtValue);
 
         // Not possible to withdraw nor borrow.
         if (data.healthFactor <= HEALTH_FACTOR_LIQUIDATION_THRESHOLD) return (0, 0);
@@ -166,15 +158,11 @@ contract Lens {
                 assetData.underlyingPrice;
         else
             withdrawable =
-                ((data.collateralValue -
-                    HEALTH_FACTOR_LIQUIDATION_THRESHOLD.wadMul(data.debtValue).percentDiv(
-                        data.avgLiquidationThreshold
-                    )) * assetData.tokenUnit) /
+                ((data.liquidationThresholdValue - data.debtValue) * assetData.tokenUnit) /
                 assetData.underlyingPrice;
 
         borrowable =
-            ((data.collateralValue.percentMul(data.avgLtv) - data.debtValue) *
-                assetData.tokenUnit) /
+            ((data.maxLoanToValue - data.debtValue) * assetData.tokenUnit) /
             assetData.underlyingPrice;
     }
 
@@ -232,10 +220,10 @@ contract Lens {
             );
 
             liquidityData.collateralValue += assetData.collateralValue;
-            liquidityData.avgLtv += assetData.collateralValue * assetData.ltv;
-            liquidityData.avgLiquidationThreshold +=
-                assetData.collateralValue *
-                assetData.liquidationThreshold;
+            liquidityData.maxLoanToValue += assetData.collateralValue.percentMul(assetData.ltv);
+            liquidityData.liquidationThresholdValue += assetData.collateralValue.percentMul(
+                assetData.liquidationThreshold
+            );
             liquidityData.debtValue += assetData.debtValue;
 
             if (_poolTokenAddress == poolTokenEntered) {
@@ -248,12 +236,12 @@ contract Lens {
                     liquidityData.collateralValue -=
                         (_withdrawnAmount * assetData.underlyingPrice) /
                         assetData.tokenUnit;
-                    liquidityData.avgLtv -=
-                        ((_withdrawnAmount * assetData.underlyingPrice) / assetData.tokenUnit) *
-                        assetData.ltv;
-                    liquidityData.avgLiquidationThreshold -=
-                        ((_withdrawnAmount * assetData.underlyingPrice) / assetData.tokenUnit) *
-                        assetData.liquidationThreshold;
+                    liquidityData.maxLoanToValue -= ((_withdrawnAmount *
+                        assetData.underlyingPrice) / assetData.tokenUnit)
+                    .percentMul(assetData.ltv);
+                    liquidityData.liquidationThresholdValue -= ((_withdrawnAmount *
+                        assetData.underlyingPrice) / assetData.tokenUnit)
+                    .percentMul(assetData.liquidationThreshold);
                 }
             }
 
@@ -262,22 +250,9 @@ contract Lens {
             }
         }
 
-        if (liquidityData.collateralValue > 0) {
-            unchecked {
-                liquidityData.avgLtv = liquidityData.avgLtv / liquidityData.collateralValue;
-                liquidityData.avgLiquidationThreshold =
-                    liquidityData.avgLiquidationThreshold /
-                    liquidityData.collateralValue;
-            }
-        } else {
-            liquidityData.avgLtv = 0;
-            liquidityData.avgLiquidationThreshold = 0;
-        }
-
         liquidityData.healthFactor = liquidityData.debtValue == 0
             ? type(uint256).max
-            : (liquidityData.collateralValue.percentMul(liquidityData.avgLiquidationThreshold))
-            .wadDiv(liquidityData.debtValue);
+            : liquidityData.liquidationThresholdValue.wadDiv(liquidityData.debtValue);
     }
 
     /// @notice Returns the updated peer-to-peer indexes.

@@ -583,7 +583,7 @@ contract ExitManager is IExitManager, PoolInteraction {
         );
     }
 
-    /// @dev Returns the debt value, max debt value and liquidation value of a given user.
+    /// @dev Returns the health factor of the user.
     /// @param _user The user to determine liquidity for.
     /// @param _poolTokenAddress The market to hypothetically withdraw from.
     /// @param _withdrawnAmount The number of tokens to hypothetically withdraw (in underlying).
@@ -621,18 +621,14 @@ contract ExitManager is IExitManager, PoolInteraction {
                 assetData.tokenUnit;
 
             liquidityData.debtValue += assetData.debtValue;
-            liquidityData.collateralValue += assetData.collateralValue;
-            liquidityData.avgLiquidationThreshold +=
-                assetData.collateralValue *
-                assetData.liquidationThreshold;
+            liquidityData.liquidationThresholdValue += assetData.collateralValue.percentMul(
+                assetData.liquidationThreshold
+            );
 
             if (_poolTokenAddress == poolTokenEntered && _withdrawnAmount > 0) {
-                liquidityData.collateralValue -=
-                    (_withdrawnAmount * assetData.underlyingPrice) /
-                    assetData.tokenUnit;
-                liquidityData.avgLiquidationThreshold -=
-                    ((_withdrawnAmount * assetData.underlyingPrice) / assetData.tokenUnit) *
-                    assetData.liquidationThreshold;
+                liquidityData.liquidationThresholdValue -= ((_withdrawnAmount *
+                    assetData.underlyingPrice) / assetData.tokenUnit)
+                .percentMul(assetData.liquidationThreshold);
             }
 
             unchecked {
@@ -640,18 +636,9 @@ contract ExitManager is IExitManager, PoolInteraction {
             }
         }
 
-        if (liquidityData.collateralValue > 0) {
-            unchecked {
-                liquidityData.avgLiquidationThreshold =
-                    liquidityData.avgLiquidationThreshold /
-                    liquidityData.collateralValue;
-            }
-        } else liquidityData.avgLiquidationThreshold = 0;
-
         healthFactor = liquidityData.debtValue == 0
             ? type(uint256).max
-            : (liquidityData.collateralValue.percentMul(liquidityData.avgLiquidationThreshold))
-            .wadDiv(liquidityData.debtValue);
+            : liquidityData.liquidationThresholdValue.wadDiv(liquidityData.debtValue);
     }
 
     /// @dev Checks whether the user can withdraw or not.
