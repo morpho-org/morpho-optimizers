@@ -81,7 +81,6 @@ contract TestGovernance is TestSetup {
     }
 
     function testShouldCreateMarketWithTheRightValues() public {
-        IAToken aToken = IAToken(aAave);
         Types.MarketParameters memory marketParams = Types.MarketParameters(3_333, 0);
         morpho.createMarket(wEth, marketParams);
 
