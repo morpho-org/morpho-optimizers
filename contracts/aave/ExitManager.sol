@@ -583,6 +583,77 @@ contract ExitManager is IExitManager, PoolInteraction {
         );
     }
 
+    /// @dev Returns the debt value, max debt value and liquidation value of a given user.
+    /// @param _user The user to determine liquidity for.
+    /// @param _poolTokenAddress The market to hypothetically withdraw from.
+    /// @param _withdrawnAmount The number of tokens to hypothetically withdraw (in underlying).
+    /// @return healthFactor The health factor of the user.
+    function _getUserHealthFactor(
+        address _user,
+        address _poolTokenAddress,
+        uint256 _withdrawnAmount
+    ) internal view returns (uint256 healthFactor) {
+        IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
+        uint256 numberOfEnteredMarkets = enteredMarkets[_user].length;
+        uint256 i;
+
+        Types.AssetLiquidityData memory assetData;
+        Types.LiquidityData memory liquidityData;
+
+        while (i < numberOfEnteredMarkets) {
+            address poolTokenEntered = enteredMarkets[_user][i];
+            address underlyingAddress = IAToken(poolTokenEntered).UNDERLYING_ASSET_ADDRESS();
+            assetData.underlyingPrice = oracle.getAssetPrice(underlyingAddress); // In ETH.
+            (
+                assetData.ltv,
+                assetData.liquidationThreshold,
+                ,
+                assetData.reserveDecimals,
+
+            ) = lendingPool.getConfiguration(underlyingAddress).getParamsMemory();
+
+            assetData.tokenUnit = 10**assetData.reserveDecimals;
+            assetData.debtValue =
+                (_getUserBorrowBalanceInOf(poolTokenEntered, _user) * assetData.underlyingPrice) /
+                assetData.tokenUnit;
+            assetData.collateralValue =
+                (_getUserSupplyBalanceInOf(poolTokenEntered, _user) * assetData.underlyingPrice) /
+                assetData.tokenUnit;
+
+            liquidityData.debtValue += assetData.debtValue;
+            liquidityData.collateralValue += assetData.collateralValue;
+            liquidityData.avgLiquidationThreshold +=
+                assetData.collateralValue *
+                assetData.liquidationThreshold;
+
+            if (_poolTokenAddress == poolTokenEntered && _withdrawnAmount > 0) {
+                liquidityData.collateralValue -=
+                    (_withdrawnAmount * assetData.underlyingPrice) /
+                    assetData.tokenUnit;
+                liquidityData.avgLiquidationThreshold -=
+                    ((_withdrawnAmount * assetData.underlyingPrice) / assetData.tokenUnit) *
+                    assetData.liquidationThreshold;
+            }
+
+            unchecked {
+                ++i;
+            }
+        }
+
+        if (liquidityData.collateralValue > 0) {
+            unchecked {
+                liquidityData.avgLiquidationThreshold =
+                    liquidityData.avgLiquidationThreshold /
+                    liquidityData.collateralValue;
+            }
+        } else liquidityData.avgLiquidationThreshold = 0;
+
+        healthFactor = liquidityData.debtValue == 0
+            ? type(uint256).max
+            : (liquidityData.collateralValue.percentMul(liquidityData.avgLiquidationThreshold))
+            .wadDiv(liquidityData.debtValue);
+    }
+
     /// @dev Checks whether the user can withdraw or not.
     /// @param _user The user to determine liquidity for.
     /// @param _poolTokenAddress The market to hypothetically withdraw/borrow in.
@@ -593,28 +664,16 @@ contract ExitManager is IExitManager, PoolInteraction {
         address _poolTokenAddress,
         uint256 _withdrawnAmount
     ) internal view returns (bool) {
-        Types.LiquidityData memory liquidityData = _getUserHypotheticalBalanceStates(
-            _user,
-            _poolTokenAddress,
-            _withdrawnAmount,
-            0
-        );
-
-        return liquidityData.healthFactor > HEALTH_FACTOR_LIQUIDATION_THRESHOLD;
+        return
+            _getUserHealthFactor(_user, _poolTokenAddress, _withdrawnAmount) >
+            HEALTH_FACTOR_LIQUIDATION_THRESHOLD;
     }
 
     /// @dev Checks if the user is liquidable.
     /// @param _user The user to check.
     /// @return Whether the user is liquidable or not.
     function _liquidationAllowed(address _user) internal view returns (bool) {
-        Types.LiquidityData memory liquidityData = _getUserHypotheticalBalanceStates(
-            _user,
-            address(0),
-            0,
-            0
-        );
-
-        return liquidityData.healthFactor < HEALTH_FACTOR_LIQUIDATION_THRESHOLD;
+        return _getUserHealthFactor(_user, address(0), 0) < HEALTH_FACTOR_LIQUIDATION_THRESHOLD;
     }
 
     /// @dev Removes the user from the market if its balances are null.

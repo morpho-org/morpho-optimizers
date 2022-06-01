@@ -10,6 +10,7 @@ import "./PoolInteraction.sol";
 /// @custom:contact security@morpho.xyz
 /// @notice Morpho's entry points: supply and borrow.
 contract EntryManager is IEntryManager, PoolInteraction {
+    using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
     using DoubleLinkedList for DoubleLinkedList.List;
     using PercentageMath for uint256;
     using SafeTransferLib for ERC20;
@@ -254,7 +255,7 @@ contract EntryManager is IEntryManager, PoolInteraction {
 
     /// @dev Checks whether the user can borrow or not.
     /// @param _user The user to determine liquidity for.
-    /// @param _poolTokenAddress The market to hypothetically withdraw/borrow in.
+    /// @param _poolTokenAddress The market to hypothetically borrow in.
     /// @param _borrowedAmount The amount of tokens to hypothetically borrow (in underlying).
     /// @return Whether the borrow is allowed or not.
     function _borrowAllowed(
@@ -262,12 +263,49 @@ contract EntryManager is IEntryManager, PoolInteraction {
         address _poolTokenAddress,
         uint256 _borrowedAmount
     ) internal view returns (bool) {
-        Types.LiquidityData memory liquidityData = _getUserHypotheticalBalanceStates(
-            _user,
-            _poolTokenAddress,
-            0,
-            _borrowedAmount
-        );
+        IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
+        uint256 numberOfEnteredMarkets = enteredMarkets[_user].length;
+        uint256 i;
+
+        Types.AssetLiquidityData memory assetData;
+        Types.LiquidityData memory liquidityData;
+
+        while (i < numberOfEnteredMarkets) {
+            address poolTokenEntered = enteredMarkets[_user][i];
+            address underlyingAddress = IAToken(poolTokenEntered).UNDERLYING_ASSET_ADDRESS();
+            assetData.underlyingPrice = oracle.getAssetPrice(underlyingAddress); // In ETH.
+            (assetData.ltv, , , assetData.reserveDecimals, ) = lendingPool
+            .getConfiguration(underlyingAddress)
+            .getParamsMemory();
+
+            assetData.tokenUnit = 10**assetData.reserveDecimals;
+            assetData.debtValue =
+                (_getUserBorrowBalanceInOf(poolTokenEntered, _user) * assetData.underlyingPrice) /
+                assetData.tokenUnit;
+            assetData.collateralValue =
+                (_getUserSupplyBalanceInOf(poolTokenEntered, _user) * assetData.underlyingPrice) /
+                assetData.tokenUnit;
+
+            liquidityData.debtValue += assetData.debtValue;
+            liquidityData.collateralValue += assetData.collateralValue;
+            liquidityData.avgLtv += assetData.collateralValue * assetData.ltv;
+
+            if (_poolTokenAddress == poolTokenEntered && _borrowedAmount > 0) {
+                liquidityData.debtValue +=
+                    (_borrowedAmount * assetData.underlyingPrice) /
+                    assetData.tokenUnit;
+            }
+
+            unchecked {
+                ++i;
+            }
+        }
+
+        if (liquidityData.collateralValue > 0) {
+            unchecked {
+                liquidityData.avgLtv = liquidityData.avgLtv / liquidityData.collateralValue;
+            }
+        } else liquidityData.avgLtv = 0;
 
         return
             liquidityData.debtValue <=
