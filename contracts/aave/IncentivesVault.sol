@@ -69,7 +69,7 @@ contract IncentivesVault is IIncentivesVault, Ownable {
     /// @notice Constructs the IncentivesVault contract.
     /// @param _morpho The main Morpho contract.
     /// @param _morphoToken The MORPHO token.
-    /// @param _rewardToken The rewards token.
+    /// @param _rewardToken The reward token.
     /// @param _morphoDao The address of the Morpho DAO.
     /// @param _oracle The oracle.
     constructor(
