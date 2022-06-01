@@ -91,7 +91,7 @@ contract TestFees is TestSetup {
         uint256 balanceAfter = IERC20(dai).balanceOf(positionsManager.treasuryVault());
         uint256 gainedByDAO = balanceAfter - balanceBefore;
 
-        assertApproxEq(gainedByDAO, expectedFees, 2);
+        assertApproxEqAbs(gainedByDAO, expectedFees, 2);
     }
 
     function testShouldNotClaimFeesIfFactorIsZero() public {

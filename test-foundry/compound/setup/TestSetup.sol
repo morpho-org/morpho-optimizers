@@ -23,10 +23,12 @@ import "../helpers/SimplePriceOracle.sol";
 import "../helpers/DumbOracle.sol";
 import {User} from "../helpers/User.sol";
 import {Utils} from "./Utils.sol";
-import "forge-std/stdlib.sol";
+import {Test} from "forge-std/Test.sol";
+import {console2} from "forge-std/console2.sol";
+import {Vm} from "forge-std/Vm.sol";
 import "@config/Config.sol";
 
-contract TestSetup is Config, Utils, stdCheats {
+contract TestSetup is Test, Config, Utils {
     Vm public hevm = Vm(HEVM_ADDRESS);
 
     uint256 public constant MAX_BASIS_POINTS = 10_000;
