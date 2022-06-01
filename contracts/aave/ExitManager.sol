@@ -372,6 +372,7 @@ contract ExitManager is IExitManager, PoolInteraction {
         if (vars.remainingToWithdraw > 0) {
             uint256 unmatched = _unmatchBorrowers(
                 _poolTokenAddress,
+                address(underlyingToken),
                 vars.remainingToWithdraw,
                 _maxGasForMatching
             );
@@ -543,6 +544,7 @@ contract ExitManager is IExitManager, PoolInteraction {
         if (vars.remainingToRepay > 0) {
             uint256 unmatched = _unmatchSuppliers(
                 _poolTokenAddress,
+                address(underlyingToken),
                 vars.remainingToRepay,
                 vars.maxGasForMatching
             );
