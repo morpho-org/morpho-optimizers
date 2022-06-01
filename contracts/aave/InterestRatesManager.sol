@@ -67,8 +67,8 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
                 p2pBorrowIndex[_poolTokenAddress],
                 poolSupplyIndex,
                 poolBorrowIndex,
-                poolIndexes.supplyPoolIndex,
-                poolIndexes.borrowPoolIndex,
+                poolIndexes.poolSupplyIndex,
+                poolIndexes.poolBorrowIndex,
                 marketParams.reserveFactor,
                 marketParams.p2pIndexCursor,
                 deltas[_poolTokenAddress]
@@ -80,8 +80,8 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
             p2pBorrowIndex[_poolTokenAddress] = newP2PBorrowIndex;
 
             poolIndexes.lastUpdateTimestamp = uint32(block.timestamp);
-            poolIndexes.supplyPoolIndex = uint112(poolSupplyIndex);
-            poolIndexes.borrowPoolIndex = uint112(poolBorrowIndex);
+            poolIndexes.poolSupplyIndex = uint112(poolSupplyIndex);
+            poolIndexes.poolBorrowIndex = uint112(poolBorrowIndex);
 
             emit P2PIndexesUpdated(
                 _poolTokenAddress,
