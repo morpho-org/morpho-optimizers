@@ -81,7 +81,7 @@ contract PoolInteraction is MatchingEngine {
         uint256 _amount,
         uint256 _poolBorrowIndex
     ) internal {
-        // Repay only what is necessary. The remaining tokens stays on the contracts and are claimable by the DAO.
+        // Repay only what is necessary. The remaining tokens stays on the contract and are claimable by the DAO.
         _amount = Math.min(
             _amount,
             IVariableDebtToken(
