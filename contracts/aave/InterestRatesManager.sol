@@ -54,8 +54,8 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
     /// @notice Updates the peer-to-peer indexes.
     /// @param _poolTokenAddress The address of the market to update.
     function updateP2PIndexes(address _poolTokenAddress) external {
-        if (block.timestamp > lastPoolIndexes[_poolTokenAddress].lastUpdateTimestamp) {
-            Types.LastPoolIndexes storage poolIndexes = lastPoolIndexes[_poolTokenAddress];
+        if (block.timestamp > poolIndexes[_poolTokenAddress].lastUpdateTimestamp) {
+            Types.PoolIndexes storage poolIndexes = poolIndexes[_poolTokenAddress];
             Types.MarketParameters storage marketParams = marketParameters[_poolTokenAddress];
 
             address underlyingToken = IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS();
@@ -67,8 +67,8 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
                 p2pBorrowIndex[_poolTokenAddress],
                 poolSupplyIndex,
                 poolBorrowIndex,
-                poolIndexes.lastSupplyPoolIndex,
-                poolIndexes.lastBorrowPoolIndex,
+                poolIndexes.supplyPoolIndex,
+                poolIndexes.borrowPoolIndex,
                 marketParams.reserveFactor,
                 marketParams.p2pIndexCursor,
                 deltas[_poolTokenAddress]
@@ -80,8 +80,8 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
             p2pBorrowIndex[_poolTokenAddress] = newP2PBorrowIndex;
 
             poolIndexes.lastUpdateTimestamp = uint32(block.timestamp);
-            poolIndexes.lastSupplyPoolIndex = uint112(poolSupplyIndex);
-            poolIndexes.lastBorrowPoolIndex = uint112(poolBorrowIndex);
+            poolIndexes.supplyPoolIndex = uint112(poolSupplyIndex);
+            poolIndexes.borrowPoolIndex = uint112(poolBorrowIndex);
 
             emit P2PIndexesUpdated(
                 _poolTokenAddress,

@@ -326,13 +326,13 @@ abstract contract MorphoGovernance is MorphoUtils {
         p2pSupplyIndex[poolTokenAddress] = WadRayMath.ray();
         p2pBorrowIndex[poolTokenAddress] = WadRayMath.ray();
 
-        Types.LastPoolIndexes storage poolIndexes = lastPoolIndexes[poolTokenAddress];
+        Types.PoolIndexes storage poolIndexes = poolIndexes[poolTokenAddress];
 
         poolIndexes.lastUpdateTimestamp = uint32(block.timestamp);
-        poolIndexes.lastSupplyPoolIndex = uint112(
+        poolIndexes.supplyPoolIndex = uint112(
             lendingPool.getReserveNormalizedIncome(_underlyingTokenAddress)
         );
-        poolIndexes.lastBorrowPoolIndex = uint112(
+        poolIndexes.borrowPoolIndex = uint112(
             lendingPool.getReserveNormalizedVariableDebt(_underlyingTokenAddress)
         );
         marketParameters[poolTokenAddress] = _marketParams;
