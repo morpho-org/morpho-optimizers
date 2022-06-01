@@ -9,11 +9,12 @@ import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 
 import "../common/helpers/MorphoToken.sol";
 import "./helpers/DumbOracle.sol";
-import "forge-std/stdlib.sol";
 import "@config/Config.sol";
-import "ds-test/test.sol";
+import {Test} from "forge-std/Test.sol";
+import {console2} from "forge-std/console2.sol";
+import {Vm} from "forge-std/Vm.sol";
 
-contract TestIncentivesVault is Config, DSTest, stdCheats {
+contract TestIncentivesVault is Config, Test {
     using SafeTransferLib for ERC20;
 
     Vm public hevm = Vm(HEVM_ADDRESS);

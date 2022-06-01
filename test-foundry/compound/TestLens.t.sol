@@ -219,7 +219,7 @@ contract TestLens is TestSetup {
             cUsdc
         );
 
-        assertApproxEq(
+        assertApproxEqAbs(
             withdrawable,
             getBalanceOnCompound(amount, ICToken(cUsdc).exchangeRateStored()),
             1,
@@ -420,7 +420,7 @@ contract TestLens is TestSetup {
             getBalanceOnCompound(to6Decimals(amount), ICToken(cUsdc).exchangeRateCurrent()),
             "withdrawable USDC"
         );
-        assertApproxEq(
+        assertApproxEqAbs(
             withdrawableDai,
             getBalanceOnCompound(amount, ICToken(cDai).exchangeRateCurrent()),
             1,
@@ -438,7 +438,7 @@ contract TestLens is TestSetup {
 
         expectedBorrowableUsdt -= toBorrow;
 
-        assertApproxEq(newBorrowableUsdt, expectedBorrowableUsdt, 1, "borrowable USDT after");
+        assertApproxEqAbs(newBorrowableUsdt, expectedBorrowableUsdt, 1, "borrowable USDT after");
     }
 
     function testUserBalanceStatesWithSupplyAndBorrow() public {

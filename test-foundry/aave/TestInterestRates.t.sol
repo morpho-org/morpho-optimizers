@@ -61,8 +61,8 @@ contract TestInterestRates is TestSetup {
 
         (uint256 newSupplyP2PExchangeRate, uint256 newBorrowP2PExchangeRate) = interestRates.computeP2PExchangeRates(params); // prettier-ignore
         (uint256 expectedNewSupplyP2PExchangeRate, uint256 expectedNewBorrowP2PExchangeRate) = computeP2PExchangeRates(params); // prettier-ignore
-        assertApproxEq(newSupplyP2PExchangeRate, expectedNewSupplyP2PExchangeRate, 1);
-        assertApproxEq(newBorrowP2PExchangeRate, expectedNewBorrowP2PExchangeRate, 1);
+        assertApproxEqAbs(newSupplyP2PExchangeRate, expectedNewSupplyP2PExchangeRate, 1);
+        assertApproxEqAbs(newBorrowP2PExchangeRate, expectedNewBorrowP2PExchangeRate, 1);
     }
 
     function testExchangeRateComputationWithReserveFactor() public {
@@ -79,8 +79,8 @@ contract TestInterestRates is TestSetup {
 
         (uint256 newSupplyP2PExchangeRate, uint256 newBorrowP2PExchangeRate) = interestRates.computeP2PExchangeRates(params); // prettier-ignore
         (uint256 expectedNewSupplyP2PExchangeRate, uint256 expectedNewBorrowP2PExchangeRate) = computeP2PExchangeRates(params); // prettier-ignore
-        assertApproxEq(newSupplyP2PExchangeRate, expectedNewSupplyP2PExchangeRate, 1);
-        assertApproxEq(newBorrowP2PExchangeRate, expectedNewBorrowP2PExchangeRate, 1);
+        assertApproxEqAbs(newSupplyP2PExchangeRate, expectedNewSupplyP2PExchangeRate, 1);
+        assertApproxEqAbs(newBorrowP2PExchangeRate, expectedNewBorrowP2PExchangeRate, 1);
     }
 
     function testExchangeRateComputationWithDelta() public {
@@ -97,8 +97,8 @@ contract TestInterestRates is TestSetup {
 
         (uint256 newSupplyP2PExchangeRate, uint256 newBorrowP2PExchangeRate) = interestRates.computeP2PExchangeRates(params); // prettier-ignore
         (uint256 expectedNewSupplyP2PExchangeRate, uint256 expectedNewBorrowP2PExchangeRate) = computeP2PExchangeRates(params); // prettier-ignore
-        assertApproxEq(newSupplyP2PExchangeRate, expectedNewSupplyP2PExchangeRate, 1);
-        assertApproxEq(newBorrowP2PExchangeRate, expectedNewBorrowP2PExchangeRate, 1);
+        assertApproxEqAbs(newSupplyP2PExchangeRate, expectedNewSupplyP2PExchangeRate, 1);
+        assertApproxEqAbs(newBorrowP2PExchangeRate, expectedNewBorrowP2PExchangeRate, 1);
     }
 
     function testExchangeRateComputationWithDeltaAndReserveFactor() public {
@@ -115,8 +115,8 @@ contract TestInterestRates is TestSetup {
 
         (uint256 newSupplyP2PExchangeRate, uint256 newBorrowP2PExchangeRate) = interestRates.computeP2PExchangeRates(params); // prettier-ignore
         (uint256 expectedNewSupplyP2PExchangeRate, uint256 expectedNewBorrowP2PExchangeRate) = computeP2PExchangeRates(params); // prettier-ignore
-        assertApproxEq(newSupplyP2PExchangeRate, expectedNewSupplyP2PExchangeRate, 1);
-        assertApproxEq(newBorrowP2PExchangeRate, expectedNewBorrowP2PExchangeRate, 1);
+        assertApproxEqAbs(newSupplyP2PExchangeRate, expectedNewSupplyP2PExchangeRate, 1);
+        assertApproxEqAbs(newBorrowP2PExchangeRate, expectedNewBorrowP2PExchangeRate, 1);
     }
 
     function testFuzzInterestRates(
@@ -163,7 +163,7 @@ contract TestInterestRates is TestSetup {
 
         (uint256 newSupplyP2PExchangeRate, uint256 newBorrowP2PExchangeRate) = interestRates.computeP2PExchangeRates(params); // prettier-ignore
         (uint256 expectedNewSupplyP2PExchangeRate, uint256 expectedNewBorrowP2PExchangeRate) = computeP2PExchangeRates(params); // prettier-ignore
-        assertApproxEq(newSupplyP2PExchangeRate, expectedNewSupplyP2PExchangeRate, 5); // prettier-ignore
-        assertApproxEq(newBorrowP2PExchangeRate, expectedNewBorrowP2PExchangeRate, 5); // prettier-ignore
+        assertApproxEqAbs(newSupplyP2PExchangeRate, expectedNewSupplyP2PExchangeRate, 5); // prettier-ignore
+        assertApproxEqAbs(newBorrowP2PExchangeRate, expectedNewBorrowP2PExchangeRate, 5); // prettier-ignore
     }
 }

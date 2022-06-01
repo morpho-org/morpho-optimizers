@@ -32,11 +32,12 @@ import "../../common/helpers/MorphoToken.sol";
 import "../helpers/SimplePriceOracle.sol";
 import {User} from "../helpers/User.sol";
 import {Utils} from "./Utils.sol";
-import "forge-std/stdlib.sol";
+import {Test} from "forge-std/Test.sol";
+import {console2} from "forge-std/console2.sol";
 
 import "@config/Config.sol";
 
-contract TestSetup is Config, Utils, stdCheats {
+contract TestSetup is Test, Config, Utils {
     using SafeERC20 for IERC20;
     using Math for uint256;
 

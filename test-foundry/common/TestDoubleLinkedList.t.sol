@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import "ds-test/test.sol";
-import "forge-std/stdlib.sol";
+import {Test} from "forge-std/Test.sol";
+import {console2} from "forge-std/console2.sol";
 
 import "@contracts/common/libraries/DoubleLinkedList.sol";
 
-contract TestDoubleLinkedList is DSTest {
+contract TestDoubleLinkedList is Test {
     using DoubleLinkedList for DoubleLinkedList.List;
 
     Vm public hevm = Vm(HEVM_ADDRESS);

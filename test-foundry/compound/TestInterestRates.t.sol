@@ -2,10 +2,10 @@
 pragma solidity 0.8.13;
 
 import "@contracts/compound/InterestRatesManager.sol";
-import "ds-test/test.sol";
-import "forge-std/stdlib.sol";
+import {Test} from "forge-std/Test.sol";
+import {Vm} from "forge-std/Vm.sol";
 
-contract TestInterestRates is InterestRatesManager, DSTest {
+contract TestInterestRates is InterestRatesManager, Test {
     Vm public hevm = Vm(HEVM_ADDRESS);
 
     uint256 public p2pSupplyIndexTest = 1 * WAD;
@@ -62,8 +62,8 @@ contract TestInterestRates is InterestRatesManager, DSTest {
 
         (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex) = _computeP2PIndexes(params); // prettier-ignore
         (uint256 expectedNewP2PSupplyIndex, uint256 expectedNewP2PBorrowIndex) = computeP2PIndexes(params); // prettier-ignore
-        assertApproxEq(newP2PSupplyIndex, expectedNewP2PSupplyIndex, 1);
-        assertApproxEq(newP2PBorrowIndex, expectedNewP2PBorrowIndex, 1);
+        assertApproxEqAbs(newP2PSupplyIndex, expectedNewP2PSupplyIndex, 1);
+        assertApproxEqAbs(newP2PBorrowIndex, expectedNewP2PBorrowIndex, 1);
     }
 
     function testIndexComputationWithReserveFactor() public {
@@ -81,8 +81,8 @@ contract TestInterestRates is InterestRatesManager, DSTest {
 
         (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex) = _computeP2PIndexes(params); // prettier-ignore
         (uint256 expectedNewP2PSupplyIndex, uint256 expectedNewP2PBorrowIndex) = computeP2PIndexes(params); // prettier-ignore
-        assertApproxEq(newP2PSupplyIndex, expectedNewP2PSupplyIndex, 1);
-        assertApproxEq(newP2PBorrowIndex, expectedNewP2PBorrowIndex, 1);
+        assertApproxEqAbs(newP2PSupplyIndex, expectedNewP2PSupplyIndex, 1);
+        assertApproxEqAbs(newP2PBorrowIndex, expectedNewP2PBorrowIndex, 1);
     }
 
     function testIndexComputationWithDelta() public {
@@ -100,8 +100,8 @@ contract TestInterestRates is InterestRatesManager, DSTest {
 
         (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex) = _computeP2PIndexes(params); // prettier-ignore
         (uint256 expectedNewP2PSupplyIndex, uint256 expectedNewP2PBorrowIndex) = computeP2PIndexes(params); // prettier-ignore
-        assertApproxEq(newP2PSupplyIndex, expectedNewP2PSupplyIndex, 1);
-        assertApproxEq(newP2PBorrowIndex, expectedNewP2PBorrowIndex, 1);
+        assertApproxEqAbs(newP2PSupplyIndex, expectedNewP2PSupplyIndex, 1);
+        assertApproxEqAbs(newP2PBorrowIndex, expectedNewP2PBorrowIndex, 1);
     }
 
     function testIndexComputationWithDeltaAndReserveFactor() public {
@@ -119,8 +119,8 @@ contract TestInterestRates is InterestRatesManager, DSTest {
 
         (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex) = _computeP2PIndexes(params); // prettier-ignore
         (uint256 expectedNewP2PSupplyIndex, uint256 expectedNewP2PBorrowIndex) = computeP2PIndexes(params); // prettier-ignore
-        assertApproxEq(newP2PSupplyIndex, expectedNewP2PSupplyIndex, 1);
-        assertApproxEq(newP2PBorrowIndex, expectedNewP2PBorrowIndex, 1);
+        assertApproxEqAbs(newP2PSupplyIndex, expectedNewP2PSupplyIndex, 1);
+        assertApproxEqAbs(newP2PBorrowIndex, expectedNewP2PBorrowIndex, 1);
     }
 
     // prettier-ignore
@@ -161,7 +161,7 @@ contract TestInterestRates is InterestRatesManager, DSTest {
 
         (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex) = _computeP2PIndexes(params);
         (uint256 expectedNewP2PSupplyIndex, uint256 expectedNewP2PBorrowIndex) = computeP2PIndexes(params);
-        assertApproxEq(newP2PSupplyIndex, expectedNewP2PSupplyIndex, 400);
-        assertApproxEq(newP2PBorrowIndex, expectedNewP2PBorrowIndex, 400);
+        assertApproxEqAbs(newP2PSupplyIndex, expectedNewP2PSupplyIndex, 400);
+        assertApproxEqAbs(newP2PBorrowIndex, expectedNewP2PBorrowIndex, 400);
     }
 }

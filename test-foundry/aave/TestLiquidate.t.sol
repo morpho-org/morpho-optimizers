@@ -157,7 +157,7 @@ contract TestLiquidate is TestSetup {
             toRepay;
 
         assertEq(onPoolBorrower, 0, "borrower borrow on pool");
-        assertApproxEq(
+        assertApproxEqAbs(
             p2pUnitToUnderlying(inP2PBorrower, marketsManager.borrowP2PExchangeRate(aUsdc)),
             expectedBorrowBalanceInP2P,
             1,
@@ -260,7 +260,7 @@ contract TestLiquidate is TestSetup {
             lendingPool.getReserveNormalizedVariableDebt(usdc)
         ) - toRepay;
 
-        assertApproxEq(
+        assertApproxEqAbs(
             aDUnitToUnderlying(onPoolBorrower, lendingPool.getReserveNormalizedVariableDebt(usdc)),
             expectedBorrowBalanceOnPool,
             1,
