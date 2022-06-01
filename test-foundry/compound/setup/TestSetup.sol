@@ -24,6 +24,7 @@ import "../helpers/DumbOracle.sol";
 import {User} from "../helpers/User.sol";
 import {Utils} from "./Utils.sol";
 import "forge-std/stdlib.sol";
+import "forge-std/console.sol";
 import "@config/Config.sol";
 
 contract TestSetup is Config, Utils, stdCheats {
@@ -181,7 +182,7 @@ contract TestSetup is Config, Utils, stdCheats {
     function fillUserBalances(User _user) internal {
         tip(dai, address(_user), INITIAL_BALANCE * WAD);
         tip(wEth, address(_user), INITIAL_BALANCE * WAD);
-        tip(usdt, address(_user), INITIAL_BALANCE * WAD);
+        tip(usdt, address(_user), INITIAL_BALANCE * 1e6);
         tip(usdc, address(_user), INITIAL_BALANCE * 1e6);
     }
 
