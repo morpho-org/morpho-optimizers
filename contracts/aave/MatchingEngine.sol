@@ -23,8 +23,6 @@ contract MatchingEngine is MorphoUtils {
         uint256 p2pIndex;
         uint256 toUnmatch;
         uint256 poolIndex;
-        uint256 remainingToUnmatch;
-        uint256 gasLeftAtTheBeginning;
     }
 
     // Struct to avoid stack too deep.
@@ -32,7 +30,6 @@ contract MatchingEngine is MorphoUtils {
         uint256 p2pIndex;
         uint256 toMatch;
         uint256 poolIndex;
-        uint256 gasLeftAtTheBeginning;
     }
 
     /// @notice Emitted when the position of a supplier is updated.
@@ -83,11 +80,14 @@ contract MatchingEngine is MorphoUtils {
         address firstPoolSupplier;
         Types.SupplyBalance storage firstPoolSupplierBalance;
 
-        vars.gasLeftAtTheBeginning = gasleft();
+        uint256 newPoolSupplyBalance;
+        uint256 newP2PSupplyBalance;
+
+        uint256 gasLeftAtTheBeginning = gasleft();
         while (
             matched < _amount &&
             (firstPoolSupplier = suppliersOnPool[_poolTokenAddress].getHead()) != address(0) &&
-            vars.gasLeftAtTheBeginning - gasleft() < _maxGasForMatching
+            gasLeftAtTheBeginning - gasleft() < _maxGasForMatching
         ) {
             firstPoolSupplierBalance = supplyBalanceInOf[_poolTokenAddress][firstPoolSupplier];
             vars.toMatch = Math.min(
@@ -96,9 +96,11 @@ contract MatchingEngine is MorphoUtils {
             );
             matched += vars.toMatch;
 
-            uint256 newPoolSupplyBalance = firstPoolSupplierBalance.onPool -
+            newPoolSupplyBalance =
+                firstPoolSupplierBalance.onPool -
                 vars.toMatch.rayDiv(vars.poolIndex);
-            uint256 newP2PSupplyBalance = firstPoolSupplierBalance.inP2P +
+            newP2PSupplyBalance =
+                firstPoolSupplierBalance.inP2P +
                 vars.toMatch.rayDiv(vars.p2pIndex);
 
             supplyBalanceInOf[_poolTokenAddress][firstPoolSupplier].onPool = newPoolSupplyBalance;
@@ -112,7 +114,7 @@ contract MatchingEngine is MorphoUtils {
             );
         }
 
-        gasConsumedInMatching = vars.gasLeftAtTheBeginning - gasleft();
+        gasConsumedInMatching = gasLeftAtTheBeginning - gasleft();
     }
 
     /// @notice Unmatches suppliers' liquidity in peer-to-peer up to the given `_amount` and moves it to Compound.
@@ -135,24 +137,29 @@ contract MatchingEngine is MorphoUtils {
         vars.p2pIndex = p2pSupplyIndex[_poolTokenAddress];
         address firstP2PSupplier;
         Types.SupplyBalance storage firstP2PSupplierBalance;
-        vars.remainingToUnmatch = _amount;
+        uint256 remainingToUnmatch = _amount;
 
-        vars.gasLeftAtTheBeginning = gasleft();
+        uint256 newPoolSupplyBalance;
+        uint256 newP2PSupplyBalance;
+
+        uint256 gasLeftAtTheBeginning = gasleft();
         while (
-            vars.remainingToUnmatch > 0 &&
+            remainingToUnmatch > 0 &&
             (firstP2PSupplier = suppliersInP2P[_poolTokenAddress].getHead()) != address(0) &&
-            vars.gasLeftAtTheBeginning - gasleft() < _maxGasForMatching
+            gasLeftAtTheBeginning - gasleft() < _maxGasForMatching
         ) {
             firstP2PSupplierBalance = supplyBalanceInOf[_poolTokenAddress][firstP2PSupplier];
             vars.toUnmatch = Math.min(
                 firstP2PSupplierBalance.inP2P.rayMul(vars.p2pIndex),
-                vars.remainingToUnmatch
+                remainingToUnmatch
             );
-            vars.remainingToUnmatch -= vars.toUnmatch;
+            remainingToUnmatch -= vars.toUnmatch;
 
-            uint256 newPoolSupplyBalance = firstP2PSupplierBalance.onPool +
+            newPoolSupplyBalance =
+                firstP2PSupplierBalance.onPool +
                 vars.toUnmatch.rayDiv(vars.poolIndex);
-            uint256 newP2PSupplyBalance = firstP2PSupplierBalance.inP2P -
+            newP2PSupplyBalance =
+                firstP2PSupplierBalance.inP2P -
                 vars.toUnmatch.rayDiv(vars.p2pIndex);
 
             supplyBalanceInOf[_poolTokenAddress][firstP2PSupplier].onPool = newPoolSupplyBalance;
@@ -166,7 +173,7 @@ contract MatchingEngine is MorphoUtils {
             );
         }
 
-        return _amount - vars.remainingToUnmatch;
+        return _amount - remainingToUnmatch;
     }
 
     /// @notice Matches borrowers' liquidity waiting on Compound up to the given `_amount` and moves it to peer-to-peer.
@@ -190,11 +197,14 @@ contract MatchingEngine is MorphoUtils {
         address firstPoolBorrower;
         Types.BorrowBalance storage firstPoolBorrowerBalance;
 
-        vars.gasLeftAtTheBeginning = gasleft();
+        uint256 newPoolBorrowBalance;
+        uint256 newP2PBorrowBalance;
+
+        uint256 gasLeftAtTheBeginning = gasleft();
         while (
             matched < _amount &&
             (firstPoolBorrower = borrowersOnPool[_poolTokenAddress].getHead()) != address(0) &&
-            vars.gasLeftAtTheBeginning - gasleft() < _maxGasForMatching
+            gasLeftAtTheBeginning - gasleft() < _maxGasForMatching
         ) {
             firstPoolBorrowerBalance = borrowBalanceInOf[_poolTokenAddress][firstPoolBorrower];
             vars.toMatch = Math.min(
@@ -203,9 +213,11 @@ contract MatchingEngine is MorphoUtils {
             );
             matched += vars.toMatch;
 
-            uint256 newPoolBorrowBalance = firstPoolBorrowerBalance.onPool -
+            newPoolBorrowBalance =
+                firstPoolBorrowerBalance.onPool -
                 vars.toMatch.rayDiv(vars.poolIndex);
-            uint256 newP2PBorrowBalance = firstPoolBorrowerBalance.inP2P +
+            newP2PBorrowBalance =
+                firstPoolBorrowerBalance.inP2P +
                 vars.toMatch.rayDiv(vars.p2pIndex);
 
             borrowBalanceInOf[_poolTokenAddress][firstPoolBorrower].onPool = newPoolBorrowBalance;
@@ -219,7 +231,7 @@ contract MatchingEngine is MorphoUtils {
             );
         }
 
-        gasConsumedInMatching = vars.gasLeftAtTheBeginning - gasleft();
+        gasConsumedInMatching = gasLeftAtTheBeginning - gasleft();
     }
 
     /// @notice Unmatches borrowers' liquidity in peer-to-peer for the given `_amount` and moves it to Compound.
@@ -242,24 +254,29 @@ contract MatchingEngine is MorphoUtils {
         vars.poolIndex = lendingPool.getReserveNormalizedVariableDebt(_underlyingTokenAddress);
         vars.p2pIndex = p2pBorrowIndex[_poolTokenAddress];
         Types.BorrowBalance storage firstP2PBorrowerBalance;
-        vars.remainingToUnmatch = _amount;
+        uint256 remainingToUnmatch = _amount;
 
-        vars.gasLeftAtTheBeginning = gasleft();
+        uint256 newPoolBorrowBalance;
+        uint256 newP2PBorrowBalance;
+
+        uint256 gasLeftAtTheBeginning = gasleft();
         while (
-            vars.remainingToUnmatch > 0 &&
+            remainingToUnmatch > 0 &&
             (firstP2PBorrower = borrowersInP2P[_poolTokenAddress].getHead()) != address(0) &&
-            vars.gasLeftAtTheBeginning - gasleft() < _maxGasForMatching
+            gasLeftAtTheBeginning - gasleft() < _maxGasForMatching
         ) {
             firstP2PBorrowerBalance = borrowBalanceInOf[_poolTokenAddress][firstP2PBorrower];
             vars.toUnmatch = Math.min(
                 firstP2PBorrowerBalance.inP2P.rayMul(vars.p2pIndex),
-                vars.remainingToUnmatch
+                remainingToUnmatch
             );
-            vars.remainingToUnmatch -= vars.toUnmatch;
+            remainingToUnmatch -= vars.toUnmatch;
 
-            uint256 newPoolBorrowBalance = firstP2PBorrowerBalance.onPool +
+            newPoolBorrowBalance =
+                firstP2PBorrowerBalance.onPool +
                 vars.toUnmatch.rayDiv(vars.poolIndex);
-            uint256 newP2PBorrowBalance = firstP2PBorrowerBalance.inP2P -
+            newP2PBorrowBalance =
+                firstP2PBorrowerBalance.inP2P -
                 vars.toUnmatch.rayDiv(vars.p2pIndex);
 
             borrowBalanceInOf[_poolTokenAddress][firstP2PBorrower].onPool = newPoolBorrowBalance;
@@ -273,7 +290,7 @@ contract MatchingEngine is MorphoUtils {
             );
         }
 
-        return _amount - vars.remainingToUnmatch;
+        return _amount - remainingToUnmatch;
     }
 
     /// @notice Updates `_user` positions in the supplier data structures.
