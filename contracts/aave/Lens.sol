@@ -280,8 +280,8 @@ contract Lens {
                 morpho.p2pBorrowIndex(_poolTokenAddress),
                 poolSupplyIndex,
                 poolBorrowIndex,
-                poolIndexes.supplyPoolIndex,
-                poolIndexes.borrowPoolIndex,
+                poolIndexes.poolSupplyIndex,
+                poolIndexes.poolBorrowIndex,
                 marketParams.reserveFactor,
                 marketParams.p2pIndexCursor,
                 morpho.deltas(_poolTokenAddress)
@@ -310,8 +310,8 @@ contract Lens {
                 morpho.p2pBorrowIndex(_poolTokenAddress),
                 poolSupplyIndex,
                 poolBorrowIndex,
-                poolIndexes.supplyPoolIndex,
-                poolIndexes.borrowPoolIndex,
+                poolIndexes.poolSupplyIndex,
+                poolIndexes.poolBorrowIndex,
                 marketParams.reserveFactor,
                 marketParams.p2pIndexCursor,
                 morpho.deltas(_poolTokenAddress)
@@ -340,8 +340,8 @@ contract Lens {
                 morpho.p2pBorrowIndex(_poolTokenAddress),
                 poolSupplyIndex,
                 poolBorrowIndex,
-                poolIndexes.supplyPoolIndex,
-                poolIndexes.borrowPoolIndex,
+                poolIndexes.poolSupplyIndex,
+                poolIndexes.poolBorrowIndex,
                 marketParams.reserveFactor,
                 marketParams.p2pIndexCursor,
                 morpho.deltas(_poolTokenAddress)
