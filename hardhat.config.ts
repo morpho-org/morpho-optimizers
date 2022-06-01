@@ -1,7 +1,7 @@
 import * as dotenv from 'dotenv';
 dotenv.config({ path: './.env.local' });
 import 'module-alias/register';
-import '@nomiclabs/hardhat-etherscan';
+import '@openzeppelin/hardhat-upgrades';
 import '@tenderly/hardhat-tenderly';
 import '@nomiclabs/hardhat-waffle';
 import 'hardhat-contract-sizer';
@@ -12,32 +12,43 @@ import 'hardhat-deploy';
 module.exports = {
   defaultNetwork: 'hardhat',
   networks: {
-    hardhat: {},
+    hardhat: {
+      accounts: [
+        {
+          privateKey: process.env.DEPLOYER_PRIVATE_KEY,
+          balance: '10000000000000000000000',
+        },
+      ],
+      forking: {
+        url: `https://${process.env.NETWORK}.infura.io/v3/${process.env.INFURA_PROJECT_ID}`,
+      },
+      mining: {
+        mempool: {
+          order: 'fifo',
+        },
+      },
+      gas: 1e7,
+    },
     mainnet: {
       accounts: [process.env.DEPLOYER_PRIVATE_KEY],
       url: `https://mainnet.infura.io/v3/${process.env.INFURA_PROJECT_ID}`,
     },
     kovan: {
       accounts: [process.env.DEPLOYER_PRIVATE_KEY],
-      // privateKey: "0x574028dad40752ed4448624f35ecb32821b0b0791652a34c10aa78053a08a730",
       url: `https://kovan.infura.io/v3/${process.env.INFURA_PROJECT_ID}`,
     },
     forkMainnet: {
-      // chainId: process.env.TENDERLY_SECRET_KEY,
       accounts: [process.env.DEPLOYER_PRIVATE_KEY],
       url: `https://rpc.tenderly.co/fork/${process.env.TENDERLY_SECRET_KEY}`,
+      chainId: 1,
     },
     rinkeby: {
       accounts: [process.env.DEPLOYER_PRIVATE_KEY],
       url: `https://rinkeby.infura.io/v3/${process.env.INFURA_PROJECT_ID}`,
-      gas: 2100000,
-      gasPrice: 8000000000,
     },
     ropsten: {
       accounts: [process.env.DEPLOYER_PRIVATE_KEY],
       url: `https://ropsten.infura.io/v3/${process.env.INFURA_PROJECT_ID}`,
-      gas: 2100000,
-      gasPrice: 8000000000,
     },
     polygon: {
       accounts: [process.env.DEPLOYER_PRIVATE_KEY],
