@@ -24,11 +24,11 @@ interface IMorpho {
     function p2pDisabled(address) external view returns (bool);
     function p2pSupplyIndex(address) external view returns (uint256);
     function p2pBorrowIndex(address) external view returns (uint256);
-    function lastPoolIndexes(address) external view returns (Types.LastPoolIndexes memory);
+    function poolIndexes(address) external view returns (Types.PoolIndexes memory);
     function marketStatus(address) external view returns (Types.MarketStatus memory);
     function interestRatesManager() external view returns (IInterestRatesManager);
     function rewardsManager() external view returns (IRewardsManager);
-        function entryManager() external view returns (IEntryManager);
+    function entryManager() external view returns (IEntryManager);
     function exitManager() external view returns (IExitManager);
     function treasuryVault() external view returns (address);
 
