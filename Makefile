@@ -24,6 +24,10 @@ test-aave: node_modules
 	@echo Run all tests on ${NETWORK}
 	@forge test -vv -c test-foundry/aave --no-match-contract TestGasConsumption --no-match-test testFuzz
 
+fuzz-aave: node_modules
+	@echo Run all fuzzing tests on ${NETWORK}
+	@forge test -vv -c test-foundry/fuzzing/aave
+
 test-compound: node_modules
 	@echo Run all tests on ${NETWORK}
 	@forge test -vv -c test-foundry/compound --no-match-contract TestGasConsumption --no-match-test testFuzz
