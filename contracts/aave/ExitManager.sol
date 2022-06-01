@@ -279,7 +279,7 @@ contract ExitManager is IExitManager, PoolInteraction {
         vars.remainingToWithdraw = _amount;
         vars.maxGasForMatching = _maxGasForMatching;
         vars.withdrawable = IAToken(_poolTokenAddress).balanceOf(address(this));
-        vars.poolSupplyIndex = lendingPool.getReserveNormalizedIncome(address(underlyingToken));
+        vars.poolSupplyIndex = poolIndexes[_poolTokenAddress].poolSupplyIndex;
 
         /// Soft withdraw ///
 
@@ -351,7 +351,6 @@ contract ExitManager is IExitManager, PoolInteraction {
         ) {
             (uint256 matched, uint256 gasConsumedInMatching) = _matchSuppliers(
                 _poolTokenAddress,
-                address(underlyingToken),
                 Math.min(vars.remainingToWithdraw, vars.withdrawable - vars.toWithdraw),
                 vars.maxGasForMatching
             );
@@ -372,7 +371,6 @@ contract ExitManager is IExitManager, PoolInteraction {
         if (vars.remainingToWithdraw > 0) {
             uint256 unmatched = _unmatchBorrowers(
                 _poolTokenAddress,
-                address(underlyingToken),
                 vars.remainingToWithdraw,
                 _maxGasForMatching
             );
@@ -380,7 +378,7 @@ contract ExitManager is IExitManager, PoolInteraction {
             // If unmatched does not cover remainingToWithdraw, the difference is added to the borrow peer-to-peer delta.
             if (unmatched < vars.remainingToWithdraw) {
                 delta.p2pBorrowDelta += (vars.remainingToWithdraw - unmatched).rayDiv(
-                    lendingPool.getReserveNormalizedVariableDebt(address(underlyingToken))
+                    poolIndexes[_poolTokenAddress].poolBorrowIndex
                 );
                 emit P2PBorrowDeltaUpdated(_poolTokenAddress, delta.p2pBorrowAmount);
             }
@@ -430,9 +428,7 @@ contract ExitManager is IExitManager, PoolInteraction {
         RepayVars memory vars;
         vars.remainingToRepay = _amount;
         vars.maxGasForMatching = _maxGasForMatching;
-        vars.poolBorrowIndex = lendingPool.getReserveNormalizedVariableDebt(
-            address(underlyingToken)
-        );
+        vars.poolBorrowIndex = poolIndexes[_poolTokenAddress].poolBorrowIndex;
 
         /// Soft repay ///
 
@@ -470,7 +466,7 @@ contract ExitManager is IExitManager, PoolInteraction {
         Types.Delta storage delta = deltas[_poolTokenAddress];
         vars.p2pSupplyIndex = p2pSupplyIndex[_poolTokenAddress];
         vars.p2pBorrowIndex = p2pBorrowIndex[_poolTokenAddress];
-        vars.poolSupplyIndex = lendingPool.getReserveNormalizedIncome(address(underlyingToken));
+        vars.poolSupplyIndex = poolIndexes[_poolTokenAddress].poolSupplyIndex;
         borrowBalanceInOf[_poolTokenAddress][_onBehalf].inP2P -= Math.min(
             borrowBalanceInOf[_poolTokenAddress][_onBehalf].inP2P,
             vars.remainingToRepay.rayDiv(vars.p2pSupplyIndex)
@@ -523,7 +519,6 @@ contract ExitManager is IExitManager, PoolInteraction {
         ) {
             (uint256 matched, uint256 gasConsumedInMatching) = _matchBorrowers(
                 _poolTokenAddress,
-                address(underlyingToken),
                 vars.remainingToRepay,
                 vars.maxGasForMatching
             );
@@ -544,7 +539,6 @@ contract ExitManager is IExitManager, PoolInteraction {
         if (vars.remainingToRepay > 0) {
             uint256 unmatched = _unmatchSuppliers(
                 _poolTokenAddress,
-                address(underlyingToken),
                 vars.remainingToRepay,
                 vars.maxGasForMatching
             );

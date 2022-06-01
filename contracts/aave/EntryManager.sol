@@ -90,9 +90,7 @@ contract EntryManager is IEntryManager, PoolInteraction {
 
         Types.Delta storage delta = deltas[_poolTokenAddress];
         SupplyVars memory vars;
-        vars.poolBorrowIndex = lendingPool.getReserveNormalizedVariableDebt(
-            address(underlyingToken)
-        );
+        vars.poolBorrowIndex = poolIndexes[_poolTokenAddress].poolBorrowIndex;
         vars.remainingToSupply = _amount;
 
         /// Supply in peer-to-peer ///
@@ -118,7 +116,6 @@ contract EntryManager is IEntryManager, PoolInteraction {
         ) {
             (uint256 matched, ) = _matchBorrowers(
                 _poolTokenAddress,
-                address(underlyingToken),
                 vars.remainingToSupply,
                 _maxGasForMatching
             ); // In underlying.
@@ -144,7 +141,7 @@ contract EntryManager is IEntryManager, PoolInteraction {
 
         if (vars.remainingToSupply > 0) {
             supplyBalanceInOf[_poolTokenAddress][_onBehalf].onPool += vars.remainingToSupply.rayDiv(
-                lendingPool.getReserveNormalizedIncome(address(underlyingToken))
+                poolIndexes[_poolTokenAddress].poolSupplyIndex
             ); // In scaled balance.
             _supplyToPool(underlyingToken, vars.remainingToSupply); // Reverts on error.
         }
@@ -180,7 +177,7 @@ contract EntryManager is IEntryManager, PoolInteraction {
         uint256 remainingToBorrow = _amount;
         uint256 toWithdraw;
         Types.Delta storage delta = deltas[_poolTokenAddress];
-        uint256 poolSupplyIndex = lendingPool.getReserveNormalizedIncome(address(underlyingToken));
+        uint256 poolSupplyIndex = poolIndexes[_poolTokenAddress].poolSupplyIndex;
         uint256 withdrawable = IAToken(_poolTokenAddress).balanceOf(address(this)); // The balance on pool.
 
         /// Borrow in peer-to-peer ///
@@ -207,7 +204,6 @@ contract EntryManager is IEntryManager, PoolInteraction {
         ) {
             (uint256 matched, ) = _matchSuppliers(
                 _poolTokenAddress,
-                address(underlyingToken),
                 Math.min(remainingToBorrow, withdrawable - toWithdraw),
                 _maxGasForMatching
             ); // In underlying.
@@ -235,7 +231,7 @@ contract EntryManager is IEntryManager, PoolInteraction {
 
         if (remainingToBorrow > 0) {
             borrowBalanceInOf[_poolTokenAddress][msg.sender].onPool += remainingToBorrow.rayDiv(
-                lendingPool.getReserveNormalizedVariableDebt(address(underlyingToken))
+                poolIndexes[_poolTokenAddress].poolBorrowIndex
             ); // In adUnit.
             _borrowFromPool(underlyingToken, remainingToBorrow);
         }
