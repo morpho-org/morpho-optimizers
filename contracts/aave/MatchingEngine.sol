@@ -61,21 +61,19 @@ contract MatchingEngine is MorphoUtils {
     /// @notice Matches suppliers' liquidity waiting on Compound up to the given `_amount` and moves it to peer-to-peer.
     /// @dev Note: This function expects Compound's exchange rate and peer-to-peer indexes to have been updated.
     /// @param _poolTokenAddress The address of the market from which to match suppliers.
-    /// @param _underlyingTokenAddress The address of the underlying token.
     /// @param _amount The token amount to search for (in underlying).
     /// @param _maxGasForMatching The maximum amount of gas to consume within a matching engine loop.
     /// @return matched The amount of liquidity matched (in underlying).
     /// @return gasConsumedInMatching The amount of gas consumed within the matching loop.
     function _matchSuppliers(
         address _poolTokenAddress,
-        address _underlyingTokenAddress,
         uint256 _amount,
         uint256 _maxGasForMatching
     ) internal returns (uint256 matched, uint256 gasConsumedInMatching) {
         if (_maxGasForMatching == 0) return (0, 0);
 
         MatchVars memory vars;
-        vars.poolIndex = lendingPool.getReserveNormalizedIncome(_underlyingTokenAddress);
+        vars.poolIndex = poolIndexes[_poolTokenAddress].poolSupplyIndex;
         vars.p2pIndex = p2pSupplyIndex[_poolTokenAddress];
         address firstPoolSupplier;
         Types.SupplyBalance storage firstPoolSupplierBalance;
@@ -120,20 +118,18 @@ contract MatchingEngine is MorphoUtils {
     /// @notice Unmatches suppliers' liquidity in peer-to-peer up to the given `_amount` and moves it to Compound.
     /// @dev Note: This function expects Compound's exchange rate and peer-to-peer indexes to have been updated.
     /// @param _poolTokenAddress The address of the market from which to unmatch suppliers.
-    /// @param _underlyingTokenAddress The address of the underlying token.
     /// @param _amount The amount to search for (in underlying).
     /// @param _maxGasForMatching The maximum amount of gas to consume within a matching engine loop.
     /// @return The amount unmatched (in underlying).
     function _unmatchSuppliers(
         address _poolTokenAddress,
-        address _underlyingTokenAddress,
         uint256 _amount,
         uint256 _maxGasForMatching
     ) internal returns (uint256) {
         if (_maxGasForMatching == 0) return 0;
 
         UnmatchVars memory vars;
-        vars.poolIndex = lendingPool.getReserveNormalizedIncome(_underlyingTokenAddress);
+        vars.poolIndex = poolIndexes[_poolTokenAddress].poolSupplyIndex;
         vars.p2pIndex = p2pSupplyIndex[_poolTokenAddress];
         address firstP2PSupplier;
         Types.SupplyBalance storage firstP2PSupplierBalance;
@@ -179,20 +175,18 @@ contract MatchingEngine is MorphoUtils {
     /// @notice Matches borrowers' liquidity waiting on Compound up to the given `_amount` and moves it to peer-to-peer.
     /// @dev Note: This function expects peer-to-peer indexes to have been updated..
     /// @param _poolTokenAddress The address of the market from which to match borrowers.
-    /// @param _underlyingTokenAddress The address of the underlying token.
     /// @param _amount The amount to search for (in underlying).
     /// @param _maxGasForMatching The maximum amount of gas to consume within a matching engine loop.
     /// @return matched The amount of liquidity matched (in underlying).
     /// @return gasConsumedInMatching The amount of gas consumed within the matching loop.
     function _matchBorrowers(
         address _poolTokenAddress,
-        address _underlyingTokenAddress,
         uint256 _amount,
         uint256 _maxGasForMatching
     ) internal returns (uint256 matched, uint256 gasConsumedInMatching) {
         if (_maxGasForMatching == 0) return (0, 0);
         MatchVars memory vars;
-        vars.poolIndex = lendingPool.getReserveNormalizedVariableDebt(_underlyingTokenAddress);
+        vars.poolIndex = poolIndexes[_poolTokenAddress].poolBorrowIndex;
         vars.p2pIndex = p2pBorrowIndex[_poolTokenAddress];
         address firstPoolBorrower;
         Types.BorrowBalance storage firstPoolBorrowerBalance;
@@ -237,13 +231,11 @@ contract MatchingEngine is MorphoUtils {
     /// @notice Unmatches borrowers' liquidity in peer-to-peer for the given `_amount` and moves it to Compound.
     /// @dev Note: This function expects and peer-to-peer indexes to have been updated.
     /// @param _poolTokenAddress The address of the market from which to unmatch borrowers.
-    /// @param _underlyingTokenAddress The address of the underlying token.
     /// @param _amount The amount to unmatch (in underlying).
     /// @param _maxGasForMatching The maximum amount of gas to consume within a matching engine loop.
     /// @return The amount unmatched (in underlying).
     function _unmatchBorrowers(
         address _poolTokenAddress,
-        address _underlyingTokenAddress,
         uint256 _amount,
         uint256 _maxGasForMatching
     ) internal returns (uint256) {
@@ -251,7 +243,7 @@ contract MatchingEngine is MorphoUtils {
 
         UnmatchVars memory vars;
         address firstP2PBorrower = borrowersInP2P[_poolTokenAddress].getHead();
-        vars.poolIndex = lendingPool.getReserveNormalizedVariableDebt(_underlyingTokenAddress);
+        vars.poolIndex = poolIndexes[_poolTokenAddress].poolBorrowIndex;
         vars.p2pIndex = p2pBorrowIndex[_poolTokenAddress];
         Types.BorrowBalance storage firstP2PBorrowerBalance;
         uint256 remainingToUnmatch = _amount;
