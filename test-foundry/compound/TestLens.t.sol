@@ -853,14 +853,14 @@ contract TestLens is TestSetup {
         );
     }
 
-    function testFuzzLiquidation(uint64 _amount, uint80 _collateralPrice) public {
-        uint256 amount = uint256(_amount) + 1e13;
+    function testLiquidation(uint256 _amount, uint80 _collateralPrice) internal {
+        uint256 amount = _amount + 1e14;
         uint256 collateralPrice = uint256(_collateralPrice) + 1;
 
+        // this is necessary to avoid compound reverting redeem because amount in USD is near zero
         supplier2.approve(usdc, 100e6);
         supplier2.supply(cUsdc, 100e6);
 
-        supplier1.approve(usdc, type(uint256).max);
         uint256 balanceBefore = ERC20(dai).balanceOf(address(supplier1));
 
         borrower1.approve(dai, 2 * amount);
@@ -880,9 +880,11 @@ contract TestLens is TestSetup {
             // liquidator cannot repay anything iff 1 wei of borrow is greater than the repayable collateral + the liquidation bonus
             assertEq(
                 collateralValue.div(borrowedPrice).div(comptroller.liquidationIncentiveMantissa()),
-                1
+                0
             );
         } else {
+            supplier1.approve(usdc, type(uint256).max);
+
             do {
                 supplier1.liquidate(cUsdc, cDai, address(borrower1), toRepay);
                 assertGt(
@@ -904,9 +906,41 @@ contract TestLens is TestSetup {
                     collateralValue.div(borrowedPrice).div(
                         comptroller.liquidationIncentiveMantissa()
                     ),
-                    1
+                    0
                 );
             }
         }
+    }
+
+    function testFuzzLiquidation(uint64 _amount, uint80 _collateralPrice) public {
+        testLiquidation(uint256(_amount), _collateralPrice);
+    }
+
+    function testLiquidationUnderIncentiveThreshold(uint64 _amount) public {
+        testLiquidation(uint256(_amount), 0.501 ether);
+    }
+
+    function testLiquidationAboveIncentiveThreshold(uint64 _amount) public {
+        testLiquidation(uint256(_amount), 0.55 ether);
+    }
+
+    /**
+     * @dev Because of rounding errors, a liquidatable position worth less than 1e-5 USD cannot get liquidated in practice
+     * Explanation with amount = 1e13 (1e-5 USDC borrowed):
+     * 0. Before changing the collateralPrice, position is not liquidatable:
+     * - debtValue = 9e-6 USD (compound rounding error, should be 1e-5 USD)
+     * - collateralValue = 2e-5 USD (+ some dust because of rounding errors, should be 2e-5 USD)
+     * 1. collateralPrice is set to 0.501 ether, position is under the [1 / liquidationIncentive] threshold:
+     * - debtValue = 9e-6 USD (compound rounding error, should be 1e-5 USD => position should be above the [1 / liquidationIncentive] threshold)
+     * - collateralValue = 1.001e-5 USD
+     * 2. Liquidation happens, position is now above the [1 / liquidationIncentive] threshold:
+     * - toRepay = 4e-6 USD (debtValue * closeFactor = 4.5e-6 truncated to 4e-6)
+     * - debtValue = 6e-6 (because of p2p units rounding errors: 9e-6 - 4e-6 ~= 6e-6)
+     * 3. After several liquidations, the position is still considered liquidatable but no collateral can be liquidated:
+     * - debtValue = 1e-6 USD
+     * - collateralValue = 1e-6 USD (+ some dust)
+     */
+    function testNoRepayLiquidation() public {
+        testLiquidation(0, 0.5 ether);
     }
 }

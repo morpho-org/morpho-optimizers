@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import "hardhat/console.sol";
-
 import "./setup/TestSetup.sol";
 
 contract TestP2PDisable is TestSetup {
