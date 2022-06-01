@@ -264,11 +264,11 @@ contract Lens {
         view
         returns (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex)
     {
-        if (block.timestamp == morpho.lastPoolIndexes(_poolTokenAddress).lastUpdateTimestamp) {
+        if (block.timestamp == morpho.poolIndexes(_poolTokenAddress).lastUpdateTimestamp) {
             newP2PSupplyIndex = morpho.p2pSupplyIndex(_poolTokenAddress);
             newP2PBorrowIndex = morpho.p2pBorrowIndex(_poolTokenAddress);
         } else {
-            Types.LastPoolIndexes memory poolIndexes = morpho.lastPoolIndexes(_poolTokenAddress);
+            Types.PoolIndexes memory poolIndexes = morpho.poolIndexes(_poolTokenAddress);
             Types.MarketParameters memory marketParams = morpho.marketParameters(_poolTokenAddress);
 
             (uint256 poolSupplyIndex, uint256 poolBorrowIndex) = _computeCompoundsIndexes(
@@ -280,8 +280,8 @@ contract Lens {
                 morpho.p2pBorrowIndex(_poolTokenAddress),
                 poolSupplyIndex,
                 poolBorrowIndex,
-                poolIndexes.lastSupplyPoolIndex,
-                poolIndexes.lastBorrowPoolIndex,
+                poolIndexes.supplyPoolIndex,
+                poolIndexes.borrowPoolIndex,
                 marketParams.reserveFactor,
                 marketParams.p2pIndexCursor,
                 morpho.deltas(_poolTokenAddress)
@@ -295,10 +295,10 @@ contract Lens {
     /// @param _poolTokenAddress The address of the market to update.
     /// @return newP2PSupplyIndex The peer-to-peer supply index after update.
     function getUpdatedP2PSupplyIndex(address _poolTokenAddress) public view returns (uint256) {
-        if (block.timestamp == morpho.lastPoolIndexes(_poolTokenAddress).lastUpdateTimestamp)
+        if (block.timestamp == morpho.poolIndexes(_poolTokenAddress).lastUpdateTimestamp)
             return morpho.p2pSupplyIndex(_poolTokenAddress);
         else {
-            Types.LastPoolIndexes memory poolIndexes = morpho.lastPoolIndexes(_poolTokenAddress);
+            Types.PoolIndexes memory poolIndexes = morpho.poolIndexes(_poolTokenAddress);
             Types.MarketParameters memory marketParams = morpho.marketParameters(_poolTokenAddress);
 
             (uint256 poolSupplyIndex, uint256 poolBorrowIndex) = _computeCompoundsIndexes(
@@ -310,8 +310,8 @@ contract Lens {
                 morpho.p2pBorrowIndex(_poolTokenAddress),
                 poolSupplyIndex,
                 poolBorrowIndex,
-                poolIndexes.lastSupplyPoolIndex,
-                poolIndexes.lastBorrowPoolIndex,
+                poolIndexes.supplyPoolIndex,
+                poolIndexes.borrowPoolIndex,
                 marketParams.reserveFactor,
                 marketParams.p2pIndexCursor,
                 morpho.deltas(_poolTokenAddress)
@@ -325,10 +325,10 @@ contract Lens {
     /// @param _poolTokenAddress The address of the market to update.
     /// @return newP2PSupplyIndex The peer-to-peer borrow index after update.
     function getUpdatedP2PBorrowIndex(address _poolTokenAddress) public view returns (uint256) {
-        if (block.timestamp == morpho.lastPoolIndexes(_poolTokenAddress).lastUpdateTimestamp)
+        if (block.timestamp == morpho.poolIndexes(_poolTokenAddress).lastUpdateTimestamp)
             return morpho.p2pBorrowIndex(_poolTokenAddress);
         else {
-            Types.LastPoolIndexes memory poolIndexes = morpho.lastPoolIndexes(_poolTokenAddress);
+            Types.PoolIndexes memory poolIndexes = morpho.poolIndexes(_poolTokenAddress);
             Types.MarketParameters memory marketParams = morpho.marketParameters(_poolTokenAddress);
 
             (uint256 poolSupplyIndex, uint256 poolBorrowIndex) = _computeCompoundsIndexes(
@@ -340,8 +340,8 @@ contract Lens {
                 morpho.p2pBorrowIndex(_poolTokenAddress),
                 poolSupplyIndex,
                 poolBorrowIndex,
-                poolIndexes.lastSupplyPoolIndex,
-                poolIndexes.lastBorrowPoolIndex,
+                poolIndexes.supplyPoolIndex,
+                poolIndexes.borrowPoolIndex,
                 marketParams.reserveFactor,
                 marketParams.p2pIndexCursor,
                 morpho.deltas(_poolTokenAddress)
@@ -381,7 +381,7 @@ contract Lens {
         }
         p2pSupplyIndex_ = morpho.p2pSupplyIndex(_poolTokenAddress);
         p2pBorrowIndex_ = morpho.p2pBorrowIndex(_poolTokenAddress);
-        lastUpdateTimestamp_ = morpho.lastPoolIndexes(_poolTokenAddress).lastUpdateTimestamp;
+        lastUpdateTimestamp_ = morpho.poolIndexes(_poolTokenAddress).lastUpdateTimestamp;
     }
 
     /// @notice Returns market's configuration.
