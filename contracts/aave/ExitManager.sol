@@ -77,7 +77,7 @@ contract ExitManager is IExitManager, PoolInteraction {
     /// @notice Thrown when the user does not have enough remaining collateral to withdraw.
     error UnauthorisedWithdraw();
 
-    /// @notice Thrown when the positions of the user is not liquidable.
+    /// @notice Thrown when the positions of the user is not liquidatable.
     error UnauthorisedLiquidate();
 
     /// STRUCTS ///
@@ -656,9 +656,9 @@ contract ExitManager is IExitManager, PoolInteraction {
             HEALTH_FACTOR_LIQUIDATION_THRESHOLD;
     }
 
-    /// @dev Checks if the user is liquidable.
+    /// @dev Checks if the user is liquidatable.
     /// @param _user The user to check.
-    /// @return Whether the user is liquidable or not.
+    /// @return Whether the user is liquidatable or not.
     function _liquidationAllowed(address _user) internal view returns (bool) {
         return _getUserHealthFactor(_user, address(0), 0) < HEALTH_FACTOR_LIQUIDATION_THRESHOLD;
     }
