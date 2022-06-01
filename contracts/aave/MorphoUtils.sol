@@ -159,10 +159,6 @@ contract MorphoUtils is MorphoStorage {
 
         while (i < numberOfEnteredMarkets) {
             address poolTokenEntered = enteredMarkets[_user][i];
-            unchecked {
-                ++i;
-            }
-
             address underlyingAddress = IAToken(poolTokenEntered).UNDERLYING_ASSET_ADDRESS();
             assetData.underlyingPrice = oracle.getAssetPrice(underlyingAddress); // In ETH.
             (
@@ -205,6 +201,10 @@ contract MorphoUtils is MorphoStorage {
                         ((_withdrawnAmount * assetData.underlyingPrice) / assetData.tokenUnit) *
                         assetData.liquidationThreshold;
                 }
+            }
+
+            unchecked {
+                ++i;
             }
         }
 
