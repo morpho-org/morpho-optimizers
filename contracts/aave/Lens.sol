@@ -119,9 +119,6 @@ contract Lens {
 
         while (i < enteredMarkets.length) {
             address poolTokenEntered = enteredMarkets[i];
-            unchecked {
-                ++i;
-            }
 
             if (_poolTokenAddress != poolTokenEntered) {
                 assetData = getUserLiquidityDataForAsset(_user, poolTokenEntered, oracle);
@@ -132,6 +129,10 @@ contract Lens {
                 data.avgLiquidationThreshold +=
                     assetData.collateralValue *
                     assetData.liquidationThreshold;
+            }
+
+            unchecked {
+                ++i;
             }
         }
 
@@ -223,9 +224,6 @@ contract Lens {
 
         while (i < enteredMarkets.length) {
             address poolTokenEntered = enteredMarkets[i];
-            unchecked {
-                ++i;
-            }
 
             Types.AssetLiquidityData memory assetData = getUserLiquidityDataForAsset(
                 _user,
@@ -257,6 +255,10 @@ contract Lens {
                         ((_withdrawnAmount * assetData.underlyingPrice) / assetData.tokenUnit) *
                         assetData.liquidationThreshold;
                 }
+            }
+
+            unchecked {
+                ++i;
             }
         }
 
