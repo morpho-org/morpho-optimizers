@@ -185,11 +185,7 @@ contract Morpho is MorphoGovernance {
         external
         nonReentrant
     {
-        uint256 amountOfRewards = rewardsManager.claimRewards(
-            _assets,
-            type(uint256).max,
-            msg.sender
-        );
+        uint256 amountOfRewards = rewardsManager.claimRewards(_assets, msg.sender);
 
         if (amountOfRewards == 0) revert AmountIsZero();
 
