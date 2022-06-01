@@ -79,20 +79,16 @@ abstract contract RewardsManager is IRewardsManager, Ownable {
 
     /// @notice Accrues unclaimed rewards for the given assets and returns the total unclaimed rewards.
     /// @param _assets The assets for which to accrue rewards (aToken or variable debt token).
-    /// @param _amount The amount of token rewards to claim.
     /// @param _user The address of the user.
-    function claimRewards(
-        address[] calldata _assets,
-        uint256 _amount,
-        address _user
-    ) external override onlyMorpho returns (uint256 amountToClaim) {
-        if (_amount == 0) return 0;
-
-        uint256 unclaimedRewards = accrueUserUnclaimedRewards(_assets, _user);
-        if (unclaimedRewards == 0) return 0;
-
-        amountToClaim = _amount > unclaimedRewards ? unclaimedRewards : _amount;
-        userUnclaimedRewards[_user] = unclaimedRewards - amountToClaim;
+    /// @return unclaimedRewards The unclaimed rewards claimed by the user.
+    function claimRewards(address[] calldata _assets, address _user)
+        external
+        override
+        onlyMorpho
+        returns (uint256 unclaimedRewards)
+    {
+        unclaimedRewards = accrueUserUnclaimedRewards(_assets, _user);
+        userUnclaimedRewards[_user] = 0;
     }
 
     /// @notice Updates the unclaimed rewards of an user.
