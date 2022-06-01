@@ -135,7 +135,6 @@ contract EntryManager is IEntryManager, PoolInteraction {
 
             delta.p2pSupplyAmount += toAddInP2P;
             supplyBalanceInOf[_poolTokenAddress][_onBehalf].inP2P += toAddInP2P;
-            _updateSupplierInDS(_poolTokenAddress, _onBehalf);
             _repayToPool(underlyingToken, vars.toRepay, vars.poolBorrowIndex); // Reverts on error.
 
             emit P2PAmountsUpdated(_poolTokenAddress, delta.p2pSupplyAmount, delta.p2pBorrowAmount);
