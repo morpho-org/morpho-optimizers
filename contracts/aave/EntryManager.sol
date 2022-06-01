@@ -279,16 +279,13 @@ contract EntryManager is IEntryManager, PoolInteraction {
             .getParamsMemory();
 
             assetData.tokenUnit = 10**assetData.reserveDecimals;
-            assetData.debtValue =
-                (_getUserBorrowBalanceInOf(poolTokenEntered, _user) * assetData.underlyingPrice) /
-                assetData.tokenUnit;
             assetData.collateralValue =
                 (_getUserSupplyBalanceInOf(poolTokenEntered, _user) * assetData.underlyingPrice) /
                 assetData.tokenUnit;
-
-            liquidityData.debtValue += assetData.debtValue;
-            liquidityData.collateralValue += assetData.collateralValue;
-            liquidityData.avgLtv += assetData.collateralValue * assetData.ltv;
+            liquidityData.debtValue +=
+                (_getUserBorrowBalanceInOf(poolTokenEntered, _user) * assetData.underlyingPrice) /
+                assetData.tokenUnit;
+            liquidityData.maxLoanToValue += assetData.collateralValue.percentMul(assetData.ltv);
 
             if (_poolTokenAddress == poolTokenEntered && _borrowedAmount > 0) {
                 liquidityData.debtValue +=
@@ -301,15 +298,7 @@ contract EntryManager is IEntryManager, PoolInteraction {
             }
         }
 
-        if (liquidityData.collateralValue > 0) {
-            unchecked {
-                liquidityData.avgLtv = liquidityData.avgLtv / liquidityData.collateralValue;
-            }
-        } else liquidityData.avgLtv = 0;
-
-        return
-            liquidityData.debtValue <=
-            liquidityData.collateralValue.percentMul(liquidityData.avgLtv);
+        return liquidityData.debtValue <= liquidityData.maxLoanToValue;
     }
 
     /// @dev Enters the user into the market if not already there.

@@ -53,10 +53,10 @@ library Types {
     }
 
     struct LiquidityData {
-        uint256 avgLiquidationThreshold; // The average liquidation threshold of the user (in basis points).
-        uint256 avgLtv; // The average loan to value of the user (in basis points).
         uint256 healthFactor; // The health factor of the user (in basis points).
         uint256 collateralValue; // The collateral value (in ETH).
+        uint256 maxLoanToValue; // The max loan to value (in ETH).
+        uint256 liquidationThresholdValue; // The liquidation threshold value (in ETH).
         uint256 debtValue; // The debt value (in ETH).
     }
 
