@@ -1,83 +1,157 @@
 /* eslint-disable no-console */
-import { BigNumber } from 'ethers';
-import hre, { ethers } from 'hardhat';
 const config = require(`@config/${process.env.NETWORK}-config.json`);
+import { BigNumber, CallOverrides } from 'ethers';
+import hre from 'hardhat';
+
+const MAX_HEX_AMOUNT = '0x' + 'f'.repeat(64);
+
+const deploymentOptions: CallOverrides = {
+  maxFeePerGas: BigNumber.from('30000000000'),
+  maxPriorityFeePerGas: BigNumber.from('15000000000'),
+};
 
 async function main() {
-  const [deployer] = await ethers.getSigners();
+  const [deployer] = await hre.ethers.getSigners();
 
-  if (process.env.NETWORK == 'mainnet') {
-    await hre.network.provider.send('hardhat_setBalance', [deployer.address, '0x100000000000000000000000000']);
+  if (hre.network.name === 'forkMainnet') {
+    await hre.network.provider.send('hardhat_setBalance', [deployer.address, MAX_HEX_AMOUNT]);
   }
 
   console.log('\n🦋 Deploying Morpho contracts for Compound');
   console.log('👩 Deployer account:', deployer.address);
-  console.log('🤑 Account balance:', (await deployer.getBalance()).toString());
 
   /// INTEREST RATES MANAGER DEPLOYMENT ///
 
   console.log('\n🦋 Deploying InterestRatesManager...');
-  const InterestRatesManager = await ethers.getContractFactory('InterestRatesManager');
-  const interestRatesManager = await InterestRatesManager.deploy();
+  const InterestRatesManager = await hre.ethers.getContractFactory('InterestRatesManager');
+  const interestRatesManager = await InterestRatesManager.deploy(deploymentOptions);
+  console.log('🕰️  Transaction:', interestRatesManager.deployTransaction.hash);
   await interestRatesManager.deployed();
-  console.log('🎉 InterestRatesManager deployed to address:', interestRatesManager.address);
+  console.log('🎉 InterestRatesManager deployed at address:', interestRatesManager.address);
 
-  console.log('\n🦋 Verifying InterestRatesManager on Tenderly...');
-  await hre.tenderly.verify({
-    name: 'InterestRatesManager',
-    address: interestRatesManager.address,
-  });
+  if (hre.network.name === 'forkMainnet') {
+    console.log('\n🦋 Verifying InterestRatesManager on Tenderly...');
+    await hre.tenderly.verify({
+      name: 'InterestRatesManager',
+      address: interestRatesManager.address,
+    });
+  } else {
+    console.log('\n🦋 Verifying InterestRatesManager on Etherscan...');
+    await hre.run('verify:verify', {
+      name: 'InterestRatesManager',
+      address: interestRatesManager.address,
+    });
+  }
   console.log('🎉 InterestRatesManager verified!');
 
   /// POSITIONS MANAGER DEPLOYMENT ///
 
   console.log('\n🦋 Deploying PositionsManager...');
-  const PositionsManager = await ethers.getContractFactory('PositionsManager');
-  const positionsManager = await PositionsManager.deploy();
+  const PositionsManager = await hre.ethers.getContractFactory('PositionsManager');
+  const positionsManager = await PositionsManager.deploy(deploymentOptions);
   await positionsManager.deployed();
-  console.log('🎉 PositionsManager deployed to address:', positionsManager.address);
+  console.log('🎉 PositionsManager deployed at address:', positionsManager.address);
 
-  console.log('\n🦋 Verifying PositionsManager on Tenderly...');
-  await hre.tenderly.verify({
-    name: 'PositionsManager',
-    address: positionsManager.address,
-  });
+  if (hre.network.name === 'forkMainnet') {
+    console.log('\n🦋 Verifying PositionsManager on Tenderly...');
+    await hre.tenderly.verify({
+      name: 'PositionsManager',
+      address: positionsManager.address,
+    });
+  } else {
+    console.log('\n🦋 Verifying PositionsManager on Etherscan...');
+    await hre.run('verify:verify', {
+      name: 'PositionsManager',
+      address: positionsManager.address,
+    });
+  }
   console.log('🎉 PositionsManager verified!');
 
   /// MORPHO DEPLOYMENT ///
 
-  const maxGas = { supply: 3e6, borrow: 3e6, withdraw: 3e6, repay: 3e6 };
+  const dustThreshold = 1;
+  const maxSortedUsers = 16;
+  const defaultMaxGasForMatching = { supply: 1e5, borrow: 1e5, withdraw: 1e5, repay: 1e5 };
 
+  // Check this doc to understand how the OZ upgrade plugin works: https://docs.openzeppelin.com/upgrades-plugins/1.x/
   console.log('\n🦋 Deploying Morpho...');
-  const Morpho = await ethers.getContractFactory('Morpho');
-  const morpho = await upgrades.deployProxy(
+  const Morpho = await hre.ethers.getContractFactory('Morpho');
+  const morpho = await hre.upgrades.deployProxy(
     Morpho,
     [
       positionsManager.address,
       interestRatesManager.address,
       config.compound.comptroller.address,
-      maxGas,
-      1,
-      100,
+      defaultMaxGasForMatching,
+      dustThreshold,
+      maxSortedUsers,
       config.tokens.cEth.address,
       config.tokens.wEth.address,
     ],
-    { unsafeAllow: ['delegatecall'] }
+    { unsafeAllow: ['delegatecall', 'constructor'] }
   );
   await morpho.deployed();
-  const morphoImplementationAddress = await upgrades.erc1967.getImplementationAddress(morpho.address);
+  const morphoImplementationAddress = await hre.upgrades.erc1967.getImplementationAddress(morpho.address);
 
-  console.log('\n🦋 Verifying PositionsManagerForCompound on Tenderly...');
-  await hre.tenderly.verify({
-    name: 'PositionsManagerForCompound',
-    address: positionsManagerForCompound.address,
-  });
-  console.log('🎉 PositionsManagerForCompound verified!');
+  console.log('🎉 Morpho contract deployed');
+  console.log('                      with proxy at address:\t', morpho.address);
+  console.log('             with implementation at address:\t', morphoImplementationAddress);
+
+  if (hre.network.name === 'forkMainnet') {
+    console.log('\n🦋 Verifying Morpho Proxy on Tenderly...');
+    await hre.tenderly.verify({
+      name: 'Morpho Proxy',
+      address: morpho.address,
+    });
+  } else {
+    console.log('\n🦋 Verifying Morpho Proxy on Etherscan...');
+    await hre.run('verify:verify', {
+      name: 'Morpho Proxy',
+      address: morpho.address,
+      constructorArgs: [
+        positionsManager.address,
+        interestRatesManager.address,
+        config.compound.comptroller.address,
+        defaultMaxGasForMatching,
+        dustThreshold,
+        maxSortedUsers,
+        config.tokens.cEth.address,
+        config.tokens.wEth.address,
+      ],
+    });
+  }
+  console.log('🎉 Morpho Proxy verified!');
+
+  if (hre.network.name === 'forkMainnet') {
+    console.log('\n🦋 Verifying Morpho Implementation on Tenderly...');
+    await hre.tenderly.verify({
+      name: 'Morpho Implementation',
+      address: morphoImplementationAddress,
+    });
+  } else {
+    console.log('\n🦋 Verifying Morpho Implementation on Etherscan...');
+    await hre.run('verify:verify', {
+      name: 'Morpho Implementation',
+      address: morphoImplementationAddress,
+    });
+  }
+  console.log('🎉 Morpho Implementation verified!');
+
+  /// MARKETS CREATION ///
 
   console.log('\n🦋 Creating markets...');
-  await marketsManagerForCompound.connect(deployer).setPositionsManager(positionsManagerForCompound.address);
-  await marketsManagerForCompound.connect(deployer).createMarket(config.tokens.cDai.address, BigNumber.from(1).pow(6));
-  await marketsManagerForCompound.connect(deployer).createMarket(config.tokens.cUsdc.address, BigNumber.from(1).pow(6));
+  await morpho.connect(deployer).createMarket(config.tokens.cEth.address, {
+    reserveFactor: 1500,
+    p2pIndexCursor: 3333,
+  });
+  await morpho.connect(deployer).createMarket(config.tokens.cDai.address, {
+    reserveFactor: 1500,
+    p2pIndexCursor: 3333,
+  });
+  await morpho.connect(deployer).createMarket(config.tokens.cUsdc.address, {
+    reserveFactor: 1500,
+    p2pIndexCursor: 3333,
+  });
   console.log('🎉 Finished!\n');
 }
 
