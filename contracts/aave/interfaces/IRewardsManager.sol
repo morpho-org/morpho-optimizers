@@ -14,11 +14,7 @@ interface IRewardsManager {
 
     function getUserUnclaimedRewards(address[] calldata, address) external view returns (uint256);
 
-    function claimRewards(
-        address[] calldata,
-        uint256,
-        address
-    ) external returns (uint256);
+    function claimRewards(address[] calldata, address) external returns (uint256);
 
     function updateUserAssetAndAccruedRewards(
         address,
