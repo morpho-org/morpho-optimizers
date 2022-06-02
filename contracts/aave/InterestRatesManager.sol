@@ -1,11 +1,9 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import "./interfaces/IInterestRatesManager.sol";
 import "./interfaces/aave/IAToken.sol";
 
 import "./libraries/aave/WadRayMath.sol";
-import "./libraries/Types.sol";
 import "./libraries/Math.sol";
 
 import "./MorphoStorage.sol";
@@ -17,7 +15,6 @@ import "./MorphoStorage.sol";
 /// @dev This contract inherits from MorphoStorage so that Morpho can delegate calls to this contract.
 contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
     using WadRayMath for uint256;
-    using Math for uint256;
 
     /// STRUCTS ///
 
