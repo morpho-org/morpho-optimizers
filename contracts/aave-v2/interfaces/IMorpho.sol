@@ -32,9 +32,12 @@ interface IMorpho {
     function exitManager() external view returns (IExitManager);
     function treasuryVault() external view returns (address);
 
-    /// GETTERS ///
+    /// UTILS ///
 
     function updateP2PIndexes(address _poolTokenAddress) external;
+
+    /// GETTERS ///
+
     function getEnteredMarkets(address _user) external view returns (address[] memory enteredMarkets_);
     function getAllMarkets() external view returns (address[] memory marketsCreated_);
     function getHead(address _poolTokenAddress, Types.PositionType _positionType) external view returns (address head);
