@@ -53,7 +53,7 @@ contract TestLiquidate is TestSetup {
             onPoolBorrower,
             lendingPool.getReserveNormalizedVariableDebt(dai)
         );
-        testEquality(expectedBorrowBalanceOnPool, amount / 2);
+        testEquality(expectedBorrowBalanceOnPool, toRepay);
         assertEq(inP2PBorrower, 0);
 
         // Check borrower1 supply balance
@@ -72,25 +72,27 @@ contract TestLiquidate is TestSetup {
             ,
 
         ) = protocolDataProvider.getReserveConfigurationData(usdc);
-        vars.collateralPrice = customOracle.getAssetPrice(usdc);
+        uint256 collateralPrice = customOracle.getAssetPrice(usdc);
         vars.collateralTokenUnit = 10**vars.collateralReserveDecimals;
 
-        (vars.borrowedReserveDecimals, , , , , , , , , ) = protocolDataProvider
-        .getReserveConfigurationData(dai);
-        vars.borrowedPrice = customOracle.getAssetPrice(dai);
-        vars.borrowedTokenUnit = 10**vars.borrowedReserveDecimals;
+        {
+            (vars.borrowedReserveDecimals, , , , , , , , , ) = protocolDataProvider
+            .getReserveConfigurationData(dai);
+            uint256 borrowedPrice = customOracle.getAssetPrice(dai);
+            vars.borrowedTokenUnit = 10**vars.borrowedReserveDecimals;
 
-        uint256 amountToSeize = ((amount / 2) *
-            vars.borrowedPrice *
-            vars.collateralTokenUnit *
-            vars.liquidationBonus) / (vars.borrowedTokenUnit * vars.collateralPrice * 10_000);
+            uint256 amountToSeize = (toRepay *
+                borrowedPrice *
+                vars.collateralTokenUnit *
+                vars.liquidationBonus) / (vars.borrowedTokenUnit * collateralPrice * 10_000);
 
-        uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(usdc);
-        uint256 expectedOnPool = collateralOnPool -
-            underlyingToScaledBalance(amountToSeize, normalizedIncome);
+            uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(usdc);
+            uint256 expectedOnPool = collateralOnPool -
+                underlyingToScaledBalance(amountToSeize, normalizedIncome);
 
-        testEquality(onPoolBorrower, expectedOnPool);
-        assertEq(inP2PBorrower, 0);
+            testEquality(onPoolBorrower, expectedOnPool);
+            assertEq(inP2PBorrower, 0);
+        }
     }
 
     function testShouldLiquidateWhileInP2PAndPool() public {
@@ -162,18 +164,18 @@ contract TestLiquidate is TestSetup {
             ,
 
         ) = protocolDataProvider.getReserveConfigurationData(dai);
-        vars.collateralPrice = customOracle.getAssetPrice(dai);
+        uint256 collateralPrice = customOracle.getAssetPrice(dai);
         vars.collateralTokenUnit = 10**vars.collateralReserveDecimals;
 
         (vars.borrowedReserveDecimals, , , , , , , , , ) = protocolDataProvider
         .getReserveConfigurationData(usdc);
-        vars.borrowedPrice = customOracle.getAssetPrice(usdc);
+        uint256 borrowedPrice = customOracle.getAssetPrice(usdc);
         vars.borrowedTokenUnit = 10**vars.borrowedReserveDecimals;
 
         uint256 amountToSeize = (toRepay *
-            vars.borrowedPrice *
+            borrowedPrice *
             vars.collateralTokenUnit *
-            vars.liquidationBonus) / (vars.borrowedTokenUnit * vars.collateralPrice * 10_000);
+            vars.liquidationBonus) / (vars.borrowedTokenUnit * collateralPrice * 10_000);
 
         assertApproxEq(
             onPoolBorrower,
@@ -255,18 +257,18 @@ contract TestLiquidate is TestSetup {
             ,
 
         ) = protocolDataProvider.getReserveConfigurationData(dai);
-        vars.collateralPrice = customOracle.getAssetPrice(dai);
+        uint256 collateralPrice = customOracle.getAssetPrice(dai);
         vars.collateralTokenUnit = 10**vars.collateralReserveDecimals;
 
         (vars.borrowedReserveDecimals, , , , , , , , , ) = protocolDataProvider
         .getReserveConfigurationData(usdc);
-        vars.borrowedPrice = customOracle.getAssetPrice(usdc);
+        uint256 borrowedPrice = customOracle.getAssetPrice(usdc);
         vars.borrowedTokenUnit = 10**vars.borrowedReserveDecimals;
 
         uint256 amountToSeize = (toRepay *
-            vars.borrowedPrice *
+            borrowedPrice *
             vars.collateralTokenUnit *
-            vars.liquidationBonus) / (vars.borrowedTokenUnit * vars.collateralPrice * 10_000);
+            vars.liquidationBonus) / (vars.borrowedTokenUnit * collateralPrice * 10_000);
 
         testEquality(
             onPoolBorrower,
