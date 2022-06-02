@@ -405,9 +405,8 @@ contract Lens {
     ) public view returns (uint256 debtValue, uint256 maxDebtValue) {
         ICompoundOracle oracle = ICompoundOracle(morpho.comptroller().oracle());
         address[] memory enteredMarkets = morpho.getEnteredMarkets(_user);
-        uint256 i;
 
-        while (i < enteredMarkets.length) {
+        for (uint256 i; i < enteredMarkets.length; ) {
             address poolTokenEntered = enteredMarkets[i];
 
             Types.AssetLiquidityData memory assetData = getUserLiquidityDataForAsset(
