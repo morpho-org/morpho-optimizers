@@ -1,34 +1,34 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import "@contracts/aave/interfaces/aave/IAaveIncentivesController.sol";
+import "@contracts/aave-v2/interfaces/aave/IAaveIncentivesController.sol";
 import "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
-import "@contracts/aave/interfaces/aave/IProtocolDataProvider.sol";
-import "@contracts/aave/interfaces/aave/IPriceOracleGetter.sol";
-import "@contracts/aave/interfaces/aave/IVariableDebtToken.sol";
-import "@contracts/aave/interfaces/IInterestRatesManager.sol";
-import "@contracts/aave/interfaces/aave/ILendingPool.sol";
-import "@contracts/aave/interfaces/IRewardsManager.sol";
-import "@contracts/aave/interfaces/aave/IAToken.sol";
-import "@contracts/aave/interfaces/IMorpho.sol";
+import "@contracts/aave-v2/interfaces/aave/IProtocolDataProvider.sol";
+import "@contracts/aave-v2/interfaces/aave/IPriceOracleGetter.sol";
+import "@contracts/aave-v2/interfaces/aave/IVariableDebtToken.sol";
+import "@contracts/aave-v2/interfaces/IInterestRatesManager.sol";
+import "@contracts/aave-v2/interfaces/aave/ILendingPool.sol";
+import "@contracts/aave-v2/interfaces/IRewardsManager.sol";
+import "@contracts/aave-v2/interfaces/aave/IAToken.sol";
+import "@contracts/aave-v2/interfaces/IMorpho.sol";
 
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
-import "@contracts/aave/libraries/aave/WadRayMath.sol";
+import "@contracts/aave-v2/libraries/aave/WadRayMath.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
-import "@contracts/aave/libraries/Types.sol";
+import "@contracts/aave-v2/libraries/Types.sol";
 
-import {RewardsManagerOnMainnetAndAvalanche} from "@contracts/aave/rewards-managers/RewardsManagerOnMainnetAndAvalanche.sol";
-import {RewardsManagerOnPolygon} from "@contracts/aave/rewards-managers/RewardsManagerOnPolygon.sol";
-import {InterestRatesManager} from "@contracts/aave/InterestRatesManager.sol";
-import {IncentivesVault} from "@contracts/aave/IncentivesVault.sol";
-import {MatchingEngine} from "@contracts/aave/MatchingEngine.sol";
-import {EntryManager} from "@contracts/aave/EntryManager.sol";
-import {ExitManager} from "@contracts/aave/ExitManager.sol";
-import {Lens} from "@contracts/aave/Lens.sol";
-import "@contracts/aave/Morpho.sol";
+import {RewardsManagerOnMainnetAndAvalanche} from "@contracts/aave-v2/rewards-managers/RewardsManagerOnMainnetAndAvalanche.sol";
+import {RewardsManagerOnPolygon} from "@contracts/aave-v2/rewards-managers/RewardsManagerOnPolygon.sol";
+import {InterestRatesManager} from "@contracts/aave-v2/InterestRatesManager.sol";
+import {IncentivesVault} from "@contracts/aave-v2/IncentivesVault.sol";
+import {MatchingEngine} from "@contracts/aave-v2/MatchingEngine.sol";
+import {EntryManager} from "@contracts/aave-v2/EntryManager.sol";
+import {ExitManager} from "@contracts/aave-v2/ExitManager.sol";
+import {Lens} from "@contracts/aave-v2/Lens.sol";
+import "@contracts/aave-v2/Morpho.sol";
 
 import "../../common/helpers/MorphoToken.sol";
 import "../helpers/SimplePriceOracle.sol";
