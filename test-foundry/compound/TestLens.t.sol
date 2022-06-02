@@ -898,6 +898,105 @@ contract TestLens is TestSetup {
         );
     }
 
+    function testLiquidationWithUpdatedPoolIndexes() public {
+        uint256 amount = 10_000 ether;
+
+        (, uint256 collateralFactor, ) = comptroller.markets(cUsdc);
+
+        borrower1.approve(usdc, to6Decimals(amount));
+        borrower1.supply(cUsdc, to6Decimals(amount));
+        borrower1.borrow(cDai, amount.mul(collateralFactor) - 10 ether);
+
+        address[] memory updatedMarkets = new address[](2);
+        assertFalse(
+            lens.isLiquidatable(address(borrower1), updatedMarkets),
+            "borrower is already liquidatable"
+        );
+
+        hevm.roll(block.number + (7 * 24 * 60 * 4));
+
+        assertFalse(
+            lens.isLiquidatable(address(borrower1), updatedMarkets),
+            "borrower is already liquidatable"
+        );
+
+        updatedMarkets[0] = address(cDai);
+        updatedMarkets[1] = address(cUsdc);
+        assertTrue(
+            lens.isLiquidatable(address(borrower1), updatedMarkets),
+            "borrower is not liquidatable with virtually updated pool indexes"
+        );
+        uint256 toRepayVirtual = lens.computeLiquidationRepayAmount(
+            address(borrower1),
+            cDai,
+            cUsdc,
+            updatedMarkets
+        );
+
+        ICToken(cUsdc).accrueInterest();
+        ICToken(cDai).accrueInterest();
+        assertTrue(
+            lens.isLiquidatable(address(borrower1), new address[](0)),
+            "borrower is not liquidatable with updated pool indexes"
+        );
+        assertEq(
+            toRepayVirtual,
+            lens.computeLiquidationRepayAmount(address(borrower1), cDai, cUsdc, new address[](0)),
+            "computed repay amounts different"
+        );
+    }
+
+    function testLiquidatableWithUpdatedP2PIndexes() public {
+        uint256 amount = 10_000 ether;
+
+        supplier2.approve(dai, amount);
+        supplier2.supply(cDai, amount);
+
+        (, uint256 collateralFactor, ) = comptroller.markets(cUsdc);
+
+        borrower1.approve(usdc, to6Decimals(amount));
+        borrower1.supply(cUsdc, to6Decimals(amount));
+        borrower1.borrow(cDai, amount.mul(collateralFactor) - 10 ether);
+
+        address[] memory updatedMarkets = new address[](2);
+        assertFalse(
+            lens.isLiquidatable(address(borrower1), updatedMarkets),
+            "borrower is already liquidatable"
+        );
+
+        hevm.roll(block.number + (7 * 24 * 60 * 4));
+
+        assertFalse(
+            lens.isLiquidatable(address(borrower1), updatedMarkets),
+            "borrower is already liquidatable"
+        );
+
+        updatedMarkets[0] = address(cDai);
+        updatedMarkets[1] = address(cUsdc);
+        assertTrue(
+            lens.isLiquidatable(address(borrower1), updatedMarkets),
+            "borrower is not liquidatable with virtually updated p2p indexes"
+        );
+        uint256 toRepayVirtual = lens.computeLiquidationRepayAmount(
+            address(borrower1),
+            cDai,
+            cUsdc,
+            updatedMarkets
+        );
+
+        morpho.updateP2PIndexes(cUsdc);
+        morpho.updateP2PIndexes(cDai);
+        assertTrue(
+            lens.isLiquidatable(address(borrower1), new address[](0)),
+            "borrower is not liquidatable with updated p2p indexes"
+        );
+        assertEq(
+            toRepayVirtual,
+            lens.computeLiquidationRepayAmount(address(borrower1), cDai, cUsdc, new address[](0)),
+            "computed repay amounts different"
+        );
+    }
+
     function testLiquidation(uint256 _amount, uint80 _collateralPrice) internal {
         uint256 amount = _amount + 1e14;
         uint256 collateralPrice = uint256(_collateralPrice) + 1;
