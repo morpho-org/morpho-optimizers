@@ -87,8 +87,8 @@ contract TestGovernance is TestSetup {
         (bool isCreated, , ) = morpho.marketStatus(aAave);
 
         assertTrue(isCreated);
-        assertEq(morpho.p2pSupplyIndex(aAave), WadRayMath.ray());
-        assertEq(morpho.p2pBorrowIndex(aAave), WadRayMath.ray());
+        assertEq(morpho.p2pSupplyIndex(aAave), WadRayMath.RAY);
+        assertEq(morpho.p2pBorrowIndex(aAave), WadRayMath.RAY);
     }
 
     function testShouldSetMaxGasWithRightValues() public {

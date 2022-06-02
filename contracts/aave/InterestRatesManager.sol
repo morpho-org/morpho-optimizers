@@ -132,11 +132,11 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
                 (_params.delta.p2pSupplyDelta.rayMul(_params.lastPoolSupplyIndex)).rayDiv(
                     (_params.delta.p2pSupplyAmount).rayMul(_params.lastP2PSupplyIndex)
                 ),
-                WadRayMath.ray() // To avoid shareOfTheDelta > 1 with rounding errors.
+                WadRayMath.RAY // To avoid shareOfTheDelta > 1 with rounding errors.
             );
 
             newP2PSupplyIndex = _params.lastP2PSupplyIndex.rayMul(
-                (WadRayMath.ray() - shareOfTheDelta).rayMul(p2pSupplyGrowthFactor) +
+                (WadRayMath.RAY - shareOfTheDelta).rayMul(p2pSupplyGrowthFactor) +
                     shareOfTheDelta.rayMul(poolSupplyGrowthFactor)
             );
         }
@@ -150,11 +150,11 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
                 (_params.delta.p2pBorrowDelta.rayMul(_params.poolBorrowIndex)).rayDiv(
                     (_params.delta.p2pBorrowAmount).rayMul(_params.lastP2PBorrowIndex)
                 ),
-                WadRayMath.ray() // To avoid shareOfTheDelta > 1 with rounding errors.
+                WadRayMath.RAY // To avoid shareOfTheDelta > 1 with rounding errors.
             );
 
             newP2PBorrowIndex = _params.lastP2PBorrowIndex.rayMul(
-                (WadRayMath.ray() - shareOfTheDelta).rayMul(p2pBorrowGrowthFactor) +
+                (WadRayMath.RAY - shareOfTheDelta).rayMul(p2pBorrowGrowthFactor) +
                     shareOfTheDelta.rayMul(poolBorrowGrowthFactor)
             );
         }
