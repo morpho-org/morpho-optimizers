@@ -352,9 +352,7 @@ contract Lens {
     }
 
     /// @notice Returns the data related to `_poolTokenAddress` for the `_user`.
-    /// @dev Note: must be called after calling `accrueInterest()` on the cToken to have the most up to date values.
     /// @param _user The user to determine data for.
-    /// @param _poolTokenAddress The address of the market.
     /// @param _poolTokenAddress The address of the market.
     /// @param _oracle The oracle used.
     /// @return assetData The data related to this asset.
@@ -364,6 +362,8 @@ contract Lens {
         ICompoundOracle _oracle
     ) public view returns (Types.AssetLiquidityData memory assetData) {
         assetData.underlyingPrice = _oracle.getUnderlyingPrice(_poolTokenAddress);
+        if (assetData.underlyingPrice == 0) revert CompoundOracleFailed();
+
         (, assetData.collateralFactor, ) = morpho.comptroller().markets(_poolTokenAddress);
 
         (
@@ -575,7 +575,7 @@ contract Lens {
         for (uint256 i; i < enteredMarkets.length; ) {
             address poolTokenEntered = enteredMarkets[i];
 
-            Types.AssetLiquidityData memory assetData = _computeUserLiquidityDataForAsset(
+            Types.AssetLiquidityData memory assetData = getUserLiquidityDataForAsset(
                 _user,
                 poolTokenEntered,
                 oracle
@@ -614,6 +614,7 @@ contract Lens {
 
         uint256 borrowedPrice = compoundOracle.getUnderlyingPrice(_poolTokenBorrowedAddress);
         uint256 collateralPrice = compoundOracle.getUnderlyingPrice(_poolTokenCollateralAddress);
+        if (borrowedPrice == 0 || collateralPrice == 0) revert CompoundOracleFailed();
 
         uint256 maxROIRepay = totalCollateralBalance.mul(collateralPrice).div(borrowedPrice).div(
             comptroller.liquidationIncentiveMantissa()
@@ -657,41 +658,6 @@ contract Lens {
         return
             morpho.borrowBalanceInOf(_poolTokenAddress, _user).inP2P.mul(_p2pBorrowIndex) +
             morpho.borrowBalanceInOf(_poolTokenAddress, _user).onPool.mul(_poolBorrowIndex);
-    }
-
-    /// @notice Returns the data related to `_poolTokenAddress` for the `_user`.
-    /// @param _user The user to determine data for.
-    /// @param _poolTokenAddress The address of the market.
-    /// @param _oracle The oracle used.
-    /// @return assetData The data related to this asset.
-    function _computeUserLiquidityDataForAsset(
-        address _user,
-        address _poolTokenAddress,
-        ICompoundOracle _oracle
-    ) internal view returns (Types.AssetLiquidityData memory assetData) {
-        assetData.underlyingPrice = _oracle.getUnderlyingPrice(_poolTokenAddress);
-        if (assetData.underlyingPrice == 0) revert CompoundOracleFailed();
-        (, assetData.collateralFactor, ) = morpho.comptroller().markets(_poolTokenAddress);
-        (
-            uint256 newP2PSupplyIndex,
-            uint256 newP2PBorrowIndex,
-            uint256 newPoolSupplyIndex,
-            uint256 newPoolBorrowIndex
-        ) = getUpdatedIndexes(_poolTokenAddress);
-
-        assetData.collateralValue = _computeUserSupplyBalanceInOf(
-            _poolTokenAddress,
-            _user,
-            newP2PSupplyIndex,
-            newPoolSupplyIndex
-        ).mul(assetData.underlyingPrice);
-        assetData.debtValue = _computeUserBorrowBalanceInOf(
-            _poolTokenAddress,
-            _user,
-            newP2PBorrowIndex,
-            newPoolBorrowIndex
-        ).mul(assetData.underlyingPrice);
-        assetData.maxDebtValue = assetData.collateralValue.mul(assetData.collateralFactor);
     }
 
     /// INDEXES ///

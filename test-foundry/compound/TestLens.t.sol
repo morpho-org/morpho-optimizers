@@ -559,6 +559,18 @@ contract TestLens is TestSetup {
         assertEq(borrowableDai, 0, "borrowable DAI");
     }
 
+    function testLiquidityDataFailsWhenOracleFails() public {
+        uint256 daiAmount = 1 ether;
+
+        borrower1.approve(dai, daiAmount);
+        borrower1.supply(cDai, daiAmount);
+
+        createAndSetCustomPriceOracle().setDirectPrice(dai, 0);
+
+        hevm.expectRevert(abi.encodeWithSignature("CompoundOracleFailed()"));
+        lens.getUserMaxCapacitiesForAsset(address(borrower1), cDai);
+    }
+
     function testLiquidityDataWithMultipleAssetsAndUSDT() public {
         Indexes memory indexes;
         uint256 amount = 10_000 ether;
@@ -890,6 +902,7 @@ contract TestLens is TestSetup {
                     balanceBefore,
                     "balance did not increase"
                 );
+
                 balanceBefore = ERC20(dai).balanceOf(address(supplier1));
                 toRepay = lens.computeLiquidationRepayAmount(address(borrower1), cUsdc, cDai);
             } while (lens.isLiquidatable(address(borrower1)) && toRepay > 0);
