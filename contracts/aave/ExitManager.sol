@@ -68,9 +68,6 @@ contract ExitManager is IExitManager, PoolInteraction {
 
     /// ERRORS ///
 
-    /// @notice Thrown when the amount of collateral to seize is above the collateral amount.
-    error ToSeizeAboveCollateral();
-
     /// @notice Thrown when user is not a member of the market.
     error UserNotMemberOfMarket();
 
@@ -108,17 +105,11 @@ contract ExitManager is IExitManager, PoolInteraction {
 
     // Struct to avoid stack too deep.
     struct LiquidateVars {
-        uint256 borrowedPrice; // The price of the asset borrowed (in ETH).
-        uint256 collateralPrice; // The price of the collateral asset (in ETH).
-        uint256 supplyBalance; // The total of collateral of the user (in underlying).
-        uint256 amountToSeize; // The amount of collateral the liquidator can seize (in underlying).
         uint256 liquidationBonus; // The liquidation bonus on Aave.
         uint256 collateralReserveDecimals; // The number of decimals of the collateral asset in the reserve.
         uint256 collateralTokenUnit; // The collateral token unit considering its decimals.
         uint256 borrowedReserveDecimals; // The number of decimals of the borrowed asset in the reserve.
         uint256 borrowedTokenUnit; // The unit of borrowed token considering its decimals.
-        uint256 amountToLiquidate; // The amount of tokens to liquidate (in underlying).
-        uint256 maxLiquidatableDebt; // The maximum amount of debt tokens liquidatable (in underlying).
     }
 
     /// LOGIC ///
@@ -201,17 +192,17 @@ contract ExitManager is IExitManager, PoolInteraction {
         address tokenBorrowedAddress = IAToken(_poolTokenBorrowedAddress)
         .UNDERLYING_ASSET_ADDRESS();
 
-        vars.maxLiquidatableDebt = _getUserBorrowBalanceInOf(_poolTokenBorrowedAddress, _borrower)
-        .percentMul(LIQUIDATION_CLOSE_FACTOR_PERCENT);
-
-        vars.amountToLiquidate = Math.min(_amount, vars.maxLiquidatableDebt);
+        uint256 amountToLiquidate = Math.min(
+            _amount,
+            _getUserBorrowBalanceInOf(_poolTokenBorrowedAddress, _borrower).percentMul(
+                LIQUIDATION_CLOSE_FACTOR_PERCENT
+            ) // Max liquidatable debt.
+        );
 
         address tokenCollateralAddress = IAToken(_poolTokenCollateralAddress)
         .UNDERLYING_ASSET_ADDRESS();
 
         IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
-        vars.borrowedPrice = oracle.getAssetPrice(tokenBorrowedAddress); // In ETH.
-        vars.collateralPrice = oracle.getAssetPrice(tokenCollateralAddress); // In ETH.
 
         (, , vars.liquidationBonus, vars.collateralReserveDecimals, ) = lendingPool
         .getConfiguration(tokenCollateralAddress)
@@ -225,37 +216,25 @@ contract ExitManager is IExitManager, PoolInteraction {
             vars.borrowedTokenUnit = 10**vars.borrowedReserveDecimals;
         }
 
-        vars.amountToSeize = ((vars.amountToLiquidate *
-            vars.borrowedPrice *
-            vars.collateralTokenUnit) / (vars.borrowedTokenUnit * vars.collateralPrice))
-        .percentMul(vars.liquidationBonus); // Same mechanism as Aave.
-
-        vars.supplyBalance = _getUserSupplyBalanceInOf(_poolTokenCollateralAddress, _borrower);
-
-        if (vars.amountToSeize > vars.supplyBalance) revert ToSeizeAboveCollateral();
-
-        _safeRepayLogic(
-            _poolTokenBorrowedAddress,
-            msg.sender,
-            _borrower,
-            vars.amountToLiquidate,
-            0
+        uint256 amountToSeize = Math.min(
+            ((amountToLiquidate *
+                oracle.getAssetPrice(tokenBorrowedAddress) *
+                vars.collateralTokenUnit) /
+                (vars.borrowedTokenUnit * oracle.getAssetPrice(tokenCollateralAddress)))
+            .percentMul(vars.liquidationBonus), // Same mechanism as Aave.
+            _getUserSupplyBalanceInOf(_poolTokenCollateralAddress, _borrower)
         );
-        _safeWithdrawLogic(
-            _poolTokenCollateralAddress,
-            vars.amountToSeize,
-            _borrower,
-            msg.sender,
-            0
-        );
+
+        _safeRepayLogic(_poolTokenBorrowedAddress, msg.sender, _borrower, amountToLiquidate, 0);
+        _safeWithdrawLogic(_poolTokenCollateralAddress, amountToSeize, _borrower, msg.sender, 0);
 
         emit Liquidated(
             msg.sender,
             _borrower,
             _poolTokenBorrowedAddress,
-            vars.amountToLiquidate,
+            amountToLiquidate,
             _poolTokenCollateralAddress,
-            vars.amountToSeize
+            amountToSeize
         );
     }
 
