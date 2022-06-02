@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import "@contracts/aave/interfaces/aave/IAaveIncentivesController.sol";
-import "@contracts/aave/interfaces/IOracle.sol";
+import "@contracts/aave-v2/interfaces/aave/IAaveIncentivesController.sol";
+import "@contracts/aave-v2/interfaces/IOracle.sol";
 
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 
-import "@contracts/aave/IncentivesVault.sol";
+import "@contracts/aave-v2/IncentivesVault.sol";
 import "../common/helpers/MorphoToken.sol";
 import "./helpers/DumbOracle.sol";
 import "forge-std/stdlib.sol";
