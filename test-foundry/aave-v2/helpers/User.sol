@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import "@contracts/aave/interfaces/aave/ILendingPool.sol";
-import "@contracts/aave/interfaces/IRewardsManager.sol";
+import "@contracts/aave-v2/interfaces/aave/ILendingPool.sol";
+import "@contracts/aave-v2/interfaces/IRewardsManager.sol";
 
-import "@contracts/aave/Morpho.sol";
+import "@contracts/aave-v2/Morpho.sol";
 
 contract User {
     using SafeTransferLib for ERC20;

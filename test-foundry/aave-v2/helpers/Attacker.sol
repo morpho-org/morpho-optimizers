@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import "@contracts/aave/interfaces/aave/ILendingPool.sol";
+import "@contracts/aave-v2/interfaces/aave/ILendingPool.sol";
 
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 
