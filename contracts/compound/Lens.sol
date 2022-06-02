@@ -597,7 +597,7 @@ contract Lens {
     /// @param _user The potential liquidatee.
     /// @param _poolTokenBorrowedAddress The address of the market to repay.
     /// @param _poolTokenCollateralAddress The address of the market to seize.
-    function computeLiquidationAmount(
+    function computeLiquidationRepayAmount(
         address _user,
         address _poolTokenBorrowedAddress,
         address _poolTokenCollateralAddress
