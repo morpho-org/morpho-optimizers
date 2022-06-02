@@ -260,12 +260,11 @@ contract EntryManager is IEntryManager, PoolInteraction {
     ) internal view returns (bool) {
         IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
         uint256 numberOfEnteredMarkets = enteredMarkets[_user].length;
-        uint256 i;
 
         Types.AssetLiquidityData memory assetData;
         Types.LiquidityData memory liquidityData;
 
-        while (i < numberOfEnteredMarkets) {
+        for (uint256 i; i < numberOfEnteredMarkets; ) {
             address poolTokenEntered = enteredMarkets[_user][i];
             address underlyingAddress = IAToken(poolTokenEntered).UNDERLYING_ASSET_ADDRESS();
             assetData.underlyingPrice = oracle.getAssetPrice(underlyingAddress); // In ETH.
