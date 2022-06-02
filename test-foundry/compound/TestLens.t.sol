@@ -871,10 +871,14 @@ contract TestLens is TestSetup {
 
         (uint256 collateralValue, uint256 debtValue, uint256 maxDebtValue) = lens
         .getUserBalanceStates(address(borrower1));
-        hevm.assume(maxDebtValue < debtValue);
 
         uint256 borrowedPrice = oracle.getUnderlyingPrice(cUsdc);
         uint256 toRepay = lens.computeLiquidationAmount(address(borrower1), cUsdc, cDai);
+
+        if (debtValue <= maxDebtValue) {
+            assertEq(toRepay, 0, "Should return 0 when the position is solvent");
+            return;
+        }
 
         if (toRepay == 0) {
             // liquidator cannot repay anything iff 1 wei of borrow is greater than the repayable collateral + the liquidation bonus
@@ -896,7 +900,7 @@ contract TestLens is TestSetup {
                 toRepay = lens.computeLiquidationAmount(address(borrower1), cUsdc, cDai);
             } while (lens.isLiquidatable(address(borrower1)) && toRepay > 0);
 
-            // either the liquidatee was above the liquidation incentive threshold and returned to a solvent position
+            // either the liquidatee's position (borrow value divided by supply value) was under the [1 / liquidationIncentive] threshold and returned to a solvent position
             if (collateralValue.div(comptroller.liquidationIncentiveMantissa()) > debtValue) {
                 assertFalse(lens.isLiquidatable(address(borrower1)));
             } else {
@@ -916,11 +920,11 @@ contract TestLens is TestSetup {
         testLiquidation(uint256(_amount), _collateralPrice);
     }
 
-    function testLiquidationUnderIncentiveThreshold(uint64 _amount) public {
+    function testFuzzLiquidationUnderIncentiveThreshold(uint64 _amount) public {
         testLiquidation(uint256(_amount), 0.501 ether);
     }
 
-    function testLiquidationAboveIncentiveThreshold(uint64 _amount) public {
+    function testFuzzLiquidationAboveIncentiveThreshold(uint64 _amount) public {
         testLiquidation(uint256(_amount), 0.55 ether);
     }
 
