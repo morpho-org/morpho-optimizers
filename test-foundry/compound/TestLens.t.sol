@@ -26,6 +26,7 @@ contract TestLens is TestSetup {
         Types.AssetLiquidityData memory assetData = lens.getUserLiquidityDataForAsset(
             address(borrower1),
             cDai,
+            true,
             oracle
         );
 
@@ -48,6 +49,7 @@ contract TestLens is TestSetup {
         Types.AssetLiquidityData memory assetData = lens.getUserLiquidityDataForAsset(
             address(borrower1),
             cDai,
+            true,
             oracle
         );
 
@@ -86,6 +88,7 @@ contract TestLens is TestSetup {
         Types.AssetLiquidityData memory assetData = lens.getUserLiquidityDataForAsset(
             address(borrower1),
             cDai,
+            true,
             oracle
         );
 
@@ -123,12 +126,14 @@ contract TestLens is TestSetup {
         Types.AssetLiquidityData memory assetDataCDai = lens.getUserLiquidityDataForAsset(
             address(borrower1),
             cDai,
+            true,
             oracle
         );
 
         Types.AssetLiquidityData memory assetDataCUsdc = lens.getUserLiquidityDataForAsset(
             address(borrower1),
             cUsdc,
+            true,
             oracle
         );
 
@@ -198,12 +203,14 @@ contract TestLens is TestSetup {
         Types.AssetLiquidityData memory assetDataCUsdc = lens.getUserLiquidityDataForAsset(
             address(borrower1),
             cUsdc,
+            true,
             oracle
         );
 
         Types.AssetLiquidityData memory assetDataCDai = lens.getUserLiquidityDataForAsset(
             address(borrower1),
             cDai,
+            true,
             oracle
         );
 
@@ -244,7 +251,7 @@ contract TestLens is TestSetup {
         UserBalance memory userSupplyBalance;
 
         (userSupplyBalance.onPool, userSupplyBalance.inP2P, userSupplyBalance.totalBalance) = lens
-        .getUserSupplyBalance(address(borrower1), cDai);
+        .getUpdatedUserSupplyBalance(address(borrower1), cDai);
 
         (uint256 supplyBalanceInP2P, uint256 supplyBalanceOnPool) = morpho.supplyBalanceInOf(
             cDai,
@@ -269,7 +276,7 @@ contract TestLens is TestSetup {
         UserBalance memory userBorrowBalance;
 
         (userBorrowBalance.onPool, userBorrowBalance.inP2P, userBorrowBalance.totalBalance) = lens
-        .getUserBorrowBalance(address(borrower1), cUsdc);
+        .getUpdatedUserBorrowBalance(address(borrower1), cUsdc);
 
         (uint256 borrowBalanceInP2P, uint256 borrowBalanceOnPool) = morpho.borrowBalanceInOf(
             cUsdc,
@@ -306,7 +313,7 @@ contract TestLens is TestSetup {
         UserBalance memory userSupplyBalance;
 
         (userSupplyBalance.onPool, userSupplyBalance.inP2P, userSupplyBalance.totalBalance) = lens
-        .getUserSupplyBalance(address(borrower1), cDai);
+        .getUpdatedUserSupplyBalance(address(borrower1), cDai);
 
         (uint256 supplyBalanceInP2P, uint256 supplyBalanceOnPool) = morpho.supplyBalanceInOf(
             cDai,
@@ -330,7 +337,7 @@ contract TestLens is TestSetup {
         UserBalance memory userBorrowBalance;
 
         (userBorrowBalance.onPool, userBorrowBalance.inP2P, userBorrowBalance.totalBalance) = lens
-        .getUserBorrowBalance(address(borrower1), cUsdc);
+        .getUpdatedUserBorrowBalance(address(borrower1), cUsdc);
 
         (uint256 borrowBalanceInP2P, uint256 borrowBalanceOnPool) = morpho.borrowBalanceInOf(
             cUsdc,
@@ -355,7 +362,7 @@ contract TestLens is TestSetup {
             matchedSupplierSupplyBalance.onPool,
             matchedSupplierSupplyBalance.inP2P,
             matchedSupplierSupplyBalance.totalBalance
-        ) = lens.getUserSupplyBalance(address(supplier1), cUsdc);
+        ) = lens.getUpdatedUserSupplyBalance(address(supplier1), cUsdc);
 
         (supplyBalanceInP2P, supplyBalanceOnPool) = morpho.supplyBalanceInOf(
             cUsdc,
@@ -393,18 +400,21 @@ contract TestLens is TestSetup {
         Types.AssetLiquidityData memory assetDataCUsdc = lens.getUserLiquidityDataForAsset(
             address(borrower1),
             cUsdc,
+            true,
             oracle
         );
 
         Types.AssetLiquidityData memory assetDataCDai = lens.getUserLiquidityDataForAsset(
             address(borrower1),
             cDai,
+            true,
             oracle
         );
 
         Types.AssetLiquidityData memory assetDataCUsdt = lens.getUserLiquidityDataForAsset(
             address(borrower1),
             cUsdt,
+            true,
             oracle
         );
 
@@ -453,7 +463,8 @@ contract TestLens is TestSetup {
         UserBalanceStates memory expectedStates;
 
         (states.collateralValue, states.debtValue, states.maxDebtValue) = lens.getUserBalanceStates(
-            address(borrower1)
+            address(borrower1),
+            new address[](0)
         );
 
         uint256 underlyingPriceUsdc = oracle.getUnderlyingPrice(cUsdc);
@@ -520,7 +531,8 @@ contract TestLens is TestSetup {
         ).mul(oracle.getUnderlyingPrice(cUsdt));
 
         (states.collateralValue, states.debtValue, states.maxDebtValue) = lens.getUserBalanceStates(
-            address(borrower1)
+            address(borrower1),
+            new address[](0)
         );
 
         assertEq(states.collateralValue, expectedStates.collateralValue, "Collateral Value");
@@ -592,7 +604,8 @@ contract TestLens is TestSetup {
         UserBalanceStates memory expectedStates;
 
         (states.collateralValue, states.debtValue, states.maxDebtValue) = lens.getUserBalanceStates(
-            address(borrower1)
+            address(borrower1),
+            new address[](0)
         );
 
         // We must take into account that not everything is on pool as borrower1 is matched to itself.
@@ -688,6 +701,26 @@ contract TestLens is TestSetup {
         assertTrue(collateralFactor == expectedCollateralFactor);
     }
 
+    function testGetOutdatedIndexes() public {
+        hevm.roll(block.number + (24 * 60 * 4));
+        (
+            uint256 p2pSupplyIndex,
+            uint256 p2pBorrowIndex,
+            uint256 poolSupplyIndex,
+            uint256 poolBorrowIndex
+        ) = lens.getIndexes(cDai, false);
+
+        assertEq(p2pSupplyIndex, morpho.p2pSupplyIndex(cDai), "p2p supply indexes different");
+        assertEq(p2pBorrowIndex, morpho.p2pBorrowIndex(cDai), "p2p borrow indexes different");
+
+        assertEq(
+            poolSupplyIndex,
+            ICToken(cDai).exchangeRateStored(),
+            "pool supply indexes different"
+        );
+        assertEq(poolBorrowIndex, ICToken(cDai).borrowIndex(), "pool borrow indexes different");
+    }
+
     function testGetUpdatedIndexes() public {
         hevm.roll(block.number + (24 * 60 * 4));
         (
@@ -695,24 +728,18 @@ contract TestLens is TestSetup {
             uint256 newP2PBorrowIndex,
             uint256 newPoolSupplyIndex,
             uint256 newPoolBorrowIndex
-        ) = lens.getUpdatedIndexes(cDai);
+        ) = lens.getIndexes(cDai, true);
 
         morpho.updateP2PIndexes(cDai);
-        assertEq(newP2PBorrowIndex, morpho.p2pBorrowIndex(cDai));
-        assertEq(newP2PSupplyIndex, morpho.p2pSupplyIndex(cDai));
+        assertEq(newP2PSupplyIndex, morpho.p2pSupplyIndex(cDai), "p2p supply indexes different");
+        assertEq(newP2PBorrowIndex, morpho.p2pBorrowIndex(cDai), "p2p borrow indexes different");
 
-        ICToken(cDai).accrueInterest();
-        assertEq(newPoolSupplyIndex, ICToken(cDai).exchangeRateCurrent());
-        assertEq(newPoolBorrowIndex, ICToken(cDai).borrowIndex());
-    }
-
-    function testGetUpdatedP2PIndexes() public {
-        hevm.roll(block.number + (24 * 60 * 4));
-        (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex) = lens.getUpdatedP2PIndexes(cDai);
-
-        morpho.updateP2PIndexes(cDai);
-        assertEq(newP2PBorrowIndex, morpho.p2pBorrowIndex(cDai));
-        assertEq(newP2PSupplyIndex, morpho.p2pSupplyIndex(cDai));
+        assertEq(
+            newPoolSupplyIndex,
+            ICToken(cDai).exchangeRateCurrent(),
+            "pool supply indexes different"
+        );
+        assertEq(newPoolBorrowIndex, ICToken(cDai).borrowIndex(), "pool borrow indexes different");
     }
 
     function testGetUpdatedP2PSupplyIndex() public {
@@ -783,7 +810,7 @@ contract TestLens is TestSetup {
         borrower1.supply(cUsdc, to6Decimals(2 * amount));
         borrower1.borrow(cDai, amount);
 
-        assertFalse(lens.isLiquidatable(address(borrower1)));
+        assertFalse(lens.isLiquidatable(address(borrower1), new address[](0)));
     }
 
     function testIsLiquidatableTrue() public {
@@ -795,7 +822,7 @@ contract TestLens is TestSetup {
 
         createAndSetCustomPriceOracle().setDirectPrice(usdc, oracle.getUnderlyingPrice(cUsdc) / 2);
 
-        assertTrue(lens.isLiquidatable(address(borrower1)));
+        assertTrue(lens.isLiquidatable(address(borrower1), new address[](0)));
     }
 
     function testComputeLiquidation() public {
@@ -807,7 +834,10 @@ contract TestLens is TestSetup {
 
         createAndSetCustomPriceOracle().setDirectPrice(usdc, 1);
 
-        assertEq(lens.computeLiquidationRepayAmount(address(borrower1), cDai, cUsdc), 0);
+        assertEq(
+            lens.computeLiquidationRepayAmount(address(borrower1), cDai, cUsdc, new address[](0)),
+            0
+        );
     }
 
     function testComputeLiquidation2() public {
@@ -817,7 +847,10 @@ contract TestLens is TestSetup {
         borrower1.supply(cUsdc, to6Decimals(2 * amount));
         borrower1.borrow(cDai, amount);
 
-        assertEq(lens.computeLiquidationRepayAmount(address(borrower1), cDai, cUsdc), 0);
+        assertEq(
+            lens.computeLiquidationRepayAmount(address(borrower1), cDai, cUsdc, new address[](0)),
+            0
+        );
     }
 
     function testComputeLiquidation3() public {
@@ -838,7 +871,7 @@ contract TestLens is TestSetup {
         );
 
         assertApproxEq(
-            lens.computeLiquidationRepayAmount(address(borrower1), cDai, cUsdc),
+            lens.computeLiquidationRepayAmount(address(borrower1), cDai, cUsdc, new address[](0)),
             amount.mul(comptroller.closeFactorMantissa()),
             1
         );
@@ -856,10 +889,10 @@ contract TestLens is TestSetup {
             (oracle.getUnderlyingPrice(cDai) / 2) * 1e12 // Setting the value of the collateral at the same value as the debt.
         );
 
-        assertTrue(lens.isLiquidatable(address(borrower1)));
+        assertTrue(lens.isLiquidatable(address(borrower1), new address[](0)));
 
         assertApproxEq(
-            lens.computeLiquidationRepayAmount(address(borrower1), cDai, cUsdc),
+            lens.computeLiquidationRepayAmount(address(borrower1), cDai, cUsdc, new address[](0)),
             amount / 2,
             1
         );
@@ -882,10 +915,15 @@ contract TestLens is TestSetup {
         createAndSetCustomPriceOracle().setDirectPrice(dai, collateralPrice);
 
         (uint256 collateralValue, uint256 debtValue, uint256 maxDebtValue) = lens
-        .getUserBalanceStates(address(borrower1));
+        .getUserBalanceStates(address(borrower1), new address[](0));
 
         uint256 borrowedPrice = oracle.getUnderlyingPrice(cUsdc);
-        uint256 toRepay = lens.computeLiquidationRepayAmount(address(borrower1), cUsdc, cDai);
+        uint256 toRepay = lens.computeLiquidationRepayAmount(
+            address(borrower1),
+            cUsdc,
+            cDai,
+            new address[](0)
+        );
 
         if (debtValue <= maxDebtValue) {
             assertEq(toRepay, 0, "Should return 0 when the position is solvent");
@@ -904,15 +942,23 @@ contract TestLens is TestSetup {
                 );
 
                 balanceBefore = ERC20(dai).balanceOf(address(supplier1));
-                toRepay = lens.computeLiquidationRepayAmount(address(borrower1), cUsdc, cDai);
-            } while (lens.isLiquidatable(address(borrower1)) && toRepay > 0);
+                toRepay = lens.computeLiquidationRepayAmount(
+                    address(borrower1),
+                    cUsdc,
+                    cDai,
+                    new address[](0)
+                );
+            } while (lens.isLiquidatable(address(borrower1), new address[](0)) && toRepay > 0);
 
             // either the liquidatee's position (borrow value divided by supply value) was under the [1 / liquidationIncentive] threshold and returned to a solvent position
             if (collateralValue.div(comptroller.liquidationIncentiveMantissa()) > debtValue) {
-                assertFalse(lens.isLiquidatable(address(borrower1)));
+                assertFalse(lens.isLiquidatable(address(borrower1), new address[](0)));
             } else {
                 // or the liquidator has drained all the collateral
-                (collateralValue, , ) = lens.getUserBalanceStates(address(borrower1));
+                (collateralValue, , ) = lens.getUserBalanceStates(
+                    address(borrower1),
+                    new address[](0)
+                );
                 assertEq(
                     collateralValue.div(borrowedPrice).div(
                         comptroller.liquidationIncentiveMantissa()
