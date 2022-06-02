@@ -122,46 +122,4 @@ contract TestInterestRates is InterestRatesManager, DSTest {
         assertApproxEq(newP2PSupplyIndex, expectedNewP2PSupplyIndex, 1);
         assertApproxEq(newP2PBorrowIndex, expectedNewP2PBorrowIndex, 1);
     }
-
-    // prettier-ignore
-    function testFuzzInterestRates(
-        uint64 _1,
-        uint64 _2,
-        uint64 _3,
-        uint64 _4,
-        uint64 _5,
-        uint64 _6,
-        uint16 _7,
-        uint16 _8,
-        uint64 _9,
-        uint64 _10,
-        uint64 _11,
-        uint64 _12
-    ) public {
-        uint256 _p2pSupplyIndex = WAD + _1;
-        uint256 _p2pBorrowIndex = WAD + _2;
-        uint256 _poolSupplyIndex = WAD + _3;
-        uint256 _poolBorrowIndex = WAD + _4;
-        uint256 _lastPoolSupplyIndex = WAD + _5;
-        uint256 _lastPoolBorrowIndex = WAD + _6;
-        uint256 _reserveFactor = _7 % 10_000;
-        uint256 _p2pIndexCursor = _8 % 10_000;
-        uint256 _p2pSupplyDelta = WAD + _9;
-        uint256 _p2pBorrowDelta = WAD + _10;
-        uint256 _p2pSupplyAmount = WAD + _11;
-        uint256 _p2pBorrowAmount = WAD + _12;
-
-        hevm.assume(_lastPoolSupplyIndex <= _poolSupplyIndex);
-        hevm.assume(_lastPoolBorrowIndex <= _poolBorrowIndex);
-        hevm.assume(_poolBorrowIndex * WAD / _lastPoolBorrowIndex > _poolSupplyIndex * WAD / _lastPoolSupplyIndex);
-        hevm.assume(_p2pSupplyAmount * _p2pSupplyIndex / WAD > _p2pSupplyDelta * _poolSupplyIndex / WAD);
-        hevm.assume(_p2pBorrowAmount * _p2pBorrowIndex / WAD > _p2pBorrowDelta * _poolBorrowIndex / WAD);
-
-        InterestRatesManager.Params memory params = InterestRatesManager.Params(_p2pSupplyIndex, _p2pBorrowIndex, _poolSupplyIndex, _poolBorrowIndex, _lastPoolSupplyIndex, _lastPoolBorrowIndex, _reserveFactor, _p2pIndexCursor, Types.Delta(_p2pSupplyDelta, _p2pBorrowDelta, _p2pSupplyAmount, _p2pBorrowAmount));
-
-        (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex) = _computeP2PIndexes(params);
-        (uint256 expectedNewP2PSupplyIndex, uint256 expectedNewP2PBorrowIndex) = computeP2PIndexes(params);
-        assertApproxEq(newP2PSupplyIndex, expectedNewP2PSupplyIndex, 400);
-        assertApproxEq(newP2PBorrowIndex, expectedNewP2PBorrowIndex, 400);
-    }
 }
