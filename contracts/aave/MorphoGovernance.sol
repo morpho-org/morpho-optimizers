@@ -322,8 +322,8 @@ abstract contract MorphoGovernance is MorphoUtils {
         if (marketStatus[poolTokenAddress].isCreated) revert MarketAlreadyCreated();
         marketStatus[poolTokenAddress].isCreated = true;
 
-        p2pSupplyIndex[poolTokenAddress] = WadRayMath.ray();
-        p2pBorrowIndex[poolTokenAddress] = WadRayMath.ray();
+        p2pSupplyIndex[poolTokenAddress] = WadRayMath.RAY;
+        p2pBorrowIndex[poolTokenAddress] = WadRayMath.RAY;
 
         Types.PoolIndexes storage poolIndexes = poolIndexes[poolTokenAddress];
 
