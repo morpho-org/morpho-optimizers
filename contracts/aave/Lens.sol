@@ -451,11 +451,11 @@ contract Lens {
                 (_params.delta.p2pSupplyDelta.rayMul(_params.lastPoolSupplyIndex)).rayDiv(
                     (_params.delta.p2pSupplyAmount).rayMul(_params.lastP2PSupplyIndex)
                 ),
-                WadRayMath.ray() // To avoid shareOfTheDelta > 1 with rounding errors.
+                WadRayMath.RAY // To avoid shareOfTheDelta > 1 with rounding errors.
             );
 
             newP2PSupplyIndex = _params.lastP2PSupplyIndex.rayMul(
-                (WadRayMath.ray() - shareOfTheDelta).rayMul(p2pSupplyGrowthFactor) +
+                (WadRayMath.RAY - shareOfTheDelta).rayMul(p2pSupplyGrowthFactor) +
                     shareOfTheDelta.rayMul(poolSupplyGrowthFactor)
             );
         }
@@ -503,11 +503,11 @@ contract Lens {
                 (_params.delta.p2pSupplyDelta.rayMul(_params.lastPoolSupplyIndex)).rayDiv(
                     (_params.delta.p2pSupplyAmount).rayMul(_params.lastP2PSupplyIndex)
                 ),
-                WadRayMath.ray() // To avoid shareOfTheDelta > 1 with rounding errors.
+                WadRayMath.RAY // To avoid shareOfTheDelta > 1 with rounding errors.
             );
 
             newP2PSupplyIndex = _params.lastP2PSupplyIndex.rayMul(
-                (WadRayMath.ray() - shareOfTheDelta).rayMul(p2pSupplyGrowthFactor) +
+                (WadRayMath.RAY - shareOfTheDelta).rayMul(p2pSupplyGrowthFactor) +
                     shareOfTheDelta.rayMul(poolSupplyGrowthFactor)
             );
         }
@@ -537,11 +537,11 @@ contract Lens {
                 (_params.delta.p2pBorrowDelta.rayMul(_params.poolBorrowIndex)).rayDiv(
                     (_params.delta.p2pBorrowAmount).rayMul(_params.lastP2PBorrowIndex)
                 ),
-                WadRayMath.ray() // To avoid shareOfTheDelta > 1 with rounding errors.
+                WadRayMath.RAY // To avoid shareOfTheDelta > 1 with rounding errors.
             );
 
             newP2PBorrowIndex = _params.lastP2PBorrowIndex.rayMul(
-                (WadRayMath.ray() - shareOfTheDelta).rayMul(p2pBorrowGrowthFactor) +
+                (WadRayMath.RAY - shareOfTheDelta).rayMul(p2pBorrowGrowthFactor) +
                     shareOfTheDelta.rayMul(poolBorrowGrowthFactor)
             );
         }
@@ -668,7 +668,7 @@ contract Lens {
     {
         uint256 timeDifference = block.timestamp - lastUpdateTimestamp;
 
-        return ((rate * timeDifference) / SECONDS_PER_YEAR) + WadRayMath.ray();
+        return ((rate * timeDifference) / SECONDS_PER_YEAR) + WadRayMath.RAY;
     }
 
     function calculateCompoundedInterest(uint256 rate, uint256 lastUpdateTimestamp)
@@ -692,15 +692,15 @@ contract Lens {
     {
         uint256 rate = _rate / SECONDS_PER_YEAR;
 
-        if (_elapsedTime == 0) return WadRayMath.ray();
+        if (_elapsedTime == 0) return WadRayMath.RAY;
 
-        if (_elapsedTime == 1) return WadRayMath.ray() + rate;
+        if (_elapsedTime == 1) return WadRayMath.RAY + rate;
 
         uint256 ratePowerTwo = rate.rayMul(rate);
         uint256 ratePowerThree = ratePowerTwo.rayMul(rate);
 
         return
-            WadRayMath.ray() +
+            WadRayMath.RAY +
             rate *
             _elapsedTime +
             (_elapsedTime * (_elapsedTime - 1) * ratePowerTwo) /

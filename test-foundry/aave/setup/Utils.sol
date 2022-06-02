@@ -105,15 +105,15 @@ contract Utils is DSTest {
     {
         uint256 rate = _rate / SECONDS_PER_YEAR;
 
-        if (_elapsedTime == 0) return WadRayMath.ray();
+        if (_elapsedTime == 0) return WadRayMath.RAY;
 
-        if (_elapsedTime == 1) return WadRayMath.ray() + rate;
+        if (_elapsedTime == 1) return WadRayMath.RAY + rate;
 
         uint256 ratePowerTwo = rate.rayMul(rate);
         uint256 ratePowerThree = ratePowerTwo.rayMul(rate);
 
         return
-            WadRayMath.ray() +
+            WadRayMath.RAY +
             rate *
             _elapsedTime +
             (_elapsedTime * (_elapsedTime - 1) * ratePowerTwo) /
