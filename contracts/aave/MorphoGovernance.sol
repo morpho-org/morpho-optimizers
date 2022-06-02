@@ -15,7 +15,6 @@ abstract contract MorphoGovernance is MorphoUtils {
     using PercentageMath for uint256;
     using SafeTransferLib for ERC20;
     using WadRayMath for uint256;
-    using Math for uint256;
 
     /// EVENTS ///
 
