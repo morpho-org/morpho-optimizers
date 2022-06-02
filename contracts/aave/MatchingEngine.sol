@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import "./interfaces/aave/IScaledBalanceToken.sol";
-
 import "./libraries/Math.sol";
 
 import "./MorphoUtils.sol";
@@ -14,7 +12,6 @@ import "./MorphoUtils.sol";
 contract MatchingEngine is MorphoUtils {
     using DoubleLinkedList for DoubleLinkedList.List;
     using WadRayMath for uint256;
-    using Math for uint256;
 
     /// STRUCTS ///
 
