@@ -214,6 +214,7 @@ contract Lens is ILens {
     /// @notice Returns the collateral value, debt value and max debt value of a given user.
     /// @dev Note: must be called after calling `accrueInterest()` on the cToken to have the most up to date values.
     /// @param _user The user to determine liquidity for.
+    /// @param _updatedMarkets The list of markets of which to compute virtually updated pool and peer-to-peer indexes.
     /// @return collateralValue The collateral value of the user.
     /// @return debtValue The current debt value of the user.
     /// @return maxDebtValue The maximum possible debt value of the user.
@@ -413,9 +414,10 @@ contract Lens is ILens {
         }
     }
 
-    /// @notice Returns the data related to `_poolTokenAddress` for the `_user`, by optionally computing virtually updated pool and p2p indexes.
+    /// @notice Returns the data related to `_poolTokenAddress` for the `_user`, by optionally computing virtually updated pool and peer-to-peer indexes.
     /// @param _user The user to determine data for.
     /// @param _poolTokenAddress The address of the market.
+    /// @param _computeUpdatedIndexes Whether to compute virtually updated pool and peer-to-peer indexes.
     /// @param _oracle The oracle used.
     /// @return assetData The data related to this asset.
     function getUserLiquidityDataForAsset(
@@ -519,6 +521,7 @@ contract Lens is ILens {
 
     /// @notice Returns the updated peer-to-peer and pool indexes.
     /// @param _poolTokenAddress The address of the market.
+    /// @param _computeUpdatedIndexes Whether to compute virtually updated pool and peer-to-peer indexes.
     /// @return newP2PSupplyIndex The updated peer-to-peer supply index.
     /// @return newP2PBorrowIndex The updated peer-to-peer borrow index.
     /// @return newPoolSupplyIndex The updated pool supply index.
@@ -568,6 +571,7 @@ contract Lens is ILens {
 
     /// @dev Checks whether the user has enough collateral to maintain such a borrow position.
     /// @param _user The user to check.
+    /// @param _updatedMarkets The list of markets of which to compute virtually updated pool and peer-to-peer indexes.
     /// @return isLiquidatable_ whether or not the user is liquidatable.
     function isLiquidatable(address _user, address[] memory _updatedMarkets)
         public
@@ -617,6 +621,7 @@ contract Lens is ILens {
     /// @param _user The potential liquidatee.
     /// @param _poolTokenBorrowedAddress The address of the market to repay.
     /// @param _poolTokenCollateralAddress The address of the market to seize.
+    /// @param _updatedMarkets The list of markets of which to compute virtually updated pool and peer-to-peer indexes.
     function computeLiquidationRepayAmount(
         address _user,
         address _poolTokenBorrowedAddress,
@@ -700,6 +705,7 @@ contract Lens is ILens {
 
     /// @dev Returns Compound's indexes, optionally computing their virtually updated values.
     /// @param _poolTokenAddress The address of the market.
+    /// @param _computeUpdatedIndexes Whether to compute virtually updated pool indexes.
     /// @return newSupplyIndex The supply index.
     /// @return newBorrowIndex The borrow index.
     function _getPoolIndexes(address _poolTokenAddress, bool _computeUpdatedIndexes)
