@@ -154,9 +154,7 @@ contract MorphoUtils is MorphoStorage {
                 p2pSupplyIndex[_poolTokenAddress]
             ) +
             supplyBalanceInOf[_poolTokenAddress][_user].onPool.rayMul(
-                lendingPool.getReserveNormalizedIncome(
-                    IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS()
-                )
+                poolIndexes[_poolTokenAddress].poolSupplyIndex
             );
     }
 
@@ -175,9 +173,7 @@ contract MorphoUtils is MorphoStorage {
                 p2pBorrowIndex[_poolTokenAddress]
             ) +
             borrowBalanceInOf[_poolTokenAddress][_user].onPool.rayMul(
-                lendingPool.getReserveNormalizedVariableDebt(
-                    IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS()
-                )
+                poolIndexes[_poolTokenAddress].poolBorrowIndex
             );
     }
 }
