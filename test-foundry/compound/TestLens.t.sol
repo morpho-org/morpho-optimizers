@@ -880,13 +880,7 @@ contract TestLens is TestSetup {
             return;
         }
 
-        if (toRepay == 0) {
-            // liquidator cannot repay anything iff 1 wei of borrow is greater than the repayable collateral + the liquidation bonus
-            assertEq(
-                collateralValue.div(borrowedPrice).div(comptroller.liquidationIncentiveMantissa()),
-                0
-            );
-        } else {
+        if (toRepay != 0) {
             supplier1.approve(usdc, type(uint256).max);
 
             do {
@@ -912,7 +906,14 @@ contract TestLens is TestSetup {
                     ),
                     0
                 );
+                assertEq(toRepay, 0);
             }
+        } else {
+            // liquidator cannot repay anything iff 1 wei of borrow is greater than the repayable collateral + the liquidation bonus
+            assertEq(
+                collateralValue.div(borrowedPrice).div(comptroller.liquidationIncentiveMantissa()),
+                0
+            );
         }
     }
 
