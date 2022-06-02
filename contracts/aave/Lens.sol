@@ -115,9 +115,9 @@ contract Lens {
         Types.AssetLiquidityData memory assetData;
         IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
         address[] memory enteredMarkets = morpho.getEnteredMarkets(_user);
-        uint256 i;
+        uint256 numberOfEnteredMarkets = enteredMarkets.length;
 
-        while (i < enteredMarkets.length) {
+        for (uint256 i; i < numberOfEnteredMarkets; ) {
             address poolTokenEntered = enteredMarkets[i];
 
             if (_poolTokenAddress != poolTokenEntered) {
@@ -208,9 +208,9 @@ contract Lens {
     ) public view returns (Types.LiquidityData memory liquidityData) {
         IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
         address[] memory enteredMarkets = morpho.getEnteredMarkets(_user);
-        uint256 i;
+        uint256 numberOfEnteredMarkets = enteredMarkets.length;
 
-        while (i < enteredMarkets.length) {
+        for (uint256 i; i < numberOfEnteredMarkets; ) {
             address poolTokenEntered = enteredMarkets[i];
 
             Types.AssetLiquidityData memory assetData = getUserLiquidityDataForAsset(
