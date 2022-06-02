@@ -913,7 +913,7 @@ contract TestLens is TestSetup {
             "borrower is already liquidatable"
         );
 
-        hevm.roll(block.number + (7 * 24 * 60 * 4));
+        hevm.roll(block.number + (31 * 24 * 60 * 4));
 
         assertFalse(
             lens.isLiquidatable(address(borrower1), updatedMarkets),
@@ -926,23 +926,12 @@ contract TestLens is TestSetup {
             lens.isLiquidatable(address(borrower1), updatedMarkets),
             "borrower is not liquidatable with virtually updated pool indexes"
         );
-        uint256 toRepayVirtual = lens.computeLiquidationRepayAmount(
-            address(borrower1),
-            cDai,
-            cUsdc,
-            updatedMarkets
-        );
 
         ICToken(cUsdc).accrueInterest();
         ICToken(cDai).accrueInterest();
         assertTrue(
             lens.isLiquidatable(address(borrower1), new address[](0)),
             "borrower is not liquidatable with updated pool indexes"
-        );
-        assertEq(
-            toRepayVirtual,
-            lens.computeLiquidationRepayAmount(address(borrower1), cDai, cUsdc, new address[](0)),
-            "computed repay amounts different"
         );
     }
 
@@ -964,7 +953,7 @@ contract TestLens is TestSetup {
             "borrower is already liquidatable"
         );
 
-        hevm.roll(block.number + (7 * 24 * 60 * 4));
+        hevm.roll(block.number + (31 * 24 * 60 * 4));
 
         assertFalse(
             lens.isLiquidatable(address(borrower1), updatedMarkets),
@@ -977,23 +966,12 @@ contract TestLens is TestSetup {
             lens.isLiquidatable(address(borrower1), updatedMarkets),
             "borrower is not liquidatable with virtually updated p2p indexes"
         );
-        uint256 toRepayVirtual = lens.computeLiquidationRepayAmount(
-            address(borrower1),
-            cDai,
-            cUsdc,
-            updatedMarkets
-        );
 
         morpho.updateP2PIndexes(cUsdc);
         morpho.updateP2PIndexes(cDai);
         assertTrue(
             lens.isLiquidatable(address(borrower1), new address[](0)),
             "borrower is not liquidatable with updated p2p indexes"
-        );
-        assertEq(
-            toRepayVirtual,
-            lens.computeLiquidationRepayAmount(address(borrower1), cDai, cUsdc, new address[](0)),
-            "computed repay amounts different"
         );
     }
 
