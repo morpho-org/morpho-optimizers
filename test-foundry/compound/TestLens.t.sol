@@ -795,7 +795,7 @@ contract TestLens is TestSetup {
 
         createAndSetCustomPriceOracle().setDirectPrice(usdc, 1);
 
-        assertEq(lens.computeLiquidationAmount(address(borrower1), cDai, cUsdc), 0);
+        assertEq(lens.computeLiquidationRepayAmount(address(borrower1), cDai, cUsdc), 0);
     }
 
     function testComputeLiquidation2() public {
@@ -805,7 +805,7 @@ contract TestLens is TestSetup {
         borrower1.supply(cUsdc, to6Decimals(2 * amount));
         borrower1.borrow(cDai, amount);
 
-        assertEq(lens.computeLiquidationAmount(address(borrower1), cDai, cUsdc), 0);
+        assertEq(lens.computeLiquidationRepayAmount(address(borrower1), cDai, cUsdc), 0);
     }
 
     function testComputeLiquidation3() public {
@@ -826,7 +826,7 @@ contract TestLens is TestSetup {
         );
 
         assertApproxEq(
-            lens.computeLiquidationAmount(address(borrower1), cDai, cUsdc),
+            lens.computeLiquidationRepayAmount(address(borrower1), cDai, cUsdc),
             amount.mul(comptroller.closeFactorMantissa()),
             1
         );
@@ -847,7 +847,7 @@ contract TestLens is TestSetup {
         assertTrue(lens.isLiquidatable(address(borrower1)));
 
         assertApproxEq(
-            lens.computeLiquidationAmount(address(borrower1), cDai, cUsdc),
+            lens.computeLiquidationRepayAmount(address(borrower1), cDai, cUsdc),
             amount / 2,
             1
         );
@@ -873,7 +873,7 @@ contract TestLens is TestSetup {
         .getUserBalanceStates(address(borrower1));
 
         uint256 borrowedPrice = oracle.getUnderlyingPrice(cUsdc);
-        uint256 toRepay = lens.computeLiquidationAmount(address(borrower1), cUsdc, cDai);
+        uint256 toRepay = lens.computeLiquidationRepayAmount(address(borrower1), cUsdc, cDai);
 
         if (debtValue <= maxDebtValue) {
             assertEq(toRepay, 0, "Should return 0 when the position is solvent");
@@ -897,7 +897,7 @@ contract TestLens is TestSetup {
                     "balance did not increase"
                 );
                 balanceBefore = ERC20(dai).balanceOf(address(supplier1));
-                toRepay = lens.computeLiquidationAmount(address(borrower1), cUsdc, cDai);
+                toRepay = lens.computeLiquidationRepayAmount(address(borrower1), cUsdc, cDai);
             } while (lens.isLiquidatable(address(borrower1)) && toRepay > 0);
 
             // either the liquidatee's position (borrow value divided by supply value) was under the [1 / liquidationIncentive] threshold and returned to a solvent position
