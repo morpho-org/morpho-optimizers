@@ -35,27 +35,27 @@ test-aave-v3: node_modules
 
 test-aave-v2: node_modules
 	@echo Run all tests on ${NETWORK}
-	@forge test -vv -c test-foundry/aave-v2 --no-match-contract TestGasConsumption --no-match-test testFuzz
+	@forge test --use solc:0.8.13 -vv -c test-foundry/aave-v2 --no-match-contract TestGasConsumption --no-match-test testFuzz
 
 test-compound: node_modules
 	@echo Run all tests on ${NETWORK}
-	@forge test -vv -c test-foundry/compound --no-match-contract TestGasConsumption --no-match-test testFuzz
+	@forge test --use solc:0.8.13 -vv -c test-foundry/compound --no-match-contract TestGasConsumption --no-match-test testFuzz
 
 test-compound-ansi: node_modules
 	@echo Run all tests on ${NETWORK}
-	@forge test -vv -c test-foundry/compound --no-match-contract TestGasConsumption --no-match-test testFuzz > trace.ansi
+	@forge test --use solc:0.8.13 -vv -c test-foundry/compound --no-match-contract TestGasConsumption --no-match-test testFuzz > trace.ansi
 
 test-compound-html: node_modules
 	@echo Run all tests on ${NETWORK}
-	@forge test -vv -c test-foundry/compound --no-match-contract TestGasConsumption --no-match-test testFuzz | aha --black > trace.html
+	@forge test --use solc:0.8.13 -vv -c test-foundry/compound --no-match-contract TestGasConsumption --no-match-test testFuzz | aha --black > trace.html
 
 fuzz-compound: node_modules
 	@echo Run all fuzzing tests on ${NETWORK}
-	@forge test -vv -c test-foundry/compound --match-test testFuzz
+	@forge test --use solc:0.8.13 -vv -c test-foundry/compound --match-test testFuzz
 
 gas-report-compound:
 	@echo Create report
-	@forge test -vvv -c test-foundry/compound --gas-report --match-contract TestGasConsumption > gas_report.ansi
+	@forge test --use solc:0.8.13 -vvv -c test-foundry/compound --gas-report --match-contract TestGasConsumption > gas_report.ansi
 
 common:
 	@echo Run all common tests
