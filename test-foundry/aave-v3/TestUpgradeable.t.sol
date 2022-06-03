@@ -55,7 +55,7 @@ contract TestUpgradeable is TestSetup {
             entryManager,
             exitManager,
             interestRatesManager,
-            IPoolAddressesProvider(lendingPoolAddressesProviderAddress),
+            IPoolAddressesProvider(poolAddressesProviderAddress),
             defaultMaxGasForMatching,
             20
         );

@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity ^0.8.0;
 
-import "@aave/core-v3/contracts/interfaces/IAaveIncentivesController.sol";
-import "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
+import "@aave/core-v3/contracts/interfaces/IPoolAddressesProvider.sol";
 import "@aave/core-v3/contracts/interfaces/IPriceOracleGetter.sol";
 import "@aave/core-v3/contracts/interfaces/IVariableDebtToken.sol";
 import "@aave/core-v3/contracts/interfaces/IPoolDataProvider.sol";
-import "@contracts/aave-v3/interfaces/IInterestRatesManager.sol";
-import "@aave/core-v3/contracts/interfaces/IPool.sol";
 import "@aave/core-v3/contracts/interfaces/IAToken.sol";
+import "@aave/core-v3/contracts/interfaces/IPool.sol";
+import "@contracts/aave-v3/interfaces/IInterestRatesManager.sol";
 import "@contracts/aave-v3/interfaces/IRewardsManager.sol";
 import "@contracts/aave-v3/interfaces/IMorpho.sol";
 
@@ -20,8 +19,8 @@ import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "@contracts/aave-v3/libraries/Types.sol";
 
-import {RewardsManagerOnMainnetAndAvalanche} from "@contracts/aave-v3/rewards-managers/RewardsManagerOnMainnetAndAvalanche.sol";
-import {RewardsManagerOnPolygon} from "@contracts/aave-v3/rewards-managers/RewardsManagerOnPolygon.sol";
+// import {RewardsManagerOnMainnetAndAvalanche} from "@contracts/aave-v3/rewards-managers/RewardsManagerOnMainnetAndAvalanche.sol";
+// import {RewardsManagerOnPolygon} from "@contracts/aave-v3/rewards-managers/RewardsManagerOnPolygon.sol";
 import {InterestRatesManager} from "@contracts/aave-v3/InterestRatesManager.sol";
 import {IncentivesVault} from "@contracts/aave-v3/IncentivesVault.sol";
 import {MatchingEngine} from "@contracts/aave-v3/MatchingEngine.sol";
@@ -37,6 +36,7 @@ import "../../common/helpers/Chains.sol";
 import {User} from "../helpers/User.sol";
 import {Utils} from "./Utils.sol";
 import "forge-std/stdlib.sol";
+import "hardhat/console.sol";
 import "@config/Config.sol";
 
 contract TestSetup is Config, Utils, stdCheats {
@@ -55,12 +55,13 @@ contract TestSetup is Config, Utils, stdCheats {
     IExitManager public exitManager;
     Lens public lens;
     MorphoToken public morphoToken;
-    address public REWARD_TOKEN =
-        IAaveIncentivesController(aaveIncentivesControllerAddress).REWARD_TOKEN();
+    // TODO: Implement rewards
+    // address public REWARD_TOKEN =
+    //     IAaveIncentivesController(aaveIncentivesControllerAddress).REWARD_TOKEN();
 
     IncentivesVault public incentivesVault;
     DumbOracle internal dumbOracle;
-    IPoolAddressesProvider public lendingPoolAddressesProvider;
+    IPoolAddressesProvider public poolAddressesProvider;
     IPoolDataProvider public protocolDataProvider;
     IPriceOracleGetter public oracle;
     IPool public pool;
@@ -91,8 +92,8 @@ contract TestSetup is Config, Utils, stdCheats {
             repay: 3e6
         });
 
-        lendingPoolAddressesProvider = IPoolAddressesProvider(lendingPoolAddressesProviderAddress);
-        pool = IPool(lendingPoolAddressesProvider.getPool());
+        poolAddressesProvider = IPoolAddressesProvider(poolAddressesProviderAddress);
+        pool = IPool(poolAddressesProvider.getPool());
         entryManager = new EntryManager();
         exitManager = new ExitManager();
 
@@ -110,34 +111,35 @@ contract TestSetup is Config, Utils, stdCheats {
             entryManager,
             exitManager,
             interestRatesManager,
-            IPoolAddressesProvider(lendingPoolAddressesProviderAddress),
+            IPoolAddressesProvider(poolAddressesProviderAddress),
             defaultMaxGasForMatching,
             20
         );
 
-        lens = new Lens(address(morpho), lendingPoolAddressesProvider);
+        lens = new Lens(address(morpho), poolAddressesProvider);
         treasuryVault = new User(morpho);
         morpho.setTreasuryVault(address(treasuryVault));
 
-        if (block.chainid == Chains.ETH_MAINNET) {
-            // Mainnet network
-            rewardsManager = new RewardsManagerOnMainnetAndAvalanche(
-                pool,
-                IMorpho(address(morpho))
-            );
-        } else if (block.chainid == Chains.AVALANCHE_MAINNET) {
-            // Avalanche network
-            rewardsManager = new RewardsManagerOnMainnetAndAvalanche(
-                pool,
-                IMorpho(address(morpho))
-            );
-        } else if (block.chainid == Chains.POLYGON_MAINNET) {
-            // Polygon network
-            rewardsManager = new RewardsManagerOnPolygon(pool, IMorpho(address(morpho)));
-        }
+        // TODO:
+        // if (block.chainid == Chains.ETH_MAINNET) {
+        //     // Mainnet network
+        //     rewardsManager = new RewardsManagerOnMainnetAndAvalanche(
+        //         pool,
+        //         IMorpho(address(morpho))
+        //     );
+        // } else if (block.chainid == Chains.AVALANCHE_MAINNET) {
+        //     // Avalanche network
+        //     rewardsManager = new RewardsManagerOnMainnetAndAvalanche(
+        //         pool,
+        //         IMorpho(address(morpho))
+        //     );
+        // } else if (block.chainid == Chains.POLYGON_MAINNET) {
+        //     // Polygon network
+        //     rewardsManager = new RewardsManagerOnPolygon(pool, IMorpho(address(morpho)));
+        // }
 
-        rewardsManager.setAaveIncentivesController(aaveIncentivesControllerAddress);
-        morpho.setAaveIncentivesController(aaveIncentivesControllerAddress);
+        // rewardsManager.setAaveIncentivesController(aaveIncentivesControllerAddress);
+        // morpho.setAaveIncentivesController(aaveIncentivesControllerAddress);
 
         /// Create markets ///
 
@@ -151,22 +153,23 @@ contract TestSetup is Config, Utils, stdCheats {
 
         /// Create Morpho token, deploy Incentives Vault and activate rewards ///
 
-        morphoToken = new MorphoToken(address(this));
-        dumbOracle = new DumbOracle();
-        incentivesVault = new IncentivesVault(
-            IMorpho(address(morpho)),
-            morphoToken,
-            ERC20(IAaveIncentivesController(aaveIncentivesControllerAddress).REWARD_TOKEN()),
-            address(1),
-            dumbOracle
-        );
-        morphoToken.transfer(address(incentivesVault), 1_000_000 ether);
+        // morphoToken = new MorphoToken(address(this));
+        // dumbOracle = new DumbOracle();
+        // incentivesVault = new IncentivesVault(
+        //     IMorpho(address(morpho)),
+        //     morphoToken,
+        //     ERC20(IAaveIncentivesController(aaveIncentivesControllerAddress).REWARD_TOKEN()),
+        //     address(1),
+        //     dumbOracle
+        // );
+        // morphoToken.transfer(address(incentivesVault), 1_000_000 ether);
 
-        oracle = IPriceOracleGetter(lendingPoolAddressesProvider.getPriceOracle());
-        protocolDataProvider = IPoolDataProvider(protocolDataProviderAddress);
+        // oracle = IPriceOracleGetter(poolAddressesProvider.getPriceOracle());
+        protocolDataProvider = IPoolDataProvider(poolDataProviderAddress);
 
-        morpho.setRewardsManager(rewardsManager);
-        morpho.setIncentivesVault(incentivesVault);
+        // TODO:
+        // morpho.setRewardsManager(rewardsManager);
+        // morpho.setIncentivesVault(incentivesVault);
     }
 
     function createMarket(address _aToken) internal {
@@ -220,8 +223,8 @@ contract TestSetup is Config, Utils, stdCheats {
         hevm.label(address(morpho), "Morpho");
         hevm.label(address(rewardsManager), "RewardsManager");
         hevm.label(address(morphoToken), "MorphoToken");
-        hevm.label(aaveIncentivesControllerAddress, "AaveIncentivesController");
-        hevm.label(address(lendingPoolAddressesProvider), "LendingPoolAddressesProvider");
+        // TODO: hevm.label(aaveIncentivesControllerAddress, "AaveIncentivesController");
+        hevm.label(address(poolAddressesProvider), "LendingPoolAddressesProvider");
         hevm.label(address(pool), "LendingPool");
         hevm.label(address(protocolDataProvider), "ProtocolDataProvider");
         hevm.label(address(oracle), "AaveOracle");
@@ -243,7 +246,7 @@ contract TestSetup is Config, Utils, stdCheats {
         SimplePriceOracle customOracle = new SimplePriceOracle();
 
         hevm.store(
-            address(lendingPoolAddressesProvider),
+            address(poolAddressesProvider),
             keccak256(abi.encode(bytes32("PRICE_ORACLE"), 2)),
             bytes32(uint256(uint160(address(customOracle))))
         );

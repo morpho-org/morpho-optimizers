@@ -10,10 +10,10 @@ contract TestGovernance is TestSetup {
         assertEq(address(morpho.entryManager()), address(entryManager));
         assertEq(address(morpho.exitManager()), address(exitManager));
         assertEq(address(morpho.interestRatesManager()), address(interestRatesManager));
-        assertEq(address(morpho.addressesProvider()), address(lendingPoolAddressesProviderAddress));
+        assertEq(address(morpho.addressesProvider()), address(poolAddressesProviderAddress));
         assertEq(
             address(morpho.pool()),
-            IPoolAddressesProvider(lendingPoolAddressesProviderAddress).getPool()
+            IPoolAddressesProvider(poolAddressesProviderAddress).getPool()
         );
         assertEq(morpho.maxSortedUsers(), 20);
 
@@ -151,19 +151,20 @@ contract TestGovernance is TestSetup {
         assertEq(address(morpho.entryManager()), address(entryManagerV2));
     }
 
-    function testOnlyOwnerShouldSetRewardsManager() public {
-        IRewardsManager rewardsManagerV2 = new RewardsManagerOnMainnetAndAvalanche(
-            pool,
-            IMorpho(address(morpho))
-        );
+    // TODO: add rewards
+    // function testOnlyOwnerShouldSetRewardsManager() public {
+    //     IRewardsManager rewardsManagerV2 = new RewardsManagerOnMainnetAndAvalanche(
+    //         pool,
+    //         IMorpho(address(morpho))
+    //     );
 
-        hevm.prank(address(0));
-        hevm.expectRevert("Ownable: caller is not the owner");
-        morpho.setRewardsManager(rewardsManagerV2);
+    //     hevm.prank(address(0));
+    //     hevm.expectRevert("Ownable: caller is not the owner");
+    //     morpho.setRewardsManager(rewardsManagerV2);
 
-        morpho.setRewardsManager(rewardsManagerV2);
-        assertEq(address(morpho.rewardsManager()), address(rewardsManagerV2));
-    }
+    //     morpho.setRewardsManager(rewardsManagerV2);
+    //     assertEq(address(morpho.rewardsManager()), address(rewardsManagerV2));
+    // }
 
     function testOnlyOwnerShouldSetInterestRates() public {
         IInterestRatesManager interestRatesV2 = new InterestRatesManager();
