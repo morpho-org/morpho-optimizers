@@ -239,9 +239,9 @@ contract MatchingEngine is MorphoUtils {
         if (_maxGasForMatching == 0) return 0;
 
         UnmatchVars memory vars;
-        address firstP2PBorrower = borrowersInP2P[_poolTokenAddress].getHead();
         vars.poolIndex = poolIndexes[_poolTokenAddress].poolBorrowIndex;
         vars.p2pIndex = p2pBorrowIndex[_poolTokenAddress];
+        address firstP2PBorrower;
         Types.BorrowBalance storage firstP2PBorrowerBalance;
         uint256 remainingToUnmatch = _amount;
 
