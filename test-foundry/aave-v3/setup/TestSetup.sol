@@ -7,7 +7,7 @@ import "@aave/core-v3/contracts/interfaces/IPriceOracleGetter.sol";
 import "@aave/core-v3/contracts/interfaces/IVariableDebtToken.sol";
 import "@contracts/aave-v3/interfaces/IInterestRatesManager.sol";
 import "@aave/core-v3/contracts/interfaces/IPool.sol";
-import "@aave/core-v3/contracts/interfaces/IAToken.sol";;
+import "@aave/core-v3/contracts/interfaces/IAToken.sol";
 import "@contracts/aave-v3/interfaces/IRewardsManager.sol";
 import "@contracts/aave-v3/interfaces/IMorpho.sol";
 
