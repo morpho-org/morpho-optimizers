@@ -147,7 +147,7 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
             newP2PBorrowIndex = _params.lastP2PBorrowIndex.rayMul(p2pBorrowGrowthFactor);
         } else {
             uint256 shareOfTheDelta = Math.min(
-                (_params.delta.p2pBorrowDelta.rayMul(_params.poolBorrowIndex)).rayDiv(
+                (_params.delta.p2pBorrowDelta.rayMul(_params.lastPoolBorrowIndex)).rayDiv(
                     (_params.delta.p2pBorrowAmount).rayMul(_params.lastP2PBorrowIndex)
                 ),
                 WadRayMath.RAY // To avoid shareOfTheDelta > 1 with rounding errors.
