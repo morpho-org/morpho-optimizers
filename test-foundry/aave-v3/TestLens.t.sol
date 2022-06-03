@@ -525,7 +525,7 @@ contract TestLens is TestSetup {
         assertEq(morpho.enteredMarkets(address(borrower1), 1), aUsdc);
 
         // Borrower1 withdraw, USDC should be the first in enteredMarkets.
-        borrower1.withdraw(aDai, 10 ether);
+        borrower1.withdraw(aDai, type(uint256).max);
 
         assertEq(morpho.enteredMarkets(address(borrower1), 0), aUsdc);
     }

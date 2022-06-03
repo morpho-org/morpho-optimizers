@@ -9,6 +9,7 @@ import "./interfaces/IMorpho.sol";
 import {ReserveConfiguration} from "@aave/core-v3/contracts/protocol/libraries/configuration/ReserveConfiguration.sol";
 import "@aave/core-v3/contracts/protocol/libraries/math/PercentageMath.sol";
 import "@aave/core-v3/contracts/protocol/libraries/math/WadRayMath.sol";
+import "@aave/core-v3/contracts/protocol/libraries/math/MathUtils.sol";
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 import "@morpho/data-structures/contracts/HeapOrdering.sol";
 import "./libraries/Math.sol";
@@ -534,7 +535,7 @@ contract Lens {
             newP2PBorrowIndex = _params.lastP2PBorrowIndex.rayMul(p2pBorrowGrowthFactor);
         } else {
             uint256 shareOfTheDelta = Math.min(
-                (_params.delta.p2pBorrowDelta.rayMul(_params.poolBorrowIndex)).rayDiv(
+                (_params.delta.p2pBorrowDelta.rayMul(_params.lastPoolSupplyIndex)).rayDiv(
                     (_params.delta.p2pBorrowAmount).rayMul(_params.lastP2PBorrowIndex)
                 ),
                 WadRayMath.RAY // To avoid shareOfTheDelta > 1 with rounding errors.
@@ -676,36 +677,11 @@ contract Lens {
         view
         returns (uint256)
     {
-        return computeCompoundedInterest(rate, block.timestamp - lastUpdateTimestamp);
-    }
-
-    /// @dev calculates compounded interest over a period of time.
-    ///   To avoid expensive exponentiation, the calculation is performed using a binomial approximation:
-    ///   (1+x)^n = 1+n*x+[n/2*(n-1)]*x^2+[n/6*(n-1)*(n-2)*x^3...
-    /// @param _rate The APR to use in the computation.
-    /// @param _elapsedTime The amount of time during to get the interest for.
-    /// @return results in ray
-    function computeCompoundedInterest(uint256 _rate, uint256 _elapsedTime)
-        public
-        pure
-        returns (uint256)
-    {
-        uint256 rate = _rate / SECONDS_PER_YEAR;
-
-        if (_elapsedTime == 0) return WadRayMath.RAY;
-
-        if (_elapsedTime == 1) return WadRayMath.RAY + rate;
-
-        uint256 ratePowerTwo = rate.rayMul(rate);
-        uint256 ratePowerThree = ratePowerTwo.rayMul(rate);
-
         return
-            WadRayMath.RAY +
-            rate *
-            _elapsedTime +
-            (_elapsedTime * (_elapsedTime - 1) * ratePowerTwo) /
-            2 +
-            (_elapsedTime * (_elapsedTime - 1) * (_elapsedTime - 2) * ratePowerThree) /
-            6;
+            MathUtils.calculateCompoundedInterest(
+                rate,
+                uint40(lastUpdateTimestamp),
+                block.timestamp
+            );
     }
 }
