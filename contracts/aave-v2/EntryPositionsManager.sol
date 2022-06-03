@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import "./interfaces/IEntryManager.sol";
+import "./interfaces/IEntryPositionsManager.sol";
 
-import "./PoolInteraction.sol";
+import "./PositionsManagerUtils.sol";
 
-/// @title EntryManager.
+/// @title EntryPositionsManager.
 /// @author Morpho Labs.
 /// @custom:contact security@morpho.xyz
 /// @notice Morpho's entry points: supply and borrow.
-contract EntryManager is IEntryManager, PoolInteraction {
+contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils {
     using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
     using HeapOrdering for HeapOrdering.HeapArray;
     using PercentageMath for uint256;

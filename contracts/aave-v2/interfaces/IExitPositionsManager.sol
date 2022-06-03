@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-interface IExitManager {
+interface IExitPositionsManager {
     function withdrawLogic(
         address _poolTokenAddress,
         uint256 _amount,
