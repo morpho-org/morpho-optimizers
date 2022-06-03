@@ -8,4 +8,4 @@ forge-std/=lib/forge-std/src/
 prb-math/=node_modules/prb-math/
 hardhat/=node_modules/hardhat/
 @contracts/=contracts/
-@config/=config/${NETWORK}
+@config/=config/polygon-mainnet/aave-v3/
