@@ -59,23 +59,23 @@ gas-report-compound:
 
 common:
 	@echo Run all common tests
-	@forge test -vvv -c test-foundry/common
+	@forge test --use solc:0.8.13 -vvv -c test-foundry/common
 
 contract-% c-%: node_modules
 	@echo Run tests for contract $* on ${NETWORK}
-	@forge test -vvv -c test-foundry/compound --match-contract $* > trace.ansi
+	@forge test --use solc:0.8.10 -vvv -c test-foundry/compound --match-contract $* > trace.ansi
 
 html-c-%: node_modules
 	@echo Run tests for contract $* on ${NETWORK}
-	@forge test -vvv -c test-foundry/compound --match-contract $* | aha --black > trace.html
+	@forge test --use solc:0.8.10 -vvv -c test-foundry/compound --match-contract $* | aha --black > trace.html
 
 single-% s-%: node_modules
 	@echo Run single test $* on ${NETWORK}
-	@forge test -vvv -c test-foundry/aave --match-test $* > trace.ansi
+	@forge test --use solc:0.8.10 -vvv -c test-foundry/aave --match-test $* > trace.ansi
 
 html-s-%: node_modules
 	@echo Run single test $* on ${NETWORK}
-	@forge test -vvv -c test-foundry/compound --match-test $* | aha --black > trace.html
+	@forge test --use solc:0.8.10 -vvv -c test-foundry/compound --match-test $* | aha --black > trace.html
 
 .PHONY: config
 config:

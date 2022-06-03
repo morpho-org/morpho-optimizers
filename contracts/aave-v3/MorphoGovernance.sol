@@ -124,7 +124,7 @@ abstract contract MorphoGovernance is MorphoUtils {
         IEntryManager _entryManager,
         IExitManager _exitManager,
         IInterestRatesManager _interestRatesManager,
-        ILendingPoolAddressesProvider _lendingPoolAddressesProvider,
+        IPoolAddressesProvider _lendingPoolAddressesProvider,
         Types.MaxGasForMatching memory _defaultMaxGasForMatching,
         uint256 _maxSortedUsers
     ) external initializer {
@@ -135,7 +135,7 @@ abstract contract MorphoGovernance is MorphoUtils {
         entryManager = _entryManager;
         exitManager = _exitManager;
         addressesProvider = _lendingPoolAddressesProvider;
-        pool = IPool(addressesProvider.getLendingPool());
+        pool = IPool(addressesProvider.getPool());
 
         defaultMaxGasForMatching = _defaultMaxGasForMatching;
         maxSortedUsers = _maxSortedUsers;

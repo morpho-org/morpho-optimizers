@@ -5,6 +5,7 @@ import "@aave/core-v3/contracts/interfaces/IAaveIncentivesController.sol";
 import "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
 import "@aave/core-v3/contracts/interfaces/IPriceOracleGetter.sol";
 import "@aave/core-v3/contracts/interfaces/IVariableDebtToken.sol";
+import "@aave/core-v3/contracts/interfaces/IPoolDataProvider.sol";
 import "@contracts/aave-v3/interfaces/IInterestRatesManager.sol";
 import "@aave/core-v3/contracts/interfaces/IPool.sol";
 import "@aave/core-v3/contracts/interfaces/IAToken.sol";
@@ -59,8 +60,8 @@ contract TestSetup is Config, Utils, stdCheats {
 
     IncentivesVault public incentivesVault;
     DumbOracle internal dumbOracle;
-    ILendingPoolAddressesProvider public lendingPoolAddressesProvider;
-    IProtocolDataProvider public protocolDataProvider;
+    IPoolAddressesProvider public lendingPoolAddressesProvider;
+    IPoolDataProvider public protocolDataProvider;
     IPriceOracleGetter public oracle;
     IPool public pool;
 
@@ -90,10 +91,8 @@ contract TestSetup is Config, Utils, stdCheats {
             repay: 3e6
         });
 
-        lendingPoolAddressesProvider = ILendingPoolAddressesProvider(
-            lendingPoolAddressesProviderAddress
-        );
-        pool = IPool(lendingPoolAddressesProvider.getLendingPool());
+        lendingPoolAddressesProvider = IPoolAddressesProvider(lendingPoolAddressesProviderAddress);
+        pool = IPool(lendingPoolAddressesProvider.getPool());
         entryManager = new EntryManager();
         exitManager = new ExitManager();
 
@@ -111,7 +110,7 @@ contract TestSetup is Config, Utils, stdCheats {
             entryManager,
             exitManager,
             interestRatesManager,
-            ILendingPoolAddressesProvider(lendingPoolAddressesProviderAddress),
+            IPoolAddressesProvider(lendingPoolAddressesProviderAddress),
             defaultMaxGasForMatching,
             20
         );
@@ -164,7 +163,7 @@ contract TestSetup is Config, Utils, stdCheats {
         morphoToken.transfer(address(incentivesVault), 1_000_000 ether);
 
         oracle = IPriceOracleGetter(lendingPoolAddressesProvider.getPriceOracle());
-        protocolDataProvider = IProtocolDataProvider(protocolDataProviderAddress);
+        protocolDataProvider = IPoolDataProvider(protocolDataProviderAddress);
 
         morpho.setRewardsManager(rewardsManager);
         morpho.setIncentivesVault(incentivesVault);

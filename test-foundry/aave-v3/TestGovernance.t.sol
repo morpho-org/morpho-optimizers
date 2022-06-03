@@ -13,7 +13,7 @@ contract TestGovernance is TestSetup {
         assertEq(address(morpho.addressesProvider()), address(lendingPoolAddressesProviderAddress));
         assertEq(
             address(morpho.pool()),
-            ILendingPoolAddressesProvider(lendingPoolAddressesProviderAddress).getLendingPool()
+            IPoolAddressesProvider(lendingPoolAddressesProviderAddress).getPool()
         );
         assertEq(morpho.maxSortedUsers(), 20);
 
