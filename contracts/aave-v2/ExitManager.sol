@@ -574,7 +574,8 @@ contract ExitManager is IExitManager, PoolInteraction {
         for (uint256 i; i < numberOfEnteredMarkets; ) {
             address poolTokenEntered = enteredMarkets[_user][i];
 
-            _updateP2PIndexes(poolTokenEntered);
+            if (poolTokenEntered != _poolTokenAddress) _updateP2PIndexes(poolTokenEntered);
+
             address underlyingAddress = IAToken(poolTokenEntered).UNDERLYING_ASSET_ADDRESS();
             assetData.underlyingPrice = oracle.getAssetPrice(underlyingAddress); // In ETH.
             (
