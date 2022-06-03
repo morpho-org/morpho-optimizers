@@ -34,13 +34,13 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @param _newIncentivesVaultAddress The new address of the `incentivesVault`.
     event IncentivesVaultSet(address indexed _newIncentivesVaultAddress);
 
-    /// @notice Emitted when the `entryManager` is set.
-    /// @param _entryManager The new address of the `entryManager`.
-    event EntryManagerSet(address indexed _entryManager);
+    /// @notice Emitted when the `entryPositionsManager` is set.
+    /// @param _entryPositionsManager The new address of the `entryPositionsManager`.
+    event EntryPositionsManagerSet(address indexed _entryPositionsManager);
 
-    /// @notice Emitted when the `exitManager` is set.
-    /// @param _exitManager The new address of the `exitManager`.
-    event ExitManagerSet(address indexed _exitManager);
+    /// @notice Emitted when the `exitPositionsManager` is set.
+    /// @param _exitPositionsManager The new address of the `exitPositionsManager`.
+    event ExitPositionsManagerSet(address indexed _exitPositionsManager);
 
     /// @notice Emitted when the `rewardsManager` is set.
     /// @param _newRewardsManagerAddress The new address of the `rewardsManager`.
@@ -117,15 +117,15 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// UPGRADE ///
 
     /// @notice Initializes the Morpho contract.
-    /// @param _entryManager The `entryManager`.
-    /// @param _exitManager The `exitManager`.
+    /// @param _entryPositionsManager The `entryPositionsManager`.
+    /// @param _exitPositionsManager The `exitPositionsManager`.
     /// @param _interestRatesManager The `interestRatesManager`.
     /// @param _lendingPoolAddressesProvider The `addressesProvider`.
     /// @param _defaultMaxGasForMatching The `defaultMaxGasForMatching`.
     /// @param _maxSortedUsers The `_maxSortedUsers`.
     function initialize(
-        IEntryManager _entryManager,
-        IExitManager _exitManager,
+        IEntryPositionsManager _entryPositionsManager,
+        IExitPositionsManager _exitPositionsManager,
         IInterestRatesManager _interestRatesManager,
         ILendingPoolAddressesProvider _lendingPoolAddressesProvider,
         Types.MaxGasForMatching memory _defaultMaxGasForMatching,
@@ -135,8 +135,8 @@ abstract contract MorphoGovernance is MorphoUtils {
         __Ownable_init();
 
         interestRatesManager = _interestRatesManager;
-        entryManager = _entryManager;
-        exitManager = _exitManager;
+        entryPositionsManager = _entryPositionsManager;
+        exitPositionsManager = _exitPositionsManager;
         addressesProvider = _lendingPoolAddressesProvider;
         lendingPool = ILendingPool(addressesProvider.getLendingPool());
 
@@ -164,18 +164,24 @@ abstract contract MorphoGovernance is MorphoUtils {
         emit DefaultMaxGasForMatchingSet(_defaultMaxGasForMatching);
     }
 
-    /// @notice Sets the `entryManager`.
-    /// @param _entryManager The new `entryManager`.
-    function setEntryManager(IEntryManager _entryManager) external onlyOwner {
-        entryManager = _entryManager;
-        emit EntryManagerSet(address(_entryManager));
+    /// @notice Sets the `entryPositionsManager`.
+    /// @param _entryPositionsManager The new `entryPositionsManager`.
+    function setEntryPositionsManager(IEntryPositionsManager _entryPositionsManager)
+        external
+        onlyOwner
+    {
+        entryPositionsManager = _entryPositionsManager;
+        emit EntryPositionsManagerSet(address(_entryPositionsManager));
     }
 
-    /// @notice Sets the `exitManager`.
-    /// @param _exitManager The new `exitManager`.
-    function setExitManager(IExitManager _exitManager) external onlyOwner {
-        exitManager = _exitManager;
-        emit ExitManagerSet(address(_exitManager));
+    /// @notice Sets the `exitPositionsManager`.
+    /// @param _exitPositionsManager The new `exitPositionsManager`.
+    function setExitPositionsManager(IExitPositionsManager _exitPositionsManager)
+        external
+        onlyOwner
+    {
+        exitPositionsManager = _exitPositionsManager;
+        emit ExitPositionsManagerSet(address(_exitPositionsManager));
     }
 
     /// @notice Sets the `rewardsManager`.
