@@ -115,20 +115,17 @@ contract MorphoUtils is MorphoStorage {
             next = borrowersOnPool[_poolTokenAddress].getNext(_user);
     }
 
-    /// @notice Updates the peer-to-peer indexes.
+    /// @notice Updates the peer-to-peer indexes and pool indexes (only stored locally).
     /// @param _poolTokenAddress The address of the market to update.
-    function updateP2PIndexes(address _poolTokenAddress)
-        external
-        isMarketCreated(_poolTokenAddress)
-    {
-        _updateP2PIndexes(_poolTokenAddress);
+    function updateIndexes(address _poolTokenAddress) external isMarketCreated(_poolTokenAddress) {
+        _updateIndexes(_poolTokenAddress);
     }
 
     /// INTERNAL ///
 
-    /// @dev Updates the peer-to-peer indexes.
+    /// @dev Updates the peer-to-peer indexes and pool indexes (only stored locally).
     /// @param _poolTokenAddress The address of the market to update.
-    function _updateP2PIndexes(address _poolTokenAddress) internal {
+    function _updateIndexes(address _poolTokenAddress) internal {
         address(interestRatesManager).functionDelegateCall(
             abi.encodeWithSelector(
                 interestRatesManager.updateP2PIndexes.selector,

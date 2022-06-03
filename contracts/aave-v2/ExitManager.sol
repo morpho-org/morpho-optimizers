@@ -130,7 +130,7 @@ contract ExitManager is IExitManager, PoolInteraction {
         if (_amount == 0) revert AmountIsZero();
         if (!userMembership[_poolTokenAddress][_supplier]) revert UserNotMemberOfMarket();
 
-        _updateP2PIndexes(_poolTokenAddress);
+        _updateIndexes(_poolTokenAddress);
         uint256 toWithdraw = Math.min(
             _getUserSupplyBalanceInOf(_poolTokenAddress, _supplier),
             _amount
@@ -158,7 +158,7 @@ contract ExitManager is IExitManager, PoolInteraction {
         if (_amount == 0) revert AmountIsZero();
         if (!userMembership[_poolTokenAddress][_onBehalf]) revert UserNotMemberOfMarket();
 
-        _updateP2PIndexes(_poolTokenAddress);
+        _updateIndexes(_poolTokenAddress);
         uint256 toRepay = Math.min(
             _getUserBorrowBalanceInOf(_poolTokenAddress, _onBehalf),
             _amount
@@ -183,8 +183,8 @@ contract ExitManager is IExitManager, PoolInteraction {
             !userMembership[_poolTokenCollateralAddress][_borrower]
         ) revert UserNotMemberOfMarket();
 
-        _updateP2PIndexes(_poolTokenBorrowedAddress);
-        _updateP2PIndexes(_poolTokenCollateralAddress);
+        _updateIndexes(_poolTokenBorrowedAddress);
+        _updateIndexes(_poolTokenCollateralAddress);
 
         if (!_liquidationAllowed(_borrower)) revert UnauthorisedLiquidate();
 
@@ -574,7 +574,7 @@ contract ExitManager is IExitManager, PoolInteraction {
         for (uint256 i; i < numberOfEnteredMarkets; ) {
             address poolTokenEntered = enteredMarkets[_user][i];
 
-            if (poolTokenEntered != _poolTokenAddress) _updateP2PIndexes(poolTokenEntered);
+            if (poolTokenEntered != _poolTokenAddress) _updateIndexes(poolTokenEntered);
 
             address underlyingAddress = IAToken(poolTokenEntered).UNDERLYING_ASSET_ADDRESS();
             assetData.underlyingPrice = oracle.getAssetPrice(underlyingAddress); // In ETH.
