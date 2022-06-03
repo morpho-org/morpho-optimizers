@@ -510,12 +510,12 @@ contract TestRewards is TestSetup {
         uint256 amount = 1 ether;
 
         supplier1.approve(usdc, type(uint256).max);
-        supplier1.supply(cUsdc, to6Decimals(amount));
+        supplier1.supply(aUsdc, to6Decimals(amount));
 
         // Set RewardsManager to address(0).
         morpho.setRewardsManager(IRewardsManager(address(0)));
 
-        move1YearForward(cUsdc);
+        move1YearForward(aUsdc);
 
         address[] memory markets = new address[](1);
         markets[0] = aUsdc;
