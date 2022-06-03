@@ -34,7 +34,7 @@ contract TestP2PDisable is TestSetup {
         // Delta must be reduce to 0.
         borrower1.borrow(aDai, borrowedAmount);
         (p2pSupplyDelta, , , ) = morpho.deltas(aDai);
-        testEquality(p2pSupplyDelta, 0);
+        testEqualityLarge(p2pSupplyDelta, 0);
     }
 
     function testShouldMatchBorrowDeltaWithP2PDisabled() public {
