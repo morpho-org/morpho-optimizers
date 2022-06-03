@@ -7,11 +7,11 @@ import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 
 import "./MatchingEngine.sol";
 
-/// @title PoolInteraction.
+/// @title PositionsManagerUtils.
 /// @author Morpho Labs.
 /// @custom:contact security@morpho.xyz
-/// @notice Pool interaction functions with common events and errors shared by the EntryManager and ExitManager.
-contract PoolInteraction is MatchingEngine {
+/// @notice Utils shared by the EntryPositionsManager and ExitPositionsManager.
+contract PositionsManagerUtils is MatchingEngine {
     using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
     using SafeTransferLib for ERC20;
     using WadRayMath for uint256;
