@@ -74,12 +74,12 @@ contract TestBorrow is TestSetup {
 
         (uint256 inP2P, uint256 onPool) = morpho.borrowBalanceInOf(aDai, address(borrower1));
 
-        testEquality(inP2P, supplyInP2P);
+        testEquality(inP2P, supplyInP2P, "in P2P");
 
         uint256 normalizedVariableDebt = pool.getReserveNormalizedVariableDebt(dai);
         uint256 expectedOnPool = underlyingToAdUnit(amount, normalizedVariableDebt);
 
-        testEquality(onPool, expectedOnPool);
+        assertApproxEq(onPool, expectedOnPool, 1e15, "on pool");
     }
 
     // There are NMAX (or less) supplier that match the borrowed amount, everything is `inP2P` after NMAX (or less) match.
@@ -118,8 +118,8 @@ contract TestBorrow is TestSetup {
 
             expectedInP2P = p2pUnitToUnderlying(inP2P, p2pSupplyIndex);
 
-            testEquality(expectedInP2P, amountPerSupplier);
-            testEquality(onPool, 0);
+            testEqualityLarge(expectedInP2P, amountPerSupplier);
+            testEqualityLarge(onPool, 0);
         }
 
         (inP2P, onPool) = morpho.borrowBalanceInOf(aDai, address(borrower1));
@@ -129,7 +129,7 @@ contract TestBorrow is TestSetup {
             underlyingToP2PUnit(amount, morpho.p2pBorrowIndex(aDai)),
             "Borrower1 in peer-to-peer"
         );
-        testEquality(onPool, 0, "Borrower1 on pool");
+        testEqualityLarge(onPool, 0, "Borrower1 on pool");
     }
 
     // The NMAX biggest supplier don't match all of the borrowed amount, after NMAX match, the rest is borrowed and set `onPool`. ⚠️ most gas expensive borrow scenario.
@@ -169,8 +169,8 @@ contract TestBorrow is TestSetup {
 
             expectedInP2P = p2pUnitToUnderlying(inP2P, p2pSupplyIndex);
 
-            testEquality(expectedInP2P, amountPerSupplier, "on pool");
-            testEquality(onPool, 0);
+            testEqualityLarge(expectedInP2P, amountPerSupplier, "on pool");
+            testEqualityLarge(onPool, 0, "in P2P");
         }
 
         (inP2P, onPool) = morpho.borrowBalanceInOf(aDai, address(borrower1));
@@ -178,8 +178,8 @@ contract TestBorrow is TestSetup {
         expectedInP2P = underlyingToP2PUnit(amount / 2, morpho.p2pBorrowIndex(aDai));
         uint256 expectedOnPool = underlyingToAdUnit(amount / 2, normalizedVariableDebt);
 
-        testEquality(inP2P, expectedInP2P, "Borrower1 in peer-to-peer");
-        testEquality(onPool, expectedOnPool, "Borrower1 on pool");
+        testEqualityLarge(inP2P, expectedInP2P, "Borrower1 in peer-to-peer");
+        testEqualityLarge(onPool, expectedOnPool, "Borrower1 on pool");
     }
 
     function testBorrowMultipleAssets() public {

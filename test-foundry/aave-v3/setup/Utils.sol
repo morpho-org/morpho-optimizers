@@ -29,7 +29,7 @@ contract Utils is DSTest {
         pure
         returns (uint256)
     {
-        return (_scaledBalance * RAY) / _normalizedIncome;
+        return _scaledBalance.rayDiv(_normalizedIncome);
     }
 
     function scaledBalanceToUnderlying(uint256 _scaledBalance, uint256 _normalizedIncome)
@@ -37,7 +37,7 @@ contract Utils is DSTest {
         pure
         returns (uint256)
     {
-        return (_scaledBalance * _normalizedIncome) / RAY;
+        return _scaledBalance.rayMul(_normalizedIncome);
     }
 
     function underlyingToAdUnit(uint256 _underlyingAmount, uint256 _normalizedVariableDebt)
@@ -45,7 +45,7 @@ contract Utils is DSTest {
         pure
         returns (uint256)
     {
-        return (_underlyingAmount * RAY) / _normalizedVariableDebt;
+        return _underlyingAmount.rayDiv(_normalizedVariableDebt);
     }
 
     function aDUnitToUnderlying(uint256 _aDUnitAmount, uint256 _normalizedVariableDebt)
@@ -53,7 +53,7 @@ contract Utils is DSTest {
         pure
         returns (uint256)
     {
-        return (_aDUnitAmount * _normalizedVariableDebt) / RAY;
+        return _aDUnitAmount.rayMul(_normalizedVariableDebt);
     }
 
     function underlyingToP2PUnit(uint256 _underlyingAmount, uint256 _p2pExchangeRate)
@@ -61,7 +61,7 @@ contract Utils is DSTest {
         pure
         returns (uint256)
     {
-        return (_underlyingAmount * RAY) / _p2pExchangeRate;
+        return _underlyingAmount.rayDiv(_p2pExchangeRate);
     }
 
     function p2pUnitToUnderlying(uint256 _p2pUnitAmount, uint256 _p2pExchangeRate)
@@ -69,7 +69,7 @@ contract Utils is DSTest {
         pure
         returns (uint256)
     {
-        return (_p2pUnitAmount * _p2pExchangeRate) / RAY;
+        return _p2pUnitAmount.rayMul(_p2pExchangeRate);
     }
 
     function getAbsDiff(uint256 a, uint256 b) internal pure returns (uint256) {
@@ -90,6 +90,18 @@ contract Utils is DSTest {
         string memory err
     ) internal {
         assertApproxEq(_firstValue, _secondValue, 20, err);
+    }
+
+    function testEqualityLarge(uint256 _firstValue, uint256 _secondValue) internal {
+        assertApproxEq(_firstValue, _secondValue, 1e15);
+    }
+
+    function testEqualityLarge(
+        uint256 _firstValue,
+        uint256 _secondValue,
+        string memory err
+    ) internal {
+        assertApproxEq(_firstValue, _secondValue, 1e16, err);
     }
 
     /// @dev calculates compounded interest over a period of time.
