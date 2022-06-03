@@ -28,17 +28,7 @@ contract TestRewards is TestSetup {
         uint256 balanceBefore = supplier1.balanceOf(REWARD_TOKEN);
         uint256 index;
 
-        if (block.chainid == Chains.AVALANCHE_MAINNET || block.chainid == Chains.ETH_MAINNET) {
-            (index, , ) = IAaveIncentivesController(aaveIncentivesControllerAddress).getAssetData(
-                aDai
-            );
-        } else {
-            // Polygon network
-            IAaveIncentivesController.AssetData memory assetData = IAaveIncentivesController(
-                aaveIncentivesControllerAddress
-            ).assets(aDai);
-            index = assetData.index;
-        }
+        (index, , ) = IAaveIncentivesController(aaveIncentivesControllerAddress).getAssetData(aDai);
 
         (, uint256 onPool) = morpho.supplyBalanceInOf(aDai, address(supplier1));
         uint256 userIndex = rewardsManager.getUserIndex(aDai, address(supplier1));
@@ -58,17 +48,7 @@ contract TestRewards is TestSetup {
         hevm.warp(block.timestamp + 365 days);
         supplier1.claimRewards(aDaiInArray, false);
 
-        if (block.chainid == Chains.AVALANCHE_MAINNET || block.chainid == Chains.ETH_MAINNET) {
-            (index, , ) = IAaveIncentivesController(aaveIncentivesControllerAddress).getAssetData(
-                aDai
-            );
-        } else {
-            // Polygon network
-            IAaveIncentivesController.AssetData memory assetData = IAaveIncentivesController(
-                aaveIncentivesControllerAddress
-            ).assets(aDai);
-            index = assetData.index;
-        }
+        (index, , ) = IAaveIncentivesController(aaveIncentivesControllerAddress).getAssetData(aDai);
 
         uint256 expectedClaimed = (onPool * (index - userIndex)) / WAD;
         uint256 balanceAfter = supplier1.balanceOf(REWARD_TOKEN);
@@ -83,17 +63,7 @@ contract TestRewards is TestSetup {
         supplier1.supply(aDai, toSupply);
         uint256 index;
 
-        if (block.chainid == Chains.AVALANCHE_MAINNET || block.chainid == Chains.ETH_MAINNET) {
-            (index, , ) = IAaveIncentivesController(aaveIncentivesControllerAddress).getAssetData(
-                aDai
-            );
-        } else {
-            // Polygon network
-            IAaveIncentivesController.AssetData memory assetData = IAaveIncentivesController(
-                aaveIncentivesControllerAddress
-            ).assets(aDai);
-            index = assetData.index;
-        }
+        (index, , ) = IAaveIncentivesController(aaveIncentivesControllerAddress).getAssetData(aDai);
 
         (, uint256 onPool) = morpho.supplyBalanceInOf(aDai, address(supplier1));
         uint256 userIndex = rewardsManager.getUserIndex(aDai, address(supplier1));
@@ -114,17 +84,7 @@ contract TestRewards is TestSetup {
         unclaimedRewards = rewardsManager.getUserUnclaimedRewards(aDaiInArray, address(supplier1));
 
         supplier1.claimRewards(aDaiInArray, false);
-        if (block.chainid == Chains.AVALANCHE_MAINNET || block.chainid == Chains.ETH_MAINNET) {
-            (index, , ) = IAaveIncentivesController(aaveIncentivesControllerAddress).getAssetData(
-                aDai
-            );
-        } else {
-            // Polygon network
-            IAaveIncentivesController.AssetData memory assetData = IAaveIncentivesController(
-                aaveIncentivesControllerAddress
-            ).assets(aDai);
-            index = assetData.index;
-        }
+        (index, , ) = IAaveIncentivesController(aaveIncentivesControllerAddress).getAssetData(aDai);
 
         uint256 expectedClaimed = (onPool * (index - userIndex)) / WAD;
         assertEq(unclaimedRewards, expectedClaimed);
@@ -138,17 +98,9 @@ contract TestRewards is TestSetup {
         uint256 balanceBefore = supplier1.balanceOf(REWARD_TOKEN);
         uint256 index;
 
-        if (block.chainid == Chains.AVALANCHE_MAINNET || block.chainid == Chains.ETH_MAINNET) {
-            (index, , ) = IAaveIncentivesController(aaveIncentivesControllerAddress).getAssetData(
-                variableDebtUsdc
-            );
-        } else {
-            // Polygon network
-            IAaveIncentivesController.AssetData memory assetData = IAaveIncentivesController(
-                aaveIncentivesControllerAddress
-            ).assets(variableDebtUsdc);
-            index = assetData.index;
-        }
+        (index, , ) = IAaveIncentivesController(aaveIncentivesControllerAddress).getAssetData(
+            variableDebtUsdc
+        );
 
         (, uint256 onPool) = morpho.borrowBalanceInOf(aUsdc, address(supplier1));
         uint256 userIndex = rewardsManager.getUserIndex(variableDebtUsdc, address(supplier1));
@@ -165,17 +117,9 @@ contract TestRewards is TestSetup {
         hevm.warp(block.timestamp + 365 days);
         supplier1.claimRewards(variableDebtUsdcArray, false);
 
-        if (block.chainid == Chains.AVALANCHE_MAINNET || block.chainid == Chains.ETH_MAINNET) {
-            (index, , ) = IAaveIncentivesController(aaveIncentivesControllerAddress).getAssetData(
-                variableDebtUsdc
-            );
-        } else {
-            // Polygon network
-            IAaveIncentivesController.AssetData memory assetData = IAaveIncentivesController(
-                aaveIncentivesControllerAddress
-            ).assets(variableDebtUsdc);
-            index = assetData.index;
-        }
+        (index, , ) = IAaveIncentivesController(aaveIncentivesControllerAddress).getAssetData(
+            variableDebtUsdc
+        );
 
         uint256 expectedClaimed = (onPool * (index - userIndex)) / WAD;
         uint256 balanceAfter = supplier1.balanceOf(REWARD_TOKEN);
@@ -191,17 +135,9 @@ contract TestRewards is TestSetup {
         supplier1.borrow(aUsdc, to6Decimals(50 ether));
         uint256 index;
 
-        if (block.chainid == Chains.AVALANCHE_MAINNET || block.chainid == Chains.ETH_MAINNET) {
-            (index, , ) = IAaveIncentivesController(aaveIncentivesControllerAddress).getAssetData(
-                variableDebtUsdc
-            );
-        } else {
-            // Polygon network
-            IAaveIncentivesController.AssetData memory assetData = IAaveIncentivesController(
-                aaveIncentivesControllerAddress
-            ).assets(variableDebtUsdc);
-            index = assetData.index;
-        }
+        (index, , ) = IAaveIncentivesController(aaveIncentivesControllerAddress).getAssetData(
+            variableDebtUsdc
+        );
 
         (, uint256 onPool) = morpho.borrowBalanceInOf(aUsdc, address(supplier1));
         uint256 userIndex = rewardsManager.getUserIndex(variableDebtUsdc, address(supplier1));
@@ -222,17 +158,9 @@ contract TestRewards is TestSetup {
         );
 
         supplier1.claimRewards(variableDebtUsdcArray, false);
-        if (block.chainid == Chains.AVALANCHE_MAINNET || block.chainid == Chains.ETH_MAINNET) {
-            (index, , ) = IAaveIncentivesController(aaveIncentivesControllerAddress).getAssetData(
-                variableDebtUsdc
-            );
-        } else {
-            // Polygon network
-            IAaveIncentivesController.AssetData memory assetData = IAaveIncentivesController(
-                aaveIncentivesControllerAddress
-            ).assets(variableDebtUsdc);
-            index = assetData.index;
-        }
+        (index, , ) = IAaveIncentivesController(aaveIncentivesControllerAddress).getAssetData(
+            variableDebtUsdc
+        );
 
         uint256 expectedClaimed = (onPool * (index - userIndex)) / WAD;
         assertEq(unclaimedRewards, expectedClaimed);
@@ -458,17 +386,7 @@ contract TestRewards is TestSetup {
         supplier1.claimRewards(aDaiInArray, true);
 
         uint256 index;
-        if (block.chainid == Chains.AVALANCHE_MAINNET || block.chainid == Chains.ETH_MAINNET) {
-            (index, , ) = IAaveIncentivesController(aaveIncentivesControllerAddress).getAssetData(
-                aDai
-            );
-        } else {
-            // Polygon network
-            IAaveIncentivesController.AssetData memory assetData = IAaveIncentivesController(
-                aaveIncentivesControllerAddress
-            ).assets(aDai);
-            index = assetData.index;
-        }
+        (index, , ) = IAaveIncentivesController(aaveIncentivesControllerAddress).getAssetData(aDai);
 
         uint256 expectedClaimed = (onPool * (index - userIndex)) / WAD;
         uint256 expectedMorphoTokens = (expectedClaimed * 11_000) / 10_000; // 10% bonus with a dumb oracle 1:1 exchange from COMP to MORPHO.
