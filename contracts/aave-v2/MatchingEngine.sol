@@ -126,12 +126,12 @@ contract MatchingEngine is MorphoUtils {
     /// @param _poolTokenAddress The address of the market from which to unmatch suppliers.
     /// @param _amount The amount to search for (in underlying).
     /// @param _maxGasForMatching The maximum amount of gas to consume within a matching engine loop.
-    /// @return The amount unmatched (in underlying).
+    /// @return matched The amount unmatched (in underlying).
     function _unmatchSuppliers(
         address _poolTokenAddress,
         uint256 _amount,
         uint256 _maxGasForMatching
-    ) internal returns (uint256) {
+    ) internal returns (uint256 matched) {
         if (_maxGasForMatching == 0) return 0;
 
         UnmatchVars memory vars;
@@ -178,7 +178,10 @@ contract MatchingEngine is MorphoUtils {
             );
         }
 
-        return _amount - remainingToUnmatch;
+        // Safe unchecked because _amount >= remainingToUnmatch.
+        unchecked {
+            matched = _amount - remainingToUnmatch;
+        }
     }
 
     /// @notice Matches borrowers' liquidity waiting on Compound up to the given `_amount` and moves it to peer-to-peer.
@@ -251,12 +254,12 @@ contract MatchingEngine is MorphoUtils {
     /// @param _poolTokenAddress The address of the market from which to unmatch borrowers.
     /// @param _amount The amount to unmatch (in underlying).
     /// @param _maxGasForMatching The maximum amount of gas to consume within a matching engine loop.
-    /// @return The amount unmatched (in underlying).
+    /// @return matched The amount unmatched (in underlying).
     function _unmatchBorrowers(
         address _poolTokenAddress,
         uint256 _amount,
         uint256 _maxGasForMatching
-    ) internal returns (uint256) {
+    ) internal returns (uint256 matched) {
         if (_maxGasForMatching == 0) return 0;
 
         UnmatchVars memory vars;
@@ -303,7 +306,10 @@ contract MatchingEngine is MorphoUtils {
             );
         }
 
-        return _amount - remainingToUnmatch;
+        // Safe unchecked because _amount >= remainingToUnmatch.
+        unchecked {
+            matched = _amount - remainingToUnmatch;
+        }
     }
 
     /// @notice Updates `_user` positions in the supplier data structures.
