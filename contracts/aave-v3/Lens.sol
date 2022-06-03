@@ -2,15 +2,15 @@
 pragma solidity 0.8.13;
 
 import "./interfaces/aave/IPriceOracleGetter.sol";
-import "./interfaces/aave/ILendingPool.sol";
-import "./interfaces/aave/IAToken.sol";
+import "@aave/core-v3/contracts/interfaces/IPool.sol";
+import "@aave/core-v3/contracts/interfaces/IAToken.sol";
 import "./interfaces/IMorpho.sol";
 
-import {ReserveConfiguration} from "./libraries/aave/ReserveConfiguration.sol";
+import {ReserveConfiguration} from "@aave/core-v3/contracts/protocol/libraries/configuration/ReserveConfiguration.sol";
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 import "@morpho/data-structures/contracts/HeapOrdering.sol";
-import "./libraries/aave/PercentageMath.sol";
-import "./libraries/aave/WadRayMath.sol";
+import "@aave/core-v3/contracts/protocol/libraries/math/PercentageMath.sol";
+import "@aave/core-v3/contracts/protocol/libraries/math/WadRayMath.sol";
 import "./libraries/Math.sol";
 
 /// @title Lens.
@@ -46,14 +46,14 @@ contract Lens {
     uint256 public constant RAY = 1e27;
     IMorpho public immutable morpho;
     ILendingPoolAddressesProvider public immutable addressesProvider;
-    ILendingPool public immutable lendingPool;
+    IPool public immutable pool;
 
     /// CONSTRUCTOR ///
 
     constructor(address _morphoAddress, ILendingPoolAddressesProvider _addressesProvider) {
         morpho = IMorpho(_morphoAddress);
         addressesProvider = _addressesProvider;
-        lendingPool = ILendingPool(addressesProvider.getLendingPool());
+        pool = IPool(addressesProvider.getLendingPool());
     }
 
     /// ERRORS ///
@@ -181,9 +181,9 @@ contract Lens {
         address underlyingAddress = IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS();
 
         assetData.underlyingPrice = _oracle.getAssetPrice(underlyingAddress); // In ETH.
-        (assetData.ltv, assetData.liquidationThreshold, , assetData.reserveDecimals, ) = lendingPool
+        (assetData.ltv, assetData.liquidationThreshold, , assetData.reserveDecimals, , ) = pool
         .getConfiguration(underlyingAddress)
-        .getParamsMemory();
+        .getParams();
 
         assetData.tokenUnit = 10**assetData.reserveDecimals;
         assetData.debtValue =
@@ -602,12 +602,12 @@ contract Lens {
         returns (uint256 newSupplyIndex, uint256 newBorrowIndex)
     {
         address underlyingAddress = IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS();
-        DataTypes.ReserveData memory reserve = lendingPool.getReserveData(underlyingAddress);
+        DataTypes.ReserveData memory reserve = pool.getReserveData(underlyingAddress);
 
         if (block.timestamp == reserve.lastUpdateTimestamp)
             return (
-                lendingPool.getReserveNormalizedIncome(underlyingAddress),
-                lendingPool.getReserveNormalizedVariableDebt(underlyingAddress)
+                pool.getReserveNormalizedIncome(underlyingAddress),
+                pool.getReserveNormalizedVariableDebt(underlyingAddress)
             );
 
         newSupplyIndex = calculateLinearInterest(
@@ -635,7 +635,7 @@ contract Lens {
                 getUpdatedP2PSupplyIndex(_poolTokenAddress)
             ) +
             morpho.supplyBalanceInOf(_poolTokenAddress, _user).onPool.rayMul(
-                lendingPool.getReserveNormalizedIncome(
+                pool.getReserveNormalizedIncome(
                     IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS()
                 )
             );
@@ -655,7 +655,7 @@ contract Lens {
                 getUpdatedP2PBorrowIndex(_poolTokenAddress)
             ) +
             morpho.borrowBalanceInOf(_poolTokenAddress, _user).onPool.rayMul(
-                lendingPool.getReserveNormalizedVariableDebt(
+                pool.getReserveNormalizedVariableDebt(
                     IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS()
                 )
             );

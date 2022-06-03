@@ -270,9 +270,9 @@ contract EntryManager is IEntryManager, PoolInteraction {
             _updateP2PIndexes(poolTokenEntered);
             address underlyingAddress = IAToken(poolTokenEntered).UNDERLYING_ASSET_ADDRESS();
             assetData.underlyingPrice = oracle.getAssetPrice(underlyingAddress); // In ETH.
-            (assetData.ltv, , , assetData.reserveDecimals, ) = lendingPool
+            (assetData.ltv, , , assetData.reserveDecimals, , ) = pool
             .getConfiguration(underlyingAddress)
-            .getParamsMemory();
+            .getParams();
 
             assetData.tokenUnit = 10**assetData.reserveDecimals;
             assetData.collateralValue =
