@@ -222,7 +222,7 @@ abstract contract MorphoGovernance is MorphoUtils {
         isMarketCreated(_poolTokenAddress)
     {
         if (_newReserveFactor > MAX_BASIS_POINTS) revert ExceedsMaxBasisPoints();
-        _updateP2PIndexes(_poolTokenAddress);
+        _updateIndexes(_poolTokenAddress);
 
         marketParameters[_poolTokenAddress].reserveFactor = _newReserveFactor;
         emit ReserveFactorSet(_poolTokenAddress, _newReserveFactor);
@@ -237,7 +237,7 @@ abstract contract MorphoGovernance is MorphoUtils {
         isMarketCreated(_poolTokenAddress)
     {
         if (_p2pIndexCursor > MAX_BASIS_POINTS) revert ExceedsMaxBasisPoints();
-        _updateP2PIndexes(_poolTokenAddress);
+        _updateIndexes(_poolTokenAddress);
 
         marketParameters[_poolTokenAddress].p2pIndexCursor = _p2pIndexCursor;
         emit P2PIndexCursorSet(_poolTokenAddress, _p2pIndexCursor);
