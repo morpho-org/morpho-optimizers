@@ -5,14 +5,19 @@ import "@contracts/aave-v3/interfaces/IRewardsManager.sol";
 import "@aave/core-v3/contracts/interfaces/IPool.sol";
 
 import "@contracts/aave-v3/Morpho.sol";
+import "forge-std/stdlib.sol";
+import "ds-test/test.sol";
 
-contract User {
+contract User is stdCheats, DSTest {
     using SafeTransferLib for ERC20;
 
+    Vm public hevm = Vm(HEVM_ADDRESS);
     Morpho internal morpho;
     IRewardsManager internal rewardsManager;
     IPool public pool;
     IAaveIncentivesController public aaveIncentivesController;
+
+    uint256 tm = 1;
 
     constructor(Morpho _morpho) {
         morpho = _morpho;
@@ -51,6 +56,7 @@ contract User {
     }
 
     function supply(address _poolTokenAddress, uint256 _amount) external {
+        hevm.warp(block.timestamp + tm);
         morpho.supply(_poolTokenAddress, address(this), _amount);
     }
 
@@ -59,6 +65,7 @@ contract User {
         uint256 _amount,
         uint256 _maxGasForMatching
     ) external {
+        hevm.warp(block.timestamp + tm);
         morpho.supply(_poolTokenAddress, address(this), _amount, _maxGasForMatching);
     }
 
@@ -79,10 +86,12 @@ contract User {
     }
 
     function repay(address _poolTokenAddress, uint256 _amount) external {
+        hevm.warp(block.timestamp + tm);
         morpho.repay(_poolTokenAddress, address(this), _amount);
     }
 
     function aaveSupply(address _underlyingTokenAddress, uint256 _amount) external {
+        hevm.warp(block.timestamp + tm);
         ERC20(_underlyingTokenAddress).safeApprove(address(pool), type(uint256).max);
         pool.deposit(_underlyingTokenAddress, _amount, address(this), 0); // 0 : no refferal code
     }
@@ -101,6 +110,7 @@ contract User {
         address _borrower,
         uint256 _amount
     ) external {
+        hevm.warp(block.timestamp + tm);
         morpho.liquidate(
             _poolTokenBorrowedAddress,
             _poolTokenCollateralAddress,

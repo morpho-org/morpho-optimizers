@@ -52,10 +52,10 @@ contract TestSupply is TestSetup {
             address(borrower1)
         );
 
-        testEquality(onPoolSupplier, 0);
+        testEqualityLarge(onPoolSupplier, 0);
         testEquality(inP2PSupplier, expectedSupplyBalanceInP2P);
 
-        testEquality(onPoolBorrower, 0);
+        testEqualityLarge(onPoolBorrower, 0);
         testEquality(inP2PBorrower, inP2PSupplier);
     }
 
@@ -80,8 +80,8 @@ contract TestSupply is TestSetup {
             aDai,
             address(supplier1)
         );
-        testEquality(onPoolSupplier, expectedSupplyBalanceOnPool);
-        testEquality(inP2PSupplier, expectedSupplyBalanceInP2P);
+        testEqualityLarge(onPoolSupplier, expectedSupplyBalanceOnPool);
+        testEqualityLarge(inP2PSupplier, expectedSupplyBalanceInP2P);
 
         (uint256 inP2PBorrower, uint256 onPoolBorrower) = morpho.borrowBalanceInOf(
             aDai,
@@ -120,20 +120,20 @@ contract TestSupply is TestSetup {
 
         uint256 inP2P;
         uint256 onPool;
-        uint256 expectedInP2P;
-        uint256 p2pSupplyIndex = morpho.p2pSupplyIndex(aDai);
+        uint256 expectedInP2PInUnderlying;
+        uint256 p2pSupplyIndex = morpho.p2pBorrowIndex(aDai);
 
         for (uint256 i = 0; i < NMAX; i++) {
             (inP2P, onPool) = morpho.borrowBalanceInOf(aDai, address(borrowers[i]));
 
-            expectedInP2P = p2pUnitToUnderlying(inP2P, p2pSupplyIndex);
+            expectedInP2PInUnderlying = p2pUnitToUnderlying(inP2P, p2pSupplyIndex);
 
-            testEquality(expectedInP2P, amountPerBorrower, "amount per borrower");
-            testEquality(onPool, 0, "on pool per borrower");
+            testEqualityLarge(expectedInP2PInUnderlying, amountPerBorrower, "amount per borrower");
+            testEqualityLarge(onPool, 0, "on pool per borrower");
         }
 
         (inP2P, onPool) = morpho.supplyBalanceInOf(aDai, address(supplier1));
-        expectedInP2P = underlyingToP2PUnit(amount, morpho.p2pBorrowIndex(aDai));
+        uint256 expectedInP2P = underlyingToP2PUnit(amount, morpho.p2pBorrowIndex(aDai));
 
         testEquality(inP2P, expectedInP2P);
         testEquality(onPool, 0);
@@ -169,25 +169,29 @@ contract TestSupply is TestSetup {
         uint256 inP2P;
         uint256 onPool;
         uint256 expectedInP2PInUnderlying;
-        uint256 p2pSupplyIndex = morpho.p2pSupplyIndex(aDai);
+        uint256 p2pBorrowIndex = morpho.p2pBorrowIndex(aDai);
         uint256 normalizedIncome = pool.getReserveNormalizedIncome(dai);
 
         for (uint256 i = 0; i < NMAX; i++) {
             (inP2P, onPool) = morpho.borrowBalanceInOf(aDai, address(borrowers[i]));
 
-            expectedInP2PInUnderlying = p2pUnitToUnderlying(inP2P, p2pSupplyIndex);
+            expectedInP2PInUnderlying = p2pUnitToUnderlying(inP2P, p2pBorrowIndex);
 
-            testEquality(expectedInP2PInUnderlying, amountPerBorrower, "borrower in peer-to-peer");
-            testEquality(onPool, 0);
+            testEqualityLarge(
+                expectedInP2PInUnderlying,
+                amountPerBorrower,
+                "borrower in peer-to-peer"
+            );
+            testEqualityLarge(onPool, 0);
         }
 
         (inP2P, onPool) = morpho.supplyBalanceInOf(aDai, address(supplier1));
 
-        uint256 expectedInP2P = underlyingToP2PUnit(amount / 2, morpho.p2pBorrowIndex(aDai));
+        uint256 expectedInP2P = underlyingToP2PUnit(amount / 2, morpho.p2pSupplyIndex(aDai));
         uint256 expectedOnPool = underlyingToAdUnit(amount / 2, normalizedIncome);
 
-        testEquality(inP2P, expectedInP2P, "in peer-to-peer");
-        testEquality(onPool, expectedOnPool, "in pool");
+        testEqualityLarge(inP2P, expectedInP2P, "in peer-to-peer");
+        testEqualityLarge(onPool, expectedOnPool, "in pool");
     }
 
     function testSupplyMultipleTimes() public {
@@ -202,7 +206,7 @@ contract TestSupply is TestSetup {
         uint256 expectedOnPool = underlyingToScaledBalance(2 * amount, normalizedIncome);
 
         (, uint256 onPool) = morpho.supplyBalanceInOf(aDai, address(supplier1));
-        testEquality(onPool, expectedOnPool);
+        testEqualityLarge(onPool, expectedOnPool);
     }
 
     function testFailSupplyZero() public {

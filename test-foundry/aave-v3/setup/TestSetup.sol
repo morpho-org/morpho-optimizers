@@ -164,7 +164,7 @@ contract TestSetup is Config, Utils, stdCheats {
         // );
         // morphoToken.transfer(address(incentivesVault), 1_000_000 ether);
 
-        // oracle = IPriceOracleGetter(poolAddressesProvider.getPriceOracle());
+        oracle = IPriceOracleGetter(poolAddressesProvider.getPriceOracle());
         protocolDataProvider = IPoolDataProvider(poolDataProviderAddress);
 
         // TODO:
@@ -230,7 +230,7 @@ contract TestSetup is Config, Utils, stdCheats {
         hevm.label(address(oracle), "AaveOracle");
         hevm.label(address(treasuryVault), "TreasuryVault");
         hevm.label(address(interestRatesManager), "InterestRatesManager");
-        hevm.label(address(incentivesVault), "IncentivesVault");
+        // TODO: hevm.label(address(incentivesVault), "IncentivesVault");
     }
 
     function createSigners(uint256 _nbOfSigners) internal {
