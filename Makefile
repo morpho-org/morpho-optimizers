@@ -9,11 +9,11 @@ else
   ifeq (${NETWORK}, eth-mainnet)
     export FOUNDRY_FORK_BLOCK_NUMBER=14292587
   else ifeq (${NETWORK}, polygon-mainnet)
-    export FOUNDRY_FORK_BLOCK_NUMBER=24032305
+    export FOUNDRY_FORK_BLOCK_NUMBER=29116728
   endif
 endif
 
-export DAPP_REMAPPINGS=@config/=config/$(NETWORK)
+export DAPP_REMAPPINGS=@config/=config/$(NETWORK)/aave-v3/
 
 ci-aave-v2: node_modules
 	@echo Run all tests on ${NETWORK}
@@ -66,7 +66,7 @@ html-c-%: node_modules
 
 single-% s-%: node_modules
 	@echo Run single test $* on ${NETWORK}
-	@forge test --use solc:0.8.10 -vvv -c test-foundry/aave --match-test $* > trace.ansi
+	@forge test --use solc:0.8.10 -vvvvv -c test-foundry/aave-v3 --match-test $* > trace.ansi
 
 html-s-%: node_modules
 	@echo Run single test $* on ${NETWORK}
