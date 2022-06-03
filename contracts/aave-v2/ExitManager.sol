@@ -564,7 +564,7 @@ contract ExitManager is IExitManager, PoolInteraction {
         address _user,
         address _poolTokenAddress,
         uint256 _withdrawnAmount
-    ) internal view returns (uint256 healthFactor) {
+    ) internal returns (uint256 healthFactor) {
         IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
         uint256 numberOfEnteredMarkets = enteredMarkets[_user].length;
 
@@ -573,6 +573,8 @@ contract ExitManager is IExitManager, PoolInteraction {
 
         for (uint256 i; i < numberOfEnteredMarkets; ) {
             address poolTokenEntered = enteredMarkets[_user][i];
+
+            _updateP2PIndexes(poolTokenEntered);
             address underlyingAddress = IAToken(poolTokenEntered).UNDERLYING_ASSET_ADDRESS();
             assetData.underlyingPrice = oracle.getAssetPrice(underlyingAddress); // In ETH.
             (
@@ -621,7 +623,7 @@ contract ExitManager is IExitManager, PoolInteraction {
         address _user,
         address _poolTokenAddress,
         uint256 _withdrawnAmount
-    ) internal view returns (bool) {
+    ) internal returns (bool) {
         return
             _getUserHealthFactor(_user, _poolTokenAddress, _withdrawnAmount) >
             HEALTH_FACTOR_LIQUIDATION_THRESHOLD;
@@ -630,7 +632,7 @@ contract ExitManager is IExitManager, PoolInteraction {
     /// @dev Checks if the user is liquidatable.
     /// @param _user The user to check.
     /// @return Whether the user is liquidatable or not.
-    function _liquidationAllowed(address _user) internal view returns (bool) {
+    function _liquidationAllowed(address _user) internal returns (bool) {
         return _getUserHealthFactor(_user, address(0), 0) < HEALTH_FACTOR_LIQUIDATION_THRESHOLD;
     }
 
