@@ -230,11 +230,13 @@ contract Lens is ILens {
         ICompoundOracle oracle = ICompoundOracle(morpho.comptroller().oracle());
         address[] memory enteredMarkets = morpho.getEnteredMarkets(_user);
 
-        for (uint256 i; i < enteredMarkets.length; ) {
+        uint256 nbEnteredMarkets = enteredMarkets.length;
+        uint256 nbUpdatedMarkets = _updatedMarkets.length;
+        for (uint256 i; i < nbEnteredMarkets; ) {
             address poolTokenEntered = enteredMarkets[i];
 
             bool shouldUpdateIndexes;
-            for (uint256 j; j < _updatedMarkets.length; ) {
+            for (uint256 j; j < nbUpdatedMarkets; ) {
                 if (_updatedMarkets[j] == poolTokenEntered) {
                     shouldUpdateIndexes = true;
                     break;
@@ -332,7 +334,8 @@ contract Lens is ILens {
         ICompoundOracle oracle = ICompoundOracle(morpho.comptroller().oracle());
         address[] memory enteredMarkets = morpho.getEnteredMarkets(_user);
 
-        for (uint256 i; i < enteredMarkets.length; ) {
+        uint256 nbEnteredMarkets = enteredMarkets.length;
+        for (uint256 i; i < nbEnteredMarkets; ) {
             address poolTokenEntered = enteredMarkets[i];
 
             if (_poolTokenAddress != poolTokenEntered) {
@@ -386,7 +389,8 @@ contract Lens is ILens {
         ICompoundOracle oracle = ICompoundOracle(morpho.comptroller().oracle());
         address[] memory enteredMarkets = morpho.getEnteredMarkets(_user);
 
-        for (uint256 i; i < enteredMarkets.length; ) {
+        uint256 nbEnteredMarkets = enteredMarkets.length;
+        for (uint256 i; i < nbEnteredMarkets; ) {
             address poolTokenEntered = enteredMarkets[i];
 
             Types.AssetLiquidityData memory assetData = getUserLiquidityDataForAsset(
@@ -584,11 +588,13 @@ contract Lens is ILens {
         uint256 maxDebtValue;
         uint256 debtValue;
 
-        for (uint256 i; i < enteredMarkets.length; ) {
+        uint256 nbEnteredMarkets = enteredMarkets.length;
+        uint256 nbUpdatedMarkets = _updatedMarkets.length;
+        for (uint256 i; i < nbEnteredMarkets; ) {
             address poolTokenEntered = enteredMarkets[i];
 
             bool shouldUpdateIndexes;
-            for (uint256 j; j < _updatedMarkets.length; ) {
+            for (uint256 j; j < nbUpdatedMarkets; ) {
                 if (_updatedMarkets[j] == poolTokenEntered) {
                     shouldUpdateIndexes = true;
                     break;
@@ -629,7 +635,9 @@ contract Lens is ILens {
         address[] calldata _updatedMarkets
     ) external view returns (uint256 toRepay) {
         address[] memory updatedMarkets = new address[](_updatedMarkets.length + 2);
-        for (uint256 i; i < _updatedMarkets.length; ) {
+
+        uint256 nbUpdatedMarkets = _updatedMarkets.length;
+        for (uint256 i; i < nbUpdatedMarkets; ) {
             updatedMarkets[i] = _updatedMarkets[i];
 
             unchecked {
