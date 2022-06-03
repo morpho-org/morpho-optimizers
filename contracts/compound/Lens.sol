@@ -737,11 +737,7 @@ contract Lens is ILens {
         uint256 borrowIndexPrior = cToken.borrowIndex();
 
         // Calculate the current borrow interest rate
-        uint256 borrowRateMantissa = cToken.interestRateModel().getBorrowRate(
-            cashPrior,
-            borrowsPrior,
-            reservesPrior
-        );
+        uint256 borrowRateMantissa = cToken.borrowRatePerBlock();
         require(borrowRateMantissa <= 0.0005e16, "borrow rate is absurdly high");
 
         uint256 blockDelta = block.number - accrualBlockNumberPrior;
