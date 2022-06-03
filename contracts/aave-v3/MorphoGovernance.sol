@@ -135,7 +135,7 @@ abstract contract MorphoGovernance is MorphoUtils {
         entryManager = _entryManager;
         exitManager = _exitManager;
         addressesProvider = _lendingPoolAddressesProvider;
-        lendingPool = ILendingPool(addressesProvider.getLendingPool());
+        pool = IPool(addressesProvider.getLendingPool());
 
         defaultMaxGasForMatching = _defaultMaxGasForMatching;
         maxSortedUsers = _maxSortedUsers;
@@ -309,15 +309,13 @@ abstract contract MorphoGovernance is MorphoUtils {
             _marketParams.reserveFactor > MAX_BASIS_POINTS
         ) revert ExceedsMaxBasisPoints();
 
-        DataTypes.ReserveConfigurationMap memory configuration = lendingPool.getConfiguration(
+        DataTypes.ReserveConfigurationMap memory configuration = pool.getConfiguration(
             _underlyingTokenAddress
         );
-        (bool isActive, , , ) = configuration.getFlagsMemory();
+        (bool isActive, , , , ) = configuration.getFlags();
         if (!isActive) revert MarketIsNotListedOnAave();
 
-        address poolTokenAddress = lendingPool
-        .getReserveData(_underlyingTokenAddress)
-        .aTokenAddress;
+        address poolTokenAddress = pool.getReserveData(_underlyingTokenAddress).aTokenAddress;
 
         if (marketStatus[poolTokenAddress].isCreated) revert MarketAlreadyCreated();
         marketStatus[poolTokenAddress].isCreated = true;
@@ -329,10 +327,10 @@ abstract contract MorphoGovernance is MorphoUtils {
 
         poolIndexes.lastUpdateTimestamp = uint32(block.timestamp);
         poolIndexes.poolSupplyIndex = uint112(
-            lendingPool.getReserveNormalizedIncome(_underlyingTokenAddress)
+            pool.getReserveNormalizedIncome(_underlyingTokenAddress)
         );
         poolIndexes.poolBorrowIndex = uint112(
-            lendingPool.getReserveNormalizedVariableDebt(_underlyingTokenAddress)
+            pool.getReserveNormalizedVariableDebt(_underlyingTokenAddress)
         );
         marketParameters[poolTokenAddress] = _marketParams;
 

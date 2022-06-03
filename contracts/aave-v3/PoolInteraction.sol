@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import {IVariableDebtToken} from "./interfaces/aave/IVariableDebtToken.sol";
+import {IVariableDebtToken} from "@aave/core-v3/contracts/interfaces/IVariableDebtToken.sol";
 
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 
@@ -49,22 +49,22 @@ contract PoolInteraction is MatchingEngine {
     /// @param _underlyingToken The underlying token of the market to supply to.
     /// @param _amount The amount of token (in underlying).
     function _supplyToPool(ERC20 _underlyingToken, uint256 _amount) internal {
-        _underlyingToken.safeApprove(address(lendingPool), _amount);
-        lendingPool.deposit(address(_underlyingToken), _amount, address(this), NO_REFERRAL_CODE);
+        _underlyingToken.safeApprove(address(pool), _amount);
+        pool.deposit(address(_underlyingToken), _amount, address(this), NO_REFERRAL_CODE);
     }
 
     /// @dev Withdraws underlying tokens from Aave.
     /// @param _underlyingToken The underlying token of the market to withdraw from.
     /// @param _amount The amount of token (in underlying).
     function _withdrawFromPool(ERC20 _underlyingToken, uint256 _amount) internal {
-        lendingPool.withdraw(address(_underlyingToken), _amount, address(this));
+        pool.withdraw(address(_underlyingToken), _amount, address(this));
     }
 
     /// @dev Borrows underlying tokens from Aave.
     /// @param _underlyingToken The underlying token of the market to borrow from.
     /// @param _amount The amount of token (in underlying).
     function _borrowFromPool(ERC20 _underlyingToken, uint256 _amount) internal {
-        lendingPool.borrow(
+        pool.borrow(
             address(_underlyingToken),
             _amount,
             VARIABLE_INTEREST_MODE,
@@ -85,19 +85,14 @@ contract PoolInteraction is MatchingEngine {
         _amount = Math.min(
             _amount,
             IVariableDebtToken(
-                lendingPool.getReserveData(address(_underlyingToken)).variableDebtTokenAddress
+                pool.getReserveData(address(_underlyingToken)).variableDebtTokenAddress
             ).scaledBalanceOf(address(this))
             .rayMul(_poolBorrowIndex) // The debt of the contract.
         );
 
         if (_amount > 0) {
-            _underlyingToken.safeApprove(address(lendingPool), _amount);
-            lendingPool.repay(
-                address(_underlyingToken),
-                _amount,
-                VARIABLE_INTEREST_MODE,
-                address(this)
-            );
+            _underlyingToken.safeApprove(address(pool), _amount);
+            pool.repay(address(_underlyingToken), _amount, VARIABLE_INTEREST_MODE, address(this));
         }
     }
 }

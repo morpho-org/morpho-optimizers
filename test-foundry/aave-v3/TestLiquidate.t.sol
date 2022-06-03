@@ -51,7 +51,7 @@ contract TestLiquidate is TestSetup {
         );
         uint256 expectedBorrowBalanceOnPool = aDUnitToUnderlying(
             onPoolBorrower,
-            lendingPool.getReserveNormalizedVariableDebt(dai)
+            pool.getReserveNormalizedVariableDebt(dai)
         );
         testEquality(expectedBorrowBalanceOnPool, toRepay);
         assertEq(inP2PBorrower, 0);
@@ -60,24 +60,18 @@ contract TestLiquidate is TestSetup {
         (inP2PBorrower, onPoolBorrower) = morpho.supplyBalanceInOf(aUsdc, address(borrower1));
 
         ExitManager.LiquidateVars memory vars;
-        (
-            vars.collateralReserveDecimals,
-            ,
-            ,
-            vars.liquidationBonus,
-            ,
-            ,
-            ,
-            ,
-            ,
-
-        ) = protocolDataProvider.getReserveConfigurationData(usdc);
+        (, , vars.liquidationBonus, vars.collateralReserveDecimals, , ) = pool
+        .protocolDataProvider
+        .getConfiguration(usdc)
+        .getParams();
         uint256 collateralPrice = customOracle.getAssetPrice(usdc);
         vars.collateralTokenUnit = 10**vars.collateralReserveDecimals;
 
         {
-            (vars.borrowedReserveDecimals, , , , , , , , , ) = protocolDataProvider
-            .getReserveConfigurationData(dai);
+            (, , , vars.borrowedReserveDecimals, , ) = pool
+            .protocolDataProvider
+            .getConfiguration(dai)
+            .getParams();
             uint256 borrowedPrice = customOracle.getAssetPrice(dai);
             vars.borrowedTokenUnit = 10**vars.borrowedReserveDecimals;
 
@@ -86,7 +80,7 @@ contract TestLiquidate is TestSetup {
                 vars.collateralTokenUnit *
                 vars.liquidationBonus) / (vars.borrowedTokenUnit * collateralPrice * 10_000);
 
-            uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(usdc);
+            uint256 normalizedIncome = pool.getReserveNormalizedIncome(usdc);
             uint256 expectedOnPool = collateralOnPool -
                 underlyingToScaledBalance(amountToSeize, normalizedIncome);
 
@@ -135,7 +129,7 @@ contract TestLiquidate is TestSetup {
 
         uint256 expectedBorrowBalanceInP2P = aDUnitToUnderlying(
             onPoolUsdc,
-            lendingPool.getReserveNormalizedVariableDebt(usdc)
+            pool.getReserveNormalizedVariableDebt(usdc)
         ) +
             p2pUnitToUnderlying(inP2PUsdc, morpho.p2pBorrowIndex(aUsdc)) -
             toRepay;
@@ -152,23 +146,17 @@ contract TestLiquidate is TestSetup {
         (inP2PBorrower, onPoolBorrower) = morpho.supplyBalanceInOf(aDai, address(borrower1));
 
         ExitManager.LiquidateVars memory vars;
-        (
-            vars.collateralReserveDecimals,
-            ,
-            ,
-            vars.liquidationBonus,
-            ,
-            ,
-            ,
-            ,
-            ,
-
-        ) = protocolDataProvider.getReserveConfigurationData(dai);
+        (, , vars.liquidationBonus, vars.collateralReserveDecimals, , ) = pool
+        .protocolDataProvider
+        .getConfiguration(dai)
+        .getParams();
         uint256 collateralPrice = customOracle.getAssetPrice(dai);
         vars.collateralTokenUnit = 10**vars.collateralReserveDecimals;
 
-        (vars.borrowedReserveDecimals, , , , , , , , , ) = protocolDataProvider
-        .getReserveConfigurationData(usdc);
+        (, , vars.liquidationBonus, vars.borrowedReserveDecimals, , ) = pool
+        .protocolDataProvider
+        .getConfiguration(usdc)
+        .getParams();
         uint256 borrowedPrice = customOracle.getAssetPrice(usdc);
         vars.borrowedTokenUnit = 10**vars.borrowedReserveDecimals;
 
@@ -180,10 +168,7 @@ contract TestLiquidate is TestSetup {
         assertApproxEq(
             onPoolBorrower,
             onPoolDai -
-                underlyingToScaledBalance(
-                    amountToSeize,
-                    lendingPool.getReserveNormalizedIncome(dai)
-                ),
+                underlyingToScaledBalance(amountToSeize, pool.getReserveNormalizedIncome(dai)),
             1,
             "borrower supply on pool"
         );
@@ -230,11 +215,11 @@ contract TestLiquidate is TestSetup {
 
         uint256 expectedBorrowBalanceOnPool = aDUnitToUnderlying(
             onPoolUsdc,
-            lendingPool.getReserveNormalizedVariableDebt(usdc)
+            pool.getReserveNormalizedVariableDebt(usdc)
         ) - toRepay;
 
         assertApproxEq(
-            aDUnitToUnderlying(onPoolBorrower, lendingPool.getReserveNormalizedVariableDebt(usdc)),
+            aDUnitToUnderlying(onPoolBorrower, pool.getReserveNormalizedVariableDebt(usdc)),
             expectedBorrowBalanceOnPool,
             1,
             "borrower borrow on pool"
@@ -245,23 +230,17 @@ contract TestLiquidate is TestSetup {
         (inP2PBorrower, onPoolBorrower) = morpho.supplyBalanceInOf(aDai, address(borrower1));
 
         ExitManager.LiquidateVars memory vars;
-        (
-            vars.collateralReserveDecimals,
-            ,
-            ,
-            vars.liquidationBonus,
-            ,
-            ,
-            ,
-            ,
-            ,
-
-        ) = protocolDataProvider.getReserveConfigurationData(dai);
+        (, , vars.liquidationBonus, vars.collateralReserveDecimals, , ) = pool
+        .protocolDataProvider
+        .getConfiguration(dai)
+        .getParams();
         uint256 collateralPrice = customOracle.getAssetPrice(dai);
         vars.collateralTokenUnit = 10**vars.collateralReserveDecimals;
 
-        (vars.borrowedReserveDecimals, , , , , , , , , ) = protocolDataProvider
-        .getReserveConfigurationData(usdc);
+        (, , , vars.borrowedReserveDecimals, , ) = pool
+        .protocolDataProvider
+        .getConfiguration(usdc)
+        .getParams();
         uint256 borrowedPrice = customOracle.getAssetPrice(usdc);
         vars.borrowedTokenUnit = 10**vars.borrowedReserveDecimals;
 
@@ -273,10 +252,7 @@ contract TestLiquidate is TestSetup {
         testEquality(
             onPoolBorrower,
             onPoolDai -
-                underlyingToScaledBalance(
-                    amountToSeize,
-                    lendingPool.getReserveNormalizedIncome(dai)
-                ),
+                underlyingToScaledBalance(amountToSeize, pool.getReserveNormalizedIncome(dai)),
             "borrower supply on pool"
         );
         assertEq(inP2PBorrower, inP2PDai, "borrower supply in peer-to-peer");

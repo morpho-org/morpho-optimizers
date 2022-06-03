@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import "./interfaces/aave/IAaveIncentivesController.sol";
-import "./interfaces/aave/IScaledBalanceToken.sol";
-import "./interfaces/aave/ILendingPool.sol";
+import "@aave/core-v3/contracts/interfaces/IAaveIncentivesController.sol";
+import "@aave/core-v3/contracts/interfaces/IScaledBalanceToken.sol";
+import "@aave/core-v3/contracts/interfaces/IPool.sol";
 import "./interfaces/IGetterUnderlyingAsset.sol";
 import "./interfaces/IRewardsManager.sol";
 import "./interfaces/IMorpho.sol";
@@ -29,7 +29,7 @@ abstract contract RewardsManager is IRewardsManager, Ownable {
     mapping(address => LocalAssetData) public localAssetData; // The local data related to a given market.
 
     IAaveIncentivesController public override aaveIncentivesController;
-    ILendingPool public immutable lendingPool;
+    IPool public immutable pool;
     IMorpho public immutable morpho;
 
     /// EVENTS ///
@@ -57,10 +57,10 @@ abstract contract RewardsManager is IRewardsManager, Ownable {
     /// CONSTRUCTOR ///
 
     /// @notice Constructs the RewardsManager contract.
-    /// @param _lendingPool The `lendingPool`.
+    /// @param _pool The `pool`.
     /// @param _morpho The `morpho`.
-    constructor(ILendingPool _lendingPool, IMorpho _morpho) {
-        lendingPool = _lendingPool;
+    constructor(IPool _pool, IMorpho _morpho) {
+        pool = _pool;
         morpho = _morpho;
     }
 
@@ -133,7 +133,7 @@ abstract contract RewardsManager is IRewardsManager, Ownable {
 
         for (uint256 i = 0; i < _assets.length; i++) {
             address asset = _assets[i];
-            DataTypes.ReserveData memory reserve = lendingPool.getReserveData(
+            DataTypes.ReserveData memory reserve = pool.getReserveData(
                 IGetterUnderlyingAsset(asset).UNDERLYING_ASSET_ADDRESS()
             );
             uint256 userBalance;
@@ -164,7 +164,7 @@ abstract contract RewardsManager is IRewardsManager, Ownable {
 
         for (uint256 i = 0; i < _assets.length; i++) {
             address asset = _assets[i];
-            DataTypes.ReserveData memory reserve = lendingPool.getReserveData(
+            DataTypes.ReserveData memory reserve = pool.getReserveData(
                 IGetterUnderlyingAsset(asset).UNDERLYING_ASSET_ADDRESS()
             );
             uint256 userBalance;
