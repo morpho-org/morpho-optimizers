@@ -279,7 +279,7 @@ contract Lens is ILens {
             uint256 totalBalance
         )
     {
-        (uint256 poolSupplyIndex, ) = _getPoolIndexes(_poolTokenAddress, true);
+        (uint256 poolSupplyIndex, ) = _computePoolIndexes(_poolTokenAddress);
 
         balanceOnPool = morpho.supplyBalanceInOf(_poolTokenAddress, _user).onPool.mul(
             poolSupplyIndex
@@ -306,7 +306,7 @@ contract Lens is ILens {
             uint256 totalBalance
         )
     {
-        (, uint256 newBorrowIndex) = _getPoolIndexes(_poolTokenAddress, true);
+        (, uint256 newBorrowIndex) = _computePoolIndexes(_poolTokenAddress);
 
         balanceOnPool = morpho.borrowBalanceInOf(_poolTokenAddress, _user).onPool.mul(
             newBorrowIndex
@@ -471,9 +471,8 @@ contract Lens is ILens {
             Types.LastPoolIndexes memory poolIndexes = morpho.lastPoolIndexes(_poolTokenAddress);
             Types.MarketParameters memory marketParams = morpho.marketParameters(_poolTokenAddress);
 
-            (uint256 poolSupplyIndex, uint256 poolBorrowIndex) = _getPoolIndexes(
-                _poolTokenAddress,
-                true
+            (uint256 poolSupplyIndex, uint256 poolBorrowIndex) = _computePoolIndexes(
+                _poolTokenAddress
             );
 
             P2PIndexesParams memory params = P2PIndexesParams(
@@ -502,9 +501,8 @@ contract Lens is ILens {
             Types.LastPoolIndexes memory poolIndexes = morpho.lastPoolIndexes(_poolTokenAddress);
             Types.MarketParameters memory marketParams = morpho.marketParameters(_poolTokenAddress);
 
-            (uint256 poolSupplyIndex, uint256 poolBorrowIndex) = _getPoolIndexes(
-                _poolTokenAddress,
-                true
+            (uint256 poolSupplyIndex, uint256 poolBorrowIndex) = _computePoolIndexes(
+                _poolTokenAddress
             );
 
             P2PIndexesParams memory params = P2PIndexesParams(
@@ -540,10 +538,14 @@ contract Lens is ILens {
             uint256 newPoolBorrowIndex
         )
     {
-        (newPoolSupplyIndex, newPoolBorrowIndex) = _getPoolIndexes(
-            _poolTokenAddress,
-            _computeUpdatedIndexes
-        );
+        if (!_computeUpdatedIndexes) {
+            ICToken cToken = ICToken(_poolTokenAddress);
+
+            newPoolSupplyIndex = cToken.exchangeRateStored();
+            newPoolBorrowIndex = cToken.borrowIndex();
+        } else {
+            (newPoolSupplyIndex, newPoolBorrowIndex) = _computePoolIndexes(_poolTokenAddress);
+        }
 
         if (
             !_computeUpdatedIndexes ||
@@ -713,21 +715,18 @@ contract Lens is ILens {
 
     /// @dev Returns Compound's indexes, optionally computing their virtually updated values.
     /// @param _poolTokenAddress The address of the market.
-    /// @param _computeUpdatedIndexes Whether to compute virtually updated pool indexes.
     /// @return newSupplyIndex The supply index.
     /// @return newBorrowIndex The borrow index.
-    function _getPoolIndexes(address _poolTokenAddress, bool _computeUpdatedIndexes)
+    function _computePoolIndexes(address _poolTokenAddress)
         internal
         view
         returns (uint256 newSupplyIndex, uint256 newBorrowIndex)
     {
         ICToken cToken = ICToken(_poolTokenAddress);
 
-        uint256 accrualBlockNumberPrior;
-        if (
-            !_computeUpdatedIndexes ||
-            block.number == (accrualBlockNumberPrior = cToken.accrualBlockNumber())
-        ) return (cToken.exchangeRateStored(), cToken.borrowIndex());
+        uint256 accrualBlockNumberPrior = cToken.accrualBlockNumber();
+        if (block.number == accrualBlockNumberPrior)
+            return (cToken.exchangeRateStored(), cToken.borrowIndex());
 
         // Read the previous values out of storage
         uint256 cashPrior = cToken.getCash();
