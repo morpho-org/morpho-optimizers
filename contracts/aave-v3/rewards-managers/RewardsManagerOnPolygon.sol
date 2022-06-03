@@ -22,15 +22,15 @@ contract RewardsManagerOnPolygon is RewardsManager {
 
         if (blockTimestamp == lastTimestamp) return localData.lastIndex;
         else {
-            IAaveIncentivesController.AssetData memory assetData = aaveIncentivesController.assets(
-                _asset
-            );
-            uint256 oldIndex = assetData.index;
-            uint128 lastTimestampOnAave = assetData.lastUpdateTimestamp;
+            (
+                uint256 oldIndex,
+                uint256 emissionPerSecond,
+                uint256 lastTimestampOnAave
+            ) = aaveIncentivesController.getAssetData(_asset);
 
             newIndex = _getAssetIndex(
                 oldIndex,
-                assetData.emissionPerSecond,
+                emissionPerSecond,
                 lastTimestampOnAave,
                 _totalBalance
             );
@@ -52,15 +52,15 @@ contract RewardsManagerOnPolygon is RewardsManager {
 
         if (blockTimestamp == lastTimestamp) return localData.lastIndex;
         else {
-            IAaveIncentivesController.AssetData memory assetData = aaveIncentivesController.assets(
-                _asset
-            );
-            uint256 oldIndex = assetData.index;
-            uint128 lastTimestampOnAave = assetData.lastUpdateTimestamp;
+            (
+                uint256 oldIndex,
+                uint256 emissionPerSecond,
+                uint256 lastTimestampOnAave
+            ) = aaveIncentivesController.getAssetData(_asset);
 
             newIndex = _getAssetIndex(
                 oldIndex,
-                assetData.emissionPerSecond,
+                emissionPerSecond,
                 lastTimestampOnAave,
                 _totalBalance
             );

@@ -4,6 +4,8 @@ pragma solidity ^0.8.0;
 import "./setup/TestSetup.sol";
 
 contract TestLiquidate is TestSetup {
+    using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
+
     // A user liquidates a borrower that has enough collateral to cover for his debt, the transaction reverts.
     function testShouldNotBePossibleToLiquidateUserAboveWater() public {
         uint256 amount = 10_000 ether;
@@ -61,17 +63,13 @@ contract TestLiquidate is TestSetup {
 
         ExitManager.LiquidateVars memory vars;
         (, , vars.liquidationBonus, vars.collateralReserveDecimals, , ) = pool
-        .protocolDataProvider
         .getConfiguration(usdc)
         .getParams();
         uint256 collateralPrice = customOracle.getAssetPrice(usdc);
         vars.collateralTokenUnit = 10**vars.collateralReserveDecimals;
 
         {
-            (, , , vars.borrowedReserveDecimals, , ) = pool
-            .protocolDataProvider
-            .getConfiguration(dai)
-            .getParams();
+            (, , , vars.borrowedReserveDecimals, , ) = pool.getConfiguration(dai).getParams();
             uint256 borrowedPrice = customOracle.getAssetPrice(dai);
             vars.borrowedTokenUnit = 10**vars.borrowedReserveDecimals;
 
@@ -147,14 +145,12 @@ contract TestLiquidate is TestSetup {
 
         ExitManager.LiquidateVars memory vars;
         (, , vars.liquidationBonus, vars.collateralReserveDecimals, , ) = pool
-        .protocolDataProvider
         .getConfiguration(dai)
         .getParams();
         uint256 collateralPrice = customOracle.getAssetPrice(dai);
         vars.collateralTokenUnit = 10**vars.collateralReserveDecimals;
 
         (, , vars.liquidationBonus, vars.borrowedReserveDecimals, , ) = pool
-        .protocolDataProvider
         .getConfiguration(usdc)
         .getParams();
         uint256 borrowedPrice = customOracle.getAssetPrice(usdc);
@@ -231,16 +227,12 @@ contract TestLiquidate is TestSetup {
 
         ExitManager.LiquidateVars memory vars;
         (, , vars.liquidationBonus, vars.collateralReserveDecimals, , ) = pool
-        .protocolDataProvider
         .getConfiguration(dai)
         .getParams();
         uint256 collateralPrice = customOracle.getAssetPrice(dai);
         vars.collateralTokenUnit = 10**vars.collateralReserveDecimals;
 
-        (, , , vars.borrowedReserveDecimals, , ) = pool
-        .protocolDataProvider
-        .getConfiguration(usdc)
-        .getParams();
+        (, , , vars.borrowedReserveDecimals, , ) = pool.getConfiguration(usdc).getParams();
         uint256 borrowedPrice = customOracle.getAssetPrice(usdc);
         vars.borrowedTokenUnit = 10**vars.borrowedReserveDecimals;
 
