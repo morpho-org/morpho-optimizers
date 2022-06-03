@@ -33,7 +33,7 @@ contract TestRepay is TestSetup {
         borrower1.borrow(aDai, amount);
 
         uint256 balanceBefore = borrower1.balanceOf(dai);
-        borrower1.approve(dai, amount);
+        borrower1.approve(dai, type(uint256).max);
         borrower1.repay(aDai, type(uint256).max);
 
         (uint256 inP2P, uint256 onPool) = morpho.borrowBalanceInOf(aDai, address(borrower1));
