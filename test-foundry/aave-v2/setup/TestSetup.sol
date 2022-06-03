@@ -25,8 +25,8 @@ import {RewardsManagerOnPolygon} from "@contracts/aave-v2/rewards-managers/Rewar
 import {InterestRatesManager} from "@contracts/aave-v2/InterestRatesManager.sol";
 import {IncentivesVault} from "@contracts/aave-v2/IncentivesVault.sol";
 import {MatchingEngine} from "@contracts/aave-v2/MatchingEngine.sol";
-import {EntryManager} from "@contracts/aave-v2/EntryManager.sol";
-import {ExitManager} from "@contracts/aave-v2/ExitManager.sol";
+import {EntryPositionsManager} from "@contracts/aave-v2/EntryPositionsManager.sol";
+import {ExitPositionsManager} from "@contracts/aave-v2/ExitPositionsManager.sol";
 import {Lens} from "@contracts/aave-v2/Lens.sol";
 import "@contracts/aave-v2/Morpho.sol";
 
@@ -51,8 +51,8 @@ contract TestSetup is Config, Utils, stdCheats {
     Morpho public morpho;
     IInterestRatesManager public interestRatesManager;
     IRewardsManager public rewardsManager;
-    IEntryManager public entryManager;
-    IExitManager public exitManager;
+    IEntryPositionsManager public entryPositionsManager;
+    IExitPositionsManager public exitPositionsManager;
     Lens public lens;
     MorphoToken public morphoToken;
     address public REWARD_TOKEN =
@@ -95,8 +95,8 @@ contract TestSetup is Config, Utils, stdCheats {
             lendingPoolAddressesProviderAddress
         );
         lendingPool = ILendingPool(lendingPoolAddressesProvider.getLendingPool());
-        entryManager = new EntryManager();
-        exitManager = new ExitManager();
+        entryPositionsManager = new EntryPositionsManager();
+        exitPositionsManager = new ExitPositionsManager();
 
         /// Deploy proxies ///
 
@@ -109,8 +109,8 @@ contract TestSetup is Config, Utils, stdCheats {
         morphoProxy.changeAdmin(address(proxyAdmin));
         morpho = Morpho(payable(address(morphoProxy)));
         morpho.initialize(
-            entryManager,
-            exitManager,
+            entryPositionsManager,
+            exitPositionsManager,
             interestRatesManager,
             ILendingPoolAddressesProvider(lendingPoolAddressesProviderAddress),
             defaultMaxGasForMatching,
