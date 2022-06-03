@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GNU AGPLv3
-pragma solidity 0.8.13;
+pragma solidity ^0.8.0;
 
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 import "./libraries/Math.sol";
