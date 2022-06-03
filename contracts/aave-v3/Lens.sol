@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity ^0.8.0;
 
-import "./interfaces/aave-v3/IPriceOracleGetter.sol";
-import "@aave/core-v3/contracts/interfaces/IPool.sol";
+import "@aave/core-v3/contracts/interfaces/IPriceOracleGetter.sol";
 import "@aave/core-v3/contracts/interfaces/IAToken.sol";
+import "@aave/core-v3/contracts/interfaces/IPool.sol";
 import "./interfaces/IMorpho.sol";
 
 import {ReserveConfiguration} from "@aave/core-v3/contracts/protocol/libraries/configuration/ReserveConfiguration.sol";
-import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
-import "@morpho/data-structures/contracts/HeapOrdering.sol";
 import "@aave/core-v3/contracts/protocol/libraries/math/PercentageMath.sol";
 import "@aave/core-v3/contracts/protocol/libraries/math/WadRayMath.sol";
+import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
+import "@morpho/data-structures/contracts/HeapOrdering.sol";
 import "./libraries/Math.sol";
 
 /// @title Lens.
@@ -45,15 +45,15 @@ contract Lens {
     uint256 public constant HEALTH_FACTOR_LIQUIDATION_THRESHOLD = 1e18; // Health factor below which the positions can be liquidated.
     uint256 public constant RAY = 1e27;
     IMorpho public immutable morpho;
-    ILendingPoolAddressesProvider public immutable addressesProvider;
+    IPoolAddressesProvider public immutable addressesProvider;
     IPool public immutable pool;
 
     /// CONSTRUCTOR ///
 
-    constructor(address _morphoAddress, ILendingPoolAddressesProvider _addressesProvider) {
+    constructor(address _morphoAddress, IPoolAddressesProvider _addressesProvider) {
         morpho = IMorpho(_morphoAddress);
         addressesProvider = _addressesProvider;
-        pool = IPool(addressesProvider.getLendingPool());
+        pool = IPool(addressesProvider.getPool());
     }
 
     /// ERRORS ///

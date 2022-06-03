@@ -56,8 +56,8 @@ abstract contract MorphoStorage is OwnableUpgradeable, ReentrancyGuardUpgradeabl
 
     /// CONTRACTS AND ADDRESSES ///
 
-    ILendingPoolAddressesProvider public addressesProvider;
     IAaveIncentivesController public aaveIncentivesController;
+    IPoolAddressesProvider public addressesProvider;
     IPool public pool;
 
     IInterestRatesManager public interestRatesManager;
