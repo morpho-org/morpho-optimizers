@@ -74,13 +74,14 @@ contract MatchingEngine is MorphoUtils {
         vars.p2pIndex = p2pSupplyIndex[_poolTokenAddress];
         address firstPoolSupplier;
         Types.SupplyBalance storage firstPoolSupplierBalance;
+        uint256 remainingToMatch = _amount;
 
         uint256 newPoolSupplyBalance;
         uint256 newP2PSupplyBalance;
 
         uint256 gasLeftAtTheBeginning = gasleft();
         while (
-            matched < _amount &&
+            remainingToMatch > 0 &&
             (firstPoolSupplier = suppliersOnPool[_poolTokenAddress].getHead()) != address(0)
         ) {
             // Safe unchecked because `gasLeftAtTheBeginning` >= gas left now.
@@ -90,9 +91,9 @@ contract MatchingEngine is MorphoUtils {
             firstPoolSupplierBalance = supplyBalanceInOf[_poolTokenAddress][firstPoolSupplier];
             vars.toMatch = Math.min(
                 firstPoolSupplierBalance.onPool.rayMul(vars.poolIndex),
-                _amount - matched
+                remainingToMatch
             );
-            matched += vars.toMatch;
+            remainingToMatch -= vars.toMatch;
 
             newPoolSupplyBalance =
                 firstPoolSupplierBalance.onPool -
@@ -113,7 +114,9 @@ contract MatchingEngine is MorphoUtils {
         }
 
         // Safe unchecked because `gasLeftAtTheBeginning` >= gas left now.
+        // And _amount >= remainingToMatch.
         unchecked {
+            matched = _amount - remainingToMatch;
             gasConsumedInMatching = gasLeftAtTheBeginning - gasleft();
         }
     }
@@ -196,13 +199,14 @@ contract MatchingEngine is MorphoUtils {
         vars.p2pIndex = p2pBorrowIndex[_poolTokenAddress];
         address firstPoolBorrower;
         Types.BorrowBalance storage firstPoolBorrowerBalance;
+        uint256 remainingToMatch = _amount;
 
         uint256 newPoolBorrowBalance;
         uint256 newP2PBorrowBalance;
 
         uint256 gasLeftAtTheBeginning = gasleft();
         while (
-            matched < _amount &&
+            remainingToMatch > 0 &&
             (firstPoolBorrower = borrowersOnPool[_poolTokenAddress].getHead()) != address(0)
         ) {
             // Safe unchecked because `gasLeftAtTheBeginning` >= gas left now.
@@ -212,9 +216,9 @@ contract MatchingEngine is MorphoUtils {
             firstPoolBorrowerBalance = borrowBalanceInOf[_poolTokenAddress][firstPoolBorrower];
             vars.toMatch = Math.min(
                 firstPoolBorrowerBalance.onPool.rayMul(vars.poolIndex),
-                _amount - matched
+                remainingToMatch
             );
-            matched += vars.toMatch;
+            remainingToMatch -= vars.toMatch;
 
             newPoolBorrowBalance =
                 firstPoolBorrowerBalance.onPool -
@@ -235,7 +239,9 @@ contract MatchingEngine is MorphoUtils {
         }
 
         // Safe unchecked because `gasLeftAtTheBeginning` >= gas left now.
+        // And _amount >= remainingToMatch.
         unchecked {
+            matched = _amount - remainingToMatch;
             gasConsumedInMatching = gasLeftAtTheBeginning - gasleft();
         }
     }
