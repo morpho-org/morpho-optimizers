@@ -27,7 +27,11 @@ ci-compound: node_modules
 
 test-aave-v2: node_modules
 	@echo Run all tests on ${NETWORK}
-	@forge test -vv -c test-foundry/aave-v2 --no-match-contract TestGasConsumption --no-match-test testFuzz
+	@forge test -vv -c test-foundry/aave-v3 --no-match-contract TestGasConsumption --no-match-test testFuzz
+
+test-aave-v3: node_modules
+	@echo Run all tests on ${NETWORK}
+	@forge test --use solc:0.8.10 -vv -c test-foundry/aave-v3 --no-match-contract TestGasConsumption --no-match-test testFuzz
 
 test-aave-v2: node_modules
 	@echo Run all tests on ${NETWORK}
