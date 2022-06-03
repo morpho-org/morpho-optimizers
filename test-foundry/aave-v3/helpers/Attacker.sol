@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import "@contracts/aave-v2/interfaces/aave/ILendingPool.sol";
+import "@aave/core-v3/contracts/interfaces/IPool.sol";
 
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 
 contract Attacker {
     using SafeTransferLib for ERC20;
 
-    ILendingPool internal lendingPool;
+    IPool internal pool;
 
-    constructor(ILendingPool _lendingPool) {
-        lendingPool = _lendingPool;
+    constructor(IPool _pool) {
+        pool = _pool;
     }
 
     receive() external payable {}
@@ -38,6 +38,6 @@ contract Attacker {
         address _onBehalfOf,
         uint16 _referralCode
     ) external {
-        lendingPool.deposit(_asset, _amount, _onBehalfOf, _referralCode);
+        pool.deposit(_asset, _amount, _onBehalfOf, _referralCode);
     }
 }

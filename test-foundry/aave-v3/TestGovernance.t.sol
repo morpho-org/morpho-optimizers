@@ -12,7 +12,7 @@ contract TestGovernance is TestSetup {
         assertEq(address(morpho.interestRatesManager()), address(interestRatesManager));
         assertEq(address(morpho.addressesProvider()), address(lendingPoolAddressesProviderAddress));
         assertEq(
-            address(morpho.lendingPool()),
+            address(morpho.pool()),
             ILendingPoolAddressesProvider(lendingPoolAddressesProviderAddress).getLendingPool()
         );
         assertEq(morpho.maxSortedUsers(), 20);
@@ -153,7 +153,7 @@ contract TestGovernance is TestSetup {
 
     function testOnlyOwnerShouldSetRewardsManager() public {
         IRewardsManager rewardsManagerV2 = new RewardsManagerOnMainnetAndAvalanche(
-            lendingPool,
+            pool,
             IMorpho(address(morpho))
         );
 

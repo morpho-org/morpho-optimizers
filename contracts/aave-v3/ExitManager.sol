@@ -204,12 +204,12 @@ contract ExitManager is IExitManager, PoolInteraction {
 
         IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
 
-        (, , vars.liquidationBonus, vars.collateralReserveDecimals, ) = lendingPool
+        (, , vars.liquidationBonus, vars.collateralReserveDecimals, , ) = pool
         .getConfiguration(tokenCollateralAddress)
-        .getParamsMemory();
-        (, , , vars.borrowedReserveDecimals, ) = lendingPool
+        .getParams();
+        (, , , vars.borrowedReserveDecimals, , ) = pool
         .getConfiguration(tokenBorrowedAddress)
-        .getParamsMemory();
+        .getParams();
 
         unchecked {
             vars.collateralTokenUnit = 10**vars.collateralReserveDecimals;
@@ -577,13 +577,9 @@ contract ExitManager is IExitManager, PoolInteraction {
             _updateP2PIndexes(poolTokenEntered);
             address underlyingAddress = IAToken(poolTokenEntered).UNDERLYING_ASSET_ADDRESS();
             assetData.underlyingPrice = oracle.getAssetPrice(underlyingAddress); // In ETH.
-            (
-                assetData.ltv,
-                assetData.liquidationThreshold,
-                ,
-                assetData.reserveDecimals,
-
-            ) = lendingPool.getConfiguration(underlyingAddress).getParamsMemory();
+            (assetData.ltv, assetData.liquidationThreshold, , assetData.reserveDecimals, , ) = pool
+            .getConfiguration(underlyingAddress)
+            .getParams();
 
             assetData.tokenUnit = 10**assetData.reserveDecimals;
             assetData.debtValue =
