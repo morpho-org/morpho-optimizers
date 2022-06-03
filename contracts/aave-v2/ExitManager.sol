@@ -362,8 +362,14 @@ contract ExitManager is IExitManager, PoolInteraction {
                 emit P2PBorrowDeltaUpdated(_poolTokenAddress, delta.p2pBorrowAmount);
             }
 
-            delta.p2pSupplyAmount -= vars.remainingToWithdraw.rayDiv(vars.p2pSupplyIndex);
-            delta.p2pBorrowAmount -= unmatched.rayDiv(p2pBorrowIndex[_poolTokenAddress]);
+            delta.p2pSupplyAmount -= Math.min(
+                delta.p2pSupplyAmount,
+                vars.remainingToWithdraw.rayDiv(vars.p2pSupplyIndex)
+            );
+            delta.p2pBorrowAmount -= Math.min(
+                delta.p2pBorrowAmount,
+                unmatched.rayDiv(p2pBorrowIndex[_poolTokenAddress])
+            );
             emit P2PAmountsUpdated(_poolTokenAddress, delta.p2pSupplyAmount, delta.p2pBorrowAmount);
 
             _borrowFromPool(underlyingToken, vars.remainingToWithdraw); // Reverts on error.
