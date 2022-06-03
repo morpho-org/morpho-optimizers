@@ -10,13 +10,13 @@ contract TestBorrowFuzzing is TestSetupFuzzing {
         uint8 _suppliedAsset,
         uint8 _borrowedAsset
     ) public {
-        (address suppliedAsset, address suppliedUnderlying) = getAsset(_suppliedAsset);
+        (address suppliedAsset, address suppliedUnderlying) = getSupplyAsset(_suppliedAsset);
         (address borrowedAsset, ) = getAsset(_borrowedAsset);
 
         uint256 supplied = _supplied;
         uint256 borrowed = _borrowed;
 
-        assumeSupplyAmountIsCorrect(suppliedUnderlying, supplied);
+        supplied = getSupplyAmount(suppliedUnderlying, supplied);
 
         borrower1.approve(suppliedUnderlying, supplied);
         borrower1.supply(suppliedAsset, supplied);
@@ -44,7 +44,7 @@ contract TestBorrowFuzzing is TestSetupFuzzing {
 
         uint256 amountSupplied = _amountSupplied;
 
-        assumeSupplyAmountIsCorrect(suppliedUnderlying, amountSupplied);
+        amountSupplied = getSupplyAmount(suppliedUnderlying, amountSupplied);
 
         borrower1.approve(suppliedUnderlying, amountSupplied);
         borrower1.supply(suppliedAsset, amountSupplied);
@@ -75,8 +75,8 @@ contract TestBorrowFuzzing is TestSetupFuzzing {
         uint256 amountSupplied = _amountSupplied;
         uint256 amountCollateral = _amountCollateral;
 
-        assumeSupplyAmountIsCorrect(collateralUnderlying, _amountCollateral);
-        assumeSupplyAmountIsCorrect(matchedUnderlying, amountSupplied);
+        amountCollateral = getSupplyAmount(collateralUnderlying, _amountCollateral);
+        amountSupplied = getSupplyAmount(matchedUnderlying, amountSupplied);
 
         supplier1.approve(matchedUnderlying, amountSupplied);
         supplier1.supply(matchedAsset, amountSupplied);
@@ -112,7 +112,7 @@ contract TestBorrowFuzzing is TestSetupFuzzing {
         uint256 amountSupplied = _amountSupplied;
         uint256 amountCollateral = _amountCollateral;
 
-        assumeSupplyAmountIsCorrect(collateralUnderlying, amountCollateral);
+        amountCollateral = getSupplyAmount(collateralUnderlying, amountCollateral);
 
         borrower1.approve(collateralUnderlying, amountCollateral);
         borrower1.supply(collateralAsset, amountCollateral);
@@ -129,7 +129,7 @@ contract TestBorrowFuzzing is TestSetupFuzzing {
         createSigners(NMAX);
 
         uint256 amountPerSupplier = (amountSupplied / NMAX) + 1;
-        assumeSupplyAmountIsCorrect(matchedUnderlying, amountPerSupplier);
+        amountPerSupplier = getSupplyAmount(matchedUnderlying, amountPerSupplier);
 
         for (uint256 i = 0; i < NMAX; i++) {
             suppliers[i].approve(matchedUnderlying, amountPerSupplier);
@@ -156,7 +156,7 @@ contract TestBorrowFuzzing is TestSetupFuzzing {
 
         uint256 amountCollateral = _amountCollateral;
 
-        assumeSupplyAmountIsCorrect(collateralUnderlying, amountCollateral);
+        amountCollateral = getSupplyAmount(collateralUnderlying, amountCollateral);
 
         borrower1.approve(collateralUnderlying, amountCollateral);
         borrower1.supply(collateralAsset, amountCollateral);

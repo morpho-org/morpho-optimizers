@@ -346,6 +346,42 @@ contract TestSetupFuzzing is Config, Utils, stdCheats {
     /// @notice Checks morpho will not revert.
     /// @param underlying Address of the underlying to supply.
     /// @param amount To check.
+    function getSupplyAmount(address underlying, uint256 amount) internal returns (uint256) {
+        uint256 min = 1;
+        if (ERC20(underlying).decimals() == 18) {
+            min = 10**6;
+        }
+
+        return bound(amount, min, ERC20(underlying).balanceOf(address(supplier1)));
+    }
+
+    function bound(
+        uint256 x,
+        uint256 min,
+        uint256 max
+    ) internal returns (uint256 result) {
+        require(max >= min, "MAX_LESS_THAN_MIN");
+
+        uint256 size = max - min;
+
+        if (max != type(uint256).max) size++; // Make the max inclusive.
+        if (size == 0) return min; // Using max would be equivalent as well.
+        // Ensure max is inclusive in cases where x != 0 and max is at uint max.
+        if (max == type(uint256).max && x != 0) x--; // Accounted for later.
+
+        if (x < min) x += size * (((min - x) / size) + 1);
+        result = min + ((x - min) % size);
+
+        // Account for decrementing x to make max inclusive.
+        if (max == type(uint256).max && x != 0) result++;
+
+        // emit log_named_uint("Bound entry", x);
+        // emit log_named_uint("Bound result", result);
+    }
+
+    /// @notice Checks morpho will not revert.
+    /// @param underlying Address of the underlying to supply.
+    /// @param amount To check.
     function assumeSupplyAmountIsCorrect(address underlying, uint256 amount) internal {
         hevm.assume(amount > 0);
         // All the signers have the same balance at the beginning of a test.
@@ -357,7 +393,7 @@ contract TestSetupFuzzing is Config, Utils, stdCheats {
     /// @param amount To check.
     function assumeBorrowAmountIsCorrect(address market, uint256 amount) internal {
         hevm.assume(amount <= IAToken(market).scaledTotalSupply());
-        hevm.assume(amount > 0);
+        hevm.assume(amount > 10);
         uint256 borrowCap = IERC20(getUnderlying(market)).balanceOf(market);
         if (borrowCap != 0) hevm.assume(amount <= borrowCap);
     }
