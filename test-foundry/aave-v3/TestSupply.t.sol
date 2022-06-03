@@ -11,7 +11,7 @@ contract TestSupply is TestSetup {
         supplier1.approve(dai, amount);
         supplier1.supply(aDai, amount);
 
-        uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(dai);
+        uint256 normalizedIncome = pool.getReserveNormalizedIncome(dai);
         uint256 expectedOnPool = underlyingToScaledBalance(amount, normalizedIncome);
 
         testEquality(IERC20(aDai).balanceOf(address(morpho)), amount);
@@ -73,7 +73,7 @@ contract TestSupply is TestSetup {
         uint256 p2pSupplyIndex = lens.getUpdatedP2PSupplyIndex(aDai);
         uint256 expectedSupplyBalanceInP2P = underlyingToP2PUnit(amount, p2pSupplyIndex);
 
-        uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(dai);
+        uint256 normalizedIncome = pool.getReserveNormalizedIncome(dai);
         uint256 expectedSupplyBalanceOnPool = underlyingToScaledBalance(amount, normalizedIncome);
 
         (uint256 inP2PSupplier, uint256 onPoolSupplier) = morpho.supplyBalanceInOf(
@@ -170,7 +170,7 @@ contract TestSupply is TestSetup {
         uint256 onPool;
         uint256 expectedInP2PInUnderlying;
         uint256 p2pSupplyIndex = morpho.p2pSupplyIndex(aDai);
-        uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(dai);
+        uint256 normalizedIncome = pool.getReserveNormalizedIncome(dai);
 
         for (uint256 i = 0; i < NMAX; i++) {
             (inP2P, onPool) = morpho.borrowBalanceInOf(aDai, address(borrowers[i]));
@@ -198,7 +198,7 @@ contract TestSupply is TestSetup {
         supplier1.supply(aDai, amount);
         supplier1.supply(aDai, amount);
 
-        uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(dai);
+        uint256 normalizedIncome = pool.getReserveNormalizedIncome(dai);
         uint256 expectedOnPool = underlyingToScaledBalance(2 * amount, normalizedIncome);
 
         (, uint256 onPool) = morpho.supplyBalanceInOf(aDai, address(supplier1));
@@ -217,9 +217,9 @@ contract TestSupply is TestSetup {
         borrower1.borrow(aDai, amount);
 
         // Someone repays on behalf of Morpho.
-        supplier2.approve(dai, address(lendingPool), amount);
+        supplier2.approve(dai, address(pool), amount);
         hevm.prank(address(supplier2));
-        lendingPool.repay(dai, amount, 2, address(morpho));
+        pool.repay(dai, amount, 2, address(morpho));
         hevm.stopPrank();
 
         // Supplier 1 supply in peer-to-peer. Not supposed to revert.
@@ -234,7 +234,7 @@ contract TestSupply is TestSetup {
         hevm.prank(address(supplier1));
         morpho.supply(aDai, address(supplier2), amount);
 
-        uint256 poolSupplyIndex = lendingPool.getReserveNormalizedIncome(dai);
+        uint256 poolSupplyIndex = pool.getReserveNormalizedIncome(dai);
         uint256 expectedOnPool = underlyingToScaledBalance(amount, poolSupplyIndex);
 
         assertEq(ERC20(aDai).balanceOf(address(morpho)), amount, "balance of aToken");

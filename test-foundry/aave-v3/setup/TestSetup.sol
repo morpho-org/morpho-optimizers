@@ -1,34 +1,33 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import "@contracts/aave-v2/interfaces/aave/IAaveIncentivesController.sol";
+import "@aave/core-v3/contracts/interfaces/IAaveIncentivesController.sol";
 import "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
-import "@contracts/aave-v2/interfaces/aave/IProtocolDataProvider.sol";
-import "@contracts/aave-v2/interfaces/aave/IPriceOracleGetter.sol";
-import "@contracts/aave-v2/interfaces/aave/IVariableDebtToken.sol";
-import "@contracts/aave-v2/interfaces/IInterestRatesManager.sol";
-import "@contracts/aave-v2/interfaces/aave/ILendingPool.sol";
-import "@contracts/aave-v2/interfaces/IRewardsManager.sol";
-import "@contracts/aave-v2/interfaces/aave/IAToken.sol";
-import "@contracts/aave-v2/interfaces/IMorpho.sol";
+import "@aave/core-v3/contracts/interfaces/IPriceOracleGetter.sol";
+import "@aave/core-v3/contracts/interfaces/IVariableDebtToken.sol";
+import "@contracts/aave-v3/interfaces/IInterestRatesManager.sol";
+import "@aave/core-v3/contracts/interfaces/IPool.sol";
+import "@aave/core-v3/contracts/interfaces/IAToken.sol";;
+import "@contracts/aave-v3/interfaces/IRewardsManager.sol";
+import "@contracts/aave-v3/interfaces/IMorpho.sol";
 
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 
+import "@aave/core-v3/contracts/protocol/libraries/math/WadRayMath.sol";
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
-import "@contracts/aave-v2/libraries/aave/WadRayMath.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
-import "@contracts/aave-v2/libraries/Types.sol";
+import "@contracts/aave-v3/libraries/Types.sol";
 
-import {RewardsManagerOnMainnetAndAvalanche} from "@contracts/aave-v2/rewards-managers/RewardsManagerOnMainnetAndAvalanche.sol";
-import {RewardsManagerOnPolygon} from "@contracts/aave-v2/rewards-managers/RewardsManagerOnPolygon.sol";
-import {InterestRatesManager} from "@contracts/aave-v2/InterestRatesManager.sol";
-import {IncentivesVault} from "@contracts/aave-v2/IncentivesVault.sol";
-import {MatchingEngine} from "@contracts/aave-v2/MatchingEngine.sol";
-import {EntryManager} from "@contracts/aave-v2/EntryManager.sol";
-import {ExitManager} from "@contracts/aave-v2/ExitManager.sol";
-import {Lens} from "@contracts/aave-v2/Lens.sol";
-import "@contracts/aave-v2/Morpho.sol";
+import {RewardsManagerOnMainnetAndAvalanche} from "@contracts/aave-v3/rewards-managers/RewardsManagerOnMainnetAndAvalanche.sol";
+import {RewardsManagerOnPolygon} from "@contracts/aave-v3/rewards-managers/RewardsManagerOnPolygon.sol";
+import {InterestRatesManager} from "@contracts/aave-v3/InterestRatesManager.sol";
+import {IncentivesVault} from "@contracts/aave-v3/IncentivesVault.sol";
+import {MatchingEngine} from "@contracts/aave-v3/MatchingEngine.sol";
+import {EntryManager} from "@contracts/aave-v3/EntryManager.sol";
+import {ExitManager} from "@contracts/aave-v3/ExitManager.sol";
+import {Lens} from "@contracts/aave-v3/Lens.sol";
+import "@contracts/aave-v3/Morpho.sol";
 
 import "../../common/helpers/MorphoToken.sol";
 import "../helpers/SimplePriceOracle.sol";
@@ -63,7 +62,7 @@ contract TestSetup is Config, Utils, stdCheats {
     ILendingPoolAddressesProvider public lendingPoolAddressesProvider;
     IProtocolDataProvider public protocolDataProvider;
     IPriceOracleGetter public oracle;
-    ILendingPool public lendingPool;
+    IPool public pool;
 
     User public supplier1;
     User public supplier2;
@@ -94,7 +93,7 @@ contract TestSetup is Config, Utils, stdCheats {
         lendingPoolAddressesProvider = ILendingPoolAddressesProvider(
             lendingPoolAddressesProviderAddress
         );
-        lendingPool = ILendingPool(lendingPoolAddressesProvider.getLendingPool());
+        pool = IPool(lendingPoolAddressesProvider.getLendingPool());
         entryManager = new EntryManager();
         exitManager = new ExitManager();
 
@@ -124,18 +123,18 @@ contract TestSetup is Config, Utils, stdCheats {
         if (block.chainid == Chains.ETH_MAINNET) {
             // Mainnet network
             rewardsManager = new RewardsManagerOnMainnetAndAvalanche(
-                lendingPool,
+                pool,
                 IMorpho(address(morpho))
             );
         } else if (block.chainid == Chains.AVALANCHE_MAINNET) {
             // Avalanche network
             rewardsManager = new RewardsManagerOnMainnetAndAvalanche(
-                lendingPool,
+                pool,
                 IMorpho(address(morpho))
             );
         } else if (block.chainid == Chains.POLYGON_MAINNET) {
             // Polygon network
-            rewardsManager = new RewardsManagerOnPolygon(lendingPool, IMorpho(address(morpho)));
+            rewardsManager = new RewardsManagerOnPolygon(pool, IMorpho(address(morpho)));
         }
 
         rewardsManager.setAaveIncentivesController(aaveIncentivesControllerAddress);
@@ -224,7 +223,7 @@ contract TestSetup is Config, Utils, stdCheats {
         hevm.label(address(morphoToken), "MorphoToken");
         hevm.label(aaveIncentivesControllerAddress, "AaveIncentivesController");
         hevm.label(address(lendingPoolAddressesProvider), "LendingPoolAddressesProvider");
-        hevm.label(address(lendingPool), "LendingPool");
+        hevm.label(address(pool), "LendingPool");
         hevm.label(address(protocolDataProvider), "ProtocolDataProvider");
         hevm.label(address(oracle), "AaveOracle");
         hevm.label(address(treasuryVault), "TreasuryVault");
@@ -290,7 +289,7 @@ contract TestSetup is Config, Utils, stdCheats {
         view
         returns (uint256 p2pSupplyRate_, uint256 p2pBorrowRate_)
     {
-        DataTypes.ReserveData memory reserveData = lendingPool.getReserveData(
+        DataTypes.ReserveData memory reserveData = pool.getReserveData(
             IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS()
         );
 

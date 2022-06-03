@@ -31,7 +31,7 @@ contract TestWithdraw is TestSetup {
         (uint256 inP2P, uint256 onPool) = morpho.supplyBalanceInOf(aUsdc, address(supplier1));
 
         uint256 expectedOnPool = to6Decimals(
-            underlyingToScaledBalance(2 * amount, lendingPool.getReserveNormalizedIncome(usdc))
+            underlyingToScaledBalance(2 * amount, pool.getReserveNormalizedIncome(usdc))
         );
 
         testEquality(inP2P, 0);
@@ -56,7 +56,7 @@ contract TestWithdraw is TestSetup {
         (uint256 inP2P, uint256 onPool) = morpho.supplyBalanceInOf(aUsdc, address(supplier1));
 
         uint256 expectedOnPool = to6Decimals(
-            underlyingToScaledBalance(amount, lendingPool.getReserveNormalizedIncome(usdc))
+            underlyingToScaledBalance(amount, pool.getReserveNormalizedIncome(usdc))
         );
 
         testEquality(inP2P, 0);
@@ -98,7 +98,7 @@ contract TestWithdraw is TestSetup {
 
         uint256 expectedOnPool = underlyingToScaledBalance(
             suppliedAmount / 2,
-            lendingPool.getReserveNormalizedIncome(dai)
+            pool.getReserveNormalizedIncome(dai)
         );
 
         testEquality(onPoolSupplier, expectedOnPool, "supplier on pool 0");
@@ -164,7 +164,7 @@ contract TestWithdraw is TestSetup {
 
         uint256 expectedOnPool = underlyingToScaledBalance(
             suppliedAmount / 2,
-            lendingPool.getReserveNormalizedIncome(dai)
+            pool.getReserveNormalizedIncome(dai)
         );
 
         testEquality(onPoolSupplier, expectedOnPool);
@@ -243,7 +243,7 @@ contract TestWithdraw is TestSetup {
 
         uint256 expectedOnPool = underlyingToScaledBalance(
             suppliedAmount / 2,
-            lendingPool.getReserveNormalizedIncome(dai)
+            pool.getReserveNormalizedIncome(dai)
         );
 
         testEquality(onPoolSupplier, expectedOnPool);
@@ -263,7 +263,7 @@ contract TestWithdraw is TestSetup {
         );
         uint256 expectedBorrowBalanceOnPool = underlyingToAdUnit(
             borrowedAmount / 2,
-            lendingPool.getReserveNormalizedVariableDebt(dai)
+            pool.getReserveNormalizedVariableDebt(dai)
         );
 
         testEquality(inP2PBorrower, expectedBorrowBalanceInP2P);
@@ -315,7 +315,7 @@ contract TestWithdraw is TestSetup {
 
         uint256 expectedOnPool = underlyingToScaledBalance(
             suppliedAmount / 2,
-            lendingPool.getReserveNormalizedIncome(dai)
+            pool.getReserveNormalizedIncome(dai)
         );
 
         testEquality(onPoolSupplier, expectedOnPool);
@@ -353,7 +353,7 @@ contract TestWithdraw is TestSetup {
         );
         uint256 expectedBorrowBalanceOnPool = underlyingToAdUnit(
             borrowedAmount / 2,
-            lendingPool.getReserveNormalizedVariableDebt(dai)
+            pool.getReserveNormalizedVariableDebt(dai)
         );
 
         testEquality(inP2PBorrower, expectedBorrowBalanceInP2P);
@@ -449,7 +449,7 @@ contract TestWithdraw is TestSetup {
             uint256 expectedBorrowP2PDeltaInUnderlying = 10 * borrowedAmount;
             uint256 expectedBorrowP2PDelta = underlyingToAdUnit(
                 expectedBorrowP2PDeltaInUnderlying,
-                lendingPool.getReserveNormalizedVariableDebt(dai)
+                pool.getReserveNormalizedVariableDebt(dai)
             );
 
             (, uint256 borrowP2PDelta, , ) = morpho.deltas(aDai);
@@ -480,17 +480,17 @@ contract TestWithdraw is TestSetup {
             Vars memory newVars;
 
             (, oldVars.BP2PD, , oldVars.BP2PA) = morpho.deltas(aDai);
-            oldVars.NVD = lendingPool.getReserveNormalizedVariableDebt(dai);
+            oldVars.NVD = pool.getReserveNormalizedVariableDebt(dai);
             oldVars.BP2PER = morpho.p2pBorrowIndex(aDai);
             (, oldVars.APR) = getApproxP2PRates(aDai);
 
             move1YearForward(aDai);
 
             (, newVars.BP2PD, , newVars.BP2PA) = morpho.deltas(aDai);
-            newVars.NVD = lendingPool.getReserveNormalizedVariableDebt(dai);
+            newVars.NVD = pool.getReserveNormalizedVariableDebt(dai);
             newVars.BP2PER = morpho.p2pBorrowIndex(aDai);
-            newVars.LR = lendingPool.getReserveData(dai).currentLiquidityRate;
-            newVars.VBR = lendingPool.getReserveData(dai).currentVariableBorrowRate;
+            newVars.LR = pool.getReserveData(dai).currentLiquidityRate;
+            newVars.VBR = pool.getReserveData(dai).currentVariableBorrowRate;
 
             uint256 shareOfTheDelta = newVars
             .BP2PD
@@ -603,7 +603,7 @@ contract TestWithdraw is TestSetup {
     // Test attack
     // Should be possible to withdraw amount while an attacker sends aToken to trick Morpho contract
     function testWithdrawWhileAttackerSendsAToken() public {
-        Attacker attacker = new Attacker(lendingPool);
+        Attacker attacker = new Attacker(pool);
         tip(dai, address(attacker), type(uint256).max / 2);
 
         uint256 toSupply = 100 ether;
@@ -611,7 +611,7 @@ contract TestWithdraw is TestSetup {
         uint256 toBorrow = toSupply;
 
         // attacker sends aToken to Morpho contract
-        attacker.approve(dai, address(lendingPool), toSupply);
+        attacker.approve(dai, address(pool), toSupply);
         attacker.deposit(dai, toSupply, address(attacker), 0);
         attacker.transfer(dai, address(morpho), toSupply);
 

@@ -8,7 +8,7 @@ contract TestUpgradeable is TestSetup {
         uint256 amount = 10_000 ether;
         supplier1.approve(dai, amount);
         supplier1.supply(aDai, amount);
-        uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(dai);
+        uint256 normalizedIncome = pool.getReserveNormalizedIncome(dai);
         uint256 expectedOnPool = underlyingToScaledBalance(amount, normalizedIncome);
 
         Morpho morphoImplV2 = new Morpho();

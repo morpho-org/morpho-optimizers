@@ -1,23 +1,23 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import "@contracts/aave-v2/interfaces/aave/ILendingPool.sol";
-import "@contracts/aave-v2/interfaces/IRewardsManager.sol";
+import "@contracts/aave-v3/interfaces/IRewardsManager.sol";
+import "@aave/core-v3/contracts/interfaces/IPool.sol";
 
-import "@contracts/aave-v2/Morpho.sol";
+import "@contracts/aave-v3/Morpho.sol";
 
 contract User {
     using SafeTransferLib for ERC20;
 
     Morpho internal morpho;
     IRewardsManager internal rewardsManager;
-    ILendingPool public lendingPool;
+    IPool public pool;
     IAaveIncentivesController public aaveIncentivesController;
 
     constructor(Morpho _morpho) {
         morpho = _morpho;
         rewardsManager = _morpho.rewardsManager();
-        lendingPool = _morpho.lendingPool();
+        pool = _morpho.pool();
         aaveIncentivesController = _morpho.aaveIncentivesController();
     }
 
@@ -83,12 +83,12 @@ contract User {
     }
 
     function aaveSupply(address _underlyingTokenAddress, uint256 _amount) external {
-        ERC20(_underlyingTokenAddress).safeApprove(address(lendingPool), type(uint256).max);
-        lendingPool.deposit(_underlyingTokenAddress, _amount, address(this), 0); // 0 : no refferal code
+        ERC20(_underlyingTokenAddress).safeApprove(address(pool), type(uint256).max);
+        pool.deposit(_underlyingTokenAddress, _amount, address(this), 0); // 0 : no refferal code
     }
 
     function aaveBorrow(address _underlyingTokenAddress, uint256 _amount) external {
-        lendingPool.borrow(_underlyingTokenAddress, _amount, 2, 0, address(this)); // 2 : variable rate | 0 : no refferal code
+        pool.borrow(_underlyingTokenAddress, _amount, 2, 0, address(this)); // 2 : variable rate | 0 : no refferal code
     }
 
     function aaveClaimRewards(address[] memory assets) external {

@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import "./interfaces/aave/IAToken.sol";
+import "@aave/core-v3/contracts/interfaces/IAToken.sol";
 
-import "./libraries/aave/WadRayMath.sol";
+import "@aave/core-v3/contracts/protocol/libraries/math/WadRayMath.sol";
 import "./libraries/Math.sol";
 
 import "./MorphoStorage.sol";
@@ -56,8 +56,8 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
             Types.MarketParameters storage marketParams = marketParameters[_poolTokenAddress];
 
             address underlyingToken = IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS();
-            uint256 poolSupplyIndex = lendingPool.getReserveNormalizedIncome(underlyingToken);
-            uint256 poolBorrowIndex = lendingPool.getReserveNormalizedVariableDebt(underlyingToken);
+            uint256 poolSupplyIndex = pool.getReserveNormalizedIncome(underlyingToken);
+            uint256 poolBorrowIndex = pool.getReserveNormalizedVariableDebt(underlyingToken);
 
             Params memory params = Params(
                 p2pSupplyIndex[_poolTokenAddress],
