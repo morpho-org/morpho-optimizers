@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GNU AGPLv3
-pragma solidity 0.8.13;
+pragma solidity ^0.8.0;
 
 import "@aave/core-v3/contracts/interfaces/IAaveIncentivesController.sol";
 import "@aave/core-v3/contracts/interfaces/IScaledBalanceToken.sol";
