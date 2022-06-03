@@ -447,7 +447,7 @@ contract ExitManager is IExitManager, PoolInteraction {
         vars.poolSupplyIndex = poolIndexes[_poolTokenAddress].poolSupplyIndex;
         borrowBalanceInOf[_poolTokenAddress][_onBehalf].inP2P -= Math.min(
             borrowBalanceInOf[_poolTokenAddress][_onBehalf].inP2P,
-            vars.remainingToRepay.rayDiv(vars.p2pSupplyIndex)
+            vars.remainingToRepay.rayDiv(vars.p2pBorrowIndex)
         ); // In peer-to-peer borrow unit.
         _updateBorrowerInDS(_poolTokenAddress, _onBehalf);
 
