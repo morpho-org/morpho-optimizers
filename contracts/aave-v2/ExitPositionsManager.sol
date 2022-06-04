@@ -314,9 +314,12 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
             uint256 remainingToWithdrawInPoolUnit = vars.remainingToWithdraw.rayDiv(
                 vars.poolSupplyIndex
             );
-            delta.p2pSupplyDelta = delta.p2pSupplyDelta > remainingToWithdrawInPoolUnit
-                ? delta.p2pSupplyDelta - remainingToWithdrawInPoolUnit
-                : 0;
+            // Safe unchecked because the substraction is done iff delta.p2pSupplyDelta > remainingToWithdrawInPoolUnit
+            unchecked {
+                delta.p2pSupplyDelta = delta.p2pSupplyDelta > remainingToWithdrawInPoolUnit
+                    ? delta.p2pSupplyDelta - remainingToWithdrawInPoolUnit
+                    : 0;
+            }
             delta.p2pSupplyAmount -= matchedDelta.rayDiv(vars.p2pSupplyIndex);
             vars.toWithdraw += matchedDelta;
             vars.remainingToWithdraw -= matchedDelta;
@@ -464,9 +467,12 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
             );
 
             uint256 remainingToRepayInPoolUnit = vars.remainingToRepay.rayDiv(vars.poolBorrowIndex);
-            delta.p2pBorrowDelta = delta.p2pBorrowDelta > remainingToRepayInPoolUnit
-                ? delta.p2pBorrowDelta - remainingToRepayInPoolUnit
-                : 0;
+            // Safe unchecked because the substraction is done iff delta.p2pBorrowDelta > remainingToRepayInPoolUnit
+            unchecked {
+                delta.p2pBorrowDelta = delta.p2pBorrowDelta > remainingToRepayInPoolUnit
+                    ? delta.p2pBorrowDelta - remainingToRepayInPoolUnit
+                    : 0;
+            }
             delta.p2pBorrowAmount -= matchedDelta.rayDiv(vars.p2pBorrowIndex);
             vars.toRepay += matchedDelta;
             vars.remainingToRepay -= matchedDelta;
