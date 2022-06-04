@@ -294,7 +294,7 @@ contract TestLens is TestSetup {
             assetDataDai.collateralValue.percentMul(assetDataDai.ltv)) * assetDataUsdt.tokenUnit) /
             assetDataUsdt.underlyingPrice;
 
-        assertEq(withdrawableUsdc, to6Decimals(amount), "withdrawableUsdc");
+        testEquality(withdrawableUsdc, to6Decimals(amount), "withdrawableUsdc");
         assertEq(withdrawableDai, amount, "withdrawableDai");
         assertEq(borrowableUsdt, expectedBorrowable, "borrowableUsdt");
 
@@ -411,46 +411,26 @@ contract TestLens is TestSetup {
         assertApproxEq(
             states.collateralValue,
             expectedStates.collateralValue,
-            2,
+            1000,
             "collateralValue"
         );
         assertEq(states.debtValue, expectedStates.debtValue, "debtValue");
-        assertEq(
+        assertApproxEq(
             states.liquidationThresholdValue,
             expectedStates.liquidationThresholdValue,
+            1000,
             "liquidationThresholdValue"
         );
-        assertEq(states.maxLoanToValue, expectedStates.maxLoanToValue, "maxLoanToValue");
-        assertEq(states.healthFactor, expectedStates.healthFactor, "healthFactor");
+        assertApproxEq(
+            states.maxLoanToValue,
+            expectedStates.maxLoanToValue,
+            1000,
+            "maxLoanToValue"
+        );
+        testEqualityLarge(states.healthFactor, expectedStates.healthFactor, "healthFactor");
     }
 
-    /// This test is to check that a call to getUserLiquidityDataForAsset with USDT doesn't end
-    ///   with error "Division or modulo by zero", as Aave returns 0 for USDT liquidationThreshold.
-    function testLiquidityDataForUSDT() public {
-        uint256 usdtAmount = to6Decimals(10_000 ether);
-
-        tip(usdt, address(borrower1), usdtAmount);
-        borrower1.approve(usdt, usdtAmount);
-        borrower1.supply(aUsdt, usdtAmount);
-
-        (uint256 withdrawableUsdt, uint256 borrowableUsdt) = lens.getUserMaxCapacitiesForAsset(
-            address(borrower1),
-            aUsdt
-        );
-
-        assertEq(withdrawableUsdt, usdtAmount, "withdrawable USDT");
-        assertEq(borrowableUsdt, 0, "borrowable USDT");
-
-        (uint256 withdrawableDai, uint256 borrowableDai) = lens.getUserMaxCapacitiesForAsset(
-            address(borrower1),
-            aDai
-        );
-
-        assertEq(withdrawableDai, 0, "withdrawable DAI");
-        assertEq(borrowableDai, 0, "borrowable DAI");
-    }
-
-    function testLiquidityDataWithMultipleAssetsAndUSDT() public {
+    function testLiquidityDataWithMultipleAssets() public {
         uint256 amount = 10_000 ether;
         uint256 toBorrow = to6Decimals(100 ether);
 
@@ -503,15 +483,19 @@ contract TestLens is TestSetup {
             expectedStates.debtValue
         );
 
-        assertEq(states.collateralValue, expectedStates.collateralValue, "collateralValue");
+        testEqualityLarge(
+            states.collateralValue,
+            expectedStates.collateralValue,
+            "collateralValue"
+        );
         assertEq(states.debtValue, expectedStates.debtValue, "debtValue");
-        assertEq(
+        testEqualityLarge(
             states.liquidationThresholdValue,
             expectedStates.liquidationThresholdValue,
             "liquidationThresholdValue"
         );
-        assertEq(states.maxLoanToValue, expectedStates.maxLoanToValue, "maxLoanToValue");
-        assertEq(states.healthFactor, expectedStates.healthFactor, "healthFactor");
+        testEqualityLarge(states.maxLoanToValue, expectedStates.maxLoanToValue, "maxLoanToValue");
+        testEqualityLarge(states.healthFactor, expectedStates.healthFactor, "healthFactor");
     }
 
     function testEnteredMarkets() public {
