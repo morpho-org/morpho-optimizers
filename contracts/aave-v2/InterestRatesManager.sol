@@ -48,9 +48,9 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
 
     /// EXTERNAL ///
 
-    /// @notice Updates the peer-to-peer indexes.
+    /// @notice Updates the peer-to-peer indexes and pool indexes (only stored locally).
     /// @param _poolTokenAddress The address of the market to update.
-    function updateP2PIndexes(address _poolTokenAddress) external {
+    function updateIndexes(address _poolTokenAddress) external {
         if (block.timestamp > poolIndexes[_poolTokenAddress].lastUpdateTimestamp) {
             Types.PoolIndexes storage poolIndexes = poolIndexes[_poolTokenAddress];
             Types.MarketParameters storage marketParams = marketParameters[_poolTokenAddress];

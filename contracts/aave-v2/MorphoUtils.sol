@@ -127,10 +127,7 @@ contract MorphoUtils is MorphoStorage {
     /// @param _poolTokenAddress The address of the market to update.
     function _updateIndexes(address _poolTokenAddress) internal {
         address(interestRatesManager).functionDelegateCall(
-            abi.encodeWithSelector(
-                interestRatesManager.updateP2PIndexes.selector,
-                _poolTokenAddress
-            )
+            abi.encodeWithSelector(interestRatesManager.updateIndexes.selector, _poolTokenAddress)
         );
     }
 
