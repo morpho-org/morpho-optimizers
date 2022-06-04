@@ -69,7 +69,7 @@ contract TestPausableMarket is TestSetup {
         supplier1.withdraw(aDai, 1);
 
         hevm.expectRevert(abi.encodeWithSignature("AmountIsZero()"));
-        morpho.claimToTreasury(aDai, 1 ether);
+        morpho.claimToTreasury(aAave, 1 ether);
     }
 
     function testShouldDisableMarketWhenPaused() public {
@@ -166,7 +166,7 @@ contract TestPausableMarket is TestSetup {
 
         // Does not revert because the market is paused.
         hevm.expectRevert(abi.encodeWithSignature("AmountIsZero()"));
-        morpho.claimToTreasury(aDai, 1 ether);
+        morpho.claimToTreasury(aAave, 1 ether);
 
         // Functions on other markets should still be enabled.
         amount = 10 ether;
