@@ -34,7 +34,7 @@ interface IMorpho {
 
     /// UTILS ///
 
-    function updateP2PIndexes(address _poolTokenAddress) external;
+    function updateIndexes(address _poolTokenAddress) external;
 
     /// GETTERS ///
 

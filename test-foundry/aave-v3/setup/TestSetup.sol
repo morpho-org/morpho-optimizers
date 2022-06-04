@@ -278,7 +278,7 @@ contract TestSetup is Config, Utils, stdCheats {
     function move1YearForward(address _marketAddress) public {
         for (uint256 k; k < 365; k++) {
             hevm.warp(block.timestamp + (1 days));
-            morpho.updateP2PIndexes(_marketAddress);
+            morpho.updateIndexes(_marketAddress);
         }
     }
 

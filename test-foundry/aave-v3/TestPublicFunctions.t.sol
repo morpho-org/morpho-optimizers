@@ -7,6 +7,6 @@ contract TestPublicFunctions is TestSetup {
     function testUserShouldNotUpdateP2PIndexesOfMarketNotCreatedYet() public {
         hevm.prank(address(2));
         hevm.expectRevert(abi.encodeWithSignature("MarketNotCreated()"));
-        morpho.updateP2PIndexes(aWeth);
+        morpho.updateIndexes(aWeth);
     }
 }
