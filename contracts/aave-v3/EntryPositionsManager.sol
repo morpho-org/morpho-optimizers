@@ -50,6 +50,9 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
 
     /// ERRORS ///
 
+    /// @notice Thrown when borrowing on pool is not enabled on a specific market.
+    error BorrowingNotEnabled();
+
     /// @notice Thrown when the user does not have enough collateral for the borrow.
     error UnauthorisedBorrow();
 
@@ -176,12 +179,17 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
         uint256 _maxGasForMatching
     ) external {
         if (_amount == 0) revert AmountIsZero();
-        _updateIndexes(_poolTokenAddress);
 
+        ERC20 underlyingToken = ERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
+        (, , bool borrowingEnabled, , ) = pool
+        .getConfiguration(address(underlyingToken))
+        .getFlags();
+        if (!borrowingEnabled) revert BorrowingNotEnabled();
+
+        _updateIndexes(_poolTokenAddress);
         _enterMarketIfNeeded(_poolTokenAddress, msg.sender);
         if (!_borrowAllowed(msg.sender, _poolTokenAddress, _amount)) revert UnauthorisedBorrow();
 
-        ERC20 underlyingToken = ERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
         uint256 remainingToBorrow = _amount;
         uint256 toWithdraw;
         Types.Delta storage delta = deltas[_poolTokenAddress];
