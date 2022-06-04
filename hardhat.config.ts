@@ -13,6 +13,10 @@ module.exports = {
   defaultNetwork: 'hardhat',
   networks: {
     hardhat: {},
+    mainnet: {
+      accounts: [process.env.DEPLOYER_PRIVATE_KEY],
+      url: `https://mainnet.infura.io/v3/${process.env.INFURA_PROJECT_ID}`,
+    },
     kovan: {
       accounts: [process.env.DEPLOYER_PRIVATE_KEY],
       // privateKey: "0x574028dad40752ed4448624f35ecb32821b0b0791652a34c10aa78053a08a730",
