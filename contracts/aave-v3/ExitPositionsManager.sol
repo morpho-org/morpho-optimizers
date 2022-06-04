@@ -647,7 +647,15 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
     /// @param _user The user to check.
     /// @return Whether the user is liquidatable or not.
     function _liquidationAllowed(address _user) internal returns (bool) {
-        return _getUserHealthFactor(_user, address(0), 0) < HEALTH_FACTOR_LIQUIDATION_THRESHOLD;
+        uint256 healthFactor = _getUserHealthFactor(_user, address(0), 0);
+        address priceOracleSentinel = addressesProvider.getPriceOracleSentinel();
+
+        if (priceOracleSentinel != address(0))
+            return (healthFactor < MINIMUM_HEALTH_FACTOR_LIQUIDATION_THRESHOLD ||
+                (IPriceOracleSentinel(priceOracleSentinel).isLiquidationAllowed() &&
+                    healthFactor < HEALTH_FACTOR_LIQUIDATION_THRESHOLD));
+
+        return healthFactor < HEALTH_FACTOR_LIQUIDATION_THRESHOLD;
     }
 
     /// @dev Removes the user from the market if its balances are null.
