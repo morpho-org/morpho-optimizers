@@ -181,7 +181,7 @@ contract Lens {
     ) public view returns (Types.AssetLiquidityData memory assetData) {
         address underlyingAddress = IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS();
 
-        assetData.underlyingPrice = _oracle.getAssetPrice(underlyingAddress); // In ETH.
+        assetData.underlyingPrice = _oracle.getAssetPrice(underlyingAddress); // In base currency in wad.
         (assetData.ltv, assetData.liquidationThreshold, , assetData.reserveDecimals, , ) = pool
         .getConfiguration(underlyingAddress)
         .getParams();
