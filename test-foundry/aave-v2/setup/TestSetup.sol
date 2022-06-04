@@ -151,6 +151,12 @@ contract TestSetup is Config, Utils, stdCheats {
 
         hevm.warp(block.timestamp + 100);
 
+        /// Send some dust on the Morpho contract, to handle roundings issues on withdraws on pool ///
+
+        tip(dai, address(morpho), WAD);
+        tip(usdt, address(morpho), 1e6);
+        tip(usdc, address(morpho), 1e6);
+
         /// Create Morpho token, deploy Incentives Vault and activate rewards ///
 
         morphoToken = new MorphoToken(address(this));
@@ -214,7 +220,7 @@ contract TestSetup is Config, Utils, stdCheats {
         tip(dai, address(_user), INITIAL_BALANCE * WAD);
         tip(aave, address(_user), INITIAL_BALANCE * WAD);
         tip(wEth, address(_user), INITIAL_BALANCE * WAD);
-        tip(usdt, address(_user), INITIAL_BALANCE * WAD);
+        tip(usdt, address(_user), INITIAL_BALANCE * 1e6);
         tip(usdc, address(_user), INITIAL_BALANCE * 1e6);
     }
 
