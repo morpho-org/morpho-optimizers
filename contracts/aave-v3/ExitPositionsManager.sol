@@ -311,10 +311,18 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
                 vars.remainingToWithdraw
             );
 
+            uint256 remainingToWithdrawInPoolUnit = vars.remainingToWithdraw.rayDiv(
+                vars.poolSupplyIndex
+            );
+            // Safe unchecked because the substraction is done iff delta.p2pSupplyDelta > remainingToWithdrawInPoolUnit.
+            unchecked {
+                delta.p2pSupplyDelta = delta.p2pSupplyDelta > remainingToWithdrawInPoolUnit
+                    ? delta.p2pSupplyDelta - remainingToWithdrawInPoolUnit
+                    : 0;
+            }
+            delta.p2pSupplyAmount -= matchedDelta.rayDiv(vars.p2pSupplyIndex);
             vars.toWithdraw += matchedDelta;
             vars.remainingToWithdraw -= matchedDelta;
-            delta.p2pSupplyDelta -= matchedDelta.rayDiv(vars.poolSupplyIndex);
-            delta.p2pSupplyAmount -= matchedDelta.rayDiv(vars.p2pSupplyIndex);
             emit P2PSupplyDeltaUpdated(_poolTokenAddress, delta.p2pSupplyDelta);
             emit P2PAmountsUpdated(_poolTokenAddress, delta.p2pSupplyAmount, delta.p2pBorrowAmount);
         }
@@ -458,10 +466,16 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
                 vars.remainingToRepay
             );
 
+            uint256 remainingToRepayInPoolUnit = vars.remainingToRepay.rayDiv(vars.poolBorrowIndex);
+            // Safe unchecked because the substraction is done iff delta.p2pBorrowDelta > remainingToRepayInPoolUnit.
+            unchecked {
+                delta.p2pBorrowDelta = delta.p2pBorrowDelta > remainingToRepayInPoolUnit
+                    ? delta.p2pBorrowDelta - remainingToRepayInPoolUnit
+                    : 0;
+            }
+            delta.p2pBorrowAmount -= matchedDelta.rayDiv(vars.p2pBorrowIndex);
             vars.toRepay += matchedDelta;
             vars.remainingToRepay -= matchedDelta;
-            delta.p2pBorrowDelta -= matchedDelta.rayDiv(vars.poolBorrowIndex);
-            delta.p2pBorrowAmount -= matchedDelta.rayDiv(vars.p2pBorrowIndex);
             emit P2PBorrowDeltaUpdated(_poolTokenAddress, delta.p2pBorrowDelta);
             emit P2PAmountsUpdated(_poolTokenAddress, delta.p2pSupplyAmount, delta.p2pBorrowAmount);
         }
