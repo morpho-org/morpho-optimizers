@@ -52,22 +52,22 @@ contract TestUpgradeable is TestSetup {
         // Test for Morpho Implementation.
         hevm.expectRevert("Initializable: contract is already initialized");
         morphoImplV1.initialize(
-            entryManager,
-            exitManager,
+            entryPositionsManager,
+            exitPositionsManager,
             interestRatesManager,
             IPoolAddressesProvider(poolAddressesProviderAddress),
             defaultMaxGasForMatching,
             20
         );
 
-        // Test for EntryManager Implementation.
+        // Test for EntryPositionsManager Implementation.
         // `_initialized` value is at slot 0.
-        uint256 _initialized = uint256(hevm.load(address(entryManager), bytes32(0)));
+        uint256 _initialized = uint256(hevm.load(address(entryPositionsManager), bytes32(0)));
         assertEq(_initialized, 1);
 
-        // Test for ExitManager Implementation.
+        // Test for ExitPositionsManager Implementation.
         // `_initialized` value is at slot 0.
-        _initialized = uint256(hevm.load(address(exitManager), bytes32(0)));
+        _initialized = uint256(hevm.load(address(exitPositionsManager), bytes32(0)));
         assertEq(_initialized, 1);
     }
 }

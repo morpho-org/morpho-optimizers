@@ -3,8 +3,8 @@ pragma solidity ^0.8.0;
 
 import "./IInterestRatesManager.sol";
 import "./IRewardsManager.sol";
-import "./IEntryManager.sol";
-import "./IExitManager.sol";
+import "./IEntryPositionsManager.sol";
+import "./IExitPositionsManager.sol";
 
 import "../libraries/Types.sol";
 
@@ -28,8 +28,8 @@ interface IMorpho {
     function marketStatus(address) external view returns (Types.MarketStatus memory);
     function interestRatesManager() external view returns (IInterestRatesManager);
     function rewardsManager() external view returns (IRewardsManager);
-    function entryManager() external view returns (IEntryManager);
-    function exitManager() external view returns (IExitManager);
+    function entryPositionsManager() external view returns (IEntryPositionsManager);
+    function exitPositionsManager() external view returns (IExitPositionsManager);
     function treasuryVault() external view returns (address);
 
     /// UTILS ///
@@ -56,6 +56,9 @@ interface IMorpho {
     function setP2PIndexCursor(address _poolTokenAddress, uint16 _p2pIndexCursor) external;
     function setPauseStatus(address _poolTokenAddress) external;
     function setPartialPauseStatus(address _poolTokenAddress) external;
+    function setExitPositionsManager(IExitPositionsManager _exitPositionsManager) external;
+    function setEntryPositionsManager(IEntryPositionsManager _entryPositionsManager)
+        external;
     function claimToTreasury(address _poolTokenAddress, uint256 _amount) external;
     function createMarket(address _poolTokenAddress, Types.MarketParameters calldata _marketParams) external;
 
