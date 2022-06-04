@@ -566,7 +566,7 @@ contract TestLens is TestSetup {
         hevm.warp(block.timestamp + 365 days);
         (uint256 newP2PSupplyIndex, uint256 newP2PBorrowIndex) = lens.getUpdatedP2PIndexes(aDai);
 
-        morpho.updateP2PIndexes(aDai);
+        morpho.updateIndexes(aDai);
         assertEq(newP2PBorrowIndex, morpho.p2pBorrowIndex(aDai));
         assertEq(newP2PSupplyIndex, morpho.p2pSupplyIndex(aDai));
     }
@@ -575,7 +575,7 @@ contract TestLens is TestSetup {
         hevm.warp(block.timestamp + 365 days);
         uint256 newP2PSupplyIndex = lens.getUpdatedP2PSupplyIndex(aDai);
 
-        morpho.updateP2PIndexes(aDai);
+        morpho.updateIndexes(aDai);
         assertEq(newP2PSupplyIndex, morpho.p2pSupplyIndex(aDai));
     }
 
@@ -583,7 +583,7 @@ contract TestLens is TestSetup {
         hevm.warp(block.timestamp + 365 days);
         uint256 newP2PBorrowIndex = lens.getUpdatedP2PBorrowIndex(aDai);
 
-        morpho.updateP2PIndexes(aDai);
+        morpho.updateIndexes(aDai);
         assertEq(newP2PBorrowIndex, morpho.p2pBorrowIndex(aDai));
     }
 }
