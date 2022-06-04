@@ -3,9 +3,9 @@ pragma solidity 0.8.13;
 
 import "@contracts/aave-v2/libraries/aave/WadRayMath.sol";
 
-import "ds-test/test.sol";
+import "forge-std/Test.sol";
 
-contract Utils is DSTest {
+contract Utils is Test {
     using WadRayMath for uint256;
 
     uint256 internal constant WAD = 1e18;
@@ -81,7 +81,7 @@ contract Utils is DSTest {
     }
 
     function testEquality(uint256 _firstValue, uint256 _secondValue) internal {
-        assertApproxEq(_firstValue, _secondValue, 20);
+        assertApproxEqAbs(_firstValue, _secondValue, 20);
     }
 
     function testEquality(
@@ -89,7 +89,7 @@ contract Utils is DSTest {
         uint256 _secondValue,
         string memory err
     ) internal {
-        assertApproxEq(_firstValue, _secondValue, 20, err);
+        assertApproxEqAbs(_firstValue, _secondValue, 20, err);
     }
 
     /// @dev calculates compounded interest over a period of time.

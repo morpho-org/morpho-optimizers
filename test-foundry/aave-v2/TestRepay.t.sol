@@ -497,7 +497,7 @@ contract TestRepay is TestSetup {
                 ) + shareOfTheDelta.rayMul(newVars.NI).rayDiv(oldVars.NI)
             );
 
-            assertApproxEq(
+            assertApproxEqAbs(
                 expectedSP2PER,
                 newVars.SP2PER,
                 (expectedSP2PER * 2) / 100,
@@ -513,7 +513,7 @@ contract TestRepay is TestSetup {
                     aDai,
                     address(suppliers[i])
                 );
-                assertApproxEq(
+                assertApproxEqAbs(
                     p2pUnitToUnderlying(inP2PSupplier, newVars.SP2PER),
                     expectedSupplyBalanceInUnderlying,
                     (expectedSupplyBalanceInUnderlying * 2) / 100,

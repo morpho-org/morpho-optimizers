@@ -21,13 +21,15 @@ import "../../common/helpers/MorphoToken.sol";
 import "../../common/helpers/Chains.sol";
 import "../helpers/SimplePriceOracle.sol";
 import "../helpers/DumbOracle.sol";
-import {User} from "../helpers/User.sol";
-import {Utils} from "./Utils.sol";
-import "forge-std/stdlib.sol";
+import "../helpers/User.sol";
+import "./Utils.sol";
+import "forge-std/Test.sol";
+import "forge-std/console2.sol";
+import "forge-std/Vm.sol";
 import "forge-std/console.sol";
 import "@config/Config.sol";
 
-contract TestSetup is Config, Utils, stdCheats {
+contract TestSetup is Test, Config, Utils {
     Vm public hevm = Vm(HEVM_ADDRESS);
 
     uint256 public constant MAX_BASIS_POINTS = 10_000;

@@ -140,8 +140,8 @@ contract TestLiquidate is TestSetup {
             p2pUnitToUnderlying(inP2PUsdc, morpho.p2pBorrowIndex(aUsdc)) -
             toRepay;
 
-        assertApproxEq(onPoolBorrower, 0, 1, "borrower borrow on pool");
-        assertApproxEq(
+        assertApproxEqAbs(onPoolBorrower, 0, 1, "borrower borrow on pool");
+        assertApproxEqAbs(
             p2pUnitToUnderlying(inP2PBorrower, morpho.p2pBorrowIndex(aUsdc)),
             expectedBorrowBalanceInP2P,
             1,
@@ -233,7 +233,7 @@ contract TestLiquidate is TestSetup {
             lendingPool.getReserveNormalizedVariableDebt(usdc)
         ) - toRepay;
 
-        assertApproxEq(
+        assertApproxEqAbs(
             aDUnitToUnderlying(onPoolBorrower, lendingPool.getReserveNormalizedVariableDebt(usdc)),
             expectedBorrowBalanceOnPool,
             1,
