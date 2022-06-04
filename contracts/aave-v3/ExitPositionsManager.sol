@@ -86,7 +86,6 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         uint256 poolSupplyIndex;
         uint256 p2pSupplyIndex;
         uint256 onPoolSupply;
-        uint256 withdrawable;
         uint256 toWithdraw;
     }
 
@@ -257,7 +256,6 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         WithdrawVars memory vars;
         vars.remainingToWithdraw = _amount;
         vars.maxGasForMatching = _maxGasForMatching;
-        vars.withdrawable = IAToken(_poolTokenAddress).balanceOf(address(this));
         vars.poolSupplyIndex = poolIndexes[_poolTokenAddress].poolSupplyIndex;
 
         /// Soft withdraw ///
@@ -266,8 +264,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         if (vars.onPoolSupply > 0) {
             vars.toWithdraw = Math.min(
                 vars.onPoolSupply.rayMul(vars.poolSupplyIndex),
-                vars.remainingToWithdraw,
-                vars.withdrawable
+                vars.remainingToWithdraw
             );
             vars.remainingToWithdraw -= vars.toWithdraw;
 
@@ -279,7 +276,8 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
 
             if (vars.remainingToWithdraw == 0) {
                 _leaveMarketIfNeeded(_poolTokenAddress, _supplier);
-                if (vars.toWithdraw > 0) _withdrawFromPool(underlyingToken, vars.toWithdraw); // Reverts on error.
+                if (vars.toWithdraw > 0)
+                    _withdrawFromPool(underlyingToken, _poolTokenAddress, vars.toWithdraw); // Reverts on error.
                 underlyingToken.safeTransfer(_receiver, _amount);
 
                 emit Withdrawn(
@@ -310,8 +308,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         if (vars.remainingToWithdraw > 0 && delta.p2pSupplyDelta > 0) {
             uint256 matchedDelta = Math.min(
                 delta.p2pSupplyDelta.rayMul(vars.poolSupplyIndex),
-                vars.remainingToWithdraw,
-                vars.withdrawable - vars.toWithdraw
+                vars.remainingToWithdraw
             );
 
             vars.toWithdraw += matchedDelta;
@@ -330,7 +327,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         ) {
             (uint256 matched, uint256 gasConsumedInMatching) = _matchSuppliers(
                 _poolTokenAddress,
-                Math.min(vars.remainingToWithdraw, vars.withdrawable - vars.toWithdraw),
+                vars.remainingToWithdraw,
                 vars.maxGasForMatching
             );
             if (vars.maxGasForMatching <= gasConsumedInMatching) vars.maxGasForMatching = 0;
@@ -342,7 +339,8 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
             }
         }
 
-        if (vars.toWithdraw > 0) _withdrawFromPool(underlyingToken, vars.toWithdraw); // Reverts on error.
+        if (vars.toWithdraw > 0)
+            _withdrawFromPool(underlyingToken, _poolTokenAddress, vars.toWithdraw); // Reverts on error.
 
         /// Hard withdraw ///
 

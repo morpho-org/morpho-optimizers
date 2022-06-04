@@ -55,8 +55,15 @@ contract PositionsManagerUtils is MatchingEngine {
 
     /// @dev Withdraws underlying tokens from Aave.
     /// @param _underlyingToken The underlying token of the market to withdraw from.
+    /// @param _poolTokenAddress The address of the market.
     /// @param _amount The amount of token (in underlying).
-    function _withdrawFromPool(ERC20 _underlyingToken, uint256 _amount) internal {
+    function _withdrawFromPool(
+        ERC20 _underlyingToken,
+        address _poolTokenAddress,
+        uint256 _amount
+    ) internal {
+        // Withdraw only what is possible. The remaining dust is taken from the contract balance.
+        _amount = Math.min(IAToken(_poolTokenAddress).balanceOf(address(this)), _amount);
         pool.withdraw(address(_underlyingToken), _amount, address(this));
     }
 
