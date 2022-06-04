@@ -82,7 +82,7 @@ contract EntryManager is IEntryManager, PoolInteraction {
     ) external {
         if (_onBehalf == address(0)) revert AddressIsZero();
         if (_amount == 0) revert AmountIsZero();
-        _updateP2PIndexes(_poolTokenAddress);
+        _updateIndexes(_poolTokenAddress);
 
         _enterMarketIfNeeded(_poolTokenAddress, _onBehalf);
         ERC20 underlyingToken = ERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
@@ -168,7 +168,7 @@ contract EntryManager is IEntryManager, PoolInteraction {
         uint256 _maxGasForMatching
     ) external {
         if (_amount == 0) revert AmountIsZero();
-        _updateP2PIndexes(_poolTokenAddress);
+        _updateIndexes(_poolTokenAddress);
 
         _enterMarketIfNeeded(_poolTokenAddress, msg.sender);
         if (!_borrowAllowed(msg.sender, _poolTokenAddress, _amount)) revert UnauthorisedBorrow();
@@ -267,7 +267,7 @@ contract EntryManager is IEntryManager, PoolInteraction {
         for (uint256 i; i < numberOfEnteredMarkets; ) {
             address poolTokenEntered = enteredMarkets[_user][i];
 
-            if (poolTokenEntered != _poolTokenAddress) _updateP2PIndexes(poolTokenEntered);
+            if (poolTokenEntered != _poolTokenAddress) _updateIndexes(poolTokenEntered);
 
             address underlyingAddress = IAToken(poolTokenEntered).UNDERLYING_ASSET_ADDRESS();
             assetData.underlyingPrice = oracle.getAssetPrice(underlyingAddress); // In ETH.
