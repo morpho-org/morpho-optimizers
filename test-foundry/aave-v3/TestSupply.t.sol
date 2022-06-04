@@ -223,6 +223,7 @@ contract TestSupply is TestSetup {
         // Someone repays on behalf of Morpho.
         supplier2.approve(dai, address(pool), amount);
         hevm.prank(address(supplier2));
+        hevm.warp(block.timestamp + 1);
         pool.repay(dai, amount, 2, address(morpho));
         hevm.stopPrank();
 

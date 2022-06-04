@@ -588,6 +588,7 @@ contract TestRepay is TestSetup {
         // Someone repays on behalf of Morpho.
         supplier1.approve(dai, address(pool), amount);
         hevm.prank(address(supplier1));
+        hevm.warp(block.timestamp + 1);
         pool.repay(dai, amount, 2, address(morpho));
         hevm.stopPrank();
 
@@ -636,9 +637,10 @@ contract TestRepay is TestSetup {
         borrower1.supply(aUsdc, to6Decimals(collateral));
         borrower1.borrow(aDai, amount);
 
-        borrower2.approve(dai, amount);
+        borrower2.approve(dai, type(uint256).max);
         hevm.prank(address(borrower2));
-        morpho.repay(aDai, address(borrower1), amount);
+        hevm.warp(block.timestamp + 1);
+        morpho.repay(aDai, address(borrower1), type(uint256).max);
 
         (uint256 inP2P, uint256 onPool) = morpho.borrowBalanceInOf(aDai, address(borrower1));
 
