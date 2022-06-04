@@ -603,14 +603,17 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
                 assetData.tokenUnit;
 
             liquidityData.debtValue += assetData.debtValue;
-            liquidityData.liquidationThresholdValue += assetData.collateralValue.percentMul(
-                assetData.liquidationThreshold
-            );
 
-            if (_poolTokenAddress == poolTokenEntered && _withdrawnAmount > 0) {
-                liquidityData.liquidationThresholdValue -= ((_withdrawnAmount *
-                    assetData.underlyingPrice) / assetData.tokenUnit)
-                .percentMul(assetData.liquidationThreshold);
+            if (assetData.ltv > 0) {
+                liquidityData.liquidationThresholdValue += assetData.collateralValue.percentMul(
+                    assetData.liquidationThreshold
+                );
+
+                if (_poolTokenAddress == poolTokenEntered && _withdrawnAmount > 0) {
+                    liquidityData.liquidationThresholdValue -= ((_withdrawnAmount *
+                        assetData.underlyingPrice) / assetData.tokenUnit)
+                    .percentMul(assetData.liquidationThreshold);
+                }
             }
 
             unchecked {
