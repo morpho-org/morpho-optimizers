@@ -5,6 +5,7 @@ import "./setup/TestSetup.sol";
 
 contract TestLiquidate is TestSetup {
     using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
+    using PercentageMath for uint256;
 
     // A user liquidates a borrower that has enough collateral to cover for his debt, the transaction reverts.
     function testShouldNotBePossibleToLiquidateUserAboveWater() public {
@@ -55,7 +56,7 @@ contract TestLiquidate is TestSetup {
             onPoolBorrower,
             pool.getReserveNormalizedVariableDebt(dai)
         );
-        testEquality(expectedBorrowBalanceOnPool, toRepay);
+        testEqualityLarge(expectedBorrowBalanceOnPool, toRepay);
         assertEq(inP2PBorrower, 0);
 
         // Check borrower1 supply balance
@@ -82,7 +83,7 @@ contract TestLiquidate is TestSetup {
             uint256 expectedOnPool = collateralOnPool -
                 underlyingToScaledBalance(amountToSeize, normalizedIncome);
 
-            testEquality(onPoolBorrower, expectedOnPool);
+            testEqualityLarge(onPoolBorrower, expectedOnPool);
             assertEq(inP2PBorrower, 0);
         }
     }
@@ -150,22 +151,18 @@ contract TestLiquidate is TestSetup {
         uint256 collateralPrice = customOracle.getAssetPrice(dai);
         vars.collateralTokenUnit = 10**vars.collateralReserveDecimals;
 
-        (, , vars.liquidationBonus, vars.borrowedReserveDecimals, , ) = pool
-        .getConfiguration(usdc)
-        .getParams();
+        (, , , vars.borrowedReserveDecimals, , ) = pool.getConfiguration(usdc).getParams();
         uint256 borrowedPrice = customOracle.getAssetPrice(usdc);
         vars.borrowedTokenUnit = 10**vars.borrowedReserveDecimals;
 
-        uint256 amountToSeize = (toRepay *
-            borrowedPrice *
-            vars.collateralTokenUnit *
-            vars.liquidationBonus) / (vars.borrowedTokenUnit * collateralPrice * 10_000);
+        uint256 amountToSeize = ((toRepay * borrowedPrice * vars.collateralTokenUnit) /
+            (vars.borrowedTokenUnit * collateralPrice))
+        .percentMul(vars.liquidationBonus);
 
-        assertApproxEq(
+        testEqualityLarge(
             onPoolBorrower,
             onPoolDai -
                 underlyingToScaledBalance(amountToSeize, pool.getReserveNormalizedIncome(dai)),
-            1,
             "borrower supply on pool"
         );
         assertEq(inP2PBorrower, inP2PDai, "borrower supply in peer-to-peer");
