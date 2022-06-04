@@ -24,8 +24,8 @@ import "@contracts/aave-v3/libraries/Types.sol";
 import {InterestRatesManager} from "@contracts/aave-v3/InterestRatesManager.sol";
 import {IncentivesVault} from "@contracts/aave-v3/IncentivesVault.sol";
 import {MatchingEngine} from "@contracts/aave-v3/MatchingEngine.sol";
-import {EntryManager} from "@contracts/aave-v3/EntryManager.sol";
-import {ExitManager} from "@contracts/aave-v3/ExitManager.sol";
+import {EntryPositionsManager} from "@contracts/aave-v3/EntryPositionsManager.sol";
+import {ExitPositionsManager} from "@contracts/aave-v3/ExitPositionsManager.sol";
 import {Lens} from "@contracts/aave-v3/Lens.sol";
 import "@contracts/aave-v3/Morpho.sol";
 
@@ -51,8 +51,8 @@ contract TestSetup is Config, Utils, stdCheats {
     Morpho public morpho;
     IInterestRatesManager public interestRatesManager;
     IRewardsManager public rewardsManager;
-    IEntryManager public entryManager;
-    IExitManager public exitManager;
+    IEntryPositionsManager public entryPositionsManager;
+    IExitPositionsManager public exitPositionsManager;
     Lens public lens;
     MorphoToken public morphoToken;
     // TODO: Implement rewards
@@ -94,8 +94,8 @@ contract TestSetup is Config, Utils, stdCheats {
 
         poolAddressesProvider = IPoolAddressesProvider(poolAddressesProviderAddress);
         pool = IPool(poolAddressesProvider.getPool());
-        entryManager = new EntryManager();
-        exitManager = new ExitManager();
+        entryPositionsManager = new EntryPositionsManager();
+        exitPositionsManager = new ExitPositionsManager();
 
         /// Deploy proxies ///
 
@@ -108,8 +108,8 @@ contract TestSetup is Config, Utils, stdCheats {
         morphoProxy.changeAdmin(address(proxyAdmin));
         morpho = Morpho(payable(address(morphoProxy)));
         morpho.initialize(
-            entryManager,
-            exitManager,
+            entryPositionsManager,
+            exitPositionsManager,
             interestRatesManager,
             IPoolAddressesProvider(poolAddressesProviderAddress),
             defaultMaxGasForMatching,

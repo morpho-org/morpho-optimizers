@@ -62,7 +62,7 @@ contract TestLiquidate is TestSetup {
         // Check borrower1 supply balance
         (inP2PBorrower, onPoolBorrower) = morpho.supplyBalanceInOf(aUsdc, address(borrower1));
 
-        ExitManager.LiquidateVars memory vars;
+        ExitPositionsManager.LiquidateVars memory vars;
         (, , vars.liquidationBonus, vars.collateralReserveDecimals, , ) = pool
         .getConfiguration(usdc)
         .getParams();
@@ -144,7 +144,7 @@ contract TestLiquidate is TestSetup {
         // Check borrower1 supply balance.
         (inP2PBorrower, onPoolBorrower) = morpho.supplyBalanceInOf(aDai, address(borrower1));
 
-        ExitManager.LiquidateVars memory vars;
+        ExitPositionsManager.LiquidateVars memory vars;
         (, , vars.liquidationBonus, vars.collateralReserveDecimals, , ) = pool
         .getConfiguration(dai)
         .getParams();
@@ -222,7 +222,7 @@ contract TestLiquidate is TestSetup {
         // Check borrower1 supply balance.
         (inP2PBorrower, onPoolBorrower) = morpho.supplyBalanceInOf(aDai, address(borrower1));
 
-        ExitManager.LiquidateVars memory vars;
+        ExitPositionsManager.LiquidateVars memory vars;
         (, , vars.liquidationBonus, vars.collateralReserveDecimals, , ) = pool
         .getConfiguration(dai)
         .getParams();
