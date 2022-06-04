@@ -113,7 +113,7 @@ contract TestRepay is TestSetup {
 
         testEqualityLarge(inP2PBorrower1, inP2PAvailableBorrower, "available in P2P");
         testEqualityLarge(inP2PBorrower1, expectedBorrowBalanceInP2P, "borrower in P2P 2");
-        assertApproxEq(onPoolAvailableBorrower, 0, 1e16, "available on pool");
+        assertApproxEqAbs(onPoolAvailableBorrower, 0, 1e16, "available on pool");
         assertEq(onPoolBorrower1, 0, "borrower on pool 2");
 
         // Check balances for supplier.
@@ -226,8 +226,13 @@ contract TestRepay is TestSetup {
                 morpho.p2pBorrowIndex(cDai)
             );
 
+<<<<<<< HEAD
             testEqualityLarge(vars.inP2P, expectedInP2P, "borrower in peer-to-peer");
             testEqualityLarge(vars.onPool, 0, "borrower on pool");
+=======
+            assertApproxEqAbs(vars.inP2P, expectedInP2P, 1, "borrower in peer-to-peer");
+            assertApproxEqAbs(vars.onPool, 0, 1e9, "borrower on pool");
+>>>>>>> Update forge-std and ds-test and clean submodules
         }
     }
 
@@ -286,7 +291,11 @@ contract TestRepay is TestSetup {
             morpho.p2pBorrowIndex(cDai)
         );
 
+<<<<<<< HEAD
         testEqualityLarge(inP2PBorrower1, expectedBorrowBalanceInP2P, "borrower in P2P");
+=======
+        assertApproxEqAbs(inP2PBorrower1, expectedBorrowBalanceInP2P, 1, "borrower in P2P");
+>>>>>>> Update forge-std and ds-test and clean submodules
         assertEq(onPoolBorrower1, 0);
 
         // Check balances for supplier.
@@ -297,8 +306,13 @@ contract TestRepay is TestSetup {
             ICToken(cDai).exchangeRateCurrent()
         );
 
+<<<<<<< HEAD
         testEqualityLarge(inP2PSupplier, expectedSupplyBalanceInP2P, "supplier in P2P 2");
         testEqualityLarge(onPoolSupplier, expectedSupplyBalanceOnPool, "supplier on pool 2");
+=======
+        assertApproxEqAbs(inP2PSupplier, expectedSupplyBalanceInP2P, 1, "supplier in P2P 2");
+        assertEq(onPoolSupplier, expectedSupplyBalanceOnPool, "supplier on pool 2");
+>>>>>>> Update forge-std and ds-test and clean submodules
     }
 
     // The borrower is matched to 2 x NMAX suppliers. There are NMAX borrowers `onPool` available to replace him `inP2P`, they don't supply enough to cover for the repaid liquidity. First, the `onPool` liquidity is repaid, then we proceed to NMAX `match borrower`. Finally, we proceed to NMAX `unmatch supplier` for an amount equal to the remaining to withdraw.
@@ -385,8 +399,13 @@ contract TestRepay is TestSetup {
         );
         uint256 expectedSupplyBalanceInP2P = (suppliedAmount / 2).div(morpho.p2pSupplyIndex(cDai));
 
+<<<<<<< HEAD
         testEqualityLarge(inP2PSupplier, expectedSupplyBalanceInP2P, "supplier in peer-to-peer");
         testEqualityLarge(onPoolSupplier, expectedSupplyBalanceOnPool, "supplier on pool");
+=======
+        assertApproxEqAbs(inP2PSupplier, expectedSupplyBalanceInP2P, 2, "supplier in peer-to-peer");
+        assertApproxEqAbs(onPoolSupplier, expectedSupplyBalanceOnPool, 1, "supplier on pool");
+>>>>>>> Update forge-std and ds-test and clean submodules
 
         uint256 inP2P;
         uint256 onPool;
@@ -449,8 +468,13 @@ contract TestRepay is TestSetup {
                 cDai,
                 address(borrower1)
             );
+<<<<<<< HEAD
             assertApproxEq(onPoolBorrower, 0, 10, "borrower on pool");
             testEqualityLarge(
+=======
+            assertApproxEqAbs(onPoolBorrower, 0, 10, "borrower on pool");
+            assertApproxEqAbs(
+>>>>>>> Update forge-std and ds-test and clean submodules
                 inP2PBorrower,
                 expectedBorrowBalanceInP2P,
                 "borrower in peer-to-peer"
@@ -500,7 +524,7 @@ contract TestRepay is TestSetup {
             .div(ICToken(cDai).exchangeRateCurrent());
 
             (uint256 p2pSupplyDelta, , , ) = morpho.deltas(cDai);
-            assertApproxEq(p2pSupplyDelta, expectedp2pSupplyDelta, 10, "supply delta 1");
+            assertApproxEqAbs(p2pSupplyDelta, expectedp2pSupplyDelta, 10, "supply delta 1");
 
             // Supply delta matching by a new borrower.
             borrower2.approve(usdc, to6Decimals(collateral));
@@ -513,7 +537,7 @@ contract TestRepay is TestSetup {
             );
 
             (p2pSupplyDelta, , , ) = morpho.deltas(cDai);
-            assertApproxEq(
+            assertApproxEqAbs(
                 p2pSupplyDelta,
                 expectedp2pSupplyDelta / 2,
                 10,
@@ -556,7 +580,7 @@ contract TestRepay is TestSetup {
                     shareOfTheDelta.mul(newVars.SPI).div(oldVars.SPI)
             );
 
-            assertApproxEq(
+            assertApproxEqAbs(
                 expectedSP2PER,
                 newVars.SP2PER,
                 (expectedSP2PER * 2) / 100,
@@ -573,7 +597,7 @@ contract TestRepay is TestSetup {
                     address(suppliers[i])
                 );
 
-                assertApproxEq(
+                assertApproxEqAbs(
                     inP2PSupplier.mul(newVars.SP2PER),
                     expectedSupplyBalanceInUnderlying,
                     (expectedSupplyBalanceInUnderlying * 2) / 100,
@@ -642,7 +666,7 @@ contract TestRepay is TestSetup {
         for (uint256 i = 0; i < 10; i++) {
             (uint256 inP2P, uint256 onPool) = morpho.supplyBalanceInOf(cDai, address(suppliers[i]));
             assertEq(inP2P, 0, "inP2P");
-            assertApproxEq(
+            assertApproxEqAbs(
                 onPool,
                 suppliedAmount.div(ICToken(cDai).exchangeRateCurrent()),
                 1e2,
@@ -651,7 +675,7 @@ contract TestRepay is TestSetup {
         }
         for (uint256 i = 10; i < 20; i++) {
             (uint256 inP2P, uint256 onPool) = morpho.supplyBalanceInOf(cDai, address(suppliers[i]));
-            assertApproxEq(
+            assertApproxEqAbs(
                 inP2P,
                 suppliedAmount.div(morpho.p2pSupplyIndex(cDai)),
                 100_000,
@@ -667,20 +691,20 @@ contract TestRepay is TestSetup {
             uint256 p2pBorrowAmount
         ) = morpho.deltas(cDai);
 
-        assertApproxEq(
+        assertApproxEqAbs(
             p2pSupplyDelta,
             (10 * suppliedAmount).div(ICToken(cDai).exchangeRateCurrent()),
             1_000_000,
             "p2pSupplyDelta"
         );
         assertEq(p2pBorrowDelta, 0, "p2pBorrowDelta");
-        assertApproxEq(
+        assertApproxEqAbs(
             p2pSupplyAmount,
             (10 * suppliedAmount).div(morpho.p2pSupplyIndex(cDai)),
             1e3,
             "p2pSupplyAmount"
         );
-        assertApproxEq(p2pBorrowAmount, 0, 1, "p2pBorrowAmount");
+        assertApproxEqAbs(p2pBorrowAmount, 0, 1, "p2pBorrowAmount");
 
         move1000BlocksForward(cDai);
 

@@ -504,7 +504,7 @@ contract TestWithdraw is TestSetup {
                     shareOfTheDelta.rayMul(newVars.NVD).rayDiv(oldVars.NVD)
             );
 
-            assertApproxEq(
+            assertApproxEqAbs(
                 expectedBP2PER,
                 newVars.BP2PER,
                 (expectedBP2PER * 2) / 100,
@@ -520,7 +520,7 @@ contract TestWithdraw is TestSetup {
                     aDai,
                     address(borrowers[i])
                 );
-                assertApproxEq(
+                assertApproxEqAbs(
                     p2pUnitToUnderlying(inP2PBorrower, newVars.BP2PER),
                     expectedBorrowBalanceInUnderlying,
                     (expectedBorrowBalanceInUnderlying * 2) / 100,

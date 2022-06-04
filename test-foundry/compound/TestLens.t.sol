@@ -226,7 +226,7 @@ contract TestLens is TestSetup {
             cUsdc
         );
 
-        assertApproxEq(
+        assertApproxEqAbs(
             withdrawable,
             getBalanceOnCompound(amount, ICToken(cUsdc).exchangeRateStored()),
             1,
@@ -430,7 +430,7 @@ contract TestLens is TestSetup {
             getBalanceOnCompound(to6Decimals(amount), ICToken(cUsdc).exchangeRateCurrent()),
             "withdrawable USDC"
         );
-        assertApproxEq(
+        assertApproxEqAbs(
             withdrawableDai,
             getBalanceOnCompound(amount, ICToken(cDai).exchangeRateCurrent()),
             1,
@@ -448,7 +448,7 @@ contract TestLens is TestSetup {
 
         expectedBorrowableUsdt -= toBorrow;
 
-        assertApproxEq(newBorrowableUsdt, expectedBorrowableUsdt, 1, "borrowable USDT after");
+        assertApproxEqAbs(newBorrowableUsdt, expectedBorrowableUsdt, 1, "borrowable USDT after");
     }
 
     function testUserBalanceStatesWithSupplyAndBorrow() public {
@@ -870,7 +870,7 @@ contract TestLens is TestSetup {
             ((oracle.getUnderlyingPrice(cDai) * 79) / 100) * 1e12
         );
 
-        assertApproxEq(
+        assertApproxEqAbs(
             lens.computeLiquidationRepayAmount(address(borrower1), cDai, cUsdc, new address[](0)),
             amount.mul(comptroller.closeFactorMantissa()),
             1
@@ -891,7 +891,7 @@ contract TestLens is TestSetup {
 
         assertTrue(lens.isLiquidatable(address(borrower1), new address[](0)));
 
-        assertApproxEq(
+        assertApproxEqAbs(
             lens.computeLiquidationRepayAmount(address(borrower1), cDai, cUsdc, new address[](0)),
             amount / 2,
             1

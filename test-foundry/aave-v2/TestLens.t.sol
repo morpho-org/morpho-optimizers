@@ -123,7 +123,7 @@ contract TestLens is TestSetup {
         assertEq(assetData.underlyingPrice, underlyingPrice, "underlyingPrice");
         assertEq(assetData.reserveDecimals, reserveDecimals, "reserveDecimals");
         assertEq(assetData.tokenUnit, tokenUnit, "tokenUnit");
-        assertApproxEq(assetData.collateralValue, collateralValue, 2, "collateralValue");
+        assertApproxEqAbs(assetData.collateralValue, collateralValue, 2, "collateralValue");
         assertEq(assetData.debtValue, debtValue, "debtValue");
     }
 
@@ -419,7 +419,7 @@ contract TestLens is TestSetup {
             expectedStates.debtValue
         );
 
-        assertApproxEq(
+        assertApproxEqAbs(
             states.collateralValue,
             expectedStates.collateralValue,
             2,

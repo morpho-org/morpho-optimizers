@@ -93,7 +93,7 @@ contract TestEth is TestSetup {
 
         assertEq(onPool, 0);
         testEquality(inP2P, expectedInP2P);
-        assertApproxEq(balanceAfter, balanceBefore + toBorrow, 1e9);
+        assertApproxEqAbs(balanceAfter, balanceBefore + toBorrow, 1e9);
     }
 
     function testWithdrawEthOnPool() public {
@@ -110,7 +110,7 @@ contract TestEth is TestSetup {
 
         assertEq(onPool, 0);
         assertEq(inP2P, 0);
-        assertApproxEq(balanceAfter, balanceBefore, 1e9);
+        assertApproxEqAbs(balanceAfter, balanceBefore, 1e9);
     }
 
     function testWithdrawEthInP2P() public {
@@ -133,7 +133,7 @@ contract TestEth is TestSetup {
 
         assertEq(onPool, 0);
         assertEq(inP2P, 0);
-        assertApproxEq(balanceAfter, balanceBefore, 1e9);
+        assertApproxEqAbs(balanceAfter, balanceBefore, 1e9);
     }
 
     function testRepayEthOnPool() public {
@@ -180,9 +180,9 @@ contract TestEth is TestSetup {
 
         (uint256 inP2P, uint256 onPool) = morpho.borrowBalanceInOf(cEth, address(borrower1));
 
-        testEquality(onPool, 0);
-        testEquality(inP2P, 0);
-        assertApproxEq(balanceAfter, balanceBefore, 1e9, "balance");
+        assertEq(onPool, 0);
+        assertEq(inP2P, 0);
+        assertApproxEqAbs(balanceAfter, balanceBefore, 1e9, "balance");
     }
 
     function testShouldLiquidateUserWithEthBorrowed() public {
