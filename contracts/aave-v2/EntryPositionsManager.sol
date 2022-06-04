@@ -178,7 +178,6 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
         uint256 toWithdraw;
         Types.Delta storage delta = deltas[_poolTokenAddress];
         uint256 poolSupplyIndex = poolIndexes[_poolTokenAddress].poolSupplyIndex;
-        uint256 withdrawable = IAToken(_poolTokenAddress).balanceOf(address(this)); // The balance on pool.
 
         /// Borrow in peer-to-peer ///
 
@@ -186,8 +185,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
         if (delta.p2pSupplyDelta > 0) {
             uint256 matchedDelta = Math.min(
                 delta.p2pSupplyDelta.rayMul(poolSupplyIndex),
-                remainingToBorrow,
-                withdrawable
+                remainingToBorrow
             );
 
             toWithdraw += matchedDelta;
@@ -204,7 +202,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
         ) {
             (uint256 matched, ) = _matchSuppliers(
                 _poolTokenAddress,
-                Math.min(remainingToBorrow, withdrawable - toWithdraw),
+                remainingToBorrow,
                 _maxGasForMatching
             ); // In underlying.
 
@@ -224,7 +222,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
             borrowBalanceInOf[_poolTokenAddress][msg.sender].inP2P += toAddInP2P;
             emit P2PAmountsUpdated(_poolTokenAddress, delta.p2pSupplyAmount, delta.p2pBorrowAmount);
 
-            if (toWithdraw > 0) _withdrawFromPool(underlyingToken, toWithdraw); // Reverts on error.
+            if (toWithdraw > 0) _withdrawFromPool(underlyingToken, _poolTokenAddress, toWithdraw); // Reverts on error.
         }
 
         /// Borrow on pool ///
