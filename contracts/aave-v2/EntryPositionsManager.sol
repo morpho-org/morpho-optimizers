@@ -102,9 +102,14 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
                 vars.remainingToSupply
             );
 
+            uint256 remainingToSupplyInPoolUnit = vars.remainingToSupply.rayDiv(
+                vars.poolBorrowIndex
+            );
+            delta.p2pBorrowDelta = delta.p2pBorrowDelta > remainingToSupplyInPoolUnit
+                ? delta.p2pBorrowDelta - remainingToSupplyInPoolUnit
+                : 0;
             vars.toRepay += matchedDelta;
             vars.remainingToSupply -= matchedDelta;
-            delta.p2pBorrowDelta -= matchedDelta.rayDiv(vars.poolBorrowIndex);
             emit P2PBorrowDeltaUpdated(_poolTokenAddress, delta.p2pBorrowDelta);
         }
 
@@ -188,9 +193,12 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
                 remainingToBorrow
             );
 
+            uint256 remainingToBorrowInPoolUnit = remainingToBorrow.rayDiv(poolSupplyIndex);
+            delta.p2pSupplyDelta = delta.p2pSupplyDelta > remainingToBorrowInPoolUnit
+                ? delta.p2pSupplyDelta - remainingToBorrowInPoolUnit
+                : 0;
             toWithdraw += matchedDelta;
             remainingToBorrow -= matchedDelta;
-            delta.p2pSupplyDelta -= matchedDelta.rayDiv(poolSupplyIndex);
             emit P2PSupplyDeltaUpdated(_poolTokenAddress, delta.p2pSupplyDelta);
         }
 
