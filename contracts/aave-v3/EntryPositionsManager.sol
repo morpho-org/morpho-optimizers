@@ -276,6 +276,12 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
         address _poolTokenAddress,
         uint256 _borrowedAmount
     ) internal returns (bool) {
+        address priceOracleSentinel = addressesProvider.getPriceOracleSentinel();
+        if (
+            priceOracleSentinel != address(0) &&
+            !IPriceOracleSentinel(priceOracleSentinel).isBorrowAllowed()
+        ) return false;
+
         IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
         uint256 numberOfEnteredMarkets = enteredMarkets[_user].length;
 
