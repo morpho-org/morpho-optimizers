@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity ^0.8.0;
 
-import "./interfaces/IExitManager.sol";
+import "./interfaces/IExitPositionsManager.sol";
 
-import "./PoolInteraction.sol";
+import "./PositionsManagerUtils.sol";
 
-/// @title ExitManager.
+/// @title ExitPositionsManager.
 /// @author Morpho Labs.
 /// @custom:contact security@morpho.xyz
 /// @notice Morpho's exit points: withdraw, repay and liquidate.
-contract ExitManager is IExitManager, PoolInteraction {
+contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
     using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
     using HeapOrdering for HeapOrdering.HeapArray;
     using PercentageMath for uint256;
