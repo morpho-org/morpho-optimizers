@@ -62,6 +62,10 @@ abstract contract MorphoStorage is OwnableUpgradeable, ReentrancyGuardUpgradeabl
     address public cEth;
     address public wEth;
 
+    /// APPENDIX STORAGE ///
+
+    mapping(address => uint256) public lastBorrowBlock; // Block number of the last borrow of the user.
+
     /// CONSTRUCTOR ///
 
     /// @notice Constructs the contract.
