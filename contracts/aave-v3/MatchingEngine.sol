@@ -81,9 +81,12 @@ contract MatchingEngine is MorphoUtils {
         uint256 gasLeftAtTheBeginning = gasleft();
         while (
             matched < _amount &&
-            (firstPoolSupplier = suppliersOnPool[_poolTokenAddress].getHead()) != address(0) &&
-            gasLeftAtTheBeginning - gasleft() < _maxGasForMatching
+            (firstPoolSupplier = suppliersOnPool[_poolTokenAddress].getHead()) != address(0)
         ) {
+            // Safe unchecked because `gasLeftAtTheBeginning` >= gas left now.
+            unchecked {
+                if (gasLeftAtTheBeginning - gasleft() >= _maxGasForMatching) break;
+            }
             firstPoolSupplierBalance = supplyBalanceInOf[_poolTokenAddress][firstPoolSupplier];
             vars.toMatch = Math.min(
                 firstPoolSupplierBalance.onPool.rayMul(vars.poolIndex),
@@ -109,7 +112,10 @@ contract MatchingEngine is MorphoUtils {
             );
         }
 
-        gasConsumedInMatching = gasLeftAtTheBeginning - gasleft();
+        // Safe unchecked because `gasLeftAtTheBeginning` >= gas left now.
+        unchecked {
+            gasConsumedInMatching = gasLeftAtTheBeginning - gasleft();
+        }
     }
 
     /// @notice Unmatches suppliers' liquidity in peer-to-peer up to the given `_amount` and moves it to Compound.
@@ -138,9 +144,12 @@ contract MatchingEngine is MorphoUtils {
         uint256 gasLeftAtTheBeginning = gasleft();
         while (
             remainingToUnmatch > 0 &&
-            (firstP2PSupplier = suppliersInP2P[_poolTokenAddress].getHead()) != address(0) &&
-            gasLeftAtTheBeginning - gasleft() < _maxGasForMatching
+            (firstP2PSupplier = suppliersInP2P[_poolTokenAddress].getHead()) != address(0)
         ) {
+            // Safe unchecked because `gasLeftAtTheBeginning` >= gas left now.
+            unchecked {
+                if (gasLeftAtTheBeginning - gasleft() >= _maxGasForMatching) break;
+            }
             firstP2PSupplierBalance = supplyBalanceInOf[_poolTokenAddress][firstP2PSupplier];
             vars.toUnmatch = Math.min(
                 firstP2PSupplierBalance.inP2P.rayMul(vars.p2pIndex),
@@ -194,9 +203,12 @@ contract MatchingEngine is MorphoUtils {
         uint256 gasLeftAtTheBeginning = gasleft();
         while (
             matched < _amount &&
-            (firstPoolBorrower = borrowersOnPool[_poolTokenAddress].getHead()) != address(0) &&
-            gasLeftAtTheBeginning - gasleft() < _maxGasForMatching
+            (firstPoolBorrower = borrowersOnPool[_poolTokenAddress].getHead()) != address(0)
         ) {
+            // Safe unchecked because `gasLeftAtTheBeginning` >= gas left now.
+            unchecked {
+                if (gasLeftAtTheBeginning - gasleft() >= _maxGasForMatching) break;
+            }
             firstPoolBorrowerBalance = borrowBalanceInOf[_poolTokenAddress][firstPoolBorrower];
             vars.toMatch = Math.min(
                 firstPoolBorrowerBalance.onPool.rayMul(vars.poolIndex),
@@ -222,7 +234,10 @@ contract MatchingEngine is MorphoUtils {
             );
         }
 
-        gasConsumedInMatching = gasLeftAtTheBeginning - gasleft();
+        // Safe unchecked because `gasLeftAtTheBeginning` >= gas left now.
+        unchecked {
+            gasConsumedInMatching = gasLeftAtTheBeginning - gasleft();
+        }
     }
 
     /// @notice Unmatches borrowers' liquidity in peer-to-peer for the given `_amount` and moves it to Compound.
@@ -251,9 +266,12 @@ contract MatchingEngine is MorphoUtils {
         uint256 gasLeftAtTheBeginning = gasleft();
         while (
             remainingToUnmatch > 0 &&
-            (firstP2PBorrower = borrowersInP2P[_poolTokenAddress].getHead()) != address(0) &&
-            gasLeftAtTheBeginning - gasleft() < _maxGasForMatching
+            (firstP2PBorrower = borrowersInP2P[_poolTokenAddress].getHead()) != address(0)
         ) {
+            // Safe unchecked because `gasLeftAtTheBeginning` >= gas left now.
+            unchecked {
+                if (gasLeftAtTheBeginning - gasleft() >= _maxGasForMatching) break;
+            }
             firstP2PBorrowerBalance = borrowBalanceInOf[_poolTokenAddress][firstP2PBorrower];
             vars.toUnmatch = Math.min(
                 firstP2PBorrowerBalance.inP2P.rayMul(vars.p2pIndex),
