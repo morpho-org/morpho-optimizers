@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import "@contracts/compound/InterestRatesManager.sol";
+import "@contracts/aave-v2/InterestRatesManager.sol";
 import "ds-test/test.sol";
 import "forge-std/stdlib.sol";
 
@@ -34,7 +34,7 @@ contract TestInterestRates is InterestRatesManager, DSTest {
                 ((_params.delta.p2pSupplyAmount * _params.lastP2PSupplyIndex) / RAY)
             : 0;
         uint256 shareOfTheBorrowDelta = _params.delta.p2pSupplyAmount > 0
-            ? (((_params.delta.p2pBorrowDelta * _params.poolBorrowIndex) / RAY) * RAY) /
+            ? (((_params.delta.p2pBorrowDelta * _params.lastPoolBorrowIndex) / RAY) * RAY) /
                 ((_params.delta.p2pBorrowAmount * _params.lastP2PBorrowIndex) / RAY)
             : 0;
         p2pSupplyIndex_ =
