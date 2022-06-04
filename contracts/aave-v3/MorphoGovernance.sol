@@ -270,7 +270,7 @@ abstract contract MorphoGovernance is MorphoUtils {
     }
 
     /// @notice Sets the peer-to-peer disable status.
-    /// @param _poolTokenAddress The address of the market to able/disable P2P.
+    /// @param _poolTokenAddress The address of the market to able/disable peer-to-peer.
     /// @param _newStatus The new status to set.
     function setP2PDisable(address _poolTokenAddress, bool _newStatus)
         external
@@ -279,6 +279,20 @@ abstract contract MorphoGovernance is MorphoUtils {
     {
         p2pDisabled[_poolTokenAddress] = _newStatus;
         emit P2PStatusSet(_poolTokenAddress, _newStatus);
+    }
+
+    /// @notice Sets a market's asset as collateral.
+    /// @param _poolTokenAddress The address of the market to (un)set as collateral.
+    /// @param _newStatus The new status to set.
+    function setAssetAsCollateral(address _poolTokenAddress, bool _newStatus)
+        external
+        onlyOwner
+        isMarketCreated(_poolTokenAddress)
+    {
+        pool.setUserUseReserveAsCollateral(
+            IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS(),
+            _newStatus
+        );
     }
 
     /// @notice Transfers the protocol reserve fee to the DAO.
