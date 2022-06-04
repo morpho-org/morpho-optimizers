@@ -77,6 +77,9 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
     /// @notice Thrown when the positions of the user is not liquidatable.
     error UnauthorisedLiquidate();
 
+    /// @notice Thrown when the address is zero.
+    error AddressIsZero();
+
     /// STRUCTS ///
 
     // Struct to avoid stack too deep.
@@ -127,6 +130,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         uint256 _maxGasForMatching
     ) external {
         if (_amount == 0) revert AmountIsZero();
+        if (_receiver == address(0)) revert AddressIsZero();
         if (!userMembership[_poolTokenAddress][_supplier]) revert UserNotMemberOfMarket();
 
         _updateIndexes(_poolTokenAddress);
