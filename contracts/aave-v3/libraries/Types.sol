@@ -47,17 +47,17 @@ library Types {
         uint256 tokenUnit; // The token unit considering its decimals.
         uint256 liquidationThreshold; // The liquidation threshold applied on this token (in basis point).
         uint256 ltv; // The LTV applied on this token (in basis point).
-        uint256 underlyingPrice; // The price of the token (in ETH).
-        uint256 collateralValue; // The collateral value of the asset (in ETH).
-        uint256 debtValue; // The debt value of the asset (in ETH).
+        uint256 underlyingPrice; // The price of the token (In base currency in wad).
+        uint256 collateralValue; // The collateral value of the asset (In base currency in wad).
+        uint256 debtValue; // The debt value of the asset (In base currency in wad).
     }
 
     struct LiquidityData {
         uint256 healthFactor; // The health factor of the user (in basis points).
-        uint256 collateralValue; // The collateral value (in ETH).
-        uint256 maxLoanToValue; // The max loan to value (in ETH).
-        uint256 liquidationThresholdValue; // The liquidation threshold value (in ETH).
-        uint256 debtValue; // The debt value (in ETH).
+        uint256 collateralValue; // The collateral value (In base currency in wad).
+        uint256 maxLoanToValue; // The max loan to value (In base currency in wad).
+        uint256 liquidationThresholdValue; // The liquidation threshold value (In base currency in wad).
+        uint256 debtValue; // The debt value (In base currency in wad).
     }
 
     // Variables are packed together to save gas (will not exceed their limit during Morpho's lifetime).
