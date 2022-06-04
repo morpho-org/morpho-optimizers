@@ -153,6 +153,9 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     /// @notice Thrown when the amount is equal to 0.
     error AmountIsZero();
 
+    /// @notice Thrown when a user tries to repay its debt after borrowing in the same block.
+    error SameBlockBorrowRepay();
+
     /// STRUCTS ///
 
     // Struct to avoid stack too deep.
@@ -304,6 +307,8 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         _updateP2PIndexes(_poolTokenAddress);
 
         _enterMarketIfNeeded(_poolTokenAddress, msg.sender);
+        lastBorrowBlock[msg.sender] = block.number;
+
         if (_isLiquidatable(msg.sender, _poolTokenAddress, 0, _amount)) revert UnauthorisedBorrow();
         ERC20 underlyingToken = _getUnderlying(_poolTokenAddress);
         uint256 remainingToBorrow = _amount;
@@ -684,6 +689,8 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         uint256 _amount,
         uint256 _maxGasForMatching
     ) internal {
+        if (lastBorrowBlock[_onBehalf] == block.number) revert SameBlockBorrowRepay();
+
         ERC20 underlyingToken = _getUnderlying(_poolTokenAddress);
         underlyingToken.safeTransferFrom(_repayer, address(this), _amount);
 

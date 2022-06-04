@@ -721,14 +721,44 @@ contract TestRepay is TestSetup {
         borrower1.supply(cUsdc, to6Decimals(collateral));
         borrower1.borrow(cDai, amount);
 
+        moveOneBlockFowardBorrowRepay();
+
         borrower2.approve(dai, amount);
         hevm.prank(address(borrower2));
         morpho.repay(cDai, address(borrower1), amount);
 
         (uint256 inP2P, uint256 onPool) = morpho.borrowBalanceInOf(cDai, address(borrower1));
 
-        assertEq(inP2P, 0);
-        assertEq(onPool, 0);
+        testEqualityLarge(inP2P, 0);
+        testEqualityLarge(onPool, 0);
+    }
+
+    function testCannotBorrowRepayInSameBlock() public {
+        uint256 amount = 10_000 ether;
+        uint256 collateral = 2 * amount;
+
+        borrower1.approve(usdc, to6Decimals(collateral));
+        borrower1.supply(cUsdc, to6Decimals(collateral));
+        borrower1.borrow(cDai, amount);
+
+        borrower1.approve(dai, amount);
+        hevm.prank(address(borrower1));
+        hevm.expectRevert(abi.encodeWithSignature("SameBlockBorrowRepay()"));
+        morpho.repay(cDai, address(borrower1), amount);
+    }
+
+    function testCannotBorrowRepayOnBehalfInSameBlock() public {
+        uint256 amount = 10_000 ether;
+        uint256 collateral = 2 * amount;
+
+        borrower1.approve(usdc, to6Decimals(collateral));
+        borrower1.supply(cUsdc, to6Decimals(collateral));
+        borrower1.borrow(cDai, amount);
+
+        borrower2.approve(dai, amount);
+        hevm.prank(address(borrower2));
+        hevm.expectRevert(abi.encodeWithSignature("SameBlockBorrowRepay()"));
+        morpho.repay(cDai, address(borrower1), amount);
     }
 
     struct StackP2PVars {
