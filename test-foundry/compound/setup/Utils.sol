@@ -39,6 +39,18 @@ contract Utils is DSTest {
         assertApproxEq(_firstValue, _secondValue, 20, err);
     }
 
+    function testEqualityLarge(uint256 _firstValue, uint256 _secondValue) internal {
+        assertApproxEq(_firstValue, _secondValue, 1e16);
+    }
+
+    function testEqualityLarge(
+        uint256 _firstValue,
+        uint256 _secondValue,
+        string memory err
+    ) internal {
+        assertApproxEq(_firstValue, _secondValue, 1e16, err);
+    }
+
     /// @dev compounds track balances deposited by dividing the amount by a rate to obtain cToken Units.
     ///      When needed, it goes back to underlying by multiplying by the said rate.
     ///      However, for the same rate, the following computation will slightly under estimate the amount

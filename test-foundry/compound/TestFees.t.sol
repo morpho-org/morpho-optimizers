@@ -56,7 +56,7 @@ contract TestFees is TestSetup {
         supplier1.supply(cDai, 100 * WAD);
         supplier1.borrow(cDai, 50 * WAD);
 
-        hevm.warp(block.number + 1_000);
+        hevm.roll(block.number + 1_000);
 
         supplier1.repay(cDai, type(uint256).max);
 

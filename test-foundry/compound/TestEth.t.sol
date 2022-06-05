@@ -145,14 +145,16 @@ contract TestEth is TestSetup {
         uint256 balanceBefore = borrower1.balanceOf(wEth);
         borrower1.borrow(cEth, toBorrow);
 
+        moveOneBlockFowardBorrowRepay();
+
         borrower1.approve(wEth, address(morpho), toBorrow);
         borrower1.repay(cEth, toBorrow);
         uint256 balanceAfter = borrower1.balanceOf(wEth);
 
         (uint256 inP2P, uint256 onPool) = morpho.borrowBalanceInOf(cEth, address(borrower1));
 
-        assertEq(onPool, 0);
-        assertEq(inP2P, 0);
+        testEqualityLarge(onPool, 0);
+        testEquality(inP2P, 0);
         testEquality(balanceAfter, balanceBefore);
     }
 
@@ -170,14 +172,16 @@ contract TestEth is TestSetup {
         uint256 balanceBefore = borrower1.balanceOf(wEth);
         borrower1.borrow(cEth, toBorrow);
 
+        moveOneBlockFowardBorrowRepay();
+
         borrower1.approve(wEth, address(morpho), toRepay);
         borrower1.repay(cEth, toRepay);
         uint256 balanceAfter = borrower1.balanceOf(wEth);
 
         (uint256 inP2P, uint256 onPool) = morpho.borrowBalanceInOf(cEth, address(borrower1));
 
-        assertEq(onPool, 0);
-        assertEq(inP2P, 0);
+        testEquality(onPool, 0);
+        testEquality(inP2P, 0);
         assertApproxEq(balanceAfter, balanceBefore, 1e9, "balance");
     }
 
@@ -195,6 +199,8 @@ contract TestEth is TestSetup {
         borrower1.borrow(cEth, amount);
 
         (, uint256 collateralOnPool) = morpho.supplyBalanceInOf(cUsdc, address(borrower1));
+
+        moveOneBlockFowardBorrowRepay();
 
         // Change Oracle.
         SimplePriceOracle customOracle = createAndSetCustomPriceOracle();
@@ -215,7 +221,7 @@ contract TestEth is TestSetup {
             address(borrower1)
         );
         uint256 expectedBorrowBalanceOnPool = (amount - toRepay).div(ICToken(cEth).borrowIndex());
-        testEquality(onPoolBorrower, expectedBorrowBalanceOnPool, "borrower borrow on pool");
+        testEqualityLarge(onPoolBorrower, expectedBorrowBalanceOnPool, "borrower borrow on pool");
         assertEq(inP2PBorrower, 0, "borrower borrow in peer-to-peer");
 
         // Check borrower1 supply balance.
@@ -253,6 +259,8 @@ contract TestEth is TestSetup {
 
         (, uint256 collateralOnPool) = morpho.supplyBalanceInOf(cEth, address(borrower1));
 
+        moveOneBlockFowardBorrowRepay();
+
         // Change Oracle.
         SimplePriceOracle customOracle = createAndSetCustomPriceOracle();
         customOracle.setDirectPrice(dai, (oracle.getUnderlyingPrice(cDai) * 105) / 100);
@@ -271,7 +279,7 @@ contract TestEth is TestSetup {
             address(borrower1)
         );
         uint256 expectedBorrowBalanceOnPool = (amount - toRepay).div(ICToken(cDai).borrowIndex());
-        testEquality(onPoolBorrower, expectedBorrowBalanceOnPool, "borrower borrow on pool");
+        testEqualityLarge(onPoolBorrower, expectedBorrowBalanceOnPool, "borrower borrow on pool");
         assertEq(inP2PBorrower, 0, "borrower borrow in peer-to-peer");
 
         // Check borrower1 supply balance.
