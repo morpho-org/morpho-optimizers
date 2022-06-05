@@ -19,8 +19,8 @@ contract Lens is ILens {
     /// STRUCTS ///
 
     struct P2PIndexesParams {
-        uint256 lastP2PSupplyIndex; // The current peer-to-peer supply index.
-        uint256 lastP2PBorrowIndex; // The current peer-to-peer borrow index
+        uint256 lastP2PSupplyIndex; // The last peer-to-peer supply index.
+        uint256 lastP2PBorrowIndex; // The last peer-to-peer borrow index
         uint256 poolSupplyIndex; // The current pool supply index.
         uint256 poolBorrowIndex; // The current pool borrow index.
         uint256 lastPoolSupplyIndex; // The pool supply index at last update.
@@ -212,7 +212,6 @@ contract Lens is ILens {
     /// BALANCES ///
 
     /// @notice Returns the collateral value, debt value and max debt value of a given user.
-    /// @dev Note: must be called after calling `accrueInterest()` on the cToken to have the most up to date values.
     /// @param _user The user to determine liquidity for.
     /// @param _updatedMarkets The list of markets of which to compute virtually updated pool and peer-to-peer indexes.
     /// @return collateralValue The collateral value of the user.
