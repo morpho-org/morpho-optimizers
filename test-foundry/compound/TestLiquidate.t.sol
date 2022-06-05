@@ -37,7 +37,7 @@ contract TestLiquidate is TestSetup {
 
         (, uint256 collateralOnPool) = morpho.supplyBalanceInOf(cUsdc, address(borrower1));
 
-        moveOneBlockFowardBorrowRepay();
+        moveOneBlockForwardBorrowRepay();
 
         // Change Oracle.
         SimplePriceOracle customOracle = createAndSetCustomPriceOracle();
@@ -102,7 +102,7 @@ contract TestLiquidate is TestSetup {
         SimplePriceOracle customOracle = createAndSetCustomPriceOracle();
         customOracle.setDirectPrice(dai, (oracle.getUnderlyingPrice(cDai) * 94) / 100);
 
-        moveOneBlockFowardBorrowRepay();
+        moveOneBlockForwardBorrowRepay();
 
         // Liquidate.
         uint256 toRepay = (borrowerDebt / 2) - 1; // -1 because of rounding error related to compound's approximation
@@ -169,7 +169,7 @@ contract TestLiquidate is TestSetup {
         SimplePriceOracle customOracle = createAndSetCustomPriceOracle();
         customOracle.setDirectPrice(dai, (oracle.getUnderlyingPrice(cDai) * 94) / 100);
 
-        moveOneBlockFowardBorrowRepay();
+        moveOneBlockForwardBorrowRepay();
 
         // Liquidate.
         uint256 toRepay = (borrowerDebt / 4);

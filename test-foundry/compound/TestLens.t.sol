@@ -989,7 +989,7 @@ contract TestLens is TestSetup {
         borrower1.supply(cDai, 2 * amount);
         borrower1.borrow(cUsdc, to6Decimals(amount));
 
-        moveOneBlockFowardBorrowRepay();
+        moveOneBlockForwardBorrowRepay();
         createAndSetCustomPriceOracle().setDirectPrice(dai, collateralPrice);
 
         (uint256 collateralValue, uint256 debtValue, uint256 maxDebtValue) = lens

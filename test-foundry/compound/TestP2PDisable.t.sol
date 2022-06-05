@@ -19,7 +19,7 @@ contract TestP2PDisable is TestSetup {
             suppliers[i].supply(cDai, suppliedAmount);
         }
 
-        moveOneBlockFowardBorrowRepay();
+        moveOneBlockForwardBorrowRepay();
 
         // Create delta.
         setDefaultMaxGasForMatchingHelper(3e6, 3e6, 3e6, 0);
