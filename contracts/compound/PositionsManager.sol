@@ -120,9 +120,6 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     /// @notice Thrown when the amount repaid during the liquidation is above what is allowed to be repaid.
     error AmountAboveWhatAllowedToRepay();
 
-    /// @notice Thrown when the amount of collateral to seize is above the collateral amount.
-    error ToSeizeAboveCollateral();
-
     /// @notice Thrown when the borrow on Compound failed.
     error BorrowOnCompoundFailed();
 
@@ -197,8 +194,6 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
         uint256 supplyBalance;
         uint256 borrowedPrice;
         uint256 amountToSeize;
-        uint256 maxDebtValue;
-        uint256 debtValue;
     }
 
     /// LOGIC ///
