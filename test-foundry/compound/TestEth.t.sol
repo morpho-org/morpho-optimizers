@@ -145,7 +145,7 @@ contract TestEth is TestSetup {
         uint256 balanceBefore = borrower1.balanceOf(wEth);
         borrower1.borrow(cEth, toBorrow);
 
-        moveOneBlockFowardBorrowRepay();
+        moveOneBlockForwardBorrowRepay();
 
         borrower1.approve(wEth, address(morpho), toBorrow);
         borrower1.repay(cEth, toBorrow);
@@ -172,7 +172,7 @@ contract TestEth is TestSetup {
         uint256 balanceBefore = borrower1.balanceOf(wEth);
         borrower1.borrow(cEth, toBorrow);
 
-        moveOneBlockFowardBorrowRepay();
+        moveOneBlockForwardBorrowRepay();
 
         borrower1.approve(wEth, address(morpho), toRepay);
         borrower1.repay(cEth, toRepay);
@@ -200,7 +200,7 @@ contract TestEth is TestSetup {
 
         (, uint256 collateralOnPool) = morpho.supplyBalanceInOf(cUsdc, address(borrower1));
 
-        moveOneBlockFowardBorrowRepay();
+        moveOneBlockForwardBorrowRepay();
 
         // Change Oracle.
         SimplePriceOracle customOracle = createAndSetCustomPriceOracle();
@@ -259,7 +259,7 @@ contract TestEth is TestSetup {
 
         (, uint256 collateralOnPool) = morpho.supplyBalanceInOf(cEth, address(borrower1));
 
-        moveOneBlockFowardBorrowRepay();
+        moveOneBlockForwardBorrowRepay();
 
         // Change Oracle.
         SimplePriceOracle customOracle = createAndSetCustomPriceOracle();

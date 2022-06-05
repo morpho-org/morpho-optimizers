@@ -15,7 +15,7 @@ contract TestRepay is TestSetup {
         borrower1.supply(cUsdc, to6Decimals(collateral));
         borrower1.borrow(cDai, amount);
 
-        moveOneBlockFowardBorrowRepay();
+        moveOneBlockForwardBorrowRepay();
 
         borrower1.approve(dai, amount);
         borrower1.repay(cDai, amount);
@@ -34,7 +34,7 @@ contract TestRepay is TestSetup {
         borrower1.supply(cUsdc, to6Decimals(collateral));
         borrower1.borrow(cDai, amount);
 
-        moveOneBlockFowardBorrowRepay();
+        moveOneBlockForwardBorrowRepay();
 
         uint256 balanceBefore = borrower1.balanceOf(dai);
         borrower1.approve(dai, type(uint256).max);
@@ -96,7 +96,7 @@ contract TestRepay is TestSetup {
         borrower2.supply(cUsdc, to6Decimals(collateral));
         borrower2.borrow(cDai, availableBorrowerAmount);
 
-        moveOneBlockFowardBorrowRepay();
+        moveOneBlockForwardBorrowRepay();
 
         // Borrower1 repays 75% of suppliedAmount.
         borrower1.approve(dai, (75 * borrowedAmount) / 100);
@@ -197,7 +197,7 @@ contract TestRepay is TestSetup {
             assertEq(vars.onPool, expectedOnPool);
         }
 
-        moveOneBlockFowardBorrowRepay();
+        moveOneBlockForwardBorrowRepay();
 
         // Borrower1 repays all of his debt.
         borrower1.approve(dai, type(uint256).max);
@@ -273,7 +273,7 @@ contract TestRepay is TestSetup {
             "borrower in peer-to-peer"
         );
 
-        moveOneBlockFowardBorrowRepay();
+        moveOneBlockForwardBorrowRepay();
 
         // Borrower1 repays 75% of borrowed amount.
         borrower1.approve(dai, (75 * borrowedAmount) / 100);
@@ -365,7 +365,7 @@ contract TestRepay is TestSetup {
             borrowers[i].borrow(cDai, amountPerBorrower);
         }
 
-        moveOneBlockFowardBorrowRepay();
+        moveOneBlockForwardBorrowRepay();
 
         // Borrower1 repays all of his debt.
         borrower1.approve(dai, borrowedAmount);
@@ -472,7 +472,7 @@ contract TestRepay is TestSetup {
                 );
             }
 
-            moveOneBlockFowardBorrowRepay();
+            moveOneBlockForwardBorrowRepay();
 
             // Borrower repays max.
             // Should create a delta on suppliers side.
@@ -632,7 +632,7 @@ contract TestRepay is TestSetup {
             assertEq(onPool, 0, "onPool");
         }
 
-        moveOneBlockFowardBorrowRepay();
+        moveOneBlockForwardBorrowRepay();
 
         // Borrower repays max.
         // Should create a delta on suppliers side.
@@ -705,7 +705,7 @@ contract TestRepay is TestSetup {
         borrower1.supply(cUsdc, to6Decimals(2 * amount));
         borrower1.borrow(cDai, amount);
 
-        moveOneBlockFowardBorrowRepay();
+        moveOneBlockForwardBorrowRepay();
 
         // Someone repays on behalf of the morpho.
         supplier2.approve(dai, cDai, amount);
@@ -729,7 +729,7 @@ contract TestRepay is TestSetup {
         uint256 onCompBeforeRepay = ICToken(cDai).borrowBalanceCurrent(address(morpho));
         (, uint256 onPoolBeforeRepay) = morpho.borrowBalanceInOf(cDai, address(borrower1));
 
-        moveOneBlockFowardBorrowRepay();
+        moveOneBlockForwardBorrowRepay();
 
         // We check that repaying a dust quantity leads to a diminishing debt in both cToken & on Morpho.
         borrower1.approve(dai, amountRepaid);
@@ -750,7 +750,7 @@ contract TestRepay is TestSetup {
         borrower1.supply(cUsdc, to6Decimals(collateral));
         borrower1.borrow(cDai, amount);
 
-        moveOneBlockFowardBorrowRepay();
+        moveOneBlockForwardBorrowRepay();
 
         borrower2.approve(dai, amount);
         hevm.prank(address(borrower2));

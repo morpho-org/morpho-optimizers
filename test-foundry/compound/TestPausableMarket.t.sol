@@ -53,7 +53,7 @@ contract TestPausableMarket is TestSetup {
 
         supplier1.borrow(cUsdc, toBorrow);
 
-        moveOneBlockFowardBorrowRepay();
+        moveOneBlockForwardBorrowRepay();
 
         supplier1.approve(usdc, toBorrow);
         supplier1.repay(cUsdc, type(uint256).max);
@@ -65,7 +65,7 @@ contract TestPausableMarket is TestSetup {
         SimplePriceOracle customOracle = createAndSetCustomPriceOracle();
         customOracle.setUnderlyingPrice(cDai, (oracle.getUnderlyingPrice(cDai) * 97) / 100);
 
-        moveOneBlockFowardBorrowRepay();
+        moveOneBlockForwardBorrowRepay();
 
         uint256 toLiquidate = toBorrow / 3;
         User liquidator = borrower3;
@@ -97,7 +97,7 @@ contract TestPausableMarket is TestSetup {
         supplier1.borrow(cUsdc, 1);
 
         supplier1.approve(usdc, toBorrow);
-        moveOneBlockFowardBorrowRepay();
+        moveOneBlockForwardBorrowRepay();
         hevm.expectRevert(abi.encodeWithSignature("MarketPaused()"));
         supplier1.repay(cUsdc, toBorrow);
         hevm.expectRevert(abi.encodeWithSignature("MarketPaused()"));
@@ -126,7 +126,7 @@ contract TestPausableMarket is TestSetup {
 
         supplier1.borrow(cUsdt, toBorrow);
 
-        moveOneBlockFowardBorrowRepay();
+        moveOneBlockForwardBorrowRepay();
 
         supplier1.approve(usdt, toBorrow);
         supplier1.repay(cUsdt, toBorrow / 2);
@@ -162,7 +162,7 @@ contract TestPausableMarket is TestSetup {
         hevm.expectRevert(abi.encodeWithSignature("MarketPaused()"));
         supplier1.borrow(cUsdc, 1);
 
-        moveOneBlockFowardBorrowRepay();
+        moveOneBlockForwardBorrowRepay();
 
         supplier1.approve(usdc, toBorrow);
         supplier1.repay(cUsdc, 1e6);
@@ -190,7 +190,7 @@ contract TestPausableMarket is TestSetup {
 
         supplier1.borrow(cUsdt, toBorrow);
 
-        moveOneBlockFowardBorrowRepay();
+        moveOneBlockForwardBorrowRepay();
 
         supplier1.approve(usdt, toBorrow);
         supplier1.repay(cUsdt, toBorrow / 2);
