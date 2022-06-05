@@ -431,17 +431,20 @@ contract TestLens is TestSetup {
     }
 
     function testLiquidityDataWithMultipleAssets() public {
+        // TODO: fix that.
+        tip(usdt, address(morpho), 1);
+
         uint256 amount = 10_000 ether;
         uint256 toBorrow = to6Decimals(100 ether);
 
         tip(usdt, address(borrower1), to6Decimals(amount));
-        borrower1.approve(usdt, to6Decimals(amount));
-        borrower1.supply(aUsdt, to6Decimals(amount));
         borrower1.approve(dai, amount);
         borrower1.supply(aDai, amount);
+        borrower1.approve(usdt, to6Decimals(amount));
+        borrower1.supply(aUsdt, to6Decimals(amount));
 
-        borrower1.borrow(aUsdc, toBorrow);
         borrower1.borrow(aUsdt, toBorrow);
+        borrower1.borrow(aUsdc, toBorrow);
 
         uint256 reserveDecimals;
         uint256 ltv;
