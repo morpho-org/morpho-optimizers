@@ -59,17 +59,6 @@ contract MorphoUtils is MorphoStorage {
 
     /// EXTERNAL ///
 
-    /// @notice Returns all markets entered by a given user.
-    /// @param _user The address of the user.
-    /// @return enteredMarkets_ The list of markets entered by this user.
-    function getEnteredMarkets(address _user)
-        external
-        view
-        returns (address[] memory enteredMarkets_)
-    {
-        return enteredMarkets[_user];
-    }
-
     /// @notice Returns all created markets.
     /// @return marketsCreated_ The list of market addresses.
     function getAllMarkets() external view returns (address[] memory marketsCreated_) {
@@ -121,7 +110,84 @@ contract MorphoUtils is MorphoStorage {
         _updateIndexes(_poolTokenAddress);
     }
 
+    /// PUBLIC ///
+
+    /// @dev Returns if a user has been borrowing or supplying on a given market.
+    /// @param _user The user to check for.
+    /// @param _market The address of the market to check.
+    /// @return True if the user has been using a reserve for borrowing or as collateral, false otherwise
+    function isSupplyingOrBorrowing(address _user, address _market) public view returns (bool) {
+        unchecked {
+            return (userMarketMap[_user] >> (indexOfMarket[_market] << 1)) & 3 != 0;
+        }
+    }
+
+    /// @dev Returns if a user is borrowing on a given market.
+    /// @param _user The user to check for.
+    /// @param _market The address of the market to check.
+    /// @return True if the user has been borrowing on this market, false otherwise.
+    function isBorrowing(address _user, address _market) public view returns (bool) {
+        unchecked {
+            return (userMarketMap[_user] >> (indexOfMarket[_market] << 1)) & 1 != 0;
+        }
+    }
+
+    /// @dev Returns if a user is supplying on a given market.
+    /// @param _user The user to check for.
+    /// @param _market The address of the market to check.
+    /// @return True if the user has been supplying on this market, false otherwise.
+    function isSupplying(address _user, address _market) public view returns (bool) {
+        unchecked {
+            return (userMarketMap[_user] >> ((indexOfMarket[_market] << 1) + 1)) & 1 != 0;
+        }
+    }
+
+    /// @dev Checks if a user has been borrowing from any market.
+    /// @param _user The user to check for.
+    /// @return True if the user has been borrowing on any market, false otherwise
+    function isBorrowingAny(address _user) public view returns (bool) {
+        return userMarketMap[_user] & BORROWING_MASK != 0;
+    }
+
     /// INTERNAL ///
+
+    /// @notice Sets if the user is borrowing on a market.
+    /// @param _user The user to set for.
+    /// @param _market The address of the market to mark as borrowed.
+    /// @param _borrowing True if the user is borrowing, false otherwise.
+    function _setBorrowing(
+        address _user,
+        address _market,
+        bool _borrowing
+    ) internal {
+        unchecked {
+            uint256 bit = 1 << (indexOfMarket[_market] << 1);
+            if (_borrowing) {
+                userMarketMap[_user] |= bit;
+            } else {
+                userMarketMap[_user] &= ~bit;
+            }
+        }
+    }
+
+    /// @notice Sets if the user is supplying on a market.
+    /// @param _user The user to set for.
+    /// @param _market The address of the market to mark as supplied.
+    /// @param _supplying True if the user is supplying, false otherwise.
+    function _setSupplying(
+        address _user,
+        address _market,
+        bool _supplying
+    ) internal {
+        unchecked {
+            uint256 bit = 1 << ((indexOfMarket[_market] << 1) + 1);
+            if (_supplying) {
+                userMarketMap[_user] |= bit;
+            } else {
+                userMarketMap[_user] &= ~bit;
+            }
+        }
+    }
 
     /// @dev Updates the peer-to-peer indexes and pool indexes (only stored locally).
     /// @param _poolTokenAddress The address of the market to update.
@@ -130,8 +196,6 @@ contract MorphoUtils is MorphoStorage {
             abi.encodeWithSelector(interestRatesManager.updateIndexes.selector, _poolTokenAddress)
         );
     }
-
-    /// INTERNAL ///
 
     /// @dev Returns the supply balance of `_user` in the `_poolTokenAddress` market.
     /// @dev Note: Compute the result with the index stored and not the most up to date one.
