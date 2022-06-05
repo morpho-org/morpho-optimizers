@@ -185,23 +185,19 @@ contract Morpho is MorphoGovernance {
         external
         nonReentrant
     {
-        uint256 amountOfRewards = rewardsManager.claimRewards(_assets, msg.sender);
-
-        if (amountOfRewards == 0) revert AmountIsZero();
-
-        ERC20 rewardToken = ERC20(aaveIncentivesController.REWARD_TOKEN());
-
-        // If there is not enough reward tokens on the contract, claim them. Else, continue.
-        if (rewardToken.balanceOf(address(this)) < amountOfRewards)
-            aaveIncentivesController.claimRewards(_assets, type(uint256).max, address(this));
-
-        if (_tradeForMorphoToken) {
-            rewardToken.safeApprove(address(incentivesVault), amountOfRewards);
-            incentivesVault.tradeRewardTokensForMorphoTokens(msg.sender, amountOfRewards);
-            emit RewardsClaimedAndTraded(msg.sender, amountOfRewards);
-        } else {
-            rewardToken.safeTransfer(msg.sender, amountOfRewards);
-            emit RewardsClaimed(msg.sender, amountOfRewards);
-        }
+        // uint256 amountOfRewards = rewardsManager.claimRewards(_assets, msg.sender);
+        // if (amountOfRewards == 0) revert AmountIsZero();
+        // ERC20 rewardToken = ERC20(aaveIncentivesController.REWARD_TOKEN());
+        // // If there is not enough reward tokens on the contract, claim them. Else, continue.
+        // if (rewardToken.balanceOf(address(this)) < amountOfRewards)
+        //     aaveIncentivesController.claimRewards(_assets, type(uint256).max, address(this));
+        // if (_tradeForMorphoToken) {
+        //     rewardToken.safeApprove(address(incentivesVault), amountOfRewards);
+        //     incentivesVault.tradeRewardTokensForMorphoTokens(msg.sender, amountOfRewards);
+        //     emit RewardsClaimedAndTraded(msg.sender, amountOfRewards);
+        // } else {
+        //     rewardToken.safeTransfer(msg.sender, amountOfRewards);
+        //     emit RewardsClaimed(msg.sender, amountOfRewards);
+        // }
     }
 }
