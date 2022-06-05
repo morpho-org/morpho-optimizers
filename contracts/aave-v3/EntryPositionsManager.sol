@@ -181,10 +181,8 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
         if (_amount == 0) revert AmountIsZero();
 
         ERC20 underlyingToken = ERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
-        (, , bool borrowingEnabled, , ) = pool
-        .getConfiguration(address(underlyingToken))
-        .getFlags();
-        if (!borrowingEnabled) revert BorrowingNotEnabled();
+        if (!pool.getConfiguration(address(underlyingToken)).getBorrowingEnabled())
+            revert BorrowingNotEnabled();
 
         _updateIndexes(_poolTokenAddress);
         _enterMarketIfNeeded(_poolTokenAddress, msg.sender);
