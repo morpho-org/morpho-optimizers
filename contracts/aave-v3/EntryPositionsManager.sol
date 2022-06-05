@@ -87,7 +87,9 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
         if (_amount == 0) revert AmountIsZero();
         _updateIndexes(_poolTokenAddress);
 
-        _enterMarketIfNeeded(_poolTokenAddress, _onBehalf);
+        if (!isSupplying(_supplier, _poolTokenAddress))
+            _setSupplying(_supplier, _poolTokenAddress, true);
+
         ERC20 underlyingToken = ERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
         underlyingToken.safeTransferFrom(_supplier, address(this), _amount);
 
@@ -185,7 +187,9 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
             revert BorrowingNotEnabled();
 
         _updateIndexes(_poolTokenAddress);
-        _enterMarketIfNeeded(_poolTokenAddress, msg.sender);
+        if (!isBorrowing(msg.sender, _poolTokenAddress))
+            _setBorrowing(msg.sender, _poolTokenAddress, true);
+
         if (!_borrowAllowed(msg.sender, _poolTokenAddress, _amount)) revert UnauthorisedBorrow();
 
         uint256 remainingToBorrow = _amount;
@@ -285,52 +289,51 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
         ) return false;
 
         IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
-        uint256 numberOfEnteredMarkets = enteredMarkets[_user].length;
+        uint256 numberOfCreatedMarkets = marketsCreated.length;
 
         Types.AssetLiquidityData memory assetData;
         Types.LiquidityData memory liquidityData;
 
-        for (uint256 i; i < numberOfEnteredMarkets; ) {
-            address poolTokenEntered = enteredMarkets[_user][i];
+        bool hasBorrowed = isBorrowingAny(_user);
 
-            if (poolTokenEntered != _poolTokenAddress) _updateIndexes(poolTokenEntered);
+        for (uint256 i; i < numberOfCreatedMarkets; ) {
+            address poolToken = marketsCreated[i];
 
-            address underlyingAddress = IAToken(poolTokenEntered).UNDERLYING_ASSET_ADDRESS();
-            assetData.underlyingPrice = oracle.getAssetPrice(underlyingAddress); // In base currency in wad.
-            (assetData.ltv, , , assetData.reserveDecimals, , ) = pool
-            .getConfiguration(underlyingAddress)
-            .getParams();
+            if (isSupplyingOrBorrowing(_user, poolToken)) {
+                if (poolToken != _poolTokenAddress) _updateIndexes(poolToken);
+                address underlyingAddress = IAToken(poolToken).UNDERLYING_ASSET_ADDRESS();
+                assetData.underlyingPrice = oracle.getAssetPrice(underlyingAddress); // In ETH.
+                (assetData.ltv, , , assetData.reserveDecimals, , ) = pool
+                .getConfiguration(underlyingAddress)
+                .getParams();
+                assetData.tokenUnit = 10**assetData.reserveDecimals;
 
-            assetData.tokenUnit = 10**assetData.reserveDecimals;
-            assetData.collateralValue =
-                (_getUserSupplyBalanceInOf(poolTokenEntered, _user) * assetData.underlyingPrice) /
-                assetData.tokenUnit;
-            liquidityData.debtValue +=
-                (_getUserBorrowBalanceInOf(poolTokenEntered, _user) * assetData.underlyingPrice) /
-                assetData.tokenUnit;
-            liquidityData.maxLoanToValue += assetData.collateralValue.percentMul(assetData.ltv);
+                if (hasBorrowed && isBorrowing(_user, poolToken)) {
+                    liquidityData.debtValue +=
+                        (_getUserBorrowBalanceInOf(poolToken, _user) * assetData.underlyingPrice) /
+                        assetData.tokenUnit;
+                }
+                if (isSupplying(_user, poolToken)) {
+                    assetData.collateralValue =
+                        (_getUserSupplyBalanceInOf(poolToken, _user) * assetData.underlyingPrice) /
+                        assetData.tokenUnit;
 
-            if (_poolTokenAddress == poolTokenEntered && _borrowedAmount > 0) {
-                liquidityData.debtValue +=
-                    (_borrowedAmount * assetData.underlyingPrice) /
-                    assetData.tokenUnit;
+                    liquidityData.maxLoanToValue += assetData.collateralValue.percentMul(
+                        assetData.ltv
+                    );
+
+                    if (_poolTokenAddress == poolToken && _borrowedAmount > 0) {
+                        liquidityData.debtValue +=
+                            (_borrowedAmount * assetData.underlyingPrice) /
+                            assetData.tokenUnit;
+                    }
+                }
             }
-
             unchecked {
                 ++i;
             }
         }
 
         return liquidityData.debtValue <= liquidityData.maxLoanToValue;
-    }
-
-    /// @dev Enters the user into the market if not already there.
-    /// @param _user The address of the user to update.
-    /// @param _poolTokenAddress The address of the market to check.
-    function _enterMarketIfNeeded(address _poolTokenAddress, address _user) internal {
-        if (!userMembership[_poolTokenAddress][_user]) {
-            userMembership[_poolTokenAddress][_user] = true;
-            enteredMarkets[_user].push(_poolTokenAddress);
-        }
     }
 }

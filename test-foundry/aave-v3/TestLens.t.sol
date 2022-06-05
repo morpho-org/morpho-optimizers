@@ -505,13 +505,14 @@ contract TestLens is TestSetup {
         borrower1.approve(usdc, to6Decimals(10 ether));
         borrower1.supply(aUsdc, to6Decimals(10 ether));
 
-        assertEq(morpho.enteredMarkets(address(borrower1), 0), aDai);
-        assertEq(morpho.enteredMarkets(address(borrower1), 1), aUsdc);
+        assertTrue(morpho.isSupplying(address(borrower1), aDai));
+        assertTrue(morpho.isSupplying(address(borrower1), aUsdc));
 
         // Borrower1 withdraw, USDC should be the first in enteredMarkets.
         borrower1.withdraw(aDai, type(uint256).max);
 
-        assertEq(morpho.enteredMarkets(address(borrower1), 0), aUsdc);
+        assertFalse(morpho.isSupplying(address(borrower1), aDai));
+        assertTrue(morpho.isSupplying(address(borrower1), aUsdc));
     }
 
     function testGetMarketData() public {
