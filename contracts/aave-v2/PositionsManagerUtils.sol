@@ -55,6 +55,7 @@ contract PositionsManagerUtils is MatchingEngine {
 
     /// @dev Withdraws underlying tokens from Aave.
     /// @param _underlyingToken The underlying token of the market to withdraw from.
+    /// @param _poolTokenAddress The address of the market.
     /// @param _amount The amount of token (in underlying).
     function _withdrawFromPool(
         ERC20 _underlyingToken,
