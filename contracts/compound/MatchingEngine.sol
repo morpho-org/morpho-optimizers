@@ -86,35 +86,35 @@ contract MatchingEngine is MorphoUtils {
             firstPoolSupplierBalance = supplyBalanceInOf[_poolTokenAddress][firstPoolSupplier];
             vars.inUnderlying = firstPoolSupplierBalance.onPool.mul(vars.poolIndex);
 
-            uint256 newPoolBorrowBalance;
-            uint256 newP2PBorrowBalance;
+            uint256 newPoolSupplyBalance;
+            uint256 newP2PSupplyBalance;
             uint256 maxToMatch = _amount - matched;
 
             if (vars.inUnderlying <= maxToMatch) {
-                // newPoolBorrowBalance is 0.
-                newP2PBorrowBalance =
+                // newPoolSupplyBalance is 0.
+                newP2PSupplyBalance =
                     firstPoolSupplierBalance.inP2P +
                     vars.inUnderlying.div(vars.p2pIndex);
                 matched += vars.inUnderlying;
             } else {
-                newPoolBorrowBalance =
+                newPoolSupplyBalance =
                     firstPoolSupplierBalance.onPool -
                     maxToMatch.div(vars.poolIndex);
-                newP2PBorrowBalance =
+                newP2PSupplyBalance =
                     firstPoolSupplierBalance.inP2P +
                     maxToMatch.div(vars.p2pIndex);
                 matched = _amount;
             }
 
-            firstPoolSupplierBalance.onPool = newPoolBorrowBalance;
-            firstPoolSupplierBalance.inP2P = newP2PBorrowBalance;
+            firstPoolSupplierBalance.onPool = newPoolSupplyBalance;
+            firstPoolSupplierBalance.inP2P = newP2PSupplyBalance;
             _updateSupplierInDS(_poolTokenAddress, firstPoolSupplier);
 
             emit SupplierPositionUpdated(
                 firstPoolSupplier,
                 _poolTokenAddress,
-                newPoolBorrowBalance,
-                newP2PBorrowBalance
+                newPoolSupplyBalance,
+                newP2PSupplyBalance
             );
         }
 
@@ -150,34 +150,34 @@ contract MatchingEngine is MorphoUtils {
             firstP2PSupplierBalance = supplyBalanceInOf[_poolTokenAddress][firstP2PSupplier];
             vars.inUnderlying = firstP2PSupplierBalance.inP2P.mul(vars.p2pIndex);
 
-            uint256 newPoolBorrowBalance;
-            uint256 newP2PBorrowBalance;
+            uint256 newPoolSupplyBalance;
+            uint256 newP2PSupplyBalance;
 
             if (vars.inUnderlying <= remainingToUnmatch) {
-                // newP2PBorrowBalance is 0.
-                newPoolBorrowBalance =
+                // newP2PSupplyBalance is 0.
+                newPoolSupplyBalance =
                     firstP2PSupplierBalance.onPool +
                     vars.inUnderlying.div(vars.poolIndex);
                 remainingToUnmatch -= vars.inUnderlying;
             } else {
-                newPoolBorrowBalance =
+                newPoolSupplyBalance =
                     firstP2PSupplierBalance.onPool +
                     remainingToUnmatch.div(vars.poolIndex);
-                newP2PBorrowBalance =
+                newP2PSupplyBalance =
                     firstP2PSupplierBalance.inP2P -
                     remainingToUnmatch.div(vars.p2pIndex);
                 remainingToUnmatch = 0;
             }
 
-            firstP2PSupplierBalance.onPool = newPoolBorrowBalance;
-            firstP2PSupplierBalance.inP2P = newP2PBorrowBalance;
+            firstP2PSupplierBalance.onPool = newPoolSupplyBalance;
+            firstP2PSupplierBalance.inP2P = newP2PSupplyBalance;
             _updateSupplierInDS(_poolTokenAddress, firstP2PSupplier);
 
             emit SupplierPositionUpdated(
                 firstP2PSupplier,
                 _poolTokenAddress,
-                newPoolBorrowBalance,
-                newP2PBorrowBalance
+                newPoolSupplyBalance,
+                newP2PSupplyBalance
             );
         }
 
