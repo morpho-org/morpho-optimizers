@@ -2,7 +2,7 @@
 # yarn lockfile v1
 
 
-"@aave/core-v3@^1.13.1":
+"@aave/core-v3@1.13.1":
   version "1.13.1"
   resolved "https://registry.yarnpkg.com/@aave/core-v3/-/core-v3-1.13.1.tgz#09fbb0ca218cc1d1d75d9ba50a3719f7ba53422f"
   integrity sha512-BDXQhp3hQxl3nA+QuUatOE8q0pizIpGxdx5DYsKcitE+zAWiljuSvF74LSV49xnoQkznZWI1XVgXGcLEl3N4Ng==

@@ -11,3 +11,6 @@
 	path = lib/data-structures
 	url = https://github.com/morpho-labs/data-structures
 	branch = feat/heap-ordering
+[submodule "lib/periphery-v3"]
+	path = lib/periphery-v3
+	url = https://github.com/aave/aave-v3-periphery
