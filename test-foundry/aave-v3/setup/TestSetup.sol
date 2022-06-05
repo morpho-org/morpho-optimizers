@@ -87,7 +87,6 @@ contract TestSetup is Config, Utils, stdCheats {
             withdraw: 3e6,
             repay: 3e6
         });
-
         poolAddressesProvider = IPoolAddressesProvider(poolAddressesProviderAddress);
         pool = IPool(poolAddressesProvider.getPool());
         entryPositionsManager = new EntryPositionsManager();
@@ -148,7 +147,7 @@ contract TestSetup is Config, Utils, stdCheats {
         protocolDataProvider = IPoolDataProvider(poolDataProviderAddress);
 
         // TODO:
-        // morpho.setRewardsManager(rewardsManager);
+        morpho.setRewardsManager(rewardsManager);
         // morpho.setIncentivesVault(incentivesVault);
     }
 
@@ -203,9 +202,9 @@ contract TestSetup is Config, Utils, stdCheats {
         hevm.label(address(morpho), "Morpho");
         hevm.label(address(rewardsManager), "RewardsManager");
         hevm.label(address(morphoToken), "MorphoToken");
-        // TODO: hevm.label(aaveIncentivesControllerAddress, "AaveIncentivesController");
-        hevm.label(address(poolAddressesProvider), "LendingPoolAddressesProvider");
-        hevm.label(address(pool), "LendingPool");
+        hevm.label(rewardsControllerAddress, "RewardsController");
+        hevm.label(address(poolAddressesProvider), "PoolAddressesProvider");
+        hevm.label(address(pool), "Pool");
         hevm.label(address(protocolDataProvider), "ProtocolDataProvider");
         hevm.label(address(oracle), "AaveOracle");
         hevm.label(address(treasuryVault), "TreasuryVault");

@@ -134,6 +134,9 @@ contract TestBorrow is TestSetup {
 
     // The NMAX biggest supplier don't match all of the borrowed amount, after NMAX match, the rest is borrowed and set `onPool`. ⚠️ most gas expensive borrow scenario.
     function testBorrow6() public {
+        // TODO: fix that.
+        tip(dai, address(morpho), 1);
+
         setDefaultMaxGasForMatchingHelper(
             type(uint64).max,
             type(uint64).max,
