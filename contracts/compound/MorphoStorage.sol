@@ -39,6 +39,7 @@ abstract contract MorphoStorage is OwnableUpgradeable, ReentrancyGuardUpgradeabl
     mapping(address => mapping(address => Types.BorrowBalance)) public borrowBalanceInOf; // For a given market, the borrow balance of a user. cToken -> user -> balances.
     mapping(address => mapping(address => bool)) public userMembership; // Whether the user is in the market or not. cToken -> user -> bool.
     mapping(address => address[]) public enteredMarkets; // The markets entered by a user. user -> cTokens.
+    mapping(uint256 => address) public indexToMarket;
 
     /// MARKETS STORAGE ///
 

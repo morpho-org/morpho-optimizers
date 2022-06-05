@@ -303,6 +303,10 @@ abstract contract MorphoGovernance is MorphoUtils {
 
         if (marketStatus[_poolTokenAddress].isCreated) revert MarketAlreadyCreated();
         marketStatus[_poolTokenAddress].isCreated = true;
+        marketsCreated.push(_poolTokenAddress);
+        require(marketsCreated.length < 128);
+
+        indexToMarket[marketsCreated.length] = _poolTokenAddress;
 
         address[] memory marketToEnter = new address[](1);
         marketToEnter[0] = _poolTokenAddress;
@@ -326,7 +330,6 @@ abstract contract MorphoGovernance is MorphoUtils {
 
         marketParameters[_poolTokenAddress] = _marketParams;
 
-        marketsCreated.push(_poolTokenAddress);
         emit MarketCreated(
             _poolTokenAddress,
             _marketParams.reserveFactor,
