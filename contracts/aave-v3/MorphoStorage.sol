@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity ^0.8.0;
 
-import "@aave/core-v3/contracts/interfaces/IAaveIncentivesController.sol";
+import "@aave/periphery-v3/contracts/rewards/interfaces/IRewardsController.sol";
 import "@aave/core-v3/contracts/interfaces/IPoolAddressesProvider.sol";
 import "@aave/core-v3/contracts/interfaces/IPool.sol";
 import "./interfaces/IInterestRatesManager.sol";
@@ -57,8 +57,8 @@ abstract contract MorphoStorage is OwnableUpgradeable, ReentrancyGuardUpgradeabl
 
     /// CONTRACTS AND ADDRESSES ///
 
-    IAaveIncentivesController public aaveIncentivesController;
     IPoolAddressesProvider public addressesProvider;
+    IRewardsController public rewardsController;
     IPool public pool;
 
     IEntryPositionsManager public entryPositionsManager;

@@ -50,9 +50,9 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @param _interestRatesManager The new address of the `interestRatesManager`.
     event InterestRatesSet(address indexed _interestRatesManager);
 
-    /// @notice Emitted when the address of the `aaveIncentivesController` is set.
-    /// @param _aaveIncentivesController The new address of the `aaveIncentivesController`.
-    event AaveIncentivesControllerSet(address indexed _aaveIncentivesController);
+    /// @notice Emitted the address of the `rewardsController` is set.
+    /// @param _rewardsController The new address of the `rewardsController`.
+    event RewardsControllerSet(address indexed _rewardsController);
 
     /// @notice Emitted when the `reserveFactor` is set.
     /// @param _poolTokenAddress The address of the concerned market.
@@ -205,11 +205,11 @@ abstract contract MorphoGovernance is MorphoUtils {
         emit TreasuryVaultSet(_treasuryVault);
     }
 
-    /// @notice Sets the `aaveIncentivesController`.
-    /// @param _aaveIncentivesController The address of the `aaveIncentivesController`.
-    function setAaveIncentivesController(address _aaveIncentivesController) external onlyOwner {
-        aaveIncentivesController = IAaveIncentivesController(_aaveIncentivesController);
-        emit AaveIncentivesControllerSet(_aaveIncentivesController);
+    /// @notice Sets the `rewardsController`.
+    /// @param _rewardsController The address of the new `rewardsController`.
+    function setRewardsController(address _rewardsController) external onlyOwner {
+        rewardsController = IRewardsController(_rewardsController);
+        emit RewardsControllerSet(_rewardsController);
     }
 
     /// @notice Sets the `incentivesVault`.
