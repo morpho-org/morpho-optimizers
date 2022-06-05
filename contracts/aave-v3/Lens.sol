@@ -115,14 +115,14 @@ contract Lens {
         Types.LiquidityData memory data;
         Types.AssetLiquidityData memory assetData;
         IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
-        address[] memory enteredMarkets = morpho.getEnteredMarkets(_user);
-        uint256 numberOfEnteredMarkets = enteredMarkets.length;
+        address[] memory createdMarkets = morpho.getAllMarkets();
+        uint256 numberOfCreatedMarkets = createdMarkets.length;
 
-        for (uint256 i; i < numberOfEnteredMarkets; ) {
-            address poolTokenEntered = enteredMarkets[i];
+        for (uint256 i; i < numberOfCreatedMarkets; ) {
+            address poolToken = createdMarkets[i];
 
-            if (_poolTokenAddress != poolTokenEntered) {
-                assetData = getUserLiquidityDataForAsset(_user, poolTokenEntered, oracle);
+            if (_poolTokenAddress != poolToken && morpho.isSupplyingOrBorrowing(_user, poolToken)) {
+                assetData = getUserLiquidityDataForAsset(_user, poolToken, oracle);
 
                 data.collateralValue += assetData.collateralValue;
                 data.debtValue += assetData.debtValue;
@@ -208,44 +208,45 @@ contract Lens {
         uint256 _borrowedAmount
     ) public view returns (Types.LiquidityData memory liquidityData) {
         IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
-        address[] memory enteredMarkets = morpho.getEnteredMarkets(_user);
-        uint256 numberOfEnteredMarkets = enteredMarkets.length;
+        address[] memory createdMarkets = morpho.getAllMarkets();
+        uint256 numberOfCreatedMarkets = createdMarkets.length;
 
-        for (uint256 i; i < numberOfEnteredMarkets; ) {
-            address poolTokenEntered = enteredMarkets[i];
+        for (uint256 i; i < numberOfCreatedMarkets; ) {
+            address poolToken = createdMarkets[i];
 
-            Types.AssetLiquidityData memory assetData = getUserLiquidityDataForAsset(
-                _user,
-                poolTokenEntered,
-                oracle
-            );
+            if (morpho.isSupplyingOrBorrowing(_user, poolToken)) {
+                Types.AssetLiquidityData memory assetData = getUserLiquidityDataForAsset(
+                    _user,
+                    poolToken,
+                    oracle
+                );
 
-            liquidityData.collateralValue += assetData.collateralValue;
-            liquidityData.maxLoanToValue += assetData.collateralValue.percentMul(assetData.ltv);
-            liquidityData.liquidationThresholdValue += assetData.collateralValue.percentMul(
-                assetData.liquidationThreshold
-            );
-            liquidityData.debtValue += assetData.debtValue;
+                liquidityData.collateralValue += assetData.collateralValue;
+                liquidityData.maxLoanToValue += assetData.collateralValue.percentMul(assetData.ltv);
+                liquidityData.liquidationThresholdValue += assetData.collateralValue.percentMul(
+                    assetData.liquidationThreshold
+                );
+                liquidityData.debtValue += assetData.debtValue;
 
-            if (_poolTokenAddress == poolTokenEntered) {
-                if (_borrowedAmount > 0)
-                    liquidityData.debtValue +=
-                        (_borrowedAmount * assetData.underlyingPrice) /
-                        assetData.tokenUnit;
+                if (_poolTokenAddress == poolToken) {
+                    if (_borrowedAmount > 0)
+                        liquidityData.debtValue +=
+                            (_borrowedAmount * assetData.underlyingPrice) /
+                            assetData.tokenUnit;
 
-                if (_withdrawnAmount > 0) {
-                    liquidityData.collateralValue -=
-                        (_withdrawnAmount * assetData.underlyingPrice) /
-                        assetData.tokenUnit;
-                    liquidityData.maxLoanToValue -= ((_withdrawnAmount *
-                        assetData.underlyingPrice) / assetData.tokenUnit)
-                    .percentMul(assetData.ltv);
-                    liquidityData.liquidationThresholdValue -= ((_withdrawnAmount *
-                        assetData.underlyingPrice) / assetData.tokenUnit)
-                    .percentMul(assetData.liquidationThreshold);
+                    if (_withdrawnAmount > 0) {
+                        liquidityData.collateralValue -=
+                            (_withdrawnAmount * assetData.underlyingPrice) /
+                            assetData.tokenUnit;
+                        liquidityData.maxLoanToValue -= ((_withdrawnAmount *
+                            assetData.underlyingPrice) / assetData.tokenUnit)
+                        .percentMul(assetData.ltv);
+                        liquidityData.liquidationThresholdValue -= ((_withdrawnAmount *
+                            assetData.underlyingPrice) / assetData.tokenUnit)
+                        .percentMul(assetData.liquidationThreshold);
+                    }
                 }
             }
-
             unchecked {
                 ++i;
             }

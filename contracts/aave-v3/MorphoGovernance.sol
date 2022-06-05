@@ -355,6 +355,8 @@ abstract contract MorphoGovernance is MorphoUtils {
         );
         marketParameters[poolTokenAddress] = _marketParams;
 
+        indexOfMarket[poolTokenAddress] = 2 * marketsCreated.length;
+
         marketsCreated.push(poolTokenAddress);
         emit MarketCreated(
             poolTokenAddress,
