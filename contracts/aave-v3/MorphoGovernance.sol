@@ -36,11 +36,11 @@ abstract contract MorphoGovernance is MorphoUtils {
 
     /// @notice Emitted when the `entryPositionsManager` is set.
     /// @param _entryPositionsManager The new address of the `entryPositionsManager`.
-    event EntryManagerSet(address indexed _entryPositionsManager);
+    event EntryPositionsManagerSet(address indexed _entryPositionsManager);
 
     /// @notice Emitted when the `exitPositionsManager` is set.
     /// @param _exitPositionsManager The new address of the `exitPositionsManager`.
-    event ExitManagerSet(address indexed _exitPositionsManager);
+    event ExitPositionsManagerSet(address indexed _exitPositionsManager);
 
     /// @notice Emitted when the `rewardsManager` is set.
     /// @param _newRewardsManagerAddress The new address of the `rewardsManager`.
@@ -105,6 +105,9 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @notice Thrown when the market is already created.
     error MarketAlreadyCreated();
 
+    /// @notice Thrown when trying to set the max sorted users to 0.
+    error MaxSortedUsersCannotBeZero();
+
     /// @notice Thrown when the amount is equal to 0.
     error AmountIsZero();
 
@@ -146,6 +149,7 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @notice Sets `maxSortedUsers`.
     /// @param _newMaxSortedUsers The new `maxSortedUsers` value.
     function setMaxSortedUsers(uint256 _newMaxSortedUsers) external onlyOwner {
+        if (_newMaxSortedUsers == 0) revert MaxSortedUsersCannotBeZero();
         maxSortedUsers = _newMaxSortedUsers;
         emit MaxSortedUsersSet(_newMaxSortedUsers);
     }
@@ -167,7 +171,7 @@ abstract contract MorphoGovernance is MorphoUtils {
         onlyOwner
     {
         entryPositionsManager = _entryPositionsManager;
-        emit EntryManagerSet(address(_entryPositionsManager));
+        emit EntryPositionsManagerSet(address(_entryPositionsManager));
     }
 
     /// @notice Sets the `exitPositionsManager`.
@@ -177,7 +181,7 @@ abstract contract MorphoGovernance is MorphoUtils {
         onlyOwner
     {
         exitPositionsManager = _exitPositionsManager;
-        emit ExitManagerSet(address(_exitPositionsManager));
+        emit ExitPositionsManagerSet(address(_exitPositionsManager));
     }
 
     /// @notice Sets the `rewardsManager`.
@@ -315,11 +319,8 @@ abstract contract MorphoGovernance is MorphoUtils {
             _marketParams.reserveFactor > MAX_BASIS_POINTS
         ) revert ExceedsMaxBasisPoints();
 
-        DataTypes.ReserveConfigurationMap memory configuration = pool.getConfiguration(
-            _underlyingTokenAddress
-        );
-        (bool isActive, , , , ) = configuration.getFlags();
-        if (!isActive) revert MarketIsNotListedOnAave();
+        if (!pool.getConfiguration(_underlyingTokenAddress).getActive())
+            revert MarketIsNotListedOnAave();
 
         address poolTokenAddress = pool.getReserveData(_underlyingTokenAddress).aTokenAddress;
 
