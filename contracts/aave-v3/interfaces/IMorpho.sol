@@ -17,7 +17,6 @@ interface IMorpho {
     function maxSortedUsers() external view returns (uint256);
     function supplyBalanceInOf(address, address) external view returns (Types.SupplyBalance memory);
     function borrowBalanceInOf(address, address) external view returns (Types.BorrowBalance memory);
-    function enteredMarkets(address) external view returns (address);
     function deltas(address) external view returns (Types.Delta memory);
     function marketsCreated() external view returns (address[] memory);
     function marketParameters(address) external view returns (Types.MarketParameters memory);
@@ -35,13 +34,18 @@ interface IMorpho {
     /// UTILS ///
 
     function updateIndexes(address _poolTokenAddress) external;
+    function isSupplyingOrBorrowing(address _user, address _market) external pure returns (bool);
+    function isBorrowing(address _user, address _market) external pure returns (bool);
+    function isSupplying(address _user, address _market) external pure returns (bool);
+    function isBorrowingAny(address _user) external pure returns (bool);
+    function setBorrowing(address _user, address _market, bool _borrowing) external;
 
     /// GETTERS ///
 
-    function getEnteredMarkets(address _user) external view returns (address[] memory enteredMarkets_);
     function getAllMarkets() external view returns (address[] memory marketsCreated_);
     function getHead(address _poolTokenAddress, Types.PositionType _positionType) external view returns (address head);
     function getNext(address _poolTokenAddress, Types.PositionType _positionType, address _user) external view returns (address next);
+    function setSupplying(address _user, address _market, bool _supplying) external;
 
     /// GOVERNANCE ///
 
