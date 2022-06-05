@@ -26,6 +26,7 @@ contract Config {
 
     address poolDataProviderAddress = 0x69FA688f1Dc47d4B5d8029D5a35FB7a548310654;
     address poolAddressesProviderAddress = 0xa97684ead0e402dC232d5A977953DF7ECBaB3CDb;
+    address rewardsControllerAddress = 0x929EC64c34a17401F460460D4B9390518E5B473e;
 
     // Uniswap V3
 

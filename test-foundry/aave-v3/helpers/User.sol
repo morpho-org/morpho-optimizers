@@ -15,7 +15,7 @@ contract User is stdCheats, DSTest {
     Morpho internal morpho;
     IRewardsManager internal rewardsManager;
     IPool public pool;
-    IAaveIncentivesController public aaveIncentivesController;
+    IRewardsController public rewardsController;
 
     uint256 tm = 1;
 
@@ -23,7 +23,7 @@ contract User is stdCheats, DSTest {
         morpho = _morpho;
         rewardsManager = _morpho.rewardsManager();
         pool = _morpho.pool();
-        aaveIncentivesController = _morpho.aaveIncentivesController();
+        rewardsController = _morpho.rewardsController();
     }
 
     receive() external payable {}
@@ -100,9 +100,10 @@ contract User is stdCheats, DSTest {
         pool.borrow(_underlyingTokenAddress, _amount, 2, 0, address(this)); // 2 : variable rate | 0 : no refferal code
     }
 
-    function aaveClaimRewards(address[] memory assets) external {
-        aaveIncentivesController.claimRewards(assets, type(uint256).max, address(this));
-    }
+    // TODO: fix rewards
+    // function aaveClaimRewards(address[] memory assets) external {
+    //     rewardsController.claimRewards(assets, type(uint256).max, address(this));
+    // }
 
     function liquidate(
         address _poolTokenBorrowedAddress,
@@ -145,9 +146,7 @@ contract User is stdCheats, DSTest {
         morpho.setTreasuryVault(_newTreasuryVault);
     }
 
-    function setAaveIncentivesControllerOnRewardsManager(address _aaveIncentivesController)
-        external
-    {
-        rewardsManager.setAaveIncentivesController(_aaveIncentivesController);
+    function setRewardsControllerOnRewardsManager(address _rewardsController) external {
+        rewardsManager.setRewardsController(_rewardsController);
     }
 }

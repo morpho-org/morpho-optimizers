@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity ^0.8.0;
 
-import "@aave/core-v3/contracts/interfaces/IPoolAddressesProvider.sol";
+import "@aave/periphery-v3/contracts/rewards/interfaces/IRewardsController.sol";
 import "@aave/core-v3/contracts/interfaces/IPriceOracleGetter.sol";
 import "@aave/core-v3/contracts/interfaces/IVariableDebtToken.sol";
 import "@aave/core-v3/contracts/interfaces/IPoolDataProvider.sol";
@@ -19,10 +19,9 @@ import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "@contracts/aave-v3/libraries/Types.sol";
 
-// import {RewardsManagerOnMainnetAndAvalanche} from "@contracts/aave-v3/rewards-managers/RewardsManagerOnMainnetAndAvalanche.sol";
-// import {RewardsManagerOnPolygon} from "@contracts/aave-v3/rewards-managers/RewardsManagerOnPolygon.sol";
 import {InterestRatesManager} from "@contracts/aave-v3/InterestRatesManager.sol";
 import {IncentivesVault} from "@contracts/aave-v3/IncentivesVault.sol";
+import {RewardsManager} from "@contracts/aave-v3/RewardsManager.sol";
 import {MatchingEngine} from "@contracts/aave-v3/MatchingEngine.sol";
 import {EntryPositionsManager} from "@contracts/aave-v3/EntryPositionsManager.sol";
 import {ExitPositionsManager} from "@contracts/aave-v3/ExitPositionsManager.sol";
@@ -55,9 +54,6 @@ contract TestSetup is Config, Utils, stdCheats {
     IExitPositionsManager public exitPositionsManager;
     Lens public lens;
     MorphoToken public morphoToken;
-    // TODO: Implement rewards
-    // address public REWARD_TOKEN =
-    //     IAaveIncentivesController(aaveIncentivesControllerAddress).REWARD_TOKEN();
 
     IncentivesVault public incentivesVault;
     DumbOracle internal dumbOracle;
@@ -120,26 +116,10 @@ contract TestSetup is Config, Utils, stdCheats {
         treasuryVault = new User(morpho);
         morpho.setTreasuryVault(address(treasuryVault));
 
-        // TODO:
-        // if (block.chainid == Chains.ETH_MAINNET) {
-        //     // Mainnet network
-        //     rewardsManager = new RewardsManagerOnMainnetAndAvalanche(
-        //         pool,
-        //         IMorpho(address(morpho))
-        //     );
-        // } else if (block.chainid == Chains.AVALANCHE_MAINNET) {
-        //     // Avalanche network
-        //     rewardsManager = new RewardsManagerOnMainnetAndAvalanche(
-        //         pool,
-        //         IMorpho(address(morpho))
-        //     );
-        // } else if (block.chainid == Chains.POLYGON_MAINNET) {
-        //     // Polygon network
-        //     rewardsManager = new RewardsManagerOnPolygon(pool, IMorpho(address(morpho)));
-        // }
+        rewardsManager = new RewardsManager(pool, IMorpho(address(morpho)));
 
-        // rewardsManager.setAaveIncentivesController(aaveIncentivesControllerAddress);
-        // morpho.setAaveIncentivesController(aaveIncentivesControllerAddress);
+        rewardsManager.setRewardsController(rewardsControllerAddress);
+        morpho.setRewardsController(rewardsControllerAddress);
 
         /// Create markets ///
 
