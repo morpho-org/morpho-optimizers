@@ -115,16 +115,16 @@ contract TestFees is TestSetup {
         // Increase time so that rates update.
         hevm.warp(block.timestamp + 1);
 
-        supplier1.approve(aave, type(uint256).max);
-        supplier1.supply(aAave, 100 * WAD);
-        supplier1.borrow(aAave, 50 * WAD);
+        supplier1.approve(dai, type(uint256).max);
+        supplier1.supply(aDai, 100 * WAD);
+        supplier1.borrow(aDai, 50 * WAD);
 
         hevm.warp(block.timestamp + (365 days));
 
-        supplier1.repay(aAave, type(uint256).max);
+        supplier1.repay(aDai, type(uint256).max);
 
         hevm.expectRevert(abi.encodeWithSignature("AmountIsZero()"));
-        morpho.claimToTreasury(aAave, 1 ether);
+        morpho.claimToTreasury(aDai, 1 ether);
     }
 
     function testShouldPayFee() public {

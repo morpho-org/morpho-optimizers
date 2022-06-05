@@ -10,6 +10,7 @@ contract Config {
     address public wEth = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     address public comp = 0xc00e94Cb662C3520282E6f5717214004A7f26888;
     address public bat = 0x6C8c6b02E7b2BE14d4fA6022Dfd6d75921D90E4E;
+    address public dpi = 0x1494CA1F11D487c2bBe4543E90080AeBa4BA3C2b;
 
     // Aave
 
@@ -19,6 +20,7 @@ contract Config {
     address public aUsdt = 0x3Ed3B47Dd13EC9a98b44e6204A523E766B225811;
     address public aWbtc = 0x9ff58f4fFB29fA2266Ab25e75e2A8b3503311656;
     address public aWeth = 0x030bA81f1c18d280636F32af80b9AAd02Cf0854e;
+    address public aDpi = 0x6F634c6135D2EBD550000ac92F494F9CB8183dAe;
 
     address public stableDebtDai = 0x778A13D3eeb110A4f7bb6529F99c000119a08E92;
     address public variableDebtDai = 0x1852DC24d1a8956a0B356AA18eDe954c7a0Ca5ae;

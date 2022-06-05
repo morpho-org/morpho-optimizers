@@ -213,9 +213,9 @@ library ReserveConfiguration {
      * @param self The reserve configuration
      * @return The borrowing state
      **/
-    function getBorrowingEnabled(DataTypes.ReserveConfigurationMap storage self)
+    function getBorrowingEnabled(DataTypes.ReserveConfigurationMap memory self)
         internal
-        view
+        pure
         returns (bool)
     {
         return (self.data & ~BORROWING_MASK) != 0;
