@@ -239,6 +239,10 @@ contract TestSetup is Config, Utils, stdCheats {
         morpho.setDefaultMaxGasForMatching(newMaxGas);
     }
 
+    function moveOneBlockFowardBorrowRepay() public {
+        hevm.roll(block.number + 1);
+    }
+
     function move1000BlocksForward(address _marketAddress) public {
         for (uint256 k; k < 100; k++) {
             hevm.roll(block.number + 10);

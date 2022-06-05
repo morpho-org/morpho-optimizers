@@ -19,6 +19,8 @@ contract TestP2PDisable is TestSetup {
             suppliers[i].supply(cDai, suppliedAmount);
         }
 
+        moveOneBlockFowardBorrowRepay();
+
         // Create delta.
         setDefaultMaxGasForMatchingHelper(3e6, 3e6, 3e6, 0);
         borrower1.approve(dai, type(uint256).max);
@@ -34,7 +36,7 @@ contract TestP2PDisable is TestSetup {
         // Delta must be reduce to 0.
         borrower1.borrow(cDai, borrowedAmount);
         (p2pSupplyDelta, , , ) = morpho.deltas(cDai);
-        testEquality(p2pSupplyDelta, 0);
+        assertApproxEq(p2pSupplyDelta, 0, 200);
     }
 
     function testShouldMatchBorrowDeltaWithP2PDisabled() public {

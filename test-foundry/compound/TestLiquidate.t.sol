@@ -37,6 +37,8 @@ contract TestLiquidate is TestSetup {
 
         (, uint256 collateralOnPool) = morpho.supplyBalanceInOf(cUsdc, address(borrower1));
 
+        moveOneBlockFowardBorrowRepay();
+
         // Change Oracle.
         SimplePriceOracle customOracle = createAndSetCustomPriceOracle();
         customOracle.setDirectPrice(usdc, (oracle.getUnderlyingPrice(cUsdc) * 94) / 100);
@@ -53,7 +55,7 @@ contract TestLiquidate is TestSetup {
             address(borrower1)
         );
         uint256 expectedBorrowBalanceOnPool = toRepay.div(ICToken(cDai).borrowIndex());
-        testEquality(onPoolBorrower, expectedBorrowBalanceOnPool, "borrower borrow on pool");
+        testEqualityLarge(onPoolBorrower, expectedBorrowBalanceOnPool, "borrower borrow on pool");
         assertEq(inP2PBorrower, 0, "borrower borrow in peer-to-peer");
 
         // Check borrower1 supply balance.
@@ -99,6 +101,8 @@ contract TestLiquidate is TestSetup {
         // Change Oracle.
         SimplePriceOracle customOracle = createAndSetCustomPriceOracle();
         customOracle.setDirectPrice(dai, (oracle.getUnderlyingPrice(cDai) * 94) / 100);
+
+        moveOneBlockFowardBorrowRepay();
 
         // Liquidate.
         uint256 toRepay = (borrowerDebt / 2) - 1; // -1 because of rounding error related to compound's approximation
@@ -165,6 +169,8 @@ contract TestLiquidate is TestSetup {
         SimplePriceOracle customOracle = createAndSetCustomPriceOracle();
         customOracle.setDirectPrice(dai, (oracle.getUnderlyingPrice(cDai) * 94) / 100);
 
+        moveOneBlockFowardBorrowRepay();
+
         // Liquidate.
         uint256 toRepay = (borrowerDebt / 4);
         User liquidator = borrower3;
@@ -180,7 +186,7 @@ contract TestLiquidate is TestSetup {
         uint256 expectedBorrowBalanceOnPool = onPoolUsdc.mul(ICToken(cUsdc).borrowIndex()) -
             toRepay;
 
-        testEquality(
+        testEqualityLarge(
             onPoolBorrower.mul(ICToken(cUsdc).borrowIndex()),
             expectedBorrowBalanceOnPool,
             "borrower borrow on pool"
