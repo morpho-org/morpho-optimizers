@@ -16,7 +16,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 /// @author Morpho Labs.
 /// @custom:contact security@morpho.xyz
 /// @notice This abstract contract is a based for rewards managers used to manage the rewards from the Aave protocol.
-abstract contract RewardsManager is IRewardsManager, Ownable {
+contract RewardsManager is IRewardsManager, Ownable {
     /// STORAGE ///
 
     mapping(address => RewardsDataTypes.AssetData) internal localAssetData; // The local data related to a given market.
@@ -29,7 +29,7 @@ abstract contract RewardsManager is IRewardsManager, Ownable {
 
     /// @notice Emitted the address of the `rewardsController` is set.
     /// @param _rewardsController The new address of the `rewardsController`.
-    event RewardsControllerControllerSet(address indexed _rewardsController);
+    event RewardsControllerSet(address indexed _rewardsController);
 
     /**
      * @dev Emitted when rewards of an asset are accrued on behalf of a user.
@@ -79,9 +79,9 @@ abstract contract RewardsManager is IRewardsManager, Ownable {
 
     /// @notice Sets the `rewardsController`.
     /// @param _rewardsController The address of the `rewardsController`.
-    function setRewardsController(address _rewardsController) external override onlyOwner {
+    function setRewardsController(address _rewardsController) external onlyOwner {
         rewardsController = IRewardsController(_rewardsController);
-        emit RewardsControllerControllerSet(_rewardsController);
+        emit RewardsControllerSet(_rewardsController);
     }
 
     /// @notice Accrues unclaimed rewards for the given assets and returns the total unclaimed rewards.
