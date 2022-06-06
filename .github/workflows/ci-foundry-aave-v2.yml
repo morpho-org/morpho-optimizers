@@ -30,6 +30,7 @@ on:
 
 jobs:
   morpho-aave-v2:
+    if: "! github.event.pull_request.draft"
     name: Morpho-Aave V2
     runs-on: ubuntu-latest
     steps:
