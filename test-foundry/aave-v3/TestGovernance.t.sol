@@ -181,7 +181,6 @@ contract TestGovernance is TestSetup {
         IIncentivesVault incentivesVaultV2 = new IncentivesVault(
             IMorpho(address(morpho)),
             morphoToken,
-            ERC20(address(1)),
             address(2),
             dumbOracle
         );
