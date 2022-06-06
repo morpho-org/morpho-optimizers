@@ -3,6 +3,8 @@ pragma solidity ^0.8.0;
 
 import "./interfaces/IExitPositionsManager.sol";
 
+import "hardhat/console.sol";
+
 import "./PositionsManagerUtils.sol";
 
 /// @title ExitPositionsManager.
@@ -494,11 +496,12 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         // Repay the fee.
         if (vars.remainingToRepay > 0) {
             // Fee = (p2pBorrowAmount - p2pBorrowDelta) - (p2pSupplyAmount - p2pSupplyDelta).
-            vars.feeToRepay =
+            vars.feeToRepay = Math.safeSub(
                 (delta.p2pBorrowAmount.rayMul(vars.p2pBorrowIndex) -
-                    delta.p2pBorrowDelta.rayMul(vars.poolBorrowIndex)) -
+                    delta.p2pBorrowDelta.rayMul(vars.poolBorrowIndex)),
                 (delta.p2pSupplyAmount.rayMul(vars.p2pSupplyIndex) -
-                    delta.p2pSupplyDelta.rayMul(vars.poolSupplyIndex));
+                    delta.p2pSupplyDelta.rayMul(vars.poolSupplyIndex))
+            );
 
             if (vars.feeToRepay > 0) {
                 uint256 feeRepaid = Math.min(vars.feeToRepay, vars.remainingToRepay);
