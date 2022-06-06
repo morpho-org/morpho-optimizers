@@ -585,19 +585,20 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
     /// @param _user The user to determine liquidity for.
     /// @param _poolTokenAddress The market to hypothetically withdraw from.
     /// @param _withdrawnAmount The number of tokens to hypothetically withdraw (in underlying).
-    /// @return healthFactor The health factor of the user.
+    /// @return The health factor of the user.
     function _getUserHealthFactor(
         address _user,
         address _poolTokenAddress,
         uint256 _withdrawnAmount
-    ) internal returns (uint256 healthFactor) {
+    ) internal returns (uint256) {
         IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
         uint256 numberOfMarketsCreated = marketsCreated.length;
 
         Types.AssetLiquidityData memory assetData;
         Types.LiquidityData memory liquidityData;
 
-        bool hasBorrowed = _isBorrowingAny(_user);
+        // If the user is not borrowing any asset, return an infinite health factor.
+        if (!_isBorrowingAny(_user)) return type(uint256).max;
 
         for (uint256 i; i < numberOfMarketsCreated; ) {
             address poolToken = marketsCreated[i];
@@ -611,7 +612,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
             .getParams();
             assetData.tokenUnit = 10**assetData.reserveDecimals;
 
-            if (hasBorrowed && _isBorrowing(_user, poolToken))
+            if (_isBorrowing(_user, poolToken))
                 liquidityData.debtValue +=
                     (_getUserBorrowBalanceInOf(poolToken, _user) * assetData.underlyingPrice) /
                     assetData.tokenUnit;
@@ -635,9 +636,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
             }
         }
 
-        healthFactor = liquidityData.debtValue == 0
-            ? type(uint256).max
-            : liquidityData.liquidationThresholdValue.wadDiv(liquidityData.debtValue);
+        return liquidityData.liquidationThresholdValue.wadDiv(liquidityData.debtValue);
     }
 
     /// @dev Checks whether the user can withdraw or not.
