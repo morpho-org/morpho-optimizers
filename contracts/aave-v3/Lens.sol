@@ -272,7 +272,7 @@ contract Lens {
             Types.PoolIndexes memory poolIndexes = morpho.poolIndexes(_poolTokenAddress);
             Types.MarketParameters memory marketParams = morpho.marketParameters(_poolTokenAddress);
 
-            (uint256 poolSupplyIndex, uint256 poolBorrowIndex) = _computeCompoundsIndexes(
+            (uint256 poolSupplyIndex, uint256 poolBorrowIndex) = _computePoolIndexes(
                 _poolTokenAddress
             );
 
@@ -302,7 +302,7 @@ contract Lens {
             Types.PoolIndexes memory poolIndexes = morpho.poolIndexes(_poolTokenAddress);
             Types.MarketParameters memory marketParams = morpho.marketParameters(_poolTokenAddress);
 
-            (uint256 poolSupplyIndex, uint256 poolBorrowIndex) = _computeCompoundsIndexes(
+            (uint256 poolSupplyIndex, uint256 poolBorrowIndex) = _computePoolIndexes(
                 _poolTokenAddress
             );
 
@@ -332,7 +332,7 @@ contract Lens {
             Types.PoolIndexes memory poolIndexes = morpho.poolIndexes(_poolTokenAddress);
             Types.MarketParameters memory marketParams = morpho.marketParameters(_poolTokenAddress);
 
-            (uint256 poolSupplyIndex, uint256 poolBorrowIndex) = _computeCompoundsIndexes(
+            (uint256 poolSupplyIndex, uint256 poolBorrowIndex) = _computePoolIndexes(
                 _poolTokenAddress
             );
 
@@ -423,25 +423,19 @@ contract Lens {
     {
         // Compute pool growth factors
 
-        uint256 poolSupplyGrowthFactor = _params.poolSupplyIndex.rayDiv(
-            _params.lastPoolSupplyIndex
+        (
+            uint256 p2pSupplyGrowthFactor,
+            uint256 poolSupplyGrowthFactor,
+            uint256 p2pBorrowGrowthFactor,
+            uint256 poolBorrowGrowthFactor
+        ) = _computeGrowthFactors(
+            _params.poolSupplyIndex,
+            _params.poolBorrowIndex,
+            _params.lastPoolSupplyIndex,
+            _params.lastPoolBorrowIndex,
+            _params.reserveFactor,
+            _params.p2pIndexCursor
         );
-        uint256 poolBorrowGrowthFactor = _params.poolBorrowIndex.rayDiv(
-            _params.lastPoolBorrowIndex
-        );
-
-        // Compute peer-to-peer growth factors
-
-        uint256 p2pGrowthFactor = ((MAX_BASIS_POINTS - _params.p2pIndexCursor) *
-            poolSupplyGrowthFactor +
-            _params.p2pIndexCursor *
-            poolBorrowGrowthFactor) / MAX_BASIS_POINTS;
-        uint256 p2pSupplyGrowthFactor = p2pGrowthFactor -
-            (_params.reserveFactor * (p2pGrowthFactor - poolSupplyGrowthFactor)) /
-            MAX_BASIS_POINTS;
-        uint256 p2pBorrowGrowthFactor = p2pGrowthFactor +
-            (_params.reserveFactor * (poolBorrowGrowthFactor - p2pGrowthFactor)) /
-            MAX_BASIS_POINTS;
 
         // Compute new peer-to-peer supply index.
 
@@ -449,8 +443,9 @@ contract Lens {
             newP2PSupplyIndex = _params.lastP2PSupplyIndex.rayMul(p2pSupplyGrowthFactor);
         } else {
             uint256 shareOfTheDelta = Math.min(
-                (_params.delta.p2pSupplyDelta.rayMul(_params.lastPoolSupplyIndex)).rayDiv(
-                    (_params.delta.p2pSupplyAmount).rayMul(_params.lastP2PSupplyIndex)
+                (_params.delta.p2pSupplyDelta.wadToRay().rayMul(_params.lastPoolSupplyIndex))
+                .rayDiv(
+                    (_params.delta.p2pSupplyAmount.wadToRay()).rayMul(_params.lastP2PSupplyIndex)
                 ),
                 WadRayMath.RAY // To avoid shareOfTheDelta > 1 with rounding errors.
             );
@@ -467,8 +462,9 @@ contract Lens {
             newP2PBorrowIndex = _params.lastP2PBorrowIndex.rayMul(p2pBorrowGrowthFactor);
         } else {
             uint256 shareOfTheDelta = Math.min(
-                (_params.delta.p2pBorrowDelta.rayMul(_params.poolBorrowIndex)).rayDiv(
-                    (_params.delta.p2pBorrowAmount).rayMul(_params.lastP2PBorrowIndex)
+                (_params.delta.p2pBorrowDelta.wadToRay().rayMul(_params.lastPoolBorrowIndex))
+                .rayDiv(
+                    (_params.delta.p2pBorrowAmount.wadToRay()).rayMul(_params.lastP2PBorrowIndex)
                 ),
                 RAY // To avoid shareOfTheDelta > 1 with rounding errors.
             );
@@ -578,48 +574,32 @@ contract Lens {
         poolSupplyGrowthFactor_ = _poolSupplyIndex.rayDiv(_lastPoolSupplyIndex);
         poolBorrowGrowthFactor_ = _poolBorrowIndex.rayDiv(_lastPoolBorrowIndex);
 
-        uint256 p2pGrowthFactor = ((MAX_BASIS_POINTS - _p2pIndexCursor) *
-            poolSupplyGrowthFactor_ +
-            _p2pIndexCursor *
-            poolBorrowGrowthFactor_) / MAX_BASIS_POINTS;
+        uint256 p2pGrowthFactor = poolSupplyGrowthFactor_.percentMul(
+            (MAX_BASIS_POINTS - _p2pIndexCursor)
+        ) + poolBorrowGrowthFactor_.percentMul(_p2pIndexCursor);
 
         p2pSupplyGrowthFactor_ =
             p2pGrowthFactor -
-            (_reserveFactor * (p2pGrowthFactor - poolSupplyGrowthFactor_)) /
-            MAX_BASIS_POINTS;
+            (p2pGrowthFactor - poolSupplyGrowthFactor_).percentMul(_reserveFactor);
         p2pBorrowGrowthFactor_ =
             p2pGrowthFactor +
-            (_reserveFactor * (poolBorrowGrowthFactor_ - p2pGrowthFactor)) /
-            MAX_BASIS_POINTS;
+            (poolBorrowGrowthFactor_ - p2pGrowthFactor).percentMul(_reserveFactor);
     }
 
-    /// @dev Computes and returns Compound's updated indexes.
+    /// @dev Computes and returns Aave's updated indexes.
     /// @param _poolTokenAddress The address of the market to compute.
     /// @return newSupplyIndex The updated supply index.
     /// @return newBorrowIndex The updated borrow index.
-    function _computeCompoundsIndexes(address _poolTokenAddress)
+    function _computePoolIndexes(address _poolTokenAddress)
         internal
         view
         returns (uint256 newSupplyIndex, uint256 newBorrowIndex)
     {
         address underlyingAddress = IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS();
-        DataTypes.ReserveData memory reserve = pool.getReserveData(underlyingAddress);
-
-        if (block.timestamp == reserve.lastUpdateTimestamp)
-            return (
-                pool.getReserveNormalizedIncome(underlyingAddress),
-                pool.getReserveNormalizedVariableDebt(underlyingAddress)
-            );
-
-        newSupplyIndex = calculateLinearInterest(
-            reserve.currentLiquidityRate,
-            reserve.lastUpdateTimestamp
-        ).rayMul(reserve.liquidityIndex);
-
-        newBorrowIndex = calculateCompoundedInterest(
-            reserve.currentVariableBorrowRate,
-            reserve.lastUpdateTimestamp
-        ).rayMul(reserve.variableBorrowIndex);
+        return (
+            pool.getReserveNormalizedIncome(underlyingAddress),
+            pool.getReserveNormalizedVariableDebt(underlyingAddress)
+        );
     }
 
     /// @dev Returns the supply balance of `_user` in the `_poolTokenAddress` market.
