@@ -115,7 +115,7 @@ contract MorphoUtils is MorphoStorage {
     /// @dev Returns if a user has been borrowing or supplying on a given market.
     /// @param _user The user to check for.
     /// @param _market The address of the market to check.
-    /// @return True if the user has been using a reserve for borrowing or as collateral, false otherwise
+    /// @return True if the user has been using a reserve for borrowing or as collateral, false otherwise.
     function _isSupplyingOrBorrowing(address _user, address _market) internal view returns (bool) {
         unchecked {
             return (userMarketsBitmask[_user] >> (indexOfMarket[_market] << 1)) & 3 != 0;
@@ -142,9 +142,9 @@ contract MorphoUtils is MorphoStorage {
         }
     }
 
-    /// @dev Checks if a user has been borrowing from any market.
+    /// @dev Returns if a user has been borrowing from any market.
     /// @param _user The user to check for.
-    /// @return True if the user has been borrowing on any market, false otherwise
+    /// @return True if the user has been borrowing on any market, false otherwise.
     function _isBorrowingAny(address _user) internal view returns (bool) {
         return userMarketsBitmask[_user] & BORROWING_MASK != 0;
     }
@@ -160,11 +160,8 @@ contract MorphoUtils is MorphoStorage {
     ) internal {
         unchecked {
             uint256 bit = 1 << (indexOfMarket[_market] << 1);
-            if (_borrowing) {
-                userMarketsBitmask[_user] |= bit;
-            } else {
-                userMarketsBitmask[_user] &= ~bit;
-            }
+            if (_borrowing) userMarketsBitmask[_user] |= bit;
+            else userMarketsBitmask[_user] &= ~bit;
         }
     }
 
@@ -179,11 +176,8 @@ contract MorphoUtils is MorphoStorage {
     ) internal {
         unchecked {
             uint256 bit = 1 << ((indexOfMarket[_market] << 1) + 1);
-            if (_supplying) {
-                userMarketsBitmask[_user] |= bit;
-            } else {
-                userMarketsBitmask[_user] &= ~bit;
-            }
+            if (_supplying) userMarketsBitmask[_user] |= bit;
+            else userMarketsBitmask[_user] &= ~bit;
         }
     }
 
