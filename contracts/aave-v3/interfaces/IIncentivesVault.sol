@@ -14,5 +14,9 @@ interface IIncentivesVault {
 
     function transferMorphoTokensToDao(uint256 _amount) external;
 
-    function tradeRewardTokensForMorphoTokens(address _to, uint256 _amount) external;
+    function tradeRewardTokensForMorphoTokens(
+        address _receiver,
+        address[] memory rewardsList,
+        uint256[] memory claimedAmounts
+    ) external;
 }
