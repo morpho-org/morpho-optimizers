@@ -22,8 +22,9 @@ contract Morpho is MorphoGovernance {
 
     /// @notice Emitted when a user claims rewards and trades them for MORPHO tokens.
     /// @param _user The address of the claimer.
+    /// @param _reward The reward token address.
     /// @param _amountSent The amount of reward token sent to the vault.
-    event RewardsClaimedAndTraded(address indexed _user, uint256 _amountSent);
+    event RewardsClaimedAndTraded(address indexed _user, address _reward, uint256 _amountSent);
 
     /// EXTERNAL ///
 
@@ -188,15 +189,28 @@ contract Morpho is MorphoGovernance {
     {
         (address[] memory rewardsList, uint256[] memory claimedAmounts) = rewardsManager
         .claimRewards(_assets, msg.sender);
-
         uint256 rewardsListLength = rewardsList.length;
 
         rewardsController.claimAllRewardsToSelf(_assets);
 
         if (_tradeForMorphoToken) {
-            // rewardToken.safeApprove(address(incentivesVault), amountOfRewards);
-            // incentivesVault.tradeRewardTokensForMorphoTokens(msg.sender, amountOfRewards);
-            // emit RewardsClaimedAndTraded(msg.sender, amountOfRewards);
+            for (uint256 i; i < rewardsListLength; ) {
+                uint256 claimedAmount = claimedAmounts[i];
+
+                if (claimedAmount > 0) {
+                    ERC20(rewardsList[i]).safeApprove(address(incentivesVault), claimedAmount);
+                    emit RewardsClaimedAndTraded(msg.sender, rewardsList[i], claimedAmount);
+                }
+
+                unchecked {
+                    ++i;
+                }
+            }
+            incentivesVault.tradeRewardTokensForMorphoTokens(
+                msg.sender,
+                rewardsList,
+                claimedAmounts
+            );
         } else {
             for (uint256 i; i < rewardsListLength; ) {
                 uint256 claimedAmount = claimedAmounts[i];
