@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 
 import "@aave/core-v3/contracts/interfaces/IAToken.sol";
 
+import "@aave/core-v3/contracts/protocol/libraries/math/PercentageMath.sol";
 import "@aave/core-v3/contracts/protocol/libraries/math/WadRayMath.sol";
 import "./libraries/Math.sol";
 
@@ -14,6 +15,7 @@ import "./MorphoStorage.sol";
 /// @notice Smart contract handling the computation of indexes used for peer-to-peer interactions.
 /// @dev This contract inherits from MorphoStorage so that Morpho can delegate calls to this contract.
 contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
+    using PercentageMath for uint256;
     using WadRayMath for uint256;
 
     /// STRUCTS ///
@@ -112,16 +114,13 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
 
         // Compute peer-to-peer growth factors
 
-        uint256 p2pGrowthFactor = ((MAX_BASIS_POINTS - _params.p2pIndexCursor) *
-            poolSupplyGrowthFactor +
-            _params.p2pIndexCursor *
-            poolBorrowGrowthFactor) / MAX_BASIS_POINTS;
+        uint256 p2pGrowthFactor = poolSupplyGrowthFactor.percentMul(
+            MAX_BASIS_POINTS - _params.p2pIndexCursor
+        ) + poolBorrowGrowthFactor.percentMul(_params.p2pIndexCursor);
         uint256 p2pSupplyGrowthFactor = p2pGrowthFactor -
-            (_params.reserveFactor * (p2pGrowthFactor - poolSupplyGrowthFactor)) /
-            MAX_BASIS_POINTS;
+            _params.reserveFactor.percentMul(p2pGrowthFactor - poolSupplyGrowthFactor);
         uint256 p2pBorrowGrowthFactor = p2pGrowthFactor +
-            (_params.reserveFactor * (poolBorrowGrowthFactor - p2pGrowthFactor)) /
-            MAX_BASIS_POINTS;
+            _params.reserveFactor.percentMul(poolBorrowGrowthFactor - p2pGrowthFactor);
 
         // Compute new peer-to-peer supply index.
 
