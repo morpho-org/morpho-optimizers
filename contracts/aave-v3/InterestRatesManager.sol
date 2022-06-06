@@ -112,7 +112,7 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
             _params.lastPoolBorrowIndex
         );
 
-        // Compute peer-to-peer growth factors
+        // Compute peer-to-peer growth factors.
 
         uint256 p2pGrowthFactor = poolSupplyGrowthFactor.percentMul(
             MAX_BASIS_POINTS - _params.p2pIndexCursor
