@@ -3,10 +3,8 @@ dotenv.config({ path: './.env.local' });
 import 'module-alias/register';
 import '@openzeppelin/hardhat-upgrades';
 import '@tenderly/hardhat-tenderly';
+import '@nomiclabs/hardhat-etherscan';
 import '@nomiclabs/hardhat-waffle';
-import 'hardhat-contract-sizer';
-import 'hardhat-gas-reporter';
-import 'solidity-coverage';
 import 'hardhat-deploy';
 
 module.exports = {
@@ -79,15 +77,5 @@ module.exports = {
   },
   etherscan: {
     apiKey: process.env.ETHERSCAN_API_KEY,
-  },
-  gasReporter: {
-    currency: 'USD',
-  },
-  mocha: {
-    // needed for the long test of Nmax
-    timeout: 300000,
-  },
-  paths: {
-    tests: './test',
   },
 };
