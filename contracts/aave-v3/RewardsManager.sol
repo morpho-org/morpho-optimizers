@@ -15,7 +15,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 /// @title RewardsManager.
 /// @author Morpho Labs.
 /// @custom:contact security@morpho.xyz
-/// @notice This abstract contract is a based for rewards managers used to manage the rewards from the Aave protocol.
+/// @notice Contract managing Aave's protocol rewards.
 contract RewardsManager is IRewardsManager, Ownable {
     /// STORAGE ///
 
@@ -27,26 +27,24 @@ contract RewardsManager is IRewardsManager, Ownable {
 
     /// EVENTS ///
 
-    /// @notice Emitted the address of the `rewardsController` is set.
+    /// @notice Emitted when the address of the `rewardsController` is set.
     /// @param _rewardsController The new address of the `rewardsController`.
     event RewardsControllerSet(address indexed _rewardsController);
 
-    /**
-     * @dev Emitted when rewards of an asset are accrued on behalf of a user.
-     * @param asset The address of the incentivized asset
-     * @param reward The address of the reward token
-     * @param user The address of the user that rewards are accrued on behalf of
-     * @param assetIndex The index of the asset distribution
-     * @param userIndex The index of the asset distribution on behalf of the user
-     * @param rewardsAccrued The amount of rewards accrued
-     */
+    /// @dev Emitted when rewards of an asset are accrued on behalf of a user.
+    /// @param _asset The address of the incentivized asset.
+    /// @param _reward The address of the reward token.
+    /// @param _user The address of the user that rewards are accrued on behalf of.
+    /// @param _assetIndex The index of the asset distribution.
+    /// @param _userIndex The index of the asset distribution on behalf of the user.
+    /// @param _rewardsAccrued The amount of rewards accrued.
     event Accrued(
-        address indexed asset,
-        address indexed reward,
-        address indexed user,
-        uint256 assetIndex,
-        uint256 userIndex,
-        uint256 rewardsAccrued
+        address indexed _asset,
+        address indexed _reward,
+        address indexed _user,
+        uint256 _assetIndex,
+        uint256 _userIndex,
+        uint256 _rewardsAccrued
     );
 
     /// ERRORS ///
@@ -87,8 +85,8 @@ contract RewardsManager is IRewardsManager, Ownable {
     /// @notice Accrues unclaimed rewards for the given assets and returns the total unclaimed rewards.
     /// @param _assets The assets for which to accrue rewards (aToken or variable debt token).
     /// @param _user The address of the user.
-    /// @return rewardsList
-    /// @return claimedAmounts
+    /// @return rewardsList The list of reward tokens.
+    /// @return claimedAmounts The list of claimed reward amounts.
     function claimRewards(address[] calldata _assets, address _user)
         external
         onlyMorpho
@@ -127,10 +125,11 @@ contract RewardsManager is IRewardsManager, Ownable {
     }
 
     /// @notice Updates the unclaimed rewards of a user.
+    /// @dev Only called by Morpho at positions updates in the data structure.
     /// @param _user The address of the user.
     /// @param _asset The address of the reference asset of the distribution (aToken or variable debt token).
-    /// @param _userBalance The user balance of tokens in the distribution.
-    /// @param _totalSupply The total balance of tokens in the distribution.
+    /// @param _userBalance The current user asset balance.
+    /// @param _totalSupply The current total supply of underlying assets for this distribution.
     function updateUserAssetAndAccruedRewards(
         address _user,
         address _asset,
@@ -140,6 +139,10 @@ contract RewardsManager is IRewardsManager, Ownable {
         _updateData(_user, _asset, _userBalance, _totalSupply);
     }
 
+    /// @notice Returns user's accrued rewards for the specified assets and reward token
+    /// @param _assets The list of assets to retrieve accrued rewards.
+    /// @param _user The address of the user.
+    /// @return totalAccrued The total amount of accrued rewards.
     function getUserAccruedRewards(
         address[] calldata _assets,
         address _user,
@@ -156,6 +159,11 @@ contract RewardsManager is IRewardsManager, Ownable {
         }
     }
 
+    /// @notice Returns user's rewards for the specified assets and for all reward tokens.
+    /// @param _assets The list of assets to retrieve rewards.
+    /// @param _user The address of the user.
+    /// @return rewardsList The list of reward tokens.
+    /// @return unclaimedAmounts The list of unclaimed reward amounts.
     function getAllUserRewards(address[] calldata _assets, address _user)
         external
         view
@@ -169,7 +177,7 @@ contract RewardsManager is IRewardsManager, Ownable {
         uint256 rewardsListLength = rewardsList.length;
         unclaimedAmounts = new uint256[](rewardsListLength);
 
-        // Add unrealized rewards from user to unclaimedRewards.
+        // Add unrealized rewards from user to unclaimed rewards.
         for (uint256 i; i < userAssetBalances.length; ) {
             for (uint256 j; j < rewardsListLength; ) {
                 unclaimedAmounts[j] += localAssetData[userAssetBalances[i].asset]
@@ -194,9 +202,13 @@ contract RewardsManager is IRewardsManager, Ownable {
                 ++i;
             }
         }
-        return (rewardsList, unclaimedAmounts);
     }
 
+    /// @notice Returns user's rewards for the specified assets and reward token.
+    /// @param _assets The list of assets to retrieve rewards.
+    /// @param _user The address of the user.
+    /// @param _reward The address of the reward token
+    /// @return The user's rewards in reward token.
     function getUserRewards(
         address[] calldata _assets,
         address _user,
@@ -205,25 +217,26 @@ contract RewardsManager is IRewardsManager, Ownable {
         return _getUserReward(_user, _reward, _getUserAssetBalances(_assets, _user));
     }
 
-    /// PUBLIC ///
-
+    /// @notice Returns the user's index for the specified asset and reward token.
+    /// @param _user The address of the user.
+    /// @param _asset The address of the reference asset of the distribution (aToken or variable debt token).
+    /// @param _reward The address of the reward token.
+    /// @return The user's index.
     function getUserAssetIndex(
         address _user,
         address _asset,
         address _reward
-    ) public view override returns (uint256) {
+    ) external view override returns (uint256) {
         return localAssetData[_asset].rewards[_reward].usersData[_user].index;
     }
 
     /// INTERNAL ///
 
-    /**
-     * @dev Updates the state of the distribution for the specified reward
-     * @param _totalSupply Current total of underlying assets for this distribution
-     * @param _assetUnit One unit of asset (10**decimals)
-     * @return newIndex The new distribution index
-     * @return indexUpdated True if the index was updated, false otherwise
-     **/
+    /// @dev Updates the state of the distribution for the specified reward.
+    /// @param _totalSupply The current total supply of underlying assets for this distribution.
+    /// @param _assetUnit The asset's unit (10**decimals).
+    /// @return newIndex The new distribution index.
+    /// @return indexUpdated True if the index was updated, false otherwise.
     function _updateRewardData(
         RewardsDataTypes.RewardData storage _localRewardData,
         address _asset,
@@ -253,15 +266,13 @@ contract RewardsManager is IRewardsManager, Ownable {
         return (newIndex, indexUpdated);
     }
 
-    /**
-     * @dev Updates the state of the distribution for the specific _user
-     * @param _user The address of the _user
-     * @param _userBalance The _user balance of the asset
-     * @param _newAssetIndex The new index of the asset distribution
-     * @param _assetUnit One unit of asset (10**decimals)
-     * @return rewardsAccrued The rewards accrued since the last update
-     * @return dataUpdated updated?
-     **/
+    /// @dev Updates the state of the distribution for the specific user.
+    /// @param _user The address of the user.
+    /// @param _userBalance The current user asset balance.
+    /// @param _newAssetIndex The new index of the asset distribution.
+    /// @param _assetUnit The asset's unit (10**decimals).
+    /// @return rewardsAccrued The rewards accrued since the last update.
+    /// @return dataUpdated True if the data was updated, false otherwise.
     function _updateUserData(
         RewardsDataTypes.RewardData storage _localRewardData,
         address _user,
@@ -281,16 +292,13 @@ contract RewardsManager is IRewardsManager, Ownable {
                 _localRewardData.usersData[_user].accrued += uint128(rewardsAccrued);
             }
         }
-        return (rewardsAccrued, dataUpdated);
     }
 
-    /**
-     * @dev Iterates and accrues all the rewards for asset of the specific _user
-     * @param _asset The address of the reference asset of the distribution
-     * @param _user The _user address
-     * @param _userBalance The current _user asset balance
-     * @param _totalSupply Total supply of the asset
-     **/
+    /// @dev Iterates and accrues all the rewards for asset of the specific user.
+    /// @param _asset The address of the reference asset of the distribution.
+    /// @param _user The user address.
+    /// @param _userBalance The current user asset balance.
+    /// @param _totalSupply The total supply of the asset.
     function _updateData(
         address _asset,
         address _user,
@@ -338,11 +346,9 @@ contract RewardsManager is IRewardsManager, Ownable {
         }
     }
 
-    /**
-     * @dev Accrues all the rewards of the assets specified in the userAssetBalances list
-     * @param _user The address of the _user
-     * @param _userAssetBalances List of structs with the _user balance and total supply of a set of assets
-     **/
+    /// @dev Accrues all the rewards of the assets specified in the userAssetBalances list.
+    /// @param _user The address of the user.
+    /// @param _userAssetBalances The list of structs with the user balance and total supply of a set of assets.
     function _updateDataMultiple(
         address _user,
         RewardsDataTypes.UserAssetBalance[] memory _userAssetBalances
@@ -362,21 +368,19 @@ contract RewardsManager is IRewardsManager, Ownable {
         }
     }
 
-    /**
-     * @dev Return the accrued unclaimed amount of a reward from a _user over a list of distribution
-     * @param _user The address of the _user
-     * @param _reward The address of the reward token
-     * @param _userAssetBalances List of structs with the _user balance and total supply of a set of assets
-     * @return unclaimedRewards The accrued rewards for the _user until the moment
-     **/
+    /// @dev Returns the accrued unclaimed amount of a reward from a user over a list of distribution.
+    /// @param _user The address of the user.
+    /// @param _reward The address of the reward token.
+    /// @param _userAssetBalances List of structs with the user balance and total supply of a set of assets.
+    /// @return unclaimedRewards The accrued rewards for the user until the moment.
     function _getUserReward(
         address _user,
         address _reward,
         RewardsDataTypes.UserAssetBalance[] memory _userAssetBalances
     ) internal view returns (uint256 unclaimedRewards) {
-        // Add unrealized rewards.
         uint256 userAssetBalancesLength = _userAssetBalances.length;
 
+        // Add unrealized rewards.
         for (uint256 i; i < userAssetBalancesLength; ) {
             if (_userAssetBalances[i].userBalance == 0) continue;
 
@@ -393,13 +397,11 @@ contract RewardsManager is IRewardsManager, Ownable {
         }
     }
 
-    /**
-     * @dev Calculates the pending (not yet accrued) rewards since the last _user action
-     * @param _user The address of the _user
-     * @param _reward The address of the reward token
-     * @param _userAssetBalance struct with the _user balance and total supply of the incentivized asset
-     * @return The pending rewards for the _user since the last _user action
-     **/
+    /// @dev Computes the pending (not yet accrued) rewards since the last user action.
+    /// @param _user The address of the user.
+    /// @param _reward The address of the reward token.
+    /// @param _userAssetBalance The struct with the user balance and total supply of the incentivized asset.
+    /// @return The pending rewards for the user since the last user action.
     function _getPendingRewards(
         address _user,
         address _reward,
@@ -432,14 +434,12 @@ contract RewardsManager is IRewardsManager, Ownable {
             );
     }
 
-    /**
-     * @dev Internal function for the calculation of _user's rewards on a distribution
-     * @param _userBalance Balance of the _user asset on a distribution
-     * @param _reserveIndex Current index of the distribution
-     * @param _userIndex Index stored for the _user, representation his staking moment
-     * @param _assetUnit One unit of asset (10**decimals)
-     * @return rewards The rewards
-     **/
+    /// @dev Computes user's accrued rewards on a distribution.
+    /// @param _userBalance The current user asset balance.
+    /// @param _reserveIndex The current index of the distribution.
+    /// @param _userIndex The index stored for the user, representing its staking moment.
+    /// @param _assetUnit The asset's unit (10**decimals).
+    /// @return rewards The rewards accrued.
     function _getRewards(
         uint256 _userBalance,
         uint256 _reserveIndex,
@@ -452,12 +452,10 @@ contract RewardsManager is IRewardsManager, Ownable {
         }
     }
 
-    /**
-     * @dev Calculates the next value of an specific distribution index, with validations
-     * @param _totalSupply of the asset being rewarded
-     * @param _assetUnit One unit of asset (10**decimals)
-     * @return The new index.
-     **/
+    /// @dev Computes the next value of an specific distribution index, with validations.
+    /// @param _totalSupply of the asset being rewarded.
+    /// @param _assetUnit The asset's unit (10**decimals).
+    /// @return The former index and the new index in this order.
     function _getAssetIndex(
         RewardsDataTypes.RewardData storage _localRewardData,
         address _asset,
@@ -497,12 +495,10 @@ contract RewardsManager is IRewardsManager, Ownable {
         }
     }
 
-    /**
-     * @dev Get user balances and total supply of all the assets specified by the assets parameter
-     * @param _assets List of assets to retrieve user balance and total supply
-     * @param _user Address of the user
-     * @return userAssetBalances contains a list of structs with user balance and total supply of the given assets
-     */
+    /// @dev Returns user balances and total supply of all the assets specified by the assets parameter.
+    /// @param _assets List of assets to retrieve user balance and total supply.
+    /// @param _user The address of the user.
+    /// @return userAssetBalances The list of structs with user balance and total supply of the given assets.
     function _getUserAssetBalances(address[] calldata _assets, address _user)
         internal
         view
