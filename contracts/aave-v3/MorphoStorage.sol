@@ -43,7 +43,7 @@ abstract contract MorphoStorage is OwnableUpgradeable, ReentrancyGuardUpgradeabl
     mapping(address => HeapOrdering.HeapArray) internal borrowersOnPool; // For a given market, the borrowers on Aave.
     mapping(address => mapping(address => Types.SupplyBalance)) public supplyBalanceInOf; // For a given market, the supply balance of a user. aToken -> user -> balances.
     mapping(address => mapping(address => Types.BorrowBalance)) public borrowBalanceInOf; // For a given market, the borrow balance of a user. aToken -> user -> balances.
-    mapping(address => uint256) public userMarketMap; // The markets entered by a user as a bitMask.
+    mapping(address => uint256) public userMarketsBitmask; // The markets entered by a user as a bitMask.
 
     /// MARKETS STORAGE ///
 
