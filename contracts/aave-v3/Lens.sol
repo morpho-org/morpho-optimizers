@@ -121,7 +121,10 @@ contract Lens {
         for (uint256 i; i < numberOfCreatedMarkets; ) {
             address poolToken = createdMarkets[i];
 
-            if (_poolTokenAddress != poolToken && morpho.isSupplyingOrBorrowing(_user, poolToken)) {
+            if (
+                _poolTokenAddress != poolToken &&
+                ((morpho.userMarketMap(_user) >> (morpho.indexOfMarket(poolToken) << 1)) & 3 != 0)
+            ) {
                 assetData = getUserLiquidityDataForAsset(_user, poolToken, oracle);
 
                 data.collateralValue += assetData.collateralValue;
@@ -214,7 +217,7 @@ contract Lens {
         for (uint256 i; i < numberOfCreatedMarkets; ) {
             address poolToken = createdMarkets[i];
 
-            if (morpho.isSupplyingOrBorrowing(_user, poolToken)) {
+            if ((morpho.userMarketMap(_user) >> (morpho.indexOfMarket(poolToken) << 1)) & 3 != 0) {
                 Types.AssetLiquidityData memory assetData = getUserLiquidityDataForAsset(
                     _user,
                     poolToken,

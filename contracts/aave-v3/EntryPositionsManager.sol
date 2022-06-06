@@ -321,12 +321,12 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
                     liquidityData.maxLoanToValue += assetData.collateralValue.percentMul(
                         assetData.ltv
                     );
+                }
 
-                    if (_poolTokenAddress == poolToken && _borrowedAmount > 0) {
-                        liquidityData.debtValue +=
-                            (_borrowedAmount * assetData.underlyingPrice) /
-                            assetData.tokenUnit;
-                    }
+                if (_poolTokenAddress == poolToken && _borrowedAmount > 0) {
+                    liquidityData.debtValue +=
+                        (_borrowedAmount * assetData.underlyingPrice) /
+                        assetData.tokenUnit;
                 }
             }
             unchecked {

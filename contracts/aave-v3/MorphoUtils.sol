@@ -116,7 +116,7 @@ contract MorphoUtils is MorphoStorage {
     /// @param _user The user to check for.
     /// @param _market The address of the market to check.
     /// @return True if the user has been using a reserve for borrowing or as collateral, false otherwise
-    function isSupplyingOrBorrowing(address _user, address _market) public view returns (bool) {
+    function isSupplyingOrBorrowing(address _user, address _market) internal view returns (bool) {
         unchecked {
             return (userMarketMap[_user] >> (indexOfMarket[_market] << 1)) & 3 != 0;
         }
@@ -126,7 +126,7 @@ contract MorphoUtils is MorphoStorage {
     /// @param _user The user to check for.
     /// @param _market The address of the market to check.
     /// @return True if the user has been borrowing on this market, false otherwise.
-    function isBorrowing(address _user, address _market) public view returns (bool) {
+    function isBorrowing(address _user, address _market) internal view returns (bool) {
         unchecked {
             return (userMarketMap[_user] >> (indexOfMarket[_market] << 1)) & 1 != 0;
         }
@@ -136,7 +136,7 @@ contract MorphoUtils is MorphoStorage {
     /// @param _user The user to check for.
     /// @param _market The address of the market to check.
     /// @return True if the user has been supplying on this market, false otherwise.
-    function isSupplying(address _user, address _market) public view returns (bool) {
+    function isSupplying(address _user, address _market) internal view returns (bool) {
         unchecked {
             return (userMarketMap[_user] >> ((indexOfMarket[_market] << 1) + 1)) & 1 != 0;
         }
@@ -145,7 +145,7 @@ contract MorphoUtils is MorphoStorage {
     /// @dev Checks if a user has been borrowing from any market.
     /// @param _user The user to check for.
     /// @return True if the user has been borrowing on any market, false otherwise
-    function isBorrowingAny(address _user) public view returns (bool) {
+    function isBorrowingAny(address _user) internal view returns (bool) {
         return userMarketMap[_user] & BORROWING_MASK != 0;
     }
 
