@@ -277,6 +277,8 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
         uint256 _borrowedAmount
     ) internal returns (bool) {
         address priceOracleSentinel = addressesProvider.getPriceOracleSentinel();
+        // Aave's can enable an oracle sentinel in specific circunstances which can prevent users to borrow.
+        // in response, Morpho mirrors this behavior.
         if (
             priceOracleSentinel != address(0) &&
             !IPriceOracleSentinel(priceOracleSentinel).isBorrowAllowed()
