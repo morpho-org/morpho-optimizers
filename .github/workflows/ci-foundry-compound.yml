@@ -30,6 +30,7 @@ on:
 
 jobs:
   morpho-compound:
+    if: "! github.event.pull_request.draft"
     name: Morpho-Compound
     runs-on: ubuntu-latest
     steps:
