@@ -127,7 +127,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         uint256 _maxGasForMatching
     ) external {
         if (_amount == 0) revert AmountIsZero();
-        if (!isSupplying(_supplier, _poolTokenAddress)) revert UserNotMemberOfMarket();
+        if (!_isSupplying(_supplier, _poolTokenAddress)) revert UserNotMemberOfMarket();
 
         _updateIndexes(_poolTokenAddress);
         uint256 toWithdraw = Math.min(
@@ -155,7 +155,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         uint256 _maxGasForMatching
     ) external {
         if (_amount == 0) revert AmountIsZero();
-        if (!isBorrowing(_onBehalf, _poolTokenAddress)) revert UserNotMemberOfMarket();
+        if (!_isBorrowing(_onBehalf, _poolTokenAddress)) revert UserNotMemberOfMarket();
 
         _updateIndexes(_poolTokenAddress);
         uint256 toRepay = Math.min(
@@ -178,8 +178,8 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         uint256 _amount
     ) external {
         if (
-            !isBorrowing(_borrower, _poolTokenBorrowedAddress) ||
-            !isSupplying(_borrower, _poolTokenCollateralAddress)
+            !_isBorrowing(_borrower, _poolTokenBorrowedAddress) ||
+            !_isSupplying(_borrower, _poolTokenCollateralAddress)
         ) revert UserNotMemberOfMarket();
 
         _updateIndexes(_poolTokenBorrowedAddress);
@@ -597,7 +597,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         Types.AssetLiquidityData memory assetData;
         Types.LiquidityData memory liquidityData;
 
-        bool hasBorrowed = isBorrowingAny(_user);
+        bool hasBorrowed = _isBorrowingAny(_user);
 
         for (uint256 i; i < numberOfMarketsCreated; ) {
             address poolToken = marketsCreated[i];
@@ -611,13 +611,13 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
             .getParams();
             assetData.tokenUnit = 10**assetData.reserveDecimals;
 
-            if (hasBorrowed && isBorrowing(_user, poolToken)) {
+            if (hasBorrowed && _isBorrowing(_user, poolToken)) {
                 liquidityData.debtValue +=
                     (_getUserBorrowBalanceInOf(poolToken, _user) * assetData.underlyingPrice) /
                     assetData.tokenUnit;
             }
 
-            if (isSupplying(_user, poolToken)) {
+            if (_isSupplying(_user, poolToken)) {
                 assetData.collateralValue =
                     (_getUserSupplyBalanceInOf(poolToken, _user) * assetData.underlyingPrice) /
                     assetData.tokenUnit;
