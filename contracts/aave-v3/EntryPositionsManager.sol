@@ -311,7 +311,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
                 if (poolToken != _poolTokenAddress) _updateIndexes(poolToken);
 
                 address underlyingAddress = IAToken(poolToken).UNDERLYING_ASSET_ADDRESS();
-                assetData.underlyingPrice = oracle.getAssetPrice(underlyingAddress); // In ETH.
+                assetData.underlyingPrice = oracle.getAssetPrice(underlyingAddress); // In base currency.
                 (assetData.ltv, , , assetData.reserveDecimals, , ) = pool
                 .getConfiguration(underlyingAddress)
                 .getParams();
@@ -332,11 +332,10 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
                     );
                 }
 
-                if (_poolTokenAddress == poolToken && _borrowedAmount > 0) {
+                if (_poolTokenAddress == poolToken && _borrowedAmount > 0)
                     liquidityData.debtValue +=
                         (_borrowedAmount * assetData.underlyingPrice) /
                         assetData.tokenUnit;
-                }
             }
 
             unchecked {
