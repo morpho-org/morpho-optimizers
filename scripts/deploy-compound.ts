@@ -1,13 +1,13 @@
 /* eslint-disable no-console */
 const config = require(`@config/${process.env.NETWORK}-config.json`);
-import { BigNumber, CallOverrides } from 'ethers';
+import { CallOverrides } from 'ethers';
 import hre from 'hardhat';
 
 const MAX_HEX_AMOUNT = '0x' + 'f'.repeat(64);
 
 const deploymentOptions: CallOverrides = {
-  maxFeePerGas: BigNumber.from('30000000000'),
-  maxPriorityFeePerGas: BigNumber.from('15000000000'),
+  //   maxFeePerGas: BigNumber.from('30000000000'),
+  //   maxPriorityFeePerGas: BigNumber.from('15000000000'),
 };
 
 async function main() {
@@ -28,16 +28,11 @@ async function main() {
   console.log('🕰️  Transaction:', interestRatesManager.deployTransaction.hash);
   await interestRatesManager.deployed();
   console.log('🎉 InterestRatesManager deployed at address:', interestRatesManager.address);
+  //   const interestRatesManager = await hre.ethers.getContractAt('InterestRatesManager', '0xfe7339C130402fbd0239515206F47D3B744cB552');
 
   if (hre.network.name === 'forkMainnet') {
     console.log('\n🦋 Verifying InterestRatesManager on Tenderly...');
     await hre.tenderly.verify({
-      name: 'InterestRatesManager',
-      address: interestRatesManager.address,
-    });
-  } else {
-    console.log('\n🦋 Verifying InterestRatesManager on Etherscan...');
-    await hre.run('verify:verify', {
       name: 'InterestRatesManager',
       address: interestRatesManager.address,
     });
@@ -55,12 +50,6 @@ async function main() {
   if (hre.network.name === 'forkMainnet') {
     console.log('\n🦋 Verifying PositionsManager on Tenderly...');
     await hre.tenderly.verify({
-      name: 'PositionsManager',
-      address: positionsManager.address,
-    });
-  } else {
-    console.log('\n🦋 Verifying PositionsManager on Etherscan...');
-    await hre.run('verify:verify', {
       name: 'PositionsManager',
       address: positionsManager.address,
     });
@@ -103,34 +92,12 @@ async function main() {
       name: 'Morpho Proxy',
       address: morpho.address,
     });
-  } else {
-    console.log('\n🦋 Verifying Morpho Proxy on Etherscan...');
-    await hre.run('verify:verify', {
-      name: 'Morpho Proxy',
-      address: morpho.address,
-      constructorArgs: [
-        positionsManager.address,
-        interestRatesManager.address,
-        config.compound.comptroller.address,
-        defaultMaxGasForMatching,
-        dustThreshold,
-        maxSortedUsers,
-        config.tokens.cEth.address,
-        config.tokens.wEth.address,
-      ],
-    });
   }
   console.log('🎉 Morpho Proxy verified!');
 
   if (hre.network.name === 'forkMainnet') {
     console.log('\n🦋 Verifying Morpho Implementation on Tenderly...');
     await hre.tenderly.verify({
-      name: 'Morpho Implementation',
-      address: morphoImplementationAddress,
-    });
-  } else {
-    console.log('\n🦋 Verifying Morpho Implementation on Etherscan...');
-    await hre.run('verify:verify', {
       name: 'Morpho Implementation',
       address: morphoImplementationAddress,
     });

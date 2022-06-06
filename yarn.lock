@@ -5308,6 +5308,11 @@ hardhat-deploy@0.9.1:
     murmur-128 "^0.2.1"
     qs "^6.9.4"
 
+hardhat-etherscan@^1.0.1:
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/hardhat-etherscan/-/hardhat-etherscan-1.0.1.tgz#db22142ccd101c4a2c6c6b12232a4daf4657e4a1"
+  integrity sha512-FShbbcrmxLK0n1JJfRO0xq6CfEsbynt0HiNHQYvY9GOQ9UDTHRAtZT4+P20cn/yAqfyQl4bgw3URxvvNN85HXA==
+
 hardhat-gas-reporter@1.0.4:
   version "1.0.4"
   resolved "https://registry.yarnpkg.com/hardhat-gas-reporter/-/hardhat-gas-reporter-1.0.4.tgz#59e3137e38e0dfeac2e4f90d5c74160b50ad4829"
