@@ -295,13 +295,13 @@ contract RewardsManager is IRewardsManager, Ownable {
     }
 
     /// @dev Iterates and accrues all the rewards for asset of the specific user.
-    /// @param _asset The address of the reference asset of the distribution.
     /// @param _user The user address.
+    /// @param _asset The address of the reference asset of the distribution.
     /// @param _userBalance The current user asset balance.
     /// @param _totalSupply The total supply of the asset.
     function _updateData(
-        address _asset,
         address _user,
+        address _asset,
         uint256 _userBalance,
         uint256 _totalSupply
     ) internal {
@@ -356,8 +356,8 @@ contract RewardsManager is IRewardsManager, Ownable {
         uint256 userAssetBalancesLength = _userAssetBalances.length;
         for (uint256 i; i < userAssetBalancesLength; ) {
             _updateData(
-                _userAssetBalances[i].asset,
                 _user,
+                _userAssetBalances[i].asset,
                 _userAssetBalances[i].userBalance,
                 _userAssetBalances[i].totalSupply
             );
