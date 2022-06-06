@@ -23,7 +23,6 @@ import "@contracts/aave-v3/libraries/Types.sol";
 // import {RewardsManagerOnPolygon} from "@contracts/aave-v3/rewards-managers/RewardsManagerOnPolygon.sol";
 import {InterestRatesManager} from "@contracts/aave-v3/InterestRatesManager.sol";
 import {IncentivesVault} from "@contracts/aave-v3/IncentivesVault.sol";
-import {MatchingEngine} from "@contracts/aave-v3/MatchingEngine.sol";
 import {EntryPositionsManager} from "@contracts/aave-v3/EntryPositionsManager.sol";
 import {ExitPositionsManager} from "@contracts/aave-v3/ExitPositionsManager.sol";
 import {Lens} from "@contracts/aave-v3/Lens.sol";

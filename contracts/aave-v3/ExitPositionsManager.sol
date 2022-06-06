@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 import "./interfaces/IExitPositionsManager.sol";
 
 import "./PositionsManagerUtils.sol";
+import "forge-std/console.sol";
 
 /// @title ExitPositionsManager.
 /// @author Morpho Labs.
@@ -483,11 +484,12 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
         // Repay the fee.
         if (vars.remainingToRepay > 0) {
             // Fee = (p2pBorrowAmount - p2pBorrowDelta) - (p2pSupplyAmount - p2pSupplyDelta).
-            vars.feeToRepay =
-                (delta.p2pBorrowAmount.rayMul(vars.p2pBorrowIndex) -
-                    delta.p2pBorrowDelta.rayMul(vars.poolBorrowIndex)) -
-                (delta.p2pSupplyAmount.rayMul(vars.p2pSupplyIndex) -
-                    delta.p2pSupplyDelta.rayMul(vars.poolSupplyIndex));
+            uint256 borrowValue = delta.p2pBorrowAmount.rayMul(vars.p2pBorrowIndex) -
+                delta.p2pBorrowDelta.rayMul(vars.poolBorrowIndex);
+            uint256 supplyValue = delta.p2pSupplyAmount.rayMul(vars.p2pSupplyIndex) -
+                delta.p2pSupplyDelta.rayMul(vars.poolSupplyIndex);
+
+            if (borrowValue > supplyValue) vars.feeToRepay = borrowValue - supplyValue;
 
             if (vars.feeToRepay > 0) {
                 uint256 feeRepaid = Math.min(vars.feeToRepay, vars.remainingToRepay);
