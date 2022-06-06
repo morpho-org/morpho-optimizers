@@ -13,7 +13,7 @@ contract TestBorrow is TestSetup {
 
         (, uint256 borrowable) = lens.getUserMaxCapacitiesForAsset(address(borrower1), aDai);
 
-        hevm.expectRevert(abi.encodeWithSignature("UnauthorisedBorrow()"));
+        hevm.expectRevert(EntryPositionsManager.UnauthorisedBorrow.selector);
         borrower1.borrow(aDai, borrowable + 1e12);
     }
 

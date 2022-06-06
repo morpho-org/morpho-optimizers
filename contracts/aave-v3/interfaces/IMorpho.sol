@@ -30,15 +30,12 @@ interface IMorpho {
     function entryPositionsManager() external view returns (IEntryPositionsManager);
     function exitPositionsManager() external view returns (IExitPositionsManager);
     function treasuryVault() external view returns (address);
+    function indexOfMarket(address) external view returns (uint256);
+    function userMarketMap(address) external view returns (uint256);
 
     /// UTILS ///
 
     function updateIndexes(address _poolTokenAddress) external;
-    function isSupplyingOrBorrowing(address _user, address _market) external pure returns (bool);
-    function isBorrowing(address _user, address _market) external pure returns (bool);
-    function isSupplying(address _user, address _market) external pure returns (bool);
-    function isBorrowingAny(address _user) external pure returns (bool);
-    function setBorrowing(address _user, address _market, bool _borrowing) external;
 
     /// GETTERS ///
 

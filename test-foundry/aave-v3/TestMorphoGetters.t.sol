@@ -104,34 +104,21 @@ contract TestMorphoGetters is TestSetup {
         }
     }
 
-    function testEnteredMarkets() public {
-        borrower1.approve(dai, 10 ether);
-        borrower1.supply(aDai, 10 ether);
-
-        borrower1.approve(usdc, to6Decimals(10 ether));
-        borrower1.supply(aUsdc, to6Decimals(10 ether));
-
-        assertTrue(morpho.isSupplying(address(borrower1), aDai));
-        assertTrue(morpho.isSupplying(address(borrower1), aUsdc));
-
-        // Borrower1 withdraw, USDC should be the first in enteredMarkets.
-        borrower1.withdraw(aDai, type(uint256).max);
-
-        assertFalse(morpho.isSupplying(address(borrower1), aDai));
-        assertTrue(morpho.isSupplying(address(borrower1), aUsdc));
-    }
-
     function testUserLeftMarkets() public {
         borrower1.approve(dai, 10 ether);
         borrower1.supply(aDai, 10 ether);
 
         // Check that borrower1 entered Dai market.
-        assertTrue(morpho.isSupplying(address(borrower1), aDai));
+        assertTrue(isSupplying(address(borrower1), aDai));
 
         // Borrower1 withdraw everything from the Dai market.
         borrower1.withdraw(aDai, 10 ether);
 
-        assertFalse(morpho.isSupplying(address(borrower1), aDai));
+        assertFalse(isSupplying(address(borrower1), aDai));
+    }
+
+    function isSupplying(address _user, address _market) internal view returns (bool) {
+        return (morpho.userMarketMap(_user) >> ((morpho.indexOfMarket(_market) << 1) + 1)) & 1 != 0;
     }
 
     function testGetAllMarkets() public {
