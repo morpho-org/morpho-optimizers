@@ -654,8 +654,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
             return (healthFactor < MINIMUM_HEALTH_FACTOR_LIQUIDATION_THRESHOLD ||
                 (IPriceOracleSentinel(priceOracleSentinel).isLiquidationAllowed() &&
                     healthFactor < HEALTH_FACTOR_LIQUIDATION_THRESHOLD));
-
-        return healthFactor < HEALTH_FACTOR_LIQUIDATION_THRESHOLD;
+        else return healthFactor < HEALTH_FACTOR_LIQUIDATION_THRESHOLD;
     }
 
     /// @dev Removes the user from the market if its balances are null.
