@@ -58,7 +58,9 @@
     "hardhat": "^2.9.7",
     "hardhat-contract-sizer": "2.0.3",
     "hardhat-deploy": "0.9.1",
+    "hardhat-etherscan": "^1.0.1",
     "hardhat-gas-reporter": "1.0.4",
+    "hardhat-upgrades": "^0.0.0",
     "husky": "7.0.1",
     "merkletreejs": "0.2.31",
     "module-alias": "2.2.2",
@@ -75,8 +77,7 @@
     "@openzeppelin/contracts-upgradeable": "4.5.2",
     "@uniswap/v2-periphery": "1.1.0-beta.0",
     "@uniswap/v3-core": "Uniswap/v3-core#36bc9101b91e2b8b5690f59e0911a85deb2d2480",
-    "@uniswap/v3-periphery": "^1.4.0",
-    "hardhat-upgrades": "^0.0.0"
+    "@uniswap/v3-periphery": "^1.4.0"
   },
   "_moduleAliases": {
     "@config": "config",
