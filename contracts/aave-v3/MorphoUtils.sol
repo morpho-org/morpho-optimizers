@@ -110,7 +110,7 @@ contract MorphoUtils is MorphoStorage {
         _updateIndexes(_poolTokenAddress);
     }
 
-    /// PUBLIC ///
+    /// INTERNAL ///
 
     /// @dev Returns if a user has been borrowing or supplying on a given market.
     /// @param _user The user to check for.
@@ -118,7 +118,7 @@ contract MorphoUtils is MorphoStorage {
     /// @return True if the user has been using a reserve for borrowing or as collateral, false otherwise
     function _isSupplyingOrBorrowing(address _user, address _market) internal view returns (bool) {
         unchecked {
-            return (userMarketMap[_user] >> (indexOfMarket[_market] << 1)) & 3 != 0;
+            return (userMarketsBitmask[_user] >> (indexOfMarket[_market] << 1)) & 3 != 0;
         }
     }
 
@@ -128,7 +128,7 @@ contract MorphoUtils is MorphoStorage {
     /// @return True if the user has been borrowing on this market, false otherwise.
     function _isBorrowing(address _user, address _market) internal view returns (bool) {
         unchecked {
-            return (userMarketMap[_user] >> (indexOfMarket[_market] << 1)) & 1 != 0;
+            return (userMarketsBitmask[_user] >> (indexOfMarket[_market] << 1)) & 1 != 0;
         }
     }
 
@@ -138,7 +138,7 @@ contract MorphoUtils is MorphoStorage {
     /// @return True if the user has been supplying on this market, false otherwise.
     function _isSupplying(address _user, address _market) internal view returns (bool) {
         unchecked {
-            return (userMarketMap[_user] >> ((indexOfMarket[_market] << 1) + 1)) & 1 != 0;
+            return (userMarketsBitmask[_user] >> ((indexOfMarket[_market] << 1) + 1)) & 1 != 0;
         }
     }
 
@@ -146,10 +146,8 @@ contract MorphoUtils is MorphoStorage {
     /// @param _user The user to check for.
     /// @return True if the user has been borrowing on any market, false otherwise
     function _isBorrowingAny(address _user) internal view returns (bool) {
-        return userMarketMap[_user] & BORROWING_MASK != 0;
+        return userMarketsBitmask[_user] & BORROWING_MASK != 0;
     }
-
-    /// INTERNAL ///
 
     /// @notice Sets if the user is borrowing on a market.
     /// @param _user The user to set for.
@@ -163,9 +161,9 @@ contract MorphoUtils is MorphoStorage {
         unchecked {
             uint256 bit = 1 << (indexOfMarket[_market] << 1);
             if (_borrowing) {
-                userMarketMap[_user] |= bit;
+                userMarketsBitmask[_user] |= bit;
             } else {
-                userMarketMap[_user] &= ~bit;
+                userMarketsBitmask[_user] &= ~bit;
             }
         }
     }
@@ -182,9 +180,9 @@ contract MorphoUtils is MorphoStorage {
         unchecked {
             uint256 bit = 1 << ((indexOfMarket[_market] << 1) + 1);
             if (_supplying) {
-                userMarketMap[_user] |= bit;
+                userMarketsBitmask[_user] |= bit;
             } else {
-                userMarketMap[_user] &= ~bit;
+                userMarketsBitmask[_user] &= ~bit;
             }
         }
     }
