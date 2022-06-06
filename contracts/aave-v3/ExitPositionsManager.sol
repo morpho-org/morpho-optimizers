@@ -605,17 +605,16 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
             if (poolToken != _poolTokenAddress) _updateIndexes(poolToken);
 
             address underlyingAddress = IAToken(poolToken).UNDERLYING_ASSET_ADDRESS();
-            assetData.underlyingPrice = oracle.getAssetPrice(underlyingAddress); // In ETH.
+            assetData.underlyingPrice = oracle.getAssetPrice(underlyingAddress); // In base currency.
             (assetData.ltv, assetData.liquidationThreshold, , assetData.reserveDecimals, , ) = pool
             .getConfiguration(underlyingAddress)
             .getParams();
             assetData.tokenUnit = 10**assetData.reserveDecimals;
 
-            if (hasBorrowed && _isBorrowing(_user, poolToken)) {
+            if (hasBorrowed && _isBorrowing(_user, poolToken))
                 liquidityData.debtValue +=
                     (_getUserBorrowBalanceInOf(poolToken, _user) * assetData.underlyingPrice) /
                     assetData.tokenUnit;
-            }
 
             if (_isSupplying(_user, poolToken)) {
                 assetData.collateralValue =
@@ -626,11 +625,10 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
                 );
             }
 
-            if (_poolTokenAddress == poolToken && _withdrawnAmount > 0) {
+            if (_poolTokenAddress == poolToken && _withdrawnAmount > 0)
                 liquidityData.liquidationThresholdValue -= ((_withdrawnAmount *
                     assetData.underlyingPrice) / assetData.tokenUnit)
                 .percentMul(assetData.liquidationThreshold);
-            }
 
             unchecked {
                 ++i;
