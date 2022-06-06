@@ -254,6 +254,7 @@ contract Lens {
                     }
                 }
             }
+
             unchecked {
                 ++i;
             }
