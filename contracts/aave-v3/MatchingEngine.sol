@@ -326,8 +326,8 @@ contract MatchingEngine is MorphoUtils {
 
         if (formerValueOnPool != onPool && address(rewardsManager) != address(0))
             rewardsManager.updateUserAssetAndAccruedRewards(
-                _poolTokenAddress,
                 _user,
+                _poolTokenAddress,
                 formerValueOnPool,
                 IScaledBalanceToken(_poolTokenAddress).scaledTotalSupply()
             );
@@ -350,8 +350,8 @@ contract MatchingEngine is MorphoUtils {
             .getReserveData(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS())
             .variableDebtTokenAddress;
             rewardsManager.updateUserAssetAndAccruedRewards(
-                variableDebtTokenAddress,
                 _user,
+                variableDebtTokenAddress,
                 formerValueOnPool,
                 IScaledBalanceToken(variableDebtTokenAddress).scaledTotalSupply()
             );
