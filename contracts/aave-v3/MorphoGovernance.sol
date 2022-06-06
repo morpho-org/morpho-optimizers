@@ -50,7 +50,7 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @param _interestRatesManager The new address of the `interestRatesManager`.
     event InterestRatesSet(address indexed _interestRatesManager);
 
-    /// @notice Emitted the address of the `rewardsController` is set.
+    /// @notice Emitted when the address of the `rewardsController` is set.
     /// @param _rewardsController The new address of the `rewardsController`.
     event RewardsControllerSet(address indexed _rewardsController);
 
