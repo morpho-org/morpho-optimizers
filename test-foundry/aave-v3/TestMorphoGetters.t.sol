@@ -118,7 +118,9 @@ contract TestMorphoGetters is TestSetup {
     }
 
     function isSupplying(address _user, address _market) internal view returns (bool) {
-        return (morpho.userMarketMap(_user) >> ((morpho.indexOfMarket(_market) << 1) + 1)) & 1 != 0;
+        return
+            (morpho.userMarketsBitmask(_user) >> ((morpho.indexOfMarket(_market) << 1) + 1)) & 1 !=
+            0;
     }
 
     function testGetAllMarkets() public {
