@@ -28,15 +28,12 @@ async function main() {
   console.log('🕰️  Transaction:', interestRatesManager.deployTransaction.hash);
   await interestRatesManager.deployed();
   console.log('🎉 InterestRatesManager deployed at address:', interestRatesManager.address);
-  //   const interestRatesManager = await hre.ethers.getContractAt('InterestRatesManager', '0xfe7339C130402fbd0239515206F47D3B744cB552');
 
-  if (hre.network.name === 'forkMainnet') {
-    console.log('\n🦋 Verifying InterestRatesManager on Tenderly...');
-    await hre.tenderly.verify({
-      name: 'InterestRatesManager',
-      address: interestRatesManager.address,
-    });
-  }
+  console.log('\n🦋 Verifying InterestRatesManager on Tenderly...');
+  await hre.tenderly.verify({
+    name: 'InterestRatesManager',
+    address: interestRatesManager.address,
+  });
   console.log('🎉 InterestRatesManager verified!');
 
   /// POSITIONS MANAGER DEPLOYMENT ///
@@ -86,23 +83,49 @@ async function main() {
   console.log('                      with proxy at address:\t', morpho.address);
   console.log('             with implementation at address:\t', morphoImplementationAddress);
 
-  if (hre.network.name === 'forkMainnet') {
-    console.log('\n🦋 Verifying Morpho Proxy on Tenderly...');
-    await hre.tenderly.verify({
-      name: 'Morpho Proxy',
-      address: morpho.address,
-    });
-  }
+  console.log('\n🦋 Verifying Morpho Proxy on Tenderly...');
+  await hre.tenderly.verify({
+    name: 'Morpho Proxy',
+    address: morpho.address,
+  });
   console.log('🎉 Morpho Proxy verified!');
 
-  if (hre.network.name === 'forkMainnet') {
-    console.log('\n🦋 Verifying Morpho Implementation on Tenderly...');
-    await hre.tenderly.verify({
-      name: 'Morpho Implementation',
-      address: morphoImplementationAddress,
-    });
-  }
+  console.log('\n🦋 Verifying Morpho Implementation on Tenderly...');
+  await hre.tenderly.verify({
+    name: 'Morpho Implementation',
+    address: morphoImplementationAddress,
+  });
   console.log('🎉 Morpho Implementation verified!');
+
+  /// REWARDS MANAGER DEPLOYMENT ///
+
+  console.log('\n🦋 Deploying RewardsManager...');
+  const RewardsManager = await hre.ethers.getContractFactory('RewardsManager');
+  const rewardsManager = await RewardsManager.deploy(morpho.address, deploymentOptions);
+  await rewardsManager.deployed();
+  console.log('🎉 RewardsManager deployed at address:', rewardsManager.address);
+
+  console.log('\n🦋 Verifying RewardsManager on Tenderly...');
+  await hre.tenderly.verify({
+    name: 'RewardsManager',
+    address: rewardsManager.address,
+  });
+  console.log('🎉 RewardsManager verified!');
+
+  /// LENS DEPLOYMENT ///
+
+  console.log('\n🦋 Deploying Lens...');
+  const Lens = await hre.ethers.getContractFactory('Lens');
+  const lens = await Lens.deploy(morpho.address, deploymentOptions);
+  await lens.deployed();
+  console.log('🎉 Lens deployed at address:', lens.address);
+
+  console.log('\n🦋 Verifying Lens on Tenderly...');
+  await hre.tenderly.verify({
+    name: 'Lens',
+    address: lens.address,
+  });
+  console.log('🎉 Lens verified!');
 
   /// MARKETS CREATION ///
 
