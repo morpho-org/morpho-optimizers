@@ -218,10 +218,7 @@ contract Lens {
         for (uint256 i; i < numberOfCreatedMarkets; ) {
             address poolToken = createdMarkets[i];
 
-            if (
-                (morpho.userMarketsBitmask(_user) >> (morpho.indexOfMarket(poolToken) << 1)) & 3 !=
-                0
-            ) {
+            if (_isSupplyingOrBorrowing(_user, poolToken)) {
                 Types.AssetLiquidityData memory assetData = getUserLiquidityDataForAsset(
                     _user,
                     poolToken,
@@ -649,6 +646,17 @@ contract Lens {
                     IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS()
                 )
             );
+    }
+
+    /// @dev Returns if a user has been borrowing or supplying on a given market.
+    /// @param _user The user to check for.
+    /// @param _market The address of the market to check.
+    /// @return True if the user has been using a reserve for borrowing or as collateral, false otherwise.
+    function _isSupplyingOrBorrowing(address _user, address _market) internal view returns (bool) {
+        unchecked {
+            return
+                (morpho.userMarketsBitmask(_user) >> (morpho.indexOfMarket(_market) << 1)) & 3 != 0;
+        }
     }
 
     function calculateLinearInterest(uint256 rate, uint256 lastUpdateTimestamp)
