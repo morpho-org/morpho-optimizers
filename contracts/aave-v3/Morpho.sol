@@ -16,8 +16,9 @@ contract Morpho is MorphoGovernance {
 
     /// @notice Emitted when a user claims rewards.
     /// @param _user The address of the claimer.
+    /// @param _reward The reward token address.
     /// @param _amountClaimed The amount of reward token claimed.
-    event RewardsClaimed(address indexed _user, uint256 _amountClaimed);
+    event RewardsClaimed(address indexed _user, address _reward, uint256 _amountClaimed);
 
     /// @notice Emitted when a user claims rewards and trades them for MORPHO tokens.
     /// @param _user The address of the claimer.
@@ -185,19 +186,29 @@ contract Morpho is MorphoGovernance {
         external
         nonReentrant
     {
-        // uint256 amountOfRewards = rewardsManager.claimRewards(_assets, msg.sender);
-        // if (amountOfRewards == 0) revert AmountIsZero();
-        // ERC20 rewardToken = ERC20(aaveIncentivesController.REWARD_TOKEN());
-        // // If there is not enough reward tokens on the contract, claim them. Else, continue.
-        // if (rewardToken.balanceOf(address(this)) < amountOfRewards)
-        //     aaveIncentivesController.claimRewards(_assets, type(uint256).max, address(this));
-        // if (_tradeForMorphoToken) {
-        //     rewardToken.safeApprove(address(incentivesVault), amountOfRewards);
-        //     incentivesVault.tradeRewardTokensForMorphoTokens(msg.sender, amountOfRewards);
-        //     emit RewardsClaimedAndTraded(msg.sender, amountOfRewards);
-        // } else {
-        //     rewardToken.safeTransfer(msg.sender, amountOfRewards);
-        //     emit RewardsClaimed(msg.sender, amountOfRewards);
-        // }
+        (address[] memory rewardsList, uint256[] memory claimedAmounts) = rewardsManager
+        .claimRewards(_assets, msg.sender);
+
+        uint256 rewardsListLength = rewardsList.length;
+
+        rewardsController.claimAllRewardsToSelf(_assets);
+
+        if (_tradeForMorphoToken) {
+            // rewardToken.safeApprove(address(incentivesVault), amountOfRewards);
+            // incentivesVault.tradeRewardTokensForMorphoTokens(msg.sender, amountOfRewards);
+            // emit RewardsClaimedAndTraded(msg.sender, amountOfRewards);
+        } else {
+            for (uint256 i; i < rewardsListLength; ) {
+                uint256 claimedAmount = claimedAmounts[i];
+                if (claimedAmount > 0) {
+                    ERC20(rewardsList[i]).safeTransfer(msg.sender, claimedAmount);
+                    emit RewardsClaimed(msg.sender, rewardsList[i], claimedAmount);
+                }
+
+                unchecked {
+                    ++i;
+                }
+            }
+        }
     }
 }
