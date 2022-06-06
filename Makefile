@@ -1,5 +1,7 @@
 -include .env.local
 
+export DAPP_REMAPPINGS=@config/=config/$(NETWORK)/
+
 ifeq (${NETWORK}, avalanche-mainnet)
   export FOUNDRY_ETH_RPC_URL=https://api.avax.network/ext/bc/C/rpc
   export FOUNDRY_FORK_BLOCK_NUMBER=9833154
@@ -10,69 +12,57 @@ else
     export FOUNDRY_FORK_BLOCK_NUMBER=14292587
   else ifeq (${NETWORK}, polygon-mainnet)
     export FOUNDRY_FORK_BLOCK_NUMBER=29116728
+    export DAPP_REMAPPINGS=@config/=config/$(NETWORK)/${PROTOCOL}/
   endif
 endif
 
-export DAPP_REMAPPINGS=@config/=config/$(NETWORK)/aave-v3/
+ifeq (${PROTOCOL}, aave-v3)
+  export FOUNDRY_SOLC_VERSION=0.8.10
+else
+  export FOUNDRY_SOLC_VERSION=0.8.13
+endif
 
-ci-aave-v2: node_modules
-	@echo Run all tests on ${NETWORK}
-	@forge test -vv -c test-foundry/aave-v2 --no-match-contract TestGasConsumption --no-match-test testFuzz
+test:
+	@echo Running all ${PROTOCOL} tests on ${NETWORK}
+	@forge test --use solc:${FOUNDRY_SOLC_VERSION} -vv -c test-foundry/${PROTOCOL} --no-match-contract TestGasConsumption --no-match-test testFuzz
 
-ci-compound: node_modules
-	@echo Run all tests on ${NETWORK}
-	@forge test -vv -c test-foundry/compound --no-match-contract TestGasConsumption --no-match-test testFuzz
-	@forge test -vv -c test-foundry/aave-v2 --no-match-contract TestGasConsumption --no-match-test testFuzz
+test-ansi:
+	@echo Running all ${PROTOCOL} tests on ${NETWORK}
+	@forge test --use solc:${FOUNDRY_SOLC_VERSION} -vv -c test-foundry/${PROTOCOL} --no-match-contract TestGasConsumption --no-match-test testFuzz > trace.ansi
 
-test-aave-v2: node_modules
-	@echo Run all tests on ${NETWORK}
-	@forge test --use solc:0.8.13 -vv -c test-foundry/aave-v3 --no-match-contract TestGasConsumption --no-match-test testFuzz
+test-html:
+	@echo Running all ${PROTOCOL} tests on ${NETWORK}
+	@forge test --use solc:${FOUNDRY_SOLC_VERSION} -vv -c test-foundry/${PROTOCOL} --no-match-contract TestGasConsumption --no-match-test testFuzz | aha --black > trace.html
 
-test-aave-v3: node_modules
-	@echo Run all tests on ${NETWORK}
-	@forge test --use solc:0.8.10 -vv -c test-foundry/aave-v3 --no-match-contract TestGasConsumption --no-match-test testFuzz
+fuzz:
+	@echo Running all ${PROTOCOL} fuzzing tests on ${NETWORK}
+	@forge test --use solc:${FOUNDRY_SOLC_VERSION} -vv -c test-foundry/${PROTOCOL} --match-test testFuzz
 
-test-compound: node_modules
-	@echo Run all tests on ${NETWORK}
-	@forge test --use solc:0.8.13 -vv -c test-foundry/compound --no-match-contract TestGasConsumption --no-match-test testFuzz
+gas-report:
+	@echo Creating gas consumption report for ${PROTOCOL} on ${NETWORK}
+	@forge test --use solc:${FOUNDRY_SOLC_VERSION} -vvv -c test-foundry/${PROTOCOL} --gas-report --match-contract TestGasConsumption > gas_report.ansi
 
-test-compound-ansi: node_modules
-	@echo Run all tests on ${NETWORK}
-	@forge test --use solc:0.8.13 -vv -c test-foundry/compound --no-match-contract TestGasConsumption --no-match-test testFuzz > trace.ansi
-
-test-compound-html: node_modules
-	@echo Run all tests on ${NETWORK}
-	@forge test --use solc:0.8.13 -vv -c test-foundry/compound --no-match-contract TestGasConsumption --no-match-test testFuzz | aha --black > trace.html
-
-fuzz-compound: node_modules
-	@echo Run all fuzzing tests on ${NETWORK}
-	@forge test --use solc:0.8.13 -vv -c test-foundry/compound --match-test testFuzz
-
-gas-report-compound:
-	@echo Create report
-	@forge test --use solc:0.8.13 -vvv -c test-foundry/compound --gas-report --match-contract TestGasConsumption > gas_report.ansi
-
-common:
-	@echo Run all common tests
+test-common:
+	@echo Running all common tests on ${NETWORK}
 	@forge test --use solc:0.8.13 -vvv -c test-foundry/common
 
-contract-% c-%: node_modules
-	@echo Run tests for contract $* on ${NETWORK}
-	@forge test --use solc:0.8.10 -vvv -c test-foundry/compound --match-contract $* > trace.ansi
+contract-% c-%:
+	@echo Running tests for contract $* of ${PROTOCOL} on ${NETWORK}
+	@forge test --use solc:${FOUNDRY_SOLC_VERSION} -vvv -c test-foundry/${PROTOCOL} --match-contract $* > trace.ansi
 
-html-c-%: node_modules
-	@echo Run tests for contract $* on ${NETWORK}
-	@forge test --use solc:0.8.10 -vvv -c test-foundry/compound --match-contract $* | aha --black > trace.html
+html-c-%:
+	@echo Running tests for contract $* of ${PROTOCOL} on ${NETWORK}
+	@forge test --use solc:${FOUNDRY_SOLC_VERSION} -vvv -c test-foundry/${PROTOCOL} --match-contract $* | aha --black > trace.html
 
-single-% s-%: node_modules
-	@echo Run single test $* on ${NETWORK}
-	@forge test --use solc:0.8.10 -vvvvv -c test-foundry/aave-v3 --match-test $* > trace.ansi
+single-% s-%:
+	@echo Running single test $* of ${PROTOCOL} on ${NETWORK}
+	@forge test --use solc:${FOUNDRY_SOLC_VERSION} -vvvvv -c test-foundry/${PROTOCOL} --match-test $* > trace.ansi
 
-html-s-%: node_modules
-	@echo Run single test $* on ${NETWORK}
-	@forge test --use solc:0.8.10 -vvv -c test-foundry/compound --match-test $* | aha --black > trace.html
+html-s-%:
+	@echo Running single test $* of ${PROTOCOL} on ${NETWORK}
+	@forge test --use solc:${FOUNDRY_SOLC_VERSION} -vvv -c test-foundry/${PROTOCOL} --match-test $* | aha --black > trace.html
 
 config:
 	forge config
 
-.PHONY: config common
+.PHONY: test config common
