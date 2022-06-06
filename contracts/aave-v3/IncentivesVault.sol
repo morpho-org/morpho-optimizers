@@ -21,7 +21,6 @@ contract IncentivesVault is IIncentivesVault, Ownable {
     uint256 public constant MAX_BASIS_POINTS = 10_000;
 
     IMorpho public immutable morpho; // The address of the main Morpho contract.
-    ERC20 public immutable rewardToken; // The reward token.
     ERC20 public immutable morphoToken; // The MORPHO token.
 
     IOracle public oracle; // The oracle used to get the price of MORPHO tokens against token reward tokens.
@@ -48,13 +47,8 @@ contract IncentivesVault is IIncentivesVault, Ownable {
 
     /// @notice Emitted when reward tokens are traded for MORPHO tokens.
     /// @param _receiver The address of the receiver.
-    /// @param _rewardAmount The amount of reward token traded.
     /// @param _morphoAmount The amount of MORPHO sent.
-    event RewardTokensTraded(
-        address indexed _receiver,
-        uint256 _rewardAmount,
-        uint256 _morphoAmount
-    );
+    event RewardTokensTraded(address indexed _receiver, uint256 _morphoAmount);
 
     /// ERRORS ///
 
@@ -69,19 +63,16 @@ contract IncentivesVault is IIncentivesVault, Ownable {
     /// @notice Constructs the IncentivesVault contract.
     /// @param _morpho The main Morpho contract.
     /// @param _morphoToken The MORPHO token.
-    /// @param _rewardToken The reward token.
     /// @param _morphoDao The address of the Morpho DAO.
     /// @param _oracle The oracle.
     constructor(
         IMorpho _morpho,
         ERC20 _morphoToken,
-        ERC20 _rewardToken,
         address _morphoDao,
         IOracle _oracle
     ) {
         morpho = _morpho;
         morphoToken = _morphoToken;
-        rewardToken = _rewardToken;
         morphoDao = _morphoDao;
         oracle = _oracle;
     }
@@ -123,21 +114,40 @@ contract IncentivesVault is IIncentivesVault, Ownable {
         emit MorphoTokensTransferred(_amount);
     }
 
-    /// @notice Trades COMP tokens for MORPHO tokens and sends them to the receiver.
+    /// @notice Trades reward tokens for MORPHO tokens and sends them to the receiver.
     /// @param _receiver The address of the receiver.
-    /// @param _amount The amount to transfer to the receiver.
-    function tradeRewardTokensForMorphoTokens(address _receiver, uint256 _amount) external {
+    /// @param _rewardsList The list of reward tokens.
+    /// @param _claimedAmounts The list of unclaimed reward amounts.
+    function tradeRewardTokensForMorphoTokens(
+        address _receiver,
+        address[] memory _rewardsList,
+        uint256[] memory _claimedAmounts
+    ) external {
         if (msg.sender != address(morpho)) revert OnlyMorpho();
         if (isPaused) revert VaultIsPaused();
 
-        // Transfer reward tokens to the DAO.
-        rewardToken.safeTransferFrom(msg.sender, morphoDao, _amount);
+        uint256 rewardsListLength = _rewardsList.length;
+        uint256 amountOut;
 
-        // Add a bonus on MORPHO rewards.
-        uint256 amountOut = (oracle.consult(_amount) * (MAX_BASIS_POINTS + bonus)) /
-            MAX_BASIS_POINTS;
+        for (uint256 i; i < rewardsListLength; ) {
+            address reward = _rewardsList[i];
+            uint256 claimedAmount = _claimedAmounts[i];
+
+            if (claimedAmount > 0) {
+                // Transfer reward tokens to the DAO.
+                ERC20(reward).safeTransferFrom(msg.sender, morphoDao, claimedAmount);
+
+                // Add a bonus on MORPHO rewards.
+                amountOut += ((oracle.consult(claimedAmount, reward) * (MAX_BASIS_POINTS + bonus)) /
+                    MAX_BASIS_POINTS);
+            }
+
+            unchecked {
+                ++i;
+            }
+        }
+
         morphoToken.transfer(_receiver, amountOut);
-
-        emit RewardTokensTraded(_receiver, _amount, amountOut);
+        emit RewardTokensTraded(_receiver, amountOut);
     }
 }

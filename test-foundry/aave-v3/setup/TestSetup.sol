@@ -132,23 +132,21 @@ contract TestSetup is Config, Utils, stdCheats {
 
         /// Create Morpho token, deploy Incentives Vault and activate rewards ///
 
-        // morphoToken = new MorphoToken(address(this));
-        // dumbOracle = new DumbOracle();
-        // incentivesVault = new IncentivesVault(
-        //     IMorpho(address(morpho)),
-        //     morphoToken,
-        //     ERC20(IAaveIncentivesController(aaveIncentivesControllerAddress).REWARD_TOKEN()),
-        //     address(1),
-        //     dumbOracle
-        // );
-        // morphoToken.transfer(address(incentivesVault), 1_000_000 ether);
+        morphoToken = new MorphoToken(address(this));
+        dumbOracle = new DumbOracle();
+        incentivesVault = new IncentivesVault(
+            IMorpho(address(morpho)),
+            morphoToken,
+            address(1),
+            dumbOracle
+        );
+        morphoToken.transfer(address(incentivesVault), 1_000_000 ether);
 
         oracle = IPriceOracleGetter(poolAddressesProvider.getPriceOracle());
         protocolDataProvider = IPoolDataProvider(poolDataProviderAddress);
 
-        // TODO:
         morpho.setRewardsManager(rewardsManager);
-        // morpho.setIncentivesVault(incentivesVault);
+        morpho.setIncentivesVault(incentivesVault);
     }
 
     function createMarket(address _aToken) internal {
@@ -209,7 +207,7 @@ contract TestSetup is Config, Utils, stdCheats {
         hevm.label(address(oracle), "AaveOracle");
         hevm.label(address(treasuryVault), "TreasuryVault");
         hevm.label(address(interestRatesManager), "InterestRatesManager");
-        // TODO: hevm.label(address(incentivesVault), "IncentivesVault");
+        hevm.label(address(incentivesVault), "IncentivesVault");
     }
 
     function createSigners(uint256 _nbOfSigners) internal {
