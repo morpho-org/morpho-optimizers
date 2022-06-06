@@ -194,7 +194,6 @@ contract PositionsManager is IPositionsManager, MatchingEngine {
     struct LiquidateVars {
         uint256 collateralPrice;
         uint256 borrowBalance;
-        uint256 supplyBalance;
         uint256 borrowedPrice;
         uint256 amountToSeize;
     }
