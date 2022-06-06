@@ -1,11 +1,16 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity ^0.8.0;
 
-import "@contracts/compound/InterestRatesManager.sol";
+import "@aave/core-v3/contracts/protocol/libraries/math/PercentageMath.sol";
+import "@aave/core-v3/contracts/protocol/libraries/math/WadRayMath.sol";
+import "@contracts/aave-v3/InterestRatesManager.sol";
 import "ds-test/test.sol";
 import "forge-std/stdlib.sol";
 
 contract TestInterestRates is InterestRatesManager, DSTest {
+    using PercentageMath for uint256;
+    using WadRayMath for uint256;
+
     Vm public hevm = Vm(HEVM_ADDRESS);
 
     uint256 public constant RAY = 1e27;
@@ -26,27 +31,29 @@ contract TestInterestRates is InterestRatesManager, DSTest {
         pure
         returns (uint256 p2pSupplyIndex_, uint256 p2pBorrowIndex_)
     {
-        uint256 poolSupplyGrowthFactor = ((_params.poolSupplyIndex * RAY) / _params.lastPoolSupplyIndex);
-        uint256 poolBorrowGrowthFactor = ((_params.poolBorrowIndex * RAY) / _params.lastPoolBorrowIndex);
-        uint256 p2pIncrease = ((MAX_BASIS_POINTS - _params.p2pIndexCursor) * poolSupplyGrowthFactor + _params.p2pIndexCursor * poolBorrowGrowthFactor) / MAX_BASIS_POINTS;
+        uint256 poolSupplyGrowthFactor = _params.poolSupplyIndex.rayDiv(_params.lastPoolSupplyIndex);
+        uint256 poolBorrowGrowthFactor = _params.poolBorrowIndex.rayDiv(_params.lastPoolBorrowIndex);
+        uint256 p2pGrowthFactor = ((MAX_BASIS_POINTS - _params.p2pIndexCursor) * poolSupplyGrowthFactor + _params.p2pIndexCursor * poolBorrowGrowthFactor) / MAX_BASIS_POINTS;
+        uint256 p2pSupplyGrowthFactor = p2pGrowthFactor - (_params.reserveFactor * (p2pGrowthFactor - poolSupplyGrowthFactor)) / MAX_BASIS_POINTS;
+        uint256 p2pBorrowGrowthFactor = p2pGrowthFactor + (_params.reserveFactor * (poolBorrowGrowthFactor - p2pGrowthFactor)) / MAX_BASIS_POINTS;
         uint256 shareOfTheSupplyDelta = _params.delta.p2pBorrowAmount > 0
-            ? (((_params.delta.p2pSupplyDelta * _params.lastPoolSupplyIndex) / RAY) * RAY) /
-                ((_params.delta.p2pSupplyAmount * _params.lastP2PSupplyIndex) / RAY)
+            ? (_params.delta.p2pSupplyDelta.wadToRay().rayMul(_params.lastPoolSupplyIndex)).rayDiv(
+                _params.delta.p2pSupplyAmount.wadToRay().rayMul(_params.lastP2PSupplyIndex))
             : 0;
         uint256 shareOfTheBorrowDelta = _params.delta.p2pSupplyAmount > 0
-            ? (((_params.delta.p2pBorrowDelta * _params.poolBorrowIndex) / RAY) * RAY) /
-                ((_params.delta.p2pBorrowAmount * _params.lastP2PBorrowIndex) / RAY)
+            ? (_params.delta.p2pBorrowDelta.wadToRay().rayMul(_params.lastPoolBorrowIndex)).rayDiv(
+                _params.delta.p2pBorrowAmount.wadToRay().rayMul(_params.lastP2PBorrowIndex))
             : 0;
         p2pSupplyIndex_ =
-            _params.lastP2PSupplyIndex *
-                ((RAY - shareOfTheSupplyDelta) * (p2pIncrease - (_params.reserveFactor * (p2pIncrease - poolSupplyGrowthFactor) / MAX_BASIS_POINTS)) / RAY +
-                (shareOfTheSupplyDelta * poolSupplyGrowthFactor) / RAY) /
-            RAY;
+            _params.lastP2PSupplyIndex.rayMul(
+                (RAY - shareOfTheSupplyDelta).rayMul(p2pSupplyGrowthFactor) +
+                shareOfTheSupplyDelta.rayMul(poolSupplyGrowthFactor)
+            );
         p2pBorrowIndex_ =
-            _params.lastP2PBorrowIndex *
-                ((RAY - shareOfTheBorrowDelta) * (p2pIncrease + (_params.reserveFactor * (poolBorrowGrowthFactor - p2pIncrease) / MAX_BASIS_POINTS)) / RAY +
-                (shareOfTheBorrowDelta * poolBorrowGrowthFactor) / RAY) /
-            RAY;
+            _params.lastP2PBorrowIndex.rayMul(
+                (RAY - shareOfTheBorrowDelta).rayMul(p2pBorrowGrowthFactor) +
+                shareOfTheBorrowDelta.rayMul(poolBorrowGrowthFactor)
+            );
     }
 
     function testIndexComputation() public {
