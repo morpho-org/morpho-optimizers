@@ -68,6 +68,12 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
         uint256 toRepay;
     }
 
+    // Struct to avoid stack too deep.
+    struct BorrowAllowedVars {
+        uint256 numberOfMarketsCreated;
+        uint256 i;
+    }
+
     /// LOGIC ///
 
     /// @dev Implements supply logic.
@@ -87,7 +93,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
         if (_amount == 0) revert AmountIsZero();
         _updateIndexes(_poolTokenAddress);
 
-        if (!isSupplying(_supplier, _poolTokenAddress))
+        if (!_isSupplying(_supplier, _poolTokenAddress))
             _setSupplying(_supplier, _poolTokenAddress, true);
 
         ERC20 underlyingToken = ERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
@@ -187,7 +193,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
             revert BorrowingNotEnabled();
 
         _updateIndexes(_poolTokenAddress);
-        if (!isBorrowing(msg.sender, _poolTokenAddress))
+        if (!_isBorrowing(msg.sender, _poolTokenAddress))
             _setBorrowing(msg.sender, _poolTokenAddress, true);
 
         if (!_borrowAllowed(msg.sender, _poolTokenAddress, _amount)) revert UnauthorisedBorrow();
@@ -288,19 +294,22 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
             !IPriceOracleSentinel(priceOracleSentinel).isBorrowAllowed()
         ) return false;
 
+        BorrowAllowedVars memory vars;
+
         IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
-        uint256 numberOfCreatedMarkets = marketsCreated.length;
+        vars.numberOfMarketsCreated = marketsCreated.length;
 
         Types.AssetLiquidityData memory assetData;
         Types.LiquidityData memory liquidityData;
 
-        bool hasBorrowed = isBorrowingAny(_user);
+        bool hasBorrowed = _isBorrowingAny(_user);
 
-        for (uint256 i; i < numberOfCreatedMarkets; ) {
-            address poolToken = marketsCreated[i];
+        for (vars.i; vars.i < vars.numberOfMarketsCreated; ) {
+            address poolToken = marketsCreated[vars.i];
 
-            if (isSupplyingOrBorrowing(_user, poolToken)) {
+            if (_isSupplyingOrBorrowing(_user, poolToken)) {
                 if (poolToken != _poolTokenAddress) _updateIndexes(poolToken);
+
                 address underlyingAddress = IAToken(poolToken).UNDERLYING_ASSET_ADDRESS();
                 assetData.underlyingPrice = oracle.getAssetPrice(underlyingAddress); // In ETH.
                 (assetData.ltv, , , assetData.reserveDecimals, , ) = pool
@@ -308,12 +317,12 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
                 .getParams();
                 assetData.tokenUnit = 10**assetData.reserveDecimals;
 
-                if (hasBorrowed && isBorrowing(_user, poolToken)) {
+                if (hasBorrowed && _isBorrowing(_user, poolToken))
                     liquidityData.debtValue +=
                         (_getUserBorrowBalanceInOf(poolToken, _user) * assetData.underlyingPrice) /
                         assetData.tokenUnit;
-                }
-                if (isSupplying(_user, poolToken)) {
+
+                if (_isSupplying(_user, poolToken)) {
                     assetData.collateralValue =
                         (_getUserSupplyBalanceInOf(poolToken, _user) * assetData.underlyingPrice) /
                         assetData.tokenUnit;
@@ -329,8 +338,9 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
                         assetData.tokenUnit;
                 }
             }
+
             unchecked {
-                ++i;
+                ++vars.i;
             }
         }
 
