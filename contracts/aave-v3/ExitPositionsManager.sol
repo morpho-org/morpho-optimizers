@@ -604,6 +604,8 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
 
             liquidityData.debtValue += assetData.debtValue;
 
+            // If a LTV has been reduced to 0 on Aave v3, the other assets of the collateral are frozen.
+            // In response, Morpho disables the asset as collateral and sets its liquidation threshold to 0.
             if (assetData.ltv > 0) {
                 liquidityData.liquidationThresholdValue += assetData.collateralValue.percentMul(
                     assetData.liquidationThreshold
