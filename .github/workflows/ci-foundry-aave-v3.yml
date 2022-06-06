@@ -8,29 +8,29 @@ on:
       - 'lib/**'
       - 'config/**'
       - 'contracts/common/**'
-      - 'contracts/compound/**'
+      - 'contracts/aave-v3/**'
       - 'test/**'
       - 'test-foundry/common/**'
-      - 'test-foundry/compound/**'
+      - 'test-foundry/aave-v3/**'
       - '*.lock'
       - 'Makefile'
-      - '.github/workflows/ci-foundry-compound.yml'
+      - '.github/workflows/ci-foundry-aave-v3.yml'
   pull_request:
     paths:
       - 'lib/**'
       - 'config/**'
       - 'contracts/common/**'
-      - 'contracts/compound/**'
+      - 'contracts/aave-v3/**'
       - 'test/**'
       - 'test-foundry/common/**'
-      - 'test-foundry/compound/**'
+      - 'test-foundry/aave-v3/**'
       - '*.lock'
       - 'Makefile'
-      - '.github/workflows/ci-foundry-compound.yml'
+      - '.github/workflows/ci-foundry-aave-v3.yml'
 
 jobs:
-  morpho-compound:
-    name: Morpho-Compound
+  morpho-aave-v3:
+    name: Morpho-Aave V3
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -56,7 +56,7 @@ jobs:
           version: nightly
 
       - name: Run tests
-        run: make test PROTOCOL=compound
+        run: make test PROTOCOL=aave-v3
         env:
           NETWORK: eth-mainnet
           ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}

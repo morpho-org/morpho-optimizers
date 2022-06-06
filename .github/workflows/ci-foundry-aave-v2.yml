@@ -56,7 +56,7 @@ jobs:
           version: nightly
 
       - name: Run tests
-        run: make ci-aave-v2
+        run: make test PROTOCOL=aave-v2
         env:
           NETWORK: eth-mainnet
           ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
