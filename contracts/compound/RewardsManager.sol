@@ -348,18 +348,14 @@ contract RewardsManager is IRewardsManager, Ownable {
                 localSupplyState.block = supplyState.block;
                 localSupplyState.index = supplyState.index;
             } else {
-                uint256 deltaBlocks = localSupplyState.block == 0
-                    ? blockNumber - supplyState.block
-                    : blockNumber - localSupplyState.block;
+                uint256 deltaBlocks = blockNumber - supplyState.block;
                 uint256 supplySpeed = comptroller.compSupplySpeeds(_cTokenAddress);
 
                 if (supplySpeed > 0) {
                     uint256 supplyTokens = ICToken(_cTokenAddress).totalSupply();
                     uint256 compAccrued = deltaBlocks * supplySpeed;
                     uint256 ratio = supplyTokens > 0 ? (compAccrued * 1e36) / supplyTokens : 0;
-                    uint256 formerIndex = localSupplyState.index == 0
-                        ? supplyState.index
-                        : localSupplyState.index;
+                    uint256 formerIndex = supplyState.index;
                     uint256 index = formerIndex + ratio;
                     localCompSupplyState[_cTokenAddress] = IComptroller.CompMarketState({
                         index: CompoundMath.safe224(index),
@@ -388,9 +384,7 @@ contract RewardsManager is IRewardsManager, Ownable {
                 localBorrowState.block = borrowState.block;
                 localBorrowState.index = borrowState.index;
             } else {
-                uint256 deltaBlocks = localBorrowState.block == 0
-                    ? blockNumber - borrowState.block
-                    : blockNumber - localBorrowState.block;
+                uint256 deltaBlocks = blockNumber - borrowState.block;
                 uint256 borrowSpeed = comptroller.compBorrowSpeeds(_cTokenAddress);
 
                 if (borrowSpeed > 0) {
@@ -399,9 +393,7 @@ contract RewardsManager is IRewardsManager, Ownable {
                     );
                     uint256 compAccrued = deltaBlocks * borrowSpeed;
                     uint256 ratio = borrowAmount > 0 ? (compAccrued * 1e36) / borrowAmount : 0;
-                    uint256 formerIndex = localBorrowState.index == 0
-                        ? borrowState.index
-                        : localBorrowState.index;
+                    uint256 formerIndex = borrowState.index;
                     uint256 index = formerIndex + ratio;
                     localBorrowState.index = CompoundMath.safe224(index);
                     localBorrowState.block = CompoundMath.safe32(blockNumber);
