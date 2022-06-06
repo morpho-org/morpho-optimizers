@@ -395,7 +395,7 @@ contract TestWithdraw is TestSetup {
 
     function testDeltaWithdraw() public {
         // 1.3e6 allows only 10 unmatch borrowers
-        setDefaultMaxGasForMatchingHelper(3e6, 3e6, 1.35e6, 3e6);
+        setDefaultMaxGasForMatchingHelper(3e6, 3e6, 1.1e6, 3e6);
 
         uint256 borrowedAmount = 1 ether;
         uint256 collateral = 2 * borrowedAmount;
@@ -424,8 +424,8 @@ contract TestWithdraw is TestSetup {
                 aDai,
                 address(supplier1)
             );
-            testEquality(onPoolSupplier, 0);
-            testEquality(inP2PSupplier, expectedSupplyBalanceInP2P);
+            testEqualityLarge(onPoolSupplier, 0);
+            testEqualityLarge(inP2PSupplier, expectedSupplyBalanceInP2P);
 
             uint256 p2pBorrowIndex = morpho.p2pBorrowIndex(aDai);
             uint256 expectedBorrowBalanceInP2P = underlyingToP2PUnit(
@@ -439,7 +439,7 @@ contract TestWithdraw is TestSetup {
                     address(borrowers[i])
                 );
                 testEquality(onPoolBorrower, 0);
-                testEquality(inP2PBorrower, expectedBorrowBalanceInP2P);
+                testEqualityLarge(inP2PBorrower, expectedBorrowBalanceInP2P, "in P2P");
             }
 
             // Supplier withdraws max
@@ -459,7 +459,11 @@ contract TestWithdraw is TestSetup {
             );
 
             (, uint256 borrowP2PDelta, , ) = morpho.deltas(aDai);
-            testEquality(borrowP2PDelta, expectedBorrowP2PDelta, "borrow Delta not expected 1");
+            testEqualityLarge(
+                borrowP2PDelta,
+                expectedBorrowP2PDelta,
+                "borrow Delta not expected 1"
+            );
 
             // Borrow delta matching by new supplier
             supplier2.approve(dai, expectedBorrowP2PDeltaInUnderlying / 2);
@@ -472,9 +476,13 @@ contract TestWithdraw is TestSetup {
             );
 
             (, borrowP2PDelta, , ) = morpho.deltas(aDai);
-            testEquality(borrowP2PDelta, expectedBorrowP2PDelta / 2, "borrow Delta not expected 2");
+            testEqualityLarge(
+                borrowP2PDelta,
+                expectedBorrowP2PDelta / 2,
+                "borrow Delta not expected 2"
+            );
             testEquality(onPoolSupplier, 0, "on pool supplier not 0");
-            testEquality(
+            testEqualityLarge(
                 inP2PSupplier,
                 expectedSupplyBalanceInP2P,
                 "in peer-to-peer supplier not expected"
@@ -521,7 +529,7 @@ contract TestWithdraw is TestSetup {
             .rayDiv(oldVars.BP2PER)
             .rayMul(expectedBP2PER);
 
-            for (uint256 i = 1; i <= 10; i++) {
+            for (uint256 i = 10; i < 20; i++) {
                 (uint256 inP2PBorrower, uint256 onPoolBorrower) = morpho.borrowBalanceInOf(
                     aDai,
                     address(borrowers[i])
@@ -532,26 +540,26 @@ contract TestWithdraw is TestSetup {
                     (expectedBorrowBalanceInUnderlying * 2) / 100,
                     "not expected underlying balance"
                 );
-                testEquality(onPoolBorrower, 0);
+                testEquality(onPoolBorrower, 0, "on pool borrower");
             }
         }
 
         // Borrow delta reduction with borrowers repaying
-        for (uint256 i = 1; i <= 10; i++) {
+        for (uint256 i = 10; i < 20; i++) {
             borrowers[i].approve(dai, borrowedAmount);
             borrowers[i].repay(aDai, borrowedAmount);
         }
 
         (, uint256 borrowP2PDeltaAfter, , ) = morpho.deltas(aDai);
-        testEquality(borrowP2PDeltaAfter, 0);
+        testEquality(borrowP2PDeltaAfter, 0, "borrow delta after");
 
         (uint256 inP2PSupplier2, uint256 onPoolSupplier2) = morpho.supplyBalanceInOf(
             aDai,
             address(supplier2)
         );
 
-        testEquality(inP2PSupplier2, expectedSupplyBalanceInP2P);
-        testEquality(onPoolSupplier2, 0);
+        testEqualityLarge(inP2PSupplier2, expectedSupplyBalanceInP2P);
+        testEquality(onPoolSupplier2, 0, "supplier2 on pool");
     }
 
     function testDeltaWithdrawAll() public {

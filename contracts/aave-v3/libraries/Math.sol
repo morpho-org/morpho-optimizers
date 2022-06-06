@@ -9,4 +9,8 @@ library Math {
     function min(uint256 a, uint256 b) internal pure returns (uint256) {
         return a < b ? a : b;
     }
+
+    function safeSub(uint256 a, uint256 b) internal pure returns (uint256) {
+        return a >= b ? a - b : 0;
+    }
 }
