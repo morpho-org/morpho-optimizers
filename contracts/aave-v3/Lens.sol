@@ -123,7 +123,8 @@ contract Lens {
 
             if (
                 _poolTokenAddress != poolToken &&
-                ((morpho.userMarketMap(_user) >> (morpho.indexOfMarket(poolToken) << 1)) & 3 != 0)
+                ((morpho.userMarketsBitmask(_user) >> (morpho.indexOfMarket(poolToken) << 1)) & 3 !=
+                    0)
             ) {
                 assetData = getUserLiquidityDataForAsset(_user, poolToken, oracle);
 
@@ -217,7 +218,10 @@ contract Lens {
         for (uint256 i; i < numberOfCreatedMarkets; ) {
             address poolToken = createdMarkets[i];
 
-            if ((morpho.userMarketMap(_user) >> (morpho.indexOfMarket(poolToken) << 1)) & 3 != 0) {
+            if (
+                (morpho.userMarketsBitmask(_user) >> (morpho.indexOfMarket(poolToken) << 1)) & 3 !=
+                0
+            ) {
                 Types.AssetLiquidityData memory assetData = getUserLiquidityDataForAsset(
                     _user,
                     poolToken,
