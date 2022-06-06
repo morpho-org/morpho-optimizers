@@ -272,15 +272,15 @@ contract Lens {
             Types.PoolIndexes memory poolIndexes = morpho.poolIndexes(_poolTokenAddress);
             Types.MarketParameters memory marketParams = morpho.marketParameters(_poolTokenAddress);
 
-            (uint256 poolSupplyIndex, uint256 poolBorrowIndex) = _computePoolIndexes(
+            (uint256 newPoolSupplyIndex, uint256 newPoolBorrowIndex) = _computePoolIndexes(
                 _poolTokenAddress
             );
 
             Params memory params = Params(
                 morpho.p2pSupplyIndex(_poolTokenAddress),
                 morpho.p2pBorrowIndex(_poolTokenAddress),
-                poolSupplyIndex,
-                poolBorrowIndex,
+                newPoolSupplyIndex,
+                newPoolBorrowIndex,
                 poolIndexes.poolSupplyIndex,
                 poolIndexes.poolBorrowIndex,
                 marketParams.reserveFactor,
@@ -302,15 +302,15 @@ contract Lens {
             Types.PoolIndexes memory poolIndexes = morpho.poolIndexes(_poolTokenAddress);
             Types.MarketParameters memory marketParams = morpho.marketParameters(_poolTokenAddress);
 
-            (uint256 poolSupplyIndex, uint256 poolBorrowIndex) = _computePoolIndexes(
+            (uint256 newPoolSupplyIndex, uint256 newPoolBorrowIndex) = _computePoolIndexes(
                 _poolTokenAddress
             );
 
             Params memory params = Params(
                 morpho.p2pSupplyIndex(_poolTokenAddress),
                 morpho.p2pBorrowIndex(_poolTokenAddress),
-                poolSupplyIndex,
-                poolBorrowIndex,
+                newPoolSupplyIndex,
+                newPoolBorrowIndex,
                 poolIndexes.poolSupplyIndex,
                 poolIndexes.poolBorrowIndex,
                 marketParams.reserveFactor,
@@ -332,15 +332,15 @@ contract Lens {
             Types.PoolIndexes memory poolIndexes = morpho.poolIndexes(_poolTokenAddress);
             Types.MarketParameters memory marketParams = morpho.marketParameters(_poolTokenAddress);
 
-            (uint256 poolSupplyIndex, uint256 poolBorrowIndex) = _computePoolIndexes(
+            (uint256 newPoolSupplyIndex, uint256 newPoolBorrowIndex) = _computePoolIndexes(
                 _poolTokenAddress
             );
 
             Params memory params = Params(
                 morpho.p2pSupplyIndex(_poolTokenAddress),
                 morpho.p2pBorrowIndex(_poolTokenAddress),
-                poolSupplyIndex,
-                poolBorrowIndex,
+                newPoolSupplyIndex,
+                newPoolBorrowIndex,
                 poolIndexes.poolSupplyIndex,
                 poolIndexes.poolBorrowIndex,
                 marketParams.reserveFactor,
