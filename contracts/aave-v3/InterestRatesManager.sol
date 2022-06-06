@@ -58,14 +58,14 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
             Types.MarketParameters storage marketParams = marketParameters[_poolTokenAddress];
 
             address underlyingToken = IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS();
-            uint256 poolSupplyIndex = pool.getReserveNormalizedIncome(underlyingToken);
-            uint256 poolBorrowIndex = pool.getReserveNormalizedVariableDebt(underlyingToken);
+            uint256 newPoolSupplyIndex = pool.getReserveNormalizedIncome(underlyingToken);
+            uint256 newPoolBorrowIndex = pool.getReserveNormalizedVariableDebt(underlyingToken);
 
             Params memory params = Params(
                 p2pSupplyIndex[_poolTokenAddress],
                 p2pBorrowIndex[_poolTokenAddress],
-                poolSupplyIndex,
-                poolBorrowIndex,
+                newPoolSupplyIndex,
+                newPoolBorrowIndex,
                 poolIndexes.poolSupplyIndex,
                 poolIndexes.poolBorrowIndex,
                 marketParams.reserveFactor,
@@ -79,15 +79,15 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
             p2pBorrowIndex[_poolTokenAddress] = newP2PBorrowIndex;
 
             poolIndexes.lastUpdateTimestamp = uint32(block.timestamp);
-            poolIndexes.poolSupplyIndex = uint112(poolSupplyIndex);
-            poolIndexes.poolBorrowIndex = uint112(poolBorrowIndex);
+            poolIndexes.poolSupplyIndex = uint112(newPoolSupplyIndex);
+            poolIndexes.poolBorrowIndex = uint112(newPoolBorrowIndex);
 
             emit P2PIndexesUpdated(
                 _poolTokenAddress,
                 newP2PSupplyIndex,
                 newP2PBorrowIndex,
-                poolSupplyIndex,
-                poolBorrowIndex
+                newPoolSupplyIndex,
+                newPoolBorrowIndex
             );
         }
     }
