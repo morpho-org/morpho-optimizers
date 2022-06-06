@@ -136,7 +136,7 @@ contract RewardsManager is IRewardsManager, Ownable {
         address _asset,
         uint256 _userBalance,
         uint256 _totalSupply
-    ) external override onlyMorpho {
+    ) external onlyMorpho {
         _updateData(_user, _asset, _userBalance, _totalSupply);
     }
 
@@ -159,7 +159,6 @@ contract RewardsManager is IRewardsManager, Ownable {
     function getAllUserRewards(address[] calldata _assets, address _user)
         external
         view
-        override
         returns (address[] memory rewardsList, uint256[] memory unclaimedAmounts)
     {
         RewardsDataTypes.UserAssetBalance[] memory userAssetBalances = _getUserAssetBalances(
@@ -226,7 +225,7 @@ contract RewardsManager is IRewardsManager, Ownable {
      * @return indexUpdated True if the index was updated, false otherwise
      **/
     function _updateRewardData(
-        RewardsDataTypes.RewardData storage localRewardData,
+        RewardsDataTypes.RewardData storage _localRewardData,
         address _asset,
         address _reward,
         uint256 _totalSupply,
@@ -234,7 +233,7 @@ contract RewardsManager is IRewardsManager, Ownable {
     ) internal returns (uint256 newIndex, bool indexUpdated) {
         uint256 oldIndex;
         (oldIndex, newIndex) = _getAssetIndex(
-            localRewardData,
+            _localRewardData,
             _asset,
             _reward,
             _totalSupply,
@@ -247,9 +246,9 @@ contract RewardsManager is IRewardsManager, Ownable {
             indexUpdated = true;
 
             // Optimization: storing one after another saves one SSTORE.
-            localRewardData.index = uint104(newIndex);
-            localRewardData.lastUpdateTimestamp = uint32(block.timestamp);
-        } else localRewardData.lastUpdateTimestamp = uint32(block.timestamp);
+            _localRewardData.index = uint104(newIndex);
+            _localRewardData.lastUpdateTimestamp = uint32(block.timestamp);
+        } else _localRewardData.lastUpdateTimestamp = uint32(block.timestamp);
 
         return (newIndex, indexUpdated);
     }
@@ -270,14 +269,14 @@ contract RewardsManager is IRewardsManager, Ownable {
         uint256 _newAssetIndex,
         uint256 _assetUnit
     ) internal returns (uint256 rewardsAccrued, bool dataUpdated) {
-        uint256 _userIndex = _localRewardData.usersData[_user].index;
+        uint256 userIndex = _localRewardData.usersData[_user].index;
 
-        if ((dataUpdated = _userIndex != _newAssetIndex)) {
+        if ((dataUpdated = userIndex != _newAssetIndex)) {
             // Already checked for overflow in _updateRewardData.
             _localRewardData.usersData[_user].index = uint104(_newAssetIndex);
 
             if (_userBalance != 0) {
-                rewardsAccrued = _getRewards(_userBalance, _newAssetIndex, _userIndex, _assetUnit);
+                rewardsAccrued = _getRewards(_userBalance, _newAssetIndex, userIndex, _assetUnit);
 
                 _localRewardData.usersData[_user].accrued += uint128(rewardsAccrued);
             }
@@ -446,7 +445,7 @@ contract RewardsManager is IRewardsManager, Ownable {
         uint256 _reserveIndex,
         uint256 _userIndex,
         uint256 _assetUnit
-    ) internal pure returns (uint256 rewards) {
+    ) internal view returns (uint256 rewards) {
         rewards = _userBalance * (_reserveIndex - _userIndex);
         assembly {
             rewards := div(rewards, _assetUnit)
@@ -472,10 +471,10 @@ contract RewardsManager is IRewardsManager, Ownable {
             return (_localRewardData.index, _localRewardData.index);
         else {
             (
-                uint256 oldIndex,
-                uint256 distributionEnd,
+                uint256 rewardIndex,
                 uint256 emissionPerSecond,
-                uint256 lastUpdateTimestamp
+                uint256 lastUpdateTimestamp,
+                uint256 distributionEnd
             ) = rewardsController.getRewardsData(_asset, _reward);
 
             if (
@@ -483,7 +482,7 @@ contract RewardsManager is IRewardsManager, Ownable {
                 _totalSupply == 0 ||
                 lastUpdateTimestamp == currentTimestamp ||
                 lastUpdateTimestamp >= distributionEnd
-            ) return (oldIndex, oldIndex);
+            ) return (_localRewardData.index, rewardIndex);
 
             currentTimestamp = currentTimestamp > distributionEnd
                 ? distributionEnd
@@ -494,7 +493,7 @@ contract RewardsManager is IRewardsManager, Ownable {
             assembly {
                 firstTerm := div(firstTerm, _totalSupply)
             }
-            return (oldIndex, (firstTerm + oldIndex));
+            return (_localRewardData.index, (firstTerm + rewardIndex));
         }
     }
 
@@ -512,7 +511,7 @@ contract RewardsManager is IRewardsManager, Ownable {
         uint256 assetsLength = _assets.length;
         userAssetBalances = new RewardsDataTypes.UserAssetBalance[](assetsLength);
 
-        for (uint256 i = 0; i < assetsLength; i++) {
+        for (uint256 i; i < assetsLength; ) {
             address asset = _assets[i];
             userAssetBalances[i].asset = asset;
 
