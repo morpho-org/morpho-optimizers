@@ -2,7 +2,7 @@
 
 ifeq (${NETWORK}, avalanche-mainnet)
   export FOUNDRY_ETH_RPC_URL=https://api.avax.network/ext/bc/C/rpc
-  export FOUNDRY_FORK_BLOCK_NUMBER=9833154
+  export FOUNDRY_FORK_BLOCK_NUMBER=15675271
 else
   export FOUNDRY_ETH_RPC_URL=https://${NETWORK}.g.alchemy.com/v2/${ALCHEMY_KEY}
 
