@@ -100,10 +100,9 @@ contract User is stdCheats, DSTest {
         pool.borrow(_underlyingTokenAddress, _amount, 2, 0, address(this)); // 2 : variable rate | 0 : no refferal code
     }
 
-    // TODO: fix rewards
-    // function aaveClaimRewards(address[] memory assets) external {
-    //     rewardsController.claimRewards(assets, type(uint256).max, address(this));
-    // }
+    function aaveClaimRewards(address[] memory _assets) external {
+        rewardsController.claimAllRewardsToSelf(_assets);
+    }
 
     function liquidate(
         address _poolTokenBorrowedAddress,
