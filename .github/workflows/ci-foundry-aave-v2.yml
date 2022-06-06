@@ -1,0 +1,62 @@
+name: Solidity tests with Foundry
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'lib/**'
+      - 'config/**'
+      - 'contracts/common/**'
+      - 'contracts/aave-v2/**'
+      - 'test/**'
+      - 'test-foundry/common/**'
+      - 'test-foundry/aave-v2/**'
+      - '*.lock'
+      - 'Makefile'
+      - '.github/workflows/ci-foundry-aave-v2.yml'
+  pull_request:
+    paths:
+      - 'lib/**'
+      - 'config/**'
+      - 'contracts/common/**'
+      - 'contracts/aave-v2/**'
+      - 'test/**'
+      - 'test-foundry/common/**'
+      - 'test-foundry/aave-v2/**'
+      - '*.lock'
+      - 'Makefile'
+      - '.github/workflows/ci-foundry-aave-v2.yml'
+
+jobs:
+  morpho-aave-v2:
+    name: Morpho-Aave V2
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - uses: actions/setup-node@v2
+        with:
+          node-version: "14"
+
+      - name: Node dependencies cache
+        uses: actions/cache@v2
+        with:
+          path: "**/node_modules"
+          key: yarn-${{ hashFiles('**/yarn.lock') }}
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Install Foundry
+        uses: onbjerg/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Run tests
+        run: make ci-aave-v2
+        env:
+          NETWORK: eth-mainnet
+          ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}

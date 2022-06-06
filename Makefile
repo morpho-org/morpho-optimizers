@@ -15,19 +15,13 @@ endif
 
 export DAPP_REMAPPINGS=@config/=config/$(NETWORK)
 
-.PHONY: test
-ci-aave: node_modules
+ci-aave-v2: node_modules
 	@echo Run all tests on ${NETWORK}
 	@forge test -vv -c test-foundry/aave-v2 --no-match-contract TestGasConsumption --no-match-test testFuzz
 
-.PHONY: test
 ci-compound: node_modules
 	@echo Run all tests on ${NETWORK}
-	@forge test -vv -c test-foundry/aave-v2 --no-match-contract TestGasConsumption --no-match-test testFuzz
-
-test-aave-v2: node_modules
-	@echo Run all tests on ${NETWORK}
-	@forge test -vv -c test-foundry/aave-v2 --no-match-contract TestGasConsumption --no-match-test testFuzz
+	@forge test -vv -c test-foundry/compound --no-match-contract TestGasConsumption --no-match-test testFuzz
 
 test-aave-v2: node_modules
 	@echo Run all tests on ${NETWORK}
@@ -73,9 +67,10 @@ html-s-%: node_modules
 	@echo Run single test $* on ${NETWORK}
 	@forge test -vvv -c test-foundry/compound --match-test $* | aha --black > trace.html
 
-.PHONY: config
 config:
 	forge config
 
 node_modules:
 	@yarn
+
+.PHONY: config
