@@ -58,5 +58,5 @@ jobs:
       - name: Run tests
         run: make test PROTOCOL=aave-v3
         env:
-          NETWORK: eth-mainnet
+          NETWORK: polygon-mainnet
           ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
