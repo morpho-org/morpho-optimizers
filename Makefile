@@ -70,7 +70,4 @@ html-s-%: node_modules
 config:
 	forge config
 
-node_modules:
-	@yarn
-
-.PHONY: config
+.PHONY: config common
