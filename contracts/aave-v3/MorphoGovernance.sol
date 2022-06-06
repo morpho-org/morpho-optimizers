@@ -108,6 +108,9 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @notice Thrown when trying to set the max sorted users to 0.
     error MaxSortedUsersCannotBeZero();
 
+    /// @notice Thrown when the number of markets will exceed the bitmask's capacity.
+    error MaxNumberOfMarkets();
+
     /// @notice Thrown when the amount is equal to 0.
     error AmountIsZero();
 
@@ -355,9 +358,10 @@ abstract contract MorphoGovernance is MorphoUtils {
         );
         marketParameters[poolTokenAddress] = _marketParams;
 
-        indexOfMarket[poolTokenAddress] = 2 * marketsCreated.length;
-
+        if (marketsCreated.length >= 128) revert MaxNumberOfMarkets();
+        indexOfMarket[poolTokenAddress] = marketsCreated.length;
         marketsCreated.push(poolTokenAddress);
+
         emit MarketCreated(
             poolTokenAddress,
             _marketParams.reserveFactor,
