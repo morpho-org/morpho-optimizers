@@ -590,7 +590,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
 
             address underlyingAddress = IAToken(poolTokenEntered).UNDERLYING_ASSET_ADDRESS();
             assetData.underlyingPrice = oracle.getAssetPrice(underlyingAddress); // In ETH.
-            (, assetData.liquidationThreshold, , assetData.reserveDecimals, , ) = pool
+            (assetData.ltv, assetData.liquidationThreshold, , assetData.reserveDecimals, , ) = pool
             .getConfiguration(underlyingAddress)
             .getParams();
 
