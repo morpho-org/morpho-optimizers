@@ -18,13 +18,13 @@ library Types {
     /// STRUCTS ///
 
     struct SupplyBalance {
-        uint256 inP2P; // In supplier's peer-to-peer unit, a unit that grows in underlying value, to keep track of the interests earned by suppliers in peer-to-peer. Multiply by the peer-to-peer supply index to get the underlying amount.
-        uint256 onPool; // In scaled balance. Multiply by the pool supply index to get the underlying amount.
+        uint256 inP2P; // In supplier's peer-to-peer unit, a unit that grows in underlying value, to keep track of the interests earned by suppliers in peer-to-peer. Multiply by the peer-to-peer supply index to get the underlying amount. (in wad)
+        uint256 onPool; // In scaled balance. Multiply by the pool supply index to get the underlying amount. (in wad)
     }
 
     struct BorrowBalance {
-        uint256 inP2P; // In borrower's peer-to-peer unit, a unit that grows in underlying value, to keep track of the interests paid by borrowers in peer-to-peer. Multiply by the peer-to-peer borrow index to get the underlying amount.
-        uint256 onPool; // In adUnit, a unit that grows in value, to keep track of the debt increase when borrowers are on Compound. Multiply by the pool borrow index to get the underlying amount.
+        uint256 inP2P; // In borrower's peer-to-peer unit, a unit that grows in underlying value, to keep track of the interests paid by borrowers in peer-to-peer. Multiply by the peer-to-peer borrow index to get the underlying amount. (in wad)
+        uint256 onPool; // In adUnit, a unit that grows in value, to keep track of the debt increase when borrowers are on Compound. Multiply by the pool borrow index to get the underlying amount. (in wad)
     }
 
     // Max gas to consume during the matching process for supply, borrow, withdraw and repay functions.
@@ -36,10 +36,10 @@ library Types {
     }
 
     struct Delta {
-        uint256 p2pSupplyDelta; // Difference between the stored peer-to-peer supply amount and the real peer-to-peer supply amount (in aToken).
-        uint256 p2pBorrowDelta; // Difference between the stored peer-to-peer borrow amount and the real peer-to-peer borrow amount (in adUnit).
-        uint256 p2pSupplyAmount; // Sum of all stored peer-to-peer supply (in peer-to-peer unit).
-        uint256 p2pBorrowAmount; // Sum of all stored peer-to-peer borrow (in peer-to-peer unit).
+        uint256 p2pSupplyDelta; // Difference between the stored peer-to-peer supply amount and the real peer-to-peer supply amount (in aToken). (in wad)
+        uint256 p2pBorrowDelta; // Difference between the stored peer-to-peer borrow amount and the real peer-to-peer borrow amount (in adUnit). (in wad)
+        uint256 p2pSupplyAmount; // Sum of all stored peer-to-peer supply (in peer-to-peer unit). (in wad)
+        uint256 p2pBorrowAmount; // Sum of all stored peer-to-peer borrow (in peer-to-peer unit). (in wad)
     }
 
     struct AssetLiquidityData {
@@ -63,8 +63,8 @@ library Types {
     // Variables are packed together to save gas (will not exceed their limit during Morpho's lifetime).
     struct PoolIndexes {
         uint32 lastUpdateTimestamp; // The last time the peer-to-peer indexes were updated.
-        uint112 poolSupplyIndex; // Last pool supply index.
-        uint112 poolBorrowIndex; // Last pool borrow index.
+        uint112 poolSupplyIndex; // Last pool supply index (in ray).
+        uint112 poolBorrowIndex; // Last pool borrow index (in ray).
     }
 
     struct MarketParameters {
