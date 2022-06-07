@@ -130,7 +130,6 @@ contract RewardsManager is IRewardsManager, Ownable {
 
         for (uint256 i; i < _cTokenAddresses.length; ) {
             address cTokenAddress = _cTokenAddresses[i];
-            ICToken(cTokenAddress).accrueInterest(); // Necessary to compute the borrow index.
 
             (bool isListed, , ) = comptroller.markets(cTokenAddress);
             if (!isListed) revert InvalidCToken();
