@@ -2,6 +2,7 @@
 pragma solidity 0.8.13;
 
 import "@contracts/compound/interfaces/compound/ICompound.sol";
+import "@contracts/compound/interfaces/ICompRewardsLens.sol";
 import "@contracts/compound/interfaces/IRewardsManager.sol";
 import "@contracts/common/interfaces/ISwapManager.sol";
 
@@ -11,6 +12,7 @@ import "@openzeppelin/contracts/utils/Strings.sol";
 
 import "@contracts/compound/IncentivesVault.sol";
 import "@contracts/compound/RewardsManager.sol";
+import "@contracts/compound/CompRewardsLens.sol";
 import "@contracts/compound/PositionsManager.sol";
 import "@contracts/compound/MatchingEngine.sol";
 import "@contracts/compound/InterestRatesManager.sol";
@@ -40,6 +42,7 @@ contract TestSetup is Config, Utils, stdCheats {
     Morpho internal fakeMorphoImpl;
     InterestRatesManager internal interestRatesManager;
     IRewardsManager internal rewardsManager;
+    ICompRewardsLens internal compRewardsLens;
     IPositionsManager internal positionsManager;
     Lens internal lens;
 
@@ -130,11 +133,12 @@ contract TestSetup is Config, Utils, stdCheats {
             dumbOracle
         );
         morphoToken.transfer(address(incentivesVault), 1_000_000 ether);
+        morpho.setIncentivesVault(incentivesVault);
 
         rewardsManager = new RewardsManager(address(morpho));
-
         morpho.setRewardsManager(rewardsManager);
-        morpho.setIncentivesVault(incentivesVault);
+
+        compRewardsLens = new CompRewardsLens(address(morpho));
     }
 
     function createMarket(address _cToken) internal {
