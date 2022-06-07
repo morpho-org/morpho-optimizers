@@ -230,7 +230,6 @@ contract RewardsManager is IRewardsManager, Initializable {
     }
 
     /// @notice Updates the COMP borrow index.
-    /// @dev Note: This function expects Compound's exchange rate to have been updated.
     /// @param _cTokenAddress The cToken address.
     function _updateBorrowIndex(address _cTokenAddress) internal {
         IComptroller.CompMarketState storage localBorrowState = localCompBorrowState[
