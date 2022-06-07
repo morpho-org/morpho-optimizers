@@ -26,7 +26,6 @@ import "../helpers/DumbOracle.sol";
 import {User} from "../helpers/User.sol";
 import {Utils} from "./Utils.sol";
 import "forge-std/stdlib.sol";
-import "forge-std/console.sol";
 import "@config/Config.sol";
 
 contract TestSetup is Config, Utils, stdCheats {
@@ -39,8 +38,9 @@ contract TestSetup is Config, Utils, stdCheats {
     TransparentUpgradeableProxy public morphoProxy;
     Morpho internal morphoImplV1;
     Morpho internal morpho;
-    Morpho internal fakeMorphoImpl;
     InterestRatesManager internal interestRatesManager;
+    TransparentUpgradeableProxy internal rewardsManagerProxy;
+    IRewardsManager internal rewardsManagerImplV1;
     IRewardsManager internal rewardsManager;
     ICompRewardsLens internal compRewardsLens;
     IPositionsManager internal positionsManager;
@@ -85,7 +85,6 @@ contract TestSetup is Config, Utils, stdCheats {
         /// Deploy proxies ///
 
         proxyAdmin = new ProxyAdmin();
-        interestRatesManager = new InterestRatesManager();
 
         morphoImplV1 = new Morpho();
         morphoProxy = new TransparentUpgradeableProxy(address(morphoImplV1), address(this), "");
@@ -104,7 +103,7 @@ contract TestSetup is Config, Utils, stdCheats {
         );
 
         treasuryVault = new User(morpho);
-        fakeMorphoImpl = new Morpho();
+
         oracle = ICompoundOracle(comptroller.oracle());
         morpho.setTreasuryVault(address(treasuryVault));
 
@@ -135,7 +134,15 @@ contract TestSetup is Config, Utils, stdCheats {
         morphoToken.transfer(address(incentivesVault), 1_000_000 ether);
         morpho.setIncentivesVault(incentivesVault);
 
-        rewardsManager = new RewardsManager(address(morpho));
+        rewardsManagerImplV1 = new RewardsManager();
+        rewardsManagerProxy = new TransparentUpgradeableProxy(
+            address(rewardsManagerImplV1),
+            address(proxyAdmin),
+            ""
+        );
+        rewardsManager = RewardsManager(address(rewardsManagerProxy));
+        rewardsManager.initialize(address(morpho));
+
         morpho.setRewardsManager(rewardsManager);
 
         compRewardsLens = new CompRewardsLens(address(morpho));
