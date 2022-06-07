@@ -415,7 +415,7 @@ contract TestRewards is TestSetup {
         supplier1.claimRewards(markets, false);
     }
 
-    function testShouldUpdateSupplyIndex() public {
+    function testShouldUpdateCorrectSupplyIndex() public {
         uint256 amount = 10_000 ether;
 
         supplier1.approve(dai, type(uint256).max);
@@ -434,7 +434,30 @@ contract TestRewards is TestSetup {
         assertEq(userIndexAfter, compoundAfter.index);
     }
 
-    function testShouldUpdateBorrowIndex() public {
+    function testShouldUpdateCorrectSupplyIndexWhenSpeedIs0() public {
+        uint256 amount = 10_000 ether;
+
+        supplier1.approve(dai, type(uint256).max);
+        supplier1.supply(cDai, amount);
+
+        hevm.roll(block.number + 1);
+        hevm.prank(comptroller.admin());
+        ICToken[] memory cTokens = new ICToken[](1);
+        uint256[] memory supplySpeeds = new uint256[](1);
+        uint256[] memory borrowSpeeds = new uint256[](1);
+        cTokens[0] = ICToken(cDai);
+        comptroller._setCompSpeeds(cTokens, supplySpeeds, borrowSpeeds);
+        hevm.roll(block.number + 1);
+
+        supplier1.borrow(cDai, amount / 2);
+
+        uint256 userIndexAfter = rewardsManager.compSupplierIndex(cDai, address(supplier1));
+        IComptroller.CompMarketState memory compoundAfter = comptroller.compSupplyState(cDai);
+
+        assertEq(userIndexAfter, compoundAfter.index);
+    }
+
+    function testShouldUpdateCorrectBorrowIndex() public {
         uint256 amount = 10_000 ether;
 
         borrower1.approve(wEth, type(uint256).max);
@@ -456,7 +479,32 @@ contract TestRewards is TestSetup {
         assertEq(userIndexAfter, compoundAfter.index);
     }
 
-    function testSupplyIndexGetter() public {
+    function testShouldUpdateCorrectBorrowIndexWhenSpeedIs0() public {
+        uint256 amount = 10_000 ether;
+
+        borrower1.approve(wEth, type(uint256).max);
+        borrower1.supply(cEth, amount);
+        borrower1.borrow(cDai, amount);
+
+        hevm.roll(block.number + 1);
+        hevm.prank(comptroller.admin());
+        ICToken[] memory cTokens = new ICToken[](1);
+        uint256[] memory supplySpeeds = new uint256[](1);
+        uint256[] memory borrowSpeeds = new uint256[](1);
+        cTokens[0] = ICToken(cDai);
+        comptroller._setCompSpeeds(cTokens, supplySpeeds, borrowSpeeds);
+        hevm.roll(block.number + 1);
+
+        borrower1.approve(dai, type(uint256).max);
+        borrower1.supply(cDai, amount / 2);
+
+        uint256 userIndexAfter = rewardsManager.compBorrowerIndex(cDai, address(borrower1));
+        IComptroller.CompMarketState memory compoundAfter = comptroller.compBorrowState(cDai);
+
+        assertEq(userIndexAfter, compoundAfter.index);
+    }
+
+    function testShouldComputeCorrectSupplyIndex() public {
         uint256 amount = 10_000 ether;
 
         supplier1.approve(dai, type(uint256).max);
@@ -475,7 +523,7 @@ contract TestRewards is TestSetup {
         assertEq(updatedIndex, compoundAfter.index);
     }
 
-    function testBorrowIndexGetter() public {
+    function testShouldComputeCorrectBorrowIndex() public {
         uint256 amount = 10_000 ether;
 
         borrower1.approve(wEth, type(uint256).max);
