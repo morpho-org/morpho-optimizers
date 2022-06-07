@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import "./interfaces/compound/ICompound.sol";
 import "./interfaces/IRewardsManager.sol";
 import "./interfaces/IMorpho.sol";
 
@@ -32,7 +31,7 @@ contract RewardsManager is IRewardsManager, Ownable {
     /// @notice Thrown when only Morpho can call the function.
     error OnlyMorpho();
 
-    /// @notice Thrown when an invalid cToken address is passed to accrue rewards.
+    /// @notice Thrown when an invalid cToken address is passed to claim rewards.
     error InvalidCToken();
 
     /// MODIFIERS ///
@@ -46,7 +45,7 @@ contract RewardsManager is IRewardsManager, Ownable {
     /// CONSTRUCTOR ///
 
     /// @notice Constructs the RewardsManager contract.
-    /// @param _morpho The `morpho`.
+    /// @param _morpho The address of Morpho's main contract's proxy.
     constructor(address _morpho) {
         morpho = IMorpho(_morpho);
         comptroller = IComptroller(morpho.comptroller());
@@ -198,35 +197,29 @@ contract RewardsManager is IRewardsManager, Ownable {
         IComptroller.CompMarketState storage localSupplyState = localCompSupplyState[
             _cTokenAddress
         ];
-        uint256 blockNumber = block.number;
 
-        if (localSupplyState.block == blockNumber) return;
+        if (localSupplyState.block == block.number) return;
         else {
             IComptroller.CompMarketState memory supplyState = comptroller.compSupplyState(
                 _cTokenAddress
             );
 
-            if (supplyState.block == blockNumber) {
-                localSupplyState.block = supplyState.block;
-                localSupplyState.index = supplyState.index;
-            } else {
-                uint256 deltaBlocks = blockNumber - supplyState.block;
-                uint256 supplySpeed = comptroller.compSupplySpeeds(_cTokenAddress);
+            uint256 deltaBlocks = block.number - supplyState.block;
+            uint256 supplySpeed = comptroller.compSupplySpeeds(_cTokenAddress);
 
-                uint224 newCompSupplyIndex;
-                if (supplySpeed > 0) {
-                    uint256 supplyTokens = ICToken(_cTokenAddress).totalSupply();
-                    uint256 compAccrued = deltaBlocks * supplySpeed;
-                    uint256 ratio = supplyTokens > 0 ? (compAccrued * 1e36) / supplyTokens : 0;
+            uint224 newCompSupplyIndex;
+            if (deltaBlocks > 0 && supplySpeed > 0) {
+                uint256 supplyTokens = ICToken(_cTokenAddress).totalSupply();
+                uint256 compAccrued = deltaBlocks * supplySpeed;
+                uint256 ratio = supplyTokens > 0 ? (compAccrued * 1e36) / supplyTokens : 0;
 
-                    newCompSupplyIndex = uint224(supplyState.index + ratio);
-                } else newCompSupplyIndex = supplyState.index;
+                newCompSupplyIndex = uint224(supplyState.index + ratio);
+            } else newCompSupplyIndex = supplyState.index;
 
-                localCompSupplyState[_cTokenAddress] = IComptroller.CompMarketState({
-                    index: newCompSupplyIndex,
-                    block: CompoundMath.safe32(blockNumber)
-                });
-            }
+            localCompSupplyState[_cTokenAddress] = IComptroller.CompMarketState({
+                index: newCompSupplyIndex,
+                block: CompoundMath.safe32(block.number)
+            });
         }
     }
 
@@ -237,36 +230,31 @@ contract RewardsManager is IRewardsManager, Ownable {
         IComptroller.CompMarketState storage localBorrowState = localCompBorrowState[
             _cTokenAddress
         ];
-        uint256 blockNumber = block.number;
 
-        if (localBorrowState.block == blockNumber) return;
+        if (localBorrowState.block == block.number) return;
         else {
             IComptroller.CompMarketState memory borrowState = comptroller.compBorrowState(
                 _cTokenAddress
             );
 
-            if (borrowState.block == blockNumber) {
-                localBorrowState.block = borrowState.block;
-                localBorrowState.index = borrowState.index;
-            } else {
-                uint256 deltaBlocks = blockNumber - borrowState.block;
-                uint256 borrowSpeed = comptroller.compBorrowSpeeds(_cTokenAddress);
+            uint256 deltaBlocks = block.number - borrowState.block;
+            uint256 borrowSpeed = comptroller.compBorrowSpeeds(_cTokenAddress);
 
-                uint224 newCompBorrowIndex;
-                if (borrowSpeed > 0) {
-                    ICToken cToken = ICToken(_cTokenAddress);
-                    uint256 borrowAmount = cToken.totalBorrows().div(cToken.borrowIndex());
-                    uint256 compAccrued = deltaBlocks * borrowSpeed;
-                    uint256 ratio = borrowAmount > 0 ? (compAccrued * 1e36) / borrowAmount : 0;
+            uint224 newCompBorrowIndex;
+            if (deltaBlocks > 0 && borrowSpeed > 0) {
+                ICToken cToken = ICToken(_cTokenAddress);
 
-                    newCompBorrowIndex = uint224(borrowState.index + ratio);
-                } else newCompBorrowIndex = borrowState.index;
+                uint256 borrowAmount = cToken.totalBorrows().div(cToken.borrowIndex());
+                uint256 compAccrued = deltaBlocks * borrowSpeed;
+                uint256 ratio = borrowAmount > 0 ? (compAccrued * 1e36) / borrowAmount : 0;
 
-                localCompBorrowState[_cTokenAddress] = IComptroller.CompMarketState({
-                    index: newCompBorrowIndex,
-                    block: CompoundMath.safe32(blockNumber)
-                });
-            }
+                newCompBorrowIndex = uint224(borrowState.index + ratio);
+            } else newCompBorrowIndex = borrowState.index;
+
+            localCompBorrowState[_cTokenAddress] = IComptroller.CompMarketState({
+                index: newCompBorrowIndex,
+                block: CompoundMath.safe32(block.number)
+            });
         }
     }
 }
