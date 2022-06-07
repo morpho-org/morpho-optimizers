@@ -12,7 +12,7 @@ import "./MatchingEngine.sol";
 /// @author Morpho Labs.
 /// @custom:contact security@morpho.xyz
 /// @notice Utils shared by the EntryPositionsManager and ExitPositionsManager.
-contract PositionsManagerUtils is MatchingEngine {
+abstract contract PositionsManagerUtils is MatchingEngine {
     using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
     using SafeTransferLib for ERC20;
     using WadRayMath for uint256;

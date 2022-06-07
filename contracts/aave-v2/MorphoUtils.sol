@@ -15,7 +15,7 @@ import "./MorphoStorage.sol";
 /// @author Morpho Labs.
 /// @custom:contact security@morpho.xyz
 /// @notice Modifiers, getters and other util functions for Morpho.
-contract MorphoUtils is MorphoStorage {
+abstract contract MorphoUtils is MorphoStorage {
     using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
     using HeapOrdering for HeapOrdering.HeapArray;
     using PercentageMath for uint256;
