@@ -9,7 +9,7 @@ import "./MorphoUtils.sol";
 /// @author Morpho Labs.
 /// @custom:contact security@morpho.xyz
 /// @notice Smart contract managing the matching engine.
-contract MatchingEngine is MorphoUtils {
+abstract contract MatchingEngine is MorphoUtils {
     using HeapOrdering for HeapOrdering.HeapArray;
     using WadRayMath for uint256;
 
