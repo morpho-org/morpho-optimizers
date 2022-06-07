@@ -164,6 +164,7 @@ contract RewardsManager is IRewardsManager, Ownable {
 
         for (uint256 i; i < _cTokenAddresses.length; ) {
             address cTokenAddress = _cTokenAddresses[i];
+            ICToken(cTokenAddress).accrueInterest(); // Necessary to compute the borrow index.
 
             (bool isListed, , ) = comptroller.markets(cTokenAddress);
             if (!isListed) revert InvalidCToken();
@@ -274,7 +275,7 @@ contract RewardsManager is IRewardsManager, Ownable {
 
                 if (borrowSpeed > 0) {
                     uint256 borrowAmount = ICToken(_cTokenAddress).totalBorrows().div(
-                        ICToken(_cTokenAddress).borrowIndex()
+                        ICToken(_cTokenAddress).borrowIndex() // Should have been updated before.
                     );
                     uint256 compAccrued = deltaBlocks * borrowSpeed;
                     uint256 ratio = borrowAmount > 0 ? (compAccrued * 1e36) / borrowAmount : 0;
