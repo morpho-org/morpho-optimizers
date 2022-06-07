@@ -353,7 +353,10 @@ contract RewardsManager is IRewardsManager, Ownable {
                         index: CompoundMath.safe224(index),
                         block: CompoundMath.safe32(blockNumber)
                     });
-                } else localSupplyState.block = CompoundMath.safe32(blockNumber);
+                } else {
+                    localSupplyState.index = CompoundMath.safe224(supplyState.index);
+                    localSupplyState.block = CompoundMath.safe32(blockNumber);
+                }
             }
         }
     }
@@ -389,7 +392,10 @@ contract RewardsManager is IRewardsManager, Ownable {
                     uint256 index = formerIndex + ratio;
                     localBorrowState.index = CompoundMath.safe224(index);
                     localBorrowState.block = CompoundMath.safe32(blockNumber);
-                } else localBorrowState.block = CompoundMath.safe32(blockNumber);
+                } else {
+                    localBorrowState.index = CompoundMath.safe224(borrowState.index);
+                    localBorrowState.block = CompoundMath.safe32(blockNumber);
+                }
             }
         }
     }
