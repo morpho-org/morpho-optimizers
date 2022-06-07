@@ -33,6 +33,7 @@ contract TestSupply is TestSetup {
         uint256 daiBalanceBefore = supplier1.balanceOf(dai);
         uint256 expectedDaiBalanceAfter = daiBalanceBefore - amount;
 
+        hevm.warp(block.timestamp + 1);
         supplier1.approve(dai, address(morpho), amount);
         supplier1.supply(aDai, amount);
 
@@ -67,6 +68,7 @@ contract TestSupply is TestSetup {
         borrower1.supply(aUsdc, to6Decimals(2 * amount));
         borrower1.borrow(aDai, amount);
 
+        hevm.warp(block.timestamp + 1);
         supplier1.approve(dai, 2 * amount);
         supplier1.supply(aDai, 2 * amount);
 
@@ -109,12 +111,14 @@ contract TestSupply is TestSetup {
         uint256 amountPerBorrower = amount / NMAX;
 
         for (uint256 i = 0; i < NMAX; i++) {
+            hevm.warp(block.timestamp + 1);
             borrowers[i].approve(usdc, to6Decimals(collateral));
             borrowers[i].supply(aUsdc, to6Decimals(collateral));
 
             borrowers[i].borrow(aDai, amountPerBorrower);
         }
 
+        hevm.warp(block.timestamp + 1);
         supplier1.approve(dai, amount);
         supplier1.supply(aDai, amount);
 
@@ -157,12 +161,14 @@ contract TestSupply is TestSetup {
         uint256 amountPerBorrower = amount / (2 * NMAX);
 
         for (uint256 i = 0; i < NMAX; i++) {
+            hevm.warp(block.timestamp + 1);
             borrowers[i].approve(usdc, to6Decimals(collateral));
             borrowers[i].supply(aUsdc, to6Decimals(collateral));
 
             borrowers[i].borrow(aDai, amountPerBorrower);
         }
 
+        hevm.warp(block.timestamp + 1);
         supplier1.approve(dai, amount);
         supplier1.supply(aDai, amount);
 
@@ -228,6 +234,7 @@ contract TestSupply is TestSetup {
         hevm.stopPrank();
 
         // Supplier 1 supply in peer-to-peer. Not supposed to revert.
+        hevm.warp(block.timestamp + 1);
         supplier1.approve(dai, amount);
         supplier1.supply(aDai, amount);
     }

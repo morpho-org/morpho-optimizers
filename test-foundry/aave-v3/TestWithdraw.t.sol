@@ -148,6 +148,7 @@ contract TestWithdraw is TestSetup {
         borrower1.supply(aUsdc, to6Decimals(collateral));
         borrower1.borrow(aDai, borrowedAmount);
 
+        hevm.warp(block.timestamp + 1);
         supplier1.approve(dai, suppliedAmount);
         supplier1.supply(aDai, suppliedAmount);
 
@@ -180,6 +181,7 @@ contract TestWithdraw is TestSetup {
         for (uint256 i = 0; i < NMAX; i++) {
             if (suppliers[i] == supplier1) continue;
 
+            hevm.warp(block.timestamp + 1);
             suppliers[i].approve(dai, amountPerSupplier);
             suppliers[i].supply(aDai, amountPerSupplier);
         }
@@ -230,6 +232,7 @@ contract TestWithdraw is TestSetup {
         borrower1.supply(aUsdc, to6Decimals(collateral));
         borrower1.borrow(aDai, borrowedAmount);
 
+        hevm.warp(block.timestamp + 1);
         supplier1.approve(dai, suppliedAmount);
         supplier1.supply(aDai, suppliedAmount);
 
@@ -302,6 +305,7 @@ contract TestWithdraw is TestSetup {
         borrower1.supply(aUsdc, to6Decimals(collateral));
         borrower1.borrow(aDai, borrowedAmount);
 
+        hevm.warp(block.timestamp + 1);
         supplier1.approve(dai, suppliedAmount);
         supplier1.supply(aDai, suppliedAmount);
 
@@ -333,6 +337,8 @@ contract TestWithdraw is TestSetup {
         // minus 1 because supplier1 must not be counted twice !
         for (uint256 i = 0; i < NMAX; i++) {
             if (suppliers[i] == supplier1) continue;
+
+            hevm.warp(block.timestamp + 1);
 
             suppliers[i].approve(dai, amountPerSupplier);
             suppliers[i].supply(aDai, amountPerSupplier);

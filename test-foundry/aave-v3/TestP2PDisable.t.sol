@@ -15,6 +15,7 @@ contract TestP2PDisable is TestSetup {
         borrower1.borrow(aDai, borrowedAmount);
 
         for (uint256 i; i < nSuppliers; i++) {
+            hevm.warp(block.timestamp + 1);
             suppliers[i].approve(dai, type(uint256).max);
             suppliers[i].supply(aDai, suppliedAmount);
         }
@@ -22,6 +23,7 @@ contract TestP2PDisable is TestSetup {
         // Create delta.
         setDefaultMaxGasForMatchingHelper(3e6, 3e6, 3e6, 0);
         borrower1.approve(dai, type(uint256).max);
+        hevm.warp(block.timestamp + 1);
         borrower1.repay(aDai, type(uint256).max);
 
         // Delta must be greater than 0.
@@ -46,6 +48,8 @@ contract TestP2PDisable is TestSetup {
         supplier1.approve(usdc, type(uint256).max);
         supplier1.supply(aUsdc, to6Decimals(supplyAmount));
 
+        hevm.warp(block.timestamp + 1);
+
         for (uint256 i; i < nBorrowers; i++) {
             borrowers[i].approve(dai, type(uint256).max);
             borrowers[i].approve(usdc, type(uint256).max);
@@ -63,6 +67,8 @@ contract TestP2PDisable is TestSetup {
 
         // Disable peer-to-peer.
         morpho.setP2PDisable(aUsdc, true);
+
+        hevm.warp(block.timestamp + 1);
 
         // Delta must be reduce to 0.
         supplier1.supply(aUsdc, to6Decimals(supplyAmount * 2));

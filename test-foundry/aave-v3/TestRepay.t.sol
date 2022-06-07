@@ -55,6 +55,7 @@ contract TestRepay is TestSetup {
         borrower1.supply(aUsdc, to6Decimals(collateral));
         borrower1.borrow(aDai, borrowedAmount);
 
+        hevm.warp(block.timestamp + 1);
         supplier1.approve(dai, suppliedAmount);
         supplier1.supply(aDai, suppliedAmount);
 
@@ -81,10 +82,12 @@ contract TestRepay is TestSetup {
         // An available borrower onPool
         uint256 availableBorrowerAmount = borrowedAmount / 4;
         borrower2.approve(usdc, to6Decimals(collateral));
+        hevm.warp(block.timestamp + 1);
         borrower2.supply(aUsdc, to6Decimals(collateral));
         borrower2.borrow(aDai, availableBorrowerAmount);
 
         // Borrower1 repays 75% of suppliedAmount
+        hevm.warp(block.timestamp + 1);
         borrower1.approve(dai, (75 * borrowedAmount) / 100);
         borrower1.repay(aDai, (75 * borrowedAmount) / 100);
 
@@ -128,6 +131,7 @@ contract TestRepay is TestSetup {
         borrower1.supply(aUsdc, to6Decimals(collateral));
         borrower1.borrow(aDai, borrowedAmount);
 
+        hevm.warp(block.timestamp + 1);
         supplier1.approve(dai, suppliedAmount);
         supplier1.supply(aDai, suppliedAmount);
 
@@ -164,6 +168,7 @@ contract TestRepay is TestSetup {
         for (uint256 i = 0; i < NMAX; i++) {
             if (borrowers[i] == borrower1) continue;
 
+            hevm.warp(block.timestamp + 1);
             borrowers[i].approve(usdc, to6Decimals(collateral));
             borrowers[i].supply(aUsdc, to6Decimals(collateral));
             borrowers[i].borrow(aDai, amountPerBorrower);
@@ -176,6 +181,7 @@ contract TestRepay is TestSetup {
         }
 
         // Borrower1 repays all of his debt
+        hevm.warp(block.timestamp + 1);
         borrower1.approve(dai, borrowedAmount);
         borrower1.repay(aDai, borrowedAmount);
 
@@ -217,6 +223,7 @@ contract TestRepay is TestSetup {
         borrower1.supply(aUsdc, to6Decimals(collateral));
         borrower1.borrow(aDai, borrowedAmount);
 
+        hevm.warp(block.timestamp + 1);
         supplier1.approve(dai, suppliedAmount);
         supplier1.supply(aDai, suppliedAmount);
 
@@ -241,6 +248,7 @@ contract TestRepay is TestSetup {
         testEqualityLarge(inP2PSupplier, inP2PBorrower1);
 
         // Borrower1 repays 75% of borrowed amount
+        hevm.warp(block.timestamp + 1);
         borrower1.approve(dai, (75 * borrowedAmount) / 100);
         borrower1.repay(aDai, (75 * borrowedAmount) / 100);
 
@@ -292,6 +300,7 @@ contract TestRepay is TestSetup {
         borrower1.supply(aUsdc, to6Decimals(collateral));
         borrower1.borrow(aDai, borrowedAmount);
 
+        hevm.warp(block.timestamp + 1);
         supplier1.approve(dai, suppliedAmount);
         supplier1.supply(aDai, suppliedAmount);
 
@@ -324,12 +333,14 @@ contract TestRepay is TestSetup {
         for (uint256 i = 0; i < NMAX; i++) {
             if (borrowers[i] == borrower1) continue;
 
+            hevm.warp(block.timestamp + 1);
             borrowers[i].approve(usdc, to6Decimals(collateral));
             borrowers[i].supply(aUsdc, to6Decimals(collateral));
             borrowers[i].borrow(aDai, amountPerBorrower);
         }
 
         // Borrower1 repays all of his debt
+        hevm.warp(block.timestamp + 1);
         borrower1.approve(dai, borrowedAmount);
         borrower1.repay(aDai, borrowedAmount);
 
@@ -381,7 +392,7 @@ contract TestRepay is TestSetup {
 
     function testDeltaRepay() public {
         // Allows only 10 unmatch suppliers
-        setDefaultMaxGasForMatchingHelper(3e6, 3e6, 3e6, 1.4e6);
+        setDefaultMaxGasForMatchingHelper(3e6, 3e6, 3e6, 1.1e6);
 
         uint256 suppliedAmount = 1 ether;
         uint256 borrowedAmount = 20 * suppliedAmount;
@@ -397,6 +408,7 @@ contract TestRepay is TestSetup {
 
         // 2 * NMAX suppliers supply suppliedAmount
         for (uint256 i; i < 20; i++) {
+            hevm.warp(block.timestamp + 1);
             suppliers[i].approve(dai, suppliedAmount);
             suppliers[i].supply(aDai, suppliedAmount);
         }
@@ -410,8 +422,8 @@ contract TestRepay is TestSetup {
                 aDai,
                 address(borrower1)
             );
-            testEquality(onPoolBorrower, 0);
-            testEquality(inP2PBorrower, expectedBorrowBalanceInP2P);
+            testEqualityLarge(onPoolBorrower, 0);
+            testEqualityLarge(inP2PBorrower, expectedBorrowBalanceInP2P);
 
             uint256 p2pSupplyIndex = morpho.p2pSupplyIndex(aDai);
             uint256 expectedSupplyBalanceInP2P = underlyingToP2PUnit(
@@ -424,12 +436,13 @@ contract TestRepay is TestSetup {
                     aDai,
                     address(suppliers[i])
                 );
-                testEquality(onPoolSupplier, 0);
-                testEquality(inP2PSupplier, expectedSupplyBalanceInP2P);
+                testEqualityLarge(onPoolSupplier, 0);
+                testEqualityLarge(inP2PSupplier, expectedSupplyBalanceInP2P);
             }
 
             // Borrower repays max
             // Should create a delta on suppliers side
+            hevm.warp(block.timestamp + 1);
             borrower1.approve(dai, type(uint256).max);
             borrower1.repay(aDai, type(uint256).max);
 
@@ -448,11 +461,13 @@ contract TestRepay is TestSetup {
                 pool.getReserveNormalizedIncome(dai)
             );
             (uint256 supplyP2PDelta, , , ) = morpho.deltas(aDai);
-            testEquality(supplyP2PDelta, expectedSupplyP2PDelta);
+            testEqualityLarge(supplyP2PDelta, expectedSupplyP2PDelta);
 
             // Supply delta matching by a new borrower
             borrower2.approve(usdc, to6Decimals(collateral));
+            hevm.warp(block.timestamp + 1);
             borrower2.supply(aUsdc, to6Decimals(collateral));
+            hevm.warp(block.timestamp + 1);
             borrower2.borrow(aDai, expectedSupplyP2PDeltaInUnderlying / 2);
 
             (inP2PBorrower, onPoolBorrower) = morpho.borrowBalanceInOf(aDai, address(borrower2));
@@ -462,9 +477,17 @@ contract TestRepay is TestSetup {
             );
 
             (supplyP2PDelta, , , ) = morpho.deltas(aDai);
-            testEquality(supplyP2PDelta, expectedSupplyP2PDelta / 2, "supply delta unexpected");
-            testEquality(onPoolBorrower, 0, "on pool not unexpected");
-            testEquality(inP2PBorrower, expectedBorrowBalanceInP2P, "in peer-to-peer unexpected");
+            testEqualityLarge(
+                supplyP2PDelta,
+                expectedSupplyP2PDelta / 2,
+                "supply delta unexpected"
+            );
+            testEqualityLarge(onPoolBorrower, 0, "on pool not unexpected");
+            testEqualityLarge(
+                inP2PBorrower,
+                expectedBorrowBalanceInP2P,
+                "in peer-to-peer unexpected"
+            );
         }
 
         {
@@ -508,7 +531,7 @@ contract TestRepay is TestSetup {
             .rayDiv(oldVars.SP2PER)
             .rayMul(expectedSP2PER);
 
-            for (uint256 i = 1; i <= 10; i++) {
+            for (uint256 i = 10; i < 20; i++) {
                 (uint256 inP2PSupplier, uint256 onPoolSupplier) = morpho.supplyBalanceInOf(
                     aDai,
                     address(suppliers[i])
@@ -524,20 +547,21 @@ contract TestRepay is TestSetup {
         }
 
         // Supply delta reduction with suppliers withdrawing
-        for (uint256 i = 1; i <= 10; i++) {
+        for (uint256 i = 10; i < 20; i++) {
+            hevm.warp(block.timestamp + 1);
             suppliers[i].withdraw(aDai, suppliedAmount);
         }
 
         (uint256 supplyP2PDeltaAfter, , , ) = morpho.deltas(aDai);
-        testEquality(supplyP2PDeltaAfter, 0);
+        testEquality(supplyP2PDeltaAfter, 0, "delta after unexpected");
 
         (uint256 inP2PBorrower2, uint256 onPoolBorrower2) = morpho.borrowBalanceInOf(
             aDai,
             address(borrower2)
         );
 
-        testEquality(inP2PBorrower2, expectedBorrowBalanceInP2P);
-        testEquality(onPoolBorrower2, 0);
+        testEqualityLarge(inP2PBorrower2, expectedBorrowBalanceInP2P);
+        testEqualityLarge(onPoolBorrower2, 0);
     }
 
     function testDeltaRepayAll() public {
@@ -557,12 +581,14 @@ contract TestRepay is TestSetup {
 
         // 2 * NMAX suppliers supply suppliedAmount
         for (uint256 i = 0; i < 20; i++) {
+            hevm.warp(block.timestamp + 1);
             suppliers[i].approve(dai, suppliedAmount);
             suppliers[i].supply(aDai, suppliedAmount);
         }
 
         // Borrower repays max
         // Should create a delta on suppliers side
+        hevm.warp(block.timestamp + 1);
         borrower1.approve(dai, type(uint256).max);
         borrower1.repay(aDai, type(uint256).max);
 

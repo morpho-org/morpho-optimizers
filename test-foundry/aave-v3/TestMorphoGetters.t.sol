@@ -52,6 +52,7 @@ contract TestMorphoGetters is TestSetup {
         createSigners(maxSortedUsers);
         for (uint256 i; i < borrowers.length; i++) {
             borrowers[i].approve(dai, amount - i);
+            hevm.warp(block.timestamp + 1);
             borrowers[i].supply(aDai, amount - i);
             borrowers[i].borrow(aUsdc, toBorrow - i);
         }
@@ -81,6 +82,7 @@ contract TestMorphoGetters is TestSetup {
 
         for (uint256 i; i < suppliers.length; i++) {
             suppliers[i].approve(usdc, toBorrow - i);
+            hevm.warp(block.timestamp + 1);
             suppliers[i].supply(aUsdc, toBorrow - i);
         }
 
