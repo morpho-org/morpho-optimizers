@@ -123,7 +123,8 @@ contract Lens {
 
             if (
                 _poolTokenAddress != poolToken &&
-                ((morpho.userMarketsBitmask(_user) >> (morpho.indexOfMarket(poolToken) << 1)) & 3 !=
+                (morpho.userMarketsBitmask(_user) &
+                    (morpho.borrowMask(poolToken) | (morpho.borrowMask(poolToken) << 1)) !=
                     0)
             ) {
                 assetData = getUserLiquidityDataForAsset(_user, poolToken, oracle);
@@ -655,7 +656,9 @@ contract Lens {
     function _isSupplyingOrBorrowing(address _user, address _market) internal view returns (bool) {
         unchecked {
             return
-                (morpho.userMarketsBitmask(_user) >> (morpho.indexOfMarket(_market) << 1)) & 3 != 0;
+                morpho.userMarketsBitmask(_user) &
+                    (morpho.borrowMask(_market) | (morpho.borrowMask(_market) << 1)) !=
+                0;
         }
     }
 
