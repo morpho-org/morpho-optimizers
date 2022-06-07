@@ -4,6 +4,8 @@ pragma solidity 0.8.13;
 import "./compound/ICompound.sol";
 
 interface IRewardsManager {
+    function initialize(address _morpho) external;
+
     function claimRewards(address[] calldata, address) external returns (uint256);
 
     function userUnclaimedCompRewards(address) external view returns (uint256);

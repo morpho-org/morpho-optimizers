@@ -7,13 +7,13 @@ import "./interfaces/IMorpho.sol";
 
 import "./libraries/CompoundMath.sol";
 
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 /// @title RewardsManager.
 /// @author Morpho Labs.
 /// @custom:contact security@morpho.xyz
 /// @notice This contract is used to manage the COMP rewards from the Compound protocol.
-contract RewardsManager is IRewardsManager, Ownable {
+contract RewardsManager is IRewardsManager, Initializable {
     using CompoundMath for uint256;
 
     /// STORAGE ///
@@ -24,8 +24,8 @@ contract RewardsManager is IRewardsManager, Ownable {
     mapping(address => IComptroller.CompMarketState) public localCompSupplyState; // The local supply state for a specific cToken.
     mapping(address => IComptroller.CompMarketState) public localCompBorrowState; // The local borrow state for a specific cToken.
 
-    IMorpho public immutable morpho;
-    IComptroller public immutable comptroller;
+    IMorpho public morpho;
+    IComptroller public comptroller;
 
     /// ERRORS ///
 
@@ -45,9 +45,15 @@ contract RewardsManager is IRewardsManager, Ownable {
 
     /// CONSTRUCTOR ///
 
-    /// @notice Constructs the RewardsManager contract.
+    /// @notice Constructs the contract.
+    /// @dev The contract is automatically marked as initialized when deployed so that nobody can highjack the implementation contract.
+    constructor() initializer {}
+
+    /// UPGRADE ///
+
+    /// @notice Initializes the RewardsManager contract.
     /// @param _morpho The `morpho`.
-    constructor(address _morpho) {
+    function initialize(address _morpho) external initializer {
         morpho = IMorpho(_morpho);
         comptroller = IComptroller(morpho.comptroller());
     }
