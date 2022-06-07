@@ -188,7 +188,7 @@ contract TestRewards is TestSetup {
         supplier1.supply(cEth, toSupply);
         supplier1.borrow(cUsdc, toBorrow);
 
-        hevm.roll(block.number + 1_000);
+        hevm.roll(block.number + 1_000_000);
 
         address[] memory daiInArray = new address[](1);
         daiInArray[0] = cDai;
@@ -198,37 +198,34 @@ contract TestRewards is TestSetup {
         tokensInArray[1] = cEth;
         tokensInArray[2] = cUsdc;
 
-        uint256 unclaimedRewardsForDai = compRewardsLens.getUserUnclaimedRewards(
+        uint256 unclaimedRewardsForDaiView = compRewardsLens.getUserUnclaimedRewards(
             daiInArray,
             address(supplier1)
         );
-        assertGt(unclaimedRewardsForDai, 0);
+        assertGt(unclaimedRewardsForDaiView, 0);
 
-        uint256 allUnclaimedRewards = compRewardsLens.getUserUnclaimedRewards(
+        uint256 allUnclaimedRewardsView = compRewardsLens.getUserUnclaimedRewards(
             tokensInArray,
             address(supplier1)
         );
-        assertGt(allUnclaimedRewards, 0);
+        assertGt(allUnclaimedRewardsView, 0);
 
-        uint256 rewardBalanceBefore = supplier1.balanceOf(comp);
-        supplier1.claimRewards(tokensInArray, false);
-        uint256 rewardBalanceAfter = supplier1.balanceOf(comp);
-
-        assertEq(
-            rewardBalanceAfter - rewardBalanceBefore,
-            allUnclaimedRewards,
-            "wrong rewards amount"
-        );
-
-        uint256 unclaimedRewardsView = compRewardsLens.getUserUnclaimedRewards(
-            tokensInArray,
-            address(supplier1)
-        );
         hevm.prank(address(morpho));
-        uint256 unclaimedRewards = rewardsManager.claimRewards(tokensInArray, address(supplier1));
+        uint256 allUnclaimedRewards = rewardsManager.claimRewards(
+            tokensInArray,
+            address(supplier1)
+        );
+        assertEq(allUnclaimedRewards, allUnclaimedRewards, "wrong rewards amount");
 
-        assertEq(unclaimedRewards, unclaimedRewardsView, "unclaimed rewards not equal");
-        assertEq(unclaimedRewards, 0);
+        allUnclaimedRewardsView = compRewardsLens.getUserUnclaimedRewards(
+            tokensInArray,
+            address(supplier1)
+        );
+        assertEq(allUnclaimedRewardsView, 0, "unclaimed rewards not null");
+
+        hevm.prank(address(morpho));
+        allUnclaimedRewards = rewardsManager.claimRewards(tokensInArray, address(supplier1));
+        assertEq(allUnclaimedRewards, 0);
     }
 
     // TODO: investigate why this test fails.
@@ -484,5 +481,47 @@ contract TestRewards is TestSetup {
         IComptroller.CompMarketState memory compoundAfter = comptroller.compBorrowState(cDai);
 
         assertEq(userIndexAfter, compoundAfter.index);
+    }
+
+    function testShouldComputeCorrectSupplyIndex() public {
+        uint256 amount = 10_000 ether;
+
+        supplier1.approve(dai, type(uint256).max);
+        supplier1.supply(cDai, amount);
+
+        hevm.roll(block.number + 5_000);
+        supplier1.approve(dai, cDai, type(uint256).max);
+        supplier1.compoundSupply(cDai, amount);
+        hevm.roll(block.number + 5_000);
+
+        uint256 updatedIndex = compRewardsLens.getUpdatedSupplyIndex(cDai);
+
+        uint256 result = comptroller.mintAllowed(cDai, address(supplier1), amount / 10); // Update compSupplyState without increasing Compound's total supply.
+        assertEq(result, 0, "compound redeem not allowed");
+        IComptroller.CompMarketState memory compoundAfter = comptroller.compSupplyState(cDai);
+
+        assertEq(updatedIndex, compoundAfter.index);
+    }
+
+    function testShouldComputeCorrectBorrowIndex() public {
+        uint256 amount = 10_000 ether;
+
+        borrower1.approve(wEth, type(uint256).max);
+        borrower1.supply(cEth, amount);
+        borrower1.borrow(cDai, amount);
+
+        hevm.roll(block.number + 5_000);
+        borrower1.approve(dai, cDai, type(uint256).max);
+        borrower1.compoundSupply(cDai, amount);
+        borrower1.compoundBorrow(cDai, amount / 2);
+        hevm.roll(block.number + 5_000);
+
+        uint256 updatedIndex = compRewardsLens.getUpdatedBorrowIndex(cDai);
+
+        uint256 result = comptroller.borrowAllowed(cDai, address(borrower1), amount / 10); // Update compBorrowState without increasing Compound's total borrowed tokens.
+        assertEq(result, 0, "compound borrow not allowed");
+        IComptroller.CompMarketState memory compoundAfter = comptroller.compBorrowState(cDai);
+
+        assertEq(updatedIndex, compoundAfter.index);
     }
 }
