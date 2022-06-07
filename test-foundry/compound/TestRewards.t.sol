@@ -538,7 +538,7 @@ contract TestRewards is TestSetup {
 
         uint256 updatedIndex = rewardsManager.getUpdatedBorrowIndex(cDai);
 
-        borrower1.compoundBorrow(cDai, amount / 10); // Update the indexes on Compound.
+        comptroller.borrowAllowed(cDai, address(borrower1), amount / 10); // Update compBorrowState on Compound without updating borrowIndex.
         IComptroller.CompMarketState memory compoundAfter = comptroller.compBorrowState(cDai);
 
         assertEq(updatedIndex, compoundAfter.index);
