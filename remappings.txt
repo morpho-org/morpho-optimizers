@@ -1,8 +1,8 @@
 ds-test/=lib/ds-test/src/
 forge-std/=lib/forge-std/src/
 @morpho/data-structures/=lib/data-structures/
-@aave/core-v3/=node_modules/@aave/core-v3/
 @aave/periphery-v3/=lib/periphery-v3/
+@aave/core-v3/=node_modules/@aave/core-v3/
 @openzeppelin/=node_modules/@openzeppelin/
 @rari-capital/=node_modules/@rari-capital
 @uniswap/=node_modules/@uniswap/
