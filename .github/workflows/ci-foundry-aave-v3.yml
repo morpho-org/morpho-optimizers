@@ -1,4 +1,4 @@
-name: Solidity tests with Foundry
+name: Solidity tests on Morpho Aave V3
 
 on:
   push:
