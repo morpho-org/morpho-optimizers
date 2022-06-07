@@ -496,10 +496,10 @@ contract TestRewardsInternals is TestSetup {
         supplier1.approve(dai, type(uint256).max);
         supplier1.supply(cDai, amount);
 
-        hevm.roll(block.timestamp + 5_000);
+        hevm.roll(block.number + 5_000);
         supplier1.approve(dai, cDai, type(uint256).max);
         supplier1.compoundSupply(cDai, amount);
-        hevm.roll(block.timestamp + 5_000);
+        hevm.roll(block.number + 5_000);
 
         supplier1.supply(cDai, amount);
 
@@ -518,11 +518,11 @@ contract TestRewardsInternals is TestSetup {
         borrower1.supply(cEth, amount);
         borrower1.borrow(cDai, amount);
 
-        hevm.roll(block.timestamp + 5_000);
+        hevm.roll(block.number + 5_000);
         supplier1.approve(dai, cDai, type(uint256).max);
         supplier1.compoundSupply(cDai, amount);
         supplier1.compoundBorrow(cDai, amount / 2);
-        hevm.roll(block.timestamp + 5_000);
+        hevm.roll(block.number + 5_000);
 
         borrower1.borrow(cDai, amount);
 
@@ -540,10 +540,10 @@ contract TestRewardsInternals is TestSetup {
         supplier1.approve(dai, type(uint256).max);
         supplier1.supply(cDai, amount);
 
-        hevm.roll(block.timestamp + 5_000);
+        hevm.roll(block.number + 5_000);
         supplier1.approve(dai, cDai, type(uint256).max);
         supplier1.compoundSupply(cDai, amount);
-        hevm.roll(block.timestamp + 5_000);
+        hevm.roll(block.number + 5_000);
 
         _updateSupplyIndex(cDai);
 
@@ -560,11 +560,11 @@ contract TestRewardsInternals is TestSetup {
         borrower1.supply(cEth, amount);
         borrower1.borrow(cDai, amount);
 
-        hevm.roll(block.timestamp + 5_000);
+        hevm.roll(block.number + 5_000);
         supplier1.approve(dai, cDai, type(uint256).max);
         supplier1.compoundSupply(cDai, amount);
         supplier1.compoundBorrow(cDai, amount / 2);
-        hevm.roll(block.timestamp + 5_000);
+        hevm.roll(block.number + 5_000);
 
         _updateBorrowIndex(cDai);
 
