@@ -10,15 +10,26 @@ contract TestUpgradeable is TestSetup {
         uint256 amount = 10000 ether;
         supplier1.approve(dai, amount);
         supplier1.supply(cDai, amount);
-        uint256 poolSupplyIndex = ICToken(cDai).exchangeRateCurrent();
-        uint256 expectedOnPool = amount.div(poolSupplyIndex);
 
         Morpho morphoImplV2 = new Morpho();
-        proxyAdmin.upgrade(morphoProxy, address(morphoImplV2));
 
-        // Should not change
-        (, uint256 onPool) = morpho.supplyBalanceInOf(cDai, address(supplier1));
-        testEquality(onPool, expectedOnPool);
+        hevm.record();
+        proxyAdmin.upgrade(morphoProxy, address(morphoImplV2));
+        (, bytes32[] memory writes) = hevm.accesses(address(morpho));
+
+        // 1 write for the implemention.
+        assertEq(writes.length, 1);
+        address newImplem = address(
+            uint160(
+                uint256(
+                    hevm.load(
+                        address(morphoProxy),
+                        bytes32(uint256(keccak256("eip1967.proxy.implementation")) - 1) // Implementation slot.
+                    )
+                )
+            )
+        );
+        assertEq(newImplem, address(morphoImplV2));
     }
 
     function testOnlyProxyOwnerCanUpgradeMorpho() public {
@@ -38,11 +49,64 @@ contract TestUpgradeable is TestSetup {
         hevm.expectRevert("Ownable: caller is not the owner");
         proxyAdmin.upgradeAndCall(morphoProxy, payable(address(morphoImplV2)), "");
 
-        // Revert for wrong data not wrong caller
         proxyAdmin.upgradeAndCall(morphoProxy, payable(address(morphoImplV2)), "");
     }
 
-    function testImplementationsShouldBeInitialized() public {
+    function testUpgradeRewardsManager() public {
+        uint256 amount = 10000 ether;
+        supplier1.approve(dai, amount);
+        supplier1.supply(cDai, amount);
+
+        RewardsManager rewardsManagerImplV2 = new RewardsManager();
+
+        hevm.record();
+        proxyAdmin.upgrade(rewardsManagerProxy, address(rewardsManagerImplV2));
+        (, bytes32[] memory writes) = hevm.accesses(address(rewardsManager));
+
+        // 1 write for the implemention.
+        assertEq(writes.length, 1);
+        address newImplem = address(
+            uint160(
+                uint256(
+                    hevm.load(
+                        address(rewardsManagerProxy),
+                        bytes32(uint256(keccak256("eip1967.proxy.implementation")) - 1) // Implementation slot.
+                    )
+                )
+            )
+        );
+        assertEq(newImplem, address(rewardsManagerImplV2));
+    }
+
+    function testOnlyProxyOwnerCanUpgradeRewardsManager() public {
+        RewardsManager rewardsManagerImplV2 = new RewardsManager();
+
+        hevm.prank(address(supplier1));
+        hevm.expectRevert("Ownable: caller is not the owner");
+        proxyAdmin.upgrade(rewardsManagerProxy, address(rewardsManagerImplV2));
+
+        proxyAdmin.upgrade(rewardsManagerProxy, address(rewardsManagerImplV2));
+    }
+
+    function testOnlyProxyOwnerCanUpgradeAndCallRewardsManager() public {
+        RewardsManager rewardsManagerImplV2 = new RewardsManager();
+
+        hevm.prank(address(supplier1));
+        hevm.expectRevert("Ownable: caller is not the owner");
+        proxyAdmin.upgradeAndCall(rewardsManagerProxy, payable(address(rewardsManagerImplV2)), "");
+
+        // Revert for wrong data not wrong caller.
+        hevm.expectRevert("Address: low-level delegate call failed");
+        proxyAdmin.upgradeAndCall(rewardsManagerProxy, payable(address(rewardsManagerImplV2)), "");
+    }
+
+    function testRewardsManagerImplementationsShouldBeInitialized() public {
+        // Test for Morpho Implementation.
+        hevm.expectRevert("Initializable: contract is already initialized");
+        rewardsManagerImplV1.initialize(address(morpho));
+    }
+
+    function testPositionsManagerImplementationsShouldBeInitialized() public {
         Types.MaxGasForMatching memory defaultMaxGasForMatching = Types.MaxGasForMatching({
             supply: 3e6,
             borrow: 3e6,
