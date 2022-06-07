@@ -1,32 +1,32 @@
-name: Solidity tests with Foundry
+name: Solidity tests on Morpho Compound
 
 on:
   push:
     branches:
       - main
     paths:
-      - 'lib/**'
-      - 'config/**'
-      - 'contracts/common/**'
-      - 'contracts/compound/**'
-      - 'test/**'
-      - 'test-foundry/common/**'
-      - 'test-foundry/compound/**'
-      - '*.lock'
-      - 'Makefile'
-      - '.github/workflows/ci-foundry-compound.yml'
+      - "lib/**"
+      - "config/**"
+      - "contracts/common/**"
+      - "contracts/compound/**"
+      - "test/**"
+      - "test-foundry/common/**"
+      - "test-foundry/compound/**"
+      - "*.lock"
+      - "Makefile"
+      - ".github/workflows/ci-foundry-compound.yml"
   pull_request:
     paths:
-      - 'lib/**'
-      - 'config/**'
-      - 'contracts/common/**'
-      - 'contracts/compound/**'
-      - 'test/**'
-      - 'test-foundry/common/**'
-      - 'test-foundry/compound/**'
-      - '*.lock'
-      - 'Makefile'
-      - '.github/workflows/ci-foundry-compound.yml'
+      - "lib/**"
+      - "config/**"
+      - "contracts/common/**"
+      - "contracts/compound/**"
+      - "test/**"
+      - "test-foundry/common/**"
+      - "test-foundry/compound/**"
+      - "*.lock"
+      - "Makefile"
+      - ".github/workflows/ci-foundry-compound.yml"
 
 jobs:
   morpho-compound:
