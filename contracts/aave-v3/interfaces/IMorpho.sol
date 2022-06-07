@@ -32,7 +32,7 @@ interface IMorpho {
     function exitPositionsManager() external view returns (IExitPositionsManager);
     function pool() external view returns (IPool);
     function treasuryVault() external view returns (address);
-    function indexOfMarket(address) external view returns (uint256);
+    function borrowMask(address) external view returns (uint256);
     function userMarketsBitmask(address) external view returns (uint256);
 
     /// UTILS ///
