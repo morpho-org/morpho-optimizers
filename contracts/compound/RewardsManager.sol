@@ -142,7 +142,6 @@ contract RewardsManager is IRewardsManager, Ownable {
                 morpho.supplyBalanceInOf(cTokenAddress, _user).onPool
             );
 
-            ICToken(cTokenAddress).accrueInterest(); // Update Compound's borrowIndex.
             _updateBorrowIndex(cTokenAddress);
             unclaimedRewards += _accrueBorrowerComp(
                 _user,
@@ -256,9 +255,8 @@ contract RewardsManager is IRewardsManager, Ownable {
 
                 uint224 newCompBorrowIndex;
                 if (borrowSpeed > 0) {
-                    uint256 borrowAmount = ICToken(_cTokenAddress).totalBorrows().div(
-                        ICToken(_cTokenAddress).borrowIndex() // Should have been updated before.
-                    );
+                    ICToken cToken = ICToken(_cTokenAddress);
+                    uint256 borrowAmount = cToken.totalBorrows().div(cToken.borrowIndex());
                     uint256 compAccrued = deltaBlocks * borrowSpeed;
                     uint256 ratio = borrowAmount > 0 ? (compAccrued * 1e36) / borrowAmount : 0;
 
