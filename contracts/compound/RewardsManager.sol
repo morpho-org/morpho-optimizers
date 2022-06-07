@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity ^0.8.0;
 
+import "./interfaces/compound/ICompound.sol";
 import "./interfaces/IRewardsManager.sol";
 import "./interfaces/IMorpho.sol";
 
@@ -53,6 +54,28 @@ contract RewardsManager is IRewardsManager, Ownable {
 
     /// EXTERNAL ///
 
+    /// @notice Returns the local COMP supply state.
+    /// @param _cTokenAddress The cToken address.
+    /// @return The local COMP supply state.
+    function getLocalCompSupplyState(address _cTokenAddress)
+        external
+        view
+        returns (IComptroller.CompMarketState memory)
+    {
+        return localCompSupplyState[_cTokenAddress];
+    }
+
+    /// @notice Returns the local COMP borrow state.
+    /// @param _cTokenAddress The cToken address.
+    /// @return The local COMP borrow state.
+    function getLocalCompBorrowState(address _cTokenAddress)
+        external
+        view
+        returns (IComptroller.CompMarketState memory)
+    {
+        return localCompBorrowState[_cTokenAddress];
+    }
+
     /// @notice Accrues unclaimed COMP rewards for the given cToken addresses and returns the total COMP unclaimed rewards.
     /// @dev This function is called by the `morpho` to accrue COMP rewards and reset them to 0.
     /// @dev The transfer of tokens is done in the `morpho`.
@@ -63,7 +86,7 @@ contract RewardsManager is IRewardsManager, Ownable {
         onlyMorpho
         returns (uint256 totalUnclaimedRewards)
     {
-        totalUnclaimedRewards = accrueUserUnclaimedRewards(_cTokenAddresses, _user);
+        totalUnclaimedRewards = _accrueUserUnclaimedRewards(_cTokenAddresses, _user);
         if (totalUnclaimedRewards > 0) userUnclaimedCompRewards[_user] = 0;
     }
 
@@ -93,71 +116,14 @@ contract RewardsManager is IRewardsManager, Ownable {
         userUnclaimedCompRewards[_user] += _accrueBorrowerComp(_user, _cTokenAddress, _userBalance);
     }
 
-    /// @notice Returns the unclaimed COMP rewards for the given cToken addresses.
-    /// @param _cTokenAddresses The cToken addresses for which to compute the rewards.
-    /// @param _user The address of the user.
-    function getUserUnclaimedRewards(address[] calldata _cTokenAddresses, address _user)
-        external
-        view
-        returns (uint256 unclaimedRewards)
-    {
-        unclaimedRewards = userUnclaimedCompRewards[_user];
-
-        for (uint256 i; i < _cTokenAddresses.length; ) {
-            address cTokenAddress = _cTokenAddresses[i];
-
-            (bool isListed, , ) = comptroller.markets(cTokenAddress);
-            if (!isListed) revert InvalidCToken();
-
-            unclaimedRewards += getAccruedSupplierComp(
-                _user,
-                cTokenAddress,
-                morpho.supplyBalanceInOf(cTokenAddress, _user).onPool
-            );
-            unclaimedRewards += getAccruedBorrowerComp(
-                _user,
-                cTokenAddress,
-                morpho.borrowBalanceInOf(cTokenAddress, _user).onPool
-            );
-
-            unchecked {
-                ++i;
-            }
-        }
-    }
-
-    /// @notice Returns the local COMP supply state.
-    /// @param _cTokenAddress The cToken address.
-    /// @return The local COMP supply state.
-    function getLocalCompSupplyState(address _cTokenAddress)
-        external
-        view
-        override
-        returns (IComptroller.CompMarketState memory)
-    {
-        return localCompSupplyState[_cTokenAddress];
-    }
-
-    /// @notice Returns the local COMP borrow state.
-    /// @param _cTokenAddress The cToken address.
-    /// @return The local COMP borrow state.
-    function getLocalCompBorrowState(address _cTokenAddress)
-        external
-        view
-        override
-        returns (IComptroller.CompMarketState memory)
-    {
-        return localCompBorrowState[_cTokenAddress];
-    }
-
-    /// PUBLIC ///
+    /// INTERNAL ///
 
     /// @notice Accrues unclaimed COMP rewards for the cToken addresses and returns the total unclaimed COMP rewards.
     /// @param _cTokenAddresses The cToken addresses for which to accrue rewards.
     /// @param _user The address of the user.
     /// @return unclaimedRewards The user unclaimed rewards.
-    function accrueUserUnclaimedRewards(address[] calldata _cTokenAddresses, address _user)
-        public
+    function _accrueUserUnclaimedRewards(address[] calldata _cTokenAddresses, address _user)
+        internal
         returns (uint256 unclaimedRewards)
     {
         unclaimedRewards = userUnclaimedCompRewards[_user];
@@ -176,7 +142,7 @@ contract RewardsManager is IRewardsManager, Ownable {
                 morpho.supplyBalanceInOf(cTokenAddress, _user).onPool
             );
 
-            ICToken(cTokenAddress).accrueInterest(); // Necessary to compute the borrow index.
+            ICToken(cTokenAddress).accrueInterest(); // Update Compound's borrowIndex.
             _updateBorrowIndex(cTokenAddress);
             unclaimedRewards += _accrueBorrowerComp(
                 _user,
@@ -191,102 +157,6 @@ contract RewardsManager is IRewardsManager, Ownable {
 
         userUnclaimedCompRewards[_user] = unclaimedRewards;
     }
-
-    /// @notice Returns the accrued COMP rewards of a user since the last update.
-    /// @param _supplier The address of the supplier.
-    /// @param _cTokenAddress The cToken address.
-    /// @param _balance The user balance of tokens in the distribution.
-    /// @return The accrued COMP rewards.
-    function getAccruedSupplierComp(
-        address _supplier,
-        address _cTokenAddress,
-        uint256 _balance
-    ) public view returns (uint256) {
-        uint256 supplyIndex = getUpdatedSupplyIndex(_cTokenAddress);
-        uint256 supplierIndex = compSupplierIndex[_cTokenAddress][_supplier];
-
-        if (supplierIndex == 0) return 0;
-        return (_balance * (supplyIndex - supplierIndex)) / 1e36;
-    }
-
-    /// @notice Returns the accrued COMP rewards of a user since the last update.
-    /// @param _borrower The address of the borrower.
-    /// @param _cTokenAddress The cToken address.
-    /// @param _balance The user balance of tokens in the distribution.
-    /// @return The accrued COMP rewards.
-    function getAccruedBorrowerComp(
-        address _borrower,
-        address _cTokenAddress,
-        uint256 _balance
-    ) public view returns (uint256) {
-        uint256 borrowIndex = getUpdatedBorrowIndex(_cTokenAddress);
-        uint256 borrowerIndex = compBorrowerIndex[_cTokenAddress][_borrower];
-
-        if (borrowerIndex == 0) return 0;
-        return (_balance * (borrowIndex - borrowerIndex)) / 1e36;
-    }
-
-    /// @notice Returns the updated COMP supply index.
-    /// @param _cTokenAddress The cToken address.
-    /// @return The updated COMP supply index.
-    function getUpdatedSupplyIndex(address _cTokenAddress) public view returns (uint256) {
-        IComptroller.CompMarketState memory localSupplyState = localCompSupplyState[_cTokenAddress];
-        uint256 blockNumber = block.number;
-
-        if (localSupplyState.block == blockNumber) return localSupplyState.index;
-        else {
-            IComptroller.CompMarketState memory supplyState = comptroller.compSupplyState(
-                _cTokenAddress
-            );
-
-            if (supplyState.block == blockNumber) return supplyState.index;
-            else {
-                uint256 deltaBlocks = blockNumber - supplyState.block;
-                uint256 supplySpeed = comptroller.compSupplySpeeds(_cTokenAddress);
-
-                if (supplySpeed > 0) {
-                    uint256 supplyTokens = ICToken(_cTokenAddress).totalSupply();
-                    uint256 compAccrued = deltaBlocks * supplySpeed;
-                    uint256 ratio = supplyTokens > 0 ? (compAccrued * 1e36) / supplyTokens : 0;
-                    uint256 formerIndex = supplyState.index;
-                    return formerIndex + ratio;
-                } else return supplyState.index;
-            }
-        }
-    }
-
-    /// @notice Returns the updated COMP borrow index.
-    /// @param _cTokenAddress The cToken address.
-    /// @return The updated COMP borrow index.
-    function getUpdatedBorrowIndex(address _cTokenAddress) public view returns (uint256) {
-        IComptroller.CompMarketState memory localBorrowState = localCompBorrowState[_cTokenAddress];
-        uint256 blockNumber = block.number;
-
-        if (localBorrowState.block == blockNumber) return localBorrowState.index;
-        else {
-            IComptroller.CompMarketState memory borrowState = comptroller.compBorrowState(
-                _cTokenAddress
-            );
-
-            if (borrowState.block == blockNumber) return borrowState.index;
-            else {
-                uint256 deltaBlocks = blockNumber - borrowState.block;
-                uint256 borrowSpeed = comptroller.compBorrowSpeeds(_cTokenAddress);
-
-                if (borrowSpeed > 0) {
-                    uint256 borrowAmount = ICToken(_cTokenAddress).totalBorrows().div(
-                        ICToken(_cTokenAddress).borrowIndex() // Should have been updated before.
-                    );
-                    uint256 compAccrued = deltaBlocks * borrowSpeed;
-                    uint256 ratio = borrowAmount > 0 ? (compAccrued * 1e36) / borrowAmount : 0;
-                    uint256 formerIndex = borrowState.index;
-                    return formerIndex + ratio;
-                } else return borrowState.index;
-            }
-        }
-    }
-
-    /// INTERNAL ///
 
     /// @notice Updates supplier index and returns the accrued COMP rewards of the supplier since the last update.
     /// @param _supplier The address of the supplier.
@@ -345,25 +215,25 @@ contract RewardsManager is IRewardsManager, Ownable {
                 uint256 deltaBlocks = blockNumber - supplyState.block;
                 uint256 supplySpeed = comptroller.compSupplySpeeds(_cTokenAddress);
 
+                uint224 newCompSupplyIndex;
                 if (supplySpeed > 0) {
                     uint256 supplyTokens = ICToken(_cTokenAddress).totalSupply();
                     uint256 compAccrued = deltaBlocks * supplySpeed;
                     uint256 ratio = supplyTokens > 0 ? (compAccrued * 1e36) / supplyTokens : 0;
-                    uint256 formerIndex = supplyState.index;
-                    uint256 index = formerIndex + ratio;
-                    localCompSupplyState[_cTokenAddress] = IComptroller.CompMarketState({
-                        index: CompoundMath.safe224(index),
-                        block: CompoundMath.safe32(blockNumber)
-                    });
-                } else {
-                    localSupplyState.index = CompoundMath.safe224(supplyState.index);
-                    localSupplyState.block = CompoundMath.safe32(blockNumber);
-                }
+
+                    newCompSupplyIndex = uint224(supplyState.index + ratio);
+                } else newCompSupplyIndex = supplyState.index;
+
+                localCompSupplyState[_cTokenAddress] = IComptroller.CompMarketState({
+                    index: newCompSupplyIndex,
+                    block: CompoundMath.safe32(blockNumber)
+                });
             }
         }
     }
 
     /// @notice Updates the COMP borrow index.
+    /// @dev Note: This function expects Compound's exchange rate to have been updated.
     /// @param _cTokenAddress The cToken address.
     function _updateBorrowIndex(address _cTokenAddress) internal {
         IComptroller.CompMarketState storage localBorrowState = localCompBorrowState[
@@ -384,20 +254,21 @@ contract RewardsManager is IRewardsManager, Ownable {
                 uint256 deltaBlocks = blockNumber - borrowState.block;
                 uint256 borrowSpeed = comptroller.compBorrowSpeeds(_cTokenAddress);
 
+                uint224 newCompBorrowIndex;
                 if (borrowSpeed > 0) {
                     uint256 borrowAmount = ICToken(_cTokenAddress).totalBorrows().div(
                         ICToken(_cTokenAddress).borrowIndex() // Should have been updated before.
                     );
                     uint256 compAccrued = deltaBlocks * borrowSpeed;
                     uint256 ratio = borrowAmount > 0 ? (compAccrued * 1e36) / borrowAmount : 0;
-                    uint256 formerIndex = borrowState.index;
-                    uint256 index = formerIndex + ratio;
-                    localBorrowState.index = CompoundMath.safe224(index);
-                    localBorrowState.block = CompoundMath.safe32(blockNumber);
-                } else {
-                    localBorrowState.index = CompoundMath.safe224(borrowState.index);
-                    localBorrowState.block = CompoundMath.safe32(blockNumber);
-                }
+
+                    newCompBorrowIndex = uint224(borrowState.index + ratio);
+                } else newCompBorrowIndex = borrowState.index;
+
+                localCompBorrowState[_cTokenAddress] = IComptroller.CompMarketState({
+                    index: newCompBorrowIndex,
+                    block: CompoundMath.safe32(blockNumber)
+                });
             }
         }
     }
