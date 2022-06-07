@@ -503,4 +503,44 @@ contract TestRewards is TestSetup {
 
         assertEq(userIndexAfter, compoundAfter.index);
     }
+
+    function testShouldComputeCorrectSupplyIndex() public {
+        uint256 amount = 10_000 ether;
+
+        supplier1.approve(dai, type(uint256).max);
+        supplier1.supply(cDai, amount);
+
+        hevm.roll(block.number + 5_000);
+        supplier1.approve(dai, cDai, type(uint256).max);
+        supplier1.compoundSupply(cDai, amount);
+        hevm.roll(block.number + 5_000);
+
+        uint256 updatedIndex = rewardsManager.getUpdatedSupplyIndex(cDai);
+
+        supplier1.compoundSupply(cDai, amount / 10); // Update the indexes on Compound.
+        IComptroller.CompMarketState memory compoundAfter = comptroller.compSupplyState(cDai);
+
+        assertEq(updatedIndex, compoundAfter.index);
+    }
+
+    function testShouldComputeCorrectBorrowIndex() public {
+        uint256 amount = 10_000 ether;
+
+        borrower1.approve(wEth, type(uint256).max);
+        borrower1.supply(cEth, amount);
+        borrower1.borrow(cDai, amount);
+
+        hevm.roll(block.number + 5_000);
+        borrower1.approve(dai, cDai, type(uint256).max);
+        borrower1.compoundSupply(cDai, amount);
+        borrower1.compoundBorrow(cDai, amount / 2);
+        hevm.roll(block.number + 5_000);
+
+        uint256 updatedIndex = rewardsManager.getUpdatedBorrowIndex(cDai);
+
+        comptroller.borrowAllowed(cDai, address(borrower1), amount / 10); // Update compBorrowState on Compound without updating borrowIndex.
+        IComptroller.CompMarketState memory compoundAfter = comptroller.compBorrowState(cDai);
+
+        assertEq(updatedIndex, compoundAfter.index);
+    }
 }
