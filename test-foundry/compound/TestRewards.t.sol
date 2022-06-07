@@ -204,11 +204,11 @@ contract TestRewards is TestSetup {
         );
         assertGt(unclaimedRewardsForDai, 0);
 
-        uint256 unclaimedRewardsExceptDai = compRewardsLens.getUserUnclaimedRewards(
+        uint256 allUnclaimedRewards = compRewardsLens.getUserUnclaimedRewards(
             tokensInArray,
             address(supplier1)
         );
-        assertGt(unclaimedRewardsExceptDai, 0);
+        assertGt(allUnclaimedRewards, 0);
 
         uint256 rewardBalanceBefore = supplier1.balanceOf(comp);
         supplier1.claimRewards(tokensInArray, false);
@@ -216,7 +216,7 @@ contract TestRewards is TestSetup {
 
         assertEq(
             rewardBalanceAfter - rewardBalanceBefore,
-            unclaimedRewardsExceptDai + unclaimedRewardsForDai,
+            allUnclaimedRewards,
             "wrong rewards amount"
         );
 
