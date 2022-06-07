@@ -117,9 +117,7 @@ contract MorphoUtils is MorphoStorage {
     /// @param _market The address of the market to check.
     /// @return True if the user has been using a reserve for borrowing or as collateral, false otherwise.
     function _isSupplyingOrBorrowing(address _user, address _market) internal view returns (bool) {
-        unchecked {
-            return (userMarketsBitmask[_user] >> (indexOfMarket[_market] << 1)) & 3 != 0;
-        }
+        return _isSupplying(_user, _market) || _isBorrowing(_user, _market);
     }
 
     /// @dev Returns if a user is borrowing on a given market.
@@ -127,9 +125,7 @@ contract MorphoUtils is MorphoStorage {
     /// @param _market The address of the market to check.
     /// @return True if the user has been borrowing on this market, false otherwise.
     function _isBorrowing(address _user, address _market) internal view returns (bool) {
-        unchecked {
-            return (userMarketsBitmask[_user] >> (indexOfMarket[_market] << 1)) & 1 != 0;
-        }
+        return userMarketsBitmask[_user] & borrowMask[_market] != 0;
     }
 
     /// @dev Returns if a user is supplying on a given market.
@@ -137,9 +133,7 @@ contract MorphoUtils is MorphoStorage {
     /// @param _market The address of the market to check.
     /// @return True if the user has been supplying on this market, false otherwise.
     function _isSupplying(address _user, address _market) internal view returns (bool) {
-        unchecked {
-            return (userMarketsBitmask[_user] >> ((indexOfMarket[_market] << 1) + 1)) & 1 != 0;
-        }
+        return userMarketsBitmask[_user] & (borrowMask[_market] << 1) != 0;
     }
 
     /// @dev Returns if a user has been borrowing from any market.
@@ -159,7 +153,7 @@ contract MorphoUtils is MorphoStorage {
         bool _borrowing
     ) internal {
         unchecked {
-            uint256 bit = 1 << (indexOfMarket[_market] << 1);
+            uint256 bit = borrowMask[_market];
             if (_borrowing) userMarketsBitmask[_user] |= bit;
             else userMarketsBitmask[_user] &= ~bit;
         }
@@ -175,7 +169,7 @@ contract MorphoUtils is MorphoStorage {
         bool _supplying
     ) internal {
         unchecked {
-            uint256 bit = 1 << ((indexOfMarket[_market] << 1) + 1);
+            uint256 bit = borrowMask[_market] << 1;
             if (_supplying) userMarketsBitmask[_user] |= bit;
             else userMarketsBitmask[_user] &= ~bit;
         }

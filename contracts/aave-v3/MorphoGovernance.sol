@@ -359,7 +359,7 @@ abstract contract MorphoGovernance is MorphoUtils {
         marketParameters[poolTokenAddress] = _marketParams;
 
         if (marketsCreated.length >= 128) revert MaxNumberOfMarkets();
-        indexOfMarket[poolTokenAddress] = marketsCreated.length;
+        borrowMask[poolTokenAddress] = 1 << (marketsCreated.length << 1);
         marketsCreated.push(poolTokenAddress);
 
         emit MarketCreated(
