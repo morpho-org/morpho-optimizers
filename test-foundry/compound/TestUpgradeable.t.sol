@@ -12,7 +12,10 @@ contract TestUpgradeable is TestSetup {
         supplier1.supply(cDai, amount);
 
         Morpho morphoImplV2 = new Morpho();
+
+        hevm.record();
         proxyAdmin.upgrade(morphoProxy, address(morphoImplV2));
+        (, bytes32[] memory writes) = hevm.accesses(address(morpho));
 
         // 1 write for the implemention.
         assertEq(writes.length, 1);
@@ -42,7 +45,6 @@ contract TestUpgradeable is TestSetup {
         hevm.expectRevert("Ownable: caller is not the owner");
         proxyAdmin.upgradeAndCall(morphoProxy, payable(address(morphoImplV2)), "");
 
-        // Revert for wrong data not wrong caller
         proxyAdmin.upgradeAndCall(morphoProxy, payable(address(morphoImplV2)), "");
     }
 
@@ -91,7 +93,7 @@ contract TestUpgradeable is TestSetup {
     }
 
     function testRewardsManagerImplementationsShouldBeInitialized() public {
-        // Test for Morpho Implementation.
+        // Test for RewardsManager Implementation.
         hevm.expectRevert("Initializable: contract is already initialized");
         rewardsManagerImplV1.initialize(address(morpho));
     }
