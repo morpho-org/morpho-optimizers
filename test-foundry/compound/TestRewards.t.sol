@@ -414,81 +414,6 @@ contract TestRewards is TestSetup {
         // User tries to claim its rewards on Morpho.
         supplier1.claimRewards(markets, false);
     }
-}
-
-contract TestRewardsInternals is TestSetup {
-    using CompoundMath for uint256;
-
-    mapping(address => IComptroller.CompMarketState) public localCompSupplyState; // The local supply state for a specific cToken.
-    mapping(address => IComptroller.CompMarketState) public localCompBorrowState; // The local borrow state for a specific cToken.
-
-    function _updateSupplyIndex(address _cTokenAddress) internal {
-        IComptroller.CompMarketState storage localSupplyState = localCompSupplyState[
-            _cTokenAddress
-        ];
-        uint256 blockNumber = block.number;
-
-        if (localSupplyState.block == blockNumber) return;
-        else {
-            IComptroller.CompMarketState memory supplyState = comptroller.compSupplyState(
-                _cTokenAddress
-            );
-
-            if (supplyState.block == blockNumber) {
-                localSupplyState.block = supplyState.block;
-                localSupplyState.index = supplyState.index;
-            } else {
-                uint256 deltaBlocks = blockNumber - supplyState.block;
-                uint256 supplySpeed = comptroller.compSupplySpeeds(_cTokenAddress);
-
-                if (supplySpeed > 0) {
-                    uint256 supplyTokens = ICToken(_cTokenAddress).totalSupply();
-                    uint256 compAccrued = deltaBlocks * supplySpeed;
-                    uint256 ratio = supplyTokens > 0 ? (compAccrued * 1e36) / supplyTokens : 0;
-                    uint256 formerIndex = supplyState.index;
-                    uint256 index = formerIndex + ratio;
-                    localCompSupplyState[_cTokenAddress] = IComptroller.CompMarketState({
-                        index: CompoundMath.safe224(index),
-                        block: CompoundMath.safe32(blockNumber)
-                    });
-                } else localSupplyState.block = CompoundMath.safe32(blockNumber);
-            }
-        }
-    }
-
-    function _updateBorrowIndex(address _cTokenAddress) internal {
-        IComptroller.CompMarketState storage localBorrowState = localCompBorrowState[
-            _cTokenAddress
-        ];
-        uint256 blockNumber = block.number;
-
-        if (localBorrowState.block == blockNumber) return;
-        else {
-            IComptroller.CompMarketState memory borrowState = comptroller.compBorrowState(
-                _cTokenAddress
-            );
-
-            if (borrowState.block == blockNumber) {
-                localBorrowState.block = borrowState.block;
-                localBorrowState.index = borrowState.index;
-            } else {
-                uint256 deltaBlocks = blockNumber - borrowState.block;
-                uint256 borrowSpeed = comptroller.compBorrowSpeeds(_cTokenAddress);
-
-                if (borrowSpeed > 0) {
-                    uint256 borrowAmount = ICToken(_cTokenAddress).totalBorrows().div(
-                        ICToken(_cTokenAddress).borrowIndex()
-                    );
-                    uint256 compAccrued = deltaBlocks * borrowSpeed;
-                    uint256 ratio = borrowAmount > 0 ? (compAccrued * 1e36) / borrowAmount : 0;
-                    uint256 formerIndex = borrowState.index;
-                    uint256 index = formerIndex + ratio;
-                    localBorrowState.index = CompoundMath.safe224(index);
-                    localBorrowState.block = CompoundMath.safe32(blockNumber);
-                } else localBorrowState.block = CompoundMath.safe32(blockNumber);
-            }
-        }
-    }
 
     function testShouldUpdateSupplyIndex() public {
         uint256 amount = 10_000 ether;
@@ -501,14 +426,12 @@ contract TestRewardsInternals is TestSetup {
         supplier1.compoundSupply(cDai, amount);
         hevm.roll(block.number + 5_000);
 
-        supplier1.supply(cDai, amount);
+        supplier1.borrow(cDai, amount / 2);
 
-        IComptroller.CompMarketState memory morphoAfter = rewardsManager.getLocalCompSupplyState(
-            cDai
-        );
+        uint256 userIndexAfter = rewardsManager.compSupplierIndex(cDai, address(supplier1));
         IComptroller.CompMarketState memory compoundAfter = comptroller.compSupplyState(cDai);
 
-        assertEq(morphoAfter.index, compoundAfter.index);
+        assertEq(userIndexAfter, compoundAfter.index);
     }
 
     function testShouldUpdateBorrowIndex() public {
@@ -519,58 +442,17 @@ contract TestRewardsInternals is TestSetup {
         borrower1.borrow(cDai, amount);
 
         hevm.roll(block.number + 5_000);
-        supplier1.approve(dai, cDai, type(uint256).max);
-        supplier1.compoundSupply(cDai, amount);
-        supplier1.compoundBorrow(cDai, amount / 2);
+        borrower1.approve(dai, cDai, type(uint256).max);
+        borrower1.compoundSupply(cDai, amount);
+        borrower1.compoundBorrow(cDai, amount / 2);
         hevm.roll(block.number + 5_000);
 
-        borrower1.borrow(cDai, amount);
+        borrower1.approve(dai, type(uint256).max);
+        borrower1.supply(cDai, amount / 2);
 
-        IComptroller.CompMarketState memory morphoAfter = rewardsManager.getLocalCompBorrowState(
-            cDai
-        );
+        uint256 userIndexAfter = rewardsManager.compBorrowerIndex(cDai, address(borrower1));
         IComptroller.CompMarketState memory compoundAfter = comptroller.compBorrowState(cDai);
 
-        assertEq(morphoAfter.index, compoundAfter.index);
-    }
-
-    function testShouldComputeSupplyIndex() public {
-        uint256 amount = 10_000 ether;
-
-        supplier1.approve(dai, type(uint256).max);
-        supplier1.supply(cDai, amount);
-
-        hevm.roll(block.number + 5_000);
-        supplier1.approve(dai, cDai, type(uint256).max);
-        supplier1.compoundSupply(cDai, amount);
-        hevm.roll(block.number + 5_000);
-
-        _updateSupplyIndex(cDai);
-
-        IComptroller.CompMarketState memory morphoAfter = localCompSupplyState[cDai];
-        IComptroller.CompMarketState memory compoundAfter = comptroller.compSupplyState(cDai);
-
-        assertEq(morphoAfter.index, compoundAfter.index);
-    }
-
-    function testShouldComputeBorrowIndex() public {
-        uint256 amount = 10_000 ether;
-
-        borrower1.approve(wEth, type(uint256).max);
-        borrower1.supply(cEth, amount);
-        borrower1.borrow(cDai, amount);
-
-        hevm.roll(block.number + 5_000);
-        supplier1.approve(dai, cDai, type(uint256).max);
-        supplier1.compoundSupply(cDai, amount);
-        supplier1.compoundBorrow(cDai, amount / 2);
-        hevm.roll(block.number + 5_000);
-
-        _updateBorrowIndex(cDai);
-
-        IComptroller.CompMarketState memory morphoAfter = localCompBorrowState[cDai];
-        IComptroller.CompMarketState memory compoundAfter = comptroller.compBorrowState(cDai);
-
-        assertEq(morphoAfter.index, compoundAfter.index);
+        assertEq(userIndexAfter, compoundAfter.index);
     }
 }
