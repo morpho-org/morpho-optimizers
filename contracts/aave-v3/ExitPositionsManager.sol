@@ -3,8 +3,6 @@ pragma solidity ^0.8.0;
 
 import "./interfaces/IExitPositionsManager.sol";
 
-import "hardhat/console.sol";
-
 import "./PositionsManagerUtils.sol";
 
 /// @title ExitPositionsManager.

@@ -380,8 +380,10 @@ contract TestRepay is TestSetup {
     }
 
     function testDeltaRepay() public {
-        // Allows only 10 unmatch suppliers
-        setDefaultMaxGasForMatchingHelper(3e6, 3e6, 3e6, 1.1e6);
+        // Allows only 10 unmatch borrowers
+        if (block.chainid == Chains.POLYGON_MAINNET || block.chainid == Chains.ETH_MAINNET)
+            setDefaultMaxGasForMatchingHelper(3e6, 3e6, 3e6, 1.1e6);
+        else setDefaultMaxGasForMatchingHelper(3e6, 3e6, 3e6, 1.5e6);
 
         uint256 suppliedAmount = 1 ether;
         uint256 borrowedAmount = 20 * suppliedAmount;
@@ -549,6 +551,9 @@ contract TestRepay is TestSetup {
     }
 
     function testDeltaRepayAll() public {
+        // TODO: fix that.
+        tip(dai, address(morpho), 1);
+
         // Allows only 10 unmatch suppliers
         setDefaultMaxGasForMatchingHelper(3e6, 3e6, 3e6, 2.4e6);
 
