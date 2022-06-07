@@ -131,8 +131,8 @@ contract CompRewardsLens is ICompRewardsLens {
                     uint256 supplyTokens = ICToken(_cTokenAddress).totalSupply();
                     uint256 compAccrued = deltaBlocks * supplySpeed;
                     uint256 ratio = supplyTokens > 0 ? (compAccrued * 1e36) / supplyTokens : 0;
-                    uint256 formerIndex = supplyState.index;
-                    return formerIndex + ratio;
+
+                    return supplyState.index + ratio;
                 } else return supplyState.index;
             }
         }
@@ -163,8 +163,8 @@ contract CompRewardsLens is ICompRewardsLens {
                     );
                     uint256 compAccrued = deltaBlocks * borrowSpeed;
                     uint256 ratio = borrowAmount > 0 ? (compAccrued * 1e36) / borrowAmount : 0;
-                    uint256 formerIndex = borrowState.index;
-                    return formerIndex + ratio;
+
+                    return borrowState.index + ratio;
                 } else return borrowState.index;
             }
         }
