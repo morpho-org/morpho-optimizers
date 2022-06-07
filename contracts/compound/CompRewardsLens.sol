@@ -7,9 +7,7 @@ import "./interfaces/IMorpho.sol";
 
 import "./libraries/CompoundMath.sol";
 
-import "@openzeppelin/contracts/access/Ownable.sol";
-
-/// @title RewardsManager.
+/// @title CompRewardsLens.
 /// @author Morpho Labs.
 /// @custom:contact security@morpho.xyz
 /// @notice This contract exposes getters retrieving information about COMP rewards accrued through Morpho.
@@ -30,7 +28,7 @@ contract CompRewardsLens is ICompRewardsLens {
     /// CONSTRUCTOR ///
 
     /// @notice Constructs the RewardsManager contract.
-    /// @param _morpho The `morpho`.
+    /// @param _morpho The address of Morpho's main contract's proxy.
     constructor(address _morpho) {
         morpho = IMorpho(_morpho);
         comptroller = IComptroller(morpho.comptroller());
@@ -114,27 +112,25 @@ contract CompRewardsLens is ICompRewardsLens {
     function getUpdatedSupplyIndex(address _cTokenAddress) public view returns (uint256) {
         IComptroller.CompMarketState memory localSupplyState = rewardsManager
         .getLocalCompSupplyState(_cTokenAddress);
-        uint256 blockNumber = block.number;
 
-        if (localSupplyState.block == blockNumber) return localSupplyState.index;
+        if (localSupplyState.block == block.number) return localSupplyState.index;
         else {
             IComptroller.CompMarketState memory supplyState = comptroller.compSupplyState(
                 _cTokenAddress
             );
 
-            if (supplyState.block == blockNumber) return supplyState.index;
-            else {
-                uint256 deltaBlocks = blockNumber - supplyState.block;
-                uint256 supplySpeed = comptroller.compSupplySpeeds(_cTokenAddress);
+            uint256 deltaBlocks = block.number - supplyState.block;
+            uint256 supplySpeed = comptroller.compSupplySpeeds(_cTokenAddress);
 
-                if (supplySpeed > 0) {
-                    uint256 supplyTokens = ICToken(_cTokenAddress).totalSupply();
-                    uint256 compAccrued = deltaBlocks * supplySpeed;
-                    uint256 ratio = supplyTokens > 0 ? (compAccrued * 1e36) / supplyTokens : 0;
+            if (deltaBlocks > 0 && supplySpeed > 0) {
+                uint256 supplyTokens = ICToken(_cTokenAddress).totalSupply();
+                uint256 compAccrued = deltaBlocks * supplySpeed;
+                uint256 ratio = supplyTokens > 0 ? (compAccrued * 1e36) / supplyTokens : 0;
 
-                    return supplyState.index + ratio;
-                } else return supplyState.index;
+                return supplyState.index + ratio;
             }
+
+            return supplyState.index;
         }
     }
 
@@ -144,29 +140,26 @@ contract CompRewardsLens is ICompRewardsLens {
     function getUpdatedBorrowIndex(address _cTokenAddress) public view returns (uint256) {
         IComptroller.CompMarketState memory localBorrowState = rewardsManager
         .getLocalCompBorrowState(_cTokenAddress);
-        uint256 blockNumber = block.number;
 
-        if (localBorrowState.block == blockNumber) return localBorrowState.index;
+        if (localBorrowState.block == block.number) return localBorrowState.index;
         else {
             IComptroller.CompMarketState memory borrowState = comptroller.compBorrowState(
                 _cTokenAddress
             );
+            uint256 deltaBlocks = block.number - borrowState.block;
+            uint256 borrowSpeed = comptroller.compBorrowSpeeds(_cTokenAddress);
 
-            if (borrowState.block == blockNumber) return borrowState.index;
-            else {
-                uint256 deltaBlocks = blockNumber - borrowState.block;
-                uint256 borrowSpeed = comptroller.compBorrowSpeeds(_cTokenAddress);
+            if (deltaBlocks > 0 && borrowSpeed > 0) {
+                ICToken cToken = ICToken(_cTokenAddress);
 
-                if (borrowSpeed > 0) {
-                    uint256 borrowAmount = ICToken(_cTokenAddress).totalBorrows().div(
-                        ICToken(_cTokenAddress).borrowIndex()
-                    );
-                    uint256 compAccrued = deltaBlocks * borrowSpeed;
-                    uint256 ratio = borrowAmount > 0 ? (compAccrued * 1e36) / borrowAmount : 0;
+                uint256 borrowAmount = cToken.totalBorrows().div(cToken.borrowIndex());
+                uint256 compAccrued = deltaBlocks * borrowSpeed;
+                uint256 ratio = borrowAmount > 0 ? (compAccrued * 1e36) / borrowAmount : 0;
 
-                    return borrowState.index + ratio;
-                } else return borrowState.index;
+                return borrowState.index + ratio;
             }
+
+            return borrowState.index;
         }
     }
 }

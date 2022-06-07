@@ -496,8 +496,7 @@ contract TestRewards is TestSetup {
 
         uint256 updatedIndex = compRewardsLens.getUpdatedSupplyIndex(cDai);
 
-        uint256 result = comptroller.mintAllowed(cDai, address(supplier1), amount / 10); // Update compSupplyState without increasing Compound's total supply.
-        assertEq(result, 0, "compound redeem not allowed");
+        supplier1.compoundSupply(cDai, amount / 10); // Update compSupplyState.
         IComptroller.CompMarketState memory compoundAfter = comptroller.compSupplyState(cDai);
 
         assertEq(updatedIndex, compoundAfter.index);
@@ -516,10 +515,10 @@ contract TestRewards is TestSetup {
         borrower1.compoundBorrow(cDai, amount / 2);
         hevm.roll(block.number + 5_000);
 
+        ICToken(cDai).accrueInterest();
         uint256 updatedIndex = compRewardsLens.getUpdatedBorrowIndex(cDai);
 
-        uint256 result = comptroller.borrowAllowed(cDai, address(borrower1), amount / 10); // Update compBorrowState without increasing Compound's total borrowed tokens.
-        assertEq(result, 0, "compound borrow not allowed");
+        borrower1.compoundBorrow(cDai, amount / 10); // Update compBorrowState.
         IComptroller.CompMarketState memory compoundAfter = comptroller.compBorrowState(cDai);
 
         assertEq(updatedIndex, compoundAfter.index);
