@@ -19,14 +19,10 @@ contract TestUpgradeable is TestSetup {
 
         // 1 write for the implemention.
         assertEq(writes.length, 1);
-        address newImplem = address(
-            uint160(
-                uint256(
-                    hevm.load(
-                        address(morphoProxy),
-                        bytes32(uint256(keccak256("eip1967.proxy.implementation")) - 1) // Implementation slot.
-                    )
-                )
+        address newImplem = bytes32ToAddress(
+            hevm.load(
+                address(morphoProxy),
+                bytes32(uint256(keccak256("eip1967.proxy.implementation")) - 1) // Implementation slot.
             )
         );
         assertEq(newImplem, address(morphoImplV2));
@@ -65,14 +61,10 @@ contract TestUpgradeable is TestSetup {
 
         // 1 write for the implemention.
         assertEq(writes.length, 1);
-        address newImplem = address(
-            uint160(
-                uint256(
-                    hevm.load(
-                        address(rewardsManagerProxy),
-                        bytes32(uint256(keccak256("eip1967.proxy.implementation")) - 1) // Implementation slot.
-                    )
-                )
+        address newImplem = bytes32ToAddress(
+            hevm.load(
+                address(rewardsManagerProxy),
+                bytes32(uint256(keccak256("eip1967.proxy.implementation")) - 1) // Implementation slot.
             )
         );
         assertEq(newImplem, address(rewardsManagerImplV2));
