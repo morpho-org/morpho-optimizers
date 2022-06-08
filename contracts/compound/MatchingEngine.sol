@@ -7,7 +7,7 @@ import "./MorphoUtils.sol";
 /// @author Morpho Labs.
 /// @custom:contact security@morpho.xyz
 /// @notice Smart contract managing the matching engine.
-contract MatchingEngine is MorphoUtils {
+abstract contract MatchingEngine is MorphoUtils {
     using DoubleLinkedList for DoubleLinkedList.List;
     using CompoundMath for uint256;
 
