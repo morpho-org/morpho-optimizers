@@ -121,12 +121,7 @@ contract Lens {
         for (uint256 i; i < numberOfCreatedMarkets; ) {
             address poolToken = createdMarkets[i];
 
-            if (
-                _poolTokenAddress != poolToken &&
-                (morpho.userMarketsBitmask(_user) &
-                    (morpho.borrowMask(poolToken) | (morpho.borrowMask(poolToken) << 1)) !=
-                    0)
-            ) {
+            if (_poolTokenAddress != poolToken && _isSupplyingOrBorrowing(_user, poolToken)) {
                 assetData = getUserLiquidityDataForAsset(_user, poolToken, oracle);
 
                 data.collateralValue += assetData.collateralValue;
@@ -654,12 +649,10 @@ contract Lens {
     /// @param _market The address of the market to check.
     /// @return True if the user has been using a reserve for borrowing or as collateral, false otherwise.
     function _isSupplyingOrBorrowing(address _user, address _market) internal view returns (bool) {
-        unchecked {
-            return
-                morpho.userMarketsBitmask(_user) &
-                    (morpho.borrowMask(_market) | (morpho.borrowMask(_market) << 1)) !=
-                0;
-        }
+        return
+            morpho.userMarketsBitmask(_user) &
+                (morpho.borrowMask(_market) | (morpho.borrowMask(_market) << 1)) !=
+            0;
     }
 
     function calculateLinearInterest(uint256 rate, uint256 lastUpdateTimestamp)

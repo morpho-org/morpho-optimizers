@@ -302,8 +302,6 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
         Types.AssetLiquidityData memory assetData;
         Types.LiquidityData memory liquidityData;
 
-        bool hasBorrowed = _isBorrowingAny(_user);
-
         for (vars.i; vars.i < vars.numberOfMarketsCreated; ) {
             address poolToken = marketsCreated[vars.i];
 
@@ -317,7 +315,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
                 .getParams();
                 assetData.tokenUnit = 10**assetData.reserveDecimals;
 
-                if (hasBorrowed && _isBorrowing(_user, poolToken))
+                if (_isBorrowing(_user, poolToken))
                     liquidityData.debtValue +=
                         (_getUserBorrowBalanceInOf(poolToken, _user) * assetData.underlyingPrice) /
                         assetData.tokenUnit;
