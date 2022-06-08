@@ -50,8 +50,6 @@ contract TestUpgradeable is TestSetup {
 
     function testUpgradeRewardsManager() public {
         uint256 amount = 10000 ether;
-        supplier1.approve(dai, amount);
-        supplier1.supply(cDai, amount);
 
         RewardsManager rewardsManagerImplV2 = new RewardsManager();
 
