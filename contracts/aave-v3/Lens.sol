@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity ^0.8.0;
 
+//lala
+
 import "@aave/core-v3/contracts/interfaces/IPriceOracleGetter.sol";
 import "@aave/core-v3/contracts/interfaces/IAToken.sol";
 import "@aave/core-v3/contracts/interfaces/IPool.sol";

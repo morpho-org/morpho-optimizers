@@ -3,8 +3,6 @@ pragma solidity ^0.8.0;
 
 import "./setup/TestSetup.sol";
 
-//lala
-
 contract TestUpgradeable is TestSetup {
     function testUpgradeMorpho() public {
         uint256 amount = 10_000 ether;
