@@ -42,7 +42,6 @@ interface IMorpho {
     function getAllMarkets() external view returns (address[] memory marketsCreated_);
     function getHead(address _poolTokenAddress, Types.PositionType _positionType) external view returns (address head);
     function getNext(address _poolTokenAddress, Types.PositionType _positionType, address _user) external view returns (address next);
-    function setSupplying(address _user, address _market, bool _supplying) external;
 
     /// GOVERNANCE ///
 

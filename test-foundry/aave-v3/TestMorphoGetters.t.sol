@@ -104,23 +104,6 @@ contract TestMorphoGetters is TestSetup {
         }
     }
 
-    function testUserLeftMarkets() public {
-        borrower1.approve(dai, 10 ether);
-        borrower1.supply(aDai, 10 ether);
-
-        // Check that borrower1 entered Dai market.
-        assertTrue(isSupplying(address(borrower1), aDai));
-
-        // Borrower1 withdraw everything from the Dai market.
-        borrower1.withdraw(aDai, 10 ether);
-
-        assertFalse(isSupplying(address(borrower1), aDai));
-    }
-
-    function isSupplying(address _user, address _market) internal view returns (bool) {
-        return morpho.userMarketsBitmask(_user) & (morpho.borrowMask(_market) << 1) != 0;
-    }
-
     function testGetAllMarkets() public {
         for (uint256 i; i < pools.length; i++) {
             assertEq(morpho.marketsCreated(i), pools[i]);
