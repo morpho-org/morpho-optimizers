@@ -12,7 +12,7 @@ Tests are run against a forks of real networks, which allows us to interact dire
 
 For testing, first, install dependencies with:
 
-```
+```bash
 yarn
 ```
 
@@ -20,7 +20,7 @@ Then, install [Foundry](https://github.com/gakonst/foundry):
 
 Run the command below to get foundryup, the Foundry toolchain installer:
 
-```
+```bash
 curl -L https://foundry.paradigm.xyz | bash
 ```
 
@@ -28,13 +28,13 @@ If you do not want to use the redirect, feel free to manually download the found
 
 Then in a new terminal session or after reloading your PATH, run it to get the latest forge and cast binaries:
 
-```
+```bash
 foundryup
 ```
 
 Finally, update git submodules:
 
-```
+```bash
 git submodule init
 git submodule update
 ```
@@ -45,37 +45,37 @@ In order to have the traces of the run exported as an HTML page, install the aha
 
 For OSX users:
 
-```
+```bash
 brew install aha
 ```
 
 For debian users:
 
-```
+```bash
 apt install aha
 ```
 
-To run tests on different platforms, navigate a Unix terminal to the root folder of the project and run the command of your choice:
+To run tests on different protocols, navigate a Unix terminal to the root folder of the project and run the command of your choice:
 
-To run every test:
+To run every test of a specific protocol (e.g. Morpho-Compound ):
 
+```bash
+make test PROTOCOL=compound
 ```
-make test-compound
-```
 
-or to run only the desired section:
+or to run only a specific set of tests of a specific protocol (e.g. Aave V2):
 
-```
-make c-TestBorrow
-make c-TestGovernance
+```bash
+make c-TestBorrow PROTOCOL=aave-v2
+make c-TestGovernance PROTOCOL=aave-v2
 ...
 ```
 
-or to run individual tests:
+or to run individual tests of a specific protocol (e.g. Aave V3):
 
-```
-make s-test_higher_than_max_fees
-make s-test_claim_fees
+```bash
+make s-testShouldCollectTheRightAmountOfFees PROTOCOL=aave-v3
+make s-testShouldReduceTheFeeToRepay PROTOCOL=aave-v3
 ...
 ```
 
@@ -90,11 +90,11 @@ For the other commands, check the `Makefile` file.
 We use prettier with the default configuration mentionned in the [Solidity Prettier Plugin](https://github.com/prettier-solidity/prettier-plugin-solidity).
 We recommend developers using VS Code to set their local config as below:
 
-```
+```json
 {
-    "editor.formatOnSave": true,
-    "solidity.formatter": "prettier",
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  "editor.formatOnSave": true,
+  "solidity.formatter": "prettier",
+  "editor.defaultFormatter": "esbenp.prettier-vscode"
 }
 ```
 
@@ -143,7 +143,7 @@ By default, PR are rebased with `dev` before merging to keep a clean historic of
 
 You can run the following command to deploy Morpho's contracts for Aave on Polygon:
 
-```
+```bash
 yarn deploy:aave:polygon
 ```
 
@@ -154,7 +154,7 @@ For the other commands, check the `package.json` file.
 An etherscan API key is required to verify the contract and placed into your `.env.local` file.
 The right arguments of the constructor of the smart contract to verify must be write inside `arguments.js`. Then you can run the following command to verify a contract:
 
-```
+```bash
 npx hardhat verify --network <network-name> --constructor-args scripts/arguments.js <contract-address>
 npx hardhat verify --network <network-name> --constructor-args scripts/arguments.js --contract contracts/Example.sol:ExampleContract <contract-address>
 ```
