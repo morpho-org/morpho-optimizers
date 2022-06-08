@@ -350,7 +350,7 @@ contract TestRewards is TestSetup {
         supplier3.borrow(aUsdc, toBorrow);
     }
 
-    function __testShouldClaimRewardsAndTradeForMorpkoTokens() public {
+    function testShouldClaimRewardsAndTradeForMorpkoTokens() public {
         // 10% bonus.
         incentivesVault.setBonus(1_000);
 
