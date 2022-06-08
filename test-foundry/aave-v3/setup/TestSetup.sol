@@ -49,7 +49,9 @@ contract TestSetup is Config, Utils, stdCheats {
     Morpho public morphoImplV1;
     Morpho public morpho;
     IInterestRatesManager public interestRatesManager;
-    IRewardsManager public rewardsManager;
+    TransparentUpgradeableProxy internal rewardsManagerProxy;
+    IRewardsManager internal rewardsManagerImplV1;
+    IRewardsManager internal rewardsManager;
     IEntryPositionsManager public entryPositionsManager;
     IExitPositionsManager public exitPositionsManager;
     Lens public lens;
@@ -98,9 +100,11 @@ contract TestSetup is Config, Utils, stdCheats {
         interestRatesManager = new InterestRatesManager();
 
         morphoImplV1 = new Morpho();
-        morphoProxy = new TransparentUpgradeableProxy(address(morphoImplV1), address(this), "");
-
-        morphoProxy.changeAdmin(address(proxyAdmin));
+        morphoProxy = new TransparentUpgradeableProxy(
+            address(morphoImplV1),
+            address(proxyAdmin),
+            ""
+        );
         morpho = Morpho(payable(address(morphoProxy)));
         morpho.initialize(
             entryPositionsManager,
@@ -115,9 +119,6 @@ contract TestSetup is Config, Utils, stdCheats {
         treasuryVault = new User(morpho);
         morpho.setTreasuryVault(address(treasuryVault));
 
-        rewardsManager = new RewardsManager(pool, IMorpho(address(morpho)));
-
-        rewardsManager.setRewardsController(rewardsControllerAddress);
         morpho.setRewardsController(rewardsControllerAddress);
 
         /// Create markets ///
@@ -144,6 +145,16 @@ contract TestSetup is Config, Utils, stdCheats {
 
         oracle = IPriceOracleGetter(poolAddressesProvider.getPriceOracle());
         protocolDataProvider = IPoolDataProvider(poolDataProviderAddress);
+
+        rewardsManagerImplV1 = new RewardsManager();
+        rewardsManagerProxy = new TransparentUpgradeableProxy(
+            address(rewardsManagerImplV1),
+            address(proxyAdmin),
+            ""
+        );
+        rewardsManager = RewardsManager(address(rewardsManagerProxy));
+        rewardsManager.initialize(address(morpho));
+        rewardsManager.setRewardsController(rewardsControllerAddress);
 
         morpho.setRewardsManager(rewardsManager);
         morpho.setIncentivesVault(incentivesVault);

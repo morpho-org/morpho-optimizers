@@ -10,20 +10,20 @@ import "./interfaces/IMorpho.sol";
 
 import "@aave/periphery-v3/contracts/rewards/libraries/RewardsDataTypes.sol";
 
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
 /// @title RewardsManager.
 /// @author Morpho Labs.
 /// @custom:contact security@morpho.xyz
 /// @notice Contract managing Aave's protocol rewards.
-contract RewardsManager is IRewardsManager, Ownable {
+contract RewardsManager is IRewardsManager, OwnableUpgradeable {
     /// STORAGE ///
 
     mapping(address => RewardsDataTypes.AssetData) internal localAssetData; // The local data related to a given market.
 
-    IRewardsController public override rewardsController;
-    IMorpho public immutable morpho;
-    IPool public immutable pool;
+    IRewardsController public rewardsController;
+    IMorpho public morpho;
+    IPool public pool;
 
     /// EVENTS ///
 
@@ -65,12 +65,19 @@ contract RewardsManager is IRewardsManager, Ownable {
 
     /// CONSTRUCTOR ///
 
-    /// @notice Constructs the RewardsManager contract.
-    /// @param _pool The `pool`.
-    /// @param _morpho The `morpho` main contract.
-    constructor(IPool _pool, IMorpho _morpho) {
-        pool = _pool;
-        morpho = _morpho;
+    /// @notice Constructs the contract.
+    /// @dev The contract is automatically marked as initialized when deployed so that nobody can highjack the implementation contract.
+    constructor() initializer {}
+
+    /// UPGRADE ///
+
+    /// @notice Initializes the RewardsManager contract.
+    /// @param _morpho The address of Morpho's main contract's proxy.
+    function initialize(address _morpho) external initializer {
+        __Ownable_init();
+
+        morpho = IMorpho(_morpho);
+        pool = IPool(morpho.pool());
     }
 
     /// EXTERNAL ///

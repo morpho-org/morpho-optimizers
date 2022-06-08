@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity ^0.8.0;
 
-import "./IInterestRatesManager.sol";
-import "./IRewardsManager.sol";
+import "@aave/core-v3/contracts/interfaces/IPool.sol";
 import "./IEntryPositionsManager.sol";
 import "./IExitPositionsManager.sol";
+import "./IInterestRatesManager.sol";
+import "./IRewardsManager.sol";
 
 import "../libraries/Types.sol";
 
@@ -29,6 +30,7 @@ interface IMorpho {
     function rewardsManager() external view returns (IRewardsManager);
     function entryPositionsManager() external view returns (IEntryPositionsManager);
     function exitPositionsManager() external view returns (IExitPositionsManager);
+    function pool() external view returns (IPool);
     function treasuryVault() external view returns (address);
     function indexOfMarket(address) external view returns (uint256);
     function userMarketsBitmask(address) external view returns (uint256);
