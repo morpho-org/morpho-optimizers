@@ -75,7 +75,7 @@ contract TestBitmask is TestSetup {
 
         assertFalse(isBorrowingAny(address(borrower1)));
 
-        supplier1.withdraw(aDai, 10 ether);
+        supplier1.withdraw(aDai, type(uint256).max);
 
         assertFalse(isSupplying(address(supplier1), aDai));
         assertFalse(isBorrowing(address(supplier1), aDai));
@@ -104,8 +104,8 @@ contract TestBitmask is TestSetup {
 
         assertTrue(isBorrowingAny(address(borrower1)));
 
-        borrower1.approve(usdc, to6Decimals(5 ether));
-        borrower1.repay(aUsdc, to6Decimals(5 ether));
+        borrower1.approve(usdc, type(uint256).max);
+        borrower1.repay(aUsdc, type(uint256).max);
 
         assertTrue(isSupplying(address(borrower1), aDai));
         assertFalse(isBorrowing(address(borrower1), aDai));
@@ -117,11 +117,11 @@ contract TestBitmask is TestSetup {
 
         assertFalse(isBorrowingAny(address(borrower1)));
 
-        borrower1.withdraw(aDai, 10.001 ether); // Withdraw more because of accrued interests.
+        borrower1.withdraw(aDai, type(uint256).max);
 
-        assertFalse(isSupplying(address(borrower1), aDai), "fails here");
+        assertFalse(isSupplying(address(borrower1), aDai));
         assertFalse(isBorrowing(address(borrower1), aDai));
-        assertFalse(isSupplyingOrBorrowing(address(borrower1), aDai), "and here");
+        assertFalse(isSupplyingOrBorrowing(address(borrower1), aDai));
 
         assertFalse(isSupplying(address(borrower1), aUsdc));
         assertFalse(isBorrowing(address(borrower1), aUsdc));
