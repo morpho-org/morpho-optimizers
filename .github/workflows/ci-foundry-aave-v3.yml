@@ -53,7 +53,7 @@ jobs:
       - name: Install Foundry
         uses: onbjerg/foundry-toolchain@v1
         with:
-          version: nightly-3fc149129d9728d0c65f7c13e1df79cf8eb3aa33
+          version: nightly-e6f2bc60781ad96e3a42c5de2b75ba67a16cf7f9
 
       - name: Run tests
         run: make test PROTOCOL=aave-v3
