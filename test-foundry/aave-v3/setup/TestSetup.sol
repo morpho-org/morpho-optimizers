@@ -15,6 +15,7 @@ import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.so
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 
 import "@aave/core-v3/contracts/protocol/libraries/math/WadRayMath.sol";
+import "@aave/core-v3/contracts/protocol/libraries/math/MathUtils.sol";
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "@contracts/aave-v3/libraries/Types.sol";
