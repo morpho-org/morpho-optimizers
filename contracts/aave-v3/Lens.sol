@@ -647,7 +647,7 @@ contract Lens {
     /// @dev Returns if a user has been borrowing or supplying on a given market.
     /// @param _user The user to check for.
     /// @param _market The address of the market to check.
-    /// @return True if the user has been using a reserve for borrowing or as collateral, false otherwise.
+    /// @return True if the user has been supplying or borrowing on this market, false otherwise.
     function _isSupplyingOrBorrowing(address _user, address _market) internal view returns (bool) {
         return
             morpho.userMarketsBitmask(_user) &
