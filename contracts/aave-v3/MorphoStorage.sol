@@ -55,7 +55,7 @@ abstract contract MorphoStorage is OwnableUpgradeable, ReentrancyGuardUpgradeabl
     mapping(address => Types.MarketParameters) public marketParameters; // Market parameters.
     mapping(address => Types.MarketStatus) public marketStatus; // Market status.
     mapping(address => Types.Delta) public deltas; // Delta parameters for each market.
-    mapping(address => uint256) public borrowMask; // Borrow mask of given market, shift left to get the supply mask.
+    mapping(address => uint256) public borrowMask; // Borrow mask of the given market, shift left to get the supply mask.
 
     /// CONTRACTS AND ADDRESSES ///
 

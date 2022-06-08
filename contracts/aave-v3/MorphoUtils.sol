@@ -117,7 +117,8 @@ contract MorphoUtils is MorphoStorage {
     /// @param _market The address of the market to check.
     /// @return True if the user has been using a reserve for borrowing or as collateral, false otherwise.
     function _isSupplyingOrBorrowing(address _user, address _market) internal view returns (bool) {
-        return _isSupplying(_user, _market) || _isBorrowing(_user, _market);
+        uint256 bmask = borrowMask[_market];
+        return userMarketsBitmask[_user] & (bmask | (bmask << 1)) != 0;
     }
 
     /// @dev Returns if a user is borrowing on a given market.
@@ -152,11 +153,8 @@ contract MorphoUtils is MorphoStorage {
         address _market,
         bool _borrowing
     ) internal {
-        unchecked {
-            uint256 bit = borrowMask[_market];
-            if (_borrowing) userMarketsBitmask[_user] |= bit;
-            else userMarketsBitmask[_user] &= ~bit;
-        }
+        if (_borrowing) userMarketsBitmask[_user] |= borrowMask[_market];
+        else userMarketsBitmask[_user] &= ~borrowMask[_market];
     }
 
     /// @notice Sets if the user is supplying on a market.
@@ -168,11 +166,8 @@ contract MorphoUtils is MorphoStorage {
         address _market,
         bool _supplying
     ) internal {
-        unchecked {
-            uint256 bit = borrowMask[_market] << 1;
-            if (_supplying) userMarketsBitmask[_user] |= bit;
-            else userMarketsBitmask[_user] &= ~bit;
-        }
+        if (_supplying) userMarketsBitmask[_user] |= borrowMask[_market] << 1;
+        else userMarketsBitmask[_user] &= ~(borrowMask[_market] << 1);
     }
 
     /// @dev Updates the peer-to-peer indexes and pool indexes (only stored locally).
