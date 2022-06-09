@@ -8,11 +8,10 @@ import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 import {DumbOracle} from "./helpers/DumbOracle.sol";
 import "@contracts/aave-v3/IncentivesVault.sol";
 import "../common/helpers/MorphoToken.sol";
-import "forge-std/stdlib.sol";
 import "@config/Config.sol";
-import "ds-test/test.sol";
+import "forge-std/Test.sol";
 
-contract TestIncentivesVault is Config, DSTest, stdCheats {
+contract TestIncentivesVault is Config, Test, stdCheats {
     using SafeTransferLib for ERC20;
 
     Vm public hevm = Vm(HEVM_ADDRESS);

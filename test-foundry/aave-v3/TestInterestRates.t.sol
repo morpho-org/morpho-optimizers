@@ -4,10 +4,9 @@ pragma solidity ^0.8.0;
 import "@aave/core-v3/contracts/protocol/libraries/math/PercentageMath.sol";
 import "@aave/core-v3/contracts/protocol/libraries/math/WadRayMath.sol";
 import "@contracts/aave-v3/InterestRatesManager.sol";
-import "ds-test/test.sol";
-import "forge-std/stdlib.sol";
+import "forge-std/Test.sol";
 
-contract TestInterestRates is InterestRatesManager, DSTest {
+contract TestInterestRates is InterestRatesManager, Test {
     using PercentageMath for uint256;
     using WadRayMath for uint256;
 
