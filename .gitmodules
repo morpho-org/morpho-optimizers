@@ -10,6 +10,9 @@
 [submodule "lib/data-structures"]
 	path = lib/data-structures
 	url = https://github.com/morpho-labs/data-structures
-[submodule "lib/periphery-v3"]
-	path = lib/periphery-v3
+[submodule "lib/aave-v3-core"]
+	path = lib/aave-v3-core
+	url = https://github.com/aave/aave-v3-core
+[submodule "lib/aave-v3-periphery"]
+	path = lib/aave-v3-periphery
 	url = https://github.com/aave/aave-v3-periphery

@@ -1,12 +1,9 @@
 ds-test/=lib/ds-test/src/
 forge-std/=lib/forge-std/src/
 @morpho/data-structures/=lib/data-structures/
-@aave/periphery-v3/=lib/periphery-v3/
-@aave/core-v3/=node_modules/@aave/core-v3/
-@openzeppelin/=node_modules/@openzeppelin/
-@rari-capital/=node_modules/@rari-capital
-@uniswap/=node_modules/@uniswap/
-prb-math/=node_modules/prb-math/
-hardhat/=node_modules/hardhat/
+
+@aave/core-v3/=lib/aave-v3-core/
+@aave/periphery-v3/=lib/aave-v3-periphery/
+
 @contracts/=contracts/
 @config/=config/polygon-mainnet/aave-v3/
