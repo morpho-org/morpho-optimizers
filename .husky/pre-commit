@@ -2,15 +2,10 @@
 
 . "$(dirname "$0")/_/husky.sh"
 
-STAGED_TS_FILES=$(git diff --staged --name-only | grep '\.ts$' | xargs)
-STAGED_SOL_FILES=$(git diff --staged --name-only | grep '\.sol$' | xargs)
 
-if [ -n "$STAGED_SOL_FILES" ]; then
-    yarn prettier --config .prettierrc.json --write $STAGED_SOL_FILES
-    git add $STAGED_SOL_FILES
-fi
+CHANGED_FILES=$(git diff --staged --name-only --diff-filter=d | grep -e "\.ts$" -e "\.sol$")
 
-if [ -n "$STAGED_TS_FILES" ]; then
-    yarn prettier --config .prettierrc.json --write $STAGED_TS_FILES
-    git add $STAGED_TS_FILES
+if [ -n "$CHANGED_FILES" ]; then
+    yarn prettier --config .prettierrc.json --write $CHANGED_FILES
+    git add $CHANGED_FILES
 fi
