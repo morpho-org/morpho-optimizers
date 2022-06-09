@@ -25,6 +25,7 @@ import {RewardsManager} from "@contracts/aave-v3/RewardsManager.sol";
 import {MatchingEngine} from "@contracts/aave-v3/MatchingEngine.sol";
 import {EntryPositionsManager} from "@contracts/aave-v3/EntryPositionsManager.sol";
 import {ExitPositionsManager} from "@contracts/aave-v3/ExitPositionsManager.sol";
+import {ConnectorV3} from "@contracts/aave-v3/ConnectorV3.sol";
 import {Lens} from "@contracts/aave-v3/Lens.sol";
 import "@contracts/aave-v3/Morpho.sol";
 
@@ -54,6 +55,7 @@ contract TestSetup is Config, Utils, stdCheats {
     IRewardsManager internal rewardsManager;
     IEntryPositionsManager public entryPositionsManager;
     IExitPositionsManager public exitPositionsManager;
+    IConnector public connector;
     Lens public lens;
     MorphoToken public morphoToken;
 
@@ -90,7 +92,8 @@ contract TestSetup is Config, Utils, stdCheats {
             repay: 3e6
         });
         poolAddressesProvider = IPoolAddressesProvider(poolAddressesProviderAddress);
-        pool = IPool(poolAddressesProvider.getPool());
+        connector = new ConnectorV3(poolAddressesProviderAddress);
+        pool = IPool(connector.getPool());
         entryPositionsManager = new EntryPositionsManager();
         exitPositionsManager = new ExitPositionsManager();
 
@@ -110,7 +113,7 @@ contract TestSetup is Config, Utils, stdCheats {
             entryPositionsManager,
             exitPositionsManager,
             interestRatesManager,
-            IPoolAddressesProvider(poolAddressesProviderAddress),
+            connector,
             defaultMaxGasForMatching,
             20
         );

@@ -608,10 +608,10 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
 
             address underlyingAddress = IAToken(poolToken).UNDERLYING_ASSET_ADDRESS();
             assetData.underlyingPrice = oracle.getAssetPrice(underlyingAddress); // In base currency.
-            (assetData.ltv, assetData.liquidationThreshold, , assetData.reserveDecimals, , ) = pool
-            .getConfiguration(underlyingAddress)
-            .getParams();
-            assetData.tokenUnit = 10**assetData.reserveDecimals;
+            IConnector.ConfigParams memory config = connector.getConfigurationParams(
+                underlyingAddress
+            );
+            assetData.tokenUnit = 10**config.reserveDecimals;
 
             if (_isBorrowing(_user, poolToken))
                 liquidityData.debtValue +=
@@ -623,14 +623,14 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
                     (_getUserSupplyBalanceInOf(poolToken, _user) * assetData.underlyingPrice) /
                     assetData.tokenUnit;
                 liquidityData.liquidationThresholdValue += assetData.collateralValue.percentMul(
-                    assetData.liquidationThreshold
+                    config.liquidationThreshold
                 );
             }
 
             if (_poolTokenAddress == poolToken && _withdrawnAmount > 0)
                 liquidityData.liquidationThresholdValue -= ((_withdrawnAmount *
                     assetData.underlyingPrice) / assetData.tokenUnit)
-                .percentMul(assetData.liquidationThreshold);
+                .percentMul(config.liquidationThreshold);
 
             unchecked {
                 ++i;
@@ -660,7 +660,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
     /// @return Whether the user is liquidatable or not.
     function _liquidationAllowed(address _user) internal returns (bool) {
         uint256 healthFactor = _getUserHealthFactor(_user, address(0), 0);
-        address priceOracleSentinel = addressesProvider.getPriceOracleSentinel();
+        address priceOracleSentinel = connector.getPriceOracleSentinel();
 
         if (priceOracleSentinel != address(0))
             return (healthFactor < MINIMUM_HEALTH_FACTOR_LIQUIDATION_THRESHOLD ||

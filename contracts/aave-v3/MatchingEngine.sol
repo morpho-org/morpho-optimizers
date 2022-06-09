@@ -346,9 +346,9 @@ contract MatchingEngine is MorphoUtils {
         borrowersInP2P[_poolTokenAddress].update(_user, formerValueInP2P, inP2P, maxSortedUsers);
 
         if (formerValueOnPool != onPool && address(rewardsManager) != address(0)) {
-            address variableDebtTokenAddress = pool
-            .getReserveData(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS())
-            .variableDebtTokenAddress;
+            address variableDebtTokenAddress = connector.getVariableDebtTokenAddress(
+                IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS()
+            );
             rewardsManager.updateUserAssetAndAccruedRewards(
                 _user,
                 variableDebtTokenAddress,

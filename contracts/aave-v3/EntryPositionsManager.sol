@@ -189,8 +189,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
         if (_amount == 0) revert AmountIsZero();
 
         ERC20 underlyingToken = ERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
-        if (!pool.getConfiguration(address(underlyingToken)).getBorrowingEnabled())
-            revert BorrowingNotEnabled();
+        if (!connector.isBorrowingEnabled(address(underlyingToken))) revert BorrowingNotEnabled();
 
         _updateIndexes(_poolTokenAddress);
         if (!_isBorrowing(msg.sender, _poolTokenAddress))
@@ -286,13 +285,14 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
         address _poolTokenAddress,
         uint256 _borrowedAmount
     ) internal returns (bool) {
-        address priceOracleSentinel = addressesProvider.getPriceOracleSentinel();
+        address priceOracleSentinel = connector.getPriceOracleSentinel();
         // Aave's can enable an oracle sentinel in specific circunstances which can prevent users to borrow.
         // in response, Morpho mirrors this behavior.
         if (
             priceOracleSentinel != address(0) &&
             !IPriceOracleSentinel(priceOracleSentinel).isBorrowAllowed()
         ) return false;
+        //if (!connector.checkPriceOracleSentinel()) return false;
 
         BorrowAllowedVars memory vars;
 

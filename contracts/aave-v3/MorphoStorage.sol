@@ -9,6 +9,7 @@ import "./interfaces/IIncentivesVault.sol";
 import "./interfaces/IRewardsManager.sol";
 import "./interfaces/IEntryPositionsManager.sol";
 import "./interfaces/IExitPositionsManager.sol";
+import "./interfaces/IConnector.sol";
 
 import "@morpho/data-structures/contracts/HeapOrdering.sol";
 import "./libraries/Types.sol";
@@ -68,6 +69,7 @@ abstract contract MorphoStorage is OwnableUpgradeable, ReentrancyGuardUpgradeabl
     IInterestRatesManager public interestRatesManager;
     IIncentivesVault public incentivesVault;
     IRewardsManager public rewardsManager;
+    IConnector public connector;
     address public treasuryVault;
 
     /// CONSTRUCTOR ///

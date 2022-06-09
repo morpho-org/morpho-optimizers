@@ -123,14 +123,14 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @param _entryPositionsManager The `entryPositionsManager`.
     /// @param _exitPositionsManager The `exitPositionsManager`.
     /// @param _interestRatesManager The `interestRatesManager`.
-    /// @param _lendingPoolAddressesProvider The `addressesProvider`.
+    /// @param _connector The `connector`.
     /// @param _defaultMaxGasForMatching The `defaultMaxGasForMatching`.
     /// @param _maxSortedUsers The `_maxSortedUsers`.
     function initialize(
         IEntryPositionsManager _entryPositionsManager,
         IExitPositionsManager _exitPositionsManager,
         IInterestRatesManager _interestRatesManager,
-        IPoolAddressesProvider _lendingPoolAddressesProvider,
+        IConnector _connector,
         Types.MaxGasForMatching memory _defaultMaxGasForMatching,
         uint256 _maxSortedUsers
     ) external initializer {
@@ -140,8 +140,9 @@ abstract contract MorphoGovernance is MorphoUtils {
         interestRatesManager = _interestRatesManager;
         entryPositionsManager = _entryPositionsManager;
         exitPositionsManager = _exitPositionsManager;
-        addressesProvider = _lendingPoolAddressesProvider;
-        pool = IPool(addressesProvider.getPool());
+        connector = _connector;
+        addressesProvider = IPoolAddressesProvider(connector.getAddressesProvider());
+        pool = IPool(connector.getPool());
 
         defaultMaxGasForMatching = _defaultMaxGasForMatching;
         maxSortedUsers = _maxSortedUsers;
@@ -336,10 +337,9 @@ abstract contract MorphoGovernance is MorphoUtils {
             _marketParams.reserveFactor > MAX_BASIS_POINTS
         ) revert ExceedsMaxBasisPoints();
 
-        if (!pool.getConfiguration(_underlyingTokenAddress).getActive())
-            revert MarketIsNotListedOnAave();
+        if (!connector.isActive(_underlyingTokenAddress)) revert MarketIsNotListedOnAave();
 
-        address poolTokenAddress = pool.getReserveData(_underlyingTokenAddress).aTokenAddress;
+        address poolTokenAddress = connector.getATokenAddress(_underlyingTokenAddress);
 
         if (marketStatus[poolTokenAddress].isCreated) revert MarketAlreadyCreated();
         marketStatus[poolTokenAddress].isCreated = true;
