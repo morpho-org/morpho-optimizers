@@ -4,9 +4,9 @@ pragma solidity ^0.8.0;
 import "@aave/core-v3/contracts/interfaces/IPriceOracleGetter.sol";
 import "@aave/core-v3/contracts/interfaces/IAToken.sol";
 import "@aave/core-v3/contracts/interfaces/IPool.sol";
+import "./interfaces/IConnector.sol";
 import "./interfaces/IMorpho.sol";
 
-import {ReserveConfiguration} from "@aave/core-v3/contracts/protocol/libraries/configuration/ReserveConfiguration.sol";
 import "@aave/core-v3/contracts/protocol/libraries/math/PercentageMath.sol";
 import "@aave/core-v3/contracts/protocol/libraries/math/WadRayMath.sol";
 import "@aave/core-v3/contracts/protocol/libraries/math/MathUtils.sol";
@@ -19,7 +19,6 @@ import "./libraries/Math.sol";
 /// @custom:contact security@morpho.xyz
 /// @notice User accessible getters.
 contract Lens {
-    using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
     using HeapOrdering for HeapOrdering.HeapArray;
     using PercentageMath for uint256;
     using WadRayMath for uint256;
@@ -45,16 +44,18 @@ contract Lens {
     uint256 public constant MAX_BASIS_POINTS = 10_000;
     uint256 public constant HEALTH_FACTOR_LIQUIDATION_THRESHOLD = 1e18; // Health factor below which the positions can be liquidated.
     uint256 public constant RAY = 1e27;
-    IMorpho public immutable morpho;
     IPoolAddressesProvider public immutable addressesProvider;
+    IMorpho public immutable morpho;
+    IConnector public connector;
     IPool public immutable pool;
 
     /// CONSTRUCTOR ///
 
-    constructor(address _morphoAddress, IPoolAddressesProvider _addressesProvider) {
+    constructor(address _morphoAddress) {
         morpho = IMorpho(_morphoAddress);
-        addressesProvider = _addressesProvider;
-        pool = IPool(addressesProvider.getPool());
+        connector = IConnector(morpho.connector());
+        addressesProvider = IPoolAddressesProvider(connector.getAddressesProvider());
+        pool = IPool(connector.getPool());
     }
 
     /// ERRORS ///
@@ -186,11 +187,12 @@ contract Lens {
         address underlyingAddress = IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS();
 
         assetData.underlyingPrice = _oracle.getAssetPrice(underlyingAddress); // In base currency in wad.
-        (assetData.ltv, assetData.liquidationThreshold, , assetData.reserveDecimals, , ) = pool
-        .getConfiguration(underlyingAddress)
-        .getParams();
+        IConnector.ConfigParams memory config = connector.getConfigurationParams(underlyingAddress);
+        assetData.ltv = config.ltv;
+        assetData.liquidationThreshold = config.liquidationThreshold;
+        assetData.reserveDecimals = config.reserveDecimals;
 
-        assetData.tokenUnit = 10**assetData.reserveDecimals;
+        assetData.tokenUnit = 10**config.reserveDecimals;
         assetData.debtValue =
             (_getUserBorrowBalanceInOf(_poolTokenAddress, _user) * assetData.underlyingPrice) /
             assetData.tokenUnit;

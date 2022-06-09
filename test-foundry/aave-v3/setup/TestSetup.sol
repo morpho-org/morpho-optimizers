@@ -26,6 +26,7 @@ import {MatchingEngine} from "@contracts/aave-v3/MatchingEngine.sol";
 import {EntryPositionsManager} from "@contracts/aave-v3/EntryPositionsManager.sol";
 import {ExitPositionsManager} from "@contracts/aave-v3/ExitPositionsManager.sol";
 import {ConnectorV3} from "@contracts/aave-v3/ConnectorV3.sol";
+import {ConnectorV2} from "@contracts/aave-v3/ConnectorV2.sol";
 import {Lens} from "@contracts/aave-v3/Lens.sol";
 import "@contracts/aave-v3/Morpho.sol";
 
@@ -92,7 +93,8 @@ contract TestSetup is Config, Utils, stdCheats {
             repay: 3e6
         });
         poolAddressesProvider = IPoolAddressesProvider(poolAddressesProviderAddress);
-        connector = new ConnectorV3(poolAddressesProviderAddress);
+        // connector = new ConnectorV3(poolAddressesProviderAddress);
+        connector = new ConnectorV2(poolAddressesProviderAddress);
         pool = IPool(connector.getPool());
         entryPositionsManager = new EntryPositionsManager();
         exitPositionsManager = new ExitPositionsManager();
@@ -118,7 +120,7 @@ contract TestSetup is Config, Utils, stdCheats {
             20
         );
 
-        lens = new Lens(address(morpho), poolAddressesProvider);
+        lens = new Lens(address(morpho));
         treasuryVault = new User(morpho);
         morpho.setTreasuryVault(address(treasuryVault));
 

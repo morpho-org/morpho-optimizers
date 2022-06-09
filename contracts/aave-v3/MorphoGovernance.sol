@@ -11,7 +11,6 @@ import "./MorphoUtils.sol";
 /// @custom:contact security@morpho.xyz
 /// @notice Governance functions for Morpho.
 abstract contract MorphoGovernance is MorphoUtils {
-    using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
     using PercentageMath for uint256;
     using SafeTransferLib for ERC20;
     using WadRayMath for uint256;

@@ -4,7 +4,6 @@ pragma solidity ^0.8.0;
 import "@aave/core-v3/contracts/interfaces/IPriceOracleGetter.sol";
 import "@aave/core-v3/contracts/interfaces/IAToken.sol";
 
-import "@aave/core-v3/contracts/protocol/libraries/configuration/ReserveConfiguration.sol";
 import "@aave/core-v3/contracts/protocol/libraries/math/PercentageMath.sol";
 import "@aave/core-v3/contracts/protocol/libraries/math/WadRayMath.sol";
 import "../common/libraries/DelegateCall.sol";
@@ -16,7 +15,6 @@ import "./MorphoStorage.sol";
 /// @custom:contact security@morpho.xyz
 /// @notice Modifiers, getters and other util functions for Morpho.
 contract MorphoUtils is MorphoStorage {
-    using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
     using HeapOrdering for HeapOrdering.HeapArray;
     using PercentageMath for uint256;
     using DelegateCall for address;

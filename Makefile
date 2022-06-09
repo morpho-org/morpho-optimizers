@@ -13,7 +13,7 @@ else
     export FOUNDRY_FORK_BLOCK_NUMBER=14292587
   else ifeq (${NETWORK}, polygon-mainnet)
     export FOUNDRY_FORK_BLOCK_NUMBER=29116728
-    export DAPP_REMAPPINGS=@config/=config/$(NETWORK)/${PROTOCOL}/
+    export DAPP_REMAPPINGS=@config/=config/$(NETWORK)/aave-v2/
   endif
 endif
 

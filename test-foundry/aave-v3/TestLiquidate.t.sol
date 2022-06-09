@@ -4,7 +4,6 @@ pragma solidity ^0.8.0;
 import "./setup/TestSetup.sol";
 
 contract TestLiquidate is TestSetup {
-    using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
     using PercentageMath for uint256;
 
     // A user liquidates a borrower that has enough collateral to cover for his debt, the transaction reverts.

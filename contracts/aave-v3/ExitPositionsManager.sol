@@ -10,7 +10,6 @@ import "./PositionsManagerUtils.sol";
 /// @custom:contact security@morpho.xyz
 /// @notice Morpho's exit points: withdraw, repay and liquidate.
 contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
-    using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
     using HeapOrdering for HeapOrdering.HeapArray;
     using PercentageMath for uint256;
     using SafeTransferLib for ERC20;

@@ -6,6 +6,7 @@ import "./IEntryPositionsManager.sol";
 import "./IExitPositionsManager.sol";
 import "./IInterestRatesManager.sol";
 import "./IRewardsManager.sol";
+import "./IConnector.sol";
 
 import "../libraries/Types.sol";
 
@@ -31,6 +32,7 @@ interface IMorpho {
     function entryPositionsManager() external view returns (IEntryPositionsManager);
     function exitPositionsManager() external view returns (IExitPositionsManager);
     function pool() external view returns (IPool);
+    function connector() external view returns (IConnector);
     function treasuryVault() external view returns (address);
     function indexOfMarket(address) external view returns (uint256);
     function userMarketsBitmask(address) external view returns (uint256);

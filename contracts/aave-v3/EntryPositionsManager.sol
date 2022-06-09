@@ -10,7 +10,6 @@ import "./PositionsManagerUtils.sol";
 /// @custom:contact security@morpho.xyz
 /// @notice Morpho's entry points: supply and borrow.
 contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils {
-    using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
     using HeapOrdering for HeapOrdering.HeapArray;
     using PercentageMath for uint256;
     using SafeTransferLib for ERC20;
@@ -312,10 +311,10 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
 
                 address underlyingAddress = IAToken(poolToken).UNDERLYING_ASSET_ADDRESS();
                 assetData.underlyingPrice = oracle.getAssetPrice(underlyingAddress); // In base currency.
-                (assetData.ltv, , , assetData.reserveDecimals, , ) = pool
-                .getConfiguration(underlyingAddress)
-                .getParams();
-                assetData.tokenUnit = 10**assetData.reserveDecimals;
+                IConnector.ConfigParams memory config = connector.getConfigurationParams(
+                    underlyingAddress
+                );
+                assetData.tokenUnit = 10**config.reserveDecimals;
 
                 if (hasBorrowed && _isBorrowing(_user, poolToken))
                     liquidityData.debtValue +=
@@ -328,7 +327,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
                         assetData.tokenUnit;
 
                     liquidityData.maxLoanToValue += assetData.collateralValue.percentMul(
-                        assetData.ltv
+                        config.ltv
                     );
                 }
 

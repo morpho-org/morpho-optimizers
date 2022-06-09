@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity ^0.8.0;
 
-import "@aave/core-v3/contracts/protocol/libraries/configuration/ReserveConfiguration.sol";
-
 interface IConnector {
     struct ConfigParams {
         uint256 ltv;
