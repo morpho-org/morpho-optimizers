@@ -7,5 +7,4 @@ certoraRun \
     --solc_args '["--optimize"]' \
     --msg "PMFA $1" \
     --send_only \
-    --staging "alex/new-dt-hashing-alpha" \
     $*
