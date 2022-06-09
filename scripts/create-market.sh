@@ -1,0 +1,13 @@
+#!/bin/bash
+
+read -p "Morpho-${PROTOCOL}'s Proxy address on ${NETWORK}? " -r MORPHO_PROXY_ADDRESS
+read -p "${PROTOCOL}'s pool token address on ${NETWORK}? " -r POOL_TOKEN_ADDRESS
+
+echo "Creating market via Morpho-${PROTOCOL}'s Proxy on ${NETWORK} at ${MORPHO_PROXY_ADDRESS}, with 15% reserveFactor & 33% p2pIndexCursor..."
+
+cast send --private-key "${DEPLOYER_PRIVATE_KEY}" "${MORPHO_PROXY_ADDRESS}" \
+    0x7a663121000000000000000000000000"${POOL_TOKEN_ADDRESS:2}"00000000000000000000000000000000000000000000000000000000000005dc0000000000000000000000000000000000000000000000000000000000000d05
+
+
+echo "---"
+echo "🎉 Market created!"
