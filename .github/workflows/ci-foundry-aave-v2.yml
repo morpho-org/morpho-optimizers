@@ -14,6 +14,7 @@ on:
       - "test-foundry/aave-v2/**"
       - "*.lock"
       - "Makefile"
+      - "remappings.txt"
       - ".github/workflows/ci-foundry-aave-v2.yml"
   pull_request:
     paths:
@@ -26,6 +27,7 @@ on:
       - "test-foundry/aave-v2/**"
       - "*.lock"
       - "Makefile"
+      - "remappings.txt"
       - ".github/workflows/ci-foundry-aave-v2.yml"
 
 jobs:
