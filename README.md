@@ -10,33 +10,10 @@ This repository contains the core smart contracts for the Morpho Protocol V1 ðŸ¦
 
 Tests are run against a forks of real networks, which allows us to interact directly with liquidity pools of Compound or Aave. Note that you need to have an RPC provider that have access to Ethereum or Polygon.
 
-For testing, first, install dependencies with:
+For testing, first, install dependencies (node_modules, git submodules, [foundry](https://github.com/gakonst/foundry)) with:
 
 ```bash
-yarn
-```
-
-Then, install [Foundry](https://github.com/gakonst/foundry):
-
-Run the command below to get foundryup, the Foundry toolchain installer:
-
-```bash
-curl -L https://foundry.paradigm.xyz | bash
-```
-
-If you do not want to use the redirect, feel free to manually download the foundryup installation script from [here](https://github.com/gakonst/foundry).
-
-Then in a new terminal session or after reloading your PATH, run it to get the latest forge and cast binaries:
-
-```bash
-foundryup
-```
-
-Finally, update git submodules:
-
-```bash
-git submodule init
-git submodule update
+make install
 ```
 
 Refer to the `env.example` for the required environment variable.
@@ -57,13 +34,13 @@ apt install aha
 
 To run tests on different protocols, navigate a Unix terminal to the root folder of the project and run the command of your choice:
 
-To run every test of a specific protocol (e.g. Morpho-Compound ):
+To run every test of a specific protocol (e.g. for Morpho-Compound):
 
 ```bash
 make test PROTOCOL=compound
 ```
 
-or to run only a specific set of tests of a specific protocol (e.g. Aave V2):
+or to run only a specific set of tests of a specific protocol (e.g. for Morpho-Aave V2):
 
 ```bash
 make c-TestBorrow PROTOCOL=aave-v2
@@ -71,7 +48,7 @@ make c-TestGovernance PROTOCOL=aave-v2
 ...
 ```
 
-or to run individual tests of a specific protocol (e.g. Aave V3):
+or to run individual tests of a specific protocol (e.g. for Morpho-Aave V3):
 
 ```bash
 make s-testShouldCollectTheRightAmountOfFees PROTOCOL=aave-v3
@@ -79,7 +56,7 @@ make s-testShouldReduceTheFeeToRepay PROTOCOL=aave-v3
 ...
 ```
 
-For the other commands, check the `Makefile` file.
+For the other commands, check the [Makefile](./Makefile).
 
 ---
 
@@ -147,7 +124,7 @@ You can run the following command to deploy Morpho's contracts for Aave on Polyg
 yarn deploy:aave:polygon
 ```
 
-For the other commands, check the `package.json` file.
+For the other commands, check the [package.json](./package.json) file.
 
 ## Publishing and verifying a contract on Etherscan ðŸ“¡
 
