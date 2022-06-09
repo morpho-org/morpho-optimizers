@@ -7,6 +7,7 @@ interface IConnector {
     struct ConfigParams {
         uint256 ltv;
         uint256 liquidationThreshold;
+        uint256 liquidationBonus;
         uint256 reserveDecimals;
     }
 

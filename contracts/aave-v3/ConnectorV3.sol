@@ -12,7 +12,6 @@ contract ConnectorV3 is IConnector {
     using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
 
     IPoolAddressesProvider public addressesProvider;
-    IRewardsController public rewardsController;
     IPool public immutable pool;
 
     constructor(address _addressesProvider) {
@@ -52,8 +51,13 @@ contract ConnectorV3 is IConnector {
         external
         returns (IConnector.ConfigParams memory config)
     {
-        (config.ltv, config.liquidationThreshold, , config.reserveDecimals, , ) = pool
-        .getConfiguration(_underlyingAddress)
-        .getParams();
+        (
+            config.ltv,
+            config.liquidationThreshold,
+            config.liquidationBonus,
+            config.reserveDecimals,
+            ,
+
+        ) = pool.getConfiguration(_underlyingAddress).getParams();
     }
 }

@@ -203,16 +203,16 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
 
         IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
 
-        (, , vars.liquidationBonus, vars.collateralReserveDecimals, , ) = pool
-        .getConfiguration(tokenCollateralAddress)
-        .getParams();
-        (, , , vars.borrowedReserveDecimals, , ) = pool
-        .getConfiguration(tokenBorrowedAddress)
-        .getParams();
+        IConnector.ConfigParams memory collateralConfig = connector.getConfigurationParams(
+            tokenCollateralAddress
+        );
+        IConnector.ConfigParams memory borrowConfig = connector.getConfigurationParams(
+            tokenBorrowedAddress
+        );
 
         unchecked {
-            vars.collateralTokenUnit = 10**vars.collateralReserveDecimals;
-            vars.borrowedTokenUnit = 10**vars.borrowedReserveDecimals;
+            vars.collateralTokenUnit = 10**collateralConfig.reserveDecimals;
+            vars.borrowedTokenUnit = 10**borrowConfig.reserveDecimals;
         }
 
         uint256 amountToSeize = Math.min(
@@ -220,7 +220,7 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
                 oracle.getAssetPrice(tokenBorrowedAddress) *
                 vars.collateralTokenUnit) /
                 (vars.borrowedTokenUnit * oracle.getAssetPrice(tokenCollateralAddress)))
-            .percentMul(vars.liquidationBonus), // Same mechanism as Aave.
+            .percentMul(collateralConfig.liquidationBonus), // Same mechanism as Aave.
             _getUserSupplyBalanceInOf(_poolTokenCollateralAddress, _borrower)
         );
 
