@@ -28,39 +28,46 @@ ifneq (, $(filter ${NETWORK}, ropsten rinkeby))
   export FOUNDRY_ETH_RPC_URL=https://${NETWORK}.infura.io/v3/${INFURA_PROJECT_ID}
 endif
 
-install: node_modules
+install:
+	@yarn
 	@git submodule update --init --recursive
 	@curl -L https://foundry.paradigm.xyz | bash
 	@foundryup
 
-deploy: node_modules
-	./scripts/deploy.sh
+	chmod +x ./scripts/deploy-compound.sh
+	chmod +x ./scripts/open-market.sh
 
-test: node_modules
+deploy:
+	./scripts/deploy-${PROTOCOL}.sh
+
+open-market:
+	./scripts/open-market.sh
+
+test:
 	@echo Running all ${PROTOCOL} tests on ${NETWORK}
 	@forge test -vv -c test-foundry/${PROTOCOL} --no-match-contract TestGasConsumption --no-match-test testFuzz
 
-test-ansi: node_modules
+test-ansi:
 	@echo Running all ${PROTOCOL} tests on ${NETWORK}
 	@forge test -vv -c test-foundry/${PROTOCOL} --no-match-contract TestGasConsumption --no-match-test testFuzz > trace.ansi
 
-test-html: node_modules
+test-html:
 	@echo Running all ${PROTOCOL} tests on ${NETWORK}
 	@forge test -vv -c test-foundry/${PROTOCOL} --no-match-contract TestGasConsumption --no-match-test testFuzz | aha --black > trace.html
 
-fuzz: node_modules
+fuzz:
 	@echo Running all ${PROTOCOL} fuzzing tests on ${NETWORK}
 	@forge test -vv -c test-foundry/fuzzing/${PROTOCOL}
 
-gas-report: node_modules
+gas-report:
 	@echo Creating gas consumption report for ${PROTOCOL} on ${NETWORK}
 	@forge test -vvv -c test-foundry/${PROTOCOL} --gas-report --match-contract TestGasConsumption > gas_report.ansi
 
-test-common: node_modules
+test-common:
 	@echo Running all common tests on ${NETWORK}
 	@forge test -vvv -c test-foundry/common
 
-contract-% c-%: node_modules
+contract-% c-%:
 	@echo Running tests for contract $* of ${PROTOCOL} on ${NETWORK}
 	@forge test -vvv -c test-foundry/${PROTOCOL}/$*.t.sol --match-contract $*
 
@@ -68,11 +75,11 @@ ansi-c-%:
 	@echo Running tests for contract $* of ${PROTOCOL} on ${NETWORK}
 	@forge test -vvv -c test-foundry/${PROTOCOL}/$*.t.sol --match-contract $* > trace.ansi
 
-html-c-%: node_modules
+html-c-%:
 	@echo Running tests for contract $* of ${PROTOCOL} on ${NETWORK}
 	@forge test -vvv -c test-foundry/${PROTOCOL}/$*.t.sol --match-contract $* | aha --black > trace.html
 
-single-% s-%: node_modules
+single-% s-%:
 	@echo Running single test $* of ${PROTOCOL} on ${NETWORK}
 	@forge test -vvv -c test-foundry/${PROTOCOL} --match-test $*
 
@@ -80,14 +87,12 @@ ansi-s-%:
 	@echo Running single test $* of ${PROTOCOL} on ${NETWORK}
 	@forge test -vvvvv -c test-foundry/${PROTOCOL} --match-test $* > trace.ansi
 
-html-s-%: node_modules
+html-s-%:
 	@echo Running single test $* of ${PROTOCOL} on ${NETWORK}
 	@forge test -vvvvv -c test-foundry/${PROTOCOL} --match-test $* | aha --black > trace.html
 
-config: node_modules
+config:
 	@forge config
 
-node_modules:
-	@yarn
 
-.PHONY: test config common node_modules
+.PHONY: test config common
