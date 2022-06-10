@@ -8,7 +8,7 @@ contract TestFees is TestSetup {
 
     function testShouldRevertWhenClaimingZeroAmount() public {
         hevm.expectRevert(abi.encodeWithSignature("AmountIsZero()"));
-        morpho.claimToTreasury(aAave, 1 ether);
+        morpho.claimToTreasury(aDai, 1 ether);
     }
 
     function testShouldNotBePossibleToSetFeesHigherThan100Percent() public {
@@ -67,8 +67,7 @@ contract TestFees is TestSetup {
         morpho.claimToTreasury(aDai, 1 ether);
     }
 
-    /// TODO: fix this test
-    function __testShouldCollectTheRightAmountOfFees() public {
+    function testShouldCollectTheRightAmountOfFees() public {
         uint16 reserveFactor = 1_000;
         uint256 toBorrow = 50 ether;
         morpho.setReserveFactor(aDai, reserveFactor); // 10%
@@ -81,32 +80,19 @@ contract TestFees is TestSetup {
         uint256 oldSupplyIndex = morpho.p2pSupplyIndex(aDai);
         uint256 oldBorrowIndex = morpho.p2pBorrowIndex(aDai);
 
-        (uint256 supplyP2PSPY, uint256 borrowP2PSPY) = getApproxP2PRates(aDai);
-
-        uint256 newSupplyIndex = oldSupplyIndex.rayMul(
-            computeCompoundedInterest(supplyP2PSPY, 365 days)
-        );
-        uint256 newBorrowIndex = oldBorrowIndex.rayMul(
-            computeCompoundedInterest(borrowP2PSPY, 365 days)
-        );
+        hevm.warp(block.timestamp + 365 days);
+        (uint256 newSupplyIndex, uint256 newBorrowIndex) = lens.getUpdatedP2PIndexes(aDai);
 
         uint256 expectedFees = toBorrow.rayMul(
             newBorrowIndex.rayDiv(oldBorrowIndex) - newSupplyIndex.rayDiv(oldSupplyIndex)
         );
-
-        hevm.warp(block.timestamp + 365 days);
 
         supplier1.repay(aDai, type(uint256).max);
         morpho.claimToTreasury(aDai, type(uint256).max);
         uint256 balanceAfter = IERC20(dai).balanceOf(morpho.treasuryVault());
         uint256 gainedByDAO = balanceAfter - balanceBefore;
 
-        assertApproxEq(
-            gainedByDAO,
-            (expectedFees * 9_000) / MAX_BASIS_POINTS,
-            (expectedFees * 1) / 100000,
-            "Fees collected"
-        );
+        assertApproxEq(gainedByDAO, expectedFees, (expectedFees * 1) / 100000, "Fees collected");
     }
 
     function testShouldNotClaimFeesIfFactorIsZero() public {
@@ -115,16 +101,16 @@ contract TestFees is TestSetup {
         // Increase time so that rates update.
         hevm.warp(block.timestamp + 1);
 
-        supplier1.approve(aave, type(uint256).max);
-        supplier1.supply(aAave, 100 * WAD);
-        supplier1.borrow(aAave, 50 * WAD);
+        supplier1.approve(dai, type(uint256).max);
+        supplier1.supply(aDai, 100 * WAD);
+        supplier1.borrow(aDai, 50 * WAD);
 
         hevm.warp(block.timestamp + (365 days));
 
-        supplier1.repay(aAave, type(uint256).max);
+        supplier1.repay(aDai, type(uint256).max);
 
         hevm.expectRevert(abi.encodeWithSignature("AmountIsZero()"));
-        morpho.claimToTreasury(aAave, 1 ether);
+        morpho.claimToTreasury(aDai, 1 ether);
     }
 
     function testShouldPayFee() public {

@@ -37,6 +37,7 @@ import "../../common/helpers/Chains.sol";
 import {User} from "../helpers/User.sol";
 import {Utils} from "./Utils.sol";
 import "forge-std/stdlib.sol";
+import "hardhat/console.sol";
 import "@config/Config.sol";
 
 contract TestSetup is Config, Utils, stdCheats {
@@ -104,9 +105,11 @@ contract TestSetup is Config, Utils, stdCheats {
         interestRatesManager = new InterestRatesManager();
 
         morphoImplV1 = new Morpho();
-        morphoProxy = new TransparentUpgradeableProxy(address(morphoImplV1), address(this), "");
-
-        morphoProxy.changeAdmin(address(proxyAdmin));
+        morphoProxy = new TransparentUpgradeableProxy(
+            address(morphoImplV1),
+            address(proxyAdmin),
+            ""
+        );
         morpho = Morpho(payable(address(morphoProxy)));
         morpho.initialize(
             entryPositionsManager,
@@ -150,12 +153,6 @@ contract TestSetup is Config, Utils, stdCheats {
         createMarket(aAave);
 
         hevm.warp(block.timestamp + 100);
-
-        /// Send some dust on the Morpho contract, to handle roundings issues on withdraws on pool ///
-
-        tip(dai, address(morpho), WAD);
-        tip(usdt, address(morpho), 1e6);
-        tip(usdc, address(morpho), 1e6);
 
         /// Create Morpho token, deploy Incentives Vault and activate rewards ///
 
