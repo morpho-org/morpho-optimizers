@@ -110,6 +110,7 @@ abstract contract MorphoGovernance is MorphoUtils {
 
     /// @notice Thrown when the number of markets will exceed the bitmask's capacity.
     error MaxNumberOfMarkets();
+
     /// @notice Thrown when the amount is equal to 0.
     error AmountIsZero();
 

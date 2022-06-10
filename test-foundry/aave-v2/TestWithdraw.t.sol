@@ -132,6 +132,9 @@ contract TestWithdraw is TestSetup {
 
     // There are NMAX (or less) suppliers `onPool` available to replace him `inP2P`, they supply enough to cover for the withdrawn liquidity. First, his liquidity `onPool` is taken, his matched is replaced by NMAX (or less) suppliers up to his withdrawal amount.
     function testWithdraw3_2() public {
+        // TODO: fix this.
+        tip(dai, address(morpho), 1);
+
         setDefaultMaxGasForMatchingHelper(
             type(uint64).max,
             type(uint64).max,
