@@ -37,7 +37,7 @@ test-html:
 
 fuzz:
 	@echo Running all ${PROTOCOL} fuzzing tests on ${NETWORK}
-	@forge test --use solc:${FOUNDRY_SOLC_VERSION} -vv -c test-foundry/${PROTOCOL} --match-test testFuzz
+	@forge test --use solc:${FOUNDRY_SOLC_VERSION} -vv -c test-foundry/fuzzing/${PROTOCOL}
 
 gas-report:
 	@echo Creating gas consumption report for ${PROTOCOL} on ${NETWORK}
