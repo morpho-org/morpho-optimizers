@@ -46,14 +46,14 @@ contract Lens {
     uint256 public constant RAY = 1e27;
     IMorpho public immutable morpho;
     ILendingPoolAddressesProvider public immutable addressesProvider;
-    ILendingPool public immutable lendingPool;
+    ILendingPool public immutable pool;
 
     /// CONSTRUCTOR ///
 
     constructor(address _morphoAddress, ILendingPoolAddressesProvider _addressesProvider) {
         morpho = IMorpho(_morphoAddress);
         addressesProvider = _addressesProvider;
-        lendingPool = ILendingPool(addressesProvider.getLendingPool());
+        pool = ILendingPool(addressesProvider.getLendingPool());
     }
 
     /// ERRORS ///
@@ -181,7 +181,7 @@ contract Lens {
         address underlyingAddress = IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS();
 
         assetData.underlyingPrice = _oracle.getAssetPrice(underlyingAddress); // In ETH.
-        (assetData.ltv, assetData.liquidationThreshold, , assetData.reserveDecimals, ) = lendingPool
+        (assetData.ltv, assetData.liquidationThreshold, , assetData.reserveDecimals, ) = pool
         .getConfiguration(underlyingAddress)
         .getParamsMemory();
 
@@ -598,8 +598,8 @@ contract Lens {
     {
         address underlyingAddress = IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS();
         return (
-            lendingPool.getReserveNormalizedIncome(underlyingAddress),
-            lendingPool.getReserveNormalizedVariableDebt(underlyingAddress)
+            pool.getReserveNormalizedIncome(underlyingAddress),
+            pool.getReserveNormalizedVariableDebt(underlyingAddress)
         );
     }
 
@@ -617,7 +617,7 @@ contract Lens {
                 getUpdatedP2PSupplyIndex(_poolTokenAddress)
             ) +
             morpho.supplyBalanceInOf(_poolTokenAddress, _user).onPool.rayMul(
-                lendingPool.getReserveNormalizedIncome(
+                pool.getReserveNormalizedIncome(
                     IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS()
                 )
             );
@@ -637,7 +637,7 @@ contract Lens {
                 getUpdatedP2PBorrowIndex(_poolTokenAddress)
             ) +
             morpho.borrowBalanceInOf(_poolTokenAddress, _user).onPool.rayMul(
-                lendingPool.getReserveNormalizedVariableDebt(
+                pool.getReserveNormalizedVariableDebt(
                     IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS()
                 )
             );

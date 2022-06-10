@@ -27,7 +27,7 @@ contract TestBorrow is TestSetup {
 
         (uint256 inP2P, uint256 onPool) = morpho.borrowBalanceInOf(aDai, address(borrower1));
 
-        uint256 normalizedVariableDebt = lendingPool.getReserveNormalizedVariableDebt(dai);
+        uint256 normalizedVariableDebt = pool.getReserveNormalizedVariableDebt(dai);
         uint256 expectedOnPool = underlyingToAdUnit(amount, normalizedVariableDebt);
 
         testEquality(onPool, expectedOnPool);
@@ -76,7 +76,7 @@ contract TestBorrow is TestSetup {
 
         testEquality(inP2P, supplyInP2P);
 
-        uint256 normalizedVariableDebt = lendingPool.getReserveNormalizedVariableDebt(dai);
+        uint256 normalizedVariableDebt = pool.getReserveNormalizedVariableDebt(dai);
         uint256 expectedOnPool = underlyingToAdUnit(amount, normalizedVariableDebt);
 
         testEquality(onPool, expectedOnPool);
@@ -167,7 +167,7 @@ contract TestBorrow is TestSetup {
         uint256 inP2P;
         uint256 onPool;
         uint256 p2pSupplyIndex = morpho.p2pSupplyIndex(aDai);
-        uint256 normalizedVariableDebt = lendingPool.getReserveNormalizedVariableDebt(dai);
+        uint256 normalizedVariableDebt = pool.getReserveNormalizedVariableDebt(dai);
         uint256 expectedInP2P;
 
         for (uint256 i = 0; i < NMAX; i++) {
@@ -199,7 +199,7 @@ contract TestBorrow is TestSetup {
 
         (, uint256 onPool) = morpho.borrowBalanceInOf(aDai, address(borrower1));
 
-        uint256 normalizedVariableDebt = lendingPool.getReserveNormalizedVariableDebt(dai);
+        uint256 normalizedVariableDebt = pool.getReserveNormalizedVariableDebt(dai);
         uint256 expectedOnPool = underlyingToAdUnit(2 * amount, normalizedVariableDebt);
         testEquality(onPool, expectedOnPool);
     }

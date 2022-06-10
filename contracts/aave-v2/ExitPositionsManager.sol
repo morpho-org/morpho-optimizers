@@ -203,10 +203,10 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
 
         IPriceOracleGetter oracle = IPriceOracleGetter(addressesProvider.getPriceOracle());
 
-        (, , vars.liquidationBonus, vars.collateralReserveDecimals, ) = lendingPool
+        (, , vars.liquidationBonus, vars.collateralReserveDecimals, ) = pool
         .getConfiguration(tokenCollateralAddress)
         .getParamsMemory();
-        (, , , vars.borrowedReserveDecimals, ) = lendingPool
+        (, , , vars.borrowedReserveDecimals, ) = pool
         .getConfiguration(tokenBorrowedAddress)
         .getParamsMemory();
 
@@ -608,13 +608,9 @@ contract ExitPositionsManager is IExitPositionsManager, PositionsManagerUtils {
 
             address underlyingAddress = IAToken(poolToken).UNDERLYING_ASSET_ADDRESS();
             assetData.underlyingPrice = oracle.getAssetPrice(underlyingAddress); // In ETH.
-            (
-                assetData.ltv,
-                assetData.liquidationThreshold,
-                ,
-                assetData.reserveDecimals,
-
-            ) = lendingPool.getConfiguration(underlyingAddress).getParamsMemory();
+            (assetData.ltv, assetData.liquidationThreshold, , assetData.reserveDecimals, ) = pool
+            .getConfiguration(underlyingAddress)
+            .getParamsMemory();
             assetData.tokenUnit = 10**assetData.reserveDecimals;
 
             if (_isBorrowing(_user, poolToken))

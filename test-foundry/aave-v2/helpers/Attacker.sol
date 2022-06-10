@@ -8,10 +8,10 @@ import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 contract Attacker {
     using SafeTransferLib for ERC20;
 
-    ILendingPool internal lendingPool;
+    ILendingPool internal pool;
 
     constructor(ILendingPool _lendingPool) {
-        lendingPool = _lendingPool;
+        pool = _lendingPool;
     }
 
     receive() external payable {}
@@ -38,6 +38,6 @@ contract Attacker {
         address _onBehalfOf,
         uint16 _referralCode
     ) external {
-        lendingPool.deposit(_asset, _amount, _onBehalfOf, _referralCode);
+        pool.deposit(_asset, _amount, _onBehalfOf, _referralCode);
     }
 }

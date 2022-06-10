@@ -29,7 +29,7 @@ abstract contract RewardsManager is IRewardsManager, OwnableUpgradeable {
     mapping(address => LocalAssetData) public localAssetData; // The local data related to a given market.
 
     IAaveIncentivesController public override aaveIncentivesController;
-    ILendingPool public lendingPool;
+    ILendingPool public pool;
     IMorpho public morpho;
 
     /// EVENTS ///
@@ -82,7 +82,7 @@ abstract contract RewardsManager is IRewardsManager, OwnableUpgradeable {
         __Ownable_init();
 
         morpho = IMorpho(_morpho);
-        lendingPool = ILendingPool(morpho.lendingPool());
+        pool = ILendingPool(morpho.pool());
     }
 
     /// EXTERNAL ///
@@ -148,7 +148,7 @@ abstract contract RewardsManager is IRewardsManager, OwnableUpgradeable {
 
         for (uint256 i; i < _assets.length; ) {
             address asset = _assets[i];
-            DataTypes.ReserveData memory reserve = lendingPool.getReserveData(
+            DataTypes.ReserveData memory reserve = pool.getReserveData(
                 IGetterUnderlyingAsset(asset).UNDERLYING_ASSET_ADDRESS()
             );
             uint256 userBalance;
@@ -183,7 +183,7 @@ abstract contract RewardsManager is IRewardsManager, OwnableUpgradeable {
 
         for (uint256 i; i < assetsLength; ) {
             address asset = _assets[i];
-            DataTypes.ReserveData memory reserve = lendingPool.getReserveData(
+            DataTypes.ReserveData memory reserve = pool.getReserveData(
                 IGetterUnderlyingAsset(asset).UNDERLYING_ASSET_ADDRESS()
             );
             uint256 userBalance;

@@ -2,7 +2,6 @@
 pragma solidity ^0.8.0;
 
 import "@contracts/aave-v2/interfaces/aave/IAaveIncentivesController.sol";
-import "@contracts/aave-v2/interfaces/aave/IProtocolDataProvider.sol";
 import "@contracts/aave-v2/interfaces/aave/IPriceOracleGetter.sol";
 import "@contracts/aave-v2/interfaces/aave/IVariableDebtToken.sol";
 import "@contracts/aave-v2/interfaces/IInterestRatesManager.sol";
@@ -14,6 +13,7 @@ import "@contracts/aave-v2/interfaces/IMorpho.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 
+import {ReserveConfiguration} from "@contracts/aave-v2/libraries/aave/ReserveConfiguration.sol";
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 import "@contracts/aave-v2/libraries/aave/WadRayMath.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
@@ -62,10 +62,9 @@ contract TestSetup is Config, Utils, stdCheats {
 
     IncentivesVault public incentivesVault;
     DumbOracle internal dumbOracle;
-    ILendingPoolAddressesProvider public lendingPoolAddressesProvider;
-    IProtocolDataProvider public protocolDataProvider;
+    ILendingPoolAddressesProvider public poolAddressesProvider;
     IPriceOracleGetter public oracle;
-    ILendingPool public lendingPool;
+    ILendingPool public pool;
 
     User public supplier1;
     User public supplier2;
@@ -93,10 +92,8 @@ contract TestSetup is Config, Utils, stdCheats {
             repay: 3e6
         });
 
-        lendingPoolAddressesProvider = ILendingPoolAddressesProvider(
-            lendingPoolAddressesProviderAddress
-        );
-        lendingPool = ILendingPool(lendingPoolAddressesProvider.getLendingPool());
+        poolAddressesProvider = ILendingPoolAddressesProvider(poolAddressesProviderAddress);
+        pool = ILendingPool(poolAddressesProvider.getLendingPool());
         entryPositionsManager = new EntryPositionsManager();
         exitPositionsManager = new ExitPositionsManager();
 
@@ -116,12 +113,12 @@ contract TestSetup is Config, Utils, stdCheats {
             entryPositionsManager,
             exitPositionsManager,
             interestRatesManager,
-            ILendingPoolAddressesProvider(lendingPoolAddressesProviderAddress),
+            ILendingPoolAddressesProvider(poolAddressesProviderAddress),
             defaultMaxGasForMatching,
             20
         );
 
-        lens = new Lens(address(morpho), lendingPoolAddressesProvider);
+        lens = new Lens(address(morpho), poolAddressesProvider);
         treasuryVault = new User(morpho);
         morpho.setTreasuryVault(address(treasuryVault));
 
@@ -164,8 +161,7 @@ contract TestSetup is Config, Utils, stdCheats {
         );
         morphoToken.transfer(address(incentivesVault), 1_000_000 ether);
 
-        oracle = IPriceOracleGetter(lendingPoolAddressesProvider.getPriceOracle());
-        protocolDataProvider = IProtocolDataProvider(protocolDataProviderAddress);
+        oracle = IPriceOracleGetter(poolAddressesProvider.getPriceOracle());
 
         morpho.setRewardsManager(rewardsManager);
         morpho.setIncentivesVault(incentivesVault);
@@ -223,9 +219,8 @@ contract TestSetup is Config, Utils, stdCheats {
         hevm.label(address(rewardsManager), "RewardsManager");
         hevm.label(address(morphoToken), "MorphoToken");
         hevm.label(aaveIncentivesControllerAddress, "AaveIncentivesController");
-        hevm.label(address(lendingPoolAddressesProvider), "LendingPoolAddressesProvider");
-        hevm.label(address(lendingPool), "LendingPool");
-        hevm.label(address(protocolDataProvider), "ProtocolDataProvider");
+        hevm.label(address(poolAddressesProvider), "PoolAddressesProvider");
+        hevm.label(address(pool), "Pool");
         hevm.label(address(oracle), "AaveOracle");
         hevm.label(address(treasuryVault), "TreasuryVault");
         hevm.label(address(interestRatesManager), "InterestRatesManager");
@@ -245,7 +240,7 @@ contract TestSetup is Config, Utils, stdCheats {
         SimplePriceOracle customOracle = new SimplePriceOracle();
 
         hevm.store(
-            address(lendingPoolAddressesProvider),
+            address(poolAddressesProvider),
             keccak256(abi.encode(bytes32("PRICE_ORACLE"), 2)),
             bytes32(uint256(uint160(address(customOracle))))
         );
@@ -290,7 +285,7 @@ contract TestSetup is Config, Utils, stdCheats {
         view
         returns (uint256 p2pSupplyRate_, uint256 p2pBorrowRate_)
     {
-        DataTypes.ReserveData memory reserveData = lendingPool.getReserveData(
+        DataTypes.ReserveData memory reserveData = pool.getReserveData(
             IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS()
         );
 
