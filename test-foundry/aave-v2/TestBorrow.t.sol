@@ -207,4 +207,14 @@ contract TestBorrow is TestSetup {
     function testFailBorrowZero() public {
         morpho.borrow(aDai, 0, type(uint256).max);
     }
+
+    function testShouldNotBorrowAssetNotBorrowable() public {
+        uint256 amount = 100 ether;
+
+        borrower1.approve(dai, type(uint256).max);
+        borrower1.supply(aDai, amount);
+
+        hevm.expectRevert(EntryPositionsManager.BorrowingNotEnabled.selector);
+        borrower1.borrow(aAave, amount / 2);
+    }
 }
