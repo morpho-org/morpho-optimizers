@@ -104,36 +104,6 @@ contract TestMorphoGetters is TestSetup {
         }
     }
 
-    function testEnteredMarkets() public {
-        borrower1.approve(dai, 10 ether);
-        borrower1.supply(aDai, 10 ether);
-
-        borrower1.approve(usdc, to6Decimals(10 ether));
-        borrower1.supply(aUsdc, to6Decimals(10 ether));
-
-        assertEq(morpho.enteredMarkets(address(borrower1), 0), aDai);
-        assertEq(morpho.enteredMarkets(address(borrower1), 1), aUsdc);
-
-        // Borrower1 withdraw, USDC should be the first in enteredMarkets.
-        borrower1.withdraw(aDai, type(uint256).max);
-
-        assertEq(morpho.enteredMarkets(address(borrower1), 0), aUsdc);
-    }
-
-    function testFailUserLeftMarkets() public {
-        borrower1.approve(dai, 10 ether);
-        borrower1.supply(aDai, 10 ether);
-
-        // Check that borrower1 entered Dai market.
-        assertEq(morpho.enteredMarkets(address(borrower1), 0), aDai);
-
-        // Borrower1 withdraw everything from the Dai market.
-        borrower1.withdraw(aDai, 10 ether);
-
-        // Test should fail because there is no element in the array.
-        morpho.enteredMarkets(address(borrower1), 0);
-    }
-
     function testGetAllMarkets() public {
         for (uint256 i; i < pools.length; i++) {
             assertEq(morpho.marketsCreated(i), pools[i]);
