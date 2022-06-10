@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
+import {ERC20, SafeTransferLib} from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 import "@rari-capital/solmate/src/utils/FixedPointMathLib.sol";
 
 /// @title ERC4626.
@@ -48,23 +47,23 @@ abstract contract ERC4626 is ERC20 {
 
     error AmountIsZero();
 
-    /// EXTERNAL ///
+    /// PUBLIC ///
 
-    function deposit(uint256 _amount, address _receiver) external virtual returns (uint256 shares) {
+    function deposit(uint256 _amount, address _receiver) public virtual returns (uint256 shares) {
         // Check for rounding error since we round down in previewDeposit.
-        require((shares = previewDeposit(_amount)) != 0, ShareIsZero());
+        if ((shares = previewDeposit(_amount)) == 0) revert ShareIsZero();
 
         // Need to transfer before minting or ERC777s could reenter.
         underlyingToken.safeTransferFrom(msg.sender, address(this), _amount);
 
-        _mint(receiver, shares);
+        _mint(_receiver, shares);
 
-        emit Deposit(msg.sender, receiver, _amount, shares);
+        emit Deposit(msg.sender, _receiver, _amount, shares);
 
         afterDeposit(_amount, shares);
     }
 
-    function mint(uint256 _shares, address _receiver) external virtual returns (uint256 _amount) {
+    function mint(uint256 _shares, address _receiver) public virtual returns (uint256 _amount) {
         _amount = previewMint(_shares); // No need to check for rounding error, previewMint rounds up.
 
         // Need to transfer before minting or ERC777s could reenter.
@@ -81,7 +80,7 @@ abstract contract ERC4626 is ERC20 {
         uint256 _amount,
         address _receiver,
         address _owner
-    ) external virtual returns (uint256 shares) {
+    ) public virtual returns (uint256 shares) {
         shares = previewWithdraw(_amount); // No need to check for rounding error, previewWithdraw rounds up.
 
         if (msg.sender != _owner) {
@@ -103,7 +102,7 @@ abstract contract ERC4626 is ERC20 {
         uint256 _shares,
         address _receiver,
         address _owner
-    ) external virtual returns (uint256 _amount) {
+    ) public virtual returns (uint256 amount) {
         if (msg.sender != _owner) {
             uint256 allowed = allowance[_owner][msg.sender]; // Saves gas for limited approvals.
 
@@ -111,15 +110,15 @@ abstract contract ERC4626 is ERC20 {
         }
 
         // Check for rounding error since we round down in previewRedeem.
-        require((_amount = previewRedeem(_shares)) != 0, AmountIsZero());
+        if ((amount = previewRedeem(_shares)) == 0) revert AmountIsZero();
 
-        beforeWithdraw(_amount, _shares);
+        beforeWithdraw(amount, _shares);
 
         _burn(_owner, _shares);
 
-        emit Withdraw(msg.sender, _receiver, _owner, _amount, _shares);
+        emit Withdraw(msg.sender, _receiver, _owner, amount, _shares);
 
-        underlyingToken.safeTransfer(_receiver, _amount);
+        underlyingToken.safeTransfer(_receiver, amount);
     }
 
     function totalAssets() public view virtual returns (uint256);
