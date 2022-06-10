@@ -108,6 +108,8 @@ abstract contract MorphoGovernance is MorphoUtils {
     /// @notice Thrown when trying to set the max sorted users to 0.
     error MaxSortedUsersCannotBeZero();
 
+    /// @notice Thrown when the number of markets will exceed the bitmask's capacity.
+    error MaxNumberOfMarkets();
     /// @notice Thrown when the amount is equal to 0.
     error AmountIsZero();
 
@@ -285,6 +287,20 @@ abstract contract MorphoGovernance is MorphoUtils {
         emit P2PStatusSet(_poolTokenAddress, _newStatus);
     }
 
+    /// @notice Sets a market's asset as collateral.
+    /// @param _poolTokenAddress The address of the market to (un)set as collateral.
+    /// @param _newStatus The new status to set.
+    function setAssetAsCollateral(address _poolTokenAddress, bool _newStatus)
+        external
+        onlyOwner
+        isMarketCreated(_poolTokenAddress)
+    {
+        lendingPool.setUserUseReserveAsCollateral(
+            IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS(),
+            _newStatus
+        );
+    }
+
     /// @notice Transfers the protocol reserve fee to the DAO.
     /// @dev No more than 90% of the accumulated fees are claimable at once.
     /// @param _poolTokenAddress The address of the market on which to claim the reserve fee.
@@ -319,11 +335,8 @@ abstract contract MorphoGovernance is MorphoUtils {
             _marketParams.reserveFactor > MAX_BASIS_POINTS
         ) revert ExceedsMaxBasisPoints();
 
-        DataTypes.ReserveConfigurationMap memory configuration = lendingPool.getConfiguration(
-            _underlyingTokenAddress
-        );
-        (bool isActive, , , ) = configuration.getFlagsMemory();
-        if (!isActive) revert MarketIsNotListedOnAave();
+        if (!lendingPool.getConfiguration(_underlyingTokenAddress).getActive())
+            revert MarketIsNotListedOnAave();
 
         address poolTokenAddress = lendingPool
         .getReserveData(_underlyingTokenAddress)
@@ -346,7 +359,10 @@ abstract contract MorphoGovernance is MorphoUtils {
         );
         marketParameters[poolTokenAddress] = _marketParams;
 
+        if (marketsCreated.length >= 128) revert MaxNumberOfMarkets();
+        borrowMask[poolTokenAddress] = 1 << (marketsCreated.length << 1);
         marketsCreated.push(poolTokenAddress);
+
         emit MarketCreated(
             poolTokenAddress,
             _marketParams.reserveFactor,

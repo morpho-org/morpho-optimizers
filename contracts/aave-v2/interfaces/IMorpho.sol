@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity ^0.8.0;
 
-import "./IInterestRatesManager.sol";
-import "./IRewardsManager.sol";
+import "./aave/ILendingPool.sol";
 import "./IEntryPositionsManager.sol";
 import "./IExitPositionsManager.sol";
+import "./IInterestRatesManager.sol";
+import "./IRewardsManager.sol";
 
 import "../libraries/Types.sol";
 
@@ -17,7 +18,6 @@ interface IMorpho {
     function maxSortedUsers() external view returns (uint256);
     function supplyBalanceInOf(address, address) external view returns (Types.SupplyBalance memory);
     function borrowBalanceInOf(address, address) external view returns (Types.BorrowBalance memory);
-    function enteredMarkets(address) external view returns (address);
     function deltas(address) external view returns (Types.Delta memory);
     function marketsCreated() external view returns (address[] memory);
     function marketParameters(address) external view returns (Types.MarketParameters memory);
@@ -28,9 +28,12 @@ interface IMorpho {
     function marketStatus(address) external view returns (Types.MarketStatus memory);
     function interestRatesManager() external view returns (IInterestRatesManager);
     function rewardsManager() external view returns (IRewardsManager);
-    function EntryPositionsManager() external view returns (IEntryPositionsManager);
-    function ExitPositionsManager() external view returns (IExitPositionsManager);
+    function entryPositionsManager() external view returns (IEntryPositionsManager);
+    function exitPositionsManager() external view returns (IExitPositionsManager);
+    function lendingPool() external view returns (ILendingPool);
     function treasuryVault() external view returns (address);
+    function borrowMask(address) external view returns (uint256);
+    function userMarketsBitmask(address) external view returns (uint256);
 
     /// UTILS ///
 
@@ -56,6 +59,9 @@ interface IMorpho {
     function setP2PIndexCursor(address _poolTokenAddress, uint16 _p2pIndexCursor) external;
     function setPauseStatus(address _poolTokenAddress) external;
     function setPartialPauseStatus(address _poolTokenAddress) external;
+    function setExitPositionsManager(IExitPositionsManager _exitPositionsManager) external;
+    function setEntryPositionsManager(IEntryPositionsManager _entryPositionsManager)
+        external;
     function claimToTreasury(address _poolTokenAddress, uint256 _amount) external;
     function createMarket(address _poolTokenAddress, Types.MarketParameters calldata _marketParams) external;
 

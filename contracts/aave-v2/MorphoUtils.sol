@@ -59,17 +59,6 @@ abstract contract MorphoUtils is MorphoStorage {
 
     /// EXTERNAL ///
 
-    /// @notice Returns all markets entered by a given user.
-    /// @param _user The address of the user.
-    /// @return enteredMarkets_ The list of markets entered by this user.
-    function getEnteredMarkets(address _user)
-        external
-        view
-        returns (address[] memory enteredMarkets_)
-    {
-        return enteredMarkets[_user];
-    }
-
     /// @notice Returns all created markets.
     /// @return marketsCreated_ The list of market addresses.
     function getAllMarkets() external view returns (address[] memory marketsCreated_) {
@@ -123,18 +112,71 @@ abstract contract MorphoUtils is MorphoStorage {
 
     /// INTERNAL ///
 
+    /// @dev Returns if a user has been borrowing or supplying on a given market.
+    /// @param _user The user to check for.
+    /// @param _market The address of the market to check.
+    /// @return True if the user has been supplying or borrowing on this market, false otherwise.
+    function _isSupplyingOrBorrowing(address _user, address _market) internal view returns (bool) {
+        uint256 bmask = borrowMask[_market];
+        return userMarketsBitmask[_user] & (bmask | (bmask << 1)) != 0;
+    }
+
+    /// @dev Returns if a user is borrowing on a given market.
+    /// @param _user The user to check for.
+    /// @param _market The address of the market to check.
+    /// @return True if the user has been borrowing on this market, false otherwise.
+    function _isBorrowing(address _user, address _market) internal view returns (bool) {
+        return userMarketsBitmask[_user] & borrowMask[_market] != 0;
+    }
+
+    /// @dev Returns if a user is supplying on a given market.
+    /// @param _user The user to check for.
+    /// @param _market The address of the market to check.
+    /// @return True if the user has been supplying on this market, false otherwise.
+    function _isSupplying(address _user, address _market) internal view returns (bool) {
+        return userMarketsBitmask[_user] & (borrowMask[_market] << 1) != 0;
+    }
+
+    /// @dev Returns if a user has been borrowing from any market.
+    /// @param _user The user to check for.
+    /// @return True if the user has been borrowing on any market, false otherwise.
+    function _isBorrowingAny(address _user) internal view returns (bool) {
+        return userMarketsBitmask[_user] & BORROWING_MASK != 0;
+    }
+
+    /// @notice Sets if the user is borrowing on a market.
+    /// @param _user The user to set for.
+    /// @param _market The address of the market to mark as borrowed.
+    /// @param _borrowing True if the user is borrowing, false otherwise.
+    function _setBorrowing(
+        address _user,
+        address _market,
+        bool _borrowing
+    ) internal {
+        if (_borrowing) userMarketsBitmask[_user] |= borrowMask[_market];
+        else userMarketsBitmask[_user] &= ~borrowMask[_market];
+    }
+
+    /// @notice Sets if the user is supplying on a market.
+    /// @param _user The user to set for.
+    /// @param _market The address of the market to mark as supplied.
+    /// @param _supplying True if the user is supplying, false otherwise.
+    function _setSupplying(
+        address _user,
+        address _market,
+        bool _supplying
+    ) internal {
+        if (_supplying) userMarketsBitmask[_user] |= borrowMask[_market] << 1;
+        else userMarketsBitmask[_user] &= ~(borrowMask[_market] << 1);
+    }
+
     /// @dev Updates the peer-to-peer indexes and pool indexes (only stored locally).
     /// @param _poolTokenAddress The address of the market to update.
     function _updateIndexes(address _poolTokenAddress) internal {
         address(interestRatesManager).functionDelegateCall(
-            abi.encodeWithSelector(
-                interestRatesManager.updateP2PIndexes.selector,
-                _poolTokenAddress
-            )
+            abi.encodeWithSelector(interestRatesManager.updateIndexes.selector, _poolTokenAddress)
         );
     }
-
-    /// INTERNAL ///
 
     /// @dev Returns the supply balance of `_user` in the `_poolTokenAddress` market.
     /// @dev Note: Compute the result with the index stored and not the most up to date one.

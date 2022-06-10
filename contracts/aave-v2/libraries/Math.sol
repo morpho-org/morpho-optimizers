@@ -6,15 +6,11 @@ pragma solidity ^0.8.0;
 /// @custom:contact security@morpho.xyz
 /// @dev Implements min helpers.
 library Math {
-    function min(
-        uint256 a,
-        uint256 b,
-        uint256 c
-    ) internal pure returns (uint256) {
-        return a < b ? a < c ? a : c : b < c ? b : c;
-    }
-
     function min(uint256 a, uint256 b) internal pure returns (uint256) {
         return a < b ? a : b;
+    }
+
+    function safeSub(uint256 a, uint256 b) internal pure returns (uint256) {
+        return a >= b ? a - b : 0;
     }
 }
