@@ -87,8 +87,8 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
         if (_amount == 0) revert AmountIsZero();
         _updateIndexes(_poolTokenAddress);
 
-        if (!_isSupplying(_supplier, _poolTokenAddress))
-            _setSupplying(_supplier, _poolTokenAddress, true);
+        if (!_isSupplying(_onBehalf, _poolTokenAddress))
+            _setSupplying(_onBehalf, _poolTokenAddress, true);
         ERC20 underlyingToken = ERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
         underlyingToken.safeTransferFrom(_supplier, address(this), _amount);
 
