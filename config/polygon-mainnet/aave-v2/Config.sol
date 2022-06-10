@@ -22,8 +22,7 @@ contract Config {
     address variableDebtDai = 0x75c4d1Fb84429023170086f06E682DcbBF537b7d;
     address variableDebtUsdc = 0x248960A9d75EdFa3de94F7193eae3161Eb349a12;
 
-    address lendingPoolAddressesProviderAddress = 0xd05e3E715d945B59290df0ae8eF85c1BdB684744;
-    address protocolDataProviderAddress = 0x7551b5D2763519d4e37e8B81929D336De671d46d;
+    address poolAddressesProviderAddress = 0xd05e3E715d945B59290df0ae8eF85c1BdB684744;
     address aaveIncentivesControllerAddress = 0x357D51124f59836DeD84c8a1730D72B749d8BC23;
     address swapRouterAddress = 0xE592427A0AEce92De3Edee1F18E0157C05861564;
 

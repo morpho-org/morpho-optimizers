@@ -30,7 +30,7 @@ interface IMorpho {
     function rewardsManager() external view returns (IRewardsManager);
     function entryPositionsManager() external view returns (IEntryPositionsManager);
     function exitPositionsManager() external view returns (IExitPositionsManager);
-    function lendingPool() external view returns (ILendingPool);
+    function pool() external view returns (ILendingPool);
     function treasuryVault() external view returns (address);
     function borrowMask(address) external view returns (uint256);
     function userMarketsBitmask(address) external view returns (uint256);

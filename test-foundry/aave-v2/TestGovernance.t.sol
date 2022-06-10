@@ -10,10 +10,10 @@ contract TestGovernance is TestSetup {
         assertEq(address(morpho.entryPositionsManager()), address(entryPositionsManager));
         assertEq(address(morpho.exitPositionsManager()), address(exitPositionsManager));
         assertEq(address(morpho.interestRatesManager()), address(interestRatesManager));
-        assertEq(address(morpho.addressesProvider()), address(lendingPoolAddressesProviderAddress));
+        assertEq(address(morpho.addressesProvider()), address(poolAddressesProviderAddress));
         assertEq(
-            address(morpho.lendingPool()),
-            ILendingPoolAddressesProvider(lendingPoolAddressesProviderAddress).getLendingPool()
+            address(morpho.pool()),
+            ILendingPoolAddressesProvider(poolAddressesProviderAddress).getLendingPool()
         );
         assertEq(morpho.maxSortedUsers(), 20);
 

@@ -71,7 +71,7 @@ contract TestRepay is TestSetup {
 
         uint256 expectedOnPool = underlyingToAdUnit(
             suppliedAmount,
-            lendingPool.getReserveNormalizedVariableDebt(dai)
+            pool.getReserveNormalizedVariableDebt(dai)
         );
 
         testEquality(onPoolSupplier, 0);
@@ -144,7 +144,7 @@ contract TestRepay is TestSetup {
 
         uint256 expectedOnPool = underlyingToAdUnit(
             suppliedAmount,
-            lendingPool.getReserveNormalizedVariableDebt(dai)
+            pool.getReserveNormalizedVariableDebt(dai)
         );
 
         testEquality(onPoolSupplier, 0);
@@ -157,7 +157,7 @@ contract TestRepay is TestSetup {
 
         uint256 inP2P;
         uint256 onPool;
-        uint256 normalizedVariableDebt = lendingPool.getReserveNormalizedVariableDebt(dai);
+        uint256 normalizedVariableDebt = pool.getReserveNormalizedVariableDebt(dai);
 
         uint256 amountPerBorrower = (borrowedAmount - suppliedAmount) / (NMAX - 1);
         // minus because borrower1 must not be counted twice !
@@ -233,7 +233,7 @@ contract TestRepay is TestSetup {
 
         uint256 expectedOnPool = underlyingToAdUnit(
             suppliedAmount,
-            lendingPool.getReserveNormalizedVariableDebt(dai)
+            pool.getReserveNormalizedVariableDebt(dai)
         );
 
         testEquality(onPoolSupplier, 0);
@@ -247,7 +247,7 @@ contract TestRepay is TestSetup {
         // Check balances for borrower
         (inP2PBorrower1, onPoolBorrower1) = morpho.borrowBalanceInOf(aDai, address(borrower1));
 
-        uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(dai);
+        uint256 normalizedIncome = pool.getReserveNormalizedIncome(dai);
         uint256 p2pBorrowIndex = morpho.p2pBorrowIndex(aDai);
 
         uint256 expectedBorrowBalanceInP2P = underlyingToP2PUnit(
@@ -308,7 +308,7 @@ contract TestRepay is TestSetup {
 
         uint256 expectedOnPool = underlyingToAdUnit(
             suppliedAmount,
-            lendingPool.getReserveNormalizedVariableDebt(dai)
+            pool.getReserveNormalizedVariableDebt(dai)
         );
 
         testEquality(onPoolSupplier, 0);
@@ -343,7 +343,7 @@ contract TestRepay is TestSetup {
         (inP2PSupplier, onPoolSupplier) = morpho.supplyBalanceInOf(aDai, address(supplier1));
 
         uint256 p2pBorrowIndex = morpho.p2pBorrowIndex(aDai);
-        uint256 normalizedIncome = lendingPool.getReserveNormalizedIncome(dai);
+        uint256 normalizedIncome = pool.getReserveNormalizedIncome(dai);
 
         uint256 expectedSupplyBalanceOnPool = underlyingToP2PUnit(
             suppliedAmount / 2,
@@ -445,7 +445,7 @@ contract TestRepay is TestSetup {
             uint256 expectedSupplyP2PDeltaInUnderlying = 10 * suppliedAmount;
             uint256 expectedSupplyP2PDelta = underlyingToScaledBalance(
                 expectedSupplyP2PDeltaInUnderlying,
-                lendingPool.getReserveNormalizedIncome(dai)
+                pool.getReserveNormalizedIncome(dai)
             );
             (uint256 supplyP2PDelta, , , ) = morpho.deltas(aDai);
             testEquality(supplyP2PDelta, expectedSupplyP2PDelta);
@@ -472,17 +472,17 @@ contract TestRepay is TestSetup {
             Vars memory newVars;
 
             (oldVars.SP2PD, , oldVars.SP2PA, ) = morpho.deltas(aDai);
-            oldVars.NI = lendingPool.getReserveNormalizedIncome(dai);
+            oldVars.NI = pool.getReserveNormalizedIncome(dai);
             oldVars.SP2PER = morpho.p2pSupplyIndex(aDai);
             (oldVars.APR, ) = getApproxP2PRates(aDai);
 
             move1YearForward(aDai);
 
             (newVars.SP2PD, , newVars.SP2PA, ) = morpho.deltas(aDai);
-            newVars.NI = lendingPool.getReserveNormalizedIncome(dai);
+            newVars.NI = pool.getReserveNormalizedIncome(dai);
             newVars.SP2PER = morpho.p2pSupplyIndex(aDai);
-            newVars.LR = lendingPool.getReserveData(dai).currentLiquidityRate;
-            newVars.VBR = lendingPool.getReserveData(dai).currentVariableBorrowRate;
+            newVars.LR = pool.getReserveData(dai).currentLiquidityRate;
+            newVars.VBR = pool.getReserveData(dai).currentVariableBorrowRate;
 
             uint256 shareOfTheDelta = newVars
             .SP2PD
@@ -586,9 +586,9 @@ contract TestRepay is TestSetup {
         borrower1.borrow(aDai, amount);
 
         // Someone repays on behalf of Morpho.
-        supplier1.approve(dai, address(lendingPool), amount);
+        supplier1.approve(dai, address(pool), amount);
         hevm.prank(address(supplier1));
-        lendingPool.repay(dai, amount, 2, address(morpho));
+        pool.repay(dai, amount, 2, address(morpho));
         hevm.stopPrank();
 
         // Repay max. Not supposed to revert !
@@ -605,17 +605,16 @@ contract TestRepay is TestSetup {
         // Borrow amount
         borrower1.borrow(aUsdt, amount);
 
-        uint256 initialDebt = IVariableDebtToken(
-            lendingPool.getReserveData(usdt).variableDebtTokenAddress
-        ).scaledBalanceOf(address(morpho));
+        uint256 initialDebt = IVariableDebtToken(pool.getReserveData(usdt).variableDebtTokenAddress)
+        .scaledBalanceOf(address(morpho));
 
         // Repay on-behalf of Morpho
         tip(usdt, address(this), amount / 2);
-        ERC20(usdt).approve(address(lendingPool), amount / 2);
-        lendingPool.repay(usdt, amount / 2, 2, address(morpho));
+        ERC20(usdt).approve(address(pool), amount / 2);
+        pool.repay(usdt, amount / 2, 2, address(morpho));
 
         uint256 remainingDebt = IVariableDebtToken(
-            lendingPool.getReserveData(usdt).variableDebtTokenAddress
+            pool.getReserveData(usdt).variableDebtTokenAddress
         ).scaledBalanceOf(address(morpho));
 
         assertLt(remainingDebt, initialDebt);
@@ -626,7 +625,7 @@ contract TestRepay is TestSetup {
         borrower1.repay(aUsdt, amount);
 
         // Make sure that USDT's Position Manager allowance is set to 0
-        assertEq(ERC20(usdt).allowance(address(morpho), address(lendingPool)), 0);
+        assertEq(ERC20(usdt).allowance(address(morpho), address(pool)), 0);
     }
 
     function testRepayOnBehalf() public {
