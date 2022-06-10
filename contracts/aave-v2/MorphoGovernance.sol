@@ -141,7 +141,7 @@ abstract contract MorphoGovernance is MorphoUtils {
         entryPositionsManager = _entryPositionsManager;
         exitPositionsManager = _exitPositionsManager;
         addressesProvider = _lendingPoolAddressesProvider;
-        lendingPool = ILendingPool(addressesProvider.getLendingPool());
+        pool = ILendingPool(addressesProvider.getLendingPool());
 
         defaultMaxGasForMatching = _defaultMaxGasForMatching;
         maxSortedUsers = _maxSortedUsers;
@@ -296,7 +296,7 @@ abstract contract MorphoGovernance is MorphoUtils {
         onlyOwner
         isMarketCreated(_poolTokenAddress)
     {
-        lendingPool.setUserUseReserveAsCollateral(
+        pool.setUserUseReserveAsCollateral(
             IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS(),
             _newStatus
         );
@@ -336,12 +336,10 @@ abstract contract MorphoGovernance is MorphoUtils {
             _marketParams.reserveFactor > MAX_BASIS_POINTS
         ) revert ExceedsMaxBasisPoints();
 
-        if (!lendingPool.getConfiguration(_underlyingTokenAddress).getActive())
+        if (!pool.getConfiguration(_underlyingTokenAddress).getActive())
             revert MarketIsNotListedOnAave();
 
-        address poolTokenAddress = lendingPool
-        .getReserveData(_underlyingTokenAddress)
-        .aTokenAddress;
+        address poolTokenAddress = pool.getReserveData(_underlyingTokenAddress).aTokenAddress;
 
         if (marketStatus[poolTokenAddress].isCreated) revert MarketAlreadyCreated();
         marketStatus[poolTokenAddress].isCreated = true;
@@ -353,10 +351,10 @@ abstract contract MorphoGovernance is MorphoUtils {
 
         poolIndexes.lastUpdateTimestamp = uint32(block.timestamp);
         poolIndexes.poolSupplyIndex = uint112(
-            lendingPool.getReserveNormalizedIncome(_underlyingTokenAddress)
+            pool.getReserveNormalizedIncome(_underlyingTokenAddress)
         );
         poolIndexes.poolBorrowIndex = uint112(
-            lendingPool.getReserveNormalizedVariableDebt(_underlyingTokenAddress)
+            pool.getReserveNormalizedVariableDebt(_underlyingTokenAddress)
         );
         marketParameters[poolTokenAddress] = _marketParams;
 

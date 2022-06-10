@@ -182,7 +182,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
         if (_amount == 0) revert AmountIsZero();
 
         ERC20 underlyingToken = ERC20(IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS());
-        if (!lendingPool.getConfiguration(address(underlyingToken)).getBorrowingEnabled())
+        if (!pool.getConfiguration(address(underlyingToken)).getBorrowingEnabled())
             revert BorrowingNotEnabled();
 
         _updateIndexes(_poolTokenAddress);
@@ -293,7 +293,7 @@ contract EntryPositionsManager is IEntryPositionsManager, PositionsManagerUtils 
 
                 address underlyingAddress = IAToken(poolToken).UNDERLYING_ASSET_ADDRESS();
                 assetData.underlyingPrice = oracle.getAssetPrice(underlyingAddress); // In ETH.
-                (assetData.ltv, , , assetData.reserveDecimals, ) = lendingPool
+                (assetData.ltv, , , assetData.reserveDecimals, ) = pool
                 .getConfiguration(underlyingAddress)
                 .getParamsMemory();
 

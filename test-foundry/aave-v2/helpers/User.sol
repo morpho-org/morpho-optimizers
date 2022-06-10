@@ -11,13 +11,13 @@ contract User {
 
     Morpho internal morpho;
     IRewardsManager internal rewardsManager;
-    ILendingPool public lendingPool;
+    ILendingPool public pool;
     IAaveIncentivesController public aaveIncentivesController;
 
     constructor(Morpho _morpho) {
         morpho = _morpho;
         rewardsManager = _morpho.rewardsManager();
-        lendingPool = _morpho.lendingPool();
+        pool = _morpho.pool();
         aaveIncentivesController = _morpho.aaveIncentivesController();
     }
 
@@ -83,12 +83,12 @@ contract User {
     }
 
     function aaveSupply(address _underlyingTokenAddress, uint256 _amount) external {
-        ERC20(_underlyingTokenAddress).safeApprove(address(lendingPool), type(uint256).max);
-        lendingPool.deposit(_underlyingTokenAddress, _amount, address(this), 0); // 0 : no refferal code
+        ERC20(_underlyingTokenAddress).safeApprove(address(pool), type(uint256).max);
+        pool.deposit(_underlyingTokenAddress, _amount, address(this), 0); // 0 : no refferal code
     }
 
     function aaveBorrow(address _underlyingTokenAddress, uint256 _amount) external {
-        lendingPool.borrow(_underlyingTokenAddress, _amount, 2, 0, address(this)); // 2 : variable rate | 0 : no refferal code
+        pool.borrow(_underlyingTokenAddress, _amount, 2, 0, address(this)); // 2 : variable rate | 0 : no refferal code
     }
 
     function aaveClaimRewards(address[] memory assets) external {
