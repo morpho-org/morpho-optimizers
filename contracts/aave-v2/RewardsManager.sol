@@ -179,9 +179,9 @@ abstract contract RewardsManager is IRewardsManager, OwnableUpgradeable {
         returns (uint256 unclaimedRewards)
     {
         unclaimedRewards = userUnclaimedRewards[_user];
-        uint256 assetsLenght = _assets.length;
+        uint256 assetsLength = _assets.length;
 
-        for (uint256 i; i < assetsLenght; ) {
+        for (uint256 i; i < assetsLength; ) {
             address asset = _assets[i];
             DataTypes.ReserveData memory reserve = lendingPool.getReserveData(
                 IGetterUnderlyingAsset(asset).UNDERLYING_ASSET_ADDRESS()
@@ -208,7 +208,7 @@ abstract contract RewardsManager is IRewardsManager, OwnableUpgradeable {
     /// @dev Updates asset's data.
     /// @param _asset The address of the reference asset of the distribution (aToken or variable debt token).
     /// @param _totalBalance The total balance of tokens in the distribution.
-    function _udpateAsset(address _asset, uint256 _totalBalance)
+    function _updateAsset(address _asset, uint256 _totalBalance)
         internal
         returns (uint256 oldIndex, uint256 newIndex)
     {
@@ -232,7 +232,7 @@ abstract contract RewardsManager is IRewardsManager, OwnableUpgradeable {
         uint256 _totalBalance
     ) internal returns (uint256 accruedRewards) {
         uint256 formerUserIndex = localAssetData[_asset].userIndex[_user];
-        (, uint256 newIndex) = _udpateAsset(_asset, _totalBalance);
+        (, uint256 newIndex) = _updateAsset(_asset, _totalBalance);
 
         if (formerUserIndex != newIndex) {
             if (_userBalance != 0) {}
