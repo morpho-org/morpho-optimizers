@@ -12,15 +12,6 @@ contract TestRewards is TestSetup {
         morpho.claimRewards(aDaiInArray, false);
     }
 
-    function testShouldRevertWhenAccruingRewardsForInvalidAsset() public {
-        address[] memory array = new address[](2);
-        array[0] = aDai;
-        array[1] = stableDebtDai;
-
-        hevm.expectRevert(abi.encodeWithSignature("InvalidAsset()"));
-        rewardsManager.accrueUserUnclaimedRewards(array, address(supplier1));
-    }
-
     function testShouldClaimRightAmountOfSupplyRewards() public {
         uint256 toSupply = 100 ether;
         supplier1.approve(dai, toSupply);
@@ -44,7 +35,7 @@ contract TestRewards is TestSetup {
         uint256 userIndex = rewardsManager.getUserIndex(aDai, address(supplier1));
         address[] memory aDaiInArray = new address[](1);
         aDaiInArray[0] = aDai;
-        uint256 unclaimedRewards = rewardsManager.accrueUserUnclaimedRewards(
+        uint256 unclaimedRewards = rewardsManager.getUserUnclaimedRewards(
             aDaiInArray,
             address(supplier1)
         );
@@ -154,7 +145,7 @@ contract TestRewards is TestSetup {
         uint256 userIndex = rewardsManager.getUserIndex(variableDebtUsdc, address(supplier1));
         address[] memory variableDebtUsdcArray = new address[](1);
         variableDebtUsdcArray[0] = variableDebtUsdc;
-        uint256 unclaimedRewards = rewardsManager.accrueUserUnclaimedRewards(
+        uint256 unclaimedRewards = rewardsManager.getUserUnclaimedRewards(
             variableDebtUsdcArray,
             address(supplier1)
         );
@@ -299,7 +290,7 @@ contract TestRewards is TestSetup {
             aDaiInArray,
             address(supplier1)
         );
-        uint256 unclaimedRewardsForDai = rewardsManager.accrueUserUnclaimedRewards(
+        uint256 unclaimedRewardsForDai = rewardsManager.getUserUnclaimedRewards(
             aDaiInArray,
             address(supplier1)
         );
@@ -309,7 +300,7 @@ contract TestRewards is TestSetup {
             tokensInArray,
             address(supplier1)
         );
-        uint256 allUnclaimedRewards = rewardsManager.accrueUserUnclaimedRewards(
+        uint256 allUnclaimedRewards = rewardsManager.getUserUnclaimedRewards(
             tokensInArray,
             address(supplier1)
         );
@@ -325,7 +316,7 @@ contract TestRewards is TestSetup {
             tokensInArray,
             address(supplier1)
         );
-        allUnclaimedRewards = rewardsManager.accrueUserUnclaimedRewards(
+        allUnclaimedRewards = rewardsManager.getUserUnclaimedRewards(
             tokensInArray,
             address(supplier1)
         );
@@ -388,15 +379,15 @@ contract TestRewards is TestSetup {
         assertGt(balanceAfter[2], balanceBefore[2]);
         assertGt(balanceAfter[3], balanceBefore[3]);
 
-        uint256 unclaimedRewards1 = rewardsManager.accrueUserUnclaimedRewards(
+        uint256 unclaimedRewards1 = rewardsManager.getUserUnclaimedRewards(
             tokensInArray,
             address(supplier1)
         );
-        uint256 unclaimedRewards2 = rewardsManager.accrueUserUnclaimedRewards(
+        uint256 unclaimedRewards2 = rewardsManager.getUserUnclaimedRewards(
             tokensInArray,
             address(supplier2)
         );
-        uint256 unclaimedRewards3 = rewardsManager.accrueUserUnclaimedRewards(
+        uint256 unclaimedRewards3 = rewardsManager.getUserUnclaimedRewards(
             tokensInArray,
             address(supplier3)
         );
@@ -493,17 +484,20 @@ contract TestRewards is TestSetup {
         address[] memory markets = new address[](1);
         markets[0] = aUsdc;
 
-        rewardsManager.accrueUserUnclaimedRewards(markets, address(supplier1));
+        uint256 unclaimedRewards1 = rewardsManager.getUserUnclaimedRewards(
+            markets,
+            address(supplier1)
+        );
 
         // supplier2 tries to game the system by supplying a huge amount of tokens and withdrawing right after accruing its rewards.
         supplier2.supply(aUsdc, to6Decimals(bigAmount));
-        rewardsManager.accrueUserUnclaimedRewards(markets, address(supplier2));
+        uint256 unclaimedRewards2 = rewardsManager.getUserUnclaimedRewards(
+            markets,
+            address(supplier2)
+        );
         supplier2.withdraw(aUsdc, to6Decimals(bigAmount));
 
-        assertEq(
-            rewardsManager.getUserUnclaimedRewards(markets, address(supplier1)),
-            rewardsManager.getUserUnclaimedRewards(markets, address(supplier2))
-        );
+        assertEq(unclaimedRewards1, unclaimedRewards2);
     }
 
     function testFailShouldNotClaimRewardsWhenRewardsManagerIsAddressZero() public {
@@ -519,9 +513,6 @@ contract TestRewards is TestSetup {
 
         address[] memory markets = new address[](1);
         markets[0] = aUsdc;
-
-        // User accrues its rewards.
-        rewardsManager.accrueUserUnclaimedRewards(markets, address(supplier1));
 
         // User tries to claim its rewards on Morpho.
         supplier1.claimRewards(markets, false);
