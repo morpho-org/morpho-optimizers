@@ -13,7 +13,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 /// @title RewardsManager.
 /// @author Morpho Labs.
 /// @custom:contact security@morpho.xyz
-/// @notice This abstract contract is a based for rewards managers used to manage the rewards from the Aave protocol.
+/// @notice This abstract contract is a base for rewards managers managing the rewards from the Aave protocol.
 abstract contract RewardsManager is IRewardsManager, Ownable {
     /// STRUCTS ///
 
@@ -87,7 +87,7 @@ abstract contract RewardsManager is IRewardsManager, Ownable {
         onlyMorpho
         returns (uint256 unclaimedRewards)
     {
-        unclaimedRewards = accrueUserUnclaimedRewards(_assets, _user);
+        unclaimedRewards = _accrueUserUnclaimedRewards(_assets, _user);
         userUnclaimedRewards[_user] = 0;
     }
 
@@ -101,22 +101,16 @@ abstract contract RewardsManager is IRewardsManager, Ownable {
         address _asset,
         uint256 _userBalance,
         uint256 _totalBalance
-    ) external override onlyMorpho {
+    ) external onlyMorpho {
         userUnclaimedRewards[_user] += _updateUserAsset(_user, _asset, _userBalance, _totalBalance);
     }
 
     /// @notice Returns the index of the `_user` for a given `_asset`.
     /// @param _asset The address of the reference asset of the distribution (aToken or variable debt token).
     /// @param _user The address of the user.
-    /// @return userIndex_ The index of the user.
-    function getUserIndex(address _asset, address _user)
-        external
-        view
-        override
-        returns (uint256 userIndex_)
-    {
-        LocalAssetData storage localData = localAssetData[_asset];
-        userIndex_ = localData.userIndex[_user];
+    /// @return The index of the user.
+    function getUserIndex(address _asset, address _user) external view override returns (uint256) {
+        return localAssetData[_asset].userIndex[_user];
     }
 
     /// @notice Get the unclaimed rewards for the given assets and returns the total unclaimed rewards.
@@ -131,7 +125,7 @@ abstract contract RewardsManager is IRewardsManager, Ownable {
     {
         unclaimedRewards = userUnclaimedRewards[_user];
 
-        for (uint256 i = 0; i < _assets.length; i++) {
+        for (uint256 i; i < _assets.length; ) {
             address asset = _assets[i];
             DataTypes.ReserveData memory reserve = lendingPool.getReserveData(
                 IGetterUnderlyingAsset(asset).UNDERLYING_ASSET_ADDRESS()
@@ -146,23 +140,27 @@ abstract contract RewardsManager is IRewardsManager, Ownable {
             uint256 totalBalance = IScaledBalanceToken(asset).scaledTotalSupply();
 
             unclaimedRewards += _getUserAsset(_user, asset, userBalance, totalBalance);
+
+            unchecked {
+                ++i;
+            }
         }
     }
 
-    /// PUBLIC ///
+    /// INTERNAL ///
 
     /// @notice Accrues unclaimed rewards for the given assets and returns the total unclaimed rewards.
     /// @param _assets The assets for which to accrue rewards (aToken or variable debt token).
     /// @param _user The address of the user.
     /// @return unclaimedRewards The user unclaimed rewards.
-    function accrueUserUnclaimedRewards(address[] calldata _assets, address _user)
-        public
-        override
+    function _accrueUserUnclaimedRewards(address[] calldata _assets, address _user)
+        internal
         returns (uint256 unclaimedRewards)
     {
         unclaimedRewards = userUnclaimedRewards[_user];
+        uint256 assetsLenght = _assets.length;
 
-        for (uint256 i = 0; i < _assets.length; i++) {
+        for (uint256 i; i < assetsLenght; ) {
             address asset = _assets[i];
             DataTypes.ReserveData memory reserve = lendingPool.getReserveData(
                 IGetterUnderlyingAsset(asset).UNDERLYING_ASSET_ADDRESS()
@@ -177,12 +175,28 @@ abstract contract RewardsManager is IRewardsManager, Ownable {
             uint256 totalBalance = IScaledBalanceToken(asset).scaledTotalSupply();
 
             unclaimedRewards += _updateUserAsset(_user, asset, userBalance, totalBalance);
+
+            unchecked {
+                ++i;
+            }
         }
 
         userUnclaimedRewards[_user] = unclaimedRewards;
     }
 
-    /// INTERNAL ///
+    /// @dev Updates asset's data.
+    /// @param _asset The address of the reference asset of the distribution (aToken or variable debt token).
+    /// @param _totalBalance The total balance of tokens in the distribution.
+    function _udpateAsset(address _asset, uint256 _totalBalance)
+        internal
+        returns (uint256 oldIndex, uint256 newIndex)
+    {
+        (oldIndex, newIndex) = _getAssetIndex(_asset, _totalBalance);
+        if (oldIndex != newIndex) {
+            localAssetData[_asset].lastUpdateTimestamp = block.timestamp;
+            localAssetData[_asset].lastIndex = newIndex;
+        }
+    }
 
     /// @dev Updates the state of a user in a distribution.
     /// @param _user The address of the user.
@@ -196,15 +210,14 @@ abstract contract RewardsManager is IRewardsManager, Ownable {
         uint256 _userBalance,
         uint256 _totalBalance
     ) internal returns (uint256 accruedRewards) {
-        LocalAssetData storage localData = localAssetData[_asset];
-        uint256 formerUserIndex = localData.userIndex[_user];
-        uint256 newIndex = _getUpdatedIndex(_asset, _totalBalance);
+        uint256 formerUserIndex = localAssetData[_asset].userIndex[_user];
+        (, uint256 newIndex) = _udpateAsset(_asset, _totalBalance);
 
         if (formerUserIndex != newIndex) {
             if (_userBalance != 0)
                 accruedRewards = _getRewards(_userBalance, newIndex, formerUserIndex);
 
-            localData.userIndex[_user] = newIndex;
+            localAssetData[_asset].userIndex[_user] = newIndex;
         }
     }
 
@@ -221,14 +234,11 @@ abstract contract RewardsManager is IRewardsManager, Ownable {
         uint256 _userBalance,
         uint256 _totalBalance
     ) internal view returns (uint256 accruedRewards) {
-        LocalAssetData storage localData = localAssetData[_asset];
-        uint256 formerUserIndex = localData.userIndex[_user];
-        uint256 newIndex = _getNewIndex(_asset, _totalBalance);
+        uint256 formerUserIndex = localAssetData[_asset].userIndex[_user];
+        (, uint256 newIndex) = _getAssetIndex(_asset, _totalBalance);
 
-        if (formerUserIndex != newIndex) {
-            if (_userBalance != 0)
-                accruedRewards = _getRewards(_userBalance, newIndex, formerUserIndex);
-        }
+        if (formerUserIndex != newIndex && _userBalance != 0)
+            accruedRewards = _getRewards(_userBalance, newIndex, formerUserIndex);
     }
 
     /// @dev Computes and returns the next value of a specific distribution index.
@@ -237,7 +247,7 @@ abstract contract RewardsManager is IRewardsManager, Ownable {
     /// @param _lastUpdateTimestamp The last moment this distribution was updated.
     /// @param _totalBalance The total balance of tokens in the distribution.
     /// @return The new index.
-    function _getAssetIndex(
+    function _computeIndex(
         uint256 _currentIndex,
         uint256 _emissionPerSecond,
         uint256 _lastUpdateTimestamp,
@@ -274,20 +284,11 @@ abstract contract RewardsManager is IRewardsManager, Ownable {
     /// @dev Returns the next reward index.
     /// @param _asset The address of the reference asset of the distribution (aToken or variable debt token).
     /// @param _totalBalance The total balance of tokens in the distribution.
+    /// @return oldIndex The old distribution index.
     /// @return newIndex The new distribution index.
-    function _getUpdatedIndex(address _asset, uint256 _totalBalance)
-        internal
-        virtual
-        returns (uint256 newIndex);
-
-    /// @dev Returns the next reward index.
-    /// @dev This function is the equivalent of _getUpdatedIndex, but as a view.
-    /// @param _asset The address of the reference asset of the distribution (aToken or variable debt token).
-    /// @param _totalBalance The total balance of tokens in the distribution.
-    /// @return newIndex The new distribution index.
-    function _getNewIndex(address _asset, uint256 _totalBalance)
+    function _getAssetIndex(address _asset, uint256 _totalBalance)
         internal
         view
         virtual
-        returns (uint256 newIndex);
+        returns (uint256 oldIndex, uint256 newIndex);
 }
