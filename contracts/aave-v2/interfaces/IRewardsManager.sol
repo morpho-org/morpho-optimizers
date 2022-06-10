@@ -4,6 +4,8 @@ pragma solidity ^0.8.0;
 import "./aave/IAaveIncentivesController.sol";
 
 interface IRewardsManager {
+    function initialize(address _morpho) external;
+
     function aaveIncentivesController() external view returns (IAaveIncentivesController);
 
     function setAaveIncentivesController(address) external;

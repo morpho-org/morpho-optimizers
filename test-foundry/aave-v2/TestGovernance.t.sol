@@ -152,10 +152,7 @@ contract TestGovernance is TestSetup {
     }
 
     function testOnlyOwnerShouldSetRewardsManager() public {
-        IRewardsManager rewardsManagerV2 = new RewardsManagerOnMainnetAndAvalanche(
-            lendingPool,
-            IMorpho(address(morpho))
-        );
+        IRewardsManager rewardsManagerV2 = new RewardsManagerOnMainnetAndAvalanche();
 
         hevm.prank(address(0));
         hevm.expectRevert("Ownable: caller is not the owner");
