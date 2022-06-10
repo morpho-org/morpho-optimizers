@@ -134,6 +134,29 @@ contract TestBitmask is TestSetup {
         assertFalse(isSupplyingOrBorrowing(address(borrower1), aWbtc));
     }
 
+    function testBitmaskSupplyOnBehalf() public {
+        supplier1.approve(dai, 10 ether);
+        hevm.prank(address(supplier1));
+        morpho.supply(aDai, address(supplier2), 10 ether);
+
+        assertFalse(isSupplying(address(supplier1), aDai));
+        assertTrue(isSupplying(address(supplier2), aDai));
+    }
+
+    function testBitmaskRepayOnBehalf() public {
+        borrower1.approve(dai, 10 ether);
+        borrower1.supply(aDai, 10 ether);
+        borrower1.borrow(aDai, 10 ether / 2);
+
+        supplier1.approve(dai, type(uint256).max);
+        hevm.prank(address(supplier1));
+        morpho.repay(aDai, address(borrower1), 10 ether / 4);
+
+        assertTrue(isBorrowing(address(borrower1), aDai));
+        assertFalse(isSupplying(address(supplier1), aDai));
+        assertFalse(isBorrowing(address(supplier1), aDai));
+    }
+
     function isSupplyingOrBorrowing(address _user, address _market) internal view returns (bool) {
         uint256 bmask = morpho.borrowMask(_market);
         return morpho.userMarketsBitmask(_user) & (bmask | (bmask << 1)) != 0;
