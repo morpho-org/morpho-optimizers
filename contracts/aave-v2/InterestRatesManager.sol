@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 
 import "./interfaces/aave/IAToken.sol";
 
+import "./libraries/aave/PercentageMath.sol";
 import "./libraries/aave/WadRayMath.sol";
 import "./libraries/Math.sol";
 
@@ -14,6 +15,7 @@ import "./MorphoStorage.sol";
 /// @notice Smart contract handling the computation of indexes used for peer-to-peer interactions.
 /// @dev This contract inherits from MorphoStorage so that Morpho can delegate calls to this contract.
 contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
+    using PercentageMath for uint256;
     using WadRayMath for uint256;
 
     /// STRUCTS ///
@@ -48,22 +50,24 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
 
     /// EXTERNAL ///
 
-    /// @notice Updates the peer-to-peer indexes.
+    /// @notice Updates the peer-to-peer indexes and pool indexes (only stored locally).
     /// @param _poolTokenAddress The address of the market to update.
-    function updateP2PIndexes(address _poolTokenAddress) external {
+    function updateIndexes(address _poolTokenAddress) external {
         if (block.timestamp > poolIndexes[_poolTokenAddress].lastUpdateTimestamp) {
             Types.PoolIndexes storage poolIndexes = poolIndexes[_poolTokenAddress];
             Types.MarketParameters storage marketParams = marketParameters[_poolTokenAddress];
 
             address underlyingToken = IAToken(_poolTokenAddress).UNDERLYING_ASSET_ADDRESS();
-            uint256 poolSupplyIndex = lendingPool.getReserveNormalizedIncome(underlyingToken);
-            uint256 poolBorrowIndex = lendingPool.getReserveNormalizedVariableDebt(underlyingToken);
+            uint256 newPoolSupplyIndex = lendingPool.getReserveNormalizedIncome(underlyingToken);
+            uint256 newPoolBorrowIndex = lendingPool.getReserveNormalizedVariableDebt(
+                underlyingToken
+            );
 
             Params memory params = Params(
                 p2pSupplyIndex[_poolTokenAddress],
                 p2pBorrowIndex[_poolTokenAddress],
-                poolSupplyIndex,
-                poolBorrowIndex,
+                newPoolSupplyIndex,
+                newPoolBorrowIndex,
                 poolIndexes.poolSupplyIndex,
                 poolIndexes.poolBorrowIndex,
                 marketParams.reserveFactor,
@@ -77,15 +81,15 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
             p2pBorrowIndex[_poolTokenAddress] = newP2PBorrowIndex;
 
             poolIndexes.lastUpdateTimestamp = uint32(block.timestamp);
-            poolIndexes.poolSupplyIndex = uint112(poolSupplyIndex);
-            poolIndexes.poolBorrowIndex = uint112(poolBorrowIndex);
+            poolIndexes.poolSupplyIndex = uint112(newPoolSupplyIndex);
+            poolIndexes.poolBorrowIndex = uint112(newPoolBorrowIndex);
 
             emit P2PIndexesUpdated(
                 _poolTokenAddress,
                 newP2PSupplyIndex,
                 newP2PBorrowIndex,
-                poolSupplyIndex,
-                poolBorrowIndex
+                newPoolSupplyIndex,
+                newPoolBorrowIndex
             );
         }
     }
@@ -110,18 +114,15 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
             _params.lastPoolBorrowIndex
         );
 
-        // Compute peer-to-peer growth factors
+        // Compute peer-to-peer growth factors.
 
-        uint256 p2pGrowthFactor = ((MAX_BASIS_POINTS - _params.p2pIndexCursor) *
-            poolSupplyGrowthFactor +
-            _params.p2pIndexCursor *
-            poolBorrowGrowthFactor) / MAX_BASIS_POINTS;
+        uint256 p2pGrowthFactor = poolSupplyGrowthFactor.percentMul(
+            MAX_BASIS_POINTS - _params.p2pIndexCursor
+        ) + poolBorrowGrowthFactor.percentMul(_params.p2pIndexCursor);
         uint256 p2pSupplyGrowthFactor = p2pGrowthFactor -
-            (_params.reserveFactor * (p2pGrowthFactor - poolSupplyGrowthFactor)) /
-            MAX_BASIS_POINTS;
+            _params.reserveFactor.percentMul(p2pGrowthFactor - poolSupplyGrowthFactor);
         uint256 p2pBorrowGrowthFactor = p2pGrowthFactor +
-            (_params.reserveFactor * (poolBorrowGrowthFactor - p2pGrowthFactor)) /
-            MAX_BASIS_POINTS;
+            _params.reserveFactor.percentMul(poolBorrowGrowthFactor - p2pGrowthFactor);
 
         // Compute new peer-to-peer supply index.
 
@@ -129,11 +130,12 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
             newP2PSupplyIndex = _params.lastP2PSupplyIndex.rayMul(p2pSupplyGrowthFactor);
         } else {
             uint256 shareOfTheDelta = Math.min(
-                (_params.delta.p2pSupplyDelta.rayMul(_params.lastPoolSupplyIndex)).rayDiv(
-                    (_params.delta.p2pSupplyAmount).rayMul(_params.lastP2PSupplyIndex)
+                (_params.delta.p2pSupplyDelta.wadToRay().rayMul(_params.lastPoolSupplyIndex))
+                .rayDiv(
+                    _params.delta.p2pSupplyAmount.wadToRay().rayMul(_params.lastP2PSupplyIndex)
                 ),
                 WadRayMath.RAY // To avoid shareOfTheDelta > 1 with rounding errors.
-            );
+            ); // In ray.
 
             newP2PSupplyIndex = _params.lastP2PSupplyIndex.rayMul(
                 (WadRayMath.RAY - shareOfTheDelta).rayMul(p2pSupplyGrowthFactor) +
@@ -147,11 +149,12 @@ contract InterestRatesManager is IInterestRatesManager, MorphoStorage {
             newP2PBorrowIndex = _params.lastP2PBorrowIndex.rayMul(p2pBorrowGrowthFactor);
         } else {
             uint256 shareOfTheDelta = Math.min(
-                (_params.delta.p2pBorrowDelta.rayMul(_params.lastPoolBorrowIndex)).rayDiv(
-                    (_params.delta.p2pBorrowAmount).rayMul(_params.lastP2PBorrowIndex)
+                (_params.delta.p2pBorrowDelta.wadToRay().rayMul(_params.lastPoolBorrowIndex))
+                .rayDiv(
+                    _params.delta.p2pBorrowAmount.wadToRay().rayMul(_params.lastP2PBorrowIndex)
                 ),
                 WadRayMath.RAY // To avoid shareOfTheDelta > 1 with rounding errors.
-            );
+            ); // In ray.
 
             newP2PBorrowIndex = _params.lastP2PBorrowIndex.rayMul(
                 (WadRayMath.RAY - shareOfTheDelta).rayMul(p2pBorrowGrowthFactor) +
