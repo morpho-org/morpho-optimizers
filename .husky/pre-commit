@@ -3,7 +3,7 @@
 . "$(dirname "$0")/_/husky.sh"
 
 
-CHANGED_FILES=$(git diff --staged --name-only --diff-filter=d | grep -e "\.ts$" -e "\.sol$")
+CHANGED_FILES=$(git diff --staged --name-only --diff-filter=d | grep -e "\.ts$" -e "\.sol$" | xargs)
 
 if [ -n "$CHANGED_FILES" ]; then
     yarn prettier --config .prettierrc.json --write $CHANGED_FILES
